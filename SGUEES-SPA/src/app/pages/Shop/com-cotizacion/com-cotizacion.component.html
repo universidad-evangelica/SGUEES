@@ -1,0 +1,562 @@
+<div class="view-wrapper list-page">
+  <app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+  (consultar)="consultar()"
+  [showRefresh]="true"
+  [btn1]="btnAplicar"
+  [btn1Icon]="'check'"
+  [btn1Type]="'success'"
+  (btn1Click)="Aplicar()"
+  [btn1Width]="100"
+  [btn1Mode]="'contained'"
+>
+>
+</app-barra-data-mtto>
+<div *ngIf="!isBrowse()">
+	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+		<div *dxTemplate="let cellInfo of 'ESTADO_COTIZACIONLookup'">
+			<app-data-lookup
+				[model]="mESTADO_COTIZACION"
+				[(value)]="model.ESTADO_COTIZACION"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="true"
+			>
+			</app-data-lookup>
+		</div>
+    <div *dxTemplate="let cellInfo of 'CORR_CONDICION_PAGOLookup'">
+      <app-data-lookup
+        [model]="mCORR_CONDICION_PAGO"
+        [(value)]="model.CORR_CONDICION_PAGO"
+        [valueExpr]="'CORR_CONDICION_PAGO'"
+        [displayExpr]="'NOMBRE_CONDICION_PAGO'"
+        [selectedRowKeys]="selectedLookUpCORR_CONDICION_PAGO"
+        [readOnly]="readOnly"
+      >
+      </app-data-lookup>
+    </div>
+    <div *dxTemplate="let cellInfo of 'CORR_FORMA_PAGOLookup'">
+      <app-data-lookup
+        [model]="mCORR_FORMA_PAGO"
+        [(value)]="model.CORR_FORMA_PAGO"
+        [valueExpr]="'CORR_FORMA_PAGO'"
+        [displayExpr]="'NOMBRE_FORMA_PAGO'"
+        [selectedRowKeys]="selectedLookUpCORR_FORMA_PAGO"
+        [readOnly]="readOnly"
+      >
+      </app-data-lookup>
+    </div>
+	</dx-form>
+  <dx-tab-panel #tabPanel [selectedIndex]="0">
+    <dxi-item title="Detalle de Item" [icon]="'cart'" >
+      <div class="dx-grid-deta">
+        <dx-data-grid
+          #DataCotizaDeta
+          [dataSource]="mCOM_COTIZACION_DETA"
+          [columnAutoWidth]="false"
+          [showBorders]="true"
+          [showColumnLines]="true"
+          [showRowLines]="true"
+          [rowAlternationEnabled]="true"
+          [hoverStateEnabled]="true"
+          [allowColumnResizing]="true"
+          [columnResizingMode]="'widget'"
+          [repaintChangesOnly]="true"
+          [focusedRowEnabled]="true"
+          [height]="'100%'"
+          [width]="'100%'"
+          keyExpr="CORR_COTIZACION_DETA"
+          (onRowUpdated)="gDataComCoticionDetaRowUpdated($event)"
+          (onRowRemoving)="gDataComCotizacionDetaRowRemoving($event)"
+          (onFocusedRowChanged)="gDataComCotizacionDetaFocusedRowChanged($event)"
+          (onRowDblClick)="gDataComCotizacionDetaRowDblClick($event)"
+          (onCellPrepared)="gDataComCotizacionDetaCellPrepared($event)"
+        >
+        <dxo-toolbar>
+          <dxi-item location="before" [visible]="true" >
+            <div *dxTemplate>
+              <dx-button class="myButton3" [icon]="'add'" text="Agregar Doc" type="success" (onClick)="AgregarDocumentoDeta($event)" [visible]="!readOnly" width="135">
+              </dx-button>
+            </div>
+          </dxi-item>
+          <dxi-item location="before" [visible]="true" >
+            <div *dxTemplate>
+              <dx-button text="Eliminar Doc" [icon]="'trash'" type="danger" (onClick)="gDataCotizacionDetaDocEliminar($event)" [visible]="!readOnly" width="135">
+              </dx-button>
+            </div>
+          </dxi-item>
+          <dxi-item name="exportButton" location="after"></dxi-item>
+          <dxi-item name="searchPanel" location="after"></dxi-item>
+        </dxo-toolbar>
+          <dxo-editing
+            mode="cell"
+            [refreshMode]="'reshape'"
+            [allowUpdating]="!readOnly"
+            [allowAdding]="!readOnly"
+            [allowDeleting]="!readOnly"
+            [useIcons]="true"
+          >
+            <dxo-popup title="Detalle de Cotización" [showTitle]="true" [width]="900" [height]="400"></dxo-popup>
+            <dxo-form
+              #fDetalleItem
+              [colCount]="8"
+              showValidationSummary="true"
+            >
+              <dxi-item dataField="CODIGO_ITEM" [colSpan]="1" [editorOptions]="{readOnly: true}">
+              </dxi-item>
+              <dxi-item dataField="ESTADO_SOLI_COTIZACION" [visible]="false" [colSpan]="2" [editorOptions]="{readOnly: true}">
+              </dxi-item>
+              <dxi-item dataField="NOMBRE_ITEM" [colSpan]="5" [editorOptions]="{readOnly: true}">
+              </dxi-item>
+              <dxi-item dataField="CORR_UNIDAD_MEDIDA" [colSpan]="2" [editorOptions]="{readOnly: true}">
+                <dxi-validation-rule type="required" message="Debe ingresar la unidad medida"></dxi-validation-rule>
+              </dxi-item>
+              <dxi-item dataField="MARCA" [colSpan]="2" >
+              </dxi-item>
+              <dxi-item dataField="CANTIDAD" [editorType]="'dxNumberBox'" [editorOptions]="{format: '#,##0.00' }" [colSpan]="2">
+                <dxi-validation-rule type="required" message="Debe ingresar la cantidad de Unidad"></dxi-validation-rule>
+              </dxi-item>
+              <dxi-item dataField="PRECIO_UNITARIO" [editorType]="'dxNumberBox'" [editorOptions]="{format: '#,##0.0000'}" [colSpan]="2">
+                <dxi-validation-rule type="required" message="Debe ingresar el precio unitario"></dxi-validation-rule>
+              </dxi-item>
+              <dxi-item dataField="MONTO_SUBTOTAL" [editorType]="'dxNumberBox'" [editorOptions]="{format: '#,##0.00', readOnly: true}" [colSpan]="2">
+                <dxi-validation-rule type="required" message="Debe ingresar el sub-total"></dxi-validation-rule>
+              </dxi-item>
+              <dxi-item dataField="OBSERVACIONES" [colSpan]="8">
+              </dxi-item>
+            </dxo-form>
+          </dxo-editing>
+          <dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
+          <dxo-load-panel [enabled]="false"></dxo-load-panel>
+          <dxo-search-panel [visible]="true"></dxo-search-panel>
+          <dxo-export [enabled]="true" fileName="Detalle"></dxo-export>
+          <dxi-column type="buttons" [width]="'60'">
+            <!-- <dxi-button hint="Editar Registro" icon="edit" [visible]="!readOnly" [onClick]="editarDetaClick"></dxi-button> -->
+            <dxi-button name="delete" [visible]="!readOnly"></dxi-button>
+          </dxi-column>
+          <dxi-column dataField="CODIGO_ITEM" caption="Cod. Item" [visible]="false" [dataType]="'string'" [width]="'80px'">
+          </dxi-column>
+          <dxi-column dataField="NOMBRE_ITEM" caption="Nombre Item" [editorOptions]="{ readOnly: true }" [dataType]="'string'" [width]="'300px'">
+          </dxi-column>
+          <dxi-column dataField="MARCA" caption="Marca" [dataType]="'string'" [width]="'150px'">
+          </dxi-column>
+          <dxi-column dataField="CORR_UNIDAD_MEDIDA" caption="U. Medida" [dataType]="'string'" [width]="'150px'" [editCellTemplate]="'CORR_UNIDAD_MEDIDALookup'">
+          <dxo-lookup [dataSource]="mCORR_UNIDAD_MEDIDA" valueExpr="CORR_UNIDAD_MEDIDA" displayExpr="NOMBRE_UNIDAD_MEDIDA"></dxo-lookup>
+          </dxi-column>
+          <div *dxTemplate="let cellInfo of 'CORR_UNIDAD_MEDIDALookup'">
+            <app-data-lookup
+              [setValue]="cellInfo.setValue"
+              [model]="mCORR_UNIDAD_MEDIDA"
+              [(value)]="cellInfo.value"
+              [selectedRowKeys]="selectedLookUpCORR_UNIDAD_MEDIDA"
+              [readOnly]="readOnly"
+              [valueExpr]="'CORR_UNIDAD_MEDIDA'"
+              [displayExpr]="'NOMBRE_UNIDAD_MEDIDA'"
+            >
+            </app-data-lookup>
+          </div>
+          <dxi-column dataField="CANTIDAD" caption="Cantidad" [dataType]="'number'" [editorOptions]="{ format: '#,##0.00' }" [width]="'100'" [setCellValue]="CantidadsetCellValue">
+          </dxi-column>
+          <div *dxTemplate="let cellInfo of 'CANTIDADNumber'">
+            <dx-number-box [(value)]="cellInfo.value">
+            </dx-number-box>
+          </div>
+          <dxi-column dataField="PRECIO_UNITARIO" caption="Precio U. (IVA Incluido)" [dataType]="'number'" [editorOptions]="{ format: '#,##0.0000' }" [width]="'180px'" [setCellValue]="PreciosetCellValue">
+          </dxi-column>
+          <dxi-column dataField="MONTO_SUBTOTAL" caption="Sub-Total" [dataType]="'number'" [editorOptions]="{ format: '#,##0.00' }" [width]="'100px'" [setCellValue]="MontoSubTotalCellValue">
+          </dxi-column>
+          <dxi-column dataField="CORR_DOCUMENTO" caption="Corr. Doc" [dataType]="'int'" [width]="'300'" [visible]="false" [allowEditing]="false">
+          </dxi-column>
+          <dxi-column dataField="IMAGEN_DOCUMENTO" caption="Adjunto" [width]="80" [allowFiltering]="false"[allowSorting]="false" cellTemplate="cellTemplate" [allowEditing]="false">
+          </dxi-column>
+          <div *dxTemplate="let data of 'cellTemplate'">
+            <img [src]="data.value" />
+          </div>
+          <dxi-column dataField="OBSERVACIONES" caption="Observaciones" [dataType]="'string'" [width]="'300px'">
+          </dxi-column>
+          <dxi-column dataField="ESTADO_SOLI_COTIZACION" caption="Estado" [dataType]="'string'" [width]="'100px'">
+            <dxo-lookup [dataSource]="mESTADO_COTIZACION" valueExpr="Key" displayExpr="Value"></dxo-lookup>
+          </dxi-column>
+          <div *dxTemplate="let cellInfo of 'ESTADO_SOLI_COTIZACIONLookup'">
+            <app-data-lookup
+              [model]="mESTADO_COTIZACION"
+              [(value)]="model.ESTADO_SOLI_COTIZACION"
+              [selectedRowKeys]="selectedLookUpmESTADO_COTIZACION_DETA"
+              [readOnly]="readOnly"
+            >
+            </app-data-lookup>
+          </div>
+          <dxo-summary>
+            <dxi-total-item
+              column="NOMBRE_ITEM"
+              summaryType="count"
+              valueFormat="#,##0"
+              displayFormat="Cant: {0}"
+            >
+            </dxi-total-item>
+            <dxi-total-item
+              column="MONTO_SUBTOTAL"
+              summaryType="sum"
+              valueFormat="#,##0.00"
+              displayFormat="{0}"
+            >
+            </dxi-total-item>
+          </dxo-summary>
+
+          <div *dxTemplate="let data of 'headerTemplate'">
+            <div><b>Precio U. (IVA Incluido)</b></div>
+          </div>
+        </dx-data-grid>
+      </div>
+    </dxi-item>
+    <dxi-item title="Detalle de Documento" [icon]="'doc'" >
+      <div class="dx-grid-deta">
+        <dx-data-grid
+        #gDataDocumentos
+        id="gridContainer"
+        [dataSource]="mCOM_COTIZACION_DOC"
+        (onRowDblClick)="gDataCotizacionDocRowDblClick($event)"
+        (onRowRemoving)="gDataCotizacionDocRowRemoving($event)"
+        [columnAutoWidth]="false"
+        [showBorders]="true"
+        [showColumnLines]="true"
+        [showRowLines]="true"
+        [rowAlternationEnabled]="true"
+        [hoverStateEnabled]="false"
+        [allowColumnResizing]="true"
+        [columnResizingMode]="'widget'"
+        [focusedRowEnabled]="true"
+        [height]="'100%'"
+        [width]="'100%'"
+        [keyExpr]="[
+          'CORR_EMPRESA',
+          'ANIO_PERIODO',
+          'CORR_COTIZACION',
+          'CORR_DOCUMENTO'
+        ]"
+      >
+      <dxo-toolbar>
+        <dxi-item location="before" [visible]="true" >
+          <div *dxTemplate>
+            <dx-button class="myButton3" [icon]="'add'" text="Agregar Doc" type="success" (onClick)="AgregarDocumento($event)" width="135">
+            </dx-button>
+          </div>
+        </dxi-item>
+        <dxi-item name="exportButton" location="after"></dxi-item>
+        <dxi-item name="searchPanel" location="after"></dxi-item>
+      </dxo-toolbar>
+        <dxo-editing
+          mode="cell"
+          [refreshMode]="'reshape'"
+          [allowUpdating]="false"
+          [allowDeleting]="true"
+          [useIcons]="true"
+        >
+        </dxo-editing>
+        <dxo-selection mode="single"></dxo-selection>
+        <dxo-load-panel [enabled]="false"></dxo-load-panel>
+        <dxo-search-panel [visible]="true"></dxo-search-panel>
+        <dxo-export [enabled]="true" fileName="Detalle"></dxo-export>
+        <dxo-paging [enabled]="false"></dxo-paging>
+        <dxo-filter-panel [visible]="true"></dxo-filter-panel>
+        <dxi-column type="buttons" [width]="'45'">
+          <dxi-button name="delete" [visible]="!readOnly"></dxi-button>
+        </dxi-column>
+        <dxi-column dataField="CORR_EMPRESA" caption="" [visible]="false">
+        </dxi-column>
+        <dxi-column dataField="ANIO_PERIODO" caption="" [visible]="false">
+        </dxi-column>
+        <dxi-column dataField="CORR_COTIZACION" caption="" [visible]="false">
+        </dxi-column>
+        <dxi-column
+          dataField="CORR_DOCUMENTO"
+          caption=""
+          [visible]="false"
+        >
+        </dxi-column>
+        <dxi-column
+        dataField="NOMBRE_TIPO_DOCUMENTO"
+        caption="Tipo de Documento"
+        width="150"
+        [allowEditing]="false"
+      ></dxi-column>
+        <dxi-column
+          dataField="NOMBRE_DOCUMENTO"
+          caption="Nombre del Documento"
+          width="250"
+          [allowEditing]="false"
+        >
+        </dxi-column>
+        <dxi-column
+          dataField="DESCRIPCION_DOCUMENTO"
+          caption="Descripción del Documento"
+          width="350"
+          [allowEditing]="false"
+        >
+        </dxi-column>
+        </dx-data-grid>
+      </div>
+    </dxi-item>
+    <dxi-item title="Comentarios" [icon]="'comment'" >
+      <div class="commentContainer">
+        <dx-toolbar class="commentToolContainer">
+          <dxi-item
+            location="before"
+            widget="dxButton"
+            [options]="{
+              icon: 'add',
+              text: 'Agregar Comentario',
+              type: 'success',
+              stylingMode: 'contained',
+              height: '28',
+              width: '200',
+              onClick: AgregarComentario,
+              visible: true
+            }"
+          ></dxi-item>
+        </dx-toolbar>
+        <div *ngFor="let deta of mCOM_COTIZACION_COMENTARIO; let i = index">
+          <div class="commentTitle">{{ deta.USUARIO_CREA }}, {{ deta.FECHA_CREA | date : "medium" }}</div>
+          <div class="description">
+            <dx-html-editor [readOnly]="true" height="auto" [value]="deta.COMENTARIO">
+            </dx-html-editor>
+          </div>
+        </div>
+      </div>
+    </dxi-item>
+  </dx-tab-panel>
+</div>
+<app-data-grid-mtto
+  #gData
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="'CORR_COTIZACION'"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+  [filterValue]="FilterValue"
+  id="gData"
+>
+</app-data-grid-mtto>
+</div>
+
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>
+<dx-popup
+  [width]="'500px'"
+  [position]="'top'"
+  [height]="'350px'"
+  [showTitle]="true"
+  title="Agregando Documentos"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="false"
+  [shading]="false"
+  [(visible)]="popupVisibleDoc"
+  class="popout"
+>
+<div *dxTemplate="let data of 'content'">
+  <dx-form #fDocumento id="fDocumento" [colCount]="4" [height]="'auto'" [formData]="mDocumento">
+    <dxi-item [colSpan]="2">
+      <div *dxTemplate>
+        <dx-button class="myButton3" [icon]="'file'" text="Seleccionar Doc." type="default" (onClick)="fileUpload.click()" width="185">
+        </dx-button>
+        <input type="file" [hidden]="true" class="file-input" [accept]="'image/jpeg,image/gif,image/png,application/pdf,image/x-eps'" (change)="onDocSelected($event)" #fileUpload>
+      </div>
+    </dxi-item>
+    <dxi-item [colSpan]="2">
+      <div>{{vNOMBRE_ARCHIVO}}</div>
+    </dxi-item>
+    <dxi-item dataField="NOMBRE_DOCUMENTO" [label]="{text: 'Nombre Documento'}" [editorType]="'dxTextBox'" [colSpan]="2" [editorOptions]="{ placeholder: 'Nombre del Documento...', showClearButton: true, maxLength: 150 }">
+      <dxi-validation-rule type="required"  message="El nombre del Documento es obligatorio"> </dxi-validation-rule>
+    </dxi-item>
+    <dxi-item
+      dataField="CORR_TIPO_DOCUMENTO"
+      [label]="{ text: 'Tipo de Documento' }"
+      [colSpan]="2"
+      [editorOptions]="{ placeholder: 'Tipo Documento...', showClearButton: true }"
+      [template]="'cbTipoDocumento'"
+      >
+    </dxi-item>
+    <div *dxTemplate="let cellInfo of 'cbTipoDocumento'">
+        <app-data-lookup
+          [model]="mCORR_TIPO_DOCUMENTO"
+          [(value)]="mDocumento.CORR_TIPO_DOCUMENTO"
+          [valueExpr]="'CORR_TIPO_DOCUMENTO'"
+          [displayExpr]="'NOMBRE_TIPO_DOCUMENTO'"
+          [selectedRowKeys]="selectedLookUpCORR_TIPO_DOCUMENTO"
+        >
+        </app-data-lookup>
+    </div>
+    <dxi-item dataField="DESCRIPCION_DOCUMENTO" [label]="{text: 'Descripción'}" [editorType]="'dxTextBox'" [colSpan]="4" [editorOptions]="{ placeholder: 'Descripción del Documento...', showClearButton: true, maxLength: 255 }">
+    </dxi-item>
+    <dxi-item [type]="'empty'" [colSpan]="4">
+    </dxi-item>
+  </dx-form>
+  <div class="form-group row text-right footer">
+    <div class="col col-sm-10 col-lg-9 offset-sm-1 offset-lg-0">
+      <dx-button [text]="'Guardar'" [icon]="'add'" id="button" class="myButton4" type="success" stylingMode="contained" (click)="guardarDocPopup()">
+      </dx-button>
+      <dx-button [text]="'Cancelar'" [icon]="'close'" id="button" class="myButton4 myButtonSpace" type="danger" stylingMode="contained" (click)="hideDocPopup()" routerLinkActive="router-link-active">
+      </dx-button>
+    </div>
+  </div>
+</div>
+</dx-popup>
+<dx-popup
+  [width]="'800px'"
+  [position]="'top'"
+  [height]="'600px'"
+  [showTitle]="true"
+  title="Agregando Comentario"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="false"
+  [shading]="false"
+  [(visible)]="popupVisibleComentario"
+  class="popout"
+>
+<div *dxTemplate="let data of 'content'">
+  <dx-form #fDocumento id="fComentario" [colCount]="8" [height]="'auto'" [formData]="mComentario">
+    <dxi-item dataField="USUARIO_CREA" [label]="{text: 'Usuario'}" [editorType]="'dxTextBox'" [colSpan]="4" [editorOptions]="{ placeholder: '', readOnly: true }">
+    </dxi-item>
+    <dxi-item
+      dataField="CLASE_COMENTARIO"
+      [label]="{ text: 'Clase de Comentario' }"
+      [colSpan]="4"
+      [editorOptions]="{ placeholder: '', showClearButton: true }"
+      [template]="'cbClaseComentario'"
+      [visible] = "muestraClaseComentario"
+      >
+    </dxi-item>
+    <dxi-item
+      [type]="'empty'"
+      [colSpan]="4"
+      [visible] = "!muestraClaseComentario"
+      >
+    </dxi-item>
+    <div *dxTemplate="let cellInfo of 'cbClaseComentario'">
+        <app-data-lookup
+          [model]="mCLASE_COMENTARIO"
+          [(value)]="mComentario.CLASE_COMENTARIO"
+          [selectedRowKeys]="selectedLookUpLista"
+        >
+        </app-data-lookup>
+    </div>
+    <dxi-item dataField="COMENTARIO" [template]="'htmlComentario'" [label]="{text: '', visible: false}" [colSpan]="8" [editorOptions]="{ placeholder: 'Escribe un comentario...'}">
+      <dxi-validation-rule type="required"  message="El comentario es obligatorio"> </dxi-validation-rule>
+    </dxi-item>
+    <div *dxTemplate="let cellInfo of 'htmlComentario'">
+      <dx-html-editor height="400"  [(value)]="mComentario.COMENTARIO">
+        <dxo-toolbar [multiline]="true">
+          <dxi-item name="undo"></dxi-item>
+          <dxi-item name="redo"></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item
+            name="size"
+            [acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt', '36pt']"
+            [options]="{ inputAttr: { 'aria-label': 'Font size' } }"
+          ></dxi-item>
+          <dxi-item
+            name="font"
+            [acceptedValues]="[
+              'Arial',
+              'Courier New',
+              'Georgia',
+              'Impact',
+              'Lucida Console',
+              'Tahoma',
+              'Times New Roman',
+              'Verdana'
+            ]"
+            [options]="{ inputAttr: { 'aria-label': 'Font family' } }"
+          ></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item name="bold"></dxi-item>
+          <dxi-item name="italic"></dxi-item>
+          <dxi-item name="strike"></dxi-item>
+          <dxi-item name="underline"></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item name="alignLeft"></dxi-item>
+          <dxi-item name="alignCenter"></dxi-item>
+          <dxi-item name="alignRight"></dxi-item>
+          <dxi-item name="alignJustify"></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item name="orderedList"></dxi-item>
+          <dxi-item name="bulletList"></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item
+            name="header"
+            [acceptedValues]="[false, 1, 2, 3, 4, 5]"
+            [options]="{ inputAttr: { 'aria-label': 'Header' } }"
+          ></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item name="color"></dxi-item>
+          <dxi-item name="background"></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item name="link"></dxi-item>
+          <dxi-item name="image"></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item name="clear"></dxi-item>
+          <dxi-item name="codeBlock"></dxi-item>
+          <dxi-item name="blockquote"></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item name="insertTable"></dxi-item>
+          <dxi-item name="deleteTable"></dxi-item>
+          <dxi-item name="insertRowAbove"></dxi-item>
+          <dxi-item name="insertRowBelow"></dxi-item>
+          <dxi-item name="deleteRow"></dxi-item>
+          <dxi-item name="insertColumnLeft"></dxi-item>
+          <dxi-item name="insertColumnRight"></dxi-item>
+          <dxi-item name="deleteColumn"></dxi-item>
+        </dxo-toolbar>
+        <dxo-media-resizing [enabled]="true"> </dxo-media-resizing>
+        <dxo-image-upload [tabs]="tabs[2].value" fileUploadMode="base64">
+        </dxo-image-upload>
+      </dx-html-editor>
+  </div>
+  </dx-form>
+  <div class="form-group row text-right footer">
+    <div class="col col-sm-10 col-lg-9 offset-sm-1 offset-lg-0">
+      <dx-button [text]="'Guardar'" [icon]="'add'" id="button" class="myButton4" type="success" stylingMode="contained" (click)="guardarComentarioPopup()">
+      </dx-button>
+      <dx-button [text]="'Cancelar'" [icon]="'close'" id="button" class="myButton4 myButtonSpace" type="danger" stylingMode="contained" (click)="hideComentarioPopup()" routerLinkActive="router-link-active">
+      </dx-button>
+    </div>
+  </div>
+</div>
+</dx-popup>
+<dx-popup
+  [width]="'1200px'"
+  [position]="'top'"
+  [height]="'1050px'"
+  [showTitle]="true"
+  title="Vista Previa"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [shading]="false"
+  [(visible)]="popupVisiblePdf"
+  class="popout"
+>
+  <object [data]="PDF" type="application/pdf" width="100%" height="95%" >
+    <embed [src]="PDF" type="application/pdf" />
+  </object>
+</dx-popup>

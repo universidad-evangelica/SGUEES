@@ -1,0 +1,219 @@
+<dx-box class="content-block"
+  direction="row"
+  width="100%"
+  [height]="'auto'">
+    <dxi-item
+      ratio="0"
+      baseSize="28"
+      class="bgOcultar"
+    >
+      <dx-toolbar class="bgOcultar"
+        [items]="toolbarContent">
+      </dx-toolbar>
+    </dxi-item>
+    <dxi-item
+      ratio="1">
+      <h2 class="content-block">{{tituloVentana}}</h2>
+    </dxi-item>
+</dx-box>
+
+<dx-drawer
+  [openedStateMode]="'shrink'"
+  [position]="'before'"
+  [revealMode]="'slide'"
+  [opened]="true"
+  [height]="600"
+  template="template"
+  [width]="'100%'"
+  [(opened)]="isDrawerOpen"
+  [closeOnOutsideClick]="false">
+
+  <div *dxTemplate="let data of 'template'" style="width: 260px">
+    <div class="options">
+      <div class="caption"></div>
+        <div class="option">
+          <div>Fecha Inicial: </div>
+          <dx-date-box [(value)]="vFECHA_INICIAL"
+          [useMaskBehavior]= "true"
+          type="date"
+          displayFormat="dd/MM/yyyy"
+          width="'100%'"
+          ></dx-date-box>
+        </div>
+        <div class="option">
+          <div>Fecha Final: </div>
+          <dx-date-box [(value)]="vFECHA_FINAL"
+          [useMaskBehavior]= "true"
+          type="date"
+          displayFormat="dd/MM/yyyy"
+          width="'100%'"
+          ></dx-date-box>
+        </div>
+        <div class="option">
+          <dxi-item location="after">
+            <dx-button text="Consultar" type="default" [icon]="'refresh'"
+            (onClick)="consultar()">
+            </dx-button>
+          </dxi-item>
+        </div>
+        <div class="option">
+          <dxi-item location="after">
+            <dx-button text="Des Aplicar" type="success" [icon]="'revert'"
+            (onClick)="desAplicar()">
+            </dx-button>
+          </dxi-item>
+        </div>
+    </div>
+  </div>
+  <dx-data-grid
+    #DataDocumentoDeta
+    [dataSource]="models"
+    [columnAutoWidth]="false"
+    [showBorders]="true"
+    [showColumnLines]="true"
+    [showRowLines]="true"
+    [rowAlternationEnabled]="true"
+    [hoverStateEnabled]="true"
+    [allowColumnResizing]="true"
+    [columnResizingMode]="'widget'"
+    [focusedRowEnabled]="true"
+    [height]="'100%'"
+    [width]="'100%'"
+    [keyExpr]="['ANIO_PERIODO','MES_PERIODO', 'CORR_DOCUMENTO']"
+    (onExporting)="onExporting($event)"
+    >
+    <dxo-toolbar>
+      <dxi-item location="before" [visible]="true">
+        <div *dxTemplate>
+          <dx-button
+            class="myButton3"
+            icon="add"
+            text="Todos"
+            type="success"
+            (onClick)="selectTodos()"
+            [visible]="!readOnly"
+            width="100"
+          >
+          </dx-button>
+        </div>
+      </dxi-item>
+      <dxi-item location="before" [visible]="true">
+        <div *dxTemplate>
+          <dx-button
+            text="Ninguno"
+            icon="minus"
+            type="danger"
+            (onClick)="selectNinguno()"
+            [visible]="!readOnly"
+            width="105"
+          >
+          </dx-button>
+        </div>
+      </dxi-item>
+      <dxi-item name="exportButton" location="after"></dxi-item>
+      <dxi-item name="searchPanel" location="after"></dxi-item>
+    </dxo-toolbar>
+      <dxo-editing
+        mode="cell"
+        [refreshMode]="'reshape'"
+        [allowAdding]="!readOnly"
+        [allowUpdating]="!readOnly"
+        [allowDeleting]="!readOnly"
+        [useIcons]="true"
+      >
+        <dxo-popup title="Impuesto" [showTitle]="true" [width]="700" [height]="350"></dxo-popup>
+        <dxo-form [colCount]="8" showValidationSummary="true">
+          <dxi-item dataField="SELECCION" [colSpan]="8" [label]="{ text: 'Incluido', alignment: 'right' }" [editorType]="'dxCheckBox'"></dxi-item>
+        </dxo-form>
+      </dxo-editing>
+      <dxo-load-panel [enabled]="false"></dxo-load-panel>
+      <dxo-search-panel [visible]="true"></dxo-search-panel>
+      <dxo-export [enabled]="true" fileName="Detalle"></dxo-export>
+      <dxo-group-panel [visible]="true"></dxo-group-panel>
+      <dxo-grouping #expand [autoExpandAll]="true"></dxo-grouping>
+      <dxo-filter-panel [visible]="true"></dxo-filter-panel>
+      <dxo-filter-row [visible]="true"></dxo-filter-row>
+      <dxo-header-filter [visible]="true"></dxo-header-filter>
+      <dxo-scrolling mode="virtual" useNative="true"></dxo-scrolling>
+      <dxi-column dataField="SELECCION" caption="" [dataType]="'boolean'" width=100 [allowEditing]="!allowEditing">
+      </dxi-column>
+      <dxi-column dataField="NUMERO_DOCUMENTO_CORR" caption="Corr." [dataType]="'int'" width=130 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="CORR_DOCUMENTO" caption="Corr." [dataType]="'int'" width=130 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="NOMBRE_TIPO_DOC" caption="Tipo Doc." [dataType]="'string'" width=220 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="NOMBRE_ESTADO_DOCUMENTO" caption="Estado" [dataType]="'string'" width=100 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="FECHA_DOCUMENTO" caption="Fecha Solicitud" [dataType]="'date'" width=130 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="FECHA_VENCIMIENTO" caption="Fecha Vencimiento" [dataType]="'date'" width=160 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="NOMBRE_PROVEEDOR" caption="Proveedor" [dataType]="'string'" width=270 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="SERIE" caption="Serie" [dataType]="'string'" width=120 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="NUMERO_DOCUMENTO" caption="Número Documento" [dataType]="'string'" width=150 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="NUMERO_UNICO" caption="Número Único" [dataType]="'int'" width=150 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="CODIGO_GENERACION" caption="Código Generación" [dataType]="'string'" width=220 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="NUMERO_CONTROL" caption="Número Control" [dataType]="'string'" width=220 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="SELLO_RECEPCION" caption="Sello Recepción" [dataType]="'string'" width=220 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="NOMBRE_CONDICION_PAGO" caption="Condición de Pago" [dataType]="'string'" width=180 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="CANTIDAD" caption="Cantidad" [dataType]="'number'" width="100" [allowEditing]="allowEditing">
+        <dxo-format
+            type="fixedPoint"
+            [precision]="2">
+        </dxo-format>
+      </dxi-column>
+      <dxi-column dataField="SALDO_DOCUMENTO" caption="Saldo Documento" [dataType]="'number'" width="150" [allowEditing]="allowEditing">
+        <dxo-format
+            type="fixedPoint"
+            [precision]="2">
+        </dxo-format>
+      </dxi-column>
+      <dxi-column dataField="NOMBRE_TIPO_GASTO" caption="Tipo Gasto" [dataType]="'string'" width=250 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="DESCRIPCION_PARTIDA" caption="Descripción Partida" [dataType]="'string'" width=260 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="USUARIO_CREA" caption="Usuario Crea" [dataType]="'string'" width=130 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="FECHA_CREA" caption="Fecha Crea." [dataType]="'date'"  width=130 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="ESTACION_CREA" caption="Estación Crea." [dataType]="'string'" width=140 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="USUARIO_ACTU" caption="Usuario Actu." [dataType]="'string'" width=140 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="FECHA_ACTU" caption="Fecha Actu." [dataType]="'date'"  width=130 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="ESTACION_ACTU" caption="Estación Actu." [dataType]="'string'" width=140 [allowEditing]="allowEditing">
+      </dxi-column>
+
+      <dxo-summary>
+        <dxi-total-item
+          column="CORR_DOCUMENTO"
+          summaryType="count"
+          valueFormat="#,##0"
+          displayFormat="Cant: {0}"
+        >
+        </dxi-total-item>
+
+      </dxo-summary>
+  </dx-data-grid>
+</dx-drawer>
+<dx-load-panel
+  #loadPanel
+  shadingColor="rgba(0,0,0,0.4)"
+  [position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+  [(visible)]="loadingVisible"
+  [showIndicator]="true"
+  [showPane]="true"
+  [shading]="true"
+  (onShown)="(loadingVisible)"
+>
+</dx-load-panel>

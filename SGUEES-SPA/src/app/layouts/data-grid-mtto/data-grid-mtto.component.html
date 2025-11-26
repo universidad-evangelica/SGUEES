@@ -1,0 +1,39 @@
+<dx-data-grid
+  class="theme-dependent"
+	#gData
+	[visible]="isBrowse"
+	[dataSource]="models"
+	[keyExpr]="keyExpr"
+	[columnAutoWidth]="false"
+	[showBorders]="true"
+	[showColumnLines]="true"
+	[showRowLines]="true"
+	[rowAlternationEnabled]="true"
+	[hoverStateEnabled]="false"
+	[allowColumnResizing]="true"
+	[columnResizingMode]="'widget'"
+	[focusedRowEnabled]="true"
+	[height]="'670px'"
+	[width]="'100%'"
+	(onRowRemoving)="OnrowRemoving($event)"
+	(onRowDblClick)="OnrowDblClick($event)"
+	(onRowClick)="OnRowClick($event)"
+	(onFocusedRowChanged)="OnfocusedRowChanged($event)"
+  (onExporting)="onExporting($event)"
+	[columns]="columns"
+	[summary]="summary"
+  [filterSyncEnabled]="true"
+  [filterValue]="filterValue"
+>
+	<dxo-editing mode="row" [refreshMode]="'reshape'" [allowDeleting]="true" [useIcons]="true"> </dxo-editing>
+	<dxo-load-panel [enabled]="false"></dxo-load-panel>
+	<dxo-search-panel [visible]="true"></dxo-search-panel>
+	<dxo-export [enabled]="true" fileName="gData"></dxo-export>
+	<dxo-group-panel [visible]="true"></dxo-group-panel>
+	<dxo-grouping #expand [autoExpandAll]="true"></dxo-grouping>
+	<dxo-paging [enabled]="true" [pageSize]="40"></dxo-paging>
+	<dxo-filter-panel [visible]="true"></dxo-filter-panel>
+	<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+	<dxo-header-filter [visible]="true"></dxo-header-filter>
+  <dxo-scrolling mode="virtual" useNative="false"></dxo-scrolling>
+</dx-data-grid>

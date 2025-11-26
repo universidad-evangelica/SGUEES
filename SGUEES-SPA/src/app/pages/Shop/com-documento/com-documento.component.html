@@ -1,0 +1,935 @@
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="permiteAdd"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+  [showRefresh]="true"
+  [showDates]="true"
+  (consultar)="consultar()"
+  [(FECHA_INICIAL)]="vFECHA_INICIAL"
+  [(FECHA_FINAL)]="vFECHA_FINAL"
+  [btn1]="btnAplicar"
+  [btn1Icon]="'check'"
+  [btn1Type]="'success'"
+  (btn1Click)="Aplicar()"
+  [btn1Width]="100"
+  [btn1Mode]="'contained'"
+  [btn2]="btnDocumentosElectronicos"
+  [btn2Icon]="'file'"
+  [btn2Type]="'default'"
+  (btn2Click)="MostrarDocumentosElectronicos()"
+  [btn2Width]="180"
+  [btn2Mode]="'contained'"
+  [btn3]="btnVistaPrevia"
+  [btn3Icon]="'pdffile'"
+  [btn3Type]="'default'"
+  (btn3Click)="MostrarVistaPrevia()"
+  [btn3Width]="180"
+  [btn3Mode]="'contained'"
+  [btn4]="btnGenerarCR"
+  [btn4Icon]="'check'"
+  [btn4Type]="'success'"
+  (btn4Click)="GenerarCR()"
+  [btn4Width]="180"
+  [btn4Mode]="'contained'"
+
+>
+</app-barra-data-mtto>
+<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="15" [items]="items">
+		<div *dxTemplate="let cellInfo of 'CORR_TIPO_DOCLookup'">
+			<app-data-lookup
+				[model]="mCORR_TIPO_DOC"
+				[(value)]="model.CORR_TIPO_DOC"
+        [valueExpr]="'CORR_TIPO_DOC'"
+        [displayExpr]="'NOMBRE_TIPO_DOC'"
+				[selectedRowKeys]="selectedLookUpCORR_TIPO_DOC"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_PROVEEDORLookup'">
+			<app-data-lookup
+				[model]="mCORR_PROVEEDOR"
+				[(value)]="model.CORR_PROVEEDOR"
+				[valueExpr]="'CORR_PROVEEDOR'"
+				[displayExpr]="'NOMBRE_PROVEEDOR'"
+				[selectedRowKeys]="selectedLookUpCORR_PROVEEDOR"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_CONDICION_PAGOLookup'">
+			<app-data-lookup
+				[model]="mCORR_CONDICION_PAGO"
+				[(value)]="model.CORR_CONDICION_PAGO"
+				[valueExpr]="'CORR_CONDICION_PAGO'"
+        [displayExpr]="'NOMBRE_CONDICION_PAGO'"
+				[selectedRowKeys]="selectedLookUpCORR_CONDICION_PAGO"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'ESTADO_DOCUMENTOLookup'">
+			<app-data-lookup
+				[model]="mESTADO_DOCUMENTO"
+				[(value)]="model.ESTADO_DOCUMENTO"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="true"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_TIPO_GASTOLookup'">
+			<app-data-lookup
+				[model]="mCORR_TIPO_GASTO"
+				[(value)]="model.CORR_TIPO_GASTO"
+				[valueExpr]="'CORR_TIPO_GASTO'"
+				[displayExpr]="'NOMBRE_TIPO_GASTO'"
+				[selectedRowKeys]="selectedLookUpCORR_TIPO_GASTO"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'ESTADO_ADMINISTRATIVOLookup'">
+			<app-data-lookup
+				[model]="mESTADO_ADMINISTRATIVO"
+				[(value)]="model.ESTADO_ADMINISTRATIVO"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="true"
+			>
+			</app-data-lookup>
+		</div>
+    <div *dxTemplate="let cellInfo of 'MES_PERIODO_IVALookup'">
+			<app-data-lookup
+				[model]="mMES_PERIODO"
+				[(value)]="model.MES_PERIODO_IVA"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+	</dx-form>
+  <div class="form">
+		<div class="dx-fieldset">
+			<div class="dx-field">
+				<dx-tab-panel
+        #tabPanelDetalle
+        [height]="'100%'"
+        [loop]="false"
+        [animationEnabled]="false"
+        [swipeEnabled]="true"
+        [selectedIndex]="IndexTab"
+        >
+					<dxi-item title="Rubros Gravados " [name]="'tpTotales'" [visible]="TabTotales" [autofocus]="TabTotales" [icon]="'doc'">
+            <div #tptotales></div>
+              <table class='border'>
+                <tbody>
+                  <tr>
+                    <th class='border'>Rubros Gravados       </th>
+                    <th class='border'><span>{{ tituloGridDetaDoc }}</span></th>
+                  </tr>
+                  <tr>
+                      <td>
+                        <div id='gridContainer2'>
+                          <div class="form">
+                            <div class="dx-fieldset">
+                              <div class="dx-field">
+                                <dx-data-grid
+                                  [dataSource]="mCOM_DOCUMENTO_TOTAL"
+                                  [columnAutoWidth]="false"
+                                  [showBorders]="true"
+                                  [showColumnLines]="true"
+                                  [showRowLines]="true"
+                                  [rowAlternationEnabled]="true"
+                                  [hoverStateEnabled]="true"
+                                  [allowColumnResizing]="true"
+                                  [columnResizingMode]="'widget'"
+                                  [repaintChangesOnly]="true"
+                                  [showColumnHeaders]="false"
+                                  [height]="'100%'"
+                                  [width]="'100%'"
+                                  keyExpr="CORR_RUBRO"
+                                  (onRowUpdated)="gDataComDocumentoTotalRowUpdated($event)"
+                                  [focusedRowKey]="focusedRubroGravado"
+                                  [focusedRowEnabled]="true"
+                                  [autoNavigateToFocusedRow]="true"
+                                >
+                                  <dxo-editing
+                                    [mode]="'cell'"
+                                    [refreshMode]="'reshape'"
+                                    [allowAdding]="false"
+                                    [allowUpdating]="!readOnly"
+                                    [allowDeleting]="false"
+                                    [useIcons]="true"
+                                  >
+                                    <dxo-popup title="Impuesto" [showTitle]="true" [width]="700" [height]="350"></dxo-popup>
+                                    <dxo-form [colCount]="8" showValidationSummary="true">
+                                      <dxi-item dataField="NOMBRE_RUBRO" [colSpan]="8" [editorOptions]="{ readOnly: true }">
+                                      </dxi-item>
+                                      <dxi-item dataField="MONTO_RUBRO" [colSpan]="8" [label]="{ text: 'Incluido', alignment: 'right' }" [editorType]="'dxNumberBox'"></dxi-item>
+                                    </dxo-form>
+                                  </dxo-editing>
+                                  <dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
+                                  <dxo-load-panel [enabled]="false"></dxo-load-panel>
+                                  <dxo-search-panel [visible]="false"></dxo-search-panel>
+                                  <dxo-export [enabled]="false" fileName="Totales"></dxo-export>
+                                  <dxi-column
+                                    dataField="NOMBRE_RUBRO"
+                                    caption=""
+                                    [width]="'250'"
+                                    [allowEditing]="false"
+                                  >
+                                  </dxi-column>
+                                  <dxi-column
+                                    dataField="MONTO_RUBRO"
+                                    caption=""
+                                    [dataType]="'number'"
+                                    [width]="'100'"
+                                    [format]="{ type: 'fixedPoint', precision: 2 }"
+                                  ></dxi-column>
+                                  <dxo-summary>
+                                    <dxi-total-item
+                                      column="CORR_RUBRO"
+                                      summaryType="count"
+                                      valueFormat="#,##0"
+                                      displayFormat="Cant: {0}"
+                                    >
+                                    </dxi-total-item>
+                                  </dxo-summary>
+                                </dx-data-grid>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div id='gridContainer'>
+                          <div class="form">
+                            <div class="dx-fieldset">
+                              <div class="dx-field">
+                                <dx-data-grid
+                                  [dataSource]="mCOM_DOCUMENTO_DETA_DOC"
+                                  [columnAutoWidth]="false"
+                                  [showBorders]="true"
+                                  [showColumnLines]="true"
+                                  [showRowLines]="true"
+                                  [rowAlternationEnabled]="true"
+                                  [hoverStateEnabled]="true"
+                                  [allowColumnResizing]="true"
+                                  [columnResizingMode]="'widget'"
+                                  [repaintChangesOnly]="true"
+                                  [showColumnHeaders]="true"
+                                  [height]="'100%'"
+                                  [width]="'100%'"
+                                  [keyExpr]="['ANIO_PERIODO_DOC','MES_PERIODO_DOC', 'CORR_DOCUMENTO_DOC']"
+                                  [focusedRowKey]="focusedRubroGravado"
+                                  [focusedRowEnabled]="true"
+                                  [autoNavigateToFocusedRow]="true"
+                                  [visible]="mostrarDetaDoc"
+                                  (onRowRemoving)="gDataComDocumentoDetaDocRowRemoving($event)"
+                                >
+                                  <dxo-toolbar>
+                                    <dxi-item location="before" [visible]="true" >
+                                      <div *dxTemplate>
+                                        <dx-button class="myButton4" [icon]="'file'" text="Agregar Doc" type="default" stylingMode="contained" (onClick)="MostrarDetalleDocumentos()" [visible]="!readOnly" width="135">
+                                        </dx-button>
+                                      </div>
+                                    </dxi-item>
+                                    <dxi-item name="exportButton" location="after"></dxi-item>
+                                    <dxi-item name="searchPanel" location="after"></dxi-item>
+                                  </dxo-toolbar>
+                                  <dxo-editing
+                                    [mode]="'cell'"
+                                    [refreshMode]="'reshape'"
+                                    [allowAdding]="false"
+                                    [allowUpdating]="false"
+                                    [allowDeleting]="!readOnly"
+                                    [useIcons]="true"
+                                  >
+                                    <dxo-popup title="Impuesto" [showTitle]="true" [width]="700" [height]="350"></dxo-popup>
+                                    <dxo-form [colCount]="8" showValidationSummary="true">
+                                      <dxi-item dataField="NOMBRE_RUBRO" [colSpan]="8" [editorOptions]="{ readOnly: true }">
+                                      </dxi-item>
+                                      <dxi-item dataField="MONTO_RUBRO" [colSpan]="8" [label]="{ text: 'Incluido', alignment: 'right' }" [editorType]="'dxNumberBox'"></dxi-item>
+                                    </dxo-form>
+                                  </dxo-editing>
+                                  <dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
+                                  <dxo-load-panel [enabled]="false"></dxo-load-panel>
+                                  <dxo-search-panel [visible]="false"></dxo-search-panel>
+                                  <dxo-export [enabled]="false" fileName="Documento Asociados"></dxo-export>
+                                  <dxi-column type="buttons" [width]="'45'">
+                                    <dxi-button name="delete" [visible]="!readOnly"></dxi-button>
+                                  </dxi-column>
+                                  <dxi-column
+                                    dataField="NUMERO_DOCUMENTO"
+                                    caption="Numero Documento"
+                                    [width]="'200'"
+                                    [allowEditing]="false"
+                                  >
+                                  </dxi-column>
+                                  <dxi-column
+                                    dataField="FECHA_DOCUMENTO"
+                                    caption="Fecha Doc."
+                                    [width]="'100'"
+                                    dataType="date"
+                                    [allowEditing]="false"
+                                  >
+                                  </dxi-column>
+                                  <dxi-column
+                                    dataField="NOMBRE_TIPO_DOC"
+                                    caption="Tipo Doc."
+                                    [width]="'200'"
+                                    [allowEditing]="false"
+                                  >
+                                  </dxi-column>
+                                  <dxi-column
+                                    dataField="MONTO_DOCUMENTO"
+                                    caption="Total"
+                                    [dataType]="'number'"
+                                    [width]="'100'"
+                                    [format]="{ type: 'fixedPoint', precision: 2 }"
+                                    [allowEditing]="false"
+                                  ></dxi-column>
+                                  <dxi-column
+                                    dataField="MONTO_INICIAL"
+                                    caption="Saldo"
+                                    [dataType]="'number'"
+                                    [width]="'100'"
+                                    [format]="{ type: 'fixedPoint', precision: 2 }"
+                                    [allowEditing]="false"
+                                  ></dxi-column>
+                                  <dxi-column
+                                    dataField="MONTO_INGRESO"
+                                    caption="Ingreso"
+                                    [dataType]="'number'"
+                                    [width]="'100'"
+                                    [format]="{ type: 'fixedPoint', precision: 2 }"
+                                  ></dxi-column>
+                                  <dxi-column
+                                    dataField="MONTO_FINAL"
+                                    caption="Saldo Final"
+                                    [dataType]="'number'"
+                                    [width]="'100'"
+                                    [format]="{ type: 'fixedPoint', precision: 2 }"
+                                    [allowEditing]="false"
+
+                                  ></dxi-column>
+                                  <dxo-summary>
+                                    <dxi-total-item
+                                      column="CORR_DOCUMENTO_DOC"
+                                      summaryType="count"
+                                      valueFormat="#,##0"
+                                      displayFormat="Cant: {0}"
+                                    >
+                                    </dxi-total-item>
+                                  </dxo-summary>
+                                </dx-data-grid>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                  </tr>
+                </tbody>
+              </table>
+					</dxi-item>
+          <dxi-item title="Comprobantes Retención" [name]="'tpComprobanteRete'" [visible]="TabComproRete" [autofocus]="TabComproRete" [icon]="'doc'">
+             <div class="form">
+                <div class="dx-fieldset">
+                  <div class="dx-field">
+                    <dx-data-grid
+                      #DataDocumentoRetencion
+                      [dataSource]="mCOM_DOCUMENTO_RETENCION"
+                      [columnAutoWidth]="false"
+                      [showBorders]="true"
+                      [showColumnLines]="true"
+                      [showRowLines]="true"
+                      [rowAlternationEnabled]="true"
+                      [hoverStateEnabled]="true"
+                      [allowColumnResizing]="true"
+                      [columnResizingMode]="'widget'"
+                      [repaintChangesOnly]="true"
+                      [height]="'100%'"
+                      [width]="'100%'"
+                      keyExpr="CORR_RETENCION"
+                    >
+                      <dxo-editing
+                        mode="popup"
+                        [refreshMode]="'reshape'"
+                        [allowAdding]="false"
+                        [allowUpdating]="false"
+                        [allowDeleting]="false"
+                        [useIcons]="false"
+                      >
+                      </dxo-editing>
+                      <dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
+                      <dxo-load-panel [enabled]="false"></dxo-load-panel>
+                      <dxo-search-panel [visible]="true"></dxo-search-panel>
+                      <dxo-export [enabled]="true" fileName="Detalle"></dxo-export>
+                      <dxi-column dataField="FECHA_CR" caption="Fecha CR" [dataType]="'date'" [width]="'15%'">
+                      </dxi-column>
+                      <dxi-column dataField="DESCRIPCION_CR" caption="Descripción Comprobante" [dataType]="'string'" [width]="'35%'">
+                      </dxi-column>
+                      <dxi-column dataField="ESTADO_CR" caption="Estado" [dataType]="'string'" [width]="'15%'">
+                      </dxi-column>
+                      <dxi-column dataField="CODIGO_GENERACION" caption="Cod. Generación" [dataType]="'string'" [width]="'30%'">
+                      </dxi-column>
+                      <dxi-column dataField="NUMERO_CONTROL" caption="Numero Control" [dataType]="'string'" [width]="'30%'">
+                      </dxi-column>
+                      <dxi-column dataField="SELLO_RECEPCION" caption="Sello de Recepción" [dataType]="'string'" [width]="'30%'">
+                      </dxi-column>
+                      <dxi-column dataField="MONTO_RETENIDO" caption="Monto Retenido" [dataType]="'string'" [width]="'15%'">
+                      </dxi-column>
+                      <dxi-column dataField="MONTO_TOTAL" caption="Monto total" [dataType]="'string'" [width]="'15%'">
+                      </dxi-column>
+                    </dx-data-grid>
+                  </div>
+                </div>
+              </div>
+					</dxi-item>
+				</dx-tab-panel>
+			</div>
+		</div>
+	</div>
+
+</div>
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="['ANIO_PERIODO','MES_PERIODO', 'CORR_DOCUMENTO']"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+
+>
+</app-data-grid-mtto>
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>
+<dx-popup
+  [position]="'top'"
+  [width]="'95%'"
+  [height]="'95%'"
+  [showTitle]="true"
+  title="Documentos Electrónicos"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="false"
+  [shading]="false"
+  [(visible)]="popupVisibleJson"
+  class="popout"
+>
+
+  <input
+    style="display: none"
+    type="file" (change)="onFileChanged($event)"
+    accept=".json"
+    #fileInput>
+  <input
+    style="display: none"
+    type="file" (change)="onFileChangedPDF($event)"
+    accept=".pdf"
+    #fileInputPDF>
+  <dxi-toolbar-item
+    location="before"
+    toolbar= "bottom"
+    widget="dxButton"
+    [options]="{
+      icon: 'save',
+      text: 'Aceptar',
+      type: 'success',
+      stylingMode: 'contained',
+      onClick: guardarDocPopup,
+    }"
+  >
+  </dxi-toolbar-item>
+  <dxi-toolbar-item
+    location="before"
+    toolbar= "bottom"
+    widget="dxButton"
+    [options]="{
+      icon: 'close',
+      text: 'Cancelar',
+      type: 'danger',
+      stylingMode: 'contained',
+      onClick: hideDocPopup,
+      routerLinkActive: 'router-link-active'
+    }"
+  >
+  </dxi-toolbar-item>
+<div *dxTemplate="let data of 'content'">
+  <div>
+    <div class="col col-sm-10 col-lg-9 offset-sm-1 offset-lg-0">
+      <dx-button [text]="'Subir JSON'" [icon]="'file'" id="button" class="myButton4" type="default" stylingMode="contained" (click)="fileInput.click()">
+      </dx-button>
+      <dx-button [text]="'Subir PDF'" [icon]="'pdffile'" id="button" class="myButton4 myButtonSpace" type="default" stylingMode="contained" (click)="fileInputPDF.click()" routerLinkActive="router-link-active">
+      </dx-button>
+      <dx-button [text]="'Vista Previa'" [icon]="'pdffile'" id="button" class="myButton4 myButtonSpace" type="default" stylingMode="contained" (onClick)="MostrarVistaPreviaModal()" >
+      </dx-button>
+    </div>
+  </div>
+  <dx-data-grid
+    #dataComJson
+    [dataSource]="mCOM_JSON"
+    [columnAutoWidth]="false"
+    [showBorders]="true"
+    [showColumnLines]="true"
+    [showRowLines]="true"
+    [rowAlternationEnabled]="true"
+    [hoverStateEnabled]="true"
+    [allowColumnResizing]="true"
+    [columnResizingMode]="'widget'"
+    [focusedRowEnabled]="true"
+    [keyExpr]="['CODIGO_GENERACION', 'NUMERO_CONTROL', 'SELLO_RECEPCION']"
+    [width]="'100%'"
+    [height]="'95%'"
+    [scrolling]="{ mode: 'virtual', useNative: true }"
+    (onFocusedRowChanged)="focusedRowChangedComJson($event)"
+    (onRowDblClick)="gDataComJsonDocRowDblClick($event)"
+  >
+
+    <dxo-editing
+      [mode]="'row'"
+      [refreshMode]="'reshape'"
+      [allowUpdating]="false"
+      [useIcons]="true"
+    >
+    </dxo-editing>
+    <dxo-filter-row
+      [visible]="true"
+      [applyFilter]="'auto'"
+    ></dxo-filter-row>
+    <dxo-load-panel [enabled]="false"></dxo-load-panel>
+    <dxi-column
+      dataField="ANIO_PERIODO"
+      caption="Año"
+      [width]="100"
+      groupIndex="0"
+    ></dxi-column>
+    <dxi-column
+      dataField="MES_PERIODO"
+      caption="Mes"
+      [width]="100"
+      groupIndex="1"
+    ></dxi-column>
+    <dxi-column
+      dataField="CORR_DOCUMENTO"
+      caption="Id. Documento"
+      [width]="100"
+      [visible]="false"
+    ></dxi-column>
+    <dxi-column
+      dataField="FECHA_DOCUMENTO"
+      caption="Fecha Documento"
+      [width]="130"
+      [dataType]="'date'"
+      [format]="'dd/MM/yyyy'"
+    ></dxi-column>
+    <dxi-column
+      dataField="NOMBRE_PROVEEDOR"
+      caption="Proveedor"
+      [width]="250"
+    ></dxi-column>
+    <dxi-column
+      dataField="CODIGO_GENERACION"
+      caption="Código Generación"
+      [width]="280"
+    ></dxi-column>
+    <dxi-column
+      dataField="NUMERO_CONTROL"
+      caption="Número Control"
+      [width]="260"
+    ></dxi-column>
+    <dxi-column
+      dataField="SELLO_RECEPCION"
+      caption="Sello Recepción"
+      [width]="340"
+    ></dxi-column>
+    <dxi-column
+      dataField="TOTAL_DOCUMENTO"
+      caption="Total Documento"
+      [width]="80"
+    ></dxi-column>
+
+    <dxi-column dataField="USUARIO_CREA" caption="Usuario Crea" [width]="150"></dxi-column>
+    <dxi-column dataField="FECHA_CREA" caption="Fecha Crea" [width]="125" dataType="datetime" format="dd/MM/yyyy HH:mm"></dxi-column>
+    <dxi-column dataField="ESTACION_CREA" caption="Estacion Crea" [width]="150"></dxi-column>
+    <dxi-column dataField="USUARIO_ACTU" caption="Usuario Actu" [width]="150"></dxi-column>
+    <dxi-column dataField="FECHA_ACTU" caption="Fecha Actu" [width]="125" dataType="datetime" format="dd/MM/yyyy HH:mm"></dxi-column>
+    <dxi-column dataField="ESTACION_ACTU" caption="Estacion Actu" [width]="150"></dxi-column>
+  </dx-data-grid>
+</div>
+</dx-popup>
+<dx-popup
+  [width]="'1200px'"
+  [position]="'top'"
+  [height]="'1050px'"
+  [showTitle]="true"
+  title="Vista Previa"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [shading]="false"
+  [(visible)]="popupVisiblePdf"
+  class="popout"
+>
+  <object [data]="PDF" type="application/pdf" width="100%" height="95%" >
+    <embed [src]="PDF" type="application/pdf" />
+  </object>
+</dx-popup>
+<dx-popup
+  [position]="'top'"
+  [width]="'95%'"
+  [height]="'95%'"
+  [showTitle]="true"
+  title="Documentos Disponibles"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="false"
+  [shading]="false"
+  [(visible)]="popupVisibleDetaDoc"
+  class="popout"
+>
+
+  <dxi-toolbar-item
+    location="before"
+    toolbar= "bottom"
+    widget="dxButton"
+    [options]="{
+      icon: 'save',
+      text: 'Aceptar',
+      type: 'success',
+      stylingMode: 'contained',
+      onClick: guardarDetaDocPopup,
+    }"
+  >
+  </dxi-toolbar-item>
+  <dxi-toolbar-item
+    location="before"
+    toolbar= "bottom"
+    widget="dxButton"
+    [options]="{
+      icon: 'close',
+      text: 'Cancelar',
+      type: 'danger',
+      stylingMode: 'contained',
+      onClick: hideDetaDocPopup,
+      routerLinkActive: 'router-link-active'
+    }"
+  >
+  </dxi-toolbar-item>
+  <dxi-toolbar-item
+    location="before"
+    toolbar= "top"
+    widget="dxButton"
+    [options]="{
+      icon: 'check',
+      text: 'Todos',
+      type: 'success',
+      stylingMode: 'contained',
+      onClick: selectTodos,
+    }"
+  >
+  </dxi-toolbar-item>
+  <dxi-toolbar-item
+    location="before"
+    toolbar= "top"
+    widget="dxButton"
+    [options]="{
+      icon: 'close',
+      text: 'Ninguno',
+      type: 'danger',
+      stylingMode: 'contained',
+      onClick: selectNinguno,
+      routerLinkActive: 'router-link-active'
+    }"
+  >
+  </dxi-toolbar-item>
+  <dxi-toolbar-item
+    location="after"
+    toolbar= "top"
+    widget="dxButton"
+    [options]="{
+      icon: 'refresh',
+      onClick: consultarCOM_DOCUMENTO_DETA_DOC_DISPONIBLES,
+    }"
+  >
+  </dxi-toolbar-item>
+  <dxi-toolbar-item
+    location="after"
+    toolbar= "top"
+    widget="dxDateBox"
+    Onval
+    [options]="{
+      useMaskBehavior: true,
+      type: 'date',
+      displayFormat: 'dd/MM/yyyy',
+      width: '120',
+      value: vFECHA_INICIAL_MODAL,
+      onValueChanged: OnValueChangeFECHA_INICIAL_MODAL
+    }"
+  >
+  </dxi-toolbar-item>
+  <dxi-toolbar-item
+    location="after"
+    toolbar= "top"
+    widget="dxDateBox"
+    [options]="{
+      useMaskBehavior: true,
+      type: 'date',
+      displayFormat: 'dd/MM/yyyy',
+      width: '120',
+      value: vFECHA_FINAL_MODAL,
+      onValueChanged: OnValueChangeFECHA_FINAL_MODAL
+    }"
+  >
+  </dxi-toolbar-item>
+  <div *dxTemplate="let data of 'content'">
+    <dx-data-grid
+      #dataComDocumentoDetaDoc
+      [dataSource]="mCOM_DOCUMENTO_DETA_DOC_DISPONIBLES"
+      [columnAutoWidth]="false"
+      [showBorders]="true"
+      [showColumnLines]="true"
+      [showRowLines]="true"
+      [rowAlternationEnabled]="true"
+      [hoverStateEnabled]="true"
+      [allowColumnResizing]="true"
+      [columnResizingMode]="'widget'"
+      [focusedRowEnabled]="true"
+      [keyExpr]="['CORR_DOCUMENTO_DOC', 'MES_PERIODO_DOC', 'ANIO_PERIODO_DOC']"
+      [width]="'100%'"
+      [height]="'95%'"
+      [scrolling]="{ mode: 'virtual', useNative: true }"
+    >
+
+      <dxo-editing
+        [mode]="'cell'"
+        [refreshMode]="'reshape'"
+        [allowUpdating]="true"
+        [useIcons]="true"
+      >
+      </dxo-editing>
+      <dxo-filter-row
+        [visible]="true"
+        [applyFilter]="'auto'"
+      ></dxo-filter-row>
+      <dxo-load-panel [enabled]="false"></dxo-load-panel>
+      <dxi-column
+        dataField="SELECCION"
+        caption=""
+        [width]="'10%'"
+        dataType="boolean"
+        [setCellValue]="SeleccionSetCellValue"
+      ></dxi-column>
+      <dxi-column
+        dataField="NUMERO_DOCUMENTO"
+        caption="Número Documento"
+        [width]="'20%'"
+        [allowEditing]="false"
+      ></dxi-column>
+      <dxi-column
+        dataField="FECHA_DOCUMENTO"
+        caption="Fecha Documento"
+        [width]="'15%'"
+        dataType="date"
+        [allowEditing]="false"
+      ></dxi-column>
+      <dxi-column
+        dataField="NOMBRE_TIPO_DOC"
+        caption="Tipo Documento"
+        [width]="'25%'"
+        [allowEditing]="false"
+      ></dxi-column>
+      <dxi-column
+        dataField="MONTO_DOCUMENTO"
+        caption="Total"
+        [width]="'10%'"
+        [format]="{ type: 'fixedPoint', precision: 2 }"
+        [allowEditing]="false"
+      ></dxi-column>
+      <dxi-column
+        dataField="MONTO_INICIAL"
+        caption="Saldo"
+        [width]="'10%'"
+        [format]="{ type: 'fixedPoint', precision: 2 }"
+        [allowEditing]="false"
+      ></dxi-column>
+      <dxi-column
+        dataField="MONTO_INGRESO"
+        caption="Monto Ingreso"
+        [width]="'10%'"
+        [format]="{ type: 'fixedPoint', precision: 2 }"
+        [setCellValue]="MontoIngresoSetCellValue"
+      ></dxi-column>
+      <dxi-column
+        dataField="MONTO_FINAL"
+        caption="Saldo Final"
+        [width]="'10%'"
+        [format]="{ type: 'fixedPoint', precision: 2 }"
+        [allowEditing]="false"
+      ></dxi-column>
+    </dx-data-grid>
+  </div>
+</dx-popup>
+<dx-popup
+  [width]="'500px'"
+  [position]="'top'"
+  [height]="'300px'"
+  [showTitle]="true"
+  title="Generar Comprobante de retención"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="false"
+  [shading]="false"
+  [(visible)]="popupVisibleCR"
+  class="popout"
+>
+  <div *dxTemplate="let data of 'content'">
+    <dx-form #fDocumento
+      id="fDocumento"
+      [colCount]="4"
+      [height]="'auto'"
+      [formData]="mDocumentoCR"
+    >
+      <dxi-item
+        dataField="ES_NACIONAL"
+        [label]="{ text: 'Nacional' }"
+        [editorType]="'dxCheckBox'"
+        [colSpan]="2"
+        [editorOptions]="{
+          text: 'Nacional'
+        }">
+      </dxi-item>
+
+      <dxi-item
+        dataField="ES_EXTRANJERO"
+        [label]="{ text: 'Extranjero' }"
+        [editorType]="'dxCheckBox'"
+        [colSpan]="2"
+        [editorOptions]="{
+          text: 'Extranjero'
+        }">
+      </dxi-item>
+      <dxi-item
+        dataField="DESCRIPCION_DOCUMENTO"
+        [label]="{ text: 'Descripción' }"
+        [editorType]="'dxTextArea'"
+        [colSpan]="4"
+        [editorOptions]="{
+          placeholder: 'Descripción del Documento...',
+          showClearButton: true,
+          maxLength: 500,
+          height: 100
+        }">
+      </dxi-item>
+
+    </dx-form>
+    <div class="form-group row text-right footer">
+      <div class="col col-sm-10 col-lg-9 offset-sm-1 offset-lg-0">
+        <dx-button
+          [text]="'Guardar'"
+          id="button"
+          class="myButton4"
+          type="success"
+          [icon]="'save'"
+          stylingMode="contained"
+          (click)="guardarDocPopupCR()"
+        >
+        </dx-button>
+        <dx-button
+          [text]="'Cancelar'"
+          id="button"
+          class="myButton4 myButtonSpace"
+          [icon]="'close'"
+          type="danger"
+          [text]="'Cancelar'"
+          stylingMode="contained"
+          (click)="hideDocPopupCR()"
+          routerLinkActive="router-link-active"
+        >
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<dx-popup
+  [width]="'500px'"
+  [position]="'top'"
+  [height]="'300px'"
+  [showTitle]="true"
+  title="Anular Comprobante de retención"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="false"
+  [shading]="false"
+  [(visible)]="popupVisibleAnularCR"
+  class="popout"
+>
+  <div *dxTemplate="let data of 'content'">
+    <dx-form #fDocumento
+      id="fDocumento"
+      [colCount]="4"
+      [height]="'auto'"
+      [formData]="mDocumentoAnularCR"
+    >
+
+      <dxi-item
+        dataField="MOTIVO_ANULACION"
+        [label]="{ text: 'Motivo de Anulación' }"
+        [editorType]="'dxTextArea'"
+        [colSpan]="4"
+        [editorOptions]="{
+          placeholder: 'Motivo de Anulación...',
+          showClearButton: true,
+          maxLength: 500,
+          height: 100
+        }">
+      </dxi-item>
+
+    </dx-form>
+    <div class="form-group row text-right footer">
+      <div class="col col-sm-10 col-lg-9 offset-sm-1 offset-lg-0">
+        <dx-button
+          [text]="'Guardar'"
+          id="button"
+          class="myButton4"
+          type="success"
+          [icon]="'save'"
+          stylingMode="contained"
+          (click)="guardarDocPopupAnularCR()"
+        >
+        </dx-button>
+        <dx-button
+          [text]="'Cancelar'"
+          id="button"
+          class="myButton4 myButtonSpace"
+          [icon]="'close'"
+          type="danger"
+          [text]="'Cancelar'"
+          stylingMode="contained"
+          (click)="hideDocPopupAnularCR()"
+          routerLinkActive="router-link-active"
+        >
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>

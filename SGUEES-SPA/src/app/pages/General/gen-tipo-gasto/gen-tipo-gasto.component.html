@@ -1,0 +1,148 @@
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="permiteAdd"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+>
+</app-barra-data-mtto>
+<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+	</dx-form>
+  <div class="form">
+    <div class="dx-fieldset">
+      <div class="dx-field">
+        <dx-data-grid
+          [dataSource]="mGEN_TIPO_GASTO_IMPUESTO"
+          [columnAutoWidth]="false"
+          [showBorders]="true"
+          [showColumnLines]="true"
+          [showRowLines]="true"
+          [rowAlternationEnabled]="true"
+          [hoverStateEnabled]="true"
+          [allowColumnResizing]="true"
+          [columnResizingMode]="'widget'"
+          [repaintChangesOnly]="true"
+          [height]="'100%'"
+          [width]="'100%'"
+          keyExpr="CORR_RUBRO"
+          (onInitNewRow)="gDataTipoGastoImpuestoInitNewRow($event)"
+          (onRowInserting)="gDataTipoGastoImpuestoRowInserting($event)"
+          (onRowUpdated)="gDataTipoGastoImpuestoRowUpdating($event)"
+          (onRowRemoving)="gDataTipoGastoImpuestoRowRemoving($event)"
+          (onRowValidating)="gDataTipoGastoImpuestoRowValidating($event)"
+        >
+          <dxo-editing
+            mode="cell"
+            [refreshMode]="'reshape'"
+            [allowAdding]="!readOnly"
+            [allowUpdating]="!readOnly"
+            [allowDeleting]="!readOnly"
+            [useIcons]="true"
+          >
+            <dxo-popup title="Sumandos" [showTitle]="true" [width]="700" [height]="350"></dxo-popup>
+            <dxo-form [colCount]="8" showValidationSummary="true">
+              <dxi-item dataField="CORR_RUBRO"[colSpan]="8" [label]="{ text: 'Rubros', alignment: 'right' }">
+              </dxi-item>>
+              <dxi-item dataField="IMPUESTO_INCLUIDO" [colSpan]="8" [label]="{ text: 'Incluido', alignment: 'right' }" [editorType]="'dxCheckBox'"></dxi-item>
+              <dxi-item dataField="ORDEN_TOTAL" [colSpan]="8" [label]="{ text: 'Orden', alignment: 'right' }" [editorType]="'dxCheckBox'"></dxi-item>
+              <dxi-item dataField="PERMITE_EDITAR" [colSpan]="8" [label]="{ text: 'Permite Editar', alignment: 'right' }" [editorType]="'dxCheckBox'"></dxi-item>
+
+            </dxo-form>
+          </dxo-editing>
+          <dxo-toolbar>
+            <dxi-item name="addRowButton" location="before"></dxi-item>
+            <dxi-item name="exportButton" location="before"></dxi-item>
+            <dxi-item name="searchPanel" location="before"></dxi-item>
+          </dxo-toolbar>
+          <dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
+          <dxo-load-panel [enabled]="false"></dxo-load-panel>
+          <dxo-search-panel [visible]="true"></dxo-search-panel>
+          <dxo-export [enabled]="true" fileName="Detalle Rubros"></dxo-export>
+          <dxi-column type="buttons" [width]="'40'">
+            <dxi-button name="delete" [visible]="!readOnly"></dxi-button>
+          </dxi-column>
+          <dxi-column
+            dataField="CORR_RUBRO"
+            caption="Rubros"
+            [dataType]="'number'"
+            [width]="'120'"
+            editCellTemplate="CORR_RUBROLookup"
+          >
+            <dxo-lookup
+              [dataSource]="mCORR_RUBRO"
+              valueExpr="CORR_RUBRO"
+              displayExpr="NOMBRE_RUBRO"
+            ></dxo-lookup>
+          </dxi-column>
+          <div *dxTemplate="let cellInfo of 'CORR_RUBROLookup'">
+            <app-data-lookup
+              [setValue]="cellInfo.setValue"
+              [model]="mCORR_RUBRO"
+              [valueExpr]="'CORR_RUBRO'"
+              [displayExpr]="'NOMBRE_RUBRO'"
+              [(value)]="cellInfo.value"
+              [selectedRowKeys]="selectedLookUpCORR_RUBRO"
+              [readOnly]="readOnly"
+            >
+            </app-data-lookup>
+          </div>
+          <dxi-column
+            dataField="IMPUESTO_INCLUIDO"
+            caption="Incluido"
+            [dataType]="'boolean'"
+            [width]="'35%'"
+          ></dxi-column>
+          <dxi-column
+            dataField="ORDEN_TOTAL"
+            caption="Orden"
+            [dataType]="'number'"
+            [width]="'35%'"
+          ></dxi-column>
+          <dxi-column
+            dataField="PERMITE_EDITAR"
+            caption="Permite Editar"
+            [dataType]="'boolean'"
+            [width]="'35%'"
+          ></dxi-column>
+          <dxo-summary>
+            <dxi-total-item
+              column="CORR_RUBRO"
+              summaryType="count"
+              valueFormat="#,##0"
+              displayFormat="Cant: {0}"
+            >
+            </dxi-total-item>
+          </dxo-summary>
+        </dx-data-grid>
+      </div>
+    </div>
+  </div>
+</div>
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="'CORR_TIPO_GASTO'"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>

@@ -1,0 +1,223 @@
+<h2 class="content-block">{{tituloVentana}}</h2>
+<div class="content-block">
+	<dx-button class="myButton" text="Nuevo" type="default" (onClick)="nuevo()" [visible]="permiteAdd && isBrowse()">
+	</dx-button>
+	<dx-button class="myButton" text="Guardar" type="success" (onClick)="guardar()" [visible]="!isBrowse() && isForm()">
+	</dx-button>
+	<dx-button class="myButton" text="Cancelar" type="danger" (onClick)="cancelar()" [visible]="!isBrowse()">
+	</dx-button>
+</div>
+<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+	<dx-form #fData id="form"
+    [formData]="model"
+    labelLocation="top"
+    [colCount]="3"
+  >
+		<dxi-item dataField="CODIGO_SISTEMA" [label]="{text: 'Código Sistema'}" [colSpan]="1" [editorOptions]="{ placeholder: ' Código Sistema...', showClearButton: true }" [template]="'cbCodigoSistema'">
+      <dxi-validation-rule type="required" message="Código Sistema es Obligatorio"> </dxi-validation-rule>
+    </dxi-item>
+    <div *dxTemplate="let cellInfo of 'cbCodigoSistema'">
+      <dx-drop-down-box
+        #corrCodigoSistema
+        [(value)]="model.CODIGO_SISTEMA"
+        [valueExpr]="'CODIGO_SISTEMA'"
+        [displayExpr]="'NOMBRE_SISTEMA'"
+        [deferRendering]="false"
+        [placeholder]="'Seleccione una opción...'"
+        [dataSource]="mCodigoSistema"
+        [readOnly]="bloqComponent"
+        (onValueChanged)="valueChangedCODIGO_SISTEMA($event)"
+      >
+        <div *dxTemplate="let dCodigoSistema of 'content'">
+          <dx-data-grid
+            #dataCodigoSistema
+            [dataSource]="mCodigoSistema"
+            [columnAutoWidth]="true"
+            [selection]="{ mode: 'single' }"
+            [hoverStateEnabled]="true"
+            [paging]="{ enabled: true, pageSize: 10 }"
+            [filterRow]="{ visible: true }"
+            [scrolling]="{ mode: 'infinite' }"
+            [filterSyncEnabled]="true"
+            (onSelectionChanged)="selectionChangedCODIGO_SISTEMA($event.selectedRowKeys)"
+            (onRowClick)="rowClickCODIGO_SISTEMA($event, dCodigoSistema)"
+            [height]="'100%'"
+            [width]="'100%'"
+          >
+            <dxi-column dataField="CODIGO_SISTEMA" caption="Corr." [width]="'0%'" [visible]="false"></dxi-column>
+            <dxi-column dataField="NOMBRE_SISTEMA" caption="Código Sistema" [width]="'100%'"></dxi-column>
+            <dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+            <dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+            <dxo-scrolling mode="virtual"></dxo-scrolling>
+            <dxo-selection mode="single"></dxo-selection>
+          </dx-data-grid>
+        </div>
+      </dx-drop-down-box>
+    </div>
+		<dxi-item dataField="CODIGO_MENU" [label]="{text: 'Código Menú'}" [colSpan]="1" [editorOptions]="{ placeholder: ' Código Menú...', showClearButton: true }" [template]="'cbCodigoMenu'">
+      <dxi-validation-rule type="required" message="Código Menú es Obligatorio"> </dxi-validation-rule>
+    </dxi-item>
+    <div *dxTemplate="let cellInfo of 'cbCodigoMenu'">
+        <dx-drop-down-box
+          #codigoMenu
+          [(value)]="model.CODIGO_MENU"
+          [valueExpr]="'CODIGO_MENU'"
+          [displayExpr]="'NOMBRE_MENU'"
+          [deferRendering]="false"
+          [placeholder]="'Seleccione una opción...'"
+          [dataSource]="mCodigoMenu"
+
+          [readOnly]="bloqComponent"
+          (onValueChanged)="valueChangedCODIGO_MENU($event)"
+        >
+          <div *dxTemplate="let dCodigoMenu of 'content'">
+            <dx-data-grid
+              #dataCodigoMenu
+              [dataSource]="mCodigoMenu"
+              [columnAutoWidth]="true"
+              [selection]="{ mode: 'single' }"
+              [hoverStateEnabled]="true"
+              [paging]="{ enabled: true, pageSize: 10 }"
+              [filterRow]="{ visible: true }"
+              [scrolling]="{ mode: 'infinite' }"
+              [filterSyncEnabled]="true"
+              (onSelectionChanged)="selectionChangedCODIGO_MENU($event.selectedRowKeys)"
+              (onRowClick)="rowClickCODIGO_MENU($event, dCodigoMenu)"
+              [height]="'100%'"
+              [width]="'100%'"
+            >
+              <dxi-column dataField="CODIGO_MENU" caption="Corr." [width]="'0%'" [visible]="false"></dxi-column>
+              <dxi-column dataField="NOMBRE_MENU" caption="Código Menú" [width]="'100%'"></dxi-column>
+              <dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+              <dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+              <dxo-scrolling mode="virtual"></dxo-scrolling>
+              <dxo-selection mode="single"></dxo-selection>
+            </dx-data-grid>
+          </div>
+        </dx-drop-down-box>
+    </div>
+		<dxi-item dataField="CODIGO_OPCION" [label]="{text: 'Código Opción'}" [editorOptions]="{ placeholder: ' Código Opción...', showClearButton: true}" [template]="'cbCodigoOpcion'">
+      <dxi-validation-rule type="required" message="Código Opción es Obligatorio"> </dxi-validation-rule>
+    </dxi-item>
+    <div *dxTemplate="let cellInfo of 'cbCodigoOpcion'">
+      <dx-drop-down-box
+        #codigoOpcion
+        [(value)]="model.CODIGO_OPCION"
+        [valueExpr]="'CODIGO_OPCION'"
+        [displayExpr]="'NOMBRE_OPCION'"
+        [deferRendering]="false"
+        [placeholder]="'Seleccione una opción...'"
+        [dataSource]="mCodigoOpcion"
+        [readOnly]="bloqComponent"
+        (onValueChanged)="valueChangedCODIGO_OPCION($event)"
+      >
+        <div *dxTemplate="let dCodigoOpcion of 'content'">
+          <dx-data-grid
+            #dataCodigoOpcion
+            [dataSource]="mCodigoOpcion"
+            [columnAutoWidth]="true"
+            [selection]="{ mode: 'single' }"
+            [hoverStateEnabled]="true"
+            [paging]="{ enabled: true, pageSize: 10 }"
+            [filterRow]="{ visible: true }"
+            [scrolling]="{ mode: 'infinite' }"
+            [filterSyncEnabled]="true"
+            (onSelectionChanged)="selectionChangedCODIGO_OPCION($event.selectedRowKeys)"
+            (onRowClick)="rowClickCODIGO_OPCION($event, dCodigoOpcion)"
+            [height]="'100%'"
+            [width]="'100%'"
+          >
+            <dxi-column dataField="CODIGO_OPCION" caption="Corr." [width]="'0%'" [visible]="false"></dxi-column>
+            <dxi-column dataField="NOMBRE_OPCION" caption="Código Opción" [width]="'100%'"></dxi-column>
+            <dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+            <dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+            <dxo-scrolling mode="virtual"></dxo-scrolling>
+            <dxo-selection mode="single"></dxo-selection>
+          </dx-data-grid>
+        </div>
+      </dx-drop-down-box>
+    </div>
+		<dxi-item dataField="ORDEN_SISTEMA" [label]="{text: 'Orden Sistema'}" [colSpan]="1" [editorOptions]="{ placeholder: ' Orden Sistema...', showClearButton: true }">
+      <dxi-validation-rule type="required" message="Orden Sistema es Obligatorio"> </dxi-validation-rule>
+    </dxi-item>
+		<dxi-item dataField="ORDEN_MENU" [label]="{text: 'Orden Menú'}" [colSpan]="1" [editorOptions]="{ placeholder: ' Orden Menu...', showClearButton: true }">
+      <dxi-validation-rule type="required" message="Orden Menu es Obligatorio"> </dxi-validation-rule>
+    </dxi-item>
+		<dxi-item dataField="ORDEN_OPCION" [label]="{text: 'Orden Opción'}" [colSpan]="1" [editorOptions]="{ placeholder: ' Orden Opcion...', showClearButton: true }">
+      <dxi-validation-rule type="required" message="Orden Opcion es Obligatorio"> </dxi-validation-rule>
+    </dxi-item>
+	</dx-form>
+</div>
+<dx-data-grid class="content-grid"
+	#gData
+	[visible]="isBrowse()"
+	[dataSource]="models"
+	[keyExpr]="['CODIGO_SISTEMA','CODIGO_MENU','CODIGO_OPCION']"
+	[columnAutoWidth]="false"
+	[showBorders]="true"
+	[showColumnLines]="true"
+	[showRowLines]="true"
+	[rowAlternationEnabled]="true"
+	[hoverStateEnabled]="false"
+	[allowColumnResizing]="true"
+	[columnResizingMode]="'widget'"
+	[focusedRowEnabled]="true"
+	[height]="450" [width]="'99%'"
+	(onRowRemoving)="rowRemoving($event)"
+	(onRowDblClick)="rowDblClick($event)"
+	(onFocusedRowChanged)="focusedRowChanged($event)"
+>
+	<dxo-editing mode="row"
+    [refreshMode]="'reshape'"
+    [allowDeleting]="true"
+    [useIcons]="true">
+	</dxo-editing>
+	<dxo-selection [mode]="'single'"></dxo-selection>
+	<dxo-load-panel [enabled]="false"></dxo-load-panel>
+	<dxo-search-panel [visible]="true"></dxo-search-panel>
+	<dxo-export [enabled]="true" fileName="SegConfigOpcion" [allowExportSelectedData]="true"></dxo-export>
+	<dxo-group-panel [visible]="true"></dxo-group-panel>
+	<dxo-grouping #expand [autoExpandAll]="true"></dxo-grouping>
+	<dxo-paging [enabled]="false"></dxo-paging>
+	<dxo-filter-panel [visible]="true"></dxo-filter-panel>
+	<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+	<dxo-header-filter [visible]="true"></dxo-header-filter>
+  <dxo-scrolling [mode]="'virtual'"></dxo-scrolling>
+	<dxi-column type="buttons" [width]="85">
+		<dxi-button hint="Editar Registro" icon="edit" [visible]="getPermiteEditar" [onClick]="editarClick"></dxi-button>
+		<dxi-button name="delete" [visible]="getPermiteDele"></dxi-button>
+	</dxi-column>
+	<dxi-column dataField="CODIGO_SISTEMA" caption="Código Sistema" [width]="120" [visible]="false"></dxi-column>
+	<dxi-column dataField="NOMBRE_SISTEMA" caption="Sistema" [width]="180" [groupIndex]="0"></dxi-column>
+	<dxi-column dataField="IMAGEN_SISTEMA" caption="Imagen Sistema" [width]="120" [visible]="false"></dxi-column>
+	<dxi-column dataField="CODIGO_MENU" caption="Codigo Menú"  [width]="100" [visible]="false"></dxi-column>
+	<dxi-column dataField="NOMBRE_MENU" caption="Menú"  [width]="100" [groupIndex]="1"></dxi-column>
+	<dxi-column dataField="IMAGEN_MENU" caption="Imagen Menú"  [width]="120" [visible]="false"></dxi-column>
+	<dxi-column dataField="CODIGO_OPCION" caption="Código opción" [width]="250" [visible]="false"></dxi-column>
+	<dxi-column dataField="NOMBRE_OPCION" caption="Opción" [width]="250"></dxi-column>
+	<dxi-column dataField="IMAGEN_OPCION" caption="Imagen Opción" [width]="120" [visible]="false"></dxi-column>
+	<dxi-column dataField="URL_OPCION" caption="Url Opción" [width]="200"></dxi-column>
+	<dxi-column dataField="ORDEN_SISTEMA" caption="Órden Sistema" [width]="125"></dxi-column>
+	<dxi-column dataField="ORDEN_MENU" caption="Órden Menú" [width]="125"></dxi-column>
+	<dxi-column dataField="ORDEN_OPCION" caption="Órden Opción" [width]="125"></dxi-column>
+	<dxi-column dataField="USUARIO_CREA" caption="Usuario Crea" [width]="100"></dxi-column>
+	<dxi-column dataField="FECHA_CREA" caption="Fecha Crea" [width]="125" [dataType]="'datetime'"></dxi-column>
+	<dxi-column dataField="ESTACION_CREA" caption="Estación Crea" [width]="100"></dxi-column>
+	<dxi-column dataField="USUARIO_ACTU" caption="Usuario Actu" [width]="100"></dxi-column>
+	<dxi-column dataField="FECHA_ACTU" caption="Fecha Actu" [width]="125" [dataType]="'datetime'"></dxi-column>
+	<dxi-column dataField="ESTACION_ACTU" caption="Estación Actu" [width]="100"></dxi-column>
+	<dxo-summary>
+		<dxi-total-item column="NOMBRE_OPCION" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}">
+		</dxi-total-item>
+	</dxo-summary>
+</dx-data-grid>
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="loadingVisible">
+</dx-load-panel>

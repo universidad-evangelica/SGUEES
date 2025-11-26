@@ -1,0 +1,175 @@
+<dx-box class="content-block"
+  direction="row"
+  width="100%"
+  [height]="'auto'">
+    <dxi-item
+      ratio="0"
+      baseSize="28"
+      class="bgOcultar"
+    >
+      <dx-toolbar class="bgOcultar"
+        [items]="toolbarContent">
+      </dx-toolbar>
+    </dxi-item>
+    <dxi-item
+      ratio="1">
+      <h2 class="content-block">{{tituloVentana}}</h2>
+    </dxi-item>
+</dx-box>
+
+<dx-drawer
+  [openedStateMode]="'shrink'"
+  [position]="'before'"
+  [revealMode]="'slide'"
+  [opened]="true"
+  [height]="600"
+  template="template"
+  [width]="'100%'"
+  [(opened)]="isDrawerOpen"
+  [closeOnOutsideClick]="false">
+
+  <div *dxTemplate="let data of 'template'" style="width: 260px">
+    <div class="options">
+      <div class="caption"></div>
+        <div class="option">
+          <div>Fecha Inicial: </div>
+          <dx-date-box [(value)]="vFECHA_INICIAL"
+          [useMaskBehavior]= "true"
+          type="date"
+          displayFormat="dd/MM/yyyy"
+          width="'100%'"
+          ></dx-date-box>
+        </div>
+        <div class="option">
+          <div>Fecha Final: </div>
+          <dx-date-box [(value)]="vFECHA_FINAL"
+          [useMaskBehavior]= "true"
+          type="date"
+          displayFormat="dd/MM/yyyy"
+          width="'100%'"
+          ></dx-date-box>
+        </div>
+        <div class="option">
+          <div>Codigo Opción: </div>
+          <dx-form
+          [formData]="mLookUps"
+            labelMode="hidden"
+          >
+          <dxi-item dataField="CODIGO_OPCION" [colSpan]="2" [label]=""  [editorOptions]="{ showClearButton: false,readOnly: false}" [template]="'CODIGO_OPCIONLookup'"></dxi-item>
+          <div *dxTemplate="let cellInfo of 'CODIGO_OPCIONLookup'">
+            <app-data-lookup
+              [showClearButton]="true"
+              [model]="mCODIGO_OPCION"
+              [(value)]="mLookUps.CODIGO_OPCION"
+              [selectedRowKeys]="selectedLookUpLista"
+            >
+            </app-data-lookup>
+          </div>
+        </dx-form>
+        </div>
+        <div class="option">
+          <div>Clase Bitacora:</div>
+          <dx-form
+            [formData]="mLookUps"
+            labelMode="hidden"
+          >
+            <dxi-item dataField="CLASE_BITACORA" [colSpan]="2" [label]=""  [editorOptions]="{ showClearButton: false,readOnly: false}" [template]="'CLASE_BITACORALookup'"></dxi-item>
+            <div *dxTemplate="let cellInfo of 'CLASE_BITACORALookup'">
+              <app-data-lookup
+                [showClearButton]="true"
+                [model]="mCLASE_BITACORA"
+                [(value)]="mLookUps.CLASE_BITACORA"
+                [selectedRowKeys]="selectedCLASE_BITACORALookUp"
+              >
+              </app-data-lookup>
+            </div>
+          </dx-form>
+        </div>
+        <div class="option">
+          <dxi-item location="after">
+            <dx-button text="Consultar" type="default"
+            (onClick)="consultar()">
+            </dx-button>
+          </dxi-item>
+        </div>
+    </div>
+  </div>
+  <dx-data-grid
+    #DataDocumentoDeta
+    [dataSource]="models"
+    [columnAutoWidth]="false"
+    [showBorders]="true"
+    [showColumnLines]="true"
+    [showRowLines]="true"
+    [rowAlternationEnabled]="true"
+    [hoverStateEnabled]="true"
+    [allowColumnResizing]="true"
+    [columnResizingMode]="'widget'"
+    [repaintChangesOnly]="true"
+    [height]="'100%'"
+    [width]="'100%'"
+    keyExpr="CORR_BITACORA"
+    (onExporting)="onExporting($event)"
+    >
+      <dxo-load-panel [enabled]="false"></dxo-load-panel>
+      <dxo-search-panel [visible]="true"></dxo-search-panel>
+      <dxo-export [enabled]="true" fileName="Detalle"></dxo-export>
+      <dxo-group-panel [visible]="true"></dxo-group-panel>
+      <dxo-grouping #expand [autoExpandAll]="true"></dxo-grouping>
+      <dxo-filter-panel [visible]="true"></dxo-filter-panel>
+      <dxo-filter-row [visible]="true"></dxo-filter-row>
+      <dxo-header-filter [visible]="true"></dxo-header-filter>
+      <dxi-column dataField="ANIO_PERIODO" caption="Año" [dataType]="'int'" width=80 groupIndex="0">
+      </dxi-column>
+      <dxi-column dataField="CORR_BITACORA" caption="Corr." [dataType]="'int'" width=80>
+      </dxi-column>
+      <dxi-column dataField="FECHA_BITACORA" caption="Fecha" [dataType]="'date'" [format]="'dd/MM/yyyy'" width=100>
+      </dxi-column>
+      <dxi-column dataField="NOMBRE_CODIGO_OPCION" caption="Codigo Opción" [dataType]="'string'" groupIndex="1" width=200>
+      </dxi-column>
+      <dxi-column dataField="NOMBRE_CLASE_BITACORA" caption="Clase Bitacora" [dataType]="'string'" width=150 >
+      </dxi-column>
+      <dxi-column dataField="LLAVE_TRANSACCION" caption="Llave Transaccion" [dataType]="'string'" width=250>
+      </dxi-column>
+      <dxi-column dataField="REFERENCIA_TRANSACCION" caption="Referencia Transaccion" [dataType]="'string'" width=250>
+      </dxi-column>
+      <dxi-column dataField="USUARIO_CREA_TRANS" caption="Usuario Crea Trans.." [dataType]="'string'" width=140>
+      </dxi-column>
+      <dxi-column dataField="ESTACION_CREA_TRANS" caption="Estación Crea Trans." [dataType]="'string'" width=140>
+      </dxi-column>
+      <dxi-column dataField="FECHA_CREA_TRANS" caption="Fecha Crea Trans." [dataType]="'datetime'" [format]="'dd/MM/yyyy HH:mm'" width=130>
+      </dxi-column>
+      <dxi-column dataField="USUARIO_ACTU_TRANS" caption="Usuario Actu. Trans." [dataType]="'string'" width=140>
+      </dxi-column>
+      <dxi-column dataField="ESTACION_ACTU_TRANS" caption="Estacion Actu. Trans." [dataType]="'string'" width=140>
+      </dxi-column>
+      <dxi-column dataField="FECHA_ACTU_TRANS" caption="Fecha Actu. Trans." [dataType]="'datetime'" [format]="'dd/MM/yyyy HH:mm'" width=130>
+      </dxi-column>
+      <dxi-column dataField="USUARIO_CREA_BITACORA" caption="Usuario Crea Bitacora" [dataType]="'string'" width=150>
+      </dxi-column>
+      <dxi-column dataField="ESTACION_CREA_BITACORA" caption="Estacion Crea Bitacora" [dataType]="'string'" width=155>
+      </dxi-column>
+      <dxi-column dataField="FECHA_CREA_BITACORA" caption="Fecha Crea Bitacora" [dataType]="'datetime'" [format]="'dd/MM/yyyy HH:mm'" width=145>
+      </dxi-column>
+      <dxo-summary>
+        <dxi-total-item
+          column="CORR_BITACORA"
+          summaryType="count"
+          valueFormat="#,##0"
+          displayFormat="Cant: {0}"
+        >
+        </dxi-total-item>
+      </dxo-summary>
+  </dx-data-grid>
+</dx-drawer>
+<dx-load-panel
+  #loadPanel
+  shadingColor="rgba(0,0,0,0.4)"
+  [position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+  [(visible)]="loadingVisible"
+  [showIndicator]="true"
+  [showPane]="true"
+  [shading]="true"
+  (onShown)="(loadingVisible)"
+>
+</dx-load-panel>

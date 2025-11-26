@@ -1,0 +1,1252 @@
+<div class="view-wrapper list-page">
+  <app-barra-data-mtto
+    [tituloVentana]="tituloVentana"
+    [isBrowse]="isBrowse()"
+    [isForm]="isForm()"
+    [permiteAdd]="permiteAdd"
+    (nuevo)="nuevo()"
+    (guardar)="guardar()"
+    (cancelar)="cancelar()"
+    [showRefresh]="true"
+    [showDates]="true"
+    (consultar)="consultar()"
+    [(FECHA_INICIAL)]="vFECHA_INICIAL"
+    [(FECHA_FINAL)]="vFECHA_FINAL"
+    [btn1Mode]="'contained'"
+    [btn1]="btnSolicitar"
+    [btn1Icon]="'taskcomplete'"
+    [btn1Type]="'success'"
+    (btn1Click)="Solicitar()"
+    [btn1Mode]="'contained'"
+    [btn1Width]="110"
+    [btn2]="'Vista Previa'"
+    [btn2Icon]="'export'"
+    [btn2Type]="'default'"
+    (btn2Click)="obtenerPDF()"
+    [btn2Width]="150"
+  >
+  </app-barra-data-mtto>
+  <div *ngIf="!isBrowse()">
+    <dx-form
+      #fData
+      id="fData"
+      [formData]="model"
+      [labelLocation]="'top'"
+      [colCount]="2"
+      [items]="items"
+    >
+      <div *dxTemplate="let cellInfo of 'ESTADO_CUADRO_COMPARATIVOLookup'">
+        <app-data-lookup
+          [model]="mESTADO_CUADRO_COMPARATIVO"
+          [(value)]="model.ESTADO_CUADRO_COMPARATIVO"
+          [selectedRowKeys]="selectedLookUpLista"
+          [readOnly]="true"
+        >
+        </app-data-lookup>
+      </div>
+    </dx-form>
+    <dx-tab-panel #tabPanel [selectedIndex]="0">
+      <dxi-item title="Detalle de Item" [icon]="'cart'">
+        <div class="dx-grid-deta">
+          <dx-data-grid
+            #DataCuadroComparativoDeta
+            [dataSource]="mCOM_CUADRO_COMPARATIVO_DETA"
+            [columnAutoWidth]="false"
+            [showBorders]="true"
+            [showColumnLines]="true"
+            [showRowLines]="true"
+            [rowAlternationEnabled]="true"
+            [hoverStateEnabled]="true"
+            [allowColumnResizing]="true"
+            [columnResizingMode]="'widget'"
+            [repaintChangesOnly]="true"
+            [focusedRowEnabled]="true"
+            [height]="'100%'"
+            [width]="'100%'"
+            [columns]="ColumnsDetalle"
+            [editing]="{ mode: 'cell', allowUpdating: true }"
+            keyExpr="CODIGO_ITEM"
+            [dataRowTemplate]="'dataRowTemplateName'"
+          >
+            <dxo-keyboard-navigation
+              [editOnKeyPress]="true"
+            ></dxo-keyboard-navigation>
+            <dxo-toolbar>
+              <dxi-item location="before" [visible]="true">
+                <div *dxTemplate>
+                  <dx-button
+                    class="myButton3"
+                    [icon]="'add'"
+                    text="Agregar Observación"
+                    type="success"
+                    (onClick)="AgregarObservacion()"
+                    [visible]="!readOnly"
+                    width="215"
+                  >
+                  </dx-button>
+                </div>
+              </dxi-item>
+              <dxi-item name="exportButton" location="after"></dxi-item>
+              <dxi-item name="searchPanel" location="after"></dxi-item>
+            </dxo-toolbar>
+            <dxo-editing
+              [mode]="'cell'"
+              [refreshMode]="'reshape'"
+              [allowUpdating]="!readOnly"
+              [allowAdding]="!readOnly"
+              [allowDeleting]="!readOnly"
+              [useIcons]="true"
+            >
+            </dxo-editing>
+            <dxo-keyboard-navigation
+              [editOnKeyPress]="true"
+            ></dxo-keyboard-navigation>
+            <dxo-load-panel [enabled]="false"></dxo-load-panel>
+            <ng-container *dxTemplate="let data of 'dataRowTemplateName'">
+              <!-- Fila principal para cada ítem -->
+              <tr class="main-row" role="row">
+                <!-- Columnas estándar -->
+                <td
+                  role="gridcell"
+                  class="text-cell"
+                  [title]="data.data.NOMBRE_ITEM"
+                >
+                  {{ data.data.NOMBRE_ITEM }}
+                </td>
+                <td
+                  role="gridcell"
+                  class="text-cell"
+                  [title]="data.data.NOMBRE_UNIDAD_MEDIDA"
+                >
+                  {{ data.data.NOMBRE_UNIDAD_MEDIDA }}
+                </td>
+                <td
+                  role="gridcell"
+                  class="text-cell"
+                  [title]="data.data.CANTIDAD"
+                >
+                  {{ data.data.CANTIDAD }}
+                </td>
+
+                <!-- Columnas de precios, montos y selecciones por proveedor -->
+                <ng-container
+                  *ngFor="let proveedor of mCOM_CUADRO_COMPARATIVO_PROVEEDOR"
+                >
+                  <td
+                    role="gridcell"
+                    [title]="
+                      formatDecimal(
+                        data.data[
+                          'PRECIO_UNITARIO_' + proveedor.CORR_PROVEEDOR_FILA
+                        ]
+                      )
+                    "
+                    class="price-cell"
+                  >
+                    {{
+                      formatDecimal(
+                        data.data[
+                          "PRECIO_UNITARIO_" + proveedor.CORR_PROVEEDOR_FILA
+                        ]
+                      )
+                    }}
+                  </td>
+                  <td
+                    role="gridcell"
+                    [title]="
+                      formatDecimal(
+                        data.data[
+                          'MONTO_SUBTOTAL_' + proveedor.CORR_PROVEEDOR_FILA
+                        ]
+                      )
+                    "
+                    class="price-cell"
+                  >
+                    {{
+                      formatDecimal(
+                        data.data[
+                          "MONTO_SUBTOTAL_" + proveedor.CORR_PROVEEDOR_FILA
+                        ]
+                      )
+                    }}
+                  </td>
+                  <td role="gridcell">
+                    <dx-check-box
+                      [(value)]="
+                        data.data['SELECCION_' + proveedor.CORR_PROVEEDOR_FILA]
+                      "
+                      (onValueChanged)="
+                        onSelectionChanged(
+                          data.data,
+                          $event,
+                          proveedor.CORR_PROVEEDOR
+                        )
+                      "
+                    >
+                    </dx-check-box>
+                  </td>
+                </ng-container>
+              </tr>
+
+              <!-- Fila para mostrar marcas -->
+              <tr class="notes-row" role="row" *ngIf="hasValidMarca(data.data)">
+                <td colspan="3" role="gridcell"></td>
+                <!-- Espacios para las columnas iniciales -->
+                <!-- Mostrar las marcas de cada proveedor -->
+                <ng-container
+                  *ngFor="let proveedor of mCOM_CUADRO_COMPARATIVO_PROVEEDOR"
+                >
+                  <td colspan="3" role="gridcell" class="marca-cell">
+                    {{ data.data["MARCA_" + proveedor.CORR_PROVEEDOR_FILA] }}
+                  </td>
+                </ng-container>
+              </tr>
+
+              <!-- Fila para mostrar observaciones -->
+              <tr
+                class="notes-row"
+                role="row"
+                *ngIf="hasValidObservaciones(data.data)"
+              >
+                <td colspan="3" role="gridcell"></td>
+                <!-- Espacios para las columnas iniciales -->
+                <!-- Mostrar las observaciones de cada proveedor -->
+                <ng-container
+                  *ngFor="let proveedor of mCOM_CUADRO_COMPARATIVO_PROVEEDOR"
+                >
+                  <td
+                    colspan="3"
+                    role="gridcell"
+                    *ngIf="
+                      data.data[
+                        'OBSERVACIONES_' + proveedor.CORR_PROVEEDOR_FILA
+                      ]
+                    "
+                    class="notes-cell"
+                  >
+                    {{
+                      data.data[
+                        "OBSERVACIONES_" + proveedor.CORR_PROVEEDOR_FILA
+                      ]
+                    }}
+                  </td>
+                  <td
+                    colspan="3"
+                    role="gridcell"
+                    *ngIf="
+                      !data.data[
+                        'OBSERVACIONES_' + proveedor.CORR_PROVEEDOR_FILA
+                      ]
+                    "
+                  >
+                    <!-- Si no hay observaciones, dejar espacio vacío -->
+                  </td>
+                </ng-container>
+              </tr>
+            </ng-container>
+            <dxo-summary>
+              <dxi-total-item
+                column='MONTO_SUBTOTAL_1'
+                summaryType="sum"
+                valueFormat="#,##0.00"
+                displayFormat="{0}"
+              >
+              </dxi-total-item>
+              <dxi-total-item
+                column='MONTO_SUBTOTAL_2'
+                summaryType="sum"
+                valueFormat="#,##0.00"
+                displayFormat="{0}"
+              >
+              </dxi-total-item>
+              <dxi-total-item
+                column='MONTO_SUBTOTAL_3'
+                summaryType="sum"
+                valueFormat="#,##0.00"
+                displayFormat="{0}"
+              >
+              </dxi-total-item>
+              <dxi-total-item
+                column='MONTO_SUBTOTAL_4'
+                summaryType="sum"
+                valueFormat="#,##0.00"
+                displayFormat="{0}"
+              >
+              </dxi-total-item>
+              <dxi-total-item
+                column='MONTO_SUBTOTAL_5'
+                summaryType="sum"
+                valueFormat="#,##0.00"
+                displayFormat="{0}"
+              >
+              </dxi-total-item>
+              <dxi-total-item
+                column='MONTO_SUBTOTAL_6'
+                summaryType="sum"
+                valueFormat="#,##0.00"
+                displayFormat="{0}"
+              >
+              </dxi-total-item>
+              <dxi-total-item
+                column='MONTO_SUBTOTAL_7'
+                summaryType="sum"
+                valueFormat="#,##0.00"
+                displayFormat="{0}"
+              >
+              </dxi-total-item>
+              <dxi-total-item
+                column='MONTO_SUBTOTAL_8'
+                summaryType="sum"
+                valueFormat="#,##0.00"
+                displayFormat="{0}"
+              >
+              </dxi-total-item>
+              <dxi-total-item
+                column='MONTO_SUBTOTAL_9'
+                summaryType="sum"
+                valueFormat="#,##0.00"
+                displayFormat="{0}"
+              >
+              </dxi-total-item>
+              <dxi-total-item
+                column='MONTO_SUBTOTAL_10'
+                summaryType="sum"
+                valueFormat="#,##0.00"
+                displayFormat="{0}"
+              >
+              </dxi-total-item>
+            </dxo-summary>
+          </dx-data-grid>
+        </div>
+      </dxi-item>
+      <dxi-item title="Detalle de Documento" [icon]="'doc'" >
+        <div class="dx-grid-deta">
+          <dx-data-grid
+          #gDataDocumentos
+          id="gridContainer"
+          [dataSource]="mCOM_COTIZACION_DOC"
+          [columnAutoWidth]="false"
+          [showBorders]="true"
+          [showColumnLines]="true"
+          [showRowLines]="true"
+          [rowAlternationEnabled]="true"
+          [hoverStateEnabled]="false"
+          [allowColumnResizing]="true"
+          [columnResizingMode]="'widget'"
+          [focusedRowEnabled]="true"
+          [height]="'100%'"
+          [width]="'100%'"
+          [keyExpr]="[
+            'CORR_EMPRESA',
+            'CORR_DOCUMENTO'
+          ]"
+          (onRowDblClick)="gDataCotizacionDocRowDblClick($event)"
+          (onRowRemoving)="gDataCotizacionDocRowRemoving($event)"
+          >
+            <dxo-toolbar>
+              <dxi-item location="before" [visible]="true" >
+                <div *dxTemplate>
+                  <dx-button class="myButton3" [icon]="'add'" text="Agregar Doc" type="success" (onClick)="AgregarDocumento($event)" width="135">
+                  </dx-button>
+                </div>
+              </dxi-item>
+              <dxi-item name="exportButton" location="after"></dxi-item>
+              <dxi-item name="searchPanel" location="after"></dxi-item>
+            </dxo-toolbar>
+            <dxo-editing
+              mode="cell"
+              [refreshMode]="'reshape'"
+              [allowUpdating]="false"
+              [allowDeleting]="true"
+              [useIcons]="true"
+            >
+            </dxo-editing>
+            <dxo-selection mode="single"></dxo-selection>
+            <dxo-load-panel [enabled]="false"></dxo-load-panel>
+            <dxo-search-panel [visible]="true"></dxo-search-panel>
+            <dxo-export [enabled]="true" fileName="Detalle"></dxo-export>
+            <dxo-paging [enabled]="false"></dxo-paging>
+            <dxo-filter-panel [visible]="true"></dxo-filter-panel>
+            <dxi-column type="buttons" [width]="'45'">
+              <dxi-button name="delete" [visible]="true"></dxi-button>
+            </dxi-column>
+            <dxi-column dataField="CORR_EMPRESA" caption="" [visible]="false">
+            </dxi-column>
+            <dxi-column dataField="ANIO_PERIODO" caption="" [visible]="false">
+            </dxi-column>
+            <dxi-column dataField="CORR_COTIZACION" caption="" [visible]="false">
+            </dxi-column>
+            <dxi-column
+              dataField="CORR_DOCUMENTO"
+              caption=""
+              [visible]="false"
+            >
+            </dxi-column>
+            <dxi-column
+            dataField="NOMBRE_PROVEEDOR"
+            caption="Proveedor"
+            width="150"
+            groupIndex="0"
+            [allowEditing]="false"
+            ></dxi-column>
+            <dxi-column
+            dataField="NOMBRE_TIPO_DOCUMENTO"
+            caption="Tipo de Documento"
+            width="150"
+            [allowEditing]="false"
+            ></dxi-column>
+            <dxi-column
+              dataField="NOMBRE_DOCUMENTO"
+              caption="Nombre del Documento"
+              width="250"
+              [allowEditing]="false"
+            >
+            </dxi-column>
+            <dxi-column
+              dataField="NOMBRE_CLASE_ORIGEN_DOCUMENTO"
+              caption="Origen Documento"
+              width="250"
+              [allowEditing]="false"
+            >
+            </dxi-column>
+            <dxi-column
+              dataField="DESCRIPCION_DOCUMENTO"
+              caption="Descripción del Documento"
+              width="350"
+              [allowEditing]="false"
+            >
+            </dxi-column>
+          </dx-data-grid>
+        </div>
+      </dxi-item>
+      <dxi-item title="Detalle de Autorizaciones" [icon]="'user'">
+        <div class="dx-grid-deta">
+          <dx-data-grid
+            #DataCuadroComparativoAutorizaciones
+            [dataSource]="mCOM_CUADRO_COMPARATIVO_AUTORIZACIONES"
+            [columnAutoWidth]="false"
+            [showBorders]="true"
+            [showColumnLines]="true"
+            [showRowLines]="true"
+            [rowAlternationEnabled]="true"
+            [hoverStateEnabled]="true"
+            [allowColumnResizing]="true"
+            [columnResizingMode]="'widget'"
+            [repaintChangesOnly]="true"
+            [focusedRowEnabled]="true"
+            [height]="'100%'"
+            [width]="'100%'"
+            [editing]="{ mode: 'cell', allowUpdating: false }"
+            [keyExpr]="[
+              'CORR_EMPRESA',
+              'LOGIN_SISTEMA',
+              'ANIO_PERIODO',
+              'CORR_CUADRO_COMPARATIVO',
+            ]"
+          >
+            <dxo-keyboard-navigation
+              [editOnKeyPress]="true"
+            ></dxo-keyboard-navigation>
+            <dxo-toolbar>
+              <dxi-item name="exportButton" location="after"></dxi-item>
+              <dxi-item name="searchPanel" location="after"></dxi-item>
+            </dxo-toolbar>
+            <dxo-editing
+              [mode]="'cell'"
+              [refreshMode]="'reshape'"
+              [allowUpdating]="false"
+              [allowAdding]="false"
+              [allowDeleting]="false"
+              [useIcons]="true"
+            >
+            </dxo-editing>
+            <dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
+            <dxo-load-panel [enabled]="false"></dxo-load-panel>
+            <dxo-search-panel [visible]="true"></dxo-search-panel>
+            <dxo-export [enabled]="true" fileName="Autorizaciones"></dxo-export>
+            <dxi-column dataField="LOGIN_SISTEMA" caption="Usuario" [visible]="false" [dataType]="'string'" [width]="'80px'">
+            </dxi-column>
+            <dxi-column dataField="NOMBRE_USUARIO" caption="Usuario" [dataType]="'string'" [width]="'180px'">
+            </dxi-column>
+            <dxi-column dataField="FECHA_AUTORIZACION" caption="Fecha Autorizacion" [editorOptions]="{ readOnly: true }" [dataType]="'datetime'" [format]="'dd/MM/yyyy HH:mm'" [width]="'200px'">
+            </dxi-column>
+            <dxi-column dataField="NOMBRE_ESTADO_AUTORIZACION" caption="Estado Autorizacion" [dataType]="'string'" [width]="'150px'">
+            </dxi-column>
+            <dxi-column dataField="ORDEN_REVISION" caption="Orden Revision" [dataType]="'number'" [editorOptions]="{ format: 'N0', readOnly: true }" [width]="'100px'">
+            </dxi-column>
+            <dxo-summary>
+              <dxi-total-item
+                column="LOGIN_SISTEMA"
+                summaryType="count"
+                valueFormat="#,##0"
+                displayFormat="Cant: {0}"
+              >
+              </dxi-total-item>
+            </dxo-summary>
+          </dx-data-grid>
+        </div>
+        <div class="commentContainer">
+          <div *ngFor="let deta of mCOM_CUADRO_COMPARATIVO_COMENTARIO; let i = index">
+            <div class="commentTitle">{{ deta.USUARIO_CREA }}, {{ deta.FECHA_CREA | date : "medium" }}</div>
+            <div class="description">
+              <dx-html-editor [readOnly]="true" height="auto" [value]="deta.COMENTARIO">
+              </dx-html-editor>
+            </div>
+          </div>
+        </div>
+      </dxi-item>
+      <dxi-item title="Ordenes Compra" [icon]="'taskcomplete'">
+        <div class="dx-grid-deta">
+          <dx-data-grid
+            #gDataCuadroComparativoOrdenesCompra
+            [dataSource]="mCOM_CUADRO_COMPARATIVO_ORDEN_COMPRA"
+            [columnAutoWidth]="false"
+            [showBorders]="true"
+            [showColumnLines]="true"
+            [showRowLines]="true"
+            [rowAlternationEnabled]="true"
+            [hoverStateEnabled]="true"
+            [allowColumnResizing]="true"
+            [columnResizingMode]="'widget'"
+            [repaintChangesOnly]="true"
+            [focusedRowEnabled]="true"
+            [height]="'100%'"
+            [width]="'100%'"
+            [editing]="{ mode: 'cell', allowUpdating: false }"
+            [keyExpr]="[
+              'CORR_EMPRESA',
+              'ANIO_PERIODO',
+              'CORR_CUADRO_COMPARATIVO',
+              'NUMERO_ORDEN',
+              'CORR_PROVEEDOR',
+            ]"
+            (onFocusedRowChanged)="gDataCuadroComparativoOrdenesCompraFocusedRowChanged($event)"
+          >
+            <dxo-keyboard-navigation
+              [editOnKeyPress]="true"
+            ></dxo-keyboard-navigation>
+            <dxo-toolbar>
+              <dxi-item location="before" [visible]="true">
+                <div *dxTemplate>
+                  <dx-button
+                    class="myButton3"
+                    [icon]="'export'"
+                    text="Vista Previa"
+                    type="default"
+                    (onClick)="obtenerPDFOrdenCompra()"
+                    [visible]="true"
+                    width="150"
+                  >
+                  </dx-button>
+                </div>
+              </dxi-item>
+              <dxi-item name="exportButton" location="after"></dxi-item>
+              <dxi-item name="searchPanel" location="after"></dxi-item>
+            </dxo-toolbar>
+            <dxo-editing
+              [mode]="'cell'"
+              [refreshMode]="'reshape'"
+              [allowUpdating]="false"
+              [allowAdding]="false"
+              [allowDeleting]="false"
+              [useIcons]="true"
+            >
+            </dxo-editing>
+            <dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
+            <dxo-load-panel [enabled]="false"></dxo-load-panel>
+            <dxo-search-panel [visible]="true"></dxo-search-panel>
+            <dxo-export [enabled]="true" fileName="Ordenes Compra"></dxo-export>
+            <dxi-column dataField="NUMERO_ORDEN" caption="N° Orden" [visible]="true" [dataType]="'number'" [width]="'150px'">
+            </dxi-column>
+            <dxi-column dataField="NOMBRE_ESTADO_ORDEN_COMPRA" caption="Estado" [dataType]="'string'" [width]="'150'">
+            </dxi-column>
+            <dxi-column dataField="MONTO_TOTAL_ORDEN" caption="Total" [dataType]="'number'" [editorOptions]="{ format: '#,##0.00', readOnly: true }" [width]="'150px'">
+            </dxi-column>
+            <dxi-column dataField="NOMBRE_PROVEEDOR" caption="Proveedor" [dataType]="'string'" [width]="'300px'">
+            </dxi-column>
+            <dxi-column dataField="NOMBRE_CONDICION_PAGO" caption="Condición Pago" [dataType]="'string'" [width]="'300px'">
+            </dxi-column>
+            <dxi-column dataField="NOMBRE_FORMA_PAGO" caption="Forma Pago" [dataType]="'string'" [width]="'300px'">
+            </dxi-column>
+            <dxi-column dataField="DETALLE_FORMA_PAGO" caption="Detalle Forma Pago" [dataType]="'string'" [width]="'300px'">
+            </dxi-column>
+            <dxo-summary>
+              <dxi-total-item
+                column="NUMERO_ORDEN"
+                summaryType="count"
+                valueFormat="#,##0"
+                displayFormat="Cant: {0}"
+              >
+              </dxi-total-item>
+              <dxi-total-item
+                column="MONTO_TOTAL_ORDEN"
+                summaryType="sum"
+                valueFormat="#,##0.00"
+                displayFormat="{0}"
+              >
+              </dxi-total-item>
+            </dxo-summary>
+          </dx-data-grid>
+        </div>
+      </dxi-item>
+    </dx-tab-panel>
+  </div>
+  <app-data-grid-mtto
+    [isBrowse]="isBrowse()"
+    [models]="models"
+    [columns]="columns"
+    [summary]="summary"
+    [keyExpr]="'CORR_CUADRO_COMPARATIVO'"
+    [permiteEditar]="getPermiteEditar"
+    [permiteDele]="getPermiteDele"
+    (rowDblClick)="rowDblClick($event)"
+    (rowRemoving)="rowRemoving($event)"
+    (focusedRowChanged)="focusedRowChanged($event)"
+    (editClick)="editarClick($event)"
+    [filterValue]="['USUARIO_CREA', '=', appInfoService.getUsuario()]"
+  >
+  </app-data-grid-mtto>
+  <dx-popup
+    [width]="'95%'"
+    [position]="'center'"
+    [height]="'95%'"
+    [showTitle]="true"
+    title="Solicitudes de Cotización Disponibles"
+    [dragEnabled]="false"
+    [closeOnOutsideClick]="false"
+    [showCloseButton]="false"
+    [shading]="false"
+    [(visible)]="popupVisible"
+  >
+    <dxi-toolbar-item
+      location="after"
+      widget="dxButton"
+      [options]="{ icon: 'refresh', onClick: RefrescarSolicitud }"
+    >
+    </dxi-toolbar-item>
+    <dxi-toolbar-item
+      location="after"
+      widget="dxDateBox"
+      Onval
+      [options]="{
+        useMaskBehavior: true,
+        type: 'date',
+        displayFormat: 'dd/MM/yyyy',
+        width: '120',
+        value: vFECHA_INICIAL_MODAL,
+        onValueChanged: OnValueChangeFECHA_INICIAL_MODAL,
+
+      }"
+    >
+    </dxi-toolbar-item>
+    <dxi-toolbar-item
+      location="after"
+      widget="dxDateBox"
+      [options]="{
+        useMaskBehavior: true,
+        type: 'date',
+        displayFormat: 'dd/MM/yyyy',
+        width: '120',
+        value: vFECHA_FINAL_MODAL,
+        onValueChanged: OnValueChangeFECHA_FINAL_MODAL
+      }"
+    >
+    </dxi-toolbar-item>
+    <dxi-toolbar-item
+      location="before"
+      toolbar= "bottom"
+      widget="dxButton"
+      [options]="{
+      icon: 'save',
+      text: 'Guardar',
+      type: 'success',
+      stylingMode: 'contained',
+      onClick: guardarPopup,
+    }"
+    >
+    </dxi-toolbar-item>
+    <dxi-toolbar-item
+      location="before"
+      toolbar= "bottom"
+      widget="dxButton"
+      [options]="{
+      icon: 'close',
+      text: 'Cancelar',
+      type: 'danger',
+      stylingMode: 'contained',
+      onClick: hidePopup,
+      routerLinkActive: 'router-link-active'
+    }"
+    ></dxi-toolbar-item>
+    <div *dxTemplate="let data of 'content'">
+      <dx-data-grid
+        #dataSolicitudDisponible
+        [dataSource]="mCOM_SOLICITUD_DISPONIBLE"
+        [columnAutoWidth]="false"
+        [showBorders]="true"
+        [showColumnLines]="true"
+        [showRowLines]="true"
+        [rowAlternationEnabled]="true"
+        [hoverStateEnabled]="true"
+        [allowColumnResizing]="true"
+        [columnResizingMode]="'widget'"
+        [focusedRowEnabled]="true"
+        (onFocusedRowChanged)="focusedRowChangedSolicitudDisponible($event)"
+        keyExpr="CORR_SOLI_COTIZACION"
+        [width]="'100%'"
+        [height]="'250px'"
+        [scrolling]="{ mode: 'virtual', useNative: true }"
+        [filterValue]="['USUARIO_SOLI', '=', appInfoService.getUsuario()]"
+      >
+        <dxo-editing
+          [mode]="'row'"
+          [refreshMode]="'reshape'"
+          [allowUpdating]="false"
+          [useIcons]="true"
+        >
+        </dxo-editing>
+        <dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+        <dxo-load-panel [enabled]="false"></dxo-load-panel>
+        <dxo-filter-panel [visible]="true"></dxo-filter-panel>
+        <dxi-column dataField="SELECCION" caption=" " [dataType]="'boolean'" [width]="45" [editCellTemplate]="'singleCheckBox'"></dxi-column>
+        <dxi-column
+          dataField="CORR_SOLI_COTIZACION"
+          caption="Solicitud"
+          [width]="100"
+        ></dxi-column>
+        <dxi-column
+          dataField="FECHA_SOLI_COTIZACION"
+          caption="Fecha Soli. Cotiza"
+          [width]="150"
+          [dataType]="'date'"
+          [format]="'dd/MM/yyyy'"
+        ></dxi-column>
+        <dxi-column
+          dataField="NOMBRE_DEPTO"
+          caption="Depto"
+          [width]="325"
+        ></dxi-column>
+        <dxi-column
+          dataField="USUARIO_SOLI"
+          caption="Usuario Sol."
+          [width]="100"
+        ></dxi-column>
+        <dxi-column
+          dataField="OBSERVACIONES"
+          caption="Observaciones"
+          [width]="500"
+        ></dxi-column>
+        <div *dxTemplate="let cellInfo of 'singleCheckBox'">
+          <dx-check-box
+            [(value)]="cellInfo.row.data.SELECCION"
+            contentTemplate="contentTemplate"
+          >
+          </dx-check-box>
+        </div>
+      </dx-data-grid>
+      <dx-tab-panel class="Espacio" [height]="'55%'" #tabPanel [selectedIndex]="0">
+        <dxi-item title="Detalle de Item" [icon]="'doc'">
+          <dx-data-grid
+            #DataSoliCotizaDeta
+            [dataSource]="mCOM_SOLI_COTIZACION_DETA"
+            [columnAutoWidth]="false"
+            [showBorders]="true"
+            [showColumnLines]="true"
+            [showRowLines]="true"
+            [rowAlternationEnabled]="true"
+            [hoverStateEnabled]="true"
+            [allowColumnResizing]="true"
+            [columnResizingMode]="'widget'"
+            [repaintChangesOnly]="true"
+            [height]="'100%'"
+            [width]="'100%'"
+            keyExpr="CORR_SOLI_COTIZACION_DETA"
+          >
+            <dxo-keyboard-navigation
+              [editOnKeyPress]="true"
+            ></dxo-keyboard-navigation>
+            <dxo-load-panel [enabled]="false"></dxo-load-panel>
+            <dxi-column
+              dataField="CODIGO_ITEM"
+              caption="Codigo Item"
+              [dataType]="'string'"
+              [width]="'15%'"
+            >
+            </dxi-column>
+            <dxi-column
+              dataField="NOMBRE_ITEM"
+              caption="Nombre Item"
+              [dataType]="'string'"
+              [width]="'35%'"
+            >
+            </dxi-column>
+            <dxi-column
+              dataField="CANTIDAD"
+              caption="Cantidad"
+              [dataType]="'decimal'"
+              [width]="'12%'"
+            >
+            </dxi-column>
+            <dxi-column
+              dataField="NOMBRE_UNIDAD_MEDIDA"
+              caption="Unidad Medida"
+              [dataType]="'string'"
+              [width]="'15%'"
+            >
+            </dxi-column>
+            <dxi-column
+              dataField="NOMBRE_ESTADO_SOLI_COTIZACION"
+              caption="Estado"
+              [dataType]="'string'"
+              [width]="'15%'"
+            >
+            </dxi-column>
+            <dxi-column
+              dataField="OBSERVACIONES"
+              caption="Observaciones"
+              [dataType]="'string'"
+              [width]="'40%'"
+            >
+            </dxi-column>
+            <dxo-summary>
+              <dxi-total-item
+                column="CORR_SOLI_COTIZACION_DETA"
+                summaryType="count"
+                valueFormat="#,##0"
+                displayFormat="Cant: {0}"
+              >
+              </dxi-total-item>
+            </dxo-summary>
+          </dx-data-grid>
+        </dxi-item>
+        <dxi-item title="Detalle de Proveedores" [icon]="'doc'">
+          <dx-data-grid
+            #DataComSoliCotizaProveedor
+            [dataSource]="mCOM_SOLI_COTIZACION_PROVEEDOR"
+            [columnAutoWidth]="false"
+            [showBorders]="true"
+            [showColumnLines]="true"
+            [showRowLines]="true"
+            [rowAlternationEnabled]="true"
+            [hoverStateEnabled]="true"
+            [allowColumnResizing]="true"
+            [columnResizingMode]="'widget'"
+            [repaintChangesOnly]="true"
+            [height]="'100%'"
+            [width]="'100%'"
+            keyExpr="CORR_PROVEEDOR"
+          >
+            <dxo-keyboard-navigation
+              [editOnKeyPress]="true"
+            ></dxo-keyboard-navigation>
+            <dxo-load-panel [enabled]="false"></dxo-load-panel>
+            <dxi-column
+              dataField="CORR_PROVEEDOR"
+              caption="Corr."
+              [dataType]="'int'"
+              [width]="'10%'"
+              [visible]="false"
+            >
+            </dxi-column>
+            <dxi-column
+              dataField="CODIGO_PROVEEDOR"
+              caption="Codigo Proveedor"
+              [dataType]="'string'"
+              [width]="'18%'"
+            >
+            </dxi-column>
+            <dxi-column
+              dataField="NOMBRE_PROVEEDOR"
+              caption="Nombre Proveedor"
+              [dataType]="'string'"
+              [width]="'35%'"
+            >
+            </dxi-column>
+            <dxi-column
+              dataField="NOMBRE_ESTADO_COTIZACION"
+              caption="Estado Coti"
+              [dataType]="'string'"
+              [width]="'12%'"
+            >
+            </dxi-column>
+            <dxi-column
+              dataField="FECHA_COTIZACION"
+              caption="Fecha Coti."
+              [dataType]="'date'"
+              [width]="'14%'"
+            >
+            </dxi-column>
+            <dxi-column
+              dataField="USUARIO_COTIZA"
+              caption="Usuario Coti."
+              [dataType]="'string'"
+              [width]="'13%'"
+            >
+            </dxi-column>
+            <dxi-column
+              dataField="PLAZO_ENTREGA"
+              caption="Plazo de Entrega"
+              [dataType]="'string'"
+              [width]="'15%'"
+            >
+            </dxi-column>
+            <dxi-column
+              dataField="OBSERVACIONES"
+              caption="Observaciones"
+              [dataType]="'string'"
+              [width]="'35%'"
+            >
+            </dxi-column>
+            <dxo-summary>
+              <dxi-total-item
+                column="CORR_PROVEEDOR"
+                summaryType="count"
+                valueFormat="#,##0"
+                displayFormat="Cant: {0}"
+              >
+              </dxi-total-item>
+            </dxo-summary>
+          </dx-data-grid>
+        </dxi-item>
+      </dx-tab-panel>
+    </div>
+  </dx-popup>
+  <dx-popup
+    [width]="'95%'"
+    [position]="'center'"
+    [height]="'95%'"
+    [showTitle]="true"
+    title="Agregar Observaciones"
+    [dragEnabled]="false"
+    [closeOnOutsideClick]="false"
+    [showCloseButton]="false"
+    [shading]="false"
+    [(visible)]="popupVisibleObservacion"
+  >
+    <div *dxTemplate="let data of 'content'">
+      <div class="dx-grid-deta">
+          <dx-data-grid
+              #DataCuadroComparativoDeta
+              [dataSource]="mCOM_COTIZACION_DETA"
+              [columnAutoWidth]="false"
+              [showBorders]="true"
+              [showColumnLines]="true"
+              [showRowLines]="true"
+              [rowAlternationEnabled]="true"
+              [hoverStateEnabled]="true"
+              [allowColumnResizing]="true"
+              [columnResizingMode]="'widget'"
+              [focusedRowEnabled]="true"
+              [repaintChangesOnly]="true"
+              [height]="'100%'"
+              [width]="'100%'"
+              keyExpr="CORR_DETA"
+            >
+              <dxo-editing
+                mode="cell"
+                [allowUpdating]="true"
+              ></dxo-editing>
+              <dxo-keyboard-navigation
+                [editOnKeyPress]="true"
+              ></dxo-keyboard-navigation>
+              <dxo-load-panel [enabled]="false"></dxo-load-panel>
+              <dxi-column
+                  dataField="SELECCION"
+                  caption="Sel."
+                  [dataType]="'boolean'"
+                  [width]="'10%'"
+                  [editorOptions]="{ readOnly: true }"
+              >
+              </dxi-column>
+              <dxi-column
+                dataField="NOMBRE_PROVEEDOR"
+                caption="Proveedor"
+                [dataType]="'string'"
+                [width]="'20%'"
+                [groupIndex]="0"
+              >
+              </dxi-column>
+              <dxi-column
+                dataField="CODIGO_ITEM"
+                caption="Codigo Item"
+                [dataType]="'string'"
+                [width]="'10%'"
+                [editorOptions]="{ readOnly: true }"
+              >
+              </dxi-column>
+              <dxi-column
+                dataField="NOMBRE_ITEM"
+                caption="Nombre Item"
+                [dataType]="'string'"
+                [width]="'35%'"
+                [editorOptions]="{ readOnly: true }"
+              >
+              </dxi-column>
+              <dxi-column
+                dataField="MARCA"
+                caption="Marca"
+                [dataType]="'string'"
+                [width]="'150px'"
+                [editorOptions]="{ readOnly: true }"
+              >
+              </dxi-column>
+              <dxi-column
+                dataField="CANTIDAD"
+                caption="Cantidad"
+                [dataType]="'number'"
+                [editorOptions]="{ format: '#,##0.00' }"
+                [width]="'80px'"
+                [editorOptions]="{ readOnly: true }"
+              >
+              </dxi-column>
+              <dxi-column
+                dataField="PRECIO_UNITARIO"
+                caption="Precio U. (IVA Incluido)"
+                [dataType]="'number'"
+                [editorOptions]="{ format: '#,##0.00' }"
+                [width]="'160px'"
+                [editorOptions]="{ readOnly: true }"
+              >
+              </dxi-column>
+              <dxi-column
+                dataField="MONTO_SUBTOTAL"
+                caption="Sub-Total"
+                [dataType]="'number'"
+                [editorOptions]="{ format: '#,##0.00', readOnly: true }"
+                [width]="'80px'"
+                [editorOptions]="{ readOnly: true }"
+              >
+              </dxi-column>
+              <dxi-column
+                dataField="OBSERVACIONES"
+                caption="Observaciones"
+                [dataType]="'string'"
+                [width]="'60%'"
+                [editorOptions]="{ readOnly: false }"
+              >
+              </dxi-column>
+              <dxo-summary>
+                <dxi-total-item
+                  column="CORR_COTIZACION_DETA"
+                  summaryType="count"
+                  valueFormat="#,##0"
+                  displayFormat="Cant: {0}"
+                >
+                </dxi-total-item>
+              </dxo-summary>
+          </dx-data-grid>
+      </div>
+      <div class="dx-grid-deta">
+        <dx-button
+          [text]="'Guardar'"
+          [icon]="'save'"
+          id="button"
+          class="myButton4"
+          type="success"
+          stylingMode="contained"
+          (click)="guardarPopupObservacion()"
+        >
+        </dx-button>
+        <dx-button
+          [text]="'Cancelar'"
+          [icon]="'close'"
+          id="button"
+          class="myButton4 myButtonSpace"
+          type="danger"
+          stylingMode="contained"
+          (click)="hidePopupObservacion()"
+          routerLinkActive="router-link-active"
+        >
+        </dx-button>
+      </div>
+    </div>
+  </dx-popup>
+</div>
+
+<dx-load-panel
+  #loadPanel
+  shadingColor="rgba(0,0,0,0.4)"
+  [position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+  [(visible)]="loadingVisible"
+  [showIndicator]="true"
+  [showPane]="true"
+  [shading]="true"
+  (onShown)="(loadingVisible)"
+>
+</dx-load-panel>
+<dx-popup
+  [width]="'1200px'"
+  [position]="'top'"
+  [height]="'1050px'"
+  [showTitle]="true"
+  title="Vista Previa"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [shading]="false"
+  [(visible)]="popupVisiblePdf"
+  class="popout"
+>
+  <object [data]="PDF" type="application/pdf" width="100%" height="95%" >
+    <embed [src]="PDF" type="application/pdf" />
+  </object>
+</dx-popup>
+<dx-popup
+  [width]="'500px'"
+  [position]="'top'"
+  [height]="'350px'"
+  [showTitle]="true"
+  title="Agregando Documentos"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="false"
+  [shading]="false"
+  [(visible)]="popupVisibleDoc"
+  class="popout"
+>
+<div *dxTemplate="let data of 'content'">
+  <dx-form #fDocumento id="fDocumento" [colCount]="4" [height]="'auto'" [formData]="mDocumento">
+    <dxi-item [colSpan]="2">
+      <div *dxTemplate>
+        <dx-button class="myButton3" [icon]="'file'" text="Seleccionar Doc." type="default" (onClick)="fileUpload.click()" width="185">
+        </dx-button>
+        <input type="file" [hidden]="true" class="file-input" [accept]="'image/jpeg,image/gif,image/png,application/pdf,image/x-eps'" (change)="onDocSelected($event)" #fileUpload>
+      </div>
+    </dxi-item>
+    <dxi-item [colSpan]="2">
+      <div>{{vNOMBRE_ARCHIVO}}</div>
+    </dxi-item>
+    <dxi-item dataField="NOMBRE_DOCUMENTO" [label]="{text: 'Nombre Documento'}" [editorType]="'dxTextBox'" [colSpan]="2" [editorOptions]="{ placeholder: 'Nombre del Documento...', showClearButton: true, maxLength: 150 }">
+      <dxi-validation-rule type="required"  message="El nombre del Documento es obligatorio"> </dxi-validation-rule>
+    </dxi-item>
+    <dxi-item
+      dataField="CORR_TIPO_DOCUMENTO"
+      [label]="{ text: 'Tipo de Documento' }"
+      [colSpan]="2"
+      [editorOptions]="{ placeholder: 'Tipo Documento...', showClearButton: true }"
+      [template]="'cbTipoDocumento'"
+      >
+    </dxi-item>
+    <div *dxTemplate="let cellInfo of 'cbTipoDocumento'">
+        <app-data-lookup
+          [model]="mCORR_TIPO_DOCUMENTO"
+          [(value)]="mDocumento.CORR_TIPO_DOCUMENTO"
+          [valueExpr]="'CORR_TIPO_DOCUMENTO'"
+          [displayExpr]="'NOMBRE_TIPO_DOCUMENTO'"
+          [selectedRowKeys]="selectedLookUpCORR_TIPO_DOCUMENTO"
+        >
+        </app-data-lookup>
+    </div>
+    <dxi-item dataField="DESCRIPCION_DOCUMENTO" [label]="{text: 'Descripción'}" [editorType]="'dxTextBox'" [colSpan]="4" [editorOptions]="{ placeholder: 'Descripción del Documento...', showClearButton: true, maxLength: 255 }">
+    </dxi-item>
+    <dxi-item [type]="'empty'" [colSpan]="4">
+    </dxi-item>
+  </dx-form>
+  <div class="form-group row text-right footer">
+    <div class="col col-sm-10 col-lg-9 offset-sm-1 offset-lg-0">
+      <dx-button [text]="'Guardar'" [icon]="'add'" id="button" class="myButton4" type="success" stylingMode="contained" (click)="guardarDocPopup()">
+      </dx-button>
+      <dx-button [text]="'Cancelar'" [icon]="'close'" id="button" class="myButton4 myButtonSpace" type="danger" stylingMode="contained" (click)="hideDocPopup()" routerLinkActive="router-link-active">
+      </dx-button>
+    </div>
+  </div>
+</div>
+</dx-popup>
+<dx-popup
+  [width]="'800px'"
+  [position]="'top'"
+  [height]="'600px'"
+  [showTitle]="true"
+  title="Ingresar Motivo de Eliminación"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="false"
+  [shading]="false"
+  [(visible)]="popupVisibleEliminarComentario"
+  class="popout"
+>
+<div *dxTemplate="let data of 'content'">
+  <dx-form #fDocumento id="fEliminarComentario" [colCount]="8" [height]="'auto'" [formData]="model">
+    <dxi-item dataField="USUARIO_CREA" [label]="{text: 'Usuario'}" [editorType]="'dxTextBox'" [colSpan]="4" [editorOptions]="{ placeholder: '', readOnly: true }">
+    </dxi-item>
+    <dxi-item itemType="empty" [colSpan]="4"></dxi-item>
+    <dxi-item dataField="JUSTIFICACION_ELIMINAR" [label]="{text: '', visible: false}" [colSpan]="8" [editorOptions]="{ placeholder: 'Escribe un comentario...'}">
+      <dxi-validation-rule type="required"  message="El motivo es obligatorio"> </dxi-validation-rule>
+    </dxi-item>
+    <!-- <div *dxTemplate="let cellInfo of 'htmlComentario'">
+      <dx-html-editor height="400"  [(value)]="model.JUSTIFICACION_ELIMINAR">
+        <dxo-toolbar [multiline]="true">
+          <dxi-item name="undo"></dxi-item>
+          <dxi-item name="redo"></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item
+            name="size"
+            [acceptedValues]="['8pt', '10pt', '12pt', '14pt', '18pt', '24pt', '36pt']"
+            [options]="{ inputAttr: { 'aria-label': 'Font size' } }"
+          ></dxi-item>
+          <dxi-item
+            name="font"
+            [acceptedValues]="[
+              'Arial',
+              'Courier New',
+              'Georgia',
+              'Impact',
+              'Lucida Console',
+              'Tahoma',
+              'Times New Roman',
+              'Verdana'
+            ]"
+            [options]="{ inputAttr: { 'aria-label': 'Font family' } }"
+          ></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item name="bold"></dxi-item>
+          <dxi-item name="italic"></dxi-item>
+          <dxi-item name="strike"></dxi-item>
+          <dxi-item name="underline"></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item name="alignLeft"></dxi-item>
+          <dxi-item name="alignCenter"></dxi-item>
+          <dxi-item name="alignRight"></dxi-item>
+          <dxi-item name="alignJustify"></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item name="orderedList"></dxi-item>
+          <dxi-item name="bulletList"></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item
+            name="header"
+            [acceptedValues]="[false, 1, 2, 3, 4, 5]"
+            [options]="{ inputAttr: { 'aria-label': 'Header' } }"
+          ></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item name="color"></dxi-item>
+          <dxi-item name="background"></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item name="link"></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item name="clear"></dxi-item>
+          <dxi-item name="codeBlock"></dxi-item>
+          <dxi-item name="blockquote"></dxi-item>
+          <dxi-item name="separator"></dxi-item>
+          <dxi-item name="insertTable"></dxi-item>
+          <dxi-item name="deleteTable"></dxi-item>
+          <dxi-item name="insertRowAbove"></dxi-item>
+          <dxi-item name="insertRowBelow"></dxi-item>
+          <dxi-item name="deleteRow"></dxi-item>
+          <dxi-item name="insertColumnLeft"></dxi-item>
+          <dxi-item name="insertColumnRight"></dxi-item>
+          <dxi-item name="deleteColumn"></dxi-item>
+        </dxo-toolbar>
+      </dx-html-editor>
+    </div> -->
+  </dx-form>
+  <div class="form-group row text-right footer">
+    <div class="col col-sm-10 col-lg-9 offset-sm-1 offset-lg-0">
+      <dx-button [text]="'Guardar'" [icon]="'add'" id="button" class="myButton4" type="success" stylingMode="contained" (click)="guardarEliminarComentarioPopup()">
+      </dx-button>
+      <dx-button [text]="'Cancelar'" [icon]="'close'" id="button" class="myButton4 myButtonSpace" type="danger" stylingMode="contained" (click)="hideEliminacionComentarioPopup()" routerLinkActive="router-link-active">
+      </dx-button>
+    </div>
+  </div>
+</div>
+</dx-popup>
+

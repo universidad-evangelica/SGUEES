@@ -1,0 +1,46 @@
+
+::ng-deep .options {
+  padding: 20px;
+  bottom: 0;
+  right: 0;
+  width: 260px;
+  height: 500px;
+  top: 0;
+  background-color: rgba(191, 191, 191, 0.15);
+  // border-right: 1px Solid white;
+}
+::ng-deep .caption {
+  font-size: 18px;
+  font-weight: 500;
+}
+::ng-deep .option {
+  margin-top: 10px;
+}
+
+::ng-deep label {
+  font-weight: bold;
+}
+
+
+.bgOcultar{
+  background-color: transparent !important;
+  justify-content: center;
+}
+
+.bordeGrid{
+  margin-top: 0px;
+}
+
+
+::ng-deep #form-container {
+  margin: 10px 10px 30px;
+}
+
+::ng-deep .long-title h3 {
+  font-family: 'Segoe UI Light', 'Helvetica Neue Light', 'Segoe UI', 'Helvetica Neue', 'Trebuchet MS', Verdana;
+  font-weight: 400;
+  font-size: 20px;
+  text-align: center;
+  margin: 5px 5px 15px 5px;
+}
+

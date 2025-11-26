@@ -1,0 +1,250 @@
+<dx-box class="content-block"
+  direction="row"
+  width="100%"
+  [height]="'auto'">
+    <dxi-item
+      ratio="0"
+      baseSize="28"
+      class="bgOcultar"
+    >
+      <dx-toolbar class="bgOcultar"
+        [items]="toolbarContent">
+      </dx-toolbar>
+    </dxi-item>
+    <dxi-item
+      ratio="1">
+      <h2 class="content-block">{{tituloVentana}}</h2>
+    </dxi-item>
+</dx-box>
+
+<dx-drawer
+  [openedStateMode]="'shrink'"
+  [position]="'before'"
+  [revealMode]="'slide'"
+  [opened]="true"
+  [height]="600"
+  template="template"
+  [width]="'100%'"
+  [(opened)]="isDrawerOpen"
+  [closeOnOutsideClick]="false">
+
+  <div *dxTemplate="let data of 'template'" style="width: 260px">
+    <div class="options">
+      <div class="caption"></div>
+        <div class="option">
+          <div>Fecha Inicial: </div>
+          <dx-date-box [(value)]="vFECHA_INICIAL"
+          [useMaskBehavior]= "true"
+          type="date"
+          displayFormat="dd/MM/yyyy"
+          width="'100%'"
+          ></dx-date-box>
+        </div>
+        <div class="option">
+          <div>Fecha Final: </div>
+          <dx-date-box [(value)]="vFECHA_FINAL"
+          [useMaskBehavior]= "true"
+          type="date"
+          displayFormat="dd/MM/yyyy"
+          width="'100%'"
+          ></dx-date-box>
+        </div>
+        <div class="option">
+          <dxi-item location="after">
+            <dx-button text="Consultar" type="default" [icon]="'refresh'"
+            (onClick)="consultar()">
+            </dx-button>
+          </dxi-item>
+        </div>
+        <div class="option">
+          <dxi-item location="after">
+            <dx-button text="anular" type="danger" [icon]="'revert'"
+            (onClick)="AnularCR()">
+            </dx-button>
+          </dxi-item>
+        </div>
+    </div>
+  </div>
+  <dx-data-grid
+    #DataDocumentoDeta
+    [dataSource]="models"
+    [columnAutoWidth]="false"
+    [showBorders]="true"
+    [showColumnLines]="true"
+    [showRowLines]="true"
+    [rowAlternationEnabled]="true"
+    [hoverStateEnabled]="true"
+    [allowColumnResizing]="true"
+    [columnResizingMode]="'widget'"
+    [focusedRowEnabled]="true"
+    [height]="'100%'"
+    [width]="'100%'"
+    [keyExpr]="['ANIO_PERIODO','MES_PERIODO', 'CORR_DOCUMENTO']"
+    (onExporting)="onExporting($event)"
+    >
+    <dxo-toolbar>
+      <dxi-item location="before" [visible]="true">
+        <div *dxTemplate>
+          <dx-button
+            class="myButton3"
+            icon="add"
+            text="Todos"
+            type="success"
+            (onClick)="selectTodos()"
+            [visible]="!readOnly"
+            width="100"
+          >
+          </dx-button>
+        </div>
+      </dxi-item>
+      <dxi-item location="before" [visible]="true">
+        <div *dxTemplate>
+          <dx-button
+            text="Ninguno"
+            icon="minus"
+            type="danger"
+            (onClick)="selectNinguno()"
+            [visible]="!readOnly"
+            width="105"
+          >
+          </dx-button>
+        </div>
+      </dxi-item>
+      <dxi-item name="exportButton" location="after"></dxi-item>
+      <dxi-item name="searchPanel" location="after"></dxi-item>
+    </dxo-toolbar>
+      <dxo-editing
+        mode="cell"
+        [refreshMode]="'reshape'"
+        [allowAdding]="!readOnly"
+        [allowUpdating]="!readOnly"
+        [allowDeleting]="!readOnly"
+        [useIcons]="true"
+      >
+        <dxo-popup title="Impuesto" [showTitle]="true" [width]="700" [height]="350"></dxo-popup>
+        <dxo-form [colCount]="8" showValidationSummary="true">
+          <dxi-item dataField="SELECCION" [colSpan]="8" [label]="{ text: 'Incluido', alignment: 'right' }" [editorType]="'dxCheckBox'"></dxi-item>
+        </dxo-form>
+      </dxo-editing>
+      <dxo-load-panel [enabled]="false"></dxo-load-panel>
+      <dxo-search-panel [visible]="true"></dxo-search-panel>
+      <dxo-export [enabled]="true" fileName="Detalle"></dxo-export>
+      <dxo-group-panel [visible]="true"></dxo-group-panel>
+      <dxo-grouping #expand [autoExpandAll]="true"></dxo-grouping>
+      <dxo-filter-panel [visible]="true"></dxo-filter-panel>
+      <dxo-filter-row [visible]="true"></dxo-filter-row>
+      <dxo-header-filter [visible]="true"></dxo-header-filter>
+      <dxo-scrolling mode="virtual" useNative="true"></dxo-scrolling>
+      <dxi-column dataField="SELECCION" caption="" [dataType]="'boolean'" width=100 [allowEditing]="!allowEditing">
+      </dxi-column>
+      <dxi-column dataField="NUMERO_DOCUMENTO_CORR" caption="Corr." [dataType]="'string'" width=150 [allowEditing]="allowEditing">
+    ></dxi-column> 
+      <dxi-column dataField="FECHA_DOC" caption="Fecha Documento" [width]="130" [dataType]="'date'" [format]="'dd/MM/yyyy'"
+    ></dxi-column> 
+      <dxi-column dataField="FECHA_CR" caption="Fecha Comrpobante" [width]="130" [dataType]="'date'" [format]="'dd/MM/yyyy'"
+    ></dxi-column>      
+      <dxi-column dataField="DESCRIPCION_CR" caption="Descripción Comprobante" [dataType]="'string'" width=150 [allowEditing]="allowEditing">
+      </dxi-column> 
+      <dxi-column dataField="ESTADO_CR" caption="Estado" [dataType]="'string'" width=100 [allowEditing]="allowEditing">
+      </dxi-column>       
+      <dxi-column dataField="CODIGO_GENERACION" caption="Código Generación" [dataType]="'string'" width=220 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="NUMERO_CONTROL" caption="Número Control" [dataType]="'string'" width=220 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="SELLO_RECEPCION" caption="Sello Recepción" [dataType]="'string'" width=220 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="MONTO_RETENIDO" caption="Monto Retinido" [dataType]="'number'" width=180 [allowEditing]="allowEditing">
+      </dxi-column>
+      <dxi-column dataField="MONTO_TOTAL" caption="Monto Total" [dataType]="'number'" width="100" [allowEditing]="allowEditing">
+        <dxo-format
+            type="fixedPoint"
+            [precision]="2">
+        </dxo-format>
+      </dxi-column>      
+
+      <dxo-summary>
+        <dxi-total-item
+          column="CORR_DOCUMENTO"
+          summaryType="count"
+          valueFormat="#,##0"
+          displayFormat="Cant: {0}"
+        >
+        </dxi-total-item>
+
+      </dxo-summary>
+  </dx-data-grid>
+</dx-drawer>
+<dx-load-panel
+  #loadPanel
+  shadingColor="rgba(0,0,0,0.4)"
+  [position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+  [(visible)]="loadingVisible"
+  [showIndicator]="true"
+  [showPane]="true"
+  [shading]="true"
+  (onShown)="(loadingVisible)"
+>
+</dx-load-panel>
+<dx-popup
+  [width]="'500px'"
+  [position]="'top'"
+  [height]="'300px'"
+  [showTitle]="true"
+  title="Anular Comprobante de retención"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="false"
+  [shading]="false"
+  [(visible)]="popupVisibleAnularCR"
+  class="popout"
+>
+  <div *dxTemplate="let data of 'content'">
+    <dx-form #fDocumento
+      id="fDocumento"
+      [colCount]="4"
+      [height]="'auto'"
+      [formData]="mDocumentoAnularCR"
+    >
+
+      <dxi-item
+        dataField="MOTIVO_ANULACION"
+        [label]="{ text: 'Motivo de Anulación' }"
+        [editorType]="'dxTextArea'"
+        [colSpan]="4"
+        [editorOptions]="{
+          placeholder: 'Motivo de Anulación...',
+          showClearButton: true,
+          maxLength: 500,
+          height: 100
+        }">
+      </dxi-item>
+
+    </dx-form>
+    <div class="form-group row text-right footer">
+      <div class="col col-sm-10 col-lg-9 offset-sm-1 offset-lg-0">
+        <dx-button
+          [text]="'Guardar'"
+          id="button"
+          class="myButton4"
+          type="success"
+          [icon]="'save'"
+          stylingMode="contained"
+          (click)="guardarDocPopupAnularCR()"
+        >
+        </dx-button>
+        <dx-button
+          [text]="'Cancelar'"
+          id="button"
+          class="myButton4 myButtonSpace"
+          [icon]="'close'"
+          type="danger"
+          [text]="'Cancelar'"
+          stylingMode="contained"
+          (click)="hideDocPopupAnularCR()"
+          routerLinkActive="router-link-active"
+        >
+        </dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>

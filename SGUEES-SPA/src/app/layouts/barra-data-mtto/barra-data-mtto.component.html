@@ -1,0 +1,183 @@
+<dx-toolbar class="theme-dependent">
+  <dxi-item location="before">
+    <span class="toolbar-header">{{ tituloVentana }}</span>
+  </dxi-item>
+	<dxi-item
+		location="before"
+		widget="dxButton"
+		[options]="{
+      icon: 'plus',
+			text: 'Nuevo',
+			type: 'default',
+			height: '30',
+			width: '100',
+      stylingMode: 'contained',
+			onClick: OnNuevo,
+			visible: permiteAdd && isBrowse
+		}"
+	></dxi-item>
+	<dxi-item
+		location="before"
+		widget="dxButton"
+		[options]="{
+      icon: 'save',
+			text: 'Guardar',
+			type: 'success',
+			height: '30',
+			width: '110',
+      stylingMode: 'contained',
+			onClick: OnGuardar,
+			visible: !isBrowse && isForm
+		}"
+	></dxi-item>
+	<dxi-item
+		location="before"
+		widget="dxButton"
+		[options]="{
+      icon: 'clear',
+			text: 'Cancelar',
+			type: 'danger',
+			height: '30',
+			width: '115',
+      stylingMode: 'contained',
+			onClick: OnCancelar,
+			visible: !isBrowse
+		}"
+	></dxi-item>
+  <dxi-item
+    location="before"
+    locateInMenu="auto"
+    menuItemTemplate="menuSeparatorTemplate"
+  >
+    <div *dxTemplate>
+      <div class="toolbar-separator"></div>
+    </div>
+  </dxi-item>
+	<dxi-item
+		[location]="btn1Location"
+		widget="dxButton"
+		[options]="{
+      icon: btn1Icon,
+			text: btn1,
+			type: btn1Type,
+			height: btn1Height,
+			width: btn1Width,
+			onClick: Onbtn1Click,
+			visible: btn1 !== '',
+      stylingMode: btn1Mode
+		}"
+	></dxi-item>
+	<dxi-item
+		[location]="btn2Location"
+		widget="dxButton"
+		[options]="{
+      icon: btn2Icon,
+			text: btn2,
+			type: btn2Type,
+			height: btn2Height,
+			width: btn2Width,
+			onClick: Onbtn2Click,
+			visible: btn2 !== '',
+      stylingMode: btn2Mode
+		}"
+	></dxi-item>
+	<dxi-item
+		[location]="btn3Location"
+		widget="dxButton"
+		[options]="{
+      icon: btn3Icon,
+			text: btn3,
+			type: btn3Type,
+			height: btn3Height,
+			width: btn3Width,
+			onClick: Onbtn3Click,
+			visible: btn3 !== '',
+      stylingMode: btn3Mode
+		}"
+	></dxi-item>
+	<dxi-item
+		[location]="btn4Location"
+		widget="dxButton"
+		[options]="{
+      icon: btn4Icon,
+			text: btn4,
+			type: btn4Type,
+			height: btn4Height,
+			width: btn4Width,
+			onClick: Onbtn4Click,
+			visible: btn4 !== '',
+      stylingMode: btn4Mode
+		}"
+	></dxi-item>
+  <dxi-item
+		[location]="btn5Location"
+		widget="dxButton"
+		[options]="{
+      icon: btn5Icon,
+			text: btn5,
+			type: btn5Type,
+			height: btn5Height,
+			width: btn5Width,
+			onClick: Onbtn5Click,
+			visible: btn5 !== '',
+      stylingMode: btn5Mode
+		}"
+	></dxi-item>
+  <dxi-item
+		[location]="btn6Location"
+		widget="dxButton"
+		[options]="{
+      icon: btn5Icon,
+			text: btn6,
+			type: btn6Type,
+			height: btn6Height,
+			width: btn6Width,
+			onClick: Onbtn6Click,
+			visible: btn6 !== '',
+      stylingMode: btn6Mode
+		}"
+	></dxi-item>
+	<dxi-item
+		location="after"
+    locateInMenu="auto"
+		widget="dxButton"
+    showText="inMenu"
+		[options]="{
+      text: 'Refresh',
+			icon: 'refresh',
+			onClick: OnConsultar,
+			visible: isBrowse && showRefresh,
+      stylingMode: 'text'
+		}"
+	></dxi-item>
+	<dxi-item
+		location="after"
+		widget="dxDateBox"
+		[options]="{
+			useMaskBehavior: true,
+			type: 'date',
+			displayFormat: 'dd/MM/yyyy',
+			width: '120',
+			visible: isBrowse && showDates,
+			value: FECHA_INICIAL,
+			onValueChanged: OnValueChangeFECHA_INICIAL
+		}"
+		[locateInMenu]="'auto'"
+	>
+	</dxi-item>
+	<dxi-item
+		location="after"
+		widget="dxDateBox"
+		[options]="{
+			useMaskBehavior: true,
+			type: 'date',
+			displayFormat: 'dd/MM/yyyy',
+			width: '120',
+			visible: isBrowse && showDates,
+			value: FECHA_FINAL,
+			onValueChanged: OnValueChangeFECHA_FINAL
+		}"
+		[locateInMenu]="'auto'"
+	>
+	</dxi-item>
+</dx-toolbar>

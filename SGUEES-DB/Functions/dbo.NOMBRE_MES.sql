@@ -1,0 +1,29 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+CREATE FUNCTION [dbo].[NOMBRE_MES] 
+(
+	@MES INT
+)
+RETURNS VARCHAR(255) 
+AS
+BEGIN
+	RETURN CASE @MES
+			WHEN 1 THEN 'Enero'
+			WHEN 2 THEN 'Febrero'
+			WHEN 3 THEN 'Marzo'
+			WHEN 4 THEN 'Abril'
+			WHEN 5 THEN 'Mayo'
+			WHEN 6 THEN 'Junio'
+			WHEN 7 THEN 'Julio'
+			WHEN 8 THEN 'Agosto'
+			WHEN 9 THEN 'Septiembre'
+			WHEN 10 THEN 'Octubre'
+			WHEN 11 THEN 'Noviembre'
+			WHEN 12 THEN 'Diciembre'
+			ELSE ''
+			END
+
+END
+GO

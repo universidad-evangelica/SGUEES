@@ -1,0 +1,73 @@
+@use "../../../../variables.scss" as *;
+@use "sass:math";
+
+:host {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+
+  // .view-wrapper {
+  //   position: absolute;
+  //   top: 0;
+  //   bottom: 0;
+  //   left: 0;
+  //   right: 0;
+  //   display: flex;
+  //   flex-direction: column;
+  // }
+
+  .grid {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    max-height: calc(100% - var(--toolbar-height) - var(--content-padding) * 2);
+
+    task-list-grid {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+}
+
+.myButton4 {
+  margin-right: 10px;
+  width: 150px; /* Añade un margen derecho de 10px a todos los botones con la clase myButton4 */
+  height: 35px;
+}
+
+.myButtonSpace {
+  margin-left: 10px; /* Añade un margen izquierdo de 10px para crear espacio entre los botones */
+}
+img {
+  height: 25px;
+  display: block;
+}
+
+::ng-deep .commentTitle {
+  padding-top: 30px;
+  font-size: 18px;
+  opacity: 0.7;
+}
+
+::ng-deep .description {
+  margin: 10px 0;
+}
+
+.commentContainer {
+  margin-top: 0px;
+  margin-right: 5px;
+  margin-left: 5px;
+  padding: 0;
+}
+
+.commentToolContainer {
+  margin-top: 15px;
+  margin-right: 5px;
+  margin-left: 6px;
+  padding: 0;
+}
+
+.resaltar:hover {
+  background-color: darkgoldenrod !important;
+}

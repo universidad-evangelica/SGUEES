@@ -1,0 +1,164 @@
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="permiteAdd"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+>
+</app-barra-data-mtto>
+<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+		<div *dxTemplate="let cellInfo of 'ESTADO_USUARIOLookup'">
+			<app-data-lookup
+				[model]="mESTADO_USUARIO"
+				[(value)]="model.ESTADO_USUARIO"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'TIPO_USUARIOLookup'">
+			<app-data-lookup
+				[model]="mTIPO_USUARIO"
+        [(value)]="model.TIPO_USUARIO"
+        [valueExpr]="'TIPO_USUARIO'"
+        [displayExpr]="'NOMBRE_TIPO_USUARIO'"
+				[selectedRowKeys]="selectedLookUpTIPO_USUARIO"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+	</dx-form>
+  <div class="form">
+    <div class="dx-fieldset dx-fieldset2">
+      <div class="dx-field">
+        <dx-data-grid
+          #DataDocumentoDeta
+          [dataSource]="mSEG_USUARIO_OPCION"
+          [columnAutoWidth]="false"
+          [showBorders]="true"
+          [showColumnLines]="true"
+          [showRowLines]="true"
+          [rowAlternationEnabled]="true"
+          [hoverStateEnabled]="true"
+          [allowColumnResizing]="true"
+          [columnResizingMode]="'widget'"
+          [repaintChangesOnly]="true"
+          [height]="'100%'"
+          [width]="'100%'"
+          [keyExpr]="['CODIGO_SISTEMA', 'CODIGO_MENU', 'CODIGO_OPCION']"
+          (onRowUpdated)="gDataVenDocumentoDetaRowInserting($event)"
+        >
+          <dxo-editing
+            mode="cell"
+            [refreshMode]="'reshape'"
+            [allowUpdating]="!readOnly"
+            [useIcons]="true"
+            [selectTextOnEditStart]="true"
+          >
+            <dxo-toolbar>
+              <dxi-item location="before">
+                <dx-button
+                  stylingMode="contained"
+                  text="Todos"
+                  type="danger"
+                  width="136"
+                  icon="check"
+                  [visible]="true"
+                >
+                </dx-button>
+              </dxi-item>
+              <dxi-item name="searchPanel"></dxi-item>
+            </dxo-toolbar>
+          </dxo-editing>
+          <dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
+          <dxo-load-panel [enabled]="true"></dxo-load-panel>
+          <dxo-search-panel [visible]="true"></dxo-search-panel>
+          <dxo-export [enabled]="false" fileName="Detalle"></dxo-export>
+          <dxi-column
+            dataField="SELECCION"
+            caption=""
+            [dataType]="'boolean'"
+            width="5%"
+          >
+          </dxi-column>
+          <dxi-column
+            dataField="NOMBRE_SISTEMA"
+            caption="Sistema"
+            width="15%"
+            [allowEditing]="false"
+          >
+          </dxi-column>
+          <dxi-column
+            dataField="NOMBRE_MENU"
+            caption="Menú"
+            width="12%"
+            [allowEditing]="false"
+          ></dxi-column>
+          <dxi-column
+            dataField="NOMBRE_OPCION"
+            caption="Opción"
+            width="28%"
+            [allowEditing]="false"
+          ></dxi-column>
+          <dxi-column
+            dataField="NUEVO"
+            caption="Nuevo"
+            width="12%"
+          ></dxi-column>
+          <dxi-column
+            dataField="MODIFICAR"
+            caption="Modificar"
+            width="12%"
+          ></dxi-column>
+          <dxi-column
+            dataField="ELIMINAR"
+            caption="Eliminar"
+            width="12%"
+          ></dxi-column>
+          <dxi-column
+            dataField="IMPRIMIR"
+            caption="Imprimir"
+            width="12%"
+          ></dxi-column>
+          <dxo-summary>
+            <dxi-total-item
+              column="CODIGO_OPCION"
+              summaryType="count"
+              valueFormat="#,##0"
+              displayFormat="Cant: {0}"
+            >
+            </dxi-total-item>
+          </dxo-summary>
+        </dx-data-grid>
+      </div>
+    </div>
+  </div>
+</div>
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="'LOGIN_SISTEMA'"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>

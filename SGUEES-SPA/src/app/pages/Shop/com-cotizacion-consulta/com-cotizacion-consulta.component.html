@@ -1,0 +1,230 @@
+<dx-box class="content-block"
+  direction="row"
+  width="100%"
+  [height]="'auto'">
+    <dxi-item
+      ratio="0"
+      baseSize="28"
+      class="bgOcultar"
+    >
+      <dx-toolbar class="bgOcultar"
+        [items]="toolbarContent">
+      </dx-toolbar>
+    </dxi-item>
+    <dxi-item
+      ratio="1">
+      <h2 class="content-block">{{tituloVentana}}</h2>
+    </dxi-item>
+</dx-box>
+
+<dx-drawer
+  [openedStateMode]="'shrink'"
+  [position]="'before'"
+  [revealMode]="'slide'"
+  [opened]="true"
+  [height]="600"
+  template="template"
+  [width]="'100%'"
+  [(opened)]="isDrawerOpen"
+  [closeOnOutsideClick]="false">
+
+  <div *dxTemplate="let data of 'template'" style="width: 260px">
+    <div class="options">
+      <div class="caption"></div>
+        <div class="option">
+          <div>Fecha Inicial: </div>
+          <dx-date-box [(value)]="vFECHA_INICIAL"
+          [useMaskBehavior]= "true"
+          type="date"
+          displayFormat="dd/MM/yyyy"
+          width="'100%'"
+          ></dx-date-box>
+        </div>
+        <div class="option">
+          <div>Fecha Final: </div>
+          <dx-date-box [(value)]="vFECHA_FINAL"
+          [useMaskBehavior]= "true"
+          type="date"
+          displayFormat="dd/MM/yyyy"
+          width="'100%'"
+          ></dx-date-box>
+        </div>
+        <div class="option">
+          <dxi-item location="after">
+            <dx-button text="Consultar" type="default" [icon]="'refresh'"
+            (onClick)="consultar()">
+            </dx-button>
+          </dxi-item>
+        </div>
+    </div>
+  </div>
+  <dx-data-grid
+    #DataDocumentoDeta
+    [dataSource]="models"
+    [columnAutoWidth]="false"
+    [showBorders]="true"
+    [showColumnLines]="true"
+    [showRowLines]="true"
+    [rowAlternationEnabled]="true"
+    [hoverStateEnabled]="true"
+    [allowColumnResizing]="true"
+    [columnResizingMode]="'widget'"
+    [focusedRowEnabled]="true"
+    [height]="'100%'"
+    [width]="'100%'"
+    [keyExpr]="['ANIO_PERIODO','CORR_COTIZACION', 'CORR_COTIZACION_DETA']"
+    (onExporting)="onExporting($event)"
+    >
+      <dxo-load-panel [enabled]="false"></dxo-load-panel>
+      <dxo-search-panel [visible]="true"></dxo-search-panel>
+      <dxo-export [enabled]="true" fileName="Detalle"></dxo-export>
+      <dxo-group-panel [visible]="true"></dxo-group-panel>
+      <dxo-grouping #expand [autoExpandAll]="true"></dxo-grouping>
+      <dxo-filter-panel [visible]="true"></dxo-filter-panel>
+      <dxo-filter-row [visible]="true"></dxo-filter-row>
+      <dxo-header-filter [visible]="true"></dxo-header-filter>
+      <dxo-scrolling mode="virtual" useNative="true"></dxo-scrolling>
+      <dxi-column dataField="ANIO_PERIODO" caption="Año Solicitud" [dataType]="'int'" width=130>
+      </dxi-column>
+      <dxi-column dataField="CORR_SOLI_COTIZACION" caption="Corr. Solicitud" [dataType]="'int'" width=130>
+      </dxi-column>
+      <dxi-column dataField="FECHA_SOLI_COTIZACION" caption="Fecha Solicitud" [dataType]="'date'" width=130>
+      </dxi-column>
+      <dxi-column dataField="FECHA_LIMITE_COTIZACION" caption="Fecha Limite Cotización" [dataType]="'date'" width=160>
+      </dxi-column>
+      <dxi-column dataField="CODIGO_DEPTO" caption="Cod. Departamento" [dataType]="'string'" width=170>
+      </dxi-column>
+      <dxi-column dataField="NUMERO_SOLI_COMPRA" caption="Número Sol. Compra" [dataType]="'string'" width=180>
+      </dxi-column>
+      <!-- <dxi-column dataField="ANIO_PERIODO_SOLI_COMPRA" caption="Año Solicitud" [dataType]="'int'" width=80>
+      </dxi-column>
+      <dxi-column dataField="CORR_SOLI_COMPRA" caption="Corr Solicitud Compra" [dataType]="'int'" width=80>
+      </dxi-column> -->
+      <dxi-column dataField="USUARIO_SOLI" caption="Usuario Solicitud" [dataType]="'string'" width=180>
+      </dxi-column>
+      <dxi-column dataField="OBSERVACIONES_SOLI_COTIZA" caption="Observaciones Sol. Cotización" [dataType]="'string'" width=440>
+      </dxi-column>
+      <dxi-column dataField="NOMBRE_ESTADO_SOLI_COTIZACION" caption="Estado Sol. Cotización" [dataType]="'string'" width=170>
+      </dxi-column>
+      <dxi-column dataField="USUARIO_CREA" caption="Usuario Crea" [dataType]="'string'" width=130>
+      </dxi-column>
+      <dxi-column dataField="FECHA_CREA" caption="Fecha Crea." [dataType]="'date'"  width=130>
+      </dxi-column>
+      <dxi-column dataField="ESTACION_CREA" caption="Estación Crea." [dataType]="'string'" width=140>
+      </dxi-column>
+      <dxi-column dataField="USUARIO_ACTU" caption="Usuario Actu." [dataType]="'string'" width=140>
+      </dxi-column>
+      <dxi-column dataField="FECHA_ACTU" caption="Fecha Actu." [dataType]="'date'"  width=130>
+      </dxi-column>
+      <dxi-column dataField="ESTACION_ACTU" caption="Estación Actu." [dataType]="'string'" width=140>
+      </dxi-column>
+      <dxi-column dataField="CORR_COTIZACION" caption="Corr. Cotización" [dataType]="'int'" width=140>
+      </dxi-column>
+      <dxi-column dataField="FECHA_COTIZACION" caption="Fecha Cotización" [dataType]="'date'" width=160>
+      </dxi-column>
+      <dxi-column dataField="NOMBRE_PROVEEDOR" caption="Proveedor" [dataType]="'string'" width=270>
+      </dxi-column>
+      <dxi-column dataField="USUARIO_COTIZA" caption="Usuario Cotización" [dataType]="'string'" width=155>
+      </dxi-column>
+      <dxi-column dataField="OBSERVACIONES_COTIZA" caption="Observaciones Cotización" [dataType]="'string'" width=440>
+      </dxi-column>
+      <dxi-column dataField="OBSERVACIONES_PROVEEDOR" caption="Observaciones Proveedor" [dataType]="'string'" width=400>
+      </dxi-column>
+      <dxi-column dataField="PLAZO_ENTREGA" caption="Plazo Entrega" [dataType]="'string'" width=155>
+      </dxi-column>
+      <dxi-column dataField="NOMBRE_ESTADO_COTIZACION" caption="Estado Cotización" [dataType]="'string'" width=155>
+      </dxi-column>
+      <dxi-column dataField="USUARIO_CREA_COTIZA" caption="Usuario Crea. Cotiza." [dataType]="'string'" width=170>
+      </dxi-column>
+      <dxi-column dataField="FECHA_CREA_COTIZA" caption="Fecha Crea. Cotiza." [dataType]="'date'"  width=160>
+      </dxi-column>
+      <dxi-column dataField="ESTACION_CREA_COTIZA" caption="Estación Crea. Cotiza." [dataType]="'string'" width=170>
+      </dxi-column>
+      <dxi-column dataField="USUARIO_ACTU_COTIZA" caption="Usuario Actu. Cotiza." [dataType]="'string'" width=170>
+      </dxi-column>
+      <dxi-column dataField="FECHA_ACTU_COTIZA" caption="Fecha Actu. Cotiza." [dataType]="'date'"  width=160>
+      </dxi-column>
+      <dxi-column dataField="ESTACION_ACTU_COTIZA" caption="Estación Actu. Cotiza." [dataType]="'string'" width=170>
+      </dxi-column>
+      <dxi-column dataField="CORR_COTIZACION_DETA" caption="Corr. Cotiza Deta" [dataType]="'int'" width=140>
+      </dxi-column>
+      <dxi-column dataField="CODIGO_ITEM" caption="Cod. Item" [dataType]="'string'" width=100>
+      </dxi-column>
+      <dxi-column dataField="NOMBRE_ITEM" caption="Item" [dataType]="'string'" width=255>
+      </dxi-column>
+      <dxi-column dataField="CANTIDAD" caption="Cantidad" [dataType]="'number'" width="100">
+        <dxo-format
+            type="fixedPoint"
+            [precision]="2">
+        </dxo-format>
+      </dxi-column>
+      <dxi-column dataField="NOMBRE_UNIDAD_MEDIDA" caption="Unidad Medida" [dataType]="'string'" width=150>
+      </dxi-column>
+      <dxi-column dataField="PRECIO_UNITARIO" caption="Precio Unitario" [dataType]="'number'" width="150" >
+        <dxo-format
+            type="fixedPoint"
+            [precision]="2">
+        </dxo-format>
+      </dxi-column>
+      <dxi-column dataField="MONTO_SUBTOTAL" caption="Monto Subtotal" [dataType]="'number'" width="150" >
+        <dxo-format
+            type="fixedPoint"
+            [precision]="2">
+        </dxo-format>
+      </dxi-column>
+      <dxi-column dataField="OBSERVACIONES" caption="Observaciones" [dataType]="'string'" width=440>
+      </dxi-column>
+      <dxi-column dataField="Marca" caption="Marca" [dataType]="'string'" width=255>
+      </dxi-column>
+      <dxi-column dataField="NOMBRE_ESTADO_COTIZACION_DETA" caption="Estado Cotización Deta" [dataType]="'string'" width=190>
+      </dxi-column>
+      <dxi-column dataField="USUARIO_CREA_COTIZA_DETA" caption="Usuario Crea. Cotiza. Deta." [dataType]="'string'" width=200>
+      </dxi-column>
+      <dxi-column dataField="FECHA_CREA_COTIZA_DETA" caption="Fecha Crea. Cotiza. Deta." [dataType]="'date'"  width=200>
+      </dxi-column>
+      <dxi-column dataField="ESTACION_CREA_COTIZA_DETA" caption="Estación Crea. Cotiza. Deta." [dataType]="'string'" width=220>
+      </dxi-column>
+      <dxi-column dataField="USUARIO_ACTU_COTIZA_DETA" caption="Usuario Actu. Cotiza. Deta." [dataType]="'string'" width=200>
+      </dxi-column>
+      <dxi-column dataField="FECHA_ACTU_COTIZA_DETA" caption="Fecha Actu. Cotiza. Deta." [dataType]="'date'"  width=200>
+      </dxi-column>
+      <dxi-column dataField="ESTACION_ACTU_COTIZA_DETA" caption="Estación Actu. Cotiza. Deta." [dataType]="'string'" width=220>
+      </dxi-column>
+      <dxi-column dataField="SELECCION" caption="Seleccion" [dataType]="'bool'" width=100>
+      </dxi-column>
+      <!-- <dxo-summary>
+        <dxi-total-item
+          column="CORR_DOCUMENTO"
+          summaryType="count"
+          valueFormat="#,##0"
+          displayFormat="Cant: {0}"
+        >
+        </dxi-total-item>
+        <dxi-total-item
+          column="TOTAL"
+          summaryType="sum"
+          valueFormat="#,##0.00"
+          displayFormat="{0}"
+        >
+        </dxi-total-item>
+        <dxi-total-item
+          column="IVA_RETENIDO"
+          summaryType="sum"
+          valueFormat="#,##0.00"
+          displayFormat="{0}"
+        >
+        </dxi-total-item>
+      </dxo-summary> -->
+  </dx-data-grid>
+</dx-drawer>
+<dx-load-panel
+  #loadPanel
+  shadingColor="rgba(0,0,0,0.4)"
+  [position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+  [(visible)]="loadingVisible"
+  [showIndicator]="true"
+  [showPane]="true"
+  [shading]="true"
+  (onShown)="(loadingVisible)"
+>
+</dx-load-panel>

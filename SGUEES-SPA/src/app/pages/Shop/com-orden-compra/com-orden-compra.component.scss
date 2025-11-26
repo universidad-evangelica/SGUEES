@@ -1,0 +1,71 @@
+@use "../../../../variables.scss" as *;
+@use "sass:math";
+
+:host {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+
+  .grid {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    max-height: calc(100% - var(--toolbar-height) - var(--content-padding) * 2);
+
+    task-list-grid {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+  }
+}
+
+.myButton4 {
+  margin-right: 10px;
+  width: 150px; /* Añade un margen derecho de 10px a todos los botones con la clase myButton4 */
+  height: 35px;
+}
+
+.myButtonSpace {
+  margin-left: 10px; /* Añade un margen izquierdo de 10px para crear espacio entre los botones */
+}
+
+  .checkbox-label-right .dx-checkbox-container {
+    display: flex;
+    align-items: center;
+  }
+
+  .checkbox-label-right .dx-checkbox-text {
+    order: 1; /* Mueve el texto después del checkbox */
+    margin-left: 5px; /* Ajusta el espacio entre el checkbox y el texto */
+  }
+
+  .checkbox-label-right .dx-checkbox-icon {
+    order: -1; /* Mueve el icono del checkbox antes del texto */
+  }
+
+  .marca-cell {
+    text-align: left; /* Centra el contenido de las celdas de marca */
+    white-space: nowrap; /* Evita que el contenido de la marca se divida en varias líneas */
+    border-collapse: collapse;
+    border: 1px solid #dddddd;
+  }
+
+  .notes-row td {
+    white-space: normal; /* Permite que el texto se envuelva automáticamente */
+    word-wrap: break-word; /* Rompe las palabras largas */
+    border-collapse: collapse;
+    border: 1px solid #dddddd;
+  }
+
+  .price-cell {
+    text-align: right; /* Alinea el contenido a la derecha */
+    border-collapse: collapse;
+    border: 1px solid #dddddd;
+  }
+
+  .text-cell {
+    text-align: left; /* Alinea el contenido a la izquierda */
+    border-collapse: collapse;
+    border: 1px solid #dddddd;
+  }

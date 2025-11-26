@@ -1,0 +1,105 @@
+<h2 class="content-block">{{tituloVentana}}</h2>
+<div class="content-block">
+	<dx-button class="myButton" text="Nuevo" type="default" (onClick)="nuevo()" [visible]="permiteAdd && isBrowse()">
+	</dx-button>
+	<dx-button class="myButton" text="Guardar" type="success" (onClick)="guardar()" [visible]="!isBrowse() && isForm()">
+	</dx-button>
+	<dx-button class="myButton" text="Cancelar" type="danger" (onClick)="cancelar()" [visible]="!isBrowse()">
+	</dx-button>
+</div>
+<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+	<dx-form #fData id="form"
+    [formData]="model"
+    labelLocation="top"
+    [colCount]="4"
+  >
+		<dxi-item dataField="CODIGO_OPCION" [label]="{text: 'Código Opción'}" [editorOptions]="{ placeholder: 'Código Opción', showClearButton: true }">
+      <dxi-validation-rule
+        type="required"
+        message="Código Opción es Obligatorio"
+      ></dxi-validation-rule>
+		</dxi-item>
+		<dxi-item dataField="NOMBRE_OPCION" [label]="{text: 'Nombre Opción'}" [colSpan]="1" [editorOptions]="{ placeholder: ' Nombre Opción', showClearButton: true }">
+      <dxi-validation-rule
+        type="required"
+        message="Nombre Opción es Obligatorio"
+      ></dxi-validation-rule>
+		</dxi-item>
+    <dxi-item dataField="URL_OPCION" [label]="{text: 'Url Opción'}" [colSpan]="1" [editorOptions]="{ placeholder: 'Url Opción', showClearButton: true }">
+      <dxi-validation-rule
+        type="required"
+        message="Url Opción es obligatorio"
+      ></dxi-validation-rule>
+		</dxi-item>
+		<dxi-item dataField="IMAGEN_OPCION" [label]="{text: 'Imagen Opción'}" [colSpan]="1" [editorOptions]="{ placeholder: 'Imagen Opción', showClearButton: true }">
+      <dxi-validation-rule
+        type="required"
+        message="Imagen Opción es Obligatorio"
+      ></dxi-validation-rule>
+		</dxi-item>
+	</dx-form>
+</div>
+<dx-data-grid class="content-grid"
+	#gData
+	[visible]="isBrowse()"
+	[dataSource]="models"
+	keyExpr="CODIGO_OPCION"
+	[columnAutoWidth]="false"
+	[showBorders]="true"
+	[showColumnLines]="true"
+	[showRowLines]="true"
+	[rowAlternationEnabled]="true"
+	[hoverStateEnabled]="false"
+	[allowColumnResizing]="true"
+	[columnResizingMode]="'widget'"
+	[focusedRowEnabled]="true"
+	[height]="450" [width]="'99%'"
+	(onRowRemoving)="rowRemoving($event)"
+	(onRowDblClick)="rowDblClick($event)"
+	(onFocusedRowChanged)="focusedRowChanged($event)"
+>
+	<dxo-editing mode="row"
+	[refreshMode]="'reshape'"
+	[allowDeleting]="true"
+	[useIcons]="true">
+	</dxo-editing>
+	<dxo-selection [mode]="'single'"></dxo-selection>
+	<dxo-load-panel [enabled]="false"></dxo-load-panel>
+	<dxo-search-panel [visible]="true"></dxo-search-panel>
+	<dxo-export [enabled]="true" fileName="SegOpcionSistema" [allowExportSelectedData]="true"></dxo-export>
+	<dxo-group-panel [visible]="true"></dxo-group-panel>
+	<dxo-grouping #expand [autoExpandAll]="true"></dxo-grouping>
+	<dxo-paging [enabled]="false"></dxo-paging>
+	<dxo-filter-panel [visible]="true"></dxo-filter-panel>
+	<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+	<dxo-header-filter [visible]="true"></dxo-header-filter>
+  <dxo-scrolling [mode]="'virtual'"></dxo-scrolling>
+	<dxi-column type="buttons" [width]="85">
+		<dxi-button hint="Editar Registro" icon="edit" [visible]="getPermiteEditar" [onClick]="editarClick"></dxi-button>
+		<dxi-button name="delete" [visible]="getPermiteDele"></dxi-button>
+	</dxi-column>
+	<dxi-column dataField="CODIGO_OPCION" caption="Código Opción" [width]="200"></dxi-column>
+	<dxi-column dataField="NOMBRE_OPCION" caption="Nombre Opción" [width]="200"></dxi-column>
+	<dxi-column dataField="URL_OPCION" caption="Url Opción" [width]="150"></dxi-column>
+	<dxi-column dataField="IMAGEN_OPCION" caption="Imagen Opción" [width]="125"></dxi-column>
+	<dxi-column dataField="USUARIO_CREA" caption="Usuario Crea" [width]="80"></dxi-column>
+	<dxi-column dataField="FECHA_CREA" caption="Fecha Crea" [width]="130" [dataType]="'datetime'"></dxi-column>
+	<dxi-column dataField="ESTACION_CREA" caption="Estación Crea" [width]="100"></dxi-column>
+	<dxi-column dataField="USUARIO_ACTU" caption="Usuario Actu" [width]="100"></dxi-column>
+	<dxi-column dataField="FECHA_ACTU" caption="Fecha Actu" [width]="130" [dataType]="'datetime'"></dxi-column>
+	<dxi-column dataField="ESTACION_ACTU" caption="Estación Actu" [width]="100"></dxi-column>
+	<dxo-summary>
+		<dxi-total-item column="CODIGO_OPCION" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}">
+		</dxi-total-item>
+	</dxo-summary>
+</dx-data-grid>
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="loadingVisible">
+</dx-load-panel>

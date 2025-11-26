@@ -1,0 +1,35 @@
+<dx-drop-down-box
+	#dataLookUp
+	[dataSource]="model"
+	[(value)]="value"
+	[valueExpr]="valueExpr"
+	[displayExpr]="displayExpr"
+	[deferRendering]="false"
+	[showClearButton]="showClearButton"
+	[readOnly]="readOnly"
+	[(opened)]="claseOpend"
+	(onOptionChanged)="onGridBoxOptionChanged($event)"
+  (onValueChanged)="onValueChanged($event)"
+>
+	<div *dxTemplate="let dg of 'content'">
+		<dx-data-grid
+			#dataGridLookup
+			[dataSource]="model"
+			[columnAutoWidth]="true"
+			[selection]="{ mode: 'single' }"
+			[hoverStateEnabled]="true"
+			[paging]="{ enabled: false, pageSize: 10 }"
+			[filterRow]="{ visible: true }"
+			[scrolling]="{ mode: 'infinite' }"
+			[filterSyncEnabled]="true"
+			(onSelectionChanged)="selectionChanged($event.selectedRowKeys)"
+			[height]="'100%'"
+			[width]="'100%'"
+			[columns]="columns"
+		>
+			<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+			<dxo-paging [enabled]="true" [pageSize]="25"></dxo-paging>
+			<dxo-scrolling mode="virtual"></dxo-scrolling>
+		</dx-data-grid>
+	</div>
+</dx-drop-down-box>

@@ -1,0 +1,696 @@
+<div class="view-wrapper list-page">
+  <app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="false"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+  (consultar)="consultar()"
+  [showRefresh]="true"
+  >
+  </app-barra-data-mtto>
+
+  <div *ngIf="!isBrowse()">
+    <dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="6" [items]="items">
+      <dxi-item
+      [dataField]="'CORR_PROVEEDOR'"
+      [label]="{ text: 'Corr.' }"
+      [colSpan]="1"
+      [editorOptions] ="{ readOnly: true }">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'CODIGO_PROVEEDOR'"
+      [label]="{ text: 'Código' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: false, maxLength: 20  }">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'TIPO_PERSONERIA'"
+      [label]="{ text: 'Tipo Personería' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: false, maxLength: 1  }"
+      [template]="'TIPO_PERSONERIALookup'"
+      >
+      </dxi-item>
+      <dxi-item
+      [dataField]="'NOMBRE_PROVEEDOR'"
+      [label]="{ text: 'Razón Social' }"
+      [colSpan]="3"
+      [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 150 }">
+      </dxi-item>
+      <dxi-item
+          itemType="group"
+          caption=""
+          name="Natural"
+          [colSpan]="6"
+          colCount="6"
+          [visible]="mostrarNatural"
+        >
+        <dxi-item
+        [dataField]="'PRIMER_NOMBRE'"
+        [label]="{ text: 'Primer Nombre' }"
+        [colSpan]="1"
+        [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 50  }">
+        </dxi-item>
+        <dxi-item
+        [dataField]="'SEGUNDO_NOMBRE'"
+        [label]="{ text: 'Segundo Nombre' }"
+        [colSpan]="1"
+        [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 50  }">
+        </dxi-item>
+        <dxi-item
+        [dataField]="'PRIMER_APELLIDO'"
+        [label]="{ text: 'Primer Apellido' }"
+        [colSpan]="1"
+        [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 50  }">
+        </dxi-item>
+        <dxi-item
+        [dataField]="'SEGUNDO_APELLIDO'"
+        [label]="{ text: 'Segundo Apellido' }"
+        [colSpan]="1"
+        [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 50  }">
+        </dxi-item>
+        <dxi-item
+        [dataField]="'CORR_TIPO_DIP'"
+        [label]="{ text: 'Tipo DIP' }"
+        [colSpan]="1"
+        [editorOptions] ="{ placeholder: '', showClearButton: false }"
+        [template]="'CORR_TIPO_DIPLookup'">
+        </dxi-item>
+        <dxi-item
+        [dataField]="'NUMERO_DIP'"
+        [label]="{ text: 'No. DIP' }"
+        [colSpan]="1"
+        [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 25  }">
+        </dxi-item>
+      </dxi-item>
+      <dxi-item
+      [dataField]="'NOMBRE_COMERCIAL'"
+      [label]="{ text: 'Nombre Comercial' }"
+      [colSpan]="2"
+      [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 150  }">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'NUMERO_NRC'"
+      [label]="{ text: 'No. NRC' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 25  }">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'NUMERO_NIT'"
+      [label]="{ text: 'No. NIT' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 25  }">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'ESTADO_PROVEEDOR'"
+      [label]="{ text: 'Estado' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: false }"
+      [template]="'ESTADO_PROVEEDORLookup'">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'ESTADO_PROVEEDOR_WEB'"
+      [label]="{ text: 'Estado Web' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: false }"
+      [template]="'ESTADO_PROVEEDOR_WEBLookup'">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'DIRECCION_PROVEEDOR'"
+      [label]="{ text: 'Dirección' }"
+      [colSpan]="3"
+      [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 50  }">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'CODIGO_PAIS'"
+      [label]="{ text: 'País' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: false }"
+      [template]="'CODIGO_PAISLookup'">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'CODIGO_DEPTO'"
+      [label]="{ text: 'Depto.' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: false }"
+      [template]="'CODIGO_DEPTOLookup'">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'CODIGO_MUNICIPIO'"
+      [label]="{ text: 'Municipio' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: false }"
+      [template]="'CODIGO_MUNICIPIOLookup'">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'CORR_ACTIVIDAD_ECONOMICA'"
+      [label]="{ text: 'Actividad Económica' }"
+      [colSpan]="2"
+      [editorOptions] ="{ placeholder: '', showClearButton: false }"
+      [template]="'CORR_ACTIVIDAD_ECONOMICALookup'">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'NOMBRE_CONTACTO'"
+      [label]="{ text: 'Contacto' }"
+      [colSpan]="2"
+      [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 25  }">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'TELEFONO_FIJO'"
+      [label]="{ text: 'Teléfono Fijo' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 25  }">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'TELEFONO_MOVIL'"
+      [label]="{ text: 'Teléfono Móvil' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 25  }">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'CORREO_ELECTRONICO_1'"
+      [label]="{ text: 'Correo Electrónico 1' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 255  }">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'CORREO_ELECTRONICO_2'"
+      [label]="{ text: 'Correo Electrónico 2' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 255  }">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'CORR_FORMA_PAGO'"
+      [label]="{ text: 'Forma de Pago' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: false }"
+      [template]="'CORR_FORMA_PAGOLookup'">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'CUENTA_BANCARIA'"
+      [label]="{ text: 'Cuenta Bancaria' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: true, maxLength: 30  }">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'CORR_BANCO'"
+      [label]="{ text: 'Banco' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: false }"
+      [template]="'CORR_BANCOLookup'">
+      </dxi-item>
+      <dxi-item
+      [dataField]="'CORR_CONDICION_PAGO'"
+      [label]="{ text: 'Condición Pago' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: false }"
+      [template]="'CORR_CONDICION_PAGOLookup'">
+      </dxi-item>
+
+      <div *dxTemplate="let cellInfo of 'CORR_TIPO_DIPLookup'">
+        <app-data-lookup
+          [model]="mCORR_TIPO_DIP"
+          [(value)]="model.CORR_TIPO_DIP"
+          [valueExpr]="'CORR_TIPO_DIP'"
+          [displayExpr]="'NOMBRE_TIPO_DIP'"
+          [selectedRowKeys]="selectedLookUpCORR_TIPO_DIP"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
+      <div *dxTemplate="let cellInfo of 'CORR_ACTIVIDAD_ECONOMICALookup'">
+        <app-data-lookup
+          [model]="mCORR_ACTIVIDAD_ECONOMICA"
+          [(value)]="model.CORR_ACTIVIDAD_ECONOMICA"
+          [valueExpr]="'CORR_ACTIVIDAD_ECONOMICA'"
+          [displayExpr]="'NOMBRE_ACTIVIDAD_ECONOMICA'"
+          [selectedRowKeys]="selectedLookUpCORR_ACTIVIDAD_ECONOMICA"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
+      <div *dxTemplate="let cellInfo of 'CODIGO_PAISLookup'">
+        <app-data-lookup
+          [model]="mCODIGO_PAIS"
+          [(value)]="model.CODIGO_PAIS"
+          [valueExpr]="'CODIGO_PAIS'"
+          [displayExpr]="'NOMBRE_PAIS'"
+          [selectedRowKeys]="selectedLookUpCODIGO_PAIS"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
+      <div *dxTemplate="let cellInfo of 'CODIGO_DEPTOLookup'">
+        <app-data-lookup
+          [model]="mCODIGO_DEPTO"
+          [(value)]="model.CODIGO_DEPTO"
+          [valueExpr]="'CODIGO_DEPTO'"
+          [displayExpr]="'NOMBRE_DEPTO'"
+          [selectedRowKeys]="selectedLookUpCODIGO_DEPTO"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
+      <div *dxTemplate="let cellInfo of 'CODIGO_MUNICIPIOLookup'">
+        <app-data-lookup
+          [model]="mCODIGO_MUNICIPIO"
+          [(value)]="model.CODIGO_MUNICIPIO"
+          [valueExpr]="'CODIGO_MUNICIPIO'"
+          [displayExpr]="'NOMBRE_MUNICIPIO'"
+          [selectedRowKeys]="selectedLookUpCODIGO_MUNICIPIO"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
+      <div *dxTemplate="let cellInfo of 'CORR_FORMA_PAGOLookup'">
+        <app-data-lookup
+          [model]="mCORR_FORMA_PAGO"
+          [(value)]="model.CORR_FORMA_PAGO"
+          [valueExpr]="'CORR_FORMA_PAGO'"
+          [displayExpr]="'NOMBRE_FORMA_PAGO'"
+          [selectedRowKeys]="selectedLookUpCORR_FORMA_PAGO"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
+      <div *dxTemplate="let cellInfo of 'CORR_BANCOLookup'">
+        <app-data-lookup
+          [model]="mCORR_BANCO"
+          [(value)]="model.CORR_BANCO"
+          [valueExpr]="'CORR_BANCO'"
+          [displayExpr]="'NOMBRE_BANCO'"
+          [selectedRowKeys]="selectedLookUpCORR_BANCO"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
+      <div *dxTemplate="let cellInfo of 'ESTADO_PROVEEDORLookup'">
+        <app-data-lookup
+          [model]="mESTADO_PROVEEDOR"
+          [(value)]="model.ESTADO_PROVEEDOR"
+          [selectedRowKeys]="selectedLookUpLista"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
+      <div *dxTemplate="let cellInfo of 'ESTADO_PROVEEDOR_WEBLookup'">
+        <app-data-lookup
+          [model]="mESTADO_PROVEEDOR_WEB"
+          [(value)]="model.ESTADO_PROVEEDOR_WEB"
+          [selectedRowKeys]="selectedLookUpLista"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
+      <div *dxTemplate="let cellInfo of 'TIPO_PERSONERIALookup'">
+        <app-data-lookup
+          [model]="mTIPO_PERSONERIA"
+          [(value)]="model.TIPO_PERSONERIA"
+          [selectedRowKeys]="selectedLookUpTIPO_PERSONERIA"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
+      <div *dxTemplate="let cellInfo of 'CORR_CONDICION_PAGOLookup'">
+        <app-data-lookup
+          [model]="mCORR_CONDICION_PAGO"
+          [(value)]="model.CORR_CONDICION_PAGO"
+          [valueExpr]="'CORR_CONDICION_PAGO'"
+          [displayExpr]="'NOMBRE_CONDICION_PAGO'"
+          [selectedRowKeys]="selectedLookUpCORR_CONDICION_PAGO"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
+    </dx-form>
+    <dx-tab-panel #tabPanel [selectedIndex]="0">
+      <dxi-item title="Usuarios" [icon]="'user'" >
+        <div class="dx-grid-deta">
+          <dx-data-grid
+            #DataCotizaProv
+            [dataSource]="mCOM_PROVEEDOR_USUARIO"
+            [columnAutoWidth]="false"
+            [showBorders]="true"
+            [showColumnLines]="true"
+            [showRowLines]="true"
+            [rowAlternationEnabled]="true"
+            [hoverStateEnabled]="true"
+            [allowColumnResizing]="true"
+            [columnResizingMode]="'widget'"
+            [repaintChangesOnly]="true"
+            [focusedRowEnabled]="true"
+            [height]="'100%'"
+            [width]="'100%'"
+            keyExpr="LOGIN_SISTEMA"
+            (onInitNewRow)="gDataComProveedorUsuarioInitNewRow($event)"
+            (onRowInserting)="gDataComProveedorUsuarioRowInserting($event)"
+            (onRowUpdated)="gDataComProveedorUsuarioRowUpdated($event)"
+            (onRowRemoving)="gDataComProveedorUsuarioRowRemoving($event)"
+            (onRowDblClick)="gDataComProveedorUsuarioRowDblClick($event)"
+            (onFocusedRowChanged)="gDataComProveedorUsuarioFocusedRowChanged($event)"
+          >
+          <dxo-toolbar>
+            <!-- <dxi-item name="addRowButton" location="before"></dxi-item> -->
+            <dxi-item location="before" [visible]="true" >
+              <div *dxTemplate>
+                <dx-button class="myButton3" [icon]="'add'" text="Agregar Usuario" type="success" (onClick)="AgregarUsuario()" [visible]="!readOnly" width="180">
+                </dx-button>
+              </div>
+            </dxi-item>
+            <dxi-item location="before" [visible]="true" >
+              <div *dxTemplate>
+                <dx-button class="myButton3" [icon]="'key'" text="Cambiar Clave" type="default" (onClick)="mostrarPopup()" [visible]="!readOnly" width="180">
+                </dx-button>
+              </div>
+            </dxi-item>
+            <dxi-item name="exportButton" location="after"></dxi-item>
+            <dxi-item name="searchPanel" location="after"></dxi-item>
+          </dxo-toolbar>
+            <dxo-editing
+              mode="popup"
+              [refreshMode]="'reshape'"
+              [allowAdding]="!readOnly"
+              [allowDeleting]="!readOnly"
+              [useIcons]="true"
+            >
+              <dxo-popup title="Usuarios del Proveedor" [showTitle]="true" [width]="600" [height]="400"></dxo-popup>
+              <dxo-form
+                #fDetalleItem
+                [colCount]="4"
+                showValidationSummary="true"
+              >
+                <dxi-item dataField="LOGIN_SISTEMA" [colSpan]="2" [editorOptions]="{readOnly: false}">
+                </dxi-item>
+                <dxi-item dataField="ESTADO_USUARIO" [colSpan]="2" [editorOptions]="{readOnly: false}" >
+                  <dxi-validation-rule type="required" message="Debe seleccionar un estado"></dxi-validation-rule>
+                </dxi-item>
+                <!-- <div *dxTemplate="let cellInfo of 'ESTADO_USUARIOLookup'">
+                  <app-data-lookup
+                    [model]="mESTADO_USUARIO"
+                    [(value)]="model.ESTADO_USUARIO"
+                    [selectedRowKeys]="selectedLookUpLista"
+                    [readOnly]="readOnly"
+                  >
+                  </app-data-lookup>
+                </div> -->
+                <dxi-item dataField="NOMBRE_USUARIO" [colSpan]="4" [editorOptions]="{readOnly: false}">
+                  <dxi-validation-rule type="required" message="Debe seleccionar un estado"></dxi-validation-rule>
+                </dxi-item>
+                <dxi-item dataField="CORREO_ELECTRONICO" [colSpan]="4" [editorOptions]="{readOnly: false}">
+                  <dxi-validation-rule type="required" message="Debe seleccionar un estado"></dxi-validation-rule>
+                </dxi-item>
+              </dxo-form>
+            </dxo-editing>
+            <dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
+            <dxo-load-panel [enabled]="false"></dxo-load-panel>
+            <dxo-search-panel [visible]="true"></dxo-search-panel>
+            <dxo-export [enabled]="true" fileName="Detalle"></dxo-export>
+            <dxi-column type="buttons" [width]="'60'">
+              <dxi-button hint="Editar Registro" icon="edit" [visible]="!readOnly" [onClick]="editarComProveedorUsuarioClick"></dxi-button>
+              <dxi-button name="delete" [visible]="!readOnly"></dxi-button>
+            </dxi-column>
+            <dxi-column dataField="LOGIN_SISTEMA" caption="Login Sistema" [dataType]="'string'" [width]="'250px'">
+            </dxi-column>
+            <dxi-column dataField="NOMBRE_USUARIO" caption="Nombre del Usuario" [dataType]="'string'" [width]="'450px'">
+            </dxi-column>
+            <dxi-column dataField="CORREO_ELECTRONICO" caption="Correo" [dataType]="'string'" [width]="'300px'">
+            </dxi-column>
+            <dxi-column dataField="ESTADO_USUARIO"  caption="Estado" [dataType]="'number'" [width]="'150px'" editCellTemplate="ESTADO_USUARIOLookup">
+              <dxo-lookup [dataSource]="mESTADO_USUARIO" valueExpr="Key" displayExpr="Value"></dxo-lookup>
+            </dxi-column>
+            <div *dxTemplate="let cellInfo of 'ESTADO_USUARIOLookup'">
+              <app-data-lookup
+                [setValue]="cellInfo.setValue"
+                [model]="mESTADO_USUARIO"
+                [(value)]="cellInfo.value"
+                [selectedRowKeys]="selectedLookUpLista"
+                [readOnly]="readOnly"
+                [valueExpr]="'Key'"
+                [displayExpr]="'Value'"
+              >
+              </app-data-lookup>
+            </div>
+            <dxo-summary>
+              <dxi-total-item
+                column="LOGIN_SISTEMA"
+                summaryType="count"
+                valueFormat="#,##0"
+                displayFormat="Cant: {0}"
+              >
+              </dxi-total-item>
+            </dxo-summary>
+          </dx-data-grid>
+        </div>
+      </dxi-item>
+      <dxi-item title="Detalle de Documento" [icon]="'doc'" >
+        <div class="dx-grid-deta">
+          <dx-data-grid
+          #gDataDocumentos
+          id="gridContainer"
+          [dataSource]="mCOM_PROVEEDOR_DOC"
+          (onRowDblClick)="gDataProveedorDocRowDblClick($event)"
+          (onRowRemoving)="gDataProveedorDocRowRemoving($event)"
+          [columnAutoWidth]="false"
+          [showBorders]="true"
+          [showColumnLines]="true"
+          [showRowLines]="true"
+          [rowAlternationEnabled]="true"
+          [hoverStateEnabled]="false"
+          [allowColumnResizing]="true"
+          [columnResizingMode]="'widget'"
+          [focusedRowEnabled]="true"
+          [height]="'100%'"
+          [width]="'100%'"
+          [keyExpr]="[
+            'CORR_EMPRESA',
+            'CORR_PROVEEDOR',
+            'CORR_DOCUMENTO'
+          ]"
+        >
+        <dxo-toolbar>
+          <dxi-item location="before" [visible]="true" >
+            <div *dxTemplate>
+              <dx-button class="myButton3" [icon]="'add'" text="Agregar Documento" type="success" (onClick)="AgregarDocumento($event)" width="195">
+              </dx-button>
+            </div>
+          </dxi-item>
+          <dxi-item name="exportButton" location="after"></dxi-item>
+          <dxi-item name="searchPanel" location="after"></dxi-item>
+        </dxo-toolbar>
+          <dxo-editing
+            mode="cell"
+            [refreshMode]="'reshape'"
+            [allowUpdating]="false"
+            [allowDeleting]="true"
+            [useIcons]="true"
+          >
+          </dxo-editing>
+          <dxo-selection mode="single"></dxo-selection>
+          <dxo-load-panel [enabled]="false"></dxo-load-panel>
+          <dxo-search-panel [visible]="true"></dxo-search-panel>
+          <dxo-export [enabled]="true" fileName="Detalle"></dxo-export>
+          <dxo-paging [enabled]="false"></dxo-paging>
+          <dxo-filter-panel [visible]="true"></dxo-filter-panel>
+          <dxi-column type="buttons" [width]="'45'">
+            <dxi-button name="delete" [visible]="!readOnly"></dxi-button>
+          </dxi-column>
+          <dxi-column dataField="CORR_EMPRESA" caption="" [visible]="false">
+          </dxi-column>
+          <dxi-column dataField="CORR_PROVEEDOR" caption="" [visible]="false">
+          </dxi-column>
+          <dxi-column
+            dataField="CORR_DOCUMENTO"
+            caption=""
+            [visible]="false"
+          >
+          </dxi-column>
+          <dxi-column
+          dataField="NOMBRE_TIPO_DOCUMENTO"
+          caption="Tipo de Documento"
+          width="150"
+          [allowEditing]="false"
+        ></dxi-column>
+          <dxi-column
+            dataField="NOMBRE_DOCUMENTO"
+            caption="Nombre del Documento"
+            width="250"
+            [allowEditing]="false"
+          >
+          </dxi-column>
+          <dxi-column
+            dataField="DESCRIPCION_DOCUMENTO"
+            caption="Descripción del Documento"
+            width="350"
+            [allowEditing]="false"
+          >
+          </dxi-column>
+          </dx-data-grid>
+        </div>
+      </dxi-item>
+    </dx-tab-panel>
+  </div>
+  <app-data-grid-mtto
+    [isBrowse]="isBrowse()"
+    [models]="models"
+    [columns]="columns"
+    [summary]="summary"
+    [keyExpr]="'CORR_PROVEEDOR'"
+    [permiteEditar]="getPermiteEditar"
+    [permiteDele]="false"
+    (rowDblClick)="rowDblClick($event)"
+    (rowRemoving)="rowRemoving($event)"
+    (focusedRowChanged)="focusedRowChanged($event)"
+    (editClick)="editarClick($event)"
+  >
+  </app-data-grid-mtto>
+</div>
+
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>
+
+<dx-popup
+  [width]="'500px'"
+  [position]="'top'"
+  [height]="'350px'"
+  [showTitle]="true"
+  title="Agregando Documentos"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="false"
+  [shading]="false"
+  [(visible)]="popupVisibleDoc"
+  class="popout"
+>
+<div *dxTemplate="let data of 'content'">
+  <dx-form #fDocumento id="fDocumento" [colCount]="4" [height]="'auto'" [formData]="mDocumento">
+    <dxi-item dataField="NOMBRE_DOCUMENTO" [label]="{text: 'Nombre Documento'}" [editorType]="'dxTextBox'" [colSpan]="2" [editorOptions]="{ placeholder: 'Nombre del Documento...', showClearButton: true, maxLength: 150 }">
+      <dxi-validation-rule type="required"  message="El nombre del Documento es obligatorio"> </dxi-validation-rule>
+    </dxi-item>
+    <dxi-item
+      dataField="CORR_TIPO_DOCUMENTO"
+      [label]="{ text: 'Tipo de Documento' }"
+      [colSpan]="2"
+      [editorOptions]="{ placeholder: 'Tipo Documento...', showClearButton: true }"
+      [template]="'cbTipoDocumento'"
+      >
+    </dxi-item>
+    <div *dxTemplate="let cellInfo of 'cbTipoDocumento'">
+        <app-data-lookup
+          [model]="mCORR_TIPO_DOCUMENTO"
+          [(value)]="mDocumento.CORR_TIPO_DOCUMENTO"
+          [valueExpr]="'CORR_TIPO_DOCUMENTO'"
+          [displayExpr]="'NOMBRE_TIPO_DOCUMENTO'"
+          [selectedRowKeys]="selectedLookUpCORR_TIPO_DOCUMENTO"
+        >
+        </app-data-lookup>
+    </div>
+    <dxi-item dataField="DESCRIPCION_DOCUMENTO" [label]="{text: 'Descripción'}" [editorType]="'dxTextBox'" [colSpan]="4" [editorOptions]="{ placeholder: 'Descripción del Documento...', showClearButton: true, maxLength: 255 }">
+      <dxi-validation-rule type="required"  message="El nombre del Documento es obligatorio"> </dxi-validation-rule>
+    </dxi-item>
+    <dxi-item [colSpan]="2">
+        <div *dxTemplate>
+          <dx-button class="myButton3" [icon]="'doc'" text="Seleccionar Doc." type="default" (onClick)="fileUpload.click()" width="185">
+          </dx-button>
+          <input type="file" [hidden]="true" class="file-input" [accept]="'image/jpeg,image/gif,image/png,application/pdf,image/x-eps'" (change)="onDocSelected($event)" #fileUpload>
+        </div>
+    </dxi-item>
+    <dxi-item [colSpan]="2">
+      <div>{{vNOMBRE_ARCHIVO}}</div>
+    </dxi-item>
+    <dxi-item [type]="'empty'" [colSpan]="4">
+    </dxi-item>
+  </dx-form>
+  <div class="form-group row text-right footer">
+    <div class="col col-sm-10 col-lg-9 offset-sm-1 offset-lg-0">
+      <dx-button [text]="'Guardar'" [icon]="'save'" id="button" class="myButton4" type="success" stylingMode="contained" (click)="guardarDocPopup()">
+      </dx-button>
+      <dx-button [text]="'Cancelar'" [icon]="'close'" id="button" class="myButton4 myButtonSpace" type="danger" stylingMode="contained" (click)="hideDocPopup()" routerLinkActive="router-link-active">
+      </dx-button>
+    </div>
+  </div>
+</div>
+</dx-popup>
+<dx-popup
+[width]="300"
+[height]="250"
+[showTitle]="true"
+[title]="'Reasignar Clave'"
+[dragEnabled]="false"
+[closeOnOutsideClick]="false"
+[showCloseButton]="false"
+[shading]="true"
+[(visible)]="popupCambiarClaveVisible">
+  <div *dxTemplate="let data of 'content'">
+    <dx-form
+    #fCambiaClave
+    id="fCambiaClave"
+    [formData]="cambiarClave"
+    labelLocation="top"
+    [colCount]="1"
+    >
+    <dxi-item dataField="CLAVE_USUARIO_NUEVA" [label]="{ text: 'Clave Nueva' }" colSpan="1" [editorOptions]="{ mode: 'password' }">
+      <dxi-validation-rule type="required" message="Debe especificar una clave">
+      </dxi-validation-rule>
+    </dxi-item>
+    <dxi-item dataField="CLAVE_CONFIRMAR" [label]="{ text: 'Confirmar Clave' }" colSpan="1" [editorOptions]="{ mode: 'password' }">
+      <dxi-validation-rule type="required" message="Debe especificar la confirmación de la clave">
+      </dxi-validation-rule>
+    </dxi-item>
+    <dxi-item itemType="group" colCount="2">
+      <dxi-item colSpan="1" [template]="'btnCambiar'">
+      </dxi-item>
+      <dxi-item colSpan="1" [template]="'btnCancelar'">
+      </dxi-item>
+    </dxi-item>
+    <div *dxTemplate="let cellInfo of 'btnCambiar'">
+      <dx-button id="button1"
+          class="myButton"
+          type="default"
+          [icon]="'save'"
+          [text]="'Cambiar'"
+          stylingMode="contained"
+          [useSubmitBehavior]="true"
+          (click)="reasignarPass(vFocucedRowClave)"></dx-button>
+    </div>
+    <div *dxTemplate="let cellInfo of 'btnCancelar'">
+      <dx-button id="button2"
+        class="myButton"
+        type="default"
+        [text]="'Cancelar'"
+        [icon]="'close'"
+        stylingMode="outlined"
+        routerLinkActive="router-link-active"
+        (click)="hidePopup()"></dx-button>
+    </div>
+    </dx-form>
+  </div>
+</dx-popup>
+<dx-popup
+  [width]="'1200px'"
+  [position]="'top'"
+  [height]="'1050px'"
+  [showTitle]="true"
+  title="Vista Previa"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [shading]="false"
+  [(visible)]="popupVisiblePdf"
+  class="popout"
+>
+  <object [data]="PDF" type="application/pdf" width="100%" height="95%" >
+    <embed [src]="PDF" type="application/pdf" />
+  </object>
+</dx-popup>

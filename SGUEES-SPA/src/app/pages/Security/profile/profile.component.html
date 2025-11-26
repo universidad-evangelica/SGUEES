@@ -1,0 +1,116 @@
+<div class="view-wrapper list-page">
+  <app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="true"
+	[permiteAdd]="false"
+  >
+  </app-barra-data-mtto>
+
+  <dx-form
+    #fData
+    id="form"
+    [formData]="model"
+    labelLocation="left"
+    [colCount]="8"
+  >
+    <dxi-item itemType="group" [colCount]="1" [colSpan]="1">
+      <dxi-item  [colSpan]="1">
+        <div class="form-avatar"><img src="assets/img/user.png" alt="Profile Background"></div>
+      </dxi-item>
+    </dxi-item>
+    <dxi-item itemType="group" [colCount]="1" [colSpan]="3">
+      <dxi-item
+        dataField="LOGIN_SISTEMA"
+        [label]="{ text: 'Usuario' }"
+        [colSpan]="1"
+        [editorOptions]="{
+        placeholder: 'Usuario...',
+        showClearButton: false,
+        readOnly: true}"
+        >
+      </dxi-item>
+      <dxi-item
+        dataField="NOMBRE_USUARIO"
+        [label]="{ text: 'Nombre Usuario' }"
+        [colSpan]="1"
+        [editorOptions]="{
+        placeholder: 'Nombre Usuario...',
+        showClearButton: false,
+        readOnly: true}">
+      </dxi-item>
+      <dxi-item [colSpan]="1" [label]="{ text: ' '}">
+        <dx-button
+          class="myButton"
+          [icon]="'edit'"
+          [text]="'Cambiar Clave'"
+          [type]="'default'"
+          [width]="180"
+          (onClick)="mostrarPopup()">
+        </dx-button>
+        <dx-popup
+          [width]="250"
+          [height]="350"
+          [showTitle]="true"
+          [title]="'Cambiar Clave'"
+          [dragEnabled]="false"
+          [closeOnOutsideClick]="false"
+          [showCloseButton]="false"
+          [shading]="true"
+          [(visible)]="popupVisible"
+        >
+          <div *dxTemplate="let data of 'content'">
+            <dx-form
+            #fCambiaClave
+            id="fCambiaClave"
+            [formData]="cambiarClave"
+            labelLocation="top"
+            [colCount]="1"
+            >
+              <dxi-item dataField="CLAVE_USUARIO" [label]="{ text: 'Clave Actual' }" colSpan="1" [editorOptions]="{ mode: 'password' }">
+                <dxi-validation-rule type="required" message="Debe especificar la clave Actual">
+                </dxi-validation-rule>
+              </dxi-item>
+              <dxi-item dataField="CLAVE_USUARIO_NUEVA" [label]="{ text: 'Clave Nueva' }" colSpan="1" [editorOptions]="{ mode: 'password' }">
+                <dxi-validation-rule type="required" message="Debe especificar una clave">
+                </dxi-validation-rule>
+              </dxi-item>
+              <dxi-item dataField="CLAVE_CONFIRMAR" [label]="{ text: 'Confirmar Clave' }" colSpan="1" [editorOptions]="{ mode: 'password' }">
+                <dxi-validation-rule type="required" message="Debe especificar la confirmación de la clave">
+                </dxi-validation-rule>
+              </dxi-item>
+              <dxi-item itemType="group" colCount="2">
+                <dxi-item colSpan="1" [template]="'btnCambiar'">
+                </dxi-item>
+                <dxi-item colSpan="1" [template]="'btnCancelar'">
+                </dxi-item>
+              </dxi-item>
+              <div *dxTemplate="let cellInfo of 'btnCambiar'">
+                <dx-button id="button"
+                  class="myButton"
+                  [text]="'Cambiar'"
+                  type="default"
+                  [icon]="'save'"
+                  stylingMode="contained"
+                  [useSubmitBehavior]="true"
+                  (click)="cambioClave()"></dx-button>
+              </div>
+              <div *dxTemplate="let cellInfo of 'btnCancelar'">
+                <dx-button id="button"
+                  class="myButton"
+                  [text]="'Cancelar'"
+                  [icon]="'close'"
+                  type="default"
+                  stylingMode="contained"
+                  routerLinkActive="router-link-active"
+                  (click)="hidePopup()">
+                </dx-button>
+              </div>
+            </dx-form>
+          </div>
+        </dx-popup>
+      </dxi-item>
+    </dxi-item>
+    <dxi-item itemType="empty" [colCount]="1" [colSpan]="4">
+    </dxi-item>
+  </dx-form>
+</div>
