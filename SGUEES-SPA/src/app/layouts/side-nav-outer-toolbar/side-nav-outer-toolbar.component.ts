@@ -71,14 +71,16 @@ export class SideNavOuterToolbarComponent implements OnInit, OnDestroy {
     const isXSmall = this.screen.sizes['screen-x-small'];
     const isLarge = this.screen.sizes['screen-large'];
 
-    this.menuMode = isLarge ? 'shrink' : 'overlap';
-    this.menuRevealMode = isXSmall ? 'slide' : 'expand';
-    this.minMenuSize = isXSmall ? 0 : 48;
-    this.shaderEnabled = !isLarge;
+    // En pantallas grandes, acoplar el contenido (push); en móviles, superponer (overlap)
+    this.menuMode = isLarge ? 'push' : 'overlap';
+    this.menuRevealMode = 'slide';
+    this.minMenuSize = 0; // oculto completamente cuando está cerrado
+    this.shaderEnabled = !isLarge; // shader solo en móviles/tablets
   }
 
   get hideMenuAfterNavigation() {
-    return this.menuMode === 'overlap' || this.temporaryMenuOpened;
+    // Mantener el menú fijo: solo cerrar si fue abierto temporalmente
+    return this.temporaryMenuOpened;
   }
 
   get showMenuAfterClick() {

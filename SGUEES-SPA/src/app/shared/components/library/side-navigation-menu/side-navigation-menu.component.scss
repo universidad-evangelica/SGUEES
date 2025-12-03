@@ -90,23 +90,31 @@
     flex: 1;
     padding-top: var(--toolbar-vertical-padding);
     padding-bottom: var(--footer-height);
+    padding-left: 16px; // margen interno a la izquierda
 
     ::ng-deep .dx-treeview {
       // ## Long text positioning
       white-space: nowrap;
+      overflow: hidden;
       // ##
 
       // ## Icon width customization
       .dx-treeview-item {
-        padding-left: 0;
+        padding: 4px 0;
         flex-direction: row-reverse;
         border-radius: 0;
-        padding-right: 0;
 
         .dx-icon {
           width: var(--side-panel-min-width);
-          width: 25px !important;
           margin: 0 !important;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .dx-treeview-item-content {
+          overflow: hidden;
+          text-overflow: clip;
         }
       }
       // ##

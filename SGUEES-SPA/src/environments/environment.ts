@@ -4,10 +4,10 @@
 
 export const environment = {
   production: false,
-  UrlSEGURIDADAPI: 'http://localhost:5001/',
-  UrlCOMPRASAPI: 'http://localhost:5001/',
-  UrlGENERALAPI: 'http://localhost:5001/',
-	UrlApiToken: 'localhost:5001'
+  UrlSEGURIDADAPI: 'http://localhost:5000/',
+  UrlCOMPRASAPI: 'http://localhost:5000/',
+  UrlGENERALAPI: 'http://localhost:5000/',
+	UrlApiToken: 'localhost:5000'
 };
 
 /*

@@ -1,0 +1,24 @@
+<div class="ai-demo">
+  <h2>Demo IA (Ollama)</h2>
+  <div>
+    <label>Prompt</label>
+    <textarea [(ngModel)]="prompt" rows="4" placeholder="Escribe tu prompt..."></textarea>
+  </div>
+  <div>
+    <label>Modelo (header X-AI-Model)</label>
+    <input [(ngModel)]="modelHeader" placeholder="ej: llama3">
+  </div>
+  <div>
+    <label>Modelo (body model)</label>
+    <input [(ngModel)]="modelBody" placeholder="ej: llama3">
+  </div>
+  <button (click)="send()" [disabled]="loading">Enviar</button>
+
+  <div *ngIf="loading">Procesando...</div>
+  <div *ngIf="error" style="color:red">{{ error }}</div>
+  <div *ngIf="response">
+    <h3>Respuesta</h3>
+    <p><strong>Modelo:</strong> {{ response.model }}</p>
+    <pre>{{ response.result }}</pre>
+  </div>
+</div>

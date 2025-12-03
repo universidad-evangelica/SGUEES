@@ -13,7 +13,7 @@ export class AppInfoService {
   constructor(private authService: AuthService, private datePipe: DatePipe, private objData: CData) {}
 
   public get title() {
-    return 'Sistema de gestión Universitario - UEES';
+    return 'SGUEES';
   }
 
   public get currentYear(): number {

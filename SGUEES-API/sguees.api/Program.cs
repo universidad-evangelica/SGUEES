@@ -16,6 +16,22 @@ builder.Services.AddControllers()
                     options.JsonSerializerOptions.Converters.Add(new DateTimeConverter());    
                     options.JsonSerializerOptions.Converters.Add(new StringConverter());    
                 });
+// Bind AI options and register model router (from eFrameworkAPI options)
+var aiOptions = new eFrameworkAPI.Core.Options.AIOptions();
+builder.Configuration.GetSection(eFrameworkAPI.Core.Options.AIOptions.SectionName).Bind(aiOptions);
+builder.Services.AddSingleton(aiOptions);
+builder.Services.AddSingleton<eFrameworkAPI.Core.AI.IAIModelRouter, eFrameworkAPI.Core.AI.AIModelRouter>();
+// Ollama options + HttpClient
+var ollamaOptions = new eFrameworkAPI.Core.Options.OllamaOptions();
+builder.Configuration.GetSection(eFrameworkAPI.Core.Options.OllamaOptions.SectionName).Bind(ollamaOptions);
+builder.Services.AddSingleton(ollamaOptions);
+builder.Services.AddHttpClient("ollama", client =>
+{
+    client.BaseAddress = new Uri(ollamaOptions.BaseUrl);
+});
+builder.Services.AddSingleton<eFrameworkAPI.Core.AI.IAIProvider, eFrameworkAPI.Core.AI.OllamaAIProvider>();
+// QA options evaluator
+builder.Services.AddSingleton<eFrameworkAPI.Core.QA.IOptionsQAEvaluator, eFrameworkAPI.Core.QA.OptionsQAEvaluator>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 // builder.Services.AddEndpointsApiExplorer();

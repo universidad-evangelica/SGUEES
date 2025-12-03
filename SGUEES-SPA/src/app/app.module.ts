@@ -1,6 +1,7 @@
 import { AppComponent } from './app.component';
 import { BrowserModule } from '@angular/platform-browser';
 import { LOCALE_ID, NgModule } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 
 import { SideNavOuterToolbarModule, SingleCardModule } from './layouts';
 import {
@@ -21,6 +22,8 @@ import { DatePipe, registerLocaleData } from '@angular/common';
 import { ErrorInterceptorProvider } from './shared/services/error.interceptor';
 
 import { AppRoutingModule } from './app-routing.module';
+import { AiDemoComponent } from './components/ai-demo/ai-demo.component';
+import { OptionsQaComponent } from './components/options-qa/options-qa.component';
 import { SecurityModule } from './pages/Security/security.module';
 import { ShopModule } from './pages/Shop/shop.module';
 import { GeneralModule } from './pages/General/general.module';
@@ -43,10 +46,13 @@ export function tokenGetterLocal(): string {
 @NgModule({
   declarations: [
     AppComponent,
+    AiDemoComponent,
+    OptionsQaComponent,
   ],
   imports: [
     BrowserModule,
     HttpClientModule,
+    FormsModule,
     JwtModule.forRoot({
 			config: {
 				tokenGetter: tokenGetterLocal,

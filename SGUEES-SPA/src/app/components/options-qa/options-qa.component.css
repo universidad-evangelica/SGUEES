@@ -1,0 +1,6 @@
+.options-qa { padding: 1rem; }
+button { margin-bottom: 1rem; }
+.error { color: #b00020; margin: 0.5rem 0; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #ddd; padding: 0.5rem; }
+th { background: #f5f5f5; text-align: left; }

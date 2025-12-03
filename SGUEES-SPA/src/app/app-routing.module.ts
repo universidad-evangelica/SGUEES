@@ -25,6 +25,8 @@ import { AppSignInComponent } from './pages/Samples/sign-in-form/sign-in-form.co
 import { AppSignUpComponent } from './pages/Samples/sign-up-form/sign-up-form.component';
 import { AppResetPasswordComponent } from './pages/Samples/reset-password-form/reset-password-form.component';
 import { UserProfileComponent } from './pages/Samples/user-profile/user-profile.component';
+import { AiDemoComponent } from './components/ai-demo/ai-demo.component';
+import { OptionsQaComponent } from './components/options-qa/options-qa.component';
 
 const routes: Routes = [
 	{
@@ -68,6 +70,14 @@ const routes: Routes = [
   {
     path: 'analytics-geography',
     component: AnalyticsGeographyComponent
+  },
+  {
+    path: 'ai-demo',
+    component: AiDemoComponent
+  },
+  {
+    path: 'options-qa',
+    component: OptionsQaComponent
   },
 	{
 		path: '**',

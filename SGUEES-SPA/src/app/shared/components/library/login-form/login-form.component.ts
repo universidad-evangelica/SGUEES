@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, NgModule, Input, OnInit } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { take } from 'rxjs/operators';
 
 import { LoginOauthModule } from 'src/app/shared/components/library/login-oauth/login-oauth.component';
@@ -24,6 +25,8 @@ export class LoginFormComponent /*implements OnInit*/ {
   btnStylingMode: DxButtonTypes.ButtonStyle;
 
   passwordMode = 'password';
+  showPassword = false;
+  errorMessage = '';
 
   loading = false;
 
@@ -67,6 +70,7 @@ export class LoginFormComponent /*implements OnInit*/ {
         this.router.navigate(['/home']);
       },
       (error: any) => {
+        this.errorMessage = error || 'Usuario o contraseña incorrectos';
         notify(
           {
             message: error,
@@ -95,6 +99,7 @@ export class LoginFormComponent /*implements OnInit*/ {
   imports: [
     CommonModule,
     RouterModule,
+    FormsModule,
     LoginOauthModule,
     DxFormModule,
     DxLoadIndicatorModule,

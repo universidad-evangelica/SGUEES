@@ -18,9 +18,15 @@ export class ThemeService {
   private storageKey = 'app-theme';
   private themeMarker = 'theme-';
 
-  currentTheme: Theme = window.localStorage[this.storageKey] || getNextTheme();
+  currentTheme: Theme = (window.localStorage[this.storageKey] as Theme) || 'dark';
 
   public isDark = new BehaviorSubject<boolean>(this.currentTheme === 'dark');
+
+  constructor() {
+    // Aplicar tema por defecto oscuro si no hay preferencia almacenada
+    this.setAppTheme(this.currentTheme);
+    window.localStorage[this.storageKey] = this.currentTheme;
+  }
 
   private getThemeStyleSheets() {
     return   Array.from(document.styleSheets).filter(

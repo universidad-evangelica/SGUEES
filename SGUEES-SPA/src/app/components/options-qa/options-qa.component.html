@@ -1,0 +1,24 @@
+<div class="options-qa">
+  <h2>QA de Opciones</h2>
+  <button (click)="runQA()" [disabled]="loading">{{ loading ? 'Ejecutando…' : 'Ejecutar QA' }}</button>
+  <div *ngIf="error" class="error">{{ error }}</div>
+  <table *ngIf="findings.length">
+    <thead>
+      <tr>
+        <th>Severidad</th>
+        <th>Clave</th>
+        <th>Detalle</th>
+        <th>Sugerencia</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let f of findings">
+        <td>{{ f.severity }}</td>
+        <td>{{ f.key }}</td>
+        <td>{{ f.message }}</td>
+        <td>{{ f.suggestion || '-' }}</td>
+      </tr>
+    </tbody>
+  </table>
+  <div *ngIf="!findings.length && !loading">Sin hallazgos todavía.</div>
+</div>
