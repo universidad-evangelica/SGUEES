@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using scuees.Models;
+using sguees.Models;
 using eFramework.Core;
-using scuees.Repositories;
+using sguees.Repositories;
 
-namespace scuees.Services
+namespace sguees.Services
 {
 	public class COM_PROVEEDOR_USUARIOService: ICOM_PROVEEDOR_USUARIOService
 	{

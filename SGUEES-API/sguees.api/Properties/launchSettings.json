@@ -9,7 +9,7 @@
     }
   },
   "profiles": {
-    "scuees.api": {
+    "sguees.api": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,

@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("Servidor de Reportes Admin FE")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("e-coffeeTech, S.A. de C.V.")]
-[assembly: AssemblyProduct("scueesRpt")]
+[assembly: AssemblyProduct("sgueesRpt")]
 [assembly: AssemblyCopyright("Copyright ©  e-coffeeTech, S.A. de C.V. 2023")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

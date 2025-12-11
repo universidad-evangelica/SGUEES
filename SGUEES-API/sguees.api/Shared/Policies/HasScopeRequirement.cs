@@ -1,7 +1,7 @@
 using System;
 using Microsoft.AspNetCore.Authorization;
 
-namespace scuees.api.Policies
+namespace sguees.api.Policies
 {
     public class HasScopeRequirement : IAuthorizationRequirement
     {        

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace scuees.Models
+namespace sguees.Models
 {
     public class SEG_USUARIO_LOGINParam
     {
@@ -11,6 +11,6 @@ namespace scuees.Models
         [Required(ErrorMessage = "Debe especificar una clave")]
         public string CLAVE_USUARIO { get; set; }
         public string CLAVE_USUARIO_NUEVA { get; set; }
-        public string CODIGO_SUITE { get; set; }="SCUEES";
+        public string CODIGO_SUITE { get; set; }="SGUEES";
     }
 }

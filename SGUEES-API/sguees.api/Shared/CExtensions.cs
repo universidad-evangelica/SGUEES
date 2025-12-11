@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http;
 
-namespace scuees.api.framework
+namespace sguees.api.framework
 {
     public static class CExtensions
     {

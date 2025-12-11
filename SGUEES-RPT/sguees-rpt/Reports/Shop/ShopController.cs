@@ -6,16 +6,16 @@ using System.Net.Http;
 using System.Web.Http;
 using System.IO;
 using System.Data;
-using scueesRpt.Models;
+using sgueesRpt.Models;
 using QRCoder;
 using System.Drawing;
 using Newtonsoft.Json;
-using scueesRpt.Reports.Shop.COM_VL_FSEE;
-using scueesRpt.Reports.Shop.COM_SOLI_COTIZACION;
-using scueesRpt.Reports.Shop.COM_CUADRO_COMPARATIVO;
-using scueesRpt.Reports.Shop.COM_ORDEN_COMPRA;
+using sgueesRpt.Reports.Shop.COM_VL_FSEE;
+using sgueesRpt.Reports.Shop.COM_SOLI_COTIZACION;
+using sgueesRpt.Reports.Shop.COM_CUADRO_COMPARATIVO;
+using sgueesRpt.Reports.Shop.COM_ORDEN_COMPRA;
 
-namespace scueesRpt.Controllers
+namespace sgueesRpt.Controllers
 {
     [Authorize]
     public class ShopController : ApiController

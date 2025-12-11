@@ -1,7 +1,7 @@
-using scuees.Models;
+using sguees.Models;
 using eFrameworkAPI.Core;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public class COM_REPORepository : eFrameworkAPI.Data.BaseRepository, ICOM_REPORepository
 	{

@@ -1,8 +1,8 @@
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public interface ICOM_ORDEN_COMPRA_DETARepository: IRepository<COM_ORDEN_COMPRA_DETATable>
 	{

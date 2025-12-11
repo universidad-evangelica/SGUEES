@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 
-namespace scueesRpt.Models
+namespace sgueesRpt.Models
 {
     public class COM_CUADRO_COMPARATIVO_TOTAL_IMPRView
     {

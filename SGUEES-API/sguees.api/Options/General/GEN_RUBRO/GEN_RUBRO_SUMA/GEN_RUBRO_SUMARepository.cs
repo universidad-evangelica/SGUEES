@@ -4,9 +4,9 @@ using Microsoft.Extensions.Configuration;
 using System.Linq;
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public class GEN_RUBRO_SUMARepository: BaseRepository<GEN_RUBRO_SUMATable>, IGEN_RUBRO_SUMARepository
 	{

@@ -1,7 +1,7 @@
 using eFramework.Data;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public interface IGEN_ACTIVIDAD_ECONOMICARepository: IRepository<GEN_ACTIVIDAD_ECONOMICATable>
 	{

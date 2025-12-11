@@ -27,6 +27,7 @@ import { OptionsQaComponent } from './components/options-qa/options-qa.component
 import { SecurityModule } from './pages/Security/security.module';
 import { ShopModule } from './pages/Shop/shop.module';
 import { GeneralModule } from './pages/General/general.module';
+import { AccountingModule } from './pages/Accounting/accounting.module';
 
 import { CrmContactListModule } from './pages/Samples/crm-contact-list/crm-contact-list.component';
 import { CrmContactDetailsModule } from './pages/Samples/crm-contact-details/crm-contact-details.component';
@@ -79,6 +80,7 @@ export function tokenGetterLocal(): string {
     SecurityModule,
     ShopModule,
     GeneralModule,
+    AccountingModule,
     AppRoutingModule,
   ],
   providers: [

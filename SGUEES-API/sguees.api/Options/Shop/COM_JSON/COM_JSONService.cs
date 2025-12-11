@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
-using scuees.Models;
-using scuees.Repositories;
+using sguees.Models;
+using sguees.Repositories;
 using System.Collections;
 using System.Text.Json;
 using System.IO;
 
-namespace scuees.Services
+namespace sguees.Services
 {
 	public class COM_JSONService : ICOM_JSONService
 	{

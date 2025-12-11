@@ -101,20 +101,31 @@
       // ## Icon width customization
       .dx-treeview-item {
         padding: 4px 0;
-        flex-direction: row-reverse;
         border-radius: 0;
+      }
+
+      .dx-item-content {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
 
         .dx-icon {
-          width: var(--side-panel-min-width);
-          margin: 0 !important;
-          display: flex;
+          width: 24px;
+          min-width: 24px;
+          height: 24px;
+          margin-right: 8px !important;
+          margin-left: 0 !important;
+          display: inline-flex !important;
           align-items: center;
           justify-content: center;
+          order: 0;
         }
 
         .dx-treeview-item-content {
           overflow: hidden;
           text-overflow: clip;
+          flex: 1;
+          order: 1;
         }
       }
       // ##

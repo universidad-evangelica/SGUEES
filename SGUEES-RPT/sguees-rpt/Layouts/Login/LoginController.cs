@@ -5,9 +5,9 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Web.Http;
-using scueesRpt.Models;
+using sgueesRpt.Models;
 
-namespace scueesRpt.Controllers
+namespace sgueesRpt.Controllers
 {
     /// <summary>
     /// login controller class for authenticate users

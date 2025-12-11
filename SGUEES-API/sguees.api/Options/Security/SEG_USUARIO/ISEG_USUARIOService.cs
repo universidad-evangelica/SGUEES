@@ -1,8 +1,8 @@
 using System.Threading.Tasks;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Services
+namespace sguees.Services
 {
 	public interface ISEG_USUARIOService
 	{
@@ -12,6 +12,8 @@ namespace scuees.Services
 		Task<CResult> UpdateAsync(SEG_USUARIOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(SEG_USUARIOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> LoginAsync(string LOGIN_SISTEMA, string CLAVE_USUARIO, string CODIGO_SUITE);
+		Task<CResult> CheckUserExistsAndActiveAsync(string LOGIN_SISTEMA, string CODIGO_SUITE);
+		Task<CResult> GenerateTokenAsync(string LOGIN_SISTEMA, string CODIGO_SUITE);
 		Task<CResult> GetMenuAsync(string LOGIN_SISTEMA, string CODIGO_SUITE);
 		string GenerateRptToken(string username);
 		#region "Detalle de opciones"

@@ -1,4 +1,4 @@
-namespace scuees.Models
+namespace sguees.Models
 {
     public class COM_JSON_DTE_TRIBUTO
     {

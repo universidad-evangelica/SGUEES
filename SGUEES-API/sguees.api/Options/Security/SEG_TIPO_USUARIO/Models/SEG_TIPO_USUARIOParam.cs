@@ -1,7 +1,7 @@
 using System;
 using eFramework.Data;
 
-namespace scuees.Models
+namespace sguees.Models
 {
 	public class SEG_TIPO_USUARIOParam: BaseParam
 	{

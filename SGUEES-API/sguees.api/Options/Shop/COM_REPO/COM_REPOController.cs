@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using eFramework.Core;
-using scuees.Models;
-using scuees.Services;
+using sguees.Models;
+using sguees.Services;
 using System.Security.Claims;
 
-namespace scuees.Controllers
+namespace sguees.Controllers
 {
 	[Authorize]
 	[Route("[controller]")]

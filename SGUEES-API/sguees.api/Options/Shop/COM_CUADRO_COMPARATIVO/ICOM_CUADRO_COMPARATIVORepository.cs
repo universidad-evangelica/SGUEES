@@ -1,8 +1,8 @@
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public interface ICOM_CUADRO_COMPARATIVORepository: IRepository<COM_CUADRO_COMPARATIVOTable>
 	{

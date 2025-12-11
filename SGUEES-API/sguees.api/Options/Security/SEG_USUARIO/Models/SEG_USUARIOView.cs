@@ -1,6 +1,6 @@
-using scuees.api.Shared;
+using sguees.api.Shared;
 
-namespace scuees.Models
+namespace sguees.Models
 {
   public class SEG_USUARIOView
   {
@@ -20,6 +20,7 @@ namespace scuees.Models
     public string USUARIO_ACTU { get; set; }
     public DateTime? FECHA_ACTU { get; set; }
     public string ESTACION_ACTU { get; set; }
+    public string USUARIO_AD { get; set; }
     public int CORR_EMPRESA { get; set; }
     public string NOMBRE_EMPRESA { get; set; }
     public byte[] FOTO_PERFIL { get; set; }

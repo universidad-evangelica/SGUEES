@@ -1,6 +1,6 @@
 using eFramework.Core;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public interface IGEN_LISTARepository
 	{

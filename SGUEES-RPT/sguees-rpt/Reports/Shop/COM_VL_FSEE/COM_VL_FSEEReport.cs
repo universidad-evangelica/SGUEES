@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace scueesRpt.Reports.Shop.COM_VL_FSEE {
+namespace sgueesRpt.Reports.Shop.COM_VL_FSEE {
     using System;
     using System.ComponentModel;
     using CrystalDecisions.Shared;
@@ -41,7 +41,7 @@ namespace scueesRpt.Reports.Shop.COM_VL_FSEE {
         
         public override string FullResourceName {
             get {
-                return "scueesRpt.Reports.Shop.COM_VL_FSEE.COM_VL_FSEEReport.rpt";
+                return "sgueesRpt.Reports.Shop.COM_VL_FSEE.COM_VL_FSEEReport.rpt";
             }
             set {
                 // Do nothing

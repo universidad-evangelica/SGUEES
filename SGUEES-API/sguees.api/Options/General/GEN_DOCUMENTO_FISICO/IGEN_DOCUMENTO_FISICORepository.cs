@@ -1,9 +1,9 @@
 using System.Threading.Tasks;
 using eFramework.Core;
 using eFramework.Data;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public interface IGEN_DOCUMENTO_FISICORepository: IRepository<GEN_DOCUMENTO_FISICOTable>
 	{

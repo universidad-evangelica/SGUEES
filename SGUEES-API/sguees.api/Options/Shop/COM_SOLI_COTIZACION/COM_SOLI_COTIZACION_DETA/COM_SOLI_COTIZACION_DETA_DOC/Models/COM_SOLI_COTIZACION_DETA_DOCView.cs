@@ -1,6 +1,6 @@
 using System;
 
-namespace scuees.Models
+namespace sguees.Models
 {
 	public class COM_SOLI_COTIZACION_DETA_DOCView
 	{

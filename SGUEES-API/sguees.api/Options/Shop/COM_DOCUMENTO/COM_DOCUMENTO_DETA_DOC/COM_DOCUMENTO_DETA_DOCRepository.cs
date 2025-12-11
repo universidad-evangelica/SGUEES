@@ -1,8 +1,8 @@
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public class COM_DOCUMENTO_DETA_DOCRepository: BaseRepository<COM_DOCUMENTO_DETA_DOCTable>, ICOM_DOCUMENTO_DETA_DOCRepository
 	{

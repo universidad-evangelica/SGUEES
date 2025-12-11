@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
-using scueesRpt.Controllers;
+using sgueesRpt.Controllers;
 
 
-namespace scueesRpt
+namespace sgueesRpt
 {
     public static class WebApiConfig
     {

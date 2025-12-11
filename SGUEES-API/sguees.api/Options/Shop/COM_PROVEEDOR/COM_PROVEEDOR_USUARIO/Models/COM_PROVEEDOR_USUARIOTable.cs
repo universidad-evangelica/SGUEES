@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using eFramework.Data;
 
-namespace scuees.Models
+namespace sguees.Models
 {
 	public class COM_PROVEEDOR_USUARIOTable: BaseEntity
 	{

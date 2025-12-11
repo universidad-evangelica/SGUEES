@@ -4,9 +4,9 @@ using Microsoft.Extensions.Configuration;
 using System.Linq;
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public class GEN_RUBRO_IMPUESTORepository: BaseRepository<GEN_RUBRO_IMPUESTOTable>, IGEN_RUBRO_IMPUESTORepository
 	{

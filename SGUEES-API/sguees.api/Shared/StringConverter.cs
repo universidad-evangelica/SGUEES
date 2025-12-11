@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace scuees.api.framework
+namespace sguees.api.framework
 {
     public class StringConverter : JsonConverter<string>
     {

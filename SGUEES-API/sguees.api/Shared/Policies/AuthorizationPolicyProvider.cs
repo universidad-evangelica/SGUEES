@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
-namespace scuees.api.Policies
+namespace sguees.api.Policies
 {
     public class AuthorizationPolicyProvider : DefaultAuthorizationPolicyProvider
     {

@@ -7,7 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Web;
 
-namespace scueesRpt.Models
+namespace sgueesRpt.Models
 {
     public static class Utils
     {        

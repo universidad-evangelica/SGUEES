@@ -4,9 +4,9 @@ using Microsoft.Extensions.Configuration;
 using System.Linq;
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public class COM_SOLI_COTIZACION_DETARepository: BaseRepository<COM_SOLI_COTIZACION_DETATable>, ICOM_SOLI_COTIZACION_DETARepository
 	{

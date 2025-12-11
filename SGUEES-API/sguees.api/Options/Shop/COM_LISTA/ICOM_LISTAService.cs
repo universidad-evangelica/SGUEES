@@ -1,6 +1,6 @@
 using eFramework.Core;
 
-namespace scuees.Services
+namespace sguees.Services
 {
 	public interface ICOM_LISTAService
 	{

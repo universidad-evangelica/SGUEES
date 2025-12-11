@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace scueesRpt.Reports.Shop.COM_CUADRO_COMPARATIVO {
+namespace sgueesRpt.Reports.Shop.COM_CUADRO_COMPARATIVO {
     using System;
     using System.ComponentModel;
     using CrystalDecisions.Shared;
@@ -41,7 +41,7 @@ namespace scueesRpt.Reports.Shop.COM_CUADRO_COMPARATIVO {
         
         public override string FullResourceName {
             get {
-                return "scueesRpt.Reports.Shop.COM_CUADRO_COMPARATIVO.COM_CUADRO_COMPARATIVO_TOTALReport." +
+                return "sgueesRpt.Reports.Shop.COM_CUADRO_COMPARATIVO.COM_CUADRO_COMPARATIVO_TOTALReport." +
                     "rpt";
             }
             set {

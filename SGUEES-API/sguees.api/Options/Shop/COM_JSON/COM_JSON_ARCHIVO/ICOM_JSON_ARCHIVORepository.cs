@@ -1,8 +1,8 @@
 using eFramework.Data;
-using scuees.Models;
+using sguees.Models;
 using eFramework.Core;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public interface ICOM_JSON_ARCHIVORepository: IRepository<COM_JSON_ARCHIVOTable>
 	{

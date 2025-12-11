@@ -1,6 +1,6 @@
 using System;
 
-namespace scuees.Models
+namespace sguees.Models
 {
 	public class GEN_RUBRO_IMPUESTOView
 	{		public int CORR_EMPRESA { get; set; }

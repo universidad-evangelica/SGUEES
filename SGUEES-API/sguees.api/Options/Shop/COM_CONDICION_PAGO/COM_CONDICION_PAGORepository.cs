@@ -4,9 +4,9 @@ using Microsoft.Extensions.Configuration;
 using System.Linq;
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public class COM_CONDICION_PAGORepository: BaseRepository<COM_CONDICION_PAGOTable>, ICOM_CONDICION_PAGORepository
 	{

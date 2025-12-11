@@ -1,9 +1,9 @@
 using System.Threading.Tasks;
 using eFramework.Data;
-using scuees.Models;
+using sguees.Models;
 using eFramework.Core;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
     public interface ISEG_USUARIO_OPCIONRepository: IRepository<SEG_USUARIO_OPCIONTable>
     {

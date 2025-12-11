@@ -44,7 +44,7 @@ export class AuthService {
 
 	logIn(login: string, password: string): any {
 		return this.http
-			.post(this.urlMtto + 'login', { LOGIN_SISTEMA: login, CLAVE_USUARIO: password, CODIGO_SUITE: 'SCUEES' })
+			.post(this.urlMtto + 'login', { LOGIN_SISTEMA: login, CLAVE_USUARIO: password, CODIGO_SUITE: 'SGUEES' })
 			.pipe(
 				map((response: any) => {
 					if (response) {

@@ -1,9 +1,9 @@
 using System.Text.Json;
-using scuees.Models;
-using scuees.Repositories;
+using sguees.Models;
+using sguees.Repositories;
 using eFramework.Core;
 
-namespace scuees.Services
+namespace sguees.Services
 {
     public class COM_REPOService: ICOM_REPOService
     {

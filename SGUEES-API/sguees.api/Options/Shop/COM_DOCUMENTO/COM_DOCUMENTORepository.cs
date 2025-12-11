@@ -5,7 +5,7 @@ using System.Linq;
 using eFramework.Data;
 using eFramework.Core;
 using eadmindevprojectmanagement.Models;
-using scuees.Models;
+using sguees.Models;
 
 namespace eadmindevprojectmanagement.Repositories
 {

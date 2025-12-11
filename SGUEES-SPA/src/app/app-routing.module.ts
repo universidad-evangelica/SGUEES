@@ -39,6 +39,16 @@ const routes: Routes = [
 		component: LoginFormComponent,
 		canActivate: [AuthGuardService],
 	},
+	{
+		path: 'accounting',
+		canActivate: [AuthGuardService],
+		loadChildren: () => import('./pages/Accounting/accounting.module').then(m => m.AccountingModule)
+	},
+	{
+		path: 'general',
+		canActivate: [AuthGuardService],
+		loadChildren: () => import('./pages/General/general.module').then(m => m.GeneralModule)
+	},
   {
     path: 'crm-contact-list',
     component: CrmContactListComponent,

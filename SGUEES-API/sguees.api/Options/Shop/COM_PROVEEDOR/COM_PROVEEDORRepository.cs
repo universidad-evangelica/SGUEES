@@ -4,9 +4,9 @@ using Microsoft.Extensions.Configuration;
 using System.Linq;
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public class COM_PROVEEDORRepository: BaseRepository<COM_PROVEEDORTable>, ICOM_PROVEEDORRepository
 	{

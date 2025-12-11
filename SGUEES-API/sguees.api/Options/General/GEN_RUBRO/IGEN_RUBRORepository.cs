@@ -1,8 +1,8 @@
 using eFramework.Core;
 using eFramework.Data;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public interface IGEN_RUBRORepository: IRepository<GEN_RUBROTable>
 	{

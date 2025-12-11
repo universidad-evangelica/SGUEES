@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace scuees.Models
+namespace sguees.Models
 {
     public class SEG_USUARIO_MENU_OPCIONView
     {

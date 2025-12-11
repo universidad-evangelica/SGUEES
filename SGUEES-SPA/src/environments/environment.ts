@@ -7,6 +7,7 @@ export const environment = {
   UrlSEGURIDADAPI: 'http://localhost:5000/',
   UrlCOMPRASAPI: 'http://localhost:5000/',
   UrlGENERALAPI: 'http://localhost:5000/',
+  UrlCONTAAPI: 'http://localhost:5000/',
 	UrlApiToken: 'localhost:5000'
 };
 

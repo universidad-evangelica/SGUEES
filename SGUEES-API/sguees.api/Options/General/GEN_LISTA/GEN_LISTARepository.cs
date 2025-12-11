@@ -1,7 +1,7 @@
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public class GEN_LISTARepository : IGEN_LISTARepository
 	{

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using eFramework.Core;
 using eFramework.Data;
 
-namespace scuees.Models
+namespace sguees.Models
 {
     public class SEG_TIPO_USUARIO_OPCIONTable: BaseEntity
     {

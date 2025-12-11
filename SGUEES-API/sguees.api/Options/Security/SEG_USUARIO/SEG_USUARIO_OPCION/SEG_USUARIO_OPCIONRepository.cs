@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
     public class SEG_USUARIO_OPCIONRepository: BaseRepository<SEG_USUARIO_OPCIONTable>, ISEG_USUARIO_OPCIONRepository
     {

@@ -1,8 +1,8 @@
 using System.Threading.Tasks;
 using eFrameworkAPI.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public interface ICOM_JSONRepository
 	{

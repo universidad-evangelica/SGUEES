@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using eFramework.Data;
 
-namespace scuees.Models
+namespace sguees.Models
 {
 	public class SEG_USUARIOTable : BaseEntity
 	{
@@ -27,6 +27,7 @@ namespace scuees.Models
 		public string USUARIO_ACTU { get; set; }
 		public DateTime? FECHA_ACTU { get; set; }
 		public string ESTACION_ACTU { get; set; }
+		public string USUARIO_AD { get; set; }
 		public int CORR_SUSCRIPCION { get; set; }
 		public int CORR_CONFI_PAIS { get; set; }
 		public int CORR_EMPRESA { get; set; }

@@ -7,7 +7,7 @@ using System.Net.Http;
 using System.Web;
 using System.Web.Http;
 
-namespace scueesRpt.Controllers
+namespace sgueesRpt.Controllers
 {
     public class eDocResult : IHttpActionResult
     {

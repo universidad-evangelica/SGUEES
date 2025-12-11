@@ -1,7 +1,7 @@
 using System;
 using eFramework.Core;
 
-namespace scuees.Models
+namespace sguees.Models
 {
     public class SEG_TIPO_USUARIO_OPCIONView
     {

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using scuees.api.Shared;
+using sguees.api.Shared;
 
-namespace scuees.Models
+namespace sguees.Models
 {
     public class SEG_USUARIO_LOGINView
     {

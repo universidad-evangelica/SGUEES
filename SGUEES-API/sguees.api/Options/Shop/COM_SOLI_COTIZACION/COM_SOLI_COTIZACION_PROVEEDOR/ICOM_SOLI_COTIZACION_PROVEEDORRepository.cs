@@ -1,7 +1,7 @@
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
-namespace scuees.Repositories
+using sguees.Models;
+namespace sguees.Repositories
 {
 	public interface ICOM_SOLI_COTIZACION_PROVEEDORRepository: IRepository<COM_SOLI_COTIZACION_PROVEEDORTable>
 	{

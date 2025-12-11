@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace scuees.Models
+namespace sguees.Models
 {
     public class GEN_LISTAView
     {

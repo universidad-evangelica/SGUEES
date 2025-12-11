@@ -1,4 +1,4 @@
-namespace scuees.api.Shared
+namespace sguees.api.Shared
 {
     public enum UserType
     {

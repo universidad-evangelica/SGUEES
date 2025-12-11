@@ -1,6 +1,6 @@
 using System;
 
-namespace scueesRpt.Models
+namespace sgueesRpt.Models
 {
     public class LoginRequest
     {

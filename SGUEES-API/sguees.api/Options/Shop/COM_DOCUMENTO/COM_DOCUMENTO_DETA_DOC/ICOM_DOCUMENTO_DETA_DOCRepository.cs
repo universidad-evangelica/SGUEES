@@ -1,7 +1,7 @@
 using eFramework.Data;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public interface ICOM_DOCUMENTO_DETA_DOCRepository: IRepository<COM_DOCUMENTO_DETA_DOCTable>
 	{

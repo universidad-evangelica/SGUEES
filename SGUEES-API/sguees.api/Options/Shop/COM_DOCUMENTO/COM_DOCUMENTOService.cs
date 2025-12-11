@@ -3,8 +3,8 @@ using System.Threading.Tasks;
 using eFramework.Core;
 using eadmindevprojectmanagement.Models;
 using eadmindevprojectmanagement.Repositories;
-using scuees.Repositories;
-using scuees.Models;
+using sguees.Repositories;
+using sguees.Models;
 
 namespace eadmindevprojectmanagement.Services
 {

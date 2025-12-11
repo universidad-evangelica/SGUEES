@@ -4,9 +4,9 @@ using Microsoft.Extensions.Configuration;
 using System.Linq;
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public class COM_UNIDAD_MEDIDARepository: BaseRepository<COM_UNIDAD_MEDIDATable>, ICOM_UNIDAD_MEDIDARepository
 	{

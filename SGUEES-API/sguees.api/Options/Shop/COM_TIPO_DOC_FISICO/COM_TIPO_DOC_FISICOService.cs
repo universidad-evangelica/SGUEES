@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
-using scuees.Models;
-using scuees.Repositories;
+using sguees.Models;
+using sguees.Repositories;
 
-namespace scuees.Services
+namespace sguees.Services
 {
 	public class COM_TIPO_DOC_FISICOService: ICOM_TIPO_DOC_FISICOService
 	{

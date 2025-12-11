@@ -4,14 +4,14 @@ using Microsoft.Extensions.Configuration;
 using System.Linq;
 using eFrameworkAPI.Data;
 using eFrameworkAPI.Core;
-using scuees.Models;
+using sguees.Models;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text;
 using Org.BouncyCastle.Bcpg;
 using System.Reflection.Metadata;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public class COM_JSONRepository : BaseRepository, ICOM_JSONRepository
 	{

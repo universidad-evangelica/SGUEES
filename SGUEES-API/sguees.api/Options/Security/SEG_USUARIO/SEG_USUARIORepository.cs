@@ -4,13 +4,13 @@ using Microsoft.Extensions.Configuration;
 using System.Linq;
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public class SEG_USUARIORepository : BaseRepository<SEG_USUARIOTable>, ISEG_USUARIORepository
 	{
@@ -70,13 +70,26 @@ namespace scuees.Repositories
 				reader.Close();
 				reader = null;
 
-				objResultado.Data = response;
-				objResultado.Result = true;
-				objResultado.RowsAffected = 1;
-				objResultado.CodeHelper = 0;
-				objResultado.ErrorCode = 0;
-				objResultado.ErrorMessage = "";
-				objResultado.ErrorSource = "";
+				if (response == null)
+				{
+					objResultado.Data = null;
+					objResultado.Result = false;
+					objResultado.RowsAffected = 0;
+					objResultado.CodeHelper = 0;
+					objResultado.ErrorCode = -1;
+					objResultado.ErrorMessage = "No se encontraron datos";
+					objResultado.ErrorSource = "";
+				}
+				else
+				{
+					objResultado.Data = response;
+					objResultado.Result = true;
+					objResultado.RowsAffected = 1;
+					objResultado.CodeHelper = 0;
+					objResultado.ErrorCode = 0;
+					objResultado.ErrorMessage = "";
+					objResultado.ErrorSource = "";
+				}
 			}
 			catch (System.Exception e)
 			{
@@ -100,7 +113,7 @@ namespace scuees.Repositories
 			CResult objResultado = new CResult();
 			try
 			{
-				var vAuth = await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_COM_VALIDA_USUARIO_CLASS", false, xWhere);	
+				var vAuth = await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "ADM_SP_VALIDA_USUARIO_CLASS", false, xWhere);	
 
 				objResultado.Data = vAuth;
 				objResultado.Result = true;
@@ -139,13 +152,26 @@ namespace scuees.Repositories
 				reader.Close();
 				reader = null;
 
-				objResultado.Data = response;
-				objResultado.Result = true;
-				objResultado.RowsAffected = 1;
-				objResultado.CodeHelper = 0;
-				objResultado.ErrorCode = 0;
-				objResultado.ErrorMessage = "";
-				objResultado.ErrorSource = "";
+				if (response == null)
+				{
+					objResultado.Data = null;
+					objResultado.Result = false;
+					objResultado.RowsAffected = 0;
+					objResultado.CodeHelper = 0;
+					objResultado.ErrorCode = -1;
+					objResultado.ErrorMessage = "Usuario no encontrado";
+					objResultado.ErrorSource = "";
+				}
+				else
+				{
+					objResultado.Data = response;
+					objResultado.Result = true;
+					objResultado.RowsAffected = 1;
+					objResultado.CodeHelper = 0;
+					objResultado.ErrorCode = 0;
+					objResultado.ErrorMessage = "";
+					objResultado.ErrorSource = "";
+				}
 			}
 			catch (System.Exception e)
 			{

@@ -4,10 +4,10 @@ using Microsoft.Extensions.Configuration;
 using System.Linq;
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 using eFrameworkAPI.Core;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public class COM_JSON_DOCRepository: BaseRepository<COM_JSON_DOCTable>, ICOM_JSON_DOCRepository
 	{

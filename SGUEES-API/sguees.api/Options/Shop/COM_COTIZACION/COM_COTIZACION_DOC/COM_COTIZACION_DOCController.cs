@@ -5,10 +5,10 @@ using Microsoft.AspNetCore.Authorization;
 using System.Linq;
 using System.Security.Claims;
 using eFramework.Core;
-using scuees.Models;
-using scuees.Services;
+using sguees.Models;
+using sguees.Services;
 
-namespace scuees.Controllers
+namespace sguees.Controllers
 {
 	[Authorize]
 	[Route("[controller]")]

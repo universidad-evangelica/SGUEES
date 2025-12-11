@@ -4,9 +4,9 @@ using Microsoft.Extensions.Configuration;
 using System.Linq;
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public class COM_CUADRO_COMPARATIVO_CONFIG_AUTORIZACIONESRepository: BaseRepository<COM_CUADRO_COMPARATIVO_CONFIG_AUTORIZACIONESTable>, ICOM_CUADRO_COMPARATIVO_CONFIG_AUTORIZACIONESRepository
 	{

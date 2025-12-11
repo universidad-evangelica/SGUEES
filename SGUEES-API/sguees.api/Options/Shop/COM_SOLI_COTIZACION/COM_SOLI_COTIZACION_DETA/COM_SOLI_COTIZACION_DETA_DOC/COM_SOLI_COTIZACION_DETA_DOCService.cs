@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
-using scuees.Models;
-using scuees.Repositories;
+using sguees.Models;
+using sguees.Repositories;
 
-namespace scuees.Services
+namespace sguees.Services
 {
 	public class COM_SOLI_COTIZACION_DETA_DOCService: ICOM_SOLI_COTIZACION_DETA_DOCService
 	{

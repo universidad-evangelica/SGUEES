@@ -1,7 +1,7 @@
 using eFramework.Data;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public interface ISEG_TIPO_USUARIORepository: IRepository<SEG_TIPO_USUARIOTable>
 	{

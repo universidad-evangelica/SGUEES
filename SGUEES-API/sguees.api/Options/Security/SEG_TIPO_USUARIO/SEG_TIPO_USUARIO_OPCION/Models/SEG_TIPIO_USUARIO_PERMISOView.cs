@@ -1,4 +1,4 @@
-namespace scuees.Models
+namespace sguees.Models
 {
     public class SEG_TIPIO_USUARIO_PERMISOView
     {

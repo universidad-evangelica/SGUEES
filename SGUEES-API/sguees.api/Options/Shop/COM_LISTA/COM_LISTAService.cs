@@ -1,8 +1,8 @@
-using scuees.Repositories;
+using sguees.Repositories;
 using eFramework.Core;
 
 
-namespace scuees.Services
+namespace sguees.Services
 {
 	public class COM_LISTAService : ICOM_LISTAService
 	{

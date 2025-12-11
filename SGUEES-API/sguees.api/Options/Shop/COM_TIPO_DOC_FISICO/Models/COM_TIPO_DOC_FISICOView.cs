@@ -1,6 +1,6 @@
 using System;
 
-namespace scuees.Models
+namespace sguees.Models
 {
 	public class COM_TIPO_DOC_FISICOView
 	{

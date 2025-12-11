@@ -6,7 +6,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Web;
 
-namespace scueesRpt.Controllers
+namespace sgueesRpt.Controllers
 {
     /// <summary>
     /// JWT Token generator class using "secret-key"

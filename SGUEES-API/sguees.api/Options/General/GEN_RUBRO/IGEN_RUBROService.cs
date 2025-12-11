@@ -1,8 +1,8 @@
 using System.Threading.Tasks;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Services
+namespace sguees.Services
 {
 	public interface IGEN_RUBROService
 	{

@@ -4,10 +4,10 @@ using Microsoft.Extensions.Configuration;
 using System.Linq;
 using eFramework.Data;
 using eFramework.Core;
-using scuees.Models;
+using sguees.Models;
 using System.Text;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public class COM_ORDEN_COMPRARepository: BaseRepository<COM_ORDEN_COMPRATable>, ICOM_ORDEN_COMPRARepository
 	{

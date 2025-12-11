@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using System.Threading.Tasks;
 using System.Linq;
 
-namespace scuees.api.Policies
+namespace sguees.api.Policies
 {
     public class HasScopeHandler : AuthorizationHandler<HasScopeRequirement>
     {

@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text;
-using scuees.api.framework;
-using scuees.api.Policies;
+using sguees.api.framework;
+using sguees.api.Policies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;

@@ -1,8 +1,8 @@
 using eFramework.Core;
 using eFramework.Data;
-using scuees.Models;
+using sguees.Models;
 
-namespace scuees.Repositories
+namespace sguees.Repositories
 {
 	public interface IGEN_TIPO_GASTORepository: IRepository<GEN_TIPO_GASTOTable>
 	{
