@@ -1,0 +1,3 @@
+﻿CREATE USER [usr_transporte]
+  WITHOUT LOGIN
+GO

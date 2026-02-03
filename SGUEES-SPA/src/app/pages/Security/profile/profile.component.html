@@ -26,7 +26,8 @@
         [editorOptions]="{
         placeholder: 'Usuario...',
         showClearButton: false,
-        readOnly: true}"
+        readOnly: true,
+        elementAttr: largeTextOptions}"
         >
       </dxi-item>
       <dxi-item
@@ -36,7 +37,9 @@
         [editorOptions]="{
         placeholder: 'Nombre Usuario...',
         showClearButton: false,
-        readOnly: true}">
+        readOnly: true,
+        elementAttr: largeTextOptions}"
+        >
       </dxi-item>
       <dxi-item [colSpan]="1" [label]="{ text: ' '}">
         <dx-button
@@ -44,11 +47,11 @@
           [icon]="'edit'"
           [text]="'Cambiar Clave'"
           [type]="'default'"
-          [width]="180"
+          [width]="250"
           (onClick)="mostrarPopup()">
         </dx-button>
         <dx-popup
-          [width]="250"
+          [width]="400"
           [height]="350"
           [showTitle]="true"
           [title]="'Cambiar Clave'"
@@ -91,6 +94,7 @@
                   type="default"
                   [icon]="'save'"
                   stylingMode="contained"
+                  [width]="'100%'"
                   [useSubmitBehavior]="true"
                   (click)="cambioClave()"></dx-button>
               </div>
@@ -101,6 +105,7 @@
                   [icon]="'close'"
                   type="default"
                   stylingMode="contained"
+                  [width]="'100%'"
                   routerLinkActive="router-link-active"
                   (click)="hidePopup()">
                 </dx-button>

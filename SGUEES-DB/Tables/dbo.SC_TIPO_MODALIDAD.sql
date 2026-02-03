@@ -1,0 +1,13 @@
+﻿CREATE TABLE [dbo].[SC_TIPO_MODALIDAD] (
+  [CORR_EMPRESA] [int] NOT NULL,
+  [CORR_TIPO_MODALIDAD] [int] NOT NULL,
+  [NOMBRE_TIPO_MODALIDAD] [varchar](250) NULL,
+  [USUARIO_CREA] [varchar](50) NULL,
+  [ESTACION_CREA] [varchar](50) NULL,
+  [FECHA_CREA] [datetime] NULL,
+  [USUARIO_ACTU] [varchar](50) NULL,
+  [ESTACION_ACTU] [varchar](50) NULL,
+  [FECHA_ACTU] [datetime] NULL
+)
+ON [PRIMARY]
+GO

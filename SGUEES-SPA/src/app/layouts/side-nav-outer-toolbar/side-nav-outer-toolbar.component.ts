@@ -13,7 +13,9 @@ import { CommonModule } from '@angular/common';
 
 import { Router, RouterModule, NavigationEnd, Event } from '@angular/router';
 import { ScreenService, AppInfoService } from '../../shared/services';
-import { SideNavigationMenuModule, AppHeaderModule, AppFooterModule } from 'src/app/shared/components';
+import { SideNavigationMenuModule } from 'src/app/shared/components/library/side-navigation-menu/side-navigation-menu.component';
+import { AppHeaderModule } from 'src/app/shared/components/library/app-header/app-header.component';
+import { AppFooterModule } from 'src/app/shared/components/library/app-footer/app-footer.component';
 
 import { Subscription } from 'rxjs';
 

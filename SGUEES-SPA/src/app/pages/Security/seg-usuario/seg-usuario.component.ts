@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+import { confirm } from 'devextreme/ui/dialog';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
@@ -108,6 +109,7 @@ export class SegUsuarioComponent extends CBaseComponent implements OnInit {
 				USUARIO_ACTU: xModel.USUARIO_ACTU,
 				FECHA_ACTU: xModel.FECHA_ACTU,
 				ESTACION_ACTU: xModel.ESTACION_ACTU,
+				USUARIO_AD: xModel.USUARIO_AD,
         DETALLE: xModel.DETALLE,
 			};
 		} else {
@@ -126,6 +128,7 @@ export class SegUsuarioComponent extends CBaseComponent implements OnInit {
 				USUARIO_ACTU: '',
 				FECHA_ACTU: new Date(),
 				ESTACION_ACTU: '',
+				USUARIO_AD: '',
         DETALLE: [],
 			};
 		}
@@ -338,4 +341,83 @@ export class SegUsuarioComponent extends CBaseComponent implements OnInit {
 		e.cancel = isCanceled;
 	}
   //#endregion
+
+	//#region "Restablecer Contraseña"
+	restablecerContrasena(e: any): void {
+		const LOGIN_SISTEMA = e.row.data.LOGIN_SISTEMA;
+		const NOMBRE_USUARIO = e.row.data.NOMBRE_USUARIO;
+
+		const result = confirm(
+			`¿Está seguro de restablecer la contraseña del usuario "${NOMBRE_USUARIO}" (${LOGIN_SISTEMA})?\n\nLa nueva contraseña será: ${LOGIN_SISTEMA}`,
+			'Confirmar Restablecimiento'
+		);
+
+		result.then((dialogResult) => {
+			if (dialogResult) {
+				this.loadingVisible = true;
+				this.service
+					.restablecerContrasena(LOGIN_SISTEMA)
+					.pipe(take(1))
+					.subscribe({
+						next: (response: any) => {
+							if (response.Result) {
+								this.notifyFx(
+									`Contraseña restablecida exitosamente.\nNueva contraseña: ${LOGIN_SISTEMA}`,
+									NotifyType.Success
+								);
+							} else {
+								this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							}
+							this.loadingVisible = false;
+						},
+						error: (error: any) => {
+							this.notifyFx(error, NotifyType.Error);
+							this.loadingVisible = false;
+						},
+					});
+			}
+		});
+	}
+
+	restablecerContrasenaForm(): void {
+		const LOGIN_SISTEMA = this.model.LOGIN_SISTEMA;
+		const NOMBRE_USUARIO = this.model.NOMBRE_USUARIO;
+
+		if (!LOGIN_SISTEMA) {
+			this.notifyFx('Seleccione un usuario válido.', NotifyType.Warning);
+			return;
+		}
+
+		const result = confirm(
+			`¿Está seguro de restablecer la contraseña del usuario "${NOMBRE_USUARIO}" (${LOGIN_SISTEMA})?\n\nLa nueva contraseña será: ${LOGIN_SISTEMA}`,
+			'Confirmar Restablecimiento'
+		);
+
+		result.then((dialogResult) => {
+			if (dialogResult) {
+				this.loadingVisible = true;
+				this.service
+					.restablecerContrasena(LOGIN_SISTEMA)
+					.pipe(take(1))
+					.subscribe({
+						next: (response: any) => {
+							if (response.Result) {
+								this.notifyFx(
+									`Contraseña restablecida exitosamente.\nNueva contraseña: ${LOGIN_SISTEMA}`,
+									NotifyType.Success
+								);
+							} else {
+								this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							}
+							this.loadingVisible = false;
+						},
+						error: (error: any) => {
+							this.notifyFx(error, NotifyType.Error);
+							this.loadingVisible = false;
+						},
+					});
+			}
+		});
+	}
+	//#endregion
 }

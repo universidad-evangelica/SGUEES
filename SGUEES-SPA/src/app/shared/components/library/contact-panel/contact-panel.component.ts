@@ -24,12 +24,10 @@ import {
   DxValidationGroupModule,
 } from 'devextreme-angular';
 import { DxButtonTypes } from 'devextreme-angular/ui/button';
-import {
-  FormTextboxModule,
-  FormPhotoModule,
-  CardActivitiesModule,
-  ContactStatusModule,
-} from 'src/app/shared/components';
+import { FormTextboxModule } from 'src/app/shared/components/utils/form-textbox/form-textbox.component';
+import { FormPhotoModule } from 'src/app/shared/components/utils/form-photo/form-photo.component';
+import { CardActivitiesModule } from 'src/app/shared/components/library/card-activities/card-activities.component';
+import { ContactStatusModule } from 'src/app/shared/components/utils/contact-status/contact-status.component';
 import { ScreenService, DataService } from 'src/app/shared/services';
 import { distinctUntilChanged, Subject, Subscription} from 'rxjs';
 import { Contact } from 'src/app/types/contact';

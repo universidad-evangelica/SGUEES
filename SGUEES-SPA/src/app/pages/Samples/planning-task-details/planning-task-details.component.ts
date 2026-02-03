@@ -9,12 +9,10 @@ import {
   DxValidationGroupModule,
   DxScrollViewModule,
 } from 'devextreme-angular';
-import {
-  CardActivitiesModule,
-  CardNotesModule,
-  CardMessagesModule,
-  StatusIndicatorModule,
-} from 'src/app/shared/components';
+import { CardActivitiesModule } from 'src/app/shared/components/library/card-activities/card-activities.component';
+import { CardNotesModule } from 'src/app/shared/components/library/card-notes/card-notes.component';
+import { CardMessagesModule } from 'src/app/shared/components/library/card-messages/card-messages.component';
+import { StatusIndicatorModule } from 'src/app/shared/components/library/status-indicator/status-indicator.component';
 import { Task } from 'src/app/types/task';
 import { DataService } from 'src/app/shared/services';
 import { TaskFormModule } from 'src/app/shared/components/library/task-form/task-form.component';

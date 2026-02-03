@@ -16,3 +16,10 @@
     margin: 0 auto;
   }
 }
+
+:deep(.large-text) {
+  .dx-texteditor-input {
+    font-size: 48px !important;
+    font-weight: 500 !important;
+  }
+}

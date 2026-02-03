@@ -50,9 +50,14 @@ export class AuthService {
 					if (response) {
             if (response.Result)
             {
-              localStorage.setItem('token', response.Data.TOKEN);
-              this.decodedToken = this.jwtHelper.decodeToken(response.Data.TOKEN);
-              this.mainMenu = response.Data.OPCIONES;
+              // Verificar si requiere cambio de contraseña
+              if (!response.Data.REQUIERE_CAMBIO_CLAVE) {
+                // Solo guardar token si NO requiere cambio de contraseña
+                localStorage.setItem('token', response.Data.TOKEN);
+                this.decodedToken = this.jwtHelper.decodeToken(response.Data.TOKEN);
+                this.mainMenu = response.Data.OPCIONES;
+              }
+              // Siempre retornar la respuesta completa (incluyendo REQUIERE_CAMBIO_CLAVE)
             } else {
               notify(
                 {

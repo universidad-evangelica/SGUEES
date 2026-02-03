@@ -1,0 +1,200 @@
+@import url('https://fonts.googleapis.com/css?family=Raleway:400,500,600,700,800');
+
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+:root {
+  --blue: #0b3a6b;
+  --accent: #f6c02b;
+  --muted: #6b6b6b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#page-login-index {
+  background: url('/assets/img/Login_Portal_2.jpg') center center / cover no-repeat;
+  background-color: #f5f7fb; // Fallback si no hay imagen
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  font-family: 'Raleway', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.login-container {
+  width: 92vw;
+  max-width: 600px; // Más ancho como el mockup
+}
+
+.card {
+  background: #e8e8e8; // Fondo gris claro como el mockup
+  border-radius: 28px;
+  padding: 44px 40px; // Más padding para hacerlo más grande
+  box-shadow: 0 10px 30px rgba(5, 20, 50, 0.15);
+}
+
+.card-header {
+  text-align: center;
+  margin-bottom: 24px;
+
+  #logo-uees {
+    max-width: 240px; // Logo más grande
+    width: 100%;
+    height: auto;
+    background: #fff; // Fondo blanco para el logo
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.portal-system {
+  font-weight: 600;
+  color: #4d4d4d;
+  text-align: center;
+  margin-top: 20px;
+  margin-bottom: 28px;
+  letter-spacing: 0.5px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+#login-title {
+  font-size: 20px;
+  color: #888; // Gris como el mockup
+  text-align: center;
+  margin-bottom: 28px;
+  font-weight: 600;
+}
+
+.card-body {
+  .form-group {
+    margin-bottom: 14px;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 25px;
+    border: none;
+    box-shadow: none;
+    background: #fff; // Fondo blanco como el mockup
+    font-size: 14px;
+    font-family: 'Raleway', sans-serif;
+    outline: none;
+    color: #333;
+
+    &::placeholder {
+      color: #999; // Placeholder visible
+    }
+
+    &:focus {
+      background: #fff;
+      outline: 2px solid rgba(11, 58, 107, 0.2);
+    }
+
+    &:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+  }
+
+  .password-wrapper {
+    position: relative;
+
+    .password-toggle {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #6d6d6d;
+      font-size: 18px;
+      user-select: none;
+
+      &:hover {
+        color: #333;
+      }
+    }
+  }
+
+  .btn-login {
+    border-radius: 25px;
+    padding: 12px 1rem;
+    width: 100%;
+    background: #0b3a6b;
+    color: #fff;
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 15px;
+    font-family: 'Raleway', sans-serif;
+    margin-top: 4px;
+    transition: background 0.3s;
+
+    &:hover:not(:disabled) {
+      background: #083154;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  .forgot-link {
+    display: block;
+    text-align: center;
+    margin-top: 14px;
+    font-weight: 700;
+    color: #1363df;
+    text-decoration: none;
+    font-size: 14px;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  #lblInfo {
+    display: block;
+    margin-top: 12px;
+    color: #c0392b;
+    font-weight: 600;
+    text-align: center;
+    min-height: 18px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 576px) {
+  .card {
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .portal-system {
+    font-size: 12px;
+  }
+
+  #login-title {
+    font-size: 16px;
+  }
+}

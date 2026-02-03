@@ -1,12 +1,10 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
 //import { BrowserModule } from '@angular/platform-browser';
-import {
-  LoginFormComponent,
-  ResetPasswordFormComponent,
-  CreateAccountFormComponent,
-  ChangePasswordFormComponent,
-} from './shared/components';
+import { LoginFormComponent } from './shared/components/library/login-form/login-form.component';
+import { ResetPasswordFormComponent } from './shared/components/library/reset-password-form/reset-password-form.component';
+import { CreateAccountFormComponent } from './shared/components/library/create-account-form/create-account-form.component';
+import { ChangePasswordFormComponent } from './shared/components/library/change-password-form/change-password-form.component';
 import { AuthGuardService } from './shared/services';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { HomeComponent } from './pages/home/home.component';
@@ -48,6 +46,11 @@ const routes: Routes = [
 		path: 'general',
 		canActivate: [AuthGuardService],
 		loadChildren: () => import('./pages/General/general.module').then(m => m.GeneralModule)
+	},
+	{
+		path: 'selection-hiring',
+		canActivate: [AuthGuardService],
+		loadChildren: () => import('./pages/SelectionHiring/selection-hiring.module').then(m => m.SelectionHiringModule)
 	},
   {
     path: 'crm-contact-list',

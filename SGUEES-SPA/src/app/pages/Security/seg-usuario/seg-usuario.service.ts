@@ -76,6 +76,7 @@ export class SegUsuarioService {
 			{ dataField: 'NOMBRE_TIPO_USUARIO', caption: 'Tipo Usuario', width: 250 },
 			{ dataField: 'NOMBRE_ESTADO_USUARIO', caption: 'Estado Usuario', width: 170 },
 			{ dataField: 'IDIOMA', caption: 'Idioma', width: 75 },
+			{ dataField: 'USUARIO_AD', caption: 'Usuario AD', width: 120 },
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 150 },
 			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 125, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 150 },
@@ -105,6 +106,12 @@ export class SegUsuarioService {
 				label: { text: 'Correo Electronico' },
 				colSpan: 2,
 				editorOptions: { placeholder: 'Correo Electronico...', showClearButton: true },
+			},
+			{
+				dataField: 'USUARIO_AD',
+				label: { text: 'Usuario AD' },
+				colSpan: 2,
+				editorOptions: { placeholder: 'Usuario AD...', showClearButton: true },
 			},
 			{
 				dataField: 'TIPO_USUARIO',
@@ -196,6 +203,10 @@ export class SegUsuarioService {
     //   map((response: any) => {
     //   })
     // );
+  }
+
+  restablecerContrasena(LOGIN_SISTEMA: string): Observable<IResult> {
+    return this.http.post<IResult>(this.urlMtto + 'RestablecerContrasena', { LOGIN_SISTEMA });
   }
 
 }

@@ -12,11 +12,9 @@ import {
   DxToolbarModule,
   DxValidatorModule,
 } from 'devextreme-angular';
-import {
-  StatusIndicatorModule,
-  FormItemDateModule,
-  FormTextboxModule,
-} from 'src/app/shared/components';
+import { StatusIndicatorModule } from 'src/app/shared/components/library/status-indicator/status-indicator.component';
+import { FormItemDateModule } from 'src/app/shared/components/utils/form-datebox/form-datebox.component';
+import { FormTextboxModule } from 'src/app/shared/components/utils/form-textbox/form-textbox.component';
 import { taskPriorityList, taskStatusList } from 'src/app/types/task';
 import { Task } from 'src/app/types/task';
 import { ScreenService, getSizeQualifier } from 'src/app/shared/services/screen.service';

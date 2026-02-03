@@ -1,0 +1,3 @@
+﻿CREATE USER [radius]
+  WITHOUT LOGIN
+GO

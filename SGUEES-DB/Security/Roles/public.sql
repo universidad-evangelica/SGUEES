@@ -1,0 +1,2 @@
+﻿CREATE ROLE [public] AUTHORIZATION [dbo]
+GO

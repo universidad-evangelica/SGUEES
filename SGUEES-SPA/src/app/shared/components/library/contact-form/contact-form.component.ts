@@ -13,12 +13,10 @@ import {
   DxValidatorModule,
   DxValidationGroupModule,
 } from 'devextreme-angular';
-import {
-  ContactStatusModule,
-  FormTextboxModule,
-  FormPhotoModule,
-  StatusSelectBoxModule,
-} from 'src/app/shared/components';
+import { ContactStatusModule } from 'src/app/shared/components/utils/contact-status/contact-status.component';
+import { FormTextboxModule } from 'src/app/shared/components/utils/form-textbox/form-textbox.component';
+import { FormPhotoModule } from 'src/app/shared/components/utils/form-photo/form-photo.component';
+import { StatusSelectBoxModule } from 'src/app/shared/components/library/status-select-box/status-select-box.component';
 import { Contact } from 'src/app/types/contact';
 import { ValidationRule } from 'devextreme-angular/common';
 import { DxButtonTypes } from 'devextreme-angular/ui/button';

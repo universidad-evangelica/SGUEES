@@ -12,10 +12,8 @@ import {
 import { DxDataGridTypes } from 'devextreme-angular/ui/data-grid';
 import { exportDataGrid as exportDataGridToPdf } from 'devextreme/pdf_exporter';
 import { exportDataGrid as exportDataGridToXLSX } from 'devextreme/excel_exporter';
-import {
-  CardActivitiesModule,
-  ContactStatusModule,
-} from 'src/app/shared/components';
+import { CardActivitiesModule } from 'src/app/shared/components/library/card-activities/card-activities.component';
+import { ContactStatusModule } from 'src/app/shared/components/utils/contact-status/contact-status.component';
 import { Contact, contactStatusList, ContactStatus, } from 'src/app/types/contact';
 import { DxDropDownButtonTypes } from 'devextreme-angular/ui/drop-down-button';
 import DataSource from 'devextreme/data/data_source';
@@ -26,7 +24,7 @@ import { saveAs } from 'file-saver-es';
 import { jsPDF } from 'jspdf';
 import notify from "devextreme/ui/notify";
 import { formatPhone } from 'src/app/pipes/phone.pipe';
-import { FormPopupModule } from 'src/app/shared/components';
+import { FormPopupModule } from 'src/app/shared/components/utils/form-popup/form-popup.component';
 import { ContactPanelModule } from 'src/app/shared/components/library/contact-panel/contact-panel.component';
 import { ContactNewFormComponent, ContactNewFormModule } from 'src/app/shared/components/library/contact-new-form/contact-new-form.component';
 

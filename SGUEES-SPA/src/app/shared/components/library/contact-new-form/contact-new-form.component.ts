@@ -8,10 +8,8 @@ import {
   DxFormModule,
   DxValidatorModule,
 } from 'devextreme-angular';
-import {
-  FormTextboxModule,
-  FormPhotoUploaderModule,
-} from 'src/app/shared/components';
+import { FormTextboxModule } from 'src/app/shared/components/utils/form-textbox/form-textbox.component';
+import { FormPhotoUploaderModule } from 'src/app/shared/components/utils/form-photo-uploader/form-photo-uploader.component';
 import { newContact } from 'src/app/types/contact';
 import { getSizeQualifier } from 'src/app/shared/services/screen.service';
 

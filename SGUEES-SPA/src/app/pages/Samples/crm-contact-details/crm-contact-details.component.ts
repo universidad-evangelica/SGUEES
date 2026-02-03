@@ -7,11 +7,9 @@ import {
   DxDropDownButtonModule,
   DxScrollViewModule,
 } from 'devextreme-angular';
-import {
-  CardActivitiesModule,
-  CardNotesModule,
-  CardMessagesModule,
-} from 'src/app/shared/components';
+import { CardActivitiesModule } from 'src/app/shared/components/library/card-activities/card-activities.component';
+import { CardNotesModule } from 'src/app/shared/components/library/card-notes/card-notes.component';
+import { CardMessagesModule } from 'src/app/shared/components/library/card-messages/card-messages.component';
 import { DataService } from 'src/app/shared/services';
 import { forkJoin, map } from 'rxjs';
 import { Contact } from 'src/app/types/contact';

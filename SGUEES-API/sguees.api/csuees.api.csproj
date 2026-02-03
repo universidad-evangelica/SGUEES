@@ -10,6 +10,7 @@
     <PackageReference Include="MailKit" Version="4.1.0"/>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.30"/>
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.35.0"/>
+    <PackageReference Include="System.DirectoryServices.AccountManagement" Version="7.0.1"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\eFramework\eFramework.csproj"/>

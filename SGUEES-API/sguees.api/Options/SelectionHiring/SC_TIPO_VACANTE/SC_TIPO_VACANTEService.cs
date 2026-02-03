@@ -1,0 +1,54 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using eFramework.Core;
+using sguees.Models;
+using sguees.Repositories;
+
+namespace sguees.Services
+{
+	public class SC_TIPO_VACANTEService: ISC_TIPO_VACANTEService
+	{
+		private readonly ISC_TIPO_VACANTERepository _repo;
+		
+		public SC_TIPO_VACANTEService(ISC_TIPO_VACANTERepository repo)
+		{
+			_repo = repo;
+		}
+		
+		public async Task<CResult> GetAllAsync(SC_TIPO_VACANTEParam xWhere)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+			};
+			
+			return await _repo.GetAllAsync(p);
+		}
+		
+		public async Task<CResult> GetAsync(SC_TIPO_VACANTEParam xWhere)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+				new CParameter() {ParameterName="CORR_TIPO_VACANTE",Value=xWhere.CORR_TIPO_VACANTE,DbType=System.Data.DbType.Int32},
+			};
+		
+			return await _repo.GetAsync(p);
+		}
+		
+		public async Task<CResult> CreateAsync(SC_TIPO_VACANTETable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+		
+		public async Task<CResult> UpdateAsync(SC_TIPO_VACANTETable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+		
+		public async Task<CResult> DeleteAsync(SC_TIPO_VACANTETable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+	}
+}

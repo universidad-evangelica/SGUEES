@@ -38,6 +38,7 @@ export class ProfileComponent {
     USUARIO_ACTU: '',
     FECHA_ACTU: new Date(),
     ESTACION_ACTU: '',
+    USUARIO_AD: '',
     DETALLE: [
       {
         LOGIN_SISTEMA: '',
@@ -75,6 +76,7 @@ export class ProfileComponent {
   modeClaveNueva: string;
   modeConfimClave: string;
   popupVisible = false;
+  largeTextOptions: any = { style: 'font-size: 48px; font-weight: 500;' };
 
   param: any = {
     TIPO_CONSULTA: 1,

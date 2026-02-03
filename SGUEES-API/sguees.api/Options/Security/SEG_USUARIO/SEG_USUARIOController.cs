@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Linq;
 using System.Security.Claims;
+using System.Collections.Generic;
 using eFramework.Core;
 using sguees.Models;
 using sguees.Services;
@@ -166,29 +167,27 @@ namespace sguees.Controllers
 		}
 		#endregion
 
-		[HttpPost("CambioClave")]
+		[AllowAnonymous]
+		[HttpPost("cambio-clave")]
 		public async Task<IActionResult> CambioClave(SEG_USUARIO_LOGINParam Data)
 		{
 			var pWhere = new List<CParameter>();
 			pWhere.Add(new CParameter() { ParameterName = "LOGIN_SISTEMA", Value = Data.LOGIN_SISTEMA, DbType = System.Data.DbType.String });
 			var UserForRepo = await _service.GetAsync(pWhere);
 
-			if (UserForRepo == null)
-				return BadRequest("Usuario No Existe");
+			if (UserForRepo == null || !UserForRepo.Result)
+			{
+				var errorResult = new CResult { Result = false, ErrorMessage = "Usuario No Existe", ErrorCode = -1 };
+				return BadRequest(errorResult);
+			}
 
 			var resultado = await _service.CambioClave(Data, "Admin", "e-coffee");
 			if (resultado.ErrorCode != 0)
 			{
-				return BadRequest(resultado.ErrorMessage);
+				return BadRequest(resultado);
 			}
 
-			// Agregado los permisos del usuario al token
-			var userOpcion = await _service.getUSUARIO_PERMISOS(Data.LOGIN_SISTEMA, Data.CODIGO_SUITE);
-
-			return Ok(new
-			{
-				token = _service.GenerateToken((SEG_USUARIOView)UserForRepo.Data, Data.CODIGO_SUITE, (List<SEG_USUARIO_PERMISOView>)userOpcion.Data)
-			});
+			return Ok(resultado);
 		}
 
 		[HttpGet("GetUSUARIOS_COM_CUADRO_COMPARATIVO_CONFIG_AUTORIZACIONES")]
@@ -196,6 +195,26 @@ namespace sguees.Controllers
 		public async Task<CResult> GetUSUARIOS_COM_CUADRO_COMPARATIVO_CONFIG_AUTORIZACIONES([FromQuery] SEG_USUARIOParam Data)
 		{
 			return await _service.GetAllSEG_USUARIO_LOOKUP(Data);
+		}
+
+		[HttpPost("RestablecerContrasena")]
+		[Authorize(Policy = "/seg-usuario|U")]
+		public async Task<IActionResult> RestablecerContrasena([FromBody] SEG_USUARIOParam Data)
+		{
+			var vLOGIN_SISTEMA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
+			var vESTACION = vLOGIN_SISTEMA;
+			var corrEmpresa = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+
+			var resultado = await _service.RestablecerContrasenaAsync(Data.LOGIN_SISTEMA, corrEmpresa, vLOGIN_SISTEMA, vESTACION);
+			
+			if (resultado.ErrorCode == 0)
+			{
+				return Ok(resultado);
+			}
+			else
+			{
+				return BadRequest(resultado);
+			}
 		}
 	}
 }

@@ -1,0 +1,59 @@
+﻿CREATE TABLE [dbo].[PEM_TRABAJADORES_OTROS_DATOS] (
+  [TRBCUN] [nvarchar](50) COLLATE Modern_Spanish_CI_AS NOT NULL,
+  [LUGAR_NAC] [nvarchar](300) NULL,
+  [IDRELIGION] [int] NULL,
+  [IGLESIA] [nvarchar](300) NULL,
+  [DISCAPACIDAD] [nvarchar](4) NULL,
+  [LICENCIA_COND] [nvarchar](100) NULL,
+  [JUBILADO] [nvarchar](4) NULL,
+  [TIPO_SALARIO] [nvarchar](10) NULL,
+  [CONYUGE] [nvarchar](300) NULL,
+  [DUI] [nvarchar](60) NULL,
+  [NIT] [nvarchar](60) NULL,
+  [CLAVE] [varchar](100) NULL,
+  [OTRO_PATRONO] [nvarchar](4) NULL,
+  [CONTRIBUYENTE] [nvarchar](4) NULL,
+  [FINGRESO] [datetime] NULL,
+  [NUP] [nvarchar](60) NULL,
+  [ISSS] [nvarchar](60) NULL,
+  [CTA_BANCO] [nvarchar](60) NULL,
+  [IDDEPARTAMENTO] [nvarchar](30) NULL,
+  [IDMUNICIPIO] [nvarchar](30) NULL,
+  [IDRELOJ_DOCENTE] [nvarchar](30) NULL,
+  [NO_MARCA] [nvarchar](10) NULL,
+  [PLANILLA_DOCENTE] [nvarchar](30) NULL,
+  [USUARIO] [nvarchar](100) NULL,
+  [FECHA] [datetime] NULL,
+  [COD_UNIDAD_ORG] [int] NULL,
+  [COD_DEPTO_ORG] [int] NULL,
+  [TIPDOC] [varchar](10) NULL,
+  [PAGOPORCTA] [bit] NULL,
+  [ACTIVOCICLO] [bit] NULL,
+  [TIPOCONTRATO] [varchar](1) NULL,
+  [TIPOTIEMPO] [varchar](1) NULL,
+  [TIPODOCENTE] [varchar](10) NULL,
+  [SALMINIMO] [nvarchar](4) NULL,
+  [EXPERIENCIADOC] [bit] NULL,
+  [DOCPERMANENTE] [bit] NULL,
+  [DOCHORACLASE] [bit] NULL,
+  [PORCRENTA] [numeric](12, 2) NULL,
+  [IDRELOJ_DOCENTEold] [nchar](30) NULL,
+  CONSTRAINT [PK_PEM_TRABAJADORES_OTROS_DATOS] PRIMARY KEY CLUSTERED ([TRBCUN])
+)
+ON [PRIMARY]
+GO
+
+GRANT SELECT ON [dbo].[PEM_TRABAJADORES_OTROS_DATOS] TO [radius] WITH GRANT OPTION
+GO
+
+GRANT
+  SELECT,
+  UPDATE ([CLAVE])
+ON [dbo].[PEM_TRABAJADORES_OTROS_DATOS] TO [ssr] WITH GRANT OPTION
+GO
+
+GRANT SELECT ON [dbo].[PEM_TRABAJADORES_OTROS_DATOS] TO [usr_transporte] WITH GRANT OPTION
+GO
+
+GRANT SELECT ON [dbo].[PEM_TRABAJADORES_OTROS_DATOS] TO [webmaster] WITH GRANT OPTION
+GO

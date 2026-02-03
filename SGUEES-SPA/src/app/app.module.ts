@@ -4,13 +4,11 @@ import { LOCALE_ID, NgModule } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
 import { SideNavOuterToolbarModule, SingleCardModule } from './layouts';
-import {
-  AppFooterModule,
-  ResetPasswordFormModule,
-  CreateAccountFormModule,
-  ChangePasswordFormModule,
-  LoginFormModule,
-} from './shared/components';
+import { AppFooterModule } from './shared/components/library/app-footer/app-footer.component';
+import { ResetPasswordFormModule } from './shared/components/library/reset-password-form/reset-password-form.component';
+import { CreateAccountFormModule } from './shared/components/library/create-account-form/create-account-form.component';
+import { ChangePasswordFormModule } from './shared/components/library/change-password-form/change-password-form.component';
+import { LoginFormModule } from './shared/components/library/login-form/login-form.component';
 
 import { AuthService, ScreenService, AppInfoService } from './shared/services';
 import { UnauthenticatedContentModule } from './layouts/unauthenticated-content/unauthenticated-content';
@@ -28,6 +26,7 @@ import { SecurityModule } from './pages/Security/security.module';
 import { ShopModule } from './pages/Shop/shop.module';
 import { GeneralModule } from './pages/General/general.module';
 import { AccountingModule } from './pages/Accounting/accounting.module';
+import { SelectionHiringModule } from './pages/SelectionHiring/selection-hiring.module';
 
 import { CrmContactListModule } from './pages/Samples/crm-contact-list/crm-contact-list.component';
 import { CrmContactDetailsModule } from './pages/Samples/crm-contact-details/crm-contact-details.component';
@@ -81,6 +80,7 @@ export function tokenGetterLocal(): string {
     ShopModule,
     GeneralModule,
     AccountingModule,
+    SelectionHiringModule,
     AppRoutingModule,
   ],
   providers: [

@@ -1,0 +1,3 @@
+﻿CREATE USER [ssr]
+  WITHOUT LOGIN
+GO

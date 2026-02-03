@@ -1,0 +1,3 @@
+﻿CREATE USER [webmaster]
+  WITHOUT LOGIN
+GO

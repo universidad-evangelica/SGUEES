@@ -10,6 +10,7 @@ using System.Text;
 using sguees.api.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using sguees.Services.Security;
 
 namespace sguees.Services
 {
@@ -19,17 +20,20 @@ namespace sguees.Services
 		private readonly ISEG_USUARIO_OPCIONRepository _SEG_USUARIO_OPCIONRepository;
 		private readonly IConfiguration _config;
 		private readonly ILogger<SEG_USUARIOService> _logger;
+        private readonly IActiveDirectoryService _adService;
 		
 		public SEG_USUARIOService(ISEG_USUARIORepository repo,
-									ISEG_USUARIO_OPCIONRepository SEG_USUARIO_OPCIONRepository,
-									IConfiguration config,
-									ILogger<SEG_USUARIOService> logger
-								)
+                                    ISEG_USUARIO_OPCIONRepository SEG_USUARIO_OPCIONRepository,
+                                    IConfiguration config,
+                                    ILogger<SEG_USUARIOService> logger,
+                                    IActiveDirectoryService adService
+                                )
 		{
 			_repo = repo;
 			_SEG_USUARIO_OPCIONRepository = SEG_USUARIO_OPCIONRepository;
 			_config = config;
 			_logger = logger;
+            _adService = adService;
 		}
 		
 		public async Task<CResult> GetAllAsync(SEG_USUARIOParam xWhere)
@@ -116,7 +120,7 @@ namespace sguees.Services
 				var pWhere = new List<CParameter>();
 				pWhere.Add(new CParameter() {ParameterName="LOGIN_SISTEMA",Value=LOGIN_SISTEMA,DbType=System.Data.DbType.String});
 				
-				var objResultadoUsuario = await _repo.GetUsuarioClassAsync(pWhere);
+				var objResultadoUsuario = await _repo.GetUsuarioAsync(pWhere);
 				
 				if (objResultadoUsuario.Result == false || objResultadoUsuario.Data == null)
 				{
@@ -174,71 +178,16 @@ namespace sguees.Services
             try
             {
                 SEG_USUARIOView DataUsuario = new ();
-                bool authenticatedInClass = false;
-
-                // Intentar autenticar en CLASS primero
-                try
-                {
-                    _logger.LogInformation($"[LoginAsync] Intentando autenticar en CLASS");
-                    var pAuth = new List<CParameter>();
-                    pAuth.Add(new CParameter() {ParameterName="@USUARIO",Value=LOGIN_SISTEMA,DbType=System.Data.DbType.String});
-                    pAuth.Add(new CParameter() {ParameterName="@CLAVE",Value=CLAVE_USUARIO,DbType=System.Data.DbType.String});
-
-                    var objResultaAuthClass = await _repo.GetAuthClassAsync(pAuth);
-                    _logger.LogInformation($"[LoginAsync] Respuesta CLASS: {objResultaAuthClass?.Result}, Data: {objResultaAuthClass?.Data}");
-
-                    // Si CLASS responde correctamente y el usuario fue autenticado
-                    if (objResultaAuthClass.Result == true && objResultaAuthClass.Data != null)
-                    {
-                        int classResult = 0;
-                        if (int.TryParse(objResultaAuthClass.Data.ToString(), out classResult) && classResult == 1)
-                        {
-                            // Usuario se autenticó exitosamente en CLASS
-                            authenticatedInClass = true;
-                            
-                            var pWhere = new List<CParameter>();
-                            pWhere.Add(new CParameter() {ParameterName="LOGIN_SISTEMA",Value=LOGIN_SISTEMA,DbType=System.Data.DbType.String});
-                            
-                            var objResultadoUsuario = await GetAsync(pWhere);
-                            if (objResultadoUsuario.Result == true && objResultadoUsuario.Data != null)
-                            {
-                                // Usuario existe en SEG_USUARIO
-                                DataUsuario = (SEG_USUARIOView)objResultadoUsuario.Data;
-                            }
-                            else
-                            {
-                                // Usuario autenticado en CLASS pero no en SEG_USUARIO local
-                                // Crear usuario temporal
-                                DataUsuario = new SEG_USUARIOView()
-                                {
-                                    LOGIN_SISTEMA = LOGIN_SISTEMA,
-                                    NOMBRE_USUARIO = LOGIN_SISTEMA,
-                                    ESTADO_USUARIO = UserStatus.Active,
-                                    TIPO_USUARIO = UserType.Normal,
-                                    CORR_EMPRESA = 1,
-                                    NOMBRE_EMPRESA = "Default"
-                                };
-                            }
-                        }
-                    }
-                }
-                catch (System.Exception)
-                {
-                    // Si falla CLASS, continuar con credenciales locales
-                    authenticatedInClass = false;
-                }
 
                 // Si no se autenticó en CLASS, intentar con credenciales locales
-                if (!authenticatedInClass)
-                {
-                    _logger.LogInformation($"[LoginAsync] Usuario no autenticado en CLASS, intentando con credenciales locales");
-                    var pWhere = new List<CParameter>();
-                    pWhere.Add(new CParameter() {ParameterName="LOGIN_SISTEMA",Value=LOGIN_SISTEMA,DbType=System.Data.DbType.String});
-                    
-                    var objResultadoUsuario = await GetAsync(pWhere);
-                    _logger.LogInformation($"[LoginAsync] GetAsync resultado: {objResultadoUsuario?.Result}");
 
-                    if (objResultadoUsuario.Result == false || objResultadoUsuario.Data == null)
+                var pWhere = new List<CParameter>();
+                pWhere.Add(new CParameter() {ParameterName="LOGIN_SISTEMA",Value=LOGIN_SISTEMA,DbType=System.Data.DbType.String});
+                    
+                var objResultadoUsuario = await GetAsync(pWhere);
+                _logger.LogInformation($"[LoginAsync] GetAsync resultado: {objResultadoUsuario?.Result}");
+
+                if (objResultadoUsuario.Result == false || objResultadoUsuario.Data == null)
                     {
                         objResultado.Data = null;
                         objResultado.Result = false;
@@ -250,17 +199,16 @@ namespace sguees.Services
                         return objResultado;
                     }
 
-                    DataUsuario = (SEG_USUARIOView) objResultadoUsuario.Data;
-                    if (!VerifyPasswordHash(CLAVE_USUARIO, DataUsuario.CLAVE_USUARIO, DataUsuario.CLAVE_USUARIO_SAL)) {
-                        objResultado.Data = null;
-                        objResultado.Result = false;
-                        objResultado.RowsAffected = 0;
-                        objResultado.CodeHelper = 0;
-                        objResultado.ErrorCode = -1;
-                        objResultado.ErrorMessage = "Usuario o Clave Inválida!";
-                        objResultado.ErrorSource = "Login()";
-                        return objResultado;
-                    }
+                DataUsuario = (SEG_USUARIOView) objResultadoUsuario.Data;
+                if (!VerifyPasswordHash(CLAVE_USUARIO, DataUsuario.CLAVE_USUARIO, DataUsuario.CLAVE_USUARIO_SAL)) {
+                    objResultado.Data = null;
+                    objResultado.Result = false;
+                    objResultado.RowsAffected = 0;
+                    objResultado.CodeHelper = 0;
+                    objResultado.ErrorCode = -1;
+                    objResultado.ErrorMessage = "Usuario o Clave Inválida!";
+                    objResultado.ErrorSource = "Login()";
+                    return objResultado;
                 }
 
                 if (DataUsuario.ESTADO_USUARIO != UserStatus.Active) {
@@ -274,8 +222,62 @@ namespace sguees.Services
                     return objResultado;
                 }
 
-                // Validar en AD si el usuario tiene USUARIO_AD asignado
-                // TEMPORALMENTE DESHABILITADO - La validación de AD se implementará posteriormente
+                // Validar en AD existencia/habilitación (cambios mínimos):
+                // Si AD está habilitado, validar por `USUARIO_AD` si existe, sino por `LOGIN_SISTEMA`.
+                var adEnabled = _config.GetSection("ActiveDirectory:Enabled").Get<bool>();
+                bool adUserExists = false; // se usará para decidir si mostrar modal de cambio de clave
+                if (adEnabled && !string.IsNullOrWhiteSpace(DataUsuario.USUARIO_AD))
+                {
+                    // Si AD está habilitado Y el usuario tiene USUARIO_AD, SIEMPRE validar en AD
+                    var adSam = DataUsuario.USUARIO_AD;
+                    _logger.LogInformation($"[LoginAsync] Validando usuario en AD: {adSam}");
+                    var adInfo = await _adService.GetUserStatusAsync(adSam);
+
+                    // Si la consulta no fue efectiva (error de conectividad), bloquear
+                    if (!adInfo.Checked)
+                    {
+                        _logger.LogError($"[LoginAsync] No se pudo validar usuario en AD: {adSam}. Verificar conectividad a AD.");
+                        objResultado.Data = null;
+                        objResultado.Result = false;
+                        objResultado.RowsAffected = 0;
+                        objResultado.CodeHelper =  0;
+                        objResultado.ErrorCode = -1;
+                        objResultado.ErrorMessage = "No se pudo validar usuario en Active Directory. Contactar administrador.";
+                        objResultado.ErrorSource = "Login()";
+                        return objResultado;
+                    }
+
+                    // Si el usuario NO existe en AD, bloquear
+                    if (!adInfo.Exists)
+                    {
+                        _logger.LogWarning($"[LoginAsync] Usuario no encontrado en AD: {adSam}");
+                        objResultado.Data = null;
+                        objResultado.Result = false;
+                        objResultado.RowsAffected = 0;
+                        objResultado.CodeHelper =  0;
+                        objResultado.ErrorCode = -1;
+                        objResultado.ErrorMessage = "Usuario no existe en Active Directory.";
+                        objResultado.ErrorSource = "Login()";
+                        return objResultado;
+                    }
+
+                    // Si el usuario existe en AD pero está inactivo, bloquear
+                    if (!adInfo.Enabled)
+                    {
+                        _logger.LogWarning($"[LoginAsync] Usuario inactivo en AD: {adSam}");
+                        objResultado.Data = null;
+                        objResultado.Result = false;
+                        objResultado.RowsAffected = 0;
+                        objResultado.CodeHelper =  0;
+                        objResultado.ErrorCode = -1;
+                        objResultado.ErrorMessage = "Usuario de Active Directory inactivo";
+                        objResultado.ErrorSource = "Login()";
+                        return objResultado;
+                    }
+
+                    // Si llegó aquí, el usuario existe y está activo en AD
+                    adUserExists = true;
+                }
 
                 // Usuario Autenticado y se busca sus Autorizaciones
                 _logger.LogInformation($"[LoginAsync] Usuario autenticado, buscando permisos");
@@ -294,6 +296,18 @@ namespace sguees.Services
                     return objResultado;
                 }
 
+                // Verificar si es el primer login del usuario
+                bool esPrimerLogin = await _repo.VerificarPrimerLoginAsync(LOGIN_SISTEMA);
+                _logger.LogInformation($"[LoginAsync] Es primer login: {esPrimerLogin}");
+                
+                // Verificar si la contraseña ha expirado
+                var validacionExpiracion = await _repo.ValidarExpiracionClaveAsync(LOGIN_SISTEMA);
+                _logger.LogInformation($"[LoginAsync] Validación expiración - Requiere cambio: {validacionExpiracion.REQUIERE_CAMBIO_CLAVE}, Días para expirar: {validacionExpiracion.DIAS_PARA_EXPIRAR}");
+                
+                // Si no existe un usuario en AD (o no tiene USUARIO_AD), no mostrar modal: requiereCambio=false
+                // También requiere cambio si la contraseña ha expirado
+                bool requiereCambio = (esPrimerLogin && adUserExists) || validacionExpiracion.REQUIERE_CAMBIO_CLAVE;
+
                 var Data = new SEG_USUARIO_LOGINView() {
                     LOGIN_SISTEMA = LOGIN_SISTEMA,
                     CODIGO_SUITE = CODIGO_SUITE,
@@ -301,10 +315,17 @@ namespace sguees.Services
                     ESTADO_USUARIO = DataUsuario.ESTADO_USUARIO,
                     CORR_EMPRESA = DataUsuario.CORR_EMPRESA,
                     NOMBRE_EMPRESA = DataUsuario.NOMBRE_EMPRESA,
+                    REQUIERE_CAMBIO_CLAVE = requiereCambio,
                     TOKEN = GenerateToken(DataUsuario, CODIGO_SUITE, (List<SEG_USUARIO_PERMISOView>) objResultadoPermiso.Data),
                     OPCIONES = GenerateMenu((List<SEG_USUARIO_PERMISOView>) objResultadoPermiso.Data)
                 };
                 _logger.LogInformation($"[LoginAsync] Login exitoso para usuario: {LOGIN_SISTEMA}");
+
+                // Registrar login exitoso en historial (solo si NO es primer login)
+                if (!esPrimerLogin)
+                {
+                    await _repo.RegistrarLoginHistorialAsync(LOGIN_SISTEMA, null, null, CODIGO_SUITE, true, "Login exitoso");
+                }
 
                 objResultado.Data = Data;
                 objResultado.Result = true;
@@ -547,7 +568,37 @@ namespace sguees.Services
         #endregion
         public async Task<CResult> CambioClave(SEG_USUARIO_LOGINParam Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
-			return await _repo.CambioClave(Data, vLOGIN_SISTEMA, vESTACION);
+            // Regla: permitir cambio de clave solo si el usuario tiene USUARIO_AD asignado
+            var validaUsuario = await _repo.GetAsync(new List<CParameter>{
+                new CParameter(){ ParameterName = "LOGIN_SISTEMA", Value = Data.LOGIN_SISTEMA, DbType = System.Data.DbType.String }
+            });
+            if (!validaUsuario.Result || validaUsuario.Data == null)
+            {
+                return new CResult{ Result = false, ErrorCode = -1, ErrorMessage = "Usuario no encontrado", RowsAffected = 0 };
+            }
+            var usuario = (SEG_USUARIOView)validaUsuario.Data;
+            if (string.IsNullOrWhiteSpace(usuario.USUARIO_AD))
+            {
+                return new CResult{ Result = false, ErrorCode = -1, ErrorMessage = "Cambio de contraseña permitido solo para usuarios con USUARIO_AD asignado", RowsAffected = 0 };
+            }
+
+            var resultado = await _repo.CambioClave(Data, vLOGIN_SISTEMA, vESTACION);
+			
+			// Si el cambio de clave fue exitoso, registrar el login en historial
+			// FECHA_CAMBIO_CLAVE y FLAG_PRIMER_LOGIN se actualizan en el SP de cambio de clave
+			if (resultado.Result)
+			{
+				await _repo.RegistrarLoginHistorialAsync(
+					Data.LOGIN_SISTEMA, 
+					null, 
+					null, 
+					Data.CODIGO_SUITE, 
+					true, 
+					"Cambio de contraseña exitoso - Primer login completado"
+				);
+			}
+			
+			return resultado;
 		}
 
         public async Task<CResult> getUSUARIO_PERMISOS(string vLOGIN_SISTEMA,string CODIGO_SUITE)
@@ -561,6 +612,54 @@ namespace sguees.Services
             var DataUsuario = (SEG_USUARIOView) objResultadoUsuario.Data;
 
 			return await _SEG_USUARIO_OPCIONRepository.GetPermisosAsync(vLOGIN_SISTEMA, CODIGO_SUITE);
+		}
+
+        public async Task<CResult> RestablecerContrasenaAsync(string LOGIN_SISTEMA, int CORR_EMPRESA, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			var objResultado = new CResult();
+
+			try
+			{
+				// Buscar usuario para verificar que existe
+				var pWhere = new List<CParameter>();
+				pWhere.Add(new CParameter() {ParameterName="LOGIN_SISTEMA",Value=LOGIN_SISTEMA,DbType=System.Data.DbType.String});
+				
+				var objResultadoUsuario = await _repo.GetAsync(pWhere);
+				
+				if (objResultadoUsuario.Result == false || objResultadoUsuario.Data == null)
+				{
+					objResultado.Result = false;
+					objResultado.ErrorMessage = "Usuario no encontrado";
+					objResultado.ErrorCode = -1;
+					return objResultado;
+				}
+
+				// Restablecer contraseña (asignar LOGIN_SISTEMA como contraseña)
+                var usuarioData = new SEG_USUARIOTable
+				{
+					LOGIN_SISTEMA = LOGIN_SISTEMA,
+                    CORR_EMPRESA = CORR_EMPRESA,
+					USUARIO_ACTU = vLOGIN_SISTEMA,
+					ESTACION_ACTU = vESTACION
+				};
+
+				// Actualizar solo la contraseña, pasando el LOGIN_SISTEMA como contraseña en texto plano
+                objResultado = await _repo.RestablecerContrasenaAsync(usuarioData, LOGIN_SISTEMA, vLOGIN_SISTEMA, vESTACION);
+				
+				if (objResultado.Result)
+				{
+					objResultado.ErrorMessage = $"Contraseña restablecida exitosamente. Nueva contraseña: {LOGIN_SISTEMA}";
+				}
+
+				return objResultado;
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Result = false;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorCode = -1;
+				return objResultado;
+			}
 		}
 
         public async Task<CResult> GetAllSEG_USUARIO_LOOKUP(SEG_USUARIOParam xWhere)

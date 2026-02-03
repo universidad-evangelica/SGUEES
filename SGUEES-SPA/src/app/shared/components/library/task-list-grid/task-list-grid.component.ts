@@ -15,9 +15,7 @@ import {
 } from 'devextreme-angular';
 import { DxDataGridTypes } from 'devextreme-angular/ui/data-grid';
 import { DxTabsTypes } from 'devextreme-angular/ui/tabs';
-import {
-  StatusIndicatorModule,
-} from 'src/app/shared/components';
+import { StatusIndicatorModule } from 'src/app/shared/components/library/status-indicator/status-indicator.component';
 import { exportDataGrid as exportToPdf } from 'devextreme/pdf_exporter';
 import { exportDataGrid as exportToXLSX } from 'devextreme/excel_exporter';
 import { Workbook } from 'exceljs';
