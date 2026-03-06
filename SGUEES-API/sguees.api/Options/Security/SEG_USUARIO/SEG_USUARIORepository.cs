@@ -552,18 +552,19 @@ namespace sguees.Repositories
 			}
 		}
 
-		public async Task<CResult> RegistrarLoginHistorialAsync(string loginSistema, string ipAddress, string navegador, string codigoSuite, bool exitoso, string mensaje)
+public async Task<CResult> RegistrarLoginHistorialAsync(string loginSistema, string ipAddress, string navegador, string codigoSuite, bool exitoso, string mensaje, bool esCambioClave = false)
+	{
+		CResult objResultado = new CResult();
+		try
 		{
-			CResult objResultado = new CResult();
-			try
-			{
-				var p = new List<CParameter>();
-				p.Add(new CParameter() { ParameterName = "@LOGIN_SISTEMA", Value = loginSistema, DbType = System.Data.DbType.String });
-				p.Add(new CParameter() { ParameterName = "@IP_ADDRESS", Value = ipAddress, DbType = System.Data.DbType.String });
-				p.Add(new CParameter() { ParameterName = "@NAVEGADOR", Value = navegador, DbType = System.Data.DbType.String });
-				p.Add(new CParameter() { ParameterName = "@CODIGO_SUITE", Value = codigoSuite, DbType = System.Data.DbType.String });
-				p.Add(new CParameter() { ParameterName = "@EXITOSO", Value = exitoso, DbType = System.Data.DbType.Boolean });
-				p.Add(new CParameter() { ParameterName = "@MENSAJE", Value = mensaje, DbType = System.Data.DbType.String });
+			var p = new List<CParameter>();
+			p.Add(new CParameter() { ParameterName = "@LOGIN_SISTEMA", Value = loginSistema, DbType = System.Data.DbType.String });
+			p.Add(new CParameter() { ParameterName = "@IP_ADDRESS", Value = ipAddress, DbType = System.Data.DbType.String });
+			p.Add(new CParameter() { ParameterName = "@NAVEGADOR", Value = navegador, DbType = System.Data.DbType.String });
+			p.Add(new CParameter() { ParameterName = "@CODIGO_SUITE", Value = codigoSuite, DbType = System.Data.DbType.String });
+			p.Add(new CParameter() { ParameterName = "@EXITOSO", Value = exitoso, DbType = System.Data.DbType.Boolean });
+			p.Add(new CParameter() { ParameterName = "@MENSAJE", Value = mensaje, DbType = System.Data.DbType.String });
+			p.Add(new CParameter() { ParameterName = "@ES_CAMBIO_CLAVE", Value = esCambioClave, DbType = System.Data.DbType.Boolean });
 				p.Add(new CParameter() { ParameterName = "@CORR_LOGIN", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output });
 
 				await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_SEG_USUARIO_LOGIN_HISTORIAL", true, p);
@@ -613,6 +614,32 @@ namespace sguees.Repositories
 					REQUIERE_CAMBIO_CLAVE = false,
 					MENSAJE = "Error al validar expiración de contraseña"
 				};
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+		}
+
+		public async Task<List<SEG_USUARIO_CLAVE_HISTORIALView>> GetUltimasClavesAsync(string loginSistema, int numeroUltimasClaves)
+		{
+			try
+			{
+				var p = new List<CParameter>();
+				p.Add(new CParameter() { ParameterName = "@LOGIN_SISTEMA", Value = loginSistema, DbType = System.Data.DbType.String });
+				p.Add(new CParameter() { ParameterName = "@NUMERO_ULTIMAS_CLAVES", Value = numeroUltimasClaves, DbType = System.Data.DbType.Int32 });
+
+				var reader = await objData.GetDataReader(System.Data.CommandType.StoredProcedure, "PRAL_DATA_SEG_USUARIO_VALIDAR_CLAVE_ANTERIOR", p);
+				var response = new List<SEG_USUARIO_CLAVE_HISTORIALView>().FromDataReader(reader).ToList();
+
+				reader.Close();
+				reader = null;
+
+				return response;
+			}
+			catch
+			{
+				return new List<SEG_USUARIO_CLAVE_HISTORIALView>();
 			}
 			finally
 			{

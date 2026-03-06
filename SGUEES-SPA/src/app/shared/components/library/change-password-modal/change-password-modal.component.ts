@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, NgModule } from '@angular/core';
+import { Component, EventEmitter, Input, Output, NgModule, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from 'src/app/shared/services';
@@ -21,9 +21,10 @@ interface PasswordStrength {
   templateUrl: './change-password-modal.component.html',
   styleUrls: ['./change-password-modal.component.scss']
 })
-export class ChangePasswordModalComponent {
+export class ChangePasswordModalComponent implements OnChanges {
   @Input() visible = false;
   @Input() loginSistema = '';
+  @Input() changeReason: 'first-login' | 'password-expired' = 'first-login';
   @Output() onPasswordChanged = new EventEmitter<void>();
 
   loading = false;
@@ -37,10 +38,60 @@ export class ChangePasswordModalComponent {
   confirmPasswordMode = 'password';
   passwordStrength: PasswordStrength = { score: 0, message: '', color: '' };
 
+  // Propiedades para el template
+  get modalTitle(): string {
+    return this.changeReason === 'password-expired'
+      ? '⏰ Actualización de Contraseña'
+      : '🔐 Cambio de Contraseña Obligatorio';
+  }
+
+  get headerMessage(): string {
+    return this.changeReason === 'password-expired'
+      ? 'Contraseña Expirada'
+      : 'Bienvenido por primera vez';
+  }
+
+  get descriptionMessage(): string {
+    return this.changeReason === 'password-expired'
+      ? 'Su contraseña ha expirado por razones de seguridad. Debe cambiarla para continuar usando el sistema.'
+      : 'Por seguridad, debe cambiar la contraseña temporal asignada por el administrador. Esta es una medida para proteger su cuenta.';
+  }
+
+  get currentPasswordLabel(): string {
+    return this.changeReason === 'password-expired'
+      ? 'Contraseña Actual'
+      : 'Contraseña Temporal (Actual)';
+  }
+
+  get currentPasswordPlaceholder(): string {
+    return this.changeReason === 'password-expired'
+      ? 'Su contraseña actual'
+      : 'Contraseña temporal';
+  }
+
   constructor(
     private authService: AuthService,
     private http: HttpClient
   ) {}
+
+  ngOnChanges(changes: SimpleChanges): void {
+    // Limpiar formulario cuando la modal se abre
+    if (changes['visible'] && changes['visible'].currentValue === true) {
+      this.resetForm();
+    }
+  }
+
+  private resetForm(): void {
+    this.formData = {
+      claveActual: 'temporal123',
+      nuevaClave: '',
+      confirmarClave: ''
+    };
+    this.passwordMode = 'password';
+    this.confirmPasswordMode = 'password';
+    this.passwordStrength = { score: 0, message: '', color: '' };
+    this.loading = false;
+  }
 
   // Validar fortaleza de contraseña
   validatePasswordStrength(password: string): PasswordStrength {

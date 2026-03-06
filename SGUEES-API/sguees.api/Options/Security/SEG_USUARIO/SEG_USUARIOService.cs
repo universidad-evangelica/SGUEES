@@ -316,6 +316,7 @@ namespace sguees.Services
                     CORR_EMPRESA = DataUsuario.CORR_EMPRESA,
                     NOMBRE_EMPRESA = DataUsuario.NOMBRE_EMPRESA,
                     REQUIERE_CAMBIO_CLAVE = requiereCambio,
+                    ES_PRIMER_LOGIN = esPrimerLogin,
                     TOKEN = GenerateToken(DataUsuario, CODIGO_SUITE, (List<SEG_USUARIO_PERMISOView>) objResultadoPermiso.Data),
                     OPCIONES = GenerateMenu((List<SEG_USUARIO_PERMISOView>) objResultadoPermiso.Data)
                 };
@@ -582,21 +583,51 @@ namespace sguees.Services
                 return new CResult{ Result = false, ErrorCode = -1, ErrorMessage = "Cambio de contraseña permitido solo para usuarios con USUARIO_AD asignado", RowsAffected = 0 };
             }
 
+            // Validar que la nueva clave no sea igual a la actual ni a las ultimas N claves
+            const int numeroUltimasClaves = 5;
+            var historialClaves = await _repo.GetUltimasClavesAsync(Data.LOGIN_SISTEMA, numeroUltimasClaves);
+            var esReutilizada = VerifyPasswordHash(Data.CLAVE_USUARIO_NUEVA, usuario.CLAVE_USUARIO, usuario.CLAVE_USUARIO_SAL);
+
+            if (!esReutilizada && historialClaves != null)
+            {
+                foreach (var claveHistorial in historialClaves)
+                {
+                    if (VerifyPasswordHash(Data.CLAVE_USUARIO_NUEVA, claveHistorial.CLAVE_USUARIO, claveHistorial.CLAVE_USUARIO_SAL))
+                    {
+                        esReutilizada = true;
+                        break;
+                    }
+                }
+            }
+
+            if (esReutilizada)
+            {
+                return new CResult{ Result = false, ErrorCode = -1, ErrorMessage = "La contrasena ingresada ya fue utilizada anteriormente", RowsAffected = 0 };
+            }
+
+            // Verificar si es primer login para personalizar el mensaje
+            bool esPrimerLogin = await _repo.VerificarPrimerLoginAsync(Data.LOGIN_SISTEMA);
+
             var resultado = await _repo.CambioClave(Data, vLOGIN_SISTEMA, vESTACION);
 			
-			// Si el cambio de clave fue exitoso, registrar el login en historial
-			// FECHA_CAMBIO_CLAVE y FLAG_PRIMER_LOGIN se actualizan en el SP de cambio de clave
-			if (resultado.Result)
-			{
-				await _repo.RegistrarLoginHistorialAsync(
-					Data.LOGIN_SISTEMA, 
-					null, 
-					null, 
-					Data.CODIGO_SUITE, 
-					true, 
-					"Cambio de contraseña exitoso - Primer login completado"
-				);
-			}
+            // Si el cambio de clave fue exitoso, registrar el login en historial
+            // FECHA_CAMBIO_CLAVE y FLAG_PRIMER_LOGIN se actualizan en el SP de cambio de clave
+            if (resultado.Result)
+            {
+                string mensajeHistorial = esPrimerLogin
+                    ? "Cambio de contraseña exitoso - Primer login completado"
+                    : "Cambio de contraseña exitoso - Expiración de contraseña";
+
+                await _repo.RegistrarLoginHistorialAsync(
+                    Data.LOGIN_SISTEMA, 
+                    null, 
+                    null, 
+                    Data.CODIGO_SUITE, 
+                    true, 
+                    mensajeHistorial,
+                    true
+                );
+            }
 			
 			return resultado;
 		}

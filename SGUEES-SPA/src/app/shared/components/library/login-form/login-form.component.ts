@@ -35,6 +35,7 @@ export class LoginFormComponent {
   // Variables para modal de cambio de contraseña
   showChangePasswordModal = false;
   loginSistemaForPasswordChange = '';
+  passwordChangeReason: 'first-login' | 'password-expired' = 'first-login';
 
   passwordEditorOptions = {
     placeholder: 'Password',
@@ -70,6 +71,11 @@ export class LoginFormComponent {
           // Verificar si requiere cambio de contraseña
           if (response.Data.REQUIERE_CAMBIO_CLAVE) {
             this.loginSistemaForPasswordChange = usuario;
+            // Determinar razón del cambio de contraseña
+            // Primer login si ES_PRIMER_LOGIN es true, sino expiración
+            this.passwordChangeReason = response.Data.ES_PRIMER_LOGIN
+              ? 'first-login'
+              : 'password-expired';
             this.showChangePasswordModal = true;
           } else {
             // Login exitoso, redirigir al home

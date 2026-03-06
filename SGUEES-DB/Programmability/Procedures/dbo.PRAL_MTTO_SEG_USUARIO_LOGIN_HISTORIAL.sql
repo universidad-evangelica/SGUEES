@@ -8,6 +8,7 @@ CREATE OR ALTER PROCEDURE [dbo].[PRAL_MTTO_SEG_USUARIO_LOGIN_HISTORIAL]
     @CODIGO_SUITE VARCHAR(20) = NULL,
     @EXITOSO BIT = 1,
     @MENSAJE VARCHAR(500) = NULL,
+    @ES_CAMBIO_CLAVE BIT = 0,
     @CORR_LOGIN INT OUTPUT
 AS
 BEGIN
@@ -20,7 +21,8 @@ BEGIN
         [NAVEGADOR],
         [CODIGO_SUITE],
         [EXITOSO],
-        [MENSAJE]
+        [MENSAJE],
+        [ES_CAMBIO_CLAVE]
     )
     VALUES (
         @LOGIN_SISTEMA,
@@ -29,7 +31,8 @@ BEGIN
         @NAVEGADOR,
         @CODIGO_SUITE,
         @EXITOSO,
-        @MENSAJE
+        @MENSAJE,
+        @ES_CAMBIO_CLAVE
     );
     
     SET @CORR_LOGIN = SCOPE_IDENTITY();

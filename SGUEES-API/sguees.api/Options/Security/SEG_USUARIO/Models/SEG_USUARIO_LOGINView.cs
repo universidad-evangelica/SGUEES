@@ -13,6 +13,7 @@ namespace sguees.Models
         public int CORR_EMPRESA { get; set; }
         public string NOMBRE_EMPRESA { get; set; }
         public bool REQUIERE_CAMBIO_CLAVE { get; set; }
+        public bool ES_PRIMER_LOGIN { get; set; }
         //public List<SEG_USUARIO_PERMISOView> OPCIONES { get; set; }
         public List<SEG_USUARIO_MENUView> OPCIONES { get; set; }
     }
