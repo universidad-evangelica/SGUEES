@@ -1,5 +1,7 @@
 using MimeKit;
 using MailKit.Net.Smtp;
+using MailKit.Security;
+using System.Linq;
 
 namespace eFramework.Core
 {
@@ -99,20 +101,54 @@ namespace eFramework.Core
             };
 
             try
-            {   
+            {
+                if (xSettig == null)
+                {
+                    vResultado.Result = false;
+                    vResultado.ErrorCode = -1;
+                    vResultado.ErrorMessage = "La configuración de correo es requerida";
+                    return vResultado;
+                }
+
+                if (string.IsNullOrWhiteSpace(xSettig.Host) ||
+                    xSettig.Port <= 0 ||
+                    string.IsNullOrWhiteSpace(xSettig.FromAddress))
+                {
+                    vResultado.Result = false;
+                    vResultado.ErrorCode = -1;
+                    vResultado.ErrorMessage = "Configuración SMTP incompleta";
+                    return vResultado;
+                }
+
+                if (xAddressees == null || xAddressees.Count == 0)
+                {
+                    vResultado.Result = false;
+                    vResultado.ErrorCode = -1;
+                    vResultado.ErrorMessage = "Debe especificar al menos un destinatario";
+                    return vResultado;
+                }
+
                 var mailMessage = new MimeMessage();
-                mailMessage.From.Add(new MailboxAddress(xSettig.FromName, xSettig.FromAddress));
+                mailMessage.From.Add(new MailboxAddress(
+                    (xSettig.FromName ?? string.Empty).Trim(),
+                    (xSettig.FromAddress ?? string.Empty).Trim()));
 
                 foreach (var item in xAddressees)
                 {
-                    mailMessage.To.Add(new MailboxAddress(item.Name, item.Address));
+                    if (!string.IsNullOrWhiteSpace(item?.Address))
+                    {
+                        mailMessage.To.Add(new MailboxAddress((item.Name ?? string.Empty).Trim(), item.Address.Trim()));
+                    }
                 }
 
                 if (xAddresseesCC != null)
                 {
                     foreach (var item in xAddresseesCC)
                     {
-                        mailMessage.Cc.Add(new MailboxAddress(item.Name, item.Address));
+                        if (!string.IsNullOrWhiteSpace(item?.Address))
+                        {
+                            mailMessage.Cc.Add(new MailboxAddress((item.Name ?? string.Empty).Trim(), item.Address.Trim()));
+                        }
                     }
                 }
 
@@ -120,8 +156,19 @@ namespace eFramework.Core
                 {
                     foreach (var item in xAddresseesCCO)
                     {
-                        mailMessage.Bcc.Add(new MailboxAddress(item.Name, item.Address));
+                        if (!string.IsNullOrWhiteSpace(item?.Address))
+                        {
+                            mailMessage.Bcc.Add(new MailboxAddress((item.Name ?? string.Empty).Trim(), item.Address.Trim()));
+                        }
                     }
+                }
+
+                if (!mailMessage.To.Any())
+                {
+                    vResultado.Result = false;
+                    vResultado.ErrorCode = -1;
+                    vResultado.ErrorMessage = "No hay destinatarios válidos para envío";
+                    return vResultado;
                 }
                 
                 mailMessage.Subject = xSubject;
@@ -145,9 +192,22 @@ namespace eFramework.Core
                 }
 
                 using var smtpClient = new SmtpClient();
-                smtpClient.Connect(xSettig.Host, xSettig.Port, MailKit.Security.SecureSocketOptions.Auto);
-                // smtpClient.Connect(xSettig.Host, xSettig.Port,xSettig.UseSSL);
-                smtpClient.Authenticate(xSettig.User, xSettig.Password);
+                var socketOptions = xSettig.UseSSL ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTlsWhenAvailable;
+
+                try
+                {
+                    smtpClient.Connect(xSettig.Host.Trim(), xSettig.Port, socketOptions);
+                }
+                catch
+                {
+                    smtpClient.Connect(xSettig.Host.Trim(), xSettig.Port, SecureSocketOptions.Auto);
+                }
+
+                if (!string.IsNullOrWhiteSpace(xSettig.User) && !string.IsNullOrWhiteSpace(xSettig.Password))
+                {
+                    smtpClient.Authenticate(xSettig.User.Trim(), xSettig.Password);
+                }
+
                 smtpClient.Send(mailMessage);
                 smtpClient.Disconnect(true);
 

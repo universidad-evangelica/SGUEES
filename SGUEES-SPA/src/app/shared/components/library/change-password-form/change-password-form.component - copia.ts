@@ -19,14 +19,23 @@ export class ChangePasswordFormComponent implements OnInit, OnDestroy {
   formData: any = {};
 
   recoveryCode = '';
+  loginSistema = '';
 
   paramMapSubscription: Subscription;
+  queryParamSubscription: Subscription;
 
   constructor(private authService: AuthService, private router: Router, private route: ActivatedRoute) { }
 
   ngOnInit() {
     this.paramMapSubscription = this.route.paramMap.subscribe((params) => {
       this.recoveryCode = params.get('recoveryCode') || '';
+    });
+
+    this.queryParamSubscription = this.route.queryParamMap.subscribe((params) => {
+      this.loginSistema = params.get('login') || '';
+      if (!this.recoveryCode) {
+        this.recoveryCode = params.get('token') || '';
+      }
     });
   }
 
@@ -35,11 +44,11 @@ export class ChangePasswordFormComponent implements OnInit, OnDestroy {
     const { password } = this.formData;
     this.loading = true;
 
-    const result = await this.authService.changePassword(password, this.recoveryCode);
+    const result = await this.authService.changePassword(password, this.recoveryCode, this.loginSistema);
     this.loading = false;
 
     if (result.isOk) {
-      this.router.navigate(['/auth/login']);
+      this.router.navigate(['/login-form']);
     } else {
       notify(result.message, 'error', 2000);
     }
@@ -49,6 +58,7 @@ export class ChangePasswordFormComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.paramMapSubscription.unsubscribe();
+    this.queryParamSubscription.unsubscribe();
   }
 }
 @NgModule({

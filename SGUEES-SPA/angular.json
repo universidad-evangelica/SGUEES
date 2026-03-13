@@ -64,7 +64,7 @@
               "src/styles.scss",
               "devexpress-gantt/dist/dx-gantt.css",
               {
-                "input": "devextreme/scss/bundles/dx.material.purple.light.compact.scss",
+                "input": "devextreme/scss/bundles/dx.material.purple.light.scss",
                 "bundleName": "theme-light"
               },
               {
@@ -72,7 +72,7 @@
                 "bundleName": "theme-light"
               },
               {
-                "input": "devextreme/scss/bundles/dx.material.blue.light.compact.scss",
+                "input": "devextreme/scss/bundles/dx.material.blue.light.scss",
                 "bundleName": "theme-light"
               },
               {
@@ -80,7 +80,7 @@
                 "bundleName": "theme-light"
               },
               {
-                "input": "devextreme/scss/bundles/dx.material.blue.dark.compact.scss",
+                "input": "devextreme/scss/bundles/dx.material.blue.dark.scss",
                 "bundleName": "theme-dark"
               },
               {

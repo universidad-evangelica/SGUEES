@@ -2,19 +2,9 @@
 
 :host {
   display: block;
-  width: 100%;
+  width: 100vw;
   min-height: 100vh;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-:root {
-  --blue: #0b3a6b;
-  --accent: #f6c02b;
-  --muted: #6b6b6b;
+  position: relative;
 }
 
 * {
@@ -25,22 +15,20 @@
   background: url('/assets/img/Login_Portal_2.jpg') center center / cover no-repeat;
   background-color: #f5f7fb; // Fallback si no hay imagen
   min-height: 100vh;
-  width: 100%;
+  width: 100vw;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
   font-family: 'Raleway', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
 }
 
 .login-container {
   width: 92vw;
-  max-width: 600px; // Más ancho como el mockup
+  max-width: 640px;
 }
 
 .card {
@@ -70,17 +58,17 @@
   color: #4d4d4d;
   text-align: center;
   margin-top: 20px;
-  margin-bottom: 28px;
+  margin-bottom: 16px;
   letter-spacing: 0.5px;
   font-size: 15px;
   line-height: 1.5;
 }
 
 #login-title {
-  font-size: 20px;
-  color: #888; // Gris como el mockup
+  font-size: 42px;
+  color: #555;
   text-align: center;
-  margin-bottom: 28px;
+  margin-bottom: 18px;
   font-weight: 600;
 }
 
@@ -96,13 +84,15 @@
     border: none;
     box-shadow: none;
     background: #fff; // Fondo blanco como el mockup
-    font-size: 14px;
+    font-size: 20px;
     font-family: 'Raleway', sans-serif;
     outline: none;
     color: #333;
+    min-height: 52px;
 
     &::placeholder {
-      color: #999; // Placeholder visible
+      color: #999;
+      font-size: 19px;
     }
 
     &:focus {
@@ -137,20 +127,23 @@
 
   .btn-login {
     border-radius: 25px;
-    padding: 12px 1rem;
-    width: 100%;
-    background: #0b3a6b;
-    color: #fff;
+    width: 78%;
+    height: 64px;
+    min-height: 64px;
+    background: #00a2e8;
+    color: #111;
     border: none;
     font-weight: 700;
     cursor: pointer;
-    font-size: 15px;
+    font-size: 18px;
+    letter-spacing: 0.2px;
     font-family: 'Raleway', sans-serif;
-    margin-top: 4px;
+    margin: 6px auto 0;
+    display: block;
     transition: background 0.3s;
 
     &:hover:not(:disabled) {
-      background: #083154;
+      background: #0092d1;
     }
 
     &:disabled {
@@ -166,7 +159,7 @@
     font-weight: 700;
     color: #1363df;
     text-decoration: none;
-    font-size: 14px;
+    font-size: 18px;
 
     &:hover {
       text-decoration: underline;
@@ -195,6 +188,28 @@
   }
 
   #login-title {
-    font-size: 16px;
+    font-size: 30px;
+  }
+
+  .card-body {
+    .form-control {
+      min-height: 46px;
+      font-size: 16px;
+
+      &::placeholder {
+        font-size: 15px;
+      }
+    }
+
+    .btn-login {
+      width: 82%;
+      height: 56px;
+      min-height: 56px;
+      font-size: 15px;
+    }
+
+    .forgot-link {
+      font-size: 14px;
+    }
   }
 }

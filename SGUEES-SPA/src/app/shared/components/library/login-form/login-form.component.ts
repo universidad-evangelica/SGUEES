@@ -19,7 +19,7 @@ import { ChangePasswordModalModule } from '../change-password-modal/change-passw
   styleUrls: ['./login-form.component.scss'],
 })
 export class LoginFormComponent {
-  @Input() resetLink = '/auth/reset-password';
+  @Input() resetLink = '/recuperar-contrasena';
   @Input() createAccountLink = '/auth/create-account';
 
   btnStylingMode: DxButtonTypes.ButtonStyle;
@@ -38,7 +38,7 @@ export class LoginFormComponent {
   passwordChangeReason: 'first-login' | 'password-expired' = 'first-login';
 
   passwordEditorOptions = {
-    placeholder: 'Password',
+    placeholder: 'Contraseña',
     stylingMode: 'filled',
     mode: this.passwordMode,
     value: 'password'

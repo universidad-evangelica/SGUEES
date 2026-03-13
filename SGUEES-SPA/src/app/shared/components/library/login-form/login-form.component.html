@@ -56,7 +56,7 @@
           </button>
         </div>
 
-        <a class="forgot-link" href="https://wsclass.uees.edu.sv/cambioclave/" target="_blank">¿Olvidaste tu contraseña?</a>
+        <a class="forgot-link" [routerLink]="resetLink">¿Olvidaste tu contraseña?</a>
 
         <div id="lblInfo" *ngIf="errorMessage">{{ errorMessage }}</div>
       </form>

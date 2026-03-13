@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, NgModule, Input, OnInit } from '@angular/core';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { ValidationCallbackData } from 'devextreme-angular/common';
 import { DxFormModule } from 'devextreme-angular/ui/form';
 import { DxLoadIndicatorModule } from 'devextreme-angular/ui/load-indicator';
 import notify from 'devextreme/ui/notify';
-import { AuthService, IResponse } from 'src/app/shared/services';
+import { AuthService } from 'src/app/shared/services';
 
-const notificationText = 'We\'ve sent a link to reset your password. Check your inbox.';
+const notificationText = 'Si el usuario existe, enviamos un correo con el enlace para restablecer la contraseña.';
 
 @Component({
   selector: 'reset-password-form',
@@ -14,36 +15,64 @@ const notificationText = 'We\'ve sent a link to reset your password. Check your 
   styleUrls: ['./reset-password-form.component.scss'],
 })
 export class ResetPasswordFormComponent implements OnInit {
-  @Input() signInLink = '/auth/login';
+  @Input() signInLink = '/login-form';
 
-  @Input() buttonLink = '/auth/login';
+  @Input() buttonLink = '/login-form';
 
-  defaultAuthData: IResponse;
+  isTokenFlow = false;
+  recoveryToken = '';
+  loginFromQuery = '';
 
   loading = false;
 
   formData: any = {};
 
-  constructor(private authService: AuthService, private router: Router) { }
+  constructor(private authService: AuthService, private router: Router, private route: ActivatedRoute) { }
 
   async onSubmit(e: Event) {
     e.preventDefault();
-    const { email } = this.formData;
     this.loading = true;
 
-    const result = await this.authService.resetPassword(email);
+    const result = this.isTokenFlow
+      ? await this.authService.changePassword(
+        this.formData.password,
+        this.recoveryToken,
+        this.formData.user
+      )
+      : await this.authService.resetPassword(this.formData.user);
+
     this.loading = false;
 
     if (result.isOk) {
       this.router.navigate([this.buttonLink]);
-      notify(notificationText, 'success', 2500);
+      notify(
+        this.isTokenFlow
+          ? 'Contraseña restablecida correctamente. Inicia sesión con tu nueva clave.'
+          : notificationText,
+        'success',
+        3000
+      );
     } else {
-      notify(result.message, 'error', 2000);
+      const genericResetError = 'No fue posible restablecer la contraseña';
+      const message = this.isTokenFlow && (!result.message || result.message === genericResetError)
+        ? 'No fue posible restablecer la contraseña. Solicita un nuevo enlace de recuperación e inténtalo nuevamente.'
+        : result.message;
+
+      notify(message, 'error', 3000);
     }
   }
 
-  async ngOnInit(): Promise<void> {
-    this.defaultAuthData = await this.authService.getUser();
+  confirmPassword = (e: ValidationCallbackData) => e.value === this.formData.password;
+
+  ngOnInit(): void {
+    this.route.queryParamMap.subscribe((params) => {
+      this.recoveryToken = params.get('token') || '';
+      this.loginFromQuery = params.get('login') || '';
+      this.isTokenFlow = !!this.recoveryToken;
+      this.formData = {
+        user: this.loginFromQuery,
+      };
+    });
   }
 }
 @NgModule({

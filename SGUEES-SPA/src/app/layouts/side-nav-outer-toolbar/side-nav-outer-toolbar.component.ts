@@ -42,6 +42,8 @@ export class SideNavOuterToolbarComponent implements OnInit, OnDestroy {
 
   minMenuSize = 0;
 
+  maxMenuSize = 320;
+
   shaderEnabled = false;
 
   routerSubscription: Subscription;
@@ -77,6 +79,7 @@ export class SideNavOuterToolbarComponent implements OnInit, OnDestroy {
     this.menuMode = isLarge ? 'shrink' : 'overlap';
     this.menuRevealMode = isLarge ? 'expand' : 'slide';
     this.minMenuSize = 0;
+    this.maxMenuSize = isLarge ? 340 : (isXSmall ? 280 : 320);
     this.shaderEnabled = !isLarge;
   }
 

@@ -216,5 +216,33 @@ namespace sguees.Controllers
 				return BadRequest(resultado);
 			}
 		}
+
+		[AllowAnonymous]
+		[HttpPost("solicitar-restablecer-contrasena")]
+		[HttpPost("forgot-password")]
+		public async Task<IActionResult> ForgotPassword([FromBody] SEG_USUARIO_FORGOT_PASSWORDParam Data)
+		{
+			var resultado = await _service.SolicitarResetContrasenaAsync(Data.LOGIN_SISTEMA);
+			if (resultado.ErrorCode == 0)
+			{
+				return Ok(resultado);
+			}
+
+			return BadRequest(resultado);
+		}
+
+		[AllowAnonymous]
+		[HttpPost("restablecer-contrasena")]
+		[HttpPost("reset-password")]
+		public async Task<IActionResult> ResetPassword([FromBody] SEG_USUARIO_RESET_PASSWORDParam Data)
+		{
+			var resultado = await _service.ConfirmarResetContrasenaAsync(Data);
+			if (resultado.ErrorCode == 0)
+			{
+				return Ok(resultado);
+			}
+
+			return BadRequest(resultado);
+		}
 	}
 }

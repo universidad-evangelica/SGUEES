@@ -37,6 +37,16 @@ const routes: Routes = [
 		component: LoginFormComponent,
 		canActivate: [AuthGuardService],
 	},
+  {
+    path: 'recuperar-contrasena',
+    component: ResetPasswordFormComponent,
+    canActivate: [AuthGuardService],
+  },
+  {
+    path: 'reset-password',
+    component: ResetPasswordFormComponent,
+    canActivate: [AuthGuardService],
+  },
 	{
 		path: 'accounting',
 		canActivate: [AuthGuardService],

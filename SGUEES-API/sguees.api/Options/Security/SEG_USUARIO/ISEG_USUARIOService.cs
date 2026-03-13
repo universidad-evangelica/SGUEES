@@ -22,6 +22,8 @@ namespace sguees.Services
 		#endregion
 		Task<CResult> CambioClave(SEG_USUARIO_LOGINParam Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> RestablecerContrasenaAsync(string LOGIN_SISTEMA, int CORR_EMPRESA, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> SolicitarResetContrasenaAsync(string LOGIN_SISTEMA);
+		Task<CResult> ConfirmarResetContrasenaAsync(SEG_USUARIO_RESET_PASSWORDParam Data);
 		string GenerateToken(SEG_USUARIOView Usuario, string CodigoSuite, List<SEG_USUARIO_PERMISOView> Opciones);
 		Task<CResult> getUSUARIO_PERMISOS(string vLOGIN_SISTEMA, string CODIGO_SUITE);
 		Task<CResult> GetAllSEG_USUARIO_LOOKUP(SEG_USUARIOParam xWhere);

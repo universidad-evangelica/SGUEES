@@ -4,7 +4,7 @@ import { environment } from 'src/environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { map } from 'rxjs/operators';
-import { Observable } from 'rxjs';
+import { Observable, lastValueFrom } from 'rxjs';
 import notify from 'devextreme/ui/notify';
 
 const defaultPath = '/';
@@ -41,6 +41,43 @@ export class AuthService {
 	}
 
 	constructor(private router: Router, private http: HttpClient) {}
+
+  private extractErrorMessage(error: any, fallback: string): string {
+    const payload = error?.error;
+
+    if (payload?.ErrorMessage && typeof payload.ErrorMessage === 'string') {
+      return payload.ErrorMessage;
+    }
+
+    if (payload?.message && typeof payload.message === 'string') {
+      return payload.message;
+    }
+
+    if (payload?.title && typeof payload.title === 'string') {
+      return payload.title;
+    }
+
+    if (payload?.errors && typeof payload.errors === 'object') {
+      const firstKey = Object.keys(payload.errors)[0];
+      const firstError = firstKey ? payload.errors[firstKey] : null;
+      if (Array.isArray(firstError) && firstError.length > 0) {
+        return String(firstError[0]);
+      }
+      if (typeof firstError === 'string' && firstError.trim()) {
+        return firstError;
+      }
+    }
+
+    if (typeof payload === 'string' && payload.trim()) {
+      return payload;
+    }
+
+    if (error?.message && typeof error.message === 'string') {
+      return error.message;
+    }
+
+    return fallback;
+  }
 
 	logIn(login: string, password: string): any {
 		return this.http
@@ -102,37 +139,66 @@ export class AuthService {
     } catch {
       return {
         isOk: false,
-        message: 'Failed to create account',
+        message: 'No se pudo crear la cuenta',
       };
     }
   }
 
-  async changePassword(email: string, recoveryCode: string) {
+  async changePassword(password: string, recoveryCode: string, loginSistema: string) {
     try {
-      // Send request
+      const response: any = await lastValueFrom(
+        this.http.post(this.urlMtto + 'restablecer-contrasena', {
+          LOGIN_SISTEMA: loginSistema,
+          RESET_TOKEN: recoveryCode,
+          CLAVE_USUARIO_NUEVA: password,
+        })
+      );
+
+      if (response?.Result === false) {
+        const backendMessage =
+          response?.ErrorMessage ||
+          response?.errorMessage ||
+          response?.message;
+
+        return {
+          isOk: false,
+          message: backendMessage || 'No fue posible restablecer la contraseña',
+        };
+      }
 
       return {
-        isOk: true,
+        isOk: response?.Result !== false,
       };
-    } catch {
+    } catch (error: any) {
       return {
         isOk: false,
-        message: 'Failed to change password',
+        message: this.extractErrorMessage(error, 'No fue posible restablecer la contraseña'),
       };
     }
   }
 
-  async resetPassword(email: string) {
+  async resetPassword(loginSistema: string) {
     try {
-      // Send request
+      const response: any = await lastValueFrom(
+        this.http.post(this.urlMtto + 'solicitar-restablecer-contrasena', {
+          LOGIN_SISTEMA: loginSistema,
+        })
+      );
+
+      if (response?.Result === false) {
+        return {
+          isOk: false,
+          message: response?.ErrorMessage || 'No fue posible enviar el correo de recuperación',
+        };
+      }
 
       return {
-        isOk: true,
+        isOk: response?.Result !== false,
       };
-    } catch {
+    } catch (error: any) {
       return {
         isOk: false,
-        message: 'Failed to reset password',
+        message: this.extractErrorMessage(error, 'No fue posible enviar el correo de recuperación'),
       };
     }
   }
@@ -167,7 +233,7 @@ export class AuthGuardService implements CanActivate {
 		let routerUrl: string;
 		let routerList: Array<any>;
 
-		const isAuthForm = ['login-form', 'reset-password', 'create-account', 'change-password/:recoveryCode'].includes(
+    const isAuthForm = ['login-form', 'recuperar-contrasena', 'reset-password', 'create-account', 'change-password/:recoveryCode', 'change-password'].includes(
 			route.routeConfig?.path || defaultPath
 		);
 

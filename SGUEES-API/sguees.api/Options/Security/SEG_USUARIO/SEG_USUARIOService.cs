@@ -11,6 +11,7 @@ using sguees.api.Shared;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using sguees.Services.Security;
+using Microsoft.Extensions.Configuration;
 
 namespace sguees.Services
 {
@@ -18,12 +19,14 @@ namespace sguees.Services
 	{
 		private readonly ISEG_USUARIORepository _repo;
 		private readonly ISEG_USUARIO_OPCIONRepository _SEG_USUARIO_OPCIONRepository;
+        private readonly ICOM_PARAMETRORepository _repoParametro;
 		private readonly IConfiguration _config;
 		private readonly ILogger<SEG_USUARIOService> _logger;
         private readonly IActiveDirectoryService _adService;
 		
 		public SEG_USUARIOService(ISEG_USUARIORepository repo,
                                     ISEG_USUARIO_OPCIONRepository SEG_USUARIO_OPCIONRepository,
+                                    ICOM_PARAMETRORepository repoParametro,
                                     IConfiguration config,
                                     ILogger<SEG_USUARIOService> logger,
                                     IActiveDirectoryService adService
@@ -31,6 +34,7 @@ namespace sguees.Services
 		{
 			_repo = repo;
 			_SEG_USUARIO_OPCIONRepository = SEG_USUARIO_OPCIONRepository;
+            _repoParametro = repoParametro;
 			_config = config;
 			_logger = logger;
             _adService = adService;
@@ -568,69 +572,186 @@ namespace sguees.Services
 		}
         #endregion
         public async Task<CResult> CambioClave(SEG_USUARIO_LOGINParam Data, string vLOGIN_SISTEMA, string vESTACION)
-		{
-            // Regla: permitir cambio de clave solo si el usuario tiene USUARIO_AD asignado
-            var validaUsuario = await _repo.GetAsync(new List<CParameter>{
-                new CParameter(){ ParameterName = "LOGIN_SISTEMA", Value = Data.LOGIN_SISTEMA, DbType = System.Data.DbType.String }
-            });
-            if (!validaUsuario.Result || validaUsuario.Data == null)
+        {
+            return await EjecutarCambioClaveAsync(Data, vLOGIN_SISTEMA, vESTACION, true);
+        }
+
+        public async Task<CResult> SolicitarResetContrasenaAsync(string LOGIN_SISTEMA)
+        {
+            var respuestaGenerica = new CResult
             {
-                return new CResult{ Result = false, ErrorCode = -1, ErrorMessage = "Usuario no encontrado", RowsAffected = 0 };
-            }
-            var usuario = (SEG_USUARIOView)validaUsuario.Data;
-            if (string.IsNullOrWhiteSpace(usuario.USUARIO_AD))
+                Result = true,
+                ErrorCode = 0,
+                RowsAffected = 0,
+                ErrorMessage = "Si el usuario existe, se enviaron instrucciones de restablecimiento al correo registrado."
+            };
+
+            LOGIN_SISTEMA = (LOGIN_SISTEMA ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(LOGIN_SISTEMA))
             {
-                return new CResult{ Result = false, ErrorCode = -1, ErrorMessage = "Cambio de contraseña permitido solo para usuarios con USUARIO_AD asignado", RowsAffected = 0 };
+                return respuestaGenerica;
             }
 
-            // Validar que la nueva clave no sea igual a la actual ni a las ultimas N claves
-            const int numeroUltimasClaves = 5;
-            var historialClaves = await _repo.GetUltimasClavesAsync(Data.LOGIN_SISTEMA, numeroUltimasClaves);
-            var esReutilizada = VerifyPasswordHash(Data.CLAVE_USUARIO_NUEVA, usuario.CLAVE_USUARIO, usuario.CLAVE_USUARIO_SAL);
-
-            if (!esReutilizada && historialClaves != null)
+            try
             {
-                foreach (var claveHistorial in historialClaves)
+                var pWhere = new List<CParameter>
                 {
-                    if (VerifyPasswordHash(Data.CLAVE_USUARIO_NUEVA, claveHistorial.CLAVE_USUARIO, claveHistorial.CLAVE_USUARIO_SAL))
+                    new CParameter() { ParameterName = "LOGIN_SISTEMA", Value = LOGIN_SISTEMA, DbType = System.Data.DbType.String }
+                };
+
+                var objResultadoUsuario = await _repo.GetAsync(pWhere);
+                if (!objResultadoUsuario.Result || objResultadoUsuario.Data == null)
+                {
+                    return respuestaGenerica;
+                }
+
+                var usuario = (SEG_USUARIOView)objResultadoUsuario.Data;
+                if (string.IsNullOrWhiteSpace(usuario.CORREO_ELECTRONICO))
+                {
+                    _logger.LogWarning("[ForgotPassword] Usuario {LoginSistema} sin correo configurado.", LOGIN_SISTEMA);
+                    return respuestaGenerica;
+                }
+
+                var pParametro = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = usuario.CORR_EMPRESA, DbType = System.Data.DbType.Int32 }
+                };
+                var objParametro = await _repoParametro.GetAsync(pParametro);
+                COM_PARAMETROView parametro = null;
+                if (objParametro.Result && objParametro.Data != null)
+                {
+                    parametro = (COM_PARAMETROView)objParametro.Data;
+                }
+
+                if (parametro == null ||
+                    string.IsNullOrWhiteSpace(parametro.SERVIDOR_CORREO) ||
+                    string.IsNullOrWhiteSpace(parametro.USUARIO_REMITENTE) ||
+                    string.IsNullOrWhiteSpace(parametro.CONTRASENA_REMITENTE) ||
+                    string.IsNullOrWhiteSpace(parametro.CORREO_REMITENTE) ||
+                    parametro.PUERTO_CORREO <= 0)
+                {
+                    var objParametros = await _repoParametro.GetAllAsync(new List<CParameter>());
+                    if (objParametros.Result && objParametros.Data != null)
                     {
-                        esReutilizada = true;
-                        break;
+                        var lista = (List<COM_PARAMETROView>)objParametros.Data;
+                        parametro = lista.FirstOrDefault(p =>
+                            !string.IsNullOrWhiteSpace(p.SERVIDOR_CORREO) &&
+                            !string.IsNullOrWhiteSpace(p.USUARIO_REMITENTE) &&
+                            !string.IsNullOrWhiteSpace(p.CONTRASENA_REMITENTE) &&
+                            !string.IsNullOrWhiteSpace(p.CORREO_REMITENTE) &&
+                            p.PUERTO_CORREO > 0);
                     }
                 }
-            }
 
-            if (esReutilizada)
+                if (parametro == null ||
+                    string.IsNullOrWhiteSpace(parametro.SERVIDOR_CORREO) ||
+                    string.IsNullOrWhiteSpace(parametro.USUARIO_REMITENTE) ||
+                    string.IsNullOrWhiteSpace(parametro.CONTRASENA_REMITENTE) ||
+                    string.IsNullOrWhiteSpace(parametro.CORREO_REMITENTE) ||
+                    parametro.PUERTO_CORREO <= 0)
+                {
+                    _logger.LogWarning("[ForgotPassword] No hay configuración SMTP válida en COM_PARAMETRO para empresa {CorrEmpresa}.", usuario.CORR_EMPRESA);
+                    return respuestaGenerica;
+                }
+
+                var configuracionCorreo = new MailSetting
+                {
+                    Host = parametro.SERVIDOR_CORREO.Trim(),
+                    Port = parametro.PUERTO_CORREO,
+                    UseSSL = parametro.USA_SSL_CORREO,
+                    User = parametro.USUARIO_REMITENTE.Trim(),
+                    Password = parametro.CONTRASENA_REMITENTE,
+                    FromName = parametro.USUARIO_REMITENTE.Trim(),
+                    FromAddress = parametro.CORREO_REMITENTE.Trim(),
+                    BodyType = "html"
+                };
+
+                var token = GenerarTokenResetContrasena(usuario.LOGIN_SISTEMA, usuario.CORR_EMPRESA);
+                var urlReset = ConstruirUrlReset(usuario.LOGIN_SISTEMA, token);
+
+                var mensaje = "<p><strong>Restablecimiento de contraseña</strong></p>";
+                mensaje += "<p>Hola " + usuario.NOMBRE_USUARIO + ",</p>";
+                mensaje += "<p>Recibimos una solicitud para restablecer tu contraseña en SGUEES.</p>";
+                mensaje += "<p>Haz clic en el siguiente enlace para continuar:</p>";
+                mensaje += "<p><a href='" + urlReset + "'>Restablecer contraseña</a></p>";
+                mensaje += "<p>Este enlace expira en 30 minutos.</p>";
+                mensaje += "<p>Si no solicitaste este cambio, puedes ignorar este correo.</p>";
+
+                var cuerpo = CRoutines.BodyEmailUEES(mensaje);
+                var destinatarios = new List<ToEMail>
+                {
+                    new ToEMail { Name = usuario.NOMBRE_USUARIO, Address = usuario.CORREO_ELECTRONICO.Trim() }
+                };
+
+                var envio = CRoutines.SendEmail("Restablecer contraseña - SGUEES", cuerpo, destinatarios, configuracionCorreo);
+                if (!envio.Result)
+                {
+                    _logger.LogError("[ForgotPassword] Falló envío de correo para usuario {LoginSistema}. Error: {Error}",
+                        LOGIN_SISTEMA,
+                        envio.ErrorMessage);
+                }
+
+                return respuestaGenerica;
+            }
+            catch (System.Exception e)
             {
-                return new CResult{ Result = false, ErrorCode = -1, ErrorMessage = "La contrasena ingresada ya fue utilizada anteriormente", RowsAffected = 0 };
+                _logger.LogError(e, "[ForgotPassword] Error al procesar solicitud para usuario {LoginSistema}", LOGIN_SISTEMA);
+                return respuestaGenerica;
             }
+        }
 
-            // Verificar si es primer login para personalizar el mensaje
-            bool esPrimerLogin = await _repo.VerificarPrimerLoginAsync(Data.LOGIN_SISTEMA);
-
-            var resultado = await _repo.CambioClave(Data, vLOGIN_SISTEMA, vESTACION);
-			
-            // Si el cambio de clave fue exitoso, registrar el login en historial
-            // FECHA_CAMBIO_CLAVE y FLAG_PRIMER_LOGIN se actualizan en el SP de cambio de clave
-            if (resultado.Result)
+        public async Task<CResult> ConfirmarResetContrasenaAsync(SEG_USUARIO_RESET_PASSWORDParam Data)
+        {
+            try
             {
-                string mensajeHistorial = esPrimerLogin
-                    ? "Cambio de contraseña exitoso - Primer login completado"
-                    : "Cambio de contraseña exitoso - Expiración de contraseña";
+                if (string.IsNullOrWhiteSpace(Data.CLAVE_USUARIO_NUEVA))
+                {
+                    return new CResult { Result = false, ErrorCode = -1, RowsAffected = 0, ErrorMessage = "Debe especificar una clave nueva" };
+                }
 
-                await _repo.RegistrarLoginHistorialAsync(
-                    Data.LOGIN_SISTEMA, 
-                    null, 
-                    null, 
-                    Data.CODIGO_SUITE, 
-                    true, 
-                    mensajeHistorial,
-                    true
-                );
+                var tokenValido = ValidarTokenResetContrasena(Data.RESET_TOKEN, Data.LOGIN_SISTEMA);
+                if (!tokenValido)
+                {
+                    _logger.LogWarning("[ResetPassword] Token inválido o expirado para usuario {LoginSistema}.", Data?.LOGIN_SISTEMA);
+                    return new CResult { Result = false, ErrorCode = -1, RowsAffected = 0, ErrorMessage = "Token inválido o expirado" };
+                }
+
+                var cambioData = new SEG_USUARIO_LOGINParam
+                {
+                    LOGIN_SISTEMA = Data.LOGIN_SISTEMA,
+                    CLAVE_USUARIO_NUEVA = Data.CLAVE_USUARIO_NUEVA,
+                    CODIGO_SUITE = "SGUEES"
+                };
+
+                var resultado = await EjecutarCambioClaveAsync(cambioData, Data.LOGIN_SISTEMA, "self-service", false);
+                if (!resultado.Result)
+                {
+                    if (string.IsNullOrWhiteSpace(resultado.ErrorMessage))
+                    {
+                        resultado.ErrorCode = resultado.ErrorCode == 0 ? -1 : resultado.ErrorCode;
+                        resultado.ErrorMessage = "No se pudo restablecer la contraseña. Verifique que cumpla la política vigente y que no haya sido utilizada anteriormente.";
+                    }
+
+                    _logger.LogWarning("[ResetPassword] Falló cambio de clave para usuario {LoginSistema}. ErrorCode={ErrorCode}, ErrorMessage={ErrorMessage}",
+                        Data?.LOGIN_SISTEMA,
+                        resultado.ErrorCode,
+                        resultado.ErrorMessage);
+                }
+
+                return resultado;
             }
-			
-			return resultado;
-		}
+            catch (System.Exception e)
+            {
+                _logger.LogError(e, "[ResetPassword] Excepción al restablecer contraseña para usuario {LoginSistema}", Data?.LOGIN_SISTEMA);
+                return new CResult
+                {
+                    Result = false,
+                    RowsAffected = 0,
+                    ErrorCode = -1,
+                    ErrorMessage = e.Message
+                };
+            }
+        }
 
         public async Task<CResult> getUSUARIO_PERMISOS(string vLOGIN_SISTEMA,string CODIGO_SUITE)
 		{
@@ -702,6 +823,155 @@ namespace sguees.Services
             };
 
 			return await _repo.GetAllAsync(p);
-		} 
+        }
+
+        private async Task<CResult> EjecutarCambioClaveAsync(SEG_USUARIO_LOGINParam Data, string vLOGIN_SISTEMA, string vESTACION, bool validarUsuarioAD)
+        {
+            var validaUsuario = await _repo.GetAsync(new List<CParameter>
+            {
+                new CParameter() { ParameterName = "LOGIN_SISTEMA", Value = Data.LOGIN_SISTEMA, DbType = System.Data.DbType.String }
+            });
+
+            if (!validaUsuario.Result || validaUsuario.Data == null)
+            {
+                return new CResult { Result = false, ErrorCode = -1, ErrorMessage = "Usuario no encontrado", RowsAffected = 0 };
+            }
+
+            var usuario = (SEG_USUARIOView)validaUsuario.Data;
+            if (validarUsuarioAD && string.IsNullOrWhiteSpace(usuario.USUARIO_AD))
+            {
+                return new CResult
+                {
+                    Result = false,
+                    ErrorCode = -1,
+                    ErrorMessage = "Cambio de contraseña permitido solo para usuarios con USUARIO_AD asignado",
+                    RowsAffected = 0
+                };
+            }
+
+            const int numeroUltimasClaves = 5;
+            var historialClaves = await _repo.GetUltimasClavesAsync(Data.LOGIN_SISTEMA, numeroUltimasClaves);
+            var esReutilizada = VerifyPasswordHash(Data.CLAVE_USUARIO_NUEVA, usuario.CLAVE_USUARIO, usuario.CLAVE_USUARIO_SAL);
+
+            if (!esReutilizada && historialClaves != null)
+            {
+                foreach (var claveHistorial in historialClaves)
+                {
+                    if (VerifyPasswordHash(Data.CLAVE_USUARIO_NUEVA, claveHistorial.CLAVE_USUARIO, claveHistorial.CLAVE_USUARIO_SAL))
+                    {
+                        esReutilizada = true;
+                        break;
+                    }
+                }
+            }
+
+            if (esReutilizada)
+            {
+                return new CResult { Result = false, ErrorCode = -1, ErrorMessage = "La contrasena ingresada ya fue utilizada anteriormente", RowsAffected = 0 };
+            }
+
+            bool esPrimerLogin = await _repo.VerificarPrimerLoginAsync(Data.LOGIN_SISTEMA);
+            var resultado = await _repo.CambioClave(Data, vLOGIN_SISTEMA, vESTACION);
+
+            if (resultado.Result)
+            {
+                string mensajeHistorial = esPrimerLogin
+                    ? "Cambio de contraseña exitoso - Primer login completado"
+                    : "Cambio de contraseña exitoso - Expiración de contraseña";
+
+                await _repo.RegistrarLoginHistorialAsync(
+                    Data.LOGIN_SISTEMA,
+                    null,
+                    null,
+                    Data.CODIGO_SUITE,
+                    true,
+                    mensajeHistorial,
+                    true
+                );
+            }
+
+            return resultado;
+        }
+
+        private string GenerarTokenResetContrasena(string loginSistema, int corrEmpresa)
+        {
+            var secretKey = _config.GetSection("AppSetting:Token").Value;
+            var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(secretKey));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, loginSistema),
+                new Claim("CORR_EMPRESA", corrEmpresa.ToString()),
+                new Claim("TOKEN_TYPE", "PASSWORD_RESET"),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(30),
+                SigningCredentials = credentials
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
+        private bool ValidarTokenResetContrasena(string token, string loginSistema)
+        {
+            try
+            {
+                var secretKey = _config.GetSection("AppSetting:Token").Value;
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var key = Encoding.ASCII.GetBytes(secretKey);
+
+                tokenHandler.ValidateToken(token, new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromMinutes(2)
+                }, out var validatedToken);
+
+                var jwtToken = (JwtSecurityToken)validatedToken;
+                var tokenType = jwtToken.Claims.FirstOrDefault(c => c.Type == "TOKEN_TYPE")?.Value;
+                var tokenLogin = jwtToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value
+                                ?? jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub)?.Value
+                                ?? jwtToken.Claims.FirstOrDefault(c => c.Type == "nameid")?.Value
+                                ?? jwtToken.Claims.FirstOrDefault(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
+
+                return tokenType == "PASSWORD_RESET" && string.Equals(tokenLogin, loginSistema, StringComparison.OrdinalIgnoreCase);
+            }
+            catch (System.Exception e)
+            {
+                _logger.LogWarning(e, "[ResetPassword] Error validando token para usuario {LoginSistema}.", loginSistema);
+                return false;
+            }
+        }
+
+        private string ConstruirUrlReset(string loginSistema, string token)
+        {
+            var urlConfigurada = _config.GetSection("AppSetting:passwordResetURL").Value;
+            if (!string.IsNullOrWhiteSpace(urlConfigurada))
+            {
+                return urlConfigurada
+                    + (urlConfigurada.Contains("?") ? "&" : "?")
+                    + "login=" + Uri.EscapeDataString(loginSistema)
+                    + "&token=" + Uri.EscapeDataString(token);
+            }
+
+            var clientUrl = _config.GetSection("AppSetting:clientURL").Value;
+            if (string.IsNullOrWhiteSpace(clientUrl))
+            {
+                clientUrl = "http://localhost:4200";
+            }
+
+            clientUrl = clientUrl.TrimEnd('/');
+            return clientUrl + "/recuperar-contrasena?login=" + Uri.EscapeDataString(loginSistema) + "&token=" + Uri.EscapeDataString(token);
+        }
 	}
 }

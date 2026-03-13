@@ -10,6 +10,71 @@ body {
 body {
   background-color: #e3f2fd; // Azul claro
   color: #212121;
+  font-size: 18px;
+}
+
+.dx-widget,
+.dx-overlay-content {
+  font-size: 18px;
+}
+
+.dx-field-item-label,
+.dx-field-item-label-text,
+.dx-label,
+.dx-texteditor-input,
+.dx-placeholder::before {
+  font-size: 18px;
+}
+
+.dx-button {
+  min-width: 140px !important;
+}
+
+.dx-button .dx-button-content {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+.dx-button .dx-button-text {
+  font-size: 18px;
+}
+
+/* Menú lateral: asegurar incremento visible de texto */
+.layout-body .dx-treeview .dx-treeview-item,
+.layout-body .dx-treeview .dx-treeview-item-content,
+.layout-body .dx-treeview .dx-treeview-node {
+  font-size: 18px !important;
+  line-height: 1.8 !important;
+}
+
+/* Grid: headers, celdas y textos internos */
+.dx-datagrid .dx-header-row > td,
+.dx-datagrid .dx-data-row > td,
+.dx-datagrid .dx-group-row > td,
+.dx-datagrid .dx-master-detail-row > td,
+.dx-datagrid .dx-datagrid-text-content,
+.dx-datagrid .dx-datagrid-summary-item,
+.dx-datagrid-headers .dx-datagrid-text-content {
+  font-size: 18px !important;
+  line-height: 1.35 !important;
+}
+
+/* Botones con texto: evitar recorte del texto */
+.dx-button.dx-button-has-text {
+  min-height: 44px;
+}
+
+.dx-button.dx-button-has-text .dx-button-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.dx-button.dx-button-has-text .dx-button-text {
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 a {

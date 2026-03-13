@@ -19,7 +19,7 @@ import { ChangePasswordModalModule } from '../change-password-modal/change-passw
   styleUrls: ['./login-form.component.scss'],
 })
 export class LoginFormComponent {
-  @Input() resetLink = '/auth/reset-password';
+  @Input() resetLink = '/reset-password';
   @Input() createAccountLink = '/auth/create-account';
 
   btnStylingMode: DxButtonTypes.ButtonStyle;
@@ -35,6 +35,7 @@ export class LoginFormComponent {
   // Variables para modal de cambio de contraseña
   showChangePasswordModal = false;
   loginSistemaForPasswordChange = '';
+  passwordChangeReason: 'first-login' | 'password-expired' = 'first-login';
 
   passwordEditorOptions = {
     placeholder: 'Password',
@@ -70,6 +71,9 @@ export class LoginFormComponent {
           // Verificar si requiere cambio de contraseña
           if (response.Data.REQUIERE_CAMBIO_CLAVE) {
             this.loginSistemaForPasswordChange = usuario;
+            this.passwordChangeReason = response.Data.ES_PRIMER_LOGIN
+              ? 'first-login'
+              : 'password-expired';
             this.showChangePasswordModal = true;
           } else {
             // Login exitoso, redirigir al home
