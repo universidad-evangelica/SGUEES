@@ -142,6 +142,7 @@ namespace sguees.Repositories
 
             return objResultado;
         }
+
         public CResult GetCLASE_TIPO_INVALIDACION()
         {
             CResult objResultado = new CResult();
@@ -516,5 +517,9 @@ namespace sguees.Repositories
 
             return objResultado;
         }
+
+      
     }
+
+    
 }
