@@ -7,6 +7,7 @@ import { GenRubroComponent } from './gen-rubro/gen-rubro.component';
 import { GenTipoGastoComponent } from './gen-tipo-gasto/gen-tipo-gasto.component';
 import { GenTipoDocumentoComponent } from './gen-tipo-documento/gen-tipo-documento.component';
 import { GenPaisComponent } from './gen-pais/gen-pais.component';
+import { GenDeptoComponent } from './gen-depto/gen-depto.component';
 
 const routes: Routes = [
   {
@@ -40,6 +41,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-pais/gen-pais.module').then(m => m.GenPaisModule)
+  },
+  {
+    path:'gen-depto',
+    component: GenDeptoComponent,
+    data: { titulo: 'Departamentos' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-depto/gen-depto.module').then(m => m.GenDeptoModule)
   }
 ];
 
