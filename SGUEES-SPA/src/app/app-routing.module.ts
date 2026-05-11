@@ -63,6 +63,11 @@ const routes: Routes = [
 		loadChildren: () => import('./pages/SelectionHiring/selection-hiring.module').then(m => m.SelectionHiringModule)
 	},
   {
+		path: 'payroll',
+		canActivate: [AuthGuardService],
+		loadChildren: () => import('./pages/Payroll/payroll.module').then(m => m.PayrollModule)
+	},
+  {
     path: 'crm-contact-list',
     component: CrmContactListComponent,
   },

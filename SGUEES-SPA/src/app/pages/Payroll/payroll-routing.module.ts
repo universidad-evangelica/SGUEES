@@ -3,16 +3,16 @@ import { RouterModule, Routes } from '@angular/router';
 
 import { AuthGuardService } from 'src/app/shared/services/auth.service';
 import { AppCanDeactivateGuard } from 'src/app/app-candeactivate.guard';
-import { PayrollHomeComponent } from './payroll-home/payroll-home.component';
+import { PlaDepartamentoComponent } from './pla-departamento/pla-departamento.component';
 
 const routes: Routes = [
   {
-    path: 'payroll-home',
-    component: PayrollHomeComponent,
-    data: { titulo: 'Payroll' },
+    path: 'pla-departamento',
+    component: PlaDepartamentoComponent,
+    data: { titulo: 'Departamento' },
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
-    loadChildren: () => import('./payroll-home/payroll-home.module').then(m => m.PayrollHomeModule)
+    loadChildren: () => import('./pla-departamento/pla-departamento.module').then(m => m.PlaDepartamentoModule)
   }
 ];
 
