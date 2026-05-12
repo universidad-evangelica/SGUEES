@@ -14,7 +14,9 @@
 			<app-data-lookup
 				[model]="mCORR_PAIS"
 				[(value)]="model.CORR_PAIS"
-				[selectedRowKeys]="selectedLookUpLista"
+				[valueExpr]="'CORR_PAIS'"
+        		[displayExpr]="'NOMBRE_PAIS'"
+				[selectedRowKeys]="selectedLookUpCORR_PAIS"
 				[readOnly]="readOnly"
 			>
 			</app-data-lookup>

@@ -116,7 +116,7 @@ namespace sguees.Repositories
 				var pWhere = new List<CParameter>
 				{
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
-					new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32},
+					//new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32},
 				};
 				
 				var reader = await objData.Insert(_TableName,p,"CORR_DEPTO",pWhere);
@@ -157,6 +157,7 @@ namespace sguees.Repositories
 				{
 					new CParameter() {ParameterName="NOMBRE_DEPTO",Value=Data.NOMBRE_DEPTO,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="CODIGO_DEPTO",Value=Data.CODIGO_DEPTO,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="ESTACION_ACTU",Value=Data.ESTACION_ACTU,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="FECHA_ACTU",Value=Data.FECHA_ACTU,DbType=System.Data.DbType.DateTime},
@@ -165,7 +166,7 @@ namespace sguees.Repositories
 				var pWhere = new List<CParameter>
 				{
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
-					new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32},
+					//new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="CORR_DEPTO",Value=Data.CORR_DEPTO,DbType=System.Data.DbType.Int32},
 				};
 				
@@ -209,7 +210,7 @@ namespace sguees.Repositories
 				var pWhere = new List<CParameter>
 				{
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
-					new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32},
+					//new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="CORR_DEPTO",Value=Data.CORR_DEPTO,DbType=System.Data.DbType.Int32},
 				};
 				

@@ -55,7 +55,8 @@ export class GenDeptoService {
 	getColumns(): any {
 		return [
 			{ dataField: 'CORR_DEPTO', caption: 'Corr.', width: 85 },
-			{ dataField: 'NOMBRE_DEPTO', caption: 'Nombre Depto', width: 250 },
+			{ dataField: 'NOMBRE_DEPTO', caption: 'Deptartamento', width: 250 },
+			{ dataField: 'NOMBRE_PAIS', caption: 'Pais', width: 250 },
 			{ dataField: 'CODIGO_DEPTO', caption: 'Codigo Depto', width: 150 },
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 150 },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 150 },

@@ -20,7 +20,7 @@ namespace sguees.Services
 			var p = new List<CParameter>
 			{
 				new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
-				new CParameter() {ParameterName="CORR_PAIS",Value=xWhere.CORR_PAIS,DbType=System.Data.DbType.Int32},
+				//new CParameter() {ParameterName="CORR_PAIS",Value=xWhere.CORR_PAIS,DbType=System.Data.DbType.Int32},
 			};
 			
 			return await _repo.GetAllAsync(p);

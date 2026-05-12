@@ -47,9 +47,14 @@ export class GenDeptoComponent extends CBaseComponent implements OnInit {
 		this.getCORR_PAIS();
 	}
 
+	
+	selectedLookUpCORR_PAIS(vRow: any): any {
+		return vRow[0].CORR_PAIS;
+	}
+
 	getCORR_PAIS() {
 		this.appInfoService
-			.getLookUp('GEN_DEPTO', 'ADP_PAIS', 'GetCORR_PAIS', undefined, environment.UrlGENERALAPI)
+			.getLookUp('GEN_DEPTO', 'GEN_PAIS', 'GetCORR_PAIS', undefined, environment.UrlGENERALAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {

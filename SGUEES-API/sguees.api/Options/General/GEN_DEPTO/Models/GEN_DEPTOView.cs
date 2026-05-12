@@ -15,5 +15,6 @@ namespace sguees.Models
 		public string USUARIO_ACTU { get; set; }
 		public string ESTACION_ACTU { get; set; }
 		public DateTime FECHA_ACTU { get; set; }
+		public string NOMBRE_PAIS { get; set; }
 	}
 }
