@@ -93,5 +93,14 @@ namespace sguees.Controllers
 				return BadRequest(resultado);
 			}
 		}
+
+		[HttpGet("GetCORR_PAIS_GEN_DEPTO")]
+        [Authorize(Policy = "/gen-depto|R")]
+        public async Task<CResult> GetCORR_PAIS_GEN_DEPTO([FromQuery] GEN_PAISParam Data)
+        {
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
+        }
+
 	}
 }
