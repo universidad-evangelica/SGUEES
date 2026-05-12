@@ -27,6 +27,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/gen-pais|R")]
 		public async Task<CResult> GetAll([FromQuery] GEN_PAISParam Data)
 		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			return await _service.GetAllAsync(Data);
 		}
 		
@@ -34,6 +35,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/gen-pais|R")]
 		public async Task<CResult> Get([FromQuery] GEN_PAISParam Data)
 		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			return await _service.GetAsync(Data);
 		}
 		
@@ -41,8 +43,15 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/gen-pais|C")]
 		public async Task<IActionResult> Post(GEN_PAISTable Data)
 		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			Data.USUARIO_CREA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
+			Data.ESTACION_CREA = Data.USUARIO_CREA;
+			Data.FECHA_CREA = DateTime.Now;
+			Data.USUARIO_ACTU = Data.USUARIO_CREA;
+			Data.ESTACION_ACTU = Data.ESTACION_CREA;
+			Data.FECHA_ACTU = Data.FECHA_CREA;
 			
-			var resultado = await _service.CreateAsync(Data, "Admin", "e-CoffeeTech");
+			var resultado = await _service.CreateAsync(Data, Data.ESTACION_CREA, "e-CoffeeTech");
 			if (resultado.ErrorCode == 0)
 			{
 				return StatusCode(201, resultado);
@@ -55,6 +64,13 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/gen-pais|U")]
 		public async Task<IActionResult> Put(GEN_PAISTable Data)
 		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			Data.USUARIO_CREA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
+			Data.ESTACION_CREA = Data.USUARIO_CREA;
+			Data.FECHA_CREA = DateTime.Now;
+			Data.USUARIO_ACTU = Data.USUARIO_CREA;
+			Data.ESTACION_ACTU = Data.ESTACION_CREA;
+			Data.FECHA_ACTU = Data.FECHA_CREA;
 			var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
 			if (resultado.ErrorCode == 0)
 			{
@@ -68,6 +84,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/gen-pais|D")]
 		public async Task<IActionResult> Delete([FromQuery] GEN_PAISTable Data)
 		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			var resultado = await _service.DeleteAsync(Data, "Admin", "e-CoffeeTech");
 			if (resultado.ErrorCode == 0)
 			{
@@ -77,19 +94,13 @@ namespace sguees.Controllers
 			}
 		}
 
-		[HttpGet("GetCODIGO_PAIS_COM_PROVEEDOR")]
-		[Authorize(Policy = "/com-proveedor|R")]
-		public async Task<CResult> GetCODIGO_PAIS_COM_PROVEEDOR([FromQuery] GEN_PAISParam Data)
-		{
-			return await _service.GetAllAsync(Data);
-		}
-
-		[HttpGet("GetCODIGO_PAIS_COM_PROVEEDOR_ACTU")]
-		[Authorize(Policy = "/com-proveedor-actu|R")]
-		public async Task<CResult> GetCODIGO_PAIS_COM_PROVEEDOR_ACTU([FromQuery] GEN_PAISParam Data)
-		{
-			return await _service.GetAllAsync(Data);
-		}
+		[HttpGet("GetCORR_PAIS_GEN_DEPTO")]
+        [Authorize(Policy = "/gen-depto|R")]
+        public async Task<CResult> GetCORR_PAIS_GEN_DEPTO([FromQuery] GEN_PAISParam Data)
+        {
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
+        }
 
 	}
 }

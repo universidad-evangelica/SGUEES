@@ -5,6 +5,7 @@ import { AuthGuardService } from 'src/app/shared/services/auth.service';
 import { AppCanDeactivateGuard } from 'src/app/app-candeactivate.guard';
 import { ScTipoVacanteComponent } from './sc-tipo-vacante/sc-tipo-vacante.component';
 import { ScRequisicionPersonalComponent } from './sc-requisicion-personal/sc-requisicion-personal.component';
+import { ScTipoModalidadComponent } from './sc-tipo-modalidad/sc-tipo-modalidad.component';
 
 const routes: Routes = [
   {
@@ -16,12 +17,19 @@ const routes: Routes = [
     loadChildren: () => import('./sc-tipo-vacante/sc-tipo-vacante.module').then(m => m.ScTipoVacanteModule)
   },
   {
+    
     path: 'sc-requisicion-personal',
     component: ScRequisicionPersonalComponent,
     data: { titulo: 'Requisicion de personal' },
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./sc-requisicion-personal/sc-requisicion-personal.module').then(m => m.ScRequisicionPersonalModule)
+    path: 'sc-tipo-modalidad',
+    component: ScTipoModalidadComponent,
+    data: { titulo: 'Tipo de modalidad' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-tipo-modalidad/sc-tipo-modalidad.module').then(m => m.ScTipoModalidadModule)
   }
 ];
 

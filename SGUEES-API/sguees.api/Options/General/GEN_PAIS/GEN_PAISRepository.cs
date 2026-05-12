@@ -100,21 +100,32 @@ namespace sguees.Repositories
 			{
 				var p = new List<CParameter>
 				{
-					new CParameter() {ParameterName="CODIGO_PAIS",Value=Data.CODIGO_PAIS,DbType=System.Data.DbType.String,Direction=System.Data.ParameterDirection.InputOutput},
+					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput},
 					new CParameter() {ParameterName="NOMBRE_PAIS",Value=Data.NOMBRE_PAIS,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="CODIGO_PAIS",Value=Data.CODIGO_PAIS,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="NACIONALIDAD",Value=Data.NACIONALIDAD,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="NOMBRE_CORTO",Value=Data.NOMBRE_CORTO,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="USUARIO_CREA",Value=Data.USUARIO_CREA,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="ESTACION_CREA",Value=Data.ESTACION_CREA,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="FECHA_CREA",Value=Data.FECHA_CREA,DbType=System.Data.DbType.DateTime},
+					new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="ESTACION_ACTU",Value=Data.ESTACION_ACTU,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="FECHA_ACTU",Value=Data.FECHA_ACTU,DbType=System.Data.DbType.DateTime},
 				};
 				
 				var pWhere = new List<CParameter>
 				{
+					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
 				};
 				
-				var reader = await objData.Insert(_TableName,p,"CODIGO_PAIS",pWhere);
+				var reader = await objData.Insert(_TableName,p,"CORR_PAIS",pWhere);
 				var response = new List<GEN_PAISView>().FromDataReader(reader).FirstOrDefault();
 				
 				objResultado.Data = response;
 				objResultado.Result = true;
 				objResultado.RowsAffected = 1;
-				objResultado.CodeHelper = response.CODIGO_PAIS;
+				objResultado.CodeHelper = response.CORR_PAIS;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
 				objResultado.ErrorSource ="";
@@ -145,11 +156,18 @@ namespace sguees.Repositories
 				var p = new List<CParameter>
 				{
 					new CParameter() {ParameterName="NOMBRE_PAIS",Value=Data.NOMBRE_PAIS,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="CODIGO_PAIS",Value=Data.CODIGO_PAIS,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="NACIONALIDAD",Value=Data.NACIONALIDAD,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="NOMBRE_CORTO",Value=Data.NOMBRE_CORTO,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="ESTACION_ACTU",Value=Data.ESTACION_ACTU,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="FECHA_ACTU",Value=Data.FECHA_ACTU,DbType=System.Data.DbType.DateTime},
 				};
 				
 				var pWhere = new List<CParameter>
 				{
-					new CParameter() {ParameterName="CODIGO_PAIS",Value=Data.CODIGO_PAIS,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32},
 				};
 				
 				var reader = await objData.Update(_TableName,p,pWhere);
@@ -161,7 +179,7 @@ namespace sguees.Repositories
 				objResultado.Data = response;
 				objResultado.Result = true;
 				objResultado.RowsAffected = 1;
-				objResultado.CodeHelper = response.CODIGO_PAIS;
+				objResultado.CodeHelper = response.CORR_PAIS;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
 				objResultado.ErrorSource ="";
@@ -191,13 +209,14 @@ namespace sguees.Repositories
 			{
 				var pWhere = new List<CParameter>
 				{
-					new CParameter() {ParameterName="CODIGO_PAIS",Value=Data.CODIGO_PAIS,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32},
 				};
 				
 				objResultado.RowsAffected = (int) await objData.Delete(_TableName,pWhere);
 				objResultado.Data = null;
 				objResultado.Result = true;
-				objResultado.CodeHelper = Data.CODIGO_PAIS;
+				objResultado.CodeHelper = Data.CORR_PAIS;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
 				objResultado.ErrorSource ="";
