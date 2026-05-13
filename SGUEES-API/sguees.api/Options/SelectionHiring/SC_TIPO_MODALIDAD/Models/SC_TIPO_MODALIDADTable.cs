@@ -1,7 +1,7 @@
 using System;
 using eFramework.Data;
 
-namespace SGUEES.Models
+namespace sguees.Models
 {
 	public class SC_TIPO_MODALIDADTable: BaseEntity
 	{

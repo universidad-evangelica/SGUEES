@@ -1,6 +1,6 @@
 using System;
 
-namespace SGUEES.Models
+namespace sguees.Models
 {
 	public class SC_TIPO_MODALIDADView
 	{

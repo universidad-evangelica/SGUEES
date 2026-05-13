@@ -4,9 +4,9 @@ using Microsoft.Extensions.Configuration;
 using System.Linq;
 using eFramework.Data;
 using eFramework.Core;
-using SGUEES.Models;
+using sguees.Models;
 
-namespace SGUEES.Repositories
+namespace sguees.Repositories
 {
 	public class SC_TIPO_MODALIDADRepository: BaseRepository<SC_TIPO_MODALIDADTable>, ISC_TIPO_MODALIDADRepository
 	{
@@ -115,13 +115,13 @@ namespace SGUEES.Repositories
 				{
 				};
 				
-				var reader = await objData.Insert(_TableName,p,"CORR_BITACORA",pWhere);
+				var reader = await objData.Insert(_TableName,p,"CORR_TIPO_MODALIDAD",pWhere);
 				var response = new List<SC_TIPO_MODALIDADView>().FromDataReader(reader).FirstOrDefault();
 				
 				objResultado.Data = response;
 				objResultado.Result = true;
 				objResultado.RowsAffected = 1;
-				objResultado.CodeHelper = response.CORR_BITACORA;
+				objResultado.CodeHelper = response.CORR_TIPO_MODALIDAD;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
 				objResultado.ErrorSource ="";
@@ -172,7 +172,7 @@ namespace SGUEES.Repositories
 				objResultado.Data = response;
 				objResultado.Result = true;
 				objResultado.RowsAffected = 1;
-				objResultado.CodeHelper = response.CORR_BITACORA;
+				objResultado.CodeHelper = response.CORR_TIPO_MODALIDAD;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
 				objResultado.ErrorSource ="";
@@ -207,7 +207,7 @@ namespace SGUEES.Repositories
 				objResultado.RowsAffected = (int) await objData.Delete(_TableName,pWhere);
 				objResultado.Data = null;
 				objResultado.Result = true;
-				objResultado.CodeHelper = Data.CORR_BITACORA;
+				objResultado.CodeHelper = Data.CORR_TIPO_MODALIDAD;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
 				objResultado.ErrorSource ="";

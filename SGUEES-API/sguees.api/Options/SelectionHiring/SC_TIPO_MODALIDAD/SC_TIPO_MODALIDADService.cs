@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
-using SGUEES.Models;
-using SGUEES.Repositories;
+using sguees.Models;
+using sguees.Repositories;
 
-namespace SGUEES.Services
+namespace sguees.Services
 {
 	public class SC_TIPO_MODALIDADService: ISC_TIPO_MODALIDADService
 	{

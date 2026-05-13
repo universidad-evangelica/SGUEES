@@ -1,8 +1,8 @@
 using System.Threading.Tasks;
 using eFramework.Core;
-using SGUEES.Models;
+using sguees.Models;
 
-namespace SGUEES.Services
+namespace sguees.Services
 {
 	public interface ISC_TIPO_MODALIDADService
 	{

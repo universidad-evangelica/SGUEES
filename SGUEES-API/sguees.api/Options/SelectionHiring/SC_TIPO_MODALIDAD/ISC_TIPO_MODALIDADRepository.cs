@@ -1,7 +1,7 @@
 using eFramework.Data;
-using SGUEES.Models;
+using sguees.Models;
 
-namespace SGUEES.Repositories
+namespace sguees.Repositories
 {
 	public interface ISC_TIPO_MODALIDADRepository: IRepository<SC_TIPO_MODALIDADTable>
 	{

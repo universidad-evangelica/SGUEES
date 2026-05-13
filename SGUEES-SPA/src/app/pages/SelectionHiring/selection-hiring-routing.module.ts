@@ -24,6 +24,7 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./sc-requisicion-personal/sc-requisicion-personal.module').then(m => m.ScRequisicionPersonalModule)
+  },{
     path: 'sc-tipo-modalidad',
     component: ScTipoModalidadComponent,
     data: { titulo: 'Tipo de modalidad' },
