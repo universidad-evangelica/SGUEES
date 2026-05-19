@@ -19,7 +19,9 @@ namespace sguees.Services
 		{
 			var p = new List<CParameter>
 			{
-				new CParameter() {ParameterName="CODIGO_DEPTO",Value=xWhere.CODIGO_DEPTO,DbType=System.Data.DbType.String},
+				new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+				//new CParameter() {ParameterName="CORR_PAIS",Value=xWhere.CORR_PAIS,DbType=System.Data.DbType.Int32},
+				//new CParameter() {ParameterName="CORR_DEPTO",Value=xWhere.CORR_DEPTO,DbType=System.Data.DbType.Int32},
 			};
 			
 			return await _repo.GetAllAsync(p);
@@ -29,8 +31,10 @@ namespace sguees.Services
 		{
 			var p = new List<CParameter>
 			{
-				new CParameter() {ParameterName="CODIGO_DEPTO",Value=xWhere.CODIGO_DEPTO,DbType=System.Data.DbType.String},
-				new CParameter() {ParameterName="CODIGO_MUNICIPIO",Value=xWhere.CODIGO_MUNICIPIO,DbType=System.Data.DbType.String},
+				new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+				//new CParameter() {ParameterName="CORR_PAIS",Value=xWhere.CORR_PAIS,DbType=System.Data.DbType.Int32},
+				//new CParameter() {ParameterName="CORR_DEPTO",Value=xWhere.CORR_DEPTO,DbType=System.Data.DbType.Int32},
+				new CParameter() {ParameterName="CORR_MUNICIPIO",Value=xWhere.CORR_MUNICIPIO,DbType=System.Data.DbType.Int32},
 			};
 		
 			return await _repo.GetAsync(p);

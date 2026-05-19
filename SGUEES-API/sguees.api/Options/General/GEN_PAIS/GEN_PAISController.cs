@@ -102,5 +102,14 @@ namespace sguees.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+		[HttpGet("GetCORR_PAIS_GEN_MUNICIPIO")]
+        [Authorize(Policy = "/gen-municipio|R")]
+        public async Task<CResult> GetCORR_PAIS_GEN_MUNICIPIO([FromQuery] GEN_PAISParam Data)
+        {
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
+        }
+
+
 	}
 }

@@ -93,5 +93,14 @@ namespace sguees.Controllers
 				return BadRequest(resultado);
 			}
 		}
+
+		[HttpGet("GetCORR_DEPTO_GEN_MUNICIPIO")]
+        [Authorize(Policy = "/gen-municipio|R")]
+        public async Task<CResult> GetCORR_DEPTO_GEN_MUNICIPIO([FromQuery] GEN_DEPTOParam Data)
+        {
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			//Data.CORR_PAIS = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_PAIS").Value);
+            return await _service.GetAllAsync(Data);
+        }
 	}
 }
