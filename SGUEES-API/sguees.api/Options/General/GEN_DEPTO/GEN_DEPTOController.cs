@@ -102,5 +102,13 @@ namespace sguees.Controllers
 			//Data.CORR_PAIS = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_PAIS").Value);
             return await _service.GetAllAsync(Data);
         }
+		[HttpGet("GetCORR_DEPTO_GEN_DISTRITO")]
+        [Authorize(Policy = "/gen-distrito|R")]
+        public async Task<CResult> GetCORR_DEPTO_GEN_DISTRITO([FromQuery] GEN_DEPTOParam Data)
+        {
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			//Data.CORR_PAIS = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_PAIS").Value);
+            return await _service.GetAllAsync(Data);
+        }
 	}
 }

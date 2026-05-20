@@ -8,11 +8,11 @@ using sguees.Models;
 
 namespace sguees.Repositories
 {
-	public class GEN_MUNICIPIORepository: BaseRepository<GEN_MUNICIPIOTable>, IGEN_MUNICIPIORepository
+	public class GEN_DISTRITORepository: BaseRepository<GEN_DISTRITOTable>, IGEN_DISTRITORepository
 	{
-		private const string _TableName = "GEN_MUNICIPIO";
+		private const string _TableName = "GEN_DISTRITO";
 		
-		public GEN_MUNICIPIORepository(IConfiguration config) : 
+		public GEN_DISTRITORepository(IConfiguration config) : 
 				base(config.GetConnectionString("defaultConnection"),
 					 config.GetSection("DbProvider:defaultProvider").Value)
 		{
@@ -25,7 +25,7 @@ namespace sguees.Repositories
 			try
 			{
 				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
-				var response = new List<GEN_MUNICIPIOView>().FromDataReader(reader).ToList();
+				var response = new List<GEN_DISTRITOView>().FromDataReader(reader).ToList();
 				
 				reader.Close();
 				reader = null;
@@ -62,7 +62,7 @@ namespace sguees.Repositories
 			try
 			{
 				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
-				var response = new List<GEN_MUNICIPIOView>().FromDataReader(reader).FirstOrDefault();
+				var response = new List<GEN_DISTRITOView>().FromDataReader(reader).FirstOrDefault();
 				
 				reader.Close();
 				reader = null;
@@ -92,7 +92,7 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 		
-		public async Task<CResult> CreateAsync(GEN_MUNICIPIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		public async Task<CResult> CreateAsync(GEN_DISTRITOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
 			
@@ -103,9 +103,9 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="CORR_DEPTO",Value=Data.CORR_DEPTO,DbType=System.Data.DbType.Int32},
-					new CParameter() {ParameterName="CORR_MUNICIPIO",Value=Data.CORR_MUNICIPIO,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput},
-					new CParameter() {ParameterName="NOMBRE_MUNICIPIO",Value=Data.NOMBRE_MUNICIPIO,DbType=System.Data.DbType.String},
-					new CParameter() {ParameterName="CODIGO_MUNICIPIO",Value=Data.CODIGO_MUNICIPIO,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="CORR_MUNICIPIO",Value=Data.CORR_MUNICIPIO,DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="CORR_DISTRITO",Value=Data.CORR_DISTRITO,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput},
+					new CParameter() {ParameterName="NOMBRE_DISTRITO",Value=Data.NOMBRE_DISTRITO,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="USUARIO_CREA",Value=Data.USUARIO_CREA,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="ESTACION_CREA",Value=Data.ESTACION_CREA,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="FECHA_CREA",Value=Data.FECHA_CREA,DbType=System.Data.DbType.DateTime},
@@ -119,15 +119,16 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
 					//new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32},
 					//new CParameter() {ParameterName="CORR_DEPTO",Value=Data.CORR_DEPTO,DbType=System.Data.DbType.Int32},
+					//new CParameter() {ParameterName="CORR_MUNICIPIO",Value=Data.CORR_MUNICIPIO,DbType=System.Data.DbType.Int32},
 				};
 				
-				var reader = await objData.Insert(_TableName,p,"CORR_MUNICIPIO",pWhere);
-				var response = new List<GEN_MUNICIPIOView>().FromDataReader(reader).FirstOrDefault();
+				var reader = await objData.Insert(_TableName,p,"CORR_DISTRITO",pWhere);
+				var response = new List<GEN_DISTRITOView>().FromDataReader(reader).FirstOrDefault();
 				
 				objResultado.Data = response;
 				objResultado.Result = true;
 				objResultado.RowsAffected = 1;
-				objResultado.CodeHelper = response.CORR_MUNICIPIO;
+				objResultado.CodeHelper = response.CORR_DISTRITO;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
 				objResultado.ErrorSource ="";
@@ -149,7 +150,7 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 		
-		public async Task<CResult> UpdateAsync(GEN_MUNICIPIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		public async Task<CResult> UpdateAsync(GEN_DISTRITOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
 			
@@ -157,11 +158,11 @@ namespace sguees.Repositories
 			{
 				var p = new List<CParameter>
 				{
-					new CParameter() {ParameterName="NOMBRE_MUNICIPIO",Value=Data.NOMBRE_MUNICIPIO,DbType=System.Data.DbType.String},
-					new CParameter() {ParameterName="CODIGO_MUNICIPIO",Value=Data.CODIGO_MUNICIPIO,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="NOMBRE_DISTRITO",Value=Data.NOMBRE_DISTRITO,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="CORR_DEPTO",Value=Data.CORR_DEPTO,DbType=System.Data.DbType.Int32 },
 					new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32},
-					new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="CORR_MUNICIPIO",Value=Data.CORR_MUNICIPIO,DbType=System.Data.DbType.Int32 },
 					new CParameter() {ParameterName="ESTACION_ACTU",Value=Data.ESTACION_ACTU,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="FECHA_ACTU",Value=Data.FECHA_ACTU,DbType=System.Data.DbType.DateTime},
 				};
@@ -171,11 +172,12 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
 					//new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32},
 					//new CParameter() {ParameterName="CORR_DEPTO",Value=Data.CORR_DEPTO,DbType=System.Data.DbType.Int32},
-					new CParameter() {ParameterName="CORR_MUNICIPIO",Value=Data.CORR_MUNICIPIO,DbType=System.Data.DbType.Int32},
+					//new CParameter() {ParameterName="CORR_MUNICIPIO",Value=Data.CORR_MUNICIPIO,DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="CORR_DISTRITO",Value=Data.CORR_DISTRITO,DbType=System.Data.DbType.Int32},
 				};
 				
 				var reader = await objData.Update(_TableName,p,pWhere);
-				var response = new List<GEN_MUNICIPIOView>().FromDataReader(reader).FirstOrDefault();
+				var response = new List<GEN_DISTRITOView>().FromDataReader(reader).FirstOrDefault();
 				
 				reader.Close();
 				reader = null;
@@ -183,7 +185,7 @@ namespace sguees.Repositories
 				objResultado.Data = response;
 				objResultado.Result = true;
 				objResultado.RowsAffected = 1;
-				objResultado.CodeHelper = response.CORR_MUNICIPIO;
+				objResultado.CodeHelper = response.CORR_DISTRITO;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
 				objResultado.ErrorSource ="";
@@ -205,7 +207,7 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 		
-		public async Task<CResult> DeleteAsync(GEN_MUNICIPIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		public async Task<CResult> DeleteAsync(GEN_DISTRITOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
 			
@@ -216,13 +218,14 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
 					//new CParameter() {ParameterName="CORR_PAIS",Value=Data.CORR_PAIS,DbType=System.Data.DbType.Int32},
 					//new CParameter() {ParameterName="CORR_DEPTO",Value=Data.CORR_DEPTO,DbType=System.Data.DbType.Int32},
-					new CParameter() {ParameterName="CORR_MUNICIPIO",Value=Data.CORR_MUNICIPIO,DbType=System.Data.DbType.Int32},
+					//new CParameter() {ParameterName="CORR_MUNICIPIO",Value=Data.CORR_MUNICIPIO,DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="CORR_DISTRITO",Value=Data.CORR_DISTRITO,DbType=System.Data.DbType.Int32},
 				};
 				
 				objResultado.RowsAffected = (int) await objData.Delete(_TableName,pWhere);
 				objResultado.Data = null;
 				objResultado.Result = true;
-				objResultado.CodeHelper = Data.CORR_MUNICIPIO;
+				objResultado.CodeHelper = Data.CORR_DISTRITO;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
 				objResultado.ErrorSource ="";
