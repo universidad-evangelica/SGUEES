@@ -14,34 +14,34 @@ namespace sguees.Controllers
 	[Route("[controller]")]
 	[ApiController]
 	
-	public class GEN_MUNICIPIOController : ControllerBase
+	public class GEN_DISTRITOController : ControllerBase
 	{
-		private readonly IGEN_MUNICIPIOService _service;
+		private readonly IGEN_DISTRITOService _service;
 		
-		public GEN_MUNICIPIOController(IGEN_MUNICIPIOService service)
+		public GEN_DISTRITOController(IGEN_DISTRITOService service)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(_service));
 		}
 		
 		[HttpGet("GetAll")]
-		[Authorize(Policy = "/gen-municipio|R")]
-		public async Task<CResult> GetAll([FromQuery] GEN_MUNICIPIOParam Data)
+		[Authorize(Policy = "/gen-distrito|R")]
+		public async Task<CResult> GetAll([FromQuery] GEN_DISTRITOParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			return await _service.GetAllAsync(Data);
 		}
 		
 		[HttpGet("Get")]
-		[Authorize(Policy = "/gen-municipio|R")]
-		public async Task<CResult> Get([FromQuery] GEN_MUNICIPIOParam Data)
+		[Authorize(Policy = "/gen-distrito|R")]
+		public async Task<CResult> Get([FromQuery] GEN_DISTRITOParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			return await _service.GetAsync(Data);
 		}
 		
 		[HttpPost]
-		[Authorize(Policy = "/gen-municipio|C")]
-		public async Task<IActionResult> Post(GEN_MUNICIPIOTable Data)
+		[Authorize(Policy = "/gen-distrito|C")]
+		public async Task<IActionResult> Post(GEN_DISTRITOTable Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			Data.USUARIO_CREA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
@@ -61,8 +61,8 @@ namespace sguees.Controllers
 		}
 		
 		[HttpPut]
-		[Authorize(Policy = "/gen-municipio|U")]
-		public async Task<IActionResult> Put(GEN_MUNICIPIOTable Data)
+		[Authorize(Policy = "/gen-distrito|U")]
+		public async Task<IActionResult> Put(GEN_DISTRITOTable Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			Data.USUARIO_CREA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
@@ -81,8 +81,8 @@ namespace sguees.Controllers
 		}
 		
 		[HttpDelete]
-		[Authorize(Policy = "/gen-municipio|D")]
-		public async Task<IActionResult> Delete([FromQuery] GEN_MUNICIPIOTable Data)
+		[Authorize(Policy = "/gen-distrito|D")]
+		public async Task<IActionResult> Delete([FromQuery] GEN_DISTRITOTable Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			var resultado = await _service.DeleteAsync(Data, "Admin", "e-CoffeeTech");
@@ -93,14 +93,5 @@ namespace sguees.Controllers
 				return BadRequest(resultado);
 			}
 		}
-		[HttpGet("GetCORR_MUNICIPIO_GEN_DISTRITO")]
-        [Authorize(Policy = "/gen-distrito|R")]
-        public async Task<CResult> GetCORR_MUNICIPIO_GEN_DISTRITO([FromQuery] GEN_MUNICIPIOParam Data)
-        {
-			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-			//Data.CORR_PAIS = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_PAIS").Value);
-            return await _service.GetAllAsync(Data);
-        }
-		
 	}
 }

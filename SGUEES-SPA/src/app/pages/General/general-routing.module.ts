@@ -8,6 +8,8 @@ import { GenTipoGastoComponent } from './gen-tipo-gasto/gen-tipo-gasto.component
 import { GenTipoDocumentoComponent } from './gen-tipo-documento/gen-tipo-documento.component';
 import { GenPaisComponent } from './gen-pais/gen-pais.component';
 import { GenDeptoComponent } from './gen-depto/gen-depto.component';
+import { GenMunicipioComponent } from './gen-municipio/gen-municipio.component';
+import { GenDistritoComponent } from './gen-distrito/gen-distrito.component';
 
 const routes: Routes = [
   {
@@ -49,6 +51,22 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-depto/gen-depto.module').then(m => m.GenDeptoModule)
+  },
+   {
+    path:'gen-municipio',
+    component: GenMunicipioComponent,
+    data: { titulo: 'municipios' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-municipio/gen-municipio.module').then(m => m.GenMunicipioModule)
+  },
+    {
+    path:'gen-distrito',
+    component: GenDistritoComponent,
+    data: { titulo: 'Distritos' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-distrito/gen-distrito.module').then(m => m.GenDistritoModule)
   }
 ];
 

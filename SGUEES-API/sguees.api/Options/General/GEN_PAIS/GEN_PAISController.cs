@@ -110,6 +110,14 @@ namespace sguees.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+		[HttpGet("GetCORR_PAIS_GEN_DISTRITO")]
+        [Authorize(Policy = "/gen-distrito|R")]
+        public async Task<CResult> GetCORR_PAIS_GEN_DISTRITO([FromQuery] GEN_PAISParam Data)
+        {
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
+        }
+
 
 	}
 }
