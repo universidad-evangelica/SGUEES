@@ -54,13 +54,13 @@ export class ScTipoVacanteService {
 
 	getColumns(): any {
 		return [
-			{ dataField: 'CORR_TIPO_VACANTE', caption: 'Corr.', width: 85 },
-			{ dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Tipo Vacante', width: 250 },
-			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
-			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
-			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
-			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
-			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{ dataField: 'CORR_TIPO_VACANTE', caption: 'Corr.', width: 100 },
+			{ dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Tipo Vacante', width: 350 },
+			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 250 },
+			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 250, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 250 },
+			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 250 },
+			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 250, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
 		];
 	}
 

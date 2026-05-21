@@ -59,12 +59,12 @@ export class GenMunicipioService {
 			{ dataField: 'CODIGO_MUNICIPIO', caption: 'Codigo', width: 150 },
 			{ dataField: 'NOMBRE_DEPTO', caption: 'Departamento', width: 250},
 			{ dataField: 'NOMBRE_PAIS', caption: 'Pais', width: 250 },
-			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 150 },
-			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 150 },
-			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 115, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
-			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 150 },
-			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 150 },
-			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 115, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
+			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
+			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
+			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
+			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
 		];
 	}
 
