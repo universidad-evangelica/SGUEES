@@ -10,6 +10,7 @@ import { GenPaisComponent } from './gen-pais/gen-pais.component';
 import { GenDeptoComponent } from './gen-depto/gen-depto.component';
 import { GenMunicipioComponent } from './gen-municipio/gen-municipio.component';
 import { GenDistritoComponent } from './gen-distrito/gen-distrito.component';
+import { GenSectorEconomicoComponent } from './gen-sector-economico/gen-sector-economico.component';
 
 const routes: Routes = [
   {
@@ -60,13 +61,21 @@ const routes: Routes = [
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-municipio/gen-municipio.module').then(m => m.GenMunicipioModule)
   },
-    {
+  {
     path:'gen-distrito',
     component: GenDistritoComponent,
     data: { titulo: 'Distritos' },
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-distrito/gen-distrito.module').then(m => m.GenDistritoModule)
+  },
+  {
+    path:'gen-sector-economico',
+    component: GenSectorEconomicoComponent,
+    data: { titulo: 'Sector Economicos' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-sector-economico/gen-sector-economico.module').then(m => m.GenSectorEconomicoModule)
   }
 ];
 
