@@ -1,0 +1,105 @@
+// SGUEES UI Kit V1 — design tokens (Fase 6G base)
+:root {
+  // Spacing (4px scale)
+  --sguees-space-1: 4px;
+  --sguees-space-2: 8px;
+  --sguees-space-3: 12px;
+  --sguees-space-4: 16px;
+  --sguees-space-5: 20px;
+  --sguees-space-6: 24px;
+  --sguees-space-7: 32px;
+  --sguees-space-8: 40px;
+  --sguees-space-9: 48px;
+
+  // Radius
+  --sguees-radius-sm: 6px;
+  --sguees-radius-md: 10px;
+  --sguees-radius-lg: 14px;
+  --sguees-radius-xl: 18px;
+  --sguees-radius-pill: 999px;
+
+  // Typography
+  --sguees-font-family: "Inter", "Segoe UI", system-ui, sans-serif;
+  --sguees-font-size-xs: 11px;
+  --sguees-font-size-sm: 13px;
+  --sguees-font-size-base: 14px;
+  --sguees-font-size-md: 15px;
+  --sguees-font-size-lg: 18px;
+  --sguees-font-size-xl: 22px;
+  --sguees-font-size-2xl: 26px;
+  --sguees-font-weight-regular: 400;
+  --sguees-font-weight-medium: 500;
+  --sguees-font-weight-semibold: 600;
+  --sguees-line-height-tight: 1.25;
+  --sguees-line-height-normal: 1.5;
+
+  // Elevation
+  --sguees-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --sguees-shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.08);
+  --sguees-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.1);
+  --sguees-shadow-lg: 0 16px 40px rgba(15, 23, 42, 0.12);
+  --sguees-shadow-drawer: 0 4px 16px rgba(15, 23, 42, 0.14);
+
+  // Surfaces — light (slate, no blanco puro)
+  --sguees-surface-page: #f4f6f9;
+  --sguees-surface-card: #ffffff;
+  --sguees-surface-raised: #ffffff;
+  --sguees-surface-subtle: #eef1f6;
+  --sguees-border-subtle: rgba(15, 23, 42, 0.1);
+  --sguees-text-primary: #0f172a;
+  --sguees-text-secondary: #475569;
+  --sguees-text-muted: #64748b;
+
+  // Brand UEES
+  --sguees-brand-primary: #1976d2;
+  --sguees-brand-primary-dark: #1565c0;
+  --sguees-page-bg-light: var(--sguees-surface-page);
+  --sguees-text-primary-light: var(--sguees-text-primary);
+
+  // Layout
+  --sguees-toolbar-height: 44px;
+  --sguees-toolbar-padding-x: var(--sguees-space-4);
+  --sguees-card-padding: var(--sguees-space-5);
+  --sguees-content-gap: var(--sguees-space-4);
+  --sguees-module-gap: var(--sguees-space-3);
+
+  // DataGrid premium
+  --sguees-grid-header-bg: #f1f5f9;
+  --sguees-grid-header-color: #334155;
+  --sguees-grid-row-hover: color-mix(in srgb, var(--accent-color, #1976d2) 7%, transparent);
+  --sguees-grid-row-selected: color-mix(in srgb, var(--accent-color, #1976d2) 14%, transparent);
+  --sguees-grid-row-alt: rgba(15, 23, 42, 0.02);
+  --sguees-grid-radius: var(--sguees-radius-md);
+  --sguees-grid-cell-py: 10px;
+  --sguees-grid-cell-px: 14px;
+
+  // Search
+  --sguees-search-bg: var(--sguees-surface-subtle);
+  --sguees-search-border: var(--sguees-border-subtle);
+  --sguees-search-radius: var(--sguees-radius-pill);
+  --sguees-search-max-width: 320px;
+
+  // Forms
+  --sguees-form-padding: var(--sguees-space-5);
+  --sguees-form-field-gap: var(--sguees-space-4);
+
+  // Motion (solo chrome; no grid rows)
+  --sguees-transition-fast: 0.12s ease;
+  --sguees-transition-base: 0.2s ease;
+  --sguees-focus-ring: 0 0 0 2px color-mix(in srgb, var(--accent-color, #1976d2) 40%, transparent);
+
+  // Status
+  --sguees-status-success-bg: color-mix(in srgb, var(--success-color, #22c55e) 14%, transparent);
+  --sguees-status-warning-bg: color-mix(in srgb, var(--warning-color, #f59e0b) 14%, transparent);
+  --sguees-status-danger-bg: color-mix(in srgb, var(--error-color, #ef4444) 14%, transparent);
+  --sguees-status-info-bg: color-mix(in srgb, var(--accent-color, #1976d2) 14%, transparent);
+
+  // Skeleton
+  --sguees-skeleton-base: var(--sguees-surface-subtle);
+  --sguees-skeleton-highlight: color-mix(in srgb, var(--sguees-surface-card) 60%, var(--sguees-surface-subtle));
+}
+
+body.dx-theme-fluent-typography,
+.dx-theme-fluent {
+  font-family: var(--sguees-font-family);
+}

@@ -1,0 +1,81 @@
+// FASE 4A/4C — Estilos enterprise Fluent (referencia: fluent-legacy.scss, sin importar legacy completo)
+@use "../../../variables.scss" as *;
+@use "design-tokens.scss";
+
+.dx-theme-fluent-typography {
+  font-family: var(--sguees-font-family);
+}
+
+.dx-theme-fluent {
+  .dx-widget {
+    font-family: var(--sguees-font-family);
+  }
+
+  .dx-drawer-panel-content {
+    box-shadow: var(--sguees-shadow-drawer);
+    /* Solo transform: animar width dispara reflow continuo con shrink + DataGrid calc */
+    transition: transform var(--sguees-transition-base);
+  }
+
+  .layout-body .menu-container.theme-dependent {
+    background-color: var(--side-panel-background);
+    padding-top: var(--sguees-space-3);
+    border-right: 1px solid var(--border-color);
+  }
+
+  side-navigation-menu .dx-treeview-toggle-item-visibility {
+    transition: transform var(--sguees-transition-fast);
+  }
+
+  .layout-header {
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: var(--sguees-shadow-xs);
+  }
+
+  .sguees-enterprise-shell {
+    padding: var(--sguees-space-5);
+  }
+
+  @media (max-width: 991.98px) {
+    .sguees-enterprise-shell {
+      padding: var(--sguees-space-4);
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .sguees-enterprise-shell {
+      padding: var(--sguees-space-3);
+    }
+  }
+
+  .view-wrapper .dx-toolbar.dx-widget.theme-dependent,
+  app-barra-data-mtto .dx-toolbar.theme-dependent {
+    @include toolbar-panel();
+    margin-bottom: var(--toolbar-margin-bottom);
+    min-height: var(--sguees-toolbar-height);
+    border: 1px solid var(--border-color);
+  }
+
+  .dx-popup-wrapper > .dx-overlay-content {
+    border-radius: var(--sguees-radius-md);
+    box-shadow: var(--sguees-shadow-md);
+  }
+
+  .dx-popup-title {
+    font-weight: var(--sguees-font-weight-semibold);
+    font-size: var(--sguees-font-size-md);
+  }
+
+  .dx-card {
+    border-radius: var(--sguees-radius-md);
+    @include card-shadow();
+  }
+
+  .responsive-paddings {
+    padding: var(--sguees-space-5);
+
+    .screen-large & {
+      padding: var(--sguees-space-8);
+    }
+  }
+}

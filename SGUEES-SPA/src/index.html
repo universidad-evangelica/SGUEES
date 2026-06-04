@@ -20,6 +20,49 @@
         g.async = true; g.src = 'https://matomo.devexpress.com/js/container_foTT0fJ8.js'; g.setAttributeNode(d.createAttribute('data-ot-ignore')); s.parentNode.insertBefore(g, s);
     </script>
     <!-- End Matomo Tag Manager -->
+     <script>
+      (function() {
+        // Interceptar la creación del elemento antes de que se añada al DOM
+        const originalCreateElement = document.createElement.bind(document);
+        document.createElement = function(tagName, options) {
+          const element = originalCreateElement(tagName, options);
+          // Si intenta crear dx-license, lo marcamos para eliminarlo
+          if (tagName.toLowerCase() === 'dx-license') {
+            // Devolver un div vacío en su lugar
+            const fakeElement = originalCreateElement('div');
+            fakeElement.style.display = 'none';
+            return fakeElement;
+          }
+          return element;
+        };
+        // También interceptar appendChild
+        const originalAppendChild = Node.prototype.appendChild;
+        Node.prototype.appendChild = function(node) {
+          if (node && node.tagName === 'DX-LICENSE') {
+            console.log('🚫 Bloqueado dx-license');
+            return node;
+          }
+          return originalAppendChild.call(this, node);
+        };
+        // Limpiar los existentes
+        function limpiar() {
+          const elementos = document.querySelectorAll('dx-license');
+          elementos.forEach(el => {
+            if (el && el.parentNode) {
+              el.parentNode.removeChild(el);
+            }
+          });
+        }
+        limpiar();
+        // Observer silencioso
+        const observer = new MutationObserver(limpiar);
+        if (document.body) {
+          observer.observe(document.body, { childList: true, subtree: true });
+        }
+        // También ejecutar periódicamente pero con intervalo largo
+        //setInterval(limpiar, 500);
+      })();
+</script>
   </head>
   <body class="dx-viewport">
     <app-root></app-root>

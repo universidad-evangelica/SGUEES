@@ -61,10 +61,15 @@
               "src/web.config"
             ],
             "styles": [
+
+              "node_modules/primeng/resources/themes/lara-light-blue/theme.css",
+              "node_modules/primeng/resources/primeng.min.css",
+              "node_modules/primeicons/primeicons.css",
+
               "src/styles.scss",
               "devexpress-gantt/dist/dx-gantt.css",
               {
-                "input": "devextreme/scss/bundles/dx.material.purple.light.scss",
+                "input": "devextreme/scss/bundles/dx.fluent.blue.light.scss",
                 "bundleName": "theme-light"
               },
               {
@@ -72,15 +77,7 @@
                 "bundleName": "theme-light"
               },
               {
-                "input": "devextreme/scss/bundles/dx.material.blue.light.scss",
-                "bundleName": "theme-light"
-              },
-              {
-                "input": "src/app/theme/styles/variables-light.scss",
-                "bundleName": "theme-light"
-              },
-              {
-                "input": "devextreme/scss/bundles/dx.material.blue.dark.scss",
+                "input": "devextreme/scss/bundles/dx.fluent.blue.dark.scss",
                 "bundleName": "theme-dark"
               },
               {

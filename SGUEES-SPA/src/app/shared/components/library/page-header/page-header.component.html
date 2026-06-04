@@ -1,0 +1,38 @@
+<header
+  class="sguees-page-header"
+  [class.sguees-page-header--compact]="compact && !isEnterprise"
+  [class.sguees-page-header--enterprise]="isEnterprise"
+>
+  <nav class="sguees-page-header__breadcrumbs" *ngIf="breadcrumbs?.length" aria-label="Breadcrumb">
+    <ng-container *ngFor="let crumb of breadcrumbs; let last = last">
+      <a
+        *ngIf="crumb.route && !last"
+        class="sguees-page-header__crumb-link"
+        [routerLink]="crumb.route"
+      >{{ crumb.label }}</a>
+      <span *ngIf="!crumb.route && !last" class="sguees-page-header__crumb-text">{{ crumb.label }}</span>
+      <span *ngIf="last" class="sguees-page-header__crumb-current">{{ crumb.label }}</span>
+      <span class="sguees-page-header__crumb-sep" *ngIf="!last" aria-hidden="true">/</span>
+    </ng-container>
+  </nav>
+
+  <p class="sguees-page-header__eyebrow" *ngIf="eyebrow">{{ eyebrow }}</p>
+
+  <div class="sguees-page-header__main">
+    <div class="sguees-page-header__text" [class.sguees-grid-header]="isEnterprise">
+      <h1 class="sguees-page-header__title" [class.sguees-grid-header__title]="isEnterprise">{{ title }}</h1>
+      <p
+        class="sguees-page-header__subtitle"
+        [class.sguees-grid-header__subtitle]="isEnterprise"
+        *ngIf="subtitle"
+      >{{ subtitle }}</p>
+    </div>
+    <div class="sguees-page-header__actions" *ngIf="isEnterprise">
+      <ng-content></ng-content>
+    </div>
+  </div>
+
+  <div class="sguees-page-header__actions" *ngIf="!isEnterprise">
+    <ng-content></ng-content>
+  </div>
+</header>

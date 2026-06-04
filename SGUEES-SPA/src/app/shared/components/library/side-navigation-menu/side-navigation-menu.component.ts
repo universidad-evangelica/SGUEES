@@ -75,8 +75,8 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
 
     if (this._items === undefined) {
       this._items = []; // Solo para que deje de ser undefined y solo ingrese una vez.
-      this.authService.getMenu().pipe(take(1)).subscribe((menu: any) => {
-        this._items = menu.Data.map((item: any) => {
+      this.authService.getMainMenu().pipe(take(1)).subscribe((menu: any[]) => {
+        this._items = menu.map((item: any) => {
           if (item.path && !(/^\//.test(item.path))) {
             item.path = `/${item.path}`;
           }

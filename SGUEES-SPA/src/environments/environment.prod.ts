@@ -5,6 +5,7 @@ export const environment = {
   UrlGENERALAPI: 'https://wsclass.uees.edu.sv/scc-API/',
   UrlCONTAAPI: 'https://wsclass.uees.edu.sv/scc-API/',
   UrlSELECCIONCONTRATACIONAPI: 'https://wsclass.uees.edu.sv/scc-API/',
+  UrlTALENTOHUMANONAPI: 'https://wsclass.uees.edu.sv/scc-API/',
   UrlFEAPI: 'http://192.168.1.129:9000/',
-	UrlApiToken: 'wsclass.uees.edu.sv'
+  UrlApiToken: 'wsclass.uees.edu.sv',
 };

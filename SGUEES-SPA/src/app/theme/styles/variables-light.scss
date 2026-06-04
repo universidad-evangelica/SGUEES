@@ -1,15 +1,15 @@
 @use "variables-mixin" as * with ($theme-mode: "light");
 
-$primary-color: #1976d2; // Azul Material
-$secondary-color: #e3f2fd; // Fondo azul claro
-$text-color: #212121;
-$accent-color: #1565c0; // Azul más oscuro
+:root {
+  --sguees-page-bg: var(--sguees-page-bg-light, #f5f7fa);
+  --sguees-text-primary: var(--sguees-text-primary-light, #1f2937);
+}
 
 body {
-  background-color: $secondary-color;
-  color: $text-color;
+  background-color: var(--sguees-page-bg);
+  color: var(--sguees-text-primary);
 }
 
 a {
-  color: $primary-color;
+  color: var(--sguees-brand-primary, #1976d2);
 }

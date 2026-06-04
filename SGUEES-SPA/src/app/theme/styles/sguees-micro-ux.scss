@@ -1,0 +1,113 @@
+// FASE 5F / 5.5 — Micro UX (scoped; sin transition global en .dx-button del grid)
+
+
+
+app-barra-data-mtto .dx-button,
+
+.layout-header .dx-button,
+
+.sguees-barra-toolbar .dx-button,
+
+.sguees-page-header__actions .dx-button {
+
+  transition: background-color var(--sguees-transition-fast), box-shadow var(--sguees-transition-fast);
+
+
+
+  &:not(.dx-state-disabled):active {
+
+    transform: scale(0.98);
+
+  }
+
+}
+
+
+
+.dx-texteditor.dx-state-focused {
+
+  outline: none;
+
+  box-shadow: var(--sguees-focus-ring);
+
+}
+
+
+
+.dx-popup-wrapper > .dx-overlay-content {
+
+  border-radius: var(--sguees-radius-md);
+
+  box-shadow: var(--sguees-shadow-md);
+
+}
+
+
+
+.dx-popup-title {
+
+  font-weight: var(--sguees-font-weight-semibold);
+
+  padding: var(--sguees-space-4);
+
+}
+
+
+
+.dx-popup-content {
+
+  padding: var(--sguees-space-4);
+
+}
+
+
+
+@keyframes sguees-skeleton-pulse {
+
+  0% {
+
+    opacity: 0.55;
+
+  }
+
+  50% {
+
+    opacity: 0.9;
+
+  }
+
+  100% {
+
+    opacity: 0.55;
+
+  }
+
+}
+
+
+
+.sguees-skeleton {
+
+  background: linear-gradient(
+
+    90deg,
+
+    var(--sguees-skeleton-base, var(--background-gray-color)) 0%,
+
+    var(--sguees-skeleton-highlight, color-mix(in srgb, var(--border-color) 50%, var(--background-gray-color))) 50%,
+
+    var(--sguees-skeleton-base, var(--background-gray-color)) 100%
+
+  );
+
+  background-size: 200% 100%;
+
+  animation: sguees-skeleton-pulse 1.4s ease-in-out infinite;
+
+  border-radius: var(--sguees-radius-sm);
+
+  min-height: 1rem;
+
+}
+
+

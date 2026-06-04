@@ -90,8 +90,8 @@
     flex: 1;
     padding-top: var(--toolbar-vertical-padding);
     padding-bottom: var(--footer-height);
-    padding-left: 10px;
-    padding-right: 10px;
+    padding-left: var(--sguees-space-3, 12px);
+    padding-right: var(--sguees-space-3, 12px);
 
     ::ng-deep .dx-treeview {
       // ## Long text positioning
@@ -101,8 +101,21 @@
 
       // ## Icon width customization
       .dx-treeview-item {
-        padding: 4px 0;
-        border-radius: 0;
+        padding: var(--sguees-space-2, 8px) var(--sguees-space-2, 8px);
+        margin: 2px 0;
+        border-radius: var(--sguees-radius-sm, 4px);
+        /* Sin transition en ítems: reduce repaints al expandir TreeView */
+      }
+
+      .dx-treeview-item.dx-state-hover {
+        background-color: var(--background-gray-color);
+      }
+
+      .dx-treeview-node.dx-state-selected > .dx-treeview-item,
+      .dx-treeview-item.dx-state-focused {
+        background-color: color-mix(in srgb, var(--accent-color) 14%, transparent);
+        color: var(--accent-color);
+        font-weight: var(--sguees-font-weight-medium, 500);
       }
 
       .dx-item-content {

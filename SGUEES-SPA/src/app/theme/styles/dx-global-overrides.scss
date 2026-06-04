@@ -1,0 +1,46 @@
+// FASE 4A — Overrides globales Fluent (mínimos; sin hacks Material legacy)
+@use "design-tokens.scss";
+
+$sguees-base-font-size: var(--sguees-font-size-base);
+$sguees-toolbar-button-min-width: 108px;
+
+body {
+  font-size: $sguees-base-font-size;
+}
+
+.dx-widget,
+.dx-overlay-content {
+  font-size: $sguees-base-font-size;
+}
+
+.dx-field-item-label,
+.dx-field-item-label-text,
+.dx-label,
+.dx-texteditor-input,
+.dx-placeholder::before {
+  font-size: $sguees-base-font-size;
+}
+
+// Menú lateral — legibilidad sin !important
+.layout-body .dx-treeview .dx-treeview-item,
+.layout-body .dx-treeview .dx-treeview-item-content,
+.layout-body .dx-treeview .dx-treeview-node {
+  font-size: $sguees-base-font-size;
+  line-height: var(--sguees-line-height-normal);
+}
+
+// DataGrid premium: ver sguees-premium-grid.scss
+
+// Toolbar mantenimiento — ancho mínimo acotado (scoped)
+.layout-body .dx-toolbar .dx-button.dx-button-has-text,
+app-barra-data-mtto .dx-button.dx-button-has-text {
+  min-width: $sguees-toolbar-button-min-width;
+}
+
+app-barra-data-mtto .dx-button.dx-button-has-text {
+  min-height: var(--sguees-toolbar-height);
+}
+
+.dx-button .dx-button-text {
+  font-size: $sguees-base-font-size;
+}

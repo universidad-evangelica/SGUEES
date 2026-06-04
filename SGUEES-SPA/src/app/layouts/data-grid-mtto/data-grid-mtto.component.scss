@@ -1,10 +1,114 @@
-@use "../../../variables.scss" as *;
-@use "sass:math";
-
-#tasks-grid {
-  min-height: 300px;
+:host {
+  --sguees-grid-mtto-max-height: 670px;
+  --sguees-grid-mtto-viewport-offset: 280px;
+  display: block;
+  width: 100%;
+  margin-top: 0;
 }
 
-.edit-cell {
-  position: relative;
+.sguees-mtto-chrome + :host {
+  margin-top: 0;
+}
+
+.sguees-grid-mtto-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sguees-space-3);
+  width: 100%;
+}
+
+.sguees-grid-mtto-shell--unified {
+  gap: 0;
+}
+
+.sguees-grid-unified-module {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  border-radius: var(--sguees-radius-lg);
+  box-shadow: var(--sguees-shadow-md);
+  border: 1px solid var(--sguees-border-subtle, var(--border-color));
+  background: var(--sguees-surface-card, var(--card-background));
+}
+
+.sguees-grid-unified-module--standalone {
+  .sguees-grid-module-card {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+}
+
+:host.sguees-data-grid-mtto-host--unified {
+  margin-top: 0;
+}
+
+.sguees-data-grid-mtto--unified {
+  ::ng-deep .sguees-grid-header {
+    margin-bottom: var(--sguees-space-2);
+  }
+}
+
+.sguees-data-grid-mtto--enterprise {
+  flex: 1;
+  min-height: 0;
+
+  ::ng-deep {
+    .dx-datagrid-content .dx-data-row {
+      cursor: pointer;
+    }
+
+    .dx-datagrid-header-panel {
+      padding-top: 0;
+      padding-inline: var(--sguees-space-4);
+    }
+
+    &.sguees-data-grid-mtto--unified .dx-datagrid-header-panel {
+      padding-bottom: var(--sguees-space-7);
+    }
+
+    .dx-datagrid-header-panel .dx-toolbar {
+      margin-bottom: 0;
+      padding: var(--sguees-space-5) 0;
+    }
+
+    .dx-datagrid-pager,
+    .dx-pager {
+      padding-top: var(--sguees-space-8);
+      border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
+    }
+  }
+}
+
+.sguees-grid-toolbar-divider {
+  height: 24px;
+}
+
+.sguees-data-grid-mtto--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.sguees-data-grid-mtto {
+  width: 100%;
+}
+
+@media (max-width: 991.98px) {
+  :host {
+    --sguees-grid-mtto-viewport-offset: 240px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  :host {
+    --sguees-grid-mtto-viewport-offset: 200px;
+  }
 }
