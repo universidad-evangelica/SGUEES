@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using NetCore.AutoRegisterDi;
-using csuees.api.Data;
+using sguees.api.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()

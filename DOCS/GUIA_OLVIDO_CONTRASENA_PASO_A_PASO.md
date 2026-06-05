@@ -153,8 +153,8 @@ Síntoma:
 Solución:
 
 ```powershell
-Get-Process csuees.api -ErrorAction SilentlyContinue | Stop-Process -Force
-dotnet build .\SGUEES-API\sguees.api\csuees.api.csproj
+Get-Process sguees.api -ErrorAction SilentlyContinue | Stop-Process -Force
+dotnet build .\SGUEES-API\sguees.api\sguees.api.csproj
 ```
 
 ### Caso C: Envío de correo no sale para usuario con empresa sin parámetros

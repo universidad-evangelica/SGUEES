@@ -1,4 +1,4 @@
-﻿namespace csuees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.DTOs
+﻿namespace sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.DTOs
 {
     public class ToggleFavoriteResponse
     {
