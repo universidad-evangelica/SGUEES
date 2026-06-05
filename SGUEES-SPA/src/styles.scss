@@ -1,4 +1,15 @@
 @use "variables.scss" as *;
+@use "app/theme/styles/design-tokens.scss";
+@use "app/theme/styles/dx-global-overrides.scss";
+@use "app/theme/styles/fluent-enterprise.scss";
+@use "app/theme/styles/sguees-premium-grid.scss";
+@use "app/theme/styles/sguees-premium-forms.scss";
+@use "app/theme/styles/sguees-micro-ux.scss";
+@use "app/theme/styles/sguees-mtto-module.scss";
+@use "app/theme/styles/sguees-grid-header.scss";
+@use "app/theme/styles/sguees-enterprise-layout.scss";
+
+// Referencia histórica Material/Fluent plantilla: fluent-legacy.scss (no importar)
 
 html,
 body {
@@ -8,77 +19,12 @@ body {
 }
 
 body {
-  background-color: #e3f2fd; // Azul claro
-  color: #212121;
-  font-size: 18px;
-}
-
-.dx-widget,
-.dx-overlay-content {
-  font-size: 18px;
-}
-
-.dx-field-item-label,
-.dx-field-item-label-text,
-.dx-label,
-.dx-texteditor-input,
-.dx-placeholder::before {
-  font-size: 18px;
-}
-
-.dx-button {
-  min-width: 140px !important;
-}
-
-.dx-button .dx-button-content {
-  padding-left: 18px;
-  padding-right: 18px;
-}
-
-.dx-button .dx-button-text {
-  font-size: 18px;
-}
-
-/* Menú lateral: asegurar incremento visible de texto */
-.layout-body .dx-treeview .dx-treeview-item,
-.layout-body .dx-treeview .dx-treeview-item-content,
-.layout-body .dx-treeview .dx-treeview-node {
-  font-size: 18px !important;
-  line-height: 1.8 !important;
-}
-
-/* Grid: headers, celdas y textos internos */
-.dx-datagrid .dx-header-row > td,
-.dx-datagrid .dx-data-row > td,
-.dx-datagrid .dx-group-row > td,
-.dx-datagrid .dx-master-detail-row > td,
-.dx-datagrid .dx-datagrid-text-content,
-.dx-datagrid .dx-datagrid-summary-item,
-.dx-datagrid-headers .dx-datagrid-text-content {
-  font-size: 18px !important;
-  line-height: 1.35 !important;
-}
-
-/* Botones con texto: evitar recorte del texto */
-.dx-button.dx-button-has-text {
-  min-height: 44px;
-}
-
-.dx-button.dx-button-has-text .dx-button-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-left: 20px;
-  padding-right: 20px;
-}
-
-.dx-button.dx-button-has-text .dx-button-text {
-  line-height: 1.2;
-  white-space: nowrap;
+  background-color: var(--sguees-page-bg, var(--typography-bg, var(--base-bg)));
+  color: var(--sguees-text-primary, var(--base-text-color));
 }
 
 a {
-  color: #1976d2; // Azul Material
+  color: var(--sguees-brand-primary, var(--accent-color));
 }
 
 * {
@@ -134,12 +80,13 @@ html, body {
 }
 
 .responsive-paddings {
-  padding: 20px;
+  padding: var(--sguees-space-5, 20px);
 
   .screen-large & {
-    padding: 40px;
+    padding: var(--sguees-space-8, 40px);
   }
 }
+
 
 .dx-dropdownbutton-content {
   .dx-list-item {
@@ -321,194 +268,4 @@ html, body {
 
 .status-indicator-high {
   @include status(#ff5722);
-}
-
-.dx-theme-fluent-typography {
-  font-family: "Inter", sans-serif;
-}
-
-.dx-theme-fluent {
-  .dx-widget {
-    font-family: "Inter", sans-serif;
-  }
-
-  .dx-drawer-panel-content {
-    box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.12);
-  }
-
-  .layout-body .menu-container.theme-dependent,
-  app-footer {
-    background-color: var(--base-bg);
-  }
-
-  .layout-body .menu-container.theme-dependent {
-    padding-top: 0;
-  }
-
-  .view-wrapper {
-    .dx-toolbar.dx-widget.theme-dependent {
-      @include toolbar-panel();
-    }
-
-    .grid.theme-dependent {
-      .dx-toolbar {
-        @include toolbar-panel();
-      }
-
-      .dx-datagrid-header-panel {
-        padding: 0;
-      }
-    }
-
-    .panels {
-      .left {
-        background-color: var(--base-bg);
-        padding: 16px 24px;
-        border-radius: 8px;
-
-        @include card-shadow();
-      }
-
-      .theme-dependent.right {
-        flex: 1 calc(100% - var(--left-panel-width) - 110px) !important;
-      }
-    }
-
-    &.crm-contact-list {
-      margin-bottom: var(--content-padding);
-    }
-  }
-
-  .view-wrapper.list-page {
-    margin-top: var(--content-padding);
-
-    .dx-toolbar.dx-widget.theme-dependent,
-    .grid.theme-dependent .dx-toolbar {
-      margin-bottom: var(--content-padding);
-    }
-  }
-
-  .dx-card {
-    @include card-shadow();
-  }
-
-  .plain-styled-form .photo {
-    border-radius: 50%;
-  }
-
-  .dx-form.plain-styled-form.view-mode {
-    .dx-texteditor {
-      &.form-editor,
-      &.dx-editor-filled {
-        .form-editor-input {
-          padding-left: 0;
-        }
-      }
-    }
-  }
-
-  .form-editor.dx-state-readonly {
-    .status.status-indicator {
-      .dx-state-readonly {
-        .status-input.status-editor-input {
-          padding-left: 0;
-        }
-      }
-    }
-
-    .form-editor-input {
-      padding-left: 0;
-    }
-  }
-
-  .contact-status.dx-state-readonly {
-    .status-editor-field {
-      .status-indicator {
-        padding-left: 0;
-        align-self: center !important;
-      }
-    }
-  }
-
-  .contact-status .status-editor-field .status-indicator {
-    align-self: center !important;
-
-    & .status {
-      display: flex !important;
-    }
-  }
-
-  .cards:not(.grey) {
-    .card {
-      border-radius: 8px;
-      border: 0;
-      background: var(--base-bg);
-
-      @include card-shadow();
-    }
-  }
-
-  .dx-form.plain-styled-form {
-    .dx-button.form-item-button {
-      margin-left: 0;
-      margin-top: 5px;
-    }
-  }
-
-  .contact-form {
-    .form-editor-input {
-      padding-left: 0;
-    }
-  }
-
-  div.gantt {
-    padding: 0 !important;
-  }
-
-  .dx-datagrid-headers.dx-datagrid-nowrap.dx-bordered-top-view {
-    border-radius: 8px 8px 0 0;
-  }
-
-  .theme-dependent {
-    .dx-gridbase-container {
-      > .dx-bordered-bottom-view {
-        border-radius: 0 0 8px 8px;
-      }
-    }
-  }
-
-  .profile-card {
-    .panel {
-      @include card-shadow();
-
-      background-color: var(--base-bg);
-    }
-  }
-
-  .right-side-panel.open {
-    background-color: var(--base-bg);
-  }
-
-  .dx-fieldset {
-    margin: 20px 0px;
-    padding: 0;
-  }
-
-  .dx-fieldset2 {
-    margin: 5px 10px;
-    padding: 0;
-  }
-
-  .dx-fieldset3 {
-    margin: 25px 50px;
-    padding: 0;
-  }
-
-  .dx-fieldset4 {
-    margin-top: 15px;
-    margin-right: 15px;
-    margin-left: 10px;
-    padding: 0;
-  }
-
 }

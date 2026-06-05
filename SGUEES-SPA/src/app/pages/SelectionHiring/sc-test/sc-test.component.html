@@ -1,0 +1,143 @@
+<div class="view-wrapper list-page sc-test-view" id="scTestView">
+  <section class="sc-test-view__grid-wrap sguees-grid-view-wrap dx-card responsive-paddings">
+    <dx-data-grid
+      #dataGrid
+      class="grid theme-dependent sc-test-grid"
+      [dataSource]="models"
+      keyExpr="CORR_TIPO_MODALIDAD"
+      [showBorders]="true"
+      [showColumnLines]="false"
+      [showRowLines]="false"
+      [rowAlternationEnabled]="true"
+      [hoverStateEnabled]="true"
+      [columnAutoWidth]="true"
+      [allowColumnResizing]="true"
+      [wordWrapEnabled]="false"
+      columnResizingMode="widget"
+      [focusedRowEnabled]="true"
+      height="calc(100vh - 220px)"
+      [columns]="gridColumns"
+      [summary]="summary"
+      (onFocusedRowChanged)="focusedRowChanged($event)"
+    >
+      <dxo-toolbar>
+        <dxi-item location="before">
+          <div class="sguees-grid-header">
+            <div class="sguees-grid-header__title">{{ tituloVentana }}</div>
+            <div class="sguees-grid-header__subtitle">
+              Sección de personal - Prueba técnica - Mantenimiento de Tipos de
+              Modalidad
+            </div>
+          </div>
+        </dxi-item>
+
+        <dxi-item location="after">
+          <dx-button
+            text="Agregar registro"
+            icon="add"
+            type="default"
+            stylingMode="contained"
+            [disabled]="!permiteAdd"
+            (onClick)="abrirModalAgregar()"
+          ></dx-button>
+        </dxi-item>
+
+        <dxi-item
+          location="after"
+          locateInMenu="auto"
+          showText="inMenu"
+          widget="dxButton"
+          [options]="refreshButtonOptions"
+        ></dxi-item>
+
+        <dxi-item location="after" locateInMenu="auto">
+          <div class="separator"></div>
+        </dxi-item>
+
+        <dxi-item name="searchPanel" locateInMenu="auto"></dxi-item>
+      </dxo-toolbar>
+
+      <dxo-load-panel [enabled]="false"></dxo-load-panel>
+
+      <dxo-search-panel
+        [visible]="true"
+        placeholder="Buscar en el listado..."
+      ></dxo-search-panel>
+
+      <dxo-header-filter [visible]="true"></dxo-header-filter>
+
+      <dxo-paging [enabled]="true" [pageSize]="5"></dxo-paging>
+
+      <dxo-pager
+        [visible]="true"
+        [showInfo]="true"
+        [showNavigationButtons]="true"
+        [showPageSizeSelector]="true"
+        [allowedPageSizes]="[5, 10, 25, 50, 100]"
+      ></dxo-pager>
+
+      <dxo-scrolling mode="standard"></dxo-scrolling>
+    </dx-data-grid>
+  </section>
+
+  <dx-popup
+    class="sc-test-form-popup"
+    [visible]="formPopupVisible"
+    (visibleChange)="onFormPopupVisibleChange($event)"
+    [title]="formPopupTitle"
+    [showTitle]="true"
+    [showCloseButton]="true"
+    [dragEnabled]="true"
+    [hideOnOutsideClick]="false"
+    [width]="480"
+    [height]="'auto'"
+    [maxHeight]="'90vh'"
+    contentTemplate="formPopupContent"
+    (onHiding)="onFormPopupHiding()"
+  >
+    <div
+      *dxTemplate="let data of 'formPopupContent'"
+      class="sc-test-form-popup__body"
+    >
+      <dx-form
+        #fData
+        id="fData"
+        [formData]="model"
+        [items]="items"
+        labelLocation="top"
+        labelMode="outside"
+        [showColonAfterLabel]="false"
+        [colCount]="1"
+        [minColWidth]="320"
+      ></dx-form>
+
+      <div class="sc-test-form-popup__actions">
+        <dx-button
+          text="Cancelar"
+          type="normal"
+          stylingMode="outlined"
+          (onClick)="cancelarModalFormulario()"
+        ></dx-button>
+
+        <dx-button
+          text="Guardar"
+          type="default"
+          stylingMode="contained"
+          icon="save"
+          (onClick)="guardar()"
+        ></dx-button>
+      </div>
+    </div>
+  </dx-popup>
+
+  <dx-load-panel
+    shadingColor="rgba(15, 23, 42, 0.45)"
+    [position]="{ my: 'center', at: 'center', of: '#scTestView' }"
+    [visible]="loadingVisible"
+    (visibleChange)="loadingVisible = $event"
+    [showIndicator]="true"
+    [showPane]="true"
+    [shading]="true"
+    message="Procesando..."
+  ></dx-load-panel>
+</div>

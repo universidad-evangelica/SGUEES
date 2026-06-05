@@ -35,6 +35,7 @@ export class ScTipoModalidadComponent extends CBaseComponent implements OnInit {
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
+		this.subTituloVentana = 'Mantenimiento de Tipo Modalidad'; //Esto es quemado por componente, ya que no existe en la tabla
 	}
 
 	inicializaOpciones() {}

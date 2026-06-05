@@ -6,6 +6,10 @@
   .dx-theme-material {
     --change-password-popup-height: 260px;
   }
+
+  .dx-theme-fluent {
+    --change-password-popup-height: 240px;
+  }
 }
 
 @mixin separator() {

@@ -1,0 +1,30 @@
+.sguees-section-card {
+  border-radius: var(--sguees-radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--card-background);
+  box-shadow: var(--sguees-shadow-sm);
+  padding: var(--sguees-form-padding);
+  margin-bottom: var(--sguees-content-gap);
+
+  &--compact {
+    padding: var(--sguees-space-4);
+  }
+
+  &__header {
+    margin-bottom: var(--sguees-space-4);
+    padding-bottom: var(--sguees-space-3);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: var(--sguees-font-size-md);
+    font-weight: var(--sguees-font-weight-semibold);
+  }
+
+  &__subtitle {
+    margin: var(--sguees-space-1) 0 0;
+    font-size: var(--sguees-font-size-sm);
+    color: var(--base-text-color-alpha);
+  }
+}

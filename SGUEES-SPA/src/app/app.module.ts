@@ -38,6 +38,11 @@ import { AnalyticsSalesReportModule } from './pages/Samples/analytics-sales-repo
 import { AnalyticsGeographyModule } from './pages/Samples/analytics-geography/analytics-geography.component';
 import { ThemeService } from './shared/services';
 
+//importacion de primeng para snackbar
+import { ToastModule } from 'primeng/toast';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { MessageService } from 'primeng/api';
+
 registerLocaleData(localeEs, 'es');
 
 export function tokenGetterLocal(): string {
@@ -84,6 +89,10 @@ export function tokenGetterLocal(): string {
     SelectionHiringModule,
     PayrollModule,
     AppRoutingModule,
+
+    //import primeng
+    BrowserAnimationsModule,
+    ToastModule,
   ],
   providers: [
     ErrorInterceptorProvider,
@@ -92,6 +101,8 @@ export function tokenGetterLocal(): string {
     ScreenService,
     AppInfoService,
     ThemeService,
+    //primeng
+    MessageService,
     { provide: LOCALE_ID, useValue: 'es' },
   ],
   bootstrap: [AppComponent],

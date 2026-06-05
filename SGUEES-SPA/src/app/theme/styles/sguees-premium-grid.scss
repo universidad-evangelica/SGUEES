@@ -1,0 +1,173 @@
+// Fase 6C — DataGrid premium (sin transitions en filas — Fase 5.5/6H)
+
+.dx-datagrid.sguees-data-grid-mtto {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+
+  &.sguees-grid-density-compact {
+    .dx-header-row > td {
+      padding: 8px var(--sguees-grid-cell-px);
+    }
+
+    .dx-data-row > td {
+      padding: 6px var(--sguees-grid-cell-px);
+    }
+  }
+
+  .dx-datagrid-headers {
+    border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+
+    .dx-header-row > td {
+      padding: var(--sguees-grid-cell-py) var(--sguees-grid-cell-px);
+      font-size: var(--sguees-font-size-sm);
+      font-weight: var(--sguees-font-weight-semibold);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--sguees-grid-header-color, var(--base-text-color-alpha));
+      background: var(--sguees-grid-header-bg);
+      border-bottom: 2px solid color-mix(in srgb, var(--accent-color, #1976d2) 25%, transparent);
+    }
+  }
+
+  .dx-data-row > td {
+    padding: var(--sguees-grid-cell-py) var(--sguees-grid-cell-px);
+    font-size: var(--sguees-font-size-base);
+    color: var(--sguees-text-primary, var(--base-text-color));
+  }
+
+  .dx-data-row.dx-row-alt > td {
+    background-color: var(--sguees-grid-row-alt);
+  }
+
+  .dx-data-row:not(.dx-selection):hover > td {
+    background-color: var(--sguees-grid-row-hover);
+  }
+
+  .dx-datagrid-rowsview .dx-selection > td,
+  .dx-datagrid-rowsview .dx-row-focused > td {
+    background-color: var(--sguees-grid-row-selected) !important;
+    color: var(--sguees-text-primary, var(--base-text-color));
+  }
+
+  .dx-datagrid-header-panel {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    padding: var(--sguees-space-2) var(--sguees-space-4);
+    border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+    background: var(--sguees-surface-card, var(--card-background));
+  }
+
+  &.sguees-data-grid-mtto--enterprise {
+    .dx-datagrid-header-panel .dx-toolbar {
+      margin-bottom: 0;
+      padding: var(--sguees-space-2) 0;
+      background: transparent;
+    }
+
+    .dx-datagrid-header-panel .dx-toolbar-after {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--sguees-space-1);
+    }
+
+    .dx-datagrid-content .dx-data-row {
+      cursor: pointer;
+    }
+  }
+
+  .dx-datagrid-search-panel {
+    margin: 0;
+    max-width: var(--sguees-search-max-width);
+
+    .dx-texteditor {
+      border-radius: var(--sguees-search-radius);
+      background: var(--sguees-search-bg);
+      border: 1px solid var(--sguees-search-border);
+    }
+
+    .dx-texteditor.dx-state-focused {
+      border-color: color-mix(in srgb, var(--accent-color) 50%, transparent);
+      box-shadow: var(--sguees-focus-ring);
+    }
+
+    .dx-texteditor-input {
+      font-size: var(--sguees-font-size-base);
+      padding-left: 8px;
+    }
+  }
+
+  .dx-datagrid-filter-row .dx-editor-cell .dx-texteditor {
+    border-radius: var(--sguees-radius-sm);
+    background: var(--sguees-surface-subtle, var(--background-gray-color));
+  }
+
+  .dx-datagrid-filter-panel {
+    padding: var(--sguees-space-2) var(--sguees-space-3);
+    font-size: var(--sguees-font-size-sm);
+    color: var(--sguees-text-secondary);
+  }
+
+  .sguees-grid-col-actions {
+    text-align: center;
+
+    .dx-datagrid-headers & {
+      font-size: var(--sguees-font-size-xs);
+      font-weight: var(--sguees-font-weight-semibold);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--sguees-text-muted);
+    }
+
+    .dx-link {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--sguees-radius-sm);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 1px;
+      transition: background-color var(--sguees-transition-fast), color var(--sguees-transition-fast);
+    }
+
+    .dx-link-edit,
+    .sguees-grid-action-edit {
+      color: var(--accent-color);
+
+      &:hover {
+        background-color: color-mix(in srgb, var(--accent-color) 12%, transparent);
+      }
+    }
+
+    .dx-link-delete,
+    .sguees-grid-action-delete {
+      color: var(--error-color);
+
+      &:hover {
+        background-color: color-mix(in srgb, var(--error-color) 12%, transparent);
+      }
+    }
+
+    &--premium {
+      .dx-datagrid-rowsview .dx-command-edit {
+        padding: 0 var(--sguees-space-2);
+        white-space: nowrap;
+      }
+
+      .dx-link .dx-icon {
+        font-size: 18px;
+      }
+
+      .dx-link:focus-visible {
+        outline: none;
+        box-shadow: var(--sguees-focus-ring);
+      }
+    }
+  }
+
+  .dx-scrollable-scrollbar {
+    background: transparent;
+  }
+}

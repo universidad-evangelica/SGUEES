@@ -9,7 +9,9 @@ export const environment = {
   UrlGENERALAPI: 'http://localhost:5000/',
   UrlCONTAAPI: 'http://localhost:5000/',
   UrlSELECCIONCONTRATACIONAPI: 'http://localhost:5000/',
-	UrlApiToken: 'localhost:5000'
+  UrlTALENTOHUMANONAPI: 'http://localhost:5000/',
+  UrlFEAPI: 'http://localhost:5000/',
+  UrlApiToken: 'localhost:5000',
 };
 
 /*

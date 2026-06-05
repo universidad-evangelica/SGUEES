@@ -1,0 +1,34 @@
+.sguees-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--sguees-space-2);
+  border-radius: var(--sguees-radius-pill);
+  font-size: var(--sguees-font-size-xs);
+  font-weight: var(--sguees-font-weight-medium);
+  line-height: 1.4;
+
+  &--success {
+    background: var(--sguees-status-success-bg);
+    color: var(--success-color);
+  }
+
+  &--warning {
+    background: var(--sguees-status-warning-bg);
+    color: var(--warning-color);
+  }
+
+  &--danger {
+    background: var(--sguees-status-danger-bg);
+    color: var(--error-color);
+  }
+
+  &--info {
+    background: var(--sguees-status-info-bg);
+    color: var(--accent-color);
+  }
+
+  &--neutral {
+    background: var(--background-gray-color);
+    color: var(--base-text-color-alpha);
+  }
+}

@@ -1,0 +1,51 @@
+// FASE 5D — Formularios premium (clases globales, sin tocar pantallas)
+
+.content-block.dx-card.responsive-paddings,
+.sguees-section-card {
+  border-radius: var(--sguees-radius-md);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--sguees-shadow-sm);
+  padding: var(--sguees-form-padding, var(--sguees-space-5));
+  background: var(--card-background);
+  margin-bottom: var(--sguees-content-gap);
+}
+
+.dx-form.sguees-form-premium,
+.content-block.dx-card .dx-form {
+  .dx-field-item-label-text {
+    font-size: var(--sguees-font-size-sm);
+    font-weight: var(--sguees-font-weight-medium);
+    color: var(--base-text-color-alpha);
+  }
+
+  .dx-field-item {
+    padding-bottom: var(--sguees-form-field-gap, var(--sguees-space-4));
+  }
+
+  .dx-texteditor {
+    border-radius: var(--sguees-radius-sm);
+    transition: border-color var(--sguees-transition-fast), box-shadow var(--sguees-transition-fast);
+  }
+
+  .dx-texteditor.dx-state-focused {
+    box-shadow: var(--sguees-focus-ring);
+  }
+}
+
+@media (max-width: 991.98px) {
+  .content-block.dx-card.responsive-paddings {
+    padding: var(--sguees-space-4);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .content-block.dx-card.responsive-paddings {
+    padding: var(--sguees-space-3);
+  }
+
+  .content-block.dx-card .dx-form {
+    .dx-field-item {
+      padding-bottom: var(--sguees-space-3);
+    }
+  }
+}

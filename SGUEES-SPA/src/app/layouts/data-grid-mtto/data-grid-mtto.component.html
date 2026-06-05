@@ -1,39 +1,147 @@
-<dx-data-grid
-  class="theme-dependent"
-	#gData
-	[visible]="isBrowse"
-	[dataSource]="models"
-	[keyExpr]="keyExpr"
-	[columnAutoWidth]="false"
-	[showBorders]="true"
-	[showColumnLines]="true"
-	[showRowLines]="true"
-	[rowAlternationEnabled]="true"
-	[hoverStateEnabled]="false"
-	[allowColumnResizing]="true"
-	[columnResizingMode]="'widget'"
-	[focusedRowEnabled]="true"
-	[height]="'670px'"
-	[width]="'100%'"
-	(onRowRemoving)="OnrowRemoving($event)"
-	(onRowDblClick)="OnrowDblClick($event)"
-	(onRowClick)="OnRowClick($event)"
-	(onFocusedRowChanged)="OnfocusedRowChanged($event)"
-  (onExporting)="onExporting($event)"
-	[columns]="columns"
-	[summary]="summary"
-  [filterSyncEnabled]="true"
-  [filterValue]="filterValue"
+<div
+  class="sguees-grid-mtto-shell sguees-grid-view-wrap"
+  *ngIf="isBrowse"
+  [class.sguees-grid-mtto-shell--unified]="isUnifiedActive"
 >
-	<dxo-editing mode="row" [refreshMode]="'reshape'" [allowDeleting]="true" [useIcons]="true"> </dxo-editing>
-	<dxo-load-panel [enabled]="false"></dxo-load-panel>
-	<dxo-search-panel [visible]="true"></dxo-search-panel>
-	<dxo-export [enabled]="true" fileName="gData"></dxo-export>
-	<dxo-group-panel [visible]="true"></dxo-group-panel>
-	<dxo-grouping #expand [autoExpandAll]="true"></dxo-grouping>
-	<dxo-paging [enabled]="true" [pageSize]="40"></dxo-paging>
-	<dxo-filter-panel [visible]="true"></dxo-filter-panel>
-	<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
-	<dxo-header-filter [visible]="true"></dxo-header-filter>
-  <dxo-scrolling mode="virtual" useNative="false"></dxo-scrolling>
-</dx-data-grid>
+  <section
+    class="sguees-grid-module-card sguees-grid-unified-module dx-card responsive-paddings"
+    [class.sguees-grid-module-card--loading]="loading"
+    [class.sguees-grid-unified-module--standalone]="isUnifiedActive"
+  >
+    <div
+      *ngIf="loading"
+      class="sguees-grid-module-card__skeleton"
+      aria-busy="true"
+      aria-label="Cargando datos"
+    >
+      <div class="sguees-skeleton" style="height: 36px; width: 42%; margin-bottom: 12px"></div>
+      <div class="sguees-skeleton" style="height: 28px; margin-bottom: 8px"></div>
+      <div class="sguees-skeleton" style="height: 28px; margin-bottom: 8px"></div>
+      <div class="sguees-skeleton" style="height: 28px; width: 88%"></div>
+    </div>
+
+    <app-empty-state
+      *ngIf="showEmptyState && isEmptyData && !loading"
+      [title]="emptyTitle"
+      [message]="emptyMessage"
+      [icon]="emptyIcon"
+      [ctaLabel]="emptyCtaLabel"
+      [ctaIcon]="emptyCtaIcon"
+      (ctaClick)="emptyCtaClick.emit()"
+    ></app-empty-state>
+
+    <dx-data-grid
+      class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise"
+      [class.sguees-data-grid-mtto--unified]="isUnifiedActive"
+      [class.sguees-data-grid-mtto--hidden]="showEmptyState && isEmptyData && !loading"
+      [class.sguees-grid-density-compact]="compactDensity"
+      #gData
+      [visible]="isBrowse"
+      [dataSource]="models"
+      [keyExpr]="keyExpr"
+      [columnAutoWidth]="columnAutoWidth"
+      [showBorders]="false"
+      [showColumnLines]="false"
+      [showRowLines]="true"
+      [rowAlternationEnabled]="true"
+      [hoverStateEnabled]="true"
+      [columnHidingEnabled]="columnHidingActive"
+      [allowColumnResizing]="true"
+      [columnResizingMode]="'nextColumn'"
+      [focusedRowEnabled]="hasFocusedRow"
+      [height]="resolvedGridHeight"
+      [width]="'100%'"
+      [repaintChangesOnly]="true"
+      (onRowRemoving)="OnrowRemoving($event)"
+      (onRowDblClick)="OnrowDblClick($event)"
+      (onRowClick)="OnRowClick($event)"
+      (onFocusedRowChanged)="OnfocusedRowChanged($event)"
+      (onExporting)="onExporting($event)"
+      [columns]="columns"
+      [summary]="null"
+      [filterSyncEnabled]="filterSyncEnabled"
+      [filterValue]="filterValue"
+    >
+      <dxo-toolbar>
+        <dxi-item *ngIf="isUnifiedActive && resolvedTitulo" location="before">
+          <div class="sguees-grid-header">
+            <div class="sguees-grid-header__title">{{ resolvedTitulo }}</div>
+            <div class="sguees-grid-header__subtitle" *ngIf="resolvedSubtitle">
+              {{ resolvedSubtitle }}
+            </div>
+          </div>
+        </dxi-item>
+
+        <dxi-item
+          *ngIf="effectiveShowSearch"
+          name="searchPanel"
+          location="after"
+          locateInMenu="auto"
+        ></dxi-item>
+
+        <dxi-item
+          *ngIf="effectiveShowRefresh"
+          location="after"
+          locateInMenu="auto"
+          showText="inMenu"
+          widget="dxButton"
+          [options]="optRefresh"
+        ></dxi-item>
+
+        <dxi-item *ngIf="showActionsDivider" location="after" locateInMenu="auto">
+          <div class="separator sguees-grid-toolbar-divider"></div>
+        </dxi-item>
+
+        <dxi-item
+          *ngIf="effectiveShowExport"
+          name="exportButton"
+          location="after"
+          locateInMenu="auto"
+          showText="inMenu"
+        ></dxi-item>
+
+        <dxi-item
+          *ngIf="isUnifiedActive && effectiveShowAdd"
+          location="after"
+          widget="dxButton"
+          [options]="optAdd"
+        ></dxi-item>
+
+        <dxi-item
+          *ngIf="showColumnChooser"
+          name="columnChooserButton"
+          location="after"
+          locateInMenu="auto"
+          showText="inMenu"
+        ></dxi-item>
+
+      </dxo-toolbar>
+
+      <dxo-editing mode="row" [refreshMode]="'reshape'" [allowDeleting]="true" [useIcons]="true"></dxo-editing>
+      <dxo-load-panel [enabled]="true"></dxo-load-panel>
+
+      <dxo-search-panel
+        [visible]="effectiveShowSearch"
+        [placeholder]="searchPlaceholder"
+      ></dxo-search-panel>
+      
+      <dxo-export [enabled]="effectiveShowExport" fileName="gData"></dxo-export>
+      <dxo-column-chooser [enabled]="showColumnChooser" mode="select"></dxo-column-chooser>
+      <dxo-paging [enabled]="true" [pageSize]="5"></dxo-paging>
+      
+      <dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+
+      <dxo-header-filter [visible]="true"></dxo-header-filter>
+
+      <dxo-pager
+        [visible]="true"
+        [showInfo]="true"
+        [showNavigationButtons]="true"
+        [showPageSizeSelector]="true"
+        [allowedPageSizes]="[5, 10, 25, 50, 100]"
+      ></dxo-pager>
+
+      <dxo-scrolling mode="standard"></dxo-scrolling>
+    </dx-data-grid>
+  </section>
+</div>
