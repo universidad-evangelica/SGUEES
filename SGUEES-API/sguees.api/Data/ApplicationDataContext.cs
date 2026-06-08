@@ -1,7 +1,7 @@
-﻿using csuees.api.Controllers;
-using csuees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Service;
+﻿using sguees.api.Controllers;
+using sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Service;
 
-namespace csuees.api.Data
+namespace sguees.api.Data
 {
     public class ApplicationDataContext
     {
