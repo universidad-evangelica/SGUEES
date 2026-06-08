@@ -1,12 +1,13 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> 775a111 (uniendo rama de diseño)
-﻿namespace sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.DTOs
 =======
-﻿namespace csuees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.DTOs
->>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
+
+>>>>>>> 5d5a652 (resolviendo conflicto)
+﻿namespace sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.DTOs
 {
     public class GetFavoriteResponse
     {

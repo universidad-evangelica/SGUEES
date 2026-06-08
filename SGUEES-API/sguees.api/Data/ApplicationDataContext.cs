@@ -1,8 +1,8 @@
-<<<<<<< HEAD
 ﻿using sguees.api.Controllers;
 using sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Service;
 
 namespace sguees.api.Data
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 =======
@@ -10,9 +10,9 @@ namespace sguees.api.Data
 =======
 ﻿using csuees.api.Controllers;
 using csuees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Service;
+=======
+>>>>>>> 5d5a652 (resolviendo conflicto)
 
-namespace csuees.api.Data
->>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
 {
     public class ApplicationDataContext
     {

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ﻿using sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Service;
 using sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.DTOs;
 using sguees.api.Data;
@@ -6,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 =======
@@ -24,7 +24,13 @@ namespace csuees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS
 <<<<<<< HEAD
 =======
 >>>>>>> 3a2defd (resolviendo conflicto)
+<<<<<<< HEAD
 >>>>>>> 775a111 (uniendo rama de diseño)
+=======
+=======
+
+>>>>>>> 51f1445 (Se agregaron resolución de conflicto en el merge..)
+>>>>>>> 5d5a652 (resolviendo conflicto)
 {
     [Route("api/[controller]")]
     [ApiController]
