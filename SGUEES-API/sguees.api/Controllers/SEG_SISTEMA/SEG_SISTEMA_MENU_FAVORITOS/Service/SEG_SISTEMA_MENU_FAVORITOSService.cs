@@ -1,7 +1,14 @@
+<<<<<<< HEAD
 ﻿using sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.DTOs;
 using Microsoft.Data.SqlClient;
 
 namespace sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Service
+=======
+﻿using csuees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.DTOs;
+using Microsoft.Data.SqlClient;
+
+namespace csuees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Service
+>>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
 {
     public class SEG_SISTEMA_MENU_FAVORITOSService
     {

@@ -4,6 +4,7 @@
 
 export const environment = {
   production: false,
+<<<<<<< HEAD
   UrlSEGURIDADAPI: 'http://localhost:5000/',
   UrlCOMPRASAPI: 'http://localhost:5000/',
   UrlGENERALAPI: 'http://localhost:5000/',
@@ -12,6 +13,16 @@ export const environment = {
   UrlTALENTOHUMANONAPI: 'http://localhost:5000/',
   UrlFEAPI: 'http://localhost:5000/',
   UrlApiToken: 'localhost:5000',
+=======
+  UrlSEGURIDADAPI: 'http://localhost:5198/',
+  UrlCOMPRASAPI: 'http://localhost:5198/',
+  UrlGENERALAPI: 'http://localhost:5198/',
+  UrlCONTAAPI: 'http://localhost:5198/',
+  UrlSELECCIONCONTRATACIONAPI: 'http://localhost:5198/',
+  UrlTALENTOHUMANONAPI: 'http://localhost:5198/',
+  UrlFEAPI: 'http://localhost:5198/',
+  UrlApiToken: 'localhost:5198',
+>>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
 };
 
 /*
