@@ -1,67 +1,104 @@
-<div id="page-login-index">
-  <div class="login-container">
-    <div class="card" role="main">
-      <div class="card-header">
-        <img id="logo-uees" src="assets/img/logo_uees_sin_fondo.png" alt="UEES" />
-      </div>
+<p-toast position="bottom-right"></p-toast>
 
-      <div class="portal-system">SISTEMA DE GESTIÓN UNIVERSITARIA UEES</div>
-      <div id="login-title">Iniciar Sesión</div>
-
-      <form class="card-body" (submit)="onSubmit($event)">
-        <div class="form-group">
-          <input
-            id="txtUsuario"
-            class="form-control"
-            placeholder="Usuario"
-            autocomplete="username"
-            [(ngModel)]="formData.usuario"
-            name="usuario"
-            [disabled]="loading"
-          />
-        </div>
-
-        <div class="form-group password-wrapper">
-          <input
-            id="txtClave"
-            class="form-control"
-            placeholder="Contraseña"
-            [type]="showPassword ? 'text' : 'password'"
-            autocomplete="current-password"
-            [(ngModel)]="formData.password"
-            name="password"
-            [disabled]="loading"
-          />
-          <span
-            id="btnTogglePassword"
-            class="password-toggle"
-            [title]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-            role="button"
-            tabindex="0"
-            (click)="showPassword = !showPassword"
-            (keypress)="$event.key === 'Enter' && (showPassword = !showPassword)"
-          >
-            {{ showPassword ? '🙈' : '👁' }}
-          </span>
-        </div>
-
-        <div class="form-group">
-          <button
-            id="btnIngresar"
-            class="btn-login"
-            type="submit"
-            [disabled]="loading"
-          >
-            {{ loading ? 'Ingresando...' : 'Ingresar' }}
-          </button>
-        </div>
-
-        <a class="forgot-link" [routerLink]="resetLink">¿Olvidaste tu contraseña?</a>
-
-        <div id="lblInfo" *ngIf="errorMessage">{{ errorMessage }}</div>
-      </form>
+<div id="page-login-index" class="login-split">
+  <aside class="login-brand-panel" aria-label="Universidad Evangélica de El Salvador">
+    <div class="login-brand-overlay" aria-hidden="true"></div>
+    <div class="login-brand-content">
+      <h2 class="login-brand-title">
+        <span class="login-brand-title__line">Universidad Evangélica</span>
+        <span class="login-brand-title__line">de El Salvador</span>
+      </h2>
+      <p class="login-brand-subtitle">Sistema de Gestión Universitaria</p>
     </div>
-  </div>
+  </aside>
+
+  <main class="login-auth-panel" role="main">
+    <div class="login-auth-center">
+      <div class="login-glass-card">
+        <header class="login-auth-header">
+          <div class="login-logo-zone">
+            <img
+              id="logo-uees"
+              src="assets/img/logo_uees_sin_fondo.png"
+              alt="Universidad Evangélica de El Salvador"
+            />
+            <!-- <p class="login-institutional-brand">Universidad Evangélica de El Salvador</p> -->
+          </div>
+
+          <h1 id="login-title">Bienvenido</h1>
+          <p class="login-subtitle">
+            Sistema de Gestión Universitario UEES
+          </p>
+        </header>
+
+        <form class="login-form" (submit)="onSubmit($event)">
+          <div class="form-group">
+            <div class="input-field">
+              <span class="input-icon" aria-hidden="true">
+                <i class="dx-icon dx-icon-user"></i>
+              </span>
+              <input
+                id="txtUsuario"
+                class="form-control"
+                placeholder="Usuario"
+                autocomplete="username"
+                [(ngModel)]="formData.usuario"
+                name="usuario"
+                [disabled]="loading"
+              />
+            </div>
+          </div>
+
+          <div class="form-group password-wrapper">
+            <div class="input-field">
+              <span class="input-icon" aria-hidden="true">
+                <i class="dx-icon dx-icon-lock"></i>
+              </span>
+              <input
+                id="txtClave"
+                class="form-control"
+                placeholder="Contraseña"
+                [type]="showPassword ? 'text' : 'password'"
+                autocomplete="current-password"
+                [(ngModel)]="formData.password"
+                name="password"
+                [disabled]="loading"
+              />
+              <span
+                id="btnTogglePassword"
+                class="password-toggle"
+                [title]="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                role="button"
+                tabindex="0"
+                (click)="showPassword = !showPassword"
+                (keypress)="$event.key === 'Enter' && (showPassword = !showPassword)"
+              >
+                <i class="dx-icon" [ngClass]="showPassword ? 'dx-icon-eyeclose' : 'dx-icon-eyeopen'"></i>
+              </span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <button
+              id="btnIngresar"
+              class="btn-login"
+              type="submit"
+              [disabled]="loading"
+            >
+              {{ loading ? 'Ingresando...' : 'Ingresar al Sistema' }}
+            </button>
+          </div>
+
+          <a class="forgot-link" [routerLink]="resetLink">¿Olvidó su contraseña?</a>
+        </form>
+
+        <footer class="login-footer">
+          <span class="login-footer__copyright">© Universidad Evangélica de El Salvador</span>
+          <span class="login-footer__version">SGUEES</span>
+        </footer>
+      </div>
+    </div>
+  </main>
 </div>
 
 <!-- Modal de cambio de contraseña obligatorio -->

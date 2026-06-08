@@ -97,17 +97,7 @@ export class AuthService {
               }
               // Siempre retornar la respuesta completa (incluyendo REQUIERE_CAMBIO_CLAVE)
             } else {
-              notify(
-                {
-                  message: response.ErrorMessage,
-                  width: 'auto',
-                  shading: false,
-                  closeOnClick: true,
-                  closeOnOutsideClick: true,
-                },
-                'error',
-                500000
-              );
+              // El componente de login muestra el mensaje al usuario.
             }
 					}
 					return response;
