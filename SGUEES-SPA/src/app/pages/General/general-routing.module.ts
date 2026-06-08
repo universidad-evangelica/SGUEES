@@ -11,6 +11,7 @@ import { GenDeptoComponent } from './gen-depto/gen-depto.component';
 import { GenMunicipioComponent } from './gen-municipio/gen-municipio.component';
 import { GenDistritoComponent } from './gen-distrito/gen-distrito.component';
 import { GenSectorEconomicoComponent } from './gen-sector-economico/gen-sector-economico.component';
+import { GenEmpresaComponent } from './gen-empresa/gen-empresa.component';
 
 const routes: Routes = [
   {
@@ -76,6 +77,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-sector-economico/gen-sector-economico.module').then(m => m.GenSectorEconomicoModule)
+  },
+   {
+    path:'gen-empresa',
+    component: GenEmpresaComponent,
+    data: { titulo: 'Empresas' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-empresa/gen-empresa.module').then(m => m.GenEmpresaModule)
   }
 ];
 

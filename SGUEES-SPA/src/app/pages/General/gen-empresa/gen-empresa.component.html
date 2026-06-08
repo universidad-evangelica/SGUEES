@@ -1,0 +1,144 @@
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="permiteAdd"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+>
+</app-barra-data-mtto>
+<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+		<div *dxTemplate="let cellInfo of 'CORR_PAISLookup'">
+			<app-data-lookup
+				[model]="mCORR_PAIS"
+				[(value)]="model.CORR_PAIS"
+				(valueChange)="onPaisChange($event)"
+				[valueExpr]="'CORR_PAIS'"
+				[displayExpr]="'NOMBRE_PAIS'"
+				[selectedRowKeys]="selectedLookUpPais"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_DEPTOLookup'">
+			<app-data-lookup
+				[model]="mCORR_DEPTO"
+				[(value)]="model.CORR_DEPTO"
+				(valueChange)="onDeptoChange($event)"
+				[valueExpr]="'CORR_DEPTO'"
+				[displayExpr]="'NOMBRE_DEPTO'"
+				[selectedRowKeys]="selectedLookUpDepto"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_MUNICIPIOLookup'">
+			<app-data-lookup
+				[model]="mCORR_MUNICIPIO"
+				[(value)]="model.CORR_MUNICIPIO"
+				[valueExpr]="'CORR_MUNICIPIO'"
+				[displayExpr]="'NOMBRE_MUNICIPIO'"
+				[selectedRowKeys]="selectedLookUpMunicipio"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_SECTOR_ECONOMICOLookup'">
+			<app-data-lookup
+				[model]="mCORR_SECTOR_ECONOMICO"
+				[(value)]="model.CORR_SECTOR_ECONOMICO"
+				[valueExpr]="'CORR_SECTOR_ECONOMICO'"
+				[displayExpr]="'NOMBRE_SECTOR_ECONOMICO'"
+				[selectedRowKeys]="selectedLookUpSectorEconomico"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'LOGO_1Uploader'">
+			<dx-file-uploader
+				selectButtonText="Seleccionar logo 1"
+				labelText=""
+				accept="image/*"
+				[multiple]="false"
+				uploadMode="useForm"
+				[showFileList]="false"
+				[readOnly]="readOnly"
+				(onValueChanged)="onLogo1Selected($event)"
+			>
+			</dx-file-uploader>
+
+			<img
+				*ngIf="logo1Preview"
+				[src]="logo1Preview"
+				style="max-width: 160px; max-height: 120px; margin-top: 8px;"
+			/>
+		</div>
+
+		<div *dxTemplate="let cellInfo of 'LOGO_2Uploader'">
+			<dx-file-uploader
+				selectButtonText="Seleccionar logo 2"
+				labelText=""
+				accept="image/*"
+				[multiple]="false"
+				uploadMode="useForm"
+				[showFileList]="false"
+				[readOnly]="readOnly"
+				(onValueChanged)="onLogo2Selected($event)"
+			>
+			</dx-file-uploader>
+
+			<img
+				*ngIf="logo2Preview"
+				[src]="logo2Preview"
+				style="max-width: 160px; max-height: 120px; margin-top: 8px;"
+			/>
+		</div>
+
+		<div *dxTemplate="let cellInfo of 'SELLOUploader'">
+			<dx-file-uploader
+				selectButtonText="Seleccionar sello"
+				labelText=""
+				accept="image/*"
+				[multiple]="false"
+				uploadMode="useForm"
+				[showFileList]="false"
+				[readOnly]="readOnly"
+				(onValueChanged)="onSelloSelected($event)"
+			>
+			</dx-file-uploader>
+
+			<img
+				*ngIf="selloPreview"
+				[src]="selloPreview"
+				style="max-width: 160px; max-height: 120px; margin-top: 8px;"
+			/>
+		</div>
+	</dx-form>
+</div>
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="'CORR_EMPRESA'"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>
