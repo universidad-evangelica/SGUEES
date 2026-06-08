@@ -4,8 +4,6 @@
 
 export const environment = {
   production: false,
-<<<<<<< HEAD
-<<<<<<< HEAD
   UrlSEGURIDADAPI: 'http://localhost:5000/',
   UrlCOMPRASAPI: 'http://localhost:5000/',
   UrlGENERALAPI: 'http://localhost:5000/',
@@ -14,31 +12,6 @@ export const environment = {
   UrlTALENTOHUMANONAPI: 'http://localhost:5000/',
   UrlFEAPI: 'http://localhost:5000/',
   UrlApiToken: 'localhost:5000',
-=======
-=======
->>>>>>> 64cd8bd (resolviendo conflicto)
-  UrlSEGURIDADAPI: 'http://localhost:5198/',
-  UrlCOMPRASAPI: 'http://localhost:5198/',
-  UrlGENERALAPI: 'http://localhost:5198/',
-  UrlCONTAAPI: 'http://localhost:5198/',
-  UrlSELECCIONCONTRATACIONAPI: 'http://localhost:5198/',
-  UrlTALENTOHUMANONAPI: 'http://localhost:5198/',
-  UrlFEAPI: 'http://localhost:5198/',
-  UrlApiToken: 'localhost:5198',
-<<<<<<< HEAD
->>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
-=======
-=======
-  UrlSEGURIDADAPI: 'http://localhost:5000/',
-  UrlCOMPRASAPI: 'http://localhost:5000/',
-  UrlGENERALAPI: 'http://localhost:5000/',
-  UrlCONTAAPI: 'http://localhost:5000/',
-  UrlSELECCIONCONTRATACIONAPI: 'http://localhost:5000/',
-  UrlTALENTOHUMANONAPI: 'http://localhost:5000/',
-  UrlFEAPI: 'http://localhost:5000/',
-  UrlApiToken: 'localhost:5000',
->>>>>>> 50f63ca (Sguees#31 (#32))
->>>>>>> 64cd8bd (resolviendo conflicto)
 };
 
 /*
