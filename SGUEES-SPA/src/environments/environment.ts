@@ -4,25 +4,7 @@
 
 export const environment = {
   production: false,
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 02c7ee7 (uniendo cambios de diseño)
-=======
->>>>>>> 5d5a652 (resolviendo conflicto)
-=======
-=======
->>>>>>> 280102a (resolviendo conflicto)
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> 775a111 (uniendo rama de diseño)
-=======
-=======
->>>>>>> 51f1445 (Se agregaron resolución de conflicto en el merge..)
->>>>>>> 5d5a652 (resolviendo conflicto)
+
   UrlSEGURIDADAPI: 'http://localhost:5000/',
   UrlCOMPRASAPI: 'http://localhost:5000/',
   UrlGENERALAPI: 'http://localhost:5000/',
@@ -31,62 +13,6 @@ export const environment = {
   UrlTALENTOHUMANONAPI: 'http://localhost:5000/',
   UrlFEAPI: 'http://localhost:5000/',
   UrlApiToken: 'localhost:5000',
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> 3a2defd (resolviendo conflicto)
->>>>>>> 775a111 (uniendo rama de diseño)
-=======
->>>>>>> 3a2defd (resolviendo conflicto)
-=======
-=======
->>>>>>> 64cd8bd (resolviendo conflicto)
->>>>>>> 280102a (resolviendo conflicto)
->>>>>>> 02c7ee7 (uniendo cambios de diseño)
-  UrlSEGURIDADAPI: 'http://localhost:5198/',
-  UrlCOMPRASAPI: 'http://localhost:5198/',
-  UrlGENERALAPI: 'http://localhost:5198/',
-  UrlCONTAAPI: 'http://localhost:5198/',
-  UrlSELECCIONCONTRATACIONAPI: 'http://localhost:5198/',
-  UrlTALENTOHUMANONAPI: 'http://localhost:5198/',
-  UrlFEAPI: 'http://localhost:5198/',
-  UrlApiToken: 'localhost:5198',
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
-=======
-=======
->>>>>>> 02c7ee7 (uniendo cambios de diseño)
-<<<<<<< HEAD
-=======
->>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
->>>>>>> 3a2defd (resolviendo conflicto)
-<<<<<<< HEAD
->>>>>>> 775a111 (uniendo rama de diseño)
-=======
-=======
->>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
-=======
-=======
-  UrlSEGURIDADAPI: 'http://localhost:5000/',
-  UrlCOMPRASAPI: 'http://localhost:5000/',
-  UrlGENERALAPI: 'http://localhost:5000/',
-  UrlCONTAAPI: 'http://localhost:5000/',
-  UrlSELECCIONCONTRATACIONAPI: 'http://localhost:5000/',
-  UrlTALENTOHUMANONAPI: 'http://localhost:5000/',
-  UrlFEAPI: 'http://localhost:5000/',
-  UrlApiToken: 'localhost:5000',
->>>>>>> 50f63ca (Sguees#31 (#32))
->>>>>>> 64cd8bd (resolviendo conflicto)
->>>>>>> 280102a (resolviendo conflicto)
-<<<<<<< HEAD
->>>>>>> 02c7ee7 (uniendo cambios de diseño)
-=======
-=======
->>>>>>> 51f1445 (Se agregaron resolución de conflicto en el merge..)
->>>>>>> 5d5a652 (resolviendo conflicto)
 };
 
 /*

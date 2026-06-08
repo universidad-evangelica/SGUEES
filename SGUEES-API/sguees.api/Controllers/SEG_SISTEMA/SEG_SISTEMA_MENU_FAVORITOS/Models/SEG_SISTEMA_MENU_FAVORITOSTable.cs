@@ -1,26 +1,6 @@
 ﻿using eFramework.Data;
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-namespace sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Models
-=======
 
-=======
-=======
->>>>>>> 5d5a652 (resolviendo conflicto)
-=======
-
-<<<<<<< HEAD
->>>>>>> 3a2defd (resolviendo conflicto)
-=======
-<<<<<<< HEAD
->>>>>>> 775a111 (uniendo rama de diseño)
-namespace csuees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Models
->>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
-=======
->>>>>>> 51f1445 (Se agregaron resolución de conflicto en el merge..)
 namespace sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Models
->>>>>>> 5d5a652 (resolviendo conflicto)
 {
     //Esta es la tabla completa, mi modelo.
     public class SEG_SISTEMA_MENU_FAVORITOSTable
