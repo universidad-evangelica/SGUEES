@@ -1,6 +1,10 @@
 ﻿using eFramework.Data;
 
+<<<<<<< HEAD
 namespace sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Models
+=======
+namespace csuees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Models
+>>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
 {
     //Esta es la tabla completa, mi modelo.
     public class SEG_SISTEMA_MENU_FAVORITOSTable
