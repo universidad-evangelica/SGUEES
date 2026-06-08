@@ -6,8 +6,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS
+<<<<<<< HEAD
 
 =======
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> 775a111 (uniendo rama de diseño)
 ﻿using csuees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Service;
 using csuees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.DTOs;
 using csuees.api.Data;
@@ -16,6 +21,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace csuees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS
 >>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
+<<<<<<< HEAD
+=======
+>>>>>>> 3a2defd (resolviendo conflicto)
+>>>>>>> 775a111 (uniendo rama de diseño)
 {
     [Route("api/[controller]")]
     [ApiController]

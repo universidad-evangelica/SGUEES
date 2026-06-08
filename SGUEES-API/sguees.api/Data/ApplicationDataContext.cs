@@ -3,7 +3,10 @@
 using sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Service;
 
 namespace sguees.api.Data
+<<<<<<< HEAD
 
+=======
+>>>>>>> 775a111 (uniendo rama de diseño)
 =======
 ﻿using csuees.api.Controllers;
 using csuees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Service;

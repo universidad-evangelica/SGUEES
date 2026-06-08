@@ -9,6 +9,9 @@ using Microsoft.IdentityModel.Tokens;
 using NetCore.AutoRegisterDi;
 <<<<<<< HEAD
 using sguees.api.Data;
+=======
+using csuees.api.Data;
+>>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
 
 =======
 using csuees.api.Data;

@@ -5,6 +5,11 @@
 export const environment = {
   production: false,
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+=======
+<<<<<<< HEAD
+>>>>>>> 775a111 (uniendo rama de diseño)
   UrlSEGURIDADAPI: 'http://localhost:5000/',
   UrlCOMPRASAPI: 'http://localhost:5000/',
   UrlGENERALAPI: 'http://localhost:5000/',
@@ -14,6 +19,10 @@ export const environment = {
   UrlFEAPI: 'http://localhost:5000/',
   UrlApiToken: 'localhost:5000',
 =======
+<<<<<<< HEAD
+=======
+>>>>>>> 3a2defd (resolviendo conflicto)
+>>>>>>> 775a111 (uniendo rama de diseño)
   UrlSEGURIDADAPI: 'http://localhost:5198/',
   UrlCOMPRASAPI: 'http://localhost:5198/',
   UrlGENERALAPI: 'http://localhost:5198/',
@@ -22,7 +31,14 @@ export const environment = {
   UrlTALENTOHUMANONAPI: 'http://localhost:5198/',
   UrlFEAPI: 'http://localhost:5198/',
   UrlApiToken: 'localhost:5198',
+<<<<<<< HEAD
 >>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
+=======
+<<<<<<< HEAD
+=======
+>>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
+>>>>>>> 3a2defd (resolviendo conflicto)
+>>>>>>> 775a111 (uniendo rama de diseño)
 };
 
 /*

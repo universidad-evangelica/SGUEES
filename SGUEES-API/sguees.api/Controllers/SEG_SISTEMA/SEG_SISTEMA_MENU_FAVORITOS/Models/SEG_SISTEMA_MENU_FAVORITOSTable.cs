@@ -1,8 +1,17 @@
 ﻿using eFramework.Data;
 <<<<<<< HEAD
+<<<<<<< HEAD
 namespace sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Models
 =======
 
+=======
+=======
+
+<<<<<<< HEAD
+>>>>>>> 3a2defd (resolviendo conflicto)
+namespace sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Models
+=======
+>>>>>>> 775a111 (uniendo rama de diseño)
 namespace csuees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Models
 >>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
 {
