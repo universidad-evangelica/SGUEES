@@ -9,11 +9,6 @@ using Microsoft.IdentityModel.Tokens;
 using NetCore.AutoRegisterDi;
 using sguees.api.Data;
 
-
-=======
-using csuees.api.Data;
->>>>>>> 454bd78 (Rediseño general aplicativo SGUEES#31)
-
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
                 .AddJsonOptions(options =>
