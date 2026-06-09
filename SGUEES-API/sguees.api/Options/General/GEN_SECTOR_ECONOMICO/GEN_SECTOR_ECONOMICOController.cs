@@ -88,5 +88,13 @@ namespace sguees.Controllers
 				return BadRequest(resultado);
 			}
 		}
+		[HttpGet("GetCORR_SECTOR_ECONOMICO_GEN_EMPRESA")]
+        [Authorize(Policy = "/gen-empresa|R")]
+        public async Task<CResult> GetCORR_SECTOR_ECONOMICO_GEN_EMPRESA([FromQuery] GEN_SECTOR_ECONOMICOParam Data)
+        {
+			//Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			//Data.CORR_PAIS = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_PAIS").Value);
+            return await _service.GetAllAsync(Data);
+        }
 	}
 }
