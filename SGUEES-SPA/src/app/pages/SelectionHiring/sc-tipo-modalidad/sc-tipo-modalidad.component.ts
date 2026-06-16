@@ -96,6 +96,7 @@ export class ScTipoModalidadComponent extends CBaseComponent implements OnInit {
 					}
 				},
 				error: (error: any) => {
+					console.log(error)
 					this.notifyFx(error, NotifyType.Error);
 				},
 			});

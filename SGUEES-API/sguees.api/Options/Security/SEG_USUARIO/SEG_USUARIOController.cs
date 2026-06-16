@@ -1,3 +1,4 @@
+using sguees.api.Shared;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -48,7 +49,7 @@ namespace sguees.Controllers
 		{
 			Data.USUARIO_CREA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
 			Data.FECHA_CREA = DateTime.Now;
-			Data.ESTACION_CREA = Data.USUARIO_CREA;
+			Data.ESTACION_CREA = ClientInfoHelper.GetClientStation(HttpContext);
 			Data.USUARIO_ACTU = Data.USUARIO_CREA;
 			Data.FECHA_ACTU = Data.FECHA_CREA;
 			Data.ESTACION_ACTU = Data.USUARIO_CREA;
@@ -150,7 +151,7 @@ namespace sguees.Controllers
 		{
 			Data.USUARIO_CREA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
 			Data.FECHA_CREA = DateTime.Now;
-			Data.ESTACION_CREA = Data.USUARIO_CREA;
+			Data.ESTACION_CREA = ClientInfoHelper.GetClientStation(HttpContext);
 			Data.USUARIO_ACTU = Data.USUARIO_CREA;
 			Data.FECHA_ACTU = Data.FECHA_CREA;
 			Data.ESTACION_ACTU = Data.USUARIO_CREA;

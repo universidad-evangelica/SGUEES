@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using NetCore.AutoRegisterDi;
 using sguees.api.Data;
+using sguees.api.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
@@ -97,10 +98,17 @@ else
 }
 
 // app.UseHttpsRedirection();
-app.UseCors(options => options.AllowAnyOrigin()
-            // options.WithOrigins(builder.Configuration.GetSection("AppSetting:clientURL").Value)
+
+// CORS: restringir a orígenes permitidos desde appsettings
+var allowedOrigins = builder.Configuration.GetSection("AppSetting:AllowedOrigins").Get<string[]>()
+    ?? new[] { builder.Configuration.GetSection("AppSetting:clientURL").Value ?? "http://localhost:4200" };
+
+app.UseCors(options => options.WithOrigins(allowedOrigins)
             .AllowAnyMethod()
             .AllowAnyHeader());
+
+// Rate limiting para endpoints públicos (login, reset password)
+app.UseMiddleware<RateLimitingMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
