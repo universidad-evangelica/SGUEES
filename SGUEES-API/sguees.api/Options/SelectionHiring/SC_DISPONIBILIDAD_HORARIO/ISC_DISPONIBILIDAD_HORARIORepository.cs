@@ -1,0 +1,9 @@
+using eFramework.Data;
+using SGUEES.Models;
+
+namespace SGUEES.Repositories
+{
+    public interface ISC_DISPONIBILIDAD_HORARIORepository : IRepository<SC_DISPONIBILIDAD_HORARIOTable>
+    {
+    }
+}
