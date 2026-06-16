@@ -7,6 +7,12 @@ import { ScTipoVacanteComponent } from './sc-tipo-vacante/sc-tipo-vacante.compon
 import { ScRequisicionPersonalComponent } from './sc-requisicion-personal/sc-requisicion-personal.component';
 import { ScTipoModalidadComponent } from './sc-tipo-modalidad/sc-tipo-modalidad.component';
 import { ScTipoContratacionComponent } from './sc-tipo-contratacion/sc-tipo-contratacion.component';
+import { ScDescriptorResponsabilidadCargoComponent } from './sc-descriptor-responsabilidad-cargo/sc-descriptor-responsabilidad-cargo.component';
+import { ScDescriptorRiesgoPuestoComponent } from './sc-descriptor-riesgo-puesto/sc-descriptor-riesgo-puesto.component';
+import { ScInduccionComponent } from './sc-induccion/sc-induccion.component';
+import { ScFrecuenciaComponent } from './sc-frecuencia/sc-frecuencia.component';
+import { ScRequerimientoOrganizacionalComponent } from './sc-requerimiento-organizacional/sc-requerimiento-organizacional.component';
+import { ScDisponibilidadHorarioComponent } from './sc-disponibilidad-horario/sc-disponibilidad-horario.component';
 
 const routes: Routes = [
   {
@@ -39,6 +45,54 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./sc-tipo-contratacion/sc-tipo-contratacion.module').then(m => m.ScTipoContratacionModule)
+  },
+  {
+    path: 'sc-descriptor-responsabilidad-cargo',
+    component: ScDescriptorResponsabilidadCargoComponent,
+    data: { titulo: 'Responsabilidad de Cargo' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-descriptor-responsabilidad-cargo/sc-descriptor-responsabilidad-cargo.module').then(m => m.ScDescriptorResponsabilidadCargoModule)
+  },
+  {
+    path: 'sc-descriptor-riesgo-puesto',
+    component: ScDescriptorRiesgoPuestoComponent,
+    data: { titulo: 'Riesgo de Puesto' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-descriptor-riesgo-puesto/sc-descriptor-riesgo-puesto.module').then(m => m.ScDescriptorRiesgoPuestoModule)
+  },
+  {
+    path: 'sc-induccion',
+    component: ScInduccionComponent,
+    data: { titulo: 'Inducción' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-induccion/sc-induccion.module').then(m => m.ScInduccionModule)
+  },
+  {
+    path: 'sc-frecuencia',
+    component: ScFrecuenciaComponent,
+    data: { titulo: 'Frecuencia' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-frecuencia/sc-frecuencia.module').then(m => m.ScFrecuenciaModule)
+  },
+  {
+    path: 'sc-requerimiento-organizacional',
+    component: ScRequerimientoOrganizacionalComponent,
+    data: { titulo: 'Requerimiento Organizacional' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-requerimiento-organizacional/sc-requerimiento-organizacional.module').then(m => m.ScRequerimientoOrganizacionalModule)
+  },
+  {
+    path: 'sc-disponibilidad-horario',
+    component: ScDisponibilidadHorarioComponent,
+    data: { titulo: 'Disponibilidad de Horario' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-disponibilidad-horario/sc-disponibilidad-horario.module').then(m => m.ScDisponibilidadHorarioModule)
   }
 ];
 
