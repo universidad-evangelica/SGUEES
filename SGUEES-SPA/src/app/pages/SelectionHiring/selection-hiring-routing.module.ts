@@ -13,6 +13,7 @@ import { ScInduccionComponent } from './sc-induccion/sc-induccion.component';
 import { ScFrecuenciaComponent } from './sc-frecuencia/sc-frecuencia.component';
 import { ScRequerimientoOrganizacionalComponent } from './sc-requerimiento-organizacional/sc-requerimiento-organizacional.component';
 import { ScDisponibilidadHorarioComponent } from './sc-disponibilidad-horario/sc-disponibilidad-horario.component';
+import { ScDescriptorImpactoEconomicoComponent } from './sc-descriptor-impacto-economico/sc-descriptor-impacto-economico.component';
 
 const routes: Routes = [
   {
@@ -93,6 +94,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./sc-disponibilidad-horario/sc-disponibilidad-horario.module').then(m => m.ScDisponibilidadHorarioModule)
+  },
+  {
+    path: 'sc-descriptor-impacto-economico',
+    component: ScDescriptorImpactoEconomicoComponent,
+    data: { titulo: 'Impacto Economico' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-descriptor-impacto-economico/sc-descriptor-impacto-economico.module').then(m => m.ScDescriptorImpactoEconomicoModule)
   }
 ];
 
