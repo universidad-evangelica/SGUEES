@@ -1,0 +1,127 @@
+:host ::ng-deep .estado-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 76px;
+	padding: 5px 12px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 800;
+	letter-spacing: 0.02em;
+	line-height: 1;
+	text-transform: uppercase;
+}
+
+:host ::ng-deep .estado-badge--activo {
+	color: #bbf7d0;
+	background: linear-gradient(135deg, rgba(22, 163, 74, 0.95), rgba(5, 150, 105, 0.9));
+	box-shadow: inset 0 0 0 1px rgba(187, 247, 208, 0.28), 0 6px 14px rgba(5, 150, 105, 0.28);
+}
+
+:host ::ng-deep .estado-badge--inactivo {
+	color: #ffe4e6;
+	background: linear-gradient(135deg, rgba(225, 29, 72, 0.95), rgba(190, 18, 60, 0.9));
+	box-shadow: inset 0 0 0 1px rgba(255, 228, 230, 0.28), 0 6px 14px rgba(225, 29, 72, 0.24);
+}
+
+.frecuencia-page {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.frecuencia-grid-title {
+	font-size: 20px;
+	font-weight: 600;
+	line-height: 1.2;
+}
+
+.frecuencia-form-card {
+	margin-top: 38px;
+}
+
+:host ::ng-deep .frecuencia-page {
+	min-width: 0;
+
+	.dx-card.responsive-paddings {
+		overflow: hidden;
+	}
+
+	.dx-datagrid-header-panel .dx-toolbar,
+	.dx-datagrid-header-panel .dx-toolbar-items-container {
+		height: auto;
+		min-height: 0;
+		overflow: visible;
+	}
+
+	.dx-datagrid-header-panel .dx-toolbar-before,
+	.dx-datagrid-header-panel .dx-toolbar-after {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px;
+		position: static;
+	}
+
+	.dx-datagrid-header-panel .dx-toolbar-after {
+		justify-content: flex-end;
+	}
+}
+
+@media (max-width: 700px) {
+	.frecuencia-page {
+		gap: 10px;
+	}
+
+	.frecuencia-grid-title {
+		font-size: 18px;
+	}
+
+	.frecuencia-form-card {
+		margin-top: 16px;
+	}
+
+	:host ::ng-deep .frecuencia-page {
+		.dx-card.responsive-paddings {
+			padding: 12px;
+		}
+
+		.dx-datagrid-header-panel {
+			padding: 8px 0;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-before,
+		.dx-datagrid-header-panel .dx-toolbar-after {
+			width: 100%;
+			justify-content: flex-start;
+		}
+
+		.dx-datagrid-header-panel .maintenance-toolbar-title {
+			flex: 1 1 100%;
+			margin-bottom: 4px;
+		}
+
+		.dx-datagrid-header-panel .maintenance-toolbar-search,
+		.dx-datagrid-header-panel .maintenance-toolbar-status {
+			flex: 1 1 100%;
+			max-width: 100%;
+		}
+
+		.dx-datagrid-header-panel .maintenance-toolbar-search .dx-textbox,
+		.dx-datagrid-header-panel .maintenance-toolbar-status .dx-selectbox {
+			width: 100% !important;
+		}
+
+		.dx-datagrid-header-panel .maintenance-toolbar-divider {
+			display: none;
+		}
+
+		.dx-datagrid-header-panel .maintenance-toolbar-add {
+			flex: 1 1 auto;
+		}
+
+		.dx-datagrid-header-panel .maintenance-toolbar-add .dx-button {
+			width: 100%;
+		}
+	}
+}

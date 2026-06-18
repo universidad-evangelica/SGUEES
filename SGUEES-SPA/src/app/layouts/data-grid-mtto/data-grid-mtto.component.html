@@ -39,6 +39,7 @@
       [visible]="isBrowse"
       [dataSource]="models"
       [keyExpr]="keyExpr"
+      [remoteOperations]="remoteOperations"
       [columnAutoWidth]="columnAutoWidth"
       [showBorders]="false"
       [showColumnLines]="false"
@@ -71,6 +72,24 @@
             </div>
           </div>
         </dxi-item>
+
+        <dxi-item
+          *ngIf="searchBoxOptions"
+          location="after"
+          locateInMenu="auto"
+          widget="dxTextBox"
+          cssClass="maintenance-toolbar-search"
+          [options]="searchBoxOptions"
+        ></dxi-item>
+
+        <dxi-item
+          *ngIf="estadoSelectOptions"
+          location="after"
+          locateInMenu="auto"
+          widget="dxSelectBox"
+          cssClass="maintenance-toolbar-status"
+          [options]="estadoSelectOptions"
+        ></dxi-item>
 
         <dxi-item
           *ngIf="effectiveShowSearch"
@@ -127,7 +146,7 @@
       
       <dxo-export [enabled]="effectiveShowExport" fileName="gData"></dxo-export>
       <dxo-column-chooser [enabled]="showColumnChooser" mode="select"></dxo-column-chooser>
-      <dxo-paging [enabled]="true" [pageSize]="5"></dxo-paging>
+      <dxo-paging [enabled]="true" [pageSize]="pageSize"></dxo-paging>
       
       <dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
 
@@ -138,7 +157,7 @@
         [showInfo]="true"
         [showNavigationButtons]="true"
         [showPageSizeSelector]="true"
-        [allowedPageSizes]="[5, 10, 25, 50, 100]"
+        [allowedPageSizes]="allowedPageSizes"
       ></dxo-pager>
 
       <dxo-scrolling mode="standard"></dxo-scrolling>
