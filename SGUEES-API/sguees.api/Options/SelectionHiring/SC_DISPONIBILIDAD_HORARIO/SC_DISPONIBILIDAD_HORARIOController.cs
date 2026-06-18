@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using eFramework.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using sguees.api.Shared;
 using SGUEES.Models;
 using SGUEES.Services;
 
@@ -113,7 +114,7 @@ namespace SGUEES.Controllers
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
             Data.USUARIO_CREA = GetUsuario();
-            Data.ESTACION_CREA = Data.USUARIO_CREA;
+            Data.ESTACION_CREA = ClientInfoHelper.GetClientStation(HttpContext);
             Data.FECHA_CREA = DateTime.Now;
             Data.USUARIO_ACTU = Data.USUARIO_CREA;
             Data.ESTACION_ACTU = Data.ESTACION_CREA;
@@ -125,7 +126,7 @@ namespace SGUEES.Controllers
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
             Data.USUARIO_ACTU = GetUsuario();
-            Data.ESTACION_ACTU = Data.USUARIO_ACTU;
+            Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
             Data.FECHA_ACTU = DateTime.Now;
             if (!Data.ESTADO_DISPONIBILIDAD_HORARIO.HasValue)
             {
