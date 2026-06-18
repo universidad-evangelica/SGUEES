@@ -19,7 +19,7 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
 	readonly pageSizes = [5, 10, 25, 50, 100];
-	private readonly maintenanceSubtitulo = 'Mantenimiento de Induccion';
+	private readonly maintenanceSubtitulo = 'Mantenimiento de Inducción';
 
 	constructor(public override appInfoService: AppInfoService, public override router: ActivatedRoute, private service: ScInduccionService) {
 		super(appInfoService, router);
