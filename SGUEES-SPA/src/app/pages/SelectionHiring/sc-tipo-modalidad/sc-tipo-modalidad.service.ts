@@ -55,7 +55,8 @@ export class ScTipoModalidadService {
 	getColumns(): any {
 		return [
 			{ dataField: 'CORR_TIPO_MODALIDAD', caption: 'Corr.', width: 100 },
-			{ dataField: 'NOMBRE_TIPO_MODALIDAD', caption: 'Nombre Tipo Modalidad', width: 300 },
+			{ dataField: 'MODALIDAD_NOMBRE', caption: 'Nombre Tipo Modalidad', width: 300 },
+			{ dataField: 'MODALIDAD_DESCRIPCION', caption: 'Descripción Tipo Modalidad', width: 300 },
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
 			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
@@ -75,10 +76,16 @@ export class ScTipoModalidadService {
 		return [
 			{ dataField: 'CORR_TIPO_MODALIDAD', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
 			{
-				dataField: 'NOMBRE_TIPO_MODALIDAD',
+				dataField: 'MODALIDAD_NOMBRE',
 				label: { text: 'Nombre Tipo Modalidad' },
 				colSpan: 3,
 				editorOptions: { placeholder: 'Nombre Tipo Modalidad...', showClearButton: true, maxLength: 250 },
+			},
+			{
+				dataField: 'MODALIDAD_DESCRIPCION',
+				label: { text: 'Descripción Tipo Modalidad' },
+				colSpan: 3,
+				editorOptions: { placeholder: 'Descripción Tipo Modalidad...', showClearButton: true, maxLength: 500 },
 			},
 		];
 	}

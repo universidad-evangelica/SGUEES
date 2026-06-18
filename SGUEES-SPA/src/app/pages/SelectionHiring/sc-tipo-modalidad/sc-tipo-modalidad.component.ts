@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-
+import { MessageService } from 'primeng/api';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
@@ -19,7 +19,8 @@ export class ScTipoModalidadComponent extends CBaseComponent implements OnInit {
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: ScTipoModalidadService
+		private service: ScTipoModalidadService,
+		private messageService: MessageService
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -62,7 +63,8 @@ export class ScTipoModalidadComponent extends CBaseComponent implements OnInit {
 			return {
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_TIPO_MODALIDAD: xModel.CORR_TIPO_MODALIDAD,
-				NOMBRE_TIPO_MODALIDAD: xModel.NOMBRE_TIPO_MODALIDAD,
+				MODALIDAD_NOMBRE: xModel.MODALIDAD_NOMBRE,
+				MODALIDAD_DESCRIPCION: xModel.MODALIDAD_DESCRIPCION,
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
 				FECHA_CREA: xModel.FECHA_CREA,
@@ -74,7 +76,8 @@ export class ScTipoModalidadComponent extends CBaseComponent implements OnInit {
 			return {
 				CORR_EMPRESA: 1,
 				CORR_TIPO_MODALIDAD: 0,
-				NOMBRE_TIPO_MODALIDAD: '',
+				MODALIDAD_NOMBRE: '',
+				MODALIDAD_DESCRIPCION: '',
 				USUARIO_CREA: '',
 				ESTACION_CREA: '',
 				FECHA_CREA: new Date(),
@@ -97,7 +100,12 @@ export class ScTipoModalidadComponent extends CBaseComponent implements OnInit {
 				},
 				error: (error: any) => {
 					console.log(error)
-					this.notifyFx(error, NotifyType.Error);
+					//this.notifyFx(error, NotifyType.Error);
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: error
+					});
 				},
 			});
 	}
@@ -118,15 +126,30 @@ export class ScTipoModalidadComponent extends CBaseComponent implements OnInit {
 							this.models.push(response.Data);
 							this.model = response.Data;
 							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro creado con exito!', NotifyType.Success);
+							//this.notifyFx('Registro creado con exito!', NotifyType.Success);
+							this.messageService.add({
+						severity: 'success',
+						summary: 'Éxito',
+						detail: 'Registro creado con exito!'
+					});
 						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							//this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: response.ErrorMessage
+					});
 						}
 						this.loadingVisible = false;
 					},
 					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
+						//this.notifyFx(error, NotifyType.Error);
 						this.loadingVisible = false;
+						this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: error
+					});
 					},
 				});
 		} else if (this.banderaMtto === UpdateType.Update) {
@@ -140,15 +163,30 @@ export class ScTipoModalidadComponent extends CBaseComponent implements OnInit {
 							const vIndex = this.models.findIndex((item: any) => item.CORR_TIPO_MODALIDAD === response.Data.CORR_TIPO_MODALIDAD);
 							this.models[vIndex] = response.Data;
 							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
+							//this.notifyFx('Registro modificado con exito!', NotifyType.Success);
+							this.messageService.add({
+						severity: 'success',
+						summary: 'Éxito',
+						detail: 'Registro modificado con exito!'
+					});
 						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							//this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: response.ErrorMessage
+					});
 						}
 						this.loadingVisible = false;
 					},
 					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
+						//this.notifyFx(error, NotifyType.Error);
 						this.loadingVisible = false;
+						this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: error
+					});
 					},
 				});
 		}
@@ -165,28 +203,43 @@ export class ScTipoModalidadComponent extends CBaseComponent implements OnInit {
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
-						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
+						//this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
+						this.messageService.add({
+						severity: 'success',
+						summary: 'Éxito',
+						detail: 'Registro eliminado con exito!'
+					});
 						e.component.refresh();
 					} else {
 						e.cancel = true;
-						this.notifyFx(response.ErrorMessage, NotifyType.Error);
+						//this.notifyFx(response.ErrorMessage, NotifyType.Error);
+						this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: response.ErrorMessage
+					});
 					}
 				},
 				error: (error: any) => {
 					e.cancel = true;
-					this.notifyFx(error, NotifyType.Error);
+					//this.notifyFx(error, NotifyType.Error);
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: error
+					});
 				},
 			});
 	}
 
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_TIPO_MODALIDAD')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('NOMBRE_TIPO_MODALIDAD')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('MODALIDAD_NOMBRE')?.option('readOnly', true);
 	}
 
 	override setFocus() {
 		setTimeout(() => {
-			this.dataForm.instance.getEditor('NOMBRE_TIPO_MODALIDAD')?.focus();
+			this.dataForm.instance.getEditor('MODALIDAD_NOMBRE')?.focus();
 		});
 	}
 	//#endregion
