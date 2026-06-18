@@ -1,0 +1,129 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using eFramework.Core;
+using SGUEES.Models;
+using SGUEES.Repositories;
+
+namespace SGUEES.Services
+{
+    public class SC_REQUERIMIENTO_ORGANIZACIONALService : ISC_REQUERIMIENTO_ORGANIZACIONALService
+    {
+        private readonly ISC_REQUERIMIENTO_ORGANIZACIONALRepository _repo;
+
+        public SC_REQUERIMIENTO_ORGANIZACIONALService(ISC_REQUERIMIENTO_ORGANIZACIONALRepository repo)
+        {
+            _repo = repo;
+        }
+
+        public async Task<CResult> GetAllAsync(SC_REQUERIMIENTO_ORGANIZACIONALParam xWhere)
+        {
+            var p = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "BUSQUEDA", Value = xWhere.BUSQUEDA, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "ESTADO_REQUERIMIENTO_ORGANIZACIONAL", Value = xWhere.ESTADO_REQUERIMIENTO_ORGANIZACIONAL, DbType = System.Data.DbType.Boolean },
+                new CParameter() { ParameterName = "PAGE", Value = xWhere.PAGE, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "PAGE_SIZE", Value = xWhere.PAGE_SIZE, DbType = System.Data.DbType.Int32 },
+            };
+
+            AddColumnFilter("CORR_REQUERIMIENTO_ORGANIZACIONAL", xWhere.CORR_REQUERIMIENTO_ORGANIZACIONAL, System.Data.DbType.Int32);
+            AddColumnFilter("DESCRIPCION", xWhere.DESCRIPCION, System.Data.DbType.String);
+            AddColumnFilter("USUARIO_CREA", xWhere.USUARIO_CREA, System.Data.DbType.String);
+            AddColumnFilter("ESTACION_CREA", xWhere.ESTACION_CREA, System.Data.DbType.String);
+            AddColumnFilter("FECHA_CREA", xWhere.FECHA_CREA, System.Data.DbType.String);
+            AddColumnFilter("USUARIO_ACTU", xWhere.USUARIO_ACTU, System.Data.DbType.String);
+            AddColumnFilter("ESTACION_ACTU", xWhere.ESTACION_ACTU, System.Data.DbType.String);
+            AddColumnFilter("FECHA_ACTU", xWhere.FECHA_ACTU, System.Data.DbType.String);
+
+            return await _repo.GetAllAsync(p);
+
+            void AddColumnFilter(string parameterName, object value, System.Data.DbType dbType)
+            {
+                if (value == null ||
+                    value is string text && string.IsNullOrWhiteSpace(text) ||
+                    value is int number && number <= 0)
+                {
+                    return;
+                }
+
+                p.Add(new CParameter() { ParameterName = parameterName, Value = value, DbType = dbType });
+            }
+        }
+
+        public async Task<CResult> GetAsync(SC_REQUERIMIENTO_ORGANIZACIONALParam xWhere)
+        {
+            var p = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_REQUERIMIENTO_ORGANIZACIONAL", Value = xWhere.CORR_REQUERIMIENTO_ORGANIZACIONAL, DbType = System.Data.DbType.Int32 },
+            };
+
+            return await _repo.GetAsync(p);
+        }
+
+        public async Task<CResult> CreateAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            var validation = Validate(Data);
+            if (validation != null) return validation;
+
+            Data.DESCRIPCION = Data.DESCRIPCION.Trim();
+            Data.ESTADO_REQUERIMIENTO_ORGANIZACIONAL ??= true;
+            return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        public async Task<CResult> UpdateAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            var validation = Validate(Data);
+            if (validation != null) return validation;
+
+            Data.DESCRIPCION = Data.DESCRIPCION.Trim();
+            Data.ESTADO_REQUERIMIENTO_ORGANIZACIONAL ??= true;
+            return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        public async Task<CResult> DeleteAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        public async Task<CResult> DesactivarAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            Data.ESTADO_REQUERIMIENTO_ORGANIZACIONAL = false;
+            return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        private static CResult Validate(SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
+        {
+            if (Data == null)
+            {
+                return ValidationError("No se recibieron datos de requerimiento organizacional.");
+            }
+
+            if (string.IsNullOrWhiteSpace(Data.DESCRIPCION))
+            {
+                return ValidationError("Debe ingresar la descripcion de requerimiento organizacional.");
+            }
+
+            if (Data.DESCRIPCION.Trim().Length > 200)
+            {
+                return ValidationError("La descripcion de requerimiento organizacional no puede superar 200 caracteres.");
+            }
+
+            return null;
+        }
+
+        private static CResult ValidationError(string message)
+        {
+            return new CResult
+            {
+                Data = null,
+                Result = false,
+                CodeHelper = 0,
+                ErrorCode = -1,
+                ErrorMessage = message,
+                ErrorSource = "[SC_REQUERIMIENTO_ORGANIZACIONALService]",
+                RowsAffected = 0
+            };
+        }
+    }
+}
