@@ -19,6 +19,7 @@ export class ScDescriptorResponsabilidadCargoComponent extends CBaseComponent im
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
 	readonly pageSizes = [5, 10, 25, 50, 100];
+	private readonly maintenanceSubtitulo = 'Mantenimiento de Responsabilidad de Cargo';
 
 	constructor(public override appInfoService: AppInfoService, public override router: ActivatedRoute, private service: ScDescriptorResponsabilidadCargoService) {
 		super(appInfoService, router);
@@ -32,7 +33,15 @@ export class ScDescriptorResponsabilidadCargoComponent extends CBaseComponent im
 	}
 
 	ngOnInit(): void {
+		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.configurarDataSource();
+	}
+
+	override AsignaStatus(xEstado: UpdateType): void {
+		super.AsignaStatus(xEstado);
+		if (xEstado === UpdateType.Browse) {
+			this.subTituloVentana = this.maintenanceSubtitulo;
+		}
 	}
 
 	onEditClick(e: any): void {
