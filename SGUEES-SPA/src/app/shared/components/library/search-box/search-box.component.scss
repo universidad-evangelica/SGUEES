@@ -1,0 +1,30 @@
+:host {
+  display: inline-block;
+  max-width: 100%;
+  width: min(100%, var(--sguees-search-max-width));
+}
+
+.sguees-search-box {
+  border-radius: var(--sguees-search-radius) !important;
+  background: var(--sguees-search-bg) !important;
+  border: 1px solid var(--sguees-search-border) !important;
+
+  &.dx-texteditor.dx-state-focused {
+    border-color: color-mix(in srgb, var(--accent-color) 50%, transparent) !important;
+    box-shadow: var(--sguees-focus-ring) !important;
+  }
+
+  .dx-texteditor-input {
+    font-size: var(--sguees-font-size-base);
+  }
+
+  .dx-icon-search {
+    color: var(--sguees-text-muted);
+  }
+}
+
+@media (max-width: 575.98px) {
+  :host {
+    width: 100%;
+  }
+}

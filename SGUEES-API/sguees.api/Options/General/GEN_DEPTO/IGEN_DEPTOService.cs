@@ -11,6 +11,5 @@ namespace sguees.Services
 		Task<CResult> CreateAsync(GEN_DEPTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(GEN_DEPTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(GEN_DEPTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
-		
 	}
 }

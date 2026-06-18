@@ -1,0 +1,19 @@
+<div class="sguees-empty-state" role="status">
+  <div class="sguees-empty-state__icon-wrap">
+    <span class="sguees-empty-state__icon dx-icon-{{ icon }}"></span>
+  </div>
+  <h3 class="sguees-empty-state__title">{{ title }}</h3>
+  <p class="sguees-empty-state__message">{{ message }}</p>
+  <button
+    *ngIf="ctaLabel"
+    type="button"
+    class="sguees-empty-state__cta"
+    (click)="onCta()"
+  >
+    <span class="dx-icon-{{ ctaIcon }}"></span>
+    {{ ctaLabel }}
+  </button>
+  <div class="sguees-empty-state__actions">
+    <ng-content></ng-content>
+  </div>
+</div>

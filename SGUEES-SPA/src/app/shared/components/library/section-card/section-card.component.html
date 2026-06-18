@@ -1,0 +1,12 @@
+<section
+  class="sguees-section-card"
+  [class.sguees-section-card--compact]="padding === 'compact'"
+>
+  <header class="sguees-section-card__header" *ngIf="title">
+    <h2 class="sguees-section-card__title">{{ title }}</h2>
+    <p class="sguees-section-card__subtitle" *ngIf="subtitle">{{ subtitle }}</p>
+  </header>
+  <div class="sguees-section-card__body">
+    <ng-content></ng-content>
+  </div>
+</section>

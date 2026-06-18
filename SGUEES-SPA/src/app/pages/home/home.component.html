@@ -1,2 +1,245 @@
+<section class="home-portal" aria-label="Portal SGUEES">
 
-<img class="logo-img" src="assets/img/bg-home_11.jpg" alt="logo" width="100%" height="100%">
+  <p-toast position="bottom-right" 
+    [showTransformOptions]="'translateY(100%)'" 
+    [hideTransitionOptions]="'500ms'" 
+    [showTransformOptions]="'translateX(100%)'"></p-toast>
+
+  <header class="portal-header">
+    <div class="portal-header__text">
+
+      <div class="portal-header__title">
+        Sistema de Gestión Universitario UEES
+      </div>
+
+      <div class="portal-header__subtitle">
+        {{
+          selectedSection
+            ? 'Selecciona un menú y elige la opción que deseas abrir'
+            : 'Selecciona una sección para ver sus módulos'
+        }}
+      </div>
+
+    </div>
+
+    <button
+      *ngIf="selectedSection"
+      type="button"
+      class="portal-back-button"
+      (click)="goBackToParents()"
+    >
+      <i class="dx-icon dx-icon-back"></i>
+
+      <span>
+        Regresar
+      </span>
+    </button>
+  </header>
+
+  <!-- Favoritos: listado o ayuda para agregar el primero -->
+  <div class="favorites-container" *ngIf="!selectedSection">
+
+    <div class="favorites-header">
+
+      <i class="pi pi-star"></i>
+
+      <span>
+        Favoritos
+      </span>
+
+    </div>
+
+    <div class="favorites-grid" *ngIf="favoritesSelected.length > 0">
+
+      <button
+        type="button"
+        *ngFor="let favorite of favoritesSelected"
+        class="favorite-card"
+        (click)="onChildClick(favorite)"
+      >
+
+        <span
+          class="favorite-icon favorite-icon--active"
+          [title]="'Quitar de favoritos'"
+          (click)="onFavoriteClick(favorite, $event)"
+        >
+          <i class="pi pi-star-fill"></i>
+        </span>
+
+        <span class="favorite-card__icon">
+          <i
+            [class]="'dx-icon dx-icon-' + favorite.icon">
+          </i>
+        </span>
+
+        <span class="favorite-card__title">
+          {{ favorite.title }}
+        </span>
+
+      </button>
+    </div>
+
+    <div
+      class="portal-info portal-info--favorites"
+      *ngIf="favoritesSelected.length === 0"
+    >
+      <div class="portal-info__icon">
+        <i class="dx-icon dx-icon-info"></i>
+      </div>
+
+      <div class="portal-info__body">
+        <div class="portal-info__title">
+          Aún no tienes favoritos
+        </div>
+
+        <div class="portal-info__text">
+          Entra a un módulo, elige un menú y en cada opción haz clic en el icono
+          <span class="portal-info__star">
+            <i class="pi pi-star"></i>
+          </span>
+          para agregarla aquí. Tus accesos favoritos aparecerán en esta sección.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Mostrar secciones hijas si hay una sección seleccionada, de lo contrario mostrar las secciones padres -->
+  <ng-container *ngIf="selectedSection; else parentCards">
+
+    <div
+      class="portal-menu-tabs"
+      role="tablist"
+      [attr.aria-label]="'Menús de ' + selectedSection.title"
+      *ngIf="selectedSection.menuTabs.length > 0"
+    >
+      <button
+        type="button"
+        role="tab"
+        class="portal-menu-tab"
+        *ngFor="let tab of selectedSection.menuTabs"
+        [class.portal-menu-tab--active]="selectedMenuTab?.id === tab.id"
+        [attr.aria-selected]="selectedMenuTab?.id === tab.id"
+        (click)="onMenuTabClick(tab)"
+      >
+        <i
+          *ngIf="tab.icon"
+          [class]="'dx-icon dx-icon-' + tab.icon"
+        ></i>
+
+        <span>
+          {{ tab.title }}
+        </span>
+      </button>
+    </div>
+
+    <p
+      class="portal-empty portal-empty--inline"
+      *ngIf="selectedSection.menuTabs.length === 0"
+    >
+      No hay menús autorizados en esta sección.
+    </p>
+
+    <div class="cards-grid" *ngIf="activeChildren.length > 0">
+
+      <button
+        type="button"
+        *ngFor="let child of activeChildren"
+        class="portal-card"
+        [attr.data-section]="selectedSection.id"
+        (click)="onChildClick(child)"
+        [disabled]="child.disabled"
+        [class.portal-card--disabled]="child.disabled"
+      >
+        <span
+          class="favorite-icon"
+          [class.favorite-icon--active]="child.isFavorite"
+          [title]="child.isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'"
+          (click)="onFavoriteClick(child, $event)"
+        >
+          <i [ngClass]="child.isFavorite ? 'pi pi-star-fill' : 'pi pi-star'"></i>
+        </span>
+
+        <span class="icon-circle">
+          <i [class]="'dx-icon dx-icon-' + child.icon"></i>
+        </span>
+
+        <span class="card-body">
+
+          <span class="card-title">
+            {{ child.title }}
+          </span>
+
+          <span class="card-subtitle">
+            {{ child.disabled ? 'Stand by' : 'Ver módulo' }}
+          </span>
+
+        </span>
+
+        <span class="card-arrow">
+          <i class="dx-icon dx-icon-chevronnext"></i>
+        </span>
+
+      </button>
+
+    </div>
+
+    <p
+      class="portal-empty portal-empty--inline"
+      *ngIf="selectedSection.menuTabs.length > 0 && activeChildren.length === 0"
+    >
+      No hay opciones autorizadas en este menú.
+    </p>
+
+  </ng-container>
+
+  <ng-template #parentCards>
+
+    <p class="portal-empty" *ngIf="sections.length === 0">
+      No hay módulos autorizados para tu usuario en este portal.
+    </p>
+
+    <div class="favorites-header">
+      <i class="pi pi-folder-open"></i>
+        <span>
+          Módulos
+        </span>
+    </div>
+
+    <div class="cards-grid" *ngIf="sections.length > 0">
+
+      <button
+        type="button"
+        *ngFor="let section of sections"
+        class="portal-card"
+        [attr.data-section]="section.id"
+        (click)="onParentClick(section)"
+      >
+
+        <span class="icon-circle">
+          <i [class]="'dx-icon dx-icon-' + section.icon"></i>
+        </span>
+
+        <span class="card-body">
+
+          <span class="card-title">
+            {{ section.title }}
+          </span>
+
+          <span class="card-subtitle">
+            Ver módulos
+          </span>
+
+        </span>
+
+        <span class="card-arrow">
+          <i class="dx-icon dx-icon-chevronnext"></i>
+        </span>
+
+      </button>
+
+    </div>
+
+  </ng-template>
+
+</section>

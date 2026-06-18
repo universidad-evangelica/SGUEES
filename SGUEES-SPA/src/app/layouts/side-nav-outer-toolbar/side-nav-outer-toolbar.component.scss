@@ -10,7 +10,7 @@
 .layout-body {
   flex: 1;
   min-height: 0;
-  background-color: var(--background-color);
+  background-color: var(--sguees-page-bg, var(--background-color));
 
   ::ng-deep {
     .dx-drawer-wrapper {
@@ -23,7 +23,6 @@
       height: 100%;
     }
 
-    // Permitir que el drawer controle el ancho automáticamente
     .dx-drawer-shrink .dx-drawer-content {
       overflow-x: hidden;
     }
@@ -31,11 +30,6 @@
     .dx-scrollview {
       height: 100%;
     }
-  }
-
-  .content-wrapper {
-    padding: 20px;
-    box-sizing: border-box;
   }
 }
 

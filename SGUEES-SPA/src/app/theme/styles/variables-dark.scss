@@ -1,15 +1,16 @@
 @use "variables-mixin" as * with ($theme-mode: "dark");
+@use "sguees-dark-premium.scss";
 
-$primary-color: #1976d2; // Púrpura Material
-$secondary-color: #212121; // Fondo oscuro
-$text-color: #EDE7F6;
-$accent-color: #FF4081; // Rosa Material
+:root {
+  --sguees-page-bg: var(--sguees-page-bg-dark, #1a1d21);
+  --sguees-text-primary: var(--sguees-text-primary-dark, #e8eaed);
+}
 
 body {
-  background-color: $secondary-color;
-  color: $text-color;
+  background-color: var(--sguees-page-bg);
+  color: var(--sguees-text-primary);
 }
 
 a {
-  color: $primary-color;
+  color: var(--accent-color);
 }

@@ -1,0 +1,137 @@
+// Fase 7D — Enterprise content container (referencia sc-test-view / sc-test-view__grid-wrap)
+
+.sguees-enterprise-shell {
+  box-sizing: border-box;
+  min-height: 100%;
+  padding: var(--page-padding, var(--sguees-space-5));
+  background-color: var(--sguees-page-bg, var(--background-color, var(--typography-bg)));
+}
+
+.sguees-enterprise-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--content-padding, var(--sguees-space-4));
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: visible;
+  padding: 0;
+}
+
+// Anula padding horizontal legacy de .view-wrapper global
+.sguees-enterprise-content.view-wrapper {
+  padding: 0;
+  overflow: visible;
+}
+
+// Host del componente enrutado (barra + form + grid)
+.sguees-enterprise-content router-outlet + * {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  flex: 1;
+}
+
+// CRUDs con .view-wrapper interno (com-proveedor, etc.)
+.sguees-enterprise-content router-outlet + * > .view-wrapper.list-page,
+.sguees-enterprise-content router-outlet + * > .view-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+}
+
+// Fase 8 — grid unificado (barra oculta en browse header-only)
+.sguees-enterprise-content router-outlet + * > app-data-grid-mtto.sguees-data-grid-mtto-host--unified:first-child,
+.sguees-enterprise-content router-outlet + * .view-wrapper > app-data-grid-mtto.sguees-data-grid-mtto-host--unified:first-child,
+.sguees-enterprise-content router-outlet + * > app-barra-data-mtto.sguees-barra-mtto--header-only-browse-hidden + app-data-grid-mtto.sguees-data-grid-mtto-host--unified {
+  margin-top: 0;
+}
+
+.sguees-enterprise-content router-outlet + * > app-barra-data-mtto.sguees-barra-mtto--header-only-browse-hidden + app-data-grid-mtto .sguees-grid-unified-module {
+  border-radius: var(--sguees-radius-lg);
+  box-shadow: var(--sguees-shadow-md);
+}
+
+// —— Módulo browse legacy: barra + grid como unidad ——
+.sguees-enterprise-content router-outlet + * > app-barra-data-mtto.sguees-mtto-chrome + app-data-grid-mtto,
+.sguees-enterprise-content router-outlet + * .view-wrapper > app-barra-data-mtto.sguees-mtto-chrome + app-data-grid-mtto {
+  margin-top: 0;
+}
+
+.sguees-enterprise-content router-outlet + * > app-barra-data-mtto.sguees-mtto-chrome:has(+ app-data-grid-mtto),
+.sguees-enterprise-content router-outlet + * .view-wrapper > app-barra-data-mtto.sguees-mtto-chrome:has(+ app-data-grid-mtto) {
+  border-radius: var(--sguees-radius-lg) var(--sguees-radius-lg) 0 0;
+  box-shadow: var(--sguees-shadow-md);
+  border-bottom: none;
+}
+
+.sguees-enterprise-content router-outlet + * > app-barra-data-mtto.sguees-mtto-chrome:has(+ app-data-grid-mtto) + app-data-grid-mtto .sguees-grid-module-card,
+.sguees-enterprise-content router-outlet + * .view-wrapper > app-barra-data-mtto.sguees-mtto-chrome:has(+ app-data-grid-mtto) + app-data-grid-mtto .sguees-grid-module-card {
+  box-shadow: none;
+  border-radius: 0 0 var(--sguees-radius-lg) var(--sguees-radius-lg);
+}
+
+// Fase 8B2 — unified standalone: radius completo (posterior a split legacy Fase 7)
+.sguees-enterprise-content router-outlet + * app-data-grid-mtto.sguees-data-grid-mtto-host--unified .sguees-grid-unified-module--standalone,
+.sguees-enterprise-content router-outlet + * .view-wrapper app-data-grid-mtto.sguees-data-grid-mtto-host--unified .sguees-grid-unified-module--standalone,
+.sguees-data-grid-mtto-host.sguees-data-grid-mtto-host--unified .sguees-grid-module-card.sguees-grid-unified-module--standalone {
+  border-radius: var(--sguees-radius-lg);
+  overflow: hidden;
+}
+
+// Grid sin barra (edge case)
+.sguees-enterprise-content router-outlet + * > app-data-grid-mtto:first-child .sguees-grid-module-card,
+.sguees-enterprise-content router-outlet + * .view-wrapper > app-data-grid-mtto:first-child .sguees-grid-module-card {
+  border-radius: var(--sguees-radius-lg);
+  box-shadow: var(--sguees-shadow-md);
+}
+
+// —— Formulario edición: separación clara header → form ——
+.sguees-enterprise-content router-outlet + * > app-barra-data-mtto + .content-block.dx-card,
+.sguees-enterprise-content router-outlet + * .view-wrapper > app-barra-data-mtto + .content-block.dx-card,
+.sguees-enterprise-content router-outlet + * > app-barra-data-mtto + div:has(.dx-form),
+.sguees-enterprise-content router-outlet + * .view-wrapper > app-barra-data-mtto + div:has(.dx-form) {
+  margin-top: var(--sguees-space-4);
+}
+
+.sguees-enterprise-content router-outlet + * > .content-block.dx-card,
+.sguees-enterprise-content router-outlet + * .view-wrapper > .content-block.dx-card {
+  margin-bottom: 0;
+}
+
+// sc-test: padding externo lo provee el shell
+app-sc-test .sc-test-view {
+  padding: 0;
+  gap: var(--content-padding, var(--sguees-space-4));
+  min-height: 0;
+}
+
+app-sc-test .sc-test-view__grid-wrap.dx-card {
+  border-radius: var(--sguees-radius-lg);
+  box-shadow: var(--sguees-shadow-md);
+  border: 1px solid var(--sguees-border-subtle, var(--border-color));
+  background: var(--sguees-surface-card, var(--card-background));
+}
+
+@media (max-width: 991.98px) {
+  .sguees-enterprise-shell {
+    padding: var(--sguees-space-4);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .sguees-enterprise-shell {
+    padding: var(--sguees-space-3);
+  }
+}

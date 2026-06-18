@@ -1,0 +1,86 @@
+// Fase 6B — Módulo mantenimiento (toolbar + grid como unidad visual)
+
+.sguees-mtto-chrome {
+  background: var(--sguees-surface-card, var(--card-background));
+  border: 1px solid var(--sguees-border-subtle, var(--border-color));
+  border-radius: var(--sguees-radius-lg) var(--sguees-radius-lg) 0 0;
+  box-shadow: var(--sguees-shadow-sm);
+  overflow: hidden;
+
+  .sguees-barra-mtto {
+    margin-bottom: 0;
+  }
+
+  .sguees-page-header {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding: var(--sguees-space-4) var(--sguees-space-5) var(--sguees-space-3);
+  }
+
+  .sguees-page-header--enterprise {
+    padding: var(--sguees-space-4) var(--sguees-space-5);
+    border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+  }
+
+  .sguees-barra-toolbar {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .sguees-barra-toolbar:not(.sguees-barra-toolbar--inline) {
+    border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
+    background: var(--sguees-surface-subtle, var(--background-gray-color));
+  }
+}
+
+// Fase 7B — contenedor grid premium (referencia sc-test-view__grid-wrap)
+.sguees-grid-view-wrap {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sguees-data-grid-mtto-host .sguees-grid-module-card {
+  background: var(--sguees-surface-card, var(--card-background));
+  border: 1px solid var(--sguees-border-subtle, var(--border-color));
+  border-top: none;
+  border-radius: 0 0 var(--sguees-radius-lg) var(--sguees-radius-lg);
+  box-shadow: var(--sguees-shadow-sm);
+  padding: var(--sguees-space-3);
+  overflow: hidden;
+}
+
+.sguees-mtto-chrome:not(:has(+ .sguees-data-grid-mtto-host)) {
+  border-radius: var(--sguees-radius-lg);
+}
+
+.sguees-data-grid-mtto-host:not(.sguees-mtto-chrome + *) .sguees-grid-module-card {
+  border-radius: var(--sguees-radius-lg);
+  border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
+}
+
+.sguees-grid-module-card__skeleton {
+  position: absolute;
+  inset: var(--sguees-space-3);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sguees-space-2);
+  border-radius: var(--sguees-radius-md);
+  pointer-events: none;
+  opacity: 0.9;
+  background: color-mix(in srgb, var(--sguees-surface-card, var(--card-background)) 88%, transparent);
+}
+
+.sguees-grid-module-card {
+  position: relative;
+}
+
+.sguees-grid-module-card--loading .dx-datagrid {
+  opacity: 0.45;
+  pointer-events: none;
+}

@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { Routes, RouterModule } from '@angular/router';
+import { CommonModule } from '@angular/common';
 //import { BrowserModule } from '@angular/platform-browser';
 import { LoginFormComponent } from './shared/components/library/login-form/login-form.component';
 import { ResetPasswordFormComponent } from './shared/components/library/reset-password-form/reset-password-form.component';
@@ -26,6 +27,9 @@ import { UserProfileComponent } from './pages/Samples/user-profile/user-profile.
 import { AiDemoComponent } from './components/ai-demo/ai-demo.component';
 import { OptionsQaComponent } from './components/options-qa/options-qa.component';
 
+//primerng
+import { ToastModule } from 'primeng/toast';
+
 const routes: Routes = [
 	{
 		path: 'home',
@@ -47,21 +51,6 @@ const routes: Routes = [
     component: ResetPasswordFormComponent,
     canActivate: [AuthGuardService],
   },
-	{
-		path: 'accounting',
-		canActivate: [AuthGuardService],
-		loadChildren: () => import('./pages/Accounting/accounting.module').then(m => m.AccountingModule)
-	},
-	{
-		path: 'general',
-		canActivate: [AuthGuardService],
-		loadChildren: () => import('./pages/General/general.module').then(m => m.GeneralModule)
-	},
-	{
-		path: 'selection-hiring',
-		canActivate: [AuthGuardService],
-		loadChildren: () => import('./pages/SelectionHiring/selection-hiring.module').then(m => m.SelectionHiringModule)
-	},
   {
     path: 'crm-contact-list',
     component: CrmContactListComponent,
@@ -214,7 +203,9 @@ const routes: Routes = [
 
 @NgModule({
   imports: [
-    RouterModule.forRoot(routes, { useHash: false, preloadingStrategy: PreloadService })
+    RouterModule.forRoot(routes, { useHash: false, preloadingStrategy: PreloadService }),
+    CommonModule, //para poder usar ngIf y ngFor en el html
+    ToastModule, //para poder usar p-toast
   ],
   providers: [AuthGuardService],
   exports: [RouterModule],

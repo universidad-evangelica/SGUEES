@@ -1,0 +1,72 @@
+@use "../../../../variables.scss" as *;
+
+:host {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+
+.sc-test-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--content-padding);
+  min-height: 0;
+  padding: var(--page-padding);
+  box-sizing: border-box;
+}
+
+.sc-test-view__grid-wrap {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sc-test-grid {
+  flex: 1;
+  min-height: 0;
+
+  ::ng-deep {
+    .dx-datagrid-header-panel {
+      padding: 0 var(--content-padding);
+    }
+
+    .dx-toolbar {
+      margin-bottom: 0;
+      padding: var(--toolbar-margin-bottom) 0;
+    }
+
+    .dx-datagrid-content .dx-row {
+      cursor: pointer;
+    }
+
+    .dx-datagrid-headers {
+      font-weight: 600;
+    }
+  }
+}
+
+.sc-test-form-popup__body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 8px 4px 4px;
+}
+
+.sc-test-form-popup__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+@media (max-width: 640px) {
+  .sc-test-form-popup__actions {
+    flex-direction: column-reverse;
+
+    ::ng-deep .dx-button {
+      width: 100%;
+    }
+  }
+}

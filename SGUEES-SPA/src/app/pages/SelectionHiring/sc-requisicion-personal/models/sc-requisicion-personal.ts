@@ -1,0 +1,30 @@
+export interface ScRequisicionPersonal {
+    CORR_EMPRESA: number;
+    CORR_REQUISICION: number;
+    FECHA_REQUISICION: Date;
+    USUARIO_SOLICITA: string;
+    CORR_TIPO_PLAZA: number;
+    CANTIDAD_CONTRATACION: number;
+    CORR_DEPTO: number;
+    CORR_PUESTO: number;
+    SUELDO_PLAZA: number;
+    CORR_TIPO_CONTRATACION: number;
+    TIEMPO_CONTRATO: string;
+    TIEMPO_LABORAL: string;
+    HORARIO: string;
+    CORR_TIPO_VACANTE: number;
+    CORR_EMPLEADO_SUSTITUCION: number;
+    RAZON_TIPO_VACANTE: string;
+    JUSTIFICACION: string;
+    ESTADO_REQUISICION: string;
+    CORR_DESCRIPTOR: number;
+    CORR_MODALIDAD_TRABAJO: number;
+    FECHA_INI_EVEN: Date;
+    FECHA_FIN_EVEN: Date;
+    USUARIO_CREA: string;
+    FECHA_CREA: Date;
+    ESTACION_CREA: string;
+    USUARIO_ACTU: string;
+    FECHA_ACTU: Date;
+    ESTACION_ACTU: string;
+}

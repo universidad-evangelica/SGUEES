@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using NetCore.AutoRegisterDi;
+using sguees.api.Data;
+using sguees.api.Shared;
+
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
@@ -16,6 +19,10 @@ builder.Services.AddControllers()
                     options.JsonSerializerOptions.Converters.Add(new DateTimeConverter());    
                     options.JsonSerializerOptions.Converters.Add(new StringConverter());    
                 });
+
+//Mapeo archivo ApplicacionDataContext que contiene los servicios de acceso a datos
+builder.Services.AddScoped<ApplicationDataContext>();
+
 // Bind AI options and register model router (from eFrameworkAPI options)
 var aiOptions = new eFrameworkAPI.Core.Options.AIOptions();
 builder.Configuration.GetSection(eFrameworkAPI.Core.Options.AIOptions.SectionName).Bind(aiOptions);
@@ -34,8 +41,8 @@ builder.Services.AddSingleton<eFrameworkAPI.Core.AI.IAIProvider, eFrameworkAPI.C
 builder.Services.AddSingleton<eFrameworkAPI.Core.QA.IOptionsQAEvaluator, eFrameworkAPI.Core.QA.OptionsQAEvaluator>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-// builder.Services.AddEndpointsApiExplorer();
-// builder.Services.AddSwaggerGen();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 builder.Services.RegisterAssemblyPublicNonGenericClasses()
             .Where(c => c.Name.EndsWith("Repository") || c.Name.EndsWith("Service") )
@@ -69,8 +76,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    // app.UseSwagger();
-    // app.UseSwaggerUI();
+    app.UseSwagger();
+    app.UseSwaggerUI();
     app.UseDeveloperExceptionPage();
 }
 else
@@ -92,10 +99,17 @@ else
 }
 
 // app.UseHttpsRedirection();
-app.UseCors(options => options.AllowAnyOrigin()
-            // options.WithOrigins(builder.Configuration.GetSection("AppSetting:clientURL").Value)
+
+// CORS: restringir a orígenes permitidos desde appsettings
+var allowedOrigins = builder.Configuration.GetSection("AppSetting:AllowedOrigins").Get<string[]>()
+    ?? new[] { builder.Configuration.GetSection("AppSetting:clientURL").Value ?? "http://localhost:4200" };
+
+app.UseCors(options => options.WithOrigins(allowedOrigins)
             .AllowAnyMethod()
             .AllowAnyHeader());
+
+// Rate limiting para endpoints públicos (login, reset password)
+app.UseMiddleware<RateLimitingMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();

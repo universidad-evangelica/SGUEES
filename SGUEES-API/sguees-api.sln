@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SGUEES.api", "sguees.api\csuees.api.csproj", "{D84DEF31-E818-4256-837E-DDF6E1594F37}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SGUEES.api", "sguees.api\sguees.api.csproj", "{D84DEF31-E818-4256-837E-DDF6E1594F37}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "eFramework", "eFramework\eFramework.csproj", "{95703916-5F64-422A-B196-628A0C491F84}"
 EndProject

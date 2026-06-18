@@ -4,7 +4,8 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ValidationCallbackData } from 'devextreme-angular/common';
 import { DxFormModule } from 'devextreme-angular/ui/form';
 import { DxLoadIndicatorModule } from 'devextreme-angular/ui/load-indicator';
-import notify from 'devextreme/ui/notify';
+import { MessageService } from 'primeng/api';
+import { ToastModule } from 'primeng/toast';
 import { AuthService } from 'src/app/shared/services';
 
 const notificationText = 'Si el usuario existe, enviamos un correo con el enlace para restablecer la contraseña.';
@@ -25,9 +26,17 @@ export class ResetPasswordFormComponent implements OnInit {
 
   loading = false;
 
+  /** Estado visual tras envío exitoso del correo de recuperación (solo flujo email). */
+  emailRequestSent = false;
+
   formData: any = {};
 
-  constructor(private authService: AuthService, private router: Router, private route: ActivatedRoute) { }
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private route: ActivatedRoute,
+    private messageService: MessageService
+  ) { }
 
   async onSubmit(e: Event) {
     e.preventDefault();
@@ -44,22 +53,43 @@ export class ResetPasswordFormComponent implements OnInit {
     this.loading = false;
 
     if (result.isOk) {
-      this.router.navigate([this.buttonLink]);
-      notify(
-        this.isTokenFlow
-          ? 'Contraseña restablecida correctamente. Inicia sesión con tu nueva clave.'
-          : notificationText,
-        'success',
-        3000
-      );
+      if (this.isTokenFlow) {
+        this.showToast(
+          'success',
+          'Éxito',
+          'Contraseña restablecida correctamente. Inicia sesión con tu nueva clave.',
+          3000
+        );
+        setTimeout(() => {
+          this.router.navigate([this.buttonLink]);
+        }, 2000);
+      } else {
+        this.emailRequestSent = true;
+        this.showToast('success', 'Éxito', notificationText, 3000);
+      }
     } else {
       const genericResetError = 'No fue posible restablecer la contraseña';
       const message = this.isTokenFlow && (!result.message || result.message === genericResetError)
         ? 'No fue posible restablecer la contraseña. Solicita un nuevo enlace de recuperación e inténtalo nuevamente.'
         : result.message;
 
-      notify(message, 'error', 3000);
+      this.showToast('error', 'Error', message, 6000);
     }
+  }
+
+  private showToast(
+    severity: 'success' | 'error' | 'warn' | 'info',
+    summary: string,
+    detail: string,
+    life: number
+  ): void {
+    this.messageService.clear();
+    this.messageService.add({
+      severity,
+      summary,
+      detail,
+      life
+    });
   }
 
   confirmPassword = (e: ValidationCallbackData) => e.value === this.formData.password;
@@ -81,6 +111,7 @@ export class ResetPasswordFormComponent implements OnInit {
     RouterModule,
     DxFormModule,
     DxLoadIndicatorModule,
+    ToastModule,
   ],
   declarations: [ResetPasswordFormComponent],
   exports: [ResetPasswordFormComponent],

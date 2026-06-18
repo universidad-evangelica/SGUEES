@@ -18,6 +18,7 @@ import { AppHeaderModule } from 'src/app/shared/components/library/app-header/ap
 import { AppFooterModule } from 'src/app/shared/components/library/app-footer/app-footer.component';
 
 import { Subscription } from 'rxjs';
+import { debounceTime } from 'rxjs/operators';
 
 @Component({
   selector: 'app-side-nav-outer-toolbar',
@@ -61,7 +62,9 @@ export class SideNavOuterToolbarComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.menuOpened = this.screen.sizes['screen-large'];
 
-    this.screenSubscription = this.screen.changed.subscribe(() => this.updateDrawer());
+    this.screenSubscription = this.screen.screenChanged
+      .pipe(debounceTime(200))
+      .subscribe(() => this.updateDrawer());
 
     this.updateDrawer();
   }
@@ -75,12 +78,25 @@ export class SideNavOuterToolbarComponent implements OnInit, OnDestroy {
     const isXSmall = this.screen.sizes['screen-x-small'];
     const isLarge = this.screen.sizes['screen-large'];
 
-    // Usar shrink en pantallas grandes para que el contenido se ajuste automáticamente
-    this.menuMode = isLarge ? 'shrink' : 'overlap';
-    this.menuRevealMode = isLarge ? 'expand' : 'slide';
+    const menuMode: DxDrawerTypes.OpenedStateMode = isLarge ? 'shrink' : 'overlap';
+    const menuRevealMode: DxDrawerTypes.RevealMode = isLarge ? 'expand' : 'slide';
+    const maxMenuSize = isLarge ? 340 : isXSmall ? 280 : 320;
+    const shaderEnabled = !isLarge;
+
+    if (
+      this.menuMode === menuMode &&
+      this.menuRevealMode === menuRevealMode &&
+      this.maxMenuSize === maxMenuSize &&
+      this.shaderEnabled === shaderEnabled
+    ) {
+      return;
+    }
+
+    this.menuMode = menuMode;
+    this.menuRevealMode = menuRevealMode;
     this.minMenuSize = 0;
-    this.maxMenuSize = isLarge ? 340 : (isXSmall ? 280 : 320);
-    this.shaderEnabled = !isLarge;
+    this.maxMenuSize = maxMenuSize;
+    this.shaderEnabled = shaderEnabled;
   }
 
   get hideMenuAfterNavigation() {

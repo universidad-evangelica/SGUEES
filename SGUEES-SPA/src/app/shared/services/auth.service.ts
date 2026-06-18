@@ -4,7 +4,7 @@ import { environment } from 'src/environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { map } from 'rxjs/operators';
-import { Observable, lastValueFrom } from 'rxjs';
+import { Observable, lastValueFrom, of } from 'rxjs';
 import notify from 'devextreme/ui/notify';
 
 const defaultPath = '/';
@@ -93,20 +93,11 @@ export class AuthService {
                 localStorage.setItem('token', response.Data.TOKEN);
                 this.decodedToken = this.jwtHelper.decodeToken(response.Data.TOKEN);
                 this.mainMenu = response.Data.OPCIONES;
+                console.log(this.mainMenu)
               }
               // Siempre retornar la respuesta completa (incluyendo REQUIERE_CAMBIO_CLAVE)
             } else {
-              notify(
-                {
-                  message: response.ErrorMessage,
-                  width: 'auto',
-                  shading: false,
-                  closeOnClick: true,
-                  closeOnOutsideClick: true,
-                },
-                'error',
-                500000
-              );
+              // El componente de login muestra el mensaje al usuario.
             }
 					}
 					return response;
@@ -217,8 +208,69 @@ export class AuthService {
 		this.router.navigate(['/login-form']);
 	}
 
-	getMenu(): Observable<any[]> {
-		return this.http.get<any[]>(this.urlMtto + 'menu/', {});
+	getMenu(): Observable<any> {
+		return this.http.get<any>(this.urlMtto + 'menu/', {}).pipe(
+			map((response: any) => {
+				if (Array.isArray(response?.Data)) {
+					this.mainMenu = response.Data;
+				}
+
+				return response;
+			})
+		);
+	}
+
+	getMainMenu(): Observable<any[]> {
+		if (Array.isArray(this.mainMenu)) {
+			return of(this.mainMenu);
+		}
+
+		return this.getMenu().pipe(
+			map((response: any) => response?.Data ?? [])
+		);
+	}
+
+  //seccion para mostrar los modulos en el home dependiendo de los permisos del usuario
+  /** Misma regla que CBaseComponent / Home: permiso de lectura en el JWT. */
+	hasReadPermission(permissionKey: string): boolean {
+		const token = this.decodedToken;
+		if (!token || !this.loggedIn) {
+			return false;
+		}
+
+		const perm = token[permissionKey];
+		return typeof perm === 'string' && perm.includes('R');
+	}
+
+	/** Claves posibles para una URL (ruta completa, hoja, primer segmento). */
+	resolvePermissionKeysFromUrl(url: string): string[] {
+		const path = url.split('?')[0];
+		const segments = path.split('/').filter(Boolean);
+		const keys: string[] = [];
+
+		if (segments.length === 0) {
+			return ['/'];
+		}
+
+		keys.push('/' + segments.join('/'));
+		keys.push('/' + segments[segments.length - 1]);
+		keys.push('/' + segments[0]);
+
+		return [...new Set(keys)];
+	}
+
+	canAccessUrl(url: string): boolean {
+		const path = url.split('?')[0];
+
+		if (path === '/' || path === '/home') {
+			return true;
+		}
+
+		if (path === '/profile' || path.startsWith('/profile/')) {
+			return true;
+		}
+
+		return this.resolvePermissionKeysFromUrl(path).some((key) => this.hasReadPermission(key));
 	}
 }
 
