@@ -1,0 +1,25 @@
+.toolbar-modulos {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.periodo-seleccionado {
+	width: 100%;
+	margin-bottom: 4px;
+}
+
+.modulo-group {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	border: 1px solid var(--dx-color-border, #ddd);
+	border-radius: 4px;
+}
+
+.modulo-label {
+	min-width: 90px;
+	font-weight: 600;
+}

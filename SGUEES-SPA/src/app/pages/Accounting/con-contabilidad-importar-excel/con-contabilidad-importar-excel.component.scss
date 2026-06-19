@@ -1,0 +1,45 @@
+.import-shell {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.import-help {
+	margin: 0;
+	font-size: 0.92rem;
+	opacity: 0.9;
+}
+
+.import-format {
+	display: grid;
+	gap: 6px;
+	font-size: 0.82rem;
+	opacity: 0.85;
+}
+
+.import-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	align-items: flex-end;
+}
+
+.import-field {
+	min-width: 280px;
+}
+
+.import-field--file {
+	flex: 1 1 320px;
+}
+
+.import-field label {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: 500;
+}
+
+.import-actions {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}

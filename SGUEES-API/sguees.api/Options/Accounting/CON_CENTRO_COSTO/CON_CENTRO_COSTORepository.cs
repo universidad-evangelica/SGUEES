@@ -244,5 +244,97 @@ namespace sguees.Repositories
 			
 			return objResultado;
 		}
+
+		public async Task<CResult> ImportarExcelAsync(CON_CENTRO_COSTO_IMPORTParam Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			CResult objResultado = new();
+			try
+			{
+				if (Data.Rows == null || Data.Rows.Count == 0)
+				{
+					objResultado.Data = 0;
+					objResultado.Result = true;
+					objResultado.RowsAffected = 0;
+					objResultado.ErrorCode = 0;
+					objResultado.ErrorMessage = "";
+					return objResultado;
+				}
+
+				int importados = 0;
+				var errores = new System.Collections.Generic.List<string>();
+
+				foreach (var row in Data.Rows.Where(r => !string.IsNullOrWhiteSpace(r.NOMBRE_CENTRO) || !string.IsNullOrWhiteSpace(r.CODIGO_CENTRO_COSTO)))
+				{
+					var entity = new CON_CENTRO_COSTOTable
+					{
+						CORR_EMPRESA = Data.CORR_EMPRESA,
+						CORR_CENTRO_COSTO = row.CORR_CENTRO_COSTO,
+						NOMBRE_CENTRO = (row.NOMBRE_CENTRO ?? "").Trim(),
+						CUENTA_CONTABLE = (row.CUENTA_CONTABLE ?? "").Trim(),
+						CODIGO_CENTRO_COSTO = (row.CODIGO_CENTRO_COSTO ?? "").Trim(),
+						CORR_TIPO_CENTRO_COSTO = row.CORR_TIPO_CENTRO_COSTO > 0 ? row.CORR_TIPO_CENTRO_COSTO : 1,
+						ESTADO_CENTRO_COSTO = string.IsNullOrWhiteSpace(row.ESTADO_CENTRO_COSTO) ? "AC" : row.ESTADO_CENTRO_COSTO.Trim(),
+						CORR_UNIDAD_NEGOCIO = row.CORR_UNIDAD_NEGOCIO,
+						CORR_AREA_FUNCIONAL = row.CORR_AREA_FUNCIONAL,
+						CODIGO_TERMINACION = (row.CODIGO_TERMINACION ?? "").Trim(),
+						CORR_EMPLEADO_JEFE = row.CORR_EMPLEADO_JEFE,
+						CORR_CLIENTE = row.CORR_CLIENTE,
+						FECHA_INICIAL = row.FECHA_INICIAL ?? System.DateTime.Today,
+						FECHA_FINAL = row.FECHA_FINAL ?? new System.DateTime(9999, 12, 31),
+					};
+
+					CResult result;
+					if (row.CORR_CENTRO_COSTO > 0)
+					{
+						var pExists = new List<CParameter>
+						{
+							new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+							new CParameter() { ParameterName = "CORR_CENTRO_COSTO", Value = row.CORR_CENTRO_COSTO, DbType = System.Data.DbType.Int32 },
+						};
+						var existing = await GetAsync(pExists);
+						result = existing.Result && existing.Data != null
+							? await UpdateAsync(entity, vLOGIN_SISTEMA, vESTACION)
+							: await CreateAsync(entity, vLOGIN_SISTEMA, vESTACION);
+					}
+					else
+					{
+						result = await CreateAsync(entity, vLOGIN_SISTEMA, vESTACION);
+					}
+
+					if (result.Result)
+					{
+						importados++;
+					}
+					else if (errores.Count < 10)
+					{
+						var key = string.IsNullOrWhiteSpace(entity.CODIGO_CENTRO_COSTO)
+							? entity.NOMBRE_CENTRO
+							: entity.CODIGO_CENTRO_COSTO;
+						errores.Add($"{key}: {result.ErrorMessage}");
+					}
+				}
+
+				objResultado.Data = importados;
+				objResultado.Result = errores.Count == 0;
+				objResultado.RowsAffected = importados;
+				objResultado.ErrorCode = errores.Count == 0 ? 0 : -1;
+				objResultado.ErrorMessage = errores.Count == 0
+					? ""
+					: $"Importados {importados}. Errores: {string.Join(" | ", errores)}";
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
 	}
 }

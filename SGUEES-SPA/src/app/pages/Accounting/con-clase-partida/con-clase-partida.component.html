@@ -1,0 +1,39 @@
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="permiteAdd"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+>
+</app-barra-data-mtto>
+<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+	</dx-form>
+</div>
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="'CORR_CLASE_PARTIDA'"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>

@@ -1,0 +1,104 @@
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="permiteAdd"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+>
+</app-barra-data-mtto>
+<div *ngIf="!isBrowse()">
+	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+		<div *dxTemplate="let cellInfo of 'CLASE_RUBROLookup'">
+			<app-data-lookup
+				[model]="mCLASE_RUBRO"
+				[(value)]="model.CLASE_RUBRO"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+	</dx-form>
+	<dx-tab-panel #tabPanel [selectedIndex]="0">
+		<dxi-item title="Detalle Niveles" [icon]="'hierarchy'">
+			<div class="dx-grid-deta">
+				<dx-data-grid
+					#gridNiveles
+					[dataSource]="niveles"
+					keyExpr="NIVEL"
+					[columnAutoWidth]="false"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[focusedRowEnabled]="true"
+					[height]="'100%'"
+					[width]="'40%'"
+					(onRowInserting)="nivelRowInserting($event)"
+					(onRowUpdated)="nivelRowUpdated($event)"
+					(onRowRemoving)="nivelRowRemoving($event)"
+				>
+					<dxo-toolbar>
+						<dxi-item location="before">
+							<div *dxTemplate>
+								<dx-button
+									icon="add"
+									text="Agregar Nivel"
+									type="success"
+									(onClick)="agregarNivel()"
+									[visible]="!readOnly"
+									[width]="160"
+								></dx-button>
+							</div>
+						</dxi-item>
+					</dxo-toolbar>
+					<dxo-editing
+						[mode]="'cell'"
+						[refreshMode]="'reshape'"
+						[allowUpdating]="!readOnly"
+						[allowDeleting]="!readOnly"
+						[useIcons]="true"
+					></dxo-editing>
+					<dxo-paging [enabled]="false"></dxo-paging>
+					<dxi-column type="buttons" [width]="100">
+						<dxi-button name="delete" [visible]="!readOnly"></dxi-button>
+					</dxi-column>
+					<dxi-column dataField="NIVEL" caption="Nivel" [width]="250" dataType="number"></dxi-column>
+					<dxi-column dataField="NUMERO_CARACTERES" caption="No. Caracteres" [width]="250" dataType="number"></dxi-column>
+					<dxo-summary>
+						<dxi-total-item column="NIVEL" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
+					</dxo-summary>
+				</dx-data-grid>
+			</div>
+		</dxi-item>
+	</dx-tab-panel>
+</div>
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="'CODIGO_RUBRO'"
+	[columnAutoWidth]="true"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>

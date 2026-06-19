@@ -1,0 +1,112 @@
+<h2 class="content-block">{{ tituloVentana }}</h2>
+
+<div class="content-block dx-card responsive-paddings filtros-card">
+	<div class="filtros">
+		<div class="filtro">
+			<div class="filtro-label">Fecha Inicial</div>
+			<dx-date-box
+				class="filtro-control"
+				[(value)]="vFECHA_INICIAL"
+				[useMaskBehavior]="true"
+				type="date"
+				displayFormat="dd/MM/yyyy"
+				[width]="220"
+				[height]="44"
+			></dx-date-box>
+		</div>
+		<div class="filtro">
+			<div class="filtro-label">Fecha Final</div>
+			<dx-date-box
+				class="filtro-control"
+				[(value)]="vFECHA_FINAL"
+				[useMaskBehavior]="true"
+				type="date"
+				displayFormat="dd/MM/yyyy"
+				[width]="220"
+				[height]="44"
+			></dx-date-box>
+		</div>
+		<div class="filtro-acciones">
+			<dx-button
+				class="filtro-btn"
+				text="Consultar"
+				type="default"
+				icon="search"
+				[width]="150"
+				[height]="44"
+				(onClick)="consultar()"
+			></dx-button>
+			<dx-button
+				class="filtro-btn"
+				[text]="getAccionLabel()"
+				type="success"
+				icon="check"
+				[width]="150"
+				[height]="44"
+				(onClick)="ejecutarOperacion()"
+			></dx-button>
+		</div>
+	</div>
+</div>
+
+<div class="content-block">
+	<dx-data-grid
+		[dataSource]="models"
+		[showBorders]="true"
+		[showColumnLines]="true"
+		[showRowLines]="true"
+		[rowAlternationEnabled]="true"
+		[hoverStateEnabled]="true"
+		[allowColumnResizing]="true"
+		[columnResizingMode]="'widget'"
+		[wordWrapEnabled]="false"
+		[height]="560"
+		[width]="'100%'"
+		[keyExpr]="['ANIO_PERIODO', 'MES_PERIODO', 'CORR_CLASE_PARTIDA', 'CORR_PARTIDA']"
+	>
+		<dxo-toolbar>
+			<dxi-item location="before">
+				<div *dxTemplate>
+					<dx-button icon="selectall" text="Todos" type="success" stylingMode="outlined" (onClick)="selectTodos()" width="110"></dx-button>
+				</div>
+			</dxi-item>
+			<dxi-item location="before">
+				<div *dxTemplate>
+					<dx-button text="Ninguno" icon="unselectall" type="danger" stylingMode="outlined" (onClick)="selectNinguno()" width="115"></dx-button>
+				</div>
+			</dxi-item>
+			<dxi-item name="searchPanel" location="after"></dxi-item>
+		</dxo-toolbar>
+		<dxo-editing mode="cell" [allowUpdating]="true" [useIcons]="true"></dxo-editing>
+		<dxo-search-panel [visible]="true" [width]="240"></dxo-search-panel>
+		<dxo-scrolling mode="virtual" useNative="true"></dxo-scrolling>
+		<dxo-paging [enabled]="false"></dxo-paging>
+
+		<dxi-column dataField="SELECCION" caption="Sel." [dataType]="'boolean'" [width]="70" [fixed]="true"></dxi-column>
+		<dxi-column dataField="ANIO_PERIODO" caption="Año" [width]="80" alignment="center"></dxi-column>
+		<dxi-column dataField="MES_PERIODO" caption="Mes" [width]="80" alignment="center"></dxi-column>
+		<dxi-column dataField="NOMBRE_CORTO_CLASE" caption="Clase" [width]="120"></dxi-column>
+		<dxi-column dataField="CORR_PARTIDA" caption="No. Partida" [width]="130" alignment="center"></dxi-column>
+		<dxi-column dataField="FECHA_PARTIDA" caption="Fecha" [dataType]="'date'" format="dd/MM/yyyy" [width]="120"></dxi-column>
+		<dxi-column dataField="NUMERO_DOCUMENTO" caption="No. Documento" [width]="180"></dxi-column>
+		<dxi-column dataField="NOMBRE_PARTIDA" caption="Concepto" [minWidth]="300"></dxi-column>
+		<dxi-column dataField="NOMBRE_ESTADO_PARTIDA" caption="Estado" [width]="140"></dxi-column>
+		<dxi-column dataField="MONTO_CARGO" caption="Cargo" [width]="140" [format]="'#,##0.00'" alignment="right"></dxi-column>
+		<dxi-column dataField="MONTO_ABONO" caption="Abono" [width]="140" [format]="'#,##0.00'" alignment="right"></dxi-column>
+
+		<dxo-summary>
+			<dxi-total-item column="CORR_PARTIDA" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
+			<dxi-total-item column="MONTO_CARGO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+			<dxi-total-item column="MONTO_ABONO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+		</dxo-summary>
+	</dx-data-grid>
+</div>
+
+<dx-load-panel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+></dx-load-panel>

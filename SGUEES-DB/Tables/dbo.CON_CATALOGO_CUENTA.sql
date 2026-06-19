@@ -97,8 +97,6 @@ AS
 	@numnull  int,
 	@errno    int,
 	@errmsg   varchar(255),
-	@CORR_SUSCRIPCION INT,
-	@CORR_CONFI_PAIS INT,
 	@CORR_EMPRESA int,
 	@CODIGO_RUBRO varchar(30),
 	@CUENTA_CONTABLE varchar(20),

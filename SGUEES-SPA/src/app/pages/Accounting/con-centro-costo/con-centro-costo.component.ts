@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+﻿import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
@@ -9,6 +10,8 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { ConCentroCosto } from './models/con-centro-costo';
 import { ConCentroCostoService } from './con-centro-costo.service';
+import { ConCentroCostoPresupuestoService } from '../con-centro-costo-presupuesto/con-centro-costo-presupuesto.service';
+import { ConCentroCostoPresupuesto } from '../con-centro-costo-presupuesto/models/con-centro-costo-presupuesto';
 
 @Component({
 	selector: 'app-con-centro-costo',
@@ -16,10 +19,12 @@ import { ConCentroCostoService } from './con-centro-costo.service';
 	styleUrls: ['./con-centro-costo.component.scss'],
 })
 export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
+	@ViewChild('gridPresupuesto', { static: false }) gridPresupuesto!: DxDataGridComponent;
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: ConCentroCostoService
+		private service: ConCentroCostoService,
+		private presupuestoService: ConCentroCostoPresupuestoService
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -32,9 +37,8 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 	mESTADO_CENTRO_COSTO: any;
 	mCORR_UNIDAD_NEGOCIO: any;
 	mCORR_AREA_FUNCIONAL: any;
-	mCORR_EMPLEADO_JEFE: any;
-	mCORR_CLIENTE: any;
 	readOnly = false;
+	presupuestos: ConCentroCostoPresupuesto[] = [];
 	// #endregion
 
 	//#region <Inicializando Opciones>
@@ -53,13 +57,11 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 		this.getESTADO_CENTRO_COSTO();
 		this.getCORR_UNIDAD_NEGOCIO();
 		this.getCORR_AREA_FUNCIONAL();
-		this.getCORR_EMPLEADO_JEFE();
-		this.getCORR_CLIENTE();
 	}
 
 	getCORR_TIPO_CENTRO_COSTO() {
 		this.appInfoService
-			.getLookUp('CON_CENTRO_COSTO', 'ADP_TIPO_CENTRO_COSTO', 'GetCORR_TIPO_CENTRO_COSTO', undefined, environment.UrlCONTABILIDADAPI)
+			.getLookUp('CON_CENTRO_COSTO', 'CON_LISTA', 'GetCORR_TIPO_CENTRO_COSTO', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -74,7 +76,7 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 	}
 	getESTADO_CENTRO_COSTO() {
 		this.appInfoService
-			.getLookUp('CON_CENTRO_COSTO', 'ADP_LISTA', 'GetESTADO_CENTRO_COSTO', undefined, environment.UrlCONTABILIDADAPI)
+			.getLookUp('CON_CENTRO_COSTO', 'CON_LISTA', 'GetESTADO_CENTRO_COSTO', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -89,7 +91,7 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 	}
 	getCORR_UNIDAD_NEGOCIO() {
 		this.appInfoService
-			.getLookUp('CON_CENTRO_COSTO', 'ADP_UNIDAD_NEGOCIO', 'GetCORR_UNIDAD_NEGOCIO', undefined, environment.UrlCONTABILIDADAPI)
+			.getLookUp('CON_CENTRO_COSTO', 'CON_LISTA', 'GetCORR_UNIDAD_NEGOCIO', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -104,42 +106,12 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 	}
 	getCORR_AREA_FUNCIONAL() {
 		this.appInfoService
-			.getLookUp('CON_CENTRO_COSTO', 'ADP_AREA_FUNCIONAL', 'GetCORR_AREA_FUNCIONAL', undefined, environment.UrlCONTABILIDADAPI)
+			.getLookUp('CON_CENTRO_COSTO', 'CON_LISTA', 'GetCORR_AREA_FUNCIONAL', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
 						this.mCORR_AREA_FUNCIONAL = response.Data;
-					}
-				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
-	}
-	getCORR_EMPLEADO_JEFE() {
-		this.appInfoService
-			.getLookUp('CON_CENTRO_COSTO', 'ADP_EMPLEADO_JEFE', 'GetCORR_EMPLEADO_JEFE', undefined, environment.UrlCONTABILIDADAPI)
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.mCORR_EMPLEADO_JEFE = response.Data;
-					}
-				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
-	}
-	getCORR_CLIENTE() {
-		this.appInfoService
-			.getLookUp('CON_CENTRO_COSTO', 'ADP_CLIENTE', 'GetCORR_CLIENTE', undefined, environment.UrlCONTABILIDADAPI)
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.mCORR_CLIENTE = response.Data;
 					}
 				},
 				error: (error: any) => {
@@ -283,6 +255,108 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_CENTRO_COSTO === this.modelUpdate.CORR_CENTRO_COSTO);
+		this.presupuestos = [];
+	}
+
+	override rowDblClick(e: any): void {
+		super.rowDblClick(e);
+		this.consultarPresupuestos();
+	}
+
+	override editarClick(e: any): void {
+		super.editarClick(e);
+		this.consultarPresupuestos();
+	}
+
+	override nuevo(): void {
+		super.nuevo();
+		this.presupuestos = [];
+	}
+
+	consultarPresupuestos() {
+		this.presupuestoService
+			.getAll({ CORR_CENTRO_COSTO: this.model.CORR_CENTRO_COSTO })
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.presupuestos = response.Data;
+					}
+				},
+				error: (error: any) => {
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
+	agregarPresupuesto() {
+		this.gridPresupuesto?.instance.addRow();
+	}
+
+	presupuestoRowInserting(e: any) {
+		const pres: any = {
+			CORR_EMPRESA: this.model.CORR_EMPRESA,
+			CORR_CENTRO_COSTO: this.model.CORR_CENTRO_COSTO,
+			NOMBRE_CENTRO: this.model.NOMBRE_CENTRO,
+			...e.data,
+		};
+		this.presupuestoService
+			.insert(pres)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response.Result) {
+						e.cancel = true;
+						this.notifyFx(response.ErrorMessage, NotifyType.Error);
+					} else {
+						this.consultarPresupuestos();
+					}
+				},
+				error: (error: any) => {
+					e.cancel = true;
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
+	presupuestoRowUpdated(e: any) {
+		const pres: any = {
+			CORR_EMPRESA: this.model.CORR_EMPRESA,
+			CORR_CENTRO_COSTO: this.model.CORR_CENTRO_COSTO,
+			NOMBRE_CENTRO: this.model.NOMBRE_CENTRO,
+			...e.data,
+		};
+		this.presupuestoService
+			.update(pres)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response.Result) {
+						this.notifyFx(response.ErrorMessage, NotifyType.Error);
+					}
+				},
+				error: (error: any) => {
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
+	presupuestoRowRemoving(e: any) {
+		this.presupuestoService
+			.delete({ CORR_CENTRO_COSTO: this.model.CORR_CENTRO_COSTO, ANIO_PERIODO: e.data.ANIO_PERIODO, MES_PERIODO: e.data.MES_PERIODO })
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response.Result) {
+						e.cancel = true;
+						this.notifyFx(response.ErrorMessage, NotifyType.Error);
+					}
+				},
+				error: (error: any) => {
+					e.cancel = true;
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
 	}
 
 	rowRemoving(e: any) {
@@ -316,20 +390,19 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 		this.dataForm.instance.getEditor('CORR_UNIDAD_NEGOCIO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CORR_AREA_FUNCIONAL')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CODIGO_TERMINACION')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_EMPLEADO_JEFE')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_CLIENTE')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('FECHA_INICIAL')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('FECHA_FINAL')?.option('readOnly', true);
 		this.readOnly = true;
 	}
 
 	override habilitar(): void {
 		this.readOnly = false;
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('CORR_CENTRO_COSTO')?.option('readOnly', true);
+		});
 	}
 
 	override setFocus() {
 		setTimeout(() => {
-			this.dataForm.instance.getEditor('NOMBRE_CENTRO_COSTO')?.focus();
+			this.dataForm.instance.getEditor('NOMBRE_CENTRO')?.focus();
 		});
 	}
 	//#endregion

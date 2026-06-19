@@ -1,0 +1,85 @@
+<h2 class="content-block">{{ tituloVentana || 'Importar catálogos contables' }}</h2>
+
+<div class="import-shell content-block dx-card responsive-paddings">
+	<p class="import-help">
+		Seleccione un archivo Excel (.xlsx) con una o dos hojas:
+		<strong>Cuentas</strong> (catálogo contable) y/o <strong>Centros</strong> (centros de costo).
+		La primera fila debe contener los encabezados de columna.
+	</p>
+
+	<div class="import-format">
+		<div>
+			<strong>Hoja Cuentas:</strong> CUENTA_CONTABLE, NOMBRE_CUENTA, ES_DEBE, ES_HABER, ES_DETALLE, NIVEL, CUENTA_MAYOR, CODIGO_RUBRO
+		</div>
+		<div>
+			<strong>Hoja Centros:</strong> CODIGO_CENTRO_COSTO, NOMBRE_CENTRO, CORR_TIPO_CENTRO_COSTO, ESTADO_CENTRO_COSTO, CUENTA_CONTABLE
+		</div>
+	</div>
+
+	<div class="import-toolbar">
+		<div class="import-field import-field--file">
+			<label>Archivo Excel (.xlsx)</label>
+			<dx-file-uploader
+				selectButtonText="Seleccionar archivo"
+				labelText=""
+				accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+				[multiple]="false"
+				uploadMode="useForm"
+				[showFileList]="true"
+				(onValueChanged)="onFileSelected($event)"
+			>
+			</dx-file-uploader>
+		</div>
+		<div class="import-actions">
+			<dx-button text="Volver" type="normal" icon="back" (onClick)="volver()"></dx-button>
+			<dx-button
+				text="Importar"
+				type="success"
+				icon="upload"
+				[disabled]="!canImportar()"
+				(onClick)="importar()"
+			></dx-button>
+		</div>
+	</div>
+
+	<dx-tab-panel [(selectedIndex)]="activeTab" [height]="520">
+		<dxi-item title="Cuentas ({{ cuentaRows.length }})">
+			<dx-data-grid
+				[dataSource]="cuentaRows"
+				keyExpr="_rowId"
+				[columns]="cuentaColumns"
+				[showBorders]="true"
+				[height]="460"
+				[width]="'100%'"
+			>
+				<dxo-search-panel [visible]="true"></dxo-search-panel>
+				<dxo-scrolling mode="virtual" showScrollbar="always"></dxo-scrolling>
+				<dxo-paging [enabled]="false"></dxo-paging>
+			</dx-data-grid>
+		</dxi-item>
+		<dxi-item title="Centros de costo ({{ centroRows.length }})">
+			<dx-data-grid
+				[dataSource]="centroRows"
+				keyExpr="_rowId"
+				[columns]="centroColumns"
+				[showBorders]="true"
+				[height]="460"
+				[width]="'100%'"
+			>
+				<dxo-search-panel [visible]="true"></dxo-search-panel>
+				<dxo-scrolling mode="virtual" showScrollbar="always"></dxo-scrolling>
+				<dxo-paging [enabled]="false"></dxo-paging>
+			</dx-data-grid>
+		</dxi-item>
+	</dx-tab-panel>
+</div>
+
+<dx-load-panel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: 'window' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>

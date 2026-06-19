@@ -1,0 +1,26 @@
+﻿SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+
+
+CREATE VIEW [dbo].[V_CON_RUBRO] 
+AS
+SELECT A.CORR_EMPRESA
+      ,A.CODIGO_RUBRO
+      ,A.NOMBRE_RUBRO
+      ,A.ES_DEBE
+      ,A.ES_HABER
+      ,ISNULL(A.CLASE_RUBRO,'') CLASE_RUBRO
+      ,CASE ISNULL(A.CLASE_RUBRO,'')
+      WHEN 'AC' THEN 'Activo'
+      WHEN 'PA' THEN 'Pasivo'
+      WHEN 'PT' THEN 'Patrimonio'
+      WHEN 'IN' THEN 'Ingreso'
+      WHEN 'GA' THEN 'Gasto'
+      WHEN 'LI' THEN 'Liquidadora'
+      WHEN 'OT' THEN 'Otra'
+      ELSE '' END NOMBRE_CLASE_RUBRO
+  FROM CON_RUBRO A
+
+GO
