@@ -52,6 +52,22 @@ export class ScDescriptorImpactoEconomicoComponent extends CBaseComponent implem
 		}
 	}
 
+	override rowDblClick(e: any): void {
+		const rowData = e?.data ?? e?.row?.data;
+		if (rowData) {
+			this.model = this.fillData(rowData);
+			this.modelUpdate = this.fillData(rowData);
+		}
+		super.rowDblClick(e);
+		setTimeout(() => {
+			if (!this.dataForm?.instance) {
+				return;
+			}
+			this.dataForm.instance.option('formData', this.model);
+			this.bloquear();
+		});
+	}
+
 	onEditClick(e: any): void {
 		if (!e?.row?.data) {
 			return;
