@@ -80,19 +80,41 @@ namespace SGUEES.Controllers
 				return BadRequest(resultado);
 			}
 		}
-		
-		[HttpDelete]
-		[Authorize(Policy = "/sc-tipo-contratacion|D")]
-		public async Task<IActionResult> Delete([FromQuery] SC_TIPO_CONTRATACIONTable Data)
-		{
-			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-			var resultado = await _service.DeleteAsync(Data, "Admin", "e-CoffeeTech");
-			if (resultado.ErrorCode == 0)
-			{
-				return Ok(resultado);
-			} else {
-				return BadRequest(resultado);
-			}
-		}
-	}
+
+        //[HttpDelete]
+        //[Authorize(Policy = "/sc-tipo-contratacion|D")]
+        //public async Task<IActionResult> Delete([FromQuery] SC_TIPO_CONTRATACIONTable Data)
+        //{
+        //	Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+        //	var resultado = await _service.DeleteAsync(Data, "Admin", "e-CoffeeTech");
+        //	if (resultado.ErrorCode == 0)
+        //	{
+        //		return Ok(resultado);
+        //	} else {
+        //		return BadRequest(resultado);
+        //	}
+        //}
+
+        [HttpDelete]
+        [Authorize(Policy = "/sc-tipo-contratacion|D")]
+        public async Task<IActionResult> Delete([FromQuery] SC_TIPO_CONTRATACIONTable Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			Data.ACTIVO = false;
+			Data.USUARIO_ACTU = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
+			Data.FECHA_ACTU = DateTime.Now;
+			Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
+            var resultado = await _service.InactivateAsync(Data, "Admin", "e-CoffeeTech");
+            if (resultado.ErrorCode == 0)
+            {
+                return Ok(resultado);
+            }
+            else
+            {
+                return BadRequest(resultado);
+            }
+        }
+
+
+    }
 }
