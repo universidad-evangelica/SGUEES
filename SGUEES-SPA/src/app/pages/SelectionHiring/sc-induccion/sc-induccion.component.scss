@@ -26,47 +26,13 @@
 	box-shadow: none;
 }
 
-:host {
-	display: block;
-	width: 100%;
-	max-width: 100%;
-	min-width: 0;
-	overflow-x: clip;
-}
-
 .frecuencia-form-card,
 .impacto-economico-form-card,
 .disponibilidad-horario-form-card {
 	margin-top: 38px;
 }
 
-:host ::ng-deep {
-	.sguees-grid-mtto-shell,
-	.sguees-grid-module-card,
-	.sguees-data-grid-mtto,
-	.dx-datagrid {
-		width: 100%;
-		max-width: 100%;
-		min-width: 0;
-	}
-
-	.sguees-grid-header {
-		min-width: 0;
-	}
-}
-
 @media (max-width: 991.98px) {
-	:host ::ng-deep {
-		.sguees-grid-header__title {
-			font-size: 18px;
-			line-height: 1.25;
-		}
-
-		.sguees-grid-header__subtitle {
-			font-size: 13px;
-		}
-	}
-
 	.frecuencia-form-card,
 	.impacto-economico-form-card,
 	.disponibilidad-horario-form-card {
@@ -119,57 +85,8 @@
 			margin-left: 0;
 		}
 
-		.dx-pager {
-			flex-wrap: wrap;
-			justify-content: center;
-			row-gap: 8px;
-		}
-
-		.dx-page-sizes {
-			flex-wrap: wrap;
-			justify-content: center;
-		}
-
-		.estado-badge {
-			min-width: 62px;
-			padding: 4px 8px;
-			font-size: 10px;
-		}
-
-		.dx-command-edit,
-		.dx-command-edit.dx-cell-focus-disabled {
-			width: 118px !important;
-			min-width: 118px !important;
-			max-width: 118px !important;
-		}
-
-		.dx-command-edit .dx-link {
-			width: 28px;
-			height: 28px;
-			margin: 0 1px;
-		}
-
-		.dx-command-edit .dx-icon {
-			font-size: 16px;
-		}
-
-		.dx-datagrid-headers .dx-header-row > td,
-		.dx-datagrid-rowsview .dx-data-row > td {
-			font-size: 12px;
-			padding: 6px 8px;
-		}
-
 		.dx-datagrid-header-panel .dx-toolbar-after .dx-button-has-text {
 			flex: 1 1 auto;
-		}
-
-		.dx-page-size,
-		.dx-page-indexes {
-			font-size: 12px;
-		}
-
-		.content-block.dx-card.responsive-paddings {
-			padding: 12px;
 		}
 	}
 
