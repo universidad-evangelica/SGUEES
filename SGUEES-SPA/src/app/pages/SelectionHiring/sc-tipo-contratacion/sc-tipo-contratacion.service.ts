@@ -52,19 +52,31 @@ export class ScTipoContratacionService {
 		return this.repo.delete(xWhere);
 	}
 
+	reactivate(model: any): Observable<IResult> {
+		let xWhere: IParam[] = [{ Parameter: 'CORR_TIPO_CONTRATACION', Value: model.CORR_TIPO_CONTRATACION }];
+
+		return this.repo.reactivate(xWhere);
+	}
+
+	desactivate(model: any): Observable<IResult> {
+		let xWhere: IParam[] = [{ Parameter: 'CORR_TIPO_CONTRATACION', Value: model.CORR_TIPO_CONTRATACION }];
+		
+		return this.repo.desactivate(xWhere);
+	}
+
 	getColumns(): any {
 		return [
 			{ dataField: 'CORR_TIPO_CONTRATACION', caption: 'Correlativo', width: 150 },
-			{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Nombre Tipo Contratacion', width: 250 },
+			{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo Contratacion', width: 250 },
 			{ dataField: 'AREA_APLICADA', caption: 'Area Aplicada', width: 250 },
 			{ dataField: 'ES_PERMANENTE', caption: 'Es Permanente', width: 200, dataType: 'boolean', alignment: 'left' },
-			//{ dataField: 'ACTIVO', caption: 'Activo', width: 200, dataType: 'boolean', alignment: 'right' },
+			{ dataField: 'ACTIVO', caption: 'Activo', width: 200, dataType: 'boolean', alignment: 'left' },
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
-			//{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
-			//{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
-			//{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
-			//{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
-			//{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
+			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
+			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
+			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
 		];
 	}
 

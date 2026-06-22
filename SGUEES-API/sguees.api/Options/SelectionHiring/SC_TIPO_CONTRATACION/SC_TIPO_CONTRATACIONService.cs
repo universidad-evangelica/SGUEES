@@ -55,9 +55,15 @@ namespace SGUEES.Services
 		}
 
 		//Funcion para inactivar un registro, no se borra de la base de datos, solo se cambia el estado a inactivo
-		public async Task<CResult> InactivateAsync(SC_TIPO_CONTRATACIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		public async Task<CResult> DesactivateAsync(SC_TIPO_CONTRATACIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
-	}
+
+        //Funcion para reactivar un registro, no se borra de la base de datos, solo se cambia el estado a activo
+		public async Task<CResult> ReactivateAsync(SC_TIPO_CONTRATACIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+    }
 }
