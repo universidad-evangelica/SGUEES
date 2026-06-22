@@ -1,0 +1,92 @@
+:host ::ng-deep .estado-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 76px;
+	padding: 5px 12px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 800;
+	letter-spacing: 0.02em;
+	line-height: 1;
+	text-transform: uppercase;
+}
+
+:host ::ng-deep .estado-badge--activo {
+	color: #4ade80;
+	background: rgba(34, 197, 94, 0.18);
+	border: 1px solid rgba(34, 197, 94, 0.35);
+	box-shadow: none;
+}
+
+:host ::ng-deep .estado-badge--inactivo {
+	color: #f87171;
+	background: rgba(239, 68, 68, 0.18);
+	border: 1px solid rgba(239, 68, 68, 0.35);
+	box-shadow: none;
+}
+
+.competencias-form-card {
+	margin-top: 38px;
+}
+
+@media (max-width: 991.98px) {
+	.competencias-form-card {
+		margin-top: 16px;
+	}
+}
+
+@media (max-width: 575.98px) {
+	:host ::ng-deep {
+		.dx-datagrid-header-panel {
+			padding: 12px !important;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar,
+		.dx-datagrid-header-panel .dx-toolbar-items-container {
+			height: auto !important;
+			min-height: 0;
+			overflow: visible;
+			flex-wrap: wrap;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-before,
+		.dx-datagrid-header-panel .dx-toolbar-after {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 8px;
+			position: static !important;
+			transform: none !important;
+			left: auto !important;
+			right: auto !important;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-before {
+			flex: 1 1 100%;
+			width: 100% !important;
+			max-width: 100%;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-after {
+			flex: 1 1 100%;
+			width: 100% !important;
+			max-width: 100%;
+			justify-content: flex-start;
+			margin-left: 0 !important;
+			padding-left: 0 !important;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-after .dx-item {
+			margin-left: 0;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-after .dx-button-has-text {
+			flex: 1 1 auto;
+		}
+	}
+
+	.competencias-form-card {
+		margin-top: 12px;
+	}
+}

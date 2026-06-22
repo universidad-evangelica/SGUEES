@@ -2,6 +2,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import CustomStore from 'devextreme/data/custom_store';
 import { custom } from 'devextreme/ui/dialog';
+import { MessageService } from 'primeng/api';
 import { lastValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
@@ -28,7 +29,8 @@ export class ScDescriptorImpactoEconomicoComponent extends CBaseComponent implem
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: ScDescriptorImpactoEconomicoService
+		private service: ScDescriptorImpactoEconomicoService,
+		private messageService: MessageService
 	) {
 		super(appInfoService, router);
 		this.onEditClick = this.onEditClick.bind(this);
@@ -127,6 +129,16 @@ export class ScDescriptorImpactoEconomicoComponent extends CBaseComponent implem
 
 	consultar(): void {
 		this.dataGrid?.refreshData(true);
+	}
+
+	override notifyFx(xMessage: string, xType: NotifyType): void {
+		const cleanMessage = `${xMessage ?? ''}`.replace(/^error:\s*/i, '').trim();
+		const warningDetail = this.getWarningMessage(xMessage);
+		const isWarning = xType === NotifyType.Warning || warningDetail !== cleanMessage;
+		const severity = xType === NotifyType.Success ? 'success' : isWarning ? 'warn' : 'error';
+		const summary = xType === NotifyType.Success ? 'Éxito' : isWarning ? 'Advertencia' : 'Error';
+		const detail = isWarning ? warningDetail : cleanMessage;
+		this.messageService.add({ severity, summary, detail });
 	}
 
 	guardar(): void {
@@ -293,7 +305,7 @@ export class ScDescriptorImpactoEconomicoComponent extends CBaseComponent implem
 					this.consultar();
 					this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
 				} else {
-					this.notifyFx(response.ErrorMessage || 'No se puede eliminar el registro porque tiene registros asociados en otras tablas.', NotifyType.Error);
+					this.notifyFx(response.ErrorMessage || 'No se puede eliminar el registro porque tiene registros asociados.', NotifyType.Warning);
 				}
 				this.loadingVisible = false;
 			},
@@ -330,6 +342,21 @@ export class ScDescriptorImpactoEconomicoComponent extends CBaseComponent implem
 	}
 
 	private getNotifyType(response: any): NotifyType {
-		return response?.ErrorCode === 2627 ? NotifyType.Warning : NotifyType.Error;
+		const message = (response?.ErrorMessage || '').toLowerCase();
+		return response?.ErrorCode === 2627 || message.includes('ya existe') || message.includes('duplicad')
+			? NotifyType.Warning
+			: NotifyType.Error;
+	}
+
+	private getWarningMessage(message: string): string {
+		const cleanMessage = `${message ?? ''}`.replace(/^error:\s*/i, '').trim();
+		const value = cleanMessage.toLowerCase();
+		if (value.includes('ya existe') || value.includes('duplicad')) {
+			return 'Ya existe un registro con ese código. Escriba otro código para continuar.';
+		}
+		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados')) {
+			return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';
+		}
+		return cleanMessage;
 	}
 }

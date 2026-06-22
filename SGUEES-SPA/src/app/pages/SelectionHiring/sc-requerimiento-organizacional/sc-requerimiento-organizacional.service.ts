@@ -62,7 +62,7 @@ export class ScRequerimientoOrganizacionalService {
 				buttons: [
 					{ hint: 'Editar registro', icon: 'edit', stylingMode: 'text', cssClass: 'sguees-grid-action-edit', onClick: onEditClick },
 					{ hint: 'Eliminar registro', icon: 'trash', stylingMode: 'text', cssClass: 'sguees-grid-action-delete', onClick: onDeleteClick },
-					{ hint: 'Activar registro', icon: 'check', stylingMode: 'text', cssClass: 'sguees-grid-action-edit', visible: (event: any) => !event.row?.data?.ESTADO_REQUERIMIENTO_ORGANIZACIONAL, onClick: onActivarClick },
+					{ hint: 'Activar registro', icon: 'refresh', stylingMode: 'text', cssClass: 'sguees-grid-action-edit', visible: (event: any) => !event.row?.data?.ESTADO_REQUERIMIENTO_ORGANIZACIONAL, onClick: onActivarClick },
 					{ hint: 'Desactivar registro', icon: 'close', stylingMode: 'text', cssClass: 'sguees-grid-action-delete', visible: (event: any) => !!event.row?.data?.ESTADO_REQUERIMIENTO_ORGANIZACIONAL, onClick: onDesactivarClick },
 				],
 			},

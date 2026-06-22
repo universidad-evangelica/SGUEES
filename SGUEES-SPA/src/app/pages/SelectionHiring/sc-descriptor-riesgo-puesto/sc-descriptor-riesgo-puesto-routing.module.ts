@@ -9,6 +9,7 @@ import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
 import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
+import { ToastModule } from 'primeng/toast';
 import { ScDescriptorRiesgoPuestoComponent } from './sc-descriptor-riesgo-puesto.component';
 
 const routes: Routes = [{ path: '', component: ScDescriptorRiesgoPuestoComponent }];
@@ -25,6 +26,7 @@ const routes: Routes = [{ path: '', component: ScDescriptorRiesgoPuestoComponent
 		DxTextBoxModule,
 		BarraDataMttoModule,
 		DataGridMttoModule,
+		ToastModule,
 	],
 	exports: [RouterModule],
 	declarations: [ScDescriptorRiesgoPuestoComponent],

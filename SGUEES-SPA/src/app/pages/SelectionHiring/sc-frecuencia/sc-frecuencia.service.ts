@@ -137,7 +137,7 @@ export class ScFrecuenciaService {
 					},
 					{
 						hint: 'Activar registro',
-						icon: 'check',
+						icon: 'refresh',
 						stylingMode: 'text',
 						cssClass: 'sguees-grid-action-edit',
 						visible: (e: any) => !e.row?.data?.ESTADO_FRECUENCIA,

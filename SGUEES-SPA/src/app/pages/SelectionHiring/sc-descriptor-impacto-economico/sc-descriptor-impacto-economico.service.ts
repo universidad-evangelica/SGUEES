@@ -102,7 +102,7 @@ export class ScDescriptorImpactoEconomicoService {
 				buttons: [
 					{ hint: 'Editar registro', icon: 'edit', stylingMode: 'text', cssClass: 'sguees-grid-action-edit', onClick: onEditClick },
 					{ hint: 'Eliminar registro', icon: 'trash', stylingMode: 'text', cssClass: 'sguees-grid-action-delete', onClick: onDeleteClick },
-					{ hint: 'Activar registro', icon: 'check', stylingMode: 'text', cssClass: 'sguees-grid-action-edit', onClick: onActivarClick, visible: (event: any) => !event.row?.data?.ESTADO_IMPACTO_ECONOMICO },
+					{ hint: 'Activar registro', icon: 'refresh', stylingMode: 'text', cssClass: 'sguees-grid-action-edit', onClick: onActivarClick, visible: (event: any) => !event.row?.data?.ESTADO_IMPACTO_ECONOMICO },
 					{ hint: 'Desactivar registro', icon: 'close', stylingMode: 'text', cssClass: 'sguees-grid-action-delete', onClick: onDesactivarClick, visible: (event: any) => !!event.row?.data?.ESTADO_IMPACTO_ECONOMICO },
 				],
 			},

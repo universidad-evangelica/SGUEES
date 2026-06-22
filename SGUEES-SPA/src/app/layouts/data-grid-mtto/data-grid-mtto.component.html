@@ -31,6 +31,7 @@
     ></app-empty-state>
 
     <dx-data-grid
+      *ngIf="gridVisible"
       class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise"
       [class.sguees-data-grid-mtto--unified]="isUnifiedActive"
       [class.sguees-data-grid-mtto--hidden]="showEmptyState && isEmptyData && !loading"
@@ -52,11 +53,12 @@
       [focusedRowEnabled]="hasFocusedRow"
       [height]="resolvedGridHeight"
       [width]="'100%'"
-      [repaintChangesOnly]="true"
+      [repaintChangesOnly]="effectiveRepaintChangesOnly"
       (onRowRemoving)="OnrowRemoving($event)"
       (onRowDblClick)="OnrowDblClick($event)"
       (onRowClick)="OnRowClick($event)"
       (onFocusedRowChanged)="OnfocusedRowChanged($event)"
+      (onOptionChanged)="OnOptionChanged($event)"
       (onExporting)="onExporting($event)"
       [columns]="columns"
       [summary]="null"
@@ -146,7 +148,7 @@
       
       <dxo-export [enabled]="effectiveShowExport" fileName="gData"></dxo-export>
       <dxo-column-chooser [enabled]="showColumnChooser" mode="select"></dxo-column-chooser>
-      <dxo-paging [enabled]="true" [pageSize]="pageSize"></dxo-paging>
+      <dxo-paging [enabled]="true" [pageSize]="activePageSize"></dxo-paging>
       
       <dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
 

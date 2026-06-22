@@ -6,13 +6,14 @@ import { DxCheckBoxModule } from 'devextreme-angular/ui/check-box';
 import { DxFormModule } from 'devextreme-angular/ui/form';
 import { DxLoadPanelModule } from 'devextreme-angular/ui/load-panel';
 import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
+import { DxTextAreaModule } from 'devextreme-angular/ui/text-area';
 import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { ToastModule } from 'primeng/toast';
-import { ScDisponibilidadHorarioComponent } from './sc-disponibilidad-horario.component';
+import { ScCompetenciasTecnicasComponent } from './sc-competencias-tecnicas.component';
 
-const routes: Routes = [{ path: '', component: ScDisponibilidadHorarioComponent }];
+const routes: Routes = [{ path: '', component: ScCompetenciasTecnicasComponent }];
 
 @NgModule({
 	imports: [
@@ -23,12 +24,13 @@ const routes: Routes = [{ path: '', component: ScDisponibilidadHorarioComponent 
 		DxFormModule,
 		DxLoadPanelModule,
 		DxSelectBoxModule,
+		DxTextAreaModule,
 		DxTextBoxModule,
 		BarraDataMttoModule,
 		DataGridMttoModule,
 		ToastModule,
 	],
 	exports: [RouterModule],
-	declarations: [ScDisponibilidadHorarioComponent],
+	declarations: [ScCompetenciasTecnicasComponent],
 })
-export class ScDisponibilidadHorarioRoutingModule {}
+export class ScCompetenciasTecnicasRoutingModule {}
