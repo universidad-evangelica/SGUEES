@@ -1,3 +1,29 @@
+.partida-especial-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin: 0 0 12px;
+	padding: 10px 14px;
+
+	&--inline {
+		flex-wrap: wrap;
+		margin: 0;
+		padding: 0 0 0 8px;
+		border-left: 1px solid var(--border-color, #ddd);
+		row-gap: 6px;
+
+		::ng-deep .dx-button {
+			margin-right: 4px;
+		}
+	}
+}
+
+.partida-especial-label {
+	font-weight: 600;
+	margin-right: 4px;
+}
+
 .con-partida-import-popup {
 	height: 100%;
 	min-height: 520px;

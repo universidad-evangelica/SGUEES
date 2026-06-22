@@ -120,6 +120,9 @@
     <Content Include="Web.config">
       <SubType>Designer</SubType>
     </Content>
+    <Content Include="Reports\Accounting\*.rpt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
@@ -132,6 +135,7 @@
     <Compile Include="Layouts\eDocResult.cs" />
     <Compile Include="Layouts\Login\LoginRequest.cs" />
     <Compile Include="Layouts\Utils.cs" />
+    <Compile Include="Layouts\ReportExportHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Reports\Shop\COM_CUADRO_COMPARATIVO\COM_CUADRO_COMPARATIVOReport.cs">
       <AutoGen>True</AutoGen>
@@ -162,6 +166,20 @@
     </Compile>
     <Compile Include="Reports\Shop\COM_SOLI_COTIZACION\COM_SOLI_COTIZACION_IMPRView.cs" />
     <Compile Include="Reports\Shop\ShopController.cs" />
+    <Compile Include="Reports\Shop\COM_REPO_SUJETO_EXCLUIDOView.cs" />
+    <Compile Include="Reports\Accounting\AccountingController.cs" />
+    <Compile Include="Reports\Accounting\AccountingReports.cs" />
+    <Compile Include="Reports\Accounting\Models\ConReportePdfRequest.cs" />
+    <Compile Include="Reports\Accounting\CON_GASTOS\CON_GASTOS_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\CON_PARTIDA\CON_PARTIDA_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\CON_PARTIDA\ConPartidaReportData.cs" />
+    <Compile Include="Reports\Accounting\CON_PARTIDA\PARTIDA_CONTABLEReportExporter.cs" />
+    <Compile Include="Reports\Accounting\CON_PARTIDA\PARTIDA_CONTABLEReport.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>PARTIDA_CONTABLEReport.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Reports\Shop\COM_VL_FSEE\COM_VL_FSEEReport.cs">
       <DependentUpon>COM_VL_FSEEReport.rpt</DependentUpon>
       <AutoGen>True</AutoGen>
@@ -203,6 +221,10 @@
     <EmbeddedResource Include="Reports\Shop\COM_VL_FSEE\COM_VL_FSEEReport.rpt">
       <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
       <LastGenOutput>COM_VL_FSEEReport.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Accounting\CON_PARTIDA\PARTIDA_CONTABLEReport.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>PARTIDA_CONTABLEReport.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>

@@ -40,4 +40,20 @@ export class ConPartidaRepository {
 	getAllDetaDoc(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAllDetaDoc', xWhere, environment.UrlCONTAAPI);
 	}
+
+	getPDF(model: any): Observable<Blob> {
+		return this.objData.PostBlob(model, this.xController, 'getPDF', environment.UrlCONTAAPI);
+	}
+
+	generarPartidaLiquidacion(model: any): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'GenerarPartidaLiquidacion', [], environment.UrlCONTAAPI);
+	}
+
+	generarPartidaCierre(model: any): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'GenerarPartidaCierre', [], environment.UrlCONTAAPI);
+	}
+
+	generarPartidaApertura(model: any): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'GenerarPartidaApertura', [], environment.UrlCONTAAPI);
+	}
 }

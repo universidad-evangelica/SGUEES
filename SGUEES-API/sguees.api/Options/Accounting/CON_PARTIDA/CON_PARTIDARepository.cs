@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Data;
+using System.Data.Common;
 using Microsoft.Extensions.Configuration;
 using System.Linq;
 using eFramework.Data;
@@ -540,6 +542,186 @@ namespace sguees.Repositories
 			}
 			finally { objData.objConnection.Close(); }
 			return objResultado;
+		}
+
+		public async Task<CResult> GetConPartidaImpr(List<CParameter> xWhere)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var reader = await objData.GetDataReader(CommandType.StoredProcedure, "PRAL_IMPR_CON_PARTIDA_CONTABLE", xWhere);
+				var response = new List<CON_PARTIDA_IMPRView>().FromDataReader(reader).ToList();
+				if (reader.NextResult())
+				{
+					var header = new List<CON_PARTIDA_IMPRView>().FromDataReader(reader).FirstOrDefault();
+					if (header != null)
+					{
+						foreach (var row in response)
+						{
+							row.NOMBRE_EMPRESA = header.NOMBRE_EMPRESA;
+							row.PERIODO = header.PERIODO;
+							row.LOGO1 = header.LOGO1;
+							row.LOGO2 = header.LOGO2;
+							row.TITULO_REPORTE = header.TITULO_REPORTE;
+							row.NOMBRE_SISTEMA = header.NOMBRE_SISTEMA;
+							row.FECHA_IMPRESION = header.FECHA_IMPRESION;
+						}
+					}
+				}
+
+				reader.Close();
+				objResultado.Data = response;
+				objResultado.Result = response.Count > 0;
+				objResultado.RowsAffected = response.Count;
+				objResultado.ErrorCode = response.Count > 0 ? 0 : -1;
+				objResultado.ErrorMessage = response.Count > 0 ? "" : "No hay datos para imprimir la partida.";
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally { objData.objConnection.Close(); }
+			return objResultado;
+		}
+
+		public Task<CResult> ConsultarParaImprAsync(CON_PARTIDAParam param)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "@CORR_EMPRESA", Value = param.CORR_EMPRESA, DbType = DbType.Int32 },
+				new CParameter() { ParameterName = "@FECHA_INICIAL", Value = param.FECHA_INICIAL, DbType = DbType.Date },
+				new CParameter() { ParameterName = "@FECHA_FINAL", Value = param.FECHA_FINAL, DbType = DbType.Date },
+				new CParameter() { ParameterName = "@ANIO_PERIODO", Value = param.ANIO_PERIODO, DbType = DbType.Int32 },
+				new CParameter() { ParameterName = "@MES_PERIODO", Value = param.MES_PERIODO, DbType = DbType.Int32 },
+				new CParameter() { ParameterName = "@CORR_CLASE_PARTIDA", Value = param.CORR_CLASE_PARTIDA, DbType = DbType.Int32 },
+				new CParameter() { ParameterName = "@CORR_PARTIDA", Value = param.CORR_PARTIDA, DbType = DbType.Int32 },
+				new CParameter() { ParameterName = "@CORR_PARTIDA_INICIAL", Value = 0, DbType = DbType.Int32 },
+				new CParameter() { ParameterName = "@CORR_PARTIDA_FINAL", Value = 0, DbType = DbType.Int32 },
+				new CParameter() { ParameterName = "@FOLIADO", Value = false, DbType = DbType.Boolean },
+				new CParameter() { ParameterName = "@NUMERO_FOLIO", Value = 0, DbType = DbType.Int32 },
+				new CParameter() { ParameterName = "@CORR_MONEDA", Value = 0, DbType = DbType.Int32 },
+				new CParameter() { ParameterName = "@OPCION_CONSULTA", Value = 0, DbType = DbType.Int32 },
+			};
+
+			return GetConPartidaImpr(p);
+		}
+
+		public Task<CResult> GenerarPartidaLiquidacionAsync(CON_PARTIDAParam param, string vLOGIN_SISTEMA, string vESTACION)
+			=> ExecPartidaGeneEspecialAsync(param, vLOGIN_SISTEMA, vESTACION, "PRAL_GENE_PARTIDA_LIQUIDACION");
+
+		public Task<CResult> GenerarPartidaCierreAsync(CON_PARTIDAParam param, string vLOGIN_SISTEMA, string vESTACION)
+			=> ExecPartidaGeneEspecialAsync(param, vLOGIN_SISTEMA, vESTACION, "PRAL_GENE_PARTIDA_CIERRE");
+
+		public Task<CResult> GenerarPartidaAperturaAsync(CON_PARTIDAParam param, string vLOGIN_SISTEMA, string vESTACION)
+			=> ExecPartidaGeneEspecialAsync(param, vLOGIN_SISTEMA, vESTACION, "PRAL_GENE_PARTIDA_APERTURA");
+
+		private async Task<CResult> ExecPartidaGeneEspecialAsync(CON_PARTIDAParam Data, string vLOGIN_SISTEMA, string vESTACION, string spName)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "@CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = DbType.Int32 },
+					new CParameter() { ParameterName = "@ANIO_PERIODO", Value = Data.ANIO_PERIODO, DbType = DbType.Int32 },
+					new CParameter() { ParameterName = "@MES_PERIODO", Value = Data.MES_PERIODO, DbType = DbType.Int32 },
+					new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA ?? "", DbType = DbType.String },
+					new CParameter() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? "", DbType = DbType.String },
+					new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = DbType.Int32, Direction = ParameterDirection.InputOutput },
+					new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = DbType.Decimal, Direction = ParameterDirection.InputOutput },
+					new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = "", DbType = DbType.String, Direction = ParameterDirection.InputOutput, Size = 4000 },
+				};
+
+				await objData.ExecCmd(CommandType.StoredProcedure, spName, true, p);
+
+				if ((decimal)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value == 0)
+				{
+					objResultado.Data = null;
+					objResultado.Result = true;
+					objResultado.RowsAffected = (int)objData.objCommand.Parameters["@SYS_FILAS_AFECTADAS"].Value;
+					objResultado.CodeHelper = Data.MES_PERIODO;
+					objResultado.ErrorCode = 0;
+					objResultado.ErrorMessage = "";
+					objResultado.ErrorSource = "";
+				}
+				else
+				{
+					objResultado.Data = null;
+					objResultado.Result = false;
+					objResultado.RowsAffected = 0;
+					objResultado.CodeHelper = 0;
+					objResultado.ErrorCode = (int)(decimal)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
+					objResultado.ErrorMessage = (string)objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value;
+					objResultado.ErrorSource = "C" + _TableName + ".Gene(" + spName + ")";
+				}
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally { objData.objConnection.Close(); }
+			return objResultado;
+		}
+
+		private static List<Dictionary<string, object>> ReadRowsWithHeader(DbDataReader reader)
+		{
+			var detail = ReadRows(reader);
+			if (!reader.NextResult())
+			{
+				return detail;
+			}
+
+			Dictionary<string, object> header = null;
+			if (reader.Read())
+			{
+				header = new Dictionary<string, object>(System.StringComparer.OrdinalIgnoreCase);
+				for (var i = 0; i < reader.FieldCount; i++)
+				{
+					header[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+				}
+			}
+
+			if (header == null || detail.Count == 0)
+			{
+				return detail;
+			}
+
+			foreach (var row in detail)
+			{
+				foreach (var item in header)
+				{
+					if (!row.ContainsKey(item.Key))
+					{
+						row[item.Key] = item.Value;
+					}
+				}
+			}
+
+			return detail;
+		}
+
+		private static List<Dictionary<string, object>> ReadRows(DbDataReader reader)
+		{
+			var rows = new List<Dictionary<string, object>>();
+			while (reader.Read())
+			{
+				var row = new Dictionary<string, object>(System.StringComparer.OrdinalIgnoreCase);
+				for (var i = 0; i < reader.FieldCount; i++)
+				{
+					row[reader.GetName(i)] = reader.IsDBNull(i) ? null : reader.GetValue(i);
+				}
+				rows.Add(row);
+			}
+			return rows;
 		}
 	}
 }

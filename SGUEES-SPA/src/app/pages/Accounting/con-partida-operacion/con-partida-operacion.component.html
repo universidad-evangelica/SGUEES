@@ -1,6 +1,6 @@
 <h2 class="content-block">{{ tituloVentana }}</h2>
 
-<div class="content-block dx-card responsive-paddings filtros-card">
+<div class="view-wrapper list-page content-block dx-card responsive-paddings filtros-card">
 	<div class="filtros">
 		<div class="filtro">
 			<div class="filtro-label">Fecha Inicial</div>
@@ -49,7 +49,7 @@
 	</div>
 </div>
 
-<div class="content-block">
+<div class="view-wrapper list-page content-block">
 	<dx-data-grid
 		[dataSource]="models"
 		[showBorders]="true"
@@ -100,6 +100,9 @@
 			<dxi-total-item column="MONTO_ABONO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
 		</dxo-summary>
 	</dx-data-grid>
+	<div *ngIf="!loadingVisible && (!models || models.length === 0)" class="sin-registros-msg">
+		{{ sinRegistrosMsg }}
+	</div>
 </div>
 
 <dx-load-panel
