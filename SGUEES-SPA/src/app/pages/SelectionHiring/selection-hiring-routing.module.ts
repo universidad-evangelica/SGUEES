@@ -14,6 +14,7 @@ import { ScFrecuenciaComponent } from './sc-frecuencia/sc-frecuencia.component';
 import { ScRequerimientoOrganizacionalComponent } from './sc-requerimiento-organizacional/sc-requerimiento-organizacional.component';
 import { ScDisponibilidadHorarioComponent } from './sc-disponibilidad-horario/sc-disponibilidad-horario.component';
 import { ScDescriptorImpactoEconomicoComponent } from './sc-descriptor-impacto-economico/sc-descriptor-impacto-economico.component';
+import { ScCompetenciasTecnicasComponent } from './sc-competencias-tecnicas/sc-competencias-tecnicas.component';
 
 const routes: Routes = [
   {
@@ -102,6 +103,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./sc-descriptor-impacto-economico/sc-descriptor-impacto-economico.module').then(m => m.ScDescriptorImpactoEconomicoModule)
+  },
+  {
+    path: 'sc-competencias-tecnicas',
+    component: ScCompetenciasTecnicasComponent,
+    data: { titulo: 'Competencias Tecnicas' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-competencias-tecnicas/sc-competencias-tecnicas.module').then(m => m.ScCompetenciasTecnicasModule)
   }
 ];
 
