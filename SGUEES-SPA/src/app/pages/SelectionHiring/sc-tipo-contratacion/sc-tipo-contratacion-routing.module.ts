@@ -14,6 +14,7 @@ import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.compon
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 
 import { ScTipoContratacionComponent } from './sc-tipo-contratacion.component';
+import { ToastModule } from "primeng/toast"; //importar el modulo de Toast para primeNG
 
 const routes: Routes = [{ path: '', component: ScTipoContratacionComponent }];
 
@@ -31,6 +32,7 @@ const routes: Routes = [{ path: '', component: ScTipoContratacionComponent }];
 		DataGridMttoModule,
 		BarraDataMttoModule,
 		DataLookupModule,
+		ToastModule
 	],
 	exports: [RouterModule],
 	declarations: [ScTipoContratacionComponent],

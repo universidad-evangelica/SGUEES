@@ -54,14 +54,17 @@ export class ScTipoContratacionService {
 
 	getColumns(): any {
 		return [
-			{ dataField: 'CORR_TIPO_CONTRATACION', caption: 'Corr.', width: 100 },
-			{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Nombre Tipo Contratacion', width: 300 },
+			{ dataField: 'CORR_TIPO_CONTRATACION', caption: 'Correlativo', width: 150 },
+			{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Nombre Tipo Contratacion', width: 250 },
+			{ dataField: 'AREA_APLICADA', caption: 'Area Aplicada', width: 250 },
+			{ dataField: 'ES_PERMANENTE', caption: 'Es Permanente', width: 200, dataType: 'boolean', alignment: 'left' },
+			//{ dataField: 'ACTIVO', caption: 'Activo', width: 200, dataType: 'boolean', alignment: 'right' },
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
-			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
-			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
-			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
-			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
-			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			//{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
+			//{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			//{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
+			//{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
+			//{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
 		];
 	}
 
@@ -80,6 +83,23 @@ export class ScTipoContratacionService {
 				colSpan: 3,
 				editorOptions: { placeholder: 'Nombre Tipo Contratacion...', showClearButton: true, maxLength: 250 },
 			},
+			{
+				dataField: 'ES_PERMANENTE',
+				label: { text: 'Es Permanente' },
+				colSpan: 1,
+				editorOptions: { readOnly: false },
+			},
+			{
+				dataField: 'AREA_APLICADA',
+				label: { text: 'Area Aplicada' },
+				colSpan: 2,
+				editorType: 'dxSelectBox',
+				editorOptions: { 
+					dataSource: ['Todos', 'Administrativo', 'Docente', 'Investigador'],
+					placeholder: 'Seleccione un área...', 
+					showClearButton: true },
+			},
+			
 		];
 	}
 }

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
-
+import { MessageService } from 'primeng/api';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
@@ -19,7 +19,8 @@ export class ScTipoContratacionComponent extends CBaseComponent implements OnIni
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: ScTipoContratacionService
+		private service: ScTipoContratacionService,
+		private messageService: MessageService
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -62,6 +63,9 @@ export class ScTipoContratacionComponent extends CBaseComponent implements OnIni
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_TIPO_CONTRATACION: xModel.CORR_TIPO_CONTRATACION,
 				NOMBRE_TIPO_CONTRATACION: xModel.NOMBRE_TIPO_CONTRATACION,
+				ES_PERMANENTE: xModel.ES_PERMANENTE,
+				AREA_APLICADA: xModel.AREA_APLICADA,
+				ACTIVO: xModel.ACTIVO,
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
 				FECHA_CREA: xModel.FECHA_CREA,
@@ -74,6 +78,9 @@ export class ScTipoContratacionComponent extends CBaseComponent implements OnIni
 				CORR_EMPRESA: 1,
 				CORR_TIPO_CONTRATACION: 0,
 				NOMBRE_TIPO_CONTRATACION: '',
+				ES_PERMANENTE: false,
+				AREA_APLICADA: '',
+				ACTIVO: true,
 				USUARIO_CREA: '',
 				ESTACION_CREA: '',
 				FECHA_CREA: new Date(),
@@ -95,7 +102,9 @@ export class ScTipoContratacionComponent extends CBaseComponent implements OnIni
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					//this.notifyFx(error, NotifyType.Error);
+					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
+					this.loadingVisible = false;
 				},
 			});
 	}
@@ -116,14 +125,17 @@ export class ScTipoContratacionComponent extends CBaseComponent implements OnIni
 							this.models.push(response.Data);
 							this.model = response.Data;
 							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro creado con exito!', NotifyType.Success);
+							//this.notifyFx('Registro creado con exito!', NotifyType.Success);
+							this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro creado con éxito!' });
 						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							//this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
 						}
 						this.loadingVisible = false;
 					},
 					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
+						//this.notifyFx(error, NotifyType.Error);
+						this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
 						this.loadingVisible = false;
 					},
 				});
@@ -138,14 +150,17 @@ export class ScTipoContratacionComponent extends CBaseComponent implements OnIni
 							const vIndex = this.models.findIndex((item: any) => item.CORR_TIPO_CONTRATACION === response.Data.CORR_TIPO_CONTRATACION);
 							this.models[vIndex] = response.Data;
 							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
+							//this.notifyFx('Registro modificado con exito!', NotifyType.Success);
+							this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro modificado con éxito!' });
 						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							//this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
 						}
 						this.loadingVisible = false;
 					},
 					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
+						//this.notifyFx(error, NotifyType.Error);
+						this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
 						this.loadingVisible = false;
 					},
 				});
@@ -163,16 +178,19 @@ export class ScTipoContratacionComponent extends CBaseComponent implements OnIni
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
-						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
+						//this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
+						this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro eliminado con éxito!' });
 						e.component.refresh();
 					} else {
 						e.cancel = true;
-						this.notifyFx(response.ErrorMessage, NotifyType.Error);
+						//this.notifyFx(response.ErrorMessage, NotifyType.Error);
+						this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
 					}
 				},
 				error: (error: any) => {
 					e.cancel = true;
-					this.notifyFx(error, NotifyType.Error);
+					//this.notifyFx(error, NotifyType.Error);
+					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
 				},
 			});
 	}
@@ -180,6 +198,8 @@ export class ScTipoContratacionComponent extends CBaseComponent implements OnIni
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_TIPO_CONTRATACION')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_TIPO_CONTRATACION')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ES_PERMANENTE')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('AREA_APLICADA')?.option('readOnly', true);
 	}
 
 	override setFocus() {
