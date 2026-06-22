@@ -102,8 +102,9 @@ namespace sguees.Repositories
 				{
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="CORR_TIPO_MODALIDAD",Value=Data.CORR_TIPO_MODALIDAD,DbType=System.Data.DbType.Int32},
-					new CParameter() {ParameterName="NOMBRE_TIPO_MODALIDAD",Value=Data.NOMBRE_TIPO_MODALIDAD,DbType=System.Data.DbType.String},
-					new CParameter() {ParameterName="USUARIO_CREA",Value=Data.USUARIO_CREA,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="MODALIDAD_NOMBRE",Value=Data.MODALIDAD_NOMBRE,DbType=System.Data.DbType.String},
+                    new CParameter() {ParameterName="MODALIDAD_DESCRIPCION",Value=Data.MODALIDAD_DESCRIPCION,DbType=System.Data.DbType.String},
+                    new CParameter() {ParameterName="USUARIO_CREA",Value=Data.USUARIO_CREA,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="ESTACION_CREA",Value=Data.ESTACION_CREA,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="FECHA_CREA",Value=Data.FECHA_CREA,DbType=System.Data.DbType.DateTime},
 					new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
@@ -151,17 +152,20 @@ namespace sguees.Repositories
 			{
 				var p = new List<CParameter>
 				{
-					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
-					new CParameter() {ParameterName="CORR_TIPO_MODALIDAD",Value=Data.CORR_TIPO_MODALIDAD,DbType=System.Data.DbType.Int32},
-					new CParameter() {ParameterName="NOMBRE_TIPO_MODALIDAD",Value=Data.NOMBRE_TIPO_MODALIDAD,DbType=System.Data.DbType.String},
-					new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
+					//new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+					//new CParameter() {ParameterName="CORR_TIPO_MODALIDAD",Value=Data.CORR_TIPO_MODALIDAD,DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="MODALIDAD_NOMBRE",Value=Data.MODALIDAD_NOMBRE,DbType=System.Data.DbType.String},
+                    new CParameter() {ParameterName="MODALIDAD_DESCRIPCION",Value=Data.MODALIDAD_DESCRIPCION,DbType=System.Data.DbType.String},
+                    new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="ESTACION_ACTU",Value=Data.ESTACION_ACTU,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="FECHA_ACTU",Value=Data.FECHA_ACTU,DbType=System.Data.DbType.DateTime},
 				};
 				
 				var pWhere = new List<CParameter>
 				{
-				};
+                    new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+                    new CParameter() {ParameterName="CORR_TIPO_MODALIDAD",Value=Data.CORR_TIPO_MODALIDAD,DbType=System.Data.DbType.Int32},
+                };
 				
 				var reader = await objData.Update(_TableName,p,pWhere);
 				var response = new List<SC_TIPO_MODALIDADView>().FromDataReader(reader).FirstOrDefault();
@@ -202,7 +206,9 @@ namespace sguees.Repositories
 			{
 				var pWhere = new List<CParameter>
 				{
-				};
+                    new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+                    new CParameter() {ParameterName="CORR_TIPO_MODALIDAD",Value=Data.CORR_TIPO_MODALIDAD,DbType=System.Data.DbType.Int32},
+                };
 				
 				objResultado.RowsAffected = (int) await objData.Delete(_TableName,pWhere);
 				objResultado.Data = null;

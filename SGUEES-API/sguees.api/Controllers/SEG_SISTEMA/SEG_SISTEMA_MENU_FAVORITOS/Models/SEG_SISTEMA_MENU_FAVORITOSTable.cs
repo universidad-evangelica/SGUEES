@@ -1,5 +1,4 @@
 ﻿using eFramework.Data;
-
 namespace sguees.api.Controllers.SEG_SISTEMA.SEG_SISTEMA_MENU_FAVORITOS.Models
 {
     //Esta es la tabla completa, mi modelo.

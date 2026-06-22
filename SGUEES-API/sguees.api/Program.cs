@@ -10,7 +10,6 @@ using NetCore.AutoRegisterDi;
 using sguees.api.Data;
 using sguees.api.Shared;
 
-
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
                 .AddJsonOptions(options =>

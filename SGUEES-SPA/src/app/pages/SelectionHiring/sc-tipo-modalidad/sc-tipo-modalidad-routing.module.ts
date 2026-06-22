@@ -14,24 +14,26 @@ import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.compon
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 
 import { ScTipoModalidadComponent } from './sc-tipo-modalidad.component';
+import { ToastModule } from "primeng/toast"; //importar el modulo de Toast para primeNG
 
 const routes: Routes = [{ path: '', component: ScTipoModalidadComponent }];
 
 @NgModule({
 	imports: [
-		RouterModule.forChild(routes),
-		CommonModule,
-		DxFormModule,
-		DxDataGridModule,
-		DxButtonModule,
-		DxLoadPanelModule,
-		DxDropDownBoxModule,
-		DxCheckBoxModule,
-		DxTabPanelModule,
-		DataGridMttoModule,
-		BarraDataMttoModule,
-		DataLookupModule,
-	],
+    RouterModule.forChild(routes),
+    CommonModule,
+    DxFormModule,
+    DxDataGridModule,
+    DxButtonModule,
+    DxLoadPanelModule,
+    DxDropDownBoxModule,
+    DxCheckBoxModule,
+    DxTabPanelModule,
+    DataGridMttoModule,
+    BarraDataMttoModule,
+    DataLookupModule,
+    ToastModule
+],
 	exports: [RouterModule],
 	declarations: [ScTipoModalidadComponent],
 })
