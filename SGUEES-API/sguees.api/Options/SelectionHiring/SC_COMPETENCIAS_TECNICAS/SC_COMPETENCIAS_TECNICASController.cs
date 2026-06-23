@@ -105,7 +105,7 @@ namespace SGUEES.Controllers
         }
 
         [HttpPut("Desactivar")]
-        [Authorize(Policy = "/sc-competencias-tecnicas|D")]
+        [Authorize(Policy = "/sc-competencias-tecnicas|U")]
         public async Task<IActionResult> Desactivar(SC_COMPETENCIAS_TECNICASTable Data)
         {
             SetUpdateAudit(Data);

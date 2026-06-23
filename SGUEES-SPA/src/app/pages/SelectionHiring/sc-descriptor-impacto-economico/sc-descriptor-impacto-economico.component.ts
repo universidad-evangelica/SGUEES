@@ -37,7 +37,7 @@ export class ScDescriptorImpactoEconomicoComponent extends CBaseComponent implem
 		this.onEliminarClick = this.onEliminarClick.bind(this);
 		this.onActivarClick = this.onActivarClick.bind(this);
 		this.onDesactivarClick = this.onDesactivarClick.bind(this);
-		this.columns = this.service.getColumns(this.onEditClick, this.onEliminarClick, this.onActivarClick, this.onDesactivarClick);
+		this.columns = this.service.getColumns(this.onEditClick, this.onEliminarClick, this.onActivarClick, this.onDesactivarClick, this.permiteEdit, this.permiteDele);
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 	}

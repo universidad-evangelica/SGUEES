@@ -82,6 +82,9 @@ export class CBaseComponent {
 		if (permisos.includes('D')) {
 			this.permiteDele = true;
 		}
+		if (permisos.includes('P')) {
+			this.permitePrint = true;
+		}
 	}
 
 	//#region <Metodos Browse>

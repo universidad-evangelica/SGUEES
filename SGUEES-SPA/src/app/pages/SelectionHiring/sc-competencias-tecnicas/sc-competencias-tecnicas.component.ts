@@ -45,7 +45,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.onDesactivarClick = this.onDesactivarClick.bind(this);
 		this.onNivelChanged = this.onNivelChanged.bind(this);
 		this.onPadreChanged = this.onPadreChanged.bind(this);
-		this.columns = this.service.getColumns(this.onEditClick, this.onEliminarClick, this.onActivarClick, this.onDesactivarClick);
+		this.columns = this.service.getColumns(this.onEditClick, this.onEliminarClick, this.onActivarClick, this.onDesactivarClick, this.permiteEdit, this.permiteDele);
 		this.summary = this.service.getSummary();
 		this.refreshFormItems();
 	}

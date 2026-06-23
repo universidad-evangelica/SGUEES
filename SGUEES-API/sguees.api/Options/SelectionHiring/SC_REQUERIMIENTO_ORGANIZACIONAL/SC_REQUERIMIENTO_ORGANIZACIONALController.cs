@@ -81,7 +81,7 @@ namespace SGUEES.Controllers
         }
 
         [HttpPut("Desactivar")]
-        [Authorize(Policy = "/sc-requerimiento-organizacional|D")]
+        [Authorize(Policy = "/sc-requerimiento-organizacional|U")]
         public async Task<IActionResult> Desactivar(SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
         {
             SetUpdateAudit(Data);

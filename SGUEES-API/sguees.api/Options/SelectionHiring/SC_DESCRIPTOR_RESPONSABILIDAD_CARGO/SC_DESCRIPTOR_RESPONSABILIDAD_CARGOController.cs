@@ -81,7 +81,7 @@ namespace SGUEES.Controllers
         }
 
         [HttpPut("Desactivar")]
-        [Authorize(Policy = "/sc-descriptor-responsabilidad-cargo|D")]
+        [Authorize(Policy = "/sc-descriptor-responsabilidad-cargo|U")]
         public async Task<IActionResult> Desactivar(SC_DESCRIPTOR_RESPONSABILIDAD_CARGOTable Data)
         {
             SetUpdateAudit(Data);
