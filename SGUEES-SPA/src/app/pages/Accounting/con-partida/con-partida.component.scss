@@ -31,16 +31,27 @@
 }
 
 .partida-deta-grid {
+	/* Barra de acciones del detalle (Agregar / Guardar / Cancelar).
+	   ANTES: solo era un flex con gap:10px y margin-bottom:12px, sin contenedor visual.
+	   AHORA: se agrupa en una superficie sutil para separarla del encabezado y de la grilla. */
 	.partida-deta-toolbar {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 10px;
-		margin-bottom: 12px;
+		/* margin-bottom: 12px;  (valor original) */
+		margin-bottom: 14px;
+		padding: 10px 12px;
+		background: var(--sguees-surface-subtle, #eef1f6);
+		border: 1px solid var(--border-color);
+		border-radius: var(--sguees-radius-md, 10px);
 	}
 
+	/* Botones de la barra de detalle.
+	   ANTES: min-width:170px (se veían muy anchos). AHORA: 150px para un look más compacto. */
 	::ng-deep .partida-deta-toolbar-btn .dx-button {
-		min-width: 170px;
+		/* min-width: 170px;  (valor original) */
+		min-width: 150px;
 		min-height: 40px;
 		padding-inline: 16px;
 		font-size: 14px;
@@ -48,15 +59,22 @@
 	}
 
 	::ng-deep .partida-deta-toolbar-btn--cancel .dx-button {
-		min-width: 150px;
+		/* min-width: 150px;  (valor original) */
+		min-width: 140px;
 	}
 
+	/* Columna "Options" del detalle: se igualó al render por defecto de la
+	   grilla principal (mismo tamaño de iconos y todos en azul por defecto).
+	   Por eso se quitó la clase premium de la columna en el HTML y se
+	   desactivaron los overrides de tamaño/color de abajo.
+	   Solo se conserva el ocultar los botones Guardar/Cancelar de la fila. */
 	::ng-deep .partida-deta-datagrid.sguees-data-grid-mtto {
 		.dx-link-save,
 		.dx-link-cancel {
 			display: none !important;
 		}
 
+		/* ---- OVERRIDES ORIGINALES (desactivados para igualar a la tabla principal) ----
 		.dx-datagrid-rowsview .dx-command-edit,
 		.dx-datagrid-rowsview .sguees-grid-col-actions {
 			padding: 0 var(--sguees-space-2, 8px);
@@ -94,6 +112,7 @@
 		.sguees-grid-action-delete {
 			color: var(--error-color, #d9534f);
 		}
+		---- FIN OVERRIDES ORIGINALES ---- */
 	}
 
 	::ng-deep .dx-datagrid-headers .dx-header-row > td,
@@ -107,3 +126,232 @@
 		text-align: right;
 	}
 }
+
+/* ======================================================
+   PROCESOS CONTABLES V3
+====================================================== */
+
+.partida-procesos-strip {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+
+	gap: 24px;
+
+	padding: 12px 18px;
+	margin-bottom: 16px;
+
+	border-radius: var(--sguees-radius-md);
+
+	background-color: var(--card-background);
+
+	border: 1px solid var(--border-color);
+
+	box-shadow: var(--sguees-shadow-sm);
+
+	transition: all .2s ease;
+}
+
+/* ======================================================
+   IZQUIERDA
+====================================================== */
+
+.partida-procesos-left {
+	display: flex;
+	align-items: center;
+	gap: 24px;
+}
+
+.partida-procesos-header {
+	display: flex;
+	flex-direction: column;
+}
+
+.partida-procesos-title {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--sguees-text-primary);
+}
+
+.partida-procesos-subtitle {
+	font-size: 12px;
+	color: var(--sguees-text-secondary);
+	margin-top: 2px;
+}
+
+/* ======================================================
+   ACCIONES
+====================================================== */
+
+.partida-procesos-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* ======================================================
+   PERIODO
+====================================================== */
+
+.partida-periodo-box {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.partida-periodo-label {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--sguees-text-secondary);
+}
+
+.partida-periodo-inputs {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* ======================================================
+   BOTONES
+====================================================== */
+
+::ng-deep .partida-procesos-actions .dx-button {
+	min-height: 34px;
+}
+
+::ng-deep .btn-liquidacion .dx-button {
+	background: #ff9800 !important;
+	border-color: #ff9800 !important;
+	color: white !important;
+}
+
+/* ======================================================
+   RESPONSIVE
+====================================================== */
+
+@media (max-width: 1300px) {
+
+	.partida-procesos-strip {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	.partida-procesos-left {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 12px;
+	}
+
+	.partida-periodo-box {
+		width: 100%;
+	}
+}
+
+/* ======================================================
+   PANTALLA DE EDICIÓN / ALTA (segunda pantalla)
+   Nuevo: agrupa formulario + detalle en tarjetas separadas.
+   No existía estilo previo para estos contenedores.
+====================================================== */
+
+/* Contenedor general de la pantalla de edición: separa verticalmente
+   la tarjeta de encabezado de la tarjeta de detalle. */
+.partida-edit-shell {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sguees-content-gap, 16px);
+}
+
+/* Tarjetas de sección: usa la clase global .sguees-section-card.
+   Aquí solo ajustamos detalles propios de esta pantalla. */
+.partida-form-card,
+.partida-detalle-card {
+	margin-bottom: 0; /* el espacio vertical lo maneja el gap del shell */
+}
+
+/* Encabezado de cada sección (título + subtítulo). */
+.partida-section-head {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-bottom: var(--sguees-space-4, 16px);
+	padding-bottom: var(--sguees-space-3, 12px);
+	border-bottom: 1px solid var(--border-color);
+}
+
+.partida-section-title {
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--sguees-text-primary);
+}
+
+.partida-section-subtitle {
+	font-size: 12px;
+	color: var(--sguees-text-secondary);
+}
+
+/* El formulario ya no necesita margen propio dentro de la tarjeta. */
+.partida-form {
+	::ng-deep .dx-field-item:last-child {
+		padding-bottom: 0;
+	}
+}
+
+/* La grilla de detalle vive dentro de la tarjeta: anulamos el margin-top
+   global de .dx-grid-deta (15px) para que respete el padding de la tarjeta. */
+.partida-detalle-card {
+	::ng-deep .dx-grid-deta {
+		margin-top: 0;
+	}
+}
+
+/* ======================================================
+   CHIP DE DIFERENCIA
+   Reemplaza el <div> con estilos inline (color verde/rojo)
+   por un indicador de estado más legible.
+====================================================== */
+
+.partida-deta-footer {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: var(--sguees-space-3, 12px);
+}
+
+.partida-diferencia-chip {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 8px;
+	padding: 6px 14px;
+	border-radius: var(--sguees-radius-pill, 999px);
+	font-weight: 600;
+	border: 1px solid transparent;
+
+	/* Diferencia en cero = partida cuadrada (estado correcto). */
+	&.is-balanced {
+		background: var(--sguees-status-success-bg);
+		color: var(--success-color, #16a34a);
+		border-color: color-mix(in srgb, var(--success-color, #22c55e) 35%, transparent);
+	}
+
+	/* Diferencia distinta de cero = partida descuadrada (alerta). */
+	&.is-unbalanced {
+		background: var(--sguees-status-danger-bg);
+		color: var(--error-color, #dc2626);
+		border-color: color-mix(in srgb, var(--error-color, #ef4444) 35%, transparent);
+	}
+}
+
+.partida-diferencia-label {
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	opacity: 0.85;
+}
+
+.partida-diferencia-value {
+	font-size: 15px;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+
