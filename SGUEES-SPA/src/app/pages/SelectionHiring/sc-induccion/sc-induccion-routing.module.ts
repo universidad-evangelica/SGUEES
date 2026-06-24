@@ -10,6 +10,7 @@ import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
 import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
+import { ToastModule } from 'primeng/toast';
 import { ScInduccionComponent } from './sc-induccion.component';
 
 const routes: Routes = [{ path: '', component: ScInduccionComponent }];
@@ -27,6 +28,7 @@ const routes: Routes = [{ path: '', component: ScInduccionComponent }];
 		DxTextBoxModule,
 		BarraDataMttoModule,
 		DataGridMttoModule,
+		ToastModule,
 	],
 	exports: [RouterModule],
 	declarations: [ScInduccionComponent],

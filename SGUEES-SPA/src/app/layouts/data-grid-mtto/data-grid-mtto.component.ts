@@ -83,6 +83,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() remoteOperations: boolean | Record<string, unknown> = false;
   @Input() pageSize = 5;
   @Input() allowedPageSizes: number[] = [5, 10, 25, 50, 100];
+  @Input() repaintChangesOnly: boolean | null = null;
   @Input() searchBoxOptions: Record<string, unknown> | null = null;
   @Input() estadoSelectOptions: Record<string, unknown> | null = null;
   @Input() exportFileName = 'Data';
@@ -92,12 +93,16 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   resolvedGridHeight: string | number = 670;
   hasFocusedRow = false;
   filterSyncEnabled = false;
+  gridVisible = true;
+  activePageSize = 5;
 
   private actionColumnsReady = false;
   private showEditActions = true;
   private showDeleteActions = true;
   private contextSub?: Subscription;
   private permiteAddEffective = false;
+  private pageSizeRepaintTimer?: ReturnType<typeof setTimeout>;
+  private pageSizeRemountTimer?: ReturnType<typeof setTimeout>;
 
   get isEmptyData(): boolean {
     return Array.isArray(this.models) && this.models.length === 0;
@@ -166,6 +171,24 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     );
   }
 
+  get isRemotePagingActive(): boolean {
+    if (this.remoteOperations === true) {
+      return true;
+    }
+    return !!(
+      this.remoteOperations &&
+      typeof this.remoteOperations === 'object' &&
+      (this.remoteOperations as Record<string, unknown>)['paging']
+    );
+  }
+
+  get effectiveRepaintChangesOnly(): boolean {
+    if (this.repaintChangesOnly !== null) {
+      return this.repaintChangesOnly;
+    }
+    return !this.isRemotePagingActive;
+  }
+
   constructor(
     private cdr: ChangeDetectorRef,
     private pageContext: MttoPageContextService,
@@ -176,6 +199,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.activePageSize = this.pageSize;
     this.rebuildToolbarOptions();
     this.contextSub = this.pageContext.changes$.subscribe(() => {
       this.permiteAddEffective = this.pageContext.snapshot.permiteAdd;
@@ -194,6 +218,9 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['gridHeight']) {
       this.resolveGridHeight();
+    }
+    if (changes['pageSize'] && !changes['pageSize'].firstChange) {
+      this.activePageSize = this.pageSize;
     }
     if (changes['columnHidingEnabled']) {
       this.columnHidingActive = this.columnHidingEnabled;
@@ -222,6 +249,12 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     this.contextSub?.unsubscribe();
+    if (this.pageSizeRepaintTimer) {
+      clearTimeout(this.pageSizeRepaintTimer);
+    }
+    if (this.pageSizeRemountTimer) {
+      clearTimeout(this.pageSizeRemountTimer);
+    }
   }
 
   private rebuildToolbarOptions(): void {
@@ -383,6 +416,40 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
 
   OneditClick(e: any): void {
     this.editClick.emit(e);
+  }
+
+  OnOptionChanged(e: any): void {
+    if (e?.fullName !== 'paging.pageSize' || e.value === e.previousValue) {
+      return;
+    }
+
+    const grid = e.component;
+    if (!grid) {
+      return;
+    }
+
+    this.activePageSize = Number(e.value) || this.pageSize;
+    grid.pageIndex(0);
+    grid.getDataSource()?.reload();
+
+    if (!this.isRemotePagingActive) {
+      if (this.pageSizeRepaintTimer) {
+        clearTimeout(this.pageSizeRepaintTimer);
+      }
+      this.pageSizeRepaintTimer = setTimeout(() => grid.repaint());
+      return;
+    }
+
+    if (this.pageSizeRemountTimer) {
+      clearTimeout(this.pageSizeRemountTimer);
+    }
+
+    this.gridVisible = false;
+    this.cdr.detectChanges();
+    this.pageSizeRemountTimer = setTimeout(() => {
+      this.gridVisible = true;
+      this.cdr.detectChanges();
+    });
   }
 
   onExporting(e: any): void {

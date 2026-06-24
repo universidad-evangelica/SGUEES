@@ -1,4 +1,4 @@
-﻿<p-toast
+<p-toast
 	position="bottom-right"
 	[showTransformOptions]="'translateY(100%)'"
 	[hideTransitionOptions]="'500ms'"
@@ -17,7 +17,7 @@
 >
 </app-barra-data-mtto>
 
-<div class="content-block dx-card responsive-paddings frecuencia-page frecuencia-form-card" *ngIf="!isBrowse()">
+<div class="content-block dx-card responsive-paddings competencias-tecnicas-page competencias-form-card" *ngIf="!isBrowse()">
 	<dx-form
 		#fData
 		id="fData"
@@ -36,7 +36,7 @@
 	[models]="models"
 	[columns]="columns"
 	[summary]="summary"
-	[keyExpr]="'CORR_RESPONSABILIDAD'"
+	[keyExpr]="'CORR_COMPETENCIAS_TECNICAS'"
 	[remoteOperations]="{ paging: true, filtering: true }"
 	[pageSize]="5"
 	[allowedPageSizes]="pageSizes"
@@ -46,7 +46,7 @@
 	[showExport]="true"
 	[responsiveColumnHiding]="false"
 	[columnHidingEnabled]="false"
-	[exportFileName]="'ResponsabilidadCargo'"
+	[exportFileName]="'CompetenciasTecnicas'"
 	(refresh)="consultar()"
 	(add)="nuevo()"
 	(rowDblClick)="rowDblClick($event)"
