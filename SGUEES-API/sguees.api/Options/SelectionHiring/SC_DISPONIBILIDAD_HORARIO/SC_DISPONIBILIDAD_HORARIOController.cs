@@ -89,7 +89,7 @@ namespace SGUEES.Controllers
         }
 
         [HttpPut("Desactivar")]
-        [Authorize(Policy = "/sc-disponibilidad-horario|D")]
+        [Authorize(Policy = "/sc-disponibilidad-horario|U")]
         public async Task<IActionResult> Desactivar(SC_DISPONIBILIDAD_HORARIOTable Data)
         {
             SetUpdateAudit(Data);

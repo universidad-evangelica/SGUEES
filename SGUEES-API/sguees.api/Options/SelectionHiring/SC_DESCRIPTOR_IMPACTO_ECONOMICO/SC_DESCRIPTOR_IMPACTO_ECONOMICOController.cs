@@ -81,7 +81,7 @@ namespace SGUEES.Controllers
         }
 
         [HttpPut("Desactivar")]
-        [Authorize(Policy = "/sc-descriptor-impacto-economico|D")]
+        [Authorize(Policy = "/sc-descriptor-impacto-economico|U")]
         public async Task<IActionResult> Desactivar(SC_DESCRIPTOR_IMPACTO_ECONOMICOTable Data)
         {
             SetUpdateAudit(Data);

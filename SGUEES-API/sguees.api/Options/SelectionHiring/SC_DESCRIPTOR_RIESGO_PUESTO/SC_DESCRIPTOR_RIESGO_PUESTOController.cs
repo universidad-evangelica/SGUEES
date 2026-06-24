@@ -81,7 +81,7 @@ namespace SGUEES.Controllers
         }
 
         [HttpPut("Desactivar")]
-        [Authorize(Policy = "/sc-descriptor-riesgo-puesto|D")]
+        [Authorize(Policy = "/sc-descriptor-riesgo-puesto|U")]
         public async Task<IActionResult> Desactivar(SC_DESCRIPTOR_RIESGO_PUESTOTable Data)
         {
             SetUpdateAudit(Data);

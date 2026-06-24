@@ -108,7 +108,20 @@ export class ScDisponibilidadHorarioService {
 		return this.repo.desactivar(model, xWhere);
 	}
 
-	getColumns(onEditClick: Function, onDeleteClick: Function, onActivarClick: Function, onDesactivarClick: Function): any {
+	getColumns(onEditClick: Function, onDeleteClick: Function, onActivarClick: Function, onDesactivarClick: Function, canEdit = true, canDelete = true): any {
+		const editHint = canEdit ? 'Editar registro' : 'No tiene permiso para editar registros.';
+		const deleteHint = canDelete ? 'Eliminar registro' : 'No tiene permiso para eliminar registros.';
+		const activarHint = canEdit ? 'Activar registro' : 'No tiene permiso para activar registros.';
+		const desactivarHint = canEdit ? 'Desactivar registro' : 'No tiene permiso para desactivar registros.';
+		const editCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-edit';
+		const deleteCssClass = canDelete ? 'sguees-grid-action-delete' : 'sguees-action-no-delete';
+		const activateCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-activate';
+		const deactivateCssClass = canEdit ? 'sguees-grid-action-delete' : 'sguees-action-no-deactivate';
+		const editClick = canEdit ? onEditClick : () => undefined;
+		const deleteClick = canDelete ? onDeleteClick : () => undefined;
+		const activarClick = canEdit ? onActivarClick : () => undefined;
+		const desactivarClick = canEdit ? onDesactivarClick : () => undefined;
+
 		return [
 			{
 				type: 'buttons',
@@ -122,34 +135,34 @@ export class ScDisponibilidadHorarioService {
 				alignment: 'center',
 				buttons: [
 					{
-						hint: 'Editar registro',
+						hint: editHint,
 						icon: 'edit',
 						stylingMode: 'text',
-						cssClass: 'sguees-grid-action-edit',
-						onClick: onEditClick,
+						cssClass: editCssClass,
+						onClick: editClick,
 					},
 					{
-						hint: 'Eliminar registro',
+						hint: deleteHint,
 						icon: 'trash',
 						stylingMode: 'text',
-						cssClass: 'sguees-grid-action-delete',
-						onClick: onDeleteClick,
+						cssClass: deleteCssClass,
+						onClick: deleteClick,
 					},
 					{
-						hint: 'Activar registro',
+						hint: activarHint,
 						icon: 'refresh',
 						stylingMode: 'text',
-						cssClass: 'sguees-grid-action-edit',
+						cssClass: activateCssClass,
 						visible: (e: any) => !e.row?.data?.ESTADO_DISPONIBILIDAD_HORARIO,
-						onClick: onActivarClick,
+						onClick: activarClick,
 					},
 					{
-						hint: 'Desactivar registro',
+						hint: desactivarHint,
 						icon: 'close',
 						stylingMode: 'text',
-						cssClass: 'sguees-grid-action-delete',
+						cssClass: deactivateCssClass,
 						visible: (e: any) => !!e.row?.data?.ESTADO_DISPONIBILIDAD_HORARIO,
-						onClick: onDesactivarClick,
+						onClick: desactivarClick,
 					},
 				],
 			},
@@ -179,15 +192,6 @@ export class ScDisponibilidadHorarioService {
 					valueExpr: 'value',
 					displayExpr: 'text',
 				},
-				editorOptions: {
-					dataSource: [
-						{ value: true, text: 'Activo' },
-						{ value: false, text: 'Inactivo' },
-					],
-					valueExpr: 'value',
-					displayExpr: 'text',
-					showClearButton: true,
-				},
 				filterCellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
 					new dxSelectBox(cellElement, {
 						dataSource: [
@@ -210,12 +214,6 @@ export class ScDisponibilidadHorarioService {
 					}
 
 					return ['ESTADO_DISPONIBILIDAD_HORARIO', '=', filterValue];
-				},
-				headerFilter: {
-					dataSource: [
-						{ text: 'Activo', value: ['ESTADO_DISPONIBILIDAD_HORARIO', '=', true] },
-						{ text: 'Inactivo', value: ['ESTADO_DISPONIBILIDAD_HORARIO', '=', false] },
-					],
 				},
 			},
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },

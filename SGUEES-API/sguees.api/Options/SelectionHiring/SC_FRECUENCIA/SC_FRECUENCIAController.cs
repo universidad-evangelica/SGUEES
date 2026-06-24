@@ -89,7 +89,7 @@ namespace SGUEES.Controllers
         }
 
         [HttpPut("Desactivar")]
-        [Authorize(Policy = "/sc-frecuencia|D")]
+        [Authorize(Policy = "/sc-frecuencia|U")]
         public async Task<IActionResult> Desactivar(SC_FRECUENCIATable Data)
         {
             SetUpdateAudit(Data);

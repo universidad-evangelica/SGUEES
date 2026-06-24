@@ -5,6 +5,7 @@
 	[showTransformOptions]="'translateX(100%)'"
 ></p-toast>
 
+<div class="sguees-mtto-view">
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[subTituloVentana]="subTituloVentana"
@@ -44,6 +45,7 @@
 	[showAdd]="true"
 	[showRefresh]="true"
 	[showExport]="true"
+	[permitePrint]="permitePrint"
 	[responsiveColumnHiding]="false"
 	[columnHidingEnabled]="false"
 	[exportFileName]="'ResponsabilidadCargo'"
@@ -53,6 +55,8 @@
 	(rowRemoving)="rowRemoving($event)"
 	(focusedRowChanged)="focusedRowChanged($event)"
 ></app-data-grid-mtto>
+
+</div>
 
 <dx-load-panel
 	#loadPanel

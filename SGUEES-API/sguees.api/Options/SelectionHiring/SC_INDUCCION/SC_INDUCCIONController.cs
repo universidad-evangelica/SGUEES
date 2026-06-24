@@ -81,7 +81,7 @@ namespace SGUEES.Controllers
         }
 
         [HttpPut("Desactivar")]
-        [Authorize(Policy = "/sc-induccion|D")]
+        [Authorize(Policy = "/sc-induccion|U")]
         public async Task<IActionResult> Desactivar(SC_INDUCCIONTable Data)
         {
             SetUpdateAudit(Data);

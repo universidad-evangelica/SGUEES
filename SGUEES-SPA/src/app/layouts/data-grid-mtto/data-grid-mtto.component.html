@@ -59,7 +59,9 @@
       (onRowClick)="OnRowClick($event)"
       (onFocusedRowChanged)="OnfocusedRowChanged($event)"
       (onOptionChanged)="OnOptionChanged($event)"
+      (onToolbarPreparing)="OnToolbarPreparing($event)"
       (onExporting)="onExporting($event)"
+      (onContentReady)="OnContentReady($event)"
       [columns]="columns"
       [summary]="null"
       [filterSyncEnabled]="filterSyncEnabled"
@@ -164,5 +166,20 @@
 
       <dxo-scrolling mode="standard"></dxo-scrolling>
     </dx-data-grid>
+
+    <dx-tooltip
+      *ngIf="isBrowse"
+      [target]="permissionTooltipTarget"
+      [(visible)]="permissionTooltipVisible"
+      position="top"
+      container="body"
+      [hideOnOutsideClick]="false"
+    >
+      <div *dxTemplate="let data of 'content'">{{ permissionTooltipMessage }}</div>
+      <dxo-animation>
+        <dxo-show type="pop" [duration]="200"></dxo-show>
+        <dxo-hide type="fade" [duration]="150"></dxo-hide>
+      </dxo-animation>
+    </dx-tooltip>
   </section>
 </div>

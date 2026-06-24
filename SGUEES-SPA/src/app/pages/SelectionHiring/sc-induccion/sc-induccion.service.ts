@@ -59,16 +59,29 @@ export class ScInduccionService {
 	activar(model: any): Observable<IResult> { return this.repo.activar(model, [{ Parameter: 'CORR_INDUCCION', Value: model.CORR_INDUCCION }]); }
 	desactivar(model: any): Observable<IResult> { return this.repo.desactivar(model, [{ Parameter: 'CORR_INDUCCION', Value: model.CORR_INDUCCION }]); }
 
-	getColumns(onEditClick: Function, onDeleteClick: Function, onActivarClick: Function, onDesactivarClick: Function): any {
+	getColumns(onEditClick: Function, onDeleteClick: Function, onActivarClick: Function, onDesactivarClick: Function, canEdit = true, canDelete = true): any {
+		const editHint = canEdit ? 'Editar registro' : 'No tiene permiso para editar registros.';
+		const deleteHint = canDelete ? 'Eliminar registro' : 'No tiene permiso para eliminar registros.';
+		const activarHint = canEdit ? 'Activar registro' : 'No tiene permiso para activar registros.';
+		const desactivarHint = canEdit ? 'Desactivar registro' : 'No tiene permiso para desactivar registros.';
+		const editCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-edit';
+		const deleteCssClass = canDelete ? 'sguees-grid-action-delete' : 'sguees-action-no-delete';
+		const activateCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-activate';
+		const deactivateCssClass = canEdit ? 'sguees-grid-action-delete' : 'sguees-action-no-deactivate';
+		const editClick = canEdit ? onEditClick : () => undefined;
+		const deleteClick = canDelete ? onDeleteClick : () => undefined;
+		const activarClick = canEdit ? onActivarClick : () => undefined;
+		const desactivarClick = canEdit ? onDesactivarClick : () => undefined;
+
 		return [
 			{
 				type: 'buttons', name: 'btnAcciones', caption: 'Options', width: 150, minWidth: 150,
 				allowResizing: false, fixed: true, fixedPosition: 'left', alignment: 'center',
 				buttons: [
-					{ hint: 'Editar registro', icon: 'edit', stylingMode: 'text', cssClass: 'sguees-grid-action-edit', onClick: onEditClick },
-					{ hint: 'Eliminar registro', icon: 'trash', stylingMode: 'text', cssClass: 'sguees-grid-action-delete', onClick: onDeleteClick },
-					{ hint: 'Activar registro', icon: 'refresh', stylingMode: 'text', cssClass: 'sguees-grid-action-edit', visible: (event: any) => !event.row?.data?.ESTADO_INDUCCION, onClick: onActivarClick },
-					{ hint: 'Desactivar registro', icon: 'close', stylingMode: 'text', cssClass: 'sguees-grid-action-delete', visible: (event: any) => !!event.row?.data?.ESTADO_INDUCCION, onClick: onDesactivarClick },
+					{ hint: editHint, icon: 'edit', stylingMode: 'text', cssClass: editCssClass, onClick: editClick },
+					{ hint: deleteHint, icon: 'trash', stylingMode: 'text', cssClass: deleteCssClass, onClick: deleteClick },
+					{ hint: activarHint, icon: 'refresh', stylingMode: 'text', cssClass: activateCssClass, visible: (event: any) => !event.row?.data?.ESTADO_INDUCCION, onClick: activarClick },
+					{ hint: desactivarHint, icon: 'close', stylingMode: 'text', cssClass: deactivateCssClass, visible: (event: any) => !!event.row?.data?.ESTADO_INDUCCION, onClick: desactivarClick },
 				],
 			},
 			{ dataField: 'CORR_INDUCCION', caption: 'Corr.', width: 100 },
@@ -92,12 +105,6 @@ export class ScInduccionService {
 					valueExpr: 'value',
 					displayExpr: 'text',
 				},
-				editorOptions: {
-					dataSource: [{ value: true, text: 'Activo' }, { value: false, text: 'Inactivo' }],
-					valueExpr: 'value',
-					displayExpr: 'text',
-					showClearButton: true,
-				},
 				filterCellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
 					new dxSelectBox(cellElement, {
 						dataSource: [{ value: true, text: 'Activo' }, { value: false, text: 'Inactivo' }],
@@ -115,9 +122,6 @@ export class ScInduccionService {
 					}
 
 					return ['ESTADO_INDUCCION', '=', filterValue];
-				},
-				headerFilter: {
-					dataSource: [{ text: 'Activo', value: ['ESTADO_INDUCCION', '=', true] }, { text: 'Inactivo', value: ['ESTADO_INDUCCION', '=', false] }],
 				},
 			},
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
