@@ -98,9 +98,8 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpPut("Desactivate")]
-        [Authorize(Policy = "/sc-tipo-contratacion|D")]
+        [Authorize(Policy = "/sc-tipo-contratacion|U")]
         public async Task<IActionResult> Desactivate([FromQuery] SC_TIPO_CONTRATACIONTable Data)
-        {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			Data.ACTIVO = false;
 			Data.USUARIO_ACTU = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
