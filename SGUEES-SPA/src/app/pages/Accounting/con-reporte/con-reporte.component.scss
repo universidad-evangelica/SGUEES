@@ -1,0 +1,55 @@
+::ng-deep .con-reporte-drawer {
+	width: 280px;
+}
+
+::ng-deep .options {
+	padding: 16px;
+	background-color: rgba(191, 191, 191, 0.15);
+	min-height: 100%;
+	box-sizing: border-box;
+}
+
+::ng-deep .option {
+	margin-top: 10px;
+}
+
+.con-reporte-drawer-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+.bgOcultar {
+	background-color: transparent !important;
+	justify-content: center;
+}
+
+.con-reporte-content {
+	height: calc(100vh - 120px);
+	min-height: 420px;
+	padding: 0 8px 8px 0;
+}
+
+.con-reporte-content--reporte {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.con-reporte-reporte-panel {
+	text-align: center;
+	color: rgba(255, 255, 255, 0.75);
+	max-width: 420px;
+	padding: 24px;
+}
+
+.con-reporte-reporte-panel h3 {
+	margin: 0 0 8px;
+	font-weight: 500;
+}
+
+.con-reporte-reporte-panel p {
+	margin: 0;
+	line-height: 1.5;
+}

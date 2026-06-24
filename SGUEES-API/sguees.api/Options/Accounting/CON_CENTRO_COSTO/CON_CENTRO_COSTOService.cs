@@ -51,7 +51,9 @@ namespace sguees.Services
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
-	
-		
+		public async Task<CResult> ImportarExcelAsync(CON_CENTRO_COSTO_IMPORTParam Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			return await _repo.ImportarExcelAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
 	}
 }

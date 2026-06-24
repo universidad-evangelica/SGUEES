@@ -1,0 +1,163 @@
+<dx-box class="content-block" direction="row" width="100%" [height]="'auto'">
+	<dxi-item ratio="0" baseSize="28" class="bgOcultar">
+		<dx-toolbar class="bgOcultar" [items]="toolbarContent"></dx-toolbar>
+	</dxi-item>
+	<dxi-item ratio="1">
+		<h2 class="content-block">{{ tituloVentana }}</h2>
+	</dxi-item>
+</dx-box>
+
+<dx-drawer
+	[openedStateMode]="'shrink'"
+	[position]="'before'"
+	[revealMode]="'slide'"
+	[opened]="true"
+	[height]="drawerHeight"
+	template="template"
+	[width]="'100%'"
+	[(opened)]="isDrawerOpen"
+	[closeOnOutsideClick]="false"
+>
+	<div *dxTemplate="let data of 'template'" class="con-reporte-drawer">
+		<div class="options">
+			<dx-form [formData]="filtro" [labelLocation]="'top'" [colCount]="1">
+				<dxi-item *ngIf="usa('FECHA_INICIAL')" dataField="FECHA_INICIAL" editorType="dxDateBox"></dxi-item>
+				<dxi-item *ngIf="usa('FECHA_FINAL')" dataField="FECHA_FINAL" editorType="dxDateBox"></dxi-item>
+				<dxi-item *ngIf="usa('ANIO_PERIODO')" dataField="ANIO_PERIODO" editorType="dxNumberBox"></dxi-item>
+				<dxi-item
+					*ngIf="usa('MES_PERIODO')"
+					dataField="MES_PERIODO"
+					editorType="dxSelectBox"
+					[editorOptions]="{ dataSource: mMeses, displayExpr: 'NOMBRE', valueExpr: 'MES' }"
+				></dxi-item>
+				<dxi-item
+					*ngIf="usa('CUENTA_CONTABLE_INICIAL')"
+					dataField="CUENTA_CONTABLE_INICIAL"
+					editorType="dxSelectBox"
+					[editorOptions]="{
+						dataSource: mCuentas,
+						displayExpr: 'NOMBRE_CUENTA',
+						valueExpr: 'CUENTA_CONTABLE',
+						searchEnabled: true,
+						showClearButton: true
+					}"
+				></dxi-item>
+				<dxi-item
+					*ngIf="usa('CUENTA_CONTABLE_FINAL')"
+					dataField="CUENTA_CONTABLE_FINAL"
+					editorType="dxSelectBox"
+					[editorOptions]="{
+						dataSource: mCuentas,
+						displayExpr: 'NOMBRE_CUENTA',
+						valueExpr: 'CUENTA_CONTABLE',
+						searchEnabled: true,
+						showClearButton: true
+					}"
+				></dxi-item>
+				<dxi-item
+					*ngIf="usa('CUENTA_DEPARTAMENTO') || usa('CUENTA_CONTABLE')"
+					dataField="CUENTA_CONTABLE"
+					editorType="dxSelectBox"
+					[editorOptions]="{
+						dataSource: mCuentas,
+						displayExpr: 'NOMBRE_CUENTA',
+						valueExpr: 'CUENTA_CONTABLE',
+						searchEnabled: true,
+						showClearButton: true
+					}"
+				></dxi-item>
+				<dxi-item *ngIf="usa('NIVEL')" dataField="NIVEL" editorType="dxNumberBox" [editorOptions]="{ min: 1, max: 9 }"></dxi-item>
+				<dxi-item
+					*ngIf="usa('CORR_CONFI_REPORTE')"
+					dataField="CORR_CONFI_REPORTE"
+					editorType="dxSelectBox"
+					[editorOptions]="{
+						dataSource: mConfiReporte,
+						displayExpr: 'NOMBRE_REPORTE',
+						valueExpr: 'CORR_CONFI_REPORTE',
+						searchEnabled: true,
+						showClearButton: true
+					}"
+				></dxi-item>
+				<dxi-item *ngIf="usa('PARTIDA_CIERRE')" dataField="PARTIDA_CIERRE" editorType="dxCheckBox"></dxi-item>
+				<dxi-item *ngIf="usa('PARTIDA_LIQUIDACION')" dataField="PARTIDA_LIQUIDACION" editorType="dxCheckBox"></dxi-item>
+				<dxi-item *ngIf="usa('CONSOLIDADO')" dataField="CONSOLIDADO" editorType="dxCheckBox"></dxi-item>
+				<dxi-item *ngIf="usa('CUENTA_A_CERO')" dataField="CUENTA_A_CERO" editorType="dxCheckBox"></dxi-item>
+				<dxi-item *ngIf="usa('FOLIADO')" dataField="FOLIADO" editorType="dxCheckBox"></dxi-item>
+				<dxi-item *ngIf="usa('NUMERO_FOLIO')" dataField="NUMERO_FOLIO" editorType="dxNumberBox"></dxi-item>
+				<dxi-item *ngIf="usa('CORR_MONEDA')" dataField="CORR_MONEDA" editorType="dxNumberBox"></dxi-item>
+			</dx-form>
+
+			<div class="con-reporte-drawer-actions">
+				<dx-button
+					*ngIf="consultaGridDisponible()"
+					text="Consultar"
+					type="default"
+					icon="search"
+					(onClick)="consultar()"
+				></dx-button>
+				<dx-button
+					*ngIf="pdfDisponible()"
+					text="Imprimir PDF"
+					type="default"
+					icon="exportpdf"
+					(onClick)="obtenerPDF()"
+				></dx-button>
+				<dx-button text="Limpiar" type="normal" icon="clearformat" stylingMode="outlined" (onClick)="limpiar()"></dx-button>
+			</div>
+		</div>
+	</div>
+
+	<div class="con-reporte-content" *ngIf="consultaGridDisponible()">
+		<dx-data-grid
+			#gridReporte
+			class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise"
+			[dataSource]="datos"
+			[columns]="columnas"
+			[showBorders]="true"
+			[columnAutoWidth]="true"
+			[allowColumnResizing]="true"
+			[rowAlternationEnabled]="true"
+			[hoverStateEnabled]="true"
+			[height]="'100%'"
+			(onExporting)="onExporting($event)"
+		>
+			<dxo-toolbar>
+				<dxi-item name="exportButton"></dxi-item>
+				<dxi-item name="searchPanel" location="after"></dxi-item>
+			</dxo-toolbar>
+			<dxo-search-panel [visible]="true"></dxo-search-panel>
+			<dxo-export [enabled]="true" [fileName]="codigoReporte"></dxo-export>
+			<dxo-scrolling mode="virtual"></dxo-scrolling>
+			<dxo-paging [enabled]="false"></dxo-paging>
+		</dx-data-grid>
+	</div>
+
+	<div class="con-reporte-content con-reporte-content--reporte" *ngIf="!consultaGridDisponible()">
+		<div class="con-reporte-reporte-panel">
+			<h3>Reporte PDF</h3>
+			<p>Configure los filtros en el panel lateral y pulse <strong>Imprimir PDF</strong>.</p>
+		</div>
+	</div>
+</dx-drawer>
+
+<dx-popup
+	[width]="'1200px'"
+	[position]="'top'"
+	[height]="'1050px'"
+	[showTitle]="true"
+	title="Vista Previa"
+	[dragEnabled]="false"
+	[closeOnOutsideClick]="false"
+	[showCloseButton]="true"
+	[shading]="false"
+	[(visible)]="popupVisiblePdf"
+	(onHiding)="hidePdfPopup()"
+	class="popout"
+>
+	<object [data]="PDF" type="application/pdf" width="100%" height="95%">
+		<embed [src]="PDF" type="application/pdf" />
+	</object>
+</dx-popup>
+
+<dx-load-panel [visible]="loadingVisible" [showIndicator]="true" [showPane]="true" [shading]="true"></dx-load-panel>

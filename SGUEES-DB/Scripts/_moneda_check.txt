@@ -1,0 +1,19 @@
+﻿=== Moneda check run 2026-06-22 08:57:50 ===
+Server: 192.168.0.250  Database: SGUEES  User: erp
+
+=== sys.objects MONEDA ===
+name type_desc
+---- ---------
+
+(0 rows affected)
+=== CON_PARAMETRO TOP 5 CORR_MONEDA ===
+CORR_MONEDA
+-----------
+
+(0 rows affected)
+=== EXEC PRAL_IMPR_CON_LIBRO_DIARIO ===
+Msg 2812, Level 16, State 62, Server WIN-18A5D8C0DM1\MSSQLSERVER2, Line 2
+No se encontró el procedimiento almacenado 'PRAL_IMPR_CON_LIBRO_DIARIO'.
+
+
+sqlcmd exit code: 1

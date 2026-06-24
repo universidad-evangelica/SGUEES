@@ -28,4 +28,12 @@ export class ScTipoVacanteRepository {
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
+
+	desactivate(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put({}, this.xController, 'Desactivate', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
+	reactivate(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put({}, this.xController, 'Reactivate', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
 }

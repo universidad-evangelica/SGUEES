@@ -1,0 +1,148 @@
+:host {
+	display: block;
+	width: 100%;
+	margin: 0;
+}
+
+.cta-page {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	width: 100%;
+	height: calc(100vh - 120px);
+	min-height: 560px;
+	overflow: hidden;
+}
+
+.cta-alert {
+	padding: 10px 14px !important;
+	border-left: 4px solid #d13438;
+	color: inherit;
+	font-size: 0.9rem;
+	flex-shrink: 0;
+}
+
+.cta-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 12px 16px !important;
+	flex-shrink: 0;
+}
+
+.cta-toolbar__title h2 {
+	margin: 0 0 4px;
+	font-size: 1.25rem;
+	font-weight: 600;
+}
+
+.cta-toolbar__title p {
+	margin: 0;
+	font-size: 0.9rem;
+	opacity: 0.85;
+}
+
+.cta-toolbar__hint {
+	font-style: italic;
+}
+
+.cta-badge {
+	margin-left: 8px;
+	font-size: 0.8rem;
+	opacity: 0.7;
+}
+
+.cta-toolbar__actions {
+	display: flex;
+	gap: 8px;
+	flex-shrink: 0;
+	flex-wrap: wrap;
+}
+
+.cta-panels {
+	display: grid;
+	grid-template-columns: minmax(380px, 1.35fr) minmax(300px, 1fr) minmax(300px, 1fr);
+	gap: 10px;
+	flex: 1;
+	min-height: 0;
+	width: 100%;
+	overflow: hidden;
+}
+
+.cta-panel {
+	display: flex;
+	flex-direction: column;
+	padding: 8px 10px !important;
+	min-height: 0;
+	height: 100%;
+	overflow: hidden;
+}
+
+.cta-panel__header-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 4px;
+	padding-bottom: 6px;
+	border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+	flex-shrink: 0;
+}
+
+.cta-panel__header {
+	font-weight: 600;
+	white-space: nowrap;
+	margin-bottom: 4px;
+	padding-bottom: 6px;
+	border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+	flex-shrink: 0;
+}
+
+.cta-panel__header-row .cta-panel__header {
+	margin-bottom: 0;
+	padding-bottom: 0;
+	border-bottom: none;
+}
+
+.cta-panel__hint {
+	margin: 0 0 4px;
+	font-size: 0.78rem;
+	opacity: 0.75;
+	flex-shrink: 0;
+}
+
+.cta-panel__body {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+}
+
+:host ::ng-deep .cta-panel__body .cta-grid {
+	width: 100%;
+	overflow: hidden;
+}
+
+@media (max-width: 1400px) {
+	.cta-panels {
+		grid-template-columns: minmax(320px, 1.2fr) minmax(260px, 1fr) minmax(260px, 1fr);
+	}
+}
+
+@media (max-width: 1100px) {
+	.cta-page {
+		height: auto;
+		min-height: calc(100vh - 120px);
+		overflow: visible;
+	}
+
+	.cta-panels {
+		grid-template-columns: 1fr;
+		overflow: visible;
+	}
+
+	.cta-panel {
+		min-height: 480px;
+		height: 480px;
+	}
+}

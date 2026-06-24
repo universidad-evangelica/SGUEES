@@ -2,6 +2,8 @@ export interface ScTipoVacante {
 	CORR_EMPRESA: number;
 	CORR_TIPO_VACANTE: number;
 	NOMBRE_TIPO_VACANTE: string;
+	REQUIERE_SUSTITUCION: boolean;
+	ACTIVO: boolean;
 	USUARIO_CREA: string;
 	ESTACION_CREA: string;
 	FECHA_CREA: Date;
