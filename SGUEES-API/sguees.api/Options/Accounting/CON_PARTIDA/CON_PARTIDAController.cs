@@ -90,7 +90,7 @@ namespace sguees.Controllers
 		}
 
 		[HttpPut("Aplicar")]
-		[Authorize(Policy = "/con-partida|U")]
+		[Authorize(Policy = "/con-partida-aplicar|U")]
 		public async Task<IActionResult> Aplicar(CON_PARTIDATable Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -165,6 +165,64 @@ namespace sguees.Controllers
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			return await _service.GetAllDetaDocAsync(Data);
+		}
+
+		[HttpPost("getPDF")]
+		[Authorize(Policy = "/con-partida|P")]
+		public async Task<IActionResult> GetPDF([FromBody] CON_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			var login = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? "";
+			try
+			{
+				var stream = await _service.GetPDFAsync(Data, login);
+				if (stream == null)
+				{
+					return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = "No se pudo generar el PDF de la partida." });
+				}
+				return File(stream, "application/pdf", "PARTIDA_CONTABLE.pdf");
+			}
+			catch (System.InvalidOperationException ex)
+			{
+				return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
+			}
+			catch (System.Exception ex)
+			{
+				return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
+			}
+		}
+
+		[HttpPut("GenerarPartidaLiquidacion")]
+		[Authorize(Policy = "/con-partida|U")]
+		public async Task<IActionResult> GenerarPartidaLiquidacion(CON_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			var login = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value?.ToLower() ?? "";
+			var estacion = ClientInfoHelper.GetClientStation(HttpContext);
+			var resultado = await _service.GenerarPartidaLiquidacionAsync(Data, login, estacion);
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
+		[HttpPut("GenerarPartidaCierre")]
+		[Authorize(Policy = "/con-partida|U")]
+		public async Task<IActionResult> GenerarPartidaCierre(CON_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			var login = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value?.ToLower() ?? "";
+			var estacion = ClientInfoHelper.GetClientStation(HttpContext);
+			var resultado = await _service.GenerarPartidaCierreAsync(Data, login, estacion);
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
+		[HttpPut("GenerarPartidaApertura")]
+		[Authorize(Policy = "/con-partida|U")]
+		public async Task<IActionResult> GenerarPartidaApertura(CON_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			var login = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value?.ToLower() ?? "";
+			var estacion = ClientInfoHelper.GetClientStation(HttpContext);
+			var resultado = await _service.GenerarPartidaAperturaAsync(Data, login, estacion);
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 	}
 }

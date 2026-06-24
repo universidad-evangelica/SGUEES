@@ -16,6 +16,7 @@ import { ScreenService, AppInfoService } from '../../shared/services';
 import { SideNavigationMenuModule } from 'src/app/shared/components/library/side-navigation-menu/side-navigation-menu.component';
 import { AppHeaderModule } from 'src/app/shared/components/library/app-header/app-header.component';
 import { AppFooterModule } from 'src/app/shared/components/library/app-footer/app-footer.component';
+import { ToastModule } from 'primeng/toast';
 
 import { Subscription } from 'rxjs';
 import { debounceTime } from 'rxjs/operators';
@@ -145,7 +146,8 @@ export class SideNavOuterToolbarComponent implements OnInit, OnDestroy {
     AppHeaderModule,
     DxScrollViewModule,
     CommonModule,
-    AppFooterModule
+    AppFooterModule,
+    ToastModule,
   ],
   exports: [SideNavOuterToolbarComponent],
   declarations: [SideNavOuterToolbarComponent],

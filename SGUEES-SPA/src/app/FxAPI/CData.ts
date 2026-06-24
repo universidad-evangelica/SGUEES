@@ -56,6 +56,16 @@ export class CData {
 		return this.http.post<IResult>(xUrlAPI + xController + '/' + xMetodo, xContent);
 	}
 
+	PostBlob(xContent: any, xController: string, xMetodo: string, xUrlAPI?: string): Observable<Blob> {
+		if (xUrlAPI === undefined) {
+			xUrlAPI = this.UrlAPI;
+		}
+
+		return this.http.post<Blob>(xUrlAPI + xController + '/' + xMetodo, xContent, {
+			responseType: 'blob' as 'json',
+		});
+	}
+
 	Put(xContent: any, xController: string, xMetodo: string, xWhere: IParam[], xUrlAPI?: string): Observable<IResult> {
 		if (xUrlAPI === undefined) {
 			xUrlAPI = this.UrlAPI;

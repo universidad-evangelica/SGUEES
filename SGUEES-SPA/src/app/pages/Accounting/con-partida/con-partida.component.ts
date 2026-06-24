@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { take } from 'rxjs/operators';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 
@@ -50,6 +51,15 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	btnCrearModelo = '';
 	btnImportarExcel = '';
 	btnGenerarDesdeModelo = '';
+	btnImprimir = '';
+	btnPartidaLiquidacion = '';
+	btnPartidaCierre = '';
+	btnPartidaApertura = '';
+	vANIO_PERIODO_CIERRE = new Date().getFullYear();
+	vMES_PERIODO_CIERRE = new Date().getMonth() + 1;
+	popupVisiblePdf = false;
+	vPDF: Blob | null = null;
+	PDF!: SafeUrl;
 	importExcelVisible = false;
 	vFECHA_INICIAL: Date = new Date();
 	vFECHA_FINAL: Date = new Date();
@@ -65,10 +75,12 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		private catalogoCuentaService: ConCatalogoCuentaService,
 		private centroCostoService: ConCentroCostoService,
 		private cuentaCentroService: ConCatalogoCuentaCentroCostoService,
-		private cdr: ChangeDetectorRef
+		private cdr: ChangeDetectorRef,
+		private sanitization: DomSanitizer
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
+		this.configurarColumnasGrid();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 		this.docColumns = this.docService.getColumns();
@@ -80,6 +92,60 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		this.editarDetalleClick = this.editarDetalleClick.bind(this);
 		this.detalleEditButtonVisible = this.detalleEditButtonVisible.bind(this);
 		this.detalleDeleteButtonVisible = this.detalleDeleteButtonVisible.bind(this);
+		this.imprimirPartidaDesdeFila = this.imprimirPartidaDesdeFila.bind(this);
+		this.gridPrintButtonVisible = this.gridPrintButtonVisible.bind(this);
+	}
+
+	configurarColumnasGrid(): void {
+		if (this.columns.some((c: { name?: string }) => c?.name === 'btnAcciones')) {
+			return;
+		}
+		this.columns.unshift({
+			type: 'buttons',
+			name: 'btnAcciones',
+			caption: 'Options',
+			width: 138,
+			minWidth: 138,
+			allowResizing: false,
+			fixed: true,
+			fixedPosition: 'left',
+			alignment: 'center',
+			buttons: [
+				{
+					hint: 'Editar registro',
+					icon: 'edit',
+					stylingMode: 'text',
+					cssClass: 'sguees-grid-action-edit',
+					visible: () => this.permiteEdit,
+					onClick: (e: { row: { data: ConPartida } }) => this.editarClick(e),
+				},
+				{
+					hint: 'Imprimir partida',
+					icon: 'print',
+					stylingMode: 'text',
+					cssClass: 'sguees-grid-action-print',
+					visible: this.gridPrintButtonVisible,
+					onClick: this.imprimirPartidaDesdeFila,
+				},
+				{
+					name: 'delete',
+					hint: 'Eliminar registro',
+					icon: 'trash',
+					stylingMode: 'text',
+					cssClass: 'sguees-grid-action-delete',
+					visible: () => this.permiteDele,
+				},
+			],
+		});
+	}
+
+	gridPrintButtonVisible(): boolean {
+		return this.permitePrint;
+	}
+
+	imprimirPartidaDesdeFila(e: { row: { data: ConPartida } }): void {
+		this.model = e.row.data;
+		this.imprimirPartida();
 	}
 
 	ngOnInit(): void {
@@ -392,12 +458,112 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 			this.btnImportarExcel = this.permiteAdd ? 'Importar Excel' : '';
 			this.btnGenerarDesdeModelo = this.permiteEdit ? 'Generar Partida' : '';
 			this.btnCrearModelo = this.permiteEdit ? 'Crear Modelo' : '';
+			this.btnImprimir = this.permitePrint ? 'Imprimir' : '';
+			this.btnPartidaLiquidacion = this.permiteEdit ? 'Part. Liquidación' : '';
+			this.btnPartidaCierre = this.permiteEdit ? 'Part. Cierre' : '';
+			this.btnPartidaApertura = this.permiteEdit ? 'Part. Apertura' : '';
 			return;
 		}
 
 		this.btnImportarExcel = '';
 		this.btnGenerarDesdeModelo = '';
+		this.btnImprimir =
+			this.permitePrint && this.banderaMtto === UpdateType.Update && this.hasPartidaSeleccionada()
+				? 'Imprimir'
+				: '';
+		this.btnPartidaLiquidacion = '';
+		this.btnPartidaCierre = '';
+		this.btnPartidaApertura = '';
 		this.btnCrearModelo = this.puedeCrearModelo() ? 'Crear Modelo' : '';
+	}
+
+	hasPartidaSeleccionada(): boolean {
+		return !!(
+			this.model?.CORR_PARTIDA &&
+			this.model?.ANIO_PERIODO &&
+			this.model?.MES_PERIODO &&
+			this.model?.CORR_CLASE_PARTIDA
+		);
+	}
+
+	imprimirPartida(): void {
+		if (!this.hasPartidaSeleccionada()) {
+			this.notifyFx('Seleccione una partida para imprimir', NotifyType.Warning);
+			return;
+		}
+		const fechaPartida = this.model.FECHA_PARTIDA || this.vFECHA_INICIAL;
+		this.loadingVisible = true;
+		this.service
+			.getPDF({
+				ANIO_PERIODO: this.model.ANIO_PERIODO,
+				MES_PERIODO: this.model.MES_PERIODO,
+				CORR_CLASE_PARTIDA: this.model.CORR_CLASE_PARTIDA,
+				CORR_PARTIDA: this.model.CORR_PARTIDA,
+				FECHA_INICIAL: this.appInfoService.toDate(fechaPartida),
+				FECHA_FINAL: this.appInfoService.toDate(fechaPartida),
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: (pdf: Blob) => {
+					if (pdf?.size) {
+						this.vPDF = pdf;
+						this.PDF = this.sanitization.bypassSecurityTrustResourceUrl(window.URL.createObjectURL(pdf));
+						this.popupVisiblePdf = true;
+					} else {
+						this.notifyFx('No se recibió el PDF de la partida', NotifyType.Error);
+					}
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					const msg =
+						typeof error === 'string'
+							? error
+							: error?.ErrorMessage || error?.message || 'Error al generar PDF';
+					this.notifyFx(msg, NotifyType.Error);
+				},
+			});
+	}
+
+	ejecutarPartidaEspecial(tipo: 'LIQ' | 'CIE' | 'APE'): void {
+		if (!this.vANIO_PERIODO_CIERRE || !this.vMES_PERIODO_CIERRE) {
+			this.notifyFx('Indique año y mes del periodo', NotifyType.Warning);
+			return;
+		}
+		const labels = { LIQ: 'liquidación', CIE: 'cierre', APE: 'apertura' };
+		const confirma = custom({
+			title: 'Confirmar',
+			messageHtml: `¿Generar partida de ${labels[tipo]} para ${this.vMES_PERIODO_CIERRE}/${this.vANIO_PERIODO_CIERRE}?`,
+			buttons: [
+				{ text: 'Sí', onClick: () => true },
+				{ text: 'No', onClick: () => false },
+			],
+		});
+		confirma.show().then((result) => {
+			if (!result) return;
+			this.loadingVisible = true;
+			const call =
+				tipo === 'LIQ'
+					? this.service.generarPartidaLiquidacion(this.vANIO_PERIODO_CIERRE, this.vMES_PERIODO_CIERRE)
+					: tipo === 'CIE'
+						? this.service.generarPartidaCierre(this.vANIO_PERIODO_CIERRE, this.vMES_PERIODO_CIERRE)
+						: this.service.generarPartidaApertura(this.vANIO_PERIODO_CIERRE, this.vMES_PERIODO_CIERRE);
+			call.pipe(take(1)).subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (response?.ErrorCode === 0) {
+						this.notifyFx(`Partida de ${labels[tipo]} generada`, NotifyType.Success);
+						this.consultar();
+					} else {
+						this.notifyFx(response?.ErrorMessage || 'Error al generar partida', NotifyType.Error);
+					}
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+		});
 	}
 
 	irImportarExcel(): void {

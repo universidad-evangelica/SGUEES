@@ -12,22 +12,39 @@
 	(guardar)="guardar()"
 	(cancelar)="cancelar()"
 	(consultar)="consultar()"
-	[btn1]="btnCrearModelo"
-	[btn1Icon]="'copy'"
+	[btn1]="btnImprimir"
+	[btn1Icon]="'print'"
 	[btn1Type]="'default'"
-	(btn1Click)="CrearModelo()"
-	[btn1Width]="130"
+	(btn1Click)="imprimirPartida()"
+	[btn1Width]="110"
 	[btn2]="btnImportarExcel"
 	[btn2Icon]="'exportxlsx'"
 	[btn2Type]="'default'"
 	(btn2Click)="irImportarExcel()"
 	[btn2Width]="155"
-	[btn3]="btnGenerarDesdeModelo"
-	[btn3Icon]="'paste'"
+	[btn3]="btnCrearModelo"
+	[btn3Icon]="'copy'"
 	[btn3Type]="'default'"
-	(btn3Click)="irGenerarDesdeModelo()"
-	[btn3Width]="155"
+	(btn3Click)="CrearModelo()"
+	[btn3Width]="150"
+	[btn4]="btnGenerarDesdeModelo"
+	[btn4Icon]="'paste'"
+	[btn4Type]="'default'"
+	(btn4Click)="irGenerarDesdeModelo()"
+	[btn4Width]="185"
 >
+	<div
+		toolbarExtra
+		class="partida-especial-toolbar partida-especial-toolbar--inline"
+		*ngIf="isBrowse() && (btnPartidaApertura || btnPartidaLiquidacion || btnPartidaCierre)"
+	>
+		<span class="partida-especial-label">Periodo cierre/apertura:</span>
+		<dx-number-box [(value)]="vANIO_PERIODO_CIERRE" [min]="2000" [max]="2100" [showSpinButtons]="true" [width]="90"></dx-number-box>
+		<dx-number-box [(value)]="vMES_PERIODO_CIERRE" [min]="1" [max]="12" [showSpinButtons]="true" [width]="70"></dx-number-box>
+		<dx-button *ngIf="btnPartidaApertura" text="Part. Apertura" icon="unlock" type="default" stylingMode="contained" (onClick)="ejecutarPartidaEspecial('APE')"></dx-button>
+		<dx-button *ngIf="btnPartidaLiquidacion" text="Part. Liquidación" icon="money" type="default" stylingMode="contained" (onClick)="ejecutarPartidaEspecial('LIQ')"></dx-button>
+		<dx-button *ngIf="btnPartidaCierre" text="Part. Cierre" icon="lock" type="default" stylingMode="contained" (onClick)="ejecutarPartidaEspecial('CIE')"></dx-button>
+	</div>
 </app-barra-data-mtto>
 <div *ngIf="!isBrowse()">
 	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
@@ -323,6 +340,19 @@
 			(imported)="onImportExcelSuccess()"
 			(cancelled)="importExcelVisible = false"
 		></app-con-partida-importar-excel>
+	</div>
+</dx-popup>
+
+<dx-popup
+	[(visible)]="popupVisiblePdf"
+	[title]="'Partida Contable'"
+	[fullScreen]="true"
+	[showCloseButton]="true"
+>
+	<div *dxTemplate="let data of 'content'" style="height: 100%;">
+		<object [data]="PDF" type="application/pdf" width="100%" height="95%">
+			<embed [src]="PDF" type="application/pdf" />
+		</object>
 	</div>
 </dx-popup>
 

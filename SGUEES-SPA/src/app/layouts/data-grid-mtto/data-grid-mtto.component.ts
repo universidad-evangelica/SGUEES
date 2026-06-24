@@ -41,6 +41,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() models!: any;
   @Input() columns: any;
   @Input() summary: any;
+  //botones customizables adicionales
+  @Input() customButtons: any[] = [];
   @Input() isBrowse: boolean = true;
   @Input() keyExpr: string | string[] = '';
   @Input() gridHeight: string | number = 670;
@@ -363,13 +365,14 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       type: 'buttons',
       name: 'btnAcciones',
       caption: 'Options',
-      width: 104,
-      minWidth: 104,
+      width: 125,
+      minWidth: 125,
       allowResizing: false,
       fixed: true,
       fixedPosition: 'left',
       alignment: 'center',
       buttons: [
+
         {
           hint: 'Editar registro',
           icon: 'edit',
@@ -386,6 +389,9 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
           cssClass: 'sguees-grid-action-delete',
           visible: this.showDeleteActions,
         },
+
+        // Botones personalizados enviados desde el componente hijo
+        ...this.customButtons,
       ],
     });
     this.actionColumnsReady = true;
@@ -394,20 +400,23 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   private syncActionButtonsVisibility(): void {
     if (!this.columns) {
       return;
-    }
-    const merged = this.columns.find((c: { name?: string }) => c?.name === 'btnAcciones');
-    if (merged?.buttons?.length === 2 && merged.buttons[1]?.name === 'delete') {
-      merged.buttons[0].visible = this.showEditActions;
-      merged.buttons[1].visible = this.showDeleteActions;
+      }
+        const merged = this.columns.find((c: { name?: string }) => c?.name === 'btnAcciones');
+        if (merged?.buttons?.length) {
+
+      for (const button of merged.buttons) {
+
+        if (button.icon === 'edit') {
+          button.visible = this.showEditActions;
+        }
+
+        if (button.name === 'delete') {
+          button.visible = this.showDeleteActions;
+        }
+
+      }
+
       return;
-    }
-    const editCol = this.columns.find((c: { name?: string }) => c?.name === 'btnEditar');
-    const delCol = this.columns.find((c: { name?: string }) => c?.name === 'btnEliminar');
-    if (editCol?.buttons?.[0]) {
-      editCol.buttons[0].visible = this.showEditActions;
-    }
-    if (delCol?.buttons?.[0]) {
-      delCol.buttons[0].visible = this.showDeleteActions;
     }
   }
 

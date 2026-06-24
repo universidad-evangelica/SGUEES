@@ -34,3 +34,13 @@
 :host ::ng-deep .filtro-btn .dx-button-text {
 	font-size: 15px;
 }
+
+.sin-registros-msg {
+	margin-top: 12px;
+	padding: 14px 18px;
+	border-radius: 8px;
+	background: var(--card-background, #f8f9fa);
+	border: 1px dashed var(--border-color, #ccc);
+	color: var(--texteditor-label-color, #666);
+	font-size: 14px;
+}
