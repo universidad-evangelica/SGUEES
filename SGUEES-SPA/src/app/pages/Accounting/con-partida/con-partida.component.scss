@@ -1,0 +1,109 @@
+.partida-especial-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin: 0 0 12px;
+	padding: 10px 14px;
+
+	&--inline {
+		flex-wrap: wrap;
+		margin: 0;
+		padding: 0 0 0 8px;
+		border-left: 1px solid var(--border-color, #ddd);
+		row-gap: 6px;
+
+		::ng-deep .dx-button {
+			margin-right: 4px;
+		}
+	}
+}
+
+.partida-especial-label {
+	font-weight: 600;
+	margin-right: 4px;
+}
+
+.con-partida-import-popup {
+	height: 100%;
+	min-height: 520px;
+	overflow: hidden;
+}
+
+.partida-deta-grid {
+	.partida-deta-toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px;
+		margin-bottom: 12px;
+	}
+
+	::ng-deep .partida-deta-toolbar-btn .dx-button {
+		min-width: 170px;
+		min-height: 40px;
+		padding-inline: 16px;
+		font-size: 14px;
+		font-weight: 600;
+	}
+
+	::ng-deep .partida-deta-toolbar-btn--cancel .dx-button {
+		min-width: 150px;
+	}
+
+	::ng-deep .partida-deta-datagrid.sguees-data-grid-mtto {
+		.dx-link-save,
+		.dx-link-cancel {
+			display: none !important;
+		}
+
+		.dx-datagrid-rowsview .dx-command-edit,
+		.dx-datagrid-rowsview .sguees-grid-col-actions {
+			padding: 0 var(--sguees-space-2, 8px);
+			white-space: nowrap;
+			text-align: center;
+		}
+
+		.dx-command-edit .dx-link,
+		.sguees-grid-col-actions .dx-link {
+			width: 34px;
+			height: 34px;
+			border-radius: var(--sguees-radius-sm, 6px);
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			margin: 0 1px;
+			text-decoration: none;
+			vertical-align: middle;
+		}
+
+		.dx-command-edit .dx-link .dx-icon,
+		.sguees-grid-col-actions .dx-link .dx-icon {
+			font-size: 18px;
+			width: 18px;
+			height: 18px;
+			line-height: 18px;
+		}
+
+		.dx-link-edit,
+		.sguees-grid-action-edit {
+			color: var(--accent-color, #337ab7);
+		}
+
+		.dx-link-delete,
+		.sguees-grid-action-delete {
+			color: var(--error-color, #d9534f);
+		}
+	}
+
+	::ng-deep .dx-datagrid-headers .dx-header-row > td,
+	::ng-deep .dx-datagrid-rowsview .dx-data-row > td {
+		white-space: normal;
+		word-break: break-word;
+	}
+
+	::ng-deep .dx-datagrid-rowsview .dx-data-row > td:last-child,
+	::ng-deep .dx-datagrid-total-footer .dx-datagrid-summary-item {
+		text-align: right;
+	}
+}

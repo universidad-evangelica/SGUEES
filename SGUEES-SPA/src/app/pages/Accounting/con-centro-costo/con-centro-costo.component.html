@@ -46,25 +46,64 @@
 			>
 			</app-data-lookup>
 		</div>
-		<div *dxTemplate="let cellInfo of 'CORR_EMPLEADO_JEFELookup'">
-			<app-data-lookup
-				[model]="mCORR_EMPLEADO_JEFE"
-				[(value)]="model.CORR_EMPLEADO_JEFE"
-				[selectedRowKeys]="selectedLookUpLista"
-				[readOnly]="readOnly"
-			>
-			</app-data-lookup>
-		</div>
-		<div *dxTemplate="let cellInfo of 'CORR_CLIENTELookup'">
-			<app-data-lookup
-				[model]="mCORR_CLIENTE"
-				[(value)]="model.CORR_CLIENTE"
-				[selectedRowKeys]="selectedLookUpLista"
-				[readOnly]="readOnly"
-			>
-			</app-data-lookup>
-		</div>
 	</dx-form>
+	<dx-tab-panel #tabPanel [selectedIndex]="0">
+		<dxi-item title="Presupuesto" [icon]="'money'">
+			<div class="dx-grid-deta">
+				<dx-data-grid
+					#gridPresupuesto
+					[dataSource]="presupuestos"
+					keyExpr="['ANIO_PERIODO','MES_PERIODO']"
+					[columnAutoWidth]="false"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[focusedRowEnabled]="true"
+					[height]="'100%'"
+					[width]="'100%'"
+					(onRowInserting)="presupuestoRowInserting($event)"
+					(onRowUpdated)="presupuestoRowUpdated($event)"
+					(onRowRemoving)="presupuestoRowRemoving($event)"
+				>
+					<dxo-toolbar>
+						<dxi-item location="before">
+							<div *dxTemplate>
+								<dx-button
+									icon="add"
+									text="Agregar Presupuesto"
+									type="success"
+									(onClick)="agregarPresupuesto()"
+									[visible]="!readOnly"
+									[width]="200"
+								></dx-button>
+							</div>
+						</dxi-item>
+					</dxo-toolbar>
+					<dxo-editing
+						[mode]="'cell'"
+						[refreshMode]="'reshape'"
+						[allowUpdating]="!readOnly"
+						[allowDeleting]="!readOnly"
+						[useIcons]="true"
+					></dxo-editing>
+					<dxo-paging [enabled]="false"></dxo-paging>
+					<dxi-column type="buttons" [width]="45">
+						<dxi-button name="delete" [visible]="!readOnly"></dxi-button>
+					</dxi-column>
+					<dxi-column dataField="ANIO_PERIODO" caption="Año" [width]="100" dataType="number"></dxi-column>
+					<dxi-column dataField="MES_PERIODO" caption="Mes" [width]="100" dataType="number"></dxi-column>
+					<dxi-column dataField="MONTO_PRESUPUESTO" caption="Monto" [width]="180" dataType="number" [format]="'#,##0.00'" [editorOptions]="{ format: '#,##0.00' }"></dxi-column>
+					<dxo-summary>
+						<dxi-total-item column="ANIO_PERIODO" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
+						<dxi-total-item column="MONTO_PRESUPUESTO" summaryType="sum" valueFormat="#,##0.00" displayFormat="Total: {0}"></dxi-total-item>
+					</dxo-summary>
+				</dx-data-grid>
+			</div>
+		</dxi-item>
+	</dx-tab-panel>
 </div>
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
@@ -72,6 +111,7 @@
 	[columns]="columns"
 	[summary]="summary"
 	[keyExpr]="'CORR_CENTRO_COSTO'"
+	[columnAutoWidth]="true"
 	[permiteEditar]="getPermiteEditar"
 	[permiteDele]="getPermiteDele"
 	(rowDblClick)="rowDblClick($event)"

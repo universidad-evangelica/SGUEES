@@ -72,11 +72,11 @@ export class ScTipoContratacionService {
 			{ dataField: 'ES_PERMANENTE', caption: 'Es Permanente', width: 200, dataType: 'boolean', alignment: 'left' },
 			{ dataField: 'ACTIVO', caption: 'Activo', width: 200, dataType: 'boolean', alignment: 'left' },
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
-			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
-			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
-			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
-			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
-			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			//{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
+			//{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			//{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
+			//{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
+			//{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
 		];
 	}
 

@@ -1,10 +1,9 @@
-import { Component, ViewChild } from '@angular/core';
+import { Component, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
 import esMessages from 'devextreme/localization/messages/es.json';
 import { loadMessages, locale } from 'devextreme/localization';
 import { custom } from 'devextreme/ui/dialog';
-import notify from 'devextreme/ui/notify';
 import { DxFormComponent } from 'devextreme-angular/ui/form';
 
 import { UpdateType } from '../shared/models/UpdateType.enum';
@@ -12,6 +11,7 @@ import { RowStatus } from '../shared/models/RowStatus.enum';
 import { NotifyType } from '../shared/models/NotifyType';
 
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
+import { SgueesNotificationService } from 'src/app/shared/services/sguees-notification.service';
 
 @Component({
 	selector: 'app-base-component',
@@ -19,6 +19,8 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 })
 export class CBaseComponent {
 	@ViewChild('fData', { static: false }) dataForm!: DxFormComponent;
+
+	private readonly sgueesNotify = inject(SgueesNotificationService);
 
   //#region <Declareando Variales>
 	tituloVentana = '';
@@ -81,6 +83,9 @@ export class CBaseComponent {
 		}
 		if (permisos.includes('D')) {
 			this.permiteDele = true;
+		}
+		if (permisos.includes('P')) {
+			this.permitePrint = true;
 		}
 	}
 
@@ -197,19 +202,7 @@ export class CBaseComponent {
 	}
 
 	notifyFx(xMessage: string, xType: NotifyType) {
-		if (xType == NotifyType.Success) {
-			notify({ message: xMessage, width: 'auto', shading: false }, 'success', 1500);
-		} else if (xType == NotifyType.Error) {
-			notify(
-				{ message: xMessage, width: 'auto', shading: false, closeOnClick: true, closeOnOutsideClick: true },
-				'error',
-				500000
-			);
-		} else if (xType === NotifyType.Warning) {
-			notify({ message: xMessage, width: 'auto', shading: false }, 'warning', 1500);
-		} else {
-			notify({ message: xMessage, width: 'auto', shading: false }, 'success', 1500);
-		}
+		this.sgueesNotify.show(xMessage, xType);
 	}
 
 	confirmaCancelar(fn: () => void) {

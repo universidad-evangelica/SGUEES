@@ -348,7 +348,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
       text,
       type,
       onClick,
-      visible: text !== '' && browseToolbarInBarra,
+      visible: text !== '' && (browseToolbarInBarra || !this.isBrowse),
     };
     if (width > 0) {
       opt.width = width;

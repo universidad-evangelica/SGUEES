@@ -10,9 +10,12 @@ import {
   OnInit,
   Output,
   SimpleChanges,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
+import { DxDataGridComponent, DxDataGridModule } from 'devextreme-angular/ui/data-grid';
+import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
+import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { EmptyStateModule } from 'src/app/shared/components/library/empty-state/empty-state.component';
 import { MttoPageContextService } from 'src/app/layouts/mtto-page-context.service';
 import { Subscription } from 'rxjs';
@@ -32,6 +35,8 @@ import { saveAs } from 'file-saver-es';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
+  @ViewChild('gData', { static: false }) gData?: DxDataGridComponent;
+
   @Input() models!: any;
   @Input() columns: any;
   @Input() summary: any;
@@ -75,6 +80,12 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   /** null = adoptar contexto barra (header-only). false = toolbar legacy 7B. */
   @Input() unifiedToolbar: boolean | null = null;
   @Input() searchPlaceholder = 'Buscar...';
+  @Input() remoteOperations: boolean | Record<string, unknown> = false;
+  @Input() pageSize = 5;
+  @Input() allowedPageSizes: number[] = [5, 10, 25, 50, 100];
+  @Input() searchBoxOptions: Record<string, unknown> | null = null;
+  @Input() estadoSelectOptions: Record<string, unknown> | null = null;
+  @Input() exportFileName = 'Data';
 
   optRefresh: Record<string, unknown> = {};
   optAdd: Record<string, unknown> = {};
@@ -240,6 +251,18 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.pageContext.triggerAdd();
   }
 
+  refreshData(resetPage = true): void {
+    const grid = this.gData?.instance;
+    if (!grid) {
+      return;
+    }
+
+    if (resetPage) {
+      grid.pageIndex(0);
+    }
+    grid.refresh();
+  }
+
   private resolveGridHeight(): void {
     if (typeof this.gridHeight === 'number') {
       this.resolvedGridHeight = this.gridHeight;
@@ -390,14 +413,14 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       },
     }).then(() => {
       workbook.xlsx.writeBuffer().then((buffer: BlobPart) => {
-        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'Data.xlsx');
+        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), `${this.exportFileName}.xlsx`);
       });
     });
   }
 }
 
 @NgModule({
-  imports: [DxDataGridModule, CommonModule, EmptyStateModule],
+  imports: [DxDataGridModule, DxSelectBoxModule, DxTextBoxModule, CommonModule, EmptyStateModule],
   declarations: [DataGridMttoComponent],
   exports: [DataGridMttoComponent],
 })

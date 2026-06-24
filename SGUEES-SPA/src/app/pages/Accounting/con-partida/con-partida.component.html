@@ -1,0 +1,369 @@
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	layoutMode="legacy"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="permiteAdd"
+	[showRefresh]="true"
+	[showDates]="true"
+	[(FECHA_INICIAL)]="vFECHA_INICIAL"
+	[(FECHA_FINAL)]="vFECHA_FINAL"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+	(consultar)="consultar()"
+	[btn1]="btnImprimir"
+	[btn1Icon]="'print'"
+	[btn1Type]="'default'"
+	(btn1Click)="imprimirPartida()"
+	[btn1Width]="110"
+	[btn2]="btnImportarExcel"
+	[btn2Icon]="'exportxlsx'"
+	[btn2Type]="'default'"
+	(btn2Click)="irImportarExcel()"
+	[btn2Width]="155"
+	[btn3]="btnCrearModelo"
+	[btn3Icon]="'copy'"
+	[btn3Type]="'default'"
+	(btn3Click)="CrearModelo()"
+	[btn3Width]="150"
+	[btn4]="btnGenerarDesdeModelo"
+	[btn4Icon]="'paste'"
+	[btn4Type]="'default'"
+	(btn4Click)="irGenerarDesdeModelo()"
+	[btn4Width]="185"
+>
+	<div
+		toolbarExtra
+		class="partida-especial-toolbar partida-especial-toolbar--inline"
+		*ngIf="isBrowse() && (btnPartidaApertura || btnPartidaLiquidacion || btnPartidaCierre)"
+	>
+		<span class="partida-especial-label">Periodo cierre/apertura:</span>
+		<dx-number-box [(value)]="vANIO_PERIODO_CIERRE" [min]="2000" [max]="2100" [showSpinButtons]="true" [width]="90"></dx-number-box>
+		<dx-number-box [(value)]="vMES_PERIODO_CIERRE" [min]="1" [max]="12" [showSpinButtons]="true" [width]="70"></dx-number-box>
+		<dx-button *ngIf="btnPartidaApertura" text="Part. Apertura" icon="unlock" type="default" stylingMode="contained" (onClick)="ejecutarPartidaEspecial('APE')"></dx-button>
+		<dx-button *ngIf="btnPartidaLiquidacion" text="Part. Liquidación" icon="money" type="default" stylingMode="contained" (onClick)="ejecutarPartidaEspecial('LIQ')"></dx-button>
+		<dx-button *ngIf="btnPartidaCierre" text="Part. Cierre" icon="lock" type="default" stylingMode="contained" (onClick)="ejecutarPartidaEspecial('CIE')"></dx-button>
+	</div>
+</app-barra-data-mtto>
+<div *ngIf="!isBrowse()">
+	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+		<div *dxTemplate="let cellInfo of 'MES_PERIODOLookup'">
+			<app-data-lookup
+				[model]="mMES_PERIODO"
+				[(value)]="model.MES_PERIODO"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_CLASE_PARTIDALookup'">
+			<app-data-lookup
+				[model]="mCORR_CLASE_PARTIDA"
+				[(value)]="model.CORR_CLASE_PARTIDA"
+				[selectedRowKeys]="selectedLookUpCORR_CLASE_PARTIDA"
+				[readOnly]="readOnly"
+				(valueChange)="onClasePartidaChanged($event)"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'ESTADO_PARTIDALookup'">
+			<app-data-lookup
+				[model]="mESTADO_PARTIDA"
+				[(value)]="model.ESTADO_PARTIDA"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="true"
+			>
+			</app-data-lookup>
+		</div>
+	</dx-form>
+	<dx-tab-panel #tabPanel [selectedIndex]="0">
+		<dxi-item title="Detalle Partida" [icon]="'detailslayout'">
+			<div class="dx-grid-deta partida-deta-grid">
+				<div class="partida-deta-toolbar" *ngIf="!readOnly">
+					<dx-button
+						class="partida-deta-toolbar-btn"
+						icon="add"
+						text="Agregar Detalle"
+						type="success"
+						stylingMode="contained"
+						(onClick)="agregarDetalle()"
+						[disabled]="detalleEditando"
+					></dx-button>
+					<dx-button
+						class="partida-deta-toolbar-btn"
+						icon="save"
+						text="Guardar"
+						type="success"
+						stylingMode="contained"
+						(onClick)="guardarDetalleEditado()"
+						[disabled]="!detalleEditando"
+					></dx-button>
+					<dx-button
+						class="partida-deta-toolbar-btn partida-deta-toolbar-btn--cancel"
+						icon="revert"
+						text="Cancelar"
+						type="danger"
+						stylingMode="contained"
+						(onClick)="cancelarDetalleEditado()"
+						[disabled]="!detalleEditando"
+					></dx-button>
+				</div>
+				<dx-data-grid
+					#gridDetalle
+					class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise partida-deta-datagrid"
+					[dataSource]="detalles"
+					keyExpr="CORR_PARTIDA_DETA"
+					[columnAutoWidth]="false"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
+					[focusedRowEnabled]="true"
+					[height]="'100%'"
+					[width]="'100%'"
+					(onRowInserting)="detalleRowInserting($event)"
+					(onRowUpdating)="detalleRowUpdating($event)"
+					(onRowRemoving)="detalleRowRemoving($event)"
+					(onRowValidating)="detalleRowValidating($event)"
+					(onInitNewRow)="detalleInitNewRow($event)"
+					(onEditingStart)="onDetalleEditingStart($event)"
+					(onSaved)="onDetalleSaved($event)"
+					(onEditCanceled)="onDetalleEditCanceled($event)"
+					(onEditorPreparing)="onDetalleEditorPreparing($event)"
+				>
+					<dxo-toolbar>
+						<dxi-item name="searchPanel" location="after"></dxi-item>
+					</dxo-toolbar>
+					<dxo-editing
+						[mode]="'row'"
+						[refreshMode]="'reshape'"
+						[allowUpdating]="!readOnly"
+						[allowDeleting]="!readOnly"
+						[useIcons]="true"
+						[selectTextOnEditStart]="true"
+					></dxo-editing>
+					<dxo-search-panel [visible]="true"></dxo-search-panel>
+					<dxo-paging [enabled]="false"></dxo-paging>
+					<dxi-column
+						type="buttons"
+						name="btnAcciones"
+						caption="Options"
+						[width]="104"
+						[minWidth]="104"
+						[fixed]="true"
+						fixedPosition="left"
+						alignment="center"
+						cssClass="sguees-grid-col-actions sguees-grid-col-actions--premium"
+						[allowResizing]="false"
+					>
+						<dxi-button
+							hint="Editar registro"
+							icon="edit"
+							stylingMode="text"
+							cssClass="sguees-grid-action-edit"
+							[visible]="detalleEditButtonVisible"
+							[onClick]="editarDetalleClick"
+						></dxi-button>
+						<dxi-button
+							name="delete"
+							hint="Eliminar registro"
+							icon="trash"
+							stylingMode="text"
+							cssClass="sguees-grid-action-delete"
+							[visible]="detalleDeleteButtonVisible"
+						></dxi-button>
+						<dxi-button name="save" [visible]="false"></dxi-button>
+						<dxi-button name="cancel" [visible]="false"></dxi-button>
+						<dxi-button name="edit" [visible]="false"></dxi-button>
+					</dxi-column>
+					<dxi-column
+						dataField="CUENTA_CONTABLE"
+						caption="Cuenta Contable"
+						width="19%"
+						[calculateDisplayValue]="cuentaContableDisplay"
+						[setCellValue]="cuentaSetCellValue"
+						[editCellTemplate]="'CUENTA_CONTABLELookup'"
+					>
+						<dxo-lookup
+							[dataSource]="mCUENTA_CONTABLE"
+							valueExpr="CUENTA_CONTABLE"
+							displayExpr="CUENTA_CONTABLE"
+						></dxo-lookup>
+					</dxi-column>
+					<div *dxTemplate="let cellInfo of 'CUENTA_CONTABLELookup'">
+						<app-data-lookup
+							[setValue]="cellInfo.setValue"
+							[model]="mCUENTA_CONTABLE"
+							[(value)]="cellInfo.value"
+							[selectedRowKeys]="selectedLookUpCUENTA_CONTABLE"
+							[readOnly]="readOnly"
+							[valueExpr]="'CUENTA_CONTABLE'"
+							[displayExpr]="'CUENTA_CONTABLE'"
+							[lookupColumns]="cuentaLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+					<dxi-column
+						dataField="NOMBRE_CUENTA"
+						caption="Nombre Cuenta"
+						width="19%"
+						[allowEditing]="false"
+					></dxi-column>
+					<dxi-column
+						dataField="CORR_CENTRO_COSTO"
+						caption="Cod. Centro"
+						width="9%"
+						[calculateDisplayValue]="codigoCentroDisplay"
+						[setCellValue]="centroCostoSetCellValue"
+						[editCellTemplate]="'CORR_CENTRO_COSTOLookup'"
+					>
+						<dxo-lookup
+							[dataSource]="mCORR_CENTRO_COSTO"
+							valueExpr="CORR_CENTRO_COSTO"
+							displayExpr="CODIGO_CENTRO_COSTO"
+						></dxo-lookup>
+					</dxi-column>
+					<div *dxTemplate="let cellInfo of 'CORR_CENTRO_COSTOLookup'">
+						<app-data-lookup
+							[setValue]="cellInfo.setValue"
+							[model]="getCentrosPorCuenta(cellInfo.data.CUENTA_CONTABLE)"
+							[(value)]="cellInfo.value"
+							[selectedRowKeys]="selectedLookUpCORR_CENTRO_COSTO"
+							[readOnly]="readOnly || !cellInfo.data.CUENTA_CONTABLE || !tieneCentrosAsignados(cellInfo.data.CUENTA_CONTABLE)"
+							[valueExpr]="'CORR_CENTRO_COSTO'"
+							[displayExpr]="'CODIGO_CENTRO_COSTO'"
+							[lookupColumns]="centroLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+					<dxi-column
+						dataField="NOMBRE_CENTRO"
+						caption="Centro Costo"
+						width="17%"
+						[allowEditing]="false"
+						[calculateDisplayValue]="centroCostoNombreDisplay"
+					></dxi-column>
+					<dxi-column
+						dataField="NOMBRE_TRAN"
+						caption="Descripción"
+						width="18%"
+					></dxi-column>
+					<dxi-column
+						dataField="MONTO_CARGO"
+						caption="Cargo"
+						width="9%"
+						alignment="right"
+						dataType="number"
+						[format]="'#,##0.00'"
+						[editorOptions]="{ format: '#,##0.00' }"
+					></dxi-column>
+					<dxi-column
+						dataField="MONTO_ABONO"
+						caption="Abono"
+						width="9%"
+						alignment="right"
+						dataType="number"
+						[format]="'#,##0.00'"
+						[editorOptions]="{ format: '#,##0.00' }"
+					></dxi-column>
+					<dxo-summary>
+						<dxi-total-item column="CUENTA_CONTABLE" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
+						<dxi-total-item column="MONTO_CARGO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+						<dxi-total-item column="MONTO_ABONO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+					</dxo-summary>
+				</dx-data-grid>
+				<div style="margin-top: 8px; text-align: right; font-weight: bold; font-size: 14px; color: {{ getDiferencia() === 0 ? 'green' : 'red' }};">
+					Diferencia: {{ getDiferencia() | number:'1.2-2' }}
+				</div>
+			</div>
+		</dxi-item>
+		<dxi-item title="Documentos Contables" [icon]="'doc'" [visible]="hasPartidaKeys()">
+			<div class="dx-grid-deta">
+				<dx-data-grid
+					[dataSource]="documentos"
+					[keyExpr]="['CORR_PARTIDA_DETA', 'ID_DOCUMENTO', 'FORMA']"
+					[columns]="docColumns"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
+					[height]="'100%'"
+					[width]="'100%'"
+				>
+					<dxo-search-panel [visible]="true"></dxo-search-panel>
+					<dxo-paging [enabled]="false"></dxo-paging>
+					<dxo-summary>
+						<dxi-total-item column="CORR_PARTIDA_DETA" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
+					</dxo-summary>
+				</dx-data-grid>
+			</div>
+		</dxi-item>
+	</dx-tab-panel>
+</div>
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="'CORR_PARTIDA'"
+	[columnAutoWidth]="true"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+<dx-popup
+	[(visible)]="importExcelVisible"
+	title="Importar Partidas desde Excel"
+	[width]="'92%'"
+	[maxWidth]="1200"
+	[height]="'88%'"
+	[maxHeight]="760"
+	[showCloseButton]="true"
+	[dragEnabled]="true"
+	[hideOnOutsideClick]="false"
+>
+	<div *dxTemplate="let data of 'content'" class="con-partida-import-popup">
+		<app-con-partida-importar-excel
+			*ngIf="importExcelVisible"
+			[modalMode]="true"
+			(imported)="onImportExcelSuccess()"
+			(cancelled)="importExcelVisible = false"
+		></app-con-partida-importar-excel>
+	</div>
+</dx-popup>
+
+<dx-popup
+	[(visible)]="popupVisiblePdf"
+	[title]="'Partida Contable'"
+	[fullScreen]="true"
+	[showCloseButton]="true"
+>
+	<div *dxTemplate="let data of 'content'" style="height: 100%;">
+		<object [data]="PDF" type="application/pdf" width="100%" height="95%">
+			<embed [src]="PDF" type="application/pdf" />
+		</object>
+	</div>
+</dx-popup>
+
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>

@@ -1,0 +1,119 @@
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="permiteAdd"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+	[btn1]="btnVolver"
+	[btn1Icon]="'back'"
+	(btn1Click)="volverPartidas()"
+	[btn1Width]="160"
+>
+</app-barra-data-mtto>
+<div *ngIf="!isBrowse()">
+	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+		<div *dxTemplate="let cellInfo of 'ESTADO_PARTIDALookup'">
+			<app-data-lookup
+				[model]="mESTADO_PARTIDA"
+				[(value)]="model.ESTADO_PARTIDA"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+	</dx-form>
+	<dx-tab-panel #tabPanel [selectedIndex]="0">
+		<dxi-item title="Detalle Partida Modelo" [icon]="'detailslayout'">
+			<div class="dx-grid-deta">
+				<dx-data-grid
+					#gridDetalle
+					[dataSource]="detalles"
+					keyExpr="CORR_PARTIDA_DETA"
+					[columnAutoWidth]="false"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
+					[focusedRowEnabled]="true"
+					[height]="'100%'"
+					[width]="'100%'"
+					(onRowInserting)="detalleRowInserting($event)"
+					(onRowUpdated)="detalleRowUpdated($event)"
+					(onRowRemoving)="detalleRowRemoving($event)"
+				>
+					<dxo-toolbar>
+						<dxi-item location="before">
+							<div *dxTemplate>
+								<dx-button
+									icon="add"
+									text="Agregar Detalle"
+									type="success"
+									(onClick)="agregarDetalle()"
+									[visible]="!readOnly"
+									[width]="180"
+								></dx-button>
+							</div>
+						</dxi-item>
+						<dxi-item name="searchPanel" location="after"></dxi-item>
+					</dxo-toolbar>
+					<dxo-editing
+						[mode]="'cell'"
+						[refreshMode]="'reshape'"
+						[allowUpdating]="!readOnly"
+						[allowDeleting]="!readOnly"
+						[useIcons]="true"
+					></dxo-editing>
+					<dxo-search-panel [visible]="true"></dxo-search-panel>
+					<dxo-paging [enabled]="false"></dxo-paging>
+					<dxi-column type="buttons" [width]="45">
+						<dxi-button name="delete" [visible]="!readOnly"></dxi-button>
+					</dxi-column>
+					<dxi-column dataField="CUENTA_CONTABLE" caption="Cuenta" [width]="130"></dxi-column>
+					<dxi-column dataField="NOMBRE_CUENTA" caption="Nombre Cuenta" [width]="200" [allowEditing]="false"></dxi-column>
+					<dxi-column dataField="NOMBRE_TRAN" caption="Concepto" [width]="250"></dxi-column>
+					<dxi-column dataField="MONTO_CARGO" caption="Cargo" [width]="120" dataType="number" [format]="'#,##0.00'" [editorOptions]="{ format: '#,##0.00' }"></dxi-column>
+					<dxi-column dataField="MONTO_ABONO" caption="Abono" [width]="120" dataType="number" [format]="'#,##0.00'" [editorOptions]="{ format: '#,##0.00' }"></dxi-column>
+					<dxo-summary>
+						<dxi-total-item column="CUENTA_CONTABLE" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
+						<dxi-total-item column="MONTO_CARGO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+						<dxi-total-item column="MONTO_ABONO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+					</dxo-summary>
+				</dx-data-grid>
+				<div style="margin-top: 8px; text-align: right; font-weight: bold; font-size: 14px; color: {{ getDiferencia() === 0 ? 'green' : 'red' }};">
+					Diferencia: {{ getDiferencia() | number:'1.2-2' }}
+				</div>
+			</div>
+		</dxi-item>
+	</dx-tab-panel>
+</div>
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="'CORR_PARTIDA'"
+	[columnAutoWidth]="true"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>

@@ -1,0 +1,46 @@
+.filtros-card {
+	padding: 20px 24px !important;
+}
+
+.filtros {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 20px;
+}
+
+.filtro {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.filtro-label {
+	font-size: 14px;
+	font-weight: 500;
+	opacity: 0.85;
+}
+
+.filtro-acciones {
+	display: flex;
+	align-items: flex-end;
+	gap: 12px;
+}
+
+:host ::ng-deep .filtro-control .dx-texteditor-input {
+	font-size: 15px;
+}
+
+:host ::ng-deep .filtro-btn .dx-button-text {
+	font-size: 15px;
+}
+
+.sin-registros-msg {
+	margin-top: 12px;
+	padding: 14px 18px;
+	border-radius: 8px;
+	background: var(--card-background, #f8f9fa);
+	border: 1px dashed var(--border-color, #ccc);
+	color: var(--texteditor-label-color, #666);
+	font-size: 14px;
+}

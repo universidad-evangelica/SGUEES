@@ -1,0 +1,135 @@
+<div class="cta-page view-wrapper">
+	<div *ngIf="cargaError" class="cta-alert content-block dx-card responsive-paddings" role="alert">
+		<strong>No se pudo cargar la información.</strong> {{ cargaError }}
+	</div>
+
+	<div class="cta-toolbar content-block dx-card responsive-paddings">
+		<div class="cta-toolbar__title">
+			<h2>{{ tituloVentana }}</h2>
+			<p *ngIf="cuentaSeleccionada">
+				Cuenta: <strong>{{ cuentaSeleccionada.CUENTA_CONTABLE }}</strong>
+				— {{ cuentaSeleccionada.NOMBRE_CUENTA }}
+				<span *ngIf="!cuentaSeleccionada.ES_DETALLE" class="cta-badge">Solo lectura (no es cuenta de detalle)</span>
+			</p>
+			<p *ngIf="!cuentaSeleccionada" class="cta-toolbar__hint">
+				Seleccione una cuenta del catálogo para ver y administrar sus centros de costo.
+			</p>
+		</div>
+		<div class="cta-toolbar__actions">
+			<dx-button icon="upload" text="Importar Excel" stylingMode="outlined" routerLink="/con-contabilidad-importar-excel"></dx-button>
+			<dx-button icon="refresh" text="Refrescar" stylingMode="outlined" (onClick)="refrescar()"></dx-button>
+		</div>
+	</div>
+
+	<div class="cta-panels">
+		<div class="cta-panel cta-panel--catalogo content-block dx-card">
+			<div class="cta-panel__header">Catálogo de Cuentas</div>
+			<div class="cta-panel__body">
+				<dx-data-grid
+					class="cta-grid"
+					[dataSource]="cuentasCatalogo"
+					[columns]="catalogoColumns"
+					keyExpr="CUENTA_CONTABLE"
+					[focusedRowEnabled]="true"
+					[autoNavigateToFocusedRow]="true"
+					[columnAutoWidth]="true"
+					[showBorders]="true"
+					[hoverStateEnabled]="true"
+					[height]="gridCatalogoHeight"
+					[width]="'100%'"
+					(onFocusedRowChanged)="onCuentaFocusedRowChanged($event)"
+					(onRowClick)="onCuentaRowClick($event)"
+				>
+					<dxo-filter-row [visible]="true"></dxo-filter-row>
+					<dxo-header-filter [visible]="true"></dxo-header-filter>
+					<dxo-scrolling mode="virtual" showScrollbar="always"></dxo-scrolling>
+					<dxo-paging [enabled]="false"></dxo-paging>
+				</dx-data-grid>
+			</div>
+		</div>
+
+		<div class="cta-panel cta-panel--centros content-block dx-card">
+			<div class="cta-panel__header-row">
+				<div class="cta-panel__header">Centros — Asignados</div>
+				<dx-button
+					text="Desasignar"
+					icon="remove"
+					type="default"
+					stylingMode="contained"
+					[disabled]="!puedeDesasignar() || !selectedAsignados.length"
+					(onClick)="desasignarSeleccionados()"
+				></dx-button>
+			</div>
+			<p class="cta-panel__hint" *ngIf="puedeDesasignar()">
+				Seleccione uno o más centros, use el botón o doble clic para quitar.
+			</p>
+			<div class="cta-panel__body">
+				<dx-data-grid
+					class="cta-grid"
+					[dataSource]="centrosAsignados"
+					[columns]="centroColumns"
+					keyExpr="CORR_CENTRO_COSTO"
+					[(selectedRowKeys)]="selectedAsignados"
+					[columnAutoWidth]="true"
+					[showBorders]="true"
+					[hoverStateEnabled]="true"
+					[height]="gridCentroHeight"
+					[width]="'100%'"
+					(onRowDblClick)="onAsignadoDblClick($event)"
+				>
+					<dxo-selection mode="multiple" showCheckBoxesMode="always"></dxo-selection>
+					<dxo-filter-row [visible]="true"></dxo-filter-row>
+					<dxo-scrolling mode="virtual" showScrollbar="always"></dxo-scrolling>
+					<dxo-paging [enabled]="false"></dxo-paging>
+				</dx-data-grid>
+			</div>
+		</div>
+
+		<div class="cta-panel cta-panel--centros content-block dx-card">
+			<div class="cta-panel__header-row">
+				<div class="cta-panel__header">Centros — No asignados</div>
+				<dx-button
+					text="Asignar"
+					icon="add"
+					type="default"
+					stylingMode="contained"
+					[disabled]="!puedeAsignar() || !selectedNoAsignados.length"
+					(onClick)="asignarSeleccionados()"
+				></dx-button>
+			</div>
+			<p class="cta-panel__hint" *ngIf="puedeAsignar()">
+				Seleccione uno o más centros, use el botón o doble clic para asignar.
+			</p>
+			<div class="cta-panel__body">
+				<dx-data-grid
+					class="cta-grid"
+					[dataSource]="centrosNoAsignados"
+					[columns]="centroColumns"
+					keyExpr="CORR_CENTRO_COSTO"
+					[(selectedRowKeys)]="selectedNoAsignados"
+					[columnAutoWidth]="true"
+					[showBorders]="true"
+					[hoverStateEnabled]="true"
+					[height]="gridCentroHeight"
+					[width]="'100%'"
+					(onRowDblClick)="onNoAsignadoDblClick($event)"
+				>
+					<dxo-selection mode="multiple" showCheckBoxesMode="always"></dxo-selection>
+					<dxo-filter-row [visible]="true"></dxo-filter-row>
+					<dxo-scrolling mode="virtual" showScrollbar="always"></dxo-scrolling>
+					<dxo-paging [enabled]="false"></dxo-paging>
+				</dx-data-grid>
+			</div>
+		</div>
+	</div>
+</div>
+
+<dx-load-panel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: 'window' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>

@@ -1,0 +1,50 @@
+.import-shell {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.import-shell--modal {
+	height: 100%;
+	padding: 4px 0 0;
+}
+
+.import-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	align-items: flex-end;
+	margin-bottom: 16px;
+	flex-shrink: 0;
+}
+
+.import-field {
+	min-width: 280px;
+}
+
+.import-field--file {
+	flex: 1 1 320px;
+}
+
+.import-field label {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: 500;
+}
+
+.import-actions {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.preview-grid {
+	margin-top: 8px;
+	flex: 1 1 auto;
+	min-height: 280px;
+}
+
+.import-shell--modal .preview-grid {
+	min-height: 0;
+	height: calc(100% - 96px);
+}

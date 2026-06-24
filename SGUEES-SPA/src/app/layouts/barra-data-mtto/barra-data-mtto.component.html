@@ -33,6 +33,11 @@
     <dxi-item [location]="btn4Location" widget="dxButton" [options]="optBtn4" locateInMenu="auto"></dxi-item>
     <dxi-item [location]="btn5Location" widget="dxButton" [options]="optBtn5" locateInMenu="auto"></dxi-item>
     <dxi-item [location]="btn6Location" widget="dxButton" [options]="optBtn6" locateInMenu="auto"></dxi-item>
+    <dxi-item location="before" locateInMenu="never">
+      <div *dxTemplate>
+        <ng-content select="[toolbarExtra]"></ng-content>
+      </div>
+    </dxi-item>
     <dxi-item location="after" locateInMenu="auto" widget="dxButton" showText="inMenu" [options]="optRefresh"></dxi-item>
     <dxi-item location="after" widget="dxDateBox" [options]="optFechaInicial" locateInMenu="auto"></dxi-item>
     <dxi-item location="after" widget="dxDateBox" [options]="optFechaFinal" locateInMenu="auto"></dxi-item>

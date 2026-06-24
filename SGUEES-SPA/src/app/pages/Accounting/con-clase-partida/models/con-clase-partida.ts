@@ -1,0 +1,14 @@
+export interface ConClasePartida {
+	CORR_EMPRESA: number;
+	CORR_CLASE_PARTIDA: number;
+	NOMBRE_CLASE_PARTIDA: string;
+	NOMBRE_CORTO_CLASE: string;
+	CORR_LINEA_AUMENTA: number;
+	NOMBRE_LINEA_AUMENTA: string;
+	CORR_LINEA_DISMINUYE: number;
+	NOMBRE_LINEA_DISMINUYE: string;
+	ACEPTA_MODIFICACION: boolean;
+	PARTIDA_CIERRE: boolean;
+	NOMBRE_REPORTE: string;
+	CODIGO_ODS: string;
+}
