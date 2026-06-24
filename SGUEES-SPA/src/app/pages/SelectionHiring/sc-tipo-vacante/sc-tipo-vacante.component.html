@@ -1,3 +1,8 @@
+<p-toast position="bottom-right" 
+    [showTransformOptions]="'translateY(100%)'" 
+    [hideTransitionOptions]="'500ms'" 
+    [showTransformOptions]="'translateX(100%)'">
+</p-toast>
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[isBrowse]="isBrowse()"
@@ -20,6 +25,7 @@
 	[keyExpr]="'CORR_TIPO_VACANTE'"
 	[permiteEditar]="getPermiteEditar"
 	[permiteDele]="getPermiteDele"
+	[customButtons]="customButtons"
 	(rowDblClick)="rowDblClick($event)"
 	(rowRemoving)="rowRemoving($event)"
 	(focusedRowChanged)="focusedRowChanged($event)"

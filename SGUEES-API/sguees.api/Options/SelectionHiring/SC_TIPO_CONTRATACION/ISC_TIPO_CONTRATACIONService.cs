@@ -15,7 +15,5 @@ namespace SGUEES.Services
     Task<CResult> DesactivateAsync(SC_TIPO_CONTRATACIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		//funcion para reactivar un registro, se actualiza el campo ACTIVO a true
 		Task<CResult> ReactivateAsync(SC_TIPO_CONTRATACIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
-    Task<CResult> InactivateAsync(SC_TIPO_CONTRATACIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
-
     }
 }

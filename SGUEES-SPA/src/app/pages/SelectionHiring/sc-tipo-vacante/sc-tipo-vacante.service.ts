@@ -52,11 +52,26 @@ export class ScTipoVacanteService {
 		return this.repo.delete(xWhere);
 	}
 
+	reactivate(model: any): Observable<IResult> {
+		let xWhere: IParam[] = [{ Parameter: 'CORR_TIPO_VACANTE', Value: model.CORR_TIPO_VACANTE }];
+
+		return this.repo.reactivate(xWhere);
+	}
+
+	desactivate(model: any): Observable<IResult> {
+		let xWhere: IParam[] = [{ Parameter: 'CORR_TIPO_VACANTE', Value: model.CORR_TIPO_VACANTE }];
+		
+		return this.repo.desactivate(xWhere);
+	}
+
 	getColumns(): any {
 		return [
 			{ dataField: 'CORR_TIPO_VACANTE', caption: 'Corr.', width: 100 },
 			{ dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Tipo Vacante', width: 350 },
+			{ dataField: 'REQUIERE_SUSTITUCION', caption: 'Requiere Sustitución', width: 200, dataType: 'boolean', alignment: 'left' },
+			{ dataField: 'ACTIVO', caption: 'Activo', width: 200, dataType: 'boolean', alignment: 'left' },
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 250 },
+			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 250 },
 			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 250, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
 			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 250 },
 			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 250 },
@@ -79,6 +94,11 @@ export class ScTipoVacanteService {
 				colSpan: 3,
 				editorOptions: { placeholder: 'Nombre Tipo Vacante...', showClearButton: true, maxLength: 250 },
 			},
+			{
+				dataField: 'REQUIERE_SUSTITUCION',
+				label: { text: 'Requiere Sustitución' },
+				colSpan: 2,
+			}
 		];
 	}
 }
