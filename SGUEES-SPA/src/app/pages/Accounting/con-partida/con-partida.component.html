@@ -17,23 +17,27 @@
 	[btn1Type]="'default'"
 	(btn1Click)="imprimirPartida()"
 	[btn1Width]="110"
+	[btn1Mode]="'outlined'"
 	[btn2]="btnImportarExcel"
 	[btn2Icon]="'exportxlsx'"
 	[btn2Type]="'default'"
 	(btn2Click)="irImportarExcel()"
 	[btn2Width]="155"
+	[btn2Mode]="'outlined'"
 	[btn3]="btnCrearModelo"
 	[btn3Icon]="'copy'"
 	[btn3Type]="'default'"
 	(btn3Click)="CrearModelo()"
 	[btn3Width]="150"
+	[btn3Mode]="'outlined'"
 	[btn4]="btnGenerarDesdeModelo"
 	[btn4Icon]="'paste'"
 	[btn4Type]="'default'"
 	(btn4Click)="irGenerarDesdeModelo()"
-	[btn4Width]="185"
+	[btn4Width]="160"
+	[btn4Mode]="'outlined'"
 >
-	<div
+	<!-- <div
 		toolbarExtra
 		class="partida-especial-toolbar partida-especial-toolbar--inline"
 		*ngIf="isBrowse() && (btnPartidaApertura || btnPartidaLiquidacion || btnPartidaCierre)"
@@ -44,10 +48,92 @@
 		<dx-button *ngIf="btnPartidaApertura" text="Part. Apertura" icon="unlock" type="default" stylingMode="contained" (onClick)="ejecutarPartidaEspecial('APE')"></dx-button>
 		<dx-button *ngIf="btnPartidaLiquidacion" text="Part. Liquidación" icon="money" type="default" stylingMode="contained" (onClick)="ejecutarPartidaEspecial('LIQ')"></dx-button>
 		<dx-button *ngIf="btnPartidaCierre" text="Part. Cierre" icon="lock" type="default" stylingMode="contained" (onClick)="ejecutarPartidaEspecial('CIE')"></dx-button>
-	</div>
+	</div> -->
+	
 </app-barra-data-mtto>
-<div *ngIf="!isBrowse()">
-	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+
+<div
+	class="partida-procesos-strip"
+	*ngIf="isBrowse() && (btnPartidaApertura || btnPartidaLiquidacion || btnPartidaCierre)"
+>
+	<div class="partida-procesos-left">
+		<div class="partida-procesos-header">
+			<div class="partida-procesos-title">
+				Procesos Contables
+			</div>
+
+			<div class="partida-procesos-subtitle">
+				Apertura, liquidación y cierre del período seleccionado
+			</div>
+		</div>
+
+		<div class="partida-procesos-actions">
+			<dx-button
+				*ngIf="btnPartidaApertura"
+				text="Apertura"
+				icon="unlock"
+				type="default"
+				stylingMode="contained"
+				(onClick)="ejecutarPartidaEspecial('APE')"
+			>
+			</dx-button>
+
+			<dx-button
+				*ngIf="btnPartidaLiquidacion"
+				text="Liquidación"
+				icon="money"
+				stylingMode="contained"
+				type="success"
+				(onClick)="ejecutarPartidaEspecial('LIQ')"
+			>
+			</dx-button>
+
+			<dx-button
+				*ngIf="btnPartidaCierre"
+				text="Cierre"
+				icon="lock"
+				type="danger"
+				stylingMode="contained"
+				(onClick)="ejecutarPartidaEspecial('CIE')"
+			>
+			</dx-button>
+		</div>
+	</div>
+
+	<div class="partida-periodo-box">
+		<div class="partida-periodo-label">
+			Período
+		</div>
+
+		<div class="partida-periodo-inputs">
+			<dx-number-box
+				[(value)]="vANIO_PERIODO_CIERRE"
+				[min]="2000"
+				[max]="2100"
+				[showSpinButtons]="true"
+				[width]="90"
+			>
+			</dx-number-box>
+
+			<dx-number-box
+				[(value)]="vMES_PERIODO_CIERRE"
+				[min]="1"
+				[max]="12"
+				[showSpinButtons]="true"
+				[width]="70"
+			>
+			</dx-number-box>
+		</div>
+	</div>
+</div>
+
+<div *ngIf="!isBrowse()" class="partida-edit-shell">
+	<section class="sguees-section-card partida-form-card">
+		<header class="partida-section-head">
+			<span class="partida-section-title">Datos de la partida</span>
+			<span class="partida-section-subtitle">Encabezado contable del registro</span>
+		</header>
+	<dx-form #fData id="fData" class="sguees-form-premium partida-form" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
 		<div *dxTemplate="let cellInfo of 'MES_PERIODOLookup'">
 			<app-data-lookup
 				[model]="mMES_PERIODO"
@@ -77,7 +163,10 @@
 			</app-data-lookup>
 		</div>
 	</dx-form>
-	<dx-tab-panel #tabPanel [selectedIndex]="0">
+	</section>
+
+	<section class="sguees-section-card partida-detalle-card">
+	<dx-tab-panel #tabPanel class="partida-tab-panel" [selectedIndex]="0">
 		<dxi-item title="Detalle Partida" [icon]="'detailslayout'">
 			<div class="dx-grid-deta partida-deta-grid">
 				<div class="partida-deta-toolbar" *ngIf="!readOnly">
@@ -157,7 +246,6 @@
 						[fixed]="true"
 						fixedPosition="left"
 						alignment="center"
-						cssClass="sguees-grid-col-actions sguees-grid-col-actions--premium"
 						[allowResizing]="false"
 					>
 						<dxi-button
@@ -276,8 +364,15 @@
 						<dxi-total-item column="MONTO_ABONO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
 					</dxo-summary>
 				</dx-data-grid>
-				<div style="margin-top: 8px; text-align: right; font-weight: bold; font-size: 14px; color: {{ getDiferencia() === 0 ? 'green' : 'red' }};">
-					Diferencia: {{ getDiferencia() | number:'1.2-2' }}
+				<div class="partida-deta-footer">
+					<span
+						class="partida-diferencia-chip"
+						[class.is-balanced]="getDiferencia() === 0"
+						[class.is-unbalanced]="getDiferencia() !== 0"
+					>
+						<span class="partida-diferencia-label">Diferencia</span>
+						<span class="partida-diferencia-value">{{ getDiferencia() | number:'1.2-2' }}</span>
+					</span>
 				</div>
 			</div>
 		</dxi-item>
@@ -306,6 +401,7 @@
 			</div>
 		</dxi-item>
 	</dx-tab-panel>
+	</section>
 </div>
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"

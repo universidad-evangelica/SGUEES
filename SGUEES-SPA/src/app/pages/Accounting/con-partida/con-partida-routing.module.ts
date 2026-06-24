@@ -17,27 +17,29 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 import { ConPartidaImportarExcelUiModule } from '../con-partida-importar-excel/con-partida-importar-excel-ui.module';
 
 import { ConPartidaComponent } from './con-partida.component';
+import { DxDropDownButtonModule } from "devextreme-angular/ui/drop-down-button";
 
 const routes: Routes = [{ path: '', component: ConPartidaComponent }];
 
 @NgModule({
 	imports: [
-		RouterModule.forChild(routes),
-		CommonModule,
-		DxFormModule,
-		DxDataGridModule,
-		DxLoadPanelModule,
-		DxButtonModule,
-		DxTabPanelModule,
-		DxDropDownBoxModule,
-		DxCheckBoxModule,
-		DxPopupModule,
-		DxNumberBoxModule,
-		DataGridMttoModule,
-		DataLookupModule,
-		BarraDataMttoModule,
-		ConPartidaImportarExcelUiModule,
-	],
+    RouterModule.forChild(routes),
+    CommonModule,
+    DxFormModule,
+    DxDataGridModule,
+    DxLoadPanelModule,
+    DxButtonModule,
+    DxTabPanelModule,
+    DxDropDownBoxModule,
+    DxCheckBoxModule,
+    DxPopupModule,
+    DxNumberBoxModule,
+    DataGridMttoModule,
+    DataLookupModule,
+    BarraDataMttoModule,
+    ConPartidaImportarExcelUiModule,
+    DxDropDownButtonModule
+],
 	declarations: [ConPartidaComponent],
 })
 export class ConPartidaRoutingModule {}
