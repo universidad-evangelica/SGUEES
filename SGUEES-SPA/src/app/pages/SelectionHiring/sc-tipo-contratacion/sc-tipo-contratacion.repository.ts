@@ -28,4 +28,14 @@ export class ScTipoContratacionRepository {
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
+
+	//Funcion para reactivar un registro, se envía el campo ACTIVO en true y el where con el id del registro a reactivar
+	reactivate(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put({}, this.xController, 'Reactivate', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
+	//Funcion para desactivar un registro, se envía el campo ACTIVO en false y el where con el id del registro a desactivar
+	desactivate(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put({}, this.xController, 'Desactivate', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
 }

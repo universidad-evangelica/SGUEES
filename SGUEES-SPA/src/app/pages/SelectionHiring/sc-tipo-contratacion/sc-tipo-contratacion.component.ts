@@ -9,6 +9,7 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { ScTipoContratacion } from './models/sc-tipo-contratacion';
 import { ScTipoContratacionService } from './sc-tipo-contratacion.service';
+import { confirm } from 'devextreme/ui/dialog';
 
 @Component({
 	selector: 'app-sc-tipo-contratacion',
@@ -26,10 +27,38 @@ export class ScTipoContratacionComponent extends CBaseComponent implements OnIni
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
+		//seccion customButtons en options
+		this.customButtons = [
+			{
+				//Reactivar
+				hint: 'Reactivar registro',
+				icon: 'refresh',
+				stylingMode: 'text',
+
+				visible: (e: any) =>
+					e.row?.data?.ACTIVO === false,
+
+				onClick: this.reactivar
+			},
+
+			{
+				//Desactivar
+				hint: 'Inactivar registro',
+				icon: 'close',
+				stylingMode: 'text',
+
+				visible: (e: any) =>
+					e.row?.data?.ACTIVO === true,
+
+				onClick: this.desactivar
+			}
+		];
 	}
 
 	//#region <Declarando Variales>
 	// #endregion
+	//this para insertar otros iconos en options de la tabla
+	customButtons: any[] = [];	
 
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
@@ -181,6 +210,7 @@ export class ScTipoContratacionComponent extends CBaseComponent implements OnIni
 						//this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
 						this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro eliminado con éxito!' });
 						e.component.refresh();
+						this.consultar();
 					} else {
 						e.cancel = true;
 						//this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -211,5 +241,53 @@ export class ScTipoContratacionComponent extends CBaseComponent implements OnIni
 
 	selectedLookUpLista(vRow: any): any {
 		return vRow[0].Key;
+	}
+
+	desactivar = (e: any) => {
+		confirm('¿Está seguro que desea <b>inactivar</b> este registro?', 'Confirmación')
+			.then((aceptar: boolean) => {
+				if (!aceptar) {
+					return;
+				}
+		this.service
+			.desactivate(this.fillParam(e.row.data.CORR_TIPO_CONTRATACION))
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						//this.notifyFx('Registro inactivado!', NotifyType.Success);
+						this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro inactivado!' });
+						this.consultar();          // ← refresca para que el icono desaparezca
+				} else {
+					this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
+				}
+			},
+				error: (error: any) => this.messageService.add({ severity: 'error', summary: 'Error', detail: error }),
+			});
+		})
+	}
+
+	reactivar = (e: any) => {
+		confirm('¿Está seguro que desea <b>reactivar</b> este registro?', 'Confirmación')
+			.then((aceptar: boolean) => {
+				if (!aceptar) {
+					return;
+				}					
+			this.service
+			.reactivate(this.fillParam(e.row.data.CORR_TIPO_CONTRATACION))
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						//this.notifyFx('Registro reactivado!', NotifyType.Success);
+						this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro reactivado!' });
+						this.consultar();          // ← refresca para que el icono desaparezca
+				} else {
+					this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
+				}
+			},
+				error: (error: any) => this.messageService.add({ severity: 'error', summary: 'Error', detail: error }),
+			});
+		})
 	}
 }
