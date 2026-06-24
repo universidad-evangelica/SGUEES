@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Linq;
-using System.Security.Claims;
 using eFramework.Core;
-using  sguees.Models;
-using  sguees.Services;
+using sguees.Models;
+using sguees.Services;
+using sguees.api.Shared;
 
 namespace sguees.Controllers
 {
@@ -44,14 +44,8 @@ namespace sguees.Controllers
 		public async Task<IActionResult> Post(CON_AREA_FUNCIONALTable Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-			
-			var resultado = await _service.CreateAsync(Data, "Admin", "e-CoffeeTech");
-			if (resultado.ErrorCode == 0)
-			{
-				return StatusCode(201, resultado);
-			} else {
-				return BadRequest(resultado);
-			}
+			var resultado = await _service.CreateAsync(Data, User.Claims.ToList().SingleOrDefault(e => e.Type == System.Security.Claims.ClaimTypes.NameIdentifier).Value, ClientInfoHelper.GetClientStation(HttpContext));
+			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
 		}
 		
 		[HttpPut]
@@ -59,13 +53,8 @@ namespace sguees.Controllers
 		public async Task<IActionResult> Put(CON_AREA_FUNCIONALTable Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-			var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
-			if (resultado.ErrorCode == 0)
-			{
-				return StatusCode(201, resultado);
-			} else {
-				return BadRequest(resultado);
-			}
+			var resultado = await _service.UpdateAsync(Data, User.Claims.ToList().SingleOrDefault(e => e.Type == System.Security.Claims.ClaimTypes.NameIdentifier).Value, ClientInfoHelper.GetClientStation(HttpContext));
+			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
 		}
 		
 		[HttpDelete]
@@ -73,13 +62,8 @@ namespace sguees.Controllers
 		public async Task<IActionResult> Delete([FromQuery] CON_AREA_FUNCIONALTable Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-			var resultado = await _service.DeleteAsync(Data, "Admin", "e-CoffeeTech");
-			if (resultado.ErrorCode == 0)
-			{
-				return Ok(resultado);
-			} else {
-				return BadRequest(resultado);
-			}
+			var resultado = await _service.DeleteAsync(Data, "", "");
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 	}
 }

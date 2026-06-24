@@ -1,0 +1,47 @@
+<h2 class="content-block">{{ tituloVentana }}</h2>
+
+<div class="content-block dx-card responsive-paddings toolbar-modulos">
+	<div class="periodo-seleccionado" *ngIf="hasPeriodoSeleccionado()">
+		Periodo seleccionado: <strong>{{ getPeriodoLabel() }}</strong>
+	</div>
+	<div class="modulo-group" *ngFor="let modulo of modulos">
+		<span class="modulo-label">{{ modulo.label }}</span>
+		<dx-button
+			text="Cierre"
+			type="danger"
+			icon="lock"
+			[disabled]="!hasPeriodoSeleccionado()"
+			(onClick)="ejecutarCierre(modulo)"
+		></dx-button>
+		<dx-button
+			text="Apertura"
+			type="success"
+			icon="unlock"
+			[disabled]="!hasPeriodoSeleccionado()"
+			(onClick)="ejecutarApertura(modulo)"
+		></dx-button>
+	</div>
+</div>
+
+<app-data-grid-mtto
+	[isBrowse]="true"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="['ANIO_PERIODO', 'MES_PERIODO']"
+	[columnAutoWidth]="false"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	(focusedRowChanged)="focusedRowChanged($event)"
+>
+</app-data-grid-mtto>
+
+<dx-load-panel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>

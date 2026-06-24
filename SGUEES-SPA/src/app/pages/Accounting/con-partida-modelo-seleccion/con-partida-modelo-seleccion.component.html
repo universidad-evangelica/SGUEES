@@ -1,0 +1,53 @@
+<h2 class="content-block">{{ tituloVentana }}</h2>
+
+<div class="content-block dx-card responsive-paddings toolbar-operacion">
+	<div class="modelo-seleccionado" *ngIf="hasModeloSeleccionado()">
+		Modelo seleccionado: <strong>{{ getModeloLabel() }}</strong>
+	</div>
+	<dx-form
+		#fGeneracion
+		[formData]="formModel"
+		[labelLocation]="'top'"
+		[colCount]="8"
+		[items]="formItems"
+	>
+	</dx-form>
+	<div class="accion-group">
+		<dx-button
+			text="Volver a Partidas"
+			type="normal"
+			icon="back"
+			(onClick)="volverPartidas()"
+		></dx-button>
+		<dx-button
+			text="Generar Partida"
+			type="success"
+			icon="check"
+			[disabled]="!hasDatosGeneracion()"
+			(onClick)="generarPartida()"
+		></dx-button>
+	</div>
+</div>
+
+<app-data-grid-mtto
+	[isBrowse]="true"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="'CORR_PARTIDA'"
+	[columnAutoWidth]="true"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	(focusedRowChanged)="focusedRowChanged($event)"
+>
+</app-data-grid-mtto>
+
+<dx-load-panel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>

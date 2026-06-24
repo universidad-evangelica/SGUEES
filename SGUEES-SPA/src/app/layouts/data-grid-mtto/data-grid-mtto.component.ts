@@ -10,9 +10,13 @@ import {
   OnInit,
   Output,
   SimpleChanges,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
+import { DxDataGridComponent, DxDataGridModule } from 'devextreme-angular/ui/data-grid';
+import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
+import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
+import { DxTooltipModule } from 'devextreme-angular/ui/tooltip';
 import { EmptyStateModule } from 'src/app/shared/components/library/empty-state/empty-state.component';
 import { MttoPageContextService } from 'src/app/layouts/mtto-page-context.service';
 import { Subscription } from 'rxjs';
@@ -32,6 +36,8 @@ import { saveAs } from 'file-saver-es';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
+  @ViewChild('gData', { static: false }) gData?: DxDataGridComponent;
+
   @Input() models!: any;
   @Input() columns: any;
   @Input() summary: any;
@@ -46,6 +52,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   columnHidingActive = false;
   @Input() permiteEditar: boolean | Function = true;
   @Input() permiteDele: boolean | Function = true;
+  @Input() permitePrint = true;
   @Output() rowDblClick = new EventEmitter<any>();
   @Output() rowClick = new EventEmitter<any>();
   @Output() rowRemoving = new EventEmitter<any>();
@@ -75,18 +82,42 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   /** null = adoptar contexto barra (header-only). false = toolbar legacy 7B. */
   @Input() unifiedToolbar: boolean | null = null;
   @Input() searchPlaceholder = 'Buscar...';
+  @Input() remoteOperations: boolean | Record<string, unknown> = false;
+  @Input() pageSize = 5;
+  @Input() allowedPageSizes: number[] = [5, 10, 25, 50, 100];
+  @Input() repaintChangesOnly: boolean | null = null;
+  @Input() searchBoxOptions: Record<string, unknown> | null = null;
+  @Input() estadoSelectOptions: Record<string, unknown> | null = null;
+  @Input() exportFileName = 'Data';
 
   optRefresh: Record<string, unknown> = {};
   optAdd: Record<string, unknown> = {};
+  permissionTooltipTarget: HTMLElement | null = null;
+  permissionTooltipVisible = false;
+  permissionTooltipMessage = '';
   resolvedGridHeight: string | number = 670;
   hasFocusedRow = false;
   filterSyncEnabled = false;
+  gridVisible = true;
+  activePageSize = 5;
 
   private actionColumnsReady = false;
   private showEditActions = true;
   private showDeleteActions = true;
   private contextSub?: Subscription;
   private permiteAddEffective = false;
+  private pageSizeRepaintTimer?: ReturnType<typeof setTimeout>;
+  private pageSizeRemountTimer?: ReturnType<typeof setTimeout>;
+  private permissionTooltipHideTimer?: ReturnType<typeof setTimeout>;
+  private permissionTooltipGridElement?: HTMLElement;
+  private readonly permissionTooltipMessages: Record<string, string> = {
+    'sguees-action-no-edit': 'No tiene permiso para editar registros.',
+    'sguees-action-no-delete': 'No tiene permiso para eliminar registros.',
+    'sguees-action-no-activate': 'No tiene permiso para activar registros.',
+    'sguees-action-no-deactivate': 'No tiene permiso para desactivar registros.',
+    'sguees-action-no-add': 'No tiene permiso para crear registros.',
+    'sguees-action-no-export': 'No tiene permiso para exportar registros.',
+  };
 
   get isEmptyData(): boolean {
     return Array.isArray(this.models) && this.models.length === 0;
@@ -155,6 +186,24 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     );
   }
 
+  get isRemotePagingActive(): boolean {
+    if (this.remoteOperations === true) {
+      return true;
+    }
+    return !!(
+      this.remoteOperations &&
+      typeof this.remoteOperations === 'object' &&
+      (this.remoteOperations as Record<string, unknown>)['paging']
+    );
+  }
+
+  get effectiveRepaintChangesOnly(): boolean {
+    if (this.repaintChangesOnly !== null) {
+      return this.repaintChangesOnly;
+    }
+    return !this.isRemotePagingActive;
+  }
+
   constructor(
     private cdr: ChangeDetectorRef,
     private pageContext: MttoPageContextService,
@@ -165,6 +214,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.activePageSize = this.pageSize;
     this.rebuildToolbarOptions();
     this.contextSub = this.pageContext.changes$.subscribe(() => {
       this.permiteAddEffective = this.pageContext.snapshot.permiteAdd;
@@ -184,6 +234,9 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     if (changes['gridHeight']) {
       this.resolveGridHeight();
     }
+    if (changes['pageSize'] && !changes['pageSize'].firstChange) {
+      this.activePageSize = this.pageSize;
+    }
     if (changes['columnHidingEnabled']) {
       this.columnHidingActive = this.columnHidingEnabled;
     }
@@ -200,6 +253,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     if (
       changes['showRefresh'] ||
       changes['showAdd'] ||
+      changes['permitePrint'] ||
       changes['titulo'] ||
       changes['subtitle'] ||
       changes['unifiedToolbar']
@@ -211,9 +265,20 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     this.contextSub?.unsubscribe();
+    if (this.pageSizeRepaintTimer) {
+      clearTimeout(this.pageSizeRepaintTimer);
+    }
+    if (this.pageSizeRemountTimer) {
+      clearTimeout(this.pageSizeRemountTimer);
+    }
+    if (this.permissionTooltipHideTimer) {
+      clearTimeout(this.permissionTooltipHideTimer);
+    }
+    this.unbindPermissionTooltipHandlers();
   }
 
   private rebuildToolbarOptions(): void {
+    const canAdd = !!this.permiteAddEffective;
     this.optRefresh = {
       text: 'Actualizar',
       icon: 'refresh',
@@ -225,7 +290,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       icon: 'add',
       type: 'default',
       stylingMode: 'contained',
-      disabled: !this.permiteAddEffective,
+      elementAttr: canAdd ? undefined : { class: 'sguees-action-no-add' },
+      hint: canAdd ? 'Agregar registro' : 'No tiene permiso para crear registros.',
       onClick: this.onAddClick,
     };
   }
@@ -236,8 +302,23 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onAddClick(): void {
+    if (!this.permiteAddEffective) {
+      return;
+    }
     this.add.emit();
     this.pageContext.triggerAdd();
+  }
+
+  refreshData(resetPage = true): void {
+    const grid = this.gData?.instance;
+    if (!grid) {
+      return;
+    }
+
+    if (resetPage) {
+      grid.pageIndex(0);
+    }
+    grid.refresh();
   }
 
   private resolveGridHeight(): void {
@@ -362,7 +443,159 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.editClick.emit(e);
   }
 
+  OnOptionChanged(e: any): void {
+    if (e?.fullName !== 'paging.pageSize' || e.value === e.previousValue) {
+      return;
+    }
+
+    const grid = e.component;
+    if (!grid) {
+      return;
+    }
+
+    this.activePageSize = Number(e.value) || this.pageSize;
+    grid.pageIndex(0);
+    grid.getDataSource()?.reload();
+
+    if (!this.isRemotePagingActive) {
+      if (this.pageSizeRepaintTimer) {
+        clearTimeout(this.pageSizeRepaintTimer);
+      }
+      this.pageSizeRepaintTimer = setTimeout(() => grid.repaint());
+      return;
+    }
+
+    if (this.pageSizeRemountTimer) {
+      clearTimeout(this.pageSizeRemountTimer);
+    }
+
+    this.gridVisible = false;
+    this.cdr.detectChanges();
+    this.pageSizeRemountTimer = setTimeout(() => {
+      this.gridVisible = true;
+      this.cdr.detectChanges();
+    });
+  }
+
+  OnContentReady(e: any): void {
+    const gridElement = e?.element as HTMLElement | undefined;
+    if (!gridElement) {
+      return;
+    }
+    this.bindPermissionTooltipHandlers(gridElement);
+  }
+
+  private bindPermissionTooltipHandlers(gridElement: HTMLElement): void {
+    if (this.permissionTooltipGridElement === gridElement) {
+      return;
+    }
+
+    this.unbindPermissionTooltipHandlers();
+    this.permissionTooltipGridElement = gridElement;
+    gridElement.addEventListener('mouseover', this.onPermissionTargetMouseOver, true);
+    gridElement.addEventListener('mouseout', this.onPermissionTargetMouseOut, true);
+  }
+
+  private unbindPermissionTooltipHandlers(): void {
+    if (!this.permissionTooltipGridElement) {
+      return;
+    }
+
+    this.permissionTooltipGridElement.removeEventListener('mouseover', this.onPermissionTargetMouseOver, true);
+    this.permissionTooltipGridElement.removeEventListener('mouseout', this.onPermissionTargetMouseOut, true);
+    this.permissionTooltipGridElement = undefined;
+  }
+
+  private readonly onPermissionTargetMouseOver = (event: MouseEvent): void => {
+    const target =
+      this.resolvePermissionTooltipTarget(event.target) ??
+      this.resolvePermissionTooltipTarget(document.elementFromPoint(event.clientX, event.clientY));
+    if (!target) {
+      return;
+    }
+
+    if (this.permissionTooltipHideTimer) {
+      clearTimeout(this.permissionTooltipHideTimer);
+      this.permissionTooltipHideTimer = undefined;
+    }
+
+    const message = this.resolvePermissionTooltipMessage(target);
+    if (!message) {
+      return;
+    }
+
+    this.permissionTooltipTarget = target;
+    this.permissionTooltipMessage = message;
+    this.permissionTooltipVisible = true;
+    this.cdr.markForCheck();
+  };
+
+  private readonly onPermissionTargetMouseOut = (event: MouseEvent): void => {
+    const fromTarget = this.resolvePermissionTooltipTarget(event.target);
+    const toTarget = this.resolvePermissionTooltipTarget(event.relatedTarget);
+    if (!fromTarget || fromTarget === toTarget) {
+      return;
+    }
+
+    if (this.permissionTooltipHideTimer) {
+      clearTimeout(this.permissionTooltipHideTimer);
+    }
+
+    this.permissionTooltipHideTimer = setTimeout(() => {
+      this.permissionTooltipVisible = false;
+      this.permissionTooltipTarget = null;
+      this.cdr.markForCheck();
+    }, 80);
+  };
+
+  private resolvePermissionTooltipTarget(eventTarget: EventTarget | null): HTMLElement | null {
+    if (!(eventTarget instanceof HTMLElement)) {
+      return null;
+    }
+
+    const match = eventTarget.closest<HTMLElement>('[class*="sguees-action-no-"]');
+    if (!match || !this.permissionTooltipGridElement?.contains(match)) {
+      return null;
+    }
+
+    return match;
+  }
+
+  private resolvePermissionTooltipMessage(target: HTMLElement): string {
+    for (const className of Array.from(target.classList)) {
+      const message = this.permissionTooltipMessages[className];
+      if (message) {
+        return message;
+      }
+    }
+
+    return '';
+  }
+
+  OnToolbarPreparing(e: any): void {
+    const exportItem = e?.toolbarOptions?.items?.find((item: any) => item?.name === 'exportButton');
+    if (!exportItem) {
+      return;
+    }
+
+    const canExport = !!this.permitePrint;
+    const existingClass = String(exportItem.options?.elementAttr?.class || '').replace(/\bsguees-action-no-export\b/g, '').trim();
+    exportItem.options = {
+      ...(exportItem.options || {}),
+      hint: canExport ? 'Exportar' : 'No tiene permiso para exportar registros.',
+      elementAttr: {
+        ...(exportItem.options?.elementAttr || {}),
+        class: canExport ? existingClass : `${existingClass} sguees-action-no-export`.trim(),
+      },
+    };
+  }
+
   onExporting(e: any): void {
+    if (!this.permitePrint) {
+      e.cancel = true;
+      return;
+    }
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Data');
 
@@ -390,14 +623,14 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       },
     }).then(() => {
       workbook.xlsx.writeBuffer().then((buffer: BlobPart) => {
-        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'Data.xlsx');
+        saveAs(new Blob([buffer], { type: 'application/octet-stream' }), `${this.exportFileName}.xlsx`);
       });
     });
   }
 }
 
 @NgModule({
-  imports: [DxDataGridModule, CommonModule, EmptyStateModule],
+  imports: [DxDataGridModule, DxSelectBoxModule, DxTextBoxModule, DxTooltipModule, CommonModule, EmptyStateModule],
   declarations: [DataGridMttoComponent],
   exports: [DataGridMttoComponent],
 })

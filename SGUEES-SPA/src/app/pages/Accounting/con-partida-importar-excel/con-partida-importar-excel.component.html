@@ -1,0 +1,95 @@
+<h2 *ngIf="!modalMode" class="content-block">{{ tituloVentana }}</h2>
+
+<div
+	class="import-shell"
+	[class.content-block]="!modalMode"
+	[class.dx-card]="!modalMode"
+	[class.responsive-paddings]="!modalMode"
+	[class.import-shell--modal]="modalMode"
+>
+	<div class="import-toolbar">
+		<div class="import-field">
+			<label>Clase Partida</label>
+			<app-data-lookup
+				[model]="mCORR_CLASE_PARTIDA"
+				[(value)]="corrClasePartida"
+				[selectedRowKeys]="selectedClasePartida"
+				valueExpr="Key"
+				displayExpr="Value"
+			>
+			</app-data-lookup>
+		</div>
+		<div class="import-field import-field--file">
+			<label>Archivo Excel (.xlsx)</label>
+			<dx-file-uploader
+				selectButtonText="Seleccionar archivo"
+				labelText=""
+				accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+				[multiple]="false"
+				uploadMode="useForm"
+				[showFileList]="true"
+				(onValueChanged)="onFileSelected($event)"
+			>
+			</dx-file-uploader>
+		</div>
+		<div class="import-actions">
+			<dx-button
+				*ngIf="!modalMode"
+				text="Volver a Partidas"
+				type="normal"
+				icon="back"
+				(onClick)="volverPartidas()"
+			></dx-button>
+			<dx-button
+				*ngIf="modalMode"
+				text="Cancelar"
+				type="normal"
+				icon="close"
+				(onClick)="cancelarModal()"
+			></dx-button>
+			<dx-button
+				text="Importar"
+				type="success"
+				icon="upload"
+				[disabled]="!canImportar()"
+				(onClick)="importar()"
+			></dx-button>
+		</div>
+	</div>
+
+	<div class="preview-grid">
+		<dx-data-grid
+			[dataSource]="previewRows"
+			keyExpr="_rowId"
+			[columns]="previewColumns"
+			[showBorders]="true"
+			[showColumnLines]="true"
+			[showRowLines]="true"
+			[rowAlternationEnabled]="true"
+			[hoverStateEnabled]="true"
+			[allowColumnResizing]="true"
+			[columnResizingMode]="'widget'"
+			[height]="modalMode ? '100%' : 480"
+			[width]="'100%'"
+		>
+			<dxo-editing mode="cell" [allowUpdating]="true" [useIcons]="true"></dxo-editing>
+			<dxo-search-panel [visible]="true"></dxo-search-panel>
+			<dxo-paging [enabled]="false"></dxo-paging>
+			<dxo-summary>
+				<dxi-total-item column="CUENTA_CONTABLE" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
+				<dxi-total-item column="MONTO_CARGO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+				<dxi-total-item column="MONTO_ABONO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+			</dxo-summary>
+		</dx-data-grid>
+	</div>
+</div>
+
+<dx-load-panel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: 'window' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>

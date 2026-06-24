@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Servidor de Reportes Admin FE")]
-[assembly: AssemblyDescription("Servidor de Reportes Admin FE")]
+[assembly: AssemblyTitle("SGUEES Report Server")]
+[assembly: AssemblyDescription("Servidor de reportes SGUEES (Sistema de GestiÃ³n Universitario UEES)")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("e-coffeeTech, S.A. de C.V.")]
+[assembly: AssemblyCompany("UNIVERSIDAD EVANGELICA DE EL SALVADOR")]
 [assembly: AssemblyProduct("sgueesRpt")]
-[assembly: AssemblyCopyright("Copyright ©  e-coffeeTech, S.A. de C.V. 2023")]
+[assembly: AssemblyCopyright("Copyright ï¿½  UNIVERSIDAD EVANGELICA DE EL SALVADOR 2026")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

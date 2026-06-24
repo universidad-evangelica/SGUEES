@@ -1,0 +1,134 @@
+﻿SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+CREATE PROCEDURE [dbo].[PRAL_IMPO_CON_PARTIDAS]
+(
+	@ANIO_PERIODO INT,
+	@MES_PERIODO INT,	
+	@CORR_EMPRESA_ORIGEN SMALLINT,
+	@CORR_SUSCRIPCION_DESTINO INT,
+	@CORR_CONFI_PAIS_DESTINO INT,
+	@CORR_EMPRESA_DESTINO INT)
+AS
+BEGIN
+
+    IF NOT EXISTS(SELECT 1 FROM CON_PERIODO_CONTABLE 
+              AND CORR_EMPRESA=@CORR_EMPRESA_DESTINO
+              AND ANIO_PERIODO=@ANIO_PERIODO
+              AND MES_PERIODO=@MES_PERIODO)
+    BEGIN
+	      INSERT INTO CON_PERIODO_CONTABLE
+	      (CORR_EMPRESA
+	      ,ANIO_PERIODO
+	      ,MES_PERIODO
+	      ,ESTADO_PERIODO_CON
+	      ,ESTADO_PERIODO_BAN
+	      ,ESTADO_PERIODO_VEN
+	      ,ESTADO_PERIODO_ACT
+	      ,ESTADO_PERIODO_INV
+	      ,ESTADO_PERIODO_PLA
+	      ,ESTADO_PERIODO_COM
+	      ,FECHA_CIERRE_CON
+		  ,FECHA_CIERRE_BAN
+		  ,FECHA_CIERRE_VEN
+		  ,FECHA_CIERRE_ACT
+		  ,FECHA_CIERRE_INV
+		  ,FECHA_CIERRE_PLA
+		  ,FECHA_CIERRE_COM
+		  )
+	      VALUES(@CORR_SUSCRIPCION_DESTINO
+	      ,@CORR_CONFI_PAIS_DESTINO
+	      ,@CORR_EMPRESA_DESTINO
+	      ,@ANIO_PERIODO
+	      ,@MES_PERIODO
+	      ,'AB' --ESTADO_PERIODO_CON
+          ,'AB' --ESTADO_PERIODO_BAN
+          ,'AB' --ESTADO_PERIODO_VEN
+          ,'AB' --ESTADO_PERIODO_ACT
+          ,'AB' --ESTADO_PERIODO_INV
+          ,'AB' --ESTADO_PERIODO_PLA
+          ,'AB' --ESTADO_PERIODO_COM
+          ,NULL
+		  ,NULL
+		  ,NULL
+		  ,NULL
+		  ,NULL
+		  ,NULL
+		  ,NULL
+          )
+    END
+
+	--Insertar Partida encabezado
+	--INSERT INTO CON_PARTIDA
+	--
+	--,CORR_EMPRESA
+	--,ANIO_PERIODO
+	--,MES_PERIODO
+	--,CORR_CLASE_PARTIDA
+	--,CORR_PARTIDA
+	--,FECHA_PARTIDA
+	--,NUMERO_DOCUMENTO
+	--,NOMBRE_PARTIDA
+	--,ESTADO_PARTIDA
+	--,USUARIO_CREA
+	--,FECHA_CREA
+ --   ,ESTACION_CREA
+ --   ,USUARIO_ACTU
+ --   ,FECHA_ACTU
+ --   ,ESTACION_ACTU)
+	--,@CORR_CONFI_PAIS_DESTINO
+	--,@CORR_EMPRESA_DESTINO
+	--,a.anio_periodo ANIO_PERIODO
+	--,a.mes_periodo MES_PERIODO
+	--,a.id_clase_partida CORR_CLASE_PARTIDA
+	--,a.id_partida  CORR_PARTIDA
+	--,a.fecha_partida FECHA_PARTIDA
+	--,a.numero_documento NUMERO_DOCUMENTO
+	--,a.descripcion_partida NOMBRE_PARTIDA
+	--,'DI' ESTADO_PARTIDA
+	--,'e-coffeeTech' USUARIO_CREA
+	--,GETDATE() FECHA_CREA
+	--,'e-cofeeTech' ESTACION_CREA
+	--,'e-cofeeTech' USUARIO_ACTU
+	--,GETDATE() FECHA_ACTU
+	--,'e-cofeeTech' ESTACION_ACTU
+	--FROM [e-contaTech].dbo.partida_encabezado a
+	--WHERE a.id_empresa=@CORR_EMPRESA_ORIGEN
+	--AND a.anio_periodo=@ANIO_PERIODO
+	--AND a.mes_periodo=@MES_PERIODO
+
+
+	--Insertar Partida detalle
+	--INSERT INTO CON_PARTIDA_DETA
+	--
+	--,CORR_EMPRESA
+	--,ANIO_PERIODO
+	--,MES_PERIODO
+	--,CORR_CLASE_PARTIDA
+	--,CORR_PARTIDA
+	--,CORR_PARTIDA_DETA
+	--,CUENTA_CONTABLE
+	--,CORR_CENTRO_COSTO
+	--,MONTO_CARGO
+	--,MONTO_ABONO
+	--,NOMBRE_TRAN)
+	--,@CORR_CONFI_PAIS_DESTINO
+	--,@CORR_EMPRESA_DESTINO
+	--,a.anio_periodo ANIO_PERIODO
+	--,a.mes_periodo MES_PERIODO
+	--,a.id_clase_partida CORR_CLASE_PARTIDA
+	--,a.id_partida  CORR_PARTIDA
+ --   ,a.id_partida_detalle CORR_PARTIDA_DETA
+ --   ,a.cuenta_contable CUENTA_CONTABLE
+ --   ,a.id_centro_costo CORR_CENTRO_COSTO
+ --   ,a.monto_cargo MONTO_CARGO
+ --   ,a.monto_abono MONTO_ABONO
+ --   ,a.descripcion_transaccion NOMBRE_TRAN
+ --   FROM [e-contaTech].dbo.partida_detalle a
+	--WHERE a.id_empresa=@CORR_EMPRESA_ORIGEN
+	--AND a.anio_periodo=@ANIO_PERIODO
+	--AND a.mes_periodo=@MES_PERIODO
+
+END
+GO

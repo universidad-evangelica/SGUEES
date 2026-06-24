@@ -1,0 +1,9 @@
+name|type_desc
+----|---------
+V_CON_PARTIDA_CUENTA_MAYOR|VIEW
+
+(1 rows affected)
+name
+----
+
+(0 rows affected)

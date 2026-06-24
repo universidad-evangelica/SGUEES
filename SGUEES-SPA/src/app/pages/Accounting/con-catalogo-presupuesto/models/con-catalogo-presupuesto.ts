@@ -1,0 +1,18 @@
+export interface ConCatalogoPresupuesto {
+	CORR_EMPRESA: number;
+	CUENTA_CONTABLE: string;
+	NOMBRE_CUENTA: string;
+	ANIO_PERIODO: number;
+	MONTO_PRESUPUESTO_1: number;
+	MONTO_PRESUPUESTO_2: number;
+	MONTO_PRESUPUESTO_3: number;
+	MONTO_PRESUPUESTO_4: number;
+	MONTO_PRESUPUESTO_5: number;
+	MONTO_PRESUPUESTO_6: number;
+	MONTO_PRESUPUESTO_7: number;
+	MONTO_PRESUPUESTO_8: number;
+	MONTO_PRESUPUESTO_9: number;
+	MONTO_PRESUPUESTO_10: number;
+	MONTO_PRESUPUESTO_11: number;
+	MONTO_PRESUPUESTO_12: number;
+}

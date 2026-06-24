@@ -7,6 +7,7 @@ using System.Security.Claims;
 using eFramework.Core;
 using  sguees.Models;
 using  sguees.Services;
+using sguees.api.Shared;
 
 namespace sguees.Controllers
 {
@@ -80,6 +81,16 @@ namespace sguees.Controllers
 			} else {
 				return BadRequest(resultado);
 			}
+		}
+
+		[HttpPost("ImportarExcel")]
+		[Authorize(Policy = "/con-centro-costo|C")]
+		public async Task<IActionResult> ImportarExcel(CON_CENTRO_COSTO_IMPORTParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			var vLOGIN = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? "Admin";
+			var resultado = await _service.ImportarExcelAsync(Data, vLOGIN, ClientInfoHelper.GetClientStation(HttpContext));
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
 		[HttpGet("GetCORR_CENTRO_COSTO_PLA_DEPARTAMENTO")]

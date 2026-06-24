@@ -1,6 +1,6 @@
 import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, NgModule, Output, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, NgModule, Output, OnInit, OnChanges, SimpleChanges } from '@angular/core';
 import { DxDropDownBoxModule } from 'devextreme-angular/ui/drop-down-box';
 
 @Component({
@@ -8,7 +8,7 @@ import { DxDropDownBoxModule } from 'devextreme-angular/ui/drop-down-box';
 	templateUrl: './data-lookup.component.html',
 	styleUrls: ['./data-lookup.component.scss'],
 })
-export class DataLookupComponent implements OnInit {
+export class DataLookupComponent implements OnInit, OnChanges {
 	@Input() model!: any;
 	@Input() valueExpr: string = 'Key';
 	@Input() displayExpr: string = 'Value';
@@ -17,6 +17,7 @@ export class DataLookupComponent implements OnInit {
 	@Input() readOnly: boolean = false;
 	@Input() showClearButton: boolean = false;
 	@Input() setValue!: Function;
+	@Input() lookupColumns: any[] | null = null;
 
 	@Output() valueChange = new EventEmitter<any>();
 	claseOpend = false;
@@ -25,7 +26,13 @@ export class DataLookupComponent implements OnInit {
 	constructor() {}
 
 	ngOnInit(): void {
-		this.getColumns();
+		this.buildColumns();
+	}
+
+	ngOnChanges(changes: SimpleChanges): void {
+		if (changes['lookupColumns'] && !changes['lookupColumns'].firstChange) {
+			this.buildColumns();
+		}
 	}
 
 	onGridBoxOptionChanged(e: any) {
@@ -48,7 +55,13 @@ export class DataLookupComponent implements OnInit {
 		}
 	}
 
-	getColumns(): any {
+	buildColumns(): void {
+		if (this.lookupColumns?.length) {
+			this.columns = [...this.lookupColumns];
+			return;
+		}
+
+		this.columns = [];
 		if (this.valueExpr !== this.displayExpr) {
 			this.columns.push({ dataField: this.valueExpr, caption: 'Código', width: 0, visible: false });
 		}

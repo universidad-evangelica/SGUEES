@@ -1,0 +1,19 @@
+﻿=== Deploy Partidas Contables SPs ===
+Server: 192.168.0.250 | Database: SGUEES
+
+--- dbo.PRAL_IMPR_CON_PARTIDA_CONTABLE.sql ---
+OK
+--- dbo.PRAL_MTTO_CON_PARTIDA.sql ---
+OK
+--- dbo.PRAL_MTTO_CON_PARTIDA_DETA.sql ---
+OK
+--- dbo.PRAL_GENE_PARTIDA_LIQUIDACION.sql ---
+OK
+--- dbo.PRAL_GENE_PARTIDA_CIERRE.sql ---
+OK
+--- dbo.PRAL_GENE_PARTIDA_APERTURA.sql ---
+OK
+--- dbo.PRAL_GENE_CON_PERIODO_CIERRE.sql ---
+OK
+--- dbo.PRAL_GENE_CON_PERIODO_APERTURA.sql ---
+OK

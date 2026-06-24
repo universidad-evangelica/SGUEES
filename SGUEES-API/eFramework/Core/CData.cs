@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -43,12 +44,15 @@ namespace eFramework.Core
                 objCommand.CommandType = CommandType.Text;
                 objCommand.CommandTimeout = 0;
 
-                foreach (CParameter p in xParametros)
+                if (xParametros != null)
                 {
-                    if (p.ParameterName != "")
+                    foreach (CParameter p in xParametros)
                     {
+                        if (!ShouldIncludeInWhere(p))
+                            continue;
+
                         objParameter = dataFactory.CreateParameter();
-                        objParameter.DbType = p.DbType;  
+                        objParameter.DbType = p.DbType;
                         objParameter.ParameterName = p.ParameterName;
                         objParameter.Value = p.Value;
                         objParameter.Direction = p.Direction;
@@ -396,6 +400,38 @@ namespace eFramework.Core
             catch (System.Exception)
             {   
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Omite filtros opcionales en GetAll: 0 numérico, cadena vacía o fecha default no restringen el WHERE.
+        /// </summary>
+        private static bool ShouldIncludeInWhere(CParameter p)
+        {
+            if (p == null || string.IsNullOrEmpty(p.ParameterName))
+                return false;
+
+            var value = p.Value;
+            if (value == null || value == DBNull.Value)
+                return false;
+
+            switch (p.DbType)
+            {
+                case DbType.Int32:
+                case DbType.Int16:
+                case DbType.Int64:
+                case DbType.Byte:
+                    return Convert.ToInt64(value) != 0;
+                case DbType.String:
+                case DbType.AnsiString:
+                case DbType.StringFixedLength:
+                case DbType.AnsiStringFixedLength:
+                    return !string.IsNullOrEmpty(Convert.ToString(value));
+                case DbType.DateTime:
+                case DbType.DateTime2:
+                    return (DateTime)value != default;
+                default:
+                    return true;
             }
         }
 
