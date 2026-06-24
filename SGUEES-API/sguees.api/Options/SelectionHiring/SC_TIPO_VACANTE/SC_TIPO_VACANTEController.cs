@@ -1,13 +1,14 @@
-using sguees.api.Shared;
 using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using eFramework.Core;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using sguees.api.Shared;
 using  sguees.Models;
 using  sguees.Services;
+using SGUEES.Models;
 
 namespace sguees.Controllers
 {
@@ -94,5 +95,45 @@ namespace sguees.Controllers
 				return BadRequest(resultado);
 			}
 		}
-	}
+
+        [HttpPut("Desactivate")]
+        [Authorize(Policy = "/sc-tipo-contratacion|D")]
+        public async Task<IActionResult> Desactivate([FromQuery] SC_TIPO_VACANTETable Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            Data.ACTIVO = false;
+            Data.USUARIO_ACTU = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
+            Data.FECHA_ACTU = DateTime.Now;
+            Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
+            var resultado = await _service.DesactivateAsync(Data, "Admin", "e-CoffeeTech");
+            if (resultado.ErrorCode == 0)
+            {
+                return Ok(resultado);
+            }
+            else
+            {
+                return BadRequest(resultado);
+            }
+        }
+
+        [HttpPut("Reactivate")]
+        [Authorize(Policy = "/sc-tipo-contratacion|U")]
+        public async Task<IActionResult> Reactivate([FromQuery] SC_TIPO_VACANTETable Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            Data.ACTIVO = true;
+            Data.USUARIO_ACTU = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
+            Data.FECHA_ACTU = DateTime.Now;
+            Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
+            var resultado = await _service.ReactivateAsync(Data, "Admin", "e-CoffeeTech");
+            if (resultado.ErrorCode == 0)
+            {
+                return Ok(resultado);
+            }
+            else
+            {
+                return BadRequest(resultado);
+            }
+        }
+    }
 }
