@@ -12,6 +12,7 @@ import { GenMunicipioComponent } from './gen-municipio/gen-municipio.component';
 import { GenDistritoComponent } from './gen-distrito/gen-distrito.component';
 import { GenSectorEconomicoComponent } from './gen-sector-economico/gen-sector-economico.component';
 import { GenEmpresaComponent } from './gen-empresa/gen-empresa.component';
+import { GenEstructuraTerritorialComponent } from './gen-estructura-territorial/gen-estructura-territorial.component';
 
 const routes: Routes = [
   {
@@ -85,6 +86,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-empresa/gen-empresa.module').then(m => m.GenEmpresaModule)
+  },
+  {
+    path: 'gen-estructura-territorial',
+    component: GenEstructuraTerritorialComponent,
+    data: { titulo: 'Estructura Territorial' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-estructura-territorial/gen-estructura-territorial.module').then(m => m.GenEstructuraTerritorialModule)
   }
 ];
 

@@ -1,0 +1,230 @@
+<p-toast
+	position="bottom-right"
+	[baseZIndex]="2000"
+	[showTransformOptions]="'translateY(100%)'"
+	[hideTransitionOptions]="'500ms'"
+	[showTransformOptions]="'translateX(100%)'"
+></p-toast>
+
+<div class="sguees-mtto-view">
+	<app-barra-data-mtto
+		[tituloVentana]="tituloVentana"
+		[subTituloVentana]="subTituloVentana"
+		[isBrowse]="isBrowse()"
+		[isForm]="isForm()"
+		[permiteAdd]="permiteAdd"
+		(nuevo)="nuevo()"
+		(guardar)="guardar()"
+		(cancelar)="cancelar()"
+	>
+	</app-barra-data-mtto>
+
+	<!-- Lista de países (entrada al módulo) -->
+	<ng-container *ngIf="!vistaDetalle">
+		<div class="content-block dx-card responsive-paddings territorial-page territorial-form-card" *ngIf="!isBrowse()">
+			<dx-form
+				#fData
+				id="fData"
+				[formData]="model"
+				[labelLocation]="'top'"
+				[colCount]="8"
+				[colCountByScreen]="{ xs: 1, sm: 1, md: 4, lg: 8 }"
+				[showRequiredMark]="false"
+				[items]="items"
+			>
+			</dx-form>
+		</div>
+
+		<app-data-grid-mtto
+			#paisGrid
+			[isBrowse]="isBrowse()"
+			[models]="models"
+			[columns]="columns"
+			[summary]="summary"
+			[keyExpr]="'CORR_PAIS'"
+			[remoteOperations]="{ paging: true, filtering: true }"
+			[pageSize]="5"
+			[allowedPageSizes]="pageSizes"
+			[showSearch]="false"
+			[showAdd]="true"
+			[showRefresh]="true"
+			[showExport]="true"
+			[permitePrint]="permitePrint"
+			[responsiveColumnHiding]="false"
+			[columnHidingEnabled]="false"
+			[exportFileName]="'Paises'"
+			(refresh)="consultar()"
+			(add)="nuevo()"
+			(rowDblClick)="rowDblClick($event)"
+			(rowRemoving)="rowRemoving($event)"
+		></app-data-grid-mtto>
+	</ng-container>
+
+	<!-- Detalle del país -->
+	<ng-container *ngIf="vistaDetalle">
+		<div class="content-block dx-card responsive-paddings territorial-form-card">
+			<div class="territorial-form-toolbar" *ngIf="isBrowse()">
+				<div class="territorial-form-toolbar__actions">
+					<dx-button
+						text="Volver al listado"
+						icon="back"
+						stylingMode="outlined"
+						(onClick)="volverAlListado()"
+					></dx-button>
+					<dx-button
+						text="Editar país"
+						icon="edit"
+						stylingMode="outlined"
+						type="default"
+						[hint]="permiteEdit ? 'Editar país' : 'No tiene permiso para editar registros.'"
+						[elementAttr]="{ class: permiteEdit ? '' : 'sguees-action-no-edit' }"
+						(onClick)="editarPais()"
+					></dx-button>
+					<dx-button
+						text="Eliminar país"
+						icon="trash"
+						stylingMode="outlined"
+						type="danger"
+						[hint]="permiteDele ? 'Eliminar país' : 'No tiene permiso para eliminar registros.'"
+						[elementAttr]="{ class: permiteDele ? '' : 'sguees-action-no-delete' }"
+						(onClick)="eliminarPaisActual()"
+					></dx-button>
+				</div>
+			</div>
+
+			<dx-form
+				#fData
+				id="fData"
+				[formData]="model"
+				[readOnly]="isBrowse()"
+				[labelLocation]="'top'"
+				[colCount]="8"
+				[colCountByScreen]="{ xs: 1, sm: 1, md: 4, lg: 8 }"
+				[showRequiredMark]="false"
+				[items]="items"
+			>
+			</dx-form>
+		</div>
+
+		<div class="territorial-cascade" *ngIf="selectedPais" [class.territorial-cascade--paused]="!isBrowse()">
+			<div class="territorial-panels" [style.--territorial-cascade-grid-height.px]="cascadeGridHeight">
+						<div class="territorial-panel territorial-panel--cascade">
+							<app-data-grid-mtto
+								#deptoGrid
+								[isBrowse]="true"
+								[models]="deptoModels"
+								[columns]="deptoColumns"
+								[summary]="deptoSummary"
+								[keyExpr]="'CORR_DEPTO'"
+								[remoteOperations]="cascadeRemoteOperations"
+								[gridHeight]="cascadeGridHeight"
+								[repaintChangesOnly]="false"
+								[showSearch]="false"
+								[showAdd]="true"
+								[showRefresh]="true"
+								[showExport]="false"
+								[permitePrint]="false"
+								[responsiveColumnHiding]="false"
+								[columnHidingEnabled]="false"
+								[titulo]="'Departamentos'"
+								[subtitle]="selectedPais?.NOMBRE_PAIS || ''"
+								(refresh)="refrescarDeptos()"
+								(add)="nuevoDepto()"
+								(rowClick)="onDeptoFocused($event)"
+								(focusedRowChanged)="onDeptoFocused($event)"
+							></app-data-grid-mtto>
+						</div>
+
+						<div class="territorial-panel territorial-panel--cascade" [class.territorial-panel--disabled]="!selectedDepto">
+							<app-data-grid-mtto
+								#municipioGrid
+								[isBrowse]="true"
+								[models]="municipioModels"
+								[columns]="municipioColumns"
+								[summary]="municipioSummary"
+								[keyExpr]="'CORR_MUNICIPIO'"
+								[remoteOperations]="cascadeRemoteOperations"
+								[gridHeight]="cascadeGridHeight"
+								[repaintChangesOnly]="false"
+								[showSearch]="false"
+								[showAdd]="!!selectedDepto"
+								[showRefresh]="true"
+								[showExport]="false"
+								[permitePrint]="false"
+								[responsiveColumnHiding]="false"
+								[columnHidingEnabled]="false"
+								[titulo]="'Municipios'"
+								[subtitle]="selectedDepto?.NOMBRE_DEPTO || ''"
+								(refresh)="refrescarMunicipios()"
+								(add)="nuevoMunicipio()"
+								(rowClick)="onMunicipioFocused($event)"
+								(focusedRowChanged)="onMunicipioFocused($event)"
+							></app-data-grid-mtto>
+						</div>
+
+						<div class="territorial-panel territorial-panel--cascade" [class.territorial-panel--disabled]="!selectedMunicipio">
+							<app-data-grid-mtto
+								#distritoGrid
+								[isBrowse]="true"
+								[models]="distritoModels"
+								[columns]="districtoColumns"
+								[summary]="distritoSummary"
+								[keyExpr]="'CORR_DISTRITO'"
+								[remoteOperations]="cascadeRemoteOperations"
+								[gridHeight]="cascadeGridHeight"
+								[repaintChangesOnly]="false"
+								[showSearch]="false"
+								[showAdd]="!!selectedMunicipio"
+								[showRefresh]="true"
+								[showExport]="false"
+								[permitePrint]="false"
+								[responsiveColumnHiding]="false"
+								[columnHidingEnabled]="false"
+								[titulo]="'Distritos'"
+								[subtitle]="selectedMunicipio?.NOMBRE_MUNICIPIO || ''"
+								(refresh)="refrescarDistritos()"
+								(add)="nuevoDistrito()"
+							></app-data-grid-mtto>
+						</div>
+			</div>
+		</div>
+	</ng-container>
+</div>
+
+<dx-popup
+	[(visible)]="popupVisible"
+	[showTitle]="true"
+	[title]="popupTitle"
+	[width]="popupWidth"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[showCloseButton]="true"
+	[dragEnabled]="false"
+	[wrapperAttr]="{ class: 'territorial-crud-popup' }"
+>
+	<div class="territorial-popup-body">
+		<dx-form
+			#popupForm
+			[formData]="popupModel"
+			[labelLocation]="'top'"
+			[colCount]="2"
+			[colCountByScreen]="popupFormColCountByScreen"
+			[showRequiredMark]="false"
+			[items]="popupItems"
+		></dx-form>
+		<div class="territorial-popup-actions">
+			<dx-button text="Guardar" type="default" stylingMode="contained" (onClick)="guardarPopup()"></dx-button>
+			<dx-button text="Cancelar" stylingMode="outlined" (onClick)="cerrarPopup()"></dx-button>
+		</div>
+	</div>
+</dx-popup>
+
+<dx-load-panel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>

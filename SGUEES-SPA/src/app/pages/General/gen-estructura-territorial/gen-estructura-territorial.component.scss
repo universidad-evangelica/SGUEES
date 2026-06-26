@@ -1,0 +1,225 @@
+.territorial-form-card {
+	margin-top: 38px;
+}
+
+@media (max-width: 991.98px) {
+	.territorial-form-card {
+		margin-top: 16px;
+	}
+}
+
+@media (max-width: 575.98px) {
+	:host ::ng-deep {
+		.dx-datagrid-header-panel {
+			padding: 12px !important;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar,
+		.dx-datagrid-header-panel .dx-toolbar-items-container {
+			height: auto !important;
+			min-height: 0;
+			overflow: visible;
+			flex-wrap: wrap;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-before,
+		.dx-datagrid-header-panel .dx-toolbar-after {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 8px;
+			position: static !important;
+			transform: none !important;
+			left: auto !important;
+			right: auto !important;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-before {
+			flex: 1 1 100%;
+			width: 100% !important;
+			max-width: 100%;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-after {
+			flex: 1 1 100%;
+			width: 100% !important;
+			max-width: 100%;
+			justify-content: flex-start;
+			margin-left: 0 !important;
+			padding-left: 0 !important;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-after .dx-item {
+			margin-left: 0;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-after .dx-button-has-text {
+			flex: 1 1 auto;
+		}
+	}
+
+	.territorial-form-card {
+		margin-top: 12px;
+	}
+
+	.territorial-form-toolbar__actions {
+		width: 100%;
+	}
+
+	.territorial-form-toolbar__actions .dx-button {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+}
+
+.territorial-form-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 16px;
+	margin-bottom: 20px;
+}
+
+.territorial-form-toolbar__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
+.territorial-cascade {
+	margin-top: 24px;
+}
+
+.territorial-cascade--paused {
+	pointer-events: none;
+	opacity: 0.72;
+}
+
+.territorial-panels {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 8px;
+	padding-top: 8px;
+	align-items: start;
+}
+
+.territorial-panel {
+	min-width: 0;
+}
+
+:host ::ng-deep .territorial-panel--cascade {
+	app-data-grid-mtto,
+	.sguees-data-grid-mtto-host,
+	.sguees-grid-module-card {
+		flex: 0 0 auto;
+		min-height: 0;
+		height: auto;
+	}
+
+	.sguees-grid-mtto-shell,
+	.sguees-grid-view-wrap,
+	.sguees-grid-module-card {
+		overflow: visible;
+	}
+
+	.dx-datagrid-header-panel {
+		position: relative;
+		top: auto;
+		z-index: auto;
+	}
+
+	.dx-datagrid-headers,
+	.dx-datagrid-filter-row,
+	.dx-datagrid-filter-row .dx-editor-cell {
+		overflow: visible;
+	}
+
+	.dx-datagrid-pager,
+	.dx-pager {
+		display: none !important;
+	}
+}
+
+:host ::ng-deep .territorial-panel > app-data-grid-mtto {
+	display: block;
+	width: 100%;
+}
+
+:host ::ng-deep .territorial-panel .sguees-data-grid-mtto-host,
+:host ::ng-deep .territorial-panel .sguees-grid-module-card {
+	display: block;
+	width: 100%;
+}
+
+.territorial-panel--disabled {
+	opacity: 0.72;
+}
+
+:host ::ng-deep .territorial-panel--cascade .dx-data-row.territorial-row-selected > td {
+	background-color: var(--sguees-grid-row-selected, rgba(56, 139, 253, 0.22)) !important;
+	color: var(--sguees-text-primary, var(--base-text-color)) !important;
+}
+
+:host ::ng-deep .territorial-panel--cascade .dx-data-row.territorial-row-selected:hover > td {
+	background-color: var(--sguees-grid-row-selected, rgba(56, 139, 253, 0.28)) !important;
+}
+
+.territorial-popup-body {
+	padding: 8px 4px 4px;
+}
+
+.territorial-popup-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 18px;
+}
+
+::ng-deep .territorial-crud-popup.dx-popup-wrapper > .dx-overlay-content {
+	max-width: calc(100vw - 24px);
+}
+
+::ng-deep .territorial-crud-popup .dx-popup-content {
+	padding: 12px 16px 16px;
+}
+
+@media (max-width: 575.98px) {
+	.territorial-popup-body {
+		padding: 4px 0 0;
+	}
+
+	.territorial-popup-actions {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.territorial-popup-actions .dx-button {
+		width: 100%;
+	}
+
+	::ng-deep .territorial-crud-popup .dx-popup-content {
+		padding: 8px 12px 12px;
+	}
+}
+
+// Confirmaciones eliminar (DevExtreme custom dialog — appendTo body)
+::ng-deep .territorial-confirm-dialog.dx-dialog-root > .dx-overlay-content {
+	max-width: min(480px, calc(100vw - 32px));
+}
+
+::ng-deep .territorial-confirm-dialog .dx-dialog-message,
+::ng-deep .territorial-confirm-dialog .territorial-confirm-message {
+	white-space: normal;
+	word-break: break-word;
+}
+
+::ng-deep .territorial-confirm-dialog .dx-popup-bottom .dx-toolbar-items-container {
+	justify-content: flex-end;
+	gap: 10px;
+}
+
+@media (max-width: 1199.98px) {
+	.territorial-panels {
+		grid-template-columns: 1fr;
+	}
+}
