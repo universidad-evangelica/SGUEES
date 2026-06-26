@@ -145,7 +145,7 @@ export class ScInduccionService {
 				label: { text: 'Nombre induccion' },
 				colSpan: 5,
 				editorOptions: { placeholder: 'Nombre induccion...', showClearButton: true, maxLength: 200 },
-				validationRules: [{ type: 'required', message: 'El nombre es obligatorio' }],
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{
 				dataField: 'SEMANAS_INDUCCION',
@@ -154,11 +154,34 @@ export class ScInduccionService {
 				colSpan: 2,
 				editorOptions: { min: 1, showSpinButtons: true },
 				validationRules: [
-					{ type: 'required', message: 'Las semanas son obligatorias' },
+					{ type: 'required', message: 'Este campo es obligatorio' },
 					{ type: 'range', min: 1, message: 'Las semanas deben ser mayores a 0' },
 				],
 			},
 			{ dataField: 'ESTADO_INDUCCION', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
 	}
+}
+
+export const EMPRESA_WARNING_ERROR_CODE = 4100;
+export const EMPRESA_REGISTRO_ETIQUETA = 'la inducción';
+
+export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
+	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
+}
+
+export function isEmpresaWarningResponse(response: any): boolean {
+	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
+}
+
+export function isEmpresaFkErrorMessage(message: string): boolean {
+	const value = `${message ?? ''}`.toLowerCase();
+	return (
+		value.includes('gen_empresa') ||
+		value.includes('foreign key') ||
+		value.includes('clave externa') ||
+		value.includes('reference constraint') ||
+		value.includes('conflicted with the foreign key') ||
+		value.includes('no tiene una empresa asignada')
+	);
 }

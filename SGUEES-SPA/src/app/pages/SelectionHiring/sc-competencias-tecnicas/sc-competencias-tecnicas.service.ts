@@ -319,7 +319,7 @@ export class ScCompetenciasTecnicasService {
 					valueExpr: 'value',
 					onValueChanged: ctx.onNivelChanged,
 				},
-				validationRules: [{ type: 'required', message: 'El nivel es obligatorio' }],
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{
 				dataField: 'CORR_COMPETENCIAS_TECNICAS_PADRE',
@@ -338,7 +338,7 @@ export class ScCompetenciasTecnicasService {
 					showClearButton: true,
 					onValueChanged: ctx.onPadreChanged,
 				},
-				validationRules: showPadre ? [{ type: 'required', message: 'Debe seleccionar el padre' }] : [],
+				validationRules: showPadre ? [{ type: 'required', message: 'Este campo es obligatorio' }] : [],
 			},
 			{
 				dataField: 'CODIGO_COMPETENCIAS_TECNICAS',
@@ -358,7 +358,7 @@ export class ScCompetenciasTecnicasService {
 							}
 						: undefined,
 				},
-				validationRules: isNivel1 ? [{ type: 'required', message: 'El codigo es obligatorio' }] : [],
+				validationRules: isNivel1 ? [{ type: 'required', message: 'Este campo es obligatorio' }] : [],
 			},
 			{
 				dataField: 'CODIGO_PREFIJO',
@@ -383,7 +383,7 @@ export class ScCompetenciasTecnicasService {
 						}
 					},
 				},
-				validationRules: isNivel2 ? [{ type: 'required', message: 'El sufijo es obligatorio' }] : [],
+				validationRules: isNivel2 ? [{ type: 'required', message: 'Este campo es obligatorio' }] : [],
 			},
 		];
 
@@ -393,7 +393,7 @@ export class ScCompetenciasTecnicasService {
 				label: { text: 'Competencia tecnica' },
 				colSpan: 6,
 				editorOptions: { placeholder: 'Nombre de la competencia...', maxLength: 150, showClearButton: true },
-				validationRules: [{ type: 'required', message: 'El nombre es obligatorio' }],
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			});
 		}
 
@@ -411,7 +411,7 @@ export class ScCompetenciasTecnicasService {
 				colSpan: 8,
 				editorType: 'dxTextArea',
 				editorOptions: { placeholder: 'Definicion...', maxLength: 500, height: 120 },
-				validationRules: [{ type: 'required', message: 'La definicion es obligatoria' }],
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			}
 		);
 
@@ -467,4 +467,27 @@ export class ScCompetenciasTecnicasService {
 
 		return !(field === 'CORR_COMPETENCIAS_TECNICAS' && Number(value) === 0);
 	}
+}
+
+export const EMPRESA_WARNING_ERROR_CODE = 4100;
+export const EMPRESA_REGISTRO_ETIQUETA = 'la competencia técnica';
+
+export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
+	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
+}
+
+export function isEmpresaWarningResponse(response: any): boolean {
+	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
+}
+
+export function isEmpresaFkErrorMessage(message: string): boolean {
+	const value = `${message ?? ''}`.toLowerCase();
+	return (
+		value.includes('gen_empresa') ||
+		value.includes('foreign key') ||
+		value.includes('clave externa') ||
+		value.includes('reference constraint') ||
+		value.includes('conflicted with the foreign key') ||
+		value.includes('no tiene una empresa asignada')
+	);
 }

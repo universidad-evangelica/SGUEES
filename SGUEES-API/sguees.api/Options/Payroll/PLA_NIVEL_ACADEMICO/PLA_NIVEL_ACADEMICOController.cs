@@ -43,6 +43,9 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/pla-nivel-academico|C")]
         public async Task<IActionResult> Post(PLA_NIVEL_ACADEMICOTable Data)
         {
+            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+                return BadRequest(resultadoEmpresa);
+
             SetCreateAudit(Data);
 
             var resultado = await _service.CreateAsync(Data, Data.ESTACION_CREA, "e-CoffeeTech");
@@ -55,6 +58,9 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/pla-nivel-academico|U")]
         public async Task<IActionResult> Put(PLA_NIVEL_ACADEMICOTable Data)
         {
+            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+                return BadRequest(resultadoEmpresa);
+
             SetUpdateAudit(Data);
 
             var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
@@ -67,6 +73,9 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/pla-nivel-academico|D")]
         public async Task<IActionResult> Delete([FromQuery] PLA_NIVEL_ACADEMICOTable Data)
         {
+            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+                return BadRequest(resultadoEmpresa);
+
             SetUpdateAudit(Data);
 
             var resultado = await _service.DeleteAsync(Data, "Admin", "e-CoffeeTech");
@@ -79,6 +88,9 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/pla-nivel-academico|U")]
         public async Task<IActionResult> Activar(PLA_NIVEL_ACADEMICOTable Data)
         {
+            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+                return BadRequest(resultadoEmpresa);
+
             SetUpdateAudit(Data);
             Data.ESTADO_NIVEL_ACADEMICO = true;
 
@@ -92,6 +104,9 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/pla-nivel-academico|U")]
         public async Task<IActionResult> Desactivar(PLA_NIVEL_ACADEMICOTable Data)
         {
+            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+                return BadRequest(resultadoEmpresa);
+
             SetUpdateAudit(Data);
 
             var resultado = await _service.DesactivarAsync(Data, "Admin", "e-CoffeeTech");
@@ -102,7 +117,30 @@ namespace SGUEES.Controllers
 
         private int GetCorrEmpresa()
         {
-            return int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
+            return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
+        }
+
+        private bool ValidateEmpresaSesion(out CResult resultado)
+        {
+            if (GetCorrEmpresa() > 0)
+            {
+                resultado = null;
+                return true;
+            }
+
+            resultado = new CResult
+            {
+                Data = null,
+                Result = false,
+                CodeHelper = 0,
+                ErrorCode = 4100,
+                ErrorMessage = "No se pudo guardar el nivel académico porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
+                ErrorSource = "[PLA_NIVEL_ACADEMICOController]",
+                RowsAffected = 0
+            };
+
+            return false;
         }
 
         private string GetUsuario()

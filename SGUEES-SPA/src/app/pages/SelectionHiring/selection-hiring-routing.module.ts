@@ -7,13 +7,13 @@ import { ScTipoVacanteComponent } from './sc-tipo-vacante/sc-tipo-vacante.compon
 import { ScRequisicionPersonalComponent } from './sc-requisicion-personal/sc-requisicion-personal.component';
 import { ScTipoModalidadComponent } from './sc-tipo-modalidad/sc-tipo-modalidad.component';
 import { ScTipoContratacionComponent } from './sc-tipo-contratacion/sc-tipo-contratacion.component';
-import { ScDescriptorResponsabilidadCargoComponent } from './sc-descriptor-responsabilidad-cargo/sc-descriptor-responsabilidad-cargo.component';
-import { ScDescriptorRiesgoPuestoComponent } from './sc-descriptor-riesgo-puesto/sc-descriptor-riesgo-puesto.component';
+import { ScResponsabilidadCargoComponent } from './sc-responsabilidad-cargo/sc-responsabilidad-cargo.component';
+import { ScRiesgoPuestoComponent } from './sc-riesgo-puesto/sc-riesgo-puesto.component';
 import { ScInduccionComponent } from './sc-induccion/sc-induccion.component';
 import { ScFrecuenciaComponent } from './sc-frecuencia/sc-frecuencia.component';
 import { ScRequerimientoOrganizacionalComponent } from './sc-requerimiento-organizacional/sc-requerimiento-organizacional.component';
 import { ScDisponibilidadHorarioComponent } from './sc-disponibilidad-horario/sc-disponibilidad-horario.component';
-import { ScDescriptorImpactoEconomicoComponent } from './sc-descriptor-impacto-economico/sc-descriptor-impacto-economico.component';
+import { ScImpactoEconomicoComponent } from './sc-impacto-economico/sc-impacto-economico.component';
 import { ScCompetenciasTecnicasComponent } from './sc-competencias-tecnicas/sc-competencias-tecnicas.component';
 
 const routes: Routes = [
@@ -49,20 +49,20 @@ const routes: Routes = [
     loadChildren: () => import('./sc-tipo-contratacion/sc-tipo-contratacion.module').then(m => m.ScTipoContratacionModule)
   },
   {
-    path: 'sc-descriptor-responsabilidad-cargo',
-    component: ScDescriptorResponsabilidadCargoComponent,
+    path: 'sc-responsabilidad-cargo',
+    component: ScResponsabilidadCargoComponent,
     data: { titulo: 'Responsabilidad de Cargo' },
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
-    loadChildren: () => import('./sc-descriptor-responsabilidad-cargo/sc-descriptor-responsabilidad-cargo.module').then(m => m.ScDescriptorResponsabilidadCargoModule)
+    loadChildren: () => import('./sc-responsabilidad-cargo/sc-responsabilidad-cargo.module').then(m => m.ScResponsabilidadCargoModule)
   },
   {
-    path: 'sc-descriptor-riesgo-puesto',
-    component: ScDescriptorRiesgoPuestoComponent,
+    path: 'sc-riesgo-puesto',
+    component: ScRiesgoPuestoComponent,
     data: { titulo: 'Riesgo de Puesto' },
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
-    loadChildren: () => import('./sc-descriptor-riesgo-puesto/sc-descriptor-riesgo-puesto.module').then(m => m.ScDescriptorRiesgoPuestoModule)
+    loadChildren: () => import('./sc-riesgo-puesto/sc-riesgo-puesto.module').then(m => m.ScRiesgoPuestoModule)
   },
   {
     path: 'sc-induccion',
@@ -97,12 +97,12 @@ const routes: Routes = [
     loadChildren: () => import('./sc-disponibilidad-horario/sc-disponibilidad-horario.module').then(m => m.ScDisponibilidadHorarioModule)
   },
   {
-    path: 'sc-descriptor-impacto-economico',
-    component: ScDescriptorImpactoEconomicoComponent,
+    path: 'sc-impacto-economico',
+    component: ScImpactoEconomicoComponent,
     data: { titulo: 'Impacto Economico' },
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
-    loadChildren: () => import('./sc-descriptor-impacto-economico/sc-descriptor-impacto-economico.module').then(m => m.ScDescriptorImpactoEconomicoModule)
+    loadChildren: () => import('./sc-impacto-economico/sc-impacto-economico.module').then(m => m.ScImpactoEconomicoModule)
   },
   {
     path: 'sc-competencias-tecnicas',
