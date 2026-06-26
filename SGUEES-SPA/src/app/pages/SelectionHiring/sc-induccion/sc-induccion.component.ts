@@ -10,8 +10,15 @@ import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
+import { AuthService } from 'src/app/shared/services/auth.service';
 import { ScInduccion } from './models/sc-induccion';
-import { ScInduccionService } from './sc-induccion.service';
+import {
+	EMPRESA_REGISTRO_ETIQUETA,
+	getEmpresaWarningMessage,
+	isEmpresaFkErrorMessage,
+	isEmpresaWarningResponse,
+	ScInduccionService,
+} from './sc-induccion.service';
 
 type EstadoFiltro = boolean | null;
 
@@ -22,7 +29,7 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 	readonly pageSizes = [5, 10, 25, 50, 100];
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Inducción';
 
-	constructor(public override appInfoService: AppInfoService, public override router: ActivatedRoute, private service: ScInduccionService, private messageService: MessageService) {
+	constructor(public override appInfoService: AppInfoService, public override router: ActivatedRoute, private service: ScInduccionService, private messageService: MessageService, private authService: AuthService) {
 		super(appInfoService, router);
 		this.onEditClick = this.onEditClick.bind(this);
 		this.onEliminarClick = this.onEliminarClick.bind(this);
@@ -107,6 +114,13 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 		this.dataGrid?.refreshData(true);
 	}
 
+	override nuevo(): void {
+		if (!this.validarEmpresaSesion()) {
+			return;
+		}
+		super.nuevo();
+	}
+
 	override notifyFx(xMessage: string, xType: NotifyType): void {
 		const cleanMessage = `${xMessage ?? ''}`.replace(/^error:\s*/i, '').trim();
 		const warningDetail = this.getWarningMessage(xMessage);
@@ -118,6 +132,21 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 	}
 
 	guardar(): void {
+		if (!this.validarEmpresaSesion()) {
+			return;
+		}
+
+		const formData = this.dataForm?.instance?.option('formData');
+		if (formData) {
+			this.model = { ...this.model, ...formData };
+		}
+
+		const formValidation = this.dataForm?.instance?.validate();
+		if (formValidation && !formValidation.isValid) {
+			this.service.esValido(this.model, this.notifyFx.bind(this));
+			return;
+		}
+
 		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) return;
 		this.loadingVisible = true;
 		const isAdd = this.banderaMtto === UpdateType.Add;
@@ -135,7 +164,7 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 				this.loadingVisible = false;
 			},
 			error: (error: any) => {
-				this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
+				this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
 				this.loadingVisible = false;
 			},
 		});
@@ -258,15 +287,38 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 	}
 
 	private getNotifyType(response: any): NotifyType {
+		if (isEmpresaWarningResponse(response)) {
+			return NotifyType.Warning;
+		}
 		const message = (response?.ErrorMessage || '').toLowerCase();
 		return response?.ErrorCode === 2627 || message.includes('ya existe') || message.includes('duplicad')
 			? NotifyType.Warning
 			: NotifyType.Error;
 	}
 
+	private getErrorNotifyType(error: any): NotifyType {
+		return isEmpresaFkErrorMessage(this.getErrorMessage(error)) ? NotifyType.Warning : NotifyType.Error;
+	}
+
+	private getCorrEmpresaSesion(): number {
+		const value = Number(this.authService.decodedToken?.CORR_EMPRESA ?? 0);
+		return Number.isFinite(value) ? value : 0;
+	}
+
+	private validarEmpresaSesion(): boolean {
+		if (this.getCorrEmpresaSesion() > 0) {
+			return true;
+		}
+		this.notifyFx(getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA), NotifyType.Warning);
+		return false;
+	}
+
 	private getWarningMessage(message: string): string {
 		const cleanMessage = `${message ?? ''}`.replace(/^error:\s*/i, '').trim();
 		const value = cleanMessage.toLowerCase();
+		if (isEmpresaFkErrorMessage(cleanMessage) || value.includes('no tiene una empresa asignada')) {
+			return getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA);
+		}
 		if (value.includes('ya existe') || value.includes('duplicad')) {
 			return 'Ya existe un registro con ese código. Escriba otro código para continuar.';
 		}

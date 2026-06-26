@@ -217,9 +217,32 @@ export class PlaTipoPuestoService {
 				label: { text: 'Nombre tipo de puesto' },
 				colSpan: 5,
 				editorOptions: { placeholder: 'Nombre tipo de puesto...', showClearButton: true, maxLength: 100 },
-				validationRules: [{ type: 'required', message: 'El nombre es obligatorio' }],
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{ dataField: 'ESTADO_TIPO_PUESTO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
 	}
+}
+
+export const EMPRESA_WARNING_ERROR_CODE = 4100;
+export const EMPRESA_REGISTRO_ETIQUETA = 'el tipo de puesto';
+
+export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
+	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
+}
+
+export function isEmpresaWarningResponse(response: any): boolean {
+	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
+}
+
+export function isEmpresaFkErrorMessage(message: string): boolean {
+	const value = `${message ?? ''}`.toLowerCase();
+	return (
+		value.includes('gen_empresa') ||
+		value.includes('foreign key') ||
+		value.includes('clave externa') ||
+		value.includes('reference constraint') ||
+		value.includes('conflicted with the foreign key') ||
+		value.includes('no tiene una empresa asignada')
+	);
 }

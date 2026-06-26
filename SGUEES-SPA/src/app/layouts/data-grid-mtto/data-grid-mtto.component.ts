@@ -107,7 +107,6 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   private contextSub?: Subscription;
   private permiteAddEffective = false;
   private pageSizeRepaintTimer?: ReturnType<typeof setTimeout>;
-  private pageSizeRemountTimer?: ReturnType<typeof setTimeout>;
   private permissionTooltipHideTimer?: ReturnType<typeof setTimeout>;
   private permissionTooltipGridElement?: HTMLElement;
   private readonly permissionTooltipMessages: Record<string, string> = {
@@ -139,9 +138,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
 
   /** 8D: subtítulo explícito o contexto; si vacío no se muestra línea. */
   get resolvedSubtitle(): string {
-    const explicit = this.subtitle?.trim();
-    if (explicit) {
-      return explicit;
+    if (this.subtitle !== undefined && this.subtitle !== null) {
+      return `${this.subtitle}`.trim();
     }
     return (this.pageContext.snapshot.subtitle || '').trim();
   }
@@ -267,9 +265,6 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.contextSub?.unsubscribe();
     if (this.pageSizeRepaintTimer) {
       clearTimeout(this.pageSizeRepaintTimer);
-    }
-    if (this.pageSizeRemountTimer) {
-      clearTimeout(this.pageSizeRemountTimer);
     }
     if (this.permissionTooltipHideTimer) {
       clearTimeout(this.permissionTooltipHideTimer);
@@ -455,26 +450,25 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
 
     this.activePageSize = Number(e.value) || this.pageSize;
     grid.pageIndex(0);
-    grid.getDataSource()?.reload();
 
-    if (!this.isRemotePagingActive) {
-      if (this.pageSizeRepaintTimer) {
-        clearTimeout(this.pageSizeRepaintTimer);
+    if (this.pageSizeRepaintTimer) {
+      clearTimeout(this.pageSizeRepaintTimer);
+      this.pageSizeRepaintTimer = undefined;
+    }
+
+    const reloadPromise = grid.getDataSource()?.reload();
+    const repaintGrid = () => grid.repaint();
+
+    if (this.isRemotePagingActive) {
+      if (reloadPromise && typeof reloadPromise.then === 'function') {
+        reloadPromise.then(repaintGrid);
+      } else {
+        this.pageSizeRepaintTimer = setTimeout(repaintGrid);
       }
-      this.pageSizeRepaintTimer = setTimeout(() => grid.repaint());
       return;
     }
 
-    if (this.pageSizeRemountTimer) {
-      clearTimeout(this.pageSizeRemountTimer);
-    }
-
-    this.gridVisible = false;
-    this.cdr.detectChanges();
-    this.pageSizeRemountTimer = setTimeout(() => {
-      this.gridVisible = true;
-      this.cdr.detectChanges();
-    });
+    this.pageSizeRepaintTimer = setTimeout(repaintGrid);
   }
 
   OnContentReady(e: any): void {
