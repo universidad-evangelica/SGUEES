@@ -11,6 +11,21 @@ import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { AuthService } from 'src/app/shared/services/auth.service';
+import {
+	cloneRemoteGridFilters,
+	hasRemoteFilterRowSearch,
+	parseRemoteGridFilters,
+	ParsedGridFilters,
+} from 'src/app/shared/utils/remote-grid-filter.util';
+import {
+	clearGridHeaderFilterSelections,
+	getColumnHeaderFilterSelection,
+	invertEstadoExcludedHeaderFilterValues,
+	invertExcludedHeaderFilterValues,
+	isEstadoField,
+	normalizeEstadoHeaderFilterValue,
+	readGridFilterRowValues,
+} from 'src/app/shared/utils/remote-header-filter.util';
 import { PlaNivelAcademico } from './models/pla-nivel-academico';
 import {
 	EMPRESA_REGISTRO_ETIQUETA,
@@ -20,7 +35,7 @@ import {
 	PlaNivelAcademicoService,
 } from './pla-nivel-academico.service';
 
-type EstadoFiltro = boolean | null;
+const GRID_FILTER_CONFIG = { estadoField: 'ESTADO_NIVEL_ACADEMICO' };
 
 @Component({
 	selector: 'app-pla-nivel-academico',
@@ -91,18 +106,49 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		page = 1,
 		pageSize = 5,
 		busqueda = '',
-		estado: EstadoFiltro = null,
-		columnFilters: Record<string, any> = {}
+		gridFilters: ParsedGridFilters = { estado: null, filterRow: {}, filterRowExact: {}, headerAnyOf: {} },
+		distinctField = '',
+		headerFilterSearch = '',
+		sortField = '',
+		sortDesc = false
 	): any {
 		return {
 			CORR_NIVEL_ACADEMICO: xCORR_NIVEL_ACADEMICO ?? 0,
 			BUSQUEDA: busqueda,
-			ESTADO_NIVEL_ACADEMICO: estado,
 			PAGE: page,
 			PAGE_SIZE: pageSize,
-			...columnFilters,
+			DISTINCT_FIELD: distinctField,
+			HEADER_FILTER_SEARCH: headerFilterSearch,
+			SORT_FIELD: sortField,
+			SORT_DESC: sortDesc,
+			gridFilters,
 		};
 	}
+
+	loadHeaderFilterValues = (field: string, searchValue?: string): Promise<unknown[]> => {
+		const grid = this.dataGrid?.gData?.instance;
+		const combinedFilter = grid?.getCombinedFilter?.(false);
+		const gridFilters = parseRemoteGridFilters(combinedFilter, grid, GRID_FILTER_CONFIG);
+		const hasFilterRowSearch = hasRemoteFilterRowSearch(gridFilters);
+		const filtersForDistinct: ParsedGridFilters = {
+			estado: hasFilterRowSearch ? gridFilters.estado : null,
+			filterRow: hasFilterRowSearch ? gridFilters.filterRow : {},
+			filterRowExact: hasFilterRowSearch ? gridFilters.filterRowExact : {},
+			headerAnyOf: {},
+		};
+
+		return lastValueFrom(
+			this.service.getDistinctValues(
+				this.fillParam(0, 1, 0, '', filtersForDistinct, field, searchValue ?? '')
+			)
+		).then((response) => {
+			if (!response.Result) {
+				throw new Error(response.ErrorMessage || 'No se pudieron cargar los valores del filtro.');
+			}
+
+			return response.Data ?? [];
+		});
+	};
 
 	override fillData(xModel?: PlaNivelAcademico): PlaNivelAcademico {
 		if (xModel !== undefined) {
@@ -254,8 +300,39 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 				const takeRows = loadOptions.take || 5;
 				const skipRows = loadOptions.skip || 0;
 				const page = Math.floor(skipRows / takeRows) + 1;
-				const gridFilters = this.getGridFilters(loadOptions.filter);
-				const response = await lastValueFrom(this.service.getAll(this.fillParam(0, page, takeRows, '', gridFilters.estado, gridFilters.columnas)));
+				const grid = this.dataGrid?.gData?.instance;
+
+				if (grid) {
+					const filterRowValues = readGridFilterRowValues(grid);
+					const hasFilterRow =
+						Object.keys(filterRowValues.filterRow).length > 0 ||
+						Object.keys(filterRowValues.filterRowExact).length > 0;
+					if (hasFilterRow) {
+						clearGridHeaderFilterSelections(grid);
+					}
+				}
+
+				const gridFilters = parseRemoteGridFilters(loadOptions.filter, grid, GRID_FILTER_CONFIG);
+				if (!hasRemoteFilterRowSearch(gridFilters)) {
+					await this.resolveExcludeHeaderFilters(grid, gridFilters);
+				}
+
+				const sort = this.getGridSort(loadOptions.sort);
+				const response = await lastValueFrom(
+					this.service.getAll(
+						this.fillParam(
+							0,
+							page,
+							takeRows,
+							'',
+							gridFilters,
+							'',
+							'',
+							sort?.field ?? '',
+							sort?.desc ?? false
+						)
+					)
+				);
 
 				if (!response.Result) {
 					throw new Error(response.ErrorMessage || 'No se pudo cargar el nivel academico.');
@@ -266,32 +343,62 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		});
 	}
 
-	private getGridFilters(filter: any): { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } {
-		const result: { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } = { busqueda: '', estado: null, columnas: {} };
-		const visit = (node: any): void => {
-			if (!Array.isArray(node)) {
-				return;
+	private async resolveExcludeHeaderFilters(grid: any, result: ParsedGridFilters): Promise<void> {
+		if (!grid?.getVisibleColumns) {
+			return;
+		}
+
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
 			}
-			if (typeof node[0] === 'string' && node.length >= 3) {
-				const field = node[0];
-				const value = node[2];
-				if (field === 'ESTADO_NIVEL_ACADEMICO') {
-					if (value === '__ALL__' || value === null || value === undefined) {
-						result.estado = null;
-						return;
-					}
-					result.estado = value === true || value === 'true';
-					return;
-				}
-				if (value !== null && value !== undefined && `${value}`.trim()) {
-					result.columnas[field] = value;
-				}
-				return;
+
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (!selection || selection.filterType !== 'exclude' || !selection.values.length) {
+				continue;
 			}
-			node.forEach((child) => visit(child));
+
+			if (isEstadoField(dataField)) {
+				const included = invertEstadoExcludedHeaderFilterValues(
+					selection.values.map((item) => normalizeEstadoHeaderFilterValue(item))
+				);
+				result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
+				continue;
+			}
+
+			const filtersForDistinct = cloneRemoteGridFilters(result);
+			delete filtersForDistinct.headerAnyOf[dataField];
+			delete filtersForDistinct.filterRow[dataField];
+			delete filtersForDistinct.filterRowExact[dataField];
+
+			const response = await lastValueFrom(
+				this.service.getDistinctValues(this.fillParam(0, 1, 0, '', filtersForDistinct, dataField, ''))
+			);
+
+			if (!response.Result) {
+				continue;
+			}
+
+			const included = invertExcludedHeaderFilterValues(selection.values, response.Data ?? []);
+			result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
+		}
+	}
+
+	private getGridSort(sort: any): { field: string; desc: boolean } | null {
+		if (!Array.isArray(sort) || !sort.length) {
+			return null;
+		}
+
+		const first = sort[0];
+		if (!first?.selector) {
+			return null;
+		}
+
+		return {
+			field: `${first.selector}`,
+			desc: !!first.desc,
 		};
-		visit(filter);
-		return result;
 	}
 
 	private cambiarEstado(row: PlaNivelAcademico, activo: boolean): void {

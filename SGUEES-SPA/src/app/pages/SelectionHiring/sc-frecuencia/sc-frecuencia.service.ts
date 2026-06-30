@@ -1,11 +1,14 @@
 import { Injectable } from '@angular/core';
-import dxSelectBox from 'devextreme/ui/select_box';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildRemoteGridWhere, createEstadoColumnConfig } from 'src/app/shared/utils/remote-grid-filter.util';
+import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
 import { ScFrecuencia } from './models/sc-frecuencia';
 import { ScFrecuenciaRepository } from './sc-frecuencia.repository';
+
+const ESTADO_FIELD = 'ESTADO_FRECUENCIA';
 
 @Injectable({
 	providedIn: 'root',
@@ -28,55 +31,15 @@ export class ScFrecuenciaService {
 	}
 
 	getAll(param: any): Observable<IResult> {
-		const xWhere: IParam[] = [];
-		const columnFilters = [
-			'CORR_FRECUENCIA',
-			'NOMBRE_FRECUENCIA',
-			'USUARIO_CREA',
-			'ESTACION_CREA',
-			'FECHA_CREA',
-			'USUARIO_ACTU',
-			'ESTACION_ACTU',
-			'FECHA_ACTU',
-		];
-
-		if (param.BUSQUEDA) {
-			xWhere.push({ Parameter: 'BUSQUEDA', Value: param.BUSQUEDA });
-		}
-
-		if (param.ESTADO_FRECUENCIA !== null && param.ESTADO_FRECUENCIA !== undefined) {
-			xWhere.push({ Parameter: 'ESTADO_FRECUENCIA', Value: param.ESTADO_FRECUENCIA });
-		}
-
-		if (param.PAGE) {
-			xWhere.push({ Parameter: 'PAGE', Value: param.PAGE });
-		}
-
-		if (param.PAGE_SIZE) {
-			xWhere.push({ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE });
-		}
-
-		columnFilters.forEach((field) => {
-			const value = param[field];
-			if (this.hasColumnFilter(value, field)) {
-				xWhere.push({ Parameter: field, Value: value });
-			}
-		});
-
-		return this.repo.get(xWhere);
+		return this.repo.get(this.buildWhere(param));
 	}
 
-	private hasColumnFilter(value: any, field: string): boolean {
-		if (value === null || value === undefined || `${value}`.trim() === '') {
-			return false;
-		}
-
-		return !(field === 'CORR_FRECUENCIA' && Number(value) === 0);
+	getDistinctValues(param: any): Observable<IResult> {
+		return this.repo.getDistinctValues(this.buildWhere(param));
 	}
 
 	get(param: any): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_FRECUENCIA', Value: param.CORR_FRECUENCIA }];
-
 		return this.repo.get(xWhere);
 	}
 
@@ -86,25 +49,21 @@ export class ScFrecuenciaService {
 
 	update(model: any): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }];
-
 		return this.repo.update(model, xWhere);
 	}
 
 	delete(model: any): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }];
-
 		return this.repo.delete(xWhere);
 	}
 
 	activar(model: any): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }];
-
 		return this.repo.activar(model, xWhere);
 	}
 
 	desactivar(model: any): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }];
-
 		return this.repo.desactivar(model, xWhere);
 	}
 
@@ -134,20 +93,8 @@ export class ScFrecuenciaService {
 				fixedPosition: 'left',
 				alignment: 'center',
 				buttons: [
-					{
-						hint: editHint,
-						icon: 'edit',
-						stylingMode: 'text',
-						cssClass: editCssClass,
-						onClick: editClick,
-					},
-					{
-						hint: deleteHint,
-						icon: 'trash',
-						stylingMode: 'text',
-						cssClass: deleteCssClass,
-						onClick: deleteClick,
-					},
+					{ hint: editHint, icon: 'edit', stylingMode: 'text', cssClass: editCssClass, onClick: editClick },
+					{ hint: deleteHint, icon: 'trash', stylingMode: 'text', cssClass: deleteCssClass, onClick: deleteClick },
 					{
 						hint: activarHint,
 						icon: 'refresh',
@@ -166,62 +113,35 @@ export class ScFrecuenciaService {
 					},
 				],
 			},
-			{ dataField: 'CORR_FRECUENCIA', caption: 'Corr.', width: 100 },
-			{ dataField: 'NOMBRE_FRECUENCIA', caption: 'Frecuencia', width: 300 },
 			{
-				dataField: 'ESTADO_FRECUENCIA',
-				caption: 'Estado',
-				width: 140,
-				allowFiltering: true,
-				allowHeaderFiltering: true,
-				cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					const badge = document.createElement('span');
-					badge.classList.add(
-						'estado-badge',
-						cellInfo.value ? 'estado-badge--activo' : 'estado-badge--inactivo'
-					);
-					badge.textContent = cellInfo.value ? 'Activo' : 'Inactivo';
-					cellElement.innerHTML = '';
-					cellElement.appendChild(badge);
-				},
-				lookup: {
-					dataSource: [
-						{ value: true, text: 'Activo' },
-						{ value: false, text: 'Inactivo' },
-					],
-					valueExpr: 'value',
-					displayExpr: 'text',
-				},
-				filterCellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					new dxSelectBox(cellElement, {
-						dataSource: [
-							{ value: true, text: 'Activo' },
-							{ value: false, text: 'Inactivo' },
-						],
-						displayExpr: 'text',
-						valueExpr: 'value',
-						value: cellInfo.value,
-						placeholder: 'Seleccione...',
-						showClearButton: false,
-						onValueChanged: (e: any) => {
-							cellInfo.setValue(e.value);
-						},
-					});
-				},
-				calculateFilterExpression: (filterValue: any) => {
-					if (filterValue === '__ALL__' || filterValue === null || filterValue === undefined) {
-						return null;
-					}
-
-					return ['ESTADO_FRECUENCIA', '=', filterValue];
-				},
+				dataField: 'CORR_FRECUENCIA',
+				caption: 'Corr.',
+				width: 100,
+				dataType: 'number',
+				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
+			{ dataField: 'NOMBRE_FRECUENCIA', caption: 'Frecuencia', width: 300 },
+			createEstadoColumnConfig(ESTADO_FIELD),
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
-			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{
+				dataField: 'FECHA_CREA',
+				caption: 'Fecha Crea',
+				width: 200,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy HH:mm',
+				calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA'),
+			},
 			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
 			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
-			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{
+				dataField: 'FECHA_ACTU',
+				caption: 'Fecha Actu',
+				width: 200,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy HH:mm',
+				calculateFilterExpression: createDateTimeFilterExpression('FECHA_ACTU'),
+			},
 		];
 	}
 
@@ -241,13 +161,12 @@ export class ScFrecuenciaService {
 				editorOptions: { placeholder: 'Nombre frecuencia...', showClearButton: true, maxLength: 50 },
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
-			{
-				dataField: 'ESTADO_FRECUENCIA',
-				label: { text: 'Activo' },
-				editorType: 'dxCheckBox',
-				colSpan: 2,
-			},
+			{ dataField: 'ESTADO_FRECUENCIA', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
+	}
+
+	private buildWhere(param: any): IParam[] {
+		return buildRemoteGridWhere(param, ESTADO_FIELD);
 	}
 }
 

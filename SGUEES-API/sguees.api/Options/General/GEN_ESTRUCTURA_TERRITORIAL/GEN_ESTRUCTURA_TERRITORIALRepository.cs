@@ -9,7 +9,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-	public class GEN_ESTRUCTURA_TERRITORIALRepository : BaseRepository<GEN_ESTRUCTURA_TERRITORIAL_PAISTable>, IGEN_ESTRUCTURA_TERRITORIALRepository
+	public partial class GEN_ESTRUCTURA_TERRITORIALRepository : BaseRepository<GEN_ESTRUCTURA_TERRITORIAL_PAISTable>, IGEN_ESTRUCTURA_TERRITORIALRepository
 	{
 		private const string _PaisTable = "GEN_PAIS";
 		private const string _DeptoTable = "GEN_DEPTO";
@@ -24,13 +24,49 @@ namespace SGUEES.Repositories
 
 		public async Task<CResult> GetAllPaisesAsync(List<CParameter> xWhere)
 		{
-			return await ReadAllPagedAsync<GEN_ESTRUCTURA_TERRITORIAL_PAISView>(
-				"V_" + _PaisTable,
-				xWhere,
-				Array.Empty<string>(),
-				list => list.OrderBy(x => x.CORR_PAIS),
-				GetPaisSearchValues,
-				GetPaisColumnValue);
+			CResult objResultado = new();
+
+			try
+			{
+				var page = xWhere
+					.Where(x => x.ParameterName == "PAGE")
+					.Select(x => Convert.ToInt32(x.Value ?? 1))
+					.FirstOrDefault();
+				var pageSize = xWhere
+					.Where(x => x.ParameterName == "PAGE_SIZE")
+					.Select(x => Convert.ToInt32(x.Value ?? 10))
+					.FirstOrDefault();
+
+				page = page < 1 ? 1 : page;
+				pageSize = pageSize < 1 ? 10 : Math.Min(pageSize, 100);
+
+				var response = await FilterPaisesQueryAsync(xWhere);
+				var totalRows = response.Count;
+				var pageData = response.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+				objResultado.Data = pageData;
+				objResultado.Result = true;
+				objResultado.RowsAffected = totalRows;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
 		}
 
 		public async Task<CResult> GetPaisAsync(List<CParameter> xWhere)
@@ -93,13 +129,33 @@ namespace SGUEES.Repositories
 
 		public async Task<CResult> GetAllDeptosAsync(List<CParameter> xWhere)
 		{
-			return await ReadAllFilteredAsync<GEN_ESTRUCTURA_TERRITORIAL_DEPTOView>(
-				"V_" + _DeptoTable,
-				xWhere,
-				new[] { "CORR_PAIS" },
-				list => list.OrderBy(x => x.CORR_DEPTO),
-				GetDeptoSearchValues,
-				GetDeptoColumnValue);
+			CResult objResultado = new();
+
+			try
+			{
+				var response = await FilterDeptosQueryAsync(xWhere);
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
 		}
 
 		public async Task<CResult> GetDeptoAsync(List<CParameter> xWhere)
@@ -166,13 +222,33 @@ namespace SGUEES.Repositories
 
 		public async Task<CResult> GetAllMunicipiosAsync(List<CParameter> xWhere)
 		{
-			return await ReadAllFilteredAsync<GEN_ESTRUCTURA_TERRITORIAL_MUNICIPIOView>(
-				"V_" + _MunicipioTable,
-				xWhere,
-				new[] { "CORR_PAIS", "CORR_DEPTO" },
-				list => list.OrderBy(x => x.CORR_MUNICIPIO),
-				GetMunicipioSearchValues,
-				GetMunicipioColumnValue);
+			CResult objResultado = new();
+
+			try
+			{
+				var response = await FilterMunicipiosQueryAsync(xWhere);
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
 		}
 
 		public async Task<CResult> GetMunicipioAsync(List<CParameter> xWhere)
@@ -243,13 +319,33 @@ namespace SGUEES.Repositories
 
 		public async Task<CResult> GetAllDistritosAsync(List<CParameter> xWhere)
 		{
-			return await ReadAllFilteredAsync<GEN_ESTRUCTURA_TERRITORIAL_DISTRITOView>(
-				"V_" + _DistritoTable,
-				xWhere,
-				new[] { "CORR_PAIS", "CORR_DEPTO", "CORR_MUNICIPIO" },
-				list => list.OrderBy(x => x.CORR_DISTRITO),
-				GetDistritoSearchValues,
-				GetDistritoColumnValue);
+			CResult objResultado = new();
+
+			try
+			{
+				var response = await FilterDistritosQueryAsync(xWhere);
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
 		}
 
 		public async Task<CResult> GetDistritoAsync(List<CParameter> xWhere)
@@ -318,6 +414,127 @@ namespace SGUEES.Repositories
 			};
 
 			return await SaveDeleteAsync(_DistritoTable, pWhere, data.CORR_DISTRITO, "No se puede eliminar el distrito porque tiene registros asociados en otras tablas.");
+		}
+
+		public Task<bool> ExistsPaisByFieldAsync(string fieldName, string normalizedValue, int excludeCorrPais)
+		{
+			if (!IsAllowedPaisField(fieldName) || string.IsNullOrWhiteSpace(normalizedValue))
+			{
+				return Task.FromResult(false);
+			}
+
+			var sql = $@"SELECT TOP 1 1 AS FOUND
+				FROM V_{_PaisTable}
+				WHERE UPPER(LTRIM(RTRIM({fieldName}))) = @NORMALIZED_VALUE
+				AND (@EXCLUDE_CORR_PAIS <= 0 OR CORR_PAIS <> @EXCLUDE_CORR_PAIS)";
+
+			return ExistsByQueryAsync(sql, new List<CParameter>
+			{
+				new CParameter() { ParameterName = "NORMALIZED_VALUE", Value = normalizedValue, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "EXCLUDE_CORR_PAIS", Value = excludeCorrPais, DbType = System.Data.DbType.Int32 },
+			});
+		}
+
+		public Task<bool> ExistsDeptoByFieldAsync(int corrPais, string fieldName, string normalizedValue, int excludeCorrPais, int excludeCorrDepto)
+		{
+			if (!IsAllowedDeptoField(fieldName) || string.IsNullOrWhiteSpace(normalizedValue))
+			{
+				return Task.FromResult(false);
+			}
+
+			var excludeClause = excludeCorrPais > 0 && excludeCorrDepto > 0
+				? " AND NOT (CORR_PAIS = @EXCLUDE_CORR_PAIS AND CORR_DEPTO = @EXCLUDE_CORR_DEPTO)"
+				: string.Empty;
+
+			var sql = $@"SELECT TOP 1 1 AS FOUND
+				FROM V_{_DeptoTable}
+				WHERE CORR_PAIS = @CORR_PAIS
+				AND UPPER(LTRIM(RTRIM({fieldName}))) = @NORMALIZED_VALUE{excludeClause}";
+
+			var parameters = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_PAIS", Value = corrPais, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "NORMALIZED_VALUE", Value = normalizedValue, DbType = System.Data.DbType.String },
+			};
+
+			if (excludeCorrPais > 0 && excludeCorrDepto > 0)
+			{
+				parameters.Add(new CParameter() { ParameterName = "EXCLUDE_CORR_PAIS", Value = excludeCorrPais, DbType = System.Data.DbType.Int32 });
+				parameters.Add(new CParameter() { ParameterName = "EXCLUDE_CORR_DEPTO", Value = excludeCorrDepto, DbType = System.Data.DbType.Int32 });
+			}
+
+			return ExistsByQueryAsync(sql, parameters);
+		}
+
+		public Task<bool> ExistsMunicipioByFieldAsync(int corrPais, int corrDepto, string fieldName, string normalizedValue, int excludeCorrPais, int excludeCorrDepto, int excludeCorrMunicipio)
+		{
+			if (!IsAllowedMunicipioField(fieldName) || string.IsNullOrWhiteSpace(normalizedValue))
+			{
+				return Task.FromResult(false);
+			}
+
+			var excludeClause = excludeCorrPais > 0 && excludeCorrDepto > 0 && excludeCorrMunicipio > 0
+				? " AND NOT (CORR_PAIS = @EXCLUDE_CORR_PAIS AND CORR_DEPTO = @EXCLUDE_CORR_DEPTO AND CORR_MUNICIPIO = @EXCLUDE_CORR_MUNICIPIO)"
+				: string.Empty;
+
+			var sql = $@"SELECT TOP 1 1 AS FOUND
+				FROM V_{_MunicipioTable}
+				WHERE CORR_PAIS = @CORR_PAIS
+				AND CORR_DEPTO = @CORR_DEPTO
+				AND UPPER(LTRIM(RTRIM({fieldName}))) = @NORMALIZED_VALUE{excludeClause}";
+
+			var parameters = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_PAIS", Value = corrPais, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_DEPTO", Value = corrDepto, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "NORMALIZED_VALUE", Value = normalizedValue, DbType = System.Data.DbType.String },
+			};
+
+			if (excludeCorrPais > 0 && excludeCorrDepto > 0 && excludeCorrMunicipio > 0)
+			{
+				parameters.Add(new CParameter() { ParameterName = "EXCLUDE_CORR_PAIS", Value = excludeCorrPais, DbType = System.Data.DbType.Int32 });
+				parameters.Add(new CParameter() { ParameterName = "EXCLUDE_CORR_DEPTO", Value = excludeCorrDepto, DbType = System.Data.DbType.Int32 });
+				parameters.Add(new CParameter() { ParameterName = "EXCLUDE_CORR_MUNICIPIO", Value = excludeCorrMunicipio, DbType = System.Data.DbType.Int32 });
+			}
+
+			return ExistsByQueryAsync(sql, parameters);
+		}
+
+		public Task<bool> ExistsDistritoByFieldAsync(int corrPais, int corrDepto, int corrMunicipio, string fieldName, string normalizedValue, int excludeCorrPais, int excludeCorrDepto, int excludeCorrMunicipio, int excludeCorrDistrito)
+		{
+			if (!IsAllowedDistritoField(fieldName) || string.IsNullOrWhiteSpace(normalizedValue))
+			{
+				return Task.FromResult(false);
+			}
+
+			var excludeClause = excludeCorrPais > 0 && excludeCorrDepto > 0 && excludeCorrMunicipio > 0 && excludeCorrDistrito > 0
+				? " AND NOT (CORR_PAIS = @EXCLUDE_CORR_PAIS AND CORR_DEPTO = @EXCLUDE_CORR_DEPTO AND CORR_MUNICIPIO = @EXCLUDE_CORR_MUNICIPIO AND CORR_DISTRITO = @EXCLUDE_CORR_DISTRITO)"
+				: string.Empty;
+
+			var sql = $@"SELECT TOP 1 1 AS FOUND
+				FROM V_{_DistritoTable}
+				WHERE CORR_PAIS = @CORR_PAIS
+				AND CORR_DEPTO = @CORR_DEPTO
+				AND CORR_MUNICIPIO = @CORR_MUNICIPIO
+				AND UPPER(LTRIM(RTRIM({fieldName}))) = @NORMALIZED_VALUE{excludeClause}";
+
+			var parameters = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_PAIS", Value = corrPais, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_DEPTO", Value = corrDepto, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_MUNICIPIO", Value = corrMunicipio, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "NORMALIZED_VALUE", Value = normalizedValue, DbType = System.Data.DbType.String },
+			};
+
+			if (excludeCorrPais > 0 && excludeCorrDepto > 0 && excludeCorrMunicipio > 0 && excludeCorrDistrito > 0)
+			{
+				parameters.Add(new CParameter() { ParameterName = "EXCLUDE_CORR_PAIS", Value = excludeCorrPais, DbType = System.Data.DbType.Int32 });
+				parameters.Add(new CParameter() { ParameterName = "EXCLUDE_CORR_DEPTO", Value = excludeCorrDepto, DbType = System.Data.DbType.Int32 });
+				parameters.Add(new CParameter() { ParameterName = "EXCLUDE_CORR_MUNICIPIO", Value = excludeCorrMunicipio, DbType = System.Data.DbType.Int32 });
+				parameters.Add(new CParameter() { ParameterName = "EXCLUDE_CORR_DISTRITO", Value = excludeCorrDistrito, DbType = System.Data.DbType.Int32 });
+			}
+
+			return ExistsByQueryAsync(sql, parameters);
 		}
 
 		private async Task<CResult> ReadAllPagedAsync<TView>(
@@ -516,6 +733,18 @@ namespace SGUEES.Repositories
 					return row.NACIONALIDAD;
 				case "NOMBRE_CORTO":
 					return row.NOMBRE_CORTO;
+				case "USUARIO_CREA":
+					return row.USUARIO_CREA;
+				case "ESTACION_CREA":
+					return row.ESTACION_CREA;
+				case "FECHA_CREA":
+					return row.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm");
+				case "USUARIO_ACTU":
+					return row.USUARIO_ACTU;
+				case "ESTACION_ACTU":
+					return row.ESTACION_ACTU;
+				case "FECHA_ACTU":
+					return row.FECHA_ACTU?.ToString("dd/MM/yyyy HH:mm");
 				default:
 					return null;
 			}
@@ -538,6 +767,18 @@ namespace SGUEES.Repositories
 					return row.NOMBRE_DEPTO;
 				case "CODIGO_DEPTO":
 					return row.CODIGO_DEPTO;
+				case "USUARIO_CREA":
+					return row.USUARIO_CREA;
+				case "ESTACION_CREA":
+					return row.ESTACION_CREA;
+				case "FECHA_CREA":
+					return row.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm");
+				case "USUARIO_ACTU":
+					return row.USUARIO_ACTU;
+				case "ESTACION_ACTU":
+					return row.ESTACION_ACTU;
+				case "FECHA_ACTU":
+					return row.FECHA_ACTU?.ToString("dd/MM/yyyy HH:mm");
 				default:
 					return null;
 			}
@@ -560,6 +801,18 @@ namespace SGUEES.Repositories
 					return row.NOMBRE_MUNICIPIO;
 				case "CODIGO_MUNICIPIO":
 					return row.CODIGO_MUNICIPIO;
+				case "USUARIO_CREA":
+					return row.USUARIO_CREA;
+				case "ESTACION_CREA":
+					return row.ESTACION_CREA;
+				case "FECHA_CREA":
+					return row.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm");
+				case "USUARIO_ACTU":
+					return row.USUARIO_ACTU;
+				case "ESTACION_ACTU":
+					return row.ESTACION_ACTU;
+				case "FECHA_ACTU":
+					return row.FECHA_ACTU?.ToString("dd/MM/yyyy HH:mm");
 				default:
 					return null;
 			}
@@ -579,6 +832,18 @@ namespace SGUEES.Repositories
 					return row.CORR_DISTRITO.ToString();
 				case "NOMBRE_DISTRITO":
 					return row.NOMBRE_DISTRITO;
+				case "USUARIO_CREA":
+					return row.USUARIO_CREA;
+				case "ESTACION_CREA":
+					return row.ESTACION_CREA;
+				case "FECHA_CREA":
+					return row.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm");
+				case "USUARIO_ACTU":
+					return row.USUARIO_ACTU;
+				case "ESTACION_ACTU":
+					return row.ESTACION_ACTU;
+				case "FECHA_ACTU":
+					return row.FECHA_ACTU?.ToString("dd/MM/yyyy HH:mm");
 				default:
 					return null;
 			}
@@ -588,6 +853,33 @@ namespace SGUEES.Repositories
 		{
 			return !string.IsNullOrWhiteSpace(value) &&
 				value.Contains(search, StringComparison.OrdinalIgnoreCase);
+		}
+
+		private static bool IsAllowedPaisField(string fieldName) =>
+			fieldName is "NOMBRE_PAIS" or "CODIGO_PAIS" or "NACIONALIDAD" or "NOMBRE_CORTO";
+
+		private static bool IsAllowedDeptoField(string fieldName) =>
+			fieldName is "NOMBRE_DEPTO" or "CODIGO_DEPTO";
+
+		private static bool IsAllowedMunicipioField(string fieldName) =>
+			fieldName is "NOMBRE_MUNICIPIO" or "CODIGO_MUNICIPIO";
+
+		private static bool IsAllowedDistritoField(string fieldName) =>
+			fieldName is "NOMBRE_DISTRITO";
+
+		private async Task<bool> ExistsByQueryAsync(string sql, List<CParameter> parameters)
+		{
+			try
+			{
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, parameters);
+				var exists = reader.Read();
+				reader.Close();
+				return exists;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
 		}
 
 		private async Task<CResult> ReadAllAsync<TView>(string viewName, List<CParameter> xWhere)
@@ -692,7 +984,7 @@ namespace SGUEES.Repositories
 				objResultado.CodeHelper = 0;
 				objResultado.ErrorCode = duplicateKey ? 2627 : -1;
 				objResultado.ErrorMessage = duplicateKey
-					? "Ya existe un registro con el mismo código o nombre. Verifique los datos e intente nuevamente."
+					? "No se pudo guardar el registro porque otro usuario guardo un registro al mismo tiempo. Intente nuevamente."
 					: e.Message;
 				objResultado.ErrorSource += $"[{e.Source}]";
 			}
@@ -732,7 +1024,7 @@ namespace SGUEES.Repositories
 				objResultado.CodeHelper = 0;
 				objResultado.ErrorCode = duplicateKey ? 2627 : -1;
 				objResultado.ErrorMessage = duplicateKey
-					? "Ya existe un registro con el mismo código o nombre. Verifique los datos e intente nuevamente."
+					? "No se pudo guardar el registro porque otro usuario guardo un registro al mismo tiempo. Intente nuevamente."
 					: e.Message;
 				objResultado.ErrorSource += $"[{e.Source}]";
 			}

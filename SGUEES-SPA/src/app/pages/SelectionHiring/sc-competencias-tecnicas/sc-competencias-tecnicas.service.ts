@@ -6,6 +6,11 @@ import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { SC_COMPETENCIA_NIVEL, ScCompetenciasTecnicas } from './models/sc-competencias-tecnicas';
 import { ScCompetenciasTecnicasRepository } from './sc-competencias-tecnicas.repository';
+import {
+	createDateTimeFilterExpression,
+	normalizeAnyOfMapValues,
+	normalizeFilterMapValues,
+} from 'src/app/shared/utils/remote-header-filter.util';
 
 export interface ScCompetenciaFormContext {
 	nivel: string;
@@ -25,16 +30,6 @@ export class ScCompetenciasTecnicasService {
 	esValido(model: ScCompetenciasTecnicas, msg: Function, isAdd: boolean): boolean {
 		if (!model.NIVEL) {
 			msg('Debe seleccionar el nivel de la competencia.', NotifyType.Warning);
-			return false;
-		}
-
-		if (!model.DESCRIPCION || model.DESCRIPCION.trim() === '') {
-			msg('Debe ingresar la descripcion.', NotifyType.Warning);
-			return false;
-		}
-
-		if (model.DESCRIPCION.trim().length > 500) {
-			msg('La descripcion no puede superar 500 caracteres.', NotifyType.Warning);
 			return false;
 		}
 
@@ -72,6 +67,16 @@ export class ScCompetenciasTecnicasService {
 				msg('El nombre no puede superar 150 caracteres.', NotifyType.Warning);
 				return false;
 			}
+		}
+
+		if (!model.DESCRIPCION || model.DESCRIPCION.trim() === '') {
+			msg('Debe ingresar la descripcion.', NotifyType.Warning);
+			return false;
+		}
+
+		if (model.DESCRIPCION.trim().length > 500) {
+			msg('La descripcion no puede superar 500 caracteres.', NotifyType.Warning);
+			return false;
 		}
 
 		return true;
@@ -115,6 +120,10 @@ export class ScCompetenciasTecnicasService {
 
 	getAll(param: any): Observable<IResult> {
 		return this.repo.get(this.buildWhere(param));
+	}
+
+	getDistinctValues(param: any): Observable<IResult> {
+		return this.repo.getDistinctValues(this.buildWhere(param));
 	}
 
 	getPadres(nivelPadre: string, incluirInactivos = false): Observable<IResult> {
@@ -219,7 +228,13 @@ export class ScCompetenciasTecnicasService {
 					},
 				],
 			},
-			{ dataField: 'CORR_COMPETENCIAS_TECNICAS', caption: 'Corr.', width: 90 },
+			{
+				dataField: 'CORR_COMPETENCIAS_TECNICAS',
+				caption: 'Corr.',
+				width: 90,
+				dataType: 'number',
+				filterOperations: ['=', '<', '>', '<=', '>='],
+			},
 			{ dataField: 'CODIGO_COMPETENCIAS_TECNICAS', caption: 'Codigo', width: 120 },
 			{ dataField: 'NOMBRE_COMPETENCIAS_TECNICAS', caption: 'Competencia Tecnica', width: 260 },
 			{ dataField: 'DESCRIPCION', caption: 'Definicion', width: 360 },
@@ -231,6 +246,7 @@ export class ScCompetenciasTecnicasService {
 				width: 140,
 				allowFiltering: true,
 				allowHeaderFiltering: true,
+				calculateCellValue: (rowData: Record<string, unknown>) => rowData?.ESTADO_COMPETENCIAS_TECNICAS,
 				cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
 					const badge = document.createElement('span');
 					badge.classList.add(
@@ -249,25 +265,19 @@ export class ScCompetenciasTecnicasService {
 					valueExpr: 'value',
 					displayExpr: 'text',
 				},
-				filterCellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					new dxSelectBox(cellElement, {
-						dataSource: [
-							{ value: true, text: 'Activo' },
-							{ value: false, text: 'Inactivo' },
-						],
-						displayExpr: 'text',
-						valueExpr: 'value',
-						value: cellInfo.value,
-						placeholder: 'Seleccione...',
-						showClearButton: false,
-						onValueChanged: (e: any) => {
-							cellInfo.setValue(e.value);
-						},
-					});
+				headerFilter: {
+					allowSearch: false,
 				},
-				calculateFilterExpression: (filterValue: any) => {
+				selectedFilterOperation: '=',
+				defaultSelectedFilterOperation: '=',
+				filterOperations: ['='],
+				calculateFilterExpression: (filterValue: any, selectedFilterOperation?: string) => {
 					if (filterValue === '__ALL__' || filterValue === null || filterValue === undefined) {
 						return null;
+					}
+
+					if (selectedFilterOperation === 'anyof' && Array.isArray(filterValue)) {
+						return filterValue.length ? ['ESTADO_COMPETENCIAS_TECNICAS', 'anyof', filterValue] : null;
 					}
 
 					return ['ESTADO_COMPETENCIAS_TECNICAS', '=', filterValue];
@@ -275,10 +285,10 @@ export class ScCompetenciasTecnicasService {
 			},
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 160 },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 160 },
-			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm', calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA') },
 			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 160 },
 			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 160 },
-			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm', calculateFilterExpression: createDateTimeFilterExpression('FECHA_ACTU') },
 		];
 	}
 
@@ -420,26 +430,45 @@ export class ScCompetenciasTecnicasService {
 
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
-		const columnFilters = [
-			'CORR_COMPETENCIAS_TECNICAS',
-			'CODIGO_COMPETENCIAS_TECNICAS',
-			'NOMBRE_COMPETENCIAS_TECNICAS',
-			'DESCRIPCION',
-			'NIVEL',
-			'USUARIO_CREA',
-			'ESTACION_CREA',
-			'FECHA_CREA',
-			'USUARIO_ACTU',
-			'ESTACION_ACTU',
-			'FECHA_ACTU',
-		];
+
+		if (param.DISTINCT_FIELD) {
+			xWhere.push({ Parameter: 'DISTINCT_FIELD', Value: param.DISTINCT_FIELD });
+		}
+
+		if (param.HEADER_FILTER_SEARCH) {
+			xWhere.push({ Parameter: 'HEADER_FILTER_SEARCH', Value: param.HEADER_FILTER_SEARCH });
+		}
+
+		const gridFilters = param.gridFilters as
+			| {
+					estado?: boolean | null;
+					filterRow?: Record<string, unknown>;
+					filterRowExact?: Record<string, unknown>;
+					headerAnyOf?: Record<string, unknown[]>;
+			  }
+			| undefined;
+
+		const filterRowJson = this.serializeFilterMap(gridFilters?.filterRow);
+		if (filterRowJson) {
+			xWhere.push({ Parameter: 'FILTER_ROW_JSON', Value: filterRowJson });
+		}
+
+		const exactJson = this.serializeFilterMap(gridFilters?.filterRowExact);
+		if (exactJson) {
+			xWhere.push({ Parameter: 'COLUMN_EXACT_JSON', Value: exactJson });
+		}
+
+		const anyOfJson = this.serializeAnyOfMap(gridFilters?.headerAnyOf);
+		if (anyOfJson) {
+			xWhere.push({ Parameter: 'COLUMN_ANYOF_JSON', Value: anyOfJson });
+		}
 
 		if (param.BUSQUEDA) {
 			xWhere.push({ Parameter: 'BUSQUEDA', Value: param.BUSQUEDA });
 		}
 
-		if (param.ESTADO_COMPETENCIAS_TECNICAS !== null && param.ESTADO_COMPETENCIAS_TECNICAS !== undefined) {
-			xWhere.push({ Parameter: 'ESTADO_COMPETENCIAS_TECNICAS', Value: param.ESTADO_COMPETENCIAS_TECNICAS });
+		if (gridFilters?.estado !== null && gridFilters?.estado !== undefined) {
+			xWhere.push({ Parameter: 'ESTADO_COMPETENCIAS_TECNICAS', Value: gridFilters.estado });
 		}
 
 		if (param.PAGE) {
@@ -450,22 +479,34 @@ export class ScCompetenciasTecnicasService {
 			xWhere.push({ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE });
 		}
 
-		columnFilters.forEach((field) => {
-			const value = param[field];
-			if (this.hasColumnFilter(value, field)) {
-				xWhere.push({ Parameter: field, Value: value });
-			}
-		});
+		if (param.SORT_FIELD) {
+			xWhere.push({ Parameter: 'SORT_FIELD', Value: param.SORT_FIELD });
+		}
+
+		if (param.SORT_FIELD && param.SORT_DESC !== null && param.SORT_DESC !== undefined) {
+			xWhere.push({ Parameter: 'SORT_DESC', Value: param.SORT_DESC });
+		}
 
 		return xWhere;
 	}
 
-	private hasColumnFilter(value: any, field: string): boolean {
-		if (value === null || value === undefined || `${value}`.trim() === '') {
-			return false;
+	private serializeFilterMap(map?: Record<string, unknown>): string {
+		const cleaned = Object.fromEntries(
+			Object.entries(normalizeFilterMapValues(map)).filter(
+				([, value]) => value !== null && value !== undefined && `${value}`.trim() !== ''
+			)
+		);
+
+		return Object.keys(cleaned).length ? JSON.stringify(cleaned) : '';
+	}
+
+	private serializeAnyOfMap(map?: Record<string, unknown[]>): string {
+		const normalized = normalizeAnyOfMapValues(map);
+		if (!normalized || !Object.keys(normalized).length) {
+			return '';
 		}
 
-		return !(field === 'CORR_COMPETENCIAS_TECNICAS' && Number(value) === 0);
+		return JSON.stringify(normalized);
 	}
 }
 

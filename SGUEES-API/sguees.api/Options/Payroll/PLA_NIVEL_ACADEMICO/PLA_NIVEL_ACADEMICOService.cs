@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using eFramework.Core;
 using SGUEES.Models;
@@ -17,37 +18,17 @@ namespace SGUEES.Services
 
         public async Task<CResult> GetAllAsync(PLA_NIVEL_ACADEMICOParam xWhere)
         {
-            var p = new List<CParameter>
+            return await _repo.GetAllAsync(BuildParameters(xWhere));
+        }
+
+        public async Task<CResult> GetDistinctValuesAsync(PLA_NIVEL_ACADEMICOParam xWhere)
+        {
+            if (string.IsNullOrWhiteSpace(xWhere.DISTINCT_FIELD))
             {
-                new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "BUSQUEDA", Value = xWhere.BUSQUEDA, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "ESTADO_NIVEL_ACADEMICO", Value = xWhere.ESTADO_NIVEL_ACADEMICO, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "PAGE", Value = xWhere.PAGE, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "PAGE_SIZE", Value = xWhere.PAGE_SIZE, DbType = System.Data.DbType.Int32 },
-            };
-
-            AddColumnFilter("CORR_NIVEL_ACADEMICO", xWhere.CORR_NIVEL_ACADEMICO, System.Data.DbType.Int32);
-            AddColumnFilter("NOMBRE_NIVEL_ACADEMICO", xWhere.NOMBRE_NIVEL_ACADEMICO, System.Data.DbType.String);
-            AddColumnFilter("USUARIO_CREA", xWhere.USUARIO_CREA, System.Data.DbType.String);
-            AddColumnFilter("FECHA_CREA", xWhere.FECHA_CREA, System.Data.DbType.String);
-            AddColumnFilter("ESTACION_CREA", xWhere.ESTACION_CREA, System.Data.DbType.String);
-            AddColumnFilter("USUARIO_ACTU", xWhere.USUARIO_ACTU, System.Data.DbType.String);
-            AddColumnFilter("FECHA_ACTU", xWhere.FECHA_ACTU, System.Data.DbType.String);
-            AddColumnFilter("ESTACION_ACTU", xWhere.ESTACION_ACTU, System.Data.DbType.String);
-
-            return await _repo.GetAllAsync(p);
-
-            void AddColumnFilter(string parameterName, object value, System.Data.DbType dbType)
-            {
-                if (value == null ||
-                    value is string text && string.IsNullOrWhiteSpace(text) ||
-                    value is int number && number <= 0)
-                {
-                    return;
-                }
-
-                p.Add(new CParameter() { ParameterName = parameterName, Value = value, DbType = dbType });
+                return ValidationError("Debe indicar el campo para el filtro de encabezado.");
             }
+
+            return await _repo.GetDistinctValuesAsync(BuildParameters(xWhere));
         }
 
         public async Task<CResult> GetAsync(PLA_NIVEL_ACADEMICOParam xWhere)
@@ -96,6 +77,98 @@ namespace SGUEES.Services
         {
             Data.ESTADO_NIVEL_ACADEMICO = false;
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        private static List<CParameter> BuildParameters(PLA_NIVEL_ACADEMICOParam xWhere)
+        {
+            var p = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "BUSQUEDA", Value = xWhere.BUSQUEDA, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "ESTADO_NIVEL_ACADEMICO", Value = xWhere.ESTADO_NIVEL_ACADEMICO, DbType = System.Data.DbType.Boolean },
+                new CParameter() { ParameterName = "PAGE", Value = xWhere.PAGE, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "PAGE_SIZE", Value = xWhere.PAGE_SIZE, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "DISTINCT_FIELD", Value = xWhere.DISTINCT_FIELD, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "HEADER_FILTER_SEARCH", Value = xWhere.HEADER_FILTER_SEARCH, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "SORT_FIELD", Value = xWhere.SORT_FIELD, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "SORT_DESC", Value = xWhere.SORT_DESC, DbType = System.Data.DbType.Boolean },
+            };
+
+            AddJsonParameter(p, "FILTER_ROW_JSON", xWhere.FILTER_ROW_JSON);
+            AddJsonParameter(p, "COLUMN_EXACT_JSON", xWhere.COLUMN_EXACT_JSON);
+            AddJsonParameter(p, "COLUMN_ANYOF_JSON", xWhere.COLUMN_ANYOF_JSON);
+            AddAnyOfFilters(p, xWhere.COLUMN_ANYOF_JSON);
+
+            return p;
+        }
+
+        private static void AddJsonParameter(List<CParameter> p, string parameterName, string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            p.Add(new CParameter()
+            {
+                ParameterName = parameterName,
+                Value = json,
+                DbType = System.Data.DbType.String,
+            });
+        }
+
+        private static void AddAnyOfFilters(List<CParameter> p, string columnAnyOfJson)
+        {
+            if (string.IsNullOrWhiteSpace(columnAnyOfJson))
+            {
+                return;
+            }
+
+            try
+            {
+                var filters = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(columnAnyOfJson);
+                if (filters == null)
+                {
+                    return;
+                }
+
+                foreach (var filter in filters)
+                {
+                    if (filter.Value.ValueKind != JsonValueKind.Array)
+                    {
+                        continue;
+                    }
+
+                    var values = filter.Value
+                        .EnumerateArray()
+                        .Select(x => x.ValueKind switch
+                        {
+                            JsonValueKind.String => x.GetString(),
+                            JsonValueKind.Number => x.GetRawText(),
+                            JsonValueKind.True => "true",
+                            JsonValueKind.False => "false",
+                            JsonValueKind.Null => "__BLANK__",
+                            _ => x.ToString(),
+                        })
+                        .Where(x => !string.IsNullOrWhiteSpace(x))
+                        .ToList();
+
+                    if (values.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    p.Add(new CParameter()
+                    {
+                        ParameterName = $"{filter.Key}_ANYOF",
+                        Value = string.Join('|', values),
+                        DbType = System.Data.DbType.String,
+                    });
+                }
+            }
+            catch (JsonException)
+            {
+            }
         }
 
         private static CResult Validate(PLA_NIVEL_ACADEMICOTable Data)

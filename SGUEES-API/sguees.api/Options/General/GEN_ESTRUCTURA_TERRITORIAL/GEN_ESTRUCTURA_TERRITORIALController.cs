@@ -31,6 +31,14 @@ namespace SGUEES.Controllers
 			return await _service.GetAllPaisesAsync(data);
 		}
 
+		[HttpGet("GetDistinctValuesPaises")]
+		[Authorize(Policy = "/gen-estructura-territorial|R")]
+		public async Task<CResult> GetDistinctValuesPaises([FromQuery] GEN_ESTRUCTURA_TERRITORIAL_PAISParam data)
+		{
+			data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetDistinctValuesPaisesAsync(data);
+		}
+
 		[HttpGet("GetPais")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
 		public async Task<CResult> GetPais([FromQuery] GEN_ESTRUCTURA_TERRITORIAL_PAISParam data)
@@ -99,6 +107,14 @@ namespace SGUEES.Controllers
 			return await _service.GetAllDeptosAsync(data);
 		}
 
+		[HttpGet("GetDistinctValuesDeptos")]
+		[Authorize(Policy = "/gen-estructura-territorial|R")]
+		public async Task<CResult> GetDistinctValuesDeptos([FromQuery] GEN_ESTRUCTURA_TERRITORIAL_DEPTOParam data)
+		{
+			data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetDistinctValuesDeptosAsync(data);
+		}
+
 		[HttpGet("GetDepto")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
 		public async Task<CResult> GetDepto([FromQuery] GEN_ESTRUCTURA_TERRITORIAL_DEPTOParam data)
@@ -156,6 +172,14 @@ namespace SGUEES.Controllers
 			return await _service.GetAllMunicipiosAsync(data);
 		}
 
+		[HttpGet("GetDistinctValuesMunicipios")]
+		[Authorize(Policy = "/gen-estructura-territorial|R")]
+		public async Task<CResult> GetDistinctValuesMunicipios([FromQuery] GEN_ESTRUCTURA_TERRITORIAL_MUNICIPIOParam data)
+		{
+			data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetDistinctValuesMunicipiosAsync(data);
+		}
+
 		[HttpGet("GetMunicipio")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
 		public async Task<CResult> GetMunicipio([FromQuery] GEN_ESTRUCTURA_TERRITORIAL_MUNICIPIOParam data)
@@ -211,6 +235,14 @@ namespace SGUEES.Controllers
 		{
 			data.CORR_EMPRESA = GetCorrEmpresa();
 			return await _service.GetAllDistritosAsync(data);
+		}
+
+		[HttpGet("GetDistinctValuesDistritos")]
+		[Authorize(Policy = "/gen-estructura-territorial|R")]
+		public async Task<CResult> GetDistinctValuesDistritos([FromQuery] GEN_ESTRUCTURA_TERRITORIAL_DISTRITOParam data)
+		{
+			data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetDistinctValuesDistritosAsync(data);
 		}
 
 		[HttpGet("GetDistrito")]

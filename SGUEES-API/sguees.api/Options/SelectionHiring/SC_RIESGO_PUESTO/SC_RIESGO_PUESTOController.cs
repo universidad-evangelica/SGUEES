@@ -31,6 +31,14 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        [HttpGet("GetDistinctValues")]
+        [Authorize(Policy = "/sc-riesgo-puesto|R")]
+        public async Task<CResult> GetDistinctValues([FromQuery] SC_RIESGO_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetDistinctValuesAsync(Data);
+        }
+
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-riesgo-puesto|R")]
         public async Task<CResult> Get([FromQuery] SC_RIESGO_PUESTOParam Data)
