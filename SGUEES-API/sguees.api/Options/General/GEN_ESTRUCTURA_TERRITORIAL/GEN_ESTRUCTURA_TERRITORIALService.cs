@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using eFramework.Core;
 using SGUEES.Models;
@@ -23,32 +25,23 @@ namespace SGUEES.Services
 				return validation;
 			}
 
-			var p = new List<CParameter>
+			return await _repo.GetAllPaisesAsync(BuildPaisParameters(xWhere));
+		}
+
+		public async Task<CResult> GetDistinctValuesPaisesAsync(GEN_ESTRUCTURA_TERRITORIAL_PAISParam xWhere)
+		{
+			var validation = ValidateCorrEmpresa(xWhere.CORR_EMPRESA, "la estructura territorial");
+			if (validation != null)
 			{
-				new CParameter() { ParameterName = "BUSQUEDA", Value = xWhere.BUSQUEDA, DbType = System.Data.DbType.String },
-				new CParameter() { ParameterName = "PAGE", Value = xWhere.PAGE, DbType = System.Data.DbType.Int32 },
-				new CParameter() { ParameterName = "PAGE_SIZE", Value = xWhere.PAGE_SIZE, DbType = System.Data.DbType.Int32 },
-			};
-
-			AddColumnFilter("CORR_PAIS", xWhere.CORR_PAIS, System.Data.DbType.Int32);
-			AddColumnFilter("NOMBRE_PAIS", xWhere.NOMBRE_PAIS, System.Data.DbType.String);
-			AddColumnFilter("CODIGO_PAIS", xWhere.CODIGO_PAIS, System.Data.DbType.String);
-			AddColumnFilter("NACIONALIDAD", xWhere.NACIONALIDAD, System.Data.DbType.String);
-			AddColumnFilter("NOMBRE_CORTO", xWhere.NOMBRE_CORTO, System.Data.DbType.String);
-
-			return await _repo.GetAllPaisesAsync(p);
-
-			void AddColumnFilter(string parameterName, object value, System.Data.DbType dbType)
-			{
-				if (value == null ||
-					value is string text && string.IsNullOrWhiteSpace(text) ||
-					value is int number && number <= 0)
-				{
-					return;
-				}
-
-				p.Add(new CParameter() { ParameterName = parameterName, Value = value, DbType = dbType });
+				return validation;
 			}
+
+			if (string.IsNullOrWhiteSpace(xWhere.DISTINCT_FIELD))
+			{
+				return ValidationError("Debe indicar el campo para el filtro de encabezado.");
+			}
+
+			return await _repo.GetDistinctValuesPaisesAsync(BuildPaisParameters(xWhere));
 		}
 
 		public async Task<CResult> GetPaisAsync(GEN_ESTRUCTURA_TERRITORIAL_PAISParam xWhere)
@@ -126,33 +119,23 @@ namespace SGUEES.Services
 				return validation;
 			}
 
-			var p = new List<CParameter>
-			{
-				new CParameter() { ParameterName = "BUSQUEDA", Value = xWhere.BUSQUEDA, DbType = System.Data.DbType.String },
-			};
+			return await _repo.GetAllDeptosAsync(BuildDeptoParameters(xWhere));
+		}
 
-			if (xWhere.CORR_PAIS > 0)
+		public async Task<CResult> GetDistinctValuesDeptosAsync(GEN_ESTRUCTURA_TERRITORIAL_DEPTOParam xWhere)
+		{
+			var validation = ValidateCorrEmpresa(xWhere.CORR_EMPRESA, "la estructura territorial");
+			if (validation != null)
 			{
-				p.Add(new CParameter() { ParameterName = "CORR_PAIS", Value = xWhere.CORR_PAIS, DbType = System.Data.DbType.Int32 });
+				return validation;
 			}
 
-			AddColumnFilter("CORR_DEPTO", xWhere.CORR_DEPTO, System.Data.DbType.Int32);
-			AddColumnFilter("NOMBRE_DEPTO", xWhere.NOMBRE_DEPTO, System.Data.DbType.String);
-			AddColumnFilter("CODIGO_DEPTO", xWhere.CODIGO_DEPTO, System.Data.DbType.String);
-
-			return await _repo.GetAllDeptosAsync(p);
-
-			void AddColumnFilter(string parameterName, object value, System.Data.DbType dbType)
+			if (string.IsNullOrWhiteSpace(xWhere.DISTINCT_FIELD))
 			{
-				if (value == null ||
-					value is string text && string.IsNullOrWhiteSpace(text) ||
-					value is int number && number <= 0)
-				{
-					return;
-				}
-
-				p.Add(new CParameter() { ParameterName = parameterName, Value = value, DbType = dbType });
+				return ValidationError("Debe indicar el campo para el filtro de encabezado.");
 			}
+
+			return await _repo.GetDistinctValuesDeptosAsync(BuildDeptoParameters(xWhere));
 		}
 
 		public async Task<CResult> GetDeptoAsync(GEN_ESTRUCTURA_TERRITORIAL_DEPTOParam xWhere)
@@ -221,38 +204,23 @@ namespace SGUEES.Services
 				return validation;
 			}
 
-			var p = new List<CParameter>
-			{
-				new CParameter() { ParameterName = "BUSQUEDA", Value = xWhere.BUSQUEDA, DbType = System.Data.DbType.String },
-			};
+			return await _repo.GetAllMunicipiosAsync(BuildMunicipioParameters(xWhere));
+		}
 
-			if (xWhere.CORR_PAIS > 0)
+		public async Task<CResult> GetDistinctValuesMunicipiosAsync(GEN_ESTRUCTURA_TERRITORIAL_MUNICIPIOParam xWhere)
+		{
+			var validation = ValidateCorrEmpresa(xWhere.CORR_EMPRESA, "la estructura territorial");
+			if (validation != null)
 			{
-				p.Add(new CParameter() { ParameterName = "CORR_PAIS", Value = xWhere.CORR_PAIS, DbType = System.Data.DbType.Int32 });
+				return validation;
 			}
 
-			if (xWhere.CORR_DEPTO > 0)
+			if (string.IsNullOrWhiteSpace(xWhere.DISTINCT_FIELD))
 			{
-				p.Add(new CParameter() { ParameterName = "CORR_DEPTO", Value = xWhere.CORR_DEPTO, DbType = System.Data.DbType.Int32 });
+				return ValidationError("Debe indicar el campo para el filtro de encabezado.");
 			}
 
-			AddColumnFilter("CORR_MUNICIPIO", xWhere.CORR_MUNICIPIO, System.Data.DbType.Int32);
-			AddColumnFilter("NOMBRE_MUNICIPIO", xWhere.NOMBRE_MUNICIPIO, System.Data.DbType.String);
-			AddColumnFilter("CODIGO_MUNICIPIO", xWhere.CODIGO_MUNICIPIO, System.Data.DbType.String);
-
-			return await _repo.GetAllMunicipiosAsync(p);
-
-			void AddColumnFilter(string parameterName, object value, System.Data.DbType dbType)
-			{
-				if (value == null ||
-					value is string text && string.IsNullOrWhiteSpace(text) ||
-					value is int number && number <= 0)
-				{
-					return;
-				}
-
-				p.Add(new CParameter() { ParameterName = parameterName, Value = value, DbType = dbType });
-			}
+			return await _repo.GetDistinctValuesMunicipiosAsync(BuildMunicipioParameters(xWhere));
 		}
 
 		public async Task<CResult> GetMunicipioAsync(GEN_ESTRUCTURA_TERRITORIAL_MUNICIPIOParam xWhere)
@@ -321,42 +289,23 @@ namespace SGUEES.Services
 				return validation;
 			}
 
-			var p = new List<CParameter>
-			{
-				new CParameter() { ParameterName = "BUSQUEDA", Value = xWhere.BUSQUEDA, DbType = System.Data.DbType.String },
-			};
+			return await _repo.GetAllDistritosAsync(BuildDistritoParameters(xWhere));
+		}
 
-			if (xWhere.CORR_PAIS > 0)
+		public async Task<CResult> GetDistinctValuesDistritosAsync(GEN_ESTRUCTURA_TERRITORIAL_DISTRITOParam xWhere)
+		{
+			var validation = ValidateCorrEmpresa(xWhere.CORR_EMPRESA, "la estructura territorial");
+			if (validation != null)
 			{
-				p.Add(new CParameter() { ParameterName = "CORR_PAIS", Value = xWhere.CORR_PAIS, DbType = System.Data.DbType.Int32 });
+				return validation;
 			}
 
-			if (xWhere.CORR_DEPTO > 0)
+			if (string.IsNullOrWhiteSpace(xWhere.DISTINCT_FIELD))
 			{
-				p.Add(new CParameter() { ParameterName = "CORR_DEPTO", Value = xWhere.CORR_DEPTO, DbType = System.Data.DbType.Int32 });
+				return ValidationError("Debe indicar el campo para el filtro de encabezado.");
 			}
 
-			if (xWhere.CORR_MUNICIPIO > 0)
-			{
-				p.Add(new CParameter() { ParameterName = "CORR_MUNICIPIO", Value = xWhere.CORR_MUNICIPIO, DbType = System.Data.DbType.Int32 });
-			}
-
-			AddColumnFilter("CORR_DISTRITO", xWhere.CORR_DISTRITO, System.Data.DbType.Int32);
-			AddColumnFilter("NOMBRE_DISTRITO", xWhere.NOMBRE_DISTRITO, System.Data.DbType.String);
-
-			return await _repo.GetAllDistritosAsync(p);
-
-			void AddColumnFilter(string parameterName, object value, System.Data.DbType dbType)
-			{
-				if (value == null ||
-					value is string text && string.IsNullOrWhiteSpace(text) ||
-					value is int number && number <= 0)
-				{
-					return;
-				}
-
-				p.Add(new CParameter() { ParameterName = parameterName, Value = value, DbType = dbType });
-			}
+			return await _repo.GetDistinctValuesDistritosAsync(BuildDistritoParameters(xWhere));
 		}
 
 		public async Task<CResult> GetDistritoAsync(GEN_ESTRUCTURA_TERRITORIAL_DISTRITOParam xWhere)
@@ -451,14 +400,14 @@ namespace SGUEES.Services
 				return ValidationError("No se recibieron datos del país.");
 			}
 
+			if (string.IsNullOrWhiteSpace(data.NOMBRE_CORTO))
+			{
+				return ValidationError("Debe ingresar el nombre corto.");
+			}
+
 			if (string.IsNullOrWhiteSpace(data.NOMBRE_PAIS))
 			{
 				return ValidationError("Debe ingresar el nombre del país.");
-			}
-
-			if (string.IsNullOrWhiteSpace(data.CODIGO_PAIS))
-			{
-				return ValidationError("Debe ingresar el código del país.");
 			}
 
 			if (string.IsNullOrWhiteSpace(data.NACIONALIDAD))
@@ -466,9 +415,9 @@ namespace SGUEES.Services
 				return ValidationError("Debe ingresar la nacionalidad.");
 			}
 
-			if (string.IsNullOrWhiteSpace(data.NOMBRE_CORTO))
+			if (string.IsNullOrWhiteSpace(data.CODIGO_PAIS))
 			{
-				return ValidationError("Debe ingresar el nombre corto.");
+				return ValidationError("Debe ingresar el código del país.");
 			}
 
 			if (data.NOMBRE_PAIS.Trim().Length > 100)
@@ -576,29 +525,23 @@ namespace SGUEES.Services
 
 		private async Task<CResult> ValidatePaisDuplicatesAsync(GEN_ESTRUCTURA_TERRITORIAL_PAISTable data, bool isUpdate)
 		{
-			var result = await _repo.GetAllPaisesAsync(BuildPagingParams());
-			var rows = ExtractRows<GEN_ESTRUCTURA_TERRITORIAL_PAISView>(result);
-			if (rows.Count == 0)
-			{
-				return null;
-			}
+			var excludeCorrPais = isUpdate ? data.CORR_PAIS : 0;
 
-			var others = rows.Where(x => !isUpdate || x.CORR_PAIS != data.CORR_PAIS).ToList();
-			if (others.Any(x => NormalizeText(x.NOMBRE_PAIS) == NormalizeText(data.NOMBRE_PAIS)))
+			if (await _repo.ExistsPaisByFieldAsync("NOMBRE_CORTO", NormalizeText(data.NOMBRE_CORTO), excludeCorrPais))
+			{
+				return DuplicateWarning("El nombre corto ingresado ya está registrado. Escriba otro nombre corto para continuar.");
+			}
+			if (await _repo.ExistsPaisByFieldAsync("NOMBRE_PAIS", NormalizeText(data.NOMBRE_PAIS), excludeCorrPais))
 			{
 				return DuplicateWarning("El nombre de país ingresado ya está registrado. Escriba otro nombre para continuar.");
 			}
-			if (others.Any(x => NormalizeText(x.CODIGO_PAIS) == NormalizeText(data.CODIGO_PAIS)))
-			{
-				return DuplicateWarning("El código de país ingresado ya está registrado. Escriba otro código para continuar.");
-			}
-			if (others.Any(x => NormalizeText(x.NACIONALIDAD) == NormalizeText(data.NACIONALIDAD)))
+			if (await _repo.ExistsPaisByFieldAsync("NACIONALIDAD", NormalizeText(data.NACIONALIDAD), excludeCorrPais))
 			{
 				return DuplicateWarning("La nacionalidad ingresada ya está registrada. Escriba otra nacionalidad para continuar.");
 			}
-			if (others.Any(x => NormalizeText(x.NOMBRE_CORTO) == NormalizeText(data.NOMBRE_CORTO)))
+			if (await _repo.ExistsPaisByFieldAsync("CODIGO_PAIS", NormalizeText(data.CODIGO_PAIS), excludeCorrPais))
 			{
-				return DuplicateWarning("El nombre corto ingresado ya está registrado. Escriba otro nombre corto para continuar.");
+				return DuplicateWarning("El código de país ingresado ya está registrado. Escriba otro código para continuar.");
 			}
 
 			return null;
@@ -606,19 +549,14 @@ namespace SGUEES.Services
 
 		private async Task<CResult> ValidateDeptoDuplicatesAsync(GEN_ESTRUCTURA_TERRITORIAL_DEPTOTable data, bool isUpdate)
 		{
-			var p = new List<CParameter>
-			{
-				new CParameter() { ParameterName = "CORR_PAIS", Value = data.CORR_PAIS, DbType = System.Data.DbType.Int32 },
-			};
-			var result = await _repo.GetAllDeptosAsync(p);
-			var rows = ExtractRows<GEN_ESTRUCTURA_TERRITORIAL_DEPTOView>(result);
-			var others = rows.Where(x => !isUpdate || x.CORR_PAIS != data.CORR_PAIS || x.CORR_DEPTO != data.CORR_DEPTO).ToList();
+			var excludeCorrPais = isUpdate ? data.CORR_PAIS : 0;
+			var excludeCorrDepto = isUpdate ? data.CORR_DEPTO : 0;
 
-			if (others.Any(x => NormalizeText(x.NOMBRE_DEPTO) == NormalizeText(data.NOMBRE_DEPTO)))
+			if (await _repo.ExistsDeptoByFieldAsync(data.CORR_PAIS, "NOMBRE_DEPTO", NormalizeText(data.NOMBRE_DEPTO), excludeCorrPais, excludeCorrDepto))
 			{
 				return DuplicateWarning("El nombre de departamento ingresado ya está registrado. Escriba otro nombre para continuar.");
 			}
-			if (others.Any(x => NormalizeText(x.CODIGO_DEPTO) == NormalizeText(data.CODIGO_DEPTO)))
+			if (await _repo.ExistsDeptoByFieldAsync(data.CORR_PAIS, "CODIGO_DEPTO", NormalizeText(data.CODIGO_DEPTO), excludeCorrPais, excludeCorrDepto))
 			{
 				return DuplicateWarning("El código de departamento ingresado ya está registrado. Escriba otro código para continuar.");
 			}
@@ -628,24 +566,29 @@ namespace SGUEES.Services
 
 		private async Task<CResult> ValidateMunicipioDuplicatesAsync(GEN_ESTRUCTURA_TERRITORIAL_MUNICIPIOTable data, bool isUpdate)
 		{
-			var p = new List<CParameter>
-			{
-				new CParameter() { ParameterName = "CORR_PAIS", Value = data.CORR_PAIS, DbType = System.Data.DbType.Int32 },
-				new CParameter() { ParameterName = "CORR_DEPTO", Value = data.CORR_DEPTO, DbType = System.Data.DbType.Int32 },
-			};
-			var result = await _repo.GetAllMunicipiosAsync(p);
-			var rows = ExtractRows<GEN_ESTRUCTURA_TERRITORIAL_MUNICIPIOView>(result);
-			var others = rows.Where(x =>
-				!isUpdate ||
-				x.CORR_PAIS != data.CORR_PAIS ||
-				x.CORR_DEPTO != data.CORR_DEPTO ||
-				x.CORR_MUNICIPIO != data.CORR_MUNICIPIO).ToList();
+			var excludeCorrPais = isUpdate ? data.CORR_PAIS : 0;
+			var excludeCorrDepto = isUpdate ? data.CORR_DEPTO : 0;
+			var excludeCorrMunicipio = isUpdate ? data.CORR_MUNICIPIO : 0;
 
-			if (others.Any(x => NormalizeText(x.NOMBRE_MUNICIPIO) == NormalizeText(data.NOMBRE_MUNICIPIO)))
+			if (await _repo.ExistsMunicipioByFieldAsync(
+				data.CORR_PAIS,
+				data.CORR_DEPTO,
+				"NOMBRE_MUNICIPIO",
+				NormalizeText(data.NOMBRE_MUNICIPIO),
+				excludeCorrPais,
+				excludeCorrDepto,
+				excludeCorrMunicipio))
 			{
 				return DuplicateWarning("El nombre de municipio ingresado ya está registrado. Escriba otro nombre para continuar.");
 			}
-			if (others.Any(x => NormalizeText(x.CODIGO_MUNICIPIO) == NormalizeText(data.CODIGO_MUNICIPIO)))
+			if (await _repo.ExistsMunicipioByFieldAsync(
+				data.CORR_PAIS,
+				data.CORR_DEPTO,
+				"CODIGO_MUNICIPIO",
+				NormalizeText(data.CODIGO_MUNICIPIO),
+				excludeCorrPais,
+				excludeCorrDepto,
+				excludeCorrMunicipio))
 			{
 				return DuplicateWarning("El código de municipio ingresado ya está registrado. Escriba otro código para continuar.");
 			}
@@ -655,56 +598,26 @@ namespace SGUEES.Services
 
 		private async Task<CResult> ValidateDistritoDuplicatesAsync(GEN_ESTRUCTURA_TERRITORIAL_DISTRITOTable data, bool isUpdate)
 		{
-			var p = new List<CParameter>
-			{
-				new CParameter() { ParameterName = "CORR_PAIS", Value = data.CORR_PAIS, DbType = System.Data.DbType.Int32 },
-				new CParameter() { ParameterName = "CORR_DEPTO", Value = data.CORR_DEPTO, DbType = System.Data.DbType.Int32 },
-				new CParameter() { ParameterName = "CORR_MUNICIPIO", Value = data.CORR_MUNICIPIO, DbType = System.Data.DbType.Int32 },
-			};
-			var result = await _repo.GetAllDistritosAsync(p);
-			var rows = ExtractRows<GEN_ESTRUCTURA_TERRITORIAL_DISTRITOView>(result);
-			var others = rows.Where(x =>
-				!isUpdate ||
-				x.CORR_PAIS != data.CORR_PAIS ||
-				x.CORR_DEPTO != data.CORR_DEPTO ||
-				x.CORR_MUNICIPIO != data.CORR_MUNICIPIO ||
-				x.CORR_DISTRITO != data.CORR_DISTRITO).ToList();
+			var excludeCorrPais = isUpdate ? data.CORR_PAIS : 0;
+			var excludeCorrDepto = isUpdate ? data.CORR_DEPTO : 0;
+			var excludeCorrMunicipio = isUpdate ? data.CORR_MUNICIPIO : 0;
+			var excludeCorrDistrito = isUpdate ? data.CORR_DISTRITO : 0;
 
-			if (others.Any(x => NormalizeText(x.NOMBRE_DISTRITO) == NormalizeText(data.NOMBRE_DISTRITO)))
+			if (await _repo.ExistsDistritoByFieldAsync(
+				data.CORR_PAIS,
+				data.CORR_DEPTO,
+				data.CORR_MUNICIPIO,
+				"NOMBRE_DISTRITO",
+				NormalizeText(data.NOMBRE_DISTRITO),
+				excludeCorrPais,
+				excludeCorrDepto,
+				excludeCorrMunicipio,
+				excludeCorrDistrito))
 			{
 				return DuplicateWarning("El nombre de distrito ingresado ya está registrado. Escriba otro nombre para continuar.");
 			}
 
 			return null;
-		}
-
-		private static List<CParameter> BuildPagingParams()
-		{
-			return new List<CParameter>
-			{
-				new CParameter() { ParameterName = "PAGE", Value = 1, DbType = System.Data.DbType.Int32 },
-				new CParameter() { ParameterName = "PAGE_SIZE", Value = 500, DbType = System.Data.DbType.Int32 },
-			};
-		}
-
-		private static List<TView> ExtractRows<TView>(CResult result)
-		{
-			if (result?.Result != true || result.Data == null)
-			{
-				return new List<TView>();
-			}
-
-			if (result.Data is List<TView> typedRows)
-			{
-				return typedRows;
-			}
-
-			if (result.Data is IEnumerable<TView> rows)
-			{
-				return rows.ToList();
-			}
-
-			return new List<TView>();
 		}
 
 		private static string NormalizeText(string value)
@@ -738,6 +651,169 @@ namespace SGUEES.Services
 				ErrorSource = "[GEN_ESTRUCTURA_TERRITORIALService]",
 				RowsAffected = 0
 			};
+		}
+
+		private static List<CParameter> BuildPaisParameters(GEN_ESTRUCTURA_TERRITORIAL_PAISParam xWhere)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "BUSQUEDA", Value = xWhere.BUSQUEDA, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "PAGE", Value = xWhere.PAGE, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "PAGE_SIZE", Value = xWhere.PAGE_SIZE, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "DISTINCT_FIELD", Value = xWhere.DISTINCT_FIELD, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "HEADER_FILTER_SEARCH", Value = xWhere.HEADER_FILTER_SEARCH, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "SORT_FIELD", Value = xWhere.SORT_FIELD, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "SORT_DESC", Value = xWhere.SORT_DESC, DbType = System.Data.DbType.Boolean },
+			};
+
+			AppendJsonParameter(p, "FILTER_ROW_JSON", xWhere.FILTER_ROW_JSON);
+			AppendJsonParameter(p, "COLUMN_EXACT_JSON", xWhere.COLUMN_EXACT_JSON);
+			AppendJsonParameter(p, "COLUMN_ANYOF_JSON", xWhere.COLUMN_ANYOF_JSON);
+			AppendAnyOfFilters(p, xWhere.COLUMN_ANYOF_JSON);
+			return p;
+		}
+
+		private static List<CParameter> BuildDeptoParameters(GEN_ESTRUCTURA_TERRITORIAL_DEPTOParam xWhere)
+		{
+			var p = BuildScopedRemoteParameters(xWhere.BUSQUEDA, xWhere.DISTINCT_FIELD, xWhere.HEADER_FILTER_SEARCH, xWhere.FILTER_ROW_JSON, xWhere.COLUMN_EXACT_JSON, xWhere.COLUMN_ANYOF_JSON, xWhere.SORT_FIELD, xWhere.SORT_DESC);
+			if (xWhere.CORR_PAIS > 0)
+			{
+				p.Add(new CParameter() { ParameterName = "CORR_PAIS", Value = xWhere.CORR_PAIS, DbType = System.Data.DbType.Int32 });
+			}
+
+			return p;
+		}
+
+		private static List<CParameter> BuildMunicipioParameters(GEN_ESTRUCTURA_TERRITORIAL_MUNICIPIOParam xWhere)
+		{
+			var p = BuildScopedRemoteParameters(xWhere.BUSQUEDA, xWhere.DISTINCT_FIELD, xWhere.HEADER_FILTER_SEARCH, xWhere.FILTER_ROW_JSON, xWhere.COLUMN_EXACT_JSON, xWhere.COLUMN_ANYOF_JSON, xWhere.SORT_FIELD, xWhere.SORT_DESC);
+			if (xWhere.CORR_PAIS > 0)
+			{
+				p.Add(new CParameter() { ParameterName = "CORR_PAIS", Value = xWhere.CORR_PAIS, DbType = System.Data.DbType.Int32 });
+			}
+
+			if (xWhere.CORR_DEPTO > 0)
+			{
+				p.Add(new CParameter() { ParameterName = "CORR_DEPTO", Value = xWhere.CORR_DEPTO, DbType = System.Data.DbType.Int32 });
+			}
+
+			return p;
+		}
+
+		private static List<CParameter> BuildDistritoParameters(GEN_ESTRUCTURA_TERRITORIAL_DISTRITOParam xWhere)
+		{
+			var p = BuildScopedRemoteParameters(xWhere.BUSQUEDA, xWhere.DISTINCT_FIELD, xWhere.HEADER_FILTER_SEARCH, xWhere.FILTER_ROW_JSON, xWhere.COLUMN_EXACT_JSON, xWhere.COLUMN_ANYOF_JSON, xWhere.SORT_FIELD, xWhere.SORT_DESC);
+			if (xWhere.CORR_PAIS > 0)
+			{
+				p.Add(new CParameter() { ParameterName = "CORR_PAIS", Value = xWhere.CORR_PAIS, DbType = System.Data.DbType.Int32 });
+			}
+
+			if (xWhere.CORR_DEPTO > 0)
+			{
+				p.Add(new CParameter() { ParameterName = "CORR_DEPTO", Value = xWhere.CORR_DEPTO, DbType = System.Data.DbType.Int32 });
+			}
+
+			if (xWhere.CORR_MUNICIPIO > 0)
+			{
+				p.Add(new CParameter() { ParameterName = "CORR_MUNICIPIO", Value = xWhere.CORR_MUNICIPIO, DbType = System.Data.DbType.Int32 });
+			}
+
+			return p;
+		}
+
+		private static List<CParameter> BuildScopedRemoteParameters(
+			string busqueda,
+			string distinctField,
+			string headerFilterSearch,
+			string filterRowJson,
+			string columnExactJson,
+			string columnAnyOfJson,
+			string sortField,
+			bool? sortDesc)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "BUSQUEDA", Value = busqueda, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "DISTINCT_FIELD", Value = distinctField, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "HEADER_FILTER_SEARCH", Value = headerFilterSearch, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "SORT_FIELD", Value = sortField, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "SORT_DESC", Value = sortDesc, DbType = System.Data.DbType.Boolean },
+			};
+
+			AppendJsonParameter(p, "FILTER_ROW_JSON", filterRowJson);
+			AppendJsonParameter(p, "COLUMN_EXACT_JSON", columnExactJson);
+			AppendJsonParameter(p, "COLUMN_ANYOF_JSON", columnAnyOfJson);
+			AppendAnyOfFilters(p, columnAnyOfJson);
+			return p;
+		}
+
+		private static void AppendJsonParameter(List<CParameter> p, string parameterName, string json)
+		{
+			if (string.IsNullOrWhiteSpace(json))
+			{
+				return;
+			}
+
+			p.Add(new CParameter()
+			{
+				ParameterName = parameterName,
+				Value = json,
+				DbType = System.Data.DbType.String,
+			});
+		}
+
+		private static void AppendAnyOfFilters(List<CParameter> p, string columnAnyOfJson)
+		{
+			if (string.IsNullOrWhiteSpace(columnAnyOfJson))
+			{
+				return;
+			}
+
+			try
+			{
+				var filters = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(columnAnyOfJson);
+				if (filters == null)
+				{
+					return;
+				}
+
+				foreach (var filter in filters)
+				{
+					if (filter.Value.ValueKind != JsonValueKind.Array)
+					{
+						continue;
+					}
+
+					var values = filter.Value
+						.EnumerateArray()
+						.Select(x => x.ValueKind switch
+						{
+							JsonValueKind.String => x.GetString(),
+							JsonValueKind.Number => x.GetRawText(),
+							JsonValueKind.True => "true",
+							JsonValueKind.False => "false",
+							JsonValueKind.Null => "__BLANK__",
+							_ => x.ToString(),
+						})
+						.Where(x => !string.IsNullOrWhiteSpace(x))
+						.ToList();
+
+					if (values.Count == 0)
+					{
+						continue;
+					}
+
+					p.Add(new CParameter()
+					{
+						ParameterName = $"{filter.Key}_ANYOF",
+						Value = string.Join('|', values),
+						DbType = System.Data.DbType.String,
+					});
+				}
+			}
+			catch (JsonException)
+			{
+			}
 		}
 	}
 }

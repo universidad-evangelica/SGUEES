@@ -1,11 +1,13 @@
-﻿import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { CData } from 'src/app/FxAPI/CData';
-import { IParam } from 'src/app/FxAPI/IParam';
-import { IResult } from 'src/app/FxAPI/IResult';
+import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
+import { IResult } from 'src/app/FxAPI/IResult';
+import { IParam } from 'src/app/FxAPI/IParam';
+import { CData } from 'src/app/FxAPI/CData';
 
-@Injectable({ providedIn: 'root' })
+@Injectable({
+	providedIn: 'root',
+})
 export class ScRiesgoPuestoRepository {
 	readonly xController = 'SC_RIESGO_PUESTO';
 
@@ -13,6 +15,10 @@ export class ScRiesgoPuestoRepository {
 
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
+	getDistinctValues(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetDistinctValues', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
 	get(xWhere: IParam[]): Observable<IResult> {

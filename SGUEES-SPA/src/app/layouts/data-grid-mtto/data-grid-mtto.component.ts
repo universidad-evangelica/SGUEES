@@ -20,6 +20,11 @@ import { DxTooltipModule } from 'devextreme-angular/ui/tooltip';
 import { EmptyStateModule } from 'src/app/shared/components/library/empty-state/empty-state.component';
 import { MttoPageContextService } from 'src/app/layouts/mtto-page-context.service';
 import { Subscription } from 'rxjs';
+import {
+  RemoteHeaderFilterLoader,
+  attachRemoteHeaderFilters,
+  syncHeaderFiltersFromPageData,
+} from 'src/app/shared/utils/remote-header-filter.util';
 
 import { exportDataGrid } from 'devextreme/excel_exporter';
 import ExcelJS from 'exceljs';
@@ -89,6 +94,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() searchBoxOptions: Record<string, unknown> | null = null;
   @Input() estadoSelectOptions: Record<string, unknown> | null = null;
   @Input() exportFileName = 'Data';
+  @Input() headerFilterLoader?: RemoteHeaderFilterLoader;
+  @Input() syncHeaderFilterWithPage = false;
 
   optRefresh: Record<string, unknown> = {};
   optAdd: Record<string, unknown> = {};
@@ -100,6 +107,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   filterSyncEnabled = false;
   gridVisible = true;
   activePageSize = 5;
+  displayColumns: any[] = [];
 
   private actionColumnsReady = false;
   private showEditActions = true;
@@ -195,6 +203,17 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     );
   }
 
+  get isRemoteHeaderFilterActive(): boolean {
+    if (this.remoteOperations === true) {
+      return true;
+    }
+    if (this.remoteOperations && typeof this.remoteOperations === 'object') {
+      const ops = this.remoteOperations as Record<string, unknown>;
+      return !!(ops['paging'] || ops['filtering']);
+    }
+    return false;
+  }
+
   get effectiveRepaintChangesOnly(): boolean {
     if (this.repaintChangesOnly !== null) {
       return this.repaintChangesOnly;
@@ -225,6 +244,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.filterSyncEnabled = this.filterValue != null && this.filterValue !== '';
     this.resolveActionVisibility();
     this.ensureActionColumns();
+    this.resolveDisplayColumns();
     this.updateFocusedRowState();
   }
 
@@ -257,6 +277,9 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       changes['unifiedToolbar']
     ) {
       this.rebuildToolbarOptions();
+    }
+    if (changes['columns'] || changes['headerFilterLoader'] || changes['remoteOperations'] || changes['syncHeaderFilterWithPage']) {
+      this.resolveDisplayColumns();
     }
     this.cdr.markForCheck();
   }
@@ -341,6 +364,68 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
 
   private updateFocusedRowState(): void {
     this.hasFocusedRow = Array.isArray(this.models) && this.models.length > 0;
+  }
+
+  private resolveDisplayColumns(): void {
+    if (!this.columns?.length) {
+      this.displayColumns = [];
+      return;
+    }
+
+    if (this.headerFilterLoader && this.isRemoteHeaderFilterActive) {
+      this.displayColumns = attachRemoteHeaderFilters([...this.columns], this.headerFilterLoader);
+      return;
+    }
+
+    this.displayColumns = this.columns;
+  }
+
+  refreshHeaderFilterDataSources(): void {
+    if (this.syncHeaderFilterWithPage && this.isRemotePagingActive) {
+      this.syncPageHeaderFilters();
+      return;
+    }
+
+    if (!this.headerFilterLoader || !this.isRemoteHeaderFilterActive) {
+      return;
+    }
+
+    const grid = this.gData?.instance;
+    const currentColumns = (grid?.option('columns') as any[]) ?? [];
+
+    this.resolveDisplayColumns();
+    this.displayColumns = this.displayColumns.map((column) => {
+      if (!column?.dataField) {
+        return column;
+      }
+
+      const current = currentColumns.find((item) => item?.dataField === column.dataField);
+      if (!current?.sortOrder) {
+        return column;
+      }
+
+      return {
+        ...column,
+        sortOrder: current.sortOrder,
+        sortIndex: current.sortIndex,
+      };
+    });
+
+    if (grid && this.displayColumns.length) {
+      grid.option('columns', [...this.displayColumns]);
+    }
+
+    this.cdr.markForCheck();
+  }
+
+  syncPageHeaderFilters(grid?: any): void {
+    const instance = grid ?? this.gData?.instance;
+    if (!instance || !this.syncHeaderFilterWithPage || !this.isRemotePagingActive || !this.columns?.length) {
+      return;
+    }
+
+    syncHeaderFiltersFromPageData(instance, this.columns);
+    this.cdr.markForCheck();
   }
 
   private ensureActionColumns(): void {
@@ -439,36 +524,51 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   OnOptionChanged(e: any): void {
-    if (e?.fullName !== 'paging.pageSize' || e.value === e.previousValue) {
-      return;
-    }
-
+    const fullName = e?.fullName;
     const grid = e.component;
     if (!grid) {
       return;
     }
 
-    this.activePageSize = Number(e.value) || this.pageSize;
-    grid.pageIndex(0);
+    const pageSizeChanged = fullName === 'paging.pageSize' && e.value !== e.previousValue;
+    const pageIndexChanged = fullName === 'paging.pageIndex' && e.value !== e.previousValue;
 
-    if (this.pageSizeRepaintTimer) {
-      clearTimeout(this.pageSizeRepaintTimer);
-      this.pageSizeRepaintTimer = undefined;
-    }
+    if (pageSizeChanged) {
+      this.activePageSize = Number(e.value) || this.pageSize;
+      grid.pageIndex(0);
 
-    const reloadPromise = grid.getDataSource()?.reload();
-    const repaintGrid = () => grid.repaint();
-
-    if (this.isRemotePagingActive) {
-      if (reloadPromise && typeof reloadPromise.then === 'function') {
-        reloadPromise.then(repaintGrid);
-      } else {
-        this.pageSizeRepaintTimer = setTimeout(repaintGrid);
+      if (this.pageSizeRepaintTimer) {
+        clearTimeout(this.pageSizeRepaintTimer);
+        this.pageSizeRepaintTimer = undefined;
       }
+
+      const reloadPromise = grid.getDataSource()?.reload();
+      const afterPagingChange = () => {
+        grid.repaint();
+        this.refreshHeaderFilterDataSources();
+      };
+
+      if (this.isRemotePagingActive) {
+        if (reloadPromise && typeof reloadPromise.then === 'function') {
+          reloadPromise.then(afterPagingChange);
+        } else {
+          this.pageSizeRepaintTimer = setTimeout(afterPagingChange);
+        }
+        return;
+      }
+
+      this.pageSizeRepaintTimer = setTimeout(afterPagingChange);
       return;
     }
 
-    this.pageSizeRepaintTimer = setTimeout(repaintGrid);
+    if (pageIndexChanged) {
+      this.refreshHeaderFilterDataSources();
+      return;
+    }
+
+    if (fullName === 'filterValue') {
+      this.refreshHeaderFilterDataSources();
+    }
   }
 
   OnContentReady(e: any): void {

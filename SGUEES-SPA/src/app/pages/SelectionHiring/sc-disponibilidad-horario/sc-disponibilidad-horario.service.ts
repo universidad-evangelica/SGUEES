@@ -1,11 +1,14 @@
 import { Injectable } from '@angular/core';
-import dxSelectBox from 'devextreme/ui/select_box';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildRemoteGridWhere, createEstadoColumnConfig } from 'src/app/shared/utils/remote-grid-filter.util';
+import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
 import { ScDisponibilidadHorario } from './models/sc-disponibilidad-horario';
 import { ScDisponibilidadHorarioRepository } from './sc-disponibilidad-horario.repository';
+
+const ESTADO_FIELD = 'ESTADO_DISPONIBILIDAD_HORARIO';
 
 @Injectable({
 	providedIn: 'root',
@@ -28,55 +31,15 @@ export class ScDisponibilidadHorarioService {
 	}
 
 	getAll(param: any): Observable<IResult> {
-		const xWhere: IParam[] = [];
-		const columnFilters = [
-			'CORR_DISPONIBILIDAD_HORARIO',
-			'NOMBRE_DISPONIBILIDAD_HORARIO',
-			'USUARIO_CREA',
-			'ESTACION_CREA',
-			'FECHA_CREA',
-			'USUARIO_ACTU',
-			'ESTACION_ACTU',
-			'FECHA_ACTU',
-		];
-
-		if (param.BUSQUEDA) {
-			xWhere.push({ Parameter: 'BUSQUEDA', Value: param.BUSQUEDA });
-		}
-
-		if (param.ESTADO_DISPONIBILIDAD_HORARIO !== null && param.ESTADO_DISPONIBILIDAD_HORARIO !== undefined) {
-			xWhere.push({ Parameter: 'ESTADO_DISPONIBILIDAD_HORARIO', Value: param.ESTADO_DISPONIBILIDAD_HORARIO });
-		}
-
-		if (param.PAGE) {
-			xWhere.push({ Parameter: 'PAGE', Value: param.PAGE });
-		}
-
-		if (param.PAGE_SIZE) {
-			xWhere.push({ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE });
-		}
-
-		columnFilters.forEach((field) => {
-			const value = param[field];
-			if (this.hasColumnFilter(value, field)) {
-				xWhere.push({ Parameter: field, Value: value });
-			}
-		});
-
-		return this.repo.get(xWhere);
+		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	private hasColumnFilter(value: any, field: string): boolean {
-		if (value === null || value === undefined || `${value}`.trim() === '') {
-			return false;
-		}
-
-		return !(field === 'CORR_DISPONIBILIDAD_HORARIO' && Number(value) === 0);
+	getDistinctValues(param: any): Observable<IResult> {
+		return this.repo.getDistinctValues(this.buildWhere(param));
 	}
 
 	get(param: any): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: param.CORR_DISPONIBILIDAD_HORARIO }];
-
 		return this.repo.get(xWhere);
 	}
 
@@ -86,25 +49,21 @@ export class ScDisponibilidadHorarioService {
 
 	update(model: any): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: model.CORR_DISPONIBILIDAD_HORARIO }];
-
 		return this.repo.update(model, xWhere);
 	}
 
 	delete(model: any): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: model.CORR_DISPONIBILIDAD_HORARIO }];
-
 		return this.repo.delete(xWhere);
 	}
 
 	activar(model: any): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: model.CORR_DISPONIBILIDAD_HORARIO }];
-
 		return this.repo.activar(model, xWhere);
 	}
 
 	desactivar(model: any): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: model.CORR_DISPONIBILIDAD_HORARIO }];
-
 		return this.repo.desactivar(model, xWhere);
 	}
 
@@ -134,20 +93,8 @@ export class ScDisponibilidadHorarioService {
 				fixedPosition: 'left',
 				alignment: 'center',
 				buttons: [
-					{
-						hint: editHint,
-						icon: 'edit',
-						stylingMode: 'text',
-						cssClass: editCssClass,
-						onClick: editClick,
-					},
-					{
-						hint: deleteHint,
-						icon: 'trash',
-						stylingMode: 'text',
-						cssClass: deleteCssClass,
-						onClick: deleteClick,
-					},
+					{ hint: editHint, icon: 'edit', stylingMode: 'text', cssClass: editCssClass, onClick: editClick },
+					{ hint: deleteHint, icon: 'trash', stylingMode: 'text', cssClass: deleteCssClass, onClick: deleteClick },
 					{
 						hint: activarHint,
 						icon: 'refresh',
@@ -166,62 +113,35 @@ export class ScDisponibilidadHorarioService {
 					},
 				],
 			},
-			{ dataField: 'CORR_DISPONIBILIDAD_HORARIO', caption: 'Corr.', width: 100 },
-			{ dataField: 'NOMBRE_DISPONIBILIDAD_HORARIO', caption: 'Disponibilidad de Horario', width: 300 },
 			{
-				dataField: 'ESTADO_DISPONIBILIDAD_HORARIO',
-				caption: 'Estado',
-				width: 140,
-				allowFiltering: true,
-				allowHeaderFiltering: true,
-				cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					const badge = document.createElement('span');
-					badge.classList.add(
-						'estado-badge',
-						cellInfo.value ? 'estado-badge--activo' : 'estado-badge--inactivo'
-					);
-					badge.textContent = cellInfo.value ? 'Activo' : 'Inactivo';
-					cellElement.innerHTML = '';
-					cellElement.appendChild(badge);
-				},
-				lookup: {
-					dataSource: [
-						{ value: true, text: 'Activo' },
-						{ value: false, text: 'Inactivo' },
-					],
-					valueExpr: 'value',
-					displayExpr: 'text',
-				},
-				filterCellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					new dxSelectBox(cellElement, {
-						dataSource: [
-							{ value: true, text: 'Activo' },
-							{ value: false, text: 'Inactivo' },
-						],
-						displayExpr: 'text',
-						valueExpr: 'value',
-						value: cellInfo.value,
-						placeholder: 'Seleccione...',
-						showClearButton: false,
-						onValueChanged: (e: any) => {
-							cellInfo.setValue(e.value);
-						},
-					});
-				},
-				calculateFilterExpression: (filterValue: any) => {
-					if (filterValue === '__ALL__' || filterValue === null || filterValue === undefined) {
-						return null;
-					}
-
-					return ['ESTADO_DISPONIBILIDAD_HORARIO', '=', filterValue];
-				},
+				dataField: 'CORR_DISPONIBILIDAD_HORARIO',
+				caption: 'Corr.',
+				width: 100,
+				dataType: 'number',
+				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
+			{ dataField: 'NOMBRE_DISPONIBILIDAD_HORARIO', caption: 'Disponibilidad de Horario', width: 300 },
+			createEstadoColumnConfig(ESTADO_FIELD),
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
-			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{
+				dataField: 'FECHA_CREA',
+				caption: 'Fecha Crea',
+				width: 200,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy HH:mm',
+				calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA'),
+			},
 			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
 			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
-			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{
+				dataField: 'FECHA_ACTU',
+				caption: 'Fecha Actu',
+				width: 200,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy HH:mm',
+				calculateFilterExpression: createDateTimeFilterExpression('FECHA_ACTU'),
+			},
 		];
 	}
 
@@ -241,13 +161,12 @@ export class ScDisponibilidadHorarioService {
 				editorOptions: { placeholder: 'Nombre disponibilidad de horario...', showClearButton: true, maxLength: 150 },
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
-			{
-				dataField: 'ESTADO_DISPONIBILIDAD_HORARIO',
-				label: { text: 'Activo' },
-				editorType: 'dxCheckBox',
-				colSpan: 2,
-			},
+			{ dataField: 'ESTADO_DISPONIBILIDAD_HORARIO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
+	}
+
+	private buildWhere(param: any): IParam[] {
+		return buildRemoteGridWhere(param, ESTADO_FIELD);
 	}
 }
 

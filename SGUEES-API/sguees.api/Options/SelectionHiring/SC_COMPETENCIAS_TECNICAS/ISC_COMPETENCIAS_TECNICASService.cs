@@ -7,6 +7,7 @@ namespace SGUEES.Services
     public interface ISC_COMPETENCIAS_TECNICASService
     {
         Task<CResult> GetAllAsync(SC_COMPETENCIAS_TECNICASParam xWhere);
+        Task<CResult> GetDistinctValuesAsync(SC_COMPETENCIAS_TECNICASParam xWhere);
         Task<CResult> GetAsync(SC_COMPETENCIAS_TECNICASParam xWhere);
         Task<CResult> GetPadresAsync(SC_COMPETENCIAS_TECNICASParam xWhere);
         Task<CResult> GetNextCodigoAsync(SC_COMPETENCIAS_TECNICASParam xWhere);

@@ -31,6 +31,14 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        [HttpGet("GetDistinctValues")]
+        [Authorize(Policy = "/pla-nivel-academico|R")]
+        public async Task<CResult> GetDistinctValues([FromQuery] PLA_NIVEL_ACADEMICOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetDistinctValuesAsync(Data);
+        }
+
         [HttpGet("Get")]
         [Authorize(Policy = "/pla-nivel-academico|R")]
         public async Task<CResult> Get([FromQuery] PLA_NIVEL_ACADEMICOParam Data)

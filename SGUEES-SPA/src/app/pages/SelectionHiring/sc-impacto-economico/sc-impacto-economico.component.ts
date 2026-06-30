@@ -1,4 +1,4 @@
-ï»¿import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import CustomStore from 'devextreme/data/custom_store';
 import { custom } from 'devextreme/ui/dialog';
@@ -11,6 +11,21 @@ import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { AuthService } from 'src/app/shared/services/auth.service';
+import {
+	cloneRemoteGridFilters,
+	hasRemoteFilterRowSearch,
+	parseRemoteGridFilters,
+	ParsedGridFilters,
+} from 'src/app/shared/utils/remote-grid-filter.util';
+import {
+	clearGridHeaderFilterSelections,
+	getColumnHeaderFilterSelection,
+	invertEstadoExcludedHeaderFilterValues,
+	invertExcludedHeaderFilterValues,
+	isEstadoField,
+	normalizeEstadoHeaderFilterValue,
+	readGridFilterRowValues,
+} from 'src/app/shared/utils/remote-header-filter.util';
 import { ScImpactoEconomico } from './models/sc-impacto-economico';
 import {
 	EMPRESA_REGISTRO_ETIQUETA,
@@ -20,7 +35,7 @@ import {
 	ScImpactoEconomicoService,
 } from './sc-impacto-economico.service';
 
-type EstadoFiltro = boolean | null;
+const GRID_FILTER_CONFIG = { estadoField: 'ESTADO_IMPACTO_ECONOMICO' };
 
 @Component({
 	selector: 'app-sc-impacto-economico',
@@ -92,18 +107,49 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		page = 1,
 		pageSize = 5,
 		busqueda = '',
-		estado: EstadoFiltro = null,
-		columnFilters: Record<string, any> = {}
+		gridFilters: ParsedGridFilters = { estado: null, filterRow: {}, filterRowExact: {}, headerAnyOf: {} },
+		distinctField = '',
+		headerFilterSearch = '',
+		sortField = '',
+		sortDesc = false
 	): any {
 		return {
 			CORR_IMPACTO_ECONOMICO: xCORR_IMPACTO_ECONOMICO ?? 0,
 			BUSQUEDA: busqueda,
-			ESTADO_IMPACTO_ECONOMICO: estado,
 			PAGE: page,
 			PAGE_SIZE: pageSize,
-			...columnFilters,
+			DISTINCT_FIELD: distinctField,
+			HEADER_FILTER_SEARCH: headerFilterSearch,
+			SORT_FIELD: sortField,
+			SORT_DESC: sortDesc,
+			gridFilters,
 		};
 	}
+
+	loadHeaderFilterValues = (field: string, searchValue?: string): Promise<unknown[]> => {
+		const grid = this.dataGrid?.gData?.instance;
+		const combinedFilter = grid?.getCombinedFilter?.(false);
+		const gridFilters = parseRemoteGridFilters(combinedFilter, grid, GRID_FILTER_CONFIG);
+		const hasFilterRowSearch = hasRemoteFilterRowSearch(gridFilters);
+		const filtersForDistinct: ParsedGridFilters = {
+			estado: hasFilterRowSearch ? gridFilters.estado : null,
+			filterRow: hasFilterRowSearch ? gridFilters.filterRow : {},
+			filterRowExact: hasFilterRowSearch ? gridFilters.filterRowExact : {},
+			headerAnyOf: {},
+		};
+
+		return lastValueFrom(
+			this.service.getDistinctValues(
+				this.fillParam(0, 1, 0, '', filtersForDistinct, field, searchValue ?? '')
+			)
+		).then((response) => {
+			if (!response.Result) {
+				throw new Error(response.ErrorMessage || 'No se pudieron cargar los valores del filtro.');
+			}
+
+			return response.Data ?? [];
+		});
+	};
 
 	override fillData(xModel?: ScImpactoEconomico): ScImpactoEconomico {
 		if (xModel !== undefined) {
@@ -151,7 +197,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		const warningDetail = this.getWarningMessage(xMessage);
 		const isWarning = xType === NotifyType.Warning || warningDetail !== cleanMessage;
 		const severity = xType === NotifyType.Success ? 'success' : isWarning ? 'warn' : 'error';
-		const summary = xType === NotifyType.Success ? 'Ã‰xito' : isWarning ? 'Advertencia' : 'Error';
+		const summary = xType === NotifyType.Success ? 'Éxito' : isWarning ? 'Advertencia' : 'Error';
 		const detail = isWarning ? warningDetail : cleanMessage;
 		this.messageService.add({ severity, summary, detail });
 	}
@@ -177,26 +223,49 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		}
 
 		this.loadingVisible = true;
-		const isAdd = this.banderaMtto === UpdateType.Add;
-		const action = isAdd ? this.service.insert(this.model) : this.service.update(this.model);
-
-		action.pipe(take(1)).subscribe({
-			next: (response: any) => {
-				if (response.Result) {
-					this.model = response.Data;
-					this.AsignaStatus(UpdateType.Browse);
-					this.consultar();
-					this.notifyFx(isAdd ? 'Registro creado con exito!' : 'Registro modificado con exito!', NotifyType.Success);
-				} else {
-					this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
-				}
-				this.loadingVisible = false;
-			},
-			error: (error: any) => {
-				this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
-				this.loadingVisible = false;
-			},
-		});
+		if (this.banderaMtto === UpdateType.Add) {
+			this.service
+				.insert(this.model)
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (response.Result) {
+							this.model = response.Data;
+							this.AsignaStatus(UpdateType.Browse);
+							this.consultar();
+							this.notifyFx('Registro creado con exito!', NotifyType.Success);
+						} else {
+							this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
+						}
+						this.loadingVisible = false;
+					},
+					error: (error: any) => {
+						this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
+						this.loadingVisible = false;
+					},
+				});
+		} else if (this.banderaMtto === UpdateType.Update) {
+			this.service
+				.update(this.model)
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (response.Result) {
+							this.model = response.Data;
+							this.AsignaStatus(UpdateType.Browse);
+							this.consultar();
+							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
+						} else {
+							this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
+						}
+						this.loadingVisible = false;
+					},
+					error: (error: any) => {
+						this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
+						this.loadingVisible = false;
+					},
+				});
+		}
 	}
 
 	override cancelar(): void {
@@ -211,7 +280,11 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		this.confirmEstado('Activar registro', 'Desea activar el impacto economico "' + row.DESCRIPCION + '"?', () => this.cambiarEstado(row, true));
+		this.confirmEstado(
+			'Activar registro',
+			`Desea activar el impacto economico "${row.DESCRIPCION}"?`,
+			() => this.cambiarEstado(row, true)
+		);
 	}
 
 	onEliminarClick(e: any): void {
@@ -220,7 +293,11 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		this.confirmEstado('Eliminar registro', 'Desea eliminar "' + row.DESCRIPCION + '"?', () => this.eliminarRegistro(row));
+		this.confirmEstado(
+			'Eliminar registro',
+			`Desea eliminar "${row.DESCRIPCION}"?`,
+			() => this.eliminarRegistro(row)
+		);
 	}
 
 	onDesactivarClick(e: any): void {
@@ -229,7 +306,11 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		this.confirmEstado('Desactivar registro', 'Desea desactivar el impacto economico "' + row.DESCRIPCION + '"?', () => this.cambiarEstado(row, false));
+		this.confirmEstado(
+			'Desactivar registro',
+			`Desea desactivar "${row.DESCRIPCION}"?`,
+			() => this.cambiarEstado(row, false)
+		);
 	}
 
 	rowRemoving(e: any): void {
@@ -244,7 +325,9 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 	}
 
 	override setFocus(): void {
-		setTimeout(() => this.dataForm.instance.getEditor('DESCRIPCION')?.focus());
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('DESCRIPCION')?.focus();
+		});
 	}
 
 	private configurarDataSource(): void {
@@ -256,53 +339,108 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 				const takeRows = loadOptions.take || 5;
 				const skipRows = loadOptions.skip || 0;
 				const page = Math.floor(skipRows / takeRows) + 1;
-				const gridFilters = this.getGridFilters(loadOptions.filter);
-				const estado = gridFilters.estado;
-				const busqueda = '';
-				const response = await lastValueFrom(this.service.getAll(this.fillParam(0, page, takeRows, busqueda, estado, gridFilters.columnas)));
+				const grid = this.dataGrid?.gData?.instance;
 
-				if (!response.Result) {
-					throw new Error(response.ErrorMessage || 'No se pudieron cargar los registros de impacto economico.');
+				if (grid) {
+					const filterRowValues = readGridFilterRowValues(grid);
+					const hasFilterRow =
+						Object.keys(filterRowValues.filterRow).length > 0 ||
+						Object.keys(filterRowValues.filterRowExact).length > 0;
+					if (hasFilterRow) {
+						clearGridHeaderFilterSelections(grid);
+					}
 				}
 
-				return { data: response.Data || [], totalCount: response.RowsAffected || 0 };
+				const gridFilters = parseRemoteGridFilters(loadOptions.filter, grid, GRID_FILTER_CONFIG);
+				if (!hasRemoteFilterRowSearch(gridFilters)) {
+					await this.resolveExcludeHeaderFilters(grid, gridFilters);
+				}
+
+				const sort = this.getGridSort(loadOptions.sort);
+				const response = await lastValueFrom(
+					this.service.getAll(
+						this.fillParam(
+							0,
+							page,
+							takeRows,
+							'',
+							gridFilters,
+							'',
+							'',
+							sort?.field ?? '',
+							sort?.desc ?? false
+						)
+					)
+				);
+
+				if (!response.Result) {
+					throw new Error(response.ErrorMessage || 'No se pudo cargar el impacto economico.');
+				}
+
+				return {
+					data: response.Data || [],
+					totalCount: response.RowsAffected || 0,
+				};
 			},
 		});
 	}
 
-	private getGridFilters(filter: any): { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } {
-		const result: { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } = { busqueda: '', estado: null, columnas: {} };
+	private async resolveExcludeHeaderFilters(grid: any, result: ParsedGridFilters): Promise<void> {
+		if (!grid?.getVisibleColumns) {
+			return;
+		}
 
-		const visit = (node: any): void => {
-			if (!Array.isArray(node)) {
-				return;
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
 			}
 
-			if (typeof node[0] === 'string' && node.length >= 3) {
-				const field = node[0];
-				const value = node[2];
-
-				if (field === 'ESTADO_IMPACTO_ECONOMICO') {
-					if (value === '__ALL__' || value === null || value === undefined) {
-						result.estado = null;
-						return;
-					}
-
-					result.estado = value === true || value === 'true';
-					return;
-				}
-
-				if (value !== null && value !== undefined && String(value).trim()) {
-					result.columnas[field] = value;
-				}
-				return;
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (!selection || selection.filterType !== 'exclude' || !selection.values.length) {
+				continue;
 			}
 
-			node.forEach((child) => visit(child));
+			if (isEstadoField(dataField)) {
+				const included = invertEstadoExcludedHeaderFilterValues(
+					selection.values.map((item) => normalizeEstadoHeaderFilterValue(item))
+				);
+				result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
+				continue;
+			}
+
+			const filtersForDistinct = cloneRemoteGridFilters(result);
+			delete filtersForDistinct.headerAnyOf[dataField];
+			delete filtersForDistinct.filterRow[dataField];
+			delete filtersForDistinct.filterRowExact[dataField];
+
+			const response = await lastValueFrom(
+				this.service.getDistinctValues(this.fillParam(0, 1, 0, '', filtersForDistinct, dataField, ''))
+			);
+
+			if (!response.Result) {
+				continue;
+			}
+
+			const included = invertExcludedHeaderFilterValues(selection.values, response.Data ?? []);
+			result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
+		}
+	}
+
+	private getGridSort(sort: any): { field: string; desc: boolean } | null {
+		if (!Array.isArray(sort) || !sort.length) {
+			return null;
+		}
+
+		const first = sort[0];
+		if (!first?.selector) {
+			return null;
+		}
+
+		return {
+			field: `${first.selector}`,
+			desc: !!first.desc,
 		};
-
-		visit(filter);
-		return result;
 	}
 
 	private cambiarEstado(row: ScImpactoEconomico, activo: boolean): void {
@@ -329,30 +467,43 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 
 	private eliminarRegistro(row: ScImpactoEconomico): void {
 		this.loadingVisible = true;
-		this.service.delete(row).pipe(take(1)).subscribe({
-			next: (response: any) => {
-				if (response.Result) {
-					this.consultar();
-					this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-				} else {
-					this.notifyFx(response.ErrorMessage || 'No se puede eliminar el registro porque tiene registros asociados.', NotifyType.Warning);
-				}
-				this.loadingVisible = false;
-			},
-			error: (error: any) => {
-				this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
-				this.loadingVisible = false;
-			},
-		});
+		this.service
+			.delete(row)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.consultar();
+						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
+					} else {
+						this.notifyFx(
+							response.ErrorMessage || 'No se puede eliminar el impacto economico porque tiene registros asociados en otras tablas.',
+							NotifyType.Warning
+						);
+					}
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
+					this.loadingVisible = false;
+				},
+			});
 	}
 
 	private confirmEstado(title: string, message: string, fn: () => void): void {
 		const dialog = custom({
 			title,
-			messageHtml: '<div class="sguees-confirm-message">' + message + '</div>',
+			messageHtml: `<div class="sguees-confirm-message">${message}</div>`,
 			buttons: [
-				{ text: 'Si', type: 'default', onClick: () => true },
-				{ text: 'No', onClick: () => false },
+				{
+					text: 'Si',
+					type: 'default',
+					onClick: () => true,
+				},
+				{
+					text: 'No',
+					onClick: () => false,
+				},
 			],
 		});
 
@@ -368,7 +519,12 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 			return error;
 		}
 
-		return error?.error?.ErrorMessage || error?.error?.message || error?.message || 'Ocurrio un error al procesar la solicitud.';
+		return (
+			error?.error?.ErrorMessage ||
+			error?.error?.message ||
+			error?.message ||
+			'Ocurrio un error al procesar la solicitud.'
+		);
 	}
 
 	private getNotifyType(response: any): NotifyType {
@@ -405,7 +561,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 			return getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA);
 		}
 		if (value.includes('ya existe') || value.includes('duplicad')) {
-			return 'Ya existe un registro con ese cÃ³digo. Escriba otro cÃ³digo para continuar.';
+			return 'Ya existe un registro con ese código. Escriba otro código para continuar.';
 		}
 		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados')) {
 			return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';
@@ -413,3 +569,5 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		return cleanMessage;
 	}
 }
+
+
