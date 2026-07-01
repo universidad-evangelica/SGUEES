@@ -17,6 +17,10 @@ export class ScFrecuenciaRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	getDistinctValues(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetDistinctValues', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}

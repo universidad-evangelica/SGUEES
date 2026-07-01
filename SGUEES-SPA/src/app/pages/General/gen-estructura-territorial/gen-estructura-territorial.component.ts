@@ -15,6 +15,18 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { AuthService } from 'src/app/shared/services/auth.service';
 import { MttoPageContextService } from 'src/app/layouts/mtto-page-context.service';
 import {
+	cloneRemoteGridFilters,
+	hasRemoteFilterRowSearch,
+	parseRemoteGridFilters,
+	ParsedGridFilters,
+} from 'src/app/shared/utils/remote-grid-filter.util';
+import {
+	clearGridHeaderFilterSelections,
+	getColumnHeaderFilterSelection,
+	invertExcludedHeaderFilterValues,
+	readGridFilterRowValues,
+} from 'src/app/shared/utils/remote-header-filter.util';
+import {
 	GenDepto,
 	GenDistrito,
 	GenMunicipio,
@@ -28,6 +40,9 @@ import {
 	isEmpresaFkErrorMessage,
 	isEmpresaWarningResponse,
 } from './gen-estructura-territorial.service';
+
+const GRID_FILTER_CONFIG = { estadoField: '__NONE__' };
+type TerritorialGridLevel = 'pais' | 'depto' | 'municipio' | 'distrito';
 
 type TerritorialConfirmDialogOptions = CustomDialogOptions & {
 	popupOptions?: {
@@ -50,7 +65,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 
 	readonly pageSizes = [5, 10, 25, 50, 100];
 	readonly cascadeGridHeight = 530;
-	readonly cascadeRemoteOperations = { filtering: true };
+	readonly cascadeRemoteOperations = { filtering: true, sorting: true };
 	readonly popupFormColCountByScreen = { xs: 1, sm: 1, md: 2, lg: 2 };
 	private readonly maintenanceSubtitulo = 'Estructura territorial';
 	private readonly cascadeGridHooks = new WeakSet<object>();
@@ -224,28 +239,88 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		page = 1,
 		pageSize = 5,
 		busqueda = '',
-		columnFilters: Record<string, any> = {},
+		gridFilters: ParsedGridFilters = { estado: null, filterRow: {}, filterRowExact: {}, headerAnyOf: {} },
+		distinctField = '',
+		headerFilterSearch = '',
+		sortField = '',
+		sortDesc = false,
 		extra: Record<string, any> = {}
 	): any {
 		return {
 			BUSQUEDA: busqueda,
 			PAGE: page,
 			PAGE_SIZE: pageSize,
-			...columnFilters,
+			DISTINCT_FIELD: distinctField,
+			HEADER_FILTER_SEARCH: headerFilterSearch,
+			SORT_FIELD: sortField,
+			SORT_DESC: sortDesc,
+			gridFilters,
 			...extra,
 		};
 	}
 
 	fillCascadeParam(
 		busqueda = '',
-		columnFilters: Record<string, any> = {},
+		gridFilters: ParsedGridFilters = { estado: null, filterRow: {}, filterRowExact: {}, headerAnyOf: {} },
+		distinctField = '',
+		headerFilterSearch = '',
+		sortField = '',
+		sortDesc = false,
 		extra: Record<string, any> = {}
 	): any {
 		return {
 			BUSQUEDA: busqueda,
-			...columnFilters,
+			DISTINCT_FIELD: distinctField,
+			HEADER_FILTER_SEARCH: headerFilterSearch,
+			SORT_FIELD: sortField,
+			SORT_DESC: sortDesc,
+			gridFilters,
 			...extra,
 		};
+	}
+
+	loadHeaderFilterValuesPaises = (field: string, searchValue?: string): Promise<unknown[]> =>
+		this.loadHeaderFilterValues('pais', field, searchValue);
+
+	loadHeaderFilterValuesDeptos = (field: string, searchValue?: string): Promise<unknown[]> =>
+		this.loadHeaderFilterValues('depto', field, searchValue);
+
+	loadHeaderFilterValuesMunicipios = (field: string, searchValue?: string): Promise<unknown[]> =>
+		this.loadHeaderFilterValues('municipio', field, searchValue);
+
+	loadHeaderFilterValuesDistritos = (field: string, searchValue?: string): Promise<unknown[]> =>
+		this.loadHeaderFilterValues('distrito', field, searchValue);
+
+	private loadHeaderFilterValues(level: TerritorialGridLevel, field: string, searchValue?: string): Promise<unknown[]> {
+		const grid = this.getGridByLevel(level)?.gData?.instance;
+		const combinedFilter = grid?.getCombinedFilter?.(false);
+		const gridFilters = parseRemoteGridFilters(combinedFilter, grid, GRID_FILTER_CONFIG);
+		const hasFilterRowSearch = hasRemoteFilterRowSearch(gridFilters);
+		const filtersForDistinct: ParsedGridFilters = {
+			estado: null,
+			filterRow: hasFilterRowSearch ? gridFilters.filterRow : {},
+			filterRowExact: hasFilterRowSearch ? gridFilters.filterRowExact : {},
+			headerAnyOf: {},
+		};
+
+		const scope = this.getScopeForLevel(level);
+		const request = this.fillCascadeParam('', filtersForDistinct, field, searchValue ?? '', '', false, scope);
+		const distinctCall =
+			level === 'pais'
+				? this.service.getDistinctValuesPaises({ ...request, PAGE: 1, PAGE_SIZE: 0 })
+				: level === 'depto'
+					? this.service.getDistinctValuesDeptos(request)
+					: level === 'municipio'
+						? this.service.getDistinctValuesMunicipios(request)
+						: this.service.getDistinctValuesDistritos(request);
+
+		return lastValueFrom(distinctCall).then((response) => {
+			if (!response.Result) {
+				throw new Error(response.ErrorMessage || 'No se pudieron cargar los valores del filtro.');
+			}
+
+			return response.Data ?? [];
+		});
 	}
 
 	consultar(): void {
@@ -370,6 +445,10 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			return;
 		}
 
+		if (this.loadingVisible) {
+			return;
+		}
+
 		const formData = this.dataForm?.instance?.option('formData') as GenPais | undefined;
 		if (formData) {
 			this.model = { ...this.model, ...formData };
@@ -387,23 +466,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 
 		this.loadingVisible = true;
-		this.service
-			.validarDuplicadosPais(this.model, !isAdd)
-			.pipe(take(1))
-			.subscribe({
-				next: (duplicateMessage) => {
-					if (duplicateMessage) {
-						this.notifyFx(duplicateMessage, NotifyType.Warning);
-						this.loadingVisible = false;
-						return;
-					}
-					this.ejecutarGuardarPais(isAdd);
-				},
-				error: () => {
-					this.notifyFx('No se pudo validar los datos del país.', NotifyType.Error);
-					this.loadingVisible = false;
-				},
-			});
+		this.ejecutarGuardarPais(isAdd);
 	}
 
 	private ejecutarGuardarPais(isAdd: boolean): void {
@@ -612,23 +675,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 
 		this.loadingVisible = true;
-		this.service
-			.validarDuplicadosNivel(this.popupNivel, this.popupModel, !this.popupIsAdd)
-			.pipe(take(1))
-			.subscribe({
-				next: (duplicateMessage) => {
-					if (duplicateMessage) {
-						this.notifyFx(duplicateMessage, NotifyType.Warning);
-						this.finalizarGuardadoPopup();
-						return;
-					}
-					this.ejecutarGuardarPopup();
-				},
-				error: () => {
-					this.notifyFx('No se pudo validar los datos del registro.', NotifyType.Error);
-					this.finalizarGuardadoPopup();
-				},
-			});
+		this.ejecutarGuardarPopup();
 	}
 
 	private reforzarContextoPopup(model: GenDepto | GenMunicipio | GenDistrito): GenDepto | GenMunicipio | GenDistrito {
@@ -769,9 +816,28 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 				const takeRows = loadOptions.take || 5;
 				const skipRows = loadOptions.skip || 0;
 				const page = Math.floor(skipRows / takeRows) + 1;
-				const gridFilters = this.getGridFilters(loadOptions.filter);
+				const grid = this.dataGrid?.gData?.instance;
+
+				if (grid) {
+					const filterRowValues = readGridFilterRowValues(grid);
+					const hasFilterRow =
+						Object.keys(filterRowValues.filterRow).length > 0 ||
+						Object.keys(filterRowValues.filterRowExact).length > 0;
+					if (hasFilterRow) {
+						clearGridHeaderFilterSelections(grid);
+					}
+				}
+
+				const gridFilters = parseRemoteGridFilters(loadOptions.filter, grid, GRID_FILTER_CONFIG);
+				if (!hasRemoteFilterRowSearch(gridFilters)) {
+					await this.resolveExcludeHeaderFilters(grid, gridFilters, 'pais');
+				}
+
+				const sort = this.getGridSort(loadOptions.sort);
 				const response = await lastValueFrom(
-					this.service.getAllPaises(this.fillParam(page, takeRows, '', gridFilters.columnas))
+					this.service.getAllPaises(
+						this.fillParam(page, takeRows, '', gridFilters, '', '', sort?.field ?? '', sort?.desc ?? false)
+					)
 				);
 
 				if (!response.Result) {
@@ -797,29 +863,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			key: ['CORR_PAIS', 'CORR_DEPTO'],
 			loadMode: 'processed',
 			cacheRawData: false,
-			load: async (loadOptions: any) => {
-				if (!this.selectedPais?.CORR_PAIS) {
-					return { data: [], totalCount: 0 };
-				}
-
-				const response = await lastValueFrom(
-					this.service.getAllDeptos(
-						this.buildCascadeRequest(loadOptions, {
-							CORR_PAIS: this.selectedPais.CORR_PAIS,
-						})
-					)
-				);
-
-				if (!response.Result) {
-					throw new Error(response.ErrorMessage || 'No se pudo cargar los departamentos.');
-				}
-
-				const data = response.Data || [];
-				return {
-					data,
-					totalCount: data.length,
-				};
-			},
+			load: async (loadOptions: any) => this.loadCascadeLevel('depto', loadOptions),
 		});
 	}
 
@@ -828,30 +872,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			key: ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO'],
 			loadMode: 'processed',
 			cacheRawData: false,
-			load: async (loadOptions: any) => {
-				if (!this.selectedPais?.CORR_PAIS || !this.selectedDepto?.CORR_DEPTO) {
-					return { data: [], totalCount: 0 };
-				}
-
-				const response = await lastValueFrom(
-					this.service.getAllMunicipios(
-						this.buildCascadeRequest(loadOptions, {
-							CORR_PAIS: this.selectedPais.CORR_PAIS,
-							CORR_DEPTO: this.selectedDepto.CORR_DEPTO,
-						})
-					)
-				);
-
-				if (!response.Result) {
-					throw new Error(response.ErrorMessage || 'No se pudo cargar los municipios.');
-				}
-
-				const data = response.Data || [];
-				return {
-					data,
-					totalCount: data.length,
-				};
-			},
+			load: async (loadOptions: any) => this.loadCascadeLevel('municipio', loadOptions),
 		});
 	}
 
@@ -860,58 +881,55 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			key: ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO', 'CORR_DISTRITO'],
 			loadMode: 'processed',
 			cacheRawData: false,
-			load: async (loadOptions: any) => {
-				if (
-					!this.selectedPais?.CORR_PAIS ||
-					!this.selectedDepto?.CORR_DEPTO ||
-					!this.selectedMunicipio?.CORR_MUNICIPIO
-				) {
-					return { data: [], totalCount: 0 };
-				}
-
-				const response = await lastValueFrom(
-					this.service.getAllDistritos(
-						this.buildCascadeRequest(loadOptions, {
-							CORR_PAIS: this.selectedPais.CORR_PAIS,
-							CORR_DEPTO: this.selectedDepto.CORR_DEPTO,
-							CORR_MUNICIPIO: this.selectedMunicipio.CORR_MUNICIPIO,
-						})
-					)
-				);
-
-				if (!response.Result) {
-					throw new Error(response.ErrorMessage || 'No se pudo cargar los distritos.');
-				}
-
-				const data = response.Data || [];
-				return {
-					data,
-					totalCount: data.length,
-				};
-			},
+			load: async (loadOptions: any) => this.loadCascadeLevel('distrito', loadOptions),
 		});
 	}
 
-	private getGridFilters(filter: any): { columnas: Record<string, any> } {
-		const result: { columnas: Record<string, any> } = { columnas: {} };
+	private async loadCascadeLevel(level: TerritorialGridLevel, loadOptions: any): Promise<{ data: unknown[]; totalCount: number }> {
+		const scope = this.getScopeForLevel(level);
+		if (!scope.CORR_PAIS) {
+			return { data: [], totalCount: 0 };
+		}
+		if (level === 'municipio' && !scope.CORR_DEPTO) {
+			return { data: [], totalCount: 0 };
+		}
+		if (level === 'distrito' && !scope.CORR_MUNICIPIO) {
+			return { data: [], totalCount: 0 };
+		}
 
-		const visit = (node: any): void => {
-			if (!Array.isArray(node)) {
-				return;
+		const grid = this.getGridByLevel(level)?.gData?.instance;
+		if (grid) {
+			const filterRowValues = readGridFilterRowValues(grid);
+			const hasFilterRow =
+				Object.keys(filterRowValues.filterRow).length > 0 ||
+				Object.keys(filterRowValues.filterRowExact).length > 0;
+			if (hasFilterRow) {
+				clearGridHeaderFilterSelections(grid);
 			}
-			if (typeof node[0] === 'string' && node.length >= 3) {
-				const field = node[0];
-				const value = node[2];
-				if (value !== null && value !== undefined && `${value}`.trim()) {
-					result.columnas[field] = value;
-				}
-				return;
-			}
-			node.forEach((child) => visit(child));
-		};
+		}
 
-		visit(filter);
-		return result;
+		const gridFilters = parseRemoteGridFilters(loadOptions.filter, grid, GRID_FILTER_CONFIG);
+		if (!hasRemoteFilterRowSearch(gridFilters)) {
+			await this.resolveExcludeHeaderFilters(grid, gridFilters, level);
+		}
+
+		const sort = this.getGridSort(loadOptions.sort);
+		const request = this.fillCascadeParam('', gridFilters, '', '', sort?.field ?? '', sort?.desc ?? false, scope);
+		const response = await lastValueFrom(
+			level === 'depto'
+				? this.service.getAllDeptos(request)
+				: level === 'municipio'
+					? this.service.getAllMunicipios(request)
+					: this.service.getAllDistritos(request)
+		);
+
+		if (!response.Result) {
+			const labels = { depto: 'departamentos', municipio: 'municipios', distrito: 'distritos' };
+			throw new Error(response.ErrorMessage || `No se pudo cargar los ${labels[level]}.`);
+		}
+
+		const data = response.Data || [];
+		return { data, totalCount: data.length };
 	}
 
 	private limpiarSeleccionHijos(): void {
@@ -1060,10 +1078,89 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	private buildCascadeRequest(loadOptions: any, extra: Record<string, any>): any {
-		const gridFilters = this.getGridFilters(loadOptions.filter);
-		const busqueda = `${loadOptions.searchValue ?? ''}`.trim();
-		return this.fillCascadeParam(busqueda, gridFilters.columnas, extra);
+	private getGridByLevel(level: TerritorialGridLevel): DataGridMttoComponent | undefined {
+		switch (level) {
+			case 'pais':
+				return this.dataGrid;
+			case 'depto':
+				return this.deptoGrid;
+			case 'municipio':
+				return this.municipioGrid;
+			case 'distrito':
+				return this.distritoGrid;
+		}
+	}
+
+	private getScopeForLevel(level: TerritorialGridLevel): Record<string, number> {
+		const scope: Record<string, number> = {};
+		if (this.selectedPais?.CORR_PAIS) {
+			scope.CORR_PAIS = this.selectedPais.CORR_PAIS;
+		}
+		if (level !== 'depto' && this.selectedDepto?.CORR_DEPTO) {
+			scope.CORR_DEPTO = this.selectedDepto.CORR_DEPTO;
+		}
+		if (level === 'distrito' && this.selectedMunicipio?.CORR_MUNICIPIO) {
+			scope.CORR_MUNICIPIO = this.selectedMunicipio.CORR_MUNICIPIO;
+		}
+		return scope;
+	}
+
+	private getGridSort(sort: any): { field: string; desc: boolean } | null {
+		if (!Array.isArray(sort) || !sort.length) {
+			return null;
+		}
+
+		const first = sort[0];
+		if (!first?.selector) {
+			return null;
+		}
+
+		return {
+			field: `${first.selector}`,
+			desc: !!first.desc,
+		};
+	}
+
+	private async resolveExcludeHeaderFilters(grid: any, result: ParsedGridFilters, level: TerritorialGridLevel): Promise<void> {
+		if (!grid?.getVisibleColumns) {
+			return;
+		}
+
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
+			}
+
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (!selection || selection.filterType !== 'exclude' || !selection.values.length) {
+				continue;
+			}
+
+			const filtersForDistinct = cloneRemoteGridFilters(result);
+			delete filtersForDistinct.headerAnyOf[dataField];
+			delete filtersForDistinct.filterRow[dataField];
+			delete filtersForDistinct.filterRowExact[dataField];
+
+			const scope = this.getScopeForLevel(level);
+			const request = this.fillCascadeParam('', filtersForDistinct, dataField, '', '', false, scope);
+			const distinctCall =
+				level === 'pais'
+					? this.service.getDistinctValuesPaises({ ...request, PAGE: 1, PAGE_SIZE: 0 })
+					: level === 'depto'
+						? this.service.getDistinctValuesDeptos(request)
+						: level === 'municipio'
+							? this.service.getDistinctValuesMunicipios(request)
+							: this.service.getDistinctValuesDistritos(request);
+
+			const response = await lastValueFrom(distinctCall);
+			if (!response.Result) {
+				continue;
+			}
+
+			const included = invertExcludedHeaderFilterValues(selection.values, response.Data ?? []);
+			result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
+		}
 	}
 
 	private getPopupRequest() {
@@ -1224,7 +1321,28 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	}
 
 	private getErrorNotifyType(error: any): NotifyType {
-		return isEmpresaFkErrorMessage(this.getErrorMessage(error)) ? NotifyType.Warning : NotifyType.Error;
+		const body = error?.error;
+		if (body && typeof body === 'object' && body.ErrorCode !== undefined) {
+			return this.getNotifyType(body);
+		}
+
+		const message = this.getErrorMessage(error);
+		if (isEmpresaFkErrorMessage(message) || this.isDuplicateWarningMessage(message)) {
+			return NotifyType.Warning;
+		}
+
+		return NotifyType.Error;
+	}
+
+	private isDuplicateWarningMessage(message: string): boolean {
+		const value = `${message ?? ''}`.toLowerCase();
+		return (
+			value.includes('ya existe') ||
+			value.includes('duplicad') ||
+			value.includes('registrad') ||
+			value.includes('otro usuario guard') ||
+			value.includes('mismo tiempo')
+		);
 	}
 
 	private getCorrEmpresaSesion(): number {
@@ -1245,7 +1363,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			return NotifyType.Warning;
 		}
 		const message = (response?.ErrorMessage || '').toLowerCase();
-		return response?.ErrorCode === 2627 || message.includes('ya existe') || message.includes('duplicad')
+		return response?.ErrorCode === 2627 || this.isDuplicateWarningMessage(message)
 			? NotifyType.Warning
 			: NotifyType.Error;
 	}
@@ -1256,8 +1374,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		if (isEmpresaFkErrorMessage(cleanMessage) || value.includes('no tiene una empresa asignada')) {
 			return getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA);
 		}
-		if (value.includes('ya existe') || value.includes('duplicad') || value.includes('ya está registrado') || value.includes('mismo código') || value.includes('mismo codigo')) {
-			return cleanMessage || 'Ya existe un registro con el mismo código o nombre. Verifique los datos e intente nuevamente.';
+		if (this.isDuplicateWarningMessage(cleanMessage)) {
+			return cleanMessage;
 		}
 		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados') || value.includes('relacionados')) {
 			return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';

@@ -31,6 +31,14 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        [HttpGet("GetDistinctValues")]
+        [Authorize(Policy = "/sc-induccion|R")]
+        public async Task<CResult> GetDistinctValues([FromQuery] SC_INDUCCIONParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetDistinctValuesAsync(Data);
+        }
+
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-induccion|R")]
         public async Task<CResult> Get([FromQuery] SC_INDUCCIONParam Data)

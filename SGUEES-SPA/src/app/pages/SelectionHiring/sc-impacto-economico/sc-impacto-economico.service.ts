@@ -1,11 +1,14 @@
 ﻿import { Injectable } from '@angular/core';
-import dxSelectBox from 'devextreme/ui/select_box';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildRemoteGridWhere, createEstadoColumnConfig } from 'src/app/shared/utils/remote-grid-filter.util';
+import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
 import { ScImpactoEconomico } from './models/sc-impacto-economico';
 import { ScImpactoEconomicoRepository } from './sc-impacto-economico.repository';
+
+const ESTADO_FIELD = 'ESTADO_IMPACTO_ECONOMICO';
 
 @Injectable({ providedIn: 'root' })
 export class ScImpactoEconomicoService {
@@ -26,41 +29,11 @@ export class ScImpactoEconomicoService {
 	}
 
 	getAll(param: any): Observable<IResult> {
-		const xWhere: IParam[] = [];
-		const columnFilters = ['CORR_IMPACTO_ECONOMICO', 'DESCRIPCION', 'USUARIO_CREA', 'ESTACION_CREA', 'FECHA_CREA', 'USUARIO_ACTU', 'ESTACION_ACTU', 'FECHA_ACTU'];
-
-		if (param.BUSQUEDA) {
-			xWhere.push({ Parameter: 'BUSQUEDA', Value: param.BUSQUEDA });
-		}
-
-		if (param.ESTADO_IMPACTO_ECONOMICO !== null && param.ESTADO_IMPACTO_ECONOMICO !== undefined) {
-			xWhere.push({ Parameter: 'ESTADO_IMPACTO_ECONOMICO', Value: param.ESTADO_IMPACTO_ECONOMICO });
-		}
-
-		if (param.PAGE) {
-			xWhere.push({ Parameter: 'PAGE', Value: param.PAGE });
-		}
-
-		if (param.PAGE_SIZE) {
-			xWhere.push({ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE });
-		}
-
-		columnFilters.forEach((field) => {
-			const value = param[field];
-			if (this.hasColumnFilter(value, field)) {
-				xWhere.push({ Parameter: field, Value: value });
-			}
-		});
-
-		return this.repo.getAll(xWhere);
+		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	private hasColumnFilter(value: any, field: string): boolean {
-		if (value === null || value === undefined || String(value).trim() === '') {
-			return false;
-		}
-
-		return !(field === 'CORR_IMPACTO_ECONOMICO' && Number(value) === 0);
+	getDistinctValues(param: any): Observable<IResult> {
+		return this.repo.getDistinctValues(this.buildWhere(param));
 	}
 
 	get(param: any): Observable<IResult> {
@@ -115,55 +88,53 @@ export class ScImpactoEconomicoService {
 				buttons: [
 					{ hint: editHint, icon: 'edit', stylingMode: 'text', cssClass: editCssClass, onClick: editClick },
 					{ hint: deleteHint, icon: 'trash', stylingMode: 'text', cssClass: deleteCssClass, onClick: deleteClick },
-					{ hint: activarHint, icon: 'refresh', stylingMode: 'text', cssClass: activateCssClass, onClick: activarClick, visible: (event: any) => !event.row?.data?.ESTADO_IMPACTO_ECONOMICO },
-					{ hint: desactivarHint, icon: 'close', stylingMode: 'text', cssClass: deactivateCssClass, onClick: desactivarClick, visible: (event: any) => !!event.row?.data?.ESTADO_IMPACTO_ECONOMICO },
+					{
+						hint: activarHint,
+						icon: 'refresh',
+						stylingMode: 'text',
+						cssClass: activateCssClass,
+						visible: (event: any) => !event.row?.data?.ESTADO_IMPACTO_ECONOMICO,
+						onClick: activarClick,
+					},
+					{
+						hint: desactivarHint,
+						icon: 'close',
+						stylingMode: 'text',
+						cssClass: deactivateCssClass,
+						visible: (event: any) => !!event.row?.data?.ESTADO_IMPACTO_ECONOMICO,
+						onClick: desactivarClick,
+					},
 				],
 			},
-			{ dataField: 'CORR_IMPACTO_ECONOMICO', caption: 'Corr.', width: 100 },
-			{ dataField: 'DESCRIPCION', caption: 'Descripcion', width: 300 },
 			{
-				dataField: 'ESTADO_IMPACTO_ECONOMICO',
-				caption: 'Estado',
-				width: 140,
-				allowFiltering: true,
-				allowHeaderFiltering: true,
-				cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					const badge = document.createElement('span');
-					badge.classList.add('estado-badge', cellInfo.value ? 'estado-badge--activo' : 'estado-badge--inactivo');
-					badge.textContent = cellInfo.value ? 'Activo' : 'Inactivo';
-					cellElement.innerHTML = '';
-					cellElement.appendChild(badge);
-				},
-				lookup: {
-					dataSource: [{ value: true, text: 'Activo' }, { value: false, text: 'Inactivo' }],
-					valueExpr: 'value',
-					displayExpr: 'text',
-				},
-				filterCellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					new dxSelectBox(cellElement, {
-						dataSource: [{ value: true, text: 'Activo' }, { value: false, text: 'Inactivo' }],
-						displayExpr: 'text',
-						valueExpr: 'value',
-						value: cellInfo.value,
-						placeholder: 'Seleccione...',
-						showClearButton: false,
-						onValueChanged: (event: any) => cellInfo.setValue(event.value),
-					});
-				},
-				calculateFilterExpression: (filterValue: any) => {
-					if (filterValue === '__ALL__' || filterValue === null || filterValue === undefined) {
-						return null;
-					}
-
-					return ['ESTADO_IMPACTO_ECONOMICO', '=', filterValue];
-				},
+				dataField: 'CORR_IMPACTO_ECONOMICO',
+				caption: 'Corr.',
+				width: 100,
+				dataType: 'number',
+				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
+			{ dataField: 'DESCRIPCION', caption: 'Descripcion', width: 300 },
+			createEstadoColumnConfig(ESTADO_FIELD),
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
-			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{
+				dataField: 'FECHA_CREA',
+				caption: 'Fecha Crea',
+				width: 200,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy HH:mm',
+				calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA'),
+			},
 			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
 			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
-			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{
+				dataField: 'FECHA_ACTU',
+				caption: 'Fecha Actu',
+				width: 200,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy HH:mm',
+				calculateFilterExpression: createDateTimeFilterExpression('FECHA_ACTU'),
+			},
 		];
 	}
 
@@ -186,6 +157,10 @@ export class ScImpactoEconomicoService {
 			},
 			{ dataField: 'ESTADO_IMPACTO_ECONOMICO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
+	}
+
+	private buildWhere(param: any): IParam[] {
+		return buildRemoteGridWhere(param, ESTADO_FIELD);
 	}
 }
 

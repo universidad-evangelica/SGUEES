@@ -15,6 +15,10 @@ export class ScInduccionRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	getDistinctValues(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetDistinctValues', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
 	get(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

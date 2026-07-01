@@ -1,4 +1,4 @@
-﻿import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import CustomStore from 'devextreme/data/custom_store';
 import { custom } from 'devextreme/ui/dialog';
@@ -11,6 +11,21 @@ import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { AuthService } from 'src/app/shared/services/auth.service';
+import {
+	cloneRemoteGridFilters,
+	hasRemoteFilterRowSearch,
+	parseRemoteGridFilters,
+	ParsedGridFilters,
+} from 'src/app/shared/utils/remote-grid-filter.util';
+import {
+	clearGridHeaderFilterSelections,
+	getColumnHeaderFilterSelection,
+	invertEstadoExcludedHeaderFilterValues,
+	invertExcludedHeaderFilterValues,
+	isEstadoField,
+	normalizeEstadoHeaderFilterValue,
+	readGridFilterRowValues,
+} from 'src/app/shared/utils/remote-header-filter.util';
 import { ScInduccion } from './models/sc-induccion';
 import {
 	EMPRESA_REGISTRO_ETIQUETA,
@@ -20,16 +35,26 @@ import {
 	ScInduccionService,
 } from './sc-induccion.service';
 
-type EstadoFiltro = boolean | null;
+const GRID_FILTER_CONFIG = { estadoField: 'ESTADO_INDUCCION' };
 
-@Component({ selector: 'app-sc-induccion', templateUrl: './sc-induccion.component.html', styleUrls: ['./sc-induccion.component.scss'] })
+@Component({
+	selector: 'app-sc-induccion',
+	templateUrl: './sc-induccion.component.html',
+	styleUrls: ['./sc-induccion.component.scss'],
+})
 export class ScInduccionComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
 	readonly pageSizes = [5, 10, 25, 50, 100];
-	private readonly maintenanceSubtitulo = 'Mantenimiento de Inducción';
+	private readonly maintenanceSubtitulo = 'Mantenimiento de Inducci?n';
 
-	constructor(public override appInfoService: AppInfoService, public override router: ActivatedRoute, private service: ScInduccionService, private messageService: MessageService, private authService: AuthService) {
+	constructor(
+		public override appInfoService: AppInfoService,
+		public override router: ActivatedRoute,
+		private service: ScInduccionService,
+		private messageService: MessageService,
+		private authService: AuthService
+	) {
 		super(appInfoService, router);
 		this.onEditClick = this.onEditClick.bind(this);
 		this.onEliminarClick = this.onEliminarClick.bind(this);
@@ -69,14 +94,62 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 	}
 
 	onEditClick(e: any): void {
-		if (!e?.row?.data) return;
+		if (!e?.row?.data) {
+			return;
+		}
+
 		this.model = e.row.data;
 		this.editarClick(e);
 	}
 
-	fillParam(xCORR_INDUCCION?: number, page = 1, pageSize = 5, busqueda = '', estado: EstadoFiltro = null, columnFilters: Record<string, any> = {}): any {
-		return { CORR_INDUCCION: xCORR_INDUCCION ?? 0, BUSQUEDA: busqueda, ESTADO_INDUCCION: estado, PAGE: page, PAGE_SIZE: pageSize, ...columnFilters };
+	fillParam(
+		xCORR_INDUCCION?: number,
+		page = 1,
+		pageSize = 5,
+		busqueda = '',
+		gridFilters: ParsedGridFilters = { estado: null, filterRow: {}, filterRowExact: {}, headerAnyOf: {} },
+		distinctField = '',
+		headerFilterSearch = '',
+		sortField = '',
+		sortDesc = false
+	): any {
+		return {
+			CORR_INDUCCION: xCORR_INDUCCION ?? 0,
+			BUSQUEDA: busqueda,
+			PAGE: page,
+			PAGE_SIZE: pageSize,
+			DISTINCT_FIELD: distinctField,
+			HEADER_FILTER_SEARCH: headerFilterSearch,
+			SORT_FIELD: sortField,
+			SORT_DESC: sortDesc,
+			gridFilters,
+		};
 	}
+
+	loadHeaderFilterValues = (field: string, searchValue?: string): Promise<unknown[]> => {
+		const grid = this.dataGrid?.gData?.instance;
+		const combinedFilter = grid?.getCombinedFilter?.(false);
+		const gridFilters = parseRemoteGridFilters(combinedFilter, grid, GRID_FILTER_CONFIG);
+		const hasFilterRowSearch = hasRemoteFilterRowSearch(gridFilters);
+		const filtersForDistinct: ParsedGridFilters = {
+			estado: hasFilterRowSearch ? gridFilters.estado : null,
+			filterRow: hasFilterRowSearch ? gridFilters.filterRow : {},
+			filterRowExact: hasFilterRowSearch ? gridFilters.filterRowExact : {},
+			headerAnyOf: {},
+		};
+
+		return lastValueFrom(
+			this.service.getDistinctValues(
+				this.fillParam(0, 1, 0, '', filtersForDistinct, field, searchValue ?? '')
+			)
+		).then((response) => {
+			if (!response.Result) {
+				throw new Error(response.ErrorMessage || 'No se pudieron cargar los valores del filtro.');
+			}
+
+			return response.Data ?? [];
+		});
+	};
 
 	override fillData(xModel?: ScInduccion): ScInduccion {
 		if (xModel !== undefined) {
@@ -126,7 +199,7 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 		const warningDetail = this.getWarningMessage(xMessage);
 		const isWarning = xType === NotifyType.Warning || warningDetail !== cleanMessage;
 		const severity = xType === NotifyType.Success ? 'success' : isWarning ? 'warn' : 'error';
-		const summary = xType === NotifyType.Success ? 'Éxito' : isWarning ? 'Advertencia' : 'Error';
+		const summary = xType === NotifyType.Success ? '?xito' : isWarning ? 'Advertencia' : 'Error';
 		const detail = isWarning ? warningDetail : cleanMessage;
 		this.messageService.add({ severity, summary, detail });
 	}
@@ -147,27 +220,54 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 
-		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) return;
+		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
+			return;
+		}
+
 		this.loadingVisible = true;
-		const isAdd = this.banderaMtto === UpdateType.Add;
-		const action = this.banderaMtto === UpdateType.Add ? this.service.insert(this.model) : this.service.update(this.model);
-		action.pipe(take(1)).subscribe({
-			next: (response: any) => {
-				if (response.Result) {
-					this.model = response.Data;
-					this.AsignaStatus(UpdateType.Browse);
-					this.consultar();
-					this.notifyFx(isAdd ? 'Registro creado con exito!' : 'Registro modificado con exito!', NotifyType.Success);
-				} else {
-					this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
-				}
-				this.loadingVisible = false;
-			},
-			error: (error: any) => {
-				this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
-				this.loadingVisible = false;
-			},
-		});
+		if (this.banderaMtto === UpdateType.Add) {
+			this.service
+				.insert(this.model)
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (response.Result) {
+							this.model = response.Data;
+							this.AsignaStatus(UpdateType.Browse);
+							this.consultar();
+							this.notifyFx('Registro creado con exito!', NotifyType.Success);
+						} else {
+							this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
+						}
+						this.loadingVisible = false;
+					},
+					error: (error: any) => {
+						this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
+						this.loadingVisible = false;
+					},
+				});
+		} else if (this.banderaMtto === UpdateType.Update) {
+			this.service
+				.update(this.model)
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (response.Result) {
+							this.model = response.Data;
+							this.AsignaStatus(UpdateType.Browse);
+							this.consultar();
+							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
+						} else {
+							this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
+						}
+						this.loadingVisible = false;
+					},
+					error: (error: any) => {
+						this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
+						this.loadingVisible = false;
+					},
+				});
+		}
 	}
 
 	override cancelar(): void {
@@ -178,20 +278,41 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 
 	onActivarClick(e: any): void {
 		const row = e.row?.data as ScInduccion;
-		if (!row) return;
-		this.confirmEstado('Activar registro', 'Desea activar la induccion "' + row.NOMBRE_INDUCCION + '"?', () => this.cambiarEstado(row, true));
+		if (!row) {
+			return;
+		}
+
+		this.confirmEstado(
+			'Activar registro',
+			`Desea activar la induccion "${row.NOMBRE_INDUCCION}"?`,
+			() => this.cambiarEstado(row, true)
+		);
 	}
 
 	onEliminarClick(e: any): void {
 		const row = e.row?.data as ScInduccion;
-		if (!row) return;
-		this.confirmEstado('Eliminar registro', 'Desea eliminar "' + row.NOMBRE_INDUCCION + '"?', () => this.eliminarRegistro(row));
+		if (!row) {
+			return;
+		}
+
+		this.confirmEstado(
+			'Eliminar registro',
+			`Desea eliminar "${row.NOMBRE_INDUCCION}"?`,
+			() => this.eliminarRegistro(row)
+		);
 	}
 
 	onDesactivarClick(e: any): void {
 		const row = e.row?.data as ScInduccion;
-		if (!row) return;
-		this.confirmEstado('Desactivar registro', 'Desea desactivar la induccion "' + row.NOMBRE_INDUCCION + '"?', () => this.cambiarEstado(row, false));
+		if (!row) {
+			return;
+		}
+
+		this.confirmEstado(
+			'Desactivar registro',
+			`Desea desactivar "${row.NOMBRE_INDUCCION}"?`,
+			() => this.cambiarEstado(row, false)
+		);
 	}
 
 	rowRemoving(e: any): void {
@@ -207,7 +328,9 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 	}
 
 	override setFocus(): void {
-		setTimeout(() => this.dataForm.instance.getEditor('NOMBRE_INDUCCION')?.focus());
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('NOMBRE_INDUCCION')?.focus();
+		});
 	}
 
 	private configurarDataSource(): void {
@@ -219,71 +342,192 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 				const takeRows = loadOptions.take || 5;
 				const skipRows = loadOptions.skip || 0;
 				const page = Math.floor(skipRows / takeRows) + 1;
-				const gridFilters = this.getGridFilters(loadOptions.filter);
-				const estado = gridFilters.estado;
-				const busqueda = '';
-				const response = await lastValueFrom(this.service.getAll(this.fillParam(0, page, takeRows, busqueda, estado, gridFilters.columnas)));
-				if (!response.Result) throw new Error(response.ErrorMessage || 'No se pudieron cargar los registros.');
-				return { data: response.Data || [], totalCount: response.RowsAffected || 0 };
+				const grid = this.dataGrid?.gData?.instance;
+
+				if (grid) {
+					const filterRowValues = readGridFilterRowValues(grid);
+					const hasFilterRow =
+						Object.keys(filterRowValues.filterRow).length > 0 ||
+						Object.keys(filterRowValues.filterRowExact).length > 0;
+					if (hasFilterRow) {
+						clearGridHeaderFilterSelections(grid);
+					}
+				}
+
+				const gridFilters = parseRemoteGridFilters(loadOptions.filter, grid, GRID_FILTER_CONFIG);
+				if (!hasRemoteFilterRowSearch(gridFilters)) {
+					await this.resolveExcludeHeaderFilters(grid, gridFilters);
+				}
+
+				const sort = this.getGridSort(loadOptions.sort);
+				const response = await lastValueFrom(
+					this.service.getAll(
+						this.fillParam(
+							0,
+							page,
+							takeRows,
+							'',
+							gridFilters,
+							'',
+							'',
+							sort?.field ?? '',
+							sort?.desc ?? false
+						)
+					)
+				);
+
+				if (!response.Result) {
+					throw new Error(response.ErrorMessage || 'No se pudo cargar la induccion.');
+				}
+
+				return {
+					data: response.Data || [],
+					totalCount: response.RowsAffected || 0,
+				};
 			},
 		});
 	}
 
-	private getGridFilters(filter: any): { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } {
-		const result: { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } = { busqueda: '', estado: null, columnas: {} };
-		const visit = (node: any): void => {
-			if (!Array.isArray(node)) return;
-			if (typeof node[0] === 'string' && node.length >= 3) {
-				const field = node[0];
-				const value = node[2];
-				if (field === 'ESTADO_INDUCCION') {
-					if (value === '__ALL__' || value === null || value === undefined) { result.estado = null; return; }
-					result.estado = value === true || value === 'true';
-					return;
-				}
-				if (value !== null && value !== undefined && String(value).trim()) result.columnas[field] = value;
-				return;
+	private async resolveExcludeHeaderFilters(grid: any, result: ParsedGridFilters): Promise<void> {
+		if (!grid?.getVisibleColumns) {
+			return;
+		}
+
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
 			}
-			node.forEach((child) => visit(child));
+
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (!selection || selection.filterType !== 'exclude' || !selection.values.length) {
+				continue;
+			}
+
+			if (isEstadoField(dataField)) {
+				const included = invertEstadoExcludedHeaderFilterValues(
+					selection.values.map((item) => normalizeEstadoHeaderFilterValue(item))
+				);
+				result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
+				continue;
+			}
+
+			const filtersForDistinct = cloneRemoteGridFilters(result);
+			delete filtersForDistinct.headerAnyOf[dataField];
+			delete filtersForDistinct.filterRow[dataField];
+			delete filtersForDistinct.filterRowExact[dataField];
+
+			const response = await lastValueFrom(
+				this.service.getDistinctValues(this.fillParam(0, 1, 0, '', filtersForDistinct, dataField, ''))
+			);
+
+			if (!response.Result) {
+				continue;
+			}
+
+			const included = invertExcludedHeaderFilterValues(selection.values, response.Data ?? []);
+			result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
+		}
+	}
+
+	private getGridSort(sort: any): { field: string; desc: boolean } | null {
+		if (!Array.isArray(sort) || !sort.length) {
+			return null;
+		}
+
+		const first = sort[0];
+		if (!first?.selector) {
+			return null;
+		}
+
+		return {
+			field: `${first.selector}`,
+			desc: !!first.desc,
 		};
-		visit(filter);
-		return result;
 	}
 
 	private cambiarEstado(row: ScInduccion, activo: boolean): void {
 		const request = { ...row, ESTADO_INDUCCION: activo };
 		const action = activo ? this.service.activar(request) : this.service.desactivar(request);
+
 		this.loadingVisible = true;
 		action.pipe(take(1)).subscribe({
 			next: (response: any) => {
-				if (response.Result) { this.consultar(); this.notifyFx(activo ? 'Registro activado con exito!' : 'Registro desactivado con exito!', NotifyType.Success); }
-				else this.notifyFx(response.ErrorMessage || 'No se pudo cambiar el estado del registro.', NotifyType.Error);
+				if (response.Result) {
+					this.consultar();
+					this.notifyFx(activo ? 'Registro activado con exito!' : 'Registro desactivado con exito!', NotifyType.Success);
+				} else {
+					this.notifyFx(response.ErrorMessage || 'No se pudo cambiar el estado del registro.', NotifyType.Error);
+				}
 				this.loadingVisible = false;
 			},
-			error: (error: any) => { this.notifyFx(this.getErrorMessage(error), NotifyType.Error); this.loadingVisible = false; },
+			error: (error: any) => {
+				this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
+				this.loadingVisible = false;
+			},
 		});
 	}
 
 	private eliminarRegistro(row: ScInduccion): void {
 		this.loadingVisible = true;
-		this.service.delete(row).pipe(take(1)).subscribe({
-			next: (response: any) => {
-				if (response.Result) { this.consultar(); this.notifyFx('Registro eliminado con exito!', NotifyType.Success); }
-				else this.notifyFx(response.ErrorMessage || 'No se puede eliminar el registro porque tiene registros asociados.', NotifyType.Warning);
-				this.loadingVisible = false;
-			},
-			error: (error: any) => { this.notifyFx(this.getErrorMessage(error), NotifyType.Error); this.loadingVisible = false; },
-		});
+		this.service
+			.delete(row)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.consultar();
+						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
+					} else {
+						this.notifyFx(
+							response.ErrorMessage || 'No se puede eliminar la induccion porque tiene registros asociados en otras tablas.',
+							NotifyType.Warning
+						);
+					}
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
+					this.loadingVisible = false;
+				},
+			});
 	}
 
 	private confirmEstado(title: string, message: string, fn: () => void): void {
-		const dialog = custom({ title, messageHtml: '<div class="sguees-confirm-message">' + message + '</div>', buttons: [{ text: 'Si', type: 'default', onClick: () => true }, { text: 'No', onClick: () => false }] });
-		dialog.show().then((accepted: boolean) => { if (accepted) fn(); });
+		const dialog = custom({
+			title,
+			messageHtml: `<div class="sguees-confirm-message">${message}</div>`,
+			buttons: [
+				{
+					text: 'Si',
+					type: 'default',
+					onClick: () => true,
+				},
+				{
+					text: 'No',
+					onClick: () => false,
+				},
+			],
+		});
+
+		dialog.show().then((accepted: boolean) => {
+			if (accepted) {
+				fn();
+			}
+		});
 	}
 
 	private getErrorMessage(error: any): string {
-		if (typeof error === 'string' && error.trim()) return error;
-		return error?.error?.ErrorMessage || error?.error?.message || error?.message || 'Ocurrio un error al procesar la solicitud.';
+		if (typeof error === 'string' && error.trim()) {
+			return error;
+		}
+
+		return (
+			error?.error?.ErrorMessage ||
+			error?.error?.message ||
+			error?.message ||
+			'Ocurrio un error al procesar la solicitud.'
+		);
 	}
 
 	private getNotifyType(response: any): NotifyType {
@@ -320,7 +564,7 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 			return getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA);
 		}
 		if (value.includes('ya existe') || value.includes('duplicad')) {
-			return 'Ya existe un registro con ese código. Escriba otro código para continuar.';
+			return 'Ya existe un registro con ese c?digo. Escriba otro c?digo para continuar.';
 		}
 		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados')) {
 			return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';

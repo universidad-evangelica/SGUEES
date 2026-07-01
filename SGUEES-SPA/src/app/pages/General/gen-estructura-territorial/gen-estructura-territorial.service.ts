@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildRemoteGridWhere } from 'src/app/shared/utils/remote-grid-filter.util';
+import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
 import {
 	GenDepto,
 	GenDistrito,
@@ -27,20 +28,20 @@ export class GenEstructuraTerritorialService {
 			return false;
 		}
 
-		if (!model.NOMBRE_PAIS?.trim()) {
-			msg('Debe ingresar el nombre del país.', NotifyType.Warning);
+		if (!model.NOMBRE_CORTO?.trim()) {
+			msg('Debe ingresar el nombre corto.', NotifyType.Warning);
 			return false;
 		}
-		if (!model.CODIGO_PAIS?.trim()) {
-			msg('Debe ingresar el código del país.', NotifyType.Warning);
+		if (!model.NOMBRE_PAIS?.trim()) {
+			msg('Debe ingresar el nombre del país.', NotifyType.Warning);
 			return false;
 		}
 		if (!model.NACIONALIDAD?.trim()) {
 			msg('Debe ingresar la nacionalidad.', NotifyType.Warning);
 			return false;
 		}
-		if (!model.NOMBRE_CORTO?.trim()) {
-			msg('Debe ingresar el nombre corto.', NotifyType.Warning);
+		if (!model.CODIGO_PAIS?.trim()) {
+			msg('Debe ingresar el código del país.', NotifyType.Warning);
 			return false;
 		}
 		if (model.NOMBRE_PAIS.trim().length > 100) {
@@ -104,150 +105,12 @@ export class GenEstructuraTerritorialService {
 		return true;
 	}
 
-	validarDuplicadosPais(model: GenPais, isUpdate: boolean): Observable<string | null> {
-		const corrPais = Number(model.CORR_PAIS) || 0;
-		return this.getAllPaises({ PAGE: 1, PAGE_SIZE: 500 }).pipe(
-			map((response) => this.checkPaisDuplicates(response, model, corrPais, isUpdate))
-		);
-	}
-
-	validarDuplicadosNivel(
-		nivel: TerritorialNivel,
-		model: GenDepto | GenMunicipio | GenDistrito,
-		isUpdate: boolean
-	): Observable<string | null> {
-		if (nivel === 'depto') {
-			const row = model as GenDepto;
-			if (!this.hasCorrKey(row.CORR_PAIS)) {
-				return of(null);
-			}
-			return this.getAllDeptos({ CORR_PAIS: row.CORR_PAIS }).pipe(
-				map((response) => this.checkDeptoDuplicates(response, row, isUpdate))
-			);
-		}
-
-		if (nivel === 'municipio') {
-			const row = model as GenMunicipio;
-			if (!this.hasCorrKey(row.CORR_PAIS) || !this.hasCorrKey(row.CORR_DEPTO)) {
-				return of(null);
-			}
-			return this.getAllMunicipios({
-				CORR_PAIS: row.CORR_PAIS,
-				CORR_DEPTO: row.CORR_DEPTO,
-			}).pipe(map((response) => this.checkMunicipioDuplicates(response, row, isUpdate)));
-		}
-
-		const row = model as GenDistrito;
-		if (!this.hasCorrKey(row.CORR_PAIS) || !this.hasCorrKey(row.CORR_DEPTO) || !this.hasCorrKey(row.CORR_MUNICIPIO)) {
-			return of(null);
-		}
-		return this.getAllDistritos({
-			CORR_PAIS: row.CORR_PAIS,
-			CORR_DEPTO: row.CORR_DEPTO,
-			CORR_MUNICIPIO: row.CORR_MUNICIPIO,
-		}).pipe(map((response) => this.checkDistritoDuplicates(response, row, isUpdate)));
-	}
-
-	private checkPaisDuplicates(response: IResult, model: GenPais, corrPais: number, isUpdate: boolean): string | null {
-		if (!response?.Result) {
-			return null;
-		}
-		const others = ((response.Data || []) as GenPais[]).filter((item) => !isUpdate || Number(item.CORR_PAIS) !== corrPais);
-		if (others.some((item) => this.normalizeText(item.NOMBRE_PAIS) === this.normalizeText(model.NOMBRE_PAIS))) {
-			return 'El nombre de país ingresado ya está registrado. Escriba otro nombre para continuar.';
-		}
-		if (others.some((item) => this.normalizeText(item.CODIGO_PAIS) === this.normalizeText(model.CODIGO_PAIS))) {
-			return 'El código de país ingresado ya está registrado. Escriba otro código para continuar.';
-		}
-		if (others.some((item) => this.normalizeText(item.NACIONALIDAD) === this.normalizeText(model.NACIONALIDAD))) {
-			return 'La nacionalidad ingresada ya está registrada. Escriba otra nacionalidad para continuar.';
-		}
-		if (others.some((item) => this.normalizeText(item.NOMBRE_CORTO) === this.normalizeText(model.NOMBRE_CORTO))) {
-			return 'El nombre corto ingresado ya está registrado. Escriba otro nombre corto para continuar.';
-		}
-		return null;
-	}
-
-	private checkDeptoDuplicates(response: IResult, row: GenDepto, isUpdate: boolean): string | null {
-		if (!response?.Result) {
-			return null;
-		}
-		const others = ((response.Data || []) as GenDepto[]).filter(
-			(item) =>
-				!isUpdate ||
-				!(Number(item.CORR_PAIS) === Number(row.CORR_PAIS) && Number(item.CORR_DEPTO) === Number(row.CORR_DEPTO))
-		);
-		if (others.some((item) => this.normalizeText(item.NOMBRE_DEPTO) === this.normalizeText(row.NOMBRE_DEPTO))) {
-			return 'El nombre de departamento ingresado ya está registrado. Escriba otro nombre para continuar.';
-		}
-		if (others.some((item) => this.normalizeText(item.CODIGO_DEPTO) === this.normalizeText(row.CODIGO_DEPTO))) {
-			return 'El código de departamento ingresado ya está registrado. Escriba otro código para continuar.';
-		}
-		return null;
-	}
-
-	private checkMunicipioDuplicates(response: IResult, row: GenMunicipio, isUpdate: boolean): string | null {
-		if (!response?.Result) {
-			return null;
-		}
-		const others = ((response.Data || []) as GenMunicipio[]).filter(
-			(item) =>
-				!isUpdate ||
-				!(
-					Number(item.CORR_PAIS) === Number(row.CORR_PAIS) &&
-					Number(item.CORR_DEPTO) === Number(row.CORR_DEPTO) &&
-					Number(item.CORR_MUNICIPIO) === Number(row.CORR_MUNICIPIO)
-				)
-		);
-		if (others.some((item) => this.normalizeText(item.NOMBRE_MUNICIPIO) === this.normalizeText(row.NOMBRE_MUNICIPIO))) {
-			return 'El nombre de municipio ingresado ya está registrado. Escriba otro nombre para continuar.';
-		}
-		if (others.some((item) => this.normalizeText(item.CODIGO_MUNICIPIO) === this.normalizeText(row.CODIGO_MUNICIPIO))) {
-			return 'El código de municipio ingresado ya está registrado. Escriba otro código para continuar.';
-		}
-		return null;
-	}
-
-	private checkDistritoDuplicates(response: IResult, row: GenDistrito, isUpdate: boolean): string | null {
-		if (!response?.Result) {
-			return null;
-		}
-		const others = ((response.Data || []) as GenDistrito[]).filter(
-			(item) =>
-				!isUpdate ||
-				!(
-					Number(item.CORR_PAIS) === Number(row.CORR_PAIS) &&
-					Number(item.CORR_DEPTO) === Number(row.CORR_DEPTO) &&
-					Number(item.CORR_MUNICIPIO) === Number(row.CORR_MUNICIPIO) &&
-					Number(item.CORR_DISTRITO) === Number(row.CORR_DISTRITO)
-				)
-		);
-		if (others.some((item) => this.normalizeText(item.NOMBRE_DISTRITO) === this.normalizeText(row.NOMBRE_DISTRITO))) {
-			return 'El nombre de distrito ingresado ya está registrado. Escriba otro nombre para continuar.';
-		}
-		return null;
-	}
-
-	private normalizeText(value: string | null | undefined): string {
-		return `${value ?? ''}`.trim().toLowerCase();
-	}
-
 	getAllPaises(param: any): Observable<IResult> {
-		return this.repo.getAllPaises(
-			this.buildPagingWhere(param, [
-				'CORR_PAIS',
-				'NOMBRE_PAIS',
-				'CODIGO_PAIS',
-				'NACIONALIDAD',
-				'NOMBRE_CORTO',
-				'USUARIO_CREA',
-				'ESTACION_CREA',
-				'FECHA_CREA',
-				'USUARIO_ACTU',
-				'ESTACION_ACTU',
-				'FECHA_ACTU',
-			])
-		);
+		return this.repo.getAllPaises(this.buildRemoteWhere(param, true));
+	}
+
+	getDistinctValuesPaises(param: any): Observable<IResult> {
+		return this.repo.getDistinctValuesPaises(this.buildRemoteWhere(param, true));
 	}
 
 	insertPais(model: GenPais): Observable<IResult> {
@@ -274,19 +137,11 @@ export class GenEstructuraTerritorialService {
 	}
 
 	getAllDeptos(param: any): Observable<IResult> {
-		const xWhere = this.buildFilterWhere(param, [
-			'CORR_DEPTO',
-			'NOMBRE_DEPTO',
-			'CODIGO_DEPTO',
-			'USUARIO_CREA',
-			'ESTACION_CREA',
-			'FECHA_CREA',
-			'USUARIO_ACTU',
-			'ESTACION_ACTU',
-			'FECHA_ACTU',
-		]);
-		this.pushScopeFilter(xWhere, param, ['CORR_PAIS']);
-		return this.repo.getAllDeptos(xWhere);
+		return this.repo.getAllDeptos(this.buildRemoteWhere(param, false, ['CORR_PAIS']));
+	}
+
+	getDistinctValuesDeptos(param: any): Observable<IResult> {
+		return this.repo.getDistinctValuesDeptos(this.buildRemoteWhere(param, false, ['CORR_PAIS']));
 	}
 
 	insertDepto(model: GenDepto): Observable<IResult> {
@@ -306,19 +161,11 @@ export class GenEstructuraTerritorialService {
 	}
 
 	getAllMunicipios(param: any): Observable<IResult> {
-		const xWhere = this.buildFilterWhere(param, [
-			'CORR_MUNICIPIO',
-			'NOMBRE_MUNICIPIO',
-			'CODIGO_MUNICIPIO',
-			'USUARIO_CREA',
-			'ESTACION_CREA',
-			'FECHA_CREA',
-			'USUARIO_ACTU',
-			'ESTACION_ACTU',
-			'FECHA_ACTU',
-		]);
-		this.pushScopeFilter(xWhere, param, ['CORR_PAIS', 'CORR_DEPTO']);
-		return this.repo.getAllMunicipios(xWhere);
+		return this.repo.getAllMunicipios(this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO']));
+	}
+
+	getDistinctValuesMunicipios(param: any): Observable<IResult> {
+		return this.repo.getDistinctValuesMunicipios(this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO']));
 	}
 
 	insertMunicipio(model: GenMunicipio): Observable<IResult> {
@@ -339,18 +186,11 @@ export class GenEstructuraTerritorialService {
 	}
 
 	getAllDistritos(param: any): Observable<IResult> {
-		const xWhere = this.buildFilterWhere(param, [
-			'CORR_DISTRITO',
-			'NOMBRE_DISTRITO',
-			'USUARIO_CREA',
-			'ESTACION_CREA',
-			'FECHA_CREA',
-			'USUARIO_ACTU',
-			'ESTACION_ACTU',
-			'FECHA_ACTU',
-		]);
-		this.pushScopeFilter(xWhere, param, ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO']);
-		return this.repo.getAllDistritos(xWhere);
+		return this.repo.getAllDistritos(this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO']));
+	}
+
+	getDistinctValuesDistritos(param: any): Observable<IResult> {
+		return this.repo.getDistinctValuesDistritos(this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO']));
 	}
 
 	getPaisListSummary(): any {
@@ -359,42 +199,16 @@ export class GenEstructuraTerritorialService {
 		};
 	}
 
-	private buildPagingWhere(param: any, columnFilters: string[]): IParam[] {
-		const xWhere = this.buildFilterWhere(param, columnFilters);
+	private buildRemoteWhere(param: any, _includePaging: boolean, scopeFields: string[] = []): IParam[] {
+		const xWhere = buildRemoteGridWhere(param, '');
 
-		if (param.PAGE) {
-			xWhere.push({ Parameter: 'PAGE', Value: param.PAGE });
-		}
-		if (param.PAGE_SIZE) {
-			xWhere.push({ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE });
-		}
-
-		return xWhere;
-	}
-
-	private buildFilterWhere(param: any, columnFilters: string[]): IParam[] {
-		const xWhere: IParam[] = [];
-
-		if (param.BUSQUEDA) {
-			xWhere.push({ Parameter: 'BUSQUEDA', Value: param.BUSQUEDA });
-		}
-
-		columnFilters.forEach((field) => {
-			const value = param[field];
-			if (this.hasColumnFilter(value, field)) {
-				xWhere.push({ Parameter: field, Value: value });
+		scopeFields.forEach((field) => {
+			if (this.hasCorrKey(param[field])) {
+				xWhere.push({ Parameter: field, Value: param[field] });
 			}
 		});
 
 		return xWhere;
-	}
-
-	private hasColumnFilter(value: any, field: string): boolean {
-		if (value === null || value === undefined || `${value}`.trim() === '') {
-			return false;
-		}
-
-		return !(field.startsWith('CORR_') && Number(value) === 0);
 	}
 
 	private hasCorrKey(value: any): boolean {
@@ -476,7 +290,7 @@ export class GenEstructuraTerritorialService {
 					},
 				],
 			},
-			{ dataField: 'CORR_PAIS', caption: 'Corr.', width: 100 },
+			{ dataField: 'CORR_PAIS', caption: 'Corr.', width: 100, dataType: 'number', filterOperations: ['=', '<', '>', '<=', '>='] },
 			{ dataField: 'NOMBRE_PAIS', caption: 'País', minWidth: 180 },
 			{ dataField: 'CODIGO_PAIS', caption: 'Código', width: 100 },
 			{ dataField: 'NACIONALIDAD', caption: 'Nacionalidad', width: 140 },
@@ -635,7 +449,7 @@ export class GenEstructuraTerritorialService {
 					},
 				],
 			},
-			{ dataField: corrField, caption: 'Corr.', width: 100 },
+			{ dataField: corrField, caption: 'Corr.', width: 100, dataType: 'number', filterOperations: ['=', '<', '>', '<=', '>='] },
 			{ dataField: nombreField, caption: nombreCaption, minWidth: 160 },
 		];
 
@@ -652,10 +466,24 @@ export class GenEstructuraTerritorialService {
 		return [
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
-			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{
+				dataField: 'FECHA_CREA',
+				caption: 'Fecha Crea',
+				width: 200,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy HH:mm',
+				calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA'),
+			},
 			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
 			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
-			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{
+				dataField: 'FECHA_ACTU',
+				caption: 'Fecha Actu',
+				width: 200,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy HH:mm',
+				calculateFilterExpression: createDateTimeFilterExpression('FECHA_ACTU'),
+			},
 		];
 	}
 

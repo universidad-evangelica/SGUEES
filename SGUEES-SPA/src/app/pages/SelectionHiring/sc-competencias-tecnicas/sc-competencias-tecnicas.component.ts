@@ -12,6 +12,16 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { AuthService } from 'src/app/shared/services/auth.service';
 import {
+	clearGridHeaderFilterSelections,
+	getColumnHeaderFilterSelection,
+	hasColumnHeaderFilterSelection,
+	invertEstadoExcludedHeaderFilterValues,
+	invertExcludedHeaderFilterValues,
+	isHeaderFilterExclude,
+	normalizeEstadoHeaderFilterValue,
+	readGridFilterRowValues,
+} from 'src/app/shared/utils/remote-header-filter.util';
+import {
 	SC_COMPETENCIA_NIVEL,
 	ScCompetenciaPadreOption,
 	ScCompetenciasTecnicas,
@@ -25,6 +35,13 @@ import {
 } from './sc-competencias-tecnicas.service';
 
 type EstadoFiltro = boolean | null;
+
+interface ParsedGridFilters {
+	estado: EstadoFiltro;
+	filterRow: Record<string, unknown>;
+	filterRowExact: Record<string, unknown>;
+	headerAnyOf: Record<string, unknown[]>;
+}
 
 @Component({
 	selector: 'app-sc-competencias-tecnicas',
@@ -101,18 +118,58 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		page = 1,
 		pageSize = 5,
 		busqueda = '',
-		estado: EstadoFiltro = null,
-		columnFilters: Record<string, any> = {}
+		gridFilters: ParsedGridFilters = { estado: null, filterRow: {}, filterRowExact: {}, headerAnyOf: {} },
+		distinctField = '',
+		headerFilterSearch = '',
+		sortField = '',
+		sortDesc = false
 	): any {
 		return {
 			CORR_COMPETENCIAS_TECNICAS: xCORR_COMPETENCIAS_TECNICAS ?? 0,
 			BUSQUEDA: busqueda,
-			ESTADO_COMPETENCIAS_TECNICAS: estado,
 			PAGE: page,
 			PAGE_SIZE: pageSize,
-			...columnFilters,
+			DISTINCT_FIELD: distinctField,
+			HEADER_FILTER_SEARCH: headerFilterSearch,
+			SORT_FIELD: sortField,
+			SORT_DESC: sortDesc,
+			gridFilters,
 		};
 	}
+
+	loadHeaderFilterValues = (field: string, searchValue?: string): Promise<unknown[]> => {
+		const grid = this.dataGrid?.gData?.instance;
+		const combinedFilter = grid?.getCombinedFilter?.(false);
+		const gridFilters = this.getGridFilters(combinedFilter, grid);
+		const hasFilterRowSearch = this.hasFilterRowSearch(gridFilters);
+		const scopeDistinctToFilterRow = hasFilterRowSearch;
+		const filtersForDistinct: ParsedGridFilters = {
+			estado: scopeDistinctToFilterRow ? gridFilters.estado : null,
+			filterRow: scopeDistinctToFilterRow ? gridFilters.filterRow : {},
+			filterRowExact: scopeDistinctToFilterRow ? gridFilters.filterRowExact : {},
+			headerAnyOf: {},
+		};
+
+		return lastValueFrom(
+			this.service.getDistinctValues(
+				this.fillParam(
+					0,
+					1,
+					0,
+					'',
+					filtersForDistinct,
+					field,
+					searchValue ?? ''
+				)
+			)
+		).then((response) => {
+			if (!response.Result) {
+				throw new Error(response.ErrorMessage || 'No se pudieron cargar los valores del filtro.');
+			}
+
+			return response.Data ?? [];
+		});
+	};
 
 	override fillData(xModel?: ScCompetenciasTecnicas): ScCompetenciasTecnicas {
 		if (xModel !== undefined) {
@@ -488,9 +545,35 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 				const takeRows = loadOptions.take || 5;
 				const skipRows = loadOptions.skip || 0;
 				const page = Math.floor(skipRows / takeRows) + 1;
-				const gridFilters = this.getGridFilters(loadOptions.filter);
+				const grid = this.dataGrid?.gData?.instance;
+				if (grid) {
+					const filterRowValues = readGridFilterRowValues(grid);
+					const hasFilterRow =
+						Object.keys(filterRowValues.filterRow).length > 0 ||
+						Object.keys(filterRowValues.filterRowExact).length > 0;
+					if (hasFilterRow) {
+						clearGridHeaderFilterSelections(grid);
+					}
+				}
+				const gridFilters = this.getGridFilters(loadOptions.filter, grid);
+				if (!this.hasFilterRowSearch(gridFilters)) {
+					await this.resolveExcludeHeaderFilters(grid, gridFilters);
+				}
+				const sort = this.getGridSort(loadOptions.sort);
 				const response = await lastValueFrom(
-					this.service.getAll(this.fillParam(0, page, takeRows, '', gridFilters.estado, gridFilters.columnas))
+					this.service.getAll(
+						this.fillParam(
+							0,
+							page,
+							takeRows,
+							'',
+							gridFilters,
+							'',
+							'',
+							sort?.field ?? '',
+							sort?.desc ?? false
+						)
+					)
 				);
 
 				if (!response.Result) {
@@ -505,43 +588,275 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
-	private getGridFilters(filter: any): { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } {
-		const result: { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } = {
-			busqueda: '',
+	private getGridFilters(filter: any, grid?: any): ParsedGridFilters {
+		const result: ParsedGridFilters = {
 			estado: null,
-			columnas: {},
+			filterRow: {},
+			filterRowExact: {},
+			headerAnyOf: {},
 		};
 
-		const visit = (node: any): void => {
-			if (!Array.isArray(node)) {
-				return;
-			}
+		const headerEquals = new Map<string, unknown[]>();
+		const headerFilterFields = this.getActiveHeaderFilterFields(grid);
+		const filterRowFromGrid = readGridFilterRowValues(grid);
+		const filterRowFields = new Set([
+			...Object.keys(filterRowFromGrid.filterRow),
+			...Object.keys(filterRowFromGrid.filterRowExact),
+		]);
+		const flatConditions = this.flattenFilter(filter);
 
-			if (typeof node[0] === 'string' && node.length >= 3) {
-				const field = node[0];
-				const value = node[2];
+		for (const node of flatConditions) {
+			const field = node[0];
+			const operator = node[1];
+			const value = node[2];
 
-				if (field === 'ESTADO_COMPETENCIAS_TECNICAS') {
-					if (value === '__ALL__' || value === null || value === undefined) {
-						result.estado = null;
-						return;
-					}
-
-					result.estado = value === true || value === 'true';
-					return;
+			if (operator === 'anyof' && Array.isArray(value) && value.length) {
+				if (grid && isHeaderFilterExclude(grid, field)) {
+					continue;
 				}
 
-				if (value !== null && value !== undefined && `${value}`.trim()) {
-					result.columnas[field] = value;
-				}
-				return;
+				const normalizedValues =
+					field === 'ESTADO_COMPETENCIAS_TECNICAS'
+						? value.map((item) => normalizeEstadoHeaderFilterValue(item))
+						: value;
+
+				result.headerAnyOf[field] = this.mergeAnyOfValues(result.headerAnyOf[field], normalizedValues);
+				continue;
 			}
 
-			node.forEach((child) => visit(child));
-		};
+			if (operator === '=' || operator === '==') {
+				if (filterRowFields.has(field)) {
+					continue;
+				}
 
-		visit(filter);
+				const values = headerEquals.get(field) ?? [];
+				values.push(value);
+				headerEquals.set(field, values);
+				continue;
+			}
+
+			if (operator === '<' || operator === '>' || operator === '<=' || operator === '>=') {
+				if (filterRowFields.has(field)) {
+					continue;
+				}
+
+				result.filterRowExact[field] = value;
+				continue;
+			}
+
+			if (value !== null && value !== undefined && `${value}`.trim()) {
+				if (filterRowFields.has(field)) {
+					continue;
+				}
+
+				result.filterRow[field] = value;
+			}
+		}
+
+		for (const [field, values] of headerEquals.entries()) {
+			if (grid && isHeaderFilterExclude(grid, field)) {
+				continue;
+			}
+
+			if (values.length > 1 || headerFilterFields.has(field)) {
+				const normalizedValues =
+					field === 'ESTADO_COMPETENCIAS_TECNICAS'
+						? values.map((item) => normalizeEstadoHeaderFilterValue(item))
+						: values;
+
+				result.headerAnyOf[field] = this.mergeAnyOfValues(result.headerAnyOf[field], normalizedValues);
+				continue;
+			}
+
+			result.filterRowExact[field] = values[0];
+		}
+
+		result.filterRow = filterRowFromGrid.filterRow;
+		result.filterRowExact = filterRowFromGrid.filterRowExact;
+		this.applyEstadoFilterRow(result);
+		this.applyHeaderFiltersFromGrid(grid, result);
+
+		if (this.hasFilterRowSearch(result)) {
+			result.headerAnyOf = {};
+		}
+
 		return result;
+	}
+
+	private applyHeaderFiltersFromGrid(grid: any, result: ParsedGridFilters): void {
+		if (!grid?.getVisibleColumns) {
+			return;
+		}
+
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
+			}
+
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (!selection || selection.filterType === 'exclude' || !selection.values.length) {
+				continue;
+			}
+
+			const values =
+				dataField === 'ESTADO_COMPETENCIAS_TECNICAS'
+					? selection.values.map((item) => normalizeEstadoHeaderFilterValue(item))
+					: selection.values;
+
+			result.headerAnyOf[dataField] = this.mergeAnyOfValues(result.headerAnyOf[dataField], values);
+		}
+	}
+
+	private applyEstadoFilterRow(result: ParsedGridFilters): void {
+		const estadoValue =
+			result.filterRowExact['ESTADO_COMPETENCIAS_TECNICAS'] ??
+			result.filterRow['ESTADO_COMPETENCIAS_TECNICAS'];
+
+		if (estadoValue === undefined) {
+			return;
+		}
+
+		if (estadoValue === '__ALL__' || estadoValue === null) {
+			result.estado = null;
+		} else {
+			result.estado = estadoValue === true || estadoValue === 'true';
+		}
+
+		delete result.filterRowExact['ESTADO_COMPETENCIAS_TECNICAS'];
+		delete result.filterRow['ESTADO_COMPETENCIAS_TECNICAS'];
+	}
+
+	private hasFilterRowSearch(filters: ParsedGridFilters): boolean {
+		return (
+			filters.estado !== null && filters.estado !== undefined ||
+			Object.keys(filters.filterRow).length > 0 ||
+			Object.keys(filters.filterRowExact).length > 0
+		);
+	}
+
+	private async resolveExcludeHeaderFilters(grid: any, result: ParsedGridFilters): Promise<void> {
+		if (!grid?.getVisibleColumns) {
+			return;
+		}
+
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
+			}
+
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (!selection || selection.filterType !== 'exclude' || !selection.values.length) {
+				continue;
+			}
+
+			if (dataField === 'ESTADO_COMPETENCIAS_TECNICAS') {
+				const included = invertEstadoExcludedHeaderFilterValues(
+					selection.values.map((item) => normalizeEstadoHeaderFilterValue(item))
+				);
+				result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
+				continue;
+			}
+
+			const filtersForDistinct = this.cloneGridFilters(result);
+			delete filtersForDistinct.headerAnyOf[dataField];
+			delete filtersForDistinct.filterRow[dataField];
+			delete filtersForDistinct.filterRowExact[dataField];
+
+			const response = await lastValueFrom(
+				this.service.getDistinctValues(this.fillParam(0, 1, 0, '', filtersForDistinct, dataField, ''))
+			);
+
+			if (!response.Result) {
+				continue;
+			}
+
+			const included = invertExcludedHeaderFilterValues(selection.values, response.Data ?? []);
+			if (included.length) {
+				result.headerAnyOf[dataField] = included;
+			} else {
+				result.headerAnyOf[dataField] = ['__NO_MATCH__'];
+			}
+		}
+	}
+
+	private cloneGridFilters(source: ParsedGridFilters): ParsedGridFilters {
+		return {
+			estado: source.estado,
+			filterRow: { ...source.filterRow },
+			filterRowExact: { ...source.filterRowExact },
+			headerAnyOf: { ...source.headerAnyOf },
+		};
+	}
+
+	private getActiveHeaderFilterFields(grid: any): Set<string> {
+		const fields = new Set<string>();
+
+		if (!grid?.getVisibleColumns) {
+			return fields;
+		}
+
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
+			}
+
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (hasColumnHeaderFilterSelection(selection) && selection!.filterType !== 'exclude') {
+				fields.add(dataField);
+			}
+		}
+
+		return fields;
+	}
+
+	private flattenFilter(node: any): any[] {
+		if (!Array.isArray(node) || !node.length) {
+			return [];
+		}
+
+		if (node.length === 3 && (node[1] === 'and' || node[1] === 'or') && Array.isArray(node[0])) {
+			return [...this.flattenFilter(node[0]), ...this.flattenFilter(node[2])];
+		}
+
+		if (typeof node[0] === 'string' && node.length >= 3) {
+			return [node];
+		}
+
+		return node.flatMap((child) => this.flattenFilter(child));
+	}
+
+	private mergeAnyOfValues(current: unknown[] | undefined, incoming: unknown[]): unknown[] {
+		const merged = [...(current ?? []), ...incoming];
+		const seen = new Set<string>();
+
+		return merged.filter((value) => {
+			const key = value === null || value === undefined ? '__null__' : `${typeof value}:${value}`;
+			if (seen.has(key)) {
+				return false;
+			}
+
+			seen.add(key);
+			return true;
+		});
+	}
+
+	private getGridSort(sort: any): { field: string; desc: boolean } | null {
+		if (!Array.isArray(sort) || !sort.length) {
+			return null;
+		}
+
+		const first = sort[0];
+		if (!first?.selector) {
+			return null;
+		}
+
+		return {
+			field: `${first.selector}`,
+			desc: !!first.desc,
+		};
 	}
 
 	private cambiarEstado(row: ScCompetenciasTecnicas, activo: boolean): void {
@@ -625,14 +940,54 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		if (isEmpresaWarningResponse(response)) {
 			return NotifyType.Warning;
 		}
-		const message = `${response?.ErrorMessage ?? ''}`.toLowerCase();
-		return response?.ErrorCode === 2627 || message.includes('ya existe') || message.includes('duplicad')
-			? NotifyType.Warning
-			: NotifyType.Error;
+		return this.isValidationWarningResponse(response) ? NotifyType.Warning : NotifyType.Error;
 	}
 
 	private getErrorNotifyType(error: any): NotifyType {
-		return isEmpresaFkErrorMessage(this.getErrorMessage(error)) ? NotifyType.Warning : NotifyType.Error;
+		const body = error?.error;
+		if (body && typeof body === 'object' && body.ErrorMessage !== undefined) {
+			return this.getNotifyType(body);
+		}
+
+		return this.isValidationWarningMessage(this.getErrorMessage(error)) ? NotifyType.Warning : NotifyType.Error;
+	}
+
+	private isValidationWarningResponse(response: any): boolean {
+		if (!response || response.Result !== false) {
+			return false;
+		}
+
+		if (response.ErrorCode === 2627) {
+			return true;
+		}
+
+		const source = `${response.ErrorSource ?? ''}`;
+		if (response.ErrorCode === -1 && source.includes('SC_COMPETENCIAS_TECNICASService')) {
+			return true;
+		}
+
+		return this.isValidationWarningMessage(response.ErrorMessage);
+	}
+
+	private isValidationWarningMessage(message: string): boolean {
+		const value = `${message ?? ''}`.toLowerCase();
+		if (isEmpresaFkErrorMessage(message) || value.includes('no tiene una empresa asignada')) {
+			return true;
+		}
+
+		return (
+			value.includes('ya existe') ||
+			value.includes('duplicad') ||
+			value.includes('registrad') ||
+			value.includes('otro usuario guard') ||
+			value.includes('debe ') ||
+			value.includes('no puede superar') ||
+			value.includes('solo puede contener') ||
+			value.includes('no es valido') ||
+			value.includes('no se encontro') ||
+			value.includes('debe iniciar con') ||
+			value.includes('tiene registros hijos')
+		);
 	}
 
 	private getCorrEmpresaSesion(): number {
@@ -654,8 +1009,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		if (isEmpresaFkErrorMessage(cleanMessage) || value.includes('no tiene una empresa asignada')) {
 			return getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA);
 		}
-		if (value.includes('ya existe') || value.includes('duplicad')) {
-			return 'Ya existe una competencia con ese código. Escriba otro código para continuar.';
+		if (this.isValidationWarningMessage(cleanMessage)) {
+			return cleanMessage;
 		}
 		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados')) {
 			return 'No se puede eliminar porque tiene competencias hijas o registros relacionados.';

@@ -31,6 +31,14 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        [HttpGet("GetDistinctValues")]
+        [Authorize(Policy = "/sc-frecuencia|R")]
+        public async Task<CResult> GetDistinctValues([FromQuery] SC_FRECUENCIAParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetDistinctValuesAsync(Data);
+        }
+
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-frecuencia|R")]
         public async Task<CResult> Get([FromQuery] SC_FRECUENCIAParam Data)
