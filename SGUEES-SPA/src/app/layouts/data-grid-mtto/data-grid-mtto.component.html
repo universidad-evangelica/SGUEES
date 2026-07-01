@@ -62,7 +62,7 @@
       (onToolbarPreparing)="OnToolbarPreparing($event)"
       (onExporting)="onExporting($event)"
       (onContentReady)="OnContentReady($event)"
-      [columns]="columns"
+      [columns]="displayColumns.length ? displayColumns : columns"
       [summary]="null"
       [filterSyncEnabled]="filterSyncEnabled"
       [filterValue]="filterValue"

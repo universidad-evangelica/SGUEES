@@ -17,6 +17,10 @@ export class GenEstructuraTerritorialRepository {
 		return this.objData.Get(this.xController, 'GetAllPaises', xWhere, environment.UrlGENERALAPI);
 	}
 
+	getDistinctValuesPaises(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetDistinctValuesPaises', xWhere, environment.UrlGENERALAPI);
+	}
+
 	createPais(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, 'Pais', environment.UrlGENERALAPI);
 	}
@@ -31,6 +35,10 @@ export class GenEstructuraTerritorialRepository {
 
 	getAllDeptos(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAllDeptos', xWhere, environment.UrlGENERALAPI);
+	}
+
+	getDistinctValuesDeptos(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetDistinctValuesDeptos', xWhere, environment.UrlGENERALAPI);
 	}
 
 	createDepto(model: any): Observable<IResult> {
@@ -49,6 +57,10 @@ export class GenEstructuraTerritorialRepository {
 		return this.objData.Get(this.xController, 'GetAllMunicipios', xWhere, environment.UrlGENERALAPI);
 	}
 
+	getDistinctValuesMunicipios(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetDistinctValuesMunicipios', xWhere, environment.UrlGENERALAPI);
+	}
+
 	createMunicipio(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, 'Municipio', environment.UrlGENERALAPI);
 	}
@@ -63,6 +75,10 @@ export class GenEstructuraTerritorialRepository {
 
 	getAllDistritos(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAllDistritos', xWhere, environment.UrlGENERALAPI);
+	}
+
+	getDistinctValuesDistritos(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetDistinctValuesDistritos', xWhere, environment.UrlGENERALAPI);
 	}
 
 	createDistrito(model: any): Observable<IResult> {

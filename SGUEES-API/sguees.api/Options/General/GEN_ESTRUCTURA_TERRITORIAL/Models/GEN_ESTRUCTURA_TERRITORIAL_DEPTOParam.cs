@@ -10,6 +10,19 @@ namespace SGUEES.Models
 		public string BUSQUEDA { get; set; }
 		public string NOMBRE_DEPTO { get; set; }
 		public string CODIGO_DEPTO { get; set; }
+		public string USUARIO_CREA { get; set; }
+		public string ESTACION_CREA { get; set; }
+		public string FECHA_CREA { get; set; }
+		public string USUARIO_ACTU { get; set; }
+		public string ESTACION_ACTU { get; set; }
+		public string FECHA_ACTU { get; set; }
 		public int OPCION_CONSULTA { get; set; } = 0;
+		public string DISTINCT_FIELD { get; set; }
+		public string HEADER_FILTER_SEARCH { get; set; }
+		public string COLUMN_ANYOF_JSON { get; set; }
+		public string FILTER_ROW_JSON { get; set; }
+		public string COLUMN_EXACT_JSON { get; set; }
+		public string SORT_FIELD { get; set; }
+		public bool? SORT_DESC { get; set; }
 	}
 }

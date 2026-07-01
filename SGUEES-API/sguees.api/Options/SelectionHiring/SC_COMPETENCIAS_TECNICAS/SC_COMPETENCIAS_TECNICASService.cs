@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -23,6 +24,16 @@ namespace SGUEES.Services
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        public async Task<CResult> GetDistinctValuesAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
+        {
+            if (string.IsNullOrWhiteSpace(xWhere.DISTINCT_FIELD))
+            {
+                return ValidationError("Debe indicar el campo para el filtro de encabezado.");
+            }
+
+            return await _repo.GetDistinctValuesAsync(BuildParameters(xWhere));
+        }
+
         public async Task<CResult> GetAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             var p = new List<CParameter>
@@ -41,22 +52,11 @@ namespace SGUEES.Services
                 return ValidationError("Debe indicar el nivel del padre.");
             }
 
-            var param = new SC_COMPETENCIAS_TECNICASParam
-            {
-                CORR_EMPRESA = xWhere.CORR_EMPRESA,
-                NIVEL = NormalizeNivel(xWhere.NIVEL_PADRE),
-                ESTADO_COMPETENCIAS_TECNICAS = xWhere.OPCION_CONSULTA == 1 ? null : true,
-                PAGE = 1,
-                PAGE_SIZE = 10000,
-            };
+            var nivel = NormalizeNivel(xWhere.NIVEL_PADRE);
+            var soloActivos = xWhere.OPCION_CONSULTA == 1 ? (bool?)null : true;
+            var rows = await _repo.GetPadresByNivelAsync(xWhere.CORR_EMPRESA, nivel, soloActivos);
 
-            var result = await _repo.GetAllAsync(BuildParameters(param));
-            if (!result.Result)
-            {
-                return result;
-            }
-
-            var data = (result.Data as List<SC_COMPETENCIAS_TECNICASView>)?
+            var data = rows
                 .Select(x => new
                 {
                     x.CORR_COMPETENCIAS_TECNICAS,
@@ -72,7 +72,7 @@ namespace SGUEES.Services
             {
                 Data = data,
                 Result = true,
-                RowsAffected = data?.Count ?? 0,
+                RowsAffected = data.Count,
                 ErrorCode = 0,
             };
         }
@@ -340,72 +340,46 @@ namespace SGUEES.Services
 
         private async Task<string> BuildNextCodigoLevel3Async(int corrEmpresa, SC_COMPETENCIAS_TECNICASView parent)
         {
-            var siblingsResult = await _repo.GetAllAsync(new List<CParameter>
-            {
-                new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_COMPETENCIAS_TECNICAS_PADRE", Value = parent.CORR_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "NIVEL", Value = "NIV3", DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "PAGE", Value = 1, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "PAGE_SIZE", Value = 10000, DbType = System.Data.DbType.Int32 },
-            });
-
-            var siblings = siblingsResult.Result && siblingsResult.Data is List<SC_COMPETENCIAS_TECNICASView> list
-                ? list
-                : new List<SC_COMPETENCIAS_TECNICASView>();
+            var parentCodigo = parent.CODIGO_COMPETENCIAS_TECNICAS ?? string.Empty;
+            var siblings = await _repo.GetSiblingCodigosLevel3Async(
+                corrEmpresa,
+                parent.CORR_COMPETENCIAS_TECNICAS,
+                parentCodigo);
 
             var max = 0;
-            foreach (var item in siblings)
+            foreach (var codigo in siblings)
             {
-                var codigo = item.CODIGO_COMPETENCIAS_TECNICAS ?? string.Empty;
-                if (!codigo.StartsWith(parent.CODIGO_COMPETENCIAS_TECNICAS, StringComparison.OrdinalIgnoreCase))
+                if (!codigo.StartsWith(parentCodigo, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
 
-                var suffix = codigo.Substring(parent.CODIGO_COMPETENCIAS_TECNICAS.Length);
+                var suffix = codigo.Substring(parentCodigo.Length);
                 if (int.TryParse(suffix, out var number) && number > max)
                 {
                     max = number;
                 }
             }
 
-            return parent.CODIGO_COMPETENCIAS_TECNICAS + (max + 1).ToString("D2");
+            return parentCodigo + (max + 1).ToString("D2");
         }
 
         private async Task<CResult> ValidateUniqueCodigoAsync(SC_COMPETENCIAS_TECNICASTable Data, int? excludeCorr)
         {
-            var all = await _repo.GetAllAsync(new List<CParameter>
-            {
-                new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "PAGE", Value = 1, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "PAGE_SIZE", Value = 10000, DbType = System.Data.DbType.Int32 },
-            });
-
-            if (!all.Result || all.Data is not List<SC_COMPETENCIAS_TECNICASView> rows)
-            {
-                return null;
-            }
-
-            var exists = rows.Any(x =>
-                x.CORR_COMPETENCIAS_TECNICAS != excludeCorr &&
-                string.Equals(x.CODIGO_COMPETENCIAS_TECNICAS, Data.CODIGO_COMPETENCIAS_TECNICAS, StringComparison.OrdinalIgnoreCase));
+            var exclude = excludeCorr ?? 0;
+            var exists = await _repo.ExistsCodigoAsync(
+                Data.CORR_EMPRESA,
+                Data.CODIGO_COMPETENCIAS_TECNICAS,
+                exclude);
 
             return exists
                 ? ValidationError($"Ya existe una competencia con el codigo {Data.CODIGO_COMPETENCIAS_TECNICAS}.")
                 : null;
         }
 
-        private async Task<bool> HasChildrenAsync(int corrEmpresa, int corrCompetencia)
+        private Task<bool> HasChildrenAsync(int corrEmpresa, int corrCompetencia)
         {
-            var children = await _repo.GetAllAsync(new List<CParameter>
-            {
-                new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_COMPETENCIAS_TECNICAS_PADRE", Value = corrCompetencia, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "PAGE", Value = 1, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "PAGE_SIZE", Value = 1, DbType = System.Data.DbType.Int32 },
-            });
-
-            return children.Result && children.RowsAffected > 0;
+            return _repo.HasChildrenAsync(corrEmpresa, corrCompetencia);
         }
 
         private static CResult ValidateBase(SC_COMPETENCIAS_TECNICASTable Data)
@@ -460,20 +434,87 @@ namespace SGUEES.Services
                 new CParameter() { ParameterName = "CORR_COMPETENCIAS_TECNICAS_PADRE", Value = xWhere.CORR_COMPETENCIAS_TECNICAS_PADRE, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "PAGE", Value = xWhere.PAGE, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "PAGE_SIZE", Value = xWhere.PAGE_SIZE, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "DISTINCT_FIELD", Value = xWhere.DISTINCT_FIELD, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "HEADER_FILTER_SEARCH", Value = xWhere.HEADER_FILTER_SEARCH, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "SORT_FIELD", Value = xWhere.SORT_FIELD, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "SORT_DESC", Value = xWhere.SORT_DESC, DbType = System.Data.DbType.Boolean },
             };
 
-            AddColumnFilter(p, "CORR_COMPETENCIAS_TECNICAS", xWhere.CORR_COMPETENCIAS_TECNICAS, System.Data.DbType.Int32);
-            AddColumnFilter(p, "CODIGO_COMPETENCIAS_TECNICAS", xWhere.CODIGO_COMPETENCIAS_TECNICAS, System.Data.DbType.String);
-            AddColumnFilter(p, "NOMBRE_COMPETENCIAS_TECNICAS", xWhere.NOMBRE_COMPETENCIAS_TECNICAS, System.Data.DbType.String);
-            AddColumnFilter(p, "DESCRIPCION", xWhere.DESCRIPCION, System.Data.DbType.String);
-            AddColumnFilter(p, "USUARIO_CREA", xWhere.USUARIO_CREA, System.Data.DbType.String);
-            AddColumnFilter(p, "ESTACION_CREA", xWhere.ESTACION_CREA, System.Data.DbType.String);
-            AddColumnFilter(p, "FECHA_CREA", xWhere.FECHA_CREA, System.Data.DbType.String);
-            AddColumnFilter(p, "USUARIO_ACTU", xWhere.USUARIO_ACTU, System.Data.DbType.String);
-            AddColumnFilter(p, "ESTACION_ACTU", xWhere.ESTACION_ACTU, System.Data.DbType.String);
-            AddColumnFilter(p, "FECHA_ACTU", xWhere.FECHA_ACTU, System.Data.DbType.String);
+            AddJsonParameter(p, "FILTER_ROW_JSON", xWhere.FILTER_ROW_JSON);
+            AddJsonParameter(p, "COLUMN_EXACT_JSON", xWhere.COLUMN_EXACT_JSON);
+            AddJsonParameter(p, "COLUMN_ANYOF_JSON", xWhere.COLUMN_ANYOF_JSON);
+            AddAnyOfFilters(p, xWhere.COLUMN_ANYOF_JSON);
 
             return p;
+        }
+
+        private static void AddJsonParameter(List<CParameter> p, string parameterName, string json)
+        {
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return;
+            }
+
+            p.Add(new CParameter()
+            {
+                ParameterName = parameterName,
+                Value = json,
+                DbType = System.Data.DbType.String,
+            });
+        }
+
+        private static void AddAnyOfFilters(List<CParameter> p, string columnAnyOfJson)
+        {
+            if (string.IsNullOrWhiteSpace(columnAnyOfJson))
+            {
+                return;
+            }
+
+            try
+            {
+                var filters = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(columnAnyOfJson);
+                if (filters == null)
+                {
+                    return;
+                }
+
+                foreach (var filter in filters)
+                {
+                    if (filter.Value.ValueKind != JsonValueKind.Array)
+                    {
+                        continue;
+                    }
+
+                    var values = filter.Value
+                        .EnumerateArray()
+                        .Select(x => x.ValueKind switch
+                        {
+                            JsonValueKind.String => x.GetString(),
+                            JsonValueKind.Number => x.GetRawText(),
+                            JsonValueKind.True => "true",
+                            JsonValueKind.False => "false",
+                            JsonValueKind.Null => "__BLANK__",
+                            _ => x.ToString(),
+                        })
+                        .Where(x => !string.IsNullOrWhiteSpace(x))
+                        .ToList();
+
+                    if (values.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    p.Add(new CParameter()
+                    {
+                        ParameterName = $"{filter.Key}_ANYOF",
+                        Value = string.Join('|', values),
+                        DbType = System.Data.DbType.String,
+                    });
+                }
+            }
+            catch (JsonException)
+            {
+            }
         }
 
         private static void AddColumnFilter(List<CParameter> p, string parameterName, object value, System.Data.DbType dbType)

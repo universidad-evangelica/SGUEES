@@ -31,6 +31,14 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        [HttpGet("GetDistinctValues")]
+        [Authorize(Policy = "/sc-responsabilidad-cargo|R")]
+        public async Task<CResult> GetDistinctValues([FromQuery] SC_RESPONSABILIDAD_CARGOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetDistinctValuesAsync(Data);
+        }
+
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-responsabilidad-cargo|R")]
         public async Task<CResult> Get([FromQuery] SC_RESPONSABILIDAD_CARGOParam Data)

@@ -17,6 +17,10 @@ export class ScCompetenciasTecnicasRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	getDistinctValues(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetDistinctValues', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
 	getPadres(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetPadres', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

@@ -3,19 +3,10 @@ import { RouterModule, Routes } from '@angular/router';
 
 import { AuthGuardService } from 'src/app/shared/services/auth.service';
 import { AppCanDeactivateGuard } from 'src/app/app-candeactivate.guard';
-import { PlaDepartamentoComponent } from './pla-departamento/pla-departamento.component';
 import { PlaNivelAcademicoComponent } from './pla-nivel-academico/pla-nivel-academico.component';
 import { PlaTipoPuestoComponent } from './pla-tipo-puesto/pla-tipo-puesto.component';
 
 const routes: Routes = [
-  {
-    path: 'pla-departamento',
-    component: PlaDepartamentoComponent,
-    data: { titulo: 'Departamento' },
-    canActivate: [ AuthGuardService ],
-    canDeactivate: [ AppCanDeactivateGuard ],
-    loadChildren: () => import('./pla-departamento/pla-departamento.module').then(m => m.PlaDepartamentoModule)
-  },
   {
     path: 'pla-nivel-academico',
     component: PlaNivelAcademicoComponent,

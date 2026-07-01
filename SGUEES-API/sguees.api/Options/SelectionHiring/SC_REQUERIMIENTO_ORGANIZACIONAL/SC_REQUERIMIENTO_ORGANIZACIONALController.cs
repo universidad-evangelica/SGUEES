@@ -31,6 +31,14 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        [HttpGet("GetDistinctValues")]
+        [Authorize(Policy = "/sc-requerimiento-organizacional|R")]
+        public async Task<CResult> GetDistinctValues([FromQuery] SC_REQUERIMIENTO_ORGANIZACIONALParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetDistinctValuesAsync(Data);
+        }
+
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-requerimiento-organizacional|R")]
         public async Task<CResult> Get([FromQuery] SC_REQUERIMIENTO_ORGANIZACIONALParam Data)

@@ -17,6 +17,10 @@ export class PlaTipoPuestoRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
+	getDistinctValues(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetDistinctValues', xWhere, environment.UrlTALENTOHUMANONAPI);
+	}
+
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlTALENTOHUMANONAPI);
 	}
