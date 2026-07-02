@@ -75,5 +75,13 @@ namespace sguees.Controllers
 			else
 				return BadRequest(resultado);
 		}
+
+		[HttpGet("GetCORR_MONEDA_BAN_CUENTA_BANCARIA")]
+		[Authorize(Policy = "/ban-cuenta-bancaria|R")]
+		public async Task<CResult> GetCORR_MONEDA_BAN_CUENTA_BANCARIA()
+		{
+			var corrEmpresa = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetMonedasAsync(corrEmpresa);
+		}
 	}
 }

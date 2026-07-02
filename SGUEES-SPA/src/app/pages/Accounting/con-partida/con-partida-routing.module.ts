@@ -40,6 +40,7 @@ const routes: Routes = [{ path: '', component: ConPartidaComponent }];
     ConPartidaImportarExcelUiModule,
     DxDropDownButtonModule
 ],
+	exports: [RouterModule],
 	declarations: [ConPartidaComponent],
 })
 export class ConPartidaRoutingModule {}

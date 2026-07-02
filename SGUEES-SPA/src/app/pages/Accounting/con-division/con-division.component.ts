@@ -26,20 +26,42 @@ export class ConDivisionComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
+	//#region <Declarando Variales>
+	readOnly = false;
+	// #endregion
+
+	//#region <Inicializando Opciones>
 	ngOnInit(): void {
 		this.inicializaOpciones();
+		this.llenaComboBox();
 		this.consultar();
 	}
 
 	inicializaOpciones() {}
+	// #endregion
 
-	fillParam(xKey?: any): any {
-		return { CORR_DIVISION: xKey || 0 };
+	//#region <Manejo de Combos>
+	llenaComboBox() {}
+	//#endregion
+
+	//#region <Metodos Mtto>
+	fillParam(xCORR_DIVISION?: number): any {
+		if (xCORR_DIVISION == undefined) {
+			xCORR_DIVISION = 0;
+		}
+		return {
+			CORR_DIVISION: xCORR_DIVISION,
+		};
 	}
 
 	override fillData(xModel?: ConDivision): ConDivision {
 		if (xModel !== undefined) {
-			return { ...xModel };
+			return {
+				CORR_EMPRESA: xModel.CORR_EMPRESA,
+				CORR_DIVISION: xModel.CORR_DIVISION,
+				NOMBRE_DIVISION: xModel.NOMBRE_DIVISION,
+				CODIGO_DIVISION: xModel.CODIGO_DIVISION,
+			};
 		} else {
 			return {
 				CORR_EMPRESA: 0,
@@ -142,4 +164,25 @@ export class ConDivisionComponent extends CBaseComponent implements OnInit {
 				},
 			});
 	}
+
+	override bloquear(): void {
+		this.dataForm.instance.getEditor('CORR_DIVISION')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NOMBRE_DIVISION')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CODIGO_DIVISION')?.option('readOnly', true);
+		this.readOnly = true;
+	}
+
+	override habilitar(): void {
+		this.readOnly = false;
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('CORR_DIVISION')?.option('readOnly', true);
+		});
+	}
+
+	override setFocus() {
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('NOMBRE_DIVISION')?.focus();
+		});
+	}
+	//#endregion
 }

@@ -40,10 +40,6 @@ export class ConReporteService {
 			msg('Indique el mes', NotifyType.Warning);
 			return false;
 		}
-		if (this.usaFiltro(definicion, 'CORR_CONFI_REPORTE') && !filtro.CORR_CONFI_REPORTE) {
-			msg('Seleccione la configuracion de reporte', NotifyType.Warning);
-			return false;
-		}
 		return true;
 	}
 
@@ -52,11 +48,31 @@ export class ConReporteService {
 	}
 
 	buildPayload(codigo: string, filtro: ConReporteFiltro): ConReporteFiltro {
+		const today = new Date();
 		return {
 			...filtro,
 			CODIGO_REPORTE: codigo,
+			FECHA_INICIAL: this.toIsoDate(filtro.FECHA_INICIAL),
+			FECHA_FINAL: this.toIsoDate(filtro.FECHA_FINAL),
+			FECHA_IMPRESION: this.toIsoDate(filtro.FECHA_IMPRESION ?? today),
 			CUENTA_DEPARTAMENTO: filtro.CUENTA_DEPARTAMENTO || filtro.CUENTA_CONTABLE || null,
 		};
+	}
+
+	private toIsoDate(value: Date | string | null | undefined): string | null {
+		if (!value) {
+			return null;
+		}
+
+		const date = value instanceof Date ? value : new Date(value);
+		if (Number.isNaN(date.getTime())) {
+			return null;
+		}
+
+		const year = date.getFullYear();
+		const month = String(date.getMonth() + 1).padStart(2, '0');
+		const day = String(date.getDate()).padStart(2, '0');
+		return `${year}-${month}-${day}`;
 	}
 
 	esPdfDisponible(definicion: ConReporteDefinicion | null | undefined): boolean {

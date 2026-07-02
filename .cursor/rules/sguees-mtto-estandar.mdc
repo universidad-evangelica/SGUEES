@@ -1,0 +1,209 @@
+---
+description: Estándar SGUEES — mtto básico, mtto con lookup (lista/cross-tabla) y mtto con detalle. SPA + API + menú BD. Usar en migraciones.
+alwaysApply: true
+---
+
+# SGUEES — Estándar Mantenimientos (mtto)
+
+Al migrar o crear pantallas, seguir **este proceso completo** (SPA + API + menú BD). No improvisar estructura distinta.
+
+## Flujo rápido — lo que el usuario dice y yo entrego
+
+El usuario puede decir solo:
+
+> *"Ya tengo la tabla, la vista SQL, [con/sin detalle]"*
+
+**Yo hago todo el trabajo** sin pedir estructura adicional salvo dudas de negocio.
+
+### Lo que el usuario aporta (mínimo)
+
+| Dato | Ejemplo |
+|------|---------|
+| Tabla(s) | `GEN_BANCO`, `CON_PARTIDA` + `CON_PARTIDA_DETA` |
+| Vista(s) | `V_GEN_BANCO`, `V_CON_PARTIDA`, `V_CON_PARTIDA_DETA` |
+| Tipo (opcional) | simple / con lookup / con detalle |
+| Módulo | Bancos, Contabilidad, Compras, General… |
+| Menú destino | `PROCESO`, `GENERAL`, nombre opción |
+
+Si no indica tipo, **inferirlo** de tablas/vistas (1 tabla = A o B; encabezado+deta = C).
+
+### Lo que yo entrego (completo)
+
+1. **BD** — vista si falta; SP `PRAL_DATA_*` / `PRAL_MTTO_*` si aplica; script menú (`SEG_OPCION_SISTEMA`, `SEG_CONFIG_OPCION`, permisos) con UTF-8.
+2. **API** — `Models`, `Repository`, `Service`, `Controller`; lookups `GetCAMPO_TABLA` y entradas en `*_LISTA` si hay combos.
+3. **SPA** — carpeta pantalla completa (tipo A, B o C según corresponda); routing en módulo padre; `exports: [RouterModule]`.
+4. **Verificación** — compilar API, lints SPA, checklist del tipo aplicado.
+
+### Cómo decidir el tipo desde la vista
+
+- **A) Básico:** una tabla/vista, sin FK combo complejo ni grid hijo.
+- **B) + lookup:** columnas FK o códigos lista (`CLASE_*`, `CORR_*`, `ESTADO_*`) → `getLookUp` + endpoints.
+- **C) Con detalle:** tabla encabezado + tabla `*_DETA` (o similar) → patrón `com-documento` / `con-partida`.
+
+### Frase disparadora
+
+Cuando el usuario diga *"mira ya tengo la tabla y la vista"* → leer vista(s) en `SGUEES-DB/Views/`, revisar tabla(s) en `SGUEES-DB/Tables/`, copiar patrón del módulo vecino y generar **API + SPA + menú BD** sin reinventar.
+
+---
+
+## Tres tipos de mtto
+
+| Tipo | Referencia SPA | Cuándo |
+|------|----------------|--------|
+| **A) Básico** | `Banking/gen-banco`, `Accounting/con-tipo-centro-costo` | Catálogo simple, combos pocos o ninguno |
+| **B) Básico + lookup** | `Accounting/con-centro-costo`, `Banking/ban-cuenta-bancaria` | Form con combos `getLookUp` (lista o cross-tabla) |
+| **C) Con detalle** | `Shop/com-documento`, `Accounting/con-partida` | Encabezado + grid detalle + estado documento |
+
+---
+
+## A) Mtto básico — SPA
+
+**Archivos:** `component.ts/html`, `service.ts`, `routing.module.ts`, `models/`.
+
+**TS — 4 regiones:**
+1. `Declarando Variables`
+2. `Inicializando Opciones` → `ngOnInit`: `inicializaOpciones()` → `llenaComboBox()` → `consultar()`
+3. `Manejo de Combos` (si aplica)
+4. `Metodos Mtto` → `fillParam`, `fillData`, `guardar()` inline, `bloquear`, `habilitar`, `setFocus`
+
+**HTML:** `app-barra-data-mtto` + `dx-form` + `app-data-grid-mtto`. **Sin** `[columnAutoWidth]="true"` en grid principal.
+
+**Routing:** `DataGridMttoModule`, `DataLookupModule`, `BarraDataMttoModule`, **`exports: [RouterModule]`**.
+
+---
+
+## B) Mtto básico + lookup — SPA
+
+Todo lo del tipo A, más:
+
+**Combos solo vía `getLookUp`:**
+```typescript
+this.appInfoService.getLookUp('TABLA_ORIGEN', 'CONTROLADOR', 'GetCAMPO', where, urlAPI)
+```
+
+| Origen lookup | API endpoint | Ejemplo |
+|---------------|--------------|---------|
+| **Lista estática** | `MOD_LISTA` → `GetCAMPO` | `BAN_LISTA.GetCLASE_BANCO` |
+| **Cross-tabla** | `GetCAMPO_TABLA_ORIGEN` en **controlador de la entidad** (cuenta, centro, lista) | `CON_CATALOGO_CUENTA.GetCUENTA_CONTABLE_CON_PARTIDA` con permiso `/con-partida|R` |
+
+El permiso del endpoint es el de la **pantalla consumidora**, no el del catálogo origen.
+
+**HTML form:** template `CAMPOLookup` + `app-data-lookup`.
+**Multi-columna:** `[lookupColumns]="[{ dataField, caption, width }]"` (popup ancho automático en `app-data-lookup`).
+**Grid detalle (si aplica en tipo C):** `editCellTemplate` + `app-data-lookup` + `lookupColumns`.
+
+**API:** crear endpoint lookup con permiso `/tabla-origen|R`. **NO** `service.getAll()` para combos cuando corresponde lookup.
+**Excepción:** datos filtrados en runtime (ej. centros por cuenta en detalle partida).
+
+---
+
+## C) Mtto con detalle — SPA
+
+Base de A/B, más:
+
+- **Agregar detalle sin guardar encabezado:** permitir `addRow()` sin exigir PK.
+- **`guardarEncabezadoParaDetalle()`** → `insert` encabezado → `UpdateType.Update` → callback guarda línea.
+- **`detalleRowInserting/Updating/Removing`** con `e.cancel = Promise`.
+- **Bloqueo por estado:** `readOnly` si `ESTADO !== 'DI'` (no reestructurar pantalla entera).
+- **Grid detalle:** `dx-data-grid` propio, `columnAutoWidth=false`.
+- **Lookups en celdas:** `editCellTemplate` + `app-data-lookup` + `lookupColumns`.
+- **Toolbar extendida** solo si el negocio lo requiere (aplicar, imprimir, importar).
+
+### Arquitectura padre / detalle
+
+| Capa | Regla |
+|------|-------|
+| **SPA** | Solo archivos del **padre** (component, routing, module). Detalle: modelo en `models/`, service/repository sin pantalla propia. UI del grid detalle en el padre. |
+| **API** | Lógica del detalle en carpeta separada bajo el padre (`PADRE/PADRE_DETA/`). |
+| **Permisos** | Detalle usa permisos del **padre** (`/ruta-padre|R/C/U/D`). Sin menú ni opción propia para detalle. |
+
+**Referencias:** `com-documento` (Compras), `con-partida` (Contabilidad).
+
+---
+
+## Permisos API (obligatorio)
+
+**Regla:** ¿Quién consume? → permiso en `[Authorize]`. ¿De dónde salen datos? → ese controlador consulta.
+
+| Caso | API | Permiso |
+|------|-----|---------|
+| CRUD propio | `MI_TABLAController` | `/mi-ruta\|R/C/U/D` |
+| Detalle | `PADRE_DETAController` | permiso del **padre** |
+| Combo cross-tabla | `CONTROLADOR_ORIGEN` / `GetCAMPO_TABLA_ORIGEN` | `/url-consumidor\|R` |
+| Grilla con datos ajenos | Repo `objData.Get(CONTROLADOR, 'GetCAMPO_TABLA_ORIGEN')` | mismo — **no** `getLookUp` |
+| Lista | `MOD_LISTA` / `GetCAMPO_TABLA_ORIGEN` | `/url-consumidor\|R` |
+
+**Prohibido:** `GetAll` nativo de catálogo ajeno con permiso de esa pantalla ajena.
+
+Ref. asignación: `con-catalogo-cuenta-centro-costo` — grillas vía `CON_CATALOGO_CUENTA` + `CON_CENTRO_COSTO` con `Get*_CON_CTA_CENTRO_COSTO`.
+
+**Tipo A+ (estado/validaciones):** `shared/mtto/` + métodos opt-in en `CBaseComponent`. Ref. `sc-impacto-economico`.
+
+Doc equipo: `docs/ESTANDAR-MTTO.md` sección **Permisos y peticiones API** y **Tipo A+**.
+
+---
+
+## Menú y seguridad (BD) — obligatorio en migraciones
+
+Al dar de alta una pantalla nueva, **siempre** configurar menú en BD:
+
+1. **`SEG_OPCION_SISTEMA`** — `CODIGO_OPCION`, `NOMBRE_OPCION` (NVARCHAR, acentos reales), `URL_OPCION` (`/ruta-spa`).
+2. **`SEG_OPCION_SISTEMA_SUITE`** — vincular a `SGUEES`.
+3. **`SEG_CONFIG_OPCION`** — `CODIGO_SISTEMA`, `CODIGO_MENU`, `ORDEN_MENU`, `ORDEN_OPCION` (orden correcto; opción principal no al final).
+4. **`SEG_USUARIO_OPCION`** — permisos; `CODIGO_MENU` debe coincidir con `SEG_CONFIG_OPCION` (sin duplicados en menús distintos).
+
+**Scripts de referencia:**
+- Reorganizar menú módulo: `SGUEES-DB/Scripts/MENU_CONTABILIDAD_REORG.sql` (modelo idempotente).
+- UTF-8 + orden: `SGUEES-DB/Scripts/FIX_MENU_UTF8_AND_CONTABILIDAD.sql`.
+
+**Ejecutar siempre:** `sqlcmd -S <srv> -d SGUEES -U <user> -f 65001 -i <script.sql>`
+
+**Reglas menú:**
+- Una opción = un `CODIGO_OPCION` = una entrada en `SEG_CONFIG_OPCION`.
+- `URL_OPCION` con `/` inicial, coincide con ruta Angular.
+- Tras cambios de menú: usuario debe **cerrar sesión y reingresar** (menú viene del API al login).
+- Menú lateral SPA usa `menuKey` único (no `path` vacío como clave).
+
+---
+
+## Texto y codificación (UTF-8)
+
+- **Código fuente:** UTF-8 (`.editorconfig`). Acentos reales: `Parámetros`, `Catálogo`, `Períodos`, `éxito` — nunca `ParÃ¡metros` ni ASCII sin tilde.
+- **BD menú:** `NOMBRE_OPCION`, `NOMBRE_MENU`, `NOMBRE_SISTEMA` en **NVARCHAR**; literales SQL con prefijo `N'...'`.
+- **Captions/labels** en `service.ts` y `titulo` en routing: español correcto con tildes.
+
+---
+
+## NO aplicar patrón mtto completo
+
+Procesos: aplicar/anular/desaplicar, importar Excel, reportes, consultas, cierre/apertura. Solo reutilizar servicios/lookups donde aplique.
+
+---
+
+## Checklist por tipo
+
+### A) Básico
+- [ ] `CBaseComponent` + 4 regiones + `ngOnInit` trio
+- [ ] `fillParam` / `fillData` / `guardar()` inline
+- [ ] `bloquear` / `habilitar` / `setFocus`
+- [ ] `app-barra-data-mtto` + `app-data-grid-mtto`
+- [ ] Routing: `DataLookupModule` + `exports: [RouterModule]`
+- [ ] Menú BD: opción + config + permisos
+- [ ] Sin `columnAutoWidth` en grid principal
+
+### B) Básico + lookup
+- [ ] Todo lo de A
+- [ ] Combos → `getLookUp` (+ endpoint API si falta)
+- [ ] `app-data-lookup` en templates; `lookupColumns` si multi-columna
+- [ ] Permiso API lookup: `/tabla-origen|R`
+
+### C) Con detalle
+- [ ] Todo lo de A/B según combos del encabezado
+- [ ] `guardarEncabezadoParaDetalle` + detalle antes de PK
+- [ ] `detalleRowInserting/Updating/Removing` con Promise
+- [ ] `readOnly` por estado; grid detalle separado
+- [ ] Lookups en celdas con `lookupColumns`
+
+### Siempre
+- [ ] Cambio mínimo: no refactorizar lógica no solicitada
+- [ ] Scripts SQL con `-f 65001`; textos NVARCHAR en menú

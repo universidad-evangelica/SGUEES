@@ -1,0 +1,30 @@
+export interface BanCuentaBancaria {
+	CORR_EMPRESA: number;
+	CORR_CUENTA_BANCO: number;
+	NUMERO_CUENTA_BANCO: string;
+	CORR_BANCO: number;
+	CUENTA_CONTABLE: string;
+	NOMBRE_REPORTE: string;
+	TIPO_CUENTA_BANCO: string;
+	CORR_CENTRO_COSTO: number;
+	CORR_MONEDA: number;
+	CODIGO_EMPRESARIAL: string;
+	CODIGO_EMPRESARIAL_PROV: string;
+	NO_PERMITE_MODIFICAR: boolean;
+	VALIDAR_SALDO: boolean;
+	PAGA_PLANILLA: boolean;
+	VALIDA_FECHA: boolean;
+	NOMBRE_CUENTA: string;
+	NO_PERMITE_CHEQUES: boolean;
+	ESTADO_CUENTA: string;
+	USA_TRANSACIONES_UNI: boolean;
+	CLASE_CHEQUE: string;
+	NOMBRE_CUENTA_BANCO?: string;
+	NOMBRE_BANCO?: string;
+	NOMBRE_BANCO_CORTO?: string;
+	NOMBRE_TIPO_CUENTA_BANCO?: string;
+	NOMBRE_CENTRO?: string;
+	NOMBRE_MONEDA?: string;
+	NOMBRE_ESTADO_CUENTA?: string;
+	NOMBRE_CLASE_CHEQUE?: string;
+}

@@ -147,6 +147,14 @@ namespace sguees.Repositories
 			CResult objResultado = new();
 			try
 			{
+				if (Data.ANIO_PERIODO <= 0 || Data.MES_PERIODO <= 0 || Data.CORR_CLASE_PARTIDA <= 0 || Data.CORR_PARTIDA <= 0)
+				{
+					objResultado.Result = false;
+					objResultado.ErrorCode = -1;
+					objResultado.ErrorMessage = "Debe indicar año, mes, clase y número de partida para eliminar.";
+					return objResultado;
+				}
+
 				var pWhere = new List<CParameter>
 				{
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
@@ -155,6 +163,37 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="CORR_CLASE_PARTIDA",Value=Data.CORR_CLASE_PARTIDA,DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="CORR_PARTIDA",Value=Data.CORR_PARTIDA,DbType=System.Data.DbType.Int32},
 				};
+
+				var readerEstado = await objData.GetDataReader(System.Data.CommandType.Text, @"
+					SELECT ESTADO_PARTIDA
+					FROM CON_PARTIDA
+					WHERE CORR_EMPRESA=@CORR_EMPRESA
+					  AND ANIO_PERIODO=@ANIO_PERIODO
+					  AND MES_PERIODO=@MES_PERIODO
+					  AND CORR_CLASE_PARTIDA=@CORR_CLASE_PARTIDA
+					  AND CORR_PARTIDA=@CORR_PARTIDA", pWhere);
+				var estado = readerEstado.Read()
+					? readerEstado["ESTADO_PARTIDA"]?.ToString()
+					: null;
+				readerEstado.Close();
+
+				if (string.IsNullOrWhiteSpace(estado))
+				{
+					objResultado.Result = false;
+					objResultado.ErrorCode = -1;
+					objResultado.ErrorMessage = "La partida indicada no existe.";
+					return objResultado;
+				}
+
+				if (estado != "DI")
+				{
+					objResultado.Result = false;
+					objResultado.ErrorCode = -1;
+					objResultado.ErrorMessage = "Solo se pueden eliminar partidas en estado DIGITADO.";
+					return objResultado;
+				}
+
+				await objData.Delete(_DetaTableName, pWhere);
 				await objData.Delete(_TableName, pWhere);
 				objResultado.Data = null; objResultado.Result = true; objResultado.RowsAffected = 1;
 				objResultado.CodeHelper = 0; objResultado.ErrorCode = 0; objResultado.ErrorMessage = ""; objResultado.ErrorSource = "";

@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using System.Linq;
+using Microsoft.Data.SqlClient;
 using eFramework.Data;
 using eFramework.Core;
 using sguees.Models;
@@ -11,11 +12,13 @@ namespace sguees.Repositories
 	public class CON_PARAMETRORepository : BaseRepository<CON_PARAMETROTable>, ICON_PARAMETRORepository
 	{
 		private const string _TableName = "CON_PARAMETRO";
+		private readonly string _connectionString;
 
 		public CON_PARAMETRORepository(IConfiguration config) :
 				base(config.GetConnectionString("defaultConnection"),
 					 config.GetSection("DbProvider:defaultProvider").Value)
 		{
+			_connectionString = config.GetConnectionString("defaultConnection") ?? "";
 		}
 
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
@@ -261,6 +264,47 @@ namespace sguees.Repositories
 			finally
 			{
 				objData.objConnection.Close();
+			}
+			return objResultado;
+		}
+
+		public async Task<CResult> GetMonedasAsync(int corrEmpresa)
+		{
+			CResult objResultado = new();
+			var response = new List<CON_MONEDA_LOOKUPView>();
+			const string sql = @"
+				SELECT DISTINCT A.CORR_MONEDA, B.NOMBRE_MONEDA
+				FROM CON_PARAMETRO A
+				INNER JOIN GEN_TIPO_MONEDA B ON A.CORR_MONEDA = B.CORR_MONEDA
+				WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+				ORDER BY B.NOMBRE_MONEDA";
+			try
+			{
+				await using var conn = new SqlConnection(_connectionString);
+				await conn.OpenAsync();
+				await using var cmd = new SqlCommand(sql, conn);
+				cmd.Parameters.AddWithValue("@CORR_EMPRESA", corrEmpresa);
+				await using var reader = await cmd.ExecuteReaderAsync();
+				while (await reader.ReadAsync())
+				{
+					response.Add(new CON_MONEDA_LOOKUPView
+					{
+						CORR_MONEDA = reader.GetInt32(0),
+						NOMBRE_MONEDA = reader.GetString(1)
+					});
+				}
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.ErrorCode = 0;
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource = $"[{e.Source}]";
 			}
 			return objResultado;
 		}

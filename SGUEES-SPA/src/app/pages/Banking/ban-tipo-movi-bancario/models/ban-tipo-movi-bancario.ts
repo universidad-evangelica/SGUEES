@@ -1,0 +1,17 @@
+export interface BanTipoMoviBancario {
+	CORR_EMPRESA: number;
+	CORR_TIPO_MOVIMIENTO: number;
+	NOMBRE_TIPO_MOVIMIENTO: string;
+	NOMBRE_TIPO_CORTO: string;
+	CORR_LINEA: number;
+	CORR_CLASE_PARTIDA: number;
+	USA_CHEQUE_PROPIO: boolean;
+	SUMA_RESTA: number;
+	CLASE_MOVIMIENTO: string;
+	CUENTA_CONTABLE_GASTO: string;
+	NOMBRE_REPORTE: string;
+	NOMBRE_LINEA_TRABAJO?: string;
+	NOMBRE_CLASE_PARTIDA?: string;
+	NOMBRE_SUMA_RESTA?: string;
+	NOMBRE_CLASE_MOVIMIENTO?: string;
+}

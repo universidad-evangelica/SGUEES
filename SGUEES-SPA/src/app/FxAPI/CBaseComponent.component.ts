@@ -1,5 +1,7 @@
 import { Component, ViewChild, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Observable } from 'rxjs';
+import { take } from 'rxjs/operators';
 
 import esMessages from 'devextreme/localization/messages/es.json';
 import { loadMessages, locale } from 'devextreme/localization';
@@ -11,7 +13,17 @@ import { RowStatus } from '../shared/models/RowStatus.enum';
 import { NotifyType } from '../shared/models/NotifyType';
 
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
+import { AuthService } from 'src/app/shared/services/auth.service';
 import { SgueesNotificationService } from 'src/app/shared/services/sguees-notification.service';
+import {
+	cleanApiMessage,
+	getApiErrorMessage,
+	getEmpresaWarningMessage,
+	getNotifyTypeFromError,
+	getNotifyTypeFromResponse,
+	isEmpresaFkErrorMessage,
+	mapApiErrorMessage,
+} from 'src/app/shared/mtto/mtto-api-messages';
 
 @Component({
 	selector: 'app-base-component',
@@ -21,6 +33,14 @@ export class CBaseComponent {
 	@ViewChild('fData', { static: false }) dataForm!: DxFormComponent;
 
 	private readonly sgueesNotify = inject(SgueesNotificationService);
+	private readonly sessionAuth = inject(AuthService, { optional: true });
+
+	/** Etiqueta del registro para mensajes API (opt-in). */
+	protected etiquetaRegistro = 'el registro';
+	/** Valida CORR_EMPRESA en sesión antes de guardar (opt-in). */
+	protected requiereEmpresaSesion = false;
+	/** Normaliza duplicados, FK y empresa en notifyFx (opt-in, default true). */
+	protected mapearMensajesApi = true;
 
   //#region <Declareando Variales>
 	tituloVentana = '';
@@ -201,8 +221,203 @@ export class CBaseComponent {
 		this.banderaMtto = xEstado;
 	}
 
-	notifyFx(xMessage: string, xType: NotifyType) {
-		this.sgueesNotify.show(xMessage, xType);
+	notifyFx(xMessage: string, xType: NotifyType, options?: { raw?: boolean }): void {
+		if (options?.raw || xType === NotifyType.Success) {
+			this.sgueesNotify.show(cleanApiMessage(xMessage) || xMessage, xType);
+			return;
+		}
+
+		const mapped = mapApiErrorMessage(xMessage, this.etiquetaRegistro);
+		const type = this.resolveNotifyType(xMessage, xType);
+		this.sgueesNotify.show(mapped, type);
+	}
+
+	notifyApiResponse(response: any): void {
+		const type = getNotifyTypeFromResponse(response, this.etiquetaRegistro);
+		const message = mapApiErrorMessage(
+			response?.ErrorMessage || 'Ocurrió un error al procesar la solicitud.',
+			this.etiquetaRegistro
+		);
+		this.sgueesNotify.show(message, type);
+	}
+
+	notifyApiError(error: any): void {
+		const type = getNotifyTypeFromError(error, this.etiquetaRegistro);
+		const message = mapApiErrorMessage(getApiErrorMessage(error), this.etiquetaRegistro);
+		this.sgueesNotify.show(message, type);
+	}
+
+	asegurarEmpresaSesion(): boolean {
+		if (!this.requiereEmpresaSesion) {
+			return true;
+		}
+
+		const corrEmpresa = Number(this.sessionAuth?.decodedToken?.CORR_EMPRESA ?? 0);
+		if (Number.isFinite(corrEmpresa) && corrEmpresa > 0) {
+			return true;
+		}
+
+		this.notifyFx(getEmpresaWarningMessage(this.etiquetaRegistro), NotifyType.Warning, { raw: true });
+		return false;
+	}
+
+	confirmaAccion(title: string, message: string, fn: () => void): void {
+		const dialog = custom({
+			title,
+			messageHtml: '<div class="sguees-confirm-message">' + message + '</div>',
+			buttons: [
+				{ text: 'Si', type: 'default', onClick: () => true },
+				{ text: 'No', onClick: () => false },
+			],
+		});
+
+		dialog.show().then((accepted: boolean) => {
+			if (accepted) {
+				fn();
+			}
+		});
+	}
+
+	guardarMtto(options: {
+		esValido?: () => boolean;
+		insert: () => Observable<unknown>;
+		update: () => Observable<unknown>;
+		onSuccess?: (data: unknown, isAdd: boolean) => void;
+		successAddMessage?: string;
+		successUpdateMessage?: string;
+	}): void {
+		if (!this.asegurarEmpresaSesion()) {
+			return;
+		}
+
+		const formData = this.dataForm?.instance?.option('formData');
+		if (formData) {
+			this.model = { ...this.model, ...formData };
+		}
+
+		const formValidation = this.dataForm?.instance?.validate();
+		if (formValidation && !formValidation.isValid) {
+			options.esValido?.();
+			return;
+		}
+
+		if (options.esValido && !options.esValido()) {
+			return;
+		}
+
+		const isAdd = this.banderaMtto === UpdateType.Add;
+		const action = isAdd ? options.insert() : options.update();
+
+		this.loadingVisible = true;
+		action.pipe(take(1)).subscribe({
+			next: (response: any) => {
+				if (response.Result) {
+					this.model = response.Data;
+					this.AsignaStatus(UpdateType.Browse);
+					options.onSuccess?.(response.Data, isAdd);
+					this.notifyFx(
+						isAdd
+							? options.successAddMessage ?? 'Registro creado con exito!'
+							: options.successUpdateMessage ?? 'Registro modificado con exito!',
+						NotifyType.Success,
+						{ raw: true }
+					);
+				} else {
+					this.notifyApiResponse(response);
+				}
+				this.loadingVisible = false;
+			},
+			error: (error: any) => {
+				this.notifyApiError(error);
+				this.loadingVisible = false;
+			},
+		});
+	}
+
+	ejecutarDelete(options: {
+		deleteFn: () => Observable<unknown>;
+		onSuccess?: () => void;
+		rowRemovingEvent?: any;
+		successMessage?: string;
+	}): void {
+		this.loadingVisible = true;
+		options
+			.deleteFn()
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						options.onSuccess?.();
+						this.notifyFx(options.successMessage ?? 'Registro eliminado con exito!', NotifyType.Success, { raw: true });
+					} else {
+						if (options.rowRemovingEvent) {
+							options.rowRemovingEvent.cancel = true;
+						}
+						this.notifyApiResponse(response);
+					}
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					if (options.rowRemovingEvent) {
+						options.rowRemovingEvent.cancel = true;
+					}
+					this.notifyApiError(error);
+					this.loadingVisible = false;
+				},
+			});
+	}
+
+	ejecutarCambioEstado(options: {
+		activar: () => Observable<unknown>;
+		desactivar: () => Observable<unknown>;
+		activo: boolean;
+		onSuccess?: () => void;
+		successActivarMessage?: string;
+		successDesactivarMessage?: string;
+	}): void {
+		const action = options.activo ? options.activar() : options.desactivar();
+
+		this.loadingVisible = true;
+		action.pipe(take(1)).subscribe({
+			next: (response: any) => {
+				if (response.Result) {
+					options.onSuccess?.();
+					this.notifyFx(
+						options.activo
+							? options.successActivarMessage ?? 'Registro activado con exito!'
+							: options.successDesactivarMessage ?? 'Registro desactivado con exito!',
+						NotifyType.Success,
+						{ raw: true }
+					);
+				} else {
+					this.notifyApiResponse(response);
+				}
+				this.loadingVisible = false;
+			},
+			error: (error: any) => {
+				this.notifyApiError(error);
+				this.loadingVisible = false;
+			},
+		});
+	}
+
+	private resolveNotifyType(message: string, requested: NotifyType): NotifyType {
+		if (requested === NotifyType.Warning) {
+			return NotifyType.Warning;
+		}
+
+		const value = cleanApiMessage(message).toLowerCase();
+		if (
+			isEmpresaFkErrorMessage(message) ||
+			value.includes('ya existe') ||
+			value.includes('duplicad') ||
+			value.includes('asociados') ||
+			value.includes('hijos asociados')
+		) {
+			return NotifyType.Warning;
+		}
+
+		return requested;
 	}
 
 	confirmaCancelar(fn: () => void) {

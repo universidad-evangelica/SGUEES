@@ -14,8 +14,11 @@
 			<app-data-lookup
 				[model]="mCODIGO_RUBRO"
 				[(value)]="model.CODIGO_RUBRO"
-				[selectedRowKeys]="selectedLookUpLista"
+				[selectedRowKeys]="selectedLookUpCODIGO_RUBRO"
 				[readOnly]="readOnly"
+				[valueExpr]="'CODIGO_RUBRO'"
+				[displayExpr]="'NOMBRE_RUBRO'"
+				[lookupColumns]="rubroLookupColumns"
 				(valueChange)="onRubroChanged($event)"
 			>
 			</app-data-lookup>
@@ -46,7 +49,6 @@
 	[columns]="columns"
 	[summary]="summary"
 	[keyExpr]="'CUENTA_CONTABLE'"
-	[columnAutoWidth]="true"
 	[permiteEditar]="getPermiteEditar"
 	[permiteDele]="getPermiteDele"
 	(rowDblClick)="rowDblClick($event)"

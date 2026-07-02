@@ -1,0 +1,115 @@
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="permiteAdd"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+>
+</app-barra-data-mtto>
+<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+		<div *dxTemplate="let cellInfo of 'CORR_BANCOLookup'">
+			<app-data-lookup
+				[model]="mCORR_BANCO"
+				[(value)]="model.CORR_BANCO"
+				[selectedRowKeys]="selectedLookUpCORR_BANCO"
+				[readOnly]="readOnly"
+				[valueExpr]="'CORR_BANCO'"
+				[displayExpr]="'NOMBRE_BANCO'"
+				[lookupColumns]="bancoLookupColumns"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'TIPO_CUENTA_BANCOLookup'">
+			<app-data-lookup
+				[model]="mTIPO_CUENTA_BANCO"
+				[(value)]="model.TIPO_CUENTA_BANCO"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'ESTADO_CUENTALookup'">
+			<app-data-lookup
+				[model]="mESTADO_CUENTA"
+				[(value)]="model.ESTADO_CUENTA"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CLASE_CHEQUELookup'">
+			<app-data-lookup
+				[model]="mCLASE_CHEQUE"
+				[(value)]="model.CLASE_CHEQUE"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_CENTRO_COSTOLookup'">
+			<app-data-lookup
+				[model]="mCORR_CENTRO_COSTO"
+				[(value)]="model.CORR_CENTRO_COSTO"
+				[selectedRowKeys]="selectedLookUpCORR_CENTRO_COSTO"
+				[readOnly]="readOnly"
+				[valueExpr]="'CORR_CENTRO_COSTO'"
+				[displayExpr]="'NOMBRE_CENTRO'"
+				[lookupColumns]="centroCostoLookupColumns"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_MONEDALookup'">
+			<app-data-lookup
+				[model]="mCORR_MONEDA"
+				[(value)]="model.CORR_MONEDA"
+				[selectedRowKeys]="selectedLookUpCORR_MONEDA"
+				[readOnly]="readOnly"
+				[valueExpr]="'CORR_MONEDA'"
+				[displayExpr]="'NOMBRE_MONEDA'"
+				[lookupColumns]="monedaLookupColumns"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CUENTA_CONTABLELookup'">
+			<app-data-lookup
+				[model]="mCUENTA_CONTABLE"
+				[(value)]="model.CUENTA_CONTABLE"
+				[selectedRowKeys]="selectedLookUpCUENTA_CONTABLE"
+				[readOnly]="readOnly"
+				[valueExpr]="'CUENTA_CONTABLE'"
+				[displayExpr]="'CUENTA_CONTABLE'"
+				[lookupColumns]="cuentaLookupColumns"
+				[showClearButton]="true"
+			>
+			</app-data-lookup>
+		</div>
+	</dx-form>
+</div>
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="'CORR_CUENTA_BANCO'"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>

@@ -15,6 +15,10 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 	styleUrls: ['./con-periodo-contable.component.scss'],
 })
 export class ConPeriodoContableComponent extends CBaseComponent implements OnInit {
+	//#region <Declarando Variales>
+	readOnly = false;
+	// #endregion
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -26,15 +30,26 @@ export class ConPeriodoContableComponent extends CBaseComponent implements OnIni
 		this.items = this.service.getItems();
 	}
 
+	//#region <Inicializando Opciones>
 	ngOnInit(): void {
 		this.inicializaOpciones();
+		this.llenaComboBox();
 		this.consultar();
 	}
 
 	inicializaOpciones() {}
+	// #endregion
 
-	fillParam(xKey?: any): any {
-		return { ANIO_PERIODO: xKey || 0 };
+	//#region <Manejo de Combos>
+	llenaComboBox() {}
+	//#endregion
+
+	//#region <Metodos Mtto>
+	fillParam(xANIO_PERIODO?: number): any {
+		if (xANIO_PERIODO == undefined) {
+			xANIO_PERIODO = 0;
+		}
+		return { ANIO_PERIODO: xANIO_PERIODO };
 	}
 
 	override fillData(xModel?: ConPeriodoContable): ConPeriodoContable {
@@ -186,4 +201,16 @@ export class ConPeriodoContableComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	override bloquear(): void {
+		this.dataForm.instance.getEditor('ANIO_PERIODO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('MES_PERIODO')?.option('readOnly', true);
+		this.readOnly = true;
+	}
+
+	override setFocus() {
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('ANIO_PERIODO')?.focus();
+		});
+	}
+	//#endregion
 }

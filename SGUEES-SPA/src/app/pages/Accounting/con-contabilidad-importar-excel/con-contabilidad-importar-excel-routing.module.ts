@@ -22,6 +22,7 @@ const routes: Routes = [{ path: '', component: ConContabilidadImportarExcelCompo
 		DxFileUploaderModule,
 		DxTabPanelModule,
 	],
+	exports: [RouterModule],
 	declarations: [ConContabilidadImportarExcelComponent],
 })
 export class ConContabilidadImportarExcelRoutingModule {}

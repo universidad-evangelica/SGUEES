@@ -32,6 +32,7 @@ const routes: Routes = [{ path: '', component: ConRubroComponent }];
 		DataLookupModule,
 		BarraDataMttoModule,
 	],
+	exports: [RouterModule],
 	declarations: [ConRubroComponent],
 })
 export class ConRubroRoutingModule {}

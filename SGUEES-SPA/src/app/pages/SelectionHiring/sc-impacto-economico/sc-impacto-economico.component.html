@@ -38,8 +38,13 @@
 	[columns]="columns"
 	[summary]="summary"
 	[keyExpr]="'CORR_IMPACTO_ECONOMICO'"
+<<<<<<< Updated upstream
 	[remoteOperations]="{ paging: true, filtering: true, sorting: true }"
 	[headerFilterLoader]="loadHeaderFilterValues"
+=======
+	[customButtons]="botonesEstado"
+	[remoteOperations]="{ paging: true, filtering: true }"
+>>>>>>> Stashed changes
 	[pageSize]="5"
 	[allowedPageSizes]="pageSizes"
 	[showSearch]="false"
@@ -47,11 +52,14 @@
 	[showRefresh]="true"
 	[showExport]="true"
 	[permitePrint]="permitePrint"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
 	[responsiveColumnHiding]="false"
 	[columnHidingEnabled]="false"
 	[exportFileName]="'DescriptorImpactoEconomico'"
 	(refresh)="consultar()"
 	(add)="nuevo()"
+	(editClick)="editarClick($event)"
 	(rowDblClick)="rowDblClick($event)"
 	(rowRemoving)="rowRemoving($event)"
 	(focusedRowChanged)="focusedRowChanged($event)"

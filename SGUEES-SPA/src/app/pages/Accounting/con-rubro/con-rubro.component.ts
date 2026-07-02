@@ -20,9 +20,12 @@ import { environment } from 'src/environments/environment';
 })
 export class ConRubroComponent extends CBaseComponent implements OnInit {
 	@ViewChild('gridNiveles', { static: false }) gridNiveles!: DxDataGridComponent;
+
+	//#region <Declarando Variales>
 	niveles: ConRubroNivel[] = [];
 	readOnly = false;
 	mCLASE_RUBRO: any;
+	// #endregion
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -36,6 +39,7 @@ export class ConRubroComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
+	//#region <Inicializando Opciones>
 	ngOnInit(): void {
 		this.inicializaOpciones();
 		this.llenaComboBox();
@@ -43,7 +47,9 @@ export class ConRubroComponent extends CBaseComponent implements OnInit {
 	}
 
 	inicializaOpciones() {}
+	// #endregion
 
+	//#region <Manejo de Combos>
 	llenaComboBox() {
 		this.getCLASE_RUBRO();
 	}
@@ -63,9 +69,14 @@ export class ConRubroComponent extends CBaseComponent implements OnInit {
 				},
 			});
 	}
+	//#endregion
 
-	fillParam(xKey?: any): any {
-		return { CODIGO_RUBRO: xKey || 0 };
+	//#region <Metodos Mtto>
+	fillParam(xCODIGO_RUBRO?: string): any {
+		if (xCODIGO_RUBRO == undefined) {
+			xCODIGO_RUBRO = '';
+		}
+		return { CODIGO_RUBRO: xCODIGO_RUBRO };
 	}
 
 	override fillData(xModel?: ConRubro): ConRubro {
@@ -281,6 +292,26 @@ export class ConRubroComponent extends CBaseComponent implements OnInit {
 				},
 			});
 	}
+
+	override bloquear(): void {
+		this.dataForm.instance.getEditor('CODIGO_RUBRO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ES_DEBE')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ES_HABER')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CLASE_RUBRO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NOMBRE_RUBRO')?.option('readOnly', true);
+		this.readOnly = true;
+	}
+
+	override habilitar(): void {
+		this.readOnly = false;
+	}
+
+	override setFocus() {
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('CODIGO_RUBRO')?.focus();
+		});
+	}
+	//#endregion
 
 	selectedLookUpLista(vRow: any): any {
 		return vRow[0].Key;

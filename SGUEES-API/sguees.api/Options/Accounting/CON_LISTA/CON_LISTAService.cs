@@ -1,4 +1,6 @@
+using sguees.Repositories;
 using eFramework.Core;
+
 
 namespace sguees.Services
 {
@@ -49,21 +51,6 @@ namespace sguees.Services
 		public CResult GetCLASE_CENTRO_COSTO()
 		{
 			return _repo.GetCLASE_CENTRO_COSTO();
-		}
-
-		public CResult GetCORR_TIPO_CENTRO_COSTO()
-		{
-			return _repo.GetCORR_TIPO_CENTRO_COSTO();
-		}
-
-		public CResult GetCORR_UNIDAD_NEGOCIO()
-		{
-			return _repo.GetCORR_UNIDAD_NEGOCIO();
-		}
-
-		public CResult GetCORR_AREA_FUNCIONAL()
-		{
-			return _repo.GetCORR_AREA_FUNCIONAL();
 		}
 
 		public CResult GetCLASE_UNIDAD_NEGOCIO()

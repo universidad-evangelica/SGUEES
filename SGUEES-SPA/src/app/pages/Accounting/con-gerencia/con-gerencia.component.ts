@@ -26,20 +26,43 @@ export class ConGerenciaComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
+	//#region <Declarando Variales>
+	readOnly = false;
+	// #endregion
+
+	//#region <Inicializando Opciones>
 	ngOnInit(): void {
 		this.inicializaOpciones();
+		this.llenaComboBox();
 		this.consultar();
 	}
 
 	inicializaOpciones() {}
+	// #endregion
 
-	fillParam(xKey?: any): any {
-		return { CORR_GERENCIA: xKey || 0 };
+	//#region <Manejo de Combos>
+	llenaComboBox() {}
+	//#endregion
+
+	//#region <Metodos Mtto>
+	fillParam(xCORR_GERENCIA?: number): any {
+		if (xCORR_GERENCIA == undefined) {
+			xCORR_GERENCIA = 0;
+		}
+		return {
+			CORR_GERENCIA: xCORR_GERENCIA,
+		};
 	}
 
 	override fillData(xModel?: ConGerencia): ConGerencia {
 		if (xModel !== undefined) {
-			return { ...xModel };
+			return {
+				CORR_EMPRESA: xModel.CORR_EMPRESA,
+				CORR_DIVISION: xModel.CORR_DIVISION,
+				CORR_GERENCIA: xModel.CORR_GERENCIA,
+				NOMBRE_GERENCIA: xModel.NOMBRE_GERENCIA,
+				CODIGO_GERENCIA: xModel.CODIGO_GERENCIA,
+			};
 		} else {
 			return {
 				CORR_EMPRESA: 0,
@@ -143,4 +166,26 @@ export class ConGerenciaComponent extends CBaseComponent implements OnInit {
 				},
 			});
 	}
+
+	override bloquear(): void {
+		this.dataForm.instance.getEditor('CORR_DIVISION')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CORR_GERENCIA')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NOMBRE_GERENCIA')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CODIGO_GERENCIA')?.option('readOnly', true);
+		this.readOnly = true;
+	}
+
+	override habilitar(): void {
+		this.readOnly = false;
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('CORR_GERENCIA')?.option('readOnly', true);
+		});
+	}
+
+	override setFocus() {
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('NOMBRE_GERENCIA')?.focus();
+		});
+	}
+	//#endregion
 }

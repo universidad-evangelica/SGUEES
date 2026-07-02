@@ -9,10 +9,8 @@ export interface ConReporteFiltro {
 	CUENTA_CONTABLE_FINAL?: string | null;
 	CUENTA_CONTABLE?: string | null;
 	CUENTA_DEPARTAMENTO?: string | null;
-	CORR_CONFI_REPORTE?: number | null;
 	CORR_AUXILIAR?: number | null;
 	CORR_CENTRO_COSTO?: number | null;
-	CORR_MONEDA?: number | null;
 	PARTIDA_CIERRE?: boolean | null;
 	PARTIDA_LIQUIDACION?: boolean | null;
 	CUENTA_A_CERO?: boolean | null;
@@ -37,9 +35,4 @@ export interface ConReporteDefinicion {
 	URL_REPORTE?: string | null;
 	URL_OPCION?: string | null;
 	FILTROS: string[];
-}
-
-export interface ConConfiReporte {
-	CORR_CONFI_REPORTE: number;
-	NOMBRE_REPORTE: string;
 }

@@ -1,0 +1,34 @@
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
+using eFramework.Core;
+using sguees.Models;
+using sguees.Repositories;
+
+namespace sguees.Services
+{
+	public class BAN_TIPO_CHEQUEService : IBAN_TIPO_CHEQUEService
+	{
+		private readonly IBAN_TIPO_CHEQUERepository _repo;
+		public BAN_TIPO_CHEQUEService(IBAN_TIPO_CHEQUERepository repo) { _repo = repo; }
+
+		public async Task<CResult> GetAllAsync(BAN_TIPO_CHEQUEParam xWhere)
+		{
+			var p = new List<CParameter> { new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 } };
+			return await _repo.GetAllAsync(p);
+		}
+
+		public async Task<CResult> GetAsync(BAN_TIPO_CHEQUEParam xWhere)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_TIPO_CHEQUE", Value = xWhere.CORR_TIPO_CHEQUE, DbType = System.Data.DbType.Int32 },
+			};
+			return await _repo.GetAsync(p);
+		}
+
+		public async Task<CResult> CreateAsync(BAN_TIPO_CHEQUETable Data, string vLOGIN_SISTEMA, string vESTACION) => await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		public async Task<CResult> UpdateAsync(BAN_TIPO_CHEQUETable Data, string vLOGIN_SISTEMA, string vESTACION) => await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		public async Task<CResult> DeleteAsync(BAN_TIPO_CHEQUETable Data, string vLOGIN_SISTEMA, string vESTACION) => await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+	}
+}

@@ -7,7 +7,6 @@ import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { ConCatalogoCuenta } from './models/con-catalogo-cuenta';
 import { ConCatalogoCuentaService } from './con-catalogo-cuenta.service';
-import { ConRubroService } from '../con-rubro/con-rubro.service';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { environment } from 'src/environments/environment';
 
@@ -17,17 +16,22 @@ import { environment } from 'src/environments/environment';
 	styleUrls: ['./con-catalogo-cuenta.component.scss'],
 })
 export class ConCatalogoCuentaComponent extends CBaseComponent implements OnInit {
+	//#region <Declarando Variales>
 	mCLASE_RUBRO: any;
 	mCLASE_VALUACION: any;
 	mCODIGO_RUBRO: any[] = [];
+	rubroLookupColumns: any[] = [
+		{ dataField: 'CODIGO_RUBRO', caption: 'Código', width: 100 },
+		{ dataField: 'NOMBRE_RUBRO', caption: 'Rubro', width: 280 },
+	];
 	private rubros: any[] = [];
 	readOnly = false;
+	// #endregion
 
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: ConCatalogoCuentaService,
-		private rubroService: ConRubroService
+		private service: ConCatalogoCuentaService
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -35,6 +39,7 @@ export class ConCatalogoCuentaComponent extends CBaseComponent implements OnInit
 		this.items = this.service.getItems();
 	}
 
+	//#region <Inicializando Opciones>
 	ngOnInit(): void {
 		this.inicializaOpciones();
 		this.llenaComboBox();
@@ -42,7 +47,9 @@ export class ConCatalogoCuentaComponent extends CBaseComponent implements OnInit
 	}
 
 	inicializaOpciones() {}
+	// #endregion
 
+	//#region <Manejo de Combos>
 	llenaComboBox() {
 		this.getRUBROS();
 		this.getCLASE_RUBRO();
@@ -50,19 +57,14 @@ export class ConCatalogoCuentaComponent extends CBaseComponent implements OnInit
 	}
 
 	getRUBROS() {
-		this.rubroService
-			.getAll({ CODIGO_RUBRO: '' })
+		this.appInfoService
+			.getLookUp('CON_CATALOGO_CUENTA', 'CON_RUBRO', 'GetCODIGO_RUBRO', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
 						this.rubros = response.Data || [];
-						this.mCODIGO_RUBRO = this.rubros.map((item: any) => ({
-							Key: item.CODIGO_RUBRO,
-							Value: `${item.CODIGO_RUBRO} - ${item.NOMBRE_RUBRO}`,
-							NOMBRE_RUBRO: item.NOMBRE_RUBRO,
-							CLASE_RUBRO: item.CLASE_RUBRO,
-						}));
+						this.mCODIGO_RUBRO = this.rubros;
 					}
 				},
 				error: (error: any) => {
@@ -102,9 +104,14 @@ export class ConCatalogoCuentaComponent extends CBaseComponent implements OnInit
 				},
 			});
 	}
+	//#endregion
 
-	fillParam(xKey?: any): any {
-		return { CUENTA_CONTABLE: xKey || '' };
+	//#region <Metodos Mtto>
+	fillParam(xCUENTA_CONTABLE?: string): any {
+		if (xCUENTA_CONTABLE == undefined) {
+			xCUENTA_CONTABLE = '';
+		}
+		return { CUENTA_CONTABLE: xCUENTA_CONTABLE };
 	}
 
 	override fillData(xModel?: ConCatalogoCuenta): ConCatalogoCuenta {
@@ -162,7 +169,6 @@ export class ConCatalogoCuentaComponent extends CBaseComponent implements OnInit
 							this.models.push(response.Data);
 							this.model = response.Data;
 							this.AsignaStatus(UpdateType.Browse);
-							this.consultar();
 							this.notifyFx('Registro creado con exito!', NotifyType.Success);
 						} else {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -185,7 +191,6 @@ export class ConCatalogoCuentaComponent extends CBaseComponent implements OnInit
 							const vIndex = this.models.findIndex((item: any) => item.CUENTA_CONTABLE === response.Data.CUENTA_CONTABLE);
 							this.models[vIndex] = response.Data;
 							this.AsignaStatus(UpdateType.Browse);
-							this.consultar();
 							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
 						} else {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -225,8 +230,42 @@ export class ConCatalogoCuentaComponent extends CBaseComponent implements OnInit
 			});
 	}
 
+	override bloquear(): void {
+		this.dataForm.instance.getEditor('CUENTA_CONTABLE')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CODIGO_RUBRO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CLASE_RUBRO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NOMBRE_CUENTA')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ES_DEBE')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ES_HABER')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CUENTA_MAYOR')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NIVEL')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ES_DETALLE')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NO_HABILITADA')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ES_LIQUIDADORA')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CLASE_VALUACION')?.option('readOnly', true);
+		this.readOnly = true;
+	}
+
+	override habilitar(): void {
+		this.readOnly = false;
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('NIVEL')?.option('readOnly', true);
+		});
+	}
+
+	override setFocus() {
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('CUENTA_CONTABLE')?.focus();
+		});
+	}
+	//#endregion
+
 	selectedLookUpLista(vRow: any): any {
 		return vRow[0].Key;
+	}
+
+	selectedLookUpCODIGO_RUBRO(vRow: any): any {
+		return vRow[0].CODIGO_RUBRO;
 	}
 
 	onRubroChanged(codigoRubro: string) {

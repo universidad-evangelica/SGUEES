@@ -1,0 +1,630 @@
+/*
+================================================================================
+  MIGRACIÓN SALDOS INICIALES: CLASS_UEES -> SGUEES
+  Basado en: CLASS_UEES.CLASS_UEES.dbo.CLASS_SP_CONT_BALANCE_GENERAL_V1 (@ACCION=1)
+
+  Qué hace:
+    1) PREVIEW  - Muestra saldos CLASS, cuenta SGUEES mapeada y cargo/abono propuesto
+    2) MIGRAR   - Crea partida de apertura (clase APE) en SGUEES y la deja DIGITADA
+    3) APLICAR  - Aplica la partida generada (ESTADO AP)
+
+  Requisitos previos en SGUEES (192.168.0.250):
+    - Catálogo CON_CATALOGO_CUENTA importado (IMPORT_CLASS_WEB_CATALOGOS.sql)
+    - Periodo destino abierto (CON_PERIODO_CONTABLE ESTADO_PERIODO_CON = 'AB')
+    - Clase de partida APE en CON_CLASE_PARTIDA (SETUP_CON_CLASE_PARTIDA_APE.sql)
+    - Linked server CLASS_UEES -> 192.168.1.129 (SETUP_CLASS_UEES_LINKED_SERVER.sql)
+      CLASS_UEES no esta en el mismo servidor que SGUEES; el SP lee via linked server.
+
+  Uso:
+    EXEC dbo.PRAL_MIGR_CLASS_SALDO_INICIAL_BALANCE
+         @ANIO = 2026,
+         @MES = 6,
+         @CIERRE = 0,              -- 0 = igual CLASS (excluye lotes cierre); 1 = incluye todo
+         @CORR_EMPRESA = 1,
+         @MODO = 'PREVIEW',         -- PREVIEW | MIGRAR | APLICAR
+         @CORR_PARTIDA = NULL,      -- requerido en APLICAR
+         @SYS_LOGIN_USUARIO = 'MIGRACION',
+         @SYS_ESTACION = 'SQL';
+
+  Ejemplo completo:
+    -- 1) Revisar
+    EXEC dbo.PRAL_MIGR_CLASS_SALDO_INICIAL_BALANCE @ANIO=2026, @MES=6, @CIERRE=0, @MODO='PREVIEW';
+
+    -- 2) Crear partida (capturar @CORR_PARTIDA salida)
+    DECLARE @P INT, @E NUMERIC(38,0), @M NVARCHAR(4000), @F INT;
+    EXEC dbo.PRAL_MIGR_CLASS_SALDO_INICIAL_BALANCE
+         @ANIO=2026, @MES=6, @CIERRE=0, @MODO='MIGRAR',
+         @CORR_PARTIDA=@P OUTPUT,
+         @SYS_NUMERO_ERROR=@E OUTPUT, @SYS_MENSAJE_ERROR=@M OUTPUT, @SYS_FILAS_AFECTADAS=@F OUTPUT;
+
+    -- 3) Aplicar
+    EXEC dbo.PRAL_MIGR_CLASS_SALDO_INICIAL_BALANCE
+         @ANIO=2026, @MES=6, @CORR_PARTIDA=@P, @MODO='APLICAR';
+================================================================================
+*/
+SET NOCOUNT ON;
+GO
+
+/*
+  Regla CLASS -> SGUEES (misma convencion del catalogo IMPORT_CLASS_WEB_CATALOGOS):
+    CLASS guarda CONGLN/TRAGLN a 12 posiciones rellenando con cero a la derecha.
+    SGUEES guarda CUENTA_CONTABLE sin esos ceros finales.
+
+  Ejemplos:
+    110100000000  -> 1101
+    110101000000  -> 110101
+    310600000000  -> 310601  (cuenta de detalle en SGUEES para excedente)
+    310800000000  -> 310801  (cuenta de detalle en SGUEES para deficit)
+*/
+IF OBJECT_ID(N'dbo.FN_CLASS_TRAGLN_TO_CUENTA', N'FN') IS NOT NULL
+    DROP FUNCTION dbo.FN_CLASS_TRAGLN_TO_CUENTA;
+GO
+
+CREATE FUNCTION dbo.FN_CLASS_TRAGLN_TO_CUENTA(@TRAGLN VARCHAR(12))
+RETURNS VARCHAR(30)
+AS
+BEGIN
+    DECLARE @x VARCHAR(30) = LTRIM(RTRIM(ISNULL(@TRAGLN, '')));
+
+    WHILE LEN(@x) > 1 AND RIGHT(@x, 1) = '0'
+        SET @x = LEFT(@x, LEN(@x) - 1);
+
+    IF @TRAGLN LIKE '310600%' SET @x = '310601';
+    ELSE IF @TRAGLN LIKE '310800%' SET @x = '310801';
+
+    RETURN @x;
+END;
+GO
+
+IF OBJECT_ID(N'dbo.PRAL_MIGR_CLASS_SALDO_INICIAL_BALANCE', N'P') IS NOT NULL
+    DROP PROCEDURE dbo.PRAL_MIGR_CLASS_SALDO_INICIAL_BALANCE;
+GO
+
+CREATE PROCEDURE dbo.PRAL_MIGR_CLASS_SALDO_INICIAL_BALANCE
+(
+    @ANIO INT,
+    @MES INT,
+    @CIERRE INT = 0,
+    @CORR_EMPRESA INT = 1,
+    @MODO VARCHAR(10) = 'PREVIEW',          -- PREVIEW | MIGRAR | APLICAR
+    @INCLUIR_CERO BIT = 0,
+    @CORR_PARTIDA INT = NULL OUTPUT,
+    @SYS_LOGIN_USUARIO VARCHAR(30) = 'MIGRACION',
+    @SYS_ESTACION VARCHAR(50) = 'SQL',
+    @SYS_FILAS_AFECTADAS INT = NULL OUTPUT,
+    @SYS_NUMERO_ERROR NUMERIC(38, 0) = NULL OUTPUT,
+    @SYS_MENSAJE_ERROR NVARCHAR(4000) = NULL OUTPUT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT @SYS_NUMERO_ERROR = 0,
+           @SYS_MENSAJE_ERROR = N'',
+           @SYS_FILAS_AFECTADAS = 0,
+           @CORR_PARTIDA = ISNULL(@CORR_PARTIDA, 0);
+
+    DECLARE @MODO_U VARCHAR(10) = UPPER(LTRIM(RTRIM(ISNULL(@MODO, 'PREVIEW'))));
+    DECLARE @FECHA_CORTE DATE;
+    DECLARE @CORR_CLASE_PARTIDA INT;
+    DECLARE @CORR_MONEDA INT;
+    DECLARE @CORR_CENTRO_COSTO INT;
+    DECLARE @GASTOINGRESO MONEY;
+    DECLARE @NOMBRE_PARTIDA VARCHAR(255);
+    DECLARE @FECHA_CREA DATETIME = GETDATE();
+
+    SET @FECHA_CORTE = EOMONTH(DATEFROMPARTS(@ANIO, @MES, 1));
+
+    IF @MODO_U = 'APLICAR'
+    BEGIN
+        IF ISNULL(@CORR_PARTIDA, 0) <= 0
+        BEGIN
+            SELECT @SYS_NUMERO_ERROR = 30001,
+                   @SYS_MENSAJE_ERROR = N'Indique @CORR_PARTIDA para aplicar.';
+            GOTO FINA;
+        END;
+
+        SELECT TOP 1 @CORR_CLASE_PARTIDA = CORR_CLASE_PARTIDA
+        FROM CON_CLASE_PARTIDA
+        WHERE CORR_EMPRESA = @CORR_EMPRESA
+          AND NOMBRE_CORTO_CLASE = 'APE';
+
+        EXEC dbo.PRAL_MTTO_CON_PARTIDA_APLICAR
+            @CORR_EMPRESA,
+            @ANIO,
+            @MES,
+            @CORR_CLASE_PARTIDA,
+            @CORR_PARTIDA OUTPUT,
+            @SYS_LOGIN_USUARIO,
+            @FECHA_CREA,
+            @SYS_ESTACION,
+            @SYS_LOGIN_USUARIO,
+            @SYS_ESTACION,
+            @SYS_FILAS_AFECTADAS OUTPUT,
+            @SYS_NUMERO_ERROR OUTPUT,
+            @SYS_MENSAJE_ERROR OUTPUT;
+
+        GOTO FINA;
+    END;
+
+    -------------------------------------------------------------------------
+    -- 1) Replicar #TEMPMOV de CLASS (TRANSAC + TRANSAC_HST)
+    -------------------------------------------------------------------------
+    SELECT CAST(NULL AS VARCHAR(5)) AS TRABNK,
+           CAST(NULL AS VARCHAR(10)) AS TRABRN,
+           CAST(NULL AS VARCHAR(5)) AS TRADCC,
+           CAST(NULL AS MONEY) AS CARGO,
+           CAST(NULL AS MONEY) AS ABONO,
+           CAST(NULL AS VARCHAR(16)) AS TRAGLN,
+           CAST(NULL AS INT) AS TRAVDY,
+           CAST(NULL AS INT) AS TRAVDM
+    INTO #TEMPMOV
+    WHERE 1 = 0;
+
+    IF @CIERRE = 0
+    BEGIN
+        INSERT INTO #TEMPMOV (TRABNK, TRABRN, TRADCC, CARGO, ABONO, TRAGLN, TRAVDY, TRAVDM)
+        SELECT TR.TRABNK, TR.TRABRN, TR.TRADCC,
+               CASE WHEN TR.TRADCC = 'D' THEN TR.TRAAMT ELSE 0.00 END,
+               CASE WHEN TR.TRADCC = 'C' THEN TR.TRAAMT ELSE 0.00 END,
+               CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)) + REPLICATE('0', 12 - LEN(CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)))),
+               TR.TRAVDY, TR.TRAVDM
+        FROM CLASS_UEES.CLASS_UEES.dbo.TRANSAC TR
+        WHERE TR.TRATYP = 'R'
+          AND LEFT(CAST(TR.TRAGLN AS VARCHAR(25)), 1) IN ('1', '2', '3', '4', '5')
+          AND TR.TRAMOD <> 'P/G'
+          AND TR.TRALOT NOT IN ('2077')
+          AND YEAR(TR.TRAFVL) < @ANIO
+          AND CAST(TR.TRALOT AS VARCHAR(5)) + CAST(YEAR(TR.TRAFVL) AS VARCHAR(5)) <> '9999' + CAST(@ANIO AS VARCHAR(5))
+          AND CAST(TR.TRALOT AS VARCHAR(5)) + CAST(YEAR(TR.TRAFVL) AS VARCHAR(5)) <> '2078' + CAST(@ANIO AS VARCHAR(5))
+          AND CAST(TR.TRALOT AS VARCHAR(5)) + CAST(YEAR(TR.TRAFVL) AS VARCHAR(5)) + TR.TRADSC <> '2080' + CAST(@ANIO AS VARCHAR(5)) + 'Liquidación Cuenta';
+
+        INSERT INTO #TEMPMOV
+        SELECT TR.TRABNK, TR.TRABRN, TR.TRADCC,
+               CASE WHEN TR.TRADCC = 'D' THEN TR.TRAAMT ELSE 0.00 END,
+               CASE WHEN TR.TRADCC = 'C' THEN TR.TRAAMT ELSE 0.00 END,
+               CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)) + REPLICATE('0', 12 - LEN(CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)))),
+               TR.TRAVDY, TR.TRAVDM
+        FROM CLASS_UEES.CLASS_UEES.dbo.TRANSAC TR
+        WHERE TR.TRATYP = 'R'
+          AND LEFT(CAST(TR.TRAGLN AS VARCHAR(25)), 1) IN ('1', '2', '3', '4', '5')
+          AND TR.TRAMOD <> 'P/G'
+          AND TR.TRALOT NOT IN ('2077')
+          AND YEAR(TR.TRAFVL) = @ANIO
+          AND MONTH(TR.TRAFVL) <= @MES
+          AND CAST(TR.TRALOT AS VARCHAR(5)) + CAST(YEAR(TR.TRAFVL) AS VARCHAR(5)) <> '9999' + CAST(@ANIO AS VARCHAR(5))
+          AND CAST(TR.TRALOT AS VARCHAR(5)) + CAST(YEAR(TR.TRAFVL) AS VARCHAR(5)) <> '2078' + CAST(@ANIO AS VARCHAR(5))
+          AND CAST(TR.TRALOT AS VARCHAR(5)) + CAST(YEAR(TR.TRAFVL) AS VARCHAR(5)) + TR.TRADSC <> '2080' + CAST(@ANIO AS VARCHAR(5)) + 'Liquidación Cuenta';
+
+        INSERT INTO #TEMPMOV
+        SELECT TR.TRABNK, TR.TRABRN, TR.TRADCC,
+               CASE WHEN TR.TRADCC = 'D' THEN TR.TRAAMT ELSE 0.00 END,
+               CASE WHEN TR.TRADCC = 'C' THEN TR.TRAAMT ELSE 0.00 END,
+               CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)) + REPLICATE('0', 12 - LEN(CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)))),
+               TR.TRAVDY, TR.TRAVDM
+        FROM CLASS_UEES.CLASS_UEES.dbo.TRANSAC_HST TR
+        WHERE TR.TRATYP = 'R'
+          AND LEFT(CAST(TR.TRAGLN AS VARCHAR(25)), 1) IN ('1', '2', '3', '4', '5')
+          AND TR.TRAMOD <> 'P/G'
+          AND TR.TRALOT NOT IN ('2077')
+          AND YEAR(TR.TRAFVL) < @ANIO
+          AND CAST(TR.TRALOT AS VARCHAR(5)) + CAST(YEAR(TR.TRAFVL) AS VARCHAR(5)) <> '9999' + CAST(@ANIO AS VARCHAR(5))
+          AND CAST(TR.TRALOT AS VARCHAR(5)) + CAST(YEAR(TR.TRAFVL) AS VARCHAR(5)) <> '2078' + CAST(@ANIO AS VARCHAR(5))
+          AND CAST(TR.TRALOT AS VARCHAR(5)) + CAST(YEAR(TR.TRAFVL) AS VARCHAR(5)) + TR.TRADSC <> '2080' + CAST(@ANIO AS VARCHAR(5)) + 'Liquidación Cuenta';
+
+        INSERT INTO #TEMPMOV
+        SELECT TR.TRABNK, TR.TRABRN, TR.TRADCC,
+               CASE WHEN TR.TRADCC = 'D' THEN TR.TRAAMT ELSE 0.00 END,
+               CASE WHEN TR.TRADCC = 'C' THEN TR.TRAAMT ELSE 0.00 END,
+               CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)) + REPLICATE('0', 12 - LEN(CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)))),
+               TR.TRAVDY, TR.TRAVDM
+        FROM CLASS_UEES.CLASS_UEES.dbo.TRANSAC_HST TR
+        WHERE TR.TRATYP = 'R'
+          AND LEFT(CAST(TR.TRAGLN AS VARCHAR(25)), 1) IN ('1', '2', '3', '4', '5')
+          AND TR.TRAMOD <> 'P/G'
+          AND TR.TRALOT NOT IN ('2077')
+          AND YEAR(TR.TRAFVL) = @ANIO
+          AND MONTH(TR.TRAFVL) <= @MES
+          AND CAST(TR.TRALOT AS VARCHAR(5)) + CAST(YEAR(TR.TRAFVL) AS VARCHAR(5)) <> '9999' + CAST(@ANIO AS VARCHAR(5))
+          AND CAST(TR.TRALOT AS VARCHAR(5)) + CAST(YEAR(TR.TRAFVL) AS VARCHAR(5)) <> '2078' + CAST(@ANIO AS VARCHAR(5))
+          AND CAST(TR.TRALOT AS VARCHAR(5)) + CAST(YEAR(TR.TRAFVL) AS VARCHAR(5)) + TR.TRADSC <> '2080' + CAST(@ANIO AS VARCHAR(5)) + 'Liquidación Cuenta';
+    END
+    ELSE
+    BEGIN
+        INSERT INTO #TEMPMOV
+        SELECT TR.TRABNK, TR.TRABRN, TR.TRADCC,
+               CASE WHEN TR.TRADCC = 'D' THEN TR.TRAAMT ELSE 0.00 END,
+               CASE WHEN TR.TRADCC = 'C' THEN TR.TRAAMT ELSE 0.00 END,
+               CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)) + REPLICATE('0', 12 - LEN(CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)))),
+               TR.TRAVDY, TR.TRAVDM
+        FROM CLASS_UEES.CLASS_UEES.dbo.TRANSAC TR
+        WHERE TR.TRATYP = 'R'
+          AND LEFT(CAST(TR.TRAGLN AS VARCHAR(25)), 1) IN ('1', '2', '3', '4', '5')
+          AND TR.TRAMOD <> 'P/G'
+          AND TR.TRALOT NOT IN ('2077')
+          AND YEAR(TR.TRAFVL) < @ANIO;
+
+        INSERT INTO #TEMPMOV
+        SELECT TR.TRABNK, TR.TRABRN, TR.TRADCC,
+               CASE WHEN TR.TRADCC = 'D' THEN TR.TRAAMT ELSE 0.00 END,
+               CASE WHEN TR.TRADCC = 'C' THEN TR.TRAAMT ELSE 0.00 END,
+               CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)) + REPLICATE('0', 12 - LEN(CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)))),
+               TR.TRAVDY, TR.TRAVDM
+        FROM CLASS_UEES.CLASS_UEES.dbo.TRANSAC TR
+        WHERE TR.TRATYP = 'R'
+          AND LEFT(CAST(TR.TRAGLN AS VARCHAR(25)), 1) IN ('1', '2', '3', '4', '5')
+          AND TR.TRAMOD <> 'P/G'
+          AND TR.TRALOT NOT IN ('2077')
+          AND YEAR(TR.TRAFVL) = @ANIO
+          AND MONTH(TR.TRAFVL) <= @MES;
+
+        INSERT INTO #TEMPMOV
+        SELECT TR.TRABNK, TR.TRABRN, TR.TRADCC,
+               CASE WHEN TR.TRADCC = 'D' THEN TR.TRAAMT ELSE 0.00 END,
+               CASE WHEN TR.TRADCC = 'C' THEN TR.TRAAMT ELSE 0.00 END,
+               CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)) + REPLICATE('0', 12 - LEN(CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)))),
+               TR.TRAVDY, TR.TRAVDM
+        FROM CLASS_UEES.CLASS_UEES.dbo.TRANSAC_HST TR
+        WHERE TR.TRATYP = 'R'
+          AND LEFT(CAST(TR.TRAGLN AS VARCHAR(25)), 1) IN ('1', '2', '3', '4', '5')
+          AND TR.TRAMOD <> 'P/G'
+          AND TR.TRALOT NOT IN ('2077')
+          AND YEAR(TR.TRAFVL) < @ANIO;
+
+        INSERT INTO #TEMPMOV
+        SELECT TR.TRABNK, TR.TRABRN, TR.TRADCC,
+               CASE WHEN TR.TRADCC = 'D' THEN TR.TRAAMT ELSE 0.00 END,
+               CASE WHEN TR.TRADCC = 'C' THEN TR.TRAAMT ELSE 0.00 END,
+               CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)) + REPLICATE('0', 12 - LEN(CAST(LEFT(TR.TRAGLN, 4) AS VARCHAR(12)))),
+               TR.TRAVDY, TR.TRAVDM
+        FROM CLASS_UEES.CLASS_UEES.dbo.TRANSAC_HST TR
+        WHERE TR.TRATYP = 'R'
+          AND LEFT(CAST(TR.TRAGLN AS VARCHAR(25)), 1) IN ('1', '2', '3', '4', '5')
+          AND TR.TRAMOD <> 'P/G'
+          AND TR.TRALOT NOT IN ('2077')
+          AND YEAR(TR.TRAFVL) = @ANIO
+          AND MONTH(TR.TRAFVL) <= @MES;
+    END;
+
+    -------------------------------------------------------------------------
+    -- 2) Resultado del ejercicio (igual CLASS)
+    -------------------------------------------------------------------------
+    SET @GASTOINGRESO =
+        ISNULL((SELECT SUM(M.ABONO) - SUM(M.CARGO) FROM #TEMPMOV M WHERE LEFT(M.TRAGLN, 1) IN ('5')), 0.00)
+      - ISNULL((SELECT SUM(M.CARGO) - SUM(M.ABONO) FROM #TEMPMOV M WHERE LEFT(M.TRAGLN, 1) IN ('4')), 0.00);
+
+    IF @GASTOINGRESO > 0
+    BEGIN
+        INSERT INTO #TEMPMOV (TRABNK, TRABRN, TRADCC, CARGO, ABONO, TRAGLN, TRAVDY, TRAVDM)
+        SELECT '01', '001', 'C', 0.00, @GASTOINGRESO, '310600000000', @ANIO, @MES;
+    END
+    ELSE IF @GASTOINGRESO < 0
+    BEGIN
+        INSERT INTO #TEMPMOV (TRABNK, TRABRN, TRADCC, CARGO, ABONO, TRAGLN, TRAVDY, TRAVDM)
+        SELECT '01', '001', 'C', @GASTOINGRESO, 0.00, '310800000000', @ANIO, @MES;
+    END;
+
+    -------------------------------------------------------------------------
+    -- 3) Saldos CLASS (misma fórmula del reporte)
+    -------------------------------------------------------------------------
+    SELECT M.TRAGLN,
+           C.CONDSC,
+           CASE
+               WHEN LEFT(M.TRAGLN, 1) IN ('1', '4') THEN SUM(ISNULL(M.CARGO, 0.00)) - SUM(ISNULL(M.ABONO, 0.00))
+               ELSE SUM(ISNULL(M.ABONO, 0.00)) - SUM(ISNULL(M.CARGO, 0.00))
+           END AS SALDO_CLASS,
+           LEFT(M.TRAGLN, 1) AS TIPO_CUENTA
+    INTO #BALANCE_CLASS
+    FROM #TEMPMOV M
+    INNER JOIN (
+        SELECT CONBNK,
+               CONSUC,
+               CONGLN,
+               MIN(CONDSC) AS CONDSC
+        FROM CLASS_UEES.CLASS_UEES.dbo.CONCAT
+        WHERE CONBNK = '01'
+          AND CONSUC = '001'
+        GROUP BY CONBNK, CONSUC, CONGLN
+    ) C
+        ON M.TRABNK = C.CONBNK COLLATE DATABASE_DEFAULT
+       AND M.TRABRN = C.CONSUC COLLATE DATABASE_DEFAULT
+       AND CAST(M.TRAGLN AS NUMERIC(38, 0)) = C.CONGLN
+    WHERE M.TRABNK = '01'
+      AND M.TRABRN = '001'
+    GROUP BY M.TRAGLN, C.CONDSC;
+
+    -------------------------------------------------------------------------
+    -- 4) Mapeo a SGUEES + cargo/abono
+    --    Solo balance (1,2,3) + cuentas de resultado del ejercicio (3106/3108)
+    -------------------------------------------------------------------------
+    SELECT B.TRAGLN AS TRAGLN_CLASS_12,
+           B.CONDSC,
+           B.SALDO_CLASS,
+           B.TIPO_CUENTA,
+           dbo.FN_CLASS_TRAGLN_TO_CUENTA(B.TRAGLN) AS CUENTA_SGUEES,
+           MAP.CUENTA_CONTABLE,
+           MAP.NOMBRE_CUENTA,
+           MAP.ES_DEBE,
+           MAP.ES_HABER,
+           MAP.ES_DETALLE,
+           CAST(CASE
+               WHEN MAP.CUENTA_CONTABLE IS NULL THEN NULL
+               WHEN MAP.ES_DEBE = 1 AND B.SALDO_CLASS >= 0 THEN B.SALDO_CLASS
+               WHEN MAP.ES_DEBE = 1 AND B.SALDO_CLASS < 0 THEN 0
+               WHEN MAP.ES_HABER = 1 AND B.SALDO_CLASS < 0 THEN ABS(B.SALDO_CLASS)
+               ELSE 0
+           END AS DECIMAL(18, 2)) AS MONTO_CARGO,
+           CAST(CASE
+               WHEN MAP.CUENTA_CONTABLE IS NULL THEN NULL
+               WHEN MAP.ES_HABER = 1 AND B.SALDO_CLASS >= 0 THEN B.SALDO_CLASS
+               WHEN MAP.ES_HABER = 1 AND B.SALDO_CLASS < 0 THEN 0
+               WHEN MAP.ES_DEBE = 1 AND B.SALDO_CLASS < 0 THEN ABS(B.SALDO_CLASS)
+               ELSE 0
+           END AS DECIMAL(18, 2)) AS MONTO_ABONO
+    INTO #MIGR
+    FROM #BALANCE_CLASS B
+    LEFT JOIN CON_CATALOGO_CUENTA MAP
+        ON MAP.CORR_EMPRESA = @CORR_EMPRESA
+       AND MAP.CUENTA_CONTABLE = dbo.FN_CLASS_TRAGLN_TO_CUENTA(B.TRAGLN)
+    WHERE (
+            LEFT(B.TRAGLN, 1) IN ('1', '2', '3')
+         OR B.TRAGLN LIKE '3106%'
+         OR B.TRAGLN LIKE '3108%'
+          )
+      AND (@INCLUIR_CERO = 1 OR ISNULL(B.SALDO_CLASS, 0) <> 0);
+
+    -------------------------------------------------------------------------
+    -- 4b) Patrimonio SGUEES: separar fondo, resultado del periodo y acumulado
+    --     CLASS concentra capital en 3101; el resultado va a 3106/3108 sintetico.
+    -------------------------------------------------------------------------
+    DECLARE @SUM_ACTIVO DECIMAL(18, 2);
+    DECLARE @SUM_PASIVO DECIMAL(18, 2);
+    DECLARE @SALDO_3101_CLASS DECIMAL(18, 2);
+    DECLARE @FONDO_3101 DECIMAL(18, 2);
+    DECLARE @AJUSTE_ACUMULADO DECIMAL(18, 2);
+    DECLARE @RESULTADO_PERIODO DECIMAL(18, 2);
+
+    SELECT @SUM_ACTIVO = ISNULL(SUM(SALDO_CLASS), 0)
+    FROM #BALANCE_CLASS
+    WHERE LEFT(TRAGLN, 1) = '1';
+
+    SELECT @SUM_PASIVO = ISNULL(SUM(SALDO_CLASS), 0)
+    FROM #BALANCE_CLASS
+    WHERE LEFT(TRAGLN, 1) = '2';
+
+    SELECT @SALDO_3101_CLASS = ISNULL(SALDO_CLASS, 0)
+    FROM #BALANCE_CLASS
+    WHERE TRAGLN = '310100000000';
+
+    SET @RESULTADO_PERIODO = ABS(ISNULL(@GASTOINGRESO, 0));
+    SET @FONDO_3101 = @SALDO_3101_CLASS;
+    SET @AJUSTE_ACUMULADO = @SALDO_3101_CLASS - ((@SUM_ACTIVO - @SUM_PASIVO) - @RESULTADO_PERIODO);
+
+    DELETE FROM #MIGR
+    WHERE LEFT(TRAGLN_CLASS_12, 1) = '3';
+
+    INSERT INTO #MIGR
+    (
+        TRAGLN_CLASS_12, CONDSC, SALDO_CLASS, TIPO_CUENTA, CUENTA_SGUEES,
+        CUENTA_CONTABLE, NOMBRE_CUENTA, ES_DEBE, ES_HABER, ES_DETALLE,
+        MONTO_CARGO, MONTO_ABONO
+    )
+    SELECT P.TRAGLN_CLASS_12,
+           P.CONDSC,
+           P.SALDO_CLASS,
+           '3',
+           P.CUENTA_SGUEES,
+           MAP.CUENTA_CONTABLE,
+           MAP.NOMBRE_CUENTA,
+           MAP.ES_DEBE,
+           MAP.ES_HABER,
+           MAP.ES_DETALLE,
+           CAST(CASE
+               WHEN MAP.CUENTA_CONTABLE IS NULL THEN NULL
+               WHEN MAP.ES_DEBE = 1 AND P.SALDO_CLASS >= 0 THEN P.SALDO_CLASS
+               WHEN MAP.ES_DEBE = 1 AND P.SALDO_CLASS < 0 THEN 0
+               WHEN MAP.ES_HABER = 1 AND P.SALDO_CLASS < 0 THEN ABS(P.SALDO_CLASS)
+               ELSE 0
+           END AS DECIMAL(18, 2)),
+           CAST(CASE
+               WHEN MAP.CUENTA_CONTABLE IS NULL THEN NULL
+               WHEN MAP.ES_HABER = 1 AND P.SALDO_CLASS >= 0 THEN P.SALDO_CLASS
+               WHEN MAP.ES_HABER = 1 AND P.SALDO_CLASS < 0 THEN 0
+               WHEN MAP.ES_DEBE = 1 AND P.SALDO_CLASS < 0 THEN ABS(P.SALDO_CLASS)
+               ELSE 0
+           END AS DECIMAL(18, 2))
+    FROM (
+        SELECT '310100000000' AS TRAGLN_CLASS_12,
+               N'FONDO PATRIMONIAL' AS CONDSC,
+               @FONDO_3101 AS SALDO_CLASS,
+               '3101' AS CUENTA_SGUEES
+        UNION ALL
+        SELECT '310701000000',
+               N'DEFICIT ACUMULADO DE ANIOS ANTERIORES',
+               -@AJUSTE_ACUMULADO,
+               '310701'
+        WHERE @GASTOINGRESO < 0 AND @AJUSTE_ACUMULADO > 0.01
+        UNION ALL
+        SELECT '310501000000',
+               N'EXCEDENTES ACUMULADOS DE ANIOS ANTERIORES',
+               @AJUSTE_ACUMULADO,
+               '310501'
+        WHERE @GASTOINGRESO >= 0 AND @AJUSTE_ACUMULADO > 0.01
+        UNION ALL
+        SELECT '310800000000',
+               N'DEFICIT DEL PERIODO ACTUAL',
+               @RESULTADO_PERIODO,
+               '310801'
+        WHERE @GASTOINGRESO < 0 AND @RESULTADO_PERIODO > 0.01
+        UNION ALL
+        SELECT '310600000000',
+               N'EXCEDENTE DEL PERIODO ACTUAL',
+               @RESULTADO_PERIODO,
+               '310601'
+        WHERE @GASTOINGRESO > 0 AND @RESULTADO_PERIODO > 0.01
+    ) P
+    LEFT JOIN CON_CATALOGO_CUENTA MAP
+        ON MAP.CORR_EMPRESA = @CORR_EMPRESA
+       AND MAP.CUENTA_CONTABLE = P.CUENTA_SGUEES
+    WHERE ABS(P.SALDO_CLASS) > 0.01;
+
+    IF @MODO_U = 'PREVIEW'
+    BEGIN
+        SELECT @FECHA_CORTE AS FECHA_CORTE,
+               @GASTOINGRESO AS RESULTADO_EJERCICIO_CLASS;
+
+        SELECT M.*,
+               CASE WHEN M.CUENTA_CONTABLE IS NULL THEN 'SIN MAPEO' ELSE 'OK' END AS ESTADO_MAPEO
+        FROM #MIGR M
+        ORDER BY M.TRAGLN_CLASS_12;
+
+        SELECT COUNT(*) AS CUENTAS_TOTAL,
+               SUM(CASE WHEN CUENTA_CONTABLE IS NULL THEN 1 ELSE 0 END) AS SIN_MAPEO,
+               SUM(MONTO_CARGO) AS TOTAL_CARGOS,
+               SUM(MONTO_ABONO) AS TOTAL_ABONOS,
+               SUM(MONTO_CARGO) - SUM(MONTO_ABONO) AS DIFERENCIA
+        FROM #MIGR;
+
+        SELECT @SYS_FILAS_AFECTADAS = @@ROWCOUNT;
+        GOTO FINA;
+    END;
+
+    IF @MODO_U <> 'MIGRAR'
+    BEGIN
+        SELECT @SYS_NUMERO_ERROR = 30002,
+               @SYS_MENSAJE_ERROR = N'Modo no valido. Use PREVIEW, MIGRAR o APLICAR.';
+        GOTO FINA;
+    END;
+
+    IF EXISTS (SELECT 1 FROM #MIGR WHERE CUENTA_CONTABLE IS NULL)
+    BEGIN
+        SELECT @SYS_NUMERO_ERROR = 30003,
+               @SYS_MENSAJE_ERROR = N'Hay cuentas CLASS sin mapeo en SGUEES. Ejecute PREVIEW y corrija el catalogo.';
+        GOTO FINA;
+    END;
+
+    DECLARE @TOTAL_CARGO DECIMAL(18, 2) = (SELECT SUM(MONTO_CARGO) FROM #MIGR);
+    DECLARE @TOTAL_ABONO DECIMAL(18, 2) = (SELECT SUM(MONTO_ABONO) FROM #MIGR);
+
+    IF ABS(ISNULL(@TOTAL_CARGO, 0) - ISNULL(@TOTAL_ABONO, 0)) > 0.01
+    BEGIN
+        SELECT @SYS_NUMERO_ERROR = 30004,
+               @SYS_MENSAJE_ERROR = N'La partida no cuadra. Cargos=' + CONVERT(VARCHAR(30), @TOTAL_CARGO)
+                   + N' Abonos=' + CONVERT(VARCHAR(30), @TOTAL_ABONO);
+        GOTO FINA;
+    END;
+
+    SELECT TOP 1 @CORR_CLASE_PARTIDA = CORR_CLASE_PARTIDA
+    FROM CON_CLASE_PARTIDA
+    WHERE CORR_EMPRESA = @CORR_EMPRESA
+      AND NOMBRE_CORTO_CLASE = 'APE';
+
+    IF @CORR_CLASE_PARTIDA IS NULL
+    BEGIN
+        SELECT @SYS_NUMERO_ERROR = 30005,
+               @SYS_MENSAJE_ERROR = N'No existe clase de partida APE en SGUEES.';
+        GOTO FINA;
+    END;
+
+    SELECT TOP 1 @CORR_MONEDA = CORR_MONEDA FROM CON_PARAMETRO WHERE CORR_EMPRESA = @CORR_EMPRESA;
+    SELECT TOP 1 @CORR_CENTRO_COSTO = CORR_CENTRO_COSTO_DEF FROM CON_PARAMETRO WHERE CORR_EMPRESA = @CORR_EMPRESA;
+
+    IF EXISTS (
+        SELECT 1 FROM CON_PARTIDA
+        WHERE CORR_EMPRESA = @CORR_EMPRESA
+          AND ANIO_PERIODO = @ANIO
+          AND MES_PERIODO = @MES
+          AND CORR_CLASE_PARTIDA = @CORR_CLASE_PARTIDA
+    )
+    BEGIN
+        SELECT @SYS_NUMERO_ERROR = 30006,
+               @SYS_MENSAJE_ERROR = N'Ya existe partida APE en el periodo destino.';
+        GOTO FINA;
+    END;
+
+    SET @NOMBRE_PARTIDA = N'MIGRACION SALDO INICIAL CLASS al ' + CONVERT(VARCHAR(10), @FECHA_CORTE, 103);
+
+    BEGIN TRY
+        BEGIN TRAN;
+
+        EXEC dbo.PRAL_MTTO_CON_PARTIDA
+            1,
+            @CORR_EMPRESA,
+            @ANIO,
+            @MES,
+            @CORR_CLASE_PARTIDA,
+            @CORR_PARTIDA OUTPUT,
+            @FECHA_CORTE,
+            0,
+            @NOMBRE_PARTIDA,
+            'DI',
+            'NOR',
+            @CORR_MONEDA,
+            1,
+            '*',
+            @SYS_LOGIN_USUARIO,
+            @FECHA_CREA,
+            @SYS_ESTACION,
+            @SYS_LOGIN_USUARIO,
+            @FECHA_CREA,
+            @SYS_ESTACION,
+            @SYS_LOGIN_USUARIO,
+            @SYS_ESTACION,
+            @SYS_FILAS_AFECTADAS OUTPUT,
+            @SYS_NUMERO_ERROR OUTPUT,
+            @SYS_MENSAJE_ERROR OUTPUT;
+
+        IF ISNULL(@SYS_NUMERO_ERROR, 0) <> 0
+        BEGIN
+            ROLLBACK TRAN;
+            GOTO FINA;
+        END;
+
+        -- Detalle por INSERT directo: el balance CLASS viene a nivel resumen (4 chars)
+        -- y muchas cuentas SGUEES equivalentes tienen ES_DETALLE=0.
+        INSERT INTO CON_PARTIDA_DETA
+        (
+            CORR_EMPRESA, ANIO_PERIODO, MES_PERIODO, CORR_CLASE_PARTIDA, CORR_PARTIDA,
+            CORR_PARTIDA_DETA, CUENTA_CONTABLE, CORR_CENTRO_COSTO, NOMBRE_TRAN,
+            MONTO_CARGO, MONTO_ABONO, MONTO_CARGO_FORANEA, MONTO_ABONO_FORANEA, CORR_AUXILIAR
+        )
+        SELECT
+            @CORR_EMPRESA,
+            @ANIO,
+            @MES,
+            @CORR_CLASE_PARTIDA,
+            @CORR_PARTIDA,
+            ROW_NUMBER() OVER (ORDER BY M.TRAGLN_CLASS_12),
+            M.CUENTA_CONTABLE,
+            @CORR_CENTRO_COSTO,
+            ISNULL(M.CONDSC, N'MIGRACION SALDO INICIAL CLASS'),
+            M.MONTO_CARGO,
+            M.MONTO_ABONO,
+            0,
+            0,
+            NULL
+        FROM #MIGR M
+        WHERE M.MONTO_CARGO <> 0 OR M.MONTO_ABONO <> 0;
+
+        COMMIT TRAN;
+
+        SELECT @SYS_MENSAJE_ERROR = N'Partida APE creada. CORR_PARTIDA=' + CONVERT(VARCHAR(20), @CORR_PARTIDA)
+            + N'. Revise y ejecute @MODO=''APLICAR''.';
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK TRAN;
+        SELECT @SYS_NUMERO_ERROR = ERROR_NUMBER(),
+               @SYS_MENSAJE_ERROR = ERROR_MESSAGE();
+    END CATCH;
+
+FINA:
+    IF @MODO_U IN ('MIGRAR', 'APLICAR') AND ISNULL(@SYS_NUMERO_ERROR, 0) <> 0
+        SELECT @SYS_NUMERO_ERROR AS SYS_NUMERO_ERROR, @SYS_MENSAJE_ERROR AS SYS_MENSAJE_ERROR;
+    ELSE IF @MODO_U = 'MIGRAR' AND ISNULL(@SYS_NUMERO_ERROR, 0) = 0
+        SELECT @CORR_PARTIDA AS CORR_PARTIDA, @SYS_MENSAJE_ERROR AS MENSAJE;
+
+    DROP TABLE IF EXISTS #TEMPMOV;
+    DROP TABLE IF EXISTS #BALANCE_CLASS;
+    DROP TABLE IF EXISTS #MIGR;
+END;
+GO

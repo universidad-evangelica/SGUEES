@@ -12,9 +12,6 @@ namespace sguees.Services
 		CResult GetCLASE_VALUACION();
 		CResult GetCLASE_VALUACION_CATALOGO_CUENTA();
 		CResult GetCLASE_CENTRO_COSTO();
-		CResult GetCORR_TIPO_CENTRO_COSTO();
-		CResult GetCORR_UNIDAD_NEGOCIO();
-		CResult GetCORR_AREA_FUNCIONAL();
 		CResult GetCLASE_UNIDAD_NEGOCIO();
 	}
 }

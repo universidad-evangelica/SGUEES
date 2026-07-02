@@ -58,7 +58,13 @@ export class ConPartidaService {
 	}
 
 	delete(model: any): Observable<IResult> {
-		let xWhere: IParam[] = [{ Parameter: 'CORR_PARTIDA', Value: model.CORR_PARTIDA }];
+		let xWhere: IParam[] = [
+			{ Parameter: 'CORR_EMPRESA', Value: model.CORR_EMPRESA },
+			{ Parameter: 'ANIO_PERIODO', Value: model.ANIO_PERIODO },
+			{ Parameter: 'MES_PERIODO', Value: model.MES_PERIODO },
+			{ Parameter: 'CORR_CLASE_PARTIDA', Value: model.CORR_CLASE_PARTIDA },
+			{ Parameter: 'CORR_PARTIDA', Value: model.CORR_PARTIDA },
+		];
 		return this.repo.delete(xWhere);
 	}
 
@@ -162,10 +168,11 @@ export class ConPartidaService {
 				colSpan: 2,
 				editorOptions: { placeholder: 'No. Documento...' },
 			},
+			{ itemType: 'empty', colSpan: 2 },
 			{
 				dataField: 'NOMBRE_PARTIDA',
 				label: { text: 'Concepto' },
-				colSpan: 4,
+				colSpan: 8,
 				editorType: 'dxTextArea',
 				editorOptions: { height: 64, placeholder: 'Concepto...' },
 			},
