@@ -431,8 +431,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	}
 
 	override notifyFx(xMessage: string, xType: NotifyType): void {
-		const cleanMessage = `${xMessage ?? ''}`.replace(/^error:\s*/i, '').trim();
-		const warningDetail = this.getWarningMessage(xMessage);
+		const cleanMessage = this.getErrorMessage(xMessage).replace(/^error:\s*/i, '').trim();
+		const warningDetail = this.getWarningMessage(cleanMessage);
 		const isWarning = xType === NotifyType.Warning || warningDetail !== cleanMessage;
 		const severity = xType === NotifyType.Success ? 'success' : isWarning ? 'warn' : 'error';
 		const summary = xType === NotifyType.Success ? 'Éxito' : isWarning ? 'Advertencia' : 'Error';
@@ -813,7 +813,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			loadMode: 'processed',
 			cacheRawData: false,
 			load: async (loadOptions: any) => {
-				const takeRows = loadOptions.take || 5;
+				try {
+					const takeRows = loadOptions.take || 5;
 				const skipRows = loadOptions.skip || 0;
 				const page = Math.floor(skipRows / takeRows) + 1;
 				const grid = this.dataGrid?.gData?.instance;
@@ -848,6 +849,11 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 					data: response.Data || [],
 					totalCount: response.RowsAffected || 0,
 				};
+				} catch (error) {
+					const message = this.getErrorMessage(error);
+					this.notifyFx(message, NotifyType.Error);
+					throw new Error(message);
+				}
 			},
 		});
 	}
@@ -886,7 +892,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	}
 
 	private async loadCascadeLevel(level: TerritorialGridLevel, loadOptions: any): Promise<{ data: unknown[]; totalCount: number }> {
-		const scope = this.getScopeForLevel(level);
+		try {
+			const scope = this.getScopeForLevel(level);
 		if (!scope.CORR_PAIS) {
 			return { data: [], totalCount: 0 };
 		}
@@ -930,6 +937,11 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 
 		const data = response.Data || [];
 		return { data, totalCount: data.length };
+		} catch (error) {
+			const message = this.getErrorMessage(error);
+			this.notifyFx(message, NotifyType.Error);
+			throw new Error(message);
+		}
 	}
 
 	private limpiarSeleccionHijos(): void {
@@ -1314,10 +1326,39 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	}
 
 	private getErrorMessage(error: any): string {
-		if (typeof error === 'string' && error.trim()) {
-			return error;
+		const connectionMessage =
+			'No se pudo comunicar con el servidor. Verifique que la API esté en ejecución e intente nuevamente.';
+
+		if (typeof error === 'string') {
+			const trimmed = error.trim();
+			if (!trimmed || trimmed === '[object ProgressEvent]' || trimmed.toLowerCase().includes('http failure')) {
+				return connectionMessage;
+			}
+			return trimmed;
 		}
-		return error?.error?.ErrorMessage || error?.error?.message || error?.message || 'Ocurrio un error al procesar la solicitud.';
+
+		if (error instanceof ProgressEvent || Object.prototype.toString.call(error) === '[object ProgressEvent]') {
+			return connectionMessage;
+		}
+
+		if (error?.error instanceof ProgressEvent) {
+			return connectionMessage;
+		}
+
+		const apiMessage = error?.error?.ErrorMessage || error?.error?.message || error?.message;
+		if (typeof apiMessage === 'string' && apiMessage.trim()) {
+			if (apiMessage === '[object ProgressEvent]' || apiMessage.toLowerCase().includes('http failure')) {
+				return connectionMessage;
+			}
+			return apiMessage;
+		}
+
+		const coerced = `${error ?? ''}`.trim();
+		if (coerced === '[object ProgressEvent]' || coerced === '[object Object]') {
+			return connectionMessage;
+		}
+
+		return coerced || 'Ocurrio un error al procesar la solicitud.';
 	}
 
 	private getErrorNotifyType(error: any): NotifyType {

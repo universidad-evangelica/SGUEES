@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
-import { buildRemoteGridWhere, createEstadoColumnConfig } from 'src/app/shared/utils/remote-grid-filter.util';
+import { buildRemoteGridWhere, createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
 import { PlaNivelAcademico } from './models/pla-nivel-academico';
 import { PlaNivelAcademicoRepository } from './pla-nivel-academico.repository';
@@ -121,7 +121,7 @@ export class PlaNivelAcademicoService {
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
 			{ dataField: 'NOMBRE_NIVEL_ACADEMICO', caption: 'Nivel academico', width: 300 },
-			createEstadoColumnConfig(ESTADO_FIELD),
+			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
 			{
 				dataField: 'FECHA_CREA',

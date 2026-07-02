@@ -1,14 +1,20 @@
 import { IParam } from 'src/app/FxAPI/IParam';
 import {
+	BooleanColumnLabels,
 	getColumnHeaderFilterSelection,
 	hasColumnHeaderFilterSelection,
-	isEstadoField,
 	isHeaderFilterExclude,
 	normalizeAnyOfMapValues,
-	normalizeEstadoHeaderFilterValue,
+	normalizeBooleanHeaderFilterValue,
 	normalizeFilterMapValues,
 	readGridFilterRowValues,
+	resolveBooleanColumnLabels,
 } from './remote-header-filter.util';
+
+export const ESTADO_ACTIVO_INACTIVO_LABELS: BooleanColumnLabels = {
+	trueLabel: 'Activo',
+	falseLabel: 'Inactivo',
+};
 
 export type EstadoFiltro = boolean | null;
 
@@ -21,6 +27,7 @@ export interface ParsedGridFilters {
 
 export interface RemoteGridFilterConfig {
 	estadoField: string;
+	booleanColumns?: Record<string, BooleanColumnLabels>;
 }
 
 export function createEmptyGridFilters(): ParsedGridFilters {
@@ -49,6 +56,22 @@ export function cloneRemoteGridFilters(source: ParsedGridFilters): ParsedGridFil
 	};
 }
 
+function getBooleanLabelsForField(field: string, config: RemoteGridFilterConfig, grid?: any): BooleanColumnLabels | undefined {
+	if (config.booleanColumns?.[field]) {
+		return config.booleanColumns[field];
+	}
+
+	if (grid?.getVisibleColumns) {
+		const column = grid.getVisibleColumns().find((item: any) => item?.dataField === field);
+		if (column?.booleanColumnLabels) {
+			return column.booleanColumnLabels;
+		}
+	}
+
+	return undefined;
+}
+
+
 export function parseRemoteGridFilters(filter: any, grid: any | undefined, config: RemoteGridFilterConfig): ParsedGridFilters {
 	const result = createEmptyGridFilters();
 	const { estadoField } = config;
@@ -64,14 +87,15 @@ export function parseRemoteGridFilters(filter: any, grid: any | undefined, confi
 		const field = node[0];
 		const operator = node[1];
 		const value = node[2];
+		const booleanLabels = getBooleanLabelsForField(field, config, grid);
 
 		if (operator === 'anyof' && Array.isArray(value) && value.length) {
 			if (grid && isHeaderFilterExclude(grid, field)) {
 				continue;
 			}
 
-			const normalizedValues = isEstadoField(field)
-				? value.map((item) => normalizeEstadoHeaderFilterValue(item))
+			const normalizedValues = booleanLabels
+				? value.map((item) => normalizeBooleanHeaderFilterValue(item, booleanLabels))
 				: value;
 
 			result.headerAnyOf[field] = mergeRemoteAnyOfValues(result.headerAnyOf[field], normalizedValues);
@@ -112,9 +136,11 @@ export function parseRemoteGridFilters(filter: any, grid: any | undefined, confi
 			continue;
 		}
 
+		const booleanLabels = getBooleanLabelsForField(field, config, grid);
+
 		if (values.length > 1 || headerFilterFields.has(field)) {
-			const normalizedValues = isEstadoField(field)
-				? values.map((item) => normalizeEstadoHeaderFilterValue(item))
+			const normalizedValues = booleanLabels
+				? values.map((item) => normalizeBooleanHeaderFilterValue(item, booleanLabels))
 				: values;
 
 			result.headerAnyOf[field] = mergeRemoteAnyOfValues(result.headerAnyOf[field], normalizedValues);
@@ -126,8 +152,8 @@ export function parseRemoteGridFilters(filter: any, grid: any | undefined, confi
 
 	result.filterRow = filterRowFromGrid.filterRow;
 	result.filterRowExact = filterRowFromGrid.filterRowExact;
-	applyEstadoFilterRow(result, estadoField);
-	applyHeaderFiltersFromGrid(grid, result, estadoField);
+	applyEstadoFilterRow(result, estadoField, config, grid);
+	applyHeaderFiltersFromGrid(grid, result, config);
 
 	if (hasRemoteFilterRowSearch(result)) {
 		result.headerAnyOf = {};
@@ -136,15 +162,30 @@ export function parseRemoteGridFilters(filter: any, grid: any | undefined, confi
 	return result;
 }
 
-function applyEstadoFilterRow(result: ParsedGridFilters, estadoField: string): void {
+function applyEstadoFilterRow(
+	result: ParsedGridFilters,
+	estadoField: string,
+	config: RemoteGridFilterConfig,
+	grid?: any
+): void {
+	if (!estadoField || estadoField === '__NONE__') {
+		return;
+	}
+
 	const estadoValue = result.filterRowExact[estadoField] ?? result.filterRow[estadoField];
 
 	if (estadoValue === undefined) {
 		return;
 	}
 
+	const labels = getBooleanLabelsForField(estadoField, config, grid);
+
 	if (estadoValue === '__ALL__' || estadoValue === null) {
 		result.estado = null;
+	} else if (labels) {
+		const normalized = normalizeBooleanHeaderFilterValue(estadoValue, labels);
+		const resolved = resolveBooleanColumnLabels(labels);
+		result.estado = normalized === null ? null : normalized === resolved.trueValue;
 	} else {
 		result.estado = estadoValue === true || estadoValue === 'true';
 	}
@@ -153,7 +194,7 @@ function applyEstadoFilterRow(result: ParsedGridFilters, estadoField: string): v
 	delete result.filterRow[estadoField];
 }
 
-function applyHeaderFiltersFromGrid(grid: any, result: ParsedGridFilters, estadoField: string): void {
+function applyHeaderFiltersFromGrid(grid: any, result: ParsedGridFilters, config: RemoteGridFilterConfig): void {
 	if (!grid?.getVisibleColumns) {
 		return;
 	}
@@ -169,8 +210,9 @@ function applyHeaderFiltersFromGrid(grid: any, result: ParsedGridFilters, estado
 			continue;
 		}
 
-		const values = isEstadoField(dataField)
-			? selection.values.map((item) => normalizeEstadoHeaderFilterValue(item))
+		const booleanLabels = getBooleanLabelsForField(dataField, config, grid);
+		const values = booleanLabels
+			? selection.values.map((item) => normalizeBooleanHeaderFilterValue(item, booleanLabels))
 			: selection.values;
 
 		result.headerAnyOf[dataField] = mergeRemoteAnyOfValues(result.headerAnyOf[dataField], values);
@@ -209,7 +251,7 @@ export function buildRemoteGridWhere(param: any, estadoField: string): IParam[] 
 		xWhere.push({ Parameter: 'BUSQUEDA', Value: param.BUSQUEDA });
 	}
 
-	if (estadoField && gridFilters?.estado !== null && gridFilters?.estado !== undefined) {
+	if (estadoField && estadoField !== '__NONE__' && gridFilters?.estado !== null && gridFilters?.estado !== undefined) {
 		xWhere.push({ Parameter: estadoField, Value: gridFilters.estado });
 	}
 
@@ -232,26 +274,34 @@ export function buildRemoteGridWhere(param: any, estadoField: string): IParam[] 
 	return xWhere;
 }
 
-export function createEstadoColumnConfig(estadoField: string): Record<string, unknown> {
+export function createEstadoColumnConfig(
+	estadoField: string,
+	labels?: BooleanColumnLabels,
+	options?: { caption?: string }
+): Record<string, unknown> {
+	const resolved = resolveBooleanColumnLabels(labels);
+
 	return {
 		dataField: estadoField,
-		caption: 'Estado',
+		caption: options?.caption ?? 'Estado',
 		width: 140,
 		allowFiltering: true,
 		allowHeaderFiltering: true,
+		booleanColumnLabels: resolved,
 		// Evita syncLookupFilterValues: con lookup dinámico DevExtreme omite false (Inactivo).
 		calculateCellValue: (rowData: Record<string, unknown>) => rowData?.[estadoField],
 		cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
 			const badge = document.createElement('span');
-			badge.classList.add('estado-badge', cellInfo.value ? 'estado-badge--activo' : 'estado-badge--inactivo');
-			badge.textContent = cellInfo.value ? 'Activo' : 'Inactivo';
+			const isTrue = cellInfo.value === resolved.trueValue;
+			badge.classList.add('estado-badge', isTrue ? 'estado-badge--activo' : 'estado-badge--inactivo');
+			badge.textContent = isTrue ? resolved.trueLabel : resolved.falseLabel;
 			cellElement.innerHTML = '';
 			cellElement.appendChild(badge);
 		},
 		lookup: {
 			dataSource: [
-				{ value: true, text: 'Activo' },
-				{ value: false, text: 'Inactivo' },
+				{ value: resolved.trueValue, text: resolved.trueLabel },
+				{ value: resolved.falseValue, text: resolved.falseLabel },
 			],
 			valueExpr: 'value',
 			displayExpr: 'text',

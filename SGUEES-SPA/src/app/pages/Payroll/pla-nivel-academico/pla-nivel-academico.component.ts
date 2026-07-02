@@ -13,6 +13,7 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { AuthService } from 'src/app/shared/services/auth.service';
 import {
 	cloneRemoteGridFilters,
+	ESTADO_ACTIVO_INACTIVO_LABELS,
 	hasRemoteFilterRowSearch,
 	parseRemoteGridFilters,
 	ParsedGridFilters,
@@ -20,11 +21,9 @@ import {
 import {
 	clearGridHeaderFilterSelections,
 	getColumnHeaderFilterSelection,
-	invertEstadoExcludedHeaderFilterValues,
 	invertExcludedHeaderFilterValues,
-	isEstadoField,
-	normalizeEstadoHeaderFilterValue,
 	readGridFilterRowValues,
+	resolveBooleanExcludeHeaderFilter,
 } from 'src/app/shared/utils/remote-header-filter.util';
 import { PlaNivelAcademico } from './models/pla-nivel-academico';
 import {
@@ -35,7 +34,14 @@ import {
 	PlaNivelAcademicoService,
 } from './pla-nivel-academico.service';
 
-const GRID_FILTER_CONFIG = { estadoField: 'ESTADO_NIVEL_ACADEMICO' };
+const ESTADO_FIELD = 'ESTADO_NIVEL_ACADEMICO';
+
+const GRID_FILTER_CONFIG = {
+	estadoField: ESTADO_FIELD,
+	booleanColumns: {
+		[ESTADO_FIELD]: ESTADO_ACTIVO_INACTIVO_LABELS,
+	},
+};
 
 @Component({
 	selector: 'app-pla-nivel-academico',
@@ -192,8 +198,8 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 	}
 
 	override notifyFx(xMessage: string, xType: NotifyType): void {
-		const cleanMessage = `${xMessage ?? ''}`.replace(/^error:\s*/i, '').trim();
-		const warningDetail = this.getWarningMessage(xMessage);
+		const cleanMessage = this.getErrorMessage(xMessage).replace(/^error:\s*/i, '').trim();
+		const warningDetail = this.getWarningMessage(cleanMessage);
 		const isWarning = xType === NotifyType.Warning || warningDetail !== cleanMessage;
 		const severity = xType === NotifyType.Success ? 'success' : isWarning ? 'warn' : 'error';
 		const summary = xType === NotifyType.Success ? 'Éxito' : isWarning ? 'Advertencia' : 'Error';
@@ -297,7 +303,8 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 			loadMode: 'processed',
 			cacheRawData: false,
 			load: async (loadOptions: any) => {
-				const takeRows = loadOptions.take || 5;
+				try {
+					const takeRows = loadOptions.take || 5;
 				const skipRows = loadOptions.skip || 0;
 				const page = Math.floor(skipRows / takeRows) + 1;
 				const grid = this.dataGrid?.gData?.instance;
@@ -339,6 +346,11 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 				}
 
 				return { data: response.Data || [], totalCount: response.RowsAffected || 0 };
+				} catch (error) {
+					const message = this.getErrorMessage(error);
+					this.notifyFx(message, NotifyType.Error);
+					throw new Error(message);
+				}
 			},
 		});
 	}
@@ -359,11 +371,13 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 				continue;
 			}
 
-			if (isEstadoField(dataField)) {
-				const included = invertEstadoExcludedHeaderFilterValues(
-					selection.values.map((item) => normalizeEstadoHeaderFilterValue(item))
-				);
-				result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
+			const booleanIncluded = resolveBooleanExcludeHeaderFilter(
+				column,
+				selection.values,
+				GRID_FILTER_CONFIG.booleanColumns?.[dataField]
+			);
+			if (booleanIncluded !== null) {
+				result.headerAnyOf[dataField] = booleanIncluded.length ? booleanIncluded : ['__NO_MATCH__'];
 				continue;
 			}
 
@@ -458,10 +472,39 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 	}
 
 	private getErrorMessage(error: any): string {
-		if (typeof error === 'string' && error.trim()) {
-			return error;
+		const connectionMessage =
+			'No se pudo comunicar con el servidor. Verifique que la API esté en ejecución e intente nuevamente.';
+
+		if (typeof error === 'string') {
+			const trimmed = error.trim();
+			if (!trimmed || trimmed === '[object ProgressEvent]' || trimmed.toLowerCase().includes('http failure')) {
+				return connectionMessage;
+			}
+			return trimmed;
 		}
-		return error?.error?.ErrorMessage || error?.error?.message || error?.message || 'Ocurrio un error al procesar la solicitud.';
+
+		if (error instanceof ProgressEvent || Object.prototype.toString.call(error) === '[object ProgressEvent]') {
+			return connectionMessage;
+		}
+
+		if (error?.error instanceof ProgressEvent) {
+			return connectionMessage;
+		}
+
+		const apiMessage = error?.error?.ErrorMessage || error?.error?.message || error?.message;
+		if (typeof apiMessage === 'string' && apiMessage.trim()) {
+			if (apiMessage === '[object ProgressEvent]' || apiMessage.toLowerCase().includes('http failure')) {
+				return connectionMessage;
+			}
+			return apiMessage;
+		}
+
+		const coerced = `${error ?? ''}`.trim();
+		if (coerced === '[object ProgressEvent]' || coerced === '[object Object]') {
+			return connectionMessage;
+		}
+
+		return coerced || 'Ocurrio un error al procesar la solicitud.';
 	}
 
 	private getNotifyType(response: any): NotifyType {

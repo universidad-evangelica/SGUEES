@@ -12,14 +12,18 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { AuthService } from 'src/app/shared/services/auth.service';
 import {
+	cloneRemoteGridFilters,
+	ESTADO_ACTIVO_INACTIVO_LABELS,
+	hasRemoteFilterRowSearch,
+	parseRemoteGridFilters,
+	ParsedGridFilters,
+} from 'src/app/shared/utils/remote-grid-filter.util';
+import {
 	clearGridHeaderFilterSelections,
 	getColumnHeaderFilterSelection,
-	hasColumnHeaderFilterSelection,
-	invertEstadoExcludedHeaderFilterValues,
 	invertExcludedHeaderFilterValues,
-	isHeaderFilterExclude,
-	normalizeEstadoHeaderFilterValue,
 	readGridFilterRowValues,
+	resolveBooleanExcludeHeaderFilter,
 } from 'src/app/shared/utils/remote-header-filter.util';
 import {
 	SC_COMPETENCIA_NIVEL,
@@ -34,7 +38,14 @@ import {
 	ScCompetenciasTecnicasService,
 } from './sc-competencias-tecnicas.service';
 
-type EstadoFiltro = boolean | null;
+const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_TECNICAS';
+
+const GRID_FILTER_CONFIG = {
+	estadoField: ESTADO_FIELD,
+	booleanColumns: {
+		[ESTADO_FIELD]: ESTADO_ACTIVO_INACTIVO_LABELS,
+	},
+};
 
 interface ParsedGridFilters {
 	estado: EstadoFiltro;
@@ -140,13 +151,12 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 	loadHeaderFilterValues = (field: string, searchValue?: string): Promise<unknown[]> => {
 		const grid = this.dataGrid?.gData?.instance;
 		const combinedFilter = grid?.getCombinedFilter?.(false);
-		const gridFilters = this.getGridFilters(combinedFilter, grid);
-		const hasFilterRowSearch = this.hasFilterRowSearch(gridFilters);
-		const scopeDistinctToFilterRow = hasFilterRowSearch;
+		const gridFilters = parseRemoteGridFilters(combinedFilter, grid, GRID_FILTER_CONFIG);
+		const hasFilterRowSearch = hasRemoteFilterRowSearch(gridFilters);
 		const filtersForDistinct: ParsedGridFilters = {
-			estado: scopeDistinctToFilterRow ? gridFilters.estado : null,
-			filterRow: scopeDistinctToFilterRow ? gridFilters.filterRow : {},
-			filterRowExact: scopeDistinctToFilterRow ? gridFilters.filterRowExact : {},
+			estado: hasFilterRowSearch ? gridFilters.estado : null,
+			filterRow: hasFilterRowSearch ? gridFilters.filterRow : {},
+			filterRowExact: hasFilterRowSearch ? gridFilters.filterRowExact : {},
 			headerAnyOf: {},
 		};
 
@@ -212,8 +222,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 	}
 
 	override notifyFx(xMessage: string, xType: NotifyType): void {
-		const cleanMessage = `${xMessage ?? ''}`.replace(/^error:\s*/i, '').trim();
-		const warningDetail = this.getWarningMessage(xMessage);
+		const cleanMessage = this.getErrorMessage(xMessage).replace(/^error:\s*/i, '').trim();
+		const warningDetail = this.getWarningMessage(cleanMessage);
 		const isWarning = xType === NotifyType.Warning || warningDetail !== cleanMessage;
 		const severity = xType === NotifyType.Success ? 'success' : isWarning ? 'warn' : 'error';
 		const summary = xType === NotifyType.Success ? 'Éxito' : isWarning ? 'Advertencia' : 'Error';
@@ -542,7 +552,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 			loadMode: 'processed',
 			cacheRawData: false,
 			load: async (loadOptions: any) => {
-				const takeRows = loadOptions.take || 5;
+				try {
+					const takeRows = loadOptions.take || 5;
 				const skipRows = loadOptions.skip || 0;
 				const page = Math.floor(skipRows / takeRows) + 1;
 				const grid = this.dataGrid?.gData?.instance;
@@ -555,8 +566,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 						clearGridHeaderFilterSelections(grid);
 					}
 				}
-				const gridFilters = this.getGridFilters(loadOptions.filter, grid);
-				if (!this.hasFilterRowSearch(gridFilters)) {
+				const gridFilters = parseRemoteGridFilters(loadOptions.filter, grid, GRID_FILTER_CONFIG);
+				if (!hasRemoteFilterRowSearch(gridFilters)) {
 					await this.resolveExcludeHeaderFilters(grid, gridFilters);
 				}
 				const sort = this.getGridSort(loadOptions.sort);
@@ -584,103 +595,74 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 					data: response.Data || [],
 					totalCount: response.RowsAffected || 0,
 				};
+				} catch (error) {
+					const message = this.getErrorMessage(error);
+					this.notifyFx(message, NotifyType.Error);
+					throw new Error(message);
+				}
 			},
 		});
 	}
 
-	private getGridFilters(filter: any, grid?: any): ParsedGridFilters {
-		const result: ParsedGridFilters = {
-			estado: null,
-			filterRow: {},
-			filterRowExact: {},
-			headerAnyOf: {},
+	private async resolveExcludeHeaderFilters(grid: any, result: ParsedGridFilters): Promise<void> {
+		if (!grid?.getVisibleColumns) {
+			return;
+		}
+
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
+			}
+
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (!selection || selection.filterType !== 'exclude' || !selection.values.length) {
+				continue;
+			}
+
+			const booleanIncluded = resolveBooleanExcludeHeaderFilter(
+				column,
+				selection.values,
+				GRID_FILTER_CONFIG.booleanColumns?.[dataField]
+			);
+			if (booleanIncluded !== null) {
+				result.headerAnyOf[dataField] = booleanIncluded.length ? booleanIncluded : ['__NO_MATCH__'];
+				continue;
+			}
+
+			const filtersForDistinct = cloneRemoteGridFilters(result);
+			delete filtersForDistinct.headerAnyOf[dataField];
+			delete filtersForDistinct.filterRow[dataField];
+			delete filtersForDistinct.filterRowExact[dataField];
+
+			const response = await lastValueFrom(
+				this.service.getDistinctValues(this.fillParam(0, 1, 0, '', filtersForDistinct, dataField, ''))
+			);
+
+			if (!response.Result) {
+				continue;
+			}
+		}
+
+			const included = invertExcludedHeaderFilterValues(selection.values, response.Data ?? []);
+			result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
+		}
+	}
+
+	private getGridSort(sort: any): { field: string; desc: boolean } | null {
+		if (!Array.isArray(sort) || !sort.length) {
+			return null;
+		}
+
+		const first = sort[0];
+		if (!first?.selector) {
+			return null;
+		}
+
+		return {
+			field: `${first.selector}`,
+			desc: !!first.desc,
 		};
-
-		const headerEquals = new Map<string, unknown[]>();
-		const headerFilterFields = this.getActiveHeaderFilterFields(grid);
-		const filterRowFromGrid = readGridFilterRowValues(grid);
-		const filterRowFields = new Set([
-			...Object.keys(filterRowFromGrid.filterRow),
-			...Object.keys(filterRowFromGrid.filterRowExact),
-		]);
-		const flatConditions = this.flattenFilter(filter);
-
-		for (const node of flatConditions) {
-			const field = node[0];
-			const operator = node[1];
-			const value = node[2];
-
-			if (operator === 'anyof' && Array.isArray(value) && value.length) {
-				if (grid && isHeaderFilterExclude(grid, field)) {
-					continue;
-				}
-
-				const normalizedValues =
-					field === 'ESTADO_COMPETENCIAS_TECNICAS'
-						? value.map((item) => normalizeEstadoHeaderFilterValue(item))
-						: value;
-
-				result.headerAnyOf[field] = this.mergeAnyOfValues(result.headerAnyOf[field], normalizedValues);
-				continue;
-			}
-
-			if (operator === '=' || operator === '==') {
-				if (filterRowFields.has(field)) {
-					continue;
-				}
-
-				const values = headerEquals.get(field) ?? [];
-				values.push(value);
-				headerEquals.set(field, values);
-				continue;
-			}
-
-			if (operator === '<' || operator === '>' || operator === '<=' || operator === '>=') {
-				if (filterRowFields.has(field)) {
-					continue;
-				}
-
-				result.filterRowExact[field] = value;
-				continue;
-			}
-
-			if (value !== null && value !== undefined && `${value}`.trim()) {
-				if (filterRowFields.has(field)) {
-					continue;
-				}
-
-				result.filterRow[field] = value;
-			}
-		}
-
-		for (const [field, values] of headerEquals.entries()) {
-			if (grid && isHeaderFilterExclude(grid, field)) {
-				continue;
-			}
-
-			if (values.length > 1 || headerFilterFields.has(field)) {
-				const normalizedValues =
-					field === 'ESTADO_COMPETENCIAS_TECNICAS'
-						? values.map((item) => normalizeEstadoHeaderFilterValue(item))
-						: values;
-
-				result.headerAnyOf[field] = this.mergeAnyOfValues(result.headerAnyOf[field], normalizedValues);
-				continue;
-			}
-
-			result.filterRowExact[field] = values[0];
-		}
-
-		result.filterRow = filterRowFromGrid.filterRow;
-		result.filterRowExact = filterRowFromGrid.filterRowExact;
-		this.applyEstadoFilterRow(result);
-		this.applyHeaderFiltersFromGrid(grid, result);
-
-		if (this.hasFilterRowSearch(result)) {
-			result.headerAnyOf = {};
-		}
-
-		return result;
 	}
 
 	private applyHeaderFiltersFromGrid(grid: any, result: ParsedGridFilters): void {
@@ -924,16 +906,39 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 	}
 
 	private getErrorMessage(error: any): string {
-		if (typeof error === 'string' && error.trim()) {
-			return error;
+		const connectionMessage =
+			'No se pudo comunicar con el servidor. Verifique que la API esté en ejecución e intente nuevamente.';
+
+		if (typeof error === 'string') {
+			const trimmed = error.trim();
+			if (!trimmed || trimmed === '[object ProgressEvent]' || trimmed.toLowerCase().includes('http failure')) {
+				return connectionMessage;
+			}
+			return trimmed;
 		}
 
-		return (
-			error?.error?.ErrorMessage ||
-			error?.error?.message ||
-			error?.message ||
-			'Ocurrio un error al procesar la solicitud.'
-		);
+		if (error instanceof ProgressEvent || Object.prototype.toString.call(error) === '[object ProgressEvent]') {
+			return connectionMessage;
+		}
+
+		if (error?.error instanceof ProgressEvent) {
+			return connectionMessage;
+		}
+
+		const apiMessage = error?.error?.ErrorMessage || error?.error?.message || error?.message;
+		if (typeof apiMessage === 'string' && apiMessage.trim()) {
+			if (apiMessage === '[object ProgressEvent]' || apiMessage.toLowerCase().includes('http failure')) {
+				return connectionMessage;
+			}
+			return apiMessage;
+		}
+
+		const coerced = `${error ?? ''}`.trim();
+		if (coerced === '[object ProgressEvent]' || coerced === '[object Object]') {
+			return connectionMessage;
+		}
+
+		return coerced || 'Ocurrio un error al procesar la solicitud.';
 	}
 
 	private getNotifyType(response: any): NotifyType {

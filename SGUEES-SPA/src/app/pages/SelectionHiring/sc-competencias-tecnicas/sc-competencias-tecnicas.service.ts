@@ -4,6 +4,8 @@ import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildRemoteGridWhere, createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
+import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
 import { SC_COMPETENCIA_NIVEL, ScCompetenciasTecnicas } from './models/sc-competencias-tecnicas';
 import { ScCompetenciasTecnicasRepository } from './sc-competencias-tecnicas.repository';
 import {
@@ -11,6 +13,8 @@ import {
 	normalizeAnyOfMapValues,
 	normalizeFilterMapValues,
 } from 'src/app/shared/utils/remote-header-filter.util';
+
+const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_TECNICAS';
 
 export interface ScCompetenciaFormContext {
 	nivel: string;
@@ -240,49 +244,7 @@ export class ScCompetenciasTecnicasService {
 			{ dataField: 'DESCRIPCION', caption: 'Definicion', width: 360 },
 			{ dataField: 'NIVEL', caption: 'Nivel', width: 80, alignment: 'center' },
 			{ dataField: 'CODIGO_PADRE', caption: 'Cod. Padre', width: 110 },
-			{
-				dataField: 'ESTADO_COMPETENCIAS_TECNICAS',
-				caption: 'Estado',
-				width: 140,
-				allowFiltering: true,
-				allowHeaderFiltering: true,
-				calculateCellValue: (rowData: Record<string, unknown>) => rowData?.ESTADO_COMPETENCIAS_TECNICAS,
-				cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					const badge = document.createElement('span');
-					badge.classList.add(
-						'estado-badge',
-						cellInfo.value ? 'estado-badge--activo' : 'estado-badge--inactivo'
-					);
-					badge.textContent = cellInfo.value ? 'Activo' : 'Inactivo';
-					cellElement.innerHTML = '';
-					cellElement.appendChild(badge);
-				},
-				lookup: {
-					dataSource: [
-						{ value: true, text: 'Activo' },
-						{ value: false, text: 'Inactivo' },
-					],
-					valueExpr: 'value',
-					displayExpr: 'text',
-				},
-				headerFilter: {
-					allowSearch: false,
-				},
-				selectedFilterOperation: '=',
-				defaultSelectedFilterOperation: '=',
-				filterOperations: ['='],
-				calculateFilterExpression: (filterValue: any, selectedFilterOperation?: string) => {
-					if (filterValue === '__ALL__' || filterValue === null || filterValue === undefined) {
-						return null;
-					}
-
-					if (selectedFilterOperation === 'anyof' && Array.isArray(filterValue)) {
-						return filterValue.length ? ['ESTADO_COMPETENCIAS_TECNICAS', 'anyof', filterValue] : null;
-					}
-
-					return ['ESTADO_COMPETENCIAS_TECNICAS', '=', filterValue];
-				},
-			},
+			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 160 },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 160 },
 			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm', calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA') },
@@ -429,84 +391,7 @@ export class ScCompetenciasTecnicasService {
 	}
 
 	private buildWhere(param: any): IParam[] {
-		const xWhere: IParam[] = [];
-
-		if (param.DISTINCT_FIELD) {
-			xWhere.push({ Parameter: 'DISTINCT_FIELD', Value: param.DISTINCT_FIELD });
-		}
-
-		if (param.HEADER_FILTER_SEARCH) {
-			xWhere.push({ Parameter: 'HEADER_FILTER_SEARCH', Value: param.HEADER_FILTER_SEARCH });
-		}
-
-		const gridFilters = param.gridFilters as
-			| {
-					estado?: boolean | null;
-					filterRow?: Record<string, unknown>;
-					filterRowExact?: Record<string, unknown>;
-					headerAnyOf?: Record<string, unknown[]>;
-			  }
-			| undefined;
-
-		const filterRowJson = this.serializeFilterMap(gridFilters?.filterRow);
-		if (filterRowJson) {
-			xWhere.push({ Parameter: 'FILTER_ROW_JSON', Value: filterRowJson });
-		}
-
-		const exactJson = this.serializeFilterMap(gridFilters?.filterRowExact);
-		if (exactJson) {
-			xWhere.push({ Parameter: 'COLUMN_EXACT_JSON', Value: exactJson });
-		}
-
-		const anyOfJson = this.serializeAnyOfMap(gridFilters?.headerAnyOf);
-		if (anyOfJson) {
-			xWhere.push({ Parameter: 'COLUMN_ANYOF_JSON', Value: anyOfJson });
-		}
-
-		if (param.BUSQUEDA) {
-			xWhere.push({ Parameter: 'BUSQUEDA', Value: param.BUSQUEDA });
-		}
-
-		if (gridFilters?.estado !== null && gridFilters?.estado !== undefined) {
-			xWhere.push({ Parameter: 'ESTADO_COMPETENCIAS_TECNICAS', Value: gridFilters.estado });
-		}
-
-		if (param.PAGE) {
-			xWhere.push({ Parameter: 'PAGE', Value: param.PAGE });
-		}
-
-		if (param.PAGE_SIZE) {
-			xWhere.push({ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE });
-		}
-
-		if (param.SORT_FIELD) {
-			xWhere.push({ Parameter: 'SORT_FIELD', Value: param.SORT_FIELD });
-		}
-
-		if (param.SORT_FIELD && param.SORT_DESC !== null && param.SORT_DESC !== undefined) {
-			xWhere.push({ Parameter: 'SORT_DESC', Value: param.SORT_DESC });
-		}
-
-		return xWhere;
-	}
-
-	private serializeFilterMap(map?: Record<string, unknown>): string {
-		const cleaned = Object.fromEntries(
-			Object.entries(normalizeFilterMapValues(map)).filter(
-				([, value]) => value !== null && value !== undefined && `${value}`.trim() !== ''
-			)
-		);
-
-		return Object.keys(cleaned).length ? JSON.stringify(cleaned) : '';
-	}
-
-	private serializeAnyOfMap(map?: Record<string, unknown[]>): string {
-		const normalized = normalizeAnyOfMapValues(map);
-		if (!normalized || !Object.keys(normalized).length) {
-			return '';
-		}
-
-		return JSON.stringify(normalized);
+		return buildRemoteGridWhere(param, ESTADO_FIELD);
 	}
 }
 

@@ -3,33 +3,31 @@ import CustomStore from 'devextreme/data/custom_store';
 export type RemoteHeaderFilterLoader = (field: string, searchValue?: string) => Promise<unknown[]>;
 
 export const GRID_DATE_TIME_FIELDS = new Set(['FECHA_CREA', 'FECHA_ACTU']);
-export const GRID_BOOLEAN_FILTER_FIELDS = new Set([
-	'ESTADO_COMPETENCIAS_TECNICAS',
-	'ESTADO_NIVEL_ACADEMICO',
-	'ESTADO_TIPO_PUESTO',
-	'ESTADO_FRECUENCIA',
-	'ESTADO_INDUCCION',
-	'ESTADO_DISPONIBILIDAD_HORARIO',
-	'ESTADO_IMPACTO_ECONOMICO',
-	'ESTADO_REQUERIMIENTO_ORGANIZACIONAL',
-	'ESTADO_RESPONSABILIDAD',
-	'ESTADO_RIESGO_PUESTO',
-]);
-export const REMOTE_HEADER_FILTER_FORCE_FIELDS = new Set([
-	'ESTADO_COMPETENCIAS_TECNICAS',
-	'ESTADO_NIVEL_ACADEMICO',
-	'ESTADO_TIPO_PUESTO',
-	'ESTADO_FRECUENCIA',
-	'ESTADO_INDUCCION',
-	'ESTADO_DISPONIBILIDAD_HORARIO',
-	'ESTADO_IMPACTO_ECONOMICO',
-	'ESTADO_REQUERIMIENTO_ORGANIZACIONAL',
-	'ESTADO_RESPONSABILIDAD',
-	'ESTADO_RIESGO_PUESTO',
-]);
 
-export function isEstadoField(field: string): boolean {
-	return GRID_BOOLEAN_FILTER_FIELDS.has(field);
+export interface BooleanColumnLabels {
+	trueLabel?: string;
+	falseLabel?: string;
+	trueValue?: unknown;
+	falseValue?: unknown;
+}
+
+export const DEFAULT_BOOLEAN_LABELS: Required<BooleanColumnLabels> = {
+	trueLabel: 'Activo',
+	falseLabel: 'Inactivo',
+	trueValue: true,
+	falseValue: false,
+};
+
+export function resolveBooleanColumnLabels(labels?: BooleanColumnLabels): Required<BooleanColumnLabels> {
+	return { ...DEFAULT_BOOLEAN_LABELS, ...labels };
+}
+
+export function isBooleanFilterField(_field: string, column?: { booleanColumnLabels?: BooleanColumnLabels }): boolean {
+	return !!column?.booleanColumnLabels;
+}
+
+export function shouldForceRemoteHeaderFilter(column: any): boolean {
+	return isBooleanFilterField(column?.dataField, column);
 }
 
 export type HeaderFilterType = 'include' | 'exclude';
@@ -54,11 +52,11 @@ export function shouldAttachRemoteHeaderFilter(column: any): boolean {
 		return false;
 	}
 
-	if (column.headerFilter?.dataSource && !REMOTE_HEADER_FILTER_FORCE_FIELDS.has(column.dataField)) {
+	if (column.headerFilter?.dataSource && !shouldForceRemoteHeaderFilter(column)) {
 		return false;
 	}
 
-	if (column.lookup?.dataSource && !REMOTE_HEADER_FILTER_FORCE_FIELDS.has(column.dataField)) {
+	if (column.lookup?.dataSource && !shouldForceRemoteHeaderFilter(column)) {
 		return false;
 	}
 
@@ -103,25 +101,42 @@ export function syncHeaderFiltersFromPageData(grid: any, columns: any[]): void {
 	});
 }
 
-export function formatHeaderFilterDisplayText(field: string, value: unknown): string {
+export function formatBooleanHeaderFilterDisplayText(value: unknown, labels?: BooleanColumnLabels): string {
 	if (value === null || value === undefined || `${value}`.trim() === '') {
 		return '(Vacio)';
 	}
 
-	if (isEstadoField(field)) {
-		if (value === true || value === 'true') {
-			return 'Activo';
-		}
+	const resolved = resolveBooleanColumnLabels(labels);
+	const normalized = normalizeBooleanHeaderFilterValue(value, labels);
 
-		if (value === false || value === 'false') {
-			return 'Inactivo';
-		}
+	if (normalized === resolved.trueValue) {
+		return resolved.trueLabel;
+	}
+
+	if (normalized === resolved.falseValue) {
+		return resolved.falseLabel;
 	}
 
 	return String(value);
 }
 
-export function createRemoteHeaderFilterDataSource(loader: RemoteHeaderFilterLoader, field: string): CustomStore {
+export function formatHeaderFilterDisplayText(field: string, value: unknown, labels?: BooleanColumnLabels): string {
+	if (value === null || value === undefined || `${value}`.trim() === '') {
+		return '(Vacio)';
+	}
+
+	if (labels) {
+		return formatBooleanHeaderFilterDisplayText(value, labels);
+	}
+
+	return String(value);
+}
+
+export function createRemoteHeaderFilterDataSource(
+	loader: RemoteHeaderFilterLoader,
+	field: string,
+	labels?: BooleanColumnLabels
+): CustomStore {
 	return new CustomStore({
 		key: 'value',
 		loadMode: 'raw',
@@ -129,7 +144,7 @@ export function createRemoteHeaderFilterDataSource(loader: RemoteHeaderFilterLoa
 		load: (loadOptions: { searchValue?: string }) =>
 			loader(field, loadOptions.searchValue).then((values) =>
 				(values ?? []).map((value) => ({
-					text: formatHeaderFilterDisplayText(field, value),
+					text: formatHeaderFilterDisplayText(field, value, labels),
 					value,
 				}))
 			),
@@ -153,7 +168,7 @@ export function attachRemoteHeaderFilters(
 			allowHeaderFiltering: column.allowHeaderFiltering ?? true,
 			headerFilter: {
 				...(column.headerFilter ?? {}),
-				dataSource: createRemoteHeaderFilterDataSource(loader, column.dataField),
+				dataSource: createRemoteHeaderFilterDataSource(loader, column.dataField, column.booleanColumnLabels),
 			},
 		};
 	});
@@ -231,7 +246,7 @@ export function readGridFilterRowValues(grid: any): {
 
 		const operation = grid.columnOption(dataField, 'selectedFilterOperation') ?? 'contains';
 		if (
-			GRID_BOOLEAN_FILTER_FIELDS.has(dataField) ||
+			isBooleanFilterField(dataField, column) ||
 			operation === '=' ||
 			operation === '<' ||
 			operation === '>' ||
@@ -265,35 +280,81 @@ export function headerFilterValueKey(value: unknown): string {
 	return `${typeof value}:${value}`;
 }
 
-export function normalizeEstadoHeaderFilterValue(value: unknown): unknown {
+export function normalizeBooleanHeaderFilterValue(value: unknown, labels?: BooleanColumnLabels): unknown {
+	const resolved = resolveBooleanColumnLabels(labels);
+
 	if (value && typeof value === 'object' && 'value' in (value as Record<string, unknown>)) {
-		return normalizeEstadoHeaderFilterValue((value as Record<string, unknown>).value);
+		return normalizeBooleanHeaderFilterValue((value as Record<string, unknown>).value, labels);
 	}
 
 	if (value === null || value === undefined || value === '' || value === '__BLANK__' || value === '(Vacio)') {
 		return null;
 	}
 
-	if (value === true || value === 'true' || value === 'Activo') {
-		return true;
+	if (
+		value === resolved.trueValue ||
+		value === 'true' ||
+		value === resolved.trueLabel ||
+		(resolved.trueValue === true && value === true)
+	) {
+		return resolved.trueValue;
 	}
 
-	if (value === false || value === 'false' || value === 'Inactivo') {
-		return false;
+	if (
+		value === resolved.falseValue ||
+		value === 'false' ||
+		value === resolved.falseLabel ||
+		(resolved.falseValue === false && value === false)
+	) {
+		return resolved.falseValue;
 	}
 
 	return value;
 }
 
-export const ESTADO_HEADER_FILTER_DOMAIN: unknown[] = [null, true, false];
+/** @deprecated Use normalizeBooleanHeaderFilterValue. Kept for backward compatibility. */
+export function normalizeEstadoHeaderFilterValue(value: unknown): unknown {
+	return normalizeBooleanHeaderFilterValue(value);
+}
 
-export function invertEstadoExcludedHeaderFilterValues(excluded: unknown[]): unknown[] {
+export function getBooleanHeaderFilterDomain(labels?: BooleanColumnLabels): unknown[] {
+	const resolved = resolveBooleanColumnLabels(labels);
+	return [null, resolved.trueValue, resolved.falseValue];
+}
+
+/** @deprecated Use getBooleanHeaderFilterDomain. Kept for backward compatibility. */
+export const ESTADO_HEADER_FILTER_DOMAIN: unknown[] = getBooleanHeaderFilterDomain();
+
+export function invertBooleanExcludedHeaderFilterValues(excluded: unknown[], labels?: BooleanColumnLabels): unknown[] {
+	const resolved = resolveBooleanColumnLabels(labels);
 	const excludedKeys = new Set(
-		excluded.map((value) => headerFilterValueKey(normalizeEstadoHeaderFilterValue(value)))
+		excluded.map((value) => headerFilterValueKey(normalizeBooleanHeaderFilterValue(value, resolved)))
 	);
 
-	return ESTADO_HEADER_FILTER_DOMAIN.filter(
-		(value) => !excludedKeys.has(headerFilterValueKey(normalizeEstadoHeaderFilterValue(value)))
+	return getBooleanHeaderFilterDomain(resolved).filter(
+		(value) => !excludedKeys.has(headerFilterValueKey(normalizeBooleanHeaderFilterValue(value, resolved)))
+	);
+}
+
+/** @deprecated Use invertBooleanExcludedHeaderFilterValues. Kept for backward compatibility. */
+export function invertEstadoExcludedHeaderFilterValues(excluded: unknown[]): unknown[] {
+	return invertBooleanExcludedHeaderFilterValues(excluded);
+}
+
+export function resolveBooleanExcludeHeaderFilter(
+	column: any,
+	excludedValues: unknown[],
+	labelsOverride?: BooleanColumnLabels
+): unknown[] | null {
+	const labels = labelsOverride ?? column?.booleanColumnLabels;
+	if (!labels) {
+		return null;
+	}
+
+	const resolved = resolveBooleanColumnLabels(labels);
+	return invertBooleanExcludedHeaderFilterValues(
+		excludedValues.map((value) => normalizeBooleanHeaderFilterValue(value, resolved)),
+		resolved
 	);
 }
 
