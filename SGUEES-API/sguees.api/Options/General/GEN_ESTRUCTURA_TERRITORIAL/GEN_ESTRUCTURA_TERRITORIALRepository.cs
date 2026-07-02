@@ -11,7 +11,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-	public class GEN_ESTRUCTURA_TERRITORIALRepository : BaseRepository<GEN_ESTRUCTURA_TERRITORIAL_PAISTable>, IGEN_ESTRUCTURA_TERRITORIALRepository
+	public partial class GEN_ESTRUCTURA_TERRITORIALRepository : BaseRepository<GEN_ESTRUCTURA_TERRITORIAL_PAISTable>, IGEN_ESTRUCTURA_TERRITORIALRepository
 	{
 		private const string _PaisTable = "GEN_PAIS";
 		private const string _DeptoTable = "GEN_DEPTO";

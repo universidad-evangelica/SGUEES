@@ -8,6 +8,13 @@ import { buildRemoteGridWhere, createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_
 import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
 import { SC_COMPETENCIA_NIVEL, ScCompetenciasTecnicas } from './models/sc-competencias-tecnicas';
 import { ScCompetenciasTecnicasRepository } from './sc-competencias-tecnicas.repository';
+import {
+	createDateTimeFilterExpression,
+	normalizeAnyOfMapValues,
+	normalizeFilterMapValues,
+} from 'src/app/shared/utils/remote-header-filter.util';
+
+const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_TECNICAS';
 
 const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_TECNICAS';
 
