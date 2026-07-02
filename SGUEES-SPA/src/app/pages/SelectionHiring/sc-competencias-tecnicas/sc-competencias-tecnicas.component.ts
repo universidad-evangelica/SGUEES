@@ -47,6 +47,13 @@ const GRID_FILTER_CONFIG = {
 	},
 };
 
+interface ParsedGridFilters {
+	estado: EstadoFiltro;
+	filterRow: Record<string, unknown>;
+	filterRowExact: Record<string, unknown>;
+	headerAnyOf: Record<string, unknown[]>;
+}
+
 @Component({
 	selector: 'app-sc-competencias-tecnicas',
 	templateUrl: './sc-competencias-tecnicas.component.html',
@@ -635,10 +642,187 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 			if (!response.Result) {
 				continue;
 			}
+		}
 
 			const included = invertExcludedHeaderFilterValues(selection.values, response.Data ?? []);
 			result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
 		}
+	}
+
+	private getGridSort(sort: any): { field: string; desc: boolean } | null {
+		if (!Array.isArray(sort) || !sort.length) {
+			return null;
+		}
+
+		const first = sort[0];
+		if (!first?.selector) {
+			return null;
+		}
+
+		return {
+			field: `${first.selector}`,
+			desc: !!first.desc,
+		};
+	}
+
+	private applyHeaderFiltersFromGrid(grid: any, result: ParsedGridFilters): void {
+		if (!grid?.getVisibleColumns) {
+			return;
+		}
+
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
+			}
+
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (!selection || selection.filterType === 'exclude' || !selection.values.length) {
+				continue;
+			}
+
+			const values =
+				dataField === 'ESTADO_COMPETENCIAS_TECNICAS'
+					? selection.values.map((item) => normalizeEstadoHeaderFilterValue(item))
+					: selection.values;
+
+			result.headerAnyOf[dataField] = this.mergeAnyOfValues(result.headerAnyOf[dataField], values);
+		}
+	}
+
+	private applyEstadoFilterRow(result: ParsedGridFilters): void {
+		const estadoValue =
+			result.filterRowExact['ESTADO_COMPETENCIAS_TECNICAS'] ??
+			result.filterRow['ESTADO_COMPETENCIAS_TECNICAS'];
+
+		if (estadoValue === undefined) {
+			return;
+		}
+
+		if (estadoValue === '__ALL__' || estadoValue === null) {
+			result.estado = null;
+		} else {
+			result.estado = estadoValue === true || estadoValue === 'true';
+		}
+
+		delete result.filterRowExact['ESTADO_COMPETENCIAS_TECNICAS'];
+		delete result.filterRow['ESTADO_COMPETENCIAS_TECNICAS'];
+	}
+
+	private hasFilterRowSearch(filters: ParsedGridFilters): boolean {
+		return (
+			filters.estado !== null && filters.estado !== undefined ||
+			Object.keys(filters.filterRow).length > 0 ||
+			Object.keys(filters.filterRowExact).length > 0
+		);
+	}
+
+	private async resolveExcludeHeaderFilters(grid: any, result: ParsedGridFilters): Promise<void> {
+		if (!grid?.getVisibleColumns) {
+			return;
+		}
+
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
+			}
+
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (!selection || selection.filterType !== 'exclude' || !selection.values.length) {
+				continue;
+			}
+
+			if (dataField === 'ESTADO_COMPETENCIAS_TECNICAS') {
+				const included = invertEstadoExcludedHeaderFilterValues(
+					selection.values.map((item) => normalizeEstadoHeaderFilterValue(item))
+				);
+				result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
+				continue;
+			}
+
+			const filtersForDistinct = this.cloneGridFilters(result);
+			delete filtersForDistinct.headerAnyOf[dataField];
+			delete filtersForDistinct.filterRow[dataField];
+			delete filtersForDistinct.filterRowExact[dataField];
+
+			const response = await lastValueFrom(
+				this.service.getDistinctValues(this.fillParam(0, 1, 0, '', filtersForDistinct, dataField, ''))
+			);
+
+			if (!response.Result) {
+				continue;
+			}
+
+			const included = invertExcludedHeaderFilterValues(selection.values, response.Data ?? []);
+			if (included.length) {
+				result.headerAnyOf[dataField] = included;
+			} else {
+				result.headerAnyOf[dataField] = ['__NO_MATCH__'];
+			}
+		}
+	}
+
+	private cloneGridFilters(source: ParsedGridFilters): ParsedGridFilters {
+		return {
+			estado: source.estado,
+			filterRow: { ...source.filterRow },
+			filterRowExact: { ...source.filterRowExact },
+			headerAnyOf: { ...source.headerAnyOf },
+		};
+	}
+
+	private getActiveHeaderFilterFields(grid: any): Set<string> {
+		const fields = new Set<string>();
+
+		if (!grid?.getVisibleColumns) {
+			return fields;
+		}
+
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
+			}
+
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (hasColumnHeaderFilterSelection(selection) && selection!.filterType !== 'exclude') {
+				fields.add(dataField);
+			}
+		}
+
+		return fields;
+	}
+
+	private flattenFilter(node: any): any[] {
+		if (!Array.isArray(node) || !node.length) {
+			return [];
+		}
+
+		if (node.length === 3 && (node[1] === 'and' || node[1] === 'or') && Array.isArray(node[0])) {
+			return [...this.flattenFilter(node[0]), ...this.flattenFilter(node[2])];
+		}
+
+		if (typeof node[0] === 'string' && node.length >= 3) {
+			return [node];
+		}
+
+		return node.flatMap((child) => this.flattenFilter(child));
+	}
+
+	private mergeAnyOfValues(current: unknown[] | undefined, incoming: unknown[]): unknown[] {
+		const merged = [...(current ?? []), ...incoming];
+		const seen = new Set<string>();
+
+		return merged.filter((value) => {
+			const key = value === null || value === undefined ? '__null__' : `${typeof value}:${value}`;
+			if (seen.has(key)) {
+				return false;
+			}
+
+			seen.add(key);
+			return true;
+		});
 	}
 
 	private getGridSort(sort: any): { field: string; desc: boolean } | null {

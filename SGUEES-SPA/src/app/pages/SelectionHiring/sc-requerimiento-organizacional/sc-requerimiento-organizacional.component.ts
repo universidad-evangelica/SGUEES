@@ -203,7 +203,7 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 		const warningDetail = this.getWarningMessage(cleanMessage);
 		const isWarning = xType === NotifyType.Warning || warningDetail !== cleanMessage;
 		const severity = xType === NotifyType.Success ? 'success' : isWarning ? 'warn' : 'error';
-		const summary = xType === NotifyType.Success ? '�xito' : isWarning ? 'Advertencia' : 'Error';
+		const summary = xType === NotifyType.Success ? 'ï¿½xito' : isWarning ? 'Advertencia' : 'Error';
 		const detail = isWarning ? warningDetail : cleanMessage;
 		this.messageService.add({ severity, summary, detail });
 	}
@@ -530,7 +530,7 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 
 	private getErrorMessage(error: any): string {
 		const connectionMessage =
-			'No se pudo comunicar con el servidor. Verifique que la API esté en ejecución e intente nuevamente.';
+			'No se pudo comunicar con el servidor. Verifique que la API estÃ© en ejecuciÃ³n e intente nuevamente.';
 
 		if (typeof error === 'string') {
 			const trimmed = error.trim();
@@ -598,7 +598,7 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 			return getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA);
 		}
 		if (value.includes('ya existe') || value.includes('duplicad')) {
-			return 'Ya existe un registro con ese c�digo. Escriba otro c�digo para continuar.';
+			return 'Ya existe un registro con ese cï¿½digo. Escriba otro cï¿½digo para continuar.';
 		}
 		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados')) {
 			return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';
