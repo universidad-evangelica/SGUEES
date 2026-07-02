@@ -3,12 +3,8 @@ import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
-<<<<<<< Updated upstream
 import { buildRemoteGridWhere, createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
-=======
-import { buildEstadoColumn } from 'src/app/shared/mtto/mtto-grid.helpers';
->>>>>>> Stashed changes
 import { ScImpactoEconomico } from './models/sc-impacto-economico';
 import { ScImpactoEconomicoRepository } from './sc-impacto-economico.repository';
 
@@ -64,9 +60,21 @@ export class ScImpactoEconomicoService {
 		return this.repo.desactivar(model, [{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO }]);
 	}
 
-	getColumns(): any[] {
+	getColumns(onEditClick: Function, onDeleteClick: Function, onActivarClick: Function, onDesactivarClick: Function, canEdit = true, canDelete = true): any {
+		const editHint = canEdit ? 'Editar registro' : 'No tiene permiso para editar registros.';
+		const deleteHint = canDelete ? 'Eliminar registro' : 'No tiene permiso para eliminar registros.';
+		const activarHint = canEdit ? 'Activar registro' : 'No tiene permiso para activar registros.';
+		const desactivarHint = canEdit ? 'Desactivar registro' : 'No tiene permiso para desactivar registros.';
+		const editCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-edit';
+		const deleteCssClass = canDelete ? 'sguees-grid-action-delete' : 'sguees-action-no-delete';
+		const activateCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-activate';
+		const deactivateCssClass = canEdit ? 'sguees-grid-action-delete' : 'sguees-action-no-deactivate';
+		const editClick = canEdit ? onEditClick : () => undefined;
+		const deleteClick = canDelete ? onDeleteClick : () => undefined;
+		const activarClick = canEdit ? onActivarClick : () => undefined;
+		const desactivarClick = canEdit ? onDesactivarClick : () => undefined;
+
 		return [
-<<<<<<< Updated upstream
 			{
 				type: 'buttons',
 				name: 'btnAcciones',
@@ -107,11 +115,6 @@ export class ScImpactoEconomicoService {
 			},
 			{ dataField: 'DESCRIPCION', caption: 'Descripcion', width: 300 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
-=======
-			{ dataField: 'CORR_IMPACTO_ECONOMICO', caption: 'Corr.', width: 100 },
-			{ dataField: 'DESCRIPCION', caption: 'Descripcion', width: 300 },
-			buildEstadoColumn('ESTADO_IMPACTO_ECONOMICO'),
->>>>>>> Stashed changes
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
 			{
@@ -159,4 +162,27 @@ export class ScImpactoEconomicoService {
 	private buildWhere(param: any): IParam[] {
 		return buildRemoteGridWhere(param, ESTADO_FIELD);
 	}
+}
+
+export const EMPRESA_WARNING_ERROR_CODE = 4100;
+export const EMPRESA_REGISTRO_ETIQUETA = 'el impacto económico';
+
+export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
+	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
+}
+
+export function isEmpresaWarningResponse(response: any): boolean {
+	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
+}
+
+export function isEmpresaFkErrorMessage(message: string): boolean {
+	const value = `${message ?? ''}`.toLowerCase();
+	return (
+		value.includes('gen_empresa') ||
+		value.includes('foreign key') ||
+		value.includes('clave externa') ||
+		value.includes('reference constraint') ||
+		value.includes('conflicted with the foreign key') ||
+		value.includes('no tiene una empresa asignada')
+	);
 }

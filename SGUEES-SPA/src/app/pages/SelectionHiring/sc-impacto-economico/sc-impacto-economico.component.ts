@@ -1,13 +1,15 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import CustomStore from 'devextreme/data/custom_store';
+import { custom } from 'devextreme/ui/dialog';
+import { MessageService } from 'primeng/api';
 import { lastValueFrom } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
-import { buildEstadoActionButtons } from 'src/app/shared/mtto/mtto-grid.helpers';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
-<<<<<<< Updated upstream
 import { AuthService } from 'src/app/shared/services/auth.service';
 import {
 	cloneRemoteGridFilters,
@@ -23,10 +25,14 @@ import {
 	readGridFilterRowValues,
 	resolveBooleanExcludeHeaderFilter,
 } from 'src/app/shared/utils/remote-header-filter.util';
-=======
->>>>>>> Stashed changes
 import { ScImpactoEconomico } from './models/sc-impacto-economico';
-import { ScImpactoEconomicoService } from './sc-impacto-economico.service';
+import {
+	EMPRESA_REGISTRO_ETIQUETA,
+	getEmpresaWarningMessage,
+	isEmpresaFkErrorMessage,
+	isEmpresaWarningResponse,
+	ScImpactoEconomicoService,
+} from './sc-impacto-economico.service';
 
 const ESTADO_FIELD = 'ESTADO_IMPACTO_ECONOMICO';
 
@@ -46,34 +52,27 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
 	readonly pageSizes = [5, 10, 25, 50, 100];
-	botonesEstado: Record<string, unknown>[] = [];
-
-	protected override etiquetaRegistro = 'el impacto económico';
-	protected override requiereEmpresaSesion = true;
-
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Impacto Economico';
 
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: ScImpactoEconomicoService
+		private service: ScImpactoEconomicoService,
+		private messageService: MessageService,
+		private authService: AuthService
 	) {
 		super(appInfoService, router);
+		this.onEditClick = this.onEditClick.bind(this);
+		this.onEliminarClick = this.onEliminarClick.bind(this);
 		this.onActivarClick = this.onActivarClick.bind(this);
 		this.onDesactivarClick = this.onDesactivarClick.bind(this);
-		this.columns = this.service.getColumns();
+		this.columns = this.service.getColumns(this.onEditClick, this.onEliminarClick, this.onActivarClick, this.onDesactivarClick, this.permiteEdit, this.permiteDele);
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 	}
 
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.botonesEstado = buildEstadoActionButtons({
-			campoEstado: 'ESTADO_IMPACTO_ECONOMICO',
-			onActivar: this.onActivarClick,
-			onDesactivar: this.onDesactivarClick,
-			canEdit: this.permiteEdit,
-		});
 		this.configurarDataSource();
 	}
 
@@ -98,6 +97,15 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 			this.dataForm.instance.option('formData', this.model);
 			this.bloquear();
 		});
+	}
+
+	onEditClick(e: any): void {
+		if (!e?.row?.data) {
+			return;
+		}
+
+		this.model = e.row.data;
+		this.editarClick(e);
 	}
 
 	fillParam(
@@ -184,13 +192,12 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 	}
 
 	override nuevo(): void {
-		if (!this.asegurarEmpresaSesion()) {
+		if (!this.validarEmpresaSesion()) {
 			return;
 		}
 		super.nuevo();
 	}
 
-<<<<<<< Updated upstream
 	override notifyFx(xMessage: string, xType: NotifyType): void {
 		const cleanMessage = this.getErrorMessage(xMessage).replace(/^error:\s*/i, '').trim();
 		const warningDetail = this.getWarningMessage(cleanMessage);
@@ -265,15 +272,6 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 					},
 				});
 		}
-=======
-	guardar(): void {
-		this.guardarMtto({
-			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
-			insert: () => this.service.insert(this.model),
-			update: () => this.service.update(this.model),
-			onSuccess: () => this.consultar(),
-		});
->>>>>>> Stashed changes
 	}
 
 	override cancelar(): void {
@@ -288,7 +286,6 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-<<<<<<< Updated upstream
 		this.confirmEstado(
 			'Activar registro',
 			`Desea activar el impacto economico "${row.DESCRIPCION}"?`,
@@ -307,13 +304,6 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 			`Desea eliminar "${row.DESCRIPCION}"?`,
 			() => this.eliminarRegistro(row)
 		);
-=======
-		this.confirmaAccion(
-			'Activar registro',
-			'Desea activar el impacto economico "' + row.DESCRIPCION + '"?',
-			() => this.cambiarEstado(row, true)
-		);
->>>>>>> Stashed changes
 	}
 
 	onDesactivarClick(e: any): void {
@@ -322,28 +312,16 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-<<<<<<< Updated upstream
 		this.confirmEstado(
 			'Desactivar registro',
 			`Desea desactivar "${row.DESCRIPCION}"?`,
-=======
-		this.confirmaAccion(
-			'Desactivar registro',
-			'Desea desactivar el impacto economico "' + row.DESCRIPCION + '"?',
->>>>>>> Stashed changes
 			() => this.cambiarEstado(row, false)
 		);
 	}
 
 	rowRemoving(e: any): void {
 		e.cancel = true;
-		const row = e.data as ScImpactoEconomico;
-		this.confirmaAccion('Eliminar registro', 'Desea eliminar "' + row.DESCRIPCION + '"?', () =>
-			this.ejecutarDelete({
-				deleteFn: () => this.service.delete(row),
-				onSuccess: () => this.consultar(),
-			})
-		);
+		this.onEliminarClick({ row: { data: e.data } });
 	}
 
 	override bloquear(): void {
@@ -368,14 +346,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 					const takeRows = loadOptions.take || 5;
 				const skipRows = loadOptions.skip || 0;
 				const page = Math.floor(skipRows / takeRows) + 1;
-<<<<<<< Updated upstream
 				const grid = this.dataGrid?.gData?.instance;
-=======
-				const gridFilters = this.getGridFilters(loadOptions.filter);
-				const response = await lastValueFrom(
-					this.service.getAll(this.fillParam(0, page, takeRows, '', gridFilters.estado, gridFilters.columnas))
-				);
->>>>>>> Stashed changes
 
 				if (grid) {
 					const filterRowValues = readGridFilterRowValues(grid);
@@ -426,19 +397,10 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-<<<<<<< Updated upstream
 	private async resolveExcludeHeaderFilters(grid: any, result: ParsedGridFilters): Promise<void> {
 		if (!grid?.getVisibleColumns) {
 			return;
 		}
-=======
-	private getGridFilters(filter: any): { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } {
-		const result: { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } = {
-			busqueda: '',
-			estado: null,
-			columnas: {},
-		};
->>>>>>> Stashed changes
 
 		for (const column of grid.getVisibleColumns()) {
 			const dataField = column?.dataField;
@@ -497,14 +459,25 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 
 	private cambiarEstado(row: ScImpactoEconomico, activo: boolean): void {
 		const request = { ...row, ESTADO_IMPACTO_ECONOMICO: activo };
-		this.ejecutarCambioEstado({
-			activo,
-			activar: () => this.service.activar(request),
-			desactivar: () => this.service.desactivar(request),
-			onSuccess: () => this.consultar(),
+		const action = activo ? this.service.activar(request) : this.service.desactivar(request);
+
+		this.loadingVisible = true;
+		action.pipe(take(1)).subscribe({
+			next: (response: any) => {
+				if (response.Result) {
+					this.consultar();
+					this.notifyFx(activo ? 'Registro activado con exito!' : 'Registro desactivado con exito!', NotifyType.Success);
+				} else {
+					this.notifyFx(response.ErrorMessage || 'No se pudo cambiar el estado del registro.', NotifyType.Error);
+				}
+				this.loadingVisible = false;
+			},
+			error: (error: any) => {
+				this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
+				this.loadingVisible = false;
+			},
 		});
 	}
-<<<<<<< Updated upstream
 
 	private eliminarRegistro(row: ScImpactoEconomico): void {
 		this.loadingVisible = true;
@@ -632,8 +605,6 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		}
 		return cleanMessage;
 	}
-=======
->>>>>>> Stashed changes
 }
 
 
