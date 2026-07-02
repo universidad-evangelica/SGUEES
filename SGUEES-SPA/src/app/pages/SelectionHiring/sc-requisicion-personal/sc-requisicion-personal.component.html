@@ -10,6 +10,23 @@
 </app-barra-data-mtto>
 <div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
 	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+		<div *dxTemplate="let item of 'tablaRequisicionTemplate'">
+			<dx-data-grid
+				[dataSource]="itemsBitacoraRequisicion"
+				[columns]="headersRequisicionBitacora"
+				keyExpr="CORR_DETALLE"
+				[showBorders]="true"
+				[showColumnLines]="true"
+				[showRowLines]="true"
+				[rowAlternationEnabled]="true"
+				[hoverStateEnabled]="true"
+				[columnAutoWidth]="true"
+
+			>
+				<dxo-paging [pageSize]="5"></dxo-paging>
+				<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 20]"></dxo-pager>
+			</dx-data-grid>
+		</div>
 	</dx-form>
 </div>
 <app-data-grid-mtto
@@ -17,7 +34,7 @@
 	[models]="models"
 	[columns]="columns"
 	[summary]="summary"
-	[keyExpr]="'CORR_REQUISICION'"
+	[keyExpr]="'CORR_REQUISICION_PERSONAL'"
 	[permiteEditar]="getPermiteEditar"
 	[permiteDele]="getPermiteDele"
 	(rowDblClick)="rowDblClick($event)"

@@ -13,7 +13,14 @@ namespace eFramework.Core
                 var prop = tOb2.GetProperty(propertyName); 
                 if (prop != null) 
                 {
-                    if (prop.PropertyType == typeof(List<string>)) 
+                    if(prop.PropertyType == typeof(DateOnly)) 
+                    {
+                        if(propertyValue != null || propertyValue.ToString() != "") 
+                        {
+                            prop.SetValue(objectTo, DateOnly.FromDateTime((DateTime)propertyValue));
+                        }
+                    }
+                    else if (prop.PropertyType == typeof(List<string>)) 
                     {
                         prop.SetValue(objectTo, ((string)propertyValue).Split(",").ToList<string>());
                     } else {

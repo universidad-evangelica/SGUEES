@@ -16,7 +16,7 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 
 
 import { ScRequisicionPersonalComponent } from './sc-requisicion-personal.component';
-
+import { ToastModule } from "primeng/toast"; //importar el modulo de Toast para primeNG
 
 const routes: Routes = [{ path: '', component: ScRequisicionPersonalComponent }];
 
@@ -35,6 +35,7 @@ const routes: Routes = [{ path: '', component: ScRequisicionPersonalComponent }]
         DataGridMttoModule,
         BarraDataMttoModule,
         DataLookupModule,
+        ToastModule,
     ],
     exports: [RouterModule],
     declarations: [ScRequisicionPersonalComponent],
