@@ -13,7 +13,6 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { AuthService } from 'src/app/shared/services/auth.service';
 import {
 	cloneRemoteGridFilters,
-	ESTADO_ACTIVO_INACTIVO_LABELS,
 	hasRemoteFilterRowSearch,
 	parseRemoteGridFilters,
 	ParsedGridFilters,
@@ -23,50 +22,40 @@ import {
 	getColumnHeaderFilterSelection,
 	invertExcludedHeaderFilterValues,
 	readGridFilterRowValues,
-	resolveBooleanExcludeHeaderFilter,
 } from 'src/app/shared/utils/remote-header-filter.util';
-import { ScRiesgoPuesto } from './models/sc-riesgo-puesto';
+import { GenDivision } from './models/gen-division';
 import {
 	EMPRESA_REGISTRO_ETIQUETA,
+	GenDivisionService,
 	getEmpresaWarningMessage,
 	isEmpresaFkErrorMessage,
 	isEmpresaWarningResponse,
-	ScRiesgoPuestoService,
-} from './sc-riesgo-puesto.service';
+} from './gen-division.service';
 
-const ESTADO_FIELD = 'ESTADO_RIESGO_PUESTO';
-
-const GRID_FILTER_CONFIG = {
-	estadoField: ESTADO_FIELD,
-	booleanColumns: {
-		[ESTADO_FIELD]: ESTADO_ACTIVO_INACTIVO_LABELS,
-	},
-};
+const GRID_FILTER_CONFIG = { estadoField: '__NONE__' };
 
 @Component({
-	selector: 'app-sc-riesgo-puesto',
-	templateUrl: './sc-riesgo-puesto.component.html',
-	styleUrls: ['./sc-riesgo-puesto.component.scss'],
+	selector: 'app-gen-division',
+	templateUrl: './gen-division.component.html',
+	styleUrls: ['./gen-division.component.scss'],
 })
-export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
+export class GenDivisionComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
 	readonly pageSizes = [5, 10, 25, 50, 100];
-	private readonly maintenanceSubtitulo = 'Mantenimiento de Riesgo de Puesto';
+	private readonly maintenanceSubtitulo = 'Mantenimiento de Divisiones';
 
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: ScRiesgoPuestoService,
+		private service: GenDivisionService,
 		private messageService: MessageService,
 		private authService: AuthService
 	) {
 		super(appInfoService, router);
 		this.onEditClick = this.onEditClick.bind(this);
 		this.onEliminarClick = this.onEliminarClick.bind(this);
-		this.onActivarClick = this.onActivarClick.bind(this);
-		this.onDesactivarClick = this.onDesactivarClick.bind(this);
-		this.columns = this.service.getColumns(this.onEditClick, this.onEliminarClick, this.onActivarClick, this.onDesactivarClick, this.permiteEdit, this.permiteDele);
+		this.columns = this.service.getColumns(this.onEditClick, this.onEliminarClick, this.permiteEdit, this.permiteDele);
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 	}
@@ -109,7 +98,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 	}
 
 	fillParam(
-		xCORR_RIESGO_PUESTO?: number,
+		xCORR_DIVISION?: number,
 		page = 1,
 		pageSize = 5,
 		busqueda = '',
@@ -120,7 +109,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		sortDesc = false
 	): any {
 		return {
-			CORR_RIESGO_PUESTO: xCORR_RIESGO_PUESTO ?? 0,
+			CORR_DIVISION: xCORR_DIVISION ?? 0,
 			BUSQUEDA: busqueda,
 			PAGE: page,
 			PAGE_SIZE: pageSize,
@@ -138,7 +127,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		const gridFilters = parseRemoteGridFilters(combinedFilter, grid, GRID_FILTER_CONFIG);
 		const hasFilterRowSearch = hasRemoteFilterRowSearch(gridFilters);
 		const filtersForDistinct: ParsedGridFilters = {
-			estado: hasFilterRowSearch ? gridFilters.estado : null,
+			estado: null,
 			filterRow: hasFilterRowSearch ? gridFilters.filterRow : {},
 			filterRowExact: hasFilterRowSearch ? gridFilters.filterRowExact : {},
 			headerAnyOf: {},
@@ -157,13 +146,13 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		});
 	};
 
-	override fillData(xModel?: ScRiesgoPuesto): ScRiesgoPuesto {
+	override fillData(xModel?: GenDivision): GenDivision {
 		if (xModel !== undefined) {
 			return {
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
-				CORR_RIESGO_PUESTO: xModel.CORR_RIESGO_PUESTO,
-				NOMBRE_RIESGO_PUESTO: xModel.NOMBRE_RIESGO_PUESTO,
-				ESTADO_RIESGO_PUESTO: xModel.ESTADO_RIESGO_PUESTO,
+				CORR_DIVISION: xModel.CORR_DIVISION,
+				NOMBRE_DIVISION: xModel.NOMBRE_DIVISION,
+				CODIGO_DIVISION: xModel.CODIGO_DIVISION,
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
 				FECHA_CREA: xModel.FECHA_CREA,
@@ -175,9 +164,9 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 
 		return {
 			CORR_EMPRESA: 1,
-			CORR_RIESGO_PUESTO: 0,
-			NOMBRE_RIESGO_PUESTO: '',
-			ESTADO_RIESGO_PUESTO: true,
+			CORR_DIVISION: 0,
+			NOMBRE_DIVISION: '',
+			CODIGO_DIVISION: '',
 			USUARIO_CREA: '',
 			ESTACION_CREA: '',
 			FECHA_CREA: new Date(),
@@ -203,7 +192,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		const warningDetail = this.getWarningMessage(cleanMessage);
 		const isWarning = xType === NotifyType.Warning || warningDetail !== cleanMessage;
 		const severity = xType === NotifyType.Success ? 'success' : isWarning ? 'warn' : 'error';
-		const summary = xType === NotifyType.Success ? '�xito' : isWarning ? 'Advertencia' : 'Error';
+		const summary = xType === NotifyType.Success ? 'Exito' : isWarning ? 'Advertencia' : 'Error';
 		const detail = isWarning ? warningDetail : cleanMessage;
 		this.messageService.add({ severity, summary, detail });
 	}
@@ -280,42 +269,16 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
 	}
 
-	onActivarClick(e: any): void {
-		const row = e.row?.data as ScRiesgoPuesto;
-		if (!row) {
-			return;
-		}
-
-		this.confirmEstado(
-			'Activar registro',
-			`Desea activar el riesgo de puesto "${row.NOMBRE_RIESGO_PUESTO}"?`,
-			() => this.cambiarEstado(row, true)
-		);
-	}
-
 	onEliminarClick(e: any): void {
-		const row = e.row?.data as ScRiesgoPuesto;
+		const row = e.row?.data as GenDivision;
 		if (!row) {
 			return;
 		}
 
-		this.confirmEstado(
+		this.confirmAction(
 			'Eliminar registro',
-			`Desea eliminar "${row.NOMBRE_RIESGO_PUESTO}"?`,
+			`Desea eliminar la division "${row.NOMBRE_DIVISION}"?`,
 			() => this.eliminarRegistro(row)
-		);
-	}
-
-	onDesactivarClick(e: any): void {
-		const row = e.row?.data as ScRiesgoPuesto;
-		if (!row) {
-			return;
-		}
-
-		this.confirmEstado(
-			'Desactivar registro',
-			`Desea desactivar "${row.NOMBRE_RIESGO_PUESTO}"?`,
-			() => this.cambiarEstado(row, false)
 		);
 	}
 
@@ -325,20 +288,20 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 	}
 
 	override bloquear(): void {
-		this.dataForm.instance.getEditor('CORR_RIESGO_PUESTO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('NOMBRE_RIESGO_PUESTO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('ESTADO_RIESGO_PUESTO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CORR_DIVISION')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NOMBRE_DIVISION')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CODIGO_DIVISION')?.option('readOnly', true);
 	}
 
 	override setFocus(): void {
 		setTimeout(() => {
-			this.dataForm.instance.getEditor('NOMBRE_RIESGO_PUESTO')?.focus();
+			this.dataForm.instance.getEditor('NOMBRE_DIVISION')?.focus();
 		});
 	}
 
 	private configurarDataSource(): void {
 		this.models = new CustomStore({
-			key: 'CORR_RIESGO_PUESTO',
+			key: 'CORR_DIVISION',
 			loadMode: 'processed',
 			cacheRawData: false,
 			load: async (loadOptions: any) => {
@@ -381,7 +344,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 				);
 
 				if (!response.Result) {
-					throw new Error(response.ErrorMessage || 'No se pudo cargar el riesgo de puesto.');
+					throw new Error(response.ErrorMessage || 'No se pudo cargar las divisiones.');
 				}
 
 				return {
@@ -410,16 +373,6 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 
 			const selection = getColumnHeaderFilterSelection(grid, dataField);
 			if (!selection || selection.filterType !== 'exclude' || !selection.values.length) {
-				continue;
-			}
-
-			const booleanIncluded = resolveBooleanExcludeHeaderFilter(
-				column,
-				selection.values,
-				GRID_FILTER_CONFIG.booleanColumns?.[dataField]
-			);
-			if (booleanIncluded !== null) {
-				result.headerAnyOf[dataField] = booleanIncluded.length ? booleanIncluded : ['__NO_MATCH__'];
 				continue;
 			}
 
@@ -457,29 +410,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		};
 	}
 
-	private cambiarEstado(row: ScRiesgoPuesto, activo: boolean): void {
-		const request = { ...row, ESTADO_RIESGO_PUESTO: activo };
-		const action = activo ? this.service.activar(request) : this.service.desactivar(request);
-
-		this.loadingVisible = true;
-		action.pipe(take(1)).subscribe({
-			next: (response: any) => {
-				if (response.Result) {
-					this.consultar();
-					this.notifyFx(activo ? 'Registro activado con exito!' : 'Registro desactivado con exito!', NotifyType.Success);
-				} else {
-					this.notifyFx(response.ErrorMessage || 'No se pudo cambiar el estado del registro.', NotifyType.Error);
-				}
-				this.loadingVisible = false;
-			},
-			error: (error: any) => {
-				this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
-				this.loadingVisible = false;
-			},
-		});
-	}
-
-	private eliminarRegistro(row: ScRiesgoPuesto): void {
+	private eliminarRegistro(row: GenDivision): void {
 		this.loadingVisible = true;
 		this.service
 			.delete(row)
@@ -491,7 +422,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
 					} else {
 						this.notifyFx(
-							response.ErrorMessage || 'No se puede eliminar el riesgo de puesto porque tiene registros asociados en otras tablas.',
+							response.ErrorMessage || 'No se puede eliminar la division porque tiene registros asociados en otras tablas.',
 							NotifyType.Warning
 						);
 					}
@@ -504,7 +435,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 			});
 	}
 
-	private confirmEstado(title: string, message: string, fn: () => void): void {
+	private confirmAction(title: string, message: string, fn: () => void): void {
 		const dialog = custom({
 			title,
 			messageHtml: `<div class="sguees-confirm-message">${message}</div>`,
@@ -568,14 +499,48 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		if (isEmpresaWarningResponse(response)) {
 			return NotifyType.Warning;
 		}
-		const message = (response?.ErrorMessage || '').toLowerCase();
-		return response?.ErrorCode === 2627 || message.includes('ya existe') || message.includes('duplicad')
-			? NotifyType.Warning
-			: NotifyType.Error;
+		return this.isValidationWarningResponse(response) ? NotifyType.Warning : NotifyType.Error;
 	}
 
 	private getErrorNotifyType(error: any): NotifyType {
-		return isEmpresaFkErrorMessage(this.getErrorMessage(error)) ? NotifyType.Warning : NotifyType.Error;
+		const body = error?.error;
+		if (body && typeof body === 'object' && body.ErrorMessage !== undefined) {
+			return this.getNotifyType(body);
+		}
+
+		return this.isValidationWarningMessage(this.getErrorMessage(error)) ? NotifyType.Warning : NotifyType.Error;
+	}
+
+	private isValidationWarningResponse(response: any): boolean {
+		if (!response || response.Result !== false) {
+			return false;
+		}
+
+		if (response.ErrorCode === 2627) {
+			return true;
+		}
+
+		const source = `${response.ErrorSource ?? ''}`;
+		if (response.ErrorCode === -1 && source.includes('GEN_DIVISIONService')) {
+			return true;
+		}
+
+		return this.isValidationWarningMessage(response.ErrorMessage);
+	}
+
+	private isValidationWarningMessage(message: string): boolean {
+		const value = `${message ?? ''}`.toLowerCase();
+		if (isEmpresaFkErrorMessage(message) || value.includes('no tiene una empresa asignada')) {
+			return true;
+		}
+
+		return (
+			value.includes('ya existe') ||
+			value.includes('duplicad') ||
+			value.includes('debe ingresar') ||
+			value.includes('debe seleccionar') ||
+			value.includes('no puede superar')
+		);
 	}
 
 	private getCorrEmpresaSesion(): number {
@@ -597,8 +562,11 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		if (isEmpresaFkErrorMessage(cleanMessage) || value.includes('no tiene una empresa asignada')) {
 			return getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA);
 		}
+		if (this.isValidationWarningMessage(cleanMessage)) {
+			return cleanMessage;
+		}
 		if (value.includes('ya existe') || value.includes('duplicad')) {
-			return 'Ya existe un registro con ese c�digo. Escriba otro c�digo para continuar.';
+			return 'Ya existe un registro con ese codigo. Escriba otro codigo para continuar.';
 		}
 		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados')) {
 			return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';
@@ -606,5 +574,3 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		return cleanMessage;
 	}
 }
-
-
