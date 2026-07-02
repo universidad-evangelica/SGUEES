@@ -18,6 +18,8 @@ const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_TECNICAS';
 
 const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_TECNICAS';
 
+const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_TECNICAS';
+
 export interface ScCompetenciaFormContext {
 	nivel: string;
 	isAdd: boolean;
