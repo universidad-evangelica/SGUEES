@@ -194,7 +194,7 @@ namespace SGUEES.Repositories
             {
                 return response
                     .Where(x =>
-                        MatchesAnyOfFilters(x, anyOfFilters) ||
+                        MatchesAnyOfFilters(x, anyOfFilters) &&
                         MatchesFilterRowFilters(x, containsByField, exactByField))
                     .ToList();
             }
@@ -225,9 +225,9 @@ namespace SGUEES.Repositories
                 {
                     response = response
                         .Where(x =>
-                            (hasAnyOf && anyOfValues.Any(value => MatchesAnyOfColumnValue(x, field, value))) ||
-                            (hasExact && MatchesExactColumnValue(x, field, exactValue)) ||
-                            (hasContains && Contains(GetColumnValue(x, field), containsValue)))
+                            (!hasAnyOf || anyOfValues.Any(value => MatchesAnyOfColumnValue(x, field, value))) &&
+                            (!hasExact || MatchesExactColumnValue(x, field, exactValue)) &&
+                            (!hasContains || Contains(GetColumnValue(x, field), containsValue)))
                         .ToList();
                     continue;
                 }
@@ -905,11 +905,14 @@ namespace SGUEES.Repositories
             }
             catch (Exception e)
             {
+                var duplicateKey = IsDuplicateKeyError(e);
                 objResultado.Data = null;
                 objResultado.Result = false;
                 objResultado.CodeHelper = 0;
-                objResultado.ErrorCode = -1;
-                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorCode = duplicateKey ? 2627 : -1;
+                objResultado.ErrorMessage = duplicateKey
+                    ? "No se pudo guardar el registro porque otro usuario guardo un registro al mismo tiempo. Intente nuevamente."
+                    : e.Message;
                 objResultado.ErrorSource += $"[{e.Source}]";
             }
             finally
@@ -955,6 +958,38 @@ namespace SGUEES.Repositories
             }
 
             return objResultado;
+        }
+
+        public async Task<bool> ExistsDescripcionAsync(int corrEmpresa, string descripcion, int excludeCorr)
+        {
+            if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(descripcion))
+            {
+                return false;
+            }
+
+            const string sql = @"SELECT TOP 1 1 AS FOUND
+                FROM V_SC_IMPACTO_ECONOMICO
+                WHERE CORR_EMPRESA = @CORR_EMPRESA
+                AND UPPER(LTRIM(RTRIM(DESCRIPCION))) = UPPER(LTRIM(RTRIM(@DESCRIPCION)))
+                AND (@EXCLUDE_CORR <= 0 OR CORR_IMPACTO_ECONOMICO <> @EXCLUDE_CORR)";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "DESCRIPCION", Value = descripcion.Trim(), DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "EXCLUDE_CORR", Value = excludeCorr, DbType = System.Data.DbType.Int32 },
+                });
+
+                var exists = reader.Read();
+                reader.Close();
+                return exists;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
         }
 
         private static bool Contains(string value, string search)

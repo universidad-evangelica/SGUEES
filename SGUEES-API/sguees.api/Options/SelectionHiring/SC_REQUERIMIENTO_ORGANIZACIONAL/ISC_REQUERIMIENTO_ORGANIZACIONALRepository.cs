@@ -9,5 +9,6 @@ namespace SGUEES.Repositories
     public interface ISC_REQUERIMIENTO_ORGANIZACIONALRepository : IRepository<SC_REQUERIMIENTO_ORGANIZACIONALTable>
     {
         Task<CResult> GetDistinctValuesAsync(List<CParameter> xWhere);
+        Task<bool> ExistsDescripcionAsync(int corrEmpresa, string descripcion, int excludeCorr);
     }
 }

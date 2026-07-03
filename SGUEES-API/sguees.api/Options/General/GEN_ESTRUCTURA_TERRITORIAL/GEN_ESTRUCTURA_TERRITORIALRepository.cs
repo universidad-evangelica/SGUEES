@@ -940,7 +940,7 @@ namespace SGUEES.Repositories
 			{
 				return response
 					.Where(x =>
-						MatchesAnyOfFilters(x, anyOfFilters, matchesExactColumnValue) ||
+						MatchesAnyOfFilters(x, anyOfFilters, matchesExactColumnValue) &&
 						MatchesFilterRowFilters(x, containsByField, exactByField, getColumnValue, matchesExactColumnValue))
 					.ToList();
 			}
@@ -971,9 +971,9 @@ namespace SGUEES.Repositories
 				{
 					response = response
 						.Where(x =>
-							(hasAnyOf && anyOfValues.Any(value => matchesExactColumnValue(x, field, value))) ||
-							(hasExact && matchesExactColumnValue(x, field, exactValue)) ||
-							(hasContains && Contains(getColumnValue(x, field), containsValue)))
+							(!hasAnyOf || anyOfValues.Any(value => matchesExactColumnValue(x, field, value))) &&
+							(!hasExact || matchesExactColumnValue(x, field, exactValue)) &&
+							(!hasContains || Contains(getColumnValue(x, field), containsValue)))
 						.ToList();
 					continue;
 				}

@@ -9,5 +9,6 @@ namespace SGUEES.Repositories
     public interface IPLA_NIVEL_ACADEMICORepository : IRepository<PLA_NIVEL_ACADEMICOTable>
     {
         Task<CResult> GetDistinctValuesAsync(List<CParameter> xWhere);
+        Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr);
     }
 }

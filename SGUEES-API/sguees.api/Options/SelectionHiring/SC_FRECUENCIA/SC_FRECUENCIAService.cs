@@ -53,6 +53,13 @@ namespace SGUEES.Services
 
             Data.NOMBRE_FRECUENCIA = Data.NOMBRE_FRECUENCIA.Trim();
             Data.ESTADO_FRECUENCIA ??= true;
+
+            var duplicate = await ValidateUniqueNombreAsync(Data, null);
+            if (duplicate != null)
+            {
+                return duplicate;
+            }
+
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
@@ -66,6 +73,13 @@ namespace SGUEES.Services
 
             Data.NOMBRE_FRECUENCIA = Data.NOMBRE_FRECUENCIA.Trim();
             Data.ESTADO_FRECUENCIA ??= true;
+
+            var duplicate = await ValidateUniqueNombreAsync(Data, Data.CORR_FRECUENCIA);
+            if (duplicate != null)
+            {
+                return duplicate;
+            }
+
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
@@ -190,6 +204,18 @@ namespace SGUEES.Services
             }
 
             return null;
+        }
+
+        private async Task<CResult> ValidateUniqueNombreAsync(SC_FRECUENCIATable Data, int? excludeCorr)
+        {
+            var exists = await _repo.ExistsNombreAsync(
+                Data.CORR_EMPRESA,
+                Data.NOMBRE_FRECUENCIA,
+                excludeCorr ?? 0);
+
+            return exists
+                ? ValidationError($"Ya existe una frecuencia con el nombre {Data.NOMBRE_FRECUENCIA}.")
+                : null;
         }
 
         private static CResult ValidationError(string message)

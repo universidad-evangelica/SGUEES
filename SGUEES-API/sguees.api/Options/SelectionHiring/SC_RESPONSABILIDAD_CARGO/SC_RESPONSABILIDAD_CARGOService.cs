@@ -53,6 +53,13 @@ namespace SGUEES.Services
 
             Data.NOMBRE_RESPONSABILIDAD = Data.NOMBRE_RESPONSABILIDAD.Trim();
             Data.ESTADO_RESPONSABILIDAD ??= true;
+
+            var duplicate = await ValidateUniqueNombreAsync(Data, null);
+            if (duplicate != null)
+            {
+                return duplicate;
+            }
+
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
@@ -66,6 +73,13 @@ namespace SGUEES.Services
 
             Data.NOMBRE_RESPONSABILIDAD = Data.NOMBRE_RESPONSABILIDAD.Trim();
             Data.ESTADO_RESPONSABILIDAD ??= true;
+
+            var duplicate = await ValidateUniqueNombreAsync(Data, Data.CORR_RESPONSABILIDAD);
+            if (duplicate != null)
+            {
+                return duplicate;
+            }
+
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
@@ -190,6 +204,18 @@ namespace SGUEES.Services
             }
 
             return null;
+        }
+
+        private async Task<CResult> ValidateUniqueNombreAsync(SC_RESPONSABILIDAD_CARGOTable Data, int? excludeCorr)
+        {
+            var exists = await _repo.ExistsNombreAsync(
+                Data.CORR_EMPRESA,
+                Data.NOMBRE_RESPONSABILIDAD,
+                excludeCorr ?? 0);
+
+            return exists
+                ? ValidationError($"Ya existe una responsabilidad de cargo con el nombre {Data.NOMBRE_RESPONSABILIDAD}.")
+                : null;
         }
 
         private static CResult ValidationError(string message)

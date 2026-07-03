@@ -164,20 +164,6 @@ namespace sguees.Controllers
             return _service.GetMES();
         }
 
-        [HttpGet("GetMES_CON_PARTIDA")]
-        [Authorize(Policy = "/con-partida|R")]
-        public CResult GetMES_CON_PARTIDA()
-        {
-            return _service.GetMES();
-        }
-
-        [HttpGet("GetMES_CON_REPORTE")]
-        [Authorize]
-        public CResult GetMES_CON_REPORTE()
-        {
-            return _service.GetMES();
-        }
-
        
 	}
 }

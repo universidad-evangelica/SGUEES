@@ -400,14 +400,28 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       }
 
       const current = currentColumns.find((item) => item?.dataField === column.dataField);
-      if (!current?.sortOrder) {
+      const currentState = {
+        sortOrder: grid?.columnOption(column.dataField, 'sortOrder') ?? current?.sortOrder,
+        sortIndex: grid?.columnOption(column.dataField, 'sortIndex') ?? current?.sortIndex,
+        filterValue: grid?.columnOption(column.dataField, 'filterValue') ?? current?.filterValue,
+        selectedFilterOperation:
+          grid?.columnOption(column.dataField, 'selectedFilterOperation') ?? current?.selectedFilterOperation,
+        filterValues: grid?.columnOption(column.dataField, 'filterValues') ?? current?.filterValues,
+        filterType: grid?.columnOption(column.dataField, 'filterType') ?? current?.filterType,
+      };
+
+      if (!current && Object.values(currentState).every((value) => value === undefined)) {
         return column;
       }
 
       return {
         ...column,
-        sortOrder: current.sortOrder,
-        sortIndex: current.sortIndex,
+        sortOrder: currentState.sortOrder,
+        sortIndex: currentState.sortIndex,
+        filterValue: currentState.filterValue,
+        selectedFilterOperation: currentState.selectedFilterOperation,
+        filterValues: currentState.filterValues,
+        filterType: currentState.filterType,
       };
     });
 
@@ -562,7 +576,9 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     if (pageIndexChanged) {
-      this.refreshHeaderFilterDataSources();
+      if (this.syncHeaderFilterWithPage) {
+        this.refreshHeaderFilterDataSources();
+      }
       return;
     }
 

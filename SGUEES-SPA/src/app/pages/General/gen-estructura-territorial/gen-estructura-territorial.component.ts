@@ -21,10 +21,8 @@ import {
 	ParsedGridFilters,
 } from 'src/app/shared/utils/remote-grid-filter.util';
 import {
-	clearGridHeaderFilterSelections,
 	getColumnHeaderFilterSelection,
 	invertExcludedHeaderFilterValues,
-	readGridFilterRowValues,
 } from 'src/app/shared/utils/remote-header-filter.util';
 import {
 	GenDepto,
@@ -819,20 +817,10 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 				const page = Math.floor(skipRows / takeRows) + 1;
 				const grid = this.dataGrid?.gData?.instance;
 
-				if (grid) {
-					const filterRowValues = readGridFilterRowValues(grid);
-					const hasFilterRow =
-						Object.keys(filterRowValues.filterRow).length > 0 ||
-						Object.keys(filterRowValues.filterRowExact).length > 0;
-					if (hasFilterRow) {
-						clearGridHeaderFilterSelections(grid);
-					}
-				}
-
 				const gridFilters = parseRemoteGridFilters(loadOptions.filter, grid, GRID_FILTER_CONFIG);
-				if (!hasRemoteFilterRowSearch(gridFilters)) {
-					await this.resolveExcludeHeaderFilters(grid, gridFilters, 'pais');
-				}
+				this.applyIncludeHeaderFilters(grid, gridFilters);
+				await this.resolveExcludeHeaderFilters(grid, gridFilters, 'pais');
+				await this.removeHeaderFiltersOverriddenByFilterRow(gridFilters, 'pais');
 
 				const sort = this.getGridSort(loadOptions.sort);
 				const response = await lastValueFrom(
@@ -905,20 +893,10 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 
 		const grid = this.getGridByLevel(level)?.gData?.instance;
-		if (grid) {
-			const filterRowValues = readGridFilterRowValues(grid);
-			const hasFilterRow =
-				Object.keys(filterRowValues.filterRow).length > 0 ||
-				Object.keys(filterRowValues.filterRowExact).length > 0;
-			if (hasFilterRow) {
-				clearGridHeaderFilterSelections(grid);
-			}
-		}
-
 		const gridFilters = parseRemoteGridFilters(loadOptions.filter, grid, GRID_FILTER_CONFIG);
-		if (!hasRemoteFilterRowSearch(gridFilters)) {
-			await this.resolveExcludeHeaderFilters(grid, gridFilters, level);
-		}
+		this.applyIncludeHeaderFilters(grid, gridFilters);
+		await this.resolveExcludeHeaderFilters(grid, gridFilters, level);
+		await this.removeHeaderFiltersOverriddenByFilterRow(gridFilters, level);
 
 		const sort = this.getGridSort(loadOptions.sort);
 		const request = this.fillCascadeParam('', gridFilters, '', '', sort?.field ?? '', sort?.desc ?? false, scope);
@@ -1133,6 +1111,108 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
+	private async removeHeaderFiltersOverriddenByFilterRow(
+		result: ParsedGridFilters,
+		level: TerritorialGridLevel
+	): Promise<void> {
+		if (!hasRemoteFilterRowSearch(result)) {
+			return;
+		}
+
+		for (const dataField of Object.keys(result.headerAnyOf)) {
+			const headerValues = result.headerAnyOf[dataField];
+			if (!headerValues?.length) {
+				continue;
+			}
+
+			const availableValues = await this.getAvailableHeaderValuesForFilterRow(dataField, result, level);
+			if (!availableValues.length) {
+				continue;
+			}
+
+			if (!this.hasAnyMatchingHeaderValue(headerValues, availableValues)) {
+				delete result.headerAnyOf[dataField];
+			}
+		}
+	}
+
+	private async getAvailableHeaderValuesForFilterRow(
+		dataField: string,
+		result: ParsedGridFilters,
+		level: TerritorialGridLevel
+	): Promise<unknown[]> {
+		const filtersForDistinct: ParsedGridFilters = {
+			estado: result.estado,
+			filterRow: { ...result.filterRow },
+			filterRowExact: { ...result.filterRowExact },
+			headerAnyOf: {},
+		};
+		const scope = this.getScopeForLevel(level);
+		const request =
+			level === 'pais'
+				? this.fillParam(1, 0, '', filtersForDistinct, dataField, '')
+				: this.fillCascadeParam('', filtersForDistinct, dataField, '', '', false, scope);
+		const distinctCall =
+			level === 'pais'
+				? this.service.getDistinctValuesPaises({ ...request, PAGE: 1, PAGE_SIZE: 0 })
+				: level === 'depto'
+					? this.service.getDistinctValuesDeptos(request)
+					: level === 'municipio'
+						? this.service.getDistinctValuesMunicipios(request)
+						: this.service.getDistinctValuesDistritos(request);
+
+		const response = await lastValueFrom(distinctCall);
+		return response.Result ? response.Data ?? [] : [];
+	}
+
+	private hasAnyMatchingHeaderValue(headerValues: unknown[], availableValues: unknown[]): boolean {
+		const availableKeys = new Set(availableValues.map((value) => this.getHeaderFilterComparableKey(value)));
+		return headerValues.some((value) => availableKeys.has(this.getHeaderFilterComparableKey(value)));
+	}
+
+	private getHeaderFilterComparableKey(value: unknown): string {
+		if (value === null || value === undefined || value === '__BLANK__') {
+			return '__blank__';
+		}
+
+		if (typeof value === 'boolean') {
+			return value ? 'true' : 'false';
+		}
+
+		const text = `${value}`.trim().toLowerCase();
+		if (!text) {
+			return '__blank__';
+		}
+
+		if (text === 'activo') {
+			return 'true';
+		}
+
+		if (text === 'inactivo') {
+			return 'false';
+		}
+
+		return text;
+	}
+	private applyIncludeHeaderFilters(grid: any, result: ParsedGridFilters): void {
+		if (!grid?.getVisibleColumns) {
+			return;
+		}
+
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
+			}
+
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (!selection || selection.filterType !== 'include' || !selection.values.length) {
+				continue;
+			}
+
+			result.headerAnyOf[dataField] = selection.values;
+		}
+	}
 	private async resolveExcludeHeaderFilters(grid: any, result: ParsedGridFilters, level: TerritorialGridLevel): Promise<void> {
 		if (!grid?.getVisibleColumns) {
 			return;

@@ -91,7 +91,7 @@ namespace sguees.Controllers
 		public async Task<CResult> GetCORR_DIVISION_GEN_GERENCIA([FromQuery] GEN_DIVISIONParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetLookUpAsync(Data);
+			return await _service.GetDivisionesAsync(Data);
 		}
 
 		private int GetCorrEmpresa()

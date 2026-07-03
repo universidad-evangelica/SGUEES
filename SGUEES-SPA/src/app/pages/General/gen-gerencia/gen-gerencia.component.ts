@@ -19,10 +19,9 @@ import {
 	ParsedGridFilters,
 } from 'src/app/shared/utils/remote-grid-filter.util';
 import {
-	clearGridHeaderFilterSelections,
 	getColumnHeaderFilterSelection,
 	invertExcludedHeaderFilterValues,
-	readGridFilterRowValues,
+	normalizeBooleanHeaderFilterValue,
 } from 'src/app/shared/utils/remote-header-filter.util';
 import { GenGerencia } from './models/gen-gerencia';
 import {
@@ -33,7 +32,10 @@ import {
 	isEmpresaWarningResponse,
 } from './gen-gerencia.service';
 
-const GRID_FILTER_CONFIG = { estadoField: '__NONE__' };
+const GRID_FILTER_CONFIG = {
+	booleanColumns: {},
+	estadoField: '__NONE__',
+};
 
 @Component({
 	selector: 'app-gen-gerencia',
@@ -372,20 +374,10 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 					const page = Math.floor(skipRows / takeRows) + 1;
 					const grid = this.dataGrid?.gData?.instance;
 
-					if (grid) {
-						const filterRowValues = readGridFilterRowValues(grid);
-						const hasFilterRow =
-							Object.keys(filterRowValues.filterRow).length > 0 ||
-							Object.keys(filterRowValues.filterRowExact).length > 0;
-						if (hasFilterRow) {
-							clearGridHeaderFilterSelections(grid);
-						}
-					}
-
 					const gridFilters = parseRemoteGridFilters(loadOptions.filter, grid, GRID_FILTER_CONFIG);
-					if (!hasRemoteFilterRowSearch(gridFilters)) {
-						await this.resolveExcludeHeaderFilters(grid, gridFilters);
-					}
+					this.applyIncludeHeaderFilters(grid, gridFilters);
+					await this.resolveExcludeHeaderFilters(grid, gridFilters);
+					await this.removeHeaderFiltersOverriddenByFilterRow(gridFilters);
 
 					const sort = this.getGridSort(loadOptions.sort);
 					const response = await lastValueFrom(
@@ -421,6 +413,94 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	private async removeHeaderFiltersOverriddenByFilterRow(result: ParsedGridFilters): Promise<void> {
+		if (!hasRemoteFilterRowSearch(result)) {
+			return;
+		}
+
+		for (const dataField of Object.keys(result.headerAnyOf)) {
+			const headerValues = result.headerAnyOf[dataField];
+			if (!headerValues?.length) {
+				continue;
+			}
+
+			const availableValues = await this.getAvailableHeaderValuesForFilterRow(dataField, result);
+			if (!availableValues.length) {
+				continue;
+			}
+
+			if (!this.hasAnyMatchingHeaderValue(headerValues, availableValues)) {
+				delete result.headerAnyOf[dataField];
+			}
+		}
+	}
+
+	private async getAvailableHeaderValuesForFilterRow(dataField: string, result: ParsedGridFilters): Promise<unknown[]> {
+		const filtersForDistinct: ParsedGridFilters = {
+			estado: result.estado,
+			filterRow: { ...result.filterRow },
+			filterRowExact: { ...result.filterRowExact },
+			headerAnyOf: {},
+		};
+
+		const response = await lastValueFrom(
+			this.service.getDistinctValues(this.fillParam(0, 1, 0, '', filtersForDistinct, dataField, ''))
+		);
+
+		return response.Result ? response.Data ?? [] : [];
+	}
+
+	private hasAnyMatchingHeaderValue(headerValues: unknown[], availableValues: unknown[]): boolean {
+		const availableKeys = new Set(availableValues.map((value) => this.getHeaderFilterComparableKey(value)));
+		return headerValues.some((value) => availableKeys.has(this.getHeaderFilterComparableKey(value)));
+	}
+
+	private getHeaderFilterComparableKey(value: unknown): string {
+		if (value === null || value === undefined || value === '__BLANK__') {
+			return '__blank__';
+		}
+
+		if (typeof value === 'boolean') {
+			return value ? 'true' : 'false';
+		}
+
+		const text = `${value}`.trim().toLowerCase();
+		if (!text) {
+			return '__blank__';
+		}
+
+		if (text === 'activo') {
+			return 'true';
+		}
+
+		if (text === 'inactivo') {
+			return 'false';
+		}
+
+		return text;
+	}
+	private applyIncludeHeaderFilters(grid: any, result: ParsedGridFilters): void {
+		if (!grid?.getVisibleColumns) {
+			return;
+		}
+
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
+			}
+
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (!selection || selection.filterType !== 'include' || !selection.values.length) {
+				continue;
+			}
+
+			const booleanLabels = GRID_FILTER_CONFIG.booleanColumns?.[dataField];
+			result.headerAnyOf[dataField] = booleanLabels
+				? selection.values.map((value) => normalizeBooleanHeaderFilterValue(value, booleanLabels))
+				: selection.values;
+		}
+	}
 	private async resolveExcludeHeaderFilters(grid: any, result: ParsedGridFilters): Promise<void> {
 		if (!grid?.getVisibleColumns) {
 			return;
@@ -490,7 +570,7 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 					this.loadingVisible = false;
 				},
 				error: (error: any) => {
-					this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
+					this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
 					this.loadingVisible = false;
 				},
 			});
@@ -598,6 +678,15 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		return (
 			value.includes('ya existe') ||
 			value.includes('duplicad') ||
+			value.includes('registrad') ||
+			value.includes('otro usuario guard') ||
+			value.includes('mismo tiempo') ||
+			value.includes('hijos asociados') ||
+			value.includes('registros asociados') ||
+			value.includes('registros hijos') ||
+			value.includes('tiene registros hijos') ||
+			value.includes('relacionados') ||
+			value.includes('asociados en otras tablas') ||
 			value.includes('debe ingresar') ||
 			value.includes('debe seleccionar') ||
 			value.includes('no puede superar')
@@ -626,8 +715,14 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		if (this.isValidationWarningMessage(cleanMessage)) {
 			return cleanMessage;
 		}
-		if (value.includes('ya existe') || value.includes('duplicad')) {
-			return 'Ya existe un registro con ese codigo. Escriba otro codigo para continuar.';
+		if (
+			value.includes('ya existe') ||
+			value.includes('duplicad') ||
+			value.includes('registrad') ||
+			value.includes('ya está registrado') ||
+			value.includes('ya esta registrado')
+		) {
+			return cleanMessage;
 		}
 		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados')) {
 			return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';

@@ -53,6 +53,13 @@ namespace SGUEES.Services
 
             Data.NOMBRE_TIPO_PUESTO = Data.NOMBRE_TIPO_PUESTO.Trim();
             Data.ESTADO_TIPO_PUESTO ??= true;
+
+            var duplicate = await ValidateUniqueNombreAsync(Data, null);
+            if (duplicate != null)
+            {
+                return duplicate;
+            }
+
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
@@ -66,6 +73,13 @@ namespace SGUEES.Services
 
             Data.NOMBRE_TIPO_PUESTO = Data.NOMBRE_TIPO_PUESTO.Trim();
             Data.ESTADO_TIPO_PUESTO ??= true;
+
+            var duplicate = await ValidateUniqueNombreAsync(Data, Data.CORR_TIPO_PUESTO);
+            if (duplicate != null)
+            {
+                return duplicate;
+            }
+
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
@@ -190,6 +204,18 @@ namespace SGUEES.Services
             }
 
             return null;
+        }
+
+        private async Task<CResult> ValidateUniqueNombreAsync(PLA_TIPO_PUESTOTable Data, int? excludeCorr)
+        {
+            var exists = await _repo.ExistsNombreAsync(
+                Data.CORR_EMPRESA,
+                Data.NOMBRE_TIPO_PUESTO,
+                excludeCorr ?? 0);
+
+            return exists
+                ? ValidationError($"Ya existe un tipo de puesto con el nombre {Data.NOMBRE_TIPO_PUESTO}.")
+                : null;
         }
 
         private static CResult ValidationError(string message)

@@ -182,7 +182,7 @@ namespace sguees.Repositories
 			{
 				return response
 					.Where(x =>
-						MatchesAnyOfFilters(x, anyOfFilters) ||
+						MatchesAnyOfFilters(x, anyOfFilters) &&
 						MatchesFilterRowFilters(x, containsByField, exactByField))
 					.ToList();
 			}
@@ -213,9 +213,9 @@ namespace sguees.Repositories
 				{
 					response = response
 						.Where(x =>
-							(hasAnyOf && anyOfValues.Any(value => MatchesAnyOfColumnValue(x, field, value))) ||
-							(hasExact && MatchesExactColumnValue(x, field, exactValue)) ||
-							(hasContains && Contains(GetColumnValue(x, field), containsValue)))
+							(!hasAnyOf || anyOfValues.Any(value => MatchesAnyOfColumnValue(x, field, value))) &&
+							(!hasExact || MatchesExactColumnValue(x, field, exactValue)) &&
+							(!hasContains || Contains(GetColumnValue(x, field), containsValue)))
 						.ToList();
 					continue;
 				}
@@ -904,7 +904,7 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		public async Task<CResult> GetLookUpAsync(List<CParameter> xWhere)
+		public async Task<CResult> GetDivisionesAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
 

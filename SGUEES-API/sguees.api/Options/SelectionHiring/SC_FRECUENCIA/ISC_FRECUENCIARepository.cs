@@ -9,5 +9,6 @@ namespace SGUEES.Repositories
     public interface ISC_FRECUENCIARepository : IRepository<SC_FRECUENCIATable>
     {
         Task<CResult> GetDistinctValuesAsync(List<CParameter> xWhere);
+        Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr);
     }
 }

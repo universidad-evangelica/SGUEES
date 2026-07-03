@@ -32,14 +32,14 @@ namespace sguees.Services
 			return await _repo.GetDistinctValuesAsync(BuildParameters(xWhere));
 		}
 
-		public async Task<CResult> GetLookUpAsync(GEN_DIVISIONParam xWhere)
+		public async Task<CResult> GetDivisionesAsync(GEN_DIVISIONParam xWhere)
 		{
 			var p = new List<CParameter>
 			{
 				new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
 			};
 
-			return await _repo.GetLookUpAsync(p);
+			return await _repo.GetDivisionesAsync(p);
 		}
 
 		public async Task<CResult> GetAsync(GEN_DIVISIONParam xWhere)

@@ -9,5 +9,6 @@ namespace SGUEES.Repositories
     public interface ISC_INDUCCIONRepository : IRepository<SC_INDUCCIONTable>
     {
         Task<CResult> GetDistinctValuesAsync(List<CParameter> xWhere);
+        Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr);
     }
 }
