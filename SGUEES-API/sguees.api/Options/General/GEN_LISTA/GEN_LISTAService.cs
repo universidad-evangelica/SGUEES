@@ -70,9 +70,14 @@ namespace sguees.Services
         {
             return _repo.GetLIBRO_IVA();
         }
-        public CResult GetMES()
+		public CResult GetMES()
         {
             return _repo.GetMES();
+        }
+
+		public CResult GetCLASE_BANCO()
+        {
+            return _repo.GetCLASE_BANCO();
         }
        
 	}

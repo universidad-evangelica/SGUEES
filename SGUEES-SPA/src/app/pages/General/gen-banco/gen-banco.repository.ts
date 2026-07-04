@@ -14,18 +14,18 @@ export class GenBancoRepository {
 	constructor(private objData: CData) {}
 
 	get(xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlCONTAAPI);
+		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlGENERALAPI);
 	}
 
 	create(model: any): Observable<IResult> {
-		return this.objData.Post(model, this.xController, '', environment.UrlCONTAAPI);
+		return this.objData.Post(model, this.xController, '', environment.UrlGENERALAPI);
 	}
 
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlCONTAAPI);
+		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlGENERALAPI);
 	}
 
 	delete(xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Delete(this.xController, '', xWhere, environment.UrlCONTAAPI);
+		return this.objData.Delete(this.xController, '', xWhere, environment.UrlGENERALAPI);
 	}
 }

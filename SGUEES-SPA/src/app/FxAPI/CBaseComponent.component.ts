@@ -334,6 +334,31 @@ export class CBaseComponent {
 		});
 	}
 
+	consultarMtto(options: {
+		load: () => Observable<unknown>;
+		onData?: (data: unknown) => void;
+	}): void {
+		this.loadingVisible = true;
+		options
+			.load()
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.models = response.Data;
+						options.onData?.(response.Data);
+					} else {
+						this.notifyApiResponse(response);
+					}
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					this.notifyApiError(error);
+					this.loadingVisible = false;
+				},
+			});
+	}
+
 	ejecutarDelete(options: {
 		deleteFn: () => Observable<unknown>;
 		onSuccess?: () => void;

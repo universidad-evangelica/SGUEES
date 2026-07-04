@@ -4,7 +4,6 @@ import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
-import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { GenBanco } from './models/gen-banco';
@@ -16,6 +15,17 @@ import { GenBancoService } from './gen-banco.service';
 	styleUrls: ['./gen-banco.component.scss'],
 })
 export class GenBancoComponent extends CBaseComponent implements OnInit {
+	protected override etiquetaRegistro = 'el banco';
+	protected override requiereEmpresaSesion = true;
+
+	readonly pageSizes = [5, 10, 25, 50, 100];
+	private readonly maintenanceSubtitulo = 'Mantenimiento de Bancos';
+
+	//#region <Declarando Variales>
+	mCLASE_BANCO: any;
+	readOnly = false;
+	// #endregion
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -27,13 +37,9 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
-	//#region <Declarando Variales>
-	mCLASE_BANCO: any;
-	readOnly = false;
-	// #endregion
-
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
+		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
@@ -42,6 +48,13 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 	inicializaOpciones() {}
 	// #endregion
 
+	override AsignaStatus(xEstado: UpdateType): void {
+		super.AsignaStatus(xEstado);
+		if (xEstado === UpdateType.Browse) {
+			this.subTituloVentana = this.maintenanceSubtitulo;
+		}
+	}
+
 	//#region <Manejo de Combos>
 	llenaComboBox() {
 		this.getCLASE_BANCO();
@@ -49,7 +62,7 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 
 	getCLASE_BANCO() {
 		this.appInfoService
-			.getLookUp('GEN_BANCO', 'BAN_LISTA', 'GetCLASE_BANCO', undefined, environment.UrlCONTAAPI)
+			.getLookUp('GEN_BANCO', 'GEN_LISTA', 'GetCLASE_BANCO', undefined, environment.UrlGENERALAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -58,7 +71,7 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -66,11 +79,8 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 
 	//#region <Metodos Mtto>
 	fillParam(xCORR_BANCO?: number): any {
-		if (xCORR_BANCO == undefined) {
-			xCORR_BANCO = 0;
-		}
 		return {
-			CORR_BANCO: xCORR_BANCO,
+			CORR_BANCO: xCORR_BANCO ?? 0,
 		};
 	}
 
@@ -84,84 +94,47 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 				CLASE_BANCO: xModel.CLASE_BANCO,
 				CODIGO_TRANSACION_UNI: xModel.CODIGO_TRANSACION_UNI,
 			};
-		} else {
-			return {
-				CORR_EMPRESA: 1,
-				CORR_BANCO: 0,
-				NOMBRE_BANCO: '',
-				NOMBRE_BANCO_CORTO: '',
-				CLASE_BANCO: '',
-				CODIGO_TRANSACION_UNI: '',
-			};
 		}
+
+		return {
+			CORR_EMPRESA: 1,
+			CORR_BANCO: 0,
+			NOMBRE_BANCO: '',
+			NOMBRE_BANCO_CORTO: '',
+			CLASE_BANCO: '',
+			CODIGO_TRANSACION_UNI: '',
+		};
 	}
 
-	consultar() {
-		this.service
-			.getAll(this.fillParam())
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.models = response.Data;
-					}
-				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+	consultar(): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+		});
+	}
+
+	override nuevo(): void {
+		if (!this.asegurarEmpresaSesion()) {
+			return;
+		}
+		super.nuevo();
 	}
 
 	guardar(): void {
-		if (!this.service.esValido(this.model, this.notifyFx)) {
-			return;
-		}
-
-		this.loadingVisible = true;
-		if (this.banderaMtto === UpdateType.Add) {
-			this.service
-				.insert(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.models.push(response.Data);
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro creado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		} else if (this.banderaMtto === UpdateType.Update) {
-			this.service
-				.update(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							const vIndex = this.models.findIndex((item: any) => item.CORR_BANCO === response.Data.CORR_BANCO);
-							this.models[vIndex] = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		}
+		this.guardarMtto({
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
+			onSuccess: (data: any, isAdd: boolean) => {
+				if (isAdd) {
+					this.models.push(data);
+				} else {
+					const vIndex = this.models.findIndex((item: any) => item.CORR_BANCO === data.CORR_BANCO);
+					if (vIndex >= 0) {
+						this.models[vIndex] = data;
+					}
+				}
+			},
+		});
 	}
 
 	override cancelar(): void {
@@ -169,24 +142,14 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 	}
 
 	rowRemoving(e: any) {
-		this.service
-			.delete(this.fillParam(e.data.CORR_BANCO))
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-						e.component.refresh();
-					} else {
-						e.cancel = true;
-						this.notifyFx(response.ErrorMessage, NotifyType.Error);
-					}
-				},
-				error: (error: any) => {
-					e.cancel = true;
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+		e.cancel = true;
+		const row = e.data as GenBanco;
+		this.confirmaAccion('Eliminar registro', `Desea eliminar el banco "${row.NOMBRE_BANCO}"?`, () =>
+			this.ejecutarDelete({
+				deleteFn: () => this.service.delete(this.fillParam(row.CORR_BANCO)),
+				onSuccess: () => e.component.refresh(),
+			})
+		);
 	}
 
 	override bloquear(): void {

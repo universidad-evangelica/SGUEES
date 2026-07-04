@@ -1,7 +1,7 @@
 /* ============================================================================
    Menú Bancos — Tablas Generales del Sistema (SGUEES)
    Opciones migradas con pantalla SPA + API:
-     - Bancos (GEN_BANCO)
+     - Bancos (GEN_BANCO) — ver MENU_GEN_BANCO.sql (sistema GENERAL)
      - Cuentas Bancarias
      - Líneas Trabajo - Conciliación Bancaria
      - Tipos de Cheques
@@ -50,11 +50,10 @@ DECLARE @Opciones TABLE (
 );
 
 INSERT INTO @Opciones (CODIGO, NOMBRE, URL, ORD) VALUES
-    (N'BAN_BANCO',                        N'Bancos',                                  N'/gen-banco',                        1),
-    (N'BAN_CUENTA_BANCARIA',              N'Cuentas Bancarias',                       N'/ban-cuenta-bancaria',              2),
-    (N'BAN_LINEA_TRABAJO_CONCILIACION',   N'Líneas Trabajo - Conciliación Bancaria',  N'/ban-linea-trabajo-conciliacion',   3),
-    (N'BAN_TIPO_CHEQUE',                  N'Tipos de Cheques',                        N'/ban-tipo-cheque',                  4),
-    (N'BAN_TIPO_MOVI_BANCARIO',           N'Tipos de Movimientos Bancarios',          N'/ban-tipo-movi-bancario',           5);
+    (N'BAN_CUENTA_BANCARIA',              N'Cuentas Bancarias',                       N'/ban-cuenta-bancaria',              1),
+    (N'BAN_LINEA_TRABAJO_CONCILIACION',   N'Líneas Trabajo - Conciliación Bancaria',  N'/ban-linea-trabajo-conciliacion',   2),
+    (N'BAN_TIPO_CHEQUE',                  N'Tipos de Cheques',                        N'/ban-tipo-cheque',                  3),
+    (N'BAN_TIPO_MOVI_BANCARIO',           N'Tipos de Movimientos Bancarios',          N'/ban-tipo-movi-bancario',           4);
 
 MERGE SEG_OPCION_SISTEMA AS T
 USING @Opciones AS S ON T.CODIGO_OPCION = S.CODIGO

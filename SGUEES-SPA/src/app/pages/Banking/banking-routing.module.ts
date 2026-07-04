@@ -3,21 +3,12 @@ import { RouterModule, Routes } from '@angular/router';
 
 import { AuthGuardService } from 'src/app/shared/services/auth.service';
 import { AppCanDeactivateGuard } from 'src/app/app-candeactivate.guard';
-import { GenBancoComponent } from './gen-banco/gen-banco.component';
 import { BanLineaTrabajoConciliacionComponent } from './ban-linea-trabajo-conciliacion/ban-linea-trabajo-conciliacion.component';
 import { BanTipoChequeComponent } from './ban-tipo-cheque/ban-tipo-cheque.component';
 import { BanTipoMoviBancarioComponent } from './ban-tipo-movi-bancario/ban-tipo-movi-bancario.component';
 import { BanCuentaBancariaComponent } from './ban-cuenta-bancaria/ban-cuenta-bancaria.component';
 
 const routes: Routes = [
-	{
-		path: 'gen-banco',
-		component: GenBancoComponent,
-		data: { titulo: 'Bancos' },
-		canActivate: [AuthGuardService],
-		canDeactivate: [AppCanDeactivateGuard],
-		loadChildren: () => import('./gen-banco/gen-banco.module').then((m) => m.GenBancoModule),
-	},
 	{
 		path: 'ban-linea-trabajo-conciliacion',
 		component: BanLineaTrabajoConciliacionComponent,

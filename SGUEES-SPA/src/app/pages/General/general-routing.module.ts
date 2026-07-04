@@ -11,6 +11,7 @@ import { GenEmpresaComponent } from './gen-empresa/gen-empresa.component';
 import { GenEstructuraTerritorialComponent } from './gen-estructura-territorial/gen-estructura-territorial.component';
 import { GenDivisionComponent } from './gen-division/gen-division.component';
 import { GenGerenciaComponent } from './gen-gerencia/gen-gerencia.component';
+import { GenBancoComponent } from './gen-banco/gen-banco.component';
 
 const routes: Routes = [
   {
@@ -76,6 +77,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-gerencia/gen-gerencia.module').then(m => m.GenGerenciaModule)
+  },
+  {
+    path: 'gen-banco',
+    component: GenBancoComponent,
+    data: { titulo: 'Bancos' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-banco/gen-banco.module').then(m => m.GenBancoModule)
   }
 ];
 

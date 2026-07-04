@@ -19,7 +19,7 @@ Módulos pendientes de alineación: **Selección y contratación** y otros legac
 
 | Tipo | Cuándo usarlo | Referencia SPA |
 |------|---------------|----------------|
-| **A — Básico** | Una tabla/vista, sin grid hijo | `SGUEES-SPA/.../Banking/gen-banco` |
+| **A — Básico** | Una tabla/vista, sin grid hijo | `SGUEES-SPA/.../General/gen-banco` |
 | **B — Básico + lookup** | Form con combos (lista o cross-tabla) | `.../Accounting/con-centro-costo` |
 | **C — Con detalle** | Encabezado + tabla detalle + estado | `.../Shop/com-documento`, `.../Accounting/con-partida` |
 
@@ -147,6 +147,7 @@ ngOnInit(): void {
 | `etiquetaRegistro` | Texto para mensajes de empresa y errores API |
 | `requiereEmpresaSesion` | Bloquea guardar si no hay `CORR_EMPRESA` en JWT |
 | `asegurarEmpresaSesion()` | Valida sesión empresa (llamado por `guardarMtto` y opcional en `nuevo`) |
+| `consultarMtto({ load, onData })` | Consulta unificada con loading y notify |
 | `guardarMtto({ esValido, insert, update, onSuccess })` | Guardar unificado con loading y notify |
 | `ejecutarDelete({ deleteFn, onSuccess })` | Eliminar con notify |
 | `ejecutarCambioEstado({ activar, desactivar, activo })` | Activar/desactivar |
@@ -360,7 +361,7 @@ El **componente** llama `this.service.getCatalogoCuentas()` — no `getLookUp`.
 Mismo criterio: permiso del consumidor.
 
 ```typescript
-getLookUp('GEN_BANCO', 'BAN_LISTA', 'GetCLASE_BANCO', undefined, environment.UrlCONTAAPI);
+getLookUp('GEN_BANCO', 'GEN_LISTA', 'GetCLASE_BANCO', undefined, environment.UrlGENERALAPI);
 ```
 
 API en `BAN_LISTAController` → `GetCLASE_BANCO_GEN_BANCO` con `[Authorize(Policy = "/gen-banco|R")]`.
@@ -534,7 +535,7 @@ El revisor debe rechazar si faltan ítems obligatorios del tipo A, B o C aplicab
 
 | Necesidad | Archivo |
 |-----------|---------|
-| Mtto básico | `SGUEES-SPA/.../Banking/gen-banco/` |
+| Mtto básico | `SGUEES-SPA/.../General/gen-banco/` |
 | Mtto + lookups | `SGUEES-SPA/.../Accounting/con-centro-costo/` |
 | Mtto + detalle (Compras) | `SGUEES-SPA/.../Shop/com-documento/` |
 | Mtto especial asignación | `SGUEES-SPA/.../Accounting/con-catalogo-cuenta-centro-costo/` |

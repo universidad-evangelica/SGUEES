@@ -2,6 +2,7 @@ import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
 
 import { GenBancoRepository } from './gen-banco.repository';
 import { GenBanco } from './models/gen-banco';
@@ -14,9 +15,15 @@ export class GenBancoService {
 
 	esValido(model: GenBanco, msg: Function): boolean {
 		if (!model.NOMBRE_BANCO?.trim()) {
-			msg('Debe digitar el nombre del banco', 0);
+			msg('Debe digitar el nombre del banco.', NotifyType.Warning);
 			return false;
 		}
+
+		if (!model.CLASE_BANCO?.trim()) {
+			msg('Debe seleccionar la clase de banco.', NotifyType.Warning);
+			return false;
+		}
+
 		return true;
 	}
 
@@ -39,8 +46,8 @@ export class GenBancoService {
 		return this.repo.update(model, xWhere);
 	}
 
-	delete(model: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_BANCO', Value: model.CORR_BANCO }];
+	delete(param: any): Observable<IResult> {
+		const xWhere: IParam[] = [{ Parameter: 'CORR_BANCO', Value: param.CORR_BANCO }];
 		return this.repo.delete(xWhere);
 	}
 
@@ -68,6 +75,7 @@ export class GenBancoService {
 				label: { text: 'Nombre Banco' },
 				colSpan: 3,
 				editorOptions: { placeholder: 'Nombre Banco...', showClearButton: true, maxLength: 60 },
+				validationRules: [{ type: 'required', message: 'El nombre del banco es obligatorio' }],
 			},
 			{
 				dataField: 'NOMBRE_BANCO_CORTO',

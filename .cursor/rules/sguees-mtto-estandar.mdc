@@ -50,7 +50,7 @@ Cuando el usuario diga *"mira ya tengo la tabla y la vista"* → leer vista(s) e
 
 | Tipo | Referencia SPA | Cuándo |
 |------|----------------|--------|
-| **A) Básico** | `Banking/gen-banco`, `Accounting/con-tipo-centro-costo` | Catálogo simple, combos pocos o ninguno |
+| **A) Básico** | `General/gen-banco`, `Accounting/con-tipo-centro-costo` | Catálogo simple, combos pocos o ninguno |
 | **B) Básico + lookup** | `Accounting/con-centro-costo`, `Banking/ban-cuenta-bancaria` | Form con combos `getLookUp` (lista o cross-tabla) |
 | **C) Con detalle** | `Shop/com-documento`, `Accounting/con-partida` | Encabezado + grid detalle + estado documento |
 
