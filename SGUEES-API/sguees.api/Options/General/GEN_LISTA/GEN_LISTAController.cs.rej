@@ -1,9 +1,0 @@
-diff a/SGUEES-API/sguees.api/Options/General/GEN_LISTA/GEN_LISTAController.cs b/SGUEES-API/sguees.api/Options/General/GEN_LISTA/GEN_LISTAController.cs	(rejected hunks)
-@@ -165,6 +165,7 @@
-          }
-  
- +<<<<<<< Updated upstream
-++=======
-          [HttpGet("GetMES_CON_PARTIDA")]
-          [Authorize(Policy = "/con-partida|R")]
-          public CResult GetMES_CON_PARTIDA()
