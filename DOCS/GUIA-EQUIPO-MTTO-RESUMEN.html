@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mantenimientos SGUEES — Resumen v1.1</title>
+  <style>
+    @page { size: A4; margin: 18mm 16mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.45;
+      color: #1a1a1a;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 12mm 10mm;
+    }
+    h1 { font-size: 20pt; margin: 0 0 4px; color: #0d47a1; }
+    .meta { color: #555; font-size: 9.5pt; margin-bottom: 16px; }
+    h2 {
+      font-size: 12pt;
+      color: #1565c0;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 4px;
+      margin-top: 18px;
+      page-break-after: avoid;
+    }
+    table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 9.5pt; }
+    th, td { border: 1px solid #ccc; padding: 5px 7px; text-align: left; vertical-align: top; }
+    th { background: #e3f2fd; font-weight: 600; }
+    ul { margin: 6px 0; padding-left: 20px; }
+    li { margin: 3px 0; }
+    .rules { background: #f5f5f5; border-left: 4px solid #1565c0; padding: 10px 12px; margin: 10px 0; }
+    .rules ol { margin: 0; padding-left: 18px; }
+    .quote { font-style: italic; background: #fff8e1; padding: 8px 10px; border-radius: 4px; margin: 8px 0; }
+    code, pre {
+      font-family: Consolas, monospace;
+      font-size: 8.5pt;
+      background: #f5f5f5;
+      border-radius: 3px;
+    }
+    pre { padding: 8px 10px; overflow-x: auto; white-space: pre-wrap; }
+    .checklist { columns: 2; column-gap: 24px; }
+    .footer { margin-top: 20px; font-size: 8.5pt; color: #666; text-align: center; border-top: 1px solid #ddd; padding-top: 8px; }
+    @media print {
+      body { padding: 0; }
+      h2 { break-after: avoid; }
+      table, pre { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>Mantenimientos SGUEES — Resumen v1.1</h1>
+<p class="meta"><strong>STI / UEES</strong> · Julio 2026 · Para programadores que crean o migran catálogos</p>
+
+<h2>Objetivo</h2>
+<p>Unificar pantallas de mantenimiento: misma UX, hijo delgado (<code>CBaseComponent</code>), plantillas en <code>DOCS/plantillas/</code>, PR con checklist.</p>
+<p><strong>Pilotos:</strong> <code>gen-banco</code> (A+) · <code>sc-impacto-economico</code> (A+P cerrado)</p>
+
+<h2>Elegir tipo</h2>
+<table>
+  <tr><th>Tipo</th><th>Cuándo</th><th>Plantilla</th></tr>
+  <tr><td><strong>A+</strong></td><td>&lt; ~500 filas, 1× getAll</td><td>mtto-a-plus.md</td></tr>
+  <tr><td><strong>A+P</strong></td><td>Muchas filas / auditoría, CustomStore</td><td>mtto-a-p-paginado.md</td></tr>
+  <tr><td><strong>B</strong></td><td>Form con combos getLookUp</td><td>+ sección lookups</td></tr>
+  <tr><td><strong>C</strong></td><td>Encabezado + detalle</td><td>con-partida / com-documento</td></tr>
+</table>
+<p>Activo/inactivo (bit): + <code>mtto-a-plus-estado-catalogo.md</code> · Estados DI/AP/AN: <code>mtto-estado-transaccional.md</code></p>
+
+<h2>Reglas que no se negocian</h2>
+<div class="rules">
+  <ol>
+    <li>HTML: <code>app-barra-data-mtto</code> + <code>dx-form</code> + <code>app-data-grid-mtto</code></li>
+    <li><code>mttoGridKeyExpr</code> obligatorio</li>
+    <li><strong>No</strong> <code>consultar()</code> después de guardar — <code>guardarMtto</code> parchea el grid</li>
+    <li>Permisos: quien <strong>consume</strong> define <code>[Authorize]</code></li>
+    <li>PR con <code>CHECKLIST-PR-MTTO.md</code></li>
+  </ol>
+</div>
+
+<h2>SPA — flags típicos</h2>
+<p><strong>A+:</strong> <code>mttoGridKeyExpr</code>, <code>requiereEmpresaSesion</code></p>
+<pre>protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
+@ViewChild(DataGridMttoComponent) dataGrid!: DataGridMttoComponent;
+protected override getMttoDataGrid() { return this.dataGrid ?? null; }</pre>
+<p><em>filtering: false</em> = filter row solo sobre la página cargada (sin API).</p>
+
+<h2>API A+P</h2>
+<table>
+  <tr><th>Parámetro</th><th>Uso</th></tr>
+  <tr><td>PAGE / PAGE_SIZE</td><td>Paginación (0 = todos)</td></tr>
+  <tr><td>SORT_FIELD / SORT_DESC</td><td>Orden (whitelist en repo)</td></tr>
+  <tr><td>CORR_EMPRESA</td><td>Desde JWT</td></tr>
+</table>
+<p><strong>Repository:</strong> <code>ReadPagedViewAsync</code> (eFramework). Controller: Authorize + auditoría. Service: validaciones.</p>
+
+<h2>Estado catálogo v1.1</h2>
+<ul>
+  <li>BD: campo <code>bit</code> en vista <code>V_*</code></li>
+  <li>Grid: badge verde/rojo (<code>createEstadoColumnConfig</code>)</li>
+  <li>Toolbar: Activar/Desactivar (<code>showEstadoToolbar</code>)</li>
+  <li>API: Put Activar / Desactivar con |U</li>
+</ul>
+
+<h2>Permisos</h2>
+<div class="quote">¿Quién consume? → Policy en [Authorize]. ¿De dónde salen datos? → Ese controlador consulta.</div>
+<p>Cross-tabla: <code>GetCAMPO_TABLA_CONSUMIDOR</code> en controlador origen, permiso del consumidor. Tras cambios en BD: cerrar sesión y reingresar.</p>
+
+<h2>Fuera de alcance v1.1</h2>
+<p>Panel de agrupación · Filtros remotos al API · Agrupamiento servidor</p>
+
+<h2>Documentación</h2>
+<table>
+  <tr><th>Archivo</th><th>Uso</th></tr>
+  <tr><td>GUIA-EQUIPO-MTTO.md</td><td>Onboarding completo</td></tr>
+  <tr><td>ESTANDAR-MTTO.md</td><td>Reglas detalladas</td></tr>
+  <tr><td>plantillas/</td><td>Código esqueleto</td></tr>
+  <tr><td>CHECKLIST-PR-MTTO.md</td><td>Antes de PR</td></tr>
+</table>
+
+<h2>Checklist express</h2>
+<div class="checklist">
+  <ul>
+    <li>Plantilla correcta</li>
+    <li>CBaseComponent + mttoGridKeyExpr</li>
+    <li>Sin consultar() post-guardar</li>
+    <li>Permisos API = JWT</li>
+    <li>Menú BD si pantalla nueva</li>
+    <li>UTF-8 en textos y SQL</li>
+  </ul>
+</div>
+
+<p class="footer">STI / UEES — Julio 2026 — Resumen de GUIA-EQUIPO-MTTO.md</p>
+
+</body>
+</html>

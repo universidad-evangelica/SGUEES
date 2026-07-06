@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using Microsoft.Data.SqlClient;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace eFramework.Core
@@ -119,6 +120,223 @@ namespace eFramework.Core
             }
             
             return objReader;
+        }
+
+        /// <summary>
+        /// Lectura paginada sobre una vista. Usa PAGE, PAGE_SIZE, SORT_FIELD, SORT_DESC en xWhere.
+        /// PAGE_SIZE &lt;= 0 devuelve todos los registros ordenados.
+        /// </summary>
+        public async Task<CPagedResult<TView>> GetPagedFromViewAsync<TView>(
+            string viewName,
+            List<CParameter> xWhere,
+            string[] allowedSortFields,
+            string defaultSortField = null,
+            int maxPageSize = 200)
+            where TView : new()
+        {
+            var paging = CPagingParameters.Parse(xWhere, maxPageSize);
+            var dbWhere = CPagingParameters.ExcludeReserved(xWhere);
+            var sortColumn = ResolveSortColumn(paging.SortField, allowedSortFields, defaultSortField);
+            var orderBy = BuildOrderByClause(sortColumn, paging.SortDesc, defaultSortField ?? sortColumn);
+
+            try
+            {
+                await OpenAsync();
+
+                var totalRows = 0;
+                List<TView> pageData;
+
+                if (paging.ReturnAll)
+                {
+                    pageData = await ExecuteSelectAsync<TView>(viewName, dbWhere, orderBy);
+                    totalRows = pageData.Count;
+                }
+                else
+                {
+                    totalRows = await ExecuteCountAsync(viewName, dbWhere);
+                    pageData = await ExecuteSelectPagedAsync<TView>(
+                        viewName,
+                        dbWhere,
+                        orderBy,
+                        paging.Offset,
+                        paging.PageSize);
+                }
+
+                return new CPagedResult<TView>
+                {
+                    PageData = pageData,
+                    TotalRows = totalRows,
+                };
+            }
+            catch (System.Exception)
+            {
+                throw;
+            }
+        }
+
+        private async Task<List<TView>> ExecuteSelectAsync<TView>(string viewName, List<CParameter> dbWhere, string orderBy)
+            where TView : new()
+        {
+            var reader = await CreateSelectReaderAsync(viewName, dbWhere, orderBy);
+            try
+            {
+                return new List<TView>().FromDataReader(reader).ToList();
+            }
+            finally
+            {
+                reader.Close();
+            }
+        }
+
+        private async Task<List<TView>> ExecuteSelectPagedAsync<TView>(
+            string viewName,
+            List<CParameter> dbWhere,
+            string orderBy,
+            int offset,
+            int fetch)
+            where TView : new()
+        {
+            var vWhere = "";
+            await OpenAsync();
+
+            objCommand = dataFactory.CreateCommand();
+            objCommand.Connection = objConnection;
+            objCommand.CommandType = CommandType.Text;
+            objCommand.CommandTimeout = 0;
+            BindWhereParameters(dbWhere, ref vWhere);
+
+            objCommand.CommandText = objSQLBuilder.toSelectPaged(viewName, vWhere, orderBy, offset, fetch);
+            objReader = await objCommand.ExecuteReaderAsync();
+
+            try
+            {
+                return new List<TView>().FromDataReader(objReader).ToList();
+            }
+            finally
+            {
+                objReader.Close();
+                objReader = null;
+            }
+        }
+
+        private async Task<int> ExecuteCountAsync(string viewName, List<CParameter> dbWhere)
+        {
+            var vWhere = "";
+            await OpenAsync();
+
+            objCommand = dataFactory.CreateCommand();
+            objCommand.Connection = objConnection;
+            objCommand.CommandType = CommandType.Text;
+            objCommand.CommandTimeout = 0;
+            BindWhereParameters(dbWhere, ref vWhere);
+
+            objCommand.CommandText = objSQLBuilder.toCount(viewName, vWhere);
+            objReader = await objCommand.ExecuteReaderAsync();
+
+            try
+            {
+                if (!objReader.Read())
+                {
+                    return 0;
+                }
+
+                return Convert.ToInt32(objReader["TOTAL_ROWS"]);
+            }
+            finally
+            {
+                objReader.Close();
+                objReader = null;
+            }
+        }
+
+        private async Task<DbDataReader> CreateSelectReaderAsync(string viewName, List<CParameter> dbWhere, string orderBy)
+        {
+            var vWhere = "";
+            await OpenAsync();
+
+            objCommand = dataFactory.CreateCommand();
+            objCommand.Connection = objConnection;
+            objCommand.CommandType = CommandType.Text;
+            objCommand.CommandTimeout = 0;
+            BindWhereParameters(dbWhere, ref vWhere);
+
+            objCommand.CommandText = objSQLBuilder.toSelect(viewName, vWhere, orderBy);
+            return await objCommand.ExecuteReaderAsync();
+        }
+
+        private void BindWhereParameters(List<CParameter> xParametros, ref string vWhere)
+        {
+            if (xParametros == null)
+            {
+                return;
+            }
+
+            foreach (CParameter p in xParametros)
+            {
+                if (!ShouldIncludeInWhere(p))
+                {
+                    continue;
+                }
+
+                objParameter = dataFactory.CreateParameter();
+                objParameter.DbType = p.DbType;
+                objParameter.ParameterName = p.ParameterName;
+                objParameter.Value = p.Value;
+                objParameter.Direction = p.Direction;
+                objParameter.Size = p.Size;
+
+                objCommand.Parameters.Add(objParameter);
+
+                if (vWhere != "") { vWhere += " AND "; }
+                vWhere += $"{p.ParameterName}=@{p.ParameterName}";
+            }
+        }
+
+        private static string ResolveSortColumn(string sortField, string[] allowedSortFields, string defaultSortField)
+        {
+            var allowed = allowedSortFields ?? Array.Empty<string>();
+
+            if (!string.IsNullOrWhiteSpace(sortField))
+            {
+                var match = allowed.FirstOrDefault(field =>
+                    string.Equals(field, sortField.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                if (match != null)
+                {
+                    return match;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(defaultSortField))
+            {
+                var defaultMatch = allowed.FirstOrDefault(field =>
+                    string.Equals(field, defaultSortField.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                if (defaultMatch != null)
+                {
+                    return defaultMatch;
+                }
+            }
+
+            return allowed.Length > 0 ? allowed[0] : "1";
+        }
+
+        private static string BuildOrderByClause(string sortColumn, bool sortDesc, string tieBreakerColumn)
+        {
+            if (string.Equals(sortColumn, "1", StringComparison.Ordinal))
+            {
+                return "1";
+            }
+
+            var direction = sortDesc ? "DESC" : "ASC";
+
+            if (!string.IsNullOrWhiteSpace(tieBreakerColumn)
+                && !string.Equals(sortColumn, tieBreakerColumn, StringComparison.OrdinalIgnoreCase))
+            {
+                return $"{sortColumn} {direction}, {tieBreakerColumn} ASC";
+            }
+
+            return $"{sortColumn} {direction}";
         }
 
         public async Task<DbDataReader> Insert(string vTableName,

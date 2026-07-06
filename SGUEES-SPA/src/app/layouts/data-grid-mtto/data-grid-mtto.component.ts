@@ -25,10 +25,12 @@ import {
   attachRemoteHeaderFilters,
   syncHeaderFiltersFromPageData,
 } from 'src/app/shared/utils/remote-header-filter.util';
+import { buildEstadoToolbarOptions } from 'src/app/shared/mtto/mtto-grid.helpers';
 
 import { exportDataGrid } from 'devextreme/excel_exporter';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver-es';
+import { PagerPageSize } from 'devextreme/common/grids';
 
 @Component({
   selector: 'app-data-grid-mtto',
@@ -89,16 +91,27 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() searchPlaceholder = 'Buscar...';
   @Input() remoteOperations: boolean | Record<string, unknown> = false;
   @Input() pageSize = 5;
-  @Input() allowedPageSizes: number[] = [5, 10, 25, 50, 100];
+  @Input() allowedPageSizes: (number | PagerPageSize)[] = [5, 10, 25, 50, 100];
   @Input() repaintChangesOnly: boolean | null = null;
   @Input() searchBoxOptions: Record<string, unknown> | null = null;
   @Input() estadoSelectOptions: Record<string, unknown> | null = null;
   @Input() exportFileName = 'Data';
+  /** false cuando el hijo confirma en rowRemoving (evita doble diálogo DevExtreme + confirmaAccion). */
+  @Input() confirmDelete = true;
   @Input() headerFilterLoader?: RemoteHeaderFilterLoader;
   @Input() syncHeaderFilterWithPage = false;
+  /** v1.1 — Activar/Desactivar en toolbar junto a Agregar (fila seleccionada). */
+  @Input() showEstadoToolbar = false;
+  @Input() campoEstado = '';
+  @Input() puedeCambiarEstado = true;
+  @Output() activarEstado = new EventEmitter<void>();
+  @Output() desactivarEstado = new EventEmitter<void>();
 
   optRefresh: Record<string, unknown> = {};
   optAdd: Record<string, unknown> = {};
+  optActivar: Record<string, unknown> = {};
+  optDesactivar: Record<string, unknown> = {};
+  focusedRowData: Record<string, unknown> | null = null;
   permissionTooltipTarget: HTMLElement | null = null;
   permissionTooltipVisible = false;
   permissionTooltipMessage = '';
@@ -192,6 +205,17 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     );
   }
 
+  get focusedRowEnabled(): boolean {
+    if (this.showEstadoToolbar && this.isBrowse) {
+      return true;
+    }
+    return this.hasFocusedRow;
+  }
+
+  get effectiveShowEstadoToolbar(): boolean {
+    return this.isUnifiedActive && this.showEstadoToolbar && !!this.campoEstado;
+  }
+
   get isRemotePagingActive(): boolean {
     if (this.remoteOperations === true) {
       return true;
@@ -228,6 +252,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.OneditClick = this.OneditClick.bind(this);
     this.onRefreshClick = this.onRefreshClick.bind(this);
     this.onAddClick = this.onAddClick.bind(this);
+    this.onActivarEstadoClick = this.onActivarEstadoClick.bind(this);
+    this.onDesactivarEstadoClick = this.onDesactivarEstadoClick.bind(this);
   }
 
   ngOnInit(): void {
@@ -274,7 +300,10 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       changes['permitePrint'] ||
       changes['titulo'] ||
       changes['subtitle'] ||
-      changes['unifiedToolbar']
+      changes['unifiedToolbar'] ||
+      changes['showEstadoToolbar'] ||
+      changes['campoEstado'] ||
+      changes['puedeCambiarEstado']
     ) {
       this.rebuildToolbarOptions();
     }
@@ -312,6 +341,29 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       hint: canAdd ? 'Agregar registro' : 'No tiene permiso para crear registros.',
       onClick: this.onAddClick,
     };
+
+    if (this.effectiveShowEstadoToolbar) {
+      const estadoOpts = buildEstadoToolbarOptions({
+        campoEstado: this.campoEstado,
+        focusedRow: this.focusedRowData,
+        puedeCambiarEstado: this.puedeCambiarEstado,
+        onActivar: this.onActivarEstadoClick,
+        onDesactivar: this.onDesactivarEstadoClick,
+      });
+      this.optActivar = estadoOpts.optActivar;
+      this.optDesactivar = estadoOpts.optDesactivar;
+    } else {
+      this.optActivar = { visible: false };
+      this.optDesactivar = { visible: false };
+    }
+  }
+
+  onActivarEstadoClick(): void {
+    this.activarEstado.emit();
+  }
+
+  onDesactivarEstadoClick(): void {
+    this.desactivarEstado.emit();
   }
 
   onRefreshClick(): void {
@@ -461,6 +513,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       caption: 'Options',
       width: 125,
       minWidth: 125,
+      allowFiltering: false,
       allowResizing: false,
       fixed: true,
       fixedPosition: 'left',
@@ -523,10 +576,16 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   OnfocusedRowChanged(e: any): void {
+    this.focusedRowData = e?.row?.data ?? null;
+    if (this.effectiveShowEstadoToolbar) {
+      this.rebuildToolbarOptions();
+    }
     if (!e?.row?.data) {
+      this.cdr.markForCheck();
       return;
     }
     this.focusedRowChanged.emit(e);
+    this.cdr.markForCheck();
   }
 
   OnRowClick(e: any): void {

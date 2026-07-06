@@ -50,7 +50,7 @@
       [columnHidingEnabled]="columnHidingActive"
       [allowColumnResizing]="true"
       [columnResizingMode]="'nextColumn'"
-      [focusedRowEnabled]="hasFocusedRow"
+      [focusedRowEnabled]="focusedRowEnabled"
       [height]="resolvedGridHeight"
       [width]="'100%'"
       [repaintChangesOnly]="effectiveRepaintChangesOnly"
@@ -131,6 +131,20 @@
         ></dxi-item>
 
         <dxi-item
+          *ngIf="effectiveShowEstadoToolbar"
+          location="after"
+          widget="dxButton"
+          [options]="optActivar"
+        ></dxi-item>
+
+        <dxi-item
+          *ngIf="effectiveShowEstadoToolbar"
+          location="after"
+          widget="dxButton"
+          [options]="optDesactivar"
+        ></dxi-item>
+
+        <dxi-item
           *ngIf="showColumnChooser"
           name="columnChooserButton"
           location="after"
@@ -140,7 +154,7 @@
 
       </dxo-toolbar>
 
-      <dxo-editing mode="row" [refreshMode]="'reshape'" [allowDeleting]="true" [useIcons]="true"></dxo-editing>
+      <dxo-editing mode="row" [refreshMode]="'reshape'" [allowDeleting]="true" [useIcons]="true" [confirmDelete]="confirmDelete"></dxo-editing>
       <dxo-load-panel [enabled]="true"></dxo-load-panel>
 
       <dxo-search-panel

@@ -1,11 +1,15 @@
 ---
-description: Estándar SGUEES — mtto básico, mtto con lookup (lista/cross-tabla) y mtto con detalle. SPA + API + menú BD. Usar en migraciones.
+description: Estándar SGUEES — mtto básico, A+, A+P, lookup, detalle. SPA + API + menú BD. Plantillas en DOCS/plantillas/.
 alwaysApply: true
 ---
 
 # SGUEES — Estándar Mantenimientos (mtto)
 
 Al migrar o crear pantallas, seguir **este proceso completo** (SPA + API + menú BD). No improvisar estructura distinta.
+
+**Fuente de verdad IA:** `DOCS/plantillas/` + `DOCS/PROMPT-MTTO.md` + `DOCS/ESTANDAR-MTTO.md`  
+**Onboarding equipo:** `DOCS/GUIA-EQUIPO-MTTO.md`  
+**Piloto vivo (solo comparar):** `gen-banco` (A+), `sc-impacto-economico` (A+P). No copiar ciego.
 
 ## Flujo rápido — lo que el usuario dice y yo entrego
 
@@ -25,7 +29,18 @@ El usuario puede decir solo:
 | Módulo | Bancos, Contabilidad, Compras, General… |
 | Menú destino | `PROCESO`, `GENERAL`, nombre opción |
 
-Si no indica tipo, **inferirlo** de tablas/vistas (1 tabla = A o B; encabezado+deta = C).
+Si no indica tipo, **inferirlo** de tablas/vistas (1 tabla = A/B/A+/A+P; encabezado+deta = C).
+
+### Elegir plantilla (catálogos)
+
+| Situación | Plantilla |
+|-----------|-----------|
+| Catálogo simple, &lt; ~500 filas | `DOCS/plantillas/mtto-a-plus.md` |
+| Catálogo + activo/inactivo (`bit`) | `mtto-a-plus.md` + `mtto-a-plus-estado-catalogo.md` |
+| Catálogo grande / auditoría / paginado servidor | `mtto-a-p-paginado.md` |
+| Documento con estados DI/AP/AN | `mtto-estado-transaccional.md` — **no** patrón bit |
+
+**A+ vs A+P:** A+ = 1× `consultarMtto` → array, paginado cliente. A+P = `CustomStore`, `remoteOperations.paging: true`, filter row sin API (`filtering: false`).
 
 ### Lo que yo entrego (completo)
 
@@ -46,17 +61,72 @@ Cuando el usuario diga *"mira ya tengo la tabla y la vista"* → leer vista(s) e
 
 ---
 
-## Tres tipos de mtto
+## Tipos de mtto
 
-| Tipo | Referencia SPA | Cuándo |
-|------|----------------|--------|
-| **A) Básico** | `General/gen-banco`, `Accounting/con-tipo-centro-costo` | Catálogo simple, combos pocos o ninguno |
-| **B) Básico + lookup** | `Accounting/con-centro-costo`, `Banking/ban-cuenta-bancaria` | Form con combos `getLookUp` (lista o cross-tabla) |
-| **C) Con detalle** | `Shop/com-documento`, `Accounting/con-partida` | Encabezado + grid detalle + estado documento |
+| Tipo | Referencia / plantilla | Cuándo |
+|------|------------------------|--------|
+| **A) Básico** | `gen-banco`, `con-tipo-centro-costo` | Catálogo simple legacy |
+| **A+) Catálogo reforzado** | `DOCS/plantillas/mtto-a-plus.md` | **Recomendado** — `CBaseComponent` + padre |
+| **A+P) Paginado servidor** | `DOCS/plantillas/mtto-a-p-paginado.md` | Catálogo grande, auditoría |
+| **B) + lookup** | `con-centro-costo`, `ban-cuenta-bancaria` | Form con combos `getLookUp` |
+| **C) Con detalle** | `com-documento`, `con-partida` | Encabezado + grid detalle |
 
 ---
 
-## A) Mtto básico — SPA
+## A+) Catálogo reforzado — SPA (preferido para catálogos nuevos)
+
+**Plantilla:** `DOCS/plantillas/mtto-a-plus.md`  
+**Piloto:** `General/gen-banco`
+
+**Flags opt-in en hijo:**
+```typescript
+protected override etiquetaRegistro = 'el banco';
+protected override requiereEmpresaSesion = true;
+protected override mttoGridKeyExpr = 'CORR_BANCO';
+// override opcional: mttoPageSize, mttoPageSizes
+```
+
+**Guardar / eliminar — sin segunda petición:**
+```typescript
+guardar(): void {
+  this.guardarMtto({
+    esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+    insert: () => this.service.insert(this.model),
+    update: () => this.service.update(this.model),
+    // NO onSuccess: () => this.consultar()
+  });
+}
+// rowRemovingMtto(e, { deleteFn }) — sin reload manual
+```
+
+**HTML grid:** `[pageSize]="mttoPageSize"` `[allowedPageSizes]="mttoPageSizes"` `[remoteOperations]="mttoRemoteOperations"` `[keyExpr]="mttoGridKeyExpr"` `(editClick)="editarClick($event)"`.
+
+**Estado catálogo (bit):** `buildEstadoColumn` en service; toolbar `showEstadoToolbar` + `campoEstado` en grid; `ejecutarCambioEstado`. Ver `mtto-a-plus-estado-catalogo.md` v1.1.
+
+**Utilidades:** `SGUEES-SPA/src/app/shared/mtto/`  
+**Padre:** `FxAPI/CBaseComponent.component.ts`
+
+---
+
+## A+P) Catálogo paginado servidor — SPA
+
+**Plantilla:** `DOCS/plantillas/mtto-a-p-paginado.md`  
+**Piloto:** `SelectionHiring/sc-impacto-economico`
+
+```typescript
+protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
+protected override mttoGridKeyExpr = 'CORR_XXX';
+@ViewChild(DataGridMttoComponent) dataGrid!: DataGridMttoComponent;
+protected override getMttoDataGrid() { return this.dataGrid ?? null; }
+```
+
+- Filter row = cliente, **no** llama API.
+- `guardarMtto` / `rowRemovingMtto` parchean `CustomStore` vía padre.
+- API actual piloto impacto: pagina en SQL (`OFFSET/FETCH`). Legacy puede estar en memoria hasta migrar.
+
+---
+
+## A) Mtto básico — SPA (legacy / sin padre extendido)
 
 **Archivos:** `component.ts/html`, `service.ts`, `routing.module.ts`, `models/`.
 
@@ -137,9 +207,9 @@ Base de A/B, más:
 
 Ref. asignación: `con-catalogo-cuenta-centro-costo` — grillas vía `CON_CATALOGO_CUENTA` + `CON_CENTRO_COSTO` con `Get*_CON_CTA_CENTRO_COSTO`.
 
-**Tipo A+ (estado/validaciones):** `shared/mtto/` + métodos opt-in en `CBaseComponent`. Ref. `sc-impacto-economico`.
+**Tipo A+ / A+P:** `shared/mtto/` + métodos opt-in en `CBaseComponent`. Plantillas: `DOCS/plantillas/`. Prompt: `DOCS/PROMPT-MTTO.md`.
 
-Doc equipo: `docs/ESTANDAR-MTTO.md` sección **Permisos y peticiones API** y **Tipo A+**.
+Doc equipo: `DOCS/ESTANDAR-MTTO.md` — secciones **Tipo A+**, **A+P**, **Estados**, **Permisos**.
 
 ---
 
@@ -182,7 +252,23 @@ Procesos: aplicar/anular/desaplicar, importar Excel, reportes, consultas, cierre
 
 ## Checklist por tipo
 
-### A) Básico
+### A+) Catálogo reforzado (preferido)
+- [ ] Plantilla `DOCS/plantillas/mtto-a-plus.md` aplicada
+- [ ] `CBaseComponent` + 4 regiones + `mttoGridKeyExpr`
+- [ ] `guardarMtto` **sin** `onSuccess: () => consultar()`
+- [ ] `rowRemovingMtto` **sin** reload manual
+- [ ] `(editClick)="editarClick($event)"` — sin botones edit custom
+- [ ] Sin `p-toast` local, sin `.scss` propio, sin `override notifyFx`
+- [ ] HTML: `.sguees-mtto-view` + bindings `mttoPageSize` / `mttoRemoteOperations` / `keyExpr`
+- [ ] Menú BD si pantalla nueva
+
+### A+P) Paginado servidor
+- [ ] Plantilla `mtto-a-p-paginado.md`
+- [ ] `CustomStore` + `remoteOperations: { paging: true, sorting: true, filtering: false }`
+- [ ] `getMttoDataGrid()` con `@ViewChild(DataGridMttoComponent)`
+- [ ] API `OFFSET/FETCH` (patrón `SC_IMPACTO_ECONOMICORepository`) si es catálogo nuevo A+P
+
+### A) Básico (legacy)
 - [ ] `CBaseComponent` + 4 regiones + `ngOnInit` trio
 - [ ] `fillParam` / `fillData` / `guardar()` inline
 - [ ] `bloquear` / `habilitar` / `setFocus`
@@ -205,5 +291,7 @@ Procesos: aplicar/anular/desaplicar, importar Excel, reportes, consultas, cierre
 - [ ] Lookups en celdas con `lookupColumns`
 
 ### Siempre
+- [ ] Leer plantilla correcta en `DOCS/plantillas/` antes de codificar
 - [ ] Cambio mínimo: no refactorizar lógica no solicitada
 - [ ] Scripts SQL con `-f 65001`; textos NVARCHAR en menú
+- [ ] `docs/CHECKLIST-PR-MTTO.md` si aplica

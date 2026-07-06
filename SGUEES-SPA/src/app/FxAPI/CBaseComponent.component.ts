@@ -7,7 +7,15 @@ import esMessages from 'devextreme/localization/messages/es.json';
 import { loadMessages, locale } from 'devextreme/localization';
 import { custom } from 'devextreme/ui/dialog';
 import { DxFormComponent } from 'devextreme-angular/ui/form';
+import { PagerPageSize } from 'devextreme/common/grids';
 
+import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
+import {
+	patchMttoArrayModels,
+	patchMttoRemoteGrid,
+	removeMttoArrayModel,
+	removeMttoRemoteGrid,
+} from 'src/app/shared/mtto/mtto-grid.helpers';
 import { UpdateType } from '../shared/models/UpdateType.enum';
 import { RowStatus } from '../shared/models/RowStatus.enum';
 import { NotifyType } from '../shared/models/NotifyType';
@@ -41,6 +49,24 @@ export class CBaseComponent {
 	protected requiereEmpresaSesion = false;
 	/** Normaliza duplicados, FK y empresa en notifyFx (opt-in, default true). */
 	protected mapearMensajesApi = true;
+
+	/** Defaults estándar para formularios y grillas mtto (Tipo A+). */
+	readonly mttoFormColCount = 8;
+	readonly mttoFormColCountByScreen: Record<string, number> = { xs: 1, sm: 1, md: 4, lg: 8 };
+
+	/** Paginación grid — el hijo puede sobreescribir pageSize y pageSizes. */
+	protected mttoPageSize = 20;
+	protected mttoPageSizes: (number | PagerPageSize)[] = [20, 50, 100, 200, 'all'];
+	/** false = A+ local; { paging, sorting, filtering } = A++ paginado servidor. */
+	protected mttoRemoteOperations: boolean | Record<string, unknown> = false;
+	/** Clave del grid para parchear models[] o CustomStore tras guardar/eliminar. */
+	protected mttoGridKeyExpr = '';
+	/** Parchea grid con response.Data tras guardar (evita segunda petición). */
+	protected mttoParchearGridTrasGuardar = true;
+	/** Campo `bit` de estado catálogo — habilita toolbar Activar/Desactivar en grid (v1.1). */
+	protected mttoCampoEstado = '';
+	/** Etiqueta descriptiva para confirmación de cambio de estado. */
+	protected mttoEstadoDescribeField = 'DESCRIPCION';
 
   //#region <Declareando Variales>
 	tituloVentana = '';
@@ -109,9 +135,69 @@ export class CBaseComponent {
 		}
 	}
 
+	/** Hijo con grid remoto sobreescribe y retorna su ViewChild. */
+	protected getMttoDataGrid(): DataGridMttoComponent | null {
+		return null;
+	}
+
+	protected refrescarGridMtto(resetPage = true): void {
+		this.getMttoDataGrid()?.refreshData(resetPage);
+	}
+
+	protected aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
+		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object') {
+			return;
+		}
+
+		const record = data as Record<string, unknown>;
+		const key = this.mttoGridKeyExpr;
+
+		if (Array.isArray(this.models)) {
+			patchMttoArrayModels(this.models, record, isAdd, key);
+			return;
+		}
+
+		if (!patchMttoRemoteGrid(this.getMttoDataGrid(), record, isAdd, key)) {
+			this.refrescarGridMtto(false);
+		}
+	}
+
+	protected quitarRegistroDeGrid(keyValue: unknown): void {
+		if (!this.mttoGridKeyExpr) {
+			return;
+		}
+
+		const key = this.mttoGridKeyExpr;
+
+		if (Array.isArray(this.models)) {
+			removeMttoArrayModel(this.models, keyValue, key);
+			return;
+		}
+
+		if (!removeMttoRemoteGrid(this.getMttoDataGrid(), keyValue, key)) {
+			this.refrescarGridMtto(false);
+		}
+	}
+
 	//#region <Metodos Browse>
 	focusedRowChanged(e: any) {
 		this.model = e.row.data;
+	}
+
+	/** Fila seleccionada en grid browse (requerida para toolbar estado v1.1). */
+	protected obtenerFilaSeleccionada(): any | null {
+		const row = this.model;
+		if (!row) {
+			return null;
+		}
+		if (this.mttoGridKeyExpr && !row[this.mttoGridKeyExpr]) {
+			return null;
+		}
+		return row;
+	}
+
+	protected notificarSeleccionRequerida(): void {
+		this.notifyFx('Seleccione un registro en el grid.', NotifyType.Warning, { raw: true });
 	}
 
 	getPermiteEditar(e: any): boolean {
@@ -160,15 +246,19 @@ export class CBaseComponent {
 		this.setFocus();
 	}
 
-	editarClick(e: any) {
-		e.event.preventDefault();
+	editarClick(e: any): void {
+		e?.event?.preventDefault?.();
+		const rowData = e?.row?.data ?? e?.data;
+		if (rowData) {
+			this.model = this.fillData(rowData);
+		}
 		this.AsignaStatus(UpdateType.Update);
 		this.modelUpdate = this.fillData(this.model);
 		this.habilitar();
 		this.setFocus();
 	}
 
-	cancelar(findIndex: Function): void {
+	cancelar(findIndex?: (item: any) => boolean): void {
 		const cancelRow = () => {
 			this.AsignaStatus(UpdateType.Browse);
 			this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
@@ -176,8 +266,12 @@ export class CBaseComponent {
 		if (this.banderaMtto === UpdateType.Add || this.banderaMtto === UpdateType.Update) {
 			this.confirmaCancelar(() => {
 				this.model = this.modelUpdate;
-				const vIndex = this.models.findIndex(findIndex);
-				this.models[vIndex] = this.modelUpdate;
+				if (Array.isArray(this.models) && findIndex) {
+					const vIndex = this.models.findIndex(findIndex);
+					if (vIndex >= 0) {
+						this.models[vIndex] = this.modelUpdate;
+					}
+				}
 				cancelRow();
 			});
 		} else {
@@ -285,6 +379,8 @@ export class CBaseComponent {
 		onSuccess?: (data: unknown, isAdd: boolean) => void;
 		successAddMessage?: string;
 		successUpdateMessage?: string;
+		/** false = no parchear grid (default: mttoParchearGridTrasGuardar). */
+		parchearGrid?: boolean;
 	}): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -314,6 +410,11 @@ export class CBaseComponent {
 				if (response.Result) {
 					this.model = response.Data;
 					this.AsignaStatus(UpdateType.Browse);
+					const shouldPatch =
+						options.parchearGrid !== false && this.mttoParchearGridTrasGuardar && !!this.mttoGridKeyExpr;
+					if (shouldPatch) {
+						this.aplicarRegistroEnGrid(response.Data, isAdd);
+					}
 					options.onSuccess?.(response.Data, isAdd);
 					this.notifyFx(
 						isAdd
@@ -392,6 +493,37 @@ export class CBaseComponent {
 			});
 	}
 
+	/**
+	 * Eliminar desde el grid con confirmación nativa DevExtreme (confirmDelete=true).
+	 * No usar confirmaAccion aquí — evita doble diálogo.
+	 */
+	rowRemovingMtto(
+		e: any,
+		options: {
+			deleteFn: () => Observable<unknown>;
+			reload?: () => void;
+			successMessage?: string;
+			/** false = no quitar fila en grid (default: parchea si hay mttoGridKeyExpr). */
+			parchearGrid?: boolean;
+		}
+	): void {
+		e.cancel = true;
+		const keyValue = this.mttoGridKeyExpr ? e.data?.[this.mttoGridKeyExpr] : undefined;
+		this.ejecutarDelete({
+			deleteFn: options.deleteFn,
+			onSuccess: () => {
+				const shouldPatch = options.parchearGrid !== false && !!this.mttoGridKeyExpr;
+				if (shouldPatch) {
+					this.quitarRegistroDeGrid(keyValue);
+				} else {
+					options.reload?.();
+				}
+			},
+			rowRemovingEvent: e,
+			successMessage: options.successMessage,
+		});
+	}
+
 	ejecutarCambioEstado(options: {
 		activar: () => Observable<unknown>;
 		desactivar: () => Observable<unknown>;
@@ -399,6 +531,8 @@ export class CBaseComponent {
 		onSuccess?: () => void;
 		successActivarMessage?: string;
 		successDesactivarMessage?: string;
+		/** false = no parchear grid con response.Data. */
+		parchearGrid?: boolean;
 	}): void {
 		const action = options.activo ? options.activar() : options.desactivar();
 
@@ -406,6 +540,11 @@ export class CBaseComponent {
 		action.pipe(take(1)).subscribe({
 			next: (response: any) => {
 				if (response.Result) {
+					const shouldPatch =
+						options.parchearGrid !== false && !!this.mttoGridKeyExpr && !!response.Data;
+					if (shouldPatch) {
+						this.aplicarRegistroEnGrid(response.Data, false);
+					}
 					options.onSuccess?.();
 					this.notifyFx(
 						options.activo

@@ -23,13 +23,23 @@ namespace sguees.Repositories
 			{
 				var reader = await objData.GetDataReader("V_" + _TableName, xWhere);
 				var response = new List<GEN_BANCOView>().FromDataReader(reader).ToList();
+
 				reader.Close(); reader = null;
 				objResultado.Data = response; objResultado.Result = true;
 				objResultado.RowsAffected = response.Count; objResultado.CodeHelper = 0;
 				objResultado.ErrorCode = 0; objResultado.ErrorMessage = ""; objResultado.ErrorSource = "";
 			}
-			catch (System.Exception e) { objResultado.Data = null; objResultado.Result = false; objResultado.ErrorCode = -1; objResultado.ErrorMessage = e.Message; }
-			finally { objData.objConnection.Close(); }
+			catch (System.Exception e) 
+			{ 
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message; 
+			}
+			finally 
+			{ 
+				objData.objConnection.Close(); 
+			}
 			return objResultado;
 		}
 
@@ -75,6 +85,7 @@ namespace sguees.Repositories
 				};
 				var reader = await objData.Insert(_TableName, p, "CORR_BANCO", pWhere);
 				var response = new List<GEN_BANCOView>().FromDataReader(reader).FirstOrDefault();
+
 				objResultado.Data = response; objResultado.Result = true; objResultado.RowsAffected = 1;
 				objResultado.CodeHelper = response?.CORR_BANCO ?? 0;
 			}
