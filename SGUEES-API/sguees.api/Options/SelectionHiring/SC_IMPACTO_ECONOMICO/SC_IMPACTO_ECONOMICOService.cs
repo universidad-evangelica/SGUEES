@@ -48,12 +48,7 @@ namespace SGUEES.Services
             Data.DESCRIPCION = Data.DESCRIPCION.Trim();
             Data.ESTADO_IMPACTO_ECONOMICO ??= true;
 
-            var duplicate = await ValidateUniqueDescripcionAsync(Data, null);
-            if (duplicate != null)
-            {
-                return duplicate;
-            }
-
+           
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
@@ -78,12 +73,6 @@ namespace SGUEES.Services
 
             Data.DESCRIPCION = Data.DESCRIPCION.Trim();
             Data.ESTADO_IMPACTO_ECONOMICO ??= true;
-
-            var duplicate = await ValidateUniqueDescripcionAsync(Data, Data.CORR_IMPACTO_ECONOMICO);
-            if (duplicate != null)
-            {
-                return duplicate;
-            }
 
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
@@ -141,18 +130,6 @@ namespace SGUEES.Services
             }
 
             return null;
-        }
-
-        private async Task<CResult> ValidateUniqueDescripcionAsync(SC_IMPACTO_ECONOMICOTable Data, int? excludeCorr)
-        {
-            var exists = await _repo.ExistsDescripcionAsync(
-                Data.CORR_EMPRESA,
-                Data.DESCRIPCION,
-                excludeCorr ?? 0);
-
-            return exists
-                ? ValidationError($"Ya existe un impacto economico con la descripcion {Data.DESCRIPCION}.")
-                : null;
         }
 
         private static CResult ValidateEmpresaSesion(int corrEmpresa)

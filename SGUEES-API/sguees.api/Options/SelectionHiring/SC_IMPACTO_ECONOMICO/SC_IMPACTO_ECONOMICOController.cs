@@ -53,7 +53,7 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/sc-impacto-economico|U")]
         public async Task<IActionResult> Put(SC_IMPACTO_ECONOMICOTable Data)
         {
-            ApplyPrimaryKeyFromQuery(Data);
+            this.ApplyQueryKeys(Data, nameof(SC_IMPACTO_ECONOMICOTable.CORR_IMPACTO_ECONOMICO));
             SetUpdateAudit(Data);
 
             var resultado = await _service.UpdateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
@@ -74,7 +74,7 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/sc-impacto-economico|U")]
         public async Task<IActionResult> Activar(SC_IMPACTO_ECONOMICOTable Data)
         {
-            ApplyPrimaryKeyFromQuery(Data);
+            this.ApplyQueryKeys(Data, nameof(SC_IMPACTO_ECONOMICOTable.CORR_IMPACTO_ECONOMICO));
             SetUpdateAudit(Data);
             Data.ESTADO_IMPACTO_ECONOMICO = true;
 
@@ -86,7 +86,7 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/sc-impacto-economico|U")]
         public async Task<IActionResult> Desactivar(SC_IMPACTO_ECONOMICOTable Data)
         {
-            ApplyPrimaryKeyFromQuery(Data);
+            this.ApplyQueryKeys(Data, nameof(SC_IMPACTO_ECONOMICOTable.CORR_IMPACTO_ECONOMICO));
             SetUpdateAudit(Data);
 
             var resultado = await _service.DesactivarAsync(Data, Data.USUARIO_ACTU, Data.ESTACION_ACTU);
@@ -125,19 +125,6 @@ namespace SGUEES.Controllers
             if (!Data.ESTADO_IMPACTO_ECONOMICO.HasValue)
             {
                 Data.ESTADO_IMPACTO_ECONOMICO = true;
-            }
-        }
-
-        private void ApplyPrimaryKeyFromQuery(SC_IMPACTO_ECONOMICOTable Data)
-        {
-            if (Data.CORR_IMPACTO_ECONOMICO > 0)
-            {
-                return;
-            }
-
-            if (int.TryParse(Request.Query["CORR_IMPACTO_ECONOMICO"], out var corr))
-            {
-                Data.CORR_IMPACTO_ECONOMICO = corr;
             }
         }
     }

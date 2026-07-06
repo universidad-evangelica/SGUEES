@@ -1,8 +1,9 @@
 # Plantilla mtto A+P — Paginado servidor (CustomStore)
 
-**Versión:** 1.1 — julio 2026  
+**Versión:** 1.2 — julio 2026  
 **Referencia viva (piloto cerrado):** `SelectionHiring/sc-impacto-economico`  
 **Guía equipo:** [../GUIA-EQUIPO-MTTO.md](../GUIA-EQUIPO-MTTO.md)  
+**Contrato HTTP PUT/DELETE:** [mtto-api-crud-http.md](./mtto-api-crud-http.md)  
 **Cuándo:** catálogo con muchas filas, columnas de auditoría, o estado catálogo + necesidad de paginar en servidor.
 
 ---
@@ -162,6 +163,28 @@ Sin `[headerFilterLoader]`.
 
 ---
 
+## Service — columnas de auditoría
+
+Si `V_*` trae `USUARIO_*`, `FECHA_*`, `ESTACION_*`: en el grid solo **usuario y fechas**, **al final**, sin estación.
+
+```typescript
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
+
+getColumns(): any[] {
+  return [
+    { dataField: 'CORR_XXX', caption: 'Corr.', width: 100 },
+    { dataField: 'DESCRIPCION', caption: 'Descripción', width: 650 },
+    createEstadoColumnConfig('ESTADO_XXX', ESTADO_ACTIVO_INACTIVO_LABELS), // si aplica
+    ...buildAuditGridColumns({ withDateTimeFilter: true }),
+  ];
+}
+```
+
+Piloto: `sc-impacto-economico.service.ts`.
+
+---
+
 ## API — contrato GetAll
 
 | Parámetro | Uso |
@@ -197,11 +220,14 @@ Combinar con [mtto-a-plus-estado-catalogo.md](./mtto-a-plus-estado-catalogo.md).
 
 | Capa | Hacer |
 |------|-------|
-| Controller | `SetCreateAudit` / `SetUpdateAudit`, `ApplyPrimaryKeyFromQuery` en PUT, `CORR_EMPRESA` desde claim |
+| Controller | `SetCreateAudit` / `SetUpdateAudit`, `ApplyQueryKeys` en PUT/Activar/Desactivar, `Delete` con `[FromQuery]`, `CORR_EMPRESA` desde claim |
 | Service | `ValidateEmpresaSesion`, validaciones negocio, `ExistsDescripcionAsync` con `excludeCorr` en update |
 | Repository | `ReadPagedViewAsync`, `_AllowedSortFields` |
 
-SPA `update()` — PK numérica en body y query (DevExtreme puede mandar `0` en body).
+**Detalle PUT vs DELETE:** [mtto-api-crud-http.md](./mtto-api-crud-http.md)
+
+- **PUT** — body + query; `CData.Put` (SPA) + `ApplyQueryKeys` (API).
+- **DELETE** — solo query; PK desde `e.data` del grid. **No** `ApplyQueryKeys`.
 
 ---
 
@@ -213,4 +239,5 @@ SPA `update()` — PK numérica en body y query (DevExtreme puede mandar `0` en 
 - [ ] CustomStore sin filtros remotos en load
 - [ ] `guardarMtto` / `rowRemovingMtto` sin reload manual
 - [ ] API: `ReadPagedViewAsync` + whitelist sort — ver `ESTANDAR-EFRAMEWORK-PAGING.md`
-- [ ] Service SPA `update()` con PK explícita
+- [ ] CRUD HTTP: [mtto-api-crud-http.md](./mtto-api-crud-http.md) (`CData.Put` + `ApplyQueryKeys`; Delete solo query)
+- [ ] Auditoría: `buildAuditGridColumns({ withDateTimeFilter: true })` al final si aplica

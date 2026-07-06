@@ -8,6 +8,7 @@ alwaysApply: true
 Al migrar o crear pantallas, seguir **este proceso completo** (SPA + API + menú BD). No improvisar estructura distinta.
 
 **Fuente de verdad IA:** `DOCS/plantillas/` + `DOCS/PROMPT-MTTO.md` + `DOCS/ESTANDAR-MTTO.md`  
+**Contrato HTTP PUT/DELETE:** `DOCS/plantillas/mtto-api-crud-http.md`  
 **Onboarding equipo:** `DOCS/GUIA-EQUIPO-MTTO.md`  
 **Piloto vivo (solo comparar):** `gen-banco` (A+), `sc-impacto-economico` (A+P). No copiar ciego.
 
@@ -209,7 +210,20 @@ Ref. asignación: `con-catalogo-cuenta-centro-costo` — grillas vía `CON_CATAL
 
 **Tipo A+ / A+P:** `shared/mtto/` + métodos opt-in en `CBaseComponent`. Plantillas: `DOCS/plantillas/`. Prompt: `DOCS/PROMPT-MTTO.md`.
 
-Doc equipo: `DOCS/ESTANDAR-MTTO.md` — secciones **Tipo A+**, **A+P**, **Estados**, **Permisos**.
+### CRUD HTTP (todos los catálogos A+ / A+P)
+
+Ver `DOCS/plantillas/mtto-api-crud-http.md`.
+
+| Verbo | SPA | API |
+|-------|-----|-----|
+| **PUT** | Body + query — `CData.Put` fusiona PK si body trae `0` | `this.ApplyQueryKeys(Data, nameof(...PK))` en Put/Activar/Desactivar |
+| **DELETE** | Solo query — PK desde `e.data` del grid | `[FromQuery]` — **sin** `ApplyQueryKeys` |
+
+Service: `update(model, [{ Parameter: 'CORR_XXX', Value: model.CORR_XXX }])` — patrón `gen-banco`. **No** `ApplyPrimaryKeyFromQuery` privado por controller.
+
+**Auditoría en grid:** si `V_*` trae `USUARIO_*`/`FECHA_*`/`ESTACION_*` → solo usuario y fechas al **final** con `buildAuditGridColumns()`; sin `ESTACION_*` en columnas.
+
+Doc equipo: `DOCS/ESTANDAR-MTTO.md` — secciones **Tipo A+**, **A+P**, **Estados**, **Permisos**, **CRUD HTTP**, **Auditoría grid**.
 
 ---
 
@@ -260,13 +274,16 @@ Procesos: aplicar/anular/desaplicar, importar Excel, reportes, consultas, cierre
 - [ ] `(editClick)="editarClick($event)"` — sin botones edit custom
 - [ ] Sin `p-toast` local, sin `.scss` propio, sin `override notifyFx`
 - [ ] HTML: `.sguees-mtto-view` + bindings `mttoPageSize` / `mttoRemoteOperations` / `keyExpr`
+- [ ] CRUD HTTP: `mtto-api-crud-http.md` (`CData.Put` + `ApplyQueryKeys`; Delete solo query)
+- [ ] Auditoría al final: `buildAuditGridColumns()` si la vista trae campos de auditoría
 - [ ] Menú BD si pantalla nueva
 
 ### A+P) Paginado servidor
 - [ ] Plantilla `mtto-a-p-paginado.md`
 - [ ] `CustomStore` + `remoteOperations: { paging: true, sorting: true, filtering: false }`
 - [ ] `getMttoDataGrid()` con `@ViewChild(DataGridMttoComponent)`
-- [ ] API `OFFSET/FETCH` (patrón `SC_IMPACTO_ECONOMICORepository`) si es catálogo nuevo A+P
+- [ ] API `ReadPagedViewAsync` + `_AllowedSortFields` (no SQL crudo ni paginación en memoria)
+- [ ] CRUD HTTP: `mtto-api-crud-http.md`
 
 ### A) Básico (legacy)
 - [ ] `CBaseComponent` + 4 regiones + `ngOnInit` trio

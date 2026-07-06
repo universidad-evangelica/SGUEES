@@ -1,7 +1,8 @@
 # Plantilla mtto A+ — Catálogo simple en memoria
 
-**Versión:** 1.0 — junio 2026  
+**Versión:** 1.2 — julio 2026  
 **Referencia viva:** `General/gen-banco`  
+**Contrato HTTP:** [mtto-api-crud-http.md](./mtto-api-crud-http.md)  
 **Cuándo:** catálogo &lt; ~500 filas por empresa, sin activar/desactivar, sin auditoría pesada en grid.
 
 ---
@@ -125,6 +126,42 @@ export class GenXxxComponent extends CBaseComponent implements OnInit {
 
 ---
 
+## Service — update / delete (estándar HTTP)
+
+Ver [mtto-api-crud-http.md](./mtto-api-crud-http.md).
+
+```typescript
+update(model: any): Observable<IResult> {
+  return this.repo.update(model, [{ Parameter: 'CORR_XXX', Value: model.CORR_XXX }]);
+}
+
+delete(param: any): Observable<IResult> {
+  return this.repo.delete([{ Parameter: 'CORR_XXX', Value: param.CORR_XXX }]);
+}
+```
+
+**API controller:** `ApplyQueryKeys` en `Put`; `Delete` con `[FromQuery]` solamente.
+
+---
+
+## Service — columnas de auditoría (si la vista las trae)
+
+Solo **usuario y fechas** al **final** del grid. **No** `ESTACION_CREA` / `ESTACION_ACTU`. No incluir auditoría en `getItems()` del formulario.
+
+```typescript
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+
+getColumns(): any[] {
+  return [
+    { dataField: 'CORR_XXX', caption: 'Corr.', width: 85 },
+    { dataField: 'DESCRIPCION', caption: 'Descripción', width: 300 },
+    ...buildAuditGridColumns(),
+  ];
+}
+```
+
+---
+
 ## Prohibido
 
 - `p-toast` local, `.scss` propio (salvo excepción documentada)
@@ -144,3 +181,5 @@ export class GenXxxComponent extends CBaseComponent implements OnInit {
 - [ ] `(editClick)="editarClick($event)"`
 - [ ] 4 regiones TS
 - [ ] Routing con `exports: [RouterModule]`
+- [ ] PUT/DELETE según [mtto-api-crud-http.md](./mtto-api-crud-http.md)
+- [ ] Auditoría al final con `buildAuditGridColumns()` si aplica

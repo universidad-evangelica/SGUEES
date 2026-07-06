@@ -1,6 +1,7 @@
 import dxSelectBox from 'devextreme/ui/select_box';
 
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
+import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
 
 export function patchMttoArrayModels(models: unknown[], data: Record<string, unknown>, isAdd: boolean, keyField: string): void {
 	if (!Array.isArray(models) || !data || !keyField) {
@@ -69,6 +70,37 @@ export function removeMttoRemoteGrid(
 
 	store.push([{ type: 'remove', key: keyValue }]);
 	return true;
+}
+
+export interface AuditGridColumnOptions {
+	/** A+P: filter row datetime en cliente (recomendado). */
+	withDateTimeFilter?: boolean;
+	usuarioWidth?: number;
+	fechaWidth?: number;
+}
+
+/** Columnas estándar de auditoría para grid mtto — al final de getColumns(). Sin ESTACION_*. */
+export function buildAuditGridColumns(options: AuditGridColumnOptions = {}): Record<string, unknown>[] {
+	const usuarioWidth = options.usuarioWidth ?? 160;
+	const fechaWidth = options.fechaWidth ?? 180;
+
+	const fechaColumn = (dataField: string, caption: string): Record<string, unknown> => ({
+		dataField,
+		caption,
+		width: fechaWidth,
+		dataType: 'datetime',
+		format: 'dd/MM/yyyy HH:mm',
+		...(options.withDateTimeFilter
+			? { calculateFilterExpression: createDateTimeFilterExpression(dataField) }
+			: {}),
+	});
+
+	return [
+		{ dataField: 'USUARIO_CREA', caption: 'Usuario crea', width: usuarioWidth },
+		fechaColumn('FECHA_CREA', 'Fecha crea'),
+		{ dataField: 'USUARIO_ACTU', caption: 'Usuario actu', width: usuarioWidth },
+		fechaColumn('FECHA_ACTU', 'Fecha actu'),
+	];
 }
 
 export interface EstadoColumnOptions {

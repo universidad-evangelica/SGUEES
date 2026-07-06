@@ -1,7 +1,8 @@
 # Plantilla mtto — Estado catálogo (activo/inactivo)
 
-**Versión:** 1.1 — julio 2026  
+**Versión:** 1.2 — julio 2026  
 **Extiende:** [mtto-a-plus.md](./mtto-a-plus.md) o [mtto-a-p-paginado.md](./mtto-a-p-paginado.md)  
+**Contrato HTTP:** [mtto-api-crud-http.md](./mtto-api-crud-http.md)  
 **Referencia viva (piloto cerrado):** `SelectionHiring/sc-impacto-economico`  
 **Guía equipo:** [../GUIA-EQUIPO-MTTO.md](../GUIA-EQUIPO-MTTO.md)
 
@@ -35,6 +36,10 @@ Incluir en tabla y vista `V_*`.
 
 Permisos: mismos del mantenimiento (`|U` para activar/desactivar).
 
+En **Put**, **Activar** y **Desactivar**: `this.ApplyQueryKeys(Data, nameof(...CORR_XXX))` — ver [mtto-api-crud-http.md](./mtto-api-crud-http.md).
+
+**Delete** no usa `ApplyQueryKeys` — solo `[FromQuery]`.
+
 ---
 
 ## Service — columna grid (badge verde/rojo)
@@ -49,7 +54,7 @@ getColumns(): any[] {
     { dataField: 'CORR_XXX', caption: 'Corr.', width: 85 },
     { dataField: 'DESCRIPCION', caption: 'Descripción', width: 300 },
     createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
-    // columnas auditoría opcionales...
+    // columnas auditoría al final — ver buildAuditGridColumns()
   ];
 }
 ```
@@ -131,7 +136,7 @@ HTML grid:
 
 - [ ] Campo `bit` en BD y vista
 - [ ] `createEstadoColumnConfig` en `getColumns()`
-- [ ] API `Activar` / `Desactivar`
+- [ ] API `Activar` / `Desactivar` + `ApplyQueryKeys` en Put/Activar/Desactivar
 - [ ] `showEstadoToolbar` + `campoEstado` en grid (sin `customButtons` por fila)
 - [ ] `(focusedRowChanged)` enlazado al padre
 - [ ] `obtenerFilaSeleccionada()` antes de confirmar

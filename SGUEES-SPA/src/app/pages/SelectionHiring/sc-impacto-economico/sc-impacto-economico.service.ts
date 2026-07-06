@@ -41,9 +41,9 @@ export class ScImpactoEconomicoService {
 	}
 
 	update(model: any): Observable<IResult> {
-		const corr = Number(model?.CORR_IMPACTO_ECONOMICO ?? 0);
-		const payload = { ...model, CORR_IMPACTO_ECONOMICO: corr };
-		return this.repo.update(payload, [{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: corr }]);
+		return this.repo.update(model, [
+			{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO },
+		]);
 	}
 
 	delete(model: any): Observable<IResult> {
@@ -67,10 +67,9 @@ export class ScImpactoEconomicoService {
 				dataType: 'number',
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
-			{ dataField: 'DESCRIPCION', caption: 'Descripcion', width: 300 },
+			{ dataField: 'DESCRIPCION', caption: 'Descripcion', width: 650 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
-			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
 			{
 				dataField: 'FECHA_CREA',
 				caption: 'Fecha Crea',
@@ -80,7 +79,6 @@ export class ScImpactoEconomicoService {
 				calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA'),
 			},
 			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
-			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
 			{
 				dataField: 'FECHA_ACTU',
 				caption: 'Fecha Actu',

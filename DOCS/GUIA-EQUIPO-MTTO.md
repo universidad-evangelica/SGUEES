@@ -1,7 +1,7 @@
-# Guía para el equipo — Mantenimientos SGUEES v1.1
+# Guía para el equipo — Mantenimientos SGUEES v1.2
 
 **Audiencia:** programadores que crean o migran pantallas de catálogo.  
-**Versión:** 1.1 — julio 2026  
+**Versión:** 1.2 — julio 2026  
 **PDF resumido (reunión / correo):** [GUIA-EQUIPO-MTTO-RESUMEN.pdf](./GUIA-EQUIPO-MTTO-RESUMEN.pdf)  
 **Documento maestro:** [ESTANDAR-MTTO.md](./ESTANDAR-MTTO.md)
 
@@ -28,6 +28,7 @@ Unificar cómo hacemos mantenimientos (mtto) en SGUEES para que:
 | 1 | **Este archivo** | Onboarding y explicación al equipo |
 | 2 | [ESTANDAR-MTTO.md](./ESTANDAR-MTTO.md) | Reglas completas (permisos, menú, UTF-8, tipos) |
 | 3 | [plantillas/README.md](./plantillas/README.md) | Índice de plantillas congeladas |
+| 3b | [plantillas/mtto-api-crud-http.md](./plantillas/mtto-api-crud-http.md) | Contrato PUT (body+query) y DELETE (solo query) |
 | 4 | Plantilla según tipo | Código esqueleto copy-paste |
 | 5 | [CHECKLIST-PR-MTTO.md](./CHECKLIST-PR-MTTO.md) | Antes de abrir PR |
 | 6 | [PROMPT-MTTO.md](./PROMPT-MTTO.md) | Texto para pedir pantallas a Cursor |
@@ -196,19 +197,40 @@ Detalle técnico: [ESTANDAR-EFRAMEWORK-PAGING.md](./ESTANDAR-EFRAMEWORK-PAGING.m
 
 | Capa | Responsabilidad |
 |------|-----------------|
-| **Controller** | `[Authorize]`, auditoría (`SetCreateAudit` / `SetUpdateAudit`), `ApplyPrimaryKeyFromQuery` en PUT, claims (`CORR_EMPRESA`) |
+| **Controller** | `[Authorize]`, auditoría (`SetCreateAudit` / `SetUpdateAudit`), `ApplyQueryKeys` en PUT/Activar/Desactivar, `Delete` con `[FromQuery]`, claims (`CORR_EMPRESA`) |
 | **Service** | Validaciones de negocio, `ValidateEmpresaSesion`, duplicados (`ExistsDescripcionAsync` con `excludeCorr` en update) |
 | **Repository** | `ReadPagedViewAsync`, whitelist `_AllowedSortFields`, SQL de negocio mínimo |
 
-### SPA service — update con PK
+### SPA + API — contrato HTTP (PUT / DELETE)
 
-DevExtreme puede enviar la PK en query y `0` en el body. El service debe forzar la PK:
+Ver [mtto-api-crud-http.md](./plantillas/mtto-api-crud-http.md).
+
+| Verbo | SPA | API |
+|-------|-----|-----|
+| **PUT** | Body + query (`CData.Put` fusiona PK si body trae `0`) | `this.ApplyQueryKeys(Data, nameof(...PK))` |
+| **DELETE** | Solo query (`CData.Delete`) | `[FromQuery]` — PK desde fila del grid |
+
+### Grid — columnas de auditoría
+
+Si la vista trae campos de auditoría:
+
+| Mostrar (al final) | No mostrar |
+|--------------------|------------|
+| `USUARIO_CREA`, `FECHA_CREA`, `USUARIO_ACTU`, `FECHA_ACTU` | `ESTACION_CREA`, `ESTACION_ACTU` |
+
+Usar `buildAuditGridColumns()` de `shared/mtto/mtto-grid.helpers.ts`. Campos de negocio (PK, descripción, estado) van **antes**.
+
+### SPA service — update (patrón gen-banco)
+
+**No** duplicar lógica de PK en cada service — `CData.Put` fusiona `xWhere` al body si el campo viene en `0`:
 
 ```typescript
 update(model: any): Observable<IResult> {
-  const corr = Number(model?.CORR_IMPACTO_ECONOMICO ?? 0);
-  const payload = { ...model, CORR_IMPACTO_ECONOMICO: corr };
-  return this.repo.update(payload, [{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: corr }]);
+  return this.repo.update(model, [{ Parameter: 'CORR_XXX', Value: model.CORR_XXX }]);
+}
+
+delete(param: any): Observable<IResult> {
+  return this.repo.delete([{ Parameter: 'CORR_XXX', Value: param.CORR_XXX }]);
 }
 ```
 
@@ -223,7 +245,7 @@ Para catálogos con campo `bit` (ej. `ESTADO_IMPACTO_ECONOMICO`):
 | BD | Campo `bit`, default activo, en vista `V_*` |
 | Grid | Badge verde/rojo con `createEstadoColumnConfig` — **sin** botones por fila |
 | Toolbar | `[showEstadoToolbar]="true"` + Activar/Desactivar sobre fila seleccionada |
-| API | `Put Activar` / `Put Desactivar` con permiso `\|U` |
+| API | `Put Activar` / `Put Desactivar` con permiso `\|U` + `ApplyQueryKeys` |
 
 Plantilla completa: [mtto-a-plus-estado-catalogo.md](./plantillas/mtto-a-plus-estado-catalogo.md).
 
@@ -334,7 +356,8 @@ Para agrupar datos masivos, usar reportes o pantallas de consulta dedicadas.
 | `consultar()` después de cada guardar | `guardarMtto` — parche local |
 | Copiar 1.100 líneas del repo legacy impacto | `ReadPagedViewAsync` (~300 líneas) |
 | `ExistsDescripcion` sin excluir PK en update | `excludeCorr` con PK del registro |
-| PK `0` en body del PUT | `ApplyPrimaryKeyFromQuery` + service SPA con PK explícita |
+| PK `0` en body del PUT | `CData.Put` (SPA) + `ApplyQueryKeys` (API) — ver `mtto-api-crud-http.md` |
+| DELETE con body | Solo query — PK desde `e.data`; `[FromQuery]` en API |
 | `getLookUp` para llenar grillas completas | `objData.Get` en repository |
 | Permiso del catálogo origen en cross-tabla | Permiso del consumidor |
 | `p-toast` local / `override notifyFx` | Shell global |

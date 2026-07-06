@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import CustomStore from 'devextreme/data/custom_store';
+import { PagerPageSize } from 'devextreme/common/grids';
 import { lastValueFrom } from 'rxjs';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
@@ -22,6 +23,8 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 
 	protected override etiquetaRegistro = 'el impacto económico';
 	protected override requiereEmpresaSesion = true;
+	//protected override mttoPageSize = 6;
+	//protected override mttoPageSizes: (number | PagerPageSize)[] = [5, 6, 10, 15,20, 'all'];
 	protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
 	protected override mttoGridKeyExpr = 'CORR_IMPACTO_ECONOMICO';
 	protected override mttoCampoEstado = ESTADO_FIELD;

@@ -1,6 +1,6 @@
 # Plantillas congeladas — Mantenimientos SGUEES
 
-**Versión del paquete:** 1.1 — julio 2026
+**Versión del paquete:** 1.2 — julio 2026
 
 Estas plantillas son la **fuente de verdad para IA y programadores** al crear o migrar pantallas.  
 **No copiar línea por línea** `gen-banco` ni `sc-impacto-economico` en código vivo: esas pantallas son **piloto** y pueden cambiar.
@@ -12,6 +12,7 @@ Estas plantillas son la **fuente de verdad para IA y programadores** al crear o 
 | [mtto-a-plus.md](./mtto-a-plus.md) | Catálogo simple, datos en memoria, paginado cliente |
 | [mtto-a-plus-estado-catalogo.md](./mtto-a-plus-estado-catalogo.md) | Catálogo activo/inactivo — toolbar v1.1 + badge verde/rojo |
 | [mtto-a-p-paginado.md](./mtto-a-p-paginado.md) | Catálogo grande, paginado servidor, auditoría en grid |
+| [mtto-api-crud-http.md](./mtto-api-crud-http.md) | **PUT/DELETE** — `CData.Put` + `ApplyQueryKeys` (todos los mttos) |
 | [mtto-estado-transaccional.md](./mtto-estado-transaccional.md) | Documentos/partidas — estado `varchar`, flujo propio |
 
 **Documento maestro:** [../ESTANDAR-MTTO.md](../ESTANDAR-MTTO.md)  

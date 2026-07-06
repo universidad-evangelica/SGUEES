@@ -175,6 +175,52 @@ Registrar la ruta en el `*-routing.module.ts` del módulo padre (ej. `accounting
 
 ---
 
+## API — contrato HTTP CRUD (PUT / DELETE)
+
+Patrón estándar para todos los mttos catálogo. **Documento completo:** [plantillas/mtto-api-crud-http.md](./plantillas/mtto-api-crud-http.md)
+
+| Verbo | SPA | API |
+|-------|-----|-----|
+| **PUT** (update, Activar, Desactivar) | Body + query (`CData.Put` fusiona PK si body trae `0`) | `this.ApplyQueryKeys(Data, nameof(...PK))` |
+| **DELETE** | Solo query (`CData.Delete`) | `[FromQuery]` — PK desde fila del grid |
+
+**Prohibido:** `ApplyPrimaryKeyFromQuery` privado por controller.
+
+**Helpers:** `SGUEES-SPA/.../FxAPI/CData.ts` · `SGUEES-API/.../Shared/MttoControllerExtensions.cs`
+
+---
+
+## Grid — columnas de auditoría
+
+Si la vista `V_*` (o el modelo) trae campos de auditoría estándar (`USUARIO_*`, `FECHA_*`, `ESTACION_*`):
+
+| Regla | Detalle |
+|-------|---------|
+| **Mostrar en grid** | Solo `USUARIO_CREA`, `FECHA_CREA`, `USUARIO_ACTU`, `FECHA_ACTU` |
+| **No mostrar** | `ESTACION_CREA`, `ESTACION_ACTU` (y cualquier otro campo técnico de estación) |
+| **Orden** | Campos de negocio primero (PK, descripción, estado, lookups); **auditoría al final** |
+| **Formato fechas** | `dataType: 'datetime'`, `format: 'dd/MM/yyyy HH:mm'` |
+| **Formulario** | No incluir auditoría en `getItems()` de alta/edición (la API la asigna) |
+
+Helper SPA (mismo orden y captions):
+
+```typescript
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+
+getColumns(): any[] {
+  return [
+    { dataField: 'CORR_XXX', caption: 'Corr.', width: 85 },
+    { dataField: 'DESCRIPCION', caption: 'Descripción', width: 300 },
+    // ... estado, lookups, etc.
+    ...buildAuditGridColumns({ withDateTimeFilter: true }), // true en A+P
+  ];
+}
+```
+
+Referencia: `sc-impacto-economico.service.ts` → `getColumns()`.
+
+---
+
 ## TypeScript — estructura obligatoria
 
 Extender **`CBaseComponent`**. Usar **4 regiones**:
@@ -609,6 +655,7 @@ El revisor debe rechazar si faltan ítems obligatorios del tipo A, B o C aplicab
 |-----------|---------|
 | **Guía equipo (reunión / onboarding)** | `DOCS/GUIA-EQUIPO-MTTO.md` |
 | **Plantillas IA (congeladas)** | `DOCS/plantillas/` |
+| **Contrato HTTP PUT/DELETE** | `DOCS/plantillas/mtto-api-crud-http.md` |
 | **Prompt crear mtto** | `DOCS/PROMPT-MTTO.md` |
 | Mtto A+ | `plantillas/mtto-a-plus.md` + `General/gen-banco` |
 | Mtto A+P API | [ESTANDAR-EFRAMEWORK-PAGING.md](./ESTANDAR-EFRAMEWORK-PAGING.md) |
@@ -632,4 +679,4 @@ El revisor debe rechazar si faltan ítems obligatorios del tipo A, B o C aplicab
 
 ---
 
-*Última actualización: julio 2026 — STI / UEES — v1.1 (A+, A+P, plantillas, estados, guía equipo)*
+*Última actualización: julio 2026 — STI / UEES — v1.2 (A+, A+P, CRUD HTTP, auditoría grid, plantillas)*

@@ -8,6 +8,6 @@ namespace SGUEES.Repositories
 {
     public interface ISC_IMPACTO_ECONOMICORepository : IRepository<SC_IMPACTO_ECONOMICOTable>
     {
-        Task<bool> ExistsDescripcionAsync(int corrEmpresa, string descripcion, int excludeCorr);
+
     }
 }

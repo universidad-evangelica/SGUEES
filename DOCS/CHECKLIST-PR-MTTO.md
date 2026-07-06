@@ -79,8 +79,7 @@ Copiar en la descripción del Pull Request o usar como guía de revisión.
 - [ ] `bloquear` / `habilitar` / `setFocus`
 
 - [ ] Sin `[columnAutoWidth]="true"` en grid principal
-
-
+- [ ] Auditoría en grid (si la vista trae campos): usuario/fechas al final; sin `ESTACION_*`
 
 ---
 
@@ -192,6 +191,7 @@ Copiar en la descripción del Pull Request o usar como guía de revisión.
 - [ ] Bindings: `[pageSize]="mttoPageSize"` `[allowedPageSizes]="mttoPageSizes"` `[keyExpr]="mttoGridKeyExpr"`
 - [ ] Sin `p-toast` local, sin `.scss` propio, sin `override notifyFx`
 - [ ] Sin `[columnAutoWidth]="true"` en grid principal
+- [ ] Auditoría: solo `USUARIO_*` + `FECHA_*` al final del grid; sin `ESTACION_*` (ver `ESTANDAR-MTTO.md`)
 
 ---
 
@@ -203,8 +203,8 @@ Copiar en la descripción del Pull Request o usar como guía de revisión.
 - [ ] `@ViewChild(DataGridMttoComponent)` + `getMttoDataGrid()` implementado
 - [ ] `fillParam` incluye `PAGE`, `PAGE_SIZE`, `SORT_FIELD`, `SORT_DESC`
 - [ ] API: `ReadPagedViewAsync` + `_AllowedSortFields` — ver `ESTANDAR-EFRAMEWORK-PAGING.md`
-- [ ] **No** SQL `OFFSET/FETCH` manual ni `Skip`/`Take` en memoria
-- [ ] Service `update()` con PK explícita en body + query
+- [ ] CRUD HTTP: [mtto-api-crud-http.md](./plantillas/mtto-api-crud-http.md) — `CData.Put` + `ApplyQueryKeys` en PUT; Delete solo `[FromQuery]`
+- [ ] Auditoría: `buildAuditGridColumns({ withDateTimeFilter: true })` al final de `getColumns()` si la vista trae auditoría
 - [ ] `guardarMtto` / `rowRemovingMtto` parchean grid sin reload completo
 
 ---
@@ -213,7 +213,7 @@ Copiar en la descripción del Pull Request o usar como guía de revisión.
 
 - [ ] Campo `bit` en BD y vista `V_*`
 - [ ] `createEstadoColumnConfig` en `getColumns()` — badge verde/rojo
-- [ ] API `Put Activar` / `Put Desactivar` con permiso `|U`
+- [ ] API `Put Activar` / `Put Desactivar` con permiso `|U` + `ApplyQueryKeys`
 - [ ] `[showEstadoToolbar]="true"` + `[campoEstado]` en grid
 - [ ] `(activarEstado)` / `(desactivarEstado)` + `(focusedRowChanged)` enlazados
 - [ ] **Sin** `buildEstadoActionButtons` por fila (legacy deprecado)

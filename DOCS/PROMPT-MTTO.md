@@ -1,6 +1,6 @@
 # Prompt — Crear o migrar mantenimiento SGUEES
 
-**Versión:** 1.1 — julio 2026
+**Versión:** 1.2 — julio 2026
 
 Usar este texto al pedir a Cursor (o a un programador) una pantalla nueva o migración.  
 **Onboarding equipo:** [GUIA-EQUIPO-MTTO.md](./GUIA-EQUIPO-MTTO.md)
@@ -28,6 +28,11 @@ Usar este texto al pedir a Cursor (o a un programador) una pantalla nueva o migr
 11. **A+P API:** `ReadPagedViewAsync` — no SQL crudo ni paginación en memoria C#.
 12. **Estado catálogo:** toolbar `showEstadoToolbar` — no botones por fila.
 13. **No** panel de agrupación ni filtros remotos en grid padre (fuera de alcance v1.1).
+14. **CRUD HTTP** — leer `plantillas/mtto-api-crud-http.md`:
+    - **PUT** (update, Activar, Desactivar): body + query; service con `xWhere` PK; API `ApplyQueryKeys`.
+    - **DELETE**: solo query (`[FromQuery]`); PK desde `e.data` del grid; **sin** `ApplyQueryKeys`.
+    - **No** métodos privados `ApplyPrimaryKeyFromQuery` por controller.
+15. **Auditoría en grid:** si la vista trae `USUARIO_*` / `FECHA_*` / `ESTACION_*`, mostrar solo usuario y fechas (`USUARIO_CREA`, `FECHA_CREA`, `USUARIO_ACTU`, `FECHA_ACTU`) **al final** de `getColumns()`; **no** `ESTACION_*`. Usar `buildAuditGridColumns()` de `shared/mtto/mtto-grid.helpers.ts`.
 
 ---
 
@@ -38,6 +43,7 @@ Usar este texto al pedir a Cursor (o a un programador) una pantalla nueva o migr
 | Catálogo simple, pocas filas, sin activar/desactivar | `plantillas/mtto-a-plus.md` |
 | Catálogo + activo/inactivo (`bit`) | `mtto-a-plus.md` + `mtto-a-plus-estado-catalogo.md` |
 | Catálogo grande / auditoría en grid / paginado servidor | `mtto-a-p-paginado.md` (+ estado catálogo si aplica) |
+| Contrato PUT/DELETE (todos los catálogos) | `plantillas/mtto-api-crud-http.md` |
 | Form con combos `getLookUp` | A+ o A+P + sección lookup en `ESTANDAR-MTTO.md` |
 | Encabezado + detalle | Tipo C — `con-partida` / `com-documento` |
 | Documento con estados DI/AP/AN | `mtto-estado-transaccional.md` — **no** patrón bit |
@@ -77,6 +83,8 @@ Usar este texto al pedir a Cursor (o a un programador) una pantalla nueva o migr
 ## Checklist final
 
 - [ ] Plantilla correcta aplicada
+- [ ] CRUD HTTP: [plantillas/mtto-api-crud-http.md](./plantillas/mtto-api-crud-http.md) (`CData.Put` + `ApplyQueryKeys`; Delete solo query)
+- [ ] Auditoría en grid: solo usuario/fechas al final; `buildAuditGridColumns()` si aplica
 - [ ] `docs/CHECKLIST-PR-MTTO.md` del tipo correspondiente
 - [ ] Compila SPA + API
 - [ ] Menú BD si es pantalla nueva
