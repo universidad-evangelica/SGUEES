@@ -47,5 +47,10 @@ namespace sguees.Services
 		{
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
+
+		public async Task<CResult> GetMonedasAsync(int corrEmpresa)
+		{
+			return await _repo.GetMonedasAsync(corrEmpresa);
+		}
 	}
 }

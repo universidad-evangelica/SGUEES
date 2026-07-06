@@ -2,12 +2,11 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { take } from 'rxjs/operators';
 import ExcelJS from 'exceljs';
+import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
-import { ConClasePartidaService } from '../con-clase-partida/con-clase-partida.service';
-import { ConCentroCostoService } from '../con-centro-costo/con-centro-costo.service';
 import { ConCentroCosto } from '../con-centro-costo/models/con-centro-costo';
 import { ConPartidaImportRow } from './models/con-partida-importar-excel';
 import { ConPartidaImportarExcelService } from './con-partida-importar-excel.service';
@@ -33,9 +32,7 @@ export class ConPartidaImportarExcelComponent extends CBaseComponent implements 
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private routerNavigate: Router,
-		private service: ConPartidaImportarExcelService,
-		private clasePartidaService: ConClasePartidaService,
-		private centroCostoService: ConCentroCostoService
+		private service: ConPartidaImportarExcelService
 	) {
 		super(appInfoService, router);
 		this.previewColumns = this.service.getPreviewColumns();
@@ -51,16 +48,13 @@ export class ConPartidaImportarExcelComponent extends CBaseComponent implements 
 	}
 
 	llenaComboBox() {
-		this.clasePartidaService
-			.getAll({ CORR_CLASE_PARTIDA: 0 })
+		this.appInfoService
+			.getLookUp('CON_PARTIDA', 'CON_CLASE_PARTIDA', 'GetCORR_CLASE_PARTIDA', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
-						this.mCORR_CLASE_PARTIDA = (response.Data || []).map((item: any) => ({
-							Key: item.CORR_CLASE_PARTIDA,
-							Value: `${item.CORR_CLASE_PARTIDA} - ${item.NOMBRE_CLASE_PARTIDA}`,
-						}));
+						this.mCORR_CLASE_PARTIDA = response.Data;
 					}
 				},
 				error: (error: any) => {
@@ -70,8 +64,8 @@ export class ConPartidaImportarExcelComponent extends CBaseComponent implements 
 	}
 
 	cargarCentrosCosto() {
-		this.centroCostoService
-			.getAll({ CORR_CENTRO_COSTO: 0 })
+		this.appInfoService
+			.getLookUp('CON_PARTIDA', 'CON_CENTRO_COSTO', 'GetCORR_CENTRO_COSTO', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -85,7 +79,7 @@ export class ConPartidaImportarExcelComponent extends CBaseComponent implements 
 			});
 	}
 
-	selectedClasePartida = (vRow: any): any => vRow[0].Key;
+	selectedClasePartida = (vRow: any): any => vRow[0].CORR_CLASE_PARTIDA;
 
 	canImportar(): boolean {
 		return this.corrClasePartida > 0 && this.previewRows.length > 0;

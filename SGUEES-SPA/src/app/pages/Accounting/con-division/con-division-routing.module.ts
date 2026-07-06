@@ -32,6 +32,7 @@ const routes: Routes = [{ path: '', component: ConDivisionComponent }];
 		DataLookupModule,
 		BarraDataMttoModule,
 	],
+	exports: [RouterModule],
 	declarations: [ConDivisionComponent],
 })
 export class ConDivisionRoutingModule {}

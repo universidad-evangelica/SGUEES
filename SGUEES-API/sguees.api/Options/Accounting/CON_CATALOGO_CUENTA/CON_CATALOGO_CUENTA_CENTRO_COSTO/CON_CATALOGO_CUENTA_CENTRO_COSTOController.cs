@@ -17,46 +17,15 @@ namespace sguees.Controllers
 	{
 		private const string PolicyBase = "/con-catalogo-cuenta-centro-costo";
 		private readonly ICON_CATALOGO_CUENTA_CENTRO_COSTOService _service;
-		private readonly ICON_CATALOGO_CUENTAService _catalogoService;
-		private readonly ICON_CENTRO_COSTOService _centroService;
 
-		public CON_CATALOGO_CUENTA_CENTRO_COSTOController(
-			ICON_CATALOGO_CUENTA_CENTRO_COSTOService service,
-			ICON_CATALOGO_CUENTAService catalogoService,
-			ICON_CENTRO_COSTOService centroService)
+		public CON_CATALOGO_CUENTA_CENTRO_COSTOController(ICON_CATALOGO_CUENTA_CENTRO_COSTOService service)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(service));
-			_catalogoService = catalogoService ?? throw new ArgumentNullException(nameof(catalogoService));
-			_centroService = centroService ?? throw new ArgumentNullException(nameof(centroService));
 		}
 
 		private int GetCorrEmpresa()
 		{
 			return int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-		}
-
-		[HttpGet("GetCatalogoCuentas")]
-		[Authorize(Policy = PolicyBase + "|R")]
-		public async Task<CResult> GetCatalogoCuentas()
-		{
-			var param = new CON_CATALOGO_CUENTAParam
-			{
-				CORR_EMPRESA = GetCorrEmpresa(),
-				CUENTA_CONTABLE = string.Empty,
-			};
-			return await _catalogoService.GetAllAsync(param);
-		}
-
-		[HttpGet("GetCentrosCosto")]
-		[Authorize(Policy = PolicyBase + "|R")]
-		public async Task<CResult> GetCentrosCosto()
-		{
-			var param = new CON_CENTRO_COSTOParam
-			{
-				CORR_EMPRESA = GetCorrEmpresa(),
-				CORR_CENTRO_COSTO = 0,
-			};
-			return await _centroService.GetAllAsync(param);
 		}
 
 		[HttpGet("GetAll")]

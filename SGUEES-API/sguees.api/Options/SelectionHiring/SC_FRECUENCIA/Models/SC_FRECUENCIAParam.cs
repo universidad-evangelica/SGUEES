@@ -18,5 +18,12 @@ namespace SGUEES.Models
         public int PAGE { get; set; } = 1;
         public int PAGE_SIZE { get; set; } = 10;
         public int OPCION_CONSULTA { get; set; } = 0;
+        public string DISTINCT_FIELD { get; set; }
+        public string HEADER_FILTER_SEARCH { get; set; }
+        public string COLUMN_ANYOF_JSON { get; set; }
+        public string FILTER_ROW_JSON { get; set; }
+        public string COLUMN_EXACT_JSON { get; set; }
+        public string SORT_FIELD { get; set; }
+        public bool? SORT_DESC { get; set; }
     }
 }

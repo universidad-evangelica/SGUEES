@@ -32,6 +32,7 @@ const routes: Routes = [{ path: '', component: ConSeccionComponent }];
 		DataLookupModule,
 		BarraDataMttoModule,
 	],
+	exports: [RouterModule],
 	declarations: [ConSeccionComponent],
 })
 export class ConSeccionRoutingModule {}

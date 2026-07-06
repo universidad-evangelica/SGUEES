@@ -1,0 +1,16 @@
+CREATE TABLE [dbo].[GEN_PAIS] (
+  [CORR_PAIS] [int] NOT NULL,
+  [NOMBRE_PAIS] [varchar](100) NULL,
+  [CODIGO_PAIS] [varchar](10) NULL,
+  [NACIONALIDAD] [varchar](50) NULL,
+  [NOMBRE_CORTO] [varchar](5) NULL,
+  [USUARIO_CREA] [varchar](50) NULL,
+  [ESTACION_CREA] [varchar](50) NULL,
+  [FECHA_CREA] [datetime] NULL,
+  [USUARIO_ACTU] [varchar](50) NULL,
+  [ESTACION_ACTU] [varchar](50) NULL,
+  [FECHA_ACTU] [datetime] NULL,
+  CONSTRAINT [PK_GEN_PAIS] PRIMARY KEY CLUSTERED ([CORR_PAIS])
+)
+ON [PRIMARY]
+GO

@@ -39,6 +39,18 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 	mCORR_AREA_FUNCIONAL: any;
 	readOnly = false;
 	presupuestos: ConCentroCostoPresupuesto[] = [];
+	tipoCentroCostoLookupColumns: any[] = [
+		{ dataField: 'CORR_TIPO_CENTRO_COSTO', caption: 'Código', width: 80 },
+		{ dataField: 'NOMBRE_TIPO_CENTRO_COSTO', caption: 'Tipo centro costo', width: 280 },
+	];
+	unidadNegocioLookupColumns: any[] = [
+		{ dataField: 'CORR_UNIDAD_NEGOCIO', caption: 'Código', width: 80 },
+		{ dataField: 'NOMBRE_UNIDAD_NEGOCIO', caption: 'Unidad negocio', width: 280 },
+	];
+	areaFuncionalLookupColumns: any[] = [
+		{ dataField: 'CORR_AREA_FUNCIONAL', caption: 'Código', width: 80 },
+		{ dataField: 'NOMBRE_AREA_FUNCIONAL', caption: 'Área funcional', width: 280 },
+	];
 	// #endregion
 
 	//#region <Inicializando Opciones>
@@ -61,7 +73,7 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 	getCORR_TIPO_CENTRO_COSTO() {
 		this.appInfoService
-			.getLookUp('CON_CENTRO_COSTO', 'CON_LISTA', 'GetCORR_TIPO_CENTRO_COSTO', undefined, environment.UrlCONTAAPI)
+			.getLookUp('CON_CENTRO_COSTO', 'CON_TIPO_CENTRO_COSTO', 'GetCORR_TIPO_CENTRO_COSTO', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -91,7 +103,7 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 	}
 	getCORR_UNIDAD_NEGOCIO() {
 		this.appInfoService
-			.getLookUp('CON_CENTRO_COSTO', 'CON_LISTA', 'GetCORR_UNIDAD_NEGOCIO', undefined, environment.UrlCONTAAPI)
+			.getLookUp('CON_CENTRO_COSTO', 'CON_UNIDAD_NEGOCIO', 'GetCORR_UNIDAD_NEGOCIO', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -106,7 +118,7 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 	}
 	getCORR_AREA_FUNCIONAL() {
 		this.appInfoService
-			.getLookUp('CON_CENTRO_COSTO', 'CON_LISTA', 'GetCORR_AREA_FUNCIONAL', undefined, environment.UrlCONTAAPI)
+			.getLookUp('CON_CENTRO_COSTO', 'CON_AREA_FUNCIONAL', 'GetCORR_AREA_FUNCIONAL', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -409,5 +421,17 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 	selectedLookUpLista(vRow: any): any {
 		return vRow[0].Key;
+	}
+
+	selectedLookUpCORR_TIPO_CENTRO_COSTO(vRow: any): any {
+		return vRow[0].CORR_TIPO_CENTRO_COSTO;
+	}
+
+	selectedLookUpCORR_UNIDAD_NEGOCIO(vRow: any): any {
+		return vRow[0].CORR_UNIDAD_NEGOCIO;
+	}
+
+	selectedLookUpCORR_AREA_FUNCIONAL(vRow: any): any {
+		return vRow[0].CORR_AREA_FUNCIONAL;
 	}
 }

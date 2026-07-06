@@ -1,11 +1,14 @@
 import { Injectable } from '@angular/core';
-import dxSelectBox from 'devextreme/ui/select_box';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildRemoteGridWhere, createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
+import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
 import { PlaTipoPuesto } from './models/pla-tipo-puesto';
 import { PlaTipoPuestoRepository } from './pla-tipo-puesto.repository';
+
+const ESTADO_FIELD = 'ESTADO_TIPO_PUESTO';
 
 @Injectable({
 	providedIn: 'root',
@@ -28,49 +31,11 @@ export class PlaTipoPuestoService {
 	}
 
 	getAll(param: any): Observable<IResult> {
-		const xWhere: IParam[] = [];
-		const columnFilters = [
-			'CORR_TIPO_PUESTO',
-			'NOMBRE_TIPO_PUESTO',
-			'USUARIO_CREA',
-			'FECHA_CREA',
-			'ESTACION_CREA',
-			'USUARIO_ACTU',
-			'FECHA_ACTU',
-			'ESTACION_ACTU',
-		];
-
-		if (param.BUSQUEDA) {
-			xWhere.push({ Parameter: 'BUSQUEDA', Value: param.BUSQUEDA });
-		}
-
-		if (param.ESTADO_TIPO_PUESTO !== null && param.ESTADO_TIPO_PUESTO !== undefined) {
-			xWhere.push({ Parameter: 'ESTADO_TIPO_PUESTO', Value: param.ESTADO_TIPO_PUESTO });
-		}
-
-		if (param.PAGE) {
-			xWhere.push({ Parameter: 'PAGE', Value: param.PAGE });
-		}
-
-		if (param.PAGE_SIZE) {
-			xWhere.push({ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE });
-		}
-
-		columnFilters.forEach((field) => {
-			const value = param[field];
-			if (this.hasColumnFilter(value, field)) {
-				xWhere.push({ Parameter: field, Value: value });
-			}
-		});
-
-		return this.repo.get(xWhere);
+		return this.repo.get(this.buildWhere(param));
 	}
 
-	private hasColumnFilter(value: any, field: string): boolean {
-		if (value === null || value === undefined || `${value}`.trim() === '') {
-			return false;
-		}
-		return !(field === 'CORR_TIPO_PUESTO' && Number(value) === 0);
+	getDistinctValues(param: any): Observable<IResult> {
+		return this.repo.getDistinctValues(this.buildWhere(param));
 	}
 
 	get(param: any): Observable<IResult> {
@@ -148,57 +113,34 @@ export class PlaTipoPuestoService {
 					},
 				],
 			},
-			{ dataField: 'CORR_TIPO_PUESTO', caption: 'Corr.', width: 100 },
-			{ dataField: 'NOMBRE_TIPO_PUESTO', caption: 'Tipo de puesto', width: 300 },
 			{
-				dataField: 'ESTADO_TIPO_PUESTO',
-				caption: 'Estado',
-				width: 140,
-				allowFiltering: true,
-				allowHeaderFiltering: true,
-				cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					const badge = document.createElement('span');
-					badge.classList.add('estado-badge', cellInfo.value ? 'estado-badge--activo' : 'estado-badge--inactivo');
-					badge.textContent = cellInfo.value ? 'Activo' : 'Inactivo';
-					cellElement.innerHTML = '';
-					cellElement.appendChild(badge);
-				},
-				lookup: {
-					dataSource: [
-						{ value: true, text: 'Activo' },
-						{ value: false, text: 'Inactivo' },
-					],
-					valueExpr: 'value',
-					displayExpr: 'text',
-				},
-				filterCellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					new dxSelectBox(cellElement, {
-						dataSource: [
-							{ value: true, text: 'Activo' },
-							{ value: false, text: 'Inactivo' },
-						],
-						displayExpr: 'text',
-						valueExpr: 'value',
-						value: cellInfo.value,
-						placeholder: 'Seleccione...',
-						showClearButton: false,
-						onValueChanged: (e: any) => {
-							cellInfo.setValue(e.value);
-						},
-					});
-				},
-				calculateFilterExpression: (filterValue: any) => {
-					if (filterValue === '__ALL__' || filterValue === null || filterValue === undefined) {
-						return null;
-					}
-					return ['ESTADO_TIPO_PUESTO', '=', filterValue];
-				},
+				dataField: 'CORR_TIPO_PUESTO',
+				caption: 'Corr.',
+				width: 100,
+				dataType: 'number',
+				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
+			{ dataField: 'NOMBRE_TIPO_PUESTO', caption: 'Tipo de puesto', width: 300 },
+			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
-			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{
+				dataField: 'FECHA_CREA',
+				caption: 'Fecha Crea',
+				width: 200,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy HH:mm',
+				calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA'),
+			},
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
 			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
-			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{
+				dataField: 'FECHA_ACTU',
+				caption: 'Fecha Actu',
+				width: 200,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy HH:mm',
+				calculateFilterExpression: createDateTimeFilterExpression('FECHA_ACTU'),
+			},
 			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
 		];
 	}
@@ -217,9 +159,36 @@ export class PlaTipoPuestoService {
 				label: { text: 'Nombre tipo de puesto' },
 				colSpan: 5,
 				editorOptions: { placeholder: 'Nombre tipo de puesto...', showClearButton: true, maxLength: 100 },
-				validationRules: [{ type: 'required', message: 'El nombre es obligatorio' }],
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{ dataField: 'ESTADO_TIPO_PUESTO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
 	}
+
+	private buildWhere(param: any): IParam[] {
+		return buildRemoteGridWhere(param, ESTADO_FIELD);
+	}
+}
+
+export const EMPRESA_WARNING_ERROR_CODE = 4100;
+export const EMPRESA_REGISTRO_ETIQUETA = 'el tipo de puesto';
+
+export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
+	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
+}
+
+export function isEmpresaWarningResponse(response: any): boolean {
+	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
+}
+
+export function isEmpresaFkErrorMessage(message: string): boolean {
+	const value = `${message ?? ''}`.toLowerCase();
+	return (
+		value.includes('gen_empresa') ||
+		value.includes('foreign key') ||
+		value.includes('clave externa') ||
+		value.includes('reference constraint') ||
+		value.includes('conflicted with the foreign key') ||
+		value.includes('no tiene una empresa asignada')
+	);
 }

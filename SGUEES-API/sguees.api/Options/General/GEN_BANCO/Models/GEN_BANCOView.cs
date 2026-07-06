@@ -1,0 +1,13 @@
+﻿namespace sguees.Models
+{
+	public class GEN_BANCOView
+	{
+		public int CORR_EMPRESA { get; set; }
+		public string NOMBRE_BANCO { get; set; }
+		public string CLASE_BANCO { get; set; }
+		public string CODIGO_TRANSACION_UNI { get; set; }
+		public int CORR_BANCO { get; set; }
+		public string NOMBRE_BANCO_CORTO { get; set; }
+		public string NOMBRE_CLASE_BANCO { get; set; }
+	}
+}

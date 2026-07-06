@@ -44,3 +44,35 @@
 	color: var(--texteditor-label-color, #666);
 	font-size: 14px;
 }
+
+.partida-consulta-popup {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	height: 100%;
+}
+
+.partida-consulta-shell {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.partida-consulta-toolbar {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+}
+
+.partida-consulta-encabezado {
+	padding: 4px 0 8px;
+}
+
+.partida-consulta-tabs {
+	flex: 1;
+	min-height: 0;
+}
+
+.partida-consulta-grid {
+	padding-top: 8px;
+}

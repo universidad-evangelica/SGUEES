@@ -26,15 +26,32 @@ export class ConParametroComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
+	//#region <Declarando Variales>
+	readOnly = false;
+	// #endregion
+
+	//#region <Inicializando Opciones>
 	ngOnInit(): void {
 		this.inicializaOpciones();
+		this.llenaComboBox();
 		this.consultar();
 	}
 
 	inicializaOpciones() {}
+	// #endregion
 
-	fillParam(xKey?: any): any {
-		return { CORR_EMPRESA: xKey || 0 };
+	//#region <Manejo de Combos>
+	llenaComboBox() {}
+	//#endregion
+
+	//#region <Metodos Mtto>
+	fillParam(xCORR_EMPRESA?: number): any {
+		if (xCORR_EMPRESA == undefined) {
+			xCORR_EMPRESA = 0;
+		}
+		return {
+			CORR_EMPRESA: xCORR_EMPRESA,
+		};
 	}
 
 	override fillData(xModel?: ConParametro): ConParametro {
@@ -170,4 +187,26 @@ export class ConParametroComponent extends CBaseComponent implements OnInit {
 			});
 	}
 
+	override bloquear(): void {
+		this.dataForm.instance.getEditor('NOMBRE_PUESTO1')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('DESCRIPCION_PUESTO1')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NOMBRE_PUESTO2')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('DESCRIPCION_PUESTO2')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NOMBRE_PUESTO3')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('DESCRIPCION_PUESTO3')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NIVEL_CUENTA_MAYOR')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CORR_MONEDA')?.option('readOnly', true);
+		this.readOnly = true;
+	}
+
+	override habilitar(): void {
+		this.readOnly = false;
+	}
+
+	override setFocus() {
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('NOMBRE_PUESTO1')?.focus();
+		});
+	}
+	//#endregion
 }

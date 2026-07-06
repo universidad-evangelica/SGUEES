@@ -31,6 +31,14 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        [HttpGet("GetDistinctValues")]
+        [Authorize(Policy = "/pla-tipo-puesto|R")]
+        public async Task<CResult> GetDistinctValues([FromQuery] PLA_TIPO_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetDistinctValuesAsync(Data);
+        }
+
         [HttpGet("Get")]
         [Authorize(Policy = "/pla-tipo-puesto|R")]
         public async Task<CResult> Get([FromQuery] PLA_TIPO_PUESTOParam Data)
@@ -43,6 +51,9 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/pla-tipo-puesto|C")]
         public async Task<IActionResult> Post(PLA_TIPO_PUESTOTable Data)
         {
+            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+                return BadRequest(resultadoEmpresa);
+
             SetCreateAudit(Data);
 
             var resultado = await _service.CreateAsync(Data, Data.ESTACION_CREA, "e-CoffeeTech");
@@ -55,6 +66,9 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/pla-tipo-puesto|U")]
         public async Task<IActionResult> Put(PLA_TIPO_PUESTOTable Data)
         {
+            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+                return BadRequest(resultadoEmpresa);
+
             SetUpdateAudit(Data);
 
             var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
@@ -67,6 +81,9 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/pla-tipo-puesto|D")]
         public async Task<IActionResult> Delete([FromQuery] PLA_TIPO_PUESTOTable Data)
         {
+            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+                return BadRequest(resultadoEmpresa);
+
             SetUpdateAudit(Data);
 
             var resultado = await _service.DeleteAsync(Data, "Admin", "e-CoffeeTech");
@@ -79,6 +96,9 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/pla-tipo-puesto|U")]
         public async Task<IActionResult> Activar(PLA_TIPO_PUESTOTable Data)
         {
+            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+                return BadRequest(resultadoEmpresa);
+
             SetUpdateAudit(Data);
             Data.ESTADO_TIPO_PUESTO = true;
 
@@ -92,6 +112,9 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/pla-tipo-puesto|U")]
         public async Task<IActionResult> Desactivar(PLA_TIPO_PUESTOTable Data)
         {
+            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+                return BadRequest(resultadoEmpresa);
+
             SetUpdateAudit(Data);
 
             var resultado = await _service.DesactivarAsync(Data, "Admin", "e-CoffeeTech");
@@ -102,7 +125,30 @@ namespace SGUEES.Controllers
 
         private int GetCorrEmpresa()
         {
-            return int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
+            return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
+        }
+
+        private bool ValidateEmpresaSesion(out CResult resultado)
+        {
+            if (GetCorrEmpresa() > 0)
+            {
+                resultado = null;
+                return true;
+            }
+
+            resultado = new CResult
+            {
+                Data = null,
+                Result = false,
+                CodeHelper = 0,
+                ErrorCode = 4100,
+                ErrorMessage = "No se pudo guardar el tipo de puesto porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
+                ErrorSource = "[PLA_TIPO_PUESTOController]",
+                RowsAffected = 0
+            };
+
+            return false;
         }
 
         private string GetUsuario()

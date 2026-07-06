@@ -66,7 +66,32 @@
 				Apertura, liquidación y cierre del período seleccionado
 			</div>
 		</div>
+			<div class="partida-periodo-box">
+			<div class="partida-periodo-label">
+			Período
+			</div>
 
+			<div class="partida-periodo-inputs">
+				<dx-number-box
+				[(value)]="vANIO_PERIODO_CIERRE"
+				[min]="2000"
+				[max]="2100"
+				[showSpinButtons]="true"
+				[width]="90"
+			>
+				</dx-number-box>
+
+				<dx-number-box
+				[(value)]="vMES_PERIODO_CIERRE"
+				[min]="1"
+				[max]="12"
+				[showSpinButtons]="true"
+				[width]="70"
+			>
+				</dx-number-box>
+			</div>
+		</div>
+		
 		<div class="partida-procesos-actions">
 			<dx-button
 				*ngIf="btnPartidaApertura"
@@ -100,31 +125,7 @@
 		</div>
 	</div>
 
-	<div class="partida-periodo-box">
-		<div class="partida-periodo-label">
-			Período
-		</div>
 
-		<div class="partida-periodo-inputs">
-			<dx-number-box
-				[(value)]="vANIO_PERIODO_CIERRE"
-				[min]="2000"
-				[max]="2100"
-				[showSpinButtons]="true"
-				[width]="90"
-			>
-			</dx-number-box>
-
-			<dx-number-box
-				[(value)]="vMES_PERIODO_CIERRE"
-				[min]="1"
-				[max]="12"
-				[showSpinButtons]="true"
-				[width]="70"
-			>
-			</dx-number-box>
-		</div>
-	</div>
 </div>
 
 <div *ngIf="!isBrowse()" class="partida-edit-shell">
@@ -149,6 +150,8 @@
 				[(value)]="model.CORR_CLASE_PARTIDA"
 				[selectedRowKeys]="selectedLookUpCORR_CLASE_PARTIDA"
 				[readOnly]="readOnly"
+				[valueExpr]="'CORR_CLASE_PARTIDA'"
+				[displayExpr]="'NOMBRE_CLASE_PARTIDA'"
 				(valueChange)="onClasePartidaChanged($event)"
 			>
 			</app-data-lookup>
@@ -212,6 +215,7 @@
 					[allowColumnResizing]="true"
 					[columnResizingMode]="'widget'"
 					[focusedRowEnabled]="true"
+					[autoNavigateToFocusedRow]="true"
 					[height]="'100%'"
 					[width]="'100%'"
 					(onRowInserting)="detalleRowInserting($event)"
@@ -271,7 +275,8 @@
 					<dxi-column
 						dataField="CUENTA_CONTABLE"
 						caption="Cuenta Contable"
-						width="19%"
+						[width]="130"
+						[minWidth]="115"
 						[calculateDisplayValue]="cuentaContableDisplay"
 						[setCellValue]="cuentaSetCellValue"
 						[editCellTemplate]="'CUENTA_CONTABLELookup'"
@@ -298,13 +303,14 @@
 					<dxi-column
 						dataField="NOMBRE_CUENTA"
 						caption="Nombre Cuenta"
-						width="19%"
+						width="16%"
 						[allowEditing]="false"
 					></dxi-column>
 					<dxi-column
 						dataField="CORR_CENTRO_COSTO"
 						caption="Cod. Centro"
-						width="9%"
+						[width]="100"
+						[minWidth]="90"
 						[calculateDisplayValue]="codigoCentroDisplay"
 						[setCellValue]="centroCostoSetCellValue"
 						[editCellTemplate]="'CORR_CENTRO_COSTOLookup'"
@@ -338,12 +344,13 @@
 					<dxi-column
 						dataField="NOMBRE_TRAN"
 						caption="Descripción"
-						width="18%"
+						width="40%"
 					></dxi-column>
 					<dxi-column
 						dataField="MONTO_CARGO"
 						caption="Cargo"
-						width="9%"
+						[width]="120"
+						[minWidth]="110"
 						alignment="right"
 						dataType="number"
 						[format]="'#,##0.00'"
@@ -352,16 +359,32 @@
 					<dxi-column
 						dataField="MONTO_ABONO"
 						caption="Abono"
-						width="9%"
+						[width]="120"
+						[minWidth]="110"
 						alignment="right"
 						dataType="number"
 						[format]="'#,##0.00'"
 						[editorOptions]="{ format: '#,##0.00' }"
 					></dxi-column>
 					<dxo-summary>
-						<dxi-total-item column="CUENTA_CONTABLE" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
-						<dxi-total-item column="MONTO_CARGO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
-						<dxi-total-item column="MONTO_ABONO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+						<dxi-total-item
+							column="CUENTA_CONTABLE"
+							summaryType="count"
+							valueFormat="#,##0"
+							displayFormat="Cant: {0}"
+						></dxi-total-item>
+						<dxi-total-item
+							column="MONTO_CARGO"
+							summaryType="sum"
+							valueFormat="#,##0.00"
+							displayFormat="{0}"
+						></dxi-total-item>
+						<dxi-total-item
+							column="MONTO_ABONO"
+							summaryType="sum"
+							valueFormat="#,##0.00"
+							displayFormat="{0}"
+						></dxi-total-item>
 					</dxo-summary>
 				</dx-data-grid>
 				<div class="partida-deta-footer">
@@ -408,7 +431,7 @@
 	[models]="models"
 	[columns]="columns"
 	[summary]="summary"
-	[keyExpr]="'CORR_PARTIDA'"
+	[keyExpr]="['ANIO_PERIODO', 'MES_PERIODO', 'CORR_CLASE_PARTIDA', 'CORR_PARTIDA']"
 	[columnAutoWidth]="true"
 	[permiteEditar]="getPermiteEditar"
 	[permiteDele]="getPermiteDele"

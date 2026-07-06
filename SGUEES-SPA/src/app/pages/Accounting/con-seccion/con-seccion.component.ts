@@ -26,20 +26,45 @@ export class ConSeccionComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
+	//#region <Declarando Variales>
+	readOnly = false;
+	// #endregion
+
+	//#region <Inicializando Opciones>
 	ngOnInit(): void {
 		this.inicializaOpciones();
+		this.llenaComboBox();
 		this.consultar();
 	}
 
 	inicializaOpciones() {}
+	// #endregion
 
-	fillParam(xKey?: any): any {
-		return { CORR_SECCION: xKey || 0 };
+	//#region <Manejo de Combos>
+	llenaComboBox() {}
+	//#endregion
+
+	//#region <Metodos Mtto>
+	fillParam(xCORR_SECCION?: number): any {
+		if (xCORR_SECCION == undefined) {
+			xCORR_SECCION = 0;
+		}
+		return {
+			CORR_SECCION: xCORR_SECCION,
+		};
 	}
 
 	override fillData(xModel?: ConSeccion): ConSeccion {
 		if (xModel !== undefined) {
-			return { ...xModel };
+			return {
+				CORR_EMPRESA: xModel.CORR_EMPRESA,
+				CORR_DIVISION: xModel.CORR_DIVISION,
+				CORR_GERENCIA: xModel.CORR_GERENCIA,
+				CORR_DEPARTAMENTO: xModel.CORR_DEPARTAMENTO,
+				CORR_SECCION: xModel.CORR_SECCION,
+				NOMBRE_SECCION: xModel.NOMBRE_SECCION,
+				CODIGO_SECCION: xModel.CODIGO_SECCION,
+			};
 		} else {
 			return {
 				CORR_EMPRESA: 0,
@@ -145,4 +170,28 @@ export class ConSeccionComponent extends CBaseComponent implements OnInit {
 				},
 			});
 	}
+
+	override bloquear(): void {
+		this.dataForm.instance.getEditor('CORR_DIVISION')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CORR_GERENCIA')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CORR_DEPARTAMENTO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CORR_SECCION')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NOMBRE_SECCION')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CODIGO_SECCION')?.option('readOnly', true);
+		this.readOnly = true;
+	}
+
+	override habilitar(): void {
+		this.readOnly = false;
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('CORR_SECCION')?.option('readOnly', true);
+		});
+	}
+
+	override setFocus() {
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('NOMBRE_SECCION')?.focus();
+		});
+	}
+	//#endregion
 }

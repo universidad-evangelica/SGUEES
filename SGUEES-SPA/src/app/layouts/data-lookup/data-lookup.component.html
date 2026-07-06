@@ -1,13 +1,14 @@
 <dx-drop-down-box
 	#dataLookUp
 	[dataSource]="model"
-	[(value)]="value"
+	[(value)]="internalValue"
 	[valueExpr]="valueExpr"
 	[displayExpr]="displayExpr"
 	[deferRendering]="false"
 	[showClearButton]="showClearButton"
 	[readOnly]="readOnly"
 	[(opened)]="claseOpend"
+	[dropDownOptions]="dropDownOptions"
 	(onOptionChanged)="onGridBoxOptionChanged($event)"
   (onValueChanged)="onValueChanged($event)"
 >
@@ -15,7 +16,7 @@
 		<dx-data-grid
 			#dataGridLookup
 			[dataSource]="model"
-			[columnAutoWidth]="true"
+			[columnAutoWidth]="lookupColumnAutoWidth"
 			[selection]="{ mode: 'single' }"
 			[hoverStateEnabled]="true"
 			[paging]="{ enabled: false, pageSize: 10 }"

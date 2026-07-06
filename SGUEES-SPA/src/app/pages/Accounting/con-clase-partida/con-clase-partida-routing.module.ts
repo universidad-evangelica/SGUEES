@@ -32,6 +32,7 @@ const routes: Routes = [{ path: '', component: ConClasePartidaComponent }];
 		DataLookupModule,
 		BarraDataMttoModule,
 	],
+	exports: [RouterModule],
 	declarations: [ConClasePartidaComponent],
 })
 export class ConClasePartidaRoutingModule {}

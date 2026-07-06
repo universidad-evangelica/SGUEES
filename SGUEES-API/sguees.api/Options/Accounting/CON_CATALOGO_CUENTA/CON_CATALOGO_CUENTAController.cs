@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Linq;
 using System.Security.Claims;
+using System.Collections.Generic;
 using eFramework.Core;
 using sguees.Models;
 using sguees.Services;
@@ -71,6 +72,85 @@ namespace sguees.Controllers
 			var vESTACION = ClientInfoHelper.GetClientStation(HttpContext);
 			var resultado = await _service.ImportarExcelAsync(Data, vLOGIN, vESTACION);
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
+		// --- BAN_CUENTA_BANCARIA ---
+
+		[HttpGet("GetCUENTA_CONTABLE_BAN_CUENTA_BANCARIA")]
+		[Authorize(Policy = "/ban-cuenta-bancaria|R")]
+		public async Task<CResult> GetCUENTA_CONTABLE_BAN_CUENTA_BANCARIA([FromQuery] CON_CATALOGO_CUENTAParam Data)
+		{
+			return await GetCuentasDetalleAsync(Data);
+		}
+
+		// --- BAN_TIPO_CHEQUE ---
+
+		[HttpGet("GetCUENTA_CONTABLE_BAN_TIPO_CHEQUE")]
+		[Authorize(Policy = "/ban-tipo-cheque|R")]
+		public async Task<CResult> GetCUENTA_CONTABLE_BAN_TIPO_CHEQUE([FromQuery] CON_CATALOGO_CUENTAParam Data)
+		{
+			return await GetCuentasDetalleAsync(Data);
+		}
+
+		// --- BAN_TIPO_MOVI_BANCARIO ---
+
+		[HttpGet("GetCUENTA_CONTABLE_BAN_TIPO_MOVI_BANCARIO")]
+		[Authorize(Policy = "/ban-tipo-movi-bancario|R")]
+		public async Task<CResult> GetCUENTA_CONTABLE_BAN_TIPO_MOVI_BANCARIO([FromQuery] CON_CATALOGO_CUENTAParam Data)
+		{
+			return await GetCuentasDetalleAsync(Data);
+		}
+
+		// --- CON_PARTIDA ---
+
+		[HttpGet("GetCUENTA_CONTABLE_CON_PARTIDA")]
+		[Authorize(Policy = "/con-partida|R")]
+		public async Task<CResult> GetCUENTA_CONTABLE_CON_PARTIDA([FromQuery] CON_CATALOGO_CUENTAParam Data)
+		{
+			return await GetCuentasDetalleAsync(Data);
+		}
+
+		// --- CON_CTA_CENTRO_COSTO (cuenta ↔ centro) ---
+
+		[HttpGet("GetCUENTA_CONTABLE_CON_CTA_CENTRO_COSTO")]
+		[Authorize(Policy = "/con-catalogo-cuenta-centro-costo|R")]
+		public async Task<CResult> GetCUENTA_CONTABLE_CON_CTA_CENTRO_COSTO([FromQuery] CON_CATALOGO_CUENTAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			if (string.IsNullOrEmpty(Data.CUENTA_CONTABLE))
+			{
+				Data.CUENTA_CONTABLE = string.Empty;
+			}
+			return await _service.GetAllAsync(Data);
+		}
+
+		// --- CON_REPORTE ---
+
+		[HttpGet("GetCUENTA_CONTABLE_CON_REPORTE")]
+		[Authorize]
+		public async Task<CResult> GetCUENTA_CONTABLE_CON_REPORTE([FromQuery] CON_CATALOGO_CUENTAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			if (string.IsNullOrEmpty(Data.CUENTA_CONTABLE))
+			{
+				Data.CUENTA_CONTABLE = string.Empty;
+			}
+			return await _service.GetAllAsync(Data);
+		}
+
+		private async Task<CResult> GetCuentasDetalleAsync(CON_CATALOGO_CUENTAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			if (string.IsNullOrEmpty(Data.CUENTA_CONTABLE))
+			{
+				Data.CUENTA_CONTABLE = string.Empty;
+			}
+			var resultado = await _service.GetAllAsync(Data);
+			if (resultado.Result && resultado.Data is List<CON_CATALOGO_CUENTAView> cuentas)
+			{
+				resultado.Data = cuentas.Where(x => x.ES_DETALLE).ToList();
+			}
+			return resultado;
 		}
 	}
 }

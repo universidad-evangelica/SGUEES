@@ -9,12 +9,14 @@ import { ConCatalogoCuentaCentroCosto } from './models/con-catalogo-cuenta-centr
 import { ConCatalogoCuentaCentroCostoService } from './con-catalogo-cuenta-centro-costo.service';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 
+/** Pantalla propia (tabla CON_CATALOGO_CUENTA_CENTRO_COSTO). Mtto especial de asignación — no es catálogo CRUD clásico. */
 @Component({
 	selector: 'app-con-catalogo-cuenta-centro-costo',
 	templateUrl: './con-catalogo-cuenta-centro-costo.component.html',
 	styleUrls: ['./con-catalogo-cuenta-centro-costo.component.scss'],
 })
 export class ConCatalogoCuentaCentroCostoComponent extends CBaseComponent implements OnInit {
+	//#region <Declarando Variables>
 	catalogoColumns: any[] = [];
 	centroColumns: any[] = [];
 	cuentasCatalogo: any[] = [];
@@ -41,9 +43,23 @@ export class ConCatalogoCuentaCentroCostoComponent extends CBaseComponent implem
 	}
 
 	ngOnInit(): void {
+		this.inicializaOpciones();
+		this.llenaComboBox();
+	}
+
+	//#region <Inicializando Opciones>
+	inicializaOpciones() {}
+
+	//#region <Manejo de Combos>
+	llenaComboBox() {
+		this.consultar();
+	}
+
+	consultar() {
 		this.cargarDatos();
 	}
 
+	//#region <Metodos Mtto>
 	@HostListener('window:resize')
 	onWindowResize(): void {
 		this.updateGridHeights();
@@ -99,7 +115,7 @@ export class ConCatalogoCuentaCentroCostoComponent extends CBaseComponent implem
 					errores.forEach((msg) => this.notifyFx(msg, NotifyType.Error));
 				} else if (!this.cuentasCatalogo.length && !this.centrosCatalogo.length) {
 					this.setCargaError(
-						'No se recibieron cuentas ni centros de costo. Verifique permisos de lectura y vuelva a iniciar sesión si acaba de asignar la opción.'
+						'Sin datos. Verifique permiso de lectura en Cuenta Contable - Centro de Costo (/con-catalogo-cuenta-centro-costo) y vuelva a iniciar sesión.'
 					);
 				}
 				if (this.cuentaSeleccionada?.CUENTA_CONTABLE) {

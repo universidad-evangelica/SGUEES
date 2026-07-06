@@ -32,6 +32,7 @@ const routes: Routes = [{ path: '', component: ConDepartamentoComponent }];
 		DataLookupModule,
 		BarraDataMttoModule,
 	],
+	exports: [RouterModule],
 	declarations: [ConDepartamentoComponent],
 })
 export class ConDepartamentoRoutingModule {}

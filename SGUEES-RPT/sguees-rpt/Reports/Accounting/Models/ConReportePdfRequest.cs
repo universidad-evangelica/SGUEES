@@ -10,6 +10,9 @@ namespace sgueesRpt.Models
 		/// <summary>Filas del dataset principal para Crystal.</summary>
 		public List<Dictionary<string, object>> Data { get; set; }
 
+		/// <summary>Nombre de la tabla detalle en Crystal (ej. PRAL_IMPR_BALANCE_GENERAL).</summary>
+		public string DetailTableName { get; set; }
+
 		/// <summary>Nombre del PDF de salida (opcional).</summary>
 		public string PdfFileName { get; set; }
 	}

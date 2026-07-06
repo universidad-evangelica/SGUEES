@@ -13,7 +13,6 @@ import { take } from 'rxjs/internal/operators/take';
 import { DxTreeViewModule, DxTreeViewComponent, DxTreeViewTypes } from 'devextreme-angular/ui/tree-view';
 import * as events from 'devextreme/events';
 import { AuthService } from '../../../services';
-// import { navigation } from 'src/app/app-navigation';
 
 @Component({
   selector: 'side-navigation-menu',
@@ -55,51 +54,100 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
     if (val) {
       this.menu.instance.collapseAll();
     } else {
-      this.menu.instance.expandItem(this._selectedItem);
+      const key = this.findMenuKeyByPath(this._items, String(this._selectedItem || ''));
+      if (key) {
+        this.menu.instance.expandItem(key);
+      }
     }
   }
 
   private _selectedItem!: String;
 
-  private _items!: Record <string, unknown>[];
+  private _items: Record<string, unknown>[] = [];
 
   get items() {
-    /*if (!this._items) {
-      this._items = navigation.map((item) => {
-        if (item.path && !(/^\//.test(item.path))) {
-          item.path = `/${item.path}`;
-        }
-        return { ...item, expanded: !this._compactMode };
-      });
-    }*/
-
-    if (this._items === undefined) {
-      this._items = []; // Solo para que deje de ser undefined y solo ingrese una vez.
-      this.authService.getMainMenu().pipe(take(1)).subscribe((menu: any[]) => {
-        this._items = menu.map((item: any) => {
-          if (item.path && !(/^\//.test(item.path))) {
-            item.path = `/${item.path}`;
-          }
-          return { ...item, expanded: !this._compactMode };
-        });
-
-        return this._items;
-      });
-    }
-
     return this._items;
   }
 
   private _compactMode = false;
 
-  constructor(private elementRef: ElementRef, private authService: AuthService) { }
+  private _menuLoaded = false;
 
-  setSelectedItem() {
-    if (!this.menu.instance) {
+  constructor(private elementRef: ElementRef, private authService: AuthService) {
+    this.loadMenu();
+  }
+
+  private loadMenu(): void {
+    if (this._menuLoaded) {
       return;
     }
 
-    this.menu.instance.selectItem(this.selectedItem);
+    this._menuLoaded = true;
+    this.authService
+      .getMenu()
+      .pipe(take(1))
+      .subscribe((response: any) => {
+        const menu = Array.isArray(response?.Data) ? response.Data : [];
+        this._items = this.normalizeMenuItems(menu);
+        setTimeout(() => this.setSelectedItem());
+      });
+  }
+
+  private normalizeMenuItems(items: any[], prefix = ''): any[] {
+    return (items || [])
+      .map((item) => {
+        const code = String(item.code || item.text || 'node');
+        const menuKey = prefix ? `${prefix}/${code}` : code;
+        let path = item.path;
+
+        if (path && !/^\//.test(path)) {
+          path = `/${path}`;
+        }
+
+        const normalized: any = {
+          ...item,
+          path,
+          menuKey,
+          expanded: !this._compactMode,
+        };
+
+        if (Array.isArray(item.items) && item.items.length > 0) {
+          normalized.items = this.normalizeMenuItems(item.items, menuKey);
+        } else {
+          delete normalized.items;
+        }
+
+        return normalized;
+      })
+      .sort((left, right) => (left.order ?? 0) - (right.order ?? 0));
+  }
+
+  private findMenuKeyByPath(items: any[], path: string): string | null {
+    for (const item of items || []) {
+      if (item.path === path) {
+        return item.menuKey;
+      }
+
+      if (item.items?.length) {
+        const found = this.findMenuKeyByPath(item.items, path);
+        if (found) {
+          return found;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  setSelectedItem() {
+    if (!this.menu.instance || !this._selectedItem) {
+      return;
+    }
+
+    const key = this.findMenuKeyByPath(this._items, String(this._selectedItem));
+    if (key) {
+      this.menu.instance.selectItem(key);
+    }
   }
 
   onItemClick(event: DxTreeViewTypes.ItemClickEvent) {
@@ -123,4 +171,4 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
   declarations: [SideNavigationMenuComponent],
   exports: [SideNavigationMenuComponent],
 })
-export class SideNavigationMenuModule { }
+export class SideNavigationMenuModule {}

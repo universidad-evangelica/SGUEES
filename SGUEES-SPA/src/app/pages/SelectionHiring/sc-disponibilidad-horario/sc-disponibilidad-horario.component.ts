@@ -10,10 +10,37 @@ import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
+import { AuthService } from 'src/app/shared/services/auth.service';
+import {
+	cloneRemoteGridFilters,
+	ESTADO_ACTIVO_INACTIVO_LABELS,
+	hasRemoteFilterRowSearch,
+	parseRemoteGridFilters,
+	ParsedGridFilters,
+} from 'src/app/shared/utils/remote-grid-filter.util';
+import {
+	getColumnHeaderFilterSelection,
+	invertExcludedHeaderFilterValues,
+	normalizeBooleanHeaderFilterValue,
+	resolveBooleanExcludeHeaderFilter,
+} from 'src/app/shared/utils/remote-header-filter.util';
 import { ScDisponibilidadHorario } from './models/sc-disponibilidad-horario';
-import { ScDisponibilidadHorarioService } from './sc-disponibilidad-horario.service';
+import {
+	EMPRESA_REGISTRO_ETIQUETA,
+	getEmpresaWarningMessage,
+	isEmpresaFkErrorMessage,
+	isEmpresaWarningResponse,
+	ScDisponibilidadHorarioService,
+} from './sc-disponibilidad-horario.service';
 
-type EstadoFiltro = boolean | null;
+const ESTADO_FIELD = 'ESTADO_DISPONIBILIDAD_HORARIO';
+
+const GRID_FILTER_CONFIG = {
+	estadoField: ESTADO_FIELD,
+	booleanColumns: {
+		[ESTADO_FIELD]: ESTADO_ACTIVO_INACTIVO_LABELS,
+	},
+};
 
 @Component({
 	selector: 'app-sc-disponibilidad-horario',
@@ -30,7 +57,8 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private service: ScDisponibilidadHorarioService,
-		private messageService: MessageService
+		private messageService: MessageService,
+		private authService: AuthService
 	) {
 		super(appInfoService, router);
 		this.onEditClick = this.onEditClick.bind(this);
@@ -84,18 +112,49 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 		page = 1,
 		pageSize = 5,
 		busqueda = '',
-		estado: EstadoFiltro = null,
-		columnFilters: Record<string, any> = {}
+		gridFilters: ParsedGridFilters = { estado: null, filterRow: {}, filterRowExact: {}, headerAnyOf: {} },
+		distinctField = '',
+		headerFilterSearch = '',
+		sortField = '',
+		sortDesc = false
 	): any {
 		return {
 			CORR_DISPONIBILIDAD_HORARIO: xCORR_DISPONIBILIDAD_HORARIO ?? 0,
 			BUSQUEDA: busqueda,
-			ESTADO_DISPONIBILIDAD_HORARIO: estado,
 			PAGE: page,
 			PAGE_SIZE: pageSize,
-			...columnFilters,
+			DISTINCT_FIELD: distinctField,
+			HEADER_FILTER_SEARCH: headerFilterSearch,
+			SORT_FIELD: sortField,
+			SORT_DESC: sortDesc,
+			gridFilters,
 		};
 	}
+
+	loadHeaderFilterValues = (field: string, searchValue?: string): Promise<unknown[]> => {
+		const grid = this.dataGrid?.gData?.instance;
+		const combinedFilter = grid?.getCombinedFilter?.(false);
+		const gridFilters = parseRemoteGridFilters(combinedFilter, grid, GRID_FILTER_CONFIG);
+		const hasFilterRowSearch = hasRemoteFilterRowSearch(gridFilters);
+		const filtersForDistinct: ParsedGridFilters = {
+			estado: hasFilterRowSearch ? gridFilters.estado : null,
+			filterRow: hasFilterRowSearch ? gridFilters.filterRow : {},
+			filterRowExact: hasFilterRowSearch ? gridFilters.filterRowExact : {},
+			headerAnyOf: {},
+		};
+
+		return lastValueFrom(
+			this.service.getDistinctValues(
+				this.fillParam(0, 1, 0, '', filtersForDistinct, field, searchValue ?? '')
+			)
+		).then((response) => {
+			if (!response.Result) {
+				throw new Error(response.ErrorMessage || 'No se pudieron cargar los valores del filtro.');
+			}
+
+			return response.Data ?? [];
+		});
+	};
 
 	override fillData(xModel?: ScDisponibilidadHorario): ScDisponibilidadHorario {
 		if (xModel !== undefined) {
@@ -105,11 +164,11 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 				NOMBRE_DISPONIBILIDAD_HORARIO: xModel.NOMBRE_DISPONIBILIDAD_HORARIO,
 				ESTADO_DISPONIBILIDAD_HORARIO: xModel.ESTADO_DISPONIBILIDAD_HORARIO,
 				USUARIO_CREA: xModel.USUARIO_CREA,
-				FECHA_CREA: xModel.FECHA_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
+				FECHA_CREA: xModel.FECHA_CREA,
 				USUARIO_ACTU: xModel.USUARIO_ACTU,
-				FECHA_ACTU: xModel.FECHA_ACTU,
 				ESTACION_ACTU: xModel.ESTACION_ACTU,
+				FECHA_ACTU: xModel.FECHA_ACTU,
 			};
 		}
 
@@ -119,11 +178,11 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 			NOMBRE_DISPONIBILIDAD_HORARIO: '',
 			ESTADO_DISPONIBILIDAD_HORARIO: true,
 			USUARIO_CREA: '',
-			FECHA_CREA: new Date(),
 			ESTACION_CREA: '',
+			FECHA_CREA: new Date(),
 			USUARIO_ACTU: '',
-			FECHA_ACTU: new Date(),
 			ESTACION_ACTU: '',
+			FECHA_ACTU: new Date(),
 		};
 	}
 
@@ -131,17 +190,39 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 		this.dataGrid?.refreshData(true);
 	}
 
+	override nuevo(): void {
+		if (!this.validarEmpresaSesion()) {
+			return;
+		}
+		super.nuevo();
+	}
+
 	override notifyFx(xMessage: string, xType: NotifyType): void {
-		const cleanMessage = `${xMessage ?? ''}`.replace(/^error:\s*/i, '').trim();
-		const warningDetail = this.getWarningMessage(xMessage);
+		const cleanMessage = this.getErrorMessage(xMessage).replace(/^error:\s*/i, '').trim();
+		const warningDetail = this.getWarningMessage(cleanMessage);
 		const isWarning = xType === NotifyType.Warning || warningDetail !== cleanMessage;
 		const severity = xType === NotifyType.Success ? 'success' : isWarning ? 'warn' : 'error';
-		const summary = xType === NotifyType.Success ? 'Éxito' : isWarning ? 'Advertencia' : 'Error';
+		const summary = xType === NotifyType.Success ? '\u00c9xito' : isWarning ? 'Advertencia' : 'Error';
 		const detail = isWarning ? warningDetail : cleanMessage;
 		this.messageService.add({ severity, summary, detail });
 	}
 
 	guardar(): void {
+		if (!this.validarEmpresaSesion()) {
+			return;
+		}
+
+		const formData = this.dataForm?.instance?.option('formData');
+		if (formData) {
+			this.model = { ...this.model, ...formData };
+		}
+
+		const formValidation = this.dataForm?.instance?.validate();
+		if (formValidation && !formValidation.isValid) {
+			this.service.esValido(this.model, this.notifyFx.bind(this));
+			return;
+		}
+
 		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
 			return;
 		}
@@ -164,7 +245,7 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 						this.loadingVisible = false;
 					},
 					error: (error: any) => {
-						this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
+						this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
 						this.loadingVisible = false;
 					},
 				});
@@ -185,7 +266,7 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 						this.loadingVisible = false;
 					},
 					error: (error: any) => {
-						this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
+						this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
 						this.loadingVisible = false;
 					},
 				});
@@ -260,13 +341,33 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 			loadMode: 'processed',
 			cacheRawData: false,
 			load: async (loadOptions: any) => {
-				const takeRows = loadOptions.take || 5;
+				try {
+					const takeRows = loadOptions.take || 5;
 				const skipRows = loadOptions.skip || 0;
 				const page = Math.floor(skipRows / takeRows) + 1;
-				const gridFilters = this.getGridFilters(loadOptions.filter);
-				const estado = gridFilters.estado;
-				const busqueda = '';
-				const response = await lastValueFrom(this.service.getAll(this.fillParam(0, page, takeRows, busqueda, estado, gridFilters.columnas)));
+				const grid = this.dataGrid?.gData?.instance;
+
+				const gridFilters = parseRemoteGridFilters(loadOptions.filter, grid, GRID_FILTER_CONFIG);
+				this.applyIncludeHeaderFilters(grid, gridFilters);
+				await this.resolveExcludeHeaderFilters(grid, gridFilters);
+				await this.removeHeaderFiltersOverriddenByFilterRow(gridFilters);
+
+				const sort = this.getGridSort(loadOptions.sort);
+				const response = await lastValueFrom(
+					this.service.getAll(
+						this.fillParam(
+							0,
+							page,
+							takeRows,
+							'',
+							gridFilters,
+							'',
+							'',
+							sort?.field ?? '',
+							sort?.desc ?? false
+						)
+					)
+				);
 
 				if (!response.Result) {
 					throw new Error(response.ErrorMessage || 'No se pudo cargar la disponibilidad de horario.');
@@ -276,47 +377,161 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 					data: response.Data || [],
 					totalCount: response.RowsAffected || 0,
 				};
+				} catch (error) {
+					const message = this.getErrorMessage(error);
+					this.notifyFx(message, NotifyType.Error);
+					throw new Error(message);
+				}
 			},
 		});
 	}
 
-	private getGridFilters(filter: any): { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } {
-		const result: { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } = {
-			busqueda: '',
-			estado: null,
-			columnas: {},
-		};
+	private async removeHeaderFiltersOverriddenByFilterRow(result: ParsedGridFilters): Promise<void> {
+		if (!hasRemoteFilterRowSearch(result)) {
+			return;
+		}
 
-		const visit = (node: any): void => {
-			if (!Array.isArray(node)) {
-				return;
+		for (const dataField of Object.keys(result.headerAnyOf)) {
+			const headerValues = result.headerAnyOf[dataField];
+			if (!headerValues?.length) {
+				continue;
 			}
 
-			if (typeof node[0] === 'string' && node.length >= 3) {
-				const field = node[0];
-				const value = node[2];
-
-				if (field === 'ESTADO_DISPONIBILIDAD_HORARIO') {
-					if (value === '__ALL__' || value === null || value === undefined) {
-						result.estado = null;
-						return;
-					}
-
-					result.estado = value === true || value === 'true';
-					return;
-				}
-
-				if (value !== null && value !== undefined && `${value}`.trim()) {
-					result.columnas[field] = value;
-				}
-				return;
+			const availableValues = await this.getAvailableHeaderValuesForFilterRow(dataField, result);
+			if (!availableValues.length) {
+				continue;
 			}
 
-			node.forEach((child) => visit(child));
+			if (!this.hasAnyMatchingHeaderValue(headerValues, availableValues)) {
+				delete result.headerAnyOf[dataField];
+			}
+		}
+	}
+
+	private async getAvailableHeaderValuesForFilterRow(dataField: string, result: ParsedGridFilters): Promise<unknown[]> {
+		const filtersForDistinct: ParsedGridFilters = {
+			estado: result.estado,
+			filterRow: { ...result.filterRow },
+			filterRowExact: { ...result.filterRowExact },
+			headerAnyOf: {},
 		};
 
-		visit(filter);
-		return result;
+		const response = await lastValueFrom(
+			this.service.getDistinctValues(this.fillParam(0, 1, 0, '', filtersForDistinct, dataField, ''))
+		);
+
+		return response.Result ? response.Data ?? [] : [];
+	}
+
+	private hasAnyMatchingHeaderValue(headerValues: unknown[], availableValues: unknown[]): boolean {
+		const availableKeys = new Set(availableValues.map((value) => this.getHeaderFilterComparableKey(value)));
+		return headerValues.some((value) => availableKeys.has(this.getHeaderFilterComparableKey(value)));
+	}
+
+	private getHeaderFilterComparableKey(value: unknown): string {
+		if (value === null || value === undefined || value === '__BLANK__') {
+			return '__blank__';
+		}
+
+		if (typeof value === 'boolean') {
+			return value ? 'true' : 'false';
+		}
+
+		const text = `${value}`.trim().toLowerCase();
+		if (!text) {
+			return '__blank__';
+		}
+
+		if (text === 'activo') {
+			return 'true';
+		}
+
+		if (text === 'inactivo') {
+			return 'false';
+		}
+
+		return text;
+	}
+	private applyIncludeHeaderFilters(grid: any, result: ParsedGridFilters): void {
+		if (!grid?.getVisibleColumns) {
+			return;
+		}
+
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
+			}
+
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (!selection || selection.filterType !== 'include' || !selection.values.length) {
+				continue;
+			}
+
+			const booleanLabels = GRID_FILTER_CONFIG.booleanColumns?.[dataField];
+			result.headerAnyOf[dataField] = booleanLabels
+				? selection.values.map((value) => normalizeBooleanHeaderFilterValue(value, booleanLabels))
+				: selection.values;
+		}
+	}
+	private async resolveExcludeHeaderFilters(grid: any, result: ParsedGridFilters): Promise<void> {
+		if (!grid?.getVisibleColumns) {
+			return;
+		}
+
+		for (const column of grid.getVisibleColumns()) {
+			const dataField = column?.dataField;
+			if (!dataField || column.allowHeaderFiltering === false) {
+				continue;
+			}
+
+			const selection = getColumnHeaderFilterSelection(grid, dataField);
+			if (!selection || selection.filterType !== 'exclude' || !selection.values.length) {
+				continue;
+			}
+
+			const booleanIncluded = resolveBooleanExcludeHeaderFilter(
+				column,
+				selection.values,
+				GRID_FILTER_CONFIG.booleanColumns?.[dataField]
+			);
+			if (booleanIncluded !== null) {
+				result.headerAnyOf[dataField] = booleanIncluded.length ? booleanIncluded : ['__NO_MATCH__'];
+				continue;
+			}
+
+			const filtersForDistinct = cloneRemoteGridFilters(result);
+			delete filtersForDistinct.headerAnyOf[dataField];
+			delete filtersForDistinct.filterRow[dataField];
+			delete filtersForDistinct.filterRowExact[dataField];
+
+			const response = await lastValueFrom(
+				this.service.getDistinctValues(this.fillParam(0, 1, 0, '', filtersForDistinct, dataField, ''))
+			);
+
+			if (!response.Result) {
+				continue;
+			}
+
+			const included = invertExcludedHeaderFilterValues(selection.values, response.Data ?? []);
+			result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
+		}
+	}
+
+	private getGridSort(sort: any): { field: string; desc: boolean } | null {
+		if (!Array.isArray(sort) || !sort.length) {
+			return null;
+		}
+
+		const first = sort[0];
+		if (!first?.selector) {
+			return null;
+		}
+
+		return {
+			field: `${first.selector}`,
+			desc: !!first.desc,
+		};
 	}
 
 	private cambiarEstado(row: ScDisponibilidadHorario, activo: boolean): void {
@@ -360,7 +575,7 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 					this.loadingVisible = false;
 				},
 				error: (error: any) => {
-					this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
+					this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
 					this.loadingVisible = false;
 				},
 			});
@@ -391,30 +606,117 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 	}
 
 	private getErrorMessage(error: any): string {
-		if (typeof error === 'string' && error.trim()) {
-			return error;
+		const connectionMessage =
+			'No se pudo comunicar con el servidor. Verifique que la API esté en ejecución e intente nuevamente.';
+
+		if (typeof error === 'string') {
+			const trimmed = error.trim();
+			if (!trimmed || trimmed === '[object ProgressEvent]' || trimmed.toLowerCase().includes('http failure')) {
+				return connectionMessage;
+			}
+			return trimmed;
 		}
 
-		return (
-			error?.error?.ErrorMessage ||
-			error?.error?.message ||
-			error?.message ||
-			'Ocurrio un error al procesar la solicitud.'
-		);
+		if (error instanceof ProgressEvent || Object.prototype.toString.call(error) === '[object ProgressEvent]') {
+			return connectionMessage;
+		}
+
+		if (error?.error instanceof ProgressEvent) {
+			return connectionMessage;
+		}
+
+		const apiMessage = error?.error?.ErrorMessage || error?.error?.message || error?.message;
+		if (typeof apiMessage === 'string' && apiMessage.trim()) {
+			if (apiMessage === '[object ProgressEvent]' || apiMessage.toLowerCase().includes('http failure')) {
+				return connectionMessage;
+			}
+			return apiMessage;
+		}
+
+		const coerced = `${error ?? ''}`.trim();
+		if (coerced === '[object ProgressEvent]' || coerced === '[object Object]') {
+			return connectionMessage;
+		}
+
+		return coerced || 'Ocurrio un error al procesar la solicitud.';
 	}
 
 	private getNotifyType(response: any): NotifyType {
-		const message = (response?.ErrorMessage || '').toLowerCase();
-		return response?.ErrorCode === 2627 || message.includes('ya existe') || message.includes('duplicad')
-			? NotifyType.Warning
-			: NotifyType.Error;
+		if (isEmpresaWarningResponse(response)) {
+			return NotifyType.Warning;
+		}
+		return this.isValidationWarningResponse(response) ? NotifyType.Warning : NotifyType.Error;
+	}
+
+	private getErrorNotifyType(error: any): NotifyType {
+		const body = error?.error;
+		if (body && typeof body === 'object' && body.ErrorMessage !== undefined) {
+			return this.getNotifyType(body);
+		}
+
+		return this.isValidationWarningMessage(this.getErrorMessage(error)) ? NotifyType.Warning : NotifyType.Error;
+	}
+
+	private isValidationWarningResponse(response: any): boolean {
+		if (!response || response.Result !== false) {
+			return false;
+		}
+
+		if (response.ErrorCode === 2627) {
+			return true;
+		}
+
+		return this.isValidationWarningMessage(response.ErrorMessage);
+	}
+
+	private isValidationWarningMessage(message: string): boolean {
+		const value = `${message ?? ''}`.toLowerCase();
+		if (isEmpresaFkErrorMessage(message) || value.includes('no tiene una empresa asignada')) {
+			return true;
+		}
+
+		return (
+			value.includes('ya existe') ||
+			value.includes('duplicad') ||
+			value.includes('registrad') ||
+			value.includes('otro usuario guard') ||
+			value.includes('mismo tiempo') ||
+			value.includes('hijos asociados') ||
+			value.includes('registros asociados') ||
+			value.includes('registros hijos') ||
+			value.includes('tiene registros hijos') ||
+			value.includes('relacionados') ||
+			value.includes('asociados en otras tablas')
+		);
+	}
+
+	private getCorrEmpresaSesion(): number {
+		const value = Number(this.authService.decodedToken?.CORR_EMPRESA ?? 0);
+		return Number.isFinite(value) ? value : 0;
+	}
+
+	private validarEmpresaSesion(): boolean {
+		if (this.getCorrEmpresaSesion() > 0) {
+			return true;
+		}
+		this.notifyFx(getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA), NotifyType.Warning);
+		return false;
 	}
 
 	private getWarningMessage(message: string): string {
 		const cleanMessage = `${message ?? ''}`.replace(/^error:\s*/i, '').trim();
 		const value = cleanMessage.toLowerCase();
-		if (value.includes('ya existe') || value.includes('duplicad')) {
-			return 'Ya existe un registro con ese código. Escriba otro código para continuar.';
+		if (isEmpresaFkErrorMessage(cleanMessage) || value.includes('no tiene una empresa asignada')) {
+			return getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA);
+		}
+		if (
+			value.includes('ya existe') ||
+			value.includes('duplicad') ||
+			value.includes('registrad') ||
+			value.includes('ya está registrado') ||
+			value.includes('ya esta registrado')
+		) {
+			return cleanMessage;
 		}
 		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados')) {
 			return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';
@@ -422,3 +724,5 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 		return cleanMessage;
 	}
 }
+
+

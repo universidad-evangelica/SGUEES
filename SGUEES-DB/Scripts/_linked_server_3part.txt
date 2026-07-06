@@ -1,0 +1,2 @@
+Msg 208, Level 16, State 1, Server WIN-18A5D8C0DM1\MSSQLSERVER2, Line 1
+El nombre de objeto 'CLASS_UEES.dbo.TRANSAC' no es válido.

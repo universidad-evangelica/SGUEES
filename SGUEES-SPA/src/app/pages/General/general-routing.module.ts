@@ -6,12 +6,12 @@ import { AppCanDeactivateGuard } from 'src/app/app-candeactivate.guard';
 import { GenRubroComponent } from './gen-rubro/gen-rubro.component';
 import { GenTipoGastoComponent } from './gen-tipo-gasto/gen-tipo-gasto.component';
 import { GenTipoDocumentoComponent } from './gen-tipo-documento/gen-tipo-documento.component';
-import { GenPaisComponent } from './gen-pais/gen-pais.component';
-import { GenDeptoComponent } from './gen-depto/gen-depto.component';
-import { GenMunicipioComponent } from './gen-municipio/gen-municipio.component';
-import { GenDistritoComponent } from './gen-distrito/gen-distrito.component';
 import { GenSectorEconomicoComponent } from './gen-sector-economico/gen-sector-economico.component';
 import { GenEmpresaComponent } from './gen-empresa/gen-empresa.component';
+import { GenEstructuraTerritorialComponent } from './gen-estructura-territorial/gen-estructura-territorial.component';
+import { GenDivisionComponent } from './gen-division/gen-division.component';
+import { GenGerenciaComponent } from './gen-gerencia/gen-gerencia.component';
+import { GenBancoComponent } from './gen-banco/gen-banco.component';
 
 const routes: Routes = [
   {
@@ -39,38 +39,6 @@ const routes: Routes = [
     loadChildren: () => import('./gen-tipo-documento/gen-tipo-documento.module').then(m => m.GenTipoDocumentoModule)
   },
   {
-    path:'gen-pais',
-    component: GenPaisComponent,
-    data: { titulo: 'Paises' },
-    canActivate: [ AuthGuardService ],
-    canDeactivate: [ AppCanDeactivateGuard ],
-    loadChildren: () => import('./gen-pais/gen-pais.module').then(m => m.GenPaisModule)
-  },
-  {
-    path:'gen-depto',
-    component: GenDeptoComponent,
-    data: { titulo: 'Departamentos' },
-    canActivate: [ AuthGuardService ],
-    canDeactivate: [ AppCanDeactivateGuard ],
-    loadChildren: () => import('./gen-depto/gen-depto.module').then(m => m.GenDeptoModule)
-  },
-   {
-    path:'gen-municipio',
-    component: GenMunicipioComponent,
-    data: { titulo: 'municipios' },
-    canActivate: [ AuthGuardService ],
-    canDeactivate: [ AppCanDeactivateGuard ],
-    loadChildren: () => import('./gen-municipio/gen-municipio.module').then(m => m.GenMunicipioModule)
-  },
-  {
-    path:'gen-distrito',
-    component: GenDistritoComponent,
-    data: { titulo: 'Distritos' },
-    canActivate: [ AuthGuardService ],
-    canDeactivate: [ AppCanDeactivateGuard ],
-    loadChildren: () => import('./gen-distrito/gen-distrito.module').then(m => m.GenDistritoModule)
-  },
-  {
     path:'gen-sector-economico',
     component: GenSectorEconomicoComponent,
     data: { titulo: 'Sector Economicos' },
@@ -85,6 +53,38 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-empresa/gen-empresa.module').then(m => m.GenEmpresaModule)
+  },
+  {
+    path: 'gen-estructura-territorial',
+    component: GenEstructuraTerritorialComponent,
+    data: { titulo: 'Estructura Territorial' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-estructura-territorial/gen-estructura-territorial.module').then(m => m.GenEstructuraTerritorialModule)
+  },
+  {
+    path: 'gen-division',
+    component: GenDivisionComponent,
+    data: { titulo: 'Divisiones' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-division/gen-division.module').then(m => m.GenDivisionModule)
+  },
+  {
+    path: 'gen-gerencia',
+    component: GenGerenciaComponent,
+    data: { titulo: 'Gerencias' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-gerencia/gen-gerencia.module').then(m => m.GenGerenciaModule)
+  },
+  {
+    path: 'gen-banco',
+    component: GenBancoComponent,
+    data: { titulo: 'Bancos' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-banco/gen-banco.module').then(m => m.GenBancoModule)
   }
 ];
 

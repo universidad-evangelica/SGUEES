@@ -26,20 +26,54 @@ export class ConCatalogoPresupuestoComponent extends CBaseComponent implements O
 		this.items = this.service.getItems();
 	}
 
+	//#region <Declarando Variales>
+	readOnly = false;
+	// #endregion
+
+	//#region <Inicializando Opciones>
 	ngOnInit(): void {
 		this.inicializaOpciones();
+		this.llenaComboBox();
 		this.consultar();
 	}
 
 	inicializaOpciones() {}
+	// #endregion
 
-	fillParam(xKey?: any): any {
-		return { CUENTA_CONTABLE: xKey || 0 };
+	//#region <Manejo de Combos>
+	llenaComboBox() {}
+	//#endregion
+
+	//#region <Metodos Mtto>
+	fillParam(xCUENTA_CONTABLE?: string): any {
+		if (xCUENTA_CONTABLE == undefined) {
+			xCUENTA_CONTABLE = '';
+		}
+		return {
+			CUENTA_CONTABLE: xCUENTA_CONTABLE,
+		};
 	}
 
 	override fillData(xModel?: ConCatalogoPresupuesto): ConCatalogoPresupuesto {
 		if (xModel !== undefined) {
-			return { ...xModel };
+			return {
+				CORR_EMPRESA: xModel.CORR_EMPRESA,
+				CUENTA_CONTABLE: xModel.CUENTA_CONTABLE,
+				NOMBRE_CUENTA: xModel.NOMBRE_CUENTA,
+				ANIO_PERIODO: xModel.ANIO_PERIODO,
+				MONTO_PRESUPUESTO_1: xModel.MONTO_PRESUPUESTO_1,
+				MONTO_PRESUPUESTO_2: xModel.MONTO_PRESUPUESTO_2,
+				MONTO_PRESUPUESTO_3: xModel.MONTO_PRESUPUESTO_3,
+				MONTO_PRESUPUESTO_4: xModel.MONTO_PRESUPUESTO_4,
+				MONTO_PRESUPUESTO_5: xModel.MONTO_PRESUPUESTO_5,
+				MONTO_PRESUPUESTO_6: xModel.MONTO_PRESUPUESTO_6,
+				MONTO_PRESUPUESTO_7: xModel.MONTO_PRESUPUESTO_7,
+				MONTO_PRESUPUESTO_8: xModel.MONTO_PRESUPUESTO_8,
+				MONTO_PRESUPUESTO_9: xModel.MONTO_PRESUPUESTO_9,
+				MONTO_PRESUPUESTO_10: xModel.MONTO_PRESUPUESTO_10,
+				MONTO_PRESUPUESTO_11: xModel.MONTO_PRESUPUESTO_11,
+				MONTO_PRESUPUESTO_12: xModel.MONTO_PRESUPUESTO_12,
+			};
 		} else {
 			return {
 				CORR_EMPRESA: 0,
@@ -155,4 +189,32 @@ export class ConCatalogoPresupuestoComponent extends CBaseComponent implements O
 			});
 	}
 
+	override bloquear(): void {
+		this.dataForm.instance.getEditor('CUENTA_CONTABLE')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NOMBRE_CUENTA')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ANIO_PERIODO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('MONTO_PRESUPUESTO_1')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('MONTO_PRESUPUESTO_2')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('MONTO_PRESUPUESTO_3')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('MONTO_PRESUPUESTO_4')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('MONTO_PRESUPUESTO_5')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('MONTO_PRESUPUESTO_6')?.option('readOnly', true);
+		this.readOnly = true;
+	}
+
+	override habilitar(): void {
+		this.readOnly = false;
+		setTimeout(() => {
+			if (this.banderaMtto === UpdateType.Update) {
+				this.dataForm.instance.getEditor('CUENTA_CONTABLE')?.option('readOnly', true);
+			}
+		});
+	}
+
+	override setFocus() {
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('CUENTA_CONTABLE')?.focus();
+		});
+	}
+	//#endregion
 }

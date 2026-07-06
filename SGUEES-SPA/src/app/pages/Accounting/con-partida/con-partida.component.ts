@@ -13,9 +13,6 @@ import { ConPartidaDetaService } from '../con-partida-deta/con-partida-deta.serv
 import { ConPartidaDeta } from '../con-partida-deta/models/con-partida-deta';
 import { ConPartidaDocService } from './con-partida-doc.service';
 import { ConPartidaDoc } from './models/con-partida-doc';
-import { ConClasePartidaService } from '../con-clase-partida/con-clase-partida.service';
-import { ConCatalogoCuentaService } from '../con-catalogo-cuenta/con-catalogo-cuenta.service';
-import { ConCentroCostoService } from '../con-centro-costo/con-centro-costo.service';
 import { ConCatalogoCuentaCentroCostoService } from '../con-catalogo-cuenta-centro-costo/con-catalogo-cuenta-centro-costo.service';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { custom } from 'devextreme/ui/dialog';
@@ -71,9 +68,6 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		private service: ConPartidaService,
 		private detaService: ConPartidaDetaService,
 		private docService: ConPartidaDocService,
-		private clasePartidaService: ConClasePartidaService,
-		private catalogoCuentaService: ConCatalogoCuentaService,
-		private centroCostoService: ConCentroCostoService,
 		private cuentaCentroService: ConCatalogoCuentaCentroCostoService,
 		private cdr: ChangeDetectorRef,
 		private sanitization: DomSanitizer
@@ -133,7 +127,8 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 					icon: 'trash',
 					stylingMode: 'text',
 					cssClass: 'sguees-grid-action-delete',
-					visible: () => this.permiteDele,
+					visible: (e: { row?: { data?: ConPartida } }) =>
+						this.permiteDele && e.row?.data?.ESTADO_PARTIDA === 'DI',
 				},
 			],
 		});
@@ -151,7 +146,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	ngOnInit(): void {
 		const today = this.appInfoService.getDate();
 		this.vFECHA_INICIAL = new Date(today.getFullYear(), today.getMonth(), 1);
-		this.vFECHA_FINAL = today;
+		this.vFECHA_FINAL = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
@@ -170,7 +165,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 
 	getMES_PERIODO() {
 		this.appInfoService
-			.getLookUp('COM_DOCUMENTO', 'GEN_LISTA', 'GetMES', undefined, environment.UrlGENERALAPI)
+			.getLookUp('CON_PARTIDA', 'GEN_LISTA', 'GetMES', undefined, environment.UrlGENERALAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -185,17 +180,13 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	getCORR_CLASE_PARTIDA() {
-		this.clasePartidaService
-			.getAll({ CORR_CLASE_PARTIDA: 0 })
+		this.appInfoService
+			.getLookUp('CON_PARTIDA', 'CON_CLASE_PARTIDA', 'GetCORR_CLASE_PARTIDA', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
-						this.mCORR_CLASE_PARTIDA = (response.Data || []).map((item: any) => ({
-							Key: item.CORR_CLASE_PARTIDA,
-							Value: item.NOMBRE_CLASE_PARTIDA,
-							NOMBRE_CORTO_CLASE: item.NOMBRE_CORTO_CLASE,
-						}));
+						this.mCORR_CLASE_PARTIDA = response.Data;
 					}
 				},
 				error: (error: any) => {
@@ -205,18 +196,13 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	getCUENTA_CONTABLE() {
-		this.catalogoCuentaService
-			.getAll({ CUENTA_CONTABLE: '' })
+		this.appInfoService
+			.getLookUp('CON_PARTIDA', 'CON_CATALOGO_CUENTA', 'GetCUENTA_CONTABLE', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
-						this.mCUENTA_CONTABLE = (response.Data || [])
-							.filter((item: any) => item.ES_DETALLE)
-							.map((item: any) => ({
-								CUENTA_CONTABLE: item.CUENTA_CONTABLE,
-								NOMBRE_CUENTA: item.NOMBRE_CUENTA,
-							}));
+						this.mCUENTA_CONTABLE = response.Data;
 					}
 				},
 				error: (error: any) => {
@@ -226,17 +212,13 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	getCORR_CENTRO_COSTO() {
-		this.centroCostoService
-			.getAll({ CORR_CENTRO_COSTO: 0 })
+		this.appInfoService
+			.getLookUp('CON_PARTIDA', 'CON_CENTRO_COSTO', 'GetCORR_CENTRO_COSTO', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
-						this.mCORR_CENTRO_COSTO = (response.Data || []).map((item: any) => ({
-							CORR_CENTRO_COSTO: item.CORR_CENTRO_COSTO,
-							NOMBRE_CENTRO: item.NOMBRE_CENTRO,
-							CODIGO_CENTRO_COSTO: item.CODIGO_CENTRO_COSTO,
-						}));
+						this.mCORR_CENTRO_COSTO = response.Data;
 					}
 				},
 				error: (error: any) => {
@@ -264,9 +246,23 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	fillParam(xKey?: any): any {
 		return {
 			CORR_PARTIDA: xKey || 0,
-			FECHA_INICIAL: this.vFECHA_INICIAL?.toISOString(),
-			FECHA_FINAL: this.vFECHA_FINAL?.toISOString(),
+			FECHA_INICIAL: this.appInfoService.toDate(this.vFECHA_INICIAL),
+			FECHA_FINAL: this.appInfoService.toDate(this.vFECHA_FINAL),
 		};
+	}
+
+	buildDeletePayload(row: ConPartida): ConPartida {
+		return {
+			CORR_EMPRESA: row.CORR_EMPRESA ?? this.appInfoService.CORR_EMPRESA,
+			ANIO_PERIODO: row.ANIO_PERIODO,
+			MES_PERIODO: row.MES_PERIODO,
+			CORR_CLASE_PARTIDA: row.CORR_CLASE_PARTIDA,
+			CORR_PARTIDA: row.CORR_PARTIDA,
+		} as ConPartida;
+	}
+
+	partidaRowKey(row: ConPartida): string {
+		return `${row.ANIO_PERIODO}-${row.MES_PERIODO}-${row.CORR_CLASE_PARTIDA}-${row.CORR_PARTIDA}`;
 	}
 
 	override fillData(xModel?: ConPartida): ConPartida {
@@ -348,7 +344,9 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 					next: (response: any) => {
 						if (response.Result) {
 							this.model = response.Data;
-							const vIndex = this.models.findIndex((item: any) => item.CORR_PARTIDA === response.Data.CORR_PARTIDA);
+							const vIndex = this.models.findIndex(
+								(item: ConPartida) => this.partidaRowKey(item) === this.partidaRowKey(response.Data)
+							);
 							this.models[vIndex] = response.Data;
 							this.modelUpdate = this.fillData(this.model);
 							this.volverAlListado();
@@ -723,10 +721,6 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	agregarDetalle() {
-		if (!this.hasPartidaKeys()) {
-			this.notifyFx('Debe guardar la partida antes de agregar detalle', NotifyType.Warning);
-			return;
-		}
 		if (this.readOnly || this.detalleEditando) {
 			return;
 		}
@@ -1020,6 +1014,58 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
+	private guardarEncabezadoParaDetalle(onSuccess: () => void, onCancel: () => void): void {
+		if (this.hasPartidaKeys()) {
+			onSuccess();
+			return;
+		}
+
+		if (!this.service.esValido(this.model, this.notifyFx)) {
+			onCancel();
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.insert(this.model)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (response.Result) {
+						this.models.push(response.Data);
+						this.model = response.Data;
+						this.modelUpdate = this.fillData(this.model);
+						this.AsignaStatus(UpdateType.Update);
+						this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
+						this.refrescarBotones();
+						onSuccess();
+					} else {
+						this.notifyFx(response.ErrorMessage, NotifyType.Error);
+						onCancel();
+					}
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyFx(error, NotifyType.Error);
+					onCancel();
+				},
+			});
+	}
+
+	private ejecutarDetalleConEncabezado(
+		accion: () => Promise<boolean>
+	): Promise<boolean> {
+		return new Promise((resolve, reject) => {
+			this.guardarEncabezadoParaDetalle(
+				() => {
+					accion().then(resolve).catch(reject);
+				},
+				() => resolve(true)
+			);
+		});
+	}
+
 	private buildDetallePayload(data: any): any {
 		this.enriquecerDetalleData(data);
 		return {
@@ -1073,15 +1119,20 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 
-		e.cancel = this.guardarDetalleRemoto(e.data, true);
+		e.cancel = this.ejecutarDetalleConEncabezado(() => this.guardarDetalleRemoto(e.data, true));
 	}
 
 	detalleRowUpdating(e: any) {
 		const data = { ...e.oldData, ...e.newData };
-		e.cancel = this.guardarDetalleRemoto(data, false);
+		e.cancel = this.ejecutarDetalleConEncabezado(() => this.guardarDetalleRemoto(data, false));
 	}
 
 	detalleRowRemoving(e: any) {
+		if (!this.hasPartidaKeys()) {
+			e.cancel = true;
+			return;
+		}
+
 		e.cancel = new Promise((resolve, reject) => {
 			this.detaService
 				.delete(this.buildDetallePayload(e.data))
@@ -1091,7 +1142,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 						if (response.Result) {
 							this.refrescarBotones();
 							this.refrescarGridDetalle();
-							this.notifyFx('Línea eliminada con exito!', NotifyType.Success);
+							this.notifyFx('Línea eliminada con éxito!', NotifyType.Success);
 							resolve(false);
 						} else {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -1107,24 +1158,38 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	rowRemoving(e: any) {
-		this.service
-			.delete(this.fillParam(e.data.CORR_PARTIDA))
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-						e.component.refresh();
-					} else {
-						e.cancel = true;
-						this.notifyFx(response.ErrorMessage, NotifyType.Error);
-					}
-				},
-				error: (error: any) => {
-					e.cancel = true;
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+		if (e.data?.ESTADO_PARTIDA !== 'DI') {
+			e.cancel = true;
+			this.notifyFx(
+				'Solo se pueden eliminar partidas DIGITADAS. Para partidas APLICADAS use Desaplicar o Anular.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
+		e.cancel = new Promise<boolean>((resolve, reject) => {
+			this.service
+				.delete(this.buildDeletePayload(e.data))
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (response.Result) {
+							this.models = (this.models || []).filter(
+								(item: ConPartida) => this.partidaRowKey(item) !== this.partidaRowKey(e.data)
+							);
+							this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
+							resolve(false);
+						} else {
+							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							resolve(true);
+						}
+					},
+					error: (error: any) => {
+						this.notifyFx(error, NotifyType.Error);
+						reject(error);
+					},
+				});
+		});
 	}
 
 	selectedLookUpLista(vRow: any): any {
@@ -1133,8 +1198,8 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 
 	selectedLookUpCORR_CLASE_PARTIDA(vRow: any): any {
 		const clase = vRow[0];
-		this.model.NOMBRE_CLASE_PARTIDA = clase?.Value || '';
-		return clase?.Key;
+		this.model.NOMBRE_CLASE_PARTIDA = clase?.NOMBRE_CLASE_PARTIDA || '';
+		return clase?.CORR_CLASE_PARTIDA;
 	}
 
 	selectedLookUpCUENTA_CONTABLE(vRow: any): any {
@@ -1146,7 +1211,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	onClasePartidaChanged(value: number) {
-		const clase = this.mCORR_CLASE_PARTIDA.find((item: any) => item.Key === value);
-		this.model.NOMBRE_CLASE_PARTIDA = clase?.Value || '';
+		const clase = this.mCORR_CLASE_PARTIDA.find((item: any) => item.CORR_CLASE_PARTIDA === value);
+		this.model.NOMBRE_CLASE_PARTIDA = clase?.NOMBRE_CLASE_PARTIDA || '';
 	}
 }

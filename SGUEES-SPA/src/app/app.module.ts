@@ -28,6 +28,7 @@ import { GeneralModule } from './pages/General/general.module';
 import { AccountingModule } from './pages/Accounting/accounting.module';
 import { SelectionHiringModule } from './pages/SelectionHiring/selection-hiring.module';
 import { PayrollModule } from './pages/Payroll/payroll.module';
+import { BankingModule } from './pages/Banking/banking.module';
 
 import { CrmContactListModule } from './pages/Samples/crm-contact-list/crm-contact-list.component';
 import { CrmContactDetailsModule } from './pages/Samples/crm-contact-details/crm-contact-details.component';
@@ -88,6 +89,7 @@ export function tokenGetterLocal(): string {
     AccountingModule,
     SelectionHiringModule,
     PayrollModule,
+    BankingModule,
     AppRoutingModule,
 
     //import primeng

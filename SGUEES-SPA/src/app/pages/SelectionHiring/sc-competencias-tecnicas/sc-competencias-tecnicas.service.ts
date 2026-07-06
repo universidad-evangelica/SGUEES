@@ -4,8 +4,12 @@ import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildRemoteGridWhere, createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
+import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
 import { SC_COMPETENCIA_NIVEL, ScCompetenciasTecnicas } from './models/sc-competencias-tecnicas';
 import { ScCompetenciasTecnicasRepository } from './sc-competencias-tecnicas.repository';
+
+const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_TECNICAS';
 
 export interface ScCompetenciaFormContext {
 	nivel: string;
@@ -25,16 +29,6 @@ export class ScCompetenciasTecnicasService {
 	esValido(model: ScCompetenciasTecnicas, msg: Function, isAdd: boolean): boolean {
 		if (!model.NIVEL) {
 			msg('Debe seleccionar el nivel de la competencia.', NotifyType.Warning);
-			return false;
-		}
-
-		if (!model.DESCRIPCION || model.DESCRIPCION.trim() === '') {
-			msg('Debe ingresar la descripcion.', NotifyType.Warning);
-			return false;
-		}
-
-		if (model.DESCRIPCION.trim().length > 500) {
-			msg('La descripcion no puede superar 500 caracteres.', NotifyType.Warning);
 			return false;
 		}
 
@@ -72,6 +66,16 @@ export class ScCompetenciasTecnicasService {
 				msg('El nombre no puede superar 150 caracteres.', NotifyType.Warning);
 				return false;
 			}
+		}
+
+		if (!model.DESCRIPCION || model.DESCRIPCION.trim() === '') {
+			msg('Debe ingresar la descripcion.', NotifyType.Warning);
+			return false;
+		}
+
+		if (model.DESCRIPCION.trim().length > 500) {
+			msg('La descripcion no puede superar 500 caracteres.', NotifyType.Warning);
+			return false;
 		}
 
 		return true;
@@ -115,6 +119,10 @@ export class ScCompetenciasTecnicasService {
 
 	getAll(param: any): Observable<IResult> {
 		return this.repo.get(this.buildWhere(param));
+	}
+
+	getDistinctValues(param: any): Observable<IResult> {
+		return this.repo.getDistinctValues(this.buildWhere(param));
 	}
 
 	getPadres(nivelPadre: string, incluirInactivos = false): Observable<IResult> {
@@ -219,66 +227,25 @@ export class ScCompetenciasTecnicasService {
 					},
 				],
 			},
-			{ dataField: 'CORR_COMPETENCIAS_TECNICAS', caption: 'Corr.', width: 90 },
+			{
+				dataField: 'CORR_COMPETENCIAS_TECNICAS',
+				caption: 'Corr.',
+				width: 90,
+				dataType: 'number',
+				filterOperations: ['=', '<', '>', '<=', '>='],
+			},
 			{ dataField: 'CODIGO_COMPETENCIAS_TECNICAS', caption: 'Codigo', width: 120 },
 			{ dataField: 'NOMBRE_COMPETENCIAS_TECNICAS', caption: 'Competencia Tecnica', width: 260 },
 			{ dataField: 'DESCRIPCION', caption: 'Definicion', width: 360 },
 			{ dataField: 'NIVEL', caption: 'Nivel', width: 80, alignment: 'center' },
 			{ dataField: 'CODIGO_PADRE', caption: 'Cod. Padre', width: 110 },
-			{
-				dataField: 'ESTADO_COMPETENCIAS_TECNICAS',
-				caption: 'Estado',
-				width: 140,
-				allowFiltering: true,
-				allowHeaderFiltering: true,
-				cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					const badge = document.createElement('span');
-					badge.classList.add(
-						'estado-badge',
-						cellInfo.value ? 'estado-badge--activo' : 'estado-badge--inactivo'
-					);
-					badge.textContent = cellInfo.value ? 'Activo' : 'Inactivo';
-					cellElement.innerHTML = '';
-					cellElement.appendChild(badge);
-				},
-				lookup: {
-					dataSource: [
-						{ value: true, text: 'Activo' },
-						{ value: false, text: 'Inactivo' },
-					],
-					valueExpr: 'value',
-					displayExpr: 'text',
-				},
-				filterCellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					new dxSelectBox(cellElement, {
-						dataSource: [
-							{ value: true, text: 'Activo' },
-							{ value: false, text: 'Inactivo' },
-						],
-						displayExpr: 'text',
-						valueExpr: 'value',
-						value: cellInfo.value,
-						placeholder: 'Seleccione...',
-						showClearButton: false,
-						onValueChanged: (e: any) => {
-							cellInfo.setValue(e.value);
-						},
-					});
-				},
-				calculateFilterExpression: (filterValue: any) => {
-					if (filterValue === '__ALL__' || filterValue === null || filterValue === undefined) {
-						return null;
-					}
-
-					return ['ESTADO_COMPETENCIAS_TECNICAS', '=', filterValue];
-				},
-			},
+			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 160 },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 160 },
-			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm', calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA') },
 			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 160 },
 			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 160 },
-			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm', calculateFilterExpression: createDateTimeFilterExpression('FECHA_ACTU') },
 		];
 	}
 
@@ -319,7 +286,7 @@ export class ScCompetenciasTecnicasService {
 					valueExpr: 'value',
 					onValueChanged: ctx.onNivelChanged,
 				},
-				validationRules: [{ type: 'required', message: 'El nivel es obligatorio' }],
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{
 				dataField: 'CORR_COMPETENCIAS_TECNICAS_PADRE',
@@ -338,7 +305,7 @@ export class ScCompetenciasTecnicasService {
 					showClearButton: true,
 					onValueChanged: ctx.onPadreChanged,
 				},
-				validationRules: showPadre ? [{ type: 'required', message: 'Debe seleccionar el padre' }] : [],
+				validationRules: showPadre ? [{ type: 'required', message: 'Este campo es obligatorio' }] : [],
 			},
 			{
 				dataField: 'CODIGO_COMPETENCIAS_TECNICAS',
@@ -358,7 +325,7 @@ export class ScCompetenciasTecnicasService {
 							}
 						: undefined,
 				},
-				validationRules: isNivel1 ? [{ type: 'required', message: 'El codigo es obligatorio' }] : [],
+				validationRules: isNivel1 ? [{ type: 'required', message: 'Este campo es obligatorio' }] : [],
 			},
 			{
 				dataField: 'CODIGO_PREFIJO',
@@ -383,7 +350,7 @@ export class ScCompetenciasTecnicasService {
 						}
 					},
 				},
-				validationRules: isNivel2 ? [{ type: 'required', message: 'El sufijo es obligatorio' }] : [],
+				validationRules: isNivel2 ? [{ type: 'required', message: 'Este campo es obligatorio' }] : [],
 			},
 		];
 
@@ -393,7 +360,7 @@ export class ScCompetenciasTecnicasService {
 				label: { text: 'Competencia tecnica' },
 				colSpan: 6,
 				editorOptions: { placeholder: 'Nombre de la competencia...', maxLength: 150, showClearButton: true },
-				validationRules: [{ type: 'required', message: 'El nombre es obligatorio' }],
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			});
 		}
 
@@ -411,7 +378,7 @@ export class ScCompetenciasTecnicasService {
 				colSpan: 8,
 				editorType: 'dxTextArea',
 				editorOptions: { placeholder: 'Definicion...', maxLength: 500, height: 120 },
-				validationRules: [{ type: 'required', message: 'La definicion es obligatoria' }],
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			}
 		);
 
@@ -419,52 +386,29 @@ export class ScCompetenciasTecnicasService {
 	}
 
 	private buildWhere(param: any): IParam[] {
-		const xWhere: IParam[] = [];
-		const columnFilters = [
-			'CORR_COMPETENCIAS_TECNICAS',
-			'CODIGO_COMPETENCIAS_TECNICAS',
-			'NOMBRE_COMPETENCIAS_TECNICAS',
-			'DESCRIPCION',
-			'NIVEL',
-			'USUARIO_CREA',
-			'ESTACION_CREA',
-			'FECHA_CREA',
-			'USUARIO_ACTU',
-			'ESTACION_ACTU',
-			'FECHA_ACTU',
-		];
-
-		if (param.BUSQUEDA) {
-			xWhere.push({ Parameter: 'BUSQUEDA', Value: param.BUSQUEDA });
-		}
-
-		if (param.ESTADO_COMPETENCIAS_TECNICAS !== null && param.ESTADO_COMPETENCIAS_TECNICAS !== undefined) {
-			xWhere.push({ Parameter: 'ESTADO_COMPETENCIAS_TECNICAS', Value: param.ESTADO_COMPETENCIAS_TECNICAS });
-		}
-
-		if (param.PAGE) {
-			xWhere.push({ Parameter: 'PAGE', Value: param.PAGE });
-		}
-
-		if (param.PAGE_SIZE) {
-			xWhere.push({ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE });
-		}
-
-		columnFilters.forEach((field) => {
-			const value = param[field];
-			if (this.hasColumnFilter(value, field)) {
-				xWhere.push({ Parameter: field, Value: value });
-			}
-		});
-
-		return xWhere;
+		return buildRemoteGridWhere(param, ESTADO_FIELD);
 	}
+}
 
-	private hasColumnFilter(value: any, field: string): boolean {
-		if (value === null || value === undefined || `${value}`.trim() === '') {
-			return false;
-		}
+export const EMPRESA_WARNING_ERROR_CODE = 4100;
+export const EMPRESA_REGISTRO_ETIQUETA = 'la competencia técnica';
 
-		return !(field === 'CORR_COMPETENCIAS_TECNICAS' && Number(value) === 0);
-	}
+export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
+	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
+}
+
+export function isEmpresaWarningResponse(response: any): boolean {
+	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
+}
+
+export function isEmpresaFkErrorMessage(message: string): boolean {
+	const value = `${message ?? ''}`.toLowerCase();
+	return (
+		value.includes('gen_empresa') ||
+		value.includes('foreign key') ||
+		value.includes('clave externa') ||
+		value.includes('reference constraint') ||
+		value.includes('conflicted with the foreign key') ||
+		value.includes('no tiene una empresa asignada')
+	);
 }

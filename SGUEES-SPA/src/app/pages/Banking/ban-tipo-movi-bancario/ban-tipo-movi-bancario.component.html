@@ -1,0 +1,94 @@
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="permiteAdd"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+>
+</app-barra-data-mtto>
+<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+		<div *dxTemplate="let cellInfo of 'CORR_LINEALookup'">
+			<app-data-lookup
+				[model]="mCORR_LINEA"
+				[(value)]="model.CORR_LINEA"
+				[selectedRowKeys]="selectedLookUpCORR_LINEA"
+				[readOnly]="readOnly"
+				[valueExpr]="'CORR_LINEA'"
+				[displayExpr]="'NOMBRE_LINEA_TRABAJO'"
+				[lookupColumns]="lineaLookupColumns"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_CLASE_PARTIDALookup'">
+			<app-data-lookup
+				[model]="mCORR_CLASE_PARTIDA"
+				[(value)]="model.CORR_CLASE_PARTIDA"
+				[selectedRowKeys]="selectedLookUpCORR_CLASE_PARTIDA"
+				[readOnly]="readOnly"
+				[valueExpr]="'CORR_CLASE_PARTIDA'"
+				[displayExpr]="'NOMBRE_CLASE_PARTIDA'"
+				[lookupColumns]="clasePartidaLookupColumns"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'SUMA_RESTALookup'">
+			<app-data-lookup
+				[model]="mSUMA_RESTA"
+				[(value)]="model.SUMA_RESTA"
+				[selectedRowKeys]="selectedLookUpNumerico"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CLASE_MOVIMIENTOLookup'">
+			<app-data-lookup
+				[model]="mCLASE_MOVIMIENTO"
+				[(value)]="model.CLASE_MOVIMIENTO"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CUENTA_CONTABLE_GASTOLookup'">
+			<app-data-lookup
+				[model]="mCUENTA_CONTABLE"
+				[(value)]="model.CUENTA_CONTABLE_GASTO"
+				[selectedRowKeys]="selectedLookUpCUENTA_CONTABLE"
+				[readOnly]="readOnly"
+				[valueExpr]="'CUENTA_CONTABLE'"
+				[displayExpr]="'CUENTA_CONTABLE'"
+				[lookupColumns]="cuentaLookupColumns"
+				[showClearButton]="true"
+			>
+			</app-data-lookup>
+		</div>
+	</dx-form>
+</div>
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="'CORR_TIPO_MOVIMIENTO'"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>

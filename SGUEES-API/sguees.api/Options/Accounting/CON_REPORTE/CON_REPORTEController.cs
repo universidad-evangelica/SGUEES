@@ -60,7 +60,7 @@ namespace sguees.Controllers
 
 			Data.CORR_EMPRESA = int.Parse(User.Claims.Single(e => e.Type == "CORR_EMPRESA").Value);
 			var resultado = await _service.ConsultarAsync(Data);
-			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+			return resultado.Result ? Ok(resultado) : BadRequest(resultado);
 		}
 
 		[HttpPost("getPDF")]

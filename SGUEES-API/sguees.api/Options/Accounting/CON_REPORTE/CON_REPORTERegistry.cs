@@ -20,37 +20,85 @@ namespace sguees.Repositories
 
 				["LIBRO_DIARIO_AUXILIAR"] = ("PRAL_IMPR_LIBRO_DIARIO_AUXILIAR", "Libro Diario Auxiliar", "B", 1, true, "LIBRO_DIARIO_AUXILIAR", "/con-reporte-libro-diario-auxiliar",
 
-					new[] { "FECHA_INICIAL", "FECHA_FINAL", "CUENTA_CONTABLE_INICIAL", "CUENTA_CONTABLE_FINAL", "CORR_CONFI_REPORTE", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "CUENTA_A_CERO", "CONSOLIDADO", "CORR_MONEDA", "FOLIADO", "NUMERO_FOLIO" }),
+					new[] { "FECHA_INICIAL", "FECHA_FINAL", "CUENTA_CONTABLE_INICIAL", "CUENTA_CONTABLE_FINAL", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "CUENTA_A_CERO", "CONSOLIDADO", "FOLIADO", "NUMERO_FOLIO" }),
 
 				["LIBRO_DIARIO_AUXILIAR_MES"] = ("PRAL_IMPR_LIBRO_DIARIO_AUXILIAR", "Libro Diario Auxiliar - Saldo Mes", "B", 1, true, "LIBRO_DIARIO_AUXILIAR_MES", "/con-reporte-libro-diario-auxiliar-mes",
 
-					new[] { "FECHA_INICIAL", "FECHA_FINAL", "CUENTA_CONTABLE_INICIAL", "CUENTA_CONTABLE_FINAL", "CORR_CONFI_REPORTE", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "CUENTA_A_CERO", "CONSOLIDADO", "CORR_MONEDA", "FOLIADO", "NUMERO_FOLIO" }),
+					new[] { "FECHA_INICIAL", "FECHA_FINAL", "CUENTA_CONTABLE_INICIAL", "CUENTA_CONTABLE_FINAL", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "CUENTA_A_CERO", "CONSOLIDADO", "FOLIADO", "NUMERO_FOLIO" }),
 
 				["LIBRO_DIARIO_MAYOR"] = ("PRAL_IMPR_LIBRO_DIARIO_MAYOR", "Libro Diario Mayor", "B", 1, true, "LIBRO_DIARIO_MAYOR", "/con-reporte-libro-diario-mayor",
 
-					new[] { "FECHA_INICIAL", "FECHA_FINAL", "CUENTA_CONTABLE_INICIAL", "CUENTA_CONTABLE_FINAL", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "CUENTA_A_CERO", "CORR_MONEDA", "FOLIADO", "NUMERO_FOLIO" }),
+					new[] { "FECHA_INICIAL", "FECHA_FINAL", "CUENTA_CONTABLE_INICIAL", "CUENTA_CONTABLE_FINAL", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "CUENTA_A_CERO", "FOLIADO", "NUMERO_FOLIO" }),
 
 				["BALANCE_COMPROBACION"] = ("PRAL_IMPR_BALANCE_COMPROBACION", "Balance de Comprobacion", "B", 1, true, "BALANCE_COMPROBACION", "/con-reporte-balance-comprobacion",
 
-					new[] { "FECHA_FINAL", "NIVEL", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "CORR_MONEDA", "CUENTA_A_CERO", "FOLIADO", "NUMERO_FOLIO" }),
+					new[] { "FECHA_FINAL", "NIVEL", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "CUENTA_A_CERO", "FOLIADO", "NUMERO_FOLIO" }),
 
 				["BALANCE_COMPROBACION_MES"] = ("PRAL_IMPR_BALANCE_COMPROBACION", "Balance de Comprobacion - Saldo Mes", "B", 1, true, "BALANCE_COMPROBACION_MES", "/con-reporte-balance-comprobacion-mes",
 
-					new[] { "FECHA_FINAL", "NIVEL", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "CORR_MONEDA", "CUENTA_A_CERO", "FOLIADO", "NUMERO_FOLIO" }),
+					new[] { "FECHA_FINAL", "NIVEL", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "CUENTA_A_CERO", "FOLIADO", "NUMERO_FOLIO" }),
 
 				["BALANCE_GENERAL"] = ("PRAL_IMPR_BALANCE_GENERAL", "Balance General", "B", 1, true, "BALANCE_GENERAL", "/con-reporte-balance-general",
 
-					new[] { "FECHA_FINAL", "NIVEL", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "CORR_MONEDA", "FOLIADO", "NUMERO_FOLIO" }),
+					new[] { "FECHA_FINAL", "NIVEL", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "FOLIADO", "NUMERO_FOLIO" }),
 
 				["ESTADO_RESULTADOS"] = ("PRAL_IMPR_ESTADO_RESULTADOS", "Estado de Resultados", "B", 1, true, "ESTADO_RESULTADOS", "/con-reporte-estado-resultados",
 
-					new[] { "FECHA_FINAL", "NIVEL", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "CORR_MONEDA", "FOLIADO", "NUMERO_FOLIO" }),
+					new[] { "FECHA_FINAL", "NIVEL", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "FOLIADO", "NUMERO_FOLIO" }),
 
 				["BALANCE_GENERAL_VERTICAL"] = ("PRAL_IMPR_BALANCE_GENERAL_VERTICAL", "Balance General Vertical", "B", 1, true, "BALANCE_GENERAL_VERTICAL", "/con-reporte-balance-general-vertical",
 
-					new[] { "FECHA_FINAL", "NIVEL", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "CORR_MONEDA", "FOLIADO", "NUMERO_FOLIO" }),
+					new[] { "FECHA_FINAL", "NIVEL", "PARTIDA_CIERRE", "PARTIDA_LIQUIDACION", "FOLIADO", "NUMERO_FOLIO" }),
 
 			};
+
+
+
+		private static readonly Dictionary<string, string> _crystalDetailTables = new Dictionary<string, string>
+		{
+			["LIBRO_DIARIO_AUXILIAR"] = "PRAL_IMPR_LIBRO_DIARIO_AUXILIAR",
+			["LIBRO_DIARIO_AUXILIAR_MES"] = "PRAL_IMPR_LIBRO_DIARIO_AUXILIAR",
+			["LIBRO_DIARIO_MAYOR"] = "PRAL_IMPR_LIBRO_DIARIO_MAYOR",
+			["BALANCE_COMPROBACION"] = "PRAL_IMPR_BALANCE_COMPROBACION",
+			["BALANCE_COMPROBACION_MES"] = "PRAL_IMPR_BALANCE_COMPROBACION",
+			["BALANCE_GENERAL"] = "PRAL_IMPR_BALANCE_GENERAL",
+			["ESTADO_RESULTADOS"] = "PRAL_IMPR_ESTADO_RESULTADOS",
+			["BALANCE_GENERAL_VERTICAL"] = "PRAL_IMPR_ESTADO_RESULTADOS",
+		};
+
+		private static readonly Dictionary<string, string> _rptEndpoints = new Dictionary<string, string>
+		{
+			["LIBRO_DIARIO_AUXILIAR"] = "PostConLibroDiarioAuxiliarImpr",
+			["LIBRO_DIARIO_AUXILIAR_MES"] = "PostConLibroDiarioAuxiliarMesImpr",
+			["LIBRO_DIARIO_MAYOR"] = "PostConLibroDiarioMayorImpr",
+			["BALANCE_COMPROBACION"] = "PostConBalanceComprobacionImpr",
+			["BALANCE_COMPROBACION_MES"] = "PostConBalanceComprobacionMesImpr",
+			["BALANCE_GENERAL"] = "PostConBalanceGeneralImpr",
+			["ESTADO_RESULTADOS"] = "PostConEstadoResultadosImpr",
+			["BALANCE_GENERAL_VERTICAL"] = "PostConBalanceGeneralVerticalImpr",
+		};
+
+		public static string GetCrystalDetailTable(string codigo, string storedProcedure)
+		{
+			if (!string.IsNullOrWhiteSpace(codigo)
+				&& _crystalDetailTables.TryGetValue(codigo.Trim().ToUpperInvariant(), out var crystalTable))
+			{
+				return crystalTable;
+			}
+
+			return storedProcedure;
+		}
+
+		public static bool TryGetRptEndpoint(string codigo, out string endpoint)
+		{
+			endpoint = null;
+			if (string.IsNullOrWhiteSpace(codigo))
+			{
+				return false;
+			}
+
+			return _rptEndpoints.TryGetValue(codigo.Trim().ToUpperInvariant(), out endpoint);
+		}
 
 
 

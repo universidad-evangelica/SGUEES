@@ -518,6 +518,29 @@ namespace sguees.Repositories
             return objResultado;
         }
 
+        public CResult GetCLASE_BANCO()
+        {
+            CResult objResultado = new();
+
+            objResultado.Data = new List<GEN_LISTAView>()
+            {
+                new() { Key = "CREDO", Value = "Credomatic" },
+                new() { Key = "CUSCA", Value = "Cuscatlán" },
+                new() { Key = "BAG", Value = "Agrícola" },
+                new() { Key = "BDV", Value = "Davivienda" },
+                new() { Key = "BPM", Value = "Promerica" },
+            };
+
+            objResultado.Result = true;
+            objResultado.RowsAffected = 1;
+            objResultado.CodeHelper = 0;
+            objResultado.ErrorCode = 0;
+            objResultado.ErrorMessage = "";
+            objResultado.ErrorSource = "";
+
+            return objResultado;
+        }
+
       
     }
 

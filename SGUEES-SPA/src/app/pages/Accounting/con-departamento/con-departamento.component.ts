@@ -26,20 +26,44 @@ export class ConDepartamentoComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
+	//#region <Declarando Variales>
+	readOnly = false;
+	// #endregion
+
+	//#region <Inicializando Opciones>
 	ngOnInit(): void {
 		this.inicializaOpciones();
+		this.llenaComboBox();
 		this.consultar();
 	}
 
 	inicializaOpciones() {}
+	// #endregion
 
-	fillParam(xKey?: any): any {
-		return { CORR_DEPARTAMENTO: xKey || 0 };
+	//#region <Manejo de Combos>
+	llenaComboBox() {}
+	//#endregion
+
+	//#region <Metodos Mtto>
+	fillParam(xCORR_DEPARTAMENTO?: number): any {
+		if (xCORR_DEPARTAMENTO == undefined) {
+			xCORR_DEPARTAMENTO = 0;
+		}
+		return {
+			CORR_DEPARTAMENTO: xCORR_DEPARTAMENTO,
+		};
 	}
 
 	override fillData(xModel?: ConDepartamento): ConDepartamento {
 		if (xModel !== undefined) {
-			return { ...xModel };
+			return {
+				CORR_EMPRESA: xModel.CORR_EMPRESA,
+				CORR_DIVISION: xModel.CORR_DIVISION,
+				CORR_GERENCIA: xModel.CORR_GERENCIA,
+				CORR_DEPARTAMENTO: xModel.CORR_DEPARTAMENTO,
+				NOMBRE_DEPARTAMENTO: xModel.NOMBRE_DEPARTAMENTO,
+				CODIGO_DEPARTAMENTO: xModel.CODIGO_DEPARTAMENTO,
+			};
 		} else {
 			return {
 				CORR_EMPRESA: 0,
@@ -144,4 +168,27 @@ export class ConDepartamentoComponent extends CBaseComponent implements OnInit {
 				},
 			});
 	}
+
+	override bloquear(): void {
+		this.dataForm.instance.getEditor('CORR_DIVISION')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CORR_GERENCIA')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CORR_DEPARTAMENTO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NOMBRE_DEPARTAMENTO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CODIGO_DEPARTAMENTO')?.option('readOnly', true);
+		this.readOnly = true;
+	}
+
+	override habilitar(): void {
+		this.readOnly = false;
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('CORR_DEPARTAMENTO')?.option('readOnly', true);
+		});
+	}
+
+	override setFocus() {
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('NOMBRE_DEPARTAMENTO')?.focus();
+		});
+	}
+	//#endregion
 }
