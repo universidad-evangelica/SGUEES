@@ -1,0 +1,110 @@
+<!-- ================================================ -->
+<!-- BARRA DE HERRAMIENTAS PRINCIPAL                   -->
+<!-- ================================================ -->
+<app-barra-data-mtto
+    [tituloVentana]="tituloVentana"
+    [isBrowse]="true"
+    [isForm]="false"
+    [permiteAdd]="false"
+    [showRefresh]="true"
+    (consultar)="consultar()"
+>
+</app-barra-data-mtto>
+
+<!-- ================================================ -->
+<!-- ÁRBOL DE UNIDADES (visible cuando !mostrarFormulario) -->
+<!-- ================================================ -->
+<section class="sguees-section-card" *ngIf="!mostrarFormulario">
+    <app-mtto-header
+        [title]="'Unidades del Organigrama'"
+        [subtitle]="'Vista jerarquica de la estructura organizativa'"
+    >
+        <dx-button
+            text="Actualizar"
+            icon="refresh"
+            stylingMode="text"
+            (onClick)="consultar()"
+        >
+        </dx-button>
+        <dx-button
+            *ngIf="permiteAdd"
+            text="Nuevo"
+            type="default"
+            stylingMode="contained"
+            icon="plus"
+            (onClick)="nuevo()"
+        >
+        </dx-button>
+    </app-mtto-header>
+
+    <dx-tree-view
+        #treeView
+        [dataSource]="unidades"
+        dataStructure="plain"
+        keyExpr="CORR_UNIDAD"
+        displayExpr="NOMBRE_UNIDAD_TREE"
+        parentIdExpr="CORR_UNIDAD_PADRE"
+        [showCheckBoxesMode]="'none'"
+        [searchEnabled]="true"
+        [searchTimeout]="200"
+        [selectionMode]="'single'"
+        (onItemClick)="onUnidadSeleccionada($event)"
+    >
+    </dx-tree-view>
+</section>
+
+<!-- ================================================ -->
+<!-- FORMULARIO DE UNIDAD (visible cuando mostrarFormulario) -->
+<!-- ================================================ -->
+<section class="sguees-section-card" *ngIf="mostrarFormulario">
+    <app-barra-data-mtto
+        [tituloVentana]="'Unidad'"
+        [isBrowse]="isBrowse()"
+        [isForm]="isForm()"
+        [permiteAdd]="false"
+        (guardar)="guardar()"
+        (cancelar)="cancelarUnidadGestion()"
+    >
+    </app-barra-data-mtto>
+    <div class="content-block dx-card responsive-paddings" style="margin-top: 15px;">
+       <dx-form #fData id="fData" [formData]="unidadModel" [labelLocation]="'top'" [colCount]="8" [items]="items">
+		<div *dxTemplate="let cellInfo of 'CORR_NIVELESLookup'">
+			<app-data-lookup
+            [model]="mCORR_NIVEL"
+            [(value)]="unidadModel.CORR_NIVEL"
+            [valueExpr]="'CORR_NIVEL'"
+            [displayExpr]="'NOMBRE_NIVEL'"
+            (valueChange)="onNivelChange($event)"
+            [selectedRowKeys]="selectedLookUpCORR_NIVEL"
+			[readOnly]="readOnly"
+            >
+            </app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_UNIDADESLookup'">
+        <app-data-lookup
+            [model]="mCORR_UNIDAD"
+            [(value)]="unidadModel.CORR_UNIDAD_PADRE"
+            [valueExpr]="'CORR_UNIDAD'"
+            [displayExpr]="'NOMBRE_UNIDAD_TREE'"
+            [selectedRowKeys]="selectedLookUpCORR_UNIDAD"
+            [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+</div>
+	</dx-form>
+    </div>
+</section>
+
+<!-- ================================================ -->
+<!-- LOAD PANEL                                       -->
+<!-- ================================================ -->
+<dx-load-panel
+    #loadPanel
+    shadingColor="rgba(0,0,0,0.4)"
+    [position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+    [(visible)]="loadingVisible"
+    [showIndicator]="true"
+    [showPane]="true"
+    [shading]="true"
+>
+</dx-load-panel>

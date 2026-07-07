@@ -1,0 +1,182 @@
+/* ======================================================
+   SECCIÓN DE NIVELES
+====================================================== */
+.niveles-section-card {
+    margin-bottom: 20px;
+}
+
+.niveles-section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: var(--sguees-space-4, 16px);
+    padding-bottom: var(--sguees-space-3, 12px);
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.niveles-section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--sguees-text-primary, #333);
+}
+
+.niveles-section-subtitle {
+    font-size: 12px;
+    color: var(--sguees-text-secondary, #666);
+}
+
+/* ======================================================
+   SECCIÓN DE ORGANIGRAMA
+====================================================== */
+.organigrama-section-card {
+    margin-bottom: 0;
+}
+
+.organigrama-section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: var(--sguees-space-4, 16px);
+    padding-bottom: var(--sguees-space-3, 12px);
+    border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.organigrama-section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--sguees-text-primary, #333);
+}
+
+.organigrama-section-subtitle {
+    font-size: 12px;
+    color: var(--sguees-text-secondary, #666);
+}
+
+/* ======================================================
+   LAYOUT: TREEVIEW + FORMULARIO
+====================================================== */
+.organigrama-layout {
+    display: flex;
+    gap: 20px;
+    min-height: 400px;
+}
+
+/* Panel Izquierdo: TreeView */
+.organigrama-tree-panel {
+    flex: 1.5;
+    min-width: 300px;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: var(--sguees-radius-md, 8px);
+    padding: 12px;
+    background: var(--card-background, #fff);
+    overflow-y: auto;
+    max-height: 600px;
+
+    ::ng-deep .dx-treeview {
+        .dx-treeview-node {
+            padding-left: 8px;
+        }
+
+        .dx-treeview-item {
+            padding: 6px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+
+            &:hover {
+                background: var(--sguees-surface-hover, #f0f2f5);
+            }
+        }
+
+        .dx-state-focused > .dx-treeview-item {
+            background: var(--accent-color, #337ab7);
+            color: #fff;
+        }
+    }
+}
+
+/* Panel Derecho: Formulario */
+.organigrama-form-panel {
+    flex: 2;
+    min-width: 400px;
+    border: 1px solid var(--border-color, #e0e0e0);
+    border-radius: var(--sguees-radius-md, 8px);
+    padding: 20px;
+    background: var(--card-background, #fff);
+}
+
+.organigrama-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+/* ======================================================
+   EMPTY STATE
+====================================================== */
+.organigrama-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+    color: var(--sguees-text-secondary, #888);
+    text-align: center;
+}
+
+.organigrama-empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.organigrama-empty-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--sguees-text-primary, #555);
+}
+
+.organigrama-empty-hint {
+    font-size: 13px;
+    margin-top: 4px;
+    color: var(--sguees-text-secondary, #888);
+}
+
+/* ======================================================
+   RESPONSIVE
+====================================================== */
+@media (max-width: 1024px) {
+    .organigrama-layout {
+        flex-direction: column;
+    }
+
+    .organigrama-tree-panel {
+        flex: none;
+        max-height: 350px;
+        min-width: unset;
+    }
+
+    .organigrama-form-panel {
+        flex: none;
+        min-width: unset;
+    }
+}
+
+@media (max-width: 768px) {
+    .organigrama-tree-panel {
+        max-height: 250px;
+    }
+
+    .organigrama-form-panel {
+        padding: 12px;
+    }
+
+    .organigrama-form-actions {
+        justify-content: stretch;
+
+        ::ng-deep .dx-button {
+            flex: 1;
+        }
+    }
+}

@@ -9,6 +9,7 @@ import { ProfileComponent } from './profile/profile.component';
 import { SegConfigOpcionComponent } from './seg-config-opcion/seg-config-opcion.component';
 import { SegUsuarioComponent } from './seg-usuario/seg-usuario.component';
 import { SegTipoUsuarioComponent } from './seg-tipo-usuario/seg-tipo-usuario.component';
+import { SegFlujoTipoDocumentoComponent } from './seg-flujo-tipo-documento/seg-flujo-tipo-documento.component';
 
 const routes: Routes = [
   /*{
@@ -57,7 +58,16 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./seg-tipo-usuario/seg-tipo-usuario.module').then(m => m.SegTipoUsuarioModule)
+  },
+    {
+    path: 'seg-flujo-tipo-documento',
+    component: SegFlujoTipoDocumentoComponent,
+    data: { titulo: 'Documentos' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./seg-flujo-tipo-documento/seg-flujo-tipo-documento.module').then(m => m.SegFlujoTipoDocumentoModule)
   }
+
 ];
 
 @NgModule({
