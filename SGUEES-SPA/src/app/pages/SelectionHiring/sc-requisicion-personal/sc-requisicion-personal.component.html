@@ -9,25 +9,122 @@
 >
 </app-barra-data-mtto>
 <div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
-	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
-		<div *dxTemplate="let item of 'tablaRequisicionTemplate'">
-			<dx-data-grid
-				[dataSource]="itemsBitacoraRequisicion"
-				[columns]="headersRequisicionBitacora"
-				keyExpr="CORR_DETALLE"
-				[showBorders]="true"
-				[showColumnLines]="true"
-				[showRowLines]="true"
-				[rowAlternationEnabled]="true"
-				[hoverStateEnabled]="true"
-				[columnAutoWidth]="true"
 
-			>
-				<dxo-paging [pageSize]="5"></dxo-paging>
-				<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 20]"></dxo-pager>
-			</dx-data-grid>
-		</div>
-	</dx-form>
+	<!--
+		dx-tab-panel: pestañas debajo del formulario (patrón con-centro-costo / com-orden-compra).
+		Solo visible en agregar/editar (*ngIf del contenedor padre).
+
+		Para agregar un tab nuevo:
+		  1. Copiar un bloque <dxi-item title="..." [icon]="'...'"> ... </dxi-item>
+		  2. Crear array en el .ts (ej. itemsTabPlazas) y columnas en el service (getPlazasColumns)
+		  3. Cargar data en cargarDatosTabs() y limpiar en limpiarDatosTabs()
+	-->
+	<dx-tab-panel #tabPanelRequisicion class="requisicion-tab-panel" [selectedIndex]="0">
+		<!-- TAB 1: Detalle / Bitácora (data quemada; luego API) -->
+		<dxi-item title="Datos requisición" [icon]="'event'">
+				<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+					<div *dxTemplate="let cellInfo of 'CORR_TIPO_MODALIDADLookup'">
+						<app-data-lookup
+							[model]="mCORR_TIPO_MODALIDAD"
+							[(value)]="model.CORR_TIPO_MODALIDAD"
+							[selectedRowKeys]="selectedLookUpCORR_TIPO_MODALIDAD"
+							[readOnly]="readOnly"
+							[valueExpr]="'CORR_TIPO_MODALIDAD'"
+							[displayExpr]="'MODALIDAD_NOMBRE'"
+							[lookupColumns]="tipoModalidadLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+					<div *dxTemplate="let cellInfo of 'CORR_TIPO_CONTRATACIONLookup'">
+						<app-data-lookup
+							[model]="mCORR_TIPO_CONTRATACION"
+							[(value)]="model.CORR_TIPO_CONTRATACION"
+							[selectedRowKeys]="selectedLookUpCORR_TIPO_CONTRATACION"
+							[readOnly]="readOnly"
+							[valueExpr]="'CORR_TIPO_CONTRATACION'"
+							[displayExpr]="'NOMBRE_TIPO_CONTRATACION'"
+							[lookupColumns]="tipoContratacionLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+					<div *dxTemplate="let cellInfo of 'CORR_TIPO_VACANTELookup'">
+						<app-data-lookup
+							[model]="mCORR_TIPO_VACANTE"
+							[(value)]="model.CORR_TIPO_VACANTE"
+							[selectedRowKeys]="selectedLookUpCORR_TIPO_VACANTE"
+							[readOnly]="readOnly"
+							[valueExpr]="'CORR_TIPO_VACANTE'"
+							[displayExpr]="'NOMBRE_TIPO_VACANTE'"
+							[lookupColumns]="tipoVacanteLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+				</dx-form>
+		</dxi-item>
+
+		<!-- TAB 2: Bitácora (data quemada; luego API) -->
+		<dxi-item title="Bitácora requisición" [icon]="'checklist'">
+			<div class="dx-grid-deta">
+				<dx-data-grid
+					#gridTabDetalle
+					[dataSource]="itemsTabDetalle"
+					[columns]="columnsTabDetalle"
+					[summary]="summaryTabDetalle"
+					keyExpr="CORR_REQUISICION_PERSONAL"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
+					[columnAutoWidth]="true"
+					[height]="320"
+				>
+					<dxo-search-panel [visible]="true"></dxo-search-panel>
+					<dxo-paging [pageSize]="5"></dxo-paging>
+					<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 20]"></dxo-pager>
+					<!-- Modo solo lectura por ahora; habilitar editing cuando el API lo soporte -->
+					<dxo-editing [allowUpdating]="false" [allowDeleting]="false" [allowAdding]="false"></dxo-editing>
+				</dx-data-grid>
+			</div>
+		</dxi-item>
+
+			TAB 3 (ejemplo futuro — descomentar y completar):
+		<dxi-item title="Plazas" [icon]="'group'">
+			<div class="dx-grid-deta">
+				<!-- <dx-data-grid
+					[dataSource]="itemsTabPlazas"
+					[columns]="columnsTabPlazas"
+					keyExpr="CORR_PLAZA"
+					[showBorders]="true"
+					[height]="320"
+				></dx-data-grid> -->
+			</div>
+		</dxi-item>
+
+		<!--
+			TAB 3 (ejemplo futuro — descomentar y completar):
+		<dxi-item title="Documentos" [icon]="'doc'">
+			<div class="dx-grid-deta">
+				<dx-data-grid
+					[dataSource]="itemsTabDocumentos"
+					[columns]="columnsTabDocumentos"
+					keyExpr="CORR_DOCUMENTO"
+					[showBorders]="true"
+					[height]="320"
+				></dx-data-grid>
+			</div>
+		</dxi-item>
+		-->
+
+		<!--
+			TAB 4 (ejemplo futuro — auditoría solo lectura desde model o API):
+		<dxi-item title="Auditoría" [icon]="'info'">
+			<dx-form [formData]="model" [colCount]="4" [readOnly]="true" [items]="itemsAuditoria"></dx-form>
+		</dxi-item>
+		-->
+	</dx-tab-panel>
 </div>
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"

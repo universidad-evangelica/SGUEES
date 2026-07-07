@@ -52,13 +52,13 @@ export class ScRequisicionPersonalService {
     }
 
     getAll(param: any): Observable<IResult> {
-		let xWhere: IParam[] = [{ Parameter: 'CORR_REQUISICION_PERSONAL', Value: param.CORR_REQUISICION_PERSONAL }];
+		const xWhere: IParam[] = [{ Parameter: 'CORR_REQUISICION_PERSONAL', Value: param.CORR_REQUISICION_PERSONAL }];
 
 		return this.repo.get(xWhere);
 	}
 
 	get(param: any): Observable<IResult> {
-		let xWhere: IParam[] = [{ Parameter: 'CORR_REQUISICION_PERSONAL', Value: param.CORR_REQUISICION_PERSONAL }];
+		const xWhere: IParam[] = [{ Parameter: 'CORR_REQUISICION_PERSONAL', Value: param.CORR_REQUISICION_PERSONAL }];
 
 		return this.repo.get(xWhere);
 	}
@@ -83,13 +83,13 @@ export class ScRequisicionPersonalService {
             FECHA_CIERRE: this.formatearDateOnly(model.FECHA_CIERRE),
         };
 
-		let xWhere: IParam[] = [{ Parameter: 'CORR_REQUISICION_PERSONAL', Value: model.CORR_REQUISICION_PERSONAL }];
+		const xWhere: IParam[] = [{ Parameter: 'CORR_REQUISICION_PERSONAL', Value: model.CORR_REQUISICION_PERSONAL }];
 
 		return this.repo.update(modelToUpdate, xWhere);
 	}
 
 	delete(model: any): Observable<IResult> {
-		let xWhere: IParam[] = [{ Parameter: 'CORR_REQUISICION_PERSONAL', Value: model.CORR_REQUISICION_PERSONAL }];
+		const xWhere: IParam[] = [{ Parameter: 'CORR_REQUISICION_PERSONAL', Value: model.CORR_REQUISICION_PERSONAL }];
 
 		return this.repo.delete(xWhere);
 	}
@@ -122,15 +122,7 @@ export class ScRequisicionPersonalService {
 
     getItems(): any {
         return [
-            {
-                itemType: 'tabbed',
-                colSpan: 8,
-                tabs: [
-                    {
-                        title: 'General',
-                        colCount: 8,
-                        items: [
-                                { dataField: 'CORR_REQUISICION_PERSONAL', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
+            { dataField: 'CORR_REQUISICION_PERSONAL', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
                                 {
                                     dataField: 'FECHA_REQUISICION',
                                     label: { text: 'Fecha requisición' },
@@ -162,20 +154,6 @@ export class ScRequisicionPersonalService {
                                     }
                                 },
                                 {
-                                    dataField: 'CORR_DEPARTAMENTO',
-                                    label: { text: 'Departamento' },
-                                    colSpan: 2,
-                                    editorType: 'dxSelectBox',
-                                    editorOptions: {
-                                        dataSource: [],
-                                        displayExpr: 'NOMBRE_DEPARTAMENTO',
-                                        valueExpr: 'CORR_DEPARTAMENTO',
-                                        searchEnabled: true,
-                                        placeholder: 'Seleccione un departamento',
-                                        showClearButton: true,
-                                    },
-                                },
-                                {
                                     dataField: 'CORR_PUESTO',
                                     label: { text: 'Puesto' },
                                     colSpan: 2,
@@ -197,44 +175,19 @@ export class ScRequisicionPersonalService {
                                     dataField: 'CORR_TIPO_MODALIDAD',
                                     label: { text: 'Tipo Modalidad' },
                                     colSpan: 2,
-                                    editorType: 'dxSelectBox',
-                                    editorOptions: {
-                                        dataSource: [],
-                                        displayExpr: 'MODALIDAD_NOMBRE',
-                                        valueExpr: 'CORR_TIPO_MODALIDAD',
-                                        searchEnabled: true,
-                                        placeholder: 'Seleccione un tipo de modalidad',
-                                        showClearButton: true,
-                                    },
+                                    template: 'CORR_TIPO_MODALIDADLookup',
                                 },
                                 {
                                     dataField: 'CORR_TIPO_CONTRATACION',
                                     label: { text: 'Tipo Contratacion' },
                                     colSpan: 2,
-                                    editorType: 'dxSelectBox',
-                                    editorOptions: {
-                                        dataSource: [],
-                                        displayExpr: 'NOMBRE_TIPO_CONTRATACION',
-                                        valueExpr: 'CORR_TIPO_CONTRATACION',
-                                        searchEnabled: true,
-                                        placeholder: 'Seleccione un tipo de contratacion',
-                                        showClearButton: true,
-                                        onValueChanged: null, // Se asignará dinámicamente en el componente
-                                    },
+                                    template: 'CORR_TIPO_CONTRATACIONLookup',
                                 },
                                 {
                                     dataField: 'CORR_TIPO_VACANTE',
                                     label: { text: 'Tipo Vacante' },
                                     colSpan: 2,
-                                    editorType: 'dxSelectBox',
-                                    editorOptions: {
-                                        dataSource: [],
-                                        displayExpr: 'NOMBRE_TIPO_VACANTE',
-                                        valueExpr: 'CORR_TIPO_VACANTE',
-                                        searchEnabled: true,
-                                        placeholder: 'Seleccione un tipo de vacante',
-                                        showClearButton: true,
-                                    },
+                                    template: 'CORR_TIPO_VACANTELookup',
                                 },
                                 {
                                     dataField: 'CANTIDAD_PLAZAS',
@@ -268,7 +221,7 @@ export class ScRequisicionPersonalService {
                                     dataField: 'TIEMPO_CONTRATO',
                                     label: { text: 'Tiempo contrato (meses)' },
                                     colSpan: 2,
-                                    visible: false, // Visible solo cuando CORR_TIPO_CONTRATACION === 2 (contrato temporal)
+                                    //visible: false, // Visible solo cuando CORR_TIPO_CONTRATACION === 2 (contrato temporal)
                                     editorType: 'dxNumberBox',
                                     editorOptions: { placeholder: 'Ej. 6 meses', showClearButton: true, maxLength: 50 },
                                 },
@@ -304,40 +257,24 @@ export class ScRequisicionPersonalService {
                                         showClearButton: true,
                                     }
                                 },
-                        ],
-                    },
-                    {
-                        title: 'Bitácora',
-                        colCount: 4,
-                        items: [
-                            { dataField: 'FECHA_CREA', label: { text: 'Fecha creación' }, colSpan: 2, editorOptions: { readOnly: true } },
-                            { dataField: 'USUARIO_CREA', label: { text: 'Usuario creación' }, colSpan: 2, editorOptions: { readOnly: true } },
-                        ],
-                    },
-                    {
-                        title: 'Tabla',
-                        colCount: 8,
-                        items: [
-                            {
-                                itemType: 'simple', //contenido libre
-                                colSpan: 8,
-                                template: 'tablaRequisicionTemplate', //nombre del template definido en el html
-                                label: { visible: false }, // Oculta la etiqueta del item
-                            },
-                        ],
-                    },
-                ],
-            },
         ];
     }
 
-    //Columnas de la tabla bitacora requisicion
-    headersRequisicionBitacora(): any {
-        return [
-            { dataField: 'CORR_DETALLE', caption: 'Corr.', width: 80 },
-            { dataField: 'DESCRIPCION', caption: 'Descripción', width: 500 },
-            { dataField: 'CANTIDAD', caption: 'Cantidad', width: 110 },
-            { dataField: 'ESTADO', caption: 'Estado', width: 130 },
-        ];
+    /**
+     * Columnas del dx-data-grid dentro del dx-tab-panel (modo agregar/editar).
+     * Por ahora replica la misma estructura del grid de consulta (getColumns).
+     *
+     * Cuando exista endpoint de bitácora/detalle hijo, crear métodos dedicados, por ejemplo:
+     *   - getBitacoraColumns()   → historial de estados / movimientos
+     *   - getPlazasColumns()    → detalle de plazas
+     *   - getDocumentosColumns() → anexos
+     */
+    getTabDetalleColumns(): any {
+        return this.getColumns();
+    }
+
+    /** Summary del grid del tab (misma lógica que el browse). */
+    getTabDetalleSummary(): any {
+        return this.getSummary();
     }
 }

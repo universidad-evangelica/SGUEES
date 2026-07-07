@@ -11,9 +11,10 @@ import { ScRequisicionPersonal } from './models/sc-requisicion-personal';
 
 import { ScRequisicionPersonalService } from './sc-requisicion-personal.service';
 import { ScTipoModalidadService } from '../sc-tipo-modalidad/sc-tipo-modalidad.service'; //Importo para poder utilizar tipo modalidades
-import { PlaDepartamentoService } from '../../Payroll/pla-departamento/pla-departamento.service'; //Importo para poder utilizar departamentos
+//import { PlaDepartamentoService } from '../../Payroll/pla-departamento/pla-departamento.service'; //Importo para poder utilizar departamentos
 import { ScTipoContratacionService } from '../sc-tipo-contratacion/sc-tipo-contratacion.service';
 import { ScTipoVacanteService } from '../sc-tipo-vacante/sc-tipo-vacante.service';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-sc-requisicion-personal',
@@ -25,11 +26,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private service: ScRequisicionPersonalService,
-		private messageService: MessageService, //Import para usar PrimeNG Toast
-		private departamentoService: PlaDepartamentoService, //importo para utilizarlo en combo box
-		private tipoModalidadService: ScTipoModalidadService, //importo para utilizarlo en combo box
-		private tipoContratacionService: ScTipoContratacionService, //importo para utilizarlo en combo box
-		private tipoVacanteService: ScTipoVacanteService //importo para utilizarlo en combo box
+		//private messageService: MessageService, //Import para usar PrimeNG Toast
 
 	) {
 		super(appInfoService, router);
@@ -37,26 +34,99 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 
-		//inserto las columnas de la tabla bitacora de requisicion
-		this.headersRequisicionBitacora = this.service.headersRequisicionBitacora();
+		// Columnas y summary del grid dentro del dx-tab-panel (misma estructura que el browse).
+		this.columnsTabDetalle = this.service.getTabDetalleColumns();
+		this.summaryTabDetalle = this.service.getTabDetalleSummary();
 	}
 
 	//Variables
-	listadoDescriptores: any[] = [];
-	listadoDepartamento: any[] = [];
-	listadoTipoModalidad: any[] = [];
-	listadoTipoContratacion: any[] = [];
-	listadoTipoVacante: any[] = [];
-	headersRequisicionBitacora: any[] = [];
-	// Datos quemados para el tab "Tabla" (reemplazar por API cuando esté disponible).
-	itemsBitacoraRequisicion = [
-		{ CORR_DETALLE: 1, DESCRIPCION: 'Analista de sistemas', CANTIDAD: 2, ESTADO: 'Pendiente' },
-		{ CORR_DETALLE: 2, DESCRIPCION: 'Técnico de soporte', CANTIDAD: 1, ESTADO: 'Aprobado' },
-		{ CORR_DETALLE: 3, DESCRIPCION: 'Coordinador de proyecto', CANTIDAD: 1, ESTADO: 'Pendiente' },
-		{ CORR_DETALLE: 4, DESCRIPCION: 'Diseñador gráfico', CANTIDAD: 1, ESTADO: 'Rechazado' },
-		{ CORR_DETALLE: 5, DESCRIPCION: 'Especialista en marketing digital', CANTIDAD: 2, ESTADO: 'Aprobado' },
-		{ CORR_DETALLE: 6, DESCRIPCION: 'Ingeniero de calidad', CANTIDAD: 1, ESTADO: 'Pendiente' },
-		{ CORR_DETALLE: 7, DESCRIPCION: 'Administrador de base de datos esta es una prueba larga para ver el tamaño de la tabla donde quedara la bitacora de la requisicion', CANTIDAD: 1, ESTADO: 'Aprobado' },
+	readOnly = false;
+	mCORR_TIPO_MODALIDAD: any[] = [];
+	mCORR_TIPO_CONTRATACION: any[] = [];
+	mCORR_TIPO_VACANTE: any[] = [];
+
+	/** Columnas del grid del tab (definidas en service.getTabDetalleColumns). */
+	columnsTabDetalle: any[] = [];
+	/** Summary del grid del tab. */
+	summaryTabDetalle: any;
+
+	/**
+	 * DataSource del tab "Detalle / Bitácora".
+	 * DATOS QUEMADOS: misma estructura de campos que getColumns() / ScRequisicionPersonal.
+	 *
+	 * Para conectar API al editar:
+	 *   1. Crear método en service/repository (ej. getBitacoraByRequisicion(corr))
+	 *   2. Llamar cargarDatosTabs() desde editarClick / después de guardar insert
+	 *   3. Asignar: this.itemsTabDetalle = response.Data ?? []
+	 *
+	 * Para limpiar al crear nuevo registro:
+	 *   llamar limpiarDatosTabs() desde nuevo()
+	 */
+	itemsTabDetalle = [
+		{
+			CORR_REQUISICION_PERSONAL: 101,
+			FECHA_REQUISICION: '2026-06-15',
+			CORR_DEPARTAMENTO: 10,
+			CANTIDAD_PLAZAS: 2,
+			SALARIO_MINIMO: 8500,
+			SALARIO_MAXIMO: 12000,
+			TIEMPO_CONTRATO: 12,
+			HORARIO: 'Lunes a viernes 8:00 - 17:00',
+			JUSTIFICACION: 'Ampliación de equipo de desarrollo',
+			FECHA_CREA: '2026-06-15',
+			USUARIO_CREA: 'admin',
+			FECHA_ACTU: '2026-06-20',
+			USUARIO_ACTU: 'rrhh',
+		},
+		{
+			CORR_REQUISICION_PERSONAL: 102,
+			FECHA_REQUISICION: '2026-06-18',
+			CORR_DEPARTAMENTO: 20,
+			CANTIDAD_PLAZAS: 1,
+			SALARIO_MINIMO: 6000,
+			SALARIO_MAXIMO: 9000,
+			TIEMPO_CONTRATO: 6,
+			HORARIO: 'Turno rotativo',
+			JUSTIFICACION: 'Sustitución por licencia',
+			FECHA_CREA: '2026-06-18',
+			USUARIO_CREA: 'jlopez',
+			FECHA_ACTU: '2026-06-18',
+			USUARIO_ACTU: 'jlopez',
+		},
+		{
+			CORR_REQUISICION_PERSONAL: 103,
+			FECHA_REQUISICION: '2026-06-22',
+			CORR_DEPARTAMENTO: 15,
+			CANTIDAD_PLAZAS: 3,
+			SALARIO_MINIMO: 7000,
+			SALARIO_MAXIMO: 11000,
+			TIEMPO_CONTRATO: 0,
+			HORARIO: 'Horario administrativo',
+			JUSTIFICACION: 'Proyecto temporal de implementación ERP',
+			FECHA_CREA: '2026-06-22',
+			USUARIO_CREA: 'mperez',
+			FECHA_ACTU: '2026-06-25',
+			USUARIO_ACTU: 'admin',
+		},
+	];
+
+	// Reservado para tabs futuros con data de API (descomentar y usar al implementar):
+	// itemsTabPlazas: any[] = [];
+	// itemsTabDocumentos: any[] = [];
+
+	tipoModalidadLookupColumns: any[] = [
+		{ dataField: 'CORR_TIPO_MODALIDAD', caption: 'Modalidad', width: 120 },
+		{ dataField: 'MODALIDAD_NOMBRE', caption: 'Tipo Modalidad', width: 280 },
+	];
+
+	tipoContratacionLookupColumns: any[] = [
+		{ dataField: 'CORR_TIPO_CONTRATACION', caption: 'Contratacion', width: 120 },
+		{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo Contratacion', width: 280 },
+	];
+
+	tipoVacanteLookupColumns: any[] = [
+		{ dataField: 'CORR_TIPO_VACANTE', caption: 'Vacante', width: 120 },
+		{ dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Tipo Vacante', width: 280 },
 	];
 
 	ngOnInit(): void {
@@ -65,171 +135,109 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.consultar();
 	}
 
-	inicializaOpciones() {
-		// 2. Este método ahora lee dinámicamente las reglas y asigna los eventos
-		Object.keys(this.reglasVisibilidad).forEach(triggerField => {
-        this.setEditorOption(
-            triggerField,
-            'onValueChanged',
-            (e: any) => this.evaluarReglas(triggerField, e.value)
-        );
-    });
+	//#region <Tabs dx-tab-panel — carga de datos>
 
+	/**
+	 * Carga la data de cada tab al entrar en edición.
+	 * Invocar desde editarClick (override) o rowDblClick cuando banderaMtto = Update.
+	 *
+	 * Ejemplo con API:
+	 *   this.service.getBitacora(this.fillParam(this.model.CORR_REQUISICION_PERSONAL))
+	 *     .pipe(take(1))
+	 *     .subscribe({ next: (r) => { if (r.Result) this.itemsTabDetalle = r.Data ?? []; } });
+	 */
+	cargarDatosTabs(): void {
+		// TODO: reemplazar datos quemados por llamadas al API según CORR_REQUISICION_PERSONAL.
+		// if (this.model.CORR_REQUISICION_PERSONAL > 0) { ... }
+
+		// Ejemplo futuro — tab Plazas:
+		// this.service.getPlazas(this.fillParam(this.model.CORR_REQUISICION_PERSONAL))...
+
+		// Ejemplo futuro — tab Documentos:
+		// this.service.getDocumentos(this.fillParam(this.model.CORR_REQUISICION_PERSONAL))...
 	}
+
+	/** Vacía los arrays de los tabs (útil al presionar Nuevo). */
+	limpiarDatosTabs(): void {
+		// this.itemsTabDetalle = [];
+		// this.itemsTabPlazas = [];
+		// this.itemsTabDocumentos = [];
+	}
+
+	/** Al crear registro nuevo, limpiar tabs (cuando se conecte API). */
+	override nuevo(): void {
+		super.nuevo();
+		this.limpiarDatosTabs();
+	}
+
+	/** Al editar, cargar data de cada tab según CORR_REQUISICION_PERSONAL. */
+	override editarClick(e: any): void {
+		super.editarClick(e);
+		this.cargarDatosTabs();
+	}
+
+	//#endregion
+
+	inicializaOpciones() {}
 
 	llenaComboBox() {
-		this.getAllDepartamento();
-		this.getAllTipoModalidad();
-		this.getAllTipoContratacion();
-		this.getAllTipoVacante();
-	}
-
-	// Asigna un dataSource a la configuracion editorOptions de un item del dx-form por su dataField.
-	actualizarComboBoxGeneral(dataField: string, dataSource: any[]): void {
-		const item = this.buscarFormItem(dataField);
-		if (item) {
-			item.editorOptions = { ...item.editorOptions, dataSource };
-		}
-	}
-
-	// Busca un item por dataField dentro de this.items (soporta tabs e items anidados).
-	private buscarFormItem(dataField: string, items: any[] = this.items): any | undefined {
-		for (const item of items ?? []) {
-			if (item?.dataField === dataField) {
-				return item;
-			}
-			if (item?.tabs?.length) {
-				for (const tab of item.tabs) {
-					const encontrado = this.buscarFormItem(dataField, tab.items);
-					if (encontrado) {
-						return encontrado;
-					}
-				}
-			}
-			if (item?.items?.length) {
-				const encontrado = this.buscarFormItem(dataField, item.items);
-				if (encontrado) {
-					return encontrado;
-				}
-			}
-		}
-		return undefined;
-	}
-
-	// =========================================
-	// Tus utilitarios originales (se mantienen)
-
-	// 1. Centralizamos todas las dependencias en un solo lugar.
-	// Aquí irás agregando tus nuevos campos sin crear nuevas funciones.
-	readonly reglasVisibilidad: { [key: string]: Array<{ targetField: string, isVisible: (value: any) => boolean }> } = {
-		'CORR_TIPO_CONTRATACION': [
-			{ targetField: 'TIEMPO_CONTRATO', isVisible: (value) => value === 2 }
-		],
-		// Ejemplo de cómo agregarías otro campo en el futuro:
-		// 'ESTADO_CIVIL': [
-		//     { targetField: 'NOMBRE_CONYUGE', isVisible: (value) => value === 'CASADO' },
-		//     { targetField: 'FECHA_MATRIMONIO', isVisible: (value) => value === 'CASADO' }
-		// ]
-	};
-
-	// 3. Un único método para evaluar cualquier regla
-	private evaluarReglas(triggerField: string, newValue: any): void {
-		const reglas = this.reglasVisibilidad[triggerField];
-		if (!reglas) return;
-
-		reglas.forEach(regla => {
-        this.setVisibleItem(regla.targetField, regla.isVisible(newValue));
-    });
-	}
-
-	private setEditorOption(dataField: string, option: string, value: any): void {
-		const item = this.buscarFormItem(dataField);
-		if (item) {
-			item.editorOptions = { ...item.editorOptions, [option]: value };
-		}
-	}
-
-	private setVisibleItem(dataField: string, visible: boolean): void {
-		const item = this.buscarFormItem(dataField);
-		
-		// Solo reasignamos this.items si la visibilidad realmente cambió.
-		if (item && item.visible !== visible) {
-			item.visible = visible;
-			this.items = [...this.items];
-		}
-	}
-	// =========================================
-	
+		//this.getAllDepartamento();
+		this.getCORR_TIPO_MODALIDAD();
+		this.getCORR_TIPO_CONTRATACION();
+		this.getCORR_TIPO_VACANTE();
+	}	
 
 	//listado de catalogos
-	getAllDepartamento(){
-		this.departamentoService.getAll({CORR_DEPARTAMENTO: 0})
+	getCORR_TIPO_MODALIDAD(){
+		this.appInfoService
+		.getLookUp('SC_REQUISICION_PERSONAL', 'SC_TIPO_MODALIDAD', 'GetCORR_TIPO_MODALIDAD', undefined, environment.UrlSELECCIONCONTRATACIONAPI)
 		.pipe(take(1))
 		.subscribe({
 			next: (response: any) => {
 				if (response.Result) {
-					this.listadoDepartamento = response.Data;
-					// Inyecta el catalogo cargado al dataSource del dxSelectBox 'CORR_DEPARTAMENTO'.
-					this.actualizarComboBoxGeneral('CORR_DEPARTAMENTO', this.listadoDepartamento);
+					this.mCORR_TIPO_MODALIDAD = response.Data;
 				}
 			},
 			error: (error: any) => {
-				this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message });
+				this.notifyFx(error, NotifyType.Error);
+				//this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message });
 			},
 		});
 	}
 
-	getAllTipoModalidad(){
-		this.tipoModalidadService.getAll({CORR_TIPO_MODALIDAD: 0})
+	getCORR_TIPO_CONTRATACION(){
+		this.appInfoService
+		.getLookUp('SC_REQUISICION_PERSONAL', 'SC_TIPO_CONTRATACION', 'GetCORR_TIPO_CONTRATACION', undefined, environment.UrlSELECCIONCONTRATACIONAPI)
 		.pipe(take(1))
 		.subscribe({
 			next: (response: any) => {
 				if (response.Result) {
-					this.listadoTipoModalidad = response.Data;
-					// Inyecta el catalogo cargado al dataSource del dxSelectBox 'CORR_TIPO_MODALIDAD'.
-					this.actualizarComboBoxGeneral('CORR_TIPO_MODALIDAD', this.listadoTipoModalidad);
+					this.mCORR_TIPO_CONTRATACION = response.Data;
 				}
 			},
 			error: (error: any) => {
-				this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message });
+				this.notifyFx(error, NotifyType.Error);
+				//this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message });
 			},
 		});
 	}
 
-	getAllTipoContratacion(){
-		this.tipoContratacionService.getAll({CORR_TIPO_CONTRATACION: 0})
+	getCORR_TIPO_VACANTE(){
+		this.appInfoService
+		.getLookUp('SC_REQUISICION_PERSONAL', 'SC_TIPO_VACANTE', 'GetCORR_TIPO_VACANTE', undefined, environment.UrlSELECCIONCONTRATACIONAPI)
 		.pipe(take(1))
 		.subscribe({
 			next: (response: any) => {
 				if (response.Result) {
-					this.listadoTipoContratacion = response.Data;
-					// Inyecta el catalogo cargado al dataSource del dxSelectBox 'CORR_TIPO_CONTRATACION'.
-					this.actualizarComboBoxGeneral('CORR_TIPO_CONTRATACION', this.listadoTipoContratacion);
+					this.mCORR_TIPO_VACANTE = response.Data;
 				}
 			},
 			error: (error: any) => {
-				this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message });
+				this.notifyFx(error, NotifyType.Error);
+				//this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message });
 			},
 		});
 	}
-
-	getAllTipoVacante(){
-		this.tipoVacanteService.getAll({CORR_TIPO_VACANTE: 0})
-		.pipe(take(1))
-		.subscribe({
-			next: (response: any) => {
-				if (response.Result) {
-					this.listadoTipoVacante = response.Data;
-					// Inyecta el catalogo cargado al dataSource del dxSelectBox 'CORR_TIPO_VACANTE'.
-					this.actualizarComboBoxGeneral('CORR_TIPO_VACANTE', this.listadoTipoVacante);
-				}
-			},
-			error: (error: any) => {
-				this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message });
-			},
-		});
-	}
-
 
 
 	fillParam(xCORR_REQUISICION?: number): any {
@@ -313,11 +321,11 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 						this.models = response.Data ?? [];
 						console.log('Datos consultados:', this.models);
 					} else {
-						this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
+						//this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
 					}
 				},
 				error: (error: any) => {
-					this.messageService.add({ severity: 'error', summary: 'Error', detail: error?.message ?? error });
+					//this.messageService.add({ severity: 'error', summary: 'Error', detail: error?.message ?? error });
 				},
 			});
 	}
@@ -422,10 +430,31 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.dataForm.instance.getEditor('JUSTIFICACION')?.option('readOnly', true);
 	}
 
-	// override setFocus() {
-	// 	setTimeout(() => {
-	// 		this.dataForm.instance.getEditor('USUARIO_SOLICITA')?.focus();
-	// 	});
-	// }
+	override setFocus() {
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('MODALIDAD_NOMBRE')?.focus();
+		});
+	}
+
+	selectedLookUpLista(vRow: any): any {
+		return vRow[0].Key;
+	}
+
+	selectedLookUpNumerico(vRow: any): any {
+		return parseInt(vRow[0].Key, 10);
+	}
+
+	selectedLookUpCORR_TIPO_MODALIDAD(vRow: any): any {
+		return vRow[0].CORR_TIPO_MODALIDAD;
+	}
+
+	selectedLookUpCORR_TIPO_CONTRATACION(vRow: any): any {
+		return vRow[0].CORR_TIPO_CONTRATACION;
+	}
+
+	selectedLookUpCORR_TIPO_VACANTE(vRow: any): any {
+		return vRow[0].CORR_TIPO_VACANTE;
+	}
+
 
 }
