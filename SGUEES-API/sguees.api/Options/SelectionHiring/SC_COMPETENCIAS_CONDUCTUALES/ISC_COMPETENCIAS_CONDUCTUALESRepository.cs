@@ -1,0 +1,15 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using eFramework.Core;
+using eFramework.Data;
+using SGUEES.Models;
+
+namespace SGUEES.Repositories
+{
+  public interface ISC_COMPETENCIAS_CONDUCTUALESRepository : IRepository<SC_COMPETENCIAS_CONDUCTUALESTable>
+  {
+    Task<CResult> ActivarInactivarAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION);
+    Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr);
+    Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr);
+  }
+}
