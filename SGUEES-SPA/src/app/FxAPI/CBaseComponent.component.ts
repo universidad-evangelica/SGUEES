@@ -184,6 +184,17 @@ export class CBaseComponent {
 		this.model = e.row.data;
 	}
 
+	get gridFocusedRowKey(): unknown {
+		if (!this.isBrowse() || !this.mttoGridKeyExpr) {
+			return null;
+		}
+		const key = this.model?.[this.mttoGridKeyExpr];
+		if (key == null || (typeof key === 'number' && key <= 0)) {
+			return null;
+		}
+		return key;
+	}
+
 	/** Fila seleccionada en grid browse (requerida para toolbar estado v1.1). */
 	protected obtenerFilaSeleccionada(): any | null {
 		const row = this.model;

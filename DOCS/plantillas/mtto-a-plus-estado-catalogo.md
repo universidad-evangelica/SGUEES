@@ -182,12 +182,15 @@ activar_inactivar(): void {
   [showEstadoToolbar]="true"
   [campoEstado]="mttoCampoEstado"
   [puedeCambiarEstado]="permiteEdit"
+  [focusedRowKey]="gridFocusedRowKey"
   (activarInactivar)="activar_inactivar()"
   (focusedRowChanged)="focusedRowChanged($event)"
   [keyExpr]="mttoGridKeyExpr"
   ...
 />
 ```
+
+- `gridFocusedRowKey` — getter en `CBaseComponent` (restaura foco tras cancelar Nuevo).
 
 - Grid: **solo badge** en columna estado — **sin** botones por fila.
 - `buildEstadoToolbarOptions` en `shared/mtto/mtto-grid.helpers.ts`.

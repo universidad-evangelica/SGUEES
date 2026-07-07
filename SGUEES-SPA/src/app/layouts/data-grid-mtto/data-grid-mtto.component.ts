@@ -105,6 +105,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() showEstadoToolbar = false;
   @Input() campoEstado = '';
   @Input() puedeCambiarEstado = true;
+  /** PK a restaurar al volver a browse (ej. tras cancelar Nuevo). */
+  @Input() focusedRowKey: unknown = null;
   @Output() activarInactivar = new EventEmitter<void>();
 
   optRefresh: Record<string, unknown> = {};
@@ -304,6 +306,12 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     if (changes['models']) {
       this.updateFocusedRowState();
     }
+    if (changes['isBrowse'] && !changes['isBrowse'].firstChange) {
+      this.handleBrowseModeChange();
+    }
+    if (changes['focusedRowKey'] && this.isBrowse) {
+      setTimeout(() => this.handleBrowseModeChange(), 0);
+    }
     if (
       changes['showRefresh'] ||
       changes['showAdd'] ||
@@ -355,7 +363,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     if (this.effectiveShowEstadoToolbar) {
       const estadoOpts = buildEstadoToolbarOptions({
         campoEstado: this.campoEstado,
-        focusedRow: this.focusedRowData,
+        focusedRow: this.isBrowse ? this.focusedRowData : null,
         puedeCambiarEstado: this.puedeCambiarEstado,
         onActivarInactivar: this.onActivarInactivarClick,
       });
@@ -421,6 +429,79 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
 
   private updateFocusedRowState(): void {
     this.hasFocusedRow = Array.isArray(this.models) && this.models.length > 0;
+  }
+
+  private isValidFocusedRowKey(key: unknown): boolean {
+    if (key === null || key === undefined) {
+      return false;
+    }
+    if (typeof key === 'number' && key <= 0) {
+      return false;
+    }
+    if (typeof key === 'string' && key.trim() === '') {
+      return false;
+    }
+    return true;
+  }
+
+  private handleBrowseModeChange(): void {
+    if (!this.isBrowse) {
+      this.focusedRowData = null;
+      this.rebuildToolbarOptions();
+      this.cdr.markForCheck();
+      return;
+    }
+
+    setTimeout(() => {
+      if (!this.isBrowse) {
+        return;
+      }
+      this.applyFocusedRowKey();
+      this.syncFocusedRowFromGrid();
+    }, 0);
+  }
+
+  private applyFocusedRowKey(): void {
+    if (!this.isValidFocusedRowKey(this.focusedRowKey)) {
+      return;
+    }
+    const instance = this.gData?.instance;
+    if (!instance) {
+      return;
+    }
+    instance.option('focusedRowKey', this.focusedRowKey);
+  }
+
+  private syncFocusedRowFromGrid(): void {
+    if (!this.isBrowse) {
+      this.focusedRowData = null;
+      this.rebuildToolbarOptions();
+      return;
+    }
+
+    const instance = this.gData?.instance;
+    if (!instance) {
+      this.focusedRowData = null;
+      this.rebuildToolbarOptions();
+      return;
+    }
+
+    const focusedKey = instance.option('focusedRowKey');
+    if (!this.isValidFocusedRowKey(focusedKey)) {
+      this.focusedRowData = null;
+      this.rebuildToolbarOptions();
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const visibleRows = instance.getVisibleRows?.() ?? [];
+    const dataRow = visibleRows.find(
+      (row: { rowType?: string; key?: unknown; data?: Record<string, unknown> }) =>
+        row.rowType === 'data' && row.key === focusedKey
+    );
+    this.focusedRowData = dataRow?.data ?? null;
+    this.rebuildToolbarOptions();
+    this.cdr.markForCheck();
   }
 
   private resolveDisplayColumns(): void {
@@ -660,6 +741,9 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.bindPermissionTooltipHandlers(gridElement);
     if (this.effectiveSyncHeaderFilterWithPage) {
       this.syncPageHeaderFilters(e?.component);
+    }
+    if (this.effectiveShowEstadoToolbar && this.isBrowse) {
+      this.syncFocusedRowFromGrid();
     }
   }
 
