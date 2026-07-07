@@ -173,8 +173,7 @@ export interface EstadoToolbarOptions {
 	campoEstado: string;
 	focusedRow: Record<string, unknown> | null;
 	puedeCambiarEstado: boolean;
-	onActivar: () => void;
-	onDesactivar: () => void;
+	onActivarInactivar: () => void;
 }
 
 /** Botones Activar/Desactivar en toolbar del grid (v1.1 — sobre fila seleccionada). */
@@ -187,6 +186,7 @@ export function buildEstadoToolbarOptions(options: EstadoToolbarOptions): {
 	const campo = options.campoEstado;
 	const activo = row ? !!row[campo] : false;
 	const hasRow = !!row;
+	const onActivarInactivar = canEdit ? options.onActivarInactivar : () => undefined;
 
 	return {
 		optActivar: {
@@ -198,7 +198,7 @@ export function buildEstadoToolbarOptions(options: EstadoToolbarOptions): {
 			disabled: !canEdit,
 			elementAttr: canEdit ? undefined : { class: 'sguees-action-no-activate' },
 			hint: canEdit ? 'Activar registro seleccionado' : 'No tiene permiso para activar registros.',
-			onClick: canEdit ? options.onActivar : () => undefined,
+			onClick: onActivarInactivar,
 		},
 		optDesactivar: {
 			text: 'Desactivar',
@@ -209,7 +209,7 @@ export function buildEstadoToolbarOptions(options: EstadoToolbarOptions): {
 			disabled: !canEdit,
 			elementAttr: canEdit ? undefined : { class: 'sguees-action-no-deactivate' },
 			hint: canEdit ? 'Desactivar registro seleccionado' : 'No tiene permiso para desactivar registros.',
-			onClick: canEdit ? options.onDesactivar : () => undefined,
+			onClick: onActivarInactivar,
 		},
 	};
 }

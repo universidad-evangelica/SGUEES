@@ -37,7 +37,7 @@ Si no indica tipo, **inferirlo** de tablas/vistas (1 tabla = A/B/A+/A+P; encabez
 | Situación | Plantilla |
 |-----------|-----------|
 | Catálogo simple, &lt; ~500 filas | `DOCS/plantillas/mtto-a-plus.md` |
-| Catálogo + activo/inactivo (`bit`) | `mtto-a-plus.md` + `mtto-a-plus-estado-catalogo.md` |
+| Catálogo + activo/inactivo (`bit`) | `mtto-a-plus.md` o `mtto-a-p-paginado.md` + `mtto-a-plus-estado-catalogo.md` |
 | Catálogo grande / auditoría / paginado servidor | `mtto-a-p-paginado.md` |
 | Documento con estados DI/AP/AN | `mtto-estado-transaccional.md` — **no** patrón bit |
 
@@ -102,7 +102,7 @@ guardar(): void {
 
 **HTML grid:** `[pageSize]="mttoPageSize"` `[allowedPageSizes]="mttoPageSizes"` `[remoteOperations]="mttoRemoteOperations"` `[keyExpr]="mttoGridKeyExpr"` `(editClick)="editarClick($event)"`.
 
-**Estado catálogo (bit):** `buildEstadoColumn` en service; toolbar `showEstadoToolbar` + `campoEstado` en grid; `ejecutarCambioEstado`. Ver `mtto-a-plus-estado-catalogo.md` v1.1.
+**Estado catálogo (bit):** extensión [mtto-a-plus-estado-catalogo.md](DOCS/plantillas/mtto-a-plus-estado-catalogo.md) — aplica a **A+ y A+P**. Toolbar + `activar_inactivar()` + `Put ActivarInactivar` + SP toggle.
 
 **Utilidades:** `SGUEES-SPA/src/app/shared/mtto/`  
 **Padre:** `FxAPI/CBaseComponent.component.ts`

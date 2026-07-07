@@ -524,6 +524,67 @@ export class CBaseComponent {
 		});
 	}
 
+	ejecutarActivarInactivar(options: {
+		ejecutar: () => Observable<unknown>;
+		eraActivo: boolean;
+		onSuccess?: () => void;
+		successActivarMessage?: string;
+		successDesactivarMessage?: string;
+		parchearGrid?: boolean;
+	}): void {
+		this.loadingVisible = true;
+		options.ejecutar().pipe(take(1)).subscribe({
+			next: (response: any) => {
+				if (response.Result) {
+					const shouldPatch =
+						options.parchearGrid !== false && !!this.mttoGridKeyExpr && !!response.Data;
+					if (shouldPatch) {
+						this.aplicarRegistroEnGrid(response.Data, false);
+					}
+					options.onSuccess?.();
+					this.notifyFx(
+						options.eraActivo
+							? options.successDesactivarMessage ?? 'Registro desactivado con exito!'
+							: options.successActivarMessage ?? 'Registro activado con exito!',
+						NotifyType.Success,
+						{ raw: true }
+					);
+				} else {
+					this.notifyApiResponse(response);
+				}
+				this.loadingVisible = false;
+			},
+			error: (error: any) => {
+				this.notifyApiError(error);
+				this.loadingVisible = false;
+			},
+		});
+	}
+
+	/** Toolbar Activar/Desactivar — un solo flujo; el SP invierte el bit en BD. */
+	protected invocarActivarInactivar(ejecutar: (row: any) => Observable<unknown>): void {
+		const row = this.obtenerFilaSeleccionada();
+		if (!row) {
+			this.notificarSeleccionRequerida();
+			return;
+		}
+
+		const activo = !!row[this.mttoCampoEstado];
+		const describe = `${row[this.mttoEstadoDescribeField] ?? ''}`.trim();
+		const titulo = activo ? 'Desactivar registro' : 'Activar registro';
+		const verbo = activo ? 'desactivar' : 'activar';
+		const mensaje = describe
+			? `¿Desea ${verbo} "${describe}"?`
+			: `¿Desea ${verbo} el registro seleccionado?`;
+
+		this.confirmaAccion(titulo, mensaje, () => {
+			this.ejecutarActivarInactivar({
+				ejecutar: () => ejecutar(row),
+				eraActivo: activo,
+			});
+		});
+	}
+
 	ejecutarCambioEstado(options: {
 		activar: () => Observable<unknown>;
 		desactivar: () => Observable<unknown>;

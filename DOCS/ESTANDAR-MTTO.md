@@ -105,8 +105,8 @@ protected override getMttoDataGrid() { return this.dataGrid ?? null; }
 |------|----------|
 | BD | `bit` — ej. `ESTADO_IMPACTO_ECONOMICO` |
 | Grid | Badge **verde/rojo** (`createEstadoColumnConfig`) — sin botones en la columna |
-| Acción | `Activar` / `Desactivar` en toolbar grid (v1.1) → `ejecutarCambioEstado` sobre fila seleccionada |
-| API | `Put Activar` / `Put Desactivar` |
+| Acción | Toolbar `Activar` / `Desactivar` → un método `activar_inactivar()` → `Put ActivarInactivar` |
+| API | SP `PRAL_MTTO_CATALOGO_ESTADO_BIT` (toggle en BD) — ver [ESTANDAR-SP-ESTADO-CATALOGO-BIT.md](./ESTANDAR-SP-ESTADO-CATALOGO-BIT.md) |
 
 **Plantilla:** [plantillas/mtto-a-plus-estado-catalogo.md](./plantillas/mtto-a-plus-estado-catalogo.md)
 
@@ -181,7 +181,7 @@ Patrón estándar para todos los mttos catálogo. **Documento completo:** [plant
 
 | Verbo | SPA | API |
 |-------|-----|-----|
-| **PUT** (update, Activar, Desactivar) | Body + query (`CData.Put` fusiona PK si body trae `0`) | `this.ApplyQueryKeys(Data, nameof(...PK))` |
+| **PUT** (update, ActivarInactivar) | Body + query (`CData.Put` fusiona PK si body trae `0`) | `this.ApplyQueryKeys(Data, nameof(...PK))` |
 | **DELETE** | Solo query (`CData.Delete`) | `[FromQuery]` — PK desde fila del grid |
 
 **Prohibido:** `ApplyPrimaryKeyFromQuery` privado por controller.
@@ -264,7 +264,8 @@ ngOnInit(): void {
 | `consultarMtto({ load })` | Consulta A+ con loading |
 | `guardarMtto({ ... })` | Guardar; parchea grid si `mttoGridKeyExpr` |
 | `rowRemovingMtto(e, { deleteFn })` | Delete grid; parchea sin reload |
-| `ejecutarCambioEstado({ ... })` | Activar/desactivar catálogo |
+| `invocarActivarInactivar(fn)` | Toolbar activar/desactivar catálogo `bit` (un flujo) |
+| `ejecutarActivarInactivar({ ... })` | Ejecuta `Put ActivarInactivar` y parchea grid |
 | `confirmaAccion(title, message, fn)` | Diálogo Si/No |
 
 ### Tipo C — además

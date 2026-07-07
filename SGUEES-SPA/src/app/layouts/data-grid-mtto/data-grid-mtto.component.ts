@@ -99,13 +99,13 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   /** false cuando el hijo confirma en rowRemoving (evita doble diálogo DevExtreme + confirmaAccion). */
   @Input() confirmDelete = true;
   @Input() headerFilterLoader?: RemoteHeaderFilterLoader;
-  @Input() syncHeaderFilterWithPage = false;
+  /** null = auto (A+P sin filtro remoto: header filter desde página cargada). */
+  @Input() syncHeaderFilterWithPage: boolean | null = null;
   /** v1.1 — Activar/Desactivar en toolbar junto a Agregar (fila seleccionada). */
   @Input() showEstadoToolbar = false;
   @Input() campoEstado = '';
   @Input() puedeCambiarEstado = true;
-  @Output() activarEstado = new EventEmitter<void>();
-  @Output() desactivarEstado = new EventEmitter<void>();
+  @Output() activarInactivar = new EventEmitter<void>();
 
   optRefresh: Record<string, unknown> = {};
   optAdd: Record<string, unknown> = {};
@@ -227,15 +227,26 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     );
   }
 
-  get isRemoteHeaderFilterActive(): boolean {
+  get isRemoteFilteringActive(): boolean {
     if (this.remoteOperations === true) {
       return true;
     }
     if (this.remoteOperations && typeof this.remoteOperations === 'object') {
-      const ops = this.remoteOperations as Record<string, unknown>;
-      return !!(ops['paging'] || ops['filtering']);
+      return !!(this.remoteOperations as Record<string, unknown>)['filtering'];
     }
     return false;
+  }
+
+  /** A+P estándar: filter row en cliente — header filter con valores de la página actual. */
+  get effectiveSyncHeaderFilterWithPage(): boolean {
+    if (this.syncHeaderFilterWithPage !== null) {
+      return this.syncHeaderFilterWithPage;
+    }
+    return this.isRemotePagingActive && !this.isRemoteFilteringActive;
+  }
+
+  get isRemoteHeaderFilterActive(): boolean {
+    return this.isRemoteFilteringActive || !!this.headerFilterLoader;
   }
 
   get effectiveRepaintChangesOnly(): boolean {
@@ -252,8 +263,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.OneditClick = this.OneditClick.bind(this);
     this.onRefreshClick = this.onRefreshClick.bind(this);
     this.onAddClick = this.onAddClick.bind(this);
-    this.onActivarEstadoClick = this.onActivarEstadoClick.bind(this);
-    this.onDesactivarEstadoClick = this.onDesactivarEstadoClick.bind(this);
+    this.onActivarInactivarClick = this.onActivarInactivarClick.bind(this);
   }
 
   ngOnInit(): void {
@@ -347,8 +357,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
         campoEstado: this.campoEstado,
         focusedRow: this.focusedRowData,
         puedeCambiarEstado: this.puedeCambiarEstado,
-        onActivar: this.onActivarEstadoClick,
-        onDesactivar: this.onDesactivarEstadoClick,
+        onActivarInactivar: this.onActivarInactivarClick,
       });
       this.optActivar = estadoOpts.optActivar;
       this.optDesactivar = estadoOpts.optDesactivar;
@@ -358,12 +367,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  onActivarEstadoClick(): void {
-    this.activarEstado.emit();
-  }
-
-  onDesactivarEstadoClick(): void {
-    this.desactivarEstado.emit();
+  onActivarInactivarClick(): void {
+    this.activarInactivar.emit();
   }
 
   onRefreshClick(): void {
@@ -433,7 +438,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   refreshHeaderFilterDataSources(): void {
-    if (this.syncHeaderFilterWithPage && this.isRemotePagingActive) {
+    if (this.effectiveSyncHeaderFilterWithPage) {
       this.syncPageHeaderFilters();
       return;
     }
@@ -486,7 +491,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
 
   syncPageHeaderFilters(grid?: any): void {
     const instance = grid ?? this.gData?.instance;
-    if (!instance || !this.syncHeaderFilterWithPage || !this.isRemotePagingActive || !this.columns?.length) {
+    if (!instance || !this.effectiveSyncHeaderFilterWithPage || !this.columns?.length) {
       return;
     }
 
@@ -635,13 +640,14 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     if (pageIndexChanged) {
-      if (this.syncHeaderFilterWithPage) {
-        this.refreshHeaderFilterDataSources();
+      if (this.effectiveSyncHeaderFilterWithPage) {
+        this.syncPageHeaderFilters(grid);
       }
       return;
     }
 
-    if (fullName === 'filterValue') {
+    // Filter row A+P (filtering: false): no tocar columnas ni headerFilter — evita reload al API.
+    if (fullName === 'filterValue' && this.isRemoteFilteringActive) {
       this.refreshHeaderFilterDataSources();
     }
   }
@@ -652,6 +658,9 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
     this.bindPermissionTooltipHandlers(gridElement);
+    if (this.effectiveSyncHeaderFilterWithPage) {
+      this.syncPageHeaderFilters(e?.component);
+    }
   }
 
   private bindPermissionTooltipHandlers(gridElement: HTMLElement): void {

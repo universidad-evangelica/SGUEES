@@ -70,26 +70,14 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
-        [HttpPut("Activar")]
+        [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/sc-impacto-economico|U")]
-        public async Task<IActionResult> Activar(SC_IMPACTO_ECONOMICOTable Data)
+        public async Task<IActionResult> ActivarInactivar(SC_IMPACTO_ECONOMICOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(SC_IMPACTO_ECONOMICOTable.CORR_IMPACTO_ECONOMICO));
-            SetUpdateAudit(Data);
-            Data.ESTADO_IMPACTO_ECONOMICO = true;
+            Data.CORR_EMPRESA = GetCorrEmpresa();
 
-            var resultado = await _service.UpdateAsync(Data, Data.USUARIO_ACTU, Data.ESTACION_ACTU);
-            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
-        }
-
-        [HttpPut("Desactivar")]
-        [Authorize(Policy = "/sc-impacto-economico|U")]
-        public async Task<IActionResult> Desactivar(SC_IMPACTO_ECONOMICOTable Data)
-        {
-            this.ApplyQueryKeys(Data, nameof(SC_IMPACTO_ECONOMICOTable.CORR_IMPACTO_ECONOMICO));
-            SetUpdateAudit(Data);
-
-            var resultado = await _service.DesactivarAsync(Data, Data.USUARIO_ACTU, Data.ESTACION_ACTU);
+            var resultado = await _service.ActivarInactivarAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 

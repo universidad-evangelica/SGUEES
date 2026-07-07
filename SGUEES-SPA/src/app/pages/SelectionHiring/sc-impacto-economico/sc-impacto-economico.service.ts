@@ -50,12 +50,10 @@ export class ScImpactoEconomicoService {
 		return this.repo.delete([{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO }]);
 	}
 
-	activar(model: any): Observable<IResult> {
-		return this.repo.activar(model, [{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO }]);
-	}
-
-	desactivar(model: any): Observable<IResult> {
-		return this.repo.desactivar(model, [{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO }]);
+	activarInactivar(model: any): Observable<IResult> {
+		return this.repo.activarInactivar(model, [
+			{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO },
+		]);
 	}
 
 	getColumns(): any {

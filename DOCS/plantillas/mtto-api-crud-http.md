@@ -1,6 +1,6 @@
 # Plantilla — Contrato HTTP CRUD mtto (SPA + API)
 
-**Versión:** 1.2 — julio 2026  
+**Versión:** 1.3 — julio 2026  
 **Aplica a:** A+, A+P y estado catálogo  
 **Helpers:** `CData.Put` (SPA) · `MttoControllerExtensions.ApplyQueryKeys` (API)
 
@@ -17,7 +17,7 @@
 
 ---
 
-## PUT — actualizar / activar / desactivar
+## PUT — actualizar / activar-inactivar (estado catálogo)
 
 ### Problema que evita el estándar
 
@@ -37,14 +37,12 @@ update(model: any): Observable<IResult> {
   return this.repo.update(model, [{ Parameter: 'CORR_XXX', Value: model.CORR_XXX }]);
 }
 
-activar(model: any): Observable<IResult> {
-  return this.repo.activar(model, [{ Parameter: 'CORR_XXX', Value: model.CORR_XXX }]);
-}
-
-desactivar(model: any): Observable<IResult> {
-  return this.repo.desactivar(model, [{ Parameter: 'CORR_XXX', Value: model.CORR_XXX }]);
+activarInactivar(model: any): Observable<IResult> {
+  return this.repo.activarInactivar(model, [{ Parameter: 'CORR_XXX', Value: model.CORR_XXX }]);
 }
 ```
+
+**Estado catálogo:** un solo endpoint `ActivarInactivar` (el SP invierte el bit en BD). Ver [mtto-a-plus-estado-catalogo.md](./mtto-a-plus-estado-catalogo.md).
 
 **No** duplicar lógica de PK en cada service — `CData.Put` fusiona `xWhere` al body si el campo viene en `0` o vacío.
 
@@ -70,29 +68,23 @@ public async Task<IActionResult> Put(MI_TABLATable Data)
     // ...
 }
 
-[HttpPut("Activar")]
-public async Task<IActionResult> Activar(MI_TABLATable Data)
+[HttpPut("ActivarInactivar")]
+public async Task<IActionResult> ActivarInactivar(MI_TABLATable Data)
 {
     this.ApplyQueryKeys(Data, nameof(MI_TABLATable.CORR_XXX));
-    SetUpdateAudit(Data);
-    // ...
-}
-
-[HttpPut("Desactivar")]
-public async Task<IActionResult> Desactivar(MI_TABLATable Data)
-{
-    this.ApplyQueryKeys(Data, nameof(MI_TABLATable.CORR_XXX));
-    SetUpdateAudit(Data);
+    Data.CORR_EMPRESA = GetCorrEmpresa();
     // ...
 }
 ```
 
+**Delete** no usa `ApplyQueryKeys` — solo `[FromQuery]`.
+
 **Prohibido:** métodos privados `ApplyPrimaryKeyFromQuery` por pantalla.
 
-### API — service
+### API — service (estado catálogo)
 
-- Validar `CORR_XXX > 0` en update.
-- Duplicados (`ExistsDescripcionAsync`): pasar `excludeCorr` = PK del registro en update.
+- Validar `CORR_XXX > 0`.
+- **No** `UpdateAsync` completo ni mutar `ESTADO_*` en service — el SP lo resuelve en BD.
 
 ---
 
@@ -131,8 +123,9 @@ La PK sale de **`e.data`** (fila del grid). Si llega `0`, el API debe rechazar �
 
 ## Checklist CRUD HTTP
 
-- [ ] Service `update` / `activar` / `desactivar` con `xWhere` PK (patrón gen-banco)
-- [ ] Controller PUT/Activar/Desactivar: `this.ApplyQueryKeys(Data, nameof(...))`
+- [ ] Service `update` con `xWhere` PK (patrón gen-banco)
+- [ ] Si estado `bit`: `activarInactivar` con xWhere PK (como `delete`)
+- [ ] Controller PUT y `ActivarInactivar`: `this.ApplyQueryKeys(Data, nameof(...))`
 - [ ] Controller Delete: `[FromQuery]` — sin `ApplyQueryKeys`
 - [ ] **No** `ApplyPrimaryKeyFromQuery` privado por controller
 - [ ] Service API valida PK `> 0` en escrituras

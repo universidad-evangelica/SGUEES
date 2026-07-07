@@ -8,6 +8,15 @@ import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
+import {
+	createMttoPagedStoreCacheState,
+	invalidateMttoPagedStoreCache,
+	MttoPagedStoreCacheState,
+	MttoPagedStorePageResult,
+	rememberMttoPagedServerCache,
+	resolveMttoPagedLoadParams,
+	tryGetMttoPagedServerCache,
+} from 'src/app/shared/mtto/mtto-paged-store.helpers';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { ScImpactoEconomico } from './models/sc-impacto-economico';
 import { ScImpactoEconomicoService } from './sc-impacto-economico.service';
@@ -23,14 +32,17 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 
 	protected override etiquetaRegistro = 'el impacto económico';
 	protected override requiereEmpresaSesion = true;
-	//protected override mttoPageSize = 6;
-	//protected override mttoPageSizes: (number | PagerPageSize)[] = [5, 6, 10, 15,20, 'all'];
+	protected override mttoPageSize = 6;
+	protected override mttoPageSizes: (number | PagerPageSize)[] = [5, 6, 10, 15,20, 'all'];
 	protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
 	protected override mttoGridKeyExpr = 'CORR_IMPACTO_ECONOMICO';
 	protected override mttoCampoEstado = ESTADO_FIELD;
 	protected override mttoEstadoDescribeField = 'DESCRIPCION';
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Impacto Economico';
+	private readonly pagedStoreCacheState: MttoPagedStoreCacheState = createMttoPagedStoreCacheState(this.mttoPageSize);
+	private pagedStoreInflightKey: string | null = null;
+	private pagedStoreInflightPromise: Promise<MttoPagedStorePageResult> | null = null;
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -109,6 +121,9 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 	}
 
 	consultar(resetPage = true): void {
+		invalidateMttoPagedStoreCache(this.pagedStoreCacheState);
+		this.pagedStoreInflightKey = null;
+		this.pagedStoreInflightPromise = null;
 		this.refrescarGridMtto(resetPage);
 	}
 
@@ -137,32 +152,8 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	onActivarToolbar(): void {
-		const row = this.obtenerFilaSeleccionada() as ScImpactoEconomico | null;
-		if (!row) {
-			this.notificarSeleccionRequerida();
-			return;
-		}
-
-		this.confirmaAccion(
-			'Activar registro',
-			`Desea activar el impacto economico "${row.DESCRIPCION}"?`,
-			() => this.cambiarEstado(row, true)
-		);
-	}
-
-	onDesactivarToolbar(): void {
-		const row = this.obtenerFilaSeleccionada() as ScImpactoEconomico | null;
-		if (!row) {
-			this.notificarSeleccionRequerida();
-			return;
-		}
-
-		this.confirmaAccion(
-			'Desactivar registro',
-			`Desea desactivar "${row.DESCRIPCION}"?`,
-			() => this.cambiarEstado(row, false)
-		);
+	activar_inactivar(): void {
+		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
 	override bloquear(): void {
@@ -193,27 +184,42 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 			loadMode: 'processed',
 			cacheRawData: false,
 			load: async (loadOptions: any) => {
-				try {
-					const requestedTake = loadOptions.take;
-					const pageSize = !requestedTake ? 0 : requestedTake;
-					const skipRows = loadOptions.skip || 0;
-					const page = pageSize > 0 ? Math.floor(skipRows / pageSize) + 1 : 1;
-					const sort = this.getGridSort(loadOptions.sort);
+				const loadGeneration = this.pagedStoreCacheState.loadGeneration;
 
-					const response = await lastValueFrom(
-						this.service.getAll(
-							this.fillParam(0, page, pageSize, sort?.field ?? '', sort?.desc ?? false)
-						)
+				try {
+					const { page, pageSize, sortField, sortDesc, serverKey } = resolveMttoPagedLoadParams(
+						loadOptions,
+						this.pagedStoreCacheState.lastPageSize,
+						this.mttoGridKeyExpr
 					);
 
-					if (!response.Result) {
-						throw new Error(response.ErrorMessage || 'No se pudo cargar el impacto economico.');
+					const cached = tryGetMttoPagedServerCache(serverKey, this.pagedStoreCacheState);
+					if (cached) {
+						return cached;
 					}
 
-					return {
-						data: response.Data || [],
-						totalCount: response.RowsAffected || 0,
-					};
+					if (this.pagedStoreInflightKey === serverKey && this.pagedStoreInflightPromise) {
+						return this.pagedStoreInflightPromise;
+					}
+
+					this.pagedStoreInflightKey = serverKey;
+					this.pagedStoreInflightPromise = this.fetchPagedImpacto(
+						page,
+						pageSize,
+						sortField,
+						sortDesc,
+						serverKey,
+						loadGeneration
+					);
+
+					try {
+						return await this.pagedStoreInflightPromise;
+					} finally {
+						if (this.pagedStoreInflightKey === serverKey) {
+							this.pagedStoreInflightKey = null;
+							this.pagedStoreInflightPromise = null;
+						}
+					}
 				} catch (error) {
 					this.notifyApiError(error);
 					throw new Error(getApiErrorMessage(error));
@@ -222,29 +228,33 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	private getGridSort(sort: any): { field: string; desc: boolean } | null {
-		if (!Array.isArray(sort) || !sort.length) {
-			return null;
+	private async fetchPagedImpacto(
+		page: number,
+		pageSize: number,
+		sortField: string,
+		sortDesc: boolean,
+		serverKey: string,
+		loadGeneration: number
+	): Promise<MttoPagedStorePageResult> {
+		const response = await lastValueFrom(
+			this.service.getAll(this.fillParam(0, page, pageSize, sortField, sortDesc))
+		);
+
+		if (loadGeneration !== this.pagedStoreCacheState.loadGeneration) {
+			return { data: [], totalCount: 0 };
 		}
 
-		const first = sort[0];
-		if (!first?.selector) {
-			return null;
+		if (!response.Result) {
+			throw new Error(response.ErrorMessage || 'No se pudo cargar el impacto economico.');
 		}
 
-		return {
-			field: `${first.selector}`,
-			desc: !!first.desc,
+		const result = {
+			data: response.Data || [],
+			totalCount: response.RowsAffected || 0,
 		};
-	}
 
-	private cambiarEstado(row: ScImpactoEconomico, activo: boolean): void {
-		const request = { ...row, ESTADO_IMPACTO_ECONOMICO: activo };
-		this.ejecutarCambioEstado({
-			activar: () => this.service.activar(request),
-			desactivar: () => this.service.desactivar(request),
-			activo,
-		});
+		rememberMttoPagedServerCache(serverKey, result, this.pagedStoreCacheState, pageSize);
+		return result;
 	}
 	//#endregion
 }

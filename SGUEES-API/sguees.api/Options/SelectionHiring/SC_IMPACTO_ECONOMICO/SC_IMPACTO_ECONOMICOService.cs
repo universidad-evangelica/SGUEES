@@ -88,7 +88,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        public async Task<CResult> DesactivarAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        public async Task<CResult> ActivarInactivarAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
             if (empresaError != null)
@@ -96,8 +96,12 @@ namespace SGUEES.Services
                 return empresaError;
             }
 
-            Data.ESTADO_IMPACTO_ECONOMICO = false;
-            return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+            if (Data.CORR_IMPACTO_ECONOMICO <= 0)
+            {
+                return ValidationError("No se pudo identificar el impacto economico a actualizar.");
+            }
+
+            return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
         private static List<CParameter> BuildParameters(SC_IMPACTO_ECONOMICOParam xWhere)

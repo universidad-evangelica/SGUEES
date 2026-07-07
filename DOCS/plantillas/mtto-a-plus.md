@@ -1,9 +1,9 @@
 # Plantilla mtto A+ — Catálogo simple en memoria
 
-**Versión:** 1.2 — julio 2026  
+**Versión:** 1.3 — julio 2026  
 **Referencia viva:** `General/gen-banco`  
 **Contrato HTTP:** [mtto-api-crud-http.md](./mtto-api-crud-http.md)  
-**Cuándo:** catálogo &lt; ~500 filas por empresa, sin activar/desactivar, sin auditoría pesada en grid.
+**Cuándo:** catálogo &lt; ~500 filas por empresa, sin auditoría pesada en grid.
 
 ---
 
@@ -12,10 +12,10 @@
 - Una tabla / vista `V_*`
 - Sin grid detalle hijo
 - **No** necesita paginado servidor
-- **No** tiene estado activo/inactivo (o no aplica)
 
-Si necesita estado bit + badge → usar también `mtto-a-plus-estado-catalogo.md`.  
-Si necesita muchas filas → `mtto-a-p-paginado.md`.
+**Con estado activo/inactivo (`bit`):** aplicar también [mtto-a-plus-estado-catalogo.md](./mtto-a-plus-estado-catalogo.md) (toolbar + SP + `activar_inactivar`).  
+**Sin estado** o catálogo sin toggle: solo esta plantilla.  
+**Muchas filas:** [mtto-a-p-paginado.md](./mtto-a-p-paginado.md) (+ estado catálogo si aplica).
 
 ---
 
@@ -183,3 +183,4 @@ getColumns(): any[] {
 - [ ] Routing con `exports: [RouterModule]`
 - [ ] PUT/DELETE según [mtto-api-crud-http.md](./mtto-api-crud-http.md)
 - [ ] Auditoría al final con `buildAuditGridColumns()` si aplica
+- [ ] **Si tiene estado `bit`:** checklist en [mtto-a-plus-estado-catalogo.md](./mtto-a-plus-estado-catalogo.md)

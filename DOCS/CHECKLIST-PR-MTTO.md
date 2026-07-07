@@ -212,10 +212,12 @@ Copiar en la descripción del Pull Request o usar como guía de revisión.
 ## Estado catálogo — activo/inactivo (marcar si aplica)
 
 - [ ] Campo `bit` en BD y vista `V_*`
+- [ ] SP `PRAL_MTTO_CATALOGO_ESTADO_BIT` desplegado — ver `ESTANDAR-SP-ESTADO-CATALOGO-BIT.md`
 - [ ] `createEstadoColumnConfig` en `getColumns()` — badge verde/rojo
-- [ ] API `Put Activar` / `Put Desactivar` con permiso `|U` + `ApplyQueryKeys`
-- [ ] `[showEstadoToolbar]="true"` + `[campoEstado]` en grid
-- [ ] `(activarEstado)` / `(desactivarEstado)` + `(focusedRowChanged)` enlazados
+- [ ] API `Put ActivarInactivar` + repository `ActivarInactivarAsync` (patrón Solicitar) + `ApplyQueryKeys`
+- [ ] `[showEstadoToolbar]="true"` + `[campoEstado]` + `(activarInactivar)="activar_inactivar()"`
+- [ ] `mttoCampoEstado` + `invocarActivarInactivar` en component
+- [ ] Service `activarInactivar` con xWhere PK (como `delete`)
 - [ ] **Sin** `buildEstadoActionButtons` por fila (legacy deprecado)
 
 ---

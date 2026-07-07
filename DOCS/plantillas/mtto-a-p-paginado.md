@@ -1,10 +1,10 @@
 # Plantilla mtto A+P — Paginado servidor (CustomStore)
 
-**Versión:** 1.2 — julio 2026  
-**Referencia viva (piloto cerrado):** `SelectionHiring/sc-impacto-economico`  
+**Versión:** 1.3 — julio 2026  
+**Referencia viva (piloto):** `SelectionHiring/sc-impacto-economico`  
 **Guía equipo:** [../GUIA-EQUIPO-MTTO.md](../GUIA-EQUIPO-MTTO.md)  
 **Contrato HTTP PUT/DELETE:** [mtto-api-crud-http.md](./mtto-api-crud-http.md)  
-**Cuándo:** catálogo con muchas filas, columnas de auditoría, o estado catálogo + necesidad de paginar en servidor.
+**Cuándo:** catálogo con muchas filas, columnas de auditoría, paginado servidor — **con o sin** estado catálogo `bit`.
 
 ---
 
@@ -113,35 +113,40 @@ fillParam(
 
 ## CustomStore load (solo page + sort — sin filtros remotos)
 
+`filtering: false` — el filter row es **solo en cliente** (página cargada). DevExtreme puede llamar `load` al filtrar; usar helper `mtto-paged-store.helpers.ts` para no repetir `GetAll`.
+
 ```typescript
-private configurarDataSource(): void {
-  this.models = new CustomStore({
-    key: this.mttoGridKeyExpr,
-    loadMode: 'processed',
-    cacheRawData: false,
-    load: async (loadOptions) => {
-      const requestedTake = loadOptions.take;
-      const pageSize = !requestedTake ? 0 : requestedTake;
-      const skipRows = loadOptions.skip || 0;
-      const page = pageSize > 0 ? Math.floor(skipRows / pageSize) + 1 : 1;
-      const sort = this.getGridSort(loadOptions.sort);
+import {
+  createMttoPagedStoreCacheState,
+  invalidateMttoPagedStoreCache,
+  rememberMttoPagedServerCache,
+  resolveMttoPagedLoadParams,
+  tryGetMttoPagedServerCache,
+} from 'src/app/shared/mtto/mtto-paged-store.helpers';
 
-      const response = await lastValueFrom(
-        this.service.getAll(this.fillParam(0, page, pageSize, sort?.field ?? '', sort?.desc ?? false))
-      );
+private readonly pagedStoreCacheState = createMttoPagedStoreCacheState(this.mttoPageSize);
 
-      if (!response.Result) throw new Error(response.ErrorMessage || '...');
-
-      return {
-        data: response.Data || [],
-        totalCount: response.RowsAffected || 0,
-      };
-    },
-  });
+consultar(resetPage = true): void {
+  invalidateMttoPagedStoreCache(this.pagedStoreCacheState);
+  this.refrescarGridMtto(resetPage);
 }
+
+load: async (loadOptions) => {
+  const loadGeneration = this.pagedStoreCacheState.loadGeneration;
+  const { page, pageSize, sortField, sortDesc, serverKey } = resolveMttoPagedLoadParams(
+    loadOptions,
+    this.pagedStoreCacheState.lastPageSize
+  );
+  const cached = tryGetMttoPagedServerCache(serverKey, this.pagedStoreCacheState);
+  if (cached) return cached;
+  // ... GetAll ...
+  rememberMttoPagedServerCache(serverKey, result, this.pagedStoreCacheState, pageSize);
+},
 ```
 
-**Prohibido** en load: `FILTER_ROW_JSON`, `GetDistinctValues`, header filters remotos.
+**Prohibido** en load: `FILTER_ROW_JSON`, `parseRemoteGridFilters`, `GetDistinctValues`, `[headerFilterLoader]` remoto.
+
+`data-grid-mtto` con `filtering: false` **no** sincroniza headerFilter al escribir en filter row (evita `GetAll` extra).
 
 ---
 
@@ -210,9 +215,16 @@ Respuesta: `Data` = filas de la página, `RowsAffected` = total para el pager.
 
 ---
 
-## Con estado catálogo
+## Con estado catálogo (`bit`) — opcional
 
-Combinar con [mtto-a-plus-estado-catalogo.md](./mtto-a-plus-estado-catalogo.md).
+Si el catálogo tiene activo/inactivo, combinar con **[mtto-a-plus-estado-catalogo.md](./mtto-a-plus-estado-catalogo.md)** (misma extensión para A+ y A+P):
+
+- `createEstadoColumnConfig` en `getColumns()`
+- `mttoCampoEstado` + `activar_inactivar()` en component
+- `[showEstadoToolbar]` + `(activarInactivar)` en grid
+- API `Put ActivarInactivar` + SP `PRAL_MTTO_CATALOGO_ESTADO_BIT`
+
+Piloto: `sc-impacto-economico`.
 
 ---
 
@@ -220,9 +232,9 @@ Combinar con [mtto-a-plus-estado-catalogo.md](./mtto-a-plus-estado-catalogo.md).
 
 | Capa | Hacer |
 |------|-------|
-| Controller | `SetCreateAudit` / `SetUpdateAudit`, `ApplyQueryKeys` en PUT/Activar/Desactivar, `Delete` con `[FromQuery]`, `CORR_EMPRESA` desde claim |
-| Service | `ValidateEmpresaSesion`, validaciones negocio, `ExistsDescripcionAsync` con `excludeCorr` en update |
-| Repository | `ReadPagedViewAsync`, `_AllowedSortFields` |
+| Controller | `SetCreateAudit` / `SetUpdateAudit`, `ApplyQueryKeys` en PUT y `ActivarInactivar`, `Delete` con `[FromQuery]` |
+| Service | `ValidateEmpresaSesion`, validaciones negocio |
+| Repository | `ReadPagedViewAsync`, `_AllowedSortFields`, `ActivarInactivarAsync` si hay estado `bit` |
 
 **Detalle PUT vs DELETE:** [mtto-api-crud-http.md](./mtto-api-crud-http.md)
 
@@ -241,3 +253,4 @@ Combinar con [mtto-a-plus-estado-catalogo.md](./mtto-a-plus-estado-catalogo.md).
 - [ ] API: `ReadPagedViewAsync` + whitelist sort — ver `ESTANDAR-EFRAMEWORK-PAGING.md`
 - [ ] CRUD HTTP: [mtto-api-crud-http.md](./mtto-api-crud-http.md) (`CData.Put` + `ApplyQueryKeys`; Delete solo query)
 - [ ] Auditoría: `buildAuditGridColumns({ withDateTimeFilter: true })` al final si aplica
+- [ ] **Si tiene estado `bit`:** checklist en [mtto-a-plus-estado-catalogo.md](./mtto-a-plus-estado-catalogo.md)
