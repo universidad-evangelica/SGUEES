@@ -72,6 +72,7 @@ export class CData {
 		}
 
 		let parametros = new HttpParams();
+		const payload = this.mergePutQueryIntoBody(xContent, xWhere);
 
 		if (xWhere !== null) {
 			xWhere.forEach(param => {
@@ -80,8 +81,56 @@ export class CData {
 		}
 
 		return this.http
-			.put<IResult>(xUrlAPI + xController + '/' + xMetodo, xContent, { params: parametros })
+			.put<IResult>(xUrlAPI + xController + '/' + xMetodo, payload, { params: parametros })
 			.pipe(map((response: any) => response));
+	}
+
+	/**
+	 * Estándar mtto PUT: la PK suele ir en query (xWhere) y a veces llega en 0 en el body.
+	 * Completa el body con los valores de xWhere cuando el campo está vacío o es 0.
+	 */
+	private mergePutQueryIntoBody(body: any, xWhere: IParam[] | null): any {
+		if (!body || !xWhere?.length) {
+			return body;
+		}
+
+		const payload = { ...body };
+
+		for (const param of xWhere) {
+			const key = param.Parameter;
+			if (!key) {
+				continue;
+			}
+
+			const queryValue = param.Value;
+			if (queryValue === null || queryValue === undefined || queryValue === '') {
+				continue;
+			}
+
+			const current = payload[key];
+			if (this.shouldMergePutField(current, queryValue)) {
+				payload[key] = queryValue;
+			}
+		}
+
+		return payload;
+	}
+
+	private shouldMergePutField(current: unknown, queryValue: unknown): boolean {
+		if (current === null || current === undefined) {
+			return true;
+		}
+
+		if (typeof current === 'number' && current <= 0) {
+			const queryNumber = Number(queryValue);
+			return !Number.isNaN(queryNumber) && queryNumber > 0;
+		}
+
+		if (typeof current === 'string' && current.trim() === '') {
+			return true;
+		}
+
+		return false;
 	}
 
 	Delete(xController: string, xMetodo: string, xWhere: IParam[], xUrlAPI?: string): any {

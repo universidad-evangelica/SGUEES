@@ -12,13 +12,14 @@ import { GenBancoService } from './gen-banco.service';
 @Component({
 	selector: 'app-gen-banco',
 	templateUrl: './gen-banco.component.html',
-	styleUrls: ['./gen-banco.component.scss'],
 })
 export class GenBancoComponent extends CBaseComponent implements OnInit {
 	protected override etiquetaRegistro = 'el banco';
 	protected override requiereEmpresaSesion = true;
+	protected override mttoPageSize = 5;
+	protected override mttoPageSizes = [5, 10, 25, 50, 100];
+	protected override mttoGridKeyExpr = 'CORR_BANCO';
 
-	readonly pageSizes = [5, 10, 25, 50, 100];
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Bancos';
 
 	//#region <Declarando Variales>
@@ -124,16 +125,6 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
 			insert: () => this.service.insert(this.model),
 			update: () => this.service.update(this.model),
-			onSuccess: (data: any, isAdd: boolean) => {
-				if (isAdd) {
-					this.models.push(data);
-				} else {
-					const vIndex = this.models.findIndex((item: any) => item.CORR_BANCO === data.CORR_BANCO);
-					if (vIndex >= 0) {
-						this.models[vIndex] = data;
-					}
-				}
-			},
 		});
 	}
 
@@ -141,15 +132,10 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 		super.cancelar((item: any) => item.CORR_BANCO === this.modelUpdate.CORR_BANCO);
 	}
 
-	rowRemoving(e: any) {
-		e.cancel = true;
-		const row = e.data as GenBanco;
-		this.confirmaAccion('Eliminar registro', `Desea eliminar el banco "${row.NOMBRE_BANCO}"?`, () =>
-			this.ejecutarDelete({
-				deleteFn: () => this.service.delete(this.fillParam(row.CORR_BANCO)),
-				onSuccess: () => e.component.refresh(),
-			})
-		);
+	rowRemoving(e: any): void {
+		this.rowRemovingMtto(e, {
+			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_BANCO)),
+		});
 	}
 
 	override bloquear(): void {

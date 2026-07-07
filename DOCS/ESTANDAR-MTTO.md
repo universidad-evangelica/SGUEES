@@ -2,76 +2,138 @@
 
 Documento oficial para todo el equipo. **Toda pantalla nueva o migración del admin debe seguir este estándar.**
 
-Módulos de referencia ya alineados: **Bancos**, **Contabilidad** (catálogos), **Compras** (catálogos + `com-documento`).  
-Módulos pendientes de alineación: **Selección y contratación** y otros legacy — al tocar una pantalla, migrarla a este estándar.
+**Onboarding / explicación al equipo:** [GUIA-EQUIPO-MTTO.md](./GUIA-EQUIPO-MTTO.md)  
+Módulos de referencia alineados: **gen-banco** (A+), **sc-impacto-economico** (A+P piloto cerrado).  
+**Plantillas congeladas (IA y equipo):** `DOCS/plantillas/` — no depender solo del código piloto en vivo.
 
 ---
 
 ## Regla de oro
 
-> Si no se parece a **`gen-banco`** (catálogo simple) o **`con-partida`** (encabezado + detalle), **no está terminado**.
+> Seguir **`DOCS/plantillas/`** según el tipo de pantalla. Comparar con `gen-banco` o `sc-impacto-economico` solo para dudas puntuales.
 
-**No inventar estructura.** Copiar la pantalla de referencia más parecida y adaptar campos.
+**No inventar estructura.** No copiar línea por línea pantallas piloto que pueden cambiar.
+
+**Prompt IA:** `DOCS/PROMPT-MTTO.md`
 
 ---
 
-## Tres tipos de mantenimiento
+## Tipos de mantenimiento
 
-| Tipo | Cuándo usarlo | Referencia SPA |
-|------|---------------|----------------|
-| **A — Básico** | Una tabla/vista, sin grid hijo | `SGUEES-SPA/.../General/gen-banco` |
-| **B — Básico + lookup** | Form con combos (lista o cross-tabla) | `.../Accounting/con-centro-costo` |
-| **C — Con detalle** | Encabezado + tabla detalle + estado | `.../Shop/com-documento`, `.../Accounting/con-partida` |
+| Tipo | Cuándo | Plantilla | Referencia viva |
+|------|--------|-----------|-----------------|
+| **A — Básico** | Una tabla/vista, sin detalle | — | `gen-banco` |
+| **B — + lookup** | Form con combos | — | `con-centro-costo` |
+| **C — Con detalle** | Encabezado + `*_DETA` | — | `con-partida`, `com-documento` |
+| **A+** | Catálogo en memoria, &lt; ~500 filas | [plantillas/mtto-a-plus.md](./plantillas/mtto-a-plus.md) | `gen-banco` |
+| **A+P** | Catálogo paginado servidor, auditoría | [plantillas/mtto-a-p-paginado.md](./plantillas/mtto-a-p-paginado.md) | `sc-impacto-economico` |
 
-### Tipo A+ — Catálogo con estado y validaciones (recomendado)
+### Cómo elegir A+ vs A+P
 
-Mismo patrón del **Tipo A** (`gen-banco`, `con-area-funcional`): hijo delgado que extiende `CBaseComponent` con las 4 regiones. Las mejoras de UX viven en el **padre** y en utilidades compartidas, no en copiar 400 líneas por pantalla.
+| Criterio | A+ | A+P |
+|----------|----|----|
+| Filas por empresa | &lt; ~500 | Muchas o crecimiento esperado |
+| Carga datos | 1× `consultarMtto` → array | `CustomStore` por página |
+| Paginado | Cliente (`mttoPageSize`) | Servidor (`remoteOperations.paging`) |
+| Filter row grid | Cliente, sin API | Cliente, sin API (`filtering: false`) |
+| Complejidad hijo | Baja | Media |
+
+**Nota A+P API:** paginación centralizada en `eFramework` (`GetPagedFromViewAsync`). Ver [ESTANDAR-EFRAMEWORK-PAGING.md](./ESTANDAR-EFRAMEWORK-PAGING.md). Legacy Selection sin migrar puede seguir en memoria C#.
+
+---
+
+## Tipo A+ — Catálogo reforzado (recomendado para la mayoría)
+
+Hijo delgado que extiende `CBaseComponent`. Lógica común en el **padre** y `shared/mtto/`.
 
 | Necesidad | Dónde |
 |-----------|--------|
-| Badge Activo/Inactivo en grid | `buildEstadoColumn('ESTADO_XXX')` en `getColumns()` del service |
-| Botones activar/desactivar | `buildEstadoActionButtons(...)` → `[customButtons]` en el HTML |
-| Mensajes API (empresa, duplicado, FK) | `CBaseComponent.notifyFx` (automático si `mapearMensajesApi = true`) |
-| Validar empresa en sesión | `protected requiereEmpresaSesion = true` + `etiquetaRegistro` en el hijo |
-| Guardar / eliminar / cambio estado | `guardarMtto()`, `ejecutarDelete()`, `ejecutarCambioEstado()` del padre |
-| Confirmaciones | `confirmaAccion(title, message, fn)` del padre |
-| CSS badge estado | Global en `sguees-mtto-module.scss` (clase `.estado-badge`) |
+| Layout form / grid defaults | Padre: `mttoFormColCount`, `mttoPageSize`, `mttoPageSizes`, `mttoRemoteOperations` |
+| Parche grid tras guardar (sin 2ª petición) | `mttoGridKeyExpr` + `guardarMtto` del padre |
+| Mensajes API | `notifyFx` / `notifyApiError` (opt-in `mapearMensajesApi`) |
+| Empresa en sesión | `requiereEmpresaSesion` + login API `ErrorCode 4100` |
+| CRUD | `consultarMtto`, `guardarMtto`, `rowRemovingMtto` |
+| Editar / eliminar grid | `editarClick`, `rowRemovingMtto` — sin columna custom |
+| Toast / CSS | Global shell + `sguees-mtto-module.scss` |
 
 **Utilidades:** `SGUEES-SPA/src/app/shared/mtto/`
 
 ```typescript
-// service — columna estado
-import { buildEstadoColumn } from 'src/app/shared/mtto/mtto-grid.helpers';
-
-getColumns(): any[] {
-  return [
-    { dataField: 'CORR_XXX', caption: 'Corr.', width: 85 },
-    buildEstadoColumn('ESTADO_XXX'),
-  ];
-}
-```
-
-```typescript
-// component — flags opt-in
-protected override etiquetaRegistro = 'el área funcional';
+// Flags típicos del hijo
+protected override etiquetaRegistro = 'el banco';
 protected override requiereEmpresaSesion = true;
+protected override mttoGridKeyExpr = 'CORR_BANCO';
+protected override mttoPageSize = 5;                    // override opcional
+protected override mttoPageSizes = [5, 10, 25, 50, 100];
 
 guardar(): void {
   this.guardarMtto({
     esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
     insert: () => this.service.insert(this.model),
     update: () => this.service.update(this.model),
-    onSuccess: () => this.consultar(),
+    // NO onSuccess con consultar() — el padre parchea models[]
   });
 }
 ```
 
-**Referencia piloto:** `sc-impacto-economico` (refactorizado sobre el estándar padre).
+**Plantilla completa:** [plantillas/mtto-a-plus.md](./plantillas/mtto-a-plus.md)
 
-### Cómo elegir el tipo
+---
 
-- Una sola tabla `V_MiTabla` → **A** o **B** (si hay FK / códigos lista).
-- Tabla encabezado + `*_DETA` → **C**.
+## Tipo A+P — Catálogo paginado servidor
+
+Para catálogos grandes o con columnas de auditoría. Ver [plantillas/mtto-a-p-paginado.md](./plantillas/mtto-a-p-paginado.md).
+
+```typescript
+protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
+protected override mttoGridKeyExpr = 'CORR_XXX';
+
+@ViewChild(DataGridMttoComponent) dataGrid!: DataGridMttoComponent;
+protected override getMttoDataGrid() { return this.dataGrid ?? null; }
+```
+
+- `filtering: false` → filter row **no** llama al API.
+- `guardarMtto` / `rowRemovingMtto` → padre parchea `CustomStore`, sin reload.
+
+---
+
+## Estados — catálogo vs transaccional
+
+### Catálogo (activo / inactivo)
+
+| Capa | Estándar |
+|------|----------|
+| BD | `bit` — ej. `ESTADO_IMPACTO_ECONOMICO` |
+| Grid | Badge **verde/rojo** (`createEstadoColumnConfig`) — sin botones en la columna |
+| Acción | Toolbar `Activar` / `Desactivar` → un método `activar_inactivar()` → `Put ActivarInactivar` |
+| API | SP `PRAL_MTTO_CATALOGO_ESTADO_BIT` (toggle en BD) — ver [ESTANDAR-SP-ESTADO-CATALOGO-BIT.md](./ESTANDAR-SP-ESTADO-CATALOGO-BIT.md) |
+
+**Plantilla:** [plantillas/mtto-a-plus-estado-catalogo.md](./plantillas/mtto-a-plus-estado-catalogo.md)
+
+### Transaccional (workflow)
+
+| Capa | Estándar |
+|------|----------|
+| BD | `varchar(2)` o `varchar(3)` — `DI`, `AP`, `AN`, … |
+| Grid | Texto / lookup de estados |
+| Acción | Botones de negocio (Aplicar, Anular…) — **no** Activar/Desactivar genérico |
+
+**Plantilla:** [plantillas/mtto-estado-transaccional.md](./plantillas/mtto-estado-transaccional.md)
+
+```
+¿Solo activo/inactivo?  → Catálogo (bit)
+¿Varios estados de flujo? → Transaccional (varchar)
+```
+
+---
+
+### Cómo elegir el tipo (resumen)
+
+- Una sola tabla `V_MiTabla`, catálogo chico → **A+**.
+- Catálogo + activo/inactivo → **A+** o **A+P** + plantilla estado catálogo.
+- Muchas filas / auditoría → **A+P**.
+- Encabezado + `*_DETA` → **C**.
+- Documento con estados de negocio → **C** + estado transaccional.
 
 ---
 
@@ -113,6 +175,52 @@ Registrar la ruta en el `*-routing.module.ts` del módulo padre (ej. `accounting
 
 ---
 
+## API — contrato HTTP CRUD (PUT / DELETE)
+
+Patrón estándar para todos los mttos catálogo. **Documento completo:** [plantillas/mtto-api-crud-http.md](./plantillas/mtto-api-crud-http.md)
+
+| Verbo | SPA | API |
+|-------|-----|-----|
+| **PUT** (update, ActivarInactivar) | Body + query (`CData.Put` fusiona PK si body trae `0`) | `this.ApplyQueryKeys(Data, nameof(...PK))` |
+| **DELETE** | Solo query (`CData.Delete`) | `[FromQuery]` — PK desde fila del grid |
+
+**Prohibido:** `ApplyPrimaryKeyFromQuery` privado por controller.
+
+**Helpers:** `SGUEES-SPA/.../FxAPI/CData.ts` · `SGUEES-API/.../Shared/MttoControllerExtensions.cs`
+
+---
+
+## Grid — columnas de auditoría
+
+Si la vista `V_*` (o el modelo) trae campos de auditoría estándar (`USUARIO_*`, `FECHA_*`, `ESTACION_*`):
+
+| Regla | Detalle |
+|-------|---------|
+| **Mostrar en grid** | Solo `USUARIO_CREA`, `FECHA_CREA`, `USUARIO_ACTU`, `FECHA_ACTU` |
+| **No mostrar** | `ESTACION_CREA`, `ESTACION_ACTU` (y cualquier otro campo técnico de estación) |
+| **Orden** | Campos de negocio primero (PK, descripción, estado, lookups); **auditoría al final** |
+| **Formato fechas** | `dataType: 'datetime'`, `format: 'dd/MM/yyyy HH:mm'` |
+| **Formulario** | No incluir auditoría en `getItems()` de alta/edición (la API la asigna) |
+
+Helper SPA (mismo orden y captions):
+
+```typescript
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+
+getColumns(): any[] {
+  return [
+    { dataField: 'CORR_XXX', caption: 'Corr.', width: 85 },
+    { dataField: 'DESCRIPCION', caption: 'Descripción', width: 300 },
+    // ... estado, lookups, etc.
+    ...buildAuditGridColumns({ withDateTimeFilter: true }), // true en A+P
+  ];
+}
+```
+
+Referencia: `sc-impacto-economico.service.ts` → `getColumns()`.
+
+---
+
 ## TypeScript — estructura obligatoria
 
 Extender **`CBaseComponent`**. Usar **4 regiones**:
@@ -146,13 +254,19 @@ ngOnInit(): void {
 |--------------------|-----|
 | `etiquetaRegistro` | Texto para mensajes de empresa y errores API |
 | `requiereEmpresaSesion` | Bloquea guardar si no hay `CORR_EMPRESA` en JWT |
-| `asegurarEmpresaSesion()` | Valida sesión empresa (llamado por `guardarMtto` y opcional en `nuevo`) |
-| `consultarMtto({ load, onData })` | Consulta unificada con loading y notify |
-| `guardarMtto({ esValido, insert, update, onSuccess })` | Guardar unificado con loading y notify |
-| `ejecutarDelete({ deleteFn, onSuccess })` | Eliminar con notify |
-| `ejecutarCambioEstado({ activar, desactivar, activo })` | Activar/desactivar |
+| `mttoFormColCount` / `mttoFormColCountByScreen` | Layout responsive del form |
+| `mttoPageSize` | Tamaño de página default del grid (default **20**) |
+| `mttoPageSizes` | Selector pager (default **20, 50, 100, 200, all**) |
+| `mttoRemoteOperations` | `false` = A+; `{ paging, sorting, filtering }` = A+P |
+| `mttoGridKeyExpr` | Clave para parchear grid tras guardar/eliminar |
+| `getMttoDataGrid()` | Override en A+P para `refrescarGridMtto` |
+| `asegurarEmpresaSesion()` | Valida sesión empresa |
+| `consultarMtto({ load })` | Consulta A+ con loading |
+| `guardarMtto({ ... })` | Guardar; parchea grid si `mttoGridKeyExpr` |
+| `rowRemovingMtto(e, { deleteFn })` | Delete grid; parchea sin reload |
+| `invocarActivarInactivar(fn)` | Toolbar activar/desactivar catálogo `bit` (un flujo) |
+| `ejecutarActivarInactivar({ ... })` | Ejecuta `Put ActivarInactivar` y parchea grid |
 | `confirmaAccion(title, message, fn)` | Diálogo Si/No |
-| `notifyApiResponse` / `notifyApiError` | Errores API normalizados |
 
 ### Tipo C — además
 
@@ -198,6 +312,11 @@ con-partida-deta/  (solo datos, sin UI)
 | `app-data-grid-mtto` en listado principal | `dx-data-grid` suelto en listado principal |
 | `app-data-lookup` en combos | `dx-select-box` con `service.getAll()` |
 | Sin `columnAutoWidth` en grid principal | `[columnAutoWidth]="true"` en grid principal |
+
+### Fuera de alcance v1.1 (grid padre)
+
+- **Panel de agrupación** — no soportado en `app-data-grid-mtto` (toolbar unificada DevExtreme 24).
+- **Filtros remotos** desde filter row en A+P — usar `filtering: false`; el filter row actúa solo sobre la página cargada.
 
 ---
 
@@ -535,25 +654,30 @@ El revisor debe rechazar si faltan ítems obligatorios del tipo A, B o C aplicab
 
 | Necesidad | Archivo |
 |-----------|---------|
-| Mtto básico | `SGUEES-SPA/.../General/gen-banco/` |
-| Mtto + lookups | `SGUEES-SPA/.../Accounting/con-centro-costo/` |
-| Mtto + detalle (Compras) | `SGUEES-SPA/.../Shop/com-documento/` |
-| Mtto especial asignación | `SGUEES-SPA/.../Accounting/con-catalogo-cuenta-centro-costo/` |
-| Permisos cross-tabla (API) | `CON_CATALOGO_CUENTAController`, `CON_CENTRO_COSTOController` |
-| Lookup component | `SGUEES-SPA/.../layouts/data-lookup/` |
-| Barra mtto | `SGUEES-SPA/.../layouts/barra-data-mtto/` |
-| Grid mtto | `SGUEES-SPA/.../layouts/data-grid-mtto/` |
-| Regla Cursor (IA) | `.cursor/rules/sguees-mtto-estandar.mdc` |
+| **Guía equipo (reunión / onboarding)** | `DOCS/GUIA-EQUIPO-MTTO.md` |
+| **Plantillas IA (congeladas)** | `DOCS/plantillas/` |
+| **Contrato HTTP PUT/DELETE** | `DOCS/plantillas/mtto-api-crud-http.md` |
+| **Prompt crear mtto** | `DOCS/PROMPT-MTTO.md` |
+| Mtto A+ | `plantillas/mtto-a-plus.md` + `General/gen-banco` |
+| Mtto A+P API | [ESTANDAR-EFRAMEWORK-PAGING.md](./ESTANDAR-EFRAMEWORK-PAGING.md) |
+| Estado catálogo (bit) | `plantillas/mtto-a-plus-estado-catalogo.md` |
+| Estado transaccional | `plantillas/mtto-estado-transaccional.md` |
+| Mtto + lookups | `Accounting/con-centro-costo` |
+| Mtto + detalle | `Shop/com-documento`, `Accounting/con-partida` |
+| Padre SPA | `FxAPI/CBaseComponent.component.ts` |
+| Helpers mtto | `shared/mtto/` |
+| Regla Cursor | `.cursor/rules/sguees-mtto-estandar.mdc` |
+| Checklist PR | `docs/CHECKLIST-PR-MTTO.md` |
 
 ---
 
 ## Política de adopción
 
-1. **Hoy:** todo desarrollo nuevo y migraciones del admin → 100 % este estándar.
-2. **Legacy:** migrar pantalla por pantalla al modificarla (tabla + vista).
-3. **Revisión:** un responsable valida checklist en PR.
-4. **Dudas:** copiar la referencia más cercana; no crear patrón nuevo.
+1. **Hoy:** todo desarrollo nuevo y migraciones del admin → plantilla en `DOCS/plantillas/` + `CBaseComponent`.
+2. **Legacy:** migrar pantalla por pantalla al modificarla (tabla + vista); A+ para la mayoría, A+P solo si el catálogo lo justifica.
+3. **Revisión:** un responsable valida checklist en PR (`docs/CHECKLIST-PR-MTTO.md`).
+4. **Dudas:** elegir plantilla del paquete v1.0; comparar con piloto vivo solo para verificar detalles.
 
 ---
 
-*Última actualización: junio 2026 — STI / UEES*
+*Última actualización: julio 2026 — STI / UEES — v1.2 (A+, A+P, CRUD HTTP, auditoría grid, plantillas)*

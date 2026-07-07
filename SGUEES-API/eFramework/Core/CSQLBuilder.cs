@@ -20,6 +20,27 @@ namespace eFramework.Core
             return sql;
         }
 
+        public string toCount(string vViewName, string vWhereSelect = "")
+        {
+            if (vWhereSelect != "") { vWhereSelect = "WHERE " + vWhereSelect; }
+
+            return @$"SELECT COUNT(1) AS TOTAL_ROWS
+                      FROM {vViewName}
+                      {vWhereSelect}".Trim();
+        }
+
+        public string toSelectPaged(string vViewName, string vWhereSelect, string vSortingFields, int offset, int fetch)
+        {
+            if (vWhereSelect != "") { vWhereSelect = "WHERE " + vWhereSelect; }
+            var vOrderBy = vSortingFields != "" ? @$"ORDER BY {vSortingFields}" : "";
+
+            return @$"SELECT {vFieldsSelect}
+                      FROM {vViewName}
+                      {vWhereSelect}
+                      {vOrderBy}
+                      OFFSET {offset} ROWS FETCH NEXT {fetch} ROWS ONLY".Trim();
+        }
+
         public string toInsert(string vTableName, string vFields, string vValues, string vCorrName = "", string vWhereCorr="") 
         {
             string sqlInsert = @$" INSERT INTO {vTableName} ({vFields}) VALUES({vValues})";

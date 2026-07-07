@@ -203,6 +203,24 @@ export class AuthService {
 		return false;
 	}
 
+	getCorrEmpresaSesion(): number {
+		const token = localStorage.getItem('token') || '';
+		if (!token || this.jwtHelper.isTokenExpired(token)) {
+			return 0;
+		}
+
+		if (!this.decodedToken) {
+			this.decodedToken = this.jwtHelper.decodeToken(token);
+		}
+
+		const value = Number(this.decodedToken?.CORR_EMPRESA ?? 0);
+		return Number.isFinite(value) ? value : 0;
+	}
+
+	tieneEmpresaAsignada(): boolean {
+		return this.getCorrEmpresaSesion() > 0;
+	}
+
 	async logOut(): Promise<void> {
 		localStorage.removeItem('token');
 		this.router.navigate(['/login-form']);
@@ -288,6 +306,22 @@ export class AuthGuardService implements CanActivate {
     const isAuthForm = ['login-form', 'recuperar-contrasena', 'reset-password', 'create-account', 'change-password/:recoveryCode', 'change-password'].includes(
 			route.routeConfig?.path || defaultPath
 		);
+
+		if (isLoggedIn && !this.authService.tieneEmpresaAsignada() && !isAuthForm) {
+			void this.authService.logOut();
+			notify(
+				{
+					message: 'Su usuario no tiene una empresa por defecto asignada. Solicite a administración que configure una empresa por defecto en el sistema.',
+					width: 'auto',
+					shading: false,
+					closeOnClick: true,
+					closeOnOutsideClick: true,
+				},
+				'warning',
+				8000
+			);
+			return false;
+		}
 
 		// eslint-disable-next-line prefer-const
 		routerList = state.url.slice(1).split('/');

@@ -10,7 +10,6 @@ import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { DxTooltipModule } from 'devextreme-angular/ui/tooltip';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
-import { ToastModule } from 'primeng/toast';
 import { ScImpactoEconomicoComponent } from './sc-impacto-economico.component';
 
 const routes: Routes = [{ path: '', component: ScImpactoEconomicoComponent }];
@@ -28,7 +27,6 @@ const routes: Routes = [{ path: '', component: ScImpactoEconomicoComponent }];
 		DxTooltipModule,
 		BarraDataMttoModule,
 		DataGridMttoModule,
-		ToastModule,
 	],
 	exports: [RouterModule],
 	declarations: [ScImpactoEconomicoComponent],

@@ -61,7 +61,9 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 		this.consultar();
 	}
 
-	inicializaOpciones() {}
+	inicializaOpciones() {
+		
+	}
 	// #endregion
 
 	//#region <Manejo de Combos>
