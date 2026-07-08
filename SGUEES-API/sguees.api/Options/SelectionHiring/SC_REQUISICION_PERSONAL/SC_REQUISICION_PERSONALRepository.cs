@@ -13,6 +13,7 @@ namespace SGUEES.Repositories
     public class SC_REQUISICION_PERSONALRepository : BaseRepository<SC_REQUISICION_PERSONALTable>, ISC_REQUISICION_PERSONALRepository
     {
         private const string _TableName = "SC_REQUISICION_PERSONAL";
+        private const string _TableNameBitacora = "SEG_FLUJO_BITACORA";
 
         private static object ToSqlDateTime(DateTime? fecha)
         {
@@ -257,6 +258,43 @@ namespace SGUEES.Repositories
                 objResultado.Data = null;
                 objResultado.Result = true;
                 objResultado.CodeHelper = Data.CORR_REQUISICION_PERSONAL;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+                objResultado.ErrorSource = "";
+            }
+            catch (System.Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        public async Task<CResult> GetAllAsyncBitacoraByCORR_REQUISICION(List<CParameter> xWhere)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                var reader = await objData.GetDataReader("V_" + _TableNameBitacora, xWhere);
+                var response = new List<SC_REQUISICION_PERSONAL_BITACORAView>().FromDataReader(reader).ToList();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
+                objResultado.Result = true;
+                objResultado.RowsAffected = response.Count;
+                objResultado.CodeHelper = 0;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
                 objResultado.ErrorSource = "";

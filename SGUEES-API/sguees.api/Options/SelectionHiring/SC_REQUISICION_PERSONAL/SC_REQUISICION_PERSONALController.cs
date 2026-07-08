@@ -1,11 +1,12 @@
-﻿using sguees.api.Shared;
-using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
+﻿using System;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using eFramework.Core;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using sguees.api.Shared;
+using sguees.Models;
 using SGUEES.Models;
 using SGUEES.Services;
 
@@ -100,6 +101,16 @@ namespace SGUEES.Controllers
             {
                 return BadRequest(resultado);
             }
+        }
+
+        //Funcion para traerme la data de SEG_FLUJO_BITACORA
+        [HttpGet("GetCORR_BITACORA_SC_REQUISICION_PERSONAL")]
+        [Authorize(Policy = "/sc-requisicion-personal|R")]
+        public async Task<CResult> GetCORR_BITACORA_SC_REQUISICION_PERSONAL([FromQuery] SC_REQUISICION_PERSONAL_BITACORAParam Data)
+        {
+            Data.CORR_TIPO_DOCUMENTO = 100 ;
+
+            return await _service.GetAllAsyncBitacoraByCORR_REQUISICION(Data);
         }
     }
 }

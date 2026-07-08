@@ -52,5 +52,19 @@ namespace SGUEES.Services
         {
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
+
+        //fUNCION PARA TRAER BITACORA DE SEG_FLUJO_BITACORA
+        public async Task<CResult> GetAllAsyncBitacoraByCORR_REQUISICION(SC_REQUISICION_PERSONAL_BITACORAParam xWhere)
+        {
+            var p = new List<CParameter>
+            {
+                //new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+                new CParameter() {ParameterName="CORR_TIPO_DOCUMENTO",Value=xWhere.CORR_TIPO_DOCUMENTO,DbType=System.Data.DbType.Int32},
+                new CParameter() {ParameterName="CORR_DOCUMENTO",Value=xWhere.CORR_REQUISICION_PERSONAL,DbType=System.Data.DbType.Int32},
+            };
+
+            return await _repo.GetAllAsyncBitacoraByCORR_REQUISICION(p);
+        }
+
     }
 }

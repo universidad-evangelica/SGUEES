@@ -22,7 +22,7 @@
 	<dx-tab-panel #tabPanelRequisicion class="requisicion-tab-panel" [selectedIndex]="0">
 		<!-- TAB 1: Detalle / Bitácora (data quemada; luego API) -->
 		<dxi-item title="Datos requisición" [icon]="'event'">
-				<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+				<dx-form class="mt-20" #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
 					<div *dxTemplate="let cellInfo of 'CORR_TIPO_MODALIDADLookup'">
 						<app-data-lookup
 							[model]="mCORR_TIPO_MODALIDAD"
@@ -91,7 +91,7 @@
 		</dxi-item>
 
 			TAB 3 (ejemplo futuro — descomentar y completar):
-		<dxi-item title="Plazas" [icon]="'group'">
+		<dxi-item title="Observadores" [icon]="'group'">
 			<div class="dx-grid-deta">
 				<!-- <dx-data-grid
 					[dataSource]="itemsTabPlazas"
