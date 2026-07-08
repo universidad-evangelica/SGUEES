@@ -28,7 +28,7 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 	protected override mttoCampoEstado = ESTADO_FIELD;
 	protected override mttoEstadoDescribeField = 'NOMBRE_COMPETENCIAS_CONDUCTUALES';
 
-	protected override mttoParchearGridTrasGuardar = false;
+	protected override mttoParchearGridTrasGuardar = true;
 	protected override mttoRemoteOperations = false;
 
 	mCORR_TIPO_PUESTO: any;
@@ -140,22 +140,91 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
-			onData: () => this.refrescarGridTrasCarga(resetPage),
+			onData: () => {
+				this.ordenarModelsPorCorr();
+				this.refrescarGridTrasCarga(resetPage);
+			},
 		});
+	}
+
+	private ordenarModelsPorCorr(): void {
+		if (!Array.isArray(this.models)) {
+			return;
+		}
+
+		this.models = [...this.models].sort(
+			(a, b) => Number(a.CORR_COMPETENCIAS_CONDUCTUALES) - Number(b.CORR_COMPETENCIAS_CONDUCTUALES)
+		);
+	}
+
+	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
+		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
+			super.aplicarRegistroEnGrid(data, isAdd);
+			return;
+		}
+
+		const record = this.fillData(data as ScCompetenciasConductuales);
+		const key = this.mttoGridKeyExpr;
+
+		if (isAdd) {
+			this.models = [...this.models, record];
+		} else {
+			const index = this.models.findIndex((item) => item?.[key] === record[key]);
+			if (index >= 0) {
+				this.models = this.models.map((item, i) =>
+					i === index ? this.fillData({ ...item, ...record }) : item
+				);
+			}
+		}
+
+		this.ordenarModelsPorCorr();
+		this.refrescarGridTrasCarga(isAdd);
+	}
+
+	protected override quitarRegistroDeGrid(keyValue: unknown): void {
+		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
+			super.quitarRegistroDeGrid(keyValue);
+			return;
+		}
+
+		const key = this.mttoGridKeyExpr;
+		this.models = this.models.filter((item) => item?.[key] !== keyValue);
+		this.refrescarGridTrasCarga(true);
 	}
 
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
-			const grid = this.dataGrid?.gData?.instance;
-			if (!grid) {
-				return;
-			}
-			if (resetPage) {
-				grid.pageIndex(0);
-			}
-			grid.updateDimensions();
-			grid.repaint();
+			this.dataGrid?.refreshData(resetPage);
 		}, 0);
+	}
+
+	override rowDblClick(e: any): void {
+		const rowData = e?.data ?? e?.row?.data;
+		if (rowData) {
+			this.model = this.fillData(rowData);
+			this.modelUpdate = this.fillData(rowData);
+		}
+		this.readOnly = true;
+		super.rowDblClick(e);
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+			this.bloquear();
+		});
+	}
+
+	onEditClick(e: any): void {
+		if (!e?.row?.data) {
+			return;
+		}
+
+		this.readOnly = false;
+		this.tipoPuestoInvalido = false;
+		this.model = this.fillData(e.row.data);
+		this.editarClick(e);
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+			this.habilitar();
+		});
 	}
 
 	override nuevo(): void {
@@ -165,6 +234,9 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		this.readOnly = false;
 		this.tipoPuestoInvalido = false;
 		super.nuevo();
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+		});
 	}
 
 	onTipoPuestoChanged(value: number | null): void {
@@ -197,8 +269,6 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
 			insert: () => this.service.insert(this.model),
 			update: () => this.service.update(this.model),
-			parchearGrid: false,
-			onSuccess: () => this.consultar(true),
 		});
 	}
 
@@ -210,34 +280,11 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_COMPETENCIAS_CONDUCTUALES)),
-			parchearGrid: false,
-			reload: () => this.consultar(true),
 		});
 	}
 
 	activar_inactivar(): void {
-		const row = this.obtenerFilaSeleccionada();
-		if (!row) {
-			this.notificarSeleccionRequerida();
-			return;
-		}
-
-		const activo = !!row[this.mttoCampoEstado];
-		const describe = `${row[this.mttoEstadoDescribeField] ?? ''}`.trim();
-		const titulo = activo ? 'Desactivar registro' : 'Activar registro';
-		const verbo = activo ? 'desactivar' : 'activar';
-		const mensaje = describe
-			? `¿Desea ${verbo} "${describe}"?`
-			: `¿Desea ${verbo} el registro seleccionado?`;
-
-		this.confirmaAccion(titulo, mensaje, () => {
-			this.ejecutarActivarInactivar({
-				ejecutar: () => this.service.activarInactivar(row),
-				eraActivo: activo,
-				parchearGrid: false,
-				onSuccess: () => this.consultar(true),
-			});
-		});
+		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
 	override bloquear(): void {

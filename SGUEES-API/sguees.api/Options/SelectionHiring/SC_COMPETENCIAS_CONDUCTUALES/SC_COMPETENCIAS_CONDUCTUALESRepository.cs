@@ -52,8 +52,7 @@ namespace SGUEES.Repositories
 
         var reader = await objData.GetDataReader(_ViewName, dbWhere);
         var response = new List<SC_COMPETENCIAS_CONDUCTUALESView>().FromDataReader(reader)
-          .OrderBy(x => x.NOMBRE_COMPETENCIAS_CONDUCTUALES)
-          .ThenBy(x => x.CORR_COMPETENCIAS_CONDUCTUALES)
+          .OrderBy(x => x.CORR_COMPETENCIAS_CONDUCTUALES)
           .ToList();
 
         reader.Close();

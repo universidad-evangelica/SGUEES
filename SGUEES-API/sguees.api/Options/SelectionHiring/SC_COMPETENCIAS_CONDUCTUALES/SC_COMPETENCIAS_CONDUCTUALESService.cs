@@ -45,12 +45,6 @@ namespace SGUEES.Services
         return validation;
       }
 
-      var uniqueNombre = await ValidateUniqueNombreAsync(Data, null);
-      if (uniqueNombre != null)
-      {
-        return uniqueNombre;
-      }
-
       NormalizeData(Data);
       return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
     }
@@ -72,12 +66,6 @@ namespace SGUEES.Services
       if (Data.CORR_COMPETENCIAS_CONDUCTUALES <= 0)
       {
         return ValidationError("No se pudo identificar la competencia conductual a actualizar.");
-      }
-
-      var uniqueNombre = await ValidateUniqueNombreAsync(Data, Data.CORR_COMPETENCIAS_CONDUCTUALES);
-      if (uniqueNombre != null)
-      {
-        return uniqueNombre;
       }
 
       NormalizeData(Data);
@@ -159,18 +147,6 @@ namespace SGUEES.Services
       }
 
       return null;
-    }
-
-    private async Task<CResult> ValidateUniqueNombreAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, int? excludeCorr)
-    {
-      var exists = await _repo.ExistsNombreAsync(
-        Data.CORR_EMPRESA,
-        Data.NOMBRE_COMPETENCIAS_CONDUCTUALES,
-        excludeCorr ?? 0);
-
-      return exists
-        ? ValidationError($"Ya existe una competencia conductual con el nombre {Data.NOMBRE_COMPETENCIAS_CONDUCTUALES}.")
-        : null;
     }
 
     private static CResult ValidateEmpresaSesion(int corrEmpresa)
