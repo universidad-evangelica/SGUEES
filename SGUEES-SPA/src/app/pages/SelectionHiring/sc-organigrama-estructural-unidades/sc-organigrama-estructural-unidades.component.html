@@ -37,20 +37,34 @@
         </dx-button>
     </app-mtto-header>
 
-    <dx-tree-view
-        #treeView
-        [dataSource]="unidades"
-        dataStructure="plain"
-        keyExpr="CORR_UNIDAD"
-        displayExpr="NOMBRE_UNIDAD_TREE"
-        parentIdExpr="CORR_UNIDAD_PADRE"
-        [showCheckBoxesMode]="'none'"
-        [searchEnabled]="true"
-        [searchTimeout]="200"
-        [selectionMode]="'single'"
-        (onItemClick)="onUnidadSeleccionada($event)"
-    >
-    </dx-tree-view>
+<dx-tree-view
+    #treeView
+    [dataSource]="unidades"
+    dataStructure="plain"
+    keyExpr="CORR_UNIDAD"
+    displayExpr="NOMBRE_UNIDAD_TREE"
+    parentIdExpr="CORR_UNIDAD_PADRE"
+    [showCheckBoxesMode]="'none'"
+    [searchEnabled]="true"
+    [searchTimeout]="200"
+    [selectionMode]="'single'"
+    itemTemplate="unidadItem"
+    (onItemClick)="onUnidadSeleccionada($event)"
+>
+    <div *dxTemplate="let itemData of 'unidadItem'" class="unidad-tree-row">
+        <span class="unidad-tree-row__text">{{ itemData.NOMBRE_UNIDAD_TREE }}</span>
+
+        <dx-button
+            *ngIf="permiteDele"
+            icon="trash"
+            hint="Eliminar registro"
+            stylingMode="text"
+            elementAttr="{ class: 'sguees-grid-action-delete' }"
+            (onClick)="onTreeDeleteClick(itemData, $event)"
+        >
+        </dx-button>
+    </div>
+</dx-tree-view>
 </section>
 
 <!-- ================================================ -->

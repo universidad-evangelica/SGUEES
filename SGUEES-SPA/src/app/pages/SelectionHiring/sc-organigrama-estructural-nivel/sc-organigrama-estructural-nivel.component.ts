@@ -6,8 +6,8 @@ import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
-import { SC_OrganigramaEstructuralUnidadesService } from '../sc-organigrama-estructural-unidades/sc-organigrama-estructural-unidades.service';
 import { SC_OrganigramaEstructuralNivel } from './models/sc-organigrama-estructural-nivel';
+import { SC_OrganigramaEstructuralNivelService } from './sc-organigrama-estructural-nivel.service';
 
 @Component({
     selector: 'app-sc-organigrama-estructural-nivel',
@@ -18,7 +18,7 @@ export class SC_OrganigramaEstructuralNivelComponent extends CBaseComponent impl
     constructor(
         public override appInfoService: AppInfoService,
         public override router: ActivatedRoute,
-        private service: SC_OrganigramaEstructuralUnidadesService
+        private service: SC_OrganigramaEstructuralNivelService
     ) {
         super(appInfoService, router);
         this.columns = this.service.getNivelColumns();

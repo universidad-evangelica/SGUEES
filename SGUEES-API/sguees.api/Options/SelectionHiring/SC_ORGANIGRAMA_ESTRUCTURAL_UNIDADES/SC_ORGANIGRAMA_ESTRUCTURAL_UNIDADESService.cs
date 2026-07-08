@@ -111,6 +111,7 @@ namespace sguees.Services
                     return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "La unidad padre seleccionada no esta activa" };
             }
 
+            Data.CORR_NIVEL=  Data.CORR_NIVEL + 1; //LE SUMAREMOS 1 AL NIVEL porque enviamos el anterior osea el nivel hijo.
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 

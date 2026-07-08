@@ -9,8 +9,11 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { SC_OrganigramaEstructuralUnidadesService } from './sc-organigrama-estructural-unidades.service';
 import { SC_OrganigramaEstructuralUnidad } from './models/sc-organigrama-estructural-unidad';
 import { SC_OrganigramaEstructuralNivel } from './models/sc-organigrama-estructural-nivel';
+import { SC_OrganigramaEstructuralNivelService } from '../sc-organigrama-estructural-nivel/sc-organigrama-estructural-nivel.service';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { environment } from 'src/environments/environment';
+import { confirm } from 'devextreme/ui/dialog';
+
 @Component({
     selector: 'app-sc-organigrama-estructural-unidades',
     templateUrl: './sc-organigrama-estructural-unidades.component.html',
@@ -24,7 +27,8 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
     constructor(
         public override appInfoService: AppInfoService,
         public override router: ActivatedRoute,
-        private service: SC_OrganigramaEstructuralUnidadesService
+        private service: SC_OrganigramaEstructuralUnidadesService,
+        private nivelService: SC_OrganigramaEstructuralNivelService
     ) {
         super(appInfoService, router);
         this.columns = this.service.getColumns();
@@ -80,15 +84,15 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
             });
     }
 
-  getCORR_UNIDADES() {
-    this.appInfoService
-        .getLookUp(
-            'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES',
-            'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES',
-            'GetCORR_UNIDADES',
-            undefined,
-            environment.UrlGENERALAPI
-        )
+    getCORR_UNIDADES() {
+        this.appInfoService
+            .getLookUp(
+                'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES',
+                'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES',
+                'GetCORR_UNIDADES',
+                undefined,
+                environment.UrlGENERALAPI
+            )
             .pipe(take(1))
             .subscribe({
                 next: (response: any) => {
@@ -106,17 +110,17 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
     }
 
 
-  onNivelChange(value: number): void {
+    onNivelChange(value: number): void {
 
-    let xWhere: IParam[] = [{ Parameter: 'CORR_NIVEL', Value: value }];
-    this.appInfoService
-        .getLookUp(
-            'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES',
-            'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES',
-            'GetCORR_UNIDADES',
-            xWhere,
-            environment.UrlGENERALAPI
-        )
+        let xWhere: IParam[] = [{ Parameter: 'CORR_NIVEL', Value: value }];
+        this.appInfoService
+            .getLookUp(
+                'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES',
+                'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES',
+                'GetCORR_UNIDADES',
+                xWhere,
+                environment.UrlGENERALAPI
+            )
             .pipe(take(1))
             .subscribe({
                 next: (response: any) => {
@@ -133,6 +137,44 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
             });
     }
 
+
+    onTreeDeleteClick(itemData: any, e: any): void {
+        e?.event?.stopPropagation();
+        e?.event?.preventDefault();
+
+        confirm('¿Está seguro que desea eliminar este registro?', 'Confirmación')
+            .then((ok: boolean) => {
+                if (!ok) return;
+
+                this.rowRemoving({
+                    data: itemData,
+                    cancel: false,
+                    component: this.treeView?.instance
+                });
+            });
+    }
+
+    rowRemoving(e: any) {
+        this.service
+            .delete(e.data)
+            .pipe(take(1))
+            .subscribe({
+                next: (response: any) => {
+                    if (response.Result) {
+                        this.notifyFx('Unidad eliminada con exito!', NotifyType.Success);
+                        this.consultar();
+                        this.getCORR_UNIDADES();
+                    } else {
+                        e.cancel = true;
+                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                    }
+                },
+                error: (error: any) => {
+                    e.cancel = true;
+                    this.notifyFx(error, NotifyType.Error);
+                },
+            });
+    }
     //#endregion
 
     //#region <Metodos Fill>
@@ -190,7 +232,7 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
     }
 
     cargarNivelesActivos() {
-        this.service
+        this.nivelService
             .getNivelesActivos({ CORR_EMPRESA: 1 })
             .pipe(take(1))
             .subscribe({
