@@ -7,7 +7,7 @@ namespace sguees.Models
         public int CORR_EMPRESA { get; set; }
         public int CORR_NIVEL { get; set; }
         public string NOMBRE_NIVEL { get; set; }
-        public int CANTIDAD_CARACTERES { get; set; }
+        
         public bool ACTIVO { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }

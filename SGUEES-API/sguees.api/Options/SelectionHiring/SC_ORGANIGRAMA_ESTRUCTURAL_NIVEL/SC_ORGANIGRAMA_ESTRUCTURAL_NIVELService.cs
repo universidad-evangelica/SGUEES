@@ -56,8 +56,7 @@ namespace sguees.Services
             if (Data.NOMBRE_NIVEL.Length > 50)
                 return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "El nombre del nivel no puede exceder los 50 caracteres" };
 
-            if (Data.CANTIDAD_CARACTERES <= 0)
-                return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "La cantidad de caracteres debe ser mayor a 0" };
+           
 
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
@@ -70,9 +69,7 @@ namespace sguees.Services
             if (Data.NOMBRE_NIVEL.Length > 50)
                 return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "El nombre del nivel no puede exceder los 50 caracteres" };
 
-            if (Data.CANTIDAD_CARACTERES <= 0)
-                return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "La cantidad de caracteres debe ser mayor a 0" };
-
+           
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 

@@ -105,13 +105,13 @@ namespace sguees.Services
 
                 var padre = (SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADESView)padreResult.Data;
 
-                
+
                 // Validar que el padre esté activo
                 if (!padre.ACTIVO)
                     return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "La unidad padre seleccionada no esta activa" };
             }
 
-            Data.CORR_NIVEL=  Data.CORR_NIVEL + 1; //LE SUMAREMOS 1 AL NIVEL porque enviamos el anterior osea el nivel hijo.
+            Data.CORR_NIVEL = Data.CORR_NIVEL + 1; //LE SUMAREMOS 1 AL NIVEL porque enviamos el anterior osea el nivel hijo.
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
@@ -170,25 +170,7 @@ namespace sguees.Services
 
         private async Task<string> GenerarCodigoUnidad(SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADESTable Data)
         {
-            // 1. Obtener el nivel para conocer la cantidad de caracteres
-            var nivelParam = new SC_ORGANIGRAMA_ESTRUCTURAL_NIVELParam
-            {
-                CORR_EMPRESA = Data.CORR_EMPRESA,
-                CORR_NIVEL = Data.CORR_NIVEL
-            };
-            var nivelResult = await _nivelRepo.GetAsync(new List<CParameter>
-            {
-                new CParameter() {ParameterName="CORR_EMPRESA", Value=nivelParam.CORR_EMPRESA, DbType=System.Data.DbType.Int32},
-                new CParameter() {ParameterName="CORR_NIVEL", Value=nivelParam.CORR_NIVEL, DbType=System.Data.DbType.Int32},
-            });
-
-            if (!nivelResult.Result || nivelResult.Data == null)
-                throw new Exception("El nivel seleccionado no existe");
-
-            var nivel = (SC_ORGANIGRAMA_ESTRUCTURAL_NIVELView)nivelResult.Data;
-            int longitudTotal = nivel.CANTIDAD_CARACTERES;
-
-            // 2. Obtener el codigo del padre (si existe)
+            // 1. Obtener el codigo del padre (si existe)
             string codigoPadre = "";
             if (Data.CORR_UNIDAD_PADRE.HasValue && Data.CORR_UNIDAD_PADRE.Value > 0)
             {
@@ -205,18 +187,18 @@ namespace sguees.Services
                 }
             }
 
-            // 3. Si es Nivel 1 (sin padre) → secuencial simple (1, 2, 3, 4...)
+            // 2. Si es Nivel 1 (sin padre) → secuencial simple (1, 2, 3, 4...)
             if (string.IsNullOrEmpty(codigoPadre))
             {
                 var maxCodigo = await ObtenerMaximoCodigoNivel1(Data.CORR_EMPRESA);
-                return (maxCodigo + 1).ToString().PadLeft(longitudTotal, '0');
+                return (maxCodigo + 1).ToString();
             }
 
-            // 4. Para niveles inferiores (con padre) → secuencia de 2 digitos
-            int longitudSecuencia = 2;
-            var maxSecuencia = await ObtenerMaximoCodigoHijo(Data.CORR_EMPRESA, Data.CORR_NIVEL, codigoPadre);
+            // 3. Para niveles con padre → secuencia de 2 digitos
+            // Buscar el maximo codigo entre las unidades que comienzan con el codigo del padre
+            var maxSecuencia = await ObtenerMaximoCodigoHijo(Data.CORR_EMPRESA, codigoPadre);
             int nuevaSecuencia = maxSecuencia + 1;
-            string secuenciaStr = nuevaSecuencia.ToString().PadLeft(longitudSecuencia, '0');
+            string secuenciaStr = nuevaSecuencia.ToString().PadLeft(2, '0');
             return codigoPadre + secuenciaStr;
         }
 
@@ -245,7 +227,7 @@ namespace sguees.Services
             return maxCodigo;
         }
 
-        private async Task<int> ObtenerMaximoCodigoHijo(int corrEmpresa, int corrNivel, string codigoPadre)
+        private async Task<int> ObtenerMaximoCodigoHijo(int corrEmpresa, string codigoPadre)
         {
             var param = new SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADESParam
             {

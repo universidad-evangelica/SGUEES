@@ -103,7 +103,6 @@ namespace sguees.Repositories
                     new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_NIVEL",Value=Data.CORR_NIVEL,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput},
                     new CParameter() {ParameterName="NOMBRE_NIVEL",Value=Data.NOMBRE_NIVEL,DbType=System.Data.DbType.String},
-                    new CParameter() {ParameterName="CANTIDAD_CARACTERES",Value=Data.CANTIDAD_CARACTERES,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="ACTIVO",Value=Data.ACTIVO,DbType=System.Data.DbType.Boolean},
                     new CParameter() {ParameterName="USUARIO_CREA",Value=Data.USUARIO_CREA,DbType=System.Data.DbType.String},
                     new CParameter() {ParameterName="ESTACION_CREA",Value=Data.ESTACION_CREA,DbType=System.Data.DbType.String},
@@ -155,7 +154,6 @@ namespace sguees.Repositories
                 var p = new List<CParameter>
                 {
                     new CParameter() {ParameterName="NOMBRE_NIVEL",Value=Data.NOMBRE_NIVEL,DbType=System.Data.DbType.String},
-                    new CParameter() {ParameterName="CANTIDAD_CARACTERES",Value=Data.CANTIDAD_CARACTERES,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="ACTIVO",Value=Data.ACTIVO,DbType=System.Data.DbType.Boolean},
                     new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
                     new CParameter() {ParameterName="ESTACION_ACTU",Value=Data.ESTACION_ACTU,DbType=System.Data.DbType.String},
