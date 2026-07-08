@@ -23,15 +23,18 @@
 		[items]="items"
 	>
 		<div *dxTemplate="let cellInfo of 'CORR_TIPO_PUESTOLookup'">
-			<app-data-lookup
-				[model]="mCORR_TIPO_PUESTO"
-				[(value)]="model.CORR_TIPO_PUESTO"
-				[valueExpr]="'CORR_TIPO_PUESTO'"
-				[displayExpr]="'NOMBRE_TIPO_PUESTO'"
-				[selectedRowKeys]="selectedLookUpCORR_TIPO_PUESTO"
-				[readOnly]="readOnly"
-			>
-			</app-data-lookup>
+			<div class="tipo-puesto-lookup-field" [class.tipo-puesto-lookup-field--invalid]="tipoPuestoInvalido">
+				<app-data-lookup
+					[model]="mCORR_TIPO_PUESTO"
+					[value]="model.CORR_TIPO_PUESTO"
+					(valueChange)="onTipoPuestoChanged($event)"
+					[valueExpr]="'CORR_TIPO_PUESTO'"
+					[displayExpr]="'NOMBRE_TIPO_PUESTO'"
+					[selectedRowKeys]="selectedLookUpCORR_TIPO_PUESTO"
+					[readOnly]="readOnly"
+				>
+				</app-data-lookup>
+			</div>
 		</div>
 	</dx-form>
 </div>
@@ -42,9 +45,10 @@
 	[columns]="columns"
 	[summary]="summary"
 	[keyExpr]="mttoGridKeyExpr"
-	[remoteOperations]="mttoRemoteOperations"
 	[pageSize]="mttoPageSize"
 	[allowedPageSizes]="mttoPageSizes"
+	[remoteOperations]="mttoRemoteOperations"
+	[repaintChangesOnly]="false"
 	[showSearch]="false"
 	[showAdd]="true"
 	[showRefresh]="true"

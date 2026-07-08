@@ -1,24 +1,11 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import CustomStore from 'devextreme/data/custom_store';
-import { PagerPageSize } from 'devextreme/common/grids';
-import { lastValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
-import { getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
-import {
-	createMttoPagedStoreCacheState,
-	invalidateMttoPagedStoreCache,
-	MttoPagedStoreCacheState,
-	MttoPagedStorePageResult,
-	rememberMttoPagedServerCache,
-	resolveMttoPagedLoadParams,
-	tryGetMttoPagedServerCache,
-} from 'src/app/shared/mtto/mtto-paged-store.helpers';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { ScCompetenciasConductuales } from './models/sc-competencias-conductuales';
 import { ScCompetenciasConductualesService } from './sc-competencias-conductuales.service';
@@ -28,26 +15,27 @@ const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_CONDUCTUALES';
 @Component({
 	selector: 'app-sc-competencias-conductuales',
 	templateUrl: './sc-competencias-conductuales.component.html',
+	styleUrls: ['./sc-competencias-conductuales.component.scss'],
 })
 export class ScCompetenciasConductualesComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
 	protected override etiquetaRegistro = 'la competencia conductual';
 	protected override requiereEmpresaSesion = true;
-	protected override mttoPageSize = 6;
-	protected override mttoPageSizes: (number | PagerPageSize)[] = [5, 6, 10, 15, 20, 'all'];
-	protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
+	protected override mttoPageSize = 5;
+	protected override mttoPageSizes = [5, 10, 25, 50, 100];
 	protected override mttoGridKeyExpr = 'CORR_COMPETENCIAS_CONDUCTUALES';
 	protected override mttoCampoEstado = ESTADO_FIELD;
-	protected override mttoEstadoDescribeField = 'NOMBRE_COMPETENCIAS_TECNICAS';
+	protected override mttoEstadoDescribeField = 'NOMBRE_COMPETENCIAS_CONDUCTUALES';
+
+	protected override mttoParchearGridTrasGuardar = false;
+	protected override mttoRemoteOperations = false;
 
 	mCORR_TIPO_PUESTO: any;
 	readOnly = false;
+	tipoPuestoInvalido = false;
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Competencias Conductuales';
-	private readonly pagedStoreCacheState: MttoPagedStoreCacheState = createMttoPagedStoreCacheState(this.mttoPageSize);
-	private pagedStoreInflightKey: string | null = null;
-	private pagedStoreInflightPromise: Promise<MttoPagedStorePageResult> | null = null;
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -68,7 +56,7 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.llenaComboBox();
-		this.configurarDataSource();
+		this.consultar();
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -108,19 +96,9 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		return vRow[0].CORR_TIPO_PUESTO;
 	}
 
-	fillParam(
-		xCORR_COMPETENCIAS_CONDUCTUALES?: number,
-		page = 1,
-		pageSize = this.mttoPageSize,
-		sortField = '',
-		sortDesc = false
-	): any {
+	fillParam(xCORR_COMPETENCIAS_CONDUCTUALES?: number): any {
 		return {
 			CORR_COMPETENCIAS_CONDUCTUALES: xCORR_COMPETENCIAS_CONDUCTUALES ?? 0,
-			PAGE: page,
-			PAGE_SIZE: pageSize,
-			SORT_FIELD: sortField,
-			SORT_DESC: sortDesc,
 		};
 	}
 
@@ -130,8 +108,7 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_COMPETENCIAS_CONDUCTUALES: xModel.CORR_COMPETENCIAS_CONDUCTUALES,
 				CORR_TIPO_PUESTO: xModel.CORR_TIPO_PUESTO,
-				CODIGO_COMPETENCIAS_TECNICAS: xModel.CODIGO_COMPETENCIAS_TECNICAS,
-				NOMBRE_COMPETENCIAS_TECNICAS: xModel.NOMBRE_COMPETENCIAS_TECNICAS,
+				NOMBRE_COMPETENCIAS_CONDUCTUALES: xModel.NOMBRE_COMPETENCIAS_CONDUCTUALES,
 				DESCRIPCION: xModel.DESCRIPCION,
 				ESTADO_COMPETENCIAS_CONDUCTUALES: xModel.ESTADO_COMPETENCIAS_CONDUCTUALES,
 				NOMBRE_TIPO_PUESTO: xModel.NOMBRE_TIPO_PUESTO,
@@ -148,8 +125,7 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 			CORR_EMPRESA: 1,
 			CORR_COMPETENCIAS_CONDUCTUALES: 0,
 			CORR_TIPO_PUESTO: null,
-			CODIGO_COMPETENCIAS_TECNICAS: '',
-			NOMBRE_COMPETENCIAS_TECNICAS: '',
+			NOMBRE_COMPETENCIAS_CONDUCTUALES: '',
 			DESCRIPCION: '',
 			ESTADO_COMPETENCIAS_CONDUCTUALES: true,
 			USUARIO_CREA: '',
@@ -161,11 +137,25 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		};
 	}
 
-	consultar(resetPage = true): void {
-		invalidateMttoPagedStoreCache(this.pagedStoreCacheState);
-		this.pagedStoreInflightKey = null;
-		this.pagedStoreInflightPromise = null;
-		this.refrescarGridMtto(resetPage);
+	consultar(resetPage = false): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+			onData: () => this.refrescarGridTrasCarga(resetPage),
+		});
+	}
+
+	private refrescarGridTrasCarga(resetPage = false): void {
+		setTimeout(() => {
+			const grid = this.dataGrid?.gData?.instance;
+			if (!grid) {
+				return;
+			}
+			if (resetPage) {
+				grid.pageIndex(0);
+			}
+			grid.updateDimensions();
+			grid.repaint();
+		}, 0);
 	}
 
 	override nuevo(): void {
@@ -173,133 +163,105 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 			return;
 		}
 		this.readOnly = false;
+		this.tipoPuestoInvalido = false;
 		super.nuevo();
 	}
 
+	onTipoPuestoChanged(value: number | null): void {
+		this.model.CORR_TIPO_PUESTO = value;
+		if (value != null && value > 0) {
+			this.tipoPuestoInvalido = false;
+		}
+	}
+
+	private actualizarEstadoValidacionLookup(): void {
+		const value = Number(this.model?.CORR_TIPO_PUESTO);
+		this.tipoPuestoInvalido = Number.isNaN(value) || value <= 0;
+	}
+
 	guardar(): void {
+		const formData = this.dataForm?.instance?.option('formData');
+		if (formData) {
+			this.model = { ...this.model, ...formData };
+		}
+
+		this.actualizarEstadoValidacionLookup();
+		const formValidation = this.dataForm?.instance?.validate();
+		if (formValidation && !formValidation.isValid) {
+			this.actualizarEstadoValidacionLookup();
+			this.service.esValido(this.model, this.notifyFx.bind(this));
+			return;
+		}
+
 		this.guardarMtto({
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
 			insert: () => this.service.insert(this.model),
 			update: () => this.service.update(this.model),
+			parchearGrid: false,
+			onSuccess: () => this.consultar(true),
 		});
 	}
 
 	override cancelar(): void {
+		this.tipoPuestoInvalido = false;
 		super.cancelar((item: any) => item.CORR_COMPETENCIAS_CONDUCTUALES === this.modelUpdate.CORR_COMPETENCIAS_CONDUCTUALES);
 	}
 
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_COMPETENCIAS_CONDUCTUALES)),
+			parchearGrid: false,
+			reload: () => this.consultar(true),
 		});
 	}
 
 	activar_inactivar(): void {
-		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
+		const row = this.obtenerFilaSeleccionada();
+		if (!row) {
+			this.notificarSeleccionRequerida();
+			return;
+		}
+
+		const activo = !!row[this.mttoCampoEstado];
+		const describe = `${row[this.mttoEstadoDescribeField] ?? ''}`.trim();
+		const titulo = activo ? 'Desactivar registro' : 'Activar registro';
+		const verbo = activo ? 'desactivar' : 'activar';
+		const mensaje = describe
+			? `¿Desea ${verbo} "${describe}"?`
+			: `¿Desea ${verbo} el registro seleccionado?`;
+
+		this.confirmaAccion(titulo, mensaje, () => {
+			this.ejecutarActivarInactivar({
+				ejecutar: () => this.service.activarInactivar(row),
+				eraActivo: activo,
+				parchearGrid: false,
+				onSuccess: () => this.consultar(true),
+			});
+		});
 	}
 
 	override bloquear(): void {
 		this.readOnly = true;
 		this.dataForm.instance.getEditor('CORR_COMPETENCIAS_CONDUCTUALES')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CODIGO_COMPETENCIAS_TECNICAS')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('NOMBRE_COMPETENCIAS_TECNICAS')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NOMBRE_COMPETENCIAS_CONDUCTUALES')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('DESCRIPCION')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ESTADO_COMPETENCIAS_CONDUCTUALES')?.option('readOnly', true);
 	}
 
 	override habilitar(): void {
 		this.readOnly = false;
+		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_COMPETENCIAS_CONDUCTUALES')?.option('readOnly', true);
-			this.dataForm.instance.getEditor('CODIGO_COMPETENCIAS_TECNICAS')?.option('readOnly', false);
-			this.dataForm.instance.getEditor('NOMBRE_COMPETENCIAS_TECNICAS')?.option('readOnly', false);
+			this.dataForm.instance.getEditor('NOMBRE_COMPETENCIAS_CONDUCTUALES')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('DESCRIPCION')?.option('readOnly', false);
-			this.dataForm.instance.getEditor('ESTADO_COMPETENCIAS_CONDUCTUALES')?.option('readOnly', false);
+			this.dataForm.instance.getEditor('ESTADO_COMPETENCIAS_CONDUCTUALES')?.option('readOnly', estadoSoloLectura);
 		});
 	}
 
 	override setFocus(): void {
 		setTimeout(() => {
-			this.dataForm.instance.getEditor('CODIGO_COMPETENCIAS_TECNICAS')?.focus();
+			this.dataForm.instance.getEditor('NOMBRE_COMPETENCIAS_CONDUCTUALES')?.focus();
 		});
-	}
-
-	private configurarDataSource(): void {
-		this.models = new CustomStore({
-			key: this.mttoGridKeyExpr,
-			loadMode: 'processed',
-			cacheRawData: false,
-			load: async (loadOptions: any) => {
-				const loadGeneration = this.pagedStoreCacheState.loadGeneration;
-
-				try {
-					const { page, pageSize, sortField, sortDesc, serverKey } = resolveMttoPagedLoadParams(
-						loadOptions,
-						this.pagedStoreCacheState.lastPageSize,
-						this.mttoGridKeyExpr
-					);
-
-					const cached = tryGetMttoPagedServerCache(serverKey, this.pagedStoreCacheState);
-					if (cached) {
-						return cached;
-					}
-
-					if (this.pagedStoreInflightKey === serverKey && this.pagedStoreInflightPromise) {
-						return this.pagedStoreInflightPromise;
-					}
-
-					this.pagedStoreInflightKey = serverKey;
-					this.pagedStoreInflightPromise = this.fetchPagedCompetencias(
-						page,
-						pageSize,
-						sortField,
-						sortDesc,
-						serverKey,
-						loadGeneration
-					);
-
-					try {
-						return await this.pagedStoreInflightPromise;
-					} finally {
-						if (this.pagedStoreInflightKey === serverKey) {
-							this.pagedStoreInflightKey = null;
-							this.pagedStoreInflightPromise = null;
-						}
-					}
-				} catch (error) {
-					this.notifyApiError(error);
-					throw new Error(getApiErrorMessage(error));
-				}
-			},
-		});
-	}
-
-	private async fetchPagedCompetencias(
-		page: number,
-		pageSize: number,
-		sortField: string,
-		sortDesc: boolean,
-		serverKey: string,
-		loadGeneration: number
-	): Promise<MttoPagedStorePageResult> {
-		const response = await lastValueFrom(
-			this.service.getAll(this.fillParam(0, page, pageSize, sortField, sortDesc))
-		);
-
-		if (loadGeneration !== this.pagedStoreCacheState.loadGeneration) {
-			return { data: [], totalCount: 0 };
-		}
-
-		if (!response.Result) {
-			throw new Error(response.ErrorMessage || 'No se pudo cargar las competencias conductuales.');
-		}
-
-		const result = {
-			data: response.Data || [],
-			totalCount: response.RowsAffected || 0,
-		};
-
-		rememberMttoPagedServerCache(serverKey, result, this.pagedStoreCacheState, pageSize);
-		return result;
 	}
 }

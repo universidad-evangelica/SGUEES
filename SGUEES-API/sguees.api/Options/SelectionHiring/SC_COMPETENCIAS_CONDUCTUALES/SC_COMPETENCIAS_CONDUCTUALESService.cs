@@ -45,12 +45,6 @@ namespace SGUEES.Services
         return validation;
       }
 
-      var uniqueCodigo = await ValidateUniqueCodigoAsync(Data, null);
-      if (uniqueCodigo != null)
-      {
-        return uniqueCodigo;
-      }
-
       var uniqueNombre = await ValidateUniqueNombreAsync(Data, null);
       if (uniqueNombre != null)
       {
@@ -78,12 +72,6 @@ namespace SGUEES.Services
       if (Data.CORR_COMPETENCIAS_CONDUCTUALES <= 0)
       {
         return ValidationError("No se pudo identificar la competencia conductual a actualizar.");
-      }
-
-      var uniqueCodigo = await ValidateUniqueCodigoAsync(Data, Data.CORR_COMPETENCIAS_CONDUCTUALES);
-      if (uniqueCodigo != null)
-      {
-        return uniqueCodigo;
       }
 
       var uniqueNombre = await ValidateUniqueNombreAsync(Data, Data.CORR_COMPETENCIAS_CONDUCTUALES);
@@ -128,17 +116,12 @@ namespace SGUEES.Services
       return new List<CParameter>
       {
         new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-        new CParameter() { ParameterName = "PAGE", Value = xWhere.PAGE, DbType = System.Data.DbType.Int32 },
-        new CParameter() { ParameterName = "PAGE_SIZE", Value = xWhere.PAGE_SIZE, DbType = System.Data.DbType.Int32 },
-        new CParameter() { ParameterName = "SORT_FIELD", Value = xWhere.SORT_FIELD, DbType = System.Data.DbType.String },
-        new CParameter() { ParameterName = "SORT_DESC", Value = xWhere.SORT_DESC, DbType = System.Data.DbType.Boolean },
       };
     }
 
     private static void NormalizeData(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
-      Data.CODIGO_COMPETENCIAS_TECNICAS = Data.CODIGO_COMPETENCIAS_TECNICAS?.Trim();
-      Data.NOMBRE_COMPETENCIAS_TECNICAS = Data.NOMBRE_COMPETENCIAS_TECNICAS?.Trim();
+      Data.NOMBRE_COMPETENCIAS_CONDUCTUALES = Data.NOMBRE_COMPETENCIAS_CONDUCTUALES?.Trim();
       Data.DESCRIPCION = Data.DESCRIPCION?.Trim();
       Data.ESTADO_COMPETENCIAS_CONDUCTUALES ??= true;
     }
@@ -155,27 +138,22 @@ namespace SGUEES.Services
         return ValidationError("Debe seleccionar el tipo de puesto.");
       }
 
-      if (string.IsNullOrWhiteSpace(Data.CODIGO_COMPETENCIAS_TECNICAS))
-      {
-        return ValidationError("Debe ingresar el codigo de la competencia conductual.");
-      }
-
-      if (Data.CODIGO_COMPETENCIAS_TECNICAS.Trim().Length > 30)
-      {
-        return ValidationError("El codigo de la competencia conductual no puede superar 30 caracteres.");
-      }
-
-      if (string.IsNullOrWhiteSpace(Data.NOMBRE_COMPETENCIAS_TECNICAS))
+      if (string.IsNullOrWhiteSpace(Data.NOMBRE_COMPETENCIAS_CONDUCTUALES))
       {
         return ValidationError("Debe ingresar el nombre de la competencia conductual.");
       }
 
-      if (Data.NOMBRE_COMPETENCIAS_TECNICAS.Trim().Length > 150)
+      if (Data.NOMBRE_COMPETENCIAS_CONDUCTUALES.Trim().Length > 150)
       {
         return ValidationError("El nombre de la competencia conductual no puede superar 150 caracteres.");
       }
 
-      if (!string.IsNullOrWhiteSpace(Data.DESCRIPCION) && Data.DESCRIPCION.Trim().Length > 500)
+      if (string.IsNullOrWhiteSpace(Data.DESCRIPCION))
+      {
+        return ValidationError("Debe ingresar la descripcion de la competencia conductual.");
+      }
+
+      if (Data.DESCRIPCION.Trim().Length > 500)
       {
         return ValidationError("La descripcion no puede superar 500 caracteres.");
       }
@@ -183,27 +161,15 @@ namespace SGUEES.Services
       return null;
     }
 
-    private async Task<CResult> ValidateUniqueCodigoAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, int? excludeCorr)
-    {
-      var exists = await _repo.ExistsCodigoAsync(
-        Data.CORR_EMPRESA,
-        Data.CODIGO_COMPETENCIAS_TECNICAS,
-        excludeCorr ?? 0);
-
-      return exists
-        ? ValidationError($"Ya existe una competencia conductual con el codigo {Data.CODIGO_COMPETENCIAS_TECNICAS}.")
-        : null;
-    }
-
     private async Task<CResult> ValidateUniqueNombreAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, int? excludeCorr)
     {
       var exists = await _repo.ExistsNombreAsync(
         Data.CORR_EMPRESA,
-        Data.NOMBRE_COMPETENCIAS_TECNICAS,
+        Data.NOMBRE_COMPETENCIAS_CONDUCTUALES,
         excludeCorr ?? 0);
 
       return exists
-        ? ValidationError($"Ya existe una competencia conductual con el nombre {Data.NOMBRE_COMPETENCIAS_TECNICAS}.")
+        ? ValidationError($"Ya existe una competencia conductual con el nombre {Data.NOMBRE_COMPETENCIAS_CONDUCTUALES}.")
         : null;
     }
 

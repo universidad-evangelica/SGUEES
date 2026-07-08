@@ -4,7 +4,7 @@ import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
-import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 import { ScCompetenciasConductuales } from './models/sc-competencias-conductuales';
 import { ScCompetenciasConductualesRepository } from './sc-competencias-conductuales.repository';
 
@@ -20,27 +20,22 @@ export class ScCompetenciasConductualesService {
 			return false;
 		}
 
-		if (!model.CODIGO_COMPETENCIAS_TECNICAS || model.CODIGO_COMPETENCIAS_TECNICAS.trim() === '') {
-			msg('Debe ingresar el codigo de la competencia conductual.', NotifyType.Warning);
-			return false;
-		}
-
-		if (model.CODIGO_COMPETENCIAS_TECNICAS.trim().length > 30) {
-			msg('El codigo de la competencia conductual no puede superar 30 caracteres.', NotifyType.Warning);
-			return false;
-		}
-
-		if (!model.NOMBRE_COMPETENCIAS_TECNICAS || model.NOMBRE_COMPETENCIAS_TECNICAS.trim() === '') {
+		if (!model.NOMBRE_COMPETENCIAS_CONDUCTUALES || model.NOMBRE_COMPETENCIAS_CONDUCTUALES.trim() === '') {
 			msg('Debe ingresar el nombre de la competencia conductual.', NotifyType.Warning);
 			return false;
 		}
 
-		if (model.NOMBRE_COMPETENCIAS_TECNICAS.trim().length > 150) {
+		if (model.NOMBRE_COMPETENCIAS_CONDUCTUALES.trim().length > 150) {
 			msg('El nombre de la competencia conductual no puede superar 150 caracteres.', NotifyType.Warning);
 			return false;
 		}
 
-		if (model.DESCRIPCION && model.DESCRIPCION.trim().length > 500) {
+		if (!model.DESCRIPCION || model.DESCRIPCION.trim() === '') {
+			msg('Debe ingresar la descripcion de la competencia conductual.', NotifyType.Warning);
+			return false;
+		}
+
+		if (model.DESCRIPCION.trim().length > 500) {
 			msg('La descripcion no puede superar 500 caracteres.', NotifyType.Warning);
 			return false;
 		}
@@ -85,29 +80,11 @@ export class ScCompetenciasConductualesService {
 				dataType: 'number',
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
-			{ dataField: 'CODIGO_COMPETENCIAS_TECNICAS', caption: 'Codigo', width: 140 },
-			{ dataField: 'NOMBRE_COMPETENCIAS_TECNICAS', caption: 'Nombre', width: 280 },
-			{ dataField: 'DESCRIPCION', caption: 'Descripcion', width: 320 },
-			{ dataField: 'NOMBRE_TIPO_PUESTO', caption: 'Tipo Puesto', width: 220 },
+			{ dataField: 'NOMBRE_COMPETENCIAS_CONDUCTUALES', caption: 'Nombre', width: 250 },
+			{ dataField: 'DESCRIPCION', caption: 'Descripcion', width: 280 },
+			{ dataField: 'NOMBRE_TIPO_PUESTO', caption: 'Tipo Puesto', width: 200 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
-			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 180 },
-			{
-				dataField: 'FECHA_CREA',
-				caption: 'Fecha Crea',
-				width: 170,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-				calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA'),
-			},
-			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 180 },
-			{
-				dataField: 'FECHA_ACTU',
-				caption: 'Fecha Actu',
-				width: 170,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-				calculateFilterExpression: createDateTimeFilterExpression('FECHA_ACTU'),
-			},
+			...buildAuditGridColumns({ withDateTimeFilter: true }),
 		];
 	}
 
@@ -138,34 +115,38 @@ export class ScCompetenciasConductualesService {
 				colSpan: 2,
 				editorOptions: { placeholder: 'Seleccione tipo de puesto...', showClearButton: false },
 				template: 'CORR_TIPO_PUESTOLookup',
-				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
+				validationRules: [
+					{
+						type: 'custom',
+						message: 'Este campo es obligatorio',
+						reevaluate: true,
+						validationCallback: (e: { value: unknown }) => {
+							const value = Number(e.value);
+							return !Number.isNaN(value) && value > 0;
+						},
+					},
+				],
 			},
 			{
-				dataField: 'CODIGO_COMPETENCIAS_TECNICAS',
-				label: { text: 'Codigo' },
-				colSpan: 2,
-				editorOptions: { placeholder: 'Codigo...', showClearButton: true, maxLength: 30 },
-				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-			},
-			{
-				dataField: 'NOMBRE_COMPETENCIAS_TECNICAS',
+				dataField: 'NOMBRE_COMPETENCIAS_CONDUCTUALES',
 				label: { text: 'Nombre' },
-				colSpan: 4,
+				colSpan: 3,
 				editorOptions: { placeholder: 'Nombre competencia conductual...', showClearButton: true, maxLength: 150 },
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-			},
-			{
-				dataField: 'DESCRIPCION',
-				label: { text: 'Descripcion' },
-				colSpan: 6,
-				editorType: 'dxTextArea',
-				editorOptions: { placeholder: 'Descripcion...', showClearButton: true, maxLength: 500, height: 90 },
 			},
 			{
 				dataField: 'ESTADO_COMPETENCIAS_CONDUCTUALES',
 				label: { text: 'Activo' },
 				editorType: 'dxCheckBox',
 				colSpan: 2,
+			},
+			{
+				dataField: 'DESCRIPCION',
+				label: { text: 'Descripcion' },
+				colSpan: 8,
+				editorType: 'dxTextArea',
+				editorOptions: { placeholder: 'Descripcion...', showClearButton: true, maxLength: 500, height: 90 },
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 		];
 	}
@@ -175,22 +156,6 @@ export class ScCompetenciasConductualesService {
 
 		if (param.CORR_COMPETENCIAS_CONDUCTUALES) {
 			xWhere.push({ Parameter: 'CORR_COMPETENCIAS_CONDUCTUALES', Value: param.CORR_COMPETENCIAS_CONDUCTUALES });
-		}
-
-		if (param.PAGE) {
-			xWhere.push({ Parameter: 'PAGE', Value: param.PAGE });
-		}
-
-		if (param.PAGE_SIZE !== undefined && param.PAGE_SIZE !== null) {
-			xWhere.push({ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE });
-		}
-
-		if (param.SORT_FIELD) {
-			xWhere.push({ Parameter: 'SORT_FIELD', Value: param.SORT_FIELD });
-		}
-
-		if (param.SORT_FIELD && param.SORT_DESC !== undefined && param.SORT_DESC !== null) {
-			xWhere.push({ Parameter: 'SORT_DESC', Value: param.SORT_DESC });
 		}
 
 		return xWhere;

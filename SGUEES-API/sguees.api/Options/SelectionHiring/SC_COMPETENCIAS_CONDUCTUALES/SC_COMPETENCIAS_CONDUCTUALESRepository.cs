@@ -22,8 +22,7 @@ namespace SGUEES.Repositories
     {
       "CORR_COMPETENCIAS_CONDUCTUALES",
       "CORR_TIPO_PUESTO",
-      "CODIGO_COMPETENCIAS_TECNICAS",
-      "NOMBRE_COMPETENCIAS_TECNICAS",
+      "NOMBRE_COMPETENCIAS_CONDUCTUALES",
       "DESCRIPCION",
       "NOMBRE_TIPO_PUESTO",
       "ESTADO_COMPETENCIAS_CONDUCTUALES",
@@ -47,15 +46,22 @@ namespace SGUEES.Repositories
 
       try
       {
-        var paged = await ReadPagedViewAsync<SC_COMPETENCIAS_CONDUCTUALESView>(
-          _ViewName,
-          xWhere,
-          _AllowedSortFields,
-          _DefaultSortField);
+        var dbWhere = xWhere
+          .Where(x => x.ParameterName == "CORR_EMPRESA")
+          .ToList();
 
-        objResultado.Data = paged.PageData;
+        var reader = await objData.GetDataReader(_ViewName, dbWhere);
+        var response = new List<SC_COMPETENCIAS_CONDUCTUALESView>().FromDataReader(reader)
+          .OrderBy(x => x.NOMBRE_COMPETENCIAS_CONDUCTUALES)
+          .ThenBy(x => x.CORR_COMPETENCIAS_CONDUCTUALES)
+          .ToList();
+
+        reader.Close();
+        reader = null;
+
+        objResultado.Data = response;
         objResultado.Result = true;
-        objResultado.RowsAffected = paged.TotalRows;
+        objResultado.RowsAffected = response.Count;
         objResultado.CodeHelper = 0;
         objResultado.ErrorCode = 0;
         objResultado.ErrorMessage = "";
@@ -126,8 +132,7 @@ namespace SGUEES.Repositories
           new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
           new CParameter() { ParameterName = "CORR_COMPETENCIAS_CONDUCTUALES", Value = Data.CORR_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
           new CParameter() { ParameterName = "CORR_TIPO_PUESTO", Value = Data.CORR_TIPO_PUESTO, DbType = System.Data.DbType.Int32 },
-          new CParameter() { ParameterName = "CODIGO_COMPETENCIAS_TECNICAS", Value = Data.CODIGO_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.String },
-          new CParameter() { ParameterName = "NOMBRE_COMPETENCIAS_TECNICAS", Value = Data.NOMBRE_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.String },
+          new CParameter() { ParameterName = "NOMBRE_COMPETENCIAS_CONDUCTUALES", Value = Data.NOMBRE_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.String },
           new CParameter() { ParameterName = "DESCRIPCION", Value = Data.DESCRIPCION, DbType = System.Data.DbType.String },
           new CParameter() { ParameterName = "ESTADO_COMPETENCIAS_CONDUCTUALES", Value = Data.ESTADO_COMPETENCIAS_CONDUCTUALES ?? true, DbType = System.Data.DbType.Boolean },
           new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
@@ -186,10 +191,8 @@ namespace SGUEES.Repositories
         var p = new List<CParameter>
         {
           new CParameter() { ParameterName = "CORR_TIPO_PUESTO", Value = Data.CORR_TIPO_PUESTO, DbType = System.Data.DbType.Int32 },
-          new CParameter() { ParameterName = "CODIGO_COMPETENCIAS_TECNICAS", Value = Data.CODIGO_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.String },
-          new CParameter() { ParameterName = "NOMBRE_COMPETENCIAS_TECNICAS", Value = Data.NOMBRE_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.String },
+          new CParameter() { ParameterName = "NOMBRE_COMPETENCIAS_CONDUCTUALES", Value = Data.NOMBRE_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.String },
           new CParameter() { ParameterName = "DESCRIPCION", Value = Data.DESCRIPCION, DbType = System.Data.DbType.String },
-          new CParameter() { ParameterName = "ESTADO_COMPETENCIAS_CONDUCTUALES", Value = Data.ESTADO_COMPETENCIAS_CONDUCTUALES ?? true, DbType = System.Data.DbType.Boolean },
           new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
           new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
           new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -344,38 +347,6 @@ namespace SGUEES.Repositories
       return objResultado;
     }
 
-    public async Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr)
-    {
-      if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(codigo))
-      {
-        return false;
-      }
-
-      const string sql = @"SELECT TOP 1 1 AS FOUND
-        FROM V_SC_COMPETENCIAS_CONDUCTUALES
-        WHERE CORR_EMPRESA = @CORR_EMPRESA
-        AND UPPER(LTRIM(RTRIM(CODIGO_COMPETENCIAS_TECNICAS))) = UPPER(LTRIM(RTRIM(@CODIGO)))
-        AND (@EXCLUDE_CORR <= 0 OR CORR_COMPETENCIAS_CONDUCTUALES <> @EXCLUDE_CORR)";
-
-      try
-      {
-        var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
-        {
-          new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
-          new CParameter() { ParameterName = "CODIGO", Value = codigo.Trim(), DbType = System.Data.DbType.String },
-          new CParameter() { ParameterName = "EXCLUDE_CORR", Value = excludeCorr, DbType = System.Data.DbType.Int32 },
-        });
-
-        var exists = reader.Read();
-        reader.Close();
-        return exists;
-      }
-      finally
-      {
-        objData.objConnection.Close();
-      }
-    }
-
     public async Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr)
     {
       if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nombre))
@@ -386,7 +357,7 @@ namespace SGUEES.Repositories
       const string sql = @"SELECT TOP 1 1 AS FOUND
         FROM V_SC_COMPETENCIAS_CONDUCTUALES
         WHERE CORR_EMPRESA = @CORR_EMPRESA
-        AND UPPER(LTRIM(RTRIM(NOMBRE_COMPETENCIAS_TECNICAS))) = UPPER(LTRIM(RTRIM(@NOMBRE)))
+        AND UPPER(LTRIM(RTRIM(NOMBRE_COMPETENCIAS_CONDUCTUALES))) = UPPER(LTRIM(RTRIM(@NOMBRE)))
         AND (@EXCLUDE_CORR <= 0 OR CORR_COMPETENCIAS_CONDUCTUALES <> @EXCLUDE_CORR)";
 
       try
