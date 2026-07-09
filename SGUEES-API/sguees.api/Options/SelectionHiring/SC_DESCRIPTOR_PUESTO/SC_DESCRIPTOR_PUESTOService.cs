@@ -1,0 +1,199 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using eFramework.Core;
+using SGUEES.Models;
+using SGUEES.Repositories;
+
+namespace SGUEES.Services
+{
+    public class SC_DESCRIPTOR_PUESTOService : ISC_DESCRIPTOR_PUESTOService
+    {
+        private readonly ISC_DESCRIPTOR_PUESTORepository _repo;
+
+        public SC_DESCRIPTOR_PUESTOService(ISC_DESCRIPTOR_PUESTORepository repo)
+        {
+            _repo = repo;
+        }
+
+        public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_PUESTOParam xWhere)
+        {
+            return await _repo.GetAllAsync(BuildParameters(xWhere));
+        }
+
+        public async Task<CResult> GetAsync(SC_DESCRIPTOR_PUESTOParam xWhere)
+        {
+            var p = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = xWhere.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+            };
+
+            return await _repo.GetAsync(p);
+        }
+
+        public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            var validation = Validate(Data);
+            if (validation != null)
+            {
+                return validation;
+            }
+
+            if (Data.CORR_PUESTO.HasValue)
+            {
+                var exists = await _repo.ExistsDescriptorAbiertoPorPuestoAsync(
+                    Data.CORR_EMPRESA,
+                    Data.CORR_PUESTO.Value,
+                    0);
+
+                if (exists)
+                {
+                    return ValidationError(
+                        "Ya existe un descriptor para este puesto que se encuentra en proceso de aprobacion o activo. Solo sera posible crear una nueva version cuando la version actual haya sido activada y posteriormente desactivada.");
+                }
+            }
+
+            NormalizeData(Data);
+            return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            var validation = Validate(Data);
+            if (validation != null)
+            {
+                return validation;
+            }
+
+            if (Data.CORR_DESCRIPTOR_PUESTO <= 0)
+            {
+                return ValidationError("No se pudo identificar el descriptor de puesto a actualizar.");
+            }
+
+            NormalizeData(Data);
+            return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        private static List<CParameter> BuildParameters(SC_DESCRIPTOR_PUESTOParam xWhere)
+        {
+            return new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+            };
+        }
+
+        private static void NormalizeData(SC_DESCRIPTOR_PUESTOTable Data)
+        {
+            Data.OBJETIVO_PUESTO = string.IsNullOrWhiteSpace(Data.OBJETIVO_PUESTO)
+                ? null
+                : Data.OBJETIVO_PUESTO.Trim();
+            Data.RESPONSABLE = string.IsNullOrWhiteSpace(Data.RESPONSABLE) ? null : Data.RESPONSABLE.Trim();
+            Data.FORMATO = NormalizeFormato(Data.FORMATO);
+            Data.ESTADO_DESCRIPTOR = string.IsNullOrWhiteSpace(Data.ESTADO_DESCRIPTOR)
+                ? "BORRADOR"
+                : Data.ESTADO_DESCRIPTOR.Trim().ToUpperInvariant();
+            Data.VERSION ??= 1;
+        }
+
+        private static CResult Validate(SC_DESCRIPTOR_PUESTOTable Data)
+        {
+            if (Data == null)
+            {
+                return ValidationError("No se recibieron datos del descriptor de puesto.");
+            }
+
+            if (string.IsNullOrWhiteSpace(Data.FORMATO))
+            {
+                return ValidationError("Debe seleccionar el tipo de formato del descriptor.");
+            }
+
+            if (!Data.CORR_UNIDAD.HasValue || Data.CORR_UNIDAD <= 0)
+            {
+                return ValidationError("Debe seleccionar el area (unidad).");
+            }
+
+            if (!Data.CORR_PUESTO.HasValue || Data.CORR_PUESTO <= 0)
+            {
+                return ValidationError("Debe seleccionar el titulo del puesto.");
+            }
+
+            if (!Data.CORR_PUESTO_REPORTA.HasValue || Data.CORR_PUESTO_REPORTA <= 0)
+            {
+                return ValidationError("Debe seleccionar el puesto al que reporta.");
+            }
+
+            if (!Data.FECHA_EMISION.HasValue)
+            {
+                return ValidationError("Debe ingresar la fecha de emision.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(Data.OBJETIVO_PUESTO) && Data.OBJETIVO_PUESTO.Trim().Length > 255)
+            {
+                return ValidationError("El objetivo del puesto no puede superar 255 caracteres.");
+            }
+
+            return null;
+        }
+
+        private static string NormalizeFormato(string formato)
+        {
+            if (string.IsNullOrWhiteSpace(formato))
+            {
+                return formato;
+            }
+
+            var value = formato.Trim().ToUpperInvariant();
+            return value switch
+            {
+                "CORTA" => "CORTO",
+                "EXTENSA" => "EXTENSO",
+                _ => value,
+            };
+        }
+
+        private static CResult ValidateEmpresaSesion(int corrEmpresa)
+        {
+            if (corrEmpresa <= 0)
+            {
+                return ValidationError("No se pudo identificar la empresa de la sesion.");
+            }
+
+            return null;
+        }
+
+        private static CResult ValidationError(string message)
+        {
+            return new CResult
+            {
+                Result = false,
+                ErrorCode = -1,
+                ErrorMessage = message,
+                ErrorSource = "[SC_DESCRIPTOR_PUESTOService]",
+            };
+        }
+    }
+}

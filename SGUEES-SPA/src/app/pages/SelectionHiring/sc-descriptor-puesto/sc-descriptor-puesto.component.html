@@ -1,0 +1,406 @@
+<div class="sguees-mtto-view">
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[subTituloVentana]="subTituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="permiteAdd"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+>
+</app-barra-data-mtto>
+
+<div class="content-block dx-card responsive-paddings descriptor-form-card" *ngIf="!isBrowse()">
+	<dx-tab-panel
+		#tabPanelPrincipal
+		class="descriptor-tab-panel"
+		[(selectedIndex)]="mainTabIndex"
+	>
+		<dxi-item title="Descriptor" icon="file">
+			<div class="descriptor-generalidades">
+				<h3 class="descriptor-section-title">Generalidades</h3>
+
+				<dx-form
+					#fHeaderData
+					id="fHeaderData"
+					[formData]="model"
+					[labelLocation]="'top'"
+					[colCount]="8"
+					[showRequiredMark]="false"
+					[items]="headerItems"
+					[readOnly]="readOnly"
+					(onFieldDataChanged)="onHeaderFieldChanged($event)"
+				>
+					<div *dxTemplate="let cellInfo of 'CORR_UNIDADLookup'">
+						<div class="descriptor-lookup-field" [class.descriptor-lookup-field--invalid]="unidadInvalido">
+							<app-data-lookup
+								[model]="mCORR_UNIDAD"
+								[value]="model.CORR_UNIDAD"
+								(valueChange)="onUnidadChanged($event)"
+								[valueExpr]="'CORR_UNIDAD'"
+								[displayExpr]="'NOMBRE_UNIDAD'"
+								[selectedRowKeys]="selectedLookUpCORR_UNIDAD"
+								[readOnly]="readOnly"
+							></app-data-lookup>
+						</div>
+					</div>
+
+					<div *dxTemplate="let cellInfo of 'CORR_PUESTOLookup'">
+						<div class="descriptor-puesto-row descriptor-lookup-field" [class.descriptor-lookup-field--invalid]="puestoInvalido">
+							<app-data-lookup
+								class="descriptor-puesto-select"
+								[model]="mCORR_PUESTO"
+								[value]="model.CORR_PUESTO"
+								(valueChange)="onPuestoChanged($event)"
+								[valueExpr]="'CORR_PUESTO'"
+								[displayExpr]="'NOMBRE_PUESTO'"
+								[selectedRowKeys]="selectedLookUpCORR_PUESTO"
+								[readOnly]="readOnly || !model.CORR_UNIDAD"
+							></app-data-lookup>
+							<dx-button
+								icon="plus"
+								type="default"
+								stylingMode="contained"
+								hint="Crear puesto"
+								[disabled]="readOnly"
+								(onClick)="crearPuestoProximamente()"
+							></dx-button>
+						</div>
+					</div>
+
+					<div *dxTemplate="let cellInfo of 'CORR_PUESTO_REPORTALookup'">
+						<div class="descriptor-lookup-field" [class.descriptor-lookup-field--invalid]="puestoReportaInvalido">
+							<app-data-lookup
+								[model]="mCORR_PUESTO_REPORTA"
+								[value]="model.CORR_PUESTO_REPORTA"
+								(valueChange)="onPuestoReportaChanged($event)"
+								[valueExpr]="'CORR_PUESTO'"
+								[displayExpr]="'RESPONSABLE'"
+								[lookupColumns]="reportaLookupColumns"
+								[selectedRowKeys]="selectedLookUpCORR_PUESTO_REPORTA"
+								[readOnly]="readOnly || !model.CORR_PUESTO"
+							></app-data-lookup>
+						</div>
+						<div class="descriptor-help-text">Se carga segun el puesto seleccionado.</div>
+					</div>
+				</dx-form>
+			</div>
+
+			<p class="descriptor-secciones-hint" *ngIf="!mostrarSeccionesDescriptor" role="status">
+				Guarde las generalidades del descriptor para habilitar objetivo, funciones y demas secciones.
+			</p>
+
+			<dx-tab-panel
+				#tabPanelSecciones
+				class="descriptor-sub-tab-panel"
+				*ngIf="mostrarSeccionesDescriptor"
+				[(selectedIndex)]="subTabIndex"
+				[deferRendering]="false"
+			>
+				<dxi-item *ngFor="let tab of subTabsVisibles" [title]="tab.order + '. ' + tab.title">
+					<div class="descriptor-sub-tab-content" *ngIf="tab.id === 'objetivo'">
+						<h4 class="descriptor-sub-tab-heading">Objetivo</h4>
+						<dx-text-area
+							[(value)]="model.OBJETIVO_PUESTO"
+							[readOnly]="readOnly"
+							[height]="180"
+							placeholder="Describa el objetivo..."
+							[maxLength]="255"
+						></dx-text-area>
+					</div>
+
+					<div class="descriptor-sub-tab-content" *ngIf="tab.id === 'funciones'">
+						<div class="descriptor-funciones-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-bulletlist descriptor-funciones-icon" aria-hidden="true"></span>
+								Funciones Claves
+							</h4>
+						</div>
+
+						<div class="descriptor-funciones-table-wrap">
+							<table class="descriptor-funciones-table">
+								<thead>
+									<tr>
+										<th class="descriptor-funciones-col-codigo">Codigo</th>
+										<th>Nombre de la funcion clave</th>
+										<th *ngIf="esFormatoExtensa" class="descriptor-funciones-col-actividades">Actividades</th>
+										<th class="descriptor-funciones-col-accion">Accion</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr *ngFor="let funcion of funcionesClaveVisibles; let i = index">
+										<td class="descriptor-funciones-col-codigo">{{ i + 1 }}</td>
+										<td>
+											<dx-text-box
+												[(value)]="funcion.NOMBRE_FUNCION"
+												[readOnly]="readOnly"
+												placeholder="Nombre de la funcion"
+												[maxLength]="255"
+												(onValueChanged)="onFuncionClaveChanged($event, funcion)"
+											></dx-text-box>
+										</td>
+										<td *ngIf="esFormatoExtensa" class="descriptor-funciones-col-actividades">
+											<button
+												type="button"
+												class="descriptor-actividades-trigger"
+												[disabled]="readOnly"
+												(click)="abrirActividades(funcion)"
+											>
+												<span>Actividades</span>
+												<span class="descriptor-actividades-badge">{{ (funcion.CANT_ACTIVIDADES ?? funcion.actividadesPendientes?.length) || 0 }}</span>
+											</button>
+										</td>
+										<td class="descriptor-funciones-col-accion">
+											<dx-button
+												icon="trash"
+												type="danger"
+												stylingMode="contained"
+												hint="Eliminar funcion"
+												[disabled]="readOnly"
+												(onClick)="eliminarFuncionClave(funcion)"
+											></dx-button>
+										</td>
+									</tr>
+									<tr *ngIf="funcionesClaveVisibles.length === 0">
+										<td [attr.colspan]="esFormatoExtensa ? 4 : 3" class="descriptor-funciones-empty">
+											No hay funciones clave registradas.
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<div class="descriptor-funciones-footer">
+							<dx-button
+								text="Agregar Funcion Clave"
+								icon="plus"
+								type="default"
+								stylingMode="contained"
+								[disabled]="readOnly"
+								(onClick)="agregarFuncionClave()"
+							></dx-button>
+							<p class="descriptor-funciones-note" *ngIf="esFormatoExtensa">
+								En version extensa, cada funcion clave permite registrar sus actividades.
+							</p>
+							<p class="descriptor-funciones-note" *ngIf="!esFormatoExtensa">
+								En version corta solo se registran las funciones clave, sin actividades.
+							</p>
+						</div>
+					</div>
+
+					<div class="descriptor-sub-tab-content" *ngIf="tab.id === 'funcionesSecundarias' && esFormatoCorta">
+						<div class="descriptor-funciones-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-chart descriptor-funciones-icon" aria-hidden="true"></span>
+								Funciones Secundarias
+							</h4>
+						</div>
+
+						<div class="descriptor-funciones-table-wrap">
+							<table class="descriptor-funciones-table">
+								<thead>
+									<tr>
+										<th class="descriptor-funciones-col-codigo">Codigo</th>
+										<th>Descripcion de la funcion secundaria</th>
+										<th class="descriptor-funciones-col-accion">Accion</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr *ngFor="let funcion of funcionesSecundariasVisibles; let i = index">
+										<td class="descriptor-funciones-col-codigo">{{ i + 1 }}</td>
+										<td>
+											<dx-text-box
+												[(value)]="funcion.NOMBRE_FUNCION"
+												[readOnly]="readOnly"
+												placeholder="Describa la funcion secundaria"
+												[maxLength]="255"
+												(onValueChanged)="onFuncionSecundariaChanged($event, funcion)"
+											></dx-text-box>
+										</td>
+										<td class="descriptor-funciones-col-accion">
+											<dx-button
+												icon="trash"
+												type="danger"
+												stylingMode="contained"
+												hint="Eliminar funcion secundaria"
+												[disabled]="readOnly"
+												(onClick)="eliminarFuncionSecundaria(funcion)"
+											></dx-button>
+										</td>
+									</tr>
+									<tr *ngIf="funcionesSecundariasVisibles.length === 0">
+										<td colspan="3" class="descriptor-funciones-empty">
+											No hay funciones secundarias registradas.
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<div class="descriptor-funciones-footer">
+							<dx-button
+								text="Agregar Funcion Secundaria"
+								icon="plus"
+								type="default"
+								stylingMode="contained"
+								[disabled]="readOnly"
+								(onClick)="agregarFuncionSecundaria()"
+							></dx-button>
+						</div>
+					</div>
+
+					<div
+						class="descriptor-sub-tab-content descriptor-sub-tab-placeholder"
+						*ngIf="tab.id !== 'objetivo' && tab.id !== 'funciones' && tab.id !== 'funcionesSecundarias'"
+					>
+						<h4 class="descriptor-sub-tab-heading">{{ tab.title }}</h4>
+						<p>Seccion en construccion.</p>
+					</div>
+				</dxi-item>
+			</dx-tab-panel>
+		</dxi-item>
+
+		<dxi-item title="Bitácora" icon="event">
+			<div class="descriptor-bitacora">
+				<h3 class="descriptor-section-title descriptor-bitacora-title">
+					<span class="dx-icon-clock descriptor-bitacora-title-icon" aria-hidden="true"></span>
+					Bitácora del Descriptor
+				</h3>
+
+				<div class="descriptor-bitacora-empty" *ngIf="!tieneBitacora" role="status">
+					<span class="dx-icon-info descriptor-bitacora-empty-icon" aria-hidden="true"></span>
+					<span class="descriptor-bitacora-empty-text">{{ mensajeBitacoraVacia }}</span>
+				</div>
+
+				<div class="dx-grid-deta" *ngIf="tieneBitacora">
+					<dx-data-grid
+						[dataSource]="itemsTabBitacora"
+						[columns]="columnsTabBitacora"
+						[summary]="summaryTabBitacora"
+						keyExpr="FECHA"
+						[showBorders]="true"
+						[showColumnLines]="true"
+						[showRowLines]="true"
+						[rowAlternationEnabled]="true"
+						[hoverStateEnabled]="true"
+						[allowColumnResizing]="true"
+						[columnResizingMode]="'widget'"
+						[height]="320"
+					>
+						<dxo-search-panel [visible]="true"></dxo-search-panel>
+						<dxo-paging [pageSize]="5"></dxo-paging>
+						<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 20]"></dxo-pager>
+						<dxo-editing [allowUpdating]="false" [allowDeleting]="false" [allowAdding]="false"></dxo-editing>
+					</dx-data-grid>
+				</div>
+			</div>
+		</dxi-item>
+	</dx-tab-panel>
+</div>
+
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="mttoGridKeyExpr"
+	[pageSize]="mttoPageSize"
+	[allowedPageSizes]="mttoPageSizes"
+	[remoteOperations]="mttoRemoteOperations"
+	[repaintChangesOnly]="false"
+	[showSearch]="false"
+	[showAdd]="true"
+	[showRefresh]="true"
+	[showExport]="true"
+	[focusedRowKey]="gridFocusedRowKey"
+	[permitePrint]="permitePrint"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	[responsiveColumnHiding]="false"
+	[columnHidingEnabled]="false"
+	[exportFileName]="'DescriptorPuesto'"
+	(refresh)="consultar()"
+	(add)="nuevo()"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+
+</div>
+
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>
+
+<dx-popup
+	[(visible)]="actividadesPopupVisible"
+	[showTitle]="true"
+	[title]="'Actividades - ' + (funcionActividadesSeleccionada?.NOMBRE_FUNCION || 'Funcion clave')"
+	[width]="720"
+	[height]="520"
+	[showCloseButton]="true"
+	(onHiding)="cerrarActividadesPopup()"
+>
+	<div class="descriptor-actividades-popup" *dxTemplate="let data of 'content'">
+		<div class="descriptor-funciones-table-wrap">
+			<table class="descriptor-funciones-table">
+				<thead>
+					<tr>
+						<th class="descriptor-funciones-col-codigo">Codigo</th>
+						<th>Nombre de la actividad</th>
+						<th class="descriptor-funciones-col-accion">Accion</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr *ngFor="let actividad of actividadesPopupVisibles; let i = index">
+						<td class="descriptor-funciones-col-codigo">{{ i + 1 }}</td>
+						<td>
+							<dx-text-box
+								[(value)]="actividad.NOMBRE_ACTIVIDAD"
+								placeholder="Nombre de la actividad"
+								[maxLength]="255"
+							></dx-text-box>
+						</td>
+						<td class="descriptor-funciones-col-accion">
+							<dx-button
+								icon="trash"
+								type="danger"
+								stylingMode="contained"
+								hint="Eliminar actividad"
+								(onClick)="eliminarActividad(actividad)"
+							></dx-button>
+						</td>
+					</tr>
+					<tr *ngIf="actividadesPopupVisibles.length === 0">
+						<td colspan="3" class="descriptor-funciones-empty">No hay actividades registradas.</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div class="descriptor-actividades-popup-actions">
+			<dx-button
+				text="Agregar actividad"
+				icon="plus"
+				type="default"
+				stylingMode="contained"
+				(onClick)="agregarActividad()"
+			></dx-button>
+			<div class="descriptor-actividades-popup-actions-right">
+				<dx-button text="Cancelar" stylingMode="outlined" (onClick)="cerrarActividadesPopup()"></dx-button>
+				<dx-button text="Guardar actividades" type="success" stylingMode="contained" (onClick)="guardarActividadesPopup()"></dx-button>
+			</div>
+		</div>
+	</div>
+</dx-popup>
