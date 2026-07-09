@@ -96,6 +96,7 @@ export class ConPeriodoContableComponent extends CBaseComponent implements OnIni
 	}
 
 	consultar() {
+		this.loadingVisible = true;
 		this.service
 			.getAll(this.fillParam())
 			.pipe(take(1))
@@ -103,12 +104,58 @@ export class ConPeriodoContableComponent extends CBaseComponent implements OnIni
 				next: (response: any) => {
 					if (response.Result) {
 						this.models = (response.Data || []).map((r: any) => this.service.enriquecer(r));
+					} else {
+						this.models = [];
+						this.notifyFx(response.ErrorMessage || 'No se pudo consultar los períodos', NotifyType.Error);
 					}
+					this.loadingVisible = false;
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.models = [];
+					this.loadingVisible = false;
+					this.notifyApiError(error);
 				},
 			});
+	}
+
+	private esPeriodoDuplicado(anio: number, mes: number): boolean {
+		return this.service.existePeriodo(this.models, anio, mes);
+	}
+
+	private notificarPeriodoDuplicado(anio: number, mes: number): void {
+		const nombreMes = this.service.getNombreMes(mes);
+		this.notifyFx(
+			`Ya existe el período ${nombreMes} ${anio}. Cada mes del año es un registro distinto; use Consultar para ver el listado completo.`,
+			NotifyType.Warning,
+			{ raw: true }
+		);
+	}
+
+	private manejarErrorGuardar(error: any, anio: number, mes: number): void {
+		const mensaje =
+			typeof error === 'string'
+				? error
+				: error?.ErrorMessage || error?.error?.ErrorMessage || '';
+		const errorCode = typeof error === 'object' ? error?.ErrorCode ?? error?.error?.ErrorCode : undefined;
+		const texto = `${mensaje}`.toLowerCase();
+		const esDuplicado =
+			errorCode === 2627 ||
+			texto.includes('ya existe el período') ||
+			texto.includes('ya existe un período') ||
+			texto.includes('duplicad');
+
+		if (esDuplicado) {
+			this.consultar();
+			this.notificarPeriodoDuplicado(anio, mes);
+			return;
+		}
+
+		if (typeof error === 'string') {
+			this.notifyFx(error, NotifyType.Error);
+			return;
+		}
+
+		this.notifyApiResponse(error);
 	}
 
 	guardar(): void {
@@ -116,14 +163,11 @@ export class ConPeriodoContableComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		if (this.banderaMtto === UpdateType.Add) {
-			const duplicado = (this.models || []).some(
-				(m: any) => m.ANIO_PERIODO === this.model.ANIO_PERIODO && m.MES_PERIODO === this.model.MES_PERIODO
-			);
-			if (duplicado) {
-				this.notifyFx('Ya existe un período registrado para ese Año y Mes', NotifyType.Warning);
-				return;
-			}
+		const { anio, mes } = this.service.normalizarClave(this.model);
+
+		if (this.banderaMtto === UpdateType.Add && this.esPeriodoDuplicado(anio, mes)) {
+			this.notificarPeriodoDuplicado(anio, mes);
+			return;
 		}
 
 		this.loadingVisible = true;
@@ -134,17 +178,16 @@ export class ConPeriodoContableComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response: any) => {
 						if (response.Result) {
-							this.model = this.service.enriquecer(response.Data);
-							this.models.push(this.model);
+							this.consultar();
 							this.AsignaStatus(UpdateType.Browse);
 							this.notifyFx('Registro creado con exito!', NotifyType.Success);
 						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							this.manejarErrorGuardar(response, anio, mes);
 						}
 						this.loadingVisible = false;
 					},
 					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
+						this.manejarErrorGuardar(error, anio, mes);
 						this.loadingVisible = false;
 					},
 				});
@@ -155,21 +198,16 @@ export class ConPeriodoContableComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response: any) => {
 						if (response.Result) {
-							this.model = this.service.enriquecer(response.Data);
-							const vIndex = this.models.findIndex(
-								(item: any) =>
-									item.ANIO_PERIODO === response.Data.ANIO_PERIODO && item.MES_PERIODO === response.Data.MES_PERIODO
-							);
-							this.models[vIndex] = this.model;
+							this.consultar();
 							this.AsignaStatus(UpdateType.Browse);
 							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
 						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							this.manejarErrorGuardar(response, anio, mes);
 						}
 						this.loadingVisible = false;
 					},
 					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
+						this.manejarErrorGuardar(error, anio, mes);
 						this.loadingVisible = false;
 					},
 				});
@@ -177,18 +215,24 @@ export class ConPeriodoContableComponent extends CBaseComponent implements OnIni
 	}
 
 	override cancelar(): void {
-		super.cancelar((item: any) => item.ANIO_PERIODO === this.modelUpdate.ANIO_PERIODO);
+		super.cancelar(
+			(item: any) =>
+				item.ANIO_PERIODO === this.modelUpdate.ANIO_PERIODO && item.MES_PERIODO === this.modelUpdate.MES_PERIODO
+		);
 	}
 
 	rowRemoving(e: any) {
 		this.service
-			.delete(this.fillParam(e.data.ANIO_PERIODO))
+			.delete({
+				ANIO_PERIODO: e.data.ANIO_PERIODO,
+				MES_PERIODO: e.data.MES_PERIODO,
+			})
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
 						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-						e.component.refresh();
+						this.consultar();
 					} else {
 						e.cancel = true;
 						this.notifyFx(response.ErrorMessage, NotifyType.Error);

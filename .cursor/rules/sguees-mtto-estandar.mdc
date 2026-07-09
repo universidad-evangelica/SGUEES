@@ -31,6 +31,7 @@ El usuario puede decir solo:
 | Menú destino | `PROCESO`, `GENERAL`, nombre opción |
 
 Si no indica tipo, **inferirlo** de tablas/vistas (1 tabla = A/B/A+/A+P; encabezado+deta = C).
+**Paginado servidor:** si no queda claro, **preguntar** (A+ = memoria / A+P = BD). Ver `PROMPT-MTTO.md`.
 
 ### Elegir plantilla (catálogos)
 
@@ -41,7 +42,7 @@ Si no indica tipo, **inferirlo** de tablas/vistas (1 tabla = A/B/A+/A+P; encabez
 | Catálogo grande / auditoría / paginado servidor | `mtto-a-p-paginado.md` |
 | Documento con estados DI/AP/AN | `mtto-estado-transaccional.md` — **no** patrón bit |
 
-**A+ vs A+P:** A+ = 1× `consultarMtto` → array, paginado cliente. A+P = `CustomStore`, `remoteOperations.paging: true`, filter row sin API (`filtering: false`).
+**A+ vs A+P:** A+ = 1× `consultarMtto` → array, paginado cliente (sin selector tamaño/"Todos" en pager). A+P = `CustomStore`, `remoteOperations.paging: true`, selector + "Todos", `PAGE`/`PAGE_SIZE` en API.
 
 ### Lo que yo entrego (completo)
 
@@ -112,7 +113,8 @@ guardar(): void {
 ## A+P) Catálogo paginado servidor — SPA
 
 **Plantilla:** `DOCS/plantillas/mtto-a-p-paginado.md`  
-**Piloto:** `SelectionHiring/sc-impacto-economico`
+**Piloto:** `SelectionHiring/sc-impacto-economico`  
+**Solo usar si el catálogo lo requiere** — la mayoría de catálogos nuevos son **A+** (sin paginar en BD).
 
 ```typescript
 protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
@@ -122,6 +124,7 @@ protected override getMttoDataGrid() { return this.dataGrid ?? null; }
 ```
 
 - Filter row = cliente, **no** llama API.
+- **Pager "Todos":** `(pageSizeChange)` → `syncMttoPagedStorePagerSize` → `resolveMttoPagedLoadParams` con `cacheState` + `activePageSize`; grid normaliza `'all'` → `0`.
 - `guardarMtto` / `rowRemovingMtto` parchean `CustomStore` vía padre.
 - API actual piloto impacto: pagina en SQL (`OFFSET/FETCH`). Legacy puede estar en memoria hasta migrar.
 
@@ -282,6 +285,7 @@ Procesos: aplicar/anular/desaplicar, importar Excel, reportes, consultas, cierre
 - [ ] Plantilla `mtto-a-p-paginado.md`
 - [ ] `CustomStore` + `remoteOperations: { paging: true, sorting: true, filtering: false }`
 - [ ] `getMttoDataGrid()` con `@ViewChild(DataGridMttoComponent)`
+- [ ] `(pageSizeChange)` + `syncMttoPagedStorePagerSize` + `resolveMttoPagedLoadParams` con `cacheState` y `activePageSize`
 - [ ] API `ReadPagedViewAsync` + `_AllowedSortFields` (no SQL crudo ni paginación en memoria)
 - [ ] CRUD HTTP: `mtto-api-crud-http.md`
 

@@ -2,7 +2,7 @@
 
 
 
-**Versión del paquete:** 1.3 — julio 2026
+**Versión del paquete:** 1.4 — julio 2026
 
 
 

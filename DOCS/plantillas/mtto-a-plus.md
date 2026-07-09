@@ -1,6 +1,6 @@
 # Plantilla mtto A+ — Catálogo simple en memoria
 
-**Versión:** 1.3 — julio 2026  
+**Versión:** 1.4 — julio 2026  
 **Referencia viva:** `General/gen-banco`  
 **Contrato HTTP:** [mtto-api-crud-http.md](./mtto-api-crud-http.md)  
 **Cuándo:** catálogo &lt; ~500 filas por empresa, sin auditoría pesada en grid.
@@ -12,6 +12,8 @@
 - Una tabla / vista `V_*`
 - Sin grid detalle hijo
 - **No** necesita paginado servidor
+- Paginado **solo en cliente**: el grid muestra páginas sobre el array ya cargado; **sin** `PAGE`/`PAGE_SIZE` en API
+- El pager **no** muestra selector de tamaño ni "Todos" (`mttoRemoteOperations = false` → `data-grid-mtto` lo oculta automáticamente)
 
 **Con estado activo/inactivo (`bit`):** aplicar también [mtto-a-plus-estado-catalogo.md](./mtto-a-plus-estado-catalogo.md) (toolbar + SP + `activar_inactivar`).  
 **Sin estado** o catálogo sin toggle: solo esta plantilla.  
@@ -26,9 +28,10 @@ protected override etiquetaRegistro = 'el registro';
 protected override requiereEmpresaSesion = true;  // si aplica empresa
 protected override mttoGridKeyExpr = 'CORR_XXX';  // obligatorio para parche sin 2ª petición
 
-// Opcional — override paginación cliente (defaults padre: 20, [20,50,100,200,'all'])
+// Opcional — override tamaño de página cliente (defaults padre: 20, [20,50,100,200])
+// Sin 'all' — la opción "Todos" es solo para A+P (paginado servidor).
 protected override mttoPageSize = 5;
-protected override mttoPageSizes = [5, 10, 25, 50, 100];
+protected override mttoPageSizes = [5, 10, 25, 50, 100]; // ignorado en UI si remoteOperations false
 protected override mttoRemoteOperations = false;  // default — no cambiar en A+
 ```
 
@@ -109,7 +112,6 @@ export class GenXxxComponent extends CBaseComponent implements OnInit {
     [summary]="summary"
     [keyExpr]="mttoGridKeyExpr"
     [pageSize]="mttoPageSize"
-    [allowedPageSizes]="mttoPageSizes"
     [remoteOperations]="mttoRemoteOperations"
     [permiteEditar]="getPermiteEditar"
     [permiteDele]="getPermiteDele"

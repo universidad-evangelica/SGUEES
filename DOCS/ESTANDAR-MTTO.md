@@ -34,9 +34,11 @@ Módulos de referencia alineados: **gen-banco** (A+), **sc-impacto-economico** (
 |----------|----|----|
 | Filas por empresa | &lt; ~500 | Muchas o crecimiento esperado |
 | Carga datos | 1× `consultarMtto` → array | `CustomStore` por página |
-| Paginado | Cliente (`mttoPageSize`) | Servidor (`remoteOperations.paging`) |
+| Paginado | Cliente — navegación de páginas; **sin** selector de tamaño ni "Todos" en pager | Servidor (`remoteOperations.paging`) + selector + "Todos" |
 | Filter row grid | Cliente, sin API | Cliente, sin API (`filtering: false`) |
 | Complejidad hijo | Baja | Media |
+
+**Regla IA:** si no está claro, **preguntar** al usuario antes de elegir plantilla. Ver [PROMPT-MTTO.md](./PROMPT-MTTO.md) sección "Pregunta obligatoria — paginado servidor".
 
 **Nota A+P API:** paginación centralizada en `eFramework` (`GetPagedFromViewAsync`). Ver [ESTANDAR-EFRAMEWORK-PAGING.md](./ESTANDAR-EFRAMEWORK-PAGING.md). Legacy Selection sin migrar puede seguir en memoria C#.
 
@@ -93,6 +95,7 @@ protected override getMttoDataGrid() { return this.dataGrid ?? null; }
 ```
 
 - `filtering: false` → filter row **no** llama al API.
+- **Pager "Todos":** grid `resolveActivePageSize` (`'all'` → `0`) + `(pageSizeChange)` → `syncMttoPagedStorePagerSize` → `resolveMttoPagedLoadParams` con `lastPageAll` y `activePageSize` → API `PAGE_SIZE=0`.
 - `guardarMtto` / `rowRemovingMtto` → padre parchea `CustomStore`, sin reload.
 
 ---

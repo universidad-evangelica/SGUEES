@@ -56,7 +56,7 @@ export class CBaseComponent {
 
 	/** Paginación grid — el hijo puede sobreescribir pageSize y pageSizes. */
 	protected mttoPageSize = 20;
-	protected mttoPageSizes: (number | PagerPageSize)[] = [20, 50, 100, 200, 'all'];
+	protected mttoPageSizes: (number | PagerPageSize)[] = [20, 50, 100, 200];
 	/** false = A+ local; { paging, sorting, filtering } = A++ paginado servidor. */
 	protected mttoRemoteOperations: boolean | Record<string, unknown> = false;
 	/** Clave del grid para parchear models[] o CustomStore tras guardar/eliminar. */

@@ -78,5 +78,29 @@ namespace sguees.Controllers
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			return await _service.GetAllAsync(Data);
 		}
+
+		[HttpGet("GetCORR_CLASE_PARTIDA_CON_PARTIDA_APLICAR")]
+		[Authorize(Policy = "/con-partida-aplicar|R")]
+		public async Task<CResult> GetCORR_CLASE_PARTIDA_CON_PARTIDA_APLICAR([FromQuery] CON_CLASE_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_CLASE_PARTIDA_CON_PARTIDA_DESAPLICAR")]
+		[Authorize(Policy = "/con-partida-desaplicar|R")]
+		public async Task<CResult> GetCORR_CLASE_PARTIDA_CON_PARTIDA_DESAPLICAR([FromQuery] CON_CLASE_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_CLASE_PARTIDA_CON_PARTIDA_ANULAR")]
+		[Authorize(Policy = "/con-partida-anular|R")]
+		public async Task<CResult> GetCORR_CLASE_PARTIDA_CON_PARTIDA_ANULAR([FromQuery] CON_CLASE_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
 	}
 }

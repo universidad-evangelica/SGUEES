@@ -54,6 +54,30 @@ namespace sguees.Repositories
 			CResult objResultado = new();
 			try
 			{
+				var pKey = new List<CParameter>
+				{
+					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="ANIO_PERIODO",Value=Data.ANIO_PERIODO,DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="MES_PERIODO",Value=Data.MES_PERIODO,DbType=System.Data.DbType.Int32},
+				};
+
+				var readerExists = await objData.GetDataReader("V_" + _TableName, pKey);
+				var existing = new List<CON_PERIODO_CONTABLEView>().FromDataReader(readerExists).FirstOrDefault();
+				readerExists.Close();
+				readerExists = null;
+
+				if (existing != null)
+				{
+					objResultado.Data = null;
+					objResultado.Result = false;
+					objResultado.RowsAffected = 0;
+					objResultado.CodeHelper = 0;
+					objResultado.ErrorCode = 2627;
+					objResultado.ErrorMessage = $"Ya existe el período contable para el año {Data.ANIO_PERIODO} y el mes {Data.MES_PERIODO}.";
+					objResultado.ErrorSource = "C" + _TableName + ".Create";
+					return objResultado;
+				}
+
 				var p = new List<CParameter>
 				{
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
@@ -67,16 +91,25 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="ESTADO_PERIODO_PLA",Value=Data.ESTADO_PERIODO_PLA,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="ESTADO_PERIODO_COM",Value=Data.ESTADO_PERIODO_COM,DbType=System.Data.DbType.String},
 				};
-				var pWhere = new List<CParameter>
-				{
-					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
-				};
-				var reader = await objData.Insert(_TableName, p, "", pWhere);
+				var reader = await objData.Insert(_TableName, p, "", pKey);
 				var response = new List<CON_PERIODO_CONTABLEView>().FromDataReader(reader).FirstOrDefault();
+				reader.Close();
+				reader = null;
 				objResultado.Data = response; objResultado.Result = true; objResultado.RowsAffected = 1;
 				objResultado.CodeHelper = 0; objResultado.ErrorCode = 0; objResultado.ErrorMessage = ""; objResultado.ErrorSource = "";
 			}
-			catch (System.Exception e) { objResultado.Data = null; objResultado.Result = false; objResultado.CodeHelper = 0; objResultado.ErrorCode = -1; objResultado.ErrorMessage = e.Message; objResultado.ErrorSource += $"[{e.Source}]"; }
+			catch (System.Exception e)
+			{
+				var duplicateKey = IsDuplicateKeyError(e);
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = duplicateKey ? 2627 : -1;
+				objResultado.ErrorMessage = duplicateKey
+					? $"Ya existe el período contable para el año {Data.ANIO_PERIODO} y el mes {Data.MES_PERIODO}."
+					: e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
 			finally { objData.objConnection.Close(); }
 			return objResultado;
 		}
@@ -217,6 +250,14 @@ namespace sguees.Repositories
 			}
 			finally { objData.objConnection.Close(); }
 			return objResultado;
+		}
+
+		private static bool IsDuplicateKeyError(System.Exception e)
+		{
+			return e.Message.Contains("duplicate key", System.StringComparison.OrdinalIgnoreCase) ||
+				e.Message.Contains("duplicad", System.StringComparison.OrdinalIgnoreCase) ||
+				e.Message.Contains("PRIMARY KEY", System.StringComparison.OrdinalIgnoreCase) ||
+				e.Message.Contains("UNIQUE KEY", System.StringComparison.OrdinalIgnoreCase);
 		}
 	}
 }

@@ -108,6 +108,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   /** PK a restaurar al volver a browse (ej. tras cancelar Nuevo). */
   @Input() focusedRowKey: unknown = null;
   @Output() activarInactivar = new EventEmitter<void>();
+  @Output() pageSizeChange = new EventEmitter<number>();
 
   optRefresh: Record<string, unknown> = {};
   optAdd: Record<string, unknown> = {};
@@ -227,6 +228,11 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       typeof this.remoteOperations === 'object' &&
       (this.remoteOperations as Record<string, unknown>)['paging']
     );
+  }
+
+  /** A+: paginado solo en cliente — ocultar selector de tamaño / "Todos" (reservado a A+P). */
+  get effectiveShowPageSizeSelector(): boolean {
+    return this.isRemotePagingActive;
   }
 
   get isRemoteFilteringActive(): boolean {
@@ -682,6 +688,15 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.editClick.emit(e);
   }
 
+  /** DevExtreme usa 0 o 'all' para "Todos"; no usar || porque 0 es falsy. */
+  private resolveActivePageSize(value: unknown): number {
+    if (value === 'all') {
+      return 0;
+    }
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : this.pageSize;
+  }
+
   OnOptionChanged(e: any): void {
     const fullName = e?.fullName;
     const grid = e.component;
@@ -693,7 +708,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     const pageIndexChanged = fullName === 'paging.pageIndex' && e.value !== e.previousValue;
 
     if (pageSizeChanged) {
-      this.activePageSize = Number(e.value) || this.pageSize;
+      this.activePageSize = this.resolveActivePageSize(e.value);
+      this.pageSizeChange.emit(this.activePageSize);
       grid.pageIndex(0);
 
       if (this.pageSizeRepaintTimer) {

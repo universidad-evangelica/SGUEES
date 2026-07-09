@@ -202,6 +202,8 @@ Copiar en la descripción del Pull Request o usar como guía de revisión.
 - [ ] `CustomStore` en `configurarDataSource()` — sin filtros remotos en `load`
 - [ ] `@ViewChild(DataGridMttoComponent)` + `getMttoDataGrid()` implementado
 - [ ] `fillParam` incluye `PAGE`, `PAGE_SIZE`, `SORT_FIELD`, `SORT_DESC`
+- [ ] `(pageSizeChange)="onPagerPageSizeChange($event)"` + `syncMttoPagedStorePagerSize` en component
+- [ ] `resolveMttoPagedLoadParams(loadOptions, cacheState, keyExpr, dataGrid?.activePageSize)` en CustomStore load
 - [ ] API: `ReadPagedViewAsync` + `_AllowedSortFields` — ver `ESTANDAR-EFRAMEWORK-PAGING.md`
 - [ ] CRUD HTTP: [mtto-api-crud-http.md](./plantillas/mtto-api-crud-http.md) — `CData.Put` + `ApplyQueryKeys` en PUT; Delete solo `[FromQuery]`
 - [ ] Auditoría: `buildAuditGridColumns({ withDateTimeFilter: true })` al final de `getColumns()` si la vista trae auditoría

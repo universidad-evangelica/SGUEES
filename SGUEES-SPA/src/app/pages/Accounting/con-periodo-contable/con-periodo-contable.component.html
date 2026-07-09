@@ -6,6 +6,7 @@
 	(nuevo)="nuevo()"
 	(guardar)="guardar()"
 	(cancelar)="cancelar()"
+	(consultar)="consultar()"
 >
 </app-barra-data-mtto>
 <div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
@@ -17,13 +18,14 @@
 	[models]="models"
 	[columns]="columns"
 	[summary]="summary"
-	[keyExpr]="'ANIO_PERIODO'"
+	[keyExpr]="['ANIO_PERIODO', 'MES_PERIODO']"
 	[permiteEditar]="getPermiteEditar"
 	[permiteDele]="getPermiteDele"
 	(rowDblClick)="rowDblClick($event)"
 	(rowRemoving)="rowRemoving($event)"
 	(focusedRowChanged)="focusedRowChanged($event)"
 	(editClick)="editarClick($event)"
+	(refresh)="consultar()"
 >
 </app-data-grid-mtto>
 <dx-load-panel

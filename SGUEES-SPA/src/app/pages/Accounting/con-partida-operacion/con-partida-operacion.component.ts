@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { DxDataGridComponent } from 'devextreme-angular';
 import { take } from 'rxjs/operators';
 import { custom } from 'devextreme/ui/dialog';
 
@@ -8,6 +9,7 @@ import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
+import { environment } from 'src/environments/environment';
 import { ConPartidaService } from '../con-partida/con-partida.service';
 import { ConPartidaDetaService } from '../con-partida-deta/con-partida-deta.service';
 import { ConPartidaDocService } from '../con-partida/con-partida-doc.service';
@@ -19,12 +21,15 @@ import { ConPartidaOperacionModo, ConPartidaOperacionService } from './con-parti
 	styleUrls: ['./con-partida-operacion.component.scss'],
 })
 export class ConPartidaOperacionComponent extends CBaseComponent implements OnInit {
+	@ViewChild('gridPartidas', { static: false }) gridPartidas?: DxDataGridComponent;
+
 	modo: ConPartidaOperacionModo = 'aplicar';
 	models: any[] = [];
 	vFECHA_INICIAL: any;
 	vFECHA_FINAL: any;
 	sinRegistrosMsg = '';
 	btnImprimir = '';
+	private clasesPartida: any[] = [];
 
 	partidaConsulta: any = {};
 	detallesConsulta: any[] = [];
@@ -38,8 +43,6 @@ export class ConPartidaOperacionComponent extends CBaseComponent implements OnIn
 	partidaViewItems: any[] = [
 		{ dataField: 'ANIO_PERIODO', label: { text: 'Año' }, colSpan: 2, editorOptions: { readOnly: true } },
 		{ dataField: 'MES_PERIODO', label: { text: 'Mes' }, colSpan: 2, editorOptions: { readOnly: true } },
-		{ dataField: 'NOMBRE_CORTO_CLASE', label: { text: 'Clase' }, colSpan: 2, editorOptions: { readOnly: true } },
-		{ dataField: 'CORR_PARTIDA', label: { text: 'No. Partida' }, colSpan: 2, editorOptions: { readOnly: true } },
 		{
 			dataField: 'FECHA_PARTIDA',
 			label: { text: 'Fecha' },
@@ -47,24 +50,21 @@ export class ConPartidaOperacionComponent extends CBaseComponent implements OnIn
 			editorType: 'dxDateBox',
 			editorOptions: { readOnly: true, displayFormat: 'dd/MM/yyyy' },
 		},
-		{ dataField: 'NUMERO_DOCUMENTO', label: { text: 'No. Documento' }, colSpan: 2, editorOptions: { readOnly: true } },
+		{ dataField: 'NOMBRE_CLASE_PARTIDA', label: { text: 'Clase' }, colSpan: 2, editorOptions: { readOnly: true } },
 		{ dataField: 'NOMBRE_ESTADO_PARTIDA', label: { text: 'Estado' }, colSpan: 2, editorOptions: { readOnly: true } },
-		{ dataField: 'NOMBRE_PARTIDA', label: { text: 'Concepto' }, colSpan: 8, editorOptions: { readOnly: true } },
+		{ dataField: 'CORR_PARTIDA', label: { text: 'No. Partida' }, colSpan: 2, editorOptions: { readOnly: true } },
+		{ dataField: 'NUMERO_DOCUMENTO', label: { text: 'No. Documento' }, colSpan: 2, editorOptions: { readOnly: true } },
+		{ itemType: 'empty', colSpan: 2 },
 		{
-			dataField: 'MONTO_CARGO',
-			label: { text: 'Cargo' },
-			colSpan: 4,
-			editorType: 'dxNumberBox',
-			editorOptions: { readOnly: true, format: '#,##0.00' },
-		},
-		{
-			dataField: 'MONTO_ABONO',
-			label: { text: 'Abono' },
-			colSpan: 4,
-			editorType: 'dxNumberBox',
-			editorOptions: { readOnly: true, format: '#,##0.00' },
+			dataField: 'NOMBRE_PARTIDA',
+			label: { text: 'Concepto' },
+			colSpan: 8,
+			editorType: 'dxTextArea',
+			editorOptions: { readOnly: true, height: 64 },
 		},
 	];
+
+	readonly partidaViewColCountByScreen = { xs: 1, sm: 1, md: 4, lg: 8 };
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -76,7 +76,7 @@ export class ConPartidaOperacionComponent extends CBaseComponent implements OnIn
 		private sanitization: DomSanitizer
 	) {
 		super(appInfoService, router);
-		this.detalleColumns = this.detaService.getColumns();
+		this.detalleColumns = this.buildDetalleConsultaColumns();
 		this.docColumns = this.docService.getColumns();
 		this.imprimirPartidaDesdeFila = this.imprimirPartidaDesdeFila.bind(this);
 		this.gridPrintButtonVisible = this.gridPrintButtonVisible.bind(this);
@@ -106,7 +106,45 @@ export class ConPartidaOperacionComponent extends CBaseComponent implements OnIn
 		const today = this.appInfoService.getDate();
 		this.vFECHA_INICIAL = new Date(today.getFullYear(), today.getMonth(), 1);
 		this.vFECHA_FINAL = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+		this.cargarClasesPartida();
 		this.consultar();
+	}
+
+	private cargarClasesPartida(): void {
+		this.appInfoService
+			.getLookUp(this.getClaseLookupOpcion(), 'CON_CLASE_PARTIDA', 'GetCORR_CLASE_PARTIDA', undefined, environment.UrlCONTAAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.clasesPartida = response.Data || [];
+						this.enrichModelsConClase();
+					}
+				},
+			});
+	}
+
+	private getClaseLookupOpcion(): string {
+		if (this.modo === 'aplicar') {
+			return 'CON_PARTIDA_APLICAR';
+		}
+		if (this.modo === 'desaplicar') {
+			return 'CON_PARTIDA_DESAPLICAR';
+		}
+		return 'CON_PARTIDA_ANULAR';
+	}
+
+	private enrichModelsConClase(): void {
+		if (!this.models?.length) {
+			return;
+		}
+		this.models = this.models.map((row: any) => ({
+			...row,
+			NOMBRE_CLASE_PARTIDA: this.resolveNombreClasePartida(row),
+		}));
+		if (this.partidaConsulta?.CORR_PARTIDA) {
+			this.partidaConsulta = this.buildPartidaConsulta(this.partidaConsulta);
+		}
 	}
 
 	private resolveRouteData(): Record<string, unknown> {
@@ -151,7 +189,10 @@ export class ConPartidaOperacionComponent extends CBaseComponent implements OnIn
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
-						this.models = response.Data || [];
+						this.models = (response.Data || []).map((row: any) => ({
+							...row,
+							NOMBRE_CLASE_PARTIDA: this.resolveNombreClasePartida(row),
+						}));
 					} else {
 						this.models = [];
 						this.notifyFx(response.ErrorMessage || 'No se pudo consultar las partidas', NotifyType.Error);
@@ -179,8 +220,63 @@ export class ConPartidaOperacionComponent extends CBaseComponent implements OnIn
 			return;
 		}
 		this.model = row;
-		this.partidaConsulta = { ...row };
+		this.partidaConsulta = this.buildPartidaConsulta(row);
 		this.cargarDetalleYDocumentos(row);
+	}
+
+	private buildPartidaConsulta(row: any): any {
+		const estadoPorCodigo: Record<string, string> = {
+			DI: 'DIGITADO',
+			AP: 'APLICADO',
+			AN: 'ANULADO',
+		};
+
+		return {
+			...row,
+			NOMBRE_CLASE_PARTIDA: this.resolveNombreClasePartida(row),
+			NOMBRE_ESTADO_PARTIDA:
+				row.NOMBRE_ESTADO_PARTIDA || estadoPorCodigo[row.ESTADO_PARTIDA] || row.ESTADO_PARTIDA || '',
+		};
+	}
+
+	private resolveNombreClasePartida(row: any): string {
+		const clase = this.clasesPartida.find(
+			(item: any) => Number(item.CORR_CLASE_PARTIDA) === Number(row.CORR_CLASE_PARTIDA)
+		);
+		if (clase?.NOMBRE_CLASE_PARTIDA) {
+			return clase.NOMBRE_CLASE_PARTIDA;
+		}
+
+		const nombre = (row.NOMBRE_CLASE_PARTIDA || '').trim();
+		if (nombre && nombre !== row.NOMBRE_CORTO_CLASE) {
+			return nombre;
+		}
+
+		return row.NOMBRE_CORTO_CLASE || '';
+	}
+
+	private buildDetalleConsultaColumns(): any[] {
+		return [
+			{ dataField: 'CORR_PARTIDA_DETA', caption: 'Línea', width: 70 },
+			{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta', width: 120 },
+			{ dataField: 'NOMBRE_CUENTA', caption: 'Nombre Cuenta', minWidth: 220 },
+			{ dataField: 'NOMBRE_CENTRO', caption: 'Centro Costo', minWidth: 180 },
+			{ dataField: 'NOMBRE_TRAN', caption: 'Concepto', minWidth: 240 },
+			{
+				dataField: 'MONTO_CARGO',
+				caption: 'Cargo',
+				width: 110,
+				format: '#,##0.00',
+				alignment: 'right',
+			},
+			{
+				dataField: 'MONTO_ABONO',
+				caption: 'Abono',
+				width: 110,
+				format: '#,##0.00',
+				alignment: 'right',
+			},
+		];
 	}
 
 	volverAlListado(): void {
@@ -296,7 +392,8 @@ export class ConPartidaOperacionComponent extends CBaseComponent implements OnIn
 		});
 	}
 
-	ejecutarOperacion() {
+	async ejecutarOperacion() {
+		await this.gridPartidas?.instance?.saveEditData();
 		const selectedModels = this.models.filter((y: { SELECCION: boolean }) => y.SELECCION === true);
 		if (selectedModels.length === 0) {
 			this.notifyFx('Debe seleccionar al menos una partida', NotifyType.Error);
@@ -320,12 +417,12 @@ export class ConPartidaOperacionComponent extends CBaseComponent implements OnIn
 										if (response.Result) {
 											this.notifyFx(`${accion} con éxito`, NotifyType.Success);
 										} else {
-											this.notifyFx(response.ErrorMessage, NotifyType.Error);
+											this.notifyApiResponse(response);
 										}
 										this.consultar();
 									},
 									error: (error: any) => {
-										this.notifyFx(error, NotifyType.Error);
+										this.notifyApiError(error);
 									},
 								});
 						});

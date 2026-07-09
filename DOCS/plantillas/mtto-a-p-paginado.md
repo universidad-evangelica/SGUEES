@@ -1,6 +1,6 @@
 # Plantilla mtto A+P — Paginado servidor (CustomStore)
 
-**Versión:** 1.3 — julio 2026  
+**Versión:** 1.4 — julio 2026  
 **Referencia viva (piloto):** `SelectionHiring/sc-impacto-economico`  
 **Guía equipo:** [../GUIA-EQUIPO-MTTO.md](../GUIA-EQUIPO-MTTO.md)  
 **Contrato HTTP PUT/DELETE:** [mtto-api-crud-http.md](./mtto-api-crud-http.md)  
@@ -45,6 +45,8 @@ protected override mttoGridKeyExpr = 'CORR_XXX';
 ```
 
 `filtering: false` → **filter row del grid es solo en cliente** (sobre la página cargada), **sin petición al API**.
+
+Con `remoteOperations.paging: true`, `data-grid-mtto` muestra el **selector de tamaño de página** y la opción **"Todos"** (`allowedPageSizes` puede incluir `'all'`). En **A+** ese selector permanece oculto.
 
 ---
 
@@ -115,34 +117,51 @@ fillParam(
 
 `filtering: false` — el filter row es **solo en cliente** (página cargada). DevExtreme puede llamar `load` al filtrar; usar helper `mtto-paged-store.helpers.ts` para no repetir `GetAll`.
 
+**Pager "Todos":** DevExtreme puede enviar `'all'` o `0`. El grid compartido (`data-grid-mtto`) normaliza a `0` y emite `pageSizeChange`; la pantalla sincroniza caché **antes** del `load` vía `syncMttoPagedStorePagerSize`.
+
 ```typescript
 import {
   createMttoPagedStoreCacheState,
   invalidateMttoPagedStoreCache,
   rememberMttoPagedServerCache,
   resolveMttoPagedLoadParams,
+  syncMttoPagedStorePagerSize,
   tryGetMttoPagedServerCache,
 } from 'src/app/shared/mtto/mtto-paged-store.helpers';
 
 private readonly pagedStoreCacheState = createMttoPagedStoreCacheState(this.mttoPageSize);
+private pagedStoreInflightKey: string | null = null;
+private pagedStoreInflightPromise: Promise<MttoPagedStorePageResult> | null = null;
 
 consultar(resetPage = true): void {
   invalidateMttoPagedStoreCache(this.pagedStoreCacheState);
+  this.pagedStoreInflightKey = null;
+  this.pagedStoreInflightPromise = null;
   this.refrescarGridMtto(resetPage);
+}
+
+onPagerPageSizeChange(pageSize: number): void {
+  syncMttoPagedStorePagerSize(this.pagedStoreCacheState, pageSize);
+  this.pagedStoreInflightKey = null;
+  this.pagedStoreInflightPromise = null;
 }
 
 load: async (loadOptions) => {
   const loadGeneration = this.pagedStoreCacheState.loadGeneration;
   const { page, pageSize, sortField, sortDesc, serverKey } = resolveMttoPagedLoadParams(
     loadOptions,
-    this.pagedStoreCacheState.lastPageSize
+    this.pagedStoreCacheState,
+    this.mttoGridKeyExpr,
+    this.dataGrid?.activePageSize
   );
   const cached = tryGetMttoPagedServerCache(serverKey, this.pagedStoreCacheState);
   if (cached) return cached;
-  // ... GetAll ...
+  // ... GetAll con fillParam(0, page, pageSize, sortField, sortDesc) ...
   rememberMttoPagedServerCache(serverKey, result, this.pagedStoreCacheState, pageSize);
 },
 ```
+
+**Grid compartido (`data-grid-mtto`):** `resolveActivePageSize` convierte `'all'` → `0` y respeta `0` (no usar `||` con pageSize). Emite `@Output() pageSizeChange` al cambiar el pager.
 
 **Prohibido** en load: `FILTER_ROW_JSON`, `parseRemoteGridFilters`, `GetDistinctValues`, `[headerFilterLoader]` remoto.
 
@@ -160,6 +179,7 @@ load: async (loadOptions) => {
   [pageSize]="mttoPageSize"
   [allowedPageSizes]="mttoPageSizes"
   (refresh)="consultar()"
+  (pageSizeChange)="onPagerPageSizeChange($event)"
   ...
 />
 ```
@@ -249,6 +269,7 @@ Piloto: `sc-impacto-economico`.
 - [ ] `getMttoDataGrid()` implementado
 - [ ] `mttoGridKeyExpr` definido
 - [ ] CustomStore sin filtros remotos en load
+- [ ] `(pageSizeChange)="onPagerPageSizeChange($event)"` + `syncMttoPagedStorePagerSize` + `resolveMttoPagedLoadParams` con `cacheState` y `dataGrid?.activePageSize`
 - [ ] `guardarMtto` / `rowRemovingMtto` sin reload manual
 - [ ] API: `ReadPagedViewAsync` + whitelist sort — ver `ESTANDAR-EFRAMEWORK-PAGING.md`
 - [ ] CRUD HTTP: [mtto-api-crud-http.md](./mtto-api-crud-http.md) (`CData.Put` + `ApplyQueryKeys`; Delete solo query)

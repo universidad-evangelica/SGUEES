@@ -15,6 +15,8 @@ export interface MttoPagedStoreCacheState {
 	pageCache: MttoPagedStorePageCache | null;
 	/** Último pageSize efectivo — DevExtreme a veces omite take al filtrar. */
 	lastPageSize: number;
+	/** true cuando el pager está en "Todos" (PAGE_SIZE=0 en API). */
+	lastPageAll: boolean;
 }
 
 export function createMttoPagedStoreCacheState(defaultPageSize = 20): MttoPagedStoreCacheState {
@@ -23,6 +25,7 @@ export function createMttoPagedStoreCacheState(defaultPageSize = 20): MttoPagedS
 		cacheGeneration: -1,
 		pageCache: null,
 		lastPageSize: defaultPageSize,
+		lastPageAll: false,
 	};
 }
 
@@ -30,6 +33,22 @@ export function invalidateMttoPagedStoreCache(state: MttoPagedStoreCacheState): 
 	state.loadGeneration += 1;
 	state.pageCache = null;
 	state.cacheGeneration = -1;
+}
+
+/** Sincroniza selección del pager antes del load (evita pedir PAGE_SIZE anterior al elegir "Todos"). */
+export function syncMttoPagedStorePagerSize(
+	state: MttoPagedStoreCacheState,
+	pageSize: number
+): void {
+	const nextPageAll = pageSize === 0;
+	const changed = state.lastPageSize !== pageSize || state.lastPageAll !== nextPageAll;
+
+	state.lastPageSize = pageSize;
+	state.lastPageAll = nextPageAll;
+
+	if (changed) {
+		invalidateMttoPagedStoreCache(state);
+	}
 }
 
 export function buildMttoPagedServerKey(
@@ -47,8 +66,9 @@ export function resolveMttoPagedLoadParams(
 		take?: number;
 		sort?: Array<{ selector?: string; desc?: boolean }>;
 	},
-	fallbackPageSize = 20,
-	defaultSortField = ''
+	cacheState: MttoPagedStoreCacheState,
+	defaultSortField = '',
+	gridPageSize?: number
 ): {
 	page: number;
 	pageSize: number;
@@ -57,8 +77,17 @@ export function resolveMttoPagedLoadParams(
 	serverKey: string;
 } {
 	const requestedTake = loadOptions.take;
-	const pageSize =
-		requestedTake === undefined || requestedTake === null ? fallbackPageSize : requestedTake;
+	let pageSize =
+		requestedTake === undefined || requestedTake === null
+			? cacheState.lastPageAll
+				? 0
+				: cacheState.lastPageSize
+			: requestedTake;
+
+	if (gridPageSize === 0) {
+		pageSize = 0;
+	}
+
 	const skipRows = loadOptions.skip || 0;
 	const page = pageSize > 0 ? Math.floor(skipRows / pageSize) + 1 : 1;
 	const sort = getMttoGridSort(loadOptions.sort);
@@ -121,5 +150,6 @@ export function rememberMttoPagedServerCache(
 	state.cacheGeneration = state.loadGeneration;
 	if (pageSize !== undefined && pageSize !== null) {
 		state.lastPageSize = pageSize;
+		state.lastPageAll = pageSize === 0;
 	}
 }

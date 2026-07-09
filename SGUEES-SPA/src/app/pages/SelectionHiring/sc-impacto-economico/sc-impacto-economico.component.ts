@@ -15,6 +15,7 @@ import {
 	MttoPagedStorePageResult,
 	rememberMttoPagedServerCache,
 	resolveMttoPagedLoadParams,
+	syncMttoPagedStorePagerSize,
 	tryGetMttoPagedServerCache,
 } from 'src/app/shared/mtto/mtto-paged-store.helpers';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
@@ -127,6 +128,12 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		this.refrescarGridMtto(resetPage);
 	}
 
+	onPagerPageSizeChange(pageSize: number): void {
+		syncMttoPagedStorePagerSize(this.pagedStoreCacheState, pageSize);
+		this.pagedStoreInflightKey = null;
+		this.pagedStoreInflightPromise = null;
+	}
+
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -189,8 +196,9 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 				try {
 					const { page, pageSize, sortField, sortDesc, serverKey } = resolveMttoPagedLoadParams(
 						loadOptions,
-						this.pagedStoreCacheState.lastPageSize,
-						this.mttoGridKeyExpr
+						this.pagedStoreCacheState,
+						this.mttoGridKeyExpr,
+						this.dataGrid?.activePageSize
 					);
 
 					const cached = tryGetMttoPagedServerCache(serverKey, this.pagedStoreCacheState);

@@ -49,6 +49,7 @@
 	[columnHidingEnabled]="false"
 	[exportFileName]="'DescriptorImpactoEconomico'"
 	(refresh)="consultar()"
+	(pageSizeChange)="onPagerPageSizeChange($event)"
 	(add)="nuevo()"
 	(activarInactivar)="activar_inactivar()"
 	(rowDblClick)="rowDblClick($event)"
