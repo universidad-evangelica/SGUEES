@@ -63,6 +63,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	@ViewChild('gridKpis', { static: false }) gridKpis?: DxDataGridComponent;
 	@ViewChild('gridEducacion', { static: false }) gridEducacion?: DxDataGridComponent;
 	@ViewChild('gridExperiencia', { static: false }) gridExperiencia?: DxDataGridComponent;
+	@ViewChild('gridActividades', { static: false }) gridActividades?: DxDataGridComponent;
 
 	protected override etiquetaRegistro = 'el descriptor de puesto';
 	protected override requiereEmpresaSesion = true;
@@ -105,6 +106,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	kpisEditando = false;
 	educacionEditando = false;
 	experienciaEditando = false;
+	actividadesEditando = false;
 	perfil: ScDescriptorPerfilPuesto = { ...PERFIL_PUESTO_DEFAULT };
 	perfilSubTabIndex = 0;
 	readonly perfilSexoOptions = PERFIL_SEXO_OPTIONS;
@@ -126,7 +128,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private funcionesTabsDirty = false;
 	private sincronizandoHeader = false;
 	private funcionPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
-	private actividadPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	private kpiPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	private perfilPersistTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -674,7 +675,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	abrirActividades(funcion: ScDescriptorFuncion): void {
-		if (!this.esFormatoExtensa || this.readOnly || !funcion) {
+		if (!this.esFormatoExtensa || !funcion) {
 			return;
 		}
 
@@ -684,6 +685,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 
 		this.funcionActividadesSeleccionada = funcion;
+		this.actividadesEditando = false;
 		this.actividadesPopupVisible = true;
 		this.cargarActividadesPopup(funcion);
 	}
@@ -692,77 +694,93 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actividadesPopupVisible = false;
 		this.funcionActividadesSeleccionada = null;
 		this.actividadesPopup = [];
+		this.actividadesEditando = false;
 	}
 
 	agregarActividad(): void {
-		const funcion = this.funcionActividadesSeleccionada;
-		const corrDescriptor = this.obtenerCorrDescriptor();
-		if (!funcion?.CORR_FUNCION || corrDescriptor <= 0) {
+		if (this.readOnly || this.actividadesEditando || !this.funcionActividadesSeleccionada?.CORR_FUNCION) {
 			return;
 		}
-
-		this.service
-			.crearActividad(corrDescriptor, funcion.CORR_FUNCION)
-			.pipe(take(1))
-			.subscribe({
-				next: (response) => {
-					if (!response?.Result) {
-						this.notifyApiResponse(response);
-						return;
-					}
-
-					const saved = this.extraerActividadGuardada(response);
-					this.actividadesPopup.push({
-						CORR_FUNCION: funcion.CORR_FUNCION,
-						CORR_ACTIVIDAD: saved.CORR_ACTIVIDAD,
-						NOMBRE_ACTIVIDAD: saved.NOMBRE_ACTIVIDAD ?? '',
-					});
-					this.actualizarContadorActividades(funcion);
-				},
-				error: (error) => this.notifyApiError(error),
-			});
+		this.gridActividades?.instance.addRow();
+		this.actividadesEditando = true;
 	}
 
-	eliminarActividad(actividad: ScDescriptorFuncionActividad): void {
-		const funcion = this.funcionActividadesSeleccionada;
-		const corrDescriptor = this.obtenerCorrDescriptor();
-		if (!actividad || !funcion) {
+	editarActividadClick = (e: any): void => {
+		if (this.readOnly || this.actividadesEditando) {
 			return;
 		}
+		e.component.editRow(e.row.rowIndex);
+		this.actividadesEditando = true;
+	};
 
-		if (!actividad.CORR_ACTIVIDAD || actividad.CORR_ACTIVIDAD <= 0) {
-			this.actividadesPopup = this.actividadesPopup.filter((item) => item !== actividad);
-			this.actualizarContadorActividades(funcion);
+	actividadEditButtonVisible = (e: any): boolean => {
+		return !this.readOnly && !this.actividadesEditando && !e.row?.isEditing;
+	};
+
+	actividadDeleteButtonVisible = (e: any): boolean => {
+		return !this.readOnly && !this.actividadesEditando && !e.row?.isEditing;
+	};
+
+	guardarActividadEditada(): void {
+		const grid = this.gridActividades?.instance;
+		if (!grid || !this.actividadesEditando) {
+			this.notifyFx('No hay una linea en edicion', NotifyType.Warning);
 			return;
 		}
-
-		this.service
-			.eliminarActividad(corrDescriptor, funcion.CORR_FUNCION, actividad.CORR_ACTIVIDAD)
-			.pipe(take(1))
-			.subscribe({
-				next: (response) => {
-					if (!response?.Result) {
-						this.notifyApiResponse(response);
-						return;
-					}
-
-					this.actividadesPopup = this.actividadesPopup.filter(
-						(item) => item.CORR_ACTIVIDAD !== actividad.CORR_ACTIVIDAD
-					);
-					this.actualizarContadorActividades(funcion);
-				},
-				error: (error) => this.notifyApiError(error),
-			});
+		grid.saveEditData();
 	}
 
-	onActividadChanged(e: any, actividad: ScDescriptorFuncionActividad): void {
-		const funcion = this.funcionActividadesSeleccionada;
-		if (!actividad || !funcion || this.readOnly) {
+	cancelarActividadEditada(): void {
+		const grid = this.gridActividades?.instance;
+		if (!grid?.hasEditData()) {
+			this.actividadesEditando = false;
+			this.refrescarGridActividades();
 			return;
 		}
+		grid.cancelEditData();
+	}
 
-		actividad.NOMBRE_ACTIVIDAD = `${e?.value ?? ''}`;
-		this.programarPersistirActividad(actividad, funcion);
+	actividadInitNewRow(e: any): void {
+		const funcion = this.funcionActividadesSeleccionada;
+		e.data.CORR_FUNCION = funcion?.CORR_FUNCION ?? 0;
+		e.data.CORR_ACTIVIDAD = 0;
+		e.data.NOMBRE_ACTIVIDAD = '';
+		e.data._clientKey = this.crearClientKey('act');
+	}
+
+	onActividadEditingStart(_e: any): void {
+		this.actividadesEditando = true;
+	}
+
+	onActividadSaved(_e: any): void {
+		this.actividadesEditando = false;
+		this.refrescarGridActividades();
+	}
+
+	onActividadEditCanceled(_e: any): void {
+		this.actividadesEditando = false;
+		this.refrescarGridActividades();
+	}
+
+	actividadRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!(data.NOMBRE_ACTIVIDAD ?? '').trim()) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar el nombre de la actividad.';
+		}
+	}
+
+	actividadRowInserting(e: any): void {
+		e.cancel = this.persistirActividadDesdeGrid(e.data, true);
+	}
+
+	actividadRowUpdating(e: any): void {
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = this.persistirActividadDesdeGrid(data, false);
+	}
+
+	actividadRowRemoving(e: any): void {
+		e.cancel = this.eliminarActividadDesdeGrid(e.data);
 	}
 
 	get actividadesPopupVisibles(): ScDescriptorFuncionActividad[] {
@@ -1397,6 +1415,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || !funcion?.CORR_FUNCION) {
 			this.actividadesPopup = [];
+			this.actividadesEditando = false;
 			return;
 		}
 
@@ -1406,11 +1425,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			.subscribe({
 				next: (response: any) => {
 					if (response?.Result) {
+						this.actividadesEditando = false;
 						this.actividadesPopup = (response.Data ?? []).map((item: ScDescriptorFuncionActividad) => ({
 							CORR_FUNCION: item.CORR_FUNCION,
 							CORR_ACTIVIDAD: item.CORR_ACTIVIDAD,
 							NOMBRE_ACTIVIDAD: item.NOMBRE_ACTIVIDAD ?? '',
+							_clientKey: item.CORR_ACTIVIDAD || this.crearClientKey('act'),
 						}));
+						this.actualizarContadorActividades(funcion);
 					}
 				},
 				error: (error) => this.notifyApiError(error),
@@ -1855,6 +1877,78 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		setTimeout(() => this.gridExperiencia?.instance?.refresh());
 	}
 
+	private refrescarGridActividades(): void {
+		setTimeout(() => this.gridActividades?.instance?.refresh());
+	}
+
+	private persistirActividadDesdeGrid(data: ScDescriptorFuncionActividad, esNuevo: boolean): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const funcion = this.funcionActividadesSeleccionada;
+		if (!funcion?.CORR_FUNCION || funcion.CORR_FUNCION <= 0) {
+			this.notifyFx('Debe guardar la funcion clave antes de registrar actividades.', NotifyType.Warning);
+			return Promise.resolve(true);
+		}
+
+		const payload: ScDescriptorFuncionActividad = {
+			...data,
+			CORR_FUNCION: funcion.CORR_FUNCION,
+			CORR_ACTIVIDAD: esNuevo ? 0 : Number(data.CORR_ACTIVIDAD) || 0,
+			NOMBRE_ACTIVIDAD: (data.NOMBRE_ACTIVIDAD ?? '').trim(),
+		};
+
+		return new Promise((resolve) => {
+			this.service
+				.persistirActividad(corrDescriptor, funcion.CORR_FUNCION, payload)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						this.actividadesEditando = false;
+						this.cargarActividadesPopup(funcion);
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private eliminarActividadDesdeGrid(data: ScDescriptorFuncionActividad): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const funcion = this.funcionActividadesSeleccionada;
+		const corrActividad = Number(data?.CORR_ACTIVIDAD);
+		if (!funcion?.CORR_FUNCION || !corrActividad || corrActividad <= 0) {
+			return Promise.resolve(false);
+		}
+
+		return new Promise((resolve) => {
+			this.service
+				.eliminarActividad(corrDescriptor, funcion.CORR_FUNCION, corrActividad)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						setTimeout(() => this.actualizarContadorActividades(funcion));
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
 	private asegurarPerfilParaDetalle(onReady: () => void): void {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
@@ -2279,51 +2373,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.resetearFuncionesTabsDirty();
 					this.notifyApiError(error);
 				},
-			});
-	}
-
-	private programarPersistirActividad(
-		actividad: ScDescriptorFuncionActividad,
-		funcion: ScDescriptorFuncion
-	): void {
-		if (!actividad?.CORR_ACTIVIDAD || actividad.CORR_ACTIVIDAD <= 0 || !funcion?.CORR_FUNCION) {
-			return;
-		}
-
-		const key = `${funcion.CORR_FUNCION}-${actividad.CORR_ACTIVIDAD}`;
-		const prev = this.actividadPersistTimers.get(key);
-		if (prev) {
-			clearTimeout(prev);
-		}
-
-		this.actividadPersistTimers.set(
-			key,
-			setTimeout(() => {
-				this.actividadPersistTimers.delete(key);
-				this.persistirActividadEnLinea(actividad, funcion);
-			}, 500)
-		);
-	}
-
-	private persistirActividadEnLinea(
-		actividad: ScDescriptorFuncionActividad,
-		funcion: ScDescriptorFuncion
-	): void {
-		const corrDescriptor = this.obtenerCorrDescriptor();
-		if (!corrDescriptor || !funcion?.CORR_FUNCION) {
-			return;
-		}
-
-		this.service
-			.persistirActividad(corrDescriptor, funcion.CORR_FUNCION, actividad)
-			.pipe(take(1))
-			.subscribe({
-				next: (response) => {
-					if (!response?.Result) {
-						this.notifyApiResponse(response);
-					}
-				},
-				error: (error) => this.notifyApiError(error),
 			});
 	}
 

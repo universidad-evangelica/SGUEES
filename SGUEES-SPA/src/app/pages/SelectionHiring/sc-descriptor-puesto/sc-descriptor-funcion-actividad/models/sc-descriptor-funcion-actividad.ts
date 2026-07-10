@@ -5,4 +5,5 @@ export interface ScDescriptorFuncionActividad {
 	CORR_ACTIVIDAD: number;
 	NOMBRE_ACTIVIDAD: string;
 	_marcadaEliminar?: boolean;
+	_clientKey?: string | number;
 }
