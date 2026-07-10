@@ -30,8 +30,11 @@ import {
 	ScDisponibilidadHorarioLookup,
 	ScTipoModalidadLookup,
 } from './sc-descriptor-perfil-puesto/models/sc-descriptor-perfil-puesto';
-import { DescriptorSubTab, MockPuesto, MockUnidad, ScDescriptorPuesto } from './models/sc-descriptor-puesto';
+import { ScPerfilPuestoEducacion } from './sc-perfil-puesto-educacion/models/sc-perfil-puesto-educacion';
+import { ScPerfilPuestoExperiencia } from './sc-perfil-puesto-experiencia/models/sc-perfil-puesto-experiencia';
+import { MockPuesto, MockUnidad, ScDescriptorPuesto } from './models/sc-descriptor-puesto';
 import {
+	EDUCACION_TIPO_REQUERIDO_OPTIONS,
 	FORMATO_CORTA,
 	FORMATO_EXTENSA,
 	MOCK_PUESTOS,
@@ -40,9 +43,6 @@ import {
 	PERFIL_LICENCIA_OPTIONS,
 	PERFIL_PUESTO_DEFAULT,
 	PERFIL_SEXO_OPTIONS,
-	PERFIL_SUB_TABS,
-	SUB_TABS_CORTA,
-	SUB_TABS_EXTENSA,
 	TIPO_FUNCION_CLAVE,
 	TIPO_FUNCION_SECUNDARIA,
 } from './sc-descriptor-puesto.mock-data';
@@ -61,6 +61,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	@ViewChild('gridFuncionesClave', { static: false }) gridFuncionesClave?: DxDataGridComponent;
 	@ViewChild('gridFuncionesSecundarias', { static: false }) gridFuncionesSecundarias?: DxDataGridComponent;
 	@ViewChild('gridKpis', { static: false }) gridKpis?: DxDataGridComponent;
+	@ViewChild('gridEducacion', { static: false }) gridEducacion?: DxDataGridComponent;
+	@ViewChild('gridExperiencia', { static: false }) gridExperiencia?: DxDataGridComponent;
 
 	protected override etiquetaRegistro = 'el descriptor de puesto';
 	protected override requiereEmpresaSesion = true;
@@ -87,7 +89,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ dataField: 'RESPONSABLE', caption: 'Nombre', width: 220 },
 		{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260 },
 	];
-	subTabsVisibles: DescriptorSubTab[] = [...SUB_TABS_CORTA];
 
 	headerItems: any[] = [];
 	columnsTabBitacora: any[] = [];
@@ -97,15 +98,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	funcionesClave: ScDescriptorFuncion[] = [];
 	funcionesSecundarias: ScDescriptorFuncion[] = [];
 	kpis: ScDescriptorKpiFuncion[] = [];
+	educaciones: ScPerfilPuestoEducacion[] = [];
+	experiencias: ScPerfilPuestoExperiencia[] = [];
 	funcionesClaveEditando = false;
 	funcionesSecundariasEditando = false;
 	kpisEditando = false;
+	educacionEditando = false;
+	experienciaEditando = false;
 	perfil: ScDescriptorPerfilPuesto = { ...PERFIL_PUESTO_DEFAULT };
 	perfilSubTabIndex = 0;
-	readonly perfilSubTabs = PERFIL_SUB_TABS;
 	readonly perfilSexoOptions = PERFIL_SEXO_OPTIONS;
 	readonly perfilEstadoFamiliarOptions = PERFIL_ESTADO_FAMILIAR_OPTIONS;
 	readonly perfilLicenciaOptions = PERFIL_LICENCIA_OPTIONS;
+	readonly educacionTipoRequeridoOptions = EDUCACION_TIPO_REQUERIDO_OPTIONS;
 	actividadesPopupVisible = false;
 	actividadesPopupFullScreen = false;
 	funcionActividadesSeleccionada: ScDescriptorFuncion | null = null;
@@ -114,6 +119,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private funcionesClaveLoadSeq = 0;
 	private funcionesSecundariasLoadSeq = 0;
 	private kpisLoadSeq = 0;
+	private educacionLoadSeq = 0;
+	private experienciaLoadSeq = 0;
 	private perfilLoadSeq = 0;
 	private perfilExiste = false;
 	private funcionesTabsDirty = false;
@@ -399,7 +406,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.limpiarEstadoValidacionHeader();
 		super.nuevo();
 		this.limpiarDatosTabs();
-		this.actualizarSubTabs();
 		this.actualizarPuestosPorUnidad(null);
 		setTimeout(() => this.syncHeaderForm());
 	}
@@ -410,7 +416,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		super.editarClick(e);
 		this.resetearFuncionesTabsDirty();
 		this.cargarDatosTabs();
-		this.actualizarSubTabs();
 		this.actualizarPuestosPorUnidad(this.model.CORR_UNIDAD);
 		if (this.model.CORR_PUESTO) {
 			this.aplicarDatosPuestoSeleccionado(this.model.CORR_PUESTO, false);
@@ -428,7 +433,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		super.rowDblClick(e);
 		this.resetearFuncionesTabsDirty();
 		this.cargarDatosTabs();
-		this.actualizarSubTabs();
 		this.actualizarPuestosPorUnidad(this.model.CORR_UNIDAD);
 		setTimeout(() => {
 			this.syncHeaderForm();
@@ -451,9 +455,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.funcionesClave = [];
 		this.funcionesSecundarias = [];
 		this.kpis = [];
+		this.educaciones = [];
+		this.experiencias = [];
 		this.resetearEdicionFuncionesClave();
 		this.resetearEdicionFuncionesSecundarias();
 		this.resetearEdicionKpis();
+		this.resetearEdicionEducacion();
+		this.resetearEdicionExperiencia();
 		this.limpiarPerfil();
 		this.resetearFuncionesTabsDirty();
 		this.cerrarActividadesPopup();
@@ -863,6 +871,185 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	agregarEducacion(): void {
+		if (this.readOnly || this.educacionEditando || !this.requiereDescriptorGuardado()) {
+			return;
+		}
+
+		this.asegurarPerfilParaDetalle(() => {
+			this.gridEducacion?.instance.addRow();
+			this.educacionEditando = true;
+		});
+	}
+
+	editarEducacionClick = (e: any): void => {
+		if (this.readOnly || this.educacionEditando) {
+			return;
+		}
+		e.component.editRow(e.row.rowIndex);
+		this.educacionEditando = true;
+	};
+
+	educacionEditButtonVisible = (e: any): boolean => {
+		return !this.readOnly && !this.educacionEditando && !e.row?.isEditing;
+	};
+
+	educacionDeleteButtonVisible = (e: any): boolean => {
+		return !this.readOnly && !this.educacionEditando && !e.row?.isEditing;
+	};
+
+	guardarEducacionEditada(): void {
+		const grid = this.gridEducacion?.instance;
+		if (!grid || !this.educacionEditando) {
+			this.notifyFx('No hay una linea en edicion', NotifyType.Warning);
+			return;
+		}
+		grid.saveEditData();
+	}
+
+	cancelarEducacionEditada(): void {
+		const grid = this.gridEducacion?.instance;
+		if (!grid?.hasEditData()) {
+			this.educacionEditando = false;
+			this.refrescarGridEducacion();
+			return;
+		}
+		grid.cancelEditData();
+	}
+
+	educacionInitNewRow(e: any): void {
+		e.data.CORR_EDUCACION = 0;
+		e.data.CORR_PERFIL_PUESTO = Number(this.perfil?.CORR_PERFIL_PUESTO) || 0;
+		e.data.REQUISITO = '';
+		e.data.ESPECIFICACIONES = '';
+		e.data.TIPO_REQUERIDO = 'SI';
+		e.data._clientKey = this.crearClientKey('edu');
+	}
+
+	onEducacionEditingStart(_e: any): void {
+		this.educacionEditando = true;
+	}
+
+	onEducacionSaved(_e: any): void {
+		this.educacionEditando = false;
+		this.refrescarGridEducacion();
+	}
+
+	onEducacionEditCanceled(_e: any): void {
+		this.educacionEditando = false;
+		this.refrescarGridEducacion();
+	}
+
+	educacionRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!(data.REQUISITO ?? '').trim()) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar el requisito.';
+		}
+	}
+
+	educacionRowInserting(e: any): void {
+		e.cancel = this.persistirEducacionDesdeGrid(e.data, true);
+	}
+
+	educacionRowUpdating(e: any): void {
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = this.persistirEducacionDesdeGrid(data, false);
+	}
+
+	educacionRowRemoving(e: any): void {
+		e.cancel = this.eliminarEducacionDesdeGrid(e.data);
+	}
+
+	agregarExperiencia(): void {
+		if (this.readOnly || this.experienciaEditando || !this.requiereDescriptorGuardado()) {
+			return;
+		}
+
+		this.asegurarPerfilParaDetalle(() => {
+			this.gridExperiencia?.instance.addRow();
+			this.experienciaEditando = true;
+		});
+	}
+
+	editarExperienciaClick = (e: any): void => {
+		if (this.readOnly || this.experienciaEditando) {
+			return;
+		}
+		e.component.editRow(e.row.rowIndex);
+		this.experienciaEditando = true;
+	};
+
+	experienciaEditButtonVisible = (e: any): boolean => {
+		return !this.readOnly && !this.experienciaEditando && !e.row?.isEditing;
+	};
+
+	experienciaDeleteButtonVisible = (e: any): boolean => {
+		return !this.readOnly && !this.experienciaEditando && !e.row?.isEditing;
+	};
+
+	guardarExperienciaEditada(): void {
+		const grid = this.gridExperiencia?.instance;
+		if (!grid || !this.experienciaEditando) {
+			this.notifyFx('No hay una linea en edicion', NotifyType.Warning);
+			return;
+		}
+		grid.saveEditData();
+	}
+
+	cancelarExperienciaEditada(): void {
+		const grid = this.gridExperiencia?.instance;
+		if (!grid?.hasEditData()) {
+			this.experienciaEditando = false;
+			this.refrescarGridExperiencia();
+			return;
+		}
+		grid.cancelEditData();
+	}
+
+	experienciaInitNewRow(e: any): void {
+		e.data.CORR_EXPERIENCIA = 0;
+		e.data.CORR_PERFIL_PUESTO = Number(this.perfil?.CORR_PERFIL_PUESTO) || 0;
+		e.data.REQUISITO = '';
+		e.data.TIPO_REQUERIDO = 'SI';
+		e.data._clientKey = this.crearClientKey('exp');
+	}
+
+	onExperienciaEditingStart(_e: any): void {
+		this.experienciaEditando = true;
+	}
+
+	onExperienciaSaved(_e: any): void {
+		this.experienciaEditando = false;
+		this.refrescarGridExperiencia();
+	}
+
+	onExperienciaEditCanceled(_e: any): void {
+		this.experienciaEditando = false;
+		this.refrescarGridExperiencia();
+	}
+
+	experienciaRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!(data.REQUISITO ?? '').trim()) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar el requisito.';
+		}
+	}
+
+	experienciaRowInserting(e: any): void {
+		e.cancel = this.persistirExperienciaDesdeGrid(e.data, true);
+	}
+
+	experienciaRowUpdating(e: any): void {
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = this.persistirExperienciaDesdeGrid(data, false);
+	}
+
+	experienciaRowRemoving(e: any): void {
+		e.cancel = this.eliminarExperienciaDesdeGrid(e.data);
+	}
+
 	onPerfilEdadMinimaChanged(e: any): void {
 		if (this.readOnly) {
 			return;
@@ -946,6 +1133,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.perfil = { ...PERFIL_PUESTO_DEFAULT };
 		this.perfilExiste = false;
 		this.perfilSubTabIndex = 0;
+		this.educaciones = [];
+		this.experiencias = [];
+		this.resetearEdicionEducacion();
+		this.resetearEdicionExperiencia();
 	}
 
 	private cargarPerfil(forzar = false): void {
@@ -982,11 +1173,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							LICENCIA: row.LICENCIA ?? PERFIL_PUESTO_DEFAULT.LICENCIA,
 						};
 						this.perfilExiste = true;
+						this.cargarEducacion(forzar);
+						this.cargarExperiencia(forzar);
 						return;
 					}
 
 					this.perfil = { ...PERFIL_PUESTO_DEFAULT };
 					this.perfilExiste = false;
+					this.educaciones = [];
+					this.experiencias = [];
+					this.resetearEdicionEducacion();
+					this.resetearEdicionExperiencia();
 				},
 				error: (error) => this.notifyApiError(error),
 			});
@@ -1031,6 +1228,77 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					} else if (Number(response?.CodeHelper) > 0) {
 						this.perfil.CORR_PERFIL_PUESTO = Number(response.CodeHelper);
 						this.perfilExiste = true;
+					}
+					this.cargarEducacion(true);
+					this.cargarExperiencia(true);
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	private cargarEducacion(forzar = false): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corrPerfil || corrPerfil <= 0) {
+			this.educaciones = [];
+			this.resetearEdicionEducacion();
+			return;
+		}
+
+		const loadSeq = ++this.educacionLoadSeq;
+		this.service
+			.getEducacionLookup(corrDescriptor, corrPerfil)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (loadSeq !== this.educacionLoadSeq) {
+						return;
+					}
+
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.resetearEdicionEducacion();
+						this.educaciones = response.Data.map((item: ScPerfilPuestoEducacion) => ({
+							CORR_PERFIL_PUESTO: item.CORR_PERFIL_PUESTO ?? corrPerfil,
+							CORR_EDUCACION: item.CORR_EDUCACION,
+							REQUISITO: item.REQUISITO ?? '',
+							ESPECIFICACIONES: item.ESPECIFICACIONES ?? '',
+							TIPO_REQUERIDO: (item.TIPO_REQUERIDO ?? 'SI').toUpperCase(),
+							_clientKey: item.CORR_EDUCACION || this.crearClientKey('edu'),
+						}));
+					}
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	private cargarExperiencia(forzar = false): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corrPerfil || corrPerfil <= 0) {
+			this.experiencias = [];
+			this.resetearEdicionExperiencia();
+			return;
+		}
+
+		const loadSeq = ++this.experienciaLoadSeq;
+		this.service
+			.getExperienciaLookup(corrDescriptor, corrPerfil)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (loadSeq !== this.experienciaLoadSeq) {
+						return;
+					}
+
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.resetearEdicionExperiencia();
+						this.experiencias = response.Data.map((item: ScPerfilPuestoExperiencia) => ({
+							CORR_PERFIL_PUESTO: item.CORR_PERFIL_PUESTO ?? corrPerfil,
+							CORR_EXPERIENCIA: item.CORR_EXPERIENCIA,
+							REQUISITO: item.REQUISITO ?? '',
+							TIPO_REQUERIDO: (item.TIPO_REQUERIDO ?? 'SI').toUpperCase(),
+							_clientKey: item.CORR_EXPERIENCIA || this.crearClientKey('exp'),
+						}));
 					}
 				},
 				error: (error) => this.notifyApiError(error),
@@ -1217,12 +1485,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const formatoNuevo = (value || FORMATO_CORTA).toUpperCase();
 		const cambioReal = formatoAnterior !== formatoNuevo;
 
-		const tabActualId = this.subTabsVisibles[this.subTabIndex]?.id;
 		this.model.FORMATO = value || FORMATO_CORTA;
-		this.actualizarSubTabs();
-		if (tabActualId) {
-			const nuevoIndex = this.subTabsVisibles.findIndex((tab) => tab.id === tabActualId);
-			this.subTabIndex = nuevoIndex >= 0 ? nuevoIndex : 0;
+		if (cambioReal) {
+			this.subTabIndex = 0;
 		}
 
 		// Solo recargar secundarias si el usuario cambió de verdad el formato (no por sync del form).
@@ -1510,21 +1775,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
-	isSubTabActivo(tabId: string): boolean {
-		return this.subTabsVisibles[this.subTabIndex]?.id === tabId;
-	}
-
 	private syncHeaderForm(): void {
 		this.sincronizandoHeader = true;
 		this.headerForm?.instance?.option('formData', this.model);
 		setTimeout(() => {
 			this.sincronizandoHeader = false;
 		});
-	}
-
-	private actualizarSubTabs(): void {
-		this.subTabsVisibles =
-			this.model.FORMATO === FORMATO_EXTENSA ? [...SUB_TABS_EXTENSA] : [...SUB_TABS_CORTA];
 	}
 
 	private marcarFuncionesTabsDirty(): void {
@@ -1567,6 +1823,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.kpisEditando = false;
 	}
 
+	private resetearEdicionEducacion(): void {
+		this.educacionEditando = false;
+	}
+
+	private resetearEdicionExperiencia(): void {
+		this.experienciaEditando = false;
+	}
+
 	private crearClientKey(prefix: string): string {
 		return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
 	}
@@ -1581,6 +1845,192 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private refrescarGridKpis(): void {
 		setTimeout(() => this.gridKpis?.instance?.refresh());
+	}
+
+	private refrescarGridEducacion(): void {
+		setTimeout(() => this.gridEducacion?.instance?.refresh());
+	}
+
+	private refrescarGridExperiencia(): void {
+		setTimeout(() => this.gridExperiencia?.instance?.refresh());
+	}
+
+	private asegurarPerfilParaDetalle(onReady: () => void): void {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
+		if (corrPerfil > 0 && this.perfilExiste) {
+			onReady();
+			return;
+		}
+
+		this.service
+			.persistirPerfil(corrDescriptor, this.perfil, this.perfilExiste)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+
+					const saved = response.Data as ScDescriptorPerfilPuesto;
+					if (saved) {
+						this.perfil = {
+							...this.perfil,
+							...saved,
+						};
+						this.perfilExiste = true;
+					} else if (Number(response?.CodeHelper) > 0) {
+						this.perfil.CORR_PERFIL_PUESTO = Number(response.CodeHelper);
+						this.perfilExiste = true;
+					}
+
+					if (!(Number(this.perfil.CORR_PERFIL_PUESTO) > 0)) {
+						this.notifyFx('No se pudo preparar el perfil.', NotifyType.Warning);
+						return;
+					}
+
+					onReady();
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	private persistirEducacionDesdeGrid(data: ScPerfilPuestoEducacion, esNuevo: boolean): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
+		if (!corrPerfil || corrPerfil <= 0) {
+			this.notifyFx('Debe guardar el perfil antes de registrar educacion.', NotifyType.Warning);
+			return Promise.resolve(true);
+		}
+
+		const payload: ScPerfilPuestoEducacion = {
+			...data,
+			CORR_PERFIL_PUESTO: corrPerfil,
+			CORR_EDUCACION: esNuevo ? 0 : Number(data.CORR_EDUCACION) || 0,
+			REQUISITO: (data.REQUISITO ?? '').trim(),
+			ESPECIFICACIONES: (data.ESPECIFICACIONES ?? '').trim(),
+			TIPO_REQUERIDO: (data.TIPO_REQUERIDO ?? 'SI').trim().toUpperCase(),
+		};
+
+		return new Promise((resolve) => {
+			this.service
+				.persistirEducacion(corrDescriptor, corrPerfil, payload)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						this.educacionEditando = false;
+						this.cargarEducacion(true);
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private eliminarEducacionDesdeGrid(data: ScPerfilPuestoEducacion): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO) || Number(data?.CORR_PERFIL_PUESTO);
+		const corrEducacion = Number(data?.CORR_EDUCACION);
+		if (!corrPerfil || corrPerfil <= 0 || !corrEducacion || corrEducacion <= 0) {
+			return Promise.resolve(false);
+		}
+
+		return new Promise((resolve) => {
+			this.service
+				.eliminarEducacion(corrDescriptor, corrPerfil, corrEducacion)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private persistirExperienciaDesdeGrid(data: ScPerfilPuestoExperiencia, esNuevo: boolean): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
+		if (!corrPerfil || corrPerfil <= 0) {
+			this.notifyFx('Debe guardar el perfil antes de registrar experiencia.', NotifyType.Warning);
+			return Promise.resolve(true);
+		}
+
+		const payload: ScPerfilPuestoExperiencia = {
+			...data,
+			CORR_PERFIL_PUESTO: corrPerfil,
+			CORR_EXPERIENCIA: esNuevo ? 0 : Number(data.CORR_EXPERIENCIA) || 0,
+			REQUISITO: (data.REQUISITO ?? '').trim(),
+			TIPO_REQUERIDO: (data.TIPO_REQUERIDO ?? 'SI').trim().toUpperCase(),
+		};
+
+		return new Promise((resolve) => {
+			this.service
+				.persistirExperiencia(corrDescriptor, corrPerfil, payload)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						this.experienciaEditando = false;
+						this.cargarExperiencia(true);
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private eliminarExperienciaDesdeGrid(data: ScPerfilPuestoExperiencia): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO) || Number(data?.CORR_PERFIL_PUESTO);
+		const corrExperiencia = Number(data?.CORR_EXPERIENCIA);
+		if (!corrPerfil || corrPerfil <= 0 || !corrExperiencia || corrExperiencia <= 0) {
+			return Promise.resolve(false);
+		}
+
+		return new Promise((resolve) => {
+			this.service
+				.eliminarExperiencia(corrDescriptor, corrPerfil, corrExperiencia)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
 	}
 
 	private persistirFuncionDesdeGrid(

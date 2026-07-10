@@ -13,6 +13,10 @@ import { ScDescriptorKpiFuncion } from './sc-descriptor-kpi-funcion/models/sc-de
 import { ScDescriptorKpiFuncionRepository } from './sc-descriptor-kpi-funcion/sc-descriptor-kpi-funcion.repository';
 import { ScDescriptorPerfilPuesto } from './sc-descriptor-perfil-puesto/models/sc-descriptor-perfil-puesto';
 import { ScDescriptorPerfilPuestoRepository } from './sc-descriptor-perfil-puesto/sc-descriptor-perfil-puesto.repository';
+import { ScPerfilPuestoEducacion } from './sc-perfil-puesto-educacion/models/sc-perfil-puesto-educacion';
+import { ScPerfilPuestoEducacionRepository } from './sc-perfil-puesto-educacion/sc-perfil-puesto-educacion.repository';
+import { ScPerfilPuestoExperiencia } from './sc-perfil-puesto-experiencia/models/sc-perfil-puesto-experiencia';
+import { ScPerfilPuestoExperienciaRepository } from './sc-perfil-puesto-experiencia/sc-perfil-puesto-experiencia.repository';
 import { ScDescriptorPuesto } from './models/sc-descriptor-puesto';
 import {
 	ESTADOS_DESCRIPTOR_BLOQUEO_CREACION,
@@ -38,7 +42,9 @@ export class ScDescriptorPuestoService {
 		private funcionRepo: ScDescriptorFuncionRepository,
 		private actividadRepo: ScDescriptorFuncionActividadRepository,
 		private kpiRepo: ScDescriptorKpiFuncionRepository,
-		private perfilRepo: ScDescriptorPerfilPuestoRepository
+		private perfilRepo: ScDescriptorPerfilPuestoRepository,
+		private educacionRepo: ScPerfilPuestoEducacionRepository,
+		private experienciaRepo: ScPerfilPuestoExperienciaRepository
 	) {}
 
 	esValido(model: ScDescriptorPuesto, msg: Function): boolean {
@@ -724,6 +730,137 @@ export class ScDescriptorPuestoService {
 
 	getPerfilLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.perfilRepo.getAll([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto }]);
+	}
+
+	getEducacionLookup(corrDescriptorPuesto: number, corrPerfilPuesto: number): Observable<IResult> {
+		return this.educacionRepo.getAll([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+			{ Parameter: 'CORR_PERFIL_PUESTO', Value: corrPerfilPuesto },
+		]);
+	}
+
+	persistirEducacion(
+		corrDescriptorPuesto: number,
+		corrPerfilPuesto: number,
+		educacion: ScPerfilPuestoEducacion
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrPerfil = Number(corrPerfilPuesto);
+		const payload = {
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_PERFIL_PUESTO: corrPerfil,
+			CORR_EDUCACION: educacion.CORR_EDUCACION ?? 0,
+			REQUISITO: (educacion.REQUISITO ?? '').trim() || null,
+			ESPECIFICACIONES: (educacion.ESPECIFICACIONES ?? '').trim() || null,
+			TIPO_REQUERIDO: (educacion.TIPO_REQUERIDO ?? '').trim().toUpperCase() || null,
+		};
+
+		if (!educacion.CORR_EDUCACION || educacion.CORR_EDUCACION <= 0) {
+			return this.educacionRepo.create(payload);
+		}
+
+		return this.educacionRepo.update(payload, [
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_PERFIL_PUESTO', Value: corrPerfil },
+			{ Parameter: 'CORR_EDUCACION', Value: educacion.CORR_EDUCACION },
+		]);
+	}
+
+	eliminarEducacion(
+		corrDescriptorPuesto: number,
+		corrPerfilPuesto: number,
+		corrEducacion: number
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrPerfil = Number(corrPerfilPuesto);
+		const corrEdu = Number(corrEducacion);
+		if (
+			!corrDescriptor ||
+			corrDescriptor <= 0 ||
+			!corrPerfil ||
+			corrPerfil <= 0 ||
+			!corrEdu ||
+			corrEdu <= 0
+		) {
+			return of({
+				Result: false,
+				Data: null,
+				ErrorCode: 1,
+				ErrorMessage: 'Debe indicar la educacion a eliminar.',
+				RowsAffected: 0,
+			} as IResult);
+		}
+
+		return this.educacionRepo.delete([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_PERFIL_PUESTO', Value: corrPerfil },
+			{ Parameter: 'CORR_EDUCACION', Value: corrEdu },
+		]);
+	}
+
+	getExperienciaLookup(corrDescriptorPuesto: number, corrPerfilPuesto: number): Observable<IResult> {
+		return this.experienciaRepo.getAll([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+			{ Parameter: 'CORR_PERFIL_PUESTO', Value: corrPerfilPuesto },
+		]);
+	}
+
+	persistirExperiencia(
+		corrDescriptorPuesto: number,
+		corrPerfilPuesto: number,
+		experiencia: ScPerfilPuestoExperiencia
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrPerfil = Number(corrPerfilPuesto);
+		const payload = {
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_PERFIL_PUESTO: corrPerfil,
+			CORR_EXPERIENCIA: experiencia.CORR_EXPERIENCIA ?? 0,
+			REQUISITO: (experiencia.REQUISITO ?? '').trim() || null,
+			TIPO_REQUERIDO: (experiencia.TIPO_REQUERIDO ?? '').trim().toUpperCase() || null,
+		};
+
+		if (!experiencia.CORR_EXPERIENCIA || experiencia.CORR_EXPERIENCIA <= 0) {
+			return this.experienciaRepo.create(payload);
+		}
+
+		return this.experienciaRepo.update(payload, [
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_PERFIL_PUESTO', Value: corrPerfil },
+			{ Parameter: 'CORR_EXPERIENCIA', Value: experiencia.CORR_EXPERIENCIA },
+		]);
+	}
+
+	eliminarExperiencia(
+		corrDescriptorPuesto: number,
+		corrPerfilPuesto: number,
+		corrExperiencia: number
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrPerfil = Number(corrPerfilPuesto);
+		const corrExp = Number(corrExperiencia);
+		if (
+			!corrDescriptor ||
+			corrDescriptor <= 0 ||
+			!corrPerfil ||
+			corrPerfil <= 0 ||
+			!corrExp ||
+			corrExp <= 0
+		) {
+			return of({
+				Result: false,
+				Data: null,
+				ErrorCode: 1,
+				ErrorMessage: 'Debe indicar la experiencia a eliminar.',
+				RowsAffected: 0,
+			} as IResult);
+		}
+
+		return this.experienciaRepo.delete([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_PERFIL_PUESTO', Value: corrPerfil },
+			{ Parameter: 'CORR_EXPERIENCIA', Value: corrExp },
+		]);
 	}
 
 	persistirPerfil(

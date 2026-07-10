@@ -1,4 +1,4 @@
-import { DescriptorSubTab, MockPuesto, MockPuestoReporta, MockUnidad } from './models/sc-descriptor-puesto';
+import { MockPuesto, MockPuestoReporta, MockUnidad } from './models/sc-descriptor-puesto';
 
 export const FORMATO_CORTA = 'CORTO';
 export const FORMATO_EXTENSA = 'EXTENSO';
@@ -60,42 +60,10 @@ export const MOCK_PUESTOS_REPORTA: MockPuestoReporta[] = [
 	{ CORR_PUESTO_REPORTA: 5, NOMBRE_PUESTO_REPORTA: 'Sofia Mendez' },
 ];
 
-export const SUB_TABS_CORTA: DescriptorSubTab[] = [
-	{ id: 'objetivo', title: 'Objetivo', order: 1 },
-	{ id: 'funciones', title: 'Funciones', order: 2 },
-	{ id: 'funcionesSecundarias', title: 'Funciones Secundarias', order: 3 },
-	{ id: 'kpis', title: 'KPIs', order: 4 },
-	{ id: 'perfil', title: 'Perfil', order: 5 },
-	{ id: 'competencias', title: 'Competencias', order: 6 },
-	{ id: 'requerimientos', title: 'Requerimientos', order: 7 },
-	{ id: 'responsabilidades', title: 'Responsabilidades', order: 8 },
-	{ id: 'entrenamiento', title: 'Entrenamiento', order: 9 },
-	{ id: 'resumen', title: 'Resumen', order: 10 },
-];
-
-export const SUB_TABS_EXTENSA: DescriptorSubTab[] = [
-	{ id: 'objetivo', title: 'Objetivo', order: 1 },
-	{ id: 'funciones', title: 'Funciones', order: 2 },
-	{ id: 'perfil', title: 'Perfil', order: 3 },
-	{ id: 'competencias', title: 'Competencias', order: 4 },
-	{ id: 'relaciones', title: 'Relaciones', order: 5 },
-	{ id: 'requerimientos', title: 'Requerimientos', order: 6 },
-	{ id: 'riesgos', title: 'Riesgos', order: 7 },
-	{ id: 'responsabilidades', title: 'Responsabilidades', order: 8 },
-	{ id: 'entrenamiento', title: 'Entrenamiento', order: 9 },
-	{ id: 'resumen', title: 'Resumen', order: 10 },
-];
-
-export interface PerfilSubTab {
-	id: string;
-	title: string;
-	icon: string;
-}
-
-export const PERFIL_SUB_TABS: PerfilSubTab[] = [
-	{ id: 'perfilDatos', title: 'Perfil', icon: 'card' },
-	{ id: 'educacion', title: 'Educacion', icon: 'education' },
-	{ id: 'experiencia', title: 'Experiencia', icon: 'briefcase' },
+export const EDUCACION_TIPO_REQUERIDO_OPTIONS = [
+	{ CODIGO: 'SI', NOMBRE: 'Si' },
+	{ CODIGO: 'NO', NOMBRE: 'No' },
+	{ CODIGO: 'DESEABLE', NOMBRE: 'Deseable' },
 ];
 
 export const PERFIL_SEXO_OPTIONS = [

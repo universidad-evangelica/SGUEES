@@ -24,12 +24,6 @@ export interface ScDescriptorPuesto {
 	NOMBRE_UNIDAD?: string;
 }
 
-export interface DescriptorSubTab {
-	id: string;
-	title: string;
-	order: number;
-}
-
 export interface MockUnidad {
 	CORR_UNIDAD: number;
 	NOMBRE_UNIDAD: string;
