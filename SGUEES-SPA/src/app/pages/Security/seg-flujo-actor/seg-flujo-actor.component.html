@@ -18,7 +18,8 @@
     [isBrowse]="isBrowse()"
     [models]="models"
     [columns]="columns"
-    [keyExpr]="'CORR_NIVEL'"
+    [summary]="summary"
+    [keyExpr]="'CORR_ACTOR'"
     [permiteEditar]="getPermiteEditar"
     [permiteDele]="getPermiteDele"
     (rowDblClick)="rowDblClick($event)"
@@ -28,18 +29,6 @@
 >
 </app-data-grid-mtto>
 
-<!-- ================================================ -->
-<!-- FIRMAS DEL DOCUMENTO (NUEVO)                     -->
-<!-- ================================================ -->
-<section class="sguees-section-card" style="margin-top: 20px;">
-    <app-firmas-documento
-        [tipoDocumento]="tipoDocumentoFirmas"
-        [idDocumento]="idDocumentoFirmas"
-        [mostrarTitulo]="true"
-    >
-    </app-firmas-documento>
-</section>
-
 <dx-load-panel
     #loadPanel
     shadingColor="rgba(0,0,0,0.4)"
@@ -48,5 +37,6 @@
     [showIndicator]="true"
     [showPane]="true"
     [shading]="true"
+    (onShown)="(loadingVisible)"
 >
 </dx-load-panel>

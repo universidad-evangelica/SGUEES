@@ -81,13 +81,13 @@ export class SC_OrganigramaEstructuralNivelService {
 
     getNivelColumns(): any {
         return [
-            { dataField: 'CORR_NIVEL', caption: 'Corr.', width: 200 },
-            { dataField: 'NOMBRE_NIVEL', caption: 'Nombre', width: 250 },
-            { dataField: 'CANTIDAD_CARACTERES', caption: 'Caracteres', width: 200 },
+            { dataField: 'CORR_NIVEL', caption: 'Corr.', width: 250 },
+            { dataField: 'NOMBRE_NIVEL', caption: 'Nombre', width: 400 },
+           
             {
                 dataField: 'ACTIVO',
                 caption: 'Activo',
-                width: 150,
+                width: 100,
                 customizeText: (e: any) => (e.value ? 'Sí' : 'No'),
             },
         ];
@@ -111,18 +111,7 @@ export class SC_OrganigramaEstructuralNivelService {
                     maxLength: 50,
                 },
             },
-            {
-                dataField: 'CANTIDAD_CARACTERES',
-                label: { text: 'Caracteres' },
-                colSpan: 2,
-                editorType: 'dxNumberBox',
-                editorOptions: {
-                    placeholder: 'Cantidad de caracteres...',
-                    min: 1,
-                    max: 99,
-                    showSpinButtons: true,
-                },
-            },
+           
             {
                 dataField: 'ACTIVO',
                 label: { text: 'Activo' },

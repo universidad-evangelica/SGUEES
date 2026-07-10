@@ -5,13 +5,16 @@ import { CommonModule } from '@angular/common';
 import { DxFormModule } from 'devextreme-angular/ui/form';
 import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
 import { DxLoadPanelModule } from 'devextreme-angular/ui/load-panel';
+import { DxButtonModule } from 'devextreme-angular/ui/button';
+import { DxTabPanelModule } from 'devextreme-angular/ui/tab-panel';
+import { DxDropDownBoxModule } from 'devextreme-angular/ui/drop-down-box';
+import { DxCheckBoxModule } from 'devextreme-angular/ui/check-box';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
-import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
-import { FirmasDocumentoModule } from 'src/app/shared/components/firmas-documento/firmas-documento.module';
-import { SC_OrganigramaEstructuralNivelComponent } from './sc-organigrama-estructural-nivel.component';
 
-const routes: Routes = [{ path: '', component: SC_OrganigramaEstructuralNivelComponent }];
+import { SegFlujoActorComponent } from './seg-flujo-actor.component';
+
+const routes: Routes = [{ path: '', component: SegFlujoActorComponent }];
 
 @NgModule({
     imports: [
@@ -19,13 +22,15 @@ const routes: Routes = [{ path: '', component: SC_OrganigramaEstructuralNivelCom
         CommonModule,
         DxFormModule,
         DxDataGridModule,
+        DxButtonModule,
         DxLoadPanelModule,
+        DxDropDownBoxModule,
+        DxCheckBoxModule,
+        DxTabPanelModule,
         DataGridMttoModule,
         BarraDataMttoModule,
-        DataLookupModule,
-        FirmasDocumentoModule  // ← Agregar esta línea
     ],
     exports: [RouterModule],
-    declarations: [SC_OrganigramaEstructuralNivelComponent],
+    declarations: [SegFlujoActorComponent],
 })
-export class SC_OrganigramaEstructuralNivelRoutingModule {}
+export class SegFlujoActorRoutingModule {}
