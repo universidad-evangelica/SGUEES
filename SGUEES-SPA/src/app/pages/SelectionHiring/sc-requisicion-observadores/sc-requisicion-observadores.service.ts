@@ -30,6 +30,15 @@ export class ScRequisicionObservadoresService {
 		return this.repo.get(xWhere);
 	}
 
+	/** Listado informativo para sc-requisicion-personal (endpoint con permiso /sc-requisicion-personal|R). */
+	getForRequisicionPersonal(param?: any): Observable<IResult> {
+		const xWhere: IParam[] = [];
+		if (param?.CORR_REQUISICION_PERSONAL != null && param.CORR_REQUISICION_PERSONAL > 0) {
+			xWhere.push({ Parameter: 'CORR_REQUISICION_PERSONAL', Value: param.CORR_REQUISICION_PERSONAL });
+		}
+		return this.repo.getForRequisicionPersonal(xWhere);
+	}
+
 	get(param: any): Observable<IResult> {
 		let xWhere: IParam[] = [{ Parameter: 'CORR_REQUISICION_OBSERVADORES', Value: param.CORR_REQUISICION_OBSERVADORES }];
 
@@ -85,7 +94,7 @@ export class ScRequisicionObservadoresService {
 			// },
 			{
 				dataField: 'LOGIN_SISTEMA',
-				label: { text: 'Usuario' },
+				label: { text: 'Seleccionar usuario:', },
 				colSpan: 2,
 				template: 'LOGIN_SISTEMALookup',
 			},

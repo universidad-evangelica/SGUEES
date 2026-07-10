@@ -1,5 +1,6 @@
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
+	[subTituloVentana]="subTituloVentana" --Esto debe de agregarse por componente ya que de etools no viene.
 	[isBrowse]="isBrowse()"
 	[isForm]="isForm()"
 	[permiteAdd]="permiteAdd"
@@ -13,11 +14,6 @@
 	<!--
 		dx-tab-panel: pestañas debajo del formulario (patrón con-centro-costo / com-orden-compra).
 		Solo visible en agregar/editar (*ngIf del contenedor padre).
-
-		Para agregar un tab nuevo:
-		  1. Copiar un bloque <dxi-item title="..." [icon]="'...'"> ... </dxi-item>
-		  2. Crear array en el .ts (ej. itemsTabPlazas) y columnas en el service (getPlazasColumns)
-		  3. Cargar data en cargarDatosTabs() y limpiar en limpiarDatosTabs()
 	-->
 	<dx-tab-panel #tabPanelRequisicion class="requisicion-tab-panel" [selectedIndex]="0">
 		<!-- TAB 1: Detalle / Bitácora (data quemada; luego API) -->
@@ -64,13 +60,21 @@
 
 		<!-- TAB 2: Bitácora (data quemada; luego API) -->
 		<dxi-item title="Bitácora requisición" [icon]="'checklist'">
+
+		</dxi-item>
+
+	</dx-tab-panel>
+</div>
+<!-- Segundo Card: observadores (solo lectura) — patrón dx-data-grid como con-partida -->
+<div class="content-block dx-card responsive-paddings mt-20" *ngIf="!isBrowse()">
+	<dx-tab-panel #tabPanelObservadores class="requisicion-tab-panel" [selectedIndex]="0">
+		<dxi-item title="Observadores" [icon]="'group'">
 			<div class="dx-grid-deta">
 				<dx-data-grid
-					#gridTabDetalle
-					[dataSource]="itemsTabDetalle"
-					[columns]="columnsTabDetalle"
-					[summary]="summaryTabDetalle"
-					keyExpr="CORR_REQUISICION_PERSONAL"
+					#gridObservadores
+					[dataSource]="modelsObservadores"
+					[columns]="columnsObservadores"
+					keyExpr="CORR_REQUISICION_OBSERVADORES"
 					[showBorders]="true"
 					[showColumnLines]="true"
 					[showRowLines]="true"
@@ -79,53 +83,27 @@
 					[allowColumnResizing]="true"
 					[columnResizingMode]="'widget'"
 					[columnAutoWidth]="true"
-					[height]="320"
+					[height]="'100%'"
+					[width]="'100%'"
 				>
 					<dxo-search-panel [visible]="true"></dxo-search-panel>
-					<dxo-paging [pageSize]="5"></dxo-paging>
+					<dxo-paging [pageSize]="10"></dxo-paging>
 					<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 20]"></dxo-pager>
-					<!-- Modo solo lectura por ahora; habilitar editing cuando el API lo soporte -->
 					<dxo-editing [allowUpdating]="false" [allowDeleting]="false" [allowAdding]="false"></dxo-editing>
+					<dxo-summary>
+						<dxi-total-item
+							column="CORR_REQUISICION_OBSERVADORES"
+							summaryType="count"
+							valueFormat="#,##0"
+							displayFormat="Cant: {0}"
+						></dxi-total-item>
+					</dxo-summary>
 				</dx-data-grid>
 			</div>
 		</dxi-item>
-
-			TAB 3 (ejemplo futuro — descomentar y completar):
-		<dxi-item title="Observadores" [icon]="'group'">
-			<div class="dx-grid-deta">
-				<!-- <dx-data-grid
-					[dataSource]="itemsTabPlazas"
-					[columns]="columnsTabPlazas"
-					keyExpr="CORR_PLAZA"
-					[showBorders]="true"
-					[height]="320"
-				></dx-data-grid> -->
-			</div>
-		</dxi-item>
-
-		<!--
-			TAB 3 (ejemplo futuro — descomentar y completar):
-		<dxi-item title="Documentos" [icon]="'doc'">
-			<div class="dx-grid-deta">
-				<dx-data-grid
-					[dataSource]="itemsTabDocumentos"
-					[columns]="columnsTabDocumentos"
-					keyExpr="CORR_DOCUMENTO"
-					[showBorders]="true"
-					[height]="320"
-				></dx-data-grid>
-			</div>
-		</dxi-item>
-		-->
-
-		<!--
-			TAB 4 (ejemplo futuro — auditoría solo lectura desde model o API):
-		<dxi-item title="Auditoría" [icon]="'info'">
-			<dx-form [formData]="model" [colCount]="4" [readOnly]="true" [items]="itemsAuditoria"></dx-form>
-		</dxi-item>
-		-->
 	</dx-tab-panel>
 </div>
+
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
 	[models]="models"

@@ -228,16 +228,9 @@ export class ScRequisicionPersonalService {
                                 {
                                     dataField: 'HORARIO',
                                     label: { text: 'Horario laboral' },
-                                    colSpan: 2,
+                                    colSpan: 4,
                                     editorType: 'dxTextArea',
                                     editorOptions: { placeholder: 'Horario laboral...', showClearButton: true, maxLength: 100 },
-                                },
-                                {
-                                    dataField: 'JUSTIFICACION',
-                                    label: { text: 'Justificacion requisición:' },
-                                    colSpan: 8,
-                                    editorType: 'dxTextArea',
-                                    editorOptions: { minHeight: 90, maxLength: 500 },
                                 },
                                 {
                                     dataField: 'CORR_ESTADO_REQUISICION',
@@ -257,24 +250,31 @@ export class ScRequisicionPersonalService {
                                         showClearButton: true,
                                     }
                                 },
+                                {
+                                    dataField: 'JUSTIFICACION',
+                                    label: { text: 'Justificacion requisición:' },
+                                    colSpan: 8,
+                                    editorType: 'dxTextArea',
+                                    editorOptions: { minHeight: 90, maxLength: 500 },
+                                },
         ];
     }
 
-    /**
-     * Columnas del dx-data-grid dentro del dx-tab-panel (modo agregar/editar).
-     * Por ahora replica la misma estructura del grid de consulta (getColumns).
-     *
-     * Cuando exista endpoint de bitácora/detalle hijo, crear métodos dedicados, por ejemplo:
-     *   - getBitacoraColumns()   → historial de estados / movimientos
-     *   - getPlazasColumns()    → detalle de plazas
-     *   - getDocumentosColumns() → anexos
-     */
-    getTabDetalleColumns(): any {
-        return this.getColumns();
+    getObservadoresColumns(): any {
+        return [
+            { dataField: 'CORR_REQUISICION_OBSERVADORES', caption: 'Corr.', width: 90 },
+            { dataField: 'LOGIN_SISTEMA', caption: 'Usuario', width: 220 },
+            { dataField: 'TIPO_OBSERVADOR', caption: 'Tipo observador', width: 160 },
+            { dataField: 'ACTIVO', caption: 'Activo', width: 160, dataType: 'boolean' },
+            { dataField: 'FECHA_ASIGNACION', caption: 'Fecha asignación', width: 160, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+        ];
     }
 
-    /** Summary del grid del tab (misma lógica que el browse). */
-    getTabDetalleSummary(): any {
-        return this.getSummary();
+    getObservadoresSummary(): any {
+        return {
+            totalItems: [{ column: 'CORR_REQUISICION_OBSERVADORES', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
+        };
     }
+    
+
 }

@@ -17,6 +17,16 @@ export class ScRequisicionObservadoresRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	/** Listado informativo consumido desde sc-requisicion-personal (permiso /sc-requisicion-personal|R). */
+	getForRequisicionPersonal(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'GetLOGIN_SISTEMA_SC_REQUISICION_PERSONAL',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}

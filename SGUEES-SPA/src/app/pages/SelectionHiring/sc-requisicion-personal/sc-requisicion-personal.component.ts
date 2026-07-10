@@ -10,10 +10,8 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { ScRequisicionPersonal } from './models/sc-requisicion-personal';
 
 import { ScRequisicionPersonalService } from './sc-requisicion-personal.service';
-import { ScTipoModalidadService } from '../sc-tipo-modalidad/sc-tipo-modalidad.service'; //Importo para poder utilizar tipo modalidades
-//import { PlaDepartamentoService } from '../../Payroll/pla-departamento/pla-departamento.service'; //Importo para poder utilizar departamentos
-import { ScTipoContratacionService } from '../sc-tipo-contratacion/sc-tipo-contratacion.service';
-import { ScTipoVacanteService } from '../sc-tipo-vacante/sc-tipo-vacante.service';
+import { ScRequisicionObservadoresService } from '../sc-requisicion-observadores/sc-requisicion-observadores.service';
+
 import { environment } from 'src/environments/environment';
 
 @Component({
@@ -26,6 +24,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private service: ScRequisicionPersonalService,
+		private observadoresService: ScRequisicionObservadoresService,
 		//private messageService: MessageService, //Import para usar PrimeNG Toast
 
 	) {
@@ -34,9 +33,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 
-		// Columnas y summary del grid dentro del dx-tab-panel (misma estructura que el browse).
-		this.columnsTabDetalle = this.service.getTabDetalleColumns();
-		this.summaryTabDetalle = this.service.getTabDetalleSummary();
+
+		this.columnsObservadores = this.service.getObservadoresColumns();
+		this.summaryObservadores = this.service.getObservadoresSummary();
 	}
 
 	//Variables
@@ -50,69 +49,11 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	/** Summary del grid del tab. */
 	summaryTabDetalle: any;
 
-	/**
-	 * DataSource del tab "Detalle / Bitácora".
-	 * DATOS QUEMADOS: misma estructura de campos que getColumns() / ScRequisicionPersonal.
-	 *
-	 * Para conectar API al editar:
-	 *   1. Crear método en service/repository (ej. getBitacoraByRequisicion(corr))
-	 *   2. Llamar cargarDatosTabs() desde editarClick / después de guardar insert
-	 *   3. Asignar: this.itemsTabDetalle = response.Data ?? []
-	 *
-	 * Para limpiar al crear nuevo registro:
-	 *   llamar limpiarDatosTabs() desde nuevo()
-	 */
-	itemsTabDetalle = [
-		{
-			CORR_REQUISICION_PERSONAL: 101,
-			FECHA_REQUISICION: '2026-06-15',
-			CORR_DEPARTAMENTO: 10,
-			CANTIDAD_PLAZAS: 2,
-			SALARIO_MINIMO: 8500,
-			SALARIO_MAXIMO: 12000,
-			TIEMPO_CONTRATO: 12,
-			HORARIO: 'Lunes a viernes 8:00 - 17:00',
-			JUSTIFICACION: 'Ampliación de equipo de desarrollo',
-			FECHA_CREA: '2026-06-15',
-			USUARIO_CREA: 'admin',
-			FECHA_ACTU: '2026-06-20',
-			USUARIO_ACTU: 'rrhh',
-		},
-		{
-			CORR_REQUISICION_PERSONAL: 102,
-			FECHA_REQUISICION: '2026-06-18',
-			CORR_DEPARTAMENTO: 20,
-			CANTIDAD_PLAZAS: 1,
-			SALARIO_MINIMO: 6000,
-			SALARIO_MAXIMO: 9000,
-			TIEMPO_CONTRATO: 6,
-			HORARIO: 'Turno rotativo',
-			JUSTIFICACION: 'Sustitución por licencia',
-			FECHA_CREA: '2026-06-18',
-			USUARIO_CREA: 'jlopez',
-			FECHA_ACTU: '2026-06-18',
-			USUARIO_ACTU: 'jlopez',
-		},
-		{
-			CORR_REQUISICION_PERSONAL: 103,
-			FECHA_REQUISICION: '2026-06-22',
-			CORR_DEPARTAMENTO: 15,
-			CANTIDAD_PLAZAS: 3,
-			SALARIO_MINIMO: 7000,
-			SALARIO_MAXIMO: 11000,
-			TIEMPO_CONTRATO: 0,
-			HORARIO: 'Horario administrativo',
-			JUSTIFICACION: 'Proyecto temporal de implementación ERP',
-			FECHA_CREA: '2026-06-22',
-			USUARIO_CREA: 'mperez',
-			FECHA_ACTU: '2026-06-25',
-			USUARIO_ACTU: 'admin',
-		},
-	];
+	/** Observadores (solo lectura) — data del endpoint GetLOGIN_SISTEMA_SC_REQUISICION_PERSONAL. */
+	modelsObservadores: any[] = [];
+	columnsObservadores: any[] = [];
+	summaryObservadores: any;
 
-	// Reservado para tabs futuros con data de API (descomentar y usar al implementar):
-	// itemsTabPlazas: any[] = [];
-	// itemsTabDocumentos: any[] = [];
 
 	tipoModalidadLookupColumns: any[] = [
 		{ dataField: 'CORR_TIPO_MODALIDAD', caption: 'Modalidad', width: 120 },
@@ -133,6 +74,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
+		this.subTituloVentana = 'Proceso y control de requisiciones de personal';
 	}
 
 	//#region <Tabs dx-tab-panel — carga de datos>
@@ -147,21 +89,33 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	 *     .subscribe({ next: (r) => { if (r.Result) this.itemsTabDetalle = r.Data ?? []; } });
 	 */
 	cargarDatosTabs(): void {
-		// TODO: reemplazar datos quemados por llamadas al API según CORR_REQUISICION_PERSONAL.
-		// if (this.model.CORR_REQUISICION_PERSONAL > 0) { ... }
-
-		// Ejemplo futuro — tab Plazas:
-		// this.service.getPlazas(this.fillParam(this.model.CORR_REQUISICION_PERSONAL))...
-
-		// Ejemplo futuro — tab Documentos:
-		// this.service.getDocumentos(this.fillParam(this.model.CORR_REQUISICION_PERSONAL))...
+		this.cargarObservadores();
 	}
 
 	/** Vacía los arrays de los tabs (útil al presionar Nuevo). */
 	limpiarDatosTabs(): void {
-		// this.itemsTabDetalle = [];
-		// this.itemsTabPlazas = [];
-		// this.itemsTabDocumentos = [];
+		this.modelsObservadores = [];
+	}
+
+	/** Carga observadores desde SC_REQUISICION_OBSERVADORES (informativo). */
+	cargarObservadores(): void {
+		this.observadoresService
+			.getForRequisicionPersonal(this.fillParam(this.model?.CORR_REQUISICION_PERSONAL))
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.modelsObservadores = response.Data ?? [];
+					} else {
+						this.modelsObservadores = [];
+						this.notifyFx(response.ErrorMessage, NotifyType.Error);
+					}
+				},
+				error: (error: any) => {
+					this.modelsObservadores = [];
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
 	}
 
 	/** Al crear registro nuevo, limpiar tabs (cuando se conecte API). */
@@ -173,6 +127,12 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	/** Al editar, cargar data de cada tab según CORR_REQUISICION_PERSONAL. */
 	override editarClick(e: any): void {
 		super.editarClick(e);
+		this.cargarDatosTabs();
+	}
+
+	/** Al consultar (doble clic), también cargar observadores (patrón con-partida). */
+	override rowDblClick(e: any): void {
+		super.rowDblClick(e);
 		this.cargarDatosTabs();
 	}
 

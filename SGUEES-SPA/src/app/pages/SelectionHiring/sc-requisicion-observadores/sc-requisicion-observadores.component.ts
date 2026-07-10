@@ -43,7 +43,7 @@ export class ScRequisicionObservadoresComponent extends CBaseComponent implement
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
-		this.subTituloVentana = 'Mantenimiento de Requisicion Observadores'; //Esto es quemado por componente, ya que no existe en la tabla
+		this.subTituloVentana = 'Control de los diferentes observadores por defecto en cualquier requisición'; //Esto es quemado por componente, ya que no existe en la tabla
 	}
 
 	inicializaOpciones() {}
@@ -68,7 +68,6 @@ export class ScRequisicionObservadoresComponent extends CBaseComponent implement
 				}
 			},
 			error: (error: any) => {
-				console.log(error);
 				this.notifyFx(error, NotifyType.Error);
 				//this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message });
 			},
@@ -144,85 +143,23 @@ export class ScRequisicionObservadoresComponent extends CBaseComponent implement
 	}
 
 	guardar(): void {
-		if (!this.service.esValido(this.model, this.notifyFx)) {
-			return;
-		}
-
-		this.loadingVisible = true;
-		if (this.banderaMtto === UpdateType.Add) {
-			this.service
-				.insert(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.models.push(response.Data);
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							//this.notifyFx('Registro creado con exito!', NotifyType.Success);
-							this.messageService.add({
-						severity: 'success',
-						summary: 'Éxito',
-						detail: 'Registro creado con exito!'
-					});
-						} else {
-							//this.notifyFx(response.ErrorMessage, NotifyType.Error);
-							this.messageService.add({
-						severity: 'error',
-						summary: 'Error',
-						detail: response.ErrorMessage
-					});
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						//this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-						this.messageService.add({
-						severity: 'error',
-						summary: 'Error',
-						detail: error
-					});
-					},
-				});
-		} else if (this.banderaMtto === UpdateType.Update) {
-			this.service
-				.update(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							const vIndex = this.models.findIndex((item: any) => item.CORR_TIPO_MODALIDAD === response.Data.CORR_TIPO_MODALIDAD);
-							this.models[vIndex] = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							//this.notifyFx('Registro modificado con exito!', NotifyType.Success);
-							this.messageService.add({
-						severity: 'success',
-						summary: 'Éxito',
-						detail: 'Registro modificado con exito!'
-					});
-						} else {
-							//this.notifyFx(response.ErrorMessage, NotifyType.Error);
-							this.messageService.add({
-						severity: 'error',
-						summary: 'Error',
-						detail: response.ErrorMessage
-					});
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						//this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-						this.messageService.add({
-						severity: 'error',
-						summary: 'Error',
-						detail: error
-					});
-					},
-				});
-		}
+		this.guardarMtto({
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
+			onSuccess: (data: any, isAdd: boolean) => {
+				if (isAdd) {
+					this.models.push(data);
+				} else {
+					const vIndex = this.models.findIndex(
+						(item: any) => item.CORR_REQUISICION_OBSERVADORES === data.CORR_REQUISICION_OBSERVADORES
+					);
+					if (vIndex >= 0) {
+						this.models[vIndex] = data;
+					}
+				}
+			},
+		});
 	}
 
 	override cancelar(): void {
@@ -266,13 +203,12 @@ export class ScRequisicionObservadoresComponent extends CBaseComponent implement
 	}
 
 	override bloquear(): void {
-		this.dataForm.instance.getEditor('CORR_TIPO_MODALIDAD')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('MODALIDAD_NOMBRE')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('LOGIN_SISTEMA')?.option('readOnly', true);
 	}
 
 	override setFocus() {
 		setTimeout(() => {
-			this.dataForm.instance.getEditor('MODALIDAD_NOMBRE')?.focus();
+			this.dataForm.instance.getEditor('LOGIN_SISTEMA')?.focus();
 		});
 	}
 	//#endregion

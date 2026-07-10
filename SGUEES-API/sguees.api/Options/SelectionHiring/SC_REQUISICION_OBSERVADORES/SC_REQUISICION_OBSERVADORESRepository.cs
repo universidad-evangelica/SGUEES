@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
@@ -11,6 +12,7 @@ namespace sguees.Repositories
 	public class SC_REQUISICION_OBSERVADORESRepository: BaseRepository<SC_REQUISICION_OBSERVADORESTable>, ISC_REQUISICION_OBSERVADORESRepository
 	{
 		private const string _TableName = "SC_REQUISICION_OBSERVADORES";
+		private const string _SpExistsLoginSistema = "PRAL_DATA_SC_REQUISICION_OBSERVADORES_EXISTS_LOGIN";
 		
 		public SC_REQUISICION_OBSERVADORESRepository(IConfiguration config) : 
 				base(config.GetConnectionString("defaultConnection"),
@@ -95,6 +97,20 @@ namespace sguees.Repositories
 		public async Task<CResult> CreateAsync(SC_REQUISICION_OBSERVADORESTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
+
+			if (string.IsNullOrWhiteSpace(Data.LOGIN_SISTEMA))
+			{
+				return ValidationResult("Debe seleccionar un usuario.");
+			}
+
+			if (await ExistsLoginSistemaAsync(
+				Data.CORR_EMPRESA,
+				Data.CORR_REQUISICION_PERSONAL ?? 0,
+				Data.LOGIN_SISTEMA,
+				0))
+			{
+				return ValidationResult($"El usuario {Data.LOGIN_SISTEMA.Trim()} ya ha sido ingresado como observador.");
+			}
 			
 			try
 			{
@@ -150,6 +166,20 @@ namespace sguees.Repositories
 		public async Task<CResult> UpdateAsync(SC_REQUISICION_OBSERVADORESTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
+
+			if (string.IsNullOrWhiteSpace(Data.LOGIN_SISTEMA))
+			{
+				return ValidationResult("Debe seleccionar un usuario.");
+			}
+
+			if (await ExistsLoginSistemaAsync(
+				Data.CORR_EMPRESA,
+				Data.CORR_REQUISICION_PERSONAL ?? 0,
+				Data.LOGIN_SISTEMA,
+				Data.CORR_REQUISICION_OBSERVADORES))
+			{
+				return ValidationResult($"El usuario {Data.LOGIN_SISTEMA.Trim()} ya ha sido ingresado como observador.");
+			}
 			
 			try
 			{
@@ -236,6 +266,47 @@ namespace sguees.Repositories
 			}
 			
 			return objResultado;
+		}
+
+		private async Task<bool> ExistsLoginSistemaAsync(int corrEmpresa, int corrRequisicionPersonal, string loginSistema, int excludeCorr)
+		{
+			if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(loginSistema))
+			{
+				return false;
+			}
+
+			try
+			{
+				var reader = await objData.GetDataReader(System.Data.CommandType.StoredProcedure, _SpExistsLoginSistema, new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_REQUISICION_PERSONAL", Value = corrRequisicionPersonal, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "LOGIN_SISTEMA", Value = loginSistema.Trim(), DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "EXCLUDE_CORR", Value = excludeCorr, DbType = System.Data.DbType.Int32 },
+				});
+
+				var exists = reader.Read();
+				reader.Close();
+				return exists;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+		}
+
+		private static CResult ValidationResult(string message)
+		{
+			return new CResult
+			{
+				Data = null,
+				Result = false,
+				CodeHelper = 0,
+				ErrorCode = -1,
+				ErrorMessage = message,
+				ErrorSource = "[SC_REQUISICION_OBSERVADORESRepository]",
+				RowsAffected = 0
+			};
 		}
 	}
 }

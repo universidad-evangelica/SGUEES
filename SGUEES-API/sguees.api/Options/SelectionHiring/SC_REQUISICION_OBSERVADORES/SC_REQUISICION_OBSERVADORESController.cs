@@ -95,12 +95,12 @@ namespace sguees.Controllers
 			}
 		}
 
-        //[HttpGet("GetCORR_TIPO_MODALIDAD_SC_REQUISICION_PERSONAL")]
-        //[Authorize(Policy = "/sc-requisicion-observadores|R")]
-        //public async Task<CResult> GetCORR_TIPO_MODALIDAD_SC_TIPO_MODALIDAD([FromQuery] SC_REQUISICION_OBSERVADORESParam Data)
-        //{
-        //    Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-        //    return await _service.GetAllAsync(Data);
-        //}
-    }
+		[HttpGet("GetLOGIN_SISTEMA_SC_REQUISICION_PERSONAL")]
+		[Authorize(Policy = "/sc-requisicion-personal|R")]
+		public async Task<CResult> GetLOGIN_SISTEMA_SC_REQUISICION_PERSONAL([FromQuery] SC_REQUISICION_OBSERVADORESParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+	}
 }
