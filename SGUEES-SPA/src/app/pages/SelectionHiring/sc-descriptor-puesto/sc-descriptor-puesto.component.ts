@@ -575,11 +575,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.cancel = this.eliminarFuncionDesdeGrid(e.data);
 	}
 
-	funcionClaveCodigoDisplay = (row: ScDescriptorFuncion): number | string => {
-		const idx = this.funcionesClave.findIndex((item) => item._clientKey === row?._clientKey);
-		return idx >= 0 ? idx + 1 : '';
-	};
-
 	agregarFuncionSecundaria(): void {
 		if (
 			this.readOnly ||
@@ -669,11 +664,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	funcionSecundariaRowRemoving(e: any): void {
 		e.cancel = this.eliminarFuncionDesdeGrid(e.data);
 	}
-
-	funcionSecundariaCodigoDisplay = (row: ScDescriptorFuncion): number | string => {
-		const idx = this.funcionesSecundarias.findIndex((item) => item._clientKey === row?._clientKey);
-		return idx >= 0 ? idx + 1 : '';
-	};
 
 	abrirActividades(funcion: ScDescriptorFuncion): void {
 		if (!this.esFormatoExtensa || this.readOnly || !funcion) {
@@ -858,11 +848,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	kpiRowRemoving(e: any): void {
 		e.cancel = this.eliminarKpiDesdeGrid(e.data);
 	}
-
-	kpiCodigoDisplay = (row: ScDescriptorKpiFuncion): number | string => {
-		const idx = this.kpis.findIndex((item) => item._clientKey === row?._clientKey);
-		return idx >= 0 ? idx + 1 : '';
-	};
 
 	kpiFrecuenciaDisplay = (row: ScDescriptorKpiFuncion): string => {
 		return row?.NOMBRE_FRECUENCIA || '';

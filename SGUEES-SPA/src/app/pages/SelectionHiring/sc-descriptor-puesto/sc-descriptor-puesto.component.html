@@ -123,7 +123,7 @@
 							<dx-button
 								class="descriptor-deta-toolbar-btn"
 								icon="add"
-								text="Agregar Detalle"
+								text="Agregar Funcion Clave"
 								type="success"
 								stylingMode="contained"
 								(onClick)="agregarFuncionClave()"
@@ -215,15 +215,19 @@
 								<dxi-button name="edit" [visible]="false"></dxi-button>
 							</dxi-column>
 							<dxi-column
+								dataField="CORR_FUNCION"
 								caption="Codigo"
-								[width]="80"
+								[width]="90"
 								[allowEditing]="false"
-								[calculateCellValue]="funcionClaveCodigoDisplay"
+								[allowSorting]="true"
+								dataType="number"
+								alignment="left"
 							></dxi-column>
 							<dxi-column
 								dataField="NOMBRE_FUNCION"
 								caption="Nombre de la funcion clave"
 								[minWidth]="260"
+								[allowSorting]="true"
 							></dxi-column>
 							<dxi-column
 								caption="Actividades"
@@ -265,7 +269,7 @@
 							<dx-button
 								class="descriptor-deta-toolbar-btn"
 								icon="add"
-								text="Agregar Detalle"
+								text="Agregar Funcion Secundaria"
 								type="success"
 								stylingMode="contained"
 								(onClick)="agregarFuncionSecundaria()"
@@ -357,15 +361,19 @@
 								<dxi-button name="edit" [visible]="false"></dxi-button>
 							</dxi-column>
 							<dxi-column
+								dataField="CORR_FUNCION"
 								caption="Codigo"
-								[width]="80"
+								[width]="90"
 								[allowEditing]="false"
-								[calculateCellValue]="funcionSecundariaCodigoDisplay"
+								[allowSorting]="true"
+								dataType="number"
+								alignment="left"
 							></dxi-column>
 							<dxi-column
 								dataField="NOMBRE_FUNCION"
 								caption="Descripcion de la funcion secundaria"
 								[minWidth]="280"
+								[allowSorting]="true"
 							></dxi-column>
 						</dx-data-grid>
 					</div>
@@ -382,7 +390,7 @@
 							<dx-button
 								class="descriptor-deta-toolbar-btn"
 								icon="add"
-								text="Agregar Detalle"
+								text="Agregar KPI"
 								type="success"
 								stylingMode="contained"
 								(onClick)="agregarKpi()"
@@ -474,20 +482,25 @@
 								<dxi-button name="edit" [visible]="false"></dxi-button>
 							</dxi-column>
 							<dxi-column
+								dataField="CORR_KPI_FUNCION"
 								caption="Codigo"
-								[width]="80"
+								[width]="90"
 								[allowEditing]="false"
-								[calculateCellValue]="kpiCodigoDisplay"
+								[allowSorting]="true"
+								dataType="number"
+								alignment="left"
 							></dxi-column>
 							<dxi-column
 								dataField="NOMBRE_INDICADOR"
 								caption="Indicador"
 								[minWidth]="240"
+								[allowSorting]="true"
 							></dxi-column>
 							<dxi-column
 								dataField="CORR_FRECUENCIA"
 								caption="Frecuencia"
 								[width]="200"
+								[allowSorting]="true"
 								[calculateDisplayValue]="kpiFrecuenciaDisplay"
 								[editCellTemplate]="'CORR_FRECUENCIALookup'"
 							>
@@ -513,6 +526,7 @@
 								caption="Meta"
 								[width]="110"
 								dataType="number"
+								[allowSorting]="true"
 								[format]="'#0'"
 								[editorOptions]="{ min: 0, max: 100, step: 1, showSpinButtons: false, format: '#0' }"
 							></dxi-column>
