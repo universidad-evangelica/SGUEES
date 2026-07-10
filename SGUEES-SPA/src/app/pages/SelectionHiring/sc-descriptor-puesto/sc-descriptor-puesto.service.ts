@@ -9,6 +9,8 @@ import { ScDescriptorFuncionActividad } from './sc-descriptor-funcion-actividad/
 import { ScDescriptorFuncionActividadRepository } from './sc-descriptor-funcion-actividad/sc-descriptor-funcion-actividad.repository';
 import { ScDescriptorFuncion } from './sc-descriptor-funcion/models/sc-descriptor-funcion';
 import { ScDescriptorFuncionRepository } from './sc-descriptor-funcion/sc-descriptor-funcion.repository';
+import { ScDescriptorKpiFuncion } from './sc-descriptor-kpi-funcion/models/sc-descriptor-kpi-funcion';
+import { ScDescriptorKpiFuncionRepository } from './sc-descriptor-kpi-funcion/sc-descriptor-kpi-funcion.repository';
 import { ScDescriptorPuesto } from './models/sc-descriptor-puesto';
 import {
 	ESTADOS_DESCRIPTOR_BLOQUEO_CREACION,
@@ -32,7 +34,8 @@ export class ScDescriptorPuestoService {
 	constructor(
 		private repo: ScDescriptorPuestoRepository,
 		private funcionRepo: ScDescriptorFuncionRepository,
-		private actividadRepo: ScDescriptorFuncionActividadRepository
+		private actividadRepo: ScDescriptorFuncionActividadRepository,
+		private kpiRepo: ScDescriptorKpiFuncionRepository
 	) {}
 
 	esValido(model: ScDescriptorPuesto, msg: Function): boolean {
@@ -542,11 +545,12 @@ export class ScDescriptorPuestoService {
 		return true;
 	}
 
-	private guardarFuncion(
-		corrDescriptor: number,
+	persistirFuncion(
+		corrDescriptorPuesto: number,
 		funcion: ScDescriptorFuncion,
 		tipoFuncion: string
 	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
 		const payload = {
 			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
 			CORR_FUNCION: funcion.CORR_FUNCION ?? 0,
@@ -561,6 +565,157 @@ export class ScDescriptorPuestoService {
 		return this.funcionRepo.update(payload, [
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
 			{ Parameter: 'CORR_FUNCION', Value: funcion.CORR_FUNCION },
+		]);
+	}
+
+	crearFuncion(corrDescriptorPuesto: number, tipoFuncion: string): Observable<IResult> {
+		return this.persistirFuncion(
+			corrDescriptorPuesto,
+			{
+				CORR_FUNCION: 0,
+				NOMBRE_FUNCION: '',
+				TIPO_FUNCION: tipoFuncion,
+			},
+			tipoFuncion
+		);
+	}
+
+	eliminarFuncion(corrDescriptorPuesto: number, corrFuncion: number): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrFunc = Number(corrFuncion);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corrFunc || corrFunc <= 0) {
+			return of({
+				Result: false,
+				Data: null,
+				ErrorCode: 1,
+				ErrorMessage: 'Debe indicar la funcion a eliminar.',
+				RowsAffected: 0,
+			} as IResult);
+		}
+
+		return this.funcionRepo.delete([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_FUNCION', Value: corrFunc },
+		]);
+	}
+
+	persistirActividad(
+		corrDescriptorPuesto: number,
+		corrFuncion: number,
+		actividad: ScDescriptorFuncionActividad
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrFunc = Number(corrFuncion);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corrFunc || corrFunc <= 0) {
+			return of({
+				Result: false,
+				Data: null,
+				ErrorCode: 1,
+				ErrorMessage: 'Debe guardar la funcion clave antes de registrar actividades.',
+				RowsAffected: 0,
+			} as IResult);
+		}
+
+		const payload = {
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_FUNCION: corrFunc,
+			CORR_ACTIVIDAD: actividad.CORR_ACTIVIDAD ?? 0,
+			NOMBRE_ACTIVIDAD: (actividad.NOMBRE_ACTIVIDAD ?? '').trim(),
+		};
+
+		if (!actividad.CORR_ACTIVIDAD || actividad.CORR_ACTIVIDAD <= 0) {
+			return this.actividadRepo.create(payload);
+		}
+
+		return this.actividadRepo.update(payload, [
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_FUNCION', Value: corrFunc },
+			{ Parameter: 'CORR_ACTIVIDAD', Value: actividad.CORR_ACTIVIDAD },
+		]);
+	}
+
+	crearActividad(corrDescriptorPuesto: number, corrFuncion: number): Observable<IResult> {
+		return this.persistirActividad(corrDescriptorPuesto, corrFuncion, {
+			CORR_FUNCION: corrFuncion,
+			CORR_ACTIVIDAD: 0,
+			NOMBRE_ACTIVIDAD: '',
+		});
+	}
+
+	eliminarActividad(
+		corrDescriptorPuesto: number,
+		corrFuncion: number,
+		corrActividad: number
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrFunc = Number(corrFuncion);
+		const corrAct = Number(corrActividad);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corrFunc || corrFunc <= 0 || !corrAct || corrAct <= 0) {
+			return of({
+				Result: false,
+				Data: null,
+				ErrorCode: 1,
+				ErrorMessage: 'Debe indicar la actividad a eliminar.',
+				RowsAffected: 0,
+			} as IResult);
+		}
+
+		return this.actividadRepo.delete([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_FUNCION', Value: corrFunc },
+			{ Parameter: 'CORR_ACTIVIDAD', Value: corrAct },
+		]);
+	}
+
+	getKpisLookup(corrDescriptorPuesto: number): Observable<IResult> {
+		return this.kpiRepo.getAll([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto }]);
+	}
+
+	persistirKpi(corrDescriptorPuesto: number, kpi: ScDescriptorKpiFuncion): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const payload = {
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_KPI_FUNCION: kpi.CORR_KPI_FUNCION ?? 0,
+			NOMBRE_INDICADOR: (kpi.NOMBRE_INDICADOR ?? '').trim(),
+			CORR_FRECUENCIA: kpi.CORR_FRECUENCIA ?? null,
+			META: kpi.META ?? null,
+		};
+
+		if (!kpi.CORR_KPI_FUNCION || kpi.CORR_KPI_FUNCION <= 0) {
+			return this.kpiRepo.create(payload);
+		}
+
+		return this.kpiRepo.update(payload, [
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_KPI_FUNCION', Value: kpi.CORR_KPI_FUNCION },
+		]);
+	}
+
+	crearKpi(corrDescriptorPuesto: number): Observable<IResult> {
+		return this.persistirKpi(corrDescriptorPuesto, {
+			CORR_KPI_FUNCION: 0,
+			NOMBRE_INDICADOR: '',
+			CORR_FRECUENCIA: null,
+			META: null,
+		});
+	}
+
+	eliminarKpi(corrDescriptorPuesto: number, corrKpiFuncion: number): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrKpi = Number(corrKpiFuncion);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corrKpi || corrKpi <= 0) {
+			return of({
+				Result: false,
+				Data: null,
+				ErrorCode: 1,
+				ErrorMessage: 'Debe indicar el KPI a eliminar.',
+				RowsAffected: 0,
+			} as IResult);
+		}
+
+		return this.kpiRepo.delete([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_KPI_FUNCION', Value: corrKpi },
 		]);
 	}
 
@@ -610,7 +765,7 @@ export class ScDescriptorPuestoService {
 
 				return from(activas).pipe(
 					concatMap((funcion) =>
-						this.guardarFuncion(corrDescriptor, funcion, tipoFuncion).pipe(
+						this.persistirFuncion(corrDescriptor, funcion, tipoFuncion).pipe(
 							concatMap((response) => {
 								if (!response?.Result || !persistirActividadesPendientes) {
 									return of(response);

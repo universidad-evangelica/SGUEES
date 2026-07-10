@@ -1,9 +1,8 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { DxFormComponent } from 'devextreme-angular/ui/form';
 import { DxTabPanelComponent } from 'devextreme-angular/ui/tab-panel';
-import { take, concatMap, map } from 'rxjs/operators';
-import { forkJoin, Observable, of } from 'rxjs';
+import { take } from 'rxjs/operators';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
@@ -17,9 +16,14 @@ import {
 	mapApiErrorMessage,
 } from 'src/app/shared/mtto/mtto-api-messages';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
+import { environment } from 'src/environments/environment';
 
 import { ScDescriptorFuncionActividad } from './sc-descriptor-funcion-actividad/models/sc-descriptor-funcion-actividad';
 import { ScDescriptorFuncion } from './sc-descriptor-funcion/models/sc-descriptor-funcion';
+import {
+	ScDescriptorKpiFuncion,
+	ScFrecuenciaLookup,
+} from './sc-descriptor-kpi-funcion/models/sc-descriptor-kpi-funcion';
 import { DescriptorSubTab, MockPuesto, MockUnidad, ScDescriptorPuesto } from './models/sc-descriptor-puesto';
 import {
 	FORMATO_CORTA,
@@ -38,7 +42,7 @@ import { ScDescriptorPuestoService } from './sc-descriptor-puesto.service';
 	templateUrl: './sc-descriptor-puesto.component.html',
 	styleUrls: ['./sc-descriptor-puesto.component.scss'],
 })
-export class ScDescriptorPuestoComponent extends CBaseComponent implements OnInit {
+export class ScDescriptorPuestoComponent extends CBaseComponent implements OnInit, OnDestroy {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 	@ViewChild('fHeaderData', { static: false }) headerForm!: DxFormComponent;
 	@ViewChild('tabPanelPrincipal', { static: false }) tabPanelPrincipal?: DxTabPanelComponent;
@@ -62,6 +66,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_UNIDAD: MockUnidad[] = [];
 	mCORR_PUESTO: MockPuesto[] = [];
 	mCORR_PUESTO_REPORTA: MockPuesto[] = [];
+	mCORR_FRECUENCIA: ScFrecuenciaLookup[] = [];
 	reportaLookupColumns = [
 		{ dataField: 'RESPONSABLE', caption: 'Nombre', width: 220 },
 		{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260 },
@@ -74,18 +79,27 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	itemsTabBitacora: any[] = [];
 
 	funcionesClave: ScDescriptorFuncion[] = [];
-	funcionesClaveEliminadas: number[] = [];
 	funcionesSecundarias: ScDescriptorFuncion[] = [];
-	funcionesSecundariasEliminadas: number[] = [];
+	kpis: ScDescriptorKpiFuncion[] = [];
 	actividadesPopupVisible = false;
+	actividadesPopupFullScreen = false;
 	funcionActividadesSeleccionada: ScDescriptorFuncion | null = null;
 	actividadesPopup: ScDescriptorFuncionActividad[] = [];
-	actividadesEliminadas: number[] = [];
 
 	private funcionesClaveLoadSeq = 0;
 	private funcionesSecundariasLoadSeq = 0;
+	private kpisLoadSeq = 0;
 	private funcionesTabsDirty = false;
 	private sincronizandoHeader = false;
+	private funcionPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
+	private actividadPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
+	private kpiPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+	readonly actividadesPopupWrapperAttr = { class: 'descriptor-actividades-popup-wrapper' };
+	private actividadesPopupMediaQuery?: MediaQueryList;
+	private readonly onActividadesPopupMediaChange = (event: MediaQueryListEvent): void => {
+		this.actividadesPopupFullScreen = event.matches;
+	};
 
 	private readonly maintenanceSubtitulo = 'Descriptor de Puesto';
 
@@ -113,11 +127,50 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.llenaComboBox();
 		this.consultar();
+		this.configurarActividadesPopupResponsive();
+	}
+
+	ngOnDestroy(): void {
+		this.actividadesPopupMediaQuery?.removeEventListener('change', this.onActividadesPopupMediaChange);
+	}
+
+	private configurarActividadesPopupResponsive(): void {
+		if (typeof window === 'undefined' || !window.matchMedia) {
+			return;
+		}
+
+		this.actividadesPopupMediaQuery = window.matchMedia('(max-width: 991.98px)');
+		this.actividadesPopupFullScreen = this.actividadesPopupMediaQuery.matches;
+		this.actividadesPopupMediaQuery.addEventListener('change', this.onActividadesPopupMediaChange);
 	}
 
 	llenaComboBox(): void {
 		this.mCORR_UNIDAD = [...MOCK_UNIDADES];
 		this.actualizarPuestosPorUnidad(this.model?.CORR_UNIDAD ?? null);
+		this.cargarFrecuenciasLookup();
+	}
+
+	private cargarFrecuenciasLookup(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_KPI_FUNCION',
+				'SC_FRECUENCIA',
+				'GetCORR_FRECUENCIA',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.mCORR_FRECUENCIA = response.Data.map((item: ScFrecuenciaLookup) => ({
+							CORR_FRECUENCIA: Number(item.CORR_FRECUENCIA),
+							NOMBRE_FRECUENCIA: item.NOMBRE_FRECUENCIA ?? '',
+						}));
+					}
+				},
+				error: (error) => this.notifyApiError(error),
+			});
 	}
 
 	selectedLookUpCORR_UNIDAD(vRow: any): number {
@@ -130,6 +183,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	selectedLookUpCORR_PUESTO_REPORTA(vRow: any): number {
 		return vRow[0].CORR_PUESTO;
+	}
+
+	selectedLookUpCORR_FRECUENCIA(vRow: any): number {
+		return vRow[0].CORR_FRECUENCIA;
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -295,15 +352,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarFuncionesClave();
 		if (this.esFormatoCorta) {
 			this.cargarFuncionesSecundarias();
+			this.cargarKpis();
 		}
 	}
 
 	limpiarDatosTabs(): void {
 		this.itemsTabBitacora = [];
 		this.funcionesClave = [];
-		this.funcionesClaveEliminadas = [];
 		this.funcionesSecundarias = [];
-		this.funcionesSecundariasEliminadas = [];
+		this.kpis = [];
 		this.resetearFuncionesTabsDirty();
 		this.cerrarActividadesPopup();
 	}
@@ -322,11 +379,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	get funcionesSecundariasVisibles(): ScDescriptorFuncion[] {
-		return this.funcionesSecundarias.filter((item) => !item._marcadaEliminar);
+		return this.funcionesSecundarias;
 	}
 
 	get funcionesClaveVisibles(): ScDescriptorFuncion[] {
-		return this.funcionesClave.filter((item) => !item._marcadaEliminar);
+		return this.funcionesClave;
+	}
+
+	get kpisVisibles(): ScDescriptorKpiFuncion[] {
+		return this.kpis;
 	}
 
 	get puedeGestionarFunciones(): boolean {
@@ -334,17 +395,31 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	agregarFuncionClave(): void {
-		if (this.readOnly) {
+		if (this.readOnly || !this.requiereDescriptorGuardado()) {
 			return;
 		}
 
-		this.funcionesClave.push({
-			CORR_FUNCION: 0,
-			NOMBRE_FUNCION: '',
-			TIPO_FUNCION: TIPO_FUNCION_CLAVE,
-			CANT_ACTIVIDADES: 0,
-		});
-		this.marcarFuncionesTabsDirty();
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		this.service
+			.crearFuncion(corrDescriptor, TIPO_FUNCION_CLAVE)
+			.pipe(take(1))
+			.subscribe({
+				next: (response) => {
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+
+					const saved = this.extraerFuncionGuardada(response);
+					this.funcionesClave.push({
+						CORR_FUNCION: saved.CORR_FUNCION,
+						NOMBRE_FUNCION: saved.NOMBRE_FUNCION ?? '',
+						TIPO_FUNCION: TIPO_FUNCION_CLAVE,
+						CANT_ACTIVIDADES: Number(saved.CANT_ACTIVIDADES ?? 0),
+					});
+				},
+				error: (error) => this.notifyApiError(error),
+			});
 	}
 
 	eliminarFuncionClave(funcion: ScDescriptorFuncion): void {
@@ -352,25 +427,54 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		if (funcion.CORR_FUNCION > 0) {
-			this.funcionesClaveEliminadas.push(funcion.CORR_FUNCION);
-		}
-
-		funcion._marcadaEliminar = true;
-		this.marcarFuncionesTabsDirty();
-	}
-
-	agregarFuncionSecundaria(): void {
-		if (this.readOnly || !this.esFormatoCorta) {
+		if (!funcion.CORR_FUNCION || funcion.CORR_FUNCION <= 0) {
+			this.funcionesClave = this.funcionesClave.filter((item) => item !== funcion);
 			return;
 		}
 
-		this.funcionesSecundarias.push({
-			CORR_FUNCION: 0,
-			NOMBRE_FUNCION: '',
-			TIPO_FUNCION: TIPO_FUNCION_SECUNDARIA,
-		});
-		this.marcarFuncionesTabsDirty();
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrFuncion = Number(funcion.CORR_FUNCION);
+		this.service
+			.eliminarFuncion(corrDescriptor, corrFuncion)
+			.pipe(take(1))
+			.subscribe({
+				next: (response) => {
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+
+					this.funcionesClave = this.funcionesClave.filter((item) => item.CORR_FUNCION !== corrFuncion);
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	agregarFuncionSecundaria(): void {
+		if (this.readOnly || !this.esFormatoCorta || !this.requiereDescriptorGuardado()) {
+			return;
+		}
+
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		this.service
+			.crearFuncion(corrDescriptor, TIPO_FUNCION_SECUNDARIA)
+			.pipe(take(1))
+			.subscribe({
+				next: (response) => {
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+
+					const saved = this.extraerFuncionGuardada(response);
+					this.funcionesSecundarias.push({
+						CORR_FUNCION: saved.CORR_FUNCION,
+						NOMBRE_FUNCION: saved.NOMBRE_FUNCION ?? '',
+						TIPO_FUNCION: TIPO_FUNCION_SECUNDARIA,
+					});
+				},
+				error: (error) => this.notifyApiError(error),
+			});
 	}
 
 	eliminarFuncionSecundaria(funcion: ScDescriptorFuncion): void {
@@ -378,12 +482,29 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		if (funcion.CORR_FUNCION > 0) {
-			this.funcionesSecundariasEliminadas.push(funcion.CORR_FUNCION);
+		if (!funcion.CORR_FUNCION || funcion.CORR_FUNCION <= 0) {
+			this.funcionesSecundarias = this.funcionesSecundarias.filter((item) => item !== funcion);
+			return;
 		}
 
-		funcion._marcadaEliminar = true;
-		this.marcarFuncionesTabsDirty();
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrFuncion = Number(funcion.CORR_FUNCION);
+		this.service
+			.eliminarFuncion(corrDescriptor, corrFuncion)
+			.pipe(take(1))
+			.subscribe({
+				next: (response) => {
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+
+					this.funcionesSecundarias = this.funcionesSecundarias.filter(
+						(item) => item.CORR_FUNCION !== corrFuncion
+					);
+				},
+				error: (error) => this.notifyApiError(error),
+			});
 	}
 
 	onFuncionClaveChanged(e: any, funcion: ScDescriptorFuncion): void {
@@ -392,7 +513,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 
 		funcion.NOMBRE_FUNCION = `${e?.value ?? ''}`;
-		this.marcarFuncionesTabsDirty();
+		this.programarPersistirFuncion(funcion, TIPO_FUNCION_CLAVE);
 	}
 
 	onFuncionSecundariaChanged(e: any, funcion: ScDescriptorFuncion): void {
@@ -401,7 +522,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 
 		funcion.NOMBRE_FUNCION = `${e?.value ?? ''}`;
-		this.marcarFuncionesTabsDirty();
+		this.programarPersistirFuncion(funcion, TIPO_FUNCION_SECUNDARIA);
 	}
 
 	abrirActividades(funcion: ScDescriptorFuncion): void {
@@ -409,96 +530,244 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		this.funcionActividadesSeleccionada = funcion;
-		this.actividadesEliminadas = [];
-		this.actividadesPopupVisible = true;
-
-		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
-		if (funcion.CORR_FUNCION > 0 && corrDescriptor > 0) {
-			this.cargarActividadesPopup(funcion);
+		if (!funcion.CORR_FUNCION || funcion.CORR_FUNCION <= 0) {
+			this.notifyDescriptorWarning('La funcion debe estar guardada antes de registrar actividades.');
 			return;
 		}
 
-		this.actividadesPopup = (funcion.actividadesPendientes ?? []).map((item) => ({
-			CORR_FUNCION: funcion.CORR_FUNCION,
-			CORR_ACTIVIDAD: item.CORR_ACTIVIDAD ?? 0,
-			NOMBRE_ACTIVIDAD: item.NOMBRE_ACTIVIDAD ?? '',
-		}));
+		this.funcionActividadesSeleccionada = funcion;
+		this.actividadesPopupVisible = true;
+		this.cargarActividadesPopup(funcion);
 	}
 
 	cerrarActividadesPopup(): void {
 		this.actividadesPopupVisible = false;
 		this.funcionActividadesSeleccionada = null;
 		this.actividadesPopup = [];
-		this.actividadesEliminadas = [];
 	}
 
 	agregarActividad(): void {
-		if (!this.funcionActividadesSeleccionada) {
-			return;
-		}
-
-		this.actividadesPopup.push({
-			CORR_FUNCION: this.funcionActividadesSeleccionada.CORR_FUNCION,
-			CORR_ACTIVIDAD: 0,
-			NOMBRE_ACTIVIDAD: '',
-		});
-	}
-
-	eliminarActividad(actividad: ScDescriptorFuncionActividad): void {
-		if (!actividad) {
-			return;
-		}
-
-		if (actividad.CORR_ACTIVIDAD > 0) {
-			this.actividadesEliminadas.push(actividad.CORR_ACTIVIDAD);
-		}
-
-		actividad._marcadaEliminar = true;
-	}
-
-	get actividadesPopupVisibles(): ScDescriptorFuncionActividad[] {
-		return this.actividadesPopup.filter((item) => !item._marcadaEliminar);
-	}
-
-	guardarActividadesPopup(): void {
 		const funcion = this.funcionActividadesSeleccionada;
-		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
-		if (!funcion || !corrDescriptor || corrDescriptor <= 0) {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		if (!funcion?.CORR_FUNCION || corrDescriptor <= 0) {
 			return;
 		}
 
-		if (!funcion.CORR_FUNCION || funcion.CORR_FUNCION <= 0 || corrDescriptor <= 0) {
-			funcion.actividadesPendientes = this.actividadesPopupVisibles.map((item) => ({
-				CORR_FUNCION: 0,
-				CORR_ACTIVIDAD: item.CORR_ACTIVIDAD ?? 0,
-				NOMBRE_ACTIVIDAD: item.NOMBRE_ACTIVIDAD ?? '',
-			}));
-			funcion.CANT_ACTIVIDADES = funcion.actividadesPendientes.length;
-			this.cerrarActividadesPopup();
-			this.notifyFx('Actividades registradas. Se guardaran al guardar el descriptor.', NotifyType.Success);
-			return;
-		}
-
-		this.loadingVisible = true;
 		this.service
-			.guardarActividadesFuncion(corrDescriptor, funcion.CORR_FUNCION, this.actividadesPopup, this.actividadesEliminadas)
+			.crearActividad(corrDescriptor, funcion.CORR_FUNCION)
 			.pipe(take(1))
 			.subscribe({
 				next: (response) => {
-					if (response.Result) {
-						this.notifyFx('Actividades guardadas con exito.', NotifyType.Success);
-						this.cargarActividadesPopup(funcion, true);
-						this.actualizarContadorActividades(funcion);
-					} else {
+					if (!response?.Result) {
 						this.notifyApiResponse(response);
+						return;
 					}
-					this.loadingVisible = false;
+
+					const saved = this.extraerActividadGuardada(response);
+					this.actividadesPopup.push({
+						CORR_FUNCION: funcion.CORR_FUNCION,
+						CORR_ACTIVIDAD: saved.CORR_ACTIVIDAD,
+						NOMBRE_ACTIVIDAD: saved.NOMBRE_ACTIVIDAD ?? '',
+					});
+					this.actualizarContadorActividades(funcion);
 				},
-				error: (error) => {
-					this.notifyApiError(error);
-					this.loadingVisible = false;
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	eliminarActividad(actividad: ScDescriptorFuncionActividad): void {
+		const funcion = this.funcionActividadesSeleccionada;
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		if (!actividad || !funcion) {
+			return;
+		}
+
+		if (!actividad.CORR_ACTIVIDAD || actividad.CORR_ACTIVIDAD <= 0) {
+			this.actividadesPopup = this.actividadesPopup.filter((item) => item !== actividad);
+			this.actualizarContadorActividades(funcion);
+			return;
+		}
+
+		this.service
+			.eliminarActividad(corrDescriptor, funcion.CORR_FUNCION, actividad.CORR_ACTIVIDAD)
+			.pipe(take(1))
+			.subscribe({
+				next: (response) => {
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+
+					this.actividadesPopup = this.actividadesPopup.filter(
+						(item) => item.CORR_ACTIVIDAD !== actividad.CORR_ACTIVIDAD
+					);
+					this.actualizarContadorActividades(funcion);
 				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	onActividadChanged(e: any, actividad: ScDescriptorFuncionActividad): void {
+		const funcion = this.funcionActividadesSeleccionada;
+		if (!actividad || !funcion || this.readOnly) {
+			return;
+		}
+
+		actividad.NOMBRE_ACTIVIDAD = `${e?.value ?? ''}`;
+		this.programarPersistirActividad(actividad, funcion);
+	}
+
+	get actividadesPopupVisibles(): ScDescriptorFuncionActividad[] {
+		return this.actividadesPopup;
+	}
+
+	agregarKpi(): void {
+		if (this.readOnly || !this.esFormatoCorta || !this.requiereDescriptorGuardado()) {
+			return;
+		}
+
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		this.service
+			.crearKpi(corrDescriptor)
+			.pipe(take(1))
+			.subscribe({
+				next: (response) => {
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+
+					const saved = this.extraerKpiGuardado(response);
+					this.kpis.push({
+						CORR_KPI_FUNCION: saved.CORR_KPI_FUNCION,
+						NOMBRE_INDICADOR: saved.NOMBRE_INDICADOR ?? '',
+						CORR_FRECUENCIA: saved.CORR_FRECUENCIA ?? null,
+						NOMBRE_FRECUENCIA: saved.NOMBRE_FRECUENCIA ?? '',
+						META: saved.META ?? null,
+					});
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	eliminarKpi(kpi: ScDescriptorKpiFuncion): void {
+		if (this.readOnly || !kpi) {
+			return;
+		}
+
+		if (!kpi.CORR_KPI_FUNCION || kpi.CORR_KPI_FUNCION <= 0) {
+			this.kpis = this.kpis.filter((item) => item !== kpi);
+			return;
+		}
+
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrKpi = Number(kpi.CORR_KPI_FUNCION);
+		this.service
+			.eliminarKpi(corrDescriptor, corrKpi)
+			.pipe(take(1))
+			.subscribe({
+				next: (response) => {
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+
+					this.kpis = this.kpis.filter((item) => item.CORR_KPI_FUNCION !== corrKpi);
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	onKpiIndicadorChanged(e: any, kpi: ScDescriptorKpiFuncion): void {
+		if (!kpi || this.readOnly) {
+			return;
+		}
+
+		kpi.NOMBRE_INDICADOR = `${e?.value ?? ''}`;
+		this.programarPersistirKpi(kpi);
+	}
+
+	onKpiFrecuenciaChanged(value: number | null, kpi: ScDescriptorKpiFuncion): void {
+		if (!kpi || this.readOnly) {
+			return;
+		}
+
+		kpi.CORR_FRECUENCIA = value != null && value > 0 ? Number(value) : null;
+		const frecuencia = this.mCORR_FRECUENCIA.find(
+			(item) => Number(item.CORR_FRECUENCIA) === Number(kpi.CORR_FRECUENCIA)
+		);
+		kpi.NOMBRE_FRECUENCIA = frecuencia?.NOMBRE_FRECUENCIA ?? '';
+		this.programarPersistirKpi(kpi);
+	}
+
+	onKpiMetaChanged(e: any, kpi: ScDescriptorKpiFuncion): void {
+		if (!kpi || this.readOnly) {
+			return;
+		}
+
+		const value = e?.value;
+		if (value == null || value === '') {
+			kpi.META = null;
+			if (e?.component?.option('value') != null) {
+				e.component.option('value', null);
+			}
+			this.programarPersistirKpi(kpi);
+			return;
+		}
+
+		const parsed = Math.trunc(Number(value));
+		if (Number.isNaN(parsed)) {
+			kpi.META = null;
+			if (e?.component) {
+				e.component.option('value', null);
+			}
+			return;
+		}
+
+		const clamped = Math.min(100, Math.max(0, parsed));
+		kpi.META = clamped;
+		if (e?.component && e.component.option('value') !== clamped) {
+			e.component.option('value', clamped);
+		}
+		this.programarPersistirKpi(kpi);
+	}
+
+	private cargarKpis(forzar = false): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoCorta) {
+			this.kpis = [];
+			return;
+		}
+
+		if (!forzar && this.funcionesTabsDirty && !this.readOnly) {
+			return;
+		}
+
+		const loadSeq = ++this.kpisLoadSeq;
+		this.service
+			.getKpisLookup(corrDescriptor)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (loadSeq !== this.kpisLoadSeq) {
+						return;
+					}
+
+					if (!forzar && this.funcionesTabsDirty && !this.readOnly) {
+						return;
+					}
+
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.kpis = response.Data.map((item: ScDescriptorKpiFuncion) => ({
+							CORR_KPI_FUNCION: item.CORR_KPI_FUNCION,
+							NOMBRE_INDICADOR: item.NOMBRE_INDICADOR ?? '',
+							CORR_FRECUENCIA: item.CORR_FRECUENCIA ?? null,
+							NOMBRE_FRECUENCIA: item.NOMBRE_FRECUENCIA ?? '',
+							META: item.META ?? null,
+						}));
+					}
+				},
+				error: (error) => this.notifyApiError(error),
 			});
 	}
 
@@ -506,7 +775,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0) {
 			this.funcionesClave = [];
-			this.funcionesClaveEliminadas = [];
 			return;
 		}
 
@@ -540,14 +808,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 								TIPO_FUNCION: item.TIPO_FUNCION ?? TIPO_FUNCION_CLAVE,
 								CANT_ACTIVIDADES: Number(item.CANT_ACTIVIDADES ?? 0),
 							}));
-						this.funcionesClaveEliminadas = [];
 					}
 				},
 				error: (error) => this.notifyApiError(error),
 			});
 	}
 
-	private cargarActividadesPopup(funcion: ScDescriptorFuncion, resetEliminadas = false): void {
+	private cargarActividadesPopup(funcion: ScDescriptorFuncion): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || !funcion?.CORR_FUNCION) {
 			this.actividadesPopup = [];
@@ -565,9 +832,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							CORR_ACTIVIDAD: item.CORR_ACTIVIDAD,
 							NOMBRE_ACTIVIDAD: item.NOMBRE_ACTIVIDAD ?? '',
 						}));
-						if (resetEliminadas) {
-							this.actividadesEliminadas = [];
-						}
 					}
 				},
 				error: (error) => this.notifyApiError(error),
@@ -578,106 +842,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		funcion.CANT_ACTIVIDADES = this.actividadesPopupVisibles.length;
 	}
 
-	private persistirFuncionesDescriptor(
-		corrDescriptorPuesto: number,
-		contexto?: {
-			funcionesClave: ScDescriptorFuncion[];
-			funcionesSecundarias: ScDescriptorFuncion[];
-			funcionesClaveEliminadas: number[];
-			funcionesSecundariasEliminadas: number[];
-			guardarSecundarias: boolean;
-		}
-	): Observable<boolean> {
-		const corrDescriptor = Number(corrDescriptorPuesto);
-		if (!corrDescriptor || corrDescriptor <= 0) {
-			return of(true);
-		}
-
-		const funcionesClave = contexto?.funcionesClave ?? this.funcionesClave;
-		const funcionesSecundarias = contexto?.funcionesSecundarias ?? this.funcionesSecundarias;
-		const funcionesClaveEliminadas = contexto?.funcionesClaveEliminadas ?? this.funcionesClaveEliminadas;
-		const funcionesSecundariasEliminadas =
-			contexto?.funcionesSecundariasEliminadas ?? this.funcionesSecundariasEliminadas;
-		const guardarSecundarias = contexto?.guardarSecundarias ?? this.esFormatoCorta;
-
-		const operaciones = [
-			this.service.guardarFuncionesClave(corrDescriptor, funcionesClave, funcionesClaveEliminadas),
-		];
-
-		if (guardarSecundarias) {
-			operaciones.push(
-				this.service.guardarFuncionesSecundarias(
-					corrDescriptor,
-					funcionesSecundarias,
-					funcionesSecundariasEliminadas
-				)
-			);
-		}
-
-		return forkJoin(operaciones).pipe(
-			map((responses) => {
-				const failed = responses.find((response) => !response?.Result);
-				if (failed) {
-					this.notifyApiResponse(failed);
-					return false;
-				}
-
-				this.aplicarFuncionesLocalesTrasGuardar(funcionesClave, responses[0], TIPO_FUNCION_CLAVE);
-				if (guardarSecundarias && responses.length > 1) {
-					this.aplicarFuncionesLocalesTrasGuardar(
-						funcionesSecundarias,
-						responses[1],
-						TIPO_FUNCION_SECUNDARIA
-					);
-				}
-
-				this.funcionesClave = funcionesClave.filter((item) => !item._marcadaEliminar);
-				this.funcionesSecundarias = funcionesSecundarias.filter((item) => !item._marcadaEliminar);
-				this.funcionesClaveEliminadas = [];
-				this.funcionesSecundariasEliminadas = [];
-				this.resetearFuncionesTabsDirty();
-				return true;
-			})
-		);
-	}
-
-	private aplicarFuncionesLocalesTrasGuardar(
-		funciones: ScDescriptorFuncion[],
-		response: any,
-		tipoFuncion: string
-	): void {
-		if (!response?.Result) {
-			return;
-		}
-
-		const activas = funciones.filter((item) => !item._marcadaEliminar);
-		const guardadas: ScDescriptorFuncion[] = Array.isArray(response.Data)
-			? (response.Data as ScDescriptorFuncion[])
-			: response.Data
-				? [response.Data as ScDescriptorFuncion]
-				: [];
-
-		activas.forEach((funcion, index) => {
-			const saved = guardadas[index];
-			if (!saved) {
-				return;
-			}
-
-			funcion.CORR_FUNCION = Number(saved.CORR_FUNCION) || funcion.CORR_FUNCION;
-			funcion.NOMBRE_FUNCION = saved.NOMBRE_FUNCION ?? funcion.NOMBRE_FUNCION;
-			funcion.TIPO_FUNCION = saved.TIPO_FUNCION ?? tipoFuncion;
-			if (saved.CANT_ACTIVIDADES != null) {
-				funcion.CANT_ACTIVIDADES = Number(saved.CANT_ACTIVIDADES);
-			}
-		});
-	}
-
 	private cargarFuncionesSecundarias(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoCorta) {
 			if (!corrDescriptor || corrDescriptor <= 0) {
 				this.funcionesSecundarias = [];
-				this.funcionesSecundariasEliminadas = [];
 			}
 			return;
 		}
@@ -711,15 +880,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 								NOMBRE_FUNCION: item.NOMBRE_FUNCION ?? '',
 								TIPO_FUNCION: item.TIPO_FUNCION ?? TIPO_FUNCION_SECUNDARIA,
 							}));
-						this.funcionesSecundariasEliminadas = [];
 					}
 				},
 				error: (error) => this.notifyApiError(error),
 			});
-	}
-
-	private persistirFuncionesClave(corrDescriptorPuesto: number): Observable<boolean> {
-		return this.persistirFuncionesDescriptor(corrDescriptorPuesto);
 	}
 
 	get tieneBitacora(): boolean {
@@ -856,41 +1020,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		this.guardarMttoDescriptor(this.buildContextoFunciones());
+		this.guardarMttoDescriptor();
 	}
 
-	private buildContextoFunciones(): {
-		funcionesClave: ScDescriptorFuncion[];
-		funcionesSecundarias: ScDescriptorFuncion[];
-		funcionesClaveEliminadas: number[];
-		funcionesSecundariasEliminadas: number[];
-		guardarSecundarias: boolean;
-	} {
-		return {
-			funcionesClave: this.funcionesClave.map((item) => ({
-				...item,
-				TIPO_FUNCION: TIPO_FUNCION_CLAVE,
-				actividadesPendientes: item.actividadesPendientes
-					? item.actividadesPendientes.map((actividad) => ({ ...actividad }))
-					: undefined,
-			})),
-			funcionesSecundarias: this.funcionesSecundarias.map((item) => ({
-				...item,
-				TIPO_FUNCION: TIPO_FUNCION_SECUNDARIA,
-			})),
-			funcionesClaveEliminadas: [...this.funcionesClaveEliminadas],
-			funcionesSecundariasEliminadas: [...this.funcionesSecundariasEliminadas],
-			guardarSecundarias: this.esFormatoCorta,
-		};
-	}
-
-	private guardarMttoDescriptor(contextoFunciones: {
-		funcionesClave: ScDescriptorFuncion[];
-		funcionesSecundarias: ScDescriptorFuncion[];
-		funcionesClaveEliminadas: number[];
-		funcionesSecundariasEliminadas: number[];
-		guardarSecundarias: boolean;
-	}): void {
+	private guardarMttoDescriptor(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
 		}
@@ -899,13 +1032,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const action = isAdd ? this.service.insert(this.model) : this.service.update(this.model);
 
 		this.loadingVisible = true;
-		action
-			.pipe(
-				concatMap((response: any) => {
-					if (!response?.Result) {
-						return of(response);
-					}
-
+		action.pipe(take(1)).subscribe({
+			next: (response: any) => {
+				if (response?.Result) {
 					const descriptor = this.fillData(response.Data as ScDescriptorPuesto);
 					descriptor.NOMBRE_UNIDAD = this.getNombreUnidad(descriptor.CORR_UNIDAD);
 					descriptor.NOMBRE_PUESTO =
@@ -918,50 +1047,28 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.actualizarSubTabs();
 					this.aplicarRegistroEnGrid(descriptor, isAdd);
 
-					return this.persistirFuncionesDescriptor(
-						Number(descriptor.CORR_DESCRIPTOR_PUESTO),
-						contextoFunciones
-					).pipe(
-						concatMap((funcionesGuardadas) => {
-							if (!funcionesGuardadas) {
-								return of({
-									Result: false,
-									ErrorCode: 1,
-									ErrorMessage:
-										'El descriptor se guardó, pero no se pudieron guardar las funciones. Revise e intente de nuevo.',
-									Data: null,
-									RowsAffected: 0,
-								});
-							}
-
-							this.recargarFuncionesTrasGuardar(contextoFunciones.guardarSecundarias);
-							return of(response);
-						})
-					);
-				}),
-				take(1)
-			)
-			.subscribe({
-				next: (response: any) => {
-					if (response?.Result) {
-						this.habilitar();
-						setTimeout(() => this.syncHeaderForm());
-
-						this.notifyFx(
-							isAdd ? 'Registro creado con exito!' : 'Registro modificado con exito!',
-							NotifyType.Success,
-							{ raw: true }
-						);
-					} else if (response) {
-						this.notifyApiResponse(response);
+					if (isAdd) {
+						this.cargarDatosTabs();
 					}
-					this.loadingVisible = false;
-				},
-				error: (error: any) => {
-					this.notifyApiError(error);
-					this.loadingVisible = false;
-				},
-			});
+
+					this.habilitar();
+					setTimeout(() => this.syncHeaderForm());
+
+					this.notifyFx(
+						isAdd ? 'Registro creado con exito!' : 'Registro modificado con exito!',
+						NotifyType.Success,
+						{ raw: true }
+					);
+				} else if (response) {
+					this.notifyApiResponse(response);
+				}
+				this.loadingVisible = false;
+			},
+			error: (error: any) => {
+				this.notifyApiError(error);
+				this.loadingVisible = false;
+			},
+		});
 	}
 
 	override cancelar(): void {
@@ -1124,15 +1231,183 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.funcionesSecundariasLoadSeq++;
 	}
 
-	private recargarFuncionesTrasGuardar(guardarSecundarias: boolean): void {
-		this.resetearFuncionesTabsDirty();
-		this.cargarFuncionesClave(true);
-		if (guardarSecundarias) {
-			this.cargarFuncionesSecundarias(true);
-		} else {
-			this.funcionesSecundarias = [];
-			this.funcionesSecundariasEliminadas = [];
+	private requiereDescriptorGuardado(): boolean {
+		const corr = this.obtenerCorrDescriptor();
+		if (corr > 0) {
+			return true;
 		}
+
+		this.notifyDescriptorWarning(
+			'Debe guardar las generalidades del descriptor antes de registrar funciones o actividades.'
+		);
+		return false;
+	}
+
+	private obtenerCorrDescriptor(): number {
+		return Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0;
+	}
+
+	private extraerFuncionGuardada(response: any): ScDescriptorFuncion {
+		const data = response?.Data;
+		if (Array.isArray(data) && data.length > 0) {
+			return data[data.length - 1] as ScDescriptorFuncion;
+		}
+
+		return (data ?? {}) as ScDescriptorFuncion;
+	}
+
+	private extraerActividadGuardada(response: any): ScDescriptorFuncionActividad {
+		const data = response?.Data;
+		if (Array.isArray(data) && data.length > 0) {
+			return data[data.length - 1] as ScDescriptorFuncionActividad;
+		}
+
+		return (data ?? {}) as ScDescriptorFuncionActividad;
+	}
+
+	private extraerKpiGuardado(response: any): ScDescriptorKpiFuncion {
+		const data = response?.Data;
+		if (Array.isArray(data) && data.length > 0) {
+			return data[data.length - 1] as ScDescriptorKpiFuncion;
+		}
+
+		return (data ?? {}) as ScDescriptorKpiFuncion;
+	}
+
+	private programarPersistirKpi(kpi: ScDescriptorKpiFuncion): void {
+		if (!kpi?.CORR_KPI_FUNCION || kpi.CORR_KPI_FUNCION <= 0) {
+			return;
+		}
+
+		this.marcarFuncionesTabsDirty();
+		const key = `kpi-${kpi.CORR_KPI_FUNCION}`;
+		const prev = this.kpiPersistTimers.get(key);
+		if (prev) {
+			clearTimeout(prev);
+		}
+
+		this.kpiPersistTimers.set(
+			key,
+			setTimeout(() => {
+				this.kpiPersistTimers.delete(key);
+				this.persistirKpiEnLinea(kpi);
+			}, 500)
+		);
+	}
+
+	private persistirKpiEnLinea(kpi: ScDescriptorKpiFuncion): void {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		if (!corrDescriptor) {
+			return;
+		}
+
+		this.service
+			.persistirKpi(corrDescriptor, kpi)
+			.pipe(take(1))
+			.subscribe({
+				next: (response) => {
+					this.resetearFuncionesTabsDirty();
+					if (response?.Result && response.Data) {
+						const saved = this.extraerKpiGuardado(response);
+						kpi.NOMBRE_FRECUENCIA = saved.NOMBRE_FRECUENCIA ?? kpi.NOMBRE_FRECUENCIA;
+					} else if (!response?.Result) {
+						this.notifyApiResponse(response);
+					}
+				},
+				error: (error) => {
+					this.resetearFuncionesTabsDirty();
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	private programarPersistirFuncion(funcion: ScDescriptorFuncion, tipoFuncion: string): void {
+		if (!funcion?.CORR_FUNCION || funcion.CORR_FUNCION <= 0) {
+			return;
+		}
+
+		this.marcarFuncionesTabsDirty();
+		const key = `${tipoFuncion}-${funcion.CORR_FUNCION}`;
+		const prev = this.funcionPersistTimers.get(key);
+		if (prev) {
+			clearTimeout(prev);
+		}
+
+		this.funcionPersistTimers.set(
+			key,
+			setTimeout(() => {
+				this.funcionPersistTimers.delete(key);
+				this.persistirFuncionEnLinea(funcion, tipoFuncion);
+			}, 500)
+		);
+	}
+
+	private persistirFuncionEnLinea(funcion: ScDescriptorFuncion, tipoFuncion: string): void {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		if (!corrDescriptor) {
+			return;
+		}
+
+		this.service
+			.persistirFuncion(corrDescriptor, funcion, tipoFuncion)
+			.pipe(take(1))
+			.subscribe({
+				next: (response) => {
+					this.resetearFuncionesTabsDirty();
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+					}
+				},
+				error: (error) => {
+					this.resetearFuncionesTabsDirty();
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	private programarPersistirActividad(
+		actividad: ScDescriptorFuncionActividad,
+		funcion: ScDescriptorFuncion
+	): void {
+		if (!actividad?.CORR_ACTIVIDAD || actividad.CORR_ACTIVIDAD <= 0 || !funcion?.CORR_FUNCION) {
+			return;
+		}
+
+		const key = `${funcion.CORR_FUNCION}-${actividad.CORR_ACTIVIDAD}`;
+		const prev = this.actividadPersistTimers.get(key);
+		if (prev) {
+			clearTimeout(prev);
+		}
+
+		this.actividadPersistTimers.set(
+			key,
+			setTimeout(() => {
+				this.actividadPersistTimers.delete(key);
+				this.persistirActividadEnLinea(actividad, funcion);
+			}, 500)
+		);
+	}
+
+	private persistirActividadEnLinea(
+		actividad: ScDescriptorFuncionActividad,
+		funcion: ScDescriptorFuncion
+	): void {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		if (!corrDescriptor || !funcion?.CORR_FUNCION) {
+			return;
+		}
+
+		this.service
+			.persistirActividad(corrDescriptor, funcion.CORR_FUNCION, actividad)
+			.pipe(take(1))
+			.subscribe({
+				next: (response) => {
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+					}
+				},
+				error: (error) => this.notifyApiError(error),
+			});
 	}
 
 	private actualizarPuestosPorUnidad(corrUnidad: number | null | undefined): void {

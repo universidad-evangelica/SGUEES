@@ -8,6 +8,7 @@ namespace SGUEES.Services
     {
         Task<CResult> GetAllAsync(SC_FRECUENCIAParam xWhere);
         Task<CResult> GetDistinctValuesAsync(SC_FRECUENCIAParam xWhere);
+        Task<CResult> GetFrecuenciasActivasAsync(SC_FRECUENCIAParam xWhere);
         Task<CResult> GetAsync(SC_FRECUENCIAParam xWhere);
         Task<CResult> CreateAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> UpdateAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION);

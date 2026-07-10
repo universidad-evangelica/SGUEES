@@ -33,6 +33,11 @@
 	margin-top: 8px;
 }
 
+:host ::ng-deep .descriptor-sub-tab-panel .dx-multiview-item,
+:host ::ng-deep .descriptor-sub-tab-panel .dx-multiview-item-content {
+	overflow: visible;
+}
+
 .descriptor-secciones-hint {
 	margin: 12px 0 0;
 	padding: 14px 16px;
@@ -58,6 +63,7 @@
 
 .descriptor-sub-tab-content {
 	padding: 12px 4px 4px;
+	min-width: 0;
 }
 
 .descriptor-sub-tab-heading {
@@ -247,13 +253,113 @@
 
 .descriptor-funciones-table-wrap {
 	overflow-x: auto;
+	overflow-y: visible;
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior-x: contain;
+	max-width: 100%;
 	border: 1px solid color-mix(in srgb, var(--base-text-color) 12%, transparent);
 	border-radius: 12px;
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in srgb, var(--base-text-color) 35%, transparent)
+		color-mix(in srgb, var(--base-text-color) 8%, transparent);
+
+	&::-webkit-scrollbar {
+		height: 8px;
+	}
+
+	&::-webkit-scrollbar-track {
+		background: color-mix(in srgb, var(--base-text-color) 8%, transparent);
+		border-radius: 0 0 12px 12px;
+	}
+
+	&::-webkit-scrollbar-thumb {
+		background: color-mix(in srgb, var(--base-text-color) 32%, transparent);
+		border-radius: 999px;
+		border: 2px solid transparent;
+		background-clip: padding-box;
+	}
+
+	&::-webkit-scrollbar-thumb:hover {
+		background: color-mix(in srgb, var(--base-text-color) 48%, transparent);
+		background-clip: padding-box;
+	}
 }
 
 .descriptor-funciones-table {
 	width: 100%;
+	min-width: 0;
 	border-collapse: collapse;
+	table-layout: fixed;
+}
+
+.descriptor-funciones-table-wrap--extensa .descriptor-funciones-table {
+	min-width: 640px;
+}
+
+.descriptor-funciones-table-wrap--kpis .descriptor-funciones-table {
+	min-width: 846px;
+}
+
+.descriptor-funciones-table-wrap--kpis .descriptor-funciones-col-nombre {
+	width: 400px;
+	min-width: 320px;
+	max-width: 400px;
+}
+
+.descriptor-funciones-table-wrap--kpis .descriptor-funciones-col-frecuencia {
+	width: 190px;
+	min-width: 180px;
+}
+
+.descriptor-funciones-table-wrap--kpis .descriptor-funciones-col-meta {
+	width: 98px;
+	min-width: 98px;
+	max-width: 98px;
+	padding: 10px 6px;
+	white-space: nowrap;
+}
+
+.descriptor-funciones-table-wrap--kpis .descriptor-kpi-meta-field {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	width: 100%;
+}
+
+.descriptor-funciones-table-wrap--kpis .descriptor-funciones-col-accion {
+	width: 84px;
+	min-width: 84px;
+	max-width: 84px;
+	padding-left: 8px;
+	padding-right: 8px;
+}
+
+.descriptor-funciones-col-frecuencia {
+	width: 180px;
+	min-width: 180px;
+}
+
+.descriptor-funciones-table-wrap:not(.descriptor-funciones-table-wrap--kpis):not(.descriptor-funciones-table-wrap--extensa)
+	.descriptor-funciones-col-nombre {
+	min-width: 0;
+}
+
+.descriptor-funciones-col-meta {
+	width: 120px;
+	min-width: 120px;
+}
+
+.descriptor-kpi-meta-suffix {
+	font-size: 0.95rem;
+	font-weight: 600;
+	opacity: 0.85;
+	flex-shrink: 0;
+}
+
+:host ::ng-deep .descriptor-funciones-table-wrap .descriptor-funciones-col-frecuencia app-data-lookup,
+:host ::ng-deep .descriptor-funciones-table-wrap .descriptor-funciones-col-frecuencia .dx-dropdownbox {
+	width: 100%;
+	min-width: 0;
 }
 
 .descriptor-funciones-table th,
@@ -273,16 +379,49 @@
 
 .descriptor-funciones-col-codigo {
 	width: 72px;
+	min-width: 72px;
 	text-align: center;
+}
+
+.descriptor-funciones-col-nombre {
+	min-width: 220px;
+	width: auto;
 }
 
 .descriptor-funciones-col-actividades {
 	width: 170px;
+	min-width: 170px;
 }
 
 .descriptor-funciones-col-accion {
 	width: 88px;
+	min-width: 88px;
 	text-align: center;
+}
+
+:host ::ng-deep .descriptor-funciones-table-wrap .descriptor-funciones-col-nombre .dx-texteditor {
+	width: 100%;
+	min-width: 0;
+}
+
+:host ::ng-deep .descriptor-funciones-table-wrap--extensa .descriptor-funciones-col-nombre .dx-texteditor,
+:host ::ng-deep .descriptor-funciones-table-wrap--kpis .descriptor-funciones-col-nombre .dx-texteditor {
+	min-width: 200px;
+}
+
+:host ::ng-deep .descriptor-funciones-table-wrap--kpis .descriptor-funciones-col-nombre .dx-texteditor {
+	min-width: 0;
+}
+
+:host ::ng-deep .descriptor-funciones-table-wrap--kpis .descriptor-kpi-meta-field .dx-numberbox {
+	flex: 1 1 auto;
+	width: auto;
+	min-width: 0;
+	max-width: none;
+}
+
+:host ::ng-deep .descriptor-funciones-table-wrap--kpis .descriptor-kpi-meta-field .dx-numberbox-spin-button {
+	display: none;
 }
 
 .descriptor-funciones-empty {
@@ -341,6 +480,7 @@
 	flex-direction: column;
 	gap: 14px;
 	padding: 4px;
+	min-height: 0;
 }
 
 .descriptor-actividades-popup-actions {
@@ -349,9 +489,72 @@
 	justify-content: space-between;
 	gap: 12px;
 	margin-top: 15px;
+	flex-wrap: wrap;
 }
 
 .descriptor-actividades-popup-actions-right {
 	display: flex;
 	gap: 8px;
+	flex-wrap: wrap;
+}
+
+:host ::ng-deep .descriptor-actividades-popup-wrapper .dx-popup-content {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+:host ::ng-deep .descriptor-actividades-popup-wrapper.dx-popup-fullscreen .dx-popup-content {
+	height: 100%;
+	padding: 12px 16px;
+	box-sizing: border-box;
+}
+
+:host ::ng-deep .descriptor-actividades-popup-wrapper.dx-popup-fullscreen .descriptor-actividades-popup {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+}
+
+:host ::ng-deep .descriptor-actividades-popup-wrapper.dx-popup-fullscreen .descriptor-funciones-table-wrap {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+}
+
+@media (max-width: 991.98px) {
+	.descriptor-actividades-popup-actions {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.descriptor-actividades-popup-actions-right {
+		width: 100%;
+		flex-direction: column;
+	}
+
+	:host ::ng-deep .descriptor-actividades-popup-actions .dx-button,
+	:host ::ng-deep .descriptor-actividades-popup-actions-right .dx-button {
+		width: 100%;
+	}
+
+	.descriptor-funciones-col-accion {
+		width: 56px;
+		min-width: 56px;
+	}
+}
+
+@media (max-width: 575.98px) {
+	.descriptor-actividades-popup {
+		padding: 0;
+	}
+
+	.descriptor-funciones-table th {
+		font-size: 11px;
+	}
+
+	.descriptor-funciones-table th,
+	.descriptor-funciones-table td {
+		padding: 8px;
+	}
 }

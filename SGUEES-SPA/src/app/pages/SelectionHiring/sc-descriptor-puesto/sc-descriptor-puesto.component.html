@@ -118,12 +118,15 @@
 							</h4>
 						</div>
 
-						<div class="descriptor-funciones-table-wrap">
+						<div
+							class="descriptor-funciones-table-wrap"
+							[class.descriptor-funciones-table-wrap--extensa]="esFormatoExtensa"
+						>
 							<table class="descriptor-funciones-table">
 								<thead>
 									<tr>
 										<th class="descriptor-funciones-col-codigo">Codigo</th>
-										<th>Nombre de la funcion clave</th>
+										<th class="descriptor-funciones-col-nombre">Nombre de la funcion clave</th>
 										<th *ngIf="esFormatoExtensa" class="descriptor-funciones-col-actividades">Actividades</th>
 										<th class="descriptor-funciones-col-accion">Accion</th>
 									</tr>
@@ -131,7 +134,7 @@
 								<tbody>
 									<tr *ngFor="let funcion of funcionesClaveVisibles; let i = index">
 										<td class="descriptor-funciones-col-codigo">{{ i + 1 }}</td>
-										<td>
+										<td class="descriptor-funciones-col-nombre">
 											<dx-text-box
 												[(value)]="funcion.NOMBRE_FUNCION"
 												[readOnly]="readOnly"
@@ -148,7 +151,7 @@
 												(click)="abrirActividades(funcion)"
 											>
 												<span>Actividades</span>
-												<span class="descriptor-actividades-badge">{{ (funcion.CANT_ACTIVIDADES ?? funcion.actividadesPendientes?.length) || 0 }}</span>
+												<span class="descriptor-actividades-badge">{{ funcion.CANT_ACTIVIDADES || 0 }}</span>
 											</button>
 										</td>
 										<td class="descriptor-funciones-col-accion">
@@ -202,14 +205,14 @@
 								<thead>
 									<tr>
 										<th class="descriptor-funciones-col-codigo">Codigo</th>
-										<th>Descripcion de la funcion secundaria</th>
+										<th class="descriptor-funciones-col-nombre">Descripcion de la funcion secundaria</th>
 										<th class="descriptor-funciones-col-accion">Accion</th>
 									</tr>
 								</thead>
 								<tbody>
 									<tr *ngFor="let funcion of funcionesSecundariasVisibles; let i = index">
 										<td class="descriptor-funciones-col-codigo">{{ i + 1 }}</td>
-										<td>
+										<td class="descriptor-funciones-col-nombre">
 											<dx-text-box
 												[(value)]="funcion.NOMBRE_FUNCION"
 												[readOnly]="readOnly"
@@ -250,9 +253,99 @@
 						</div>
 					</div>
 
+					<div class="descriptor-sub-tab-content" *ngIf="tab.id === 'kpis' && esFormatoCorta">
+						<div class="descriptor-funciones-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-chart descriptor-funciones-icon" aria-hidden="true"></span>
+								KPIs
+							</h4>
+						</div>
+
+						<div class="descriptor-funciones-table-wrap descriptor-funciones-table-wrap--kpis">
+							<table class="descriptor-funciones-table">
+								<thead>
+									<tr>
+										<th class="descriptor-funciones-col-codigo">Codigo</th>
+										<th class="descriptor-funciones-col-nombre">Indicador</th>
+										<th class="descriptor-funciones-col-frecuencia">Frecuencia</th>
+										<th class="descriptor-funciones-col-meta">Meta</th>
+										<th class="descriptor-funciones-col-accion">Accion</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr *ngFor="let kpi of kpisVisibles; let i = index">
+										<td class="descriptor-funciones-col-codigo">{{ i + 1 }}</td>
+										<td class="descriptor-funciones-col-nombre">
+											<dx-text-box
+												[(value)]="kpi.NOMBRE_INDICADOR"
+												[readOnly]="readOnly"
+												placeholder="Indicador"
+												[maxLength]="255"
+												(onValueChanged)="onKpiIndicadorChanged($event, kpi)"
+											></dx-text-box>
+										</td>
+										<td class="descriptor-funciones-col-frecuencia">
+											<app-data-lookup
+												[model]="mCORR_FRECUENCIA"
+												[value]="kpi.CORR_FRECUENCIA"
+												(valueChange)="onKpiFrecuenciaChanged($event, kpi)"
+												[valueExpr]="'CORR_FRECUENCIA'"
+												[displayExpr]="'NOMBRE_FRECUENCIA'"
+												[selectedRowKeys]="selectedLookUpCORR_FRECUENCIA"
+												[readOnly]="readOnly"
+												[showClearButton]="true"
+											></app-data-lookup>
+										</td>
+										<td class="descriptor-funciones-col-meta">
+											<div class="descriptor-kpi-meta-field">
+												<dx-number-box
+													[(value)]="kpi.META"
+													[readOnly]="readOnly"
+													[min]="0"
+													[max]="100"
+													[step]="1"
+													[format]="'#0'"
+													[showSpinButtons]="false"
+													[showClearButton]="false"
+													placeholder="0"
+													(onValueChanged)="onKpiMetaChanged($event, kpi)"
+												></dx-number-box>
+												<span class="descriptor-kpi-meta-suffix" aria-hidden="true">%</span>
+											</div>
+										</td>
+										<td class="descriptor-funciones-col-accion">
+											<dx-button
+												icon="trash"
+												type="danger"
+												stylingMode="contained"
+												hint="Eliminar KPI"
+												[disabled]="readOnly"
+												(onClick)="eliminarKpi(kpi)"
+											></dx-button>
+										</td>
+									</tr>
+									<tr *ngIf="kpisVisibles.length === 0">
+										<td colspan="5" class="descriptor-funciones-empty">No hay KPIs registrados.</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+
+						<div class="descriptor-funciones-footer">
+							<dx-button
+								text="Agregar KPI"
+								icon="plus"
+								type="default"
+								stylingMode="contained"
+								[disabled]="readOnly"
+								(onClick)="agregarKpi()"
+							></dx-button>
+						</div>
+					</div>
+
 					<div
 						class="descriptor-sub-tab-content descriptor-sub-tab-placeholder"
-						*ngIf="tab.id !== 'objetivo' && tab.id !== 'funciones' && tab.id !== 'funcionesSecundarias'"
+						*ngIf="tab.id !== 'objetivo' && tab.id !== 'funciones' && tab.id !== 'funcionesSecundarias' && tab.id !== 'kpis'"
 					>
 						<h4 class="descriptor-sub-tab-heading">{{ tab.title }}</h4>
 						<p>Seccion en construccion.</p>
@@ -339,7 +432,6 @@
 	[showIndicator]="true"
 	[showPane]="true"
 	[shading]="true"
-	(onShown)="(loadingVisible)"
 >
 </dx-load-panel>
 
@@ -347,8 +439,11 @@
 	[(visible)]="actividadesPopupVisible"
 	[showTitle]="true"
 	[title]="'Actividades - ' + (funcionActividadesSeleccionada?.NOMBRE_FUNCION || 'Funcion clave')"
+	[fullScreen]="actividadesPopupFullScreen"
 	[width]="720"
-	[height]="520"
+	[height]="'auto'"
+	[maxHeight]="520"
+	[wrapperAttr]="actividadesPopupWrapperAttr"
 	[showCloseButton]="true"
 	(onHiding)="cerrarActividadesPopup()"
 >
@@ -358,18 +453,19 @@
 				<thead>
 					<tr>
 						<th class="descriptor-funciones-col-codigo">Codigo</th>
-						<th>Nombre de la actividad</th>
+						<th class="descriptor-funciones-col-nombre">Nombre de la actividad</th>
 						<th class="descriptor-funciones-col-accion">Accion</th>
 					</tr>
 				</thead>
 				<tbody>
 					<tr *ngFor="let actividad of actividadesPopupVisibles; let i = index">
 						<td class="descriptor-funciones-col-codigo">{{ i + 1 }}</td>
-						<td>
+						<td class="descriptor-funciones-col-nombre">
 							<dx-text-box
 								[(value)]="actividad.NOMBRE_ACTIVIDAD"
 								placeholder="Nombre de la actividad"
 								[maxLength]="255"
+								(onValueChanged)="onActividadChanged($event, actividad)"
 							></dx-text-box>
 						</td>
 						<td class="descriptor-funciones-col-accion">
@@ -398,8 +494,7 @@
 				(onClick)="agregarActividad()"
 			></dx-button>
 			<div class="descriptor-actividades-popup-actions-right">
-				<dx-button text="Cancelar" stylingMode="outlined" (onClick)="cerrarActividadesPopup()"></dx-button>
-				<dx-button text="Guardar actividades" type="success" stylingMode="contained" (onClick)="guardarActividadesPopup()"></dx-button>
+				<dx-button text="Cerrar" stylingMode="outlined" (onClick)="cerrarActividadesPopup()"></dx-button>
 			</div>
 		</div>
 	</div>

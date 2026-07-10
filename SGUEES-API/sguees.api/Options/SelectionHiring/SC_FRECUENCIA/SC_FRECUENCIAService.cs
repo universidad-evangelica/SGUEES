@@ -32,6 +32,16 @@ namespace SGUEES.Services
             return await _repo.GetDistinctValuesAsync(BuildParameters(xWhere));
         }
 
+        public async Task<CResult> GetFrecuenciasActivasAsync(SC_FRECUENCIAParam xWhere)
+        {
+            var p = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+            };
+
+            return await _repo.GetFrecuenciasActivasAsync(p);
+        }
+
         public async Task<CResult> GetAsync(SC_FRECUENCIAParam xWhere)
         {
             var p = new List<CParameter>
