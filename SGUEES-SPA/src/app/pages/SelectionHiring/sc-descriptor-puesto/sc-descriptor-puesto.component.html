@@ -94,10 +94,12 @@
 			<dx-tab-panel
 				#tabPanelSecciones
 				class="descriptor-sub-tab-panel"
+				[class.descriptor-sub-tab-panel--sin-seleccion]="mostrarAvisoSeleccioneTab"
 				*ngIf="mostrarSeccionesDescriptor"
 				[(selectedIndex)]="subTabIndex"
 				[animationEnabled]="true"
 				[swipeEnabled]="false"
+				(onSelectionChanged)="onSeccionTabSelectionChanged($event)"
 			>
 				<dxi-item title="Objetivo">
 					<div class="descriptor-sub-tab-content">
@@ -165,7 +167,7 @@
 							[allowColumnResizing]="true"
 							[columnResizingMode]="'widget'"
 							[width]="'100%'"
-							[repaintChangesOnly]="true"
+							[repaintChangesOnly]="false"
 							(onInitNewRow)="funcionClaveInitNewRow($event)"
 							(onEditingStart)="onFuncionClaveEditingStart($event)"
 							(onSaved)="onFuncionClaveSaved($event)"
@@ -313,7 +315,7 @@
 							[allowColumnResizing]="true"
 							[columnResizingMode]="'widget'"
 							[width]="'100%'"
-							[repaintChangesOnly]="true"
+							[repaintChangesOnly]="false"
 							(onInitNewRow)="funcionSecundariaInitNewRow($event)"
 							(onEditingStart)="onFuncionSecundariaEditingStart($event)"
 							(onSaved)="onFuncionSecundariaSaved($event)"
@@ -436,7 +438,7 @@
 							[allowColumnResizing]="true"
 							[columnResizingMode]="'widget'"
 							[width]="'100%'"
-							[repaintChangesOnly]="true"
+							[repaintChangesOnly]="false"
 							(onInitNewRow)="kpiInitNewRow($event)"
 							(onEditingStart)="onKpiEditingStart($event)"
 							(onSaved)="onKpiSaved($event)"
@@ -710,7 +712,7 @@
 										[allowColumnResizing]="true"
 										[columnResizingMode]="'widget'"
 										[width]="'100%'"
-										[repaintChangesOnly]="true"
+										[repaintChangesOnly]="false"
 										(onInitNewRow)="educacionInitNewRow($event)"
 										(onEditingStart)="onEducacionEditingStart($event)"
 										(onSaved)="onEducacionSaved($event)"
@@ -851,7 +853,7 @@
 										[allowColumnResizing]="true"
 										[columnResizingMode]="'widget'"
 										[width]="'100%'"
-										[repaintChangesOnly]="true"
+										[repaintChangesOnly]="false"
 										(onInitNewRow)="experienciaInitNewRow($event)"
 										(onEditingStart)="onExperienciaEditingStart($event)"
 										(onSaved)="onExperienciaSaved($event)"
@@ -985,6 +987,20 @@
 					</div>
 				</dxi-item>
 			</dx-tab-panel>
+
+			<div
+				class="descriptor-seleccione-tab-card"
+				*ngIf="mostrarSeccionesDescriptor && mostrarAvisoSeleccioneTab"
+				role="status"
+			>
+				<span class="dx-icon-info descriptor-seleccione-tab-card__icon" aria-hidden="true"></span>
+				<div class="descriptor-seleccione-tab-card__body">
+					<strong>Seleccione un tab</strong>
+					<p>
+						El tab anterior no esta disponible en el formato actual. Elija uno de los tabs disponibles.
+					</p>
+				</div>
+			</div>
 		</dxi-item>
 
 		<dxi-item title="Bitácora" icon="event">
@@ -1125,7 +1141,7 @@
 			[allowColumnResizing]="true"
 			[columnResizingMode]="'widget'"
 			[width]="'100%'"
-			[repaintChangesOnly]="true"
+			[repaintChangesOnly]="false"
 			(onInitNewRow)="actividadInitNewRow($event)"
 			(onEditingStart)="onActividadEditingStart($event)"
 			(onSaved)="onActividadSaved($event)"

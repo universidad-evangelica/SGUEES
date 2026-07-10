@@ -127,6 +127,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private perfilExiste = false;
 	private funcionesTabsDirty = false;
 	private sincronizandoHeader = false;
+	private ultimoFormatoAplicado: string | null = null;
+	private ultimoTabSeccionValido = 0;
+	mostrarAvisoSeleccioneTab = false;
 	private funcionPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	private kpiPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	private perfilPersistTimer: ReturnType<typeof setTimeout> | null = null;
@@ -151,6 +154,24 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.selectedLookUpCORR_FRECUENCIA = this.selectedLookUpCORR_FRECUENCIA.bind(this);
 		this.selectedLookUpCORR_DISPONIBILIDAD_HORARIO = this.selectedLookUpCORR_DISPONIBILIDAD_HORARIO.bind(this);
 		this.selectedLookUpCORR_TIPO_MODALIDAD = this.selectedLookUpCORR_TIPO_MODALIDAD.bind(this);
+		this.funcionClaveEditButtonVisible = this.funcionClaveEditButtonVisible.bind(this);
+		this.funcionClaveDeleteButtonVisible = this.funcionClaveDeleteButtonVisible.bind(this);
+		this.editarFuncionClaveClick = this.editarFuncionClaveClick.bind(this);
+		this.funcionSecundariaEditButtonVisible = this.funcionSecundariaEditButtonVisible.bind(this);
+		this.funcionSecundariaDeleteButtonVisible = this.funcionSecundariaDeleteButtonVisible.bind(this);
+		this.editarFuncionSecundariaClick = this.editarFuncionSecundariaClick.bind(this);
+		this.kpiEditButtonVisible = this.kpiEditButtonVisible.bind(this);
+		this.kpiDeleteButtonVisible = this.kpiDeleteButtonVisible.bind(this);
+		this.editarKpiClick = this.editarKpiClick.bind(this);
+		this.educacionEditButtonVisible = this.educacionEditButtonVisible.bind(this);
+		this.educacionDeleteButtonVisible = this.educacionDeleteButtonVisible.bind(this);
+		this.editarEducacionClick = this.editarEducacionClick.bind(this);
+		this.experienciaEditButtonVisible = this.experienciaEditButtonVisible.bind(this);
+		this.experienciaDeleteButtonVisible = this.experienciaDeleteButtonVisible.bind(this);
+		this.editarExperienciaClick = this.editarExperienciaClick.bind(this);
+		this.actividadEditButtonVisible = this.actividadEditButtonVisible.bind(this);
+		this.actividadDeleteButtonVisible = this.actividadDeleteButtonVisible.bind(this);
+		this.editarActividadClick = this.editarActividadClick.bind(this);
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.headerItems = this.service.getHeaderItems();
@@ -506,21 +527,21 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.funcionesClaveEditando = true;
 	}
 
-	editarFuncionClaveClick = (e: any): void => {
+	editarFuncionClaveClick(e: any): void {
 		if (this.readOnly || this.funcionesClaveEditando) {
 			return;
 		}
 		e.component.editRow(e.row.rowIndex);
 		this.funcionesClaveEditando = true;
-	};
+	}
 
-	funcionClaveEditButtonVisible = (e: any): boolean => {
-		return !this.readOnly && !this.funcionesClaveEditando && !e.row?.isEditing;
-	};
+	funcionClaveEditButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
 
-	funcionClaveDeleteButtonVisible = (e: any): boolean => {
-		return !this.readOnly && !this.funcionesClaveEditando && !e.row?.isEditing;
-	};
+	funcionClaveDeleteButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
 
 	guardarFuncionClaveEditada(): void {
 		const grid = this.gridFuncionesClave?.instance;
@@ -532,13 +553,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	cancelarFuncionClaveEditada(): void {
-		const grid = this.gridFuncionesClave?.instance;
-		if (!grid?.hasEditData()) {
+		this.cancelarEdicionGrid(this.gridFuncionesClave?.instance, () => {
 			this.funcionesClaveEditando = false;
-			this.refrescarGridFuncionesClave();
-			return;
-		}
-		grid.cancelEditData();
+		});
 	}
 
 	funcionClaveInitNewRow(e: any): void {
@@ -553,14 +570,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.funcionesClaveEditando = true;
 	}
 
-	onFuncionClaveSaved(_e: any): void {
-		this.funcionesClaveEditando = false;
-		this.refrescarGridFuncionesClave();
+	onFuncionClaveSaved(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.funcionesClaveEditando = false;
+		});
 	}
 
-	onFuncionClaveEditCanceled(_e: any): void {
-		this.funcionesClaveEditando = false;
-		this.refrescarGridFuncionesClave();
+	onFuncionClaveEditCanceled(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.funcionesClaveEditando = false;
+		});
 	}
 
 	funcionClaveRowValidating(e: any): void {
@@ -597,21 +616,21 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.funcionesSecundariasEditando = true;
 	}
 
-	editarFuncionSecundariaClick = (e: any): void => {
+	editarFuncionSecundariaClick(e: any): void {
 		if (this.readOnly || this.funcionesSecundariasEditando) {
 			return;
 		}
 		e.component.editRow(e.row.rowIndex);
 		this.funcionesSecundariasEditando = true;
-	};
+	}
 
-	funcionSecundariaEditButtonVisible = (e: any): boolean => {
-		return !this.readOnly && !this.funcionesSecundariasEditando && !e.row?.isEditing;
-	};
+	funcionSecundariaEditButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
 
-	funcionSecundariaDeleteButtonVisible = (e: any): boolean => {
-		return !this.readOnly && !this.funcionesSecundariasEditando && !e.row?.isEditing;
-	};
+	funcionSecundariaDeleteButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
 
 	guardarFuncionSecundariaEditada(): void {
 		const grid = this.gridFuncionesSecundarias?.instance;
@@ -623,13 +642,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	cancelarFuncionSecundariaEditada(): void {
-		const grid = this.gridFuncionesSecundarias?.instance;
-		if (!grid?.hasEditData()) {
+		this.cancelarEdicionGrid(this.gridFuncionesSecundarias?.instance, () => {
 			this.funcionesSecundariasEditando = false;
-			this.refrescarGridFuncionesSecundarias();
-			return;
-		}
-		grid.cancelEditData();
+		});
 	}
 
 	funcionSecundariaInitNewRow(e: any): void {
@@ -643,14 +658,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.funcionesSecundariasEditando = true;
 	}
 
-	onFuncionSecundariaSaved(_e: any): void {
-		this.funcionesSecundariasEditando = false;
-		this.refrescarGridFuncionesSecundarias();
+	onFuncionSecundariaSaved(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.funcionesSecundariasEditando = false;
+		});
 	}
 
-	onFuncionSecundariaEditCanceled(_e: any): void {
-		this.funcionesSecundariasEditando = false;
-		this.refrescarGridFuncionesSecundarias();
+	onFuncionSecundariaEditCanceled(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.funcionesSecundariasEditando = false;
+		});
 	}
 
 	funcionSecundariaRowValidating(e: any): void {
@@ -705,21 +722,21 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actividadesEditando = true;
 	}
 
-	editarActividadClick = (e: any): void => {
+	editarActividadClick(e: any): void {
 		if (this.readOnly || this.actividadesEditando) {
 			return;
 		}
 		e.component.editRow(e.row.rowIndex);
 		this.actividadesEditando = true;
-	};
+	}
 
-	actividadEditButtonVisible = (e: any): boolean => {
-		return !this.readOnly && !this.actividadesEditando && !e.row?.isEditing;
-	};
+	actividadEditButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
 
-	actividadDeleteButtonVisible = (e: any): boolean => {
-		return !this.readOnly && !this.actividadesEditando && !e.row?.isEditing;
-	};
+	actividadDeleteButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
 
 	guardarActividadEditada(): void {
 		const grid = this.gridActividades?.instance;
@@ -731,13 +748,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	cancelarActividadEditada(): void {
-		const grid = this.gridActividades?.instance;
-		if (!grid?.hasEditData()) {
+		this.cancelarEdicionGrid(this.gridActividades?.instance, () => {
 			this.actividadesEditando = false;
-			this.refrescarGridActividades();
-			return;
-		}
-		grid.cancelEditData();
+		});
 	}
 
 	actividadInitNewRow(e: any): void {
@@ -752,14 +765,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actividadesEditando = true;
 	}
 
-	onActividadSaved(_e: any): void {
-		this.actividadesEditando = false;
-		this.refrescarGridActividades();
+	onActividadSaved(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.actividadesEditando = false;
+		});
 	}
 
-	onActividadEditCanceled(_e: any): void {
-		this.actividadesEditando = false;
-		this.refrescarGridActividades();
+	onActividadEditCanceled(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.actividadesEditando = false;
+		});
 	}
 
 	actividadRowValidating(e: any): void {
@@ -796,21 +811,21 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.kpisEditando = true;
 	}
 
-	editarKpiClick = (e: any): void => {
+	editarKpiClick(e: any): void {
 		if (this.readOnly || this.kpisEditando) {
 			return;
 		}
 		e.component.editRow(e.row.rowIndex);
 		this.kpisEditando = true;
-	};
+	}
 
-	kpiEditButtonVisible = (e: any): boolean => {
-		return !this.readOnly && !this.kpisEditando && !e.row?.isEditing;
-	};
+	kpiEditButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
 
-	kpiDeleteButtonVisible = (e: any): boolean => {
-		return !this.readOnly && !this.kpisEditando && !e.row?.isEditing;
-	};
+	kpiDeleteButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
 
 	guardarKpiEditado(): void {
 		const grid = this.gridKpis?.instance;
@@ -822,13 +837,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	cancelarKpiEditado(): void {
-		const grid = this.gridKpis?.instance;
-		if (!grid?.hasEditData()) {
+		this.cancelarEdicionGrid(this.gridKpis?.instance, () => {
 			this.kpisEditando = false;
-			this.refrescarGridKpis();
-			return;
-		}
-		grid.cancelEditData();
+		});
 	}
 
 	kpiInitNewRow(e: any): void {
@@ -844,14 +855,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.kpisEditando = true;
 	}
 
-	onKpiSaved(_e: any): void {
-		this.kpisEditando = false;
-		this.refrescarGridKpis();
+	onKpiSaved(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.kpisEditando = false;
+		});
 	}
 
-	onKpiEditCanceled(_e: any): void {
-		this.kpisEditando = false;
-		this.refrescarGridKpis();
+	onKpiEditCanceled(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.kpisEditando = false;
+		});
 	}
 
 	kpiRowValidating(e: any): void {
@@ -900,21 +913,21 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	editarEducacionClick = (e: any): void => {
+	editarEducacionClick(e: any): void {
 		if (this.readOnly || this.educacionEditando) {
 			return;
 		}
 		e.component.editRow(e.row.rowIndex);
 		this.educacionEditando = true;
-	};
+	}
 
-	educacionEditButtonVisible = (e: any): boolean => {
-		return !this.readOnly && !this.educacionEditando && !e.row?.isEditing;
-	};
+	educacionEditButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
 
-	educacionDeleteButtonVisible = (e: any): boolean => {
-		return !this.readOnly && !this.educacionEditando && !e.row?.isEditing;
-	};
+	educacionDeleteButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
 
 	guardarEducacionEditada(): void {
 		const grid = this.gridEducacion?.instance;
@@ -926,13 +939,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	cancelarEducacionEditada(): void {
-		const grid = this.gridEducacion?.instance;
-		if (!grid?.hasEditData()) {
+		this.cancelarEdicionGrid(this.gridEducacion?.instance, () => {
 			this.educacionEditando = false;
-			this.refrescarGridEducacion();
-			return;
-		}
-		grid.cancelEditData();
+		});
 	}
 
 	educacionInitNewRow(e: any): void {
@@ -948,14 +957,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.educacionEditando = true;
 	}
 
-	onEducacionSaved(_e: any): void {
-		this.educacionEditando = false;
-		this.refrescarGridEducacion();
+	onEducacionSaved(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.educacionEditando = false;
+		});
 	}
 
-	onEducacionEditCanceled(_e: any): void {
-		this.educacionEditando = false;
-		this.refrescarGridEducacion();
+	onEducacionEditCanceled(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.educacionEditando = false;
+		});
 	}
 
 	educacionRowValidating(e: any): void {
@@ -990,21 +1001,21 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	editarExperienciaClick = (e: any): void => {
+	editarExperienciaClick(e: any): void {
 		if (this.readOnly || this.experienciaEditando) {
 			return;
 		}
 		e.component.editRow(e.row.rowIndex);
 		this.experienciaEditando = true;
-	};
+	}
 
-	experienciaEditButtonVisible = (e: any): boolean => {
-		return !this.readOnly && !this.experienciaEditando && !e.row?.isEditing;
-	};
+	experienciaEditButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
 
-	experienciaDeleteButtonVisible = (e: any): boolean => {
-		return !this.readOnly && !this.experienciaEditando && !e.row?.isEditing;
-	};
+	experienciaDeleteButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
 
 	guardarExperienciaEditada(): void {
 		const grid = this.gridExperiencia?.instance;
@@ -1016,13 +1027,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	cancelarExperienciaEditada(): void {
-		const grid = this.gridExperiencia?.instance;
-		if (!grid?.hasEditData()) {
+		this.cancelarEdicionGrid(this.gridExperiencia?.instance, () => {
 			this.experienciaEditando = false;
-			this.refrescarGridExperiencia();
-			return;
-		}
-		grid.cancelEditData();
+		});
 	}
 
 	experienciaInitNewRow(e: any): void {
@@ -1037,14 +1044,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.experienciaEditando = true;
 	}
 
-	onExperienciaSaved(_e: any): void {
-		this.experienciaEditando = false;
-		this.refrescarGridExperiencia();
+	onExperienciaSaved(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.experienciaEditando = false;
+		});
 	}
 
-	onExperienciaEditCanceled(_e: any): void {
-		this.experienciaEditando = false;
-		this.refrescarGridExperiencia();
+	onExperienciaEditCanceled(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.experienciaEditando = false;
+		});
 	}
 
 	experienciaRowValidating(e: any): void {
@@ -1502,14 +1511,33 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return 'No hay registros en la bitácora por el momento.';
 	}
 
-	onFormatoChanged(value: string): void {
-		const formatoAnterior = (this.model?.FORMATO ?? '').toUpperCase();
+	onFormatoChanged(value: string, formatoAnteriorHint?: string): void {
 		const formatoNuevo = (value || FORMATO_CORTA).toUpperCase();
+		// El form a veces ya escribio FORMATO en model antes del evento; previousValue puede venir vacio.
+		const formatoAnterior = (
+			formatoAnteriorHint ??
+			this.ultimoFormatoAplicado ??
+			this.model?.FORMATO ??
+			''
+		).toUpperCase();
 		const cambioReal = formatoAnterior !== formatoNuevo;
+		const tabActualIndex = this.subTabIndex >= 0 ? this.subTabIndex : this.ultimoTabSeccionValido;
 
 		this.model.FORMATO = value || FORMATO_CORTA;
+		this.ultimoFormatoAplicado = formatoNuevo;
+
 		if (cambioReal) {
-			this.subTabIndex = 0;
+			if (this.esTabSeccionVisibleParaFormato(tabActualIndex, formatoNuevo)) {
+				// Volvio a un formato donde el tab si aplica: restaurar y quitar card.
+				this.mostrarAvisoSeleccioneTab = false;
+				this.seleccionarTabSeccion(tabActualIndex);
+			} else {
+				if (this.subTabIndex >= 0) {
+					this.ultimoTabSeccionValido = this.subTabIndex;
+				}
+				this.dejarSinTabSeccionSeleccionado();
+				this.mostrarAvisoSeleccioneTab = true;
+			}
 		}
 
 		// Solo recargar secundarias si el usuario cambió de verdad el formato (no por sync del form).
@@ -1520,6 +1548,67 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			!this.funcionesTabsDirty
 		) {
 			this.cargarFuncionesSecundarias();
+		}
+	}
+
+	/** Orden = dxi-item del tabPanelSecciones. visibleEn: ambos | corta | extensa */
+	private readonly seccionesTabsMeta: Array<{ title: string; visibleEn: 'ambos' | 'corta' | 'extensa' }> = [
+		{ title: 'Objetivo', visibleEn: 'ambos' },
+		{ title: 'Funciones', visibleEn: 'ambos' },
+		{ title: 'Funciones Secundarias', visibleEn: 'corta' },
+		{ title: 'KPIs', visibleEn: 'corta' },
+		{ title: 'Perfil', visibleEn: 'ambos' },
+		{ title: 'Competencias', visibleEn: 'ambos' },
+		{ title: 'Relaciones', visibleEn: 'extensa' },
+		{ title: 'Requerimientos', visibleEn: 'ambos' },
+		{ title: 'Riesgos', visibleEn: 'extensa' },
+		{ title: 'Responsabilidades', visibleEn: 'ambos' },
+		{ title: 'Entrenamiento', visibleEn: 'ambos' },
+		{ title: 'Resumen', visibleEn: 'ambos' },
+	];
+
+	private esTabSeccionVisibleParaFormato(index: number, formato: string): boolean {
+		const tab = this.seccionesTabsMeta[index];
+		if (!tab) {
+			return false;
+		}
+		const fmt = (formato || '').toUpperCase();
+		const esCorta = fmt === FORMATO_CORTA || fmt === 'CORTA';
+		const esExtensa = fmt === FORMATO_EXTENSA || fmt === 'EXTENSA';
+		if (tab.visibleEn === 'ambos') {
+			return true;
+		}
+		if (tab.visibleEn === 'corta') {
+			return esCorta;
+		}
+		return esExtensa;
+	}
+
+	private seleccionarTabSeccion(index: number): void {
+		this.subTabIndex = index;
+		this.ultimoTabSeccionValido = index;
+		setTimeout(() => {
+			this.subTabIndex = index;
+			this.tabPanelSecciones?.instance?.option('selectedIndex', index);
+		});
+	}
+
+	private dejarSinTabSeccionSeleccionado(): void {
+		this.subTabIndex = -1;
+		setTimeout(() => {
+			this.subTabIndex = -1;
+			this.tabPanelSecciones?.instance?.option('selectedIndex', -1);
+		});
+	}
+
+	onSeccionTabSelectionChanged(e: any): void {
+		const index = typeof e?.component?.option === 'function'
+			? e.component.option('selectedIndex')
+			: this.subTabIndex;
+		if (typeof index === 'number' && index >= 0) {
+			this.subTabIndex = index;
+			this.ultimoTabSeccionValido = index;
+			this.mostrarAvisoSeleccioneTab = false;
 		}
 	}
 
@@ -1580,7 +1669,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 
 		if (e?.dataField === 'FORMATO') {
-			this.onFormatoChanged(e.value);
+			this.onFormatoChanged(e.value, e.previousValue);
 		}
 	}
 
@@ -1799,6 +1888,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private syncHeaderForm(): void {
 		this.sincronizandoHeader = true;
+		this.ultimoFormatoAplicado = (this.model?.FORMATO || FORMATO_CORTA).toUpperCase();
+		this.mostrarAvisoSeleccioneTab = false;
 		this.headerForm?.instance?.option('formData', this.model);
 		setTimeout(() => {
 			this.sincronizandoHeader = false;
@@ -1853,32 +1944,51 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.experienciaEditando = false;
 	}
 
+	/** Visibilidad Options: usa editRowKey (no e.row.isEditing, que puede quedar pegado tras Cancelar). */
+	private accionGridVisible(e: any): boolean {
+		if (this.readOnly) {
+			return false;
+		}
+		const editKey = e?.component?.option?.('editing.editRowKey');
+		if (editKey == null) {
+			return true;
+		}
+		return e?.row?.key !== editKey;
+	}
+
+	/** Tras Guardar/Cancelar: limpia flag y repinta para que vuelvan los iconos Options. */
+	private finalizarEdicionGrid(e: any, clearFlag: () => void): void {
+		clearFlag();
+		const grid = e?.component;
+		const rowIndex = typeof e?.row?.rowIndex === 'number' ? e.row.rowIndex : null;
+		setTimeout(() => {
+			if (!grid) {
+				return;
+			}
+			if (rowIndex != null && rowIndex >= 0 && typeof grid.repaintRows === 'function') {
+				grid.repaintRows([rowIndex]);
+				return;
+			}
+			grid.repaint?.();
+		});
+	}
+
+	private cancelarEdicionGrid(grid: any, clearFlag: () => void): void {
+		if (!grid) {
+			clearFlag();
+			return;
+		}
+		const editKey = grid.option?.('editing.editRowKey');
+		if (grid.hasEditData?.() || editKey != null) {
+			grid.cancelEditData();
+			return;
+		}
+		clearFlag();
+		grid.repaint?.();
+	}
+
 	private crearClientKey(prefix: string): string {
 		return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
-	}
-
-	private refrescarGridFuncionesClave(): void {
-		setTimeout(() => this.gridFuncionesClave?.instance?.refresh());
-	}
-
-	private refrescarGridFuncionesSecundarias(): void {
-		setTimeout(() => this.gridFuncionesSecundarias?.instance?.refresh());
-	}
-
-	private refrescarGridKpis(): void {
-		setTimeout(() => this.gridKpis?.instance?.refresh());
-	}
-
-	private refrescarGridEducacion(): void {
-		setTimeout(() => this.gridEducacion?.instance?.refresh());
-	}
-
-	private refrescarGridExperiencia(): void {
-		setTimeout(() => this.gridExperiencia?.instance?.refresh());
-	}
-
-	private refrescarGridActividades(): void {
-		setTimeout(() => this.gridActividades?.instance?.refresh());
 	}
 
 	private persistirActividadDesdeGrid(data: ScDescriptorFuncionActividad, esNuevo: boolean): Promise<boolean> {

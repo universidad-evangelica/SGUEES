@@ -38,6 +38,10 @@
 	overflow: visible;
 }
 
+:host ::ng-deep .descriptor-sub-tab-panel--sin-seleccion .dx-multiview-wrapper {
+	display: none;
+}
+
 .descriptor-secciones-hint {
 	margin: 12px 0 0;
 	padding: 14px 16px;
@@ -47,6 +51,41 @@
 	font-size: 0.92rem;
 	line-height: 1.45;
 	opacity: 0.85;
+}
+
+.descriptor-seleccione-tab-card {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	margin: 12px 0 0;
+	padding: 16px 18px;
+	border-radius: 10px;
+	border: 1px solid color-mix(in srgb, var(--base-accent, #3b82f6) 35%, var(--border-color, transparent));
+	background: color-mix(in srgb, var(--base-accent, #3b82f6) 10%, transparent);
+	box-shadow: 0 1px 2px color-mix(in srgb, #000 12%, transparent);
+}
+
+.descriptor-seleccione-tab-card__icon {
+	margin-top: 2px;
+	font-size: 1.15rem;
+	opacity: 0.9;
+}
+
+.descriptor-seleccione-tab-card__body {
+	min-width: 0;
+}
+
+.descriptor-seleccione-tab-card__body strong {
+	display: block;
+	margin-bottom: 4px;
+	font-size: 0.95rem;
+}
+
+.descriptor-seleccione-tab-card__body p {
+	margin: 0;
+	font-size: 0.9rem;
+	line-height: 1.45;
+	opacity: 0.9;
 }
 
 .descriptor-sub-tab-pill {
