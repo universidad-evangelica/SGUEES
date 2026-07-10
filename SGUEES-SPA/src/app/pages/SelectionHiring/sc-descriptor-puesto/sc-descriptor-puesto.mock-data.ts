@@ -86,6 +86,46 @@ export const SUB_TABS_EXTENSA: DescriptorSubTab[] = [
 	{ id: 'resumen', title: 'Resumen', order: 10 },
 ];
 
+export interface PerfilSubTab {
+	id: string;
+	title: string;
+	icon: string;
+}
+
+export const PERFIL_SUB_TABS: PerfilSubTab[] = [
+	{ id: 'perfilDatos', title: 'Perfil', icon: 'card' },
+	{ id: 'educacion', title: 'Educacion', icon: 'education' },
+	{ id: 'experiencia', title: 'Experiencia', icon: 'briefcase' },
+];
+
+export const PERFIL_SEXO_OPTIONS = [
+	{ CODIGO: 'INDIFERENTE', NOMBRE: 'Indiferente' },
+	{ CODIGO: 'MASCULINO', NOMBRE: 'Masculino' },
+	{ CODIGO: 'FEMENINO', NOMBRE: 'Femenino' },
+];
+
+export const PERFIL_ESTADO_FAMILIAR_OPTIONS = [
+	{ CODIGO: 'INDIFERENTE', NOMBRE: 'Indiferente' },
+	{ CODIGO: 'SOLTERO', NOMBRE: 'Soltero(a)' },
+	{ CODIGO: 'CASADO', NOMBRE: 'Casado(a)' },
+	{ CODIGO: 'OTRO', NOMBRE: 'Otro' },
+];
+
+export const PERFIL_LICENCIA_OPTIONS = [
+	{ CODIGO: false, NOMBRE: 'No' },
+	{ CODIGO: true, NOMBRE: 'Si' },
+];
+
+export const PERFIL_PUESTO_DEFAULT = {
+	EDAD_MINIMA: 18,
+	EDAD_MAXIMA: 65,
+	SEXO: 'INDIFERENTE',
+	ESTADO_FAMILIAR: 'INDIFERENTE',
+	CORR_DISPONIBILIDAD_HORARIO: null as number | null,
+	CORR_TIPO_MODALIDAD: null as number | null,
+	LICENCIA: false,
+};
+
 export const MOCK_BITACORA = [
 	{
 		CORR_DESCRIPTOR_PUESTO: 0,

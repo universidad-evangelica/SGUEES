@@ -1,5 +1,6 @@
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 import { DxFormComponent } from 'devextreme-angular/ui/form';
 import { DxTabPanelComponent } from 'devextreme-angular/ui/tab-panel';
 import { take } from 'rxjs/operators';
@@ -24,12 +25,22 @@ import {
 	ScDescriptorKpiFuncion,
 	ScFrecuenciaLookup,
 } from './sc-descriptor-kpi-funcion/models/sc-descriptor-kpi-funcion';
+import {
+	ScDescriptorPerfilPuesto,
+	ScDisponibilidadHorarioLookup,
+	ScTipoModalidadLookup,
+} from './sc-descriptor-perfil-puesto/models/sc-descriptor-perfil-puesto';
 import { DescriptorSubTab, MockPuesto, MockUnidad, ScDescriptorPuesto } from './models/sc-descriptor-puesto';
 import {
 	FORMATO_CORTA,
 	FORMATO_EXTENSA,
 	MOCK_PUESTOS,
 	MOCK_UNIDADES,
+	PERFIL_ESTADO_FAMILIAR_OPTIONS,
+	PERFIL_LICENCIA_OPTIONS,
+	PERFIL_PUESTO_DEFAULT,
+	PERFIL_SEXO_OPTIONS,
+	PERFIL_SUB_TABS,
 	SUB_TABS_CORTA,
 	SUB_TABS_EXTENSA,
 	TIPO_FUNCION_CLAVE,
@@ -47,6 +58,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	@ViewChild('fHeaderData', { static: false }) headerForm!: DxFormComponent;
 	@ViewChild('tabPanelPrincipal', { static: false }) tabPanelPrincipal?: DxTabPanelComponent;
 	@ViewChild('tabPanelSecciones', { static: false }) tabPanelSecciones?: DxTabPanelComponent;
+	@ViewChild('gridFuncionesClave', { static: false }) gridFuncionesClave?: DxDataGridComponent;
+	@ViewChild('gridFuncionesSecundarias', { static: false }) gridFuncionesSecundarias?: DxDataGridComponent;
+	@ViewChild('gridKpis', { static: false }) gridKpis?: DxDataGridComponent;
 
 	protected override etiquetaRegistro = 'el descriptor de puesto';
 	protected override requiereEmpresaSesion = true;
@@ -67,6 +81,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_PUESTO: MockPuesto[] = [];
 	mCORR_PUESTO_REPORTA: MockPuesto[] = [];
 	mCORR_FRECUENCIA: ScFrecuenciaLookup[] = [];
+	mCORR_DISPONIBILIDAD_HORARIO: ScDisponibilidadHorarioLookup[] = [];
+	mCORR_TIPO_MODALIDAD: ScTipoModalidadLookup[] = [];
 	reportaLookupColumns = [
 		{ dataField: 'RESPONSABLE', caption: 'Nombre', width: 220 },
 		{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260 },
@@ -81,6 +97,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	funcionesClave: ScDescriptorFuncion[] = [];
 	funcionesSecundarias: ScDescriptorFuncion[] = [];
 	kpis: ScDescriptorKpiFuncion[] = [];
+	funcionesClaveEditando = false;
+	funcionesSecundariasEditando = false;
+	kpisEditando = false;
+	perfil: ScDescriptorPerfilPuesto = { ...PERFIL_PUESTO_DEFAULT };
+	perfilSubTabIndex = 0;
+	readonly perfilSubTabs = PERFIL_SUB_TABS;
+	readonly perfilSexoOptions = PERFIL_SEXO_OPTIONS;
+	readonly perfilEstadoFamiliarOptions = PERFIL_ESTADO_FAMILIAR_OPTIONS;
+	readonly perfilLicenciaOptions = PERFIL_LICENCIA_OPTIONS;
 	actividadesPopupVisible = false;
 	actividadesPopupFullScreen = false;
 	funcionActividadesSeleccionada: ScDescriptorFuncion | null = null;
@@ -89,11 +114,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private funcionesClaveLoadSeq = 0;
 	private funcionesSecundariasLoadSeq = 0;
 	private kpisLoadSeq = 0;
+	private perfilLoadSeq = 0;
+	private perfilExiste = false;
 	private funcionesTabsDirty = false;
 	private sincronizandoHeader = false;
 	private funcionPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	private actividadPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	private kpiPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
+	private perfilPersistTimer: ReturnType<typeof setTimeout> | null = null;
 
 	readonly actividadesPopupWrapperAttr = { class: 'descriptor-actividades-popup-wrapper' };
 	private actividadesPopupMediaQuery?: MediaQueryList;
@@ -112,6 +140,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.selectedLookUpCORR_UNIDAD = this.selectedLookUpCORR_UNIDAD.bind(this);
 		this.selectedLookUpCORR_PUESTO = this.selectedLookUpCORR_PUESTO.bind(this);
 		this.selectedLookUpCORR_PUESTO_REPORTA = this.selectedLookUpCORR_PUESTO_REPORTA.bind(this);
+		this.selectedLookUpCORR_FRECUENCIA = this.selectedLookUpCORR_FRECUENCIA.bind(this);
+		this.selectedLookUpCORR_DISPONIBILIDAD_HORARIO = this.selectedLookUpCORR_DISPONIBILIDAD_HORARIO.bind(this);
+		this.selectedLookUpCORR_TIPO_MODALIDAD = this.selectedLookUpCORR_TIPO_MODALIDAD.bind(this);
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.headerItems = this.service.getHeaderItems();
@@ -148,6 +179,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.mCORR_UNIDAD = [...MOCK_UNIDADES];
 		this.actualizarPuestosPorUnidad(this.model?.CORR_UNIDAD ?? null);
 		this.cargarFrecuenciasLookup();
+		this.cargarDisponibilidadHorarioLookup();
+		this.cargarTipoModalidadLookup();
 	}
 
 	private cargarFrecuenciasLookup(): void {
@@ -173,6 +206,54 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	private cargarDisponibilidadHorarioLookup(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_DISPONIBILIDAD_HORARIO',
+				'GetCORR_DISPONIBILIDAD_HORARIO',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.mCORR_DISPONIBILIDAD_HORARIO = response.Data.map(
+							(item: ScDisponibilidadHorarioLookup) => ({
+								CORR_DISPONIBILIDAD_HORARIO: Number(item.CORR_DISPONIBILIDAD_HORARIO),
+								NOMBRE_DISPONIBILIDAD_HORARIO: item.NOMBRE_DISPONIBILIDAD_HORARIO ?? '',
+							})
+						);
+					}
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	private cargarTipoModalidadLookup(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_TIPO_MODALIDAD',
+				'GetCORR_TIPO_MODALIDAD',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.mCORR_TIPO_MODALIDAD = response.Data.map((item: ScTipoModalidadLookup) => ({
+							CORR_TIPO_MODALIDAD: Number(item.CORR_TIPO_MODALIDAD),
+							MODALIDAD_NOMBRE: item.MODALIDAD_NOMBRE ?? '',
+						}));
+					}
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
 	selectedLookUpCORR_UNIDAD(vRow: any): number {
 		return vRow[0].CORR_UNIDAD;
 	}
@@ -187,6 +268,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	selectedLookUpCORR_FRECUENCIA(vRow: any): number {
 		return vRow[0].CORR_FRECUENCIA;
+	}
+
+	selectedLookUpCORR_DISPONIBILIDAD_HORARIO(vRow: any): number {
+		return vRow[0].CORR_DISPONIBILIDAD_HORARIO;
+	}
+
+	selectedLookUpCORR_TIPO_MODALIDAD(vRow: any): number {
+		return vRow[0].CORR_TIPO_MODALIDAD;
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -354,6 +443,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.cargarFuncionesSecundarias();
 			this.cargarKpis();
 		}
+		this.cargarPerfil();
 	}
 
 	limpiarDatosTabs(): void {
@@ -361,6 +451,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.funcionesClave = [];
 		this.funcionesSecundarias = [];
 		this.kpis = [];
+		this.resetearEdicionFuncionesClave();
+		this.resetearEdicionFuncionesSecundarias();
+		this.resetearEdicionKpis();
+		this.limpiarPerfil();
 		this.resetearFuncionesTabsDirty();
 		this.cerrarActividadesPopup();
 	}
@@ -394,136 +488,192 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return !this.readOnly;
 	}
 
+
 	agregarFuncionClave(): void {
-		if (this.readOnly || !this.requiereDescriptorGuardado()) {
+		if (this.readOnly || this.funcionesClaveEditando || !this.requiereDescriptorGuardado()) {
 			return;
 		}
-
-		const corrDescriptor = this.obtenerCorrDescriptor();
-		this.service
-			.crearFuncion(corrDescriptor, TIPO_FUNCION_CLAVE)
-			.pipe(take(1))
-			.subscribe({
-				next: (response) => {
-					if (!response?.Result) {
-						this.notifyApiResponse(response);
-						return;
-					}
-
-					const saved = this.extraerFuncionGuardada(response);
-					this.funcionesClave.push({
-						CORR_FUNCION: saved.CORR_FUNCION,
-						NOMBRE_FUNCION: saved.NOMBRE_FUNCION ?? '',
-						TIPO_FUNCION: TIPO_FUNCION_CLAVE,
-						CANT_ACTIVIDADES: Number(saved.CANT_ACTIVIDADES ?? 0),
-					});
-				},
-				error: (error) => this.notifyApiError(error),
-			});
+		this.gridFuncionesClave?.instance.addRow();
+		this.funcionesClaveEditando = true;
 	}
 
-	eliminarFuncionClave(funcion: ScDescriptorFuncion): void {
-		if (this.readOnly || !funcion) {
+	editarFuncionClaveClick = (e: any): void => {
+		if (this.readOnly || this.funcionesClaveEditando) {
 			return;
 		}
+		e.component.editRow(e.row.rowIndex);
+		this.funcionesClaveEditando = true;
+	};
 
-		if (!funcion.CORR_FUNCION || funcion.CORR_FUNCION <= 0) {
-			this.funcionesClave = this.funcionesClave.filter((item) => item !== funcion);
+	funcionClaveEditButtonVisible = (e: any): boolean => {
+		return !this.readOnly && !this.funcionesClaveEditando && !e.row?.isEditing;
+	};
+
+	funcionClaveDeleteButtonVisible = (e: any): boolean => {
+		return !this.readOnly && !this.funcionesClaveEditando && !e.row?.isEditing;
+	};
+
+	guardarFuncionClaveEditada(): void {
+		const grid = this.gridFuncionesClave?.instance;
+		if (!grid || !this.funcionesClaveEditando) {
+			this.notifyFx('No hay una linea en edicion', NotifyType.Warning);
 			return;
 		}
-
-		const corrDescriptor = this.obtenerCorrDescriptor();
-		const corrFuncion = Number(funcion.CORR_FUNCION);
-		this.service
-			.eliminarFuncion(corrDescriptor, corrFuncion)
-			.pipe(take(1))
-			.subscribe({
-				next: (response) => {
-					if (!response?.Result) {
-						this.notifyApiResponse(response);
-						return;
-					}
-
-					this.funcionesClave = this.funcionesClave.filter((item) => item.CORR_FUNCION !== corrFuncion);
-				},
-				error: (error) => this.notifyApiError(error),
-			});
+		grid.saveEditData();
 	}
+
+	cancelarFuncionClaveEditada(): void {
+		const grid = this.gridFuncionesClave?.instance;
+		if (!grid?.hasEditData()) {
+			this.funcionesClaveEditando = false;
+			this.refrescarGridFuncionesClave();
+			return;
+		}
+		grid.cancelEditData();
+	}
+
+	funcionClaveInitNewRow(e: any): void {
+		e.data.CORR_FUNCION = 0;
+		e.data.NOMBRE_FUNCION = '';
+		e.data.TIPO_FUNCION = TIPO_FUNCION_CLAVE;
+		e.data.CANT_ACTIVIDADES = 0;
+		e.data._clientKey = this.crearClientKey('fc');
+	}
+
+	onFuncionClaveEditingStart(_e: any): void {
+		this.funcionesClaveEditando = true;
+	}
+
+	onFuncionClaveSaved(_e: any): void {
+		this.funcionesClaveEditando = false;
+		this.refrescarGridFuncionesClave();
+	}
+
+	onFuncionClaveEditCanceled(_e: any): void {
+		this.funcionesClaveEditando = false;
+		this.refrescarGridFuncionesClave();
+	}
+
+	funcionClaveRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!(data.NOMBRE_FUNCION ?? '').trim()) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar el nombre de la funcion clave.';
+		}
+	}
+
+	funcionClaveRowInserting(e: any): void {
+		e.cancel = this.persistirFuncionDesdeGrid(e.data, TIPO_FUNCION_CLAVE, true);
+	}
+
+	funcionClaveRowUpdating(e: any): void {
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = this.persistirFuncionDesdeGrid(data, TIPO_FUNCION_CLAVE, false);
+	}
+
+	funcionClaveRowRemoving(e: any): void {
+		e.cancel = this.eliminarFuncionDesdeGrid(e.data);
+	}
+
+	funcionClaveCodigoDisplay = (row: ScDescriptorFuncion): number | string => {
+		const idx = this.funcionesClave.findIndex((item) => item._clientKey === row?._clientKey);
+		return idx >= 0 ? idx + 1 : '';
+	};
 
 	agregarFuncionSecundaria(): void {
-		if (this.readOnly || !this.esFormatoCorta || !this.requiereDescriptorGuardado()) {
+		if (
+			this.readOnly ||
+			this.funcionesSecundariasEditando ||
+			!this.esFormatoCorta ||
+			!this.requiereDescriptorGuardado()
+		) {
 			return;
 		}
-
-		const corrDescriptor = this.obtenerCorrDescriptor();
-		this.service
-			.crearFuncion(corrDescriptor, TIPO_FUNCION_SECUNDARIA)
-			.pipe(take(1))
-			.subscribe({
-				next: (response) => {
-					if (!response?.Result) {
-						this.notifyApiResponse(response);
-						return;
-					}
-
-					const saved = this.extraerFuncionGuardada(response);
-					this.funcionesSecundarias.push({
-						CORR_FUNCION: saved.CORR_FUNCION,
-						NOMBRE_FUNCION: saved.NOMBRE_FUNCION ?? '',
-						TIPO_FUNCION: TIPO_FUNCION_SECUNDARIA,
-					});
-				},
-				error: (error) => this.notifyApiError(error),
-			});
+		this.gridFuncionesSecundarias?.instance.addRow();
+		this.funcionesSecundariasEditando = true;
 	}
 
-	eliminarFuncionSecundaria(funcion: ScDescriptorFuncion): void {
-		if (this.readOnly || !funcion) {
+	editarFuncionSecundariaClick = (e: any): void => {
+		if (this.readOnly || this.funcionesSecundariasEditando) {
 			return;
 		}
+		e.component.editRow(e.row.rowIndex);
+		this.funcionesSecundariasEditando = true;
+	};
 
-		if (!funcion.CORR_FUNCION || funcion.CORR_FUNCION <= 0) {
-			this.funcionesSecundarias = this.funcionesSecundarias.filter((item) => item !== funcion);
+	funcionSecundariaEditButtonVisible = (e: any): boolean => {
+		return !this.readOnly && !this.funcionesSecundariasEditando && !e.row?.isEditing;
+	};
+
+	funcionSecundariaDeleteButtonVisible = (e: any): boolean => {
+		return !this.readOnly && !this.funcionesSecundariasEditando && !e.row?.isEditing;
+	};
+
+	guardarFuncionSecundariaEditada(): void {
+		const grid = this.gridFuncionesSecundarias?.instance;
+		if (!grid || !this.funcionesSecundariasEditando) {
+			this.notifyFx('No hay una linea en edicion', NotifyType.Warning);
 			return;
 		}
-
-		const corrDescriptor = this.obtenerCorrDescriptor();
-		const corrFuncion = Number(funcion.CORR_FUNCION);
-		this.service
-			.eliminarFuncion(corrDescriptor, corrFuncion)
-			.pipe(take(1))
-			.subscribe({
-				next: (response) => {
-					if (!response?.Result) {
-						this.notifyApiResponse(response);
-						return;
-					}
-
-					this.funcionesSecundarias = this.funcionesSecundarias.filter(
-						(item) => item.CORR_FUNCION !== corrFuncion
-					);
-				},
-				error: (error) => this.notifyApiError(error),
-			});
+		grid.saveEditData();
 	}
 
-	onFuncionClaveChanged(e: any, funcion: ScDescriptorFuncion): void {
-		if (!funcion || this.readOnly) {
+	cancelarFuncionSecundariaEditada(): void {
+		const grid = this.gridFuncionesSecundarias?.instance;
+		if (!grid?.hasEditData()) {
+			this.funcionesSecundariasEditando = false;
+			this.refrescarGridFuncionesSecundarias();
 			return;
 		}
-
-		funcion.NOMBRE_FUNCION = `${e?.value ?? ''}`;
-		this.programarPersistirFuncion(funcion, TIPO_FUNCION_CLAVE);
+		grid.cancelEditData();
 	}
 
-	onFuncionSecundariaChanged(e: any, funcion: ScDescriptorFuncion): void {
-		if (!funcion || this.readOnly) {
-			return;
+	funcionSecundariaInitNewRow(e: any): void {
+		e.data.CORR_FUNCION = 0;
+		e.data.NOMBRE_FUNCION = '';
+		e.data.TIPO_FUNCION = TIPO_FUNCION_SECUNDARIA;
+		e.data._clientKey = this.crearClientKey('fs');
+	}
+
+	onFuncionSecundariaEditingStart(_e: any): void {
+		this.funcionesSecundariasEditando = true;
+	}
+
+	onFuncionSecundariaSaved(_e: any): void {
+		this.funcionesSecundariasEditando = false;
+		this.refrescarGridFuncionesSecundarias();
+	}
+
+	onFuncionSecundariaEditCanceled(_e: any): void {
+		this.funcionesSecundariasEditando = false;
+		this.refrescarGridFuncionesSecundarias();
+	}
+
+	funcionSecundariaRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!(data.NOMBRE_FUNCION ?? '').trim()) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar la descripcion de la funcion secundaria.';
 		}
-
-		funcion.NOMBRE_FUNCION = `${e?.value ?? ''}`;
-		this.programarPersistirFuncion(funcion, TIPO_FUNCION_SECUNDARIA);
 	}
+
+	funcionSecundariaRowInserting(e: any): void {
+		e.cancel = this.persistirFuncionDesdeGrid(e.data, TIPO_FUNCION_SECUNDARIA, true);
+	}
+
+	funcionSecundariaRowUpdating(e: any): void {
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = this.persistirFuncionDesdeGrid(data, TIPO_FUNCION_SECUNDARIA, false);
+	}
+
+	funcionSecundariaRowRemoving(e: any): void {
+		e.cancel = this.eliminarFuncionDesdeGrid(e.data);
+	}
+
+	funcionSecundariaCodigoDisplay = (row: ScDescriptorFuncion): number | string => {
+		const idx = this.funcionesSecundarias.findIndex((item) => item._clientKey === row?._clientKey);
+		return idx >= 0 ? idx + 1 : '';
+	};
 
 	abrirActividades(funcion: ScDescriptorFuncion): void {
 		if (!this.esFormatoExtensa || this.readOnly || !funcion) {
@@ -621,121 +771,292 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.actividadesPopup;
 	}
 
+
 	agregarKpi(): void {
-		if (this.readOnly || !this.esFormatoCorta || !this.requiereDescriptorGuardado()) {
+		if (this.readOnly || this.kpisEditando || !this.esFormatoCorta || !this.requiereDescriptorGuardado()) {
 			return;
 		}
-
-		const corrDescriptor = this.obtenerCorrDescriptor();
-		this.service
-			.crearKpi(corrDescriptor)
-			.pipe(take(1))
-			.subscribe({
-				next: (response) => {
-					if (!response?.Result) {
-						this.notifyApiResponse(response);
-						return;
-					}
-
-					const saved = this.extraerKpiGuardado(response);
-					this.kpis.push({
-						CORR_KPI_FUNCION: saved.CORR_KPI_FUNCION,
-						NOMBRE_INDICADOR: saved.NOMBRE_INDICADOR ?? '',
-						CORR_FRECUENCIA: saved.CORR_FRECUENCIA ?? null,
-						NOMBRE_FRECUENCIA: saved.NOMBRE_FRECUENCIA ?? '',
-						META: saved.META ?? null,
-					});
-				},
-				error: (error) => this.notifyApiError(error),
-			});
+		this.gridKpis?.instance.addRow();
+		this.kpisEditando = true;
 	}
 
-	eliminarKpi(kpi: ScDescriptorKpiFuncion): void {
-		if (this.readOnly || !kpi) {
+	editarKpiClick = (e: any): void => {
+		if (this.readOnly || this.kpisEditando) {
 			return;
 		}
+		e.component.editRow(e.row.rowIndex);
+		this.kpisEditando = true;
+	};
 
-		if (!kpi.CORR_KPI_FUNCION || kpi.CORR_KPI_FUNCION <= 0) {
-			this.kpis = this.kpis.filter((item) => item !== kpi);
+	kpiEditButtonVisible = (e: any): boolean => {
+		return !this.readOnly && !this.kpisEditando && !e.row?.isEditing;
+	};
+
+	kpiDeleteButtonVisible = (e: any): boolean => {
+		return !this.readOnly && !this.kpisEditando && !e.row?.isEditing;
+	};
+
+	guardarKpiEditado(): void {
+		const grid = this.gridKpis?.instance;
+		if (!grid || !this.kpisEditando) {
+			this.notifyFx('No hay una linea en edicion', NotifyType.Warning);
 			return;
 		}
-
-		const corrDescriptor = this.obtenerCorrDescriptor();
-		const corrKpi = Number(kpi.CORR_KPI_FUNCION);
-		this.service
-			.eliminarKpi(corrDescriptor, corrKpi)
-			.pipe(take(1))
-			.subscribe({
-				next: (response) => {
-					if (!response?.Result) {
-						this.notifyApiResponse(response);
-						return;
-					}
-
-					this.kpis = this.kpis.filter((item) => item.CORR_KPI_FUNCION !== corrKpi);
-				},
-				error: (error) => this.notifyApiError(error),
-			});
+		grid.saveEditData();
 	}
 
-	onKpiIndicadorChanged(e: any, kpi: ScDescriptorKpiFuncion): void {
-		if (!kpi || this.readOnly) {
+	cancelarKpiEditado(): void {
+		const grid = this.gridKpis?.instance;
+		if (!grid?.hasEditData()) {
+			this.kpisEditando = false;
+			this.refrescarGridKpis();
 			return;
 		}
-
-		kpi.NOMBRE_INDICADOR = `${e?.value ?? ''}`;
-		this.programarPersistirKpi(kpi);
+		grid.cancelEditData();
 	}
 
-	onKpiFrecuenciaChanged(value: number | null, kpi: ScDescriptorKpiFuncion): void {
-		if (!kpi || this.readOnly) {
+	kpiInitNewRow(e: any): void {
+		e.data.CORR_KPI_FUNCION = 0;
+		e.data.NOMBRE_INDICADOR = '';
+		e.data.CORR_FRECUENCIA = null;
+		e.data.NOMBRE_FRECUENCIA = '';
+		e.data.META = null;
+		e.data._clientKey = this.crearClientKey('kpi');
+	}
+
+	onKpiEditingStart(_e: any): void {
+		this.kpisEditando = true;
+	}
+
+	onKpiSaved(_e: any): void {
+		this.kpisEditando = false;
+		this.refrescarGridKpis();
+	}
+
+	onKpiEditCanceled(_e: any): void {
+		this.kpisEditando = false;
+		this.refrescarGridKpis();
+	}
+
+	kpiRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!(data.NOMBRE_INDICADOR ?? '').trim()) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar el nombre del indicador.';
+		}
+	}
+
+	kpiRowInserting(e: any): void {
+		e.cancel = this.persistirKpiDesdeGrid(e.data, true);
+	}
+
+	kpiRowUpdating(e: any): void {
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = this.persistirKpiDesdeGrid(data, false);
+	}
+
+	kpiRowRemoving(e: any): void {
+		e.cancel = this.eliminarKpiDesdeGrid(e.data);
+	}
+
+	kpiCodigoDisplay = (row: ScDescriptorKpiFuncion): number | string => {
+		const idx = this.kpis.findIndex((item) => item._clientKey === row?._clientKey);
+		return idx >= 0 ? idx + 1 : '';
+	};
+
+	kpiFrecuenciaDisplay = (row: ScDescriptorKpiFuncion): string => {
+		return row?.NOMBRE_FRECUENCIA || '';
+	};
+
+	onKpiFrecuenciaLookupChanged(value: number | null, cellInfo: any): void {
+		const corr = value != null && value > 0 ? Number(value) : null;
+		const frecuencia = this.mCORR_FRECUENCIA.find((item) => Number(item.CORR_FRECUENCIA) === Number(corr));
+		cellInfo.setValue(corr);
+		if (cellInfo.data) {
+			cellInfo.data.CORR_FRECUENCIA = corr;
+			cellInfo.data.NOMBRE_FRECUENCIA = frecuencia?.NOMBRE_FRECUENCIA ?? '';
+		}
+	}
+
+	onPerfilEdadMinimaChanged(e: any): void {
+		if (this.readOnly) {
 			return;
 		}
+		this.perfil.EDAD_MINIMA = this.normalizarEdadPerfil(e?.value);
+		this.programarPersistirPerfil();
+	}
 
-		kpi.CORR_FRECUENCIA = value != null && value > 0 ? Number(value) : null;
-		const frecuencia = this.mCORR_FRECUENCIA.find(
-			(item) => Number(item.CORR_FRECUENCIA) === Number(kpi.CORR_FRECUENCIA)
+	onPerfilEdadMaximaChanged(e: any): void {
+		if (this.readOnly) {
+			return;
+		}
+		this.perfil.EDAD_MAXIMA = this.normalizarEdadPerfil(e?.value);
+		this.programarPersistirPerfil();
+	}
+
+	onPerfilSexoChanged(e: any): void {
+		if (this.readOnly) {
+			return;
+		}
+		this.perfil.SEXO = `${e?.value ?? PERFIL_PUESTO_DEFAULT.SEXO}`.trim().toUpperCase();
+		this.programarPersistirPerfil();
+	}
+
+	onPerfilEstadoFamiliarChanged(e: any): void {
+		if (this.readOnly) {
+			return;
+		}
+		this.perfil.ESTADO_FAMILIAR = `${e?.value ?? PERFIL_PUESTO_DEFAULT.ESTADO_FAMILIAR}`.trim().toUpperCase();
+		this.programarPersistirPerfil();
+	}
+
+	onPerfilDisponibilidadChanged(value: number | null): void {
+		if (this.readOnly) {
+			return;
+		}
+		this.perfil.CORR_DISPONIBILIDAD_HORARIO = value != null && value > 0 ? Number(value) : null;
+		const item = this.mCORR_DISPONIBILIDAD_HORARIO.find(
+			(row) => Number(row.CORR_DISPONIBILIDAD_HORARIO) === Number(this.perfil.CORR_DISPONIBILIDAD_HORARIO)
 		);
-		kpi.NOMBRE_FRECUENCIA = frecuencia?.NOMBRE_FRECUENCIA ?? '';
-		this.programarPersistirKpi(kpi);
+		this.perfil.NOMBRE_DISPONIBILIDAD_HORARIO = item?.NOMBRE_DISPONIBILIDAD_HORARIO ?? '';
+		this.programarPersistirPerfil();
 	}
 
-	onKpiMetaChanged(e: any, kpi: ScDescriptorKpiFuncion): void {
-		if (!kpi || this.readOnly) {
+	onPerfilModalidadChanged(value: number | null): void {
+		if (this.readOnly) {
 			return;
 		}
+		this.perfil.CORR_TIPO_MODALIDAD = value != null && value > 0 ? Number(value) : null;
+		const item = this.mCORR_TIPO_MODALIDAD.find(
+			(row) => Number(row.CORR_TIPO_MODALIDAD) === Number(this.perfil.CORR_TIPO_MODALIDAD)
+		);
+		this.perfil.MODALIDAD_NOMBRE = item?.MODALIDAD_NOMBRE ?? '';
+		this.programarPersistirPerfil();
+	}
 
-		const value = e?.value;
+	onPerfilLicenciaChanged(e: any): void {
+		if (this.readOnly) {
+			return;
+		}
+		this.perfil.LICENCIA = e?.value === true;
+		this.programarPersistirPerfil();
+	}
+
+	private normalizarEdadPerfil(value: unknown): number | null {
 		if (value == null || value === '') {
-			kpi.META = null;
-			if (e?.component?.option('value') != null) {
-				e.component.option('value', null);
-			}
-			this.programarPersistirKpi(kpi);
-			return;
+			return null;
 		}
-
 		const parsed = Math.trunc(Number(value));
 		if (Number.isNaN(parsed)) {
-			kpi.META = null;
-			if (e?.component) {
-				e.component.option('value', null);
-			}
+			return null;
+		}
+		return Math.min(120, Math.max(0, parsed));
+	}
+
+	private limpiarPerfil(): void {
+		if (this.perfilPersistTimer) {
+			clearTimeout(this.perfilPersistTimer);
+			this.perfilPersistTimer = null;
+		}
+		this.perfil = { ...PERFIL_PUESTO_DEFAULT };
+		this.perfilExiste = false;
+		this.perfilSubTabIndex = 0;
+	}
+
+	private cargarPerfil(forzar = false): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0) {
+			this.limpiarPerfil();
 			return;
 		}
 
-		const clamped = Math.min(100, Math.max(0, parsed));
-		kpi.META = clamped;
-		if (e?.component && e.component.option('value') !== clamped) {
-			e.component.option('value', clamped);
+		const loadSeq = ++this.perfilLoadSeq;
+		this.service
+			.getPerfilLookup(corrDescriptor)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (loadSeq !== this.perfilLoadSeq) {
+						return;
+					}
+
+					const row = Array.isArray(response?.Data) ? response.Data[0] : null;
+					if (response?.Result && row) {
+						this.perfil = {
+							CORR_EMPRESA: row.CORR_EMPRESA,
+							CORR_DESCRIPTOR_PUESTO: row.CORR_DESCRIPTOR_PUESTO,
+							CORR_PERFIL_PUESTO: row.CORR_PERFIL_PUESTO ?? 0,
+							EDAD_MINIMA: row.EDAD_MINIMA ?? PERFIL_PUESTO_DEFAULT.EDAD_MINIMA,
+							EDAD_MAXIMA: row.EDAD_MAXIMA ?? PERFIL_PUESTO_DEFAULT.EDAD_MAXIMA,
+							SEXO: row.SEXO ?? PERFIL_PUESTO_DEFAULT.SEXO,
+							ESTADO_FAMILIAR: row.ESTADO_FAMILIAR ?? PERFIL_PUESTO_DEFAULT.ESTADO_FAMILIAR,
+							CORR_DISPONIBILIDAD_HORARIO: row.CORR_DISPONIBILIDAD_HORARIO ?? null,
+							NOMBRE_DISPONIBILIDAD_HORARIO: row.NOMBRE_DISPONIBILIDAD_HORARIO ?? '',
+							CORR_TIPO_MODALIDAD: row.CORR_TIPO_MODALIDAD ?? null,
+							MODALIDAD_NOMBRE: row.MODALIDAD_NOMBRE ?? '',
+							LICENCIA: row.LICENCIA ?? PERFIL_PUESTO_DEFAULT.LICENCIA,
+						};
+						this.perfilExiste = true;
+						return;
+					}
+
+					this.perfil = { ...PERFIL_PUESTO_DEFAULT };
+					this.perfilExiste = false;
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	private programarPersistirPerfil(): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0 || this.readOnly) {
+			return;
 		}
-		this.programarPersistirKpi(kpi);
+
+		if (this.perfilPersistTimer) {
+			clearTimeout(this.perfilPersistTimer);
+		}
+
+		this.perfilPersistTimer = setTimeout(() => this.persistirPerfilEnLinea(), 500);
+	}
+
+	private persistirPerfilEnLinea(): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0 || this.readOnly) {
+			return;
+		}
+
+		this.service
+			.persistirPerfil(corrDescriptor, this.perfil, this.perfilExiste)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+
+					const saved = response.Data as ScDescriptorPerfilPuesto;
+					if (saved) {
+						this.perfil = {
+							...this.perfil,
+							...saved,
+						};
+						this.perfilExiste = true;
+					} else if (Number(response?.CodeHelper) > 0) {
+						this.perfil.CORR_PERFIL_PUESTO = Number(response.CodeHelper);
+						this.perfilExiste = true;
+					}
+				},
+				error: (error) => this.notifyApiError(error),
+			});
 	}
 
 	private cargarKpis(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoCorta) {
 			this.kpis = [];
+			this.resetearEdicionKpis();
 			return;
 		}
 
@@ -758,12 +1079,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					}
 
 					if (response?.Result && Array.isArray(response.Data)) {
+						this.resetearEdicionKpis();
 						this.kpis = response.Data.map((item: ScDescriptorKpiFuncion) => ({
 							CORR_KPI_FUNCION: item.CORR_KPI_FUNCION,
 							NOMBRE_INDICADOR: item.NOMBRE_INDICADOR ?? '',
 							CORR_FRECUENCIA: item.CORR_FRECUENCIA ?? null,
 							NOMBRE_FRECUENCIA: item.NOMBRE_FRECUENCIA ?? '',
 							META: item.META ?? null,
+							_clientKey: item.CORR_KPI_FUNCION || this.crearClientKey('kpi'),
 						}));
 					}
 				},
@@ -775,6 +1098,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0) {
 			this.funcionesClave = [];
+			this.resetearEdicionFuncionesClave();
 			return;
 		}
 
@@ -797,6 +1121,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					}
 
 					if (response?.Result && Array.isArray(response.Data)) {
+						this.resetearEdicionFuncionesClave();
 						this.funcionesClave = response.Data
 							.filter(
 								(item: ScDescriptorFuncion) =>
@@ -807,6 +1132,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 								NOMBRE_FUNCION: item.NOMBRE_FUNCION ?? '',
 								TIPO_FUNCION: item.TIPO_FUNCION ?? TIPO_FUNCION_CLAVE,
 								CANT_ACTIVIDADES: Number(item.CANT_ACTIVIDADES ?? 0),
+								_clientKey: item.CORR_FUNCION || this.crearClientKey('fc'),
 							}));
 					}
 				},
@@ -847,6 +1173,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoCorta) {
 			if (!corrDescriptor || corrDescriptor <= 0) {
 				this.funcionesSecundarias = [];
+				this.resetearEdicionFuncionesSecundarias();
 			}
 			return;
 		}
@@ -870,6 +1197,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					}
 
 					if (response?.Result && Array.isArray(response.Data)) {
+						this.resetearEdicionFuncionesSecundarias();
 						this.funcionesSecundarias = response.Data
 							.filter(
 								(item: ScDescriptorFuncion) =>
@@ -879,6 +1207,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 								CORR_FUNCION: item.CORR_FUNCION,
 								NOMBRE_FUNCION: item.NOMBRE_FUNCION ?? '',
 								TIPO_FUNCION: item.TIPO_FUNCION ?? TIPO_FUNCION_SECUNDARIA,
+								_clientKey: item.CORR_FUNCION || this.crearClientKey('fs'),
 							}));
 					}
 				},
@@ -1042,17 +1371,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 					this.model = descriptor;
 					this.modelUpdate = this.fillData(descriptor);
-					this.AsignaStatus(UpdateType.Update);
-					this.readOnly = false;
-					this.actualizarSubTabs();
 					this.aplicarRegistroEnGrid(descriptor, isAdd);
-
-					if (isAdd) {
-						this.cargarDatosTabs();
-					}
-
-					this.habilitar();
-					setTimeout(() => this.syncHeaderForm());
+					this.limpiarEstadoValidacionHeader();
+					this.limpiarDatosTabs();
+					this.AsignaStatus(UpdateType.Browse);
+					this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
 
 					this.notifyFx(
 						isAdd ? 'Registro creado con exito!' : 'Registro modificado con exito!',
@@ -1245,6 +1568,165 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private obtenerCorrDescriptor(): number {
 		return Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0;
+	}
+
+	private resetearEdicionFuncionesClave(): void {
+		this.funcionesClaveEditando = false;
+	}
+
+	private resetearEdicionFuncionesSecundarias(): void {
+		this.funcionesSecundariasEditando = false;
+	}
+
+	private resetearEdicionKpis(): void {
+		this.kpisEditando = false;
+	}
+
+	private crearClientKey(prefix: string): string {
+		return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+	}
+
+	private refrescarGridFuncionesClave(): void {
+		setTimeout(() => this.gridFuncionesClave?.instance?.refresh());
+	}
+
+	private refrescarGridFuncionesSecundarias(): void {
+		setTimeout(() => this.gridFuncionesSecundarias?.instance?.refresh());
+	}
+
+	private refrescarGridKpis(): void {
+		setTimeout(() => this.gridKpis?.instance?.refresh());
+	}
+
+	private persistirFuncionDesdeGrid(
+		data: ScDescriptorFuncion,
+		tipoFuncion: string,
+		esNuevo: boolean
+	): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const payload: ScDescriptorFuncion = {
+			...data,
+			CORR_FUNCION: esNuevo ? 0 : Number(data.CORR_FUNCION) || 0,
+			NOMBRE_FUNCION: (data.NOMBRE_FUNCION ?? '').trim(),
+			TIPO_FUNCION: tipoFuncion,
+		};
+
+		return new Promise((resolve) => {
+			this.service
+				.persistirFuncion(corrDescriptor, payload, tipoFuncion)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+
+						if (tipoFuncion === TIPO_FUNCION_CLAVE) {
+							this.funcionesClaveEditando = false;
+							this.cargarFuncionesClave(true);
+						} else {
+							this.funcionesSecundariasEditando = false;
+							this.cargarFuncionesSecundarias(true);
+						}
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private eliminarFuncionDesdeGrid(data: ScDescriptorFuncion): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrFuncion = Number(data?.CORR_FUNCION);
+		if (!corrFuncion || corrFuncion <= 0) {
+			return Promise.resolve(false);
+		}
+
+		return new Promise((resolve) => {
+			this.service
+				.eliminarFuncion(corrDescriptor, corrFuncion)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private persistirKpiDesdeGrid(data: ScDescriptorKpiFuncion, esNuevo: boolean): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const payload: ScDescriptorKpiFuncion = {
+			...data,
+			CORR_KPI_FUNCION: esNuevo ? 0 : Number(data.CORR_KPI_FUNCION) || 0,
+			NOMBRE_INDICADOR: (data.NOMBRE_INDICADOR ?? '').trim(),
+			CORR_FRECUENCIA: data.CORR_FRECUENCIA ?? null,
+			META: data.META ?? null,
+		};
+
+		return new Promise((resolve) => {
+			this.service
+				.persistirKpi(corrDescriptor, payload)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						this.kpisEditando = false;
+						this.cargarKpis(true);
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private eliminarKpiDesdeGrid(data: ScDescriptorKpiFuncion): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrKpi = Number(data?.CORR_KPI_FUNCION);
+		if (!corrKpi || corrKpi <= 0) {
+			return Promise.resolve(false);
+		}
+
+		return new Promise((resolve) => {
+			this.service
+				.eliminarKpi(corrDescriptor, corrKpi)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
 	}
 
 	private extraerFuncionGuardada(response: any): ScDescriptorFuncion {

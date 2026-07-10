@@ -9,4 +9,5 @@ export interface ScDescriptorFuncion {
 	CANT_ACTIVIDADES?: number;
 	actividadesPendientes?: ScDescriptorFuncionActividad[];
 	_marcadaEliminar?: boolean;
+	_clientKey?: string | number;
 }

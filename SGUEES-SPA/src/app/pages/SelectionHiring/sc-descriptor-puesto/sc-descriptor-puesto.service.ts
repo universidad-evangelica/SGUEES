@@ -11,6 +11,8 @@ import { ScDescriptorFuncion } from './sc-descriptor-funcion/models/sc-descripto
 import { ScDescriptorFuncionRepository } from './sc-descriptor-funcion/sc-descriptor-funcion.repository';
 import { ScDescriptorKpiFuncion } from './sc-descriptor-kpi-funcion/models/sc-descriptor-kpi-funcion';
 import { ScDescriptorKpiFuncionRepository } from './sc-descriptor-kpi-funcion/sc-descriptor-kpi-funcion.repository';
+import { ScDescriptorPerfilPuesto } from './sc-descriptor-perfil-puesto/models/sc-descriptor-perfil-puesto';
+import { ScDescriptorPerfilPuestoRepository } from './sc-descriptor-perfil-puesto/sc-descriptor-perfil-puesto.repository';
 import { ScDescriptorPuesto } from './models/sc-descriptor-puesto';
 import {
 	ESTADOS_DESCRIPTOR_BLOQUEO_CREACION,
@@ -35,7 +37,8 @@ export class ScDescriptorPuestoService {
 		private repo: ScDescriptorPuestoRepository,
 		private funcionRepo: ScDescriptorFuncionRepository,
 		private actividadRepo: ScDescriptorFuncionActividadRepository,
-		private kpiRepo: ScDescriptorKpiFuncionRepository
+		private kpiRepo: ScDescriptorKpiFuncionRepository,
+		private perfilRepo: ScDescriptorPerfilPuestoRepository
 	) {}
 
 	esValido(model: ScDescriptorPuesto, msg: Function): boolean {
@@ -716,6 +719,39 @@ export class ScDescriptorPuestoService {
 		return this.kpiRepo.delete([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
 			{ Parameter: 'CORR_KPI_FUNCION', Value: corrKpi },
+		]);
+	}
+
+	getPerfilLookup(corrDescriptorPuesto: number): Observable<IResult> {
+		return this.perfilRepo.getAll([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto }]);
+	}
+
+	persistirPerfil(
+		corrDescriptorPuesto: number,
+		perfil: ScDescriptorPerfilPuesto,
+		existe: boolean
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrPerfil = Number(perfil.CORR_PERFIL_PUESTO ?? 0);
+		const payload = {
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_PERFIL_PUESTO: corrPerfil > 0 ? corrPerfil : 0,
+			EDAD_MINIMA: perfil.EDAD_MINIMA ?? null,
+			EDAD_MAXIMA: perfil.EDAD_MAXIMA ?? null,
+			SEXO: (perfil.SEXO ?? '').trim().toUpperCase() || null,
+			ESTADO_FAMILIAR: (perfil.ESTADO_FAMILIAR ?? '').trim().toUpperCase() || null,
+			CORR_DISPONIBILIDAD_HORARIO: perfil.CORR_DISPONIBILIDAD_HORARIO ?? null,
+			CORR_TIPO_MODALIDAD: perfil.CORR_TIPO_MODALIDAD ?? null,
+			LICENCIA: perfil.LICENCIA ?? false,
+		};
+
+		if (!existe || corrPerfil <= 0) {
+			return this.perfilRepo.create(payload);
+		}
+
+		return this.perfilRepo.update(payload, [
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_PERFIL_PUESTO', Value: corrPerfil },
 		]);
 	}
 

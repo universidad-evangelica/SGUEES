@@ -327,9 +327,9 @@
 }
 
 .descriptor-funciones-table-wrap--kpis .descriptor-funciones-col-accion {
-	width: 84px;
-	min-width: 84px;
-	max-width: 84px;
+	width: 110px;
+	min-width: 110px;
+	max-width: 110px;
 	padding-left: 8px;
 	padding-right: 8px;
 }
@@ -394,8 +394,8 @@
 }
 
 .descriptor-funciones-col-accion {
-	width: 88px;
-	min-width: 88px;
+	width: 110px;
+	min-width: 110px;
 	text-align: center;
 }
 
@@ -430,18 +430,102 @@
 	padding: 18px 12px;
 }
 
-.descriptor-funciones-footer {
+.descriptor-deta-toolbar {
 	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
+	flex-wrap: wrap;
+	align-items: center;
 	gap: 10px;
-	margin-top: 14px;
+	margin-bottom: 14px;
+	padding: 10px 12px;
+	background: var(--sguees-surface-subtle, color-mix(in srgb, var(--base-text-color) 6%, transparent));
+	border: 1px solid var(--border-color, color-mix(in srgb, var(--base-text-color) 12%, transparent));
+	border-radius: var(--sguees-radius-md, 10px);
+}
+
+:host ::ng-deep .descriptor-deta-toolbar-btn .dx-button {
+	min-width: 150px;
+	min-height: 40px;
+	padding-inline: 16px;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+:host ::ng-deep .descriptor-deta-toolbar-btn--cancel .dx-button {
+	min-width: 140px;
+}
+
+:host ::ng-deep .descriptor-deta-datagrid {
+	.dx-link-save,
+	.dx-link-cancel {
+		display: none !important;
+	}
 }
 
 .descriptor-funciones-note {
-	margin: 0;
+	margin: 12px 0 0;
 	font-size: 12px;
 	opacity: 0.75;
+}
+
+.descriptor-perfil-header {
+	margin-bottom: 12px;
+}
+
+.descriptor-perfil-icon {
+	margin-right: 8px;
+	font-size: 1rem;
+}
+
+.descriptor-perfil-tab-panel {
+	margin-top: 4px;
+}
+
+:host ::ng-deep .descriptor-perfil-tab-panel .dx-multiview-item,
+:host ::ng-deep .descriptor-perfil-tab-panel .dx-multiview-item-content {
+	overflow: visible;
+}
+
+.descriptor-perfil-tab-content {
+	padding: 16px 4px 4px;
+}
+
+.descriptor-perfil-form {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+.descriptor-perfil-row {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 16px;
+}
+
+.descriptor-perfil-row--secondary {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.descriptor-perfil-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+.descriptor-perfil-label {
+	font-size: 12px;
+	font-weight: 600;
+	opacity: 0.85;
+}
+
+:host ::ng-deep .descriptor-perfil-field .dx-texteditor,
+:host ::ng-deep .descriptor-perfil-field app-data-lookup,
+:host ::ng-deep .descriptor-perfil-field .dx-dropdownbox {
+	width: 100%;
+}
+
+:host ::ng-deep .descriptor-perfil-tab-panel .dx-tab {
+	min-width: 120px;
 }
 
 .descriptor-actividades-trigger {
@@ -541,6 +625,11 @@
 	.descriptor-funciones-col-accion {
 		width: 56px;
 		min-width: 56px;
+	}
+
+	.descriptor-perfil-row,
+	.descriptor-perfil-row--secondary {
+		grid-template-columns: 1fr;
 	}
 }
 

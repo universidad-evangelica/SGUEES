@@ -96,7 +96,8 @@
 				class="descriptor-sub-tab-panel"
 				*ngIf="mostrarSeccionesDescriptor"
 				[(selectedIndex)]="subTabIndex"
-				[deferRendering]="false"
+				[animationEnabled]="true"
+				[swipeEnabled]="false"
 			>
 				<dxi-item *ngFor="let tab of subTabsVisibles" [title]="tab.order + '. ' + tab.title">
 					<div class="descriptor-sub-tab-content" *ngIf="tab.id === 'objetivo'">
@@ -118,78 +119,138 @@
 							</h4>
 						</div>
 
-						<div
-							class="descriptor-funciones-table-wrap"
-							[class.descriptor-funciones-table-wrap--extensa]="esFormatoExtensa"
-						>
-							<table class="descriptor-funciones-table">
-								<thead>
-									<tr>
-										<th class="descriptor-funciones-col-codigo">Codigo</th>
-										<th class="descriptor-funciones-col-nombre">Nombre de la funcion clave</th>
-										<th *ngIf="esFormatoExtensa" class="descriptor-funciones-col-actividades">Actividades</th>
-										<th class="descriptor-funciones-col-accion">Accion</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr *ngFor="let funcion of funcionesClaveVisibles; let i = index">
-										<td class="descriptor-funciones-col-codigo">{{ i + 1 }}</td>
-										<td class="descriptor-funciones-col-nombre">
-											<dx-text-box
-												[(value)]="funcion.NOMBRE_FUNCION"
-												[readOnly]="readOnly"
-												placeholder="Nombre de la funcion"
-												[maxLength]="255"
-												(onValueChanged)="onFuncionClaveChanged($event, funcion)"
-											></dx-text-box>
-										</td>
-										<td *ngIf="esFormatoExtensa" class="descriptor-funciones-col-actividades">
-											<button
-												type="button"
-												class="descriptor-actividades-trigger"
-												[disabled]="readOnly"
-												(click)="abrirActividades(funcion)"
-											>
-												<span>Actividades</span>
-												<span class="descriptor-actividades-badge">{{ funcion.CANT_ACTIVIDADES || 0 }}</span>
-											</button>
-										</td>
-										<td class="descriptor-funciones-col-accion">
-											<dx-button
-												icon="trash"
-												type="danger"
-												stylingMode="contained"
-												hint="Eliminar funcion"
-												[disabled]="readOnly"
-												(onClick)="eliminarFuncionClave(funcion)"
-											></dx-button>
-										</td>
-									</tr>
-									<tr *ngIf="funcionesClaveVisibles.length === 0">
-										<td [attr.colspan]="esFormatoExtensa ? 4 : 3" class="descriptor-funciones-empty">
-											No hay funciones clave registradas.
-										</td>
-									</tr>
-								</tbody>
-							</table>
+						<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="add"
+								text="Agregar Detalle"
+								type="success"
+								stylingMode="contained"
+								(onClick)="agregarFuncionClave()"
+								[disabled]="funcionesClaveEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="save"
+								text="Guardar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="guardarFuncionClaveEditada()"
+								[disabled]="!funcionesClaveEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+								icon="revert"
+								text="Cancelar"
+								type="danger"
+								stylingMode="contained"
+								(onClick)="cancelarFuncionClaveEditada()"
+								[disabled]="!funcionesClaveEditando"
+							></dx-button>
 						</div>
 
-						<div class="descriptor-funciones-footer">
-							<dx-button
-								text="Agregar Funcion Clave"
-								icon="plus"
-								type="default"
-								stylingMode="contained"
-								[disabled]="readOnly"
-								(onClick)="agregarFuncionClave()"
-							></dx-button>
-							<p class="descriptor-funciones-note" *ngIf="esFormatoExtensa">
-								En version extensa, cada funcion clave permite registrar sus actividades.
-							</p>
-							<p class="descriptor-funciones-note" *ngIf="!esFormatoExtensa">
-								En version corta solo se registran las funciones clave, sin actividades.
-							</p>
-						</div>
+						<dx-data-grid
+							#gridFuncionesClave
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid"
+							[dataSource]="funcionesClave"
+							keyExpr="_clientKey"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[width]="'100%'"
+							[repaintChangesOnly]="true"
+							(onInitNewRow)="funcionClaveInitNewRow($event)"
+							(onEditingStart)="onFuncionClaveEditingStart($event)"
+							(onSaved)="onFuncionClaveSaved($event)"
+							(onEditCanceled)="onFuncionClaveEditCanceled($event)"
+							(onRowInserting)="funcionClaveRowInserting($event)"
+							(onRowUpdating)="funcionClaveRowUpdating($event)"
+							(onRowRemoving)="funcionClaveRowRemoving($event)"
+							(onRowValidating)="funcionClaveRowValidating($event)"
+						>
+							<dxo-editing
+								[mode]="'row'"
+								[refreshMode]="'reshape'"
+								[allowUpdating]="!readOnly"
+								[allowDeleting]="!readOnly"
+								[useIcons]="true"
+								[selectTextOnEditStart]="true"
+								[newRowPosition]="'first'"
+							></dxo-editing>
+							<dxo-paging [enabled]="false"></dxo-paging>
+							<dxi-column
+								type="buttons"
+								name="btnAcciones"
+								caption="Options"
+								[width]="104"
+								[minWidth]="104"
+								[fixed]="true"
+								fixedPosition="left"
+								alignment="center"
+								[allowResizing]="false"
+							>
+								<dxi-button
+									hint="Editar registro"
+									icon="edit"
+									stylingMode="text"
+									cssClass="sguees-grid-action-edit"
+									[visible]="funcionClaveEditButtonVisible"
+									[onClick]="editarFuncionClaveClick"
+								></dxi-button>
+								<dxi-button
+									name="delete"
+									hint="Eliminar registro"
+									icon="trash"
+									stylingMode="text"
+									cssClass="sguees-grid-action-delete"
+									[visible]="funcionClaveDeleteButtonVisible"
+								></dxi-button>
+								<dxi-button name="save" [visible]="false"></dxi-button>
+								<dxi-button name="cancel" [visible]="false"></dxi-button>
+								<dxi-button name="edit" [visible]="false"></dxi-button>
+							</dxi-column>
+							<dxi-column
+								caption="Codigo"
+								[width]="80"
+								[allowEditing]="false"
+								[calculateCellValue]="funcionClaveCodigoDisplay"
+							></dxi-column>
+							<dxi-column
+								dataField="NOMBRE_FUNCION"
+								caption="Nombre de la funcion clave"
+								[minWidth]="260"
+							></dxi-column>
+							<dxi-column
+								caption="Actividades"
+								[width]="160"
+								[allowEditing]="false"
+								[visible]="esFormatoExtensa"
+								cellTemplate="actividadesClaveTemplate"
+							></dxi-column>
+							<div *dxTemplate="let cellInfo of 'actividadesClaveTemplate'">
+								<button
+									type="button"
+									class="descriptor-actividades-trigger"
+									[disabled]="readOnly || funcionesClaveEditando"
+									(click)="abrirActividades(cellInfo.data)"
+								>
+									<span>Actividades</span>
+									<span class="descriptor-actividades-badge">{{ cellInfo.data?.CANT_ACTIVIDADES || 0 }}</span>
+								</button>
+							</div>
+						</dx-data-grid>
+
+						<p class="descriptor-funciones-note" *ngIf="esFormatoExtensa">
+							En version extensa, cada funcion clave permite registrar sus actividades.
+						</p>
+						<p class="descriptor-funciones-note" *ngIf="!esFormatoExtensa">
+							En version corta solo se registran las funciones clave, sin actividades.
+						</p>
 					</div>
 
 					<div class="descriptor-sub-tab-content" *ngIf="tab.id === 'funcionesSecundarias' && esFormatoCorta">
@@ -200,57 +261,113 @@
 							</h4>
 						</div>
 
-						<div class="descriptor-funciones-table-wrap">
-							<table class="descriptor-funciones-table">
-								<thead>
-									<tr>
-										<th class="descriptor-funciones-col-codigo">Codigo</th>
-										<th class="descriptor-funciones-col-nombre">Descripcion de la funcion secundaria</th>
-										<th class="descriptor-funciones-col-accion">Accion</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr *ngFor="let funcion of funcionesSecundariasVisibles; let i = index">
-										<td class="descriptor-funciones-col-codigo">{{ i + 1 }}</td>
-										<td class="descriptor-funciones-col-nombre">
-											<dx-text-box
-												[(value)]="funcion.NOMBRE_FUNCION"
-												[readOnly]="readOnly"
-												placeholder="Describa la funcion secundaria"
-												[maxLength]="255"
-												(onValueChanged)="onFuncionSecundariaChanged($event, funcion)"
-											></dx-text-box>
-										</td>
-										<td class="descriptor-funciones-col-accion">
-											<dx-button
-												icon="trash"
-												type="danger"
-												stylingMode="contained"
-												hint="Eliminar funcion secundaria"
-												[disabled]="readOnly"
-												(onClick)="eliminarFuncionSecundaria(funcion)"
-											></dx-button>
-										</td>
-									</tr>
-									<tr *ngIf="funcionesSecundariasVisibles.length === 0">
-										<td colspan="3" class="descriptor-funciones-empty">
-											No hay funciones secundarias registradas.
-										</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-
-						<div class="descriptor-funciones-footer">
+						<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
 							<dx-button
-								text="Agregar Funcion Secundaria"
-								icon="plus"
-								type="default"
+								class="descriptor-deta-toolbar-btn"
+								icon="add"
+								text="Agregar Detalle"
+								type="success"
 								stylingMode="contained"
-								[disabled]="readOnly"
 								(onClick)="agregarFuncionSecundaria()"
+								[disabled]="funcionesSecundariasEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="save"
+								text="Guardar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="guardarFuncionSecundariaEditada()"
+								[disabled]="!funcionesSecundariasEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+								icon="revert"
+								text="Cancelar"
+								type="danger"
+								stylingMode="contained"
+								(onClick)="cancelarFuncionSecundariaEditada()"
+								[disabled]="!funcionesSecundariasEditando"
 							></dx-button>
 						</div>
+
+						<dx-data-grid
+							#gridFuncionesSecundarias
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid"
+							[dataSource]="funcionesSecundarias"
+							keyExpr="_clientKey"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[width]="'100%'"
+							[repaintChangesOnly]="true"
+							(onInitNewRow)="funcionSecundariaInitNewRow($event)"
+							(onEditingStart)="onFuncionSecundariaEditingStart($event)"
+							(onSaved)="onFuncionSecundariaSaved($event)"
+							(onEditCanceled)="onFuncionSecundariaEditCanceled($event)"
+							(onRowInserting)="funcionSecundariaRowInserting($event)"
+							(onRowUpdating)="funcionSecundariaRowUpdating($event)"
+							(onRowRemoving)="funcionSecundariaRowRemoving($event)"
+							(onRowValidating)="funcionSecundariaRowValidating($event)"
+						>
+							<dxo-editing
+								[mode]="'row'"
+								[refreshMode]="'reshape'"
+								[allowUpdating]="!readOnly"
+								[allowDeleting]="!readOnly"
+								[useIcons]="true"
+								[selectTextOnEditStart]="true"
+								[newRowPosition]="'first'"
+							></dxo-editing>
+							<dxo-paging [enabled]="false"></dxo-paging>
+							<dxi-column
+								type="buttons"
+								name="btnAcciones"
+								caption="Options"
+								[width]="104"
+								[minWidth]="104"
+								[fixed]="true"
+								fixedPosition="left"
+								alignment="center"
+								[allowResizing]="false"
+							>
+								<dxi-button
+									hint="Editar registro"
+									icon="edit"
+									stylingMode="text"
+									cssClass="sguees-grid-action-edit"
+									[visible]="funcionSecundariaEditButtonVisible"
+									[onClick]="editarFuncionSecundariaClick"
+								></dxi-button>
+								<dxi-button
+									name="delete"
+									hint="Eliminar registro"
+									icon="trash"
+									stylingMode="text"
+									cssClass="sguees-grid-action-delete"
+									[visible]="funcionSecundariaDeleteButtonVisible"
+								></dxi-button>
+								<dxi-button name="save" [visible]="false"></dxi-button>
+								<dxi-button name="cancel" [visible]="false"></dxi-button>
+								<dxi-button name="edit" [visible]="false"></dxi-button>
+							</dxi-column>
+							<dxi-column
+								caption="Codigo"
+								[width]="80"
+								[allowEditing]="false"
+								[calculateCellValue]="funcionSecundariaCodigoDisplay"
+							></dxi-column>
+							<dxi-column
+								dataField="NOMBRE_FUNCION"
+								caption="Descripcion de la funcion secundaria"
+								[minWidth]="280"
+							></dxi-column>
+						</dx-data-grid>
 					</div>
 
 					<div class="descriptor-sub-tab-content" *ngIf="tab.id === 'kpis' && esFormatoCorta">
@@ -261,91 +378,275 @@
 							</h4>
 						</div>
 
-						<div class="descriptor-funciones-table-wrap descriptor-funciones-table-wrap--kpis">
-							<table class="descriptor-funciones-table">
-								<thead>
-									<tr>
-										<th class="descriptor-funciones-col-codigo">Codigo</th>
-										<th class="descriptor-funciones-col-nombre">Indicador</th>
-										<th class="descriptor-funciones-col-frecuencia">Frecuencia</th>
-										<th class="descriptor-funciones-col-meta">Meta</th>
-										<th class="descriptor-funciones-col-accion">Accion</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr *ngFor="let kpi of kpisVisibles; let i = index">
-										<td class="descriptor-funciones-col-codigo">{{ i + 1 }}</td>
-										<td class="descriptor-funciones-col-nombre">
-											<dx-text-box
-												[(value)]="kpi.NOMBRE_INDICADOR"
-												[readOnly]="readOnly"
-												placeholder="Indicador"
-												[maxLength]="255"
-												(onValueChanged)="onKpiIndicadorChanged($event, kpi)"
-											></dx-text-box>
-										</td>
-										<td class="descriptor-funciones-col-frecuencia">
-											<app-data-lookup
-												[model]="mCORR_FRECUENCIA"
-												[value]="kpi.CORR_FRECUENCIA"
-												(valueChange)="onKpiFrecuenciaChanged($event, kpi)"
-												[valueExpr]="'CORR_FRECUENCIA'"
-												[displayExpr]="'NOMBRE_FRECUENCIA'"
-												[selectedRowKeys]="selectedLookUpCORR_FRECUENCIA"
-												[readOnly]="readOnly"
-												[showClearButton]="true"
-											></app-data-lookup>
-										</td>
-										<td class="descriptor-funciones-col-meta">
-											<div class="descriptor-kpi-meta-field">
+						<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="add"
+								text="Agregar Detalle"
+								type="success"
+								stylingMode="contained"
+								(onClick)="agregarKpi()"
+								[disabled]="kpisEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="save"
+								text="Guardar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="guardarKpiEditado()"
+								[disabled]="!kpisEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+								icon="revert"
+								text="Cancelar"
+								type="danger"
+								stylingMode="contained"
+								(onClick)="cancelarKpiEditado()"
+								[disabled]="!kpisEditando"
+							></dx-button>
+						</div>
+
+						<dx-data-grid
+							#gridKpis
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid"
+							[dataSource]="kpis"
+							keyExpr="_clientKey"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[width]="'100%'"
+							[repaintChangesOnly]="true"
+							(onInitNewRow)="kpiInitNewRow($event)"
+							(onEditingStart)="onKpiEditingStart($event)"
+							(onSaved)="onKpiSaved($event)"
+							(onEditCanceled)="onKpiEditCanceled($event)"
+							(onRowInserting)="kpiRowInserting($event)"
+							(onRowUpdating)="kpiRowUpdating($event)"
+							(onRowRemoving)="kpiRowRemoving($event)"
+							(onRowValidating)="kpiRowValidating($event)"
+						>
+							<dxo-editing
+								[mode]="'row'"
+								[refreshMode]="'reshape'"
+								[allowUpdating]="!readOnly"
+								[allowDeleting]="!readOnly"
+								[useIcons]="true"
+								[selectTextOnEditStart]="true"
+								[newRowPosition]="'first'"
+							></dxo-editing>
+							<dxo-paging [enabled]="false"></dxo-paging>
+							<dxi-column
+								type="buttons"
+								name="btnAcciones"
+								caption="Options"
+								[width]="104"
+								[minWidth]="104"
+								[fixed]="true"
+								fixedPosition="left"
+								alignment="center"
+								[allowResizing]="false"
+							>
+								<dxi-button
+									hint="Editar registro"
+									icon="edit"
+									stylingMode="text"
+									cssClass="sguees-grid-action-edit"
+									[visible]="kpiEditButtonVisible"
+									[onClick]="editarKpiClick"
+								></dxi-button>
+								<dxi-button
+									name="delete"
+									hint="Eliminar registro"
+									icon="trash"
+									stylingMode="text"
+									cssClass="sguees-grid-action-delete"
+									[visible]="kpiDeleteButtonVisible"
+								></dxi-button>
+								<dxi-button name="save" [visible]="false"></dxi-button>
+								<dxi-button name="cancel" [visible]="false"></dxi-button>
+								<dxi-button name="edit" [visible]="false"></dxi-button>
+							</dxi-column>
+							<dxi-column
+								caption="Codigo"
+								[width]="80"
+								[allowEditing]="false"
+								[calculateCellValue]="kpiCodigoDisplay"
+							></dxi-column>
+							<dxi-column
+								dataField="NOMBRE_INDICADOR"
+								caption="Indicador"
+								[minWidth]="240"
+							></dxi-column>
+							<dxi-column
+								dataField="CORR_FRECUENCIA"
+								caption="Frecuencia"
+								[width]="200"
+								[calculateDisplayValue]="kpiFrecuenciaDisplay"
+								[editCellTemplate]="'CORR_FRECUENCIALookup'"
+							>
+								<dxo-lookup
+									[dataSource]="mCORR_FRECUENCIA"
+									valueExpr="CORR_FRECUENCIA"
+									displayExpr="NOMBRE_FRECUENCIA"
+								></dxo-lookup>
+							</dxi-column>
+							<div *dxTemplate="let cellInfo of 'CORR_FRECUENCIALookup'">
+								<app-data-lookup
+									[model]="mCORR_FRECUENCIA"
+									[value]="cellInfo.value"
+									(valueChange)="onKpiFrecuenciaLookupChanged($event, cellInfo)"
+									[valueExpr]="'CORR_FRECUENCIA'"
+									[displayExpr]="'NOMBRE_FRECUENCIA'"
+									[selectedRowKeys]="selectedLookUpCORR_FRECUENCIA"
+									[showClearButton]="true"
+								></app-data-lookup>
+							</div>
+							<dxi-column
+								dataField="META"
+								caption="Meta"
+								[width]="110"
+								dataType="number"
+								[format]="'#0'"
+								[editorOptions]="{ min: 0, max: 100, step: 1, showSpinButtons: false, format: '#0' }"
+							></dxi-column>
+						</dx-data-grid>
+					</div>
+
+					<div class="descriptor-sub-tab-content" *ngIf="tab.id === 'perfil'">
+						<div class="descriptor-perfil-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-user descriptor-perfil-icon" aria-hidden="true"></span>
+								Perfil del Puesto
+							</h4>
+						</div>
+
+						<dx-tab-panel
+							class="descriptor-perfil-tab-panel"
+							[(selectedIndex)]="perfilSubTabIndex"
+							[animationEnabled]="true"
+							[swipeEnabled]="false"
+						>
+							<dxi-item *ngFor="let perfilTab of perfilSubTabs" [title]="perfilTab.title" [icon]="perfilTab.icon">
+								<div class="descriptor-perfil-tab-content" *ngIf="perfilTab.id === 'perfilDatos'">
+									<div class="descriptor-perfil-form">
+										<div class="descriptor-perfil-row">
+											<div class="descriptor-perfil-field">
+												<label class="descriptor-perfil-label">Edad Minima</label>
 												<dx-number-box
-													[(value)]="kpi.META"
+													[(value)]="perfil.EDAD_MINIMA"
 													[readOnly]="readOnly"
 													[min]="0"
-													[max]="100"
+													[max]="120"
 													[step]="1"
 													[format]="'#0'"
 													[showSpinButtons]="false"
 													[showClearButton]="false"
-													placeholder="0"
-													(onValueChanged)="onKpiMetaChanged($event, kpi)"
+													(onValueChanged)="onPerfilEdadMinimaChanged($event)"
 												></dx-number-box>
-												<span class="descriptor-kpi-meta-suffix" aria-hidden="true">%</span>
 											</div>
-										</td>
-										<td class="descriptor-funciones-col-accion">
-											<dx-button
-												icon="trash"
-												type="danger"
-												stylingMode="contained"
-												hint="Eliminar KPI"
-												[disabled]="readOnly"
-												(onClick)="eliminarKpi(kpi)"
-											></dx-button>
-										</td>
-									</tr>
-									<tr *ngIf="kpisVisibles.length === 0">
-										<td colspan="5" class="descriptor-funciones-empty">No hay KPIs registrados.</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
+											<div class="descriptor-perfil-field">
+												<label class="descriptor-perfil-label">Edad Maxima</label>
+												<dx-number-box
+													[(value)]="perfil.EDAD_MAXIMA"
+													[readOnly]="readOnly"
+													[min]="0"
+													[max]="120"
+													[step]="1"
+													[format]="'#0'"
+													[showSpinButtons]="false"
+													[showClearButton]="false"
+													(onValueChanged)="onPerfilEdadMaximaChanged($event)"
+												></dx-number-box>
+											</div>
+											<div class="descriptor-perfil-field">
+												<label class="descriptor-perfil-label">Sexo</label>
+												<dx-select-box
+													[(value)]="perfil.SEXO"
+													[dataSource]="perfilSexoOptions"
+													valueExpr="CODIGO"
+													displayExpr="NOMBRE"
+													[readOnly]="readOnly"
+													[searchEnabled]="false"
+													(onValueChanged)="onPerfilSexoChanged($event)"
+												></dx-select-box>
+											</div>
+											<div class="descriptor-perfil-field">
+												<label class="descriptor-perfil-label">Estado Familiar</label>
+												<dx-select-box
+													[(value)]="perfil.ESTADO_FAMILIAR"
+													[dataSource]="perfilEstadoFamiliarOptions"
+													valueExpr="CODIGO"
+													displayExpr="NOMBRE"
+													[readOnly]="readOnly"
+													[searchEnabled]="false"
+													(onValueChanged)="onPerfilEstadoFamiliarChanged($event)"
+												></dx-select-box>
+											</div>
+										</div>
 
-						<div class="descriptor-funciones-footer">
-							<dx-button
-								text="Agregar KPI"
-								icon="plus"
-								type="default"
-								stylingMode="contained"
-								[disabled]="readOnly"
-								(onClick)="agregarKpi()"
-							></dx-button>
-						</div>
+										<div class="descriptor-perfil-row descriptor-perfil-row--secondary">
+											<div class="descriptor-perfil-field">
+												<label class="descriptor-perfil-label">Disponibilidad</label>
+												<app-data-lookup
+													[model]="mCORR_DISPONIBILIDAD_HORARIO"
+													[value]="perfil.CORR_DISPONIBILIDAD_HORARIO"
+													(valueChange)="onPerfilDisponibilidadChanged($event)"
+													[valueExpr]="'CORR_DISPONIBILIDAD_HORARIO'"
+													[displayExpr]="'NOMBRE_DISPONIBILIDAD_HORARIO'"
+													[selectedRowKeys]="selectedLookUpCORR_DISPONIBILIDAD_HORARIO"
+													[readOnly]="readOnly"
+													[showClearButton]="true"
+												></app-data-lookup>
+											</div>
+											<div class="descriptor-perfil-field">
+												<label class="descriptor-perfil-label">Modalidad</label>
+												<app-data-lookup
+													[model]="mCORR_TIPO_MODALIDAD"
+													[value]="perfil.CORR_TIPO_MODALIDAD"
+													(valueChange)="onPerfilModalidadChanged($event)"
+													[valueExpr]="'CORR_TIPO_MODALIDAD'"
+													[displayExpr]="'MODALIDAD_NOMBRE'"
+													[selectedRowKeys]="selectedLookUpCORR_TIPO_MODALIDAD"
+													[readOnly]="readOnly"
+													[showClearButton]="true"
+												></app-data-lookup>
+											</div>
+											<div class="descriptor-perfil-field">
+												<label class="descriptor-perfil-label">Licencia</label>
+												<dx-select-box
+													[(value)]="perfil.LICENCIA"
+													[dataSource]="perfilLicenciaOptions"
+													valueExpr="CODIGO"
+													displayExpr="NOMBRE"
+													[readOnly]="readOnly"
+													[searchEnabled]="false"
+													(onValueChanged)="onPerfilLicenciaChanged($event)"
+												></dx-select-box>
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div
+									class="descriptor-perfil-tab-content descriptor-sub-tab-placeholder"
+									*ngIf="perfilTab.id === 'educacion' || perfilTab.id === 'experiencia'"
+								>
+									<p>Seccion en construccion.</p>
+								</div>
+							</dxi-item>
+						</dx-tab-panel>
 					</div>
 
 					<div
 						class="descriptor-sub-tab-content descriptor-sub-tab-placeholder"
-						*ngIf="tab.id !== 'objetivo' && tab.id !== 'funciones' && tab.id !== 'funcionesSecundarias' && tab.id !== 'kpis'"
+						*ngIf="tab.id !== 'objetivo' && tab.id !== 'funciones' && tab.id !== 'funcionesSecundarias' && tab.id !== 'kpis' && tab.id !== 'perfil'"
 					>
 						<h4 class="descriptor-sub-tab-heading">{{ tab.title }}</h4>
 						<p>Seccion en construccion.</p>

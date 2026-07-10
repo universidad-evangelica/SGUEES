@@ -6,6 +6,7 @@ export interface ScDescriptorKpiFuncion {
 	CORR_FRECUENCIA?: number | null;
 	NOMBRE_FRECUENCIA?: string;
 	META?: number | null;
+	_clientKey?: string | number;
 }
 
 export interface ScFrecuenciaLookup {
