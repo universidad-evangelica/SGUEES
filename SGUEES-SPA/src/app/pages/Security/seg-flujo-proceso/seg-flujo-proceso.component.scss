@@ -1,0 +1,26 @@
+.flujo-tab-panel {
+    margin-top: 20px;
+}
+
+.paso-section-card {
+    background-color: #fff;
+    border-radius: 4px;
+    padding: 15px;
+}
+
+.mensaje-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 20px;
+
+    p {
+        font-size: 16px;
+        color: #6c757d;
+        text-align: center;
+        margin: 0;
+    }
+}

@@ -1,0 +1,100 @@
+<app-barra-data-mtto
+    [tituloVentana]="tituloVentana"
+    [isBrowse]="isBrowse()"
+    [isForm]="isForm()"
+    [permiteAdd]="permiteAdd"
+    (nuevo)="nuevo()"
+    (guardar)="guardar()"
+    (cancelar)="cancelar()"
+>
+</app-barra-data-mtto>
+
+<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+    <dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+        <!-- Template para combo de Tipo Documento -->
+        <div *dxTemplate="let cellInfo of 'CORR_TIPO_DOCUMENTOLookup'">
+            <app-data-lookup
+                [model]="mCORR_TIPO_DOCUMENTO"
+                [(value)]="model.CORR_TIPO_DOCUMENTO"
+                [valueExpr]="'CORR_TIPO_DOCUMENTO'"
+                [displayExpr]="'NOMBRE_TIPO'"
+                [selectedRowKeys]="selectedLookUpCORR_TIPO_DOCUMENTO"
+                [readOnly]="readOnly"
+            >
+            </app-data-lookup>
+        </div>
+    </dx-form>
+</div>
+
+<dx-tab-panel #tabPanel [selectedIndex]="0" *ngIf="!isBrowse() && model.CORR_FLUJO_PROCESO > 0">
+    <dxi-item title="Pasos del Flujo" [icon]="'tasks'">
+        <div class="paso-section-card">
+            <!-- Barra de herramientas de Pasos -->
+            <app-barra-data-mtto
+                [tituloVentana]="'Pasos'"
+                [isBrowse]="isPasoBrowse()"
+                [isForm]="isPasoForm()"
+                [permiteAdd]="getPermiteAddPaso"
+                (nuevo)="nuevoPaso()"
+                (guardar)="guardarPaso()"
+                (cancelar)="cancelarPaso()"
+            >
+            </app-barra-data-mtto>
+
+            <!-- Formulario de Paso (se muestra cuando NO está en browse) -->
+            <div *ngIf="!isPasoBrowse()" style="margin-top: 15px;">
+                <dx-form #fPaso id="fPaso" [formData]="pasoModel" [labelLocation]="'top'" [colCount]="8" [items]="itemsPasos">
+                </dx-form>
+            </div>
+
+            <!-- Grid de Pasos (siempre visible) -->
+            <div style="margin-top: 15px;">
+                <app-data-grid-mtto
+                    [isBrowse]="isPasoBrowse()"
+                    [models]="pasos"
+                    [columns]="columnsPasos"
+                    [summary]="summaryPasos"
+                    [keyExpr]="'CORR_FLUJO_PASO'"
+                    [permiteEditar]="getPermiteEditarPaso"
+                    [permiteDele]="getPermiteDelePaso"
+                    (rowDblClick)="rowDblClickPaso($event)"
+                    (rowRemoving)="rowRemovingPaso($event)"
+                    (focusedRowChanged)="focusedRowChangedPaso($event)"
+                    (editClick)="editarClickPaso($event)"
+                >
+                </app-data-grid-mtto>
+            </div>
+        </div>
+    </dxi-item>
+    <dxi-item title="Mensajes por Estado" [icon]="'mail'">
+        <div class="mensaje-placeholder">
+            <p>Aquí se gestionarán los mensajes por estado</p>
+        </div>
+    </dxi-item>
+</dx-tab-panel>
+
+<app-data-grid-mtto
+    [isBrowse]="isBrowse()"
+    [models]="models"
+    [columns]="columns"
+    [summary]="summary"
+    [keyExpr]="'CORR_FLUJO_PROCESO'"
+    [permiteEditar]="getPermiteEditar"
+    [permiteDele]="getPermiteDele"
+    (rowDblClick)="rowDblClick($event)"
+    (rowRemoving)="rowRemoving($event)"
+    (focusedRowChanged)="focusedRowChanged($event)"
+    (editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+
+<dx-load-panel
+    #loadPanel
+    shadingColor="rgba(0,0,0,0.4)"
+    [position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+    [(visible)]="loadingVisible"
+    [showIndicator]="true"
+    [showPane]="true"
+    [shading]="true"
+>
+</dx-load-panel>

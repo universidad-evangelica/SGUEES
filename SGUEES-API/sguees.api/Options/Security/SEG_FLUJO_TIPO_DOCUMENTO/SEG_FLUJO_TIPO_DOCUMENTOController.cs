@@ -88,71 +88,14 @@ namespace sguees.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
-        // ======================================================
-        // NUEVOS MÉTODOS DE ESTADOS (dentro del mismo controlador)
-        // ======================================================
-
-        [HttpGet("GetEstados")]
-        [Authorize(Policy = "/seg-flujo-tipo-documento|R")] // ← Usa la misma política
-        public async Task<CResult> GetEstados([FromQuery] SEG_FLUJO_ESTADOParam Data)
+         //Brindamos accesos a la vista de flujos de procesos para capturar los documentos mediante el lookup
+        [HttpGet("GetCORR_FLUJO_TIPO_DOCUMENTO_SEG_FLUJO_PROCESO")]
+        [Authorize(Policy = "/seg-flujo-proceso|R")]
+        public async Task<CResult> GetCORR_FLUJO_TIPO_DOCUMENTO_SEG_FLUJO_PROCESO([FromQuery] SEG_FLUJO_TIPO_DOCUMENTOParam Data)
         {
-            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            return await _estadoService.GetAllAsync(Data);
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
         }
 
-        [HttpGet("GetEstado")]
-        [Authorize(Policy = "/seg-flujo-tipo-documento|R")] // ← Usa la misma política
-        public async Task<CResult> GetEstado([FromQuery] SEG_FLUJO_ESTADOParam Data)
-        {
-            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            return await _estadoService.GetAsync(Data);
-        }
-
-        [HttpPost("Estado")]
-        [Authorize(Policy = "/seg-flujo-tipo-documento|C")] // ← Usa la misma política
-        public async Task<IActionResult> PostEstado(SEG_FLUJO_ESTADOTable Data)
-        {
-            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            Data.USUARIO_CREA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
-            Data.ESTACION_CREA = ClientInfoHelper.GetClientStation(HttpContext);
-            Data.FECHA_CREA = DateTime.Now;
-            Data.USUARIO_ACTU = Data.USUARIO_CREA;
-            Data.ESTACION_ACTU = Data.ESTACION_CREA;
-            Data.FECHA_ACTU = Data.FECHA_CREA;
-            Data.ACTIVO = true;
-
-            var resultado = await _estadoService.CreateAsync(Data, Data.ESTACION_CREA, "e-CoffeeTech");
-            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
-        }
-
-        [HttpPut("Estado")]
-        [Authorize(Policy = "/seg-flujo-tipo-documento|U")] // ← Usa la misma política
-        public async Task<IActionResult> PutEstado(SEG_FLUJO_ESTADOTable Data)
-        {
-            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            Data.USUARIO_ACTU = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
-            Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
-            Data.FECHA_ACTU = DateTime.Now;
-
-            var resultado = await _estadoService.UpdateAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
-        }
-
-        [HttpDelete("Estado")]
-        [Authorize(Policy = "/seg-flujo-tipo-documento|D")] // ← Usa la misma política
-        public async Task<IActionResult> DeleteEstado([FromQuery] SEG_FLUJO_ESTADOTable Data)
-        {
-            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            var resultado = await _estadoService.DeleteAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
-        }
-
-        [HttpGet("GetEstadosByTipoDocumento")]
-        [Authorize(Policy = "/seg-flujo-tipo-documento|R")] // ← Usa la misma política
-        public async Task<CResult> GetEstadosByTipoDocumento([FromQuery] SEG_FLUJO_ESTADOParam Data)
-        {
-            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            return await _estadoService.GetByTipoDocumentoAsync(Data.CORR_EMPRESA, Data.CORR_TIPO_DOCUMENTO);
-        }
     }
 }

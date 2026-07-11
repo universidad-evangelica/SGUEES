@@ -11,6 +11,7 @@ import { SegUsuarioComponent } from './seg-usuario/seg-usuario.component';
 import { SegTipoUsuarioComponent } from './seg-tipo-usuario/seg-tipo-usuario.component';
 import { SegFlujoTipoDocumentoComponent } from './seg-flujo-tipo-documento/seg-flujo-tipo-documento.component';
 import { SegFlujoActorComponent } from './seg-flujo-actor/seg-flujo-actor.component';
+import { SegFlujoProcesoComponent } from './seg-flujo-proceso/seg-flujo-proceso.component';
 
 const routes: Routes = [
   /*{
@@ -75,6 +76,14 @@ const routes: Routes = [
     canActivate: [AuthGuardService],
     canDeactivate: [AppCanDeactivateGuard],
     loadChildren: () => import('./seg-flujo-actor/seg-flujo-actor.module').then(m => m.SegFlujoActorModule)
+  },
+  {
+    path: 'seg-flujo-proceso',
+    component: SegFlujoProcesoComponent,
+    data: { titulo: 'Flujos del sistema' },
+    canActivate: [AuthGuardService],
+    canDeactivate: [AppCanDeactivateGuard],
+    loadChildren: () => import('./seg-flujo-proceso/seg-flujo-proceso.module').then(m => m.SegFlujoProcesoModule)
   }
 
 ];

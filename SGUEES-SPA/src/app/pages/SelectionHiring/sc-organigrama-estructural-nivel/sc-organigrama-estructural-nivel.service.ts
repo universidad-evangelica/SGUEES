@@ -3,14 +3,14 @@ import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
-import { SC_OrganigramaEstructuralUnidadesRepository } from '../sc-organigrama-estructural-unidades/sc-organigrama-estructural-unidades.repository';
+import { SC_OrganigramaEstructuralNivelRepository } from './sc-organigrama-estructural-nivel.repository';
 import { SC_OrganigramaEstructuralNivel } from './models/sc-organigrama-estructural-nivel';
 
 @Injectable({
     providedIn: 'root',
 })
 export class SC_OrganigramaEstructuralNivelService {
-    constructor(private repo: SC_OrganigramaEstructuralUnidadesRepository) {}
+    constructor(private repo: SC_OrganigramaEstructuralNivelRepository) {}
 
     esValidoNivel(model: SC_OrganigramaEstructuralNivel, msg: Function): boolean {
         if (model.NOMBRE_NIVEL == '' || model.NOMBRE_NIVEL == null) {
@@ -23,10 +23,7 @@ export class SC_OrganigramaEstructuralNivelService {
             return false;
         }
 
-        if (!model.CANTIDAD_CARACTERES || model.CANTIDAD_CARACTERES <= 0) {
-            msg('La cantidad de caracteres debe ser mayor a 0', NotifyType.Error);
-            return false;
-        }
+        
 
         return true;
     }

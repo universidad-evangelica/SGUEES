@@ -92,7 +92,7 @@ export class SC_OrganigramaEstructuralNivelComponent extends CBaseComponent impl
     }
 
     guardar(): void {
-        if (!this.service.esValidoNivel(this.model, this.notifyFx)) {
+        if (!this.service.esValidoNivel(this.model, this.notifyFx.bind(this))) {
             return;
         }
 
