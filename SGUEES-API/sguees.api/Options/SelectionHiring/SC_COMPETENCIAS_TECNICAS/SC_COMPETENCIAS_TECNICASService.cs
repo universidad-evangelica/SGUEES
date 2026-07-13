@@ -77,6 +77,36 @@ namespace SGUEES.Services
             };
         }
 
+        public async Task<CResult> GetCatalogoNivel2DescriptorAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
+        {
+            var rows = await _repo.GetCatalogoNivel2DescriptorAsync(xWhere.CORR_EMPRESA);
+
+            var data = rows
+                .Select(x => new
+                {
+                    x.CORR_COMPETENCIAS_TECNICAS,
+                    x.CORR_COMPETENCIAS_TECNICAS_PADRE,
+                    x.CODIGO_COMPETENCIAS_TECNICAS,
+                    x.NOMBRE_COMPETENCIAS_TECNICAS,
+                    x.DESCRIPCION,
+                    x.NIVEL,
+                    x.CODIGO_PADRE,
+                    x.NOMBRE_PADRE,
+                    GRUPO_PADRE = BuildLookupDisplay(x.CODIGO_PADRE, x.NOMBRE_PADRE),
+                    NOMBRE_DISPLAY = BuildLookupDisplay(x.CODIGO_COMPETENCIAS_TECNICAS, x.NOMBRE_COMPETENCIAS_TECNICAS),
+                    SELECCIONABLE = true,
+                })
+                .ToList();
+
+            return new CResult
+            {
+                Data = data,
+                Result = true,
+                RowsAffected = data.Count,
+                ErrorCode = 0,
+            };
+        }
+
         public async Task<CResult> GetNextCodigoAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             if (xWhere.CORR_COMPETENCIAS_TECNICAS_PADRE is not > 0)
@@ -420,6 +450,29 @@ namespace SGUEES.Services
             }
 
             return value;
+        }
+
+        private static string BuildLookupDisplay(string codigo, string nombre)
+        {
+            var code = codigo?.Trim() ?? string.Empty;
+            var name = nombre?.Trim() ?? string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(code) && !string.IsNullOrWhiteSpace(name))
+            {
+                return $"{code} - {name}";
+            }
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                return name;
+            }
+
+            if (!string.IsNullOrWhiteSpace(code))
+            {
+                return code;
+            }
+
+            return "(Sin nombre)";
         }
 
         private static List<CParameter> BuildParameters(SC_COMPETENCIAS_TECNICASParam xWhere)

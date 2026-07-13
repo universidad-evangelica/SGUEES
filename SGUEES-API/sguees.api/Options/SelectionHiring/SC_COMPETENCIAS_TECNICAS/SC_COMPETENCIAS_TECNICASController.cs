@@ -55,6 +55,14 @@ namespace SGUEES.Controllers
             return await _service.GetPadresAsync(Data);
         }
 
+        [HttpGet("GetCORR_COMPETENCIAS_TECNICAS_SC_DESCRIPTOR_PUESTO")]
+        [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        public async Task<CResult> GetCORR_COMPETENCIAS_TECNICAS_SC_DESCRIPTOR_PUESTO([FromQuery] SC_COMPETENCIAS_TECNICASParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetCatalogoNivel2DescriptorAsync(Data);
+        }
+
         [HttpGet("GetNextCodigo")]
         [Authorize(Policy = "/sc-competencias-tecnicas|R")]
         public async Task<CResult> GetNextCodigo([FromQuery] SC_COMPETENCIAS_TECNICASParam Data)

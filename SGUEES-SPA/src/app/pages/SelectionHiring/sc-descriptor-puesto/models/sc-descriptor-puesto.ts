@@ -41,3 +41,14 @@ export interface MockPuestoReporta {
 	CORR_PUESTO_REPORTA: number;
 	NOMBRE_PUESTO_REPORTA: string;
 }
+
+export interface ScCompetenciaTecnicaLookupItem {
+	CORR_COMPETENCIAS_TECNICAS: number;
+	CORR_COMPETENCIAS_TECNICAS_PADRE: number | null;
+	CODIGO_COMPETENCIAS_TECNICAS: string;
+	NOMBRE_COMPETENCIAS_TECNICAS: string;
+	DESCRIPCION: string;
+	NOMBRE_DISPLAY: string;
+	GRUPO_PADRE: string;
+	NIVEL: string;
+}

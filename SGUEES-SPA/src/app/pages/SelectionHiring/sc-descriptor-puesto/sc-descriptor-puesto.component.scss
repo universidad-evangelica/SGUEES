@@ -528,6 +528,66 @@
 	padding: 16px 4px 4px;
 }
 
+.descriptor-competencias-header {
+	margin-bottom: 12px;
+}
+
+.descriptor-competencias-icon {
+	margin-right: 8px;
+	font-size: 1rem;
+}
+
+.descriptor-competencias-tab-panel {
+	margin-top: 4px;
+}
+
+:host ::ng-deep .descriptor-competencias-tab-panel .dx-multiview-item,
+:host ::ng-deep .descriptor-competencias-tab-panel .dx-multiview-item-content {
+	overflow: visible;
+}
+
+.descriptor-competencias-tab-content {
+	padding: 16px 4px 4px;
+}
+
+.descriptor-competencias-tecnicas-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	align-items: flex-end;
+	margin-bottom: 12px;
+}
+
+.descriptor-competencias-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 280px;
+	max-width: 520px;
+	flex: 1 1 320px;
+}
+
+.descriptor-competencias-field--lookup {
+	max-width: 640px;
+	flex: 1 1 420px;
+}
+
+.descriptor-competencias-label {
+	font-size: 12px;
+	font-weight: 600;
+	opacity: 0.85;
+}
+
+:host ::ng-deep .descriptor-competencias-field .dx-selectbox,
+:host ::ng-deep .descriptor-competencias-field app-data-lookup,
+:host ::ng-deep .descriptor-competencias-field .dx-dropdownbox {
+	width: 100%;
+}
+
+:host ::ng-deep .descriptor-competencias-tab-panel .dx-tab {
+	min-width: 140px;
+}
+
 .descriptor-perfil-form {
 	display: flex;
 	flex-direction: column;

@@ -32,7 +32,7 @@ import {
 } from './sc-descriptor-perfil-puesto/models/sc-descriptor-perfil-puesto';
 import { ScPerfilPuestoEducacion } from './sc-perfil-puesto-educacion/models/sc-perfil-puesto-educacion';
 import { ScPerfilPuestoExperiencia } from './sc-perfil-puesto-experiencia/models/sc-perfil-puesto-experiencia';
-import { MockPuesto, MockUnidad, ScDescriptorPuesto } from './models/sc-descriptor-puesto';
+import { MockPuesto, MockUnidad, ScCompetenciaTecnicaLookupItem, ScDescriptorPuesto } from './models/sc-descriptor-puesto';
 import {
 	EDUCACION_TIPO_REQUERIDO_OPTIONS,
 	FORMATO_CORTA,
@@ -86,9 +86,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_FRECUENCIA: ScFrecuenciaLookup[] = [];
 	mCORR_DISPONIBILIDAD_HORARIO: ScDisponibilidadHorarioLookup[] = [];
 	mCORR_TIPO_MODALIDAD: ScTipoModalidadLookup[] = [];
+	mCORR_COMPETENCIAS_TECNICAS: ScCompetenciaTecnicaLookupItem[] = [];
+	corrCompetenciaTecnicaSeleccionada: number | null = null;
 	reportaLookupColumns = [
 		{ dataField: 'RESPONSABLE', caption: 'Nombre', width: 220 },
 		{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260 },
+	];
+	competenciasTecnicasLookupColumns = [
+		{ dataField: 'GRUPO_PADRE', caption: 'Grupo', width: 140 },
+		{ dataField: 'CODIGO_COMPETENCIAS_TECNICAS', caption: 'Codigo', width: 110 },
+		{ dataField: 'NIVEL', caption: 'Nivel', width: 80 },
+		{ dataField: 'DESCRIPCION', caption: 'Definicion', width: 280 },
 	];
 
 	headerItems: any[] = [];
@@ -109,6 +117,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	actividadesEditando = false;
 	perfil: ScDescriptorPerfilPuesto = { ...PERFIL_PUESTO_DEFAULT };
 	perfilSubTabIndex = 0;
+	competenciasSubTabIndex = 0;
 	readonly perfilSexoOptions = PERFIL_SEXO_OPTIONS;
 	readonly perfilEstadoFamiliarOptions = PERFIL_ESTADO_FAMILIAR_OPTIONS;
 	readonly perfilLicenciaOptions = PERFIL_LICENCIA_OPTIONS;
@@ -154,6 +163,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.selectedLookUpCORR_FRECUENCIA = this.selectedLookUpCORR_FRECUENCIA.bind(this);
 		this.selectedLookUpCORR_DISPONIBILIDAD_HORARIO = this.selectedLookUpCORR_DISPONIBILIDAD_HORARIO.bind(this);
 		this.selectedLookUpCORR_TIPO_MODALIDAD = this.selectedLookUpCORR_TIPO_MODALIDAD.bind(this);
+		this.selectedLookUpCORR_COMPETENCIAS_TECNICAS = this.selectedLookUpCORR_COMPETENCIAS_TECNICAS.bind(this);
 		this.funcionClaveEditButtonVisible = this.funcionClaveEditButtonVisible.bind(this);
 		this.funcionClaveDeleteButtonVisible = this.funcionClaveDeleteButtonVisible.bind(this);
 		this.editarFuncionClaveClick = this.editarFuncionClaveClick.bind(this);
@@ -210,6 +220,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarFrecuenciasLookup();
 		this.cargarDisponibilidadHorarioLookup();
 		this.cargarTipoModalidadLookup();
+		this.cargarCompetenciasTecnicasLookup();
 	}
 
 	private cargarFrecuenciasLookup(): void {
@@ -283,6 +294,48 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	private cargarCompetenciasTecnicasLookup(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_COMPETENCIAS_TECNICAS',
+				'GetCORR_COMPETENCIAS_TECNICAS',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result || !Array.isArray(response.Data)) {
+						this.mCORR_COMPETENCIAS_TECNICAS = [];
+						return;
+					}
+
+					this.mCORR_COMPETENCIAS_TECNICAS = response.Data.map((item: any) => {
+						const codigo = (item.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim();
+						const nivel = (item.NIVEL ?? 'NIV2').trim();
+						const descripcion = (item.DESCRIPCION ?? item.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim();
+						const grupoPadre = (item.GRUPO_PADRE ?? item.CODIGO_PADRE ?? 'Sin grupo').trim();
+						const nombreDisplay = [codigo, nivel, descripcion].filter((parte) => !!parte).join(' | ');
+
+						return {
+							CORR_COMPETENCIAS_TECNICAS: Number(item.CORR_COMPETENCIAS_TECNICAS),
+							CORR_COMPETENCIAS_TECNICAS_PADRE: item.CORR_COMPETENCIAS_TECNICAS_PADRE != null
+								? Number(item.CORR_COMPETENCIAS_TECNICAS_PADRE)
+								: null,
+							CODIGO_COMPETENCIAS_TECNICAS: codigo,
+							NOMBRE_COMPETENCIAS_TECNICAS: item.NOMBRE_COMPETENCIAS_TECNICAS ?? '',
+							DESCRIPCION: descripcion,
+							NOMBRE_DISPLAY: nombreDisplay || codigo || '(Sin nombre)',
+							GRUPO_PADRE: grupoPadre || 'Sin grupo',
+							NIVEL: nivel,
+						};
+					});
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
 	selectedLookUpCORR_UNIDAD(vRow: any): number {
 		return vRow[0].CORR_UNIDAD;
 	}
@@ -305,6 +358,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	selectedLookUpCORR_TIPO_MODALIDAD(vRow: any): number {
 		return vRow[0].CORR_TIPO_MODALIDAD;
+	}
+
+	selectedLookUpCORR_COMPETENCIAS_TECNICAS(vRow: any): number {
+		return vRow[0].CORR_COMPETENCIAS_TECNICAS;
+	}
+
+	onCompetenciaTecnicaChanged(value: number | null): void {
+		this.corrCompetenciaTecnicaSeleccionada = value != null && value > 0 ? Number(value) : null;
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -479,6 +540,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.kpis = [];
 		this.educaciones = [];
 		this.experiencias = [];
+		this.competenciasSubTabIndex = 0;
+		this.corrCompetenciaTecnicaSeleccionada = null;
 		this.resetearEdicionFuncionesClave();
 		this.resetearEdicionFuncionesSecundarias();
 		this.resetearEdicionKpis();

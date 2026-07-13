@@ -939,9 +939,48 @@
 				</dxi-item>
 
 				<dxi-item title="Competencias">
-					<div class="descriptor-sub-tab-content descriptor-sub-tab-placeholder">
-						<h4 class="descriptor-sub-tab-heading">Competencias</h4>
-						<p>Seccion en construccion.</p>
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-competencias-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-preferences descriptor-competencias-icon" aria-hidden="true"></span>
+								Competencias
+							</h4>
+						</div>
+
+						<dx-tab-panel
+							class="descriptor-competencias-tab-panel"
+							[(selectedIndex)]="competenciasSubTabIndex"
+							[animationEnabled]="true"
+							[swipeEnabled]="false"
+						>
+							<dxi-item title="Tecnicas" icon="toolbox">
+								<div class="descriptor-competencias-tab-content">
+									<div class="descriptor-competencias-tecnicas-toolbar">
+										<div class="descriptor-competencias-field descriptor-competencias-field--lookup">
+											<label class="descriptor-competencias-label">Competencia tecnica</label>
+											<app-data-lookup
+												[model]="mCORR_COMPETENCIAS_TECNICAS"
+												[value]="corrCompetenciaTecnicaSeleccionada"
+												(valueChange)="onCompetenciaTecnicaChanged($event)"
+												[valueExpr]="'CORR_COMPETENCIAS_TECNICAS'"
+												[displayExpr]="'NOMBRE_DISPLAY'"
+												[lookupColumns]="competenciasTecnicasLookupColumns"
+												[selectedRowKeys]="selectedLookUpCORR_COMPETENCIAS_TECNICAS"
+												[showClearButton]="true"
+												[readOnly]="readOnly"
+												[dropDownWidth]="640"
+											></app-data-lookup>
+										</div>
+									</div>
+								</div>
+							</dxi-item>
+
+							<dxi-item title="Conductuales" icon="group">
+								<div class="descriptor-competencias-tab-content descriptor-sub-tab-placeholder">
+									<p>Seccion de competencias conductuales pendiente.</p>
+								</div>
+							</dxi-item>
+						</dx-tab-panel>
 					</div>
 				</dxi-item>
 

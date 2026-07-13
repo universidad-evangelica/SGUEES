@@ -1123,6 +1123,58 @@ namespace SGUEES.Repositories
             }
         }
 
+        public async Task<List<SC_COMPETENCIAS_TECNICASView>> GetCatalogoNivel2DescriptorAsync(int corrEmpresa)
+        {
+            if (corrEmpresa <= 0)
+            {
+                return new List<SC_COMPETENCIAS_TECNICASView>();
+            }
+
+            const string sql = @"SELECT
+                    H.CORR_EMPRESA,
+                    H.CORR_COMPETENCIAS_TECNICAS,
+                    H.CORR_COMPETENCIAS_TECNICAS_PADRE,
+                    H.CODIGO_COMPETENCIAS_TECNICAS,
+                    H.NOMBRE_COMPETENCIAS_TECNICAS,
+                    H.DESCRIPCION,
+                    H.NIVEL,
+                    H.ESTADO_COMPETENCIAS_TECNICAS,
+                    P.CODIGO_COMPETENCIAS_TECNICAS AS CODIGO_PADRE,
+                    P.NOMBRE_COMPETENCIAS_TECNICAS AS NOMBRE_PADRE,
+                    P.DESCRIPCION AS DESCRIPCION_PADRE,
+                    P.NIVEL AS NIVEL_PADRE
+                FROM V_SC_COMPETENCIAS_TECNICAS H
+                INNER JOIN V_SC_COMPETENCIAS_TECNICAS P
+                    ON P.CORR_EMPRESA = H.CORR_EMPRESA
+                   AND P.CORR_COMPETENCIAS_TECNICAS = H.CORR_COMPETENCIAS_TECNICAS_PADRE
+                WHERE H.CORR_EMPRESA = @CORR_EMPRESA
+                  AND UPPER(LTRIM(RTRIM(H.NIVEL))) = 'NIV2'
+                  AND UPPER(LTRIM(RTRIM(P.NIVEL))) = 'NIV1'
+                  AND ISNULL(H.ESTADO_COMPETENCIAS_TECNICAS, 1) = 1
+                  AND ISNULL(P.ESTADO_COMPETENCIAS_TECNICAS, 1) = 1
+                ORDER BY
+                    P.CODIGO_COMPETENCIAS_TECNICAS,
+                    P.CORR_COMPETENCIAS_TECNICAS,
+                    H.CODIGO_COMPETENCIAS_TECNICAS,
+                    H.CORR_COMPETENCIAS_TECNICAS";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                });
+
+                var response = new List<SC_COMPETENCIAS_TECNICASView>().FromDataReader(reader).ToList();
+                reader.Close();
+                return response;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
         public async Task<List<string>> GetSiblingCodigosLevel3Async(int corrEmpresa, int corrPadre, string parentCodigoPrefix)
         {
             if (corrEmpresa <= 0 || corrPadre <= 0 || string.IsNullOrWhiteSpace(parentCodigoPrefix))
