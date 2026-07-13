@@ -8,5 +8,6 @@ namespace sguees.Models
 		public int OPCION_CONSULTA { get; set; } = 0;
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_REQUISICION_OBSERVADORES { get; set; }
-	}
+		public int CORR_REQUISICION_PERSONAL { get; set; }
+    }
 }

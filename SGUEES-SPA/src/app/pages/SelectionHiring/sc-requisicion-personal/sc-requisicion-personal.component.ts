@@ -25,7 +25,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		public override router: ActivatedRoute,
 		private service: ScRequisicionPersonalService,
 		private observadoresService: ScRequisicionObservadoresService,
-		//private messageService: MessageService, //Import para usar PrimeNG Toast
+		private messageService: MessageService, //Import para usar PrimeNG Toast
 
 	) {
 		super(appInfoService, router);
@@ -36,6 +36,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 
 		this.columnsObservadores = this.service.getObservadoresColumns();
 		this.summaryObservadores = this.service.getObservadoresSummary();
+		this.itemsObservadorModal = this.observadoresService.getItemsObservadorModal();
 	}
 
 	//Variables
@@ -43,17 +44,27 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	mCORR_TIPO_MODALIDAD: any[] = [];
 	mCORR_TIPO_CONTRATACION: any[] = [];
 	mCORR_TIPO_VACANTE: any[] = [];
+	mLOGIN_SISTEMA: any[] = [];
 
 	/** Columnas del grid del tab (definidas en service.getTabDetalleColumns). */
 	columnsTabDetalle: any[] = [];
 	/** Summary del grid del tab. */
 	summaryTabDetalle: any;
 
-	/** Observadores (solo lectura) — data del endpoint GetLOGIN_SISTEMA_SC_REQUISICION_PERSONAL. */
+	/** Observadores — data del endpoint GetLOGIN_SISTEMA_SC_REQUISICION_PERSONAL. */
 	modelsObservadores: any[] = [];
 	columnsObservadores: any[] = [];
 	summaryObservadores: any;
 
+	/** Modal agregar observador */
+	popupObservadorVisible = false;
+	modelObservador: any = { LOGIN_SISTEMA: '' };
+	itemsObservadorModal: any[] = [];
+
+	loginSistemaLookupColumns: any[] = [
+		{ dataField: 'LOGIN_SISTEMA', caption: 'Login Sistema', width: 120 },
+		{ dataField: 'NOMBRE_USUARIO', caption: 'Nombre Usuario', width: 250 },
+	];
 
 	tipoModalidadLookupColumns: any[] = [
 		{ dataField: 'CORR_TIPO_MODALIDAD', caption: 'Modalidad', width: 120 },
@@ -82,11 +93,6 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	/**
 	 * Carga la data de cada tab al entrar en edición.
 	 * Invocar desde editarClick (override) o rowDblClick cuando banderaMtto = Update.
-	 *
-	 * Ejemplo con API:
-	 *   this.service.getBitacora(this.fillParam(this.model.CORR_REQUISICION_PERSONAL))
-	 *     .pipe(take(1))
-	 *     .subscribe({ next: (r) => { if (r.Result) this.itemsTabDetalle = r.Data ?? []; } });
 	 */
 	cargarDatosTabs(): void {
 		this.cargarObservadores();
@@ -97,7 +103,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.modelsObservadores = [];
 	}
 
-	/** Carga observadores desde SC_REQUISICION_OBSERVADORES (informativo). */
+	/** Carga observadores desde SC_REQUISICION_OBSERVADORES. */
 	cargarObservadores(): void {
 		this.observadoresService
 			.getForRequisicionPersonal(this.fillParam(this.model?.CORR_REQUISICION_PERSONAL))
@@ -118,10 +124,85 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			});
 	}
 
+	abrirModalObservador(): void {
+		if (!this.model?.CORR_REQUISICION_PERSONAL || this.model.CORR_REQUISICION_PERSONAL <= 0) {
+			this.notifyFx('Debe guardar la requisición antes de agregar observadores.', NotifyType.Warning);
+			return;
+		}
+		this.modelObservador = { LOGIN_SISTEMA: '' };
+		if (!this.mLOGIN_SISTEMA?.length) {
+			this.getLOGIN_SISTEMA();
+		}
+		this.popupObservadorVisible = true;
+	}
+
+	cerrarModalObservador(): void {
+		this.popupObservadorVisible = false;
+		this.modelObservador = { LOGIN_SISTEMA: '' };
+	}
+
+	/** Alta de observador ligado a la requisición actual (mismo CreateAsync del API). */
+	guardarObservadorRequisicion(): void {
+		if (!this.modelObservador?.LOGIN_SISTEMA) {
+			this.notifyFx('Debe seleccionar un usuario.', NotifyType.Warning);
+			return;
+		}
+		if (!this.model?.CORR_REQUISICION_PERSONAL || this.model.CORR_REQUISICION_PERSONAL <= 0) {
+			this.notifyFx('Debe guardar la requisición antes de agregar observadores.', NotifyType.Warning);
+			return;
+		}
+
+		const payload = {
+			CORR_REQUISICION_OBSERVADORES: 0,
+			CORR_REQUISICION_PERSONAL: this.model.CORR_REQUISICION_PERSONAL,
+			LOGIN_SISTEMA: this.modelObservador.LOGIN_SISTEMA,
+			TIPO_OBSERVADOR: '',
+			FECHA_ASIGNACION: new Date(),
+			ACTIVO: true,
+		};
+
+		this.loadingVisible = true;
+		this.observadoresService
+			.guardarObservadorRequisicion(payload)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						//this.notifyFx('Observador agregado con éxito!', NotifyType.Success);
+						this.messageService.add({
+						severity: 'success',
+						summary: 'Éxito',
+						detail: 'Observador agregado con éxito a su requisición'
+					});
+						this.cerrarModalObservador();
+						this.cargarObservadores();
+					} else {
+						//this.notifyFx(response.ErrorMessage, NotifyType.Error);
+						this.messageService.add({
+							severity: 'error',
+							summary: 'Error',
+							detail: response.ErrorMessage
+						});	
+					}
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					//this.notifyFx(error, NotifyType.Error);
+					this.messageService.add({
+						severity: 'error',
+						summary: 'Error',
+						detail: error
+					});
+					this.loadingVisible = false;
+				},
+			});
+	}
+
 	/** Al crear registro nuevo, limpiar tabs (cuando se conecte API). */
 	override nuevo(): void {
 		super.nuevo();
 		this.limpiarDatosTabs();
+		this.cerrarModalObservador();
 	}
 
 	/** Al editar, cargar data de cada tab según CORR_REQUISICION_PERSONAL. */
@@ -145,9 +226,26 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.getCORR_TIPO_MODALIDAD();
 		this.getCORR_TIPO_CONTRATACION();
 		this.getCORR_TIPO_VACANTE();
+		this.getLOGIN_SISTEMA();
 	}	
 
 	//listado de catalogos
+	getLOGIN_SISTEMA() {
+		this.appInfoService
+			.getLookUp('SC_REQUISICION_PERSONAL', 'SEG_USUARIO', 'GetLOGIN_SISTEMA', undefined, environment.UrlSEGURIDADAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.mLOGIN_SISTEMA = response.Data;
+					}
+				},
+				error: (error: any) => {
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
 	getCORR_TIPO_MODALIDAD(){
 		this.appInfoService
 		.getLookUp('SC_REQUISICION_PERSONAL', 'SC_TIPO_MODALIDAD', 'GetCORR_TIPO_MODALIDAD', undefined, environment.UrlSELECCIONCONTRATACIONAPI)
@@ -414,6 +512,10 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 
 	selectedLookUpCORR_TIPO_VACANTE(vRow: any): any {
 		return vRow[0].CORR_TIPO_VACANTE;
+	}
+
+	selectedLookUpLOGIN_SISTEMA(vRow: any): any {
+		return vRow[0].LOGIN_SISTEMA;
 	}
 
 

@@ -65,7 +65,8 @@
 
 	</dx-tab-panel>
 </div>
-<!-- Segundo Card: observadores (solo lectura) — patrón dx-data-grid como con-partida -->
+
+<!-- Segundo Card: observadores — patrón dx-data-grid -->
 <div class="content-block dx-card responsive-paddings mt-20" *ngIf="!isBrowse()">
 	<dx-tab-panel #tabPanelObservadores class="requisicion-tab-panel" [selectedIndex]="0">
 		<dxi-item title="Observadores" [icon]="'group'">
@@ -86,6 +87,22 @@
 					[height]="'100%'"
 					[width]="'100%'"
 				>
+					<dxo-toolbar>
+						<dxi-item location="before">
+							<div *dxTemplate>
+								<dx-button
+									icon="add"
+									text="Agregar"
+									type="success"
+									stylingMode="contained"
+									[width]="140"
+									[visible]="!readOnly"
+									(onClick)="abrirModalObservador()"
+								></dx-button>
+							</div>
+						</dxi-item>
+						<dxi-item name="searchPanel" location="after"></dxi-item>
+					</dxo-toolbar>
 					<dxo-search-panel [visible]="true"></dxo-search-panel>
 					<dxo-paging [pageSize]="10"></dxo-paging>
 					<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 20]"></dxo-pager>
@@ -103,6 +120,45 @@
 		</dxi-item>
 	</dx-tab-panel>
 </div>
+
+<!-- Modal: agregar observador a la requisición (lookup LOGIN_SISTEMA) -->
+<dx-popup
+	[(visible)]="popupObservadorVisible"
+	title="Agregar observador"
+	[width]="480"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[showCloseButton]="true"
+	[dragEnabled]="true"
+	[hideOnOutsideClick]="false"
+>
+	<div *dxTemplate="let data of 'content'">
+		<dx-form
+			#fObservador
+			[formData]="modelObservador"
+			[labelLocation]="'top'"
+			[colCount]="2"
+			[items]="itemsObservadorModal"
+		>
+			<div *dxTemplate="let cellInfo of 'LOGIN_SISTEMALookup'">
+				<app-data-lookup
+					[model]="mLOGIN_SISTEMA"
+					[(value)]="modelObservador.LOGIN_SISTEMA"
+					[selectedRowKeys]="selectedLookUpLOGIN_SISTEMA"
+					[readOnly]="false"
+					[valueExpr]="'LOGIN_SISTEMA'"
+					[displayExpr]="'NOMBRE_USUARIO'"
+					[lookupColumns]="loginSistemaLookupColumns"
+				>
+				</app-data-lookup>
+			</div>
+		</dx-form>
+		<div class="d-flex justify-content-end gap-2 mt-3" style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+			<dx-button text="Cancelar" stylingMode="outlined" (onClick)="cerrarModalObservador()"></dx-button>
+			<dx-button text="Guardar" type="default" stylingMode="contained" (onClick)="guardarObservadorRequisicion()"></dx-button>
+		</div>
+	</div>
+</dx-popup>
 
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"

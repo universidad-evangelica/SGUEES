@@ -49,6 +49,25 @@ export class ScRequisicionObservadoresService {
 		return this.repo.create(model);
 	}
 
+	/**
+	 * Guarda observador ligado a una requisición (desde sc-requisicion-personal).
+	 * El API asigna TIPO_OBSERVADOR = REQUISICION cuando CORR_REQUISICION_PERSONAL > 0.
+	 */
+	guardarObservadorRequisicion(model: any): Observable<IResult> {
+		return this.repo.createForRequisicionPersonal(model);
+	}
+
+	getItemsObservadorModal(): any {
+		return [
+			{
+				dataField: 'LOGIN_SISTEMA',
+				label: { text: 'Seleccionar usuario:' },
+				colSpan: 2,
+				template: 'LOGIN_SISTEMALookup',
+			},
+		];
+	}
+
 	update(model: any): Observable<IResult> {
 		let xWhere: IParam[] = [{ Parameter: 'CORR_REQUISICION_OBSERVADORES', Value: model.CORR_REQUISICION_OBSERVADORES }];
 

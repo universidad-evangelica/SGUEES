@@ -60,6 +60,31 @@ namespace sguees.Controllers
 				return BadRequest(resultado);
 			}
 		}
+
+		/// <summary>
+		/// Alta de observador desde sc-requisicion-personal.
+		/// Insert + relectura con GetAllBy_CORR_REQUISICION_PERSONAL (DEFECTO + de la requisición).
+		/// </summary>
+		[HttpPost("Create_SC_REQUISICION_PERSONAL")]
+		[Authorize(Policy = "/sc-requisicion-personal|C")]
+		public async Task<IActionResult> Create_SC_REQUISICION_PERSONAL(SC_REQUISICION_OBSERVADORESTable Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			Data.USUARIO_CREA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
+			Data.ESTACION_CREA = ClientInfoHelper.GetClientStation(HttpContext);
+			Data.FECHA_CREA = DateTime.Now;
+			Data.USUARIO_ACTU = Data.USUARIO_CREA;
+			Data.ESTACION_ACTU = Data.ESTACION_CREA;
+			Data.FECHA_ACTU = Data.FECHA_CREA;
+
+			var resultado = await _service.CreateBy_CORR_REQUISICION_PERSONAL(Data, Data.ESTACION_CREA, "e-CoffeeTech");
+			if (resultado.ErrorCode == 0)
+			{
+				return StatusCode(201, resultado);
+			}
+
+			return BadRequest(resultado);
+		}
 		
 		[HttpPut]
 		[Authorize(Policy = "/sc-requisicion-observadores|U")]
@@ -100,7 +125,7 @@ namespace sguees.Controllers
 		public async Task<CResult> GetLOGIN_SISTEMA_SC_REQUISICION_PERSONAL([FromQuery] SC_REQUISICION_OBSERVADORESParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-			return await _service.GetAllAsync(Data);
+			return await _service.GetAllBy_CORR_REQUISICION_PERSONAL(Data);
 		}
 	}
 }

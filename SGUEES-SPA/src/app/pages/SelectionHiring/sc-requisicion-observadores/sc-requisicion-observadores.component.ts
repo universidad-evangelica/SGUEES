@@ -168,7 +168,7 @@ export class ScRequisicionObservadoresComponent extends CBaseComponent implement
 
 	rowRemoving(e: any) {
 		this.service
-			.delete(this.fillParam(e.data.CORR_TIPO_MODALIDAD))
+			.delete(this.fillParam(e.data.CORR_REQUISICION_OBSERVADORES))
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {

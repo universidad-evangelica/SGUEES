@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
 using eFramework.Core;
 using sguees.Models;
@@ -47,5 +48,21 @@ namespace sguees.Services
 		{
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
-	}
+
+        public async Task<CResult> GetAllBy_CORR_REQUISICION_PERSONAL(SC_REQUISICION_OBSERVADORESParam xWhere)
+        {
+            var p = new List<CParameter>
+            {
+                new CParameter() {ParameterName="CORR_EMPRESA",Value= xWhere.CORR_EMPRESA, DbType=DbType.Int32},
+				new CParameter() {ParameterName="CORR_REQUISICION_PERSONAL",Value= xWhere.CORR_REQUISICION_PERSONAL, DbType=DbType.Int32}
+            };
+
+            return await _repo.GetAllBy_CORR_REQUISICION_PERSONAL(p);
+        }
+
+		public async Task<CResult> CreateBy_CORR_REQUISICION_PERSONAL(SC_REQUISICION_OBSERVADORESTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			return await _repo.CreateBy_CORR_REQUISICION_PERSONAL(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+    }
 }

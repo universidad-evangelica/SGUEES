@@ -253,5 +253,12 @@ namespace sguees.Controllers
             //Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetAllSEG_USUARIO_LOOKUP(Data);
         }
+
+		[HttpGet("GetLOGIN_SISTEMA_SC_REQUISICION_PERSONAL")]
+		[Authorize(Policy = "/sc-requisicion-personal|R")]
+		public async Task<CResult> GetLOGIN_SISTEMA_SC_REQUISICION_PERSONAL([FromQuery] SEG_USUARIOParam Data)
+		{
+			return await _service.GetAllSEG_USUARIO_LOOKUP(Data);
+		}
     }
 }
