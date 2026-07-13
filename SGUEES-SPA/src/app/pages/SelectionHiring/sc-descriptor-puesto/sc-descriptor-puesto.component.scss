@@ -500,6 +500,16 @@
 	}
 }
 
+:host ::ng-deep .descriptor-deta-datagrid--wrap-text {
+	.dx-datagrid-rowsview .dx-row > td,
+	.dx-datagrid-rowsview .dx-datagrid-text-content {
+		white-space: normal !important;
+		word-break: break-word;
+		overflow-wrap: anywhere;
+		text-overflow: clip !important;
+	}
+}
+
 .descriptor-funciones-note {
 	margin: 12px 0 0;
 	font-size: 12px;

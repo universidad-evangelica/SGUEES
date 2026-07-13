@@ -60,30 +60,6 @@ export const MOCK_PUESTOS_REPORTA: MockPuestoReporta[] = [
 	{ CORR_PUESTO_REPORTA: 5, NOMBRE_PUESTO_REPORTA: 'Sofia Mendez' },
 ];
 
-export const EDUCACION_TIPO_REQUERIDO_OPTIONS = [
-	{ CODIGO: 'SI', NOMBRE: 'Si' },
-	{ CODIGO: 'NO', NOMBRE: 'No' },
-	{ CODIGO: 'DESEABLE', NOMBRE: 'Deseable' },
-];
-
-export const PERFIL_SEXO_OPTIONS = [
-	{ CODIGO: 'INDIFERENTE', NOMBRE: 'Indiferente' },
-	{ CODIGO: 'MASCULINO', NOMBRE: 'Masculino' },
-	{ CODIGO: 'FEMENINO', NOMBRE: 'Femenino' },
-];
-
-export const PERFIL_ESTADO_FAMILIAR_OPTIONS = [
-	{ CODIGO: 'INDIFERENTE', NOMBRE: 'Indiferente' },
-	{ CODIGO: 'SOLTERO', NOMBRE: 'Soltero(a)' },
-	{ CODIGO: 'CASADO', NOMBRE: 'Casado(a)' },
-	{ CODIGO: 'OTRO', NOMBRE: 'Otro' },
-];
-
-export const PERFIL_LICENCIA_OPTIONS = [
-	{ CODIGO: false, NOMBRE: 'No' },
-	{ CODIGO: true, NOMBRE: 'Si' },
-];
-
 export const PERFIL_PUESTO_DEFAULT = {
 	EDAD_MINIMA: 18,
 	EDAD_MAXIMA: 65,

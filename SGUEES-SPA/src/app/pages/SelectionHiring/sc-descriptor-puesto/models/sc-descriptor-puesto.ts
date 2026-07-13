@@ -49,6 +49,8 @@ export interface ScCompetenciaTecnicaLookupItem {
 	NOMBRE_COMPETENCIAS_TECNICAS: string;
 	DESCRIPCION: string;
 	NOMBRE_DISPLAY: string;
+	GRUPO_NIV1: string;
+	GRUPO_NIV2: string;
 	GRUPO_PADRE: string;
 	NIVEL: string;
 }

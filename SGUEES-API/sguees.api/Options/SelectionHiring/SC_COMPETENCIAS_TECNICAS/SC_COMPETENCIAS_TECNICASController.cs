@@ -39,28 +39,21 @@ namespace SGUEES.Controllers
             return await _service.GetDistinctValuesAsync(Data);
         }
 
-        [HttpGet("Get")]
+        [HttpGet("GetCORR_COMPETENCIAS_TECNICAS_PADRE_SC_COMPETENCIAS_TECNICAS")]
         [Authorize(Policy = "/sc-competencias-tecnicas|R")]
-        public async Task<CResult> Get([FromQuery] SC_COMPETENCIAS_TECNICASParam Data)
-        {
-            Data.CORR_EMPRESA = GetCorrEmpresa();
-            return await _service.GetAsync(Data);
-        }
-
-        [HttpGet("GetPadres")]
-        [Authorize(Policy = "/sc-competencias-tecnicas|R")]
-        public async Task<CResult> GetPadres([FromQuery] SC_COMPETENCIAS_TECNICASParam Data)
+        public async Task<CResult> GetCORR_COMPETENCIAS_TECNICAS_PADRE_SC_COMPETENCIAS_TECNICAS(
+            [FromQuery] SC_COMPETENCIAS_TECNICASParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
             return await _service.GetPadresAsync(Data);
         }
 
-        [HttpGet("GetCORR_COMPETENCIAS_TECNICAS_SC_DESCRIPTOR_PUESTO")]
+        [HttpGet("GetCORR_COMPETENCIAS_TECNICAS_NIV3_SC_DESCRIPTOR_PUESTO")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
-        public async Task<CResult> GetCORR_COMPETENCIAS_TECNICAS_SC_DESCRIPTOR_PUESTO([FromQuery] SC_COMPETENCIAS_TECNICASParam Data)
+        public async Task<CResult> GetCORR_COMPETENCIAS_TECNICAS_NIV3_SC_DESCRIPTOR_PUESTO([FromQuery] SC_COMPETENCIAS_TECNICASParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
-            return await _service.GetCatalogoNivel2DescriptorAsync(Data);
+            return await _service.GetCatalogoNivel3DescriptorAsync(Data);
         }
 
         [HttpGet("GetNextCodigo")]

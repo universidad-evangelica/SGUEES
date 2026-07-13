@@ -17,6 +17,8 @@ import { ScPerfilPuestoEducacion } from './sc-perfil-puesto-educacion/models/sc-
 import { ScPerfilPuestoEducacionRepository } from './sc-perfil-puesto-educacion/sc-perfil-puesto-educacion.repository';
 import { ScPerfilPuestoExperiencia } from './sc-perfil-puesto-experiencia/models/sc-perfil-puesto-experiencia';
 import { ScPerfilPuestoExperienciaRepository } from './sc-perfil-puesto-experiencia/sc-perfil-puesto-experiencia.repository';
+import { ScPerfilPuestoCompetenciasTecnicas } from './sc-perfil-puesto-competencias-tecnicas/models/sc-perfil-puesto-competencias-tecnicas';
+import { ScPerfilPuestoCompetenciasTecnicasRepository } from './sc-perfil-puesto-competencias-tecnicas/sc-perfil-puesto-competencias-tecnicas.repository';
 import { ScDescriptorPuesto } from './models/sc-descriptor-puesto';
 import {
 	ESTADOS_DESCRIPTOR_BLOQUEO_CREACION,
@@ -44,7 +46,8 @@ export class ScDescriptorPuestoService {
 		private kpiRepo: ScDescriptorKpiFuncionRepository,
 		private perfilRepo: ScDescriptorPerfilPuestoRepository,
 		private educacionRepo: ScPerfilPuestoEducacionRepository,
-		private experienciaRepo: ScPerfilPuestoExperienciaRepository
+		private experienciaRepo: ScPerfilPuestoExperienciaRepository,
+		private competenciasTecnicasRepo: ScPerfilPuestoCompetenciasTecnicasRepository
 	) {}
 
 	esValido(model: ScDescriptorPuesto, msg: Function): boolean {
@@ -258,12 +261,9 @@ export class ScDescriptorPuestoService {
 				colSpan: 1,
 				editorType: 'dxSelectBox',
 				editorOptions: {
-					dataSource: [
-						{ value: FORMATO_CORTA, label: 'Version corta' },
-						{ value: FORMATO_EXTENSA, label: 'Version extensa' },
-					],
-					displayExpr: 'label',
-					valueExpr: 'value',
+					dataSource: [],
+					displayExpr: 'Value',
+					valueExpr: 'Key',
 					placeholder: 'Seleccione...',
 				},
 				validationRules: [
@@ -860,6 +860,59 @@ export class ScDescriptorPuestoService {
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
 			{ Parameter: 'CORR_PERFIL_PUESTO', Value: corrPerfil },
 			{ Parameter: 'CORR_EXPERIENCIA', Value: corrExp },
+		]);
+	}
+
+	getCompetenciasTecnicasLookup(corrDescriptorPuesto: number, corrPerfilPuesto: number): Observable<IResult> {
+		return this.competenciasTecnicasRepo.getAll([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+			{ Parameter: 'CORR_PERFIL_PUESTO', Value: corrPerfilPuesto },
+		]);
+	}
+
+	persistirCompetenciaTecnica(
+		corrDescriptorPuesto: number,
+		corrPerfilPuesto: number,
+		row: ScPerfilPuestoCompetenciasTecnicas
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrPerfil = Number(corrPerfilPuesto);
+		const payload = {
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_PERFIL_PUESTO: corrPerfil,
+			CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS: row.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS ?? 0,
+			NOMBRE_COMPETENCIAS_TECNICAS: (row.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim() || null,
+			DESCRIPCION: (row.DESCRIPCION ?? '').trim() || null,
+			NIVEL_DOMINIO: (row.NIVEL_DOMINIO ?? '').trim().toUpperCase() || null,
+			CORR_COMPETENCIAS_TECNICAS: row.CORR_COMPETENCIAS_TECNICAS ?? null,
+		};
+
+		if (!row.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS || row.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS <= 0) {
+			return this.competenciasTecnicasRepo.create(payload);
+		}
+
+		return this.competenciasTecnicasRepo.update(payload, [
+			{
+				Parameter: 'CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS',
+				Value: row.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS,
+			},
+		]);
+	}
+
+	eliminarCompetenciaTecnica(corrPerfilPuestoCompetenciasTecnicas: number): Observable<IResult> {
+		const corr = Number(corrPerfilPuestoCompetenciasTecnicas);
+		if (!corr || corr <= 0) {
+			return of({
+				Result: false,
+				Data: null,
+				ErrorCode: 1,
+				ErrorMessage: 'Debe indicar la competencia tecnica a eliminar.',
+				RowsAffected: 0,
+			} as IResult);
+		}
+
+		return this.competenciasTecnicasRepo.delete([
+			{ Parameter: 'CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS', Value: corr },
 		]);
 	}
 

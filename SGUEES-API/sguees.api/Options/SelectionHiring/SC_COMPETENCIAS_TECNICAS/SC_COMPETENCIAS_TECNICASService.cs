@@ -57,14 +57,24 @@ namespace SGUEES.Services
             var rows = await _repo.GetPadresByNivelAsync(xWhere.CORR_EMPRESA, nivel, soloActivos);
 
             var data = rows
-                .Select(x => new
+                .Select(x =>
                 {
-                    x.CORR_COMPETENCIAS_TECNICAS,
-                    x.CODIGO_COMPETENCIAS_TECNICAS,
-                    x.NOMBRE_COMPETENCIAS_TECNICAS,
-                    x.DESCRIPCION,
-                    x.NIVEL,
-                    x.ESTADO_COMPETENCIAS_TECNICAS,
+                    var codigo = x.CODIGO_COMPETENCIAS_TECNICAS?.Trim() ?? string.Empty;
+                    var nombre = (x.DESCRIPCION ?? x.NOMBRE_COMPETENCIAS_TECNICAS)?.Trim() ?? string.Empty;
+                    var display = !string.IsNullOrWhiteSpace(codigo) && !string.IsNullOrWhiteSpace(nombre)
+                        ? $"{codigo} - {nombre}"
+                        : (!string.IsNullOrWhiteSpace(nombre) ? nombre : codigo);
+
+                    return new
+                    {
+                        x.CORR_COMPETENCIAS_TECNICAS,
+                        x.CODIGO_COMPETENCIAS_TECNICAS,
+                        x.NOMBRE_COMPETENCIAS_TECNICAS,
+                        x.DESCRIPCION,
+                        x.NIVEL,
+                        x.ESTADO_COMPETENCIAS_TECNICAS,
+                        NOMBRE_DISPLAY = string.IsNullOrWhiteSpace(display) ? "(Sin nombre)" : display,
+                    };
                 })
                 .ToList();
 
@@ -77,24 +87,35 @@ namespace SGUEES.Services
             };
         }
 
-        public async Task<CResult> GetCatalogoNivel2DescriptorAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
+        public async Task<CResult> GetCatalogoNivel3DescriptorAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
-            var rows = await _repo.GetCatalogoNivel2DescriptorAsync(xWhere.CORR_EMPRESA);
+            var rows = await _repo.GetCatalogoNivel3DescriptorAsync(xWhere.CORR_EMPRESA);
 
             var data = rows
-                .Select(x => new
+                .Select(x =>
                 {
-                    x.CORR_COMPETENCIAS_TECNICAS,
-                    x.CORR_COMPETENCIAS_TECNICAS_PADRE,
-                    x.CODIGO_COMPETENCIAS_TECNICAS,
-                    x.NOMBRE_COMPETENCIAS_TECNICAS,
-                    x.DESCRIPCION,
-                    x.NIVEL,
-                    x.CODIGO_PADRE,
-                    x.NOMBRE_PADRE,
-                    GRUPO_PADRE = BuildLookupDisplay(x.CODIGO_PADRE, x.NOMBRE_PADRE),
-                    NOMBRE_DISPLAY = BuildLookupDisplay(x.CODIGO_COMPETENCIAS_TECNICAS, x.NOMBRE_COMPETENCIAS_TECNICAS),
-                    SELECCIONABLE = true,
+                    var grupoNiv1 = BuildLookupDisplay(x.CODIGO_NIV1, x.NOMBRE_NIV1);
+                    var grupoNiv2 = BuildLookupDisplay(x.CODIGO_PADRE, x.NOMBRE_PADRE);
+                    var nombre = BuildLookupDisplay(x.CODIGO_COMPETENCIAS_TECNICAS, x.NOMBRE_COMPETENCIAS_TECNICAS);
+
+                    return new
+                    {
+                        x.CORR_COMPETENCIAS_TECNICAS,
+                        x.CORR_COMPETENCIAS_TECNICAS_PADRE,
+                        x.CODIGO_COMPETENCIAS_TECNICAS,
+                        x.NOMBRE_COMPETENCIAS_TECNICAS,
+                        x.DESCRIPCION,
+                        NIVEL = "NIV3",
+                        x.CODIGO_PADRE,
+                        x.NOMBRE_PADRE,
+                        x.CODIGO_NIV1,
+                        x.NOMBRE_NIV1,
+                        GRUPO_NIV1 = grupoNiv1,
+                        GRUPO_NIV2 = grupoNiv2,
+                        GRUPO_PADRE = grupoNiv2,
+                        NOMBRE_DISPLAY = $"{nombre} | NIV3 | Grupo NIV2: {grupoNiv2} | Grupo NIV1: {grupoNiv1}",
+                        SELECCIONABLE = true,
+                    };
                 })
                 .ToList();
 

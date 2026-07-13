@@ -32,17 +32,14 @@ import {
 } from './sc-descriptor-perfil-puesto/models/sc-descriptor-perfil-puesto';
 import { ScPerfilPuestoEducacion } from './sc-perfil-puesto-educacion/models/sc-perfil-puesto-educacion';
 import { ScPerfilPuestoExperiencia } from './sc-perfil-puesto-experiencia/models/sc-perfil-puesto-experiencia';
+import { ScPerfilPuestoCompetenciasTecnicas } from './sc-perfil-puesto-competencias-tecnicas/models/sc-perfil-puesto-competencias-tecnicas';
 import { MockPuesto, MockUnidad, ScCompetenciaTecnicaLookupItem, ScDescriptorPuesto } from './models/sc-descriptor-puesto';
 import {
-	EDUCACION_TIPO_REQUERIDO_OPTIONS,
 	FORMATO_CORTA,
 	FORMATO_EXTENSA,
 	MOCK_PUESTOS,
 	MOCK_UNIDADES,
-	PERFIL_ESTADO_FAMILIAR_OPTIONS,
-	PERFIL_LICENCIA_OPTIONS,
 	PERFIL_PUESTO_DEFAULT,
-	PERFIL_SEXO_OPTIONS,
 	TIPO_FUNCION_CLAVE,
 	TIPO_FUNCION_SECUNDARIA,
 } from './sc-descriptor-puesto.mock-data';
@@ -56,13 +53,13 @@ import { ScDescriptorPuestoService } from './sc-descriptor-puesto.service';
 export class ScDescriptorPuestoComponent extends CBaseComponent implements OnInit, OnDestroy {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 	@ViewChild('fHeaderData', { static: false }) headerForm!: DxFormComponent;
-	@ViewChild('tabPanelPrincipal', { static: false }) tabPanelPrincipal?: DxTabPanelComponent;
 	@ViewChild('tabPanelSecciones', { static: false }) tabPanelSecciones?: DxTabPanelComponent;
 	@ViewChild('gridFuncionesClave', { static: false }) gridFuncionesClave?: DxDataGridComponent;
 	@ViewChild('gridFuncionesSecundarias', { static: false }) gridFuncionesSecundarias?: DxDataGridComponent;
 	@ViewChild('gridKpis', { static: false }) gridKpis?: DxDataGridComponent;
 	@ViewChild('gridEducacion', { static: false }) gridEducacion?: DxDataGridComponent;
 	@ViewChild('gridExperiencia', { static: false }) gridExperiencia?: DxDataGridComponent;
+	@ViewChild('gridCompetenciasTecnicas', { static: false }) gridCompetenciasTecnicas?: DxDataGridComponent;
 	@ViewChild('gridActividades', { static: false }) gridActividades?: DxDataGridComponent;
 
 	protected override etiquetaRegistro = 'el descriptor de puesto';
@@ -87,16 +84,18 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_DISPONIBILIDAD_HORARIO: ScDisponibilidadHorarioLookup[] = [];
 	mCORR_TIPO_MODALIDAD: ScTipoModalidadLookup[] = [];
 	mCORR_COMPETENCIAS_TECNICAS: ScCompetenciaTecnicaLookupItem[] = [];
-	corrCompetenciaTecnicaSeleccionada: number | null = null;
+	mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES: ScCompetenciaTecnicaLookupItem[] = [];
 	reportaLookupColumns = [
 		{ dataField: 'RESPONSABLE', caption: 'Nombre', width: 220 },
 		{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260 },
 	];
 	competenciasTecnicasLookupColumns = [
-		{ dataField: 'GRUPO_PADRE', caption: 'Grupo', width: 140 },
-		{ dataField: 'CODIGO_COMPETENCIAS_TECNICAS', caption: 'Codigo', width: 110 },
+		{ dataField: 'GRUPO_NIV1', caption: 'Grupo NIV1', width: 180 },
+		{ dataField: 'GRUPO_NIV2', caption: 'Grupo NIV2', width: 180 },
+		{ dataField: 'CODIGO_COMPETENCIAS_TECNICAS', caption: 'Codigo NIV3', width: 120 },
 		{ dataField: 'NIVEL', caption: 'Nivel', width: 80 },
-		{ dataField: 'DESCRIPCION', caption: 'Definicion', width: 280 },
+		{ dataField: 'NOMBRE_COMPETENCIAS_TECNICAS', caption: 'Competencia NIV3', width: 220 },
+		{ dataField: 'DESCRIPCION', caption: 'Definicion', width: 260 },
 	];
 
 	headerItems: any[] = [];
@@ -109,19 +108,23 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	kpis: ScDescriptorKpiFuncion[] = [];
 	educaciones: ScPerfilPuestoEducacion[] = [];
 	experiencias: ScPerfilPuestoExperiencia[] = [];
+	competenciasTecnicas: ScPerfilPuestoCompetenciasTecnicas[] = [];
 	funcionesClaveEditando = false;
 	funcionesSecundariasEditando = false;
 	kpisEditando = false;
 	educacionEditando = false;
 	experienciaEditando = false;
+	competenciasTecnicasEditando = false;
 	actividadesEditando = false;
 	perfil: ScDescriptorPerfilPuesto = { ...PERFIL_PUESTO_DEFAULT };
 	perfilSubTabIndex = 0;
 	competenciasSubTabIndex = 0;
-	readonly perfilSexoOptions = PERFIL_SEXO_OPTIONS;
-	readonly perfilEstadoFamiliarOptions = PERFIL_ESTADO_FAMILIAR_OPTIONS;
-	readonly perfilLicenciaOptions = PERFIL_LICENCIA_OPTIONS;
-	readonly educacionTipoRequeridoOptions = EDUCACION_TIPO_REQUERIDO_OPTIONS;
+	perfilSexoOptions: Array<{ Key: any; Value: string }> = [];
+	perfilEstadoFamiliarOptions: Array<{ Key: any; Value: string }> = [];
+	perfilLicenciaOptions: Array<{ Key: any; Value: string }> = [];
+	educacionTipoRequeridoOptions: Array<{ Key: any; Value: string }> = [];
+	competenciaTecnicaNivelDominioOptions: Array<{ Key: any; Value: string }> = [];
+	mFORMATO: Array<{ Key: any; Value: string }> = [];
 	actividadesPopupVisible = false;
 	actividadesPopupFullScreen = false;
 	funcionActividadesSeleccionada: ScDescriptorFuncion | null = null;
@@ -132,15 +135,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private kpisLoadSeq = 0;
 	private educacionLoadSeq = 0;
 	private experienciaLoadSeq = 0;
+	private competenciasTecnicasLoadSeq = 0;
 	private perfilLoadSeq = 0;
 	private perfilExiste = false;
-	private funcionesTabsDirty = false;
 	private sincronizandoHeader = false;
 	private ultimoFormatoAplicado: string | null = null;
 	private ultimoTabSeccionValido = 0;
 	mostrarAvisoSeleccioneTab = false;
-	private funcionPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
-	private kpiPersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
 	private perfilPersistTimer: ReturnType<typeof setTimeout> | null = null;
 
 	readonly actividadesPopupWrapperAttr = { class: 'descriptor-actividades-popup-wrapper' };
@@ -179,6 +180,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.experienciaEditButtonVisible = this.experienciaEditButtonVisible.bind(this);
 		this.experienciaDeleteButtonVisible = this.experienciaDeleteButtonVisible.bind(this);
 		this.editarExperienciaClick = this.editarExperienciaClick.bind(this);
+		this.competenciaTecnicaEditButtonVisible = this.competenciaTecnicaEditButtonVisible.bind(this);
+		this.competenciaTecnicaDeleteButtonVisible = this.competenciaTecnicaDeleteButtonVisible.bind(this);
+		this.editarCompetenciaTecnicaClick = this.editarCompetenciaTecnicaClick.bind(this);
 		this.actividadEditButtonVisible = this.actividadEditButtonVisible.bind(this);
 		this.actividadDeleteButtonVisible = this.actividadDeleteButtonVisible.bind(this);
 		this.editarActividadClick = this.editarActividadClick.bind(this);
@@ -217,13 +221,169 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	llenaComboBox(): void {
 		this.mCORR_UNIDAD = [...MOCK_UNIDADES];
 		this.actualizarPuestosPorUnidad(this.model?.CORR_UNIDAD ?? null);
-		this.cargarFrecuenciasLookup();
-		this.cargarDisponibilidadHorarioLookup();
-		this.cargarTipoModalidadLookup();
-		this.cargarCompetenciasTecnicasLookup();
+		this.getCORR_FRECUENCIA();
+		this.getCORR_DISPONIBILIDAD_HORARIO();
+		this.getCORR_TIPO_MODALIDAD();
+		this.getCORR_COMPETENCIAS_TECNICAS_NIV3();
+		this.getFORMATO();
+		this.getNIVEL_DOMINIO();
+		this.getSEXO();
+		this.getESTADO_FAMILIAR();
+		this.getLICENCIA();
+		this.getTIPO_REQUERIDO();
 	}
 
-	private cargarFrecuenciasLookup(): void {
+	getFORMATO(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_LISTA',
+				'GetFORMATO',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.mFORMATO = response.Data;
+						this.aplicarFormatoLookupAlHeader();
+					}
+				},
+				error: (error) => {
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	getNIVEL_DOMINIO(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_LISTA',
+				'GetNIVEL_DOMINIO',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.competenciaTecnicaNivelDominioOptions = response.Data;
+					}
+				},
+				error: (error) => {
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	getSEXO(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_LISTA',
+				'GetSEXO',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.perfilSexoOptions = response.Data;
+					}
+				},
+				error: (error) => {
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	getESTADO_FAMILIAR(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_LISTA',
+				'GetESTADO_FAMILIAR',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.perfilEstadoFamiliarOptions = response.Data;
+					}
+				},
+				error: (error) => {
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	getLICENCIA(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_LISTA',
+				'GetLICENCIA',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.perfilLicenciaOptions = response.Data;
+					}
+				},
+				error: (error) => {
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	getTIPO_REQUERIDO(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_LISTA',
+				'GetTIPO_REQUERIDO',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.educacionTipoRequeridoOptions = response.Data;
+					}
+				},
+				error: (error) => {
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	private aplicarFormatoLookupAlHeader(): void {
+		const item = this.headerItems?.find((x) => x.dataField === 'FORMATO');
+		if (!item) {
+			return;
+		}
+
+		item.editorOptions = {
+			...(item.editorOptions || {}),
+			dataSource: this.mFORMATO,
+			displayExpr: 'Value',
+			valueExpr: 'Key',
+			placeholder: 'Seleccione...',
+		};
+
+		this.headerForm?.instance?.itemOption('FORMATO', 'editorOptions', item.editorOptions);
+	}
+
+	getCORR_FRECUENCIA(): void {
 		this.appInfoService
 			.getLookUp(
 				'SC_DESCRIPTOR_KPI_FUNCION',
@@ -246,7 +406,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	private cargarDisponibilidadHorarioLookup(): void {
+	getCORR_DISPONIBILIDAD_HORARIO(): void {
 		this.appInfoService
 			.getLookUp(
 				'SC_DESCRIPTOR_PUESTO',
@@ -271,7 +431,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	private cargarTipoModalidadLookup(): void {
+	getCORR_TIPO_MODALIDAD(): void {
 		this.appInfoService
 			.getLookUp(
 				'SC_DESCRIPTOR_PUESTO',
@@ -294,12 +454,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	private cargarCompetenciasTecnicasLookup(): void {
+	getCORR_COMPETENCIAS_TECNICAS_NIV3(): void {
 		this.appInfoService
 			.getLookUp(
 				'SC_DESCRIPTOR_PUESTO',
 				'SC_COMPETENCIAS_TECNICAS',
-				'GetCORR_COMPETENCIAS_TECNICAS',
+				'GetCORR_COMPETENCIAS_TECNICAS_NIV3',
 				undefined,
 				environment.UrlSELECCIONCONTRATACIONAPI
 			)
@@ -308,31 +468,49 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				next: (response: any) => {
 					if (!response?.Result || !Array.isArray(response.Data)) {
 						this.mCORR_COMPETENCIAS_TECNICAS = [];
+						this.mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES = [];
 						return;
 					}
 
 					this.mCORR_COMPETENCIAS_TECNICAS = response.Data.map((item: any) => {
 						const codigo = (item.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim();
-						const nivel = (item.NIVEL ?? 'NIV2').trim();
-						const descripcion = (item.DESCRIPCION ?? item.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim();
-						const grupoPadre = (item.GRUPO_PADRE ?? item.CODIGO_PADRE ?? 'Sin grupo').trim();
-						const nombreDisplay = [codigo, nivel, descripcion].filter((parte) => !!parte).join(' | ');
+						const nombre = (item.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim();
+						const descripcion = (item.DESCRIPCION ?? nombre).trim();
+						const grupoNiv1 = (item.GRUPO_NIV1 ?? item.CODIGO_NIV1 ?? 'Sin grupo NIV1').trim();
+						const grupoNiv2 = (
+							item.GRUPO_NIV2 ??
+							item.GRUPO_PADRE ??
+							item.CODIGO_PADRE ??
+							'Sin grupo NIV2'
+						).trim();
+						const nivel = (item.NIVEL ?? 'NIV3').trim() || 'NIV3';
+						const nombreDisplay =
+							(item.NOMBRE_DISPLAY ?? '').trim() ||
+							[codigo, nivel, nombre].filter((parte) => !!parte).join(' | ');
 
 						return {
 							CORR_COMPETENCIAS_TECNICAS: Number(item.CORR_COMPETENCIAS_TECNICAS),
-							CORR_COMPETENCIAS_TECNICAS_PADRE: item.CORR_COMPETENCIAS_TECNICAS_PADRE != null
-								? Number(item.CORR_COMPETENCIAS_TECNICAS_PADRE)
-								: null,
+							CORR_COMPETENCIAS_TECNICAS_PADRE:
+								item.CORR_COMPETENCIAS_TECNICAS_PADRE != null
+									? Number(item.CORR_COMPETENCIAS_TECNICAS_PADRE)
+									: null,
 							CODIGO_COMPETENCIAS_TECNICAS: codigo,
-							NOMBRE_COMPETENCIAS_TECNICAS: item.NOMBRE_COMPETENCIAS_TECNICAS ?? '',
+							NOMBRE_COMPETENCIAS_TECNICAS: nombre,
 							DESCRIPCION: descripcion,
 							NOMBRE_DISPLAY: nombreDisplay || codigo || '(Sin nombre)',
-							GRUPO_PADRE: grupoPadre || 'Sin grupo',
+							GRUPO_NIV1: grupoNiv1 || 'Sin grupo NIV1',
+							GRUPO_NIV2: grupoNiv2 || 'Sin grupo NIV2',
+							GRUPO_PADRE: grupoNiv2 || 'Sin grupo NIV2',
 							NIVEL: nivel,
 						};
 					});
+					this.actualizarCompetenciasTecnicasLookupDisponibles();
 				},
-				error: (error) => this.notifyApiError(error),
+				error: (error) => {
+					this.mCORR_COMPETENCIAS_TECNICAS = [];
+					this.mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES = [];
+					this.notifyApiError(error);
+				},
 			});
 	}
 
@@ -362,10 +540,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	selectedLookUpCORR_COMPETENCIAS_TECNICAS(vRow: any): number {
 		return vRow[0].CORR_COMPETENCIAS_TECNICAS;
-	}
-
-	onCompetenciaTecnicaChanged(value: number | null): void {
-		this.corrCompetenciaTecnicaSeleccionada = value != null && value > 0 ? Number(value) : null;
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -540,13 +714,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.kpis = [];
 		this.educaciones = [];
 		this.experiencias = [];
+		this.competenciasTecnicas = [];
 		this.competenciasSubTabIndex = 0;
-		this.corrCompetenciaTecnicaSeleccionada = null;
 		this.resetearEdicionFuncionesClave();
 		this.resetearEdicionFuncionesSecundarias();
 		this.resetearEdicionKpis();
 		this.resetearEdicionEducacion();
 		this.resetearEdicionExperiencia();
+		this.resetearEdicionCompetenciasTecnicas();
 		this.limpiarPerfil();
 		this.resetearFuncionesTabsDirty();
 		this.cerrarActividadesPopup();
@@ -564,23 +739,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	get mostrarSeccionesDescriptor(): boolean {
 		return Number(this.model?.CORR_DESCRIPTOR_PUESTO) > 0;
 	}
-
-	get funcionesSecundariasVisibles(): ScDescriptorFuncion[] {
-		return this.funcionesSecundarias;
-	}
-
-	get funcionesClaveVisibles(): ScDescriptorFuncion[] {
-		return this.funcionesClave;
-	}
-
-	get kpisVisibles(): ScDescriptorKpiFuncion[] {
-		return this.kpis;
-	}
-
-	get puedeGestionarFunciones(): boolean {
-		return !this.readOnly;
-	}
-
 
 	agregarFuncionClave(): void {
 		if (this.readOnly || this.funcionesClaveEditando || !this.requiereDescriptorGuardado()) {
@@ -1140,6 +1298,185 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.cancel = this.eliminarExperienciaDesdeGrid(e.data);
 	}
 
+	agregarCompetenciaTecnica(): void {
+		if (this.readOnly || this.competenciasTecnicasEditando || !this.requiereDescriptorGuardado()) {
+			return;
+		}
+
+		this.asegurarPerfilParaDetalle(() => {
+			this.actualizarCompetenciasTecnicasLookupDisponibles();
+			this.gridCompetenciasTecnicas?.instance.addRow();
+			this.competenciasTecnicasEditando = true;
+		});
+	}
+
+	editarCompetenciaTecnicaClick(e: any): void {
+		if (this.readOnly || this.competenciasTecnicasEditando) {
+			return;
+		}
+		this.actualizarCompetenciasTecnicasLookupDisponibles(
+			Number(e?.row?.data?.CORR_COMPETENCIAS_TECNICAS) || null
+		);
+		e.component.editRow(e.row.rowIndex);
+		this.competenciasTecnicasEditando = true;
+	}
+
+	competenciaTecnicaEditButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
+
+	competenciaTecnicaDeleteButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
+
+	guardarCompetenciaTecnicaEditada(): void {
+		const grid = this.gridCompetenciasTecnicas?.instance;
+		if (!grid || !this.competenciasTecnicasEditando) {
+			this.notifyFx('No hay una linea en edicion', NotifyType.Warning);
+			return;
+		}
+		grid.saveEditData();
+	}
+
+	cancelarCompetenciaTecnicaEditada(): void {
+		this.cancelarEdicionGrid(this.gridCompetenciasTecnicas?.instance, () => {
+			this.competenciasTecnicasEditando = false;
+		});
+	}
+
+	competenciaTecnicaInitNewRow(e: any): void {
+		e.data.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS = 0;
+		e.data.CORR_PERFIL_PUESTO = Number(this.perfil?.CORR_PERFIL_PUESTO) || 0;
+		e.data.CORR_COMPETENCIAS_TECNICAS = null;
+		e.data.NOMBRE_COMPETENCIAS_TECNICAS = '';
+		e.data.DESCRIPCION = '';
+		e.data.NIVEL_DOMINIO = 'BASICO';
+		e.data._clientKey = this.crearClientKey('ct');
+		this.actualizarCompetenciasTecnicasLookupDisponibles();
+	}
+
+	onCompetenciaTecnicaEditingStart(e: any): void {
+		this.actualizarCompetenciasTecnicasLookupDisponibles(
+			Number(e?.data?.CORR_COMPETENCIAS_TECNICAS) || null
+		);
+		this.competenciasTecnicasEditando = true;
+	}
+
+	onCompetenciaTecnicaSaved(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.competenciasTecnicasEditando = false;
+		});
+	}
+
+	onCompetenciaTecnicaEditCanceled(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.competenciasTecnicasEditando = false;
+		});
+	}
+
+	competenciaTecnicaRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!(Number(data.CORR_COMPETENCIAS_TECNICAS) > 0)) {
+			e.isValid = false;
+			e.errorText = 'Debe seleccionar una competencia tecnica de nivel 3.';
+			return;
+		}
+		if (!(data.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim()) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar el nombre de la competencia.';
+			return;
+		}
+		const nivel = (data.NIVEL_DOMINIO ?? '').trim().toUpperCase();
+		if (!['BASICO', 'INTERMEDIO', 'AVANZADO'].includes(nivel)) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar el nivel de dominio.';
+			return;
+		}
+
+		const corrCatalogo = Number(data.CORR_COMPETENCIAS_TECNICAS);
+		const clientKey = data._clientKey ?? e?.key;
+		const duplicada = (this.competenciasTecnicas || []).some((row) => {
+			if (!(Number(row.CORR_COMPETENCIAS_TECNICAS) > 0)) {
+				return false;
+			}
+			if (clientKey != null && row._clientKey === clientKey) {
+				return false;
+			}
+			return Number(row.CORR_COMPETENCIAS_TECNICAS) === corrCatalogo;
+		});
+		if (duplicada) {
+			e.isValid = false;
+			e.errorText = 'Esa competencia tecnica ya esta agregada en el descriptor.';
+		}
+	}
+
+	competenciaTecnicaRowInserting(e: any): void {
+		e.cancel = this.persistirCompetenciaTecnicaDesdeGrid(e.data, true);
+	}
+
+	competenciaTecnicaRowUpdating(e: any): void {
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = this.persistirCompetenciaTecnicaDesdeGrid(data, false);
+	}
+
+	competenciaTecnicaRowRemoving(e: any): void {
+		e.cancel = this.eliminarCompetenciaTecnicaDesdeGrid(e.data);
+	}
+
+	competenciaTecnicaCatalogDisplay = (row: ScPerfilPuestoCompetenciasTecnicas): string => {
+		const corr = Number(row?.CORR_COMPETENCIAS_TECNICAS);
+		const catalog = this.mCORR_COMPETENCIAS_TECNICAS.find(
+			(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === corr
+		);
+		return catalog?.CODIGO_COMPETENCIAS_TECNICAS || '';
+	};
+
+	private actualizarCompetenciasTecnicasLookupDisponibles(
+		corrConservar: number | null = null
+	): void {
+		const usados = new Set(
+			(this.competenciasTecnicas || [])
+				.map((row) => Number(row.CORR_COMPETENCIAS_TECNICAS))
+				.filter((corr) => corr > 0 && corr !== Number(corrConservar || 0))
+		);
+
+		this.mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES = (this.mCORR_COMPETENCIAS_TECNICAS || []).filter(
+			(item) => {
+				const corr = Number(item.CORR_COMPETENCIAS_TECNICAS);
+				if (!(corr > 0)) {
+					return false;
+				}
+				if (corrConservar != null && corr === Number(corrConservar)) {
+					return true;
+				}
+				return !usados.has(corr);
+			}
+		);
+	}
+
+	onCompetenciaTecnicaLookupChanged(value: number | null, cellInfo: any): void {
+		const corr = value != null && value > 0 ? Number(value) : null;
+		const catalog = this.mCORR_COMPETENCIAS_TECNICAS.find(
+			(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === Number(corr)
+		);
+		cellInfo.setValue(corr);
+
+		const nombre = catalog?.NOMBRE_COMPETENCIAS_TECNICAS ?? '';
+		const descripcion = catalog?.DESCRIPCION ?? '';
+		if (cellInfo.data) {
+			cellInfo.data.CORR_COMPETENCIAS_TECNICAS = corr;
+			cellInfo.data.NOMBRE_COMPETENCIAS_TECNICAS = nombre;
+			cellInfo.data.DESCRIPCION = descripcion;
+		}
+
+		const grid = cellInfo.component;
+		const rowIndex = cellInfo.rowIndex;
+		if (grid != null && typeof rowIndex === 'number') {
+			grid.cellValue(rowIndex, 'NOMBRE_COMPETENCIAS_TECNICAS', nombre);
+			grid.cellValue(rowIndex, 'DESCRIPCION', descripcion);
+		}
+	}
+
 	onPerfilEdadMinimaChanged(e: any): void {
 		if (this.readOnly) {
 			return;
@@ -1225,8 +1562,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.perfilSubTabIndex = 0;
 		this.educaciones = [];
 		this.experiencias = [];
+		this.competenciasTecnicas = [];
 		this.resetearEdicionEducacion();
 		this.resetearEdicionExperiencia();
+		this.resetearEdicionCompetenciasTecnicas();
+		this.actualizarCompetenciasTecnicasLookupDisponibles();
 	}
 
 	private cargarPerfil(forzar = false): void {
@@ -1265,6 +1605,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.perfilExiste = true;
 						this.cargarEducacion(forzar);
 						this.cargarExperiencia(forzar);
+						this.cargarCompetenciasTecnicas(forzar);
 						return;
 					}
 
@@ -1272,8 +1613,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.perfilExiste = false;
 					this.educaciones = [];
 					this.experiencias = [];
+					this.competenciasTecnicas = [];
 					this.resetearEdicionEducacion();
 					this.resetearEdicionExperiencia();
+					this.resetearEdicionCompetenciasTecnicas();
 				},
 				error: (error) => this.notifyApiError(error),
 			});
@@ -1298,6 +1641,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
+		const esCreacion = !this.perfilExiste;
 		this.service
 			.persistirPerfil(corrDescriptor, this.perfil, this.perfilExiste)
 			.pipe(take(1))
@@ -1319,8 +1663,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.perfil.CORR_PERFIL_PUESTO = Number(response.CodeHelper);
 						this.perfilExiste = true;
 					}
-					this.cargarEducacion(true);
-					this.cargarExperiencia(true);
+
+					// Solo en la creación inicial: ahí recién existe CORR_PERFIL_PUESTO.
+					if (esCreacion && Number(this.perfil.CORR_PERFIL_PUESTO) > 0) {
+						this.cargarEducacion(true);
+						this.cargarExperiencia(true);
+						this.cargarCompetenciasTecnicas(true);
+					}
 				},
 				error: (error) => this.notifyApiError(error),
 			});
@@ -1395,15 +1744,54 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	private cargarCompetenciasTecnicas(forzar = false): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corrPerfil || corrPerfil <= 0) {
+			this.competenciasTecnicas = [];
+			this.resetearEdicionCompetenciasTecnicas();
+			this.actualizarCompetenciasTecnicasLookupDisponibles();
+			return;
+		}
+
+		const loadSeq = ++this.competenciasTecnicasLoadSeq;
+		this.service
+			.getCompetenciasTecnicasLookup(corrDescriptor, corrPerfil)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (loadSeq !== this.competenciasTecnicasLoadSeq) {
+						return;
+					}
+
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.resetearEdicionCompetenciasTecnicas();
+						this.competenciasTecnicas = response.Data.map(
+							(item: ScPerfilPuestoCompetenciasTecnicas) => ({
+								CORR_PERFIL_PUESTO: item.CORR_PERFIL_PUESTO ?? corrPerfil,
+								CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS:
+									item.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS,
+								NOMBRE_COMPETENCIAS_TECNICAS: item.NOMBRE_COMPETENCIAS_TECNICAS ?? '',
+								DESCRIPCION: item.DESCRIPCION ?? '',
+								NIVEL_DOMINIO: (item.NIVEL_DOMINIO ?? 'BASICO').toUpperCase(),
+								CORR_COMPETENCIAS_TECNICAS: item.CORR_COMPETENCIAS_TECNICAS ?? null,
+								_clientKey:
+									item.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS ||
+									this.crearClientKey('ct'),
+							})
+						);
+						this.actualizarCompetenciasTecnicasLookupDisponibles();
+					}
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
 	private cargarKpis(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoCorta) {
 			this.kpis = [];
 			this.resetearEdicionKpis();
-			return;
-		}
-
-		if (!forzar && this.funcionesTabsDirty && !this.readOnly) {
 			return;
 		}
 
@@ -1414,10 +1802,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			.subscribe({
 				next: (response: any) => {
 					if (loadSeq !== this.kpisLoadSeq) {
-						return;
-					}
-
-					if (!forzar && this.funcionesTabsDirty && !this.readOnly) {
 						return;
 					}
 
@@ -1445,10 +1829,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		if (!forzar && this.funcionesTabsDirty && !this.readOnly) {
-			return;
-		}
-
 		const loadSeq = ++this.funcionesClaveLoadSeq;
 		this.service
 			.getFuncionesClaveLookup(corrDescriptor)
@@ -1456,10 +1836,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			.subscribe({
 				next: (response: any) => {
 					if (loadSeq !== this.funcionesClaveLoadSeq) {
-						return;
-					}
-
-					if (!forzar && this.funcionesTabsDirty && !this.readOnly) {
 						return;
 					}
 
@@ -1525,10 +1901,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		if (!forzar && this.funcionesTabsDirty && !this.readOnly) {
-			return;
-		}
-
 		const loadSeq = ++this.funcionesSecundariasLoadSeq;
 		this.service
 			.getFuncionesSecundariasLookup(corrDescriptor)
@@ -1536,10 +1908,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			.subscribe({
 				next: (response: any) => {
 					if (loadSeq !== this.funcionesSecundariasLoadSeq) {
-						return;
-					}
-
-					if (!forzar && this.funcionesTabsDirty && !this.readOnly) {
 						return;
 					}
 
@@ -1604,12 +1972,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 
 		// Solo recargar secundarias si el usuario cambió de verdad el formato (no por sync del form).
-		if (
-			cambioReal &&
-			this.esFormatoCorta &&
-			this.mostrarSeccionesDescriptor &&
-			!this.funcionesTabsDirty
-		) {
+		if (cambioReal && this.esFormatoCorta && this.mostrarSeccionesDescriptor) {
 			this.cargarFuncionesSecundarias();
 		}
 	}
@@ -1888,11 +2251,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return MOCK_PUESTOS.find((item) => Number(item.CORR_PUESTO) === corr)?.NOMBRE_PUESTO ?? '';
 	}
 
-	getNombrePuestoReporta(corr: number | null | undefined): string {
-		const corrReporta = Number(corr);
-		return MOCK_PUESTOS.find((item) => Number(item.CORR_PUESTO) === corrReporta)?.RESPONSABLE ?? '';
-	}
-
 	private notifyDescriptorWarning(message: string): void {
 		this.notifyFx(message, NotifyType.Warning, { raw: true });
 	}
@@ -1959,14 +2317,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	private marcarFuncionesTabsDirty(): void {
-		this.funcionesTabsDirty = true;
-		this.funcionesClaveLoadSeq++;
-		this.funcionesSecundariasLoadSeq++;
-	}
-
 	private resetearFuncionesTabsDirty(): void {
-		this.funcionesTabsDirty = false;
 		this.funcionesClaveLoadSeq++;
 		this.funcionesSecundariasLoadSeq++;
 	}
@@ -2005,6 +2356,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private resetearEdicionExperiencia(): void {
 		this.experienciaEditando = false;
+	}
+
+	private resetearEdicionCompetenciasTecnicas(): void {
+		this.competenciasTecnicasEditando = false;
 	}
 
 	/** Visibilidad Options: usa editRowKey (no e.row.isEditing, que puede quedar pegado tras Cancelar). */
@@ -2300,6 +2655,84 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	private persistirCompetenciaTecnicaDesdeGrid(
+		data: ScPerfilPuestoCompetenciasTecnicas,
+		esNuevo: boolean
+	): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
+		if (!corrPerfil || corrPerfil <= 0) {
+			this.notifyFx(
+				'Debe guardar el perfil antes de registrar competencias tecnicas.',
+				NotifyType.Warning
+			);
+			return Promise.resolve(true);
+		}
+
+		const payload: ScPerfilPuestoCompetenciasTecnicas = {
+			...data,
+			CORR_PERFIL_PUESTO: corrPerfil,
+			CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS: esNuevo
+				? 0
+				: Number(data.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS) || 0,
+			CORR_COMPETENCIAS_TECNICAS: Number(data.CORR_COMPETENCIAS_TECNICAS) || null,
+			NOMBRE_COMPETENCIAS_TECNICAS: (data.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim(),
+			DESCRIPCION: (data.DESCRIPCION ?? '').trim(),
+			NIVEL_DOMINIO: (data.NIVEL_DOMINIO ?? 'BASICO').trim().toUpperCase(),
+		};
+
+		return new Promise((resolve) => {
+			this.service
+				.persistirCompetenciaTecnica(corrDescriptor, corrPerfil, payload)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						this.competenciasTecnicasEditando = false;
+						this.cargarCompetenciasTecnicas(true);
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private eliminarCompetenciaTecnicaDesdeGrid(
+		data: ScPerfilPuestoCompetenciasTecnicas
+	): Promise<boolean> {
+		const corr = Number(data?.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS);
+		if (!corr || corr <= 0) {
+			return Promise.resolve(false);
+		}
+
+		return new Promise((resolve) => {
+			this.service
+				.eliminarCompetenciaTecnica(corr)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
 	private persistirFuncionDesdeGrid(
 		data: ScDescriptorFuncion,
 		tipoFuncion: string,
@@ -2429,124 +2862,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					},
 				});
 		});
-	}
-
-	private extraerFuncionGuardada(response: any): ScDescriptorFuncion {
-		const data = response?.Data;
-		if (Array.isArray(data) && data.length > 0) {
-			return data[data.length - 1] as ScDescriptorFuncion;
-		}
-
-		return (data ?? {}) as ScDescriptorFuncion;
-	}
-
-	private extraerActividadGuardada(response: any): ScDescriptorFuncionActividad {
-		const data = response?.Data;
-		if (Array.isArray(data) && data.length > 0) {
-			return data[data.length - 1] as ScDescriptorFuncionActividad;
-		}
-
-		return (data ?? {}) as ScDescriptorFuncionActividad;
-	}
-
-	private extraerKpiGuardado(response: any): ScDescriptorKpiFuncion {
-		const data = response?.Data;
-		if (Array.isArray(data) && data.length > 0) {
-			return data[data.length - 1] as ScDescriptorKpiFuncion;
-		}
-
-		return (data ?? {}) as ScDescriptorKpiFuncion;
-	}
-
-	private programarPersistirKpi(kpi: ScDescriptorKpiFuncion): void {
-		if (!kpi?.CORR_KPI_FUNCION || kpi.CORR_KPI_FUNCION <= 0) {
-			return;
-		}
-
-		this.marcarFuncionesTabsDirty();
-		const key = `kpi-${kpi.CORR_KPI_FUNCION}`;
-		const prev = this.kpiPersistTimers.get(key);
-		if (prev) {
-			clearTimeout(prev);
-		}
-
-		this.kpiPersistTimers.set(
-			key,
-			setTimeout(() => {
-				this.kpiPersistTimers.delete(key);
-				this.persistirKpiEnLinea(kpi);
-			}, 500)
-		);
-	}
-
-	private persistirKpiEnLinea(kpi: ScDescriptorKpiFuncion): void {
-		const corrDescriptor = this.obtenerCorrDescriptor();
-		if (!corrDescriptor) {
-			return;
-		}
-
-		this.service
-			.persistirKpi(corrDescriptor, kpi)
-			.pipe(take(1))
-			.subscribe({
-				next: (response) => {
-					this.resetearFuncionesTabsDirty();
-					if (response?.Result && response.Data) {
-						const saved = this.extraerKpiGuardado(response);
-						kpi.NOMBRE_FRECUENCIA = saved.NOMBRE_FRECUENCIA ?? kpi.NOMBRE_FRECUENCIA;
-					} else if (!response?.Result) {
-						this.notifyApiResponse(response);
-					}
-				},
-				error: (error) => {
-					this.resetearFuncionesTabsDirty();
-					this.notifyApiError(error);
-				},
-			});
-	}
-
-	private programarPersistirFuncion(funcion: ScDescriptorFuncion, tipoFuncion: string): void {
-		if (!funcion?.CORR_FUNCION || funcion.CORR_FUNCION <= 0) {
-			return;
-		}
-
-		this.marcarFuncionesTabsDirty();
-		const key = `${tipoFuncion}-${funcion.CORR_FUNCION}`;
-		const prev = this.funcionPersistTimers.get(key);
-		if (prev) {
-			clearTimeout(prev);
-		}
-
-		this.funcionPersistTimers.set(
-			key,
-			setTimeout(() => {
-				this.funcionPersistTimers.delete(key);
-				this.persistirFuncionEnLinea(funcion, tipoFuncion);
-			}, 500)
-		);
-	}
-
-	private persistirFuncionEnLinea(funcion: ScDescriptorFuncion, tipoFuncion: string): void {
-		const corrDescriptor = this.obtenerCorrDescriptor();
-		if (!corrDescriptor) {
-			return;
-		}
-
-		this.service
-			.persistirFuncion(corrDescriptor, funcion, tipoFuncion)
-			.pipe(take(1))
-			.subscribe({
-				next: (response) => {
-					this.resetearFuncionesTabsDirty();
-					if (!response?.Result) {
-						this.notifyApiResponse(response);
-					}
-				},
-				error: (error) => {
-					this.resetearFuncionesTabsDirty();
-					this.notifyApiError(error);
-				},
-			});
 	}
 
 	private actualizarPuestosPorUnidad(corrUnidad: number | null | undefined): void {

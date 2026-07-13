@@ -10,7 +10,7 @@ namespace SGUEES.Services
         Task<CResult> GetDistinctValuesAsync(SC_COMPETENCIAS_TECNICASParam xWhere);
         Task<CResult> GetAsync(SC_COMPETENCIAS_TECNICASParam xWhere);
         Task<CResult> GetPadresAsync(SC_COMPETENCIAS_TECNICASParam xWhere);
-        Task<CResult> GetCatalogoNivel2DescriptorAsync(SC_COMPETENCIAS_TECNICASParam xWhere);
+        Task<CResult> GetCatalogoNivel3DescriptorAsync(SC_COMPETENCIAS_TECNICASParam xWhere);
         Task<CResult> GetNextCodigoAsync(SC_COMPETENCIAS_TECNICASParam xWhere);
         Task<CResult> CreateAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> UpdateAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION);

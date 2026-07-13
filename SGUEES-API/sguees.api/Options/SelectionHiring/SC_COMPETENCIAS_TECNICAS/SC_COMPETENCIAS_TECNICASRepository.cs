@@ -1123,7 +1123,7 @@ namespace SGUEES.Repositories
             }
         }
 
-        public async Task<List<SC_COMPETENCIAS_TECNICASView>> GetCatalogoNivel2DescriptorAsync(int corrEmpresa)
+        public async Task<List<SC_COMPETENCIAS_TECNICASView>> GetCatalogoNivel3DescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)
             {
@@ -1139,22 +1139,31 @@ namespace SGUEES.Repositories
                     H.DESCRIPCION,
                     H.NIVEL,
                     H.ESTADO_COMPETENCIAS_TECNICAS,
-                    P.CODIGO_COMPETENCIAS_TECNICAS AS CODIGO_PADRE,
-                    P.NOMBRE_COMPETENCIAS_TECNICAS AS NOMBRE_PADRE,
-                    P.DESCRIPCION AS DESCRIPCION_PADRE,
-                    P.NIVEL AS NIVEL_PADRE
+                    N2.CODIGO_COMPETENCIAS_TECNICAS AS CODIGO_PADRE,
+                    N2.NOMBRE_COMPETENCIAS_TECNICAS AS NOMBRE_PADRE,
+                    N2.DESCRIPCION AS DESCRIPCION_PADRE,
+                    N2.NIVEL AS NIVEL_PADRE,
+                    N1.CODIGO_COMPETENCIAS_TECNICAS AS CODIGO_NIV1,
+                    N1.NOMBRE_COMPETENCIAS_TECNICAS AS NOMBRE_NIV1
                 FROM V_SC_COMPETENCIAS_TECNICAS H
-                INNER JOIN V_SC_COMPETENCIAS_TECNICAS P
-                    ON P.CORR_EMPRESA = H.CORR_EMPRESA
-                   AND P.CORR_COMPETENCIAS_TECNICAS = H.CORR_COMPETENCIAS_TECNICAS_PADRE
+                INNER JOIN V_SC_COMPETENCIAS_TECNICAS N2
+                    ON N2.CORR_EMPRESA = H.CORR_EMPRESA
+                   AND N2.CORR_COMPETENCIAS_TECNICAS = H.CORR_COMPETENCIAS_TECNICAS_PADRE
+                INNER JOIN V_SC_COMPETENCIAS_TECNICAS N1
+                    ON N1.CORR_EMPRESA = N2.CORR_EMPRESA
+                   AND N1.CORR_COMPETENCIAS_TECNICAS = N2.CORR_COMPETENCIAS_TECNICAS_PADRE
                 WHERE H.CORR_EMPRESA = @CORR_EMPRESA
-                  AND UPPER(LTRIM(RTRIM(H.NIVEL))) = 'NIV2'
-                  AND UPPER(LTRIM(RTRIM(P.NIVEL))) = 'NIV1'
+                  AND UPPER(LTRIM(RTRIM(H.NIVEL))) = 'NIV3'
+                  AND UPPER(LTRIM(RTRIM(N2.NIVEL))) = 'NIV2'
+                  AND UPPER(LTRIM(RTRIM(N1.NIVEL))) = 'NIV1'
                   AND ISNULL(H.ESTADO_COMPETENCIAS_TECNICAS, 1) = 1
-                  AND ISNULL(P.ESTADO_COMPETENCIAS_TECNICAS, 1) = 1
+                  AND ISNULL(N2.ESTADO_COMPETENCIAS_TECNICAS, 1) = 1
+                  AND ISNULL(N1.ESTADO_COMPETENCIAS_TECNICAS, 1) = 1
                 ORDER BY
-                    P.CODIGO_COMPETENCIAS_TECNICAS,
-                    P.CORR_COMPETENCIAS_TECNICAS,
+                    N1.CODIGO_COMPETENCIAS_TECNICAS,
+                    N1.CORR_COMPETENCIAS_TECNICAS,
+                    N2.CODIGO_COMPETENCIAS_TECNICAS,
+                    N2.CORR_COMPETENCIAS_TECNICAS,
                     H.CODIGO_COMPETENCIAS_TECNICAS,
                     H.CORR_COMPETENCIAS_TECNICAS";
 

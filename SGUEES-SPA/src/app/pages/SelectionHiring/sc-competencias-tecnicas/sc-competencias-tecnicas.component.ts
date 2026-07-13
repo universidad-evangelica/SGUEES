@@ -11,6 +11,7 @@ import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { AuthService } from 'src/app/shared/services/auth.service';
+import { environment } from 'src/environments/environment';
 import {
 	cloneRemoteGridFilters,
 	ESTADO_ACTIVO_INACTIVO_LABELS,
@@ -55,8 +56,20 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
 	readonly pageSizes = [5, 10, 25, 50, 100];
+	readonly UpdateType = UpdateType;
 	private readonly maintenanceSubtitulo = 'Catalogo de Competencias Tecnicas';
 	padres: ScCompetenciaPadreOption[] = [];
+	mNIVEL: Array<{ Key: any; Value: string }> = [];
+	nivelLookupColumns = [
+		{ dataField: 'Key', caption: 'Codigo', width: 90 },
+		{ dataField: 'Value', caption: 'Nivel', width: 140 },
+	];
+	padreLookupColumns = [
+		{ dataField: 'CODIGO_COMPETENCIAS_TECNICAS', caption: 'Codigo', width: 120 },
+		{ dataField: 'NOMBRE_COMPETENCIAS_TECNICAS', caption: 'Nombre', width: 200 },
+		{ dataField: 'DESCRIPCION', caption: 'Definicion', width: 280 },
+		{ dataField: 'NIVEL', caption: 'Nivel', width: 80 },
+	];
 	registroSeleccionadoInactivo = false;
 
 	constructor(
@@ -73,6 +86,9 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.onDesactivarClick = this.onDesactivarClick.bind(this);
 		this.onNivelChanged = this.onNivelChanged.bind(this);
 		this.onPadreChanged = this.onPadreChanged.bind(this);
+		this.selectedLookUpNIVEL = this.selectedLookUpNIVEL.bind(this);
+		this.selectedLookUpCORR_COMPETENCIAS_TECNICAS_PADRE =
+			this.selectedLookUpCORR_COMPETENCIAS_TECNICAS_PADRE.bind(this);
 		this.columns = this.service.getColumns(this.onEditClick, this.onEliminarClick, this.onActivarClick, this.onDesactivarClick, this.permiteEdit, this.permiteDele);
 		this.summary = this.service.getSummary();
 		this.refreshFormItems();
@@ -80,7 +96,35 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
+		this.getNIVEL();
 		this.configurarDataSource();
+	}
+
+	getNIVEL(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_COMPETENCIAS_TECNICAS',
+				'SC_LISTA',
+				'GetNIVEL',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.mNIVEL = response.Data;
+					} else {
+						this.mNIVEL = [];
+					}
+					this.refreshFormItems();
+				},
+				error: (error: any) => {
+					this.mNIVEL = [];
+					this.notifyFx(error, NotifyType.Error);
+					this.refreshFormItems();
+				},
+			});
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -309,8 +353,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
-	onNivelChanged(e: any): void {
-		const nivel = `${e?.value ?? this.model.NIVEL ?? SC_COMPETENCIA_NIVEL.UNO}`;
+	onNivelChanged(value: string | null): void {
+		const nivel = `${value ?? this.model.NIVEL ?? SC_COMPETENCIA_NIVEL.UNO}`;
 		this.model.NIVEL = nivel;
 		this.model.CORR_COMPETENCIAS_TECNICAS_PADRE = null;
 		this.model.CODIGO_COMPETENCIAS_TECNICAS = '';
@@ -328,8 +372,10 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		}
 	}
 
-	onPadreChanged(e: any): void {
-		const corrPadre = e?.value ?? this.model.CORR_COMPETENCIAS_TECNICAS_PADRE;
+	onPadreChanged(value: number | null): void {
+		const corrPadre = value != null && Number(value) > 0 ? Number(value) : null;
+		this.model.CORR_COMPETENCIAS_TECNICAS_PADRE = corrPadre;
+
 		if (!corrPadre) {
 			this.model.CODIGO_PREFIJO = '';
 			this.model.CODIGO_COMPETENCIAS_TECNICAS = '';
@@ -338,7 +384,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 			return;
 		}
 
-		const padre = this.padres.find((item) => item.CORR_COMPETENCIAS_TECNICAS === corrPadre);
+		const padre = this.padres.find((item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === corrPadre);
 		if (!padre) {
 			return;
 		}
@@ -438,11 +484,20 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
+	selectedLookUpNIVEL(vRow: any): string {
+		return vRow[0].Key;
+	}
+
+	selectedLookUpCORR_COMPETENCIAS_TECNICAS_PADRE(vRow: any): number {
+		return vRow[0].CORR_COMPETENCIAS_TECNICAS;
+	}
+
 	private refreshFormItems(): void {
 		this.items = this.service.getItems({
 			nivel: `${this.model?.NIVEL ?? SC_COMPETENCIA_NIVEL.UNO}`,
 			isAdd: this.banderaMtto === UpdateType.Add,
 			padres: this.padres,
+			niveles: this.mNIVEL,
 			registroSeleccionadoInactivo: this.registroSeleccionadoInactivo,
 			onNivelChanged: this.onNivelChanged,
 			onPadreChanged: this.onPadreChanged,
@@ -455,13 +510,26 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 
 	private cargarPadres(nivelPadre: string): void {
 		const incluirInactivos = this.banderaMtto !== UpdateType.Add;
-		this.service
-			.getPadres(nivelPadre, incluirInactivos)
+		const xWhere: Array<{ Parameter: string; Value: any }> = [
+			{ Parameter: 'NIVEL_PADRE', Value: nivelPadre },
+		];
+		if (incluirInactivos) {
+			xWhere.push({ Parameter: 'OPCION_CONSULTA', Value: 1 });
+		}
+
+		this.appInfoService
+			.getLookUp(
+				'SC_COMPETENCIAS_TECNICAS',
+				'SC_COMPETENCIAS_TECNICAS',
+				'GetCORR_COMPETENCIAS_TECNICAS_PADRE',
+				xWhere,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
-						this.padres = response.Data ?? [];
+						this.padres = (response.Data ?? []).map((item: any) => this.mapPadreLookupItem(item));
 						this.agregarPadreActualSiNoExiste(() => this.refreshFormItems());
 					} else {
 						this.notifyFx(response.ErrorMessage || 'No se pudieron cargar los registros padre.', NotifyType.Error);
@@ -471,6 +539,25 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 					this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
 				},
 			});
+	}
+
+	private mapPadreLookupItem(item: any): ScCompetenciaPadreOption {
+		const codigo = (item.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim();
+		const nombre = (item.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim();
+		const descripcion = (item.DESCRIPCION ?? '').trim();
+		const nombreDisplay =
+			(item.NOMBRE_DISPLAY ?? '').trim() ||
+			[codigo, descripcion || nombre].filter((parte) => !!parte).join(' - ');
+
+		return {
+			CORR_COMPETENCIAS_TECNICAS: Number(item.CORR_COMPETENCIAS_TECNICAS),
+			CODIGO_COMPETENCIAS_TECNICAS: codigo,
+			NOMBRE_COMPETENCIAS_TECNICAS: nombre,
+			DESCRIPCION: descripcion,
+			NOMBRE_DISPLAY: nombreDisplay || codigo || '(Sin nombre)',
+			NIVEL: item.NIVEL ?? '',
+			ESTADO_COMPETENCIAS_TECNICAS: item.ESTADO_COMPETENCIAS_TECNICAS,
+		};
 	}
 
 	private agregarPadreActualSiNoExiste(onDone: () => void): void {
@@ -499,13 +586,15 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 				next: (response: any) => {
 					const padre = response.Result && Array.isArray(response.Data) ? response.Data[0] : null;
 					if (padreIndex >= 0) {
-						this.padres[padreIndex] = {
+						this.padres[padreIndex] = this.mapPadreLookupItem({
 							...this.padres[padreIndex],
-							CODIGO_COMPETENCIAS_TECNICAS: padre?.CODIGO_COMPETENCIAS_TECNICAS || this.padres[padreIndex].CODIGO_COMPETENCIAS_TECNICAS,
-							NOMBRE_COMPETENCIAS_TECNICAS: padre?.NOMBRE_COMPETENCIAS_TECNICAS || this.padres[padreIndex].NOMBRE_COMPETENCIAS_TECNICAS,
+							CODIGO_COMPETENCIAS_TECNICAS:
+								padre?.CODIGO_COMPETENCIAS_TECNICAS || this.padres[padreIndex].CODIGO_COMPETENCIAS_TECNICAS,
+							NOMBRE_COMPETENCIAS_TECNICAS:
+								padre?.NOMBRE_COMPETENCIAS_TECNICAS || this.padres[padreIndex].NOMBRE_COMPETENCIAS_TECNICAS,
 							DESCRIPCION: padre?.DESCRIPCION || this.padres[padreIndex].DESCRIPCION,
 							ESTADO_COMPETENCIAS_TECNICAS: padre?.ESTADO_COMPETENCIAS_TECNICAS,
-						};
+						});
 						this.actualizarEstadoRegistroSeleccionado();
 					} else {
 						this.agregarPadreActual(padre);
@@ -520,16 +609,16 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 	}
 
 	private agregarPadreActual(padre?: ScCompetenciasTecnicas): void {
-		this.padres = [
-			{
-				CORR_COMPETENCIAS_TECNICAS: this.model.CORR_COMPETENCIAS_TECNICAS_PADRE,
-				CODIGO_COMPETENCIAS_TECNICAS: padre?.CODIGO_COMPETENCIAS_TECNICAS || this.model.CODIGO_PADRE || this.model.CODIGO_PREFIJO || 'Padre',
-				NOMBRE_COMPETENCIAS_TECNICAS: padre?.NOMBRE_COMPETENCIAS_TECNICAS || this.model.NOMBRE_PADRE || '',
-				DESCRIPCION: padre?.DESCRIPCION || this.model.DESCRIPCION_PADRE || this.model.NOMBRE_PADRE || this.model.CODIGO_PADRE || '',
-				ESTADO_COMPETENCIAS_TECNICAS: padre?.ESTADO_COMPETENCIAS_TECNICAS ?? false,
-			},
-			...this.padres,
-		];
+		const item = this.mapPadreLookupItem({
+			CORR_COMPETENCIAS_TECNICAS: this.model.CORR_COMPETENCIAS_TECNICAS_PADRE,
+			CODIGO_COMPETENCIAS_TECNICAS:
+				padre?.CODIGO_COMPETENCIAS_TECNICAS || this.model.CODIGO_PADRE || this.model.CODIGO_PREFIJO || 'Padre',
+			NOMBRE_COMPETENCIAS_TECNICAS: padre?.NOMBRE_COMPETENCIAS_TECNICAS || this.model.NOMBRE_PADRE || '',
+			DESCRIPCION:
+				padre?.DESCRIPCION || this.model.DESCRIPCION_PADRE || this.model.NOMBRE_PADRE || this.model.CODIGO_PADRE || '',
+			ESTADO_COMPETENCIAS_TECNICAS: padre?.ESTADO_COMPETENCIAS_TECNICAS ?? false,
+		});
+		this.padres = [item, ...this.padres];
 		this.actualizarEstadoRegistroSeleccionado();
 	}
 
