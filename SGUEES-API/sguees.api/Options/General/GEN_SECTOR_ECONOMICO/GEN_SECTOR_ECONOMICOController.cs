@@ -62,6 +62,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/gen-sector-economico|U")]
 		public async Task<IActionResult> Put(GEN_SECTOR_ECONOMICOTable Data)
 		{
+			this.ApplyQueryKeys(Data, nameof(GEN_SECTOR_ECONOMICOTable.CORR_SECTOR_ECONOMICO));
 			Data.USUARIO_CREA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
 			Data.FECHA_CREA = DateTime.Now;
 			Data.ESTACION_CREA = ClientInfoHelper.GetClientStation(HttpContext);

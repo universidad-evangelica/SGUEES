@@ -88,9 +88,29 @@ export class CData {
 	/**
 	 * Estándar mtto PUT: la PK suele ir en query (xWhere) y a veces llega en 0 en el body.
 	 * Completa el body con los valores de xWhere cuando el campo está vacío o es 0.
+	 * FormData no se clona (mantener multipart para imágenes).
 	 */
 	private mergePutQueryIntoBody(body: any, xWhere: IParam[] | null): any {
 		if (!body || !xWhere?.length) {
+			return body;
+		}
+
+		if (typeof FormData !== 'undefined' && body instanceof FormData) {
+			for (const param of xWhere) {
+				const key = param.Parameter;
+				if (!key) {
+					continue;
+				}
+				const queryValue = param.Value;
+				if (queryValue === null || queryValue === undefined || queryValue === '') {
+					continue;
+				}
+				const current = body.get(key);
+				const currentNumber = current == null || current === '' ? 0 : Number(current);
+				if (current == null || current === '' || (Number.isFinite(currentNumber) && currentNumber <= 0)) {
+					body.set(key, String(queryValue));
+				}
+			}
 			return body;
 		}
 

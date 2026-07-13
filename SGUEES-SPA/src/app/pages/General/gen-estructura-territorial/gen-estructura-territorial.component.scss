@@ -1,10 +1,10 @@
 .territorial-form-card {
-	margin-top: 38px;
+	margin-top: var(--sguees-space-4, 16px);
 }
 
 @media (max-width: 991.98px) {
 	.territorial-form-card {
-		margin-top: 16px;
+		margin-top: var(--sguees-space-3, 12px);
 	}
 }
 
@@ -57,42 +57,10 @@
 			flex: 1 1 auto;
 		}
 	}
-
-	.territorial-form-card {
-		margin-top: 12px;
-	}
-
-	.territorial-form-toolbar__actions {
-		width: 100%;
-	}
-
-	.territorial-form-toolbar__actions .dx-button {
-		flex: 1 1 auto;
-		min-width: 0;
-	}
-}
-
-.territorial-form-toolbar {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-end;
-	gap: 16px;
-	margin-bottom: 20px;
-}
-
-.territorial-form-toolbar__actions {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 10px;
 }
 
 .territorial-cascade {
 	margin-top: 24px;
-}
-
-.territorial-cascade--paused {
-	pointer-events: none;
-	opacity: 0.72;
 }
 
 .territorial-panels {

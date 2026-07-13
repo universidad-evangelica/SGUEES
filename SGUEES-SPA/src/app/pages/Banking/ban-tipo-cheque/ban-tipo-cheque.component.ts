@@ -4,7 +4,6 @@ import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
-import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { BanTipoCheque } from './models/ban-tipo-cheque';
@@ -13,19 +12,15 @@ import { BanTipoChequeService } from './ban-tipo-cheque.service';
 @Component({
 	selector: 'app-ban-tipo-cheque',
 	templateUrl: './ban-tipo-cheque.component.html',
-	styleUrls: ['./ban-tipo-cheque.component.scss'],
 })
 export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
-	constructor(
-		public override appInfoService: AppInfoService,
-		public override router: ActivatedRoute,
-		private service: BanTipoChequeService
-	) {
-		super(appInfoService, router);
-		this.columns = this.service.getColumns();
-		this.summary = this.service.getSummary();
-		this.items = this.service.getItems();
-	}
+	protected override etiquetaRegistro = 'el tipo de cheque';
+	protected override requiereEmpresaSesion = true;
+	protected override mttoGridKeyExpr = 'CORR_TIPO_CHEQUE';
+	protected override mttoCampoEstado = 'ESTADO_TIPO_CHEQUE';
+	protected override mttoEstadoDescribeField = 'NOMBRE_TIPO_CHEQUE';
+
+	private readonly maintenanceSubtitulo = 'Mantenimiento de Tipos de Cheque';
 
 	//#region <Declarando Variales>
 	mCLASE_TIPO_CHEQUE: any;
@@ -37,8 +32,20 @@ export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
 	readOnly = false;
 	// #endregion
 
+	constructor(
+		public override appInfoService: AppInfoService,
+		public override router: ActivatedRoute,
+		private service: BanTipoChequeService
+	) {
+		super(appInfoService, router);
+		this.columns = this.service.getColumns();
+		this.summary = this.service.getSummary();
+		this.items = this.service.getItems();
+	}
+
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
+		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
@@ -46,6 +53,13 @@ export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
 
 	inicializaOpciones() {}
 	// #endregion
+
+	override AsignaStatus(xEstado: UpdateType): void {
+		super.AsignaStatus(xEstado);
+		if (xEstado === UpdateType.Browse) {
+			this.subTituloVentana = this.maintenanceSubtitulo;
+		}
+	}
 
 	//#region <Manejo de Combos>
 	llenaComboBox() {
@@ -64,7 +78,7 @@ export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -80,7 +94,7 @@ export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -88,11 +102,8 @@ export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
 
 	//#region <Metodos Mtto>
 	fillParam(xCORR_TIPO_CHEQUE?: number): any {
-		if (xCORR_TIPO_CHEQUE == undefined) {
-			xCORR_TIPO_CHEQUE = 0;
-		}
 		return {
-			CORR_TIPO_CHEQUE: xCORR_TIPO_CHEQUE,
+			CORR_TIPO_CHEQUE: xCORR_TIPO_CHEQUE ?? 0,
 		};
 	}
 
@@ -105,110 +116,54 @@ export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
 				CUENTA_CONTABLE: xModel.CUENTA_CONTABLE,
 				CLASE_TIPO_CHEQUE: xModel.CLASE_TIPO_CHEQUE,
 				CONTABILIZAR_LUEGO_DE_IMPRIMIR: xModel.CONTABILIZAR_LUEGO_DE_IMPRIMIR,
-			};
-		} else {
-			return {
-				CORR_EMPRESA: 1,
-				CORR_TIPO_CHEQUE: 0,
-				NOMBRE_TIPO_CHEQUE: '',
-				CUENTA_CONTABLE: '',
-				CLASE_TIPO_CHEQUE: '',
-				CONTABILIZAR_LUEGO_DE_IMPRIMIR: true,
+				ESTADO_TIPO_CHEQUE: xModel.ESTADO_TIPO_CHEQUE,
 			};
 		}
+
+		return {
+			CORR_EMPRESA: 1,
+			CORR_TIPO_CHEQUE: 0,
+			NOMBRE_TIPO_CHEQUE: '',
+			CUENTA_CONTABLE: '',
+			CLASE_TIPO_CHEQUE: '',
+			CONTABILIZAR_LUEGO_DE_IMPRIMIR: true,
+			ESTADO_TIPO_CHEQUE: true,
+		};
 	}
 
-	consultar() {
-		this.service
-			.getAll(this.fillParam())
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.models = response.Data;
-					}
-				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+	consultar(): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+		});
+	}
+
+	override nuevo(): void {
+		if (!this.asegurarEmpresaSesion()) {
+			return;
+		}
+		super.nuevo();
 	}
 
 	guardar(): void {
-		if (!this.service.esValido(this.model, this.notifyFx)) {
-			return;
-		}
-
-		this.loadingVisible = true;
-		if (this.banderaMtto === UpdateType.Add) {
-			this.service
-				.insert(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.models.push(response.Data);
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro creado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		} else if (this.banderaMtto === UpdateType.Update) {
-			this.service
-				.update(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							const vIndex = this.models.findIndex((item: any) => item.CORR_TIPO_CHEQUE === response.Data.CORR_TIPO_CHEQUE);
-							this.models[vIndex] = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		}
+		this.guardarMtto({
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
+		});
 	}
 
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_TIPO_CHEQUE === this.modelUpdate.CORR_TIPO_CHEQUE);
 	}
 
-	rowRemoving(e: any) {
-		this.service
-			.delete(this.fillParam(e.data.CORR_TIPO_CHEQUE))
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-						e.component.refresh();
-					} else {
-						e.cancel = true;
-						this.notifyFx(response.ErrorMessage, NotifyType.Error);
-					}
-				},
-				error: (error: any) => {
-					e.cancel = true;
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+	rowRemoving(e: any): void {
+		this.rowRemovingMtto(e, {
+			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_TIPO_CHEQUE)),
+		});
+	}
+
+	activar_inactivar(): void {
+		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
 	override bloquear(): void {
@@ -217,6 +172,7 @@ export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
 		this.dataForm.instance.getEditor('CUENTA_CONTABLE')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CLASE_TIPO_CHEQUE')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CONTABILIZAR_LUEGO_DE_IMPRIMIR')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ESTADO_TIPO_CHEQUE')?.option('readOnly', true);
 		this.readOnly = true;
 	}
 
@@ -224,6 +180,7 @@ export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
 		this.readOnly = false;
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_TIPO_CHEQUE')?.option('readOnly', true);
+			this.dataForm.instance.getEditor('ESTADO_TIPO_CHEQUE')?.option('readOnly', false);
 		});
 	}
 

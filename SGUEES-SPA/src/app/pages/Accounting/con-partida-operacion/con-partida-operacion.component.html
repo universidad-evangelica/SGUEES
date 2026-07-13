@@ -83,22 +83,32 @@
 		<dxo-toolbar>
 			<dxi-item location="before">
 				<div *dxTemplate>
-					<dx-button icon="selectall" text="Todos" type="success" stylingMode="outlined" (onClick)="selectTodos()" width="110"></dx-button>
+					<dx-button icon="selectall" text="Todos" type="success" stylingMode="outlined" (onClick)="selectTodos()" width="150"></dx-button>
 				</div>
 			</dxi-item>
 			<dxi-item location="before">
 				<div *dxTemplate>
-					<dx-button text="Ninguno" icon="unselectall" type="danger" stylingMode="outlined" (onClick)="selectNinguno()" width="115"></dx-button>
+					<dx-button text="Ninguno" icon="unselectall" type="danger" stylingMode="outlined" (onClick)="selectNinguno()" width="150"></dx-button>
 				</div>
 			</dxi-item>
-			<dxi-item name="searchPanel" location="after"></dxi-item>
 		</dxo-toolbar>
 		<dxo-editing mode="cell" [allowUpdating]="true" startEditAction="click" [useIcons]="true"></dxo-editing>
 		<dxo-search-panel [visible]="true" [width]="240"></dxo-search-panel>
+		<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
 		<dxo-scrolling mode="virtual" useNative="true"></dxo-scrolling>
 		<dxo-paging [enabled]="false"></dxo-paging>
+		<dxo-column-fixing [enabled]="true"></dxo-column-fixing>
 
-		<dxi-column type="buttons" caption="Opciones" [width]="90" [fixed]="true" [allowResizing]="false" [allowEditing]="false">
+		<dxi-column
+			type="buttons"
+			caption="Impr."
+			[width]="70"
+			[fixed]="true"
+			fixedPosition="left"
+			[visibleIndex]="0"
+			[allowResizing]="false"
+			[allowEditing]="false"
+		>
 			<dxi-button
 				hint="Imprimir partida"
 				icon="print"
@@ -106,7 +116,16 @@
 				[onClick]="imprimirPartidaDesdeFila"
 			></dxi-button>
 		</dxi-column>
-		<dxi-column dataField="SELECCION" caption="Sel." [dataType]="'boolean'" [width]="70" [fixed]="true" [allowEditing]="true"></dxi-column>
+		<dxi-column
+			dataField="SELECCION"
+			caption="Sel."
+			[dataType]="'boolean'"
+			[width]="70"
+			[fixed]="true"
+			fixedPosition="left"
+			[visibleIndex]="1"
+			[allowEditing]="true"
+		></dxi-column>
 		<dxi-column dataField="ANIO_PERIODO" caption="Año" [width]="80" alignment="center" [allowEditing]="false"></dxi-column>
 		<dxi-column dataField="MES_PERIODO" caption="Mes" [width]="80" alignment="center" [allowEditing]="false"></dxi-column>
 		<dxi-column dataField="NOMBRE_CORTO_CLASE" caption="Clase" [width]="120" [allowEditing]="false"></dxi-column>

@@ -86,8 +86,13 @@ guardar(): void {
 
 Para catálogos grandes o con columnas de auditoría. Ver [plantillas/mtto-a-p-paginado.md](./plantillas/mtto-a-p-paginado.md).
 
+**Híbrido (recomendado):** filas visibles fijas (`mttoPageSize` = 15); el selector del **pager inferior** elige el lote API (`mttoApiPageSize`: 50 / 100 / Todos).
+
 ```typescript
 protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
+protected override mttoHybridPaging = true;
+protected override mttoPageSize = 15;
+protected override mttoApiPageSize = 50;
 protected override mttoGridKeyExpr = 'CORR_XXX';
 
 @ViewChild(DataGridMttoComponent) dataGrid!: DataGridMttoComponent;
@@ -95,7 +100,7 @@ protected override getMttoDataGrid() { return this.dataGrid ?? null; }
 ```
 
 - `filtering: false` → filter row **no** llama al API.
-- **Pager "Todos":** grid `resolveActivePageSize` (`'all'` → `0`) + `(pageSizeChange)` → `syncMttoPagedStorePagerSize` → `resolveMttoPagedLoadParams` con `lastPageAll` y `activePageSize` → API `PAGE_SIZE=0`.
+- **Lote:** selector del pager → `(apiPageSizeChange)` → `syncMttoHybridApiPageSize` → `loadMttoHybridDisplayPage` (caché por lote; cruce de lotes; `PAGE_SIZE=0` = Todos).
 - `guardarMtto` / `rowRemovingMtto` → padre parchea `CustomStore`, sin reload.
 
 ---
@@ -276,6 +281,7 @@ ngOnInit(): void {
 - `guardarEncabezadoParaDetalle()` — inserta encabezado si no hay PK y luego guarda línea.
 - `detalleRowInserting` / `Updating` / `Removing` — `e.cancel = Promise`.
 - `readOnly` condicional por estado (ej. `ESTADO !== 'DI'`).
+- **Barra:** patrón proceso Compras (`com-documento`) — ver [plantillas/mtto-barra-patron.md](./plantillas/mtto-barra-patron.md). Grid principal **sin** `showAdd` / `showRefresh`.
 
 ### Arquitectura padre / detalle (SPA vs API)
 
@@ -315,6 +321,20 @@ con-partida-deta/  (solo datos, sin UI)
 | `app-data-grid-mtto` en listado principal | `dx-data-grid` suelto en listado principal |
 | `app-data-lookup` en combos | `dx-select-box` con `service.getAll()` |
 | Sin `columnAutoWidth` en grid principal | `[columnAutoWidth]="true"` en grid principal |
+
+### Barra mtto — patrón Compras (obligatorio)
+
+**Plantilla:** [plantillas/mtto-barra-patron.md](./plantillas/mtto-barra-patron.md)  
+Un solo componente (`app-barra-data-mtto`). No inventar otra barra solo para el título ni botones de negocio en el grid.
+
+| Tipo | Referencia | Barra browse | Nuevo / Actualizar |
+|------|------------|--------------|--------------------|
+| **Proceso / Tipo C / fechas** | `com-documento`, `con-partida` | Completa: `showDates`, `(consultar)`, `btn1`–`btnN` + Width/Icon/Mode/Click en **HTML** | En la **barra**. Grid **sin** `showAdd` / `showRefresh` |
+| **Catálogo A+ / A+P** | `com-banco`, `gen-banco` | Título (+ subtítulo) | En el **grid** (`showAdd` / `showRefresh`) |
+
+- **TS:** solo textos vía `refrescarBotones()` (`''` = oculto). Icono, ancho y click **no** van en arrays del componente.
+- **Prohibido:** `toolbarButtons`, fechas o botones de proceso en `app-data-grid-mtto`.
+- Franjas de negocio extra (ej. Procesos Contables): proyectar en el toolbar del grid con `[toolbarBeforeTemplate]` + `<ng-template>` en el HTML del hijo — **sin** arrays de botones en TS ni una tercera card.
 
 ### Fuera de alcance v1.1 (grid padre)
 
@@ -663,6 +683,7 @@ El revisor debe rechazar si faltan ítems obligatorios del tipo A, B o C aplicab
 | **Prompt crear mtto** | `DOCS/PROMPT-MTTO.md` |
 | Mtto A+ | `plantillas/mtto-a-plus.md` + `General/gen-banco` |
 | Mtto A+P API | [ESTANDAR-EFRAMEWORK-PAGING.md](./ESTANDAR-EFRAMEWORK-PAGING.md) |
+| Barra / toolbar | `plantillas/mtto-barra-patron.md` — proceso Compras vs catálogo |
 | Estado catálogo (bit) | `plantillas/mtto-a-plus-estado-catalogo.md` |
 | Estado transaccional | `plantillas/mtto-estado-transaccional.md` |
 | Mtto + lookups | `Accounting/con-centro-costo` |
@@ -683,4 +704,4 @@ El revisor debe rechazar si faltan ítems obligatorios del tipo A, B o C aplicab
 
 ---
 
-*Última actualización: julio 2026 — STI / UEES — v1.2 (A+, A+P, CRUD HTTP, auditoría grid, plantillas)*
+*Última actualización: julio 2026 — STI / UEES — v1.3 (barra mtto patrón Compras, A+, A+P, CRUD HTTP, auditoría grid)*

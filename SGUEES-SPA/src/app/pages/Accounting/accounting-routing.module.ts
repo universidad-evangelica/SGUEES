@@ -48,17 +48,24 @@ import { ConPartidaModeloComponent } from './con-partida-modelo/con-partida-mode
 
 import { ConPartidaModeloSeleccionComponent } from './con-partida-modelo-seleccion/con-partida-modelo-seleccion.component';
 
-import { ConReporteComponent } from './con-reporte/con-reporte.component';
+import { ConReporteLibroDiarioAuxiliarComponent } from './con-reporte/libro-diario-auxiliar/con-reporte-libro-diario-auxiliar.component';
+import { ConReporteLibroDiarioAuxiliarMesComponent } from './con-reporte/libro-diario-auxiliar-mes/con-reporte-libro-diario-auxiliar-mes.component';
+import { ConReporteLibroDiarioMayorComponent } from './con-reporte/libro-diario-mayor/con-reporte-libro-diario-mayor.component';
+import { ConReporteBalanceComprobacionComponent } from './con-reporte/balance-comprobacion/con-reporte-balance-comprobacion.component';
+import { ConReporteBalanceComprobacionMesComponent } from './con-reporte/balance-comprobacion-mes/con-reporte-balance-comprobacion-mes.component';
+import { ConReporteBalanceGeneralComponent } from './con-reporte/balance-general/con-reporte-balance-general.component';
+import { ConReporteEstadoResultadosComponent } from './con-reporte/estado-resultados/con-reporte-estado-resultados.component';
+import { ConReporteBalanceGeneralVerticalComponent } from './con-reporte/balance-general-vertical/con-reporte-balance-general-vertical.component';
 
 const reporteRoutes = [
-	{ path: 'con-reporte-libro-diario-auxiliar', codigo: 'LIBRO_DIARIO_AUXILIAR', titulo: 'Libro Diario Auxiliar' },
-	{ path: 'con-reporte-libro-diario-auxiliar-mes', codigo: 'LIBRO_DIARIO_AUXILIAR_MES', titulo: 'Libro Diario Auxiliar - Saldo Mes' },
-	{ path: 'con-reporte-libro-diario-mayor', codigo: 'LIBRO_DIARIO_MAYOR', titulo: 'Libro Diario Mayor' },
-	{ path: 'con-reporte-balance-comprobacion', codigo: 'BALANCE_COMPROBACION', titulo: 'Balance de Comprobacion' },
-	{ path: 'con-reporte-balance-comprobacion-mes', codigo: 'BALANCE_COMPROBACION_MES', titulo: 'Balance de Comprobacion - Saldo Mes' },
-	{ path: 'con-reporte-balance-general', codigo: 'BALANCE_GENERAL', titulo: 'Balance General' },
-	{ path: 'con-reporte-estado-resultados', codigo: 'ESTADO_RESULTADOS', titulo: 'Estado de Resultados' },
-	{ path: 'con-reporte-balance-general-vertical', codigo: 'BALANCE_GENERAL_VERTICAL', titulo: 'Balance General Vertical' },
+	{ path: 'con-reporte-libro-diario-auxiliar', component: ConReporteLibroDiarioAuxiliarComponent, titulo: 'Libro Diario Auxiliar' },
+	{ path: 'con-reporte-libro-diario-auxiliar-mes', component: ConReporteLibroDiarioAuxiliarMesComponent, titulo: 'Libro Diario Auxiliar - Saldo Mes' },
+	{ path: 'con-reporte-libro-diario-mayor', component: ConReporteLibroDiarioMayorComponent, titulo: 'Libro Diario Mayor' },
+	{ path: 'con-reporte-balance-comprobacion', component: ConReporteBalanceComprobacionComponent, titulo: 'Balance de Comprobación' },
+	{ path: 'con-reporte-balance-comprobacion-mes', component: ConReporteBalanceComprobacionMesComponent, titulo: 'Balance de Comprobación - Saldo Mes' },
+	{ path: 'con-reporte-balance-general', component: ConReporteBalanceGeneralComponent, titulo: 'Balance General' },
+	{ path: 'con-reporte-estado-resultados', component: ConReporteEstadoResultadosComponent, titulo: 'Estado de Resultados' },
+	{ path: 'con-reporte-balance-general-vertical', component: ConReporteBalanceGeneralVerticalComponent, titulo: 'Balance General Vertical' },
 ];
 
 const routes: Routes = [
@@ -409,10 +416,9 @@ const routes: Routes = [
 
   ...reporteRoutes.map((r) => ({
     path: r.path,
-    component: ConReporteComponent,
-    data: { titulo: r.titulo, codigo: r.codigo },
+    component: r.component,
+    data: { titulo: r.titulo },
     canActivate: [ AuthGuardService ],
-    loadChildren: () => import('./con-reporte/con-reporte.module').then(m => m.ConReporteModule),
   })),
 
 ];

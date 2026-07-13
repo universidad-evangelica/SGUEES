@@ -107,6 +107,69 @@
   }
 }
 
+/* Botones heredados (barra + grid unificado): tamaño y look tipo Partidas */
+.sguees-mtto-chrome,
+.sguees-data-grid-mtto-host,
+.sguees-barra-toolbar {
+  .dx-button.dx-button-has-text {
+    min-height: var(--sguees-toolbar-height, 44px);
+    min-width: 108px;
+    padding-inline: 16px;
+    font-weight: var(--sguees-font-weight-semibold, 600);
+    border-radius: var(--sguees-radius-sm, 4px);
+  }
+
+  .dx-button.dx-button-mode-contained.dx-button-default {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #fff;
+  }
+
+  .dx-button.dx-button-mode-contained.dx-button-default .dx-icon {
+    color: #fff;
+  }
+
+  .dx-button.dx-button-mode-contained.dx-button-default.dx-state-hover,
+  .dx-button.dx-button-mode-contained.dx-button-default.dx-state-focused {
+    background-color: color-mix(in srgb, var(--accent-color) 88%, #000);
+    border-color: color-mix(in srgb, var(--accent-color) 88%, #000);
+    color: #fff;
+  }
+
+  .dx-button.dx-button-mode-outlined.dx-button-default {
+    border-width: 1.5px;
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    background-color: transparent;
+  }
+
+  .dx-button.dx-button-mode-outlined.dx-button-default .dx-icon {
+    color: var(--accent-color);
+  }
+
+  .dx-button.dx-button-mode-outlined.dx-button-default.dx-state-hover,
+  .dx-button.dx-button-mode-outlined.dx-button-default.dx-state-focused {
+    background-color: color-mix(in srgb, var(--accent-color) 12%, transparent);
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+  }
+}
+
+/* Separación entre acciones en toolbar del grid unificado */
+.sguees-data-grid-mtto-host .dx-datagrid-header-panel .dx-toolbar-before {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sguees-space-2, 8px);
+}
+
+.sguees-data-grid-mtto-host .sguees-grid-toolbar-divider {
+  height: var(--sguees-toolbar-height, 44px);
+  margin: 0 var(--sguees-space-3, 12px);
+  border-left: 1px solid var(--border-color);
+  opacity: 0.85;
+}
+
 // Fase 7B — contenedor grid premium (referencia sc-test-view__grid-wrap)
 .sguees-grid-view-wrap {
   display: flex;

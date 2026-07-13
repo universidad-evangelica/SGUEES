@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System.Linq;
+using System.Security.Claims;
 using eFramework.Core;
 using sguees.Models;
 using sguees.Services;
@@ -22,7 +23,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/ban-tipo-cheque|R")]
 		public async Task<CResult> GetAll([FromQuery] BAN_TIPO_CHEQUEParam Data)
 		{
-			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			Data.CORR_EMPRESA = GetCorrEmpresa();
 			return await _service.GetAllAsync(Data);
 		}
 
@@ -30,7 +31,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/ban-tipo-cheque|R")]
 		public async Task<CResult> Get([FromQuery] BAN_TIPO_CHEQUEParam Data)
 		{
-			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			Data.CORR_EMPRESA = GetCorrEmpresa();
 			return await _service.GetAsync(Data);
 		}
 
@@ -38,9 +39,10 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/ban-tipo-cheque|C")]
 		public async Task<IActionResult> Post(BAN_TIPO_CHEQUETable Data)
 		{
-			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			Data.ESTADO_TIPO_CHEQUE ??= true;
 
-			var resultado = await _service.CreateAsync(Data, User.Claims.ToList().SingleOrDefault(e => e.Type == System.Security.Claims.ClaimTypes.NameIdentifier).Value, ClientInfoHelper.GetClientStation(HttpContext));
+			var resultado = await _service.CreateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
 			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
 		}
 
@@ -48,9 +50,10 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/ban-tipo-cheque|U")]
 		public async Task<IActionResult> Put(BAN_TIPO_CHEQUETable Data)
 		{
-			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			this.ApplyQueryKeys(Data, nameof(BAN_TIPO_CHEQUETable.CORR_TIPO_CHEQUE));
+			Data.CORR_EMPRESA = GetCorrEmpresa();
 
-			var resultado = await _service.UpdateAsync(Data, User.Claims.ToList().SingleOrDefault(e => e.Type == System.Security.Claims.ClaimTypes.NameIdentifier).Value, ClientInfoHelper.GetClientStation(HttpContext));
+			var resultado = await _service.UpdateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
 			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
 		}
 
@@ -58,9 +61,31 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/ban-tipo-cheque|D")]
 		public async Task<IActionResult> Delete([FromQuery] BAN_TIPO_CHEQUETable Data)
 		{
-			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			Data.CORR_EMPRESA = GetCorrEmpresa();
 			var resultado = await _service.DeleteAsync(Data, "", "");
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
+		[HttpPut("ActivarInactivar")]
+		[Authorize(Policy = "/ban-tipo-cheque|U")]
+		public async Task<IActionResult> ActivarInactivar(BAN_TIPO_CHEQUETable Data)
+		{
+			this.ApplyQueryKeys(Data, nameof(BAN_TIPO_CHEQUETable.CORR_TIPO_CHEQUE));
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+
+			var resultado = await _service.ActivarInactivarAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
+		private int GetCorrEmpresa()
+		{
+			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
+			return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
+		}
+
+		private string GetUsuario()
+		{
+			return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
 		}
 	}
 }

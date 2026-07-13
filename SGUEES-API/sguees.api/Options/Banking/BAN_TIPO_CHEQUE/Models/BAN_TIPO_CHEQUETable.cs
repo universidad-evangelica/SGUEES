@@ -10,5 +10,6 @@ namespace sguees.Models
 		public string NOMBRE_TIPO_CHEQUE { get; set; }
 		public bool CONTABILIZAR_LUEGO_DE_IMPRIMIR { get; set; }
 		public string CUENTA_CONTABLE { get; set; }
+		public bool? ESTADO_TIPO_CHEQUE { get; set; } = true;
 	}
 }

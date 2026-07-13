@@ -10,6 +10,7 @@ import {
   OnInit,
   Output,
   SimpleChanges,
+  TemplateRef,
   ViewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -90,8 +91,15 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() unifiedToolbar: boolean | null = null;
   @Input() searchPlaceholder = 'Buscar...';
   @Input() remoteOperations: boolean | Record<string, unknown> = false;
-  @Input() pageSize = 5;
+  @Input() pageSize = 15;
   @Input() allowedPageSizes: (number | PagerPageSize)[] = [5, 10, 25, 50, 100];
+  /**
+   * A+P híbrido: el selector del pager (abajo) elige el lote API;
+   * las filas visibles siguen siendo `pageSize` (ej. 15).
+   */
+  @Input() hybridPaging = false;
+  @Input() apiPageSize = 50;
+  @Input() apiPageSizes: (number | 'all')[] = [50, 100, 'all'];
   @Input() repaintChangesOnly: boolean | null = null;
   @Input() searchBoxOptions: Record<string, unknown> | null = null;
   @Input() estadoSelectOptions: Record<string, unknown> | null = null;
@@ -107,8 +115,14 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() puedeCambiarEstado = true;
   /** PK a restaurar al volver a browse (ej. tras cancelar Nuevo). */
   @Input() focusedRowKey: unknown = null;
+  /**
+   * Slot HTML opcional a la izquierda del toolbar del grid (Tipo C: Procesos Contables, etc.).
+   * Definir el markup en el hijo con `<ng-template>` — no armar botones en arrays TS.
+   */
+  @Input() toolbarBeforeTemplate: TemplateRef<unknown> | null = null;
   @Output() activarInactivar = new EventEmitter<void>();
   @Output() pageSizeChange = new EventEmitter<number>();
+  @Output() apiPageSizeChange = new EventEmitter<number>();
 
   optRefresh: Record<string, unknown> = {};
   optAdd: Record<string, unknown> = {};
@@ -125,9 +139,9 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   activePageSize = 5;
   displayColumns: any[] = [];
 
-  private actionColumnsReady = false;
   private showEditActions = true;
   private showDeleteActions = true;
+  private hybridSuppressPageSizeEmit = false;
   private contextSub?: Subscription;
   private permiteAddEffective = false;
   private pageSizeRepaintTimer?: ReturnType<typeof setTimeout>;
@@ -141,6 +155,10 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     'sguees-action-no-add': 'No tiene permiso para crear registros.',
     'sguees-action-no-export': 'No tiene permiso para exportar registros.',
   };
+
+  get showPrimaryToolbarDivider(): boolean {
+    return this.effectiveShowEstadoToolbar;
+  }
 
   get isEmptyData(): boolean {
     return Array.isArray(this.models) && this.models.length === 0;
@@ -158,6 +176,17 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
 
   get resolvedTitulo(): string {
     return (this.titulo?.trim() || this.pageContext.snapshot.titulo || '').trim();
+  }
+
+  /** Título embebido: input explícito del grid, o contexto si la barra no muestra page-header. */
+  get showUnifiedTitle(): boolean {
+    if (!this.isUnifiedActive || !this.resolvedTitulo) {
+      return false;
+    }
+    if (this.titulo?.trim()) {
+      return true;
+    }
+    return this.pageContext.snapshot.embedTitleInGrid;
   }
 
   /** 8D: subtítulo explícito o contexto; si vacío no se muestra línea. */
@@ -216,7 +245,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   get effectiveShowEstadoToolbar(): boolean {
-    return this.isUnifiedActive && this.showEstadoToolbar && !!this.campoEstado;
+    return this.isBrowse && this.showEstadoToolbar && !!this.campoEstado;
   }
 
   get isRemotePagingActive(): boolean {
@@ -230,9 +259,22 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     );
   }
 
-  /** A+: paginado solo en cliente — ocultar selector de tamaño / "Todos" (reservado a A+P). */
+  /** A+: oculto. A+P / híbrido: selector en el pager inferior. */
   get effectiveShowPageSizeSelector(): boolean {
-    return this.isRemotePagingActive;
+    return this.isRemotePagingActive || this.hybridPaging;
+  }
+
+  /** Híbrido: opciones del pager = lotes API; si no, allowedPageSizes normal. */
+  get effectiveAllowedPageSizes(): (number | PagerPageSize)[] {
+    if (this.hybridPaging) {
+      return (this.apiPageSizes ?? []) as (number | PagerPageSize)[];
+    }
+    return this.allowedPageSizes;
+  }
+
+  /** Filas visibles reales en modo híbrido (no el pageSize del pager/lote). */
+  get displayPageSize(): number {
+    return this.pageSize > 0 ? this.pageSize : 15;
   }
 
   get isRemoteFilteringActive(): boolean {
@@ -275,7 +317,11 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.activePageSize = this.pageSize;
+    this.activePageSize = this.hybridPaging
+      ? this.apiPageSize > 0
+        ? this.apiPageSize
+        : this.displayPageSize
+      : this.pageSize;
     this.rebuildToolbarOptions();
     this.contextSub = this.pageContext.changes$.subscribe(() => {
       this.permiteAddEffective = this.pageContext.snapshot.permiteAdd;
@@ -283,11 +329,17 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       this.cdr.markForCheck();
     });
     this.permiteAddEffective = this.pageContext.snapshot.permiteAdd;
+    this.pageContext.registerGridHandlers({
+      refresh: () => {
+        if (this.shouldHandleBarraRefresh()) {
+          this.onRefreshClick();
+        }
+      },
+    });
     this.resolveGridHeight();
     this.columnHidingActive = this.columnHidingEnabled;
     this.filterSyncEnabled = this.filterValue != null && this.filterValue !== '';
     this.resolveActionVisibility();
-    this.ensureActionColumns();
     this.resolveDisplayColumns();
     this.updateFocusedRowState();
   }
@@ -297,7 +349,13 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       this.resolveGridHeight();
     }
     if (changes['pageSize'] && !changes['pageSize'].firstChange) {
-      this.activePageSize = this.pageSize;
+      if (!this.hybridPaging) {
+        this.activePageSize = this.pageSize;
+      }
+    }
+    if (changes['apiPageSize'] && this.hybridPaging) {
+      this.activePageSize =
+        this.apiPageSize > 0 ? this.apiPageSize : this.displayPageSize;
     }
     if (changes['columnHidingEnabled']) {
       this.columnHidingActive = this.columnHidingEnabled;
@@ -305,9 +363,10 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     if (changes['filterValue']) {
       this.filterSyncEnabled = this.filterValue != null && this.filterValue !== '';
     }
-    if (changes['permiteEditar'] || changes['permiteDele']) {
+    if (changes['permiteEditar'] || changes['permiteDele'] || changes['customButtons']) {
       this.resolveActionVisibility();
       this.syncActionButtonsVisibility();
+      this.resolveDisplayColumns();
     }
     if (changes['models']) {
       this.updateFocusedRowState();
@@ -331,7 +390,13 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     ) {
       this.rebuildToolbarOptions();
     }
-    if (changes['columns'] || changes['headerFilterLoader'] || changes['remoteOperations'] || changes['syncHeaderFilterWithPage']) {
+    if (
+      changes['columns'] ||
+      changes['customButtons'] ||
+      changes['headerFilterLoader'] ||
+      changes['remoteOperations'] ||
+      changes['syncHeaderFilterWithPage']
+    ) {
       this.resolveDisplayColumns();
     }
     this.cdr.markForCheck();
@@ -339,6 +404,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnDestroy(): void {
     this.contextSub?.unsubscribe();
+    this.pageContext.registerGridHandlers();
     if (this.pageSizeRepaintTimer) {
       clearTimeout(this.pageSizeRepaintTimer);
     }
@@ -354,15 +420,17 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       text: 'Actualizar',
       icon: 'refresh',
       stylingMode: 'text',
+      height: 44,
       onClick: this.onRefreshClick,
     };
     this.optAdd = {
-      text: 'Agregar registro',
-      icon: 'add',
+      text: 'Nuevo',
+      icon: 'plus',
       type: 'default',
       stylingMode: 'contained',
+      height: 44,
       elementAttr: canAdd ? undefined : { class: 'sguees-action-no-add' },
-      hint: canAdd ? 'Agregar registro' : 'No tiene permiso para crear registros.',
+      hint: canAdd ? 'Nuevo' : 'No tiene permiso para crear registros.',
       onClick: this.onAddClick,
     };
 
@@ -387,7 +455,16 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
 
   onRefreshClick(): void {
     this.refresh.emit();
-    this.pageContext.triggerRefresh();
+  }
+
+  private shouldHandleBarraRefresh(): boolean {
+    if (this.showRefresh === false) {
+      return false;
+    }
+    if (this.showRefresh === true) {
+      return true;
+    }
+    return this.isUnifiedActive;
   }
 
   onAddClick(): void {
@@ -395,7 +472,10 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
     this.add.emit();
-    this.pageContext.triggerAdd();
+    // Plantilla A+ enlaza (add) y barra (nuevo); no disparar ambos.
+    if (!this.add.observed) {
+      this.pageContext.triggerAdd();
+    }
   }
 
   refreshData(resetPage = true): void {
@@ -516,12 +596,57 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
 
+    let cols = [...this.columns];
     if (this.headerFilterLoader && this.isRemoteHeaderFilterActive) {
-      this.displayColumns = attachRemoteHeaderFilters([...this.columns], this.headerFilterLoader);
-      return;
+      cols = attachRemoteHeaderFilters(cols, this.headerFilterLoader);
     }
 
-    this.displayColumns = this.columns;
+    this.displayColumns = this.withActionColumn(cols);
+  }
+
+  private withActionColumn(cols: any[]): any[] {
+    if (cols.some((c: { name?: string }) => c?.name === 'btnAcciones' || c?.name === 'btnEditar')) {
+      return cols;
+    }
+
+    return [this.buildActionColumn(), ...cols];
+  }
+
+  private buildActionColumn(): Record<string, unknown> {
+    const actionWidth = 125 + (this.customButtons?.length ?? 0) * 36;
+    return {
+      type: 'buttons',
+      name: 'btnAcciones',
+      caption: 'Options',
+      width: actionWidth,
+      minWidth: actionWidth,
+      allowFiltering: false,
+      allowHeaderFiltering: false,
+      allowSorting: false,
+      allowResizing: false,
+      fixed: true,
+      fixedPosition: 'left',
+      alignment: 'center',
+      buttons: [
+        {
+          hint: 'Editar registro',
+          icon: 'edit',
+          stylingMode: 'text',
+          cssClass: 'sguees-grid-action-edit',
+          visible: this.showEditActions,
+          onClick: this.OneditClick,
+        },
+        {
+          name: 'delete',
+          hint: 'Eliminar registro',
+          icon: 'trash',
+          stylingMode: 'text',
+          cssClass: 'sguees-grid-action-delete',
+          visible: this.showDeleteActions,
+        },
+        ...this.customButtons,
+      ],
+    };
   }
 
   refreshHeaderFilterDataSources(): void {
@@ -586,76 +711,25 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  private ensureActionColumns(): void {
-    if (!this.columns || this.actionColumnsReady) {
-      return;
-    }
-    if (
-      this.columns.some(
-        (c: { name?: string }) => c?.name === 'btnAcciones' || c?.name === 'btnEditar',
-      )
-    ) {
-      this.actionColumnsReady = true;
-      this.syncActionButtonsVisibility();
-      return;
-    }
-    this.columns.push({
-      type: 'buttons',
-      name: 'btnAcciones',
-      caption: 'Options',
-      width: 125,
-      minWidth: 125,
-      allowFiltering: false,
-      allowResizing: false,
-      fixed: true,
-      fixedPosition: 'left',
-      alignment: 'center',
-      buttons: [
-
-        {
-          hint: 'Editar registro',
-          icon: 'edit',
-          stylingMode: 'text',
-          cssClass: 'sguees-grid-action-edit',
-          visible: this.showEditActions,
-          onClick: this.OneditClick,
-        },
-        {
-          name: 'delete',
-          hint: 'Eliminar registro',
-          icon: 'trash',
-          stylingMode: 'text',
-          cssClass: 'sguees-grid-action-delete',
-          visible: this.showDeleteActions,
-        },
-
-        // Botones personalizados enviados desde el componente hijo
-        ...this.customButtons,
-      ],
-    });
-    this.actionColumnsReady = true;
-  }
-
   private syncActionButtonsVisibility(): void {
     if (!this.columns) {
       return;
-      }
-        const merged = this.columns.find((c: { name?: string }) => c?.name === 'btnAcciones');
-        if (merged?.buttons?.length) {
-
-      for (const button of merged.buttons) {
-
-        if (button.icon === 'edit') {
-          button.visible = this.showEditActions;
-        }
-
-        if (button.name === 'delete') {
-          button.visible = this.showDeleteActions;
-        }
-
-      }
-
+    }
+    const merged = this.columns.find((c: { name?: string }) => c?.name === 'btnAcciones');
+    if (!merged?.buttons?.length) {
       return;
+    }
+
+    for (const button of merged.buttons) {
+      if (typeof button.visible === 'function') {
+        continue;
+      }
+      if (button.icon === 'edit') {
+        button.visible = this.showEditActions;
+      }
+      if (button.name === 'delete') {
+        button.visible = this.showDeleteActions;
+      }
     }
   }
 
@@ -708,8 +782,30 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     const pageIndexChanged = fullName === 'paging.pageIndex' && e.value !== e.previousValue;
 
     if (pageSizeChanged) {
-      this.activePageSize = this.resolveActivePageSize(e.value);
-      this.pageSizeChange.emit(this.activePageSize);
+      if (this.hybridPaging && this.hybridSuppressPageSizeEmit) {
+        this.hybridSuppressPageSizeEmit = false;
+        this.activePageSize = this.displayPageSize;
+        this.cdr.markForCheck();
+        return;
+      }
+
+      const resolved = this.resolveActivePageSize(e.value);
+
+      if (this.hybridPaging) {
+        // Selector inferior = lote API; "Todos" (0) fuerza pageSize de display para no pintar todo.
+        this.apiPageSizeChange.emit(resolved);
+        if (resolved === 0) {
+          this.activePageSize = this.displayPageSize;
+          this.hybridSuppressPageSizeEmit = true;
+          grid.option('paging.pageSize', this.displayPageSize);
+        } else {
+          this.activePageSize = resolved;
+        }
+      } else {
+        this.activePageSize = resolved;
+        this.pageSizeChange.emit(this.activePageSize);
+      }
+
       grid.pageIndex(0);
 
       if (this.pageSizeRepaintTimer) {
@@ -723,7 +819,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
         this.refreshHeaderFilterDataSources();
       };
 
-      if (this.isRemotePagingActive) {
+      if (this.isRemotePagingActive || this.hybridPaging) {
         if (reloadPromise && typeof reloadPromise.then === 'function') {
           reloadPromise.then(afterPagingChange);
         } else {
@@ -760,6 +856,9 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     }
     if (this.effectiveShowEstadoToolbar && this.isBrowse) {
       this.syncFocusedRowFromGrid();
+    }
+    if (this.isUnifiedActive) {
+      requestAnimationFrame(() => e?.component?.updateDimensions?.());
     }
   }
 

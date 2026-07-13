@@ -21,13 +21,15 @@ Usar este texto al pedir a Cursor (o a un programador) una pantalla nueva o migr
 3. Entregar **BD + API + SPA + menú** si es pantalla nueva.
 4. Extender **`CBaseComponent`** con 4 regiones TS.
 5. HTML: `app-barra-data-mtto` + `dx-form` + `app-data-grid-mtto` dentro de `.sguees-mtto-view`.
+   - **Barra:** leer `plantillas/mtto-barra-patron.md`. Proceso/Tipo C → como `com-documento` (fechas/`btn1`–`btnN` en HTML; grid sin `showAdd`). Catálogo A+/A+P → barra título + Nuevo en grid (`gen-banco`).
+   - Botones de negocio: icono/ancho/click en HTML de la barra; TS solo textos (`refrescarBotones`). **Prohibido** `toolbarButtons` / fechas en el grid.
 6. **Sin** `p-toast` local, **sin** `.scss` propio, **sin** `override notifyFx`.
 7. **`mttoGridKeyExpr`** obligatorio en catálogos.
 8. **`guardarMtto`** sin `onSuccess: () => consultar()` (el padre parchea el grid).
 9. **`rowRemovingMtto`** sin `reload` manual.
 10. **`(editClick)="editarClick($event)"`** — no botones edit custom en columnas.
 11. **A+P API:** `ReadPagedViewAsync` — no SQL crudo ni paginación en memoria C#.
-12. **A+P pager "Todos":** plantilla `mtto-a-p-paginado.md` — `(pageSizeChange)` + `syncMttoPagedStorePagerSize` + `resolveMttoPagedLoadParams` con `cacheState` y `dataGrid?.activePageSize`; grid `data-grid-mtto` normaliza `'all'` → `0`.
+12. **A+P híbrido:** plantilla `mtto-a-p-paginado.md` — selector del pager = lote API; filas visibles = `mttoPageSize` (15); `(apiPageSizeChange)` + `loadMttoHybridDisplayPage`.
 13. **Estado catálogo (`bit`):** extensión `mtto-a-plus-estado-catalogo.md` — aplica a **A+ y A+P**; toolbar + `activar_inactivar()` + `Put ActivarInactivar` + SP.
 14. **No** panel de agrupación ni filtros remotos en grid padre (fuera de alcance v1.1).
 15. **CRUD HTTP** — leer `plantillas/mtto-api-crud-http.md`:
@@ -47,13 +49,13 @@ Usar este texto al pedir a Cursor (o a un programador) una pantalla nueva o migr
 | Respuesta | Plantilla | API | Grid / diseño |
 |-----------|-----------|-----|----------------|
 | **No** / catálogo chico (&lt; ~500 filas) | `mtto-a-plus.md` | `GetAll` una vez — **sin** `PAGE` / `PAGE_SIZE` | Paginado **solo en cliente** (navegación de páginas). **Sin** selector de tamaño ni opción "Todos" en el pager (`remoteOperations` false → el grid lo oculta). |
-| **Sí** / muchas filas / auditoría pesada | `mtto-a-p-paginado.md` | `ReadPagedViewAsync` + `PAGE`, `PAGE_SIZE` (0 = todos) | `CustomStore`, `(pageSizeChange)`, selector de tamaño + "Todos" visible. |
+| **Sí** / muchas filas / auditoría pesada | `mtto-a-p-paginado.md` | `ReadPagedViewAsync` + `PAGE`, `PAGE_SIZE` (0 = todos) | `CustomStore` híbrido: 15 filas visibles + selector del pager = lote API (50/100/Todos). |
 
 **Inferir solo si el usuario ya lo dejó claro** (ej. "catálogo grande", "como impacto económico", "sin paginar en BD"). Si hay duda, **preguntar**.
 
-**A+ (sin paginado BD):** no usar `CustomStore`, no `fillParam` con `PAGE`/`PAGE_SIZE`, no `(pageSizeChange)`, no `syncMttoPagedStorePagerSize`.
+**A+ (sin paginado BD):** no usar `CustomStore`, no `fillParam` con `PAGE`/`PAGE_SIZE`, no híbrido.
 
-**A+P (con paginado BD):** aplicar plantilla completa incl. pager servidor y helper `mtto-paged-store.helpers.ts`.
+**A+P (con paginado BD):** aplicar plantilla híbrida (`mttoHybridPaging`) + helper `mtto-paged-store.helpers.ts`.
 
 ---
 
@@ -68,7 +70,8 @@ Usar este texto al pedir a Cursor (o a un programador) una pantalla nueva o migr
 | Catálogo grande / auditoría en grid / paginado servidor | `mtto-a-p-paginado.md` (+ estado catálogo si aplica) |
 | Contrato PUT/DELETE (todos los catálogos) | `plantillas/mtto-api-crud-http.md` |
 | Form con combos `getLookUp` | A+ o A+P + sección lookup en `ESTANDAR-MTTO.md` |
-| Encabezado + detalle | Tipo C — `con-partida` / `com-documento` |
+| Encabezado + detalle | Tipo C — `con-partida` / `com-documento` + [mtto-barra-patron.md](./plantillas/mtto-barra-patron.md) |
+| Barra / botones de proceso | `plantillas/mtto-barra-patron.md` — no inventar toolbar en el grid |
 | Documento con estados DI/AP/AN | `mtto-estado-transaccional.md` — **no** patrón bit |
 
 ---
@@ -88,7 +91,8 @@ Usar este texto al pedir a Cursor (o a un programador) una pantalla nueva o migr
 | Propiedad | Default |
 |-----------|---------|
 | `mttoPageSize` | 20 |
-| `mttoPageSizes` | 20, 50, 100, 200 (sin `'all'` — solo A+P) |
+| `mttoPageSizes` | 15, 30, 50, 100 (A+; selector oculto) |
+| `mttoHybridPaging` / `mttoApiPageSize(s)` | Solo A+P: lote API 50/100/Todos; display fijo 15 |
 | `mttoRemoteOperations` | false (A+) — grid oculta selector de tamaño / "Todos" |
 | `mttoParchearGridTrasGuardar` | true |
 

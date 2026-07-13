@@ -8,6 +8,8 @@ export interface MttoPageContextState {
   permiteAdd: boolean;
   showRefresh: boolean;
   unifiedToolbar: boolean;
+  /** true = título en toolbar del grid; false = título en page-header de la barra. */
+  embedTitleInGrid: boolean;
   isBrowse: boolean;
 }
 
@@ -17,6 +19,7 @@ const INITIAL: MttoPageContextState = {
   permiteAdd: false,
   showRefresh: false,
   unifiedToolbar: false,
+  embedTitleInGrid: false,
   isBrowse: true,
 };
 
@@ -25,6 +28,7 @@ export class MttoPageContextService {
   private readonly state$ = new BehaviorSubject<MttoPageContextState>(INITIAL);
   private addHandler: (() => void) | null = null;
   private refreshHandler: (() => void) | null = null;
+  private gridRefreshHandler: (() => void) | null = null;
 
   readonly changes$ = this.state$.asObservable();
 
@@ -49,13 +53,21 @@ export class MttoPageContextService {
     this.addHandler?.();
   }
 
+  registerGridHandlers(handlers?: { refresh?: () => void }): void {
+    this.gridRefreshHandler = handlers?.refresh ?? null;
+  }
+
   triggerRefresh(): void {
+    if (this.gridRefreshHandler) {
+      this.gridRefreshHandler();
+    }
     this.refreshHandler?.();
   }
 
   reset(): void {
     this.addHandler = null;
     this.refreshHandler = null;
+    this.gridRefreshHandler = null;
     this.state$.next(INITIAL);
   }
 }

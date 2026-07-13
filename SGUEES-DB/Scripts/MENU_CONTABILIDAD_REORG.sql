@@ -82,9 +82,12 @@ INSERT INTO @Config (MENU, OPCION, ORD_MENU, ORD_OPC) VALUES
   ('GENERAL', 'CON_SECCION',                      4, 12),
   ('GENERAL', 'CON_PARAMETRO',                    4, 13);
 
-/* Limpiar config previa de contabilidad para reescribir órdenes correctos */
+/* Limpiar config previa de contabilidad para reescribir órdenes correctos.
+   No tocar reportes (CON_REPO_*) — se gestionan en MENU_CONTABILIDAD_REPORTES.sql */
 DELETE FROM SEG_CONFIG_OPCION
-WHERE CODIGO_SISTEMA=@SISTEMA AND CODIGO_OPCION LIKE 'CON%';
+WHERE CODIGO_SISTEMA=@SISTEMA
+  AND CODIGO_OPCION LIKE 'CON%'
+  AND CODIGO_OPCION NOT LIKE 'CON_REPO_%';
 
 INSERT INTO SEG_CONFIG_OPCION
   (CODIGO_SISTEMA, CODIGO_MENU, CODIGO_OPCION, ORDEN_SISTEMA, ORDEN_MENU, ORDEN_OPCION, USUARIO_CREA, FECHA_CREA, ESTACION_CREA)

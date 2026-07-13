@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using eFramework.Core;
 using sguees.Models;
-using sguees.Repositories;
 
 namespace sguees.Services
 {
@@ -12,5 +11,6 @@ namespace sguees.Services
 		Task<CResult> CreateAsync(BAN_CUENTA_BANCARIATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(BAN_CUENTA_BANCARIATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(BAN_CUENTA_BANCARIATable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> ActivarInactivarAsync(BAN_CUENTA_BANCARIATable Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
 }

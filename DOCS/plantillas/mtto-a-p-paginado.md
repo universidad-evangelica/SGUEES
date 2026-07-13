@@ -1,9 +1,10 @@
 # Plantilla mtto A+P — Paginado servidor (CustomStore)
 
-**Versión:** 1.4 — julio 2026  
+**Versión:** 1.5 — julio 2026  
 **Referencia viva (piloto):** `SelectionHiring/sc-impacto-economico`  
 **Guía equipo:** [../GUIA-EQUIPO-MTTO.md](../GUIA-EQUIPO-MTTO.md)  
 **Contrato HTTP PUT/DELETE:** [mtto-api-crud-http.md](./mtto-api-crud-http.md)  
+**Barra / toolbar:** [mtto-barra-patron.md](./mtto-barra-patron.md) (mismo patrón catálogo que A+)  
 **Cuándo:** catálogo con muchas filas, columnas de auditoría, paginado servidor — **con o sin** estado catálogo `bit`.
 
 ---
@@ -12,6 +13,18 @@
 
 - Catálogo pequeño (&lt; ~500 filas) → usar **A+** (`mtto-a-plus.md`): menos código, una sola carga, mejor para BD.
 - Otros módulos legacy pueden seguir paginando en memoria C# hasta migrar el repository.
+
+---
+
+## A+ vs A+P vs A+P híbrido
+
+| Modo | Qué pagina | Filas visibles | Selector |
+|------|------------|----------------|----------|
+| **A+** | Solo grid (cliente) | `mttoPageSize` (15) | Oculto |
+| **A+P clásico** | API = visible | Lo que eliges en el pager | Pager DX (puede verse “pared” de filas) |
+| **A+P híbrido (recomendado)** | API por **lote**; grid siempre 15 filas | Siempre `mttoPageSize` | Selector del **pager inferior** (`50` / `100` / `Todos`) = lote API |
+
+Híbrido: el lote pide `PAGE_SIZE` al API; el pager navega el catálogo de 15 en 15. Si la ventana visible cruza dos lotes (ej. skip 90 + take 15 con lote 100), se piden ambos y se unen.
 
 ---
 
@@ -36,17 +49,20 @@ objResultado.RowsAffected = paged.TotalRows;
 
 ---
 
-## Flags del hijo
+## Flags del hijo (híbrido)
 
 ```typescript
 protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
 protected override mttoGridKeyExpr = 'CORR_XXX';
-// mttoPageSize y mttoPageSizes: heredar del padre (20, [20,50,100,200,'all']) o override
+protected override mttoHybridPaging = true;
+protected override mttoPageSize = 15;                 // filas visibles (siempre)
+protected override mttoApiPageSize = 50;              // lote API default
+protected override mttoApiPageSizes = [50, 100, 'all'];
 ```
 
-`filtering: false` → **filter row del grid es solo en cliente** (sobre la página cargada), **sin petición al API**.
+`filtering: false` → **filter row del grid es solo en cliente** (sobre la página visible), **sin petición al API**.
 
-Con `remoteOperations.paging: true`, `data-grid-mtto` muestra el **selector de tamaño de página** y la opción **"Todos"** (`allowedPageSizes` puede incluir `'all'`). En **A+** ese selector permanece oculto.
+Con `mttoHybridPaging`, el **selector del pager** (abajo) elige el lote API; las filas visibles siguen siendo `mttoPageSize` (15). En **A+** el selector permanece oculto.
 
 ---
 
@@ -70,6 +86,9 @@ ngOnInit(): void {
 }
 
 consultar(resetPage = true): void {
+  invalidateMttoPagedStoreCache(this.pagedStoreCacheState);
+  this.pagedStoreInflightKey = null;
+  this.pagedStoreInflightPromise = null;
   this.refrescarGridMtto(resetPage);
 }
 
@@ -97,14 +116,14 @@ rowRemoving(e: any): void {
 fillParam(
   xCORR_XXX?: number,
   page = 1,
-  pageSize = this.mttoPageSize,
+  pageSize = this.mttoApiPageSize,
   sortField = '',
   sortDesc = false
 ): any {
   return {
     CORR_XXX: xCORR_XXX ?? 0,
     PAGE: page,
-    PAGE_SIZE: pageSize,  // 0 = todos (opción 'all' del pager)
+    PAGE_SIZE: pageSize,  // 0 = todos (lote «Todos»)
     SORT_FIELD: sortField,
     SORT_DESC: sortDesc,
   };
@@ -113,63 +132,49 @@ fillParam(
 
 ---
 
-## CustomStore load (solo page + sort — sin filtros remotos)
+## CustomStore load híbrido
 
-`filtering: false` — el filter row es **solo en cliente** (página cargada). DevExtreme puede llamar `load` al filtrar; usar helper `mtto-paged-store.helpers.ts` para no repetir `GetAll`.
-
-**Pager "Todos":** DevExtreme puede enviar `'all'` o `0`. El grid compartido (`data-grid-mtto`) normaliza a `0` y emite `pageSizeChange`; la pantalla sincroniza caché **antes** del `load` vía `syncMttoPagedStorePagerSize`.
+`filtering: false` — el filter row es **solo en cliente**. Los lotes se cachean en `mtto-paged-store.helpers.ts` (`loadMttoHybridDisplayPage`).
 
 ```typescript
 import {
   createMttoPagedStoreCacheState,
   invalidateMttoPagedStoreCache,
-  rememberMttoPagedServerCache,
-  resolveMttoPagedLoadParams,
-  syncMttoPagedStorePagerSize,
-  tryGetMttoPagedServerCache,
+  loadMttoHybridDisplayPage,
+  resolveMttoHybridLoadPlan,
+  syncMttoHybridApiPageSize,
 } from 'src/app/shared/mtto/mtto-paged-store.helpers';
 
-private readonly pagedStoreCacheState = createMttoPagedStoreCacheState(this.mttoPageSize);
-private pagedStoreInflightKey: string | null = null;
-private pagedStoreInflightPromise: Promise<MttoPagedStorePageResult> | null = null;
+private readonly pagedStoreCacheState = createMttoPagedStoreCacheState(
+  this.mttoPageSize,
+  this.mttoApiPageSize
+);
 
-consultar(resetPage = true): void {
-  invalidateMttoPagedStoreCache(this.pagedStoreCacheState);
-  this.pagedStoreInflightKey = null;
-  this.pagedStoreInflightPromise = null;
-  this.refrescarGridMtto(resetPage);
-}
-
-onPagerPageSizeChange(pageSize: number): void {
-  syncMttoPagedStorePagerSize(this.pagedStoreCacheState, pageSize);
+onApiPageSizeChange(apiPageSize: number): void {
+  this.mttoApiPageSize = apiPageSize;
+  syncMttoHybridApiPageSize(this.pagedStoreCacheState, apiPageSize);
   this.pagedStoreInflightKey = null;
   this.pagedStoreInflightPromise = null;
 }
 
 load: async (loadOptions) => {
-  const loadGeneration = this.pagedStoreCacheState.loadGeneration;
-  const { page, pageSize, sortField, sortDesc, serverKey } = resolveMttoPagedLoadParams(
+  const plan = resolveMttoHybridLoadPlan(
     loadOptions,
     this.pagedStoreCacheState,
     this.mttoGridKeyExpr,
-    this.dataGrid?.activePageSize
+    this.mttoPageSize
   );
-  const cached = tryGetMttoPagedServerCache(serverKey, this.pagedStoreCacheState);
-  if (cached) return cached;
-  // ... GetAll con fillParam(0, page, pageSize, sortField, sortDesc) ...
-  rememberMttoPagedServerCache(serverKey, result, this.pagedStoreCacheState, pageSize);
+  return loadMttoHybridDisplayPage(plan, this.pagedStoreCacheState, (apiPage, apiPageSize, sortField, sortDesc) =>
+    this.fetchPaged(apiPage, apiPageSize, sortField, sortDesc, loadGeneration)
+  );
 },
 ```
 
-**Grid compartido (`data-grid-mtto`):** `resolveActivePageSize` convierte `'all'` → `0` y respeta `0` (no usar `||` con pageSize). Emite `@Output() pageSizeChange` al cambiar el pager.
-
 **Prohibido** en load: `FILTER_ROW_JSON`, `parseRemoteGridFilters`, `GetDistinctValues`, `[headerFilterLoader]` remoto.
-
-`data-grid-mtto` con `filtering: false` **no** sincroniza headerFilter al escribir en filter row (evita `GetAll` extra).
 
 ---
 
-## HTML grid
+## HTML grid (híbrido)
 
 ```html
 <app-data-grid-mtto
@@ -177,14 +182,16 @@ load: async (loadOptions) => {
   [keyExpr]="mttoGridKeyExpr"
   [remoteOperations]="mttoRemoteOperations"
   [pageSize]="mttoPageSize"
-  [allowedPageSizes]="mttoPageSizes"
+  [hybridPaging]="mttoHybridPaging"
+  [apiPageSize]="mttoApiPageSize"
+  [apiPageSizes]="mttoApiPageSizes"
   (refresh)="consultar()"
-  (pageSizeChange)="onPagerPageSizeChange($event)"
+  (apiPageSizeChange)="onApiPageSizeChange($event)"
   ...
 />
 ```
 
-Sin `[headerFilterLoader]`.
+Sin `[headerFilterLoader]`. El pager inferior muestra `apiPageSizes`; no hace falta toolbar «Lote».
 
 ---
 
@@ -227,9 +234,9 @@ Respuesta: `Data` = filas de la página, `RowsAffected` = total para el pager.
 
 | Qué optimiza | Detalle |
 |--------------|---------|
-| Payload al navegador | Solo filas de la página |
-| Lectura SQL (A+P) | `OFFSET/FETCH` vía `eFramework.GetPagedFromViewAsync` |
-| Memoria API | COUNT + página, no vista completa en C# |
+| Payload al navegador | Solo filas **visibles** (15); el lote API se cachea en el CustomStore |
+| Lectura SQL (A+P) | `OFFSET/FETCH` vía `eFramework.GetPagedFromViewAsync` (tamaño = lote) |
+| Memoria API | COUNT + página/lote, no vista completa en C# (salvo lote Todos) |
 
 **Legacy:** otros catálogos A+P pueden seguir en memoria hasta migrar su repository.
 
@@ -263,13 +270,16 @@ Piloto: `sc-impacto-economico`.
 
 ---
 
-## Checklist A+P
+## Checklist A+P (híbrido)
 
 - [ ] `mttoRemoteOperations` con `filtering: false`
+- [ ] `mttoHybridPaging = true`
+- [ ] `mttoPageSize` = filas visibles (15); `mttoApiPageSize` / `mttoApiPageSizes` = lote
 - [ ] `getMttoDataGrid()` implementado
 - [ ] `mttoGridKeyExpr` definido
-- [ ] CustomStore sin filtros remotos en load
-- [ ] `(pageSizeChange)="onPagerPageSizeChange($event)"` + `syncMttoPagedStorePagerSize` + `resolveMttoPagedLoadParams` con `cacheState` y `dataGrid?.activePageSize`
+- [ ] CustomStore con `resolveMttoHybridLoadPlan` + `loadMttoHybridDisplayPage`
+- [ ] `(apiPageSizeChange)="onApiPageSizeChange($event)"` + `syncMttoHybridApiPageSize`
+- [ ] HTML: `[hybridPaging]`, `[apiPageSize]`, `[apiPageSizes]`, `(apiPageSizeChange)` — selector en pager inferior
 - [ ] `guardarMtto` / `rowRemovingMtto` sin reload manual
 - [ ] API: `ReadPagedViewAsync` + whitelist sort — ver `ESTANDAR-EFRAMEWORK-PAGING.md`
 - [ ] CRUD HTTP: [mtto-api-crud-http.md](./mtto-api-crud-http.md) (`CData.Put` + `ApplyQueryKeys`; Delete solo query)

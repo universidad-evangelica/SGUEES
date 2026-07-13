@@ -80,6 +80,7 @@ Copiar en la descripción del Pull Request o usar como guía de revisión.
 
 - [ ] Sin `[columnAutoWidth]="true"` en grid principal
 - [ ] Auditoría en grid (si la vista trae campos): usuario/fechas al final; sin `ESTACION_*`
+- [ ] Barra según [plantillas/mtto-barra-patron.md](./plantillas/mtto-barra-patron.md) (catálogo vs proceso)
 
 ---
 
@@ -120,6 +121,10 @@ Copiar en la descripción del Pull Request o usar como guía de revisión.
 - [ ] Grid detalle separado; `columnAutoWidth=false` en detalle
 
 - [ ] `CON_PADRE_DETA` API con permiso `/url-padre|*`
+
+- [ ] Barra proceso como `com-documento` (`showDates` / `btn1`–`btnN` en HTML); grid principal **sin** `showAdd` / `showRefresh`
+
+- [ ] Botones de negocio solo en HTML de `app-barra-data-mtto`; TS solo textos (`refrescarBotones`)
 
 
 
@@ -188,6 +193,7 @@ Copiar en la descripción del Pull Request o usar como guía de revisión.
 - [ ] `rowRemovingMtto` **sin** reload manual
 - [ ] `(editClick)="editarClick($event)"` — sin botones edit custom en columnas
 - [ ] HTML: `.sguees-mtto-view` + `app-barra-data-mtto` + `app-data-grid-mtto`
+- [ ] Barra catálogo: título + grid `showAdd` / `showRefresh` ([mtto-barra-patron.md](./plantillas/mtto-barra-patron.md))
 - [ ] Bindings: `[pageSize]="mttoPageSize"` `[allowedPageSizes]="mttoPageSizes"` `[keyExpr]="mttoGridKeyExpr"`
 - [ ] Sin `p-toast` local, sin `.scss` propio, sin `override notifyFx`
 - [ ] Sin `[columnAutoWidth]="true"` en grid principal

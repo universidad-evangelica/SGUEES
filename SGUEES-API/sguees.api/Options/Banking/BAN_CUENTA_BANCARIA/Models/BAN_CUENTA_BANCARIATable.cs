@@ -11,7 +11,7 @@ namespace sguees.Models
 		public string NOMBRE_REPORTE { get; set; }
 		public bool? USA_TRANSACIONES_UNI { get; set; }
 		public int? CORR_CENTRO_COSTO { get; set; }
-		public string ESTADO_CUENTA { get; set; }
+		public bool? ESTADO_CUENTA_BANCARIA { get; set; } = true;
 		public int CORR_MONEDA { get; set; }
 		public bool? NO_PERMITE_CHEQUES { get; set; }
 		public string CODIGO_EMPRESARIAL_PROV { get; set; }

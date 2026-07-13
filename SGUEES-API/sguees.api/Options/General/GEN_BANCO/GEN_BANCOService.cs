@@ -27,8 +27,32 @@ namespace sguees.Services
 			return await _repo.GetAsync(p);
 		}
 
-		public async Task<CResult> CreateAsync(GEN_BANCOTable Data, string vLOGIN_SISTEMA, string vESTACION) => await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		public async Task<CResult> CreateAsync(GEN_BANCOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			Data.ESTADO_BANCO ??= true;
+			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
 		public async Task<CResult> UpdateAsync(GEN_BANCOTable Data, string vLOGIN_SISTEMA, string vESTACION) => await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		public async Task<CResult> DeleteAsync(GEN_BANCOTable Data, string vLOGIN_SISTEMA, string vESTACION) => await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+
+		public async Task<CResult> ActivarInactivarAsync(GEN_BANCOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			if (Data.CORR_BANCO <= 0)
+			{
+				return new CResult
+				{
+					Data = null,
+					Result = false,
+					CodeHelper = 0,
+					ErrorCode = -1,
+					ErrorMessage = "No se pudo identificar el banco a actualizar.",
+					ErrorSource = "[GEN_BANCOService]",
+					RowsAffected = 0
+				};
+			}
+
+			return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
 	}
 }

@@ -1,8 +1,9 @@
 # Plantilla mtto A+ — Catálogo simple en memoria
 
-**Versión:** 1.4 — julio 2026  
+**Versión:** 1.5 — julio 2026  
 **Referencia viva:** `General/gen-banco`  
 **Contrato HTTP:** [mtto-api-crud-http.md](./mtto-api-crud-http.md)  
+**Barra / toolbar:** [mtto-barra-patron.md](./mtto-barra-patron.md) (catálogo = título en barra + Nuevo en grid)  
 **Cuándo:** catálogo &lt; ~500 filas por empresa, sin auditoría pesada en grid.
 
 ---
@@ -97,9 +98,22 @@ export class GenXxxComponent extends CBaseComponent implements OnInit {
 
 ## HTML (esqueleto)
 
+**Barra:** mínima (título + Guardar/Cancelar en edición). **No** `showDates` ni `btn1`–`btn6` en catálogo.  
+**Grid:** `showAdd` / `showRefresh` / `showExport` — Nuevo y Actualizar viven aquí en browse (patrón `com-banco` / `gen-banco`).  
+Detalle del patrón: [mtto-barra-patron.md](./mtto-barra-patron.md).
+
 ```html
 <div class="sguees-mtto-view">
-  <app-barra-data-mtto ... (nuevo)="nuevo()" (guardar)="guardar()" (cancelar)="cancelar()" />
+  <app-barra-data-mtto
+    [tituloVentana]="tituloVentana"
+    [subTituloVentana]="subTituloVentana"
+    [isBrowse]="isBrowse()"
+    [isForm]="isForm()"
+    [permiteAdd]="permiteAdd"
+    (nuevo)="nuevo()"
+    (guardar)="guardar()"
+    (cancelar)="cancelar()"
+  />
 
   <div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
     <dx-form #fData [formData]="model" [colCount]="mttoFormColCount"
@@ -113,6 +127,9 @@ export class GenXxxComponent extends CBaseComponent implements OnInit {
     [keyExpr]="mttoGridKeyExpr"
     [pageSize]="mttoPageSize"
     [remoteOperations]="mttoRemoteOperations"
+    [showAdd]="true"
+    [showRefresh]="true"
+    [showExport]="true"
     [permiteEditar]="getPermiteEditar"
     [permiteDele]="getPermiteDele"
     (refresh)="consultar()"
@@ -172,6 +189,8 @@ getColumns(): any[] {
 - `confirmaAccion` en delete del grid (usar `rowRemovingMtto`)
 - Columna `btnAcciones` custom para editar/eliminar
 - `CustomStore` en A+
+- Botones de negocio / fechas en el grid (`toolbarButtons`, etc.) — ver [mtto-barra-patron.md](./mtto-barra-patron.md)
+- Segunda barra custom solo para el título
 
 ---
 
@@ -181,6 +200,7 @@ getColumns(): any[] {
 - [ ] `guardarMtto` sin reload
 - [ ] `rowRemovingMtto` sin reload
 - [ ] `(editClick)="editarClick($event)"`
+- [ ] Barra mínima + grid `showAdd` / `showRefresh` (patrón catálogo)
 - [ ] 4 regiones TS
 - [ ] Routing con `exports: [RouterModule]`
 - [ ] PUT/DELETE según [mtto-api-crud-http.md](./mtto-api-crud-http.md)

@@ -50,9 +50,8 @@
 	/* Botones de la barra de detalle.
 	   ANTES: min-width:170px (se veían muy anchos). AHORA: 150px para un look más compacto. */
 	::ng-deep .partida-deta-toolbar-btn .dx-button {
-		/* min-width: 170px;  (valor original) */
 		min-width: 150px;
-		min-height: 40px;
+		min-height: var(--sguees-toolbar-height, 44px);
 		padding-inline: 16px;
 		font-size: 14px;
 		font-weight: 600;
@@ -135,21 +134,25 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-
 	gap: 24px;
-
 	padding: 12px 18px;
 	margin-bottom: 16px;
-
 	border-radius: var(--sguees-radius-md);
-
 	background-color: var(--card-background);
-
 	border: 1px solid var(--border-color);
-
 	box-shadow: var(--sguees-shadow-sm);
-
 	transition: all .2s ease;
+}
+
+/* Dentro del toolbar del grid: sin card extra (una sola franja visual) */
+.partida-procesos-strip--toolbar {
+	margin: 0;
+	padding: 0 8px 0 0;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	background: transparent;
+	min-height: var(--sguees-toolbar-height, 44px);
 }
 
 /* ======================================================
@@ -212,11 +215,14 @@
 }
 
 /* ======================================================
-   BOTONES
+   BOTONES (procesos — negocio; barra hereda chrome padre)
 ====================================================== */
 
 ::ng-deep .partida-procesos-actions .dx-button {
-	min-height: 34px;
+	min-height: var(--sguees-toolbar-height, 44px);
+	min-width: 108px;
+	padding-inline: 16px;
+	font-weight: var(--sguees-font-weight-semibold, 600);
 }
 
 ::ng-deep .btn-liquidacion .dx-button {

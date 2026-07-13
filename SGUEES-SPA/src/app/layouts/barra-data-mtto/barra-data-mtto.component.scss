@@ -5,8 +5,26 @@
   margin-bottom: var(--sguees-content-gap);
 }
 
-:host.sguees-barra-mtto--header-only-browse-hidden {
-  display: none;
+:host.sguees-barra-mtto--browse {
+  margin-bottom: 0;
+}
+
+:host.sguees-barra-mtto--browse:not(.sguees-barra-mtto--header-only-edit):not(.sguees-barra-mtto--header-only-browse) {
+  .sguees-barra-mtto__header-row {
+    padding: var(--sguees-space-5) var(--sguees-space-4) 0;
+  }
+
+  .sguees-barra-mtto__toolbar-row {
+    padding: var(--sguees-space-3) var(--sguees-space-4) var(--sguees-space-4);
+  }
+}
+
+/* header-only browse: solo título; la toolbar vive en el grid */
+:host.sguees-barra-mtto--header-only-browse {
+  .sguees-barra-mtto__header-row {
+    margin-bottom: 0;
+    padding: 0;
+  }
 }
 
 :host.sguees-barra-mtto--header-only-edit {
@@ -20,64 +38,38 @@
   flex-direction: column;
 }
 
-// UX puntual — título/subtítulo izquierda, acciones derecha (misma fila en desktop)
+// UX — título arriba, toolbar ancho completo abajo (estilo partidas)
 .sguees-barra-mtto__header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: block;
+  width: 100%;
+  margin-bottom: var(--sguees-space-3);
+}
+
+.sguees-barra-mtto__toolbar-row {
   width: 100%;
 }
 
 :host ::ng-deep .sguees-barra-mtto__header-row .sguees-page-header--enterprise {
   width: 100%;
-  flex: 1 1 auto;
-  min-width: 0;
 }
 
 :host ::ng-deep .sguees-barra-mtto__header-row .sguees-page-header__main {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--sguees-space-4);
   width: 100%;
 }
 
-:host ::ng-deep .sguees-barra-mtto__header-row .sguees-page-header__text.sguees-grid-header {
-  flex: 1 1 auto;
-  min-width: 0;
-  text-align: left;
+:host.sguees-barra-mtto--legacy + app-data-grid-mtto,
+:host.sguees-mtto-chrome + app-data-grid-mtto {
+  margin-top: 0;
 }
 
-:host ::ng-deep .sguees-barra-mtto__header-row .sguees-page-header__actions {
-  flex: 0 0 auto;
-  width: auto;
-  min-width: 0;
-  max-width: none;
-  margin-left: auto;
-  justify-content: flex-end;
-  align-self: center;
+:host.sguees-barra-mtto--header-only-edit {
+  border-radius: var(--sguees-radius-lg);
+  box-shadow: var(--sguees-shadow-sm);
 }
 
-@media (min-width: 992px) {
-  :host ::ng-deep .sguees-barra-mtto__header-row .sguees-page-header__main {
-    flex-wrap: nowrap;
-    align-items: center;
-  }
-
-  :host ::ng-deep .sguees-barra-mtto__header-row .sguees-page-header__actions {
-    flex: 0 0 auto;
-    width: auto;
-  }
-}
-
-:host ::ng-deep .sguees-barra-mtto__header-row .sguees-page-header__actions .sguees-barra-toolbar {
-  width: auto;
-  max-width: 100%;
-
-  .dx-toolbar-items-container {
-    flex-wrap: nowrap;
-  }
+:host.sguees-barra-mtto--header-only-edit .sguees-barra-mtto__toolbar-row {
+  padding: 0 var(--sguees-space-4);
+  padding-bottom: var(--sguees-space-3);
 }
 
 .sguees-barra-toolbar {
@@ -86,7 +78,7 @@
   background-color: var(--card-background);
   box-shadow: var(--sguees-shadow-sm);
   border: 1px solid var(--border-color);
-  min-height: var(--sguees-toolbar-height);
+  min-height: calc(var(--sguees-toolbar-height) + var(--sguees-space-4));
 
   ::ng-deep .dx-button {
     border-radius: var(--sguees-radius-sm);
@@ -107,9 +99,10 @@
 }
 
 .sguees-toolbar-divider {
-  height: calc(var(--sguees-toolbar-height) - 12px);
-  margin: 0 var(--sguees-space-2);
+  height: var(--sguees-toolbar-height);
+  margin: 0 var(--sguees-space-3);
   border-left: 1px solid var(--border-color);
+  opacity: 0.85;
 }
 
 .sguees-barra-toolbar--grouped {
@@ -117,14 +110,14 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--sguees-space-1);
+    gap: var(--sguees-space-2);
   }
 
   ::ng-deep .dx-toolbar-after {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--sguees-space-2);
+    gap: var(--sguees-space-3);
     margin-left: auto;
   }
 }

@@ -31,6 +31,19 @@ namespace SGUEES.Controllers
 			return await _service.GetAllPaisesAsync(data);
 		}
 
+		/** Lookup para gen-empresa (permiso del consumidor). Sin exigir empresa de sesión. */
+		[HttpGet("GetCORR_PAIS_GEN_EMPRESA")]
+		[Authorize(Policy = "/gen-empresa|R")]
+		public async Task<CResult> GetCORR_PAIS_GEN_EMPRESA([FromQuery] GEN_ESTRUCTURA_TERRITORIAL_PAISParam data)
+		{
+			data.CORR_EMPRESA = GetCorrEmpresa();
+			if (data.CORR_EMPRESA <= 0)
+			{
+				data.CORR_EMPRESA = 1;
+			}
+			return await _service.GetAllPaisesAsync(data);
+		}
+
 		[HttpGet("GetDistinctValuesPaises")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
 		public async Task<CResult> GetDistinctValuesPaises([FromQuery] GEN_ESTRUCTURA_TERRITORIAL_PAISParam data)
@@ -107,6 +120,18 @@ namespace SGUEES.Controllers
 			return await _service.GetAllDeptosAsync(data);
 		}
 
+		[HttpGet("GetCORR_DEPTO_GEN_EMPRESA")]
+		[Authorize(Policy = "/gen-empresa|R")]
+		public async Task<CResult> GetCORR_DEPTO_GEN_EMPRESA([FromQuery] GEN_ESTRUCTURA_TERRITORIAL_DEPTOParam data)
+		{
+			data.CORR_EMPRESA = GetCorrEmpresa();
+			if (data.CORR_EMPRESA <= 0)
+			{
+				data.CORR_EMPRESA = 1;
+			}
+			return await _service.GetAllDeptosAsync(data);
+		}
+
 		[HttpGet("GetDistinctValuesDeptos")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
 		public async Task<CResult> GetDistinctValuesDeptos([FromQuery] GEN_ESTRUCTURA_TERRITORIAL_DEPTOParam data)
@@ -169,6 +194,18 @@ namespace SGUEES.Controllers
 		public async Task<CResult> GetAllMunicipios([FromQuery] GEN_ESTRUCTURA_TERRITORIAL_MUNICIPIOParam data)
 		{
 			data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetAllMunicipiosAsync(data);
+		}
+
+		[HttpGet("GetCORR_MUNICIPIO_GEN_EMPRESA")]
+		[Authorize(Policy = "/gen-empresa|R")]
+		public async Task<CResult> GetCORR_MUNICIPIO_GEN_EMPRESA([FromQuery] GEN_ESTRUCTURA_TERRITORIAL_MUNICIPIOParam data)
+		{
+			data.CORR_EMPRESA = GetCorrEmpresa();
+			if (data.CORR_EMPRESA <= 0)
+			{
+				data.CORR_EMPRESA = 1;
+			}
 			return await _service.GetAllMunicipiosAsync(data);
 		}
 

@@ -51,16 +51,21 @@
   overflow: visible;
 }
 
-// Fase 8 — grid unificado (barra oculta en browse header-only)
+// Reportes contables — altura la calcula el componente según viewport
+.sguees-enterprise-content router-outlet + * > app-con-reporte {
+  display: block;
+  width: 100%;
+}
+
 .sguees-enterprise-content router-outlet + * > app-data-grid-mtto.sguees-data-grid-mtto-host--unified:first-child,
-.sguees-enterprise-content router-outlet + * .view-wrapper > app-data-grid-mtto.sguees-data-grid-mtto-host--unified:first-child,
-.sguees-enterprise-content router-outlet + * > app-barra-data-mtto.sguees-barra-mtto--header-only-browse-hidden + app-data-grid-mtto.sguees-data-grid-mtto-host--unified {
+.sguees-enterprise-content router-outlet + * .view-wrapper > app-data-grid-mtto.sguees-data-grid-mtto-host--unified:first-child {
   margin-top: 0;
 }
 
-.sguees-enterprise-content router-outlet + * > app-barra-data-mtto.sguees-barra-mtto--header-only-browse-hidden + app-data-grid-mtto .sguees-grid-unified-module {
-  border-radius: var(--sguees-radius-lg);
-  box-shadow: var(--sguees-shadow-md);
+/* header-only browse: título en barra + toolbar unificada en grid (misma unidad visual) */
+.sguees-enterprise-content router-outlet + * > app-barra-data-mtto.sguees-barra-mtto--header-only-browse + app-data-grid-mtto.sguees-data-grid-mtto-host--unified,
+.sguees-enterprise-content router-outlet + * .view-wrapper > app-barra-data-mtto.sguees-barra-mtto--header-only-browse + app-data-grid-mtto.sguees-data-grid-mtto-host--unified {
+  margin-top: 0;
 }
 
 // —— Módulo browse legacy: barra + grid como unidad ——

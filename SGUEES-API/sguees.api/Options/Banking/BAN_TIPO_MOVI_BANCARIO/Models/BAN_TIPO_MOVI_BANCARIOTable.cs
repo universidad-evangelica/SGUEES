@@ -15,5 +15,6 @@ namespace sguees.Models
 		public bool USA_CHEQUE_PROPIO { get; set; }
 		public int CORR_LINEA { get; set; }
 		public int CORR_TIPO_MOVIMIENTO { get; set; }
+		public bool? ESTADO_TIPO_MOVIMIENTO { get; set; } = true;
 	}
 }

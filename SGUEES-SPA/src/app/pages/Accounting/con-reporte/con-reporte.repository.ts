@@ -13,19 +13,15 @@ export class ConReporteRepository {
 
 	constructor(private objData: CData) {}
 
-	getDefiniciones(): Observable<IResult> {
+	obtenerDefiniciones(): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetDefiniciones', null, environment.UrlCONTAAPI);
-	}
-
-	getConfiReportes(): Observable<IResult> {
-		return this.objData.Get(this.xController, 'GetConfiReportes', null, environment.UrlCONTAAPI);
 	}
 
 	consultar(filtro: ConReporteFiltro): Observable<IResult> {
 		return this.objData.Post(filtro, this.xController, 'Consultar', environment.UrlCONTAAPI);
 	}
 
-	getPDF(filtro: ConReporteFiltro): Observable<Blob> {
+	obtenerPdf(filtro: ConReporteFiltro): Observable<Blob> {
 		return this.objData.PostBlob(filtro, this.xController, 'getPDF', environment.UrlCONTAAPI);
 	}
 }

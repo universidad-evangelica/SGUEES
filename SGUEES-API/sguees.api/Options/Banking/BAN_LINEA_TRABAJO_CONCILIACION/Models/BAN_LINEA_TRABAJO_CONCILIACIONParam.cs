@@ -6,5 +6,6 @@ namespace sguees.Models
 	{
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_LINEA { get; set; }
+		public int AUMENTA_DISMINUYE { get; set; }
 	}
 }

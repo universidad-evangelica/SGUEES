@@ -31,14 +31,14 @@ body {
 
 // DataGrid premium: ver sguees-premium-grid.scss
 
-// Toolbar mantenimiento — ancho mínimo acotado (scoped)
+// Toolbar mantenimiento — botones tipo Partidas (altura + ancho mínimos)
 .layout-body .dx-toolbar .dx-button.dx-button-has-text,
-app-barra-data-mtto .dx-button.dx-button-has-text {
+app-barra-data-mtto .dx-button.dx-button-has-text,
+.sguees-data-grid-mtto-host .dx-datagrid-header-panel .dx-button.dx-button-has-text {
   min-width: $sguees-toolbar-button-min-width;
-}
-
-app-barra-data-mtto .dx-button.dx-button-has-text {
   min-height: var(--sguees-toolbar-height);
+  padding-inline: 16px;
+  font-weight: var(--sguees-font-weight-semibold, 600);
 }
 
 .dx-button .dx-button-text {

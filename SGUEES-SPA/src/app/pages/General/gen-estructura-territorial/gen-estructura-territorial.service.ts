@@ -3,15 +3,15 @@ import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 import { buildRemoteGridWhere } from 'src/app/shared/utils/remote-grid-filter.util';
-import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
-import {
-	GenDepto,
-	GenDistrito,
-	GenMunicipio,
-	GenPais,
-	TerritorialNivel,
-} from './models/gen-estructura-territorial';
+import { GenDepto } from './gen-depto/models/gen-depto';
+import { GenDeptoRepository } from './gen-depto/gen-depto.repository';
+import { GenDistrito } from './gen-distrito/models/gen-distrito';
+import { GenDistritoRepository } from './gen-distrito/gen-distrito.repository';
+import { GenMunicipio } from './gen-municipio/models/gen-municipio';
+import { GenMunicipioRepository } from './gen-municipio/gen-municipio.repository';
+import { GenPais, TerritorialNivel } from './models/gen-pais';
 import { GenEstructuraTerritorialRepository } from './gen-estructura-territorial.repository';
 
 @Injectable({
@@ -20,7 +20,12 @@ import { GenEstructuraTerritorialRepository } from './gen-estructura-territorial
 export class GenEstructuraTerritorialService {
 	private readonly requiredMessage = 'Este campo es obligatorio';
 
-	constructor(private repo: GenEstructuraTerritorialRepository) {}
+	constructor(
+		private repo: GenEstructuraTerritorialRepository,
+		private repoDepto: GenDeptoRepository,
+		private repoMunicipio: GenMunicipioRepository,
+		private repoDistrito: GenDistritoRepository
+	) {}
 
 	esValidoPais(model: GenPais, msg: Function, isUpdate = false): boolean {
 		if (isUpdate && (!model?.CORR_PAIS || model.CORR_PAIS <= 0)) {
@@ -118,7 +123,8 @@ export class GenEstructuraTerritorialService {
 	}
 
 	updatePais(model: GenPais): Observable<IResult> {
-		return this.repo.updatePais(this.buildPaisPayload(model));
+		const xWhere: IParam[] = [{ Parameter: 'CORR_PAIS', Value: model.CORR_PAIS }];
+		return this.repo.updatePais(this.buildPaisPayload(model), xWhere);
 	}
 
 	buildPaisPayload(model: GenPais): Pick<GenPais, 'CORR_PAIS' | 'NOMBRE_PAIS' | 'CODIGO_PAIS' | 'NACIONALIDAD' | 'NOMBRE_CORTO'> {
@@ -137,19 +143,19 @@ export class GenEstructuraTerritorialService {
 	}
 
 	getAllDeptos(param: any): Observable<IResult> {
-		return this.repo.getAllDeptos(this.buildRemoteWhere(param, false, ['CORR_PAIS']));
+		return this.repoDepto.getAll(this.buildRemoteWhere(param, false, ['CORR_PAIS']));
 	}
 
 	getDistinctValuesDeptos(param: any): Observable<IResult> {
-		return this.repo.getDistinctValuesDeptos(this.buildRemoteWhere(param, false, ['CORR_PAIS']));
+		return this.repoDepto.getDistinctValues(this.buildRemoteWhere(param, false, ['CORR_PAIS']));
 	}
 
 	insertDepto(model: GenDepto): Observable<IResult> {
-		return this.repo.createDepto(model);
+		return this.repoDepto.create(model);
 	}
 
 	updateDepto(model: GenDepto): Observable<IResult> {
-		return this.repo.updateDepto(model);
+		return this.repoDepto.update(model);
 	}
 
 	deleteDepto(model: GenDepto): Observable<IResult> {
@@ -157,23 +163,23 @@ export class GenEstructuraTerritorialService {
 			{ Parameter: 'CORR_PAIS', Value: model.CORR_PAIS },
 			{ Parameter: 'CORR_DEPTO', Value: model.CORR_DEPTO },
 		];
-		return this.repo.deleteDepto(xWhere);
+		return this.repoDepto.delete(xWhere);
 	}
 
 	getAllMunicipios(param: any): Observable<IResult> {
-		return this.repo.getAllMunicipios(this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO']));
+		return this.repoMunicipio.getAll(this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO']));
 	}
 
 	getDistinctValuesMunicipios(param: any): Observable<IResult> {
-		return this.repo.getDistinctValuesMunicipios(this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO']));
+		return this.repoMunicipio.getDistinctValues(this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO']));
 	}
 
 	insertMunicipio(model: GenMunicipio): Observable<IResult> {
-		return this.repo.createMunicipio(model);
+		return this.repoMunicipio.create(model);
 	}
 
 	updateMunicipio(model: GenMunicipio): Observable<IResult> {
-		return this.repo.updateMunicipio(model);
+		return this.repoMunicipio.update(model);
 	}
 
 	deleteMunicipio(model: GenMunicipio): Observable<IResult> {
@@ -182,15 +188,17 @@ export class GenEstructuraTerritorialService {
 			{ Parameter: 'CORR_DEPTO', Value: model.CORR_DEPTO },
 			{ Parameter: 'CORR_MUNICIPIO', Value: model.CORR_MUNICIPIO },
 		];
-		return this.repo.deleteMunicipio(xWhere);
+		return this.repoMunicipio.delete(xWhere);
 	}
 
 	getAllDistritos(param: any): Observable<IResult> {
-		return this.repo.getAllDistritos(this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO']));
+		return this.repoDistrito.getAll(this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO']));
 	}
 
 	getDistinctValuesDistritos(param: any): Observable<IResult> {
-		return this.repo.getDistinctValuesDistritos(this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO']));
+		return this.repoDistrito.getDistinctValues(
+			this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO'])
+		);
 	}
 
 	getPaisListSummary(): any {
@@ -232,11 +240,11 @@ export class GenEstructuraTerritorialService {
 	}
 
 	insertDistrito(model: GenDistrito): Observable<IResult> {
-		return this.repo.createDistrito(model);
+		return this.repoDistrito.create(model);
 	}
 
 	updateDistrito(model: GenDistrito): Observable<IResult> {
-		return this.repo.updateDistrito(model);
+		return this.repoDistrito.update(model);
 	}
 
 	deleteDistrito(model: GenDistrito): Observable<IResult> {
@@ -246,56 +254,18 @@ export class GenEstructuraTerritorialService {
 			{ Parameter: 'CORR_MUNICIPIO', Value: model.CORR_MUNICIPIO },
 			{ Parameter: 'CORR_DISTRITO', Value: model.CORR_DISTRITO },
 		];
-		return this.repo.deleteDistrito(xWhere);
+		return this.repoDistrito.delete(xWhere);
 	}
 
-	getPaisColumns(
-		onEditClick: Function,
-		onDeleteClick: Function,
-		canEdit = true,
-		canDelete = true
-	): any[] {
-		const editHint = canEdit ? 'Editar país' : 'No tiene permiso para editar registros.';
-		const deleteHint = canDelete ? 'Eliminar país' : 'No tiene permiso para eliminar registros.';
-		const editCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-edit';
-		const deleteCssClass = canDelete ? 'sguees-grid-action-delete' : 'sguees-action-no-delete';
-		const editClick = canEdit ? onEditClick : () => undefined;
-		const deleteClick = canDelete ? onDeleteClick : () => undefined;
-
+	/** Columnas del listado de países — acciones las aporta `app-data-grid-mtto`. */
+	getPaisColumns(): any[] {
 		return [
-			{
-				type: 'buttons',
-				name: 'btnAcciones',
-				caption: 'Options',
-				width: 150,
-				minWidth: 150,
-				allowResizing: false,
-				fixed: true,
-				fixedPosition: 'left',
-				alignment: 'center',
-				buttons: [
-					{
-						hint: editHint,
-						icon: 'edit',
-						stylingMode: 'text',
-						cssClass: editCssClass,
-						onClick: editClick,
-					},
-					{
-						hint: deleteHint,
-						icon: 'trash',
-						stylingMode: 'text',
-						cssClass: deleteCssClass,
-						onClick: deleteClick,
-					},
-				],
-			},
 			{ dataField: 'CORR_PAIS', caption: 'Corr.', width: 100, dataType: 'number', filterOperations: ['=', '<', '>', '<=', '>='] },
 			{ dataField: 'NOMBRE_PAIS', caption: 'País', minWidth: 180 },
 			{ dataField: 'CODIGO_PAIS', caption: 'Código', width: 100 },
 			{ dataField: 'NACIONALIDAD', caption: 'Nacionalidad', width: 140 },
 			{ dataField: 'NOMBRE_CORTO', caption: 'Nombre corto', width: 140 },
-			...this.getAuditColumns(),
+			...buildAuditGridColumns({ withDateTimeFilter: true }),
 		];
 	}
 
@@ -425,9 +395,9 @@ export class GenEstructuraTerritorialService {
 			{
 				type: 'buttons',
 				name: 'btnAcciones',
-				caption: 'Options',
-				width: 150,
-				minWidth: 150,
+				caption: 'Acciones',
+				width: 100,
+				minWidth: 100,
 				allowResizing: false,
 				fixed: true,
 				fixedPosition: 'left',
@@ -457,34 +427,9 @@ export class GenEstructuraTerritorialService {
 			columns.push({ dataField: codigoField, caption: codigoCaption, width: 140 });
 		}
 
-		columns.push(...this.getAuditColumns());
+		columns.push(...buildAuditGridColumns({ withDateTimeFilter: true }));
 
 		return columns;
-	}
-
-	private getAuditColumns(): any[] {
-		return [
-			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
-			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
-			{
-				dataField: 'FECHA_CREA',
-				caption: 'Fecha Crea',
-				width: 200,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-				calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA'),
-			},
-			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
-			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
-			{
-				dataField: 'FECHA_ACTU',
-				caption: 'Fecha Actu',
-				width: 200,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-				calculateFilterExpression: createDateTimeFilterExpression('FECHA_ACTU'),
-			},
-		];
 	}
 
 	private getChildItems(

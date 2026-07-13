@@ -1,7 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import CustomStore from 'devextreme/data/custom_store';
-import { PagerPageSize } from 'devextreme/common/grids';
 import { lastValueFrom } from 'rxjs';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
@@ -11,12 +10,11 @@ import { getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
 import {
 	createMttoPagedStoreCacheState,
 	invalidateMttoPagedStoreCache,
+	loadMttoHybridDisplayPage,
 	MttoPagedStoreCacheState,
 	MttoPagedStorePageResult,
-	rememberMttoPagedServerCache,
-	resolveMttoPagedLoadParams,
-	syncMttoPagedStorePagerSize,
-	tryGetMttoPagedServerCache,
+	resolveMttoHybridLoadPlan,
+	syncMttoHybridApiPageSize,
 } from 'src/app/shared/mtto/mtto-paged-store.helpers';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { ScImpactoEconomico } from './models/sc-impacto-economico';
@@ -33,15 +31,20 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 
 	protected override etiquetaRegistro = 'el impacto económico';
 	protected override requiereEmpresaSesion = true;
-	protected override mttoPageSize = 6;
-	protected override mttoPageSizes: (number | PagerPageSize)[] = [5, 6, 10, 15,20, 'all'];
+	protected override mttoHybridPaging = true;
+	protected override mttoPageSize = 15;
+	protected override mttoApiPageSize = 50;
+	protected override mttoApiPageSizes: (number | 'all')[] = [50, 100, 150, 250, 'all'];
 	protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
 	protected override mttoGridKeyExpr = 'CORR_IMPACTO_ECONOMICO';
 	protected override mttoCampoEstado = ESTADO_FIELD;
 	protected override mttoEstadoDescribeField = 'DESCRIPCION';
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Impacto Economico';
-	private readonly pagedStoreCacheState: MttoPagedStoreCacheState = createMttoPagedStoreCacheState(this.mttoPageSize);
+	private readonly pagedStoreCacheState: MttoPagedStoreCacheState = createMttoPagedStoreCacheState(
+		this.mttoPageSize,
+		this.mttoApiPageSize
+	);
 	private pagedStoreInflightKey: string | null = null;
 	private pagedStoreInflightPromise: Promise<MttoPagedStorePageResult> | null = null;
 
@@ -78,7 +81,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 	fillParam(
 		xCORR_IMPACTO_ECONOMICO?: number,
 		page = 1,
-		pageSize = this.mttoPageSize,
+		pageSize = this.mttoApiPageSize,
 		sortField = '',
 		sortDesc = false
 	): any {
@@ -128,8 +131,9 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		this.refrescarGridMtto(resetPage);
 	}
 
-	onPagerPageSizeChange(pageSize: number): void {
-		syncMttoPagedStorePagerSize(this.pagedStoreCacheState, pageSize);
+	onApiPageSizeChange(apiPageSize: number): void {
+		this.mttoApiPageSize = apiPageSize;
+		syncMttoHybridApiPageSize(this.pagedStoreCacheState, apiPageSize);
 		this.pagedStoreInflightKey = null;
 		this.pagedStoreInflightPromise = null;
 	}
@@ -184,7 +188,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 	}
 	//#endregion
 
-	//#region <Grid paginado servidor>
+	//#region <Grid paginado servidor híbrido>
 	private configurarDataSource(): void {
 		this.models = new CustomStore({
 			key: this.mttoGridKeyExpr,
@@ -194,36 +198,30 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 				const loadGeneration = this.pagedStoreCacheState.loadGeneration;
 
 				try {
-					const { page, pageSize, sortField, sortDesc, serverKey } = resolveMttoPagedLoadParams(
+					const plan = resolveMttoHybridLoadPlan(
 						loadOptions,
 						this.pagedStoreCacheState,
 						this.mttoGridKeyExpr,
-						this.dataGrid?.activePageSize
+						this.mttoPageSize
 					);
 
-					const cached = tryGetMttoPagedServerCache(serverKey, this.pagedStoreCacheState);
-					if (cached) {
-						return cached;
-					}
-
-					if (this.pagedStoreInflightKey === serverKey && this.pagedStoreInflightPromise) {
+					if (this.pagedStoreInflightKey === plan.displayKey && this.pagedStoreInflightPromise) {
 						return this.pagedStoreInflightPromise;
 					}
 
-					this.pagedStoreInflightKey = serverKey;
-					this.pagedStoreInflightPromise = this.fetchPagedImpacto(
-						page,
-						pageSize,
-						sortField,
-						sortDesc,
-						serverKey,
-						loadGeneration
+					this.pagedStoreInflightKey = plan.displayKey;
+					this.pagedStoreInflightPromise = loadMttoHybridDisplayPage(
+						plan,
+						this.pagedStoreCacheState,
+						(apiPage, apiPageSize, sortField, sortDesc) =>
+							this.fetchPagedImpacto(apiPage, apiPageSize, sortField, sortDesc, loadGeneration),
+						this.mttoPageSize
 					);
 
 					try {
 						return await this.pagedStoreInflightPromise;
 					} finally {
-						if (this.pagedStoreInflightKey === serverKey) {
+						if (this.pagedStoreInflightKey === plan.displayKey) {
 							this.pagedStoreInflightKey = null;
 							this.pagedStoreInflightPromise = null;
 						}
@@ -241,7 +239,6 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		pageSize: number,
 		sortField: string,
 		sortDesc: boolean,
-		serverKey: string,
 		loadGeneration: number
 	): Promise<MttoPagedStorePageResult> {
 		const response = await lastValueFrom(
@@ -256,13 +253,10 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 			throw new Error(response.ErrorMessage || 'No se pudo cargar el impacto economico.');
 		}
 
-		const result = {
+		return {
 			data: response.Data || [],
 			totalCount: response.RowsAffected || 0,
 		};
-
-		rememberMttoPagedServerCache(serverKey, result, this.pagedStoreCacheState, pageSize);
-		return result;
 	}
 	//#endregion
 }

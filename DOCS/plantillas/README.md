@@ -26,6 +26,8 @@ Estas plantillas son la **fuente de verdad para IA y programadores** al crear o 
 
 | [mtto-a-plus-estado-catalogo.md](./mtto-a-plus-estado-catalogo.md) | **Extensión** activo/inactivo (`bit`) — combinar con **A+** o **A+P** |
 
+| [mtto-barra-patron.md](./mtto-barra-patron.md) | **Barra / toolbar** — proceso = Compras; catálogo = título + Nuevo en grid |
+
 | [mtto-api-crud-http.md](./mtto-api-crud-http.md) | **PUT/DELETE** — `CData.Put` + `ApplyQueryKeys` (todos los mttos) |
 
 | [mtto-estado-transaccional.md](./mtto-estado-transaccional.md) | Documentos/partidas — estado `varchar`, flujo propio |

@@ -36,7 +36,7 @@ Catálogo simple activo/inactivo → [mtto-a-plus-estado-catalogo.md](./mtto-a-p
 |------|--------|
 | Grid | Columna texto o badge con lookup de estados (no solo verde/rojo) |
 | Editar / eliminar | Condicionado por estado (`ESTADO === 'DI'`) |
-| Botones | Acciones de negocio: Aplicar, Anular, Autorizar — **no** Activar/Desactivar genérico |
+| Botones | Acciones de negocio: Aplicar, Anular, Autorizar — **no** Activar/Desactivar genérico. Configurar en **HTML** de `app-barra-data-mtto` (`btn1`…); TS solo textos. Ver [mtto-barra-patron.md](./mtto-barra-patron.md). |
 | Form | Campos bloqueados según estado (`bloquear()` por `ESTADO`) |
 | API | Métodos específicos por transición, validación en service |
 

@@ -1,0 +1,198 @@
+<div class="con-reporte-shell">
+  <dx-box
+    class="content-block con-reporte-shell__cabecera"
+    direction="row"
+    width="100%"
+    [height]="'auto'"
+  >
+    <dxi-item ratio="0" baseSize="28" class="bgOcultar">
+      <dx-toolbar class="bgOcultar" [items]="contenidoToolbar"></dx-toolbar>
+    </dxi-item>
+    <dxi-item ratio="1">
+      <h2 class="con-reporte-shell__titulo">{{ tituloVentana }}</h2>
+    </dxi-item>
+  </dx-box>
+
+  <div class="con-reporte-shell__separador-titulo" #separadorTitulo aria-hidden="true"></div>
+
+  <dx-drawer
+    class="con-reporte-shell__drawer"
+    [openedStateMode]="'shrink'"
+    [position]="'before'"
+    [revealMode]="'slide'"
+    [opened]="true"
+    [height]="altoDrawer"
+    template="template"
+    [width]="'100%'"
+    [(opened)]="panelFiltrosAbierto"
+    [closeOnOutsideClick]="false"
+  >
+    <div *dxTemplate="let data of 'template'" class="con-reporte-shell__panel-filtros">
+      <div class="options">
+        <div class="option" *ngIf="usaFiltro('FECHA_INICIAL')">
+          <div>Fecha Inicial: </div>
+          <dx-date-box
+            [(value)]="filtro.FECHA_INICIAL"
+            [useMaskBehavior]="true"
+            type="date"
+            displayFormat="dd/MM/yyyy"
+            width="'100%'"
+            [showClearButton]="true"
+          ></dx-date-box>
+        </div>
+        <div class="option" *ngIf="usaFiltro('FECHA_FINAL')">
+          <div>Fecha Final: </div>
+          <dx-date-box
+            [(value)]="filtro.FECHA_FINAL"
+            [useMaskBehavior]="true"
+            type="date"
+            displayFormat="dd/MM/yyyy"
+            width="'100%'"
+            [showClearButton]="true"
+          ></dx-date-box>
+        </div>
+        <div class="option" *ngIf="usaFiltro('ANIO_PERIODO')">
+          <div>Año: </div>
+          <dx-number-box
+            [(value)]="filtro.ANIO_PERIODO"
+            [min]="2000"
+            [max]="2100"
+            [showSpinButtons]="true"
+            width="'100%'"
+          ></dx-number-box>
+        </div>
+        <div class="option" *ngIf="usaFiltro('MES_PERIODO')">
+          <div>Mes: </div>
+          <dx-select-box
+            [(value)]="filtro.MES_PERIODO"
+            [dataSource]="mMeses"
+            displayExpr="NOMBRE"
+            valueExpr="MES"
+            width="'100%'"
+          ></dx-select-box>
+        </div>
+        <div class="option" *ngIf="usaFiltro('CUENTA_CONTABLE_INICIAL')">
+          <div>Cuenta Inicial: </div>
+          <dx-select-box
+            [(value)]="filtro.CUENTA_CONTABLE_INICIAL"
+            [dataSource]="mCuentas"
+            [displayExpr]="etiquetaCuenta"
+            valueExpr="CUENTA_CONTABLE"
+            [searchEnabled]="true"
+            [showClearButton]="true"
+            width="'100%'"
+          ></dx-select-box>
+          <small class="field-hint" *ngIf="codigoReporte === 'LIBRO_DIARIO_MAYOR' && nivelCuentaMayor">
+            Solo cuentas de nivel mayor ({{ nivelCuentaMayor }}).
+          </small>
+        </div>
+        <div class="option" *ngIf="usaFiltro('CUENTA_CONTABLE_FINAL')">
+          <div>Cuenta Final: </div>
+          <dx-select-box
+            [(value)]="filtro.CUENTA_CONTABLE_FINAL"
+            [dataSource]="mCuentas"
+            [displayExpr]="etiquetaCuenta"
+            valueExpr="CUENTA_CONTABLE"
+            [searchEnabled]="true"
+            [showClearButton]="true"
+            width="'100%'"
+          ></dx-select-box>
+        </div>
+        <div class="option" *ngIf="usaFiltro('CUENTA_DEPARTAMENTO') || usaFiltro('CUENTA_CONTABLE')">
+          <div>Cuenta: </div>
+          <dx-select-box
+            [(value)]="filtro.CUENTA_CONTABLE"
+            [dataSource]="mCuentas"
+            [displayExpr]="etiquetaCuenta"
+            valueExpr="CUENTA_CONTABLE"
+            [searchEnabled]="true"
+            [showClearButton]="true"
+            width="'100%'"
+          ></dx-select-box>
+        </div>
+        <div class="option" *ngIf="usaFiltro('NIVEL')">
+          <div>Nivel: </div>
+          <dx-number-box
+            [(value)]="filtro.NIVEL"
+            [min]="1"
+            [max]="9"
+            [showSpinButtons]="true"
+            width="'100%'"
+          ></dx-number-box>
+        </div>
+        <div class="option" *ngIf="usaFiltro('PARTIDA_CIERRE')">
+          <dx-check-box [(value)]="filtro.PARTIDA_CIERRE" text="Partida cierre"></dx-check-box>
+        </div>
+        <div class="option" *ngIf="usaFiltro('PARTIDA_LIQUIDACION')">
+          <dx-check-box [(value)]="filtro.PARTIDA_LIQUIDACION" text="Partida liquidación"></dx-check-box>
+        </div>
+        <div class="option" *ngIf="usaFiltro('CONSOLIDADO')">
+          <dx-check-box [(value)]="filtro.CONSOLIDADO" text="Consolidado"></dx-check-box>
+        </div>
+        <div class="option" *ngIf="usaFiltro('CUENTA_A_CERO')">
+          <dx-check-box [(value)]="filtro.CUENTA_A_CERO" text="Cuenta a cero"></dx-check-box>
+        </div>
+        <div class="option" *ngIf="usaFiltro('FOLIADO')">
+          <dx-check-box [(value)]="filtro.FOLIADO" text="Foliado"></dx-check-box>
+        </div>
+        <div class="option" *ngIf="usaFiltro('NUMERO_FOLIO')">
+          <div>Número folio: </div>
+          <dx-number-box
+            [(value)]="filtro.NUMERO_FOLIO"
+            [min]="0"
+            [showSpinButtons]="true"
+            width="'100%'"
+          ></dx-number-box>
+        </div>
+        <div class="option" *ngIf="muestraBotonConsultar">
+          <dx-button text="Consultar" type="default" (onClick)="consultar.emit()"></dx-button>
+        </div>
+        <div class="option" *ngIf="muestraBotonVistaPrevia">
+          <dx-button text="Vista Previa" type="default" (onClick)="vistaPrevia.emit()"></dx-button>
+        </div>
+      </div>
+    </div>
+
+    <div class="con-reporte-shell__viewport">
+      <dx-data-grid
+        *ngIf="muestraGrid && !mostrarPdf"
+        #gridReporte
+        class="con-reporte-shell__grid bordeGrid"
+        [dataSource]="datos"
+        [columns]="columnas"
+        [columnAutoWidth]="false"
+        [wordWrapEnabled]="true"
+        [showBorders]="true"
+        [showColumnLines]="true"
+        [showRowLines]="true"
+        [rowAlternationEnabled]="true"
+        [hoverStateEnabled]="true"
+        [allowColumnResizing]="true"
+        [columnResizingMode]="'widget'"
+        [repaintChangesOnly]="true"
+        [height]="'100%'"
+        [width]="'100%'"
+        (onExporting)="alExportar($event)"
+        (onContentReady)="alGridListo()"
+      >
+        <dxo-load-panel [enabled]="false"></dxo-load-panel>
+        <dxo-search-panel [visible]="true"></dxo-search-panel>
+        <dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+        <dxo-export [enabled]="true" [fileName]="codigoReporte"></dxo-export>
+        <dxo-scrolling mode="standard" showScrollbar="always"></dxo-scrolling>
+        <dxo-paging [enabled]="false"></dxo-paging>
+      </dx-data-grid>
+
+      <object
+        *ngIf="(!muestraGrid || mostrarPdf) && pdfUrl"
+        class="con-reporte-shell__pdf"
+        [data]="pdfUrl"
+        type="application/pdf"
+        width="100%"
+        height="100%"
+      >
+        <embed [src]="pdfUrl" type="application/pdf" />
+      </object>
+    </div>
+  </dx-drawer>
+</div>

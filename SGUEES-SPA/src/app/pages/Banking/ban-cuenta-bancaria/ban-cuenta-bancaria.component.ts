@@ -4,7 +4,6 @@ import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
-import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { BanCuentaBancaria } from './models/ban-cuenta-bancaria';
@@ -13,24 +12,19 @@ import { BanCuentaBancariaService } from './ban-cuenta-bancaria.service';
 @Component({
 	selector: 'app-ban-cuenta-bancaria',
 	templateUrl: './ban-cuenta-bancaria.component.html',
-	styleUrls: ['./ban-cuenta-bancaria.component.scss'],
 })
 export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit {
-	constructor(
-		public override appInfoService: AppInfoService,
-		public override router: ActivatedRoute,
-		private service: BanCuentaBancariaService
-	) {
-		super(appInfoService, router);
-		this.columns = this.service.getColumns();
-		this.summary = this.service.getSummary();
-		this.items = this.service.getItems();
-	}
+	protected override etiquetaRegistro = 'la cuenta bancaria';
+	protected override requiereEmpresaSesion = true;
+	protected override mttoGridKeyExpr = 'CORR_CUENTA_BANCO';
+	protected override mttoCampoEstado = 'ESTADO_CUENTA_BANCARIA';
+	protected override mttoEstadoDescribeField = 'NOMBRE_CUENTA';
+
+	private readonly maintenanceSubtitulo = 'Mantenimiento de Cuentas Bancarias';
 
 	//#region <Declarando Variales>
 	mCORR_BANCO: any;
 	mTIPO_CUENTA_BANCO: any;
-	mESTADO_CUENTA: any;
 	mCLASE_CHEQUE: any;
 	mCORR_CENTRO_COSTO: any;
 	mCORR_MONEDA: any;
@@ -54,23 +48,39 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 	readOnly = false;
 	// #endregion
 
+	constructor(
+		public override appInfoService: AppInfoService,
+		public override router: ActivatedRoute,
+		private service: BanCuentaBancariaService
+	) {
+		super(appInfoService, router);
+		this.columns = this.service.getColumns();
+		this.summary = this.service.getSummary();
+		this.items = this.service.getItems();
+	}
+
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
+		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
 	}
 
-	inicializaOpciones() {
-		
-	}
+	inicializaOpciones() {}
 	// #endregion
+
+	override AsignaStatus(xEstado: UpdateType): void {
+		super.AsignaStatus(xEstado);
+		if (xEstado === UpdateType.Browse) {
+			this.subTituloVentana = this.maintenanceSubtitulo;
+		}
+	}
 
 	//#region <Manejo de Combos>
 	llenaComboBox() {
 		this.getCORR_BANCO();
 		this.getTIPO_CUENTA_BANCO();
-		this.getESTADO_CUENTA();
 		this.getCLASE_CHEQUE();
 		this.getCORR_CENTRO_COSTO();
 		this.getCORR_MONEDA();
@@ -88,7 +98,7 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -104,7 +114,7 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -120,23 +130,7 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
-	}
-
-	getESTADO_CUENTA() {
-		this.appInfoService
-			.getLookUp('BAN_CUENTA_BANCARIA', 'BAN_LISTA', 'GetESTADO_CUENTA', undefined, environment.UrlCONTAAPI)
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.mESTADO_CUENTA = response.Data;
-					}
-				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -152,7 +146,7 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -168,7 +162,7 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -184,7 +178,7 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -192,11 +186,8 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 
 	//#region <Metodos Mtto>
 	fillParam(xCORR_CUENTA_BANCO?: number): any {
-		if (xCORR_CUENTA_BANCO == undefined) {
-			xCORR_CUENTA_BANCO = 0;
-		}
 		return {
-			CORR_CUENTA_BANCO: xCORR_CUENTA_BANCO,
+			CORR_CUENTA_BANCO: xCORR_CUENTA_BANCO ?? 0,
 		};
 	}
 
@@ -220,127 +211,69 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 				VALIDA_FECHA: xModel.VALIDA_FECHA,
 				NOMBRE_CUENTA: xModel.NOMBRE_CUENTA,
 				NO_PERMITE_CHEQUES: xModel.NO_PERMITE_CHEQUES,
-				ESTADO_CUENTA: xModel.ESTADO_CUENTA,
+				ESTADO_CUENTA_BANCARIA: xModel.ESTADO_CUENTA_BANCARIA,
 				USA_TRANSACIONES_UNI: xModel.USA_TRANSACIONES_UNI,
 				CLASE_CHEQUE: xModel.CLASE_CHEQUE,
 			};
-		} else {
-			return {
-				CORR_EMPRESA: 1,
-				CORR_CUENTA_BANCO: 0,
-				NUMERO_CUENTA_BANCO: '',
-				CORR_BANCO: 0,
-				CUENTA_CONTABLE: '',
-				NOMBRE_REPORTE: '',
-				TIPO_CUENTA_BANCO: 'CO',
-				CORR_CENTRO_COSTO: 0,
-				CORR_MONEDA: 0,
-				CODIGO_EMPRESARIAL: '',
-				CODIGO_EMPRESARIAL_PROV: '',
-				NO_PERMITE_MODIFICAR: false,
-				VALIDAR_SALDO: false,
-				PAGA_PLANILLA: false,
-				VALIDA_FECHA: false,
-				NOMBRE_CUENTA: '',
-				NO_PERMITE_CHEQUES: false,
-				ESTADO_CUENTA: 'AC',
-				USA_TRANSACIONES_UNI: false,
-				CLASE_CHEQUE: '',
-			};
 		}
+
+		return {
+			CORR_EMPRESA: 1,
+			CORR_CUENTA_BANCO: 0,
+			NUMERO_CUENTA_BANCO: '',
+			CORR_BANCO: 0,
+			CUENTA_CONTABLE: '',
+			NOMBRE_REPORTE: '',
+			TIPO_CUENTA_BANCO: 'CO',
+			CORR_CENTRO_COSTO: 0,
+			CORR_MONEDA: 0,
+			CODIGO_EMPRESARIAL: '',
+			CODIGO_EMPRESARIAL_PROV: '',
+			NO_PERMITE_MODIFICAR: false,
+			VALIDAR_SALDO: false,
+			PAGA_PLANILLA: false,
+			VALIDA_FECHA: false,
+			NOMBRE_CUENTA: '',
+			NO_PERMITE_CHEQUES: false,
+			ESTADO_CUENTA_BANCARIA: true,
+			USA_TRANSACIONES_UNI: false,
+			CLASE_CHEQUE: '',
+		};
 	}
 
-	consultar() {
-		this.service
-			.getAll(this.fillParam())
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.models = response.Data;
-					}
-				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+	consultar(): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+		});
+	}
+
+	override nuevo(): void {
+		if (!this.asegurarEmpresaSesion()) {
+			return;
+		}
+		super.nuevo();
 	}
 
 	guardar(): void {
-		if (!this.service.esValido(this.model, this.notifyFx)) {
-			return;
-		}
-
-		this.loadingVisible = true;
-		if (this.banderaMtto === UpdateType.Add) {
-			this.service
-				.insert(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.models.push(response.Data);
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro creado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		} else if (this.banderaMtto === UpdateType.Update) {
-			this.service
-				.update(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							const vIndex = this.models.findIndex((item: any) => item.CORR_CUENTA_BANCO === response.Data.CORR_CUENTA_BANCO);
-							this.models[vIndex] = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		}
+		this.guardarMtto({
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
+		});
 	}
 
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_CUENTA_BANCO === this.modelUpdate.CORR_CUENTA_BANCO);
 	}
 
-	rowRemoving(e: any) {
-		this.service
-			.delete(this.fillParam(e.data.CORR_CUENTA_BANCO))
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-						e.component.refresh();
-					} else {
-						e.cancel = true;
-						this.notifyFx(response.ErrorMessage, NotifyType.Error);
-					}
-				},
-				error: (error: any) => {
-					e.cancel = true;
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+	rowRemoving(e: any): void {
+		this.rowRemovingMtto(e, {
+			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_CUENTA_BANCO)),
+		});
+	}
+
+	activar_inactivar(): void {
+		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
 	override bloquear(): void {
@@ -349,7 +282,6 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 		this.dataForm.instance.getEditor('NOMBRE_CUENTA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CORR_BANCO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('TIPO_CUENTA_BANCO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('ESTADO_CUENTA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CLASE_CHEQUE')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CORR_CENTRO_COSTO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CORR_MONEDA')?.option('readOnly', true);
@@ -363,6 +295,7 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 		this.dataForm.instance.getEditor('VALIDA_FECHA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NO_PERMITE_CHEQUES')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('USA_TRANSACIONES_UNI')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ESTADO_CUENTA_BANCARIA')?.option('readOnly', true);
 		this.readOnly = true;
 	}
 
@@ -370,6 +303,7 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 		this.readOnly = false;
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_CUENTA_BANCO')?.option('readOnly', true);
+			this.dataForm.instance.getEditor('ESTADO_CUENTA_BANCARIA')?.option('readOnly', false);
 		});
 	}
 

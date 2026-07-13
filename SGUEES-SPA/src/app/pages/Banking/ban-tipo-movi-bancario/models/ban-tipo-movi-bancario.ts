@@ -10,8 +10,15 @@ export interface BanTipoMoviBancario {
 	CLASE_MOVIMIENTO: string;
 	CUENTA_CONTABLE_GASTO: string;
 	NOMBRE_REPORTE: string;
+	ESTADO_TIPO_MOVIMIENTO: boolean;
 	NOMBRE_LINEA_TRABAJO?: string;
 	NOMBRE_CLASE_PARTIDA?: string;
 	NOMBRE_SUMA_RESTA?: string;
 	NOMBRE_CLASE_MOVIMIENTO?: string;
+	USUARIO_CREA?: string;
+	FECHA_CREA?: Date;
+	ESTACION_CREA?: string;
+	USUARIO_ACTU?: string;
+	FECHA_ACTU?: Date;
+	ESTACION_ACTU?: string;
 }

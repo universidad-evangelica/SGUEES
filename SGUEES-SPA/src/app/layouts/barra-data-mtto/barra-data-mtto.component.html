@@ -8,21 +8,23 @@
       [breadcrumbs]="breadcrumbs ?? null"
       variant="enterprise"
     >
-      <ng-container *ngTemplateOutlet="barraToolbar"></ng-container>
     </app-page-header>
   </div>
 
-  <ng-container *ngIf="showPageHeader">
+  <div class="sguees-barra-mtto__toolbar-row" *ngIf="showToolbarRow">
     <ng-container *ngTemplateOutlet="barraToolbar"></ng-container>
-  </ng-container>
+  </div>
 </div>
 
 <ng-template #barraToolbar>
-  <dx-toolbar class="theme-dependent sguees-barra-toolbar sguees-barra-toolbar--inline sguees-barra-toolbar--grouped">
+  <dx-toolbar
+    class="theme-dependent sguees-barra-toolbar sguees-barra-toolbar--grouped"
+    [class.sguees-barra-toolbar--inline]="!isBrowse"
+  >
     <dxi-item location="before" widget="dxButton" [options]="optNuevo"></dxi-item>
     <dxi-item *ngIf="!isBrowse && isForm" location="before" widget="dxButton" [options]="optGuardar"></dxi-item>
     <dxi-item *ngIf="!isBrowse" location="before" widget="dxButton" [options]="optCancelar"></dxi-item>
-    <dxi-item location="before" locateInMenu="auto" menuItemTemplate="menuSeparatorTemplate">
+    <dxi-item *ngIf="showPrimaryToolbarDivider" location="before" locateInMenu="auto" menuItemTemplate="menuSeparatorTemplate">
       <div *dxTemplate>
         <div class="toolbar-separator sguees-toolbar-divider"></div>
       </div>

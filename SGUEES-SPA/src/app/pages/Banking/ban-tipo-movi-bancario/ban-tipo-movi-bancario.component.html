@@ -1,5 +1,7 @@
+<div class="sguees-mtto-view">
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
+	[subTituloVentana]="subTituloVentana"
 	[isBrowse]="isBrowse()"
 	[isForm]="isForm()"
 	[permiteAdd]="permiteAdd"
@@ -8,8 +10,18 @@
 	(cancelar)="cancelar()"
 >
 </app-barra-data-mtto>
-<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
-	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+
+<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
+	<dx-form
+		#fData
+		id="fData"
+		[formData]="model"
+		[labelLocation]="'top'"
+		[colCount]="mttoFormColCount"
+		[colCountByScreen]="mttoFormColCountByScreen"
+		[showRequiredMark]="false"
+		[items]="items"
+	>
 		<div *dxTemplate="let cellInfo of 'CORR_LINEALookup'">
 			<app-data-lookup
 				[model]="mCORR_LINEA"
@@ -67,20 +79,42 @@
 		</div>
 	</dx-form>
 </div>
+
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
 	[models]="models"
 	[columns]="columns"
 	[summary]="summary"
-	[keyExpr]="'CORR_TIPO_MOVIMIENTO'"
+	[keyExpr]="mttoGridKeyExpr"
+	[pageSize]="mttoPageSize"
+	[allowedPageSizes]="mttoPageSizes"
+	[remoteOperations]="mttoRemoteOperations"
+	[showSearch]="false"
+	[showAdd]="true"
+	[showRefresh]="true"
+	[showExport]="true"
+	[showEstadoToolbar]="true"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="permiteEdit"
+	[focusedRowKey]="gridFocusedRowKey"
+	[permitePrint]="permitePrint"
 	[permiteEditar]="getPermiteEditar"
 	[permiteDele]="getPermiteDele"
+	[responsiveColumnHiding]="false"
+	[columnHidingEnabled]="false"
+	[exportFileName]="'TiposMovimientoBancario'"
+	(refresh)="consultar()"
+	(add)="nuevo()"
+	(activarInactivar)="activar_inactivar()"
 	(rowDblClick)="rowDblClick($event)"
 	(rowRemoving)="rowRemoving($event)"
 	(focusedRowChanged)="focusedRowChanged($event)"
 	(editClick)="editarClick($event)"
 >
 </app-data-grid-mtto>
+
+</div>
+
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"
