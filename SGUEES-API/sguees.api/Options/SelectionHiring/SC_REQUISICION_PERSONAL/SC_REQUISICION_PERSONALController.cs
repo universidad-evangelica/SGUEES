@@ -108,7 +108,7 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/sc-requisicion-personal|R")]
         public async Task<CResult> GetCORR_BITACORA_SC_REQUISICION_PERSONAL([FromQuery] SC_REQUISICION_PERSONAL_BITACORAParam Data)
         {
-            Data.CORR_TIPO_DOCUMENTO = 100 ;
+            Data.CORR_TIPO_DOCUMENTO = 101 ;
 
             return await _service.GetAllAsyncBitacoraByCORR_REQUISICION(Data);
         }

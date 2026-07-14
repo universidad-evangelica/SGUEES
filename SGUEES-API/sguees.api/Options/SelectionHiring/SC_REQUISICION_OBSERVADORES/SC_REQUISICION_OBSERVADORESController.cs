@@ -53,19 +53,27 @@ namespace sguees.Controllers
 			Data.FECHA_ACTU = Data.FECHA_CREA;
 			
 			var resultado = await _service.CreateAsync(Data, Data.ESTACION_CREA, "e-CoffeeTech");
-			if (resultado.ErrorCode == 0)
-			{
-				return StatusCode(201, resultado);
-			} else {
-				return BadRequest(resultado);
-			}
-		}
+            //if (resultado.ErrorCode == 0)
+            //{
+            //	return StatusCode(201, resultado);
+            //} else {
+            //	return BadRequest(resultado);
+            //}
 
-		/// <summary>
-		/// Alta de observador desde sc-requisicion-personal.
-		/// Insert + relectura con GetAllBy_CORR_REQUISICION_PERSONAL (DEFECTO + de la requisición).
-		/// </summary>
-		[HttpPost("Create_SC_REQUISICION_PERSONAL")]
+            if (resultado.Result)
+            {
+                return StatusCode(StatusCodes.Status201Created, resultado);
+            }
+
+            //Todas las validaciones regresan en 200
+			return Ok(resultado);
+        }
+
+        /// <summary>
+        /// Alta de observador desde sc-requisicion-personal.
+        /// Insert + relectura con GetAllBy_CORR_REQUISICION_PERSONAL (DEFECTO + de la requisición).
+        /// </summary>
+        [HttpPost("Create_SC_REQUISICION_PERSONAL")]
 		[Authorize(Policy = "/sc-requisicion-personal|C")]
 		public async Task<IActionResult> Create_SC_REQUISICION_PERSONAL(SC_REQUISICION_OBSERVADORESTable Data)
 		{
@@ -78,12 +86,19 @@ namespace sguees.Controllers
 			Data.FECHA_ACTU = Data.FECHA_CREA;
 
 			var resultado = await _service.CreateBy_CORR_REQUISICION_PERSONAL(Data, Data.ESTACION_CREA, "e-CoffeeTech");
-			if (resultado.ErrorCode == 0)
+
+			//if (resultado.ErrorCode == 0)
+			//{
+			//	return StatusCode(201, resultado);
+			//}
+
+			if (resultado.Result)
 			{
-				return StatusCode(201, resultado);
+				return StatusCode(StatusCodes.Status201Created, resultado);
 			}
 
-			return BadRequest(resultado);
+			//Todas las validaciones regresan en 200
+			return Ok(resultado);
 		}
 		
 		[HttpPut]
@@ -98,15 +113,24 @@ namespace sguees.Controllers
 			Data.ESTACION_ACTU = Data.ESTACION_CREA;
 			Data.FECHA_ACTU = Data.FECHA_CREA;
 			var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
-			if (resultado.ErrorCode == 0)
-			{
-				return StatusCode(201, resultado);
-			} else {
-				return BadRequest(resultado);
-			}
-		}
-		
-		[HttpDelete]
+
+            //if (resultado.ErrorCode == 0)
+            //{
+            //	return StatusCode(201, resultado);
+            //} else {
+            //	return BadRequest(resultado);
+            //}
+
+            if (resultado.Result)
+            {
+                return StatusCode(StatusCodes.Status201Created, resultado);
+            }
+
+            //Todas las validaciones regresan en 200
+			return Ok(resultado);
+        }
+
+        [HttpDelete]
 		[Authorize(Policy = "/sc-requisicion-observadores|D")]
 		public async Task<IActionResult> Delete([FromQuery] SC_REQUISICION_OBSERVADORESTable Data)
 		{

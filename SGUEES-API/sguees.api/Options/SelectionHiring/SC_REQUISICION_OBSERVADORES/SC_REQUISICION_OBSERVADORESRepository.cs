@@ -102,7 +102,7 @@ namespace sguees.Repositories
 
 			if (string.IsNullOrWhiteSpace(Data.LOGIN_SISTEMA))
 			{
-				return ValidationResult("Debe seleccionar un usuario.");
+				return ValidationResult(1001, "Debe seleccionar un usuario.");
 			}
 
 			if (await ExistsLoginSistemaAsync(
@@ -111,7 +111,7 @@ namespace sguees.Repositories
 				Data.LOGIN_SISTEMA,
 				0))
 			{
-				return ValidationResult($"El usuario {Data.LOGIN_SISTEMA.Trim()} ya ha sido ingresado como observador.");
+				return ValidationResult(1003, $"El usuario {Data.LOGIN_SISTEMA.Trim()} ya ha sido ingresado como observador.");
 			}
 
             //string _tipoObservador = Data.CORR_REQUISICION_PERSONAL.HasValue && Data.CORR_REQUISICION_PERSONAL.Value > 0 ? "REQUISICION" : "DEFECTO";
@@ -175,7 +175,7 @@ namespace sguees.Repositories
 
 			if (string.IsNullOrWhiteSpace(Data.LOGIN_SISTEMA))
 			{
-				return ValidationResult("Debe seleccionar un usuario.");
+				return ValidationResult(1001, "Debe seleccionar un usuario.");
 			}
 
 			if (await ExistsLoginSistemaAsync(
@@ -184,7 +184,7 @@ namespace sguees.Repositories
 				Data.LOGIN_SISTEMA,
 				Data.CORR_REQUISICION_OBSERVADORES))
 			{
-				return ValidationResult($"El usuario {Data.LOGIN_SISTEMA.Trim()} ya ha sido ingresado como observador.");
+				return ValidationResult(1003, $"El usuario {Data.LOGIN_SISTEMA.Trim()} ya ha sido ingresado como observador.");
 			}
 
             //string _tipoObservador = Data.CORR_REQUISICION_PERSONAL.HasValue && Data.CORR_REQUISICION_PERSONAL.Value > 0 ? "REQUISICION" : "DEFECTO";
@@ -360,12 +360,12 @@ namespace sguees.Repositories
 
 			if (string.IsNullOrWhiteSpace(Data.LOGIN_SISTEMA))
 			{
-				return ValidationResult("Debe seleccionar un usuario.");
+				return ValidationResult(1001, "Debe seleccionar un usuario.");
 			}
 
 			if (!Data.CORR_REQUISICION_PERSONAL.HasValue || Data.CORR_REQUISICION_PERSONAL.Value <= 0)
 			{
-				return ValidationResult("Debe indicar la requisición de personal.");
+				return ValidationResult(1002, "Debe indicar la requisición de personal.");
 			}
 
 			if (await ExistsLoginSistemaAsync(
@@ -374,7 +374,7 @@ namespace sguees.Repositories
 				Data.LOGIN_SISTEMA,
 				0))
 			{
-				return ValidationResult($"El usuario {Data.LOGIN_SISTEMA.Trim()} ya ha sido ingresado como observador.");
+				return ValidationResult(1003, $"El usuario {Data.LOGIN_SISTEMA.Trim()} ya ha sido ingresado como observador.");
 			}
 
 			const string tipoObservador = "REQUISICION";
@@ -441,7 +441,7 @@ namespace sguees.Repositories
 				objResultado.Data = null;
 				objResultado.Result = false;
 				objResultado.CodeHelper = 0;
-				objResultado.ErrorCode = -1;
+				objResultado.ErrorCode = 5000;
 				objResultado.ErrorMessage = e.Message;
 				objResultado.ErrorSource += $"[{e.Source}]";
 			}
@@ -456,14 +456,14 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-        private static CResult ValidationResult(string message)
+        private static CResult ValidationResult(int errorCode, string message)
 		{
 			return new CResult
 			{
 				Data = null,
 				Result = false,
 				CodeHelper = 0,
-				ErrorCode = -1,
+				ErrorCode = errorCode,
 				ErrorMessage = message,
 				ErrorSource = "[SC_REQUISICION_OBSERVADORESRepository]",
 				RowsAffected = 0

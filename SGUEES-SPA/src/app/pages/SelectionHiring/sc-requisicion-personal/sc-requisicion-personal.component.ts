@@ -37,6 +37,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.columnsObservadores = this.service.getObservadoresColumns();
 		this.summaryObservadores = this.service.getObservadoresSummary();
 		this.itemsObservadorModal = this.observadoresService.getItemsObservadorModal();
+
+		this.columnsBitacora = this.service.getBitacoraColumns();
+		this.summaryBitacora = this.service.getBitacoraSummary();
 	}
 
 	//Variables
@@ -55,6 +58,11 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	modelsObservadores: any[] = [];
 	columnsObservadores: any[] = [];
 	summaryObservadores: any;
+
+	/** Bitácora — data del endpoint GetCORR_BITACORA_SC_REQUISICION_PERSONAL. */
+	modelsBitacora: any[] = [];
+	columnsBitacora: any[] = [];
+	summaryBitacora: any;
 
 	/** Modal agregar observador */
 	popupObservadorVisible = false;
@@ -96,11 +104,13 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	 */
 	cargarDatosTabs(): void {
 		this.cargarObservadores();
+		this.cargarBitacora();
 	}
 
 	/** Vacía los arrays de los tabs (útil al presionar Nuevo). */
 	limpiarDatosTabs(): void {
 		this.modelsObservadores = [];
+		this.modelsBitacora = [];
 	}
 
 	/** Carga observadores desde SC_REQUISICION_OBSERVADORES. */
@@ -119,6 +129,32 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				},
 				error: (error: any) => {
 					this.modelsObservadores = [];
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
+	/** Carga bitácora desde SC_REQUISICION_PERSONAL/GetCORR_BITACORA_SC_REQUISICION_PERSONAL. */
+	cargarBitacora(): void {
+		if (!this.model?.CORR_REQUISICION_PERSONAL || this.model.CORR_REQUISICION_PERSONAL <= 0) {
+			this.modelsBitacora = [];
+			return;
+		}
+
+		this.service
+			.getBitacora(this.fillParam(this.model.CORR_REQUISICION_PERSONAL))
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.modelsBitacora = response.Data ?? [];
+					} else {
+						this.modelsBitacora = [];
+						this.notifyFx(response.ErrorMessage, NotifyType.Error);
+					}
+				},
+				error: (error: any) => {
+					this.modelsBitacora = [];
 					this.notifyFx(error, NotifyType.Error);
 				},
 			});
@@ -179,10 +215,10 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 					} else {
 						//this.notifyFx(response.ErrorMessage, NotifyType.Error);
 						this.messageService.add({
-							severity: 'error',
-							summary: 'Error',
+							severity: 'warn',
+							summary: 'Validacion',
 							detail: response.ErrorMessage
-						});	
+						});
 					}
 					this.loadingVisible = false;
 				},

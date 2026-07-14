@@ -1,3 +1,8 @@
+<p-toast position="bottom-right" 
+    [showTransformOptions]="'translateY(100%)'" 
+    [hideTransitionOptions]="'500ms'" 
+    [showTransformOptions]="'translateX(100%)'">
+</p-toast>
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[subTituloVentana]="subTituloVentana" --Esto debe de agregarse por componente ya que de etools no viene.
@@ -58,9 +63,38 @@
 				</dx-form>
 		</dxi-item>
 
-		<!-- TAB 2: Bitácora (data quemada; luego API) -->
+		<!-- TAB 2: Bitácora requisición (solo lectura — GetCORR_BITACORA_SC_REQUISICION_PERSONAL) -->
 		<dxi-item title="Bitácora requisición" [icon]="'checklist'">
-
+			<div class="dx-grid-deta">
+				<dx-data-grid
+					#gridBitacora
+					[dataSource]="modelsBitacora"
+					[columns]="columnsBitacora"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
+					[columnAutoWidth]="true"
+					[height]="'100%'"
+					[width]="'100%'"
+				>
+					<dxo-search-panel [visible]="true"></dxo-search-panel>
+					<dxo-paging [pageSize]="10"></dxo-paging>
+					<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 20]"></dxo-pager>
+					<dxo-editing [allowUpdating]="false" [allowDeleting]="false" [allowAdding]="false"></dxo-editing>
+					<dxo-summary>
+						<dxi-total-item
+							column="LOGIN_SISTEMA"
+							summaryType="count"
+							valueFormat="#,##0"
+							displayFormat="Cant: {0}"
+						></dxi-total-item>
+					</dxo-summary>
+				</dx-data-grid>
+			</div>
 		</dxi-item>
 
 	</dx-tab-panel>

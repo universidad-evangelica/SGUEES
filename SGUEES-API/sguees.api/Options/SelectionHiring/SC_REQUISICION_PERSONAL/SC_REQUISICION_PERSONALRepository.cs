@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
-using System;
-using eFramework.Data;
-using SGUEES.Models;
+using System.Threading.Tasks;
 using eFramework.Core;
+using eFramework.Data;
+using Microsoft.Extensions.Configuration;
+using sguees.Models;
+using SGUEES.Models;
 
 
 namespace SGUEES.Repositories
@@ -279,13 +280,58 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        //public async Task<CResult> GetAllAsyncBitacoraByCORR_REQUISICION(List<CParameter> xWhere)
+        //{
+        //    CResult objResultado = new();
+
+        //    try
+        //    {
+        //        var reader = await objData.GetDataReader("V_" + _TableNameBitacora, xWhere);
+        //        var response = new List<SC_REQUISICION_PERSONAL_BITACORAView>().FromDataReader(reader).ToList();
+
+        //        reader.Close();
+        //        reader = null;
+
+        //        objResultado.Data = response;
+        //        objResultado.Result = true;
+        //        objResultado.RowsAffected = response.Count;
+        //        objResultado.CodeHelper = 0;
+        //        objResultado.ErrorCode = 0;
+        //        objResultado.ErrorMessage = "";
+        //        objResultado.ErrorSource = "";
+        //    }
+        //    catch (System.Exception e)
+        //    {
+        //        objResultado.Data = null;
+        //        objResultado.Result = false;
+        //        objResultado.CodeHelper = 0;
+        //        objResultado.ErrorCode = -1;
+        //        objResultado.ErrorMessage = e.Message;
+        //        objResultado.ErrorSource += $"[{e.Source}]";
+        //    }
+        //    finally
+        //    {
+        //        objData.objConnection.Close();
+        //    }
+
+        //    return objResultado;
+        //}
+
+        /// <summary>
+        /// Lectura de vista V_SEG_FLUJO_BITACORA_FIRMAS
+        /// Devuelve todo el movimiento de la requisicion personal
+        /// </summary>
         public async Task<CResult> GetAllAsyncBitacoraByCORR_REQUISICION(List<CParameter> xWhere)
         {
             CResult objResultado = new();
 
             try
             {
-                var reader = await objData.GetDataReader("V_" + _TableNameBitacora, xWhere);
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, @"
+				SELECT FB.* 
+				FROM V_SEG_FLUJO_BITACORA_FIRMAS FB
+				WHERE CORR_TIPO_DOCUMENTO = @CORR_TIPO_DOCUMENTO AND CORR_DOCUMENTO = @CORR_DOCUMENTO", xWhere);
+
                 var response = new List<SC_REQUISICION_PERSONAL_BITACORAView>().FromDataReader(reader).ToList();
 
                 reader.Close();

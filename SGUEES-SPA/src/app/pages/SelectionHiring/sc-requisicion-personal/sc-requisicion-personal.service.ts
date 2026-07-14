@@ -94,6 +94,15 @@ export class ScRequisicionPersonalService {
 		return this.repo.delete(xWhere);
 	}
 
+	/** Bitácora de la requisición (endpoint GetCORR_BITACORA_SC_REQUISICION_PERSONAL). */
+	getBitacora(param?: any): Observable<IResult> {
+		const xWhere: IParam[] = [];
+		if (param?.CORR_REQUISICION_PERSONAL != null && param.CORR_REQUISICION_PERSONAL > 0) {
+			xWhere.push({ Parameter: 'CORR_REQUISICION_PERSONAL', Value: param.CORR_REQUISICION_PERSONAL });
+		}
+		return this.repo.getBitacora(xWhere);
+	}
+
 
 
     getColumns(): any {
@@ -273,6 +282,30 @@ export class ScRequisicionPersonalService {
     getObservadoresSummary(): any {
         return {
             totalItems: [{ column: 'CORR_REQUISICION_OBSERVADORES', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
+        };
+    }
+
+    /**
+     * Columnas del grid Bitácora (tab en sc-requisicion-personal).
+     * Dejar comentadas las columnas futuras para ir habilitando sin romper el grid.
+     */
+    getBitacoraColumns(): any {
+        return [
+            { dataField: 'CORR_EMPRESA', caption: 'Empresa', width: 100 },
+            { dataField: 'CORR_REQUISICION_PERSONAL', caption: 'Corr. Requisición', width: 130 },
+            { dataField: 'LOGIN_SISTEMA', caption: 'Usuario', width: 180 },
+            { dataField: 'ESTADO_DESTINO', caption: 'Estado destino', width: 180 },
+            { dataField: 'COMENTARIO', caption: 'Comentario', width: 320 },
+            // Columnas futuras (descomentar cuando el API las envíe):
+            // { dataField: 'FECHA', caption: 'Fecha', width: 160, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+            // { dataField: 'ESTADO_ORIGEN', caption: 'Estado origen', width: 180 },
+            // { dataField: 'NOMBRE_USUARIO', caption: 'Nombre usuario', width: 220 },
+        ];
+    }
+
+    getBitacoraSummary(): any {
+        return {
+            totalItems: [{ column: 'LOGIN_SISTEMA', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
         };
     }
     

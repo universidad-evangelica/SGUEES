@@ -7,9 +7,9 @@ namespace SGUEES.Models
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_REQUISICION_PERSONAL { get; set; }
-        public string NOMBRE_ESTADO { get; set; }
-        public string USUARIO { get; set; }
-        public string OBSERVACIONES { get; set; }
-        public DateTime FECHA { get; set; }
+        public string LOGIN_SISTEMA { get; set; }
+        public string ESTADO_DESTINO { get; set; }
+        public string COMENTARIO { get; set; }
+        //public DateTime FECHA { get; set; }
     }
 }
