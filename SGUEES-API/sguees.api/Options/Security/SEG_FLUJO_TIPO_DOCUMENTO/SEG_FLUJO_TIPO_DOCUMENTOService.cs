@@ -32,9 +32,9 @@ namespace sguees.Services
                 p.Add(new CParameter() {ParameterName="NOMBRE_TIPO",Value=xWhere.NOMBRE_TIPO,DbType=System.Data.DbType.String});
             }
 
-            if (!string.IsNullOrEmpty(xWhere.TABLA_ORIGEN))
+            if (!string.IsNullOrEmpty(xWhere.CODIGO_OPCION))
             {
-                p.Add(new CParameter() {ParameterName="TABLA_ORIGEN",Value=xWhere.TABLA_ORIGEN,DbType=System.Data.DbType.String});
+                p.Add(new CParameter() {ParameterName="CODIGO_OPCION",Value=xWhere.CODIGO_OPCION,DbType=System.Data.DbType.String});
             }
 
           

@@ -30,7 +30,7 @@ export class SegFlujoTipoDocumentoService {
             return false;
         }
 
-        if (model.TABLA_ORIGEN && model.TABLA_ORIGEN.length > 50) {
+        if (model.CODIGO_OPCION && model.CODIGO_OPCION.length > 50) {
             msg('El nombre de la tabla origen no puede exceder los 50 caracteres', NotifyType.Error);
             return false;
         }
@@ -50,8 +50,8 @@ export class SegFlujoTipoDocumentoService {
             xWhere.push({ Parameter: 'NOMBRE_TIPO', Value: param.NOMBRE_TIPO });
         }
 
-        if (param.TABLA_ORIGEN) {
-            xWhere.push({ Parameter: 'TABLA_ORIGEN', Value: param.TABLA_ORIGEN });
+        if (param.CODIGO_OPCION) {
+            xWhere.push({ Parameter: 'CODIGO_OPCION', Value: param.CODIGO_OPCION });
         }
 
 
@@ -86,7 +86,7 @@ export class SegFlujoTipoDocumentoService {
             { dataField: 'CORR_TIPO_DOCUMENTO', caption: 'Corr.', width: 100 },
             { dataField: 'NOMBRE_TIPO', caption: 'Nombre', width: 250 },
             { dataField: 'DESCRIPCION', caption: 'Descripción', width: 350 },
-            { dataField: 'TABLA_ORIGEN', caption: 'Tabla Origen', width: 200 },
+            { dataField: 'CODIGO_OPCION', caption: 'Opcion sistema', width: 300 },
             {
                 dataField: 'ACTIVO',
                 caption: 'Activo',
@@ -157,7 +157,7 @@ export class SegFlujoTipoDocumentoService {
                 },
             },
             {
-                dataField: 'TABLA_ORIGEN',
+                dataField: 'CODIGO_OPCION',
                 label: { text: 'Tabla Origen' },
                 colSpan: 2,
                 editorOptions: {

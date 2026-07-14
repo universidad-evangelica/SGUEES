@@ -70,7 +70,7 @@ namespace sguees.Services
             if (Data.DESCRIPCION != null && Data.DESCRIPCION.Length > 255)
                 return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "La descripción no puede exceder los 255 caracteres" };
 
-            // ✅ Validar que exista el tipo de documento usando el servicio de TipoDocumento
+            //  Validar que exista el tipo de documento usando el servicio de TipoDocumento
             var tipoDocumentoParam = new SEG_FLUJO_TIPO_DOCUMENTOParam
             {
                 CORR_EMPRESA = Data.CORR_EMPRESA,

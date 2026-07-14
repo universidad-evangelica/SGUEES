@@ -9,7 +9,7 @@ namespace sguees.Models
         public int CORR_TIPO_DOCUMENTO { get; set; }
         public string NOMBRE_TIPO { get; set; }
         public string DESCRIPCION { get; set; }
-        public string TABLA_ORIGEN { get; set; }
+        public string CODIGO_OPCION { get; set; }
         public bool ACTIVO { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }

@@ -25,7 +25,7 @@ namespace sguees.Controllers
         }
         
         [HttpGet("GetAll")]
-        [Authorize(Policy = "/seg-flujo-estado|R")]
+        [Authorize(Policy = "/seg-flujo-tipo-documento|R")]
         public async Task<CResult> GetAll([FromQuery] SEG_FLUJO_ESTADOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -33,7 +33,7 @@ namespace sguees.Controllers
         }
         
         [HttpGet("Get")]
-        [Authorize(Policy = "/seg-flujo-estado|R")]
+        [Authorize(Policy = "/seg-flujo-tipo-documento|R")]
         public async Task<CResult> Get([FromQuery] SEG_FLUJO_ESTADOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -41,7 +41,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetByTipoDocumento")]
-        [Authorize(Policy = "/seg-flujo-estado|R")]
+        [Authorize(Policy = "/seg-flujo-tipo-documento|R")]
         public async Task<CResult> GetByTipoDocumento([FromQuery] SEG_FLUJO_ESTADOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -49,7 +49,7 @@ namespace sguees.Controllers
         }
         
         [HttpPost]
-        [Authorize(Policy = "/seg-flujo-estado|C")]
+        [Authorize(Policy = "/seg-flujo-tipo-documento|C")]
         public async Task<IActionResult> Post(SEG_FLUJO_ESTADOTable Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -75,7 +75,7 @@ namespace sguees.Controllers
         }
         
         [HttpPut]
-        [Authorize(Policy = "/seg-flujo-estado|U")]
+        [Authorize(Policy = "/seg-flujo-tipo-documento|U")]
         public async Task<IActionResult> Put(SEG_FLUJO_ESTADOTable Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -95,7 +95,7 @@ namespace sguees.Controllers
         }
         
         [HttpDelete]
-        [Authorize(Policy = "/seg-flujo-estado|D")]
+        [Authorize(Policy = "/seg-flujo-tipo-documento|D")]
         public async Task<IActionResult> Delete([FromQuery] SEG_FLUJO_ESTADOTable Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -111,7 +111,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetIniciales")]
-        [Authorize(Policy = "/seg-flujo-estado|R")]
+        [Authorize(Policy = "/seg-flujo-tipo-documento|R")]
         public async Task<CResult> GetIniciales([FromQuery] SEG_FLUJO_ESTADOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -120,7 +120,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetFinales")]
-        [Authorize(Policy = "/seg-flujo-estado|R")]
+        [Authorize(Policy = "/seg-flujo-tipo-documento|R")]
         public async Task<CResult> GetFinales([FromQuery] SEG_FLUJO_ESTADOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);

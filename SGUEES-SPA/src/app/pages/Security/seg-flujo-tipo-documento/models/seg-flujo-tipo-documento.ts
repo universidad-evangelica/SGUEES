@@ -3,7 +3,7 @@ export interface SegFlujoTipoDocumento {
     CORR_TIPO_DOCUMENTO: number;
     NOMBRE_TIPO: string;
     DESCRIPCION: string;
-    TABLA_ORIGEN: string;
+    CODIGO_OPCION: string;
     ACTIVO: boolean;
     USUARIO_CREA: string;
     ESTACION_CREA: string;

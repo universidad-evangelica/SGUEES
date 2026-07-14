@@ -79,7 +79,7 @@ export class SegFlujoTipoDocumentoComponent extends CBaseComponent implements On
                 CORR_TIPO_DOCUMENTO: 0,
                 NOMBRE_TIPO: '',
                 DESCRIPCION: '',
-                TABLA_ORIGEN: '',
+                CODIGO_OPCION: '',
                 ACTIVO: true,
                 USUARIO_CREA: '',
                 ESTACION_CREA: '',
@@ -320,7 +320,7 @@ export class SegFlujoTipoDocumentoComponent extends CBaseComponent implements On
         this.dataForm.instance.getEditor('CORR_TIPO_DOCUMENTO')?.option('readOnly', true);
         this.dataForm.instance.getEditor('NOMBRE_TIPO')?.option('readOnly', true);
         this.dataForm.instance.getEditor('DESCRIPCION')?.option('readOnly', true);
-        this.dataForm.instance.getEditor('TABLA_ORIGEN')?.option('readOnly', true);
+        this.dataForm.instance.getEditor('CODIGO_OPCION')?.option('readOnly', true);
         this.dataForm.instance.getEditor('ACTIVO')?.option('disabled', true);
         this.readOnly = true;
     }

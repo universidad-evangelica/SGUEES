@@ -13,6 +13,8 @@ import { SC_OrganigramaEstructuralNivelService } from '../sc-organigrama-estruct
 import { IParam } from 'src/app/FxAPI/IParam';
 import { environment } from 'src/environments/environment';
 import { confirm } from 'devextreme/ui/dialog';
+import { SC_OrganigramaEstructuralJefesService } from './sc-organigrama-estructural-jefes.service';
+import { SC_OrganigramaEstructuralJefe } from './models/sc-organigrama-estructural-jefe';
 
 @Component({
     selector: 'app-sc-organigrama-estructural-unidades',
@@ -28,12 +30,17 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
         public override appInfoService: AppInfoService,
         public override router: ActivatedRoute,
         private service: SC_OrganigramaEstructuralUnidadesService,
-        private nivelService: SC_OrganigramaEstructuralNivelService
+        private nivelService: SC_OrganigramaEstructuralNivelService,
+        private jefeService: SC_OrganigramaEstructuralJefesService
     ) {
         super(appInfoService, router);
         this.columns = this.service.getColumns();
         this.summary = this.service.getSummary();
         this.items = this.service.getItems();
+
+        //  Inicializar columnas y items de jefes
+        this.jefesColumns = this.jefeService.getColumns();
+        this.jefesItems = this.jefeService.getItems();
     }
 
     //#region <Declarando Variables>
@@ -45,6 +52,17 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
     mCORR_NIVEL: any;
     mCORR_UNIDAD: any;
     readOnly = false;
+    // Variables para Jefes
+    jefesModels: SC_OrganigramaEstructuralJefe[] = [];
+    jefeModel: SC_OrganigramaEstructuralJefe = this.fillJefeData();
+    jefesColumns: any[];
+    jefesItems: any[];
+    jefeReadOnly = false;
+    banderaMttoJefe: UpdateType = UpdateType.Browse;
+
+    // Variables para empleados disponibles
+    empleadosDisponibles: any[] = [];
+    filtroUnidadJefe: number = 0;
     // Data sources para combos
     nivelesActivos: SC_OrganigramaEstructuralNivel[] = [];
     unidadesPadre: SC_OrganigramaEstructuralUnidad[] = [];
@@ -205,6 +223,27 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
         }
     }
 
+    fillJefeData(xModel?: SC_OrganigramaEstructuralJefe): SC_OrganigramaEstructuralJefe {
+        if (xModel !== undefined) {
+            return { ...xModel };
+        } else {
+            const today = new Date();
+            return {
+                CORR_EMPRESA: 1,
+                CORR_JEFE: 0,
+                CORR_UNIDAD: this.unidadModel?.CORR_UNIDAD || 0,
+                NOMBRE_UNIDAD: '',
+                CORR_EMPLEADO: 0,
+                NOMBRE_EMPLEADO: '',
+                LOGIN_SISTEMA_WEB: '',
+                FECHA_INICIO: today,
+                FECHA_FIN: null,
+                ACTIVO: true,
+                CORR_PUESTO: null,
+                NOMBRE_PUESTO: '',
+            };
+        }
+    }
     //#endregion
 
     //#region <Metodos de Consulta>
@@ -248,6 +287,211 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
             });
     }
 
+    //#region <Metodos de Jefes>
+    cargarJefes(corrUnidad: number) {
+        if (!corrUnidad || corrUnidad === 0) {
+            this.jefesModels = [];
+            return;
+        }
+
+        this.jefeService
+            .getByUnidad(corrUnidad)
+            .pipe(take(1))
+            .subscribe({
+                next: (response: any) => {
+                    if (response.Result) {
+                        this.jefesModels = response.Data || [];
+                    }
+                },
+                error: (error: any) => {
+                    this.notifyFx(error, NotifyType.Error);
+                },
+            });
+    }
+
+    cargarEmpleadosDisponibles(corrUnidadOrigen: number, corrUnidadDestino: number) {
+        if (!corrUnidadOrigen || corrUnidadOrigen === 0 || !corrUnidadDestino || corrUnidadDestino === 0) {
+            this.empleadosDisponibles = [];
+            return;
+        }
+
+        this.jefeService
+            .getEmpleadosByUnidad(corrUnidadOrigen, corrUnidadDestino)
+            .pipe(take(1))
+            .subscribe({
+                next: (response: any) => {
+                    if (response.Result) {
+                        this.empleadosDisponibles = response.Data || [];
+                        // Actualizar combo
+                        this.actualizarItemComboJefe('CORR_EMPLEADO', this.empleadosDisponibles);
+                    }
+                },
+                error: (error: any) => {
+                    this.notifyFx(error, NotifyType.Error);
+                },
+            });
+    }
+
+    onFiltroUnidadJefeChanged(corrUnidad: number) {
+        this.filtroUnidadJefe = corrUnidad;
+        this.jefeModel.CORR_EMPLEADO = 0;
+        this.cargarEmpleadosDisponibles(this.unidadModel.CORR_UNIDAD,corrUnidad );
+    }
+
+    nuevoJefe(): void {
+        this.jefeModel = this.fillJefeData();
+        this.jefeModel.CORR_UNIDAD = this.unidadModel.CORR_UNIDAD;
+        this.jefeModel.FECHA_INICIO = new Date();
+        this.filtroUnidadJefe = this.unidadModel.CORR_UNIDAD;
+        this.banderaMttoJefe = UpdateType.Add;
+        this.jefeReadOnly = false;
+        this.habilitarJefe();
+        this.cargarEmpleadosDisponibles(this.filtroUnidadJefe, this.unidadModel.CORR_UNIDAD);
+    }
+
+    guardarJefe(): void {
+        if (!this.jefeService.esValido(this.jefeModel, this.notifyFx)) {
+            return;
+        }
+
+        this.loadingVisible = true;
+        this.jefeModel.CORR_UNIDAD = this.unidadModel.CORR_UNIDAD;
+
+        if (this.banderaMttoJefe === UpdateType.Add) {
+            this.jefeService
+                .insert(this.jefeModel)
+                .pipe(take(1))
+                .subscribe({
+                    next: (response: any) => {
+                        if (response.Result) {
+                            this.jefesModels.push(response.Data);
+                            this.jefeModel = this.fillJefeData(response.Data);
+                            this.banderaMttoJefe = UpdateType.Browse;
+                            this.jefeReadOnly = false;
+                            this.notifyFx('Jefe asignado con exito!', NotifyType.Success);
+                            this.cargarJefes(this.unidadModel.CORR_UNIDAD);
+                        } else {
+                            this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        }
+                        this.loadingVisible = false;
+                    },
+                    error: (error: any) => {
+                        this.notifyFx(error, NotifyType.Error);
+                        this.loadingVisible = false;
+                    },
+                });
+        } else if (this.banderaMttoJefe === UpdateType.Update) {
+            this.jefeService
+                .update(this.jefeModel)
+                .pipe(take(1))
+                .subscribe({
+                    next: (response: any) => {
+                        if (response.Result) {
+                            const vIndex = this.jefesModels.findIndex(
+                                (item: any) => item.CORR_JEFE === response.Data.CORR_JEFE
+                            );
+                            this.jefesModels[vIndex] = response.Data;
+                            this.jefeModel = this.fillJefeData(response.Data);
+                            this.banderaMttoJefe = UpdateType.Browse;
+                            this.jefeReadOnly = false;
+                            this.notifyFx('Jefe actualizado con exito!', NotifyType.Success);
+                            this.cargarJefes(this.unidadModel.CORR_UNIDAD);
+                        } else {
+                            this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                        }
+                        this.loadingVisible = false;
+                    },
+                    error: (error: any) => {
+                        this.notifyFx(error, NotifyType.Error);
+                        this.loadingVisible = false;
+                    },
+                });
+        }
+    }
+
+    editarJefe(data: any): void {
+        const jefe = data?.data || data;
+        if (!jefe || !jefe.CORR_JEFE) return;
+
+        this.jefeModel = this.fillJefeData(jefe);
+        this.banderaMttoJefe = UpdateType.Update;
+        this.jefeReadOnly = false;
+        this.habilitarJefe();
+        this.filtroUnidadJefe = this.unidadModel.CORR_UNIDAD;
+        this.cargarEmpleadosDisponibles(this.filtroUnidadJefe, this.unidadModel.CORR_UNIDAD);
+    }
+
+    eliminarJefe(e: any): void {
+        if (!e.data) return;
+
+        this.jefeService
+            .delete(e.data)
+            .pipe(take(1))
+            .subscribe({
+                next: (response: any) => {
+                    if (response.Result) {
+                        this.notifyFx('Jefe removido con exito!', NotifyType.Success);
+                        this.cargarJefes(this.unidadModel.CORR_UNIDAD);
+                        e.component.refresh();
+                    } else {
+                        e.cancel = true;
+                        this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                    }
+                },
+                error: (error: any) => {
+                    e.cancel = true;
+                    this.notifyFx(error, NotifyType.Error);
+                },
+            });
+    }
+
+    cancelarJefe(): void {
+        this.banderaMttoJefe = UpdateType.Browse;
+        this.jefeReadOnly = false;
+        this.jefeModel = this.fillJefeData();
+    }
+
+    rowDblClickJefe(e: any): void {
+        if (e && e.data) {
+            this.editarJefe(e.data);
+        }
+    }
+
+    isJefeBrowse(): boolean {
+        return this.banderaMttoJefe === UpdateType.Browse;
+    }
+
+    isJefeForm(): boolean {
+        return this.banderaMttoJefe === UpdateType.Add || this.banderaMttoJefe === UpdateType.Update;
+    }
+
+    get getPermiteAddJefe(): boolean {
+        return this.permiteAdd && this.unidadModel?.CORR_UNIDAD > 0;
+    }
+
+    get getPermiteEditarJefe(): boolean {
+        return this.permiteEdit;
+    }
+
+    get getPermiteDeleJefe(): boolean {
+        return this.permiteDele;
+    }
+
+    bloquearJefe(): void {
+        this.jefeReadOnly = true;
+    }
+
+    habilitarJefe(): void {
+        this.jefeReadOnly = false;
+    }
+
+    actualizarItemComboJefe(dataField: string, dataSource: any[]) {
+        const item = this.jefesItems?.find((i: any) => i.dataField === dataField);
+        if (item && item.editorOptions) {
+            item.editorOptions.dataSource = dataSource;
+        }
+    }
+    //#endregion
     cargarUnidadesPadre() {
         this.unidadesPadre = this.unidades.filter(u => u.ACTIVO === true);
         this.actualizarCombos();
@@ -284,18 +528,29 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
             this.mostrarFormulario = true;
             this.AsignaStatus(UpdateType.Update);
             this.habilitar();
+
+            //  Cargar jefes de la unidad seleccionada
+            this.cargarJefes(this.unidadModel.CORR_UNIDAD);
+            this.filtroUnidadJefe = this.unidadModel.CORR_UNIDAD;
+
             setTimeout(() => {
                 this.dataForm?.instance?.getEditor('CODIGO_UNIDAD')?.focus();
             });
         }
     }
-
     override nuevo(): void {
         this.unidadModel = this.fillUnidadData();
         this.unidadModel.CORR_EMPRESA = this.appInfoService.CORR_EMPRESA;
         this.mostrarFormulario = true;
         this.AsignaStatus(UpdateType.Add);
         this.habilitar();
+
+        //  Limpiar jefes
+        this.jefesModels = [];
+        this.jefeModel = this.fillJefeData();
+        this.banderaMttoJefe = UpdateType.Browse;
+        this.empleadosDisponibles = [];
+
         setTimeout(() => {
             this.dataForm?.instance?.getEditor('CODIGO_UNIDAD')?.focus();
         });
@@ -384,12 +639,21 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
                 }
                 this.AsignaStatus(UpdateType.Browse);
                 this.mostrarFormulario = false;
+
+                //  Limpiar jefes
+                this.jefesModels = [];
+                this.jefeModel = this.fillJefeData();
+                this.banderaMttoJefe = UpdateType.Browse;
+                this.empleadosDisponibles = [];
             });
         } else {
             this.mostrarFormulario = false;
+            this.jefesModels = [];
+            this.jefeModel = this.fillJefeData();
+            this.banderaMttoJefe = UpdateType.Browse;
+            this.empleadosDisponibles = [];
         }
     }
-
     override bloquear(): void {
         this.dataForm?.instance?.getEditor('CODIGO_UNIDAD')?.option('readOnly', true);
         this.dataForm?.instance?.getEditor('NOMBRE_UNIDAD')?.option('readOnly', true);
@@ -418,5 +682,8 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
     selectedLookUpCORR_UNIDAD(vRow: any): any {
         return vRow[0].CORR_UNIDAD;
     }
+    selectedLookUpEMPLEADO(vRow: any): any {
+    return vRow[0]?.CORR_EMPLEADO;
+}
     //#endregion
 }

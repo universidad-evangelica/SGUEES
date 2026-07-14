@@ -8,24 +8,20 @@ import { CData } from 'src/app/FxAPI/CData';
 @Injectable({
     providedIn: 'root',
 })
-export class SegFlujoEstadoRepository {
-    //  Ahora apunta al mismo controlador que Tipo Documento
-    readonly xController = 'SEG_FLUJO_ESTADO';
+export class SC_OrganigramaEstructuralJefesRepository {
+    readonly xController = 'SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES';
 
     constructor(private objData: CData) {}
 
-    
     get(xWhere: IParam[]): Observable<IResult> {
-        return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlGENERALAPI);
+        return this.objData.Get(this.xController, 'GetByUnidad', xWhere, environment.UrlGENERALAPI);
     }
 
-    
-    getById(xWhere: IParam[]): Observable<IResult> {
-        return this.objData.Get(this.xController, 'GetEstado', xWhere, environment.UrlGENERALAPI);
+    getEmpleados(xWhere: IParam[]): Observable<IResult> {
+        return this.objData.Get(this.xController, 'GetEmpleadosByUnidad', xWhere, environment.UrlGENERALAPI);
     }
 
-    
-     create(model: any): Observable<IResult> {
+    create(model: any): Observable<IResult> {
         return this.objData.Post(model, this.xController, '', environment.UrlGENERALAPI);
     }
 
@@ -35,10 +31,5 @@ export class SegFlujoEstadoRepository {
 
     delete(xWhere: IParam[]): Observable<IResult> {
         return this.objData.Delete(this.xController, '', xWhere, environment.UrlGENERALAPI);
-    }
-
-    
-    getByTipoDocumento(xWhere: IParam[]): Observable<IResult> {
-        return this.objData.Get(this.xController, 'GetEstadosByTipoDocumento', xWhere, environment.UrlGENERALAPI);
     }
 }

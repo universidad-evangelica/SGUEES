@@ -122,3 +122,80 @@
     [shading]="true"
 >
 </dx-load-panel>
+<!-- SECCIÓN 3: Gestión de Jefes (SOLO si existe la unidad) -->
+<section class="sguees-section-card" *ngIf="mostrarFormulario && unidadModel && unidadModel.CORR_UNIDAD > 0">
+    <header class="tipo-documento-section-head">
+        <span class="tipo-documento-section-title">Jefes de la Unidad</span>
+        <span class="tipo-documento-section-subtitle">
+            Empleados asignados como jefes de {{ unidadModel.NOMBRE_UNIDAD }}
+        </span>
+    </header>
+
+    <!-- Barra de herramientas de Jefes -->
+    <app-barra-data-mtto
+        [tituloVentana]="'Jefes'"
+        [isBrowse]="isJefeBrowse()"
+        [isForm]="isJefeForm()"
+        [permiteAdd]="getPermiteAddJefe"
+        (nuevo)="nuevoJefe()"
+        (guardar)="guardarJefe()"
+        (cancelar)="cancelarJefe()"
+    >
+    </app-barra-data-mtto>
+
+    <!-- Formulario de Jefe -->
+    <div *ngIf="!isJefeBrowse()" style="margin-top: 15px;">
+        <dx-form #fDataJefe id="fDataJefe" [formData]="jefeModel" [labelLocation]="'top'" [colCount]="8" [items]="jefesItems">
+            <!-- Template para combo de empleados -->
+            <div *dxTemplate="let cellInfo of 'CORR_EMPLEADOLookup'">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <!-- Filtro de unidad -->
+                    <dx-select-box
+                        [dataSource]="unidades"
+                        [value]="filtroUnidadJefe"
+                        displayExpr="NOMBRE_UNIDAD_TREE"
+                        valueExpr="CORR_UNIDAD"
+                        placeholder="Filtrar por unidad..."
+                        [showClearButton]="true"
+                        (onValueChanged)="onFiltroUnidadJefeChanged($event.value)"
+                        style="width: 250px;"
+                    >
+                    </dx-select-box>
+                    
+                    <!-- Selector de empleado -->
+                    <app-data-lookup
+                        [model]="empleadosDisponibles"
+                        [(value)]="jefeModel.CORR_EMPLEADO"
+                        [valueExpr]="'CORR_EMPLEADO'"
+                        [displayExpr]="'NOMBRE_EMPLEADO'"
+                        [lookupColumns]="[
+                            { dataField: 'NOMBRE_EMPLEADO', caption: 'Empleado', width: 200 },
+                            { dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 200 },
+                            { dataField: 'UNIDAD_EMPLEADO', caption: 'Unidad', width: 200 }
+                        ]"
+                        [selectedRowKeys]="selectedLookUpEMPLEADO"
+                        [readOnly]="jefeReadOnly"
+                        style="flex: 1;"
+                    >
+                    </app-data-lookup>
+                </div>
+            </div>
+        </dx-form>
+    </div>
+
+    <!-- Grid de Jefes -->
+    <div style="margin-top: 15px;">
+        <app-data-grid-mtto
+            [isBrowse]="isJefeBrowse()"
+            [models]="jefesModels"
+            [columns]="jefesColumns"
+            [keyExpr]="'CORR_JEFE'"
+            [permiteEditar]="getPermiteEditarJefe"
+            [permiteDele]="getPermiteDeleJefe"
+            (rowDblClick)="rowDblClickJefe($event)"
+            (rowRemoving)="eliminarJefe($event)"
+            (editClick)="editarJefe($event)"
+        >
+        </app-data-grid-mtto>
+    </div>
+</section>

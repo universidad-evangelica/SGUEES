@@ -1,14 +1,16 @@
 using System;
+using eFramework.Data;
 
 namespace sguees.Models
 {
-    public class SEG_FLUJO_TIPO_DOCUMENTOView
+    public class SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADESTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }
-        public int CORR_TIPO_DOCUMENTO { get; set; }
-        public string NOMBRE_TIPO { get; set; }
-        public string DESCRIPCION { get; set; }
-        public string CODIGO_OPCION { get; set; }
+        public int CORR_JEFE { get; set; }
+        public int CORR_UNIDAD { get; set; }
+        public int CORR_EMPLEADO { get; set; }
+        public DateTime FECHA_INICIO { get; set; }
+        public DateTime? FECHA_FIN { get; set; }
         public bool ACTIVO { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }
