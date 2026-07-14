@@ -53,6 +53,7 @@ namespace SGUEES.Services
 
             Data.NOMBRE_RIESGO_PUESTO = Data.NOMBRE_RIESGO_PUESTO.Trim();
             Data.ESTADO_RIESGO_PUESTO ??= true;
+            Data.ES_LISTA ??= false;
 
             var duplicate = await ValidateUniqueNombreAsync(Data, null);
             if (duplicate != null)
@@ -73,6 +74,7 @@ namespace SGUEES.Services
 
             Data.NOMBRE_RIESGO_PUESTO = Data.NOMBRE_RIESGO_PUESTO.Trim();
             Data.ESTADO_RIESGO_PUESTO ??= true;
+            Data.ES_LISTA ??= false;
 
             var duplicate = await ValidateUniqueNombreAsync(Data, Data.CORR_RIESGO_PUESTO);
             if (duplicate != null)
@@ -92,6 +94,21 @@ namespace SGUEES.Services
         {
             Data.ESTADO_RIESGO_PUESTO = false;
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        public async Task<CResult> GetCatalogoDescriptorAsync(SC_RIESGO_PUESTOParam xWhere)
+        {
+            var rows = await _repo.GetCatalogoDescriptorAsync(xWhere.CORR_EMPRESA);
+            return new CResult
+            {
+                Data = rows,
+                Result = true,
+                CodeHelper = 0,
+                ErrorCode = 0,
+                ErrorMessage = "",
+                ErrorSource = "",
+                RowsAffected = rows.Count,
+            };
         }
 
         private static List<CParameter> BuildParameters(SC_RIESGO_PUESTOParam xWhere)

@@ -384,5 +384,48 @@ namespace SGUEES.Repositories
         e.Message.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase) ||
         e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
     }
+
+    public async Task<List<SC_COMPETENCIAS_CONDUCTUALESView>> GetCatalogoDescriptorAsync(int corrEmpresa)
+    {
+      if (corrEmpresa <= 0)
+      {
+        return new List<SC_COMPETENCIAS_CONDUCTUALESView>();
+      }
+
+      const string sql = @"SELECT
+          A.CORR_EMPRESA,
+          A.CORR_COMPETENCIAS_CONDUCTUALES,
+          A.CORR_TIPO_PUESTO,
+          A.NOMBRE_COMPETENCIAS_CONDUCTUALES,
+          A.DESCRIPCION,
+          A.ESTADO_COMPETENCIAS_CONDUCTUALES,
+          A.USUARIO_CREA,
+          A.ESTACION_CREA,
+          A.FECHA_CREA,
+          A.USUARIO_ACTU,
+          A.ESTACION_ACTU,
+          A.FECHA_ACTU,
+          A.NOMBRE_TIPO_PUESTO
+        FROM V_SC_COMPETENCIAS_CONDUCTUALES A
+        WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+          AND ISNULL(A.ESTADO_COMPETENCIAS_CONDUCTUALES, 1) = 1
+        ORDER BY A.NOMBRE_COMPETENCIAS_CONDUCTUALES, A.CORR_COMPETENCIAS_CONDUCTUALES";
+
+      try
+      {
+        var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+        {
+          new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+        });
+
+        var response = new List<SC_COMPETENCIAS_CONDUCTUALESView>().FromDataReader(reader).ToList();
+        reader.Close();
+        return response;
+      }
+      finally
+      {
+        objData.objConnection.Close();
+      }
+    }
   }
 }

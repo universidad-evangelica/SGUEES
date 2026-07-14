@@ -47,6 +47,14 @@ namespace SGUEES.Controllers
             return await _service.GetAsync(Data);
         }
 
+        [HttpGet("GetCORR_DISPONIBILIDAD_HORARIO_SC_DESCRIPTOR_PUESTO")]
+        [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        public async Task<CResult> GetCORR_DISPONIBILIDAD_HORARIO_SC_DESCRIPTOR_PUESTO([FromQuery] SC_DISPONIBILIDAD_HORARIOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetDisponibilidadesActivasAsync(Data);
+        }
+
         [HttpPost]
         [Authorize(Policy = "/sc-disponibilidad-horario|C")]
         public async Task<IActionResult> Post(SC_DISPONIBILIDAD_HORARIOTable Data)

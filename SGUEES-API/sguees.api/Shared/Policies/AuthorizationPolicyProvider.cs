@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace sguees.api.Policies
@@ -9,6 +8,7 @@ namespace sguees.api.Policies
     public class AuthorizationPolicyProvider : DefaultAuthorizationPolicyProvider
     {
         private readonly AuthorizationOptions _options;
+        private readonly object _policyLock = new();
 
         public AuthorizationPolicyProvider(IOptions<AuthorizationOptions> options) : base(options)
         {
@@ -17,41 +17,32 @@ namespace sguees.api.Policies
 
         public override async Task<AuthorizationPolicy> GetPolicyAsync(string policyName)
         {
-
-            // Check static policies first
             var policy = await base.GetPolicyAsync(policyName);
-            
-            if (policy == null)
+
+            if (policy != null)
             {
-                string policyValue;
-                if (policyName.Contains("|"))
+                return policy;
+            }
+
+            lock (_policyLock)
+            {
+                policy = _options.GetPolicy(policyName);
+                if (policy != null)
                 {
-                    policyValue = policyName.Split("|")[1].ToString();
+                    return policy;
                 }
-                else
-                {
-                    policyValue = "R";
-                }
-                
+
+                var policyValue = policyName.Contains('|')
+                    ? policyName.Split('|')[1]
+                    : "R";
+
                 var policyNew = new AuthorizationPolicyBuilder();
                 policyNew.AddRequirements(new HasScopeRequirement(policyName, policyValue));
-                policy = await Task.FromResult(policyNew.Build());
-
-                // Add policy to the AuthorizationOptions, so we don't have to re-create it each time
-                try {
-                    await AddPolicyAsync(policyName, policy);
-                }
-                catch (NullReferenceException ex) {
-                    Console.Write(ex);
-                }                
+                policy = policyNew.Build();
+                _options.AddPolicy(policyName, policy);
             }
-         
-            return policy;
-        }
 
-        private async Task AddPolicyAsync(string policyName, AuthorizationPolicy policy) 
-        {
-            await Task.Run(() => {_options.AddPolicy(policyName, policy);});
+            return policy;
         }
     }
 }

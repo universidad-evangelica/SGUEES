@@ -10,5 +10,6 @@ namespace SGUEES.Repositories
   {
     Task<CResult> ActivarInactivarAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION);
     Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr);
+    Task<List<SC_COMPETENCIAS_CONDUCTUALESView>> GetCatalogoDescriptorAsync(int corrEmpresa);
   }
 }

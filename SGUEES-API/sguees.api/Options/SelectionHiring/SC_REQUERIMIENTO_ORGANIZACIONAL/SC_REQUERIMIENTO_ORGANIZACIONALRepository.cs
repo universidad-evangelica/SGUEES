@@ -992,6 +992,46 @@ namespace SGUEES.Repositories
             }
         }
 
+        public async Task<List<SC_REQUERIMIENTO_ORGANIZACIONALView>> GetCatalogoDescriptorAsync(int corrEmpresa)
+        {
+            if (corrEmpresa <= 0)
+            {
+                return new List<SC_REQUERIMIENTO_ORGANIZACIONALView>();
+            }
+
+            const string sql = @"SELECT
+                  A.CORR_EMPRESA,
+                  A.CORR_REQUERIMIENTO_ORGANIZACIONAL,
+                  A.DESCRIPCION,
+                  A.ESTADO_REQUERIMIENTO_ORGANIZACIONAL,
+                  A.USUARIO_CREA,
+                  A.ESTACION_CREA,
+                  A.FECHA_CREA,
+                  A.USUARIO_ACTU,
+                  A.ESTACION_ACTU,
+                  A.FECHA_ACTU
+                FROM V_SC_REQUERIMIENTO_ORGANIZACIONAL A
+                WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+                  AND ISNULL(A.ESTADO_REQUERIMIENTO_ORGANIZACIONAL, 1) = 1
+                ORDER BY A.DESCRIPCION, A.CORR_REQUERIMIENTO_ORGANIZACIONAL";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                });
+
+                var response = new List<SC_REQUERIMIENTO_ORGANIZACIONALView>().FromDataReader(reader).ToList();
+                reader.Close();
+                return response;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
         private static bool Contains(string value, string search)
         {
             return !string.IsNullOrWhiteSpace(value) &&

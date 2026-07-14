@@ -22,5 +22,7 @@ namespace SGUEES.Models
         public string NOMBRE_PADRE { get; set; }
         public string DESCRIPCION_PADRE { get; set; }
         public string NIVEL_PADRE { get; set; }
+        public string CODIGO_NIV1 { get; set; }
+        public string NOMBRE_NIV1 { get; set; }
     }
 }

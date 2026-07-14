@@ -8,6 +8,7 @@ namespace SGUEES.Services
     {
         Task<CResult> GetAllAsync(SC_DISPONIBILIDAD_HORARIOParam xWhere);
         Task<CResult> GetDistinctValuesAsync(SC_DISPONIBILIDAD_HORARIOParam xWhere);
+        Task<CResult> GetDisponibilidadesActivasAsync(SC_DISPONIBILIDAD_HORARIOParam xWhere);
         Task<CResult> GetAsync(SC_DISPONIBILIDAD_HORARIOParam xWhere);
         Task<CResult> CreateAsync(SC_DISPONIBILIDAD_HORARIOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> UpdateAsync(SC_DISPONIBILIDAD_HORARIOTable Data, string vLOGIN_SISTEMA, string vESTACION);

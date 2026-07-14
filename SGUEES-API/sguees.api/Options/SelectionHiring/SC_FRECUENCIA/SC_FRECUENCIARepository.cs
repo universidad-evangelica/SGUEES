@@ -117,6 +117,59 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        public async Task<CResult> GetFrecuenciasActivasAsync(List<CParameter> xWhere)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                const string sql = @"SELECT
+                        CORR_EMPRESA,
+                        CORR_FRECUENCIA,
+                        NOMBRE_FRECUENCIA,
+                        ESTADO_FRECUENCIA,
+                        USUARIO_CREA,
+                        ESTACION_CREA,
+                        FECHA_CREA,
+                        USUARIO_ACTU,
+                        ESTACION_ACTU,
+                        FECHA_ACTU
+                    FROM V_SC_FRECUENCIA
+                    WHERE CORR_EMPRESA = @CORR_EMPRESA
+                      AND ISNULL(ESTADO_FRECUENCIA, 1) = 1
+                    ORDER BY NOMBRE_FRECUENCIA";
+
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, xWhere);
+                var response = new List<SC_FRECUENCIAView>().FromDataReader(reader).ToList();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
+                objResultado.Result = true;
+                objResultado.RowsAffected = response.Count;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+                objResultado.ErrorSource = "";
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
         private async Task<List<SC_FRECUENCIAView>> FilterQueryAsync(List<CParameter> xWhere, string skipColumnFilter = null)
         {
             var dbWhere = xWhere

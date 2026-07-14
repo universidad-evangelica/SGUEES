@@ -31,6 +31,7 @@ export interface ScCompetenciaPadreOption {
 	CODIGO_COMPETENCIAS_TECNICAS: string;
 	NOMBRE_COMPETENCIAS_TECNICAS?: string;
 	DESCRIPCION?: string;
+	NOMBRE_DISPLAY?: string;
 	NIVEL?: string;
 	ESTADO_COMPETENCIAS_TECNICAS?: boolean;
 }

@@ -149,6 +149,21 @@ namespace SGUEES.Services
       return null;
     }
 
+    public async Task<CResult> GetCatalogoDescriptorAsync(SC_COMPETENCIAS_CONDUCTUALESParam xWhere)
+    {
+      var rows = await _repo.GetCatalogoDescriptorAsync(xWhere.CORR_EMPRESA);
+      return new CResult
+      {
+        Data = rows,
+        Result = true,
+        CodeHelper = 0,
+        ErrorCode = 0,
+        ErrorMessage = "",
+        ErrorSource = "",
+        RowsAffected = rows.Count,
+      };
+    }
+
     private static CResult ValidateEmpresaSesion(int corrEmpresa)
     {
       if (corrEmpresa > 0)

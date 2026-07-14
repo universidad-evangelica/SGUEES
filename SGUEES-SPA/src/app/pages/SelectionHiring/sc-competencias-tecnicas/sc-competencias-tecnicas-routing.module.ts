@@ -11,6 +11,7 @@ import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { DxTooltipModule } from 'devextreme-angular/ui/tooltip';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
+import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 import { ToastModule } from 'primeng/toast';
 import { ScCompetenciasTecnicasComponent } from './sc-competencias-tecnicas.component';
 
@@ -30,6 +31,7 @@ const routes: Routes = [{ path: '', component: ScCompetenciasTecnicasComponent }
 		DxTooltipModule,
 		BarraDataMttoModule,
 		DataGridMttoModule,
+		DataLookupModule,
 		ToastModule,
 	],
 	exports: [RouterModule],

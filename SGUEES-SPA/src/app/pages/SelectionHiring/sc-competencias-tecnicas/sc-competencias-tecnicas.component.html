@@ -29,6 +29,34 @@
 		[showRequiredMark]="false"
 		[items]="items"
 	>
+		<div *dxTemplate="let data of 'NIVELLookup'">
+			<app-data-lookup
+				[model]="mNIVEL"
+				[value]="model.NIVEL"
+				(valueChange)="onNivelChanged($event)"
+				[valueExpr]="'Key'"
+				[displayExpr]="'Value'"
+				[lookupColumns]="nivelLookupColumns"
+				[selectedRowKeys]="selectedLookUpNIVEL"
+				[showClearButton]="false"
+				[readOnly]="banderaMtto !== UpdateType.Add"
+				[dropDownWidth]="280"
+			></app-data-lookup>
+		</div>
+		<div *dxTemplate="let data of 'CORR_COMPETENCIAS_TECNICAS_PADRELookup'">
+			<app-data-lookup
+				[model]="padres"
+				[value]="model.CORR_COMPETENCIAS_TECNICAS_PADRE"
+				(valueChange)="onPadreChanged($event)"
+				[valueExpr]="'CORR_COMPETENCIAS_TECNICAS'"
+				[displayExpr]="'NOMBRE_DISPLAY'"
+				[lookupColumns]="padreLookupColumns"
+				[selectedRowKeys]="selectedLookUpCORR_COMPETENCIAS_TECNICAS_PADRE"
+				[showClearButton]="true"
+				[readOnly]="banderaMtto !== UpdateType.Add"
+				[dropDownWidth]="640"
+			></app-data-lookup>
+		</div>
 	</dx-form>
 </div>
 
