@@ -508,6 +508,31 @@
 		overflow-wrap: anywhere;
 		text-overflow: clip !important;
 	}
+
+	.dx-datagrid-rowsview .dx-row.dx-edit-row > td {
+		vertical-align: top !important;
+	}
+}
+
+.descriptor-riesgo-lookup-cell {
+	display: block;
+	width: 100%;
+	min-height: 36px;
+	padding-top: 2px;
+	box-sizing: border-box;
+}
+
+:host ::ng-deep .descriptor-riesgo-lookup-cell app-data-lookup,
+:host ::ng-deep .descriptor-riesgo-lookup-cell .dx-dropdownbox {
+	display: block;
+	width: 100%;
+	min-height: 36px;
+}
+
+:host ::ng-deep .descriptor-riesgo-lookup-cell .dx-dropdownbox .dx-texteditor-container,
+:host ::ng-deep .descriptor-riesgo-lookup-cell .dx-dropdownbox .dx-texteditor-input-container {
+	min-height: 34px;
+	align-items: center;
 }
 
 .descriptor-riesgo-lista-vista {

@@ -88,7 +88,7 @@
 			</div>
 
 			<p class="descriptor-secciones-hint" *ngIf="!mostrarSeccionesDescriptor" role="status">
-				Guarde las generalidades del descriptor para habilitar objetivo, funciones y demas secciones.
+				Guarde las generalidades del descriptor en modo edicion para habilitar objetivo, funciones y demas secciones.
 			</p>
 
 			<dx-tab-panel
@@ -1838,17 +1838,19 @@
 								></dxo-lookup>
 							</dxi-column>
 							<div *dxTemplate="let cellInfo of 'CORR_RIESGO_PUESTOLookup'">
-								<app-data-lookup
-									[model]="mCORR_RIESGO_PUESTO_DISPONIBLES"
-									[value]="cellInfo.value"
-									(valueChange)="onRiesgoPuestoLookupChanged($event, cellInfo)"
-									[valueExpr]="'CORR_RIESGO_PUESTO'"
-									[displayExpr]="'NOMBRE_RIESGO_PUESTO'"
-									[lookupColumns]="riesgosPuestoLookupColumns"
-									[selectedRowKeys]="selectedLookUpCORR_RIESGO_PUESTO"
-									[showClearButton]="true"
-									[dropDownWidth]="520"
-								></app-data-lookup>
+								<div class="descriptor-riesgo-lookup-cell">
+									<app-data-lookup
+										[model]="mCORR_RIESGO_PUESTO_DISPONIBLES"
+										[value]="cellInfo.value"
+										(valueChange)="onRiesgoPuestoLookupChanged($event, cellInfo)"
+										[valueExpr]="'CORR_RIESGO_PUESTO'"
+										[displayExpr]="'NOMBRE_RIESGO_PUESTO'"
+										[lookupColumns]="riesgosPuestoLookupColumns"
+										[selectedRowKeys]="selectedLookUpCORR_RIESGO_PUESTO"
+										[showClearButton]="true"
+										[dropDownWidth]="520"
+									></app-data-lookup>
+								</div>
 							</div>
 							<dxi-column
 								dataField="NOMBRE_RIESGO_PUESTO"

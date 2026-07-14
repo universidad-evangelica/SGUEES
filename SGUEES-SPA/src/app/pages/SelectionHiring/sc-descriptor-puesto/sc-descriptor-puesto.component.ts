@@ -161,6 +161,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	requerimientosOrganizacionalesEditando = false;
 	riesgosPuestoEditando = false;
 	private riesgoListaEditorDraft = new Map<string, string[]>();
+	private riesgoPuestoPersistiendo = false;
 	actividadesEditando = false;
 	relacionesInternasEditando = false;
 	relacionesExternasEditando = false;
@@ -952,7 +953,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	get mostrarSeccionesDescriptor(): boolean {
-		return Number(this.model?.CORR_DESCRIPTOR_PUESTO) > 0;
+		return (
+			this.isForm() &&
+			!this.readOnly &&
+			Number(this.model?.CORR_DESCRIPTOR_PUESTO) > 0
+		);
 	}
 
 	agregarFuncionClave(): void {
@@ -2389,12 +2394,30 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	onRiesgoPuestoLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && value > 0 ? Number(value) : null;
 		cellInfo.setValue(corr);
+		this.repintarFilaRiesgoPuestoLookup(cellInfo);
+	}
+
+	private repintarFilaRiesgoPuestoLookup(cellInfo: any): void {
+		this.cdr.detectChanges();
+		setTimeout(() => {
+			const grid = this.gridRiesgosPuesto?.instance ?? cellInfo?.component;
+			const rowIndex = typeof cellInfo?.row?.rowIndex === 'number' ? cellInfo.row.rowIndex : null;
+			if (!grid) {
+				return;
+			}
+			grid.updateDimensions?.();
+			if (rowIndex != null && rowIndex >= 0 && typeof grid.repaintRows === 'function') {
+				grid.repaintRows([rowIndex]);
+				return;
+			}
+			grid.repaint?.();
+		});
 	}
 
 	setRiesgoPuestoCellValue = (
 		newData: ScDescriptorPuestoRiesgoPuesto,
 		value: number | null,
-		_currentRowData: ScDescriptorPuestoRiesgoPuesto
+		currentRowData: ScDescriptorPuestoRiesgoPuesto
 	): void => {
 		const corr = value != null && Number(value) > 0 ? Number(value) : null;
 		const catalog = this.mCORR_RIESGO_PUESTO.find(
@@ -2403,14 +2426,41 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		newData.CORR_RIESGO_PUESTO = corr;
 		newData.NOMBRE_RIESGO_PUESTO = catalog?.NOMBRE_RIESGO_PUESTO ?? '';
 		newData.ES_LISTA = !!catalog?.ES_LISTA;
+		const draftKey =
+			this.obtenerRiesgoListaEditorKey(newData) || this.obtenerRiesgoListaEditorKey(currentRowData);
+
 		if (catalog?.ES_LISTA) {
 			newData.INFORMACION = '';
-			const draftKey = this.obtenerRiesgoListaEditorKey(newData);
 			if (draftKey) {
 				this.riesgoListaEditorDraft.set(draftKey, ['']);
 			}
+			return;
+		}
+
+		if (this.debeConvertirRiesgoInformacionListaATexto(currentRowData, newData, draftKey)) {
+			const items = this.obtenerRiesgoListaItemsDesdeFila(currentRowData ?? newData);
+			newData.INFORMACION = items.length ? items.join(', ') : '';
+		}
+
+		if (draftKey) {
+			this.riesgoListaEditorDraft.delete(draftKey);
 		}
 	};
+
+	private debeConvertirRiesgoInformacionListaATexto(
+		currentRowData: ScDescriptorPuestoRiesgoPuesto,
+		newData: ScDescriptorPuestoRiesgoPuesto,
+		draftKey: string
+	): boolean {
+		if (!!currentRowData?.ES_LISTA) {
+			return true;
+		}
+		if (draftKey && this.riesgoListaEditorDraft.has(draftKey)) {
+			return true;
+		}
+		const informacion = (currentRowData?.INFORMACION ?? newData.INFORMACION ?? '').trim();
+		return informacion.startsWith('[');
+	}
 
 	riesgoPuestoEsLista(row: ScDescriptorPuestoRiesgoPuesto | null | undefined): boolean {
 		if (!row) {
@@ -3482,9 +3532,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.modelUpdate = this.fillData(descriptor);
 					this.aplicarRegistroEnGrid(descriptor, isAdd);
 					this.limpiarEstadoValidacionHeader();
-					this.limpiarDatosTabs();
-					this.AsignaStatus(UpdateType.Browse);
+					this.readOnly = false;
+					this.AsignaStatus(UpdateType.Update);
 					this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
+					this.mainTabIndex = 0;
+					this.subTabIndex = 0;
+					this.cargarDatosTabs();
+					setTimeout(() => this.syncHeaderForm());
 
 					this.notifyFx(
 						isAdd ? 'Registro creado con exito!' : 'Registro modificado con exito!',
@@ -4236,6 +4290,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		data: ScDescriptorPuestoRiesgoPuesto,
 		esNuevo: boolean
 	): Promise<boolean> {
+		if (this.riesgoPuestoPersistiendo) {
+			return Promise.resolve(true);
+		}
+
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		if (!corrDescriptor || corrDescriptor <= 0) {
 			this.notifyFx(
@@ -4257,22 +4315,33 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			ES_LISTA: data.ES_LISTA,
 		};
 
+		this.riesgoPuestoPersistiendo = true;
+
 		return new Promise((resolve) => {
 			this.service
 				.persistirRiesgoPuesto(corrDescriptor, payload)
 				.pipe(take(1))
 				.subscribe({
 					next: (response) => {
+						this.riesgoPuestoPersistiendo = false;
 						if (!response?.Result) {
 							this.notifyApiResponse(response);
 							resolve(true);
 							return;
 						}
+
 						this.riesgosPuestoEditando = false;
+						this.limpiarRiesgoListaEditorDraft();
+						try {
+							this.gridRiesgosPuesto?.instance?.cancelEditData?.();
+						} catch {
+							// El grid puede haberse desmontado.
+						}
 						this.cargarRiesgosPuesto(true);
-						resolve(false);
+						resolve(true);
 					},
 					error: (error) => {
+						this.riesgoPuestoPersistiendo = false;
 						this.notifyApiError(error);
 						resolve(true);
 					},
@@ -4297,7 +4366,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							resolve(true);
 							return;
 						}
-						resolve(false);
+						this.cargarRiesgosPuesto(true);
+						resolve(true);
 					},
 					error: (error) => {
 						this.notifyApiError(error);
