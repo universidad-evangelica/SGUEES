@@ -155,7 +155,7 @@
 
 						<dx-data-grid
 							#gridFuncionesClave
-							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid"
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
 							[dataSource]="funcionesClave"
 							keyExpr="_clientKey"
 							[columnAutoWidth]="false"
@@ -167,6 +167,7 @@
 							[allowColumnResizing]="true"
 							[columnResizingMode]="'widget'"
 							[width]="'100%'"
+							[wordWrapEnabled]="true"
 							[repaintChangesOnly]="false"
 							(onInitNewRow)="funcionClaveInitNewRow($event)"
 							(onEditingStart)="onFuncionClaveEditingStart($event)"
@@ -303,7 +304,7 @@
 
 						<dx-data-grid
 							#gridFuncionesSecundarias
-							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid"
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
 							[dataSource]="funcionesSecundarias"
 							keyExpr="_clientKey"
 							[columnAutoWidth]="false"
@@ -315,6 +316,7 @@
 							[allowColumnResizing]="true"
 							[columnResizingMode]="'widget'"
 							[width]="'100%'"
+							[wordWrapEnabled]="true"
 							[repaintChangesOnly]="false"
 							(onInitNewRow)="funcionSecundariaInitNewRow($event)"
 							(onEditingStart)="onFuncionSecundariaEditingStart($event)"
@@ -426,7 +428,7 @@
 
 						<dx-data-grid
 							#gridKpis
-							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid"
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
 							[dataSource]="kpis"
 							keyExpr="_clientKey"
 							[columnAutoWidth]="false"
@@ -438,6 +440,7 @@
 							[allowColumnResizing]="true"
 							[columnResizingMode]="'widget'"
 							[width]="'100%'"
+							[wordWrapEnabled]="true"
 							[repaintChangesOnly]="false"
 							(onInitNewRow)="kpiInitNewRow($event)"
 							(onEditingStart)="onKpiEditingStart($event)"
@@ -996,7 +999,7 @@
 
 									<dx-data-grid
 										#gridCompetenciasTecnicas
-										class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid"
+										class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
 										[dataSource]="competenciasTecnicas"
 										keyExpr="_clientKey"
 										[columnAutoWidth]="false"
@@ -1008,6 +1011,7 @@
 										[allowColumnResizing]="true"
 										[columnResizingMode]="'widget'"
 										[width]="'100%'"
+										[wordWrapEnabled]="true"
 										[repaintChangesOnly]="false"
 										(onInitNewRow)="competenciaTecnicaInitNewRow($event)"
 										(onEditingStart)="onCompetenciaTecnicaEditingStart($event)"
@@ -1159,7 +1163,7 @@
 
 									<dx-data-grid
 										#gridCompetenciasConductuales
-										class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid"
+										class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
 										[dataSource]="competenciasConductuales"
 										keyExpr="_clientKey"
 										[columnAutoWidth]="false"
@@ -1171,6 +1175,7 @@
 										[allowColumnResizing]="true"
 										[columnResizingMode]="'widget'"
 										[width]="'100%'"
+										[wordWrapEnabled]="true"
 										[repaintChangesOnly]="false"
 										(onInitNewRow)="competenciaConductualInitNewRow($event)"
 										(onEditingStart)="onCompetenciaConductualEditingStart($event)"
@@ -1237,6 +1242,7 @@
 											[width]="140"
 											[minWidth]="120"
 											[allowSorting]="true"
+											[visible]="competenciasConductualesEditando"
 											[calculateDisplayValue]="competenciaConductualCatalogDisplay"
 											[editCellTemplate]="'CORR_COMPETENCIAS_CONDUCTUALESLookup'"
 										>
@@ -1256,7 +1262,7 @@
 												[lookupColumns]="competenciasConductualesLookupColumns"
 												[selectedRowKeys]="selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES"
 												[showClearButton]="true"
-												[dropDownWidth]="760"
+												[dropDownWidth]="520"
 											></app-data-lookup>
 										</div>
 										<dxi-column
@@ -1270,6 +1276,7 @@
 											caption="Descripcion"
 											[minWidth]="220"
 											[allowSorting]="true"
+											[visible]="esFormatoExtensa"
 										></dxi-column>
 									</dx-data-grid>
 								</div>
@@ -1294,14 +1301,248 @@
 							[swipeEnabled]="false"
 						>
 							<dxi-item title="Internas" icon="home">
-								<div class="descriptor-relaciones-tab-content descriptor-sub-tab-placeholder">
-									<p>Tabla de relaciones internas pendiente.</p>
+								<div class="descriptor-relaciones-tab-content">
+									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="add"
+											text="Agregar Relacion Interna"
+											type="success"
+											stylingMode="contained"
+											(onClick)="agregarRelacionInterna()"
+											[disabled]="relacionesInternasEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="save"
+											text="Guardar"
+											type="success"
+											stylingMode="contained"
+											(onClick)="guardarRelacionInternaEditada()"
+											[disabled]="!relacionesInternasEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+											icon="revert"
+											text="Cancelar"
+											type="danger"
+											stylingMode="contained"
+											(onClick)="cancelarRelacionInternaEditada()"
+											[disabled]="!relacionesInternasEditando"
+										></dx-button>
+									</div>
+
+									<dx-data-grid
+										#gridRelacionesInternas
+										class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+										[dataSource]="relacionesInternas"
+										keyExpr="_clientKey"
+										[columnAutoWidth]="false"
+										[showBorders]="true"
+										[showColumnLines]="true"
+										[showRowLines]="true"
+										[rowAlternationEnabled]="true"
+										[hoverStateEnabled]="true"
+										[allowColumnResizing]="true"
+										[columnResizingMode]="'widget'"
+										[width]="'100%'"
+										[wordWrapEnabled]="true"
+										[repaintChangesOnly]="false"
+										(onInitNewRow)="relacionInternaInitNewRow($event)"
+										(onEditingStart)="onRelacionInternaEditingStart($event)"
+										(onSaved)="onRelacionInternaSaved($event)"
+										(onEditCanceled)="onRelacionInternaEditCanceled($event)"
+										(onRowInserting)="relacionInternaRowInserting($event)"
+										(onRowUpdating)="relacionInternaRowUpdating($event)"
+										(onRowRemoving)="relacionInternaRowRemoving($event)"
+										(onRowValidating)="relacionInternaRowValidating($event)"
+									>
+										<dxo-editing
+											[mode]="'row'"
+											[refreshMode]="'reshape'"
+											[allowUpdating]="!readOnly"
+											[allowDeleting]="!readOnly"
+											[useIcons]="true"
+											[selectTextOnEditStart]="true"
+											[newRowPosition]="'first'"
+										></dxo-editing>
+										<dxo-paging [enabled]="false"></dxo-paging>
+										<dxi-column
+											type="buttons"
+											name="btnAcciones"
+											caption="Options"
+											[width]="104"
+											[minWidth]="104"
+											[fixed]="true"
+											fixedPosition="left"
+											alignment="center"
+											[allowResizing]="false"
+										>
+											<dxi-button
+												hint="Editar registro"
+												icon="edit"
+												stylingMode="text"
+												cssClass="sguees-grid-action-edit"
+												[visible]="relacionInternaEditButtonVisible"
+												[onClick]="editarRelacionInternaClick"
+											></dxi-button>
+											<dxi-button
+												name="delete"
+												hint="Eliminar registro"
+												icon="trash"
+												stylingMode="text"
+												cssClass="sguees-grid-action-delete"
+												[visible]="relacionInternaDeleteButtonVisible"
+											></dxi-button>
+											<dxi-button name="save" [visible]="false"></dxi-button>
+											<dxi-button name="cancel" [visible]="false"></dxi-button>
+											<dxi-button name="edit" [visible]="false"></dxi-button>
+										</dxi-column>
+										<dxi-column
+											dataField="CORR_RELACION_LABORAL"
+											caption="Codigo"
+											[width]="90"
+											[allowEditing]="false"
+											[allowSorting]="true"
+											dataType="number"
+											alignment="left"
+										></dxi-column>
+										<dxi-column
+											dataField="PUESTO_AREA"
+											caption="Puesto / Area"
+											[minWidth]="220"
+											[allowSorting]="true"
+										></dxi-column>
+										<dxi-column
+											dataField="MOTIVO_RELACION"
+											caption="Motivo de la relacion"
+											[minWidth]="260"
+											[allowSorting]="true"
+										></dxi-column>
+									</dx-data-grid>
 								</div>
 							</dxi-item>
 
 							<dxi-item title="Externas" icon="globe">
-								<div class="descriptor-relaciones-tab-content descriptor-sub-tab-placeholder">
-									<p>Tabla de relaciones externas pendiente.</p>
+								<div class="descriptor-relaciones-tab-content">
+									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="add"
+											text="Agregar Relacion Externa"
+											type="success"
+											stylingMode="contained"
+											(onClick)="agregarRelacionExterna()"
+											[disabled]="relacionesExternasEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="save"
+											text="Guardar"
+											type="success"
+											stylingMode="contained"
+											(onClick)="guardarRelacionExternaEditada()"
+											[disabled]="!relacionesExternasEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+											icon="revert"
+											text="Cancelar"
+											type="danger"
+											stylingMode="contained"
+											(onClick)="cancelarRelacionExternaEditada()"
+											[disabled]="!relacionesExternasEditando"
+										></dx-button>
+									</div>
+
+									<dx-data-grid
+										#gridRelacionesExternas
+										class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+										[dataSource]="relacionesExternas"
+										keyExpr="_clientKey"
+										[columnAutoWidth]="false"
+										[showBorders]="true"
+										[showColumnLines]="true"
+										[showRowLines]="true"
+										[rowAlternationEnabled]="true"
+										[hoverStateEnabled]="true"
+										[allowColumnResizing]="true"
+										[columnResizingMode]="'widget'"
+										[width]="'100%'"
+										[wordWrapEnabled]="true"
+										[repaintChangesOnly]="false"
+										(onInitNewRow)="relacionExternaInitNewRow($event)"
+										(onEditingStart)="onRelacionExternaEditingStart($event)"
+										(onSaved)="onRelacionExternaSaved($event)"
+										(onEditCanceled)="onRelacionExternaEditCanceled($event)"
+										(onRowInserting)="relacionExternaRowInserting($event)"
+										(onRowUpdating)="relacionExternaRowUpdating($event)"
+										(onRowRemoving)="relacionExternaRowRemoving($event)"
+										(onRowValidating)="relacionExternaRowValidating($event)"
+									>
+										<dxo-editing
+											[mode]="'row'"
+											[refreshMode]="'reshape'"
+											[allowUpdating]="!readOnly"
+											[allowDeleting]="!readOnly"
+											[useIcons]="true"
+											[selectTextOnEditStart]="true"
+											[newRowPosition]="'first'"
+										></dxo-editing>
+										<dxo-paging [enabled]="false"></dxo-paging>
+										<dxi-column
+											type="buttons"
+											name="btnAcciones"
+											caption="Options"
+											[width]="104"
+											[minWidth]="104"
+											[fixed]="true"
+											fixedPosition="left"
+											alignment="center"
+											[allowResizing]="false"
+										>
+											<dxi-button
+												hint="Editar registro"
+												icon="edit"
+												stylingMode="text"
+												cssClass="sguees-grid-action-edit"
+												[visible]="relacionExternaEditButtonVisible"
+												[onClick]="editarRelacionExternaClick"
+											></dxi-button>
+											<dxi-button
+												name="delete"
+												hint="Eliminar registro"
+												icon="trash"
+												stylingMode="text"
+												cssClass="sguees-grid-action-delete"
+												[visible]="relacionExternaDeleteButtonVisible"
+											></dxi-button>
+											<dxi-button name="save" [visible]="false"></dxi-button>
+											<dxi-button name="cancel" [visible]="false"></dxi-button>
+											<dxi-button name="edit" [visible]="false"></dxi-button>
+										</dxi-column>
+										<dxi-column
+											dataField="CORR_RELACION_LABORAL"
+											caption="Codigo"
+											[width]="90"
+											[allowEditing]="false"
+											[allowSorting]="true"
+											dataType="number"
+											alignment="left"
+										></dxi-column>
+										<dxi-column
+											dataField="PUESTO_AREA"
+											caption="Puesto / Area"
+											[minWidth]="220"
+											[allowSorting]="true"
+										></dxi-column>
+										<dxi-column
+											dataField="MOTIVO_RELACION"
+											caption="Motivo de la relacion"
+											[minWidth]="260"
+											[allowSorting]="true"
+										></dxi-column>
+									</dx-data-grid>
 								</div>
 							</dxi-item>
 						</dx-tab-panel>
@@ -1463,7 +1704,7 @@
 
 		<dx-data-grid
 			#gridActividades
-			class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid"
+			class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
 			[dataSource]="actividadesPopup"
 			keyExpr="_clientKey"
 			[columnAutoWidth]="false"
@@ -1475,6 +1716,7 @@
 			[allowColumnResizing]="true"
 			[columnResizingMode]="'widget'"
 			[width]="'100%'"
+			[wordWrapEnabled]="true"
 			[repaintChangesOnly]="false"
 			(onInitNewRow)="actividadInitNewRow($event)"
 			(onEditingStart)="onActividadEditingStart($event)"

@@ -21,6 +21,7 @@ import { environment } from 'src/environments/environment';
 
 import { ScDescriptorFuncionActividad } from './sc-descriptor-funcion-actividad/models/sc-descriptor-funcion-actividad';
 import { ScDescriptorFuncion } from './sc-descriptor-funcion/models/sc-descriptor-funcion';
+import { ScDescriptorRelacionLaboral } from './sc-descriptor-relacion-laboral/models/sc-descriptor-relacion-laboral';
 import {
 	ScDescriptorKpiFuncion,
 	ScFrecuenciaLookup,
@@ -49,6 +50,8 @@ import {
 	PERFIL_PUESTO_DEFAULT,
 	TIPO_FUNCION_CLAVE,
 	TIPO_FUNCION_SECUNDARIA,
+	TIPO_RELACION_EXTERNA,
+	TIPO_RELACION_INTERNA,
 } from './sc-descriptor-puesto.mock-data';
 import { ScDescriptorPuestoService } from './sc-descriptor-puesto.service';
 
@@ -69,6 +72,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	@ViewChild('gridCompetenciasTecnicas', { static: false }) gridCompetenciasTecnicas?: DxDataGridComponent;
 	@ViewChild('gridCompetenciasConductuales', { static: false }) gridCompetenciasConductuales?: DxDataGridComponent;
 	@ViewChild('gridActividades', { static: false }) gridActividades?: DxDataGridComponent;
+	@ViewChild('gridRelacionesInternas', { static: false }) gridRelacionesInternas?: DxDataGridComponent;
+	@ViewChild('gridRelacionesExternas', { static: false }) gridRelacionesExternas?: DxDataGridComponent;
 
 	protected override etiquetaRegistro = 'el descriptor de puesto';
 	protected override requiereEmpresaSesion = true;
@@ -111,7 +116,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ dataField: 'CORR_COMPETENCIAS_CONDUCTUALES', caption: 'Codigo', width: 90 },
 		{ dataField: 'NOMBRE_COMPETENCIAS_CONDUCTUALES', caption: 'Competencia', width: 220 },
 		{ dataField: 'NOMBRE_TIPO_PUESTO', caption: 'Tipo puesto', width: 180 },
-		{ dataField: 'DESCRIPCION', caption: 'Descripcion', width: 260 },
 	];
 
 	headerItems: any[] = [];
@@ -124,6 +128,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	experiencias: ScPerfilPuestoExperiencia[] = [];
 	competenciasTecnicas: ScPerfilPuestoCompetenciasTecnicas[] = [];
 	competenciasConductuales: ScPerfilPuestoCompetenciasConductuales[] = [];
+	relacionesInternas: ScDescriptorRelacionLaboral[] = [];
+	relacionesExternas: ScDescriptorRelacionLaboral[] = [];
 	funcionesClaveEditando = false;
 	funcionesSecundariasEditando = false;
 	kpisEditando = false;
@@ -132,6 +138,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	competenciasTecnicasEditando = false;
 	competenciasConductualesEditando = false;
 	actividadesEditando = false;
+	relacionesInternasEditando = false;
+	relacionesExternasEditando = false;
 	perfil: ScDescriptorPerfilPuesto = { ...PERFIL_PUESTO_DEFAULT };
 	perfilSubTabIndex = 0;
 	competenciasSubTabIndex = 0;
@@ -154,6 +162,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private experienciaLoadSeq = 0;
 	private competenciasTecnicasLoadSeq = 0;
 	private competenciasConductualesLoadSeq = 0;
+	private relacionesInternasLoadSeq = 0;
+	private relacionesExternasLoadSeq = 0;
 	private perfilLoadSeq = 0;
 	private perfilExiste = false;
 	private sincronizandoHeader = false;
@@ -208,6 +218,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actividadEditButtonVisible = this.actividadEditButtonVisible.bind(this);
 		this.actividadDeleteButtonVisible = this.actividadDeleteButtonVisible.bind(this);
 		this.editarActividadClick = this.editarActividadClick.bind(this);
+		this.relacionInternaEditButtonVisible = this.relacionInternaEditButtonVisible.bind(this);
+		this.relacionInternaDeleteButtonVisible = this.relacionInternaDeleteButtonVisible.bind(this);
+		this.editarRelacionInternaClick = this.editarRelacionInternaClick.bind(this);
+		this.relacionExternaEditButtonVisible = this.relacionExternaEditButtonVisible.bind(this);
+		this.relacionExternaDeleteButtonVisible = this.relacionExternaDeleteButtonVisible.bind(this);
+		this.editarRelacionExternaClick = this.editarRelacionExternaClick.bind(this);
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.headerItems = this.service.getHeaderItems();
@@ -773,6 +789,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.cargarFuncionesSecundarias();
 			this.cargarKpis();
 		}
+		if (this.esFormatoExtensa) {
+			this.cargarRelacionesInternas();
+			this.cargarRelacionesExternas();
+		}
 		this.cargarPerfil();
 	}
 
@@ -785,6 +805,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.experiencias = [];
 		this.competenciasTecnicas = [];
 		this.competenciasConductuales = [];
+		this.relacionesInternas = [];
+		this.relacionesExternas = [];
 		this.competenciasSubTabIndex = 0;
 		this.relacionesSubTabIndex = 0;
 		this.resetearEdicionFuncionesClave();
@@ -794,6 +816,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.resetearEdicionExperiencia();
 		this.resetearEdicionCompetenciasTecnicas();
 		this.resetearEdicionCompetenciasConductuales();
+		this.resetearEdicionRelacionesInternas();
+		this.resetearEdicionRelacionesExternas();
 		this.limpiarPerfil();
 		this.resetearFuncionesTabsDirty();
 		this.cerrarActividadesPopup();
@@ -982,6 +1006,174 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	funcionSecundariaRowRemoving(e: any): void {
 		e.cancel = this.eliminarFuncionDesdeGrid(e.data);
+	}
+
+	agregarRelacionInterna(): void {
+		if (this.readOnly || this.relacionesInternasEditando || !this.esFormatoExtensa || !this.requiereDescriptorGuardado()) {
+			return;
+		}
+		this.gridRelacionesInternas?.instance.addRow();
+		this.relacionesInternasEditando = true;
+	}
+
+	editarRelacionInternaClick(e: any): void {
+		if (this.readOnly || this.relacionesInternasEditando) {
+			return;
+		}
+		e.component.editRow(e.row.rowIndex);
+		this.relacionesInternasEditando = true;
+	}
+
+	relacionInternaEditButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
+
+	relacionInternaDeleteButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
+
+	guardarRelacionInternaEditada(): void {
+		const grid = this.gridRelacionesInternas?.instance;
+		if (!grid || !this.relacionesInternasEditando) {
+			this.notifyFx('No hay una linea en edicion', NotifyType.Warning);
+			return;
+		}
+		grid.saveEditData();
+	}
+
+	cancelarRelacionInternaEditada(): void {
+		this.cancelarEdicionGrid(this.gridRelacionesInternas?.instance, () => {
+			this.relacionesInternasEditando = false;
+		});
+	}
+
+	relacionInternaInitNewRow(e: any): void {
+		e.data.CORR_RELACION_LABORAL = 0;
+		e.data.TIPO_RELACION = TIPO_RELACION_INTERNA;
+		e.data.PUESTO_AREA = '';
+		e.data.MOTIVO_RELACION = '';
+		e.data._clientKey = this.crearClientKey('ri');
+	}
+
+	onRelacionInternaEditingStart(_e: any): void {
+		this.relacionesInternasEditando = true;
+	}
+
+	onRelacionInternaSaved(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.relacionesInternasEditando = false;
+		});
+	}
+
+	onRelacionInternaEditCanceled(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.relacionesInternasEditando = false;
+		});
+	}
+
+	relacionInternaRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!(data.PUESTO_AREA ?? '').trim()) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar el puesto o area de la relacion interna.';
+		}
+	}
+
+	relacionInternaRowInserting(e: any): void {
+		e.cancel = this.persistirRelacionDesdeGrid(e.data, TIPO_RELACION_INTERNA, true);
+	}
+
+	relacionInternaRowUpdating(e: any): void {
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = this.persistirRelacionDesdeGrid(data, TIPO_RELACION_INTERNA, false);
+	}
+
+	relacionInternaRowRemoving(e: any): void {
+		e.cancel = this.eliminarRelacionDesdeGrid(e.data);
+	}
+
+	agregarRelacionExterna(): void {
+		if (this.readOnly || this.relacionesExternasEditando || !this.esFormatoExtensa || !this.requiereDescriptorGuardado()) {
+			return;
+		}
+		this.gridRelacionesExternas?.instance.addRow();
+		this.relacionesExternasEditando = true;
+	}
+
+	editarRelacionExternaClick(e: any): void {
+		if (this.readOnly || this.relacionesExternasEditando) {
+			return;
+		}
+		e.component.editRow(e.row.rowIndex);
+		this.relacionesExternasEditando = true;
+	}
+
+	relacionExternaEditButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
+
+	relacionExternaDeleteButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
+
+	guardarRelacionExternaEditada(): void {
+		const grid = this.gridRelacionesExternas?.instance;
+		if (!grid || !this.relacionesExternasEditando) {
+			this.notifyFx('No hay una linea en edicion', NotifyType.Warning);
+			return;
+		}
+		grid.saveEditData();
+	}
+
+	cancelarRelacionExternaEditada(): void {
+		this.cancelarEdicionGrid(this.gridRelacionesExternas?.instance, () => {
+			this.relacionesExternasEditando = false;
+		});
+	}
+
+	relacionExternaInitNewRow(e: any): void {
+		e.data.CORR_RELACION_LABORAL = 0;
+		e.data.TIPO_RELACION = TIPO_RELACION_EXTERNA;
+		e.data.PUESTO_AREA = '';
+		e.data.MOTIVO_RELACION = '';
+		e.data._clientKey = this.crearClientKey('re');
+	}
+
+	onRelacionExternaEditingStart(_e: any): void {
+		this.relacionesExternasEditando = true;
+	}
+
+	onRelacionExternaSaved(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.relacionesExternasEditando = false;
+		});
+	}
+
+	onRelacionExternaEditCanceled(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.relacionesExternasEditando = false;
+		});
+	}
+
+	relacionExternaRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!(data.PUESTO_AREA ?? '').trim()) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar el puesto o area de la relacion externa.';
+		}
+	}
+
+	relacionExternaRowInserting(e: any): void {
+		e.cancel = this.persistirRelacionDesdeGrid(e.data, TIPO_RELACION_EXTERNA, true);
+	}
+
+	relacionExternaRowUpdating(e: any): void {
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = this.persistirRelacionDesdeGrid(data, TIPO_RELACION_EXTERNA, false);
+	}
+
+	relacionExternaRowRemoving(e: any): void {
+		e.cancel = this.eliminarRelacionDesdeGrid(e.data);
 	}
 
 	abrirActividades(funcion: ScDescriptorFuncion): void {
@@ -1551,8 +1743,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		this.asegurarPerfilParaDetalle(() => {
 			this.actualizarCompetenciasConductualesLookupDisponibles();
-			this.gridCompetenciasConductuales?.instance.addRow();
 			this.competenciasConductualesEditando = true;
+			setTimeout(() => this.gridCompetenciasConductuales?.instance.addRow());
 		});
 	}
 
@@ -1563,8 +1755,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actualizarCompetenciasConductualesLookupDisponibles(
 			Number(e?.row?.data?.CORR_COMPETENCIAS_CONDUCTUALES) || null
 		);
-		e.component.editRow(e.row.rowIndex);
 		this.competenciasConductualesEditando = true;
+		const rowIndex = e.row.rowIndex;
+		const grid = e.component;
+		setTimeout(() => grid.editRow(rowIndex));
 	}
 
 	competenciaConductualEditButtonVisible(e: any): boolean {
@@ -1701,7 +1895,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		cellInfo.setValue(corr);
 
 		const nombre = catalog?.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '';
-		const descripcion = catalog?.DESCRIPCION ?? '';
+		const descripcion = this.esFormatoExtensa ? catalog?.DESCRIPCION ?? '' : '';
 		if (cellInfo.data) {
 			cellInfo.data.CORR_COMPETENCIAS_CONDUCTUALES = corr;
 			cellInfo.data.NOMBRE_COMPETENCIAS_CONDUCTUALES = nombre;
@@ -1712,7 +1906,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const rowIndex = cellInfo.rowIndex;
 		if (grid != null && typeof rowIndex === 'number') {
 			grid.cellValue(rowIndex, 'NOMBRE_COMPETENCIAS_CONDUCTUALES', nombre);
-			grid.cellValue(rowIndex, 'DESCRIPCION', descripcion);
+			if (this.esFormatoExtensa) {
+				grid.cellValue(rowIndex, 'DESCRIPCION', descripcion);
+			}
 		}
 	}
 
@@ -2268,6 +2464,86 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	private cargarRelacionesInternas(forzar = false): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtensa) {
+			if (!corrDescriptor || corrDescriptor <= 0) {
+				this.relacionesInternas = [];
+				this.resetearEdicionRelacionesInternas();
+			}
+			return;
+		}
+
+		const loadSeq = ++this.relacionesInternasLoadSeq;
+		this.service
+			.getRelacionesInternasLookup(corrDescriptor)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (loadSeq !== this.relacionesInternasLoadSeq) {
+						return;
+					}
+
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.resetearEdicionRelacionesInternas();
+						this.relacionesInternas = response.Data
+							.filter(
+								(item: ScDescriptorRelacionLaboral) =>
+									(item.TIPO_RELACION ?? '').trim().toUpperCase() === TIPO_RELACION_INTERNA
+							)
+							.map((item: ScDescriptorRelacionLaboral) => ({
+								CORR_RELACION_LABORAL: item.CORR_RELACION_LABORAL,
+								TIPO_RELACION: TIPO_RELACION_INTERNA,
+								PUESTO_AREA: item.PUESTO_AREA ?? '',
+								MOTIVO_RELACION: item.MOTIVO_RELACION ?? '',
+								_clientKey: item.CORR_RELACION_LABORAL || this.crearClientKey('ri'),
+							}));
+					}
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	private cargarRelacionesExternas(forzar = false): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtensa) {
+			if (!corrDescriptor || corrDescriptor <= 0) {
+				this.relacionesExternas = [];
+				this.resetearEdicionRelacionesExternas();
+			}
+			return;
+		}
+
+		const loadSeq = ++this.relacionesExternasLoadSeq;
+		this.service
+			.getRelacionesExternasLookup(corrDescriptor)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (loadSeq !== this.relacionesExternasLoadSeq) {
+						return;
+					}
+
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.resetearEdicionRelacionesExternas();
+						this.relacionesExternas = response.Data
+							.filter(
+								(item: ScDescriptorRelacionLaboral) =>
+									(item.TIPO_RELACION ?? '').trim().toUpperCase() === TIPO_RELACION_EXTERNA
+							)
+							.map((item: ScDescriptorRelacionLaboral) => ({
+								CORR_RELACION_LABORAL: item.CORR_RELACION_LABORAL,
+								TIPO_RELACION: TIPO_RELACION_EXTERNA,
+								PUESTO_AREA: item.PUESTO_AREA ?? '',
+								MOTIVO_RELACION: item.MOTIVO_RELACION ?? '',
+								_clientKey: item.CORR_RELACION_LABORAL || this.crearClientKey('re'),
+							}));
+					}
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
 	get tieneBitacora(): boolean {
 		return Array.isArray(this.itemsTabBitacora) && this.itemsTabBitacora.length > 0;
 	}
@@ -2312,6 +2588,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		// Solo recargar secundarias si el usuario cambió de verdad el formato (no por sync del form).
 		if (cambioReal && this.esFormatoCorta && this.mostrarSeccionesDescriptor) {
 			this.cargarFuncionesSecundarias();
+		}
+
+		if (cambioReal && this.esFormatoExtensa && this.mostrarSeccionesDescriptor) {
+			this.cargarRelacionesInternas();
+			this.cargarRelacionesExternas();
 		}
 	}
 
@@ -2702,6 +2983,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private resetearEdicionCompetenciasConductuales(): void {
 		this.competenciasConductualesEditando = false;
+	}
+
+	private resetearEdicionRelacionesInternas(): void {
+		this.relacionesInternasEditando = false;
+	}
+
+	private resetearEdicionRelacionesExternas(): void {
+		this.relacionesExternasEditando = false;
 	}
 
 	/** Visibilidad Options: usa editRowKey (no e.row.isEditing, que puede quedar pegado tras Cancelar). */
@@ -3101,7 +3390,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				: Number(data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES) || 0,
 			CORR_COMPETENCIAS_CONDUCTUALES: Number(data.CORR_COMPETENCIAS_CONDUCTUALES) || null,
 			NOMBRE_COMPETENCIAS_CONDUCTUALES: (data.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim(),
-			DESCRIPCION: (data.DESCRIPCION ?? '').trim(),
+			DESCRIPCION: this.esFormatoExtensa ? (data.DESCRIPCION ?? '').trim() : '',
 		};
 
 		return new Promise((resolve) => {
@@ -3208,6 +3497,77 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return new Promise((resolve) => {
 			this.service
 				.eliminarFuncion(corrDescriptor, corrFuncion)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private persistirRelacionDesdeGrid(
+		data: ScDescriptorRelacionLaboral,
+		tipoRelacion: string,
+		esNuevo: boolean
+	): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const payload: ScDescriptorRelacionLaboral = {
+			...data,
+			CORR_RELACION_LABORAL: esNuevo ? 0 : Number(data.CORR_RELACION_LABORAL) || 0,
+			TIPO_RELACION: tipoRelacion,
+			PUESTO_AREA: (data.PUESTO_AREA ?? '').trim(),
+			MOTIVO_RELACION: (data.MOTIVO_RELACION ?? '').trim(),
+		};
+
+		return new Promise((resolve) => {
+			this.service
+				.persistirRelacionLaboral(corrDescriptor, payload, tipoRelacion)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+
+						if (tipoRelacion === TIPO_RELACION_INTERNA) {
+							this.relacionesInternasEditando = false;
+							this.cargarRelacionesInternas(true);
+						} else {
+							this.relacionesExternasEditando = false;
+							this.cargarRelacionesExternas(true);
+						}
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private eliminarRelacionDesdeGrid(data: ScDescriptorRelacionLaboral): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrRelacion = Number(data?.CORR_RELACION_LABORAL);
+		if (!corrRelacion || corrRelacion <= 0) {
+			return Promise.resolve(false);
+		}
+
+		return new Promise((resolve) => {
+			this.service
+				.eliminarRelacionLaboral(corrDescriptor, corrRelacion)
 				.pipe(take(1))
 				.subscribe({
 					next: (response) => {

@@ -6,6 +6,10 @@ export const FORMATO_EXTENSA = 'EXTENSO';
 export const TIPO_FUNCION_CLAVE = 'CLAVE';
 export const TIPO_FUNCION_SECUNDARIA = 'SECUNDARIA';
 
+/** I = Interna, E = Externa */
+export const TIPO_RELACION_INTERNA = 'I';
+export const TIPO_RELACION_EXTERNA = 'E';
+
 export const ESTADOS_DESCRIPTOR_BLOQUEO_CREACION = ['BORRADOR', 'ENVIADO', 'REVISADO', 'ACTIVO'];
 
 export const MOCK_UNIDADES: MockUnidad[] = [

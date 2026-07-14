@@ -9,6 +9,8 @@ import { ScDescriptorFuncionActividad } from './sc-descriptor-funcion-actividad/
 import { ScDescriptorFuncionActividadRepository } from './sc-descriptor-funcion-actividad/sc-descriptor-funcion-actividad.repository';
 import { ScDescriptorFuncion } from './sc-descriptor-funcion/models/sc-descriptor-funcion';
 import { ScDescriptorFuncionRepository } from './sc-descriptor-funcion/sc-descriptor-funcion.repository';
+import { ScDescriptorRelacionLaboral } from './sc-descriptor-relacion-laboral/models/sc-descriptor-relacion-laboral';
+import { ScDescriptorRelacionLaboralRepository } from './sc-descriptor-relacion-laboral/sc-descriptor-relacion-laboral.repository';
 import { ScDescriptorKpiFuncion } from './sc-descriptor-kpi-funcion/models/sc-descriptor-kpi-funcion';
 import { ScDescriptorKpiFuncionRepository } from './sc-descriptor-kpi-funcion/sc-descriptor-kpi-funcion.repository';
 import { ScDescriptorPerfilPuesto } from './sc-descriptor-perfil-puesto/models/sc-descriptor-perfil-puesto';
@@ -28,6 +30,8 @@ import {
 	FORMATO_EXTENSA,
 	TIPO_FUNCION_CLAVE,
 	TIPO_FUNCION_SECUNDARIA,
+	TIPO_RELACION_EXTERNA,
+	TIPO_RELACION_INTERNA,
 } from './sc-descriptor-puesto.mock-data';
 import { ScDescriptorPuestoRepository } from './sc-descriptor-puesto.repository';
 
@@ -50,7 +54,8 @@ export class ScDescriptorPuestoService {
 		private educacionRepo: ScPerfilPuestoEducacionRepository,
 		private experienciaRepo: ScPerfilPuestoExperienciaRepository,
 		private competenciasTecnicasRepo: ScPerfilPuestoCompetenciasTecnicasRepository,
-		private competenciasConductualesRepo: ScPerfilPuestoCompetenciasConductualesRepository
+		private competenciasConductualesRepo: ScPerfilPuestoCompetenciasConductualesRepository,
+		private relacionLaboralRepo: ScDescriptorRelacionLaboralRepository
 	) {}
 
 	esValido(model: ScDescriptorPuesto, msg: Function): boolean {
@@ -515,6 +520,66 @@ export class ScDescriptorPuestoService {
 		return this.actividadRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
 			{ Parameter: 'CORR_FUNCION', Value: corrFuncion },
+		]);
+	}
+
+	getRelacionesInternasLookup(corrDescriptorPuesto: number): Observable<IResult> {
+		return this.relacionLaboralRepo.getAll([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+			{ Parameter: 'TIPO_RELACION', Value: TIPO_RELACION_INTERNA },
+		]);
+	}
+
+	getRelacionesExternasLookup(corrDescriptorPuesto: number): Observable<IResult> {
+		return this.relacionLaboralRepo.getAll([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+			{ Parameter: 'TIPO_RELACION', Value: TIPO_RELACION_EXTERNA },
+		]);
+	}
+
+	persistirRelacionLaboral(
+		corrDescriptorPuesto: number,
+		relacion: ScDescriptorRelacionLaboral,
+		tipoRelacion: string
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const payload = {
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_RELACION_LABORAL: relacion.CORR_RELACION_LABORAL ?? 0,
+			TIPO_RELACION: tipoRelacion,
+			PUESTO_AREA: (relacion.PUESTO_AREA ?? '').trim(),
+			MOTIVO_RELACION: (relacion.MOTIVO_RELACION ?? '').trim() || null,
+		};
+
+		if (!relacion.CORR_RELACION_LABORAL || relacion.CORR_RELACION_LABORAL <= 0) {
+			return this.relacionLaboralRepo.create(payload);
+		}
+
+		return this.relacionLaboralRepo.update(payload, [
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_RELACION_LABORAL', Value: relacion.CORR_RELACION_LABORAL },
+		]);
+	}
+
+	eliminarRelacionLaboral(
+		corrDescriptorPuesto: number,
+		corrRelacionLaboral: number
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrRelacion = Number(corrRelacionLaboral);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corrRelacion || corrRelacion <= 0) {
+			return of({
+				Result: false,
+				Data: null,
+				ErrorCode: 1,
+				ErrorMessage: 'Debe indicar la relacion laboral a eliminar.',
+				RowsAffected: 0,
+			} as IResult);
+		}
+
+		return this.relacionLaboralRepo.delete([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_RELACION_LABORAL', Value: corrRelacion },
 		]);
 	}
 
