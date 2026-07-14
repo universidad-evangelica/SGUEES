@@ -2177,12 +2177,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.funcionesClave = response.Data
 							.filter(
 								(item: ScDescriptorFuncion) =>
-									(item.TIPO_FUNCION ?? TIPO_FUNCION_CLAVE).toUpperCase() === TIPO_FUNCION_CLAVE
+									(item.TIPO_FUNCION ?? TIPO_FUNCION_CLAVE).trim().toUpperCase() ===
+									TIPO_FUNCION_CLAVE
 							)
 							.map((item: ScDescriptorFuncion) => ({
 								CORR_FUNCION: item.CORR_FUNCION,
 								NOMBRE_FUNCION: item.NOMBRE_FUNCION ?? '',
-								TIPO_FUNCION: item.TIPO_FUNCION ?? TIPO_FUNCION_CLAVE,
+								TIPO_FUNCION:
+									(item.TIPO_FUNCION ?? TIPO_FUNCION_CLAVE).trim().toUpperCase() ||
+									TIPO_FUNCION_CLAVE,
 								CANT_ACTIVIDADES: Number(item.CANT_ACTIVIDADES ?? 0),
 								_clientKey: item.CORR_FUNCION || this.crearClientKey('fc'),
 							}));
@@ -2249,12 +2252,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.funcionesSecundarias = response.Data
 							.filter(
 								(item: ScDescriptorFuncion) =>
-									(item.TIPO_FUNCION ?? '').toUpperCase() === TIPO_FUNCION_SECUNDARIA
+									(item.TIPO_FUNCION ?? '').trim().toUpperCase() === TIPO_FUNCION_SECUNDARIA
 							)
 							.map((item: ScDescriptorFuncion) => ({
 								CORR_FUNCION: item.CORR_FUNCION,
 								NOMBRE_FUNCION: item.NOMBRE_FUNCION ?? '',
-								TIPO_FUNCION: item.TIPO_FUNCION ?? TIPO_FUNCION_SECUNDARIA,
+								TIPO_FUNCION:
+									(item.TIPO_FUNCION ?? TIPO_FUNCION_SECUNDARIA).trim().toUpperCase() ||
+									TIPO_FUNCION_SECUNDARIA,
 								_clientKey: item.CORR_FUNCION || this.crearClientKey('fs'),
 							}));
 					}

@@ -34,6 +34,8 @@ namespace SGUEES.Repositories
                 reader.Close();
                 reader = null;
 
+                NormalizeTipoFuncion(response);
+
                 objResultado.Data = response;
                 objResultado.Result = true;
                 objResultado.RowsAffected = response.Count;
@@ -70,6 +72,11 @@ namespace SGUEES.Repositories
 
                 reader.Close();
                 reader = null;
+
+                if (response != null)
+                {
+                    NormalizeTipoFuncion(response);
+                }
 
                 objResultado.Data = response;
                 objResultado.Result = true;
@@ -114,6 +121,11 @@ namespace SGUEES.Repositories
 
                 reader.Close();
                 reader = null;
+
+                if (response != null)
+                {
+                    NormalizeTipoFuncion(response);
+                }
 
                 objResultado.Data = response;
                 objResultado.Result = true;
@@ -167,6 +179,11 @@ namespace SGUEES.Repositories
 
                 reader.Close();
                 reader = null;
+
+                if (response != null)
+                {
+                    NormalizeTipoFuncion(response);
+                }
 
                 objResultado.Data = response;
                 objResultado.Result = true;
@@ -249,6 +266,26 @@ namespace SGUEES.Repositories
                 new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
             };
+        }
+
+        private static void NormalizeTipoFuncion(IEnumerable<SC_DESCRIPTOR_FUNCIONView> items)
+        {
+            foreach (var item in items)
+            {
+                NormalizeTipoFuncion(item);
+            }
+        }
+
+        private static void NormalizeTipoFuncion(SC_DESCRIPTOR_FUNCIONView item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            item.TIPO_FUNCION = string.IsNullOrWhiteSpace(item.TIPO_FUNCION)
+                ? item.TIPO_FUNCION
+                : item.TIPO_FUNCION.Trim();
         }
     }
 }
