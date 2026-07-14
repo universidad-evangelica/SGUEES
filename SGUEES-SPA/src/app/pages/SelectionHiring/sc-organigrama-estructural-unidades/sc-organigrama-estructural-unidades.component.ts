@@ -24,6 +24,7 @@ import { SC_OrganigramaEstructuralJefe } from './models/sc-organigrama-estructur
 export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent implements OnInit {
     //#region <ViewChilds>
     @ViewChild('treeView') treeView: any;
+    @ViewChild('fDataJefe') fDataJefe: any;
     //#endregion
 
     constructor(
@@ -41,6 +42,19 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
         //  Inicializar columnas y items de jefes
         this.jefesColumns = this.jefeService.getColumns();
         this.jefesItems = this.jefeService.getItems();
+    }
+
+    private configurarItemsJefe(esEdicion: boolean): void {
+        this.jefesItems = this.jefeService.getItems().map((item: any) => {
+            if (item.dataField === 'CORR_EMPLEADO' || item.dataField === 'FECHA_INICIO') {
+                return {
+                    ...item,
+                    visible: !esEdicion,
+                };
+            }
+
+            return { ...item };
+        });
     }
 
     //#region <Declarando Variables>
@@ -300,7 +314,7 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
             .subscribe({
                 next: (response: any) => {
                     if (response.Result) {
-                        this.jefesModels = response.Data || [];
+                        this.jefesModels = (response.Data || []).filter((item: any) => item);
                     }
                 },
                 error: (error: any) => {
@@ -339,6 +353,7 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
     }
 
     nuevoJefe(): void {
+        this.configurarItemsJefe(false);
         this.jefeModel = this.fillJefeData();
         this.jefeModel.CORR_UNIDAD = this.unidadModel.CORR_UNIDAD;
         this.jefeModel.FECHA_INICIO = new Date();
@@ -388,9 +403,11 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
                     next: (response: any) => {
                         if (response.Result) {
                             const vIndex = this.jefesModels.findIndex(
-                                (item: any) => item.CORR_JEFE === response.Data.CORR_JEFE
+                                (item: any) => item && item.CORR_JEFE === response.Data?.CORR_JEFE
                             );
-                            this.jefesModels[vIndex] = response.Data;
+                            if (vIndex >= 0) {
+                                this.jefesModels[vIndex] = response.Data;
+                            }
                             this.jefeModel = this.fillJefeData(response.Data);
                             this.banderaMttoJefe = UpdateType.Browse;
                             this.jefeReadOnly = false;
@@ -410,15 +427,19 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
     }
 
     editarJefe(data: any): void {
-        const jefe = data?.data || data;
+        const jefe = data?.row?.data || data;
         if (!jefe || !jefe.CORR_JEFE) return;
 
+        this.configurarItemsJefe(true);
         this.jefeModel = this.fillJefeData(jefe);
         this.banderaMttoJefe = UpdateType.Update;
         this.jefeReadOnly = false;
         this.habilitarJefe();
         this.filtroUnidadJefe = this.unidadModel.CORR_UNIDAD;
         this.cargarEmpleadosDisponibles(this.filtroUnidadJefe, this.unidadModel.CORR_UNIDAD);
+        setTimeout(() => {
+            this.fDataJefe?.instance?.getEditor('CORR_EMPLEADO')?.focus();
+        });
     }
 
     eliminarJefe(e: any): void {
@@ -446,6 +467,7 @@ export class SC_OrganigramaEstructuralUnidadesComponent extends CBaseComponent i
     }
 
     cancelarJefe(): void {
+        this.configurarItemsJefe(false);
         this.banderaMttoJefe = UpdateType.Browse;
         this.jefeReadOnly = false;
         this.jefeModel = this.fillJefeData();

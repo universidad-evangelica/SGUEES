@@ -155,14 +155,17 @@ namespace sguees.Repositories
 
             try
             {
+                var fechaFin = Data.ACTIVO ? (Data.FECHA_FIN ?? (object)DBNull.Value) : DateTime.Now;
+
                 var p = new List<CParameter>
                 {
                     new CParameter() {ParameterName="FECHA_INICIO",Value=Data.FECHA_INICIO,DbType=System.Data.DbType.DateTime},
-                    new CParameter() {ParameterName="FECHA_FIN",Value=Data.FECHA_FIN ?? (object)DBNull.Value,DbType=System.Data.DbType.DateTime},
+                    new CParameter() {ParameterName="FECHA_FIN",Value=fechaFin,DbType=System.Data.DbType.DateTime},
                     new CParameter() {ParameterName="ACTIVO",Value=Data.ACTIVO,DbType=System.Data.DbType.Boolean},
                     new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
                     new CParameter() {ParameterName="ESTACION_ACTU",Value=Data.ESTACION_ACTU,DbType=System.Data.DbType.String},
                     new CParameter() {ParameterName="FECHA_ACTU",Value=Data.FECHA_ACTU,DbType=System.Data.DbType.DateTime},
+                    
                 };
 
                 var pWhere = new List<CParameter>

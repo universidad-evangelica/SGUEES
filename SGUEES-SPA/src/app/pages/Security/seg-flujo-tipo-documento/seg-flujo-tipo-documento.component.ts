@@ -484,7 +484,7 @@ export class SegFlujoTipoDocumentoComponent extends CBaseComponent implements On
         
         // Verificar que tenemos datos válidos
         if (!estado || !estado.CORR_ESTADO) {
-            console.warn('⚠️ Datos de estado no válidos:', estado);
+            console.warn('Datos de estado no válidos:', estado);
             return;
         }
         
