@@ -35,16 +35,55 @@ namespace sguees.Services
 
         public async Task<CResult> GetEmpleadosByUnidadAsync(SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADESParam xWhere)
         {
-            var p = new List<CParameter>
+            // 1. Obtener empleados de la unidad destino (vista simple, sin cambios)
+            var pEmpleados = new List<CParameter>
             {
-                new CParameter() {ParameterName="CORR_UNIDAD_ORIGEN", Value=xWhere.CORR_UNIDAD_ORIGEN, DbType=System.Data.DbType.Int32},
-                new CParameter() {ParameterName="CORR_UNIDAD_DESTINO", Value=xWhere.CORR_UNIDAD_DESTINO, DbType=System.Data.DbType.Int32},
+                new CParameter() {ParameterName="CORR_UNIDAD_EMPLEADO", Value=xWhere.CORR_UNIDAD_DESTINO, DbType=System.Data.DbType.Int32},
             };
 
+            var resultado = await _repo.GetEmpleadosDisponiblesAsync(pEmpleados);
 
-            return await _repo.GetEmpleadosDisponiblesAsync(p);
+            if (!resultado.Result || resultado.Data == null)
+                return resultado;
+
+            var empleados = (List<GEN_EMPLEADO_DISPONIBLEView>)resultado.Data;
+
+            // 2. Obtener los CORR_EMPLEADO de jefes activos de la unidad origen
+            var pJefes = new List<CParameter>
+            {
+                new CParameter() {ParameterName="CORR_EMPRESA", Value=xWhere.CORR_EMPRESA, DbType=System.Data.DbType.Int32},
+                new CParameter() {ParameterName="CORR_UNIDAD", Value=xWhere.CORR_UNIDAD_ORIGEN, DbType=System.Data.DbType.Int32},
+                new CParameter() {ParameterName="ACTIVO", Value=1, DbType=System.Data.DbType.Boolean},
+            };
+
+            var resultadoJefes = await _repo.GetAllAsync(pJefes);
+            var idsExcluidos = new HashSet<int>();
+
+            if (resultadoJefes.Result && resultadoJefes.Data != null)
+            {
+                var jefes = (List<SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADESView>)resultadoJefes.Data;
+                foreach (var j in jefes)
+                {
+                    idsExcluidos.Add(j.CORR_EMPLEADO);
+                }
+            }
+
+            // 3. Filtrar en memoria
+            var empleadosFiltrados = empleados
+                .Where(e => !idsExcluidos.Contains(e.CORR_EMPLEADO))
+                .ToList();
+
+            return new CResult
+            {
+                Data = empleadosFiltrados,
+                Result = true,
+                RowsAffected = empleadosFiltrados.Count,
+                CodeHelper = 0,
+                ErrorCode = 0,
+                ErrorMessage = "",
+                ErrorSource = ""
+            };
         }
-
         public async Task<CResult> GetAsync(SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADESParam xWhere)
         {
             var p = new List<CParameter>

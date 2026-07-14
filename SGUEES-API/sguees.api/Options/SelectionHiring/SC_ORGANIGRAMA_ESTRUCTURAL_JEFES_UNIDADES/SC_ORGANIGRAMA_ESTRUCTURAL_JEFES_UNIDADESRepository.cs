@@ -215,6 +215,7 @@ namespace sguees.Repositories
                     new CParameter() {ParameterName="USUARIO_ACTU",Value=vLOGIN_SISTEMA,DbType=System.Data.DbType.String},
                     new CParameter() {ParameterName="ESTACION_ACTU",Value=vESTACION,DbType=System.Data.DbType.String},
                     new CParameter() {ParameterName="FECHA_ACTU",Value=DateTime.Now,DbType=System.Data.DbType.DateTime},
+                    new CParameter() {ParameterName="FECHA_FIN",Value=DateTime.Now,DbType=System.Data.DbType.DateTime},
                 };
 
                 var pWhere = new List<CParameter>
