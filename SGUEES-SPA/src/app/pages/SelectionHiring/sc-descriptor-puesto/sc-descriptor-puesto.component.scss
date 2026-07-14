@@ -510,6 +510,49 @@
 	}
 }
 
+.descriptor-riesgo-lista-vista {
+	margin: 0;
+	padding-left: 18px;
+}
+
+.descriptor-riesgo-lista-vista li {
+	margin: 0 0 4px;
+}
+
+.descriptor-riesgo-lista-vacia {
+	opacity: 0.65;
+	font-style: italic;
+}
+
+.descriptor-riesgo-lista-editor {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 10px;
+	box-sizing: border-box;
+}
+
+.descriptor-riesgo-lista-editor__row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.descriptor-riesgo-lista-editor__input {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.descriptor-riesgo-lista-editor__delete {
+	flex: 0 0 auto;
+}
+
+.descriptor-riesgo-lista-editor__add {
+	align-self: flex-start;
+	margin-top: 2px;
+}
+
 .descriptor-funciones-note {
 	margin: 12px 0 0;
 	font-size: 12px;

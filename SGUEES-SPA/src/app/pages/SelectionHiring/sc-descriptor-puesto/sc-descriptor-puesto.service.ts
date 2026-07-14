@@ -25,6 +25,8 @@ import { ScPerfilPuestoCompetenciasConductuales } from './sc-perfil-puesto-compe
 import { ScPerfilPuestoCompetenciasConductualesRepository } from './sc-perfil-puesto-competencias-conductuales/sc-perfil-puesto-competencias-conductuales.repository';
 import { ScDescriptorPuestoRequerimientoOrganizacional } from './sc-descriptor-puesto-requerimiento-organizacional/models/sc-descriptor-puesto-requerimiento-organizacional';
 import { ScDescriptorPuestoRequerimientoOrganizacionalRepository } from './sc-descriptor-puesto-requerimiento-organizacional/sc-descriptor-puesto-requerimiento-organizacional.repository';
+import { ScDescriptorPuestoRiesgoPuesto } from './sc-descriptor-puesto-riesgo-puesto/models/sc-descriptor-puesto-riesgo-puesto';
+import { ScDescriptorPuestoRiesgoPuestoRepository } from './sc-descriptor-puesto-riesgo-puesto/sc-descriptor-puesto-riesgo-puesto.repository';
 import { ScDescriptorPuesto } from './models/sc-descriptor-puesto';
 import {
 	ESTADOS_DESCRIPTOR_BLOQUEO_CREACION,
@@ -58,6 +60,7 @@ export class ScDescriptorPuestoService {
 		private competenciasTecnicasRepo: ScPerfilPuestoCompetenciasTecnicasRepository,
 		private competenciasConductualesRepo: ScPerfilPuestoCompetenciasConductualesRepository,
 		private requerimientosOrganizacionalesRepo: ScDescriptorPuestoRequerimientoOrganizacionalRepository,
+		private riesgosPuestoRepo: ScDescriptorPuestoRiesgoPuestoRepository,
 		private relacionLaboralRepo: ScDescriptorRelacionLaboralRepository
 	) {}
 
@@ -1058,6 +1061,55 @@ export class ScDescriptorPuestoService {
 
 		return this.requerimientosOrganizacionalesRepo.delete([
 			{ Parameter: 'CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL', Value: corr },
+		]);
+	}
+
+	getRiesgosPuestoLookup(corrDescriptorPuesto: number): Observable<IResult> {
+		return this.riesgosPuestoRepo.getAll([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+		]);
+	}
+
+	persistirRiesgoPuesto(
+		corrDescriptorPuesto: number,
+		row: ScDescriptorPuestoRiesgoPuesto
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const payload = {
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_DESCRIPTOR_RIESGO: row.CORR_DESCRIPTOR_RIESGO ?? 0,
+			NOMBRE_RIESGO_PUESTO: (row.NOMBRE_RIESGO_PUESTO ?? '').trim() || null,
+			INFORMACION: (row.INFORMACION ?? '').trim() || null,
+			CORR_RIESGO_PUESTO: row.CORR_RIESGO_PUESTO ?? null,
+			ES_LISTA: row.ES_LISTA ?? null,
+		};
+
+		if (!row.CORR_DESCRIPTOR_RIESGO || row.CORR_DESCRIPTOR_RIESGO <= 0) {
+			return this.riesgosPuestoRepo.create(payload);
+		}
+
+		return this.riesgosPuestoRepo.update(payload, [
+			{
+				Parameter: 'CORR_DESCRIPTOR_RIESGO',
+				Value: row.CORR_DESCRIPTOR_RIESGO,
+			},
+		]);
+	}
+
+	eliminarRiesgoPuesto(corrDescriptorRiesgo: number): Observable<IResult> {
+		const corr = Number(corrDescriptorRiesgo);
+		if (!corr || corr <= 0) {
+			return of({
+				Result: false,
+				Data: null,
+				ErrorCode: 1,
+				ErrorMessage: 'Debe indicar el riesgo del descriptor a eliminar.',
+				RowsAffected: 0,
+			} as IResult);
+		}
+
+		return this.riesgosPuestoRepo.delete([
+			{ Parameter: 'CORR_DESCRIPTOR_RIESGO', Value: corr },
 		]);
 	}
 

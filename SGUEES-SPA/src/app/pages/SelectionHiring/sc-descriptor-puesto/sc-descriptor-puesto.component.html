@@ -1707,9 +1707,218 @@
 				</dxi-item>
 
 				<dxi-item title="Riesgos" [visible]="esFormatoExtensa">
-					<div class="descriptor-sub-tab-content descriptor-sub-tab-placeholder">
-						<h4 class="descriptor-sub-tab-heading">Riesgos</h4>
-						<p>Seccion en construccion.</p>
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-funciones-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-warning descriptor-funciones-icon" aria-hidden="true"></span>
+								Riesgos del puesto
+							</h4>
+						</div>
+
+						<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="add"
+								text="Agregar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="agregarRiesgoPuesto()"
+								[disabled]="riesgosPuestoEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="save"
+								text="Guardar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="guardarRiesgoPuestoEditado()"
+								[disabled]="!riesgosPuestoEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+								icon="revert"
+								text="Cancelar"
+								type="danger"
+								stylingMode="contained"
+								(onClick)="cancelarRiesgoPuestoEditado()"
+								[disabled]="!riesgosPuestoEditando"
+							></dx-button>
+						</div>
+
+						<dx-data-grid
+							#gridRiesgosPuesto
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+							[dataSource]="riesgosPuesto"
+							keyExpr="_clientKey"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[width]="'100%'"
+							[wordWrapEnabled]="true"
+							[repaintChangesOnly]="false"
+							(onInitNewRow)="riesgoPuestoInitNewRow($event)"
+							(onEditingStart)="onRiesgoPuestoEditingStart($event)"
+							(onSaved)="onRiesgoPuestoSaved($event)"
+							(onEditCanceled)="onRiesgoPuestoEditCanceled($event)"
+							(onRowInserting)="riesgoPuestoRowInserting($event)"
+							(onRowUpdating)="riesgoPuestoRowUpdating($event)"
+							(onRowRemoving)="riesgoPuestoRowRemoving($event)"
+							(onRowValidating)="riesgoPuestoRowValidating($event)"
+						>
+							<dxo-editing
+								[mode]="'row'"
+								[refreshMode]="'reshape'"
+								[allowUpdating]="!readOnly"
+								[allowDeleting]="!readOnly"
+								[useIcons]="true"
+								[selectTextOnEditStart]="true"
+								[newRowPosition]="'first'"
+							></dxo-editing>
+							<dxo-paging [enabled]="false"></dxo-paging>
+							<dxi-column
+								type="buttons"
+								name="btnAcciones"
+								caption="Options"
+								[width]="104"
+								[minWidth]="104"
+								[fixed]="true"
+								fixedPosition="left"
+								alignment="center"
+								[allowResizing]="false"
+							>
+								<dxi-button
+									hint="Editar registro"
+									icon="edit"
+									stylingMode="text"
+									cssClass="sguees-grid-action-edit"
+									[visible]="riesgoPuestoEditButtonVisible"
+									[onClick]="editarRiesgoPuestoClick"
+								></dxi-button>
+								<dxi-button
+									name="delete"
+									hint="Eliminar registro"
+									icon="trash"
+									stylingMode="text"
+									cssClass="sguees-grid-action-delete"
+									[visible]="riesgoPuestoDeleteButtonVisible"
+								></dxi-button>
+								<dxi-button name="save" [visible]="false"></dxi-button>
+								<dxi-button name="cancel" [visible]="false"></dxi-button>
+								<dxi-button name="edit" [visible]="false"></dxi-button>
+							</dxi-column>
+							<dxi-column
+								dataField="CORR_DESCRIPTOR_RIESGO"
+								caption="Codigo"
+								[width]="90"
+								[allowEditing]="false"
+								[allowSorting]="true"
+								dataType="number"
+								alignment="left"
+							></dxi-column>
+							<dxi-column
+								dataField="CORR_RIESGO_PUESTO"
+								caption="Riesgo"
+								[width]="140"
+								[minWidth]="120"
+								[allowSorting]="true"
+								[visible]="riesgosPuestoEditando"
+								[calculateDisplayValue]="riesgoPuestoCatalogDisplay"
+								[setCellValue]="setRiesgoPuestoCellValue"
+								[editCellTemplate]="'CORR_RIESGO_PUESTOLookup'"
+							>
+								<dxo-lookup
+									[dataSource]="mCORR_RIESGO_PUESTO"
+									valueExpr="CORR_RIESGO_PUESTO"
+									displayExpr="NOMBRE_RIESGO_PUESTO"
+								></dxo-lookup>
+							</dxi-column>
+							<div *dxTemplate="let cellInfo of 'CORR_RIESGO_PUESTOLookup'">
+								<app-data-lookup
+									[model]="mCORR_RIESGO_PUESTO_DISPONIBLES"
+									[value]="cellInfo.value"
+									(valueChange)="onRiesgoPuestoLookupChanged($event, cellInfo)"
+									[valueExpr]="'CORR_RIESGO_PUESTO'"
+									[displayExpr]="'NOMBRE_RIESGO_PUESTO'"
+									[lookupColumns]="riesgosPuestoLookupColumns"
+									[selectedRowKeys]="selectedLookUpCORR_RIESGO_PUESTO"
+									[showClearButton]="true"
+									[dropDownWidth]="520"
+								></app-data-lookup>
+							</div>
+							<dxi-column
+								dataField="NOMBRE_RIESGO_PUESTO"
+								caption="Nombre (descriptor)"
+								[minWidth]="220"
+								[allowSorting]="true"
+							></dxi-column>
+							<dxi-column
+								dataField="INFORMACION"
+								caption="Informacion"
+								[minWidth]="280"
+								[allowSorting]="true"
+								[calculateDisplayValue]="riesgoPuestoInformacionDisplay"
+								[cellTemplate]="'riesgoPuestoInformacionCell'"
+								[editCellTemplate]="'riesgoPuestoInformacionEdit'"
+							></dxi-column>
+							<div *dxTemplate="let cell of 'riesgoPuestoInformacionCell'">
+								<ng-container *ngIf="riesgoPuestoEsLista(cell.data); else riesgoInformacionTextoVista">
+									<ul class="descriptor-riesgo-lista-vista" *ngIf="parseRiesgoInformacionLista(cell.value).length; else riesgoListaVacia">
+										<li *ngFor="let item of parseRiesgoInformacionLista(cell.value)">{{ item }}</li>
+									</ul>
+									<ng-template #riesgoListaVacia>
+										<span class="descriptor-riesgo-lista-vacia">Sin items</span>
+									</ng-template>
+								</ng-container>
+								<ng-template #riesgoInformacionTextoVista>{{ cell.value }}</ng-template>
+							</div>
+							<div *dxTemplate="let cellInfo of 'riesgoPuestoInformacionEdit'">
+								<ng-container *ngIf="riesgoPuestoEsLista(cellInfo.data); else riesgoInformacionTextoEdit">
+									<div class="descriptor-riesgo-lista-editor">
+										<div
+											class="descriptor-riesgo-lista-editor__row"
+											*ngFor="let item of getRiesgoListaEditorItems(cellInfo); let i = index; trackBy: trackRiesgoListaItemIndex"
+										>
+											<dx-text-box
+												class="descriptor-riesgo-lista-editor__input"
+												[value]="item"
+												[showClearButton]="true"
+												[maxLength]="150"
+												(valueChange)="onRiesgoListaItemChanged(cellInfo, i, $event)"
+											></dx-text-box>
+											<dx-button
+												class="descriptor-riesgo-lista-editor__delete"
+												icon="trash"
+												stylingMode="text"
+												hint="Quitar item"
+												[disabled]="getRiesgoListaEditorItems(cellInfo).length <= 1"
+												(onClick)="eliminarRiesgoListaItem(cellInfo, i)"
+											></dx-button>
+										</div>
+										<dx-button
+											class="descriptor-riesgo-lista-editor__add"
+											icon="add"
+											text="Agregar item"
+											type="default"
+											stylingMode="contained"
+											(onClick)="agregarRiesgoListaItem(cellInfo)"
+										></dx-button>
+									</div>
+								</ng-container>
+								<ng-template #riesgoInformacionTextoEdit>
+									<dx-text-box
+										[value]="cellInfo.value"
+										[maxLength]="255"
+										[showClearButton]="true"
+										(valueChange)="onRiesgoInformacionTextoChanged(cellInfo, $event)"
+									></dx-text-box>
+								</ng-template>
+							</div>
+						</dx-data-grid>
 					</div>
 				</dxi-item>
 

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 import { DxFormComponent } from 'devextreme-angular/ui/form';
@@ -36,6 +36,7 @@ import { ScPerfilPuestoExperiencia } from './sc-perfil-puesto-experiencia/models
 import { ScPerfilPuestoCompetenciasTecnicas } from './sc-perfil-puesto-competencias-tecnicas/models/sc-perfil-puesto-competencias-tecnicas';
 import { ScPerfilPuestoCompetenciasConductuales } from './sc-perfil-puesto-competencias-conductuales/models/sc-perfil-puesto-competencias-conductuales';
 import { ScDescriptorPuestoRequerimientoOrganizacional } from './sc-descriptor-puesto-requerimiento-organizacional/models/sc-descriptor-puesto-requerimiento-organizacional';
+import { ScDescriptorPuestoRiesgoPuesto } from './sc-descriptor-puesto-riesgo-puesto/models/sc-descriptor-puesto-riesgo-puesto';
 import {
 	MockPuesto,
 	MockUnidad,
@@ -43,6 +44,7 @@ import {
 	ScCompetenciaTecnicaLookupItem,
 	ScDescriptorPuesto,
 	ScRequerimientoOrganizacionalLookupItem,
+	ScRiesgoPuestoLookupItem,
 } from './models/sc-descriptor-puesto';
 import {
 	FORMATO_CORTA,
@@ -75,6 +77,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	@ViewChild('gridCompetenciasConductuales', { static: false }) gridCompetenciasConductuales?: DxDataGridComponent;
 	@ViewChild('gridRequerimientosOrganizacionales', { static: false })
 	gridRequerimientosOrganizacionales?: DxDataGridComponent;
+	@ViewChild('gridRiesgosPuesto', { static: false }) gridRiesgosPuesto?: DxDataGridComponent;
 	@ViewChild('gridActividades', { static: false }) gridActividades?: DxDataGridComponent;
 	@ViewChild('gridRelacionesInternas', { static: false }) gridRelacionesInternas?: DxDataGridComponent;
 	@ViewChild('gridRelacionesExternas', { static: false }) gridRelacionesExternas?: DxDataGridComponent;
@@ -106,6 +109,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES: ScCompetenciaConductualLookupItem[] = [];
 	mCORR_REQUERIMIENTO_ORGANIZACIONAL: ScRequerimientoOrganizacionalLookupItem[] = [];
 	mCORR_REQUERIMIENTO_ORGANIZACIONAL_DISPONIBLES: ScRequerimientoOrganizacionalLookupItem[] = [];
+	mCORR_RIESGO_PUESTO: ScRiesgoPuestoLookupItem[] = [];
+	mCORR_RIESGO_PUESTO_DISPONIBLES: ScRiesgoPuestoLookupItem[] = [];
 	reportaLookupColumns = [
 		{ dataField: 'RESPONSABLE', caption: 'Nombre', width: 220 },
 		{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260 },
@@ -127,6 +132,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ dataField: 'CORR_REQUERIMIENTO_ORGANIZACIONAL', caption: 'Codigo', width: 90 },
 		{ dataField: 'DESCRIPCION', caption: 'Descripcion', width: 320 },
 	];
+	riesgosPuestoLookupColumns = [
+		{ dataField: 'CORR_RIESGO_PUESTO', caption: 'Codigo', width: 90 },
+		{ dataField: 'NOMBRE_RIESGO_PUESTO', caption: 'Riesgo', width: 320 },
+	];
 
 	headerItems: any[] = [];
 	itemsTabBitacora: any[] = [];
@@ -139,6 +148,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	competenciasTecnicas: ScPerfilPuestoCompetenciasTecnicas[] = [];
 	competenciasConductuales: ScPerfilPuestoCompetenciasConductuales[] = [];
 	requerimientosOrganizacionales: ScDescriptorPuestoRequerimientoOrganizacional[] = [];
+	riesgosPuesto: ScDescriptorPuestoRiesgoPuesto[] = [];
 	relacionesInternas: ScDescriptorRelacionLaboral[] = [];
 	relacionesExternas: ScDescriptorRelacionLaboral[] = [];
 	funcionesClaveEditando = false;
@@ -149,6 +159,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	competenciasTecnicasEditando = false;
 	competenciasConductualesEditando = false;
 	requerimientosOrganizacionalesEditando = false;
+	riesgosPuestoEditando = false;
+	private riesgoListaEditorDraft = new Map<string, string[]>();
 	actividadesEditando = false;
 	relacionesInternasEditando = false;
 	relacionesExternasEditando = false;
@@ -175,6 +187,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private competenciasTecnicasLoadSeq = 0;
 	private competenciasConductualesLoadSeq = 0;
 	private requerimientosOrganizacionalesLoadSeq = 0;
+	private riesgosPuestoLoadSeq = 0;
 	private relacionesInternasLoadSeq = 0;
 	private relacionesExternasLoadSeq = 0;
 	private perfilLoadSeq = 0;
@@ -196,7 +209,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: ScDescriptorPuestoService
+		private service: ScDescriptorPuestoService,
+		private cdr: ChangeDetectorRef
 	) {
 		super(appInfoService, router);
 		this.selectedLookUpCORR_UNIDAD = this.selectedLookUpCORR_UNIDAD.bind(this);
@@ -209,6 +223,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES = this.selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES.bind(this);
 		this.selectedLookUpCORR_REQUERIMIENTO_ORGANIZACIONAL =
 			this.selectedLookUpCORR_REQUERIMIENTO_ORGANIZACIONAL.bind(this);
+		this.selectedLookUpCORR_RIESGO_PUESTO = this.selectedLookUpCORR_RIESGO_PUESTO.bind(this);
 		this.funcionClaveEditButtonVisible = this.funcionClaveEditButtonVisible.bind(this);
 		this.funcionClaveDeleteButtonVisible = this.funcionClaveDeleteButtonVisible.bind(this);
 		this.editarFuncionClaveClick = this.editarFuncionClaveClick.bind(this);
@@ -235,6 +250,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.requerimientoOrganizacionalDeleteButtonVisible =
 			this.requerimientoOrganizacionalDeleteButtonVisible.bind(this);
 		this.editarRequerimientoOrganizacionalClick = this.editarRequerimientoOrganizacionalClick.bind(this);
+		this.riesgoPuestoEditButtonVisible = this.riesgoPuestoEditButtonVisible.bind(this);
+		this.riesgoPuestoDeleteButtonVisible = this.riesgoPuestoDeleteButtonVisible.bind(this);
+		this.editarRiesgoPuestoClick = this.editarRiesgoPuestoClick.bind(this);
 		this.actividadEditButtonVisible = this.actividadEditButtonVisible.bind(this);
 		this.actividadDeleteButtonVisible = this.actividadDeleteButtonVisible.bind(this);
 		this.editarActividadClick = this.editarActividadClick.bind(this);
@@ -287,6 +305,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.getCORR_COMPETENCIAS_TECNICAS_NIV3();
 		this.getCORR_COMPETENCIAS_CONDUCTUALES();
 		this.getCORR_REQUERIMIENTO_ORGANIZACIONAL();
+		this.getCORR_RIESGO_PUESTO();
 		this.getFORMATO();
 		this.getNIVEL_DOMINIO();
 		this.getSEXO();
@@ -648,6 +667,39 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	getCORR_RIESGO_PUESTO(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_RIESGO_PUESTO',
+				'GetCORR_RIESGO_PUESTO',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result || !Array.isArray(response.Data)) {
+						this.mCORR_RIESGO_PUESTO = [];
+						this.mCORR_RIESGO_PUESTO_DISPONIBLES = [];
+						return;
+					}
+
+					this.mCORR_RIESGO_PUESTO = response.Data.map((item: any) => ({
+						CORR_RIESGO_PUESTO: Number(item.CORR_RIESGO_PUESTO),
+						NOMBRE_RIESGO_PUESTO: (item.NOMBRE_RIESGO_PUESTO ?? '').trim(),
+						ES_LISTA: !!item.ES_LISTA,
+					}));
+					this.actualizarRiesgosPuestoLookupDisponibles();
+				},
+				error: (error) => {
+					this.mCORR_RIESGO_PUESTO = [];
+					this.mCORR_RIESGO_PUESTO_DISPONIBLES = [];
+					this.notifyApiError(error);
+				},
+			});
+	}
+
 	selectedLookUpCORR_UNIDAD(vRow: any): number {
 		return vRow[0].CORR_UNIDAD;
 	}
@@ -682,6 +734,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	selectedLookUpCORR_REQUERIMIENTO_ORGANIZACIONAL(vRow: any): number {
 		return vRow[0].CORR_REQUERIMIENTO_ORGANIZACIONAL;
+	}
+
+	selectedLookUpCORR_RIESGO_PUESTO(vRow: any): number {
+		return vRow[0].CORR_RIESGO_PUESTO;
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -849,6 +905,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (this.esFormatoExtensa) {
 			this.cargarRelacionesInternas();
 			this.cargarRelacionesExternas();
+			this.cargarRiesgosPuesto();
 		}
 		this.cargarPerfil();
 		this.cargarRequerimientosOrganizacionales();
@@ -864,6 +921,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.competenciasTecnicas = [];
 		this.competenciasConductuales = [];
 		this.requerimientosOrganizacionales = [];
+		this.riesgosPuesto = [];
 		this.relacionesInternas = [];
 		this.relacionesExternas = [];
 		this.competenciasSubTabIndex = 0;
@@ -876,6 +934,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.resetearEdicionCompetenciasTecnicas();
 		this.resetearEdicionCompetenciasConductuales();
 		this.resetearEdicionRequerimientosOrganizacionales();
+		this.resetearEdicionRiesgosPuesto();
 		this.resetearEdicionRelacionesInternas();
 		this.resetearEdicionRelacionesExternas();
 		this.limpiarPerfil();
@@ -2152,6 +2211,333 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		newData.DESCRIPCION = catalog?.DESCRIPCION ?? '';
 	};
 
+	agregarRiesgoPuesto(): void {
+		if (this.readOnly || this.riesgosPuestoEditando || !this.requiereDescriptorGuardado()) {
+			return;
+		}
+		this.actualizarRiesgosPuestoLookupDisponibles();
+		this.riesgosPuestoEditando = true;
+		setTimeout(() => this.gridRiesgosPuesto?.instance.addRow());
+	}
+
+	editarRiesgoPuestoClick(e: any): void {
+		if (this.readOnly || this.riesgosPuestoEditando) {
+			return;
+		}
+		this.actualizarRiesgosPuestoLookupDisponibles(Number(e?.row?.data?.CORR_RIESGO_PUESTO) || null);
+		this.riesgosPuestoEditando = true;
+		const rowIndex = e.row.rowIndex;
+		const grid = e.component;
+		setTimeout(() => grid.editRow(rowIndex));
+	}
+
+	riesgoPuestoEditButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
+
+	riesgoPuestoDeleteButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
+
+	guardarRiesgoPuestoEditado(): void {
+		const grid = this.gridRiesgosPuesto?.instance;
+		if (!grid || !this.riesgosPuestoEditando) {
+			this.notifyFx('No hay una linea en edicion', NotifyType.Warning);
+			return;
+		}
+		grid.saveEditData();
+	}
+
+	cancelarRiesgoPuestoEditado(): void {
+		this.cancelarEdicionGrid(this.gridRiesgosPuesto?.instance, () => {
+			this.riesgosPuestoEditando = false;
+			this.cargarRiesgosPuesto(true);
+		});
+	}
+
+	riesgoPuestoInitNewRow(e: any): void {
+		e.data.CORR_DESCRIPTOR_RIESGO = 0;
+		e.data.CORR_DESCRIPTOR_PUESTO = Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0;
+		e.data.CORR_RIESGO_PUESTO = null;
+		e.data.NOMBRE_RIESGO_PUESTO = '';
+		e.data.ES_LISTA = false;
+		e.data.INFORMACION = '';
+		e.data._clientKey = this.crearClientKey('rp');
+		this.actualizarRiesgosPuestoLookupDisponibles();
+	}
+
+	onRiesgoPuestoEditingStart(e: any): void {
+		this.actualizarRiesgosPuestoLookupDisponibles(Number(e?.data?.CORR_RIESGO_PUESTO) || null);
+		this.riesgosPuestoEditando = true;
+	}
+
+	onRiesgoPuestoSaved(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.riesgosPuestoEditando = false;
+			this.limpiarRiesgoListaEditorDraft();
+		});
+	}
+
+	onRiesgoPuestoEditCanceled(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.riesgosPuestoEditando = false;
+			this.limpiarRiesgoListaEditorDraft();
+		});
+		this.cargarRiesgosPuesto(true);
+	}
+
+	riesgoPuestoRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!(Number(data.CORR_RIESGO_PUESTO) > 0)) {
+			e.isValid = false;
+			e.errorText = 'Debe seleccionar un riesgo de puesto.';
+			return;
+		}
+		if (!(data.NOMBRE_RIESGO_PUESTO ?? '').trim()) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar el nombre del riesgo.';
+			return;
+		}
+		if ((data.NOMBRE_RIESGO_PUESTO ?? '').trim().length > 150) {
+			e.isValid = false;
+			e.errorText = 'El nombre del riesgo no puede superar 150 caracteres.';
+			return;
+		}
+
+		if (this.riesgoPuestoEsLista(data)) {
+			const items = this.obtenerRiesgoListaItemsDesdeFila(data);
+			const cleaned = items.map((item) => item.trim()).filter((item) => item.length > 0);
+			if (!cleaned.length) {
+				e.isValid = false;
+				e.errorText = 'Debe agregar al menos un item en la informacion.';
+				return;
+			}
+			if (items.some((item) => item.trim().length > 150)) {
+				e.isValid = false;
+				e.errorText = 'Cada item de la lista no puede superar 150 caracteres.';
+				return;
+			}
+			const serialized = this.serializeRiesgoInformacionLista(cleaned);
+			if (serialized.length > 255) {
+				e.isValid = false;
+				e.errorText = 'La informacion de la lista no puede superar 255 caracteres.';
+				return;
+			}
+		} else if ((data.INFORMACION ?? '').trim().length > 255) {
+			e.isValid = false;
+			e.errorText = 'La informacion no puede superar 255 caracteres.';
+			return;
+		}
+
+		const corrCatalogo = Number(data.CORR_RIESGO_PUESTO);
+		const clientKey = data._clientKey ?? e?.key;
+		const duplicada = (this.riesgosPuesto || []).some((row) => {
+			if (!(Number(row.CORR_RIESGO_PUESTO) > 0)) {
+				return false;
+			}
+			if (clientKey != null && row._clientKey === clientKey) {
+				return false;
+			}
+			return Number(row.CORR_RIESGO_PUESTO) === corrCatalogo;
+		});
+		if (duplicada) {
+			e.isValid = false;
+			e.errorText = 'Ese riesgo de puesto ya esta agregado en el descriptor.';
+		}
+	}
+
+	riesgoPuestoRowInserting(e: any): void {
+		e.cancel = this.persistirRiesgoPuestoDesdeGrid(e.data, true);
+	}
+
+	riesgoPuestoRowUpdating(e: any): void {
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = this.persistirRiesgoPuestoDesdeGrid(data, false);
+	}
+
+	riesgoPuestoRowRemoving(e: any): void {
+		e.cancel = this.eliminarRiesgoPuestoDesdeGrid(e.data);
+	}
+
+	riesgoPuestoCatalogDisplay = (row: ScDescriptorPuestoRiesgoPuesto): string => {
+		const corr = Number(row?.CORR_RIESGO_PUESTO);
+		if (!(corr > 0)) {
+			return '';
+		}
+		return String(corr);
+	};
+
+	private actualizarRiesgosPuestoLookupDisponibles(corrConservar: number | null = null): void {
+		const usados = new Set(
+			(this.riesgosPuesto || [])
+				.map((row) => Number(row.CORR_RIESGO_PUESTO))
+				.filter((corr) => corr > 0 && corr !== Number(corrConservar || 0))
+		);
+
+		this.mCORR_RIESGO_PUESTO_DISPONIBLES = (this.mCORR_RIESGO_PUESTO || []).filter((item) => {
+			const corr = Number(item.CORR_RIESGO_PUESTO);
+			if (!(corr > 0)) {
+				return false;
+			}
+			if (corrConservar != null && corr === Number(corrConservar)) {
+				return true;
+			}
+			return !usados.has(corr);
+		});
+	}
+
+	onRiesgoPuestoLookupChanged(value: number | null, cellInfo: any): void {
+		const corr = value != null && value > 0 ? Number(value) : null;
+		cellInfo.setValue(corr);
+	}
+
+	setRiesgoPuestoCellValue = (
+		newData: ScDescriptorPuestoRiesgoPuesto,
+		value: number | null,
+		_currentRowData: ScDescriptorPuestoRiesgoPuesto
+	): void => {
+		const corr = value != null && Number(value) > 0 ? Number(value) : null;
+		const catalog = this.mCORR_RIESGO_PUESTO.find(
+			(item) => Number(item.CORR_RIESGO_PUESTO) === Number(corr)
+		);
+		newData.CORR_RIESGO_PUESTO = corr;
+		newData.NOMBRE_RIESGO_PUESTO = catalog?.NOMBRE_RIESGO_PUESTO ?? '';
+		newData.ES_LISTA = !!catalog?.ES_LISTA;
+		if (catalog?.ES_LISTA) {
+			newData.INFORMACION = '';
+			const draftKey = this.obtenerRiesgoListaEditorKey(newData);
+			if (draftKey) {
+				this.riesgoListaEditorDraft.set(draftKey, ['']);
+			}
+		}
+	};
+
+	riesgoPuestoEsLista(row: ScDescriptorPuestoRiesgoPuesto | null | undefined): boolean {
+		if (!row) {
+			return false;
+		}
+		if (row.ES_LISTA != null) {
+			return !!row.ES_LISTA;
+		}
+		const corr = Number(row.CORR_RIESGO_PUESTO);
+		if (!(corr > 0)) {
+			return false;
+		}
+		const catalog = this.mCORR_RIESGO_PUESTO.find((item) => Number(item.CORR_RIESGO_PUESTO) === corr);
+		return !!catalog?.ES_LISTA;
+	}
+
+	parseRiesgoInformacionLista(value: string | null | undefined): string[] {
+		const raw = (value ?? '').trim();
+		if (!raw) {
+			return [];
+		}
+		if (raw.startsWith('[')) {
+			try {
+				const parsed = JSON.parse(raw);
+				if (Array.isArray(parsed)) {
+					return parsed
+						.map((item) => String(item ?? '').trim())
+						.filter((item) => item.length > 0);
+				}
+			} catch {
+				return [];
+			}
+		}
+		return [raw];
+	}
+
+	serializeRiesgoInformacionLista(items: string[]): string {
+		const cleaned = (items ?? []).map((item) => (item ?? '').trim()).filter((item) => item.length > 0);
+		return cleaned.length ? JSON.stringify(cleaned) : '';
+	}
+
+	riesgoPuestoInformacionDisplay = (row: ScDescriptorPuestoRiesgoPuesto): string => {
+		if (this.riesgoPuestoEsLista(row)) {
+			return this.parseRiesgoInformacionLista(row.INFORMACION).join(' | ');
+		}
+		return (row?.INFORMACION ?? '').trim();
+	};
+
+	getRiesgoListaEditorItems(cellInfo: any): string[] {
+		return this.obtenerRiesgoListaEditorDraft(cellInfo);
+	}
+
+	trackRiesgoListaItemIndex(index: number): number {
+		return index;
+	}
+
+	onRiesgoInformacionTextoChanged(cellInfo: any, value: string | null | undefined): void {
+		cellInfo.setValue((value ?? '').trim());
+	}
+
+	onRiesgoListaItemChanged(cellInfo: any, index: number, value: string | null | undefined): void {
+		const items = [...this.obtenerRiesgoListaEditorDraft(cellInfo)];
+		while (items.length <= index) {
+			items.push('');
+		}
+		items[index] = value ?? '';
+		this.actualizarRiesgoInformacionLista(cellInfo, items);
+	}
+
+	agregarRiesgoListaItem(cellInfo: any): void {
+		const items = [...this.obtenerRiesgoListaEditorDraft(cellInfo), ''];
+		this.actualizarRiesgoInformacionLista(cellInfo, items);
+	}
+
+	eliminarRiesgoListaItem(cellInfo: any, index: number): void {
+		const items = this.obtenerRiesgoListaEditorDraft(cellInfo).filter((_, i) => i !== index);
+		this.actualizarRiesgoInformacionLista(cellInfo, items.length ? items : ['']);
+	}
+
+	private obtenerRiesgoListaEditorKey(source: any): string {
+		const data = source?.data ?? source ?? {};
+		const key = data._clientKey ?? data.CORR_DESCRIPTOR_RIESGO;
+		return key != null && `${key}`.length ? String(key) : '';
+	}
+
+	private obtenerRiesgoListaEditorDraft(cellInfo: any): string[] {
+		const key = this.obtenerRiesgoListaEditorKey(cellInfo);
+		if (!key) {
+			const parsed = this.parseRiesgoInformacionLista(cellInfo?.value);
+			return parsed.length ? [...parsed] : [''];
+		}
+
+		if (!this.riesgoListaEditorDraft.has(key)) {
+			const parsed = this.parseRiesgoInformacionLista(cellInfo?.value);
+			this.riesgoListaEditorDraft.set(key, parsed.length ? [...parsed] : ['']);
+		}
+
+		return [...(this.riesgoListaEditorDraft.get(key) ?? [''])];
+	}
+
+	private obtenerRiesgoListaItemsDesdeFila(row: ScDescriptorPuestoRiesgoPuesto): string[] {
+		const key = this.obtenerRiesgoListaEditorKey(row);
+		if (key && this.riesgoListaEditorDraft.has(key)) {
+			return [...(this.riesgoListaEditorDraft.get(key) ?? [])];
+		}
+		return this.parseRiesgoInformacionLista(row.INFORMACION);
+	}
+
+	private actualizarRiesgoInformacionLista(cellInfo: any, items: string[]): void {
+		const draft = items.length ? [...items] : [''];
+		const key = this.obtenerRiesgoListaEditorKey(cellInfo);
+		if (key) {
+			this.riesgoListaEditorDraft.set(key, draft);
+		}
+
+		const serialized = this.serializeRiesgoInformacionLista(draft);
+		cellInfo.setValue(serialized);
+		if (cellInfo?.data) {
+			cellInfo.data.INFORMACION = serialized;
+		}
+		this.cdr.detectChanges();
+	}
+
+	private limpiarRiesgoListaEditorDraft(): void {
+		this.riesgoListaEditorDraft.clear();
+	}
+
 	onPerfilEdadMinimaChanged(e: any): void {
 		if (this.readOnly) {
 			return;
@@ -2590,6 +2976,43 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							})
 						);
 						this.actualizarRequerimientosOrganizacionalesLookupDisponibles();
+					}
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	private cargarRiesgosPuesto(forzar = false): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtensa) {
+			this.riesgosPuesto = [];
+			this.resetearEdicionRiesgosPuesto();
+			this.actualizarRiesgosPuestoLookupDisponibles();
+			return;
+		}
+
+		const loadSeq = ++this.riesgosPuestoLoadSeq;
+		this.service
+			.getRiesgosPuestoLookup(corrDescriptor)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (loadSeq !== this.riesgosPuestoLoadSeq) {
+						return;
+					}
+
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.resetearEdicionRiesgosPuesto();
+						this.riesgosPuesto = response.Data.map((item: ScDescriptorPuestoRiesgoPuesto) => ({
+							CORR_DESCRIPTOR_PUESTO: item.CORR_DESCRIPTOR_PUESTO ?? corrDescriptor,
+							CORR_DESCRIPTOR_RIESGO: item.CORR_DESCRIPTOR_RIESGO,
+							NOMBRE_RIESGO_PUESTO: item.NOMBRE_RIESGO_PUESTO ?? '',
+							INFORMACION: item.INFORMACION ?? '',
+							CORR_RIESGO_PUESTO: item.CORR_RIESGO_PUESTO ?? null,
+							ES_LISTA: !!item.ES_LISTA,
+							_clientKey: item.CORR_DESCRIPTOR_RIESGO || this.crearClientKey('rp'),
+						}));
+						this.actualizarRiesgosPuestoLookupDisponibles();
 					}
 				},
 				error: (error) => this.notifyApiError(error),
@@ -3269,6 +3692,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.requerimientosOrganizacionalesEditando = false;
 	}
 
+	private resetearEdicionRiesgosPuesto(): void {
+		this.riesgosPuestoEditando = false;
+		this.limpiarRiesgoListaEditorDraft();
+	}
+
 	private resetearEdicionRelacionesInternas(): void {
 		this.relacionesInternasEditando = false;
 	}
@@ -3786,6 +4214,81 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return new Promise((resolve) => {
 			this.service
 				.eliminarRequerimientoOrganizacional(corr)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private persistirRiesgoPuestoDesdeGrid(
+		data: ScDescriptorPuestoRiesgoPuesto,
+		esNuevo: boolean
+	): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		if (!corrDescriptor || corrDescriptor <= 0) {
+			this.notifyFx(
+				'Debe guardar el descriptor antes de registrar riesgos del puesto.',
+				NotifyType.Warning
+			);
+			return Promise.resolve(true);
+		}
+
+		const payload: ScDescriptorPuestoRiesgoPuesto = {
+			...data,
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_DESCRIPTOR_RIESGO: esNuevo ? 0 : Number(data.CORR_DESCRIPTOR_RIESGO) || 0,
+			CORR_RIESGO_PUESTO: Number(data.CORR_RIESGO_PUESTO) || null,
+			NOMBRE_RIESGO_PUESTO: (data.NOMBRE_RIESGO_PUESTO ?? '').trim(),
+			INFORMACION: this.riesgoPuestoEsLista(data)
+				? this.serializeRiesgoInformacionLista(this.obtenerRiesgoListaItemsDesdeFila(data))
+				: (data.INFORMACION ?? '').trim(),
+			ES_LISTA: data.ES_LISTA,
+		};
+
+		return new Promise((resolve) => {
+			this.service
+				.persistirRiesgoPuesto(corrDescriptor, payload)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						this.riesgosPuestoEditando = false;
+						this.cargarRiesgosPuesto(true);
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private eliminarRiesgoPuestoDesdeGrid(data: ScDescriptorPuestoRiesgoPuesto): Promise<boolean> {
+		const corr = Number(data?.CORR_DESCRIPTOR_RIESGO);
+		if (!corr || corr <= 0) {
+			return Promise.resolve(false);
+		}
+
+		return new Promise((resolve) => {
+			this.service
+				.eliminarRiesgoPuesto(corr)
 				.pipe(take(1))
 				.subscribe({
 					next: (response) => {

@@ -11,13 +11,16 @@ namespace SGUEES.Services
     {
         private readonly ISC_DESCRIPTOR_PUESTORepository _repo;
         private readonly ISC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService _requerimientoOrganizacionalService;
+        private readonly ISC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService _riesgoPuestoService;
 
         public SC_DESCRIPTOR_PUESTOService(
             ISC_DESCRIPTOR_PUESTORepository repo,
-            ISC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService requerimientoOrganizacionalService)
+            ISC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService requerimientoOrganizacionalService,
+            ISC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService riesgoPuestoService)
         {
             _repo = repo;
             _requerimientoOrganizacionalService = requerimientoOrganizacionalService;
+            _riesgoPuestoService = riesgoPuestoService;
         }
 
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_PUESTOParam xWhere)
@@ -86,6 +89,11 @@ namespace SGUEES.Services
                 try
                 {
                     await _requerimientoOrganizacionalService.SeedActivosDesdeCatalogoAsync(
+                        Data.CORR_EMPRESA,
+                        corrDescriptor,
+                        vLOGIN_SISTEMA,
+                        vESTACION);
+                    await _riesgoPuestoService.SeedActivosDesdeCatalogoAsync(
                         Data.CORR_EMPRESA,
                         corrDescriptor,
                         vLOGIN_SISTEMA,

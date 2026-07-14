@@ -66,3 +66,9 @@ export interface ScRequerimientoOrganizacionalLookupItem {
 	CORR_REQUERIMIENTO_ORGANIZACIONAL: number;
 	DESCRIPCION: string;
 }
+
+export interface ScRiesgoPuestoLookupItem {
+	CORR_RIESGO_PUESTO: number;
+	NOMBRE_RIESGO_PUESTO: string;
+	ES_LISTA?: boolean;
+}

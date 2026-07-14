@@ -10,5 +10,6 @@ namespace SGUEES.Repositories
     {
         Task<CResult> GetDistinctValuesAsync(List<CParameter> xWhere);
         Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr);
+        Task<List<SC_RIESGO_PUESTOView>> GetCatalogoDescriptorAsync(int corrEmpresa);
     }
 }
