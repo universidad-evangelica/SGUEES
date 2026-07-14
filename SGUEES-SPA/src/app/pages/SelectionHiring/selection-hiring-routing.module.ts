@@ -15,6 +15,7 @@ import { ScRequerimientoOrganizacionalComponent } from './sc-requerimiento-organ
 import { ScDisponibilidadHorarioComponent } from './sc-disponibilidad-horario/sc-disponibilidad-horario.component';
 import { ScImpactoEconomicoComponent } from './sc-impacto-economico/sc-impacto-economico.component';
 import { ScCompetenciasTecnicasComponent } from './sc-competencias-tecnicas/sc-competencias-tecnicas.component';
+import { ScCompetenciasConductualesComponent } from './sc-competencias-conductuales/sc-competencias-conductuales.component';
 
 const routes: Routes = [
   {
@@ -111,6 +112,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./sc-competencias-tecnicas/sc-competencias-tecnicas.module').then(m => m.ScCompetenciasTecnicasModule)
+  },
+  {
+    path: 'sc-competencias-conductuales',
+    component: ScCompetenciasConductualesComponent,
+    data: { titulo: 'Competencias Conductuales' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-competencias-conductuales/sc-competencias-conductuales.module').then(m => m.ScCompetenciasConductualesModule)
   }
 ];
 
