@@ -27,8 +27,32 @@ namespace sguees.Services
 			return await _repo.GetAsync(p);
 		}
 
-		public async Task<CResult> CreateAsync(BAN_CUENTA_BANCARIATable Data, string vLOGIN_SISTEMA, string vESTACION) => await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		public async Task<CResult> CreateAsync(BAN_CUENTA_BANCARIATable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			Data.ESTADO_CUENTA_BANCARIA ??= true;
+			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
 		public async Task<CResult> UpdateAsync(BAN_CUENTA_BANCARIATable Data, string vLOGIN_SISTEMA, string vESTACION) => await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		public async Task<CResult> DeleteAsync(BAN_CUENTA_BANCARIATable Data, string vLOGIN_SISTEMA, string vESTACION) => await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+
+		public async Task<CResult> ActivarInactivarAsync(BAN_CUENTA_BANCARIATable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			if (Data.CORR_CUENTA_BANCO <= 0)
+			{
+				return new CResult
+				{
+					Data = null,
+					Result = false,
+					CodeHelper = 0,
+					ErrorCode = -1,
+					ErrorMessage = "No se pudo identificar la cuenta bancaria a actualizar.",
+					ErrorSource = "[BAN_CUENTA_BANCARIAService]",
+					RowsAffected = 0
+				};
+			}
+
+			return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
 	}
 }

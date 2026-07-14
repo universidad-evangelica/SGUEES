@@ -27,8 +27,32 @@ namespace sguees.Services
 			return await _repo.GetAsync(p);
 		}
 
-		public async Task<CResult> CreateAsync(BAN_TIPO_MOVI_BANCARIOTable Data, string vLOGIN_SISTEMA, string vESTACION) => await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		public async Task<CResult> CreateAsync(BAN_TIPO_MOVI_BANCARIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			Data.ESTADO_TIPO_MOVIMIENTO ??= true;
+			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
 		public async Task<CResult> UpdateAsync(BAN_TIPO_MOVI_BANCARIOTable Data, string vLOGIN_SISTEMA, string vESTACION) => await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		public async Task<CResult> DeleteAsync(BAN_TIPO_MOVI_BANCARIOTable Data, string vLOGIN_SISTEMA, string vESTACION) => await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+
+		public async Task<CResult> ActivarInactivarAsync(BAN_TIPO_MOVI_BANCARIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			if (Data.CORR_TIPO_MOVIMIENTO <= 0)
+			{
+				return new CResult
+				{
+					Data = null,
+					Result = false,
+					CodeHelper = 0,
+					ErrorCode = -1,
+					ErrorMessage = "No se pudo identificar el tipo de movimiento a actualizar.",
+					ErrorSource = "[BAN_TIPO_MOVI_BANCARIOService]",
+					RowsAffected = 0
+				};
+			}
+
+			return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
 	}
 }

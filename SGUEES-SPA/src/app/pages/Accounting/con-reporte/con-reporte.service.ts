@@ -21,7 +21,7 @@ export class ConReporteService {
 			return false;
 		}
 		if (!definicion?.SP_DISPONIBLE) {
-			msg('Este reporte aun no esta disponible en SGUEES', NotifyType.Warning);
+			msg('Este reporte aún no está disponible en SGUEES', NotifyType.Warning);
 			return false;
 		}
 		if (this.usaFiltro(definicion, 'FECHA_INICIAL') && !filtro.FECHA_INICIAL) {
@@ -33,7 +33,7 @@ export class ConReporteService {
 			return false;
 		}
 		if (this.usaFiltro(definicion, 'ANIO_PERIODO') && !filtro.ANIO_PERIODO) {
-			msg('Indique el ano', NotifyType.Warning);
+			msg('Indique el año', NotifyType.Warning);
 			return false;
 		}
 		if (this.usaFiltro(definicion, 'MES_PERIODO') && !filtro.MES_PERIODO) {
@@ -47,19 +47,19 @@ export class ConReporteService {
 		return definicion?.FILTROS?.includes(filtro) ?? false;
 	}
 
-	buildPayload(codigo: string, filtro: ConReporteFiltro): ConReporteFiltro {
-		const today = new Date();
+	armarFiltroEnvio(codigo: string, filtro: ConReporteFiltro): ConReporteFiltro {
+		const hoy = new Date();
 		return {
 			...filtro,
 			CODIGO_REPORTE: codigo,
-			FECHA_INICIAL: this.toIsoDate(filtro.FECHA_INICIAL),
-			FECHA_FINAL: this.toIsoDate(filtro.FECHA_FINAL),
-			FECHA_IMPRESION: this.toIsoDate(filtro.FECHA_IMPRESION ?? today),
+			FECHA_INICIAL: this.convertirFechaIso(filtro.FECHA_INICIAL),
+			FECHA_FINAL: this.convertirFechaIso(filtro.FECHA_FINAL),
+			FECHA_IMPRESION: this.convertirFechaIso(filtro.FECHA_IMPRESION ?? hoy),
 			CUENTA_DEPARTAMENTO: filtro.CUENTA_DEPARTAMENTO || filtro.CUENTA_CONTABLE || null,
 		};
 	}
 
-	private toIsoDate(value: Date | string | null | undefined): string | null {
+	private convertirFechaIso(value: Date | string | null | undefined): string | null {
 		if (!value) {
 			return null;
 		}
@@ -83,7 +83,7 @@ export class ConReporteService {
 		return !!definicion?.CONSULTA_GRID;
 	}
 
-	getPDF(codigo: string, filtro: ConReporteFiltro): Observable<Blob> {
-		return this.repo.getPDF(this.buildPayload(codigo, filtro));
+	obtenerPdf(codigo: string, filtro: ConReporteFiltro): Observable<Blob> {
+		return this.repo.obtenerPdf(this.armarFiltroEnvio(codigo, filtro));
 	}
 }

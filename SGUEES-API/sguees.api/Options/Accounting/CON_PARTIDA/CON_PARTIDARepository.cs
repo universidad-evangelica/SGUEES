@@ -384,13 +384,13 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA ?? "", DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? "", DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
-					new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Decimal, Direction = System.Data.ParameterDirection.InputOutput },
+					new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
 					new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = "", DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
 				};
 
 				await objData.ExecCmd(System.Data.CommandType.StoredProcedure, spName, true, p);
 
-				if ((decimal)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value == 0)
+				if ((int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value == 0)
 				{
 					var xWhere = new List<CParameter>
 					{
@@ -418,7 +418,7 @@ namespace sguees.Repositories
 					objResultado.Result = false;
 					objResultado.RowsAffected = 0;
 					objResultado.CodeHelper = Data.CORR_PARTIDA;
-					objResultado.ErrorCode = (int)(decimal)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
+					objResultado.ErrorCode = (int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
 					objResultado.ErrorMessage = (string)objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value;
 					objResultado.ErrorSource = "C" + _TableName + ".Mtto(" + spName + ")";
 				}

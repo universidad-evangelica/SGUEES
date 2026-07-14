@@ -9,6 +9,7 @@ namespace sguees.Models
 		public int MES_PERIODO { get; set; }
 		public int CORR_CLASE_PARTIDA { get; set; }
 		public string NOMBRE_CORTO_CLASE { get; set; }
+		public string NOMBRE_CLASE_PARTIDA { get; set; }
 		public int CORR_PARTIDA { get; set; }
 		public string NUMERO_DOCUMENTO { get; set; }
 		public DateTime FECHA_PARTIDA { get; set; }

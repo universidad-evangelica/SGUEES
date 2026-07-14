@@ -56,6 +56,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/gen-banco|U")]
 		public async Task<IActionResult> Put(GEN_BANCOTable Data)
 		{
+			this.ApplyQueryKeys(Data, nameof(GEN_BANCOTable.CORR_BANCO));
 			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
 				return BadRequest(resultadoEmpresa);
 
@@ -83,6 +84,20 @@ namespace sguees.Controllers
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
 			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpPut("ActivarInactivar")]
+		[Authorize(Policy = "/gen-banco|U")]
+		public async Task<IActionResult> ActivarInactivar(GEN_BANCOTable Data)
+		{
+			this.ApplyQueryKeys(Data, nameof(GEN_BANCOTable.CORR_BANCO));
+			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
+				return BadRequest(resultadoEmpresa);
+
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+
+			var resultado = await _service.ActivarInactivarAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
 		private int GetCorrEmpresa()
@@ -127,6 +142,7 @@ namespace sguees.Controllers
 			Data.USUARIO_ACTU = Data.USUARIO_CREA;
 			Data.ESTACION_ACTU = Data.ESTACION_CREA;
 			Data.FECHA_ACTU = Data.FECHA_CREA;
+			Data.ESTADO_BANCO ??= true;
 		}
 
 		private void SetUpdateAudit(GEN_BANCOTable Data)

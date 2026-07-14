@@ -45,34 +45,65 @@
 	font-size: 14px;
 }
 
-.partida-consulta-popup {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-	height: 100%;
-}
-
-.partida-consulta-shell {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
-}
-
 .partida-consulta-toolbar {
 	display: flex;
 	justify-content: flex-end;
 	gap: 10px;
 }
 
-.partida-consulta-encabezado {
-	padding: 4px 0 8px;
+.partida-edit-shell {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sguees-content-gap, 16px);
 }
 
-.partida-consulta-tabs {
-	flex: 1;
-	min-height: 0;
+.partida-form-card,
+.partida-detalle-card {
+	margin-bottom: 0;
+}
+
+.partida-section-head {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-bottom: var(--sguees-space-4, 16px);
+	padding-bottom: var(--sguees-space-3, 12px);
+	border-bottom: 1px solid var(--border-color);
+}
+
+.partida-section-title {
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--sguees-text-primary);
+}
+
+.partida-section-subtitle {
+	font-size: 12px;
+	color: var(--sguees-text-secondary);
+}
+
+.partida-form {
+	::ng-deep .dx-field-item:last-child {
+		padding-bottom: 0;
+	}
+}
+
+.partida-detalle-card {
+	::ng-deep .dx-grid-deta {
+		margin-top: 0;
+	}
+}
+
+.partida-tab-panel {
+	min-height: 520px;
 }
 
 .partida-consulta-grid {
 	padding-top: 8px;
+}
+
+.partida-deta-grid {
+	::ng-deep .partida-deta-datagrid .dx-datagrid-headers {
+		font-weight: 600;
+	}
 }

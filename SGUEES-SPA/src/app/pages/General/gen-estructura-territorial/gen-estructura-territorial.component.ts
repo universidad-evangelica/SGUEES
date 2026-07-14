@@ -4,7 +4,6 @@ import CustomStore from 'devextreme/data/custom_store';
 import Menu from 'devextreme/ui/menu';
 import { DxFormComponent } from 'devextreme-angular';
 import { custom, CustomDialogOptions } from 'devextreme/ui/dialog';
-import { MessageService } from 'primeng/api';
 import { lastValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
@@ -24,13 +23,10 @@ import {
 	getColumnHeaderFilterSelection,
 	invertExcludedHeaderFilterValues,
 } from 'src/app/shared/utils/remote-header-filter.util';
-import {
-	GenDepto,
-	GenDistrito,
-	GenMunicipio,
-	GenPais,
-	TerritorialNivel,
-} from './models/gen-estructura-territorial';
+import { GenDepto } from './gen-depto/models/gen-depto';
+import { GenDistrito } from './gen-distrito/models/gen-distrito';
+import { GenMunicipio } from './gen-municipio/models/gen-municipio';
+import { GenPais, TerritorialNivel } from './models/gen-pais';
 import {
 	EMPRESA_REGISTRO_ETIQUETA,
 	GenEstructuraTerritorialService,
@@ -61,7 +57,12 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	@ViewChild('distritoGrid', { static: false }) distritoGrid?: DataGridMttoComponent;
 	@ViewChild('popupForm', { static: false }) popupForm?: DxFormComponent;
 
-	readonly pageSizes = [5, 10, 25, 50, 100];
+	protected override etiquetaRegistro = 'el país';
+	protected override requiereEmpresaSesion = true;
+	protected override mttoGridKeyExpr = 'CORR_PAIS';
+	/** A+: paginado / filtro / orden en cliente (API devuelve todos los países). */
+	protected override mttoRemoteOperations = false;
+
 	readonly cascadeGridHeight = 530;
 	readonly cascadeRemoteOperations = { filtering: true, sorting: true };
 	readonly popupFormColCountByScreen = { xs: 1, sm: 1, md: 2, lg: 2 };
@@ -96,13 +97,10 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private service: GenEstructuraTerritorialService,
-		private messageService: MessageService,
 		private authService: AuthService,
 		private pageContext: MttoPageContextService
 	) {
 		super(appInfoService, router);
-		this.onEditPaisClick = this.onEditPaisClick.bind(this);
-		this.onDeletePaisClick = this.onDeletePaisClick.bind(this);
 		this.onEditDeptoClick = this.onEditDeptoClick.bind(this);
 		this.onDeleteDeptoClick = this.onDeleteDeptoClick.bind(this);
 		this.onEditMunicipioClick = this.onEditMunicipioClick.bind(this);
@@ -110,7 +108,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.onEditDistritoClick = this.onEditDistritoClick.bind(this);
 		this.onDeleteDistritoClick = this.onDeleteDistritoClick.bind(this);
 
-		this.columns = this.service.getPaisColumns(this.onEditPaisClick, this.onDeletePaisClick, this.permiteEdit, this.permiteDele);
+		this.columns = this.service.getPaisColumns();
 		this.items = this.service.getPaisItems();
 		this.summary = this.service.getPaisListSummary();
 		this.deptoSummary = this.service.getChildSummary('NOMBRE_DEPTO');
@@ -144,23 +142,16 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
-			this.entrarDetalle(rowData as GenPais);
+			this.abrirDocumentoPais(rowData as GenPais);
 		}
 	}
 
-	onEditPaisClick(e: any): void {
-		if (!e?.row?.data) {
-			return;
+	/** Edit del grid → documento país (form editable + cascada), Guardar/Cancelar del padre. */
+	editarPaisDesdeGrid(e: any): void {
+		const rowData = e?.row?.data ?? e?.data;
+		if (rowData) {
+			this.abrirDocumentoPais(rowData as GenPais);
 		}
-		this.entrarDetalle(e.row.data as GenPais);
-	}
-
-	onDeletePaisClick(e: any): void {
-		const row = e?.row?.data as GenPais;
-		if (!row) {
-			return;
-		}
-		this.confirmAction('Eliminar país', `Desea eliminar el país "${row.NOMBRE_PAIS}"?`, () => this.eliminarPais(row, false));
 	}
 
 	fillPais(xModel?: GenPais): GenPais {
@@ -234,8 +225,6 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	}
 
 	fillParam(
-		page = 1,
-		pageSize = 5,
 		busqueda = '',
 		gridFilters: ParsedGridFilters = { estado: null, filterRow: {}, filterRowExact: {}, headerAnyOf: {} },
 		distinctField = '',
@@ -246,8 +235,6 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	): any {
 		return {
 			BUSQUEDA: busqueda,
-			PAGE: page,
-			PAGE_SIZE: pageSize,
 			DISTINCT_FIELD: distinctField,
 			HEADER_FILTER_SEARCH: headerFilterSearch,
 			SORT_FIELD: sortField,
@@ -277,9 +264,6 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
-	loadHeaderFilterValuesPaises = (field: string, searchValue?: string): Promise<unknown[]> =>
-		this.loadHeaderFilterValues('pais', field, searchValue);
-
 	loadHeaderFilterValuesDeptos = (field: string, searchValue?: string): Promise<unknown[]> =>
 		this.loadHeaderFilterValues('depto', field, searchValue);
 
@@ -305,7 +289,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		const request = this.fillCascadeParam('', filtersForDistinct, field, searchValue ?? '', '', false, scope);
 		const distinctCall =
 			level === 'pais'
-				? this.service.getDistinctValuesPaises({ ...request, PAGE: 1, PAGE_SIZE: 0 })
+				? this.service.getDistinctValuesPaises(request)
 				: level === 'depto'
 					? this.service.getDistinctValuesDeptos(request)
 					: level === 'municipio'
@@ -325,74 +309,43 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.dataGrid?.refreshData(true);
 	}
 
-	entrarDetalle(pais: GenPais): void {
+	/**
+	 * Abre el documento país (como partida): form habilitado + cascada.
+	 * Barra = Guardar / Cancelar del padre.
+	 */
+	abrirDocumentoPais(pais: GenPais, desdeAlta = false): void {
+		if (!desdeAlta && !this.permiteEdit) {
+			this.notifyFx('No tiene permiso para editar registros.', NotifyType.Warning);
+			return;
+		}
 		this.vistaDetalle = true;
 		this.selectedPais = this.fillPais(pais);
 		this.model = this.fillPais(pais);
 		this.modelUpdate = this.fillPais(pais);
-		this.subTituloVentana = pais.NOMBRE_PAIS;
-		this.AsignaStatus(UpdateType.Browse);
-		this.syncToolbarContext();
+		this.AsignaStatus(UpdateType.Update);
 		this.limpiarSeleccionHijos();
 		this.configurarDataSourceHijos();
 		setTimeout(() => {
+			this.habilitar();
+			this.setFocus();
 			this.refrescarDeptos(true);
 			this.inicializarGridsCascade();
 		});
 	}
 
-	volverAlListado(): void {
+	/** Sale del documento al listado (Cancelar / tras eliminar). */
+	salirAListado(): void {
 		this.vistaDetalle = false;
 		this.selectedPais = undefined;
 		this.limpiarSeleccionHijos();
 		this.model = this.fillPais();
 		this.modelUpdate = this.fillPais();
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.AsignaStatus(UpdateType.Browse);
+		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
 		this.actualizarColumnas();
+		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.syncToolbarContext();
 		setTimeout(() => this.consultar());
-	}
-
-	private refrescarDetallePais(pais: GenPais): void {
-		const deptoSel = this.selectedDepto;
-		const municipioSel = this.selectedMunicipio;
-
-		this.AsignaStatus(UpdateType.Browse);
-		this.selectedPais = this.fillPais(pais);
-		this.model = this.fillPais(pais);
-		this.modelUpdate = this.fillPais(pais);
-		this.subTituloVentana = pais.NOMBRE_PAIS;
-		this.syncToolbarContext();
-
-		if (deptoSel && Number(deptoSel.CORR_PAIS) === Number(pais.CORR_PAIS)) {
-			this.selectedDepto = { ...deptoSel, CORR_PAIS: pais.CORR_PAIS };
-		} else {
-			this.limpiarSeleccionHijos();
-		}
-
-		if (this.selectedDepto && municipioSel && Number(municipioSel.CORR_DEPTO) === Number(this.selectedDepto.CORR_DEPTO)) {
-			this.selectedMunicipio = {
-				...municipioSel,
-				CORR_PAIS: pais.CORR_PAIS,
-				CORR_DEPTO: this.selectedDepto.CORR_DEPTO,
-			};
-		} else if (this.selectedDepto) {
-			this.selectedMunicipio = undefined;
-		}
-
-		this.configurarDataSourceHijos();
-		setTimeout(() => {
-			this.refrescarDeptos(true);
-			if (this.selectedDepto) {
-				this.refrescarMunicipios(true);
-			}
-			if (this.selectedMunicipio) {
-				this.refrescarDistritos(true);
-			}
-			this.inicializarGridsCascade();
-			this.actualizarResaltadoCascade();
-		});
 	}
 
 	override nuevo(): void {
@@ -400,42 +353,6 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			return;
 		}
 		super.nuevo();
-	}
-
-	editarPais(): void {
-		if (!this.selectedPais) {
-			return;
-		}
-		if (!this.permiteEdit) {
-			this.notifyFx('No tiene permiso para editar registros.', NotifyType.Warning);
-			return;
-		}
-		this.model = this.fillPais(this.selectedPais);
-		this.editarClick({ event: { preventDefault: () => undefined } });
-		setTimeout(() => this.dataForm?.instance?.option('formData', this.model));
-	}
-
-	eliminarPaisActual(): void {
-		if (!this.selectedPais) {
-			return;
-		}
-		if (!this.permiteDele) {
-			this.notifyFx('No tiene permiso para eliminar registros.', NotifyType.Warning);
-			return;
-		}
-		this.confirmAction('Eliminar país', `Desea eliminar el país "${this.selectedPais.NOMBRE_PAIS}"?`, () =>
-			this.eliminarPais(this.selectedPais!, true)
-		);
-	}
-
-	override notifyFx(xMessage: string, xType: NotifyType): void {
-		const cleanMessage = this.getErrorMessage(xMessage).replace(/^error:\s*/i, '').trim();
-		const warningDetail = this.getWarningMessage(cleanMessage);
-		const isWarning = xType === NotifyType.Warning || warningDetail !== cleanMessage;
-		const severity = xType === NotifyType.Success ? 'success' : isWarning ? 'warn' : 'error';
-		const summary = xType === NotifyType.Success ? 'Éxito' : isWarning ? 'Advertencia' : 'Error';
-		const detail = isWarning ? warningDetail : cleanMessage;
-		this.messageService.add({ severity, summary, detail });
 	}
 
 	guardar(): void {
@@ -475,15 +392,12 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 				if (response.Result) {
 					const savedPais = response.Data as GenPais;
 					if (isAdd) {
-						this.entrarDetalle(savedPais);
-						this.notifyFx('País creado con exito!', NotifyType.Success);
-					} else if (this.vistaDetalle) {
-						this.refrescarDetallePais(savedPais);
-						this.notifyFx('País modificado con exito!', NotifyType.Success);
+						this.abrirDocumentoPais(savedPais, true);
+						this.notifyFx('País creado con éxito.', NotifyType.Success);
 					} else {
-						this.AsignaStatus(UpdateType.Browse);
-						this.consultar();
-						this.notifyFx('País modificado con exito!', NotifyType.Success);
+						// Igual que mtto padre: tras Guardar vuelve al grid principal.
+						this.salirAListado();
+						this.notifyFx('País modificado con éxito.', NotifyType.Success);
 					}
 				} else {
 					this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
@@ -498,32 +412,36 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	}
 
 	override cancelar(): void {
+		const finalizar = () => {
+			if (this.vistaDetalle) {
+				this.salirAListado();
+				return;
+			}
+			this.AsignaStatus(UpdateType.Browse);
+			this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
+			this.actualizarColumnas();
+			this.syncToolbarContext();
+			this.model = this.fillPais();
+			this.modelUpdate = this.fillPais();
+		};
+
 		if (this.banderaMtto === UpdateType.Add || this.banderaMtto === UpdateType.Update) {
-			this.confirmaCancelar(() => {
-				this.AsignaStatus(UpdateType.Browse);
-				this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
-				this.actualizarColumnas();
-				this.syncToolbarContext();
-				if (this.vistaDetalle && this.selectedPais) {
-					this.model = this.fillPais(this.selectedPais);
-					this.modelUpdate = this.fillPais(this.selectedPais);
-					this.subTituloVentana = this.selectedPais.NOMBRE_PAIS;
-				} else {
-					this.model = this.fillPais();
-					this.modelUpdate = this.fillPais();
-				}
-			});
+			this.confirmaCancelar(finalizar);
 			return;
 		}
-		this.AsignaStatus(UpdateType.Browse);
-		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
-		this.actualizarColumnas();
-		this.syncToolbarContext();
+		finalizar();
 	}
 
 	rowRemoving(e: any): void {
-		e.cancel = true;
-		this.onDeletePaisClick({ row: { data: e.data } });
+		if (!this.validarEmpresaSesion()) {
+			e.cancel = true;
+			return;
+		}
+		// Una sola confirmación: nativa DevExtreme (confirmDelete). No confirmAction extra.
+		this.rowRemovingMtto(e, {
+			deleteFn: () => this.service.deletePais(e.data),
+			successMessage: 'País eliminado con éxito.',
+		});
 	}
 
 	onDeptoFocused(e: any): void {
@@ -713,7 +631,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 					if (response.Result) {
 						this.popupVisible = false;
 						this.refrescarNivel(this.popupNivel);
-						this.notifyFx(this.popupIsAdd ? 'Registro creado con exito!' : 'Registro modificado con exito!', NotifyType.Success);
+						this.notifyFx(this.popupIsAdd ? 'Registro creado con éxito.' : 'Registro modificado con éxito.', NotifyType.Success);
 					} else {
 						this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
 					}
@@ -760,7 +678,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	}
 
 	private actualizarColumnas(): void {
-		this.columns = this.service.getPaisColumns(this.onEditPaisClick, this.onDeletePaisClick, this.permiteEdit, this.permiteDele);
+		this.columns = this.service.getPaisColumns();
 		this.deptoColumns = this.service.getDeptoColumns(this.onEditDeptoClick, this.onDeleteDeptoClick, this.permiteEdit, this.permiteDele);
 		this.municipioColumns = this.service.getMunicipioColumns(
 			this.onEditMunicipioClick,
@@ -793,9 +711,11 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			{
 				titulo: this.tituloVentana,
 				subtitle: this.subTituloVentana,
+				// En documento el Nuevo de país no sale (isForm); permiteAdd real alimenta la cascada.
 				permiteAdd: this.permiteAdd,
-				showRefresh: true,
-				unifiedToolbar: true,
+				showRefresh: !this.vistaDetalle,
+				unifiedToolbar: !this.vistaDetalle,
+				embedTitleInGrid: false,
 				isBrowse: this.isBrowse(),
 			},
 			{
@@ -808,35 +728,14 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	private configurarDataSourcePaises(): void {
 		this.models = new CustomStore({
 			key: 'CORR_PAIS',
-			loadMode: 'processed',
-			cacheRawData: false,
-			load: async (loadOptions: any) => {
+			loadMode: 'raw',
+			load: async () => {
 				try {
-					const takeRows = loadOptions.take || 5;
-				const skipRows = loadOptions.skip || 0;
-				const page = Math.floor(skipRows / takeRows) + 1;
-				const grid = this.dataGrid?.gData?.instance;
-
-				const gridFilters = parseRemoteGridFilters(loadOptions.filter, grid, GRID_FILTER_CONFIG);
-				this.applyIncludeHeaderFilters(grid, gridFilters);
-				await this.resolveExcludeHeaderFilters(grid, gridFilters, 'pais');
-				await this.removeHeaderFiltersOverriddenByFilterRow(gridFilters, 'pais');
-
-				const sort = this.getGridSort(loadOptions.sort);
-				const response = await lastValueFrom(
-					this.service.getAllPaises(
-						this.fillParam(page, takeRows, '', gridFilters, '', '', sort?.field ?? '', sort?.desc ?? false)
-					)
-				);
-
-				if (!response.Result) {
-					throw new Error(response.ErrorMessage || 'No se pudo cargar los países.');
-				}
-
-				return {
-					data: response.Data || [],
-					totalCount: response.RowsAffected || 0,
-				};
+					const response = await lastValueFrom(this.service.getAllPaises(this.fillParam()));
+					if (!response.Result) {
+						throw new Error(response.ErrorMessage || 'No se pudo cargar los países.');
+					}
+					return response.Data || [];
 				} catch (error) {
 					const message = this.getErrorMessage(error);
 					this.notifyFx(message, NotifyType.Error);
@@ -1068,6 +967,10 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	protected override getMttoDataGrid(): DataGridMttoComponent | null {
+		return this.dataGrid ?? null;
+	}
+
 	private getGridByLevel(level: TerritorialGridLevel): DataGridMttoComponent | undefined {
 		switch (level) {
 			case 'pais':
@@ -1150,11 +1053,11 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		const scope = this.getScopeForLevel(level);
 		const request =
 			level === 'pais'
-				? this.fillParam(1, 0, '', filtersForDistinct, dataField, '')
+				? this.fillParam('', filtersForDistinct, dataField, '')
 				: this.fillCascadeParam('', filtersForDistinct, dataField, '', '', false, scope);
 		const distinctCall =
 			level === 'pais'
-				? this.service.getDistinctValuesPaises({ ...request, PAGE: 1, PAGE_SIZE: 0 })
+				? this.service.getDistinctValuesPaises(request)
 				: level === 'depto'
 					? this.service.getDistinctValuesDeptos(request)
 					: level === 'municipio'
@@ -1238,7 +1141,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			const request = this.fillCascadeParam('', filtersForDistinct, dataField, '', '', false, scope);
 			const distinctCall =
 				level === 'pais'
-					? this.service.getDistinctValuesPaises({ ...request, PAGE: 1, PAGE_SIZE: 0 })
+					? this.service.getDistinctValuesPaises(request)
 					: level === 'depto'
 						? this.service.getDistinctValuesDeptos(request)
 						: level === 'municipio'
@@ -1280,39 +1183,6 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.refrescarDistritos(true);
 	}
 
-	private eliminarPais(row: GenPais, desdeDetalle: boolean): void {
-		if (!this.validarEmpresaSesion()) {
-			return;
-		}
-
-		this.loadingVisible = true;
-		this.service
-			.deletePais(row)
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						if (desdeDetalle) {
-							this.volverAlListado();
-						} else {
-							this.consultar();
-						}
-						this.notifyFx('País eliminado con exito!', NotifyType.Success);
-					} else {
-						this.notifyFx(
-							response.ErrorMessage || 'No se puede eliminar el país porque tiene registros relacionados.',
-							this.getDeleteNotifyType(response.ErrorMessage)
-						);
-					}
-					this.loadingVisible = false;
-				},
-				error: (error: any) => {
-					this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
-					this.loadingVisible = false;
-				},
-			});
-	}
-
 	private eliminarDepto(row: GenDepto): void {
 		this.eliminarNivel(this.service.deleteDepto(row), 'depto', 'departamento');
 	}
@@ -1346,7 +1216,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 						this.actualizarResaltadoCascade();
 					}
 					this.refrescarNivel(nivel);
-					this.notifyFx(`${etiqueta} eliminado con exito!`, NotifyType.Success);
+					this.notifyFx(`${etiqueta} eliminado con éxito.`, NotifyType.Success);
 				} else {
 					this.notifyFx(
 						response.ErrorMessage || `No se puede eliminar el ${etiqueta} porque tiene registros relacionados.`,

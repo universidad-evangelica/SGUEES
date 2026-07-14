@@ -2,7 +2,7 @@
 
 
 
-**Versión del paquete:** 1.3 — julio 2026
+**Versión del paquete:** 1.4 — julio 2026
 
 
 
@@ -25,6 +25,8 @@ Estas plantillas son la **fuente de verdad para IA y programadores** al crear o 
 | [mtto-a-p-paginado.md](./mtto-a-p-paginado.md) | Catálogo grande, paginado servidor, auditoría en grid |
 
 | [mtto-a-plus-estado-catalogo.md](./mtto-a-plus-estado-catalogo.md) | **Extensión** activo/inactivo (`bit`) — combinar con **A+** o **A+P** |
+
+| [mtto-barra-patron.md](./mtto-barra-patron.md) | **Barra / toolbar** — proceso = Compras; catálogo = título + Nuevo en grid |
 
 | [mtto-api-crud-http.md](./mtto-api-crud-http.md) | **PUT/DELETE** — `CData.Put` + `ApplyQueryKeys` (todos los mttos) |
 

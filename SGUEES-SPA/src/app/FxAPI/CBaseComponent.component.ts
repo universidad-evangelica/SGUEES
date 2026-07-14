@@ -54,9 +54,17 @@ export class CBaseComponent {
 	readonly mttoFormColCount = 8;
 	readonly mttoFormColCountByScreen: Record<string, number> = { xs: 1, sm: 1, md: 4, lg: 8 };
 
-	/** Paginación grid — el hijo puede sobreescribir pageSize y pageSizes. */
-	protected mttoPageSize = 20;
-	protected mttoPageSizes: (number | PagerPageSize)[] = [20, 50, 100, 200, 'all'];
+	/** Paginación grid (filas visibles) — el hijo puede sobreescribir. */
+	protected mttoDisplayPageSize = 15;
+	protected mttoPageSize = 15;
+	protected mttoPageSizes: (number | PagerPageSize)[] = [15, 30, 50, 100];
+	/**
+	 * A+P híbrido: selector de lote API ≠ filas visibles.
+	 * Display siempre `mttoPageSize`; lote vía `mttoApiPageSize` / toolbar «Lote».
+	 */
+	protected mttoHybridPaging = false;
+	protected mttoApiPageSize = 50;
+	protected mttoApiPageSizes: (number | 'all')[] = [50, 100, 'all'];
 	/** false = A+ local; { paging, sorting, filtering } = A++ paginado servidor. */
 	protected mttoRemoteOperations: boolean | Record<string, unknown> = false;
 	/** Clave del grid para parchear models[] o CustomStore tras guardar/eliminar. */
@@ -189,10 +197,14 @@ export class CBaseComponent {
 			return null;
 		}
 		const key = this.model?.[this.mttoGridKeyExpr];
-		if (key == null || (typeof key === 'number' && key <= 0)) {
+		if (this.esClaveGridInvalida(key)) {
 			return null;
 		}
 		return key;
+	}
+
+	protected esClaveGridInvalida(key: unknown): boolean {
+		return key == null || key === '' || (typeof key === 'number' && key <= 0);
 	}
 
 	/** Fila seleccionada en grid browse (requerida para toolbar estado v1.1). */
@@ -201,7 +213,7 @@ export class CBaseComponent {
 		if (!row) {
 			return null;
 		}
-		if (this.mttoGridKeyExpr && !row[this.mttoGridKeyExpr]) {
+		if (this.mttoGridKeyExpr && this.esClaveGridInvalida(row[this.mttoGridKeyExpr])) {
 			return null;
 		}
 		return row;

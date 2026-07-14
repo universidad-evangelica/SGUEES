@@ -9,6 +9,7 @@ Al migrar o crear pantallas, seguir **este proceso completo** (SPA + API + menú
 
 **Fuente de verdad IA:** `DOCS/plantillas/` + `DOCS/PROMPT-MTTO.md` + `DOCS/ESTANDAR-MTTO.md`  
 **Contrato HTTP PUT/DELETE:** `DOCS/plantillas/mtto-api-crud-http.md`  
+**Barra / toolbar:** `DOCS/plantillas/mtto-barra-patron.md` (proceso = Compras; catálogo = título + Nuevo en grid)  
 **Onboarding equipo:** `DOCS/GUIA-EQUIPO-MTTO.md`  
 **Piloto vivo (solo comparar):** `gen-banco` (A+), `sc-impacto-economico` (A+P). No copiar ciego.
 
@@ -31,6 +32,7 @@ El usuario puede decir solo:
 | Menú destino | `PROCESO`, `GENERAL`, nombre opción |
 
 Si no indica tipo, **inferirlo** de tablas/vistas (1 tabla = A/B/A+/A+P; encabezado+deta = C).
+**Paginado servidor:** si no queda claro, **preguntar** (A+ = memoria / A+P = BD). Ver `PROMPT-MTTO.md`.
 
 ### Elegir plantilla (catálogos)
 
@@ -40,8 +42,9 @@ Si no indica tipo, **inferirlo** de tablas/vistas (1 tabla = A/B/A+/A+P; encabez
 | Catálogo + activo/inactivo (`bit`) | `mtto-a-plus.md` o `mtto-a-p-paginado.md` + `mtto-a-plus-estado-catalogo.md` |
 | Catálogo grande / auditoría / paginado servidor | `mtto-a-p-paginado.md` |
 | Documento con estados DI/AP/AN | `mtto-estado-transaccional.md` — **no** patrón bit |
+| Barra / botones proceso vs catálogo | `mtto-barra-patron.md` — **obligatorio** al armar HTML |
 
-**A+ vs A+P:** A+ = 1× `consultarMtto` → array, paginado cliente. A+P = `CustomStore`, `remoteOperations.paging: true`, filter row sin API (`filtering: false`).
+**A+ vs A+P:** A+ = 1× `consultarMtto` → array, paginado cliente (sin selector tamaño/"Todos" en pager). A+P híbrido = `CustomStore`, filas visibles 15; selector del pager = lote API (50/100/Todos) → `PAGE`/`PAGE_SIZE`.
 
 ### Lo que yo entrego (completo)
 
@@ -112,18 +115,23 @@ guardar(): void {
 ## A+P) Catálogo paginado servidor — SPA
 
 **Plantilla:** `DOCS/plantillas/mtto-a-p-paginado.md`  
-**Piloto:** `SelectionHiring/sc-impacto-economico`
+**Piloto:** `SelectionHiring/sc-impacto-economico`  
+**Solo usar si el catálogo lo requiere** — la mayoría de catálogos nuevos son **A+** (sin paginar en BD).
 
 ```typescript
 protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
 protected override mttoGridKeyExpr = 'CORR_XXX';
+protected override mttoHybridPaging = true;
+protected override mttoPageSize = 15;
+protected override mttoApiPageSize = 50;
 @ViewChild(DataGridMttoComponent) dataGrid!: DataGridMttoComponent;
 protected override getMttoDataGrid() { return this.dataGrid ?? null; }
 ```
 
 - Filter row = cliente, **no** llama API.
+- **Lote API (pager inferior):** `(apiPageSizeChange)` → `syncMttoHybridApiPageSize` → `loadMttoHybridDisplayPage` (display siempre 15; cruce de lotes soportado).
 - `guardarMtto` / `rowRemovingMtto` parchean `CustomStore` vía padre.
-- API actual piloto impacto: pagina en SQL (`OFFSET/FETCH`). Legacy puede estar en memoria hasta migrar.
+- API: pagina en SQL (`OFFSET/FETCH`). Legacy puede estar en memoria hasta migrar.
 
 ---
 
@@ -172,6 +180,7 @@ El permiso del endpoint es el de la **pantalla consumidora**, no el del catálog
 
 Base de A/B, más:
 
+- **Barra:** patrón proceso Compras (`mtto-barra-patron.md`) — `showDates` / `btn1`–`btnN` en HTML; grid principal **sin** `showAdd` / `showRefresh`. TS solo textos en `refrescarBotones()`.
 - **Agregar detalle sin guardar encabezado:** permitir `addRow()` sin exigir PK.
 - **`guardarEncabezadoParaDetalle()`** → `insert` encabezado → `UpdateType.Update` → callback guarda línea.
 - **`detalleRowInserting/Updating/Removing`** con `e.cancel = Promise`.
@@ -281,7 +290,9 @@ Procesos: aplicar/anular/desaplicar, importar Excel, reportes, consultas, cierre
 ### A+P) Paginado servidor
 - [ ] Plantilla `mtto-a-p-paginado.md`
 - [ ] `CustomStore` + `remoteOperations: { paging: true, sorting: true, filtering: false }`
+- [ ] `mttoHybridPaging` + lote (`mttoApiPageSize`) ≠ display (`mttoPageSize`)
 - [ ] `getMttoDataGrid()` con `@ViewChild(DataGridMttoComponent)`
+- [ ] `(apiPageSizeChange)` + `syncMttoHybridApiPageSize` + `loadMttoHybridDisplayPage`
 - [ ] API `ReadPagedViewAsync` + `_AllowedSortFields` (no SQL crudo ni paginación en memoria)
 - [ ] CRUD HTTP: `mtto-api-crud-http.md`
 

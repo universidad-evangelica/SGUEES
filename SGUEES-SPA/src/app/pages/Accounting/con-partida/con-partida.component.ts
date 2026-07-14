@@ -25,6 +25,9 @@ import { environment } from 'src/environments/environment';
 })
 export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	@ViewChild('gridDetalle', { static: false }) gridDetalle!: DxDataGridComponent;
+	protected override etiquetaRegistro = 'la partida';
+	private readonly maintenanceSubtitulo = 'Mantenimiento de partidas contables';
+
 	detalles: ConPartidaDeta[] = [];
 	documentos: ConPartidaDoc[] = [];
 	docColumns: any[] = [];
@@ -74,7 +77,6 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
-		this.configurarColumnasGrid();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 		this.docColumns = this.docService.getColumns();
@@ -86,67 +88,13 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		this.editarDetalleClick = this.editarDetalleClick.bind(this);
 		this.detalleEditButtonVisible = this.detalleEditButtonVisible.bind(this);
 		this.detalleDeleteButtonVisible = this.detalleDeleteButtonVisible.bind(this);
-		this.imprimirPartidaDesdeFila = this.imprimirPartidaDesdeFila.bind(this);
-		this.gridPrintButtonVisible = this.gridPrintButtonVisible.bind(this);
-	}
-
-	configurarColumnasGrid(): void {
-		if (this.columns.some((c: { name?: string }) => c?.name === 'btnAcciones')) {
-			return;
-		}
-		this.columns.unshift({
-			type: 'buttons',
-			name: 'btnAcciones',
-			caption: 'Options',
-			width: 138,
-			minWidth: 138,
-			allowResizing: false,
-			fixed: true,
-			fixedPosition: 'left',
-			alignment: 'center',
-			buttons: [
-				{
-					hint: 'Editar registro',
-					icon: 'edit',
-					stylingMode: 'text',
-					cssClass: 'sguees-grid-action-edit',
-					visible: () => this.permiteEdit,
-					onClick: (e: { row: { data: ConPartida } }) => this.editarClick(e),
-				},
-				{
-					hint: 'Imprimir partida',
-					icon: 'print',
-					stylingMode: 'text',
-					cssClass: 'sguees-grid-action-print',
-					visible: this.gridPrintButtonVisible,
-					onClick: this.imprimirPartidaDesdeFila,
-				},
-				{
-					name: 'delete',
-					hint: 'Eliminar registro',
-					icon: 'trash',
-					stylingMode: 'text',
-					cssClass: 'sguees-grid-action-delete',
-					visible: (e: { row?: { data?: ConPartida } }) =>
-						this.permiteDele && e.row?.data?.ESTADO_PARTIDA === 'DI',
-				},
-			],
-		});
-	}
-
-	gridPrintButtonVisible(): boolean {
-		return this.permitePrint;
-	}
-
-	imprimirPartidaDesdeFila(e: { row: { data: ConPartida } }): void {
-		this.model = e.row.data;
-		this.imprimirPartida();
 	}
 
 	ngOnInit(): void {
 		const today = this.appInfoService.getDate();
 		this.vFECHA_INICIAL = new Date(today.getFullYear(), today.getMonth(), 1);
 		this.vFECHA_FINAL = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
@@ -154,6 +102,13 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	inicializaOpciones() {}
+
+	override AsignaStatus(xEstado: UpdateType): void {
+		super.AsignaStatus(xEstado);
+		if (xEstado === UpdateType.Browse) {
+			this.subTituloVentana = this.maintenanceSubtitulo;
+		}
+	}
 
 	llenaComboBox() {
 		this.getESTADO_PARTIDA();
@@ -292,76 +247,36 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		};
 	}
 
-	consultar() {
-		this.service
-			.getAll(this.fillParam())
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.models = response.Data;
-					}
-				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+	consultar(): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+		});
 	}
 
 	guardar(): void {
-		if (!this.service.esValido(this.model, this.notifyFx)) {
-			return;
-		}
-
-		this.loadingVisible = true;
-		if (this.banderaMtto === UpdateType.Add) {
-			this.service
-				.insert(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.models.push(response.Data);
-							this.model = response.Data;
-							this.modelUpdate = this.fillData(this.model);
-							this.volverAlListado();
-							this.notifyFx('Registro creado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		} else if (this.banderaMtto === UpdateType.Update) {
-			this.service
-				.update(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							const vIndex = this.models.findIndex(
-								(item: ConPartida) => this.partidaRowKey(item) === this.partidaRowKey(response.Data)
-							);
-							this.models[vIndex] = response.Data;
-							this.modelUpdate = this.fillData(this.model);
-							this.volverAlListado();
-							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		}
+		this.guardarMtto({
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
+			parchearGrid: false,
+			onSuccess: (data: unknown, isAdd: boolean) => {
+				const row = data as ConPartida;
+				if (!Array.isArray(this.models)) {
+					this.models = [];
+				}
+				if (isAdd) {
+					this.models.push(row);
+				} else {
+					const key = this.partidaRowKey(row);
+					const index = this.models.findIndex((item: ConPartida) => this.partidaRowKey(item) === key);
+					if (index >= 0) {
+						this.models[index] = row;
+					}
+				}
+				this.modelUpdate = this.fillData(row);
+				this.volverAlListado();
+			},
+		});
 	}
 
 	private volverAlListado(): void {
@@ -473,6 +388,10 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		this.btnPartidaCierre = '';
 		this.btnPartidaApertura = '';
 		this.btnCrearModelo = this.puedeCrearModelo() ? 'Crear Modelo' : '';
+	}
+
+	get showProcesosEnGrid(): boolean {
+		return !!(this.btnPartidaApertura || this.btnPartidaLiquidacion || this.btnPartidaCierre);
 	}
 
 	hasPartidaSeleccionada(): boolean {
@@ -1157,7 +1076,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	rowRemoving(e: any) {
+	rowRemoving(e: any): void {
 		if (e.data?.ESTADO_PARTIDA !== 'DI') {
 			e.cancel = true;
 			this.notifyFx(
@@ -1167,28 +1086,15 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 
-		e.cancel = new Promise<boolean>((resolve, reject) => {
-			this.service
-				.delete(this.buildDeletePayload(e.data))
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.models = (this.models || []).filter(
-								(item: ConPartida) => this.partidaRowKey(item) !== this.partidaRowKey(e.data)
-							);
-							this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-							resolve(false);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-							resolve(true);
-						}
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						reject(error);
-					},
-				});
+		const removedKey = this.partidaRowKey(e.data);
+		this.rowRemovingMtto(e, {
+			deleteFn: () => this.service.delete(this.buildDeletePayload(e.data)),
+			parchearGrid: false,
+			reload: () => {
+				this.models = (this.models || []).filter(
+					(item: ConPartida) => this.partidaRowKey(item) !== removedKey
+				);
+			},
 		});
 	}
 

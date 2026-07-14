@@ -3,9 +3,13 @@ import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 
 import { GenBancoRepository } from './gen-banco.repository';
 import { GenBanco } from './models/gen-banco';
+
+const ESTADO_FIELD = 'ESTADO_BANCO';
 
 @Injectable({
 	providedIn: 'root',
@@ -51,13 +55,21 @@ export class GenBancoService {
 		return this.repo.delete(xWhere);
 	}
 
+	activarInactivar(model: any): Observable<IResult> {
+		return this.repo.activarInactivar(model, [
+			{ Parameter: 'CORR_BANCO', Value: model.CORR_BANCO },
+		]);
+	}
+
 	getColumns(): any {
 		return [
 			{ dataField: 'CORR_BANCO', caption: 'Corr.', width: 85 },
-			{ dataField: 'NOMBRE_BANCO', caption: 'Nombre Banco', width: 250 },
-			{ dataField: 'NOMBRE_BANCO_CORTO', caption: 'Nombre Banco Corto', width: 200 },
+			{ dataField: 'NOMBRE_BANCO', caption: 'Nombre Banco', width: 300 },
+			{ dataField: 'NOMBRE_BANCO_CORTO', caption: 'Nombre Corto', width: 150 },
 			{ dataField: 'NOMBRE_CLASE_BANCO', caption: 'Clase Banco', width: 200 },
-			{ dataField: 'CODIGO_TRANSACION_UNI', caption: 'Código Transacción Uni', width: 150 },
+			{ dataField: 'CODIGO_TRANSACION_UNI', caption: 'Código Transacción Uni', width: 250 },
+			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
+			...buildAuditGridColumns(),
 		];
 	}
 
@@ -95,6 +107,7 @@ export class GenBancoService {
 				colSpan: 2,
 				editorOptions: { placeholder: 'Código...', showClearButton: true, maxLength: 5 },
 			},
+			{ dataField: 'ESTADO_BANCO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
 	}
 }

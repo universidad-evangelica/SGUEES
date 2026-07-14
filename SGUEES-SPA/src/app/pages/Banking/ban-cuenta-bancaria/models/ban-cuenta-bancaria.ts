@@ -16,7 +16,7 @@ export interface BanCuentaBancaria {
 	VALIDA_FECHA: boolean;
 	NOMBRE_CUENTA: string;
 	NO_PERMITE_CHEQUES: boolean;
-	ESTADO_CUENTA: string;
+	ESTADO_CUENTA_BANCARIA: boolean;
 	USA_TRANSACIONES_UNI: boolean;
 	CLASE_CHEQUE: string;
 	NOMBRE_CUENTA_BANCO?: string;
@@ -25,6 +25,11 @@ export interface BanCuentaBancaria {
 	NOMBRE_TIPO_CUENTA_BANCO?: string;
 	NOMBRE_CENTRO?: string;
 	NOMBRE_MONEDA?: string;
-	NOMBRE_ESTADO_CUENTA?: string;
 	NOMBRE_CLASE_CHEQUE?: string;
+	USUARIO_CREA?: string;
+	FECHA_CREA?: Date;
+	ESTACION_CREA?: string;
+	USUARIO_ACTU?: string;
+	FECHA_ACTU?: Date;
+	ESTACION_ACTU?: string;
 }

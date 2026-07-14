@@ -4,7 +4,6 @@ import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
-import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { BanLineaTrabajoConciliacion } from './models/ban-linea-trabajo-conciliacion';
@@ -13,9 +12,21 @@ import { BanLineaTrabajoConciliacionService } from './ban-linea-trabajo-concilia
 @Component({
 	selector: 'app-ban-linea-trabajo-conciliacion',
 	templateUrl: './ban-linea-trabajo-conciliacion.component.html',
-	styleUrls: ['./ban-linea-trabajo-conciliacion.component.scss'],
 })
 export class BanLineaTrabajoConciliacionComponent extends CBaseComponent implements OnInit {
+	protected override etiquetaRegistro = 'la línea de trabajo';
+	protected override requiereEmpresaSesion = true;
+	protected override mttoGridKeyExpr = 'CORR_LINEA';
+	protected override mttoCampoEstado = 'ESTADO_LINEA';
+	protected override mttoEstadoDescribeField = 'NOMBRE_LINEA_TRABAJO';
+
+	private readonly maintenanceSubtitulo = 'Mantenimiento de Líneas de Trabajo - Conciliación';
+
+	//#region <Declarando Variales>
+	mAUMENTA_DISMINUYE: any;
+	readOnly = false;
+	// #endregion
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -27,13 +38,9 @@ export class BanLineaTrabajoConciliacionComponent extends CBaseComponent impleme
 		this.items = this.service.getItems();
 	}
 
-	//#region <Declarando Variales>
-	mAUMENTA_DISMINUYE: any;
-	readOnly = false;
-	// #endregion
-
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
+		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
@@ -41,6 +48,13 @@ export class BanLineaTrabajoConciliacionComponent extends CBaseComponent impleme
 
 	inicializaOpciones() {}
 	// #endregion
+
+	override AsignaStatus(xEstado: UpdateType): void {
+		super.AsignaStatus(xEstado);
+		if (xEstado === UpdateType.Browse) {
+			this.subTituloVentana = this.maintenanceSubtitulo;
+		}
+	}
 
 	//#region <Manejo de Combos>
 	llenaComboBox() {
@@ -58,7 +72,7 @@ export class BanLineaTrabajoConciliacionComponent extends CBaseComponent impleme
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -66,11 +80,8 @@ export class BanLineaTrabajoConciliacionComponent extends CBaseComponent impleme
 
 	//#region <Metodos Mtto>
 	fillParam(xCORR_LINEA?: number): any {
-		if (xCORR_LINEA == undefined) {
-			xCORR_LINEA = 0;
-		}
 		return {
-			CORR_LINEA: xCORR_LINEA,
+			CORR_LINEA: xCORR_LINEA ?? 0,
 		};
 	}
 
@@ -81,114 +92,59 @@ export class BanLineaTrabajoConciliacionComponent extends CBaseComponent impleme
 				CORR_LINEA: xModel.CORR_LINEA,
 				NOMBRE_LINEA_TRABAJO: xModel.NOMBRE_LINEA_TRABAJO,
 				AUMENTA_DISMINUYE: xModel.AUMENTA_DISMINUYE,
-			};
-		} else {
-			return {
-				CORR_EMPRESA: 1,
-				CORR_LINEA: 0,
-				NOMBRE_LINEA_TRABAJO: '',
-				AUMENTA_DISMINUYE: 1,
+				ESTADO_LINEA: xModel.ESTADO_LINEA,
 			};
 		}
+
+		return {
+			CORR_EMPRESA: 1,
+			CORR_LINEA: 0,
+			NOMBRE_LINEA_TRABAJO: '',
+			AUMENTA_DISMINUYE: 1,
+			ESTADO_LINEA: true,
+		};
 	}
 
-	consultar() {
-		this.service
-			.getAll(this.fillParam())
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.models = response.Data;
-					}
-				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+	consultar(): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+		});
+	}
+
+	override nuevo(): void {
+		if (!this.asegurarEmpresaSesion()) {
+			return;
+		}
+		super.nuevo();
 	}
 
 	guardar(): void {
-		if (!this.service.esValido(this.model, this.notifyFx)) {
-			return;
-		}
-
-		this.loadingVisible = true;
-		if (this.banderaMtto === UpdateType.Add) {
-			this.service
-				.insert(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.models.push(response.Data);
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro creado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		} else if (this.banderaMtto === UpdateType.Update) {
-			this.service
-				.update(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							const vIndex = this.models.findIndex((item: any) => item.CORR_LINEA === response.Data.CORR_LINEA);
-							this.models[vIndex] = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		}
+		this.guardarMtto({
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
+		});
 	}
 
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_LINEA === this.modelUpdate.CORR_LINEA);
 	}
 
-	rowRemoving(e: any) {
-		this.service
-			.delete(this.fillParam(e.data.CORR_LINEA))
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-						e.component.refresh();
-					} else {
-						e.cancel = true;
-						this.notifyFx(response.ErrorMessage, NotifyType.Error);
-					}
-				},
-				error: (error: any) => {
-					e.cancel = true;
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+	rowRemoving(e: any): void {
+		this.rowRemovingMtto(e, {
+			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_LINEA)),
+		});
+	}
+
+	activar_inactivar(): void {
+		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_LINEA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_LINEA_TRABAJO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('AUMENTA_DISMINUYE')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ESTADO_LINEA')?.option('readOnly', true);
 		this.readOnly = true;
 	}
 
@@ -196,6 +152,7 @@ export class BanLineaTrabajoConciliacionComponent extends CBaseComponent impleme
 		this.readOnly = false;
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_LINEA')?.option('readOnly', true);
+			this.dataForm.instance.getEditor('ESTADO_LINEA')?.option('readOnly', false);
 		});
 	}
 

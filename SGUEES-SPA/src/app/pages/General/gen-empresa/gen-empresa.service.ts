@@ -4,6 +4,8 @@ import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+
 import { GenEmpresaRepository } from './gen-empresa.repository';
 import { GenEmpresa } from './models/gen-empresa';
 
@@ -54,11 +56,10 @@ export class GenEmpresaService {
 
 	//#region <Validadores>
 	esValido(model: GenEmpresa, msg: Function): boolean {
-		// if (model.NOMBRE_ROL == '') {
-		// msg('Debe digitar el nombre del Rol', NotifyType.Error)
-		// return false;
-		// }
-
+		if (!model.NOMBRE_EMPRESA?.trim()) {
+			msg('Debe digitar el nombre de la empresa.', NotifyType.Warning);
+			return false;
+		}
 		return true;
 	}
 	// #endregion
@@ -103,6 +104,7 @@ export class GenEmpresaService {
 
 	getColumns(): any {
 		return [
+			{ dataField: 'CORR_EMPRESA', caption: 'Corr.', width: 90 },
 			{ dataField: 'NOMBRE_EMPRESA', caption: 'Nombre Empresa', width: 250 },
 			{ dataField: 'NOMBRE_COMERCIAL', caption: 'Nombre Comercial', width: 250 },
 			{ dataField: 'NOMBRE_REPRESENTANTE_LEGAL', caption: 'Nombre Representante Legal', width: 250 },
@@ -127,16 +129,11 @@ export class GenEmpresaService {
 			{ dataField: 'TIPO_INGRESO_ISR', caption: 'Tipo Ingreso Isr', width: 150 },
 			{ dataField: 'USA_CAMPOS_LIBRO_IVA', caption: 'Usa Campos Libro Iva', width: 150 },
 			{ dataField: 'PERMITE_EDITAR_CAMPOS_LIBRO_IVA', caption: 'Permite Editar Campos Libro Iva', width: 150 },
-			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 150 },
-			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 115, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
-			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 150 },
-			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 150 },
-			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 115, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
-			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 150 },
-			{ dataField: 'NOMBRE_PAIS', caption: 'Nombre Pais', width: 250 },
-			{ dataField: 'NOMBRE_DEPTO', caption: 'Nombre Depto', width: 250 },
-			{ dataField: 'NOMBRE_MUNICIPIO', caption: 'Nombre Municipio', width: 250 },
-			{ dataField: 'NOMBRE_SECTOR_ECONOMICO', caption: 'Nombre Sector Economico', width: 250 },
+			{ dataField: 'NOMBRE_PAIS', caption: 'País', width: 180 },
+			{ dataField: 'NOMBRE_DEPTO', caption: 'Departamento', width: 180 },
+			{ dataField: 'NOMBRE_MUNICIPIO', caption: 'Municipio', width: 180 },
+			{ dataField: 'NOMBRE_SECTOR_ECONOMICO', caption: 'Sector económico', width: 200 },
+			...buildAuditGridColumns(),
 		];
 	}
 

@@ -1,11 +1,3 @@
-<p-toast
-	position="bottom-right"
-	[baseZIndex]="2000"
-	[showTransformOptions]="'translateY(100%)'"
-	[hideTransitionOptions]="'500ms'"
-	[showTransformOptions]="'translateX(100%)'"
-></p-toast>
-
 <div class="sguees-mtto-view">
 	<app-barra-data-mtto
 		[tituloVentana]="tituloVentana"
@@ -13,6 +5,7 @@
 		[isBrowse]="isBrowse()"
 		[isForm]="isForm()"
 		[permiteAdd]="permiteAdd"
+		[showRefresh]="!vistaDetalle"
 		(nuevo)="nuevo()"
 		(guardar)="guardar()"
 		(cancelar)="cancelar()"
@@ -21,14 +14,14 @@
 
 	<!-- Lista de países (entrada al módulo) -->
 	<ng-container *ngIf="!vistaDetalle">
-		<div class="content-block dx-card responsive-paddings territorial-page territorial-form-card" *ngIf="!isBrowse()">
+		<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 			<dx-form
 				#fData
 				id="fData"
 				[formData]="model"
 				[labelLocation]="'top'"
-				[colCount]="8"
-				[colCountByScreen]="{ xs: 1, sm: 1, md: 4, lg: 8 }"
+				[colCount]="mttoFormColCount"
+				[colCountByScreen]="mttoFormColCountByScreen"
 				[showRequiredMark]="false"
 				[items]="items"
 			>
@@ -41,73 +34,45 @@
 			[models]="models"
 			[columns]="columns"
 			[summary]="summary"
-			[keyExpr]="'CORR_PAIS'"
-			[remoteOperations]="{ paging: true, filtering: true, sorting: true }"
-			[headerFilterLoader]="loadHeaderFilterValuesPaises"
-			[pageSize]="5"
-			[allowedPageSizes]="pageSizes"
+			[keyExpr]="mttoGridKeyExpr"
+			[remoteOperations]="mttoRemoteOperations"
+			[pageSize]="mttoPageSize"
+			[allowedPageSizes]="mttoPageSizes"
 			[showSearch]="false"
 			[showAdd]="true"
 			[showRefresh]="true"
 			[showExport]="true"
 			[permitePrint]="permitePrint"
+			[permiteEditar]="getPermiteEditar"
+			[permiteDele]="getPermiteDele"
 			[responsiveColumnHiding]="false"
 			[columnHidingEnabled]="false"
 			[exportFileName]="'Paises'"
 			(refresh)="consultar()"
 			(add)="nuevo()"
+			(editClick)="editarPaisDesdeGrid($event)"
 			(rowDblClick)="rowDblClick($event)"
 			(rowRemoving)="rowRemoving($event)"
 		></app-data-grid-mtto>
 	</ng-container>
 
-	<!-- Detalle del país -->
+	<!-- Documento país + cascada (flujo tipo partida: Guardar / Cancelar del padre) -->
 	<ng-container *ngIf="vistaDetalle">
-		<div class="content-block dx-card responsive-paddings territorial-form-card">
-			<div class="territorial-form-toolbar" *ngIf="isBrowse()">
-				<div class="territorial-form-toolbar__actions">
-					<dx-button
-						text="Volver al listado"
-						icon="back"
-						stylingMode="outlined"
-						(onClick)="volverAlListado()"
-					></dx-button>
-					<dx-button
-						text="Editar país"
-						icon="edit"
-						stylingMode="outlined"
-						type="default"
-						[hint]="permiteEdit ? 'Editar país' : 'No tiene permiso para editar registros.'"
-						[elementAttr]="{ class: permiteEdit ? '' : 'sguees-action-no-edit' }"
-						(onClick)="editarPais()"
-					></dx-button>
-					<dx-button
-						text="Eliminar país"
-						icon="trash"
-						stylingMode="outlined"
-						type="danger"
-						[hint]="permiteDele ? 'Eliminar país' : 'No tiene permiso para eliminar registros.'"
-						[elementAttr]="{ class: permiteDele ? '' : 'sguees-action-no-delete' }"
-						(onClick)="eliminarPaisActual()"
-					></dx-button>
-				</div>
-			</div>
-
+		<div class="content-block dx-card responsive-paddings sguees-mtto-form-card territorial-form-card">
 			<dx-form
 				#fData
 				id="fData"
 				[formData]="model"
-				[readOnly]="isBrowse()"
 				[labelLocation]="'top'"
-				[colCount]="8"
-				[colCountByScreen]="{ xs: 1, sm: 1, md: 4, lg: 8 }"
+				[colCount]="mttoFormColCount"
+				[colCountByScreen]="mttoFormColCountByScreen"
 				[showRequiredMark]="false"
 				[items]="items"
 			>
 			</dx-form>
 		</div>
 
-		<div class="territorial-cascade" *ngIf="selectedPais" [class.territorial-cascade--paused]="!isBrowse()">
+		<div class="territorial-cascade" *ngIf="selectedPais">
 			<div class="territorial-panels" [style.--territorial-cascade-grid-height.px]="cascadeGridHeight">
 						<div class="territorial-panel territorial-panel--cascade">
 							<app-data-grid-mtto
@@ -121,6 +86,7 @@
 								[headerFilterLoader]="loadHeaderFilterValuesDeptos"
 								[gridHeight]="cascadeGridHeight"
 								[repaintChangesOnly]="false"
+								[unifiedToolbar]="true"
 								[showSearch]="false"
 								[showAdd]="true"
 								[showRefresh]="true"
@@ -149,6 +115,7 @@
 								[headerFilterLoader]="loadHeaderFilterValuesMunicipios"
 								[gridHeight]="cascadeGridHeight"
 								[repaintChangesOnly]="false"
+								[unifiedToolbar]="true"
 								[showSearch]="false"
 								[showAdd]="!!selectedDepto"
 								[showRefresh]="true"
@@ -177,6 +144,7 @@
 								[headerFilterLoader]="loadHeaderFilterValuesDistritos"
 								[gridHeight]="cascadeGridHeight"
 								[repaintChangesOnly]="false"
+								[unifiedToolbar]="true"
 								[showSearch]="false"
 								[showAdd]="!!selectedMunicipio"
 								[showRefresh]="true"

@@ -2,9 +2,14 @@ import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 
 import { BanCuentaBancariaRepository } from './ban-cuenta-bancaria.repository';
 import { BanCuentaBancaria } from './models/ban-cuenta-bancaria';
+
+const ESTADO_FIELD = 'ESTADO_CUENTA_BANCARIA';
 
 @Injectable({
 	providedIn: 'root',
@@ -14,11 +19,11 @@ export class BanCuentaBancariaService {
 
 	esValido(model: BanCuentaBancaria, msg: Function): boolean {
 		if (!model.NUMERO_CUENTA_BANCO?.trim()) {
-			msg('Debe digitar el número de cuenta bancaria', 0);
+			msg('Debe digitar el número de cuenta bancaria', NotifyType.Warning);
 			return false;
 		}
 		if (!model.CORR_BANCO) {
-			msg('Debe seleccionar el banco', 0);
+			msg('Debe seleccionar el banco', NotifyType.Warning);
 			return false;
 		}
 		return true;
@@ -48,16 +53,23 @@ export class BanCuentaBancariaService {
 		return this.repo.delete(xWhere);
 	}
 
+	activarInactivar(model: any): Observable<IResult> {
+		return this.repo.activarInactivar(model, [
+			{ Parameter: 'CORR_CUENTA_BANCO', Value: model.CORR_CUENTA_BANCO },
+		]);
+	}
+
 	getColumns(): any {
 		return [
-			{ dataField: 'CORR_CUENTA_BANCO', caption: 'Corr.', width: 80 },
-			{ dataField: 'NOMBRE_CUENTA_BANCO', caption: 'Nombre cuenta' },
-			{ dataField: 'NUMERO_CUENTA_BANCO', caption: 'Número cuenta', width: 140 },
-			{ dataField: 'NOMBRE_BANCO', caption: 'Banco', width: 180 },
-			{ dataField: 'NOMBRE_TIPO_CUENTA_BANCO', caption: 'Tipo cuenta', width: 120 },
-			{ dataField: 'NOMBRE_ESTADO_CUENTA', caption: 'Estado', width: 100 },
-			{ dataField: 'NOMBRE_MONEDA', caption: 'Moneda', width: 100 },
-			{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta contable', width: 130 },
+			{ dataField: 'CORR_CUENTA_BANCO', caption: 'Corr.', width: 85 },
+			{ dataField: 'NOMBRE_CUENTA_BANCO', caption: 'Nombre cuenta' , width: 250},
+			{ dataField: 'NUMERO_CUENTA_BANCO', caption: 'Número cuenta', width: 200 },
+			{ dataField: 'NOMBRE_BANCO', caption: 'Banco', width: 200 },
+			{ dataField: 'NOMBRE_TIPO_CUENTA_BANCO', caption: 'Tipo cuenta', width: 200 },
+			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
+			{ dataField: 'NOMBRE_MONEDA', caption: 'Moneda', width: 180 },
+			{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta contable', width: 200 },
+			...buildAuditGridColumns(),
 		];
 	}
 
@@ -93,12 +105,6 @@ export class BanCuentaBancariaService {
 				label: { text: 'Tipo cuenta' },
 				colSpan: 4,
 				template: 'TIPO_CUENTA_BANCOLookup',
-			},
-			{
-				dataField: 'ESTADO_CUENTA',
-				label: { text: 'Estado cuenta' },
-				colSpan: 4,
-				template: 'ESTADO_CUENTALookup',
 			},
 			{
 				dataField: 'CLASE_CHEQUE',
@@ -148,6 +154,7 @@ export class BanCuentaBancariaService {
 			{ dataField: 'VALIDA_FECHA', label: { text: 'Valida fecha' }, colSpan: 2, editorType: 'dxCheckBox' },
 			{ dataField: 'NO_PERMITE_CHEQUES', label: { text: 'No permite cheques' }, colSpan: 2, editorType: 'dxCheckBox' },
 			{ dataField: 'USA_TRANSACIONES_UNI', label: { text: 'Usa transacciones uni' }, colSpan: 2, editorType: 'dxCheckBox' },
+			{ dataField: 'ESTADO_CUENTA_BANCARIA', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
 	}
 }

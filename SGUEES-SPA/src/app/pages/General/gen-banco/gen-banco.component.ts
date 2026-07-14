@@ -16,9 +16,9 @@ import { GenBancoService } from './gen-banco.service';
 export class GenBancoComponent extends CBaseComponent implements OnInit {
 	protected override etiquetaRegistro = 'el banco';
 	protected override requiereEmpresaSesion = true;
-	protected override mttoPageSize = 5;
-	protected override mttoPageSizes = [5, 10, 25, 50, 100];
 	protected override mttoGridKeyExpr = 'CORR_BANCO';
+	protected override mttoCampoEstado = 'ESTADO_BANCO';
+	protected override mttoEstadoDescribeField = 'NOMBRE_BANCO';
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Bancos';
 
@@ -94,6 +94,7 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 				NOMBRE_BANCO_CORTO: xModel.NOMBRE_BANCO_CORTO,
 				CLASE_BANCO: xModel.CLASE_BANCO,
 				CODIGO_TRANSACION_UNI: xModel.CODIGO_TRANSACION_UNI,
+				ESTADO_BANCO: xModel.ESTADO_BANCO,
 			};
 		}
 
@@ -104,6 +105,7 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 			NOMBRE_BANCO_CORTO: '',
 			CLASE_BANCO: '',
 			CODIGO_TRANSACION_UNI: '',
+			ESTADO_BANCO: true,
 		};
 	}
 
@@ -138,12 +140,17 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	activar_inactivar(): void {
+		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
+	}
+
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_BANCO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_BANCO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_BANCO_CORTO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CLASE_BANCO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CODIGO_TRANSACION_UNI')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ESTADO_BANCO')?.option('readOnly', true);
 		this.readOnly = true;
 	}
 
@@ -151,6 +158,7 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 		this.readOnly = false;
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_BANCO')?.option('readOnly', true);
+			this.dataForm.instance.getEditor('ESTADO_BANCO')?.option('readOnly', false);
 		});
 	}
 

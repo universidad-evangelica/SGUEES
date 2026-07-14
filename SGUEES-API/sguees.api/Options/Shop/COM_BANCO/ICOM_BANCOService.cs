@@ -11,5 +11,6 @@ namespace sguees.Services
 		Task<CResult> CreateAsync(COM_BANCOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(COM_BANCOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(COM_BANCOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> ActivarInactivarAsync(COM_BANCOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
 }
