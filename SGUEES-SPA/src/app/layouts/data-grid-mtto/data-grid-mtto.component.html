@@ -4,7 +4,8 @@
   [class.sguees-grid-mtto-shell--unified]="isUnifiedActive"
 >
   <section
-    class="sguees-grid-module-card sguees-grid-unified-module dx-card responsive-paddings"
+    class="sguees-grid-module-card sguees-grid-unified-module dx-card"
+    [class.responsive-paddings]="!isUnifiedActive"
     [class.sguees-grid-module-card--loading]="loading"
     [class.sguees-grid-unified-module--standalone]="isUnifiedActive"
   >
@@ -42,8 +43,8 @@
       [keyExpr]="keyExpr"
       [remoteOperations]="remoteOperations"
       [columnAutoWidth]="columnAutoWidth"
-      [showBorders]="false"
-      [showColumnLines]="false"
+      [showBorders]="true"
+      [showColumnLines]="true"
       [showRowLines]="true"
       [rowAlternationEnabled]="true"
       [hoverStateEnabled]="true"
@@ -69,7 +70,45 @@
       [filterValue]="filterValue"
     >
       <dxo-toolbar>
-        <dxi-item *ngIf="isUnifiedActive && resolvedTitulo" location="before">
+        <dxi-item
+          *ngIf="toolbarBeforeTemplate"
+          location="before"
+          locateInMenu="never"
+          cssClass="sguees-grid-toolbar-before-slot"
+        >
+          <ng-container *ngTemplateOutlet="toolbarBeforeTemplate"></ng-container>
+        </dxi-item>
+
+        <dxi-item
+          *ngIf="isUnifiedActive && effectiveShowAdd"
+          location="before"
+          widget="dxButton"
+          [options]="optAdd"
+        ></dxi-item>
+
+        <dxi-item
+          *ngIf="isUnifiedActive && effectiveShowAdd && showPrimaryToolbarDivider"
+          location="before"
+          locateInMenu="auto"
+        >
+          <div class="separator sguees-grid-toolbar-divider"></div>
+        </dxi-item>
+
+        <dxi-item
+          *ngIf="effectiveShowEstadoToolbar"
+          location="before"
+          widget="dxButton"
+          [options]="optActivar"
+        ></dxi-item>
+
+        <dxi-item
+          *ngIf="effectiveShowEstadoToolbar"
+          location="before"
+          widget="dxButton"
+          [options]="optDesactivar"
+        ></dxi-item>
+
+        <dxi-item *ngIf="showUnifiedTitle" location="before">
           <div class="sguees-grid-header">
             <div class="sguees-grid-header__title">{{ resolvedTitulo }}</div>
             <div class="sguees-grid-header__subtitle" *ngIf="resolvedSubtitle">
@@ -125,27 +164,6 @@
         ></dxi-item>
 
         <dxi-item
-          *ngIf="isUnifiedActive && effectiveShowAdd"
-          location="after"
-          widget="dxButton"
-          [options]="optAdd"
-        ></dxi-item>
-
-        <dxi-item
-          *ngIf="effectiveShowEstadoToolbar"
-          location="after"
-          widget="dxButton"
-          [options]="optActivar"
-        ></dxi-item>
-
-        <dxi-item
-          *ngIf="effectiveShowEstadoToolbar"
-          location="after"
-          widget="dxButton"
-          [options]="optDesactivar"
-        ></dxi-item>
-
-        <dxi-item
           *ngIf="showColumnChooser"
           name="columnChooserButton"
           location="after"
@@ -174,9 +192,10 @@
       <dxo-pager
         [visible]="true"
         [showInfo]="true"
+        [infoText]="hybridPaging ? 'Página {0} de {1}' : 'Página {0} de {1} ({2} ítems)'"
         [showNavigationButtons]="true"
-        [showPageSizeSelector]="true"
-        [allowedPageSizes]="allowedPageSizes"
+        [showPageSizeSelector]="effectiveShowPageSizeSelector"
+        [allowedPageSizes]="effectiveAllowedPageSizes"
       ></dxo-pager>
 
       <dxo-scrolling mode="standard"></dxo-scrolling>
