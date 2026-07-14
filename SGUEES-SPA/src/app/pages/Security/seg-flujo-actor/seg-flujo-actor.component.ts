@@ -38,22 +38,10 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
     }
 
     inicializaOpciones() {
-        const resoCol = this.columns.find((c: any) => c.dataField === 'RESOLUCION_AUTOMATICA');
-        if (resoCol) {
-            resoCol.cellTemplate = (container: HTMLElement, options: any) => {
-                container.textContent = options.data.RESOLUCION_AUTOMATICA ? 'Sí' : 'No';
-                if (options.data.RESOLUCION_AUTOMATICA) {
-                    requestAnimationFrame(() => {
-                        const rowElements: HTMLElement[] = options.component.getRowElement(options.rowIndex) || [];
-                        rowElements.forEach((rowEl: HTMLElement) => {
-                            const editBtn = rowEl.querySelector<HTMLElement>('.sguees-grid-action-edit');
-                            const deleteBtn = rowEl.querySelector<HTMLElement>('.sguees-grid-action-delete');
-                            if (editBtn) editBtn.style.display = 'none';
-                            if (deleteBtn) deleteBtn.style.display = 'none';
-                        });
-                    });
-                }
-            };
+        const acciones = this.columns.find((c: any) => c.name === 'btnAcciones');
+        if (acciones?.buttons) {
+            const editBtn = acciones.buttons.find((b: any) => b.icon === 'edit');
+            if (editBtn) editBtn.onClick = (e: any) => this.editarClick(e);
         }
     }
     // #endregion
@@ -76,7 +64,7 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
                 NOMBRE_ACTOR: xModel.NOMBRE_ACTOR,
                 DESCRIPCION: xModel.DESCRIPCION,
                 REQUIERE_UNIDAD: xModel.REQUIERE_UNIDAD,
-                RESOLUCION_AUTOMATICA: xModel.REQUIERE_UNIDAD,
+                RESOLUCION_AUTOMATICA: xModel.RESOLUCION_AUTOMATICA,
                 ACTIVO: xModel.ACTIVO,
                 USUARIO_CREA: xModel.USUARIO_CREA,
                 ESTACION_CREA: xModel.ESTACION_CREA,

@@ -64,6 +64,34 @@ export class SegFlujoActorService {
 
     getColumns(): any {
         return [
+            {
+                type: 'buttons',
+                name: 'btnAcciones',
+                caption: 'Options',
+                width: 125,
+                minWidth: 125,
+                allowResizing: false,
+                fixed: true,
+                fixedPosition: 'left',
+                alignment: 'center',
+                buttons: [
+                    {
+                        hint: 'Editar registro',
+                        icon: 'edit',
+                        stylingMode: 'text',
+                        cssClass: 'sguees-grid-action-edit',
+                        disabled: (e: any) => !!e.row.data.RESOLUCION_AUTOMATICA,
+                    },
+                    {
+                        name: 'delete',
+                        hint: 'Eliminar registro',
+                        icon: 'trash',
+                        stylingMode: 'text',
+                        cssClass: 'sguees-grid-action-delete',
+                        disabled: (e: any) => !!e.row.data.RESOLUCION_AUTOMATICA,
+                    },
+                ],
+            },
             { dataField: 'CORR_ACTOR', caption: 'Corr.', width: 150 },
             { dataField: 'NOMBRE_ACTOR', caption: 'Nombre', width: 300 },
             { dataField: 'DESCRIPCION', caption: 'Descripción', width: 350 },
