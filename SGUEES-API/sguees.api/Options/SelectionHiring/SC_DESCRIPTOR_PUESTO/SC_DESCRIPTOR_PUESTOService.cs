@@ -10,10 +10,14 @@ namespace SGUEES.Services
     public class SC_DESCRIPTOR_PUESTOService : ISC_DESCRIPTOR_PUESTOService
     {
         private readonly ISC_DESCRIPTOR_PUESTORepository _repo;
+        private readonly ISC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService _requerimientoOrganizacionalService;
 
-        public SC_DESCRIPTOR_PUESTOService(ISC_DESCRIPTOR_PUESTORepository repo)
+        public SC_DESCRIPTOR_PUESTOService(
+            ISC_DESCRIPTOR_PUESTORepository repo,
+            ISC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService requerimientoOrganizacionalService)
         {
             _repo = repo;
+            _requerimientoOrganizacionalService = requerimientoOrganizacionalService;
         }
 
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_PUESTOParam xWhere)
@@ -61,7 +65,39 @@ namespace SGUEES.Services
             }
 
             NormalizeData(Data);
-            return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+            var result = await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+            if (result.ErrorCode != 0)
+            {
+                return result;
+            }
+
+            var corrDescriptor = 0;
+            if (result.Data is SC_DESCRIPTOR_PUESTOView created)
+            {
+                corrDescriptor = created.CORR_DESCRIPTOR_PUESTO;
+            }
+            else if (result.CodeHelper != null && int.TryParse(result.CodeHelper.ToString(), out var codeHelper))
+            {
+                corrDescriptor = codeHelper;
+            }
+
+            if (corrDescriptor > 0)
+            {
+                try
+                {
+                    await _requerimientoOrganizacionalService.SeedActivosDesdeCatalogoAsync(
+                        Data.CORR_EMPRESA,
+                        corrDescriptor,
+                        vLOGIN_SISTEMA,
+                        vESTACION);
+                }
+                catch
+                {
+                    // El descriptor ya se creo; el seed no debe fallar la operacion.
+                }
+            }
+
+            return result;
         }
 
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)

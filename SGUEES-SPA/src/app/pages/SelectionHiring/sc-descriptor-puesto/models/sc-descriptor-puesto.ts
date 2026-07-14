@@ -61,3 +61,8 @@ export interface ScCompetenciaConductualLookupItem {
 	DESCRIPCION: string;
 	NOMBRE_TIPO_PUESTO?: string;
 }
+
+export interface ScRequerimientoOrganizacionalLookupItem {
+	CORR_REQUERIMIENTO_ORGANIZACIONAL: number;
+	DESCRIPCION: string;
+}

@@ -35,12 +35,14 @@ import { ScPerfilPuestoEducacion } from './sc-perfil-puesto-educacion/models/sc-
 import { ScPerfilPuestoExperiencia } from './sc-perfil-puesto-experiencia/models/sc-perfil-puesto-experiencia';
 import { ScPerfilPuestoCompetenciasTecnicas } from './sc-perfil-puesto-competencias-tecnicas/models/sc-perfil-puesto-competencias-tecnicas';
 import { ScPerfilPuestoCompetenciasConductuales } from './sc-perfil-puesto-competencias-conductuales/models/sc-perfil-puesto-competencias-conductuales';
+import { ScDescriptorPuestoRequerimientoOrganizacional } from './sc-descriptor-puesto-requerimiento-organizacional/models/sc-descriptor-puesto-requerimiento-organizacional';
 import {
 	MockPuesto,
 	MockUnidad,
 	ScCompetenciaConductualLookupItem,
 	ScCompetenciaTecnicaLookupItem,
 	ScDescriptorPuesto,
+	ScRequerimientoOrganizacionalLookupItem,
 } from './models/sc-descriptor-puesto';
 import {
 	FORMATO_CORTA,
@@ -71,6 +73,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	@ViewChild('gridExperiencia', { static: false }) gridExperiencia?: DxDataGridComponent;
 	@ViewChild('gridCompetenciasTecnicas', { static: false }) gridCompetenciasTecnicas?: DxDataGridComponent;
 	@ViewChild('gridCompetenciasConductuales', { static: false }) gridCompetenciasConductuales?: DxDataGridComponent;
+	@ViewChild('gridRequerimientosOrganizacionales', { static: false })
+	gridRequerimientosOrganizacionales?: DxDataGridComponent;
 	@ViewChild('gridActividades', { static: false }) gridActividades?: DxDataGridComponent;
 	@ViewChild('gridRelacionesInternas', { static: false }) gridRelacionesInternas?: DxDataGridComponent;
 	@ViewChild('gridRelacionesExternas', { static: false }) gridRelacionesExternas?: DxDataGridComponent;
@@ -100,6 +104,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES: ScCompetenciaTecnicaLookupItem[] = [];
 	mCORR_COMPETENCIAS_CONDUCTUALES: ScCompetenciaConductualLookupItem[] = [];
 	mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES: ScCompetenciaConductualLookupItem[] = [];
+	mCORR_REQUERIMIENTO_ORGANIZACIONAL: ScRequerimientoOrganizacionalLookupItem[] = [];
+	mCORR_REQUERIMIENTO_ORGANIZACIONAL_DISPONIBLES: ScRequerimientoOrganizacionalLookupItem[] = [];
 	reportaLookupColumns = [
 		{ dataField: 'RESPONSABLE', caption: 'Nombre', width: 220 },
 		{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260 },
@@ -117,6 +123,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ dataField: 'NOMBRE_COMPETENCIAS_CONDUCTUALES', caption: 'Competencia', width: 220 },
 		{ dataField: 'NOMBRE_TIPO_PUESTO', caption: 'Tipo puesto', width: 180 },
 	];
+	requerimientosOrganizacionalesLookupColumns = [
+		{ dataField: 'CORR_REQUERIMIENTO_ORGANIZACIONAL', caption: 'Codigo', width: 90 },
+		{ dataField: 'DESCRIPCION', caption: 'Descripcion', width: 320 },
+	];
 
 	headerItems: any[] = [];
 	itemsTabBitacora: any[] = [];
@@ -128,6 +138,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	experiencias: ScPerfilPuestoExperiencia[] = [];
 	competenciasTecnicas: ScPerfilPuestoCompetenciasTecnicas[] = [];
 	competenciasConductuales: ScPerfilPuestoCompetenciasConductuales[] = [];
+	requerimientosOrganizacionales: ScDescriptorPuestoRequerimientoOrganizacional[] = [];
 	relacionesInternas: ScDescriptorRelacionLaboral[] = [];
 	relacionesExternas: ScDescriptorRelacionLaboral[] = [];
 	funcionesClaveEditando = false;
@@ -137,6 +148,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	experienciaEditando = false;
 	competenciasTecnicasEditando = false;
 	competenciasConductualesEditando = false;
+	requerimientosOrganizacionalesEditando = false;
 	actividadesEditando = false;
 	relacionesInternasEditando = false;
 	relacionesExternasEditando = false;
@@ -162,6 +174,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private experienciaLoadSeq = 0;
 	private competenciasTecnicasLoadSeq = 0;
 	private competenciasConductualesLoadSeq = 0;
+	private requerimientosOrganizacionalesLoadSeq = 0;
 	private relacionesInternasLoadSeq = 0;
 	private relacionesExternasLoadSeq = 0;
 	private perfilLoadSeq = 0;
@@ -194,6 +207,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.selectedLookUpCORR_TIPO_MODALIDAD = this.selectedLookUpCORR_TIPO_MODALIDAD.bind(this);
 		this.selectedLookUpCORR_COMPETENCIAS_TECNICAS = this.selectedLookUpCORR_COMPETENCIAS_TECNICAS.bind(this);
 		this.selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES = this.selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES.bind(this);
+		this.selectedLookUpCORR_REQUERIMIENTO_ORGANIZACIONAL =
+			this.selectedLookUpCORR_REQUERIMIENTO_ORGANIZACIONAL.bind(this);
 		this.funcionClaveEditButtonVisible = this.funcionClaveEditButtonVisible.bind(this);
 		this.funcionClaveDeleteButtonVisible = this.funcionClaveDeleteButtonVisible.bind(this);
 		this.editarFuncionClaveClick = this.editarFuncionClaveClick.bind(this);
@@ -215,6 +230,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.competenciaConductualEditButtonVisible = this.competenciaConductualEditButtonVisible.bind(this);
 		this.competenciaConductualDeleteButtonVisible = this.competenciaConductualDeleteButtonVisible.bind(this);
 		this.editarCompetenciaConductualClick = this.editarCompetenciaConductualClick.bind(this);
+		this.requerimientoOrganizacionalEditButtonVisible =
+			this.requerimientoOrganizacionalEditButtonVisible.bind(this);
+		this.requerimientoOrganizacionalDeleteButtonVisible =
+			this.requerimientoOrganizacionalDeleteButtonVisible.bind(this);
+		this.editarRequerimientoOrganizacionalClick = this.editarRequerimientoOrganizacionalClick.bind(this);
 		this.actividadEditButtonVisible = this.actividadEditButtonVisible.bind(this);
 		this.actividadDeleteButtonVisible = this.actividadDeleteButtonVisible.bind(this);
 		this.editarActividadClick = this.editarActividadClick.bind(this);
@@ -266,6 +286,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.getCORR_TIPO_MODALIDAD();
 		this.getCORR_COMPETENCIAS_TECNICAS_NIV3();
 		this.getCORR_COMPETENCIAS_CONDUCTUALES();
+		this.getCORR_REQUERIMIENTO_ORGANIZACIONAL();
 		this.getFORMATO();
 		this.getNIVEL_DOMINIO();
 		this.getSEXO();
@@ -595,6 +616,38 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	getCORR_REQUERIMIENTO_ORGANIZACIONAL(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_REQUERIMIENTO_ORGANIZACIONAL',
+				'GetCORR_REQUERIMIENTO_ORGANIZACIONAL',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result || !Array.isArray(response.Data)) {
+						this.mCORR_REQUERIMIENTO_ORGANIZACIONAL = [];
+						this.mCORR_REQUERIMIENTO_ORGANIZACIONAL_DISPONIBLES = [];
+						return;
+					}
+
+					this.mCORR_REQUERIMIENTO_ORGANIZACIONAL = response.Data.map((item: any) => ({
+						CORR_REQUERIMIENTO_ORGANIZACIONAL: Number(item.CORR_REQUERIMIENTO_ORGANIZACIONAL),
+						DESCRIPCION: (item.DESCRIPCION ?? '').trim(),
+					}));
+					this.actualizarRequerimientosOrganizacionalesLookupDisponibles();
+				},
+				error: (error) => {
+					this.mCORR_REQUERIMIENTO_ORGANIZACIONAL = [];
+					this.mCORR_REQUERIMIENTO_ORGANIZACIONAL_DISPONIBLES = [];
+					this.notifyApiError(error);
+				},
+			});
+	}
+
 	selectedLookUpCORR_UNIDAD(vRow: any): number {
 		return vRow[0].CORR_UNIDAD;
 	}
@@ -625,6 +678,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES(vRow: any): number {
 		return vRow[0].CORR_COMPETENCIAS_CONDUCTUALES;
+	}
+
+	selectedLookUpCORR_REQUERIMIENTO_ORGANIZACIONAL(vRow: any): number {
+		return vRow[0].CORR_REQUERIMIENTO_ORGANIZACIONAL;
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -794,6 +851,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.cargarRelacionesExternas();
 		}
 		this.cargarPerfil();
+		this.cargarRequerimientosOrganizacionales();
 	}
 
 	limpiarDatosTabs(): void {
@@ -805,6 +863,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.experiencias = [];
 		this.competenciasTecnicas = [];
 		this.competenciasConductuales = [];
+		this.requerimientosOrganizacionales = [];
 		this.relacionesInternas = [];
 		this.relacionesExternas = [];
 		this.competenciasSubTabIndex = 0;
@@ -816,6 +875,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.resetearEdicionExperiencia();
 		this.resetearEdicionCompetenciasTecnicas();
 		this.resetearEdicionCompetenciasConductuales();
+		this.resetearEdicionRequerimientosOrganizacionales();
 		this.resetearEdicionRelacionesInternas();
 		this.resetearEdicionRelacionesExternas();
 		this.limpiarPerfil();
@@ -1319,6 +1379,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	cancelarKpiEditado(): void {
 		this.cancelarEdicionGrid(this.gridKpis?.instance, () => {
 			this.kpisEditando = false;
+			this.cargarKpis(true);
 		});
 	}
 
@@ -1345,6 +1406,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.finalizarEdicionGrid(e, () => {
 			this.kpisEditando = false;
 		});
+		this.cargarKpis(true);
 	}
 
 	kpiRowValidating(e: any): void {
@@ -1374,13 +1436,21 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	onKpiFrecuenciaLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && value > 0 ? Number(value) : null;
-		const frecuencia = this.mCORR_FRECUENCIA.find((item) => Number(item.CORR_FRECUENCIA) === Number(corr));
 		cellInfo.setValue(corr);
-		if (cellInfo.data) {
-			cellInfo.data.CORR_FRECUENCIA = corr;
-			cellInfo.data.NOMBRE_FRECUENCIA = frecuencia?.NOMBRE_FRECUENCIA ?? '';
-		}
 	}
+
+	setKpiFrecuenciaCellValue = (
+		newData: ScDescriptorKpiFuncion,
+		value: number | null,
+		_currentRowData: ScDescriptorKpiFuncion
+	): void => {
+		const corr = value != null && Number(value) > 0 ? Number(value) : null;
+		const frecuencia = this.mCORR_FRECUENCIA.find(
+			(item) => Number(item.CORR_FRECUENCIA) === Number(corr)
+		);
+		newData.CORR_FRECUENCIA = corr;
+		newData.NOMBRE_FRECUENCIA = frecuencia?.NOMBRE_FRECUENCIA ?? '';
+	};
 
 	agregarEducacion(): void {
 		if (this.readOnly || this.educacionEditando || !this.requiereDescriptorGuardado()) {
@@ -1600,6 +1670,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	cancelarCompetenciaTecnicaEditada(): void {
 		this.cancelarEdicionGrid(this.gridCompetenciasTecnicas?.instance, () => {
 			this.competenciasTecnicasEditando = false;
+			this.cargarCompetenciasTecnicas(true);
 		});
 	}
 
@@ -1631,6 +1702,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.finalizarEdicionGrid(e, () => {
 			this.competenciasTecnicasEditando = false;
 		});
+		this.cargarCompetenciasTecnicas(true);
 	}
 
 	competenciaTecnicaRowValidating(e: any): void {
@@ -1715,26 +1787,22 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	onCompetenciaTecnicaLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && value > 0 ? Number(value) : null;
+		cellInfo.setValue(corr);
+	}
+
+	setCompetenciaTecnicaCellValue = (
+		newData: ScPerfilPuestoCompetenciasTecnicas,
+		value: number | null,
+		_currentRowData: ScPerfilPuestoCompetenciasTecnicas
+	): void => {
+		const corr = value != null && Number(value) > 0 ? Number(value) : null;
 		const catalog = this.mCORR_COMPETENCIAS_TECNICAS.find(
 			(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === Number(corr)
 		);
-		cellInfo.setValue(corr);
-
-		const nombre = catalog?.NOMBRE_COMPETENCIAS_TECNICAS ?? '';
-		const descripcion = catalog?.DESCRIPCION ?? '';
-		if (cellInfo.data) {
-			cellInfo.data.CORR_COMPETENCIAS_TECNICAS = corr;
-			cellInfo.data.NOMBRE_COMPETENCIAS_TECNICAS = nombre;
-			cellInfo.data.DESCRIPCION = descripcion;
-		}
-
-		const grid = cellInfo.component;
-		const rowIndex = cellInfo.rowIndex;
-		if (grid != null && typeof rowIndex === 'number') {
-			grid.cellValue(rowIndex, 'NOMBRE_COMPETENCIAS_TECNICAS', nombre);
-			grid.cellValue(rowIndex, 'DESCRIPCION', descripcion);
-		}
-	}
+		newData.CORR_COMPETENCIAS_TECNICAS = corr;
+		newData.NOMBRE_COMPETENCIAS_TECNICAS = catalog?.NOMBRE_COMPETENCIAS_TECNICAS ?? '';
+		newData.DESCRIPCION = catalog?.DESCRIPCION ?? '';
+	};
 
 	agregarCompetenciaConductual(): void {
 		if (this.readOnly || this.competenciasConductualesEditando || !this.requiereDescriptorGuardado()) {
@@ -1781,6 +1849,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	cancelarCompetenciaConductualEditada(): void {
 		this.cancelarEdicionGrid(this.gridCompetenciasConductuales?.instance, () => {
 			this.competenciasConductualesEditando = false;
+			this.cargarCompetenciasConductuales(true);
 		});
 	}
 
@@ -1811,6 +1880,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.finalizarEdicionGrid(e, () => {
 			this.competenciasConductualesEditando = false;
 		});
+		this.cargarCompetenciasConductuales(true);
 	}
 
 	competenciaConductualRowValidating(e: any): void {
@@ -1889,28 +1959,198 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	onCompetenciaConductualLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && value > 0 ? Number(value) : null;
+		cellInfo.setValue(corr);
+	}
+
+	setCompetenciaConductualCellValue = (
+		newData: ScPerfilPuestoCompetenciasConductuales,
+		value: number | null,
+		_currentRowData: ScPerfilPuestoCompetenciasConductuales
+	): void => {
+		const corr = value != null && Number(value) > 0 ? Number(value) : null;
 		const catalog = this.mCORR_COMPETENCIAS_CONDUCTUALES.find(
 			(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === Number(corr)
 		);
-		cellInfo.setValue(corr);
+		newData.CORR_COMPETENCIAS_CONDUCTUALES = corr;
+		newData.NOMBRE_COMPETENCIAS_CONDUCTUALES = catalog?.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '';
+		newData.DESCRIPCION = this.esFormatoExtensa ? catalog?.DESCRIPCION ?? '' : '';
+	};
 
-		const nombre = catalog?.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '';
-		const descripcion = this.esFormatoExtensa ? catalog?.DESCRIPCION ?? '' : '';
-		if (cellInfo.data) {
-			cellInfo.data.CORR_COMPETENCIAS_CONDUCTUALES = corr;
-			cellInfo.data.NOMBRE_COMPETENCIAS_CONDUCTUALES = nombre;
-			cellInfo.data.DESCRIPCION = descripcion;
+	agregarRequerimientoOrganizacional(): void {
+		if (this.readOnly || this.requerimientosOrganizacionalesEditando || !this.requiereDescriptorGuardado()) {
+			return;
+		}
+		this.actualizarRequerimientosOrganizacionalesLookupDisponibles();
+		this.requerimientosOrganizacionalesEditando = true;
+		setTimeout(() => this.gridRequerimientosOrganizacionales?.instance.addRow());
+	}
+
+	editarRequerimientoOrganizacionalClick(e: any): void {
+		if (this.readOnly || this.requerimientosOrganizacionalesEditando) {
+			return;
+		}
+		this.actualizarRequerimientosOrganizacionalesLookupDisponibles(
+			Number(e?.row?.data?.CORR_REQUERIMIENTO_ORGANIZACIONAL) || null
+		);
+		this.requerimientosOrganizacionalesEditando = true;
+		const rowIndex = e.row.rowIndex;
+		const grid = e.component;
+		setTimeout(() => grid.editRow(rowIndex));
+	}
+
+	requerimientoOrganizacionalEditButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
+
+	requerimientoOrganizacionalDeleteButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
+
+	guardarRequerimientoOrganizacionalEditado(): void {
+		const grid = this.gridRequerimientosOrganizacionales?.instance;
+		if (!grid || !this.requerimientosOrganizacionalesEditando) {
+			this.notifyFx('No hay una linea en edicion', NotifyType.Warning);
+			return;
+		}
+		grid.saveEditData();
+	}
+
+	cancelarRequerimientoOrganizacionalEditado(): void {
+		this.cancelarEdicionGrid(this.gridRequerimientosOrganizacionales?.instance, () => {
+			this.requerimientosOrganizacionalesEditando = false;
+			this.cargarRequerimientosOrganizacionales(true);
+		});
+	}
+
+	requerimientoOrganizacionalInitNewRow(e: any): void {
+		e.data.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL = 0;
+		e.data.CORR_DESCRIPTOR_PUESTO = Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0;
+		e.data.CORR_REQUERIMIENTO_ORGANIZACIONAL = null;
+		e.data.DESCRIPCION = '';
+		e.data._clientKey = this.crearClientKey('ro');
+		this.actualizarRequerimientosOrganizacionalesLookupDisponibles();
+	}
+
+	onRequerimientoOrganizacionalEditingStart(e: any): void {
+		this.actualizarRequerimientosOrganizacionalesLookupDisponibles(
+			Number(e?.data?.CORR_REQUERIMIENTO_ORGANIZACIONAL) || null
+		);
+		this.requerimientosOrganizacionalesEditando = true;
+	}
+
+	onRequerimientoOrganizacionalSaved(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.requerimientosOrganizacionalesEditando = false;
+		});
+	}
+
+	onRequerimientoOrganizacionalEditCanceled(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.requerimientosOrganizacionalesEditando = false;
+		});
+		this.cargarRequerimientosOrganizacionales(true);
+	}
+
+	requerimientoOrganizacionalRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!(Number(data.CORR_REQUERIMIENTO_ORGANIZACIONAL) > 0)) {
+			e.isValid = false;
+			e.errorText = 'Debe seleccionar un requerimiento organizacional.';
+			return;
+		}
+		if (!(data.DESCRIPCION ?? '').trim()) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar la descripcion del requerimiento.';
+			return;
+		}
+		if ((data.DESCRIPCION ?? '').trim().length > 150) {
+			e.isValid = false;
+			e.errorText = 'La descripcion no puede superar 150 caracteres.';
+			return;
 		}
 
-		const grid = cellInfo.component;
-		const rowIndex = cellInfo.rowIndex;
-		if (grid != null && typeof rowIndex === 'number') {
-			grid.cellValue(rowIndex, 'NOMBRE_COMPETENCIAS_CONDUCTUALES', nombre);
-			if (this.esFormatoExtensa) {
-				grid.cellValue(rowIndex, 'DESCRIPCION', descripcion);
+		const corrCatalogo = Number(data.CORR_REQUERIMIENTO_ORGANIZACIONAL);
+		const clientKey = data._clientKey ?? e?.key;
+		const duplicada = (this.requerimientosOrganizacionales || []).some((row) => {
+			if (!(Number(row.CORR_REQUERIMIENTO_ORGANIZACIONAL) > 0)) {
+				return false;
 			}
+			if (clientKey != null && row._clientKey === clientKey) {
+				return false;
+			}
+			return Number(row.CORR_REQUERIMIENTO_ORGANIZACIONAL) === corrCatalogo;
+		});
+		if (duplicada) {
+			e.isValid = false;
+			e.errorText = 'Ese requerimiento organizacional ya esta agregado en el descriptor.';
 		}
 	}
+
+	requerimientoOrganizacionalRowInserting(e: any): void {
+		e.cancel = this.persistirRequerimientoOrganizacionalDesdeGrid(e.data, true);
+	}
+
+	requerimientoOrganizacionalRowUpdating(e: any): void {
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = this.persistirRequerimientoOrganizacionalDesdeGrid(data, false);
+	}
+
+	requerimientoOrganizacionalRowRemoving(e: any): void {
+		e.cancel = this.eliminarRequerimientoOrganizacionalDesdeGrid(e.data);
+	}
+
+	requerimientoOrganizacionalCatalogDisplay = (row: ScDescriptorPuestoRequerimientoOrganizacional): string => {
+		const corr = Number(row?.CORR_REQUERIMIENTO_ORGANIZACIONAL);
+		if (!(corr > 0)) {
+			return '';
+		}
+		return String(corr);
+	};
+
+	private actualizarRequerimientosOrganizacionalesLookupDisponibles(
+		corrConservar: number | null = null
+	): void {
+		const usados = new Set(
+			(this.requerimientosOrganizacionales || [])
+				.map((row) => Number(row.CORR_REQUERIMIENTO_ORGANIZACIONAL))
+				.filter((corr) => corr > 0 && corr !== Number(corrConservar || 0))
+		);
+
+		this.mCORR_REQUERIMIENTO_ORGANIZACIONAL_DISPONIBLES = (
+			this.mCORR_REQUERIMIENTO_ORGANIZACIONAL || []
+		).filter((item) => {
+			const corr = Number(item.CORR_REQUERIMIENTO_ORGANIZACIONAL);
+			if (!(corr > 0)) {
+				return false;
+			}
+			if (corrConservar != null && corr === Number(corrConservar)) {
+				return true;
+			}
+			return !usados.has(corr);
+		});
+	}
+
+	onRequerimientoOrganizacionalLookupChanged(value: number | null, cellInfo: any): void {
+		const corr = value != null && value > 0 ? Number(value) : null;
+		cellInfo.setValue(corr);
+	}
+
+	/**
+	 * Aplica el catálogo en el buffer de edicion (no en el dataSource),
+	 * para que Cancelar revierta CORR + DESCRIPCION.
+	 */
+	setRequerimientoOrganizacionalCellValue = (
+		newData: ScDescriptorPuestoRequerimientoOrganizacional,
+		value: number | null,
+		_currentRowData: ScDescriptorPuestoRequerimientoOrganizacional
+	): void => {
+		const corr = value != null && Number(value) > 0 ? Number(value) : null;
+		const catalog = this.mCORR_REQUERIMIENTO_ORGANIZACIONAL.find(
+			(item) => Number(item.CORR_REQUERIMIENTO_ORGANIZACIONAL) === Number(corr)
+		);
+		newData.CORR_REQUERIMIENTO_ORGANIZACIONAL = corr;
+		newData.DESCRIPCION = catalog?.DESCRIPCION ?? '';
+	};
 
 	onPerfilEdadMinimaChanged(e: any): void {
 		if (this.readOnly) {
@@ -2310,6 +2550,46 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							})
 						);
 						this.actualizarCompetenciasConductualesLookupDisponibles();
+					}
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	private cargarRequerimientosOrganizacionales(forzar = false): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0) {
+			this.requerimientosOrganizacionales = [];
+			this.resetearEdicionRequerimientosOrganizacionales();
+			this.actualizarRequerimientosOrganizacionalesLookupDisponibles();
+			return;
+		}
+
+		const loadSeq = ++this.requerimientosOrganizacionalesLoadSeq;
+		this.service
+			.getRequerimientosOrganizacionalesLookup(corrDescriptor)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (loadSeq !== this.requerimientosOrganizacionalesLoadSeq) {
+						return;
+					}
+
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.resetearEdicionRequerimientosOrganizacionales();
+						this.requerimientosOrganizacionales = response.Data.map(
+							(item: ScDescriptorPuestoRequerimientoOrganizacional) => ({
+								CORR_DESCRIPTOR_PUESTO: item.CORR_DESCRIPTOR_PUESTO ?? corrDescriptor,
+								CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL:
+									item.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL,
+								DESCRIPCION: item.DESCRIPCION ?? '',
+								CORR_REQUERIMIENTO_ORGANIZACIONAL: item.CORR_REQUERIMIENTO_ORGANIZACIONAL ?? null,
+								_clientKey:
+									item.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL ||
+									this.crearClientKey('ro'),
+							})
+						);
+						this.actualizarRequerimientosOrganizacionalesLookupDisponibles();
 					}
 				},
 				error: (error) => this.notifyApiError(error),
@@ -2985,6 +3265,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.competenciasConductualesEditando = false;
 	}
 
+	private resetearEdicionRequerimientosOrganizacionales(): void {
+		this.requerimientosOrganizacionalesEditando = false;
+	}
+
 	private resetearEdicionRelacionesInternas(): void {
 		this.relacionesInternasEditando = false;
 	}
@@ -3427,6 +3711,81 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return new Promise((resolve) => {
 			this.service
 				.eliminarCompetenciaConductual(corr)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private persistirRequerimientoOrganizacionalDesdeGrid(
+		data: ScDescriptorPuestoRequerimientoOrganizacional,
+		esNuevo: boolean
+	): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		if (!corrDescriptor || corrDescriptor <= 0) {
+			this.notifyFx(
+				'Debe guardar el descriptor antes de registrar requerimientos organizacionales.',
+				NotifyType.Warning
+			);
+			return Promise.resolve(true);
+		}
+
+		const payload: ScDescriptorPuestoRequerimientoOrganizacional = {
+			...data,
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL: esNuevo
+				? 0
+				: Number(data.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL) || 0,
+			CORR_REQUERIMIENTO_ORGANIZACIONAL: Number(data.CORR_REQUERIMIENTO_ORGANIZACIONAL) || null,
+			DESCRIPCION: (data.DESCRIPCION ?? '').trim(),
+		};
+
+		return new Promise((resolve) => {
+			this.service
+				.persistirRequerimientoOrganizacional(corrDescriptor, payload)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						this.requerimientosOrganizacionalesEditando = false;
+						this.cargarRequerimientosOrganizacionales(true);
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private eliminarRequerimientoOrganizacionalDesdeGrid(
+		data: ScDescriptorPuestoRequerimientoOrganizacional
+	): Promise<boolean> {
+		const corr = Number(data?.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL);
+		if (!corr || corr <= 0) {
+			return Promise.resolve(false);
+		}
+
+		return new Promise((resolve) => {
+			this.service
+				.eliminarRequerimientoOrganizacional(corr)
 				.pipe(take(1))
 				.subscribe({
 					next: (response) => {

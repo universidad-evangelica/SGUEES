@@ -23,6 +23,8 @@ import { ScPerfilPuestoCompetenciasTecnicas } from './sc-perfil-puesto-competenc
 import { ScPerfilPuestoCompetenciasTecnicasRepository } from './sc-perfil-puesto-competencias-tecnicas/sc-perfil-puesto-competencias-tecnicas.repository';
 import { ScPerfilPuestoCompetenciasConductuales } from './sc-perfil-puesto-competencias-conductuales/models/sc-perfil-puesto-competencias-conductuales';
 import { ScPerfilPuestoCompetenciasConductualesRepository } from './sc-perfil-puesto-competencias-conductuales/sc-perfil-puesto-competencias-conductuales.repository';
+import { ScDescriptorPuestoRequerimientoOrganizacional } from './sc-descriptor-puesto-requerimiento-organizacional/models/sc-descriptor-puesto-requerimiento-organizacional';
+import { ScDescriptorPuestoRequerimientoOrganizacionalRepository } from './sc-descriptor-puesto-requerimiento-organizacional/sc-descriptor-puesto-requerimiento-organizacional.repository';
 import { ScDescriptorPuesto } from './models/sc-descriptor-puesto';
 import {
 	ESTADOS_DESCRIPTOR_BLOQUEO_CREACION,
@@ -55,6 +57,7 @@ export class ScDescriptorPuestoService {
 		private experienciaRepo: ScPerfilPuestoExperienciaRepository,
 		private competenciasTecnicasRepo: ScPerfilPuestoCompetenciasTecnicasRepository,
 		private competenciasConductualesRepo: ScPerfilPuestoCompetenciasConductualesRepository,
+		private requerimientosOrganizacionalesRepo: ScDescriptorPuestoRequerimientoOrganizacionalRepository,
 		private relacionLaboralRepo: ScDescriptorRelacionLaboralRepository
 	) {}
 
@@ -1005,6 +1008,56 @@ export class ScDescriptorPuestoService {
 
 		return this.competenciasConductualesRepo.delete([
 			{ Parameter: 'CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES', Value: corr },
+		]);
+	}
+
+	getRequerimientosOrganizacionalesLookup(corrDescriptorPuesto: number): Observable<IResult> {
+		return this.requerimientosOrganizacionalesRepo.getAll([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+		]);
+	}
+
+	persistirRequerimientoOrganizacional(
+		corrDescriptorPuesto: number,
+		row: ScDescriptorPuestoRequerimientoOrganizacional
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const payload = {
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL: row.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL ?? 0,
+			DESCRIPCION: (row.DESCRIPCION ?? '').trim() || null,
+			CORR_REQUERIMIENTO_ORGANIZACIONAL: row.CORR_REQUERIMIENTO_ORGANIZACIONAL ?? null,
+		};
+
+		if (
+			!row.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL ||
+			row.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL <= 0
+		) {
+			return this.requerimientosOrganizacionalesRepo.create(payload);
+		}
+
+		return this.requerimientosOrganizacionalesRepo.update(payload, [
+			{
+				Parameter: 'CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL',
+				Value: row.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL,
+			},
+		]);
+	}
+
+	eliminarRequerimientoOrganizacional(corrDescriptorRequerimientoOrganizacional: number): Observable<IResult> {
+		const corr = Number(corrDescriptorRequerimientoOrganizacional);
+		if (!corr || corr <= 0) {
+			return of({
+				Result: false,
+				Data: null,
+				ErrorCode: 1,
+				ErrorMessage: 'Debe indicar el requerimiento organizacional a eliminar.',
+				RowsAffected: 0,
+			} as IResult);
+		}
+
+		return this.requerimientosOrganizacionalesRepo.delete([
+			{ Parameter: 'CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL', Value: corr },
 		]);
 	}
 
