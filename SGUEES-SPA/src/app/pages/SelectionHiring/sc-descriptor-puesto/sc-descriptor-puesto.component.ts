@@ -33,7 +33,14 @@ import {
 import { ScPerfilPuestoEducacion } from './sc-perfil-puesto-educacion/models/sc-perfil-puesto-educacion';
 import { ScPerfilPuestoExperiencia } from './sc-perfil-puesto-experiencia/models/sc-perfil-puesto-experiencia';
 import { ScPerfilPuestoCompetenciasTecnicas } from './sc-perfil-puesto-competencias-tecnicas/models/sc-perfil-puesto-competencias-tecnicas';
-import { MockPuesto, MockUnidad, ScCompetenciaTecnicaLookupItem, ScDescriptorPuesto } from './models/sc-descriptor-puesto';
+import { ScPerfilPuestoCompetenciasConductuales } from './sc-perfil-puesto-competencias-conductuales/models/sc-perfil-puesto-competencias-conductuales';
+import {
+	MockPuesto,
+	MockUnidad,
+	ScCompetenciaConductualLookupItem,
+	ScCompetenciaTecnicaLookupItem,
+	ScDescriptorPuesto,
+} from './models/sc-descriptor-puesto';
 import {
 	FORMATO_CORTA,
 	FORMATO_EXTENSA,
@@ -60,6 +67,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	@ViewChild('gridEducacion', { static: false }) gridEducacion?: DxDataGridComponent;
 	@ViewChild('gridExperiencia', { static: false }) gridExperiencia?: DxDataGridComponent;
 	@ViewChild('gridCompetenciasTecnicas', { static: false }) gridCompetenciasTecnicas?: DxDataGridComponent;
+	@ViewChild('gridCompetenciasConductuales', { static: false }) gridCompetenciasConductuales?: DxDataGridComponent;
 	@ViewChild('gridActividades', { static: false }) gridActividades?: DxDataGridComponent;
 
 	protected override etiquetaRegistro = 'el descriptor de puesto';
@@ -85,6 +93,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_TIPO_MODALIDAD: ScTipoModalidadLookup[] = [];
 	mCORR_COMPETENCIAS_TECNICAS: ScCompetenciaTecnicaLookupItem[] = [];
 	mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES: ScCompetenciaTecnicaLookupItem[] = [];
+	mCORR_COMPETENCIAS_CONDUCTUALES: ScCompetenciaConductualLookupItem[] = [];
+	mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES: ScCompetenciaConductualLookupItem[] = [];
 	reportaLookupColumns = [
 		{ dataField: 'RESPONSABLE', caption: 'Nombre', width: 220 },
 		{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260 },
@@ -97,10 +107,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ dataField: 'NOMBRE_COMPETENCIAS_TECNICAS', caption: 'Competencia NIV3', width: 220 },
 		{ dataField: 'DESCRIPCION', caption: 'Definicion', width: 260 },
 	];
+	competenciasConductualesLookupColumns = [
+		{ dataField: 'CORR_COMPETENCIAS_CONDUCTUALES', caption: 'Codigo', width: 90 },
+		{ dataField: 'NOMBRE_COMPETENCIAS_CONDUCTUALES', caption: 'Competencia', width: 220 },
+		{ dataField: 'NOMBRE_TIPO_PUESTO', caption: 'Tipo puesto', width: 180 },
+		{ dataField: 'DESCRIPCION', caption: 'Descripcion', width: 260 },
+	];
 
 	headerItems: any[] = [];
-	columnsTabBitacora: any[] = [];
-	summaryTabBitacora: any;
 	itemsTabBitacora: any[] = [];
 
 	funcionesClave: ScDescriptorFuncion[] = [];
@@ -109,16 +123,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	educaciones: ScPerfilPuestoEducacion[] = [];
 	experiencias: ScPerfilPuestoExperiencia[] = [];
 	competenciasTecnicas: ScPerfilPuestoCompetenciasTecnicas[] = [];
+	competenciasConductuales: ScPerfilPuestoCompetenciasConductuales[] = [];
 	funcionesClaveEditando = false;
 	funcionesSecundariasEditando = false;
 	kpisEditando = false;
 	educacionEditando = false;
 	experienciaEditando = false;
 	competenciasTecnicasEditando = false;
+	competenciasConductualesEditando = false;
 	actividadesEditando = false;
 	perfil: ScDescriptorPerfilPuesto = { ...PERFIL_PUESTO_DEFAULT };
 	perfilSubTabIndex = 0;
 	competenciasSubTabIndex = 0;
+	relacionesSubTabIndex = 0;
 	perfilSexoOptions: Array<{ Key: any; Value: string }> = [];
 	perfilEstadoFamiliarOptions: Array<{ Key: any; Value: string }> = [];
 	perfilLicenciaOptions: Array<{ Key: any; Value: string }> = [];
@@ -136,6 +153,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private educacionLoadSeq = 0;
 	private experienciaLoadSeq = 0;
 	private competenciasTecnicasLoadSeq = 0;
+	private competenciasConductualesLoadSeq = 0;
 	private perfilLoadSeq = 0;
 	private perfilExiste = false;
 	private sincronizandoHeader = false;
@@ -165,6 +183,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.selectedLookUpCORR_DISPONIBILIDAD_HORARIO = this.selectedLookUpCORR_DISPONIBILIDAD_HORARIO.bind(this);
 		this.selectedLookUpCORR_TIPO_MODALIDAD = this.selectedLookUpCORR_TIPO_MODALIDAD.bind(this);
 		this.selectedLookUpCORR_COMPETENCIAS_TECNICAS = this.selectedLookUpCORR_COMPETENCIAS_TECNICAS.bind(this);
+		this.selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES = this.selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES.bind(this);
 		this.funcionClaveEditButtonVisible = this.funcionClaveEditButtonVisible.bind(this);
 		this.funcionClaveDeleteButtonVisible = this.funcionClaveDeleteButtonVisible.bind(this);
 		this.editarFuncionClaveClick = this.editarFuncionClaveClick.bind(this);
@@ -183,14 +202,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.competenciaTecnicaEditButtonVisible = this.competenciaTecnicaEditButtonVisible.bind(this);
 		this.competenciaTecnicaDeleteButtonVisible = this.competenciaTecnicaDeleteButtonVisible.bind(this);
 		this.editarCompetenciaTecnicaClick = this.editarCompetenciaTecnicaClick.bind(this);
+		this.competenciaConductualEditButtonVisible = this.competenciaConductualEditButtonVisible.bind(this);
+		this.competenciaConductualDeleteButtonVisible = this.competenciaConductualDeleteButtonVisible.bind(this);
+		this.editarCompetenciaConductualClick = this.editarCompetenciaConductualClick.bind(this);
 		this.actividadEditButtonVisible = this.actividadEditButtonVisible.bind(this);
 		this.actividadDeleteButtonVisible = this.actividadDeleteButtonVisible.bind(this);
 		this.editarActividadClick = this.editarActividadClick.bind(this);
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.headerItems = this.service.getHeaderItems();
-		this.columnsTabBitacora = this.service.getBitacoraColumns();
-		this.summaryTabBitacora = this.service.getBitacoraSummary();
 	}
 
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
@@ -206,6 +226,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	ngOnDestroy(): void {
 		this.actividadesPopupMediaQuery?.removeEventListener('change', this.onActividadesPopupMediaChange);
+		if (this.perfilPersistTimer) {
+			clearTimeout(this.perfilPersistTimer);
+			this.perfilPersistTimer = null;
+		}
 	}
 
 	private configurarActividadesPopupResponsive(): void {
@@ -225,6 +249,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.getCORR_DISPONIBILIDAD_HORARIO();
 		this.getCORR_TIPO_MODALIDAD();
 		this.getCORR_COMPETENCIAS_TECNICAS_NIV3();
+		this.getCORR_COMPETENCIAS_CONDUCTUALES();
 		this.getFORMATO();
 		this.getNIVEL_DOMINIO();
 		this.getSEXO();
@@ -514,6 +539,46 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	getCORR_COMPETENCIAS_CONDUCTUALES(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_COMPETENCIAS_CONDUCTUALES',
+				'GetCORR_COMPETENCIAS_CONDUCTUALES',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result || !Array.isArray(response.Data)) {
+						this.mCORR_COMPETENCIAS_CONDUCTUALES = [];
+						this.mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES = [];
+						return;
+					}
+
+					this.mCORR_COMPETENCIAS_CONDUCTUALES = response.Data.map((item: any) => {
+						const nombre = (item.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim();
+						const descripcion = (item.DESCRIPCION ?? nombre).trim();
+						const tipoPuesto = (item.NOMBRE_TIPO_PUESTO ?? '').trim();
+
+						return {
+							CORR_COMPETENCIAS_CONDUCTUALES: Number(item.CORR_COMPETENCIAS_CONDUCTUALES),
+							NOMBRE_COMPETENCIAS_CONDUCTUALES: nombre,
+							DESCRIPCION: descripcion,
+							NOMBRE_TIPO_PUESTO: tipoPuesto,
+						};
+					});
+					this.actualizarCompetenciasConductualesLookupDisponibles();
+				},
+				error: (error) => {
+					this.mCORR_COMPETENCIAS_CONDUCTUALES = [];
+					this.mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES = [];
+					this.notifyApiError(error);
+				},
+			});
+	}
+
 	selectedLookUpCORR_UNIDAD(vRow: any): number {
 		return vRow[0].CORR_UNIDAD;
 	}
@@ -540,6 +605,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	selectedLookUpCORR_COMPETENCIAS_TECNICAS(vRow: any): number {
 		return vRow[0].CORR_COMPETENCIAS_TECNICAS;
+	}
+
+	selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES(vRow: any): number {
+		return vRow[0].CORR_COMPETENCIAS_CONDUCTUALES;
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -715,13 +784,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.educaciones = [];
 		this.experiencias = [];
 		this.competenciasTecnicas = [];
+		this.competenciasConductuales = [];
 		this.competenciasSubTabIndex = 0;
+		this.relacionesSubTabIndex = 0;
 		this.resetearEdicionFuncionesClave();
 		this.resetearEdicionFuncionesSecundarias();
 		this.resetearEdicionKpis();
 		this.resetearEdicionEducacion();
 		this.resetearEdicionExperiencia();
 		this.resetearEdicionCompetenciasTecnicas();
+		this.resetearEdicionCompetenciasConductuales();
 		this.limpiarPerfil();
 		this.resetearFuncionesTabsDirty();
 		this.cerrarActividadesPopup();
@@ -1018,11 +1090,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	actividadRowRemoving(e: any): void {
 		e.cancel = this.eliminarActividadDesdeGrid(e.data);
 	}
-
-	get actividadesPopupVisibles(): ScDescriptorFuncionActividad[] {
-		return this.actividadesPopup;
-	}
-
 
 	agregarKpi(): void {
 		if (this.readOnly || this.kpisEditando || !this.esFormatoCorta || !this.requiereDescriptorGuardado()) {
@@ -1477,6 +1544,178 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	agregarCompetenciaConductual(): void {
+		if (this.readOnly || this.competenciasConductualesEditando || !this.requiereDescriptorGuardado()) {
+			return;
+		}
+
+		this.asegurarPerfilParaDetalle(() => {
+			this.actualizarCompetenciasConductualesLookupDisponibles();
+			this.gridCompetenciasConductuales?.instance.addRow();
+			this.competenciasConductualesEditando = true;
+		});
+	}
+
+	editarCompetenciaConductualClick(e: any): void {
+		if (this.readOnly || this.competenciasConductualesEditando) {
+			return;
+		}
+		this.actualizarCompetenciasConductualesLookupDisponibles(
+			Number(e?.row?.data?.CORR_COMPETENCIAS_CONDUCTUALES) || null
+		);
+		e.component.editRow(e.row.rowIndex);
+		this.competenciasConductualesEditando = true;
+	}
+
+	competenciaConductualEditButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
+
+	competenciaConductualDeleteButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
+
+	guardarCompetenciaConductualEditada(): void {
+		const grid = this.gridCompetenciasConductuales?.instance;
+		if (!grid || !this.competenciasConductualesEditando) {
+			this.notifyFx('No hay una linea en edicion', NotifyType.Warning);
+			return;
+		}
+		grid.saveEditData();
+	}
+
+	cancelarCompetenciaConductualEditada(): void {
+		this.cancelarEdicionGrid(this.gridCompetenciasConductuales?.instance, () => {
+			this.competenciasConductualesEditando = false;
+		});
+	}
+
+	competenciaConductualInitNewRow(e: any): void {
+		e.data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES = 0;
+		e.data.CORR_PERFIL_PUESTO = Number(this.perfil?.CORR_PERFIL_PUESTO) || 0;
+		e.data.CORR_COMPETENCIAS_CONDUCTUALES = null;
+		e.data.NOMBRE_COMPETENCIAS_CONDUCTUALES = '';
+		e.data.DESCRIPCION = '';
+		e.data._clientKey = this.crearClientKey('cc');
+		this.actualizarCompetenciasConductualesLookupDisponibles();
+	}
+
+	onCompetenciaConductualEditingStart(e: any): void {
+		this.actualizarCompetenciasConductualesLookupDisponibles(
+			Number(e?.data?.CORR_COMPETENCIAS_CONDUCTUALES) || null
+		);
+		this.competenciasConductualesEditando = true;
+	}
+
+	onCompetenciaConductualSaved(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.competenciasConductualesEditando = false;
+		});
+	}
+
+	onCompetenciaConductualEditCanceled(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.competenciasConductualesEditando = false;
+		});
+	}
+
+	competenciaConductualRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!(Number(data.CORR_COMPETENCIAS_CONDUCTUALES) > 0)) {
+			e.isValid = false;
+			e.errorText = 'Debe seleccionar una competencia conductual.';
+			return;
+		}
+		if (!(data.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim()) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar el nombre de la competencia.';
+			return;
+		}
+
+		const corrCatalogo = Number(data.CORR_COMPETENCIAS_CONDUCTUALES);
+		const clientKey = data._clientKey ?? e?.key;
+		const duplicada = (this.competenciasConductuales || []).some((row) => {
+			if (!(Number(row.CORR_COMPETENCIAS_CONDUCTUALES) > 0)) {
+				return false;
+			}
+			if (clientKey != null && row._clientKey === clientKey) {
+				return false;
+			}
+			return Number(row.CORR_COMPETENCIAS_CONDUCTUALES) === corrCatalogo;
+		});
+		if (duplicada) {
+			e.isValid = false;
+			e.errorText = 'Esa competencia conductual ya esta agregada en el descriptor.';
+		}
+	}
+
+	competenciaConductualRowInserting(e: any): void {
+		e.cancel = this.persistirCompetenciaConductualDesdeGrid(e.data, true);
+	}
+
+	competenciaConductualRowUpdating(e: any): void {
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = this.persistirCompetenciaConductualDesdeGrid(data, false);
+	}
+
+	competenciaConductualRowRemoving(e: any): void {
+		e.cancel = this.eliminarCompetenciaConductualDesdeGrid(e.data);
+	}
+
+	competenciaConductualCatalogDisplay = (row: ScPerfilPuestoCompetenciasConductuales): string => {
+		const corr = Number(row?.CORR_COMPETENCIAS_CONDUCTUALES);
+		if (!(corr > 0)) {
+			return '';
+		}
+		return String(corr);
+	};
+
+	private actualizarCompetenciasConductualesLookupDisponibles(
+		corrConservar: number | null = null
+	): void {
+		const usados = new Set(
+			(this.competenciasConductuales || [])
+				.map((row) => Number(row.CORR_COMPETENCIAS_CONDUCTUALES))
+				.filter((corr) => corr > 0 && corr !== Number(corrConservar || 0))
+		);
+
+		this.mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES = (
+			this.mCORR_COMPETENCIAS_CONDUCTUALES || []
+		).filter((item) => {
+			const corr = Number(item.CORR_COMPETENCIAS_CONDUCTUALES);
+			if (!(corr > 0)) {
+				return false;
+			}
+			if (corrConservar != null && corr === Number(corrConservar)) {
+				return true;
+			}
+			return !usados.has(corr);
+		});
+	}
+
+	onCompetenciaConductualLookupChanged(value: number | null, cellInfo: any): void {
+		const corr = value != null && value > 0 ? Number(value) : null;
+		const catalog = this.mCORR_COMPETENCIAS_CONDUCTUALES.find(
+			(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === Number(corr)
+		);
+		cellInfo.setValue(corr);
+
+		const nombre = catalog?.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '';
+		const descripcion = catalog?.DESCRIPCION ?? '';
+		if (cellInfo.data) {
+			cellInfo.data.CORR_COMPETENCIAS_CONDUCTUALES = corr;
+			cellInfo.data.NOMBRE_COMPETENCIAS_CONDUCTUALES = nombre;
+			cellInfo.data.DESCRIPCION = descripcion;
+		}
+
+		const grid = cellInfo.component;
+		const rowIndex = cellInfo.rowIndex;
+		if (grid != null && typeof rowIndex === 'number') {
+			grid.cellValue(rowIndex, 'NOMBRE_COMPETENCIAS_CONDUCTUALES', nombre);
+			grid.cellValue(rowIndex, 'DESCRIPCION', descripcion);
+		}
+	}
+
 	onPerfilEdadMinimaChanged(e: any): void {
 		if (this.readOnly) {
 			return;
@@ -1563,10 +1802,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.educaciones = [];
 		this.experiencias = [];
 		this.competenciasTecnicas = [];
+		this.competenciasConductuales = [];
 		this.resetearEdicionEducacion();
 		this.resetearEdicionExperiencia();
 		this.resetearEdicionCompetenciasTecnicas();
+		this.resetearEdicionCompetenciasConductuales();
 		this.actualizarCompetenciasTecnicasLookupDisponibles();
+		this.actualizarCompetenciasConductualesLookupDisponibles();
 	}
 
 	private cargarPerfil(forzar = false): void {
@@ -1606,17 +1848,65 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.cargarEducacion(forzar);
 						this.cargarExperiencia(forzar);
 						this.cargarCompetenciasTecnicas(forzar);
+						this.cargarCompetenciasConductuales(forzar);
 						return;
 					}
 
-					this.perfil = { ...PERFIL_PUESTO_DEFAULT };
-					this.perfilExiste = false;
-					this.educaciones = [];
-					this.experiencias = [];
-					this.competenciasTecnicas = [];
-					this.resetearEdicionEducacion();
-					this.resetearEdicionExperiencia();
-					this.resetearEdicionCompetenciasTecnicas();
+					// 1 perfil por descriptor: si no existe, crearlo con valores por defecto.
+					this.crearPerfilPorDefecto(corrDescriptor, loadSeq, forzar);
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	private crearPerfilPorDefecto(corrDescriptor: number, loadSeq: number, forzar = false): void {
+		this.perfil = {
+			...PERFIL_PUESTO_DEFAULT,
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_PERFIL_PUESTO: 0,
+		};
+		this.perfilExiste = false;
+		this.educaciones = [];
+		this.experiencias = [];
+		this.competenciasTecnicas = [];
+		this.competenciasConductuales = [];
+		this.resetearEdicionEducacion();
+		this.resetearEdicionExperiencia();
+		this.resetearEdicionCompetenciasTecnicas();
+		this.resetearEdicionCompetenciasConductuales();
+
+		this.service
+			.persistirPerfil(corrDescriptor, this.perfil, false)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (loadSeq !== this.perfilLoadSeq) {
+						return;
+					}
+
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+
+					const saved = response.Data as ScDescriptorPerfilPuesto;
+					if (saved) {
+						this.perfil = {
+							...this.perfil,
+							...saved,
+						};
+						this.perfilExiste = true;
+					} else if (Number(response?.CodeHelper) > 0) {
+						this.perfil.CORR_PERFIL_PUESTO = Number(response.CodeHelper);
+						this.perfilExiste = true;
+					}
+
+					if (Number(this.perfil.CORR_PERFIL_PUESTO) > 0) {
+						this.cargarEducacion(forzar);
+						this.cargarExperiencia(forzar);
+						this.cargarCompetenciasTecnicas(forzar);
+						this.cargarCompetenciasConductuales(forzar);
+					}
 				},
 				error: (error) => this.notifyApiError(error),
 			});
@@ -1669,6 +1959,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.cargarEducacion(true);
 						this.cargarExperiencia(true);
 						this.cargarCompetenciasTecnicas(true);
+						this.cargarCompetenciasConductuales(true);
 					}
 				},
 				error: (error) => this.notifyApiError(error),
@@ -1787,6 +2078,48 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	private cargarCompetenciasConductuales(forzar = false): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corrPerfil || corrPerfil <= 0) {
+			this.competenciasConductuales = [];
+			this.resetearEdicionCompetenciasConductuales();
+			this.actualizarCompetenciasConductualesLookupDisponibles();
+			return;
+		}
+
+		const loadSeq = ++this.competenciasConductualesLoadSeq;
+		this.service
+			.getCompetenciasConductualesLookup(corrDescriptor, corrPerfil)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (loadSeq !== this.competenciasConductualesLoadSeq) {
+						return;
+					}
+
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.resetearEdicionCompetenciasConductuales();
+						this.competenciasConductuales = response.Data.map(
+							(item: ScPerfilPuestoCompetenciasConductuales) => ({
+								CORR_PERFIL_PUESTO: item.CORR_PERFIL_PUESTO ?? corrPerfil,
+								CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES:
+									item.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES,
+								NOMBRE_COMPETENCIAS_CONDUCTUALES: item.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '',
+								DESCRIPCION: item.DESCRIPCION ?? '',
+								CORR_COMPETENCIAS_CONDUCTUALES: item.CORR_COMPETENCIAS_CONDUCTUALES ?? null,
+								_clientKey:
+									item.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES ||
+									this.crearClientKey('cc'),
+							})
+						);
+						this.actualizarCompetenciasConductualesLookupDisponibles();
+					}
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
 	private cargarKpis(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoCorta) {
@@ -1888,7 +2221,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	private actualizarContadorActividades(funcion: ScDescriptorFuncion): void {
-		funcion.CANT_ACTIVIDADES = this.actividadesPopupVisibles.length;
+		funcion.CANT_ACTIVIDADES = this.actividadesPopup.length;
 	}
 
 	private cargarFuncionesSecundarias(forzar = false): void {
@@ -2362,6 +2695,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.competenciasTecnicasEditando = false;
 	}
 
+	private resetearEdicionCompetenciasConductuales(): void {
+		this.competenciasConductualesEditando = false;
+	}
+
 	/** Visibilidad Options: usa editRowKey (no e.row.isEditing, que puede quedar pegado tras Cancelar). */
 	private accionGridVisible(e: any): boolean {
 		if (this.readOnly) {
@@ -2396,13 +2733,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			clearFlag();
 			return;
 		}
-		const editKey = grid.option?.('editing.editRowKey');
-		if (grid.hasEditData?.() || editKey != null) {
-			grid.cancelEditData();
-			return;
+		try {
+			const editKey = grid.option?.('editing.editRowKey');
+			if (grid.hasEditData?.() || editKey != null) {
+				grid.cancelEditData();
+			} else {
+				grid.repaint?.();
+			}
+		} catch {
+			// Si el grid ya se desmontó, igual liberamos el flag de edicion.
 		}
 		clearFlag();
-		grid.repaint?.();
 	}
 
 	private crearClientKey(prefix: string): string {
@@ -2715,6 +3056,83 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return new Promise((resolve) => {
 			this.service
 				.eliminarCompetenciaTecnica(corr)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private persistirCompetenciaConductualDesdeGrid(
+		data: ScPerfilPuestoCompetenciasConductuales,
+		esNuevo: boolean
+	): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
+		if (!corrPerfil || corrPerfil <= 0) {
+			this.notifyFx(
+				'Debe guardar el perfil antes de registrar competencias conductuales.',
+				NotifyType.Warning
+			);
+			return Promise.resolve(true);
+		}
+
+		const payload: ScPerfilPuestoCompetenciasConductuales = {
+			...data,
+			CORR_PERFIL_PUESTO: corrPerfil,
+			CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES: esNuevo
+				? 0
+				: Number(data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES) || 0,
+			CORR_COMPETENCIAS_CONDUCTUALES: Number(data.CORR_COMPETENCIAS_CONDUCTUALES) || null,
+			NOMBRE_COMPETENCIAS_CONDUCTUALES: (data.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim(),
+			DESCRIPCION: (data.DESCRIPCION ?? '').trim(),
+		};
+
+		return new Promise((resolve) => {
+			this.service
+				.persistirCompetenciaConductual(corrDescriptor, corrPerfil, payload)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						this.competenciasConductualesEditando = false;
+						this.cargarCompetenciasConductuales(true);
+						resolve(false);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private eliminarCompetenciaConductualDesdeGrid(
+		data: ScPerfilPuestoCompetenciasConductuales
+	): Promise<boolean> {
+		const corr = Number(data?.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES);
+		if (!corr || corr <= 0) {
+			return Promise.resolve(false);
+		}
+
+		return new Promise((resolve) => {
+			this.service
+				.eliminarCompetenciaConductual(corr)
 				.pipe(take(1))
 				.subscribe({
 					next: (response) => {

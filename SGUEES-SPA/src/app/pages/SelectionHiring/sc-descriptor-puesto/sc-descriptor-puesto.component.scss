@@ -560,6 +560,28 @@
 	padding: 16px 4px 4px;
 }
 
+.descriptor-relaciones-header {
+	margin-bottom: 4px;
+}
+
+.descriptor-relaciones-icon {
+	margin-right: 8px;
+	font-size: 1rem;
+}
+
+.descriptor-relaciones-tab-panel {
+	margin-top: 4px;
+}
+
+:host ::ng-deep .descriptor-relaciones-tab-panel .dx-multiview-item,
+:host ::ng-deep .descriptor-relaciones-tab-panel .dx-multiview-item-content {
+	overflow: visible;
+}
+
+.descriptor-relaciones-tab-content {
+	padding: 16px 4px 4px;
+}
+
 .descriptor-competencias-tecnicas-toolbar {
 	display: flex;
 	flex-wrap: wrap;
@@ -595,6 +617,10 @@
 }
 
 :host ::ng-deep .descriptor-competencias-tab-panel .dx-tab {
+	min-width: 140px;
+}
+
+:host ::ng-deep .descriptor-relaciones-tab-panel .dx-tab {
 	min-width: 140px;
 }
 

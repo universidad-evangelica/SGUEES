@@ -225,6 +225,9 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
                 };
 
+                // Solo elimina el perfil de puesto vinculado al descriptor.
+                await objData.Delete("SC_PERFIL_PUESTO", pWhere);
+
                 objResultado.RowsAffected = (int)await objData.Delete(_TableName, pWhere);
                 objResultado.Data = null;
                 objResultado.Result = true;

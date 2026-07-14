@@ -19,6 +19,8 @@ import { ScPerfilPuestoExperiencia } from './sc-perfil-puesto-experiencia/models
 import { ScPerfilPuestoExperienciaRepository } from './sc-perfil-puesto-experiencia/sc-perfil-puesto-experiencia.repository';
 import { ScPerfilPuestoCompetenciasTecnicas } from './sc-perfil-puesto-competencias-tecnicas/models/sc-perfil-puesto-competencias-tecnicas';
 import { ScPerfilPuestoCompetenciasTecnicasRepository } from './sc-perfil-puesto-competencias-tecnicas/sc-perfil-puesto-competencias-tecnicas.repository';
+import { ScPerfilPuestoCompetenciasConductuales } from './sc-perfil-puesto-competencias-conductuales/models/sc-perfil-puesto-competencias-conductuales';
+import { ScPerfilPuestoCompetenciasConductualesRepository } from './sc-perfil-puesto-competencias-conductuales/sc-perfil-puesto-competencias-conductuales.repository';
 import { ScDescriptorPuesto } from './models/sc-descriptor-puesto';
 import {
 	ESTADOS_DESCRIPTOR_BLOQUEO_CREACION,
@@ -47,7 +49,8 @@ export class ScDescriptorPuestoService {
 		private perfilRepo: ScDescriptorPerfilPuestoRepository,
 		private educacionRepo: ScPerfilPuestoEducacionRepository,
 		private experienciaRepo: ScPerfilPuestoExperienciaRepository,
-		private competenciasTecnicasRepo: ScPerfilPuestoCompetenciasTecnicasRepository
+		private competenciasTecnicasRepo: ScPerfilPuestoCompetenciasTecnicasRepository,
+		private competenciasConductualesRepo: ScPerfilPuestoCompetenciasConductualesRepository
 	) {}
 
 	esValido(model: ScDescriptorPuesto, msg: Function): boolean {
@@ -381,37 +384,6 @@ export class ScDescriptorPuestoService {
 				editorOptions: { readOnly: true },
 			},
 		];
-	}
-
-	getBitacoraColumns(): any[] {
-		return [
-			{ dataField: 'NOMBRE_ESTADO', caption: 'Estado', width: 160 },
-			{ dataField: 'USUARIO', caption: 'Usuario', width: 160 },
-			{ dataField: 'OBSERVACIONES', caption: 'Observaciones', width: 320 },
-			{
-				dataField: 'FECHA',
-				caption: 'Fecha',
-				width: 180,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-			},
-		];
-	}
-
-	getBitacoraSummary(): any {
-		return {
-			totalItems: [{ column: 'NOMBRE_ESTADO', summaryType: 'count', displayFormat: 'Cant: {0}' }],
-		};
-	}
-
-	getFormatoLabel(formato: string): string {
-		if (formato === FORMATO_EXTENSA) {
-			return 'Version extensa';
-		}
-		if (formato === FORMATO_CORTA) {
-			return 'Version corta';
-		}
-		return formato ?? '';
 	}
 
 	private toApiPayload(model: ScDescriptorPuesto): any {
@@ -913,6 +885,61 @@ export class ScDescriptorPuestoService {
 
 		return this.competenciasTecnicasRepo.delete([
 			{ Parameter: 'CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS', Value: corr },
+		]);
+	}
+
+	getCompetenciasConductualesLookup(corrDescriptorPuesto: number, corrPerfilPuesto: number): Observable<IResult> {
+		return this.competenciasConductualesRepo.getAll([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+			{ Parameter: 'CORR_PERFIL_PUESTO', Value: corrPerfilPuesto },
+		]);
+	}
+
+	persistirCompetenciaConductual(
+		corrDescriptorPuesto: number,
+		corrPerfilPuesto: number,
+		row: ScPerfilPuestoCompetenciasConductuales
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrPerfil = Number(corrPerfilPuesto);
+		const payload = {
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_PERFIL_PUESTO: corrPerfil,
+			CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES: row.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES ?? 0,
+			NOMBRE_COMPETENCIAS_CONDUCTUALES: (row.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim() || null,
+			DESCRIPCION: (row.DESCRIPCION ?? '').trim() || null,
+			CORR_COMPETENCIAS_CONDUCTUALES: row.CORR_COMPETENCIAS_CONDUCTUALES ?? null,
+		};
+
+		if (
+			!row.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES ||
+			row.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES <= 0
+		) {
+			return this.competenciasConductualesRepo.create(payload);
+		}
+
+		return this.competenciasConductualesRepo.update(payload, [
+			{
+				Parameter: 'CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES',
+				Value: row.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES,
+			},
+		]);
+	}
+
+	eliminarCompetenciaConductual(corrPerfilPuestoCompetenciasConductuales: number): Observable<IResult> {
+		const corr = Number(corrPerfilPuestoCompetenciasConductuales);
+		if (!corr || corr <= 0) {
+			return of({
+				Result: false,
+				Data: null,
+				ErrorCode: 1,
+				ErrorMessage: 'Debe indicar la competencia conductual a eliminar.',
+				RowsAffected: 0,
+			} as IResult);
+		}
+
+		return this.competenciasConductualesRepo.delete([
+			{ Parameter: 'CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES', Value: corr },
 		]);
 	}
 

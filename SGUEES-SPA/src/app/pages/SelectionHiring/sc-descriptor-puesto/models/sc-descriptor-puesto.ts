@@ -54,3 +54,10 @@ export interface ScCompetenciaTecnicaLookupItem {
 	GRUPO_PADRE: string;
 	NIVEL: string;
 }
+
+export interface ScCompetenciaConductualLookupItem {
+	CORR_COMPETENCIAS_CONDUCTUALES: number;
+	NOMBRE_COMPETENCIAS_CONDUCTUALES: string;
+	DESCRIPCION: string;
+	NOMBRE_TIPO_PUESTO?: string;
+}

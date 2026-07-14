@@ -81,6 +81,14 @@ namespace SGUEES.Controllers
       return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
     }
 
+    [HttpGet("GetCORR_COMPETENCIAS_CONDUCTUALES_SC_DESCRIPTOR_PUESTO")]
+    [Authorize(Policy = "/sc-descriptor-puesto|R")]
+    public async Task<CResult> GetCORR_COMPETENCIAS_CONDUCTUALES_SC_DESCRIPTOR_PUESTO([FromQuery] SC_COMPETENCIAS_CONDUCTUALESParam Data)
+    {
+      Data.CORR_EMPRESA = GetCorrEmpresa();
+      return await _service.GetCatalogoDescriptorAsync(Data);
+    }
+
     private int GetCorrEmpresa()
     {
       var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
