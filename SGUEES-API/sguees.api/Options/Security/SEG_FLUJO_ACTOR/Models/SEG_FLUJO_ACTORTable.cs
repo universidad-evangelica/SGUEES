@@ -10,6 +10,7 @@ namespace sguees.Models
         public string NOMBRE_ACTOR { get; set; }
         public string DESCRIPCION { get; set; }
         public bool REQUIERE_UNIDAD { get; set; }
+         public bool RESOLUCION_AUTOMATICA { get; set; }
         public bool ACTIVO { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }

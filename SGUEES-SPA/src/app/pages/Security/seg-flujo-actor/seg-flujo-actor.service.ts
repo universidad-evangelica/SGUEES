@@ -75,6 +75,13 @@ export class SegFlujoActorService {
                 customizeText: (e: any) => e.value ? 'Sí' : 'No',
             },
             {
+                dataField: 'RESOLUCION_AUTOMATICA',
+                caption: 'Resolución automatica',
+                width: 250,
+                dataType: 'boolean',
+                customizeText: (e: any) => e.value ? 'Sí' : 'No',
+            },
+            {
                 dataField: 'ACTIVO',
                 caption: 'Activo',
                 width: 150,
@@ -141,6 +148,13 @@ export class SegFlujoActorService {
             {
                 dataField: 'REQUIERE_UNIDAD',
                 label: { text: 'Requiere Unidad' },
+                colSpan: 2,
+                editorType: 'dxCheckBox',
+            },
+            {
+                dataField: 'RESOLUCION_AUTOMATICA',
+                disabled:true,
+                label: { text: 'Resolución automatica' },
                 colSpan: 2,
                 editorType: 'dxCheckBox',
             },

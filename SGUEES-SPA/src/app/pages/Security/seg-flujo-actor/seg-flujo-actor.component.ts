@@ -37,7 +37,25 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
         this.consultar();
     }
 
-    inicializaOpciones() {}
+    inicializaOpciones() {
+        const resoCol = this.columns.find((c: any) => c.dataField === 'RESOLUCION_AUTOMATICA');
+        if (resoCol) {
+            resoCol.cellTemplate = (container: HTMLElement, options: any) => {
+                container.textContent = options.data.RESOLUCION_AUTOMATICA ? 'Sí' : 'No';
+                if (options.data.RESOLUCION_AUTOMATICA) {
+                    requestAnimationFrame(() => {
+                        const rowElements: HTMLElement[] = options.component.getRowElement(options.rowIndex) || [];
+                        rowElements.forEach((rowEl: HTMLElement) => {
+                            const editBtn = rowEl.querySelector<HTMLElement>('.sguees-grid-action-edit');
+                            const deleteBtn = rowEl.querySelector<HTMLElement>('.sguees-grid-action-delete');
+                            if (editBtn) editBtn.style.display = 'none';
+                            if (deleteBtn) deleteBtn.style.display = 'none';
+                        });
+                    });
+                }
+            };
+        }
+    }
     // #endregion
 
     //#region <Metodos Mtto>
@@ -58,6 +76,7 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
                 NOMBRE_ACTOR: xModel.NOMBRE_ACTOR,
                 DESCRIPCION: xModel.DESCRIPCION,
                 REQUIERE_UNIDAD: xModel.REQUIERE_UNIDAD,
+                RESOLUCION_AUTOMATICA: xModel.REQUIERE_UNIDAD,
                 ACTIVO: xModel.ACTIVO,
                 USUARIO_CREA: xModel.USUARIO_CREA,
                 ESTACION_CREA: xModel.ESTACION_CREA,
@@ -73,6 +92,7 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
                 NOMBRE_ACTOR: '',
                 DESCRIPCION: '',
                 REQUIERE_UNIDAD: false,
+                RESOLUCION_AUTOMATICA: false,
                 ACTIVO: true,
                 USUARIO_CREA: '',
                 ESTACION_CREA: '',
@@ -155,6 +175,7 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
     }
 
     override cancelar(): void {
+        
         super.cancelar((item: any) => item.CORR_ACTOR === this.modelUpdate.CORR_ACTOR);
     }
 
