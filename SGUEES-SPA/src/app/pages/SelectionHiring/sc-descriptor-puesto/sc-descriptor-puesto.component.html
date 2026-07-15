@@ -1865,63 +1865,8 @@
 								caption="Informacion"
 								[minWidth]="280"
 								[allowSorting]="true"
-								[calculateDisplayValue]="riesgoPuestoInformacionDisplay"
-								[cellTemplate]="'riesgoPuestoInformacionCell'"
-								[editCellTemplate]="'riesgoPuestoInformacionEdit'"
+								[editorOptions]="{ maxLength: 255, showClearButton: true }"
 							></dxi-column>
-							<div *dxTemplate="let cell of 'riesgoPuestoInformacionCell'">
-								<ng-container *ngIf="riesgoPuestoEsLista(cell.data); else riesgoInformacionTextoVista">
-									<ul class="descriptor-riesgo-lista-vista" *ngIf="parseRiesgoInformacionLista(cell.value).length; else riesgoListaVacia">
-										<li *ngFor="let item of parseRiesgoInformacionLista(cell.value)">{{ item }}</li>
-									</ul>
-									<ng-template #riesgoListaVacia>
-										<span class="descriptor-riesgo-lista-vacia">Sin items</span>
-									</ng-template>
-								</ng-container>
-								<ng-template #riesgoInformacionTextoVista>{{ cell.value }}</ng-template>
-							</div>
-							<div *dxTemplate="let cellInfo of 'riesgoPuestoInformacionEdit'">
-								<ng-container *ngIf="riesgoPuestoEsLista(cellInfo.data); else riesgoInformacionTextoEdit">
-									<div class="descriptor-riesgo-lista-editor">
-										<div
-											class="descriptor-riesgo-lista-editor__row"
-											*ngFor="let item of getRiesgoListaEditorItems(cellInfo); let i = index; trackBy: trackRiesgoListaItemIndex"
-										>
-											<dx-text-box
-												class="descriptor-riesgo-lista-editor__input"
-												[value]="item"
-												[showClearButton]="true"
-												[maxLength]="150"
-												(valueChange)="onRiesgoListaItemChanged(cellInfo, i, $event)"
-											></dx-text-box>
-											<dx-button
-												class="descriptor-riesgo-lista-editor__delete"
-												icon="trash"
-												stylingMode="text"
-												hint="Quitar item"
-												[disabled]="getRiesgoListaEditorItems(cellInfo).length <= 1"
-												(onClick)="eliminarRiesgoListaItem(cellInfo, i)"
-											></dx-button>
-										</div>
-										<dx-button
-											class="descriptor-riesgo-lista-editor__add"
-											icon="add"
-											text="Agregar item"
-											type="default"
-											stylingMode="contained"
-											(onClick)="agregarRiesgoListaItem(cellInfo)"
-										></dx-button>
-									</div>
-								</ng-container>
-								<ng-template #riesgoInformacionTextoEdit>
-									<dx-text-box
-										[value]="cellInfo.value"
-										[maxLength]="255"
-										[showClearButton]="true"
-										(valueChange)="onRiesgoInformacionTextoChanged(cellInfo, $event)"
-									></dx-text-box>
-								</ng-template>
-							</div>
 						</dx-data-grid>
 					</div>
 				</dxi-item>

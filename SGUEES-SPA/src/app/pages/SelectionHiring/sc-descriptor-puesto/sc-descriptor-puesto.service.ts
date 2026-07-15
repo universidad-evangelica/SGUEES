@@ -1081,7 +1081,6 @@ export class ScDescriptorPuestoService {
 			NOMBRE_RIESGO_PUESTO: (row.NOMBRE_RIESGO_PUESTO ?? '').trim() || null,
 			INFORMACION: (row.INFORMACION ?? '').trim() || null,
 			CORR_RIESGO_PUESTO: row.CORR_RIESGO_PUESTO ?? null,
-			ES_LISTA: row.ES_LISTA ?? null,
 		};
 
 		if (!row.CORR_DESCRIPTOR_RIESGO || row.CORR_DESCRIPTOR_RIESGO <= 0) {

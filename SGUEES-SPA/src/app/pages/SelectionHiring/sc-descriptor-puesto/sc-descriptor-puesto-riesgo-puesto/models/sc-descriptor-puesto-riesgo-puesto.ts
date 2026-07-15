@@ -5,6 +5,5 @@ export interface ScDescriptorPuestoRiesgoPuesto {
 	INFORMACION?: string | null;
 	CORR_DESCRIPTOR_PUESTO?: number;
 	CORR_RIESGO_PUESTO: number | null;
-	ES_LISTA?: boolean;
 	_clientKey?: string | number;
 }

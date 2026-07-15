@@ -71,7 +71,6 @@ export interface ScRequerimientoOrganizacionalLookupItem {
 export interface ScRiesgoPuestoLookupItem {
 	CORR_RIESGO_PUESTO: number;
 	NOMBRE_RIESGO_PUESTO: string;
-	ES_LISTA?: boolean;
 }
 
 export const FORMATO_CORTA = 'CORTO';

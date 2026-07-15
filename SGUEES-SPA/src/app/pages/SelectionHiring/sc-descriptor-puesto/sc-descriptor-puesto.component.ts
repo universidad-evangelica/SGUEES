@@ -159,7 +159,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	competenciasConductualesEditando = false;
 	requerimientosOrganizacionalesEditando = false;
 	riesgosPuestoEditando = false;
-	private riesgoListaEditorDraft = new Map<string, string[]>();
 	private riesgoPuestoPersistiendo = false;
 	actividadesEditando = false;
 	relacionesInternasEditando = false;
@@ -690,7 +689,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.mCORR_RIESGO_PUESTO = response.Data.map((item: any) => ({
 						CORR_RIESGO_PUESTO: Number(item.CORR_RIESGO_PUESTO),
 						NOMBRE_RIESGO_PUESTO: (item.NOMBRE_RIESGO_PUESTO ?? '').trim(),
-						ES_LISTA: !!item.ES_LISTA,
 					}));
 					this.actualizarRiesgosPuestoLookupDisponibles();
 				},
@@ -2276,7 +2274,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.data.CORR_DESCRIPTOR_PUESTO = Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0;
 		e.data.CORR_RIESGO_PUESTO = null;
 		e.data.NOMBRE_RIESGO_PUESTO = '';
-		e.data.ES_LISTA = false;
 		e.data.INFORMACION = '';
 		e.data._clientKey = this.crearClientKey('rp');
 		this.actualizarRiesgosPuestoLookupDisponibles();
@@ -2290,14 +2287,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	onRiesgoPuestoSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.riesgosPuestoEditando = false;
-			this.limpiarRiesgoListaEditorDraft();
 		});
 	}
 
 	onRiesgoPuestoEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.riesgosPuestoEditando = false;
-			this.limpiarRiesgoListaEditorDraft();
 		});
 		this.cargarRiesgosPuesto(true);
 	}
@@ -2320,26 +2315,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		if (this.riesgoPuestoEsLista(data)) {
-			const items = this.obtenerRiesgoListaItemsDesdeFila(data);
-			const cleaned = items.map((item) => item.trim()).filter((item) => item.length > 0);
-			if (!cleaned.length) {
-				e.isValid = false;
-				e.errorText = 'Debe agregar al menos un item en la informacion.';
-				return;
-			}
-			if (items.some((item) => item.trim().length > 150)) {
-				e.isValid = false;
-				e.errorText = 'Cada item de la lista no puede superar 150 caracteres.';
-				return;
-			}
-			const serialized = this.serializeRiesgoInformacionLista(cleaned);
-			if (serialized.length > 255) {
-				e.isValid = false;
-				e.errorText = 'La informacion de la lista no puede superar 255 caracteres.';
-				return;
-			}
-		} else if ((data.INFORMACION ?? '').trim().length > 255) {
+		if ((data.INFORMACION ?? '').trim().length > 255) {
 			e.isValid = false;
 			e.errorText = 'La informacion no puede superar 255 caracteres.';
 			return;
@@ -2428,7 +2404,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	setRiesgoPuestoCellValue = (
 		newData: ScDescriptorPuestoRiesgoPuesto,
 		value: number | null,
-		currentRowData: ScDescriptorPuestoRiesgoPuesto
+		_currentRowData: ScDescriptorPuestoRiesgoPuesto
 	): void => {
 		const corr = value != null && Number(value) > 0 ? Number(value) : null;
 		const catalog = this.mCORR_RIESGO_PUESTO.find(
@@ -2436,168 +2412,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 		newData.CORR_RIESGO_PUESTO = corr;
 		newData.NOMBRE_RIESGO_PUESTO = catalog?.NOMBRE_RIESGO_PUESTO ?? '';
-		newData.ES_LISTA = !!catalog?.ES_LISTA;
-		const draftKey =
-			this.obtenerRiesgoListaEditorKey(newData) || this.obtenerRiesgoListaEditorKey(currentRowData);
-
-		if (catalog?.ES_LISTA) {
-			newData.INFORMACION = '';
-			if (draftKey) {
-				this.riesgoListaEditorDraft.set(draftKey, ['']);
-			}
-			return;
-		}
-
-		if (this.debeConvertirRiesgoInformacionListaATexto(currentRowData, newData, draftKey)) {
-			const items = this.obtenerRiesgoListaItemsDesdeFila(currentRowData ?? newData);
-			newData.INFORMACION = items.length ? items.join(', ') : '';
-		}
-
-		if (draftKey) {
-			this.riesgoListaEditorDraft.delete(draftKey);
-		}
 	};
-
-	private debeConvertirRiesgoInformacionListaATexto(
-		currentRowData: ScDescriptorPuestoRiesgoPuesto,
-		newData: ScDescriptorPuestoRiesgoPuesto,
-		draftKey: string
-	): boolean {
-		if (!!currentRowData?.ES_LISTA) {
-			return true;
-		}
-		if (draftKey && this.riesgoListaEditorDraft.has(draftKey)) {
-			return true;
-		}
-		const informacion = (currentRowData?.INFORMACION ?? newData.INFORMACION ?? '').trim();
-		return informacion.startsWith('[');
-	}
-
-	riesgoPuestoEsLista(row: ScDescriptorPuestoRiesgoPuesto | null | undefined): boolean {
-		if (!row) {
-			return false;
-		}
-		if (row.ES_LISTA != null) {
-			return !!row.ES_LISTA;
-		}
-		const corr = Number(row.CORR_RIESGO_PUESTO);
-		if (!(corr > 0)) {
-			return false;
-		}
-		const catalog = this.mCORR_RIESGO_PUESTO.find((item) => Number(item.CORR_RIESGO_PUESTO) === corr);
-		return !!catalog?.ES_LISTA;
-	}
-
-	parseRiesgoInformacionLista(value: string | null | undefined): string[] {
-		const raw = (value ?? '').trim();
-		if (!raw) {
-			return [];
-		}
-		if (raw.startsWith('[')) {
-			try {
-				const parsed = JSON.parse(raw);
-				if (Array.isArray(parsed)) {
-					return parsed
-						.map((item) => String(item ?? '').trim())
-						.filter((item) => item.length > 0);
-				}
-			} catch {
-				return [];
-			}
-		}
-		return [raw];
-	}
-
-	serializeRiesgoInformacionLista(items: string[]): string {
-		const cleaned = (items ?? []).map((item) => (item ?? '').trim()).filter((item) => item.length > 0);
-		return cleaned.length ? JSON.stringify(cleaned) : '';
-	}
-
-	riesgoPuestoInformacionDisplay = (row: ScDescriptorPuestoRiesgoPuesto): string => {
-		if (this.riesgoPuestoEsLista(row)) {
-			return this.parseRiesgoInformacionLista(row.INFORMACION).join(' | ');
-		}
-		return (row?.INFORMACION ?? '').trim();
-	};
-
-	getRiesgoListaEditorItems(cellInfo: any): string[] {
-		return this.obtenerRiesgoListaEditorDraft(cellInfo);
-	}
-
-	trackRiesgoListaItemIndex(index: number): number {
-		return index;
-	}
-
-	onRiesgoInformacionTextoChanged(cellInfo: any, value: string | null | undefined): void {
-		cellInfo.setValue((value ?? '').trim());
-	}
-
-	onRiesgoListaItemChanged(cellInfo: any, index: number, value: string | null | undefined): void {
-		const items = [...this.obtenerRiesgoListaEditorDraft(cellInfo)];
-		while (items.length <= index) {
-			items.push('');
-		}
-		items[index] = value ?? '';
-		this.actualizarRiesgoInformacionLista(cellInfo, items);
-	}
-
-	agregarRiesgoListaItem(cellInfo: any): void {
-		const items = [...this.obtenerRiesgoListaEditorDraft(cellInfo), ''];
-		this.actualizarRiesgoInformacionLista(cellInfo, items);
-	}
-
-	eliminarRiesgoListaItem(cellInfo: any, index: number): void {
-		const items = this.obtenerRiesgoListaEditorDraft(cellInfo).filter((_, i) => i !== index);
-		this.actualizarRiesgoInformacionLista(cellInfo, items.length ? items : ['']);
-	}
-
-	private obtenerRiesgoListaEditorKey(source: any): string {
-		const data = source?.data ?? source ?? {};
-		const key = data._clientKey ?? data.CORR_DESCRIPTOR_RIESGO;
-		return key != null && `${key}`.length ? String(key) : '';
-	}
-
-	private obtenerRiesgoListaEditorDraft(cellInfo: any): string[] {
-		const key = this.obtenerRiesgoListaEditorKey(cellInfo);
-		if (!key) {
-			const parsed = this.parseRiesgoInformacionLista(cellInfo?.value);
-			return parsed.length ? [...parsed] : [''];
-		}
-
-		if (!this.riesgoListaEditorDraft.has(key)) {
-			const parsed = this.parseRiesgoInformacionLista(cellInfo?.value);
-			this.riesgoListaEditorDraft.set(key, parsed.length ? [...parsed] : ['']);
-		}
-
-		return [...(this.riesgoListaEditorDraft.get(key) ?? [''])];
-	}
-
-	private obtenerRiesgoListaItemsDesdeFila(row: ScDescriptorPuestoRiesgoPuesto): string[] {
-		const key = this.obtenerRiesgoListaEditorKey(row);
-		if (key && this.riesgoListaEditorDraft.has(key)) {
-			return [...(this.riesgoListaEditorDraft.get(key) ?? [])];
-		}
-		return this.parseRiesgoInformacionLista(row.INFORMACION);
-	}
-
-	private actualizarRiesgoInformacionLista(cellInfo: any, items: string[]): void {
-		const draft = items.length ? [...items] : [''];
-		const key = this.obtenerRiesgoListaEditorKey(cellInfo);
-		if (key) {
-			this.riesgoListaEditorDraft.set(key, draft);
-		}
-
-		const serialized = this.serializeRiesgoInformacionLista(draft);
-		cellInfo.setValue(serialized);
-		if (cellInfo?.data) {
-			cellInfo.data.INFORMACION = serialized;
-		}
-		this.cdr.detectChanges();
-	}
-
-	private limpiarRiesgoListaEditorDraft(): void {
-		this.riesgoListaEditorDraft.clear();
-	}
 
 	onPerfilEdadMinimaChanged(e: any): void {
 		if (this.readOnly) {
@@ -3071,7 +2886,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							NOMBRE_RIESGO_PUESTO: item.NOMBRE_RIESGO_PUESTO ?? '',
 							INFORMACION: item.INFORMACION ?? '',
 							CORR_RIESGO_PUESTO: item.CORR_RIESGO_PUESTO ?? null,
-							ES_LISTA: !!item.ES_LISTA,
 							_clientKey: item.CORR_DESCRIPTOR_RIESGO || this.crearClientKey('rp'),
 						}));
 						this.actualizarRiesgosPuestoLookupDisponibles();
@@ -3764,7 +3578,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private resetearEdicionRiesgosPuesto(): void {
 		this.riesgosPuestoEditando = false;
-		this.limpiarRiesgoListaEditorDraft();
 	}
 
 	private resetearEdicionRelacionesInternas(): void {
@@ -4325,10 +4138,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			CORR_DESCRIPTOR_RIESGO: esNuevo ? 0 : Number(data.CORR_DESCRIPTOR_RIESGO) || 0,
 			CORR_RIESGO_PUESTO: Number(data.CORR_RIESGO_PUESTO) || null,
 			NOMBRE_RIESGO_PUESTO: (data.NOMBRE_RIESGO_PUESTO ?? '').trim(),
-			INFORMACION: this.riesgoPuestoEsLista(data)
-				? this.serializeRiesgoInformacionLista(this.obtenerRiesgoListaItemsDesdeFila(data))
-				: (data.INFORMACION ?? '').trim(),
-			ES_LISTA: data.ES_LISTA,
+			INFORMACION: (data.INFORMACION ?? '').trim(),
 		};
 
 		this.riesgoPuestoPersistiendo = true;
@@ -4347,7 +4157,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						}
 
 						this.riesgosPuestoEditando = false;
-						this.limpiarRiesgoListaEditorDraft();
 						try {
 							this.gridRiesgosPuesto?.instance?.cancelEditData?.();
 						} catch {

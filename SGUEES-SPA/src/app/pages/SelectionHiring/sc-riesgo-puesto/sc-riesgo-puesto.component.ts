@@ -34,14 +34,11 @@ import {
 } from './sc-riesgo-puesto.service';
 
 const ESTADO_FIELD = 'ESTADO_RIESGO_PUESTO';
-const ES_LISTA_FIELD = 'ES_LISTA';
-const ES_LISTA_LABELS = { trueLabel: 'Lista', falseLabel: 'Texto plano' };
 
 const GRID_FILTER_CONFIG = {
 	estadoField: ESTADO_FIELD,
 	booleanColumns: {
 		[ESTADO_FIELD]: ESTADO_ACTIVO_INACTIVO_LABELS,
-		[ES_LISTA_FIELD]: ES_LISTA_LABELS,
 	},
 };
 
@@ -166,7 +163,6 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 				CORR_RIESGO_PUESTO: xModel.CORR_RIESGO_PUESTO,
 				NOMBRE_RIESGO_PUESTO: xModel.NOMBRE_RIESGO_PUESTO,
 				ESTADO_RIESGO_PUESTO: xModel.ESTADO_RIESGO_PUESTO,
-				ES_LISTA: !!xModel.ES_LISTA,
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
 				FECHA_CREA: xModel.FECHA_CREA,
@@ -181,7 +177,6 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 			CORR_RIESGO_PUESTO: 0,
 			NOMBRE_RIESGO_PUESTO: '',
 			ESTADO_RIESGO_PUESTO: true,
-			ES_LISTA: false,
 			USUARIO_CREA: '',
 			ESTACION_CREA: '',
 			FECHA_CREA: new Date(),

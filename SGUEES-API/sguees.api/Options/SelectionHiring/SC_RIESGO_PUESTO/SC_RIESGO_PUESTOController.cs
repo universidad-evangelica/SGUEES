@@ -164,7 +164,6 @@ namespace SGUEES.Controllers
             Data.ESTACION_ACTU = Data.ESTACION_CREA;
             Data.FECHA_ACTU = Data.FECHA_CREA;
             Data.ESTADO_RIESGO_PUESTO ??= true;
-            Data.ES_LISTA ??= false;
         }
 
         private void SetUpdateAudit(SC_RIESGO_PUESTOTable Data)

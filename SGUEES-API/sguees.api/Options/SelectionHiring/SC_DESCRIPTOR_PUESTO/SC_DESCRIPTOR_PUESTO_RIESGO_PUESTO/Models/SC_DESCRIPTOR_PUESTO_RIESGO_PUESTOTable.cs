@@ -9,7 +9,6 @@ namespace SGUEES.Models
         public int CORR_DESCRIPTOR_RIESGO { get; set; }
         public string NOMBRE_RIESGO_PUESTO { get; set; }
         public string INFORMACION { get; set; }
-        public bool? ES_LISTA { get; set; }
         public int? CORR_DESCRIPTOR_PUESTO { get; set; }
         public int? CORR_RIESGO_PUESTO { get; set; }
         public string USUARIO_CREA { get; set; }

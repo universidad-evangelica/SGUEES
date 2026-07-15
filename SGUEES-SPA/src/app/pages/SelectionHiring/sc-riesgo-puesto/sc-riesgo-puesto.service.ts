@@ -9,53 +9,6 @@ import { ScRiesgoPuesto } from './models/sc-riesgo-puesto';
 import { ScRiesgoPuestoRepository } from './sc-riesgo-puesto.repository';
 
 const ESTADO_FIELD = 'ESTADO_RIESGO_PUESTO';
-const ES_LISTA_FIELD = 'ES_LISTA';
-const ES_LISTA_LABELS = { trueLabel: 'Lista', falseLabel: 'Texto plano' };
-
-function createTipoInformacionColumnConfig(): Record<string, unknown> {
-	return {
-		dataField: ES_LISTA_FIELD,
-		caption: 'Tipo informacion',
-		width: 150,
-		allowFiltering: true,
-		allowHeaderFiltering: true,
-		booleanColumnLabels: ES_LISTA_LABELS,
-		calculateCellValue: (rowData: Record<string, unknown>) => rowData?.[ES_LISTA_FIELD],
-		cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-			const badge = document.createElement('span');
-			const isLista = cellInfo.value === true;
-			badge.classList.add('tipo-info-badge', isLista ? 'tipo-info-badge--lista' : 'tipo-info-badge--texto');
-			badge.textContent = isLista ? ES_LISTA_LABELS.trueLabel : ES_LISTA_LABELS.falseLabel;
-			cellElement.innerHTML = '';
-			cellElement.appendChild(badge);
-		},
-		lookup: {
-			dataSource: [
-				{ value: true, text: ES_LISTA_LABELS.trueLabel },
-				{ value: false, text: ES_LISTA_LABELS.falseLabel },
-			],
-			valueExpr: 'value',
-			displayExpr: 'text',
-		},
-		headerFilter: {
-			allowSearch: false,
-		},
-		selectedFilterOperation: '=',
-		defaultSelectedFilterOperation: '=',
-		filterOperations: ['='],
-		calculateFilterExpression: (filterValue: any, selectedFilterOperation?: string) => {
-			if (filterValue === '__ALL__' || filterValue === null || filterValue === undefined) {
-				return null;
-			}
-
-			if (selectedFilterOperation === 'anyof' && Array.isArray(filterValue)) {
-				return filterValue.length ? [ES_LISTA_FIELD, 'anyof', filterValue] : null;
-			}
-
-			return [ES_LISTA_FIELD, '=', filterValue];
-		},
-	};
-}
 
 @Injectable({
 	providedIn: 'root',
@@ -168,7 +121,6 @@ export class ScRiesgoPuestoService {
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
 			{ dataField: 'NOMBRE_RIESGO_PUESTO', caption: 'Riesgo de Puesto', width: 300 },
-			createTipoInformacionColumnConfig(),
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
@@ -208,20 +160,6 @@ export class ScRiesgoPuestoService {
 				colSpan: 5,
 				editorOptions: { placeholder: 'Nombre riesgo de puesto...', showClearButton: true, maxLength: 150 },
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
-			},
-			{
-				dataField: 'ES_LISTA',
-				label: { text: 'Tipo informacion' },
-				editorType: 'dxSelectBox',
-				colSpan: 2,
-				editorOptions: {
-					items: [
-						{ value: false, text: 'Texto plano' },
-						{ value: true, text: 'Lista' },
-					],
-					valueExpr: 'value',
-					displayExpr: 'text',
-				},
 			},
 			{ dataField: 'ESTADO_RIESGO_PUESTO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];

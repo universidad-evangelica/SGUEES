@@ -149,7 +149,6 @@ namespace SGUEES.Repositories
                 {
                     new CParameter() { ParameterName = "NOMBRE_RIESGO_PUESTO", Value = Data.NOMBRE_RIESGO_PUESTO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "INFORMACION", Value = Data.INFORMACION, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ES_LISTA", Value = Data.ES_LISTA, DbType = System.Data.DbType.Boolean },
                     new CParameter() { ParameterName = "CORR_RIESGO_PUESTO", Value = Data.CORR_RIESGO_PUESTO, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
@@ -240,7 +239,6 @@ namespace SGUEES.Repositories
                 new CParameter() { ParameterName = "CORR_DESCRIPTOR_RIESGO", Value = Data.CORR_DESCRIPTOR_RIESGO, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "NOMBRE_RIESGO_PUESTO", Value = Data.NOMBRE_RIESGO_PUESTO, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "INFORMACION", Value = Data.INFORMACION, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "ES_LISTA", Value = Data.ES_LISTA, DbType = System.Data.DbType.Boolean },
                 new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "CORR_RIESGO_PUESTO", Value = Data.CORR_RIESGO_PUESTO, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },

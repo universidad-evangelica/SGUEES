@@ -136,7 +136,6 @@ namespace SGUEES.Services
                         CORR_DESCRIPTOR_RIESGO = 0,
                         NOMBRE_RIESGO_PUESTO = nombre,
                         INFORMACION = null,
-                        ES_LISTA = item.ES_LISTA,
                         CORR_DESCRIPTOR_PUESTO = corrDescriptor,
                         CORR_RIESGO_PUESTO = item.CORR_RIESGO_PUESTO,
                         USUARIO_CREA = usuario,
@@ -251,11 +250,6 @@ namespace SGUEES.Services
             if (string.IsNullOrWhiteSpace(Data.NOMBRE_RIESGO_PUESTO))
             {
                 Data.NOMBRE_RIESGO_PUESTO = catalog.NOMBRE_RIESGO_PUESTO?.Trim();
-            }
-
-            if (Data.ES_LISTA == null)
-            {
-                Data.ES_LISTA = catalog.ES_LISTA;
             }
 
             return null;

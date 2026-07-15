@@ -53,7 +53,6 @@ namespace SGUEES.Services
 
             Data.NOMBRE_RIESGO_PUESTO = Data.NOMBRE_RIESGO_PUESTO.Trim();
             Data.ESTADO_RIESGO_PUESTO ??= true;
-            Data.ES_LISTA ??= false;
 
             var duplicate = await ValidateUniqueNombreAsync(Data, null);
             if (duplicate != null)
@@ -74,7 +73,6 @@ namespace SGUEES.Services
 
             Data.NOMBRE_RIESGO_PUESTO = Data.NOMBRE_RIESGO_PUESTO.Trim();
             Data.ESTADO_RIESGO_PUESTO ??= true;
-            Data.ES_LISTA ??= false;
 
             var duplicate = await ValidateUniqueNombreAsync(Data, Data.CORR_RIESGO_PUESTO);
             if (duplicate != null)
