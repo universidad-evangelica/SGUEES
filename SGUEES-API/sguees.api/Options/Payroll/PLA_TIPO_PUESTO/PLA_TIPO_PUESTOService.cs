@@ -52,12 +52,19 @@ namespace SGUEES.Services
             }
 
             Data.NOMBRE_TIPO_PUESTO = Data.NOMBRE_TIPO_PUESTO.Trim();
+            Data.CODIGO_TIPO_PUESTO = Data.CODIGO_TIPO_PUESTO.Trim();
             Data.ESTADO_TIPO_PUESTO ??= true;
 
-            var duplicate = await ValidateUniqueNombreAsync(Data, null);
-            if (duplicate != null)
+            var duplicateNombre = await ValidateUniqueNombreAsync(Data, null);
+            if (duplicateNombre != null)
             {
-                return duplicate;
+                return duplicateNombre;
+            }
+
+            var duplicateCodigo = await ValidateUniqueCodigoAsync(Data, null);
+            if (duplicateCodigo != null)
+            {
+                return duplicateCodigo;
             }
 
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
@@ -72,12 +79,19 @@ namespace SGUEES.Services
             }
 
             Data.NOMBRE_TIPO_PUESTO = Data.NOMBRE_TIPO_PUESTO.Trim();
+            Data.CODIGO_TIPO_PUESTO = Data.CODIGO_TIPO_PUESTO.Trim();
             Data.ESTADO_TIPO_PUESTO ??= true;
 
-            var duplicate = await ValidateUniqueNombreAsync(Data, Data.CORR_TIPO_PUESTO);
-            if (duplicate != null)
+            var duplicateNombre = await ValidateUniqueNombreAsync(Data, Data.CORR_TIPO_PUESTO);
+            if (duplicateNombre != null)
             {
-                return duplicate;
+                return duplicateNombre;
+            }
+
+            var duplicateCodigo = await ValidateUniqueCodigoAsync(Data, Data.CORR_TIPO_PUESTO);
+            if (duplicateCodigo != null)
+            {
+                return duplicateCodigo;
             }
 
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
@@ -203,7 +217,29 @@ namespace SGUEES.Services
                 return ValidationError("El nombre del tipo de puesto no puede superar 100 caracteres.");
             }
 
+            if (string.IsNullOrWhiteSpace(Data.CODIGO_TIPO_PUESTO))
+            {
+                return ValidationError("Debe ingresar el codigo del tipo de puesto.");
+            }
+
+            if (Data.CODIGO_TIPO_PUESTO.Trim().Length > 30)
+            {
+                return ValidationError("El codigo del tipo de puesto no puede superar 30 caracteres.");
+            }
+
             return null;
+        }
+
+        private async Task<CResult> ValidateUniqueCodigoAsync(PLA_TIPO_PUESTOTable Data, int? excludeCorr)
+        {
+            var exists = await _repo.ExistsCodigoAsync(
+                Data.CORR_EMPRESA,
+                Data.CODIGO_TIPO_PUESTO,
+                excludeCorr ?? 0);
+
+            return exists
+                ? ValidationError($"Ya existe un tipo de puesto con el codigo {Data.CODIGO_TIPO_PUESTO}.")
+                : null;
         }
 
         private async Task<CResult> ValidateUniqueNombreAsync(PLA_TIPO_PUESTOTable Data, int? excludeCorr)

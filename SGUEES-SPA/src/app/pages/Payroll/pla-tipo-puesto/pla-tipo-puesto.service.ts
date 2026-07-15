@@ -27,6 +27,16 @@ export class PlaTipoPuestoService {
 			return false;
 		}
 
+		if (!model.CODIGO_TIPO_PUESTO || model.CODIGO_TIPO_PUESTO.trim() === '') {
+			msg('Debe ingresar el codigo del tipo de puesto.', NotifyType.Warning);
+			return false;
+		}
+
+		if (model.CODIGO_TIPO_PUESTO.trim().length > 30) {
+			msg('El codigo del tipo de puesto no puede superar 30 caracteres.', NotifyType.Warning);
+			return false;
+		}
+
 		return true;
 	}
 
@@ -120,6 +130,7 @@ export class PlaTipoPuestoService {
 				dataType: 'number',
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
+			{ dataField: 'CODIGO_TIPO_PUESTO', caption: 'Codigo', width: 140 },
 			{ dataField: 'NOMBRE_TIPO_PUESTO', caption: 'Tipo de puesto', width: 300 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
@@ -157,8 +168,15 @@ export class PlaTipoPuestoService {
 			{
 				dataField: 'NOMBRE_TIPO_PUESTO',
 				label: { text: 'Nombre tipo de puesto' },
-				colSpan: 5,
+				colSpan: 3,
 				editorOptions: { placeholder: 'Nombre tipo de puesto...', showClearButton: true, maxLength: 100 },
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
+			},
+			{
+				dataField: 'CODIGO_TIPO_PUESTO',
+				label: { text: 'Codigo' },
+				colSpan: 2,
+				editorOptions: { placeholder: 'Codigo tipo de puesto...', showClearButton: true, maxLength: 30 },
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{ dataField: 'ESTADO_TIPO_PUESTO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },

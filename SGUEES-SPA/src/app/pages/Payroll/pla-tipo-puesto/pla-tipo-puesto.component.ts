@@ -161,6 +161,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_TIPO_PUESTO: xModel.CORR_TIPO_PUESTO,
 				NOMBRE_TIPO_PUESTO: xModel.NOMBRE_TIPO_PUESTO,
+				CODIGO_TIPO_PUESTO: xModel.CODIGO_TIPO_PUESTO,
 				ESTADO_TIPO_PUESTO: xModel.ESTADO_TIPO_PUESTO,
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				FECHA_CREA: xModel.FECHA_CREA,
@@ -175,6 +176,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 			CORR_EMPRESA: 1,
 			CORR_TIPO_PUESTO: 0,
 			NOMBRE_TIPO_PUESTO: '',
+			CODIGO_TIPO_PUESTO: '',
 			ESTADO_TIPO_PUESTO: true,
 			USUARIO_CREA: '',
 			FECHA_CREA: new Date(),
@@ -287,7 +289,15 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_TIPO_PUESTO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_TIPO_PUESTO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CODIGO_TIPO_PUESTO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ESTADO_TIPO_PUESTO')?.option('readOnly', true);
+	}
+
+	override habilitar(): void {
+		this.dataForm?.instance?.getEditor('CORR_TIPO_PUESTO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('NOMBRE_TIPO_PUESTO')?.option('readOnly', false);
+		this.dataForm?.instance?.getEditor('CODIGO_TIPO_PUESTO')?.option('readOnly', false);
+		this.dataForm?.instance?.getEditor('ESTADO_TIPO_PUESTO')?.option('readOnly', false);
 	}
 
 	override setFocus(): void {

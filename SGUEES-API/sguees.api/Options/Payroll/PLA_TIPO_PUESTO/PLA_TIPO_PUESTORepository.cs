@@ -152,6 +152,7 @@ namespace SGUEES.Repositories
                     Contains(x.CORR_EMPRESA.ToString(), search) ||
                     Contains(x.CORR_TIPO_PUESTO.ToString(), search) ||
                     Contains(x.NOMBRE_TIPO_PUESTO, search) ||
+                    Contains(x.CODIGO_TIPO_PUESTO, search) ||
                     Contains((x.ESTADO_TIPO_PUESTO ?? false) ? "Activo" : "Inactivo", search) ||
                     Contains(x.USUARIO_CREA, search) ||
                     Contains(x.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm"), search) ||
@@ -327,6 +328,9 @@ namespace SGUEES.Repositories
                 "NOMBRE_TIPO_PUESTO" => desc
                     ? response.OrderByDescending(x => x.NOMBRE_TIPO_PUESTO)
                     : response.OrderBy(x => x.NOMBRE_TIPO_PUESTO),
+                "CODIGO_TIPO_PUESTO" => desc
+                    ? response.OrderByDescending(x => x.CODIGO_TIPO_PUESTO)
+                    : response.OrderBy(x => x.CODIGO_TIPO_PUESTO),
                 "ESTADO_TIPO_PUESTO" => desc
                     ? response.OrderByDescending(x => x.ESTADO_TIPO_PUESTO ?? false)
                     : response.OrderBy(x => x.ESTADO_TIPO_PUESTO ?? false),
@@ -360,6 +364,7 @@ namespace SGUEES.Repositories
             {
                 "CORR_TIPO_PUESTO" => true,
                 "NOMBRE_TIPO_PUESTO" => true,
+                "CODIGO_TIPO_PUESTO" => true,
                 "ESTADO_TIPO_PUESTO" => true,
                 "USUARIO_CREA" => true,
                 "ESTACION_CREA" => true,
@@ -696,6 +701,8 @@ namespace SGUEES.Repositories
                     return row.CORR_TIPO_PUESTO;
                 case "NOMBRE_TIPO_PUESTO":
                     return row.NOMBRE_TIPO_PUESTO;
+                case "CODIGO_TIPO_PUESTO":
+                    return row.CODIGO_TIPO_PUESTO;
                 case "ESTADO_TIPO_PUESTO":
                     return row.ESTADO_TIPO_PUESTO.HasValue
                         ? row.ESTADO_TIPO_PUESTO.Value
@@ -730,6 +737,8 @@ namespace SGUEES.Repositories
                     return row.CORR_TIPO_PUESTO.ToString();
                 case "NOMBRE_TIPO_PUESTO":
                     return row.NOMBRE_TIPO_PUESTO;
+                case "CODIGO_TIPO_PUESTO":
+                    return row.CODIGO_TIPO_PUESTO;
                 case "ESTADO_TIPO_PUESTO":
                     if (!row.ESTADO_TIPO_PUESTO.HasValue)
                     {
@@ -801,6 +810,7 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "CORR_TIPO_PUESTO", Value = Data.CORR_TIPO_PUESTO, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
                     new CParameter() { ParameterName = "NOMBRE_TIPO_PUESTO", Value = Data.NOMBRE_TIPO_PUESTO, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CODIGO_TIPO_PUESTO", Value = Data.CODIGO_TIPO_PUESTO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTADO_TIPO_PUESTO", Value = Data.ESTADO_TIPO_PUESTO ?? true, DbType = System.Data.DbType.Boolean },
                     new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime },
@@ -857,6 +867,7 @@ namespace SGUEES.Repositories
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "NOMBRE_TIPO_PUESTO", Value = Data.NOMBRE_TIPO_PUESTO, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CODIGO_TIPO_PUESTO", Value = Data.CODIGO_TIPO_PUESTO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTADO_TIPO_PUESTO", Value = Data.ESTADO_TIPO_PUESTO ?? true, DbType = System.Data.DbType.Boolean },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -958,6 +969,38 @@ namespace SGUEES.Repositories
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "NOMBRE", Value = nombre.Trim(), DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "EXCLUDE_CORR", Value = excludeCorr, DbType = System.Data.DbType.Int32 },
+                });
+
+                var exists = reader.Read();
+                reader.Close();
+                return exists;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
+        public async Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr)
+        {
+            if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(codigo))
+            {
+                return false;
+            }
+
+            const string sql = @"SELECT TOP 1 1 AS FOUND
+                FROM V_PLA_TIPO_PUESTO
+                WHERE CORR_EMPRESA = @CORR_EMPRESA
+                AND UPPER(LTRIM(RTRIM(CODIGO_TIPO_PUESTO))) = UPPER(LTRIM(RTRIM(@CODIGO)))
+                AND (@EXCLUDE_CORR <= 0 OR CORR_TIPO_PUESTO <> @EXCLUDE_CORR)";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CODIGO", Value = codigo.Trim(), DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "EXCLUDE_CORR", Value = excludeCorr, DbType = System.Data.DbType.Int32 },
                 });
 

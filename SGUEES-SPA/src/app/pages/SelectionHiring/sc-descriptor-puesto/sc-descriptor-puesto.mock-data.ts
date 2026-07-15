@@ -65,8 +65,8 @@ export const MOCK_PUESTOS_REPORTA: MockPuestoReporta[] = [
 ];
 
 export const PERFIL_PUESTO_DEFAULT = {
-	EDAD_MINIMA: 18,
-	EDAD_MAXIMA: 65,
+	EDAD_MINIMA: null as number | null,
+	EDAD_MAXIMA: null as number | null,
 	SEXO: 'INDIFERENTE',
 	ESTADO_FAMILIAR: 'INDIFERENTE',
 	CORR_DISPONIBILIDAD_HORARIO: null as number | null,

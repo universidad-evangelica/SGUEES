@@ -116,17 +116,18 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260 },
 	];
 	competenciasTecnicasLookupColumns = [
+		/*
 		{ dataField: 'GRUPO_NIV1', caption: 'Grupo NIV1', width: 180 },
-		{ dataField: 'GRUPO_NIV2', caption: 'Grupo NIV2', width: 180 },
-		{ dataField: 'CODIGO_COMPETENCIAS_TECNICAS', caption: 'Codigo NIV3', width: 120 },
-		{ dataField: 'NIVEL', caption: 'Nivel', width: 80 },
-		{ dataField: 'NOMBRE_COMPETENCIAS_TECNICAS', caption: 'Competencia NIV3', width: 220 },
-		{ dataField: 'DESCRIPCION', caption: 'Definicion', width: 260 },
+		{ dataField: 'GRUPO_NIV2', caption: 'Grupo NIV2', width: 180 },*/
+		{ dataField: 'CODIGO_COMPETENCIAS_TECNICAS', caption: 'Codigo', width: 120 }, // Codigo NIV3
+		//{ dataField: 'NIVEL', caption: 'Nivel', width: 80 },
+		{ dataField: 'NOMBRE_COMPETENCIAS_TECNICAS', caption: 'Competencia', width: 220 }, // Competencia NIV3
+		//{ dataField: 'DESCRIPCION', caption: 'Definicion', width: 260 },
 	];
 	competenciasConductualesLookupColumns = [
 		{ dataField: 'CORR_COMPETENCIAS_CONDUCTUALES', caption: 'Codigo', width: 90 },
 		{ dataField: 'NOMBRE_COMPETENCIAS_CONDUCTUALES', caption: 'Competencia', width: 220 },
-		{ dataField: 'NOMBRE_TIPO_PUESTO', caption: 'Tipo puesto', width: 180 },
+		{ dataField: 'NOMBRE_TIPO_PUESTO', caption: 'Grupo ocupacional', width: 180 }, // Tipo puesto
 	];
 	requerimientosOrganizacionalesLookupColumns = [
 		{ dataField: 'CORR_REQUERIMIENTO_ORGANIZACIONAL', caption: 'Codigo', width: 90 },
