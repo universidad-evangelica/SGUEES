@@ -151,7 +151,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	competenciasTecnicasEditando = false;
 	competenciasConductualesEditando = false;
 	requerimientosOrganizacionalesEditando = false;
+	requerimientosOrganizacionalesInsertando = false;
 	riesgosPuestoEditando = false;
+	riesgosPuestoInsertando = false;
 	private riesgoPuestoPersistiendo = false;
 	actividadesEditando = false;
 	relacionesInternasEditando = false;
@@ -2047,8 +2049,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 		this.actualizarRequerimientosOrganizacionalesLookupDisponibles();
+		this.requerimientosOrganizacionalesInsertando = true;
 		this.requerimientosOrganizacionalesEditando = true;
-		setTimeout(() => this.gridRequerimientosOrganizacionales?.instance.addRow());
+		setTimeout(() => {
+			this.gridRequerimientosOrganizacionales?.instance.addRow();
+			this.syncRequerimientoOrganizacionalColumnas();
+		});
 	}
 
 	editarRequerimientoOrganizacionalClick(e: any): void {
@@ -2058,10 +2064,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actualizarRequerimientosOrganizacionalesLookupDisponibles(
 			Number(e?.row?.data?.CORR_REQUERIMIENTO_ORGANIZACIONAL) || null
 		);
+		this.requerimientosOrganizacionalesInsertando = false;
 		this.requerimientosOrganizacionalesEditando = true;
 		const rowIndex = e.row.rowIndex;
 		const grid = e.component;
-		setTimeout(() => grid.editRow(rowIndex));
+		setTimeout(() => {
+			grid.editRow(rowIndex);
+			this.syncRequerimientoOrganizacionalColumnas();
+		});
 	}
 
 	requerimientoOrganizacionalEditButtonVisible(e: any): boolean {
@@ -2084,11 +2094,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	cancelarRequerimientoOrganizacionalEditado(): void {
 		this.cancelarEdicionGrid(this.gridRequerimientosOrganizacionales?.instance, () => {
 			this.requerimientosOrganizacionalesEditando = false;
+			this.requerimientosOrganizacionalesInsertando = false;
 			this.cargarRequerimientosOrganizacionales(true);
 		});
 	}
 
 	requerimientoOrganizacionalInitNewRow(e: any): void {
+		this.requerimientosOrganizacionalesInsertando = true;
 		e.data.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL = 0;
 		e.data.CORR_DESCRIPTOR_PUESTO = Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0;
 		e.data.CORR_REQUERIMIENTO_ORGANIZACIONAL = null;
@@ -2098,21 +2110,27 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	onRequerimientoOrganizacionalEditingStart(e: any): void {
+		this.requerimientosOrganizacionalesInsertando = !(
+			Number(e?.data?.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL) > 0
+		);
 		this.actualizarRequerimientosOrganizacionalesLookupDisponibles(
 			Number(e?.data?.CORR_REQUERIMIENTO_ORGANIZACIONAL) || null
 		);
 		this.requerimientosOrganizacionalesEditando = true;
+		this.syncRequerimientoOrganizacionalColumnas();
 	}
 
 	onRequerimientoOrganizacionalSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.requerimientosOrganizacionalesEditando = false;
+			this.requerimientosOrganizacionalesInsertando = false;
 		});
 	}
 
 	onRequerimientoOrganizacionalEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.requerimientosOrganizacionalesEditando = false;
+			this.requerimientosOrganizacionalesInsertando = false;
 		});
 		this.cargarRequerimientosOrganizacionales(true);
 	}
@@ -2223,8 +2241,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 		this.actualizarRiesgosPuestoLookupDisponibles();
+		this.riesgosPuestoInsertando = true;
 		this.riesgosPuestoEditando = true;
-		setTimeout(() => this.gridRiesgosPuesto?.instance.addRow());
+		setTimeout(() => {
+			this.gridRiesgosPuesto?.instance.addRow();
+			this.syncRiesgoPuestoColumnas();
+		});
 	}
 
 	editarRiesgoPuestoClick(e: any): void {
@@ -2232,10 +2254,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 		this.actualizarRiesgosPuestoLookupDisponibles(Number(e?.row?.data?.CORR_RIESGO_PUESTO) || null);
+		this.riesgosPuestoInsertando = false;
 		this.riesgosPuestoEditando = true;
 		const rowIndex = e.row.rowIndex;
 		const grid = e.component;
-		setTimeout(() => grid.editRow(rowIndex));
+		setTimeout(() => {
+			grid.editRow(rowIndex);
+			this.syncRiesgoPuestoColumnas();
+		});
 	}
 
 	riesgoPuestoEditButtonVisible(e: any): boolean {
@@ -2258,11 +2284,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	cancelarRiesgoPuestoEditado(): void {
 		this.cancelarEdicionGrid(this.gridRiesgosPuesto?.instance, () => {
 			this.riesgosPuestoEditando = false;
+			this.riesgosPuestoInsertando = false;
 			this.cargarRiesgosPuesto(true);
 		});
 	}
 
 	riesgoPuestoInitNewRow(e: any): void {
+		this.riesgosPuestoInsertando = true;
 		e.data.CORR_DESCRIPTOR_RIESGO = 0;
 		e.data.CORR_DESCRIPTOR_PUESTO = Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0;
 		e.data.CORR_RIESGO_PUESTO = null;
@@ -2273,19 +2301,23 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	onRiesgoPuestoEditingStart(e: any): void {
+		this.riesgosPuestoInsertando = !(Number(e?.data?.CORR_DESCRIPTOR_RIESGO) > 0);
 		this.actualizarRiesgosPuestoLookupDisponibles(Number(e?.data?.CORR_RIESGO_PUESTO) || null);
 		this.riesgosPuestoEditando = true;
+		this.syncRiesgoPuestoColumnas();
 	}
 
 	onRiesgoPuestoSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.riesgosPuestoEditando = false;
+			this.riesgosPuestoInsertando = false;
 		});
 	}
 
 	onRiesgoPuestoEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.riesgosPuestoEditando = false;
+			this.riesgosPuestoInsertando = false;
 		});
 		this.cargarRiesgosPuesto(true);
 	}
@@ -3515,10 +3547,32 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private resetearEdicionRequerimientosOrganizacionales(): void {
 		this.requerimientosOrganizacionalesEditando = false;
+		this.requerimientosOrganizacionalesInsertando = false;
 	}
 
 	private resetearEdicionRiesgosPuesto(): void {
 		this.riesgosPuestoEditando = false;
+		this.riesgosPuestoInsertando = false;
+	}
+
+	private syncRequerimientoOrganizacionalColumnas(): void {
+		setTimeout(() => {
+			this.gridRequerimientosOrganizacionales?.instance?.columnOption(
+				'CORR_REQUERIMIENTO_ORGANIZACIONAL',
+				'visible',
+				this.requerimientosOrganizacionalesInsertando
+			);
+		});
+	}
+
+	private syncRiesgoPuestoColumnas(): void {
+		setTimeout(() => {
+			this.gridRiesgosPuesto?.instance?.columnOption(
+				'CORR_RIESGO_PUESTO',
+				'visible',
+				this.riesgosPuestoInsertando
+			);
+		});
 	}
 
 	private resetearEdicionRelacionesInternas(): void {
