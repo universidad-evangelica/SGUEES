@@ -31,14 +31,6 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
-        [HttpGet("GetDistinctValues")]
-        [Authorize(Policy = "/pla-nivel-academico|R")]
-        public async Task<CResult> GetDistinctValues([FromQuery] PLA_NIVEL_ACADEMICOParam Data)
-        {
-            Data.CORR_EMPRESA = GetCorrEmpresa();
-            return await _service.GetDistinctValuesAsync(Data);
-        }
-
         [HttpGet("Get")]
         [Authorize(Policy = "/pla-nivel-academico|R")]
         public async Task<CResult> Get([FromQuery] PLA_NIVEL_ACADEMICOParam Data)
@@ -51,104 +43,48 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/pla-nivel-academico|C")]
         public async Task<IActionResult> Post(PLA_NIVEL_ACADEMICOTable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
             SetCreateAudit(Data);
 
-            var resultado = await _service.CreateAsync(Data, Data.ESTACION_CREA, "e-CoffeeTech");
-            return resultado.ErrorCode == 0
-                ? StatusCode(201, resultado)
-                : BadRequest(resultado);
+            var resultado = await _service.CreateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
         [HttpPut]
         [Authorize(Policy = "/pla-nivel-academico|U")]
         public async Task<IActionResult> Put(PLA_NIVEL_ACADEMICOTable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
+            this.ApplyQueryKeys(Data, nameof(PLA_NIVEL_ACADEMICOTable.CORR_NIVEL_ACADEMICO));
             SetUpdateAudit(Data);
 
-            var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0
-                ? StatusCode(201, resultado)
-                : BadRequest(resultado);
+            var resultado = await _service.UpdateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
         [HttpDelete]
         [Authorize(Policy = "/pla-nivel-academico|D")]
         public async Task<IActionResult> Delete([FromQuery] PLA_NIVEL_ACADEMICOTable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
+            Data.CORR_EMPRESA = GetCorrEmpresa();
 
-            SetUpdateAudit(Data);
-
-            var resultado = await _service.DeleteAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0
-                ? Ok(resultado)
-                : BadRequest(resultado);
+            var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
-        [HttpPut("Activar")]
+        [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/pla-nivel-academico|U")]
-        public async Task<IActionResult> Activar(PLA_NIVEL_ACADEMICOTable Data)
+        public async Task<IActionResult> ActivarInactivar(PLA_NIVEL_ACADEMICOTable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
+            this.ApplyQueryKeys(Data, nameof(PLA_NIVEL_ACADEMICOTable.CORR_NIVEL_ACADEMICO));
+            Data.CORR_EMPRESA = GetCorrEmpresa();
 
-            SetUpdateAudit(Data);
-            Data.ESTADO_NIVEL_ACADEMICO = true;
-
-            var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0
-                ? StatusCode(201, resultado)
-                : BadRequest(resultado);
-        }
-
-        [HttpPut("Desactivar")]
-        [Authorize(Policy = "/pla-nivel-academico|U")]
-        public async Task<IActionResult> Desactivar(PLA_NIVEL_ACADEMICOTable Data)
-        {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
-            SetUpdateAudit(Data);
-
-            var resultado = await _service.DesactivarAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0
-                ? Ok(resultado)
-                : BadRequest(resultado);
+            var resultado = await _service.ActivarInactivarAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
-        }
-
-        private bool ValidateEmpresaSesion(out CResult resultado)
-        {
-            if (GetCorrEmpresa() > 0)
-            {
-                resultado = null;
-                return true;
-            }
-
-            resultado = new CResult
-            {
-                Data = null,
-                Result = false,
-                CodeHelper = 0,
-                ErrorCode = 4100,
-                ErrorMessage = "No se pudo guardar el nivel académico porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
-                ErrorSource = "[PLA_NIVEL_ACADEMICOController]",
-                RowsAffected = 0
-            };
-
-            return false;
         }
 
         private string GetUsuario()
@@ -160,11 +96,11 @@ namespace SGUEES.Controllers
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
             Data.USUARIO_CREA = GetUsuario();
-            Data.FECHA_CREA = DateTime.Now;
             Data.ESTACION_CREA = ClientInfoHelper.GetClientStation(HttpContext);
+            Data.FECHA_CREA = DateTime.Now;
             Data.USUARIO_ACTU = Data.USUARIO_CREA;
-            Data.FECHA_ACTU = Data.FECHA_CREA;
             Data.ESTACION_ACTU = Data.ESTACION_CREA;
+            Data.FECHA_ACTU = Data.FECHA_CREA;
             Data.ESTADO_NIVEL_ACADEMICO ??= true;
         }
 
@@ -172,8 +108,8 @@ namespace SGUEES.Controllers
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
             Data.USUARIO_ACTU = GetUsuario();
-            Data.FECHA_ACTU = DateTime.Now;
             Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
+            Data.FECHA_ACTU = DateTime.Now;
             if (!Data.ESTADO_NIVEL_ACADEMICO.HasValue)
             {
                 Data.ESTADO_NIVEL_ACADEMICO = true;

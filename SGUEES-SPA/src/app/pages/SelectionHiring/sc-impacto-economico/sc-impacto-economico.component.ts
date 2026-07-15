@@ -1,21 +1,8 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import CustomStore from 'devextreme/data/custom_store';
-import { lastValueFrom } from 'rxjs';
-
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
-import { getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
-import {
-	createMttoPagedStoreCacheState,
-	invalidateMttoPagedStoreCache,
-	loadMttoHybridDisplayPage,
-	MttoPagedStoreCacheState,
-	MttoPagedStorePageResult,
-	resolveMttoHybridLoadPlan,
-	syncMttoHybridApiPageSize,
-} from 'src/app/shared/mtto/mtto-paged-store.helpers';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { ScImpactoEconomico } from './models/sc-impacto-economico';
 import { ScImpactoEconomicoService } from './sc-impacto-economico.service';
@@ -31,22 +18,15 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 
 	protected override etiquetaRegistro = 'el impacto económico';
 	protected override requiereEmpresaSesion = true;
-	protected override mttoHybridPaging = true;
-	protected override mttoPageSize = 15;
-	protected override mttoApiPageSize = 50;
-	protected override mttoApiPageSizes: (number | 'all')[] = [50, 100, 150, 250, 'all'];
-	protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
+	protected override mttoPageSize = 5;
+	protected override mttoPageSizes = [5, 10, 25, 50, 100];
 	protected override mttoGridKeyExpr = 'CORR_IMPACTO_ECONOMICO';
 	protected override mttoCampoEstado = ESTADO_FIELD;
 	protected override mttoEstadoDescribeField = 'DESCRIPCION';
+	protected override mttoParchearGridTrasGuardar = true;
+	protected override mttoRemoteOperations = false;
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Impacto Economico';
-	private readonly pagedStoreCacheState: MttoPagedStoreCacheState = createMttoPagedStoreCacheState(
-		this.mttoPageSize,
-		this.mttoApiPageSize
-	);
-	private pagedStoreInflightKey: string | null = null;
-	private pagedStoreInflightPromise: Promise<MttoPagedStorePageResult> | null = null;
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -63,10 +43,9 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		return this.dataGrid ?? null;
 	}
 
-	//#region <Inicializando Opciones>
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.configurarDataSource();
+		this.consultar();
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -75,23 +54,9 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 			this.subTituloVentana = this.maintenanceSubtitulo;
 		}
 	}
-	//#endregion
 
-	//#region <Metodos Mtto>
-	fillParam(
-		xCORR_IMPACTO_ECONOMICO?: number,
-		page = 1,
-		pageSize = this.mttoApiPageSize,
-		sortField = '',
-		sortDesc = false
-	): any {
-		return {
-			CORR_IMPACTO_ECONOMICO: xCORR_IMPACTO_ECONOMICO ?? 0,
-			PAGE: page,
-			PAGE_SIZE: pageSize,
-			SORT_FIELD: sortField,
-			SORT_DESC: sortDesc,
-		};
+	fillParam(xCORR_IMPACTO_ECONOMICO?: number): any {
+		return { CORR_IMPACTO_ECONOMICO: xCORR_IMPACTO_ECONOMICO ?? 0 };
 	}
 
 	override fillData(xModel?: ScImpactoEconomico): ScImpactoEconomico {
@@ -124,18 +89,87 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		};
 	}
 
-	consultar(resetPage = true): void {
-		invalidateMttoPagedStoreCache(this.pagedStoreCacheState);
-		this.pagedStoreInflightKey = null;
-		this.pagedStoreInflightPromise = null;
-		this.refrescarGridMtto(resetPage);
+	consultar(resetPage = false): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+			onData: () => {
+				this.ordenarModelsPorCorr();
+				this.refrescarGridTrasCarga(resetPage);
+			},
+		});
 	}
 
-	onApiPageSizeChange(apiPageSize: number): void {
-		this.mttoApiPageSize = apiPageSize;
-		syncMttoHybridApiPageSize(this.pagedStoreCacheState, apiPageSize);
-		this.pagedStoreInflightKey = null;
-		this.pagedStoreInflightPromise = null;
+	private ordenarModelsPorCorr(): void {
+		if (!Array.isArray(this.models)) {
+			return;
+		}
+
+		this.models = [...this.models].sort((a, b) => Number(a.CORR_IMPACTO_ECONOMICO) - Number(b.CORR_IMPACTO_ECONOMICO));
+	}
+
+	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
+		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
+			super.aplicarRegistroEnGrid(data, isAdd);
+			return;
+		}
+
+		const record = this.fillData(data as ScImpactoEconomico);
+		const key = this.mttoGridKeyExpr;
+
+		if (isAdd) {
+			this.models = [...this.models, record];
+		} else {
+			const index = this.models.findIndex((item) => item?.[key] === record[key]);
+			if (index >= 0) {
+				this.models = this.models.map((item, i) => (i === index ? this.fillData({ ...item, ...record }) : item));
+			}
+		}
+
+		this.ordenarModelsPorCorr();
+		this.refrescarGridTrasCarga(isAdd);
+	}
+
+	protected override quitarRegistroDeGrid(keyValue: unknown): void {
+		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
+			super.quitarRegistroDeGrid(keyValue);
+			return;
+		}
+
+		const key = this.mttoGridKeyExpr;
+		this.models = this.models.filter((item) => item?.[key] !== keyValue);
+		this.refrescarGridTrasCarga(true);
+	}
+
+	private refrescarGridTrasCarga(resetPage = false): void {
+		setTimeout(() => {
+			this.dataGrid?.refreshData(resetPage);
+		}, 0);
+	}
+
+	override rowDblClick(e: any): void {
+		const rowData = e?.data ?? e?.row?.data;
+		if (rowData) {
+			this.model = this.fillData(rowData);
+			this.modelUpdate = this.fillData(rowData);
+		}
+		super.rowDblClick(e);
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+			this.bloquear();
+		});
+	}
+
+	onEditClick(e: any): void {
+		if (!e?.row?.data) {
+			return;
+		}
+
+		this.model = this.fillData(e.row.data);
+		this.editarClick(e);
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+			this.habilitar();
+		});
 	}
 
 	override nuevo(): void {
@@ -143,6 +177,9 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 		super.nuevo();
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+		});
 	}
 
 	guardar(): void {
@@ -174,10 +211,11 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 	}
 
 	override habilitar(): void {
+		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_IMPACTO_ECONOMICO')?.option('readOnly', true);
 			this.dataForm.instance.getEditor('DESCRIPCION')?.option('readOnly', false);
-			this.dataForm.instance.getEditor('ESTADO_IMPACTO_ECONOMICO')?.option('readOnly', false);
+			this.dataForm.instance.getEditor('ESTADO_IMPACTO_ECONOMICO')?.option('readOnly', estadoSoloLectura);
 		});
 	}
 
@@ -186,77 +224,4 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 			this.dataForm.instance.getEditor('DESCRIPCION')?.focus();
 		});
 	}
-	//#endregion
-
-	//#region <Grid paginado servidor híbrido>
-	private configurarDataSource(): void {
-		this.models = new CustomStore({
-			key: this.mttoGridKeyExpr,
-			loadMode: 'processed',
-			cacheRawData: false,
-			load: async (loadOptions: any) => {
-				const loadGeneration = this.pagedStoreCacheState.loadGeneration;
-
-				try {
-					const plan = resolveMttoHybridLoadPlan(
-						loadOptions,
-						this.pagedStoreCacheState,
-						this.mttoGridKeyExpr,
-						this.mttoPageSize
-					);
-
-					if (this.pagedStoreInflightKey === plan.displayKey && this.pagedStoreInflightPromise) {
-						return this.pagedStoreInflightPromise;
-					}
-
-					this.pagedStoreInflightKey = plan.displayKey;
-					this.pagedStoreInflightPromise = loadMttoHybridDisplayPage(
-						plan,
-						this.pagedStoreCacheState,
-						(apiPage, apiPageSize, sortField, sortDesc) =>
-							this.fetchPagedImpacto(apiPage, apiPageSize, sortField, sortDesc, loadGeneration),
-						this.mttoPageSize
-					);
-
-					try {
-						return await this.pagedStoreInflightPromise;
-					} finally {
-						if (this.pagedStoreInflightKey === plan.displayKey) {
-							this.pagedStoreInflightKey = null;
-							this.pagedStoreInflightPromise = null;
-						}
-					}
-				} catch (error) {
-					this.notifyApiError(error);
-					throw new Error(getApiErrorMessage(error));
-				}
-			},
-		});
-	}
-
-	private async fetchPagedImpacto(
-		page: number,
-		pageSize: number,
-		sortField: string,
-		sortDesc: boolean,
-		loadGeneration: number
-	): Promise<MttoPagedStorePageResult> {
-		const response = await lastValueFrom(
-			this.service.getAll(this.fillParam(0, page, pageSize, sortField, sortDesc))
-		);
-
-		if (loadGeneration !== this.pagedStoreCacheState.loadGeneration) {
-			return { data: [], totalCount: 0 };
-		}
-
-		if (!response.Result) {
-			throw new Error(response.ErrorMessage || 'No se pudo cargar el impacto economico.');
-		}
-
-		return {
-			data: response.Data || [],
-			totalCount: response.RowsAffected || 0,
-		};
-	}
-	//#endregion
 }

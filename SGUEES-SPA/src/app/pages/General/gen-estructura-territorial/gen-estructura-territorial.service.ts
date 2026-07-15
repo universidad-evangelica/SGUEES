@@ -4,7 +4,6 @@ import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
-import { buildRemoteGridWhere } from 'src/app/shared/utils/remote-grid-filter.util';
 import { GenDepto } from './gen-depto/models/gen-depto';
 import { GenDeptoRepository } from './gen-depto/gen-depto.repository';
 import { GenDistrito } from './gen-distrito/models/gen-distrito';
@@ -110,12 +109,8 @@ export class GenEstructuraTerritorialService {
 		return true;
 	}
 
-	getAllPaises(param: any): Observable<IResult> {
-		return this.repo.getAllPaises(this.buildRemoteWhere(param, true));
-	}
-
-	getDistinctValuesPaises(param: any): Observable<IResult> {
-		return this.repo.getDistinctValuesPaises(this.buildRemoteWhere(param, true));
+	getAllPaises(): Observable<IResult> {
+		return this.repo.getAllPaises([]);
 	}
 
 	insertPais(model: GenPais): Observable<IResult> {
@@ -142,14 +137,6 @@ export class GenEstructuraTerritorialService {
 		return this.repo.deletePais(xWhere);
 	}
 
-	getAllDeptos(param: any): Observable<IResult> {
-		return this.repoDepto.getAll(this.buildRemoteWhere(param, false, ['CORR_PAIS']));
-	}
-
-	getDistinctValuesDeptos(param: any): Observable<IResult> {
-		return this.repoDepto.getDistinctValues(this.buildRemoteWhere(param, false, ['CORR_PAIS']));
-	}
-
 	insertDepto(model: GenDepto): Observable<IResult> {
 		return this.repoDepto.create(model);
 	}
@@ -164,14 +151,6 @@ export class GenEstructuraTerritorialService {
 			{ Parameter: 'CORR_DEPTO', Value: model.CORR_DEPTO },
 		];
 		return this.repoDepto.delete(xWhere);
-	}
-
-	getAllMunicipios(param: any): Observable<IResult> {
-		return this.repoMunicipio.getAll(this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO']));
-	}
-
-	getDistinctValuesMunicipios(param: any): Observable<IResult> {
-		return this.repoMunicipio.getDistinctValues(this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO']));
 	}
 
 	insertMunicipio(model: GenMunicipio): Observable<IResult> {
@@ -191,48 +170,10 @@ export class GenEstructuraTerritorialService {
 		return this.repoMunicipio.delete(xWhere);
 	}
 
-	getAllDistritos(param: any): Observable<IResult> {
-		return this.repoDistrito.getAll(this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO']));
-	}
-
-	getDistinctValuesDistritos(param: any): Observable<IResult> {
-		return this.repoDistrito.getDistinctValues(
-			this.buildRemoteWhere(param, false, ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO'])
-		);
-	}
-
 	getPaisListSummary(): any {
 		return {
 			totalItems: [{ column: 'CORR_PAIS', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
 		};
-	}
-
-	private buildRemoteWhere(param: any, _includePaging: boolean, scopeFields: string[] = []): IParam[] {
-		const xWhere = buildRemoteGridWhere(param, '');
-
-		scopeFields.forEach((field) => {
-			if (this.hasCorrKey(param[field])) {
-				xWhere.push({ Parameter: field, Value: param[field] });
-			}
-		});
-
-		return xWhere;
-	}
-
-	private hasCorrKey(value: any): boolean {
-		if (value === null || value === undefined || `${value}`.trim() === '') {
-			return false;
-		}
-
-		return !Number.isNaN(Number(value)) && Number(value) > 0;
-	}
-
-	private pushScopeFilter(xWhere: IParam[], param: any, fields: string[]): void {
-		fields.forEach((field) => {
-			if (this.hasCorrKey(param[field])) {
-				xWhere.push({ Parameter: field, Value: param[field] });
-			}
-		});
 	}
 
 	private requiredRule() {

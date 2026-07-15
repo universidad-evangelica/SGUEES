@@ -9,6 +9,7 @@ import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { ToastModule } from 'primeng/toast';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
+import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 import { GenGerenciaComponent } from './gen-gerencia.component';
 
 const routes: Routes = [{ path: '', component: GenGerenciaComponent }];
@@ -24,6 +25,7 @@ const routes: Routes = [{ path: '', component: GenGerenciaComponent }];
 		DxTextBoxModule,
 		BarraDataMttoModule,
 		DataGridMttoModule,
+		DataLookupModule,
 		ToastModule,
 	],
 	exports: [RouterModule],

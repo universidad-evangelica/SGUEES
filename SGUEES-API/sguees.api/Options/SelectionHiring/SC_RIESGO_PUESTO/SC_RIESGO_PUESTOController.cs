@@ -31,86 +31,12 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
-        [HttpGet("GetDistinctValues")]
-        [Authorize(Policy = "/sc-riesgo-puesto|R")]
-        public async Task<CResult> GetDistinctValues([FromQuery] SC_RIESGO_PUESTOParam Data)
-        {
-            Data.CORR_EMPRESA = GetCorrEmpresa();
-            return await _service.GetDistinctValuesAsync(Data);
-        }
-
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-riesgo-puesto|R")]
         public async Task<CResult> Get([FromQuery] SC_RIESGO_PUESTOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
             return await _service.GetAsync(Data);
-        }
-
-        [HttpPost]
-        [Authorize(Policy = "/sc-riesgo-puesto|C")]
-        public async Task<IActionResult> Post(SC_RIESGO_PUESTOTable Data)
-        {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
-            SetCreateAudit(Data);
-
-            var resultado = await _service.CreateAsync(Data, Data.ESTACION_CREA, "e-CoffeeTech");
-            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
-        }
-
-        [HttpPut]
-        [Authorize(Policy = "/sc-riesgo-puesto|U")]
-        public async Task<IActionResult> Put(SC_RIESGO_PUESTOTable Data)
-        {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
-            SetUpdateAudit(Data);
-
-            var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
-        }
-
-        [HttpDelete]
-        [Authorize(Policy = "/sc-riesgo-puesto|D")]
-        public async Task<IActionResult> Delete([FromQuery] SC_RIESGO_PUESTOTable Data)
-        {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
-            SetUpdateAudit(Data);
-
-            var resultado = await _service.DeleteAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
-        }
-
-        [HttpPut("Activar")]
-        [Authorize(Policy = "/sc-riesgo-puesto|U")]
-        public async Task<IActionResult> Activar(SC_RIESGO_PUESTOTable Data)
-        {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
-            SetUpdateAudit(Data);
-            Data.ESTADO_RIESGO_PUESTO = true;
-
-            var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
-        }
-
-        [HttpPut("Desactivar")]
-        [Authorize(Policy = "/sc-riesgo-puesto|U")]
-        public async Task<IActionResult> Desactivar(SC_RIESGO_PUESTOTable Data)
-        {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
-            SetUpdateAudit(Data);
-
-            var resultado = await _service.DesactivarAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
         [HttpGet("GetCORR_RIESGO_PUESTO_SC_DESCRIPTOR_PUESTO")]
@@ -121,32 +47,52 @@ namespace SGUEES.Controllers
             return await _service.GetCatalogoDescriptorAsync(Data);
         }
 
+        [HttpPost]
+        [Authorize(Policy = "/sc-riesgo-puesto|C")]
+        public async Task<IActionResult> Post(SC_RIESGO_PUESTOTable Data)
+        {
+            SetCreateAudit(Data);
+
+            var resultado = await _service.CreateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+        }
+
+        [HttpPut]
+        [Authorize(Policy = "/sc-riesgo-puesto|U")]
+        public async Task<IActionResult> Put(SC_RIESGO_PUESTOTable Data)
+        {
+            this.ApplyQueryKeys(Data, nameof(SC_RIESGO_PUESTOTable.CORR_RIESGO_PUESTO));
+            SetUpdateAudit(Data);
+
+            var resultado = await _service.UpdateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+        }
+
+        [HttpDelete]
+        [Authorize(Policy = "/sc-riesgo-puesto|D")]
+        public async Task<IActionResult> Delete([FromQuery] SC_RIESGO_PUESTOTable Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+
+            var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+        }
+
+        [HttpPut("ActivarInactivar")]
+        [Authorize(Policy = "/sc-riesgo-puesto|U")]
+        public async Task<IActionResult> ActivarInactivar(SC_RIESGO_PUESTOTable Data)
+        {
+            this.ApplyQueryKeys(Data, nameof(SC_RIESGO_PUESTOTable.CORR_RIESGO_PUESTO));
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+
+            var resultado = await _service.ActivarInactivarAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+        }
+
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
-        }
-
-        private bool ValidateEmpresaSesion(out CResult resultado)
-        {
-            if (GetCorrEmpresa() > 0)
-            {
-                resultado = null;
-                return true;
-            }
-
-            resultado = new CResult
-            {
-                Data = null,
-                Result = false,
-                CodeHelper = 0,
-                ErrorCode = 4100,
-                ErrorMessage = "No se pudo guardar el riesgo de puesto porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
-                ErrorSource = "[SC_RIESGO_PUESTOController]",
-                RowsAffected = 0
-            };
-
-            return false;
         }
 
         private string GetUsuario()

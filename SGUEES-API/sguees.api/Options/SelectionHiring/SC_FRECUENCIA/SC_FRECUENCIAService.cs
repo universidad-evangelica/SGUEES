@@ -1,6 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using eFramework.Core;
 using SGUEES.Models;
@@ -20,16 +18,6 @@ namespace SGUEES.Services
         public async Task<CResult> GetAllAsync(SC_FRECUENCIAParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
-        }
-
-        public async Task<CResult> GetDistinctValuesAsync(SC_FRECUENCIAParam xWhere)
-        {
-            if (string.IsNullOrWhiteSpace(xWhere.DISTINCT_FIELD))
-            {
-                return ValidationError("Debe indicar el campo para el filtro de encabezado.");
-            }
-
-            return await _repo.GetDistinctValuesAsync(BuildParameters(xWhere));
         }
 
         public async Task<CResult> GetFrecuenciasActivasAsync(SC_FRECUENCIAParam xWhere)
@@ -55,145 +43,84 @@ namespace SGUEES.Services
 
         public async Task<CResult> CreateAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
             var validation = Validate(Data);
             if (validation != null)
             {
                 return validation;
             }
 
-            Data.NOMBRE_FRECUENCIA = Data.NOMBRE_FRECUENCIA.Trim();
-            Data.ESTADO_FRECUENCIA ??= true;
-
-            var duplicate = await ValidateUniqueNombreAsync(Data, null);
-            if (duplicate != null)
-            {
-                return duplicate;
-            }
-
+            NormalizeData(Data);
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
         public async Task<CResult> UpdateAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
             var validation = Validate(Data);
             if (validation != null)
             {
                 return validation;
             }
 
-            Data.NOMBRE_FRECUENCIA = Data.NOMBRE_FRECUENCIA.Trim();
-            Data.ESTADO_FRECUENCIA ??= true;
-
-            var duplicate = await ValidateUniqueNombreAsync(Data, Data.CORR_FRECUENCIA);
-            if (duplicate != null)
+            if (Data.CORR_FRECUENCIA <= 0)
             {
-                return duplicate;
+                return ValidationError("No se pudo identificar la frecuencia a actualizar.");
             }
 
+            NormalizeData(Data);
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
         public async Task<CResult> DeleteAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        public async Task<CResult> DesactivarAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
+        public async Task<CResult> ActivarInactivarAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            Data.ESTADO_FRECUENCIA = false;
-            return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            if (Data.CORR_FRECUENCIA <= 0)
+            {
+                return ValidationError("No se pudo identificar la frecuencia a actualizar.");
+            }
+
+            return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
         private static List<CParameter> BuildParameters(SC_FRECUENCIAParam xWhere)
         {
-            var p = new List<CParameter>
+            return new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "BUSQUEDA", Value = xWhere.BUSQUEDA, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "ESTADO_FRECUENCIA", Value = xWhere.ESTADO_FRECUENCIA, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "PAGE", Value = xWhere.PAGE, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "PAGE_SIZE", Value = xWhere.PAGE_SIZE, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "DISTINCT_FIELD", Value = xWhere.DISTINCT_FIELD, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "HEADER_FILTER_SEARCH", Value = xWhere.HEADER_FILTER_SEARCH, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "SORT_FIELD", Value = xWhere.SORT_FIELD, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "SORT_DESC", Value = xWhere.SORT_DESC, DbType = System.Data.DbType.Boolean },
             };
-
-            AddJsonParameter(p, "FILTER_ROW_JSON", xWhere.FILTER_ROW_JSON);
-            AddJsonParameter(p, "COLUMN_EXACT_JSON", xWhere.COLUMN_EXACT_JSON);
-            AddJsonParameter(p, "COLUMN_ANYOF_JSON", xWhere.COLUMN_ANYOF_JSON);
-            AddAnyOfFilters(p, xWhere.COLUMN_ANYOF_JSON);
-
-            return p;
         }
 
-        private static void AddJsonParameter(List<CParameter> p, string parameterName, string json)
+        private static void NormalizeData(SC_FRECUENCIATable Data)
         {
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return;
-            }
-
-            p.Add(new CParameter()
-            {
-                ParameterName = parameterName,
-                Value = json,
-                DbType = System.Data.DbType.String,
-            });
-        }
-
-        private static void AddAnyOfFilters(List<CParameter> p, string columnAnyOfJson)
-        {
-            if (string.IsNullOrWhiteSpace(columnAnyOfJson))
-            {
-                return;
-            }
-
-            try
-            {
-                var filters = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(columnAnyOfJson);
-                if (filters == null)
-                {
-                    return;
-                }
-
-                foreach (var filter in filters)
-                {
-                    if (filter.Value.ValueKind != JsonValueKind.Array)
-                    {
-                        continue;
-                    }
-
-                    var values = filter.Value
-                        .EnumerateArray()
-                        .Select(x => x.ValueKind switch
-                        {
-                            JsonValueKind.String => x.GetString(),
-                            JsonValueKind.Number => x.GetRawText(),
-                            JsonValueKind.True => "true",
-                            JsonValueKind.False => "false",
-                            JsonValueKind.Null => "__BLANK__",
-                            _ => x.ToString(),
-                        })
-                        .Where(x => !string.IsNullOrWhiteSpace(x))
-                        .ToList();
-
-                    if (values.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    p.Add(new CParameter()
-                    {
-                        ParameterName = $"{filter.Key}_ANYOF",
-                        Value = string.Join('|', values),
-                        DbType = System.Data.DbType.String,
-                    });
-                }
-            }
-            catch (JsonException)
-            {
-            }
+            Data.NOMBRE_FRECUENCIA = Data.NOMBRE_FRECUENCIA?.Trim();
+            Data.ESTADO_FRECUENCIA ??= true;
         }
 
         private static CResult Validate(SC_FRECUENCIATable Data)
@@ -216,16 +143,23 @@ namespace SGUEES.Services
             return null;
         }
 
-        private async Task<CResult> ValidateUniqueNombreAsync(SC_FRECUENCIATable Data, int? excludeCorr)
+        private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
-            var exists = await _repo.ExistsNombreAsync(
-                Data.CORR_EMPRESA,
-                Data.NOMBRE_FRECUENCIA,
-                excludeCorr ?? 0);
+            if (corrEmpresa > 0)
+            {
+                return null;
+            }
 
-            return exists
-                ? ValidationError($"Ya existe una frecuencia con el nombre {Data.NOMBRE_FRECUENCIA}.")
-                : null;
+            return new CResult
+            {
+                Data = null,
+                Result = false,
+                CodeHelper = 0,
+                ErrorCode = 4100,
+                ErrorMessage = "No se pudo guardar la frecuencia porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
+                ErrorSource = "[SC_FRECUENCIAService]",
+                RowsAffected = 0
+            };
         }
 
         private static CResult ValidationError(string message)

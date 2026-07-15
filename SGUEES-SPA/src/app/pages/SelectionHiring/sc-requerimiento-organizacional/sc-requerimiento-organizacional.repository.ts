@@ -15,10 +15,6 @@ export class ScRequerimientoOrganizacionalRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	getDistinctValues(xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Get(this.xController, 'GetDistinctValues', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
-	}
-
 	get(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
@@ -35,11 +31,7 @@ export class ScRequerimientoOrganizacionalRepository {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	activar(model: any, xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Put(model, this.xController, 'Activar', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
-	}
-
-	desactivar(model: any, xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Put(model, this.xController, 'Desactivar', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 }

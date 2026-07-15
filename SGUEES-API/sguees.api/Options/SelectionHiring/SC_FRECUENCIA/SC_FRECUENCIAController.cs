@@ -31,14 +31,6 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
-        [HttpGet("GetDistinctValues")]
-        [Authorize(Policy = "/sc-frecuencia|R")]
-        public async Task<CResult> GetDistinctValues([FromQuery] SC_FRECUENCIAParam Data)
-        {
-            Data.CORR_EMPRESA = GetCorrEmpresa();
-            return await _service.GetDistinctValuesAsync(Data);
-        }
-
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-frecuencia|R")]
         public async Task<CResult> Get([FromQuery] SC_FRECUENCIAParam Data)
@@ -59,104 +51,48 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/sc-frecuencia|C")]
         public async Task<IActionResult> Post(SC_FRECUENCIATable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
             SetCreateAudit(Data);
 
-            var resultado = await _service.CreateAsync(Data, Data.ESTACION_CREA, "e-CoffeeTech");
-            return resultado.ErrorCode == 0
-                ? StatusCode(201, resultado)
-                : BadRequest(resultado);
+            var resultado = await _service.CreateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
         [HttpPut]
         [Authorize(Policy = "/sc-frecuencia|U")]
         public async Task<IActionResult> Put(SC_FRECUENCIATable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
+            this.ApplyQueryKeys(Data, nameof(SC_FRECUENCIATable.CORR_FRECUENCIA));
             SetUpdateAudit(Data);
 
-            var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0
-                ? StatusCode(201, resultado)
-                : BadRequest(resultado);
+            var resultado = await _service.UpdateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
         [HttpDelete]
         [Authorize(Policy = "/sc-frecuencia|D")]
         public async Task<IActionResult> Delete([FromQuery] SC_FRECUENCIATable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
+            Data.CORR_EMPRESA = GetCorrEmpresa();
 
-            SetUpdateAudit(Data);
-
-            var resultado = await _service.DeleteAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0
-                ? Ok(resultado)
-                : BadRequest(resultado);
+            var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
-        [HttpPut("Activar")]
+        [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/sc-frecuencia|U")]
-        public async Task<IActionResult> Activar(SC_FRECUENCIATable Data)
+        public async Task<IActionResult> ActivarInactivar(SC_FRECUENCIATable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
+            this.ApplyQueryKeys(Data, nameof(SC_FRECUENCIATable.CORR_FRECUENCIA));
+            Data.CORR_EMPRESA = GetCorrEmpresa();
 
-            SetUpdateAudit(Data);
-            Data.ESTADO_FRECUENCIA = true;
-
-            var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0
-                ? StatusCode(201, resultado)
-                : BadRequest(resultado);
-        }
-
-        [HttpPut("Desactivar")]
-        [Authorize(Policy = "/sc-frecuencia|U")]
-        public async Task<IActionResult> Desactivar(SC_FRECUENCIATable Data)
-        {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
-            SetUpdateAudit(Data);
-
-            var resultado = await _service.DesactivarAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0
-                ? Ok(resultado)
-                : BadRequest(resultado);
+            var resultado = await _service.ActivarInactivarAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
-        }
-
-        private bool ValidateEmpresaSesion(out CResult resultado)
-        {
-            if (GetCorrEmpresa() > 0)
-            {
-                resultado = null;
-                return true;
-            }
-
-            resultado = new CResult
-            {
-                Data = null,
-                Result = false,
-                CodeHelper = 0,
-                ErrorCode = 4100,
-                ErrorMessage = "No se pudo guardar la frecuencia porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
-                ErrorSource = "[SC_FRECUENCIAController]",
-                RowsAffected = 0
-            };
-
-            return false;
         }
 
         private string GetUsuario()

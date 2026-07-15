@@ -5,32 +5,28 @@ import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { environment } from 'src/environments/environment';
 
-/** Detalle cascada: municipio (mismo controller padre, endpoints Municipio). */
+/** Detalle cascada: municipio. */
 @Injectable({
 	providedIn: 'root',
 })
 export class GenMunicipioRepository {
-	readonly xController = 'GEN_ESTRUCTURA_TERRITORIAL';
+	readonly xController = 'GEN_MUNICIPIO';
 
 	constructor(private objData: CData) {}
 
 	getAll(xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Get(this.xController, 'GetAllMunicipios', xWhere, environment.UrlGENERALAPI);
-	}
-
-	getDistinctValues(xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Get(this.xController, 'GetDistinctValuesMunicipios', xWhere, environment.UrlGENERALAPI);
+		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlGENERALAPI);
 	}
 
 	create(model: any): Observable<IResult> {
-		return this.objData.Post(model, this.xController, 'Municipio', environment.UrlGENERALAPI);
+		return this.objData.Post(model, this.xController, '', environment.UrlGENERALAPI);
 	}
 
 	update(model: any): Observable<IResult> {
-		return this.objData.Put(model, this.xController, 'Municipio', [], environment.UrlGENERALAPI);
+		return this.objData.Put(model, this.xController, '', [], environment.UrlGENERALAPI);
 	}
 
 	delete(xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Delete(this.xController, 'Municipio', xWhere, environment.UrlGENERALAPI);
+		return this.objData.Delete(this.xController, '', xWhere, environment.UrlGENERALAPI);
 	}
 }

@@ -8,7 +8,6 @@ namespace sguees.Repositories
 {
 	public interface IGEN_GERENCIARepository : IRepository<GEN_GERENCIATable>
 	{
-		Task<CResult> GetDistinctValuesAsync(List<CParameter> xWhere);
 		Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr);
 	}
 }

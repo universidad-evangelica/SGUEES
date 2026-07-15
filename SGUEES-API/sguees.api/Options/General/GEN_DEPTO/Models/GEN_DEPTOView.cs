@@ -2,7 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
-	public class GEN_ESTRUCTURA_TERRITORIAL_DEPTOView
+	public class GEN_DEPTOView
 	{
 		public int CORR_PAIS { get; set; }
 		public int CORR_DEPTO { get; set; }

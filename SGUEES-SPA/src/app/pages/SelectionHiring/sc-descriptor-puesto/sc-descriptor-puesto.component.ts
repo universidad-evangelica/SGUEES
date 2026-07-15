@@ -9,13 +9,6 @@ import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
-import {
-	cleanApiMessage,
-	getApiErrorMessage,
-	isEmpresaFkErrorMessage,
-	isEmpresaWarningResponse,
-	mapApiErrorMessage,
-} from 'src/app/shared/mtto/mtto-api-messages';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { environment } from 'src/environments/environment';
 
@@ -3459,58 +3452,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private notifyDescriptorWarning(message: string): void {
 		this.notifyFx(message, NotifyType.Warning, { raw: true });
-	}
-
-	/** Solo en esta pantalla: validaciones de negocio (hijos, vacíos, etc.) como Warning. */
-	override notifyApiResponse(response: any): void {
-		const message = mapApiErrorMessage(
-			response?.ErrorMessage || 'Ocurrió un error al procesar la solicitud.',
-			this.etiquetaRegistro
-		);
-		const type = this.getDescriptorNotifyTypeFromResponse(response);
-		this.notifyFx(message, type, { raw: true });
-	}
-
-	override notifyApiError(error: any): void {
-		const body = error?.error;
-		if (body && typeof body === 'object' && body.ErrorMessage != null) {
-			this.notifyApiResponse(body);
-			return;
-		}
-
-		const rawMessage = getApiErrorMessage(error);
-		const message = mapApiErrorMessage(rawMessage, this.etiquetaRegistro);
-		const type = this.isDescriptorBusinessWarning(rawMessage) ? NotifyType.Warning : NotifyType.Error;
-		this.notifyFx(message, type, { raw: true });
-	}
-
-	private getDescriptorNotifyTypeFromResponse(response: any): NotifyType {
-		if (isEmpresaWarningResponse(response) || response?.ErrorCode === 2627) {
-			return NotifyType.Warning;
-		}
-
-		return this.isDescriptorBusinessWarning(response?.ErrorMessage) ? NotifyType.Warning : NotifyType.Error;
-	}
-
-	private isDescriptorBusinessWarning(message: string): boolean {
-		const value = cleanApiMessage(message).toLowerCase();
-		if (isEmpresaFkErrorMessage(message) || value.includes('no tiene una empresa asignada')) {
-			return true;
-		}
-
-		return (
-			value.includes('ya existe') ||
-			value.includes('duplicad') ||
-			value.includes('hijos asociados') ||
-			value.includes('registros asociados') ||
-			value.includes('asociados') ||
-			value.includes('no se puede eliminar') ||
-			value.includes('debe seleccionar') ||
-			value.includes('debe ingresar') ||
-			value.includes('debe indicar') ||
-			value.includes('obligatorio') ||
-			value.includes('no se pudieron guardar las funciones')
-		);
 	}
 
 	private syncHeaderForm(): void {

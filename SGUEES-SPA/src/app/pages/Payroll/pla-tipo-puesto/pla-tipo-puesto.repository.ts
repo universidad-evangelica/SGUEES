@@ -13,12 +13,12 @@ export class PlaTipoPuestoRepository {
 
 	constructor(private objData: CData) {}
 
-	get(xWhere: IParam[]): Observable<IResult> {
+	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
-	getDistinctValues(xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Get(this.xController, 'GetDistinctValues', xWhere, environment.UrlTALENTOHUMANONAPI);
+	get(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
 	create(model: any): Observable<IResult> {
@@ -33,11 +33,7 @@ export class PlaTipoPuestoRepository {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
-	activar(model: any, xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Put(model, this.xController, 'Activar', xWhere, environment.UrlTALENTOHUMANONAPI);
-	}
-
-	desactivar(model: any, xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Put(model, this.xController, 'Desactivar', xWhere, environment.UrlTALENTOHUMANONAPI);
+	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 }

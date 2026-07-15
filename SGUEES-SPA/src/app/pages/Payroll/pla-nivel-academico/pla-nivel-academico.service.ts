@@ -3,16 +3,14 @@ import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
-import { buildRemoteGridWhere, createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
-import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 import { PlaNivelAcademico } from './models/pla-nivel-academico';
 import { PlaNivelAcademicoRepository } from './pla-nivel-academico.repository';
 
 const ESTADO_FIELD = 'ESTADO_NIVEL_ACADEMICO';
 
-@Injectable({
-	providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class PlaNivelAcademicoService {
 	constructor(private repo: PlaNivelAcademicoRepository) {}
 
@@ -31,16 +29,11 @@ export class PlaNivelAcademicoService {
 	}
 
 	getAll(param: any): Observable<IResult> {
-		return this.repo.get(this.buildWhere(param));
-	}
-
-	getDistinctValues(param: any): Observable<IResult> {
-		return this.repo.getDistinctValues(this.buildWhere(param));
+		return this.repo.getAll(this.buildWhere(param));
 	}
 
 	get(param: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: param.CORR_NIVEL_ACADEMICO }];
-		return this.repo.get(xWhere);
+		return this.repo.get([{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: param.CORR_NIVEL_ACADEMICO }]);
 	}
 
 	insert(model: any): Observable<IResult> {
@@ -48,106 +41,42 @@ export class PlaNivelAcademicoService {
 	}
 
 	update(model: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }];
-		return this.repo.update(model, xWhere);
+		return this.repo.update(model, [{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }]);
 	}
 
 	delete(model: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }];
-		return this.repo.delete(xWhere);
+		return this.repo.delete([{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }]);
 	}
 
-	activar(model: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }];
-		return this.repo.activar(model, xWhere);
+	activarInactivar(model: any): Observable<IResult> {
+		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }]);
 	}
 
-	desactivar(model: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }];
-		return this.repo.desactivar(model, xWhere);
-	}
-
-	getColumns(onEditClick: Function, onDeleteClick: Function, onActivarClick: Function, onDesactivarClick: Function, canEdit = true, canDelete = true): any {
-		const editHint = canEdit ? 'Editar registro' : 'No tiene permiso para editar registros.';
-		const deleteHint = canDelete ? 'Eliminar registro' : 'No tiene permiso para eliminar registros.';
-		const activarHint = canEdit ? 'Activar registro' : 'No tiene permiso para activar registros.';
-		const desactivarHint = canEdit ? 'Desactivar registro' : 'No tiene permiso para desactivar registros.';
-		const editCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-edit';
-		const deleteCssClass = canDelete ? 'sguees-grid-action-delete' : 'sguees-action-no-delete';
-		const activateCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-activate';
-		const deactivateCssClass = canEdit ? 'sguees-grid-action-delete' : 'sguees-action-no-deactivate';
-		const editClick = canEdit ? onEditClick : () => undefined;
-		const deleteClick = canDelete ? onDeleteClick : () => undefined;
-		const activarClick = canEdit ? onActivarClick : () => undefined;
-		const desactivarClick = canEdit ? onDesactivarClick : () => undefined;
-
+	getColumns(): any {
 		return [
-			{
-				type: 'buttons',
-				name: 'btnAcciones',
-				caption: 'Options',
-				width: 150,
-				minWidth: 150,
-				allowResizing: false,
-				fixed: true,
-				fixedPosition: 'left',
-				alignment: 'center',
-				buttons: [
-					{ hint: editHint, icon: 'edit', stylingMode: 'text', cssClass: editCssClass, onClick: editClick },
-					{ hint: deleteHint, icon: 'trash', stylingMode: 'text', cssClass: deleteCssClass, onClick: deleteClick },
-					{
-						hint: activarHint,
-						icon: 'refresh',
-						stylingMode: 'text',
-						cssClass: activateCssClass,
-						visible: (e: any) => !e.row?.data?.ESTADO_NIVEL_ACADEMICO,
-						onClick: activarClick,
-					},
-					{
-						hint: desactivarHint,
-						icon: 'close',
-						stylingMode: 'text',
-						cssClass: deactivateCssClass,
-						visible: (e: any) => !!e.row?.data?.ESTADO_NIVEL_ACADEMICO,
-						onClick: desactivarClick,
-					},
-				],
-			},
 			{
 				dataField: 'CORR_NIVEL_ACADEMICO',
 				caption: 'Corr.',
-				width: 100,
+				width: 90,
 				dataType: 'number',
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
 			{ dataField: 'NOMBRE_NIVEL_ACADEMICO', caption: 'Nivel academico', width: 300 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
-			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
-			{
-				dataField: 'FECHA_CREA',
-				caption: 'Fecha Crea',
-				width: 200,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-				calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA'),
-			},
-			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
-			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
-			{
-				dataField: 'FECHA_ACTU',
-				caption: 'Fecha Actu',
-				width: 200,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-				calculateFilterExpression: createDateTimeFilterExpression('FECHA_ACTU'),
-			},
-			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
+			...buildAuditGridColumns({ withDateTimeFilter: true }),
 		];
 	}
 
 	getSummary(): any {
 		return {
-			totalItems: [{ column: 'CORR_NIVEL_ACADEMICO', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
+			totalItems: [
+				{
+					column: 'CORR_NIVEL_ACADEMICO',
+					summaryType: 'count',
+					valueFormat: '#,##0',
+					displayFormat: 'Cant: {0}',
+				},
+			],
 		};
 	}
 
@@ -166,29 +95,12 @@ export class PlaNivelAcademicoService {
 	}
 
 	private buildWhere(param: any): IParam[] {
-		return buildRemoteGridWhere(param, ESTADO_FIELD);
+		const xWhere: IParam[] = [];
+
+		if (param.CORR_NIVEL_ACADEMICO) {
+			xWhere.push({ Parameter: 'CORR_NIVEL_ACADEMICO', Value: param.CORR_NIVEL_ACADEMICO });
+		}
+
+		return xWhere;
 	}
-}
-
-export const EMPRESA_WARNING_ERROR_CODE = 4100;
-export const EMPRESA_REGISTRO_ETIQUETA = 'el nivel académico';
-
-export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
-	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
-}
-
-export function isEmpresaWarningResponse(response: any): boolean {
-	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
-}
-
-export function isEmpresaFkErrorMessage(message: string): boolean {
-	const value = `${message ?? ''}`.toLowerCase();
-	return (
-		value.includes('gen_empresa') ||
-		value.includes('foreign key') ||
-		value.includes('clave externa') ||
-		value.includes('reference constraint') ||
-		value.includes('conflicted with the foreign key') ||
-		value.includes('no tiene una empresa asignada')
-	);
 }

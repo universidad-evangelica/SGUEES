@@ -31,14 +31,6 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
-        [HttpGet("GetDistinctValues")]
-        [Authorize(Policy = "/sc-requerimiento-organizacional|R")]
-        public async Task<CResult> GetDistinctValues([FromQuery] SC_REQUERIMIENTO_ORGANIZACIONALParam Data)
-        {
-            Data.CORR_EMPRESA = GetCorrEmpresa();
-            return await _service.GetDistinctValuesAsync(Data);
-        }
-
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-requerimiento-organizacional|R")]
         public async Task<CResult> Get([FromQuery] SC_REQUERIMIENTO_ORGANIZACIONALParam Data)
@@ -51,12 +43,9 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/sc-requerimiento-organizacional|C")]
         public async Task<IActionResult> Post(SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
             SetCreateAudit(Data);
 
-            var resultado = await _service.CreateAsync(Data, Data.ESTACION_CREA, "e-CoffeeTech");
+            var resultado = await _service.CreateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
@@ -64,12 +53,10 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/sc-requerimiento-organizacional|U")]
         public async Task<IActionResult> Put(SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
+            this.ApplyQueryKeys(Data, nameof(SC_REQUERIMIENTO_ORGANIZACIONALTable.CORR_REQUERIMIENTO_ORGANIZACIONAL));
             SetUpdateAudit(Data);
 
-            var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
+            var resultado = await _service.UpdateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
@@ -77,39 +64,20 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/sc-requerimiento-organizacional|D")]
         public async Task<IActionResult> Delete([FromQuery] SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
+            Data.CORR_EMPRESA = GetCorrEmpresa();
 
-            SetUpdateAudit(Data);
-
-            var resultado = await _service.DeleteAsync(Data, "Admin", "e-CoffeeTech");
+            var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
-        [HttpPut("Activar")]
+        [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/sc-requerimiento-organizacional|U")]
-        public async Task<IActionResult> Activar(SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
+        public async Task<IActionResult> ActivarInactivar(SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
+            this.ApplyQueryKeys(Data, nameof(SC_REQUERIMIENTO_ORGANIZACIONALTable.CORR_REQUERIMIENTO_ORGANIZACIONAL));
+            Data.CORR_EMPRESA = GetCorrEmpresa();
 
-            SetUpdateAudit(Data);
-            Data.ESTADO_REQUERIMIENTO_ORGANIZACIONAL = true;
-
-            var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
-        }
-
-        [HttpPut("Desactivar")]
-        [Authorize(Policy = "/sc-requerimiento-organizacional|U")]
-        public async Task<IActionResult> Desactivar(SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
-        {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
-            SetUpdateAudit(Data);
-
-            var resultado = await _service.DesactivarAsync(Data, "Admin", "e-CoffeeTech");
+            var resultado = await _service.ActivarInactivarAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
@@ -125,28 +93,6 @@ namespace SGUEES.Controllers
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
-        }
-
-        private bool ValidateEmpresaSesion(out CResult resultado)
-        {
-            if (GetCorrEmpresa() > 0)
-            {
-                resultado = null;
-                return true;
-            }
-
-            resultado = new CResult
-            {
-                Data = null,
-                Result = false,
-                CodeHelper = 0,
-                ErrorCode = 4100,
-                ErrorMessage = "No se pudo guardar el requerimiento organizacional porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
-                ErrorSource = "[SC_REQUERIMIENTO_ORGANIZACIONALController]",
-                RowsAffected = 0
-            };
-
-            return false;
         }
 
         private string GetUsuario()

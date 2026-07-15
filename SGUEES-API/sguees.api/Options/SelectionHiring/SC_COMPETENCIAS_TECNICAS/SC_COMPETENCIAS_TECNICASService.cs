@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -22,16 +21,6 @@ namespace SGUEES.Services
         public async Task<CResult> GetAllAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
-        }
-
-        public async Task<CResult> GetDistinctValuesAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
-        {
-            if (string.IsNullOrWhiteSpace(xWhere.DISTINCT_FIELD))
-            {
-                return ValidationError("Debe indicar el campo para el filtro de encabezado.");
-            }
-
-            return await _repo.GetDistinctValuesAsync(BuildParameters(xWhere));
         }
 
         public async Task<CResult> GetAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
@@ -163,6 +152,12 @@ namespace SGUEES.Services
 
         public async Task<CResult> CreateAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
             var prepare = await PrepareForSaveAsync(Data, true);
             if (prepare != null)
             {
@@ -181,6 +176,12 @@ namespace SGUEES.Services
 
         public async Task<CResult> UpdateAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
             var current = await GetAsync(new SC_COMPETENCIAS_TECNICASParam
             {
                 CORR_EMPRESA = Data.CORR_EMPRESA,
@@ -218,6 +219,12 @@ namespace SGUEES.Services
 
         public async Task<CResult> DeleteAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
             if (await HasChildrenAsync(Data.CORR_EMPRESA, Data.CORR_COMPETENCIAS_TECNICAS))
             {
                 return ValidationError("No se puede eliminar la competencia porque tiene registros hijos asociados.");
@@ -226,10 +233,20 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        public async Task<CResult> DesactivarAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        public async Task<CResult> ActivarInactivarAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            Data.ESTADO_COMPETENCIAS_TECNICAS = false;
-            return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            if (Data.CORR_COMPETENCIAS_TECNICAS <= 0)
+            {
+                return ValidationError("No se pudo identificar la competencia tecnica a actualizar.");
+            }
+
+            return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
         private async Task<CResult> PrepareForSaveAsync(
@@ -498,109 +515,29 @@ namespace SGUEES.Services
 
         private static List<CParameter> BuildParameters(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
-            var p = new List<CParameter>
+            return new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "BUSQUEDA", Value = xWhere.BUSQUEDA, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "ESTADO_COMPETENCIAS_TECNICAS", Value = xWhere.ESTADO_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "NIVEL", Value = string.IsNullOrWhiteSpace(xWhere.NIVEL) ? null : NormalizeNivel(xWhere.NIVEL), DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "NIVEL_PADRE", Value = string.IsNullOrWhiteSpace(xWhere.NIVEL_PADRE) ? null : NormalizeNivel(xWhere.NIVEL_PADRE), DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "CORR_COMPETENCIAS_TECNICAS_PADRE", Value = xWhere.CORR_COMPETENCIAS_TECNICAS_PADRE, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "PAGE", Value = xWhere.PAGE, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "PAGE_SIZE", Value = xWhere.PAGE_SIZE, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "DISTINCT_FIELD", Value = xWhere.DISTINCT_FIELD, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "HEADER_FILTER_SEARCH", Value = xWhere.HEADER_FILTER_SEARCH, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "SORT_FIELD", Value = xWhere.SORT_FIELD, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "SORT_DESC", Value = xWhere.SORT_DESC, DbType = System.Data.DbType.Boolean },
             };
-
-            AddJsonParameter(p, "FILTER_ROW_JSON", xWhere.FILTER_ROW_JSON);
-            AddJsonParameter(p, "COLUMN_EXACT_JSON", xWhere.COLUMN_EXACT_JSON);
-            AddJsonParameter(p, "COLUMN_ANYOF_JSON", xWhere.COLUMN_ANYOF_JSON);
-            AddAnyOfFilters(p, xWhere.COLUMN_ANYOF_JSON);
-
-            return p;
         }
 
-        private static void AddJsonParameter(List<CParameter> p, string parameterName, string json)
+        private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
-            if (string.IsNullOrWhiteSpace(json))
+            if (corrEmpresa > 0)
             {
-                return;
+                return null;
             }
 
-            p.Add(new CParameter()
+            return new CResult
             {
-                ParameterName = parameterName,
-                Value = json,
-                DbType = System.Data.DbType.String,
-            });
-        }
-
-        private static void AddAnyOfFilters(List<CParameter> p, string columnAnyOfJson)
-        {
-            if (string.IsNullOrWhiteSpace(columnAnyOfJson))
-            {
-                return;
-            }
-
-            try
-            {
-                var filters = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(columnAnyOfJson);
-                if (filters == null)
-                {
-                    return;
-                }
-
-                foreach (var filter in filters)
-                {
-                    if (filter.Value.ValueKind != JsonValueKind.Array)
-                    {
-                        continue;
-                    }
-
-                    var values = filter.Value
-                        .EnumerateArray()
-                        .Select(x => x.ValueKind switch
-                        {
-                            JsonValueKind.String => x.GetString(),
-                            JsonValueKind.Number => x.GetRawText(),
-                            JsonValueKind.True => "true",
-                            JsonValueKind.False => "false",
-                            JsonValueKind.Null => "__BLANK__",
-                            _ => x.ToString(),
-                        })
-                        .Where(x => !string.IsNullOrWhiteSpace(x))
-                        .ToList();
-
-                    if (values.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    p.Add(new CParameter()
-                    {
-                        ParameterName = $"{filter.Key}_ANYOF",
-                        Value = string.Join('|', values),
-                        DbType = System.Data.DbType.String,
-                    });
-                }
-            }
-            catch (JsonException)
-            {
-            }
-        }
-
-        private static void AddColumnFilter(List<CParameter> p, string parameterName, object value, System.Data.DbType dbType)
-        {
-            if (value == null ||
-                value is string text && string.IsNullOrWhiteSpace(text) ||
-                value is int number && number <= 0)
-            {
-                return;
-            }
-
-            p.Add(new CParameter() { ParameterName = parameterName, Value = value, DbType = dbType });
+                Data = null,
+                Result = false,
+                CodeHelper = 0,
+                ErrorCode = 4100,
+                ErrorMessage = "No se pudo guardar la competencia tecnica porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
+                ErrorSource = "[SC_COMPETENCIAS_TECNICASService]",
+                RowsAffected = 0
+            };
         }
 
         private static CResult ValidationError(string message)

@@ -2,21 +2,21 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
-	public class GEN_ESTRUCTURA_TERRITORIAL_DISTRITOParam : BaseParam
+	public class GEN_DEPTOParam : BaseParam
 	{
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_PAIS { get; set; }
 		public int CORR_DEPTO { get; set; }
-		public int CORR_MUNICIPIO { get; set; }
-		public int CORR_DISTRITO { get; set; }
+		public string CODIGO_DEPTO { get; set; }
 		public string BUSQUEDA { get; set; }
-		public string NOMBRE_DISTRITO { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }
 		public string FECHA_CREA { get; set; }
 		public string USUARIO_ACTU { get; set; }
 		public string ESTACION_ACTU { get; set; }
 		public string FECHA_ACTU { get; set; }
+		public int PAGE { get; set; } = 1;
+		public int PAGE_SIZE { get; set; } = 10;
 		public int OPCION_CONSULTA { get; set; } = 0;
 		public string DISTINCT_FIELD { get; set; }
 		public string HEADER_FILTER_SEARCH { get; set; }

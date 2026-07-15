@@ -1,46 +1,13 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import CustomStore from 'devextreme/data/custom_store';
-import { custom } from 'devextreme/ui/dialog';
-import { MessageService } from 'primeng/api';
-import { lastValueFrom } from 'rxjs';
-import { take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
-import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
-import { AuthService } from 'src/app/shared/services/auth.service';
-import {
-	cloneRemoteGridFilters,
-	ESTADO_ACTIVO_INACTIVO_LABELS,
-	hasRemoteFilterRowSearch,
-	parseRemoteGridFilters,
-	ParsedGridFilters,
-} from 'src/app/shared/utils/remote-grid-filter.util';
-import {
-	getColumnHeaderFilterSelection,
-	invertExcludedHeaderFilterValues,
-	normalizeBooleanHeaderFilterValue,
-	resolveBooleanExcludeHeaderFilter,
-} from 'src/app/shared/utils/remote-header-filter.util';
 import { ScRequerimientoOrganizacional } from './models/sc-requerimiento-organizacional';
-import {
-	EMPRESA_REGISTRO_ETIQUETA,
-	getEmpresaWarningMessage,
-	isEmpresaFkErrorMessage,
-	isEmpresaWarningResponse,
-	ScRequerimientoOrganizacionalService,
-} from './sc-requerimiento-organizacional.service';
+import { ScRequerimientoOrganizacionalService } from './sc-requerimiento-organizacional.service';
 
 const ESTADO_FIELD = 'ESTADO_REQUERIMIENTO_ORGANIZACIONAL';
-
-const GRID_FILTER_CONFIG = {
-	estadoField: ESTADO_FIELD,
-	booleanColumns: {
-		[ESTADO_FIELD]: ESTADO_ACTIVO_INACTIVO_LABELS,
-	},
-};
 
 @Component({
 	selector: 'app-sc-requerimiento-organizacional',
@@ -50,29 +17,36 @@ const GRID_FILTER_CONFIG = {
 export class ScRequerimientoOrganizacionalComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
-	readonly pageSizes = [5, 10, 25, 50, 100];
+	protected override etiquetaRegistro = 'el requerimiento organizacional';
+	protected override requiereEmpresaSesion = true;
+	protected override mttoPageSize = 5;
+	protected override mttoPageSizes = [5, 10, 25, 50, 100];
+	protected override mttoGridKeyExpr = 'CORR_REQUERIMIENTO_ORGANIZACIONAL';
+	protected override mttoCampoEstado = ESTADO_FIELD;
+	protected override mttoEstadoDescribeField = 'DESCRIPCION';
+	protected override mttoParchearGridTrasGuardar = true;
+	protected override mttoRemoteOperations = false;
+
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Requerimiento Organizacional';
 
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: ScRequerimientoOrganizacionalService,
-		private messageService: MessageService,
-		private authService: AuthService
+		private service: ScRequerimientoOrganizacionalService
 	) {
 		super(appInfoService, router);
-		this.onEditClick = this.onEditClick.bind(this);
-		this.onEliminarClick = this.onEliminarClick.bind(this);
-		this.onActivarClick = this.onActivarClick.bind(this);
-		this.onDesactivarClick = this.onDesactivarClick.bind(this);
-		this.columns = this.service.getColumns(this.onEditClick, this.onEliminarClick, this.onActivarClick, this.onDesactivarClick, this.permiteEdit, this.permiteDele);
+		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 	}
 
+	protected override getMttoDataGrid(): DataGridMttoComponent | null {
+		return this.dataGrid ?? null;
+	}
+
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.configurarDataSource();
+		this.consultar();
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -82,79 +56,9 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 		}
 	}
 
-	override rowDblClick(e: any): void {
-		const rowData = e?.data ?? e?.row?.data;
-		if (rowData) {
-			this.model = this.fillData(rowData);
-			this.modelUpdate = this.fillData(rowData);
-		}
-		super.rowDblClick(e);
-		setTimeout(() => {
-			if (!this.dataForm?.instance) {
-				return;
-			}
-			this.dataForm.instance.option('formData', this.model);
-			this.bloquear();
-		});
+	fillParam(xCORR_REQUERIMIENTO_ORGANIZACIONAL?: number): any {
+		return { CORR_REQUERIMIENTO_ORGANIZACIONAL: xCORR_REQUERIMIENTO_ORGANIZACIONAL ?? 0 };
 	}
-
-	onEditClick(e: any): void {
-		if (!e?.row?.data) {
-			return;
-		}
-
-		this.model = e.row.data;
-		this.editarClick(e);
-	}
-
-	fillParam(
-		xCORR_REQUERIMIENTO_ORGANIZACIONAL?: number,
-		page = 1,
-		pageSize = 5,
-		busqueda = '',
-		gridFilters: ParsedGridFilters = { estado: null, filterRow: {}, filterRowExact: {}, headerAnyOf: {} },
-		distinctField = '',
-		headerFilterSearch = '',
-		sortField = '',
-		sortDesc = false
-	): any {
-		return {
-			CORR_REQUERIMIENTO_ORGANIZACIONAL: xCORR_REQUERIMIENTO_ORGANIZACIONAL ?? 0,
-			BUSQUEDA: busqueda,
-			PAGE: page,
-			PAGE_SIZE: pageSize,
-			DISTINCT_FIELD: distinctField,
-			HEADER_FILTER_SEARCH: headerFilterSearch,
-			SORT_FIELD: sortField,
-			SORT_DESC: sortDesc,
-			gridFilters,
-		};
-	}
-
-	loadHeaderFilterValues = (field: string, searchValue?: string): Promise<unknown[]> => {
-		const grid = this.dataGrid?.gData?.instance;
-		const combinedFilter = grid?.getCombinedFilter?.(false);
-		const gridFilters = parseRemoteGridFilters(combinedFilter, grid, GRID_FILTER_CONFIG);
-		const hasFilterRowSearch = hasRemoteFilterRowSearch(gridFilters);
-		const filtersForDistinct: ParsedGridFilters = {
-			estado: hasFilterRowSearch ? gridFilters.estado : null,
-			filterRow: hasFilterRowSearch ? gridFilters.filterRow : {},
-			filterRowExact: hasFilterRowSearch ? gridFilters.filterRowExact : {},
-			headerAnyOf: {},
-		};
-
-		return lastValueFrom(
-			this.service.getDistinctValues(
-				this.fillParam(0, 1, 0, '', filtersForDistinct, field, searchValue ?? '')
-			)
-		).then((response) => {
-			if (!response.Result) {
-				throw new Error(response.ErrorMessage || 'No se pudieron cargar los valores del filtro.');
-			}
-
-			return response.Data ?? [];
-		});
-	};
 
 	override fillData(xModel?: ScRequerimientoOrganizacional): ScRequerimientoOrganizacional {
 		if (xModel !== undefined) {
@@ -186,32 +90,102 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 		};
 	}
 
-	consultar(): void {
-		this.dataGrid?.refreshData(true);
+	consultar(resetPage = false): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+			onData: () => {
+				this.ordenarModelsPorCorr();
+				this.refrescarGridTrasCarga(resetPage);
+			},
+		});
+	}
+
+	private ordenarModelsPorCorr(): void {
+		if (!Array.isArray(this.models)) {
+			return;
+		}
+
+		this.models = [...this.models].sort(
+			(a, b) => Number(a.CORR_REQUERIMIENTO_ORGANIZACIONAL) - Number(b.CORR_REQUERIMIENTO_ORGANIZACIONAL)
+		);
+	}
+
+	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
+		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
+			super.aplicarRegistroEnGrid(data, isAdd);
+			return;
+		}
+
+		const record = this.fillData(data as ScRequerimientoOrganizacional);
+		const key = this.mttoGridKeyExpr;
+
+		if (isAdd) {
+			this.models = [...this.models, record];
+		} else {
+			const index = this.models.findIndex((item) => item?.[key] === record[key]);
+			if (index >= 0) {
+				this.models = this.models.map((item, i) => (i === index ? this.fillData({ ...item, ...record }) : item));
+			}
+		}
+
+		this.ordenarModelsPorCorr();
+		this.refrescarGridTrasCarga(isAdd);
+	}
+
+	protected override quitarRegistroDeGrid(keyValue: unknown): void {
+		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
+			super.quitarRegistroDeGrid(keyValue);
+			return;
+		}
+
+		const key = this.mttoGridKeyExpr;
+		this.models = this.models.filter((item) => item?.[key] !== keyValue);
+		this.refrescarGridTrasCarga(true);
+	}
+
+	private refrescarGridTrasCarga(resetPage = false): void {
+		setTimeout(() => {
+			this.dataGrid?.refreshData(resetPage);
+		}, 0);
+	}
+
+	override rowDblClick(e: any): void {
+		const rowData = e?.data ?? e?.row?.data;
+		if (rowData) {
+			this.model = this.fillData(rowData);
+			this.modelUpdate = this.fillData(rowData);
+		}
+		super.rowDblClick(e);
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+			this.bloquear();
+		});
+	}
+
+	onEditClick(e: any): void {
+		if (!e?.row?.data) {
+			return;
+		}
+
+		this.model = this.fillData(e.row.data);
+		this.editarClick(e);
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+			this.habilitar();
+		});
 	}
 
 	override nuevo(): void {
-		if (!this.validarEmpresaSesion()) {
+		if (!this.asegurarEmpresaSesion()) {
 			return;
 		}
 		super.nuevo();
-	}
-
-	override notifyFx(xMessage: string, xType: NotifyType): void {
-		const cleanMessage = this.getErrorMessage(xMessage).replace(/^error:\s*/i, '').trim();
-		const warningDetail = this.getWarningMessage(cleanMessage);
-		const isWarning = xType === NotifyType.Warning || warningDetail !== cleanMessage;
-		const severity = xType === NotifyType.Success ? 'success' : isWarning ? 'warn' : 'error';
-		const summary = xType === NotifyType.Success ? '\u00c9xito' : isWarning ? 'Advertencia' : 'Error';
-		const detail = isWarning ? warningDetail : cleanMessage;
-		this.messageService.add({ severity, summary, detail });
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+		});
 	}
 
 	guardar(): void {
-		if (!this.validarEmpresaSesion()) {
-			return;
-		}
-
 		const formData = this.dataForm?.instance?.option('formData');
 		if (formData) {
 			this.model = { ...this.model, ...formData };
@@ -223,104 +197,25 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 			return;
 		}
 
-		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
-			return;
-		}
-
-		this.loadingVisible = true;
-		if (this.banderaMtto === UpdateType.Add) {
-			this.service
-				.insert(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.consultar();
-							this.notifyFx('Registro creado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
-						this.loadingVisible = false;
-					},
-				});
-		} else if (this.banderaMtto === UpdateType.Update) {
-			this.service
-				.update(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.consultar();
-							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
-						this.loadingVisible = false;
-					},
-				});
-		}
+		this.guardarMtto({
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
+		});
 	}
 
 	override cancelar(): void {
-		this.model = this.modelUpdate;
-		this.AsignaStatus(UpdateType.Browse);
-		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
-	}
-
-	onActivarClick(e: any): void {
-		const row = e.row?.data as ScRequerimientoOrganizacional;
-		if (!row) {
-			return;
-		}
-
-		this.confirmEstado(
-			'Activar registro',
-			`Desea activar el requerimiento organizacional "${row.DESCRIPCION}"?`,
-			() => this.cambiarEstado(row, true)
-		);
-	}
-
-	onEliminarClick(e: any): void {
-		const row = e.row?.data as ScRequerimientoOrganizacional;
-		if (!row) {
-			return;
-		}
-
-		this.confirmEstado(
-			'Eliminar registro',
-			`Desea eliminar "${row.DESCRIPCION}"?`,
-			() => this.eliminarRegistro(row)
-		);
-	}
-
-	onDesactivarClick(e: any): void {
-		const row = e.row?.data as ScRequerimientoOrganizacional;
-		if (!row) {
-			return;
-		}
-
-		this.confirmEstado(
-			'Desactivar registro',
-			`Desea desactivar "${row.DESCRIPCION}"?`,
-			() => this.cambiarEstado(row, false)
-		);
+		super.cancelar((item: any) => item.CORR_REQUERIMIENTO_ORGANIZACIONAL === this.modelUpdate.CORR_REQUERIMIENTO_ORGANIZACIONAL);
 	}
 
 	rowRemoving(e: any): void {
-		e.cancel = true;
-		this.onEliminarClick({ row: { data: e.data } });
+		this.rowRemovingMtto(e, {
+			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_REQUERIMIENTO_ORGANIZACIONAL)),
+		});
+	}
+
+	activar_inactivar(): void {
+		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
 	override bloquear(): void {
@@ -329,400 +224,18 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 		this.dataForm.instance.getEditor('ESTADO_REQUERIMIENTO_ORGANIZACIONAL')?.option('readOnly', true);
 	}
 
+	override habilitar(): void {
+		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('CORR_REQUERIMIENTO_ORGANIZACIONAL')?.option('readOnly', true);
+			this.dataForm.instance.getEditor('DESCRIPCION')?.option('readOnly', false);
+			this.dataForm.instance.getEditor('ESTADO_REQUERIMIENTO_ORGANIZACIONAL')?.option('readOnly', estadoSoloLectura);
+		});
+	}
+
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('DESCRIPCION')?.focus();
 		});
 	}
-
-	private configurarDataSource(): void {
-		this.models = new CustomStore({
-			key: 'CORR_REQUERIMIENTO_ORGANIZACIONAL',
-			loadMode: 'processed',
-			cacheRawData: false,
-			load: async (loadOptions: any) => {
-				try {
-					const takeRows = loadOptions.take || 5;
-				const skipRows = loadOptions.skip || 0;
-				const page = Math.floor(skipRows / takeRows) + 1;
-				const grid = this.dataGrid?.gData?.instance;
-
-				const gridFilters = parseRemoteGridFilters(loadOptions.filter, grid, GRID_FILTER_CONFIG);
-				this.applyIncludeHeaderFilters(grid, gridFilters);
-				await this.resolveExcludeHeaderFilters(grid, gridFilters);
-				await this.removeHeaderFiltersOverriddenByFilterRow(gridFilters);
-
-				const sort = this.getGridSort(loadOptions.sort);
-				const response = await lastValueFrom(
-					this.service.getAll(
-						this.fillParam(
-							0,
-							page,
-							takeRows,
-							'',
-							gridFilters,
-							'',
-							'',
-							sort?.field ?? '',
-							sort?.desc ?? false
-						)
-					)
-				);
-
-				if (!response.Result) {
-					throw new Error(response.ErrorMessage || 'No se pudo cargar el requerimiento organizacional.');
-				}
-
-				return {
-					data: response.Data || [],
-					totalCount: response.RowsAffected || 0,
-				};
-				} catch (error) {
-					const message = this.getErrorMessage(error);
-					this.notifyFx(message, NotifyType.Error);
-					throw new Error(message);
-				}
-			},
-		});
-	}
-
-	private async removeHeaderFiltersOverriddenByFilterRow(result: ParsedGridFilters): Promise<void> {
-		if (!hasRemoteFilterRowSearch(result)) {
-			return;
-		}
-
-		for (const dataField of Object.keys(result.headerAnyOf)) {
-			const headerValues = result.headerAnyOf[dataField];
-			if (!headerValues?.length) {
-				continue;
-			}
-
-			const availableValues = await this.getAvailableHeaderValuesForFilterRow(dataField, result);
-			if (!availableValues.length) {
-				continue;
-			}
-
-			if (!this.hasAnyMatchingHeaderValue(headerValues, availableValues)) {
-				delete result.headerAnyOf[dataField];
-			}
-		}
-	}
-
-	private async getAvailableHeaderValuesForFilterRow(dataField: string, result: ParsedGridFilters): Promise<unknown[]> {
-		const filtersForDistinct: ParsedGridFilters = {
-			estado: result.estado,
-			filterRow: { ...result.filterRow },
-			filterRowExact: { ...result.filterRowExact },
-			headerAnyOf: {},
-		};
-
-		const response = await lastValueFrom(
-			this.service.getDistinctValues(this.fillParam(0, 1, 0, '', filtersForDistinct, dataField, ''))
-		);
-
-		return response.Result ? response.Data ?? [] : [];
-	}
-
-	private hasAnyMatchingHeaderValue(headerValues: unknown[], availableValues: unknown[]): boolean {
-		const availableKeys = new Set(availableValues.map((value) => this.getHeaderFilterComparableKey(value)));
-		return headerValues.some((value) => availableKeys.has(this.getHeaderFilterComparableKey(value)));
-	}
-
-	private getHeaderFilterComparableKey(value: unknown): string {
-		if (value === null || value === undefined || value === '__BLANK__') {
-			return '__blank__';
-		}
-
-		if (typeof value === 'boolean') {
-			return value ? 'true' : 'false';
-		}
-
-		const text = `${value}`.trim().toLowerCase();
-		if (!text) {
-			return '__blank__';
-		}
-
-		if (text === 'activo') {
-			return 'true';
-		}
-
-		if (text === 'inactivo') {
-			return 'false';
-		}
-
-		return text;
-	}
-	private applyIncludeHeaderFilters(grid: any, result: ParsedGridFilters): void {
-		if (!grid?.getVisibleColumns) {
-			return;
-		}
-
-		for (const column of grid.getVisibleColumns()) {
-			const dataField = column?.dataField;
-			if (!dataField || column.allowHeaderFiltering === false) {
-				continue;
-			}
-
-			const selection = getColumnHeaderFilterSelection(grid, dataField);
-			if (!selection || selection.filterType !== 'include' || !selection.values.length) {
-				continue;
-			}
-
-			const booleanLabels = GRID_FILTER_CONFIG.booleanColumns?.[dataField];
-			result.headerAnyOf[dataField] = booleanLabels
-				? selection.values.map((value) => normalizeBooleanHeaderFilterValue(value, booleanLabels))
-				: selection.values;
-		}
-	}
-	private async resolveExcludeHeaderFilters(grid: any, result: ParsedGridFilters): Promise<void> {
-		if (!grid?.getVisibleColumns) {
-			return;
-		}
-
-		for (const column of grid.getVisibleColumns()) {
-			const dataField = column?.dataField;
-			if (!dataField || column.allowHeaderFiltering === false) {
-				continue;
-			}
-
-			const selection = getColumnHeaderFilterSelection(grid, dataField);
-			if (!selection || selection.filterType !== 'exclude' || !selection.values.length) {
-				continue;
-			}
-
-			const booleanIncluded = resolveBooleanExcludeHeaderFilter(
-				column,
-				selection.values,
-				GRID_FILTER_CONFIG.booleanColumns?.[dataField]
-			);
-			if (booleanIncluded !== null) {
-				result.headerAnyOf[dataField] = booleanIncluded.length ? booleanIncluded : ['__NO_MATCH__'];
-				continue;
-			}
-
-			const filtersForDistinct = cloneRemoteGridFilters(result);
-			delete filtersForDistinct.headerAnyOf[dataField];
-			delete filtersForDistinct.filterRow[dataField];
-			delete filtersForDistinct.filterRowExact[dataField];
-
-			const response = await lastValueFrom(
-				this.service.getDistinctValues(this.fillParam(0, 1, 0, '', filtersForDistinct, dataField, ''))
-			);
-
-			if (!response.Result) {
-				continue;
-			}
-
-			const included = invertExcludedHeaderFilterValues(selection.values, response.Data ?? []);
-			result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
-		}
-	}
-
-	private getGridSort(sort: any): { field: string; desc: boolean } | null {
-		if (!Array.isArray(sort) || !sort.length) {
-			return null;
-		}
-
-		const first = sort[0];
-		if (!first?.selector) {
-			return null;
-		}
-
-		return {
-			field: `${first.selector}`,
-			desc: !!first.desc,
-		};
-	}
-
-	private cambiarEstado(row: ScRequerimientoOrganizacional, activo: boolean): void {
-		const request = { ...row, ESTADO_REQUERIMIENTO_ORGANIZACIONAL: activo };
-		const action = activo ? this.service.activar(request) : this.service.desactivar(request);
-
-		this.loadingVisible = true;
-		action.pipe(take(1)).subscribe({
-			next: (response: any) => {
-				if (response.Result) {
-					this.consultar();
-					this.notifyFx(activo ? 'Registro activado con exito!' : 'Registro desactivado con exito!', NotifyType.Success);
-				} else {
-					this.notifyFx(response.ErrorMessage || 'No se pudo cambiar el estado del registro.', NotifyType.Error);
-				}
-				this.loadingVisible = false;
-			},
-			error: (error: any) => {
-				this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
-				this.loadingVisible = false;
-			},
-		});
-	}
-
-	private eliminarRegistro(row: ScRequerimientoOrganizacional): void {
-		this.loadingVisible = true;
-		this.service
-			.delete(row)
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.consultar();
-						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-					} else {
-						this.notifyFx(
-							response.ErrorMessage || 'No se puede eliminar el requerimiento organizacional porque tiene registros asociados en otras tablas.',
-							NotifyType.Warning
-						);
-					}
-					this.loadingVisible = false;
-				},
-				error: (error: any) => {
-					this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
-					this.loadingVisible = false;
-				},
-			});
-	}
-
-	private confirmEstado(title: string, message: string, fn: () => void): void {
-		const dialog = custom({
-			title,
-			messageHtml: `<div class="sguees-confirm-message">${message}</div>`,
-			buttons: [
-				{
-					text: 'Si',
-					type: 'default',
-					onClick: () => true,
-				},
-				{
-					text: 'No',
-					onClick: () => false,
-				},
-			],
-		});
-
-		dialog.show().then((accepted: boolean) => {
-			if (accepted) {
-				fn();
-			}
-		});
-	}
-
-	private getErrorMessage(error: any): string {
-		const connectionMessage =
-			'No se pudo comunicar con el servidor. Verifique que la API esté en ejecución e intente nuevamente.';
-
-		if (typeof error === 'string') {
-			const trimmed = error.trim();
-			if (!trimmed || trimmed === '[object ProgressEvent]' || trimmed.toLowerCase().includes('http failure')) {
-				return connectionMessage;
-			}
-			return trimmed;
-		}
-
-		if (error instanceof ProgressEvent || Object.prototype.toString.call(error) === '[object ProgressEvent]') {
-			return connectionMessage;
-		}
-
-		if (error?.error instanceof ProgressEvent) {
-			return connectionMessage;
-		}
-
-		const apiMessage = error?.error?.ErrorMessage || error?.error?.message || error?.message;
-		if (typeof apiMessage === 'string' && apiMessage.trim()) {
-			if (apiMessage === '[object ProgressEvent]' || apiMessage.toLowerCase().includes('http failure')) {
-				return connectionMessage;
-			}
-			return apiMessage;
-		}
-
-		const coerced = `${error ?? ''}`.trim();
-		if (coerced === '[object ProgressEvent]' || coerced === '[object Object]') {
-			return connectionMessage;
-		}
-
-		return coerced || 'Ocurrio un error al procesar la solicitud.';
-	}
-
-	private getNotifyType(response: any): NotifyType {
-		if (isEmpresaWarningResponse(response)) {
-			return NotifyType.Warning;
-		}
-		return this.isValidationWarningResponse(response) ? NotifyType.Warning : NotifyType.Error;
-	}
-
-	private getErrorNotifyType(error: any): NotifyType {
-		const body = error?.error;
-		if (body && typeof body === 'object' && body.ErrorMessage !== undefined) {
-			return this.getNotifyType(body);
-		}
-
-		return this.isValidationWarningMessage(this.getErrorMessage(error)) ? NotifyType.Warning : NotifyType.Error;
-	}
-
-	private isValidationWarningResponse(response: any): boolean {
-		if (!response || response.Result !== false) {
-			return false;
-		}
-
-		if (response.ErrorCode === 2627) {
-			return true;
-		}
-
-		return this.isValidationWarningMessage(response.ErrorMessage);
-	}
-
-	private isValidationWarningMessage(message: string): boolean {
-		const value = `${message ?? ''}`.toLowerCase();
-		if (isEmpresaFkErrorMessage(message) || value.includes('no tiene una empresa asignada')) {
-			return true;
-		}
-
-		return (
-			value.includes('ya existe') ||
-			value.includes('duplicad') ||
-			value.includes('registrad') ||
-			value.includes('otro usuario guard') ||
-			value.includes('mismo tiempo') ||
-			value.includes('hijos asociados') ||
-			value.includes('registros asociados') ||
-			value.includes('registros hijos') ||
-			value.includes('tiene registros hijos') ||
-			value.includes('relacionados') ||
-			value.includes('asociados en otras tablas')
-		);
-	}
-
-	private getCorrEmpresaSesion(): number {
-		const value = Number(this.authService.decodedToken?.CORR_EMPRESA ?? 0);
-		return Number.isFinite(value) ? value : 0;
-	}
-
-	private validarEmpresaSesion(): boolean {
-		if (this.getCorrEmpresaSesion() > 0) {
-			return true;
-		}
-		this.notifyFx(getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA), NotifyType.Warning);
-		return false;
-	}
-
-	private getWarningMessage(message: string): string {
-		const cleanMessage = `${message ?? ''}`.replace(/^error:\s*/i, '').trim();
-		const value = cleanMessage.toLowerCase();
-		if (isEmpresaFkErrorMessage(cleanMessage) || value.includes('no tiene una empresa asignada')) {
-			return getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA);
-		}
-		if (
-			value.includes('ya existe') ||
-			value.includes('duplicad') ||
-			value.includes('registrad') ||
-			value.includes('ya está registrado') ||
-			value.includes('ya esta registrado')
-		) {
-			return cleanMessage;
-		}
-		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados')) {
-			return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';
-		}
-		return cleanMessage;
-	}
 }
-
-

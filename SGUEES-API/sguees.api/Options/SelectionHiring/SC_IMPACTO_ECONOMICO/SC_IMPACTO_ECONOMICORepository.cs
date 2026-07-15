@@ -16,21 +16,6 @@ namespace SGUEES.Repositories
         private const string _CampoPk = "CORR_IMPACTO_ECONOMICO";
         private const string _CampoEstado = "ESTADO_IMPACTO_ECONOMICO";
         private const bool _UsaEmpresa = true;
-        private const string _DefaultSortField = "CORR_IMPACTO_ECONOMICO";
-
-        private static readonly string[] _AllowedSortFields =
-        {
-            "CORR_IMPACTO_ECONOMICO",
-            "DESCRIPCION",
-            "ESTADO_IMPACTO_ECONOMICO",
-            "USUARIO_CREA",
-            "ESTACION_CREA",
-            "FECHA_CREA",
-            "USUARIO_ACTU",
-            "ESTACION_ACTU",
-            "FECHA_ACTU",
-        };
-
         public SC_IMPACTO_ECONOMICORepository(IConfiguration config) :
             base(config.GetConnectionString("defaultConnection"),
                 config.GetSection("DbProvider:defaultProvider").Value)
@@ -43,15 +28,21 @@ namespace SGUEES.Repositories
 
             try
             {
-                var paged = await ReadPagedViewAsync<SC_IMPACTO_ECONOMICOView>(
-                    _ViewName,
-                    xWhere,
-                    _AllowedSortFields,
-                    _DefaultSortField);
+                var dbWhere = xWhere
+                    .Where(x => x.ParameterName == "CORR_EMPRESA")
+                    .ToList();
 
-                objResultado.Data = paged.PageData;
+                var reader = await objData.GetDataReader(_ViewName, dbWhere);
+                var response = new List<SC_IMPACTO_ECONOMICOView>().FromDataReader(reader)
+                    .OrderBy(x => x.CORR_IMPACTO_ECONOMICO)
+                    .ToList();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
                 objResultado.Result = true;
-                objResultado.RowsAffected = paged.TotalRows;
+                objResultado.RowsAffected = response.Count;
                 objResultado.CodeHelper = 0;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";

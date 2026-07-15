@@ -1,13 +1,11 @@
-import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
-import { environment } from 'src/environments/environment';
-import { IResult } from 'src/app/FxAPI/IResult';
-import { IParam } from 'src/app/FxAPI/IParam';
+import { Observable } from 'rxjs';
 import { CData } from 'src/app/FxAPI/CData';
+import { IParam } from 'src/app/FxAPI/IParam';
+import { IResult } from 'src/app/FxAPI/IResult';
+import { environment } from 'src/environments/environment';
 
-@Injectable({
-	providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
 export class ScRiesgoPuestoRepository {
 	readonly xController = 'SC_RIESGO_PUESTO';
 
@@ -15,10 +13,6 @@ export class ScRiesgoPuestoRepository {
 
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
-	}
-
-	getDistinctValues(xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Get(this.xController, 'GetDistinctValues', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
 	get(xWhere: IParam[]): Observable<IResult> {
@@ -37,11 +31,7 @@ export class ScRiesgoPuestoRepository {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	activar(model: any, xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Put(model, this.xController, 'Activar', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
-	}
-
-	desactivar(model: any, xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Put(model, this.xController, 'Desactivar', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 }
