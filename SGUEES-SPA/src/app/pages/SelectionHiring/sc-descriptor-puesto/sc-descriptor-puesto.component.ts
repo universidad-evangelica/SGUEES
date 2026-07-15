@@ -38,25 +38,23 @@ import { ScPerfilPuestoCompetenciasConductuales } from './sc-perfil-puesto-compe
 import { ScDescriptorPuestoRequerimientoOrganizacional } from './sc-descriptor-puesto-requerimiento-organizacional/models/sc-descriptor-puesto-requerimiento-organizacional';
 import { ScDescriptorPuestoRiesgoPuesto } from './sc-descriptor-puesto-riesgo-puesto/models/sc-descriptor-puesto-riesgo-puesto';
 import {
+	FORMATO_CORTA,
+	FORMATO_EXTENSA,
+	MOCK_PUESTOS,
+	MOCK_UNIDADES,
 	MockPuesto,
 	MockUnidad,
+	PERFIL_PUESTO_DEFAULT,
 	ScCompetenciaConductualLookupItem,
 	ScCompetenciaTecnicaLookupItem,
 	ScDescriptorPuesto,
 	ScRequerimientoOrganizacionalLookupItem,
 	ScRiesgoPuestoLookupItem,
-} from './models/sc-descriptor-puesto';
-import {
-	FORMATO_CORTA,
-	FORMATO_EXTENSA,
-	MOCK_PUESTOS,
-	MOCK_UNIDADES,
-	PERFIL_PUESTO_DEFAULT,
 	TIPO_FUNCION_CLAVE,
 	TIPO_FUNCION_SECUNDARIA,
 	TIPO_RELACION_EXTERNA,
 	TIPO_RELACION_INTERNA,
-} from './sc-descriptor-puesto.mock-data';
+} from './models/sc-descriptor-puesto';
 import { ScDescriptorPuestoService } from './sc-descriptor-puesto.service';
 
 @Component({
@@ -121,13 +119,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ dataField: 'GRUPO_NIV2', caption: 'Grupo NIV2', width: 180 },*/
 		{ dataField: 'CODIGO_COMPETENCIAS_TECNICAS', caption: 'Codigo', width: 120 }, // Codigo NIV3
 		//{ dataField: 'NIVEL', caption: 'Nivel', width: 80 },
-		{ dataField: 'NOMBRE_COMPETENCIAS_TECNICAS', caption: 'Competencia', width: 220 }, // Competencia NIV3
+		{ dataField: 'NOMBRE_COMPETENCIAS_TECNICAS', caption: 'Competencia Técnica', width: 220 }, // Competencia NIV3
 		//{ dataField: 'DESCRIPCION', caption: 'Definicion', width: 260 },
 	];
 	competenciasConductualesLookupColumns = [
-		{ dataField: 'CORR_COMPETENCIAS_CONDUCTUALES', caption: 'Codigo', width: 90 },
-		{ dataField: 'NOMBRE_COMPETENCIAS_CONDUCTUALES', caption: 'Competencia', width: 220 },
-		{ dataField: 'NOMBRE_TIPO_PUESTO', caption: 'Grupo ocupacional', width: 180 }, // Tipo puesto
+		//{ dataField: 'CORR_COMPETENCIAS_CONDUCTUALES', caption: 'Corr.', width: 90 },
+		{ dataField: 'CODIGO_TIPO_PUESTO', caption: 'Codigo', width: 140 }, // Cod. tipo puesto o Grupo ocupacional
+		{ dataField: 'NOMBRE_COMPETENCIAS_CONDUCTUALES', caption: 'Competencia Conductual', width: 220 },
 	];
 	requerimientosOrganizacionalesLookupColumns = [
 		{ dataField: 'CORR_REQUERIMIENTO_ORGANIZACIONAL', caption: 'Codigo', width: 90 },
@@ -619,12 +617,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						const nombre = (item.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim();
 						const descripcion = (item.DESCRIPCION ?? nombre).trim();
 						const tipoPuesto = (item.NOMBRE_TIPO_PUESTO ?? '').trim();
+						const codigoTipoPuesto = (item.CODIGO_TIPO_PUESTO ?? '').trim();
 
 						return {
 							CORR_COMPETENCIAS_CONDUCTUALES: Number(item.CORR_COMPETENCIAS_CONDUCTUALES),
 							NOMBRE_COMPETENCIAS_CONDUCTUALES: nombre,
 							DESCRIPCION: descripcion,
 							NOMBRE_TIPO_PUESTO: tipoPuesto,
+							CODIGO_TIPO_PUESTO: codigoTipoPuesto,
 						};
 					});
 					this.actualizarCompetenciasConductualesLookupDisponibles();
@@ -1992,11 +1992,20 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	competenciaConductualCatalogDisplay = (row: ScPerfilPuestoCompetenciasConductuales): string => {
+		const codigo = (row?.CODIGO_TIPO_PUESTO ?? '').trim();
+		if (codigo) {
+			return codigo;
+		}
+
 		const corr = Number(row?.CORR_COMPETENCIAS_CONDUCTUALES);
 		if (!(corr > 0)) {
 			return '';
 		}
-		return String(corr);
+
+		const catalog = this.mCORR_COMPETENCIAS_CONDUCTUALES.find(
+			(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === corr
+		);
+		return (catalog?.CODIGO_TIPO_PUESTO ?? '').trim();
 	};
 
 	private actualizarCompetenciasConductualesLookupDisponibles(
@@ -2038,6 +2047,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 		newData.CORR_COMPETENCIAS_CONDUCTUALES = corr;
 		newData.NOMBRE_COMPETENCIAS_CONDUCTUALES = catalog?.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '';
+		newData.CODIGO_TIPO_PUESTO = catalog?.CODIGO_TIPO_PUESTO ?? '';
 		newData.DESCRIPCION = this.esFormatoExtensa ? catalog?.DESCRIPCION ?? '' : '';
 	};
 
@@ -2981,6 +2991,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 								NOMBRE_COMPETENCIAS_CONDUCTUALES: item.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '',
 								DESCRIPCION: item.DESCRIPCION ?? '',
 								CORR_COMPETENCIAS_CONDUCTUALES: item.CORR_COMPETENCIAS_CONDUCTUALES ?? null,
+								CODIGO_TIPO_PUESTO: item.CODIGO_TIPO_PUESTO ?? '',
 								_clientKey:
 									item.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES ||
 									this.crearClientKey('cc'),

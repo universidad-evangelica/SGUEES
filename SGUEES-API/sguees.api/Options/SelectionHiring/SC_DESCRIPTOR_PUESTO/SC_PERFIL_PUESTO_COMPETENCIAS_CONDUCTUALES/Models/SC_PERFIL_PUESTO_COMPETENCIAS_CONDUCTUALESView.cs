@@ -17,5 +17,6 @@ namespace SGUEES.Models
         public string USUARIO_ACTU { get; set; }
         public string ESTACION_ACTU { get; set; }
         public DateTime? FECHA_ACTU { get; set; }
+        public string CODIGO_TIPO_PUESTO { get; set; }
     }
 }

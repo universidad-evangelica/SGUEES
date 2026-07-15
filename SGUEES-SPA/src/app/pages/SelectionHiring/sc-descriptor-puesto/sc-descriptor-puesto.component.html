@@ -1245,7 +1245,7 @@
 											[width]="140"
 											[minWidth]="120"
 											[allowSorting]="true"
-											[visible]="competenciasConductualesEditando"
+											[allowEditing]="competenciasConductualesEditando && !readOnly"
 											[calculateDisplayValue]="competenciaConductualCatalogDisplay"
 											[setCellValue]="setCompetenciaConductualCellValue"
 											[editCellTemplate]="'CORR_COMPETENCIAS_CONDUCTUALESLookup'"
@@ -1253,7 +1253,7 @@
 											<dxo-lookup
 												[dataSource]="mCORR_COMPETENCIAS_CONDUCTUALES"
 												valueExpr="CORR_COMPETENCIAS_CONDUCTUALES"
-												displayExpr="NOMBRE_COMPETENCIAS_CONDUCTUALES"
+												displayExpr="CODIGO_TIPO_PUESTO"
 											></dxo-lookup>
 										</dxi-column>
 										<div *dxTemplate="let cellInfo of 'CORR_COMPETENCIAS_CONDUCTUALESLookup'">
@@ -1262,7 +1262,7 @@
 												[value]="cellInfo.value"
 												(valueChange)="onCompetenciaConductualLookupChanged($event, cellInfo)"
 												[valueExpr]="'CORR_COMPETENCIAS_CONDUCTUALES'"
-												[displayExpr]="'NOMBRE_COMPETENCIAS_CONDUCTUALES'"
+												[displayExpr]="'CODIGO_TIPO_PUESTO'"
 												[lookupColumns]="competenciasConductualesLookupColumns"
 												[selectedRowKeys]="selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES"
 												[showClearButton]="true"
@@ -1274,6 +1274,7 @@
 											caption="Nombre (descriptor)"
 											[minWidth]="220"
 											[allowSorting]="true"
+											[allowEditing]="false"
 										></dxi-column>
 										<dxi-column
 											dataField="DESCRIPCION"

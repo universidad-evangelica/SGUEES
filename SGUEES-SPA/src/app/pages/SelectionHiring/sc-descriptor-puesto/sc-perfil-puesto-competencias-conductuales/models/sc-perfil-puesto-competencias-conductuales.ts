@@ -6,5 +6,6 @@ export interface ScPerfilPuestoCompetenciasConductuales {
 	CORR_DESCRIPTOR_PUESTO?: number;
 	CORR_PERFIL_PUESTO?: number;
 	CORR_COMPETENCIAS_CONDUCTUALES: number | null;
+	CODIGO_TIPO_PUESTO?: string;
 	_clientKey?: string | number;
 }

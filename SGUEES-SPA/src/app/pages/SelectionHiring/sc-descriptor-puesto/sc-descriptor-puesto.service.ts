@@ -27,16 +27,16 @@ import { ScDescriptorPuestoRequerimientoOrganizacional } from './sc-descriptor-p
 import { ScDescriptorPuestoRequerimientoOrganizacionalRepository } from './sc-descriptor-puesto-requerimiento-organizacional/sc-descriptor-puesto-requerimiento-organizacional.repository';
 import { ScDescriptorPuestoRiesgoPuesto } from './sc-descriptor-puesto-riesgo-puesto/models/sc-descriptor-puesto-riesgo-puesto';
 import { ScDescriptorPuestoRiesgoPuestoRepository } from './sc-descriptor-puesto-riesgo-puesto/sc-descriptor-puesto-riesgo-puesto.repository';
-import { ScDescriptorPuesto } from './models/sc-descriptor-puesto';
 import {
 	ESTADOS_DESCRIPTOR_BLOQUEO_CREACION,
 	FORMATO_CORTA,
 	FORMATO_EXTENSA,
+	ScDescriptorPuesto,
 	TIPO_FUNCION_CLAVE,
 	TIPO_FUNCION_SECUNDARIA,
 	TIPO_RELACION_EXTERNA,
 	TIPO_RELACION_INTERNA,
-} from './sc-descriptor-puesto.mock-data';
+} from './models/sc-descriptor-puesto';
 import { ScDescriptorPuestoRepository } from './sc-descriptor-puesto.repository';
 
 const ESTADO_DESCRIPTOR_LABELS: Record<string, string> = {
