@@ -124,6 +124,11 @@ export class CBaseComponent {
 		return false;
 	}
 
+	/** Modo consulta: doble clic en grid (Not_Defined). Muestra formulario sin Guardar ni edición. */
+	isConsulta(): boolean {
+		return this.banderaMtto === UpdateType.Not_Defined;
+	}
+
 	getPermisos(permisos: string) {
 		this.permiteAdd = false;
 		this.permiteEdit = false;
@@ -311,9 +316,17 @@ export class CBaseComponent {
 	//#endregion
 
 	rowDblClick(e: any) {
-		this.banderaMtto = UpdateType.Not_Defined;
+		const rowData = e?.data ?? e?.row?.data;
+		if (rowData) {
+			this.model = this.fillData(rowData);
+			this.modelUpdate = this.fillData(rowData);
+		}
+		this.AsignaStatus(UpdateType.Not_Defined);
 		this.subTituloVentana = RowStatus.Browse.toString();
 		setTimeout(() => {
+			if (this.dataForm?.instance) {
+				this.dataForm.instance.option('formData', this.model);
+			}
 			this.bloquear();
 		});
 	}

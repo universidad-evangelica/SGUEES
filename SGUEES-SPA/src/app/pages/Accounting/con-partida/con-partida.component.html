@@ -153,7 +153,7 @@
 	<dx-tab-panel #tabPanel class="partida-tab-panel" [selectedIndex]="0">
 		<dxi-item title="Detalle Partida" [icon]="'detailslayout'">
 			<div class="dx-grid-deta partida-deta-grid">
-				<div class="partida-deta-toolbar" *ngIf="!readOnly">
+				<div class="partida-deta-toolbar" *ngIf="puedeEditarDetalle()">
 					<dx-button
 						class="partida-deta-toolbar-btn"
 						icon="add"
@@ -215,8 +215,9 @@
 					<dxo-editing
 						[mode]="'row'"
 						[refreshMode]="'reshape'"
-						[allowUpdating]="!readOnly"
-						[allowDeleting]="!readOnly"
+						[allowAdding]="puedeEditarDetalle()"
+						[allowUpdating]="puedeEditarDetalle()"
+						[allowDeleting]="puedeEditarDetalle()"
 						[useIcons]="true"
 						[selectTextOnEditStart]="true"
 					></dxo-editing>

@@ -148,16 +148,16 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
    * Fila de acciones.
    * header-only browse: acciones en el grid unificado (sin segunda barra vacía),
    * salvo fechas/botones extra que aún viven solo en la barra.
-   * header-only edición / legacy: Guardar-Cancelar o toolbar browse en barra.
+   * header-only consulta/edición: Guardar-Cancelar en barra.
    */
   get showToolbarRow(): boolean {
+    if (!this.isBrowse) {
+      return true;
+    }
     if (this.isHeaderOnlyMode) {
-      if (this.isForm) {
-        return true;
-      }
       return this.browseNeedsBarraToolbar;
     }
-    return this.isBrowse || this.isForm;
+    return true;
   }
 
   /** Browse con fechas o btn1–6: la barra sigue mostrando toolbar (aún no migrados al grid). */

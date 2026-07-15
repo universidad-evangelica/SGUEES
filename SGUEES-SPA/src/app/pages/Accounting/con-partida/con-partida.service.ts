@@ -106,14 +106,14 @@ export class ConPartidaService {
 
 	getColumns(): any {
 		return [
-			{ dataField: 'ANIO_PERIODO', caption: 'Año' },
-			{ dataField: 'MES_PERIODO', caption: 'Mes' },
-			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase' },
-			{ dataField: 'CORR_PARTIDA', caption: 'No. Partida' },
-			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date' },
-			{ dataField: 'NUMERO_DOCUMENTO', caption: 'No. Documento' },
-			{ dataField: 'NOMBRE_PARTIDA', caption: 'Concepto' },
-			{ dataField: 'NOMBRE_ESTADO_PARTIDA', caption: 'Estado' },
+			{ dataField: 'ANIO_PERIODO', caption: 'Año', width: 80 },
+			{ dataField: 'MES_PERIODO', caption: 'Mes', width: 70 },
+			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase', width: 160 },
+			{ dataField: 'CORR_PARTIDA', caption: 'No. Partida', width: 100 },
+			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date', width: 110 },
+			{ dataField: 'NUMERO_DOCUMENTO', caption: 'No. Documento', width: 130 },
+			{ dataField: 'NOMBRE_PARTIDA', caption: 'Concepto', width: 280 },
+			{ dataField: 'NOMBRE_ESTADO_PARTIDA', caption: 'Estado', width: 110 },
 		];
 	}
 

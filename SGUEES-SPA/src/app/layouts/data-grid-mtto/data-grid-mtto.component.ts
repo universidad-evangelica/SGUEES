@@ -314,6 +314,33 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.onRefreshClick = this.onRefreshClick.bind(this);
     this.onAddClick = this.onAddClick.bind(this);
     this.onActivarInactivarClick = this.onActivarInactivarClick.bind(this);
+    this.isEditActionVisible = this.isEditActionVisible.bind(this);
+    this.isDeleteActionVisible = this.isDeleteActionVisible.bind(this);
+  }
+
+  /** Solo filas de datos (no encabezado de grupo) — patrón AdminFE / VEN_DOCUMENTO. */
+  private isGridDataRow(e: any): boolean {
+    return !e?.row?.rowType || e.row.rowType === 'data';
+  }
+
+  isEditActionVisible(e: any): boolean {
+    if (!this.isGridDataRow(e)) {
+      return false;
+    }
+    if (typeof this.permiteEditar === 'function') {
+      return (this.permiteEditar as (row: unknown) => boolean)(e);
+    }
+    return this.showEditActions;
+  }
+
+  isDeleteActionVisible(e: any): boolean {
+    if (!this.isGridDataRow(e)) {
+      return false;
+    }
+    if (typeof this.permiteDele === 'function') {
+      return (this.permiteDele as (row: unknown) => boolean)(e);
+    }
+    return this.showDeleteActions;
   }
 
   ngOnInit(): void {
@@ -503,14 +530,30 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private resolveActionVisibility(): void {
-    this.showEditActions =
-      typeof this.permiteEditar === 'function'
-        ? (this.permiteEditar as (e: unknown) => boolean)({})
-        : !!this.permiteEditar;
-    this.showDeleteActions =
-      typeof this.permiteDele === 'function'
-        ? (this.permiteDele as (e: unknown) => boolean)({})
-        : !!this.permiteDele;
+    if (typeof this.permiteEditar === 'function') {
+      this.showEditActions = true;
+    } else {
+      this.showEditActions = !!this.permiteEditar;
+    }
+    if (typeof this.permiteDele === 'function') {
+      this.showDeleteActions = true;
+    } else {
+      this.showDeleteActions = !!this.permiteDele;
+    }
+  }
+
+  private resolveEditButtonVisible(): boolean | ((e: unknown) => boolean) {
+    if (typeof this.permiteEditar === 'function') {
+      return this.isEditActionVisible;
+    }
+    return !!this.permiteEditar;
+  }
+
+  private resolveDeleteButtonVisible(): boolean | ((e: unknown) => boolean) {
+    if (typeof this.permiteDele === 'function') {
+      return this.isDeleteActionVisible;
+    }
+    return !!this.permiteDele;
   }
 
   private updateFocusedRowState(): void {
@@ -618,6 +661,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       type: 'buttons',
       name: 'btnAcciones',
       caption: 'Options',
+      visibleIndex: 0,
       width: actionWidth,
       minWidth: actionWidth,
       allowFiltering: false,
@@ -633,7 +677,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
           icon: 'edit',
           stylingMode: 'text',
           cssClass: 'sguees-grid-action-edit',
-          visible: this.showEditActions,
+          visible: this.resolveEditButtonVisible(),
           onClick: this.OneditClick,
         },
         {
@@ -642,7 +686,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
           icon: 'trash',
           stylingMode: 'text',
           cssClass: 'sguees-grid-action-delete',
-          visible: this.showDeleteActions,
+          visible: this.resolveDeleteButtonVisible(),
         },
         ...this.customButtons,
       ],
@@ -725,10 +769,16 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
         continue;
       }
       if (button.icon === 'edit') {
-        button.visible = this.showEditActions;
+        button.visible =
+          typeof this.permiteEditar === 'function'
+            ? this.resolveEditButtonVisible()
+            : this.showEditActions;
       }
       if (button.name === 'delete') {
-        button.visible = this.showDeleteActions;
+        button.visible =
+          typeof this.permiteDele === 'function'
+            ? this.resolveDeleteButtonVisible()
+            : this.showDeleteActions;
       }
     }
   }
