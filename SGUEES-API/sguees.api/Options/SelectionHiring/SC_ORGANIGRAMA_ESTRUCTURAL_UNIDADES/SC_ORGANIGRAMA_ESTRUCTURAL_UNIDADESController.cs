@@ -93,8 +93,14 @@ namespace sguees.Controllers
         public async Task<CResult> GetCORR_UNIDADES_SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES([FromQuery] SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADESParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
+        }
 
-            //Data.OPCION_CONSULTA = 1; // opcional, si quieres solo activas
+        [HttpGet("GetCORR_UNIDADES_SEG_FLUJO_ACTOR")]
+        [Authorize(Policy = "/seg-flujo-actor|R")]
+        public async Task<CResult> GetCORR_UNIDADES_SEG_FLUJO_ACTOR([FromQuery] SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADESParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetAllAsync(Data);
         }
 

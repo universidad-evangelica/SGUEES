@@ -48,6 +48,15 @@ namespace sguees.Services
             return await _repo.GetAsync(p);
         }
 
+        public async Task<CResult> GetEmpleadosByUnidadAsync(SEG_FLUJO_ACTORParam xWhere)
+        {
+            var pEmpleados = new List<CParameter>
+            {
+                new CParameter() {ParameterName="CORR_UNIDAD_EMPLEADO", Value=xWhere.CORR_UNIDAD_EMPLEADO, DbType=System.Data.DbType.Int32},
+            };
+
+            return await _repo.GetEmpleadosDisponiblesAsync(pEmpleados);
+        }
         public async Task<CResult> CreateAsync(SEG_FLUJO_ACTORTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             // Validaciones de negocio

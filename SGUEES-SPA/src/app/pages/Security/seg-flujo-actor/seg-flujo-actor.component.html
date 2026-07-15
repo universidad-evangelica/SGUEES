@@ -1,3 +1,4 @@
+<!-- Barra de herramientas principal -->
 <app-barra-data-mtto
     [tituloVentana]="tituloVentana"
     [isBrowse]="isBrowse()"
@@ -9,11 +10,82 @@
 >
 </app-barra-data-mtto>
 
-<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
-    <dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
-    </dx-form>
+<!-- ================================================ -->
+<!-- PANTALLA DE EDICIÓN / CREACIÓN (SOLO !isBrowse) -->
+<!-- ================================================ -->
+<div *ngIf="!isBrowse()" class="actor-edit-shell">
+
+    <!-- SECCIÓN 1: Formulario del Actor -->
+    <section class="sguees-section-card actor-form-card">
+        <header class="seg-flujo-actor-section-head">
+            <span class="seg-flujo-actor-section-title">Datos del Actor</span>
+            <span class="seg-flujo-actor-section-subtitle">Información general del actor de flujo</span>
+        </header>
+        <dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+        </dx-form>
+    </section>
+
+    <!-- SECCIÓN 2: Gestión de Asignaciones (SOLO si existe el actor) -->
+    <section class="sguees-section-card seg-flujo-actor-asignaciones-card" *ngIf="model && model.CORR_ACTOR > 0">
+        <header class="seg-flujo-actor-section-head">
+            <span class="seg-flujo-actor-section-title">Asignaciones del Actor</span>
+            <span class="seg-flujo-actor-section-subtitle">Usuarios asignados al actor {{ model.NOMBRE_ACTOR }}</span>
+        </header>
+
+        <!-- Barra de herramientas de Asignaciones -->
+        <app-barra-data-mtto
+            [tituloVentana]="'Asignaciones'"
+            [isBrowse]="isAsignacionBrowse()"
+            [isForm]="isAsignacionForm()"
+            [permiteAdd]="getPermiteAddAsignacion"
+            (nuevo)="nuevoAsignacion()"
+            (guardar)="guardarAsignacion()"
+            (cancelar)="cancelarAsignacion()"
+        >
+        </app-barra-data-mtto>
+
+        <!-- Formulario de Asignación (se muestra cuando NO está en browse) -->
+        <div *ngIf="!isAsignacionBrowse()" style="margin-top: 15px;">
+            <dx-form #fDataAsignacion id="fDataAsignacion" [formData]="asignacionModel" [labelLocation]="'top'" [colCount]="8" [items]="asignacionItems">
+                <div *dxTemplate="let cellInfo of 'CORR_UNIDADTemplate'">
+                    <dx-select-box
+                        [dataSource]="unidades"
+                        [(value)]="asignacionModel.CORR_UNIDAD"
+                        displayExpr="NOMBRE_UNIDAD_TREE"
+                        valueExpr="CORR_UNIDAD"
+                        placeholder="Seleccionar unidad..."
+                        [showClearButton]="true"
+                        [searchEnabled]="true"
+                        [searchTimeout]="200"
+                         (onValueChanged)="onFiltroUnidadJefeChanged($event.value)"
+                    >
+                    </dx-select-box>
+                </div>
+            </dx-form>
+        </div>
+
+        <!-- Grid de Asignaciones (siempre visible) -->
+        <div style="margin-top: 15px;">
+            <app-data-grid-mtto
+                [isBrowse]="isAsignacionBrowse()"
+                [models]="asignacionModels"
+                [columns]="asignacionColumns"
+                [keyExpr]="'CORR_ASIGNACION'"
+                [permiteEditar]="getPermiteEditarAsignacion"
+                [permiteDele]="getPermiteDeleAsignacion"
+                (rowDblClick)="rowDblClickAsignacion($event)"
+                (rowRemoving)="rowRemovingAsignacion($event)"
+                (editClick)="editarAsignacion($event)"
+            >
+            </app-data-grid-mtto>
+        </div>
+    </section>
+
 </div>
 
+<!-- ================================================ -->
+<!-- GRID PRINCIPAL (siempre visible) -->
+<!-- ================================================ -->
 <app-data-grid-mtto
     [isBrowse]="isBrowse()"
     [models]="models"

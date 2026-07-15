@@ -8,8 +8,8 @@ import { CData } from 'src/app/FxAPI/CData';
 @Injectable({
     providedIn: 'root',
 })
-export class SegFlujoActorRepository {
-    readonly xController = 'SEG_FLUJO_ACTOR';
+export class SegFlujoActorAsignacionRepository {
+    readonly xController = 'SEG_FLUJO_ACTOR_ASIGNACION';
 
     constructor(private objData: CData) {}
 
@@ -17,13 +17,15 @@ export class SegFlujoActorRepository {
         return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlGENERALAPI);
     }
 
+    getById(xWhere: IParam[]): Observable<IResult> {
+        return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlGENERALAPI);
+    }
+
+    
     create(model: any): Observable<IResult> {
         return this.objData.Post(model, this.xController, '', environment.UrlGENERALAPI);
     }
 
-    getEmpleados(xWhere: IParam[]): Observable<IResult> {
-        return this.objData.Get(this.xController, 'GetEmpleadosByUnidad', xWhere, environment.UrlGENERALAPI);
-    }
     update(model: any, xWhere: IParam[]): Observable<IResult> {
         return this.objData.Put(model, this.xController, '', xWhere, environment.UrlGENERALAPI);
     }

@@ -1,0 +1,54 @@
+// Barra de herramientas Actores - Aislada
+.barra-mtto-actores {
+    // Identifica la barra de actores
+    &::ng-deep .dx-toolbar {
+        // Estilos específicos para barra de actores
+    }
+}
+
+// Barra de herramientas Asignaciones - Aislada
+.barra-mtto-asignaciones {
+    margin-top: 15px;
+    
+    // Aislamiento: Identificador único para evitar interferencia
+    &::ng-deep .dx-toolbar {
+        background-color: #f9f9f9;
+        border-top: 1px solid #e8e8e8;
+        
+        .dx-toolbar-items-container .dx-item {
+            // Botones de asignación
+            &:last-child .dx-button {
+                // Estilo del botón "Agregar registro" de asignaciones
+            }
+        }
+    }
+}
+
+// Sección de asignaciones
+.seg-flujo-actor-asignaciones-card {
+    margin-top: 20px;
+    padding: 15px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background-color: #fafafa;
+}
+
+.seg-flujo-actor-section-head {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.seg-flujo-actor-section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.seg-flujo-actor-section-subtitle {
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+}

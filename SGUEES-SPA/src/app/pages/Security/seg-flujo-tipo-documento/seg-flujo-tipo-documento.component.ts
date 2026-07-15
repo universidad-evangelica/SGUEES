@@ -11,6 +11,7 @@ import { SegFlujoTipoDocumento } from './models/seg-flujo-tipo-documento';
 import { SegFlujoTipoDocumentoService } from './seg-flujo-tipo-documento.service';
 import { SegFlujoEstadoService } from './seg-flujo-estado.service';
 import { SegFlujoEstado } from './models/seg-flujo-estado';
+import { MttoPageContextService } from 'src/app/layouts/mtto-page-context.service';
 
 @Component({
     selector: 'app-seg-flujo-tipo-documento',
@@ -26,7 +27,8 @@ export class SegFlujoTipoDocumentoComponent extends CBaseComponent implements On
         public override appInfoService: AppInfoService,
         public override router: ActivatedRoute,
         private service: SegFlujoTipoDocumentoService,
-        private estadoService: SegFlujoEstadoService
+        private estadoService: SegFlujoEstadoService,
+        private pageContext: MttoPageContextService
     ) {
         super(appInfoService, router);
         this.columns = this.service.getColumns();
@@ -309,10 +311,25 @@ export class SegFlujoTipoDocumentoComponent extends CBaseComponent implements On
                 this.AsignaStatus(UpdateType.Browse);
                 this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
                 finalizarCancelacion();
+                // La barra hija llama pageContext.reset() en ngOnDestroy DESPUES de que la barra
+                // principal re-publica en ngOnChanges. reset() borra permiteAdd Y unifiedToolbar.
+                // Este setTimeout(0) restaura ambos tras el ciclo de destrucción.
+                setTimeout(() => {
+                    this.pageContext.updateFromBarra(
+                        { permiteAdd: this.permiteAdd, unifiedToolbar: true },
+                        { add: () => this.nuevo() }
+                    );
+                });
             });
         } else {
             this.AsignaStatus(UpdateType.Browse);
             finalizarCancelacion();
+            setTimeout(() => {
+                this.pageContext.updateFromBarra(
+                    { permiteAdd: this.permiteAdd, unifiedToolbar: true },
+                    { add: () => this.nuevo() }
+                );
+            });
         }
     }
 
