@@ -61,6 +61,72 @@
 						</app-data-lookup>
 					</div>
 				</dx-form>
+				<div class="dx-grid-deta">
+					<dx-toolbar class="mb-20">
+						<dxi-item location="before">
+							<div *dxTemplate>
+								
+								<h5><i class="dx-icon dx-icon-group mr-20"></i>Observadores</h5>
+							</div>
+						</dxi-item>
+					</dx-toolbar>
+				<dx-data-grid
+					#gridObservadores
+					[dataSource]="modelsObservadores"
+					[columns]="columnsObservadores"
+					keyExpr="CORR_REQUISICION_OBSERVADORES"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
+					[columnAutoWidth]="true"
+					[height]="'100%'"
+					[width]="'100%'"
+				>
+					<dxo-toolbar>
+						<dxi-item location="before">
+							<div *dxTemplate>
+								<dx-button
+									icon="add"
+									text="Agregar"
+									type="success"
+									stylingMode="contained"
+									[width]="140"
+									[visible]="!readOnly"
+									(onClick)="abrirModalObservador()"
+								></dx-button>
+							</div>
+						</dxi-item>
+						<dxi-item name="searchPanel" location="after"></dxi-item>
+					</dxo-toolbar>
+					<div *dxTemplate="let cell of 'optionsTemplate'">
+						<dx-button
+							icon="trash"
+							type="danger"
+							stylingMode="text"
+							hint="Eliminar"
+							[visible]="!readOnly"
+							(onClick)="rowRemovingObservador(cell.data)">
+						</dx-button>
+					</div>
+					<dxo-search-panel [visible]="true"></dxo-search-panel>
+					<dxo-paging [pageSize]="10"></dxo-paging>
+					<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 20]"></dxo-pager>
+					<dxo-editing [allowUpdating]="false" [allowDeleting]="false" [allowAdding]="false"></dxo-editing>
+					<dxo-summary>
+						<dxi-total-item
+							column="CORR_REQUISICION_OBSERVADORES"
+							summaryType="count"
+							valueFormat="#,##0"
+							displayFormat="Cant: {0}"
+						></dxi-total-item>
+					</dxo-summary>
+				</dx-data-grid>
+			</div>
+
 		</dxi-item>
 
 		<!-- TAB 2: Bitácora requisición (solo lectura — GetCORR_BITACORA_SC_REQUISICION_PERSONAL) -->
@@ -101,7 +167,7 @@
 </div>
 
 <!-- Segundo Card: observadores — patrón dx-data-grid -->
-<div class="content-block dx-card responsive-paddings mt-20" *ngIf="!isBrowse()">
+<!-- <div class="content-block dx-card responsive-paddings mt-20" *ngIf="!isBrowse()">
 	<dx-tab-panel #tabPanelObservadores class="requisicion-tab-panel" [selectedIndex]="0">
 		<dxi-item title="Observadores" [icon]="'group'">
 			<div class="dx-grid-deta">
@@ -153,7 +219,7 @@
 			</div>
 		</dxi-item>
 	</dx-tab-panel>
-</div>
+</div> -->
 
 <!-- Modal: agregar observador a la requisición (lookup LOGIN_SISTEMA) -->
 <dx-popup

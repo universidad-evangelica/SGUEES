@@ -17,28 +17,30 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 
 
 import { ScRequisicionPersonalComponent } from './sc-requisicion-personal.component';
-import { ToastModule } from "primeng/toast"; //importar el modulo de Toast para primeNG
+import { ToastModule } from "primeng/toast";
+import { DxToolbarModule } from "devextreme-angular/ui/toolbar"; //importar el modulo de Toast para primeNG
 
 const routes: Routes = [{ path: '', component: ScRequisicionPersonalComponent }];
 
 
 @NgModule({
     imports: [
-        RouterModule.forChild(routes),
-        CommonModule,
-        DxFormModule,
-        DxDataGridModule,
-        DxButtonModule,
-        DxLoadPanelModule,
-        DxDropDownBoxModule,
-        DxCheckBoxModule,
-        DxTabPanelModule,
-        DxPopupModule,
-        DataGridMttoModule,
-        BarraDataMttoModule,
-        DataLookupModule,
-        ToastModule,
-    ],
+    RouterModule.forChild(routes),
+    CommonModule,
+    DxFormModule,
+    DxDataGridModule,
+    DxButtonModule,
+    DxLoadPanelModule,
+    DxDropDownBoxModule,
+    DxCheckBoxModule,
+    DxTabPanelModule,
+    DxPopupModule,
+    DataGridMttoModule,
+    BarraDataMttoModule,
+    DataLookupModule,
+    ToastModule,
+    DxToolbarModule
+],
     exports: [RouterModule],
     declarations: [ScRequisicionPersonalComponent],
 })

@@ -239,18 +239,21 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		super.nuevo();
 		this.limpiarDatosTabs();
 		this.cerrarModalObservador();
+		setTimeout(() => this.aplicarVisibilidadTiempoContrato(null), 0);
 	}
 
 	/** Al editar, cargar data de cada tab según CORR_REQUISICION_PERSONAL. */
 	override editarClick(e: any): void {
 		super.editarClick(e);
 		this.cargarDatosTabs();
+		setTimeout(() => this.sincronizarVisibilidadTiempoContrato(), 0);
 	}
 
 	/** Al consultar (doble clic), también cargar observadores (patrón con-partida). */
 	override rowDblClick(e: any): void {
 		super.rowDblClick(e);
 		this.cargarDatosTabs();
+		setTimeout(() => this.sincronizarVisibilidadTiempoContrato(), 0);
 	}
 
 	//#endregion
@@ -503,6 +506,61 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			});
 	}
 
+	/**
+	 * Eliminar un observador de la requisición.
+	 * Valida que no sea de TIPO_OBSERVADOR = 'DEFECTO'; si lo es, no permite eliminar.
+	 * Solo requiere CORR_REQUISICION_OBSERVADORES para eliminar y luego refresca el grid.
+	 */
+	rowRemovingObservador(data: any): void {
+		if (!data) {
+			return;
+		}
+
+		if ((data.TIPO_OBSERVADOR || '').trim().toUpperCase() === 'DEFECTO') {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Validación',
+				detail: 'No se puede eliminar porque es un observador por defecto.',
+			});
+			return;
+		}
+
+		this.confirmaAccion('Confirmación', '¿Está seguro de eliminar el observador seleccionado?', () => {
+			this.loadingVisible = true;
+			this.observadoresService
+				.delete({ CORR_REQUISICION_OBSERVADORES: data.CORR_REQUISICION_OBSERVADORES })
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (response.Result) {
+							this.messageService.add({
+								severity: 'success',
+								summary: 'Éxito',
+								detail: 'Observador eliminado con éxito.',
+							});
+							this.cargarObservadores();
+						} else {
+							this.messageService.add({
+								severity: 'warn',
+								summary: 'Validación',
+								detail: response.ErrorMessage,
+							});
+						}
+						this.loadingVisible = false;
+					},
+					error: (error: any) => {
+						this.messageService.add({
+							severity: 'error',
+							summary: 'Error',
+							detail: error,
+						});
+						this.loadingVisible = false;
+					},
+				});
+		});
+	}
+				
+
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_REQUISICION_PERSONAL')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('FECHA_REQUISICION')?.option('readOnly', true);
@@ -542,8 +600,35 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		return vRow[0].CORR_TIPO_MODALIDAD;
 	}
 
-	selectedLookUpCORR_TIPO_CONTRATACION(vRow: any): any {
+	/**
+	 * Arrow function para conservar el contexto del componente (this),
+	 * ya que se pasa como referencia a app-data-lookup [selectedRowKeys].
+	 * Además de retornar el valor, alterna la visibilidad de TIEMPO_CONTRATO.
+	 */
+	selectedLookUpCORR_TIPO_CONTRATACION = (vRow: any): any => {
+		this.aplicarVisibilidadTiempoContrato(vRow?.[0]?.NOMBRE_TIPO_CONTRATACION);
 		return vRow[0].CORR_TIPO_CONTRATACION;
+	};
+
+	/**
+	 * Muestra el campo TIEMPO_CONTRATO solo cuando el tipo de contratación es EVENTUAL;
+	 * en cualquier otro caso lo oculta.
+	 */
+	aplicarVisibilidadTiempoContrato(nombreTipoContratacion: string | undefined | null): void {
+		const esEventual = (nombreTipoContratacion || '').trim().toUpperCase() === 'EVENTUAL';
+		this.dataForm?.instance?.itemOption('TIEMPO_CONTRATO', 'visible', esEventual);
+	}
+
+	/**
+	 * Sincroniza la visibilidad de TIEMPO_CONTRATO a partir del modelo cargado
+	 * (edición/consulta), resolviendo el nombre del tipo de contratación por su código.
+	 */
+	sincronizarVisibilidadTiempoContrato(): void {
+		const corr = this.model?.CORR_TIPO_CONTRATACION;
+		const item = (this.mCORR_TIPO_CONTRATACION || []).find(
+			(x: any) => Number(x.CORR_TIPO_CONTRATACION) === Number(corr)
+		);
+		this.aplicarVisibilidadTiempoContrato(item?.NOMBRE_TIPO_CONTRATACION);
 	}
 
 	selectedLookUpCORR_TIPO_VACANTE(vRow: any): any {

@@ -230,7 +230,7 @@ export class ScRequisicionPersonalService {
                                     dataField: 'TIEMPO_CONTRATO',
                                     label: { text: 'Tiempo contrato (meses)' },
                                     colSpan: 2,
-                                    //visible: false, // Visible solo cuando CORR_TIPO_CONTRATACION === 2 (contrato temporal)
+                                    visible: false, // Visible solo cuando CORR_TIPO_CONTRATACION === 2 (contrato temporal)
                                     editorType: 'dxNumberBox',
                                     editorOptions: { placeholder: 'Ej. 6 meses', showClearButton: true, maxLength: 50 },
                                 },
@@ -259,6 +259,7 @@ export class ScRequisicionPersonalService {
                                         showClearButton: true,
                                     }
                                 },
+                                
                                 {
                                     dataField: 'JUSTIFICACION',
                                     label: { text: 'Justificacion requisición:' },
@@ -271,9 +272,11 @@ export class ScRequisicionPersonalService {
 
     getObservadoresColumns(): any {
         return [
-            { dataField: 'CORR_REQUISICION_OBSERVADORES', caption: 'Corr.', width: 90 },
-            { dataField: 'LOGIN_SISTEMA', caption: 'Usuario', width: 220 },
-            { dataField: 'TIPO_OBSERVADOR', caption: 'Tipo observador', width: 160 },
+            { dataField: 'OPTIONS', caption: 'Opciones', width: 100, cellTemplate: 'optionsTemplate', alignment: 'center'},
+            { dataField: 'CORR_REQUISICION_OBSERVADORES', caption: 'Corr.', width: 90, alignment: 'center' },
+            { dataField: 'LOGIN_SISTEMA', caption: 'Usuario', width: 160 },
+            { dataField: 'NOMBRE_USUARIO', caption: 'Nombre', width: 250 },
+            //{ dataField: 'TIPO_OBSERVADOR', caption: 'Tipo observador', width: 160 },
             { dataField: 'ACTIVO', caption: 'Activo', width: 160, dataType: 'boolean' },
             { dataField: 'FECHA_ASIGNACION', caption: 'Fecha asignación', width: 160, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
         ];
