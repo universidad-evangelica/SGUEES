@@ -225,8 +225,19 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
                 };
 
-                // Solo elimina el perfil de puesto vinculado al descriptor.
+                // Hijos del descriptor y del perfil (orden: detalle -> encabezados -> descriptor).
+                await objData.Delete("SC_DESCRIPTOR_FUNCION_ACTIVIDAD", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_FUNCION", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_KPI_FUNCION", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_RELACION_LABORAL", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO", pWhere);
+                await objData.Delete("SC_PERFIL_PUESTO_EDUCACION", pWhere);
+                await objData.Delete("SC_PERFIL_PUESTO_EXPERIENCIA", pWhere);
+                await objData.Delete("SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS", pWhere);
+                await objData.Delete("SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES", pWhere);
                 await objData.Delete("SC_PERFIL_PUESTO", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_RIESGO_PUESTO", pWhere);
 
                 objResultado.RowsAffected = (int)await objData.Delete(_TableName, pWhere);
                 objResultado.Data = null;

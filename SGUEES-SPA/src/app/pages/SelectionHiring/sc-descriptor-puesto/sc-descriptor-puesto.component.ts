@@ -3358,6 +3358,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (cambioReal && this.esFormatoExtensa && this.mostrarSeccionesDescriptor) {
 			this.cargarRelacionesInternas();
 			this.cargarRelacionesExternas();
+			this.cargarRiesgosPuesto();
 		}
 	}
 
@@ -3547,8 +3548,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.readOnly = false;
 					this.AsignaStatus(UpdateType.Update);
 					this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
-					this.mainTabIndex = 0;
-					this.subTabIndex = 0;
 					this.cargarDatosTabs();
 					setTimeout(() => this.syncHeaderForm());
 
@@ -3557,6 +3556,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						NotifyType.Success,
 						{ raw: true }
 					);
+
+					const seedMessage = (response?.ErrorMessage ?? '').trim();
+					if (seedMessage) {
+						this.notifyDescriptorWarning(seedMessage);
+					}
 				} else if (response) {
 					this.notifyApiResponse(response);
 				}

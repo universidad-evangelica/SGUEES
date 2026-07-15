@@ -86,22 +86,33 @@ namespace SGUEES.Services
 
             if (corrDescriptor > 0)
             {
-                try
+                var seedMessages = new List<string>();
+
+                var seedRequerimientos = await _requerimientoOrganizacionalService.SeedActivosDesdeCatalogoAsync(
+                    Data.CORR_EMPRESA,
+                    corrDescriptor,
+                    vLOGIN_SISTEMA,
+                    vESTACION);
+
+                if (!string.IsNullOrWhiteSpace(seedRequerimientos?.ErrorMessage))
                 {
-                    await _requerimientoOrganizacionalService.SeedActivosDesdeCatalogoAsync(
-                        Data.CORR_EMPRESA,
-                        corrDescriptor,
-                        vLOGIN_SISTEMA,
-                        vESTACION);
-                    await _riesgoPuestoService.SeedActivosDesdeCatalogoAsync(
-                        Data.CORR_EMPRESA,
-                        corrDescriptor,
-                        vLOGIN_SISTEMA,
-                        vESTACION);
+                    seedMessages.Add(seedRequerimientos.ErrorMessage.Trim());
                 }
-                catch
+
+                var seedRiesgos = await _riesgoPuestoService.SeedActivosDesdeCatalogoAsync(
+                    Data.CORR_EMPRESA,
+                    corrDescriptor,
+                    vLOGIN_SISTEMA,
+                    vESTACION);
+
+                if (!string.IsNullOrWhiteSpace(seedRiesgos?.ErrorMessage))
                 {
-                    // El descriptor ya se creo; el seed no debe fallar la operacion.
+                    seedMessages.Add(seedRiesgos.ErrorMessage.Trim());
+                }
+
+                if (seedMessages.Count > 0)
+                {
+                    result.ErrorMessage = string.Join(" ", seedMessages);
                 }
             }
 

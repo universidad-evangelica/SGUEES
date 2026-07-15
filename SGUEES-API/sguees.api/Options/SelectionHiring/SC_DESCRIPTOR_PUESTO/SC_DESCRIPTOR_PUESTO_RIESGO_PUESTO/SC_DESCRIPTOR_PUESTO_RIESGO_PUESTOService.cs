@@ -72,83 +72,119 @@ namespace SGUEES.Services
         {
             if (corrEmpresa <= 0 || corrDescriptor <= 0)
             {
-                return new CResult
-                {
-                    Data = null,
-                    Result = true,
-                    RowsAffected = 0,
-                    CodeHelper = 0,
-                    ErrorCode = 0,
-                    ErrorMessage = "",
-                    ErrorSource = "",
-                };
+                return SeedSuccess(0);
             }
 
-            var existentes = await GetAllAsync(new SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOParam
+            try
             {
-                CORR_EMPRESA = corrEmpresa,
-                CORR_DESCRIPTOR_PUESTO = corrDescriptor,
-            });
-
-            if (existentes.Result && existentes.Data is List<SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOView> rows && rows.Count > 0)
-            {
-                return new CResult
-                {
-                    Data = rows,
-                    Result = true,
-                    RowsAffected = 0,
-                    CodeHelper = 0,
-                    ErrorCode = 0,
-                    ErrorMessage = "",
-                    ErrorSource = "",
-                };
-            }
-
-            var catalogo = await _catalogoRepo.GetCatalogoDescriptorAsync(corrEmpresa);
-            var ahora = DateTime.Now;
-            var creados = 0;
-
-            foreach (var item in catalogo)
-            {
-                if (item.CORR_RIESGO_PUESTO <= 0)
-                {
-                    continue;
-                }
-
-                var nombre = (item.NOMBRE_RIESGO_PUESTO ?? string.Empty).Trim();
-                if (string.IsNullOrWhiteSpace(nombre))
-                {
-                    continue;
-                }
-
-                if (nombre.Length > 150)
-                {
-                    nombre = nombre.Substring(0, 150);
-                }
-
-                var createResult = await CreateAsync(new SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable
+                var existentes = await GetAllAsync(new SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOParam
                 {
                     CORR_EMPRESA = corrEmpresa,
-                    CORR_DESCRIPTOR_RIESGO = 0,
-                    NOMBRE_RIESGO_PUESTO = nombre,
-                    INFORMACION = null,
-                    ES_LISTA = item.ES_LISTA,
                     CORR_DESCRIPTOR_PUESTO = corrDescriptor,
-                    CORR_RIESGO_PUESTO = item.CORR_RIESGO_PUESTO,
-                    USUARIO_CREA = usuario,
-                    ESTACION_CREA = estacion,
-                    FECHA_CREA = ahora,
-                    USUARIO_ACTU = usuario,
-                    ESTACION_ACTU = estacion,
-                    FECHA_ACTU = ahora,
-                }, usuario, estacion);
+                });
 
-                if (createResult.ErrorCode == 0)
+                if (!existentes.Result)
                 {
-                    creados++;
+                    return SeedError("No se pudieron consultar los riesgos del descriptor.");
                 }
-            }
 
+                var catalogoUsados = new HashSet<int>();
+                if (existentes.Data is List<SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOView> rows)
+                {
+                    foreach (var row in rows)
+                    {
+                        if (row.CORR_RIESGO_PUESTO is > 0)
+                        {
+                            catalogoUsados.Add(row.CORR_RIESGO_PUESTO.Value);
+                        }
+                    }
+                }
+
+                var catalogo = await _catalogoRepo.GetCatalogoDescriptorAsync(corrEmpresa);
+                var ahora = DateTime.Now;
+                var creados = 0;
+                var pendientes = 0;
+                var fallidos = 0;
+
+                foreach (var item in catalogo)
+                {
+                    if (item.CORR_RIESGO_PUESTO <= 0)
+                    {
+                        continue;
+                    }
+
+                    if (catalogoUsados.Contains(item.CORR_RIESGO_PUESTO))
+                    {
+                        continue;
+                    }
+
+                    var nombre = (item.NOMBRE_RIESGO_PUESTO ?? string.Empty).Trim();
+                    if (string.IsNullOrWhiteSpace(nombre))
+                    {
+                        continue;
+                    }
+
+                    if (nombre.Length > 150)
+                    {
+                        nombre = nombre.Substring(0, 150);
+                    }
+
+                    pendientes++;
+                    var createResult = await CreateAsync(new SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable
+                    {
+                        CORR_EMPRESA = corrEmpresa,
+                        CORR_DESCRIPTOR_RIESGO = 0,
+                        NOMBRE_RIESGO_PUESTO = nombre,
+                        INFORMACION = null,
+                        ES_LISTA = item.ES_LISTA,
+                        CORR_DESCRIPTOR_PUESTO = corrDescriptor,
+                        CORR_RIESGO_PUESTO = item.CORR_RIESGO_PUESTO,
+                        USUARIO_CREA = usuario,
+                        ESTACION_CREA = estacion,
+                        FECHA_CREA = ahora,
+                        USUARIO_ACTU = usuario,
+                        ESTACION_ACTU = estacion,
+                        FECHA_ACTU = ahora,
+                    }, usuario, estacion);
+
+                    if (createResult.ErrorCode == 0)
+                    {
+                        creados++;
+                        catalogoUsados.Add(item.CORR_RIESGO_PUESTO);
+                    }
+                    else
+                    {
+                        fallidos++;
+                    }
+                }
+
+                if (pendientes == 0)
+                {
+                    return SeedSuccess(creados);
+                }
+
+                if (fallidos == 0)
+                {
+                    return SeedSuccess(creados);
+                }
+
+                if (creados > 0)
+                {
+                    return SeedWarning(
+                        creados,
+                        $"Se cargaron {creados} de {pendientes} riesgo(s) del puesto desde el catalogo.");
+                }
+
+                return SeedError("No se pudieron cargar los riesgos activos del puesto desde el catalogo.");
+            }
+            catch (Exception ex)
+            {
+                return SeedError($"No se pudieron cargar los riesgos del puesto desde el catalogo: {ex.Message}");
+            }
+        }
+
+        private static CResult SeedSuccess(int creados)
+        {
             return new CResult
             {
                 Data = null,
@@ -158,6 +194,34 @@ namespace SGUEES.Services
                 ErrorCode = 0,
                 ErrorMessage = "",
                 ErrorSource = "",
+            };
+        }
+
+        private static CResult SeedWarning(int creados, string message)
+        {
+            return new CResult
+            {
+                Data = null,
+                Result = true,
+                RowsAffected = creados,
+                CodeHelper = 0,
+                ErrorCode = 0,
+                ErrorMessage = message,
+                ErrorSource = "[SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService]",
+            };
+        }
+
+        private static CResult SeedError(string message)
+        {
+            return new CResult
+            {
+                Data = null,
+                Result = false,
+                RowsAffected = 0,
+                CodeHelper = 0,
+                ErrorCode = 1,
+                ErrorMessage = message,
+                ErrorSource = "[SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService]",
             };
         }
 
