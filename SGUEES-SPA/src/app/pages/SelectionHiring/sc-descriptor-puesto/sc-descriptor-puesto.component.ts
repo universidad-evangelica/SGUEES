@@ -30,9 +30,10 @@ import { ScPerfilPuestoCompetenciasTecnicas } from './sc-perfil-puesto-competenc
 import { ScPerfilPuestoCompetenciasConductuales } from './sc-perfil-puesto-competencias-conductuales/models/sc-perfil-puesto-competencias-conductuales';
 import { ScDescriptorPuestoRequerimientoOrganizacional } from './sc-descriptor-puesto-requerimiento-organizacional/models/sc-descriptor-puesto-requerimiento-organizacional';
 import { ScDescriptorPuestoRiesgoPuesto } from './sc-descriptor-puesto-riesgo-puesto/models/sc-descriptor-puesto-riesgo-puesto';
+import { ScDescriptorPuestoResponsabilidadCargo } from './sc-descriptor-puesto-responsabilidad-cargo/models/sc-descriptor-puesto-responsabilidad-cargo';
 import {
-	FORMATO_CORTA,
-	FORMATO_EXTENSA,
+	FORMATO_CORTO,
+	FORMATO_EXTENSO,
 	MOCK_PUESTOS,
 	MOCK_UNIDADES,
 	MockPuesto,
@@ -42,6 +43,7 @@ import {
 	ScCompetenciaTecnicaLookupItem,
 	ScDescriptorPuesto,
 	ScRequerimientoOrganizacionalLookupItem,
+	ScResponsabilidadCargoLookupItem,
 	ScRiesgoPuestoLookupItem,
 	TIPO_FUNCION_CLAVE,
 	TIPO_FUNCION_SECUNDARIA,
@@ -69,6 +71,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	@ViewChild('gridRequerimientosOrganizacionales', { static: false })
 	gridRequerimientosOrganizacionales?: DxDataGridComponent;
 	@ViewChild('gridRiesgosPuesto', { static: false }) gridRiesgosPuesto?: DxDataGridComponent;
+	@ViewChild('gridResponsabilidadesCargo', { static: false })
+	gridResponsabilidadesCargo?: DxDataGridComponent;
 	@ViewChild('gridActividades', { static: false }) gridActividades?: DxDataGridComponent;
 	@ViewChild('gridRelacionesInternas', { static: false }) gridRelacionesInternas?: DxDataGridComponent;
 	@ViewChild('gridRelacionesExternas', { static: false }) gridRelacionesExternas?: DxDataGridComponent;
@@ -102,6 +106,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_REQUERIMIENTO_ORGANIZACIONAL_DISPONIBLES: ScRequerimientoOrganizacionalLookupItem[] = [];
 	mCORR_RIESGO_PUESTO: ScRiesgoPuestoLookupItem[] = [];
 	mCORR_RIESGO_PUESTO_DISPONIBLES: ScRiesgoPuestoLookupItem[] = [];
+	mCORR_RESPONSABILIDAD: ScResponsabilidadCargoLookupItem[] = [];
+	mCORR_RESPONSABILIDAD_DISPONIBLES: ScResponsabilidadCargoLookupItem[] = [];
 	reportaLookupColumns = [
 		{ dataField: 'RESPONSABLE', caption: 'Nombre', width: 220 },
 		{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260 },
@@ -128,6 +134,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ dataField: 'CORR_RIESGO_PUESTO', caption: 'Codigo', width: 90 },
 		{ dataField: 'NOMBRE_RIESGO_PUESTO', caption: 'Riesgo', width: 320 },
 	];
+	responsabilidadesCargoLookupColumns = [
+		{ dataField: 'CORR_RESPONSABILIDAD', caption: 'Codigo', width: 90 },
+		{ dataField: 'NOMBRE_RESPONSABILIDAD', caption: 'Responsabilidad', width: 320 },
+	];
 
 	headerItems: any[] = [];
 	itemsTabBitacora: any[] = [];
@@ -141,6 +151,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	competenciasConductuales: ScPerfilPuestoCompetenciasConductuales[] = [];
 	requerimientosOrganizacionales: ScDescriptorPuestoRequerimientoOrganizacional[] = [];
 	riesgosPuesto: ScDescriptorPuestoRiesgoPuesto[] = [];
+	responsabilidadesCargo: ScDescriptorPuestoResponsabilidadCargo[] = [];
 	relacionesInternas: ScDescriptorRelacionLaboral[] = [];
 	relacionesExternas: ScDescriptorRelacionLaboral[] = [];
 	funcionesClaveEditando = false;
@@ -155,6 +166,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	riesgosPuestoEditando = false;
 	riesgosPuestoInsertando = false;
 	private riesgoPuestoPersistiendo = false;
+	responsabilidadesCargoEditando = false;
+	responsabilidadesCargoInsertando = false;
+	private responsabilidadCargoPersistiendo = false;
 	actividadesEditando = false;
 	relacionesInternasEditando = false;
 	relacionesExternasEditando = false;
@@ -182,6 +196,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private competenciasConductualesLoadSeq = 0;
 	private requerimientosOrganizacionalesLoadSeq = 0;
 	private riesgosPuestoLoadSeq = 0;
+	private responsabilidadesCargoLoadSeq = 0;
 	private relacionesInternasLoadSeq = 0;
 	private relacionesExternasLoadSeq = 0;
 	private perfilLoadSeq = 0;
@@ -218,6 +233,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.selectedLookUpCORR_REQUERIMIENTO_ORGANIZACIONAL =
 			this.selectedLookUpCORR_REQUERIMIENTO_ORGANIZACIONAL.bind(this);
 		this.selectedLookUpCORR_RIESGO_PUESTO = this.selectedLookUpCORR_RIESGO_PUESTO.bind(this);
+		this.selectedLookUpCORR_RESPONSABILIDAD = this.selectedLookUpCORR_RESPONSABILIDAD.bind(this);
 		this.funcionClaveEditButtonVisible = this.funcionClaveEditButtonVisible.bind(this);
 		this.funcionClaveDeleteButtonVisible = this.funcionClaveDeleteButtonVisible.bind(this);
 		this.editarFuncionClaveClick = this.editarFuncionClaveClick.bind(this);
@@ -247,6 +263,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.riesgoPuestoEditButtonVisible = this.riesgoPuestoEditButtonVisible.bind(this);
 		this.riesgoPuestoDeleteButtonVisible = this.riesgoPuestoDeleteButtonVisible.bind(this);
 		this.editarRiesgoPuestoClick = this.editarRiesgoPuestoClick.bind(this);
+		this.responsabilidadCargoEditButtonVisible = this.responsabilidadCargoEditButtonVisible.bind(this);
+		this.responsabilidadCargoDeleteButtonVisible = this.responsabilidadCargoDeleteButtonVisible.bind(this);
+		this.editarResponsabilidadCargoClick = this.editarResponsabilidadCargoClick.bind(this);
 		this.actividadEditButtonVisible = this.actividadEditButtonVisible.bind(this);
 		this.actividadDeleteButtonVisible = this.actividadDeleteButtonVisible.bind(this);
 		this.editarActividadClick = this.editarActividadClick.bind(this);
@@ -300,6 +319,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.getCORR_COMPETENCIAS_CONDUCTUALES();
 		this.getCORR_REQUERIMIENTO_ORGANIZACIONAL();
 		this.getCORR_RIESGO_PUESTO();
+		this.getCORR_RESPONSABILIDAD();
 		this.getFORMATO();
 		this.getNIVEL_DOMINIO();
 		this.getSEXO();
@@ -695,6 +715,38 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	getCORR_RESPONSABILIDAD(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_RESPONSABILIDAD_CARGO',
+				'GetCORR_RESPONSABILIDAD',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result || !Array.isArray(response.Data)) {
+						this.mCORR_RESPONSABILIDAD = [];
+						this.mCORR_RESPONSABILIDAD_DISPONIBLES = [];
+						return;
+					}
+
+					this.mCORR_RESPONSABILIDAD = response.Data.map((item: any) => ({
+						CORR_RESPONSABILIDAD: Number(item.CORR_RESPONSABILIDAD),
+						NOMBRE_RESPONSABILIDAD: (item.NOMBRE_RESPONSABILIDAD ?? '').trim(),
+					}));
+					this.actualizarResponsabilidadesCargoLookupDisponibles();
+				},
+				error: (error) => {
+					this.mCORR_RESPONSABILIDAD = [];
+					this.mCORR_RESPONSABILIDAD_DISPONIBLES = [];
+					this.notifyApiError(error);
+				},
+			});
+	}
+
 	selectedLookUpCORR_UNIDAD(vRow: any): number {
 		return vRow[0].CORR_UNIDAD;
 	}
@@ -735,6 +787,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return vRow[0].CORR_RIESGO_PUESTO;
 	}
 
+	selectedLookUpCORR_RESPONSABILIDAD(vRow: any): number {
+		return vRow[0].CORR_RESPONSABILIDAD;
+	}
+
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -765,7 +821,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				CORR_IMPACTO_ECONOMICO: xModel.CORR_IMPACTO_ECONOMICO,
 				CORR_INDUCCION: xModel.CORR_INDUCCION,
 				RESPONSABLE: xModel.RESPONSABLE ?? '',
-				FORMATO: xModel.FORMATO ?? FORMATO_CORTA,
+				FORMATO: xModel.FORMATO ?? FORMATO_CORTO,
 				VERSION: xModel.VERSION ?? 1,
 				ESTADO_DESCRIPTOR: xModel.ESTADO_DESCRIPTOR ?? 'BORRADOR',
 				USUARIO_CREA: xModel.USUARIO_CREA,
@@ -793,7 +849,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			CORR_IMPACTO_ECONOMICO: null,
 			CORR_INDUCCION: null,
 			RESPONSABLE: '',
-			FORMATO: FORMATO_CORTA,
+			FORMATO: FORMATO_CORTO,
 			VERSION: 1,
 			ESTADO_DESCRIPTOR: 'BORRADOR',
 			USUARIO_CREA: '',
@@ -893,17 +949,18 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	cargarDatosTabs(): void {
 		this.itemsTabBitacora = [];
 		this.cargarFuncionesClave();
-		if (this.esFormatoCorta) {
+		if (this.esFormatoCorto) {
 			this.cargarFuncionesSecundarias();
 			this.cargarKpis();
 		}
-		if (this.esFormatoExtensa) {
+		if (this.esFormatoExtenso) {
 			this.cargarRelacionesInternas();
 			this.cargarRelacionesExternas();
 			this.cargarRiesgosPuesto();
 		}
 		this.cargarPerfil();
 		this.cargarRequerimientosOrganizacionales();
+		this.cargarResponsabilidadesCargo();
 	}
 
 	limpiarDatosTabs(): void {
@@ -917,6 +974,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.competenciasConductuales = [];
 		this.requerimientosOrganizacionales = [];
 		this.riesgosPuesto = [];
+		this.responsabilidadesCargo = [];
 		this.relacionesInternas = [];
 		this.relacionesExternas = [];
 		this.competenciasSubTabIndex = 0;
@@ -930,6 +988,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.resetearEdicionCompetenciasConductuales();
 		this.resetearEdicionRequerimientosOrganizacionales();
 		this.resetearEdicionRiesgosPuesto();
+		this.resetearEdicionResponsabilidadesCargo();
 		this.resetearEdicionRelacionesInternas();
 		this.resetearEdicionRelacionesExternas();
 		this.limpiarPerfil();
@@ -937,13 +996,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cerrarActividadesPopup();
 	}
 
-	get esFormatoCorta(): boolean {
-		const formato = (this.model?.FORMATO ?? '').toUpperCase();
-		return formato === FORMATO_CORTA || formato === 'CORTA';
+	get esFormatoCorto(): boolean {
+		return (this.model?.FORMATO ?? '').toUpperCase() === FORMATO_CORTO;
 	}
 
-	get esFormatoExtensa(): boolean {
-		return (this.model?.FORMATO ?? '').toUpperCase() === FORMATO_EXTENSA;
+	get esFormatoExtenso(): boolean {
+		return (this.model?.FORMATO ?? '').toUpperCase() === FORMATO_EXTENSO;
 	}
 
 	get mostrarSeccionesDescriptor(): boolean {
@@ -1042,7 +1100,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (
 			this.readOnly ||
 			this.funcionesSecundariasEditando ||
-			!this.esFormatoCorta ||
+			!this.esFormatoCorto ||
 			!this.requiereDescriptorGuardado()
 		) {
 			return;
@@ -1127,7 +1185,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	agregarRelacionInterna(): void {
-		if (this.readOnly || this.relacionesInternasEditando || !this.esFormatoExtensa || !this.requiereDescriptorGuardado()) {
+		if (this.readOnly || this.relacionesInternasEditando || !this.esFormatoExtenso || !this.requiereDescriptorGuardado()) {
 			return;
 		}
 		this.gridRelacionesInternas?.instance.addRow();
@@ -1211,7 +1269,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	agregarRelacionExterna(): void {
-		if (this.readOnly || this.relacionesExternasEditando || !this.esFormatoExtensa || !this.requiereDescriptorGuardado()) {
+		if (this.readOnly || this.relacionesExternasEditando || !this.esFormatoExtenso || !this.requiereDescriptorGuardado()) {
 			return;
 		}
 		this.gridRelacionesExternas?.instance.addRow();
@@ -1295,7 +1353,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	abrirActividades(funcion: ScDescriptorFuncion): void {
-		if (!this.esFormatoExtensa || !funcion) {
+		if (!this.esFormatoExtenso || !funcion) {
 			return;
 		}
 
@@ -1402,7 +1460,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	agregarKpi(): void {
-		if (this.readOnly || this.kpisEditando || !this.esFormatoCorta || !this.requiereDescriptorGuardado()) {
+		if (this.readOnly || this.kpisEditando || !this.esFormatoCorto || !this.requiereDescriptorGuardado()) {
 			return;
 		}
 		this.gridKpis?.instance.addRow();
@@ -2041,7 +2099,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		newData.CORR_COMPETENCIAS_CONDUCTUALES = corr;
 		newData.NOMBRE_COMPETENCIAS_CONDUCTUALES = catalog?.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '';
 		newData.CODIGO_TIPO_PUESTO = catalog?.CODIGO_TIPO_PUESTO ?? '';
-		newData.DESCRIPCION = this.esFormatoExtensa ? catalog?.DESCRIPCION ?? '' : '';
+		newData.DESCRIPCION = this.esFormatoExtenso ? catalog?.DESCRIPCION ?? '' : '';
 	};
 
 	agregarRequerimientoOrganizacional(): void {
@@ -2437,6 +2495,211 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 		newData.CORR_RIESGO_PUESTO = corr;
 		newData.NOMBRE_RIESGO_PUESTO = catalog?.NOMBRE_RIESGO_PUESTO ?? '';
+	};
+
+	agregarResponsabilidadCargo(): void {
+		if (this.readOnly || this.responsabilidadesCargoEditando || !this.requiereDescriptorGuardado()) {
+			return;
+		}
+		this.actualizarResponsabilidadesCargoLookupDisponibles();
+		this.responsabilidadesCargoInsertando = true;
+		this.responsabilidadesCargoEditando = true;
+		setTimeout(() => {
+			this.gridResponsabilidadesCargo?.instance.addRow();
+			this.syncResponsabilidadCargoColumnas();
+		});
+	}
+
+	editarResponsabilidadCargoClick(e: any): void {
+		if (this.readOnly || this.responsabilidadesCargoEditando) {
+			return;
+		}
+		this.actualizarResponsabilidadesCargoLookupDisponibles(
+			Number(e?.row?.data?.CORR_RESPONSABILIDAD) || null
+		);
+		this.responsabilidadesCargoInsertando = false;
+		this.responsabilidadesCargoEditando = true;
+		const rowIndex = e.row.rowIndex;
+		const grid = e.component;
+		setTimeout(() => {
+			grid.editRow(rowIndex);
+			this.syncResponsabilidadCargoColumnas();
+		});
+	}
+
+	responsabilidadCargoEditButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
+
+	responsabilidadCargoDeleteButtonVisible(e: any): boolean {
+		return this.accionGridVisible(e);
+	}
+
+	guardarResponsabilidadCargoEditado(): void {
+		const grid = this.gridResponsabilidadesCargo?.instance;
+		if (!grid || !this.responsabilidadesCargoEditando) {
+			this.notifyFx('No hay una linea en edicion', NotifyType.Warning);
+			return;
+		}
+		grid.saveEditData();
+	}
+
+	cancelarResponsabilidadCargoEditado(): void {
+		this.cancelarEdicionGrid(this.gridResponsabilidadesCargo?.instance, () => {
+			this.responsabilidadesCargoEditando = false;
+			this.responsabilidadesCargoInsertando = false;
+			this.cargarResponsabilidadesCargo(true);
+		});
+	}
+
+	responsabilidadCargoInitNewRow(e: any): void {
+		this.responsabilidadesCargoInsertando = true;
+		e.data.CORR_DESCRIPTOR_RESPONSABILIDAD = 0;
+		e.data.CORR_DESCRIPTOR_PUESTO = Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0;
+		e.data.CORR_RESPONSABILIDAD = null;
+		e.data.NOMBRE_RESPONSABILIDAD = '';
+		e.data.INFORMACION = '';
+		e.data._clientKey = this.crearClientKey('rc');
+		this.actualizarResponsabilidadesCargoLookupDisponibles();
+	}
+
+	onResponsabilidadCargoEditingStart(e: any): void {
+		this.responsabilidadesCargoInsertando = !(Number(e?.data?.CORR_DESCRIPTOR_RESPONSABILIDAD) > 0);
+		this.actualizarResponsabilidadesCargoLookupDisponibles(Number(e?.data?.CORR_RESPONSABILIDAD) || null);
+		this.responsabilidadesCargoEditando = true;
+		this.syncResponsabilidadCargoColumnas();
+	}
+
+	onResponsabilidadCargoSaved(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.responsabilidadesCargoEditando = false;
+			this.responsabilidadesCargoInsertando = false;
+		});
+	}
+
+	onResponsabilidadCargoEditCanceled(e: any): void {
+		this.finalizarEdicionGrid(e, () => {
+			this.responsabilidadesCargoEditando = false;
+			this.responsabilidadesCargoInsertando = false;
+		});
+		this.cargarResponsabilidadesCargo(true);
+	}
+
+	responsabilidadCargoRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!(Number(data.CORR_RESPONSABILIDAD) > 0)) {
+			e.isValid = false;
+			e.errorText = 'Debe seleccionar una responsabilidad de cargo.';
+			return;
+		}
+		if (!(data.NOMBRE_RESPONSABILIDAD ?? '').trim()) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar el nombre de la responsabilidad.';
+			return;
+		}
+		if ((data.NOMBRE_RESPONSABILIDAD ?? '').trim().length > 150) {
+			e.isValid = false;
+			e.errorText = 'El nombre de la responsabilidad no puede superar 150 caracteres.';
+			return;
+		}
+
+		if ((data.INFORMACION ?? '').trim().length > 255) {
+			e.isValid = false;
+			e.errorText = 'La informacion no puede superar 255 caracteres.';
+			return;
+		}
+
+		const corrCatalogo = Number(data.CORR_RESPONSABILIDAD);
+		const clientKey = data._clientKey ?? e?.key;
+		const duplicada = (this.responsabilidadesCargo || []).some((row) => {
+			if (!(Number(row.CORR_RESPONSABILIDAD) > 0)) {
+				return false;
+			}
+			if (clientKey != null && row._clientKey === clientKey) {
+				return false;
+			}
+			return Number(row.CORR_RESPONSABILIDAD) === corrCatalogo;
+		});
+		if (duplicada) {
+			e.isValid = false;
+			e.errorText = 'Esa responsabilidad de cargo ya esta agregada en el descriptor.';
+		}
+	}
+
+	responsabilidadCargoRowInserting(e: any): void {
+		e.cancel = this.persistirResponsabilidadCargoDesdeGrid(e.data, true);
+	}
+
+	responsabilidadCargoRowUpdating(e: any): void {
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = this.persistirResponsabilidadCargoDesdeGrid(data, false);
+	}
+
+	responsabilidadCargoRowRemoving(e: any): void {
+		e.cancel = this.eliminarResponsabilidadCargoDesdeGrid(e.data);
+	}
+
+	responsabilidadCargoCatalogDisplay = (row: ScDescriptorPuestoResponsabilidadCargo): string => {
+		const corr = Number(row?.CORR_RESPONSABILIDAD);
+		if (!(corr > 0)) {
+			return '';
+		}
+		return String(corr);
+	};
+
+	private actualizarResponsabilidadesCargoLookupDisponibles(corrConservar: number | null = null): void {
+		const usados = new Set(
+			(this.responsabilidadesCargo || [])
+				.map((row) => Number(row.CORR_RESPONSABILIDAD))
+				.filter((corr) => corr > 0 && corr !== Number(corrConservar || 0))
+		);
+
+		this.mCORR_RESPONSABILIDAD_DISPONIBLES = (this.mCORR_RESPONSABILIDAD || []).filter((item) => {
+			const corr = Number(item.CORR_RESPONSABILIDAD);
+			if (!(corr > 0)) {
+				return false;
+			}
+			if (corrConservar != null && corr === Number(corrConservar)) {
+				return true;
+			}
+			return !usados.has(corr);
+		});
+	}
+
+	onResponsabilidadCargoLookupChanged(value: number | null, cellInfo: any): void {
+		const corr = value != null && value > 0 ? Number(value) : null;
+		cellInfo.setValue(corr);
+		this.repintarFilaResponsabilidadCargoLookup(cellInfo);
+	}
+
+	private repintarFilaResponsabilidadCargoLookup(cellInfo: any): void {
+		this.cdr.detectChanges();
+		setTimeout(() => {
+			const grid = this.gridResponsabilidadesCargo?.instance ?? cellInfo?.component;
+			const rowIndex = typeof cellInfo?.row?.rowIndex === 'number' ? cellInfo.row.rowIndex : null;
+			if (!grid) {
+				return;
+			}
+			grid.updateDimensions?.();
+			if (rowIndex != null && rowIndex >= 0 && typeof grid.repaintRows === 'function') {
+				grid.repaintRows([rowIndex]);
+				return;
+			}
+			grid.repaint?.();
+		});
+	}
+
+	setResponsabilidadCargoCellValue = (
+		newData: ScDescriptorPuestoResponsabilidadCargo,
+		value: number | null,
+		_currentRowData: ScDescriptorPuestoResponsabilidadCargo
+	): void => {
+		const corr = value != null && Number(value) > 0 ? Number(value) : null;
+		const catalog = this.mCORR_RESPONSABILIDAD.find(
+			(item) => Number(item.CORR_RESPONSABILIDAD) === Number(corr)
+		);
+		newData.CORR_RESPONSABILIDAD = corr;
+		newData.NOMBRE_RESPONSABILIDAD = catalog?.NOMBRE_RESPONSABILIDAD ?? '';
 	};
 
 	onPerfilEdadMinimaChanged(e: any): void {
@@ -2886,7 +3149,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private cargarRiesgosPuesto(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
-		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtensa) {
+		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtenso) {
 			this.riesgosPuesto = [];
 			this.resetearEdicionRiesgosPuesto();
 			this.actualizarRiesgosPuestoLookupDisponibles();
@@ -2920,9 +3183,47 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	private cargarResponsabilidadesCargo(forzar = false): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0) {
+			this.responsabilidadesCargo = [];
+			this.resetearEdicionResponsabilidadesCargo();
+			this.actualizarResponsabilidadesCargoLookupDisponibles();
+			return;
+		}
+
+		const loadSeq = ++this.responsabilidadesCargoLoadSeq;
+		this.service
+			.getResponsabilidadesCargoLookup(corrDescriptor)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (loadSeq !== this.responsabilidadesCargoLoadSeq) {
+						return;
+					}
+
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.resetearEdicionResponsabilidadesCargo();
+						this.responsabilidadesCargo = response.Data.map(
+							(item: ScDescriptorPuestoResponsabilidadCargo) => ({
+								CORR_DESCRIPTOR_PUESTO: item.CORR_DESCRIPTOR_PUESTO ?? corrDescriptor,
+								CORR_DESCRIPTOR_RESPONSABILIDAD: item.CORR_DESCRIPTOR_RESPONSABILIDAD,
+								NOMBRE_RESPONSABILIDAD: item.NOMBRE_RESPONSABILIDAD ?? '',
+								INFORMACION: item.INFORMACION ?? '',
+								CORR_RESPONSABILIDAD: item.CORR_RESPONSABILIDAD ?? null,
+								_clientKey: item.CORR_DESCRIPTOR_RESPONSABILIDAD || this.crearClientKey('rc'),
+							})
+						);
+						this.actualizarResponsabilidadesCargoLookupDisponibles();
+					}
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
 	private cargarKpis(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
-		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoCorta) {
+		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoCorto) {
 			this.kpis = [];
 			this.resetearEdicionKpis();
 			return;
@@ -3029,7 +3330,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private cargarFuncionesSecundarias(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
-		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoCorta) {
+		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoCorto) {
 			if (!corrDescriptor || corrDescriptor <= 0) {
 				this.funcionesSecundarias = [];
 				this.resetearEdicionFuncionesSecundarias();
@@ -3070,7 +3371,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private cargarRelacionesInternas(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
-		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtensa) {
+		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtenso) {
 			if (!corrDescriptor || corrDescriptor <= 0) {
 				this.relacionesInternas = [];
 				this.resetearEdicionRelacionesInternas();
@@ -3110,7 +3411,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private cargarRelacionesExternas(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
-		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtensa) {
+		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtenso) {
 			if (!corrDescriptor || corrDescriptor <= 0) {
 				this.relacionesExternas = [];
 				this.resetearEdicionRelacionesExternas();
@@ -3161,7 +3462,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	onFormatoChanged(value: string, formatoAnteriorHint?: string): void {
-		const formatoNuevo = (value || FORMATO_CORTA).toUpperCase();
+		const formatoNuevo = (value || FORMATO_CORTO).toUpperCase();
 		// El form a veces ya escribio FORMATO en model antes del evento; previousValue puede venir vacio.
 		const formatoAnterior = (
 			formatoAnteriorHint ??
@@ -3172,7 +3473,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const cambioReal = formatoAnterior !== formatoNuevo;
 		const tabActualIndex = this.subTabIndex >= 0 ? this.subTabIndex : this.ultimoTabSeccionValido;
 
-		this.model.FORMATO = value || FORMATO_CORTA;
+		this.model.FORMATO = value || FORMATO_CORTO;
 		this.ultimoFormatoAplicado = formatoNuevo;
 
 		if (cambioReal) {
@@ -3190,11 +3491,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 
 		// Solo recargar secundarias si el usuario cambió de verdad el formato (no por sync del form).
-		if (cambioReal && this.esFormatoCorta && this.mostrarSeccionesDescriptor) {
+		if (cambioReal && this.esFormatoCorto && this.mostrarSeccionesDescriptor) {
 			this.cargarFuncionesSecundarias();
 		}
 
-		if (cambioReal && this.esFormatoExtensa && this.mostrarSeccionesDescriptor) {
+		if (cambioReal && this.esFormatoExtenso && this.mostrarSeccionesDescriptor) {
 			this.cargarRelacionesInternas();
 			this.cargarRelacionesExternas();
 			this.cargarRiesgosPuesto();
@@ -3223,8 +3524,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return false;
 		}
 		const fmt = (formato || '').toUpperCase();
-		const esCorta = fmt === FORMATO_CORTA || fmt === 'CORTA';
-		const esExtensa = fmt === FORMATO_EXTENSA || fmt === 'EXTENSA';
+		const esCorta = fmt === FORMATO_CORTO;
+		const esExtensa = fmt === FORMATO_EXTENSO;
 		if (tab.visibleEn === 'ambos') {
 			return true;
 		}
@@ -3488,7 +3789,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private syncHeaderForm(): void {
 		this.sincronizandoHeader = true;
-		this.ultimoFormatoAplicado = (this.model?.FORMATO || FORMATO_CORTA).toUpperCase();
+		this.ultimoFormatoAplicado = (this.model?.FORMATO || FORMATO_CORTO).toUpperCase();
 		this.mostrarAvisoSeleccioneTab = false;
 		this.headerForm?.instance?.option('formData', this.model);
 		setTimeout(() => {
@@ -3555,6 +3856,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.riesgosPuestoInsertando = false;
 	}
 
+	private resetearEdicionResponsabilidadesCargo(): void {
+		this.responsabilidadesCargoEditando = false;
+		this.responsabilidadesCargoInsertando = false;
+	}
+
 	private syncRequerimientoOrganizacionalColumnas(): void {
 		setTimeout(() => {
 			this.gridRequerimientosOrganizacionales?.instance?.columnOption(
@@ -3571,6 +3877,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				'CORR_RIESGO_PUESTO',
 				'visible',
 				this.riesgosPuestoInsertando
+			);
+		});
+	}
+
+	private syncResponsabilidadCargoColumnas(): void {
+		setTimeout(() => {
+			this.gridResponsabilidadesCargo?.instance?.columnOption(
+				'CORR_RESPONSABILIDAD',
+				'visible',
+				this.responsabilidadesCargoInsertando
 			);
 		});
 	}
@@ -3980,7 +4296,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				: Number(data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES) || 0,
 			CORR_COMPETENCIAS_CONDUCTUALES: Number(data.CORR_COMPETENCIAS_CONDUCTUALES) || null,
 			NOMBRE_COMPETENCIAS_CONDUCTUALES: (data.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim(),
-			DESCRIPCION: this.esFormatoExtensa ? (data.DESCRIPCION ?? '').trim() : '',
+			DESCRIPCION: this.esFormatoExtenso ? (data.DESCRIPCION ?? '').trim() : '',
 		};
 
 		return new Promise((resolve) => {
@@ -4187,6 +4503,95 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							return;
 						}
 						this.cargarRiesgosPuesto(true);
+						resolve(true);
+					},
+					error: (error) => {
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private persistirResponsabilidadCargoDesdeGrid(
+		data: ScDescriptorPuestoResponsabilidadCargo,
+		esNuevo: boolean
+	): Promise<boolean> {
+		if (this.responsabilidadCargoPersistiendo) {
+			return Promise.resolve(true);
+		}
+
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		if (!corrDescriptor || corrDescriptor <= 0) {
+			this.notifyFx(
+				'Debe guardar el descriptor antes de registrar responsabilidades del cargo.',
+				NotifyType.Warning
+			);
+			return Promise.resolve(true);
+		}
+
+		const payload: ScDescriptorPuestoResponsabilidadCargo = {
+			...data,
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_DESCRIPTOR_RESPONSABILIDAD: esNuevo ? 0 : Number(data.CORR_DESCRIPTOR_RESPONSABILIDAD) || 0,
+			CORR_RESPONSABILIDAD: Number(data.CORR_RESPONSABILIDAD) || null,
+			NOMBRE_RESPONSABILIDAD: (data.NOMBRE_RESPONSABILIDAD ?? '').trim(),
+			INFORMACION: (data.INFORMACION ?? '').trim(),
+		};
+
+		this.responsabilidadCargoPersistiendo = true;
+
+		return new Promise((resolve) => {
+			this.service
+				.persistirResponsabilidadCargo(corrDescriptor, payload)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						this.responsabilidadCargoPersistiendo = false;
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+
+						this.responsabilidadesCargoEditando = false;
+						try {
+							this.gridResponsabilidadesCargo?.instance?.cancelEditData?.();
+						} catch {
+							// El grid puede haberse desmontado.
+						}
+						this.cargarResponsabilidadesCargo(true);
+						resolve(true);
+					},
+					error: (error) => {
+						this.responsabilidadCargoPersistiendo = false;
+						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private eliminarResponsabilidadCargoDesdeGrid(
+		data: ScDescriptorPuestoResponsabilidadCargo
+	): Promise<boolean> {
+		const corr = Number(data?.CORR_DESCRIPTOR_RESPONSABILIDAD);
+		if (!corr || corr <= 0) {
+			return Promise.resolve(false);
+		}
+
+		return new Promise((resolve) => {
+			this.service
+				.eliminarResponsabilidadCargo(corr)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+							resolve(true);
+							return;
+						}
+						this.cargarResponsabilidadesCargo(true);
 						resolve(true);
 					},
 					error: (error) => {

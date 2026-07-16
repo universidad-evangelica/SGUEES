@@ -73,8 +73,13 @@ export interface ScRiesgoPuestoLookupItem {
 	NOMBRE_RIESGO_PUESTO: string;
 }
 
-export const FORMATO_CORTA = 'CORTO';
-export const FORMATO_EXTENSA = 'EXTENSO';
+export interface ScResponsabilidadCargoLookupItem {
+	CORR_RESPONSABILIDAD: number;
+	NOMBRE_RESPONSABILIDAD: string;
+}
+
+export const FORMATO_CORTO = 'CORTO';
+export const FORMATO_EXTENSO = 'EXTENSO';
 
 export const TIPO_FUNCION_CLAVE = 'CLAVE';
 export const TIPO_FUNCION_SECUNDARIA = 'SECUNDARIA';

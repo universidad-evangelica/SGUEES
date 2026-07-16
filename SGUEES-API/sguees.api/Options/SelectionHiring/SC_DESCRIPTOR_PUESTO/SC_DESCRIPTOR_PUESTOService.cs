@@ -12,15 +12,18 @@ namespace SGUEES.Services
         private readonly ISC_DESCRIPTOR_PUESTORepository _repo;
         private readonly ISC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService _requerimientoOrganizacionalService;
         private readonly ISC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService _riesgoPuestoService;
+        private readonly ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService _responsabilidadCargoService;
 
         public SC_DESCRIPTOR_PUESTOService(
             ISC_DESCRIPTOR_PUESTORepository repo,
             ISC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService requerimientoOrganizacionalService,
-            ISC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService riesgoPuestoService)
+            ISC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService riesgoPuestoService,
+            ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService responsabilidadCargoService)
         {
             _repo = repo;
             _requerimientoOrganizacionalService = requerimientoOrganizacionalService;
             _riesgoPuestoService = riesgoPuestoService;
+            _responsabilidadCargoService = responsabilidadCargoService;
         }
 
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_PUESTOParam xWhere)
@@ -108,6 +111,17 @@ namespace SGUEES.Services
                 if (!string.IsNullOrWhiteSpace(seedRiesgos?.ErrorMessage))
                 {
                     seedMessages.Add(seedRiesgos.ErrorMessage.Trim());
+                }
+
+                var seedResponsabilidades = await _responsabilidadCargoService.SeedActivosDesdeCatalogoAsync(
+                    Data.CORR_EMPRESA,
+                    corrDescriptor,
+                    vLOGIN_SISTEMA,
+                    vESTACION);
+
+                if (!string.IsNullOrWhiteSpace(seedResponsabilidades?.ErrorMessage))
+                {
+                    seedMessages.Add(seedResponsabilidades.ErrorMessage.Trim());
                 }
 
                 if (seedMessages.Count > 0)

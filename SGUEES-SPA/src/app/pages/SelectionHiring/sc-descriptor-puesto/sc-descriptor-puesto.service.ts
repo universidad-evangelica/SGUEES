@@ -27,10 +27,12 @@ import { ScDescriptorPuestoRequerimientoOrganizacional } from './sc-descriptor-p
 import { ScDescriptorPuestoRequerimientoOrganizacionalRepository } from './sc-descriptor-puesto-requerimiento-organizacional/sc-descriptor-puesto-requerimiento-organizacional.repository';
 import { ScDescriptorPuestoRiesgoPuesto } from './sc-descriptor-puesto-riesgo-puesto/models/sc-descriptor-puesto-riesgo-puesto';
 import { ScDescriptorPuestoRiesgoPuestoRepository } from './sc-descriptor-puesto-riesgo-puesto/sc-descriptor-puesto-riesgo-puesto.repository';
+import { ScDescriptorPuestoResponsabilidadCargo } from './sc-descriptor-puesto-responsabilidad-cargo/models/sc-descriptor-puesto-responsabilidad-cargo';
+import { ScDescriptorPuestoResponsabilidadCargoRepository } from './sc-descriptor-puesto-responsabilidad-cargo/sc-descriptor-puesto-responsabilidad-cargo.repository';
 import {
 	ESTADOS_DESCRIPTOR_BLOQUEO_CREACION,
-	FORMATO_CORTA,
-	FORMATO_EXTENSA,
+	FORMATO_CORTO,
+	FORMATO_EXTENSO,
 	ScDescriptorPuesto,
 	TIPO_FUNCION_CLAVE,
 	TIPO_FUNCION_SECUNDARIA,
@@ -61,6 +63,7 @@ export class ScDescriptorPuestoService {
 		private competenciasConductualesRepo: ScPerfilPuestoCompetenciasConductualesRepository,
 		private requerimientosOrganizacionalesRepo: ScDescriptorPuestoRequerimientoOrganizacionalRepository,
 		private riesgosPuestoRepo: ScDescriptorPuestoRiesgoPuestoRepository,
+		private responsabilidadesCargoRepo: ScDescriptorPuestoResponsabilidadCargoRepository,
 		private relacionLaboralRepo: ScDescriptorRelacionLaboralRepository
 	) {}
 
@@ -465,10 +468,10 @@ export class ScDescriptorPuestoService {
 
 	private getFormatoBadgeLabel(formato: string | null | undefined): string {
 		const value = (formato ?? '').toUpperCase();
-		if (value === FORMATO_EXTENSA || value === 'EXTENSA') {
+		if (value === FORMATO_EXTENSO) {
 			return 'Extensa';
 		}
-		if (value === FORMATO_CORTA || value === 'CORTA') {
+		if (value === FORMATO_CORTO) {
 			return 'Corta';
 		}
 		return formato ?? '';
@@ -476,10 +479,10 @@ export class ScDescriptorPuestoService {
 
 	private getFormatoBadgeClass(formato: string | null | undefined): string {
 		const value = (formato ?? '').toUpperCase();
-		if (value === FORMATO_EXTENSA || value === 'EXTENSA') {
+		if (value === FORMATO_EXTENSO) {
 			return 'descriptor-badge--formato-extensa';
 		}
-		if (value === FORMATO_CORTA || value === 'CORTA') {
+		if (value === FORMATO_CORTO) {
 			return 'descriptor-badge--formato-corta';
 		}
 		return 'descriptor-badge--formato-default';
@@ -1109,6 +1112,54 @@ export class ScDescriptorPuestoService {
 
 		return this.riesgosPuestoRepo.delete([
 			{ Parameter: 'CORR_DESCRIPTOR_RIESGO', Value: corr },
+		]);
+	}
+
+	getResponsabilidadesCargoLookup(corrDescriptorPuesto: number): Observable<IResult> {
+		return this.responsabilidadesCargoRepo.getAll([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+		]);
+	}
+
+	persistirResponsabilidadCargo(
+		corrDescriptorPuesto: number,
+		row: ScDescriptorPuestoResponsabilidadCargo
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const payload = {
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_DESCRIPTOR_RESPONSABILIDAD: row.CORR_DESCRIPTOR_RESPONSABILIDAD ?? 0,
+			NOMBRE_RESPONSABILIDAD: (row.NOMBRE_RESPONSABILIDAD ?? '').trim() || null,
+			INFORMACION: (row.INFORMACION ?? '').trim() || null,
+			CORR_RESPONSABILIDAD: row.CORR_RESPONSABILIDAD ?? null,
+		};
+
+		if (!row.CORR_DESCRIPTOR_RESPONSABILIDAD || row.CORR_DESCRIPTOR_RESPONSABILIDAD <= 0) {
+			return this.responsabilidadesCargoRepo.create(payload);
+		}
+
+		return this.responsabilidadesCargoRepo.update(payload, [
+			{
+				Parameter: 'CORR_DESCRIPTOR_RESPONSABILIDAD',
+				Value: row.CORR_DESCRIPTOR_RESPONSABILIDAD,
+			},
+		]);
+	}
+
+	eliminarResponsabilidadCargo(corrDescriptorResponsabilidad: number): Observable<IResult> {
+		const corr = Number(corrDescriptorResponsabilidad);
+		if (!corr || corr <= 0) {
+			return of({
+				Result: false,
+				Data: null,
+				ErrorCode: 1,
+				ErrorMessage: 'Debe indicar la responsabilidad del descriptor a eliminar.',
+				RowsAffected: 0,
+			} as IResult);
+		}
+
+		return this.responsabilidadesCargoRepo.delete([
+			{ Parameter: 'CORR_DESCRIPTOR_RESPONSABILIDAD', Value: corr },
 		]);
 	}
 
