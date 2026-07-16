@@ -239,21 +239,33 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		super.nuevo();
 		this.limpiarDatosTabs();
 		this.cerrarModalObservador();
-		setTimeout(() => this.aplicarVisibilidadTiempoContrato(null), 0);
+		// Ocultar campos condicionales al iniciar un registro nuevo
+		setTimeout(() => {
+			this.aplicarVisibilidadTiempoContrato(true); // ES_PERMANENTE=true → ocultar TIEMPO_CONTRATO
+			this.aplicarVisibilidadEmpleadoSustituto(false); // REQUIERE_SUSTITUCION=false → ocultar sustituto
+		}, 0);
 	}
 
 	/** Al editar, cargar data de cada tab según CORR_REQUISICION_PERSONAL. */
 	override editarClick(e: any): void {
 		super.editarClick(e);
 		this.cargarDatosTabs();
-		setTimeout(() => this.sincronizarVisibilidadTiempoContrato(), 0);
+		// Sincronizar visibilidad de campos condicionales según el registro cargado
+		setTimeout(() => {
+			this.sincronizarVisibilidadTiempoContrato();
+			this.sincronizarVisibilidadEmpleadoSustituto();
+		}, 0);
 	}
 
 	/** Al consultar (doble clic), también cargar observadores (patrón con-partida). */
 	override rowDblClick(e: any): void {
 		super.rowDblClick(e);
 		this.cargarDatosTabs();
-		setTimeout(() => this.sincronizarVisibilidadTiempoContrato(), 0);
+		// Sincronizar visibilidad de campos condicionales según el registro cargado
+		setTimeout(() => {
+			this.sincronizarVisibilidadTiempoContrato();
+			this.sincronizarVisibilidadEmpleadoSustituto();
+		}, 0);
 	}
 
 	//#endregion
@@ -572,6 +584,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.dataForm.instance.getEditor('CORR_TIPO_VACANTE')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('TIEMPO_CONTRATO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('HORARIO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CORR_EMPLEADO_SUSTITUTO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('FECHA_CIERRE')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('FECHA_APROBACION')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CANTIDAD_PLAZAS')?.option('readOnly', true);
@@ -600,43 +613,97 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		return vRow[0].CORR_TIPO_MODALIDAD;
 	}
 
+	selectedLookUpLOGIN_SISTEMA(vRow: any): any {
+		return vRow[0].LOGIN_SISTEMA;
+	}
+
 	/**
 	 * Arrow function para conservar el contexto del componente (this),
 	 * ya que se pasa como referencia a app-data-lookup [selectedRowKeys].
 	 * Además de retornar el valor, alterna la visibilidad de TIEMPO_CONTRATO.
 	 */
 	selectedLookUpCORR_TIPO_CONTRATACION = (vRow: any): any => {
-		this.aplicarVisibilidadTiempoContrato(vRow?.[0]?.NOMBRE_TIPO_CONTRATACION);
-		return vRow[0].CORR_TIPO_CONTRATACION;
+		const corr = vRow[0].CORR_TIPO_CONTRATACION;
+		const esPermanente = vRow?.[0]?.ES_PERMANENTE;
+		// Diferir itemOption: si se ejecuta aquí, el form remonta el template
+		// del lookup y el drop-down queda sin texto aunque el model sí tenga valor.
+		setTimeout(() => this.aplicarVisibilidadTiempoContrato(esPermanente), 0);
+		return corr;
 	};
 
 	/**
-	 * Muestra el campo TIEMPO_CONTRATO solo cuando el tipo de contratación es EVENTUAL;
-	 * en cualquier otro caso lo oculta.
+	 * Muestra TIEMPO_CONTRATO cuando ES_PERMANENTE es distinto de true
+	 * (contrato no permanente). Si es permanente, lo oculta.
+	 * También ajusta el colSpan de HORARIO para que la fila siempre sume 8
+	 * (sin huecos: si queda espacio libre, CORR_EMPLEADO_SUSTITUTO / JUSTIFICACION se encogen).
 	 */
-	aplicarVisibilidadTiempoContrato(nombreTipoContratacion: string | undefined | null): void {
-		const esEventual = (nombreTipoContratacion || '').trim().toUpperCase() === 'EVENTUAL';
-		this.dataForm?.instance?.itemOption('TIEMPO_CONTRATO', 'visible', esEventual);
+	aplicarVisibilidadTiempoContrato(esPermanente: boolean | null | undefined): void {
+		const mostrarTiempoContrato = esPermanente !== true;
+		const form = this.dataForm?.instance;
+		if (!form) {
+			return;
+		}
+
+		form.itemOption('TIEMPO_CONTRATO', 'visible', mostrarTiempoContrato);
+		// Visible: TIEMPO(2)+HORARIO(6)=8
+		// Oculto:  HORARIO(8)=8  → filas siguientes (sustituto / justificación) arrancan a colSpan 8
+		form.itemOption('HORARIO', 'colSpan', mostrarTiempoContrato ? 4 : 6);
 	}
 
 	/**
 	 * Sincroniza la visibilidad de TIEMPO_CONTRATO a partir del modelo cargado
-	 * (edición/consulta), resolviendo el nombre del tipo de contratación por su código.
+	 * (edición/consulta), resolviendo ES_PERMANENTE del tipo de contratación por su código.
 	 */
 	sincronizarVisibilidadTiempoContrato(): void {
 		const corr = this.model?.CORR_TIPO_CONTRATACION;
 		const item = (this.mCORR_TIPO_CONTRATACION || []).find(
 			(x: any) => Number(x.CORR_TIPO_CONTRATACION) === Number(corr)
 		);
-		this.aplicarVisibilidadTiempoContrato(item?.NOMBRE_TIPO_CONTRATACION);
+		// Sin tipo seleccionado → tratar como permanente (ocultar TIEMPO_CONTRATO)
+		this.aplicarVisibilidadTiempoContrato(item ? item.ES_PERMANENTE : true);
 	}
 
-	selectedLookUpCORR_TIPO_VACANTE(vRow: any): any {
-		return vRow[0].CORR_TIPO_VACANTE;
+		/**
+	 * Arrow function para conservar this (mismo patrón que CORR_TIPO_CONTRATACION).
+	 * Evalúa REQUIERE_SUSTITUCION del lookup y muestra/oculta CORR_EMPLEADO_SUSTITUTO.
+	 */
+	selectedLookUpCORR_TIPO_VACANTE = (vRow: any): any => {
+		const corr = vRow[0].CORR_TIPO_VACANTE;
+		const requiereSustitucion = vRow?.[0]?.REQUIERE_SUSTITUCION;
+		// Diferir itemOption para no remontar el lookup a mitad de la selección
+		setTimeout(() => this.aplicarVisibilidadEmpleadoSustituto(requiereSustitucion), 0);
+		return corr;
+	};
+
+	/**
+	 * Muestra CORR_EMPLEADO_SUSTITUTO (colSpan 8) solo cuando REQUIERE_SUSTITUCION === true.
+	 * En cualquier otro caso lo oculta.
+	 */
+	aplicarVisibilidadEmpleadoSustituto(requiereSustitucion: boolean | null | undefined): void {
+		const mostrarSustituto = requiereSustitucion === true;
+		const form = this.dataForm?.instance;
+		if (!form) {
+			return;
+		}
+
+		form.itemOption('CORR_EMPLEADO_SUSTITUTO', 'visible', mostrarSustituto);
+		// Reforzar ancho completo al mostrarse (antes de JUSTIFICACION)
+		if (mostrarSustituto) {
+			form.itemOption('CORR_EMPLEADO_SUSTITUTO', 'colSpan', 8);
+		}
 	}
 
-	selectedLookUpLOGIN_SISTEMA(vRow: any): any {
-		return vRow[0].LOGIN_SISTEMA;
+	/**
+	 * Sincroniza la visibilidad de CORR_EMPLEADO_SUSTITUTO al editar/consultar,
+	 * resolviendo REQUIERE_SUSTITUCION del tipo de vacante por su código.
+	 */
+	sincronizarVisibilidadEmpleadoSustituto(): void {
+		const corr = this.model?.CORR_TIPO_VACANTE;
+		const item = (this.mCORR_TIPO_VACANTE || []).find(
+			(x: any) => Number(x.CORR_TIPO_VACANTE) === Number(corr)
+		);
+		// Sin vacante seleccionada → ocultar sustituto
+		this.aplicarVisibilidadEmpleadoSustituto(item ? item.REQUIERE_SUSTITUCION : false);
 	}
 
 

@@ -133,6 +133,24 @@ export class ScRequisicionPersonalService {
         return [
             { dataField: 'CORR_REQUISICION_PERSONAL', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
                                 {
+                                    dataField: 'CORR_ESTADO_REQUISICION',
+                                    label: { text: 'Estado requisición' },
+                                    colSpan: 2,
+                                    editorType: 'dxSelectBox',
+                                    editorOptions: { 
+                                        dataSource: [
+                                        { CORR_ESTADO_REQUISICION: 1, ESTADO_REQUISICION: 'Borrador' },
+                                        { CORR_ESTADO_REQUISICION: 2, ESTADO_REQUISICION: 'En Aprobacion' },
+                                        { CORR_ESTADO_REQUISICION: 3, ESTADO_REQUISICION: 'Devuelta' },
+                                        ],
+                                        displayExpr: 'ESTADO_REQUISICION',
+                                        valueExpr: 'CORR_ESTADO_REQUISICION',
+                                        placeholder: 'Seleccione un estado...',
+                                        searchEnabled: true,
+                                        showClearButton: true,
+                                    }
+                                },
+                                {
                                     dataField: 'FECHA_REQUISICION',
                                     label: { text: 'Fecha requisición' },
                                     colSpan: 1,
@@ -230,7 +248,7 @@ export class ScRequisicionPersonalService {
                                     dataField: 'TIEMPO_CONTRATO',
                                     label: { text: 'Tiempo contrato (meses)' },
                                     colSpan: 2,
-                                    visible: false, // Visible solo cuando CORR_TIPO_CONTRATACION === 2 (contrato temporal)
+                                    visible: false, // Visible cuando ES_PERMANENTE !== true (tipo no permanente)
                                     editorType: 'dxNumberBox',
                                     editorOptions: { placeholder: 'Ej. 6 meses', showClearButton: true, maxLength: 50 },
                                 },
@@ -239,34 +257,34 @@ export class ScRequisicionPersonalService {
                                     label: { text: 'Horario laboral' },
                                     colSpan: 4,
                                     editorType: 'dxTextArea',
-                                    editorOptions: { placeholder: 'Horario laboral...', showClearButton: true, maxLength: 100 },
+                                    editorOptions: { placeholder: 'Detalle horario laboral...', showClearButton: true, maxLength: 100 },
                                 },
                                 {
-                                    dataField: 'CORR_ESTADO_REQUISICION',
-                                    label: { text: 'Estado requisición' },
-                                    colSpan: 2,
+                                    dataField: 'CORR_EMPLEADO_SUSTITUTO',
+                                    label: { text: 'Empleado sustituto' },
+                                    visible: false, // Visible cuando REQUIERE_SUSTITUCION === true
+                                    colSpan: 8, // Ancho completo al mostrarse (antes de JUSTIFICACION)
                                     editorType: 'dxSelectBox',
                                     editorOptions: { 
                                         dataSource: [
-                                        { CORR_ESTADO_REQUISICION: 1, ESTADO_REQUISICION: 'Borrador' },
-                                        { CORR_ESTADO_REQUISICION: 2, ESTADO_REQUISICION: 'En Aprobacion' },
-                                        { CORR_ESTADO_REQUISICION: 3, ESTADO_REQUISICION: 'Devuelta' },
+                                        { CORR_EMPLEADO_SUSTITUTO: 1, EMPLEADO_SUSTITUTO: 'Javier Orellana' },
+                                        { CORR_EMPLEADO_SUSTITUTO: 2, EMPLEADO_SUSTITUTO: 'Juan Pérez' },
+                                        { CORR_EMPLEADO_SUSTITUTO: 3, EMPLEADO_SUSTITUTO: 'María López' },
                                         ],
-                                        displayExpr: 'ESTADO_REQUISICION',
-                                        valueExpr: 'CORR_ESTADO_REQUISICION',
-                                        placeholder: 'Seleccione un estado...',
+                                        displayExpr: 'EMPLEADO_SUSTITUTO',
+                                        valueExpr: 'CORR_EMPLEADO_SUSTITUTO',
+                                        placeholder: 'Seleccione un empleado sustituto...',
                                         searchEnabled: true,
                                         showClearButton: true,
                                     }
                                 },
-                                
-                                {
-                                    dataField: 'JUSTIFICACION',
-                                    label: { text: 'Justificacion requisición:' },
-                                    colSpan: 8,
-                                    editorType: 'dxTextArea',
-                                    editorOptions: { minHeight: 90, maxLength: 500 },
-                                },
+								{
+									dataField: 'JUSTIFICACION',
+									label: { text: 'Justificacion requisición' },
+									colSpan: 8,
+									editorType: 'dxTextArea',
+									editorOptions: { minHeight: 90, maxLength: 500 },
+								},
         ];
     }
 
