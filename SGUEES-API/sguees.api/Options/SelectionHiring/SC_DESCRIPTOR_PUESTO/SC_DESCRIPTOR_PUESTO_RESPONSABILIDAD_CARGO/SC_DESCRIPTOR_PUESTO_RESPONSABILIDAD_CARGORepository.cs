@@ -31,8 +31,18 @@ namespace SGUEES.Repositories
                     WHERE D.CORR_EMPRESA = @CORR_EMPRESA
                       AND D.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
                       AND (
-                        ISNULL(D.APLICA_DESCRIPTOR, 'AMBOS') = 'AMBOS'
-                        OR D.APLICA_DESCRIPTOR = @FORMATO
+                        D.APLICA_DESCRIPTOR = @FORMATO
+                        OR (
+                          ISNULL(D.APLICA_DESCRIPTOR, 'AMBOS') = 'AMBOS'
+                          AND NOT EXISTS (
+                            SELECT 1
+                            FROM V_SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO E
+                            WHERE E.CORR_EMPRESA = D.CORR_EMPRESA
+                              AND E.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO
+                              AND E.CORR_RESPONSABILIDAD = D.CORR_RESPONSABILIDAD
+                              AND E.APLICA_DESCRIPTOR = @FORMATO
+                          )
+                        )
                       )";
                 var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, xWhere);
                 var response = new List<SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOView>().FromDataReader(reader)
