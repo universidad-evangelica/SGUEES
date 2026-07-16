@@ -3654,6 +3654,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const cambioReal = formatoAnterior !== formatoNuevo;
 		const tabActualIndex = this.subTabIndex >= 0 ? this.subTabIndex : this.ultimoTabSeccionValido;
 
+		if (cambioReal) {
+			this.cancelarEdicionesNoAplicablesFormato(formatoNuevo);
+		}
+
 		this.model.FORMATO = value || FORMATO_CORTO;
 		this.ultimoFormatoAplicado = formatoNuevo;
 		this.actualizarResponsabilidadesCargoLookupDisponibles();
@@ -3684,6 +3688,45 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.cargarRelacionesInternas();
 			this.cargarRelacionesExternas();
 			this.cargarRiesgosPuesto();
+		}
+	}
+
+	private cancelarEdicionesNoAplicablesFormato(formatoNuevo: string): void {
+		if (formatoNuevo === FORMATO_CORTO) {
+			if (this.riesgosPuestoEditando) {
+				this.cancelarEdicionGrid(
+					this.gridRiesgosPuesto?.instance,
+					() => this.resetearEdicionRiesgosPuesto()
+				);
+			}
+			if (this.relacionesInternasEditando) {
+				this.cancelarEdicionGrid(
+					this.gridRelacionesInternas?.instance,
+					() => this.resetearEdicionRelacionesInternas()
+				);
+			}
+			if (this.relacionesExternasEditando) {
+				this.cancelarEdicionGrid(
+					this.gridRelacionesExternas?.instance,
+					() => this.resetearEdicionRelacionesExternas()
+				);
+			}
+			return;
+		}
+
+		if (formatoNuevo === FORMATO_EXTENSO) {
+			if (this.funcionesSecundariasEditando) {
+				this.cancelarEdicionGrid(
+					this.gridFuncionesSecundarias?.instance,
+					() => this.resetearEdicionFuncionesSecundarias()
+				);
+			}
+			if (this.kpisEditando) {
+				this.cancelarEdicionGrid(
+					this.gridKpis?.instance,
+					() => this.resetearEdicionKpis()
+				);
+			}
 		}
 	}
 
@@ -3814,6 +3857,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	guardar(): void {
+		const detalleEnEdicion = this.obtenerDetalleEnEdicion();
+		if (detalleEnEdicion) {
+			this.notifyFx(
+				`Guarde o cancele la linea en edicion de ${detalleEnEdicion} antes de guardar el descriptor.`,
+				NotifyType.Warning
+			);
+			return;
+		}
+
 		const formData = this.headerForm?.instance?.option('formData');
 		if (formData) {
 			this.model = { ...this.model, ...formData };
@@ -3847,6 +3899,26 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 
 		this.guardarMttoDescriptor();
+	}
+
+	private obtenerDetalleEnEdicion(): string | null {
+		const detalles: Array<[boolean, string]> = [
+			[this.funcionesClaveEditando, 'Funciones clave'],
+			[this.funcionesSecundariasEditando, 'Funciones secundarias'],
+			[this.kpisEditando, 'Indicadores KPI'],
+			[this.educacionEditando, 'Educacion'],
+			[this.experienciaEditando, 'Experiencia'],
+			[this.competenciasTecnicasEditando, 'Competencias tecnicas'],
+			[this.competenciasConductualesEditando, 'Competencias conductuales'],
+			[this.requerimientosOrganizacionalesEditando, 'Requerimientos organizacionales'],
+			[this.riesgosPuestoEditando, 'Riesgos del puesto'],
+			[this.responsabilidadesCargoEditando, 'Responsabilidades del cargo'],
+			[this.actividadesEditando, 'Actividades'],
+			[this.relacionesInternasEditando, 'Relaciones internas'],
+			[this.relacionesExternasEditando, 'Relaciones externas']
+		];
+
+		return detalles.find(([editando]) => editando)?.[1] ?? null;
 	}
 
 	private guardarMttoDescriptor(): void {
@@ -3976,7 +4048,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private syncHeaderForm(): void {
 		this.sincronizandoHeader = true;
 		this.ultimoFormatoAplicado = (this.model?.FORMATO || FORMATO_CORTO).toUpperCase();
-		this.mostrarAvisoSeleccioneTab = false;
+		this.mostrarAvisoSeleccioneTab = this.subTabIndex < 0;
 		this.headerForm?.instance?.option('formData', this.model);
 		setTimeout(() => {
 			this.sincronizandoHeader = false;
