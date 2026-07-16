@@ -3655,6 +3655,18 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const tabActualIndex = this.subTabIndex >= 0 ? this.subTabIndex : this.ultimoTabSeccionValido;
 
 		if (cambioReal) {
+			const detallesEnEdicion = this.obtenerDetallesEnEdicion();
+			if (detallesEnEdicion.length > 0) {
+				this.restaurarFormatoAnterior(formatoAnterior);
+				this.notifyFx(
+					this.crearMensajeEdicionesPendientes(detallesEnEdicion, 'cambiar el formato'),
+					NotifyType.Warning
+				);
+				return;
+			}
+		}
+
+		if (cambioReal) {
 			this.cancelarEdicionesNoAplicablesFormato(formatoNuevo);
 		}
 
@@ -3689,6 +3701,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.cargarRelacionesExternas();
 			this.cargarRiesgosPuesto();
 		}
+	}
+
+	private restaurarFormatoAnterior(formatoAnterior: string): void {
+		const formato = formatoAnterior === FORMATO_EXTENSO ? FORMATO_EXTENSO : FORMATO_CORTO;
+		this.sincronizandoHeader = true;
+		this.model.FORMATO = formato;
+		this.ultimoFormatoAplicado = formato;
+		this.headerForm?.instance?.updateData('FORMATO', formato);
+		setTimeout(() => {
+			this.sincronizandoHeader = false;
+		});
 	}
 
 	private cancelarEdicionesNoAplicablesFormato(formatoNuevo: string): void {
@@ -3859,13 +3882,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	guardar(): void {
 		const detallesEnEdicion = this.obtenerDetallesEnEdicion();
 		if (detallesEnEdicion.length > 0) {
-			const detalleActual = detallesEnEdicion[0];
-			const detallesAdicionales = detallesEnEdicion.slice(1);
-			const mensajeAdicional = detallesAdicionales.length > 0
-				? ` Tambien hay ediciones pendientes en: ${detallesAdicionales.join(', ')}.`
-				: '';
 			this.notifyFx(
-				`Guarde o cancele la linea en edicion de ${detalleActual} antes de guardar el descriptor.${mensajeAdicional}`,
+				this.crearMensajeEdicionesPendientes(detallesEnEdicion, 'guardar el descriptor'),
 				NotifyType.Warning
 			);
 			return;
@@ -3927,6 +3945,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const tabActual = pendientes.filter((detalle) => detalle.tabIndex === this.subTabIndex);
 		const otrosTabs = pendientes.filter((detalle) => detalle.tabIndex !== this.subTabIndex);
 		return [...tabActual, ...otrosTabs].map((detalle) => detalle.nombre);
+	}
+
+	private crearMensajeEdicionesPendientes(detallesEnEdicion: string[], accion: string): string {
+		const detalleActual = detallesEnEdicion[0];
+		const detallesAdicionales = detallesEnEdicion.slice(1);
+		const mensajeAdicional = detallesAdicionales.length > 0
+			? ` Tambien hay ediciones pendientes en: ${detallesAdicionales.join(', ')}.`
+			: '';
+		return `Guarde o cancele la linea en edicion de ${detalleActual} antes de ${accion}.${mensajeAdicional}`;
 	}
 
 	private guardarMttoDescriptor(): void {
