@@ -37,6 +37,8 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
     readOnly = false;
     model: any = this.fillData();
     mCORR_TIPO_DOCUMENTO: any;
+    mCORR_ACTOR_ORIGEN: any;
+    mCORR_ACTOR_DESTINO: any;
 
     // Variables para Pasos
     pasos: SegFlujoPaso[] = [];
@@ -56,6 +58,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
     ngOnInit(): void {
         this.inicializaOpciones();
         this.getCORR_TIPO_DOCUMENTO();
+        this.getCORR_ACTOR_ORIGEN();
         this.consultar();
     }
 
@@ -77,6 +80,29 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                 next: (response: any) => {
                     if (response.Result) {
                         this.mCORR_TIPO_DOCUMENTO = response.Data;
+                    }
+                },
+                error: (error: any) => {
+                    this.notifyFx(error, NotifyType.Error);
+                },
+            });
+    }
+
+    getCORR_ACTOR_ORIGEN() {
+
+        this.appInfoService
+            .getLookUp(
+                'SEG_FLUJO_PROCESO',
+                'SEG_FLUJO_ACTOR',
+                'GetCORR_FLUJO_ACTOR',
+                undefined,
+                environment.UrlGENERALAPI
+            )
+            .pipe(take(1))
+            .subscribe({
+                next: (response: any) => {
+                    if (response.Result) {
+                        this.mCORR_ACTOR_ORIGEN = response.Data;
                     }
                 },
                 error: (error: any) => {
@@ -349,6 +375,8 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
             CORR_EMPRESA: 1,
             CORR_FLUJO_PROCESO: this.model.CORR_FLUJO_PROCESO,
             CORR_FLUJO_PASO: 0,
+            CORR_ACTOR_ORIGEN: 0,
+            CORR_ACTOR_DESTINO: 0,
             NUMERO_PASO: 0,
             NOMBRE_PASO: '',
             DESCRIPCION_PASO: '',
@@ -533,4 +561,8 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
         this.pasoReadOnly = false;
     }
     //#endregion
+
+    selectedLookUpCORR_ACTOR_ORIGEN(vRow: any): any {
+        return vRow[0].CORR_ACTOR;
+    }
 }

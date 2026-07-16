@@ -110,5 +110,15 @@ namespace sguees.Controllers
                 return BadRequest(resultado);
             }
         }
+
+
+        //Brindamos accesos a la vista de flujos de procesos para capturar los documentos mediante el lookup
+        [HttpGet("GetCORR_FLUJO_ACTOR_SEG_FLUJO_PROCESO")]
+        [Authorize(Policy = "/seg-flujo-proceso|R")]
+        public async Task<CResult> GetCORR_FLUJO_ACTOR_SEG_FLUJO_PROCESO([FromQuery] SEG_FLUJO_ACTORParam Data)
+        {
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
+        }
     }
 }

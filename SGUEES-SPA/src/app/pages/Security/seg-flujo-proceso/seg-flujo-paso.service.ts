@@ -91,6 +91,12 @@ export class SegFlujoPasoService {
                 },
             },
             {
+                dataField: 'CORR_ACTOR_ORIGEN',
+                label: { text: 'Actor Origen' },
+                colSpan: 3,
+                template: 'CORR_ACTOR_ORIGENLookup',
+            },
+            {
                 dataField: 'DESCRIPCION_PASO',
                 label: { text: 'Descripción' },
                 colSpan: 8,

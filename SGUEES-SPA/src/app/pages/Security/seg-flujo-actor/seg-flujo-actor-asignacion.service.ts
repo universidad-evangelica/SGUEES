@@ -11,7 +11,7 @@ import { SegFlujoActorAsignacion } from './models/seg-flujo-actor-asignacion';
     providedIn: 'root',
 })
 export class SegFlujoActorAsignacionService {
-    constructor(private repo: SegFlujoActorAsignacionRepository) {}
+    constructor(private repo: SegFlujoActorAsignacionRepository) { }
 
     //#region <Validadores>
     esValido(model: SegFlujoActorAsignacion, msg: Function): boolean {
@@ -101,6 +101,12 @@ export class SegFlujoActorAsignacionService {
                 label: { text: 'Corr.' },
                 colSpan: 1,
                 editorOptions: { readOnly: true },
+            },
+            {
+                dataField: 'CORR_ACTOR_ORIGEN',
+                label: { text: 'Actor Origen' },
+                colSpan: 3,
+                template: 'CORR_ACTOR_ORIGENLookup',
             },
             {
                 dataField: 'CORR_UNIDAD',

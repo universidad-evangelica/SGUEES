@@ -44,6 +44,17 @@
             <!-- Formulario de Paso (se muestra cuando NO está en browse) -->
             <div *ngIf="!isPasoBrowse()" style="margin-top: 15px;">
                 <dx-form #fPaso id="fPaso" [formData]="pasoModel" [labelLocation]="'top'" [colCount]="8" [items]="itemsPasos">
+                    <div *dxTemplate="let cellInfo of 'CORR_ACTOR_ORIGENLookup'">
+                        <app-data-lookup
+                            [model]="mCORR_ACTOR_ORIGEN"
+                            [(value)]="pasoModel.CORR_ACTOR_ORIGEN"
+                            [valueExpr]="'CORR_ACTOR'"
+                            [displayExpr]="'NOMBRE_ACTOR'"
+                            [selectedRowKeys]="selectedLookUpCORR_ACTOR_ORIGEN"
+                            [readOnly]="pasoReadOnly"
+                        >
+                        </app-data-lookup>
+                    </div>
                 </dx-form>
             </div>
 
