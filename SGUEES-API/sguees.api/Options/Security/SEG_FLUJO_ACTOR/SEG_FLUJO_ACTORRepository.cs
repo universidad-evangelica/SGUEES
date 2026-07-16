@@ -270,7 +270,7 @@ namespace sguees.Repositories
 
             try
             {
-                var reader = await objData.GetDataReader("V_GEN_EMPLEADO_DISPONIBLE", xWhere);
+                var reader = await objData.GetDataReader("V_GEN_EMPLEADO_DISPONIBLE_ACTOR", xWhere);
                 var response = new List<GEN_EMPLEADO_DISPONIBLEView>().FromDataReader(reader).ToList();
 
                 reader.Close();

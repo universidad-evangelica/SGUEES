@@ -4,6 +4,7 @@ export interface SegFlujoActor {
     NOMBRE_ACTOR: string;
     DESCRIPCION: string;
     REQUIERE_UNIDAD: boolean;
+    CORR_UNIDAD_EMPLEADO: number;
     RESOLUCION_AUTOMATICA: boolean;
     ACTIVO: boolean;
     USUARIO_CREA: string;

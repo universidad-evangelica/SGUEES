@@ -12,6 +12,7 @@ import { DxCheckBoxModule } from 'devextreme-angular/ui/check-box';
 import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
+import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 
 import { SegFlujoActorComponent } from './seg-flujo-actor.component';
 
@@ -31,6 +32,7 @@ const routes: Routes = [{ path: '', component: SegFlujoActorComponent }];
         DxTabPanelModule,
         DataGridMttoModule,
         BarraDataMttoModule,
+        DataLookupModule,
     ],
     exports: [RouterModule],
     declarations: [SegFlujoActorComponent],

@@ -53,6 +53,7 @@ namespace sguees.Services
             var pEmpleados = new List<CParameter>
             {
                 new CParameter() {ParameterName="CORR_UNIDAD_EMPLEADO", Value=xWhere.CORR_UNIDAD_EMPLEADO, DbType=System.Data.DbType.Int32},
+                new CParameter() {ParameterName="CORR_ACTOR", Value=xWhere.CORR_ACTOR, DbType=System.Data.DbType.Int32},
             };
 
             return await _repo.GetEmpleadosDisponiblesAsync(pEmpleados);

@@ -11,7 +11,7 @@ import { SegFlujoActor } from './models/seg-flujo-actor';
     providedIn: 'root',
 })
 export class SegFlujoActorService {
-    constructor(private repo: SegFlujoActorRepository) {}
+    constructor(private repo: SegFlujoActorRepository) { }
 
     //#region <Validadores>
     esValido(model: SegFlujoActor, msg: Function): boolean {
@@ -60,6 +60,15 @@ export class SegFlujoActorService {
         let xWhere: IParam[] = [{ Parameter: 'CORR_ACTOR', Value: model.CORR_ACTOR }];
 
         return this.repo.delete(xWhere);
+    }
+
+    getEmpleadosByUnidad(corrUnidadEmpleado: number, corrActor: number): Observable<IResult> {
+        const xWhere: IParam[] = [
+            { Parameter: 'CORR_UNIDAD_EMPLEADO', Value: corrUnidadEmpleado },
+            { Parameter: 'CORR_ACTOR', Value: corrActor },
+        ];
+
+        return this.repo.getEmpleados(xWhere);
     }
 
     getColumns(): any {
@@ -181,7 +190,7 @@ export class SegFlujoActorService {
             },
             {
                 dataField: 'RESOLUCION_AUTOMATICA',
-                disabled:true,
+                disabled: true,
                 label: { text: 'Resolución automatica' },
                 colSpan: 2,
                 editorType: 'dxCheckBox',

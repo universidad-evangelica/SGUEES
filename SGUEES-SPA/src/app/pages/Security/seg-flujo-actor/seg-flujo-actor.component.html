@@ -48,18 +48,37 @@
         <div *ngIf="!isAsignacionBrowse()" style="margin-top: 15px;">
             <dx-form #fDataAsignacion id="fDataAsignacion" [formData]="asignacionModel" [labelLocation]="'top'" [colCount]="8" [items]="asignacionItems">
                 <div *dxTemplate="let cellInfo of 'CORR_UNIDADTemplate'">
-                    <dx-select-box
-                        [dataSource]="unidades"
-                        [(value)]="asignacionModel.CORR_UNIDAD"
-                        displayExpr="NOMBRE_UNIDAD_TREE"
-                        valueExpr="CORR_UNIDAD"
-                        placeholder="Seleccionar unidad..."
-                        [showClearButton]="true"
-                        [searchEnabled]="true"
-                        [searchTimeout]="200"
-                         (onValueChanged)="onFiltroUnidadJefeChanged($event.value)"
-                    >
-                    </dx-select-box>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <dx-select-box
+                            [dataSource]="unidades"
+                            [(value)]="asignacionModel.CORR_UNIDAD"
+                            displayExpr="NOMBRE_UNIDAD_TREE"
+                            valueExpr="CORR_UNIDAD"
+                            placeholder="Seleccionar unidad..."
+                            [showClearButton]="true"
+                            [searchEnabled]="true"
+                            [searchTimeout]="200"
+                            (onValueChanged)="onFiltroUnidadEmpleadoChanged($event.value)"
+                            style="width: 250px;"
+                        >
+                        </dx-select-box>
+
+                        <app-data-lookup
+                            [model]="empleadosDisponibles"
+                            [(value)]="asignacionModel.LOGIN_SISTEMA"
+                            [valueExpr]="'LOGIN_SISTEMA_WEB'"
+                            [displayExpr]="'NOMBRE_EMPLEADO'"
+                            [lookupColumns]="[
+                                { dataField: 'NOMBRE_EMPLEADO', caption: 'Empleado', width: 200 },
+                                { dataField: 'LOGIN_SISTEMA_WEB', caption: 'Login', width: 200 },
+                                { dataField: 'UNIDAD_EMPLEADO', caption: 'Unidad', width: 200 }
+                            ]"
+                            [selectedRowKeys]="selectedLookUpLOGIN_SISTEMA"
+                            [readOnly]="asignacionReadOnly"
+                            style="flex: 1;"
+                        >
+                        </app-data-lookup>
+                    </div>
                 </div>
             </dx-form>
         </div>

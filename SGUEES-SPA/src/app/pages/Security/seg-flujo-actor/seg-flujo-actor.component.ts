@@ -48,6 +48,8 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
     asignacionReadOnly = false;
     banderaMttoAsignacion: UpdateType = UpdateType.Browse;
     unidades: any[] = [];
+    empleadosDisponibles: any[] = [];
+    filtroUnidadEmpleado: number = 0;
     // #endregion
 
     //#region <Inicializando Opciones>
@@ -90,11 +92,35 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
             });
     }
 
-     onFiltroUnidadJefeChanged(corrUnidad: number) {
-        this.filtroUnidadJefe = corrUnidad;
-        this.jefeModel.CORR_EMPLEADO = 0;
-        this.cargarEmpleadosDisponibles(this.unidadModel.CORR_UNIDAD,corrUnidad );
+    cargarEmpleadosDisponibles(corrUnidadEmpleado: number) {
+        if (!corrUnidadEmpleado || corrUnidadEmpleado === 0) {
+            this.empleadosDisponibles = [];
+            return;
+        }
+
+        this.service
+            .getEmpleadosByUnidad(corrUnidadEmpleado,this.model?.CORR_ACTOR || 0)
+            .pipe(take(1))
+            .subscribe({
+                next: (response: any) => {
+                    if (response.Result) {
+                        this.empleadosDisponibles = response.Data || [];
+                    }
+                },
+                error: (error: any) => {
+                    this.notifyFx(error, NotifyType.Error);
+                },
+            });
     }
+
+    onFiltroUnidadEmpleadoChanged(corrUnidadEmpleado: number) {
+        this.filtroUnidadEmpleado = corrUnidadEmpleado || 0;
+        this.asignacionModel.CORR_UNIDAD = corrUnidadEmpleado || 0;
+        this.asignacionModel.LOGIN_SISTEMA = '';
+        this.cargarEmpleadosDisponibles(this.filtroUnidadEmpleado);
+    }
+
+
 
     // #endregion
 
@@ -116,6 +142,7 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
                 NOMBRE_ACTOR: xModel.NOMBRE_ACTOR,
                 DESCRIPCION: xModel.DESCRIPCION,
                 REQUIERE_UNIDAD: xModel.REQUIERE_UNIDAD,
+                CORR_UNIDAD_EMPLEADO: xModel.CORR_UNIDAD_EMPLEADO,
                 RESOLUCION_AUTOMATICA: xModel.RESOLUCION_AUTOMATICA,
                 ACTIVO: xModel.ACTIVO,
                 USUARIO_CREA: xModel.USUARIO_CREA,
@@ -131,6 +158,7 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
                 CORR_ACTOR: 0,
                 NOMBRE_ACTOR: '',
                 DESCRIPCION: '',
+                CORR_UNIDAD_EMPLEADO: 0,
                 REQUIERE_UNIDAD: false,
                 RESOLUCION_AUTOMATICA: false,
                 ACTIVO: true,
@@ -210,7 +238,7 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
     }
 
     guardar(): void {
-        if (!this.service.esValido(this.model, this.notifyFx)) {
+        if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
             return;
         }
 
@@ -391,11 +419,13 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
     nuevoAsignacion() {
         this.banderaMttoAsignacion = UpdateType.Add;
         this.asignacionModel = this.fillAsignacionData();
+        this.filtroUnidadEmpleado = this.asignacionModel.CORR_UNIDAD;
+        this.cargarEmpleadosDisponibles(this.filtroUnidadEmpleado);
         this.asignacionReadOnly = false;
     }
 
     guardarAsignacion(): void {
-        if (!this.asignacionService.esValido(this.asignacionModel, this.notifyFx)) {
+        if (!this.asignacionService.esValido(this.asignacionModel, this.notifyFx.bind(this))) {
             return;
         }
 
@@ -458,6 +488,8 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
         this.banderaMttoAsignacion = UpdateType.Browse;
         this.asignacionReadOnly = false;
         this.asignacionModel = this.fillAsignacionData();
+        this.filtroUnidadEmpleado = 0;
+        this.empleadosDisponibles = [];
     }
 
     rowDblClickAsignacion(e: any): void {
@@ -465,9 +497,16 @@ export class SegFlujoActorComponent extends CBaseComponent implements OnInit {
     }
 
     editarAsignacion(e: any) {
-        this.asignacionModel = this.fillAsignacionData(e.data);
+        const asignacion = e?.row?.data || e?.data || e;   // ← cubre editClick Y rowDblClick
+        this.asignacionModel = this.fillAsignacionData(asignacion);
         this.banderaMttoAsignacion = UpdateType.Update;
+        this.filtroUnidadEmpleado = this.asignacionModel.CORR_UNIDAD;
+        this.cargarEmpleadosDisponibles(this.filtroUnidadEmpleado);
         this.asignacionReadOnly = false;
+    }
+
+    selectedLookUpLOGIN_SISTEMA(vRow: any): any {
+        return vRow[0]?.LOGIN_SISTEMA_WEB;
     }
 
     rowRemovingAsignacion(e: any) {
