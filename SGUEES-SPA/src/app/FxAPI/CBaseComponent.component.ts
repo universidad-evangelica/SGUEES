@@ -672,6 +672,7 @@ export class CBaseComponent {
 			isEmpresaFkErrorMessage(message) ||
 			value.includes('ya existe') ||
 			value.includes('duplicad') ||
+			value.includes('ya ha sido ingresado') ||
 			value.includes('asociados') ||
 			value.includes('hijos asociados')
 		) {

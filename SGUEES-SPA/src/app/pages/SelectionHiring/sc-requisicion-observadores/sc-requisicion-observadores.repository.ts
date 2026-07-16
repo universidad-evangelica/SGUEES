@@ -8,8 +8,8 @@ import { CData } from 'src/app/FxAPI/CData';
 @Injectable({
 	providedIn: 'root',
 })
-export class ScRequisicionPersonalRepository {
-	readonly xController = 'SC_REQUISICION_PERSONAL';
+export class ScRequisicionObservadoresRepository {
+	readonly xController = 'SC_REQUISICION_OBSERVADORES';
 
 	constructor(private objData: CData) {}
 
@@ -17,11 +17,11 @@ export class ScRequisicionPersonalRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	/** Bitácora de flujo de la requisición (GetAllAsyncBitacoraByCORR_REQUISICION). */
-	getBitacora(xWhere: IParam[]): Observable<IResult> {
+	/** Listado informativo consumido desde sc-requisicion-personal (permiso /sc-requisicion-personal|R). */
+	getForRequisicionPersonal(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(
 			this.xController,
-			'GetCORR_BITACORA_SC_REQUISICION_PERSONAL',
+			'GetLOGIN_SISTEMA_SC_REQUISICION_PERSONAL',
 			xWhere,
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
@@ -29,6 +29,16 @@ export class ScRequisicionPersonalRepository {
 
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
+	/** Alta desde sc-requisicion-personal (permiso /sc-requisicion-personal|C; mismo CreateAsync en API). */
+	createForRequisicionPersonal(model: any): Observable<IResult> {
+		return this.objData.Post(
+			model,
+			this.xController,
+			'Create_SC_REQUISICION_PERSONAL',
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
 	}
 
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
