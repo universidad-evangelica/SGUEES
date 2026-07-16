@@ -94,6 +94,21 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        public async Task<CResult> GetCatalogoDescriptorAsync(SC_REQUERIMIENTO_ORGANIZACIONALParam xWhere)
+        {
+            var rows = await _repo.GetCatalogoDescriptorAsync(xWhere.CORR_EMPRESA);
+            return new CResult
+            {
+                Data = rows,
+                Result = true,
+                CodeHelper = 0,
+                ErrorCode = 0,
+                ErrorMessage = "",
+                ErrorSource = "",
+                RowsAffected = rows.Count,
+            };
+        }
+
         private static List<CParameter> BuildParameters(SC_REQUERIMIENTO_ORGANIZACIONALParam xWhere)
         {
             var p = new List<CParameter>

@@ -15,6 +15,7 @@ export interface ScCompetenciaFormContext {
 	nivel: string;
 	isAdd: boolean;
 	padres: any[];
+	niveles?: Array<{ Key: any; Value: string }>;
 	registroSeleccionadoInactivo?: boolean;
 	onNivelChanged?: (e: any) => void;
 	onPadreChanged?: (e: any) => void;
@@ -123,15 +124,6 @@ export class ScCompetenciasTecnicasService {
 
 	getDistinctValues(param: any): Observable<IResult> {
 		return this.repo.getDistinctValues(this.buildWhere(param));
-	}
-
-	getPadres(nivelPadre: string, incluirInactivos = false): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'NIVEL_PADRE', Value: nivelPadre }];
-		if (incluirInactivos) {
-			xWhere.push({ Parameter: 'OPCION_CONSULTA', Value: 1 });
-		}
-
-		return this.repo.getPadres(xWhere);
 	}
 
 	getNextCodigo(corrPadre: number): Observable<IResult> {
@@ -274,18 +266,7 @@ export class ScCompetenciasTecnicasService {
 				dataField: 'NIVEL',
 				label: { text: 'Nivel' },
 				colSpan: isNivel1 ? 3 : 2,
-				editorType: 'dxSelectBox',
-				editorOptions: {
-					readOnly: !ctx.isAdd,
-					items: [
-						{ value: SC_COMPETENCIA_NIVEL.UNO, text: 'Nivel 1' },
-						{ value: SC_COMPETENCIA_NIVEL.DOS, text: 'Nivel 2' },
-						{ value: SC_COMPETENCIA_NIVEL.TRES, text: 'Nivel 3' },
-					],
-					displayExpr: 'text',
-					valueExpr: 'value',
-					onValueChanged: ctx.onNivelChanged,
-				},
+				template: 'NIVELLookup',
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{
@@ -294,17 +275,7 @@ export class ScCompetenciasTecnicasService {
 				colSpan: isNivel2 ? 5 : 3,
 				visible: showPadre,
 				helpText: ctx.registroSeleccionadoInactivo ? 'El registro seleccionado esta inactivo.' : undefined,
-				editorType: 'dxSelectBox',
-				editorOptions: {
-					readOnly: !ctx.isAdd,
-					dataSource: ctx.padres,
-					displayExpr: (item: any) =>
-						item ? `${item.CODIGO_COMPETENCIAS_TECNICAS} - ${item.DESCRIPCION ?? item.NOMBRE_COMPETENCIAS_TECNICAS ?? ''}` : '',
-					valueExpr: 'CORR_COMPETENCIAS_TECNICAS',
-					searchEnabled: true,
-					showClearButton: true,
-					onValueChanged: ctx.onPadreChanged,
-				},
+				template: 'CORR_COMPETENCIAS_TECNICAS_PADRELookup',
 				validationRules: showPadre ? [{ type: 'required', message: 'Este campo es obligatorio' }] : [],
 			},
 			{

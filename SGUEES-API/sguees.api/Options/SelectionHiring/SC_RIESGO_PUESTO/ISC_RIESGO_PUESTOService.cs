@@ -13,5 +13,6 @@ namespace SGUEES.Services
         Task<CResult> UpdateAsync(SC_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> DeleteAsync(SC_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> DesactivarAsync(SC_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+        Task<CResult> GetCatalogoDescriptorAsync(SC_RIESGO_PUESTOParam xWhere);
     }
 }

@@ -62,6 +62,7 @@
 
 <div class="view-wrapper list-page content-block" *ngIf="isBrowse()">
 	<dx-data-grid
+		#gridPartidas
 		[dataSource]="models"
 		[showBorders]="true"
 		[showColumnLines]="true"
@@ -82,22 +83,32 @@
 		<dxo-toolbar>
 			<dxi-item location="before">
 				<div *dxTemplate>
-					<dx-button icon="selectall" text="Todos" type="success" stylingMode="outlined" (onClick)="selectTodos()" width="110"></dx-button>
+					<dx-button icon="selectall" text="Todos" type="success" stylingMode="outlined" (onClick)="selectTodos()" width="150"></dx-button>
 				</div>
 			</dxi-item>
 			<dxi-item location="before">
 				<div *dxTemplate>
-					<dx-button text="Ninguno" icon="unselectall" type="danger" stylingMode="outlined" (onClick)="selectNinguno()" width="115"></dx-button>
+					<dx-button text="Ninguno" icon="unselectall" type="danger" stylingMode="outlined" (onClick)="selectNinguno()" width="150"></dx-button>
 				</div>
 			</dxi-item>
-			<dxi-item name="searchPanel" location="after"></dxi-item>
 		</dxo-toolbar>
 		<dxo-editing mode="cell" [allowUpdating]="true" startEditAction="click" [useIcons]="true"></dxo-editing>
 		<dxo-search-panel [visible]="true" [width]="240"></dxo-search-panel>
+		<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
 		<dxo-scrolling mode="virtual" useNative="true"></dxo-scrolling>
 		<dxo-paging [enabled]="false"></dxo-paging>
+		<dxo-column-fixing [enabled]="true"></dxo-column-fixing>
 
-		<dxi-column type="buttons" caption="Opciones" [width]="90" [fixed]="true" [allowResizing]="false" [allowEditing]="false">
+		<dxi-column
+			type="buttons"
+			caption="Impr."
+			[width]="70"
+			[fixed]="true"
+			fixedPosition="left"
+			[visibleIndex]="0"
+			[allowResizing]="false"
+			[allowEditing]="false"
+		>
 			<dxi-button
 				hint="Imprimir partida"
 				icon="print"
@@ -105,7 +116,16 @@
 				[onClick]="imprimirPartidaDesdeFila"
 			></dxi-button>
 		</dxi-column>
-		<dxi-column dataField="SELECCION" caption="Sel." [dataType]="'boolean'" [width]="70" [fixed]="true" [allowEditing]="true"></dxi-column>
+		<dxi-column
+			dataField="SELECCION"
+			caption="Sel."
+			[dataType]="'boolean'"
+			[width]="70"
+			[fixed]="true"
+			fixedPosition="left"
+			[visibleIndex]="1"
+			[allowEditing]="true"
+		></dxi-column>
 		<dxi-column dataField="ANIO_PERIODO" caption="Año" [width]="80" alignment="center" [allowEditing]="false"></dxi-column>
 		<dxi-column dataField="MES_PERIODO" caption="Mes" [width]="80" alignment="center" [allowEditing]="false"></dxi-column>
 		<dxi-column dataField="NOMBRE_CORTO_CLASE" caption="Clase" [width]="120" [allowEditing]="false"></dxi-column>
@@ -128,7 +148,7 @@
 	</div>
 </div>
 
-<div *ngIf="!isBrowse()" class="partida-consulta-shell content-block dx-card responsive-paddings">
+<div *ngIf="!isBrowse()" class="partida-edit-shell content-block">
 	<div class="partida-consulta-toolbar">
 		<dx-button text="Volver" icon="back" type="default" stylingMode="outlined" (onClick)="volverAlListado()"></dx-button>
 		<dx-button
@@ -141,68 +161,82 @@
 		></dx-button>
 	</div>
 
-	<section class="partida-consulta-encabezado">
+	<section class="sguees-section-card partida-form-card dx-card responsive-paddings">
+		<header class="partida-section-head">
+			<span class="partida-section-title">Datos de la partida</span>
+			<span class="partida-section-subtitle">Consulta de encabezado contable</span>
+		</header>
 		<dx-form
+			class="sguees-form-premium partida-form"
 			[formData]="partidaConsulta"
 			[items]="partidaViewItems"
 			[labelLocation]="'top'"
 			[colCount]="8"
-			[readOnly]="true"
+			[colCountByScreen]="partidaViewColCountByScreen"
 		></dx-form>
 	</section>
 
-	<dx-tab-panel class="partida-consulta-tabs" [selectedIndex]="0">
-		<dxi-item title="Detalle Partida" icon="detailslayout">
-			<div class="partida-consulta-grid">
-				<dx-data-grid
-					[dataSource]="detallesConsulta"
-					[columns]="detalleColumns"
-					keyExpr="CORR_PARTIDA_DETA"
-					[showBorders]="true"
-					[showColumnLines]="true"
-					[showRowLines]="true"
-					[rowAlternationEnabled]="true"
-					[hoverStateEnabled]="true"
-					[allowColumnResizing]="true"
-					[columnResizingMode]="'widget'"
-					[height]="420"
-					[width]="'100%'"
-				>
-					<dxo-search-panel [visible]="true"></dxo-search-panel>
-					<dxo-paging [enabled]="false"></dxo-paging>
-					<dxo-summary>
-						<dxi-total-item column="CORR_PARTIDA_DETA" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
-						<dxi-total-item column="MONTO_CARGO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
-						<dxi-total-item column="MONTO_ABONO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
-					</dxo-summary>
-				</dx-data-grid>
-			</div>
-		</dxi-item>
-		<dxi-item title="Documentos Contables" icon="doc">
-			<div class="partida-consulta-grid">
-				<dx-data-grid
-					[dataSource]="documentosConsulta"
-					[columns]="docColumns"
-					[keyExpr]="['CORR_PARTIDA_DETA', 'ID_DOCUMENTO', 'FORMA']"
-					[showBorders]="true"
-					[showColumnLines]="true"
-					[showRowLines]="true"
-					[rowAlternationEnabled]="true"
-					[hoverStateEnabled]="true"
-					[allowColumnResizing]="true"
-					[columnResizingMode]="'widget'"
-					[height]="420"
-					[width]="'100%'"
-				>
-					<dxo-search-panel [visible]="true"></dxo-search-panel>
-					<dxo-paging [enabled]="false"></dxo-paging>
-					<dxo-summary>
-						<dxi-total-item column="CORR_PARTIDA_DETA" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
-					</dxo-summary>
-				</dx-data-grid>
-			</div>
-		</dxi-item>
-	</dx-tab-panel>
+	<section class="sguees-section-card partida-detalle-card dx-card responsive-paddings">
+		<dx-tab-panel class="partida-tab-panel" [selectedIndex]="0" [height]="'100%'">
+			<dxi-item title="Detalle Partida" icon="detailslayout">
+				<div class="partida-consulta-grid dx-grid-deta partida-deta-grid">
+					<dx-data-grid
+						class="partida-deta-datagrid"
+						[dataSource]="detallesConsulta"
+						[columns]="detalleColumns"
+						keyExpr="CORR_PARTIDA_DETA"
+						[columnAutoWidth]="false"
+						[showBorders]="true"
+						[showColumnLines]="true"
+						[showRowLines]="true"
+						[rowAlternationEnabled]="true"
+						[hoverStateEnabled]="true"
+						[allowColumnResizing]="true"
+						[columnResizingMode]="'widget'"
+						[height]="480"
+						[width]="'100%'"
+					>
+						<dxo-search-panel [visible]="true"></dxo-search-panel>
+						<dxo-paging [enabled]="false"></dxo-paging>
+						<dxo-scrolling mode="standard" [useNative]="true"></dxo-scrolling>
+						<dxo-column-fixing [enabled]="true"></dxo-column-fixing>
+						<dxo-summary>
+							<dxi-total-item column="CORR_PARTIDA_DETA" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
+							<dxi-total-item column="MONTO_CARGO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+							<dxi-total-item column="MONTO_ABONO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+						</dxo-summary>
+					</dx-data-grid>
+				</div>
+			</dxi-item>
+			<dxi-item title="Documentos Contables" icon="doc">
+				<div class="partida-consulta-grid dx-grid-deta partida-deta-grid">
+					<dx-data-grid
+						class="partida-deta-datagrid"
+						[dataSource]="documentosConsulta"
+						[columns]="docColumns"
+						[keyExpr]="['CORR_PARTIDA_DETA', 'ID_DOCUMENTO', 'FORMA']"
+						[columnAutoWidth]="false"
+						[showBorders]="true"
+						[showColumnLines]="true"
+						[showRowLines]="true"
+						[rowAlternationEnabled]="true"
+						[hoverStateEnabled]="true"
+						[allowColumnResizing]="true"
+						[columnResizingMode]="'widget'"
+						[height]="480"
+						[width]="'100%'"
+					>
+						<dxo-search-panel [visible]="true"></dxo-search-panel>
+						<dxo-paging [enabled]="false"></dxo-paging>
+						<dxo-scrolling mode="standard"></dxo-scrolling>
+						<dxo-summary>
+							<dxi-total-item column="CORR_PARTIDA_DETA" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
+						</dxo-summary>
+					</dx-data-grid>
+				</div>
+			</dxi-item>
+		</dx-tab-panel>
+	</section>
 </div>
 
 <dx-popup

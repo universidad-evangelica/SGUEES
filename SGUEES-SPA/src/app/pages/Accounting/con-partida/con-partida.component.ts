@@ -25,6 +25,9 @@ import { environment } from 'src/environments/environment';
 })
 export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	@ViewChild('gridDetalle', { static: false }) gridDetalle!: DxDataGridComponent;
+	protected override etiquetaRegistro = 'la partida';
+	private readonly maintenanceSubtitulo = 'Mantenimiento de partidas contables';
+
 	detalles: ConPartidaDeta[] = [];
 	documentos: ConPartidaDoc[] = [];
 	docColumns: any[] = [];
@@ -45,6 +48,8 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	centrosPorCuentaCache: Record<string, any[]> = {};
 	centrosPorCuentaCargando: Record<string, boolean> = {};
 	detalleEditando = false;
+	/** Solo true cuando edición viene de Agregar o botón Editar del detalle (no doble clic). */
+	private detalleEdicionExplicita = false;
 	btnCrearModelo = '';
 	btnImportarExcel = '';
 	btnGenerarDesdeModelo = '';
@@ -74,7 +79,6 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
-		this.configurarColumnasGrid();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 		this.docColumns = this.docService.getColumns();
@@ -86,67 +90,13 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		this.editarDetalleClick = this.editarDetalleClick.bind(this);
 		this.detalleEditButtonVisible = this.detalleEditButtonVisible.bind(this);
 		this.detalleDeleteButtonVisible = this.detalleDeleteButtonVisible.bind(this);
-		this.imprimirPartidaDesdeFila = this.imprimirPartidaDesdeFila.bind(this);
-		this.gridPrintButtonVisible = this.gridPrintButtonVisible.bind(this);
-	}
-
-	configurarColumnasGrid(): void {
-		if (this.columns.some((c: { name?: string }) => c?.name === 'btnAcciones')) {
-			return;
-		}
-		this.columns.unshift({
-			type: 'buttons',
-			name: 'btnAcciones',
-			caption: 'Options',
-			width: 138,
-			minWidth: 138,
-			allowResizing: false,
-			fixed: true,
-			fixedPosition: 'left',
-			alignment: 'center',
-			buttons: [
-				{
-					hint: 'Editar registro',
-					icon: 'edit',
-					stylingMode: 'text',
-					cssClass: 'sguees-grid-action-edit',
-					visible: () => this.permiteEdit,
-					onClick: (e: { row: { data: ConPartida } }) => this.editarClick(e),
-				},
-				{
-					hint: 'Imprimir partida',
-					icon: 'print',
-					stylingMode: 'text',
-					cssClass: 'sguees-grid-action-print',
-					visible: this.gridPrintButtonVisible,
-					onClick: this.imprimirPartidaDesdeFila,
-				},
-				{
-					name: 'delete',
-					hint: 'Eliminar registro',
-					icon: 'trash',
-					stylingMode: 'text',
-					cssClass: 'sguees-grid-action-delete',
-					visible: (e: { row?: { data?: ConPartida } }) =>
-						this.permiteDele && e.row?.data?.ESTADO_PARTIDA === 'DI',
-				},
-			],
-		});
-	}
-
-	gridPrintButtonVisible(): boolean {
-		return this.permitePrint;
-	}
-
-	imprimirPartidaDesdeFila(e: { row: { data: ConPartida } }): void {
-		this.model = e.row.data;
-		this.imprimirPartida();
 	}
 
 	ngOnInit(): void {
 		const today = this.appInfoService.getDate();
 		this.vFECHA_INICIAL = new Date(today.getFullYear(), today.getMonth(), 1);
 		this.vFECHA_FINAL = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
@@ -154,6 +104,13 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	inicializaOpciones() {}
+
+	override AsignaStatus(xEstado: UpdateType): void {
+		super.AsignaStatus(xEstado);
+		if (xEstado === UpdateType.Browse) {
+			this.subTituloVentana = this.maintenanceSubtitulo;
+		}
+	}
 
 	llenaComboBox() {
 		this.getESTADO_PARTIDA();
@@ -292,82 +249,54 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		};
 	}
 
-	consultar() {
-		this.service
-			.getAll(this.fillParam())
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.models = response.Data;
-					}
-				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+	consultar(): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+		});
 	}
 
 	guardar(): void {
-		if (!this.service.esValido(this.model, this.notifyFx)) {
+		if (
+			this.banderaMtto === UpdateType.Update &&
+			!this.partidaEditablePorEstado(this.model?.ESTADO_PARTIDA)
+		) {
+			this.notifyFx(
+				'Solo se pueden modificar partidas DIGITADAS. Las partidas APLICADAS o ANULADAS no se pueden modificar.',
+				NotifyType.Warning
+			);
 			return;
 		}
 
-		this.loadingVisible = true;
-		if (this.banderaMtto === UpdateType.Add) {
-			this.service
-				.insert(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.models.push(response.Data);
-							this.model = response.Data;
-							this.modelUpdate = this.fillData(this.model);
-							this.volverAlListado();
-							this.notifyFx('Registro creado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		} else if (this.banderaMtto === UpdateType.Update) {
-			this.service
-				.update(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							const vIndex = this.models.findIndex(
-								(item: ConPartida) => this.partidaRowKey(item) === this.partidaRowKey(response.Data)
-							);
-							this.models[vIndex] = response.Data;
-							this.modelUpdate = this.fillData(this.model);
-							this.volverAlListado();
-							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		}
+		this.guardarMtto({
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
+			parchearGrid: false,
+			onSuccess: (data: unknown, isAdd: boolean) => {
+				const row = data as ConPartida;
+				if (!Array.isArray(this.models)) {
+					this.models = [];
+				}
+				if (isAdd) {
+					this.models.push(row);
+				} else {
+					const key = this.partidaRowKey(row);
+					const index = this.models.findIndex((item: ConPartida) => this.partidaRowKey(item) === key);
+					if (index >= 0) {
+						this.models[index] = row;
+					}
+				}
+				this.modelUpdate = this.fillData(row);
+				this.volverAlListado();
+			},
+		});
 	}
 
 	private volverAlListado(): void {
 		this.detalles = [];
 		this.documentos = [];
 		this.detalleEditando = false;
+		this.detalleEdicionExplicita = false;
 		this.AsignaStatus(UpdateType.Browse);
 		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
 		this.refrescarBotones();
@@ -379,6 +308,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 			this.documentos = [];
 			this.readOnly = false;
 			this.detalleEditando = false;
+			this.detalleEdicionExplicita = false;
 			this.refrescarBotones();
 		};
 
@@ -402,11 +332,49 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	override bloquear(): void {
-		this.readOnly = this.model?.ESTADO_PARTIDA !== 'DI';
+		this.aplicarReadOnlyFormulario(true);
 	}
 
 	override habilitar(): void {
-		this.readOnly = this.model?.ESTADO_PARTIDA !== 'DI';
+		this.aplicarReadOnlyFormulario(
+			!this.partidaEditablePorEstado(this.model?.ESTADO_PARTIDA)
+		);
+	}
+
+	/** Bloquea/desbloquea encabezado — el padre llama esto en rowDblClick (consulta) y editarClick vía habilitar(). */
+	private aplicarReadOnlyFormulario(soloLectura: boolean): void {
+		this.readOnly = soloLectura;
+		setTimeout(() => {
+			const form = this.dataForm?.instance;
+			if (!form) {
+				return;
+			}
+			(['FECHA_PARTIDA', 'NUMERO_DOCUMENTO', 'NOMBRE_PARTIDA'] as const).forEach((campo) => {
+				form.getEditor(campo)?.option('readOnly', soloLectura);
+			});
+		});
+	}
+
+	partidaEditablePorEstado(estado?: string): boolean {
+		return estado === 'DI';
+	}
+
+	puedeEditarDetalle(): boolean {
+		return this.isForm() && this.partidaEditablePorEstado(this.model?.ESTADO_PARTIDA);
+	}
+
+	override getPermiteEditar(e: any): boolean {
+		return (
+			this.permiteEdit &&
+			this.partidaEditablePorEstado(e?.row?.data?.ESTADO_PARTIDA)
+		);
+	}
+
+	override getPermiteDele(e: any): boolean {
+		return (
+			this.permiteDele &&
+			this.partidaEditablePorEstado(e?.row?.data?.ESTADO_PARTIDA)
+		);
 	}
 
 	hasPartidaKeys(): boolean {
@@ -422,11 +390,18 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		super.rowDblClick(e);
 		this.consultarDetalles();
 		this.consultarDocumentos();
-		this.bloquear();
 		this.refrescarBotones();
 	}
 
 	override editarClick(e: any): void {
+		const rowData = e?.row?.data ?? e?.data;
+		if (!this.partidaEditablePorEstado(rowData?.ESTADO_PARTIDA)) {
+			this.notifyFx(
+				'Solo se pueden modificar partidas DIGITADAS. Las partidas APLICADAS o ANULADAS no se pueden modificar.',
+				NotifyType.Warning
+			);
+			return;
+		}
 		super.editarClick(e);
 		this.consultarDetalles();
 		this.consultarDocumentos();
@@ -439,6 +414,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		this.detalles = [];
 		this.documentos = [];
 		this.detalleEditando = false;
+		this.detalleEdicionExplicita = false;
 		this.habilitar();
 		this.refrescarBotones();
 	}
@@ -473,6 +449,10 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		this.btnPartidaCierre = '';
 		this.btnPartidaApertura = '';
 		this.btnCrearModelo = this.puedeCrearModelo() ? 'Crear Modelo' : '';
+	}
+
+	get showProcesosEnGrid(): boolean {
+		return !!(this.btnPartidaApertura || this.btnPartidaLiquidacion || this.btnPartidaCierre);
 	}
 
 	hasPartidaSeleccionada(): boolean {
@@ -721,27 +701,43 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	agregarDetalle() {
-		if (this.readOnly || this.detalleEditando) {
+		if (!this.puedeEditarDetalle() || this.detalleEditando) {
 			return;
 		}
-		this.gridDetalle?.instance.addRow();
-		this.detalleEditando = true;
+		this.detalleEdicionExplicita = true;
+		const grid = this.gridDetalle?.instance;
+		if (!grid) {
+			return;
+		}
+		grid.addRow();
+		this.sincronizarEstadoEdicionDetalle(grid);
 	}
 
 	editarDetalleClick(e: any): void {
-		if (this.readOnly || this.detalleEditando) {
+		if (!this.puedeEditarDetalle() || this.detalleEditando) {
 			return;
 		}
+		this.detalleEdicionExplicita = true;
 		e.component.editRow(e.row.rowIndex);
-		this.detalleEditando = true;
+		this.sincronizarEstadoEdicionDetalle(e.component);
+	}
+
+	/** Activa toolbar Guardar/Cancelar cuando el grid entra en edición explícita. */
+	private sincronizarEstadoEdicionDetalle(grid: any): void {
+		setTimeout(() => {
+			if (grid?.hasEditData?.()) {
+				this.detalleEditando = true;
+				this.cdr.detectChanges();
+			}
+		});
 	}
 
 	detalleEditButtonVisible(e: any): boolean {
-		return !this.readOnly && !e.row?.isEditing;
+		return this.puedeEditarDetalle() && !e.row?.isEditing;
 	}
 
 	detalleDeleteButtonVisible(e: any): boolean {
-		return !this.readOnly && !e.row?.isEditing;
+		return this.puedeEditarDetalle() && !e.row?.isEditing;
 	}
 
 	private refrescarGridDetalle(): void {
@@ -763,6 +759,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	cancelarDetalleEditado(): void {
 		const grid = this.gridDetalle?.instance;
 		if (!grid?.hasEditData()) {
+			this.detalleEdicionExplicita = false;
 			this.detalleEditando = false;
 			this.refrescarGridDetalle();
 			return;
@@ -919,6 +916,16 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 
+		const prevOnKeyDown = e.editorOptions?.onKeyDown;
+		e.editorOptions.onKeyDown = (args: any) => {
+			if (args.event?.key === 'Enter') {
+				args.event.preventDefault();
+				args.event.stopPropagation();
+				return;
+			}
+			prevOnKeyDown?.(args);
+		};
+
 		if (e.dataField === 'CUENTA_CONTABLE' && e.row?.data?.CUENTA_CONTABLE) {
 			this.cargarCentrosPorCuenta(e.row.data.CUENTA_CONTABLE);
 		}
@@ -954,18 +961,26 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	onDetalleEditingStart(e: any) {
+		if (!this.detalleEdicionExplicita) {
+			e.cancel = true;
+			return;
+		}
+		this.detalleEdicionExplicita = false;
 		this.detalleEditando = true;
+		this.cdr.detectChanges();
 		if (e.data?.CUENTA_CONTABLE) {
 			this.cargarCentrosPorCuenta(e.data.CUENTA_CONTABLE);
 		}
 	}
 
 	onDetalleSaved(_e: any) {
+		this.detalleEdicionExplicita = false;
 		this.detalleEditando = false;
 		this.refrescarGridDetalle();
 	}
 
 	onDetalleEditCanceled(_e: any) {
+		this.detalleEdicionExplicita = false;
 		this.detalleEditando = false;
 		this.refrescarGridDetalle();
 	}
@@ -1087,6 +1102,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 				next: (response: any) => {
 					if (response.Result) {
 						this.detalleEditando = false;
+						this.detalleEdicionExplicita = false;
 						this.consultarDetalles();
 						this.refrescarBotones();
 						resolve(false);
@@ -1110,6 +1126,15 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	detalleRowInserting(e: any) {
+		if (!this.puedeEditarDetalle()) {
+			e.cancel = true;
+			this.notifyFx(
+				'Solo se pueden modificar partidas DIGITADAS. Las partidas APLICADAS o ANULADAS no se pueden modificar.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
 		if (
 			!e.data?.CUENTA_CONTABLE &&
 			!(e.data?.MONTO_CARGO || 0) &&
@@ -1123,11 +1148,29 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	detalleRowUpdating(e: any) {
+		if (!this.puedeEditarDetalle()) {
+			e.cancel = true;
+			this.notifyFx(
+				'Solo se pueden modificar partidas DIGITADAS. Las partidas APLICADAS o ANULADAS no se pueden modificar.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
 		const data = { ...e.oldData, ...e.newData };
 		e.cancel = this.ejecutarDetalleConEncabezado(() => this.guardarDetalleRemoto(data, false));
 	}
 
 	detalleRowRemoving(e: any) {
+		if (!this.puedeEditarDetalle()) {
+			e.cancel = true;
+			this.notifyFx(
+				'Solo se pueden modificar partidas DIGITADAS. Las partidas APLICADAS o ANULADAS no se pueden modificar.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
 		if (!this.hasPartidaKeys()) {
 			e.cancel = true;
 			return;
@@ -1157,38 +1200,25 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	rowRemoving(e: any) {
-		if (e.data?.ESTADO_PARTIDA !== 'DI') {
+	rowRemoving(e: any): void {
+		if (!this.partidaEditablePorEstado(e.data?.ESTADO_PARTIDA)) {
 			e.cancel = true;
 			this.notifyFx(
-				'Solo se pueden eliminar partidas DIGITADAS. Para partidas APLICADAS use Desaplicar o Anular.',
+				'Solo se pueden eliminar partidas DIGITADAS. Las partidas APLICADAS o ANULADAS no se pueden eliminar desde aquí.',
 				NotifyType.Warning
 			);
 			return;
 		}
 
-		e.cancel = new Promise<boolean>((resolve, reject) => {
-			this.service
-				.delete(this.buildDeletePayload(e.data))
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.models = (this.models || []).filter(
-								(item: ConPartida) => this.partidaRowKey(item) !== this.partidaRowKey(e.data)
-							);
-							this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-							resolve(false);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-							resolve(true);
-						}
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						reject(error);
-					},
-				});
+		const removedKey = this.partidaRowKey(e.data);
+		this.rowRemovingMtto(e, {
+			deleteFn: () => this.service.delete(this.buildDeletePayload(e.data)),
+			parchearGrid: false,
+			reload: () => {
+				this.models = (this.models || []).filter(
+					(item: ConPartida) => this.partidaRowKey(item) !== removedKey
+				);
+			},
 		});
 	}
 

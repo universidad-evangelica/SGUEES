@@ -62,6 +62,50 @@ export class ConPeriodoContableService {
 		return true;
 	}
 
+	normalizarClave(model: any): { anio: number; mes: number } {
+		return {
+			anio: Number(model?.ANIO_PERIODO),
+			mes: Number(model?.MES_PERIODO),
+		};
+	}
+
+	existePeriodo(models: any[], anio: number, mes: number): boolean {
+		return (models || []).some(
+			(row: any) => Number(row.ANIO_PERIODO) === anio && Number(row.MES_PERIODO) === mes
+		);
+	}
+
+	getNombreMes(mes: number): string {
+		return MESES_PERIODO.find((item) => item.MES_PERIODO === mes)?.NOMBRE_MES_PERIODO || `${mes}`;
+	}
+
+	buildInsertPayload(model: any): any {
+		return {
+			ANIO_PERIODO: Number(model.ANIO_PERIODO),
+			MES_PERIODO: Number(model.MES_PERIODO),
+			ESTADO_PERIODO_CON: model.ESTADO_PERIODO_CON,
+			ESTADO_PERIODO_BAN: model.ESTADO_PERIODO_BAN,
+			ESTADO_PERIODO_VEN: model.ESTADO_PERIODO_VEN,
+			ESTADO_PERIODO_ACT: model.ESTADO_PERIODO_ACT,
+			ESTADO_PERIODO_INV: model.ESTADO_PERIODO_INV,
+			ESTADO_PERIODO_PLA: model.ESTADO_PERIODO_PLA,
+			ESTADO_PERIODO_COM: model.ESTADO_PERIODO_COM,
+		};
+	}
+
+	buildUpdatePayload(model: any): any {
+		return {
+			...this.buildInsertPayload(model),
+			FECHA_CIERRE_CON: model.FECHA_CIERRE_CON,
+			FECHA_CIERRE_BAN: model.FECHA_CIERRE_BAN,
+			FECHA_CIERRE_VEN: model.FECHA_CIERRE_VEN,
+			FECHA_CIERRE_ACT: model.FECHA_CIERRE_ACT,
+			FECHA_CIERRE_INV: model.FECHA_CIERRE_INV,
+			FECHA_CIERRE_PLA: model.FECHA_CIERRE_PLA,
+			FECHA_CIERRE_COM: model.FECHA_CIERRE_COM,
+		};
+	}
+
 	getAll(param: any): Observable<IResult> {
 		let xWhere: IParam[] = [{ Parameter: 'ANIO_PERIODO', Value: param.ANIO_PERIODO }];
 		return this.repo.get(xWhere);
@@ -73,22 +117,30 @@ export class ConPeriodoContableService {
 	}
 
 	insert(model: any): Observable<IResult> {
-		return this.repo.create(model);
+		return this.repo.create(this.buildInsertPayload(model));
 	}
 
 	update(model: any): Observable<IResult> {
-		let xWhere: IParam[] = [{ Parameter: 'ANIO_PERIODO', Value: model.ANIO_PERIODO }];
-		return this.repo.update(model, xWhere);
+		const payload = this.buildUpdatePayload(model);
+		const xWhere: IParam[] = [
+			{ Parameter: 'ANIO_PERIODO', Value: payload.ANIO_PERIODO },
+			{ Parameter: 'MES_PERIODO', Value: payload.MES_PERIODO },
+		];
+		return this.repo.update(payload, xWhere);
 	}
 
 	delete(model: any): Observable<IResult> {
-		let xWhere: IParam[] = [{ Parameter: 'ANIO_PERIODO', Value: model.ANIO_PERIODO }];
+		const xWhere: IParam[] = [
+			{ Parameter: 'ANIO_PERIODO', Value: model.ANIO_PERIODO },
+			{ Parameter: 'MES_PERIODO', Value: model.MES_PERIODO },
+		];
 		return this.repo.delete(xWhere);
 	}
 
 	getColumns(): any {
 		return [
-			{ dataField: 'ANIO_PERIODO', caption: 'Año' },
+			{ dataField: 'ANIO_PERIODO', caption: 'Año', sortOrder: 'desc', sortIndex: 0 },
+			{ dataField: 'MES_PERIODO', caption: 'Mes No.', width: 90, alignment: 'center', sortOrder: 'asc', sortIndex: 1 },
 			{ dataField: 'NOMBRE_MES_PERIODO', caption: 'Mes' },
 			{ dataField: 'NOMBRE_ESTADO_PERIODO_ACT', caption: 'Estado Activo Fijo' },
 			{ dataField: 'NOMBRE_ESTADO_PERIODO_BAN', caption: 'Estado Bancos' },

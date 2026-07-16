@@ -104,6 +104,10 @@
     background: var(--sguees-surface-subtle, var(--background-gray-color));
   }
 
+  .dx-datagrid-filter-row td.dx-command-edit {
+    background: var(--sguees-grid-header-bg, var(--card-background));
+  }
+
   .dx-datagrid-filter-panel {
     padding: var(--sguees-space-2) var(--sguees-space-3);
     font-size: var(--sguees-font-size-sm);

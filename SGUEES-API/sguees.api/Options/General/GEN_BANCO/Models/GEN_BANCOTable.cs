@@ -1,4 +1,5 @@
-﻿using eFramework.Data;
+﻿using System;
+using eFramework.Data;
 
 namespace sguees.Models
 {
@@ -16,5 +17,6 @@ namespace sguees.Models
 		public string USUARIO_ACTU { get; set; }
 		public string NOMBRE_BANCO_CORTO { get; set; }
 		public DateTime FECHA_ACTU { get; set; }
+		public bool? ESTADO_BANCO { get; set; } = true;
 	}
 }

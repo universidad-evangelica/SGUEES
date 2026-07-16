@@ -8,6 +8,7 @@ namespace SGUEES.Models
         public int CORR_RIESGO_PUESTO { get; set; }
         public string NOMBRE_RIESGO_PUESTO { get; set; }
         public bool? ESTADO_RIESGO_PUESTO { get; set; }
+        public bool? ES_LISTA { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }
         public DateTime? FECHA_CREA { get; set; }

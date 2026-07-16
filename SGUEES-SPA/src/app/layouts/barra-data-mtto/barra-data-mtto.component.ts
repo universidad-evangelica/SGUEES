@@ -47,7 +47,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() isBrowse: boolean = false;
   @Input() isForm: boolean = false;
   @Input() permiteAdd: boolean = false;
-  @Input() showRefresh: boolean = false;
+  @Input() showRefresh: boolean = true;
   @Input() showDates: boolean = false;
   @Input() items: any[] = [];
   @Input() FECHA_INICIAL: Date = new Date();
@@ -63,54 +63,54 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() btn1Icon: string = '';
   @Input() btn1Location: string = 'before';
   @Input() btn1Type: string = 'default';
-  @Input() btn1Height: number = 36;
+  @Input() btn1Height: number = 44;
   @Input() btn1Width: number = 0;
-  @Input() btn1Mode: string = 'contained';
+  @Input() btn1Mode: string = 'outlined';
   @Output() btn1Click = new EventEmitter<any>();
 
   @Input() btn2: string = '';
   @Input() btn2Icon: string = '';
   @Input() btn2Location: string = 'before';
   @Input() btn2Type: string = 'default';
-  @Input() btn2Height: number = 36;
+  @Input() btn2Height: number = 44;
   @Input() btn2Width: number = 0;
-  @Input() btn2Mode: string = 'contained';
+  @Input() btn2Mode: string = 'outlined';
   @Output() btn2Click = new EventEmitter<any>();
 
   @Input() btn3: string = '';
   @Input() btn3Icon: string = '';
   @Input() btn3Location: string = 'before';
   @Input() btn3Type: string = 'default';
-  @Input() btn3Height: number = 36;
+  @Input() btn3Height: number = 44;
   @Input() btn3Width: number = 0;
-  @Input() btn3Mode: string = 'contained';
+  @Input() btn3Mode: string = 'outlined';
   @Output() btn3Click = new EventEmitter<any>();
 
   @Input() btn4: string = '';
   @Input() btn4Icon: string = '';
   @Input() btn4Location: string = 'before';
   @Input() btn4Type: string = 'default';
-  @Input() btn4Height: number = 36;
+  @Input() btn4Height: number = 44;
   @Input() btn4Width: number = 0;
-  @Input() btn4Mode: string = 'contained';
+  @Input() btn4Mode: string = 'outlined';
   @Output() btn4Click = new EventEmitter<any>();
 
   @Input() btn5: string = '';
   @Input() btn5Icon: string = '';
   @Input() btn5Location: string = 'before';
   @Input() btn5Type: string = 'default';
-  @Input() btn5Height: number = 36;
+  @Input() btn5Height: number = 44;
   @Input() btn5Width: number = 0;
-  @Input() btn5Mode: string = 'contained';
+  @Input() btn5Mode: string = 'outlined';
   @Output() btn5Click = new EventEmitter<any>();
 
   @Input() btn6: string = '';
   @Input() btn6Icon: string = '';
   @Input() btn6Location: string = 'before';
   @Input() btn6Type: string = 'default';
-  @Input() btn6Height: number = 36;
+  @Input() btn6Height: number = 44;
   @Input() btn6Width: number = 0;
-  @Input() btn6Mode: string = 'contained';
+  @Input() btn6Mode: string = 'outlined';
   @Output() btn6Click = new EventEmitter<any>();
 
   optNuevo: Record<string, unknown> = {};
@@ -139,25 +139,69 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
     return !!(this.eyebrow?.trim() || this.breadcrumbs?.length);
   }
 
-  /** Muestra page-header enterprise (oculto en browse header-only sin meta). */
+  /** Muestra page-header enterprise (título arriba, toolbar abajo). */
   get showPageHeader(): boolean {
-    if (this.isHeaderOnlyBrowseHidden) {
-      return false;
-    }
     return !!(this.tituloVentana?.trim() || this.hasHeaderMeta);
+  }
+
+  /**
+   * Fila de acciones.
+   * header-only browse: acciones en el grid unificado (sin segunda barra vacía),
+   * salvo fechas/botones extra que aún viven solo en la barra.
+   * header-only consulta/edición: Guardar-Cancelar en barra.
+   */
+  get showToolbarRow(): boolean {
+    if (!this.isBrowse) {
+      return true;
+    }
+    if (this.isHeaderOnlyMode) {
+      return this.browseNeedsBarraToolbar;
+    }
+    return true;
+  }
+
+  /** Browse con fechas o btn1–6: la barra sigue mostrando toolbar (aún no migrados al grid). */
+  get browseNeedsBarraToolbar(): boolean {
+    return (
+      this.showDates ||
+      !!this.btn1 ||
+      !!this.btn2 ||
+      !!this.btn3 ||
+      !!this.btn4 ||
+      !!this.btn5 ||
+      !!this.btn6
+    );
+  }
+
+  /** Separador tras Nuevo / Guardar-Cancelar cuando hay más acciones a la izquierda. */
+  get showPrimaryToolbarDivider(): boolean {
+    if (!this.isBrowse) {
+      return true;
+    }
+    return (
+      this.permiteAdd ||
+      !!this.btn1 ||
+      !!this.btn2 ||
+      !!this.btn3 ||
+      !!this.btn4 ||
+      !!this.btn5 ||
+      !!this.btn6
+    );
   }
 
   get isHeaderOnlyMode(): boolean {
     return this.layoutMode === 'header-only';
   }
 
-  get isHeaderOnlyBrowseHidden(): boolean {
-    return this.isHeaderOnlyMode && this.isBrowse && !this.hasHeaderMeta;
+  @HostBinding('class.sguees-barra-mtto--browse')
+  get hostBrowse(): boolean {
+    return this.isBrowse;
   }
 
-  @HostBinding('class.sguees-barra-mtto--header-only-browse-hidden')
-  get hostBrowseHidden(): boolean {
-    return this.isHeaderOnlyBrowseHidden;
+  /** Browse + header-only: solo título; toolbar del grid (si no hay fechas/btn extra). */
+  @HostBinding('class.sguees-barra-mtto--header-only-browse')
+  get hostHeaderOnlyBrowse(): boolean {
+    return this.isHeaderOnlyMode && this.isBrowse && !this.browseNeedsBarraToolbar;
   }
 
   @HostBinding('class.sguees-barra-mtto--header-only-edit')
@@ -234,13 +278,17 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private syncPageContext(): void {
+    const unifiedBrowse =
+      this.isHeaderOnlyMode && this.isBrowse && !this.browseNeedsBarraToolbar;
     this.pageContext.updateFromBarra(
       {
         titulo: this.tituloVentana?.trim() ?? '',
         subtitle: this.resolvedSubtitle,
         permiteAdd: this.permiteAdd,
         showRefresh: this.showRefresh,
-        unifiedToolbar: this.layoutMode === 'header-only',
+        unifiedToolbar: unifiedBrowse,
+        // Título permanece en page-header de la barra; el grid solo lleva acciones.
+        embedTitleInGrid: false,
         isBrowse: this.isBrowse,
       },
       {
@@ -251,8 +299,9 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private rebuildToolbarOptions(): void {
-    const base = { stylingMode: 'contained', height: 36 };
-    const browseToolbarInBarra = this.layoutMode === 'legacy';
+    const base = { stylingMode: 'contained', height: 44 };
+    const browseToolbarInBarra =
+      this.isBrowse && (!this.isHeaderOnlyMode || this.browseNeedsBarraToolbar);
 
     this.optNuevo = {
       ...base,
@@ -282,7 +331,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
       onClick: this.OnConsultar,
       visible: browseToolbarInBarra && this.isBrowse && this.showRefresh,
       stylingMode: 'text',
-      height: 36,
+      height: 44,
     };
     this.optBtn1 = this.buildExtraBtn(
       this.btn1, this.btn1Icon, this.btn1Type, this.btn1Mode, this.Onbtn1Click, this.btn1Height, this.btn1Width,
@@ -337,12 +386,12 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
     type: string,
     mode: string,
     onClick: () => void,
-    height = 36,
+    height = 44,
     width = 0,
     browseToolbarInBarra = true,
   ): Record<string, unknown> {
     const opt: Record<string, unknown> = {
-      stylingMode: mode || 'contained',
+      stylingMode: mode || 'outlined',
       height,
       icon,
       text,
@@ -366,7 +415,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.cancelar.emit();
   }
   OnConsultar(): void {
-    this.consultar.emit();
+    this.pageContext.triggerRefresh();
   }
   Onbtn1Click(): void {
     this.btn1Click.emit();

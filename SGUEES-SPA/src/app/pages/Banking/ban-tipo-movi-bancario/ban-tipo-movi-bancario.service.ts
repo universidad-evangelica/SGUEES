@@ -2,9 +2,14 @@ import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 
 import { BanTipoMoviBancarioRepository } from './ban-tipo-movi-bancario.repository';
 import { BanTipoMoviBancario } from './models/ban-tipo-movi-bancario';
+
+const ESTADO_FIELD = 'ESTADO_TIPO_MOVIMIENTO';
 
 @Injectable({
 	providedIn: 'root',
@@ -14,11 +19,11 @@ export class BanTipoMoviBancarioService {
 
 	esValido(model: BanTipoMoviBancario, msg: Function): boolean {
 		if (!model.NOMBRE_TIPO_MOVIMIENTO?.trim()) {
-			msg('Debe digitar el nombre del tipo de movimiento', 0);
+			msg('Debe digitar el nombre del tipo de movimiento', NotifyType.Warning);
 			return false;
 		}
 		if (!model.NOMBRE_TIPO_CORTO?.trim()) {
-			msg('Debe digitar el nombre corto del tipo de movimiento', 0);
+			msg('Debe digitar el nombre corto del tipo de movimiento', NotifyType.Warning);
 			return false;
 		}
 		return true;
@@ -48,6 +53,12 @@ export class BanTipoMoviBancarioService {
 		return this.repo.delete(xWhere);
 	}
 
+	activarInactivar(model: any): Observable<IResult> {
+		return this.repo.activarInactivar(model, [
+			{ Parameter: 'CORR_TIPO_MOVIMIENTO', Value: model.CORR_TIPO_MOVIMIENTO },
+		]);
+	}
+
 	getColumns(): any {
 		return [
 			{ dataField: 'CORR_TIPO_MOVIMIENTO', caption: 'Corr.', width: 80 },
@@ -58,6 +69,8 @@ export class BanTipoMoviBancarioService {
 			{ dataField: 'NOMBRE_SUMA_RESTA', caption: 'Suma / Resta', width: 110 },
 			{ dataField: 'NOMBRE_CLASE_MOVIMIENTO', caption: 'Clase movimiento', width: 180 },
 			{ dataField: 'USA_CHEQUE_PROPIO', caption: 'Usa cheque propio', width: 120, dataType: 'boolean' },
+			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
+			...buildAuditGridColumns(),
 		];
 	}
 
@@ -121,9 +134,10 @@ export class BanTipoMoviBancarioService {
 			{
 				dataField: 'USA_CHEQUE_PROPIO',
 				label: { text: 'Usa cheque propio' },
-				colSpan: 4,
+				colSpan: 2,
 				editorType: 'dxCheckBox',
 			},
+			{ dataField: 'ESTADO_TIPO_MOVIMIENTO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
 	}
 }

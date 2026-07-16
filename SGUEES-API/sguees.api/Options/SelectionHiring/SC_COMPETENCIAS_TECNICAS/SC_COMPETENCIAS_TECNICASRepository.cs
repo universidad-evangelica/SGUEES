@@ -1123,6 +1123,67 @@ namespace SGUEES.Repositories
             }
         }
 
+        public async Task<List<SC_COMPETENCIAS_TECNICASView>> GetCatalogoNivel3DescriptorAsync(int corrEmpresa)
+        {
+            if (corrEmpresa <= 0)
+            {
+                return new List<SC_COMPETENCIAS_TECNICASView>();
+            }
+
+            const string sql = @"SELECT
+                    H.CORR_EMPRESA,
+                    H.CORR_COMPETENCIAS_TECNICAS,
+                    H.CORR_COMPETENCIAS_TECNICAS_PADRE,
+                    H.CODIGO_COMPETENCIAS_TECNICAS,
+                    H.NOMBRE_COMPETENCIAS_TECNICAS,
+                    H.DESCRIPCION,
+                    H.NIVEL,
+                    H.ESTADO_COMPETENCIAS_TECNICAS,
+                    N2.CODIGO_COMPETENCIAS_TECNICAS AS CODIGO_PADRE,
+                    N2.NOMBRE_COMPETENCIAS_TECNICAS AS NOMBRE_PADRE,
+                    N2.DESCRIPCION AS DESCRIPCION_PADRE,
+                    N2.NIVEL AS NIVEL_PADRE,
+                    N1.CODIGO_COMPETENCIAS_TECNICAS AS CODIGO_NIV1,
+                    N1.NOMBRE_COMPETENCIAS_TECNICAS AS NOMBRE_NIV1
+                FROM V_SC_COMPETENCIAS_TECNICAS H
+                INNER JOIN V_SC_COMPETENCIAS_TECNICAS N2
+                    ON N2.CORR_EMPRESA = H.CORR_EMPRESA
+                   AND N2.CORR_COMPETENCIAS_TECNICAS = H.CORR_COMPETENCIAS_TECNICAS_PADRE
+                INNER JOIN V_SC_COMPETENCIAS_TECNICAS N1
+                    ON N1.CORR_EMPRESA = N2.CORR_EMPRESA
+                   AND N1.CORR_COMPETENCIAS_TECNICAS = N2.CORR_COMPETENCIAS_TECNICAS_PADRE
+                WHERE H.CORR_EMPRESA = @CORR_EMPRESA
+                  AND UPPER(LTRIM(RTRIM(H.NIVEL))) = 'NIV3'
+                  AND UPPER(LTRIM(RTRIM(N2.NIVEL))) = 'NIV2'
+                  AND UPPER(LTRIM(RTRIM(N1.NIVEL))) = 'NIV1'
+                  AND ISNULL(H.ESTADO_COMPETENCIAS_TECNICAS, 1) = 1
+                  AND ISNULL(N2.ESTADO_COMPETENCIAS_TECNICAS, 1) = 1
+                  AND ISNULL(N1.ESTADO_COMPETENCIAS_TECNICAS, 1) = 1
+                ORDER BY
+                    N1.CODIGO_COMPETENCIAS_TECNICAS,
+                    N1.CORR_COMPETENCIAS_TECNICAS,
+                    N2.CODIGO_COMPETENCIAS_TECNICAS,
+                    N2.CORR_COMPETENCIAS_TECNICAS,
+                    H.CODIGO_COMPETENCIAS_TECNICAS,
+                    H.CORR_COMPETENCIAS_TECNICAS";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                });
+
+                var response = new List<SC_COMPETENCIAS_TECNICASView>().FromDataReader(reader).ToList();
+                reader.Close();
+                return response;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
         public async Task<List<string>> GetSiblingCodigosLevel3Async(int corrEmpresa, int corrPadre, string parentCodigoPrefix)
         {
             if (corrEmpresa <= 0 || corrPadre <= 0 || string.IsNullOrWhiteSpace(parentCodigoPrefix))

@@ -39,6 +39,23 @@ namespace sguees.Services
 			_logger = logger;
             _adService = adService;
 		}
+
+		private const int EmpresaWarningErrorCode = 4100;
+		private const string LoginEmpresaWarningMessage ="Su usuario no tiene una empresa por defecto asignada. Solicite a administración que configure una empresa por defecto en el sistema.";
+
+		private static CResult BuildEmpresaWarningResult(string errorSource = "Login()")
+		{
+			return new CResult
+			{
+				Data = null,
+				Result = false,
+				RowsAffected = 0,
+				CodeHelper = 0,
+				ErrorCode = EmpresaWarningErrorCode,
+				ErrorMessage = LoginEmpresaWarningMessage,
+				ErrorSource = errorSource,
+			};
+		}
 		
 		public async Task<CResult> GetAllAsync(SEG_USUARIOParam xWhere)
 		{
@@ -145,6 +162,12 @@ namespace sguees.Services
 					objResultado.ErrorMessage = "No se pudieron obtener los permisos del usuario";
 					objResultado.ErrorCode = -1;
 					return objResultado;
+				}
+
+				if (DataUsuario.CORR_EMPRESA <= 0)
+				{
+					_logger.LogWarning("[GenerateTokenAsync] Usuario sin empresa por defecto: {Login}", LOGIN_SISTEMA);
+					return BuildEmpresaWarningResult("GenerateToken()");
 				}
 
 				// Generar token
@@ -298,6 +321,12 @@ namespace sguees.Services
                     objResultado.ErrorSource = "Login()";
 
                     return objResultado;
+                }
+
+                if (DataUsuario.CORR_EMPRESA <= 0)
+                {
+                    _logger.LogWarning("[LoginAsync] Usuario sin empresa por defecto: {Login}", LOGIN_SISTEMA);
+                    return BuildEmpresaWarningResult();
                 }
 
                 // Verificar si es el primer login del usuario

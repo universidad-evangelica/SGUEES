@@ -5,7 +5,11 @@
   [title]="appInfo.title"
 ></app-header>
 
-<!-- <p-toast position="bottom-right"></p-toast> -->
+<p-toast
+	position="bottom-right"
+	[showTransformOptions]="'translateX(100%)'"
+	[hideTransitionOptions]="'500ms'"
+></p-toast>
 
 <dx-drawer
   class="layout-body"

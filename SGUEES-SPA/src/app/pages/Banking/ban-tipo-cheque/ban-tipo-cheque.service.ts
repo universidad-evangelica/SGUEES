@@ -2,9 +2,14 @@ import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 
 import { BanTipoChequeRepository } from './ban-tipo-cheque.repository';
 import { BanTipoCheque } from './models/ban-tipo-cheque';
+
+const ESTADO_FIELD = 'ESTADO_TIPO_CHEQUE';
 
 @Injectable({
 	providedIn: 'root',
@@ -14,12 +19,11 @@ export class BanTipoChequeService {
 
 	esValido(model: BanTipoCheque, msg: Function): boolean {
 		if (!model.NOMBRE_TIPO_CHEQUE?.trim()) {
-			msg('Debe digitar el nombre del tipo de cheque', 0);
+			msg('Debe digitar el nombre del tipo de cheque.', NotifyType.Warning);
 			return false;
 		}
 		return true;
 	}
-
 	getAll(param: any): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_TIPO_CHEQUE', Value: param.CORR_TIPO_CHEQUE }];
 		return this.repo.get(xWhere);
@@ -44,12 +48,20 @@ export class BanTipoChequeService {
 		return this.repo.delete(xWhere);
 	}
 
+	activarInactivar(model: any): Observable<IResult> {
+		return this.repo.activarInactivar(model, [
+			{ Parameter: 'CORR_TIPO_CHEQUE', Value: model.CORR_TIPO_CHEQUE },
+		]);
+	}
+
 	getColumns(): any {
 		return [
 			{ dataField: 'CORR_TIPO_CHEQUE', caption: 'Corr.', width: 80 },
 			{ dataField: 'NOMBRE_TIPO_CHEQUE', caption: 'Nombre tipo cheque' },
 			{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta contable', width: 140 },
 			{ dataField: 'NOMBRE_CLASE_TIPO_CHEQUE', caption: 'Clase tipo cheque', width: 180 },
+			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
+			...buildAuditGridColumns(),
 		];
 	}
 
@@ -87,6 +99,7 @@ export class BanTipoChequeService {
 				colSpan: 4,
 				editorType: 'dxCheckBox',
 			},
+			{ dataField: 'ESTADO_TIPO_CHEQUE', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
 	}
 }

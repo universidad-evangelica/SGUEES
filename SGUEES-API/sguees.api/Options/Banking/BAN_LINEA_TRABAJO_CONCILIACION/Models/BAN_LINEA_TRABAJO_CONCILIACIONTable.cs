@@ -8,5 +8,6 @@ namespace sguees.Models
 		public int CORR_LINEA { get; set; }
 		public string NOMBRE_LINEA_TRABAJO { get; set; }
 		public int AUMENTA_DISMINUYE { get; set; }
+		public bool? ESTADO_LINEA { get; set; } = true;
 	}
 }

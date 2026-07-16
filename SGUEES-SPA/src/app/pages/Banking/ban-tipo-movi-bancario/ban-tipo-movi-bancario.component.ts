@@ -4,7 +4,6 @@ import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
-import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { BanTipoMoviBancario } from './models/ban-tipo-movi-bancario';
@@ -13,19 +12,15 @@ import { BanTipoMoviBancarioService } from './ban-tipo-movi-bancario.service';
 @Component({
 	selector: 'app-ban-tipo-movi-bancario',
 	templateUrl: './ban-tipo-movi-bancario.component.html',
-	styleUrls: ['./ban-tipo-movi-bancario.component.scss'],
 })
 export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnInit {
-	constructor(
-		public override appInfoService: AppInfoService,
-		public override router: ActivatedRoute,
-		private service: BanTipoMoviBancarioService
-	) {
-		super(appInfoService, router);
-		this.columns = this.service.getColumns();
-		this.summary = this.service.getSummary();
-		this.items = this.service.getItems();
-	}
+	protected override etiquetaRegistro = 'el tipo de movimiento';
+	protected override requiereEmpresaSesion = true;
+	protected override mttoGridKeyExpr = 'CORR_TIPO_MOVIMIENTO';
+	protected override mttoCampoEstado = 'ESTADO_TIPO_MOVIMIENTO';
+	protected override mttoEstadoDescribeField = 'NOMBRE_TIPO_MOVIMIENTO';
+
+	private readonly maintenanceSubtitulo = 'Mantenimiento de Tipos de Movimientos Bancarios';
 
 	//#region <Declarando Variales>
 	mCORR_LINEA: any;
@@ -48,8 +43,20 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 	readOnly = false;
 	// #endregion
 
+	constructor(
+		public override appInfoService: AppInfoService,
+		public override router: ActivatedRoute,
+		private service: BanTipoMoviBancarioService
+	) {
+		super(appInfoService, router);
+		this.columns = this.service.getColumns();
+		this.summary = this.service.getSummary();
+		this.items = this.service.getItems();
+	}
+
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
+		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
@@ -57,6 +64,13 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 
 	inicializaOpciones() {}
 	// #endregion
+
+	override AsignaStatus(xEstado: UpdateType): void {
+		super.AsignaStatus(xEstado);
+		if (xEstado === UpdateType.Browse) {
+			this.subTituloVentana = this.maintenanceSubtitulo;
+		}
+	}
 
 	//#region <Manejo de Combos>
 	llenaComboBox() {
@@ -78,7 +92,7 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -94,7 +108,7 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -110,7 +124,7 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -126,7 +140,7 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -142,7 +156,7 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
@@ -150,11 +164,8 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 
 	//#region <Metodos Mtto>
 	fillParam(xCORR_TIPO_MOVIMIENTO?: number): any {
-		if (xCORR_TIPO_MOVIMIENTO == undefined) {
-			xCORR_TIPO_MOVIMIENTO = 0;
-		}
 		return {
-			CORR_TIPO_MOVIMIENTO: xCORR_TIPO_MOVIMIENTO,
+			CORR_TIPO_MOVIMIENTO: xCORR_TIPO_MOVIMIENTO ?? 0,
 		};
 	}
 
@@ -172,115 +183,59 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 				CLASE_MOVIMIENTO: xModel.CLASE_MOVIMIENTO,
 				CUENTA_CONTABLE_GASTO: xModel.CUENTA_CONTABLE_GASTO,
 				NOMBRE_REPORTE: xModel.NOMBRE_REPORTE,
-			};
-		} else {
-			return {
-				CORR_EMPRESA: 1,
-				CORR_TIPO_MOVIMIENTO: 0,
-				NOMBRE_TIPO_MOVIMIENTO: '',
-				NOMBRE_TIPO_CORTO: '',
-				CORR_LINEA: 0,
-				CORR_CLASE_PARTIDA: 0,
-				USA_CHEQUE_PROPIO: false,
-				SUMA_RESTA: 1,
-				CLASE_MOVIMIENTO: '',
-				CUENTA_CONTABLE_GASTO: '',
-				NOMBRE_REPORTE: '',
+				ESTADO_TIPO_MOVIMIENTO: xModel.ESTADO_TIPO_MOVIMIENTO,
 			};
 		}
+
+		return {
+			CORR_EMPRESA: 1,
+			CORR_TIPO_MOVIMIENTO: 0,
+			NOMBRE_TIPO_MOVIMIENTO: '',
+			NOMBRE_TIPO_CORTO: '',
+			CORR_LINEA: 0,
+			CORR_CLASE_PARTIDA: 0,
+			USA_CHEQUE_PROPIO: false,
+			SUMA_RESTA: 1,
+			CLASE_MOVIMIENTO: '',
+			CUENTA_CONTABLE_GASTO: '',
+			NOMBRE_REPORTE: '',
+			ESTADO_TIPO_MOVIMIENTO: true,
+		};
 	}
 
-	consultar() {
-		this.service
-			.getAll(this.fillParam())
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.models = response.Data;
-					}
-				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+	consultar(): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+		});
+	}
+
+	override nuevo(): void {
+		if (!this.asegurarEmpresaSesion()) {
+			return;
+		}
+		super.nuevo();
 	}
 
 	guardar(): void {
-		if (!this.service.esValido(this.model, this.notifyFx)) {
-			return;
-		}
-
-		this.loadingVisible = true;
-		if (this.banderaMtto === UpdateType.Add) {
-			this.service
-				.insert(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.models.push(response.Data);
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro creado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		} else if (this.banderaMtto === UpdateType.Update) {
-			this.service
-				.update(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							const vIndex = this.models.findIndex((item: any) => item.CORR_TIPO_MOVIMIENTO === response.Data.CORR_TIPO_MOVIMIENTO);
-							this.models[vIndex] = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		}
+		this.guardarMtto({
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
+		});
 	}
 
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_TIPO_MOVIMIENTO === this.modelUpdate.CORR_TIPO_MOVIMIENTO);
 	}
 
-	rowRemoving(e: any) {
-		this.service
-			.delete(this.fillParam(e.data.CORR_TIPO_MOVIMIENTO))
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-						e.component.refresh();
-					} else {
-						e.cancel = true;
-						this.notifyFx(response.ErrorMessage, NotifyType.Error);
-					}
-				},
-				error: (error: any) => {
-					e.cancel = true;
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+	rowRemoving(e: any): void {
+		this.rowRemovingMtto(e, {
+			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_TIPO_MOVIMIENTO)),
+		});
+	}
+
+	activar_inactivar(): void {
+		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
 	override bloquear(): void {
@@ -294,6 +249,7 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 		this.dataForm.instance.getEditor('CLASE_MOVIMIENTO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CUENTA_CONTABLE_GASTO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_REPORTE')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ESTADO_TIPO_MOVIMIENTO')?.option('readOnly', true);
 		this.readOnly = true;
 	}
 
@@ -301,6 +257,7 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 		this.readOnly = false;
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_TIPO_MOVIMIENTO')?.option('readOnly', true);
+			this.dataForm.instance.getEditor('ESTADO_TIPO_MOVIMIENTO')?.option('readOnly', false);
 		});
 	}
 

@@ -47,6 +47,14 @@ namespace SGUEES.Controllers
             return await _service.GetAsync(Data);
         }
 
+        [HttpGet("GetCORR_FRECUENCIA_SC_DESCRIPTOR_KPI_FUNCION")]
+        [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        public async Task<CResult> GetCORR_FRECUENCIA_SC_DESCRIPTOR_KPI_FUNCION([FromQuery] SC_FRECUENCIAParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetFrecuenciasActivasAsync(Data);
+        }
+
         [HttpPost]
         [Authorize(Policy = "/sc-frecuencia|C")]
         public async Task<IActionResult> Post(SC_FRECUENCIATable Data)

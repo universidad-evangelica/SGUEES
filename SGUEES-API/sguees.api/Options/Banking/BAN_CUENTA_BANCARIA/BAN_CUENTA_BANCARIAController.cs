@@ -48,6 +48,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/ban-cuenta-bancaria|U")]
 		public async Task<IActionResult> Put(BAN_CUENTA_BANCARIATable Data)
 		{
+			this.ApplyQueryKeys(Data, nameof(BAN_CUENTA_BANCARIATable.CORR_CUENTA_BANCO));
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 
 			var resultado = await _service.UpdateAsync(Data, User.Claims.ToList().SingleOrDefault(e => e.Type == System.Security.Claims.ClaimTypes.NameIdentifier).Value, ClientInfoHelper.GetClientStation(HttpContext));
@@ -60,6 +61,20 @@ namespace sguees.Controllers
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			var resultado = await _service.DeleteAsync(Data, "", "");
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
+		[HttpPut("ActivarInactivar")]
+		[Authorize(Policy = "/ban-cuenta-bancaria|U")]
+		public async Task<IActionResult> ActivarInactivar(BAN_CUENTA_BANCARIATable Data)
+		{
+			this.ApplyQueryKeys(Data, nameof(BAN_CUENTA_BANCARIATable.CORR_CUENTA_BANCO));
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+
+			var resultado = await _service.ActivarInactivarAsync(
+				Data,
+				User.Claims.ToList().SingleOrDefault(e => e.Type == System.Security.Claims.ClaimTypes.NameIdentifier).Value,
+				ClientInfoHelper.GetClientStation(HttpContext));
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 	}

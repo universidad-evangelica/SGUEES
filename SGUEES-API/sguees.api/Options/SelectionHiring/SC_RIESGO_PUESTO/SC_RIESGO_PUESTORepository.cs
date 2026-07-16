@@ -167,6 +167,7 @@ namespace SGUEES.Repositories
                         Contains(x.CORR_RIESGO_PUESTO.ToString(), search) ||
                         Contains(x.NOMBRE_RIESGO_PUESTO, search) ||
                         Contains((x.ESTADO_RIESGO_PUESTO ?? false) ? "Activo" : "Inactivo", search) ||
+                        Contains((x.ES_LISTA ?? false) ? "Lista" : "Texto plano", search) ||
                         Contains(x.USUARIO_CREA, search) ||
                         Contains(x.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm"), search) ||
                         Contains(x.ESTACION_CREA, search) ||
@@ -345,6 +346,9 @@ namespace SGUEES.Repositories
                 "ESTADO_RIESGO_PUESTO" => desc
                     ? response.OrderByDescending(x => x.ESTADO_RIESGO_PUESTO ?? false)
                     : response.OrderBy(x => x.ESTADO_RIESGO_PUESTO ?? false),
+                "ES_LISTA" => desc
+                    ? response.OrderByDescending(x => x.ES_LISTA ?? false)
+                    : response.OrderBy(x => x.ES_LISTA ?? false),
                 "USUARIO_CREA" => desc
                     ? response.OrderByDescending(x => x.USUARIO_CREA)
                     : response.OrderBy(x => x.USUARIO_CREA),
@@ -376,6 +380,7 @@ namespace SGUEES.Repositories
                 "CORR_RIESGO_PUESTO" => true,
                 "NOMBRE_RIESGO_PUESTO" => true,
                 "ESTADO_RIESGO_PUESTO" => true,
+                "ES_LISTA" => true,
                 "USUARIO_CREA" => true,
                 "ESTACION_CREA" => true,
                 "FECHA_CREA" => true,
@@ -438,6 +443,11 @@ namespace SGUEES.Repositories
                 return MatchesEstadoColumnValue(row, filterValue);
             }
 
+            if (string.Equals(columnName, "ES_LISTA", StringComparison.OrdinalIgnoreCase))
+            {
+                return MatchesEsListaColumnValue(row, filterValue);
+            }
+
             if (string.Equals(filterValue, "__BLANK__", StringComparison.OrdinalIgnoreCase))
             {
                 return string.IsNullOrWhiteSpace(GetColumnValue(row, columnName));
@@ -451,6 +461,11 @@ namespace SGUEES.Repositories
             if (string.Equals(columnName, "ESTADO_RIESGO_PUESTO", StringComparison.OrdinalIgnoreCase))
             {
                 return MatchesEstadoColumnValue(row, filterValue);
+            }
+
+            if (string.Equals(columnName, "ES_LISTA", StringComparison.OrdinalIgnoreCase))
+            {
+                return MatchesEsListaColumnValue(row, filterValue);
             }
 
             if (string.Equals(filterValue, "__BLANK__", StringComparison.OrdinalIgnoreCase))
@@ -483,6 +498,33 @@ namespace SGUEES.Repositories
                 || string.Equals(filterValue, "Inactivo", StringComparison.OrdinalIgnoreCase))
             {
                 return !row.ESTADO_RIESGO_PUESTO.Value;
+            }
+
+            return false;
+        }
+
+        private static bool MatchesEsListaColumnValue(SC_RIESGO_PUESTOView row, string filterValue)
+        {
+            if (string.Equals(filterValue, "__BLANK__", StringComparison.OrdinalIgnoreCase))
+            {
+                return !row.ES_LISTA.HasValue;
+            }
+
+            if (!row.ES_LISTA.HasValue)
+            {
+                return false;
+            }
+
+            if (string.Equals(filterValue, "true", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(filterValue, "Lista", StringComparison.OrdinalIgnoreCase))
+            {
+                return row.ES_LISTA.Value;
+            }
+
+            if (string.Equals(filterValue, "false", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(filterValue, "Texto plano", StringComparison.OrdinalIgnoreCase))
+            {
+                return !row.ES_LISTA.Value;
             }
 
             return false;
@@ -715,6 +757,10 @@ namespace SGUEES.Repositories
                     return row.ESTADO_RIESGO_PUESTO.HasValue
                         ? row.ESTADO_RIESGO_PUESTO.Value
                         : null;
+                case "ES_LISTA":
+                    return row.ES_LISTA.HasValue
+                        ? row.ES_LISTA.Value
+                        : null;
                 case "USUARIO_CREA":
                     return row.USUARIO_CREA;
                 case "ESTACION_CREA":
@@ -755,6 +801,13 @@ namespace SGUEES.Repositories
                     }
 
                     return row.ESTADO_RIESGO_PUESTO.Value ? "Activo" : "Inactivo";
+                case "ES_LISTA":
+                    if (!row.ES_LISTA.HasValue)
+                    {
+                        return null;
+                    }
+
+                    return row.ES_LISTA.Value ? "Lista" : "Texto plano";
                 case "USUARIO_CREA":
                     return row.USUARIO_CREA;
                 case "FECHA_CREA":
@@ -821,6 +874,7 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "CORR_RIESGO_PUESTO", Value = Data.CORR_RIESGO_PUESTO, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
                     new CParameter() { ParameterName = "NOMBRE_RIESGO_PUESTO", Value = Data.NOMBRE_RIESGO_PUESTO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTADO_RIESGO_PUESTO", Value = Data.ESTADO_RIESGO_PUESTO ?? true, DbType = System.Data.DbType.Boolean },
+                    new CParameter() { ParameterName = "ES_LISTA", Value = Data.ES_LISTA ?? false, DbType = System.Data.DbType.Boolean },
                     new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime },
@@ -878,6 +932,7 @@ namespace SGUEES.Repositories
                 {
                     new CParameter() { ParameterName = "NOMBRE_RIESGO_PUESTO", Value = Data.NOMBRE_RIESGO_PUESTO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTADO_RIESGO_PUESTO", Value = Data.ESTADO_RIESGO_PUESTO ?? true, DbType = System.Data.DbType.Boolean },
+                    new CParameter() { ParameterName = "ES_LISTA", Value = Data.ES_LISTA ?? false, DbType = System.Data.DbType.Boolean },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -1003,6 +1058,47 @@ namespace SGUEES.Repositories
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
                 e.Message.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase) ||
                 e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public async Task<List<SC_RIESGO_PUESTOView>> GetCatalogoDescriptorAsync(int corrEmpresa)
+        {
+            if (corrEmpresa <= 0)
+            {
+                return new List<SC_RIESGO_PUESTOView>();
+            }
+
+            const string sql = @"SELECT
+                  A.CORR_EMPRESA,
+                  A.CORR_RIESGO_PUESTO,
+                  A.NOMBRE_RIESGO_PUESTO,
+                  A.ESTADO_RIESGO_PUESTO,
+                  A.ES_LISTA,
+                  A.USUARIO_CREA,
+                  A.ESTACION_CREA,
+                  A.FECHA_CREA,
+                  A.USUARIO_ACTU,
+                  A.ESTACION_ACTU,
+                  A.FECHA_ACTU
+                FROM V_SC_RIESGO_PUESTO A
+                WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+                  AND ISNULL(A.ESTADO_RIESGO_PUESTO, 1) = 1
+                ORDER BY A.NOMBRE_RIESGO_PUESTO, A.CORR_RIESGO_PUESTO";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                });
+
+                var response = new List<SC_RIESGO_PUESTOView>().FromDataReader(reader).ToList();
+                reader.Close();
+                return response;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
         }
     }
 }

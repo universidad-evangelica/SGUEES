@@ -1004,5 +1004,58 @@ namespace SGUEES.Repositories
                 e.Message.Contains("PRIMARY KEY", StringComparison.OrdinalIgnoreCase) ||
                 e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
         }
+
+        public async Task<CResult> GetDisponibilidadesActivasAsync(List<CParameter> xWhere)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                const string sql = @"SELECT
+                        CORR_EMPRESA,
+                        CORR_DISPONIBILIDAD_HORARIO,
+                        NOMBRE_DISPONIBILIDAD_HORARIO,
+                        ESTADO_DISPONIBILIDAD_HORARIO,
+                        USUARIO_CREA,
+                        ESTACION_CREA,
+                        FECHA_CREA,
+                        USUARIO_ACTU,
+                        ESTACION_ACTU,
+                        FECHA_ACTU
+                    FROM V_SC_DISPONIBILIDAD_HORARIO
+                    WHERE CORR_EMPRESA = @CORR_EMPRESA
+                      AND ISNULL(ESTADO_DISPONIBILIDAD_HORARIO, 1) = 1
+                    ORDER BY NOMBRE_DISPONIBILIDAD_HORARIO";
+
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, xWhere);
+                var response = new List<SC_DISPONIBILIDAD_HORARIOView>().FromDataReader(reader).ToList();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
+                objResultado.Result = true;
+                objResultado.RowsAffected = response.Count;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+                objResultado.ErrorSource = "";
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
     }
 }

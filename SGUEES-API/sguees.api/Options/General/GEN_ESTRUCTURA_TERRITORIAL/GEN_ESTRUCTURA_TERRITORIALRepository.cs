@@ -30,25 +30,11 @@ namespace SGUEES.Repositories
 
 			try
 			{
-				var page = xWhere
-					.Where(x => x.ParameterName == "PAGE")
-					.Select(x => Convert.ToInt32(x.Value ?? 1))
-					.FirstOrDefault();
-				var pageSize = xWhere
-					.Where(x => x.ParameterName == "PAGE_SIZE")
-					.Select(x => Convert.ToInt32(x.Value ?? 10))
-					.FirstOrDefault();
-
-				page = page < 1 ? 1 : page;
-				pageSize = pageSize < 1 ? 10 : Math.Min(pageSize, 100);
-
 				var response = await FilterPaisesQueryAsync(xWhere);
-				var totalRows = response.Count;
-				var pageData = response.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
-				objResultado.Data = pageData;
+				objResultado.Data = response;
 				objResultado.Result = true;
-				objResultado.RowsAffected = totalRows;
+				objResultado.RowsAffected = response.Count;
 				objResultado.CodeHelper = 0;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";

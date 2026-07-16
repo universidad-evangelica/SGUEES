@@ -108,6 +108,14 @@ namespace SGUEES.Controllers
                 : BadRequest(resultado);
         }
 
+        [HttpGet("GetCORR_TIPO_PUESTO_SC_COMPETENCIAS_CONDUCTUALES")]
+        [Authorize(Policy = "/sc-competencias-conductuales|R")]
+        public async Task<CResult> GetCORR_TIPO_PUESTO_SC_COMPETENCIAS_CONDUCTUALES([FromQuery] PLA_TIPO_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetAllAsync(Data);
+        }
+
         [HttpPut("Desactivar")]
         [Authorize(Policy = "/pla-tipo-puesto|U")]
         public async Task<IActionResult> Desactivar(PLA_TIPO_PUESTOTable Data)

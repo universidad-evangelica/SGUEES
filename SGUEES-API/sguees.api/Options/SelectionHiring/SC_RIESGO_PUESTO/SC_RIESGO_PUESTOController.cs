@@ -113,6 +113,14 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        [HttpGet("GetCORR_RIESGO_PUESTO_SC_DESCRIPTOR_PUESTO")]
+        [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        public async Task<CResult> GetCORR_RIESGO_PUESTO_SC_DESCRIPTOR_PUESTO([FromQuery] SC_RIESGO_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetCatalogoDescriptorAsync(Data);
+        }
+
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
@@ -156,6 +164,7 @@ namespace SGUEES.Controllers
             Data.ESTACION_ACTU = Data.ESTACION_CREA;
             Data.FECHA_ACTU = Data.FECHA_CREA;
             Data.ESTADO_RIESGO_PUESTO ??= true;
+            Data.ES_LISTA ??= false;
         }
 
         private void SetUpdateAudit(SC_RIESGO_PUESTOTable Data)

@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using eFramework.Core;
 using sguees.Models;
 using sguees.Repositories;
@@ -12,5 +13,6 @@ namespace sguees.Services
 		Task<CResult> CreateAsync(GEN_BANCOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(GEN_BANCOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(GEN_BANCOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> ActivarInactivarAsync(GEN_BANCOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
 }

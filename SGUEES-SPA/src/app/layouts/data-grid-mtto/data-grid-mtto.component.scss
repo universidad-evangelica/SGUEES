@@ -35,11 +35,12 @@
 }
 
 .sguees-grid-unified-module--standalone {
-  .sguees-grid-module-card {
-    border: none;
-    box-shadow: none;
-    padding: 0;
-  }
+  padding: var(--sguees-space-3);
+}
+
+.sguees-grid-unified-module--standalone.sguees-grid-module-card {
+  border: none;
+  box-shadow: none;
 }
 
 :host.sguees-data-grid-mtto-host--unified {
@@ -67,7 +68,7 @@
     }
 
     &.sguees-data-grid-mtto--unified .dx-datagrid-header-panel {
-      padding-bottom: var(--sguees-space-7);
+      padding-bottom: var(--sguees-space-2);
     }
 
     .dx-datagrid-header-panel .dx-toolbar {
@@ -84,7 +85,18 @@
 }
 
 .sguees-grid-toolbar-divider {
-  height: 24px;
+  height: var(--sguees-toolbar-height, 44px);
+  margin: 0 var(--sguees-space-3, 12px);
+  border-left: 1px solid var(--sguees-border-subtle, var(--border-color));
+  opacity: 0.85;
+}
+
+:host ::ng-deep .sguees-grid-toolbar-before-slot {
+  max-width: none;
+
+  .dx-toolbar-item-content {
+    overflow: visible;
+  }
 }
 
 .sguees-data-grid-mtto--hidden {

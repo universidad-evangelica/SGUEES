@@ -11,5 +11,6 @@ namespace sguees.Services
 		Task<CResult> CreateAsync(BAN_LINEA_TRABAJO_CONCILIACIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(BAN_LINEA_TRABAJO_CONCILIACIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(BAN_LINEA_TRABAJO_CONCILIACIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> ActivarInactivarAsync(BAN_LINEA_TRABAJO_CONCILIACIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
 }

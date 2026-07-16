@@ -1,6 +1,7 @@
+<div class="sguees-mtto-view">
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
-	layoutMode="legacy"
+	[subTituloVentana]="subTituloVentana"
 	[isBrowse]="isBrowse()"
 	[isForm]="isForm()"
 	[permiteAdd]="permiteAdd"
@@ -16,117 +17,97 @@
 	[btn1Icon]="'print'"
 	[btn1Type]="'default'"
 	(btn1Click)="imprimirPartida()"
-	[btn1Width]="110"
+	[btn1Width]="140"
 	[btn1Mode]="'outlined'"
 	[btn2]="btnImportarExcel"
 	[btn2Icon]="'exportxlsx'"
 	[btn2Type]="'default'"
 	(btn2Click)="irImportarExcel()"
-	[btn2Width]="155"
+	[btn2Width]="200"
 	[btn2Mode]="'outlined'"
 	[btn3]="btnCrearModelo"
 	[btn3Icon]="'copy'"
 	[btn3Type]="'default'"
 	(btn3Click)="CrearModelo()"
-	[btn3Width]="150"
+	[btn3Width]="200"
 	[btn3Mode]="'outlined'"
 	[btn4]="btnGenerarDesdeModelo"
 	[btn4Icon]="'paste'"
 	[btn4Type]="'default'"
 	(btn4Click)="irGenerarDesdeModelo()"
-	[btn4Width]="160"
+	[btn4Width]="200"
 	[btn4Mode]="'outlined'"
 >
-	<!-- <div
-		toolbarExtra
-		class="partida-especial-toolbar partida-especial-toolbar--inline"
-		*ngIf="isBrowse() && (btnPartidaApertura || btnPartidaLiquidacion || btnPartidaCierre)"
-	>
-		<span class="partida-especial-label">Periodo cierre/apertura:</span>
-		<dx-number-box [(value)]="vANIO_PERIODO_CIERRE" [min]="2000" [max]="2100" [showSpinButtons]="true" [width]="90"></dx-number-box>
-		<dx-number-box [(value)]="vMES_PERIODO_CIERRE" [min]="1" [max]="12" [showSpinButtons]="true" [width]="70"></dx-number-box>
-		<dx-button *ngIf="btnPartidaApertura" text="Part. Apertura" icon="unlock" type="default" stylingMode="contained" (onClick)="ejecutarPartidaEspecial('APE')"></dx-button>
-		<dx-button *ngIf="btnPartidaLiquidacion" text="Part. Liquidación" icon="money" type="default" stylingMode="contained" (onClick)="ejecutarPartidaEspecial('LIQ')"></dx-button>
-		<dx-button *ngIf="btnPartidaCierre" text="Part. Cierre" icon="lock" type="default" stylingMode="contained" (onClick)="ejecutarPartidaEspecial('CIE')"></dx-button>
-	</div> -->
-	
 </app-barra-data-mtto>
 
-<div
-	class="partida-procesos-strip"
-	*ngIf="isBrowse() && (btnPartidaApertura || btnPartidaLiquidacion || btnPartidaCierre)"
->
-	<div class="partida-procesos-left">
-		<div class="partida-procesos-header">
-			<div class="partida-procesos-title">
-				Procesos Contables
+<ng-template #procesosContablesToolbar>
+	<div
+		class="partida-procesos-strip partida-procesos-strip--toolbar"
+	>
+		<div class="partida-procesos-left">
+			<div class="partida-procesos-header">
+				<div class="partida-procesos-title">Procesos Contables</div>
+				<div class="partida-procesos-subtitle">
+					Apertura, liquidación y cierre del período seleccionado
+				</div>
 			</div>
 
-			<div class="partida-procesos-subtitle">
-				Apertura, liquidación y cierre del período seleccionado
-			</div>
-		</div>
 			<div class="partida-periodo-box">
-			<div class="partida-periodo-label">
-			Período
+				<div class="partida-periodo-label">Período</div>
+				<div class="partida-periodo-inputs">
+					<dx-number-box
+						[(value)]="vANIO_PERIODO_CIERRE"
+						[min]="2000"
+						[max]="2100"
+						[showSpinButtons]="true"
+						[width]="90"
+						[height]="44"
+					>
+					</dx-number-box>
+					<dx-number-box
+						[(value)]="vMES_PERIODO_CIERRE"
+						[min]="1"
+						[max]="12"
+						[showSpinButtons]="true"
+						[width]="70"
+						[height]="44"
+					>
+					</dx-number-box>
+				</div>
 			</div>
 
-			<div class="partida-periodo-inputs">
-				<dx-number-box
-				[(value)]="vANIO_PERIODO_CIERRE"
-				[min]="2000"
-				[max]="2100"
-				[showSpinButtons]="true"
-				[width]="90"
-			>
-				</dx-number-box>
-
-				<dx-number-box
-				[(value)]="vMES_PERIODO_CIERRE"
-				[min]="1"
-				[max]="12"
-				[showSpinButtons]="true"
-				[width]="70"
-			>
-				</dx-number-box>
+			<div class="partida-procesos-actions">
+				<dx-button
+					*ngIf="btnPartidaApertura"
+					text="Apertura"
+					icon="unlock"
+					type="default"
+					stylingMode="contained"
+					(onClick)="ejecutarPartidaEspecial('APE')"
+				>
+				</dx-button>
+				<dx-button
+					*ngIf="btnPartidaLiquidacion"
+					text="Liquidación"
+					icon="money"
+					stylingMode="contained"
+					type="success"
+					(onClick)="ejecutarPartidaEspecial('LIQ')"
+				>
+				</dx-button>
+				<dx-button
+					*ngIf="btnPartidaCierre"
+					text="Cierre"
+					icon="lock"
+					type="danger"
+					stylingMode="contained"
+					(onClick)="ejecutarPartidaEspecial('CIE')"
+				>
+				</dx-button>
 			</div>
-		</div>
-		
-		<div class="partida-procesos-actions">
-			<dx-button
-				*ngIf="btnPartidaApertura"
-				text="Apertura"
-				icon="unlock"
-				type="default"
-				stylingMode="contained"
-				(onClick)="ejecutarPartidaEspecial('APE')"
-			>
-			</dx-button>
-
-			<dx-button
-				*ngIf="btnPartidaLiquidacion"
-				text="Liquidación"
-				icon="money"
-				stylingMode="contained"
-				type="success"
-				(onClick)="ejecutarPartidaEspecial('LIQ')"
-			>
-			</dx-button>
-
-			<dx-button
-				*ngIf="btnPartidaCierre"
-				text="Cierre"
-				icon="lock"
-				type="danger"
-				stylingMode="contained"
-				(onClick)="ejecutarPartidaEspecial('CIE')"
-			>
-			</dx-button>
 		</div>
 	</div>
-
-
-</div>
+</ng-template>
 
 <div *ngIf="!isBrowse()" class="partida-edit-shell">
 	<section class="sguees-section-card partida-form-card">
@@ -172,7 +153,7 @@
 	<dx-tab-panel #tabPanel class="partida-tab-panel" [selectedIndex]="0">
 		<dxi-item title="Detalle Partida" [icon]="'detailslayout'">
 			<div class="dx-grid-deta partida-deta-grid">
-				<div class="partida-deta-toolbar" *ngIf="!readOnly">
+				<div class="partida-deta-toolbar" *ngIf="puedeEditarDetalle()">
 					<dx-button
 						class="partida-deta-toolbar-btn"
 						icon="add"
@@ -234,8 +215,9 @@
 					<dxo-editing
 						[mode]="'row'"
 						[refreshMode]="'reshape'"
-						[allowUpdating]="!readOnly"
-						[allowDeleting]="!readOnly"
+						[allowAdding]="puedeEditarDetalle()"
+						[allowUpdating]="puedeEditarDetalle()"
+						[allowDeleting]="puedeEditarDetalle()"
 						[useIcons]="true"
 						[selectTextOnEditStart]="true"
 					></dxo-editing>
@@ -432,15 +414,24 @@
 	[columns]="columns"
 	[summary]="summary"
 	[keyExpr]="['ANIO_PERIODO', 'MES_PERIODO', 'CORR_CLASE_PARTIDA', 'CORR_PARTIDA']"
-	[columnAutoWidth]="true"
+	[columnAutoWidth]="false"
+	[showSearch]="false"
+	[showExport]="true"
+	[permitePrint]="permitePrint"
+	[exportFileName]="'PartidasContables'"
 	[permiteEditar]="getPermiteEditar"
 	[permiteDele]="getPermiteDele"
+	[responsiveColumnHiding]="false"
+	[columnHidingEnabled]="false"
+	[toolbarBeforeTemplate]="showProcesosEnGrid ? procesosContablesToolbar : null"
 	(rowDblClick)="rowDblClick($event)"
 	(rowRemoving)="rowRemoving($event)"
 	(focusedRowChanged)="focusedRowChanged($event)"
 	(editClick)="editarClick($event)"
 >
 </app-data-grid-mtto>
+</div>
+
 <dx-popup
 	[(visible)]="importExcelVisible"
 	title="Importar Partidas desde Excel"

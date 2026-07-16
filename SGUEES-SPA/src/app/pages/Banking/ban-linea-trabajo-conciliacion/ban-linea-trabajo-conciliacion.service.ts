@@ -2,9 +2,14 @@
 import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 
 import { BanLineaTrabajoConciliacionRepository } from './ban-linea-trabajo-conciliacion.repository';
 import { BanLineaTrabajoConciliacion } from './models/ban-linea-trabajo-conciliacion';
+
+const ESTADO_FIELD = 'ESTADO_LINEA';
 
 @Injectable({
 	providedIn: 'root',
@@ -14,12 +19,11 @@ export class BanLineaTrabajoConciliacionService {
 
 	esValido(model: BanLineaTrabajoConciliacion, msg: Function): boolean {
 		if (!model.NOMBRE_LINEA_TRABAJO?.trim()) {
-			msg('Debe digitar el nombre de la línea de trabajo', 0);
+			msg('Debe digitar el nombre de la línea de trabajo.', NotifyType.Warning);
 			return false;
 		}
 		return true;
 	}
-
 	getAll(param: any): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_LINEA', Value: param.CORR_LINEA }];
 		return this.repo.get(xWhere);
@@ -44,11 +48,19 @@ export class BanLineaTrabajoConciliacionService {
 		return this.repo.delete(xWhere);
 	}
 
+	activarInactivar(model: any): Observable<IResult> {
+		return this.repo.activarInactivar(model, [
+			{ Parameter: 'CORR_LINEA', Value: model.CORR_LINEA },
+		]);
+	}
+
 	getColumns(): any {
 		return [
 			{ dataField: 'CORR_LINEA', caption: 'Corr.', width: 80 },
 			{ dataField: 'NOMBRE_LINEA_TRABAJO', caption: 'Nombre línea' },
 			{ dataField: 'NOMBRE_AUMENTA_DISMINUYE', caption: 'Aumenta / Disminuye', width: 160 },
+			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
+			...buildAuditGridColumns(),
 		];
 	}
 
@@ -69,8 +81,8 @@ export class BanLineaTrabajoConciliacionService {
 			},
 			{ itemType: 'empty', colSpan: 4 },
 			{ dataField: 'NOMBRE_LINEA_TRABAJO', label: { text: 'Nombre línea' }, colSpan: 4, editorOptions: { showClearButton: true } },
+			{ dataField: 'ESTADO_LINEA', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 			{ itemType: 'empty', colSpan: 2 },
-			
 		];
 	}
 }

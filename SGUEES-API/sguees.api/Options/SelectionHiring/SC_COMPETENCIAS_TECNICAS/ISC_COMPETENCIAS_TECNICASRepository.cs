@@ -10,6 +10,7 @@ namespace SGUEES.Repositories
     {
         Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr);
         Task<List<SC_COMPETENCIAS_TECNICASView>> GetPadresByNivelAsync(int corrEmpresa, string nivel, bool? soloActivos);
+        Task<List<SC_COMPETENCIAS_TECNICASView>> GetCatalogoNivel3DescriptorAsync(int corrEmpresa);
         Task<List<string>> GetSiblingCodigosLevel3Async(int corrEmpresa, int corrPadre, string parentCodigoPrefix);
         Task<bool> HasChildrenAsync(int corrEmpresa, int corrCompetencia);
         Task<CResult> GetDistinctValuesAsync(List<CParameter> xWhere);
