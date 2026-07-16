@@ -7,5 +7,6 @@ namespace SGUEES.Models
         public int CORR_EMPRESA { get; set; }
         public int CORR_DESCRIPTOR_PUESTO { get; set; }
         public int CORR_DESCRIPTOR_RESPONSABILIDAD { get; set; }
+        public string FORMATO { get; set; }
     }
 }

@@ -30,7 +30,11 @@ import { ScPerfilPuestoCompetenciasTecnicas } from './sc-perfil-puesto-competenc
 import { ScPerfilPuestoCompetenciasConductuales } from './sc-perfil-puesto-competencias-conductuales/models/sc-perfil-puesto-competencias-conductuales';
 import { ScDescriptorPuestoRequerimientoOrganizacional } from './sc-descriptor-puesto-requerimiento-organizacional/models/sc-descriptor-puesto-requerimiento-organizacional';
 import { ScDescriptorPuestoRiesgoPuesto } from './sc-descriptor-puesto-riesgo-puesto/models/sc-descriptor-puesto-riesgo-puesto';
-import { ScDescriptorPuestoResponsabilidadCargo } from './sc-descriptor-puesto-responsabilidad-cargo/models/sc-descriptor-puesto-responsabilidad-cargo';
+import {
+	IMPACTO_ECONOMICO_CLIENT_KEY,
+	IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR,
+	ScDescriptorPuestoResponsabilidadCargo,
+} from './sc-descriptor-puesto-responsabilidad-cargo/models/sc-descriptor-puesto-responsabilidad-cargo';
 import {
 	FORMATO_CORTO,
 	FORMATO_EXTENSO,
@@ -42,6 +46,7 @@ import {
 	ScCompetenciaConductualLookupItem,
 	ScCompetenciaTecnicaLookupItem,
 	ScDescriptorPuesto,
+	ScImpactoEconomicoLookupItem,
 	ScRequerimientoOrganizacionalLookupItem,
 	ScResponsabilidadCargoLookupItem,
 	ScRiesgoPuestoLookupItem,
@@ -108,6 +113,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_RIESGO_PUESTO_DISPONIBLES: ScRiesgoPuestoLookupItem[] = [];
 	mCORR_RESPONSABILIDAD: ScResponsabilidadCargoLookupItem[] = [];
 	mCORR_RESPONSABILIDAD_DISPONIBLES: ScResponsabilidadCargoLookupItem[] = [];
+	mCORR_IMPACTO_ECONOMICO: ScImpactoEconomicoLookupItem[] = [];
+	impactosEconomicosLookupColumns = [
+		{ dataField: 'CORR_IMPACTO_ECONOMICO', caption: 'Codigo', width: 90 },
+		{ dataField: 'DESCRIPCION', caption: 'Impacto economico', width: 360 },
+	];
 	reportaLookupColumns = [
 		{ dataField: 'RESPONSABLE', caption: 'Nombre', width: 220 },
 		{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260 },
@@ -234,6 +244,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.selectedLookUpCORR_REQUERIMIENTO_ORGANIZACIONAL.bind(this);
 		this.selectedLookUpCORR_RIESGO_PUESTO = this.selectedLookUpCORR_RIESGO_PUESTO.bind(this);
 		this.selectedLookUpCORR_RESPONSABILIDAD = this.selectedLookUpCORR_RESPONSABILIDAD.bind(this);
+		this.selectedLookUpCORR_IMPACTO_ECONOMICO =
+			this.selectedLookUpCORR_IMPACTO_ECONOMICO.bind(this);
 		this.funcionClaveEditButtonVisible = this.funcionClaveEditButtonVisible.bind(this);
 		this.funcionClaveDeleteButtonVisible = this.funcionClaveDeleteButtonVisible.bind(this);
 		this.editarFuncionClaveClick = this.editarFuncionClaveClick.bind(this);
@@ -320,6 +332,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.getCORR_REQUERIMIENTO_ORGANIZACIONAL();
 		this.getCORR_RIESGO_PUESTO();
 		this.getCORR_RESPONSABILIDAD();
+		this.getCORR_IMPACTO_ECONOMICO();
 		this.getFORMATO();
 		this.getNIVEL_DOMINIO();
 		this.getSEXO();
@@ -736,12 +749,44 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.mCORR_RESPONSABILIDAD = response.Data.map((item: any) => ({
 						CORR_RESPONSABILIDAD: Number(item.CORR_RESPONSABILIDAD),
 						NOMBRE_RESPONSABILIDAD: (item.NOMBRE_RESPONSABILIDAD ?? '').trim(),
+						APLICA_DESCRIPTOR: this.normalizarAplicabilidadResponsabilidad(
+							item.APLICA_DESCRIPTOR
+						),
 					}));
 					this.actualizarResponsabilidadesCargoLookupDisponibles();
 				},
 				error: (error) => {
 					this.mCORR_RESPONSABILIDAD = [];
 					this.mCORR_RESPONSABILIDAD_DISPONIBLES = [];
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	getCORR_IMPACTO_ECONOMICO(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_IMPACTO_ECONOMICO',
+				'GetCORR_IMPACTO_ECONOMICO',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result || !Array.isArray(response.Data)) {
+						this.mCORR_IMPACTO_ECONOMICO = [];
+						return;
+					}
+
+					this.mCORR_IMPACTO_ECONOMICO = response.Data.map((item: any) => ({
+						CORR_IMPACTO_ECONOMICO: Number(item.CORR_IMPACTO_ECONOMICO),
+						DESCRIPCION: (item.DESCRIPCION ?? '').trim(),
+					}));
+				},
+				error: (error) => {
+					this.mCORR_IMPACTO_ECONOMICO = [];
 					this.notifyApiError(error);
 				},
 			});
@@ -791,6 +836,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return vRow[0].CORR_RESPONSABILIDAD;
 	}
 
+	selectedLookUpCORR_IMPACTO_ECONOMICO(vRow: any): number {
+		return vRow[0].CORR_IMPACTO_ECONOMICO;
+	}
+
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -819,7 +868,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				NUM_PERSONAL_CARGO: xModel.NUM_PERSONAL_CARGO,
 				OBJETIVO_PUESTO: xModel.OBJETIVO_PUESTO ?? '',
 				CORR_IMPACTO_ECONOMICO: xModel.CORR_IMPACTO_ECONOMICO,
+				DESCRIPCION_IMPACTO_ECONOMICO: xModel.DESCRIPCION_IMPACTO_ECONOMICO ?? '',
 				CORR_INDUCCION: xModel.CORR_INDUCCION,
+				NOMBRE_INDUCCION: xModel.NOMBRE_INDUCCION ?? '',
+				SEMANAS_INDUCCION: xModel.SEMANAS_INDUCCION ?? null,
 				RESPONSABLE: xModel.RESPONSABLE ?? '',
 				FORMATO: xModel.FORMATO ?? FORMATO_CORTO,
 				VERSION: xModel.VERSION ?? 1,
@@ -847,7 +899,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			NUM_PERSONAL_CARGO: null,
 			OBJETIVO_PUESTO: '',
 			CORR_IMPACTO_ECONOMICO: null,
+			DESCRIPCION_IMPACTO_ECONOMICO: '',
 			CORR_INDUCCION: null,
+			NOMBRE_INDUCCION: '',
+			SEMANAS_INDUCCION: null,
 			RESPONSABLE: '',
 			FORMATO: FORMATO_CORTO,
 			VERSION: 1,
@@ -881,7 +936,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		this.models = this.models.map((row: ScDescriptorPuesto) => ({
 			...row,
-			NOMBRE_UNIDAD: this.getNombreUnidad(row.CORR_UNIDAD),
+			NOMBRE_UNIDAD: row.NOMBRE_UNIDAD || this.getNombreUnidad(row.CORR_UNIDAD),
 			NOMBRE_PUESTO: row.NOMBRE_PUESTO || this.getNombrePuesto(row.CORR_PUESTO),
 		}));
 	}
@@ -2514,9 +2569,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (this.readOnly || this.responsabilidadesCargoEditando) {
 			return;
 		}
-		this.actualizarResponsabilidadesCargoLookupDisponibles(
-			Number(e?.row?.data?.CORR_RESPONSABILIDAD) || null
-		);
+		if (!e?.row?.data?._esImpactoEconomico) {
+			this.actualizarResponsabilidadesCargoLookupDisponibles(
+				Number(e?.row?.data?.CORR_RESPONSABILIDAD) || null
+			);
+		}
 		this.responsabilidadesCargoInsertando = false;
 		this.responsabilidadesCargoEditando = true;
 		const rowIndex = e.row.rowIndex;
@@ -2532,6 +2589,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	responsabilidadCargoDeleteButtonVisible(e: any): boolean {
+		if (e?.row?.data?._esImpactoEconomico) {
+			return false;
+		}
 		return this.accionGridVisible(e);
 	}
 
@@ -2559,15 +2619,38 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.data.CORR_RESPONSABILIDAD = null;
 		e.data.NOMBRE_RESPONSABILIDAD = '';
 		e.data.INFORMACION = '';
+		e.data.APLICA_DESCRIPTOR = this.model?.FORMATO ?? FORMATO_CORTO;
 		e.data._clientKey = this.crearClientKey('rc');
 		this.actualizarResponsabilidadesCargoLookupDisponibles();
 	}
 
 	onResponsabilidadCargoEditingStart(e: any): void {
+		if (e?.data?._esImpactoEconomico) {
+			this.responsabilidadesCargoInsertando = false;
+			e.data.NOMBRE_RESPONSABILIDAD = IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR;
+			this.responsabilidadesCargoEditando = true;
+			this.syncResponsabilidadCargoColumnas();
+			return;
+		}
+
 		this.responsabilidadesCargoInsertando = !(Number(e?.data?.CORR_DESCRIPTOR_RESPONSABILIDAD) > 0);
 		this.actualizarResponsabilidadesCargoLookupDisponibles(Number(e?.data?.CORR_RESPONSABILIDAD) || null);
 		this.responsabilidadesCargoEditando = true;
 		this.syncResponsabilidadCargoColumnas();
+	}
+
+	onResponsabilidadCargoEditorPreparing(e: any): void {
+		if (e?.parentType !== 'dataRow' || !e?.row?.data?._esImpactoEconomico) {
+			return;
+		}
+
+		if (e.dataField === 'NOMBRE_RESPONSABILIDAD' || e.dataField === 'CORR_RESPONSABILIDAD') {
+			e.editorOptions = {
+				...(e.editorOptions || {}),
+				readOnly: true,
+				disabled: true,
+			};
+		}
 	}
 
 	onResponsabilidadCargoSaved(e: any): void {
@@ -2587,6 +2670,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	responsabilidadCargoRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (data._esImpactoEconomico) {
+			e.newData = {
+				...(e.newData || {}),
+				NOMBRE_RESPONSABILIDAD: IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR,
+				CORR_RESPONSABILIDAD: null,
+				CORR_DESCRIPTOR_RESPONSABILIDAD: 0,
+			};
+			return;
+		}
+
 		if (!(Number(data.CORR_RESPONSABILIDAD) > 0)) {
 			e.isValid = false;
 			e.errorText = 'Debe seleccionar una responsabilidad de cargo.';
@@ -2612,6 +2705,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const corrCatalogo = Number(data.CORR_RESPONSABILIDAD);
 		const clientKey = data._clientKey ?? e?.key;
 		const duplicada = (this.responsabilidadesCargo || []).some((row) => {
+			if (row._esImpactoEconomico) {
+				return false;
+			}
 			if (!(Number(row.CORR_RESPONSABILIDAD) > 0)) {
 				return false;
 			}
@@ -2627,19 +2723,41 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	responsabilidadCargoRowInserting(e: any): void {
+		if (e?.data?._esImpactoEconomico) {
+			e.cancel = true;
+			return;
+		}
 		e.cancel = this.persistirResponsabilidadCargoDesdeGrid(e.data, true);
 	}
 
 	responsabilidadCargoRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
+		if (data._esImpactoEconomico) {
+			const live = (this.responsabilidadesCargo || []).find(
+				(row) => row._esImpactoEconomico || row._clientKey === e.key
+			);
+			data.CORR_IMPACTO_ECONOMICO =
+				live?.CORR_IMPACTO_ECONOMICO ?? data.CORR_IMPACTO_ECONOMICO ?? null;
+			data.INFORMACION = (live?.INFORMACION ?? data.INFORMACION ?? '').trim();
+			data.NOMBRE_RESPONSABILIDAD = IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR;
+			e.cancel = this.persistirImpactoEconomicoDesdeGrid(data);
+			return;
+		}
 		e.cancel = this.persistirResponsabilidadCargoDesdeGrid(data, false);
 	}
 
 	responsabilidadCargoRowRemoving(e: any): void {
+		if (e?.data?._esImpactoEconomico) {
+			e.cancel = true;
+			return;
+		}
 		e.cancel = this.eliminarResponsabilidadCargoDesdeGrid(e.data);
 	}
 
 	responsabilidadCargoCatalogDisplay = (row: ScDescriptorPuestoResponsabilidadCargo): string => {
+		if (row?._esImpactoEconomico) {
+			return '';
+		}
 		const corr = Number(row?.CORR_RESPONSABILIDAD);
 		if (!(corr > 0)) {
 			return '';
@@ -2647,16 +2765,44 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return String(corr);
 	};
 
+	responsabilidadCargoCodigoDisplay = (row: ScDescriptorPuestoResponsabilidadCargo): string => {
+		if (row?._esImpactoEconomico) {
+			return '';
+		}
+		const corr = Number(row?.CORR_DESCRIPTOR_RESPONSABILIDAD);
+		return corr > 0 ? String(corr) : '';
+	};
+
+	responsabilidadCargoInformacionDisplay = (row: ScDescriptorPuestoResponsabilidadCargo): string => {
+		return (row?.INFORMACION ?? '').trim();
+	};
+
+	onImpactoEconomicoLookupChanged(value: number | null, cellInfo: any): void {
+		const corr = value != null && Number(value) > 0 ? Number(value) : null;
+		const catalog = this.mCORR_IMPACTO_ECONOMICO.find(
+			(item) => Number(item.CORR_IMPACTO_ECONOMICO) === Number(corr)
+		);
+		const descripcion = (catalog?.DESCRIPCION ?? '').trim();
+
+		cellInfo.setValue(descripcion);
+		if (cellInfo?.data) {
+			cellInfo.data.CORR_IMPACTO_ECONOMICO = corr;
+			cellInfo.data.NOMBRE_RESPONSABILIDAD = IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR;
+			cellInfo.data.INFORMACION = descripcion;
+		}
+	}
+
 	private actualizarResponsabilidadesCargoLookupDisponibles(corrConservar: number | null = null): void {
 		const usados = new Set(
 			(this.responsabilidadesCargo || [])
+				.filter((row) => !row._esImpactoEconomico)
 				.map((row) => Number(row.CORR_RESPONSABILIDAD))
 				.filter((corr) => corr > 0 && corr !== Number(corrConservar || 0))
 		);
 
 		this.mCORR_RESPONSABILIDAD_DISPONIBLES = (this.mCORR_RESPONSABILIDAD || []).filter((item) => {
 			const corr = Number(item.CORR_RESPONSABILIDAD);
-			if (!(corr > 0)) {
+			if (!(corr > 0) || !this.responsabilidadAplicaAlFormato(item.APLICA_DESCRIPTOR)) {
 				return false;
 			}
 			if (corrConservar != null && corr === Number(corrConservar)) {
@@ -2664,6 +2810,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			}
 			return !usados.has(corr);
 		});
+	}
+
+	private normalizarAplicabilidadResponsabilidad(value: string | null | undefined): string {
+		const aplica = (value ?? 'AMBOS').trim().toUpperCase();
+		return aplica === 'CORTO' || aplica === 'EXTENSO' || aplica === 'AMBOS' ? aplica : 'AMBOS';
+	}
+
+	private responsabilidadAplicaAlFormato(value: string | null | undefined): boolean {
+		const aplica = this.normalizarAplicabilidadResponsabilidad(value);
+		const formato = (this.model?.FORMATO ?? FORMATO_CORTO).trim().toUpperCase();
+		return aplica === 'AMBOS' || aplica === formato;
 	}
 
 	onResponsabilidadCargoLookupChanged(value: number | null, cellInfo: any): void {
@@ -2700,6 +2857,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 		newData.CORR_RESPONSABILIDAD = corr;
 		newData.NOMBRE_RESPONSABILIDAD = catalog?.NOMBRE_RESPONSABILIDAD ?? '';
+		newData.APLICA_DESCRIPTOR = this.normalizarAplicabilidadResponsabilidad(
+			catalog?.APLICA_DESCRIPTOR
+		);
 	};
 
 	onPerfilEdadMinimaChanged(e: any): void {
@@ -3194,7 +3354,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		const loadSeq = ++this.responsabilidadesCargoLoadSeq;
 		this.service
-			.getResponsabilidadesCargoLookup(corrDescriptor)
+			.getResponsabilidadesCargoLookup(
+				corrDescriptor,
+				this.model?.FORMATO ?? FORMATO_CORTO
+			)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -3204,21 +3367,39 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 					if (response?.Result && Array.isArray(response.Data)) {
 						this.resetearEdicionResponsabilidadesCargo();
-						this.responsabilidadesCargo = response.Data.map(
-							(item: ScDescriptorPuestoResponsabilidadCargo) => ({
+						const data = response.Data as ScDescriptorPuestoResponsabilidadCargo[];
+						const filas = data.map(
+							(item: ScDescriptorPuestoResponsabilidadCargo): ScDescriptorPuestoResponsabilidadCargo => ({
 								CORR_DESCRIPTOR_PUESTO: item.CORR_DESCRIPTOR_PUESTO ?? corrDescriptor,
 								CORR_DESCRIPTOR_RESPONSABILIDAD: item.CORR_DESCRIPTOR_RESPONSABILIDAD,
 								NOMBRE_RESPONSABILIDAD: item.NOMBRE_RESPONSABILIDAD ?? '',
 								INFORMACION: item.INFORMACION ?? '',
+								APLICA_DESCRIPTOR: this.normalizarAplicabilidadResponsabilidad(
+									item.APLICA_DESCRIPTOR
+								),
 								CORR_RESPONSABILIDAD: item.CORR_RESPONSABILIDAD ?? null,
 								_clientKey: item.CORR_DESCRIPTOR_RESPONSABILIDAD || this.crearClientKey('rc'),
 							})
-						);
+						).filter((item) => this.responsabilidadAplicaAlFormato(item.APLICA_DESCRIPTOR));
+						this.responsabilidadesCargo = [...filas, this.crearFilaImpactoEconomico()];
 						this.actualizarResponsabilidadesCargoLookupDisponibles();
 					}
 				},
 				error: (error) => this.notifyApiError(error),
 			});
+	}
+
+	private crearFilaImpactoEconomico(): ScDescriptorPuestoResponsabilidadCargo {
+		return {
+			CORR_DESCRIPTOR_PUESTO: Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0,
+			CORR_DESCRIPTOR_RESPONSABILIDAD: 0,
+			CORR_RESPONSABILIDAD: null,
+			NOMBRE_RESPONSABILIDAD: IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR,
+			INFORMACION: (this.model?.DESCRIPCION_IMPACTO_ECONOMICO ?? '').trim(),
+			CORR_IMPACTO_ECONOMICO: this.model?.CORR_IMPACTO_ECONOMICO ?? null,
+			_esImpactoEconomico: true,
+			_clientKey: IMPACTO_ECONOMICO_CLIENT_KEY,
+		};
 	}
 
 	private cargarKpis(forzar = false): void {
@@ -3475,6 +3656,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		this.model.FORMATO = value || FORMATO_CORTO;
 		this.ultimoFormatoAplicado = formatoNuevo;
+		this.actualizarResponsabilidadesCargoLookupDisponibles();
+		if (cambioReal && Number(this.model?.CORR_DESCRIPTOR_PUESTO) > 0) {
+			this.cargarResponsabilidadesCargo(true);
+		}
 
 		if (cambioReal) {
 			if (this.esTabSeccionVisibleParaFormato(tabActualIndex, formatoNuevo)) {
@@ -3677,7 +3862,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			next: (response: any) => {
 				if (response?.Result) {
 					const descriptor = this.fillData(response.Data as ScDescriptorPuesto);
-					descriptor.NOMBRE_UNIDAD = this.getNombreUnidad(descriptor.CORR_UNIDAD);
+					descriptor.NOMBRE_UNIDAD =
+						descriptor.NOMBRE_UNIDAD || this.getNombreUnidad(descriptor.CORR_UNIDAD);
 					descriptor.NOMBRE_PUESTO =
 						descriptor.NOMBRE_PUESTO || this.getNombrePuesto(descriptor.CORR_PUESTO);
 
@@ -3737,7 +3923,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
 		if (data && typeof data === 'object') {
 			const record = this.fillData(data as ScDescriptorPuesto);
-			record.NOMBRE_UNIDAD = this.getNombreUnidad(record.CORR_UNIDAD);
+			record.NOMBRE_UNIDAD = record.NOMBRE_UNIDAD || this.getNombreUnidad(record.CORR_UNIDAD);
 			record.NOMBRE_PUESTO = record.NOMBRE_PUESTO || this.getNombrePuesto(record.CORR_PUESTO);
 			super.aplicarRegistroEnGrid(record, isAdd);
 			return;
@@ -4517,6 +4703,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		data: ScDescriptorPuestoResponsabilidadCargo,
 		esNuevo: boolean
 	): Promise<boolean> {
+		if (data?._esImpactoEconomico) {
+			return Promise.resolve(true);
+		}
+
 		if (this.responsabilidadCargoPersistiendo) {
 			return Promise.resolve(true);
 		}
@@ -4575,6 +4765,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private eliminarResponsabilidadCargoDesdeGrid(
 		data: ScDescriptorPuestoResponsabilidadCargo
 	): Promise<boolean> {
+		if (data?._esImpactoEconomico) {
+			return Promise.resolve(true);
+		}
+
 		const corr = Number(data?.CORR_DESCRIPTOR_RESPONSABILIDAD);
 		if (!corr || corr <= 0) {
 			return Promise.resolve(false);
@@ -4596,6 +4790,64 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					},
 					error: (error) => {
 						this.notifyApiError(error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	private persistirImpactoEconomicoDesdeGrid(
+		data: ScDescriptorPuestoResponsabilidadCargo
+	): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		if (!corrDescriptor || corrDescriptor <= 0) {
+			this.notifyFx(
+				'Debe guardar el descriptor antes de registrar el impacto economico.',
+				NotifyType.Warning
+			);
+			return Promise.resolve(true);
+		}
+
+		const corrAnterior = this.model.CORR_IMPACTO_ECONOMICO;
+		const descripcionAnterior = this.model.DESCRIPCION_IMPACTO_ECONOMICO;
+		const corrImpacto = Number(data?.CORR_IMPACTO_ECONOMICO);
+		this.model.CORR_IMPACTO_ECONOMICO = corrImpacto > 0 ? corrImpacto : null;
+		this.model.DESCRIPCION_IMPACTO_ECONOMICO = (data?.INFORMACION ?? '').trim();
+
+		return new Promise((resolve) => {
+			this.service
+				.update(this.model)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.model.CORR_IMPACTO_ECONOMICO = corrAnterior;
+							this.model.DESCRIPCION_IMPACTO_ECONOMICO = descripcionAnterior;
+							this.notifyApiResponse(response);
+							this.cargarResponsabilidadesCargo(true);
+							resolve(true);
+							return;
+						}
+
+						if (response.Data) {
+							this.model = this.fillData(response.Data);
+							this.modelUpdate = this.fillData(response.Data);
+						}
+
+						this.responsabilidadesCargoEditando = false;
+						try {
+							this.gridResponsabilidadesCargo?.instance?.cancelEditData?.();
+						} catch {
+							// El grid puede haberse desmontado.
+						}
+						this.cargarResponsabilidadesCargo(true);
+						resolve(true);
+					},
+					error: (error) => {
+						this.model.CORR_IMPACTO_ECONOMICO = corrAnterior;
+						this.model.DESCRIPCION_IMPACTO_ECONOMICO = descripcionAnterior;
+						this.notifyApiError(error);
+						this.cargarResponsabilidadesCargo(true);
 						resolve(true);
 					},
 				});

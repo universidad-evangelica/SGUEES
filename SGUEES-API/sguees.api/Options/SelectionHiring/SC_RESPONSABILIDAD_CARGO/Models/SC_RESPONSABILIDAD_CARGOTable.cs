@@ -9,6 +9,7 @@ namespace SGUEES.Models
         public int CORR_RESPONSABILIDAD { get; set; }
         public string NOMBRE_RESPONSABILIDAD { get; set; }
         public bool? ESTADO_RESPONSABILIDAD { get; set; } = true;
+        public string APLICA_DESCRIPTOR { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }
         public DateTime FECHA_CREA { get; set; }

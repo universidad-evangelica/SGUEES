@@ -1928,6 +1928,7 @@
 							[repaintChangesOnly]="false"
 							(onInitNewRow)="responsabilidadCargoInitNewRow($event)"
 							(onEditingStart)="onResponsabilidadCargoEditingStart($event)"
+							(onEditorPreparing)="onResponsabilidadCargoEditorPreparing($event)"
 							(onSaved)="onResponsabilidadCargoSaved($event)"
 							(onEditCanceled)="onResponsabilidadCargoEditCanceled($event)"
 							(onRowInserting)="responsabilidadCargoRowInserting($event)"
@@ -1981,16 +1982,16 @@
 								caption="Codigo"
 								[width]="90"
 								[allowEditing]="false"
-								[allowSorting]="true"
-								dataType="number"
+								[allowSorting]="false"
 								alignment="left"
+								[calculateDisplayValue]="responsabilidadCargoCodigoDisplay"
 							></dxi-column>
 							<dxi-column
 								dataField="CORR_RESPONSABILIDAD"
 								caption="Responsabilidad"
 								[width]="140"
 								[minWidth]="120"
-								[allowSorting]="true"
+								[allowSorting]="false"
 								[visible]="responsabilidadesCargoInsertando"
 								[calculateDisplayValue]="responsabilidadCargoCatalogDisplay"
 								[setCellValue]="setResponsabilidadCargoCellValue"
@@ -2021,15 +2022,43 @@
 								dataField="NOMBRE_RESPONSABILIDAD"
 								caption="Nombre (descriptor)"
 								[minWidth]="220"
-								[allowSorting]="true"
+								[allowSorting]="false"
 							></dxi-column>
 							<dxi-column
 								dataField="INFORMACION"
 								caption="Informacion"
 								[minWidth]="280"
-								[allowSorting]="true"
+								[allowSorting]="false"
+								[calculateDisplayValue]="responsabilidadCargoInformacionDisplay"
+								[editCellTemplate]="'INFORMACIONResponsabilidadEdit'"
 								[editorOptions]="{ maxLength: 255, showClearButton: true }"
 							></dxi-column>
+							<div *dxTemplate="let cellInfo of 'INFORMACIONResponsabilidadEdit'">
+								<div
+									class="descriptor-riesgo-lookup-cell"
+									*ngIf="cellInfo.data?._esImpactoEconomico; else infoResponsabilidadTexto"
+								>
+									<app-data-lookup
+										[model]="mCORR_IMPACTO_ECONOMICO"
+										[value]="cellInfo.data.CORR_IMPACTO_ECONOMICO"
+										(valueChange)="onImpactoEconomicoLookupChanged($event, cellInfo)"
+										[valueExpr]="'CORR_IMPACTO_ECONOMICO'"
+										[displayExpr]="'DESCRIPCION'"
+										[lookupColumns]="impactosEconomicosLookupColumns"
+										[selectedRowKeys]="selectedLookUpCORR_IMPACTO_ECONOMICO"
+										[showClearButton]="true"
+										[dropDownWidth]="520"
+									></app-data-lookup>
+								</div>
+								<ng-template #infoResponsabilidadTexto>
+									<dx-text-box
+										[value]="cellInfo.value"
+										(onValueChanged)="cellInfo.setValue($event.value)"
+										[maxLength]="255"
+										[showClearButton]="true"
+									></dx-text-box>
+								</ng-template>
+							</div>
 						</dx-data-grid>
 					</div>
 				</dxi-item>

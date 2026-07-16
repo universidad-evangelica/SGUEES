@@ -13,8 +13,13 @@ namespace SGUEES.Models
         public DateTime? FECHA_REVISION { get; set; }
         public int? NUM_PERSONAL_CARGO { get; set; }
         public string OBJETIVO_PUESTO { get; set; }
+        public string NOMBRE_PUESTO { get; set; }
+        public string NOMBRE_UNIDAD { get; set; }
         public int? CORR_IMPACTO_ECONOMICO { get; set; }
+        public string DESCRIPCION_IMPACTO_ECONOMICO { get; set; }
         public int? CORR_INDUCCION { get; set; }
+        public string NOMBRE_INDUCCION { get; set; }
+        public int? SEMANAS_INDUCCION { get; set; }
         public string RESPONSABLE { get; set; }
         public string FORMATO { get; set; }
         public int? VERSION { get; set; }
@@ -25,6 +30,5 @@ namespace SGUEES.Models
         public string USUARIO_ACTU { get; set; }
         public string ESTACION_ACTU { get; set; }
         public DateTime? FECHA_ACTU { get; set; }
-        public string NOMBRE_PUESTO { get; set; }
     }
 }

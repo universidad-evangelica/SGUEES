@@ -23,6 +23,15 @@ namespace SGUEES.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(_service));
         }
 
+        [HttpGet("GetCORR_IMPACTO_ECONOMICO_SC_DESCRIPTOR_PUESTO")]
+        [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        public async Task<CResult> GetCORR_IMPACTO_ECONOMICO_SC_DESCRIPTOR_PUESTO(
+            [FromQuery] SC_IMPACTO_ECONOMICOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetCatalogoDescriptorAsync(Data);
+        }
+
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-impacto-economico|R")]
         public async Task<CResult> GetAll([FromQuery] SC_IMPACTO_ECONOMICOParam Data)

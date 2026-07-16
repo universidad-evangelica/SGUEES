@@ -77,26 +77,19 @@ namespace SGUEES.Services
 
             try
             {
-                var existentes = await GetAllAsync(new SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOParam
+                var existentes = await _repo.GetAllSinFiltroFormatoAsync(corrEmpresa, corrDescriptor);
+                var formatoDescriptor = await _repo.GetFormatoDescriptorAsync(corrEmpresa, corrDescriptor);
+                if (formatoDescriptor != "CORTO" && formatoDescriptor != "EXTENSO")
                 {
-                    CORR_EMPRESA = corrEmpresa,
-                    CORR_DESCRIPTOR_PUESTO = corrDescriptor,
-                });
-
-                if (!existentes.Result)
-                {
-                    return SeedError("No se pudieron consultar las responsabilidades del descriptor.");
+                    return SeedError("No se pudo identificar el formato del descriptor.");
                 }
 
                 var catalogoUsados = new HashSet<int>();
-                if (existentes.Data is List<SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOView> rows)
+                foreach (var row in existentes)
                 {
-                    foreach (var row in rows)
+                    if (row.CORR_RESPONSABILIDAD is > 0)
                     {
-                        if (row.CORR_RESPONSABILIDAD is > 0)
-                        {
-                            catalogoUsados.Add(row.CORR_RESPONSABILIDAD.Value);
-                        }
+                        catalogoUsados.Add(row.CORR_RESPONSABILIDAD.Value);
                     }
                 }
 
@@ -108,7 +101,8 @@ namespace SGUEES.Services
 
                 foreach (var item in catalogo)
                 {
-                    if (item.CORR_RESPONSABILIDAD <= 0)
+                    if (item.CORR_RESPONSABILIDAD <= 0 ||
+                        !EsAplicable(item.APLICA_DESCRIPTOR, formatoDescriptor))
                     {
                         continue;
                     }
@@ -136,6 +130,7 @@ namespace SGUEES.Services
                         CORR_DESCRIPTOR_RESPONSABILIDAD = 0,
                         NOMBRE_RESPONSABILIDAD = nombre,
                         INFORMACION = null,
+                        APLICA_DESCRIPTOR = NormalizarAplicacion(item.APLICA_DESCRIPTOR),
                         CORR_DESCRIPTOR_PUESTO = corrDescriptor,
                         CORR_RESPONSABILIDAD = item.CORR_RESPONSABILIDAD,
                         USUARIO_CREA = usuario,
@@ -226,6 +221,14 @@ namespace SGUEES.Services
                 return null;
             }
 
+            var existentes = await _repo.GetAllSinFiltroFormatoAsync(
+                Data.CORR_EMPRESA,
+                Data.CORR_DESCRIPTOR_PUESTO.GetValueOrDefault());
+            if (existentes.Exists(x => x.CORR_RESPONSABILIDAD == Data.CORR_RESPONSABILIDAD))
+            {
+                return ValidationError("La responsabilidad de cargo ya esta registrada en el descriptor.");
+            }
+
             var catalogResult = await _catalogoRepo.GetAsync(new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
@@ -242,6 +245,15 @@ namespace SGUEES.Services
                 return ValidationError("La responsabilidad de cargo seleccionada esta inactiva.");
             }
 
+            var formatoDescriptor = await _repo.GetFormatoDescriptorAsync(
+                Data.CORR_EMPRESA,
+                Data.CORR_DESCRIPTOR_PUESTO.GetValueOrDefault());
+            if (!EsAplicable(catalog.APLICA_DESCRIPTOR, formatoDescriptor))
+            {
+                return ValidationError("La responsabilidad de cargo no aplica al formato actual del descriptor.");
+            }
+
+            Data.APLICA_DESCRIPTOR = NormalizarAplicacion(catalog.APLICA_DESCRIPTOR);
             if (string.IsNullOrWhiteSpace(Data.NOMBRE_RESPONSABILIDAD))
             {
                 Data.NOMBRE_RESPONSABILIDAD = catalog.NOMBRE_RESPONSABILIDAD?.Trim();
@@ -260,6 +272,14 @@ namespace SGUEES.Services
             if (xWhere.CORR_DESCRIPTOR_PUESTO > 0)
             {
                 p.Add(new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = xWhere.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 });
+            }
+
+            if (!includeCorr)
+            {
+                var formato = string.IsNullOrWhiteSpace(xWhere.FORMATO)
+                    ? "CORTO"
+                    : xWhere.FORMATO.Trim().ToUpperInvariant();
+                p.Add(new CParameter() { ParameterName = "FORMATO", Value = formato, DbType = System.Data.DbType.String });
             }
 
             if (includeCorr && xWhere.CORR_DESCRIPTOR_RESPONSABILIDAD > 0)
@@ -315,8 +335,29 @@ namespace SGUEES.Services
             }
 
             Data.INFORMACION = string.IsNullOrWhiteSpace(Data.INFORMACION) ? null : Data.INFORMACION.Trim();
+            Data.APLICA_DESCRIPTOR = NormalizarAplicacion(Data.APLICA_DESCRIPTOR);
+            if (Data.APLICA_DESCRIPTOR != "CORTO" &&
+                Data.APLICA_DESCRIPTOR != "EXTENSO" &&
+                Data.APLICA_DESCRIPTOR != "AMBOS")
+            {
+                return ValidationError("La aplicabilidad de la responsabilidad no es valida.");
+            }
 
             return null;
+        }
+
+        private static string NormalizarAplicacion(string aplicaDescriptor)
+        {
+            return string.IsNullOrWhiteSpace(aplicaDescriptor)
+                ? "AMBOS"
+                : aplicaDescriptor.Trim().ToUpperInvariant();
+        }
+
+        private static bool EsAplicable(string aplicaDescriptor, string formatoDescriptor)
+        {
+            var aplica = NormalizarAplicacion(aplicaDescriptor);
+            var formato = formatoDescriptor?.Trim().ToUpperInvariant();
+            return aplica == "AMBOS" || aplica == formato;
         }
 
         private static CResult ValidationError(string message)

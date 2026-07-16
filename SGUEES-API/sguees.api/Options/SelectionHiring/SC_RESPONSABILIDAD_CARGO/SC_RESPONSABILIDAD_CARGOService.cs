@@ -137,6 +137,7 @@ namespace SGUEES.Services
         private static void NormalizeData(SC_RESPONSABILIDAD_CARGOTable Data)
         {
             Data.NOMBRE_RESPONSABILIDAD = Data.NOMBRE_RESPONSABILIDAD?.Trim();
+            Data.APLICA_DESCRIPTOR = Data.APLICA_DESCRIPTOR?.Trim().ToUpperInvariant();
             Data.ESTADO_RESPONSABILIDAD ??= true;
         }
 
@@ -155,6 +156,12 @@ namespace SGUEES.Services
             if (Data.NOMBRE_RESPONSABILIDAD.Trim().Length > 150)
             {
                 return ValidationError("El nombre de la responsabilidad de cargo no puede superar 150 caracteres.");
+            }
+
+            var aplicaDescriptor = Data.APLICA_DESCRIPTOR?.Trim().ToUpperInvariant();
+            if (aplicaDescriptor != "CORTO" && aplicaDescriptor != "EXTENSO" && aplicaDescriptor != "AMBOS")
+            {
+                return ValidationError("Debe indicar si la responsabilidad aplica al descriptor CORTO, EXTENSO o AMBOS.");
             }
 
             return null;
@@ -206,4 +213,4 @@ namespace SGUEES.Services
         }
     }
 }
-
+

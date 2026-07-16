@@ -1115,9 +1115,10 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
-	getResponsabilidadesCargoLookup(corrDescriptorPuesto: number): Observable<IResult> {
+	getResponsabilidadesCargoLookup(corrDescriptorPuesto: number, formato: string): Observable<IResult> {
 		return this.responsabilidadesCargoRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+			{ Parameter: 'FORMATO', Value: (formato || 'CORTO').trim().toUpperCase() },
 		]);
 	}
 
@@ -1131,6 +1132,7 @@ export class ScDescriptorPuestoService {
 			CORR_DESCRIPTOR_RESPONSABILIDAD: row.CORR_DESCRIPTOR_RESPONSABILIDAD ?? 0,
 			NOMBRE_RESPONSABILIDAD: (row.NOMBRE_RESPONSABILIDAD ?? '').trim() || null,
 			INFORMACION: (row.INFORMACION ?? '').trim() || null,
+			APLICA_DESCRIPTOR: (row.APLICA_DESCRIPTOR ?? 'AMBOS').trim().toUpperCase(),
 			CORR_RESPONSABILIDAD: row.CORR_RESPONSABILIDAD ?? null,
 		};
 

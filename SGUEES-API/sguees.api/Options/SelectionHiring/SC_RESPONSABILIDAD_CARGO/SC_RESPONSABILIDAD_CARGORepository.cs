@@ -115,6 +115,7 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "CORR_RESPONSABILIDAD", Value = Data.CORR_RESPONSABILIDAD, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
                     new CParameter() { ParameterName = "NOMBRE_RESPONSABILIDAD", Value = Data.NOMBRE_RESPONSABILIDAD, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTADO_RESPONSABILIDAD", Value = Data.ESTADO_RESPONSABILIDAD ?? true, DbType = System.Data.DbType.Boolean },
+                    new CParameter() { ParameterName = "APLICA_DESCRIPTOR", Value = Data.APLICA_DESCRIPTOR, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime },
@@ -171,6 +172,7 @@ namespace SGUEES.Repositories
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "NOMBRE_RESPONSABILIDAD", Value = Data.NOMBRE_RESPONSABILIDAD, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "APLICA_DESCRIPTOR", Value = Data.APLICA_DESCRIPTOR, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -337,6 +339,7 @@ namespace SGUEES.Repositories
                   A.CORR_RESPONSABILIDAD,
                   A.NOMBRE_RESPONSABILIDAD,
                   A.ESTADO_RESPONSABILIDAD,
+                  A.APLICA_DESCRIPTOR,
                   A.USUARIO_CREA,
                   A.ESTACION_CREA,
                   A.FECHA_CREA,
@@ -405,4 +408,4 @@ namespace SGUEES.Repositories
         }
     }
 }
-
+

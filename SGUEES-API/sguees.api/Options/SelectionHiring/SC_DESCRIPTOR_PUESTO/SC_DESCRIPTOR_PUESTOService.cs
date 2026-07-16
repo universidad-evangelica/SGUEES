@@ -153,7 +153,23 @@ namespace SGUEES.Services
             }
 
             NormalizeData(Data);
-            return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+            var result = await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+            if (result.ErrorCode != 0)
+            {
+                return result;
+            }
+
+            var seedResponsabilidades = await _responsabilidadCargoService.SeedActivosDesdeCatalogoAsync(
+                Data.CORR_EMPRESA,
+                Data.CORR_DESCRIPTOR_PUESTO,
+                vLOGIN_SISTEMA,
+                vESTACION);
+            if (!string.IsNullOrWhiteSpace(seedResponsabilidades?.ErrorMessage))
+            {
+                result.ErrorMessage = seedResponsabilidades.ErrorMessage.Trim();
+            }
+
+            return result;
         }
 
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
@@ -180,6 +196,16 @@ namespace SGUEES.Services
             Data.OBJETIVO_PUESTO = string.IsNullOrWhiteSpace(Data.OBJETIVO_PUESTO)
                 ? null
                 : Data.OBJETIVO_PUESTO.Trim();
+            Data.NOMBRE_PUESTO = string.IsNullOrWhiteSpace(Data.NOMBRE_PUESTO)
+                ? null
+                : Data.NOMBRE_PUESTO.Trim();
+            Data.NOMBRE_UNIDAD = string.IsNullOrWhiteSpace(Data.NOMBRE_UNIDAD)
+                ? null
+                : Data.NOMBRE_UNIDAD.Trim();
+            Data.DESCRIPCION_IMPACTO_ECONOMICO =
+                string.IsNullOrWhiteSpace(Data.DESCRIPCION_IMPACTO_ECONOMICO)
+                    ? null
+                    : Data.DESCRIPCION_IMPACTO_ECONOMICO.Trim();
             Data.RESPONSABLE = string.IsNullOrWhiteSpace(Data.RESPONSABLE) ? null : Data.RESPONSABLE.Trim();
             Data.FORMATO = NormalizeFormato(Data.FORMATO);
             Data.ESTADO_DESCRIPTOR = string.IsNullOrWhiteSpace(Data.ESTADO_DESCRIPTOR)

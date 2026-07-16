@@ -22,6 +22,40 @@ namespace SGUEES.Repositories
         {
         }
 
+        public async Task<List<SC_IMPACTO_ECONOMICOView>> GetCatalogoDescriptorAsync(int corrEmpresa)
+        {
+            if (corrEmpresa <= 0)
+            {
+                return new List<SC_IMPACTO_ECONOMICOView>();
+            }
+
+            const string sql = @"SELECT
+                  A.CORR_EMPRESA,
+                  A.CORR_IMPACTO_ECONOMICO,
+                  A.DESCRIPCION,
+                  A.ESTADO_IMPACTO_ECONOMICO
+                FROM V_SC_IMPACTO_ECONOMICO A
+                WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+                  AND ISNULL(A.ESTADO_IMPACTO_ECONOMICO, 1) = 1
+                ORDER BY A.DESCRIPCION, A.CORR_IMPACTO_ECONOMICO";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                });
+
+                var response = new List<SC_IMPACTO_ECONOMICOView>().FromDataReader(reader).ToList();
+                reader.Close();
+                return response;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();

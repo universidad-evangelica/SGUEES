@@ -9,7 +9,10 @@ export interface ScDescriptorPuesto {
 	NUM_PERSONAL_CARGO: number | null;
 	OBJETIVO_PUESTO: string;
 	CORR_IMPACTO_ECONOMICO: number | null;
+	DESCRIPCION_IMPACTO_ECONOMICO?: string;
 	CORR_INDUCCION: number | null;
+	NOMBRE_INDUCCION?: string;
+	SEMANAS_INDUCCION?: number | null;
 	RESPONSABLE: string;
 	FORMATO: string;
 	VERSION: number | null;
@@ -76,6 +79,12 @@ export interface ScRiesgoPuestoLookupItem {
 export interface ScResponsabilidadCargoLookupItem {
 	CORR_RESPONSABILIDAD: number;
 	NOMBRE_RESPONSABILIDAD: string;
+	APLICA_DESCRIPTOR: string;
+}
+
+export interface ScImpactoEconomicoLookupItem {
+	CORR_IMPACTO_ECONOMICO: number;
+	DESCRIPCION: string;
 }
 
 export const FORMATO_CORTO = 'CORTO';
