@@ -245,14 +245,6 @@ namespace SGUEES.Services
                 return ValidationError("La responsabilidad de cargo seleccionada esta inactiva.");
             }
 
-            var formatoDescriptor = await _repo.GetFormatoDescriptorAsync(
-                Data.CORR_EMPRESA,
-                Data.CORR_DESCRIPTOR_PUESTO.GetValueOrDefault());
-            if (!EsAplicable(catalog.APLICA_DESCRIPTOR, formatoDescriptor))
-            {
-                return ValidationError("La responsabilidad de cargo no aplica al formato actual del descriptor.");
-            }
-
             Data.APLICA_DESCRIPTOR = NormalizarAplicacion(catalog.APLICA_DESCRIPTOR);
             if (string.IsNullOrWhiteSpace(Data.NOMBRE_RESPONSABILIDAD))
             {

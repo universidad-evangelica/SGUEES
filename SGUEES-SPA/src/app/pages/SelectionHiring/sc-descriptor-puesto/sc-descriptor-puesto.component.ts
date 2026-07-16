@@ -3857,10 +3857,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	guardar(): void {
-		const detalleEnEdicion = this.obtenerDetalleEnEdicion();
-		if (detalleEnEdicion) {
+		const detallesEnEdicion = this.obtenerDetallesEnEdicion();
+		if (detallesEnEdicion.length > 0) {
+			const detalleActual = detallesEnEdicion[0];
+			const detallesAdicionales = detallesEnEdicion.slice(1);
+			const mensajeAdicional = detallesAdicionales.length > 0
+				? ` Tambien hay ediciones pendientes en: ${detallesAdicionales.join(', ')}.`
+				: '';
 			this.notifyFx(
-				`Guarde o cancele la linea en edicion de ${detalleEnEdicion} antes de guardar el descriptor.`,
+				`Guarde o cancele la linea en edicion de ${detalleActual} antes de guardar el descriptor.${mensajeAdicional}`,
 				NotifyType.Warning
 			);
 			return;
@@ -3901,24 +3906,27 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.guardarMttoDescriptor();
 	}
 
-	private obtenerDetalleEnEdicion(): string | null {
-		const detalles: Array<[boolean, string]> = [
-			[this.funcionesClaveEditando, 'Funciones clave'],
-			[this.funcionesSecundariasEditando, 'Funciones secundarias'],
-			[this.kpisEditando, 'Indicadores KPI'],
-			[this.educacionEditando, 'Educacion'],
-			[this.experienciaEditando, 'Experiencia'],
-			[this.competenciasTecnicasEditando, 'Competencias tecnicas'],
-			[this.competenciasConductualesEditando, 'Competencias conductuales'],
-			[this.requerimientosOrganizacionalesEditando, 'Requerimientos organizacionales'],
-			[this.riesgosPuestoEditando, 'Riesgos del puesto'],
-			[this.responsabilidadesCargoEditando, 'Responsabilidades del cargo'],
-			[this.actividadesEditando, 'Actividades'],
-			[this.relacionesInternasEditando, 'Relaciones internas'],
-			[this.relacionesExternasEditando, 'Relaciones externas']
+	private obtenerDetallesEnEdicion(): string[] {
+		const detalles: Array<{ editando: boolean; nombre: string; tabIndex: number }> = [
+			{ editando: this.funcionesClaveEditando, nombre: 'Funciones clave', tabIndex: 1 },
+			{ editando: this.funcionesSecundariasEditando, nombre: 'Funciones secundarias', tabIndex: 2 },
+			{ editando: this.kpisEditando, nombre: 'Indicadores KPI', tabIndex: 3 },
+			{ editando: this.educacionEditando, nombre: 'Educacion', tabIndex: 4 },
+			{ editando: this.experienciaEditando, nombre: 'Experiencia', tabIndex: 4 },
+			{ editando: this.competenciasTecnicasEditando, nombre: 'Competencias tecnicas', tabIndex: 5 },
+			{ editando: this.competenciasConductualesEditando, nombre: 'Competencias conductuales', tabIndex: 5 },
+			{ editando: this.relacionesInternasEditando, nombre: 'Relaciones internas', tabIndex: 6 },
+			{ editando: this.relacionesExternasEditando, nombre: 'Relaciones externas', tabIndex: 6 },
+			{ editando: this.requerimientosOrganizacionalesEditando, nombre: 'Requerimientos organizacionales', tabIndex: 7 },
+			{ editando: this.riesgosPuestoEditando, nombre: 'Riesgos del puesto', tabIndex: 8 },
+			{ editando: this.responsabilidadesCargoEditando, nombre: 'Responsabilidades del cargo', tabIndex: 9 },
+			{ editando: this.actividadesEditando, nombre: 'Actividades', tabIndex: 1 }
 		];
 
-		return detalles.find(([editando]) => editando)?.[1] ?? null;
+		const pendientes = detalles.filter((detalle) => detalle.editando);
+		const tabActual = pendientes.filter((detalle) => detalle.tabIndex === this.subTabIndex);
+		const otrosTabs = pendientes.filter((detalle) => detalle.tabIndex !== this.subTabIndex);
+		return [...tabActual, ...otrosTabs].map((detalle) => detalle.nombre);
 	}
 
 	private guardarMttoDescriptor(): void {
@@ -3927,6 +3935,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 
 		const isAdd = this.banderaMtto === UpdateType.Add;
+		const conservarAvisoSeleccioneTab = this.mostrarAvisoSeleccioneTab;
 		const action = isAdd ? this.service.insert(this.model) : this.service.update(this.model);
 
 		this.loadingVisible = true;
@@ -3947,7 +3956,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.AsignaStatus(UpdateType.Update);
 					this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
 					this.cargarDatosTabs();
-					setTimeout(() => this.syncHeaderForm());
+					setTimeout(() => {
+						this.syncHeaderForm();
+						if (conservarAvisoSeleccioneTab) {
+							this.dejarSinTabSeccionSeleccionado();
+							this.mostrarAvisoSeleccioneTab = true;
+						}
+					});
 
 					this.notifyFx(
 						isAdd ? 'Registro creado con exito!' : 'Registro modificado con exito!',
