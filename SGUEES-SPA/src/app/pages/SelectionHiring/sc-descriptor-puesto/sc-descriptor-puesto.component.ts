@@ -1061,8 +1061,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	get mostrarSeccionesDescriptor(): boolean {
 		return (
-			this.isForm() &&
-			!this.readOnly &&
+			(this.isForm() || this.isConsulta()) &&
 			Number(this.model?.CORR_DESCRIPTOR_PUESTO) > 0
 		);
 	}
