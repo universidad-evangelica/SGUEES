@@ -159,16 +159,6 @@ namespace SGUEES.Services
                 return result;
             }
 
-            var seedResponsabilidades = await _responsabilidadCargoService.SeedActivosDesdeCatalogoAsync(
-                Data.CORR_EMPRESA,
-                Data.CORR_DESCRIPTOR_PUESTO,
-                vLOGIN_SISTEMA,
-                vESTACION);
-            if (!string.IsNullOrWhiteSpace(seedResponsabilidades?.ErrorMessage))
-            {
-                result.ErrorMessage = seedResponsabilidades.ErrorMessage.Trim();
-            }
-
             return result;
         }
 
