@@ -35,12 +35,14 @@ namespace SGUEES.Services
         // Valida y crea el registro de riesgo del puesto con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Completa y valida el ítem contra el catálogo activo.
             var prepare = await PrepareFromCatalogAsync(Data, esNuevo: true);
             if (prepare != null)
             {
                 return prepare;
             }
 
+            // Valida reglas de negocio antes de crear.
             var validation = Validate(Data, esNuevo: true);
             if (validation != null)
             {
@@ -53,6 +55,7 @@ namespace SGUEES.Services
         // Valida y actualiza el registro existente de riesgo del puesto.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Valida reglas de negocio antes de actualizar.
             var validation = Validate(Data, esNuevo: false);
             if (validation != null)
             {
@@ -106,6 +109,7 @@ namespace SGUEES.Services
                     }
                 }
 
+                // Obtiene catálogo activo a sembrar en el descriptor.
                 var catalogo = await _catalogoRepo.GetCatalogoDescriptorAsync(corrEmpresa);
                 var ahora = DateTime.Now;
                 var creados = 0;
@@ -241,6 +245,7 @@ namespace SGUEES.Services
                 return null;
             }
 
+            // Consulta el riesgo en el catálogo maestro.
             var catalogResult = await _catalogoRepo.GetAsync(new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },

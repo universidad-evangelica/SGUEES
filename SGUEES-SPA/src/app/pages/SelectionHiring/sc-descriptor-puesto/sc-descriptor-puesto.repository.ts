@@ -5,6 +5,7 @@ import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { environment } from 'src/environments/environment';
 
+// Acceso HTTP al encabezado SC_DESCRIPTOR_PUESTO e inducción/entrenamiento.
 @Injectable({ providedIn: 'root' })
 export class ScDescriptorPuestoRepository {
 	readonly xController = 'SC_DESCRIPTOR_PUESTO';

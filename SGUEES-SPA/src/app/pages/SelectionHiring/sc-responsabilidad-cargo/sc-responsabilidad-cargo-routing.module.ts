@@ -14,6 +14,7 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { ToastModule } from 'primeng/toast';
 import { ScResponsabilidadCargoComponent } from './sc-responsabilidad-cargo.component';
 
+// Ruta lazy y declaraciones DevExtreme del mantenimiento de responsabilidad de cargo.
 const routes: Routes = [{ path: '', component: ScResponsabilidadCargoComponent }];
 
 @NgModule({

@@ -46,6 +46,7 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/sc-descriptor-puesto|C")]
         public async Task<IActionResult> Post(SC_DESCRIPTOR_PUESTOTable Data)
         {
+            // Completa auditoría de creación y empresa de sesión.
             SetCreateAudit(Data);
 
             var resultado = await _service.CreateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
@@ -57,7 +58,9 @@ namespace SGUEES.Controllers
         [Authorize(Policy = "/sc-descriptor-puesto|U")]
         public async Task<IActionResult> Put(SC_DESCRIPTOR_PUESTOTable Data)
         {
+            // Aplica la llave primaria recibida por query string.
             this.ApplyQueryKeys(Data, nameof(SC_DESCRIPTOR_PUESTOTable.CORR_DESCRIPTOR_PUESTO));
+            // Actualiza auditoría de modificación y empresa de sesión.
             SetUpdateAudit(Data);
 
             var resultado = await _service.UpdateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
@@ -71,8 +74,10 @@ namespace SGUEES.Controllers
         {
             if (Data != null)
             {
+                // Aplica la llave primaria recibida por query string.
                 this.ApplyQueryKeys(Data, nameof(SC_DESCRIPTOR_PUESTOTable.CORR_DESCRIPTOR_PUESTO));
                 Data.CORR_EMPRESA = GetCorrEmpresa();
+                // Actualiza auditoría de modificación y empresa de sesión.
                 SetUpdateAudit(Data);
             }
 
@@ -94,11 +99,15 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Lee CORR_EMPRESA del claim de la sesión autenticada.
+
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
+
+        // Obtiene el identificador de usuario desde los claims.
 
         private string GetUsuario()
         {

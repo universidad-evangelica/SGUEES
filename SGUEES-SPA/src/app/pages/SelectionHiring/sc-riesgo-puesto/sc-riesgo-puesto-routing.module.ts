@@ -14,6 +14,7 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { ToastModule } from 'primeng/toast';
 import { ScRiesgoPuestoComponent } from './sc-riesgo-puesto.component';
 
+// Ruta lazy y declaraciones DevExtreme del mantenimiento de riesgo de puesto.
 const routes: Routes = [{ path: '', component: ScRiesgoPuestoComponent }];
 
 @NgModule({

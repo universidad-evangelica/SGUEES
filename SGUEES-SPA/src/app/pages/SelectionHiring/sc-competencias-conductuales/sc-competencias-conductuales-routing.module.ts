@@ -15,6 +15,7 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 import { ScCompetenciasConductualesComponent } from './sc-competencias-conductuales.component';
 
+// Ruta lazy y declaraciones DevExtreme del mantenimiento de competencias conductuales.
 const routes: Routes = [{ path: '', component: ScCompetenciasConductualesComponent }];
 
 @NgModule({

@@ -47,12 +47,14 @@ namespace SGUEES.Services
         // Valida y crea el registro de descriptor de puesto con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Verifica que la empresa de sesión sea válida.
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
             if (empresaError != null)
             {
                 return empresaError;
             }
 
+            // Aplica reglas de negocio del descriptor.
             var validation = Validate(Data);
             if (validation != null)
             {
@@ -61,6 +63,7 @@ namespace SGUEES.Services
 
             if (Data.CORR_PUESTO.HasValue)
             {
+                // Impide crear si ya hay un descriptor abierto para el puesto.
                 var exists = await _repo.ExistsDescriptorAbiertoPorPuestoAsync(
                     Data.CORR_EMPRESA,
                     Data.CORR_PUESTO.Value,
@@ -73,6 +76,7 @@ namespace SGUEES.Services
                 }
             }
 
+            // Homologa textos, formato y estado antes de persistir.
             NormalizeData(Data);
             var result = await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
             if (result.ErrorCode != 0)
@@ -94,6 +98,7 @@ namespace SGUEES.Services
             {
                 var seedMessages = new List<string>();
 
+                // Precarga requerimientos activos del catálogo en el descriptor nuevo.
                 var seedRequerimientos = await _requerimientoOrganizacionalService.SeedActivosDesdeCatalogoAsync(
                     Data.CORR_EMPRESA,
                     corrDescriptor,
@@ -105,6 +110,7 @@ namespace SGUEES.Services
                     seedMessages.Add(seedRequerimientos.ErrorMessage.Trim());
                 }
 
+                // Precarga riesgos activos del catálogo en el descriptor nuevo.
                 var seedRiesgos = await _riesgoPuestoService.SeedActivosDesdeCatalogoAsync(
                     Data.CORR_EMPRESA,
                     corrDescriptor,
@@ -116,6 +122,7 @@ namespace SGUEES.Services
                     seedMessages.Add(seedRiesgos.ErrorMessage.Trim());
                 }
 
+                // Precarga responsabilidades activas del catálogo en el descriptor nuevo.
                 var seedResponsabilidades = await _responsabilidadCargoService.SeedActivosDesdeCatalogoAsync(
                     Data.CORR_EMPRESA,
                     corrDescriptor,
@@ -139,12 +146,14 @@ namespace SGUEES.Services
         // Valida y actualiza el registro existente de descriptor de puesto.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Verifica que la empresa de sesión sea válida.
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
             if (empresaError != null)
             {
                 return empresaError;
             }
 
+            // Aplica reglas de negocio del descriptor.
             var validation = Validate(Data);
             if (validation != null)
             {
@@ -156,6 +165,7 @@ namespace SGUEES.Services
                 return ValidationError("No se pudo identificar el descriptor de puesto a actualizar.");
             }
 
+            // Homologa textos, formato y estado antes de persistir.
             NormalizeData(Data);
             var result = await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
             if (result.ErrorCode != 0)
@@ -177,6 +187,7 @@ namespace SGUEES.Services
                 return ValidationError("No se recibieron datos del entrenamiento.");
             }
 
+            // Verifica que la empresa de sesión sea válida.
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
             if (empresaError != null)
             {
@@ -203,6 +214,7 @@ namespace SGUEES.Services
                 return ValidationError("El responsable del entrenamiento no puede superar 100 caracteres.");
             }
 
+            // Obtiene inducción activa para copiar snapshot al descriptor.
             var induccion = await _repo.GetInduccionActivaAsync(
                 Data.CORR_EMPRESA,
                 Data.CORR_INDUCCION.Value);
@@ -211,6 +223,7 @@ namespace SGUEES.Services
                 return ValidationError("La induccion seleccionada no existe o se encuentra inactiva.");
             }
 
+            // Copia snapshot de inducción al descriptor antes de persistir.
             Data.NOMBRE_INDUCCION = induccion.NOMBRE_INDUCCION;
             Data.SEMANAS_INDUCCION = induccion.SEMANAS_INDUCCION;
             Data.RESPONSABLE = Data.RESPONSABLE.Trim();
@@ -224,6 +237,7 @@ namespace SGUEES.Services
         // Valida las claves y elimina el registro de descriptor de puesto.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Verifica que la empresa de sesión sea válida.
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
             if (empresaError != null)
             {
@@ -259,6 +273,7 @@ namespace SGUEES.Services
                     ? null
                     : Data.DESCRIPCION_IMPACTO_ECONOMICO.Trim();
             Data.RESPONSABLE = string.IsNullOrWhiteSpace(Data.RESPONSABLE) ? null : Data.RESPONSABLE.Trim();
+            // Unifica alias CORTA/EXTENSA a CORTO/EXTENSO.
             Data.FORMATO = NormalizeFormato(Data.FORMATO);
             Data.ESTADO_DESCRIPTOR = string.IsNullOrWhiteSpace(Data.ESTADO_DESCRIPTOR)
                 ? "BORRADOR"

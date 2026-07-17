@@ -13,6 +13,7 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { ScImpactoEconomicoComponent } from './sc-impacto-economico.component';
 
+// Ruta lazy y declaraciones DevExtreme del mantenimiento de impacto económico.
 const routes: Routes = [{ path: '', component: ScImpactoEconomicoComponent }];
 
 @NgModule({

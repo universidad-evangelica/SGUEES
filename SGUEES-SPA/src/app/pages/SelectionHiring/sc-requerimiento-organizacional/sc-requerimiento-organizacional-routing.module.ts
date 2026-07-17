@@ -14,6 +14,7 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { ToastModule } from 'primeng/toast';
 import { ScRequerimientoOrganizacionalComponent } from './sc-requerimiento-organizacional.component';
 
+// Ruta lazy y declaraciones DevExtreme del mantenimiento de requerimiento organizacional.
 const routes: Routes = [{ path: '', component: ScRequerimientoOrganizacionalComponent }];
 
 @NgModule({

@@ -32,6 +32,7 @@ namespace SGUEES.Services
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             NormalizarCatalogos(Data);
+            // Valida reglas de negocio del registro.
             var validation = Validate(Data);
             if (validation != null)
             {
