@@ -22,6 +22,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Recupera impactos activos ordenados para el lookup del descriptor.
         public async Task<List<SC_IMPACTO_ECONOMICOView>> GetCatalogoDescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)

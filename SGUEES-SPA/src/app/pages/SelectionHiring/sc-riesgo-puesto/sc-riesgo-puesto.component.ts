@@ -58,10 +58,12 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
+	// Construye el filtro por correlativo usado en consultas y eliminaciones.
 	fillParam(xCORR_RIESGO_PUESTO?: number): any {
 		return { CORR_RIESGO_PUESTO: xCORR_RIESGO_PUESTO ?? 0 };
 	}
 
+	// Copia el registro seleccionado o crea el modelo inicial del formulario.
 	override fillData(xModel?: ScRiesgoPuesto): ScRiesgoPuesto {
 		if (xModel !== undefined) {
 			return {
@@ -92,6 +94,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		};
 	}
 
+	// Carga los riesgos y sincroniza el orden y la paginación de la grilla.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -102,6 +105,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Mantiene los registros ordenados por correlativo tras cambios locales.
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -110,6 +114,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		this.models = [...this.models].sort((a, b) => Number(a.CORR_RIESGO_PUESTO) - Number(b.CORR_RIESGO_PUESTO));
 	}
 
+	// Agrega o reemplaza en la grilla la respuesta del guardado.
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
 		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
 			super.aplicarRegistroEnGrid(data, isAdd);
@@ -117,7 +122,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		}
 
 		const record = this.fillData(data as ScRiesgoPuesto);
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof ScRiesgoPuesto;
 
 		if (isAdd) {
 			this.models = [...this.models, record];
@@ -132,17 +137,19 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		this.refrescarGridTrasCarga(isAdd);
 	}
 
+	// Retira de la grilla el registro eliminado sin recargar el catálogo.
 	protected override quitarRegistroDeGrid(keyValue: unknown): void {
 		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
 			super.quitarRegistroDeGrid(keyValue);
 			return;
 		}
 
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof ScRiesgoPuesto;
 		this.models = this.models.filter((item) => item?.[key] !== keyValue);
 		this.refrescarGridTrasCarga(true);
 	}
 
+	// Espera la actualización de Angular antes de refrescar la grilla.
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
@@ -175,6 +182,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Inicializa un registro nuevo solo si existe empresa en sesión.
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -185,6 +193,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Valida el formulario antes de insertar o actualizar.
 	guardar(): void {
 		const formData = this.dataForm?.instance?.option('formData');
 		if (formData) {
@@ -212,6 +221,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Convierte duplicados y relaciones existentes en advertencias controladas.
 	private convertirErrorMttoEnWarning<T>(
 		request: Observable<T>,
 		mensajeDuplicado?: string,
@@ -261,6 +271,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		super.cancelar((item: any) => item.CORR_RIESGO_PUESTO === this.modelUpdate.CORR_RIESGO_PUESTO);
 	}
 
+	// Solicita la eliminación y controla dependencias asociadas.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
@@ -272,6 +283,7 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Cambia el estado del riesgo seleccionado.
 	activar_inactivar(): void {
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}

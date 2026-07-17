@@ -11,6 +11,7 @@ export class ScPerfilPuestoCompetenciasConductualesRepository {
 
 	constructor(private objData: CData) {}
 
+	// Recupera las competencias conductuales asignadas al perfil indicado por los filtros.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
@@ -19,6 +20,7 @@ export class ScPerfilPuestoCompetenciasConductualesRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// El correlativo del vínculo, no el del catálogo, identifica la asignación que se modifica o elimina.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

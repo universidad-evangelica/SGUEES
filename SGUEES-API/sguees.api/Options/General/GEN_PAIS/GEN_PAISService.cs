@@ -15,11 +15,13 @@ namespace SGUEES.Services
 			_repo = repo;
 		}
 
+		// Construye los filtros y solicita al repositorio el listado de países.
 		public async Task<CResult> GetAllAsync(GEN_PAISParam xWhere)
 		{
 			return await _repo.GetAllAsync(BuildParameters(xWhere));
 		}
 
+		// Valida las claves de consulta y solicita al repositorio el detalle de el país.
 		public async Task<CResult> GetAsync(GEN_PAISParam xWhere)
 		{
 			var p = new List<CParameter>
@@ -30,6 +32,7 @@ namespace SGUEES.Services
 			return await _repo.GetAsync(p);
 		}
 
+		// Normaliza y valida el país, comprueba duplicados y solicita su creación.
 		public async Task<CResult> CreateAsync(GEN_PAISTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			var validation = Validate(Data);
@@ -48,6 +51,7 @@ namespace SGUEES.Services
 			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
+		// Normaliza y valida el país, comprueba duplicados y solicita su actualización.
 		public async Task<CResult> UpdateAsync(GEN_PAISTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			if (Data == null)
@@ -76,16 +80,19 @@ namespace SGUEES.Services
 			return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
+		// Valida la identidad de el país y solicita su eliminación al repositorio.
 		public async Task<CResult> DeleteAsync(GEN_PAISTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
+		// Convierte los filtros recibidos en parámetros seguros para el repositorio.
 		private static List<CParameter> BuildParameters(GEN_PAISParam xWhere)
 		{
 			return new List<CParameter>();
 		}
 
+		// Limpia espacios en los textos antes de validar y persistir el registro.
 		private static void NormalizeData(GEN_PAISTable Data)
 		{
 			Data.NOMBRE_PAIS = Data.NOMBRE_PAIS?.Trim();
@@ -94,6 +101,7 @@ namespace SGUEES.Services
 			Data.NOMBRE_CORTO = Data.NOMBRE_CORTO?.Trim();
 		}
 
+		// Valida las claves y campos obligatorios de el país antes de persistirla.
 		private static CResult Validate(GEN_PAISTable Data)
 		{
 			if (Data == null)
@@ -134,6 +142,7 @@ namespace SGUEES.Services
 			return null;
 		}
 
+		// Comprueba que los datos únicos de el país no están registrados en el mismo ámbito.
 		private async Task<CResult> ValidateDuplicatesAsync(GEN_PAISTable Data, bool isUpdate)
 		{
 			var excludeCorrPais = isUpdate ? Data.CORR_PAIS : 0;
@@ -161,11 +170,13 @@ namespace SGUEES.Services
 			return null;
 		}
 
+		// Normaliza el texto para realizar comparaciones consistentes de duplicados.
 		private static string NormalizeText(string value)
 		{
 			return (value ?? string.Empty).Trim().ToUpperInvariant();
 		}
 
+		// Construye una respuesta controlada para informar un conflicto por datos duplicados.
 		private static CResult DuplicateWarning(string message)
 		{
 			return new CResult
@@ -180,6 +191,7 @@ namespace SGUEES.Services
 			};
 		}
 
+		// Construye una respuesta uniforme para devolver errores de validación al cliente.
 		private static CResult ValidationError(string message)
 		{
 			return new CResult

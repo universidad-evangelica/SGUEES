@@ -16,6 +16,7 @@ const ESTADO_FIELD = 'ESTADO_TIPO_PUESTO';
 export class PlaTipoPuestoService {
 	constructor(private repo: PlaTipoPuestoRepository) {}
 
+	// Valida los campos obligatorios y sus longitudes antes de guardar.
 	esValido(model: PlaTipoPuesto, msg: Function): boolean {
 		if (!model.NOMBRE_TIPO_PUESTO || model.NOMBRE_TIPO_PUESTO.trim() === '') {
 			msg('Debe ingresar el nombre del tipo de puesto.', NotifyType.Warning);
@@ -40,6 +41,7 @@ export class PlaTipoPuestoService {
 		return true;
 	}
 
+	// Consulta los tipos de puesto aplicando únicamente los filtros informados.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
@@ -64,6 +66,7 @@ export class PlaTipoPuestoService {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_TIPO_PUESTO', Value: model.CORR_TIPO_PUESTO }]);
 	}
 
+	// Define las columnas y filtros mostrados en la grilla del mantenimiento.
 	getColumns(): any {
 		return [
 			{
@@ -86,6 +89,7 @@ export class PlaTipoPuestoService {
 		};
 	}
 
+	// Define los campos, editores y reglas de validación del formulario.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_TIPO_PUESTO', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -107,6 +111,7 @@ export class PlaTipoPuestoService {
 		];
 	}
 
+	// Traduce los filtros de pantalla al formato esperado por el repositorio.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 
@@ -121,6 +126,7 @@ export class PlaTipoPuestoService {
 export const EMPRESA_WARNING_ERROR_CODE = 4100;
 export const EMPRESA_REGISTRO_ETIQUETA = 'el tipo de puesto';
 
+// Construye el mensaje mostrado cuando el usuario no tiene empresa asignada.
 export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
 	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
 }
@@ -129,6 +135,7 @@ export function isEmpresaWarningResponse(response: any): boolean {
 	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
 }
 
+// Detecta variantes del error de relación con empresa devueltas por la API.
 export function isEmpresaFkErrorMessage(message: string): boolean {
 	const value = `${message ?? ''}`.toLowerCase();
 	return (

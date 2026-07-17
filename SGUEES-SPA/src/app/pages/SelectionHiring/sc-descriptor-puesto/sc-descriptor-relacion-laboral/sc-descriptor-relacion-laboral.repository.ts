@@ -11,6 +11,8 @@ export class ScDescriptorRelacionLaboralRepository {
 
 	constructor(private objData: CData) {}
 
+	// El mismo endpoint atiende relaciones internas y externas; TIPO_RELACION viaja
+	// en los filtros y payloads construidos por el servicio.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
@@ -19,6 +21,7 @@ export class ScDescriptorRelacionLaboralRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// Actualización y eliminación reciben descriptor y relación como llave compuesta.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

@@ -15,6 +15,7 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Consulta todos los niveles académicos de la empresa indicada.
         public async Task<CResult> GetAllAsync(PLA_NIVEL_ACADEMICOParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
@@ -31,6 +32,7 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
+        // Valida y normaliza los datos antes de crear el nivel académico.
         public async Task<CResult> CreateAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -49,6 +51,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida la empresa, los datos y el identificador antes de actualizar.
         public async Task<CResult> UpdateAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -72,6 +75,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Verifica la empresa de sesión antes de solicitar la eliminación.
         public async Task<CResult> DeleteAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -83,6 +87,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida el registro antes de cambiar su estado activo o inactivo.
         public async Task<CResult> ActivarInactivarAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -99,6 +104,7 @@ namespace SGUEES.Services
             return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Construye los parámetros que limitan la consulta a la empresa actual.
         private static List<CParameter> BuildParameters(PLA_NIVEL_ACADEMICOParam xWhere)
         {
             return new List<CParameter>
@@ -107,12 +113,14 @@ namespace SGUEES.Services
             };
         }
 
+        // Limpia el nombre y aplica el estado activo cuando no fue informado.
         private static void NormalizeData(PLA_NIVEL_ACADEMICOTable Data)
         {
             Data.NOMBRE_NIVEL_ACADEMICO = Data.NOMBRE_NIVEL_ACADEMICO?.Trim();
             Data.ESTADO_NIVEL_ACADEMICO ??= true;
         }
 
+        // Comprueba los datos obligatorios y la longitud permitida del nombre.
         private static CResult Validate(PLA_NIVEL_ACADEMICOTable Data)
         {
             if (Data == null)
@@ -133,6 +141,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Devuelve una respuesta controlada cuando la sesión no tiene empresa.
         private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
             if (corrEmpresa > 0)
@@ -152,6 +161,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Crea una respuesta uniforme para los errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult

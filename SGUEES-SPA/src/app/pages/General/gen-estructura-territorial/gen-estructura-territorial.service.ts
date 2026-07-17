@@ -26,6 +26,7 @@ export class GenEstructuraTerritorialService {
 		private repoDistrito: GenDistritoRepository
 	) {}
 
+	// Valida identidad, campos obligatorios y longitudes del país antes de guardarlo.
 	esValidoPais(model: GenPais, msg: Function, isUpdate = false): boolean {
 		if (isUpdate && (!model?.CORR_PAIS || model.CORR_PAIS <= 0)) {
 			msg('No se pudo identificar el país a modificar.', NotifyType.Warning);
@@ -68,6 +69,7 @@ export class GenEstructuraTerritorialService {
 		return true;
 	}
 
+	// Valida las claves jerárquicas y los datos obligatorios del nivel territorial antes de guardarlo.
 	esValidoNivel(
 		nivel: TerritorialNivel,
 		model: GenDepto | GenMunicipio | GenDistrito,
@@ -165,19 +167,23 @@ export class GenEstructuraTerritorialService {
 		return true;
 	}
 
+	// Solicita al repositorio el listado completo de países.
 	getAllPaises(): Observable<IResult> {
 		return this.repo.getAllPaises([]);
 	}
 
+	// Normaliza el país y solicita su creación al repositorio.
 	insertPais(model: GenPais): Observable<IResult> {
 		return this.repo.createPais(this.buildPaisPayload(model));
 	}
 
+	// Normaliza el país y solicita su actualización usando su correlativo.
 	updatePais(model: GenPais): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_PAIS', Value: model.CORR_PAIS }];
 		return this.repo.updatePais(this.buildPaisPayload(model), xWhere);
 	}
 
+	// Normaliza y limita el modelo del país a los campos aceptados por el API.
 	buildPaisPayload(model: GenPais): Pick<GenPais, 'CORR_PAIS' | 'NOMBRE_PAIS' | 'CODIGO_PAIS' | 'NACIONALIDAD' | 'NOMBRE_CORTO'> {
 		return {
 			CORR_PAIS: Number(model.CORR_PAIS) || 0,
@@ -188,19 +194,23 @@ export class GenEstructuraTerritorialService {
 		};
 	}
 
+	// Construye la clave del país y solicita su eliminación al repositorio.
 	deletePais(model: GenPais): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_PAIS', Value: model.CORR_PAIS }];
 		return this.repo.deletePais(xWhere);
 	}
 
+	// Solicita al repositorio la creación del departamento.
 	insertDepto(model: GenDepto): Observable<IResult> {
 		return this.repoDepto.create(model);
 	}
 
+	// Solicita al repositorio la actualización del departamento.
 	updateDepto(model: GenDepto): Observable<IResult> {
 		return this.repoDepto.update(model);
 	}
 
+	// Construye la clave territorial y solicita la eliminación del departamento.
 	deleteDepto(model: GenDepto): Observable<IResult> {
 		const xWhere: IParam[] = [
 			{ Parameter: 'CORR_PAIS', Value: model.CORR_PAIS },
@@ -209,14 +219,17 @@ export class GenEstructuraTerritorialService {
 		return this.repoDepto.delete(xWhere);
 	}
 
+	// Solicita al repositorio la creación del municipio.
 	insertMunicipio(model: GenMunicipio): Observable<IResult> {
 		return this.repoMunicipio.create(model);
 	}
 
+	// Solicita al repositorio la actualización del municipio.
 	updateMunicipio(model: GenMunicipio): Observable<IResult> {
 		return this.repoMunicipio.update(model);
 	}
 
+	// Construye la clave territorial y solicita la eliminación del municipio.
 	deleteMunicipio(model: GenMunicipio): Observable<IResult> {
 		const xWhere: IParam[] = [
 			{ Parameter: 'CORR_PAIS', Value: model.CORR_PAIS },
@@ -226,24 +239,29 @@ export class GenEstructuraTerritorialService {
 		return this.repoMunicipio.delete(xWhere);
 	}
 
+	// Configura el total de países mostrado al pie de la cuadrícula.
 	getPaisListSummary(): any {
 		return {
 			totalItems: [{ column: 'CORR_PAIS', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
 		};
 	}
 
+	// Crea la regla obligatoria reutilizada por los campos del formulario territorial.
 	private requiredRule() {
 		return [{ type: 'required', message: this.requiredMessage }];
 	}
 
+	// Solicita al repositorio la creación del distrito.
 	insertDistrito(model: GenDistrito): Observable<IResult> {
 		return this.repoDistrito.create(model);
 	}
 
+	// Solicita al repositorio la actualización del distrito.
 	updateDistrito(model: GenDistrito): Observable<IResult> {
 		return this.repoDistrito.update(model);
 	}
 
+	// Construye la clave territorial y solicita la eliminación del distrito.
 	deleteDistrito(model: GenDistrito): Observable<IResult> {
 		const xWhere: IParam[] = [
 			{ Parameter: 'CORR_PAIS', Value: model.CORR_PAIS },
@@ -266,6 +284,7 @@ export class GenEstructuraTerritorialService {
 		];
 	}
 
+	// Define los campos, límites y validaciones del formulario de país.
 	getPaisItems(): any[] {
 		return [
 			{
@@ -305,12 +324,14 @@ export class GenEstructuraTerritorialService {
 		];
 	}
 
+	// Configura el contador de registros para una cuadrícula territorial hija.
 	getChildSummary(nombreField: string): any {
 		return {
 			totalItems: [{ column: nombreField, summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
 		};
 	}
 
+	// Construye las columnas del listado de departamentos con sus acciones permitidas.
 	getDeptoColumns(onEditClick: Function, onDeleteClick: Function, canEdit = true, canDelete = true): any[] {
 		return this.getChildColumns(
 			'CORR_DEPTO',
@@ -325,6 +346,7 @@ export class GenEstructuraTerritorialService {
 		);
 	}
 
+	// Construye las columnas del listado de municipios con sus acciones permitidas.
 	getMunicipioColumns(onEditClick: Function, onDeleteClick: Function, canEdit = true, canDelete = true): any[] {
 		return this.getChildColumns(
 			'CORR_MUNICIPIO',
@@ -339,6 +361,7 @@ export class GenEstructuraTerritorialService {
 		);
 	}
 
+	// Construye las columnas del listado de distritos con sus acciones permitidas.
 	getDistritoColumns(onEditClick: Function, onDeleteClick: Function, canEdit = true, canDelete = true): any[] {
 		return this.getChildColumns(
 			'CORR_DISTRITO',
@@ -353,23 +376,28 @@ export class GenEstructuraTerritorialService {
 		);
 	}
 
+	// Define los campos editables del formulario de departamento.
 	getDeptoItems(): any[] {
 		return this.getChildItems('CORR_DEPTO', 'NOMBRE_DEPTO', 'Nombre departamento', 'CODIGO_DEPTO', 'Código departamento');
 	}
 
+	// Define los campos editables del formulario de municipio.
 	getMunicipioItems(): any[] {
 		return this.getChildItems('CORR_MUNICIPIO', 'NOMBRE_MUNICIPIO', 'Nombre municipio', 'CODIGO_MUNICIPIO', 'Código municipio');
 	}
 
+	// Define los campos editables del formulario de distrito.
 	getDistritoItems(): any[] {
 		return this.getChildItems('CORR_DISTRITO', 'NOMBRE_DISTRITO', 'Nombre distrito', null, null);
 	}
 
+	// Genera el título del formulario emergente según el nivel y la operación activa.
 	getPopupTitle(nivel: TerritorialNivel, isAdd: boolean): string {
 		const labels = { depto: 'departamento', municipio: 'municipio', distrito: 'distrito' };
 		return isAdd ? `Nuevo ${labels[nivel]}` : `Editar ${labels[nivel]}`;
 	}
 
+	// Construye la configuración común de columnas y acciones para los niveles territoriales hijos.
 	private getChildColumns(
 		corrField: string,
 		nombreField: string,
@@ -429,6 +457,7 @@ export class GenEstructuraTerritorialService {
 		return columns;
 	}
 
+	// Construye la configuración común de campos y validaciones para los formularios territoriales hijos.
 	private getChildItems(
 		corrField: string,
 		nombreField: string,
@@ -463,14 +492,17 @@ export class GenEstructuraTerritorialService {
 export const EMPRESA_WARNING_ERROR_CODE = 4100;
 export const EMPRESA_REGISTRO_ETIQUETA = 'la estructura territorial';
 
+// Genera el mensaje funcional usado cuando la sesión no tiene una empresa asignada.
 export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
 	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
 }
 
+// Identifica respuestas controladas relacionadas con la empresa de la sesión.
 export function isEmpresaWarningResponse(response: any): boolean {
 	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
 }
 
+// Detecta errores técnicos vinculados con la empresa y permite mostrarlos como advertencia.
 export function isEmpresaFkErrorMessage(message: string): boolean {
 	const value = `${message ?? ''}`.toLowerCase();
 	return (

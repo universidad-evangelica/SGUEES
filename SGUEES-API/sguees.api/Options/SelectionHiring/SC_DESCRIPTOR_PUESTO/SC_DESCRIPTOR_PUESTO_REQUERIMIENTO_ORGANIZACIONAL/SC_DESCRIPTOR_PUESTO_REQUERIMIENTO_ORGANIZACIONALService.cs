@@ -20,16 +20,19 @@ namespace SGUEES.Services
             _catalogoRepo = catalogoRepo;
         }
 
+        // Obtiene el listado de requerimiento organizacional aplicando los filtros recibidos.
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un registro de requerimiento organizacional con los identificadores recibidos.
         public async Task<CResult> GetAsync(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeCorr: true));
         }
 
+        // Valida y crea el registro de requerimiento organizacional con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var prepare = await PrepareFromCatalogAsync(Data, esNuevo: true);
@@ -47,6 +50,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida y actualiza el registro existente de requerimiento organizacional.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var validation = Validate(Data, esNuevo: false);
@@ -58,6 +62,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida las claves y elimina el registro de requerimiento organizacional.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL <= 0)
@@ -68,6 +73,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Agrega al descriptor los registros activos de requerimiento organizacional que aún no existen.
         public async Task<CResult> SeedActivosDesdeCatalogoAsync(int corrEmpresa, int corrDescriptor, string usuario, string estacion)
         {
             if (corrEmpresa <= 0 || corrDescriptor <= 0)
@@ -181,6 +187,7 @@ namespace SGUEES.Services
             }
         }
 
+        // Construye la respuesta exitosa del proceso de carga desde catálogo.
         private static CResult SeedSuccess(int creados)
         {
             return new CResult
@@ -195,6 +202,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Construye una advertencia cuando la carga desde catálogo queda parcial.
         private static CResult SeedWarning(int creados, string message)
         {
             return new CResult
@@ -209,6 +217,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Construye la respuesta de error del proceso de carga desde catálogo.
         private static CResult SeedError(string message)
         {
             return new CResult
@@ -223,6 +232,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Completa y contrasta los datos de requerimiento organizacional con el catálogo activo.
         private async Task<CResult> PrepareFromCatalogAsync(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable Data, bool esNuevo)
         {
             if (!esNuevo || Data.CORR_REQUERIMIENTO_ORGANIZACIONAL is not > 0)
@@ -254,6 +264,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Construye los parámetros de filtrado para consultar requerimiento organizacional.
         private static List<CParameter> BuildParameters(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALParam xWhere, bool includeCorr = false)
         {
             var p = new List<CParameter>
@@ -279,6 +290,7 @@ namespace SGUEES.Services
             return p;
         }
 
+        // Valida las claves y reglas de negocio requeridas para requerimiento organizacional.
         private static CResult Validate(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable Data, bool esNuevo)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -316,6 +328,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Construye un resultado uniforme para reportar errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult

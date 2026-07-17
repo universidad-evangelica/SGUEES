@@ -20,6 +20,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Consulta la vista de KPI de la función con los filtros indicados.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -59,6 +60,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Consulta un registro de KPI de la función según los filtros indicados.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -96,6 +98,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta el registro de KPI de la función y devuelve los datos persistidos.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -140,6 +143,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza el registro de KPI de la función identificado por sus claves.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -194,6 +198,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Elimina el registro de KPI de la función identificado por sus claves.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -234,6 +239,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Construye los parámetros de escritura de KPI de la función, incluida su auditoría.
         private static List<CParameter> BuildWriteParameters(SC_DESCRIPTOR_KPI_FUNCIONTable Data)
         {
             return new List<CParameter>

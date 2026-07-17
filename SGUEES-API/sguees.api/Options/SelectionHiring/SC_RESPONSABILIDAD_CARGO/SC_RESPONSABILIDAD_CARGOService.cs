@@ -31,6 +31,7 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
+        // Devuelve responsabilidades activas y aplicables al descriptor.
         public async Task<CResult> GetCatalogoDescriptorAsync(SC_RESPONSABILIDAD_CARGOParam xWhere)
         {
             var rows = await _repo.GetCatalogoDescriptorAsync(xWhere.CORR_EMPRESA);
@@ -46,6 +47,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Valida nombre, aplicación y unicidad antes de crear.
         public async Task<CResult> CreateAsync(SC_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -70,6 +72,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida la llave y excluye el registro actual al comprobar duplicados.
         public async Task<CResult> UpdateAsync(SC_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -134,6 +137,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Limpia el nombre y estandariza el tipo de descriptor.
         private static void NormalizeData(SC_RESPONSABILIDAD_CARGOTable Data)
         {
             Data.NOMBRE_RESPONSABILIDAD = Data.NOMBRE_RESPONSABILIDAD?.Trim();
@@ -141,6 +145,7 @@ namespace SGUEES.Services
             Data.ESTADO_RESPONSABILIDAD ??= true;
         }
 
+        // Comprueba nombre y valores permitidos de aplicación al descriptor.
         private static CResult Validate(SC_RESPONSABILIDAD_CARGOTable Data)
         {
             if (Data == null)
@@ -167,6 +172,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Verifica que el nombre no pertenezca a otra responsabilidad de la empresa.
         private async Task<CResult> ValidateUniqueNombreAsync(SC_RESPONSABILIDAD_CARGOTable Data, int? excludeCorr)
         {
             var exists = await _repo.ExistsNombreAsync(

@@ -23,6 +23,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Consulta la vista por empresa y devuelve los tipos ordenados.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -66,6 +67,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Recupera un tipo de puesto específico con los filtros recibidos.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -102,6 +104,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta el registro y devuelve la fila creada desde la vista.
         public async Task<CResult> CreateAsync(PLA_TIPO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -161,6 +164,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza el tipo de la empresa y devuelve su estado persistido.
         public async Task<CResult> UpdateAsync(PLA_TIPO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -215,6 +219,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Elimina el tipo por empresa y correlativo, controlando relaciones existentes.
         public async Task<CResult> DeleteAsync(PLA_TIPO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -252,6 +257,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Ejecuta el procedimiento común de cambio de estado y recarga el registro.
         public async Task<CResult> ActivarInactivarAsync(PLA_TIPO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -324,6 +330,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Comprueba si otro tipo de la empresa ya utiliza el mismo nombre.
         public async Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr)
         {
             if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nombre))
@@ -356,6 +363,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Comprueba si otro tipo de la empresa ya utiliza el mismo código.
         public async Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr)
         {
             if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(codigo))
@@ -388,6 +396,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Identifica errores de unicidad reportados con distintos textos por SQL Server.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

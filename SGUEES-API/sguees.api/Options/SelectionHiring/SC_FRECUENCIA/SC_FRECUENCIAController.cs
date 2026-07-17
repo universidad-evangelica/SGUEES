@@ -41,6 +41,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetCORR_FRECUENCIA_SC_DESCRIPTOR_KPI_FUNCION")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        // Provee frecuencias activas para los indicadores del descriptor.
         public async Task<CResult> GetCORR_FRECUENCIA_SC_DESCRIPTOR_KPI_FUNCION([FromQuery] SC_FRECUENCIAParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -49,6 +50,7 @@ namespace SGUEES.Controllers
 
         [HttpPost]
         [Authorize(Policy = "/sc-frecuencia|C")]
+        // Completa auditoría antes de crear la frecuencia.
         public async Task<IActionResult> Post(SC_FRECUENCIATable Data)
         {
             SetCreateAudit(Data);
@@ -59,6 +61,7 @@ namespace SGUEES.Controllers
 
         [HttpPut]
         [Authorize(Policy = "/sc-frecuencia|U")]
+        // Aplica la llave consultada y la auditoría antes de actualizar.
         public async Task<IActionResult> Put(SC_FRECUENCIATable Data)
         {
             this.ApplyQueryKeys(Data, nameof(SC_FRECUENCIATable.CORR_FRECUENCIA));
@@ -100,6 +103,7 @@ namespace SGUEES.Controllers
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
+        // Completa empresa, usuario, estación y fechas del registro nuevo.
         private void SetCreateAudit(SC_FRECUENCIATable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -112,6 +116,7 @@ namespace SGUEES.Controllers
             Data.ESTADO_FRECUENCIA ??= true;
         }
 
+        // Actualiza auditoría sin reemplazar la información de creación.
         private void SetUpdateAudit(SC_FRECUENCIATable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

@@ -11,6 +11,7 @@ export class ScDescriptorFuncionActividadRepository {
 
 	constructor(private objData: CData) {}
 
+	// Consulta actividades por descriptor y función, que en conjunto identifican su registro padre.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
@@ -19,6 +20,8 @@ export class ScDescriptorFuncionActividadRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// Las mutaciones usan las llaves compuestas preparadas por el servicio para evitar afectar
+	// actividades homónimas de otra función.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

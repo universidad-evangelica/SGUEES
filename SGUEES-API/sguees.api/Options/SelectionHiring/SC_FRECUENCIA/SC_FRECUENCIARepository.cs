@@ -325,6 +325,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Recupera frecuencias activas ordenadas para el lookup.
         public async Task<CResult> GetFrecuenciasActivasAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();

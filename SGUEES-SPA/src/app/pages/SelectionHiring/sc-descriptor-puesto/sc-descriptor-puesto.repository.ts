@@ -11,6 +11,8 @@ export class ScDescriptorPuestoRepository {
 
 	constructor(private objData: CData) {}
 
+	// Centraliza el CRUD del descriptor sobre el controlador de Selección y Contratación;
+	// los filtros se envían como IParam porque CData los serializa según el contrato común de la API.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
@@ -27,6 +29,7 @@ export class ScDescriptorPuestoRepository {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// Consulta el catálogo de inducciones mediante la acción diseñada para el lookup del descriptor.
 	getInducciones(): Observable<IResult> {
 		return this.objData.Get(
 			'SC_INDUCCION',
@@ -36,6 +39,7 @@ export class ScDescriptorPuestoRepository {
 		);
 	}
 
+	// Actualiza solo el bloque de entrenamiento y envía el descriptor como condición de la operación.
 	updateEntrenamiento(model: any, corrDescriptorPuesto: number): Observable<IResult> {
 		return this.objData.Put(
 			model,

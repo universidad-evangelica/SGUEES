@@ -14,6 +14,7 @@ const ESTADO_FIELD = 'ESTADO_NIVEL_ACADEMICO';
 export class PlaNivelAcademicoService {
 	constructor(private repo: PlaNivelAcademicoRepository) {}
 
+	// Valida que el nombre obligatorio respete la longitud permitida.
 	esValido(model: PlaNivelAcademico, msg: Function): boolean {
 		if (!model.NOMBRE_NIVEL_ACADEMICO || model.NOMBRE_NIVEL_ACADEMICO.trim() === '') {
 			msg('Debe ingresar el nombre del nivel academico.', NotifyType.Warning);
@@ -28,6 +29,7 @@ export class PlaNivelAcademicoService {
 		return true;
 	}
 
+	// Consulta los niveles aplicando únicamente los filtros informados.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
@@ -52,6 +54,7 @@ export class PlaNivelAcademicoService {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }]);
 	}
 
+	// Define las columnas y filtros mostrados en la grilla del mantenimiento.
 	getColumns(): any {
 		return [
 			{
@@ -80,6 +83,7 @@ export class PlaNivelAcademicoService {
 		};
 	}
 
+	// Define los campos, editores y reglas de validación del formulario.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_NIVEL_ACADEMICO', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -94,6 +98,7 @@ export class PlaNivelAcademicoService {
 		];
 	}
 
+	// Traduce los filtros de pantalla al formato esperado por el repositorio.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

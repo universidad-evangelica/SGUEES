@@ -8,7 +8,9 @@ namespace sguees.Repositories
 {
 	public interface IGEN_DIVISIONRepository : IRepository<GEN_DIVISIONTable>
 	{
+		// Define la consulta del catálogo de divisiones usado por mantenimientos relacionados.
 		Task<CResult> GetDivisionesAsync(List<CParameter> xWhere);
+		// Define la comprobación de duplicados de la división dentro de su ámbito funcional.
 		Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr);
 	}
 }

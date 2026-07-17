@@ -6,10 +6,15 @@ namespace SGUEES.Services
 {
 	public interface IGEN_DEPTOService
 	{
+		// Define la consulta del listado de departamentos según los filtros recibidos.
 		Task<CResult> GetAllAsync(GEN_DEPTOParam xWhere);
+		// Define la consulta de un departamento específica por sus claves.
 		Task<CResult> GetAsync(GEN_DEPTOParam xWhere);
+		// Define la creación validada de un departamento con su información de auditoría.
 		Task<CResult> CreateAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion);
+		// Define la actualización validada de un departamento con su información de auditoría.
 		Task<CResult> UpdateAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion);
+		// Define la eliminación de un departamento identificada por sus claves.
 		Task<CResult> DeleteAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion);
 	}
 }

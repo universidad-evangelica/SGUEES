@@ -11,6 +11,8 @@ export class ScDescriptorPerfilPuestoRepository {
 
 	constructor(private objData: CData) {}
 
+	// Obtiene el perfil padre por descriptor; sus correlativos se reutilizan después
+	// en educación, experiencia y competencias.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
@@ -19,6 +21,7 @@ export class ScDescriptorPerfilPuestoRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// La actualización recibe descriptor y perfil como condiciones para preservar la relación padre.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

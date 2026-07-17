@@ -259,6 +259,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Comprueba si otra competencia de la empresa utiliza el mismo código.
         public async Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr)
         {
             if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(codigo))
@@ -291,6 +292,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Recupera candidatos padre por nivel y estado.
         public async Task<List<SC_COMPETENCIAS_TECNICASView>> GetPadresByNivelAsync(int corrEmpresa, string nivel, bool? soloActivos)
         {
             if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nivel))
@@ -331,6 +333,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Une los tres niveles activos para construir el catálogo del descriptor.
         public async Task<List<SC_COMPETENCIAS_TECNICASView>> GetCatalogoNivel3DescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)
@@ -392,6 +395,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Recupera códigos hermanos para calcular el siguiente sufijo.
         public async Task<List<string>> GetSiblingCodigosLevel3Async(int corrEmpresa, int corrPadre, string parentCodigoPrefix)
         {
             if (corrEmpresa <= 0 || corrPadre <= 0 || string.IsNullOrWhiteSpace(parentCodigoPrefix))
@@ -430,6 +434,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Determina si una competencia conserva nodos hijos asociados.
         public async Task<bool> HasChildrenAsync(int corrEmpresa, int corrCompetencia)
         {
             if (corrEmpresa <= 0 || corrCompetencia <= 0)

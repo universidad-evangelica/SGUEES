@@ -14,6 +14,7 @@ const ESTADO_FIELD = 'ESTADO_DISPONIBILIDAD_HORARIO';
 export class ScDisponibilidadHorarioService {
 	constructor(private repo: ScDisponibilidadHorarioRepository) {}
 
+	// Valida el nombre obligatorio y su longitud antes del guardado.
 	esValido(model: ScDisponibilidadHorario, msg: Function): boolean {
 		if (!model.NOMBRE_DISPONIBILIDAD_HORARIO || model.NOMBRE_DISPONIBILIDAD_HORARIO.trim() === '') {
 			msg('Debe ingresar el nombre de la disponibilidad de horario.', NotifyType.Warning);
@@ -80,6 +81,7 @@ export class ScDisponibilidadHorarioService {
 		};
 	}
 
+	// Define los campos y reglas del formulario de disponibilidad.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_DISPONIBILIDAD_HORARIO', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -94,6 +96,7 @@ export class ScDisponibilidadHorarioService {
 		];
 	}
 
+	// Traduce los filtros del componente al formato esperado por la API.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

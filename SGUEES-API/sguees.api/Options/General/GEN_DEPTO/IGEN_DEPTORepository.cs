@@ -8,6 +8,7 @@ namespace SGUEES.Repositories
 {
 	public interface IGEN_DEPTORepository : IRepository<GEN_DEPTOTable>
 	{
+		// Define la comprobación de duplicados del departamento dentro de su ámbito funcional.
 		Task<bool> ExistsDeptoByFieldAsync(int corrPais, string fieldName, string normalizedValue, int excludeCorrPais, int excludeCorrDepto);
 	}
 }

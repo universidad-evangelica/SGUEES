@@ -325,6 +325,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Recupera riesgos activos para el lookup del descriptor.
         public async Task<List<SC_RIESGO_PUESTOView>> GetCatalogoDescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)
@@ -365,6 +366,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Comprueba si otro riesgo utiliza el mismo nombre.
         public async Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr)
         {
             if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nombre))

@@ -67,6 +67,7 @@ export class ScDescriptorPuestoService {
 		private relacionLaboralRepo: ScDescriptorRelacionLaboralRepository
 	) {}
 
+	// Valida los campos obligatorios del encabezado y los límites que no dependen del estado visual del formulario.
 	esValido(model: ScDescriptorPuesto, msg: Function): boolean {
 		if (!model.FORMATO || model.FORMATO.trim() === '') {
 			msg('Debe seleccionar el tipo de formato.', NotifyType.Warning);
@@ -101,6 +102,8 @@ export class ScDescriptorPuestoService {
 		return true;
 	}
 
+	// Busca otro descriptor del mismo puesto cuyo estado impida crear una versión paralela.
+	// En edición excluye el registro actual para no reportarlo como conflicto consigo mismo.
 	buscarDescriptorBloqueoPorPuesto(
 		model: ScDescriptorPuesto,
 		models: ScDescriptorPuesto[],
@@ -174,6 +177,7 @@ export class ScDescriptorPuestoService {
 		return this.repo.get([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: param.CORR_DESCRIPTOR_PUESTO }]);
 	}
 
+	// Normaliza las fechas del modelo al contrato date-only esperado por la API antes de guardar.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(this.toApiPayload(model));
 	}
@@ -188,6 +192,8 @@ export class ScDescriptorPuestoService {
 		return this.repo.getInducciones();
 	}
 
+	// El endpoint de entrenamiento recibe únicamente inducción y responsable; el identificador
+	// del descriptor viaja como parámetro de la operación específica.
 	actualizarEntrenamiento(
 		corrDescriptorPuesto: number,
 		corrInduccion: number | null,
@@ -418,6 +424,7 @@ export class ScDescriptorPuestoService {
 		];
 	}
 
+	// Evita que la zona horaria convierta fechas de negocio en el día anterior al serializar el payload.
 	private toApiPayload(model: ScDescriptorPuesto): any {
 		return {
 			...model,
@@ -529,6 +536,8 @@ export class ScDescriptorPuestoService {
 		}
 	}
 
+	// Los lookups de detalles envían las llaves de la relación y los discriminadores de tipo
+	// para que cada grid reciba solo las filas que le corresponden.
 	getFuncionesSecundariasLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.funcionRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -564,6 +573,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Construye un payload uniforme para relaciones internas y externas, y decide entre alta
+	// y actualización por la existencia de la llave del detalle.
 	persistirRelacionLaboral(
 		corrDescriptorPuesto: number,
 		relacion: ScDescriptorRelacionLaboral,
@@ -588,6 +599,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Las eliminaciones validan las llaves antes de llamar al repositorio y devuelven un IResult
+	// controlado para que el componente trate el error igual que una respuesta de la API.
 	eliminarRelacionLaboral(
 		corrDescriptorPuesto: number,
 		corrRelacionLaboral: number
@@ -618,6 +631,7 @@ export class ScDescriptorPuestoService {
 		return true;
 	}
 
+	// Conserva el tipo de función en el payload para que funciones clave y secundarias compartan el flujo CRUD.
 	persistirFuncion(
 		corrDescriptorPuesto: number,
 		funcion: ScDescriptorFuncion,
@@ -672,6 +686,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Una actividad requiere las dos llaves padre; no se envía mientras la función siga siendo temporal.
 	persistirActividad(
 		corrDescriptorPuesto: number,
 		corrFuncion: number,
@@ -744,6 +759,7 @@ export class ScDescriptorPuestoService {
 		return this.kpiRepo.getAll([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto }]);
 	}
 
+	// Normaliza los campos opcionales del KPI y usa su correlativo para seleccionar alta o actualización.
 	persistirKpi(corrDescriptorPuesto: number, kpi: ScDescriptorKpiFuncion): Observable<IResult> {
 		const corrDescriptor = Number(corrDescriptorPuesto);
 		const payload = {
@@ -803,6 +819,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Los payloads de Perfil incluyen descriptor y perfil porque sus detalles dependen de ambas llaves.
+	// Los códigos de catálogo se normalizan en mayúsculas y los textos vacíos se envían como null.
 	persistirEducacion(
 		corrDescriptorPuesto: number,
 		corrPerfilPuesto: number,
@@ -934,6 +952,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Las competencias conservan la llave del catálogo y el texto descriptivo capturado en el grid;
+	// la actualización se identifica por la llave única del vínculo con el perfil.
 	persistirCompetenciaTecnica(
 		corrDescriptorPuesto: number,
 		corrPerfilPuesto: number,
@@ -1041,6 +1061,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Requerimientos, riesgos y responsabilidades convierten selecciones de catálogo en vínculos
+	// del descriptor, manteniendo null para valores realmente opcionales.
 	persistirRequerimientoOrganizacional(
 		corrDescriptorPuesto: number,
 		row: ScDescriptorPuestoRequerimientoOrganizacional
@@ -1183,6 +1205,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// El perfil funciona como registro padre de varios detalles. La bandera existe evita duplicarlo
+	// cuando ya cuenta con correlativo, pero permite crearlo al guardar por primera vez.
 	persistirPerfil(
 		corrDescriptorPuesto: number,
 		perfil: ScDescriptorPerfilPuesto,
@@ -1212,6 +1236,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Sincroniza eliminaciones y filas activas en orden. Para funciones clave recién creadas,
+	// encadena después sus actividades pendientes usando el correlativo devuelto por la API.
 	private sincronizarFunciones(
 		corrDescriptorPuesto: number,
 		funciones: ScDescriptorFuncion[],
@@ -1334,6 +1360,8 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
+	// Ejecuta en una sola espera las altas, actualizaciones y eliminaciones de actividades,
+	// y propaga la primera respuesta fallida para conservar el detalle del error.
 	guardarActividadesFuncion(
 		corrDescriptorPuesto: number,
 		corrFuncion: number,

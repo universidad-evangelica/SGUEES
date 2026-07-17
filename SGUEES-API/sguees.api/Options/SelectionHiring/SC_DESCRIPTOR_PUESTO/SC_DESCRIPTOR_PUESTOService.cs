@@ -26,11 +26,13 @@ namespace SGUEES.Services
             _responsabilidadCargoService = responsabilidadCargoService;
         }
 
+        // Obtiene el listado de descriptor de puesto aplicando los filtros recibidos.
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_PUESTOParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un registro de descriptor de puesto con los identificadores recibidos.
         public async Task<CResult> GetAsync(SC_DESCRIPTOR_PUESTOParam xWhere)
         {
             var p = new List<CParameter>
@@ -42,6 +44,7 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
+        // Valida y crea el registro de descriptor de puesto con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -133,6 +136,7 @@ namespace SGUEES.Services
             return result;
         }
 
+        // Valida y actualiza el registro existente de descriptor de puesto.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -162,6 +166,7 @@ namespace SGUEES.Services
             return result;
         }
 
+        // Valida y persiste los datos de entrenamiento asociados al descriptor.
         public async Task<CResult> ActualizarEntrenamientoAsync(
             SC_DESCRIPTOR_PUESTOTable Data,
             string vLOGIN_SISTEMA,
@@ -216,6 +221,7 @@ namespace SGUEES.Services
             return await _repo.ActualizarEntrenamientoAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida las claves y elimina el registro de descriptor de puesto.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -227,6 +233,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Construye los parámetros de filtrado para consultar descriptor de puesto.
         private static List<CParameter> BuildParameters(SC_DESCRIPTOR_PUESTOParam xWhere)
         {
             return new List<CParameter>
@@ -235,6 +242,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Normaliza textos, fechas y valores opcionales antes de validar el descriptor.
         private static void NormalizeData(SC_DESCRIPTOR_PUESTOTable Data)
         {
             Data.OBJETIVO_PUESTO = string.IsNullOrWhiteSpace(Data.OBJETIVO_PUESTO)
@@ -258,6 +266,7 @@ namespace SGUEES.Services
             Data.VERSION ??= 1;
         }
 
+        // Valida las claves y reglas de negocio requeridas para descriptor de puesto.
         private static CResult Validate(SC_DESCRIPTOR_PUESTOTable Data)
         {
             if (Data == null)
@@ -298,6 +307,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Convierte el formato del descriptor a su valor canónico permitido.
         private static string NormalizeFormato(string formato)
         {
             if (string.IsNullOrWhiteSpace(formato))
@@ -314,6 +324,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Valida que la empresa recibida corresponda a una sesión válida.
         private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
             if (corrEmpresa <= 0)
@@ -324,6 +335,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Construye un resultado uniforme para reportar errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult

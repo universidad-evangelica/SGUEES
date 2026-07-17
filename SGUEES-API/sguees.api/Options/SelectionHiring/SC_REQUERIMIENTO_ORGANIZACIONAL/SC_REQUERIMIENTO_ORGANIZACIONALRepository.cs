@@ -325,6 +325,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Comprueba si otro requerimiento utiliza la misma descripción.
         public async Task<bool> ExistsDescripcionAsync(int corrEmpresa, string descripcion, int excludeCorr)
         {
             if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(descripcion))
@@ -357,6 +358,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Recupera requerimientos activos para el lookup del descriptor.
         public async Task<List<SC_REQUERIMIENTO_ORGANIZACIONALView>> GetCatalogoDescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)

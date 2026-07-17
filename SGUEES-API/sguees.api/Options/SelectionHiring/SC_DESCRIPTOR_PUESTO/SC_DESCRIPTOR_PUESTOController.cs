@@ -23,6 +23,7 @@ namespace SGUEES.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(_service));
         }
 
+        // Obtiene el listado de descriptor de puesto aplicando los filtros recibidos.
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> GetAll([FromQuery] SC_DESCRIPTOR_PUESTOParam Data)
@@ -31,6 +32,7 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Obtiene un registro de descriptor de puesto con los identificadores recibidos.
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> Get([FromQuery] SC_DESCRIPTOR_PUESTOParam Data)
@@ -39,6 +41,7 @@ namespace SGUEES.Controllers
             return await _service.GetAsync(Data);
         }
 
+        // Crea un registro de descriptor de puesto con la auditoría de la sesión.
         [HttpPost]
         [Authorize(Policy = "/sc-descriptor-puesto|C")]
         public async Task<IActionResult> Post(SC_DESCRIPTOR_PUESTOTable Data)
@@ -49,6 +52,7 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Actualiza el registro de descriptor de puesto y su auditoría de modificación.
         [HttpPut]
         [Authorize(Policy = "/sc-descriptor-puesto|U")]
         public async Task<IActionResult> Put(SC_DESCRIPTOR_PUESTOTable Data)
@@ -60,6 +64,7 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Actualiza los datos de entrenamiento del descriptor con auditoría de sesión.
         [HttpPut("ActualizarEntrenamiento")]
         [Authorize(Policy = "/sc-descriptor-puesto|U")]
         public async Task<IActionResult> ActualizarEntrenamiento(SC_DESCRIPTOR_PUESTOTable Data)
@@ -78,6 +83,7 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Elimina el registro de descriptor de puesto solicitado para la empresa de la sesión.
         [HttpDelete]
         [Authorize(Policy = "/sc-descriptor-puesto|D")]
         public async Task<IActionResult> Delete([FromQuery] SC_DESCRIPTOR_PUESTOTable Data)
@@ -99,6 +105,7 @@ namespace SGUEES.Controllers
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
+        // Completa los datos de auditoría requeridos para una creación.
         private void SetCreateAudit(SC_DESCRIPTOR_PUESTOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -112,6 +119,7 @@ namespace SGUEES.Controllers
             Data.VERSION ??= 1;
         }
 
+        // Completa los datos de auditoría requeridos para una actualización.
         private void SetUpdateAudit(SC_DESCRIPTOR_PUESTOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

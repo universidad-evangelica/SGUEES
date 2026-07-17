@@ -11,6 +11,8 @@ export class ScPerfilPuestoCompetenciasTecnicasRepository {
 
 	constructor(private objData: CData) {}
 
+	// Recupera las competencias técnicas vinculadas al perfil; el servicio agrega las llaves padre
+	// y prepara los datos descriptivos del catálogo.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
@@ -19,6 +21,7 @@ export class ScPerfilPuestoCompetenciasTecnicasRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// La llave única del vínculo se envía como condición para actualizar o eliminar la asignación exacta.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

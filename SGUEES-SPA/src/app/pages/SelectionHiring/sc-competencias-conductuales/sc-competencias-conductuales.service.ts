@@ -14,6 +14,7 @@ const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_CONDUCTUALES';
 export class ScCompetenciasConductualesService {
 	constructor(private repo: ScCompetenciasConductualesRepository) {}
 
+	// Valida tipo de puesto, nombre y descripción antes del guardado.
 	esValido(model: ScCompetenciasConductuales, msg: Function): boolean {
 		if (!model.CORR_TIPO_PUESTO || model.CORR_TIPO_PUESTO <= 0) {
 			msg('Debe seleccionar el tipo de puesto.', NotifyType.Warning);
@@ -101,6 +102,7 @@ export class ScCompetenciasConductualesService {
 		};
 	}
 
+	// Define los campos y reglas del formulario de competencia conductual.
 	getItems(): any {
 		return [
 			{
@@ -151,6 +153,7 @@ export class ScCompetenciasConductualesService {
 		];
 	}
 
+	// Traduce los filtros del componente al formato esperado por la API.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

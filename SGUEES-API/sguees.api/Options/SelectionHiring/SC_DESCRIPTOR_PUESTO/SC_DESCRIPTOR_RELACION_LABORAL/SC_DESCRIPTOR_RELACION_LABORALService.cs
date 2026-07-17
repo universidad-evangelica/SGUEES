@@ -15,16 +15,19 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Obtiene el listado de relación laboral aplicando los filtros recibidos.
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_RELACION_LABORALParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un registro de relación laboral con los identificadores recibidos.
         public async Task<CResult> GetAsync(SC_DESCRIPTOR_RELACION_LABORALParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeRelacion: true));
         }
 
+        // Valida y crea el registro de relación laboral con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_RELACION_LABORALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var validation = Validate(Data);
@@ -37,6 +40,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida y actualiza el registro existente de relación laboral.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_RELACION_LABORALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var validation = Validate(Data);
@@ -49,6 +53,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida las claves y elimina el registro de relación laboral.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_RELACION_LABORALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_PUESTO <= 0 || Data.CORR_RELACION_LABORAL <= 0)
@@ -59,6 +64,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Construye los parámetros de filtrado para consultar relación laboral.
         private static List<CParameter> BuildParameters(SC_DESCRIPTOR_RELACION_LABORALParam xWhere, bool includeRelacion = false)
         {
             var p = new List<CParameter>
@@ -84,6 +90,7 @@ namespace SGUEES.Services
             return p;
         }
 
+        // Valida las claves y reglas de negocio requeridas para relación laboral.
         private static CResult Validate(SC_DESCRIPTOR_RELACION_LABORALTable Data)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -120,6 +127,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Normaliza el tipo de relación laboral antes de consultar o persistir.
         private static void NormalizeTipoRelacion(SC_DESCRIPTOR_RELACION_LABORALTable Data)
         {
             Data.TIPO_RELACION = string.IsNullOrWhiteSpace(Data.TIPO_RELACION)
@@ -131,6 +139,7 @@ namespace SGUEES.Services
                 : Data.MOTIVO_RELACION.Trim();
         }
 
+        // Construye un resultado uniforme para reportar errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult

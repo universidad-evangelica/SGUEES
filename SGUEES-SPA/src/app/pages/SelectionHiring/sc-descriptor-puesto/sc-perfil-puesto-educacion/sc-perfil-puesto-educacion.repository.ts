@@ -11,6 +11,7 @@ export class ScPerfilPuestoEducacionRepository {
 
 	constructor(private objData: CData) {}
 
+	// Consulta educación mediante las llaves del descriptor y del perfil que la contiene.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
@@ -19,6 +20,7 @@ export class ScPerfilPuestoEducacionRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// Las condiciones IParam incluyen la llave compuesta completa para modificar o eliminar una sola fila.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

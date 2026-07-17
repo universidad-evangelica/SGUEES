@@ -20,6 +20,7 @@ namespace SGUEES.Repositories
 		{
 		}
 
+		// Consulta la vista de municipios aplicando el contexto de empresa y devuelve el listado ordenado.
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -59,6 +60,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Consulta un municipio por sus claves y devuelve el primer registro coincidente.
 		public async Task<CResult> GetAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -96,6 +98,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Consulta el catálogo de municipios requerido por otros mantenimientos y ordena sus resultados.
 		public async Task<CResult> GetMunicipiosByCodigoDeptoAsync(string codigoDepto)
 		{
 			CResult objResultado = new();
@@ -166,6 +169,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Inserta el municipio, recupera el registro creado y normaliza errores de clave duplicada.
 		public async Task<CResult> CreateAsync(GEN_MUNICIPIOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -227,6 +231,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Actualiza el municipio por sus claves y devuelve el registro resultante.
 		public async Task<CResult> UpdateAsync(GEN_MUNICIPIOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -283,6 +288,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Elimina el municipio por sus claves y convierte restricciones relacionadas en un resultado controlado.
 		public async Task<CResult> DeleteAsync(GEN_MUNICIPIOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -321,6 +327,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Comprueba si ya existe un municipio con el valor normalizado, excluyendo el registro en edición.
 		public Task<bool> ExistsMunicipioByFieldAsync(int corrPais, int corrDepto, string fieldName, string normalizedValue, int excludeCorrPais, int excludeCorrDepto, int excludeCorrMunicipio)
 		{
 			if (!IsAllowedMunicipioField(fieldName) || string.IsNullOrWhiteSpace(normalizedValue))
@@ -355,6 +362,7 @@ namespace SGUEES.Repositories
 			return ExistsByQueryAsync(sql, parameters);
 		}
 
+		// Ejecuta la consulta de existencia y garantiza el cierre de la conexión utilizada.
 		private async Task<bool> ExistsByQueryAsync(string sql, List<CParameter> parameters)
 		{
 			try
@@ -370,9 +378,11 @@ namespace SGUEES.Repositories
 			}
 		}
 
+		// Restringe los campos del municipio permitidos en la consulta dinámica de duplicados.
 		private static bool IsAllowedMunicipioField(string fieldName) =>
 			fieldName is "NOMBRE_MUNICIPIO" or "CODIGO_MUNICIPIO";
 
+		// Reconoce excepciones de claves únicas para devolver un mensaje funcional en lugar del error técnico.
 		private static bool IsDuplicateKeyError(Exception e)
 		{
 			return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

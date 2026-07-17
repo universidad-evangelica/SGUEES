@@ -20,6 +20,7 @@ namespace SGUEES.Services
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Devuelve únicamente frecuencias activas de la empresa.
         public async Task<CResult> GetFrecuenciasActivasAsync(SC_FRECUENCIAParam xWhere)
         {
             var p = new List<CParameter>
@@ -41,6 +42,7 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
+        // Valida empresa y nombre antes de crear la frecuencia.
         public async Task<CResult> CreateAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -59,6 +61,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida la llave y normaliza el nombre antes de actualizar.
         public async Task<CResult> UpdateAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -117,12 +120,14 @@ namespace SGUEES.Services
             };
         }
 
+        // Limpia el nombre y aplica el estado activo predeterminado.
         private static void NormalizeData(SC_FRECUENCIATable Data)
         {
             Data.NOMBRE_FRECUENCIA = Data.NOMBRE_FRECUENCIA?.Trim();
             Data.ESTADO_FRECUENCIA ??= true;
         }
 
+        // Comprueba el nombre obligatorio y su longitud máxima.
         private static CResult Validate(SC_FRECUENCIATable Data)
         {
             if (Data == null)

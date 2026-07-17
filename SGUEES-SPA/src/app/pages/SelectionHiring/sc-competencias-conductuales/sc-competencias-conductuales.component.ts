@@ -97,12 +97,14 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		return vRow[0].CORR_TIPO_PUESTO;
 	}
 
+	// Construye el filtro por correlativo usado en consultas y eliminaciones.
 	fillParam(xCORR_COMPETENCIAS_CONDUCTUALES?: number): any {
 		return {
 			CORR_COMPETENCIAS_CONDUCTUALES: xCORR_COMPETENCIAS_CONDUCTUALES ?? 0,
 		};
 	}
 
+	// Copia el registro seleccionado o crea el modelo inicial del formulario.
 	override fillData(xModel?: ScCompetenciasConductuales): ScCompetenciasConductuales {
 		if (xModel !== undefined) {
 			return {
@@ -138,6 +140,7 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		};
 	}
 
+	// Carga las competencias y sincroniza el orden y la paginación de la grilla.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -148,6 +151,7 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		});
 	}
 
+	// Mantiene los registros ordenados por correlativo tras cambios locales.
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -158,6 +162,7 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		);
 	}
 
+	// Agrega o reemplaza en la grilla la respuesta del guardado.
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
 		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
 			super.aplicarRegistroEnGrid(data, isAdd);
@@ -165,7 +170,7 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		}
 
 		const record = this.fillData(data as ScCompetenciasConductuales);
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof ScCompetenciasConductuales;
 
 		if (isAdd) {
 			this.models = [...this.models, record];
@@ -182,23 +187,26 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		this.refrescarGridTrasCarga(isAdd);
 	}
 
+	// Retira de la grilla el registro eliminado sin recargar el catálogo.
 	protected override quitarRegistroDeGrid(keyValue: unknown): void {
 		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
 			super.quitarRegistroDeGrid(keyValue);
 			return;
 		}
 
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof ScCompetenciasConductuales;
 		this.models = this.models.filter((item) => item?.[key] !== keyValue);
 		this.refrescarGridTrasCarga(true);
 	}
 
+	// Espera la actualización de Angular antes de refrescar la grilla.
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
 		}, 0);
 	}
 
+	// Abre el registro seleccionado en modo consulta.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -213,6 +221,7 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		});
 	}
 
+	// Prepara el registro seleccionado y habilita sus campos editables.
 	onEditClick(e: any): void {
 		if (!e?.row?.data) {
 			return;
@@ -228,6 +237,7 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		});
 	}
 
+	// Inicializa un registro nuevo solo si existe empresa en sesión.
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -247,11 +257,13 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		}
 	}
 
+	// Marca el lookup como inválido cuando no se seleccionó un tipo de puesto.
 	private actualizarEstadoValidacionLookup(): void {
 		const value = Number(this.model?.CORR_TIPO_PUESTO);
 		this.tipoPuestoInvalido = Number.isNaN(value) || value <= 0;
 	}
 
+	// Valida formulario y lookup antes de insertar o actualizar.
 	guardar(): void {
 		const formData = this.dataForm?.instance?.option('formData');
 		if (formData) {
@@ -281,6 +293,7 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		});
 	}
 
+	// Convierte duplicados y relaciones existentes en advertencias controladas.
 	private convertirErrorMttoEnWarning<T>(
 		request: Observable<T>,
 		mensajeDuplicado?: string,
@@ -331,6 +344,7 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		super.cancelar((item: any) => item.CORR_COMPETENCIAS_CONDUCTUALES === this.modelUpdate.CORR_COMPETENCIAS_CONDUCTUALES);
 	}
 
+	// Solicita la eliminación y controla dependencias asociadas.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
@@ -342,6 +356,7 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 		});
 	}
 
+	// Cambia el estado de la competencia seleccionada.
 	activar_inactivar(): void {
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}

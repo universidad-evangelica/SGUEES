@@ -25,6 +25,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetCORR_INDUCCION_SC_DESCRIPTOR_PUESTO")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        // Provee inducciones activas para el descriptor.
         public async Task<CResult> GetCORR_INDUCCION_SC_DESCRIPTOR_PUESTO(
             [FromQuery] SC_INDUCCIONParam Data)
         {
@@ -50,6 +51,7 @@ namespace SGUEES.Controllers
 
         [HttpPost]
         [Authorize(Policy = "/sc-induccion|C")]
+        // Completa auditoría antes de crear la inducción.
         public async Task<IActionResult> Post(SC_INDUCCIONTable Data)
         {
             SetCreateAudit(Data);
@@ -60,6 +62,7 @@ namespace SGUEES.Controllers
 
         [HttpPut]
         [Authorize(Policy = "/sc-induccion|U")]
+        // Aplica la llave consultada y la auditoría antes de actualizar.
         public async Task<IActionResult> Put(SC_INDUCCIONTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(SC_INDUCCIONTable.CORR_INDUCCION));
@@ -101,6 +104,7 @@ namespace SGUEES.Controllers
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
+        // Completa empresa, usuario, estación y fechas del registro nuevo.
         private void SetCreateAudit(SC_INDUCCIONTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -113,6 +117,7 @@ namespace SGUEES.Controllers
             Data.ESTADO_INDUCCION ??= true;
         }
 
+        // Actualiza auditoría sin reemplazar la información de creación.
         private void SetUpdateAudit(SC_INDUCCIONTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

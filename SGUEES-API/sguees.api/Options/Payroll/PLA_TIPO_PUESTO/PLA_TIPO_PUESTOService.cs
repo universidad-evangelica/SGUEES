@@ -15,6 +15,7 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Consulta todos los tipos de puesto de la empresa indicada.
         public async Task<CResult> GetAllAsync(PLA_TIPO_PUESTOParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
@@ -31,6 +32,7 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
+        // Valida datos y unicidad antes de crear el tipo de puesto.
         public async Task<CResult> CreateAsync(PLA_TIPO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -62,6 +64,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida datos, identificador y unicidad antes de actualizar.
         public async Task<CResult> UpdateAsync(PLA_TIPO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -98,6 +101,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Verifica la empresa de sesión antes de solicitar la eliminación.
         public async Task<CResult> DeleteAsync(PLA_TIPO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -109,6 +113,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida el registro antes de cambiar su estado activo o inactivo.
         public async Task<CResult> ActivarInactivarAsync(PLA_TIPO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -125,6 +130,7 @@ namespace SGUEES.Services
             return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Construye los parámetros que limitan la consulta a la empresa actual.
         private static List<CParameter> BuildParameters(PLA_TIPO_PUESTOParam xWhere)
         {
             return new List<CParameter>
@@ -133,6 +139,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Limpia nombre y código, y aplica el estado activo por defecto.
         private static void NormalizeData(PLA_TIPO_PUESTOTable Data)
         {
             Data.NOMBRE_TIPO_PUESTO = Data.NOMBRE_TIPO_PUESTO?.Trim();
@@ -140,6 +147,7 @@ namespace SGUEES.Services
             Data.ESTADO_TIPO_PUESTO ??= true;
         }
 
+        // Comprueba campos obligatorios y longitudes antes de guardar.
         private static CResult Validate(PLA_TIPO_PUESTOTable Data)
         {
             if (Data == null)
@@ -170,6 +178,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Verifica que el código no pertenezca a otro registro de la empresa.
         private async Task<CResult> ValidateUniqueCodigoAsync(PLA_TIPO_PUESTOTable Data, int? excludeCorr)
         {
             var exists = await _repo.ExistsCodigoAsync(
@@ -182,6 +191,7 @@ namespace SGUEES.Services
                 : null;
         }
 
+        // Verifica que el nombre no pertenezca a otro registro de la empresa.
         private async Task<CResult> ValidateUniqueNombreAsync(PLA_TIPO_PUESTOTable Data, int? excludeCorr)
         {
             var exists = await _repo.ExistsNombreAsync(
@@ -194,6 +204,7 @@ namespace SGUEES.Services
                 : null;
         }
 
+        // Devuelve una respuesta controlada cuando la sesión no tiene empresa.
         private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
             if (corrEmpresa > 0)
@@ -213,6 +224,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Crea una respuesta uniforme para los errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult

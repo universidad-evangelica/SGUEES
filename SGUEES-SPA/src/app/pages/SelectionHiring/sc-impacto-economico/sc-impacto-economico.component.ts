@@ -57,10 +57,12 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Construye el filtro por correlativo usado en consultas y eliminaciones.
 	fillParam(xCORR_IMPACTO_ECONOMICO?: number): any {
 		return { CORR_IMPACTO_ECONOMICO: xCORR_IMPACTO_ECONOMICO ?? 0 };
 	}
 
+	// Copia el registro seleccionado o crea el modelo inicial del formulario.
 	override fillData(xModel?: ScImpactoEconomico): ScImpactoEconomico {
 		if (xModel !== undefined) {
 			return {
@@ -91,6 +93,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		};
 	}
 
+	// Carga los impactos y sincroniza el orden y la paginación de la grilla.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -101,6 +104,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Mantiene los registros ordenados por correlativo tras cambios locales.
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -109,6 +113,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		this.models = [...this.models].sort((a, b) => Number(a.CORR_IMPACTO_ECONOMICO) - Number(b.CORR_IMPACTO_ECONOMICO));
 	}
 
+	// Agrega o reemplaza en la grilla la respuesta del guardado.
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
 		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
 			super.aplicarRegistroEnGrid(data, isAdd);
@@ -116,7 +121,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		}
 
 		const record = this.fillData(data as ScImpactoEconomico);
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof ScImpactoEconomico;
 
 		if (isAdd) {
 			this.models = [...this.models, record];
@@ -131,17 +136,19 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		this.refrescarGridTrasCarga(isAdd);
 	}
 
+	// Retira de la grilla el registro eliminado sin recargar el catálogo.
 	protected override quitarRegistroDeGrid(keyValue: unknown): void {
 		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
 			super.quitarRegistroDeGrid(keyValue);
 			return;
 		}
 
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof ScImpactoEconomico;
 		this.models = this.models.filter((item) => item?.[key] !== keyValue);
 		this.refrescarGridTrasCarga(true);
 	}
 
+	// Espera la actualización de Angular antes de refrescar la grilla.
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
@@ -174,6 +181,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Inicializa un registro nuevo solo si existe empresa en sesión.
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -184,6 +192,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Valida y guarda el impacto según el estado del mantenimiento.
 	guardar(): void {
 		this.guardarMtto({
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
@@ -200,6 +209,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Convierte duplicados y relaciones existentes en advertencias controladas.
 	private convertirErrorMttoEnWarning<T>(
 		request: Observable<T>,
 		mensajeDuplicado?: string,
@@ -249,6 +259,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		super.cancelar((item: any) => item.CORR_IMPACTO_ECONOMICO === this.modelUpdate.CORR_IMPACTO_ECONOMICO);
 	}
 
+	// Solicita la eliminación y controla dependencias asociadas.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
@@ -260,6 +271,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Cambia el estado del impacto seleccionado.
 	activar_inactivar(): void {
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}

@@ -14,6 +14,7 @@ const ESTADO_FIELD = 'ESTADO_FRECUENCIA';
 export class ScFrecuenciaService {
 	constructor(private repo: ScFrecuenciaRepository) {}
 
+	// Valida el nombre obligatorio y su longitud antes del guardado.
 	esValido(model: ScFrecuencia, msg: Function): boolean {
 		if (!model.NOMBRE_FRECUENCIA || model.NOMBRE_FRECUENCIA.trim() === '') {
 			msg('Debe ingresar el nombre de la frecuencia.', NotifyType.Warning);
@@ -80,6 +81,7 @@ export class ScFrecuenciaService {
 		};
 	}
 
+	// Define los campos y reglas del formulario de frecuencia.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_FRECUENCIA', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -94,6 +96,7 @@ export class ScFrecuenciaService {
 		];
 	}
 
+	// Traduce los filtros del componente al formato esperado por la API.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

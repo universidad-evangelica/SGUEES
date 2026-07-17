@@ -31,6 +31,7 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
+        // Valida empresa, descripción y unicidad antes de crear.
         public async Task<CResult> CreateAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -55,6 +56,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida la llave y excluye el registro actual al comprobar duplicados.
         public async Task<CResult> UpdateAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -111,6 +113,7 @@ namespace SGUEES.Services
             return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Devuelve los requerimientos activos disponibles para el descriptor.
         public async Task<CResult> GetCatalogoDescriptorAsync(SC_REQUERIMIENTO_ORGANIZACIONALParam xWhere)
         {
             var rows = await _repo.GetCatalogoDescriptorAsync(xWhere.CORR_EMPRESA);
@@ -134,12 +137,14 @@ namespace SGUEES.Services
             };
         }
 
+        // Limpia la descripción y aplica el estado activo predeterminado.
         private static void NormalizeData(SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
         {
             Data.DESCRIPCION = Data.DESCRIPCION?.Trim();
             Data.ESTADO_REQUERIMIENTO_ORGANIZACIONAL ??= true;
         }
 
+        // Comprueba la descripción obligatoria y su longitud máxima.
         private static CResult Validate(SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
         {
             if (Data == null)
@@ -160,6 +165,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Verifica que la descripción no pertenezca a otro registro de la empresa.
         private async Task<CResult> ValidateUniqueDescripcionAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, int? excludeCorr)
         {
             var exists = await _repo.ExistsDescripcionAsync(

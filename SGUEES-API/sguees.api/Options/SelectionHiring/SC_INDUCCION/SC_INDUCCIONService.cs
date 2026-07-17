@@ -15,6 +15,7 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Devuelve las inducciones activas disponibles para el descriptor.
         public async Task<CResult> GetCatalogoDescriptorAsync(SC_INDUCCIONParam xWhere)
         {
             var rows = await _repo.GetCatalogoDescriptorAsync(xWhere.CORR_EMPRESA);
@@ -46,6 +47,7 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
+        // Valida nombre y semanas antes de crear la inducción.
         public async Task<CResult> CreateAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -64,6 +66,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida la llave y normaliza el nombre antes de actualizar.
         public async Task<CResult> UpdateAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -122,12 +125,14 @@ namespace SGUEES.Services
             };
         }
 
+        // Limpia el nombre y aplica el estado activo predeterminado.
         private static void NormalizeData(SC_INDUCCIONTable Data)
         {
             Data.NOMBRE_INDUCCION = Data.NOMBRE_INDUCCION?.Trim();
             Data.ESTADO_INDUCCION ??= true;
         }
 
+        // Comprueba nombre, longitud y semanas positivas.
         private static CResult Validate(SC_INDUCCIONTable Data)
         {
             if (Data == null)

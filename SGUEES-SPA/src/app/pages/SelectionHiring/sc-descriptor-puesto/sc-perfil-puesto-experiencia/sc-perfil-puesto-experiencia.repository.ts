@@ -11,6 +11,7 @@ export class ScPerfilPuestoExperienciaRepository {
 
 	constructor(private objData: CData) {}
 
+	// Consulta experiencia dentro del perfil indicado por las condiciones preparadas en el servicio.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
@@ -19,6 +20,7 @@ export class ScPerfilPuestoExperienciaRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// Actualización y eliminación conservan descriptor, perfil y experiencia como llave compuesta.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

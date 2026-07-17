@@ -26,6 +26,7 @@ export interface ScCompetenciaFormContext {
 export class ScCompetenciasTecnicasService {
 	constructor(private repo: ScCompetenciasTecnicasRepository) {}
 
+	// Aplica las reglas de código, padre y nombre correspondientes a cada nivel.
 	esValido(model: ScCompetenciasTecnicas, msg: Function, isAdd: boolean): boolean {
 		if (!model.NIVEL) {
 			msg('Debe seleccionar el nivel de la competencia.', NotifyType.Warning);
@@ -96,6 +97,7 @@ export class ScCompetenciasTecnicasService {
 		return true;
 	}
 
+	// Compone el código jerárquico y retira campos auxiliares antes de enviar.
 	prepararModeloParaGuardar(model: ScCompetenciasTecnicas, isAdd: boolean): ScCompetenciasTecnicas {
 		const payload = { ...model };
 		payload.DESCRIPCION = payload.DESCRIPCION?.trim() ?? '';
@@ -140,6 +142,7 @@ export class ScCompetenciasTecnicasService {
 		return this.repo.get([{ Parameter: 'CORR_COMPETENCIAS_TECNICAS', Value: param.CORR_COMPETENCIAS_TECNICAS }]);
 	}
 
+	// Solicita el siguiente código disponible para un padre de nivel dos.
 	getNextCodigo(corrPadre: number): Observable<IResult> {
 		return this.repo.getNextCodigo([{ Parameter: 'CORR_COMPETENCIAS_TECNICAS_PADRE', Value: corrPadre }]);
 	}
@@ -192,6 +195,7 @@ export class ScCompetenciasTecnicasService {
 		};
 	}
 
+	// Construye dinámicamente el formulario según el nivel y sus padres.
 	getItems(ctx: ScCompetenciaFormContext): any[] {
 		const isNivel1 = ctx.nivel === SC_COMPETENCIA_NIVEL.UNO;
 		const isNivel2 = ctx.nivel === SC_COMPETENCIA_NIVEL.DOS;
@@ -294,6 +298,7 @@ export class ScCompetenciasTecnicasService {
 		return items;
 	}
 
+	// Traduce los filtros del componente al formato esperado por la API.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 
@@ -312,10 +317,12 @@ export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETI
 	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
 }
 
+// Identifica la respuesta controlada por ausencia de empresa en sesión.
 export function isEmpresaWarningResponse(response: any): boolean {
 	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
 }
 
+// Reconoce variantes del error de relación con la empresa.
 export function isEmpresaFkErrorMessage(message: string): boolean {
 	const value = `${message ?? ''}`.toLowerCase();
 	return (

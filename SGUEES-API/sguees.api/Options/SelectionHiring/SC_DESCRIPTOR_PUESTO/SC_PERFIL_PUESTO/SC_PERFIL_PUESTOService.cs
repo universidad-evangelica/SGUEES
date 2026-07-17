@@ -16,16 +16,19 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Obtiene el listado de perfil del puesto aplicando los filtros recibidos.
         public async Task<CResult> GetAllAsync(SC_PERFIL_PUESTOParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un registro de perfil del puesto con los identificadores recibidos.
         public async Task<CResult> GetAsync(SC_PERFIL_PUESTOParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeDescriptor: true, includePerfil: true));
         }
 
+        // Valida y crea el registro de perfil del puesto con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             NormalizarCatalogos(Data);
@@ -38,6 +41,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida y actualiza el registro existente de perfil del puesto.
         public async Task<CResult> UpdateAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_PERFIL_PUESTO <= 0)
@@ -55,6 +59,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Construye los parámetros de filtrado para consultar perfil del puesto.
         private static List<CParameter> BuildParameters(
             SC_PERFIL_PUESTOParam xWhere,
             bool includeDescriptor = false,
@@ -81,6 +86,7 @@ namespace SGUEES.Services
         private static readonly string[] SexosPermitidos = { "MASCULINO", "FEMENINO", "INDIFERENTE" };
         private static readonly string[] EstadosFamiliaresPermitidos = { "CASADO", "SOLTERO", "INDIFERENTE", "OTRO" };
 
+        // Valida las claves y reglas de negocio requeridas para perfil del puesto.
         private static CResult Validate(SC_PERFIL_PUESTOTable Data)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -122,6 +128,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Normaliza los códigos de catálogo opcionales del perfil del puesto.
         private static void NormalizarCatalogos(SC_PERFIL_PUESTOTable Data)
         {
             if (!string.IsNullOrWhiteSpace(Data.SEXO))
@@ -135,6 +142,7 @@ namespace SGUEES.Services
             }
         }
 
+        // Construye un resultado uniforme para reportar errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult

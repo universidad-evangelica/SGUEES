@@ -20,6 +20,7 @@ namespace SGUEES.Services
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Devuelve únicamente disponibilidades activas de la empresa.
         public async Task<CResult> GetDisponibilidadesActivasAsync(SC_DISPONIBILIDAD_HORARIOParam xWhere)
         {
             var p = new List<CParameter>
@@ -41,6 +42,7 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
+        // Valida empresa y nombre antes de crear la disponibilidad.
         public async Task<CResult> CreateAsync(SC_DISPONIBILIDAD_HORARIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -59,6 +61,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida la llave y normaliza el nombre antes de actualizar.
         public async Task<CResult> UpdateAsync(SC_DISPONIBILIDAD_HORARIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -117,12 +120,14 @@ namespace SGUEES.Services
             };
         }
 
+        // Limpia el nombre y aplica el estado activo predeterminado.
         private static void NormalizeData(SC_DISPONIBILIDAD_HORARIOTable Data)
         {
             Data.NOMBRE_DISPONIBILIDAD_HORARIO = Data.NOMBRE_DISPONIBILIDAD_HORARIO?.Trim();
             Data.ESTADO_DISPONIBILIDAD_HORARIO ??= true;
         }
 
+        // Comprueba el nombre obligatorio y su longitud máxima.
         private static CResult Validate(SC_DISPONIBILIDAD_HORARIOTable Data)
         {
             if (Data == null)

@@ -148,10 +148,12 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
+	// Construye el filtro por correlativo usado en consultas y eliminaciones.
 	fillParam(xCORR_COMPETENCIAS_TECNICAS?: number): any {
 		return { CORR_COMPETENCIAS_TECNICAS: xCORR_COMPETENCIAS_TECNICAS ?? 0 };
 	}
 
+	// Normaliza el nivel y separa prefijo y sufijo para presentar el formulario.
 	override fillData(xModel?: ScCompetenciasTecnicas): ScCompetenciasTecnicas {
 		if (xModel !== undefined) {
 			const model = {
@@ -188,6 +190,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		};
 	}
 
+	// Carga las competencias y sincroniza el orden y la paginación de la grilla.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -198,6 +201,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
+	// Mantiene los registros ordenados por correlativo tras cambios locales.
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -208,6 +212,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		);
 	}
 
+	// Agrega o reemplaza en la grilla la respuesta del guardado.
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
 		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
 			super.aplicarRegistroEnGrid(data, isAdd);
@@ -230,6 +235,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.refrescarGridTrasCarga(isAdd);
 	}
 
+	// Retira de la grilla el registro eliminado sin recargar el catálogo.
 	protected override quitarRegistroDeGrid(keyValue: unknown): void {
 		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
 			super.quitarRegistroDeGrid(keyValue);
@@ -241,12 +247,14 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.refrescarGridTrasCarga(true);
 	}
 
+	// Espera la actualización de Angular antes de refrescar la grilla.
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
 		}, 0);
 	}
 
+	// Valida la jerarquía y prepara el modelo según el nivel antes de guardar.
 	guardar(): void {
 		const isAdd = this.banderaMtto === UpdateType.Add;
 		const formData = this.dataForm?.instance?.option('formData');
@@ -275,6 +283,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
+	// Convierte duplicados y relaciones existentes en advertencias controladas.
 	private convertirErrorMttoEnWarning<T>(request: Observable<T>, esEliminacion = false): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
@@ -324,6 +333,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		}`;
 	}
 
+	// Selecciona el mensaje de duplicidad correspondiente al nivel actual.
 	private obtenerMensajeCodigoDuplicado(): string {
 		if (this.model.NIVEL === SC_COMPETENCIA_NIVEL.DOS) {
 			return 'El sufijo de Nivel 2 ingresado está registrado para otra competencia técnica.';
@@ -352,6 +362,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.bloquear();
 	}
 
+	// Abre el registro y carga los padres válidos para su nivel.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (!rowData) {
@@ -377,6 +388,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
+	// Reinicia campos dependientes y carga la jerarquía del nivel seleccionado.
 	onNivelChanged(value: string | null): void {
 		const nivel = `${value ?? this.model.NIVEL ?? SC_COMPETENCIA_NIVEL.UNO}`;
 		this.padreInvalido = false;
@@ -397,6 +409,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		}
 	}
 
+	// Aplica el padre y genera o prepara el código según el nivel hijo.
 	onPadreChanged(value: number | null): void {
 		const corrPadre = value != null && Number(value) > 0 ? Number(value) : null;
 		this.model.CORR_COMPETENCIAS_TECNICAS_PADRE = corrPadre;
@@ -445,6 +458,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		}
 	}
 
+	// Exige un padre para competencias de niveles dos y tres.
 	private actualizarEstadoValidacionPadre(): void {
 		const requierePadre =
 			this.model?.NIVEL === SC_COMPETENCIA_NIVEL.DOS ||
@@ -452,6 +466,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.padreInvalido = requierePadre && !this.model?.CORR_COMPETENCIAS_TECNICAS_PADRE;
 	}
 
+	// Solicita la eliminación y controla competencias hijas o relacionadas.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
@@ -512,6 +527,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		return vRow[0].CORR_COMPETENCIAS_TECNICAS;
 	}
 
+	// Reconstruye los editores según nivel, modo y disponibilidad de padres.
 	private refreshFormItems(): void {
 		this.items = this.service.getItems({
 			nivel: `${this.model?.NIVEL ?? SC_COMPETENCIA_NIVEL.UNO}`,
@@ -528,6 +544,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		}
 	}
 
+	// Carga los candidatos padre e incluye inactivos durante consulta o edición.
 	private cargarPadres(nivelPadre: string): void {
 		const incluirInactivos = this.banderaMtto !== UpdateType.Add;
 		const xWhere: Array<{ Parameter: string; Value: any }> = [{ Parameter: 'NIVEL_PADRE', Value: nivelPadre }];
@@ -559,6 +576,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 			});
 	}
 
+	// Normaliza un registro padre y construye su texto visible en el lookup.
 	private mapPadreLookupItem(item: any): ScCompetenciaPadreOption {
 		const codigo = (item.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim();
 		const nombre = (item.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim();
@@ -578,6 +596,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		};
 	}
 
+	// Conserva el padre actual aunque ya no forme parte del lookup normal.
 	private agregarPadreActualSiNoExiste(onDone: () => void): void {
 		if (this.banderaMtto === UpdateType.Add || !this.model?.CORR_COMPETENCIAS_TECNICAS_PADRE) {
 			onDone();
@@ -632,6 +651,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.actualizarEstadoRegistroSeleccionado();
 	}
 
+	// Indica si el padre seleccionado está inactivo para advertir al usuario.
 	private actualizarEstadoRegistroSeleccionado(): void {
 		const padre = this.padres.find((item) => item.CORR_COMPETENCIAS_TECNICAS === this.model?.CORR_COMPETENCIAS_TECNICAS_PADRE);
 		this.registroSeleccionadoInactivo = padre?.ESTADO_COMPETENCIAS_TECNICAS === false;

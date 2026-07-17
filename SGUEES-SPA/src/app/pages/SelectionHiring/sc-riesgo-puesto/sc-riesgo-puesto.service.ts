@@ -14,6 +14,7 @@ const ESTADO_FIELD = 'ESTADO_RIESGO_PUESTO';
 export class ScRiesgoPuestoService {
 	constructor(private repo: ScRiesgoPuestoRepository) {}
 
+	// Valida el nombre obligatorio y su longitud antes del guardado.
 	esValido(model: ScRiesgoPuesto, msg: Function): boolean {
 		if (!model.NOMBRE_RIESGO_PUESTO || model.NOMBRE_RIESGO_PUESTO.trim() === '') {
 			msg('Debe ingresar el nombre de riesgo de puesto.', NotifyType.Warning);
@@ -80,6 +81,7 @@ export class ScRiesgoPuestoService {
 		};
 	}
 
+	// Define los campos y reglas del formulario de riesgo.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_RIESGO_PUESTO', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -94,6 +96,7 @@ export class ScRiesgoPuestoService {
 		];
 	}
 
+	// Traduce los filtros del componente al formato esperado por la API.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

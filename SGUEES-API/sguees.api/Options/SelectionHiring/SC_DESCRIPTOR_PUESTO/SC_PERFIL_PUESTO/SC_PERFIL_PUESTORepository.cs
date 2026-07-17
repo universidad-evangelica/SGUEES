@@ -20,6 +20,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Consulta la vista de perfil del puesto con los filtros indicados.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -59,6 +60,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Consulta un registro de perfil del puesto según los filtros indicados.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -96,6 +98,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta el registro de perfil del puesto y devuelve los datos persistidos.
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -140,6 +143,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza el registro de perfil del puesto identificado por sus claves.
         public async Task<CResult> UpdateAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -198,6 +202,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Elimina el registro de perfil del puesto identificado por sus claves.
         public async Task<CResult> DeleteAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -238,6 +243,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Construye los parámetros de escritura de perfil del puesto, incluida su auditoría.
         private static List<CParameter> BuildWriteParameters(SC_PERFIL_PUESTOTable Data)
         {
             return new List<CParameter>

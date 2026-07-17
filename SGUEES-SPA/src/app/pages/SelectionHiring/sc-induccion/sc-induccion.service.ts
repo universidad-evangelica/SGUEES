@@ -14,6 +14,7 @@ const ESTADO_FIELD = 'ESTADO_INDUCCION';
 export class ScInduccionService {
 	constructor(private repo: ScInduccionRepository) {}
 
+	// Valida nombre, longitud y semanas positivas antes del guardado.
 	esValido(model: ScInduccion, msg: Function): boolean {
 		if (!model.NOMBRE_INDUCCION || model.NOMBRE_INDUCCION.trim() === '') {
 			msg('Debe ingresar el nombre de induccion.', NotifyType.Warning);
@@ -92,6 +93,7 @@ export class ScInduccionService {
 		};
 	}
 
+	// Define los campos y reglas del formulario de inducción.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_INDUCCION', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -117,6 +119,7 @@ export class ScInduccionService {
 		];
 	}
 
+	// Traduce los filtros del componente al formato esperado por la API.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

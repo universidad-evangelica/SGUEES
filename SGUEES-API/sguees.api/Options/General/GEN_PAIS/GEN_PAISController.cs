@@ -25,6 +25,7 @@ namespace SGUEES.Controllers
 
 		[HttpGet("GetAll")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
+		// Atiende la consulta del listado de países y la limita a la empresa de la sesión.
 		public async Task<CResult> GetAll([FromQuery] GEN_PAISParam data)
 		{
 			return await _service.GetAllAsync(data);
@@ -32,6 +33,7 @@ namespace SGUEES.Controllers
 
 		[HttpGet("Get")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
+		// Atiende la consulta de un país específica dentro de la empresa de la sesión.
 		public async Task<CResult> Get([FromQuery] GEN_PAISParam data)
 		{
 			return await _service.GetAsync(data);
@@ -39,6 +41,7 @@ namespace SGUEES.Controllers
 
 		[HttpGet("GetCORR_PAIS_GEN_EMPRESA")]
 		[Authorize(Policy = "/gen-empresa|R")]
+		// Expone el catálogo de países requerido por el mantenimiento relacionado y aplica el contexto de empresa.
 		public async Task<CResult> GetCORR_PAIS_GEN_EMPRESA([FromQuery] GEN_PAISParam data)
 		{
 			return await _service.GetAllAsync(data);
@@ -46,6 +49,7 @@ namespace SGUEES.Controllers
 
 		[HttpGet("GetCORR_PAIS_GEN_ESTRUCTURA_TERRITORIAL")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
+		// Expone el catálogo de países requerido por el mantenimiento relacionado y aplica el contexto de empresa.
 		public async Task<CResult> GetCORR_PAIS_GEN_ESTRUCTURA_TERRITORIAL([FromQuery] GEN_PAISParam data)
 		{
 			return await _service.GetAllAsync(data);
@@ -53,6 +57,7 @@ namespace SGUEES.Controllers
 
 		[HttpGet("GetCODIGO_PAIS_COM_PROVEEDOR")]
 		[Authorize(Policy = "/com-proveedor|R")]
+		// Expone el catálogo de países requerido por el mantenimiento relacionado y aplica el contexto de empresa.
 		public async Task<CResult> GetCODIGO_PAIS_COM_PROVEEDOR([FromQuery] GEN_PAISParam data)
 		{
 			return await _service.GetAllAsync(data);
@@ -60,6 +65,7 @@ namespace SGUEES.Controllers
 
 		[HttpPost]
 		[Authorize(Policy = "/gen-estructura-territorial|C")]
+		// Prepara auditoría, crea el país y traduce el resultado al estado HTTP correspondiente.
 		public async Task<IActionResult> Post(GEN_PAISTable data)
 		{
 			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
@@ -74,6 +80,7 @@ namespace SGUEES.Controllers
 
 		[HttpPut]
 		[Authorize(Policy = "/gen-estructura-territorial|U")]
+		// Aplica las claves de la solicitud, prepara auditoría y actualiza el país.
 		public async Task<IActionResult> Put(GEN_PAISTable data)
 		{
 			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
@@ -90,6 +97,7 @@ namespace SGUEES.Controllers
 
 		[HttpDelete]
 		[Authorize(Policy = "/gen-estructura-territorial|D")]
+		// Valida el contexto de empresa y elimina el país indicada por sus claves.
 		public async Task<IActionResult> Delete([FromQuery] GEN_PAISTable data)
 		{
 			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
@@ -101,17 +109,20 @@ namespace SGUEES.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
+		// Obtiene la empresa asociada a la sesión para aislar las operaciones del usuario.
 		private int GetCorrEmpresa()
 		{
 			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
 			return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
 		}
 
+		// Obtiene el identificador del usuario autenticado para registrar la auditoría.
 		private string GetUsuario()
 		{
 			return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
 		}
 
+		// Verifica que la sesión tenga una empresa válida y prepara una respuesta controlada si falta.
 		private bool ValidateEmpresaSesion(out CResult resultado)
 		{
 			if (GetCorrEmpresa() > 0)
@@ -135,6 +146,7 @@ namespace SGUEES.Controllers
 			return false;
 		}
 
+		// Completa la empresa y los datos de auditoría requeridos para crear el registro.
 		private void SetCreateAudit(GEN_PAISTable data)
 		{
 			data.USUARIO_CREA = GetUsuario();
@@ -145,6 +157,7 @@ namespace SGUEES.Controllers
 			data.FECHA_ACTU = data.FECHA_CREA;
 		}
 
+		// Completa la empresa y los datos de auditoría requeridos para actualizar el registro.
 		private void SetUpdateAudit(GEN_PAISTable data)
 		{
 			data.USUARIO_ACTU = GetUsuario();

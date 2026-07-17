@@ -346,6 +346,7 @@ namespace SGUEES.Repositories
       return objResultado;
     }
 
+    // Comprueba si otra competencia de la empresa utiliza el mismo nombre.
     public async Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr)
     {
       if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nombre))
@@ -385,6 +386,7 @@ namespace SGUEES.Repositories
         e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
     }
 
+    // Recupera competencias activas ordenadas para el lookup del descriptor.
     public async Task<List<SC_COMPETENCIAS_CONDUCTUALESView>> GetCatalogoDescriptorAsync(int corrEmpresa)
     {
       if (corrEmpresa <= 0)

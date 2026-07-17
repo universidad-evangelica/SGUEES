@@ -25,6 +25,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetCORR_IMPACTO_ECONOMICO_SC_DESCRIPTOR_PUESTO")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        // Provee impactos activos para el descriptor.
         public async Task<CResult> GetCORR_IMPACTO_ECONOMICO_SC_DESCRIPTOR_PUESTO(
             [FromQuery] SC_IMPACTO_ECONOMICOParam Data)
         {
@@ -50,6 +51,7 @@ namespace SGUEES.Controllers
 
         [HttpPost]
         [Authorize(Policy = "/sc-impacto-economico|C")]
+        // Completa auditoría antes de crear el impacto.
         public async Task<IActionResult> Post(SC_IMPACTO_ECONOMICOTable Data)
         {
             SetCreateAudit(Data);
@@ -60,6 +62,7 @@ namespace SGUEES.Controllers
 
         [HttpPut]
         [Authorize(Policy = "/sc-impacto-economico|U")]
+        // Aplica la llave consultada y la auditoría antes de actualizar.
         public async Task<IActionResult> Put(SC_IMPACTO_ECONOMICOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(SC_IMPACTO_ECONOMICOTable.CORR_IMPACTO_ECONOMICO));
@@ -101,6 +104,7 @@ namespace SGUEES.Controllers
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
+        // Completa empresa, usuario, estación y fechas del registro nuevo.
         private void SetCreateAudit(SC_IMPACTO_ECONOMICOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -113,6 +117,7 @@ namespace SGUEES.Controllers
             Data.ESTADO_IMPACTO_ECONOMICO ??= true;
         }
 
+        // Actualiza auditoría sin reemplazar la información de creación.
         private void SetUpdateAudit(SC_IMPACTO_ECONOMICOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

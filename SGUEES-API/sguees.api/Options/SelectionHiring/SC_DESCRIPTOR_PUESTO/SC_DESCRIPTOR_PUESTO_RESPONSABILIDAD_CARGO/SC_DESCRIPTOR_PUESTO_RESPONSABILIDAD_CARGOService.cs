@@ -20,16 +20,19 @@ namespace SGUEES.Services
             _catalogoRepo = catalogoRepo;
         }
 
+        // Obtiene el listado de responsabilidad del cargo aplicando los filtros recibidos.
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un registro de responsabilidad del cargo con los identificadores recibidos.
         public async Task<CResult> GetAsync(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeCorr: true));
         }
 
+        // Valida y crea el registro de responsabilidad del cargo con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var prepare = await PrepareFromCatalogAsync(Data, esNuevo: true);
@@ -47,6 +50,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida y actualiza el registro existente de responsabilidad del cargo.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var validation = Validate(Data, esNuevo: false);
@@ -58,6 +62,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida las claves y elimina el registro de responsabilidad del cargo.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_RESPONSABILIDAD <= 0)
@@ -68,6 +73,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Agrega al descriptor los registros activos de responsabilidad del cargo que aún no existen.
         public async Task<CResult> SeedActivosDesdeCatalogoAsync(int corrEmpresa, int corrDescriptor, string usuario, string estacion)
         {
             if (corrEmpresa <= 0 || corrDescriptor <= 0)
@@ -163,6 +169,7 @@ namespace SGUEES.Services
             }
         }
 
+        // Construye la respuesta exitosa del proceso de carga desde catálogo.
         private static CResult SeedSuccess(int creados)
         {
             return new CResult
@@ -177,6 +184,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Construye una advertencia cuando la carga desde catálogo queda parcial.
         private static CResult SeedWarning(int creados, string message)
         {
             return new CResult
@@ -191,6 +199,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Construye la respuesta de error del proceso de carga desde catálogo.
         private static CResult SeedError(string message)
         {
             return new CResult
@@ -205,6 +214,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Completa y contrasta los datos de responsabilidad del cargo con el catálogo activo.
         private async Task<CResult> PrepareFromCatalogAsync(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable Data, bool esNuevo)
         {
             if (!esNuevo || Data.CORR_RESPONSABILIDAD is not > 0)
@@ -250,6 +260,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Construye los parámetros de filtrado para consultar responsabilidad del cargo.
         private static List<CParameter> BuildParameters(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOParam xWhere, bool includeCorr = false)
         {
             var p = new List<CParameter>
@@ -283,6 +294,7 @@ namespace SGUEES.Services
             return p;
         }
 
+        // Valida las claves y reglas de negocio requeridas para responsabilidad del cargo.
         private static CResult Validate(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable Data, bool esNuevo)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -334,6 +346,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Normaliza el indicador de aplicación usado para comparar responsabilidades.
         private static string NormalizarAplicacion(string aplicaDescriptor)
         {
             return string.IsNullOrWhiteSpace(aplicaDescriptor)
@@ -341,6 +354,7 @@ namespace SGUEES.Services
                 : aplicaDescriptor.Trim().ToUpperInvariant();
         }
 
+        // Comprueba si ya existe la misma responsabilidad con igual aplicación.
         private static bool ExisteMismaAplicacion(
             List<SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOView> existentes,
             int corrResponsabilidad,
@@ -352,6 +366,7 @@ namespace SGUEES.Services
                 NormalizarAplicacion(x.APLICA_DESCRIPTOR) == nueva);
         }
 
+        // Construye un resultado uniforme para reportar errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult

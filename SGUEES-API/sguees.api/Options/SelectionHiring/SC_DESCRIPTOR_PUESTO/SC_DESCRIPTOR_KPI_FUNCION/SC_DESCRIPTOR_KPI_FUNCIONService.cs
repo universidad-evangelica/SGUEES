@@ -15,16 +15,19 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Obtiene el listado de KPI de la función aplicando los filtros recibidos.
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_KPI_FUNCIONParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un registro de KPI de la función con los identificadores recibidos.
         public async Task<CResult> GetAsync(SC_DESCRIPTOR_KPI_FUNCIONParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeKpi: true));
         }
 
+        // Valida y crea el registro de KPI de la función con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var validation = Validate(Data);
@@ -36,6 +39,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida y actualiza el registro existente de KPI de la función.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var validation = Validate(Data);
@@ -47,6 +51,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida las claves y elimina el registro de KPI de la función.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_PUESTO <= 0 || Data.CORR_KPI_FUNCION <= 0)
@@ -57,6 +62,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Construye los parámetros de filtrado para consultar KPI de la función.
         private static List<CParameter> BuildParameters(SC_DESCRIPTOR_KPI_FUNCIONParam xWhere, bool includeKpi = false)
         {
             var p = new List<CParameter>
@@ -77,6 +83,7 @@ namespace SGUEES.Services
             return p;
         }
 
+        // Valida las claves y reglas de negocio requeridas para KPI de la función.
         private static CResult Validate(SC_DESCRIPTOR_KPI_FUNCIONTable Data)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -102,6 +109,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Construye un resultado uniforme para reportar errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult

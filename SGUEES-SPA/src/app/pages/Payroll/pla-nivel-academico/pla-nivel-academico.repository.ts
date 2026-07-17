@@ -11,6 +11,7 @@ export class PlaNivelAcademicoRepository {
 
 	constructor(private objData: CData) {}
 
+	// Solicita a la API el listado de niveles con los filtros recibidos.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
@@ -19,6 +20,7 @@ export class PlaNivelAcademicoRepository {
 		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
+	// Envía un nuevo nivel académico al endpoint de mantenimiento.
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlTALENTOHUMANONAPI);
 	}
@@ -27,6 +29,7 @@ export class PlaNivelAcademicoRepository {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
+	// Elimina el nivel identificado por los parámetros de búsqueda.
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}

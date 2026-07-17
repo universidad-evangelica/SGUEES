@@ -31,6 +31,7 @@ namespace SGUEES.Services
       return await _repo.GetAsync(p);
     }
 
+    // Valida empresa y datos antes de crear la competencia conductual.
     public async Task<CResult> CreateAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
     {
       var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -49,6 +50,7 @@ namespace SGUEES.Services
       return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
     }
 
+    // Valida la llave y normaliza los datos antes de actualizar.
     public async Task<CResult> UpdateAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
     {
       var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -107,6 +109,7 @@ namespace SGUEES.Services
       };
     }
 
+    // Limpia textos y aplica el estado activo predeterminado.
     private static void NormalizeData(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       Data.NOMBRE_COMPETENCIAS_CONDUCTUALES = Data.NOMBRE_COMPETENCIAS_CONDUCTUALES?.Trim();
@@ -114,6 +117,7 @@ namespace SGUEES.Services
       Data.ESTADO_COMPETENCIAS_CONDUCTUALES ??= true;
     }
 
+    // Comprueba tipo de puesto, nombre y descripción requeridos.
     private static CResult Validate(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       if (Data == null)
@@ -149,6 +153,7 @@ namespace SGUEES.Services
       return null;
     }
 
+    // Devuelve las competencias activas disponibles para el descriptor.
     public async Task<CResult> GetCatalogoDescriptorAsync(SC_COMPETENCIAS_CONDUCTUALESParam xWhere)
     {
       var rows = await _repo.GetCatalogoDescriptorAsync(xWhere.CORR_EMPRESA);

@@ -25,6 +25,7 @@ namespace sguees.Controllers
 
 		[HttpGet("GetAll")]
 		[Authorize(Policy = "/gen-gerencia|R")]
+		// Atiende la consulta del listado de gerencias y la limita a la empresa de la sesión.
 		public async Task<CResult> GetAll([FromQuery] GEN_GERENCIAParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -33,6 +34,7 @@ namespace sguees.Controllers
 
 		[HttpGet("Get")]
 		[Authorize(Policy = "/gen-gerencia|R")]
+		// Atiende la consulta de una gerencia específica dentro de la empresa de la sesión.
 		public async Task<CResult> Get([FromQuery] GEN_GERENCIAParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -41,6 +43,7 @@ namespace sguees.Controllers
 
 		[HttpPost]
 		[Authorize(Policy = "/gen-gerencia|C")]
+		// Prepara auditoría, crea la gerencia y traduce el resultado al estado HTTP correspondiente.
 		public async Task<IActionResult> Post(GEN_GERENCIATable Data)
 		{
 			SetCreateAudit(Data);
@@ -51,6 +54,7 @@ namespace sguees.Controllers
 
 		[HttpPut]
 		[Authorize(Policy = "/gen-gerencia|U")]
+		// Aplica las claves de la solicitud, prepara auditoría y actualiza la gerencia.
 		public async Task<IActionResult> Put(GEN_GERENCIATable Data)
 		{
 			this.ApplyQueryKeys(Data, nameof(GEN_GERENCIATable.CORR_GERENCIA));
@@ -62,6 +66,7 @@ namespace sguees.Controllers
 
 		[HttpDelete]
 		[Authorize(Policy = "/gen-gerencia|D")]
+		// Valida el contexto de empresa y elimina la gerencia indicada por sus claves.
 		public async Task<IActionResult> Delete([FromQuery] GEN_GERENCIATable Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -70,17 +75,20 @@ namespace sguees.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
+		// Obtiene la empresa asociada a la sesión para aislar las operaciones del usuario.
 		private int GetCorrEmpresa()
 		{
 			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
 			return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
 		}
 
+		// Obtiene el identificador del usuario autenticado para registrar la auditoría.
 		private string GetUsuario()
 		{
 			return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
 		}
 
+		// Completa la empresa y los datos de auditoría requeridos para crear el registro.
 		private void SetCreateAudit(GEN_GERENCIATable Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -92,6 +100,7 @@ namespace sguees.Controllers
 			Data.FECHA_ACTU = Data.FECHA_CREA;
 		}
 
+		// Completa la empresa y los datos de auditoría requeridos para actualizar el registro.
 		private void SetUpdateAudit(GEN_GERENCIATable Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();

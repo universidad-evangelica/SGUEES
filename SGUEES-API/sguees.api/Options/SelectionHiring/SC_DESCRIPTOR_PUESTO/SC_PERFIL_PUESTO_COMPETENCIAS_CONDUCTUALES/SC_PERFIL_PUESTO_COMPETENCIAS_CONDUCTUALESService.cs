@@ -19,16 +19,19 @@ namespace SGUEES.Services
             _competenciasRepo = competenciasRepo;
         }
 
+        // Obtiene el listado de competencia conductual del perfil aplicando los filtros recibidos.
         public async Task<CResult> GetAllAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un registro de competencia conductual del perfil con los identificadores recibidos.
         public async Task<CResult> GetAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeCorr: true));
         }
 
+        // Valida y crea el registro de competencia conductual del perfil con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var prepare = await PrepareFromCatalogAsync(Data, esNuevo: true);
@@ -46,6 +49,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida y actualiza el registro existente de competencia conductual del perfil.
         public async Task<CResult> UpdateAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var validation = Validate(Data, esNuevo: false);
@@ -57,6 +61,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida las claves y elimina el registro de competencia conductual del perfil.
         public async Task<CResult> DeleteAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_EMPRESA <= 0 || Data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES <= 0)
@@ -67,6 +72,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Completa y contrasta los datos de competencia conductual del perfil con el catálogo activo.
         private async Task<CResult> PrepareFromCatalogAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, bool esNuevo)
         {
             if (!esNuevo || Data.CORR_COMPETENCIAS_CONDUCTUALES is not > 0)
@@ -103,6 +109,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Construye los parámetros de filtrado para consultar competencia conductual del perfil.
         private static List<CParameter> BuildParameters(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESParam xWhere, bool includeCorr = false)
         {
             var p = new List<CParameter>
@@ -133,6 +140,7 @@ namespace SGUEES.Services
             return p;
         }
 
+        // Valida las claves y reglas de negocio requeridas para competencia conductual del perfil.
         private static CResult Validate(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, bool esNuevo)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -181,6 +189,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Construye un resultado uniforme para reportar errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult

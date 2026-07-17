@@ -20,6 +20,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Consulta la vista de responsabilidad del cargo con los filtros indicados.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -77,6 +78,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Obtiene todas las responsabilidades del descriptor sin restringirlas por formato.
         public async Task<List<SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOView>> GetAllSinFiltroFormatoAsync(
             int corrEmpresa,
             int corrDescriptor)
@@ -101,6 +103,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Consulta el formato vigente del descriptor indicado.
         public async Task<string> GetFormatoDescriptorAsync(int corrEmpresa, int corrDescriptor)
         {
             const string sql = @"SELECT TOP 1 FORMATO
@@ -125,6 +128,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Consulta un registro de responsabilidad del cargo según los filtros indicados.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -162,6 +166,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta el registro de responsabilidad del cargo y devuelve los datos persistidos.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -205,6 +210,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza el registro de responsabilidad del cargo identificado por sus claves.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -258,6 +264,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Elimina el registro de responsabilidad del cargo identificado por sus claves.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -297,6 +304,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Construye los parámetros de escritura de responsabilidad del cargo, incluida su auditoría.
         private static List<CParameter> BuildWriteParameters(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable Data)
         {
             return new List<CParameter>

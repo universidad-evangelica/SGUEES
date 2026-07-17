@@ -11,6 +11,7 @@ export class ScDescriptorPuestoResponsabilidadCargoRepository {
 
 	constructor(private objData: CData) {}
 
+	// Consulta responsabilidades aplicables al descriptor y formato indicados por el servicio.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
@@ -19,6 +20,7 @@ export class ScDescriptorPuestoResponsabilidadCargoRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// La mutación usa el correlativo del vínculo; la aplicabilidad por formato viaja dentro del payload.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

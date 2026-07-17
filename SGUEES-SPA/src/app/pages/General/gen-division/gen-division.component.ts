@@ -42,11 +42,13 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		return this.dataGrid ?? null;
 	}
 
+	// Inicializa la vista y carga la información necesaria para comenzar el mantenimiento.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.consultar();
 	}
 
+	// Sincroniza el estado del mantenimiento con la presentación y las acciones disponibles.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -54,10 +56,12 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
+	// Construye los filtros enviados al API para consultar el registro seleccionado.
 	fillParam(xCORR_DIVISION?: number): any {
 		return { CORR_DIVISION: xCORR_DIVISION ?? 0 };
 	}
 
+	// Transforma los datos recibidos en el modelo editable y crea sus valores iniciales cuando corresponde.
 	override fillData(xModel?: GenDivision): GenDivision {
 		if (xModel !== undefined) {
 			return {
@@ -88,6 +92,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		};
 	}
 
+	// Carga el listado desde el servicio, ordena los resultados y actualiza la cuadrícula.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -98,6 +103,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Ordena una copia del listado por correlativo para mantener una presentación estable.
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -106,6 +112,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		this.models = [...this.models].sort((a, b) => Number(a.CORR_DIVISION) - Number(b.CORR_DIVISION));
 	}
 
+	// Integra el registro guardado al listado local y mantiene su orden sin recargar toda la consulta.
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
 		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
 			super.aplicarRegistroEnGrid(data, isAdd);
@@ -113,7 +120,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		}
 
 		const record = this.fillData(data as GenDivision);
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof GenDivision;
 
 		if (isAdd) {
 			this.models = [...this.models, record];
@@ -128,23 +135,26 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		this.refrescarGridTrasCarga(isAdd);
 	}
 
+	// Retira del listado local el registro eliminado y refresca la cuadrícula.
 	protected override quitarRegistroDeGrid(keyValue: unknown): void {
 		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
 			super.quitarRegistroDeGrid(keyValue);
 			return;
 		}
 
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof GenDivision;
 		this.models = this.models.filter((item) => item?.[key] !== keyValue);
 		this.refrescarGridTrasCarga(true);
 	}
 
+	// Actualiza la cuadrícula después de una carga y opcionalmente reinicia su paginación.
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
 		}, 0);
 	}
 
+	// Abre el registro seleccionado desde la cuadrícula y prepara sus datos para consulta.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -158,6 +168,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Carga la fila seleccionada y habilita el formulario para su modificación.
 	onEditClick(e: any): void {
 		if (!e?.row?.data) {
 			return;
@@ -171,6 +182,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Prepara un modelo vacío y abre el formulario para registrar un nuevo elemento.
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -181,6 +193,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Valida el formulario y ejecuta la creación o actualización según el estado del mantenimiento.
 	guardar(): void {
 		const formData = this.dataForm?.instance?.option('formData');
 		if (formData) {
@@ -200,6 +213,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Convierte errores de código duplicado en una respuesta controlada para mostrar una advertencia clara.
 	private convertirCodigoDuplicadoEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
@@ -218,6 +232,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
+	// Convierte restricciones de integridad al eliminar en una advertencia comprensible para el usuario.
 	private convertirEliminacionRelacionadaEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
@@ -236,12 +251,14 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
+	// Reconoce variantes del mensaje de base de datos que indican un registro duplicado.
 	private esErrorDuplicadoLocal(message: string): boolean {
 		return ['ya existe', 'duplicad', 'primary key', 'unique key', 'mismo tiempo', 'llave primaria', 'clave primaria'].some(
 			(fragment) => message.includes(fragment)
 		);
 	}
 
+	// Reconoce mensajes de integridad referencial para evitar mostrar errores técnicos.
 	private esErrorRelacionadosLocal(message: string): boolean {
 		return [
 			'foreign key',
@@ -254,6 +271,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		].some((fragment) => message.includes(fragment));
 	}
 
+	// Extrae el mensaje útil de las distintas formas de error que puede devolver el API.
 	private obtenerMensajeApiLocal(error: any): string {
 		if (typeof error === 'string') {
 			return error;
@@ -266,10 +284,12 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		return `${error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.message ?? error ?? ''}`;
 	}
 
+	// Descarta la edición actual y restaura el estado de consulta del mantenimiento.
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_DIVISION === this.modelUpdate.CORR_DIVISION);
 	}
 
+	// Canaliza la eliminación de la fila y convierte restricciones relacionadas en mensajes controlados.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>

@@ -41,6 +41,7 @@ namespace SGUEES.Controllers
 
     [HttpPost]
     [Authorize(Policy = "/sc-competencias-conductuales|C")]
+    // Completa auditoría y crea la competencia en la empresa de la sesión.
     public async Task<IActionResult> Post(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       SetCreateAudit(Data);
@@ -51,6 +52,7 @@ namespace SGUEES.Controllers
 
     [HttpPut]
     [Authorize(Policy = "/sc-competencias-conductuales|U")]
+    // Aplica la llave consultada y la auditoría antes de actualizar.
     public async Task<IActionResult> Put(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       this.ApplyQueryKeys(Data, nameof(SC_COMPETENCIAS_CONDUCTUALESTable.CORR_COMPETENCIAS_CONDUCTUALES));
@@ -62,6 +64,7 @@ namespace SGUEES.Controllers
 
     [HttpDelete]
     [Authorize(Policy = "/sc-competencias-conductuales|D")]
+    // Restringe la eliminación a la empresa de la sesión.
     public async Task<IActionResult> Delete([FromQuery] SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -83,6 +86,7 @@ namespace SGUEES.Controllers
 
     [HttpGet("GetCORR_COMPETENCIAS_CONDUCTUALES_SC_DESCRIPTOR_PUESTO")]
     [Authorize(Policy = "/sc-descriptor-puesto|R")]
+    // Provee el catálogo activo de competencias para el descriptor.
     public async Task<CResult> GetCORR_COMPETENCIAS_CONDUCTUALES_SC_DESCRIPTOR_PUESTO([FromQuery] SC_COMPETENCIAS_CONDUCTUALESParam Data)
     {
       Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -100,6 +104,7 @@ namespace SGUEES.Controllers
       return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
     }
 
+    // Completa empresa, usuario, estación y fechas del registro nuevo.
     private void SetCreateAudit(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -112,6 +117,7 @@ namespace SGUEES.Controllers
       Data.ESTADO_COMPETENCIAS_CONDUCTUALES ??= true;
     }
 
+    // Actualiza auditoría sin reemplazar la información de creación.
     private void SetUpdateAudit(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       Data.CORR_EMPRESA = GetCorrEmpresa();

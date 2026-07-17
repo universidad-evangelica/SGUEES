@@ -14,6 +14,7 @@ const ESTADO_FIELD = 'ESTADO_RESPONSABILIDAD';
 export class ScResponsabilidadCargoService {
 	constructor(private repo: ScResponsabilidadCargoRepository) {}
 
+	// Valida nombre y aplicación al descriptor antes del guardado.
 	esValido(model: ScResponsabilidadCargo, msg: Function): boolean {
 		if (!model.NOMBRE_RESPONSABILIDAD || model.NOMBRE_RESPONSABILIDAD.trim() === '') {
 			msg('Debe ingresar el nombre de la responsabilidad de cargo.', NotifyType.Warning);
@@ -86,6 +87,7 @@ export class ScResponsabilidadCargoService {
 		};
 	}
 
+	// Define los campos y opciones de aplicación al descriptor.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_RESPONSABILIDAD', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -112,6 +114,7 @@ export class ScResponsabilidadCargoService {
 		];
 	}
 
+	// Traduce los filtros del componente al formato esperado por la API.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

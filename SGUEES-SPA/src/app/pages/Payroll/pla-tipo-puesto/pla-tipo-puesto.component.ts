@@ -58,10 +58,12 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
+	// Construye el filtro que se envía al consultar o eliminar un tipo de puesto.
 	fillParam(xCORR_TIPO_PUESTO?: number): any {
 		return { CORR_TIPO_PUESTO: xCORR_TIPO_PUESTO ?? 0 };
 	}
 
+	// Crea una copia del registro seleccionado o devuelve el modelo inicial del formulario.
 	override fillData(xModel?: PlaTipoPuesto): PlaTipoPuesto {
 		if (xModel !== undefined) {
 			return {
@@ -94,6 +96,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		};
 	}
 
+	// Carga los tipos de puesto y sincroniza el orden y la paginación de la grilla.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -104,6 +107,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Mantiene los registros ordenados por correlativo después de cada cambio local.
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -112,6 +116,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		this.models = [...this.models].sort((a, b) => Number(a.CORR_TIPO_PUESTO) - Number(b.CORR_TIPO_PUESTO));
 	}
 
+	// Incorpora en la grilla la respuesta del guardado sin volver a consultar la API.
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
 		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
 			super.aplicarRegistroEnGrid(data, isAdd);
@@ -119,7 +124,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		}
 
 		const record = this.fillData(data as PlaTipoPuesto);
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof PlaTipoPuesto;
 
 		if (isAdd) {
 			this.models = [...this.models, record];
@@ -134,23 +139,26 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		this.refrescarGridTrasCarga(isAdd);
 	}
 
+	// Retira el registro eliminado del arreglo visible y reinicia la página.
 	protected override quitarRegistroDeGrid(keyValue: unknown): void {
 		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
 			super.quitarRegistroDeGrid(keyValue);
 			return;
 		}
 
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof PlaTipoPuesto;
 		this.models = this.models.filter((item) => item?.[key] !== keyValue);
 		this.refrescarGridTrasCarga(true);
 	}
 
+	// Espera a que Angular actualice los datos antes de refrescar la grilla.
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
 		}, 0);
 	}
 
+	// Abre en modo consulta el registro seleccionado y bloquea sus campos.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -164,6 +172,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Prepara el registro seleccionado para edición y habilita sus campos permitidos.
 	onEditClick(e: any): void {
 		if (!e?.row?.data) {
 			return;
@@ -177,6 +186,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Inicializa un registro nuevo únicamente cuando existe una empresa en sesión.
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -187,6 +197,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Valida el formulario y ejecuta la inserción o actualización según el estado actual.
 	guardar(): void {
 		const formData = this.dataForm?.instance?.option('formData');
 		if (formData) {
@@ -206,6 +217,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Convierte errores de unicidad en una advertencia específica para nombre o código.
 	private convertirDuplicadoEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
@@ -226,6 +238,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
+	// Convierte errores por relaciones existentes en una advertencia de eliminación.
 	private convertirEliminacionRelacionadaEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
@@ -244,12 +257,14 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
+	// Reconoce mensajes de distintas capas que corresponden a registros duplicados.
 	private esErrorDuplicadoLocal(message: string): boolean {
 		return ['ya existe', 'duplicad', 'primary key', 'unique key', 'mismo tiempo', 'llave primaria', 'clave primaria'].some(
 			(fragment) => message.includes(fragment)
 		);
 	}
 
+	// Reconoce mensajes que indican dependencias asociadas al registro.
 	private esErrorRelacionadosLocal(message: string): boolean {
 		return [
 			'foreign key',
@@ -262,6 +277,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		].some((fragment) => message.includes(fragment));
 	}
 
+	// Extrae de las variantes de respuesta de la API el mensaje útil del error.
 	private obtenerMensajeApiLocal(error: any): string {
 		if (typeof error === 'string') {
 			return error;
@@ -278,6 +294,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		super.cancelar((item: any) => item.CORR_TIPO_PUESTO === this.modelUpdate.CORR_TIPO_PUESTO);
 	}
 
+	// Solicita la eliminación y controla el caso de registros relacionados.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
@@ -285,6 +302,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Cambia el estado del tipo seleccionado mediante el flujo común de mantenimiento.
 	activar_inactivar(): void {
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}

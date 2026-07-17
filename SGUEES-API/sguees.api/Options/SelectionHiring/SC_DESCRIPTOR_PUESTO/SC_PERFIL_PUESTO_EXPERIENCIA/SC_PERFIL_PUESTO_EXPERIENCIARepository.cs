@@ -20,6 +20,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Consulta la vista de experiencia del perfil con los filtros indicados.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -59,6 +60,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Consulta un registro de experiencia del perfil según los filtros indicados.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -96,6 +98,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta el registro de experiencia del perfil y devuelve los datos persistidos.
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTO_EXPERIENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -141,6 +144,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza el registro de experiencia del perfil identificado por sus claves.
         public async Task<CResult> UpdateAsync(SC_PERFIL_PUESTO_EXPERIENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -195,6 +199,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Elimina el registro de experiencia del perfil identificado por sus claves.
         public async Task<CResult> DeleteAsync(SC_PERFIL_PUESTO_EXPERIENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -236,6 +241,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Construye los parámetros de escritura de experiencia del perfil, incluida su auditoría.
         private static List<CParameter> BuildWriteParameters(SC_PERFIL_PUESTO_EXPERIENCIATable Data)
         {
             return new List<CParameter>

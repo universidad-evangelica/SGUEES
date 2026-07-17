@@ -325,6 +325,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Recupera disponibilidades activas ordenadas para el lookup.
         public async Task<CResult> GetDisponibilidadesActivasAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();

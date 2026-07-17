@@ -58,10 +58,12 @@ export class ScResponsabilidadCargoComponent extends CBaseComponent implements O
 		}
 	}
 
+	// Construye el filtro por correlativo usado en consultas y eliminaciones.
 	fillParam(xCORR_RESPONSABILIDAD?: number): any {
 		return { CORR_RESPONSABILIDAD: xCORR_RESPONSABILIDAD ?? 0 };
 	}
 
+	// Copia el registro o crea el modelo con aplicación a ambos descriptores.
 	override fillData(xModel?: ScResponsabilidadCargo): ScResponsabilidadCargo {
 		if (xModel !== undefined) {
 			return {
@@ -94,6 +96,7 @@ export class ScResponsabilidadCargoComponent extends CBaseComponent implements O
 		};
 	}
 
+	// Carga las responsabilidades y sincroniza orden y paginación de la grilla.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -104,6 +107,7 @@ export class ScResponsabilidadCargoComponent extends CBaseComponent implements O
 		});
 	}
 
+	// Mantiene los registros ordenados por correlativo tras cambios locales.
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -112,6 +116,7 @@ export class ScResponsabilidadCargoComponent extends CBaseComponent implements O
 		this.models = [...this.models].sort((a, b) => Number(a.CORR_RESPONSABILIDAD) - Number(b.CORR_RESPONSABILIDAD));
 	}
 
+	// Agrega o reemplaza en la grilla la respuesta del guardado.
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
 		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
 			super.aplicarRegistroEnGrid(data, isAdd);
@@ -119,7 +124,7 @@ export class ScResponsabilidadCargoComponent extends CBaseComponent implements O
 		}
 
 		const record = this.fillData(data as ScResponsabilidadCargo);
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof ScResponsabilidadCargo;
 
 		if (isAdd) {
 			this.models = [...this.models, record];
@@ -134,17 +139,19 @@ export class ScResponsabilidadCargoComponent extends CBaseComponent implements O
 		this.refrescarGridTrasCarga(isAdd);
 	}
 
+	// Retira de la grilla el registro eliminado sin recargar el catálogo.
 	protected override quitarRegistroDeGrid(keyValue: unknown): void {
 		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
 			super.quitarRegistroDeGrid(keyValue);
 			return;
 		}
 
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof ScResponsabilidadCargo;
 		this.models = this.models.filter((item) => item?.[key] !== keyValue);
 		this.refrescarGridTrasCarga(true);
 	}
 
+	// Espera la actualización de Angular antes de refrescar la grilla.
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
@@ -177,6 +184,7 @@ export class ScResponsabilidadCargoComponent extends CBaseComponent implements O
 		});
 	}
 
+	// Inicializa un registro nuevo solo si existe empresa en sesión.
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -187,6 +195,7 @@ export class ScResponsabilidadCargoComponent extends CBaseComponent implements O
 		});
 	}
 
+	// Valida nombre y tipo de descriptor antes de guardar.
 	guardar(): void {
 		const formData = this.dataForm?.instance?.option('formData');
 		if (formData) {
@@ -214,6 +223,7 @@ export class ScResponsabilidadCargoComponent extends CBaseComponent implements O
 		});
 	}
 
+	// Convierte duplicados y relaciones existentes en advertencias controladas.
 	private convertirErrorMttoEnWarning<T>(
 		request: Observable<T>,
 		mensajeDuplicado?: string,
@@ -263,6 +273,7 @@ export class ScResponsabilidadCargoComponent extends CBaseComponent implements O
 		super.cancelar((item: any) => item.CORR_RESPONSABILIDAD === this.modelUpdate.CORR_RESPONSABILIDAD);
 	}
 
+	// Solicita la eliminación y controla dependencias asociadas.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
@@ -274,6 +285,7 @@ export class ScResponsabilidadCargoComponent extends CBaseComponent implements O
 		});
 	}
 
+	// Cambia el estado de la responsabilidad seleccionada.
 	activar_inactivar(): void {
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}

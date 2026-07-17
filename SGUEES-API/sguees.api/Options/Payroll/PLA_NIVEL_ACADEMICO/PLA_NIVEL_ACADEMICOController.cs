@@ -25,6 +25,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetAll")]
         [Authorize(Policy = "/pla-nivel-academico|R")]
+        // Completa la empresa desde la sesión antes de consultar el catálogo.
         public async Task<CResult> GetAll([FromQuery] PLA_NIVEL_ACADEMICOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -41,6 +42,7 @@ namespace SGUEES.Controllers
 
         [HttpPost]
         [Authorize(Policy = "/pla-nivel-academico|C")]
+        // Asigna la auditoría de creación y devuelve el resultado del guardado.
         public async Task<IActionResult> Post(PLA_NIVEL_ACADEMICOTable Data)
         {
             SetCreateAudit(Data);
@@ -51,6 +53,7 @@ namespace SGUEES.Controllers
 
         [HttpPut]
         [Authorize(Policy = "/pla-nivel-academico|U")]
+        // Aplica la llave de la consulta y la auditoría antes de actualizar.
         public async Task<IActionResult> Put(PLA_NIVEL_ACADEMICOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(PLA_NIVEL_ACADEMICOTable.CORR_NIVEL_ACADEMICO));
@@ -62,6 +65,7 @@ namespace SGUEES.Controllers
 
         [HttpDelete]
         [Authorize(Policy = "/pla-nivel-academico|D")]
+        // Restringe la eliminación a la empresa de la sesión actual.
         public async Task<IActionResult> Delete([FromQuery] PLA_NIVEL_ACADEMICOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -72,6 +76,7 @@ namespace SGUEES.Controllers
 
         [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/pla-nivel-academico|U")]
+        // Identifica el registro y solicita el cambio de estado en su empresa.
         public async Task<IActionResult> ActivarInactivar(PLA_NIVEL_ACADEMICOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(PLA_NIVEL_ACADEMICOTable.CORR_NIVEL_ACADEMICO));
@@ -92,6 +97,7 @@ namespace SGUEES.Controllers
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
+        // Completa empresa, usuario, estación y fechas para un registro nuevo.
         private void SetCreateAudit(PLA_NIVEL_ACADEMICOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -104,6 +110,7 @@ namespace SGUEES.Controllers
             Data.ESTADO_NIVEL_ACADEMICO ??= true;
         }
 
+        // Actualiza los datos de auditoría sin reemplazar la información de creación.
         private void SetUpdateAudit(PLA_NIVEL_ACADEMICOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

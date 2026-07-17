@@ -25,6 +25,7 @@ namespace sguees.Controllers
 
 		[HttpGet("GetAll")]
 		[Authorize(Policy = "/gen-division|R")]
+		// Atiende la consulta del listado de divisiones y la limita a la empresa de la sesión.
 		public async Task<CResult> GetAll([FromQuery] GEN_DIVISIONParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -33,6 +34,7 @@ namespace sguees.Controllers
 
 		[HttpGet("Get")]
 		[Authorize(Policy = "/gen-division|R")]
+		// Atiende la consulta de una división específica dentro de la empresa de la sesión.
 		public async Task<CResult> Get([FromQuery] GEN_DIVISIONParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -41,6 +43,7 @@ namespace sguees.Controllers
 
 		[HttpPost]
 		[Authorize(Policy = "/gen-division|C")]
+		// Prepara auditoría, crea la división y traduce el resultado al estado HTTP correspondiente.
 		public async Task<IActionResult> Post(GEN_DIVISIONTable Data)
 		{
 			SetCreateAudit(Data);
@@ -51,6 +54,7 @@ namespace sguees.Controllers
 
 		[HttpPut]
 		[Authorize(Policy = "/gen-division|U")]
+		// Aplica las claves de la solicitud, prepara auditoría y actualiza la división.
 		public async Task<IActionResult> Put(GEN_DIVISIONTable Data)
 		{
 			this.ApplyQueryKeys(Data, nameof(GEN_DIVISIONTable.CORR_DIVISION));
@@ -62,6 +66,7 @@ namespace sguees.Controllers
 
 		[HttpDelete]
 		[Authorize(Policy = "/gen-division|D")]
+		// Valida el contexto de empresa y elimina la división indicada por sus claves.
 		public async Task<IActionResult> Delete([FromQuery] GEN_DIVISIONTable Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -72,23 +77,27 @@ namespace sguees.Controllers
 
 		[HttpGet("GetCORR_DIVISION_GEN_GERENCIA")]
 		[Authorize(Policy = "/gen-gerencia|R")]
+		// Expone el catálogo de divisiones requerido por el mantenimiento relacionado y aplica el contexto de empresa.
 		public async Task<CResult> GetCORR_DIVISION_GEN_GERENCIA([FromQuery] GEN_DIVISIONParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
 			return await _service.GetDivisionesAsync(Data);
 		}
 
+		// Obtiene la empresa asociada a la sesión para aislar las operaciones del usuario.
 		private int GetCorrEmpresa()
 		{
 			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
 			return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
 		}
 
+		// Obtiene el identificador del usuario autenticado para registrar la auditoría.
 		private string GetUsuario()
 		{
 			return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
 		}
 
+		// Completa la empresa y los datos de auditoría requeridos para crear el registro.
 		private void SetCreateAudit(GEN_DIVISIONTable Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -100,6 +109,7 @@ namespace sguees.Controllers
 			Data.FECHA_ACTU = Data.FECHA_CREA;
 		}
 
+		// Completa la empresa y los datos de auditoría requeridos para actualizar el registro.
 		private void SetUpdateAudit(GEN_DIVISIONTable Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();

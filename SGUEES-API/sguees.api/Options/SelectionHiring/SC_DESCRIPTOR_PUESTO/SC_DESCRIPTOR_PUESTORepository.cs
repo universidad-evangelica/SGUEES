@@ -21,6 +21,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Consulta la vista de descriptor de puesto con los filtros indicados.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -64,6 +65,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Consulta un registro de descriptor de puesto según los filtros indicados.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -101,6 +103,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta el registro de descriptor de puesto y devuelve los datos persistidos.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -147,6 +150,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza el registro de descriptor de puesto identificado por sus claves.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -214,6 +218,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Busca la inducción activa asociada a la empresa y al identificador recibido.
         public async Task<SC_INDUCCIONView> GetInduccionActivaAsync(int corrEmpresa, int corrInduccion)
         {
             const string sql = @"SELECT TOP 1
@@ -243,6 +248,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Valida y persiste los datos de entrenamiento asociados al descriptor.
         public async Task<CResult> ActualizarEntrenamientoAsync(
             SC_DESCRIPTOR_PUESTOTable Data,
             string vLOGIN_SISTEMA,
@@ -301,6 +307,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Elimina el registro de descriptor de puesto identificado por sus claves.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -352,6 +359,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Construye los parámetros de escritura de descriptor de puesto, incluida su auditoría.
         private static List<CParameter> BuildWriteParameters(SC_DESCRIPTOR_PUESTOTable Data, bool includeAuditCreate = true)
         {
             var p = new List<CParameter>
@@ -388,6 +396,7 @@ namespace SGUEES.Repositories
             return p;
         }
 
+        // Convierte fechas inválidas para SQL Server en un valor nulo de base de datos.
         private static object ToSqlDate(DateTime? fecha)
         {
             if (!fecha.HasValue || fecha.Value.Year < 1753)
@@ -398,6 +407,7 @@ namespace SGUEES.Repositories
             return fecha.Value.Date;
         }
 
+        // Identifica errores de clave duplicada para devolver un mensaje controlado.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
@@ -405,6 +415,7 @@ namespace SGUEES.Repositories
                 e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
         }
 
+        // Comprueba si el puesto ya tiene otro descriptor abierto en la empresa.
         public async Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(int corrEmpresa, int corrPuesto, int excludeCorrDescriptor)
         {
             if (corrEmpresa <= 0 || corrPuesto <= 0)

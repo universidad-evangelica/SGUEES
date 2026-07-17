@@ -20,6 +20,7 @@ namespace SGUEES.Repositories
 		{
 		}
 
+		// Consulta la vista de distritos aplicando el contexto de empresa y devuelve el listado ordenado.
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -59,6 +60,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Consulta un distrito por sus claves y devuelve el primer registro coincidente.
 		public async Task<CResult> GetAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -96,6 +98,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Inserta el distrito, recupera el registro creado y normaliza errores de clave duplicada.
 		public async Task<CResult> CreateAsync(GEN_DISTRITOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -158,6 +161,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Actualiza el distrito por sus claves y devuelve el registro resultante.
 		public async Task<CResult> UpdateAsync(GEN_DISTRITOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -214,6 +218,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Elimina el distrito por sus claves y convierte restricciones relacionadas en un resultado controlado.
 		public async Task<CResult> DeleteAsync(GEN_DISTRITOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -253,6 +258,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Comprueba si ya existe un distrito con el valor normalizado, excluyendo el registro en edición.
 		public Task<bool> ExistsDistritoByFieldAsync(int corrPais, int corrDepto, int corrMunicipio, string fieldName, string normalizedValue, int excludeCorrPais, int excludeCorrDepto, int excludeCorrMunicipio, int excludeCorrDistrito)
 		{
 			if (!IsAllowedDistritoField(fieldName) || string.IsNullOrWhiteSpace(normalizedValue))
@@ -290,6 +296,7 @@ namespace SGUEES.Repositories
 			return ExistsByQueryAsync(sql, parameters);
 		}
 
+		// Ejecuta la consulta de existencia y garantiza el cierre de la conexión utilizada.
 		private async Task<bool> ExistsByQueryAsync(string sql, List<CParameter> parameters)
 		{
 			try
@@ -305,9 +312,11 @@ namespace SGUEES.Repositories
 			}
 		}
 
+		// Restringe los campos del distrito permitidos en la consulta dinámica de duplicados.
 		private static bool IsAllowedDistritoField(string fieldName) =>
 			fieldName is "NOMBRE_DISTRITO";
 
+		// Reconoce excepciones de claves únicas para devolver un mensaje funcional en lugar del error técnico.
 		private static bool IsDuplicateKeyError(Exception e)
 		{
 			return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

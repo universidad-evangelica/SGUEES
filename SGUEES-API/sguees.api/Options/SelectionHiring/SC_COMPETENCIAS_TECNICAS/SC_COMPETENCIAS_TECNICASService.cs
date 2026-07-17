@@ -34,6 +34,7 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
+        // Carga padres del nivel solicitado y construye su texto de lookup.
         public async Task<CResult> GetPadresAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             if (string.IsNullOrWhiteSpace(xWhere.NIVEL_PADRE))
@@ -76,6 +77,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Agrupa competencias de nivel tres por sus ancestros para el descriptor.
         public async Task<CResult> GetCatalogoNivel3DescriptorAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             var rows = await _repo.GetCatalogoNivel3DescriptorAsync(xWhere.CORR_EMPRESA);
@@ -117,6 +119,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Valida el padre de nivel dos y calcula el siguiente código de nivel tres.
         public async Task<CResult> GetNextCodigoAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             if (xWhere.CORR_COMPETENCIAS_TECNICAS_PADRE is not > 0)
@@ -150,6 +153,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Prepara la jerarquía y valida la unicidad antes de crear.
         public async Task<CResult> CreateAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -174,6 +178,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Conserva la estructura de nodos con hijos y valida antes de actualizar.
         public async Task<CResult> UpdateAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -217,6 +222,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Impide eliminar competencias que todavía poseen nodos hijos.
         public async Task<CResult> DeleteAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -249,6 +255,7 @@ namespace SGUEES.Services
             return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Normaliza y valida código, padre y nombre según el nivel jerárquico.
         private async Task<CResult> PrepareForSaveAsync(
             SC_COMPETENCIAS_TECNICASTable Data,
             bool isCreate,
@@ -406,6 +413,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Incrementa el mayor sufijo numérico usado por los hermanos de nivel tres.
         private async Task<string> BuildNextCodigoLevel3Async(int corrEmpresa, SC_COMPETENCIAS_TECNICASView parent)
         {
             var parentCodigo = parent.CODIGO_COMPETENCIAS_TECNICAS ?? string.Empty;
@@ -432,6 +440,7 @@ namespace SGUEES.Services
             return parentCodigo + (max + 1).ToString("D2");
         }
 
+        // Verifica que el código no pertenezca a otra competencia de la empresa.
         private async Task<CResult> ValidateUniqueCodigoAsync(SC_COMPETENCIAS_TECNICASTable Data, int? excludeCorr)
         {
             var exclude = excludeCorr ?? 0;
@@ -465,6 +474,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Convierte las variantes aceptadas de nivel al formato NIV1, NIV2 o NIV3.
         private static string NormalizeNivel(string nivel)
         {
             var value = nivel?.Trim().ToUpperInvariant();
@@ -490,6 +500,7 @@ namespace SGUEES.Services
             return value;
         }
 
+        // Combina código y nombre en una etiqueta legible para lookups.
         private static string BuildLookupDisplay(string codigo, string nombre)
         {
             var code = codigo?.Trim() ?? string.Empty;

@@ -11,6 +11,8 @@ export class ScDescriptorKpiFuncionRepository {
 
 	constructor(private objData: CData) {}
 
+	// Encapsula las llamadas de KPI en el endpoint de Selección y Contratación;
+	// el servicio aporta el descriptor y normaliza frecuencia y meta.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
@@ -19,6 +21,7 @@ export class ScDescriptorKpiFuncionRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// CData serializa las condiciones IParam como la llave del KPI que debe modificarse o eliminarse.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

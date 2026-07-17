@@ -15,11 +15,13 @@ namespace sguees.Services
 			_repo = repo;
 		}
 
+		// Construye los filtros y solicita al repositorio el listado de divisiones.
 		public async Task<CResult> GetAllAsync(GEN_DIVISIONParam xWhere)
 		{
 			return await _repo.GetAllAsync(BuildParameters(xWhere));
 		}
 
+		// Prepara los filtros del catálogo y solicita al repositorio las divisiones disponibles.
 		public async Task<CResult> GetDivisionesAsync(GEN_DIVISIONParam xWhere)
 		{
 			var p = new List<CParameter>
@@ -30,6 +32,7 @@ namespace sguees.Services
 			return await _repo.GetDivisionesAsync(p);
 		}
 
+		// Valida las claves de consulta y solicita al repositorio el detalle de la división.
 		public async Task<CResult> GetAsync(GEN_DIVISIONParam xWhere)
 		{
 			var p = new List<CParameter>
@@ -41,6 +44,7 @@ namespace sguees.Services
 			return await _repo.GetAsync(p);
 		}
 
+		// Normaliza y valida la división, comprueba duplicados y solicita su creación.
 		public async Task<CResult> CreateAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -67,6 +71,7 @@ namespace sguees.Services
 			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
+		// Normaliza y valida la división, comprueba duplicados y solicita su actualización.
 		public async Task<CResult> UpdateAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -93,6 +98,7 @@ namespace sguees.Services
 			return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
+		// Valida la identidad de la división y solicita su eliminación al repositorio.
 		public async Task<CResult> DeleteAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -104,6 +110,7 @@ namespace sguees.Services
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
+		// Convierte los filtros recibidos en parámetros seguros para el repositorio.
 		private static List<CParameter> BuildParameters(GEN_DIVISIONParam xWhere)
 		{
 			return new List<CParameter>
@@ -112,6 +119,7 @@ namespace sguees.Services
 			};
 		}
 
+		// Valida las claves y campos obligatorios de la división antes de persistirla.
 		private static CResult Validate(GEN_DIVISIONTable Data)
 		{
 			if (Data == null)
@@ -142,6 +150,7 @@ namespace sguees.Services
 			return null;
 		}
 
+		// Comprueba que el código de la división sea único dentro de la empresa.
 		private async Task<CResult> ValidateUniqueCodigoAsync(GEN_DIVISIONTable Data, int? excludeCorr)
 		{
 			var exists = await _repo.ExistsCodigoAsync(
@@ -154,6 +163,7 @@ namespace sguees.Services
 				: null;
 		}
 
+		// Verifica que la sesión tenga una empresa válida y prepara una respuesta controlada si falta.
 		private static CResult ValidateEmpresaSesion(int corrEmpresa)
 		{
 			if (corrEmpresa > 0)
@@ -173,6 +183,7 @@ namespace sguees.Services
 			};
 		}
 
+		// Construye una respuesta uniforme para devolver errores de validación al cliente.
 		private static CResult ValidationError(string message)
 		{
 			return new CResult

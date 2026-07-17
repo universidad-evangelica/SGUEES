@@ -23,6 +23,7 @@ namespace SGUEES.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }
 
+        // Obtiene el listado de competencia conductual del perfil aplicando los filtros recibidos.
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> GetAll([FromQuery] SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESParam Data)
@@ -31,6 +32,7 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Obtiene un registro de competencia conductual del perfil con los identificadores recibidos.
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> Get([FromQuery] SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESParam Data)
@@ -39,6 +41,7 @@ namespace SGUEES.Controllers
             return await _service.GetAsync(Data);
         }
 
+        // Crea un registro de competencia conductual del perfil con la auditoría de la sesión.
         [HttpPost]
         [Authorize(Policy = "/sc-descriptor-puesto|C")]
         public async Task<IActionResult> Post(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data)
@@ -49,6 +52,7 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Actualiza el registro de competencia conductual del perfil y su auditoría de modificación.
         [HttpPut]
         [Authorize(Policy = "/sc-descriptor-puesto|U")]
         public async Task<IActionResult> Put(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data)
@@ -62,6 +66,7 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Elimina el registro de competencia conductual del perfil solicitado para la empresa de la sesión.
         [HttpDelete]
         [Authorize(Policy = "/sc-descriptor-puesto|D")]
         public async Task<IActionResult> Delete([FromQuery] SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data)
@@ -83,6 +88,7 @@ namespace SGUEES.Controllers
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
+        // Completa los datos de auditoría requeridos para una creación.
         private void SetCreateAudit(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -94,6 +100,7 @@ namespace SGUEES.Controllers
             Data.FECHA_ACTU = Data.FECHA_CREA;
         }
 
+        // Completa los datos de auditoría requeridos para una actualización.
         private void SetUpdateAudit(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

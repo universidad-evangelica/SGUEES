@@ -103,6 +103,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.distritoSummary = this.service.getChildSummary('NOMBRE_DISTRITO');
 	}
 
+	// Inicializa la vista y carga la información necesaria para comenzar el mantenimiento.
 	ngOnInit(): void {
 		this.urlOpcion = this.resolveUrlOpcion();
 		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
@@ -122,6 +123,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return this.screen(window.innerWidth) === 'sm' ? 'calc(100vw - 24px)' : 520;
 	}
 
+	// Sincroniza el estado del mantenimiento con la presentación y las acciones disponibles.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		this.syncToolbarContext();
@@ -130,6 +132,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 	}
 
+	// Abre el registro seleccionado desde la cuadrícula y prepara sus datos para consulta.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -164,6 +167,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
+	// Transforma los datos recibidos en el modelo editable y crea sus valores iniciales cuando corresponde.
 	override fillData(xModel?: GenPais): GenPais {
 		return this.fillPais(xModel);
 	}
@@ -215,6 +219,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
+	// Carga el listado desde el servicio, ordena los resultados y actualiza la cuadrícula.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAllPaises(),
@@ -225,6 +230,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Ordena los países por correlativo sin alterar directamente el arreglo recibido.
 	private ordenarPaisesPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -233,6 +239,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.models = [...this.models].sort((a, b) => Number(a.CORR_PAIS) - Number(b.CORR_PAIS));
 	}
 
+	// Actualiza la cuadrícula de países y conserva el contexto visual solicitado.
 	private refrescarGridPaises(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
@@ -277,6 +284,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		setTimeout(() => this.consultar());
 	}
 
+	// Prepara un modelo vacío y abre el formulario para registrar un nuevo elemento.
 	override nuevo(): void {
 		if (this.vistaDetalle) {
 			return;
@@ -284,6 +292,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		super.nuevo();
 	}
 
+	// Valida el formulario y ejecuta la creación o actualización según el estado del mantenimiento.
 	guardar(): void {
 		const formData = this.dataForm?.instance?.option('formData') as GenPais | undefined;
 		if (formData) {
@@ -320,6 +329,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Descarta la edición actual y restaura el estado de consulta del mantenimiento.
 	override cancelar(): void {
 		const finalizar = () => {
 			if (this.vistaDetalle) {
@@ -341,6 +351,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		finalizar();
 	}
 
+	// Canaliza la eliminación de la fila y convierte restricciones relacionadas en mensajes controlados.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () => this.convertirEliminacionRelacionadaEnWarning(this.service.deletePais(e.data)),
@@ -348,6 +359,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Carga los municipios del departamento enfocado y limpia selecciones hijas obsoletas.
 	onDeptoFocused(e: any): void {
 		const row = (e?.row?.data ?? e?.data) as GenDepto;
 		if (!row?.CORR_DEPTO) {
@@ -365,6 +377,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.getCORR_DISTRITO();
 	}
 
+	// Carga los distritos del municipio enfocado y actualiza la selección en cascada.
 	onMunicipioFocused(e: any): void {
 		const row = (e?.row?.data ?? e?.data) as GenMunicipio;
 		if (!row?.CORR_MUNICIPIO) {
@@ -384,6 +397,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.getCORR_DISTRITO();
 	}
 
+	// Abre el formulario emergente para crear un departamento dentro del país seleccionado.
 	nuevoDepto(): void {
 		if (!this.permiteAdd) {
 			this.notifyFx('No tiene permiso para crear registros.', NotifyType.Warning);
@@ -396,6 +410,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.abrirPopup('depto', true);
 	}
 
+	// Abre el formulario emergente para crear un municipio dentro del departamento seleccionado.
 	nuevoMunicipio(): void {
 		if (!this.permiteAdd) {
 			this.notifyFx('No tiene permiso para crear registros.', NotifyType.Warning);
@@ -408,6 +423,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.abrirPopup('municipio', true);
 	}
 
+	// Abre el formulario emergente para crear un distrito dentro del municipio seleccionado.
 	nuevoDistrito(): void {
 		if (!this.permiteAdd) {
 			this.notifyFx('No tiene permiso para crear registros.', NotifyType.Warning);
@@ -420,12 +436,14 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.abrirPopup('distrito', true);
 	}
 
+	// Abre el departamento seleccionado en el formulario emergente de edición.
 	onEditDeptoClick(e: any): void {
 		if (e?.row?.data) {
 			this.abrirPopup('depto', false, e.row.data);
 		}
 	}
 
+	// Solicita confirmación antes de eliminar el departamento seleccionado.
 	onDeleteDeptoClick(e: any): void {
 		const row = e?.row?.data as GenDepto;
 		if (!row) {
@@ -434,12 +452,14 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.confirmAction('Eliminar departamento', `Desea eliminar "${row.NOMBRE_DEPTO}"?`, () => this.eliminarDepto(row));
 	}
 
+	// Abre el municipio seleccionado en el formulario emergente de edición.
 	onEditMunicipioClick(e: any): void {
 		if (e?.row?.data) {
 			this.abrirPopup('municipio', false, e.row.data);
 		}
 	}
 
+	// Solicita confirmación antes de eliminar el municipio seleccionado.
 	onDeleteMunicipioClick(e: any): void {
 		const row = e?.row?.data as GenMunicipio;
 		if (!row) {
@@ -448,12 +468,14 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.confirmAction('Eliminar municipio', `Desea eliminar "${row.NOMBRE_MUNICIPIO}"?`, () => this.eliminarMunicipio(row));
 	}
 
+	// Abre el distrito seleccionado en el formulario emergente de edición.
 	onEditDistritoClick(e: any): void {
 		if (e?.row?.data) {
 			this.abrirPopup('distrito', false, e.row.data);
 		}
 	}
 
+	// Solicita confirmación antes de eliminar el distrito seleccionado.
 	onDeleteDistritoClick(e: any): void {
 		const row = e?.row?.data as GenDistrito;
 		if (!row) {
@@ -462,6 +484,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.confirmAction('Eliminar distrito', `Desea eliminar "${row.NOMBRE_DISTRITO}"?`, () => this.eliminarDistrito(row));
 	}
 
+	// Valida el formulario territorial emergente y prepara el guardado del nivel seleccionado.
 	guardarPopup(): void {
 		if (this.popupSaving) {
 			return;
@@ -496,6 +519,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.ejecutarGuardarPopup();
 	}
 
+	// Completa en el modelo emergente las claves de sus niveles territoriales superiores.
 	private reforzarContextoPopup(model: GenDepto | GenMunicipio | GenDistrito): GenDepto | GenMunicipio | GenDistrito {
 		if (this.popupNivel === 'depto') {
 			return {
@@ -520,11 +544,13 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
+	// Cierra el guardado emergente y restaura sus indicadores de procesamiento.
 	private finalizarGuardadoPopup(): void {
 		this.popupSaving = false;
 		this.loadingVisible = false;
 	}
 
+	// Ejecuta la petición de alta o edición y refresca el nivel territorial afectado.
 	private ejecutarGuardarPopup(): void {
 		this.getPopupRequest()
 			.pipe(take(1))
@@ -546,6 +572,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			});
 	}
 
+	// Cierra el formulario emergente y limpia su estado temporal.
 	cerrarPopup(): void {
 		this.popupVisible = false;
 	}
@@ -564,6 +591,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Carga los departamentos del país seleccionado y reinicia los niveles territoriales inferiores.
 	getCORR_DEPTO(corrPais?: number): void {
 		const pais = corrPais ?? this.selectedPais?.CORR_PAIS;
 		if (!pais) {
@@ -605,6 +633,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			});
 	}
 
+	// Carga los municipios del departamento seleccionado y reinicia sus distritos.
 	getCORR_MUNICIPIO(corrPais?: number, corrDepto?: number): void {
 		const pais = corrPais ?? this.selectedPais?.CORR_PAIS;
 		const depto = corrDepto ?? this.selectedDepto?.CORR_DEPTO;
@@ -650,6 +679,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			});
 	}
 
+	// Carga los distritos asociados al municipio seleccionado.
 	getCORR_DISTRITO(corrPais?: number, corrDepto?: number, corrMunicipio?: number): void {
 		const pais = corrPais ?? this.selectedPais?.CORR_PAIS;
 		const depto = corrDepto ?? this.selectedDepto?.CORR_DEPTO;
@@ -697,6 +727,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			});
 	}
 
+	// Regenera las columnas de los niveles territoriales según los permisos actuales.
 	private actualizarColumnas(): void {
 		this.columns = this.service.getPaisColumns();
 		this.deptoColumns = this.service.getDeptoColumns(this.onEditDeptoClick, this.onDeleteDeptoClick, this.permiteEdit, this.permiteDele);
@@ -714,6 +745,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
+	// Obtiene la ruta funcional activa para sincronizar permisos y contexto de la barra de acciones.
 	private resolveUrlOpcion(): string {
 		let route: ActivatedRoute | null = this.router;
 		while (route) {
@@ -726,6 +758,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return '/gen-estructura-territorial';
 	}
 
+	// Publica el contexto del mantenimiento territorial usado por las acciones de la barra.
 	private syncToolbarContext(): void {
 		this.pageContext.updateFromBarra(
 			{
@@ -745,6 +778,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
+	// Descarta selecciones de niveles inferiores cuando cambia el nivel territorial padre.
 	private limpiarSeleccionHijos(): void {
 		this.selectedDepto = undefined;
 		this.selectedMunicipio = undefined;
@@ -759,6 +793,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Conecta los eventos de las cuadrículas territoriales para mantener selección y filtros en cascada.
 	private inicializarGridsCascade(): void {
 		this.vincularGridCascade(this.deptoGrid, 'depto');
 		this.vincularGridCascade(this.municipioGrid, 'municipio');
@@ -809,6 +844,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.cascadeGridHooks.add(instance);
 	}
 
+	// Ajusta los menús de filtro para que no pierdan el contexto de la cuadrícula territorial.
 	private parchearOverlaysFiltroCascade(instance: any): void {
 		const headerFilterView = instance.getView?.('headerFilterView');
 		const headerFilterPopup = headerFilterView?.getPopupContainer?.();
@@ -840,6 +876,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Repinta las filas visibles para reflejar las selecciones territoriales actuales.
 	private actualizarResaltadoCascade(): void {
 		setTimeout(() => {
 			this.inicializarGridsCascade();
@@ -848,6 +885,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Solicita a la cuadrícula volver a dibujar únicamente sus filas visibles.
 	private repintarFilasVisibles(grid: DataGridMttoComponent | undefined): void {
 		const instance = grid?.gData?.instance;
 		if (!instance) {
@@ -864,10 +902,12 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 	}
 
+	// Compara las claves compuestas para identificar el mismo departamento.
 	private esMismoDepto(data: GenDepto, selected: GenDepto): boolean {
 		return Number(data.CORR_PAIS) === Number(selected.CORR_PAIS) && Number(data.CORR_DEPTO) === Number(selected.CORR_DEPTO);
 	}
 
+	// Compara las claves compuestas para identificar el mismo municipio.
 	private esMismoMunicipio(data: GenMunicipio, selected: GenMunicipio): boolean {
 		return (
 			Number(data.CORR_PAIS) === Number(selected.CORR_PAIS) &&
@@ -876,6 +916,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
+	// Configura el modelo y el contexto padre antes de mostrar el formulario territorial emergente.
 	private abrirPopup(nivel: TerritorialNivel, isAdd: boolean, row?: GenDepto | GenMunicipio | GenDistrito): void {
 		this.popupNivel = nivel;
 		this.popupIsAdd = isAdd;
@@ -899,6 +940,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Selecciona la operación de creación o actualización correspondiente al nivel territorial activo.
 	private getPopupRequest() {
 		if (this.popupNivel === 'depto') {
 			const model = this.popupModel as GenDepto;
@@ -924,6 +966,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
+	// Recarga el nivel territorial modificado y también los niveles dependientes cuando aplica.
 	private refrescarNivel(nivel: TerritorialNivel): void {
 		if (nivel === 'depto') {
 			this.getCORR_DEPTO();
@@ -936,6 +979,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.getCORR_DISTRITO();
 	}
 
+	// Construye y ejecuta la eliminación del departamento seleccionado.
 	private eliminarDepto(row: GenDepto): void {
 		this.eliminarNivel(
 			this.convertirEliminacionRelacionadaEnWarning(this.service.deleteDepto(row)),
@@ -944,6 +988,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
+	// Construye y ejecuta la eliminación del municipio seleccionado.
 	private eliminarMunicipio(row: GenMunicipio): void {
 		this.eliminarNivel(
 			this.convertirEliminacionRelacionadaEnWarning(this.service.deleteMunicipio(row)),
@@ -952,6 +997,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
+	// Construye y ejecuta la eliminación del distrito seleccionado.
 	private eliminarDistrito(row: GenDistrito): void {
 		this.eliminarNivel(
 			this.convertirEliminacionRelacionadaEnWarning(this.service.deleteDistrito(row)),
@@ -960,6 +1006,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
+	// Ejecuta una eliminación territorial, actualiza las listas afectadas y normaliza sus mensajes.
 	private eliminarNivel(request: any, nivel: TerritorialNivel, etiqueta: string): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -998,6 +1045,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Determina si una respuesta de eliminación debe mostrarse como advertencia o error.
 	private getDeleteNotifyType(message: string): NotifyType {
 		if (isEmpresaFkErrorMessage(message) || this.isRelatedDeleteWarningMessage(message)) {
 			return NotifyType.Warning;
@@ -1040,6 +1088,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
+	// Convierte restricciones de integridad al eliminar en una advertencia comprensible para el usuario.
 	private convertirEliminacionRelacionadaEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
@@ -1058,6 +1107,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
+	// Detecta mensajes que indican dependencias asociadas al registro que se intenta eliminar.
 	private isRelatedDeleteWarningMessage(message: string): boolean {
 		const value = `${message ?? ''}`.toLowerCase();
 		return [
@@ -1071,6 +1121,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		].some((fragment) => value.includes(fragment));
 	}
 
+	// Mantiene las claves correlativas como solo lectura dentro del formulario emergente.
 	private bloquearCamposCorr(form?: DxFormComponent): void {
 		const corrFields = ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO', 'CORR_DISTRITO'];
 		corrFields.forEach((field) => {
@@ -1078,6 +1129,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Solicita confirmación al usuario y ejecuta la acción únicamente cuando es aceptada.
 	private confirmAction(title: string, message: string, fn: () => void): void {
 		const dialog = custom({
 			title,
@@ -1099,6 +1151,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Normaliza errores HTTP y de base de datos en un mensaje útil para la interfaz.
 	private getErrorMessage(error: any): string {
 		const connectionMessage =
 			'No se pudo comunicar con el servidor. Verifique que la API esté en ejecución e intente nuevamente.';
@@ -1139,6 +1192,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return coerced || 'Ocurrio un error al procesar la solicitud.';
 	}
 
+	// Clasifica el error para presentarlo con el nivel de notificación adecuado.
 	private getErrorNotifyType(error: any): NotifyType {
 		const body = error?.error;
 		if (body && typeof body === 'object' && body.ErrorCode !== undefined) {
@@ -1153,6 +1207,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return NotifyType.Error;
 	}
 
+	// Detecta mensajes que representan conflictos por registros duplicados.
 	private isDuplicateWarningMessage(message: string): boolean {
 		const value = `${message ?? ''}`.toLowerCase();
 		return [
@@ -1169,6 +1224,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		].some((fragment) => value.includes(fragment));
 	}
 
+	// Determina el tipo de notificación a partir del código y contenido de la respuesta.
 	private getNotifyType(response: any): NotifyType {
 		const errorCode = Number(response?.ErrorCode);
 		if (isEmpresaWarningResponse(response) || errorCode === 4100) {
@@ -1180,6 +1236,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			: NotifyType.Error;
 	}
 
+	// Convierte mensajes técnicos conocidos en advertencias claras para el usuario.
 	private getWarningMessage(message: string): string {
 		const cleanMessage = `${message ?? ''}`.replace(/^error:\s*/i, '').trim();
 		const value = cleanMessage.toLowerCase();

@@ -11,6 +11,7 @@ import { GenDivisionRepository } from './gen-division.repository';
 export class GenDivisionService {
 	constructor(private repo: GenDivisionRepository) {}
 
+	// Valida los campos obligatorios y sus longitudes antes de guardar la división.
 	esValido(model: GenDivision, msg: Function): boolean {
 		if (!model.NOMBRE_DIVISION || model.NOMBRE_DIVISION.trim() === '') {
 			msg('Debe ingresar el nombre de division.', NotifyType.Warning);
@@ -35,26 +36,32 @@ export class GenDivisionService {
 		return true;
 	}
 
+	// Solicita al repositorio el listado de divisiones con los filtros construidos.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
+	// Solicita al repositorio el detalle de la división indicada.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_DIVISION', Value: param.CORR_DIVISION }]);
 	}
 
+	// Delega en el repositorio la creación de la división.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Delega en el repositorio la actualización de la división y sus claves.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_DIVISION', Value: model.CORR_DIVISION }]);
 	}
 
+	// Delega en el repositorio la eliminación de la división indicada.
 	delete(param: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_DIVISION', Value: param.CORR_DIVISION }]);
 	}
 
+	// Define las columnas y formatos usados por la cuadrícula del mantenimiento.
 	getColumns(): any {
 		return [
 			{
@@ -70,12 +77,14 @@ export class GenDivisionService {
 		];
 	}
 
+	// Configura el contador de registros mostrado en la cuadrícula.
 	getSummary(): any {
 		return {
 			totalItems: [{ column: 'CORR_DIVISION', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
 		};
 	}
 
+	// Define los campos, editores y validaciones que presenta el formulario.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_DIVISION', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -96,6 +105,7 @@ export class GenDivisionService {
 		];
 	}
 
+	// Transforma los parámetros del componente en filtros compatibles con el repositorio.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 
@@ -110,14 +120,17 @@ export class GenDivisionService {
 export const EMPRESA_WARNING_ERROR_CODE = 4100;
 export const EMPRESA_REGISTRO_ETIQUETA = 'la division';
 
+// Genera el mensaje funcional usado cuando la sesión no tiene una empresa asignada.
 export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
 	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
 }
 
+// Identifica respuestas controladas relacionadas con la empresa de la sesión.
 export function isEmpresaWarningResponse(response: any): boolean {
 	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
 }
 
+// Detecta errores técnicos vinculados con la empresa y permite mostrarlos como advertencia.
 export function isEmpresaFkErrorMessage(message: string): boolean {
 	const value = `${message ?? ''}`.toLowerCase();
 	return (

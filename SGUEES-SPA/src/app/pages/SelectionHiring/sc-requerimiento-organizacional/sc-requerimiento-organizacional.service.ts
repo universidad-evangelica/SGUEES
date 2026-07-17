@@ -14,6 +14,7 @@ const ESTADO_FIELD = 'ESTADO_REQUERIMIENTO_ORGANIZACIONAL';
 export class ScRequerimientoOrganizacionalService {
 	constructor(private repo: ScRequerimientoOrganizacionalRepository) {}
 
+	// Valida la descripción obligatoria y su longitud antes del guardado.
 	esValido(model: ScRequerimientoOrganizacional, msg: Function): boolean {
 		if (!model.DESCRIPCION || model.DESCRIPCION.trim() === '') {
 			msg('Debe ingresar la descripcion de requerimiento organizacional.', NotifyType.Warning);
@@ -80,6 +81,7 @@ export class ScRequerimientoOrganizacionalService {
 		};
 	}
 
+	// Define los campos y reglas del formulario del requerimiento.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_REQUERIMIENTO_ORGANIZACIONAL', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -94,6 +96,7 @@ export class ScRequerimientoOrganizacionalService {
 		];
 	}
 
+	// Traduce los filtros del componente al formato esperado por la API.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

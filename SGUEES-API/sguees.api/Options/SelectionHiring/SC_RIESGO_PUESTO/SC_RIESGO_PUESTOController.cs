@@ -41,6 +41,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetCORR_RIESGO_PUESTO_SC_DESCRIPTOR_PUESTO")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        // Provee riesgos activos para el descriptor.
         public async Task<CResult> GetCORR_RIESGO_PUESTO_SC_DESCRIPTOR_PUESTO([FromQuery] SC_RIESGO_PUESTOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -49,6 +50,7 @@ namespace SGUEES.Controllers
 
         [HttpPost]
         [Authorize(Policy = "/sc-riesgo-puesto|C")]
+        // Completa auditoría antes de crear el riesgo.
         public async Task<IActionResult> Post(SC_RIESGO_PUESTOTable Data)
         {
             SetCreateAudit(Data);
@@ -59,6 +61,7 @@ namespace SGUEES.Controllers
 
         [HttpPut]
         [Authorize(Policy = "/sc-riesgo-puesto|U")]
+        // Aplica la llave consultada y la auditoría antes de actualizar.
         public async Task<IActionResult> Put(SC_RIESGO_PUESTOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(SC_RIESGO_PUESTOTable.CORR_RIESGO_PUESTO));
@@ -100,6 +103,7 @@ namespace SGUEES.Controllers
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
+        // Completa empresa, usuario, estación y fechas del registro nuevo.
         private void SetCreateAudit(SC_RIESGO_PUESTOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -112,6 +116,7 @@ namespace SGUEES.Controllers
             Data.ESTADO_RIESGO_PUESTO ??= true;
         }
 
+        // Actualiza auditoría sin reemplazar la información de creación.
         private void SetUpdateAudit(SC_RIESGO_PUESTOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

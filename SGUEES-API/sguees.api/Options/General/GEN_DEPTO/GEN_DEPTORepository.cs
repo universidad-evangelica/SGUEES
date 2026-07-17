@@ -20,6 +20,7 @@ namespace SGUEES.Repositories
 		{
 		}
 
+		// Consulta la vista de departamentos aplicando el contexto de empresa y devuelve el listado ordenado.
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -63,6 +64,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Consulta un departamento por sus claves y devuelve el primer registro coincidente.
 		public async Task<CResult> GetAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -100,6 +102,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Inserta el departamento, recupera el registro creado y normaliza errores de clave duplicada.
 		public async Task<CResult> CreateAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -159,6 +162,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Actualiza el departamento por sus claves y devuelve el registro resultante.
 		public async Task<CResult> UpdateAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -214,6 +218,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Elimina el departamento por sus claves y convierte restricciones relacionadas en un resultado controlado.
 		public async Task<CResult> DeleteAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -251,6 +256,7 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Comprueba si ya existe un departamento con el valor normalizado, excluyendo el registro en edición.
 		public async Task<bool> ExistsDeptoByFieldAsync(int corrPais, string fieldName, string normalizedValue, int excludeCorrPais, int excludeCorrDepto)
 		{
 			if (!IsAllowedDeptoField(fieldName) || string.IsNullOrWhiteSpace(normalizedValue))
@@ -292,9 +298,11 @@ namespace SGUEES.Repositories
 			}
 		}
 
+		// Restringe los campos del departamento permitidos en la consulta dinámica de duplicados.
 		private static bool IsAllowedDeptoField(string fieldName) =>
 			fieldName is "NOMBRE_DEPTO" or "CODIGO_DEPTO";
 
+		// Reconoce excepciones de claves únicas para devolver un mensaje funcional en lugar del error técnico.
 		private static bool IsDuplicateKeyError(Exception e)
 		{
 			return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

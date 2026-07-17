@@ -327,6 +327,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Recupera responsabilidades activas para el lookup del descriptor.
         public async Task<List<SC_RESPONSABILIDAD_CARGOView>> GetCatalogoDescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)
@@ -368,6 +369,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Comprueba si otra responsabilidad utiliza el mismo nombre.
         public async Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr)
         {
             if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nombre))

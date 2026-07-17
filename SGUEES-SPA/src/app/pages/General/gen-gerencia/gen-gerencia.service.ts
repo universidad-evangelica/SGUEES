@@ -11,6 +11,7 @@ import { GenGerenciaRepository } from './gen-gerencia.repository';
 export class GenGerenciaService {
 	constructor(private repo: GenGerenciaRepository) {}
 
+	// Valida los campos obligatorios y sus longitudes antes de guardar la gerencia.
 	esValido(model: GenGerencia, msg: Function): boolean {
 		if (!model.CORR_DIVISION || model.CORR_DIVISION <= 0) {
 			msg('Debe seleccionar la division.', NotifyType.Warning);
@@ -40,26 +41,32 @@ export class GenGerenciaService {
 		return true;
 	}
 
+	// Solicita al repositorio el listado de gerencias con los filtros construidos.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
+	// Solicita al repositorio el detalle de la gerencia indicada.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_GERENCIA', Value: param.CORR_GERENCIA }]);
 	}
 
+	// Delega en el repositorio la creación de la gerencia.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Delega en el repositorio la actualización de la gerencia y sus claves.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_GERENCIA', Value: model.CORR_GERENCIA }]);
 	}
 
+	// Delega en el repositorio la eliminación de la gerencia indicada.
 	delete(param: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_GERENCIA', Value: param.CORR_GERENCIA }]);
 	}
 
+	// Define las columnas y formatos usados por la cuadrícula del mantenimiento.
 	getColumns(): any {
 		return [
 			{
@@ -77,12 +84,14 @@ export class GenGerenciaService {
 		];
 	}
 
+	// Configura el contador de registros mostrado en la cuadrícula.
 	getSummary(): any {
 		return {
 			totalItems: [{ column: 'CORR_GERENCIA', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
 		};
 	}
 
+	// Define los campos, editores y validaciones que presenta el formulario.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_GERENCIA', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -121,6 +130,7 @@ export class GenGerenciaService {
 		];
 	}
 
+	// Transforma los parámetros del componente en filtros compatibles con el repositorio.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 
@@ -135,14 +145,17 @@ export class GenGerenciaService {
 export const EMPRESA_WARNING_ERROR_CODE = 4100;
 export const EMPRESA_REGISTRO_ETIQUETA = 'la gerencia';
 
+// Genera el mensaje funcional usado cuando la sesión no tiene una empresa asignada.
 export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
 	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
 }
 
+// Identifica respuestas controladas relacionadas con la empresa de la sesión.
 export function isEmpresaWarningResponse(response: any): boolean {
 	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
 }
 
+// Detecta errores técnicos vinculados con la empresa y permite mostrarlos como advertencia.
 export function isEmpresaFkErrorMessage(message: string): boolean {
 	const value = `${message ?? ''}`.toLowerCase();
 	return (

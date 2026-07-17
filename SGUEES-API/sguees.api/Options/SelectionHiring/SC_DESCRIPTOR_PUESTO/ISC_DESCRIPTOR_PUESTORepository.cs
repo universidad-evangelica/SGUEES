@@ -7,8 +7,11 @@ namespace SGUEES.Repositories
 {
     public interface ISC_DESCRIPTOR_PUESTORepository : IRepository<SC_DESCRIPTOR_PUESTOTable>
     {
+        // Comprueba si el puesto ya tiene otro descriptor abierto en la empresa.
         Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(int corrEmpresa, int corrPuesto, int excludeCorrDescriptor);
+        // Busca la inducción activa asociada a la empresa y al identificador recibido.
         Task<SC_INDUCCIONView> GetInduccionActivaAsync(int corrEmpresa, int corrInduccion);
+        // Valida y persiste los datos de entrenamiento asociados al descriptor.
         Task<CResult> ActualizarEntrenamientoAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
     }
 }

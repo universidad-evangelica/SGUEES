@@ -31,6 +31,7 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
+        // Devuelve los riesgos activos disponibles para el descriptor.
         public async Task<CResult> GetCatalogoDescriptorAsync(SC_RIESGO_PUESTOParam xWhere)
         {
             var rows = await _repo.GetCatalogoDescriptorAsync(xWhere.CORR_EMPRESA);
@@ -46,6 +47,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Valida empresa, nombre y unicidad antes de crear.
         public async Task<CResult> CreateAsync(SC_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -70,6 +72,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida la llave y excluye el registro actual al comprobar duplicados.
         public async Task<CResult> UpdateAsync(SC_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -134,12 +137,14 @@ namespace SGUEES.Services
             };
         }
 
+        // Limpia el nombre y aplica el estado activo predeterminado.
         private static void NormalizeData(SC_RIESGO_PUESTOTable Data)
         {
             Data.NOMBRE_RIESGO_PUESTO = Data.NOMBRE_RIESGO_PUESTO?.Trim();
             Data.ESTADO_RIESGO_PUESTO ??= true;
         }
 
+        // Comprueba el nombre obligatorio y su longitud máxima.
         private static CResult Validate(SC_RIESGO_PUESTOTable Data)
         {
             if (Data == null)
@@ -160,6 +165,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Verifica que el nombre no pertenezca a otro riesgo de la empresa.
         private async Task<CResult> ValidateUniqueNombreAsync(SC_RIESGO_PUESTOTable Data, int? excludeCorr)
         {
             var exists = await _repo.ExistsNombreAsync(

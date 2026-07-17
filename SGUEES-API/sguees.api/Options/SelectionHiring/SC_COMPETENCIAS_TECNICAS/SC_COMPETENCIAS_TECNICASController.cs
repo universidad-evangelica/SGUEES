@@ -41,6 +41,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetCORR_COMPETENCIAS_TECNICAS_PADRE_SC_COMPETENCIAS_TECNICAS")]
         [Authorize(Policy = "/sc-competencias-tecnicas|R")]
+        // Provee los posibles padres para construir la jerarquía.
         public async Task<CResult> GetCORR_COMPETENCIAS_TECNICAS_PADRE_SC_COMPETENCIAS_TECNICAS(
             [FromQuery] SC_COMPETENCIAS_TECNICASParam Data)
         {
@@ -50,6 +51,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetCORR_COMPETENCIAS_TECNICAS_NIV3_SC_DESCRIPTOR_PUESTO")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        // Provee competencias de nivel tres agrupadas para el descriptor.
         public async Task<CResult> GetCORR_COMPETENCIAS_TECNICAS_NIV3_SC_DESCRIPTOR_PUESTO([FromQuery] SC_COMPETENCIAS_TECNICASParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -58,6 +60,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetNextCodigo")]
         [Authorize(Policy = "/sc-competencias-tecnicas|R")]
+        // Genera el siguiente código para el padre indicado.
         public async Task<CResult> GetNextCodigo([FromQuery] SC_COMPETENCIAS_TECNICASParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -66,6 +69,7 @@ namespace SGUEES.Controllers
 
         [HttpPost]
         [Authorize(Policy = "/sc-competencias-tecnicas|C")]
+        // Completa auditoría y crea la competencia en la empresa de la sesión.
         public async Task<IActionResult> Post(SC_COMPETENCIAS_TECNICASTable Data)
         {
             SetCreateAudit(Data);
@@ -76,6 +80,7 @@ namespace SGUEES.Controllers
 
         [HttpPut]
         [Authorize(Policy = "/sc-competencias-tecnicas|U")]
+        // Aplica la llave consultada y la auditoría antes de actualizar.
         public async Task<IActionResult> Put(SC_COMPETENCIAS_TECNICASTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(SC_COMPETENCIAS_TECNICASTable.CORR_COMPETENCIAS_TECNICAS));
@@ -117,6 +122,7 @@ namespace SGUEES.Controllers
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
+        // Completa empresa, usuario, estación y fechas del registro nuevo.
         private void SetCreateAudit(SC_COMPETENCIAS_TECNICASTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -129,6 +135,7 @@ namespace SGUEES.Controllers
             Data.ESTADO_COMPETENCIAS_TECNICAS ??= true;
         }
 
+        // Actualiza auditoría sin reemplazar la información de creación.
         private void SetUpdateAudit(SC_COMPETENCIAS_TECNICASTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

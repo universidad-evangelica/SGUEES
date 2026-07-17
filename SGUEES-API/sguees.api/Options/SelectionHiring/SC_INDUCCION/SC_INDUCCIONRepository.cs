@@ -23,6 +23,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Recupera inducciones activas ordenadas para el lookup del descriptor.
         public async Task<List<SC_INDUCCIONView>> GetCatalogoDescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)

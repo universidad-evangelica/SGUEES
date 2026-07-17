@@ -15,6 +15,7 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Devuelve los impactos activos disponibles para el descriptor.
         public async Task<CResult> GetCatalogoDescriptorAsync(SC_IMPACTO_ECONOMICOParam xWhere)
         {
             var rows = await _repo.GetCatalogoDescriptorAsync(xWhere.CORR_EMPRESA);
@@ -46,6 +47,7 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
+        // Valida y normaliza la descripción antes de crear.
         public async Task<CResult> CreateAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -67,6 +69,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida la llave y descripción antes de actualizar.
         public async Task<CResult> UpdateAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -127,6 +130,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Comprueba la descripción obligatoria y su longitud máxima.
         private static CResult Validate(SC_IMPACTO_ECONOMICOTable Data)
         {
             if (Data == null)

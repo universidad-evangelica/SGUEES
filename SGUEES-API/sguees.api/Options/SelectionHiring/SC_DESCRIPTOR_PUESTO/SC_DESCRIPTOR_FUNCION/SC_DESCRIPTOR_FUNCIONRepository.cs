@@ -20,6 +20,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Consulta la vista de función del descriptor con los filtros indicados.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -61,6 +62,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Consulta un registro de función del descriptor según los filtros indicados.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -103,6 +105,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta el registro de función del descriptor y devuelve los datos persistidos.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -152,6 +155,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza el registro de función del descriptor identificado por sus claves.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -210,6 +214,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Elimina el registro de función del descriptor identificado por sus claves.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -250,6 +255,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Construye los parámetros de escritura de función del descriptor, incluida su auditoría.
         private static List<CParameter> BuildWriteParameters(SC_DESCRIPTOR_FUNCIONTable Data)
         {
             return new List<CParameter>
@@ -268,6 +274,7 @@ namespace SGUEES.Repositories
             };
         }
 
+        // Normaliza el tipo de función para mantener un valor consistente.
         private static void NormalizeTipoFuncion(IEnumerable<SC_DESCRIPTOR_FUNCIONView> items)
         {
             foreach (var item in items)
@@ -276,6 +283,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Normaliza el tipo de función para mantener un valor consistente.
         private static void NormalizeTipoFuncion(SC_DESCRIPTOR_FUNCIONView item)
         {
             if (item == null)

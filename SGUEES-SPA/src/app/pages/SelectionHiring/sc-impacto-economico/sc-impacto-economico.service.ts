@@ -14,6 +14,7 @@ const ESTADO_FIELD = 'ESTADO_IMPACTO_ECONOMICO';
 export class ScImpactoEconomicoService {
 	constructor(private repo: ScImpactoEconomicoRepository) {}
 
+	// Valida la descripción obligatoria y su longitud antes del guardado.
 	esValido(model: ScImpactoEconomico, msg: Function): boolean {
 		if (!model.DESCRIPCION || model.DESCRIPCION.trim() === '') {
 			msg('Debe ingresar la descripcion del impacto economico.', NotifyType.Warning);
@@ -73,6 +74,7 @@ export class ScImpactoEconomicoService {
 		};
 	}
 
+	// Define los campos y reglas del formulario de impacto económico.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_IMPACTO_ECONOMICO', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -88,6 +90,7 @@ export class ScImpactoEconomicoService {
 		];
 	}
 
+	// Traduce los filtros del componente al formato esperado por la API.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

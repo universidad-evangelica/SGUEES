@@ -23,6 +23,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Consulta la vista por empresa y devuelve los niveles ordenados.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -66,6 +67,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Recupera un nivel académico específico con los filtros recibidos.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -103,6 +105,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta el registro y devuelve la fila creada desde la vista.
         public async Task<CResult> CreateAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -162,6 +165,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza el nivel de la empresa y devuelve su estado persistido.
         public async Task<CResult> UpdateAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -216,6 +220,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Elimina el nivel por empresa y correlativo, controlando relaciones existentes.
         public async Task<CResult> DeleteAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -253,6 +258,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Ejecuta el procedimiento común de cambio de estado y recarga el registro.
         public async Task<CResult> ActivarInactivarAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -325,6 +331,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Comprueba si otro nivel de la empresa ya utiliza el mismo nombre.
         public async Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr)
         {
             if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nombre))
@@ -357,6 +364,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Identifica errores de unicidad reportados con distintos textos por SQL Server.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

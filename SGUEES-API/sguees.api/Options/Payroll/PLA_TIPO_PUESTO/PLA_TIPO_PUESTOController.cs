@@ -25,6 +25,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetAll")]
         [Authorize(Policy = "/pla-tipo-puesto|R")]
+        // Completa la empresa desde la sesión antes de consultar el catálogo.
         public async Task<CResult> GetAll([FromQuery] PLA_TIPO_PUESTOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -41,6 +42,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetCORR_TIPO_PUESTO_SC_COMPETENCIAS_CONDUCTUALES")]
         [Authorize(Policy = "/sc-competencias-conductuales|R")]
+        // Provee el catálogo de tipos de puesto para competencias conductuales.
         public async Task<CResult> GetCORR_TIPO_PUESTO_SC_COMPETENCIAS_CONDUCTUALES([FromQuery] PLA_TIPO_PUESTOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -49,6 +51,7 @@ namespace SGUEES.Controllers
 
         [HttpPost]
         [Authorize(Policy = "/pla-tipo-puesto|C")]
+        // Asigna la auditoría de creación y devuelve el resultado del guardado.
         public async Task<IActionResult> Post(PLA_TIPO_PUESTOTable Data)
         {
             SetCreateAudit(Data);
@@ -59,6 +62,7 @@ namespace SGUEES.Controllers
 
         [HttpPut]
         [Authorize(Policy = "/pla-tipo-puesto|U")]
+        // Aplica la llave de la consulta y la auditoría antes de actualizar.
         public async Task<IActionResult> Put(PLA_TIPO_PUESTOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(PLA_TIPO_PUESTOTable.CORR_TIPO_PUESTO));
@@ -70,6 +74,7 @@ namespace SGUEES.Controllers
 
         [HttpDelete]
         [Authorize(Policy = "/pla-tipo-puesto|D")]
+        // Restringe la eliminación a la empresa de la sesión actual.
         public async Task<IActionResult> Delete([FromQuery] PLA_TIPO_PUESTOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -80,6 +85,7 @@ namespace SGUEES.Controllers
 
         [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/pla-tipo-puesto|U")]
+        // Identifica el registro y solicita el cambio de estado en su empresa.
         public async Task<IActionResult> ActivarInactivar(PLA_TIPO_PUESTOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(PLA_TIPO_PUESTOTable.CORR_TIPO_PUESTO));
@@ -100,6 +106,7 @@ namespace SGUEES.Controllers
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
+        // Completa empresa, usuario, estación y fechas para un registro nuevo.
         private void SetCreateAudit(PLA_TIPO_PUESTOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -112,6 +119,7 @@ namespace SGUEES.Controllers
             Data.ESTADO_TIPO_PUESTO ??= true;
         }
 
+        // Actualiza los datos de auditoría sin reemplazar la información de creación.
         private void SetUpdateAudit(PLA_TIPO_PUESTOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

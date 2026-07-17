@@ -20,6 +20,7 @@ namespace sguees.Repositories
 		{
 		}
 
+		// Consulta la vista de gerencias aplicando el contexto de empresa y devuelve el listado ordenado.
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -63,6 +64,7 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		// Consulta una gerencia por sus claves y devuelve el primer registro coincidente.
 		public async Task<CResult> GetAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -100,6 +102,7 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		// Inserta la gerencia, recupera el registro creado y normaliza errores de clave duplicada.
 		public async Task<CResult> CreateAsync(GEN_GERENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
@@ -160,6 +163,7 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		// Actualiza la gerencia por sus claves y devuelve el registro resultante.
 		public async Task<CResult> UpdateAsync(GEN_GERENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
@@ -216,6 +220,7 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		// Elimina la gerencia por sus claves y convierte restricciones relacionadas en un resultado controlado.
 		public async Task<CResult> DeleteAsync(GEN_GERENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
@@ -253,6 +258,7 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		// Comprueba si ya existe una gerencia con el valor normalizado, excluyendo el registro en edición.
 		public async Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr)
 		{
 			if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(codigo))
@@ -285,6 +291,7 @@ namespace sguees.Repositories
 			}
 		}
 
+		// Reconoce excepciones de claves únicas para devolver un mensaje funcional en lugar del error técnico.
 		private static bool IsDuplicateKeyError(Exception e)
 		{
 			return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

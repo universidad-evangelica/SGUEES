@@ -58,10 +58,12 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
+	// Construye el filtro por correlativo usado en consultas y eliminaciones.
 	fillParam(xCORR_FRECUENCIA?: number): any {
 		return { CORR_FRECUENCIA: xCORR_FRECUENCIA ?? 0 };
 	}
 
+	// Copia el registro seleccionado o crea el modelo inicial del formulario.
 	override fillData(xModel?: ScFrecuencia): ScFrecuencia {
 		if (xModel !== undefined) {
 			return {
@@ -92,6 +94,7 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		};
 	}
 
+	// Carga las frecuencias y sincroniza el orden y la paginación de la grilla.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -102,6 +105,7 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Mantiene los registros ordenados por correlativo tras cambios locales.
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -110,6 +114,7 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		this.models = [...this.models].sort((a, b) => Number(a.CORR_FRECUENCIA) - Number(b.CORR_FRECUENCIA));
 	}
 
+	// Agrega o reemplaza en la grilla la respuesta del guardado.
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
 		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
 			super.aplicarRegistroEnGrid(data, isAdd);
@@ -117,7 +122,7 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		}
 
 		const record = this.fillData(data as ScFrecuencia);
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof ScFrecuencia;
 
 		if (isAdd) {
 			this.models = [...this.models, record];
@@ -132,17 +137,19 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		this.refrescarGridTrasCarga(isAdd);
 	}
 
+	// Retira de la grilla el registro eliminado sin recargar el catálogo.
 	protected override quitarRegistroDeGrid(keyValue: unknown): void {
 		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
 			super.quitarRegistroDeGrid(keyValue);
 			return;
 		}
 
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof ScFrecuencia;
 		this.models = this.models.filter((item) => item?.[key] !== keyValue);
 		this.refrescarGridTrasCarga(true);
 	}
 
+	// Espera la actualización de Angular antes de refrescar la grilla.
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
@@ -175,6 +182,7 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Inicializa un registro nuevo solo si existe empresa en sesión.
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -185,6 +193,7 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Valida el formulario antes de insertar o actualizar.
 	guardar(): void {
 		const formData = this.dataForm?.instance?.option('formData');
 		if (formData) {
@@ -212,6 +221,7 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Convierte duplicados y relaciones existentes en advertencias controladas.
 	private convertirErrorMttoEnWarning<T>(
 		request: Observable<T>,
 		mensajeDuplicado?: string,
@@ -261,6 +271,7 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		super.cancelar((item: any) => item.CORR_FRECUENCIA === this.modelUpdate.CORR_FRECUENCIA);
 	}
 
+	// Solicita la eliminación y controla dependencias asociadas.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
@@ -272,6 +283,7 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Cambia el estado de la frecuencia seleccionada.
 	activar_inactivar(): void {
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
