@@ -341,7 +341,7 @@ namespace SGUEES.Services
             return new CResult
             {
                 Result = false,
-                ErrorCode = -1,
+                ErrorCode = 4101,
                 ErrorMessage = message,
                 ErrorSource = "[SC_DESCRIPTOR_PUESTOService]",
             };

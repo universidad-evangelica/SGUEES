@@ -2184,12 +2184,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.invalidarFila(e, 'Debe indicar el nombre de la competencia.');
 			return;
 		}
-		if ((data.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim().length > 255) {
-			this.invalidarFila(e, 'El nombre de la competencia no puede superar 255 caracteres.');
+		if ((data.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim().length > 150) {
+			this.invalidarFila(e, 'El nombre de la competencia no puede superar 150 caracteres.');
 			return;
 		}
-		if ((data.DESCRIPCION ?? '').trim().length > 255) {
-			this.invalidarFila(e, 'La descripcion no puede superar 255 caracteres.');
+		if ((data.DESCRIPCION ?? '').trim().length > 500) {
+			this.invalidarFila(e, 'La descripcion no puede superar 500 caracteres.');
 			return;
 		}
 
@@ -4411,6 +4411,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const errorCode = Number(value?.ErrorCode ?? value?.error?.ErrorCode);
 		const message = this.normalizarMensajeOperacion(this.obtenerMensajeOperacion(value));
 
+		// 4100 empresa / 4101 vacio-maximo-seleccion: advertencia de negocio, no error tecnico.
+		if (errorCode === 4100 || errorCode === 4101) {
+			return true;
+		}
+
 		if (operacion === 'guardar') {
 			return (
 				errorCode === 2601 ||
@@ -4425,7 +4430,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				message.includes('same time') ||
 				message.includes('concurren') ||
 				message.includes('llave primaria') ||
-				message.includes('clave primaria')
+				message.includes('clave primaria') ||
+				message.includes('no puede superar') ||
+				message.includes('debe indicar') ||
+				message.includes('debe seleccionar') ||
+				message.includes('debe ingresar') ||
+				message.includes('debe guardar')
 			);
 		}
 

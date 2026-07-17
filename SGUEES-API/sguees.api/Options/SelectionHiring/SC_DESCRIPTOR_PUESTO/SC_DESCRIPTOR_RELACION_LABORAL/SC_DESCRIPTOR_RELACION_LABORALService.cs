@@ -114,14 +114,14 @@ namespace SGUEES.Services
                 return ValidationError("Debe indicar el puesto o area de la relacion.");
             }
 
-            if (Data.PUESTO_AREA.Trim().Length > 200)
+            if (Data.PUESTO_AREA.Trim().Length > 255)
             {
-                return ValidationError("El puesto o area no puede superar 200 caracteres.");
+                return ValidationError("El puesto o area no puede superar 255 caracteres.");
             }
 
-            if (!string.IsNullOrEmpty(Data.MOTIVO_RELACION) && Data.MOTIVO_RELACION.Trim().Length > 255)
+            if (!string.IsNullOrEmpty(Data.MOTIVO_RELACION) && Data.MOTIVO_RELACION.Trim().Length > 500)
             {
-                return ValidationError("El motivo de la relacion no puede superar 255 caracteres.");
+                return ValidationError("El motivo de la relacion no puede superar 500 caracteres.");
             }
 
             return null;
@@ -148,7 +148,7 @@ namespace SGUEES.Services
                 Result = false,
                 RowsAffected = 0,
                 CodeHelper = 0,
-                ErrorCode = 1,
+                ErrorCode = 4101,
                 ErrorMessage = message,
                 ErrorSource = "",
             };

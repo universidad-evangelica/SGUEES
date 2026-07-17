@@ -173,14 +173,14 @@ namespace SGUEES.Services
                 return ValidationError("Debe indicar el nombre de la competencia conductual.");
             }
 
-            if (Data.NOMBRE_COMPETENCIAS_CONDUCTUALES.Trim().Length > 255)
+            if (Data.NOMBRE_COMPETENCIAS_CONDUCTUALES.Trim().Length > 150)
             {
-                return ValidationError("El nombre no puede superar 255 caracteres.");
+                return ValidationError("El nombre no puede superar 150 caracteres.");
             }
 
-            if (!string.IsNullOrEmpty(Data.DESCRIPCION) && Data.DESCRIPCION.Trim().Length > 255)
+            if (!string.IsNullOrEmpty(Data.DESCRIPCION) && Data.DESCRIPCION.Trim().Length > 500)
             {
-                return ValidationError("La descripcion no puede superar 255 caracteres.");
+                return ValidationError("La descripcion no puede superar 500 caracteres.");
             }
 
             Data.NOMBRE_COMPETENCIAS_CONDUCTUALES = Data.NOMBRE_COMPETENCIAS_CONDUCTUALES.Trim();
@@ -198,7 +198,7 @@ namespace SGUEES.Services
                 Result = false,
                 RowsAffected = 0,
                 CodeHelper = 0,
-                ErrorCode = 1,
+                ErrorCode = 4101,
                 ErrorMessage = message,
                 ErrorSource = "",
             };

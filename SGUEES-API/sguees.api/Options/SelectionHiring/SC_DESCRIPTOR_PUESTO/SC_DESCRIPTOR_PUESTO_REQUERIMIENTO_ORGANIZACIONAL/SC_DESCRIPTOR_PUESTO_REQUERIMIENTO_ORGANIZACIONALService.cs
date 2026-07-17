@@ -226,7 +226,7 @@ namespace SGUEES.Services
                 Result = false,
                 RowsAffected = 0,
                 CodeHelper = 0,
-                ErrorCode = 1,
+                ErrorCode = 4101,
                 ErrorMessage = message,
                 ErrorSource = "[SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService]",
             };
@@ -337,7 +337,7 @@ namespace SGUEES.Services
                 Result = false,
                 RowsAffected = 0,
                 CodeHelper = 0,
-                ErrorCode = 1,
+                ErrorCode = 4101,
                 ErrorMessage = message,
                 ErrorSource = "",
             };
