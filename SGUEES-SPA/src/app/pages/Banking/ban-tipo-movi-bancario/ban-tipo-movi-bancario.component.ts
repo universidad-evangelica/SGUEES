@@ -18,10 +18,7 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_TIPO_MOVIMIENTO';
 	protected override mttoCampoEstado = 'ESTADO_TIPO_MOVIMIENTO';
-	protected override mttoEstadoDescribeField = 'NOMBRE_TIPO_MOVIMIENTO';
-
-	private readonly maintenanceSubtitulo = 'Mantenimiento de Tipos de Movimientos Bancarios';
-
+	protected override mttoEstadoDescribeField = 'NOMBRE_TIPO_MOVIMIENTO';
 	//#region <Declarando Variales>
 	mCORR_LINEA: any;
 	mCORR_CLASE_PARTIDA: any;
@@ -55,9 +52,7 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 	}
 
 	//#region <Inicializando Opciones>
-	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.inicializaOpciones();
+	ngOnInit(): void {		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
 	}
@@ -67,9 +62,7 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
-		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
-		}
+		if (xEstado === UpdateType.Browse) {		}
 	}
 
 	//#region <Manejo de Combos>

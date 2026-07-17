@@ -11,6 +11,22 @@ namespace sguees.Repositories
 	public class GEN_RUBRORepository: BaseRepository<GEN_RUBROTable>, IGEN_RUBRORepository
 	{
 		private const string _TableName = "GEN_RUBRO";
+		private const string _ViewName = "V_GEN_RUBRO";
+		private const string _DefaultSortField = "CORR_RUBRO";
+
+		private static readonly string[] _AllowedSortFields =
+		{
+			"CORR_RUBRO",
+			"NOMBRE_RUBRO",
+			"DESCRIPCION_RUBRO",
+			"ES_IMPUESTO",
+			"POR_IMPUESTO",
+			"MUESTRA_DETALLE",
+			"MUESTRA_TOTAL",
+			"NOMBRE_SUMA_RESTA",
+			"NOMBRE_CLASE_RUBRO",
+			"NOMBRE_TIPO_APLICACION",
+		};
 		
 		public GEN_RUBRORepository(IConfiguration config) : 
 				base(config.GetConnectionString("defaultConnection"),
@@ -24,15 +40,15 @@ namespace sguees.Repositories
 			
 			try
 			{
-				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
-				var response = new List<GEN_RUBROView>().FromDataReader(reader).ToList();
-				
-				reader.Close();
-				reader = null;
-				
-				objResultado.Data = response;
+				var paged = await ReadPagedViewAsync<GEN_RUBROView>(
+					_ViewName,
+					xWhere,
+					_AllowedSortFields,
+					_DefaultSortField);
+
+				objResultado.Data = paged.PageData;
 				objResultado.Result = true;
-				objResultado.RowsAffected = response.Count;
+				objResultado.RowsAffected = paged.TotalRows;
 				objResultado.CodeHelper =  0;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";

@@ -18,10 +18,7 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_BANCO';
 	protected override mttoCampoEstado = 'ESTADO_BANCO';
-	protected override mttoEstadoDescribeField = 'NOMBRE_BANCO';
-
-	private readonly maintenanceSubtitulo = 'Mantenimiento de Bancos';
-
+	protected override mttoEstadoDescribeField = 'NOMBRE_BANCO';
 	//#region <Declarando Variales>
 	mCLASE_BANCO: any;
 	readOnly = false;
@@ -39,9 +36,7 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 	}
 
 	//#region <Inicializando Opciones>
-	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.inicializaOpciones();
+	ngOnInit(): void {		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
 	}
@@ -51,9 +46,7 @@ export class GenBancoComponent extends CBaseComponent implements OnInit {
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
-		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
-		}
+		if (xEstado === UpdateType.Browse) {		}
 	}
 
 	//#region <Manejo de Combos>

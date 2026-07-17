@@ -12,6 +12,23 @@ namespace sguees.Repositories
 	public class GEN_GERENCIARepository : BaseRepository<GEN_GERENCIATable>, IGEN_GERENCIARepository
 	{
 		private const string _TableName = "GEN_GERENCIA";
+		private const string _ViewName = "V_GEN_GERENCIA";
+		private const string _DefaultSortField = "CORR_GERENCIA";
+
+		private static readonly string[] _AllowedSortFields =
+		{
+			"CORR_GERENCIA",
+			"NOMBRE_GERENCIA",
+			"CODIGO_GERENCIA",
+			"NOMBRE_DIVISION",
+			"CODIGO_DIVISION",
+			"USUARIO_CREA",
+			"ESTACION_CREA",
+			"FECHA_CREA",
+			"USUARIO_ACTU",
+			"ESTACION_ACTU",
+			"FECHA_ACTU",
+		};
 
 		public GEN_GERENCIARepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
@@ -25,29 +42,15 @@ namespace sguees.Repositories
 
 			try
 			{
-				var page = xWhere
-					.Where(x => x.ParameterName == "PAGE")
-					.Select(x => Convert.ToInt32(x.Value ?? 1))
-					.FirstOrDefault();
+				var paged = await ReadPagedViewAsync<GEN_GERENCIAView>(
+					_ViewName,
+					xWhere,
+					_AllowedSortFields,
+					_DefaultSortField);
 
-				var pageSize = xWhere
-					.Where(x => x.ParameterName == "PAGE_SIZE")
-					.Select(x => Convert.ToInt32(x.Value ?? 10))
-					.FirstOrDefault();
-
-				page = page < 1 ? 1 : page;
-				pageSize = pageSize < 1 ? 10 : Math.Min(pageSize, 100);
-
-				var response = await FilterQueryAsync(xWhere);
-				var totalRows = response.Count;
-				var pageData = response
-					.Skip((page - 1) * pageSize)
-					.Take(pageSize)
-					.ToList();
-
-				objResultado.Data = pageData;
+				objResultado.Data = paged.PageData;
 				objResultado.Result = true;
-				objResultado.RowsAffected = totalRows;
+				objResultado.RowsAffected = paged.TotalRows;
 				objResultado.CodeHelper = 0;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";

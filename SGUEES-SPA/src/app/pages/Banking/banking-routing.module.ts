@@ -7,6 +7,7 @@ import { BanLineaTrabajoConciliacionComponent } from './ban-linea-trabajo-concil
 import { BanTipoChequeComponent } from './ban-tipo-cheque/ban-tipo-cheque.component';
 import { BanTipoMoviBancarioComponent } from './ban-tipo-movi-bancario/ban-tipo-movi-bancario.component';
 import { BanCuentaBancariaComponent } from './ban-cuenta-bancaria/ban-cuenta-bancaria.component';
+import { BanDocumentoComponent } from './ban-documento/ban-documento.component';
 
 const routes: Routes = [
 	{
@@ -45,6 +46,22 @@ const routes: Routes = [
 		canDeactivate: [AppCanDeactivateGuard],
 		loadChildren: () =>
 			import('./ban-cuenta-bancaria/ban-cuenta-bancaria.module').then((m) => m.BanCuentaBancariaModule),
+	},
+	{
+		path: 'ban-documento',
+		component: BanDocumentoComponent,
+		data: { titulo: 'Documentos Bancarios', muestraCheques: false },
+		canActivate: [AuthGuardService],
+		canDeactivate: [AppCanDeactivateGuard],
+		loadChildren: () => import('./ban-documento/ban-documento.module').then((m) => m.BanDocumentoModule),
+	},
+	{
+		path: 'ban-cheque',
+		component: BanDocumentoComponent,
+		data: { titulo: 'Cheques', muestraCheques: true },
+		canActivate: [AuthGuardService],
+		canDeactivate: [AppCanDeactivateGuard],
+		loadChildren: () => import('./ban-documento/ban-documento.module').then((m) => m.BanDocumentoModule),
 	},
 ];
 

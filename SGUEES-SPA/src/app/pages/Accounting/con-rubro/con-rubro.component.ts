@@ -44,12 +44,7 @@ export class ConRubroComponent extends CBaseComponent implements OnInit {
 
 	protected override requiereEmpresaSesion = true;
 
-	protected override mttoGridKeyExpr = 'CODIGO_RUBRO';
-
-
-
-	private readonly maintenanceSubtitulo = 'Mantenimiento de rubros contables';
-
+	protected override mttoGridKeyExpr = 'CODIGO_RUBRO';
 
 
 	@ViewChild('gridNiveles', { static: false }) gridNiveles!: DxDataGridComponent;
@@ -94,10 +89,7 @@ export class ConRubroComponent extends CBaseComponent implements OnInit {
 
 	//#region <Inicializando Opciones>
 
-	ngOnInit(): void {
-
-		this.subTituloVentana = this.maintenanceSubtitulo;
-
+	ngOnInit(): void {
 		this.inicializaOpciones();
 
 		this.llenaComboBox();
@@ -118,10 +110,7 @@ export class ConRubroComponent extends CBaseComponent implements OnInit {
 
 		super.AsignaStatus(xEstado);
 
-		if (xEstado === UpdateType.Browse) {
-
-			this.subTituloVentana = this.maintenanceSubtitulo;
-
+		if (xEstado === UpdateType.Browse) {
 		}
 
 	}

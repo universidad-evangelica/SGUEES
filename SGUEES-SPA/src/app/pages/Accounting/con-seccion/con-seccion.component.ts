@@ -30,12 +30,7 @@ export class ConSeccionComponent extends CBaseComponent implements OnInit {
 
 	protected override requiereEmpresaSesion = true;
 
-	protected override mttoGridKeyExpr = 'CORR_SECCION';
-
-
-
-	private readonly maintenanceSubtitulo = 'Mantenimiento de secciones';
-
+	protected override mttoGridKeyExpr = 'CORR_SECCION';
 
 
 	constructor(
@@ -70,10 +65,7 @@ export class ConSeccionComponent extends CBaseComponent implements OnInit {
 
 	//#region <Inicializando Opciones>
 
-	ngOnInit(): void {
-
-		this.subTituloVentana = this.maintenanceSubtitulo;
-
+	ngOnInit(): void {
 		this.consultar();
 
 	}
@@ -86,10 +78,7 @@ export class ConSeccionComponent extends CBaseComponent implements OnInit {
 
 		super.AsignaStatus(xEstado);
 
-		if (xEstado === UpdateType.Browse) {
-
-			this.subTituloVentana = this.maintenanceSubtitulo;
-
+		if (xEstado === UpdateType.Browse) {
 		}
 
 	}

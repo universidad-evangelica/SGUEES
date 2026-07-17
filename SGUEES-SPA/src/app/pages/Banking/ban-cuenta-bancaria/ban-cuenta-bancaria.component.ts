@@ -1,33 +1,42 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { BanCuentaBancaria } from './models/ban-cuenta-bancaria';
 import { BanCuentaBancariaService } from './ban-cuenta-bancaria.service';
+import { BanCuentaBancariaChequeraService } from './ban-cuenta-bancaria-chequera/ban-cuenta-bancaria-chequera.service';
+import { BanCuentaBancariaChequera } from './ban-cuenta-bancaria-chequera/models/ban-cuenta-bancaria-chequera';
 
 @Component({
 	selector: 'app-ban-cuenta-bancaria',
 	templateUrl: './ban-cuenta-bancaria.component.html',
+	styleUrls: ['./ban-cuenta-bancaria.component.scss'],
 })
 export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit {
+	@ViewChild('gridChequera', { static: false }) gridChequera!: DxDataGridComponent;
+
 	protected override etiquetaRegistro = 'la cuenta bancaria';
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_CUENTA_BANCO';
 	protected override mttoCampoEstado = 'ESTADO_CUENTA_BANCARIA';
 	protected override mttoEstadoDescribeField = 'NOMBRE_CUENTA';
 
-	private readonly maintenanceSubtitulo = 'Mantenimiento de Cuentas Bancarias';
+	chequeras: BanCuentaBancariaChequera[] = [];
+	chequeraEditando = false;
+	private chequeraEdicionExplicita = false;
 
-	//#region <Declarando Variales>
 	mCORR_BANCO: any;
 	mTIPO_CUENTA_BANCO: any;
 	mCLASE_CHEQUE: any;
 	mCORR_CENTRO_COSTO: any;
 	mCORR_MONEDA: any;
+	mESTADO_CHEQUERA: any;
 	mCUENTA_CONTABLE: any[] = [];
 	cuentaLookupColumns: any[] = [
 		{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta', width: 120 },
@@ -46,38 +55,48 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 		{ dataField: 'NOMBRE_MONEDA', caption: 'Moneda', width: 200 },
 	];
 	readOnly = false;
-	// #endregion
 
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: BanCuentaBancariaService
+		private cdr: ChangeDetectorRef,
+		private service: BanCuentaBancariaService,
+		private chequeraService: BanCuentaBancariaChequeraService
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
+		this.editarChequeraClick = this.editarChequeraClick.bind(this);
+		this.chequeraEditButtonVisible = this.chequeraEditButtonVisible.bind(this);
+		this.chequeraDeleteButtonVisible = this.chequeraDeleteButtonVisible.bind(this);
 	}
 
-	//#region <Inicializando Opciones>
 	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
 	}
 
 	inicializaOpciones() {}
-	// #endregion
+
+	puedeEditarChequera(): boolean {
+		return this.isForm() && !this.readOnly && !this.model?.NO_PERMITE_MODIFICAR && this.permiteEdit;
+	}
+
+	hasCuentaKeys(): boolean {
+		return (this.model?.CORR_CUENTA_BANCO ?? 0) > 0;
+	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
+			this.chequeras = [];
+			this.chequeraEditando = false;
+			this.chequeraEdicionExplicita = false;
 		}
 	}
 
-	//#region <Manejo de Combos>
 	llenaComboBox() {
 		this.getCORR_BANCO();
 		this.getTIPO_CUENTA_BANCO();
@@ -85,6 +104,21 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 		this.getCORR_CENTRO_COSTO();
 		this.getCORR_MONEDA();
 		this.getCUENTA_CONTABLE();
+		this.getESTADO_CHEQUERA();
+	}
+
+	getESTADO_CHEQUERA() {
+		this.appInfoService
+			.getLookUp('BAN_CUENTA_BANCARIA', 'BAN_LISTA', 'GetESTADO_CHEQUERA', undefined, environment.UrlCONTAAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.mESTADO_CHEQUERA = response.Data;
+					}
+				},
+				error: (error: any) => this.notifyApiError(error),
+			});
 	}
 
 	getCUENTA_CONTABLE() {
@@ -97,9 +131,7 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 						this.mCUENTA_CONTABLE = response.Data;
 					}
 				},
-				error: (error: any) => {
-					this.notifyApiError(error);
-				},
+				error: (error: any) => this.notifyApiError(error),
 			});
 	}
 
@@ -113,9 +145,7 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 						this.mCORR_BANCO = response.Data;
 					}
 				},
-				error: (error: any) => {
-					this.notifyApiError(error);
-				},
+				error: (error: any) => this.notifyApiError(error),
 			});
 	}
 
@@ -129,9 +159,7 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 						this.mTIPO_CUENTA_BANCO = response.Data;
 					}
 				},
-				error: (error: any) => {
-					this.notifyApiError(error);
-				},
+				error: (error: any) => this.notifyApiError(error),
 			});
 	}
 
@@ -145,9 +173,7 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 						this.mCLASE_CHEQUE = response.Data;
 					}
 				},
-				error: (error: any) => {
-					this.notifyApiError(error);
-				},
+				error: (error: any) => this.notifyApiError(error),
 			});
 	}
 
@@ -161,9 +187,7 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 						this.mCORR_CENTRO_COSTO = response.Data;
 					}
 				},
-				error: (error: any) => {
-					this.notifyApiError(error);
-				},
+				error: (error: any) => this.notifyApiError(error),
 			});
 	}
 
@@ -177,18 +201,12 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 						this.mCORR_MONEDA = response.Data;
 					}
 				},
-				error: (error: any) => {
-					this.notifyApiError(error);
-				},
+				error: (error: any) => this.notifyApiError(error),
 			});
 	}
-	//#endregion
 
-	//#region <Metodos Mtto>
 	fillParam(xCORR_CUENTA_BANCO?: number): any {
-		return {
-			CORR_CUENTA_BANCO: xCORR_CUENTA_BANCO ?? 0,
-		};
+		return { CORR_CUENTA_BANCO: xCORR_CUENTA_BANCO ?? 0 };
 	}
 
 	override fillData(xModel?: BanCuentaBancaria): BanCuentaBancaria {
@@ -252,6 +270,30 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 			return;
 		}
 		super.nuevo();
+		this.chequeras = [];
+		this.chequeraEditando = false;
+		this.chequeraEdicionExplicita = false;
+		this.readOnly = false;
+	}
+
+	override rowDblClick(e: any): void {
+		super.rowDblClick(e);
+		this.consultarChequeras();
+		this.readOnly = false;
+	}
+
+	override editarClick(e: any): void {
+		super.editarClick(e);
+		this.consultarChequeras();
+		this.readOnly = false;
+	}
+
+	override cancelar(): void {
+		super.cancelar((item: any) => item.CORR_CUENTA_BANCO === this.modelUpdate.CORR_CUENTA_BANCO);
+		this.chequeras = [];
+		this.chequeraEditando = false;
+		this.chequeraEdicionExplicita = false;
+		this.readOnly = false;
 	}
 
 	guardar(): void {
@@ -262,8 +304,288 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 		});
 	}
 
-	override cancelar(): void {
-		super.cancelar((item: any) => item.CORR_CUENTA_BANCO === this.modelUpdate.CORR_CUENTA_BANCO);
+	consultarChequeras(): void {
+		if (!this.hasCuentaKeys()) {
+			this.chequeras = [];
+			return;
+		}
+
+		this.chequeraService
+			.getAll({ CORR_CUENTA_BANCO: this.model.CORR_CUENTA_BANCO })
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.chequeras = response.Data ?? [];
+					}
+				},
+				error: (error: any) => this.notifyApiError(error),
+			});
+	}
+
+	agregarChequera(): void {
+		if (!this.puedeEditarChequera() || this.chequeraEditando) {
+			return;
+		}
+		this.chequeraEdicionExplicita = true;
+		const grid = this.gridChequera?.instance;
+		if (!grid) {
+			return;
+		}
+		grid.addRow();
+		this.sincronizarEstadoEdicionChequera(grid);
+	}
+
+	editarChequeraClick(e: any): void {
+		if (!this.puedeEditarChequera() || this.chequeraEditando) {
+			return;
+		}
+		this.chequeraEdicionExplicita = true;
+		e.component.editRow(e.row.rowIndex);
+		this.sincronizarEstadoEdicionChequera(e.component);
+	}
+
+	private sincronizarEstadoEdicionChequera(grid: any): void {
+		setTimeout(() => {
+			if (grid?.hasEditData?.()) {
+				this.chequeraEditando = true;
+				this.cdr.detectChanges();
+			}
+		});
+	}
+
+	chequeraEditButtonVisible(e: any): boolean {
+		return this.puedeEditarChequera() && !e.row?.isEditing;
+	}
+
+	chequeraDeleteButtonVisible(e: any): boolean {
+		return this.puedeEditarChequera() && !e.row?.isEditing;
+	}
+
+	private refrescarGridChequera(): void {
+		setTimeout(() => {
+			this.gridChequera?.instance?.refresh();
+			this.cdr.detectChanges();
+		});
+	}
+
+	guardarChequeraEditada(): void {
+		const grid = this.gridChequera?.instance;
+		if (!grid || !this.chequeraEditando) {
+			this.notifyFx('No hay una chequera en edición', NotifyType.Warning);
+			return;
+		}
+		grid.saveEditData();
+	}
+
+	cancelarChequeraEditada(): void {
+		const grid = this.gridChequera?.instance;
+		if (!grid?.hasEditData()) {
+			this.chequeraEdicionExplicita = false;
+			this.chequeraEditando = false;
+			this.refrescarGridChequera();
+			return;
+		}
+		grid.cancelEditData();
+	}
+
+	chequeraInitNewRow(e: any): void {
+		e.data.CORR_CHEQUERA = 0;
+		e.data.NUMERO_CHEQUE_INICIAL = 1;
+		e.data.NUMERO_CHEQUE_FINAL = 1;
+		e.data.NUMERO_CHEQUE_ACTUAL = 1;
+		e.data.SERIE_CHEQUE = '';
+		e.data.ESTADO_CHEQUERA = 'AC';
+	}
+
+	onChequeraEditorPreparing(e: any): void {
+		if (e.parentType === 'commandColumn' && (e.name === 'save' || e.name === 'cancel')) {
+			e.visible = false;
+		}
+	}
+
+	onChequeraEditingStart(e: any): void {
+		if (!this.chequeraEdicionExplicita) {
+			e.cancel = true;
+			return;
+		}
+		this.chequeraEdicionExplicita = false;
+		this.chequeraEditando = true;
+		this.cdr.detectChanges();
+	}
+
+	onChequeraSaved(_e: any): void {
+		this.chequeraEdicionExplicita = false;
+		this.chequeraEditando = false;
+		this.refrescarGridChequera();
+	}
+
+	onChequeraEditCanceled(_e: any): void {
+		this.chequeraEdicionExplicita = false;
+		this.chequeraEditando = false;
+		this.refrescarGridChequera();
+	}
+
+	chequeraRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!this.chequeraService.esValido(this.buildChequeraPayload(data), this.notifyFx.bind(this))) {
+			e.isValid = false;
+		}
+	}
+
+	private buildChequeraPayload(data: any): BanCuentaBancariaChequera {
+		return {
+			CORR_EMPRESA: this.model.CORR_EMPRESA,
+			CORR_CUENTA_BANCO: this.model.CORR_CUENTA_BANCO,
+			CORR_CHEQUERA: data.CORR_CHEQUERA ?? 0,
+			NUMERO_CHEQUE_INICIAL: data.NUMERO_CHEQUE_INICIAL,
+			NUMERO_CHEQUE_FINAL: data.NUMERO_CHEQUE_FINAL,
+			NUMERO_CHEQUE_ACTUAL: data.NUMERO_CHEQUE_ACTUAL,
+			SERIE_CHEQUE: data.SERIE_CHEQUE ?? '',
+			ESTADO_CHEQUERA: data.ESTADO_CHEQUERA ?? 'AC',
+		};
+	}
+
+	private guardarEncabezadoParaDetalle(onSuccess: () => void, onCancel: () => void): void {
+		if (this.hasCuentaKeys()) {
+			onSuccess();
+			return;
+		}
+
+		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
+			onCancel();
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.insert(this.model)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (response.Result) {
+						this.models.push(response.Data);
+						this.model = response.Data;
+						this.modelUpdate = this.fillData(this.model);
+						this.AsignaStatus(UpdateType.Update);
+						this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
+						onSuccess();
+					} else {
+						this.notifyApiResponse(response);
+						onCancel();
+					}
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+					onCancel();
+				},
+			});
+	}
+
+	private ejecutarChequeraConEncabezado(accion: () => Promise<boolean>): Promise<boolean> {
+		return new Promise((resolve, reject) => {
+			this.guardarEncabezadoParaDetalle(
+				() => {
+					accion().then(resolve).catch(reject);
+				},
+				() => resolve(true)
+			);
+		});
+	}
+
+	private guardarChequeraRemoto(data: any, esNuevo: boolean): Promise<boolean> {
+		return new Promise((resolve, reject) => {
+			const payload = this.buildChequeraPayload({ ...data });
+			const operacion = esNuevo ? this.chequeraService.insert(payload) : this.chequeraService.update(payload);
+
+			operacion.pipe(take(1)).subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.chequeraEditando = false;
+						this.chequeraEdicionExplicita = false;
+						this.consultarChequeras();
+						this.refrescarGridChequera();
+						resolve(false);
+					} else {
+						this.notifyApiResponse(response);
+						resolve(true);
+					}
+				},
+				error: (error: any) => {
+					this.notifyApiError(error);
+					reject(error);
+				},
+			});
+		});
+	}
+
+	chequeraRowInserting(e: any): void {
+		if (!this.puedeEditarChequera()) {
+			e.cancel = true;
+			this.notifyFx('No se pueden modificar chequeras en este modo', NotifyType.Warning);
+			return;
+		}
+
+		const isEmpty =
+			!(e.data?.NUMERO_CHEQUE_INICIAL || 0) &&
+			!(e.data?.NUMERO_CHEQUE_FINAL || 0) &&
+			!(e.data?.NUMERO_CHEQUE_ACTUAL || 0) &&
+			!e.data?.SERIE_CHEQUE;
+
+		if (isEmpty) {
+			e.cancel = true;
+			return;
+		}
+
+		e.cancel = this.ejecutarChequeraConEncabezado(() => this.guardarChequeraRemoto(e.data, true));
+	}
+
+	chequeraRowUpdating(e: any): void {
+		if (!this.puedeEditarChequera()) {
+			e.cancel = true;
+			this.notifyFx('No se pueden modificar chequeras en este modo', NotifyType.Warning);
+			return;
+		}
+
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = this.ejecutarChequeraConEncabezado(() => this.guardarChequeraRemoto(data, false));
+	}
+
+	chequeraRowRemoving(e: any): void {
+		if (!this.puedeEditarChequera()) {
+			e.cancel = true;
+			this.notifyFx('No se pueden modificar chequeras en este modo', NotifyType.Warning);
+			return;
+		}
+
+		if (!this.hasCuentaKeys()) {
+			e.cancel = true;
+			return;
+		}
+
+		e.cancel = new Promise((resolve, reject) => {
+			this.chequeraService
+				.delete(this.buildChequeraPayload(e.data))
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (response.Result) {
+							this.refrescarGridChequera();
+							this.notifyFx('Chequera eliminada con éxito!', NotifyType.Success);
+							resolve(false);
+						} else {
+							this.notifyApiResponse(response);
+							resolve(true);
+						}
+					},
+					error: (error: any) => {
+						this.notifyApiError(error);
+						reject(error);
+					},
+				});
+		});
 	}
 
 	rowRemoving(e: any): void {
@@ -312,7 +634,6 @@ export class BanCuentaBancariaComponent extends CBaseComponent implements OnInit
 			this.dataForm.instance.getEditor('NUMERO_CUENTA_BANCO')?.focus();
 		});
 	}
-	//#endregion
 
 	selectedLookUpLista(vRow: any): any {
 		return vRow[0].Key;

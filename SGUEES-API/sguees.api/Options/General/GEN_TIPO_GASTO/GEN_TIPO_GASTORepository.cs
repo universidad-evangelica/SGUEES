@@ -11,6 +11,16 @@ namespace sguees.Repositories
 	public class GEN_TIPO_GASTORepository: BaseRepository<GEN_TIPO_GASTOTable>, IGEN_TIPO_GASTORepository
 	{
 		private const string _TableName = "GEN_TIPO_GASTO";
+		private const string _ViewName = "V_GEN_TIPO_GASTO";
+		private const string _DefaultSortField = "CORR_TIPO_GASTO";
+
+		private static readonly string[] _AllowedSortFields =
+		{
+			"CORR_TIPO_GASTO",
+			"NOMBRE_TIPO_GASTO",
+			"ES_SERVICIO",
+			"ES_INTANGIBLE",
+		};
 		
 		public GEN_TIPO_GASTORepository(IConfiguration config) : 
 				base(config.GetConnectionString("defaultConnection"),
@@ -24,15 +34,15 @@ namespace sguees.Repositories
 			
 			try
 			{
-				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
-				var response = new List<GEN_TIPO_GASTOView>().FromDataReader(reader).ToList();
-				
-				reader.Close();
-				reader = null;
-				
-				objResultado.Data = response;
+				var paged = await ReadPagedViewAsync<GEN_TIPO_GASTOView>(
+					_ViewName,
+					xWhere,
+					_AllowedSortFields,
+					_DefaultSortField);
+
+				objResultado.Data = paged.PageData;
 				objResultado.Result = true;
-				objResultado.RowsAffected = response.Count;
+				objResultado.RowsAffected = paged.TotalRows;
 				objResultado.CodeHelper =  0;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";

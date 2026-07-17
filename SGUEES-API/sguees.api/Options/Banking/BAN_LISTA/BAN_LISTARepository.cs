@@ -184,5 +184,29 @@ namespace sguees.Repositories
 
             return objResultado;
         }
+
+        public CResult GetESTADO_DOCUMENTO()
+        {
+            CResult objResultado = new();
+
+            objResultado.Data = new List<BAN_LISTAView>()
+            {
+                new() { Key = "DI", Value = "Digitado" },
+                new() { Key = "AP", Value = "Aplicado" },
+                new() { Key = "IM", Value = "Impreso" },
+                new() { Key = "AN", Value = "Anulado" },
+                new() { Key = "SO", Value = "Solicitando Autorización" },
+                new() { Key = "VA", Value = "Validación" },
+            };
+
+            objResultado.Result = true;
+            objResultado.RowsAffected = 1;
+            objResultado.CodeHelper = 0;
+            objResultado.ErrorCode = 0;
+            objResultado.ErrorMessage = "";
+            objResultado.ErrorSource = "";
+
+            return objResultado;
+        }
     }
 }

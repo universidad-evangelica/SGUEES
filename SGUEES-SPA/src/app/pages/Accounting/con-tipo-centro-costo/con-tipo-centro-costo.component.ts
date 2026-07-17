@@ -16,10 +16,7 @@ import { ConTipoCentroCostoService } from './con-tipo-centro-costo.service';
 export class ConTipoCentroCostoComponent extends CBaseComponent implements OnInit {
 	protected override etiquetaRegistro = 'el tipo de centro de costo';
 	protected override requiereEmpresaSesion = true;
-	protected override mttoGridKeyExpr = 'CORR_TIPO_CENTRO_COSTO';
-
-	private readonly maintenanceSubtitulo = 'Mantenimiento de tipos de centro de costo';
-
+	protected override mttoGridKeyExpr = 'CORR_TIPO_CENTRO_COSTO';
 	//#region <Declarando Variales>
 	mCLASE_CENTRO_COSTO: any;
 	readOnly = false;
@@ -37,9 +34,7 @@ export class ConTipoCentroCostoComponent extends CBaseComponent implements OnIni
 	}
 
 	//#region <Inicializando Opciones>
-	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.inicializaOpciones();
+	ngOnInit(): void {		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
 	}
@@ -49,9 +44,7 @@ export class ConTipoCentroCostoComponent extends CBaseComponent implements OnIni
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
-		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
-		}
+		if (xEstado === UpdateType.Browse) {		}
 	}
 
 	//#region <Manejo de Combos>

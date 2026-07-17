@@ -72,5 +72,26 @@ namespace sguees.Controllers
         {
             return _service.GetCLASE_CHEQUE();
         }
+
+        [HttpGet("GetESTADO_CHEQUERA_BAN_CUENTA_BANCARIA")]
+		[Authorize(Policy = "/ban-cuenta-bancaria|R")]
+        public CResult GetESTADO_CHEQUERA_BAN_CUENTA_BANCARIA()
+        {
+            return _service.GetESTADO_CUENTA();
+        }
+
+        [HttpGet("GetESTADO_DOCUMENTO_BAN_DOCUMENTO")]
+		[Authorize(Policy = "/ban-documento|R")]
+        public CResult GetESTADO_DOCUMENTO_BAN_DOCUMENTO()
+        {
+            return _service.GetESTADO_DOCUMENTO();
+        }
+
+        [HttpGet("GetESTADO_DOCUMENTO_BAN_CHEQUE")]
+		[Authorize(Policy = "/ban-cheque|R")]
+        public CResult GetESTADO_DOCUMENTO_BAN_CHEQUE()
+        {
+            return _service.GetESTADO_DOCUMENTO();
+        }
     }
 }

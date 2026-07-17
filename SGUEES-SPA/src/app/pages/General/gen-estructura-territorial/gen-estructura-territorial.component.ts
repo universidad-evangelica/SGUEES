@@ -65,9 +65,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 
 	readonly cascadeGridHeight = 530;
 	readonly cascadeRemoteOperations = { filtering: true, sorting: true };
-	readonly popupFormColCountByScreen = { xs: 1, sm: 1, md: 2, lg: 2 };
-	private readonly maintenanceSubtitulo = 'Estructura territorial';
-	private readonly cascadeGridHooks = new WeakSet<object>();
+	readonly popupFormColCountByScreen = { xs: 1, sm: 1, md: 2, lg: 2 };	private readonly cascadeGridHooks = new WeakSet<object>();
 
 	vistaDetalle = false;
 	selectedPais?: GenPais;
@@ -118,9 +116,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 
 	ngOnInit(): void {
 		this.urlOpcion = this.resolveUrlOpcion();
-		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
-		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.model = this.fillPais();
+		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));		this.model = this.fillPais();
 		this.modelUpdate = this.fillPais();
 		this.actualizarColumnas();
 		this.syncToolbarContext();
@@ -134,9 +130,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		this.syncToolbarContext();
-		if (xEstado === UpdateType.Browse && !this.vistaDetalle) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
-		}
+		if (xEstado === UpdateType.Browse && !this.vistaDetalle) {		}
 	}
 
 	override rowDblClick(e: any): void {
@@ -342,9 +336,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.modelUpdate = this.fillPais();
 		this.AsignaStatus(UpdateType.Browse);
 		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
-		this.actualizarColumnas();
-		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.syncToolbarContext();
+		this.actualizarColumnas();		this.syncToolbarContext();
 		setTimeout(() => this.consultar());
 	}
 
@@ -710,7 +702,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.pageContext.updateFromBarra(
 			{
 				titulo: this.tituloVentana,
-				subtitle: this.subTituloVentana,
+				subtitle: '',
 				// En documento el Nuevo de país no sale (isForm); permiteAdd real alimenta la cascada.
 				permiteAdd: this.permiteAdd,
 				showRefresh: !this.vistaDetalle,

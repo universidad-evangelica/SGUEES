@@ -3,8 +3,7 @@ import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
-import { buildRemoteGridWhere } from 'src/app/shared/utils/remote-grid-filter.util';
-import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 import { GenDivision } from './models/gen-division';
 import { GenDivisionRepository } from './gen-division.repository';
 
@@ -36,15 +35,12 @@ export class GenDivisionService {
 		return true;
 	}
 
-	getAll(param: any): Observable<IResult> {
-		return this.repo.getAll(this.buildWhere(param));
+	getAll(param: { CORR_DIVISION?: number }): Observable<IResult> {
+		const xWhere: IParam[] = [{ Parameter: 'CORR_DIVISION', Value: param.CORR_DIVISION ?? 0 }];
+		return this.repo.getAll(xWhere);
 	}
 
-	getDistinctValues(param: any): Observable<IResult> {
-		return this.repo.getDistinctValues(this.buildWhere(param));
-	}
-
-	get(param: any): Observable<IResult> {
+	get(param: { CORR_DIVISION: number }): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_DIVISION', Value: param.CORR_DIVISION }]);
 	}
 
@@ -60,59 +56,12 @@ export class GenDivisionService {
 		return this.repo.delete([{ Parameter: 'CORR_DIVISION', Value: model.CORR_DIVISION }]);
 	}
 
-	getColumns(onEditClick: Function, onDeleteClick: Function, canEdit = true, canDelete = true): any {
-		const editHint = canEdit ? 'Editar registro' : 'No tiene permiso para editar registros.';
-		const deleteHint = canDelete ? 'Eliminar registro' : 'No tiene permiso para eliminar registros.';
-		const editCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-edit';
-		const deleteCssClass = canDelete ? 'sguees-grid-action-delete' : 'sguees-action-no-delete';
-		const editClick = canEdit ? onEditClick : () => undefined;
-		const deleteClick = canDelete ? onDeleteClick : () => undefined;
-
+	getColumns(): any {
 		return [
-			{
-				type: 'buttons',
-				name: 'btnAcciones',
-				caption: 'Options',
-				width: 100,
-				minWidth: 100,
-				allowResizing: false,
-				fixed: true,
-				fixedPosition: 'left',
-				alignment: 'center',
-				buttons: [
-					{ hint: editHint, icon: 'edit', stylingMode: 'text', cssClass: editCssClass, onClick: editClick },
-					{ hint: deleteHint, icon: 'trash', stylingMode: 'text', cssClass: deleteCssClass, onClick: deleteClick },
-				],
-			},
-			{
-				dataField: 'CORR_DIVISION',
-				caption: 'Corr.',
-				width: 100,
-				dataType: 'number',
-				filterOperations: ['=', '<', '>', '<=', '>='],
-			},
+			{ dataField: 'CORR_DIVISION', caption: 'Corr.', width: 100, dataType: 'number' },
 			{ dataField: 'NOMBRE_DIVISION', caption: 'Division', width: 300 },
 			{ dataField: 'CODIGO_DIVISION', caption: 'Codigo', width: 120 },
-			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
-			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
-			{
-				dataField: 'FECHA_CREA',
-				caption: 'Fecha Crea',
-				width: 200,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-				calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA'),
-			},
-			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
-			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
-			{
-				dataField: 'FECHA_ACTU',
-				caption: 'Fecha Actu',
-				width: 200,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-				calculateFilterExpression: createDateTimeFilterExpression('FECHA_ACTU'),
-			},
+			...buildAuditGridColumns(),
 		];
 	}
 
@@ -140,10 +89,6 @@ export class GenDivisionService {
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 		];
-	}
-
-	private buildWhere(param: any): IParam[] {
-		return buildRemoteGridWhere(param, '');
 	}
 }
 

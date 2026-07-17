@@ -32,27 +32,13 @@
 			>
 			</dx-file-uploader>
 		</div>
-		<div class="import-actions">
+		<div class="import-toolbar-actions">
 			<dx-button
-				*ngIf="!modalMode"
-				text="Volver a Partidas"
-				type="normal"
-				icon="back"
-				(onClick)="volverPartidas()"
-			></dx-button>
-			<dx-button
-				*ngIf="modalMode"
-				text="Cancelar"
-				type="normal"
-				icon="close"
-				(onClick)="cancelarModal()"
-			></dx-button>
-			<dx-button
-				text="Importar"
-				type="success"
-				icon="upload"
-				[disabled]="!canImportar()"
-				(onClick)="importar()"
+				text="Plantilla"
+				type="default"
+				icon="download"
+				stylingMode="outlined"
+				(onClick)="descargarPlantilla()"
 			></dx-button>
 		</div>
 	</div>
@@ -69,11 +55,13 @@
 			[hoverStateEnabled]="true"
 			[allowColumnResizing]="true"
 			[columnResizingMode]="'widget'"
+			[filterSyncEnabled]="true"
 			[height]="modalMode ? '100%' : 480"
 			[width]="'100%'"
 		>
 			<dxo-editing mode="cell" [allowUpdating]="true" [useIcons]="true"></dxo-editing>
-			<dxo-search-panel [visible]="true"></dxo-search-panel>
+			<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+			<dxo-filter-panel [visible]="true" [customizeText]="onCustomizeFilterPanelText"></dxo-filter-panel>
 			<dxo-paging [enabled]="false"></dxo-paging>
 			<dxo-summary>
 				<dxi-total-item column="CUENTA_CONTABLE" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
@@ -81,6 +69,36 @@
 				<dxi-total-item column="MONTO_ABONO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
 			</dxo-summary>
 		</dx-data-grid>
+	</div>
+
+	<div class="import-footer">
+		<dx-button
+			*ngIf="!modalMode"
+			class="import-footer-btn import-footer-btn--cancel"
+			text="Volver a Partidas"
+			type="danger"
+			stylingMode="contained"
+			icon="back"
+			(onClick)="volverPartidas()"
+		></dx-button>
+		<dx-button
+			*ngIf="modalMode"
+			class="import-footer-btn import-footer-btn--cancel"
+			text="Cancelar"
+			type="danger"
+			stylingMode="contained"
+			icon="close"
+			(onClick)="cancelarModal()"
+		></dx-button>
+		<dx-button
+			class="import-footer-btn import-footer-btn--save"
+			text="Guardar"
+			type="success"
+			stylingMode="contained"
+			icon="save"
+			[disabled]="!canImportar()"
+			(onClick)="guardar()"
+		></dx-button>
 	</div>
 </div>
 

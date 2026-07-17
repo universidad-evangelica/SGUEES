@@ -1,13 +1,16 @@
 <div class="sguees-mtto-view">
 <app-barra-data-mtto
-	[tituloVentana]="tituloVentana"
-	[subTituloVentana]="subTituloVentana"
+	[tituloVentana]="tituloVentana"
 	[isBrowse]="isBrowse()"
 	[isForm]="isForm()"
+	[showRibbon]="true"
 	[permiteAdd]="permiteAdd"
+	[showRefresh]="true"
+	[showExport]="permitePrint"
 	(nuevo)="nuevo()"
 	(guardar)="guardar()"
 	(cancelar)="cancelar()"
+	(consultar)="consultar()"
 >
 </app-barra-data-mtto>
 
@@ -35,9 +38,11 @@
 	[allowedPageSizes]="mttoPageSizes"
 	[remoteOperations]="mttoRemoteOperations"
 	[showSearch]="false"
+	[nativeToolbar]="true"
+	[unifiedToolbar]="false"
 	[showAdd]="false"
-	[showRefresh]="true"
-	[showExport]="true"
+	[showRefresh]="false"
+	[showExport]="false"
 	[focusedRowKey]="gridFocusedRowKey"
 	[permitePrint]="permitePrint"
 	[permiteEditar]="getPermiteEditar"
@@ -45,8 +50,6 @@
 	[responsiveColumnHiding]="false"
 	[columnHidingEnabled]="false"
 	[exportFileName]="'ParametrosContabilidad'"
-	(refresh)="consultar()"
-	(add)="nuevo()"
 	(rowDblClick)="rowDblClick($event)"
 	(rowRemoving)="rowRemoving($event)"
 	(focusedRowChanged)="focusedRowChanged($event)"

@@ -25,9 +25,7 @@ import { environment } from 'src/environments/environment';
 })
 export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	@ViewChild('gridDetalle', { static: false }) gridDetalle!: DxDataGridComponent;
-	protected override etiquetaRegistro = 'la partida';
-	private readonly maintenanceSubtitulo = 'Mantenimiento de partidas contables';
-
+	protected override etiquetaRegistro = 'la partida';
 	detalles: ConPartidaDeta[] = [];
 	documentos: ConPartidaDoc[] = [];
 	docColumns: any[] = [];
@@ -95,9 +93,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	ngOnInit(): void {
 		const today = this.appInfoService.getDate();
 		this.vFECHA_INICIAL = new Date(today.getFullYear(), today.getMonth(), 1);
-		this.vFECHA_FINAL = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.inicializaOpciones();
+		this.vFECHA_FINAL = new Date(today.getFullYear(), today.getMonth() + 1, 0);		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
 		this.refrescarBotones();
@@ -107,9 +103,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
-		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
-		}
+		if (xEstado === UpdateType.Browse) {		}
 	}
 
 	llenaComboBox() {
@@ -364,16 +358,18 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	override getPermiteEditar(e: any): boolean {
+		const data = e?.row?.data ?? e?.data;
 		return (
 			this.permiteEdit &&
-			this.partidaEditablePorEstado(e?.row?.data?.ESTADO_PARTIDA)
+			this.partidaEditablePorEstado(data?.ESTADO_PARTIDA)
 		);
 	}
 
 	override getPermiteDele(e: any): boolean {
+		const data = e?.row?.data ?? e?.data;
 		return (
 			this.permiteDele &&
-			this.partidaEditablePorEstado(e?.row?.data?.ESTADO_PARTIDA)
+			this.partidaEditablePorEstado(data?.ESTADO_PARTIDA)
 		);
 	}
 

@@ -77,5 +77,21 @@ namespace sguees.Controllers
 				ClientInfoHelper.GetClientStation(HttpContext));
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
+
+		[HttpGet("GetCORR_CUENTA_BANCO_BAN_DOCUMENTO")]
+		[Authorize(Policy = "/ban-documento|R")]
+		public async Task<CResult> GetCORR_CUENTA_BANCO_BAN_DOCUMENTO([FromQuery] BAN_CUENTA_BANCARIAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_CUENTA_BANCO_BAN_CHEQUE")]
+		[Authorize(Policy = "/ban-cheque|R")]
+		public async Task<CResult> GetCORR_CUENTA_BANCO_BAN_CHEQUE([FromQuery] BAN_CUENTA_BANCARIAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
 	}
 }

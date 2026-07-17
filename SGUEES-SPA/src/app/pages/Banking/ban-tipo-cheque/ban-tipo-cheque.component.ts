@@ -18,10 +18,7 @@ export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_TIPO_CHEQUE';
 	protected override mttoCampoEstado = 'ESTADO_TIPO_CHEQUE';
-	protected override mttoEstadoDescribeField = 'NOMBRE_TIPO_CHEQUE';
-
-	private readonly maintenanceSubtitulo = 'Mantenimiento de Tipos de Cheque';
-
+	protected override mttoEstadoDescribeField = 'NOMBRE_TIPO_CHEQUE';
 	//#region <Declarando Variales>
 	mCLASE_TIPO_CHEQUE: any;
 	mCUENTA_CONTABLE: any[] = [];
@@ -44,9 +41,7 @@ export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
 	}
 
 	//#region <Inicializando Opciones>
-	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.inicializaOpciones();
+	ngOnInit(): void {		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
 	}
@@ -56,9 +51,7 @@ export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
-		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
-		}
+		if (xEstado === UpdateType.Browse) {		}
 	}
 
 	//#region <Manejo de Combos>

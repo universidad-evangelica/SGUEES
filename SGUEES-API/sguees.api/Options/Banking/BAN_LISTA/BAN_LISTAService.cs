@@ -52,5 +52,10 @@ namespace sguees.Services
 		{
 			return _repo.GetCLASE_BANCO();
 		}
+
+		public CResult GetESTADO_DOCUMENTO()
+		{
+			return _repo.GetESTADO_DOCUMENTO();
+		}
 	}
 }

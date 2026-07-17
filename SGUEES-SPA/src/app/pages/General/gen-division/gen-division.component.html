@@ -1,24 +1,20 @@
-<p-toast
-	position="bottom-right"
-	[showTransformOptions]="'translateY(100%)'"
-	[hideTransitionOptions]="'500ms'"
-	[showTransformOptions]="'translateX(100%)'"
-></p-toast>
-
 <div class="sguees-mtto-view">
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
-	[subTituloVentana]="subTituloVentana"
 	[isBrowse]="isBrowse()"
 	[isForm]="isForm()"
+	[showRibbon]="true"
 	[permiteAdd]="permiteAdd"
+	[showRefresh]="true"
+	[showExport]="permitePrint"
 	(nuevo)="nuevo()"
 	(guardar)="guardar()"
 	(cancelar)="cancelar()"
+	(consultar)="consultar()"
 >
 </app-barra-data-mtto>
 
-<div class="content-block dx-card responsive-paddings division-form-card" *ngIf="!isBrowse()">
+<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 	<dx-form
 		#fData
 		id="fData"
@@ -37,25 +33,28 @@
 	[models]="models"
 	[columns]="columns"
 	[summary]="summary"
-	[keyExpr]="'CORR_DIVISION'"
-	[remoteOperations]="{ paging: true, filtering: true, sorting: true }"
-	[headerFilterLoader]="loadHeaderFilterValues"
-	[pageSize]="5"
-	[allowedPageSizes]="pageSizes"
+	[keyExpr]="mttoGridKeyExpr"
+	[pageSize]="mttoPageSize"
+	[allowedPageSizes]="mttoPageSizes"
+	[remoteOperations]="mttoRemoteOperations"
+	[nativeToolbar]="true"
+	[unifiedToolbar]="false"
 	[showSearch]="false"
-	[showAdd]="true"
-	[showRefresh]="true"
-	[showExport]="true"
+	[showAdd]="false"
+	[showRefresh]="false"
+	[showExport]="false"
 	[permitePrint]="permitePrint"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
 	[responsiveColumnHiding]="false"
 	[columnHidingEnabled]="false"
 	[exportFileName]="'Divisiones'"
-	(refresh)="consultar()"
-	(add)="nuevo()"
 	(rowDblClick)="rowDblClick($event)"
 	(rowRemoving)="rowRemoving($event)"
 	(focusedRowChanged)="focusedRowChanged($event)"
-></app-data-grid-mtto>
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
 
 </div>
 

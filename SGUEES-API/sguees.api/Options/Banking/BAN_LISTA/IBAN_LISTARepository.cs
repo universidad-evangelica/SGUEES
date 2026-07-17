@@ -12,5 +12,6 @@ namespace sguees.Repositories
 		CResult GetESTADO_CUENTA();
 		CResult GetCLASE_CHEQUE();
 		CResult GetCLASE_BANCO();
+		CResult GetESTADO_DOCUMENTO();
 	}
 }

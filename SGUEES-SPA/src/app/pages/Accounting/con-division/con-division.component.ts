@@ -30,12 +30,7 @@ export class ConDivisionComponent extends CBaseComponent implements OnInit {
 
 	protected override requiereEmpresaSesion = true;
 
-	protected override mttoGridKeyExpr = 'CORR_DIVISION';
-
-
-
-	private readonly maintenanceSubtitulo = 'Mantenimiento de divisiones';
-
+	protected override mttoGridKeyExpr = 'CORR_DIVISION';
 
 
 	constructor(
@@ -70,10 +65,7 @@ export class ConDivisionComponent extends CBaseComponent implements OnInit {
 
 	//#region <Inicializando Opciones>
 
-	ngOnInit(): void {
-
-		this.subTituloVentana = this.maintenanceSubtitulo;
-
+	ngOnInit(): void {
 		this.consultar();
 
 	}
@@ -86,10 +78,7 @@ export class ConDivisionComponent extends CBaseComponent implements OnInit {
 
 		super.AsignaStatus(xEstado);
 
-		if (xEstado === UpdateType.Browse) {
-
-			this.subTituloVentana = this.maintenanceSubtitulo;
-
+		if (xEstado === UpdateType.Browse) {
 		}
 
 	}

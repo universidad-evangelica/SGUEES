@@ -87,5 +87,21 @@ namespace sguees.Controllers
 		{
 			return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
 		}
+
+		[HttpGet("GetCORR_TIPO_CHEQUE_BAN_DOCUMENTO")]
+		[Authorize(Policy = "/ban-documento|R")]
+		public async Task<CResult> GetCORR_TIPO_CHEQUE_BAN_DOCUMENTO([FromQuery] BAN_TIPO_CHEQUEParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_TIPO_CHEQUE_BAN_CHEQUE")]
+		[Authorize(Policy = "/ban-cheque|R")]
+		public async Task<CResult> GetCORR_TIPO_CHEQUE_BAN_CHEQUE([FromQuery] BAN_TIPO_CHEQUEParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetAllAsync(Data);
+		}
 	}
 }
