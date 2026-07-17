@@ -78,12 +78,6 @@ namespace SGUEES.Services
             try
             {
                 var existentes = await _repo.GetAllSinFiltroFormatoAsync(corrEmpresa, corrDescriptor);
-                var formatoDescriptor = await _repo.GetFormatoDescriptorAsync(corrEmpresa, corrDescriptor);
-                if (formatoDescriptor != "CORTO" && formatoDescriptor != "EXTENSO")
-                {
-                    return SeedError("No se pudo identificar el formato del descriptor.");
-                }
-
                 var catalogo = await _catalogoRepo.GetCatalogoDescriptorAsync(corrEmpresa);
                 var ahora = DateTime.Now;
                 var creados = 0;
@@ -92,8 +86,7 @@ namespace SGUEES.Services
 
                 foreach (var item in catalogo)
                 {
-                    if (item.CORR_RESPONSABILIDAD <= 0 ||
-                        !EsAplicable(item.APLICA_DESCRIPTOR, formatoDescriptor))
+                    if (item.CORR_RESPONSABILIDAD <= 0)
                     {
                         continue;
                     }
@@ -346,13 +339,6 @@ namespace SGUEES.Services
             return string.IsNullOrWhiteSpace(aplicaDescriptor)
                 ? "AMBOS"
                 : aplicaDescriptor.Trim().ToUpperInvariant();
-        }
-
-        private static bool EsAplicable(string aplicaDescriptor, string formatoDescriptor)
-        {
-            var aplica = NormalizarAplicacion(aplicaDescriptor);
-            var formato = formatoDescriptor?.Trim().ToUpperInvariant();
-            return aplica == "AMBOS" || aplica == formato;
         }
 
         private static bool ExisteMismaAplicacion(
