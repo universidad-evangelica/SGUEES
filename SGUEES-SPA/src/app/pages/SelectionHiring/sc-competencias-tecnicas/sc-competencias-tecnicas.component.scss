@@ -1,3 +1,16 @@
+:host ::ng-deep .padre-lookup-field--invalid .dx-dropdownbox.dx-texteditor {
+	border-color: var(--error-color, #d9534f);
+}
+
+:host ::ng-deep .padre-lookup-field--invalid .dx-dropdownbox.dx-texteditor.dx-state-hover,
+:host ::ng-deep .padre-lookup-field--invalid .dx-dropdownbox.dx-texteditor.dx-state-focused {
+	border-color: var(--error-color, #d9534f);
+}
+
+:host ::ng-deep .padre-lookup-field--invalid .dx-dropdownbox.dx-texteditor .dx-dropdowneditor-icon {
+	color: var(--error-color, #d9534f);
+}
+
 :host ::ng-deep .estado-badge {
 	display: inline-flex;
 	align-items: center;

@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { take } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
@@ -49,6 +50,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		{ dataField: 'NIVEL', caption: 'Nivel', width: 80 },
 	];
 	registroSeleccionadoInactivo = false;
+	padreInvalido = false;
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -115,6 +117,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 			return;
 		}
 		super.nuevo();
+		this.padreInvalido = false;
 		this.model = this.fillData();
 		this.padres = [];
 		this.registroSeleccionadoInactivo = false;
@@ -129,6 +132,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 			return;
 		}
 
+		this.padreInvalido = false;
 		this.model = this.fillData(e.row.data);
 		this.editarClick(e);
 		if (this.model.NIVEL === SC_COMPETENCIA_NIVEL.DOS) {
@@ -211,7 +215,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		}
 
 		const record = this.fillData(data as ScCompetenciasTecnicas);
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof ScCompetenciasTecnicas;
 
 		if (isAdd) {
 			this.models = [...this.models, record];
@@ -232,7 +236,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 			return;
 		}
 
-		const key = this.mttoGridKeyExpr;
+		const key = this.mttoGridKeyExpr as keyof ScCompetenciasTecnicas;
 		this.models = this.models.filter((item) => item?.[key] !== keyValue);
 		this.refrescarGridTrasCarga(true);
 	}
@@ -250,20 +254,90 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 			this.model = { ...this.model, ...formData };
 		}
 
+		this.actualizarEstadoValidacionPadre();
 		const formValidation = this.dataForm?.instance?.validate();
 		if (formValidation && !formValidation.isValid) {
+			this.actualizarEstadoValidacionPadre();
 			this.service.esValido(this.model, this.notifyFx.bind(this), isAdd);
 			return;
 		}
 
 		this.guardarMtto({
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this), isAdd),
-			insert: () => this.service.insert(this.service.prepararModeloParaGuardar(this.model, true)),
-			update: () => this.service.update(this.service.prepararModeloParaGuardar(this.model, false)),
+			insert: () =>
+				this.convertirErrorMttoEnWarning(
+					this.service.insert(this.service.prepararModeloParaGuardar(this.model, true))
+				),
+			update: () =>
+				this.convertirErrorMttoEnWarning(
+					this.service.update(this.service.prepararModeloParaGuardar(this.model, false))
+				),
 		});
 	}
 
+	private convertirErrorMttoEnWarning<T>(request: Observable<T>, esEliminacion = false): Observable<T> {
+		return request.pipe(
+			catchError((error: any) => {
+				const message = this.obtenerMensajeApiLocal(error);
+				const normalized = message.toLowerCase();
+				const esDuplicado =
+					!esEliminacion &&
+					['ya existe', 'duplicad', 'primary key', 'unique key', 'mismo tiempo', 'llave primaria', 'clave primaria'].some(
+						(texto) => normalized.includes(texto)
+					);
+				const tieneRelacion =
+					esEliminacion &&
+					[
+						'foreign key',
+						'reference constraint',
+						'clave externa',
+						'clave foránea',
+						'llave foránea',
+						'hijos',
+						'registros relacionados',
+						'registros asociados',
+						'asociados',
+					].some((texto) => normalized.includes(texto));
+
+				if (esDuplicado || tieneRelacion) {
+					return of({
+						Result: false,
+						ErrorCode: 2627,
+						ErrorMessage: tieneRelacion
+							? 'No se puede eliminar porque tiene registros relacionados.'
+							: this.obtenerMensajeCodigoDuplicado(),
+					} as T);
+				}
+
+				return throwError(() => error);
+			})
+		);
+	}
+
+	private obtenerMensajeApiLocal(error: any): string {
+		if (typeof error === 'string') {
+			return error;
+		}
+
+		return `${
+			error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.error?.message ?? error?.error ?? error?.message ?? error ?? ''
+		}`;
+	}
+
+	private obtenerMensajeCodigoDuplicado(): string {
+		if (this.model.NIVEL === SC_COMPETENCIA_NIVEL.DOS) {
+			return 'El sufijo de Nivel 2 ingresado está registrado para otra competencia técnica.';
+		}
+
+		if (this.model.NIVEL === SC_COMPETENCIA_NIVEL.UNO) {
+			return 'El código de Nivel 1 ingresado está registrado para otra competencia técnica.';
+		}
+
+		return 'El código generado está registrado para otra competencia técnica.';
+	}
+
 	override cancelar(): void {
+		this.padreInvalido = false;
 		super.cancelar((item: any) => item.CORR_COMPETENCIAS_TECNICAS === this.modelUpdate.CORR_COMPETENCIAS_TECNICAS);
 	}
 
@@ -284,6 +358,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 			return;
 		}
 
+		this.padreInvalido = false;
 		this.model = this.fillData(rowData);
 		this.modelUpdate = this.fillData(rowData);
 		this.refreshFormItems();
@@ -304,6 +379,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 
 	onNivelChanged(value: string | null): void {
 		const nivel = `${value ?? this.model.NIVEL ?? SC_COMPETENCIA_NIVEL.UNO}`;
+		this.padreInvalido = false;
 		this.model.NIVEL = nivel;
 		this.model.CORR_COMPETENCIAS_TECNICAS_PADRE = null;
 		this.model.CODIGO_COMPETENCIAS_TECNICAS = '';
@@ -324,6 +400,9 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 	onPadreChanged(value: number | null): void {
 		const corrPadre = value != null && Number(value) > 0 ? Number(value) : null;
 		this.model.CORR_COMPETENCIAS_TECNICAS_PADRE = corrPadre;
+		if (corrPadre) {
+			this.padreInvalido = false;
+		}
 
 		if (!corrPadre) {
 			this.model.CODIGO_PREFIJO = '';
@@ -366,9 +445,20 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		}
 	}
 
+	private actualizarEstadoValidacionPadre(): void {
+		const requierePadre =
+			this.model?.NIVEL === SC_COMPETENCIA_NIVEL.DOS ||
+			this.model?.NIVEL === SC_COMPETENCIA_NIVEL.TRES;
+		this.padreInvalido = requierePadre && !this.model?.CORR_COMPETENCIAS_TECNICAS_PADRE;
+	}
+
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_COMPETENCIAS_TECNICAS)),
+			deleteFn: () =>
+				this.convertirErrorMttoEnWarning(
+					this.service.delete(this.fillParam(e.data.CORR_COMPETENCIAS_TECNICAS)),
+					true
+				),
 		});
 	}
 

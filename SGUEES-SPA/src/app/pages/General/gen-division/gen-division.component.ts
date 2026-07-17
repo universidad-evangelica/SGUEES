@@ -1,5 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
@@ -193,9 +195,75 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 
 		this.guardarMtto({
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
-			insert: () => this.service.insert(this.model),
-			update: () => this.service.update(this.model),
+			insert: () => this.convertirCodigoDuplicadoEnWarning(this.service.insert(this.model)),
+			update: () => this.convertirCodigoDuplicadoEnWarning(this.service.update(this.model)),
 		});
+	}
+
+	private convertirCodigoDuplicadoEnWarning<T>(request: Observable<T>): Observable<T> {
+		return request.pipe(
+			catchError((error: any) => {
+				const message = this.obtenerMensajeApiLocal(error).toLowerCase();
+				const errorCode = Number(error?.ErrorCode ?? error?.error?.ErrorCode);
+				if (errorCode === 2601 || errorCode === 2627 || this.esErrorDuplicadoLocal(message)) {
+					return of({
+						Result: false,
+						ErrorCode: 2627,
+						ErrorMessage: 'El código de división ingresado está registrado. Escriba otro código para continuar.',
+					} as T);
+				}
+
+				return throwError(() => error);
+			})
+		);
+	}
+
+	private convertirEliminacionRelacionadaEnWarning<T>(request: Observable<T>): Observable<T> {
+		return request.pipe(
+			catchError((error: any) => {
+				const message = this.obtenerMensajeApiLocal(error).toLowerCase();
+				const errorCode = Number(error?.ErrorCode ?? error?.error?.ErrorCode);
+				if (errorCode === 547 || this.esErrorRelacionadosLocal(message)) {
+					return of({
+						Result: false,
+						ErrorCode: 2627,
+						ErrorMessage: 'No se puede eliminar porque tiene registros relacionados.',
+					} as T);
+				}
+
+				return throwError(() => error);
+			})
+		);
+	}
+
+	private esErrorDuplicadoLocal(message: string): boolean {
+		return ['ya existe', 'duplicad', 'primary key', 'unique key', 'mismo tiempo', 'llave primaria', 'clave primaria'].some(
+			(fragment) => message.includes(fragment)
+		);
+	}
+
+	private esErrorRelacionadosLocal(message: string): boolean {
+		return [
+			'foreign key',
+			'reference constraint',
+			'restricción reference',
+			'restriccion reference',
+			'hijos',
+			'relacionad',
+			'asociad',
+		].some((fragment) => message.includes(fragment));
+	}
+
+	private obtenerMensajeApiLocal(error: any): string {
+		if (typeof error === 'string') {
+			return error;
+		}
+
+		if (typeof error?.error === 'string') {
+			return error.error;
+		}
+
+		return `${error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.message ?? error ?? ''}`;
 	}
 
 	override cancelar(): void {
@@ -204,7 +272,8 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_DIVISION)),
+			deleteFn: () =>
+				this.convertirEliminacionRelacionadaEnWarning(this.service.delete(this.fillParam(e.data.CORR_DIVISION))),
 		});
 	}
 

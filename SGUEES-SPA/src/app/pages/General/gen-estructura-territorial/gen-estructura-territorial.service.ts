@@ -36,20 +36,32 @@ export class GenEstructuraTerritorialService {
 			msg('Debe ingresar el nombre corto.', NotifyType.Warning);
 			return false;
 		}
+		if (model.NOMBRE_CORTO.trim().length > 5) {
+			msg('El nombre corto no puede superar 5 caracteres.', NotifyType.Warning);
+			return false;
+		}
 		if (!model.NOMBRE_PAIS?.trim()) {
 			msg('Debe ingresar el nombre del país.', NotifyType.Warning);
+			return false;
+		}
+		if (model.NOMBRE_PAIS.trim().length > 100) {
+			msg('El nombre del país no puede superar 100 caracteres.', NotifyType.Warning);
 			return false;
 		}
 		if (!model.NACIONALIDAD?.trim()) {
 			msg('Debe ingresar la nacionalidad.', NotifyType.Warning);
 			return false;
 		}
+		if (model.NACIONALIDAD.trim().length > 50) {
+			msg('La nacionalidad no puede superar 50 caracteres.', NotifyType.Warning);
+			return false;
+		}
 		if (!model.CODIGO_PAIS?.trim()) {
 			msg('Debe ingresar el código del país.', NotifyType.Warning);
 			return false;
 		}
-		if (model.NOMBRE_PAIS.trim().length > 100) {
-			msg('El nombre del país no puede superar 100 caracteres.', NotifyType.Warning);
+		if (model.CODIGO_PAIS.trim().length > 10) {
+			msg('El código del país no puede superar 10 caracteres.', NotifyType.Warning);
 			return false;
 		}
 
@@ -68,12 +80,24 @@ export class GenEstructuraTerritorialService {
 				msg('No se pudo identificar el departamento a modificar.', NotifyType.Warning);
 				return false;
 			}
+			if (!row.CORR_PAIS || row.CORR_PAIS <= 0) {
+				msg('Debe seleccionar el país.', NotifyType.Warning);
+				return false;
+			}
 			if (!row.NOMBRE_DEPTO?.trim()) {
 				msg('Debe ingresar el nombre del departamento.', NotifyType.Warning);
 				return false;
 			}
+			if (row.NOMBRE_DEPTO.trim().length > 100) {
+				msg('El nombre del departamento no puede superar 100 caracteres.', NotifyType.Warning);
+				return false;
+			}
 			if (!row.CODIGO_DEPTO?.trim()) {
 				msg('Debe ingresar el código del departamento.', NotifyType.Warning);
+				return false;
+			}
+			if (row.CODIGO_DEPTO.trim().length > 10) {
+				msg('El código del departamento no puede superar 10 caracteres.', NotifyType.Warning);
 				return false;
 			}
 			return true;
@@ -85,12 +109,28 @@ export class GenEstructuraTerritorialService {
 				msg('No se pudo identificar el municipio a modificar.', NotifyType.Warning);
 				return false;
 			}
+			if (!row.CORR_PAIS || row.CORR_PAIS <= 0) {
+				msg('Debe seleccionar el país.', NotifyType.Warning);
+				return false;
+			}
+			if (!row.CORR_DEPTO || row.CORR_DEPTO <= 0) {
+				msg('Debe seleccionar el departamento.', NotifyType.Warning);
+				return false;
+			}
 			if (!row.NOMBRE_MUNICIPIO?.trim()) {
 				msg('Debe ingresar el nombre del municipio.', NotifyType.Warning);
 				return false;
 			}
+			if (row.NOMBRE_MUNICIPIO.trim().length > 100) {
+				msg('El nombre del municipio no puede superar 100 caracteres.', NotifyType.Warning);
+				return false;
+			}
 			if (!row.CODIGO_MUNICIPIO?.trim()) {
 				msg('Debe ingresar el código del municipio.', NotifyType.Warning);
+				return false;
+			}
+			if (row.CODIGO_MUNICIPIO.trim().length > 10) {
+				msg('El código del municipio no puede superar 10 caracteres.', NotifyType.Warning);
 				return false;
 			}
 			return true;
@@ -101,8 +141,24 @@ export class GenEstructuraTerritorialService {
 			msg('No se pudo identificar el distrito a modificar.', NotifyType.Warning);
 			return false;
 		}
+		if (!row.CORR_PAIS || row.CORR_PAIS <= 0) {
+			msg('Debe seleccionar el país.', NotifyType.Warning);
+			return false;
+		}
+		if (!row.CORR_DEPTO || row.CORR_DEPTO <= 0) {
+			msg('Debe seleccionar el departamento.', NotifyType.Warning);
+			return false;
+		}
+		if (!row.CORR_MUNICIPIO || row.CORR_MUNICIPIO <= 0) {
+			msg('Debe seleccionar el municipio.', NotifyType.Warning);
+			return false;
+		}
 		if (!row.NOMBRE_DISTRITO?.trim()) {
 			msg('Debe ingresar el nombre del distrito.', NotifyType.Warning);
+			return false;
+		}
+		if (row.NOMBRE_DISTRITO.trim().length > 100) {
+			msg('El nombre del distrito no puede superar 100 caracteres.', NotifyType.Warning);
 			return false;
 		}
 

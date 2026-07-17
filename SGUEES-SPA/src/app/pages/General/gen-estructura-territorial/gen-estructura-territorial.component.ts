@@ -3,11 +3,11 @@ import { ActivatedRoute } from '@angular/router';
 import Menu from 'devextreme/ui/menu';
 import { DxFormComponent } from 'devextreme-angular';
 import { custom, CustomDialogOptions } from 'devextreme/ui/dialog';
-import { take } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map, take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { IParam } from 'src/app/FxAPI/IParam';
-import { IResult } from 'src/app/FxAPI/IResult';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
@@ -299,10 +299,18 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 
 		this.guardarMtto({
 			esValido: () => this.service.esValidoPais(this.model, this.notifyFx.bind(this), !isAdd),
-			insert: () => this.service.insertPais(this.model),
-			update: () => this.service.updatePais(this.model),
-			onSuccess: (response: IResult) => {
-				const savedPais = response.Data as GenPais;
+			insert: () =>
+				this.convertirDuplicadoEnWarning(
+					this.service.insertPais(this.model),
+					'El código de país ingresado está registrado. Escriba otro código para continuar.'
+				),
+			update: () =>
+				this.convertirDuplicadoEnWarning(
+					this.service.updatePais(this.model),
+					'El código de país ingresado está registrado. Escriba otro código para continuar.'
+				),
+			onSuccess: (data: unknown) => {
+				const savedPais = data as GenPais;
 				if (isAdd) {
 					this.abrirDocumentoPais(savedPais, true);
 				} else {
@@ -335,7 +343,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.service.deletePais(e.data),
+			deleteFn: () => this.convertirEliminacionRelacionadaEnWarning(this.service.deletePais(e.data)),
 			successMessage: 'País eliminado con éxito.',
 		});
 	}
@@ -740,7 +748,15 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	private limpiarSeleccionHijos(): void {
 		this.selectedDepto = undefined;
 		this.selectedMunicipio = undefined;
+		this.deptoModels = [];
+		this.municipioModels = [];
+		this.distritoModels = [];
 		this.actualizarResaltadoCascade();
+		setTimeout(() => {
+			this.deptoGrid?.refreshData(true);
+			this.municipioGrid?.refreshData(true);
+			this.distritoGrid?.refreshData(true);
+		});
 	}
 
 	private inicializarGridsCascade(): void {
@@ -886,14 +902,26 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	private getPopupRequest() {
 		if (this.popupNivel === 'depto') {
 			const model = this.popupModel as GenDepto;
-			return this.popupIsAdd ? this.service.insertDepto(model) : this.service.updateDepto(model);
+			const request = this.popupIsAdd ? this.service.insertDepto(model) : this.service.updateDepto(model);
+			return this.convertirDuplicadoEnWarning(
+				request,
+				'El código de departamento ingresado está registrado. Escriba otro código para continuar.'
+			);
 		}
 		if (this.popupNivel === 'municipio') {
 			const model = this.popupModel as GenMunicipio;
-			return this.popupIsAdd ? this.service.insertMunicipio(model) : this.service.updateMunicipio(model);
+			const request = this.popupIsAdd ? this.service.insertMunicipio(model) : this.service.updateMunicipio(model);
+			return this.convertirDuplicadoEnWarning(
+				request,
+				'El código de municipio ingresado está registrado. Escriba otro código para continuar.'
+			);
 		}
 		const model = this.popupModel as GenDistrito;
-		return this.popupIsAdd ? this.service.insertDistrito(model) : this.service.updateDistrito(model);
+		const request = this.popupIsAdd ? this.service.insertDistrito(model) : this.service.updateDistrito(model);
+		return this.convertirDuplicadoEnWarning(
+			request,
+			'El identificador del distrito está registrado. Recargue los datos e intente nuevamente.'
+		);
 	}
 
 	private refrescarNivel(nivel: TerritorialNivel): void {
@@ -909,15 +937,27 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	}
 
 	private eliminarDepto(row: GenDepto): void {
-		this.eliminarNivel(this.service.deleteDepto(row), 'depto', 'departamento');
+		this.eliminarNivel(
+			this.convertirEliminacionRelacionadaEnWarning(this.service.deleteDepto(row)),
+			'depto',
+			'departamento'
+		);
 	}
 
 	private eliminarMunicipio(row: GenMunicipio): void {
-		this.eliminarNivel(this.service.deleteMunicipio(row), 'municipio', 'municipio');
+		this.eliminarNivel(
+			this.convertirEliminacionRelacionadaEnWarning(this.service.deleteMunicipio(row)),
+			'municipio',
+			'municipio'
+		);
 	}
 
 	private eliminarDistrito(row: GenDistrito): void {
-		this.eliminarNivel(this.service.deleteDistrito(row), 'distrito', 'distrito');
+		this.eliminarNivel(
+			this.convertirEliminacionRelacionadaEnWarning(this.service.deleteDistrito(row)),
+			'distrito',
+			'distrito'
+		);
 	}
 
 	private eliminarNivel(request: any, nivel: TerritorialNivel, etiqueta: string): void {
@@ -959,17 +999,76 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	}
 
 	private getDeleteNotifyType(message: string): NotifyType {
-		const value = `${message ?? ''}`.toLowerCase();
-		if (
-			isEmpresaFkErrorMessage(message) ||
-			value.includes('relacionados') ||
-			value.includes('asociados') ||
-			value.includes('registros asociados') ||
-			value.includes('hijos asociados')
-		) {
+		if (isEmpresaFkErrorMessage(message) || this.isRelatedDeleteWarningMessage(message)) {
 			return NotifyType.Warning;
 		}
 		return NotifyType.Error;
+	}
+
+	private convertirDuplicadoEnWarning<T>(request: Observable<T>, errorMessage: string): Observable<T> {
+		return request.pipe(
+			map((response: any) => {
+				const message = `${response?.ErrorMessage ?? ''}`.toLowerCase();
+				const errorCode = Number(response?.ErrorCode);
+				if (
+					response?.Result === false &&
+					(errorCode === 2601 || errorCode === 2627 || this.isDuplicateWarningMessage(message))
+				) {
+					return {
+						...response,
+						ErrorCode: 2627,
+						ErrorMessage: response?.ErrorMessage || errorMessage,
+					} as T;
+				}
+
+				return response as T;
+			}),
+			catchError((error: any) => {
+				const apiMessage = this.getErrorMessage(error).replace(/^error:\s*/i, '').trim();
+				const message = apiMessage.toLowerCase();
+				const errorCode = Number(error?.ErrorCode ?? error?.error?.ErrorCode);
+				if (errorCode === 2601 || errorCode === 2627 || this.isDuplicateWarningMessage(message)) {
+					return of({
+						Result: false,
+						ErrorCode: 2627,
+						ErrorMessage: apiMessage || errorMessage,
+					} as T);
+				}
+
+				return throwError(() => error);
+			})
+		);
+	}
+
+	private convertirEliminacionRelacionadaEnWarning<T>(request: Observable<T>): Observable<T> {
+		return request.pipe(
+			catchError((error: any) => {
+				const message = this.getErrorMessage(error).toLowerCase();
+				const errorCode = Number(error?.ErrorCode ?? error?.error?.ErrorCode);
+				if (errorCode === 547 || isEmpresaFkErrorMessage(message) || this.isRelatedDeleteWarningMessage(message)) {
+					return of({
+						Result: false,
+						ErrorCode: 2627,
+						ErrorMessage: 'No se puede eliminar porque tiene registros relacionados.',
+					} as T);
+				}
+
+				return throwError(() => error);
+			})
+		);
+	}
+
+	private isRelatedDeleteWarningMessage(message: string): boolean {
+		const value = `${message ?? ''}`.toLowerCase();
+		return [
+			'foreign key',
+			'reference constraint',
+			'restricción reference',
+			'restriccion reference',
+			'hijos',
+			'relacionad',
+			'asociad',
+		].some((fragment) => value.includes(fragment));
 	}
 
 	private bloquearCamposCorr(form?: DxFormComponent): void {
@@ -1020,6 +1119,10 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			return connectionMessage;
 		}
 
+		if (typeof error?.error === 'string' && error.error.trim()) {
+			return error.error.trim();
+		}
+
 		const apiMessage = error?.error?.ErrorMessage || error?.error?.message || error?.message;
 		if (typeof apiMessage === 'string' && apiMessage.trim()) {
 			if (apiMessage === '[object ProgressEvent]' || apiMessage.toLowerCase().includes('http failure')) {
@@ -1052,21 +1155,27 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 
 	private isDuplicateWarningMessage(message: string): boolean {
 		const value = `${message ?? ''}`.toLowerCase();
-		return (
-			value.includes('ya existe') ||
-			value.includes('duplicad') ||
-			value.includes('registrad') ||
-			value.includes('otro usuario guard') ||
-			value.includes('mismo tiempo')
-		);
+		return [
+			'ya existe',
+			'ya está registrado',
+			'ya esta registrado',
+			'duplicad',
+			'primary key',
+			'unique key',
+			'mismo tiempo',
+			'llave primaria',
+			'clave primaria',
+			'otro usuario guard',
+		].some((fragment) => value.includes(fragment));
 	}
 
 	private getNotifyType(response: any): NotifyType {
-		if (isEmpresaWarningResponse(response)) {
+		const errorCode = Number(response?.ErrorCode);
+		if (isEmpresaWarningResponse(response) || errorCode === 4100) {
 			return NotifyType.Warning;
 		}
 		const message = (response?.ErrorMessage || '').toLowerCase();
-		return response?.ErrorCode === 2627 || this.isDuplicateWarningMessage(message)
+		return errorCode === 2601 || errorCode === 2627 || this.isDuplicateWarningMessage(message)
 			? NotifyType.Warning
 			: NotifyType.Error;
 	}

@@ -3,7 +3,8 @@ import { ActivatedRoute } from '@angular/router';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 import { DxFormComponent } from 'devextreme-angular/ui/form';
 import { DxTabPanelComponent } from 'devextreme-angular/ui/tab-panel';
-import { take } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, take } from 'rxjs/operators';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
@@ -1132,8 +1133,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	funcionClaveRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.NOMBRE_FUNCION ?? '').trim()) {
-			e.isValid = false;
-			e.errorText = 'Debe indicar el nombre de la funcion clave.';
+			this.invalidarFila(e, 'Debe indicar el nombre de la funcion clave.');
+			return;
+		}
+		if ((data.NOMBRE_FUNCION ?? '').trim().length > 255) {
+			this.invalidarFila(e, 'El nombre de la funcion clave no puede superar 255 caracteres.');
+			return;
 		}
 	}
 
@@ -1220,8 +1225,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	funcionSecundariaRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.NOMBRE_FUNCION ?? '').trim()) {
-			e.isValid = false;
-			e.errorText = 'Debe indicar la descripcion de la funcion secundaria.';
+			this.invalidarFila(e, 'Debe indicar la descripcion de la funcion secundaria.');
+			return;
+		}
+		if ((data.NOMBRE_FUNCION ?? '').trim().length > 255) {
+			this.invalidarFila(e, 'La descripcion de la funcion secundaria no puede superar 255 caracteres.');
+			return;
 		}
 	}
 
@@ -1304,8 +1313,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	relacionInternaRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.PUESTO_AREA ?? '').trim()) {
-			e.isValid = false;
-			e.errorText = 'Debe indicar el puesto o area de la relacion interna.';
+			this.invalidarFila(e, 'Debe indicar el puesto o area de la relacion interna.');
+			return;
+		}
+		if ((data.PUESTO_AREA ?? '').trim().length > 200) {
+			this.invalidarFila(e, 'El puesto o area no puede superar 200 caracteres.');
+			return;
+		}
+		if ((data.MOTIVO_RELACION ?? '').trim().length > 255) {
+			this.invalidarFila(e, 'El motivo de la relacion no puede superar 255 caracteres.');
+			return;
 		}
 	}
 
@@ -1388,8 +1405,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	relacionExternaRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.PUESTO_AREA ?? '').trim()) {
-			e.isValid = false;
-			e.errorText = 'Debe indicar el puesto o area de la relacion externa.';
+			this.invalidarFila(e, 'Debe indicar el puesto o area de la relacion externa.');
+			return;
+		}
+		if ((data.PUESTO_AREA ?? '').trim().length > 200) {
+			this.invalidarFila(e, 'El puesto o area no puede superar 200 caracteres.');
+			return;
+		}
+		if ((data.MOTIVO_RELACION ?? '').trim().length > 255) {
+			this.invalidarFila(e, 'El motivo de la relacion no puede superar 255 caracteres.');
+			return;
 		}
 	}
 
@@ -1495,8 +1520,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	actividadRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.NOMBRE_ACTIVIDAD ?? '').trim()) {
-			e.isValid = false;
-			e.errorText = 'Debe indicar el nombre de la actividad.';
+			this.invalidarFila(e, 'Debe indicar el nombre de la actividad.');
+			return;
+		}
+		if ((data.NOMBRE_ACTIVIDAD ?? '').trim().length > 255) {
+			this.invalidarFila(e, 'El nombre de la actividad no puede superar 255 caracteres.');
+			return;
 		}
 	}
 
@@ -1582,8 +1611,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	kpiRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.NOMBRE_INDICADOR ?? '').trim()) {
-			e.isValid = false;
-			e.errorText = 'Debe indicar el nombre del indicador.';
+			this.invalidarFila(e, 'Debe indicar el nombre del indicador.');
+			return;
+		}
+		if ((data.NOMBRE_INDICADOR ?? '').trim().length > 255) {
+			this.invalidarFila(e, 'El nombre del indicador no puede superar 255 caracteres.');
+			return;
 		}
 	}
 
@@ -1692,8 +1725,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	educacionRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.REQUISITO ?? '').trim()) {
-			e.isValid = false;
-			e.errorText = 'Debe indicar el requisito.';
+			this.invalidarFila(e, 'Debe indicar el requisito.');
+			return;
+		}
+		if ((data.REQUISITO ?? '').trim().length > 255) {
+			this.invalidarFila(e, 'El requisito no puede superar 255 caracteres.');
+			return;
+		}
+		if ((data.ESPECIFICACIONES ?? '').trim().length > 255) {
+			this.invalidarFila(e, 'Las especificaciones no pueden superar 255 caracteres.');
+			return;
 		}
 	}
 
@@ -1779,8 +1820,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	experienciaRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.REQUISITO ?? '').trim()) {
-			e.isValid = false;
-			e.errorText = 'Debe indicar el requisito.';
+			this.invalidarFila(e, 'Debe indicar el requisito.');
+			return;
+		}
+		if ((data.REQUISITO ?? '').trim().length > 255) {
+			this.invalidarFila(e, 'El requisito no puede superar 255 caracteres.');
+			return;
 		}
 	}
 
@@ -1878,19 +1923,24 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	competenciaTecnicaRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(Number(data.CORR_COMPETENCIAS_TECNICAS) > 0)) {
-			e.isValid = false;
-			e.errorText = 'Debe seleccionar una competencia tecnica de nivel 3.';
+			this.invalidarFila(e, 'Debe seleccionar una competencia tecnica de nivel 3.');
 			return;
 		}
 		if (!(data.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim()) {
-			e.isValid = false;
-			e.errorText = 'Debe indicar el nombre de la competencia.';
+			this.invalidarFila(e, 'Debe indicar el nombre de la competencia.');
+			return;
+		}
+		if ((data.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim().length > 150) {
+			this.invalidarFila(e, 'El nombre de la competencia no puede superar 150 caracteres.');
+			return;
+		}
+		if ((data.DESCRIPCION ?? '').trim().length > 500) {
+			this.invalidarFila(e, 'La descripcion no puede superar 500 caracteres.');
 			return;
 		}
 		const nivel = (data.NIVEL_DOMINIO ?? '').trim().toUpperCase();
 		if (!['BASICO', 'INTERMEDIO', 'AVANZADO'].includes(nivel)) {
-			e.isValid = false;
-			e.errorText = 'Debe indicar el nivel de dominio.';
+			this.invalidarFila(e, 'Debe indicar el nivel de dominio.');
 			return;
 		}
 
@@ -1906,8 +1956,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return Number(row.CORR_COMPETENCIAS_TECNICAS) === corrCatalogo;
 		});
 		if (duplicada) {
-			e.isValid = false;
-			e.errorText = 'Esa competencia tecnica ya esta agregada en el descriptor.';
+			this.invalidarFila(e, 'Esa competencia tecnica ya esta agregada en el descriptor.');
+			return;
 		}
 	}
 
@@ -2056,13 +2106,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	competenciaConductualRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(Number(data.CORR_COMPETENCIAS_CONDUCTUALES) > 0)) {
-			e.isValid = false;
-			e.errorText = 'Debe seleccionar una competencia conductual.';
+			this.invalidarFila(e, 'Debe seleccionar una competencia conductual.');
 			return;
 		}
 		if (!(data.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim()) {
-			e.isValid = false;
-			e.errorText = 'Debe indicar el nombre de la competencia.';
+			this.invalidarFila(e, 'Debe indicar el nombre de la competencia.');
+			return;
+		}
+		if ((data.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim().length > 255) {
+			this.invalidarFila(e, 'El nombre de la competencia no puede superar 255 caracteres.');
+			return;
+		}
+		if ((data.DESCRIPCION ?? '').trim().length > 255) {
+			this.invalidarFila(e, 'La descripcion no puede superar 255 caracteres.');
 			return;
 		}
 
@@ -2078,8 +2134,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return Number(row.CORR_COMPETENCIAS_CONDUCTUALES) === corrCatalogo;
 		});
 		if (duplicada) {
-			e.isValid = false;
-			e.errorText = 'Esa competencia conductual ya esta agregada en el descriptor.';
+			this.invalidarFila(e, 'Esa competencia conductual ya esta agregada en el descriptor.');
+			return;
 		}
 	}
 
@@ -2250,18 +2306,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	requerimientoOrganizacionalRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(Number(data.CORR_REQUERIMIENTO_ORGANIZACIONAL) > 0)) {
-			e.isValid = false;
-			e.errorText = 'Debe seleccionar un requerimiento organizacional.';
+			this.invalidarFila(e, 'Debe seleccionar un requerimiento organizacional.');
 			return;
 		}
 		if (!(data.DESCRIPCION ?? '').trim()) {
-			e.isValid = false;
-			e.errorText = 'Debe indicar la descripcion del requerimiento.';
+			this.invalidarFila(e, 'Debe indicar la descripcion del requerimiento.');
 			return;
 		}
 		if ((data.DESCRIPCION ?? '').trim().length > 150) {
-			e.isValid = false;
-			e.errorText = 'La descripcion no puede superar 150 caracteres.';
+			this.invalidarFila(e, 'La descripcion no puede superar 150 caracteres.');
 			return;
 		}
 
@@ -2277,8 +2330,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return Number(row.CORR_REQUERIMIENTO_ORGANIZACIONAL) === corrCatalogo;
 		});
 		if (duplicada) {
-			e.isValid = false;
-			e.errorText = 'Ese requerimiento organizacional ya esta agregado en el descriptor.';
+			this.invalidarFila(e, 'Ese requerimiento organizacional ya esta agregado en el descriptor.');
+			return;
 		}
 	}
 
@@ -2437,24 +2490,20 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	riesgoPuestoRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(Number(data.CORR_RIESGO_PUESTO) > 0)) {
-			e.isValid = false;
-			e.errorText = 'Debe seleccionar un riesgo de puesto.';
+			this.invalidarFila(e, 'Debe seleccionar un riesgo de puesto.');
 			return;
 		}
 		if (!(data.NOMBRE_RIESGO_PUESTO ?? '').trim()) {
-			e.isValid = false;
-			e.errorText = 'Debe indicar el nombre del riesgo.';
+			this.invalidarFila(e, 'Debe indicar el nombre del riesgo.');
 			return;
 		}
 		if ((data.NOMBRE_RIESGO_PUESTO ?? '').trim().length > 150) {
-			e.isValid = false;
-			e.errorText = 'El nombre del riesgo no puede superar 150 caracteres.';
+			this.invalidarFila(e, 'El nombre del riesgo no puede superar 150 caracteres.');
 			return;
 		}
 
 		if ((data.INFORMACION ?? '').trim().length > 255) {
-			e.isValid = false;
-			e.errorText = 'La informacion no puede superar 255 caracteres.';
+			this.invalidarFila(e, 'La informacion no puede superar 255 caracteres.');
 			return;
 		}
 
@@ -2470,8 +2519,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return Number(row.CORR_RIESGO_PUESTO) === corrCatalogo;
 		});
 		if (duplicada) {
-			e.isValid = false;
-			e.errorText = 'Ese riesgo de puesto ya esta agregado en el descriptor.';
+			this.invalidarFila(e, 'Ese riesgo de puesto ya esta agregado en el descriptor.');
+			return;
 		}
 	}
 
@@ -2670,6 +2719,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	responsabilidadCargoRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (data._esImpactoEconomico) {
+			if ((data.INFORMACION ?? '').trim().length > 255) {
+				this.invalidarFila(e, 'La informacion no puede superar 255 caracteres.');
+				return;
+			}
 			e.newData = {
 				...(e.newData || {}),
 				NOMBRE_RESPONSABILIDAD: IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR,
@@ -2680,24 +2733,20 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 
 		if (!(Number(data.CORR_RESPONSABILIDAD) > 0)) {
-			e.isValid = false;
-			e.errorText = 'Debe seleccionar una responsabilidad de cargo.';
+			this.invalidarFila(e, 'Debe seleccionar una responsabilidad de cargo.');
 			return;
 		}
 		if (!(data.NOMBRE_RESPONSABILIDAD ?? '').trim()) {
-			e.isValid = false;
-			e.errorText = 'Debe indicar el nombre de la responsabilidad.';
+			this.invalidarFila(e, 'Debe indicar el nombre de la responsabilidad.');
 			return;
 		}
 		if ((data.NOMBRE_RESPONSABILIDAD ?? '').trim().length > 150) {
-			e.isValid = false;
-			e.errorText = 'El nombre de la responsabilidad no puede superar 150 caracteres.';
+			this.invalidarFila(e, 'El nombre de la responsabilidad no puede superar 150 caracteres.');
 			return;
 		}
 
 		if ((data.INFORMACION ?? '').trim().length > 255) {
-			e.isValid = false;
-			e.errorText = 'La informacion no puede superar 255 caracteres.';
+			this.invalidarFila(e, 'La informacion no puede superar 255 caracteres.');
 			return;
 		}
 
@@ -2716,8 +2765,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return Number(row.CORR_RESPONSABILIDAD) === corrCatalogo;
 		});
 		if (duplicada) {
-			e.isValid = false;
-			e.errorText = 'Esa responsabilidad de cargo ya esta agregada en el descriptor.';
+			this.invalidarFila(e, 'Esa responsabilidad de cargo ya esta agregada en el descriptor.');
+			return;
 		}
 	}
 
@@ -3030,7 +3079,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					}
 
 					if (!response?.Result) {
-						this.notifyApiResponse(response);
+						this.notificarRespuestaOperacion(response, 'guardar');
 						return;
 					}
 
@@ -3053,7 +3102,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.cargarCompetenciasConductuales(forzar);
 					}
 				},
-				error: (error) => this.notifyApiError(error),
+				error: (error) => this.notificarErrorOperacion(error, 'guardar'),
 			});
 	}
 
@@ -3083,7 +3132,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			.subscribe({
 				next: (response: any) => {
 					if (!response?.Result) {
-						this.notifyApiResponse(response);
+						this.notificarRespuestaOperacion(response, 'guardar');
 						return;
 					}
 
@@ -3107,7 +3156,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.cargarCompetenciasConductuales(true);
 					}
 				},
-				error: (error) => this.notifyApiError(error),
+				error: (error) => this.notificarErrorOperacion(error, 'guardar'),
 			});
 	}
 
@@ -4001,12 +4050,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.notifyDescriptorWarning(seedMessage);
 					}
 				} else if (response) {
-					this.notifyApiResponse(response);
+					this.notificarRespuestaOperacion(response, 'guardar');
 				}
 				this.loadingVisible = false;
 			},
 			error: (error: any) => {
-				this.notifyApiError(error);
+				this.notificarErrorOperacion(error, 'guardar');
 				this.loadingVisible = false;
 			},
 		});
@@ -4047,7 +4096,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_DESCRIPTOR_PUESTO)),
+			deleteFn: () =>
+				this.convertirErrorOperacionEnRespuesta(
+					this.service.delete(this.fillParam(e.data.CORR_DESCRIPTOR_PUESTO)),
+					'eliminar',
+					'No se pudo eliminar el descriptor porque contiene información relacionada.'
+				),
 		});
 	}
 
@@ -4084,6 +4138,123 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private notifyDescriptorWarning(message: string): void {
 		this.notifyFx(message, NotifyType.Warning, { raw: true });
+	}
+
+	private obtenerMensajeOperacion(value: any): string {
+		if (typeof value === 'string') {
+			return value.trim();
+		}
+
+		const nestedError = value?.error;
+		if (typeof nestedError === 'string') {
+			return nestedError.trim();
+		}
+
+		return `${
+			value?.ErrorMessage ??
+			nestedError?.ErrorMessage ??
+			nestedError?.message ??
+			value?.message ??
+			''
+		}`.trim();
+	}
+
+	private normalizarMensajeOperacion(message: string): string {
+		return `${message ?? ''}`
+			.normalize('NFD')
+			.replace(/[\u0300-\u036f]/g, '')
+			.toLowerCase();
+	}
+
+	private esAdvertenciaOperacion(value: any, operacion: 'guardar' | 'eliminar'): boolean {
+		const errorCode = Number(value?.ErrorCode ?? value?.error?.ErrorCode);
+		const message = this.normalizarMensajeOperacion(this.obtenerMensajeOperacion(value));
+
+		if (operacion === 'guardar') {
+			return (
+				errorCode === 2601 ||
+				errorCode === 2627 ||
+				message.includes('ya existe') ||
+				message.includes('duplicad') ||
+				message.includes('duplicate key') ||
+				message.includes('primary key') ||
+				message.includes('unique key') ||
+				message.includes('unique constraint') ||
+				message.includes('mismo tiempo') ||
+				message.includes('same time') ||
+				message.includes('concurren') ||
+				message.includes('llave primaria') ||
+				message.includes('clave primaria')
+			);
+		}
+
+		return (
+			errorCode === 547 ||
+			message.includes('hijos') ||
+			message.includes('child record') ||
+			message.includes('foreign key') ||
+			message.includes('fk_') ||
+			message.includes('clave externa') ||
+			message.includes('llave externa') ||
+			message.includes('reference constraint') ||
+			message.includes('restriccion de referencia') ||
+			message.includes('asociados') ||
+			message.includes('registros relacionados')
+		);
+	}
+
+	private notificarRespuestaOperacion(response: any, operacion: 'guardar' | 'eliminar'): void {
+		if (this.esAdvertenciaOperacion(response, operacion)) {
+			this.notifyDescriptorWarning(
+				this.obtenerMensajeOperacion(response) ||
+					(operacion === 'guardar'
+						? 'No se pudo guardar porque otro registro utiliza la misma llave.'
+						: 'No se puede eliminar porque existen registros relacionados.')
+			);
+			return;
+		}
+
+		this.notifyApiResponse(response);
+	}
+
+	private notificarErrorOperacion(error: any, operacion: 'guardar' | 'eliminar'): void {
+		if (this.esAdvertenciaOperacion(error, operacion)) {
+			this.notifyDescriptorWarning(
+				this.obtenerMensajeOperacion(error) ||
+					(operacion === 'guardar'
+						? 'No se pudo guardar porque otro registro utiliza la misma llave.'
+						: 'No se puede eliminar porque existen registros relacionados.')
+			);
+			return;
+		}
+
+		this.notifyApiError(error);
+	}
+
+	private convertirErrorOperacionEnRespuesta<T>(
+		request: Observable<T>,
+		operacion: 'guardar' | 'eliminar',
+		contextMessage: string
+	): Observable<T> {
+		return request.pipe(
+			catchError((error: any) => {
+				if (this.esAdvertenciaOperacion(error, operacion)) {
+					return of({
+						Result: false,
+						ErrorCode: 2627,
+						ErrorMessage: contextMessage,
+					} as T);
+				}
+
+				return throwError(() => error);
+			})
+		);
+	}
+
+	private invalidarFila(e: any, message: string): void {
+		e.isValid = false;
+		e.errorText = message;
+		this.notifyDescriptorWarning(message);
 	}
 
 	private syncHeaderForm(): void {
@@ -4271,7 +4442,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'guardar');
 							resolve(true);
 							return;
 						}
@@ -4280,7 +4451,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'guardar');
 						resolve(true);
 					},
 				});
@@ -4302,7 +4473,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'eliminar');
 							resolve(true);
 							return;
 						}
@@ -4310,7 +4481,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'eliminar');
 						resolve(true);
 					},
 				});
@@ -4331,7 +4502,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			.subscribe({
 				next: (response: any) => {
 					if (!response?.Result) {
-						this.notifyApiResponse(response);
+						this.notificarRespuestaOperacion(response, 'guardar');
 						return;
 					}
 
@@ -4354,7 +4525,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 					onReady();
 				},
-				error: (error) => this.notifyApiError(error),
+				error: (error) => this.notificarErrorOperacion(error, 'guardar'),
 			});
 	}
 
@@ -4382,7 +4553,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'guardar');
 							resolve(true);
 							return;
 						}
@@ -4391,7 +4562,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'guardar');
 						resolve(true);
 					},
 				});
@@ -4413,14 +4584,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'eliminar');
 							resolve(true);
 							return;
 						}
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'eliminar');
 						resolve(true);
 					},
 				});
@@ -4450,7 +4621,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'guardar');
 							resolve(true);
 							return;
 						}
@@ -4459,7 +4630,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'guardar');
 						resolve(true);
 					},
 				});
@@ -4481,14 +4652,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'eliminar');
 							resolve(true);
 							return;
 						}
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'eliminar');
 						resolve(true);
 					},
 				});
@@ -4528,7 +4699,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'guardar');
 							resolve(true);
 							return;
 						}
@@ -4537,7 +4708,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'guardar');
 						resolve(true);
 					},
 				});
@@ -4559,14 +4730,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'eliminar');
 							resolve(true);
 							return;
 						}
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'eliminar');
 						resolve(true);
 					},
 				});
@@ -4605,7 +4776,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'guardar');
 							resolve(true);
 							return;
 						}
@@ -4614,7 +4785,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'guardar');
 						resolve(true);
 					},
 				});
@@ -4636,14 +4807,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'eliminar');
 							resolve(true);
 							return;
 						}
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'eliminar');
 						resolve(true);
 					},
 				});
@@ -4680,7 +4851,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'guardar');
 							resolve(true);
 							return;
 						}
@@ -4689,7 +4860,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'guardar');
 						resolve(true);
 					},
 				});
@@ -4711,14 +4882,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'eliminar');
 							resolve(true);
 							return;
 						}
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'eliminar');
 						resolve(true);
 					},
 				});
@@ -4761,7 +4932,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					next: (response) => {
 						this.riesgoPuestoPersistiendo = false;
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'guardar');
 							resolve(true);
 							return;
 						}
@@ -4777,7 +4948,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					},
 					error: (error) => {
 						this.riesgoPuestoPersistiendo = false;
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'guardar');
 						resolve(true);
 					},
 				});
@@ -4797,7 +4968,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'eliminar');
 							resolve(true);
 							return;
 						}
@@ -4805,7 +4976,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						resolve(true);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'eliminar');
 						resolve(true);
 					},
 				});
@@ -4852,7 +5023,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					next: (response) => {
 						this.responsabilidadCargoPersistiendo = false;
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'guardar');
 							resolve(true);
 							return;
 						}
@@ -4868,7 +5039,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					},
 					error: (error) => {
 						this.responsabilidadCargoPersistiendo = false;
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'guardar');
 						resolve(true);
 					},
 				});
@@ -4894,7 +5065,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'eliminar');
 							resolve(true);
 							return;
 						}
@@ -4902,7 +5073,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						resolve(true);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'eliminar');
 						resolve(true);
 					},
 				});
@@ -4936,7 +5107,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						if (!response?.Result) {
 							this.model.CORR_IMPACTO_ECONOMICO = corrAnterior;
 							this.model.DESCRIPCION_IMPACTO_ECONOMICO = descripcionAnterior;
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'guardar');
 							this.cargarResponsabilidadesCargo(true);
 							resolve(true);
 							return;
@@ -4959,7 +5130,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					error: (error) => {
 						this.model.CORR_IMPACTO_ECONOMICO = corrAnterior;
 						this.model.DESCRIPCION_IMPACTO_ECONOMICO = descripcionAnterior;
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'guardar');
 						this.cargarResponsabilidadesCargo(true);
 						resolve(true);
 					},
@@ -4987,7 +5158,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'guardar');
 							resolve(true);
 							return;
 						}
@@ -5002,7 +5173,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'guardar');
 						resolve(true);
 					},
 				});
@@ -5023,14 +5194,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'eliminar');
 							resolve(true);
 							return;
 						}
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'eliminar');
 						resolve(true);
 					},
 				});
@@ -5058,7 +5229,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'guardar');
 							resolve(true);
 							return;
 						}
@@ -5073,7 +5244,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'guardar');
 						resolve(true);
 					},
 				});
@@ -5094,14 +5265,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'eliminar');
 							resolve(true);
 							return;
 						}
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'eliminar');
 						resolve(true);
 					},
 				});
@@ -5125,7 +5296,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'guardar');
 							resolve(true);
 							return;
 						}
@@ -5134,7 +5305,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'guardar');
 						resolve(true);
 					},
 				});
@@ -5155,14 +5326,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
-							this.notifyApiResponse(response);
+							this.notificarRespuestaOperacion(response, 'eliminar');
 							resolve(true);
 							return;
 						}
 						resolve(false);
 					},
 					error: (error) => {
-						this.notifyApiError(error);
+						this.notificarErrorOperacion(error, 'eliminar');
 						resolve(true);
 					},
 				});

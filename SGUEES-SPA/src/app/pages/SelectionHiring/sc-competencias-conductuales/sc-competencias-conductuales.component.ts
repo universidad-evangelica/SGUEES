@@ -1,6 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { take } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
@@ -267,9 +268,62 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 
 		this.guardarMtto({
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
-			insert: () => this.service.insert(this.model),
-			update: () => this.service.update(this.model),
+			insert: () =>
+				this.convertirErrorMttoEnWarning(
+					this.service.insert(this.model),
+					'El nombre ingresado ya está registrado para otra competencia conductual.'
+				),
+			update: () =>
+				this.convertirErrorMttoEnWarning(
+					this.service.update(this.model),
+					'El nombre ingresado ya está registrado para otra competencia conductual.'
+				),
 		});
+	}
+
+	private convertirErrorMttoEnWarning<T>(
+		request: Observable<T>,
+		mensajeDuplicado?: string,
+		esEliminacion = false
+	): Observable<T> {
+		return request.pipe(
+			catchError((error: any) => {
+				const mensaje = `${
+					error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.error?.message ?? error?.error ?? error?.message ?? error ?? ''
+				}`;
+				const normalizado = mensaje.toLowerCase();
+				const esDuplicado =
+					!!mensajeDuplicado &&
+					['ya existe', 'duplicad', 'primary key', 'unique key', 'mismo tiempo', 'llave primaria', 'clave primaria'].some(
+						(texto) => normalizado.includes(texto)
+					);
+				const tieneRelacion =
+					esEliminacion &&
+					[
+						'foreign key',
+						'reference constraint',
+						'clave externa',
+						'clave foránea',
+						'llave foránea',
+						'hijos',
+						'registros relacionados',
+						'registros asociados',
+						'asociados',
+					].some((texto) => normalizado.includes(texto));
+
+				if (esDuplicado || tieneRelacion) {
+					return of({
+						Result: false,
+						ErrorCode: 2627,
+						ErrorMessage: tieneRelacion
+							? 'No se puede eliminar porque tiene registros relacionados.'
+							: mensajeDuplicado,
+					} as T);
+				}
+
+				return throwError(() => error);
+			})
+		);
 	}
 
 	override cancelar(): void {
@@ -279,7 +333,12 @@ export class ScCompetenciasConductualesComponent extends CBaseComponent implemen
 
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_COMPETENCIAS_CONDUCTUALES)),
+			deleteFn: () =>
+				this.convertirErrorMttoEnWarning(
+					this.service.delete(this.fillParam(e.data.CORR_COMPETENCIAS_CONDUCTUALES)),
+					undefined,
+					true
+				),
 		});
 	}
 

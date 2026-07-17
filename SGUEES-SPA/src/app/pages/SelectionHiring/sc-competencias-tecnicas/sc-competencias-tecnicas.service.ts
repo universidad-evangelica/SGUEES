@@ -37,6 +37,11 @@ export class ScCompetenciasTecnicasService {
 				msg('Debe ingresar el codigo.', NotifyType.Warning);
 				return false;
 			}
+
+			if (!/^[a-zA-Z0-9]{2,10}$/.test(model.CODIGO_COMPETENCIAS_TECNICAS.trim())) {
+				msg('El codigo de nivel 1 solo puede contener letras y numeros (2 a 10 caracteres).', NotifyType.Warning);
+				return false;
+			}
 		}
 
 		if (model.NIVEL === SC_COMPETENCIA_NIVEL.DOS) {
@@ -47,6 +52,16 @@ export class ScCompetenciasTecnicasService {
 
 			if (!model.CODIGO_SUFIJO || model.CODIGO_SUFIJO.trim() === '') {
 				msg('Debe ingresar el sufijo del codigo.', NotifyType.Warning);
+				return false;
+			}
+
+			if (model.CODIGO_SUFIJO.trim().length > 10) {
+				msg('El sufijo del codigo no puede superar 10 caracteres.', NotifyType.Warning);
+				return false;
+			}
+
+			if (!/^[a-zA-Z0-9]+$/.test(model.CODIGO_SUFIJO.trim())) {
+				msg('El sufijo del codigo de nivel 2 solo puede contener letras y numeros.', NotifyType.Warning);
 				return false;
 			}
 		}

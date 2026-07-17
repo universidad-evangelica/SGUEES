@@ -45,12 +45,6 @@ namespace SGUEES.Services
                 return validation;
             }
 
-            var duplicate = await ValidateUniqueNombreAsync(Data, null);
-            if (duplicate != null)
-            {
-                return duplicate;
-            }
-
             NormalizeData(Data);
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
@@ -72,12 +66,6 @@ namespace SGUEES.Services
             if (Data.CORR_INDUCCION <= 0)
             {
                 return ValidationError("No se pudo identificar la induccion a actualizar.");
-            }
-
-            var duplicate = await ValidateUniqueNombreAsync(Data, Data.CORR_INDUCCION);
-            if (duplicate != null)
-            {
-                return duplicate;
             }
 
             NormalizeData(Data);
@@ -148,18 +136,6 @@ namespace SGUEES.Services
             }
 
             return null;
-        }
-
-        private async Task<CResult> ValidateUniqueNombreAsync(SC_INDUCCIONTable Data, int? excludeCorr)
-        {
-            var exists = await _repo.ExistsNombreAsync(
-                Data.CORR_EMPRESA,
-                Data.NOMBRE_INDUCCION,
-                excludeCorr ?? 0);
-
-            return exists
-                ? ValidationError($"Ya existe una induccion con el nombre {Data.NOMBRE_INDUCCION}.")
-                : null;
         }
 
         private static CResult ValidateEmpresaSesion(int corrEmpresa)

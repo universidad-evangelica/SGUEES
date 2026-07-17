@@ -327,38 +327,6 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        public async Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr)
-        {
-            if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nombre))
-            {
-                return false;
-            }
-
-            const string sql = @"SELECT TOP 1 1 AS FOUND
-                FROM V_SC_INDUCCION
-                WHERE CORR_EMPRESA = @CORR_EMPRESA
-                AND UPPER(LTRIM(RTRIM(NOMBRE_INDUCCION))) = UPPER(LTRIM(RTRIM(@NOMBRE)))
-                AND (@EXCLUDE_CORR <= 0 OR CORR_INDUCCION <> @EXCLUDE_CORR)";
-
-            try
-            {
-                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "NOMBRE", Value = nombre.Trim(), DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "EXCLUDE_CORR", Value = excludeCorr, DbType = System.Data.DbType.Int32 },
-                });
-
-                var exists = reader.Read();
-                reader.Close();
-                return exists;
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-        }
-
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

@@ -156,16 +156,28 @@
 	color: var(--sguees-text-secondary, color-mix(in srgb, var(--base-text-color) 72%, transparent));
 }
 
-:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor {
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor,
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-dropdownbox.dx-texteditor,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-selectbox.dx-texteditor,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-dropdownbox.dx-texteditor {
 	border-color: var(--error-color, #d9534f);
 }
 
 :host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor.dx-state-hover,
-:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor.dx-state-focused {
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor.dx-state-focused,
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-dropdownbox.dx-texteditor.dx-state-hover,
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-dropdownbox.dx-texteditor.dx-state-focused,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-selectbox.dx-texteditor.dx-state-hover,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-selectbox.dx-texteditor.dx-state-focused,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-dropdownbox.dx-texteditor.dx-state-hover,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-dropdownbox.dx-texteditor.dx-state-focused {
 	border-color: var(--error-color, #d9534f);
 }
 
-:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor .dx-dropdowneditor-icon {
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor .dx-dropdowneditor-icon,
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-dropdownbox.dx-texteditor .dx-dropdowneditor-icon,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-selectbox.dx-texteditor .dx-dropdowneditor-icon,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-dropdownbox.dx-texteditor .dx-dropdowneditor-icon {
 	color: var(--error-color, #d9534f);
 }
 

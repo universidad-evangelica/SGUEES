@@ -55,12 +55,6 @@ namespace SGUEES.Services
                 return validation;
             }
 
-            var duplicate = await ValidateUniqueNombreAsync(Data, null);
-            if (duplicate != null)
-            {
-                return duplicate;
-            }
-
             NormalizeData(Data);
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
@@ -82,12 +76,6 @@ namespace SGUEES.Services
             if (Data.CORR_DISPONIBILIDAD_HORARIO <= 0)
             {
                 return ValidationError("No se pudo identificar la disponibilidad de horario a actualizar.");
-            }
-
-            var duplicate = await ValidateUniqueNombreAsync(Data, Data.CORR_DISPONIBILIDAD_HORARIO);
-            if (duplicate != null)
-            {
-                return duplicate;
             }
 
             NormalizeData(Data);
@@ -153,18 +141,6 @@ namespace SGUEES.Services
             }
 
             return null;
-        }
-
-        private async Task<CResult> ValidateUniqueNombreAsync(SC_DISPONIBILIDAD_HORARIOTable Data, int? excludeCorr)
-        {
-            var exists = await _repo.ExistsNombreAsync(
-                Data.CORR_EMPRESA,
-                Data.NOMBRE_DISPONIBILIDAD_HORARIO,
-                excludeCorr ?? 0);
-
-            return exists
-                ? ValidationError($"Ya existe una disponibilidad de horario con el nombre {Data.NOMBRE_DISPONIBILIDAD_HORARIO}.")
-                : null;
         }
 
         private static CResult ValidateEmpresaSesion(int corrEmpresa)

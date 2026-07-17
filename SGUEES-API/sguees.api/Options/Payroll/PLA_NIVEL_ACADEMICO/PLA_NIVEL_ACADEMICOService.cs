@@ -45,12 +45,6 @@ namespace SGUEES.Services
                 return validation;
             }
 
-            var duplicate = await ValidateUniqueNombreAsync(Data, null);
-            if (duplicate != null)
-            {
-                return duplicate;
-            }
-
             NormalizeData(Data);
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
@@ -72,12 +66,6 @@ namespace SGUEES.Services
             if (Data.CORR_NIVEL_ACADEMICO <= 0)
             {
                 return ValidationError("No se pudo identificar el nivel academico a actualizar.");
-            }
-
-            var duplicate = await ValidateUniqueNombreAsync(Data, Data.CORR_NIVEL_ACADEMICO);
-            if (duplicate != null)
-            {
-                return duplicate;
             }
 
             NormalizeData(Data);
@@ -143,18 +131,6 @@ namespace SGUEES.Services
             }
 
             return null;
-        }
-
-        private async Task<CResult> ValidateUniqueNombreAsync(PLA_NIVEL_ACADEMICOTable Data, int? excludeCorr)
-        {
-            var exists = await _repo.ExistsNombreAsync(
-                Data.CORR_EMPRESA,
-                Data.NOMBRE_NIVEL_ACADEMICO,
-                excludeCorr ?? 0);
-
-            return exists
-                ? ValidationError($"Ya existe un nivel academico con el nombre {Data.NOMBRE_NIVEL_ACADEMICO}.")
-                : null;
         }
 
         private static CResult ValidateEmpresaSesion(int corrEmpresa)

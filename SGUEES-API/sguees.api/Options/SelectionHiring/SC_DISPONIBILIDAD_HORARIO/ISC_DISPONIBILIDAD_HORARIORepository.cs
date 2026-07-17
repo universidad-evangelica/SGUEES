@@ -10,6 +10,5 @@ namespace SGUEES.Repositories
     {
         Task<CResult> ActivarInactivarAsync(SC_DISPONIBILIDAD_HORARIOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> GetDisponibilidadesActivasAsync(List<CParameter> xWhere);
-        Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr);
     }
 }

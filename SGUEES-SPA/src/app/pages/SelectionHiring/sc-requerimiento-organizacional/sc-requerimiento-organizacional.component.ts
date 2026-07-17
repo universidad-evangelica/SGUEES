@@ -1,5 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
@@ -199,9 +201,62 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 
 		this.guardarMtto({
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
-			insert: () => this.service.insert(this.model),
-			update: () => this.service.update(this.model),
+			insert: () =>
+				this.convertirErrorMttoEnWarning(
+					this.service.insert(this.model),
+					'La descripción ingresada ya está registrada para otro requerimiento organizacional.'
+				),
+			update: () =>
+				this.convertirErrorMttoEnWarning(
+					this.service.update(this.model),
+					'La descripción ingresada ya está registrada para otro requerimiento organizacional.'
+				),
 		});
+	}
+
+	private convertirErrorMttoEnWarning<T>(
+		request: Observable<T>,
+		mensajeDuplicado?: string,
+		esEliminacion = false
+	): Observable<T> {
+		return request.pipe(
+			catchError((error: any) => {
+				const mensaje = `${
+					error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.error?.message ?? error?.error ?? error?.message ?? error ?? ''
+				}`;
+				const normalizado = mensaje.toLowerCase();
+				const esDuplicado =
+					!!mensajeDuplicado &&
+					['ya existe', 'duplicad', 'primary key', 'unique key', 'mismo tiempo', 'llave primaria', 'clave primaria'].some(
+						(texto) => normalizado.includes(texto)
+					);
+				const tieneRelacion =
+					esEliminacion &&
+					[
+						'foreign key',
+						'reference constraint',
+						'clave externa',
+						'clave foránea',
+						'llave foránea',
+						'hijos',
+						'registros relacionados',
+						'registros asociados',
+						'asociados',
+					].some((texto) => normalizado.includes(texto));
+
+				if (esDuplicado || tieneRelacion) {
+					return of({
+						Result: false,
+						ErrorCode: 2627,
+						ErrorMessage: tieneRelacion
+							? 'No se puede eliminar porque tiene registros relacionados.'
+							: mensajeDuplicado,
+					} as T);
+				}
+
+				return throwError(() => error);
+			})
+		);
 	}
 
 	override cancelar(): void {
@@ -210,7 +265,12 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_REQUERIMIENTO_ORGANIZACIONAL)),
+			deleteFn: () =>
+				this.convertirErrorMttoEnWarning(
+					this.service.delete(this.fillParam(e.data.CORR_REQUERIMIENTO_ORGANIZACIONAL)),
+					undefined,
+					true
+				),
 		});
 	}
 

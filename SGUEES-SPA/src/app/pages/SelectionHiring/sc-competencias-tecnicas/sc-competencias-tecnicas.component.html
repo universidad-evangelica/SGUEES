@@ -37,18 +37,20 @@
 			></app-data-lookup>
 		</div>
 		<div *dxTemplate="let data of 'CORR_COMPETENCIAS_TECNICAS_PADRELookup'">
-			<app-data-lookup
-				[model]="padres"
-				[value]="model.CORR_COMPETENCIAS_TECNICAS_PADRE"
-				(valueChange)="onPadreChanged($event)"
-				[valueExpr]="'CORR_COMPETENCIAS_TECNICAS'"
-				[displayExpr]="'NOMBRE_DISPLAY'"
-				[lookupColumns]="padreLookupColumns"
-				[selectedRowKeys]="selectedLookUpCORR_COMPETENCIAS_TECNICAS_PADRE"
-				[showClearButton]="true"
-				[readOnly]="banderaMtto !== UpdateType.Add"
-				[dropDownWidth]="640"
-			></app-data-lookup>
+			<div class="padre-lookup-field" [class.padre-lookup-field--invalid]="padreInvalido">
+				<app-data-lookup
+					[model]="padres"
+					[value]="model.CORR_COMPETENCIAS_TECNICAS_PADRE"
+					(valueChange)="onPadreChanged($event)"
+					[valueExpr]="'CORR_COMPETENCIAS_TECNICAS'"
+					[displayExpr]="'NOMBRE_DISPLAY'"
+					[lookupColumns]="padreLookupColumns"
+					[selectedRowKeys]="selectedLookUpCORR_COMPETENCIAS_TECNICAS_PADRE"
+					[showClearButton]="true"
+					[readOnly]="banderaMtto !== UpdateType.Add"
+					[dropDownWidth]="640"
+				></app-data-lookup>
+			</div>
 		</div>
 	</dx-form>
 </div>
