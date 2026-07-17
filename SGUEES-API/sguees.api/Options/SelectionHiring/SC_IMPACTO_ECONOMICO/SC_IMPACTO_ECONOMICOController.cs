@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -33,6 +33,7 @@ namespace SGUEES.Controllers
             return await _service.GetCatalogoDescriptorAsync(Data);
         }
 
+        // Atiende la consulta del listado de impactos económicos y la limita a la empresa de la sesión.
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-impacto-economico|R")]
         public async Task<CResult> GetAll([FromQuery] SC_IMPACTO_ECONOMICOParam Data)
@@ -41,6 +42,7 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Atiende la consulta de un impacto económico dentro de la empresa de la sesión.
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-impacto-economico|R")]
         public async Task<CResult> Get([FromQuery] SC_IMPACTO_ECONOMICOParam Data)
@@ -72,6 +74,7 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Valida el contexto de empresa y elimina el impacto económico indicado por sus claves.
         [HttpDelete]
         [Authorize(Policy = "/sc-impacto-economico|D")]
         public async Task<IActionResult> Delete([FromQuery] SC_IMPACTO_ECONOMICOTable Data)
@@ -82,6 +85,7 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Identifica el registro y solicita el cambio de estado activo/inactivo en su empresa.
         [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/sc-impacto-economico|U")]
         public async Task<IActionResult> ActivarInactivar(SC_IMPACTO_ECONOMICOTable Data)
@@ -93,12 +97,14 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Obtiene la empresa asociada a la sesión para aislar las operaciones del usuario.
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
+        // Obtiene el identificador del usuario autenticado para registrar la auditoría.
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;

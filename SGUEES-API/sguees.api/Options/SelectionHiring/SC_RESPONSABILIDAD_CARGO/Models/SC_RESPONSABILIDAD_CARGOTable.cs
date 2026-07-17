@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de persistencia (tabla) del catálogo de responsabilidad de cargo.
     public class SC_RESPONSABILIDAD_CARGOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

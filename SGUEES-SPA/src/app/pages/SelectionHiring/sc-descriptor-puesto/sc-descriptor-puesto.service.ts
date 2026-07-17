@@ -1,3 +1,6 @@
+// Orquesta validaciones, columnas/header del mtto y CRUD de detalles del descriptor.
+// Delega HTTP a los repositories; el component solo consume Observables/IResult.
+
 import { Injectable } from '@angular/core';
 import { forkJoin, from, Observable, of } from 'rxjs';
 import { concatMap, map, toArray } from 'rxjs/operators';
@@ -41,6 +44,7 @@ import {
 } from './models/sc-descriptor-puesto';
 import { ScDescriptorPuestoRepository } from './sc-descriptor-puesto.repository';
 
+// Etiquetas de estado para badges del grid browse.
 const ESTADO_DESCRIPTOR_LABELS: Record<string, string> = {
 	BORRADOR: 'Borrador',
 	ENVIADO: 'Enviado',

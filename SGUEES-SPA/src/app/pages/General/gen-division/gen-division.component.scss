@@ -1,13 +1,16 @@
+// Separación del formulario respecto a la barra en desktop.
 .division-form-card {
 	margin-top: 38px;
 }
 
+// Reduce el margen del formulario en tablet.
 @media (max-width: 991.98px) {
 	.division-form-card {
 		margin-top: 16px;
 	}
 }
 
+// En móvil: toolbar del grid se apila para no solapar botones.
 @media (max-width: 575.98px) {
 	:host ::ng-deep {
 		.dx-datagrid-header-panel {

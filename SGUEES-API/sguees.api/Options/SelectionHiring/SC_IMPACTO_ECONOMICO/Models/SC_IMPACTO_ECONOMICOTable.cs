@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de persistencia (tabla) del catálogo de impacto económico.
     public class SC_IMPACTO_ECONOMICOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

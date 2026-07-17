@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+	// Entidad de persistencia (tabla) del catálogo de país.
 	public class GEN_PAISTable : BaseEntity
 	{
 		public int CORR_PAIS { get; set; }

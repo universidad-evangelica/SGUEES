@@ -1,3 +1,5 @@
+// Responsabilidad de cargo del descriptor. La fila virtual de impacto económico usa
+// IMPACTO_ECONOMICO_CLIENT_KEY y `_esImpactoEconomico` para reglas de edición distintas.
 export interface ScDescriptorPuestoResponsabilidadCargo {
 	CORR_EMPRESA?: number;
 	CORR_DESCRIPTOR_RESPONSABILIDAD: number;

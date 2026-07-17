@@ -9,8 +9,10 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { GenEstructuraTerritorialComponent } from './gen-estructura-territorial.component';
 
+// Ruta por defecto: listado de países y documento territorial en cascada.
 const routes: Routes = [{ path: '', component: GenEstructuraTerritorialComponent }];
 
+// Declara el componente y UI de grid, form, popup y barra de mantenimiento.
 @NgModule({
 	imports: [
 		RouterModule.forChild(routes),

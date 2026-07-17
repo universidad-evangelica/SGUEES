@@ -9,6 +9,7 @@ namespace SGUEES.Services
 {
     public class SC_PERFIL_PUESTO_EDUCACIONService : ISC_PERFIL_PUESTO_EDUCACIONService
     {
+        // Valores permitidos de tipo requerido en educación.
         private static readonly HashSet<string> TiposRequeridoValidos = new(StringComparer.OrdinalIgnoreCase)
         {
             "SI",
@@ -38,6 +39,7 @@ namespace SGUEES.Services
         // Valida y crea el registro de educación del perfil con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTO_EDUCACIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Valida reglas de negocio del registro.
             var validation = Validate(Data);
             if (validation != null)
             {

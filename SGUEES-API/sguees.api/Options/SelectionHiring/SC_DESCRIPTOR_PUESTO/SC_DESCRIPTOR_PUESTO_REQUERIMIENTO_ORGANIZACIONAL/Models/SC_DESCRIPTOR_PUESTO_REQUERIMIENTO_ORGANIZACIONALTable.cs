@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de escritura de requerimiento organizacional del descriptor.
     public class SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

@@ -30,6 +30,7 @@ namespace SGUEES.Services
         // Valida y crea el registro de relación laboral con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_RELACION_LABORALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Valida reglas de negocio del registro.
             var validation = Validate(Data);
             if (validation != null)
             {

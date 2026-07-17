@@ -31,11 +31,13 @@ namespace SGUEES.Services
             };
         }
 
+        // Construye los filtros y solicita al repositorio el listado de impactos económicos.
         public async Task<CResult> GetAllAsync(SC_IMPACTO_ECONOMICOParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Valida las claves de consulta y solicita al repositorio el detalle del impacto económico.
         public async Task<CResult> GetAsync(SC_IMPACTO_ECONOMICOParam xWhere)
         {
             var p = new List<CParameter>
@@ -95,6 +97,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida la identidad del impacto económico y solicita su eliminación al repositorio.
         public async Task<CResult> DeleteAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -106,6 +109,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida el registro antes de cambiar su estado activo o inactivo.
         public async Task<CResult> ActivarInactivarAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -122,6 +126,7 @@ namespace SGUEES.Services
             return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Convierte los filtros recibidos en parámetros seguros para el repositorio.
         private static List<CParameter> BuildParameters(SC_IMPACTO_ECONOMICOParam xWhere)
         {
             return new List<CParameter>
@@ -151,6 +156,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Verifica que la sesión tenga una empresa válida y prepara una respuesta controlada si falta.
         private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
             if (corrEmpresa > 0)
@@ -170,6 +176,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Construye una respuesta uniforme para devolver errores de validación al cliente.
         private static CResult ValidationError(string message)
         {
             return new CResult

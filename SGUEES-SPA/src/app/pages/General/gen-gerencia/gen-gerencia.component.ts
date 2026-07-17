@@ -44,6 +44,7 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
+	// Expone el grid de mantenimiento a la base para refrescos y foco.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
@@ -355,6 +356,7 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Deja el formulario y el lookup en solo lectura al consultar.
 	override bloquear(): void {
 		this.readOnly = true;
 		this.dataForm?.instance?.getEditor('CORR_GERENCIA')?.option('readOnly', true);
@@ -362,6 +364,7 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		this.dataForm?.instance?.getEditor('CODIGO_GERENCIA')?.option('readOnly', true);
 	}
 
+	// Habilita campos editables y el lookup; el correlativo permanece bloqueado.
 	override habilitar(): void {
 		this.readOnly = false;
 		setTimeout(() => {
@@ -371,6 +374,7 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Coloca el cursor en el nombre al abrir el formulario.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm?.instance?.getEditor('NOMBRE_GERENCIA')?.focus();

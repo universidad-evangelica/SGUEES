@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura (vista) del catálogo de nivel académico.
     public class PLA_NIVEL_ACADEMICOView
     {
         public int CORR_EMPRESA { get; set; }

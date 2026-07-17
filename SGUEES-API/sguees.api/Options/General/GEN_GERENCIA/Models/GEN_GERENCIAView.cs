@@ -2,6 +2,7 @@ using System;
 
 namespace sguees.Models
 {
+	// Proyección de lectura (vista) del catálogo de gerencia.
 	public class GEN_GERENCIAView
 	{
 		public int CORR_EMPRESA { get; set; }

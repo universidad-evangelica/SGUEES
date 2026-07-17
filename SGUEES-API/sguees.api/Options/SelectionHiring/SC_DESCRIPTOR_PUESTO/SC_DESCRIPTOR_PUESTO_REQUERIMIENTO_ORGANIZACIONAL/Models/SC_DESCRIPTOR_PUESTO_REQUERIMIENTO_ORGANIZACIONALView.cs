@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura de requerimiento organizacional del descriptor.
     public class SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALView
     {
         public int CORR_EMPRESA { get; set; }

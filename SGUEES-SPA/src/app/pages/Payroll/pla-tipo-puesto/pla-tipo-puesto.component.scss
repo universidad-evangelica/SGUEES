@@ -2,6 +2,7 @@
 	display: block;
 }
 
+// Badge de estado Activo / Inactivo en la columna del grid.
 :host ::ng-deep .estado-badge {
 	display: inline-flex;
 	align-items: center;
@@ -30,6 +31,7 @@
 	box-shadow: none;
 }
 
+// Separación del formulario respecto a la barra en desktop.
 .pla-tipo-puesto-form-card {
 	margin-top: 38px;
 }
@@ -40,6 +42,7 @@
 	}
 }
 
+// En móvil: toolbar del grid se apila para no solapar botones.
 @media (max-width: 575.98px) {
 	:host ::ng-deep {
 		.dx-datagrid-header-panel {

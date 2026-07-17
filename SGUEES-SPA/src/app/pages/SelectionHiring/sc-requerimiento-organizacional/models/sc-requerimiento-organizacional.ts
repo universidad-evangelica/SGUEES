@@ -1,3 +1,4 @@
+// Catálogo de requerimientos organizacionales del puesto.
 export interface ScRequerimientoOrganizacional {
 	CORR_EMPRESA: number;
 	CORR_REQUERIMIENTO_ORGANIZACIONAL: number;

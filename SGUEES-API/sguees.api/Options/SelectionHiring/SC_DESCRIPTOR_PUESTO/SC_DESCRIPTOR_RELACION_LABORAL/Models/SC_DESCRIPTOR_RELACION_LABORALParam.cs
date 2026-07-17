@@ -2,6 +2,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Filtros de consulta de relaciones laborales del descriptor.
     public class SC_DESCRIPTOR_RELACION_LABORALParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

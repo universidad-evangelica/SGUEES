@@ -1,3 +1,4 @@
+// Contrato del nivel académico; ESTADO_NIVEL_ACADEMICO controla activo/inactivo.
 export interface PlaNivelAcademico {
 	CORR_EMPRESA: number;
 	CORR_NIVEL_ACADEMICO: number;

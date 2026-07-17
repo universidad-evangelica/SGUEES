@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura de riesgo del puesto en el descriptor.
     public class SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOView
     {
         public int CORR_EMPRESA { get; set; }

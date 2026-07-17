@@ -27,6 +27,7 @@ namespace SGUEES.Repositories
 
             try
             {
+                // Filtra por FORMATO: preferencia exacta; AMBOS solo si no hay fila específica.
                 const string sql = @"SELECT D.*
                     FROM V_SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO D
                     WHERE D.CORR_EMPRESA = @CORR_EMPRESA

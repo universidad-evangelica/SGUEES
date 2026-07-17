@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+	// Entidad de persistencia (tabla) del catálogo de departamento.
 	public class GEN_DEPTOTable : BaseEntity
 	{
 		public int CORR_PAIS { get; set; }

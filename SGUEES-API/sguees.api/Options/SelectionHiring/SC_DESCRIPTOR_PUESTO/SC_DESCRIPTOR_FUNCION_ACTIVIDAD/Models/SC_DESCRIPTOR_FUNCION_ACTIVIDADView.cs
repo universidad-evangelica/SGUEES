@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura de actividad de función del descriptor.
     public class SC_DESCRIPTOR_FUNCION_ACTIVIDADView
     {
         public int CORR_EMPRESA { get; set; }

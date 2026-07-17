@@ -23,6 +23,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Construye los filtros y solicita al repositorio el listado de disponibilidades de horario.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -66,6 +67,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Consulta una disponibilidad de horario por sus claves y devuelve el primer registro coincidente.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -103,6 +105,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta la disponibilidad de horario, recupera el registro creado y normaliza errores de clave duplicada.
         public async Task<CResult> CreateAsync(SC_DISPONIBILIDAD_HORARIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -162,6 +165,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza la disponibilidad de horario por sus claves y devuelve el registro resultante.
         public async Task<CResult> UpdateAsync(SC_DISPONIBILIDAD_HORARIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -216,6 +220,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Elimina la disponibilidad de horario por sus claves y convierte restricciones relacionadas en un resultado controlado.
         public async Task<CResult> DeleteAsync(SC_DISPONIBILIDAD_HORARIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -253,6 +258,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Cambia el estado activo/inactivo de la disponibilidad de horario y recupera el registro actualizado.
         public async Task<CResult> ActivarInactivarAsync(SC_DISPONIBILIDAD_HORARIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -379,6 +385,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Reconoce excepciones de claves únicas para devolver un mensaje funcional en lugar del error técnico.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+	// Entidad de persistencia (tabla) del catálogo de municipio.
 	public class GEN_MUNICIPIOTable : BaseEntity
 	{
 		public int CORR_DEPTO { get; set; }

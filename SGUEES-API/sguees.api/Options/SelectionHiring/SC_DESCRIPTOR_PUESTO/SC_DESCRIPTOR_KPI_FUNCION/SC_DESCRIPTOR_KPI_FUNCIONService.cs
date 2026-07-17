@@ -30,6 +30,7 @@ namespace SGUEES.Services
         // Valida y crea el registro de KPI de la función con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Valida reglas de negocio del registro.
             var validation = Validate(Data);
             if (validation != null)
             {

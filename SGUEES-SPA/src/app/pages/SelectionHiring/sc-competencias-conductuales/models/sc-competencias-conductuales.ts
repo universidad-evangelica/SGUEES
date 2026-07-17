@@ -1,3 +1,4 @@
+// Catálogo de competencias conductuales vinculadas a un tipo de puesto.
 export interface ScCompetenciasConductuales {
 	CORR_EMPRESA: number;
 	CORR_COMPETENCIAS_CONDUCTUALES: number;

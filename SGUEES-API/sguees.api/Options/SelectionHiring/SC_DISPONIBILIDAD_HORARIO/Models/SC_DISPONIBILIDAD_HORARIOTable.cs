@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de persistencia (tabla) del catálogo de disponibilidad de horario.
     public class SC_DISPONIBILIDAD_HORARIOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

@@ -1,3 +1,4 @@
+// Relación laboral interna (I) o externa (E) del formato extenso.
 export interface ScDescriptorRelacionLaboral {
 	CORR_EMPRESA?: number;
 	CORR_DESCRIPTOR_PUESTO?: number;

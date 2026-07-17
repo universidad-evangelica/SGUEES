@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura de educación del perfil del puesto.
     public class SC_PERFIL_PUESTO_EDUCACIONView
     {
         public int CORR_EMPRESA { get; set; }

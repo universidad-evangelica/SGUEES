@@ -46,22 +46,27 @@ export class PlaTipoPuestoService {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
+	// Solicita al repositorio el detalle del tipo indicado.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_TIPO_PUESTO', Value: param.CORR_TIPO_PUESTO }]);
 	}
 
+	// Delega en el repositorio la creación del tipo de puesto.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Delega en el repositorio la actualización del tipo y su clave.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_TIPO_PUESTO', Value: model.CORR_TIPO_PUESTO }]);
 	}
 
+	// Delega en el repositorio la eliminación del tipo indicado.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_TIPO_PUESTO', Value: model.CORR_TIPO_PUESTO }]);
 	}
 
+	// Cambia el estado activo/inactivo del tipo vía el endpoint dedicado.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_TIPO_PUESTO', Value: model.CORR_TIPO_PUESTO }]);
 	}
@@ -83,6 +88,7 @@ export class PlaTipoPuestoService {
 		];
 	}
 
+	// Configura el contador de registros mostrado en la cuadrícula.
 	getSummary(): any {
 		return {
 			totalItems: [{ column: 'CORR_TIPO_PUESTO', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
@@ -131,6 +137,7 @@ export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETI
 	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
 }
 
+// Identifica respuestas controladas relacionadas con la empresa de la sesión.
 export function isEmpresaWarningResponse(response: any): boolean {
 	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
 }

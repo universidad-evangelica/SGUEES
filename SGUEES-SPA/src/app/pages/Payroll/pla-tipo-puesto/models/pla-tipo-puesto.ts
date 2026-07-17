@@ -1,3 +1,4 @@
+// Contrato del tipo de puesto; CODIGO y ESTADO son campos de negocio del mantenimiento.
 export interface PlaTipoPuesto {
 	CORR_EMPRESA: number;
 	CORR_TIPO_PUESTO: number;

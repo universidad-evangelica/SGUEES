@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de escritura de riesgo del puesto en el descriptor.
     public class SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura (vista) del catálogo de frecuencia.
     public class SC_FRECUENCIAView
     {
         public int CORR_EMPRESA { get; set; }

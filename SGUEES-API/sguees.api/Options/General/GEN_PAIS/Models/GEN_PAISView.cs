@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+	// Proyección de lectura (vista) del catálogo de país.
 	public class GEN_PAISView
 	{
 		public int CORR_PAIS { get; set; }

@@ -1,3 +1,4 @@
+// Catálogo de inducciones y su duración en semanas.
 export interface ScInduccion {
 	CORR_EMPRESA: number;
 	CORR_INDUCCION: number;

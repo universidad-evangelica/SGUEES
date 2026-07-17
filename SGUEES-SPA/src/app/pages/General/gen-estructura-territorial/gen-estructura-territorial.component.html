@@ -1,4 +1,5 @@
 <div class="sguees-mtto-view">
+	<!-- Toolbar: título y acciones según listado o documento país -->
 	<app-barra-data-mtto
 		[tituloVentana]="tituloVentana"
 		[subTituloVentana]="subTituloVentana"
@@ -14,6 +15,7 @@
 
 	<!-- Lista de países (entrada al módulo) -->
 	<ng-container *ngIf="!vistaDetalle">
+		<!-- Formulario de país en alta/edición sobre el listado -->
 		<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 			<dx-form
 				#fData
@@ -28,6 +30,7 @@
 			</dx-form>
 		</div>
 
+		<!-- Grid de países: doble clic / editar abre el documento territorial -->
 		<app-data-grid-mtto
 			#paisGrid
 			[isBrowse]="isBrowse()"
@@ -58,6 +61,7 @@
 
 	<!-- Documento país + cascada (flujo tipo partida: Guardar / Cancelar del padre) -->
 	<ng-container *ngIf="vistaDetalle">
+		<!-- Formulario del país seleccionado -->
 		<div class="content-block dx-card responsive-paddings sguees-mtto-form-card territorial-form-card">
 			<dx-form
 				#fData
@@ -72,8 +76,10 @@
 			</dx-form>
 		</div>
 
+		<!-- Cascada depto → municipio → distrito del país enfocado -->
 		<div class="territorial-cascade" *ngIf="selectedPais">
 			<div class="territorial-panels" [style.--territorial-cascade-grid-height.px]="cascadeGridHeight">
+						<!-- Grid departamentos -->
 						<div class="territorial-panel territorial-panel--cascade">
 							<app-data-grid-mtto
 								#deptoGrid
@@ -102,6 +108,7 @@
 							></app-data-grid-mtto>
 						</div>
 
+						<!-- Grid municipios (habilitado al seleccionar depto) -->
 						<div class="territorial-panel territorial-panel--cascade" [class.territorial-panel--disabled]="!selectedDepto">
 							<app-data-grid-mtto
 								#municipioGrid
@@ -130,6 +137,7 @@
 							></app-data-grid-mtto>
 						</div>
 
+						<!-- Grid distritos (habilitado al seleccionar municipio) -->
 						<div class="territorial-panel territorial-panel--cascade" [class.territorial-panel--disabled]="!selectedMunicipio">
 							<app-data-grid-mtto
 								#distritoGrid
@@ -160,6 +168,7 @@
 	</ng-container>
 </div>
 
+<!-- Popup CRUD de depto / municipio / distrito -->
 <dx-popup
 	[(visible)]="popupVisible"
 	[showTitle]="true"
@@ -172,6 +181,7 @@
 	[wrapperAttr]="{ class: 'territorial-crud-popup' }"
 >
 	<div class="territorial-popup-body">
+		<!-- Formulario del nivel territorial emergente -->
 		<dx-form
 			#popupForm
 			[formData]="popupModel"
@@ -181,6 +191,7 @@
 			[showRequiredMark]="false"
 			[items]="popupItems"
 		></dx-form>
+		<!-- Botones Guardar / Cancelar del popup -->
 		<div class="territorial-popup-actions">
 			<dx-button text="Guardar" type="default" stylingMode="contained" (onClick)="guardarPopup()"></dx-button>
 			<dx-button text="Cancelar" stylingMode="outlined" (onClick)="cerrarPopup()"></dx-button>
@@ -188,6 +199,7 @@
 	</div>
 </dx-popup>
 
+<!-- Overlay de carga mientras responden las peticiones -->
 <dx-load-panel
 	shadingColor="rgba(0,0,0,0.4)"
 	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"

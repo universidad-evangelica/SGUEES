@@ -34,22 +34,27 @@ export class PlaNivelAcademicoService {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
+	// Solicita al repositorio el detalle del nivel indicado.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: param.CORR_NIVEL_ACADEMICO }]);
 	}
 
+	// Delega en el repositorio la creación del nivel académico.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Delega en el repositorio la actualización del nivel y su clave.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }]);
 	}
 
+	// Delega en el repositorio la eliminación del nivel indicado.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }]);
 	}
 
+	// Cambia el estado activo/inactivo del nivel vía el endpoint dedicado.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }]);
 	}
@@ -70,6 +75,7 @@ export class PlaNivelAcademicoService {
 		];
 	}
 
+	// Configura el contador de registros mostrado en la cuadrícula.
 	getSummary(): any {
 		return {
 			totalItems: [

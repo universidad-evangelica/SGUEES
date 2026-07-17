@@ -1,3 +1,4 @@
+// Vínculo perfil–competencia técnica; conserva llave de catálogo y nivel de dominio.
 export interface ScPerfilPuestoCompetenciasTecnicas {
 	CORR_EMPRESA?: number;
 	CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS: number;

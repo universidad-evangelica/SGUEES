@@ -1,3 +1,4 @@
+// Requisito educativo del perfil (requisito, especificaciones y tipo requerido/deseable).
 export interface ScPerfilPuestoEducacion {
 	CORR_EMPRESA?: number;
 	CORR_DESCRIPTOR_PUESTO?: number;

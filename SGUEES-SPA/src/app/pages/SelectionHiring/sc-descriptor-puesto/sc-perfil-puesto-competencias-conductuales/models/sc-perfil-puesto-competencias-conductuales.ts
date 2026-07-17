@@ -1,3 +1,4 @@
+// Vínculo perfil–competencia conductual; la llave del vínculo identifica la asignación.
 export interface ScPerfilPuestoCompetenciasConductuales {
 	CORR_EMPRESA?: number;
 	CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES: number;

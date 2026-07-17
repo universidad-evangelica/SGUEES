@@ -17,12 +17,14 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 import { ScDescriptorPuestoComponent } from './sc-descriptor-puesto.component';
 
+// Ruta lazy del mantenimiento: path vacío porque el padre ya define el segmento.
 const routes: Routes = [{ path: '', component: ScDescriptorPuestoComponent }];
 
 @NgModule({
 	imports: [
 		RouterModule.forChild(routes),
 		CommonModule,
+		// Controles DevExtreme usados en encabezado, grids de detalle y popup de actividades.
 		DxButtonModule,
 		DxDataGridModule,
 		DxDateBoxModule,
@@ -34,6 +36,7 @@ const routes: Routes = [{ path: '', component: ScDescriptorPuestoComponent }];
 		DxTabPanelModule,
 		DxTextAreaModule,
 		DxTextBoxModule,
+		// Layouts compartidos del patrón mtto (barra, grid browse, lookups).
 		BarraDataMttoModule,
 		DataGridMttoModule,
 		DataLookupModule,

@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura de relación laboral del descriptor.
     public class SC_DESCRIPTOR_RELACION_LABORALView
     {
         public int CORR_EMPRESA { get; set; }

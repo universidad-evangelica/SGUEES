@@ -10,8 +10,10 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { GenDivisionComponent } from './gen-division.component';
 
+// Ruta por defecto del feature: renderiza el mantenimiento de divisiones.
 const routes: Routes = [{ path: '', component: GenDivisionComponent }];
 
+// Declara el componente y los módulos UI que usa la vista (barra, grid, form, toast).
 @NgModule({
 	imports: [
 		RouterModule.forChild(routes),

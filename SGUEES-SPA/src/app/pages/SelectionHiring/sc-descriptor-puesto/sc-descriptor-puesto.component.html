@@ -1,4 +1,6 @@
+<!-- Vista mantenimiento Descriptor de Puesto: barra mtto + formulario (tabs) + grid browse -->
 <div class="sguees-mtto-view">
+<!-- Barra: Nuevo / Guardar / Cancelar -->
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[subTituloVentana]="subTituloVentana"
@@ -11,13 +13,16 @@
 >
 </app-barra-data-mtto>
 
+<!-- Formulario: tab principal Descriptor + Bitácora -->
 <div class="content-block dx-card responsive-paddings descriptor-form-card" *ngIf="!isBrowse()">
 	<dx-tab-panel
 		#tabPanelPrincipal
 		class="descriptor-tab-panel"
 		[(selectedIndex)]="mainTabIndex"
 	>
+		<!-- Tab Descriptor: encabezado (generalidades) + subtabs de detalle -->
 		<dxi-item title="Descriptor" icon="file">
+			<!-- Encabezado / Generalidades: formato, área, puesto, reporta, fechas, versión, estado -->
 			<div class="descriptor-generalidades">
 				<h3 class="descriptor-section-title">Generalidades</h3>
 
@@ -32,6 +37,7 @@
 					[readOnly]="readOnly"
 					(onFieldDataChanged)="onHeaderFieldChanged($event)"
 				>
+					<!-- Lookup Área (unidad) -->
 					<div *dxTemplate="let cellInfo of 'CORR_UNIDADLookup'">
 						<div class="descriptor-lookup-field" [class.descriptor-lookup-field--invalid]="unidadInvalido">
 							<app-data-lookup
@@ -46,6 +52,7 @@
 						</div>
 					</div>
 
+					<!-- Lookup Título del puesto (+ botón crear puesto) -->
 					<div *dxTemplate="let cellInfo of 'CORR_PUESTOLookup'">
 						<div class="descriptor-puesto-row descriptor-lookup-field" [class.descriptor-lookup-field--invalid]="puestoInvalido">
 							<app-data-lookup
@@ -69,6 +76,7 @@
 						</div>
 					</div>
 
+					<!-- Lookup Reporta a (depende del puesto) -->
 					<div *dxTemplate="let cellInfo of 'CORR_PUESTO_REPORTALookup'">
 						<div class="descriptor-lookup-field" [class.descriptor-lookup-field--invalid]="puestoReportaInvalido">
 							<app-data-lookup
@@ -87,10 +95,12 @@
 				</dx-form>
 			</div>
 
+			<!-- Hint: secciones de detalle solo tras guardar generalidades -->
 			<p class="descriptor-secciones-hint" *ngIf="!mostrarSeccionesDescriptor" role="status">
 				Guarde las generalidades del descriptor en modo edicion para habilitar objetivo, funciones y demas secciones.
 			</p>
 
+			<!-- Subtabs de detalle (visibles según formato corto/extenso) -->
 			<dx-tab-panel
 				#tabPanelSecciones
 				class="descriptor-sub-tab-panel"
@@ -101,6 +111,7 @@
 				[swipeEnabled]="false"
 				(onSelectionChanged)="onSeccionTabSelectionChanged($event)"
 			>
+				<!-- Subtab Objetivo -->
 				<dxi-item title="Objetivo">
 					<div class="descriptor-sub-tab-content">
 						<h4 class="descriptor-sub-tab-heading">Objetivo</h4>
@@ -114,6 +125,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Subtab Funciones clave: toolbar Editar/Guardar/Cancelar + grid (+ actividades en extenso) -->
 				<dxi-item title="Funciones">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
@@ -263,6 +275,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Subtab Funciones secundarias (solo formato corto) -->
 				<dxi-item title="Funciones Secundarias" [visible]="esFormatoCorto">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
@@ -387,6 +400,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Subtab KPIs (solo formato corto): indicador, frecuencia, meta -->
 				<dxi-item title="KPIs" [visible]="esFormatoCorto">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
@@ -546,6 +560,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Subtab Perfil: formulario demográfico + grids Educación / Experiencia -->
 				<dxi-item title="Perfil">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-perfil-header">
@@ -561,6 +576,7 @@
 							[animationEnabled]="true"
 							[swipeEnabled]="false"
 						>
+							<!-- Perfil: Editar/Guardar/Cancelar + campos edad/sexo/modalidad/licencia -->
 							<dxi-item title="Perfil" icon="card">
 								<div class="descriptor-perfil-tab-content">
 									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
@@ -691,6 +707,7 @@
 								</div>
 							</dxi-item>
 
+							<!-- Grid Educación del perfil -->
 							<dxi-item title="Educacion" icon="bookmark">
 								<div class="descriptor-perfil-tab-content">
 									<div class="descriptor-funciones-header">
@@ -833,6 +850,7 @@
 								</div>
 							</dxi-item>
 
+							<!-- Grid Experiencia del perfil -->
 							<dxi-item title="Experiencia" icon="folder">
 								<div class="descriptor-perfil-tab-content">
 									<div class="descriptor-funciones-header">
@@ -972,6 +990,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Subtab Competencias: Técnicas y Conductuales -->
 				<dxi-item title="Competencias">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-competencias-header">
@@ -987,6 +1006,7 @@
 							[animationEnabled]="true"
 							[swipeEnabled]="false"
 						>
+							<!-- Grid competencias técnicas (lookup NIV3 + nivel dominio) -->
 							<dxi-item title="Tecnicas" icon="toolbox">
 								<div class="descriptor-competencias-tab-content">
 									<div class="descriptor-funciones-header">
@@ -1153,6 +1173,7 @@
 								</div>
 							</dxi-item>
 
+							<!-- Grid competencias conductuales (lookup + descripción) -->
 							<dxi-item title="Conductuales" icon="group">
 								<div class="descriptor-competencias-tab-content">
 									<div class="descriptor-funciones-header">
@@ -1318,6 +1339,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Subtab Relaciones laborales (solo formato extenso): Internas / Externas -->
 				<dxi-item title="Relaciones" [visible]="esFormatoExtenso">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-relaciones-header">
@@ -1333,6 +1355,7 @@
 							[animationEnabled]="true"
 							[swipeEnabled]="false"
 						>
+							<!-- Grid relaciones internas -->
 							<dxi-item title="Internas" icon="home">
 								<div class="descriptor-relaciones-tab-content">
 									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
@@ -1456,6 +1479,7 @@
 								</div>
 							</dxi-item>
 
+							<!-- Grid relaciones externas -->
 							<dxi-item title="Externas" icon="globe">
 								<div class="descriptor-relaciones-tab-content">
 									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
@@ -1582,6 +1606,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Subtab Requerimientos organizacionales -->
 				<dxi-item title="Requerimientos">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
@@ -1736,6 +1761,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Subtab Riesgos del puesto (solo formato extenso) -->
 				<dxi-item title="Riesgos" [visible]="esFormatoExtenso">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
@@ -1899,6 +1925,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Subtab Responsabilidades (+ fila fija impacto económico institucional) -->
 				<dxi-item title="Responsabilidades">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
@@ -2064,6 +2091,7 @@
 							<div *dxTemplate="let cellInfo of 'INFORMACIONResponsabilidadEdit'">
 								<div
 									class="descriptor-riesgo-lookup-cell"
+								<!-- Fila impacto económico: lookup especial; resto usa texto libre -->
 									*ngIf="cellInfo.data?._esImpactoEconomico; else infoResponsabilidadTexto"
 								>
 									<app-data-lookup
@@ -2091,6 +2119,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Subtab Entrenamiento: inducción + responsable (Editar/Guardar/Cancelar) -->
 				<dxi-item title="Entrenamiento">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-perfil-header">
@@ -2175,6 +2204,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Subtab Resumen (placeholder) -->
 				<dxi-item title="Resumen">
 					<div class="descriptor-sub-tab-content descriptor-sub-tab-placeholder">
 						<h4 class="descriptor-sub-tab-heading">Resumen</h4>
@@ -2183,6 +2213,7 @@
 				</dxi-item>
 			</dx-tab-panel>
 
+			<!-- Aviso cuando el tab previo no aplica al formato actual -->
 			<div
 				class="descriptor-seleccione-tab-card"
 				*ngIf="mostrarSeccionesDescriptor && mostrarAvisoSeleccioneTab"
@@ -2198,6 +2229,7 @@
 			</div>
 		</dxi-item>
 
+		<!-- Tab Bitácora del descriptor (placeholder / vacío) -->
 		<dxi-item title="Bitácora" icon="event">
 			<div class="descriptor-bitacora">
 				<h3 class="descriptor-section-title descriptor-bitacora-title">
@@ -2214,6 +2246,7 @@
 	</dx-tab-panel>
 </div>
 
+<!-- Grid browse: listado de descriptores (consulta / editar / eliminar) -->
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
 	[models]="models"
@@ -2246,6 +2279,7 @@
 
 </div>
 
+<!-- Overlay de carga -->
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"
@@ -2257,6 +2291,7 @@
 >
 </dx-load-panel>
 
+<!-- Popup actividades de una función clave (formato extenso) -->
 <dx-popup
 	[(visible)]="actividadesPopupVisible"
 	[showTitle]="true"

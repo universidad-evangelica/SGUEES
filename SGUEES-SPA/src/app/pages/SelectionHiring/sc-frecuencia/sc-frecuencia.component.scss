@@ -1,3 +1,4 @@
+// Badge visual de estado activo/inactivo en la grilla.
 :host ::ng-deep .estado-badge {
 	display: inline-flex;
 	align-items: center;
@@ -26,12 +27,14 @@
 	box-shadow: none;
 }
 
+// Separación superior del formulario en desktop.
 .frecuencia-form-card,
 .impacto-economico-form-card,
 .disponibilidad-horario-form-card {
 	margin-top: 38px;
 }
 
+// Ajuste de margen del formulario en tablet.
 @media (max-width: 991.98px) {
 	.frecuencia-form-card,
 	.impacto-economico-form-card,
@@ -40,6 +43,7 @@
 	}
 }
 
+// Toolbar de grilla apilable y margen en móvil.
 @media (max-width: 575.98px) {
 	:host ::ng-deep {
 		.dx-datagrid-header-panel {

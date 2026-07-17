@@ -1,3 +1,4 @@
+// Contrato del distrito; cierra la cascada país → depto → municipio.
 export interface GenDistrito {
 	CORR_PAIS: number;
 	CORR_DEPTO: number;

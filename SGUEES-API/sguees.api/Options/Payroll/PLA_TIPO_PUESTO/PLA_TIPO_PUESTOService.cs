@@ -21,6 +21,7 @@ namespace SGUEES.Services
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Valida las claves de consulta y solicita al repositorio el detalle del tipo de puesto.
         public async Task<CResult> GetAsync(PLA_TIPO_PUESTOParam xWhere)
         {
             var p = new List<CParameter>

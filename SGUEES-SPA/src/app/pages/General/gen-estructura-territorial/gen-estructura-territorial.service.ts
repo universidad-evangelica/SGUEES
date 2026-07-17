@@ -272,7 +272,7 @@ export class GenEstructuraTerritorialService {
 		return this.repoDistrito.delete(xWhere);
 	}
 
-	/** Columnas del listado de países — acciones las aporta `app-data-grid-mtto`. */
+	// Columnas del listado de países; las acciones las aporta app-data-grid-mtto.
 	getPaisColumns(): any[] {
 		return [
 			{ dataField: 'CORR_PAIS', caption: 'Corr.', width: 100, dataType: 'number', filterOperations: ['=', '<', '>', '<=', '>='] },

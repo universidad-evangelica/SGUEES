@@ -29,30 +29,37 @@ export class ScFrecuenciaService {
 		return true;
 	}
 
+	// Lista el catálogo; arma el where con buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
+	// Obtiene un registro por correlativo.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_FRECUENCIA', Value: param.CORR_FRECUENCIA }]);
 	}
 
+	// Delega la creación al repositorio.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Delega la actualización al repositorio con clave por correlativo.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }]);
 	}
 
+	// Delega la eliminación al repositorio por correlativo.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }]);
 	}
 
+	// Cambia el estado activo/inactivo vía repositorio.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }]);
 	}
 
+	// Columnas, filtros y auditoría de la grilla.
 	getColumns(): any {
 		return [
 			{
@@ -68,6 +75,7 @@ export class ScFrecuenciaService {
 		];
 	}
 
+	// Contador total mostrado en el pie de la grilla.
 	getSummary(): any {
 		return {
 			totalItems: [

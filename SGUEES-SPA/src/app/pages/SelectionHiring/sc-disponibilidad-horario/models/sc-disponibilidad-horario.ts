@@ -1,3 +1,4 @@
+// Catálogo de disponibilidades de horario.
 export interface ScDisponibilidadHorario {
 	CORR_EMPRESA: number;
 	CORR_DISPONIBILIDAD_HORARIO: number;

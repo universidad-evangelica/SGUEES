@@ -29,30 +29,37 @@ export class ScImpactoEconomicoService {
 		return true;
 	}
 
+	// Lista el catálogo; arma el where con buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
+	// Obtiene un registro por correlativo.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: param.CORR_IMPACTO_ECONOMICO }]);
 	}
 
+	// Delega la creación al repositorio.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Delega la actualización al repositorio con clave por correlativo.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO }]);
 	}
 
+	// Delega la eliminación al repositorio por correlativo.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO }]);
 	}
 
+	// Cambia el estado activo/inactivo vía repositorio.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO }]);
 	}
 
+	// Columnas, filtros y auditoría de la grilla.
 	getColumns(): any {
 		return [
 			{
@@ -68,6 +75,7 @@ export class ScImpactoEconomicoService {
 		];
 	}
 
+	// Contador total mostrado en el pie de la grilla.
 	getSummary(): any {
 		return {
 			totalItems: [{ column: 'CORR_IMPACTO_ECONOMICO', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],

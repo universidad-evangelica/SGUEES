@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de persistencia (tabla) del catálogo de riesgo de puesto.
     public class SC_RIESGO_PUESTOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

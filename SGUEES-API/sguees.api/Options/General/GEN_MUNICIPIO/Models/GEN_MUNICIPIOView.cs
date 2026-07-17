@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+	// Proyección de lectura (vista) del catálogo de municipio.
 	public class GEN_MUNICIPIOView
 	{
 		public int CORR_DEPTO { get; set; }

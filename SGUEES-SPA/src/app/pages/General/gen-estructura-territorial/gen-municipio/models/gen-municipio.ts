@@ -1,3 +1,4 @@
+// Contrato del municipio; claves de país y departamento definen su jerarquía.
 export interface GenMunicipio {
 	CORR_DEPTO: number;
 	CORR_MUNICIPIO: number;

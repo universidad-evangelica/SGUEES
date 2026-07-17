@@ -23,6 +23,7 @@ namespace SGUEES.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(_service));
         }
 
+        // Atiende la consulta del listado de requerimientos organizacionales y la limita a la empresa de la sesión.
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-requerimiento-organizacional|R")]
         public async Task<CResult> GetAll([FromQuery] SC_REQUERIMIENTO_ORGANIZACIONALParam Data)
@@ -31,6 +32,7 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Atiende la consulta de un requerimiento organizacional dentro de la empresa de la sesión.
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-requerimiento-organizacional|R")]
         public async Task<CResult> Get([FromQuery] SC_REQUERIMIENTO_ORGANIZACIONALParam Data)
@@ -62,6 +64,7 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Valida el contexto de empresa y elimina el requerimiento organizacional indicado por sus claves.
         [HttpDelete]
         [Authorize(Policy = "/sc-requerimiento-organizacional|D")]
         public async Task<IActionResult> Delete([FromQuery] SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
@@ -72,6 +75,7 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Identifica el registro y solicita el cambio de estado activo/inactivo en su empresa.
         [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/sc-requerimiento-organizacional|U")]
         public async Task<IActionResult> ActivarInactivar(SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
@@ -92,12 +96,14 @@ namespace SGUEES.Controllers
             return await _service.GetCatalogoDescriptorAsync(Data);
         }
 
+        // Obtiene la empresa asociada a la sesión para aislar las operaciones del usuario.
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
+        // Obtiene el identificador del usuario autenticado para registrar la auditoría.
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;

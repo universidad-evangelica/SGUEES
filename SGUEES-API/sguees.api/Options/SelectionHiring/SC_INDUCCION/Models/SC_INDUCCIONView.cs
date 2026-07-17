@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura (vista) del catálogo de inducción.
     public class SC_INDUCCIONView
     {
         public int CORR_EMPRESA { get; set; }

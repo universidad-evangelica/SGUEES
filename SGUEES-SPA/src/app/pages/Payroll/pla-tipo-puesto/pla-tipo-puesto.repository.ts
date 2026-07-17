@@ -18,6 +18,7 @@ export class PlaTipoPuestoRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
+	// Consulta un tipo específico mediante sus filtros de identificación.
 	get(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
@@ -27,6 +28,7 @@ export class PlaTipoPuestoRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlTALENTOHUMANONAPI);
 	}
 
+	// Envía al API la solicitud para actualizar el tipo identificado por sus claves.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
@@ -36,6 +38,7 @@ export class PlaTipoPuestoRepository {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
+	// Cambia el estado activo/inactivo del tipo vía ActivarInactivar.
 	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}

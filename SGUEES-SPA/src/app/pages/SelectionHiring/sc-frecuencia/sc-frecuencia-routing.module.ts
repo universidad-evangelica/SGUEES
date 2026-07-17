@@ -13,6 +13,7 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { ToastModule } from 'primeng/toast';
 import { ScFrecuenciaComponent } from './sc-frecuencia.component';
 
+// Ruta lazy y declaraciones DevExtreme del mantenimiento de frecuencia.
 const routes: Routes = [{ path: '', component: ScFrecuenciaComponent }];
 
 @NgModule({
@@ -34,4 +35,3 @@ const routes: Routes = [{ path: '', component: ScFrecuenciaComponent }];
 	declarations: [ScFrecuenciaComponent],
 })
 export class ScFrecuenciaRoutingModule {}
-

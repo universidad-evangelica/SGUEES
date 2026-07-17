@@ -34,12 +34,14 @@ namespace SGUEES.Services
         // Valida y crea el registro de función del descriptor con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Valida claves y longitud del nombre de función.
             var validation = Validate(Data);
             if (validation != null)
             {
                 return validation;
             }
 
+            // Normaliza TIPO_FUNCION a mayúsculas consistentes.
             NormalizeTipoFuncion(Data);
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
@@ -47,12 +49,14 @@ namespace SGUEES.Services
         // Valida y actualiza el registro existente de función del descriptor.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Valida claves y longitud del nombre de función.
             var validation = Validate(Data);
             if (validation != null)
             {
                 return validation;
             }
 
+            // Normaliza TIPO_FUNCION a mayúsculas consistentes.
             NormalizeTipoFuncion(Data);
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
@@ -65,6 +69,7 @@ namespace SGUEES.Services
                 return ValidationError("Debe indicar la funcion a eliminar.");
             }
 
+            // Borra primero las actividades hijas de la función.
             await _actividadRepo.DeleteByFuncionAsync(Data, vLOGIN_SISTEMA, vESTACION);
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }

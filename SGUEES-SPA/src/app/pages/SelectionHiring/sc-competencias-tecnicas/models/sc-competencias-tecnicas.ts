@@ -1,9 +1,11 @@
+// Códigos de nivel jerárquico de competencias técnicas.
 export const SC_COMPETENCIA_NIVEL = {
 	UNO: 'NIV1',
 	DOS: 'NIV2',
 	TRES: 'NIV3',
 } as const;
 
+// Modelo de competencia técnica con padre, código compuesto y campos de UI.
 export interface ScCompetenciasTecnicas {
 	CORR_EMPRESA: number;
 	CORR_COMPETENCIAS_TECNICAS: number;
@@ -26,6 +28,7 @@ export interface ScCompetenciasTecnicas {
 	CODIGO_SUFIJO?: string;
 }
 
+// Opción del lookup de padre (niveles 2 y 3).
 export interface ScCompetenciaPadreOption {
 	CORR_COMPETENCIAS_TECNICAS: number;
 	CODIGO_COMPETENCIAS_TECNICAS: string;

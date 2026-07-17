@@ -42,15 +42,18 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		this.items = this.service.getItems();
 	}
 
+	// Expone el grid de mantenimiento a la base para refrescos y foco.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
+	// Inicializa la vista y carga el listado de niveles académicos.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.consultar();
 	}
 
+	// Restaura el subtítulo de mantenimiento al volver a modo browse.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -287,6 +290,7 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		return `${error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.message ?? error ?? ''}`;
 	}
 
+	// Descarta la edición actual y restaura el estado de consulta del mantenimiento.
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_NIVEL_ACADEMICO === this.modelUpdate.CORR_NIVEL_ACADEMICO);
 	}
@@ -306,12 +310,14 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
+	// Deja el formulario en solo lectura al consultar un registro.
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_NIVEL_ACADEMICO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_NIVEL_ACADEMICO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ESTADO_NIVEL_ACADEMICO')?.option('readOnly', true);
 	}
 
+	// Habilita el nombre; el estado solo se edita en alta, no en actualización.
 	override habilitar(): void {
 		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
 		setTimeout(() => {
@@ -321,6 +327,7 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		});
 	}
 
+	// Coloca el cursor en el nombre al abrir el formulario.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('NOMBRE_NIVEL_ACADEMICO')?.focus();

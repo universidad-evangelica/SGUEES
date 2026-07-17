@@ -21,6 +21,7 @@ namespace SGUEES.Services
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Valida las claves de consulta y solicita al repositorio el detalle del nivel académico.
         public async Task<CResult> GetAsync(PLA_NIVEL_ACADEMICOParam xWhere)
         {
             var p = new List<CParameter>

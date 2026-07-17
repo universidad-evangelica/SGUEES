@@ -1,3 +1,4 @@
+// Requerimiento organizacional asignado al descriptor (vínculo + descripción del catálogo).
 export interface ScDescriptorPuestoRequerimientoOrganizacional {
 	CORR_EMPRESA?: number;
 	CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL: number;

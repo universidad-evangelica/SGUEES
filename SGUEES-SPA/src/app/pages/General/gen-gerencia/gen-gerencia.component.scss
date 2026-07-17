@@ -1,7 +1,9 @@
+// Separación del formulario respecto a la barra en desktop.
 .gerencia-form-card {
 	margin-top: 38px;
 }
 
+// Resalta el lookup de división cuando la selección es inválida.
 :host ::ng-deep .division-lookup-field--invalid .dx-dropdownbox.dx-texteditor {
 	border-color: var(--error-color, #d9534f);
 }
@@ -15,12 +17,14 @@
 	color: var(--error-color, #d9534f);
 }
 
+// Reduce el margen del formulario en tablet.
 @media (max-width: 991.98px) {
 	.gerencia-form-card {
 		margin-top: 16px;
 	}
 }
 
+// En móvil: toolbar del grid se apila para no solapar botones.
 @media (max-width: 575.98px) {
 	:host ::ng-deep {
 		.dx-datagrid-header-panel {

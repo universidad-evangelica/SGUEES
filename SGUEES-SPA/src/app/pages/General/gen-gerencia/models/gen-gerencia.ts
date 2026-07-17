@@ -1,3 +1,4 @@
+// Contrato del registro de gerencia; CORR_DIVISION enlaza con el catálogo de divisiones.
 export interface GenGerencia {
 	CORR_EMPRESA: number;
 	CORR_GERENCIA: number;

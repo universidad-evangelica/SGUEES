@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace sguees.Models
 {
+	// Entidad de persistencia (tabla) del catálogo de división.
 	public class GEN_DIVISIONTable : BaseEntity
 	{
 		public int CORR_EMPRESA { get; set; }

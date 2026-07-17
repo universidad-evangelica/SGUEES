@@ -23,6 +23,7 @@ namespace SGUEES.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(_service));
         }
 
+        // Atiende la consulta del listado de disponibilidades de horario y la limita a la empresa de la sesión.
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-disponibilidad-horario|R")]
         public async Task<CResult> GetAll([FromQuery] SC_DISPONIBILIDAD_HORARIOParam Data)
@@ -31,6 +32,7 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Atiende la consulta de una disponibilidad de horario dentro de la empresa de la sesión.
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-disponibilidad-horario|R")]
         public async Task<CResult> Get([FromQuery] SC_DISPONIBILIDAD_HORARIOParam Data)
@@ -71,6 +73,7 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Valida el contexto de empresa y elimina la disponibilidad de horario indicada por sus claves.
         [HttpDelete]
         [Authorize(Policy = "/sc-disponibilidad-horario|D")]
         public async Task<IActionResult> Delete([FromQuery] SC_DISPONIBILIDAD_HORARIOTable Data)
@@ -81,6 +84,7 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Identifica el registro y solicita el cambio de estado activo/inactivo en su empresa.
         [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/sc-disponibilidad-horario|U")]
         public async Task<IActionResult> ActivarInactivar(SC_DISPONIBILIDAD_HORARIOTable Data)
@@ -92,12 +96,14 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Obtiene la empresa asociada a la sesión para aislar las operaciones del usuario.
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
+        // Obtiene el identificador del usuario autenticado para registrar la auditoría.
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;

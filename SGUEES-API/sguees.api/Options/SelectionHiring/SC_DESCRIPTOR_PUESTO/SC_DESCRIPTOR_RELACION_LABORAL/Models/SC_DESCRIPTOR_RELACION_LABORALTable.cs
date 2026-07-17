@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de escritura de relación laboral del descriptor.
     public class SC_DESCRIPTOR_RELACION_LABORALTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

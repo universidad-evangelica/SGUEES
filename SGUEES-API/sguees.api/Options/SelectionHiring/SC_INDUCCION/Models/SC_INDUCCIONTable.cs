@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de persistencia (tabla) del catálogo de inducción.
     public class SC_INDUCCIONTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

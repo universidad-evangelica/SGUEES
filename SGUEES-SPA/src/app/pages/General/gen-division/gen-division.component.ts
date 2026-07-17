@@ -38,6 +38,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
+	// Expone el grid de mantenimiento a la base para refrescos y foco.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
@@ -297,12 +298,14 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Deja el formulario en solo lectura al consultar un registro.
 	override bloquear(): void {
 		this.dataForm?.instance?.getEditor('CORR_DIVISION')?.option('readOnly', true);
 		this.dataForm?.instance?.getEditor('NOMBRE_DIVISION')?.option('readOnly', true);
 		this.dataForm?.instance?.getEditor('CODIGO_DIVISION')?.option('readOnly', true);
 	}
 
+	// Habilita los campos editables y mantiene el correlativo bloqueado.
 	override habilitar(): void {
 		setTimeout(() => {
 			this.dataForm?.instance?.getEditor('CORR_DIVISION')?.option('readOnly', true);
@@ -311,6 +314,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Coloca el cursor en el nombre al abrir el formulario.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm?.instance?.getEditor('NOMBRE_DIVISION')?.focus();

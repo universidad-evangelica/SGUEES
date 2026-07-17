@@ -34,12 +34,14 @@ namespace SGUEES.Services
         // Valida y crea el registro de competencia conductual del perfil con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Completa y valida la competencia contra el catálogo activo.
             var prepare = await PrepareFromCatalogAsync(Data, esNuevo: true);
             if (prepare != null)
             {
                 return prepare;
             }
 
+            // Valida reglas de negocio antes de crear.
             var validation = Validate(Data, esNuevo: true);
             if (validation != null)
             {
@@ -52,6 +54,7 @@ namespace SGUEES.Services
         // Valida y actualiza el registro existente de competencia conductual del perfil.
         public async Task<CResult> UpdateAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Valida reglas de negocio antes de actualizar.
             var validation = Validate(Data, esNuevo: false);
             if (validation != null)
             {
@@ -80,6 +83,7 @@ namespace SGUEES.Services
                 return null;
             }
 
+            // Consulta la competencia conductual en el catálogo maestro.
             var catalogResult = await _competenciasRepo.GetAsync(new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },

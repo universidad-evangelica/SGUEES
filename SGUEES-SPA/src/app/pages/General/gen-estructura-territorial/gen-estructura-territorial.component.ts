@@ -25,6 +25,7 @@ import {
 	isEmpresaWarningResponse,
 } from './gen-estructura-territorial.service';
 
+// Extiende el diálogo DevExtreme para tipar opciones del confirm de eliminación.
 type TerritorialConfirmDialogOptions = CustomDialogOptions & {
 	popupOptions?: {
 		width?: number;
@@ -47,7 +48,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	protected override etiquetaRegistro = 'el país';
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_PAIS';
-	/** A+: paginado / filtro / orden en cliente (API devuelve todos los países). */
+	// Paginado / filtro / orden en cliente (API devuelve todos los países).
 	protected override mttoRemoteOperations = false;
 
 	readonly cascadeGridHeight = 530;
@@ -115,10 +116,12 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.consultar();
 	}
 
+	// Expone el grid de países a la base para refrescos y foco.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
+	// Ancho del popup CRUD: pantalla completa en móvil, fijo en desktop.
 	get popupWidth(): number | string {
 		return this.screen(window.innerWidth) === 'sm' ? 'calc(100vw - 24px)' : 520;
 	}
@@ -140,7 +143,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 	}
 
-	/** Edit del grid → documento país (form editable + cascada), Guardar/Cancelar del padre. */
+	// Edit del grid → documento país (form editable + cascada); Guardar/Cancelar del padre.
 	editarPaisDesdeGrid(e: any): void {
 		const rowData = e?.row?.data ?? e?.data;
 		if (rowData) {
@@ -148,6 +151,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 	}
 
+	// Construye el modelo de país editable o el vacío para un alta.
 	fillPais(xModel?: GenPais): GenPais {
 		if (xModel) {
 			return { ...xModel };
@@ -172,6 +176,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return this.fillPais(xModel);
 	}
 
+	// Construye el modelo de departamento con las claves del país seleccionado.
 	fillDepto(xModel?: GenDepto): GenDepto {
 		return {
 			CORR_PAIS: this.selectedPais?.CORR_PAIS ?? 0,
@@ -187,6 +192,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
+	// Construye el modelo de municipio con las claves de país y departamento.
 	fillMunicipio(xModel?: GenMunicipio): GenMunicipio {
 		return {
 			CORR_PAIS: this.selectedPais?.CORR_PAIS ?? 0,
@@ -203,6 +209,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
+	// Construye el modelo de distrito con las claves de la cascada seleccionada.
 	fillDistrito(xModel?: GenDistrito): GenDistrito {
 		return {
 			CORR_PAIS: this.selectedPais?.CORR_PAIS ?? xModel?.CORR_PAIS ?? 0,
@@ -246,10 +253,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}, 0);
 	}
 
-	/**
-	 * Abre el documento país (como partida): form habilitado + cascada.
-	 * Barra = Guardar / Cancelar del padre.
-	 */
+	// Abre el documento país (como partida): form habilitado + cascada; barra = Guardar/Cancelar del padre.
 	abrirDocumentoPais(pais: GenPais, desdeAlta = false): void {
 		if (!desdeAlta && !this.permiteEdit) {
 			this.notifyFx('No tiene permiso para editar registros.', NotifyType.Warning);
@@ -269,7 +273,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	/** Sale del documento al listado (Cancelar / tras eliminar). */
+	// Sale del documento al listado (Cancelar / tras eliminar).
 	salirAListado(): void {
 		this.vistaDetalle = false;
 		this.selectedPais = undefined;
@@ -577,14 +581,17 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.popupVisible = false;
 	}
 
+	// Deja correlativos de país en solo lectura vía bloquearCamposCorr.
 	override bloquear(): void {
 		this.bloquearCamposCorr(this.dataForm);
 	}
 
+	// Tras habilitar, vuelve a fijar correlativos como solo lectura.
 	override habilitar(): void {
 		setTimeout(() => this.bloquearCamposCorr(this.dataForm));
 	}
 
+	// Coloca el cursor en el nombre del país al abrir el formulario.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm?.instance?.getEditor('NOMBRE_PAIS')?.focus();
@@ -800,6 +807,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.vincularGridCascade(this.distritoGrid, 'distrito');
 	}
 
+	// Configura scroll/pager y engancha selección + resaltado + filtros del grid de cascada.
 	private vincularGridCascade(
 		grid: DataGridMttoComponent | undefined,
 		tipo: 'depto' | 'municipio' | 'distrito'

@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de persistencia (tabla) del catálogo de competencia técnica.
     public class SC_COMPETENCIAS_TECNICASTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

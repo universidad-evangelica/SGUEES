@@ -32,6 +32,7 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Atiende la consulta de un tipo de puesto dentro de la empresa de la sesión.
         [HttpGet("Get")]
         [Authorize(Policy = "/pla-tipo-puesto|R")]
         public async Task<CResult> Get([FromQuery] PLA_TIPO_PUESTOParam Data)
@@ -95,12 +96,14 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Obtiene la empresa asociada a la sesión para aislar las operaciones del usuario.
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
+        // Obtiene el identificador del usuario autenticado para registrar la auditoría.
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;

@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+	// Proyección de lectura (vista) del catálogo de departamento.
 	public class GEN_DEPTOView
 	{
 		public int CORR_PAIS { get; set; }

@@ -18,11 +18,13 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Construye los filtros y solicita al repositorio el listado de competencias técnicas.
         public async Task<CResult> GetAllAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Valida las claves de consulta y solicita al repositorio el detalle de la competencia técnica.
         public async Task<CResult> GetAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             var p = new List<CParameter>
@@ -239,6 +241,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida el registro antes de cambiar su estado activo o inactivo.
         public async Task<CResult> ActivarInactivarAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -454,11 +457,13 @@ namespace SGUEES.Services
                 : null;
         }
 
+        // Indica si el registro tiene hijos activos para restringir operaciones de jerarquía.
         private Task<bool> HasChildrenAsync(int corrEmpresa, int corrCompetencia)
         {
             return _repo.HasChildrenAsync(corrEmpresa, corrCompetencia);
         }
 
+        // Aplica las validaciones comunes de campos obligatorios de la competencia técnica.
         private static CResult ValidateBase(SC_COMPETENCIAS_TECNICASTable Data)
         {
             if (Data == null)
@@ -524,6 +529,7 @@ namespace SGUEES.Services
             return "(Sin nombre)";
         }
 
+        // Convierte los filtros recibidos en parámetros seguros para el repositorio.
         private static List<CParameter> BuildParameters(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             return new List<CParameter>
@@ -532,6 +538,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Verifica que la sesión tenga una empresa válida y prepara una respuesta controlada si falta.
         private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
             if (corrEmpresa > 0)
@@ -551,6 +558,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Construye una respuesta uniforme para devolver errores de validación al cliente.
         private static CResult ValidationError(string message)
         {
             return new CResult

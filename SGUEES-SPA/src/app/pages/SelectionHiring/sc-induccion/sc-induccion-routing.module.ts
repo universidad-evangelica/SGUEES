@@ -14,6 +14,7 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { ToastModule } from 'primeng/toast';
 import { ScInduccionComponent } from './sc-induccion.component';
 
+// Ruta lazy y declaraciones DevExtreme del mantenimiento de inducción.
 const routes: Routes = [{ path: '', component: ScInduccionComponent }];
 
 @NgModule({

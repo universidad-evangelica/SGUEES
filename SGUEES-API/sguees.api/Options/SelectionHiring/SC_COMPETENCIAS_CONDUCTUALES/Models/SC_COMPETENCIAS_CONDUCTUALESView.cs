@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura (vista) del catálogo de competencia conductual.
     public class SC_COMPETENCIAS_CONDUCTUALESView
     {
         public int CORR_EMPRESA { get; set; }

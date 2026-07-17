@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura del descriptor de puesto.
     public class SC_DESCRIPTOR_PUESTOView
     {
         public int CORR_EMPRESA { get; set; }
@@ -17,10 +18,12 @@ namespace SGUEES.Models
         public string NOMBRE_UNIDAD { get; set; }
         public int? CORR_IMPACTO_ECONOMICO { get; set; }
         public string DESCRIPCION_IMPACTO_ECONOMICO { get; set; }
+        // Snapshot de entrenamiento persistido en el descriptor.
         public int? CORR_INDUCCION { get; set; }
         public string NOMBRE_INDUCCION { get; set; }
         public int? SEMANAS_INDUCCION { get; set; }
         public string RESPONSABLE { get; set; }
+        // CORTO | EXTENSO.
         public string FORMATO { get; set; }
         public int? VERSION { get; set; }
         public string ESTADO_DESCRIPTOR { get; set; }

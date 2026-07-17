@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de escritura del perfil del puesto (edad, sexo, modalidad, etc.).
     public class SC_PERFIL_PUESTOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

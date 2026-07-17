@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de escritura de KPI de función del descriptor.
     public class SC_DESCRIPTOR_KPI_FUNCIONTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

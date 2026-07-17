@@ -1,3 +1,4 @@
+// Borde de error cuando el lookup de tipo de puesto es inválido.
 :host ::ng-deep .tipo-puesto-lookup-field--invalid .dx-dropdownbox.dx-texteditor {
 	border-color: var(--error-color, #d9534f);
 }

@@ -13,8 +13,10 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { PlaNivelAcademicoComponent } from './pla-nivel-academico.component';
 
+// Ruta por defecto del feature: mantenimiento de niveles académicos.
 const routes: Routes = [{ path: '', component: PlaNivelAcademicoComponent }];
 
+// Declara el componente y módulos UI (checkbox de estado, grid, form, toast).
 @NgModule({
 	imports: [
 		RouterModule.forChild(routes),

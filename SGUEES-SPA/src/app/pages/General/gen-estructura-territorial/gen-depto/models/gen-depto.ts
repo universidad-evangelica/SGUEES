@@ -1,3 +1,4 @@
+// Contrato del departamento; depende de CORR_PAIS.
 export interface GenDepto {
 	CORR_PAIS: number;
 	CORR_DEPTO: number;

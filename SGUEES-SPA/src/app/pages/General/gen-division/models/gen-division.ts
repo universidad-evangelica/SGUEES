@@ -1,3 +1,4 @@
+// Contrato del registro de división usado por el mantenimiento.
 export interface GenDivision {
 	CORR_EMPRESA: number;
 	CORR_DIVISION: number;

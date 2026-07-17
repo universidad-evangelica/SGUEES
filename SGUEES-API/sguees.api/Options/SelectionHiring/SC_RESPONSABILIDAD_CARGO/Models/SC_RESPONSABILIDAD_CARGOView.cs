@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura (vista) del catálogo de responsabilidad de cargo.
     public class SC_RESPONSABILIDAD_CARGOView
     {
         public int CORR_EMPRESA { get; set; }

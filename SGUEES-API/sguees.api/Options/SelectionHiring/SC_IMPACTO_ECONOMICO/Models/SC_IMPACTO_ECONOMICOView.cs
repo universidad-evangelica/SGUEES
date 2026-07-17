@@ -1,7 +1,8 @@
-﻿using System;
+using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura (vista) del catálogo de impacto económico.
     public class SC_IMPACTO_ECONOMICOView
     {
         public int CORR_EMPRESA { get; set; }

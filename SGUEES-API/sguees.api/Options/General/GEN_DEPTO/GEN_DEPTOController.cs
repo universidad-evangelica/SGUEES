@@ -34,7 +34,7 @@ namespace SGUEES.Controllers
 
 		[HttpGet("Get")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
-		// Atiende la consulta de un departamento específica dentro de la empresa de la sesión.
+		// Atiende la consulta de un departamento específico dentro de la empresa de la sesión.
 		public async Task<CResult> Get([FromQuery] GEN_DEPTOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();

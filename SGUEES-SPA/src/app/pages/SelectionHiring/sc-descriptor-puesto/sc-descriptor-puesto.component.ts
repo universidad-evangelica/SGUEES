@@ -59,12 +59,15 @@ import {
 } from './models/sc-descriptor-puesto';
 import { ScDescriptorPuestoService } from './sc-descriptor-puesto.service';
 
+// Mantenimiento Descriptor de Puesto: encabezado, tabs por formato, grids de detalle,
+// perfil/entrenamiento y persistencias vía ScDescriptorPuestoService.
 @Component({
 	selector: 'app-sc-descriptor-puesto',
 	templateUrl: './sc-descriptor-puesto.component.html',
 	styleUrls: ['./sc-descriptor-puesto.component.scss'],
 })
 export class ScDescriptorPuestoComponent extends CBaseComponent implements OnInit, OnDestroy {
+	// Referencias a grids de detalle y al form de encabezado.
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 	@ViewChild('fHeaderData', { static: false }) headerForm!: DxFormComponent;
 	@ViewChild('tabPanelSecciones', { static: false }) tabPanelSecciones?: DxTabPanelComponent;
@@ -92,6 +95,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	protected override mttoParchearGridTrasGuardar = true;
 	protected override mttoRemoteOperations = false;
 
+	// Estado UI del formulario y validación visual de lookups del encabezado.
 	readOnly = false;
 	mainTabIndex = 0;
 	subTabIndex = 0;
@@ -99,6 +103,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	puestoInvalido = false;
 	puestoReportaInvalido = false;
 
+	// Catálogos / lookups (completos y filtrados “disponibles” para evitar duplicados).
 	mCORR_UNIDAD: MockUnidad[] = [];
 	mCORR_PUESTO: MockPuesto[] = [];
 	mCORR_PUESTO_REPORTA: MockPuesto[] = [];
@@ -155,6 +160,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	headerItems: any[] = [];
 	itemsTabBitacora: any[] = [];
 
+	// Colecciones de detalle y banderas de edición por grid/sección.
 	funcionesClave: ScDescriptorFuncion[] = [];
 	funcionesSecundarias: ScDescriptorFuncion[] = [];
 	kpis: ScDescriptorKpiFuncion[] = [];
@@ -203,6 +209,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	funcionActividadesSeleccionada: ScDescriptorFuncion | null = null;
 	actividadesPopup: ScDescriptorFuncionActividad[] = [];
 
+	// Secuencias de carga: descartan respuestas obsoletas al cambiar de descriptor.
 	private funcionesClaveLoadSeq = 0;
 	private funcionesSecundariasLoadSeq = 0;
 	private kpisLoadSeq = 0;
@@ -236,6 +243,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private readonly maintenanceSubtitulo = 'Descriptor de Puesto';
 
+	// Bind de callbacks de grids/lookups para conservar `this` en plantillas DevExtreme.
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -352,6 +360,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.getTIPO_REQUERIDO();
 	}
 
+	// Carga listados locales de formato, sexo, estado familiar, licencia y tipo requerido.
 	getFORMATO(): void {
 		this.appInfoService
 			.getLookUp(
@@ -502,6 +511,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.headerForm?.instance?.itemOption('FORMATO', 'editorOptions', item.editorOptions);
 	}
 
+	// Lookups remotos del encabezado y de grids (frecuencia, inducción, competencias, etc.).
 	getCORR_FRECUENCIA(): void {
 		this.appInfoService
 			.getLookUp(
@@ -828,6 +838,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// selectedRowKeys de los app-data-lookup (devuelven el correlativo de la fila seleccionada).
 	selectedLookUpCORR_UNIDAD(vRow: any): number {
 		return vRow[0].CORR_UNIDAD;
 	}
@@ -882,6 +893,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
+		// Al volver a browse limpia edición de perfil/entrenamiento y tabs.
 		if (xEstado === UpdateType.Browse) {
 			this.perfilEditando = false;
 			this.entrenamientoEditando = false;
@@ -898,6 +910,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		};
 	}
 
+	// Clona el modelo API al contrato de la vista, o crea un descriptor nuevo en borrador.
 	override fillData(xModel?: ScDescriptorPuesto): ScDescriptorPuesto {
 		if (xModel !== undefined) {
 			return {
@@ -961,6 +974,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		};
 	}
 
+	// Consulta el listado browse; en onData enriquece nombres y refresca el grid.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -1000,6 +1014,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}, 0);
 	}
 
+	// Alta: limpia tabs/validación y sincroniza el form vacío.
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -1016,6 +1031,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		setTimeout(() => this.syncHeaderForm());
 	}
 
+	// Edición: carga detalles del descriptor seleccionado y datos derivados del puesto.
 	override editarClick(e: any): void {
 		this.readOnly = false;
 		this.limpiarEstadoValidacionHeader();
@@ -1031,6 +1047,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		setTimeout(() => this.syncHeaderForm());
 	}
 
+	// Doble clic: abre en solo lectura y bloquea controles tras sincronizar el form.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -1071,6 +1088,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarResponsabilidadesCargo();
 	}
 
+	// Limpia todas las colecciones de detalle al crear o cambiar de contexto.
 	limpiarDatosTabs(): void {
 		this.itemsTabBitacora = [];
 		this.funcionesClave = [];
@@ -2456,10 +2474,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		cellInfo.setValue(corr);
 	}
 
-	/**
-	 * Aplica el catálogo en el buffer de edicion (no en el dataSource),
-	 * para que Cancelar revierta CORR + DESCRIPCION.
-	 */
+	// Aplica el catálogo en el buffer de edición (no en el dataSource),
+	// para que Cancelar revierta CORR + DESCRIPCION.
 	setRequerimientoOrganizacionalCellValue = (
 		newData: ScDescriptorPuestoRequerimientoOrganizacional,
 		value: number | null,
@@ -4033,7 +4049,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
-	/** Orden = dxi-item del tabPanelSecciones. visibleEn: ambos | corta | extensa */
+	// Orden = dxi-item del tabPanelSecciones. visibleEn: ambos | corta | extensa
 	private readonly seccionesTabsMeta: Array<{ title: string; visibleEn: 'ambos' | 'corta' | 'extensa' }> = [
 		{ title: 'Objetivo', visibleEn: 'ambos' },
 		{ title: 'Funciones', visibleEn: 'ambos' },
@@ -4300,6 +4316,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Cancela el mtto y limpia marcas de validación visual del encabezado.
 	override cancelar(): void {
 		this.limpiarEstadoValidacionHeader();
 		super.cancelar((item: any) => item.CORR_DESCRIPTOR_PUESTO === this.modelUpdate.CORR_DESCRIPTOR_PUESTO);
@@ -4622,7 +4639,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.relacionesExternasEditando = false;
 	}
 
-	/** Visibilidad Options: usa editRowKey (no e.row.isEditing, que puede quedar pegado tras Cancelar). */
+	// Visibilidad Options: usa editRowKey (no e.row.isEditing, que puede quedar pegado tras Cancelar).
 	private accionGridVisible(e: any): boolean {
 		if (this.readOnly) {
 			return false;
@@ -4634,7 +4651,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return e?.row?.key !== editKey;
 	}
 
-	/** Tras Guardar/Cancelar: limpia flag y repinta para que vuelvan los iconos Options. */
+	// Tras Guardar/Cancelar: limpia flag y repinta para que vuelvan los iconos Options.
 	private finalizarEdicionGrid(e: any, clearFlag: () => void): void {
 		clearFlag();
 		const grid = e?.component;

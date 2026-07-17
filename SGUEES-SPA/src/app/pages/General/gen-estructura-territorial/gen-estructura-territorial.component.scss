@@ -1,3 +1,4 @@
+// Separación del formulario de país en el documento territorial.
 .territorial-form-card {
 	margin-top: var(--sguees-space-4, 16px);
 }
@@ -8,6 +9,7 @@
 	}
 }
 
+// En móvil: toolbar del grid de países se apila.
 @media (max-width: 575.98px) {
 	:host ::ng-deep {
 		.dx-datagrid-header-panel {
@@ -59,10 +61,12 @@
 	}
 }
 
+// Contenedor de la cascada depto / municipio / distrito.
 .territorial-cascade {
 	margin-top: 24px;
 }
 
+// Tres paneles en fila en desktop.
 .territorial-panels {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -75,6 +79,7 @@
 	min-width: 0;
 }
 
+// Ajusta altura y overflow del grid embebido en cada panel de cascada.
 :host ::ng-deep .territorial-panel--cascade {
 	app-data-grid-mtto,
 	.sguees-data-grid-mtto-host,
@@ -102,6 +107,7 @@
 		overflow: visible;
 	}
 
+	// Oculta pager: la cascada muestra el set filtrado por padre.
 	.dx-datagrid-pager,
 	.dx-pager {
 		display: none !important;
@@ -119,10 +125,12 @@
 	width: 100%;
 }
 
+// Atenúa paneles hijos mientras no hay selección padre.
 .territorial-panel--disabled {
 	opacity: 0.72;
 }
 
+// Resalta la fila seleccionada en la cascada.
 :host ::ng-deep .territorial-panel--cascade .dx-data-row.territorial-row-selected > td {
 	background-color: var(--sguees-grid-row-selected, rgba(56, 139, 253, 0.22)) !important;
 	color: var(--sguees-text-primary, var(--base-text-color)) !important;
@@ -132,6 +140,7 @@
 	background-color: var(--sguees-grid-row-selected, rgba(56, 139, 253, 0.28)) !important;
 }
 
+// Cuerpo y acciones del popup CRUD territorial.
 .territorial-popup-body {
 	padding: 8px 4px 4px;
 }
@@ -186,6 +195,7 @@
 	gap: 10px;
 }
 
+// En pantallas angostas la cascada pasa a una columna.
 @media (max-width: 1199.98px) {
 	.territorial-panels {
 		grid-template-columns: 1fr;

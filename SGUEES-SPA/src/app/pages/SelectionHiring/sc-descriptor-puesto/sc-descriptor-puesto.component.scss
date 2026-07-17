@@ -1,3 +1,6 @@
+// Estilos del mantenimiento Descriptor de Puesto: cards, tabs, grids detalle, badges y popup.
+
+// --- Layout general / títulos de sección ---
 .descriptor-form-card {
 	margin-bottom: 16px;
 }
@@ -29,6 +32,7 @@
 	opacity: 0.75;
 }
 
+// --- Subtabs de secciones (Objetivo, Funciones, Perfil, etc.) ---
 .descriptor-sub-tab-panel {
 	margin-top: 8px;
 }
@@ -116,6 +120,7 @@
 	opacity: 0.8;
 }
 
+// --- Tab Bitácora ---
 .descriptor-bitacora {
 	margin-top: 15px;
 }
@@ -156,6 +161,7 @@
 	color: var(--sguees-text-secondary, color-mix(in srgb, var(--base-text-color) 72%, transparent));
 }
 
+// --- Lookups inválidos (borde de error en encabezado) ---
 :host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor,
 :host ::ng-deep .descriptor-lookup-field--invalid .dx-dropdownbox.dx-texteditor,
 :host ::ng-deep .descriptor-lookup-field--invalid.dx-selectbox.dx-texteditor,
@@ -181,6 +187,7 @@
 	color: var(--error-color, #d9534f);
 }
 
+// --- Badges de formato / estado / versión en el grid browse ---
 :host ::ng-deep .descriptor-grid-badge-col {
 	overflow: visible !important;
 }
@@ -290,6 +297,7 @@
 	border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
+// --- Tablas/grids de funciones, KPI y toolbars Editar/Guardar/Cancelar ---
 .descriptor-funciones-header {
 	display: flex;
 	align-items: center;
@@ -526,6 +534,7 @@
 	}
 }
 
+// --- Celdas lookup / listas de riesgos y responsabilidades ---
 .descriptor-riesgo-lookup-cell {
 	display: block;
 	width: 100%;
@@ -596,6 +605,7 @@
 	opacity: 0.75;
 }
 
+// --- Perfil, competencias y relaciones (subtabs anidados) ---
 .descriptor-perfil-header {
 	margin-bottom: 12px;
 }
@@ -743,6 +753,7 @@
 	min-width: 120px;
 }
 
+// --- Popup de actividades de función clave ---
 .descriptor-actividades-trigger {
 	display: inline-flex;
 	align-items: center;
@@ -821,6 +832,7 @@
 	overflow: auto;
 }
 
+// --- Responsive: popup, columnas de acción y filas de perfil ---
 @media (max-width: 991.98px) {
 	.descriptor-actividades-popup-actions {
 		flex-direction: column;

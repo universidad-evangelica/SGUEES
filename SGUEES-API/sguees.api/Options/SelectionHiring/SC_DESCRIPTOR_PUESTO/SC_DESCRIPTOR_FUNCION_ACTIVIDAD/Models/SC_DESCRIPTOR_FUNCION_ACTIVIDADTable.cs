@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de escritura de actividad de función del descriptor.
     public class SC_DESCRIPTOR_FUNCION_ACTIVIDADTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

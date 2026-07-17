@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de persistencia (tabla) del catálogo de requerimiento organizacional.
     public class SC_REQUERIMIENTO_ORGANIZACIONALTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura de KPI de función del descriptor.
     public class SC_DESCRIPTOR_KPI_FUNCIONView
     {
         public int CORR_EMPRESA { get; set; }

@@ -1,4 +1,5 @@
 <div class="sguees-mtto-view">
+<!-- Toolbar: título y acciones Nuevo / Guardar / Cancelar -->
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[subTituloVentana]="subTituloVentana"
@@ -11,6 +12,7 @@
 >
 </app-barra-data-mtto>
 
+<!-- Formulario de alta/edición (oculto en modo browse) -->
 <div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 	<dx-form
 		#fData
@@ -25,6 +27,7 @@
 	</dx-form>
 </div>
 
+<!-- Grid con activar/inactivar, export y acciones por fila -->
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
 	[models]="models"
@@ -61,6 +64,7 @@
 
 </div>
 
+<!-- Overlay de carga mientras responden las peticiones -->
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"

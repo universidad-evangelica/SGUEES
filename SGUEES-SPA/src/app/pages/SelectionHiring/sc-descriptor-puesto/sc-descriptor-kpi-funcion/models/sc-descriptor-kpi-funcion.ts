@@ -1,3 +1,4 @@
+// KPI del formato corto: indicador, frecuencia y meta porcentual.
 export interface ScDescriptorKpiFuncion {
 	CORR_EMPRESA?: number;
 	CORR_DESCRIPTOR_PUESTO?: number;
@@ -9,6 +10,7 @@ export interface ScDescriptorKpiFuncion {
 	_clientKey?: string | number;
 }
 
+// Catálogo de frecuencias usado en el lookup del grid de KPI.
 export interface ScFrecuenciaLookup {
 	CORR_FRECUENCIA: number;
 	NOMBRE_FRECUENCIA: string;

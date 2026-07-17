@@ -15,6 +15,7 @@ import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.compon
 import { ToastModule } from 'primeng/toast';
 import { ScCompetenciasTecnicasComponent } from './sc-competencias-tecnicas.component';
 
+// Ruta lazy y declaraciones DevExtreme del mantenimiento de competencias técnicas.
 const routes: Routes = [{ path: '', component: ScCompetenciasTecnicasComponent }];
 
 @NgModule({

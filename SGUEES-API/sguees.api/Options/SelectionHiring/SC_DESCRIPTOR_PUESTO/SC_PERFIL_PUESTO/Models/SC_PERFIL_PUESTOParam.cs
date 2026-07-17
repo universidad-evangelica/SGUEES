@@ -2,6 +2,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Filtros de consulta del perfil asociado al descriptor.
     public class SC_PERFIL_PUESTOParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

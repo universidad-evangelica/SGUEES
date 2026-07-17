@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace sguees.Models
 {
+	// Entidad de persistencia (tabla) del catálogo de gerencia.
 	public class GEN_GERENCIATable : BaseEntity
 	{
 		public int CORR_EMPRESA { get; set; }

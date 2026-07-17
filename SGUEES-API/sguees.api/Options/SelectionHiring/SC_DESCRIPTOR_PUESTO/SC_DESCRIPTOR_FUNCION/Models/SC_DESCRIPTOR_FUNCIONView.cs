@@ -2,12 +2,14 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura de función del descriptor.
     public class SC_DESCRIPTOR_FUNCIONView
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_DESCRIPTOR_PUESTO { get; set; }
         public int CORR_FUNCION { get; set; }
         public string NOMBRE_FUNCION { get; set; }
+        // Clasificación de la función.
         public string TIPO_FUNCION { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }

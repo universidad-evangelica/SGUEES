@@ -5,7 +5,7 @@ import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { environment } from 'src/environments/environment';
 
-/** Detalle cascada: distrito. */
+// Detalle cascada: distrito.
 @Injectable({
 	providedIn: 'root',
 })

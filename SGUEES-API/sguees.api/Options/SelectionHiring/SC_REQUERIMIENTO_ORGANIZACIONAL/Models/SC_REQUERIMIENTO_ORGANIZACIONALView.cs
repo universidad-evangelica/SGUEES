@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura (vista) del catálogo de requerimiento organizacional.
     public class SC_REQUERIMIENTO_ORGANIZACIONALView
     {
         public int CORR_EMPRESA { get; set; }

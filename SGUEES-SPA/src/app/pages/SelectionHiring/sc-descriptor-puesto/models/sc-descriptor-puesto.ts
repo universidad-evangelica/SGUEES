@@ -1,3 +1,6 @@
+// Modelo principal del descriptor de puesto y tipos auxiliares de lookups/catálogos.
+// Las constantes de formato, tipo de función/relación y bloqueo de creación se reutilizan en service y component.
+
 export interface ScDescriptorPuesto {
 	CORR_EMPRESA: number;
 	CORR_DESCRIPTOR_PUESTO: number;
@@ -23,16 +26,19 @@ export interface ScDescriptorPuesto {
 	USUARIO_ACTU: string;
 	ESTACION_ACTU: string;
 	FECHA_ACTU: Date | string | null;
+	// Campos de solo lectura enriquecidos desde joins o mocks locales.
 	NOMBRE_PUESTO?: string;
 	NOMBRE_UNIDAD?: string;
 }
 
+// Item del lookup de inducción usado en el tab Entrenamiento.
 export interface ScInduccionLookupItem {
 	CORR_INDUCCION: number;
 	NOMBRE_INDUCCION: string;
 	SEMANAS_INDUCCION: number | null;
 }
 
+// Mocks temporales de unidad/puesto mientras no exista el catálogo real de organigrama.
 export interface MockUnidad {
 	CORR_UNIDAD: number;
 	NOMBRE_UNIDAD: string;
@@ -51,6 +57,7 @@ export interface MockPuestoReporta {
 	NOMBRE_PUESTO_REPORTA: string;
 }
 
+// Lookups de competencias, requerimientos, riesgos, responsabilidades e impacto económico.
 export interface ScCompetenciaTecnicaLookupItem {
 	CORR_COMPETENCIAS_TECNICAS: number;
 	CORR_COMPETENCIAS_TECNICAS_PADRE: number | null;
@@ -99,10 +106,11 @@ export const FORMATO_EXTENSO = 'EXTENSO';
 export const TIPO_FUNCION_CLAVE = 'CLAVE';
 export const TIPO_FUNCION_SECUNDARIA = 'SECUNDARIA';
 
-/** I = Interna, E = Externa */
+// I = Interna, E = Externa
 export const TIPO_RELACION_INTERNA = 'I';
 export const TIPO_RELACION_EXTERNA = 'E';
 
+// Estados que impiden crear otra versión del mismo puesto en paralelo.
 export const ESTADOS_DESCRIPTOR_BLOQUEO_CREACION = ['BORRADOR', 'ENVIADO', 'REVISADO', 'ACTIVO'];
 
 export const MOCK_UNIDADES: MockUnidad[] = [
@@ -157,6 +165,7 @@ export const MOCK_PUESTOS_REPORTA: MockPuestoReporta[] = [
 	{ CORR_PUESTO_REPORTA: 5, NOMBRE_PUESTO_REPORTA: 'Sofia Mendez' },
 ];
 
+// Valores iniciales del perfil cuando el descriptor aún no tiene registro padre.
 export const PERFIL_PUESTO_DEFAULT = {
 	EDAD_MINIMA: null as number | null,
 	EDAD_MAXIMA: null as number | null,
@@ -167,6 +176,7 @@ export const PERFIL_PUESTO_DEFAULT = {
 	LICENCIA: false,
 };
 
+// Datos de demostración para la bitácora (aún no conectada a API).
 export const MOCK_BITACORA = [
 	{
 		CORR_DESCRIPTOR_PUESTO: 0,

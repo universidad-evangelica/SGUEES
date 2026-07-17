@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura (vista) del catálogo de competencia técnica.
     public class SC_COMPETENCIAS_TECNICASView
     {
         public int CORR_EMPRESA { get; set; }

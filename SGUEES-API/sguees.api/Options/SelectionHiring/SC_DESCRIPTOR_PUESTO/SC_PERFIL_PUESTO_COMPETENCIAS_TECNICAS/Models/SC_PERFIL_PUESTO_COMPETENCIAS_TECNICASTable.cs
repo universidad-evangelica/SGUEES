@@ -3,12 +3,14 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de escritura de competencia técnica del perfil.
     public class SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS { get; set; }
         public string NOMBRE_COMPETENCIAS_TECNICAS { get; set; }
         public string DESCRIPCION { get; set; }
+        // BASICO | INTERMEDIO | AVANZADO.
         public string NIVEL_DOMINIO { get; set; }
         public int? CORR_DESCRIPTOR_PUESTO { get; set; }
         public int? CORR_PERFIL_PUESTO { get; set; }

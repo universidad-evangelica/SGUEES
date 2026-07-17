@@ -1,3 +1,4 @@
+// Catálogo de frecuencias usadas en descriptores de puesto.
 export interface ScFrecuencia {
 	CORR_EMPRESA: number;
 	CORR_FRECUENCIA: number;

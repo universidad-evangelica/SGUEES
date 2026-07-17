@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Proyección de lectura (vista) del catálogo de disponibilidad de horario.
     public class SC_DISPONIBILIDAD_HORARIOView
     {
         public int CORR_EMPRESA { get; set; }

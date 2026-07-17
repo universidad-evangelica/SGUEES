@@ -1,4 +1,5 @@
-﻿export interface ScRiesgoPuesto {
+﻿// Catálogo de riesgos asociados al puesto.
+export interface ScRiesgoPuesto {
 	CORR_EMPRESA: number;
 	CORR_RIESGO_PUESTO: number;
 	NOMBRE_RIESGO_PUESTO: string;

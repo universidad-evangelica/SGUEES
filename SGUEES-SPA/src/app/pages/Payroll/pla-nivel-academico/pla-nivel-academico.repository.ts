@@ -16,6 +16,7 @@ export class PlaNivelAcademicoRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
+	// Consulta un nivel específico mediante sus filtros de identificación.
 	get(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
@@ -25,6 +26,7 @@ export class PlaNivelAcademicoRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlTALENTOHUMANONAPI);
 	}
 
+	// Envía al API la solicitud para actualizar el nivel identificado por sus claves.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
@@ -34,6 +36,7 @@ export class PlaNivelAcademicoRepository {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
+	// Cambia el estado activo/inactivo del nivel vía ActivarInactivar.
 	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}

@@ -1,3 +1,5 @@
+// Perfil padre del descriptor: datos demográficos y de condiciones laborales.
+// Sus correlativos se reutilizan en educación, experiencia y competencias.
 export interface ScDescriptorPerfilPuesto {
 	CORR_EMPRESA?: number;
 	CORR_DESCRIPTOR_PUESTO?: number;
@@ -23,6 +25,7 @@ export interface ScTipoModalidadLookup {
 	MODALIDAD_NOMBRE: string;
 }
 
+// Opción genérica para selects locales del perfil (sexo, licencia, etc.).
 export interface PerfilListaOption<T = string | boolean> {
 	CODIGO: T;
 	NOMBRE: string;

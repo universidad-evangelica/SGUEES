@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de escritura de competencia conductual del perfil.
     public class SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

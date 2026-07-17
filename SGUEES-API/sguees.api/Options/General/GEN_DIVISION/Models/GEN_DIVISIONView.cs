@@ -2,6 +2,7 @@ using System;
 
 namespace sguees.Models
 {
+	// Proyección de lectura (vista) del catálogo de división.
 	public class GEN_DIVISIONView
 	{
 		public int CORR_EMPRESA { get; set; }

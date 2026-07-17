@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de persistencia (tabla) del catálogo de nivel académico.
     public class PLA_NIVEL_ACADEMICOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

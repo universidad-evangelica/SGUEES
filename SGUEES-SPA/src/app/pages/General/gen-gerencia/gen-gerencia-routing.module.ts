@@ -12,8 +12,10 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 import { GenGerenciaComponent } from './gen-gerencia.component';
 
+// Ruta por defecto del feature: renderiza el mantenimiento de gerencias.
 const routes: Routes = [{ path: '', component: GenGerenciaComponent }];
 
+// Declara el componente y los módulos UI (incluye lookup de división).
 @NgModule({
 	imports: [
 		RouterModule.forChild(routes),

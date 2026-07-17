@@ -42,15 +42,18 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
+	// Expone la grilla al base para refrescos y foco.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
+	// Inicializa subtítulo y carga el catálogo.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.consultar();
 	}
 
+	// Restaura el subtítulo al volver a modo consulta.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -156,6 +159,7 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		}, 0);
 	}
 
+	// Abre el registro en consulta y bloquea el formulario.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -169,6 +173,7 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Carga la fila y habilita campos para edición.
 	onEditClick(e: any): void {
 		if (!e?.row?.data) {
 			return;
@@ -267,6 +272,7 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
+	// Descarta cambios y restaura el registro previo.
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_FRECUENCIA === this.modelUpdate.CORR_FRECUENCIA);
 	}
@@ -288,12 +294,14 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
+	// Deja el formulario en solo lectura (consulta).
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_FRECUENCIA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_FRECUENCIA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ESTADO_FRECUENCIA')?.option('readOnly', true);
 	}
 
+	// Habilita edición; el estado queda solo lectura si es Update.
 	override habilitar(): void {
 		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
 		setTimeout(() => {
@@ -303,6 +311,7 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Enfoca el campo principal al abrir el formulario.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('NOMBRE_FRECUENCIA')?.focus();

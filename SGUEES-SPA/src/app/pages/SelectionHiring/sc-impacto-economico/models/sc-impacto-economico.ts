@@ -1,4 +1,5 @@
-﻿export interface ScImpactoEconomico {
+﻿// Catálogo de impactos económicos del descriptor de puesto.
+export interface ScImpactoEconomico {
 	CORR_EMPRESA: number;
 	CORR_IMPACTO_ECONOMICO: number;
 	DESCRIPCION: string;

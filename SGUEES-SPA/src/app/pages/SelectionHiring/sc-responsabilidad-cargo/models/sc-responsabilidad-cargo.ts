@@ -1,4 +1,5 @@
-﻿export interface ScResponsabilidadCargo {
+﻿// Catálogo de responsabilidades de cargo y su aplicación a descriptores.
+export interface ScResponsabilidadCargo {
 	CORR_EMPRESA: number;
 	CORR_RESPONSABILIDAD: number;
 	NOMBRE_RESPONSABILIDAD: string;
