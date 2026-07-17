@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // entidad de escritura/auditoria de SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO.
     public class SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

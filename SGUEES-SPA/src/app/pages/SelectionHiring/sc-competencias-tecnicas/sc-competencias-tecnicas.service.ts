@@ -1,3 +1,4 @@
+// Servicio de negocio del catálogo Competencias Técnicas (validación, CRUD y config de grilla/form).
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -23,6 +24,7 @@ export interface ScCompetenciaFormContext {
 @Injectable({
 	providedIn: 'root',
 })
+// Encapsula validaciones y delega el CRUD en el repositorio de competencia técnica.
 export class ScCompetenciasTecnicasService {
 	constructor(private repo: ScCompetenciasTecnicasRepository) {}
 
@@ -134,10 +136,12 @@ export class ScCompetenciasTecnicasService {
 		return payload;
 	}
 
+	// Solicita al repositorio el listado con los filtros construidos.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
+	// Solicita al repositorio el detalle por correlativo.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_COMPETENCIAS_TECNICAS', Value: param.CORR_COMPETENCIAS_TECNICAS }]);
 	}
@@ -147,22 +151,27 @@ export class ScCompetenciasTecnicasService {
 		return this.repo.getNextCodigo([{ Parameter: 'CORR_COMPETENCIAS_TECNICAS_PADRE', Value: corrPadre }]);
 	}
 
+	// Delega en el repositorio la creación del registro.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Delega en el repositorio la actualización con su llave.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_COMPETENCIAS_TECNICAS', Value: model.CORR_COMPETENCIAS_TECNICAS }]);
 	}
 
+	// Delega en el repositorio la eliminación por correlativo.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_COMPETENCIAS_TECNICAS', Value: model.CORR_COMPETENCIAS_TECNICAS }]);
 	}
 
+	// Delega en el repositorio el cambio de estado activo/inactivo.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_COMPETENCIAS_TECNICAS', Value: model.CORR_COMPETENCIAS_TECNICAS }]);
 	}
 
+	// Define columnas y formatos de la grilla de mantenimiento.
 	getColumns(): any {
 		return [
 			{
@@ -182,6 +191,7 @@ export class ScCompetenciasTecnicasService {
 		];
 	}
 
+	// Configura el contador de registros de la grilla.
 	getSummary(): any {
 		return {
 			totalItems: [

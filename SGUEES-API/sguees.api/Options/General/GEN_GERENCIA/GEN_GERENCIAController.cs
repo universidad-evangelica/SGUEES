@@ -11,6 +11,7 @@ using sguees.Services;
 
 namespace sguees.Controllers
 {
+	// API HTTP del catálogo de gerencias: autentica, aplica empresa de sesión y delega al servicio.
 	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
@@ -18,6 +19,7 @@ namespace sguees.Controllers
 	{
 		private readonly IGEN_GERENCIAService _service;
 
+		// Inyecta el servicio de gerencias; falla si no está registrado.
 		public GEN_GERENCIAController(IGEN_GERENCIAService service)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(service));

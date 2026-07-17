@@ -1,3 +1,4 @@
+// Competencia conductual del perfil de puesto.
 export interface ScPerfilPuestoCompetenciasConductuales {
 	CORR_EMPRESA?: number;
 	CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES: number;

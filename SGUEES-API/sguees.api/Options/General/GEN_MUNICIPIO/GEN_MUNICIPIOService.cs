@@ -6,10 +6,12 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
+	// Capa de servicio de municipios: valida/normaliza y delega la persistencia al repositorio.
 	public class GEN_MUNICIPIOService : IGEN_MUNICIPIOService
 	{
 		private readonly IGEN_MUNICIPIORepository _repo;
 
+		// Inyecta el repositorio de municipios para operaciones de datos.
 		public GEN_MUNICIPIOService(IGEN_MUNICIPIORepository repo)
 		{
 			_repo = repo;

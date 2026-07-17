@@ -1,7 +1,9 @@
+// Parámetros de consulta/filtro de responsabilidad del cargo.
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Filtros y opciones de paginación/orden para consultas de responsabilidad del cargo.
     public class SC_RESPONSABILIDAD_CARGOParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

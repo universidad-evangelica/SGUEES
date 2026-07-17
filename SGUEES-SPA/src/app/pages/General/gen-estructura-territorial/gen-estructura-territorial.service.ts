@@ -1,3 +1,4 @@
+// Capa de negocio territorial: validación, columnas/forms y CRUD país + hijos vía repositorios.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -272,7 +273,7 @@ export class GenEstructuraTerritorialService {
 		return this.repoDistrito.delete(xWhere);
 	}
 
-	/** Columnas del listado de países — acciones las aporta `app-data-grid-mtto`. */
+	// Columnas del listado de países; las acciones las aporta app-data-grid-mtto.
 	getPaisColumns(): any[] {
 		return [
 			{ dataField: 'CORR_PAIS', caption: 'Corr.', width: 100, dataType: 'number', filterOperations: ['=', '<', '>', '<=', '>='] },

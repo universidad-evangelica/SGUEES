@@ -6,6 +6,7 @@ import { IResult } from 'src/app/FxAPI/IResult';
 import { environment } from 'src/environments/environment';
 
 @Injectable({ providedIn: 'root' })
+// Acceso HTTP al controlador PLA_NIVEL_ACADEMICO.
 export class PlaNivelAcademicoRepository {
 	readonly xController = 'PLA_NIVEL_ACADEMICO';
 
@@ -16,6 +17,7 @@ export class PlaNivelAcademicoRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
+	// Solicita un nivel específico por filtros.
 	get(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
@@ -25,6 +27,7 @@ export class PlaNivelAcademicoRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlTALENTOHUMANONAPI);
 	}
 
+	// Actualiza el nivel identificado por los parámetros de búsqueda.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
@@ -34,6 +37,7 @@ export class PlaNivelAcademicoRepository {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
+	// Llama al endpoint de activar/inactivar del catálogo.
 	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}

@@ -1,4 +1,6 @@
+<!-- Contenedor principal del mantenimiento de Competencias Técnicas. -->
 <div class="sguees-mtto-view">
+<!-- Toolbar: nuevo, guardar y cancelar. -->
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[subTituloVentana]="subTituloVentana"
@@ -11,6 +13,7 @@
 >
 </app-barra-data-mtto>
 
+<!-- Formulario de alta/edición (oculto en browse). -->
 <div class="content-block dx-card responsive-paddings competencias-tecnicas-page competencias-form-card" *ngIf="!isBrowse()">
 	<dx-form
 		#fData
@@ -22,6 +25,7 @@
 		[showRequiredMark]="false"
 		[items]="items"
 	>
+		<!-- Template del lookup de nivel jerárquico. -->
 		<div *dxTemplate="let data of 'NIVELLookup'">
 			<app-data-lookup
 				[model]="mNIVEL"
@@ -36,6 +40,7 @@
 				[dropDownWidth]="280"
 			></app-data-lookup>
 		</div>
+		<!-- Template del lookup de competencia padre. -->
 		<div *dxTemplate="let data of 'CORR_COMPETENCIAS_TECNICAS_PADRELookup'">
 			<div class="padre-lookup-field" [class.padre-lookup-field--invalid]="padreInvalido">
 				<app-data-lookup
@@ -55,6 +60,7 @@
 	</dx-form>
 </div>
 
+<!-- Grilla del catálogo con acciones de mantenimiento. -->
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
 	[models]="models"
@@ -90,6 +96,7 @@
 
 </div>
 
+<!-- Panel de carga durante operaciones asíncronas. -->
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"

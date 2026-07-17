@@ -2,6 +2,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // filtros de consulta de SC_PERFIL_PUESTO_EXPERIENCIA.
     public class SC_PERFIL_PUESTO_EXPERIENCIAParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

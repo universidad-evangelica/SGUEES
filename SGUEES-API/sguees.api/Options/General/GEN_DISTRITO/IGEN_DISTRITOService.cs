@@ -4,6 +4,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+	// Contrato del servicio de distritos (consultas, alta, baja y actualización).
 	public interface IGEN_DISTRITOService
 	{
 		// Define la consulta del listado de distritos según los filtros recibidos.

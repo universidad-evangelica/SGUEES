@@ -1,3 +1,4 @@
+// Acceso HTTP al detalle cascada municipio (GEN_MUNICIPIO).
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { CData } from 'src/app/FxAPI/CData';
@@ -5,7 +6,6 @@ import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { environment } from 'src/environments/environment';
 
-/** Detalle cascada: municipio. */
 @Injectable({
 	providedIn: 'root',
 })

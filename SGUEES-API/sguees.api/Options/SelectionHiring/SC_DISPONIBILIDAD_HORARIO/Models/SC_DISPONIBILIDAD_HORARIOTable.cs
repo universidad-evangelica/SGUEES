@@ -1,8 +1,10 @@
+// Entidad de persistencia de disponibilidad de horario (mapeo a la tabla).
 using System;
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Campos de tabla de disponibilidad de horario, incluyendo auditoría.
     public class SC_DISPONIBILIDAD_HORARIOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

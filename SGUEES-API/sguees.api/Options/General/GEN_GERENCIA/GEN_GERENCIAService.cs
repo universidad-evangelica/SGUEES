@@ -6,10 +6,12 @@ using sguees.Repositories;
 
 namespace sguees.Services
 {
+	// Capa de servicio de gerencias: valida/normaliza y delega la persistencia al repositorio.
 	public class GEN_GERENCIAService : IGEN_GERENCIAService
 	{
 		private readonly IGEN_GERENCIARepository _repo;
 
+		// Inyecta el repositorio de gerencias para operaciones de datos.
 		public GEN_GERENCIAService(IGEN_GERENCIARepository repo)
 		{
 			_repo = repo;

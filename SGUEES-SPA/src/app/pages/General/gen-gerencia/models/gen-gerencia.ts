@@ -1,3 +1,4 @@
+// Modelo de datos de una gerencia (alineado a GEN_GERENCIA; incluye datos de división).
 export interface GenGerencia {
 	CORR_EMPRESA: number;
 	CORR_GERENCIA: number;

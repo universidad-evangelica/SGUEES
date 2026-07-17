@@ -1,3 +1,4 @@
+// Vista de mantenimiento de gerencias (CRUD sobre GEN_GERENCIA, con lookup de división).
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
@@ -15,6 +16,7 @@ import { GenGerenciaService } from './gen-gerencia.service';
 	templateUrl: './gen-gerencia.component.html',
 	styleUrls: ['./gen-gerencia.component.scss'],
 })
+// Orquesta grid, formulario, lookup de división y llamadas al servicio de gerencias.
 export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
@@ -44,6 +46,7 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
+	// Expone el grid de mantenimiento al flujo base de CBaseComponent.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
@@ -355,6 +358,7 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Deja el formulario en solo lectura (modo consulta); también marca el lookup.
 	override bloquear(): void {
 		this.readOnly = true;
 		this.dataForm?.instance?.getEditor('CORR_GERENCIA')?.option('readOnly', true);
@@ -362,6 +366,7 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		this.dataForm?.instance?.getEditor('CODIGO_GERENCIA')?.option('readOnly', true);
 	}
 
+	// Habilita nombre y código; el correlativo sigue bloqueado.
 	override habilitar(): void {
 		this.readOnly = false;
 		setTimeout(() => {
@@ -371,6 +376,7 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Enfoca el nombre para agilizar la captura.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm?.instance?.getEditor('NOMBRE_GERENCIA')?.focus();

@@ -1,7 +1,9 @@
-﻿using System;
+// DTO de lectura de responsabilidad del cargo (proyección de la vista SQL).
+using System;
 
 namespace SGUEES.Models
 {
+    // Campos expuestos por la vista de consulta de responsabilidad del cargo.
     public class SC_RESPONSABILIDAD_CARGOView
     {
         public int CORR_EMPRESA { get; set; }

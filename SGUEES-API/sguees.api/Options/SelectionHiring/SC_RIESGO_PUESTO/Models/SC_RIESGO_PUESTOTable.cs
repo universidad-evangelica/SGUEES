@@ -1,8 +1,10 @@
-﻿using System;
+// Entidad de persistencia de riesgo del puesto (mapeo a la tabla).
+using System;
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Campos de tabla de riesgo del puesto, incluyendo auditoría.
     public class SC_RIESGO_PUESTOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

@@ -1,3 +1,4 @@
+// Vista de mantenimiento de divisiones (CRUD sobre GEN_DIVISION).
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
@@ -14,6 +15,7 @@ import { GenDivisionService } from './gen-division.service';
 	templateUrl: './gen-division.component.html',
 	styleUrls: ['./gen-division.component.scss'],
 })
+// Orquesta grid, formulario y llamadas al servicio de divisiones.
 export class GenDivisionComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
@@ -38,6 +40,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
+	// Expone el grid de mantenimiento al flujo base de CBaseComponent.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
@@ -297,12 +300,14 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Deja el formulario en solo lectura (modo consulta).
 	override bloquear(): void {
 		this.dataForm?.instance?.getEditor('CORR_DIVISION')?.option('readOnly', true);
 		this.dataForm?.instance?.getEditor('NOMBRE_DIVISION')?.option('readOnly', true);
 		this.dataForm?.instance?.getEditor('CODIGO_DIVISION')?.option('readOnly', true);
 	}
 
+	// Habilita nombre y código; el correlativo sigue bloqueado.
 	override habilitar(): void {
 		setTimeout(() => {
 			this.dataForm?.instance?.getEditor('CORR_DIVISION')?.option('readOnly', true);
@@ -311,6 +316,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Enfoca el nombre para agilizar la captura.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm?.instance?.getEditor('NOMBRE_DIVISION')?.focus();

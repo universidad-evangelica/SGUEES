@@ -6,6 +6,7 @@ using sguees.Models;
 
 namespace sguees.Repositories
 {
+	// Contrato del repositorio de gerencias; extiende IRepository con chequeo de duplicados.
 	public interface IGEN_GERENCIARepository : IRepository<GEN_GERENCIATable>
 	{
 		// Define la comprobación de duplicados de la gerencia dentro de su ámbito funcional.

@@ -1,3 +1,4 @@
+// Routing y declaraciones DevExtreme/layout de la vista Competencias Conductuales.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
@@ -35,4 +36,5 @@ const routes: Routes = [{ path: '', component: ScCompetenciasConductualesCompone
 	exports: [RouterModule],
 	declarations: [ScCompetenciasConductualesComponent],
 })
+// Declara el componente y registra la ruta hija del catálogo.
 export class ScCompetenciasConductualesRoutingModule {}

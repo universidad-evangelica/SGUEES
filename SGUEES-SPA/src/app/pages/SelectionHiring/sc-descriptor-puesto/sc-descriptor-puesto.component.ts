@@ -64,6 +64,7 @@ import { ScDescriptorPuestoService } from './sc-descriptor-puesto.service';
 	templateUrl: './sc-descriptor-puesto.component.html',
 	styleUrls: ['./sc-descriptor-puesto.component.scss'],
 })
+// Vista de mantenimiento del Descriptor de Puesto (encabezado + secciones por formato).
 export class ScDescriptorPuestoComponent extends CBaseComponent implements OnInit, OnDestroy {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 	@ViewChild('fHeaderData', { static: false }) headerForm!: DxFormComponent;
@@ -236,6 +237,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private readonly maintenanceSubtitulo = 'Descriptor de Puesto';
 
+	// Inyecta servicio, route y ChangeDetectorRef; configura el mtto base.
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -308,6 +310,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.dataGrid ?? null;
 	}
 
+	// Inicializa mtto, combos y consulta inicial del descriptor de puesto.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.llenaComboBox();
@@ -315,10 +318,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.configurarActividadesPopupResponsive();
 	}
 
+	// Limpia suscripciones/timers al destruir el componente.
 	ngOnDestroy(): void {
 		this.actividadesPopupMediaQuery?.removeEventListener('change', this.onActividadesPopupMediaChange);
 	}
 
+	// Ajusta el popup de actividades al ancho de pantalla para mantenerlo usable en mobile.
 	private configurarActividadesPopupResponsive(): void {
 		if (typeof window === 'undefined' || !window.matchMedia) {
 			return;
@@ -485,6 +490,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Sincroniza el lookup de FORMATO del encabezado con el valor actual del modelo.
 	private aplicarFormatoLookupAlHeader(): void {
 		const item = this.headerItems?.find((x) => x.dataField === 'FORMATO');
 		if (!item) {
@@ -892,6 +898,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Arma el filtro IParam del descriptor (empresa + correlativo) para las consultas al repositorio.
 	fillParam(xCORR_DESCRIPTOR_PUESTO?: number): any {
 		return {
 			CORR_DESCRIPTOR_PUESTO: xCORR_DESCRIPTOR_PUESTO ?? 0,
@@ -961,6 +968,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		};
 	}
 
+	// Carga el listado principal del mtto y luego enriquece/ordena filas antes de refrescar el grid.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -972,6 +980,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Completa nombres de unidad/puesto en filas que la API no trae resueltos.
 	private enriquecerFilasConsulta(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -984,6 +993,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}));
 	}
 
+	// Ordena el grid de consulta por CORR_DESCRIPTOR_PUESTO ascendente.
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -994,6 +1004,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
+	// Repinta el data-grid-mtto tras consultar; resetPage vuelve a la primera pagina.
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
@@ -1071,6 +1082,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarResponsabilidadesCargo();
 	}
 
+	// Vacia arrays y flags de todas las secciones al cambiar o cancelar el descriptor.
 	limpiarDatosTabs(): void {
 		this.itemsTabBitacora = [];
 		this.funcionesClave = [];
@@ -1147,6 +1159,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.accionGridVisible(e);
 	}
 
+	// Confirma la fila del grid de funciones clave (saveEditData de DevExtreme).
 	guardarFuncionClaveEditada(): void {
 		const grid = this.gridFuncionesClave?.instance;
 		if (!grid || !this.funcionesClaveEditando) {
@@ -1156,6 +1169,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
+	// Descarta la edicion en curso de funciones clave y resetea flags locales.
 	cancelarFuncionClaveEditada(): void {
 		this.cancelarEdicionGrid(this.gridFuncionesClave?.instance, () => {
 			this.funcionesClaveEditando = false;
@@ -1242,6 +1256,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.accionGridVisible(e);
 	}
 
+	// Confirma la fila del grid de funciones secundarias.
 	guardarFuncionSecundariaEditada(): void {
 		const grid = this.gridFuncionesSecundarias?.instance;
 		if (!grid || !this.funcionesSecundariasEditando) {
@@ -1251,6 +1266,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
+	// Descarta la edicion en curso de funciones secundarias.
 	cancelarFuncionSecundariaEditada(): void {
 		this.cancelarEdicionGrid(this.gridFuncionesSecundarias?.instance, () => {
 			this.funcionesSecundariasEditando = false;
@@ -1331,6 +1347,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.accionGridVisible(e);
 	}
 
+	// Confirma la fila del grid de relaciones internas.
 	guardarRelacionInternaEditada(): void {
 		const grid = this.gridRelacionesInternas?.instance;
 		if (!grid || !this.relacionesInternasEditando) {
@@ -1340,6 +1357,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
+	// Descarta la edicion en curso de relaciones internas.
 	cancelarRelacionInternaEditada(): void {
 		this.cancelarEdicionGrid(this.gridRelacionesInternas?.instance, () => {
 			this.relacionesInternasEditando = false;
@@ -1424,6 +1442,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.accionGridVisible(e);
 	}
 
+	// Confirma la fila del grid de relaciones externas.
 	guardarRelacionExternaEditada(): void {
 		const grid = this.gridRelacionesExternas?.instance;
 		if (!grid || !this.relacionesExternasEditando) {
@@ -1433,6 +1452,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
+	// Descarta la edicion en curso de relaciones externas.
 	cancelarRelacionExternaEditada(): void {
 		this.cancelarEdicionGrid(this.gridRelacionesExternas?.instance, () => {
 			this.relacionesExternasEditando = false;
@@ -1510,6 +1530,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarActividadesPopup(funcion);
 	}
 
+	// Cierra el popup de actividades y limpia la funcion seleccionada.
 	cerrarActividadesPopup(): void {
 		this.actividadesPopupVisible = false;
 		this.funcionActividadesSeleccionada = null;
@@ -1541,6 +1562,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.accionGridVisible(e);
 	}
 
+	// Confirma la fila del grid de actividades del popup.
 	guardarActividadEditada(): void {
 		const grid = this.gridActividades?.instance;
 		if (!grid || !this.actividadesEditando) {
@@ -1550,6 +1572,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
+	// Descarta la edicion en curso de actividades.
 	cancelarActividadEditada(): void {
 		this.cancelarEdicionGrid(this.gridActividades?.instance, () => {
 			this.actividadesEditando = false;
@@ -1631,6 +1654,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.accionGridVisible(e);
 	}
 
+	// Confirma la fila del grid de KPIs (formato corto).
 	guardarKpiEditado(): void {
 		const grid = this.gridKpis?.instance;
 		if (!grid || !this.kpisEditando) {
@@ -1640,6 +1664,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
+	// Descarta la edicion en curso de KPIs.
 	cancelarKpiEditado(): void {
 		this.cancelarEdicionGrid(this.gridKpis?.instance, () => {
 			this.kpisEditando = false;
@@ -1749,6 +1774,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.accionGridVisible(e);
 	}
 
+	// Confirma la fila del grid de educacion del perfil.
 	guardarEducacionEditada(): void {
 		const grid = this.gridEducacion?.instance;
 		if (!grid || !this.educacionEditando) {
@@ -1758,6 +1784,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
+	// Descarta la edicion en curso de educacion.
 	cancelarEducacionEditada(): void {
 		this.cancelarEdicionGrid(this.gridEducacion?.instance, () => {
 			this.educacionEditando = false;
@@ -1845,6 +1872,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.accionGridVisible(e);
 	}
 
+	// Confirma la fila del grid de experiencia del perfil.
 	guardarExperienciaEditada(): void {
 		const grid = this.gridExperiencia?.instance;
 		if (!grid || !this.experienciaEditando) {
@@ -1854,6 +1882,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
+	// Descarta la edicion en curso de experiencia.
 	cancelarExperienciaEditada(): void {
 		this.cancelarEdicionGrid(this.gridExperiencia?.instance, () => {
 			this.experienciaEditando = false;
@@ -1942,6 +1971,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.accionGridVisible(e);
 	}
 
+	// Confirma la fila del grid de competencias tecnicas.
 	guardarCompetenciaTecnicaEditada(): void {
 		const grid = this.gridCompetenciasTecnicas?.instance;
 		if (!grid || !this.competenciasTecnicasEditando) {
@@ -1951,6 +1981,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
+	// Descarta la edicion en curso de competencias tecnicas.
 	cancelarCompetenciaTecnicaEditada(): void {
 		this.cancelarEdicionGrid(this.gridCompetenciasTecnicas?.instance, () => {
 			this.competenciasTecnicasEditando = false;
@@ -2051,6 +2082,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return catalog?.CODIGO_COMPETENCIAS_TECNICAS || '';
 	};
 
+	// Filtra el catalogo tecnico para ocultar competencias ya asignadas (conserva la de la fila editada).
 	private actualizarCompetenciasTecnicasLookupDisponibles(
 		corrConservar: number | null = null
 	): void {
@@ -2128,6 +2160,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.accionGridVisible(e);
 	}
 
+	// Confirma la fila del grid de competencias conductuales.
 	guardarCompetenciaConductualEditada(): void {
 		const grid = this.gridCompetenciasConductuales?.instance;
 		if (!grid || !this.competenciasConductualesEditando) {
@@ -2137,6 +2170,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
+	// Descarta la edicion en curso de competencias conductuales.
 	cancelarCompetenciaConductualEditada(): void {
 		this.cancelarEdicionGrid(this.gridCompetenciasConductuales?.instance, () => {
 			this.competenciasConductualesEditando = false;
@@ -2240,6 +2274,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return (catalog?.CODIGO_TIPO_PUESTO ?? '').trim();
 	};
 
+	// Filtra el catalogo conductual para evitar duplicados en el perfil.
 	private actualizarCompetenciasConductualesLookupDisponibles(
 		corrConservar: number | null = null
 	): void {
@@ -2322,6 +2357,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.accionGridVisible(e);
 	}
 
+	// Confirma la fila del grid de requerimientos organizacionales.
 	guardarRequerimientoOrganizacionalEditado(): void {
 		const grid = this.gridRequerimientosOrganizacionales?.instance;
 		if (!grid || !this.requerimientosOrganizacionalesEditando) {
@@ -2331,6 +2367,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
+	// Descarta la edicion en curso de requerimientos.
 	cancelarRequerimientoOrganizacionalEditado(): void {
 		this.cancelarEdicionGrid(this.gridRequerimientosOrganizacionales?.instance, () => {
 			this.requerimientosOrganizacionalesEditando = false;
@@ -2428,6 +2465,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return String(corr);
 	};
 
+	// Quita del lookup los requerimientos ya usados en el descriptor.
 	private actualizarRequerimientosOrganizacionalesLookupDisponibles(
 		corrConservar: number | null = null
 	): void {
@@ -2511,6 +2549,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.accionGridVisible(e);
 	}
 
+	// Confirma la fila del grid de riesgos del puesto.
 	guardarRiesgoPuestoEditado(): void {
 		const grid = this.gridRiesgosPuesto?.instance;
 		if (!grid || !this.riesgosPuestoEditando) {
@@ -2520,6 +2559,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
+	// Descarta la edicion en curso de riesgos.
 	cancelarRiesgoPuestoEditado(): void {
 		this.cancelarEdicionGrid(this.gridRiesgosPuesto?.instance, () => {
 			this.riesgosPuestoEditando = false;
@@ -2619,6 +2659,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return String(corr);
 	};
 
+	// Filtra riesgos del catalogo ya asignados al descriptor.
 	private actualizarRiesgosPuestoLookupDisponibles(corrConservar: number | null = null): void {
 		const usados = new Set(
 			(this.riesgosPuesto || [])
@@ -2644,6 +2685,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.repintarFilaRiesgoPuestoLookup(cellInfo);
 	}
 
+	// Fuerza repaint diferido de la fila tras cambiar el lookup (DevExtreme).
 	private repintarFilaRiesgoPuestoLookup(cellInfo: any): void {
 		this.cdr.detectChanges();
 		setTimeout(() => {
@@ -2719,6 +2761,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.accionGridVisible(e);
 	}
 
+	// Confirma la fila del grid de responsabilidades (incluye impacto economico).
 	guardarResponsabilidadCargoEditado(): void {
 		const grid = this.gridResponsabilidadesCargo?.instance;
 		if (!grid || !this.responsabilidadesCargoEditando) {
@@ -2728,6 +2771,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
+	// Descarta la edicion en curso de responsabilidades.
 	cancelarResponsabilidadCargoEditado(): void {
 		this.cancelarEdicionGrid(this.gridResponsabilidadesCargo?.instance, () => {
 			this.responsabilidadesCargoEditando = false;
@@ -2916,6 +2960,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Filtra responsabilidades segun formato y seleccion actual.
 	private actualizarResponsabilidadesCargoLookupDisponibles(corrConservar: number | null = null): void {
 		const usados = new Set(
 			(this.responsabilidadesCargo || [])
@@ -2936,6 +2981,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Normaliza APLICA_DESCRIPTOR a C/E/A para comparar con el formato.
 	private normalizarAplicabilidadResponsabilidad(value: string | null | undefined): string {
 		const aplica = (value ?? 'AMBOS').trim().toUpperCase();
 		return aplica === 'CORTO' || aplica === 'EXTENSO' || aplica === 'AMBOS' ? aplica : 'AMBOS';
@@ -2953,6 +2999,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.repintarFilaResponsabilidadCargoLookup(cellInfo);
 	}
 
+	// Repinta la fila tras lookup de responsabilidad para mostrar textos derivados.
 	private repintarFilaResponsabilidadCargoLookup(cellInfo: any): void {
 		this.cdr.detectChanges();
 		setTimeout(() => {
@@ -3053,6 +3100,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.perfilEditando = true;
 	}
 
+	// Valida y persiste el perfil padre; actualiza CORR_PERFIL_PUESTO compartido por detalles.
 	guardarPerfil(): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (this.readOnly || !this.perfilEditando || !corrDescriptor || corrDescriptor <= 0) {
@@ -3101,6 +3149,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Restaura el perfil desde la copia previa sin tocar detalles hijos.
 	cancelarEdicionPerfil(): void {
 		if (!this.perfilEditando) {
 			return;
@@ -3136,6 +3185,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.model.SEMANAS_INDUCCION = induccion?.SEMANAS_INDUCCION ?? null;
 	}
 
+	// Persiste induccion/semanas/responsable via updateEntrenamiento del servicio.
 	guardarEntrenamiento(): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		const corrInduccion = Number(this.model?.CORR_INDUCCION);
@@ -3190,6 +3240,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Restaura entrenamiento desde la copia previa sin recargar secciones.
 	cancelarEdicionEntrenamiento(): void {
 		if (!this.entrenamientoEditando) {
 			return;
@@ -3199,6 +3250,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.entrenamientoEditando = false;
 	}
 
+	// Lee del modelo los campos de entrenamiento para edicion o cancelacion.
 	private obtenerEntrenamientoActual(): {
 		CORR_INDUCCION: number | null;
 		NOMBRE_INDUCCION: string;
@@ -3244,6 +3296,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cdr.detectChanges();
 	}
 
+	// Convierte edad del perfil a number|null descartando valores invalidos.
 	private normalizarEdadPerfil(value: unknown): number | null {
 		if (value == null || value === '') {
 			return null;
@@ -3255,6 +3308,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return Math.min(120, Math.max(0, parsed));
 	}
 
+	// Limpia perfil y sus detalles al cambiar de descriptor o cancelar el formulario.
 	private limpiarPerfil(): void {
 		this.perfil = { ...PERFIL_PUESTO_DEFAULT };
 		this.perfilOriginal = { ...this.perfil };
@@ -3421,6 +3475,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Consulta experiencia del perfil; ignora respuestas de otra secuencia/seleccion.
 	private cargarExperiencia(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
@@ -3455,6 +3510,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Carga competencias tecnicas del perfil y refresca el lookup disponible.
 	private cargarCompetenciasTecnicas(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
@@ -3498,6 +3554,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Carga competencias conductuales del perfil y refresca el lookup disponible.
 	private cargarCompetenciasConductuales(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
@@ -3583,6 +3640,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Carga riesgos del descriptor (formato extenso) y actualiza lookup disponible.
 	private cargarRiesgosPuesto(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtenso) {
@@ -3619,6 +3677,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Carga responsabilidades y construye la fila virtual de impacto economico.
 	private cargarResponsabilidadesCargo(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0) {
@@ -3714,6 +3773,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Carga funciones clave del descriptor y prepara contadores de actividades.
 	private cargarFuncionesClave(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0) {
@@ -3755,6 +3815,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Carga actividades de la funcion clave abierta en el popup.
 	private cargarActividadesPopup(funcion: ScDescriptorFuncion): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || !funcion?.CORR_FUNCION) {
@@ -3783,10 +3844,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Actualiza el contador visible de actividades en la fila de funcion clave.
 	private actualizarContadorActividades(funcion: ScDescriptorFuncion): void {
 		funcion.CANT_ACTIVIDADES = this.actividadesPopup.length;
 	}
 
+	// Carga funciones secundarias (solo formato corto).
 	private cargarFuncionesSecundarias(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoCorto) {
@@ -3828,6 +3891,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Carga relaciones laborales internas (formato extenso).
 	private cargarRelacionesInternas(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtenso) {
@@ -3868,6 +3932,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Carga relaciones laborales externas (formato extenso).
 	private cargarRelacionesExternas(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtenso) {
@@ -3983,6 +4048,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Revierte FORMATO en modelo y form cuando hay ediciones pendientes.
 	private restaurarFormatoAnterior(formatoAnterior: string): void {
 		const formato = formatoAnterior === FORMATO_EXTENSO ? FORMATO_EXTENSO : FORMATO_CORTO;
 		this.sincronizandoHeader = true;
@@ -3994,6 +4060,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Al cambiar formato, cancela grids de secciones que dejan de ser visibles.
 	private cancelarEdicionesNoAplicablesFormato(formatoNuevo: string): void {
 		if (formatoNuevo === FORMATO_CORTO) {
 			if (this.riesgosPuestoEditando) {
@@ -4049,6 +4116,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ title: 'Resumen', visibleEn: 'ambos' },
 	];
 
+	// Indica si el indice de sub-tab aplica al formato corto/extenso.
 	private esTabSeccionVisibleParaFormato(index: number, formato: string): boolean {
 		const tab = this.seccionesTabsMeta[index];
 		if (!tab) {
@@ -4066,6 +4134,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return esExtensa;
 	}
 
+	// Fija el sub-tab visible y sincroniza el TabPanel de DevExtreme.
 	private seleccionarTabSeccion(index: number): void {
 		this.subTabIndex = index;
 		this.ultimoTabSeccionValido = index;
@@ -4075,6 +4144,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Deja selectedIndex en -1 para mostrar la card de seleccionar tab.
 	private dejarSinTabSeccionSeleccionado(): void {
 		this.subTabIndex = -1;
 		setTimeout(() => {
@@ -4083,6 +4153,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Actualiza subTabIndex y oculta el aviso al elegir un tab valido.
 	onSeccionTabSelectionChanged(e: any): void {
 		const index = typeof e?.component?.option === 'function'
 			? e.component.option('selectedIndex')
@@ -4094,6 +4165,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Cambia unidad y limpia puesto/reporta para forzar nueva seleccion coherente.
 	onUnidadChanged(value: number | null): void {
 		this.model.CORR_UNIDAD = value;
 		this.model.CORR_PUESTO = null;
@@ -4105,6 +4177,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actualizarPuestosPorUnidad(value);
 	}
 
+	// Asigna puesto, deriva reporta/responsable y valida descriptor abierto.
 	onPuestoChanged(value: number | null): void {
 		const corrPuesto = value != null ? Number(value) : null;
 		this.model.CORR_PUESTO = corrPuesto;
@@ -4140,6 +4213,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Actualiza el puesto al que reporta y limpia marca de invalidez.
 	onPuestoReportaChanged(value: number | null): void {
 		this.model.CORR_PUESTO_REPORTA = value;
 		if (value != null && value > 0) {
@@ -4147,6 +4221,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Reacciona a cambios del form de encabezado (p.ej. FORMATO) sin loops de sync.
 	onHeaderFieldChanged(e: any): void {
 		if (this.sincronizandoHeader) {
 			return;
@@ -4157,6 +4232,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Placeholder del boton crear puesto hasta integrar PLA_PUESTO.
 	crearPuestoProximamente(): void {
 		this.notifyFx('El mantenimiento de puestos (PLA_PUESTO) estara disponible proximamente.', NotifyType.Warning);
 	}
@@ -4208,6 +4284,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.guardarMttoDescriptor();
 	}
 
+	// Lista nombres de secciones con edicion activa para bloquear guardar/cambio de formato.
 	private obtenerDetallesEnEdicion(): string[] {
 		const detalles: Array<{ editando: boolean; nombre: string; tabIndex: number }> = [
 			{ editando: this.funcionesClaveEditando, nombre: 'Funciones clave', tabIndex: 1 },
@@ -4233,6 +4310,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return [...tabActual, ...otrosTabs].map((detalle) => detalle.nombre);
 	}
 
+	// Arma el warning que lista detalles en edicion antes de una accion.
 	private crearMensajeEdicionesPendientes(detallesEnEdicion: string[], accion: string): string {
 		const detalleActual = detallesEnEdicion[0];
 		const detallesAdicionales = detallesEnEdicion.slice(1);
@@ -4305,12 +4383,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		super.cancelar((item: any) => item.CORR_DESCRIPTOR_PUESTO === this.modelUpdate.CORR_DESCRIPTOR_PUESTO);
 	}
 
+	// Quita marcas visuales de campos invalidos del encabezado.
 	private limpiarEstadoValidacionHeader(): void {
 		this.unidadInvalido = false;
 		this.puestoInvalido = false;
 		this.puestoReportaInvalido = false;
 	}
 
+	// Marca unidad/puesto/reporta invalidos segun reglas de validacion.
 	private actualizarEstadoValidacionHeader(): void {
 		const unidad = Number(this.model?.CORR_UNIDAD);
 		const puesto = Number(this.model?.CORR_PUESTO);
@@ -4375,6 +4455,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return MOCK_PUESTOS.find((item) => Number(item.CORR_PUESTO) === corr)?.NOMBRE_PUESTO ?? '';
 	}
 
+	// Muestra advertencia de negocio del descriptor (NotifyType.Warning).
 	private notifyDescriptorWarning(message: string): void {
 		this.notifyFx(message, NotifyType.Warning, { raw: true });
 	}
@@ -4400,6 +4481,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}`.trim();
 	}
 
+	// Unifica mensajes de API/errores para notificaciones al usuario.
 	private normalizarMensajeOperacion(message: string): string {
 		return `${message ?? ''}`
 			.normalize('NFD')
@@ -4407,6 +4489,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			.toLowerCase();
 	}
 
+	// Detecta si la respuesta de API es advertencia (no error fatal) por codigo/mensaje.
 	private esAdvertenciaOperacion(value: any, operacion: 'guardar' | 'eliminar'): boolean {
 		const errorCode = Number(value?.ErrorCode ?? value?.error?.ErrorCode);
 		const message = this.normalizarMensajeOperacion(this.obtenerMensajeOperacion(value));
@@ -4454,6 +4537,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
+	// Notifica Result/ErrorMessage de API diferenciando advertencia vs error.
 	private notificarRespuestaOperacion(response: any, operacion: 'guardar' | 'eliminar'): void {
 		if (this.esAdvertenciaOperacion(response, operacion)) {
 			this.notifyDescriptorWarning(
@@ -4468,6 +4552,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.notifyApiResponse(response);
 	}
 
+	// Notifica errores HTTP/excepciones de operaciones del descriptor.
 	private notificarErrorOperacion(error: any, operacion: 'guardar' | 'eliminar'): void {
 		if (this.esAdvertenciaOperacion(error, operacion)) {
 			this.notifyDescriptorWarning(
@@ -4537,6 +4622,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return false;
 	}
 
+	// Devuelve CORR_DESCRIPTOR_PUESTO del modelo activo o 0 si aun no existe.
 	private obtenerCorrDescriptor(): number {
 		return Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0;
 	}
@@ -4651,6 +4737,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Cancela edicion DevExtreme del grid y ejecuta el reset de flags locales.
 	private cancelarEdicionGrid(grid: any, clearFlag: () => void): void {
 		if (!grid) {
 			clearFlag();
@@ -4669,6 +4756,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		clearFlag();
 	}
 
+	// Genera llave temporal de fila (_clientKey) para filas nuevas aun sin correlativo de BD.
 	private crearClientKey(prefix: string): string {
 		return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
 	}
@@ -4856,6 +4944,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Inserta o actualiza experiencia desde eventos del grid via el servicio.
 	private persistirExperienciaDesdeGrid(data: ScPerfilPuestoExperiencia, esNuevo: boolean): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
@@ -4924,6 +5013,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Persiste competencia tecnica y refresca lookup para evitar duplicados.
 	private persistirCompetenciaTecnicaDesdeGrid(
 		data: ScPerfilPuestoCompetenciasTecnicas,
 		esNuevo: boolean
@@ -5002,6 +5092,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Persiste competencia conductual y refresca lookup disponible.
 	private persistirCompetenciaConductualDesdeGrid(
 		data: ScPerfilPuestoCompetenciasConductuales,
 		esNuevo: boolean
@@ -5156,6 +5247,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Persiste riesgo del puesto; evita dobles posts con flag de persistiendo.
 	private persistirRiesgoPuestoDesdeGrid(
 		data: ScDescriptorPuestoRiesgoPuesto,
 		esNuevo: boolean
@@ -5243,6 +5335,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Persiste responsabilidad de catalogo (no la fila virtual de impacto).
 	private persistirResponsabilidadCargoDesdeGrid(
 		data: ScDescriptorPuestoResponsabilidadCargo,
 		esNuevo: boolean
@@ -5340,6 +5433,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Persiste CORR_IMPACTO_ECONOMICO en el descriptor desde la fila virtual.
 	private persistirImpactoEconomicoDesdeGrid(
 		data: ScDescriptorPuestoResponsabilidadCargo
 	): Promise<boolean> {
@@ -5470,6 +5564,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Persiste relacion interna/externa segun TIPO_RELACION de la fila.
 	private persistirRelacionDesdeGrid(
 		data: ScDescriptorRelacionLaboral,
 		tipoRelacion: string,
@@ -5541,6 +5636,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Persiste KPI del formato corto desde el grid.
 	private persistirKpiDesdeGrid(data: ScDescriptorKpiFuncion, esNuevo: boolean): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const payload: ScDescriptorKpiFuncion = {
@@ -5616,6 +5712,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.mCORR_PUESTO_REPORTA = MOCK_PUESTOS.filter((item) => reportaIds.has(Number(item.CORR_PUESTO)));
 	}
 
+	// Copia reporta/responsable del puesto seleccionado al modelo del encabezado.
 	private aplicarDatosPuestoSeleccionado(corrPuesto: number | null, limpiarSiNoExiste: boolean): void {
 		const corr = corrPuesto != null ? Number(corrPuesto) : null;
 		const puesto = MOCK_PUESTOS.find((item) => Number(item.CORR_PUESTO) === corr);

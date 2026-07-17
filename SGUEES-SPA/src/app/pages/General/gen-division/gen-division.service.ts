@@ -1,3 +1,4 @@
+// Capa de negocio: validación, columnas/formulario y orquestación hacia el repositorio de divisiones.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';

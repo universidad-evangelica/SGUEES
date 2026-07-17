@@ -1,3 +1,4 @@
+// Routing y declaraciones DevExtreme/layout de la vista Disponibilidad de Horario.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
@@ -31,4 +32,5 @@ const routes: Routes = [{ path: '', component: ScDisponibilidadHorarioComponent 
 	exports: [RouterModule],
 	declarations: [ScDisponibilidadHorarioComponent],
 })
+// Declara el componente y registra la ruta hija del catálogo.
 export class ScDisponibilidadHorarioRoutingModule {}

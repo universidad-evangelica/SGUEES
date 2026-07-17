@@ -6,10 +6,12 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
+	// Capa de servicio de distritos: valida/normaliza y delega la persistencia al repositorio.
 	public class GEN_DISTRITOService : IGEN_DISTRITOService
 	{
 		private readonly IGEN_DISTRITORepository _repo;
 
+		// Inyecta el repositorio de distritos para operaciones de datos.
 		public GEN_DISTRITOService(IGEN_DISTRITORepository repo)
 		{
 			_repo = repo;

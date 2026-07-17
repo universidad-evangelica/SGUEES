@@ -4,6 +4,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+	// Contrato del servicio de departamentos (consultas, alta, baja y actualización).
 	public interface IGEN_DEPTOService
 	{
 		// Define la consulta del listado de departamentos según los filtros recibidos.

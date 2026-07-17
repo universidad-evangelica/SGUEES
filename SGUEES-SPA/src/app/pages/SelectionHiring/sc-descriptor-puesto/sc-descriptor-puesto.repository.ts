@@ -17,10 +17,12 @@ export class ScDescriptorPuestoRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// Obtiene un registro por llave.
 	get(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// Alta del registro.
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
@@ -50,6 +52,7 @@ export class ScDescriptorPuestoRepository {
 		);
 	}
 
+	// Baja por llave (IParam).
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

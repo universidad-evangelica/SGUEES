@@ -11,6 +11,7 @@ using SGUEES.Services;
 
 namespace SGUEES.Controllers
 {
+	// API HTTP del catálogo de departamentos: autentica, aplica empresa de sesión y delega al servicio.
 	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
@@ -18,6 +19,7 @@ namespace SGUEES.Controllers
 	{
 		private readonly IGEN_DEPTOService _service;
 
+		// Inyecta el servicio de departamentos; falla si no está registrado.
 		public GEN_DEPTOController(IGEN_DEPTOService service)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(service));

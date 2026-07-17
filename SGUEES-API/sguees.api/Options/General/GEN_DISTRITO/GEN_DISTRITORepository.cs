@@ -9,11 +9,13 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+	// Acceso a datos de GEN_DISTRITO / V_GEN_DISTRITO: CRUD y comprobación de duplicados.
 	public class GEN_DISTRITORepository : BaseRepository<GEN_DISTRITOTable>, IGEN_DISTRITORepository
 	{
 		private const string _TableName = "GEN_DISTRITO";
 		private const string _ViewName = "V_GEN_DISTRITO";
 
+		// Configura la conexión y el proveedor de BD desde appsettings.
 		public GEN_DISTRITORepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
 				config.GetSection("DbProvider:defaultProvider").Value)

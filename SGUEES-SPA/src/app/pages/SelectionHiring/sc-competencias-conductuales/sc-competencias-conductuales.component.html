@@ -1,4 +1,6 @@
+<!-- Contenedor principal del mantenimiento de Competencias Conductuales. -->
 <div class="sguees-mtto-view">
+<!-- Toolbar: nuevo, guardar y cancelar. -->
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[subTituloVentana]="subTituloVentana"
@@ -11,6 +13,7 @@
 >
 </app-barra-data-mtto>
 
+<!-- Formulario de alta/edición (oculto en browse). -->
 <div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 	<dx-form
 		#fData
@@ -22,6 +25,7 @@
 		[showRequiredMark]="false"
 		[items]="items"
 	>
+		<!-- Template del lookup de tipo de puesto. -->
 		<div *dxTemplate="let cellInfo of 'CORR_TIPO_PUESTOLookup'">
 			<div class="tipo-puesto-lookup-field" [class.tipo-puesto-lookup-field--invalid]="tipoPuestoInvalido">
 				<app-data-lookup
@@ -39,6 +43,7 @@
 	</dx-form>
 </div>
 
+<!-- Grilla del catálogo con acciones de mantenimiento. -->
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
 	[models]="models"
@@ -75,6 +80,7 @@
 
 </div>
 
+<!-- Panel de carga durante operaciones asíncronas. -->
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"

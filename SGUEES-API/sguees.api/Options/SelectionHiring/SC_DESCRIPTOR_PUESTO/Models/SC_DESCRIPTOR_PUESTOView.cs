@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // proyeccion de lectura (vista) de SC_DESCRIPTOR_PUESTO.
     public class SC_DESCRIPTOR_PUESTOView
     {
         public int CORR_EMPRESA { get; set; }

@@ -1,7 +1,10 @@
+// Estilos locales del mantenimiento de gerencias.
+// Separación del card del formulario respecto al grid.
 .gerencia-form-card {
 	margin-top: 38px;
 }
 
+// Borde de error cuando la división no está seleccionada al validar.
 :host ::ng-deep .division-lookup-field--invalid .dx-dropdownbox.dx-texteditor {
 	border-color: var(--error-color, #d9534f);
 }
@@ -21,9 +24,9 @@
 	}
 }
 
+// En móvil: toolbar del grid en varias filas para que no se recorte.
 @media (max-width: 575.98px) {
-	:host ::ng-deep {
-		.dx-datagrid-header-panel {
+	:host ::ng-deep {		.dx-datagrid-header-panel {
 			padding: 12px !important;
 		}
 

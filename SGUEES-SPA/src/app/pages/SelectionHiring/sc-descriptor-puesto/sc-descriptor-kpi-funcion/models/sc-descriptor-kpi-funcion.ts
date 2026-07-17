@@ -1,3 +1,4 @@
+// KPI / indicador del formato corto.
 export interface ScDescriptorKpiFuncion {
 	CORR_EMPRESA?: number;
 	CORR_DESCRIPTOR_PUESTO?: number;
@@ -9,6 +10,7 @@ export interface ScDescriptorKpiFuncion {
 	_clientKey?: string | number;
 }
 
+// Lookup de frecuencia del KPI.
 export interface ScFrecuenciaLookup {
 	CORR_FRECUENCIA: number;
 	NOMBRE_FRECUENCIA: string;

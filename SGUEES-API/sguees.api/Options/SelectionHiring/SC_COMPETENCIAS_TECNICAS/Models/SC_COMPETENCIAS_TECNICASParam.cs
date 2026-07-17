@@ -1,7 +1,9 @@
+// Parámetros de consulta/filtro de competencia técnica.
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Filtros y opciones de paginación/orden para consultas de competencia técnica.
     public class SC_COMPETENCIAS_TECNICASParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

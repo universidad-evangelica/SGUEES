@@ -13,8 +13,10 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { PlaTipoPuestoComponent } from './pla-tipo-puesto.component';
 
+// Ruta hija que renderiza el componente de tipo de puesto.
 const routes: Routes = [{ path: '', component: PlaTipoPuestoComponent }];
 
+// Declara el componente e importa UI DevExtreme/barra/grilla del mantenimiento.
 @NgModule({
 	imports: [
 		RouterModule.forChild(routes),

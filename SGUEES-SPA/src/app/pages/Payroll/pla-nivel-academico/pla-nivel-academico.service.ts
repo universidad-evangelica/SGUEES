@@ -10,6 +10,7 @@ import { PlaNivelAcademicoRepository } from './pla-nivel-academico.repository';
 
 const ESTADO_FIELD = 'ESTADO_NIVEL_ACADEMICO';
 
+// Orquesta validación, columnas/formulario y llamadas al repositorio.
 @Injectable({ providedIn: 'root' })
 export class PlaNivelAcademicoService {
 	constructor(private repo: PlaNivelAcademicoRepository) {}
@@ -34,22 +35,27 @@ export class PlaNivelAcademicoService {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
+	// Obtiene un nivel por correlativo.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: param.CORR_NIVEL_ACADEMICO }]);
 	}
 
+	// Delega la inserción al repositorio.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Delega la actualización identificando el correlativo.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }]);
 	}
 
+	// Delega la eliminación por correlativo.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }]);
 	}
 
+	// Delega el cambio de estado activo/inactivo.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }]);
 	}
@@ -70,6 +76,7 @@ export class PlaNivelAcademicoService {
 		];
 	}
 
+	// Resumen de cantidad de registros en la grilla.
 	getSummary(): any {
 		return {
 			totalItems: [

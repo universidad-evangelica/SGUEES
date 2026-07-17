@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // proyeccion de lectura (vista) de SC_PERFIL_PUESTO_EXPERIENCIA.
     public class SC_PERFIL_PUESTO_EXPERIENCIAView
     {
         public int CORR_EMPRESA { get; set; }

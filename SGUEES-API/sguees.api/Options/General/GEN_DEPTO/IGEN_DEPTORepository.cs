@@ -6,6 +6,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+	// Contrato del repositorio de departamentos; extiende IRepository con chequeo de duplicados.
 	public interface IGEN_DEPTORepository : IRepository<GEN_DEPTOTable>
 	{
 		// Define la comprobación de duplicados del departamento dentro de su ámbito funcional.

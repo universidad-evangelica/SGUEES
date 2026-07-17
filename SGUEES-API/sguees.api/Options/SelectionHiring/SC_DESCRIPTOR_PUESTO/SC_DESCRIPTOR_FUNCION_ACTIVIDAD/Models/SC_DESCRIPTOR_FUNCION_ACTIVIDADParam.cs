@@ -2,6 +2,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // filtros de consulta de SC_DESCRIPTOR_FUNCION_ACTIVIDAD.
     public class SC_DESCRIPTOR_FUNCION_ACTIVIDADParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

@@ -6,10 +6,12 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
+	// Capa de servicio de países: valida/normaliza y delega la persistencia al repositorio.
 	public class GEN_PAISService : IGEN_PAISService
 	{
 		private readonly IGEN_PAISRepository _repo;
 
+		// Inyecta el repositorio de países para operaciones de datos.
 		public GEN_PAISService(IGEN_PAISRepository repo)
 		{
 			_repo = repo;

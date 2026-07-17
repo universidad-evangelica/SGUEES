@@ -11,6 +11,7 @@ using SGUEES.Services;
 
 namespace SGUEES.Controllers
 {
+    // Endpoints REST del catálogo Payroll de nivel académico.
     [Authorize]
     [ApiController]
     [Route("[controller]")]
@@ -34,6 +35,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("Get")]
         [Authorize(Policy = "/pla-nivel-academico|R")]
+        // Obtiene un nivel filtrando por empresa de sesión.
         public async Task<CResult> Get([FromQuery] PLA_NIVEL_ACADEMICOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -86,12 +88,14 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Lee CORR_EMPRESA del claim del usuario autenticado.
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
+        // Obtiene el login del usuario desde los claims.
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;

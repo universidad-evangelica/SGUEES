@@ -4,6 +4,7 @@ using sguees.Models;
 
 namespace sguees.Services
 {
+	// Contrato del servicio de gerencias (consultas, alta, baja y actualización).
 	public interface IGEN_GERENCIAService
 	{
 		// Define la consulta del listado de gerencias según los filtros recibidos.

@@ -11,6 +11,7 @@ using SGUEES.Services;
 
 namespace SGUEES.Controllers
 {
+	// API HTTP del catálogo de países: autentica, aplica contexto de sesión y delega al servicio.
 	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
@@ -18,6 +19,7 @@ namespace SGUEES.Controllers
 	{
 		private readonly IGEN_PAISService _service;
 
+		// Inyecta el servicio de países; falla si no está registrado.
 		public GEN_PAISController(IGEN_PAISService service)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(service));

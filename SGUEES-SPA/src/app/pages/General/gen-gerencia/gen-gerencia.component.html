@@ -1,4 +1,6 @@
+<!-- Mantenimiento de gerencias: barra, formulario con lookup de división y grid -->
 <div class="sguees-mtto-view">
+	<!-- Acciones Nuevo / Guardar / Cancelar según estado del mtto -->
 	<app-barra-data-mtto
 		[tituloVentana]="tituloVentana"
 		[subTituloVentana]="subTituloVentana"
@@ -11,6 +13,7 @@
 	>
 	</app-barra-data-mtto>
 
+	<!-- Formulario de alta/edición; el lookup de división usa plantilla custom -->
 	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 		<dx-form
 			#fData
@@ -22,6 +25,7 @@
 			[showRequiredMark]="false"
 			[items]="items"
 		>
+			<!-- Selector de división; marca visual si falta selección al guardar -->
 			<div *dxTemplate="let cellInfo of 'CORR_DIVISIONLookup'">
 				<div class="division-lookup-field" [class.division-lookup-field--invalid]="divisionInvalida">
 					<app-data-lookup
@@ -39,6 +43,7 @@
 		</dx-form>
 	</div>
 
+	<!-- Listado de gerencias con paginación local -->
 	<app-data-grid-mtto
 		[isBrowse]="isBrowse()"
 		[models]="models"
@@ -69,6 +74,7 @@
 	</app-data-grid-mtto>
 </div>
 
+<!-- Overlay de carga durante operaciones al API -->
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"

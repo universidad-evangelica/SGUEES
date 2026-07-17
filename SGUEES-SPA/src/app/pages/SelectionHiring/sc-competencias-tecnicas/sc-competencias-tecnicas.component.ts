@@ -1,3 +1,4 @@
+// Vista de mantenimiento de Competencias Técnicas (CRUD del catálogo SC).
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
@@ -22,6 +23,7 @@ const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_TECNICAS';
 	templateUrl: './sc-competencias-tecnicas.component.html',
 	styleUrls: ['./sc-competencias-tecnicas.component.scss'],
 })
+// Orquesta grilla, formulario y llamadas al servicio de competencia técnica.
 export class ScCompetenciasTecnicasComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
@@ -68,16 +70,19 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.refreshFormItems();
 	}
 
+	// Expone el grid de mantenimiento al flujo base de CBaseComponent.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
+	// Inicializa subtítulo y carga el catálogo al abrir la vista.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.getNIVEL();
 		this.consultar();
 	}
 
+	// Carga el catálogo de niveles (NIV1/NIV2/NIV3) para el lookup del formulario.
 	getNIVEL(): void {
 		this.appInfoService
 			.getLookUp(
@@ -105,6 +110,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 			});
 	}
 
+	// Restaura el subtítulo de mantenimiento al volver a modo consulta.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -112,6 +118,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		}
 	}
 
+	// Inicializa un registro nuevo solo si existe empresa en sesión.
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -127,6 +134,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
+	// Prepara el registro seleccionado y habilita sus campos editables.
 	onEditClick(e: any): void {
 		if (!e?.row?.data) {
 			return;
@@ -323,6 +331,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		);
 	}
 
+	// Extrae el mensaje útil de las distintas formas de error del API.
 	private obtenerMensajeApiLocal(error: any): string {
 		if (typeof error === 'string') {
 			return error;
@@ -346,11 +355,13 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		return 'El código generado está registrado para otra competencia técnica.';
 	}
 
+	// Descarta la edición y restaura el registro original en la grilla.
 	override cancelar(): void {
 		this.padreInvalido = false;
 		super.cancelar((item: any) => item.CORR_COMPETENCIAS_TECNICAS === this.modelUpdate.CORR_COMPETENCIAS_TECNICAS);
 	}
 
+	// Sincroniza el modelo con la fila enfocada en modo consulta.
 	override focusedRowChanged(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (!rowData || !this.isBrowse()) {
@@ -477,10 +488,12 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
+	// Cambia el estado del registro; delega en invocarActivarInactivar del base.
 	activar_inactivar(): void {
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
+	// Deja el formulario en solo lectura (modo consulta).
 	override bloquear(): void {
 		this.dataForm?.instance?.getEditor('CORR_COMPETENCIAS_TECNICAS')?.option('readOnly', true);
 		this.dataForm?.instance?.getEditor('NIVEL')?.option('readOnly', true);
@@ -493,6 +506,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.dataForm?.instance?.getEditor('ESTADO_COMPETENCIAS_TECNICAS')?.option('readOnly', true);
 	}
 
+	// Habilita campos editables; el estado queda bloqueado al editar.
 	override habilitar(): void {
 		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
 		setTimeout(() => {
@@ -508,6 +522,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
+	// Coloca el foco en el primer campo editable del formulario.
 	override setFocus(): void {
 		setTimeout(() => {
 			if (this.model.NIVEL === SC_COMPETENCIA_NIVEL.UNO) {
@@ -519,10 +534,12 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
+	// Devuelve la clave del nivel seleccionado en el lookup.
 	selectedLookUpNIVEL(vRow: any): string {
 		return vRow[0].Key;
 	}
 
+	// Devuelve la clave del padre seleccionado en el lookup.
 	selectedLookUpCORR_COMPETENCIAS_TECNICAS_PADRE(vRow: any): number {
 		return vRow[0].CORR_COMPETENCIAS_TECNICAS;
 	}
@@ -637,6 +654,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		onDone();
 	}
 
+	// Inserta en el lookup el padre actual cuando no viene en la lista activa.
 	private agregarPadreActual(padre?: ScCompetenciasTecnicas): void {
 		const item = this.mapPadreLookupItem({
 			CORR_COMPETENCIAS_TECNICAS: this.model.CORR_COMPETENCIAS_TECNICAS_PADRE,

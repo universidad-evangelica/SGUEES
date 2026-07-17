@@ -5,6 +5,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+    // Contrato de acceso a datos del perfil de puesto.
     public interface ISC_PERFIL_PUESTORepository : IRepository<SC_PERFIL_PUESTOTable>
     {
     }

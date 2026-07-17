@@ -1,7 +1,9 @@
+// DTO de lectura de frecuencia (proyección de la vista SQL).
 using System;
 
 namespace SGUEES.Models
 {
+    // Campos expuestos por la vista de consulta de frecuencia.
     public class SC_FRECUENCIAView
     {
         public int CORR_EMPRESA { get; set; }

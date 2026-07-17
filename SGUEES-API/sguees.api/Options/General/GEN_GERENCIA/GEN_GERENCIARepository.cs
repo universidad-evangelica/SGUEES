@@ -9,11 +9,13 @@ using sguees.Models;
 
 namespace sguees.Repositories
 {
+	// Acceso a datos de GEN_GERENCIA / V_GEN_GERENCIA: CRUD y comprobación de duplicados.
 	public class GEN_GERENCIARepository : BaseRepository<GEN_GERENCIATable>, IGEN_GERENCIARepository
 	{
 		private const string _TableName = "GEN_GERENCIA";
 		private const string _ViewName = "V_GEN_GERENCIA";
 
+		// Configura la conexión y el proveedor de BD desde appsettings.
 		public GEN_GERENCIARepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
 				config.GetSection("DbProvider:defaultProvider").Value)

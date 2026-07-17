@@ -6,6 +6,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+	// Contrato del repositorio de municipios; extiende IRepository con lookup y chequeo de duplicados.
 	public interface IGEN_MUNICIPIORepository : IRepository<GEN_MUNICIPIOTable>
 	{
 		// Define la consulta del catálogo de municipios usado por mantenimientos relacionados.

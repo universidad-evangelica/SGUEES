@@ -2,6 +2,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // filtros de consulta de SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL.
     public class SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

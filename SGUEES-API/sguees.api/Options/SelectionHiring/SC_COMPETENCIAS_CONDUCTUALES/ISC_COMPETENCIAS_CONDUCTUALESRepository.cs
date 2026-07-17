@@ -1,3 +1,4 @@
+// Contrato del repositorio de competencias conductuales.
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;

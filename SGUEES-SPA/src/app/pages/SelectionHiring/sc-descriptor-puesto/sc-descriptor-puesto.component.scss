@@ -1,3 +1,5 @@
+// Estilos del mtto Descriptor de Puesto: layout de formulario, tabs, grids de detalle y popup.
+// Tarjeta del formulario y tipografia de secciones.
 .descriptor-form-card {
 	margin-bottom: 16px;
 }
@@ -8,6 +10,7 @@
 	font-weight: 600;
 }
 
+// Encabezado de generalidades y lookup de puesto.
 .descriptor-generalidades {
 	margin-top: 15px;
 	margin-bottom: 16px;
@@ -29,6 +32,7 @@
 	opacity: 0.75;
 }
 
+// Sub-tabs de secciones; --sin-seleccion oculta el contenido hasta elegir un tab.
 .descriptor-sub-tab-panel {
 	margin-top: 8px;
 }
@@ -53,6 +57,7 @@
 	opacity: 0.85;
 }
 
+// Aviso cuando el formato actual no incluye el tab que estaba activo.
 .descriptor-seleccione-tab-card {
 	display: flex;
 	align-items: flex-start;
@@ -116,6 +121,7 @@
 	opacity: 0.8;
 }
 
+// Bitacora del descriptor (tab principal).
 .descriptor-bitacora {
 	margin-top: 15px;
 }
@@ -290,6 +296,7 @@
 	border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
+// Cabeceras y tablas de funciones/KPIs.
 .descriptor-funciones-header {
 	display: flex;
 	align-items: center;
@@ -481,6 +488,7 @@
 	padding: 18px 12px;
 }
 
+// Toolbar Agregar/Guardar/Cancelar compartida por grids de detalle.
 .descriptor-deta-toolbar {
 	display: flex;
 	flex-wrap: wrap;
@@ -526,6 +534,7 @@
 	}
 }
 
+// Celdas de lookup y listas editables (riesgos / requerimientos).
 .descriptor-riesgo-lookup-cell {
 	display: block;
 	width: 100%;
@@ -596,6 +605,7 @@
 	opacity: 0.75;
 }
 
+// Perfil, competencias y relaciones: headers y paneles internos.
 .descriptor-perfil-header {
 	margin-bottom: 12px;
 }
@@ -743,6 +753,7 @@
 	min-width: 120px;
 }
 
+// Boton/badge que abre el popup de actividades desde la fila de funcion clave.
 .descriptor-actividades-trigger {
 	display: inline-flex;
 	align-items: center;
@@ -797,6 +808,7 @@
 	flex-wrap: wrap;
 }
 
+// Layout del popup de actividades (incluye fullscreen responsive).
 :host ::ng-deep .descriptor-actividades-popup-wrapper .dx-popup-content {
 	display: flex;
 	flex-direction: column;

@@ -1,3 +1,4 @@
+// Modelo de distrito (GEN_DISTRITO) dentro de la cascada territorial.
 export interface GenDistrito {
 	CORR_PAIS: number;
 	CORR_DEPTO: number;

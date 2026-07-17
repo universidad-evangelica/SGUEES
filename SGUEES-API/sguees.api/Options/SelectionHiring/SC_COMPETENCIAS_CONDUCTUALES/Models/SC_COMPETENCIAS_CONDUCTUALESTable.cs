@@ -1,8 +1,10 @@
+// Entidad de persistencia de competencia conductual (mapeo a la tabla).
 using System;
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Campos de tabla de competencia conductual, incluyendo auditoría.
     public class SC_COMPETENCIAS_CONDUCTUALESTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

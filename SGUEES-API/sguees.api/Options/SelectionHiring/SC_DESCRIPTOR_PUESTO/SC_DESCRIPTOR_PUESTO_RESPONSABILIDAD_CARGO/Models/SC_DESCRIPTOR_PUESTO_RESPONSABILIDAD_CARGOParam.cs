@@ -2,6 +2,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // filtros de consulta de SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO.
     public class SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

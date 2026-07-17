@@ -50,7 +50,9 @@ const ESTADO_DESCRIPTOR_LABELS: Record<string, string> = {
 };
 
 @Injectable({ providedIn: 'root' })
+// Orquesta CRUD del descriptor y de todas sus secciones de detalle.
 export class ScDescriptorPuestoService {
+	// Inyecta repositorios del descriptor y de todos sus detalles.
 	constructor(
 		private repo: ScDescriptorPuestoRepository,
 		private funcionRepo: ScDescriptorFuncionRepository,
@@ -132,6 +134,7 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
+	// Impide crear/usar un puesto con otro descriptor en estado bloqueante.
 	validarDescriptorUnicoPorPuesto(
 		model: ScDescriptorPuesto,
 		models: ScDescriptorPuesto[],
@@ -147,6 +150,7 @@ export class ScDescriptorPuestoService {
 		return false;
 	}
 
+	// Construye texto identificador legible del descriptor para mensajes.
 	buildCodigoDescriptor(corrDescriptor: number | null | undefined): string {
 		const corr = Number(corrDescriptor);
 		if (!corr || corr <= 0) {
@@ -156,6 +160,7 @@ export class ScDescriptorPuestoService {
 		return `DES-${String(corr).padStart(4, '0')}`;
 	}
 
+	// Mensaje de advertencia cuando ya existe descriptor abierto del puesto.
 	buildMensajeDescriptorExistente(conflicto: ScDescriptorPuesto): string {
 		const codigo = this.buildCodigoDescriptor(conflicto.CORR_DESCRIPTOR_PUESTO);
 		const version = Number(conflicto.VERSION) > 0 ? Number(conflicto.VERSION) : 1;
@@ -169,10 +174,12 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
+	// Lista descriptores segun filtros IParam.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
+	// Obtiene un descriptor por llave.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: param.CORR_DESCRIPTOR_PUESTO }]);
 	}
@@ -182,12 +189,14 @@ export class ScDescriptorPuestoService {
 		return this.repo.create(this.toApiPayload(model));
 	}
 
+	// Actualiza el descriptor principal.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(this.toApiPayload(model), [
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO },
 		]);
 	}
 
+	// Catalogo de inducciones para el bloque de entrenamiento.
 	getInduccionesLookup(): Observable<IResult> {
 		return this.repo.getInducciones();
 	}
@@ -208,10 +217,12 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
+	// Elimina el descriptor por llave.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO }]);
 	}
 
+	// Definicion de columnas del grid de consulta (incl. badges).
 	getColumns(): any[] {
 		return [
 			{ dataField: 'CORR_DESCRIPTOR_PUESTO', caption: 'Corr.', width: 85 },
@@ -275,6 +286,7 @@ export class ScDescriptorPuestoService {
 		];
 	}
 
+	// Resumen/agregados del grid de consulta.
 	getSummary(): any {
 		return {
 			totalItems: [
@@ -288,6 +300,7 @@ export class ScDescriptorPuestoService {
 		};
 	}
 
+	// Items del dx-form de generalidades del descriptor.
 	getHeaderItems(): any[] {
 		return [
 			{
@@ -433,6 +446,7 @@ export class ScDescriptorPuestoService {
 		};
 	}
 
+	// Normaliza fechas a date-only para el form/API.
 	private formatearDateOnly(fecha: Date | string | null): string | null {
 		if (!fecha) {
 			return null;
@@ -456,6 +470,7 @@ export class ScDescriptorPuestoService {
 		return `${year}-${month}-${day}`;
 	}
 
+	// Arma IParam estandar (empresa + correlativo) para CRUD.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 		if (param?.CORR_DESCRIPTOR_PUESTO) {
@@ -464,6 +479,7 @@ export class ScDescriptorPuestoService {
 		return xWhere;
 	}
 
+	// HTML de badge para formato/estado en el grid.
 	private renderBadge(
 		cellElement: HTMLElement,
 		classNames: string[],
@@ -491,6 +507,7 @@ export class ScDescriptorPuestoService {
 		cellElement.appendChild(badge);
 	}
 
+	// Etiqueta legible del formato CORTO/EXTENSO.
 	private getFormatoBadgeLabel(formato: string | null | undefined): string {
 		const value = (formato ?? '').toUpperCase();
 		if (value === FORMATO_EXTENSO) {
@@ -502,6 +519,7 @@ export class ScDescriptorPuestoService {
 		return formato ?? '';
 	}
 
+	// Clase CSS del badge de formato.
 	private getFormatoBadgeClass(formato: string | null | undefined): string {
 		const value = (formato ?? '').toUpperCase();
 		if (value === FORMATO_EXTENSO) {
@@ -513,11 +531,13 @@ export class ScDescriptorPuestoService {
 		return 'descriptor-badge--formato-default';
 	}
 
+	// Etiqueta legible del estado del descriptor.
 	private getEstadoDescriptorLabel(estado: string | null | undefined): string {
 		const value = (estado ?? '').toUpperCase();
 		return ESTADO_DESCRIPTOR_LABELS[value] ?? (estado ?? '');
 	}
 
+	// Clase CSS del badge de estado.
 	private getEstadoDescriptorBadgeClass(estado: string | null | undefined): string {
 		const value = (estado ?? '').toUpperCase();
 		switch (value) {
@@ -545,6 +565,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Carga funciones clave del descriptor.
 	getFuncionesClaveLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.funcionRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -552,6 +573,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Carga actividades de una funcion.
 	getActividadesLookup(corrDescriptorPuesto: number, corrFuncion: number): Observable<IResult> {
 		return this.actividadRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -559,6 +581,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Carga relaciones internas.
 	getRelacionesInternasLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.relacionLaboralRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -566,6 +589,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Carga relaciones externas.
 	getRelacionesExternasLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.relacionLaboralRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -623,10 +647,12 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Valida fila de funcion clave antes de persistir.
 	esValidoFuncionesClave(_funciones: ScDescriptorFuncion[], _msg: Function): boolean {
 		return true;
 	}
 
+	// Valida fila de actividad antes de persistir.
 	esValidoActividades(_actividades: ScDescriptorFuncionActividad[], _msg: Function): boolean {
 		return true;
 	}
@@ -655,6 +681,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Alta de funcion (clave/secundaria) via repositorio.
 	crearFuncion(corrDescriptorPuesto: number, tipoFuncion: string): Observable<IResult> {
 		return this.persistirFuncion(
 			corrDescriptorPuesto,
@@ -667,6 +694,7 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
+	// Baja de funcion por llave compuesta.
 	eliminarFuncion(corrDescriptorPuesto: number, corrFuncion: number): Observable<IResult> {
 		const corrDescriptor = Number(corrDescriptorPuesto);
 		const corrFunc = Number(corrFuncion);
@@ -722,6 +750,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Alta de actividad de funcion.
 	crearActividad(corrDescriptorPuesto: number, corrFuncion: number): Observable<IResult> {
 		return this.persistirActividad(corrDescriptorPuesto, corrFuncion, {
 			CORR_FUNCION: corrFuncion,
@@ -730,6 +759,7 @@ export class ScDescriptorPuestoService {
 		});
 	}
 
+	// Baja de actividad por llave.
 	eliminarActividad(
 		corrDescriptorPuesto: number,
 		corrFuncion: number,
@@ -755,6 +785,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Carga KPIs del descriptor (formato corto).
 	getKpisLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.kpiRepo.getAll([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto }]);
 	}
@@ -780,6 +811,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Alta de KPI.
 	crearKpi(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.persistirKpi(corrDescriptorPuesto, {
 			CORR_KPI_FUNCION: 0,
@@ -789,6 +821,7 @@ export class ScDescriptorPuestoService {
 		});
 	}
 
+	// Baja de KPI.
 	eliminarKpi(corrDescriptorPuesto: number, corrKpiFuncion: number): Observable<IResult> {
 		const corrDescriptor = Number(corrDescriptorPuesto);
 		const corrKpi = Number(corrKpiFuncion);
@@ -808,10 +841,12 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Carga el perfil padre del descriptor.
 	getPerfilLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.perfilRepo.getAll([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto }]);
 	}
 
+	// Carga educacion del perfil.
 	getEducacionLookup(corrDescriptorPuesto: number, corrPerfilPuesto: number): Observable<IResult> {
 		return this.educacionRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -848,6 +883,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Baja de educacion del perfil.
 	eliminarEducacion(
 		corrDescriptorPuesto: number,
 		corrPerfilPuesto: number,
@@ -880,6 +916,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Carga experiencia del perfil.
 	getExperienciaLookup(corrDescriptorPuesto: number, corrPerfilPuesto: number): Observable<IResult> {
 		return this.experienciaRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -887,6 +924,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Inserta o actualiza experiencia segun tenga correlativo.
 	persistirExperiencia(
 		corrDescriptorPuesto: number,
 		corrPerfilPuesto: number,
@@ -913,6 +951,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Baja de experiencia del perfil.
 	eliminarExperiencia(
 		corrDescriptorPuesto: number,
 		corrPerfilPuesto: number,
@@ -945,6 +984,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Carga competencias tecnicas del perfil.
 	getCompetenciasTecnicasLookup(corrDescriptorPuesto: number, corrPerfilPuesto: number): Observable<IResult> {
 		return this.competenciasTecnicasRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -983,6 +1023,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Baja de competencia tecnica.
 	eliminarCompetenciaTecnica(corrPerfilPuestoCompetenciasTecnicas: number): Observable<IResult> {
 		const corr = Number(corrPerfilPuestoCompetenciasTecnicas);
 		if (!corr || corr <= 0) {
@@ -1000,6 +1041,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Carga competencias conductuales del perfil.
 	getCompetenciasConductualesLookup(corrDescriptorPuesto: number, corrPerfilPuesto: number): Observable<IResult> {
 		return this.competenciasConductualesRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -1007,6 +1049,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Inserta o actualiza competencia conductual.
 	persistirCompetenciaConductual(
 		corrDescriptorPuesto: number,
 		corrPerfilPuesto: number,
@@ -1038,6 +1081,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Baja de competencia conductual.
 	eliminarCompetenciaConductual(corrPerfilPuestoCompetenciasConductuales: number): Observable<IResult> {
 		const corr = Number(corrPerfilPuestoCompetenciasConductuales);
 		if (!corr || corr <= 0) {
@@ -1055,6 +1099,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Carga requerimientos del descriptor.
 	getRequerimientosOrganizacionalesLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.requerimientosOrganizacionalesRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -1090,6 +1135,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Baja de requerimiento organizacional.
 	eliminarRequerimientoOrganizacional(corrDescriptorRequerimientoOrganizacional: number): Observable<IResult> {
 		const corr = Number(corrDescriptorRequerimientoOrganizacional);
 		if (!corr || corr <= 0) {
@@ -1107,12 +1153,14 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Carga riesgos del descriptor.
 	getRiesgosPuestoLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.riesgosPuestoRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
 		]);
 	}
 
+	// Inserta o actualiza riesgo del puesto.
 	persistirRiesgoPuesto(
 		corrDescriptorPuesto: number,
 		row: ScDescriptorPuestoRiesgoPuesto
@@ -1138,6 +1186,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Baja de riesgo del puesto.
 	eliminarRiesgoPuesto(corrDescriptorRiesgo: number): Observable<IResult> {
 		const corr = Number(corrDescriptorRiesgo);
 		if (!corr || corr <= 0) {
@@ -1155,6 +1204,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Carga responsabilidades del cargo.
 	getResponsabilidadesCargoLookup(corrDescriptorPuesto: number, formato: string): Observable<IResult> {
 		return this.responsabilidadesCargoRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -1162,6 +1212,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Inserta o actualiza responsabilidad del cargo.
 	persistirResponsabilidadCargo(
 		corrDescriptorPuesto: number,
 		row: ScDescriptorPuestoResponsabilidadCargo
@@ -1188,6 +1239,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Baja de responsabilidad del cargo.
 	eliminarResponsabilidadCargo(corrDescriptorResponsabilidad: number): Observable<IResult> {
 		const corr = Number(corrDescriptorResponsabilidad);
 		if (!corr || corr <= 0) {
@@ -1332,6 +1384,7 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
+	// Persiste lote/cambios de funciones clave desde el componente.
 	guardarFuncionesClave(
 		corrDescriptorPuesto: number,
 		funciones: ScDescriptorFuncion[],
@@ -1346,6 +1399,7 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
+	// Persiste lote/cambios de funciones secundarias desde el componente.
 	guardarFuncionesSecundarias(
 		corrDescriptorPuesto: number,
 		funciones: ScDescriptorFuncion[],

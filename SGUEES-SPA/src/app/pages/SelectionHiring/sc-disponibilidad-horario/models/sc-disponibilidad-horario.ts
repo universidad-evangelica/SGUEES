@@ -1,3 +1,4 @@
+// Modelo TypeScript de disponibilidad de horario (campos del formulario y grilla).
 export interface ScDisponibilidadHorario {
 	CORR_EMPRESA: number;
 	CORR_DISPONIBILIDAD_HORARIO: number;

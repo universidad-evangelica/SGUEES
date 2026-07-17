@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // proyeccion de lectura (vista) de SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES.
     public class SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESView
     {
         public int CORR_EMPRESA { get; set; }

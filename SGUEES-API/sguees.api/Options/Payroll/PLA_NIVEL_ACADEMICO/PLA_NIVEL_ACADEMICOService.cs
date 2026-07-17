@@ -6,6 +6,7 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
+    // Valida y orquesta el mantenimiento de nivel académico vía repositorio.
     public class PLA_NIVEL_ACADEMICOService : IPLA_NIVEL_ACADEMICOService
     {
         private readonly IPLA_NIVEL_ACADEMICORepository _repo;
@@ -21,6 +22,7 @@ namespace SGUEES.Services
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un nivel por empresa y correlativo.
         public async Task<CResult> GetAsync(PLA_NIVEL_ACADEMICOParam xWhere)
         {
             var p = new List<CParameter>

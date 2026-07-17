@@ -6,10 +6,12 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
+	// Capa de servicio de departamentos: valida/normaliza y delega la persistencia al repositorio.
 	public class GEN_DEPTOService : IGEN_DEPTOService
 	{
 		private readonly IGEN_DEPTORepository _repo;
 
+		// Inyecta el repositorio de departamentos para operaciones de datos.
 		public GEN_DEPTOService(IGEN_DEPTORepository repo)
 		{
 			_repo = repo;

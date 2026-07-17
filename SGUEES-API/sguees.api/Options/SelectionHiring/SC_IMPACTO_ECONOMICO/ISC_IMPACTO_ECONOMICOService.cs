@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+// Contrato del servicio de impacto económico.
+using System.Threading.Tasks;
 using eFramework.Core;
 using SGUEES.Models;
 

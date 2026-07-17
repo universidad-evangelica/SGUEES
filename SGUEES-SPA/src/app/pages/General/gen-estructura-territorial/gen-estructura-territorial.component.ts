@@ -1,3 +1,4 @@
+// Vista de estructura territorial: país + cascada depto/municipio/distrito.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import Menu from 'devextreme/ui/menu';
@@ -25,6 +26,7 @@ import {
 	isEmpresaWarningResponse,
 } from './gen-estructura-territorial.service';
 
+// Extiende el diálogo custom de DevExtreme para fijar ancho/clase del popup de confirmación.
 type TerritorialConfirmDialogOptions = CustomDialogOptions & {
 	popupOptions?: {
 		width?: number;
@@ -37,6 +39,7 @@ type TerritorialConfirmDialogOptions = CustomDialogOptions & {
 	templateUrl: './gen-estructura-territorial.component.html',
 	styleUrls: ['./gen-estructura-territorial.component.scss'],
 })
+// Listado de países y documento con cascada territorial (CRUD hijos vía popup).
 export class GenEstructuraTerritorialComponent extends CBaseComponent implements OnInit {
 	@ViewChild('paisGrid', { static: false }) dataGrid?: DataGridMttoComponent;
 	@ViewChild('deptoGrid', { static: false }) deptoGrid?: DataGridMttoComponent;
@@ -47,7 +50,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	protected override etiquetaRegistro = 'el país';
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_PAIS';
-	/** A+: paginado / filtro / orden en cliente (API devuelve todos los países). */
+	// Paginado / filtro / orden en cliente (API devuelve todos los países).
 	protected override mttoRemoteOperations = false;
 
 	readonly cascadeGridHeight = 530;
@@ -115,10 +118,12 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.consultar();
 	}
 
+	// Expone el grid de países al flujo base de CBaseComponent.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
+	// Ancho del popup de hijos: casi full-width en pantallas pequeñas.
 	get popupWidth(): number | string {
 		return this.screen(window.innerWidth) === 'sm' ? 'calc(100vw - 24px)' : 520;
 	}
@@ -140,7 +145,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 	}
 
-	/** Edit del grid → documento país (form editable + cascada), Guardar/Cancelar del padre. */
+	// Edit del grid → documento país (form editable + cascada); Guardar/Cancelar del padre.
 	editarPaisDesdeGrid(e: any): void {
 		const rowData = e?.row?.data ?? e?.data;
 		if (rowData) {
@@ -148,6 +153,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 	}
 
+	// Arma el modelo de país editable o valores iniciales para un alta.
 	fillPais(xModel?: GenPais): GenPais {
 		if (xModel) {
 			return { ...xModel };
@@ -172,6 +178,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return this.fillPais(xModel);
 	}
 
+	// Arma el modelo de departamento ligado al país seleccionado.
 	fillDepto(xModel?: GenDepto): GenDepto {
 		return {
 			CORR_PAIS: this.selectedPais?.CORR_PAIS ?? 0,
@@ -187,6 +194,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
+	// Arma el modelo de municipio ligado a país y departamento seleccionados.
 	fillMunicipio(xModel?: GenMunicipio): GenMunicipio {
 		return {
 			CORR_PAIS: this.selectedPais?.CORR_PAIS ?? 0,
@@ -203,6 +211,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
+	// Arma el modelo de distrito ligado a la jerarquía territorial seleccionada.
 	fillDistrito(xModel?: GenDistrito): GenDistrito {
 		return {
 			CORR_PAIS: this.selectedPais?.CORR_PAIS ?? xModel?.CORR_PAIS ?? 0,
@@ -246,10 +255,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}, 0);
 	}
 
-	/**
-	 * Abre el documento país (como partida): form habilitado + cascada.
-	 * Barra = Guardar / Cancelar del padre.
-	 */
+	// Abre el documento país (form habilitado + cascada); barra = Guardar/Cancelar del padre.
 	abrirDocumentoPais(pais: GenPais, desdeAlta = false): void {
 		if (!desdeAlta && !this.permiteEdit) {
 			this.notifyFx('No tiene permiso para editar registros.', NotifyType.Warning);
@@ -269,7 +275,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	/** Sale del documento al listado (Cancelar / tras eliminar). */
+	// Sale del documento al listado de países (Cancelar / tras flujo de cierre).
 	salirAListado(): void {
 		this.vistaDetalle = false;
 		this.selectedPais = undefined;
@@ -577,14 +583,17 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.popupVisible = false;
 	}
 
+	// Deja correlativos de país en solo lectura.
 	override bloquear(): void {
 		this.bloquearCamposCorr(this.dataForm);
 	}
 
+	// En edición del documento país solo bloquea correlativos (resto editable).
 	override habilitar(): void {
 		setTimeout(() => this.bloquearCamposCorr(this.dataForm));
 	}
 
+	// Enfoca el nombre del país para agilizar la captura.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm?.instance?.getEditor('NOMBRE_PAIS')?.focus();
@@ -800,6 +809,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.vincularGridCascade(this.distritoGrid, 'distrito');
 	}
 
+	// Configura scroll/altura del grid hijo y engancha resaltado de fila seleccionada.
 	private vincularGridCascade(
 		grid: DataGridMttoComponent | undefined,
 		tipo: 'depto' | 'municipio' | 'distrito'
@@ -1053,6 +1063,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return NotifyType.Error;
 	}
 
+	// Convierte respuestas/errores de duplicado en advertencia controlada con mensaje claro.
 	private convertirDuplicadoEnWarning<T>(request: Observable<T>, errorMessage: string): Observable<T> {
 		return request.pipe(
 			map((response: any) => {

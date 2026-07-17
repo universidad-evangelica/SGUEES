@@ -1,7 +1,9 @@
+// Parámetros de consulta/filtro de competencia conductual.
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+  // Filtros y opciones de paginación/orden para consultas de competencia conductual.
   public class SC_COMPETENCIAS_CONDUCTUALESParam : BaseParam
   {
     public int CORR_EMPRESA { get; set; }

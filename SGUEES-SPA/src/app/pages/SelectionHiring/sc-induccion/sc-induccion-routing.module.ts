@@ -1,4 +1,5 @@
-﻿import { CommonModule } from '@angular/common';
+// Routing y declaraciones DevExtreme/layout de la vista Inducción.
+import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
@@ -35,5 +36,6 @@ const routes: Routes = [{ path: '', component: ScInduccionComponent }];
 	exports: [RouterModule],
 	declarations: [ScInduccionComponent],
 })
+// Declara el componente y registra la ruta hija del catálogo.
 export class ScInduccionRoutingModule {}
 

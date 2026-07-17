@@ -1,4 +1,5 @@
-﻿using System;
+// Endpoints REST del catálogo impacto económico.
+using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ namespace SGUEES.Controllers
     [Authorize]
     [ApiController]
     [Route("[controller]")]
+    // Expone el CRUD y lookups de impacto económico con autorización por política.
     public class SC_IMPACTO_ECONOMICOController : ControllerBase
     {
         private readonly ISC_IMPACTO_ECONOMICOService _service;
@@ -35,6 +37,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-impacto-economico|R")]
+        // Atiende el listado y lo limita a la empresa de la sesión.
         public async Task<CResult> GetAll([FromQuery] SC_IMPACTO_ECONOMICOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -43,6 +46,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-impacto-economico|R")]
+        // Atiende la consulta de un registro dentro de la empresa de la sesión.
         public async Task<CResult> Get([FromQuery] SC_IMPACTO_ECONOMICOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -74,6 +78,7 @@ namespace SGUEES.Controllers
 
         [HttpDelete]
         [Authorize(Policy = "/sc-impacto-economico|D")]
+        // Restringe la eliminación a la empresa de la sesión.
         public async Task<IActionResult> Delete([FromQuery] SC_IMPACTO_ECONOMICOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -84,6 +89,7 @@ namespace SGUEES.Controllers
 
         [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/sc-impacto-economico|U")]
+        // Cambia el estado activo/inactivo del registro indicado.
         public async Task<IActionResult> ActivarInactivar(SC_IMPACTO_ECONOMICOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(SC_IMPACTO_ECONOMICOTable.CORR_IMPACTO_ECONOMICO));
@@ -93,12 +99,14 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Lee CORR_EMPRESA del claim del usuario autenticado.
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
+        // Obtiene el identificador de usuario desde los claims.
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;

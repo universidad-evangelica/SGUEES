@@ -1,3 +1,4 @@
+// Vista de mantenimiento de Impacto Económico (CRUD del catálogo SC).
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
@@ -14,7 +15,9 @@ const ESTADO_FIELD = 'ESTADO_IMPACTO_ECONOMICO';
 @Component({
 	selector: 'app-sc-impacto-economico',
 	templateUrl: './sc-impacto-economico.component.html',
+	styleUrls: ['./sc-impacto-economico.component.scss'],
 })
+// Orquesta grilla, formulario y llamadas al servicio de impacto económico.
 export class ScImpactoEconomicoComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
@@ -41,15 +44,18 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		this.items = this.service.getItems();
 	}
 
+	// Expone el grid de mantenimiento al flujo base de CBaseComponent.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
+	// Inicializa subtítulo y carga el catálogo al abrir la vista.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.consultar();
 	}
 
+	// Restaura el subtítulo de mantenimiento al volver a modo consulta.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -155,6 +161,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		}, 0);
 	}
 
+	// Abre el registro seleccionado en modo consulta.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -168,6 +175,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Prepara el registro seleccionado y habilita sus campos editables.
 	onEditClick(e: any): void {
 		if (!e?.row?.data) {
 			return;
@@ -255,6 +263,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
+	// Descarta la edición y restaura el registro original en la grilla.
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_IMPACTO_ECONOMICO === this.modelUpdate.CORR_IMPACTO_ECONOMICO);
 	}
@@ -276,12 +285,14 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
+	// Deja el formulario en solo lectura (modo consulta).
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_IMPACTO_ECONOMICO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('DESCRIPCION')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ESTADO_IMPACTO_ECONOMICO')?.option('readOnly', true);
 	}
 
+	// Habilita campos editables; el estado queda bloqueado al editar.
 	override habilitar(): void {
 		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
 		setTimeout(() => {
@@ -291,6 +302,7 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Coloca el foco en el primer campo editable del formulario.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('DESCRIPCION')?.focus();

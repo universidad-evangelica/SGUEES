@@ -9,12 +9,14 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+	// Acceso a datos de GEN_PAIS / V_GEN_PAIS: CRUD y comprobación de duplicados.
 	public class GEN_PAISRepository : BaseRepository<GEN_PAISTable>, IGEN_PAISRepository
 	{
 		private const string _TableName = "GEN_PAIS";
 		private const string _ViewName = "V_GEN_PAIS";
 		private const string _CampoPk = "CORR_PAIS";
 
+		// Configura la conexión y el proveedor de BD desde appsettings.
 		public GEN_PAISRepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
 				config.GetSection("DbProvider:defaultProvider").Value)

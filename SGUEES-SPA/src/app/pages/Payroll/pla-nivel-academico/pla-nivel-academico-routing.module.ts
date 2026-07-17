@@ -13,8 +13,10 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { PlaNivelAcademicoComponent } from './pla-nivel-academico.component';
 
+// Ruta hija que renderiza el componente de nivel académico.
 const routes: Routes = [{ path: '', component: PlaNivelAcademicoComponent }];
 
+// Declara el componente e importa UI DevExtreme/barra/grilla del mantenimiento.
 @NgModule({
 	imports: [
 		RouterModule.forChild(routes),

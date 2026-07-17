@@ -1,7 +1,9 @@
+// Parámetros de consulta/filtro de disponibilidad de horario.
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Filtros y opciones de paginación/orden para consultas de disponibilidad de horario.
     public class SC_DISPONIBILIDAD_HORARIOParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

@@ -1,7 +1,9 @@
+// DTO de lectura de requerimiento organizacional (proyección de la vista SQL).
 using System;
 
 namespace SGUEES.Models
 {
+    // Campos expuestos por la vista de consulta de requerimiento organizacional.
     public class SC_REQUERIMIENTO_ORGANIZACIONALView
     {
         public int CORR_EMPRESA { get; set; }

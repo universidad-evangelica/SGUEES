@@ -6,6 +6,7 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
+    // Valida y orquesta el mantenimiento de tipo de puesto vía repositorio.
     public class PLA_TIPO_PUESTOService : IPLA_TIPO_PUESTOService
     {
         private readonly IPLA_TIPO_PUESTORepository _repo;
@@ -21,6 +22,7 @@ namespace SGUEES.Services
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un tipo por empresa y correlativo.
         public async Task<CResult> GetAsync(PLA_TIPO_PUESTOParam xWhere)
         {
             var p = new List<CParameter>

@@ -1,7 +1,9 @@
+// Parámetros de consulta/filtro de requerimiento organizacional.
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Filtros y opciones de paginación/orden para consultas de requerimiento organizacional.
     public class SC_REQUERIMIENTO_ORGANIZACIONALParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

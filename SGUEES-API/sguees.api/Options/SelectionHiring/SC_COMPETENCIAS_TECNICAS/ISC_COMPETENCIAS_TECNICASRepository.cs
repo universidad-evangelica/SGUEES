@@ -1,3 +1,4 @@
+// Contrato del repositorio de competencias técnicas.
 using eFramework.Core;
 using eFramework.Data;
 using SGUEES.Models;

@@ -1,9 +1,4 @@
-// Host del componente como bloque independiente.
-:host {
-	display: block;
-}
-
-// Badge de estado activo/inactivo mostrado en la grilla.
+// Estilos locales del mantenimiento de Impacto Economico.
 :host ::ng-deep .estado-badge {
 	display: inline-flex;
 	align-items: center;
@@ -32,18 +27,20 @@
 	box-shadow: none;
 }
 
-// Separación del formulario respecto a la barra de acciones.
-.pla-nivel-academico-form-card {
+.frecuencia-form-card,
+.impacto-economico-form-card,
+.disponibilidad-horario-form-card {
 	margin-top: 38px;
 }
 
 @media (max-width: 991.98px) {
-	.pla-nivel-academico-form-card {
+	.frecuencia-form-card,
+	.impacto-economico-form-card,
+	.disponibilidad-horario-form-card {
 		margin-top: 16px;
 	}
 }
 
-// Ajusta el toolbar de la grilla para pantallas muy pequeñas.
 @media (max-width: 575.98px) {
 	:host ::ng-deep {
 		.dx-datagrid-header-panel {
@@ -94,7 +91,9 @@
 		}
 	}
 
-	.pla-nivel-academico-form-card {
+	.frecuencia-form-card,
+	.impacto-economico-form-card,
+	.disponibilidad-horario-form-card {
 		margin-top: 12px;
 	}
 }

@@ -1,3 +1,4 @@
+// Modelo TypeScript de competencia conductual (campos del formulario y grilla).
 export interface ScCompetenciasConductuales {
 	CORR_EMPRESA: number;
 	CORR_COMPETENCIAS_CONDUCTUALES: number;

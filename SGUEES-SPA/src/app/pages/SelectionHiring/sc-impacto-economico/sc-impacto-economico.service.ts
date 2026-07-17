@@ -1,4 +1,5 @@
-﻿import { Injectable } from '@angular/core';
+// Servicio de negocio del catálogo Impacto Económico (validación, CRUD y config de grilla/form).
+import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
@@ -11,6 +12,7 @@ import { ScImpactoEconomicoRepository } from './sc-impacto-economico.repository'
 const ESTADO_FIELD = 'ESTADO_IMPACTO_ECONOMICO';
 
 @Injectable({ providedIn: 'root' })
+// Encapsula validaciones y delega el CRUD en el repositorio de impacto económico.
 export class ScImpactoEconomicoService {
 	constructor(private repo: ScImpactoEconomicoRepository) {}
 
@@ -29,30 +31,37 @@ export class ScImpactoEconomicoService {
 		return true;
 	}
 
+	// Solicita al repositorio el listado con los filtros construidos.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
+	// Solicita al repositorio el detalle por correlativo.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: param.CORR_IMPACTO_ECONOMICO }]);
 	}
 
+	// Delega en el repositorio la creación del registro.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Delega en el repositorio la actualización con su llave.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO }]);
 	}
 
+	// Delega en el repositorio la eliminación por correlativo.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO }]);
 	}
 
+	// Delega en el repositorio el cambio de estado activo/inactivo.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO }]);
 	}
 
+	// Define columnas y formatos de la grilla de mantenimiento.
 	getColumns(): any {
 		return [
 			{
@@ -68,6 +77,7 @@ export class ScImpactoEconomicoService {
 		];
 	}
 
+	// Configura el contador de registros de la grilla.
 	getSummary(): any {
 		return {
 			totalItems: [{ column: 'CORR_IMPACTO_ECONOMICO', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],

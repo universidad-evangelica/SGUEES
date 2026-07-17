@@ -1,3 +1,4 @@
+// Servicio de negocio del catálogo Inducción (validación, CRUD y config de grilla/form).
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -11,6 +12,7 @@ import { ScInduccionRepository } from './sc-induccion.repository';
 const ESTADO_FIELD = 'ESTADO_INDUCCION';
 
 @Injectable({ providedIn: 'root' })
+// Encapsula validaciones y delega el CRUD en el repositorio de inducción.
 export class ScInduccionService {
 	constructor(private repo: ScInduccionRepository) {}
 
@@ -34,30 +36,37 @@ export class ScInduccionService {
 		return true;
 	}
 
+	// Solicita al repositorio el listado con los filtros construidos.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
+	// Solicita al repositorio el detalle por correlativo.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_INDUCCION', Value: param.CORR_INDUCCION }]);
 	}
 
+	// Delega en el repositorio la creación del registro.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Delega en el repositorio la actualización con su llave.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_INDUCCION', Value: model.CORR_INDUCCION }]);
 	}
 
+	// Delega en el repositorio la eliminación por correlativo.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_INDUCCION', Value: model.CORR_INDUCCION }]);
 	}
 
+	// Delega en el repositorio el cambio de estado activo/inactivo.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_INDUCCION', Value: model.CORR_INDUCCION }]);
 	}
 
+	// Define columnas y formatos de la grilla de mantenimiento.
 	getColumns(): any {
 		return [
 			{
@@ -80,6 +89,7 @@ export class ScInduccionService {
 		];
 	}
 
+	// Configura el contador de registros de la grilla.
 	getSummary(): any {
 		return {
 			totalItems: [

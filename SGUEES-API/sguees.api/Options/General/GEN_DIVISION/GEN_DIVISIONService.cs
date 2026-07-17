@@ -6,10 +6,12 @@ using sguees.Repositories;
 
 namespace sguees.Services
 {
+	// Capa de servicio de divisiones: valida/normaliza y delega la persistencia al repositorio.
 	public class GEN_DIVISIONService : IGEN_DIVISIONService
 	{
 		private readonly IGEN_DIVISIONRepository _repo;
 
+		// Inyecta el repositorio de divisiones para operaciones de datos.
 		public GEN_DIVISIONService(IGEN_DIVISIONRepository repo)
 		{
 			_repo = repo;

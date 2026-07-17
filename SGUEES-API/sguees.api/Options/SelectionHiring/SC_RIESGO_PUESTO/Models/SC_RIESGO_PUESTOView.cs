@@ -1,7 +1,9 @@
-﻿using System;
+// DTO de lectura de riesgo del puesto (proyección de la vista SQL).
+using System;
 
 namespace SGUEES.Models
 {
+    // Campos expuestos por la vista de consulta de riesgo del puesto.
     public class SC_RIESGO_PUESTOView
     {
         public int CORR_EMPRESA { get; set; }

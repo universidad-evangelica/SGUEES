@@ -4,6 +4,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+	// Contrato del servicio de países (consultas, alta, baja y actualización).
 	public interface IGEN_PAISService
 	{
 		// Define la consulta del listado de países según los filtros recibidos.

@@ -1,3 +1,4 @@
+// Acceso HTTP al controlador GEN_GERENCIA de la API General.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { CData } from 'src/app/FxAPI/CData';

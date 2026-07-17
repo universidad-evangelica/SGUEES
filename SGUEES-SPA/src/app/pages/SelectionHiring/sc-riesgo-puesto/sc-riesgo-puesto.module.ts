@@ -1,4 +1,5 @@
-﻿import { NgModule } from '@angular/core';
+// Módulo Angular que importa el routing de Riesgo del Puesto.
+import { NgModule } from '@angular/core';
 import { ScRiesgoPuestoRoutingModule } from './sc-riesgo-puesto-routing.module';
 
 @NgModule({

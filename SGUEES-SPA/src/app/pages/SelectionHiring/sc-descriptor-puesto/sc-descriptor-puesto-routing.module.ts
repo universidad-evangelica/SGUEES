@@ -17,6 +17,7 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 import { ScDescriptorPuestoComponent } from './sc-descriptor-puesto.component';
 
+// Ruta lazy del mtto; declara el componente y los modulos DevExtreme/layout que usa la vista.
 const routes: Routes = [{ path: '', component: ScDescriptorPuestoComponent }];
 
 @NgModule({

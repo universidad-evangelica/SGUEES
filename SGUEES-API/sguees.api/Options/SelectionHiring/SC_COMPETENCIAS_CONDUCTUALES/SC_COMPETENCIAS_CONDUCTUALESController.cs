@@ -1,3 +1,4 @@
+// Endpoints REST del catálogo competencias conductuales.
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -14,6 +15,7 @@ namespace SGUEES.Controllers
   [Authorize]
   [ApiController]
   [Route("[controller]")]
+  // Expone el CRUD y lookups de competencia conductual con autorización por política.
   public class SC_COMPETENCIAS_CONDUCTUALESController : ControllerBase
   {
     private readonly ISC_COMPETENCIAS_CONDUCTUALESService _service;
@@ -25,6 +27,7 @@ namespace SGUEES.Controllers
 
     [HttpGet("GetAll")]
     [Authorize(Policy = "/sc-competencias-conductuales|R")]
+    // Atiende el listado y lo limita a la empresa de la sesión.
     public async Task<CResult> GetAll([FromQuery] SC_COMPETENCIAS_CONDUCTUALESParam Data)
     {
       Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -33,6 +36,7 @@ namespace SGUEES.Controllers
 
     [HttpGet("Get")]
     [Authorize(Policy = "/sc-competencias-conductuales|R")]
+    // Atiende la consulta de un registro dentro de la empresa de la sesión.
     public async Task<CResult> Get([FromQuery] SC_COMPETENCIAS_CONDUCTUALESParam Data)
     {
       Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -75,6 +79,7 @@ namespace SGUEES.Controllers
 
     [HttpPut("ActivarInactivar")]
     [Authorize(Policy = "/sc-competencias-conductuales|U")]
+    // Cambia el estado activo/inactivo del registro indicado.
     public async Task<IActionResult> ActivarInactivar(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       this.ApplyQueryKeys(Data, nameof(SC_COMPETENCIAS_CONDUCTUALESTable.CORR_COMPETENCIAS_CONDUCTUALES));
@@ -93,12 +98,14 @@ namespace SGUEES.Controllers
       return await _service.GetCatalogoDescriptorAsync(Data);
     }
 
+    // Lee CORR_EMPRESA del claim del usuario autenticado.
     private int GetCorrEmpresa()
     {
       var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
       return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
     }
 
+    // Obtiene el identificador de usuario desde los claims.
     private string GetUsuario()
     {
       return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;

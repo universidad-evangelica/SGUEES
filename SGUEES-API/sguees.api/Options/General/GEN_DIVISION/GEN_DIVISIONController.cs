@@ -11,6 +11,7 @@ using sguees.Services;
 
 namespace sguees.Controllers
 {
+	// API HTTP del catálogo de divisiones: autentica, aplica empresa de sesión y delega al servicio.
 	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
@@ -18,6 +19,7 @@ namespace sguees.Controllers
 	{
 		private readonly IGEN_DIVISIONService _service;
 
+		// Inyecta el servicio de divisiones; falla si no está registrado.
 		public GEN_DIVISIONController(IGEN_DIVISIONService service)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(_service));

@@ -9,6 +9,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+    // Persistencia SQL del catálogo PLA_NIVEL_ACADEMICO.
     public class PLA_NIVEL_ACADEMICORepository : BaseRepository<PLA_NIVEL_ACADEMICOTable>, IPLA_NIVEL_ACADEMICORepository
     {
         private const string _TableName = "PLA_NIVEL_ACADEMICO";

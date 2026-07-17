@@ -1,8 +1,10 @@
+// Entidad de persistencia de requerimiento organizacional (mapeo a la tabla).
 using System;
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Campos de tabla de requerimiento organizacional, incluyendo auditoría.
     public class SC_REQUERIMIENTO_ORGANIZACIONALTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

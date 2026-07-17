@@ -4,6 +4,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+	// Contrato del servicio de municipios (consultas, lookups, alta, baja y actualización).
 	public interface IGEN_MUNICIPIOService
 	{
 		// Define la consulta del listado de municipios según los filtros recibidos.

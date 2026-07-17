@@ -9,11 +9,13 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+	// Acceso a datos de GEN_DEPTO / V_GEN_DEPTO: CRUD y comprobación de duplicados.
 	public class GEN_DEPTORepository : BaseRepository<GEN_DEPTOTable>, IGEN_DEPTORepository
 	{
 		private const string _TableName = "GEN_DEPTO";
 		private const string _ViewName = "V_GEN_DEPTO";
 
+		// Configura la conexión y el proveedor de BD desde appsettings.
 		public GEN_DEPTORepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
 				config.GetSection("DbProvider:defaultProvider").Value)

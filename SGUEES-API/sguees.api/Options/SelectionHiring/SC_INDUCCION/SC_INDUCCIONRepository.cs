@@ -1,3 +1,4 @@
+// Persistencia SQL del catálogo inducción (tabla/vista SC).
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+    // Ejecuta CRUD y consultas sobre la tabla/vista de inducción.
     public class SC_INDUCCIONRepository : BaseRepository<SC_INDUCCIONTable>, ISC_INDUCCIONRepository
     {
         private const string _TableName = "SC_INDUCCION";
@@ -57,6 +59,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Lee el listado desde la vista filtrado por empresa.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -100,6 +103,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Lee un registro por llave desde la vista.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -137,6 +141,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta el registro y controla duplicados de nombre/código.
         public async Task<CResult> CreateAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -197,6 +202,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza el registro validando unicidad.
         public async Task<CResult> UpdateAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -252,6 +258,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Elimina el registro; propaga errores de integridad.
         public async Task<CResult> DeleteAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -289,6 +296,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Invierte el estado activo/inactivo del registro.
         public async Task<CResult> ActivarInactivarAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -361,6 +369,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Detecta errores de clave duplicada de SQL Server.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

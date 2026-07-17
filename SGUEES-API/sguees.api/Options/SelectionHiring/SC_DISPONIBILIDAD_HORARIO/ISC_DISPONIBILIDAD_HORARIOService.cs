@@ -1,3 +1,4 @@
+// Contrato del servicio de disponibilidad de horario.
 using System.Threading.Tasks;
 using eFramework.Core;
 using SGUEES.Models;

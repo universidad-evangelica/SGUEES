@@ -1,3 +1,4 @@
+// Modelo de municipio (GEN_MUNICIPIO) dentro de la cascada territorial.
 export interface GenMunicipio {
 	CORR_DEPTO: number;
 	CORR_MUNICIPIO: number;

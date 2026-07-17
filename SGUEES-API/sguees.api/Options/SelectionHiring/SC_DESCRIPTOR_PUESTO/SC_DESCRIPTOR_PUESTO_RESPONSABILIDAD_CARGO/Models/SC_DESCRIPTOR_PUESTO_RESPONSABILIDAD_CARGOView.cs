@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // proyeccion de lectura (vista) de SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO.
     public class SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOView
     {
         public int CORR_EMPRESA { get; set; }

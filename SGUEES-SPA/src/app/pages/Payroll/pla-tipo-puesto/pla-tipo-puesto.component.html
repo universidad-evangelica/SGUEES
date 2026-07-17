@@ -1,4 +1,6 @@
+<!-- Contenedor principal del mantenimiento de tipo de puesto -->
 <div class="sguees-mtto-view">
+<!-- Barra de acciones: nuevo, guardar y cancelar -->
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[subTituloVentana]="subTituloVentana"
@@ -11,6 +13,7 @@
 >
 </app-barra-data-mtto>
 
+<!-- Formulario visible solo fuera del modo consulta/browse -->
 <div class="content-block dx-card responsive-paddings pla-tipo-puesto-page pla-tipo-puesto-form-card" *ngIf="!isBrowse()">
 	<dx-form
 		#fData
@@ -25,6 +28,7 @@
 	</dx-form>
 </div>
 
+<!-- Grilla del catálogo con alta, refresh, export y activar/inactivar -->
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
 	[models]="models"
@@ -60,6 +64,7 @@
 
 </div>
 
+<!-- Overlay de carga durante operaciones asíncronas -->
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"

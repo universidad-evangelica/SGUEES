@@ -9,6 +9,7 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { PlaNivelAcademico } from './models/pla-nivel-academico';
 import { PlaNivelAcademicoService } from './pla-nivel-academico.service';
 
+// Campo de estado usado por la grilla y el activar/inactivar.
 const ESTADO_FIELD = 'ESTADO_NIVEL_ACADEMICO';
 
 @Component({
@@ -16,6 +17,7 @@ const ESTADO_FIELD = 'ESTADO_NIVEL_ACADEMICO';
 	templateUrl: './pla-nivel-academico.component.html',
 	styleUrls: ['./pla-nivel-academico.component.scss'],
 })
+// Vista de mantenimiento del catálogo Payroll de nivel académico.
 export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
@@ -37,20 +39,24 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		private service: PlaNivelAcademicoService
 	) {
 		super(appInfoService, router);
+		// Configura grilla y formulario desde el servicio.
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 	}
 
+	// Expone la grilla al flujo común de mantenimiento.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
+	// Inicializa subtítulo y carga el catálogo al entrar.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.consultar();
 	}
 
+	// Restaura el subtítulo al volver al modo browse.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -287,6 +293,7 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		return `${error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.message ?? error ?? ''}`;
 	}
 
+	// Cancela y recupera el registro original por correlativo.
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_NIVEL_ACADEMICO === this.modelUpdate.CORR_NIVEL_ACADEMICO);
 	}
@@ -306,12 +313,14 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
+	// Bloquea todos los editores en modo consulta.
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_NIVEL_ACADEMICO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_NIVEL_ACADEMICO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ESTADO_NIVEL_ACADEMICO')?.option('readOnly', true);
 	}
 
+	// Habilita campos editables; el estado queda fijo al actualizar.
 	override habilitar(): void {
 		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
 		setTimeout(() => {
@@ -321,6 +330,7 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		});
 	}
 
+	// Coloca el foco en el nombre al abrir el formulario.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('NOMBRE_NIVEL_ACADEMICO')?.focus();

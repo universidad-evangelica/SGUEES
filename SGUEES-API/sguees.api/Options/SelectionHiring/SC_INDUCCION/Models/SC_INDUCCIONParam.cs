@@ -1,7 +1,9 @@
+// Parámetros de consulta/filtro de inducción.
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Filtros y opciones de paginación/orden para consultas de inducción.
     public class SC_INDUCCIONParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

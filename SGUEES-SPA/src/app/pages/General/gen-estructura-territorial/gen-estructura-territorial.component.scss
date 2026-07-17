@@ -1,3 +1,4 @@
+// Estilos de la vista territorial: form país, cascada de 3 grids y popup CRUD.
 .territorial-form-card {
 	margin-top: var(--sguees-space-4, 16px);
 }
@@ -8,6 +9,7 @@
 	}
 }
 
+// En móvil: toolbar del grid en varias filas para que no se recorte.
 @media (max-width: 575.98px) {
 	:host ::ng-deep {
 		.dx-datagrid-header-panel {
@@ -59,10 +61,12 @@
 	}
 }
 
+// Contenedor de la cascada debajo del form del país.
 .territorial-cascade {
 	margin-top: 24px;
 }
 
+// Tres columnas en desktop; se apilan en breakpoint inferior.
 .territorial-panels {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -75,6 +79,7 @@
 	min-width: 0;
 }
 
+// Ajustes DevExtreme para grids hijos sin pager y con filtros visibles.
 :host ::ng-deep .territorial-panel--cascade {
 	app-data-grid-mtto,
 	.sguees-data-grid-mtto-host,
@@ -119,10 +124,12 @@
 	width: 100%;
 }
 
+// Opacidad cuando aún no hay padre seleccionado (municipio/distrito).
 .territorial-panel--disabled {
 	opacity: 0.72;
 }
 
+// Resaltado de fila seleccionada en depto/municipio.
 :host ::ng-deep .territorial-panel--cascade .dx-data-row.territorial-row-selected > td {
 	background-color: var(--sguees-grid-row-selected, rgba(56, 139, 253, 0.22)) !important;
 	color: var(--sguees-text-primary, var(--base-text-color)) !important;

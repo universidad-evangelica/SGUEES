@@ -1,3 +1,4 @@
+// Servicio de negocio del catálogo Frecuencia (validación, CRUD y config de grilla/form).
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -11,6 +12,7 @@ import { ScFrecuenciaRepository } from './sc-frecuencia.repository';
 const ESTADO_FIELD = 'ESTADO_FRECUENCIA';
 
 @Injectable({ providedIn: 'root' })
+// Encapsula validaciones y delega el CRUD en el repositorio de frecuencia.
 export class ScFrecuenciaService {
 	constructor(private repo: ScFrecuenciaRepository) {}
 
@@ -29,30 +31,37 @@ export class ScFrecuenciaService {
 		return true;
 	}
 
+	// Solicita al repositorio el listado con los filtros construidos.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
+	// Solicita al repositorio el detalle por correlativo.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_FRECUENCIA', Value: param.CORR_FRECUENCIA }]);
 	}
 
+	// Delega en el repositorio la creación del registro.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Delega en el repositorio la actualización con su llave.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }]);
 	}
 
+	// Delega en el repositorio la eliminación por correlativo.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }]);
 	}
 
+	// Delega en el repositorio el cambio de estado activo/inactivo.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }]);
 	}
 
+	// Define columnas y formatos de la grilla de mantenimiento.
 	getColumns(): any {
 		return [
 			{
@@ -68,6 +77,7 @@ export class ScFrecuenciaService {
 		];
 	}
 
+	// Configura el contador de registros de la grilla.
 	getSummary(): any {
 		return {
 			totalItems: [

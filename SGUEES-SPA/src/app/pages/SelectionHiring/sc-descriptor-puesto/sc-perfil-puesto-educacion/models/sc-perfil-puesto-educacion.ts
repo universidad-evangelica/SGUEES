@@ -1,3 +1,4 @@
+// Educacion requerida del perfil de puesto.
 export interface ScPerfilPuestoEducacion {
 	CORR_EMPRESA?: number;
 	CORR_DESCRIPTOR_PUESTO?: number;

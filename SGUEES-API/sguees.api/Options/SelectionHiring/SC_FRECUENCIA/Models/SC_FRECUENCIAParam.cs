@@ -1,7 +1,9 @@
+// Parámetros de consulta/filtro de frecuencia.
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Filtros y opciones de paginación/orden para consultas de frecuencia.
     public class SC_FRECUENCIAParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

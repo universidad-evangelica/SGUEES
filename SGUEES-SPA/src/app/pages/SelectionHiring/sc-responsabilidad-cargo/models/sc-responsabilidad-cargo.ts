@@ -1,4 +1,5 @@
-﻿export interface ScResponsabilidadCargo {
+// Modelo TypeScript de responsabilidad del cargo (campos del formulario y grilla).
+export interface ScResponsabilidadCargo {
 	CORR_EMPRESA: number;
 	CORR_RESPONSABILIDAD: number;
 	NOMBRE_RESPONSABILIDAD: string;

@@ -1,8 +1,10 @@
-﻿using System;
+// Entidad de persistencia de responsabilidad del cargo (mapeo a la tabla).
+using System;
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Campos de tabla de responsabilidad del cargo, incluyendo auditoría.
     public class SC_RESPONSABILIDAD_CARGOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

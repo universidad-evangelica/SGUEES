@@ -1,3 +1,4 @@
+// Vista de mantenimiento de Requerimiento Organizacional (CRUD del catálogo SC).
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
@@ -16,6 +17,7 @@ const ESTADO_FIELD = 'ESTADO_REQUERIMIENTO_ORGANIZACIONAL';
 	templateUrl: './sc-requerimiento-organizacional.component.html',
 	styleUrls: ['./sc-requerimiento-organizacional.component.scss'],
 })
+// Orquesta grilla, formulario y llamadas al servicio de requerimiento organizacional.
 export class ScRequerimientoOrganizacionalComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
@@ -42,15 +44,18 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 		this.items = this.service.getItems();
 	}
 
+	// Expone el grid de mantenimiento al flujo base de CBaseComponent.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
+	// Inicializa subtítulo y carga el catálogo al abrir la vista.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.consultar();
 	}
 
+	// Restaura el subtítulo de mantenimiento al volver a modo consulta.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -158,6 +163,7 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 		}, 0);
 	}
 
+	// Abre el registro seleccionado en modo consulta.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -171,6 +177,7 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 		});
 	}
 
+	// Prepara el registro seleccionado y habilita sus campos editables.
 	onEditClick(e: any): void {
 		if (!e?.row?.data) {
 			return;
@@ -269,6 +276,7 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 		);
 	}
 
+	// Descarta la edición y restaura el registro original en la grilla.
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_REQUERIMIENTO_ORGANIZACIONAL === this.modelUpdate.CORR_REQUERIMIENTO_ORGANIZACIONAL);
 	}
@@ -290,12 +298,14 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
+	// Deja el formulario en solo lectura (modo consulta).
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_REQUERIMIENTO_ORGANIZACIONAL')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('DESCRIPCION')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ESTADO_REQUERIMIENTO_ORGANIZACIONAL')?.option('readOnly', true);
 	}
 
+	// Habilita campos editables; el estado queda bloqueado al editar.
 	override habilitar(): void {
 		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
 		setTimeout(() => {
@@ -305,6 +315,7 @@ export class ScRequerimientoOrganizacionalComponent extends CBaseComponent imple
 		});
 	}
 
+	// Coloca el foco en el primer campo editable del formulario.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('DESCRIPCION')?.focus();

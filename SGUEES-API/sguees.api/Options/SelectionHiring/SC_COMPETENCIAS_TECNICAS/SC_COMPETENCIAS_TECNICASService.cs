@@ -1,3 +1,4 @@
+// Lógica de negocio del catálogo competencias técnicas (validación y delegación al repositorio).
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,7 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
+    // Valida datos y delega persistencia de competencia técnica en el repositorio.
     public class SC_COMPETENCIAS_TECNICASService : ISC_COMPETENCIAS_TECNICASService
     {
         private readonly ISC_COMPETENCIAS_TECNICASRepository _repo;
@@ -18,11 +20,13 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Delega en el repositorio la consulta del listado.
         public async Task<CResult> GetAllAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Delega en el repositorio la consulta por llave.
         public async Task<CResult> GetAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             var p = new List<CParameter>
@@ -239,6 +243,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida empresa y llave antes de cambiar el estado.
         public async Task<CResult> ActivarInactivarAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -454,11 +459,13 @@ namespace SGUEES.Services
                 : null;
         }
 
+        // Consulta en el repositorio si la competencia aún tiene hijos.
         private Task<bool> HasChildrenAsync(int corrEmpresa, int corrCompetencia)
         {
             return _repo.HasChildrenAsync(corrEmpresa, corrCompetencia);
         }
 
+        // Valida presencia de datos y nivel antes de las reglas por jerarquía.
         private static CResult ValidateBase(SC_COMPETENCIAS_TECNICASTable Data)
         {
             if (Data == null)
@@ -524,6 +531,7 @@ namespace SGUEES.Services
             return "(Sin nombre)";
         }
 
+        // Arma los parámetros de filtro para el repositorio.
         private static List<CParameter> BuildParameters(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             return new List<CParameter>
@@ -532,6 +540,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Rechaza operaciones cuando no hay empresa en sesión.
         private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
             if (corrEmpresa > 0)
@@ -551,6 +560,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Construye un CResult de validación funcional.
         private static CResult ValidationError(string message)
         {
             return new CResult

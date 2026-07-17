@@ -1,3 +1,4 @@
+// Modelo de departamento (GEN_DEPTO) dentro de la cascada territorial.
 export interface GenDepto {
 	CORR_PAIS: number;
 	CORR_DEPTO: number;

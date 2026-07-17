@@ -1,3 +1,4 @@
+// Contrato del servicio de competencias técnicas.
 using System.Threading.Tasks;
 using eFramework.Core;
 using SGUEES.Models;

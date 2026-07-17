@@ -6,6 +6,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+	// Contrato del repositorio de distritos; extiende IRepository con chequeo de duplicados.
 	public interface IGEN_DISTRITORepository : IRepository<GEN_DISTRITOTable>
 	{
 		// Define la comprobación de duplicados del distrito dentro de su ámbito funcional.

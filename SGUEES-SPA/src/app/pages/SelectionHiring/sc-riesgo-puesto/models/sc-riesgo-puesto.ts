@@ -1,4 +1,5 @@
-﻿export interface ScRiesgoPuesto {
+// Modelo TypeScript de riesgo del puesto (campos del formulario y grilla).
+export interface ScRiesgoPuesto {
 	CORR_EMPRESA: number;
 	CORR_RIESGO_PUESTO: number;
 	NOMBRE_RIESGO_PUESTO: string;

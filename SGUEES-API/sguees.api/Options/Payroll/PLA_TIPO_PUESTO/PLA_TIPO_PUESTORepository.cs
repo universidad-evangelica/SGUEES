@@ -9,6 +9,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+    // Persistencia SQL del catálogo PLA_TIPO_PUESTO.
     public class PLA_TIPO_PUESTORepository : BaseRepository<PLA_TIPO_PUESTOTable>, IPLA_TIPO_PUESTORepository
     {
         private const string _TableName = "PLA_TIPO_PUESTO";

@@ -1,7 +1,9 @@
+// DTO de lectura de competencia técnica (proyección de la vista SQL).
 using System;
 
 namespace SGUEES.Models
 {
+    // Campos expuestos por la vista de consulta de competencia técnica.
     public class SC_COMPETENCIAS_TECNICASView
     {
         public int CORR_EMPRESA { get; set; }

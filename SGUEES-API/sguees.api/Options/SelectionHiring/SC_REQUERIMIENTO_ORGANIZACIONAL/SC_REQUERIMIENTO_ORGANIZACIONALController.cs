@@ -1,3 +1,4 @@
+// Endpoints REST del catálogo requerimiento organizacional.
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -14,6 +15,7 @@ namespace SGUEES.Controllers
     [Authorize]
     [ApiController]
     [Route("[controller]")]
+    // Expone el CRUD y lookups de requerimiento organizacional con autorización por política.
     public class SC_REQUERIMIENTO_ORGANIZACIONALController : ControllerBase
     {
         private readonly ISC_REQUERIMIENTO_ORGANIZACIONALService _service;
@@ -25,6 +27,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-requerimiento-organizacional|R")]
+        // Atiende el listado y lo limita a la empresa de la sesión.
         public async Task<CResult> GetAll([FromQuery] SC_REQUERIMIENTO_ORGANIZACIONALParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -33,6 +36,7 @@ namespace SGUEES.Controllers
 
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-requerimiento-organizacional|R")]
+        // Atiende la consulta de un registro dentro de la empresa de la sesión.
         public async Task<CResult> Get([FromQuery] SC_REQUERIMIENTO_ORGANIZACIONALParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -64,6 +68,7 @@ namespace SGUEES.Controllers
 
         [HttpDelete]
         [Authorize(Policy = "/sc-requerimiento-organizacional|D")]
+        // Restringe la eliminación a la empresa de la sesión.
         public async Task<IActionResult> Delete([FromQuery] SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -74,6 +79,7 @@ namespace SGUEES.Controllers
 
         [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/sc-requerimiento-organizacional|U")]
+        // Cambia el estado activo/inactivo del registro indicado.
         public async Task<IActionResult> ActivarInactivar(SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(SC_REQUERIMIENTO_ORGANIZACIONALTable.CORR_REQUERIMIENTO_ORGANIZACIONAL));
@@ -92,12 +98,14 @@ namespace SGUEES.Controllers
             return await _service.GetCatalogoDescriptorAsync(Data);
         }
 
+        // Lee CORR_EMPRESA del claim del usuario autenticado.
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
+        // Obtiene el identificador de usuario desde los claims.
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;

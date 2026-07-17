@@ -1,7 +1,9 @@
+// DTO de lectura de inducción (proyección de la vista SQL).
 using System;
 
 namespace SGUEES.Models
 {
+    // Campos expuestos por la vista de consulta de inducción.
     public class SC_INDUCCIONView
     {
         public int CORR_EMPRESA { get; set; }

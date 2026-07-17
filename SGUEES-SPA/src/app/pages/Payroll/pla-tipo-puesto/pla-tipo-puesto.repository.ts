@@ -8,6 +8,7 @@ import { CData } from 'src/app/FxAPI/CData';
 @Injectable({
 	providedIn: 'root',
 })
+// Acceso HTTP al controlador PLA_TIPO_PUESTO.
 export class PlaTipoPuestoRepository {
 	readonly xController = 'PLA_TIPO_PUESTO';
 
@@ -18,6 +19,7 @@ export class PlaTipoPuestoRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
+	// Solicita un tipo de puesto específico por filtros.
 	get(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
@@ -27,6 +29,7 @@ export class PlaTipoPuestoRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlTALENTOHUMANONAPI);
 	}
 
+	// Actualiza el tipo identificado por los parámetros de búsqueda.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
@@ -36,6 +39,7 @@ export class PlaTipoPuestoRepository {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
+	// Llama al endpoint de activar/inactivar del catálogo.
 	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}

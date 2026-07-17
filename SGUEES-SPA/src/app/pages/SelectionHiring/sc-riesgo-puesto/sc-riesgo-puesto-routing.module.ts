@@ -1,4 +1,5 @@
-﻿import { CommonModule } from '@angular/common';
+// Routing y declaraciones DevExtreme/layout de la vista Riesgo del Puesto.
+import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
@@ -33,5 +34,6 @@ const routes: Routes = [{ path: '', component: ScRiesgoPuestoComponent }];
 	exports: [RouterModule],
 	declarations: [ScRiesgoPuestoComponent],
 })
+// Declara el componente y registra la ruta hija del catálogo.
 export class ScRiesgoPuestoRoutingModule {}
 

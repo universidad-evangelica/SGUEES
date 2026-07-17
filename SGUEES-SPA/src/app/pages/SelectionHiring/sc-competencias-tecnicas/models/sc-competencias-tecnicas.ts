@@ -1,3 +1,4 @@
+// Modelo TypeScript de competencia técnica (campos del formulario y grilla).
 export const SC_COMPETENCIA_NIVEL = {
 	UNO: 'NIV1',
 	DOS: 'NIV2',

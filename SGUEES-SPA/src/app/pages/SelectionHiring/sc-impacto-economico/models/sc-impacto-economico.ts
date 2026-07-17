@@ -1,4 +1,5 @@
-﻿export interface ScImpactoEconomico {
+// Modelo TypeScript de impacto económico (campos del formulario y grilla).
+export interface ScImpactoEconomico {
 	CORR_EMPRESA: number;
 	CORR_IMPACTO_ECONOMICO: number;
 	DESCRIPCION: string;

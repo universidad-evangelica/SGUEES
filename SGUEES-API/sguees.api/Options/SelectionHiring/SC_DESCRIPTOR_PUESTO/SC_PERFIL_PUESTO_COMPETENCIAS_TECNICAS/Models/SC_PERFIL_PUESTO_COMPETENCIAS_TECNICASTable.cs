@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // entidad de escritura/auditoria de SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS.
     public class SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

@@ -4,6 +4,7 @@ using sguees.Models;
 
 namespace sguees.Services
 {
+	// Contrato del servicio de divisiones (consultas, catálogo, alta, baja y actualización).
 	public interface IGEN_DIVISIONService
 	{
 		// Define la consulta del listado de divisiones según los filtros recibidos.

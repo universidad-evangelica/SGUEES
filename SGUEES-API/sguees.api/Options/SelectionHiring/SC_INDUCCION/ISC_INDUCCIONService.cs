@@ -1,3 +1,4 @@
+// Contrato del servicio de inducción.
 using System.Threading.Tasks;
 using eFramework.Core;
 using SGUEES.Models;

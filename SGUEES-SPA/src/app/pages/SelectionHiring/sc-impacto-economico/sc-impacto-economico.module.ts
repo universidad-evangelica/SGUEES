@@ -1,4 +1,5 @@
-﻿import { NgModule } from '@angular/core';
+// Módulo Angular que importa el routing de Impacto Económico.
+import { NgModule } from '@angular/core';
 import { ScImpactoEconomicoRoutingModule } from './sc-impacto-economico-routing.module';
 
 @NgModule({

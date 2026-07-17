@@ -1,7 +1,9 @@
-﻿using System;
+// DTO de lectura de impacto económico (proyección de la vista SQL).
+using System;
 
 namespace SGUEES.Models
 {
+    // Campos expuestos por la vista de consulta de impacto económico.
     public class SC_IMPACTO_ECONOMICOView
     {
         public int CORR_EMPRESA { get; set; }

@@ -1,3 +1,4 @@
+// Modelo de datos de una división (alineado a GEN_DIVISION).
 export interface GenDivision {
 	CORR_EMPRESA: number;
 	CORR_DIVISION: number;

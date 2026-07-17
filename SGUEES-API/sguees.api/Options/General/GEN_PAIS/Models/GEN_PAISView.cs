@@ -2,8 +2,10 @@ using System;
 
 namespace SGUEES.Models
 {
+	// Proyección de lectura de V_GEN_PAIS para listados y detalle.
 	public class GEN_PAISView
 	{
+		// PK del país.
 		public int CORR_PAIS { get; set; }
 		public string NOMBRE_PAIS { get; set; }
 		public string CODIGO_PAIS { get; set; }

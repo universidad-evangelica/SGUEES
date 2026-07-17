@@ -10,6 +10,7 @@ import { PlaTipoPuestoRepository } from './pla-tipo-puesto.repository';
 
 const ESTADO_FIELD = 'ESTADO_TIPO_PUESTO';
 
+// Orquesta validación, columnas/formulario y llamadas al repositorio.
 @Injectable({
 	providedIn: 'root',
 })
@@ -46,22 +47,27 @@ export class PlaTipoPuestoService {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
+	// Obtiene un tipo de puesto por correlativo.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_TIPO_PUESTO', Value: param.CORR_TIPO_PUESTO }]);
 	}
 
+	// Delega la inserción al repositorio.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Delega la actualización identificando el correlativo.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_TIPO_PUESTO', Value: model.CORR_TIPO_PUESTO }]);
 	}
 
+	// Delega la eliminación por correlativo.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_TIPO_PUESTO', Value: model.CORR_TIPO_PUESTO }]);
 	}
 
+	// Delega el cambio de estado activo/inactivo.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_TIPO_PUESTO', Value: model.CORR_TIPO_PUESTO }]);
 	}
@@ -83,6 +89,7 @@ export class PlaTipoPuestoService {
 		];
 	}
 
+	// Resumen de cantidad de registros en la grilla.
 	getSummary(): any {
 		return {
 			totalItems: [{ column: 'CORR_TIPO_PUESTO', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
@@ -131,6 +138,7 @@ export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETI
 	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
 }
 
+// Indica si la respuesta de la API corresponde a falta de empresa.
 export function isEmpresaWarningResponse(response: any): boolean {
 	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
 }

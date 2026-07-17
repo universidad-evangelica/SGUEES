@@ -1,3 +1,4 @@
+// Modelo de país (encabezado GEN_PAIS).
 export interface GenPais {
 	CORR_PAIS: number;
 	NOMBRE_PAIS: string;
@@ -12,5 +13,5 @@ export interface GenPais {
 	FECHA_ACTU: Date;
 }
 
-/** Niveles hijos del documento país (cascada). */
+// Niveles hijos del documento país (cascada).
 export type TerritorialNivel = 'depto' | 'municipio' | 'distrito';

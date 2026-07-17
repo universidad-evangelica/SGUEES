@@ -9,6 +9,7 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { PlaTipoPuesto } from './models/pla-tipo-puesto';
 import { PlaTipoPuestoService } from './pla-tipo-puesto.service';
 
+// Campo de estado usado por la grilla y el activar/inactivar.
 const ESTADO_FIELD = 'ESTADO_TIPO_PUESTO';
 
 @Component({
@@ -16,6 +17,7 @@ const ESTADO_FIELD = 'ESTADO_TIPO_PUESTO';
 	templateUrl: './pla-tipo-puesto.component.html',
 	styleUrls: ['./pla-tipo-puesto.component.scss'],
 })
+// Vista de mantenimiento del catálogo Payroll de tipo de puesto.
 export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
@@ -37,20 +39,24 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		private service: PlaTipoPuestoService
 	) {
 		super(appInfoService, router);
+		// Configura grilla y formulario desde el servicio.
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 	}
 
+	// Expone la grilla al flujo común de mantenimiento.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
+	// Inicializa subtítulo y carga el catálogo al entrar.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.consultar();
 	}
 
+	// Restaura el subtítulo al volver al modo browse.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -290,6 +296,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		return `${error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.message ?? error ?? ''}`;
 	}
 
+	// Cancela y recupera el registro original por correlativo.
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_TIPO_PUESTO === this.modelUpdate.CORR_TIPO_PUESTO);
 	}
@@ -307,6 +314,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
+	// Bloquea todos los editores en modo consulta.
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_TIPO_PUESTO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_TIPO_PUESTO')?.option('readOnly', true);
@@ -314,6 +322,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		this.dataForm.instance.getEditor('ESTADO_TIPO_PUESTO')?.option('readOnly', true);
 	}
 
+	// Habilita campos editables; el estado queda fijo al actualizar.
 	override habilitar(): void {
 		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
 		setTimeout(() => {
@@ -324,6 +333,7 @@ export class PlaTipoPuestoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	// Coloca el foco en el nombre al abrir el formulario.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('NOMBRE_TIPO_PUESTO')?.focus();

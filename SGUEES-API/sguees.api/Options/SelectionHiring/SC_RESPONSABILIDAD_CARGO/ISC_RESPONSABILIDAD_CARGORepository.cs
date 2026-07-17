@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+// Contrato del repositorio de responsabilidad del cargo.
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
 using eFramework.Data;

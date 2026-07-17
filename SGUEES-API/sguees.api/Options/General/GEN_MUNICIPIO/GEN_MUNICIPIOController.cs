@@ -11,6 +11,7 @@ using SGUEES.Services;
 
 namespace SGUEES.Controllers
 {
+	// API HTTP del catálogo de municipios: autentica, aplica empresa de sesión y delega al servicio.
 	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
@@ -18,6 +19,7 @@ namespace SGUEES.Controllers
 	{
 		private readonly IGEN_MUNICIPIOService _service;
 
+		// Inyecta el servicio de municipios; falla si no está registrado.
 		public GEN_MUNICIPIOController(IGEN_MUNICIPIOService service)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(service));

@@ -1,7 +1,9 @@
+// DTO de lectura de competencia conductual (proyección de la vista SQL).
 using System;
 
 namespace SGUEES.Models
 {
+    // Campos expuestos por la vista de consulta de competencia conductual.
     public class SC_COMPETENCIAS_CONDUCTUALESView
     {
         public int CORR_EMPRESA { get; set; }

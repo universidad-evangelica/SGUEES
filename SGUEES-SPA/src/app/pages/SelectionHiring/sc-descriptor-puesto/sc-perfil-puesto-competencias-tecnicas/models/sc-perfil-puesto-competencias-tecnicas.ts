@@ -1,3 +1,4 @@
+// Competencia tecnica del perfil de puesto.
 export interface ScPerfilPuestoCompetenciasTecnicas {
 	CORR_EMPRESA?: number;
 	CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS: number;

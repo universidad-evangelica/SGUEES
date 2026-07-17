@@ -1,3 +1,4 @@
+// Modelo TypeScript de requerimiento organizacional (campos del formulario y grilla).
 export interface ScRequerimientoOrganizacional {
 	CORR_EMPRESA: number;
 	CORR_REQUERIMIENTO_ORGANIZACIONAL: number;

@@ -1,4 +1,6 @@
+<!-- Estructura territorial: listado de países y documento con cascada -->
 <div class="sguees-mtto-view">
+	<!-- Acciones del mantenimiento (en documento: Guardar/Cancelar del país) -->
 	<app-barra-data-mtto
 		[tituloVentana]="tituloVentana"
 		[subTituloVentana]="subTituloVentana"
@@ -14,6 +16,7 @@
 
 	<!-- Lista de países (entrada al módulo) -->
 	<ng-container *ngIf="!vistaDetalle">
+		<!-- Alta de país desde listado (formulario encima del grid) -->
 		<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 			<dx-form
 				#fData
@@ -28,6 +31,7 @@
 			</dx-form>
 		</div>
 
+		<!-- Grid de países: doble clic o editar abre el documento -->
 		<app-data-grid-mtto
 			#paisGrid
 			[isBrowse]="isBrowse()"
@@ -58,6 +62,7 @@
 
 	<!-- Documento país + cascada (flujo tipo partida: Guardar / Cancelar del padre) -->
 	<ng-container *ngIf="vistaDetalle">
+		<!-- Datos del país seleccionado -->
 		<div class="content-block dx-card responsive-paddings sguees-mtto-form-card territorial-form-card">
 			<dx-form
 				#fData
@@ -72,8 +77,10 @@
 			</dx-form>
 		</div>
 
+		<!-- Tres paneles: depto → municipio → distrito (selección en cascada) -->
 		<div class="territorial-cascade" *ngIf="selectedPais">
 			<div class="territorial-panels" [style.--territorial-cascade-grid-height.px]="cascadeGridHeight">
+						<!-- Departamentos del país -->
 						<div class="territorial-panel territorial-panel--cascade">
 							<app-data-grid-mtto
 								#deptoGrid
@@ -102,6 +109,7 @@
 							></app-data-grid-mtto>
 						</div>
 
+						<!-- Municipios del departamento enfocado -->
 						<div class="territorial-panel territorial-panel--cascade" [class.territorial-panel--disabled]="!selectedDepto">
 							<app-data-grid-mtto
 								#municipioGrid
@@ -130,6 +138,7 @@
 							></app-data-grid-mtto>
 						</div>
 
+						<!-- Distritos del municipio enfocado -->
 						<div class="territorial-panel territorial-panel--cascade" [class.territorial-panel--disabled]="!selectedMunicipio">
 							<app-data-grid-mtto
 								#distritoGrid
@@ -160,6 +169,7 @@
 	</ng-container>
 </div>
 
+<!-- Popup CRUD de depto / municipio / distrito -->
 <dx-popup
 	[(visible)]="popupVisible"
 	[showTitle]="true"
@@ -188,6 +198,7 @@
 	</div>
 </dx-popup>
 
+<!-- Overlay de carga durante operaciones al API -->
 <dx-load-panel
 	shadingColor="rgba(0,0,0,0.4)"
 	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"

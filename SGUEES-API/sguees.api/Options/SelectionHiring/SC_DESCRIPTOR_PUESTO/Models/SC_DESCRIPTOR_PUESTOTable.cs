@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Entidad de escritura/auditoria de SC_DESCRIPTOR_PUESTO.
     public class SC_DESCRIPTOR_PUESTOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

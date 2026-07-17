@@ -1,7 +1,9 @@
+// DTO de lectura de disponibilidad de horario (proyección de la vista SQL).
 using System;
 
 namespace SGUEES.Models
 {
+    // Campos expuestos por la vista de consulta de disponibilidad de horario.
     public class SC_DISPONIBILIDAD_HORARIOView
     {
         public int CORR_EMPRESA { get; set; }

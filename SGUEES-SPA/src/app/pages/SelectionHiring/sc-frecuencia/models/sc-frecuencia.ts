@@ -1,3 +1,4 @@
+// Modelo TypeScript de frecuencia (campos del formulario y grilla).
 export interface ScFrecuencia {
 	CORR_EMPRESA: number;
 	CORR_FRECUENCIA: number;

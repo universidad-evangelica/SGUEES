@@ -1,3 +1,4 @@
+// Lógica de negocio del catálogo impacto económico (validación y delegación al repositorio).
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -6,6 +7,7 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
+    // Valida datos y delega persistencia de impacto económico en el repositorio.
     public class SC_IMPACTO_ECONOMICOService : ISC_IMPACTO_ECONOMICOService
     {
         private readonly ISC_IMPACTO_ECONOMICORepository _repo;
@@ -31,11 +33,13 @@ namespace SGUEES.Services
             };
         }
 
+        // Delega en el repositorio la consulta del listado.
         public async Task<CResult> GetAllAsync(SC_IMPACTO_ECONOMICOParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Delega en el repositorio la consulta por llave.
         public async Task<CResult> GetAsync(SC_IMPACTO_ECONOMICOParam xWhere)
         {
             var p = new List<CParameter>
@@ -95,6 +99,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida empresa de sesión antes de eliminar.
         public async Task<CResult> DeleteAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -106,6 +111,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida empresa y llave antes de cambiar el estado.
         public async Task<CResult> ActivarInactivarAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -122,6 +128,7 @@ namespace SGUEES.Services
             return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Arma los parámetros de filtro para el repositorio.
         private static List<CParameter> BuildParameters(SC_IMPACTO_ECONOMICOParam xWhere)
         {
             return new List<CParameter>
@@ -151,6 +158,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Rechaza operaciones cuando no hay empresa en sesión.
         private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
             if (corrEmpresa > 0)
@@ -170,6 +178,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Construye un CResult de validación funcional.
         private static CResult ValidationError(string message)
         {
             return new CResult

@@ -1,3 +1,4 @@
+// Modelo principal del descriptor de puesto y constantes/lookups usados por la vista.
 export interface ScDescriptorPuesto {
 	CORR_EMPRESA: number;
 	CORR_DESCRIPTOR_PUESTO: number;
@@ -27,12 +28,14 @@ export interface ScDescriptorPuesto {
 	NOMBRE_UNIDAD?: string;
 }
 
+// Item de lookup de induccion (entrenamiento).
 export interface ScInduccionLookupItem {
 	CORR_INDUCCION: number;
 	NOMBRE_INDUCCION: string;
 	SEMANAS_INDUCCION: number | null;
 }
 
+// Lookups temporales de unidad/puesto mientras PLA_PUESTO no esta integrado.
 export interface MockUnidad {
 	CORR_UNIDAD: number;
 	NOMBRE_UNIDAD: string;
@@ -51,6 +54,7 @@ export interface MockPuestoReporta {
 	NOMBRE_PUESTO_REPORTA: string;
 }
 
+// Catalogo de competencias tecnicas (NIV3) para el lookup del grid.
 export interface ScCompetenciaTecnicaLookupItem {
 	CORR_COMPETENCIAS_TECNICAS: number;
 	CORR_COMPETENCIAS_TECNICAS_PADRE: number | null;
@@ -99,10 +103,11 @@ export const FORMATO_EXTENSO = 'EXTENSO';
 export const TIPO_FUNCION_CLAVE = 'CLAVE';
 export const TIPO_FUNCION_SECUNDARIA = 'SECUNDARIA';
 
-/** I = Interna, E = Externa */
+// I = Interna, E = Externa
 export const TIPO_RELACION_INTERNA = 'I';
 export const TIPO_RELACION_EXTERNA = 'E';
 
+// Estados que impiden crear otra version abierta del mismo puesto.
 export const ESTADOS_DESCRIPTOR_BLOQUEO_CREACION = ['BORRADOR', 'ENVIADO', 'REVISADO', 'ACTIVO'];
 
 export const MOCK_UNIDADES: MockUnidad[] = [
@@ -157,6 +162,7 @@ export const MOCK_PUESTOS_REPORTA: MockPuestoReporta[] = [
 	{ CORR_PUESTO_REPORTA: 5, NOMBRE_PUESTO_REPORTA: 'Sofia Mendez' },
 ];
 
+// Valores por defecto al crear el perfil local si aun no existe en BD.
 export const PERFIL_PUESTO_DEFAULT = {
 	EDAD_MINIMA: null as number | null,
 	EDAD_MAXIMA: null as number | null,
@@ -167,6 +173,7 @@ export const PERFIL_PUESTO_DEFAULT = {
 	LICENCIA: false,
 };
 
+// Datos mock de bitacora hasta integrar el endpoint real.
 export const MOCK_BITACORA = [
 	{
 		CORR_DESCRIPTOR_PUESTO: 0,

@@ -1,4 +1,5 @@
-﻿:host ::ng-deep .estado-badge {
+// Estilos locales del mantenimiento de Riesgo del Puesto.
+:host ::ng-deep .estado-badge {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -26,6 +27,7 @@
 	box-shadow: none;
 }
 
+// Badge informativo del tipo mostrado en la vista.
 :host ::ng-deep .tipo-info-badge {
 	display: inline-flex;
 	align-items: center;
@@ -40,6 +42,7 @@
 	text-transform: uppercase;
 }
 
+// Badge informativo del tipo mostrado en la vista.
 :host ::ng-deep .tipo-info-badge--lista {
 	color: #c4b5fd;
 	background: rgba(139, 92, 246, 0.22);
@@ -47,6 +50,7 @@
 	box-shadow: none;
 }
 
+// Badge informativo del tipo mostrado en la vista.
 :host ::ng-deep .tipo-info-badge--texto {
 	color: #67e8f9;
 	background: rgba(6, 182, 212, 0.18);

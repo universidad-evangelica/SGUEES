@@ -9,11 +9,13 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+	// Acceso a datos de GEN_MUNICIPIO / V_GEN_MUNICIPIO: CRUD y comprobación de duplicados.
 	public class GEN_MUNICIPIORepository : BaseRepository<GEN_MUNICIPIOTable>, IGEN_MUNICIPIORepository
 	{
 		private const string _TableName = "GEN_MUNICIPIO";
 		private const string _ViewName = "V_GEN_MUNICIPIO";
 
+		// Configura la conexión y el proveedor de BD desde appsettings.
 		public GEN_MUNICIPIORepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
 				config.GetSection("DbProvider:defaultProvider").Value)

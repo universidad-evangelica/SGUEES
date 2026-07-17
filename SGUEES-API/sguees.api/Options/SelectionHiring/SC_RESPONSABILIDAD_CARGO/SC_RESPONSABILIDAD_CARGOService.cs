@@ -1,3 +1,4 @@
+// Lógica de negocio del catálogo responsabilidad del cargo (validación y delegación al repositorio).
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -6,6 +7,7 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
+    // Valida datos y delega persistencia de responsabilidad del cargo en el repositorio.
     public class SC_RESPONSABILIDAD_CARGOService : ISC_RESPONSABILIDAD_CARGOService
     {
         private readonly ISC_RESPONSABILIDAD_CARGORepository _repo;
@@ -15,11 +17,13 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Delega en el repositorio la consulta del listado.
         public async Task<CResult> GetAllAsync(SC_RESPONSABILIDAD_CARGOParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Delega en el repositorio la consulta por llave.
         public async Task<CResult> GetAsync(SC_RESPONSABILIDAD_CARGOParam xWhere)
         {
             var p = new List<CParameter>
@@ -102,6 +106,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida empresa de sesión antes de eliminar.
         public async Task<CResult> DeleteAsync(SC_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -113,6 +118,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida empresa y llave antes de cambiar el estado.
         public async Task<CResult> ActivarInactivarAsync(SC_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -129,6 +135,7 @@ namespace SGUEES.Services
             return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Arma los parámetros de filtro para el repositorio.
         private static List<CParameter> BuildParameters(SC_RESPONSABILIDAD_CARGOParam xWhere)
         {
             return new List<CParameter>
@@ -185,6 +192,7 @@ namespace SGUEES.Services
                 : null;
         }
 
+        // Rechaza operaciones cuando no hay empresa en sesión.
         private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
             if (corrEmpresa > 0)
@@ -204,6 +212,7 @@ namespace SGUEES.Services
             };
         }
 
+        // Construye un CResult de validación funcional.
         private static CResult ValidationError(string message)
         {
             return new CResult

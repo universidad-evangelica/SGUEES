@@ -11,6 +11,7 @@ using SGUEES.Services;
 
 namespace SGUEES.Controllers
 {
+	// API HTTP del catálogo de distritos: autentica, aplica empresa de sesión y delega al servicio.
 	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
@@ -18,6 +19,7 @@ namespace SGUEES.Controllers
 	{
 		private readonly IGEN_DISTRITOService _service;
 
+		// Inyecta el servicio de distritos; falla si no está registrado.
 		public GEN_DISTRITOController(IGEN_DISTRITOService service)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(service));

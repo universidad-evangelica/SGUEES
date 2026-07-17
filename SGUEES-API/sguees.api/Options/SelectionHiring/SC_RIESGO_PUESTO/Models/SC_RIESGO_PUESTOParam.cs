@@ -1,7 +1,9 @@
+// Parámetros de consulta/filtro de riesgo del puesto.
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Filtros y opciones de paginación/orden para consultas de riesgo del puesto.
     public class SC_RIESGO_PUESTOParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

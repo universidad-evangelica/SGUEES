@@ -1,8 +1,10 @@
+// Entidad de persistencia de competencia técnica (mapeo a la tabla).
 using System;
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Campos de tabla de competencia técnica, incluyendo auditoría.
     public class SC_COMPETENCIAS_TECNICASTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

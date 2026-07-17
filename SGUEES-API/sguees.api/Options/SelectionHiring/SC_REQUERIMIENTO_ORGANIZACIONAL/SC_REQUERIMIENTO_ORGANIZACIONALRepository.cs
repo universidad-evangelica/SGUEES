@@ -1,3 +1,4 @@
+// Persistencia SQL del catálogo requerimiento organizacional (tabla/vista SC).
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+    // Ejecuta CRUD y consultas sobre la tabla/vista de requerimiento organizacional.
     public class SC_REQUERIMIENTO_ORGANIZACIONALRepository : BaseRepository<SC_REQUERIMIENTO_ORGANIZACIONALTable>, ISC_REQUERIMIENTO_ORGANIZACIONALRepository
     {
         private const string _TableName = "SC_REQUERIMIENTO_ORGANIZACIONAL";
@@ -23,6 +25,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Lee el listado desde la vista filtrado por empresa.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -66,6 +69,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Lee un registro por llave desde la vista.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -103,6 +107,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta el registro y controla duplicados de nombre/código.
         public async Task<CResult> CreateAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -162,6 +167,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza el registro validando unicidad.
         public async Task<CResult> UpdateAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -216,6 +222,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Elimina el registro; propaga errores de integridad.
         public async Task<CResult> DeleteAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -253,6 +260,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Invierte el estado activo/inactivo del registro.
         public async Task<CResult> ActivarInactivarAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -399,6 +407,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Detecta errores de clave duplicada de SQL Server.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
