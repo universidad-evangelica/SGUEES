@@ -23,6 +23,39 @@ namespace SGUEES.Repositories
         {
         }
 
+        public async Task<List<SC_INDUCCIONView>> GetCatalogoDescriptorAsync(int corrEmpresa)
+        {
+            if (corrEmpresa <= 0)
+            {
+                return new List<SC_INDUCCIONView>();
+            }
+
+            const string sql = @"SELECT
+                  A.CORR_INDUCCION,
+                  A.NOMBRE_INDUCCION,
+                  A.SEMANAS_INDUCCION
+                FROM SC_INDUCCION A
+                WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+                  AND ISNULL(A.ESTADO_INDUCCION, 1) = 1
+                ORDER BY A.NOMBRE_INDUCCION, A.SEMANAS_INDUCCION, A.CORR_INDUCCION";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                });
+
+                var response = new List<SC_INDUCCIONView>().FromDataReader(reader).ToList();
+                reader.Close();
+                return response;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();

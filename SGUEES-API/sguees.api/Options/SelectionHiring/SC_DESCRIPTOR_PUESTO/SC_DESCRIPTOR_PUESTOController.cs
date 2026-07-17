@@ -60,6 +60,24 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        [HttpPut("ActualizarEntrenamiento")]
+        [Authorize(Policy = "/sc-descriptor-puesto|U")]
+        public async Task<IActionResult> ActualizarEntrenamiento(SC_DESCRIPTOR_PUESTOTable Data)
+        {
+            if (Data != null)
+            {
+                this.ApplyQueryKeys(Data, nameof(SC_DESCRIPTOR_PUESTOTable.CORR_DESCRIPTOR_PUESTO));
+                Data.CORR_EMPRESA = GetCorrEmpresa();
+                SetUpdateAudit(Data);
+            }
+
+            var resultado = await _service.ActualizarEntrenamientoAsync(
+                Data,
+                GetUsuario(),
+                ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+        }
+
         [HttpDelete]
         [Authorize(Policy = "/sc-descriptor-puesto|D")]
         public async Task<IActionResult> Delete([FromQuery] SC_DESCRIPTOR_PUESTOTable Data)

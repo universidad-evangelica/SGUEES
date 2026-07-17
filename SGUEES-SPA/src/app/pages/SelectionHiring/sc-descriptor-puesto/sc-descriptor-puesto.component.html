@@ -563,13 +563,43 @@
 						>
 							<dxi-item title="Perfil" icon="card">
 								<div class="descriptor-perfil-tab-content">
+									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											*ngIf="!perfilEditando"
+											icon="edit"
+											text="Editar perfil"
+											type="default"
+											stylingMode="contained"
+											[disabled]="!model.CORR_DESCRIPTOR_PUESTO"
+											(onClick)="editarPerfil()"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											*ngIf="perfilEditando"
+											icon="save"
+											text="Guardar"
+											type="success"
+											stylingMode="contained"
+											(onClick)="guardarPerfil()"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+											*ngIf="perfilEditando"
+											icon="revert"
+											text="Cancelar edición"
+											type="danger"
+											stylingMode="contained"
+											(onClick)="cancelarEdicionPerfil()"
+										></dx-button>
+									</div>
 									<div class="descriptor-perfil-form">
 										<div class="descriptor-perfil-row">
 											<div class="descriptor-perfil-field">
 												<label class="descriptor-perfil-label">Edad Minima</label>
 												<dx-number-box
 													[(value)]="perfil.EDAD_MINIMA"
-													[readOnly]="readOnly"
+													[readOnly]="readOnly || !perfilEditando"
 													[min]="0"
 													[max]="120"
 													[step]="1"
@@ -583,7 +613,7 @@
 												<label class="descriptor-perfil-label">Edad Maxima</label>
 												<dx-number-box
 													[(value)]="perfil.EDAD_MAXIMA"
-													[readOnly]="readOnly"
+													[readOnly]="readOnly || !perfilEditando"
 													[min]="0"
 													[max]="120"
 													[step]="1"
@@ -600,7 +630,7 @@
 													[dataSource]="perfilSexoOptions"
 													valueExpr="Key"
 													displayExpr="Value"
-													[readOnly]="readOnly"
+													[readOnly]="readOnly || !perfilEditando"
 													[searchEnabled]="false"
 													(onValueChanged)="onPerfilSexoChanged($event)"
 												></dx-select-box>
@@ -612,7 +642,7 @@
 													[dataSource]="perfilEstadoFamiliarOptions"
 													valueExpr="Key"
 													displayExpr="Value"
-													[readOnly]="readOnly"
+													[readOnly]="readOnly || !perfilEditando"
 													[searchEnabled]="false"
 													(onValueChanged)="onPerfilEstadoFamiliarChanged($event)"
 												></dx-select-box>
@@ -629,7 +659,7 @@
 													[valueExpr]="'CORR_DISPONIBILIDAD_HORARIO'"
 													[displayExpr]="'NOMBRE_DISPONIBILIDAD_HORARIO'"
 													[selectedRowKeys]="selectedLookUpCORR_DISPONIBILIDAD_HORARIO"
-													[readOnly]="readOnly"
+													[readOnly]="readOnly || !perfilEditando"
 													[showClearButton]="true"
 												></app-data-lookup>
 											</div>
@@ -642,7 +672,7 @@
 													[valueExpr]="'CORR_TIPO_MODALIDAD'"
 													[displayExpr]="'MODALIDAD_NOMBRE'"
 													[selectedRowKeys]="selectedLookUpCORR_TIPO_MODALIDAD"
-													[readOnly]="readOnly"
+													[readOnly]="readOnly || !perfilEditando"
 													[showClearButton]="true"
 												></app-data-lookup>
 											</div>
@@ -653,7 +683,7 @@
 													[dataSource]="perfilLicenciaOptions"
 													valueExpr="Key"
 													displayExpr="Value"
-													[readOnly]="readOnly"
+													[readOnly]="readOnly || !perfilEditando"
 													[searchEnabled]="false"
 													(onValueChanged)="onPerfilLicenciaChanged($event)"
 												></dx-select-box>
@@ -2070,35 +2100,75 @@
 								<span class="dx-icon-toolbox descriptor-perfil-icon" aria-hidden="true"></span>
 								Entrenamiento
 							</h4>
+							<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+								<dx-button
+									class="descriptor-deta-toolbar-btn"
+									*ngIf="!entrenamientoEditando"
+									icon="edit"
+									text="Editar entrenamiento"
+									type="default"
+									stylingMode="contained"
+									[disabled]="!model.CORR_DESCRIPTOR_PUESTO"
+									(onClick)="editarEntrenamiento()"
+								></dx-button>
+								<dx-button
+									class="descriptor-deta-toolbar-btn"
+									*ngIf="entrenamientoEditando"
+									icon="save"
+									text="Guardar"
+									type="success"
+									stylingMode="contained"
+									(onClick)="guardarEntrenamiento()"
+								></dx-button>
+								<dx-button
+									class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+									*ngIf="entrenamientoEditando"
+									icon="revert"
+									text="Cancelar edición"
+									type="danger"
+									stylingMode="contained"
+									(onClick)="cancelarEdicionEntrenamiento()"
+								></dx-button>
+							</div>
 						</div>
 
 						<div class="descriptor-perfil-tab-content">
 							<div class="descriptor-perfil-form">
 								<div class="descriptor-perfil-row descriptor-perfil-row--secondary">
 									<div class="descriptor-perfil-field">
-										<label class="descriptor-perfil-label">Tipo</label>
-										<dx-select-box
-											[items]="model.NOMBRE_INDUCCION ? [model.NOMBRE_INDUCCION] : []"
-											[value]="model.NOMBRE_INDUCCION || null"
-											[readOnly]="true"
-											placeholder="Seleccione el tipo de entrenamiento..."
-										></dx-select-box>
+										<label class="descriptor-perfil-label">Tipo de Inducción</label>
+										<div
+											class="descriptor-lookup-field"
+											[class.descriptor-lookup-field--invalid]="induccionInvalida"
+										>
+											<app-data-lookup
+												[model]="mCORR_INDUCCION"
+												[value]="model.CORR_INDUCCION"
+												(valueChange)="onEntrenamientoInduccionChanged($event)"
+												[valueExpr]="'CORR_INDUCCION'"
+												[displayExpr]="'NOMBRE_INDUCCION'"
+												[selectedRowKeys]="selectedLookUpCORR_INDUCCION"
+												[readOnly]="readOnly || !entrenamientoEditando"
+												[showClearButton]="true"
+											></app-data-lookup>
+										</div>
 									</div>
 
 									<div class="descriptor-perfil-field">
 										<label class="descriptor-perfil-label">Duración</label>
 										<dx-text-box
-											[value]="model.SEMANAS_INDUCCION ? model.SEMANAS_INDUCCION + ' semanas' : ''"
+											[value]="model.SEMANAS_INDUCCION != null ? model.SEMANAS_INDUCCION + ' semanas' : ''"
 											[readOnly]="true"
 											placeholder="Duración del entrenamiento..."
 										></dx-text-box>
 									</div>
 
 									<div class="descriptor-perfil-field">
-										<label class="descriptor-perfil-label">Responsables</label>
+										<label class="descriptor-perfil-label">Responsable</label>
 										<dx-text-box
-											[value]="model.RESPONSABLE || ''"
-											[readOnly]="true"
+											[(value)]="model.RESPONSABLE"
+											[readOnly]="readOnly || !entrenamientoEditando"
+											[maxLength]="100"
 											placeholder="Responsables del entrenamiento..."
 										></dx-text-box>
 									</div>

@@ -48,6 +48,7 @@ import {
 	ScCompetenciaTecnicaLookupItem,
 	ScDescriptorPuesto,
 	ScImpactoEconomicoLookupItem,
+	ScInduccionLookupItem,
 	ScRequerimientoOrganizacionalLookupItem,
 	ScResponsabilidadCargoLookupItem,
 	ScRiesgoPuestoLookupItem,
@@ -104,6 +105,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_FRECUENCIA: ScFrecuenciaLookup[] = [];
 	mCORR_DISPONIBILIDAD_HORARIO: ScDisponibilidadHorarioLookup[] = [];
 	mCORR_TIPO_MODALIDAD: ScTipoModalidadLookup[] = [];
+	mCORR_INDUCCION: ScInduccionLookupItem[] = [];
 	mCORR_COMPETENCIAS_TECNICAS: ScCompetenciaTecnicaLookupItem[] = [];
 	mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES: ScCompetenciaTecnicaLookupItem[] = [];
 	mCORR_COMPETENCIAS_CONDUCTUALES: ScCompetenciaConductualLookupItem[] = [];
@@ -184,6 +186,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	relacionesInternasEditando = false;
 	relacionesExternasEditando = false;
 	perfil: ScDescriptorPerfilPuesto = { ...PERFIL_PUESTO_DEFAULT };
+	perfilEditando = false;
+	entrenamientoEditando = false;
+	induccionInvalida = false;
 	perfilSubTabIndex = 0;
 	competenciasSubTabIndex = 0;
 	relacionesSubTabIndex = 0;
@@ -212,12 +217,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private relacionesExternasLoadSeq = 0;
 	private perfilLoadSeq = 0;
 	private perfilExiste = false;
+	private perfilOriginal: ScDescriptorPerfilPuesto = { ...PERFIL_PUESTO_DEFAULT };
+	private entrenamientoOriginal = {
+		CORR_INDUCCION: null as number | null,
+		NOMBRE_INDUCCION: '',
+		SEMANAS_INDUCCION: null as number | null,
+		RESPONSABLE: '',
+	};
 	private sincronizandoHeader = false;
 	private ultimoFormatoAplicado: string | null = null;
 	private ultimoTabSeccionValido = 0;
 	mostrarAvisoSeleccioneTab = false;
-	private perfilPersistTimer: ReturnType<typeof setTimeout> | null = null;
-
 	readonly actividadesPopupWrapperAttr = { class: 'descriptor-actividades-popup-wrapper' };
 	private actividadesPopupMediaQuery?: MediaQueryList;
 	private readonly onActividadesPopupMediaChange = (event: MediaQueryListEvent): void => {
@@ -239,6 +249,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.selectedLookUpCORR_FRECUENCIA = this.selectedLookUpCORR_FRECUENCIA.bind(this);
 		this.selectedLookUpCORR_DISPONIBILIDAD_HORARIO = this.selectedLookUpCORR_DISPONIBILIDAD_HORARIO.bind(this);
 		this.selectedLookUpCORR_TIPO_MODALIDAD = this.selectedLookUpCORR_TIPO_MODALIDAD.bind(this);
+		this.selectedLookUpCORR_INDUCCION = this.selectedLookUpCORR_INDUCCION.bind(this);
 		this.selectedLookUpCORR_COMPETENCIAS_TECNICAS = this.selectedLookUpCORR_COMPETENCIAS_TECNICAS.bind(this);
 		this.selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES = this.selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES.bind(this);
 		this.selectedLookUpCORR_REQUERIMIENTO_ORGANIZACIONAL =
@@ -306,10 +317,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	ngOnDestroy(): void {
 		this.actividadesPopupMediaQuery?.removeEventListener('change', this.onActividadesPopupMediaChange);
-		if (this.perfilPersistTimer) {
-			clearTimeout(this.perfilPersistTimer);
-			this.perfilPersistTimer = null;
-		}
 	}
 
 	private configurarActividadesPopupResponsive(): void {
@@ -328,6 +335,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.getCORR_FRECUENCIA();
 		this.getCORR_DISPONIBILIDAD_HORARIO();
 		this.getCORR_TIPO_MODALIDAD();
+		this.getCORR_INDUCCION();
 		this.getCORR_COMPETENCIAS_TECNICAS_NIV3();
 		this.getCORR_COMPETENCIAS_CONDUCTUALES();
 		this.getCORR_REQUERIMIENTO_ORGANIZACIONAL();
@@ -560,6 +568,31 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					}
 				},
 				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	getCORR_INDUCCION(): void {
+		this.service
+			.getInduccionesLookup()
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result || !Array.isArray(response.Data)) {
+						this.mCORR_INDUCCION = [];
+						return;
+					}
+
+					this.mCORR_INDUCCION = response.Data.map((item: ScInduccionLookupItem) => ({
+						CORR_INDUCCION: Number(item.CORR_INDUCCION),
+						NOMBRE_INDUCCION: (item.NOMBRE_INDUCCION ?? '').trim(),
+						SEMANAS_INDUCCION:
+							item.SEMANAS_INDUCCION != null ? Number(item.SEMANAS_INDUCCION) : null,
+					}));
+				},
+				error: (error) => {
+					this.mCORR_INDUCCION = [];
+					this.notifyApiError(error);
+				},
 			});
 	}
 
@@ -817,6 +850,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return vRow[0].CORR_TIPO_MODALIDAD;
 	}
 
+	selectedLookUpCORR_INDUCCION(vRow: any): number {
+		return vRow[0].CORR_INDUCCION;
+	}
+
 	selectedLookUpCORR_COMPETENCIAS_TECNICAS(vRow: any): number {
 		return vRow[0].CORR_COMPETENCIAS_TECNICAS;
 	}
@@ -844,6 +881,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
+			this.perfilEditando = false;
+			this.entrenamientoEditando = false;
+			this.induccionInvalida = false;
 			this.subTituloVentana = this.maintenanceSubtitulo;
 			this.mainTabIndex = 0;
 			this.subTabIndex = 0;
@@ -967,6 +1007,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.subTabIndex = 0;
 		this.limpiarEstadoValidacionHeader();
 		super.nuevo();
+		this.entrenamientoOriginal = this.obtenerEntrenamientoActual();
+		this.entrenamientoEditando = false;
 		this.limpiarDatosTabs();
 		this.actualizarPuestosPorUnidad(null);
 		setTimeout(() => this.syncHeaderForm());
@@ -976,6 +1018,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.readOnly = false;
 		this.limpiarEstadoValidacionHeader();
 		super.editarClick(e);
+		this.entrenamientoOriginal = this.obtenerEntrenamientoActual();
+		this.entrenamientoEditando = false;
 		this.resetearFuncionesTabsDirty();
 		this.cargarDatosTabs();
 		this.actualizarPuestosPorUnidad(this.model.CORR_UNIDAD);
@@ -992,6 +1036,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.modelUpdate = this.fillData(rowData);
 		}
 		this.readOnly = true;
+		this.entrenamientoOriginal = this.obtenerEntrenamientoActual();
+		this.entrenamientoEditando = false;
 		super.rowDblClick(e);
 		this.resetearFuncionesTabsDirty();
 		this.cargarDatosTabs();
@@ -1004,6 +1050,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	cargarDatosTabs(): void {
 		this.itemsTabBitacora = [];
+		this.entrenamientoOriginal = this.obtenerEntrenamientoActual();
+		this.entrenamientoEditando = false;
 		this.cargarFuncionesClave();
 		if (this.esFormatoCorto) {
 			this.cargarFuncionesSecundarias();
@@ -1033,6 +1081,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.responsabilidadesCargo = [];
 		this.relacionesInternas = [];
 		this.relacionesExternas = [];
+		this.entrenamientoOriginal = this.obtenerEntrenamientoActual();
+		this.entrenamientoEditando = false;
 		this.competenciasSubTabIndex = 0;
 		this.relacionesSubTabIndex = 0;
 		this.resetearEdicionFuncionesClave();
@@ -2911,39 +2961,35 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	};
 
 	onPerfilEdadMinimaChanged(e: any): void {
-		if (this.readOnly) {
+		if (this.readOnly || !this.perfilEditando) {
 			return;
 		}
 		this.perfil.EDAD_MINIMA = this.normalizarEdadPerfil(e?.value);
-		this.programarPersistirPerfil();
 	}
 
 	onPerfilEdadMaximaChanged(e: any): void {
-		if (this.readOnly) {
+		if (this.readOnly || !this.perfilEditando) {
 			return;
 		}
 		this.perfil.EDAD_MAXIMA = this.normalizarEdadPerfil(e?.value);
-		this.programarPersistirPerfil();
 	}
 
 	onPerfilSexoChanged(e: any): void {
-		if (this.readOnly) {
+		if (this.readOnly || !this.perfilEditando) {
 			return;
 		}
 		this.perfil.SEXO = `${e?.value ?? PERFIL_PUESTO_DEFAULT.SEXO}`.trim().toUpperCase();
-		this.programarPersistirPerfil();
 	}
 
 	onPerfilEstadoFamiliarChanged(e: any): void {
-		if (this.readOnly) {
+		if (this.readOnly || !this.perfilEditando) {
 			return;
 		}
 		this.perfil.ESTADO_FAMILIAR = `${e?.value ?? PERFIL_PUESTO_DEFAULT.ESTADO_FAMILIAR}`.trim().toUpperCase();
-		this.programarPersistirPerfil();
 	}
 
 	onPerfilDisponibilidadChanged(value: number | null): void {
-		if (this.readOnly) {
+		if (this.readOnly || !this.perfilEditando) {
 			return;
 		}
 		this.perfil.CORR_DISPONIBILIDAD_HORARIO = value != null && value > 0 ? Number(value) : null;
@@ -2951,11 +2997,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			(row) => Number(row.CORR_DISPONIBILIDAD_HORARIO) === Number(this.perfil.CORR_DISPONIBILIDAD_HORARIO)
 		);
 		this.perfil.NOMBRE_DISPONIBILIDAD_HORARIO = item?.NOMBRE_DISPONIBILIDAD_HORARIO ?? '';
-		this.programarPersistirPerfil();
 	}
 
 	onPerfilModalidadChanged(value: number | null): void {
-		if (this.readOnly) {
+		if (this.readOnly || !this.perfilEditando) {
 			return;
 		}
 		this.perfil.CORR_TIPO_MODALIDAD = value != null && value > 0 ? Number(value) : null;
@@ -2963,15 +3008,208 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			(row) => Number(row.CORR_TIPO_MODALIDAD) === Number(this.perfil.CORR_TIPO_MODALIDAD)
 		);
 		this.perfil.MODALIDAD_NOMBRE = item?.MODALIDAD_NOMBRE ?? '';
-		this.programarPersistirPerfil();
 	}
 
 	onPerfilLicenciaChanged(e: any): void {
-		if (this.readOnly) {
+		if (this.readOnly || !this.perfilEditando) {
 			return;
 		}
 		this.perfil.LICENCIA = e?.value === true;
-		this.programarPersistirPerfil();
+	}
+
+	editarPerfil(): void {
+		if (this.readOnly || !this.requiereDescriptorGuardado()) {
+			return;
+		}
+		this.perfilOriginal = { ...this.perfil };
+		this.perfilEditando = true;
+	}
+
+	guardarPerfil(): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (this.readOnly || !this.perfilEditando || !corrDescriptor || corrDescriptor <= 0) {
+			return;
+		}
+
+		this.perfil.EDAD_MINIMA = this.normalizarEdadPerfil(this.perfil.EDAD_MINIMA);
+		this.perfil.EDAD_MAXIMA = this.normalizarEdadPerfil(this.perfil.EDAD_MAXIMA);
+		if (
+			this.perfil.EDAD_MINIMA != null &&
+			this.perfil.EDAD_MAXIMA != null &&
+			this.perfil.EDAD_MINIMA > this.perfil.EDAD_MAXIMA
+		) {
+			this.notifyFx('La edad minima no puede ser mayor que la edad maxima.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.persistirPerfil(corrDescriptor, this.perfil, this.perfilExiste)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result) {
+						this.notificarRespuestaOperacion(response, 'guardar');
+						this.loadingVisible = false;
+						return;
+					}
+
+					const saved = response.Data as ScDescriptorPerfilPuesto;
+					if (saved) {
+						this.perfil = { ...this.perfil, ...saved };
+					} else if (Number(response?.CodeHelper) > 0) {
+						this.perfil.CORR_PERFIL_PUESTO = Number(response.CodeHelper);
+					}
+					this.perfilExiste = Number(this.perfil.CORR_PERFIL_PUESTO) > 0;
+					this.perfilOriginal = { ...this.perfil };
+					this.perfilEditando = false;
+					this.loadingVisible = false;
+					this.notifyFx('Perfil modificado con exito!', NotifyType.Success, { raw: true });
+				},
+				error: (error) => {
+					this.notificarErrorOperacion(error, 'guardar');
+					this.loadingVisible = false;
+				},
+			});
+	}
+
+	cancelarEdicionPerfil(): void {
+		if (!this.perfilEditando) {
+			return;
+		}
+		this.perfil = { ...this.perfilOriginal };
+		this.perfilEditando = false;
+	}
+
+	editarEntrenamiento(): void {
+		if (this.readOnly || !this.requiereDescriptorGuardado()) {
+			return;
+		}
+		this.entrenamientoOriginal = this.obtenerEntrenamientoActual();
+		this.induccionInvalida = false;
+		this.entrenamientoEditando = true;
+	}
+
+	onEntrenamientoInduccionChanged(value: number | null): void {
+		if (this.readOnly || !this.entrenamientoEditando) {
+			return;
+		}
+		const corrInduccion = value != null && Number(value) > 0 ? Number(value) : null;
+		if (corrInduccion) {
+			this.induccionInvalida = false;
+		}
+		const induccion = this.mCORR_INDUCCION.find(
+			(item) => Number(item.CORR_INDUCCION) === Number(corrInduccion)
+		);
+		this.model.CORR_INDUCCION = corrInduccion;
+		this.model.NOMBRE_INDUCCION = induccion?.NOMBRE_INDUCCION ?? '';
+		this.model.SEMANAS_INDUCCION = induccion?.SEMANAS_INDUCCION ?? null;
+	}
+
+	guardarEntrenamiento(): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		const corrInduccion = Number(this.model?.CORR_INDUCCION);
+		const responsable = (this.model?.RESPONSABLE ?? '').trim();
+		if (this.readOnly || !this.entrenamientoEditando || !corrDescriptor || corrDescriptor <= 0) {
+			return;
+		}
+		if (!corrInduccion || corrInduccion <= 0) {
+			this.induccionInvalida = true;
+			this.notifyFx('Debe seleccionar el tipo de entrenamiento.', NotifyType.Warning);
+			return;
+		}
+		if (!responsable) {
+			this.notifyFx('Debe ingresar el responsable del entrenamiento.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.actualizarEntrenamiento(corrDescriptor, corrInduccion, responsable)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result) {
+						this.notificarRespuestaOperacion(response, 'guardar');
+						this.loadingVisible = false;
+						return;
+					}
+
+					const induccion = this.mCORR_INDUCCION.find(
+						(item) => Number(item.CORR_INDUCCION) === corrInduccion
+					);
+					const data = response.Data as Partial<ScDescriptorPuesto> | null;
+					const entrenamiento = {
+						CORR_INDUCCION: data?.CORR_INDUCCION ?? corrInduccion,
+						NOMBRE_INDUCCION: data?.NOMBRE_INDUCCION ?? induccion?.NOMBRE_INDUCCION ?? '',
+						SEMANAS_INDUCCION:
+							data?.SEMANAS_INDUCCION ?? induccion?.SEMANAS_INDUCCION ?? null,
+						RESPONSABLE: (data?.RESPONSABLE ?? responsable).trim(),
+					};
+					this.sincronizarEntrenamiento(entrenamiento);
+					this.entrenamientoOriginal = { ...entrenamiento };
+					this.induccionInvalida = false;
+					this.entrenamientoEditando = false;
+					this.loadingVisible = false;
+					this.notifyFx('Entrenamiento modificado con exito!', NotifyType.Success, { raw: true });
+				},
+				error: (error) => {
+					this.notificarErrorOperacion(error, 'guardar');
+					this.loadingVisible = false;
+				},
+			});
+	}
+
+	cancelarEdicionEntrenamiento(): void {
+		if (!this.entrenamientoEditando) {
+			return;
+		}
+		this.sincronizarEntrenamiento(this.entrenamientoOriginal, false);
+		this.induccionInvalida = false;
+		this.entrenamientoEditando = false;
+	}
+
+	private obtenerEntrenamientoActual(): {
+		CORR_INDUCCION: number | null;
+		NOMBRE_INDUCCION: string;
+		SEMANAS_INDUCCION: number | null;
+		RESPONSABLE: string;
+	} {
+		return {
+			CORR_INDUCCION:
+				this.model?.CORR_INDUCCION != null && Number(this.model.CORR_INDUCCION) > 0
+					? Number(this.model.CORR_INDUCCION)
+					: null,
+			NOMBRE_INDUCCION: this.model?.NOMBRE_INDUCCION ?? '',
+			SEMANAS_INDUCCION: this.model?.SEMANAS_INDUCCION ?? null,
+			RESPONSABLE: this.model?.RESPONSABLE ?? '',
+		};
+	}
+
+	private sincronizarEntrenamiento(
+		entrenamiento: {
+			CORR_INDUCCION: number | null;
+			NOMBRE_INDUCCION: string;
+			SEMANAS_INDUCCION: number | null;
+			RESPONSABLE: string;
+		},
+		actualizarGrid = true
+	): void {
+		Object.assign(this.model, entrenamiento);
+		if (this.modelUpdate) {
+			Object.assign(this.modelUpdate, entrenamiento);
+		}
+		if (!actualizarGrid || !Array.isArray(this.models)) {
+			return;
+		}
+
+		const corrDescriptor = Number(this.model.CORR_DESCRIPTOR_PUESTO);
+		this.models = this.models.map((row: ScDescriptorPuesto) =>
+			Number(row.CORR_DESCRIPTOR_PUESTO) === corrDescriptor
+				? { ...row, ...entrenamiento }
+				: row
+		);
+		this.cdr.detectChanges();
 	}
 
 	private normalizarEdadPerfil(value: unknown): number | null {
@@ -2986,11 +3224,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	private limpiarPerfil(): void {
-		if (this.perfilPersistTimer) {
-			clearTimeout(this.perfilPersistTimer);
-			this.perfilPersistTimer = null;
-		}
 		this.perfil = { ...PERFIL_PUESTO_DEFAULT };
+		this.perfilOriginal = { ...this.perfil };
+		this.perfilEditando = false;
 		this.perfilExiste = false;
 		this.perfilSubTabIndex = 0;
 		this.educaciones = [];
@@ -3038,6 +3274,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							MODALIDAD_NOMBRE: row.MODALIDAD_NOMBRE ?? '',
 							LICENCIA: row.LICENCIA ?? PERFIL_PUESTO_DEFAULT.LICENCIA,
 						};
+						this.perfilOriginal = { ...this.perfil };
+						this.perfilEditando = false;
 						this.perfilExiste = true;
 						this.cargarEducacion(forzar);
 						this.cargarExperiencia(forzar);
@@ -3059,6 +3297,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
 			CORR_PERFIL_PUESTO: 0,
 		};
+		this.perfilOriginal = { ...this.perfil };
+		this.perfilEditando = false;
 		this.perfilExiste = false;
 		this.educaciones = [];
 		this.experiencias = [];
@@ -3096,65 +3336,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					}
 
 					if (Number(this.perfil.CORR_PERFIL_PUESTO) > 0) {
+						this.perfilOriginal = { ...this.perfil };
 						this.cargarEducacion(forzar);
 						this.cargarExperiencia(forzar);
 						this.cargarCompetenciasTecnicas(forzar);
 						this.cargarCompetenciasConductuales(forzar);
 					}
-				},
-				error: (error) => this.notificarErrorOperacion(error, 'guardar'),
-			});
-	}
-
-	private programarPersistirPerfil(): void {
-		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
-		if (!corrDescriptor || corrDescriptor <= 0 || this.readOnly) {
-			return;
-		}
-
-		if (this.perfilPersistTimer) {
-			clearTimeout(this.perfilPersistTimer);
-		}
-
-		this.perfilPersistTimer = setTimeout(() => this.persistirPerfilEnLinea(), 500);
-	}
-
-	private persistirPerfilEnLinea(): void {
-		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
-		if (!corrDescriptor || corrDescriptor <= 0 || this.readOnly) {
-			return;
-		}
-
-		const esCreacion = !this.perfilExiste;
-		this.service
-			.persistirPerfil(corrDescriptor, this.perfil, this.perfilExiste)
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (!response?.Result) {
-						this.notificarRespuestaOperacion(response, 'guardar');
-						return;
-					}
-
-					const saved = response.Data as ScDescriptorPerfilPuesto;
-					if (saved) {
-						this.perfil = {
-							...this.perfil,
-							...saved,
-						};
-						this.perfilExiste = true;
-					} else if (Number(response?.CodeHelper) > 0) {
-						this.perfil.CORR_PERFIL_PUESTO = Number(response.CodeHelper);
-						this.perfilExiste = true;
-					}
-
-					// Solo en la creación inicial: ahí recién existe CORR_PERFIL_PUESTO.
-					if (esCreacion && Number(this.perfil.CORR_PERFIL_PUESTO) > 0) {
-						this.cargarEducacion(true);
-						this.cargarExperiencia(true);
-						this.cargarCompetenciasTecnicas(true);
-						this.cargarCompetenciasConductuales(true);
-					}
+					this.perfilOriginal = { ...this.perfil };
 				},
 				error: (error) => this.notificarErrorOperacion(error, 'guardar'),
 			});
@@ -3986,7 +4174,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			{ editando: this.requerimientosOrganizacionalesEditando, nombre: 'Requerimientos organizacionales', tabIndex: 7 },
 			{ editando: this.riesgosPuestoEditando, nombre: 'Riesgos del puesto', tabIndex: 8 },
 			{ editando: this.responsabilidadesCargoEditando, nombre: 'Responsabilidades del cargo', tabIndex: 9 },
-			{ editando: this.actividadesEditando, nombre: 'Actividades', tabIndex: 1 }
+			{ editando: this.actividadesEditando, nombre: 'Actividades', tabIndex: 1 },
+			{ editando: this.perfilEditando, nombre: 'Perfil', tabIndex: 4 },
+			{ editando: this.entrenamientoEditando, nombre: 'Entrenamiento', tabIndex: 10 },
 		];
 
 		const pendientes = detalles.filter((detalle) => detalle.editando);

@@ -6,6 +6,7 @@ namespace SGUEES.Services
 {
     public interface ISC_INDUCCIONService
     {
+        Task<CResult> GetCatalogoDescriptorAsync(SC_INDUCCIONParam xWhere);
         Task<CResult> GetAllAsync(SC_INDUCCIONParam xWhere);
         Task<CResult> GetAsync(SC_INDUCCIONParam xWhere);
         Task<CResult> CreateAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION);

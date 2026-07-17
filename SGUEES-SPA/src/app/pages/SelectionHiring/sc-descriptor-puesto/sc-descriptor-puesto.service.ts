@@ -184,6 +184,24 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	getInduccionesLookup(): Observable<IResult> {
+		return this.repo.getInducciones();
+	}
+
+	actualizarEntrenamiento(
+		corrDescriptorPuesto: number,
+		corrInduccion: number | null,
+		responsable: string
+	): Observable<IResult> {
+		return this.repo.updateEntrenamiento(
+			{
+				CORR_INDUCCION: corrInduccion,
+				RESPONSABLE: (responsable ?? '').trim(),
+			},
+			corrDescriptorPuesto
+		);
+	}
+
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO }]);
 	}

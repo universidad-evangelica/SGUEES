@@ -27,6 +27,25 @@ export class ScDescriptorPuestoRepository {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	getInducciones(): Observable<IResult> {
+		return this.objData.Get(
+			'SC_INDUCCION',
+			'GetCORR_INDUCCION_SC_DESCRIPTOR_PUESTO',
+			[],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	updateEntrenamiento(model: any, corrDescriptorPuesto: number): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'ActualizarEntrenamiento',
+			[{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto }],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

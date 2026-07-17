@@ -162,6 +162,60 @@ namespace SGUEES.Services
             return result;
         }
 
+        public async Task<CResult> ActualizarEntrenamientoAsync(
+            SC_DESCRIPTOR_PUESTOTable Data,
+            string vLOGIN_SISTEMA,
+            string vESTACION)
+        {
+            if (Data == null)
+            {
+                return ValidationError("No se recibieron datos del entrenamiento.");
+            }
+
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            if (Data.CORR_DESCRIPTOR_PUESTO <= 0)
+            {
+                return ValidationError("No se pudo identificar el descriptor de puesto a actualizar.");
+            }
+
+            if (!Data.CORR_INDUCCION.HasValue || Data.CORR_INDUCCION <= 0)
+            {
+                return ValidationError("Debe seleccionar una induccion.");
+            }
+
+            if (string.IsNullOrWhiteSpace(Data.RESPONSABLE))
+            {
+                return ValidationError("Debe ingresar el responsable del entrenamiento.");
+            }
+
+            if (Data.RESPONSABLE.Trim().Length > 100)
+            {
+                return ValidationError("El responsable del entrenamiento no puede superar 100 caracteres.");
+            }
+
+            var induccion = await _repo.GetInduccionActivaAsync(
+                Data.CORR_EMPRESA,
+                Data.CORR_INDUCCION.Value);
+            if (induccion == null)
+            {
+                return ValidationError("La induccion seleccionada no existe o se encuentra inactiva.");
+            }
+
+            Data.NOMBRE_INDUCCION = induccion.NOMBRE_INDUCCION;
+            Data.SEMANAS_INDUCCION = induccion.SEMANAS_INDUCCION;
+            Data.RESPONSABLE = Data.RESPONSABLE.Trim();
+            Data.USUARIO_ACTU = vLOGIN_SISTEMA;
+            Data.ESTACION_ACTU = vESTACION;
+            Data.FECHA_ACTU = DateTime.Now;
+
+            return await _repo.ActualizarEntrenamientoAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);

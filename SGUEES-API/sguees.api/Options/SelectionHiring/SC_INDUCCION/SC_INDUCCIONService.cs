@@ -15,6 +15,21 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        public async Task<CResult> GetCatalogoDescriptorAsync(SC_INDUCCIONParam xWhere)
+        {
+            var rows = await _repo.GetCatalogoDescriptorAsync(xWhere.CORR_EMPRESA);
+            return new CResult
+            {
+                Data = rows,
+                Result = true,
+                RowsAffected = rows.Count,
+                CodeHelper = 0,
+                ErrorCode = 0,
+                ErrorMessage = "",
+                ErrorSource = "",
+            };
+        }
+
         public async Task<CResult> GetAllAsync(SC_INDUCCIONParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));

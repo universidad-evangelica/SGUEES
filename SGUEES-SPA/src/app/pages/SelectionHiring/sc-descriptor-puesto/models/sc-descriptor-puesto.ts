@@ -27,6 +27,12 @@ export interface ScDescriptorPuesto {
 	NOMBRE_UNIDAD?: string;
 }
 
+export interface ScInduccionLookupItem {
+	CORR_INDUCCION: number;
+	NOMBRE_INDUCCION: string;
+	SEMANAS_INDUCCION: number | null;
+}
+
 export interface MockUnidad {
 	CORR_UNIDAD: number;
 	NOMBRE_UNIDAD: string;

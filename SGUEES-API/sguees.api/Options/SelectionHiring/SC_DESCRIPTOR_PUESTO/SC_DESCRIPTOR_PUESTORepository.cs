@@ -166,7 +166,6 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "NOMBRE_UNIDAD", Value = Data.NOMBRE_UNIDAD, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "CORR_IMPACTO_ECONOMICO", Value = Data.CORR_IMPACTO_ECONOMICO, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "DESCRIPCION_IMPACTO_ECONOMICO", Value = Data.DESCRIPCION_IMPACTO_ECONOMICO, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "RESPONSABLE", Value = Data.RESPONSABLE, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FORMATO", Value = Data.FORMATO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "VERSION", Value = Data.VERSION, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "ESTADO_DESCRIPTOR", Value = Data.ESTADO_DESCRIPTOR, DbType = System.Data.DbType.String },
@@ -205,6 +204,93 @@ namespace SGUEES.Repositories
                 objResultado.ErrorMessage = duplicateKey
                     ? "No se pudo guardar el registro porque otro usuario guardo un registro al mismo tiempo. Intente nuevamente."
                     : e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        public async Task<SC_INDUCCIONView> GetInduccionActivaAsync(int corrEmpresa, int corrInduccion)
+        {
+            const string sql = @"SELECT TOP 1
+                  A.CORR_INDUCCION,
+                  A.NOMBRE_INDUCCION,
+                  A.SEMANAS_INDUCCION
+                FROM SC_INDUCCION A
+                WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+                  AND A.CORR_INDUCCION = @CORR_INDUCCION
+                  AND ISNULL(A.ESTADO_INDUCCION, 1) = 1";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_INDUCCION", Value = corrInduccion, DbType = System.Data.DbType.Int32 },
+                });
+
+                var response = new List<SC_INDUCCIONView>().FromDataReader(reader).FirstOrDefault();
+                reader.Close();
+                return response;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
+        public async Task<CResult> ActualizarEntrenamientoAsync(
+            SC_DESCRIPTOR_PUESTOTable Data,
+            string vLOGIN_SISTEMA,
+            string vESTACION)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_INDUCCION", Value = Data.CORR_INDUCCION, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "NOMBRE_INDUCCION", Value = Data.NOMBRE_INDUCCION, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "SEMANAS_INDUCCION", Value = Data.SEMANAS_INDUCCION, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "RESPONSABLE", Value = Data.RESPONSABLE, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
+                };
+
+                var pWhere = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                };
+
+                var reader = await objData.Update(_TableName, p, pWhere);
+                var response = new List<SC_DESCRIPTOR_PUESTOView>().FromDataReader(reader).FirstOrDefault();
+                reader.Close();
+
+                objResultado.Data = response;
+                objResultado.Result = response != null;
+                objResultado.RowsAffected = response == null ? 0 : 1;
+                objResultado.CodeHelper = Data.CORR_DESCRIPTOR_PUESTO;
+                objResultado.ErrorCode = response == null ? -1 : 0;
+                objResultado.ErrorMessage = response == null
+                    ? "No se encontro el descriptor de puesto para la empresa de la sesion."
+                    : "";
+                objResultado.ErrorSource = response == null ? "[SC_DESCRIPTOR_PUESTORepository]" : "";
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.RowsAffected = 0;
+                objResultado.CodeHelper = Data.CORR_DESCRIPTOR_PUESTO;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
                 objResultado.ErrorSource += $"[{e.Source}]";
             }
             finally
