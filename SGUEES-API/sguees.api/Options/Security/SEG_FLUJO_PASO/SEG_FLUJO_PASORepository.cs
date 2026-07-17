@@ -106,7 +106,7 @@ namespace sguees.Repositories
                     new CParameter() {ParameterName="CORR_FLUJO_PROCESO",Value=Data.CORR_FLUJO_PROCESO,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="ORDEN",Value=Data.ORDEN,DbType=System.Data.DbType.Decimal},
                     new CParameter() {ParameterName="NOMBRE_PASO",Value=Data.NOMBRE_PASO,DbType=System.Data.DbType.String},
-                    new CParameter() {ParameterName="TIPO_USUARIO",Value=Data.TIPO_USUARIO,DbType=System.Data.DbType.Int32},
+                    new CParameter() {ParameterName="CORR_ACTOR_ORIGEN",Value=Data.CORR_ACTOR_ORIGEN,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_ESTADO_ORIGEN",Value=Data.CORR_ESTADO_ORIGEN,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_ESTADO_ORIGEN_ALT",Value=Data.CORR_ESTADO_ORIGEN_ALT ?? (object)DBNull.Value,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_PASO_RETORNO",Value=Data.CORR_PASO_RETORNO ?? (object)DBNull.Value,DbType=System.Data.DbType.Int32},
@@ -163,7 +163,7 @@ namespace sguees.Repositories
                 {
                     new CParameter() {ParameterName="ORDEN",Value=Data.ORDEN,DbType=System.Data.DbType.Decimal},
                     new CParameter() {ParameterName="NOMBRE_PASO",Value=Data.NOMBRE_PASO,DbType=System.Data.DbType.String},
-                    new CParameter() {ParameterName="TIPO_USUARIO",Value=Data.TIPO_USUARIO,DbType=System.Data.DbType.Int32},
+                    new CParameter() {ParameterName="CORR_ACTOR_ORIGEN",Value=Data.CORR_ACTOR_ORIGEN,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_ESTADO_ORIGEN",Value=Data.CORR_ESTADO_ORIGEN,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_ESTADO_ORIGEN_ALT",Value=Data.CORR_ESTADO_ORIGEN_ALT ?? (object)DBNull.Value,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_PASO_RETORNO",Value=Data.CORR_PASO_RETORNO ?? (object)DBNull.Value,DbType=System.Data.DbType.Int32},

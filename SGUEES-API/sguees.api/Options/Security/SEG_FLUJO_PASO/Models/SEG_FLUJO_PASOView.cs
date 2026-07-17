@@ -9,7 +9,7 @@ namespace sguees.Models
         public int CORR_FLUJO_PROCESO { get; set; }
         public decimal ORDEN { get; set; }
         public string NOMBRE_PASO { get; set; }
-        public int TIPO_USUARIO { get; set; }
+        public int CORR_ACTOR_ORIGEN { get; set; }
         public int CORR_ESTADO_ORIGEN { get; set; }
         public int? CORR_ESTADO_ORIGEN_ALT { get; set; }
         public int? CORR_PASO_RETORNO { get; set; }

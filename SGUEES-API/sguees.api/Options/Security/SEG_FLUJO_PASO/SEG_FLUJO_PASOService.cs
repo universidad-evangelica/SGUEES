@@ -68,7 +68,7 @@ namespace sguees.Services
             if (Data.CORR_FLUJO_PROCESO <= 0)
                 return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "Debe seleccionar un flujo" };
 
-            if (Data.TIPO_USUARIO <= 0)
+            if (Data.CORR_ACTOR_ORIGEN <= 0)
                 return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "Debe seleccionar un actor" };
 
             if (Data.CORR_ESTADO_ORIGEN <= 0)
@@ -91,7 +91,7 @@ namespace sguees.Services
             if (Data.CORR_FLUJO_PROCESO <= 0)
                 return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "Debe seleccionar un flujo" };
 
-            if (Data.TIPO_USUARIO <= 0)
+            if (Data.CORR_ACTOR_ORIGEN <= 0)
                 return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "Debe seleccionar un actor" };
 
             if (Data.CORR_ESTADO_ORIGEN <= 0)

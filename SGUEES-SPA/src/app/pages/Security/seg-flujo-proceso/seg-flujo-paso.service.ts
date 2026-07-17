@@ -65,20 +65,12 @@ export class SegFlujoPasoService {
 
     getItems(): any {
         return [
+            // Fila 1: total 8 cols
             {
                 dataField: 'CORR_FLUJO_PASO',
                 label: { text: 'Corr.' },
                 colSpan: 1,
                 editorOptions: { readOnly: true },
-            },
-            {
-                dataField: 'NUMERO_PASO',
-                label: { text: 'Número' },
-                colSpan: 2,
-                editorOptions: {
-                    placeholder: 'Número del paso...',
-                    showClearButton: true,
-                },
             },
             {
                 dataField: 'NOMBRE_PASO',
@@ -93,13 +85,20 @@ export class SegFlujoPasoService {
             {
                 dataField: 'CORR_ACTOR_ORIGEN',
                 label: { text: 'Actor Origen' },
-                colSpan: 3,
+                colSpan: 2,
                 template: 'CORR_ACTOR_ORIGENLookup',
             },
             {
+                dataField: 'CORR_ACTOR_DESTINO',
+                label: { text: 'Actor Destino' },
+                colSpan: 2,
+                template: 'CORR_ACTOR_DESTINOLookup',
+            },
+            // Fila 2: total 8 cols
+            {
                 dataField: 'DESCRIPCION_PASO',
                 label: { text: 'Descripción' },
-                colSpan: 8,
+                colSpan: 7,
                 editorType: 'dxTextArea',
                 editorOptions: {
                     placeholder: 'Descripción del paso...',

@@ -55,6 +55,17 @@
                         >
                         </app-data-lookup>
                     </div>
+                     <div *dxTemplate="let cellInfo of 'CORR_ACTOR_DESTINOLookup'">
+                     <app-data-lookup
+                            [model]="mCORR_ACTOR_DESTINO"
+                            [(value)]="pasoModel.CORR_ACTOR_DESTINO"
+                            [valueExpr]="'CORR_ACTOR'"
+                            [displayExpr]="'NOMBRE_ACTOR'"
+                            [selectedRowKeys]="selectedLookUpCORR_ACTOR_DESTINO"
+                            [readOnly]="pasoReadOnly"
+                        >
+                        </app-data-lookup>
+                    </div>
                 </dx-form>
             </div>
 

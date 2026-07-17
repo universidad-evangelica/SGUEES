@@ -59,6 +59,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
         this.inicializaOpciones();
         this.getCORR_TIPO_DOCUMENTO();
         this.getCORR_ACTOR_ORIGEN();
+        this.getCORR_ACTOR_DESTINO();
         this.consultar();
     }
 
@@ -103,6 +104,28 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                 next: (response: any) => {
                     if (response.Result) {
                         this.mCORR_ACTOR_ORIGEN = response.Data;
+                    }
+                },
+                error: (error: any) => {
+                    this.notifyFx(error, NotifyType.Error);
+                },
+            });
+    }
+      getCORR_ACTOR_DESTINO() {
+
+        this.appInfoService
+            .getLookUp(
+                'SEG_FLUJO_PROCESO',
+                'SEG_FLUJO_ACTOR',
+                'GetCORR_FLUJO_ACTOR',
+                undefined,
+                environment.UrlGENERALAPI
+            )
+            .pipe(take(1))
+            .subscribe({
+                next: (response: any) => {
+                    if (response.Result) {
+                        this.mCORR_ACTOR_DESTINO = response.Data;
                     }
                 },
                 error: (error: any) => {
@@ -563,6 +586,9 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
     //#endregion
 
     selectedLookUpCORR_ACTOR_ORIGEN(vRow: any): any {
+        return vRow[0].CORR_ACTOR;
+    }
+     selectedLookUpCORR_ACTOR_DESTINO(vRow: any): any {
         return vRow[0].CORR_ACTOR;
     }
 }

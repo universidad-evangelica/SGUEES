@@ -103,12 +103,6 @@ export class SegFlujoActorAsignacionService {
                 editorOptions: { readOnly: true },
             },
             {
-                dataField: 'CORR_ACTOR_ORIGEN',
-                label: { text: 'Actor Origen' },
-                colSpan: 3,
-                template: 'CORR_ACTOR_ORIGENLookup',
-            },
-            {
                 dataField: 'CORR_UNIDAD',
                 label: { text: 'Unidad' },
                 colSpan: 3,
