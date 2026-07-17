@@ -2064,9 +2064,47 @@
 				</dxi-item>
 
 				<dxi-item title="Entrenamiento">
-					<div class="descriptor-sub-tab-content descriptor-sub-tab-placeholder">
-						<h4 class="descriptor-sub-tab-heading">Entrenamiento</h4>
-						<p>Seccion en construccion.</p>
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-perfil-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-toolbox descriptor-perfil-icon" aria-hidden="true"></span>
+								Entrenamiento
+							</h4>
+						</div>
+
+						<div class="descriptor-perfil-tab-content">
+							<div class="descriptor-perfil-form">
+								<div class="descriptor-perfil-row descriptor-perfil-row--secondary">
+									<div class="descriptor-perfil-field">
+										<label class="descriptor-perfil-label">Tipo</label>
+										<dx-select-box
+											[items]="model.NOMBRE_INDUCCION ? [model.NOMBRE_INDUCCION] : []"
+											[value]="model.NOMBRE_INDUCCION || null"
+											[readOnly]="true"
+											placeholder="Seleccione el tipo de entrenamiento..."
+										></dx-select-box>
+									</div>
+
+									<div class="descriptor-perfil-field">
+										<label class="descriptor-perfil-label">Duración</label>
+										<dx-text-box
+											[value]="model.SEMANAS_INDUCCION ? model.SEMANAS_INDUCCION + ' semanas' : ''"
+											[readOnly]="true"
+											placeholder="Duración del entrenamiento..."
+										></dx-text-box>
+									</div>
+
+									<div class="descriptor-perfil-field">
+										<label class="descriptor-perfil-label">Responsables</label>
+										<dx-text-box
+											[value]="model.RESPONSABLE || ''"
+											[readOnly]="true"
+											placeholder="Responsables del entrenamiento..."
+										></dx-text-box>
+									</div>
+								</div>
+							</div>
+						</div>
 					</div>
 				</dxi-item>
 
