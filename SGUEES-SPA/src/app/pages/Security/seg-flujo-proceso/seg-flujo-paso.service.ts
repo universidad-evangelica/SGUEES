@@ -94,6 +94,12 @@ export class SegFlujoPasoService {
                 colSpan: 2,
                 template: 'CORR_ACTOR_DESTINOLookup',
             },
+            {
+                dataField: 'CORR_UNIDAD_DESTINO',
+                label: { text: 'Unidad destino (NULL->Inferirá unidad documento)', visible: false },
+                colSpan: 2,
+                template: 'CORR_UNIDAD_DESTINOTemplate',
+            },
             // Fila 2: total 8 cols
             {
                 dataField: 'DESCRIPCION_PASO',

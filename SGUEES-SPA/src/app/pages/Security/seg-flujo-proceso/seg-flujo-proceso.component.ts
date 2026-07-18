@@ -39,6 +39,8 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
     mCORR_TIPO_DOCUMENTO: any;
     mCORR_ACTOR_ORIGEN: any;
     mCORR_ACTOR_DESTINO: any;
+    unidadesPaso: any[] = [];
+    mostrarUnidadDestino: boolean = false;
 
     // Variables para Pasos
     pasos: SegFlujoPaso[] = [];
@@ -60,6 +62,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
         this.getCORR_TIPO_DOCUMENTO();
         this.getCORR_ACTOR_ORIGEN();
         this.getCORR_ACTOR_DESTINO();
+        this.cargarUnidadesPaso();
         this.consultar();
     }
 
@@ -132,6 +135,46 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                     this.notifyFx(error, NotifyType.Error);
                 },
             });
+    }
+
+    cargarUnidadesPaso() {
+        this.appInfoService
+            .getLookUp(
+                'SEG_FLUJO_PROCESO',
+                'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES',
+                'GetCORR_UNIDADES',
+                undefined,
+                environment.UrlGENERALAPI
+            )
+            .pipe(take(1))
+            .subscribe({
+                next: (response: any) => {
+                    if (response.Result) {
+                        this.unidadesPaso = (response.Data || []).map((u: any) => ({
+                            ...u,
+                            NOMBRE_UNIDAD_TREE: (u.CODIGO_UNIDAD ? u.CODIGO_UNIDAD + ' - ' : '') + (u.NOMBRE_UNIDAD || ''),
+                        }));
+                    }
+                },
+                error: (error: any) => {
+                    this.notifyFx(error, NotifyType.Error);
+                },
+            });
+    }
+
+    onActorDestinoChanged(corrActor: number) {
+        this.mostrarUnidadDestino = corrActor !== 1 && corrActor !== 2 && corrActor !== 3;
+        if (!this.mostrarUnidadDestino && this.pasoModel) {
+            this.pasoModel.CORR_UNIDAD_DESTINO = null;
+        }
+    }
+
+    selectedLookUpCORR_ACTOR_ORIGEN(vRow: any): any {
+        return vRow[0]?.CORR_ACTOR;
+    }
+
+    selectedLookUpCORR_ACTOR_DESTINO(vRow: any): any {
+        return vRow[0]?.CORR_ACTOR;
     }
 
     cargarPasos() {
@@ -400,6 +443,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
             CORR_FLUJO_PASO: 0,
             CORR_ACTOR_ORIGEN: 0,
             CORR_ACTOR_DESTINO: 0,
+            CORR_UNIDAD_DESTINO: null,
             NUMERO_PASO: 0,
             NOMBRE_PASO: '',
             DESCRIPCION_PASO: '',
@@ -413,6 +457,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
         };
         this.banderaMttoPaso = UpdateType.Add;
         this.pasoReadOnly = false;
+        this.mostrarUnidadDestino = false;
         this.habilitarPaso();
     }
 
@@ -487,6 +532,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
     cancelarPaso(): void {
         this.banderaMttoPaso = UpdateType.Browse;
         this.pasoReadOnly = false;
+        this.mostrarUnidadDestino = false;
         if (this.pasoModel && this.pasoModel.CORR_FLUJO_PASO > 0) {
             const original = this.pasos.find(p => p.CORR_FLUJO_PASO === this.pasoModel?.CORR_FLUJO_PASO);
             if (original) {
@@ -511,6 +557,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
         this.pasoModel = { ...paso };
         this.banderaMttoPaso = UpdateType.Update;
         this.pasoReadOnly = false;
+        this.mostrarUnidadDestino = paso.CORR_ACTOR_DESTINO !== 1 && paso.CORR_ACTOR_DESTINO !== 2 && paso.CORR_ACTOR_DESTINO !== 3;
         this.habilitarPaso();
     }
     //#endregion
@@ -584,11 +631,4 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
         this.pasoReadOnly = false;
     }
     //#endregion
-
-    selectedLookUpCORR_ACTOR_ORIGEN(vRow: any): any {
-        return vRow[0].CORR_ACTOR;
-    }
-     selectedLookUpCORR_ACTOR_DESTINO(vRow: any): any {
-        return vRow[0].CORR_ACTOR;
-    }
 }
