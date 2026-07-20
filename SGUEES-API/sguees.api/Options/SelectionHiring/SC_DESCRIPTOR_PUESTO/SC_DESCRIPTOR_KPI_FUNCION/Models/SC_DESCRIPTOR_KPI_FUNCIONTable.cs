@@ -11,6 +11,7 @@ namespace SGUEES.Models
         public int CORR_KPI_FUNCION { get; set; }
         public string NOMBRE_INDICADOR { get; set; }
         public int? CORR_FRECUENCIA { get; set; }
+        public string NOMBRE_FRECUENCIA { get; set; }
         public int? META { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }

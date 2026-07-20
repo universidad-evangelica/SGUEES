@@ -805,6 +805,7 @@ export class ScDescriptorPuestoService {
 			CORR_KPI_FUNCION: kpi.CORR_KPI_FUNCION ?? 0,
 			NOMBRE_INDICADOR: (kpi.NOMBRE_INDICADOR ?? '').trim(),
 			CORR_FRECUENCIA: kpi.CORR_FRECUENCIA ?? null,
+			NOMBRE_FRECUENCIA: (kpi.NOMBRE_FRECUENCIA ?? '').trim(),
 			META: kpi.META ?? null,
 		};
 
@@ -824,6 +825,7 @@ export class ScDescriptorPuestoService {
 			CORR_KPI_FUNCION: 0,
 			NOMBRE_INDICADOR: '',
 			CORR_FRECUENCIA: null,
+			NOMBRE_FRECUENCIA: '',
 			META: null,
 		});
 	}

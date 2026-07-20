@@ -106,6 +106,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_FRECUENCIA: ScFrecuenciaLookup[] = [];
 	// Lookup del editor KPI: activas + solo la frecuencia de la fila en edición (si está inactiva).
 	mCORR_FRECUENCIA_KPI_EDIT: ScFrecuenciaLookup[] = [];
+	frecuenciasKpiLookupColumns = [
+		{ dataField: 'CORR_FRECUENCIA', caption: 'Codigo', width: 90 },
+		{ dataField: 'NOMBRE_FRECUENCIA_CATALOGO', caption: 'Frecuencia', width: 280 },
+	];
 	mCORR_DISPONIBILIDAD_HORARIO: ScDisponibilidadHorarioLookup[] = [];
 	// Lookup de perfil: activas + la disponibilidad ya asociada (si está inactiva).
 	mCORR_DISPONIBILIDAD_HORARIO_EDIT: ScDisponibilidadHorarioLookup[] = [];
@@ -542,13 +546,22 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			.subscribe({
 				next: (response: any) => {
 					if (response?.Result && Array.isArray(response.Data)) {
-						this.mCORR_FRECUENCIA = response.Data.map((item: ScFrecuenciaLookup) => ({
-							CORR_FRECUENCIA: Number(item.CORR_FRECUENCIA),
-							NOMBRE_FRECUENCIA: item.NOMBRE_FRECUENCIA ?? '',
-						}));
+						this.mCORR_FRECUENCIA = response.Data.map((item: ScFrecuenciaLookup) => {
+							const nombre = (item.NOMBRE_FRECUENCIA ?? '').trim();
+							return {
+								CORR_FRECUENCIA: Number(item.CORR_FRECUENCIA),
+								NOMBRE_FRECUENCIA: nombre,
+								NOMBRE_FRECUENCIA_CATALOGO: nombre,
+							};
+						});
+					} else {
+						this.mCORR_FRECUENCIA = [];
 					}
 				},
-				error: (error) => this.notifyApiError(error),
+				error: (error) => {
+					this.mCORR_FRECUENCIA = [];
+					this.notifyApiError(error);
+				},
 			});
 	}
 
@@ -1792,7 +1805,33 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	onKpiFrecuenciaLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && value > 0 ? Number(value) : null;
+		const fromCatalog = this.mCORR_FRECUENCIA.find(
+			(item) => Number(item.CORR_FRECUENCIA) === Number(corr)
+		);
+		const fromEdit = this.mCORR_FRECUENCIA_KPI_EDIT.find(
+			(item) => Number(item.CORR_FRECUENCIA) === Number(corr)
+		);
+		const nombre = (
+			fromCatalog?.NOMBRE_FRECUENCIA_CATALOGO ??
+			fromCatalog?.NOMBRE_FRECUENCIA ??
+			fromEdit?.NOMBRE_FRECUENCIA_CATALOGO ??
+			''
+		).trim();
+
+		// Aunque sea el mismo corr, forzar nombre del catálogo (re-selección tras renombre).
+		if (cellInfo?.data) {
+			cellInfo.data.CORR_FRECUENCIA = corr;
+			cellInfo.data.NOMBRE_FRECUENCIA = nombre;
+		}
+
+		const live = this.resolverFilaKpi(cellInfo?.data);
+		if (live) {
+			live.CORR_FRECUENCIA = corr;
+			live.NOMBRE_FRECUENCIA = nombre;
+		}
+
 		cellInfo.setValue(corr);
+		this.prepararFrecuenciasLookupParaEdicionKpi(cellInfo?.data);
 	}
 
 	setKpiFrecuenciaCellValue = (
@@ -1801,11 +1840,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		_currentRowData: ScDescriptorKpiFuncion
 	): void => {
 		const corr = value != null && Number(value) > 0 ? Number(value) : null;
-		const frecuencia = this.mCORR_FRECUENCIA_KPI_EDIT.find(
+		const fromCatalog = this.mCORR_FRECUENCIA.find(
+			(item) => Number(item.CORR_FRECUENCIA) === Number(corr)
+		);
+		const fromEdit = this.mCORR_FRECUENCIA_KPI_EDIT.find(
 			(item) => Number(item.CORR_FRECUENCIA) === Number(corr)
 		);
 		newData.CORR_FRECUENCIA = corr;
-		newData.NOMBRE_FRECUENCIA = frecuencia?.NOMBRE_FRECUENCIA ?? '';
+		newData.NOMBRE_FRECUENCIA = (
+			fromCatalog?.NOMBRE_FRECUENCIA_CATALOGO ??
+			fromCatalog?.NOMBRE_FRECUENCIA ??
+			fromEdit?.NOMBRE_FRECUENCIA_CATALOGO ??
+			''
+		).trim();
 	};
 
 	// Los detalles de Perfil comparten CORR_PERFIL_PUESTO. Antes de agregar una fila se garantiza
@@ -4240,6 +4287,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Activas del catálogo + solo la frecuencia ya asociada a la fila KPI en edición (si está inactiva).
+	// NOMBRE_FRECUENCIA (valor cerrado) puede conservar el snapshot del KPI;
+	// NOMBRE_FRECUENCIA_CATALOGO se usa en el popup para mostrar el catálogo tal cual.
 	private prepararFrecuenciasLookupParaEdicionKpi(row?: ScDescriptorKpiFuncion | null): void {
 		const fila = this.resolverFilaKpi(row);
 		const porCorr = new Map<number, ScFrecuenciaLookup>();
@@ -4247,25 +4296,45 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		for (const item of this.mCORR_FRECUENCIA ?? []) {
 			const corr = Number(item.CORR_FRECUENCIA);
 			if (corr > 0) {
+				const nombreCatalogo = (
+					item.NOMBRE_FRECUENCIA_CATALOGO ??
+					item.NOMBRE_FRECUENCIA ??
+					''
+				).trim();
 				porCorr.set(corr, {
 					CORR_FRECUENCIA: corr,
-					NOMBRE_FRECUENCIA: item.NOMBRE_FRECUENCIA ?? '',
+					NOMBRE_FRECUENCIA: nombreCatalogo,
+					NOMBRE_FRECUENCIA_CATALOGO: nombreCatalogo,
 				});
 			}
 		}
 
 		const corrAsociada = Number(fila?.CORR_FRECUENCIA);
-		if (corrAsociada > 0 && !porCorr.has(corrAsociada)) {
-			porCorr.set(corrAsociada, {
-				CORR_FRECUENCIA: corrAsociada,
-				NOMBRE_FRECUENCIA: (fila?.NOMBRE_FRECUENCIA ?? '').trim() || `Frecuencia ${corrAsociada}`,
-			});
+		const nombreDescriptor = (fila?.NOMBRE_FRECUENCIA ?? '').trim();
+		if (corrAsociada > 0) {
+			const existente = porCorr.get(corrAsociada);
+			if (existente) {
+				porCorr.set(corrAsociada, {
+					CORR_FRECUENCIA: corrAsociada,
+					NOMBRE_FRECUENCIA: nombreDescriptor || existente.NOMBRE_FRECUENCIA,
+					NOMBRE_FRECUENCIA_CATALOGO:
+						existente.NOMBRE_FRECUENCIA_CATALOGO || existente.NOMBRE_FRECUENCIA,
+				});
+			} else {
+				porCorr.set(corrAsociada, {
+					CORR_FRECUENCIA: corrAsociada,
+					NOMBRE_FRECUENCIA: nombreDescriptor || `Frecuencia ${corrAsociada}`,
+					NOMBRE_FRECUENCIA_CATALOGO: nombreDescriptor || `Frecuencia ${corrAsociada}`,
+				});
+			}
 		}
 
 		this.mCORR_FRECUENCIA_KPI_EDIT = Array.from(porCorr.values()).sort((a, b) =>
-			(a.NOMBRE_FRECUENCIA || '').localeCompare(b.NOMBRE_FRECUENCIA || '', 'es', {
-				sensitivity: 'base',
-			})
+			(a.NOMBRE_FRECUENCIA_CATALOGO || a.NOMBRE_FRECUENCIA || '').localeCompare(
+				b.NOMBRE_FRECUENCIA_CATALOGO || b.NOMBRE_FRECUENCIA || '',
+				'es',
+				{ sensitivity: 'base' }
+			)
 		);
 	}
 
@@ -6311,6 +6380,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			CORR_KPI_FUNCION: esNuevo ? 0 : Number(data.CORR_KPI_FUNCION) || 0,
 			NOMBRE_INDICADOR: (data.NOMBRE_INDICADOR ?? '').trim(),
 			CORR_FRECUENCIA: data.CORR_FRECUENCIA ?? null,
+			NOMBRE_FRECUENCIA: (data.NOMBRE_FRECUENCIA ?? '').trim(),
 			META: data.META ?? null,
 		};
 

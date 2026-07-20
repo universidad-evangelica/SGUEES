@@ -102,6 +102,11 @@ namespace SGUEES.Services
                 return ValidationError("El indicador no puede superar 255 caracteres.");
             }
 
+            if (!string.IsNullOrEmpty(Data.NOMBRE_FRECUENCIA) && Data.NOMBRE_FRECUENCIA.Trim().Length > 50)
+            {
+                return ValidationError("El nombre de la frecuencia no puede superar 50 caracteres.");
+            }
+
             if (Data.META.HasValue && (Data.META < 0 || Data.META > 100))
             {
                 return ValidationError("La meta debe estar entre 0 y 100.");

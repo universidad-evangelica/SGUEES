@@ -14,4 +14,6 @@ export interface ScDescriptorKpiFuncion {
 export interface ScFrecuenciaLookup {
 	CORR_FRECUENCIA: number;
 	NOMBRE_FRECUENCIA: string;
+	/** Nombre vigente del catálogo (popup); NOMBRE_FRECUENCIA puede ser snapshot del KPI. */
+	NOMBRE_FRECUENCIA_CATALOGO?: string;
 }

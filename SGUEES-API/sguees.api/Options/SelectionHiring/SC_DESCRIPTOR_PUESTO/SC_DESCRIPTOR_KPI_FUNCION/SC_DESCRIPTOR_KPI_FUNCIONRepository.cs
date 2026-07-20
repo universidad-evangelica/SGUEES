@@ -154,6 +154,7 @@ namespace SGUEES.Repositories
                 {
                     new CParameter() { ParameterName = "NOMBRE_INDICADOR", Value = Data.NOMBRE_INDICADOR, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "CORR_FRECUENCIA", Value = Data.CORR_FRECUENCIA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "NOMBRE_FRECUENCIA", Value = Data.NOMBRE_FRECUENCIA, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "META", Value = Data.META, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
@@ -249,6 +250,7 @@ namespace SGUEES.Repositories
                 new CParameter() { ParameterName = "CORR_KPI_FUNCION", Value = Data.CORR_KPI_FUNCION, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "NOMBRE_INDICADOR", Value = Data.NOMBRE_INDICADOR, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "CORR_FRECUENCIA", Value = Data.CORR_FRECUENCIA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "NOMBRE_FRECUENCIA", Value = Data.NOMBRE_FRECUENCIA, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "META", Value = Data.META, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },
