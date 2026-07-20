@@ -12,7 +12,7 @@ namespace sguees.Models
         public string CODIGO_SISTEMA { get; set; }        
 		[StringLength(10, MinimumLength = 4, ErrorMessage = "Debe especificar entre 4 y 10 caracteres")]
         public string CODIGO_MENU  { get; set; }        
-		[StringLength(30, MinimumLength = 4, ErrorMessage = "Debe especificar entre 4 y 30 caracteres")]
+		[StringLength(50, MinimumLength = 4, ErrorMessage = "Debe especificar entre 4 y 50 caracteres")]
         public string CODIGO_OPCION { get; set; }
         public bool NUEVO  { get; set; }
         public bool MODIFICAR  { get; set; }

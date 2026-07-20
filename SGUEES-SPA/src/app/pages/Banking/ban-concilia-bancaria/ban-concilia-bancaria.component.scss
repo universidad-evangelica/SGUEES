@@ -1,0 +1,65 @@
+@import '../ban-documento/ban-documento.component.scss';
+
+.concilia-edit-shell {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sguees-content-gap, 16px);
+}
+
+.concilia-form-card,
+.concilia-detalle-card {
+	margin-bottom: 0;
+}
+
+.concilia-section-head {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-bottom: var(--sguees-space-4, 16px);
+	padding-bottom: var(--sguees-space-3, 12px);
+	border-bottom: 1px solid var(--border-color);
+}
+
+.concilia-section-title {
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--sguees-text-primary);
+}
+
+.concilia-section-subtitle {
+	font-size: 12px;
+	color: var(--sguees-text-secondary, var(--texteditor-label-color));
+}
+
+.concilia-split {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
+
+.concilia-split-pane {
+	min-width: 0;
+}
+
+.concilia-pane-title {
+	font-weight: 600;
+	margin-bottom: 8px;
+}
+
+.concilia-deta-toolbar,
+.concilia-action-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.concilia-action-bar {
+	margin-top: 12px;
+}
+
+@media (max-width: 1100px) {
+	.concilia-split {
+		grid-template-columns: 1fr;
+	}
+}

@@ -185,6 +185,12 @@
       </dxo-toolbar>
 
       <dxo-editing mode="row" [refreshMode]="'reshape'" [allowDeleting]="true" [useIcons]="true" [confirmDelete]="confirmDelete"></dxo-editing>
+      <dxo-selection
+        *ngIf="selectionMode === 'multiple'"
+        mode="multiple"
+        showCheckBoxesMode="always"
+        selectAllMode="page"
+      ></dxo-selection>
       <dxo-load-panel [enabled]="true"></dxo-load-panel>
 
       <dxo-search-panel

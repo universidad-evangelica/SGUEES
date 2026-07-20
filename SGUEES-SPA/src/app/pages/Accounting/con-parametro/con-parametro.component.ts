@@ -14,7 +14,8 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 export class ConParametroComponent extends CBaseComponent implements OnInit {
 	protected override etiquetaRegistro = 'el parámetro';
 	protected override requiereEmpresaSesion = true;
-	protected override mttoGridKeyExpr = 'CORR_EMPRESA';
+	protected override mttoGridKeyExpr = 'CORR_EMPRESA';
+
 	//#region <Declarando Variales>
 	readOnly = false;
 	// #endregion
@@ -31,7 +32,8 @@ export class ConParametroComponent extends CBaseComponent implements OnInit {
 	}
 
 	//#region <Inicializando Opciones>
-	ngOnInit(): void {		this.inicializaOpciones();
+	ngOnInit(): void {
+		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
 	}
@@ -41,7 +43,8 @@ export class ConParametroComponent extends CBaseComponent implements OnInit {
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
-		if (xEstado === UpdateType.Browse) {		}
+		if (xEstado === UpdateType.Browse) {
+		}
 	}
 
 	//#region <Manejo de Combos>

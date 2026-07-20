@@ -6,6 +6,8 @@ using System.Reflection;
 using sgueesRpt.Layouts;
 using sgueesRpt.Models;
 
+using sgueesRpt.Reports.Accounting.CON_GASTOS;
+
 namespace sgueesRpt.Reports.Accounting
 {
 	/// <summary>
@@ -25,20 +27,18 @@ namespace sgueesRpt.Reports.Accounting
 			"FECHA_IMPRESION",
 		};
 
-		public static DataSet CreateDataSet(List<CON_REPORTE_IMPRView> rows, string detailTableName)
+		public static DataSet CreateDataSet<T>(List<T> rows, string detailTableName)
 		{
+			var firstRow = rows != null && rows.Count > 0 ? rows[0] : default(T);
 			return CreateDataSetInternal(
-				Utils.CreateDataTable(rows ?? new List<CON_REPORTE_IMPRView>()),
-				ToHeaderDictionary(rows?.FirstOrDefault()),
+				Utils.CreateDataTable(rows ?? new List<T>()),
+				ToHeaderDictionary(firstRow),
 				detailTableName);
 		}
 
 		public static DataSet CreateDataSet(List<CON_GASTOS_IMPRView> rows, string detailTableName)
 		{
-			return CreateDataSetInternal(
-				Utils.CreateDataTable(rows ?? new List<CON_GASTOS_IMPRView>()),
-				ToHeaderDictionary(rows?.FirstOrDefault()),
-				detailTableName);
+			return CreateDataSet<CON_GASTOS_IMPRView>(rows, detailTableName);
 		}
 
 		private static DataSet CreateDataSetInternal(

@@ -103,5 +103,13 @@ namespace sguees.Controllers
 			Data.CORR_EMPRESA = GetCorrEmpresa();
 			return await _service.GetAllAsync(Data);
 		}
+
+		[HttpGet("GetCORR_TIPO_CHEQUE_BAN_SOLI_CHEQUE")]
+		[Authorize(Policy = "/ban-soli-cheque|R")]
+		public async Task<CResult> GetCORR_TIPO_CHEQUE_BAN_SOLI_CHEQUE([FromQuery] BAN_TIPO_CHEQUEParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetAllAsync(Data);
+		}
 	}
 }

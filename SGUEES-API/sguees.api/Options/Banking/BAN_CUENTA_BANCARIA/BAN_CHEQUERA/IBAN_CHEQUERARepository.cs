@@ -8,5 +8,6 @@ namespace sguees.Repositories
 {
 	public interface IBAN_CHEQUERARepository : IRepository<BAN_CHEQUERATable>
 	{
+		Task<CResult> GetActivaPorCuentaAsync(List<CParameter> xWhere);
 	}
 }

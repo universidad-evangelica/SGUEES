@@ -1,30 +1,44 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { take } from 'rxjs/operators';
+import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { BanTipoMoviBancario } from './models/ban-tipo-movi-bancario';
 import { BanTipoMoviBancarioService } from './ban-tipo-movi-bancario.service';
+import { BanTipoMoviSegunBanco } from './models/ban-tipo-movi-segun-banco';
+import { BanTipoMoviSegunBancoService } from './ban-tipo-movi-segun-banco/ban-tipo-movi-segun-banco.service';
 
 @Component({
 	selector: 'app-ban-tipo-movi-bancario',
 	templateUrl: './ban-tipo-movi-bancario.component.html',
 })
 export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnInit {
+	@ViewChild('gridSegunBanco', { static: false }) gridSegunBanco!: DxDataGridComponent;
+
 	protected override etiquetaRegistro = 'el tipo de movimiento';
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_TIPO_MOVIMIENTO';
 	protected override mttoCampoEstado = 'ESTADO_TIPO_MOVIMIENTO';
-	protected override mttoEstadoDescribeField = 'NOMBRE_TIPO_MOVIMIENTO';
+	protected override mttoEstadoDescribeField = 'NOMBRE_TIPO_MOVIMIENTO';
+
 	//#region <Declarando Variales>
 	mCORR_LINEA: any;
 	mCORR_CLASE_PARTIDA: any;
 	mSUMA_RESTA: any;
 	mCLASE_MOVIMIENTO: any;
 	mCUENTA_CONTABLE: any[] = [];
+	mCORR_BANCO: any[] = [];
+	segunBancoDetalle: BanTipoMoviSegunBanco[] = [];
+	segunBancoColumns: any[] = [];
+	bancoLookupColumns: any[] = [
+		{ dataField: 'CORR_BANCO', caption: 'Código', width: 80 },
+		{ dataField: 'NOMBRE_BANCO', caption: 'Banco', width: 280 },
+	];
 	cuentaLookupColumns: any[] = [
 		{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta', width: 120 },
 		{ dataField: 'NOMBRE_CUENTA', caption: 'Nombre cuenta', width: 280 },
@@ -43,16 +57,19 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: BanTipoMoviBancarioService
+		private service: BanTipoMoviBancarioService,
+		private segunBancoService: BanTipoMoviSegunBancoService
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
+		this.segunBancoColumns = this.segunBancoService.getSegunBancoColumns();
 	}
 
 	//#region <Inicializando Opciones>
-	ngOnInit(): void {		this.inicializaOpciones();
+	ngOnInit(): void {
+		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
 	}
@@ -62,7 +79,8 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
-		if (xEstado === UpdateType.Browse) {		}
+		if (xEstado === UpdateType.Browse) {
+		}
 	}
 
 	//#region <Manejo de Combos>
@@ -72,6 +90,23 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 		this.getSUMA_RESTA();
 		this.getCLASE_MOVIMIENTO();
 		this.getCUENTA_CONTABLE();
+		this.getCORR_BANCO();
+	}
+
+	getCORR_BANCO() {
+		this.appInfoService
+			.getLookUp('BAN_TIPO_MOVI_BANCARIO', 'GEN_BANCO', 'GetCORR_BANCO_BAN_TIPO_MOVI_BANCARIO', undefined, environment.UrlCONTAAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.mCORR_BANCO = response.Data;
+					}
+				},
+				error: (error: any) => {
+					this.notifyApiError(error);
+				},
+			});
 	}
 
 	getCUENTA_CONTABLE() {
@@ -207,6 +242,182 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 			return;
 		}
 		super.nuevo();
+		this.segunBancoDetalle = [];
+	}
+
+	override editarClick(e: any): void {
+		super.editarClick(e);
+		this.cargarSegunBanco();
+	}
+
+	override rowDblClick(e: any): void {
+		super.rowDblClick(e);
+		this.cargarSegunBanco();
+	}
+
+	override focusedRowChanged(e: any): void {
+		super.focusedRowChanged(e);
+		if (this.isBrowse()) {
+			this.cargarSegunBancoBrowse();
+		}
+	}
+
+	cargarSegunBancoBrowse(): void {
+		if (!this.model?.CORR_TIPO_MOVIMIENTO) {
+			this.segunBancoDetalle = [];
+			return;
+		}
+		this.segunBancoService
+			.getAll(this.model.CORR_TIPO_MOVIMIENTO)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.segunBancoDetalle = response.Data || [];
+					}
+				},
+				error: (error: any) => this.notifyApiError(error),
+			});
+	}
+
+	cargarSegunBanco(): void {
+		if (!this.model?.CORR_TIPO_MOVIMIENTO) {
+			this.segunBancoDetalle = [];
+			return;
+		}
+		this.segunBancoService
+			.getAll(this.model.CORR_TIPO_MOVIMIENTO)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.segunBancoDetalle = response.Data || [];
+						this.gridSegunBanco?.instance?.refresh();
+					}
+				},
+				error: (error: any) => this.notifyApiError(error),
+			});
+	}
+
+	puedeEditarSegunBanco(): boolean {
+		return this.isForm() && !this.readOnly && this.model?.CORR_TIPO_MOVIMIENTO > 0;
+	}
+
+	segunBancoInitNewRow(e: any): void {
+		e.data.CORR_EMPRESA = this.model.CORR_EMPRESA;
+		e.data.CORR_TIPO_MOVIMIENTO = this.model.CORR_TIPO_MOVIMIENTO;
+		e.data.CODIGO_MOVIMIENTO = '';
+		e.data.NOMBRE_MOVIMIENTO_SEGUN_BANCO = '';
+	}
+
+	segunBancoRowValidating(e: any): void {
+		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (!data.CORR_BANCO) {
+			e.isValid = false;
+			e.errorText = 'Debe seleccionar el banco';
+			this.notifyFx(e.errorText, NotifyType.Warning);
+			return;
+		}
+		if (!data.CODIGO_MOVIMIENTO?.trim()) {
+			e.isValid = false;
+			e.errorText = 'Debe indicar el código del banco';
+			this.notifyFx(e.errorText, NotifyType.Warning);
+		}
+	}
+
+	private buildSegunBancoPayload(data: any): BanTipoMoviSegunBanco {
+		const banco = this.mCORR_BANCO?.find((row: any) => row.CORR_BANCO === data.CORR_BANCO);
+		return {
+			CORR_EMPRESA: this.model.CORR_EMPRESA,
+			CORR_TIPO_MOVIMIENTO: this.model.CORR_TIPO_MOVIMIENTO,
+			CORR_BANCO: data.CORR_BANCO,
+			NOMBRE_BANCO: banco?.NOMBRE_BANCO ?? data.NOMBRE_BANCO,
+			CODIGO_MOVIMIENTO: data.CODIGO_MOVIMIENTO,
+			NOMBRE_MOVIMIENTO_SEGUN_BANCO: data.NOMBRE_MOVIMIENTO_SEGUN_BANCO,
+		};
+	}
+
+	segunBancoRowInserting(e: any): void {
+		if (!this.puedeEditarSegunBanco()) {
+			e.cancel = true;
+			return;
+		}
+		e.cancel = new Promise((resolve) => {
+			this.segunBancoService
+				.insert(this.buildSegunBancoPayload(e.data))
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (response.Result) {
+							this.cargarSegunBanco();
+							resolve(false);
+						} else {
+							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							resolve(true);
+						}
+					},
+					error: (error: any) => {
+						this.notifyFx(error, NotifyType.Error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	segunBancoRowUpdating(e: any): void {
+		if (!this.puedeEditarSegunBanco()) {
+			e.cancel = true;
+			return;
+		}
+		const data = { ...e.oldData, ...e.newData };
+		e.cancel = new Promise((resolve) => {
+			this.segunBancoService
+				.update(this.buildSegunBancoPayload(data))
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (response.Result) {
+							this.cargarSegunBanco();
+							resolve(false);
+						} else {
+							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							resolve(true);
+						}
+					},
+					error: (error: any) => {
+						this.notifyFx(error, NotifyType.Error);
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	segunBancoRowRemoving(e: any): void {
+		if (!this.puedeEditarSegunBanco()) {
+			e.cancel = true;
+			return;
+		}
+		e.cancel = new Promise((resolve) => {
+			this.segunBancoService
+				.delete(this.buildSegunBancoPayload(e.data))
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (response.Result) {
+							this.cargarSegunBanco();
+							this.notifyFx('Registro eliminado con éxito.', NotifyType.Success);
+							resolve(false);
+						} else {
+							this.notifyFx(response.ErrorMessage, NotifyType.Error);
+							resolve(true);
+						}
+					},
+					error: (error: any) => {
+						this.notifyFx(error, NotifyType.Error);
+						resolve(true);
+					},
+				});
+		});
 	}
 
 	guardar(): void {
@@ -214,6 +425,11 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
 			insert: () => this.service.insert(this.model),
 			update: () => this.service.update(this.model),
+			onSuccess: (_data: unknown, isAdd: boolean) => {
+				if (isAdd) {
+					this.cargarSegunBanco();
+				}
+			},
 		});
 	}
 
@@ -279,5 +495,9 @@ export class BanTipoMoviBancarioComponent extends CBaseComponent implements OnIn
 
 	selectedLookUpCUENTA_CONTABLE(vRow: any): any {
 		return vRow[0].CUENTA_CONTABLE;
+	}
+
+	selectedLookUpCORR_BANCO(vRow: any): any {
+		return vRow[0].CORR_BANCO;
 	}
 }

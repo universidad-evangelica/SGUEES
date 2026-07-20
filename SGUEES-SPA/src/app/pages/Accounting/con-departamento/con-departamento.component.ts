@@ -30,7 +30,8 @@ export class ConDepartamentoComponent extends CBaseComponent implements OnInit {
 
 	protected override requiereEmpresaSesion = true;
 
-	protected override mttoGridKeyExpr = 'CORR_DEPARTAMENTO';
+	protected override mttoGridKeyExpr = 'CORR_DEPARTAMENTO';
+
 
 
 	constructor(
@@ -65,7 +66,8 @@ export class ConDepartamentoComponent extends CBaseComponent implements OnInit {
 
 	//#region <Inicializando Opciones>
 
-	ngOnInit(): void {
+	ngOnInit(): void {
+
 		this.consultar();
 
 	}
@@ -78,7 +80,8 @@ export class ConDepartamentoComponent extends CBaseComponent implements OnInit {
 
 		super.AsignaStatus(xEstado);
 
-		if (xEstado === UpdateType.Browse) {
+		if (xEstado === UpdateType.Browse) {
+
 		}
 
 	}

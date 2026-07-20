@@ -14,7 +14,8 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 export class ConCatalogoPresupuestoComponent extends CBaseComponent implements OnInit {
 	protected override etiquetaRegistro = 'el presupuesto';
 	protected override requiereEmpresaSesion = true;
-	protected override mttoGridKeyExpr = 'CUENTA_CONTABLE';
+	protected override mttoGridKeyExpr = 'CUENTA_CONTABLE';
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -31,13 +32,15 @@ export class ConCatalogoPresupuestoComponent extends CBaseComponent implements O
 	// #endregion
 
 	//#region <Inicializando Opciones>
-	ngOnInit(): void {		this.consultar();
+	ngOnInit(): void {
+		this.consultar();
 	}
 	// #endregion
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
-		if (xEstado === UpdateType.Browse) {		}
+		if (xEstado === UpdateType.Browse) {
+		}
 	}
 
 	//#region <Metodos Mtto>

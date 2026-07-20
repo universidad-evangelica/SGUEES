@@ -14,21 +14,6 @@
 	(consultar)="consultar()"
 	[(FECHA_INICIAL)]="vFECHA_INICIAL"
 	[(FECHA_FINAL)]="vFECHA_FINAL"
-	[btn1]="btnAplicar"
-	[btn1Icon]="'check'"
-	[btn1Width]="150"
-	(btn1Click)="Aplicar()"
-	[btn1Type]="'success'"
-	[btn2]="btnAnular"
-	[btn2Icon]="'close'"
-	[btn2Width]="150"
-	(btn2Click)="Anular()"
-	[btn2Type]="'danger'"
-	[btn3]="btnImprimirCheque"
-	[btn3Icon]="'print'"
-	[btn3Width]="180"
-	(btn3Click)="ImprimirCheque()"
-	[btn3Type]="'default'"
 >
 </app-barra-data-mtto>
 
@@ -83,16 +68,7 @@
 				</app-data-lookup>
 			</div>
 			<div *dxTemplate="let cellInfo of 'CORR_TIPO_CHEQUELookup'">
-				<app-data-lookup
-					[model]="mCORR_TIPO_CHEQUE"
-					[(value)]="model.CORR_TIPO_CHEQUE"
-					[selectedRowKeys]="selectedLookUpCORR_TIPO_CHEQUE"
-					[readOnly]="readOnly"
-					[valueExpr]="'CORR_TIPO_CHEQUE'"
-					[displayExpr]="'NOMBRE_TIPO_CHEQUE'"
-					[lookupColumns]="tipoChequeLookupColumns"
-				>
-				</app-data-lookup>
+				<!-- reservado para pantalla de cheques -->
 			</div>
 			<div *dxTemplate="let cellInfo of 'ESTADO_DOCUMENTOLookup'">
 				<app-data-lookup
@@ -353,7 +329,7 @@
 	[showExport]="false"
 	[showGrouping]="true"
 	[permitePrint]="permitePrint"
-	[exportFileName]="muestraCheques ? 'Cheques' : 'DocumentosBancarios'"
+	[exportFileName]="'DocumentosBancarios'"
 	[permiteEditar]="getPermiteEditar"
 	[permiteDele]="getPermiteDele"
 	[responsiveColumnHiding]="false"

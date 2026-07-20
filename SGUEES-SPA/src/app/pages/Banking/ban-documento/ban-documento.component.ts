@@ -1,7 +1,6 @@
 import { ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { take } from 'rxjs/operators';
-import { custom } from 'devextreme/ui/dialog';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
@@ -15,6 +14,7 @@ import { BanDocumento } from './models/ban-documento';
 import { BanDocumentoDeta } from './models/ban-documento-deta';
 import { BanDocumentoService } from './ban-documento.service';
 import { BanDocumentoDetaService } from './ban-documento-deta/ban-documento-deta.service';
+import { BanDocumentoDetaApiScope } from './ban-documento-deta/ban-documento-deta.repository';
 import { ConCatalogoCuentaCentroCostoService } from '../../Accounting/con-catalogo-cuenta-centro-costo/con-catalogo-cuenta-centro-costo.service';
 
 @Component({
@@ -27,8 +27,10 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 
 	protected override etiquetaRegistro = 'el documento bancario';
 	protected override requiereEmpresaSesion = true;
-
-	muestraCheques = false;
+	protected readonly apiScope = 'documento' as const;
+	protected readonly detaScope: BanDocumentoDetaApiScope = 'documento';
+	protected readonly lookupOpcion = 'BAN_DOCUMENTO';
+	protected readonly esCheque = false;
 	detalles: BanDocumentoDeta[] = [];
 	readOnly = false;
 	detalleEditando = false;
@@ -66,10 +68,6 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 	centrosPorCuentaCache: Record<string, any[]> = {};
 	centrosPorCuentaCargando: Record<string, boolean> = {};
 
-	btnAplicar = '';
-	btnAnular = '';
-	btnImprimirCheque = '';
-
 	vFECHA_INICIAL: Date = new Date();
 	vFECHA_FINAL: Date = new Date();
 
@@ -82,10 +80,9 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		private cuentaCentroService: ConCatalogoCuentaCentroCostoService
 	) {
 		super(appInfoService, router);
-		this.muestraCheques = router.snapshot.data['muestraCheques'] ?? false;
-		this.columns = this.service.getColumns(this.muestraCheques);
+		this.columns = this.service.getColumns(this.esCheque);
 		this.summary = this.service.getSummary();
-		this.items = this.service.getItems();
+		this.items = this.service.getItems(this.esCheque);
 
 		this.cuentaSetCellValue = this.cuentaSetCellValue.bind(this);
 		this.centroCostoSetCellValue = this.centroCostoSetCellValue.bind(this);
@@ -109,15 +106,10 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 
 	inicializaOpciones() {}
 
-	private get lookupOpcion(): string {
-		return this.muestraCheques ? 'BAN_CHEQUE' : 'BAN_DOCUMENTO';
-	}
-
 	llenaComboBox() {
 		this.getMES_PERIODO();
 		this.getCORR_TIPO_MOVIMIENTO();
 		this.getCORR_CUENTA_BANCO();
-		this.getCORR_TIPO_CHEQUE();
 		this.getESTADO_DOCUMENTO();
 		this.getCUENTA_CONTABLE();
 		this.getCORR_CENTRO_COSTO();
@@ -144,7 +136,9 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
-						this.mCORR_TIPO_MOVIMIENTO = response.Data;
+						this.mCORR_TIPO_MOVIMIENTO = (response.Data || []).filter(
+							(item: any) => item.CLASE_MOVIMIENTO !== 'CHQ'
+						);
 					}
 				},
 				error: (error: any) => this.notifyFx(error, NotifyType.Error),
@@ -226,7 +220,6 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 			CORR_DOCUMENTO: 0,
 			FECHA_INICIAL: this.appInfoService.toDate(this.vFECHA_INICIAL),
 			FECHA_FINAL: this.appInfoService.toDate(this.vFECHA_FINAL),
-			MUESTRA_CHEQUES: this.muestraCheques,
 		};
 	}
 
@@ -263,7 +256,7 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 
 	consultar(): void {
 		this.consultarMtto({
-			load: () => this.service.getAll(this.fillParam()),
+			load: () => this.service.getAll(this.apiScope, this.fillParam()),
 		});
 	}
 
@@ -280,9 +273,9 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		}
 
 		this.guardarMtto({
-			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
-			insert: () => this.service.insert(this.model),
-			update: () => this.service.update(this.model),
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this), this.esCheque),
+			insert: () => this.service.insert(this.apiScope, this.model),
+			update: () => this.service.update(this.apiScope, this.model),
 			parchearGrid: false,
 			onSuccess: (data: unknown, isAdd: boolean) => {
 				const row = data as BanDocumento;
@@ -298,8 +291,16 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 						this.models[index] = row;
 					}
 				}
+				this.model = this.fillData(row);
 				this.modelUpdate = this.fillData(row);
-				this.volverAlListado();
+				if (isAdd) {
+					this.AsignaStatus(UpdateType.Update);
+					this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
+					this.habilitar();
+					this.consultarDetalles();
+				} else {
+					this.volverAlListado();
+				}
 			},
 		});
 	}
@@ -310,7 +311,6 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		this.detalleEdicionExplicita = false;
 		this.AsignaStatus(UpdateType.Browse);
 		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
-		this.refrescarBotones();
 	}
 
 	override cancelar(): void {
@@ -319,7 +319,6 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 			this.readOnly = false;
 			this.detalleEditando = false;
 			this.detalleEdicionExplicita = false;
-			this.refrescarBotones();
 		};
 
 		if (this.banderaMtto === UpdateType.Add || this.banderaMtto === UpdateType.Update) {
@@ -335,6 +334,11 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 				finalizarCancelacion();
 			});
 		} else {
+			if (this.banderaMtto === UpdateType.Not_Defined) {
+				this.restaurarFilaGridConsulta(
+					(item: BanDocumento) => this.documentoRowKey(item) === this.documentoRowKey(this.modelUpdate)
+				);
+			}
 			this.AsignaStatus(UpdateType.Browse);
 			finalizarCancelacion();
 		}
@@ -364,7 +368,6 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 					'NOMBRE_BENEFICIARIO',
 					'NOMBRE_PARTIDA',
 					'MONTO_DOCUMENTO',
-					'CORR_TIPO_CHEQUE',
 				] as const
 			).forEach((campo) => {
 				form.getEditor(campo)?.option('readOnly', soloLectura);
@@ -403,16 +406,11 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		return this.model?.CLASE_MOVIMIENTO === 'CHQ';
 	}
 
-	customizeItem(item: any): void {
-		if (item?.itemType === 'simple' && item.dataField === 'CORR_TIPO_CHEQUE') {
-			item.visible = this.esClaseCheque();
-		}
-	}
+	customizeItem(_item: any): void {}
 
 	override rowDblClick(e: any): void {
 		super.rowDblClick(e);
 		this.consultarDetalles();
-		this.refrescarBotones();
 	}
 
 	override editarClick(e: any): void {
@@ -427,7 +425,6 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		super.editarClick(e);
 		this.consultarDetalles();
 		this.habilitar();
-		this.refrescarBotones();
 	}
 
 	override nuevo(): void {
@@ -439,196 +436,23 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		this.detalleEditando = false;
 		this.detalleEdicionExplicita = false;
 		this.habilitar();
-		this.refrescarBotones();
-	}
-
-	refrescarBotones(): void {
-		if (this.isBrowse()) {
-			this.btnAplicar = '';
-			this.btnAnular = '';
-			this.btnImprimirCheque = '';
-			return;
-		}
-
-		this.btnAplicar =
-			this.permiteEdit && this.model?.ESTADO_DOCUMENTO === 'DI' && this.hasDocumentoKeys() ? 'Aplicar' : '';
-		this.btnAnular =
-			this.permiteEdit && this.model?.ESTADO_DOCUMENTO === 'AP' && this.hasDocumentoKeys() ? 'Anular' : '';
-		this.btnImprimirCheque =
-			this.permiteEdit &&
-			this.esClaseCheque() &&
-			this.model?.ESTADO_DOCUMENTO === 'AP' &&
-			this.hasDocumentoKeys()
-				? 'Imprimir Cheque'
-				: '';
-	}
-
-	Aplicar(): void {
-		if (!this.hasDocumentoKeys()) {
-			this.notifyFx('Seleccione un documento para aplicar', NotifyType.Warning);
-			return;
-		}
-
-		const confirma = custom({
-			title: 'Confirmación de Aplicar',
-			messageHtml: '¿Realmente quiere aplicar el documento bancario?',
-			buttons: [
-				{
-					text: 'Sí',
-					onClick: () => {
-						this.loadingVisible = true;
-						this.service
-							.aplicar(this.model)
-							.pipe(take(1))
-							.subscribe({
-								next: (response: any) => {
-									this.loadingVisible = false;
-									if (response.Result && response.ErrorCode === 0) {
-										this.model = response.Data;
-										this.modelUpdate = this.fillData(this.model);
-										const key = this.documentoRowKey(this.model);
-										const vIndex = this.models.findIndex(
-											(item: BanDocumento) => this.documentoRowKey(item) === key
-										);
-										if (vIndex >= 0) {
-											this.models[vIndex] = this.model;
-										}
-										this.bloquear();
-										this.refrescarBotones();
-										this.notifyFx('Documento aplicado con éxito', NotifyType.Success);
-									} else {
-										this.notifyFx(response.ErrorMessage, NotifyType.Error);
-									}
-								},
-								error: (error: any) => {
-									this.loadingVisible = false;
-									this.notifyFx(error, NotifyType.Error);
-								},
-							});
-					},
-				},
-				{ text: 'No', onClick: () => false },
-			],
-		});
-		confirma.show();
-	}
-
-	Anular(): void {
-		if (!this.hasDocumentoKeys()) {
-			this.notifyFx('Seleccione un documento para anular', NotifyType.Warning);
-			return;
-		}
-
-		const confirma = custom({
-			title: 'Confirmación de Anular',
-			messageHtml: '¿Realmente quiere anular el documento bancario?',
-			buttons: [
-				{
-					text: 'Sí',
-					onClick: () => {
-						this.loadingVisible = true;
-						this.service
-							.anular(this.model)
-							.pipe(take(1))
-							.subscribe({
-								next: (response: any) => {
-									this.loadingVisible = false;
-									if (response.Result && response.ErrorCode === 0) {
-										this.model = response.Data;
-										this.modelUpdate = this.fillData(this.model);
-										const key = this.documentoRowKey(this.model);
-										const vIndex = this.models.findIndex(
-											(item: BanDocumento) => this.documentoRowKey(item) === key
-										);
-										if (vIndex >= 0) {
-											this.models[vIndex] = this.model;
-										}
-										this.bloquear();
-										this.refrescarBotones();
-										this.notifyFx('Documento anulado con éxito', NotifyType.Success);
-									} else {
-										this.notifyFx(response.ErrorMessage, NotifyType.Error);
-									}
-								},
-								error: (error: any) => {
-									this.loadingVisible = false;
-									this.notifyFx(error, NotifyType.Error);
-								},
-							});
-					},
-				},
-				{ text: 'No', onClick: () => false },
-			],
-		});
-		confirma.show();
-	}
-
-	ImprimirCheque(): void {
-		if (!this.hasDocumentoKeys() || !this.esClaseCheque()) {
-			this.notifyFx('Seleccione un cheque aplicado para imprimir', NotifyType.Warning);
-			return;
-		}
-
-		const confirma = custom({
-			title: 'Confirmación de Impresión',
-			messageHtml: '¿Realmente quiere imprimir el cheque?',
-			buttons: [
-				{
-					text: 'Sí',
-					onClick: () => {
-						this.loadingVisible = true;
-						this.service
-							.imprimirCheque(this.model)
-							.pipe(take(1))
-							.subscribe({
-								next: (response: any) => {
-									this.loadingVisible = false;
-									if (response.Result && response.ErrorCode === 0) {
-										this.model = response.Data;
-										this.modelUpdate = this.fillData(this.model);
-										const key = this.documentoRowKey(this.model);
-										const vIndex = this.models.findIndex(
-											(item: BanDocumento) => this.documentoRowKey(item) === key
-										);
-										if (vIndex >= 0) {
-											this.models[vIndex] = this.model;
-										}
-										this.refrescarBotones();
-										this.notifyFx('Cheque impreso con éxito', NotifyType.Success);
-									} else {
-										this.notifyFx(response.ErrorMessage, NotifyType.Error);
-									}
-								},
-								error: (error: any) => {
-									this.loadingVisible = false;
-									this.notifyFx(error, NotifyType.Error);
-								},
-							});
-					},
-				},
-				{ text: 'No', onClick: () => false },
-			],
-		});
-		confirma.show();
 	}
 
 	override focusedRowChanged(e: any): void {
 		super.focusedRowChanged(e);
 		if (this.isBrowse()) {
-			this.consultarDetalles(true);
-		} else {
-			this.refrescarBotones();
+			this.consultarDetalles();
 		}
 	}
 
-	consultarDetalles(refrescarBotones = false): void {
+	consultarDetalles(): void {
 		if (!this.hasDocumentoKeys()) {
 			this.detalles = [];
 			return;
 		}
 
 		this.detaService
-			.getAll({
+			.getAll(this.detaScope, {
 				ANIO_PERIODO: this.model.ANIO_PERIODO,
 				MES_PERIODO: this.model.MES_PERIODO,
 				CORR_TIPO_MOVIMIENTO: this.model.CORR_TIPO_MOVIMIENTO,
@@ -642,16 +466,8 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 						this.precargarCentrosDetalle(this.detalles);
 						this.refrescarGridDetalle();
 					}
-					if (refrescarBotones) {
-						this.refrescarBotones();
-					}
 				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-					if (refrescarBotones) {
-						this.refrescarBotones();
-					}
-				},
+				error: (error: any) => this.notifyFx(error, NotifyType.Error),
 			});
 	}
 
@@ -979,18 +795,18 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 
 		this.loadingVisible = true;
 		this.service
-			.insert(this.model)
+			.insert(this.apiScope, this.model)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
 					this.loadingVisible = false;
 					if (response.Result) {
 						this.models.push(response.Data);
-						this.model = response.Data;
+						this.model = this.fillData(response.Data);
 						this.modelUpdate = this.fillData(this.model);
 						this.AsignaStatus(UpdateType.Update);
 						this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
-						this.refrescarBotones();
+						this.consultarDetalles();
 						onSuccess();
 					} else {
 						this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -1031,7 +847,9 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 	private guardarDetalleRemoto(data: any, esNuevo: boolean): Promise<boolean> {
 		return new Promise((resolve, reject) => {
 			const deta = this.buildDetallePayload({ ...data });
-			const operacion = esNuevo ? this.detaService.insert(deta) : this.detaService.update(deta);
+			const operacion = esNuevo
+				? this.detaService.insert(this.detaScope, deta)
+				: this.detaService.update(this.detaScope, deta);
 
 			operacion.pipe(take(1)).subscribe({
 				next: (response: any) => {
@@ -1039,7 +857,6 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 						this.detalleEditando = false;
 						this.detalleEdicionExplicita = false;
 						this.consultarDetalles();
-						this.refrescarBotones();
 						resolve(false);
 					} else {
 						this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -1109,12 +926,11 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 
 		e.cancel = new Promise((resolve, reject) => {
 			this.detaService
-				.delete(this.buildDetallePayload(e.data))
+				.delete(this.detaScope, this.buildDetallePayload(e.data))
 				.pipe(take(1))
 				.subscribe({
 					next: (response: any) => {
 						if (response.Result) {
-							this.refrescarBotones();
 							this.refrescarGridDetalle();
 							this.notifyFx('Línea eliminada con éxito!', NotifyType.Success);
 							resolve(false);
@@ -1143,7 +959,7 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 
 		const removedKey = this.documentoRowKey(e.data);
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.service.delete(e.data),
+			deleteFn: () => this.service.delete(this.apiScope, e.data),
 			parchearGrid: false,
 			reload: () => {
 				this.models = (this.models || []).filter(

@@ -117,6 +117,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() exportFileName = 'Data';
   /** false cuando el hijo confirma en rowRemoving (evita doble diálogo DevExtreme + confirmaAccion). */
   @Input() confirmDelete = true;
+  /** Selección múltiple con casillas (procesos batch: contabilizar, autorizar, etc.). */
+  @Input() selectionMode: 'none' | 'multiple' = 'none';
   @Input() headerFilterLoader?: RemoteHeaderFilterLoader;
   /** null = auto (A+P sin filtro remoto: header filter desde página cargada). */
   @Input() syncHeaderFilterWithPage: boolean | null = null;
@@ -1158,6 +1160,26 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
 
     e.cancel = true;
     this.runExcelExport(e.component);
+  }
+
+  selectAllOnPage(): void {
+    const grid = this.gData?.instance;
+    if (!grid) {
+      return;
+    }
+    grid.selectAll();
+  }
+
+  clearSelection(): void {
+    const grid = this.gData?.instance;
+    if (!grid) {
+      return;
+    }
+    grid.clearSelection();
+  }
+
+  getSelectedRows(): any[] {
+    return this.gData?.instance?.getSelectedRowsData?.() ?? [];
   }
 }
 

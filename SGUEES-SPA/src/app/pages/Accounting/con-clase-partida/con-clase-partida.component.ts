@@ -16,7 +16,8 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 export class ConClasePartidaComponent extends CBaseComponent implements OnInit {
 	protected override etiquetaRegistro = 'la clase de partida';
 	protected override requiereEmpresaSesion = true;
-	protected override mttoGridKeyExpr = 'CORR_CLASE_PARTIDA';
+	protected override mttoGridKeyExpr = 'CORR_CLASE_PARTIDA';
+
 	//#region <Declarando Variales>
 	mLINEA_AUMENTA: any[] = [];
 	mLINEA_DISMINUYE: any[] = [];
@@ -39,14 +40,16 @@ export class ConClasePartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	//#region <Inicializando Opciones>
-	ngOnInit(): void {		this.llenaComboBox();
+	ngOnInit(): void {
+		this.llenaComboBox();
 		this.consultar();
 	}
 	// #endregion
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
-		if (xEstado === UpdateType.Browse) {		}
+		if (xEstado === UpdateType.Browse) {
+		}
 	}
 
 	//#region <Manejo de Combos>

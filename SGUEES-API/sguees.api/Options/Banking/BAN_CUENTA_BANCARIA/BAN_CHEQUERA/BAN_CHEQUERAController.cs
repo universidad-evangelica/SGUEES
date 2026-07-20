@@ -71,5 +71,13 @@ namespace sguees.Controllers
 			var resultado = await _service.DeleteAsync(Data, string.Empty, string.Empty);
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
+
+		[HttpGet("GetActivaBAN_CHEQUE_IMPRIMIR")]
+		[Authorize(Policy = "/ban-cheque-imprimir|R")]
+		public async Task<CResult> GetActivaBAN_CHEQUE_IMPRIMIR([FromQuery] BAN_CHEQUERAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetActivaPorCuentaAsync(Data);
+		}
 	}
 }

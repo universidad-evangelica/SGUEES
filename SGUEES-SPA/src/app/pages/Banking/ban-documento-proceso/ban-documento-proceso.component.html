@@ -1,0 +1,200 @@
+<div class="sguees-mtto-view">
+<h2 class="content-block">{{ tituloVentana }}</h2>
+
+<div class="view-wrapper list-page content-block dx-card responsive-paddings proceso-layout" *ngIf="isBrowse()">
+	<div class="filtros">
+		<div class="filtro filtro-wide" *ngIf="modo === 'documento-contabilizar'">
+			<div class="filtro-label">Estado contable</div>
+			<dx-select-box
+				class="filtro-control"
+				[dataSource]="filtroContabilizadoOpciones"
+				displayExpr="text"
+				valueExpr="value"
+				[(value)]="filtroContabilizado"
+				[width]="280"
+				[height]="44"
+				(valueChange)="onFiltroContabilizadoChanged()"
+			></dx-select-box>
+			<div class="filtro-hint">Para des-contabilizar, elija «Contabilizados» y pulse Consultar.</div>
+		</div>
+		<div class="filtro">
+			<div class="filtro-label">Fecha Inicial</div>
+			<dx-date-box
+				class="filtro-control"
+				[(value)]="vFECHA_INICIAL"
+				[useMaskBehavior]="true"
+				type="date"
+				displayFormat="dd/MM/yyyy"
+				[width]="220"
+				[height]="44"
+			></dx-date-box>
+		</div>
+		<div class="filtro">
+			<div class="filtro-label">Fecha Final</div>
+			<dx-date-box
+				class="filtro-control"
+				[(value)]="vFECHA_FINAL"
+				[useMaskBehavior]="true"
+				type="date"
+				displayFormat="dd/MM/yyyy"
+				[width]="220"
+				[height]="44"
+			></dx-date-box>
+		</div>
+		<div class="filtro-acciones">
+			<dx-button
+				class="filtro-btn"
+				text="Consultar"
+				type="default"
+				icon="search"
+				[width]="150"
+				[height]="44"
+				(onClick)="consultar()"
+			></dx-button>
+			<ng-container *ngIf="esModoLote()">
+				<dx-button
+					class="filtro-btn"
+					text="Todos"
+					type="default"
+					[width]="110"
+					[height]="44"
+					(onClick)="selectTodos()"
+				></dx-button>
+				<dx-button
+					class="filtro-btn"
+					text="Ninguno"
+					type="default"
+					[width]="110"
+					[height]="44"
+					(onClick)="selectNinguno()"
+				></dx-button>
+			</ng-container>
+			<dx-button
+				*ngIf="btnAccion"
+				class="filtro-btn"
+				[text]="btnAccion"
+				type="success"
+				[icon]="
+					modo === 'cheque-imprimir'
+						? 'print'
+						: modo === 'documento-anular' || modo === 'cheque-anular'
+							? 'remove'
+							: 'check'
+				"
+				[width]="esModoLote() ? 170 : 180"
+				[height]="44"
+				(onClick)="ejecutarAccion()"
+			></dx-button>
+			<dx-button
+				*ngIf="btnDescontabilizar"
+				class="filtro-btn"
+				[text]="btnDescontabilizar"
+				type="danger"
+				icon="undo"
+				stylingMode="outlined"
+				[width]="190"
+				[height]="44"
+				(onClick)="descontabilizarDocumentos()"
+			></dx-button>
+		</div>
+	</div>
+
+	<div class="proceso-grid">
+		<app-data-grid-mtto
+			#gridProceso
+			[isBrowse]="true"
+			[models]="models"
+			[columns]="columns"
+			[summary]="summary"
+			[keyExpr]="documentoKeyExpr"
+			[columnAutoWidth]="false"
+			[showSearch]="true"
+			[nativeToolbar]="true"
+			[unifiedToolbar]="false"
+			[showAdd]="false"
+			[showRefresh]="false"
+			[showExport]="true"
+			[showGrouping]="true"
+			[permitePrint]="false"
+			[exportFileName]="tituloVentana"
+			[permiteEditar]="false"
+			[permiteDele]="false"
+			[responsiveColumnHiding]="false"
+			[columnHidingEnabled]="false"
+			[selectionMode]="esModoLote() ? 'multiple' : 'none'"
+			(focusedRowChanged)="focusedRowChanged($event)"
+			(rowDblClick)="rowDblClick($event)"
+		>
+		</app-data-grid-mtto>
+		<div *ngIf="!loadingVisible && sinRegistrosMsg && (!models || models.length === 0)" class="sin-registros-msg">
+			{{ sinRegistrosMsg }}
+		</div>
+	</div>
+</div>
+
+<div *ngIf="!isBrowse()" class="documento-edit-shell content-block">
+	<div class="documento-consulta-toolbar">
+		<dx-button text="Volver" icon="back" type="default" stylingMode="outlined" (onClick)="volverAlListado()"></dx-button>
+	</div>
+
+	<section class="sguees-section-card documento-form-card dx-card responsive-paddings">
+		<header class="documento-section-head">
+			<span class="documento-section-title">Datos del documento bancario</span>
+			<span class="documento-section-subtitle">Consulta de encabezado</span>
+		</header>
+		<dx-form
+			class="sguees-form-premium documento-form"
+			[formData]="documentoConsulta"
+			[items]="documentoViewItems"
+			[labelLocation]="'top'"
+			[colCount]="8"
+			[colCountByScreen]="documentoViewColCountByScreen"
+		></dx-form>
+	</section>
+
+	<section class="sguees-section-card documento-detalle-card dx-card responsive-paddings">
+		<header class="documento-section-head">
+			<span class="documento-section-title">Detalle contable</span>
+			<span class="documento-section-subtitle">Líneas del documento</span>
+		</header>
+		<div class="documento-consulta-grid dx-grid-deta documento-deta-grid">
+			<dx-data-grid
+				class="documento-deta-datagrid"
+				[dataSource]="detallesConsulta"
+				[columns]="detalleColumns"
+				keyExpr="CORR_DOCUMENTO_DETA"
+				[columnAutoWidth]="false"
+				[showBorders]="true"
+				[showColumnLines]="true"
+				[showRowLines]="true"
+				[rowAlternationEnabled]="true"
+				[hoverStateEnabled]="true"
+				[allowColumnResizing]="true"
+				[columnResizingMode]="'widget'"
+				[height]="480"
+				[width]="'100%'"
+			>
+				<dxo-search-panel [visible]="true"></dxo-search-panel>
+				<dxo-paging [enabled]="false"></dxo-paging>
+				<dxo-scrolling mode="standard" [useNative]="true"></dxo-scrolling>
+				<dxo-column-fixing [enabled]="true"></dxo-column-fixing>
+				<dxo-summary>
+					<dxi-total-item column="CORR_DOCUMENTO_DETA" summaryType="count" valueFormat="#,##0" displayFormat="Cant: {0}"></dxi-total-item>
+					<dxi-total-item column="MONTO_CARGO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+					<dxi-total-item column="MONTO_ABONO" summaryType="sum" valueFormat="#,##0.00" displayFormat="{0}"></dxi-total-item>
+				</dxo-summary>
+			</dx-data-grid>
+		</div>
+	</section>
+</div>
+
+<dx-load-panel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>
+</div>

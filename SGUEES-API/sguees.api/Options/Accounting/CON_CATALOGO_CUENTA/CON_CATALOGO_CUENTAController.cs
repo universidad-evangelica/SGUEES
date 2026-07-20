@@ -124,6 +124,13 @@ namespace sguees.Controllers
 			return await GetCuentasDetalleAsync(Data);
 		}
 
+		[HttpGet("GetCUENTA_CONTABLE_BAN_SOLI_CHEQUE")]
+		[Authorize(Policy = "/ban-soli-cheque|R")]
+		public async Task<CResult> GetCUENTA_CONTABLE_BAN_SOLI_CHEQUE([FromQuery] CON_CATALOGO_CUENTAParam Data)
+		{
+			return await GetCuentasDetalleAsync(Data);
+		}
+
 		// --- CON_CTA_CENTRO_COSTO (cuenta ↔ centro) ---
 
 		[HttpGet("GetCUENTA_CONTABLE_CON_CTA_CENTRO_COSTO")]

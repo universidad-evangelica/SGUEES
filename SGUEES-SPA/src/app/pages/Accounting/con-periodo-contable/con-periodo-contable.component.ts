@@ -36,7 +36,8 @@ export class ConPeriodoContableComponent extends CBaseComponent implements OnIni
 
 	protected override mttoGridKeyExpr = 'ANIO_PERIODO';
 
-	readonly periodoGridKeyExpr: string[] = ['ANIO_PERIODO', 'MES_PERIODO'];
+	readonly periodoGridKeyExpr: string[] = ['ANIO_PERIODO', 'MES_PERIODO'];
+
 	private pendingRemoveRow: ConPeriodoContable | null = null;
 
 
@@ -73,7 +74,8 @@ export class ConPeriodoContableComponent extends CBaseComponent implements OnIni
 
 	//#region <Inicializando Opciones>
 
-	ngOnInit(): void {
+	ngOnInit(): void {
+
 		this.inicializaOpciones();
 
 		this.llenaComboBox();
@@ -94,7 +96,8 @@ export class ConPeriodoContableComponent extends CBaseComponent implements OnIni
 
 		super.AsignaStatus(xEstado);
 
-		if (xEstado === UpdateType.Browse) {
+		if (xEstado === UpdateType.Browse) {
+
 		}
 
 	}

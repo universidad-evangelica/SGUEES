@@ -32,6 +32,8 @@ namespace sguees.Models
 		public string USUARIO_ACTU { get; set; }
 		public DateTime? FECHA_ACTU { get; set; }
 		public string ESTACION_ACTU { get; set; }
+		public int CORR_MOVIMIENTO { get; set; }
+		public int CORR_MOVIMIENTO_DESTINO { get; set; }
 		public int CORR_TIPO_CHEQUE { get; set; }
 		public string NOMBRE_TIPO_CHEQUE { get; set; }
 		public int CORR_CHEQUERA { get; set; }

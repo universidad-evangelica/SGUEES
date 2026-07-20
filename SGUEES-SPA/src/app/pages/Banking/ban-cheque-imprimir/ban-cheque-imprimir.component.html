@@ -1,0 +1,144 @@
+<div class="sguees-mtto-view">
+<h2 class="content-block">{{ tituloVentana }}</h2>
+
+<div class="view-wrapper list-page content-block dx-card responsive-paddings imprimir-layout">
+	<div class="filtros imprimir-header">
+		<div class="filtro filtro-cuenta">
+			<div class="filtro-label">Cuenta bancaria</div>
+			<dx-select-box
+				class="filtro-control"
+				[dataSource]="mCORR_CUENTA_BANCO"
+				displayExpr="NOMBRE_CUENTA_BANCO"
+				valueExpr="CORR_CUENTA_BANCO"
+				[(value)]="vCORR_CUENTA_BANCO"
+				[searchEnabled]="true"
+				[showClearButton]="true"
+				[width]="320"
+				[height]="44"
+				(valueChange)="onCuentaChanged($event)"
+			></dx-select-box>
+		</div>
+		<div class="filtro">
+			<div class="filtro-label">Fecha inicial</div>
+			<dx-date-box
+				class="filtro-control"
+				[(value)]="vFECHA_INICIAL"
+				[useMaskBehavior]="true"
+				type="date"
+				displayFormat="dd/MM/yyyy"
+				[showClearButton]="true"
+				[width]="220"
+				[height]="44"
+			></dx-date-box>
+		</div>
+		<div class="filtro">
+			<div class="filtro-label">Fecha final</div>
+			<dx-date-box
+				class="filtro-control"
+				[(value)]="vFECHA_FINAL"
+				[useMaskBehavior]="true"
+				type="date"
+				displayFormat="dd/MM/yyyy"
+				[showClearButton]="true"
+				[width]="220"
+				[height]="44"
+			></dx-date-box>
+		</div>
+
+		<div class="filtro filtro-chequera" *ngIf="vCORR_CUENTA_BANCO">
+			<table class="chequera-tabla" aria-label="Chequera activa">
+				<thead>
+					<tr>
+						<th>Inicio</th>
+						<th>Final</th>
+						<th>Actual</th>
+						<th>Serie</th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr *ngIf="chequeraActiva; else sinChequeraFila">
+						<td>{{ chequeraActiva.NUMERO_CHEQUE_INICIAL }}</td>
+						<td>{{ chequeraActiva.NUMERO_CHEQUE_FINAL }}</td>
+						<td>{{ chequeraActiva.NUMERO_CHEQUE_ACTUAL }}</td>
+						<td>{{ chequeraActiva.SERIE_CHEQUE || '—' }}</td>
+					</tr>
+					<ng-template #sinChequeraFila>
+						<tr>
+							<td colspan="4" class="chequera-warning">Sin chequera activa</td>
+						</tr>
+					</ng-template>
+				</tbody>
+			</table>
+		</div>
+
+		<div class="filtro-acciones">
+			<dx-button
+				class="filtro-btn"
+				text="Limpiar"
+				type="normal"
+				icon="clearformat"
+				stylingMode="outlined"
+				[width]="130"
+				[height]="44"
+				(onClick)="limpiarFiltros()"
+			></dx-button>
+			<dx-button
+				class="filtro-btn"
+				text="Consultar"
+				type="default"
+				icon="search"
+				[width]="150"
+				[height]="44"
+				(onClick)="consultar()"
+			></dx-button>
+			<dx-button
+				*ngIf="permitePrint"
+				class="filtro-btn"
+				text="Imprimir Cheque"
+				type="success"
+				icon="print"
+				[width]="180"
+				[height]="44"
+				(onClick)="imprimirCheque()"
+			></dx-button>
+		</div>
+	</div>
+
+	<div class="imprimir-grid">
+		<app-data-grid-mtto
+			[isBrowse]="true"
+			[models]="models"
+			[columns]="columns"
+			[summary]="summary"
+			[keyExpr]="['ANIO_PERIODO', 'MES_PERIODO', 'CORR_TIPO_MOVIMIENTO', 'CORR_DOCUMENTO']"
+			[columnAutoWidth]="false"
+			[showSearch]="false"
+			[nativeToolbar]="true"
+			[unifiedToolbar]="false"
+			[showAdd]="false"
+			[showRefresh]="false"
+			[showExport]="true"
+			[showGrouping]="true"
+			[showFilterPanel]="true"
+			[permitePrint]="false"
+			[exportFileName]="tituloVentana"
+			[permiteEditar]="false"
+			[permiteDele]="false"
+			[responsiveColumnHiding]="false"
+			[columnHidingEnabled]="false"
+			(focusedRowChanged)="focusedRowChanged($event)"
+		>
+		</app-data-grid-mtto>
+	</div>
+</div>
+
+<dx-load-panel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>
+</div>

@@ -34,7 +34,8 @@ export class ConCatalogoCuentaComponent extends CBaseComponent implements OnInit
 
 	protected override requiereEmpresaSesion = true;
 
-	protected override mttoGridKeyExpr = 'CUENTA_CONTABLE';
+	protected override mttoGridKeyExpr = 'CUENTA_CONTABLE';
+
 
 
 	//#region <Declarando Variales>
@@ -85,7 +86,8 @@ export class ConCatalogoCuentaComponent extends CBaseComponent implements OnInit
 
 	//#region <Inicializando Opciones>
 
-	ngOnInit(): void {
+	ngOnInit(): void {
+
 		this.inicializaOpciones();
 
 		this.llenaComboBox();
@@ -106,7 +108,8 @@ export class ConCatalogoCuentaComponent extends CBaseComponent implements OnInit
 
 		super.AsignaStatus(xEstado);
 
-		if (xEstado === UpdateType.Browse) {
+		if (xEstado === UpdateType.Browse) {
+
 		}
 
 	}

@@ -19,16 +19,7 @@ namespace sguees.api.Policies
                 ClaimName = requirement.PolicyName;
             }
             
-            if (TrySucceedFromClaim(context, requirement, ClaimName))
-                return Task.CompletedTask;
-
-            // Cheques y documentos bancarios comparten API BAN_DOCUMENTO
-            if (ClaimName is "/ban-documento" or "/ban-cheque")
-            {
-                var sibling = ClaimName == "/ban-documento" ? "/ban-cheque" : "/ban-documento";
-                TrySucceedFromClaim(context, requirement, sibling);
-            }
-
+            TrySucceedFromClaim(context, requirement, ClaimName);
             return Task.CompletedTask;
         }
 

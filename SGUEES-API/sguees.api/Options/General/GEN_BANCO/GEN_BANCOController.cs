@@ -86,6 +86,14 @@ namespace sguees.Controllers
 			return await _service.GetAllAsync(Data);
 		}
 
+		[HttpGet("GetCORR_BANCO_BAN_TIPO_MOVI_BANCARIO")]
+		[Authorize(Policy = "/ban-tipo-movi-bancario|R")]
+		public async Task<CResult> GetCORR_BANCO_BAN_TIPO_MOVI_BANCARIO([FromQuery] GEN_BANCOParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetAllAsync(Data);
+		}
+
 		[HttpPut("ActivarInactivar")]
 		[Authorize(Policy = "/gen-banco|U")]
 		public async Task<IActionResult> ActivarInactivar(GEN_BANCOTable Data)

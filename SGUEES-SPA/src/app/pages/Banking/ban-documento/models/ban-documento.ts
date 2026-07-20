@@ -23,6 +23,7 @@ export interface BanDocumento {
 	CANTIDAD_LETRAS?: string;
 	CORR_TIPO_CHEQUE?: number;
 	NOMBRE_TIPO_CHEQUE?: string;
+	CLASE_TIPO_CHEQUE?: string;
 	CORR_CHEQUERA?: number;
 	SERIE_CHEQUE?: string;
 	CORR_MONEDA?: number;

@@ -1,0 +1,95 @@
+/* ============================================================================
+   Menú Seguridad — opciones de administración SGUEES
+   Idempotente. Incluye pantallas de opciones, config menú, usuarios y tipos.
+   ============================================================================
+   Ejecutar:
+     sqlcmd -S 192.168.0.250 -U erp -d SGUEES -f 65001 -i MENU_SEGURIDAD.sql
+   ============================================================================ */
+SET NOCOUNT ON;
+
+DECLARE @SISTEMA   varchar(30) = 'SEGURIDAD';
+DECLARE @MENU      varchar(10) = 'GENERAL';
+DECLARE @SUITE     varchar(30) = 'SGUEES';
+DECLARE @ORD_MENU  int         = 1;
+DECLARE @LOGIN     varchar(30) = 'admin';
+DECLARE @USR       varchar(30) = 'admin';
+DECLARE @EST       varchar(30) = 'SISTEMA';
+DECLARE @HOY       datetime    = GETDATE();
+
+/* Sistema Seguridad (si no existe) */
+MERGE SEG_SISTEMA AS T
+USING (VALUES (@SISTEMA, N'Seguridad', N'', N'SEG', N'Seguridad')) AS S (CODIGO, NOMBRE, IMG, PREF, MODULO)
+ON T.CODIGO_SISTEMA = S.CODIGO
+WHEN MATCHED THEN
+    UPDATE SET T.NOMBRE_SISTEMA = S.NOMBRE, T.NOMBRE_MODULO = S.MODULO
+WHEN NOT MATCHED THEN
+    INSERT (CODIGO_SISTEMA, NOMBRE_SISTEMA, IMAGEN_SISTEMA, PREFIJO, NOMBRE_MODULO)
+    VALUES (S.CODIGO, S.NOMBRE, S.IMG, S.PREF, S.MODULO);
+
+/* Catálogo de opciones */
+DECLARE @Opciones TABLE (CODIGO varchar(30), NOMBRE nvarchar(100), URL nvarchar(4000));
+INSERT INTO @Opciones (CODIGO, NOMBRE, URL) VALUES
+    (N'SEG_OPCION_SISTEMA', N'Opciones del Sistema', N'/seg-opcion-sistema'),
+    (N'SEG_CONFIG_OPCION', N'Configuración de Opciones', N'/seg-config-opcion'),
+    (N'SEG_USUARIO', N'Usuarios', N'/seg-usuario'),
+    (N'SEG_TIPO_USUARIO', N'Tipo de Usuario', N'/seg-tipo-usuario');
+
+MERGE SEG_OPCION_SISTEMA AS T
+USING @Opciones AS S ON T.CODIGO_OPCION = S.CODIGO
+WHEN MATCHED THEN
+    UPDATE SET T.NOMBRE_OPCION = S.NOMBRE,
+               T.URL_OPCION = S.URL,
+               T.IMAGEN_OPCION = N'',
+               T.USUARIO_ACTU = @USR,
+               T.FECHA_ACTU = @HOY,
+               T.ESTACION_ACTU = @EST
+WHEN NOT MATCHED THEN
+    INSERT (CODIGO_OPCION, NOMBRE_OPCION, URL_OPCION, IMAGEN_OPCION, USUARIO_CREA, FECHA_CREA, ESTACION_CREA)
+    VALUES (S.CODIGO, S.NOMBRE, S.URL, N'', @USR, @HOY, @EST);
+
+INSERT INTO SEG_OPCION_SISTEMA_SUITE (CODIGO_OPCION, CODIGO_SUITE)
+SELECT o.CODIGO, @SUITE
+FROM @Opciones o
+WHERE NOT EXISTS (
+    SELECT 1 FROM SEG_OPCION_SISTEMA_SUITE s
+    WHERE s.CODIGO_OPCION = o.CODIGO AND s.CODIGO_SUITE = @SUITE
+);
+
+/* Configuración menú Seguridad / General */
+DECLARE @Config TABLE (OPCION varchar(30), ORD_OPC int);
+INSERT INTO @Config (OPCION, ORD_OPC) VALUES
+    (N'SEG_OPCION_SISTEMA', 1),
+    (N'SEG_CONFIG_OPCION', 2),
+    (N'SEG_USUARIO', 3),
+    (N'SEG_TIPO_USUARIO', 4);
+
+DELETE FROM SEG_CONFIG_OPCION
+WHERE CODIGO_SISTEMA = @SISTEMA
+  AND CODIGO_MENU = @MENU
+  AND CODIGO_OPCION IN (SELECT OPCION FROM @Config);
+
+INSERT INTO SEG_CONFIG_OPCION
+    (CODIGO_SISTEMA, CODIGO_MENU, CODIGO_OPCION, ORDEN_SISTEMA, ORDEN_MENU, ORDEN_OPCION, USUARIO_CREA, FECHA_CREA, ESTACION_CREA)
+SELECT @SISTEMA, @MENU, c.OPCION, 0, @ORD_MENU, c.ORD_OPC, @USR, @HOY, @EST
+FROM @Config c;
+
+/* Permisos admin */
+INSERT INTO SEG_USUARIO_OPCION
+    (LOGIN_SISTEMA, CODIGO_SISTEMA, CODIGO_MENU, CODIGO_OPCION, NUEVO, MODIFICAR, ELIMINAR, IMPRIMIR, USUARIO_CREA, FECHA_CREA, ESTACION_CREA)
+SELECT @LOGIN, @SISTEMA, @MENU, c.OPCION, 1, 1, 1, 1, @USR, @HOY, @EST
+FROM @Config c
+WHERE NOT EXISTS (
+    SELECT 1 FROM SEG_USUARIO_OPCION u
+    WHERE u.LOGIN_SISTEMA = @LOGIN
+      AND u.CODIGO_SISTEMA = @SISTEMA
+      AND u.CODIGO_MENU = @MENU
+      AND u.CODIGO_OPCION = c.OPCION
+);
+
+PRINT N'Menú Seguridad configurado (SEGURIDAD / GENERAL).';
+
+SELECT c.CODIGO_SISTEMA, c.CODIGO_MENU, c.ORDEN_OPCION, c.CODIGO_OPCION, o.NOMBRE_OPCION, o.URL_OPCION
+FROM SEG_CONFIG_OPCION c
+INNER JOIN SEG_OPCION_SISTEMA o ON c.CODIGO_OPCION = o.CODIGO_OPCION
+WHERE c.CODIGO_SISTEMA = @SISTEMA
+ORDER BY c.ORDEN_OPCION;

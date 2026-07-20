@@ -30,17 +30,55 @@ namespace sguees.Repositories
 				var fechaInicial = xWhere.FirstOrDefault(p => p.ParameterName == "FECHA_INICIAL")?.Value;
 				var fechaFinal = xWhere.FirstOrDefault(p => p.ParameterName == "FECHA_FINAL")?.Value;
 
+				EnsureSqlParameter(xWhere, "ESTADO_DOCUMENTO", string.Empty, System.Data.DbType.String);
+				EnsureSqlParameter(xWhere, "CORR_CUENTA_BANCO", 0, System.Data.DbType.Int32);
+				EnsureSqlParameter(xWhere, "EXCLUIR_ANULADOS", false, System.Data.DbType.Boolean);
+				EnsureSqlParameter(xWhere, "MUESTRA_CHEQUES", System.DBNull.Value, System.Data.DbType.Boolean);
+				var muestraCheques = xWhere.FirstOrDefault(p => p.ParameterName == "MUESTRA_CHEQUES");
+				if (muestraCheques != null && muestraCheques.Value == null)
+				{
+					muestraCheques.Value = System.DBNull.Value;
+				}
+
 				var reader = corrDocumento == 0 && fechaInicial != null && fechaFinal != null
 					? await objData.GetDataReader(System.Data.CommandType.Text, @"
 						SELECT A.*
 						FROM V_BAN_DOCUMENTO A
 						WHERE A.CORR_EMPRESA = @CORR_EMPRESA
-						AND A.FECHA_EMISION >= @FECHA_INICIAL
-						AND A.FECHA_EMISION <= @FECHA_FINAL
+						AND (
+							(
+								@FECHA_INICIAL IS NOT NULL
+								AND @FECHA_FINAL IS NOT NULL
+								AND CAST(A.FECHA_EMISION AS DATE) >= CAST(@FECHA_INICIAL AS DATE)
+								AND CAST(A.FECHA_EMISION AS DATE) <= CAST(@FECHA_FINAL AS DATE)
+							)
+							OR (
+								@FECHA_INICIAL IS NOT NULL
+								AND @FECHA_FINAL IS NOT NULL
+								AND A.ANIO_PERIODO = YEAR(CAST(@FECHA_INICIAL AS DATE))
+								AND A.MES_PERIODO >= MONTH(CAST(@FECHA_INICIAL AS DATE))
+								AND A.MES_PERIODO <= MONTH(CAST(@FECHA_FINAL AS DATE))
+							)
+						)
 						AND (
 							@MUESTRA_CHEQUES IS NULL
 							OR (@MUESTRA_CHEQUES = 1 AND A.CLASE_MOVIMIENTO = 'CHQ')
 							OR (@MUESTRA_CHEQUES = 0 AND A.CLASE_MOVIMIENTO <> 'CHQ')
+						)
+						AND (
+							@ESTADO_DOCUMENTO IS NULL
+							OR LTRIM(RTRIM(@ESTADO_DOCUMENTO)) = ''
+							OR A.ESTADO_DOCUMENTO = @ESTADO_DOCUMENTO
+						)
+						AND (
+							@CORR_CUENTA_BANCO IS NULL
+							OR @CORR_CUENTA_BANCO = 0
+							OR A.CORR_CUENTA_BANCO = @CORR_CUENTA_BANCO
+						)
+						AND (
+							@EXCLUIR_ANULADOS IS NULL
+							OR @EXCLUIR_ANULADOS = 0
+							OR A.ESTADO_DOCUMENTO <> 'AN'
 						)
 						ORDER BY A.FECHA_EMISION DESC, A.CORR_DOCUMENTO DESC", xWhere)
 					: await objData.GetDataReader(_ViewName, xWhere);
@@ -108,6 +146,38 @@ namespace sguees.Repositories
 
 		public async Task<CResult> ImprimirChequeAsync(BAN_DOCUMENTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 			=> await ExecDocumentoOperacionAsync(Data, vLOGIN_SISTEMA, vESTACION, "PRAL_IMPR_BAN_CHEQUE_IMPRIME");
+
+		public async Task<CResult> ContabilizarAsync(BAN_DOCUMENTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+			=> await ExecDocumentoOperacionAsync(Data, vLOGIN_SISTEMA, vESTACION, "PRAL_MTTO_BAN_DOCUMENTO_CONTABILIZAR");
+
+		public async Task<CResult> DesContabilizarAsync(BAN_DOCUMENTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+			=> await ExecDocumentoOperacionAsync(Data, vLOGIN_SISTEMA, vESTACION, "PRAL_MTTO_BAN_DOCUMENTO_DESCONTABILIZAR");
+
+		public async Task<CResult> GetChequeImprimirDatosAsync(List<CParameter> xWhere)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var reader = await objData.GetDataReader("V_BAN_CHEQUE_IMPRIME", xWhere);
+				var response = new List<BAN_CHEQUE_IMPRIMEView>().FromDataReader(reader).ToList();
+				reader.Close();
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
 
 		private async Task<CResult> ExecMttoAsync(
 			BAN_DOCUMENTOTable Data,
@@ -225,6 +295,26 @@ namespace sguees.Repositories
 			}
 
 			return objResultado;
+		}
+
+		private static void EnsureSqlParameter(List<CParameter> xWhere, string name, object value, System.Data.DbType dbType)
+		{
+			var existing = xWhere.FirstOrDefault(p => p.ParameterName == name);
+			if (existing == null)
+			{
+				xWhere.Add(new CParameter
+				{
+					ParameterName = name,
+					Value = value ?? System.DBNull.Value,
+					DbType = dbType,
+				});
+				return;
+			}
+
+			if (existing.Value == null)
+			{
+				existing.Value = value ?? System.DBNull.Value;
+			}
 		}
 
 		private static List<CParameter> BuildKeyWhere(BAN_DOCUMENTOTable Data)

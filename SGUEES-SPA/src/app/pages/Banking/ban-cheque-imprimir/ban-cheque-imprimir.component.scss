@@ -1,0 +1,96 @@
+.imprimir-layout {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 20px 24px !important;
+}
+
+.filtros {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	align-items: flex-end;
+}
+
+.imprimir-header {
+	align-items: flex-end;
+	padding-bottom: 16px;
+	border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+}
+
+.filtro-cuenta {
+	min-width: 320px;
+}
+
+.filtro-periodo {
+	flex: 0 0 auto;
+}
+
+.filtro-chequera {
+	flex: 0 0 auto;
+	align-self: flex-end;
+}
+
+.filtro-label {
+	margin-bottom: 6px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.filtro-acciones {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	flex-wrap: wrap;
+	margin-left: auto;
+}
+
+.filtro-control {
+	min-width: 0;
+}
+
+.chequera-tabla {
+	border-collapse: collapse;
+	min-width: 280px;
+	font-size: 13px;
+
+	th,
+	td {
+		border: 1px solid var(--border-color, rgba(255, 255, 255, 0.18));
+		padding: 8px 12px;
+		text-align: center;
+		white-space: nowrap;
+	}
+
+	th {
+		font-size: 12px;
+		font-weight: 600;
+		background: var(--base-bg, rgba(255, 255, 255, 0.04));
+	}
+
+	td {
+		font-weight: 600;
+	}
+}
+
+.chequera-warning {
+	color: #c62828;
+	font-weight: 500;
+}
+
+.imprimir-grid {
+	width: 100%;
+	min-width: 0;
+}
+
+:host ::ng-deep .imprimir-grid .sguees-grid-unified-module--standalone,
+:host ::ng-deep .imprimir-grid .sguees-grid-module-card {
+	padding: 0;
+	border: none;
+	box-shadow: none;
+	background: transparent;
+}
+
+:host ::ng-deep .imprimir-grid .dx-datagrid-header-panel {
+	padding-inline: 0 !important;
+}

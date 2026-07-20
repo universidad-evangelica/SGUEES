@@ -14,7 +14,8 @@ import { ConAreaFuncionalService } from './con-area-funcional.service';
 export class ConAreaFuncionalComponent extends CBaseComponent implements OnInit {
 	protected override etiquetaRegistro = 'el área funcional';
 	protected override requiereEmpresaSesion = true;
-	protected override mttoGridKeyExpr = 'CORR_AREA_FUNCIONAL';
+	protected override mttoGridKeyExpr = 'CORR_AREA_FUNCIONAL';
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -31,13 +32,15 @@ export class ConAreaFuncionalComponent extends CBaseComponent implements OnInit 
 	// #endregion
 
 	//#region <Inicializando Opciones>
-	ngOnInit(): void {		this.consultar();
+	ngOnInit(): void {
+		this.consultar();
 	}
 	// #endregion
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
-		if (xEstado === UpdateType.Browse) {		}
+		if (xEstado === UpdateType.Browse) {
+		}
 	}
 
 	//#region <Metodos Mtto>

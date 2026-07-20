@@ -139,6 +139,14 @@ namespace sguees.Controllers
 			return await _service.GetAllAsync(Data);
 		}
 
+		[HttpGet("GetCORR_CENTRO_COSTO_BAN_SOLI_CHEQUE")]
+		[Authorize(Policy = "/ban-soli-cheque|R")]
+		public async Task<CResult> GetCORR_CENTRO_COSTO_BAN_SOLI_CHEQUE([FromQuery] CON_CENTRO_COSTOParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
 		// --- CON_CTA_CENTRO_COSTO (cuenta ↔ centro) ---
 
 		[HttpGet("GetCORR_CENTRO_COSTO_CON_CTA_CENTRO_COSTO")]

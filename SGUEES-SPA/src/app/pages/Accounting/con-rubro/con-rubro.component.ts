@@ -44,7 +44,8 @@ export class ConRubroComponent extends CBaseComponent implements OnInit {
 
 	protected override requiereEmpresaSesion = true;
 
-	protected override mttoGridKeyExpr = 'CODIGO_RUBRO';
+	protected override mttoGridKeyExpr = 'CODIGO_RUBRO';
+
 
 
 	@ViewChild('gridNiveles', { static: false }) gridNiveles!: DxDataGridComponent;
@@ -89,7 +90,8 @@ export class ConRubroComponent extends CBaseComponent implements OnInit {
 
 	//#region <Inicializando Opciones>
 
-	ngOnInit(): void {
+	ngOnInit(): void {
+
 		this.inicializaOpciones();
 
 		this.llenaComboBox();
@@ -110,7 +112,8 @@ export class ConRubroComponent extends CBaseComponent implements OnInit {
 
 		super.AsignaStatus(xEstado);
 
-		if (xEstado === UpdateType.Browse) {
+		if (xEstado === UpdateType.Browse) {
+
 		}
 
 	}

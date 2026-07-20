@@ -114,7 +114,7 @@ namespace sguees.Controllers
 			Data.ESTACION_CREA = ClientInfoHelper.GetClientStation(HttpContext);
 			Data.USUARIO_ACTU = Data.USUARIO_CREA;
 			Data.FECHA_ACTU = Data.FECHA_CREA;
-			Data.ESTACION_ACTU = Data.USUARIO_CREA;
+			Data.ESTACION_ACTU = Data.ESTACION_CREA;
 
 			var resultado = await _service.UpdateSEG_TIPO_USUARIO_OPCIONAsync(Data, Data.USUARIO_CREA, Data.ESTACION_CREA);
 			if (resultado.ErrorCode == 0)

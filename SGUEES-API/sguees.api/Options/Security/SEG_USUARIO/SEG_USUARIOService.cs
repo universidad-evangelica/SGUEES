@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
 using sguees.Models;
@@ -485,11 +486,24 @@ namespace sguees.Services
             
             foreach (var vOpcion in Opciones)
             {
-                if (vOpcion.CODIGO_OPCION != null && vOpcion.PERMISO != null) {
-                    var vClaims = appIdentity.Claims.FirstOrDefault(x => x.Type == vOpcion.CODIGO_OPCION);
-                    if (vClaims == null)
-                        appIdentity.AddClaim(new Claim(vOpcion.URL_OPCION, vOpcion.PERMISO));
-                }  
+                if (string.IsNullOrEmpty(vOpcion.URL_OPCION) || string.IsNullOrEmpty(vOpcion.PERMISO))
+                {
+                    continue;
+                }
+
+                var existingClaim = appIdentity.Claims.FirstOrDefault(x => x.Type == vOpcion.URL_OPCION);
+                if (existingClaim == null)
+                {
+                    appIdentity.AddClaim(new Claim(vOpcion.URL_OPCION, vOpcion.PERMISO));
+                    continue;
+                }
+
+                var mergedPermiso = MergePermiso(existingClaim.Value, vOpcion.PERMISO);
+                if (mergedPermiso != existingClaim.Value)
+                {
+                    appIdentity.RemoveClaim(existingClaim);
+                    appIdentity.AddClaim(new Claim(vOpcion.URL_OPCION, mergedPermiso));
+                }
             }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8
@@ -509,6 +523,21 @@ namespace sguees.Services
             var token = tokenHandler.CreateToken(tokenDescriptor);
 
             return tokenHandler.WriteToken(token);
+        }
+
+        private static string MergePermiso(string current, string incoming)
+        {
+            var permisos = new HashSet<char>();
+            foreach (var c in (current ?? string.Empty) + (incoming ?? string.Empty))
+            {
+                if (c is 'C' or 'R' or 'U' or 'D' or 'P')
+                {
+                    permisos.Add(c);
+                }
+            }
+
+            var orden = new[] { 'C', 'R', 'U', 'D', 'P' };
+            return new string(orden.Where(permisos.Contains).ToArray());
         }
 
         public async Task<CResult> GetMenuAsync(string LOGIN_SISTEMA, string CODIGO_SUITE)

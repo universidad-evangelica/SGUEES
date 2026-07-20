@@ -11,5 +11,6 @@ namespace sguees.Services
 		Task<CResult> CreateAsync(BAN_CHEQUERATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(BAN_CHEQUERATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(BAN_CHEQUERATable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> GetActivaPorCuentaAsync(BAN_CHEQUERAParam xWhere);
 	}
 }

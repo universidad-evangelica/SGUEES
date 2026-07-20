@@ -44,7 +44,8 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 	protected override requiereEmpresaSesion = true;
 
-	protected override mttoGridKeyExpr = 'CORR_CENTRO_COSTO';
+	protected override mttoGridKeyExpr = 'CORR_CENTRO_COSTO';
+
 
 
 	@ViewChild('gridPresupuesto', { static: false }) gridPresupuesto!: DxDataGridComponent;
@@ -119,7 +120,8 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 	//#region <Inicializando Opciones>
 
-	ngOnInit(): void {
+	ngOnInit(): void {
+
 		this.inicializaOpciones();
 
 		this.llenaComboBox();
@@ -140,7 +142,8 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 		super.AsignaStatus(xEstado);
 
-		if (xEstado === UpdateType.Browse) {
+		if (xEstado === UpdateType.Browse) {
+
 		}
 
 	}

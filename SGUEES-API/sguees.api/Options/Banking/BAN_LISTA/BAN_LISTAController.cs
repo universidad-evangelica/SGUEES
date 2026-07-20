@@ -93,5 +93,48 @@ namespace sguees.Controllers
         {
             return _service.GetESTADO_DOCUMENTO();
         }
+
+        [HttpGet("GetESTADO_CONCILIACION_BAN_CONCILIA_BANCARIA")]
+		[Authorize(Policy = "/ban-concilia-bancaria|R")]
+        public CResult GetESTADO_CONCILIACION_BAN_CONCILIA_BANCARIA()
+        {
+            return _service.GetESTADO_CONCILIACION();
+        }
+
+        [HttpGet("GetCORR_PROVEEDOR_BAN_DOCUMENTO")]
+		[Authorize(Policy = "/ban-documento|R")]
+        public CResult GetCORR_PROVEEDOR_BAN_DOCUMENTO() => _service.GetCORR_PROVEEDOR();
+
+        [HttpGet("GetCORR_PROVEEDOR_BAN_CHEQUE")]
+		[Authorize(Policy = "/ban-cheque|R")]
+        public CResult GetCORR_PROVEEDOR_BAN_CHEQUE() => _service.GetCORR_PROVEEDOR();
+
+        [HttpGet("GetCORR_EMPLEADO_BAN_DOCUMENTO")]
+		[Authorize(Policy = "/ban-documento|R")]
+        public CResult GetCORR_EMPLEADO_BAN_DOCUMENTO() => _service.GetCORR_EMPLEADO();
+
+        [HttpGet("GetCORR_EMPLEADO_BAN_CHEQUE")]
+		[Authorize(Policy = "/ban-cheque|R")]
+        public CResult GetCORR_EMPLEADO_BAN_CHEQUE() => _service.GetCORR_EMPLEADO();
+
+        [HttpGet("GetCORR_CLIENTE_BAN_DOCUMENTO")]
+		[Authorize(Policy = "/ban-documento|R")]
+        public CResult GetCORR_CLIENTE_BAN_DOCUMENTO() => _service.GetCORR_CLIENTE();
+
+        [HttpGet("GetCORR_CLIENTE_BAN_CHEQUE")]
+		[Authorize(Policy = "/ban-cheque|R")]
+        public CResult GetCORR_CLIENTE_BAN_CHEQUE() => _service.GetCORR_CLIENTE();
+
+        [HttpGet("GetCORR_PROVEEDOR_BAN_SOLI_CHEQUE")]
+		[Authorize(Policy = "/ban-soli-cheque|R")]
+        public CResult GetCORR_PROVEEDOR_BAN_SOLI_CHEQUE() => _service.GetCORR_PROVEEDOR();
+
+        [HttpGet("GetCORR_EMPLEADO_BAN_SOLI_CHEQUE")]
+		[Authorize(Policy = "/ban-soli-cheque|R")]
+        public CResult GetCORR_EMPLEADO_BAN_SOLI_CHEQUE() => _service.GetCORR_EMPLEADO();
+
+        [HttpGet("GetCORR_CLIENTE_BAN_SOLI_CHEQUE")]
+		[Authorize(Policy = "/ban-soli-cheque|R")]
+        public CResult GetCORR_CLIENTE_BAN_SOLI_CHEQUE() => _service.GetCORR_CLIENTE();
     }
 }

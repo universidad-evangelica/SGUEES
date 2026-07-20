@@ -18,7 +18,8 @@ export class BanLineaTrabajoConciliacionComponent extends CBaseComponent impleme
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_LINEA';
 	protected override mttoCampoEstado = 'ESTADO_LINEA';
-	protected override mttoEstadoDescribeField = 'NOMBRE_LINEA_TRABAJO';
+	protected override mttoEstadoDescribeField = 'NOMBRE_LINEA_TRABAJO';
+
 	//#region <Declarando Variales>
 	mAUMENTA_DISMINUYE: any;
 	readOnly = false;
@@ -36,7 +37,8 @@ export class BanLineaTrabajoConciliacionComponent extends CBaseComponent impleme
 	}
 
 	//#region <Inicializando Opciones>
-	ngOnInit(): void {		this.inicializaOpciones();
+	ngOnInit(): void {
+		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
 	}
@@ -46,7 +48,8 @@ export class BanLineaTrabajoConciliacionComponent extends CBaseComponent impleme
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
-		if (xEstado === UpdateType.Browse) {		}
+		if (xEstado === UpdateType.Browse) {
+		}
 	}
 
 	//#region <Manejo de Combos>

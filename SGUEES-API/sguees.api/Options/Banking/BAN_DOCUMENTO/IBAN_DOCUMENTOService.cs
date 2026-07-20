@@ -14,5 +14,9 @@ namespace sguees.Services
 		Task<CResult> AplicarAsync(BAN_DOCUMENTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> AnularAsync(BAN_DOCUMENTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> ImprimirChequeAsync(BAN_DOCUMENTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> GetChequeImprimirDatosAsync(BAN_DOCUMENTOParam xWhere);
+		Task<CResult> GetAllContabilizarAsync(BAN_DOCUMENTOParam xWhere);
+		Task<CResult> ContabilizarAsync(BAN_DOCUMENTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> DesContabilizarAsync(BAN_DOCUMENTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
 }

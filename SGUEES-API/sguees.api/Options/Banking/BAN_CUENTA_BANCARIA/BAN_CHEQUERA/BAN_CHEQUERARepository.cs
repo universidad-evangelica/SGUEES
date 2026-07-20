@@ -72,6 +72,48 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		public async Task<CResult> GetActivaPorCuentaAsync(List<CParameter> xWhere)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var reader = await objData.GetDataReader(System.Data.CommandType.Text, @"
+					SELECT TOP 1
+						A.CORR_EMPRESA,
+						A.CORR_CUENTA_BANCO,
+						A.NUMERO_CUENTA_BANCO,
+						A.CORR_CHEQUERA,
+						A.NUMERO_CHEQUE_INICIAL,
+						A.NUMERO_CHEQUE_FINAL,
+						A.NUMERO_CHEQUE_ACTUAL,
+						A.SERIE_CHEQUE,
+						A.ESTADO_CHEQUERA,
+						A.CLASE_CHEQUE
+					FROM V_BAN_CHEQUERA A
+					WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+					AND A.CORR_CUENTA_BANCO = @CORR_CUENTA_BANCO
+					AND A.ESTADO_CHEQUERA = 'AC'
+					ORDER BY A.CORR_CHEQUERA", xWhere);
+				var response = new List<BAN_CHEQUERAView>().FromDataReader(reader).FirstOrDefault();
+				reader.Close();
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response == null ? 0 : 1;
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
+
 		public async Task<CResult> CreateAsync(BAN_CHEQUERATable Data, string vLOGIN_SISTEMA, string vESTACION)
 			=> await ExecMttoAsync(Data, UpdateType.Add, vLOGIN_SISTEMA, vESTACION, validarPermiso: false);
 

@@ -14,7 +14,8 @@ export class GenSectorEconomicoComponent extends CBaseComponent implements OnIni
 	protected override etiquetaRegistro = 'el sector económico';
 	protected override requiereEmpresaSesion = false;
 	protected override mttoGridKeyExpr = 'CORR_SECTOR_ECONOMICO';
-	protected override mttoRemoteOperations = false;	readOnly = false;
+	protected override mttoRemoteOperations = false;
+	readOnly = false;
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -27,7 +28,8 @@ export class GenSectorEconomicoComponent extends CBaseComponent implements OnIni
 		this.items = this.service.getItems();
 	}
 
-	ngOnInit(): void {		this.inicializaOpciones();
+	ngOnInit(): void {
+		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
 	}
@@ -36,7 +38,8 @@ export class GenSectorEconomicoComponent extends CBaseComponent implements OnIni
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
-		if (xEstado === UpdateType.Browse) {		}
+		if (xEstado === UpdateType.Browse) {
+		}
 	}
 
 	llenaComboBox() {}
