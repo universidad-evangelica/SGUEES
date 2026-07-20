@@ -13,6 +13,8 @@ namespace SGUEES.Models
         public int? CORR_DESCRIPTOR_PUESTO { get; set; }
         public int? CORR_PERFIL_PUESTO { get; set; }
         public int? CORR_COMPETENCIAS_TECNICAS { get; set; }
+        // Codigo del catalogo (incluye inactivas asociadas via LEFT JOIN en la vista).
+        public string CODIGO_COMPETENCIAS_TECNICAS { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }
         public DateTime? FECHA_CREA { get; set; }

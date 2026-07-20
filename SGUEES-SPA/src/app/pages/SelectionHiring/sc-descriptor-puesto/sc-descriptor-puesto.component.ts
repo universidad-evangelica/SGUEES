@@ -107,8 +107,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Lookup del editor KPI: activas + solo la frecuencia de la fila en edición (si está inactiva).
 	mCORR_FRECUENCIA_KPI_EDIT: ScFrecuenciaLookup[] = [];
 	mCORR_DISPONIBILIDAD_HORARIO: ScDisponibilidadHorarioLookup[] = [];
+	// Lookup de perfil: activas + la disponibilidad ya asociada (si está inactiva).
+	mCORR_DISPONIBILIDAD_HORARIO_EDIT: ScDisponibilidadHorarioLookup[] = [];
 	mCORR_TIPO_MODALIDAD: ScTipoModalidadLookup[] = [];
 	mCORR_INDUCCION: ScInduccionLookupItem[] = [];
+	// Lookup de entrenamiento: activas + la inducción ya asociada al descriptor (si está inactiva).
+	mCORR_INDUCCION_EDIT: ScInduccionLookupItem[] = [];
 	mCORR_COMPETENCIAS_TECNICAS: ScCompetenciaTecnicaLookupItem[] = [];
 	mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES: ScCompetenciaTecnicaLookupItem[] = [];
 	mCORR_COMPETENCIAS_CONDUCTUALES: ScCompetenciaConductualLookupItem[] = [];
@@ -552,9 +556,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 								NOMBRE_DISPONIBILIDAD_HORARIO: item.NOMBRE_DISPONIBILIDAD_HORARIO ?? '',
 							})
 						);
+					} else {
+						this.mCORR_DISPONIBILIDAD_HORARIO = [];
 					}
+					this.prepararDisponibilidadLookupParaPerfil();
 				},
-				error: (error) => this.notifyApiError(error),
+				error: (error) => {
+					this.mCORR_DISPONIBILIDAD_HORARIO = [];
+					this.prepararDisponibilidadLookupParaPerfil();
+					this.notifyApiError(error);
+				},
 			});
 	}
 
@@ -589,6 +600,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				next: (response: any) => {
 					if (!response?.Result || !Array.isArray(response.Data)) {
 						this.mCORR_INDUCCION = [];
+						this.prepararInduccionesLookupParaEntrenamiento();
 						return;
 					}
 
@@ -598,9 +610,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						SEMANAS_INDUCCION:
 							item.SEMANAS_INDUCCION != null ? Number(item.SEMANAS_INDUCCION) : null,
 					}));
+					this.prepararInduccionesLookupParaEntrenamiento();
 				},
 				error: (error) => {
 					this.mCORR_INDUCCION = [];
+					this.prepararInduccionesLookupParaEntrenamiento();
 					this.notifyApiError(error);
 				},
 			});
@@ -1069,6 +1083,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.itemsTabBitacora = [];
 		this.entrenamientoOriginal = this.obtenerEntrenamientoActual();
 		this.entrenamientoEditando = false;
+		this.prepararInduccionesLookupParaEntrenamiento();
 		this.cargarFuncionesClave();
 		if (this.esFormatoCorto) {
 			this.cargarFuncionesSecundarias();
@@ -1998,6 +2013,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.data.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS = 0;
 		e.data.CORR_PERFIL_PUESTO = Number(this.perfil?.CORR_PERFIL_PUESTO) || 0;
 		e.data.CORR_COMPETENCIAS_TECNICAS = null;
+		e.data.CODIGO_COMPETENCIAS_TECNICAS = '';
 		e.data.NOMBRE_COMPETENCIAS_TECNICAS = '';
 		e.data.DESCRIPCION = '';
 		e.data.NIVEL_DOMINIO = 'BASICO';
@@ -2080,14 +2096,25 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	competenciaTecnicaCatalogDisplay = (row: ScPerfilPuestoCompetenciasTecnicas): string => {
+		const codigoFila = (row?.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim();
+		if (codigoFila) {
+			return codigoFila;
+		}
+
 		const corr = Number(row?.CORR_COMPETENCIAS_TECNICAS);
-		const catalog = this.mCORR_COMPETENCIAS_TECNICAS.find(
-			(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === corr
-		);
-		return catalog?.CODIGO_COMPETENCIAS_TECNICAS || '';
+		const catalog =
+			this.mCORR_COMPETENCIAS_TECNICAS.find(
+				(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === corr
+			) ??
+			this.mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES.find(
+				(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === corr
+			);
+		// Columna Competencia (ya seleccionado): solo codigo, nunca el nombre.
+		return (catalog?.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim();
 	};
 
 	// Filtra el catalogo tecnico para ocultar competencias ya asignadas (conserva la de la fila editada).
+	// Si la conservada está inactiva y no viene del catálogo, se inyecta desde la fila del perfil.
 	private actualizarCompetenciasTecnicasLookupDisponibles(
 		corrConservar: number | null = null
 	): void {
@@ -2097,18 +2124,44 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.filter((corr) => corr > 0 && corr !== Number(corrConservar || 0))
 		);
 
-		this.mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES = (this.mCORR_COMPETENCIAS_TECNICAS || []).filter(
-			(item) => {
-				const corr = Number(item.CORR_COMPETENCIAS_TECNICAS);
-				if (!(corr > 0)) {
-					return false;
-				}
-				if (corrConservar != null && corr === Number(corrConservar)) {
-					return true;
-				}
-				return !usados.has(corr);
+		const disponibles = (this.mCORR_COMPETENCIAS_TECNICAS || []).filter((item) => {
+			const corr = Number(item.CORR_COMPETENCIAS_TECNICAS);
+			if (!(corr > 0)) {
+				return false;
 			}
-		);
+			if (corrConservar != null && corr === Number(corrConservar)) {
+				return true;
+			}
+			return !usados.has(corr);
+		});
+
+		const corrAsociada = Number(corrConservar || 0);
+		if (
+			corrAsociada > 0 &&
+			!disponibles.some((item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === corrAsociada)
+		) {
+			const fila = (this.competenciasTecnicas || []).find(
+				(row) => Number(row.CORR_COMPETENCIAS_TECNICAS) === corrAsociada
+			);
+			if (fila) {
+				const nombre = (fila.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim();
+				const codigo = (fila.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim();
+				disponibles.push({
+					CORR_COMPETENCIAS_TECNICAS: corrAsociada,
+					CORR_COMPETENCIAS_TECNICAS_PADRE: null,
+					CODIGO_COMPETENCIAS_TECNICAS: codigo,
+					NOMBRE_COMPETENCIAS_TECNICAS: nombre,
+					DESCRIPCION: (fila.DESCRIPCION ?? nombre).trim(),
+					NOMBRE_DISPLAY: [codigo, nombre].filter((parte) => !!parte).join(' | ') || `Competencia ${corrAsociada}`,
+					GRUPO_NIV1: '',
+					GRUPO_NIV2: '',
+					GRUPO_PADRE: '',
+					NIVEL: 'NIV3',
+				});
+			}
+		}
+
+		this.mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES = disponibles;
 	}
 
 	onCompetenciaTecnicaLookupChanged(value: number | null, cellInfo: any): void {
@@ -2122,10 +2175,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		_currentRowData: ScPerfilPuestoCompetenciasTecnicas
 	): void => {
 		const corr = value != null && Number(value) > 0 ? Number(value) : null;
-		const catalog = this.mCORR_COMPETENCIAS_TECNICAS.find(
-			(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === Number(corr)
-		);
+		const catalog =
+			this.mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES.find(
+				(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === Number(corr)
+			) ??
+			this.mCORR_COMPETENCIAS_TECNICAS.find(
+				(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === Number(corr)
+			);
 		newData.CORR_COMPETENCIAS_TECNICAS = corr;
+		newData.CODIGO_COMPETENCIAS_TECNICAS = catalog?.CODIGO_COMPETENCIAS_TECNICAS ?? '';
 		newData.NOMBRE_COMPETENCIAS_TECNICAS = catalog?.NOMBRE_COMPETENCIAS_TECNICAS ?? '';
 		newData.DESCRIPCION = catalog?.DESCRIPCION ?? '';
 	};
@@ -2273,13 +2331,18 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return '';
 		}
 
-		const catalog = this.mCORR_COMPETENCIAS_CONDUCTUALES.find(
-			(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === corr
-		);
+		const catalog =
+			this.mCORR_COMPETENCIAS_CONDUCTUALES.find(
+				(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === corr
+			) ??
+			this.mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES.find(
+				(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === corr
+			);
 		return (catalog?.CODIGO_TIPO_PUESTO ?? '').trim();
 	};
 
 	// Filtra el catalogo conductual para evitar duplicados en el perfil.
+	// Si la conservada está inactiva y no viene del catálogo, se inyecta desde la fila del perfil.
 	private actualizarCompetenciasConductualesLookupDisponibles(
 		corrConservar: number | null = null
 	): void {
@@ -2289,9 +2352,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.filter((corr) => corr > 0 && corr !== Number(corrConservar || 0))
 		);
 
-		this.mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES = (
-			this.mCORR_COMPETENCIAS_CONDUCTUALES || []
-		).filter((item) => {
+		const disponibles = (this.mCORR_COMPETENCIAS_CONDUCTUALES || []).filter((item) => {
 			const corr = Number(item.CORR_COMPETENCIAS_CONDUCTUALES);
 			if (!(corr > 0)) {
 				return false;
@@ -2301,6 +2362,29 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			}
 			return !usados.has(corr);
 		});
+
+		const corrAsociada = Number(corrConservar || 0);
+		if (
+			corrAsociada > 0 &&
+			!disponibles.some((item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === corrAsociada)
+		) {
+			const fila = (this.competenciasConductuales || []).find(
+				(row) => Number(row.CORR_COMPETENCIAS_CONDUCTUALES) === corrAsociada
+			);
+			if (fila) {
+				const nombre = (fila.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim();
+				const codigoTipo = (fila.CODIGO_TIPO_PUESTO ?? '').trim();
+				disponibles.push({
+					CORR_COMPETENCIAS_CONDUCTUALES: corrAsociada,
+					NOMBRE_COMPETENCIAS_CONDUCTUALES: nombre,
+					DESCRIPCION: (fila.DESCRIPCION ?? nombre).trim(),
+					NOMBRE_TIPO_PUESTO: '',
+					CODIGO_TIPO_PUESTO: codigoTipo,
+				});
+			}
+		}
+
+		this.mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES = disponibles;
 	}
 
 	onCompetenciaConductualLookupChanged(value: number | null, cellInfo: any): void {
@@ -2314,9 +2398,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		_currentRowData: ScPerfilPuestoCompetenciasConductuales
 	): void => {
 		const corr = value != null && Number(value) > 0 ? Number(value) : null;
-		const catalog = this.mCORR_COMPETENCIAS_CONDUCTUALES.find(
-			(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === Number(corr)
-		);
+		const catalog =
+			this.mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES.find(
+				(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === Number(corr)
+			) ??
+			this.mCORR_COMPETENCIAS_CONDUCTUALES.find(
+				(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === Number(corr)
+			);
 		newData.CORR_COMPETENCIAS_CONDUCTUALES = corr;
 		newData.NOMBRE_COMPETENCIAS_CONDUCTUALES = catalog?.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '';
 		newData.CODIGO_TIPO_PUESTO = catalog?.CODIGO_TIPO_PUESTO ?? '';
@@ -3073,7 +3161,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 		this.perfil.CORR_DISPONIBILIDAD_HORARIO = value != null && value > 0 ? Number(value) : null;
-		const item = this.mCORR_DISPONIBILIDAD_HORARIO.find(
+		const item = this.mCORR_DISPONIBILIDAD_HORARIO_EDIT.find(
 			(row) => Number(row.CORR_DISPONIBILIDAD_HORARIO) === Number(this.perfil.CORR_DISPONIBILIDAD_HORARIO)
 		);
 		this.perfil.NOMBRE_DISPONIBILIDAD_HORARIO = item?.NOMBRE_DISPONIBILIDAD_HORARIO ?? '';
@@ -3102,6 +3190,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 		this.perfilOriginal = { ...this.perfil };
+		this.prepararDisponibilidadLookupParaPerfil();
 		this.perfilEditando = true;
 	}
 
@@ -3143,6 +3232,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					}
 					this.perfilExiste = Number(this.perfil.CORR_PERFIL_PUESTO) > 0;
 					this.perfilOriginal = { ...this.perfil };
+					this.prepararDisponibilidadLookupParaPerfil();
 					this.perfilEditando = false;
 					this.loadingVisible = false;
 					this.notifyFx('Perfil modificado con exito!', NotifyType.Success, { raw: true });
@@ -3160,6 +3250,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 		this.perfil = { ...this.perfilOriginal };
+		this.prepararDisponibilidadLookupParaPerfil();
 		this.perfilEditando = false;
 	}
 
@@ -3171,6 +3262,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 		this.entrenamientoOriginal = this.obtenerEntrenamientoActual();
 		this.induccionInvalida = false;
+		this.prepararInduccionesLookupParaEntrenamiento();
 		this.entrenamientoEditando = true;
 	}
 
@@ -3182,7 +3274,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (corrInduccion) {
 			this.induccionInvalida = false;
 		}
-		const induccion = this.mCORR_INDUCCION.find(
+		const induccion = this.mCORR_INDUCCION_EDIT.find(
 			(item) => Number(item.CORR_INDUCCION) === Number(corrInduccion)
 		);
 		this.model.CORR_INDUCCION = corrInduccion;
@@ -3220,7 +3312,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						return;
 					}
 
-					const induccion = this.mCORR_INDUCCION.find(
+					const induccion = this.mCORR_INDUCCION_EDIT.find(
 						(item) => Number(item.CORR_INDUCCION) === corrInduccion
 					);
 					const data = response.Data as Partial<ScDescriptorPuesto> | null;
@@ -3288,6 +3380,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (this.modelUpdate) {
 			Object.assign(this.modelUpdate, entrenamiento);
 		}
+		this.prepararInduccionesLookupParaEntrenamiento();
 		if (!actualizarGrid || !Array.isArray(this.models)) {
 			return;
 		}
@@ -3328,6 +3421,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.resetearEdicionExperiencia();
 		this.resetearEdicionCompetenciasTecnicas();
 		this.resetearEdicionCompetenciasConductuales();
+		this.prepararDisponibilidadLookupParaPerfil();
 		this.actualizarCompetenciasTecnicasLookupDisponibles();
 		this.actualizarCompetenciasConductualesLookupDisponibles();
 	}
@@ -3370,6 +3464,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.perfilOriginal = { ...this.perfil };
 						this.perfilEditando = false;
 						this.perfilExiste = true;
+						this.prepararDisponibilidadLookupParaPerfil();
 						this.cargarEducacion(forzar);
 						this.cargarExperiencia(forzar);
 						this.cargarCompetenciasTecnicas(forzar);
@@ -3544,6 +3639,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 								CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS:
 									item.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS,
 								NOMBRE_COMPETENCIAS_TECNICAS: item.NOMBRE_COMPETENCIAS_TECNICAS ?? '',
+								CODIGO_COMPETENCIAS_TECNICAS: item.CODIGO_COMPETENCIAS_TECNICAS ?? '',
 								DESCRIPCION: item.DESCRIPCION ?? '',
 								NIVEL_DOMINIO: (item.NIVEL_DOMINIO ?? 'BASICO').toUpperCase(),
 								CORR_COMPETENCIAS_TECNICAS: item.CORR_COMPETENCIAS_TECNICAS ?? null,
@@ -3823,6 +3919,70 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			) ?? null;
 
 		return encontrada ?? row;
+	}
+
+	// Activas del catálogo + la disponibilidad ya asociada al perfil (si está inactiva).
+	private prepararDisponibilidadLookupParaPerfil(): void {
+		const porCorr = new Map<number, ScDisponibilidadHorarioLookup>();
+
+		for (const item of this.mCORR_DISPONIBILIDAD_HORARIO ?? []) {
+			const corr = Number(item.CORR_DISPONIBILIDAD_HORARIO);
+			if (corr > 0) {
+				porCorr.set(corr, {
+					CORR_DISPONIBILIDAD_HORARIO: corr,
+					NOMBRE_DISPONIBILIDAD_HORARIO: item.NOMBRE_DISPONIBILIDAD_HORARIO ?? '',
+				});
+			}
+		}
+
+		const corrAsociada = Number(this.perfil?.CORR_DISPONIBILIDAD_HORARIO);
+		if (corrAsociada > 0 && !porCorr.has(corrAsociada)) {
+			porCorr.set(corrAsociada, {
+				CORR_DISPONIBILIDAD_HORARIO: corrAsociada,
+				NOMBRE_DISPONIBILIDAD_HORARIO:
+					(this.perfil?.NOMBRE_DISPONIBILIDAD_HORARIO ?? '').trim() ||
+					`Disponibilidad ${corrAsociada}`,
+			});
+		}
+
+		this.mCORR_DISPONIBILIDAD_HORARIO_EDIT = Array.from(porCorr.values()).sort((a, b) =>
+			(a.NOMBRE_DISPONIBILIDAD_HORARIO || '').localeCompare(
+				b.NOMBRE_DISPONIBILIDAD_HORARIO || '',
+				'es',
+				{ sensitivity: 'base' }
+			)
+		);
+	}
+
+	// Activas del catálogo + la inducción ya asociada al descriptor (si está inactiva).
+	private prepararInduccionesLookupParaEntrenamiento(): void {
+		const porCorr = new Map<number, ScInduccionLookupItem>();
+
+		for (const item of this.mCORR_INDUCCION ?? []) {
+			const corr = Number(item.CORR_INDUCCION);
+			if (corr > 0) {
+				porCorr.set(corr, {
+					CORR_INDUCCION: corr,
+					NOMBRE_INDUCCION: item.NOMBRE_INDUCCION ?? '',
+					SEMANAS_INDUCCION: item.SEMANAS_INDUCCION ?? null,
+				});
+			}
+		}
+
+		const corrAsociada = Number(this.model?.CORR_INDUCCION);
+		if (corrAsociada > 0 && !porCorr.has(corrAsociada)) {
+			porCorr.set(corrAsociada, {
+				CORR_INDUCCION: corrAsociada,
+				NOMBRE_INDUCCION: (this.model?.NOMBRE_INDUCCION ?? '').trim() || `Inducción ${corrAsociada}`,
+				SEMANAS_INDUCCION: this.model?.SEMANAS_INDUCCION ?? null,
+			});
+		}
+
+		this.mCORR_INDUCCION_EDIT = Array.from(porCorr.values()).sort((a, b) =>
+			(a.NOMBRE_INDUCCION || '').localeCompare(b.NOMBRE_INDUCCION || '', 'es', {
+				sensitivity: 'base',
+			})
+		);
 	}
 
 	// Carga funciones clave del descriptor y prepara contadores de actividades.

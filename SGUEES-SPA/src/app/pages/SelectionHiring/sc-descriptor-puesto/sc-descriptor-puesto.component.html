@@ -246,7 +246,8 @@
 							></dxi-column>
 							<dxi-column
 								caption="Actividades"
-								[width]="160"
+								[width]="200"
+								[minWidth]="180"
 								[allowEditing]="false"
 								[visible]="esFormatoExtenso"
 								cellTemplate="actividadesClaveTemplate"
@@ -667,7 +668,7 @@
 											<div class="descriptor-perfil-field">
 												<label class="descriptor-perfil-label">Disponibilidad</label>
 												<app-data-lookup
-													[model]="mCORR_DISPONIBILIDAD_HORARIO"
+													[model]="mCORR_DISPONIBILIDAD_HORARIO_EDIT"
 													[value]="perfil.CORR_DISPONIBILIDAD_HORARIO"
 													(valueChange)="onPerfilDisponibilidadChanged($event)"
 													[valueExpr]="'CORR_DISPONIBILIDAD_HORARIO'"
@@ -2166,7 +2167,7 @@
 											[class.descriptor-lookup-field--invalid]="induccionInvalida"
 										>
 											<app-data-lookup
-												[model]="mCORR_INDUCCION"
+												[model]="mCORR_INDUCCION_EDIT"
 												[value]="model.CORR_INDUCCION"
 												(valueChange)="onEntrenamientoInduccionChanged($event)"
 												[valueExpr]="'CORR_INDUCCION'"

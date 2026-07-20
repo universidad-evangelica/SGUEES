@@ -8,5 +8,6 @@ export interface ScPerfilPuestoCompetenciasTecnicas {
 	CORR_DESCRIPTOR_PUESTO?: number;
 	CORR_PERFIL_PUESTO?: number;
 	CORR_COMPETENCIAS_TECNICAS: number | null;
+	CODIGO_COMPETENCIAS_TECNICAS?: string;
 	_clientKey?: string | number;
 }
