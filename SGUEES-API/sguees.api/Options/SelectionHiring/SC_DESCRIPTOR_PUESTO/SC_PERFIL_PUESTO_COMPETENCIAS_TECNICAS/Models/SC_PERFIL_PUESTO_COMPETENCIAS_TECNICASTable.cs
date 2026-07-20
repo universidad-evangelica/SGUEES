@@ -8,6 +8,7 @@ namespace SGUEES.Models
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS { get; set; }
+        public string CODIGO_COMPETENCIAS_TECNICAS { get; set; }
         public string NOMBRE_COMPETENCIAS_TECNICAS { get; set; }
         public string DESCRIPCION { get; set; }
         public string NIVEL_DOMINIO { get; set; }

@@ -152,6 +152,7 @@ namespace SGUEES.Repositories
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "NOMBRE_COMPETENCIAS_TECNICAS", Value = Data.NOMBRE_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CODIGO_COMPETENCIAS_TECNICAS", Value = Data.CODIGO_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "DESCRIPCION", Value = Data.DESCRIPCION, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "NIVEL_DOMINIO", Value = Data.NIVEL_DOMINIO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "CORR_COMPETENCIAS_TECNICAS", Value = Data.CORR_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.Int32 },
@@ -244,6 +245,7 @@ namespace SGUEES.Repositories
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS", Value = Data.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CODIGO_COMPETENCIAS_TECNICAS", Value = Data.CODIGO_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "NOMBRE_COMPETENCIAS_TECNICAS", Value = Data.NOMBRE_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "DESCRIPCION", Value = Data.DESCRIPCION, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "NIVEL_DOMINIO", Value = Data.NIVEL_DOMINIO, DbType = System.Data.DbType.String },

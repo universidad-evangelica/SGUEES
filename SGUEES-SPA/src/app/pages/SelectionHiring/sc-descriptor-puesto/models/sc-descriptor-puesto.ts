@@ -62,6 +62,7 @@ export interface ScCompetenciaTecnicaLookupItem {
 	CORR_COMPETENCIAS_TECNICAS: number;
 	CORR_COMPETENCIAS_TECNICAS_PADRE: number | null;
 	CODIGO_COMPETENCIAS_TECNICAS: string;
+	CODIGO_COMPETENCIAS_TECNICAS_CATALOGO?: string;
 	NOMBRE_COMPETENCIAS_TECNICAS: string;
 	DESCRIPCION: string;
 	NOMBRE_DISPLAY: string;
@@ -77,6 +78,7 @@ export interface ScCompetenciaConductualLookupItem {
 	DESCRIPCION: string;
 	NOMBRE_TIPO_PUESTO?: string;
 	CODIGO_TIPO_PUESTO?: string;
+	CODIGO_TIPO_PUESTO_CATALOGO?: string;
 }
 
 export interface ScRequerimientoOrganizacionalLookupItem {

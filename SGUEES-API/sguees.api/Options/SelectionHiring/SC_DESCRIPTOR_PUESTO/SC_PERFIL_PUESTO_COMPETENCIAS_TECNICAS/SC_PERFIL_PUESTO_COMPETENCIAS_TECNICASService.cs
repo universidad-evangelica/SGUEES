@@ -114,6 +114,11 @@ namespace SGUEES.Services
                 Data.NOMBRE_COMPETENCIAS_TECNICAS = catalog.NOMBRE_COMPETENCIAS_TECNICAS?.Trim();
             }
 
+            if (string.IsNullOrWhiteSpace(Data.CODIGO_COMPETENCIAS_TECNICAS))
+            {
+                Data.CODIGO_COMPETENCIAS_TECNICAS = catalog.CODIGO_COMPETENCIAS_TECNICAS?.Trim();
+            }
+
             if (string.IsNullOrWhiteSpace(Data.DESCRIPCION))
             {
                 Data.DESCRIPCION = catalog.DESCRIPCION?.Trim();
@@ -203,6 +208,13 @@ namespace SGUEES.Services
             }
 
             Data.NOMBRE_COMPETENCIAS_TECNICAS = Data.NOMBRE_COMPETENCIAS_TECNICAS.Trim();
+            Data.CODIGO_COMPETENCIAS_TECNICAS = string.IsNullOrWhiteSpace(Data.CODIGO_COMPETENCIAS_TECNICAS)
+                ? null
+                : Data.CODIGO_COMPETENCIAS_TECNICAS.Trim();
+            if (Data.CODIGO_COMPETENCIAS_TECNICAS?.Length > 30)
+            {
+                Data.CODIGO_COMPETENCIAS_TECNICAS = Data.CODIGO_COMPETENCIAS_TECNICAS.Substring(0, 30);
+            }
             Data.DESCRIPCION = string.IsNullOrWhiteSpace(Data.DESCRIPCION) ? null : Data.DESCRIPCION.Trim();
             Data.NIVEL_DOMINIO = Data.NIVEL_DOMINIO.Trim().ToUpperInvariant();
 

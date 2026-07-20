@@ -152,6 +152,7 @@ namespace SGUEES.Repositories
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "NOMBRE_COMPETENCIAS_CONDUCTUALES", Value = Data.NOMBRE_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CODIGO_TIPO_PUESTO", Value = Data.CODIGO_TIPO_PUESTO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "DESCRIPCION", Value = Data.DESCRIPCION, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "CORR_COMPETENCIAS_CONDUCTUALES", Value = Data.CORR_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
@@ -243,6 +244,7 @@ namespace SGUEES.Repositories
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES", Value = Data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CODIGO_TIPO_PUESTO", Value = Data.CODIGO_TIPO_PUESTO, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "NOMBRE_COMPETENCIAS_CONDUCTUALES", Value = Data.NOMBRE_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "DESCRIPCION", Value = Data.DESCRIPCION, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },

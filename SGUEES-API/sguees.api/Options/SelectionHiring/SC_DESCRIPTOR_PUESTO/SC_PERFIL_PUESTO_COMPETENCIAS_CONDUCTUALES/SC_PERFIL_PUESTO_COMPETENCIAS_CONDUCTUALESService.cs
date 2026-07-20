@@ -105,6 +105,11 @@ namespace SGUEES.Services
                 Data.NOMBRE_COMPETENCIAS_CONDUCTUALES = catalog.NOMBRE_COMPETENCIAS_CONDUCTUALES?.Trim();
             }
 
+            if (string.IsNullOrWhiteSpace(Data.CODIGO_TIPO_PUESTO))
+            {
+                Data.CODIGO_TIPO_PUESTO = catalog.CODIGO_TIPO_PUESTO?.Trim();
+            }
+
             if (string.IsNullOrWhiteSpace(Data.DESCRIPCION))
             {
                 Data.DESCRIPCION = catalog.DESCRIPCION?.Trim();
@@ -188,6 +193,13 @@ namespace SGUEES.Services
             }
 
             Data.NOMBRE_COMPETENCIAS_CONDUCTUALES = Data.NOMBRE_COMPETENCIAS_CONDUCTUALES.Trim();
+            Data.CODIGO_TIPO_PUESTO = string.IsNullOrWhiteSpace(Data.CODIGO_TIPO_PUESTO)
+                ? null
+                : Data.CODIGO_TIPO_PUESTO.Trim();
+            if (Data.CODIGO_TIPO_PUESTO?.Length > 30)
+            {
+                Data.CODIGO_TIPO_PUESTO = Data.CODIGO_TIPO_PUESTO.Substring(0, 30);
+            }
             Data.DESCRIPCION = string.IsNullOrWhiteSpace(Data.DESCRIPCION) ? null : Data.DESCRIPCION.Trim();
 
             return null;

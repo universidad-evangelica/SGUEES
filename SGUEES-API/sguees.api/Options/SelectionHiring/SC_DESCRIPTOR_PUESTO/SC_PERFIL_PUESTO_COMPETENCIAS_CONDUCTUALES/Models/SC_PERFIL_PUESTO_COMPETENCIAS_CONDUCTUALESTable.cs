@@ -8,6 +8,7 @@ namespace SGUEES.Models
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES { get; set; }
+        public string CODIGO_TIPO_PUESTO { get; set; }
         public string NOMBRE_COMPETENCIAS_CONDUCTUALES { get; set; }
         public string DESCRIPCION { get; set; }
         public int? CORR_DESCRIPTOR_PUESTO { get; set; }

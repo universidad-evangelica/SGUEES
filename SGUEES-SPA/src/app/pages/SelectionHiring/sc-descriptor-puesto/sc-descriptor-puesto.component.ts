@@ -151,14 +151,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		/*
 		{ dataField: 'GRUPO_NIV1', caption: 'Grupo NIV1', width: 180 },
 		{ dataField: 'GRUPO_NIV2', caption: 'Grupo NIV2', width: 180 },*/
-		{ dataField: 'CODIGO_COMPETENCIAS_TECNICAS', caption: 'Codigo', width: 120 }, // Codigo NIV3
+		{ dataField: 'CODIGO_COMPETENCIAS_TECNICAS_CATALOGO', caption: 'Codigo', width: 120 }, // Codigo NIV3
 		//{ dataField: 'NIVEL', caption: 'Nivel', width: 80 },
 		{ dataField: 'NOMBRE_COMPETENCIAS_TECNICAS', caption: 'Competencia Técnica', width: 220 }, // Competencia NIV3
 		//{ dataField: 'DESCRIPCION', caption: 'Definicion', width: 260 },
 	];
 	competenciasConductualesLookupColumns = [
 		//{ dataField: 'CORR_COMPETENCIAS_CONDUCTUALES', caption: 'Corr.', width: 90 },
-		{ dataField: 'CODIGO_TIPO_PUESTO', caption: 'Codigo', width: 140 }, // Cod. tipo puesto o Grupo ocupacional
+		{ dataField: 'CODIGO_TIPO_PUESTO_CATALOGO', caption: 'Codigo', width: 140 }, // Cod. tipo puesto o Grupo ocupacional
 		{ dataField: 'NOMBRE_COMPETENCIAS_CONDUCTUALES', caption: 'Competencia Conductual', width: 220 },
 	];
 	requerimientosOrganizacionalesLookupColumns = [
@@ -695,6 +695,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 									? Number(item.CORR_COMPETENCIAS_TECNICAS_PADRE)
 									: null,
 							CODIGO_COMPETENCIAS_TECNICAS: codigo,
+							CODIGO_COMPETENCIAS_TECNICAS_CATALOGO: codigo,
 							NOMBRE_COMPETENCIAS_TECNICAS: nombre,
 							DESCRIPCION: descripcion,
 							NOMBRE_DISPLAY: nombreDisplay || codigo || '(Sin nombre)',
@@ -744,6 +745,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							DESCRIPCION: descripcion,
 							NOMBRE_TIPO_PUESTO: tipoPuesto,
 							CODIGO_TIPO_PUESTO: codigoTipoPuesto,
+							CODIGO_TIPO_PUESTO_CATALOGO: codigoTipoPuesto,
 						};
 					});
 					this.actualizarCompetenciasConductualesLookupDisponibles();
@@ -2174,26 +2176,53 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				return true;
 			}
 			return !usados.has(corr);
+		}).map((item) => {
+			const codigoCatalogo = (
+				item.CODIGO_COMPETENCIAS_TECNICAS_CATALOGO ??
+				item.CODIGO_COMPETENCIAS_TECNICAS ??
+				''
+			).trim();
+			return {
+				...item,
+				CODIGO_COMPETENCIAS_TECNICAS: codigoCatalogo,
+				CODIGO_COMPETENCIAS_TECNICAS_CATALOGO: codigoCatalogo,
+			};
 		});
 
 		const corrAsociada = Number(corrConservar || 0);
-		if (
-			corrAsociada > 0 &&
-			!disponibles.some((item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === corrAsociada)
-		) {
-			const fila = (this.competenciasTecnicas || []).find(
-				(row) => Number(row.CORR_COMPETENCIAS_TECNICAS) === corrAsociada
+		const fila = corrAsociada
+			? (this.competenciasTecnicas || []).find(
+					(row) => Number(row.CORR_COMPETENCIAS_TECNICAS) === corrAsociada
+			  )
+			: null;
+		const codigoDescriptor = (fila?.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim();
+
+		if (corrAsociada > 0) {
+			const idx = disponibles.findIndex(
+				(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === corrAsociada
 			);
-			if (fila) {
+			if (idx >= 0) {
+				const existente = disponibles[idx];
+				disponibles[idx] = {
+					...existente,
+					CODIGO_COMPETENCIAS_TECNICAS:
+						codigoDescriptor || existente.CODIGO_COMPETENCIAS_TECNICAS,
+					CODIGO_COMPETENCIAS_TECNICAS_CATALOGO:
+						existente.CODIGO_COMPETENCIAS_TECNICAS_CATALOGO ||
+						existente.CODIGO_COMPETENCIAS_TECNICAS,
+				};
+			} else if (fila) {
 				const nombre = (fila.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim();
-				const codigo = (fila.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim();
 				disponibles.push({
 					CORR_COMPETENCIAS_TECNICAS: corrAsociada,
 					CORR_COMPETENCIAS_TECNICAS_PADRE: null,
-					CODIGO_COMPETENCIAS_TECNICAS: codigo,
+					CODIGO_COMPETENCIAS_TECNICAS: codigoDescriptor,
+					CODIGO_COMPETENCIAS_TECNICAS_CATALOGO: codigoDescriptor,
 					NOMBRE_COMPETENCIAS_TECNICAS: nombre,
 					DESCRIPCION: (fila.DESCRIPCION ?? nombre).trim(),
-					NOMBRE_DISPLAY: [codigo, nombre].filter((parte) => !!parte).join(' | ') || `Competencia ${corrAsociada}`,
+					NOMBRE_DISPLAY:
+						[codigoDescriptor, nombre].filter((parte) => !!parte).join(' | ') ||
+						`Competencia ${corrAsociada}`,
 					GRUPO_NIV1: '',
 					GRUPO_NIV2: '',
 					GRUPO_PADRE: '',
@@ -2207,7 +2236,43 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	onCompetenciaTecnicaLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && value > 0 ? Number(value) : null;
+		const fromCatalog = this.mCORR_COMPETENCIAS_TECNICAS.find(
+			(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === Number(corr)
+		);
+		const fromEdit = this.mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES.find(
+			(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === Number(corr)
+		);
+		const codigo = (
+			fromCatalog?.CODIGO_COMPETENCIAS_TECNICAS_CATALOGO ??
+			fromCatalog?.CODIGO_COMPETENCIAS_TECNICAS ??
+			fromEdit?.CODIGO_COMPETENCIAS_TECNICAS_CATALOGO ??
+			''
+		).trim();
+		const nombre = (
+			fromCatalog?.NOMBRE_COMPETENCIAS_TECNICAS ??
+			fromEdit?.NOMBRE_COMPETENCIAS_TECNICAS ??
+			''
+		).trim();
+		const descripcion = (fromCatalog?.DESCRIPCION ?? fromEdit?.DESCRIPCION ?? '').trim();
+
+		// Aunque sea el mismo corr, forzar codigo/nombre del catálogo (re-selección tras renombre).
+		if (cellInfo?.data) {
+			cellInfo.data.CORR_COMPETENCIAS_TECNICAS = corr;
+			cellInfo.data.CODIGO_COMPETENCIAS_TECNICAS = codigo;
+			cellInfo.data.NOMBRE_COMPETENCIAS_TECNICAS = nombre;
+			cellInfo.data.DESCRIPCION = descripcion;
+		}
+
+		const live = this.resolverFilaCompetenciaTecnica(cellInfo?.data);
+		if (live) {
+			live.CORR_COMPETENCIAS_TECNICAS = corr;
+			live.CODIGO_COMPETENCIAS_TECNICAS = codigo;
+			live.NOMBRE_COMPETENCIAS_TECNICAS = nombre;
+			live.DESCRIPCION = descripcion;
+		}
+
 		cellInfo.setValue(corr);
+		this.actualizarCompetenciasTecnicasLookupDisponibles(corr);
 	}
 
 	setCompetenciaTecnicaCellValue = (
@@ -2216,18 +2281,45 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		_currentRowData: ScPerfilPuestoCompetenciasTecnicas
 	): void => {
 		const corr = value != null && Number(value) > 0 ? Number(value) : null;
-		const catalog =
-			this.mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES.find(
-				(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === Number(corr)
-			) ??
-			this.mCORR_COMPETENCIAS_TECNICAS.find(
-				(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === Number(corr)
-			);
+		const fromCatalog = this.mCORR_COMPETENCIAS_TECNICAS.find(
+			(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === Number(corr)
+		);
+		const fromEdit = this.mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES.find(
+			(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === Number(corr)
+		);
 		newData.CORR_COMPETENCIAS_TECNICAS = corr;
-		newData.CODIGO_COMPETENCIAS_TECNICAS = catalog?.CODIGO_COMPETENCIAS_TECNICAS ?? '';
-		newData.NOMBRE_COMPETENCIAS_TECNICAS = catalog?.NOMBRE_COMPETENCIAS_TECNICAS ?? '';
-		newData.DESCRIPCION = catalog?.DESCRIPCION ?? '';
+		// Al elegir en el select, tomar codigo/nombre actuales del catálogo.
+		newData.CODIGO_COMPETENCIAS_TECNICAS = (
+			fromCatalog?.CODIGO_COMPETENCIAS_TECNICAS_CATALOGO ??
+			fromCatalog?.CODIGO_COMPETENCIAS_TECNICAS ??
+			fromEdit?.CODIGO_COMPETENCIAS_TECNICAS_CATALOGO ??
+			''
+		).trim();
+		newData.NOMBRE_COMPETENCIAS_TECNICAS = (
+			fromCatalog?.NOMBRE_COMPETENCIAS_TECNICAS ??
+			fromEdit?.NOMBRE_COMPETENCIAS_TECNICAS ??
+			''
+		).trim();
+		newData.DESCRIPCION = (fromCatalog?.DESCRIPCION ?? fromEdit?.DESCRIPCION ?? '').trim();
 	};
+
+	private resolverFilaCompetenciaTecnica(
+		row?: ScPerfilPuestoCompetenciasTecnicas | null
+	): ScPerfilPuestoCompetenciasTecnicas | null {
+		if (!row) {
+			return null;
+		}
+		const clientKey = row._clientKey;
+		const corrDetalle = Number(row.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS);
+		return (
+			(this.competenciasTecnicas || []).find(
+				(item) =>
+					(!!clientKey && item._clientKey === clientKey) ||
+					(corrDetalle > 0 &&
+						Number(item.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS) === corrDetalle)
+			) ?? null
+		);
+	}
 
 	// Mantiene disponibles únicamente las competencias conductuales aún no asignadas al perfil,
 	// conservando la opción de la fila editada para que no desaparezca del lookup.
@@ -2402,25 +2494,44 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				return true;
 			}
 			return !usados.has(corr);
+		}).map((item) => {
+			const codigoCatalogo = (item.CODIGO_TIPO_PUESTO_CATALOGO ?? item.CODIGO_TIPO_PUESTO ?? '').trim();
+			return {
+				...item,
+				CODIGO_TIPO_PUESTO: codigoCatalogo,
+				CODIGO_TIPO_PUESTO_CATALOGO: codigoCatalogo,
+			};
 		});
 
 		const corrAsociada = Number(corrConservar || 0);
-		if (
-			corrAsociada > 0 &&
-			!disponibles.some((item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === corrAsociada)
-		) {
-			const fila = (this.competenciasConductuales || []).find(
-				(row) => Number(row.CORR_COMPETENCIAS_CONDUCTUALES) === corrAsociada
+		const fila = corrAsociada
+			? (this.competenciasConductuales || []).find(
+					(row) => Number(row.CORR_COMPETENCIAS_CONDUCTUALES) === corrAsociada
+			  )
+			: null;
+		const codigoDescriptor = (fila?.CODIGO_TIPO_PUESTO ?? '').trim();
+
+		if (corrAsociada > 0) {
+			const idx = disponibles.findIndex(
+				(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === corrAsociada
 			);
-			if (fila) {
+			if (idx >= 0) {
+				const existente = disponibles[idx];
+				disponibles[idx] = {
+					...existente,
+					CODIGO_TIPO_PUESTO: codigoDescriptor || existente.CODIGO_TIPO_PUESTO,
+					CODIGO_TIPO_PUESTO_CATALOGO:
+						existente.CODIGO_TIPO_PUESTO_CATALOGO || existente.CODIGO_TIPO_PUESTO,
+				};
+			} else if (fila) {
 				const nombre = (fila.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim();
-				const codigoTipo = (fila.CODIGO_TIPO_PUESTO ?? '').trim();
 				disponibles.push({
 					CORR_COMPETENCIAS_CONDUCTUALES: corrAsociada,
 					NOMBRE_COMPETENCIAS_CONDUCTUALES: nombre,
 					DESCRIPCION: (fila.DESCRIPCION ?? nombre).trim(),
 					NOMBRE_TIPO_PUESTO: '',
-					CODIGO_TIPO_PUESTO: codigoTipo,
+					CODIGO_TIPO_PUESTO: codigoDescriptor,
+					CODIGO_TIPO_PUESTO_CATALOGO: codigoDescriptor,
 				});
 			}
 		}
@@ -2430,7 +2541,45 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	onCompetenciaConductualLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && value > 0 ? Number(value) : null;
+		const fromCatalog = this.mCORR_COMPETENCIAS_CONDUCTUALES.find(
+			(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === Number(corr)
+		);
+		const fromEdit = this.mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES.find(
+			(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === Number(corr)
+		);
+		const codigo = (
+			fromCatalog?.CODIGO_TIPO_PUESTO_CATALOGO ??
+			fromCatalog?.CODIGO_TIPO_PUESTO ??
+			fromEdit?.CODIGO_TIPO_PUESTO_CATALOGO ??
+			''
+		).trim();
+		const nombre = (
+			fromCatalog?.NOMBRE_COMPETENCIAS_CONDUCTUALES ??
+			fromEdit?.NOMBRE_COMPETENCIAS_CONDUCTUALES ??
+			''
+		).trim();
+		const descripcion = this.esFormatoExtenso
+			? (fromCatalog?.DESCRIPCION ?? fromEdit?.DESCRIPCION ?? '').trim()
+			: '';
+
+		// Aunque sea el mismo corr, forzar codigo/nombre del catálogo (re-selección tras renombre).
+		if (cellInfo?.data) {
+			cellInfo.data.CORR_COMPETENCIAS_CONDUCTUALES = corr;
+			cellInfo.data.CODIGO_TIPO_PUESTO = codigo;
+			cellInfo.data.NOMBRE_COMPETENCIAS_CONDUCTUALES = nombre;
+			cellInfo.data.DESCRIPCION = descripcion;
+		}
+
+		const live = this.resolverFilaCompetenciaConductual(cellInfo?.data);
+		if (live) {
+			live.CORR_COMPETENCIAS_CONDUCTUALES = corr;
+			live.CODIGO_TIPO_PUESTO = codigo;
+			live.NOMBRE_COMPETENCIAS_CONDUCTUALES = nombre;
+			live.DESCRIPCION = descripcion;
+		}
+
 		cellInfo.setValue(corr);
+		this.actualizarCompetenciasConductualesLookupDisponibles(corr);
 	}
 
 	setCompetenciaConductualCellValue = (
@@ -2439,18 +2588,46 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		_currentRowData: ScPerfilPuestoCompetenciasConductuales
 	): void => {
 		const corr = value != null && Number(value) > 0 ? Number(value) : null;
-		const catalog =
-			this.mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES.find(
-				(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === Number(corr)
-			) ??
-			this.mCORR_COMPETENCIAS_CONDUCTUALES.find(
-				(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === Number(corr)
-			);
+		const fromCatalog = this.mCORR_COMPETENCIAS_CONDUCTUALES.find(
+			(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === Number(corr)
+		);
+		const fromEdit = this.mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES.find(
+			(item) => Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === Number(corr)
+		);
 		newData.CORR_COMPETENCIAS_CONDUCTUALES = corr;
-		newData.NOMBRE_COMPETENCIAS_CONDUCTUALES = catalog?.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '';
-		newData.CODIGO_TIPO_PUESTO = catalog?.CODIGO_TIPO_PUESTO ?? '';
-		newData.DESCRIPCION = this.esFormatoExtenso ? catalog?.DESCRIPCION ?? '' : '';
+		newData.NOMBRE_COMPETENCIAS_CONDUCTUALES = (
+			fromCatalog?.NOMBRE_COMPETENCIAS_CONDUCTUALES ??
+			fromEdit?.NOMBRE_COMPETENCIAS_CONDUCTUALES ??
+			''
+		).trim();
+		newData.CODIGO_TIPO_PUESTO = (
+			fromCatalog?.CODIGO_TIPO_PUESTO_CATALOGO ??
+			fromCatalog?.CODIGO_TIPO_PUESTO ??
+			fromEdit?.CODIGO_TIPO_PUESTO_CATALOGO ??
+			''
+		).trim();
+		newData.DESCRIPCION = this.esFormatoExtenso
+			? (fromCatalog?.DESCRIPCION ?? fromEdit?.DESCRIPCION ?? '').trim()
+			: '';
 	};
+
+	private resolverFilaCompetenciaConductual(
+		row?: ScPerfilPuestoCompetenciasConductuales | null
+	): ScPerfilPuestoCompetenciasConductuales | null {
+		if (!row) {
+			return null;
+		}
+		const clientKey = row._clientKey;
+		const corrDetalle = Number(row.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES);
+		return (
+			(this.competenciasConductuales || []).find(
+				(item) =>
+					(!!clientKey && item._clientKey === clientKey) ||
+					(corrDetalle > 0 &&
+						Number(item.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES) === corrDetalle)
+			) ?? null
+		);
+	}
 
 	// Sincroniza requerimientos con su catálogo y descarta opciones ya utilizadas para prevenir duplicados.
 	agregarRequerimientoOrganizacional(): void {
@@ -5524,6 +5701,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				? 0
 				: Number(data.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS) || 0,
 			CORR_COMPETENCIAS_TECNICAS: Number(data.CORR_COMPETENCIAS_TECNICAS) || null,
+			CODIGO_COMPETENCIAS_TECNICAS: (data.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim(),
 			NOMBRE_COMPETENCIAS_TECNICAS: (data.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim(),
 			DESCRIPCION: (data.DESCRIPCION ?? '').trim(),
 			NIVEL_DOMINIO: (data.NIVEL_DOMINIO ?? 'BASICO').trim().toUpperCase(),
@@ -5603,6 +5781,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				? 0
 				: Number(data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES) || 0,
 			CORR_COMPETENCIAS_CONDUCTUALES: Number(data.CORR_COMPETENCIAS_CONDUCTUALES) || null,
+			CODIGO_TIPO_PUESTO: (data.CODIGO_TIPO_PUESTO ?? '').trim(),
 			NOMBRE_COMPETENCIAS_CONDUCTUALES: (data.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim(),
 			DESCRIPCION: this.esFormatoExtenso ? (data.DESCRIPCION ?? '').trim() : '',
 		};
