@@ -4779,7 +4779,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ title: 'Riesgos', visibleEn: 'extensa' },
 		{ title: 'Responsabilidades', visibleEn: 'ambos' },
 		{ title: 'Entrenamiento', visibleEn: 'ambos' },
-		{ title: 'Resumen', visibleEn: 'ambos' },
 	];
 
 	// Indica si el indice de sub-tab aplica al formato corto/extenso.
