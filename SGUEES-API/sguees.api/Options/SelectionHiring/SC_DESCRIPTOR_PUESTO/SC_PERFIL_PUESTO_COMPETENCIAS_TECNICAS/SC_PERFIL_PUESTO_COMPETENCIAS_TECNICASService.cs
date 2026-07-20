@@ -178,7 +178,7 @@ namespace SGUEES.Services
 
             if (esNuevo && Data.CORR_COMPETENCIAS_TECNICAS is not > 0)
             {
-                return ValidationError("Debe seleccionar una competencia tecnica de nivel 3.");
+                return ValidationError("Debe seleccionar una competencia tecnica.");
             }
 
             if (!esNuevo && Data.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS <= 0)

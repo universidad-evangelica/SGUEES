@@ -2466,7 +2466,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	competenciaTecnicaRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(Number(data.CORR_COMPETENCIAS_TECNICAS) > 0)) {
-			this.invalidarFila(e, 'Debe seleccionar una competencia tecnica de nivel 3.');
+			this.invalidarFila(e, 'Debe seleccionar una competencia tecnica.');
 			return;
 		}
 		if (!(data.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim()) {
