@@ -1,3 +1,4 @@
+// Qué hace: módulo lazy del mantenimiento de estructura territorial.
 import { NgModule } from '@angular/core';
 import { GenEstructuraTerritorialRoutingModule } from './gen-estructura-territorial-routing.module';
 

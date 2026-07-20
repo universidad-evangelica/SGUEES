@@ -1,3 +1,5 @@
+// Qué hace: lógica de negocio del catálogo competencias conductuales.
+// Cómo: valida los datos y llama a ISC_COMPETENCIAS_CONDUCTUALESRepository para ejecutar el CRUD.
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -6,6 +8,8 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
+  // Qué hace: servicio de competencias conductuales.
+  // Cómo: valida los datos y llama al repositorio para persistir la información.
   public class SC_COMPETENCIAS_CONDUCTUALESService : ISC_COMPETENCIAS_CONDUCTUALESService
   {
     private readonly ISC_COMPETENCIAS_CONDUCTUALESRepository _repo;
@@ -15,11 +19,15 @@ namespace SGUEES.Services
       _repo = repo;
     }
 
+    // Qué hace: obtiene el listado de competencias conductuales.
+    // Cómo: llama a GetAllAsync del repositorio con los parámetros armados por BuildParameters.
     public async Task<CResult> GetAllAsync(SC_COMPETENCIAS_CONDUCTUALESParam xWhere)
     {
       return await _repo.GetAllAsync(BuildParameters(xWhere));
     }
 
+    // Qué hace: obtiene una competencia conductual puntual.
+    // Cómo: llama a GetAsync del repositorio filtrando por CORR_EMPRESA y CORR_COMPETENCIAS_CONDUCTUALES.
     public async Task<CResult> GetAsync(SC_COMPETENCIAS_CONDUCTUALESParam xWhere)
     {
       var p = new List<CParameter>
@@ -31,6 +39,8 @@ namespace SGUEES.Services
       return await _repo.GetAsync(p);
     }
 
+    // Qué hace: crea una competencia conductual.
+    // Cómo: valida la empresa de sesión y los datos con ValidateEmpresaSesion y Validate, normaliza con NormalizeData y llama a CreateAsync del repositorio.
     public async Task<CResult> CreateAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
     {
       var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -49,6 +59,8 @@ namespace SGUEES.Services
       return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
     }
 
+    // Qué hace: actualiza una competencia conductual.
+    // Cómo: valida la empresa de sesión, los datos y el CORR_COMPETENCIAS_CONDUCTUALES a actualizar, normaliza con NormalizeData y llama a UpdateAsync del repositorio.
     public async Task<CResult> UpdateAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
     {
       var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -72,6 +84,8 @@ namespace SGUEES.Services
       return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
     }
 
+    // Qué hace: elimina una competencia conductual.
+    // Cómo: valida la empresa de sesión con ValidateEmpresaSesion y llama a DeleteAsync del repositorio.
     public async Task<CResult> DeleteAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
     {
       var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -83,6 +97,8 @@ namespace SGUEES.Services
       return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
     }
 
+    // Qué hace: cambia el estado activo/inactivo de una competencia conductual.
+    // Cómo: valida la empresa de sesión y el CORR_COMPETENCIAS_CONDUCTUALES a actualizar, y llama a ActivarInactivarAsync del repositorio.
     public async Task<CResult> ActivarInactivarAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
     {
       var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -99,6 +115,8 @@ namespace SGUEES.Services
       return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
     }
 
+    // Qué hace: arma los parámetros de filtro para el repositorio.
+    // Cómo: construye la lista con CORR_EMPRESA a partir de xWhere.
     private static List<CParameter> BuildParameters(SC_COMPETENCIAS_CONDUCTUALESParam xWhere)
     {
       return new List<CParameter>
@@ -107,6 +125,8 @@ namespace SGUEES.Services
       };
     }
 
+    // Qué hace: normaliza los datos antes de guardar.
+    // Cómo: recorta espacios de NOMBRE_COMPETENCIAS_CONDUCTUALES y DESCRIPCION, y aplica ESTADO_COMPETENCIAS_CONDUCTUALES activo cuando no viene informado.
     private static void NormalizeData(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       Data.NOMBRE_COMPETENCIAS_CONDUCTUALES = Data.NOMBRE_COMPETENCIAS_CONDUCTUALES?.Trim();
@@ -114,6 +134,8 @@ namespace SGUEES.Services
       Data.ESTADO_COMPETENCIAS_CONDUCTUALES ??= true;
     }
 
+    // Qué hace: valida los datos obligatorios de la competencia conductual.
+    // Cómo: comprueba que Data no sea nulo, que CORR_TIPO_PUESTO sea válido, y que NOMBRE_COMPETENCIAS_CONDUCTUALES y DESCRIPCION no estén vacíos ni superen sus límites.
     private static CResult Validate(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       if (Data == null)
@@ -149,6 +171,8 @@ namespace SGUEES.Services
       return null;
     }
 
+    // Qué hace: obtiene las competencias conductuales activas para el descriptor de puesto.
+    // Cómo: llama a GetCatalogoDescriptorAsync del repositorio filtrando por CORR_EMPRESA y arma el CResult con el listado.
     public async Task<CResult> GetCatalogoDescriptorAsync(SC_COMPETENCIAS_CONDUCTUALESParam xWhere)
     {
       var rows = await _repo.GetCatalogoDescriptorAsync(xWhere.CORR_EMPRESA);
@@ -164,6 +188,8 @@ namespace SGUEES.Services
       };
     }
 
+    // Qué hace: verifica que exista empresa en la sesión.
+    // Cómo: si corrEmpresa es mayor a cero devuelve null; de lo contrario devuelve un CResult con el error de empresa no asignada.
     private static CResult ValidateEmpresaSesion(int corrEmpresa)
     {
       if (corrEmpresa > 0)
@@ -183,6 +209,8 @@ namespace SGUEES.Services
       };
     }
 
+    // Qué hace: construye un resultado de error de validación.
+    // Cómo: arma un CResult con Result en false y el mensaje recibido.
     private static CResult ValidationError(string message)
     {
       return new CResult

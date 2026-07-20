@@ -1,3 +1,4 @@
+// Qué hace: define la estructura de datos de una gerencia en Angular (GEN_GERENCIA).
 export interface GenGerencia {
 	CORR_EMPRESA: number;
 	CORR_GERENCIA: number;

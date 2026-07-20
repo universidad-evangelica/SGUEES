@@ -20,6 +20,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Lee de V_SC_PERFIL_PUESTO con los filtros recibidos; ordena por CORR_PERFIL_PUESTO.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -59,6 +60,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Lee un registro de V_SC_PERFIL_PUESTO con empresa, descriptor e id de perfil.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -96,6 +98,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta en SC_PERFIL_PUESTO y devuelve el registro creado leído desde la vista.
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -140,6 +143,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza SC_PERFIL_PUESTO por empresa, descriptor e id; devuelve el registro.
         public async Task<CResult> UpdateAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -154,7 +158,9 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "ESTADO_FAMILIAR", Value = Data.ESTADO_FAMILIAR, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "LICENCIA", Value = Data.LICENCIA, DbType = System.Data.DbType.Boolean },
                     new CParameter() { ParameterName = "CORR_DISPONIBILIDAD_HORARIO", Value = Data.CORR_DISPONIBILIDAD_HORARIO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "NOMBRE_DISPONIBILIDAD_HORARIO", Value = Data.NOMBRE_DISPONIBILIDAD_HORARIO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "CORR_TIPO_MODALIDAD", Value = Data.CORR_TIPO_MODALIDAD, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "NOMBRE_MODALIDAD", Value = Data.NOMBRE_MODALIDAD, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -198,6 +204,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Borra el registro de SC_PERFIL_PUESTO por empresa, descriptor e id.
         public async Task<CResult> DeleteAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -238,6 +245,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Arma columnas y valores para insertar en SC_PERFIL_PUESTO, incluyendo auditoría.
         private static List<CParameter> BuildWriteParameters(SC_PERFIL_PUESTOTable Data)
         {
             return new List<CParameter>
@@ -251,7 +259,9 @@ namespace SGUEES.Repositories
                 new CParameter() { ParameterName = "ESTADO_FAMILIAR", Value = Data.ESTADO_FAMILIAR, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "LICENCIA", Value = Data.LICENCIA, DbType = System.Data.DbType.Boolean },
                 new CParameter() { ParameterName = "CORR_DISPONIBILIDAD_HORARIO", Value = Data.CORR_DISPONIBILIDAD_HORARIO, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "NOMBRE_DISPONIBILIDAD_HORARIO", Value = Data.NOMBRE_DISPONIBILIDAD_HORARIO, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "CORR_TIPO_MODALIDAD", Value = Data.CORR_TIPO_MODALIDAD, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "NOMBRE_MODALIDAD", Value = Data.NOMBRE_MODALIDAD, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime },

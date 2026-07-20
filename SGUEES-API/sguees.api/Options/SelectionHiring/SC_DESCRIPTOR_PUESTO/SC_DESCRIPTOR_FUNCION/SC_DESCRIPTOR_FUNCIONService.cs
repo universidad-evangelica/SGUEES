@@ -19,40 +19,49 @@ namespace SGUEES.Services
             _actividadRepo = actividadRepo;
         }
 
+        // Obtiene el listado de función del descriptor aplicando los filtros recibidos.
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_FUNCIONParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un registro de función del descriptor con los identificadores recibidos.
         public async Task<CResult> GetAsync(SC_DESCRIPTOR_FUNCIONParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeFuncion: true));
         }
 
+        // Valida y crea el registro de función del descriptor con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Valida claves y longitud del nombre de función.
             var validation = Validate(Data);
             if (validation != null)
             {
                 return validation;
             }
 
+            // Normaliza TIPO_FUNCION a mayúsculas consistentes.
             NormalizeTipoFuncion(Data);
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida y actualiza el registro existente de función del descriptor.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Valida claves y longitud del nombre de función.
             var validation = Validate(Data);
             if (validation != null)
             {
                 return validation;
             }
 
+            // Normaliza TIPO_FUNCION a mayúsculas consistentes.
             NormalizeTipoFuncion(Data);
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida las claves y elimina el registro de función del descriptor.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_PUESTO <= 0 || Data.CORR_FUNCION <= 0)
@@ -60,10 +69,12 @@ namespace SGUEES.Services
                 return ValidationError("Debe indicar la funcion a eliminar.");
             }
 
+            // Borra primero las actividades hijas de la función.
             await _actividadRepo.DeleteByFuncionAsync(Data, vLOGIN_SISTEMA, vESTACION);
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Construye los parámetros de filtrado para consultar función del descriptor.
         private static List<CParameter> BuildParameters(SC_DESCRIPTOR_FUNCIONParam xWhere, bool includeFuncion = false)
         {
             var p = new List<CParameter>
@@ -89,6 +100,7 @@ namespace SGUEES.Services
             return p;
         }
 
+        // Valida las claves y reglas de negocio requeridas para función del descriptor.
         private static CResult Validate(SC_DESCRIPTOR_FUNCIONTable Data)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -109,6 +121,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Normaliza el tipo de función para mantener un valor consistente.
         private static void NormalizeTipoFuncion(SC_DESCRIPTOR_FUNCIONTable Data)
         {
             Data.TIPO_FUNCION = string.IsNullOrWhiteSpace(Data.TIPO_FUNCION)
@@ -116,6 +129,7 @@ namespace SGUEES.Services
                 : Data.TIPO_FUNCION.Trim().ToUpperInvariant();
         }
 
+        // Construye un resultado uniforme para reportar errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult
@@ -124,7 +138,7 @@ namespace SGUEES.Services
                 Result = false,
                 RowsAffected = 0,
                 CodeHelper = 0,
-                ErrorCode = 1,
+                ErrorCode = 4101,
                 ErrorMessage = message,
                 ErrorSource = "",
             };

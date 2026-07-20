@@ -1,5 +1,5 @@
+// Qué hace: aplica las reglas de negocio del catálogo nivel académico antes de llamar al repositorio.
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Threading.Tasks;
 using eFramework.Core;
 using SGUEES.Models;
@@ -7,6 +7,7 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
+    // Qué hace: valida los datos de nivel académico y coordina su persistencia con el repositorio.
     public class PLA_NIVEL_ACADEMICOService : IPLA_NIVEL_ACADEMICOService
     {
         private readonly IPLA_NIVEL_ACADEMICORepository _repo;
@@ -16,21 +17,15 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Qué hace: lista los niveles académicos según los filtros recibidos.
+        // Cómo: llama a GetAllAsync del repositorio con los parámetros armados en BuildParameters.
         public async Task<CResult> GetAllAsync(PLA_NIVEL_ACADEMICOParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
-        public async Task<CResult> GetDistinctValuesAsync(PLA_NIVEL_ACADEMICOParam xWhere)
-        {
-            if (string.IsNullOrWhiteSpace(xWhere.DISTINCT_FIELD))
-            {
-                return ValidationError("Debe indicar el campo para el filtro de encabezado.");
-            }
-
-            return await _repo.GetDistinctValuesAsync(BuildParameters(xWhere));
-        }
-
+        // Qué hace: obtiene un nivel académico por su correlativo.
+        // Cómo: llama a GetAsync del repositorio con CORR_EMPRESA y CORR_NIVEL_ACADEMICO.
         public async Task<CResult> GetAsync(PLA_NIVEL_ACADEMICOParam xWhere)
         {
             var p = new List<CParameter>
@@ -42,149 +37,101 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
+        // Qué hace: crea un nivel académico nuevo.
+        // Cómo: valida empresa de sesión y datos con Validate, normaliza el nombre y llama a CreateAsync del repositorio.
         public async Task<CResult> CreateAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
             var validation = Validate(Data);
             if (validation != null)
             {
                 return validation;
             }
 
-            Data.NOMBRE_NIVEL_ACADEMICO = Data.NOMBRE_NIVEL_ACADEMICO.Trim();
-            Data.ESTADO_NIVEL_ACADEMICO ??= true;
-
-            var duplicate = await ValidateUniqueNombreAsync(Data, null);
-            if (duplicate != null)
-            {
-                return duplicate;
-            }
-
+            NormalizeData(Data);
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Qué hace: actualiza un nivel académico existente.
+        // Cómo: valida empresa, datos y llave; normaliza el nombre y llama a UpdateAsync del repositorio.
         public async Task<CResult> UpdateAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
             var validation = Validate(Data);
             if (validation != null)
             {
                 return validation;
             }
 
-            Data.NOMBRE_NIVEL_ACADEMICO = Data.NOMBRE_NIVEL_ACADEMICO.Trim();
-            Data.ESTADO_NIVEL_ACADEMICO ??= true;
-
-            var duplicate = await ValidateUniqueNombreAsync(Data, Data.CORR_NIVEL_ACADEMICO);
-            if (duplicate != null)
+            if (Data.CORR_NIVEL_ACADEMICO <= 0)
             {
-                return duplicate;
+                return ValidationError("No se pudo identificar el nivel academico a actualizar.");
             }
 
+            NormalizeData(Data);
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Qué hace: elimina un nivel académico de la empresa en sesión.
+        // Cómo: valida la empresa con ValidateEmpresaSesion y llama a DeleteAsync del repositorio.
         public async Task<CResult> DeleteAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        public async Task<CResult> DesactivarAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        // Qué hace: cambia el estado activo/inactivo de un nivel académico.
+        // Cómo: valida empresa y llave, luego llama a ActivarInactivarAsync del repositorio.
+        public async Task<CResult> ActivarInactivarAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            Data.ESTADO_NIVEL_ACADEMICO = false;
-            return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            if (Data.CORR_NIVEL_ACADEMICO <= 0)
+            {
+                return ValidationError("No se pudo identificar el nivel academico a actualizar.");
+            }
+
+            return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Qué hace: arma los parámetros de consulta limitados a la empresa actual.
         private static List<CParameter> BuildParameters(PLA_NIVEL_ACADEMICOParam xWhere)
         {
-            var p = new List<CParameter>
+            return new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "BUSQUEDA", Value = xWhere.BUSQUEDA, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "ESTADO_NIVEL_ACADEMICO", Value = xWhere.ESTADO_NIVEL_ACADEMICO, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "PAGE", Value = xWhere.PAGE, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "PAGE_SIZE", Value = xWhere.PAGE_SIZE, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "DISTINCT_FIELD", Value = xWhere.DISTINCT_FIELD, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "HEADER_FILTER_SEARCH", Value = xWhere.HEADER_FILTER_SEARCH, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "SORT_FIELD", Value = xWhere.SORT_FIELD, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "SORT_DESC", Value = xWhere.SORT_DESC, DbType = System.Data.DbType.Boolean },
             };
-
-            AddJsonParameter(p, "FILTER_ROW_JSON", xWhere.FILTER_ROW_JSON);
-            AddJsonParameter(p, "COLUMN_EXACT_JSON", xWhere.COLUMN_EXACT_JSON);
-            AddJsonParameter(p, "COLUMN_ANYOF_JSON", xWhere.COLUMN_ANYOF_JSON);
-            AddAnyOfFilters(p, xWhere.COLUMN_ANYOF_JSON);
-
-            return p;
         }
 
-        private static void AddJsonParameter(List<CParameter> p, string parameterName, string json)
+        // Qué hace: normaliza el nombre y el estado antes de persistir.
+        // Cómo: recorta NOMBRE_NIVEL_ACADEMICO y deja ESTADO_NIVEL_ACADEMICO en true si no fue informado.
+        private static void NormalizeData(PLA_NIVEL_ACADEMICOTable Data)
         {
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return;
-            }
-
-            p.Add(new CParameter()
-            {
-                ParameterName = parameterName,
-                Value = json,
-                DbType = System.Data.DbType.String,
-            });
+            Data.NOMBRE_NIVEL_ACADEMICO = Data.NOMBRE_NIVEL_ACADEMICO?.Trim();
+            Data.ESTADO_NIVEL_ACADEMICO ??= true;
         }
 
-        private static void AddAnyOfFilters(List<CParameter> p, string columnAnyOfJson)
-        {
-            if (string.IsNullOrWhiteSpace(columnAnyOfJson))
-            {
-                return;
-            }
-
-            try
-            {
-                var filters = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(columnAnyOfJson);
-                if (filters == null)
-                {
-                    return;
-                }
-
-                foreach (var filter in filters)
-                {
-                    if (filter.Value.ValueKind != JsonValueKind.Array)
-                    {
-                        continue;
-                    }
-
-                    var values = filter.Value
-                        .EnumerateArray()
-                        .Select(x => x.ValueKind switch
-                        {
-                            JsonValueKind.String => x.GetString(),
-                            JsonValueKind.Number => x.GetRawText(),
-                            JsonValueKind.True => "true",
-                            JsonValueKind.False => "false",
-                            JsonValueKind.Null => "__BLANK__",
-                            _ => x.ToString(),
-                        })
-                        .Where(x => !string.IsNullOrWhiteSpace(x))
-                        .ToList();
-
-                    if (values.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    p.Add(new CParameter()
-                    {
-                        ParameterName = $"{filter.Key}_ANYOF",
-                        Value = string.Join('|', values),
-                        DbType = System.Data.DbType.String,
-                    });
-                }
-            }
-            catch (JsonException)
-            {
-            }
-        }
-
+        // Qué hace: valida los datos obligatorios del nivel académico.
+        // Cómo: revisa que el nombre no esté vacío y no supere 150 caracteres.
         private static CResult Validate(PLA_NIVEL_ACADEMICOTable Data)
         {
             if (Data == null)
@@ -205,18 +152,27 @@ namespace SGUEES.Services
             return null;
         }
 
-        private async Task<CResult> ValidateUniqueNombreAsync(PLA_NIVEL_ACADEMICOTable Data, int? excludeCorr)
+        // Qué hace: devuelve error controlado cuando la sesión no tiene empresa asignada.
+        private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
-            var exists = await _repo.ExistsNombreAsync(
-                Data.CORR_EMPRESA,
-                Data.NOMBRE_NIVEL_ACADEMICO,
-                excludeCorr ?? 0);
+            if (corrEmpresa > 0)
+            {
+                return null;
+            }
 
-            return exists
-                ? ValidationError($"Ya existe un nivel academico con el nombre {Data.NOMBRE_NIVEL_ACADEMICO}.")
-                : null;
+            return new CResult
+            {
+                Data = null,
+                Result = false,
+                CodeHelper = 0,
+                ErrorCode = 4100,
+                ErrorMessage = "No se pudo guardar el nivel academico porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
+                ErrorSource = "[PLA_NIVEL_ACADEMICOService]",
+                RowsAffected = 0
+            };
         }
 
+        // Qué hace: construye una respuesta uniforme para errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult

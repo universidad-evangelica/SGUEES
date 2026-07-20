@@ -1,3 +1,4 @@
+// Qué hace: define la estructura de un distrito en Angular (GEN_DISTRITO).
 export interface GenDistrito {
 	CORR_PAIS: number;
 	CORR_DEPTO: number;

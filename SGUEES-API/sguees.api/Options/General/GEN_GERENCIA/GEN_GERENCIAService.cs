@@ -1,6 +1,5 @@
+// Qué hace: aplica las reglas de negocio del catálogo gerencias antes de llamar al repositorio.
 using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using eFramework.Core;
 using sguees.Models;
@@ -8,6 +7,7 @@ using sguees.Repositories;
 
 namespace sguees.Services
 {
+	// Qué hace: valida los datos de gerencia y coordina su persistencia con el repositorio.
 	public class GEN_GERENCIAService : IGEN_GERENCIAService
 	{
 		private readonly IGEN_GERENCIARepository _repo;
@@ -17,21 +17,15 @@ namespace sguees.Services
 			_repo = repo;
 		}
 
+		// Qué hace: lista las gerencias según los filtros recibidos.
+		// Cómo: llama a GetAllAsync del repositorio con los parámetros armados en BuildParameters.
 		public async Task<CResult> GetAllAsync(GEN_GERENCIAParam xWhere)
 		{
 			return await _repo.GetAllAsync(BuildParameters(xWhere));
 		}
 
-		public async Task<CResult> GetDistinctValuesAsync(GEN_GERENCIAParam xWhere)
-		{
-			if (string.IsNullOrWhiteSpace(xWhere.DISTINCT_FIELD))
-			{
-				return ValidationError("Debe indicar el campo para el filtro de encabezado.");
-			}
-
-			return await _repo.GetDistinctValuesAsync(BuildParameters(xWhere));
-		}
-
+		// Qué hace: obtiene una gerencia por su correlativo.
+		// Cómo: llama a GetAsync del repositorio con CORR_EMPRESA y CORR_GERENCIA.
 		public async Task<CResult> GetAsync(GEN_GERENCIAParam xWhere)
 		{
 			var p = new List<CParameter>
@@ -43,130 +37,85 @@ namespace sguees.Services
 			return await _repo.GetAsync(p);
 		}
 
+		// Qué hace: crea una gerencia nueva.
+		// Cómo: valida empresa y datos, normaliza campos, comprueba código único y llama a CreateAsync del repositorio.
 		public async Task<CResult> CreateAsync(GEN_GERENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
+			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+			if (empresaError != null)
+			{
+				return empresaError;
+			}
+
 			var validation = Validate(Data);
-			if (validation != null) return validation;
+			if (validation != null)
+			{
+				return validation;
+			}
 
 			Data.NOMBRE_GERENCIA = Data.NOMBRE_GERENCIA.Trim();
 			Data.CODIGO_GERENCIA = Data.CODIGO_GERENCIA.Trim();
 
 			var duplicate = await ValidateUniqueCodigoAsync(Data, null);
-			if (duplicate != null) return duplicate;
+			if (duplicate != null)
+			{
+				return duplicate;
+			}
 
 			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
+		// Qué hace: actualiza una gerencia existente.
+		// Cómo: valida empresa, datos y código único; normaliza campos y llama a UpdateAsync del repositorio.
 		public async Task<CResult> UpdateAsync(GEN_GERENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
+			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+			if (empresaError != null)
+			{
+				return empresaError;
+			}
+
 			var validation = Validate(Data);
-			if (validation != null) return validation;
+			if (validation != null)
+			{
+				return validation;
+			}
 
 			Data.NOMBRE_GERENCIA = Data.NOMBRE_GERENCIA.Trim();
 			Data.CODIGO_GERENCIA = Data.CODIGO_GERENCIA.Trim();
 
 			var duplicate = await ValidateUniqueCodigoAsync(Data, Data.CORR_GERENCIA);
-			if (duplicate != null) return duplicate;
+			if (duplicate != null)
+			{
+				return duplicate;
+			}
 
 			return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
+		// Qué hace: elimina una gerencia.
+		// Cómo: valida empresa de sesión y llama a DeleteAsync del repositorio.
 		public async Task<CResult> DeleteAsync(GEN_GERENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
+			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+			if (empresaError != null)
+			{
+				return empresaError;
+			}
+
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
+		// Qué hace: arma el parámetro CORR_EMPRESA para filtrar en el repositorio.
 		private static List<CParameter> BuildParameters(GEN_GERENCIAParam xWhere)
 		{
-			var p = new List<CParameter>
+			return new List<CParameter>
 			{
 				new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-				new CParameter() { ParameterName = "BUSQUEDA", Value = xWhere.BUSQUEDA, DbType = System.Data.DbType.String },
-				new CParameter() { ParameterName = "PAGE", Value = xWhere.PAGE, DbType = System.Data.DbType.Int32 },
-				new CParameter() { ParameterName = "PAGE_SIZE", Value = xWhere.PAGE_SIZE, DbType = System.Data.DbType.Int32 },
-				new CParameter() { ParameterName = "DISTINCT_FIELD", Value = xWhere.DISTINCT_FIELD, DbType = System.Data.DbType.String },
-				new CParameter() { ParameterName = "HEADER_FILTER_SEARCH", Value = xWhere.HEADER_FILTER_SEARCH, DbType = System.Data.DbType.String },
-				new CParameter() { ParameterName = "SORT_FIELD", Value = xWhere.SORT_FIELD, DbType = System.Data.DbType.String },
-				new CParameter() { ParameterName = "SORT_DESC", Value = xWhere.SORT_DESC, DbType = System.Data.DbType.Boolean },
 			};
-
-			AddJsonParameter(p, "FILTER_ROW_JSON", xWhere.FILTER_ROW_JSON);
-			AddJsonParameter(p, "COLUMN_EXACT_JSON", xWhere.COLUMN_EXACT_JSON);
-			AddJsonParameter(p, "COLUMN_ANYOF_JSON", xWhere.COLUMN_ANYOF_JSON);
-			AddAnyOfFilters(p, xWhere.COLUMN_ANYOF_JSON);
-
-			return p;
 		}
 
-		private static void AddJsonParameter(List<CParameter> p, string parameterName, string json)
-		{
-			if (string.IsNullOrWhiteSpace(json))
-			{
-				return;
-			}
-
-			p.Add(new CParameter()
-			{
-				ParameterName = parameterName,
-				Value = json,
-				DbType = System.Data.DbType.String,
-			});
-		}
-
-		private static void AddAnyOfFilters(List<CParameter> p, string columnAnyOfJson)
-		{
-			if (string.IsNullOrWhiteSpace(columnAnyOfJson))
-			{
-				return;
-			}
-
-			try
-			{
-				var filters = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(columnAnyOfJson);
-				if (filters == null)
-				{
-					return;
-				}
-
-				foreach (var filter in filters)
-				{
-					if (filter.Value.ValueKind != JsonValueKind.Array)
-					{
-						continue;
-					}
-
-					var values = filter.Value
-						.EnumerateArray()
-						.Select(x => x.ValueKind switch
-						{
-							JsonValueKind.String => x.GetString(),
-							JsonValueKind.Number => x.GetRawText(),
-							JsonValueKind.True => "true",
-							JsonValueKind.False => "false",
-							JsonValueKind.Null => "__BLANK__",
-							_ => x.ToString(),
-						})
-						.Where(x => !string.IsNullOrWhiteSpace(x))
-						.ToList();
-
-					if (values.Count == 0)
-					{
-						continue;
-					}
-
-					p.Add(new CParameter()
-					{
-						ParameterName = $"{filter.Key}_ANYOF",
-						Value = string.Join('|', values),
-						DbType = System.Data.DbType.String,
-					});
-				}
-			}
-			catch (JsonException)
-			{
-			}
-		}
-
+		// Qué hace: valida campos obligatorios de la gerencia antes de persistirla.
 		private static CResult Validate(GEN_GERENCIATable Data)
 		{
 			if (Data == null)
@@ -194,7 +143,7 @@ namespace sguees.Services
 				return ValidationError("El codigo de gerencia no puede superar 10 caracteres.");
 			}
 
-			if (!Data.CORR_DIVISION.HasValue || Data.CORR_DIVISION.Value <= 0)
+			if (!Data.CORR_DIVISION.HasValue || Data.CORR_DIVISION <= 0)
 			{
 				return ValidationError("Debe seleccionar la division.");
 			}
@@ -202,6 +151,8 @@ namespace sguees.Services
 			return null;
 		}
 
+		// Qué hace: comprueba que el código de gerencia sea único en la empresa.
+		// Cómo: llama a ExistsCodigoAsync del repositorio.
 		private async Task<CResult> ValidateUniqueCodigoAsync(GEN_GERENCIATable Data, int? excludeCorr)
 		{
 			var exists = await _repo.ExistsCodigoAsync(
@@ -214,6 +165,27 @@ namespace sguees.Services
 				: null;
 		}
 
+		// Qué hace: verifica que la sesión tenga empresa válida.
+		private static CResult ValidateEmpresaSesion(int corrEmpresa)
+		{
+			if (corrEmpresa > 0)
+			{
+				return null;
+			}
+
+			return new CResult
+			{
+				Data = null,
+				Result = false,
+				CodeHelper = 0,
+				ErrorCode = 4100,
+				ErrorMessage = "No se pudo guardar la gerencia porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
+				ErrorSource = "[GEN_GERENCIAService]",
+				RowsAffected = 0
+			};
+		}
+
+		// Qué hace: construye una respuesta uniforme para errores de validación.
 		private static CResult ValidationError(string message)
 		{
 			return new CResult

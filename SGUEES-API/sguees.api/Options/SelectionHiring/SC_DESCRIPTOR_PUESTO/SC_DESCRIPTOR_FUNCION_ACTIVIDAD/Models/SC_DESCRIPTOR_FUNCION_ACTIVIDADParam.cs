@@ -2,6 +2,8 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Filtros de consulta (query string) para listar/buscar SC_DESCRIPTOR_FUNCION_ACTIVIDAD por empresa,
+    // descriptor, función o identificador de actividad.
     public class SC_DESCRIPTOR_FUNCION_ACTIVIDADParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

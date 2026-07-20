@@ -15,18 +15,22 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Lista KPIs del descriptor; convierte filtros a parámetros SQL y consulta el repositorio.
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_KPI_FUNCIONParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un KPI por empresa, descriptor y CORR_KPI_FUNCION.
         public async Task<CResult> GetAsync(SC_DESCRIPTOR_KPI_FUNCIONParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeKpi: true));
         }
 
+        // Valida indicador, frecuencia y meta; luego inserta en SC_DESCRIPTOR_KPI_FUNCION.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Revisa campos obligatorios y rangos antes de guardar.
             var validation = Validate(Data);
             if (validation != null)
             {
@@ -36,6 +40,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida y actualiza un KPI existente en SC_DESCRIPTOR_KPI_FUNCION.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var validation = Validate(Data);
@@ -47,6 +52,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida claves y elimina el KPI de SC_DESCRIPTOR_KPI_FUNCION.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_PUESTO <= 0 || Data.CORR_KPI_FUNCION <= 0)
@@ -57,6 +63,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Arma parámetros SQL: siempre CORR_EMPRESA; opcionalmente descriptor y CORR_KPI_FUNCION.
         private static List<CParameter> BuildParameters(SC_DESCRIPTOR_KPI_FUNCIONParam xWhere, bool includeKpi = false)
         {
             var p = new List<CParameter>
@@ -77,6 +84,7 @@ namespace SGUEES.Services
             return p;
         }
 
+        // Revisa empresa, descriptor guardado, longitudes y que la meta esté entre 0 y 100.
         private static CResult Validate(SC_DESCRIPTOR_KPI_FUNCIONTable Data)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -94,6 +102,11 @@ namespace SGUEES.Services
                 return ValidationError("El indicador no puede superar 255 caracteres.");
             }
 
+            if (!string.IsNullOrEmpty(Data.NOMBRE_FRECUENCIA) && Data.NOMBRE_FRECUENCIA.Trim().Length > 50)
+            {
+                return ValidationError("El nombre de la frecuencia no puede superar 50 caracteres.");
+            }
+
             if (Data.META.HasValue && (Data.META < 0 || Data.META > 100))
             {
                 return ValidationError("La meta debe estar entre 0 y 100.");
@@ -102,6 +115,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Devuelve un CResult con ErrorCode 4101 y el mensaje de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult
@@ -110,7 +124,7 @@ namespace SGUEES.Services
                 Result = false,
                 RowsAffected = 0,
                 CodeHelper = 0,
-                ErrorCode = 1,
+                ErrorCode = 4101,
                 ErrorMessage = message,
                 ErrorSource = "",
             };

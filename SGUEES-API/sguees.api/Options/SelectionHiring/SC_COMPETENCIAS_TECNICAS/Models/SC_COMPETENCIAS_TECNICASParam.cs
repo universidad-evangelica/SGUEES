@@ -1,7 +1,11 @@
+// Qué hace: parámetros de consulta y filtro de competencia técnica.
+// Cómo: extiende BaseParam con claves, datos de negocio, opciones de jerarquía y parámetros de paginación/orden del catálogo.
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Qué hace: modelo de filtros de competencia técnica.
+    // Cómo: agrupa CORR_EMPRESA, correlativos, códigos, niveles, estado, auditoría y opciones de consulta remota.
     public class SC_COMPETENCIAS_TECNICASParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

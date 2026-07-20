@@ -1,8 +1,9 @@
-﻿using eFramework.Data;
+// Parámetros de consulta/filtro de impacto económico.
+using eFramework.Data;
 
 namespace SGUEES.Models
 {
-    /// <summary>Parámetros GetAll (A+P) y Get por PK. Sin filtros remotos legacy.</summary>
+    // Qué hace: agrupa los parámetros de GetAll (A+P) y Get por PK.
     public class SC_IMPACTO_ECONOMICOParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

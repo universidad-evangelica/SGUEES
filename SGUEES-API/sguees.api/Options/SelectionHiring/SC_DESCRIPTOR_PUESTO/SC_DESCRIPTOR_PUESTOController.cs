@@ -23,6 +23,7 @@ namespace SGUEES.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(_service));
         }
 
+        // Lista todos los descriptores de puesto de la empresa en sesión; pasa los filtros del query al servicio.
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> GetAll([FromQuery] SC_DESCRIPTOR_PUESTOParam Data)
@@ -31,6 +32,7 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Obtiene un descriptor por CORR_DESCRIPTOR_PUESTO y empresa de sesión.
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> Get([FromQuery] SC_DESCRIPTOR_PUESTOParam Data)
@@ -39,27 +41,54 @@ namespace SGUEES.Controllers
             return await _service.GetAsync(Data);
         }
 
+        // Crea un descriptor nuevo; rellena auditoría de sesión y delega al servicio.
         [HttpPost]
         [Authorize(Policy = "/sc-descriptor-puesto|C")]
         public async Task<IActionResult> Post(SC_DESCRIPTOR_PUESTOTable Data)
         {
+            // Rellena usuario, estación, fechas y empresa antes de guardar.
             SetCreateAudit(Data);
 
             var resultado = await _service.CreateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Actualiza un descriptor existente; toma la PK del query string y actualiza auditoría.
         [HttpPut]
         [Authorize(Policy = "/sc-descriptor-puesto|U")]
         public async Task<IActionResult> Put(SC_DESCRIPTOR_PUESTOTable Data)
         {
+            // Copia CORR_DESCRIPTOR_PUESTO desde la URL al cuerpo del request.
             this.ApplyQueryKeys(Data, nameof(SC_DESCRIPTOR_PUESTOTable.CORR_DESCRIPTOR_PUESTO));
+            // Rellena usuario, estación y fecha de modificación.
             SetUpdateAudit(Data);
 
             var resultado = await _service.UpdateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Guarda el entrenamiento del descriptor (inducción, semanas, responsable) con auditoría de sesión.
+        [HttpPut("ActualizarEntrenamiento")]
+        [Authorize(Policy = "/sc-descriptor-puesto|U")]
+        public async Task<IActionResult> ActualizarEntrenamiento(SC_DESCRIPTOR_PUESTOTable Data)
+        {
+            if (Data != null)
+            {
+                // Copia CORR_DESCRIPTOR_PUESTO desde la URL al cuerpo del request.
+                this.ApplyQueryKeys(Data, nameof(SC_DESCRIPTOR_PUESTOTable.CORR_DESCRIPTOR_PUESTO));
+                Data.CORR_EMPRESA = GetCorrEmpresa();
+                // Rellena usuario, estación y fecha de modificación.
+                SetUpdateAudit(Data);
+            }
+
+            var resultado = await _service.ActualizarEntrenamientoAsync(
+                Data,
+                GetUsuario(),
+                ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+        }
+
+        // Elimina un descriptor de la empresa en sesión; borra también sus registros hijos.
         [HttpDelete]
         [Authorize(Policy = "/sc-descriptor-puesto|D")]
         public async Task<IActionResult> Delete([FromQuery] SC_DESCRIPTOR_PUESTOTable Data)
@@ -70,17 +99,22 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Lee CORR_EMPRESA del token JWT del usuario autenticado.
+
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
+        // Lee el login del usuario desde el claim NameIdentifier.
+
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
+        // Rellena auditoría al crear: empresa, usuario, estación, fechas y valores por defecto (BORRADOR, versión 1).
         private void SetCreateAudit(SC_DESCRIPTOR_PUESTOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -94,6 +128,7 @@ namespace SGUEES.Controllers
             Data.VERSION ??= 1;
         }
 
+        // Rellena auditoría al modificar: empresa, usuario, estación, fecha y estado BORRADOR si viene vacío.
         private void SetUpdateAudit(SC_DESCRIPTOR_PUESTOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

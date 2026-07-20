@@ -1,8 +1,10 @@
-﻿using System;
+// Entidad de persistencia de impacto económico (mapeo a la tabla).
+using System;
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Qué hace: mapea los campos de la tabla de impacto económico, incluyendo auditoría.
     public class SC_IMPACTO_ECONOMICOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

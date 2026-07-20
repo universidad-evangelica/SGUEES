@@ -1,14 +1,19 @@
+// Parámetros de consulta/filtro de inducción.
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Filtros y opciones de paginación/orden para consultas de inducción.
     public class SC_INDUCCIONParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_INDUCCION { get; set; }
+        // Texto libre de búsqueda para filtros del listado.
         public string BUSQUEDA { get; set; }
         public string NOMBRE_INDUCCION { get; set; }
+        // Duración de la inducción, en semanas.
         public int? SEMANAS_INDUCCION { get; set; }
+        // Estado del catálogo: true = activo, false = inactivo.
         public bool? ESTADO_INDUCCION { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }

@@ -20,6 +20,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Lee de V_SC_DESCRIPTOR_KPI_FUNCION con los filtros recibidos; ordena por CORR_KPI_FUNCION.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -59,6 +60,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Lee un registro de V_SC_DESCRIPTOR_KPI_FUNCION con empresa, descriptor e id de KPI.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -96,6 +98,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta en SC_DESCRIPTOR_KPI_FUNCION y devuelve el registro creado leído desde la vista.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -140,6 +143,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza SC_DESCRIPTOR_KPI_FUNCION por empresa, descriptor e id; devuelve el registro.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -150,6 +154,7 @@ namespace SGUEES.Repositories
                 {
                     new CParameter() { ParameterName = "NOMBRE_INDICADOR", Value = Data.NOMBRE_INDICADOR, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "CORR_FRECUENCIA", Value = Data.CORR_FRECUENCIA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "NOMBRE_FRECUENCIA", Value = Data.NOMBRE_FRECUENCIA, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "META", Value = Data.META, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
@@ -194,6 +199,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Borra el registro de SC_DESCRIPTOR_KPI_FUNCION por empresa, descriptor e id.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -234,6 +240,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Arma columnas y valores para insertar en SC_DESCRIPTOR_KPI_FUNCION, incluyendo auditoría.
         private static List<CParameter> BuildWriteParameters(SC_DESCRIPTOR_KPI_FUNCIONTable Data)
         {
             return new List<CParameter>
@@ -243,6 +250,7 @@ namespace SGUEES.Repositories
                 new CParameter() { ParameterName = "CORR_KPI_FUNCION", Value = Data.CORR_KPI_FUNCION, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "NOMBRE_INDICADOR", Value = Data.NOMBRE_INDICADOR, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "CORR_FRECUENCIA", Value = Data.CORR_FRECUENCIA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "NOMBRE_FRECUENCIA", Value = Data.NOMBRE_FRECUENCIA, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "META", Value = Data.META, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },

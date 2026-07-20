@@ -1,3 +1,4 @@
+// Qué hace: define la estructura de datos de una división en Angular (GEN_DIVISION).
 export interface GenDivision {
 	CORR_EMPRESA: number;
 	CORR_DIVISION: number;

@@ -1,3 +1,6 @@
+// Qué hace: coordina validaciones, columnas del grid y operaciones del descriptor y sus detalles.
+// Cómo: usa los repositorios para llamar a la API; el componente solo consume los resultados.
+
 import { Injectable } from '@angular/core';
 import { forkJoin, from, Observable, of } from 'rxjs';
 import { concatMap, map, toArray } from 'rxjs/operators';
@@ -27,18 +30,21 @@ import { ScDescriptorPuestoRequerimientoOrganizacional } from './sc-descriptor-p
 import { ScDescriptorPuestoRequerimientoOrganizacionalRepository } from './sc-descriptor-puesto-requerimiento-organizacional/sc-descriptor-puesto-requerimiento-organizacional.repository';
 import { ScDescriptorPuestoRiesgoPuesto } from './sc-descriptor-puesto-riesgo-puesto/models/sc-descriptor-puesto-riesgo-puesto';
 import { ScDescriptorPuestoRiesgoPuestoRepository } from './sc-descriptor-puesto-riesgo-puesto/sc-descriptor-puesto-riesgo-puesto.repository';
-import { ScDescriptorPuesto } from './models/sc-descriptor-puesto';
+import { ScDescriptorPuestoResponsabilidadCargo } from './sc-descriptor-puesto-responsabilidad-cargo/models/sc-descriptor-puesto-responsabilidad-cargo';
+import { ScDescriptorPuestoResponsabilidadCargoRepository } from './sc-descriptor-puesto-responsabilidad-cargo/sc-descriptor-puesto-responsabilidad-cargo.repository';
 import {
 	ESTADOS_DESCRIPTOR_BLOQUEO_CREACION,
-	FORMATO_CORTA,
-	FORMATO_EXTENSA,
+	FORMATO_CORTO,
+	FORMATO_EXTENSO,
+	ScDescriptorPuesto,
 	TIPO_FUNCION_CLAVE,
 	TIPO_FUNCION_SECUNDARIA,
 	TIPO_RELACION_EXTERNA,
 	TIPO_RELACION_INTERNA,
-} from './sc-descriptor-puesto.mock-data';
+} from './models/sc-descriptor-puesto';
 import { ScDescriptorPuestoRepository } from './sc-descriptor-puesto.repository';
 
+// Qué hace: textos legibles de cada estado del descriptor para los badges del grid.
 const ESTADO_DESCRIPTOR_LABELS: Record<string, string> = {
 	BORRADOR: 'Borrador',
 	ENVIADO: 'Enviado',
@@ -47,6 +53,7 @@ const ESTADO_DESCRIPTOR_LABELS: Record<string, string> = {
 	INACTIVO: 'Inactivo',
 };
 
+// Qué hace: expone la lógica de negocio del descriptor y de todas sus secciones de detalle.
 @Injectable({ providedIn: 'root' })
 export class ScDescriptorPuestoService {
 	constructor(
@@ -61,9 +68,12 @@ export class ScDescriptorPuestoService {
 		private competenciasConductualesRepo: ScPerfilPuestoCompetenciasConductualesRepository,
 		private requerimientosOrganizacionalesRepo: ScDescriptorPuestoRequerimientoOrganizacionalRepository,
 		private riesgosPuestoRepo: ScDescriptorPuestoRiesgoPuestoRepository,
+		private responsabilidadesCargoRepo: ScDescriptorPuestoResponsabilidadCargoRepository,
 		private relacionLaboralRepo: ScDescriptorRelacionLaboralRepository
 	) {}
 
+	// Qué hace: valida campos obligatorios del encabezado y límites de longitud.
+	// Cómo: revisa formato, área, puesto, reporta a, fecha y objetivo; muestra advertencia si falla.
 	esValido(model: ScDescriptorPuesto, msg: Function): boolean {
 		if (!model.FORMATO || model.FORMATO.trim() === '') {
 			msg('Debe seleccionar el tipo de formato.', NotifyType.Warning);
@@ -98,6 +108,8 @@ export class ScDescriptorPuestoService {
 		return true;
 	}
 
+	// Qué hace: busca otro descriptor del mismo puesto en estado que impida crear una versión paralela.
+	// Cómo: filtra la lista por puesto y estado bloqueante; en edición excluye el registro actual.
 	buscarDescriptorBloqueoPorPuesto(
 		model: ScDescriptorPuesto,
 		models: ScDescriptorPuesto[],
@@ -126,6 +138,8 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
+	// Qué hace: impide guardar si ya existe otro descriptor bloqueante para el mismo puesto.
+	// Cómo: usa buscarDescriptorBloqueoPorPuesto y muestra el mensaje de conflicto si encuentra uno.
 	validarDescriptorUnicoPorPuesto(
 		model: ScDescriptorPuesto,
 		models: ScDescriptorPuesto[],
@@ -141,6 +155,7 @@ export class ScDescriptorPuestoService {
 		return false;
 	}
 
+	// Qué hace: arma el código legible del descriptor (por ejemplo DES-0001).
 	buildCodigoDescriptor(corrDescriptor: number | null | undefined): string {
 		const corr = Number(corrDescriptor);
 		if (!corr || corr <= 0) {
@@ -150,6 +165,7 @@ export class ScDescriptorPuestoService {
 		return `DES-${String(corr).padStart(4, '0')}`;
 	}
 
+	// Qué hace: arma el mensaje de advertencia cuando ya existe un descriptor abierto del puesto.
 	buildMensajeDescriptorExistente(conflicto: ScDescriptorPuesto): string {
 		const codigo = this.buildCodigoDescriptor(conflicto.CORR_DESCRIPTOR_PUESTO);
 		const version = Number(conflicto.VERSION) > 0 ? Number(conflicto.VERSION) : 1;
@@ -163,28 +179,62 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
+	// Qué hace: lista descriptores según filtros.
+	// Cómo: llama a la API con los filtros armados en buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
+	// Qué hace: obtiene un descriptor por su correlativo.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: param.CORR_DESCRIPTOR_PUESTO }]);
 	}
 
+	// Qué hace: crea un descriptor nuevo.
+	// Cómo: formatea las fechas a solo día y llama a create del repositorio.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(this.toApiPayload(model));
 	}
 
+	// Qué hace: actualiza el descriptor principal.
+	// Cómo: formatea las fechas a solo día y llama a la API con la llave del descriptor.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(this.toApiPayload(model), [
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO },
 		]);
 	}
 
+	// Qué hace: carga el catálogo de inducciones para el bloque de entrenamiento.
+	getInduccionesLookup(): Observable<IResult> {
+		return this.repo.getInducciones();
+	}
+
+	// Qué hace: guarda inducción, semanas y responsable del entrenamiento.
+	// Cómo: llama a la API ActualizarEntrenamiento con el correlativo del descriptor.
+	actualizarEntrenamiento(
+		corrDescriptorPuesto: number,
+		corrInduccion: number | null,
+		responsable: string,
+		nombreInduccion: string = '',
+		semanasInduccion: number | null = null
+	): Observable<IResult> {
+		return this.repo.updateEntrenamiento(
+			{
+				CORR_INDUCCION: corrInduccion,
+				NOMBRE_INDUCCION: (nombreInduccion ?? '').trim(),
+				SEMANAS_INDUCCION: semanasInduccion,
+				RESPONSABLE: (responsable ?? '').trim(),
+			},
+			corrDescriptorPuesto
+		);
+	}
+
+	// Qué hace: elimina un descriptor por su correlativo.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO }]);
 	}
 
+	// Qué hace: define las columnas del grid de consulta, incluidos badges de formato, estado y versión.
 	getColumns(): any[] {
 		return [
 			{ dataField: 'CORR_DESCRIPTOR_PUESTO', caption: 'Corr.', width: 85 },
@@ -248,6 +298,7 @@ export class ScDescriptorPuestoService {
 		];
 	}
 
+	// Qué hace: define el resumen de totales del grid de consulta.
 	getSummary(): any {
 		return {
 			totalItems: [
@@ -261,6 +312,7 @@ export class ScDescriptorPuestoService {
 		};
 	}
 
+	// Qué hace: define los campos del formulario de generalidades del descriptor.
 	getHeaderItems(): any[] {
 		return [
 			{
@@ -397,6 +449,8 @@ export class ScDescriptorPuestoService {
 		];
 	}
 
+	// Qué hace: prepara el modelo para enviar a la API con fechas en formato yyyy-MM-dd.
+	// Cómo: copia el modelo y convierte FECHA_EMISION y FECHA_REVISION a solo día.
 	private toApiPayload(model: ScDescriptorPuesto): any {
 		return {
 			...model,
@@ -405,6 +459,7 @@ export class ScDescriptorPuestoService {
 		};
 	}
 
+	// Qué hace: convierte una fecha a texto yyyy-MM-dd sin hora.
 	private formatearDateOnly(fecha: Date | string | null): string | null {
 		if (!fecha) {
 			return null;
@@ -428,6 +483,7 @@ export class ScDescriptorPuestoService {
 		return `${year}-${month}-${day}`;
 	}
 
+	// Qué hace: arma los filtros de consulta a partir de los parámetros recibidos.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 		if (param?.CORR_DESCRIPTOR_PUESTO) {
@@ -436,6 +492,7 @@ export class ScDescriptorPuestoService {
 		return xWhere;
 	}
 
+	// Qué hace: pinta un badge HTML en una celda del grid.
 	private renderBadge(
 		cellElement: HTMLElement,
 		classNames: string[],
@@ -463,33 +520,37 @@ export class ScDescriptorPuestoService {
 		cellElement.appendChild(badge);
 	}
 
+	// Qué hace: devuelve la etiqueta legible del formato (Corta o Extensa).
 	private getFormatoBadgeLabel(formato: string | null | undefined): string {
 		const value = (formato ?? '').toUpperCase();
-		if (value === FORMATO_EXTENSA || value === 'EXTENSA') {
+		if (value === FORMATO_EXTENSO) {
 			return 'Extensa';
 		}
-		if (value === FORMATO_CORTA || value === 'CORTA') {
+		if (value === FORMATO_CORTO) {
 			return 'Corta';
 		}
 		return formato ?? '';
 	}
 
+	// Qué hace: devuelve la clase CSS del badge según el formato.
 	private getFormatoBadgeClass(formato: string | null | undefined): string {
 		const value = (formato ?? '').toUpperCase();
-		if (value === FORMATO_EXTENSA || value === 'EXTENSA') {
+		if (value === FORMATO_EXTENSO) {
 			return 'descriptor-badge--formato-extensa';
 		}
-		if (value === FORMATO_CORTA || value === 'CORTA') {
+		if (value === FORMATO_CORTO) {
 			return 'descriptor-badge--formato-corta';
 		}
 		return 'descriptor-badge--formato-default';
 	}
 
+	// Qué hace: devuelve la etiqueta legible del estado del descriptor.
 	private getEstadoDescriptorLabel(estado: string | null | undefined): string {
 		const value = (estado ?? '').toUpperCase();
 		return ESTADO_DESCRIPTOR_LABELS[value] ?? (estado ?? '');
 	}
 
+	// Qué hace: devuelve la clase CSS del badge según el estado del descriptor.
 	private getEstadoDescriptorBadgeClass(estado: string | null | undefined): string {
 		const value = (estado ?? '').toUpperCase();
 		switch (value) {
@@ -508,6 +569,8 @@ export class ScDescriptorPuestoService {
 		}
 	}
 
+	// Qué hace: lista funciones secundarias del descriptor.
+	// Cómo: llama a la API con descriptor y TIPO_FUNCION secundaria.
 	getFuncionesSecundariasLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.funcionRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -515,6 +578,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: lista funciones clave del descriptor.
+	// Cómo: llama a la API con descriptor y TIPO_FUNCION clave.
 	getFuncionesClaveLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.funcionRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -522,6 +587,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: lista actividades de una función.
+	// Cómo: llama a la API con descriptor y correlativo de función.
 	getActividadesLookup(corrDescriptorPuesto: number, corrFuncion: number): Observable<IResult> {
 		return this.actividadRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -529,6 +596,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: lista relaciones internas del descriptor.
+	// Cómo: llama a la API con descriptor y TIPO_RELACION interna.
 	getRelacionesInternasLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.relacionLaboralRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -536,6 +605,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: lista relaciones externas del descriptor.
+	// Cómo: llama a la API con descriptor y TIPO_RELACION externa.
 	getRelacionesExternasLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.relacionLaboralRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -543,6 +614,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: guarda una relación laboral (interna o externa).
+	// Cómo: arma el objeto a enviar y llama a create o update según tenga correlativo.
 	persistirRelacionLaboral(
 		corrDescriptorPuesto: number,
 		relacion: ScDescriptorRelacionLaboral,
@@ -567,6 +640,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: elimina una relación laboral.
+	// Cómo: valida las llaves; si faltan devuelve error local, si no llama a delete del repositorio.
 	eliminarRelacionLaboral(
 		corrDescriptorPuesto: number,
 		corrRelacionLaboral: number
@@ -589,14 +664,18 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: valida filas de funciones clave antes de persistir (sin reglas adicionales por ahora).
 	esValidoFuncionesClave(_funciones: ScDescriptorFuncion[], _msg: Function): boolean {
 		return true;
 	}
 
+	// Qué hace: valida filas de actividades antes de persistir (sin reglas adicionales por ahora).
 	esValidoActividades(_actividades: ScDescriptorFuncionActividad[], _msg: Function): boolean {
 		return true;
 	}
 
+	// Qué hace: guarda una función (clave o secundaria).
+	// Cómo: arma el objeto con TIPO_FUNCION y llama a create o update según tenga correlativo.
 	persistirFuncion(
 		corrDescriptorPuesto: number,
 		funcion: ScDescriptorFuncion,
@@ -620,6 +699,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: crea una función vacía (clave o secundaria).
 	crearFuncion(corrDescriptorPuesto: number, tipoFuncion: string): Observable<IResult> {
 		return this.persistirFuncion(
 			corrDescriptorPuesto,
@@ -632,6 +712,8 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
+	// Qué hace: elimina una función.
+	// Cómo: valida las llaves; si faltan devuelve error local, si no llama a delete del repositorio.
 	eliminarFuncion(corrDescriptorPuesto: number, corrFuncion: number): Observable<IResult> {
 		const corrDescriptor = Number(corrDescriptorPuesto);
 		const corrFunc = Number(corrFuncion);
@@ -651,6 +733,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: guarda una actividad de una función.
+	// Cómo: exige descriptor y función guardados; arma el objeto y llama a create o update.
 	persistirActividad(
 		corrDescriptorPuesto: number,
 		corrFuncion: number,
@@ -686,6 +770,7 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: crea una actividad vacía para una función.
 	crearActividad(corrDescriptorPuesto: number, corrFuncion: number): Observable<IResult> {
 		return this.persistirActividad(corrDescriptorPuesto, corrFuncion, {
 			CORR_FUNCION: corrFuncion,
@@ -694,6 +779,8 @@ export class ScDescriptorPuestoService {
 		});
 	}
 
+	// Qué hace: elimina una actividad.
+	// Cómo: valida las llaves; si faltan devuelve error local, si no llama a delete del repositorio.
 	eliminarActividad(
 		corrDescriptorPuesto: number,
 		corrFuncion: number,
@@ -719,10 +806,13 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: lista los KPI del descriptor (formato corto).
 	getKpisLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.kpiRepo.getAll([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto }]);
 	}
 
+	// Qué hace: guarda un KPI del descriptor.
+	// Cómo: arma el objeto con campos recortados y llama a create o update según tenga correlativo.
 	persistirKpi(corrDescriptorPuesto: number, kpi: ScDescriptorKpiFuncion): Observable<IResult> {
 		const corrDescriptor = Number(corrDescriptorPuesto);
 		const payload = {
@@ -730,6 +820,7 @@ export class ScDescriptorPuestoService {
 			CORR_KPI_FUNCION: kpi.CORR_KPI_FUNCION ?? 0,
 			NOMBRE_INDICADOR: (kpi.NOMBRE_INDICADOR ?? '').trim(),
 			CORR_FRECUENCIA: kpi.CORR_FRECUENCIA ?? null,
+			NOMBRE_FRECUENCIA: (kpi.NOMBRE_FRECUENCIA ?? '').trim(),
 			META: kpi.META ?? null,
 		};
 
@@ -743,15 +834,19 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: crea un KPI vacío.
 	crearKpi(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.persistirKpi(corrDescriptorPuesto, {
 			CORR_KPI_FUNCION: 0,
 			NOMBRE_INDICADOR: '',
 			CORR_FRECUENCIA: null,
+			NOMBRE_FRECUENCIA: '',
 			META: null,
 		});
 	}
 
+	// Qué hace: elimina un KPI.
+	// Cómo: valida las llaves; si faltan devuelve error local, si no llama a delete del repositorio.
 	eliminarKpi(corrDescriptorPuesto: number, corrKpiFuncion: number): Observable<IResult> {
 		const corrDescriptor = Number(corrDescriptorPuesto);
 		const corrKpi = Number(corrKpiFuncion);
@@ -771,10 +866,13 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: obtiene el perfil de puesto del descriptor.
 	getPerfilLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.perfilRepo.getAll([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto }]);
 	}
 
+	// Qué hace: lista la educación de un perfil.
+	// Cómo: llama a la API con descriptor y correlativo de perfil.
 	getEducacionLookup(corrDescriptorPuesto: number, corrPerfilPuesto: number): Observable<IResult> {
 		return this.educacionRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -782,6 +880,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: guarda un registro de educación del perfil.
+	// Cómo: arma el objeto con descriptor y perfil; convierte textos vacíos a null y llama a create o update.
 	persistirEducacion(
 		corrDescriptorPuesto: number,
 		corrPerfilPuesto: number,
@@ -809,6 +909,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: elimina un registro de educación del perfil.
+	// Cómo: valida las llaves; si faltan devuelve error local, si no llama a delete del repositorio.
 	eliminarEducacion(
 		corrDescriptorPuesto: number,
 		corrPerfilPuesto: number,
@@ -841,6 +943,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: lista la experiencia de un perfil.
+	// Cómo: llama a la API con descriptor y correlativo de perfil.
 	getExperienciaLookup(corrDescriptorPuesto: number, corrPerfilPuesto: number): Observable<IResult> {
 		return this.experienciaRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -848,6 +952,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: guarda un registro de experiencia del perfil.
+	// Cómo: arma el objeto y llama a create o update según tenga correlativo.
 	persistirExperiencia(
 		corrDescriptorPuesto: number,
 		corrPerfilPuesto: number,
@@ -874,6 +980,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: elimina un registro de experiencia del perfil.
+	// Cómo: valida las llaves; si faltan devuelve error local, si no llama a delete del repositorio.
 	eliminarExperiencia(
 		corrDescriptorPuesto: number,
 		corrPerfilPuesto: number,
@@ -906,6 +1014,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: lista las competencias técnicas de un perfil.
+	// Cómo: llama a la API con descriptor y correlativo de perfil.
 	getCompetenciasTecnicasLookup(corrDescriptorPuesto: number, corrPerfilPuesto: number): Observable<IResult> {
 		return this.competenciasTecnicasRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -913,6 +1023,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: guarda una competencia técnica del perfil.
+	// Cómo: arma el objeto con catálogo y descripción; llama a create o update según tenga correlativo del vínculo.
 	persistirCompetenciaTecnica(
 		corrDescriptorPuesto: number,
 		corrPerfilPuesto: number,
@@ -924,6 +1036,7 @@ export class ScDescriptorPuestoService {
 			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
 			CORR_PERFIL_PUESTO: corrPerfil,
 			CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS: row.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS ?? 0,
+			CODIGO_COMPETENCIAS_TECNICAS: (row.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim() || null,
 			NOMBRE_COMPETENCIAS_TECNICAS: (row.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim() || null,
 			DESCRIPCION: (row.DESCRIPCION ?? '').trim() || null,
 			NIVEL_DOMINIO: (row.NIVEL_DOMINIO ?? '').trim().toUpperCase() || null,
@@ -942,6 +1055,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: elimina una competencia técnica del perfil.
+	// Cómo: valida la llave; si falta devuelve error local, si no llama a delete del repositorio.
 	eliminarCompetenciaTecnica(corrPerfilPuestoCompetenciasTecnicas: number): Observable<IResult> {
 		const corr = Number(corrPerfilPuestoCompetenciasTecnicas);
 		if (!corr || corr <= 0) {
@@ -959,6 +1074,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: lista las competencias conductuales de un perfil.
+	// Cómo: llama a la API con descriptor y correlativo de perfil.
 	getCompetenciasConductualesLookup(corrDescriptorPuesto: number, corrPerfilPuesto: number): Observable<IResult> {
 		return this.competenciasConductualesRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
@@ -966,6 +1083,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: guarda una competencia conductual del perfil.
+	// Cómo: arma el objeto y llama a create o update según tenga correlativo del vínculo.
 	persistirCompetenciaConductual(
 		corrDescriptorPuesto: number,
 		corrPerfilPuesto: number,
@@ -977,6 +1096,7 @@ export class ScDescriptorPuestoService {
 			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
 			CORR_PERFIL_PUESTO: corrPerfil,
 			CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES: row.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES ?? 0,
+			CODIGO_TIPO_PUESTO: (row.CODIGO_TIPO_PUESTO ?? '').trim() || null,
 			NOMBRE_COMPETENCIAS_CONDUCTUALES: (row.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim() || null,
 			DESCRIPCION: (row.DESCRIPCION ?? '').trim() || null,
 			CORR_COMPETENCIAS_CONDUCTUALES: row.CORR_COMPETENCIAS_CONDUCTUALES ?? null,
@@ -997,6 +1117,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: elimina una competencia conductual del perfil.
+	// Cómo: valida la llave; si falta devuelve error local, si no llama a delete del repositorio.
 	eliminarCompetenciaConductual(corrPerfilPuestoCompetenciasConductuales: number): Observable<IResult> {
 		const corr = Number(corrPerfilPuestoCompetenciasConductuales);
 		if (!corr || corr <= 0) {
@@ -1014,12 +1136,15 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: lista los requerimientos organizacionales del descriptor.
 	getRequerimientosOrganizacionalesLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.requerimientosOrganizacionalesRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
 		]);
 	}
 
+	// Qué hace: guarda un requerimiento organizacional del descriptor.
+	// Cómo: arma el objeto con catálogo y descripción; llama a create o update según tenga correlativo.
 	persistirRequerimientoOrganizacional(
 		corrDescriptorPuesto: number,
 		row: ScDescriptorPuestoRequerimientoOrganizacional
@@ -1047,6 +1172,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: elimina un requerimiento organizacional del descriptor.
+	// Cómo: valida la llave; si falta devuelve error local, si no llama a delete del repositorio.
 	eliminarRequerimientoOrganizacional(corrDescriptorRequerimientoOrganizacional: number): Observable<IResult> {
 		const corr = Number(corrDescriptorRequerimientoOrganizacional);
 		if (!corr || corr <= 0) {
@@ -1064,12 +1191,15 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: lista los riesgos del puesto vinculados al descriptor.
 	getRiesgosPuestoLookup(corrDescriptorPuesto: number): Observable<IResult> {
 		return this.riesgosPuestoRepo.getAll([
 			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
 		]);
 	}
 
+	// Qué hace: guarda un riesgo del puesto vinculado al descriptor.
+	// Cómo: arma el objeto y llama a create o update según tenga correlativo.
 	persistirRiesgoPuesto(
 		corrDescriptorPuesto: number,
 		row: ScDescriptorPuestoRiesgoPuesto
@@ -1081,7 +1211,6 @@ export class ScDescriptorPuestoService {
 			NOMBRE_RIESGO_PUESTO: (row.NOMBRE_RIESGO_PUESTO ?? '').trim() || null,
 			INFORMACION: (row.INFORMACION ?? '').trim() || null,
 			CORR_RIESGO_PUESTO: row.CORR_RIESGO_PUESTO ?? null,
-			ES_LISTA: row.ES_LISTA ?? null,
 		};
 
 		if (!row.CORR_DESCRIPTOR_RIESGO || row.CORR_DESCRIPTOR_RIESGO <= 0) {
@@ -1096,6 +1225,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: elimina un riesgo del puesto vinculado al descriptor.
+	// Cómo: valida la llave; si falta devuelve error local, si no llama a delete del repositorio.
 	eliminarRiesgoPuesto(corrDescriptorRiesgo: number): Observable<IResult> {
 		const corr = Number(corrDescriptorRiesgo);
 		if (!corr || corr <= 0) {
@@ -1113,6 +1244,64 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: lista las responsabilidades del cargo del descriptor.
+	// Cómo: llama a la API con descriptor y formato (CORTO o EXTENSO).
+	getResponsabilidadesCargoLookup(corrDescriptorPuesto: number, formato: string): Observable<IResult> {
+		return this.responsabilidadesCargoRepo.getAll([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+			{ Parameter: 'FORMATO', Value: (formato || 'CORTO').trim().toUpperCase() },
+		]);
+	}
+
+	// Qué hace: guarda una responsabilidad del cargo vinculada al descriptor.
+	// Cómo: arma el objeto y llama a create o update según tenga correlativo.
+	persistirResponsabilidadCargo(
+		corrDescriptorPuesto: number,
+		row: ScDescriptorPuestoResponsabilidadCargo
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const payload = {
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_DESCRIPTOR_RESPONSABILIDAD: row.CORR_DESCRIPTOR_RESPONSABILIDAD ?? 0,
+			NOMBRE_RESPONSABILIDAD: (row.NOMBRE_RESPONSABILIDAD ?? '').trim() || null,
+			INFORMACION: (row.INFORMACION ?? '').trim() || null,
+			APLICA_DESCRIPTOR: (row.APLICA_DESCRIPTOR ?? 'AMBOS').trim().toUpperCase(),
+			CORR_RESPONSABILIDAD: row.CORR_RESPONSABILIDAD ?? null,
+		};
+
+		if (!row.CORR_DESCRIPTOR_RESPONSABILIDAD || row.CORR_DESCRIPTOR_RESPONSABILIDAD <= 0) {
+			return this.responsabilidadesCargoRepo.create(payload);
+		}
+
+		return this.responsabilidadesCargoRepo.update(payload, [
+			{
+				Parameter: 'CORR_DESCRIPTOR_RESPONSABILIDAD',
+				Value: row.CORR_DESCRIPTOR_RESPONSABILIDAD,
+			},
+		]);
+	}
+
+	// Qué hace: elimina una responsabilidad del cargo vinculada al descriptor.
+	// Cómo: valida la llave; si falta devuelve error local, si no llama a delete del repositorio.
+	eliminarResponsabilidadCargo(corrDescriptorResponsabilidad: number): Observable<IResult> {
+		const corr = Number(corrDescriptorResponsabilidad);
+		if (!corr || corr <= 0) {
+			return of({
+				Result: false,
+				Data: null,
+				ErrorCode: 1,
+				ErrorMessage: 'Debe indicar la responsabilidad del descriptor a eliminar.',
+				RowsAffected: 0,
+			} as IResult);
+		}
+
+		return this.responsabilidadesCargoRepo.delete([
+			{ Parameter: 'CORR_DESCRIPTOR_RESPONSABILIDAD', Value: corr },
+		]);
+	}
+
+	// Qué hace: guarda el perfil de puesto del descriptor.
+	// Cómo: crea si no existe o no tiene correlativo; si ya existe, actualiza con descriptor y perfil como llave.
 	persistirPerfil(
 		corrDescriptorPuesto: number,
 		perfil: ScDescriptorPerfilPuesto,
@@ -1128,7 +1317,9 @@ export class ScDescriptorPuestoService {
 			SEXO: (perfil.SEXO ?? '').trim().toUpperCase() || null,
 			ESTADO_FAMILIAR: (perfil.ESTADO_FAMILIAR ?? '').trim().toUpperCase() || null,
 			CORR_DISPONIBILIDAD_HORARIO: perfil.CORR_DISPONIBILIDAD_HORARIO ?? null,
+			NOMBRE_DISPONIBILIDAD_HORARIO: (perfil.NOMBRE_DISPONIBILIDAD_HORARIO ?? '').trim() || null,
 			CORR_TIPO_MODALIDAD: perfil.CORR_TIPO_MODALIDAD ?? null,
+			NOMBRE_MODALIDAD: (perfil.NOMBRE_MODALIDAD ?? '').trim() || null,
 			LICENCIA: perfil.LICENCIA ?? false,
 		};
 
@@ -1142,6 +1333,8 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: sincroniza eliminaciones y filas activas de funciones en orden.
+	// Cómo: elimina marcadas, guarda activas; en funciones clave nuevas encadena actividades pendientes con el correlativo devuelto.
 	private sincronizarFunciones(
 		corrDescriptorPuesto: number,
 		funciones: ScDescriptorFuncion[],
@@ -1236,6 +1429,7 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
+	// Qué hace: guarda en lote funciones clave y sus actividades pendientes.
 	guardarFuncionesClave(
 		corrDescriptorPuesto: number,
 		funciones: ScDescriptorFuncion[],
@@ -1250,6 +1444,7 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
+	// Qué hace: guarda en lote funciones secundarias del descriptor.
 	guardarFuncionesSecundarias(
 		corrDescriptorPuesto: number,
 		funciones: ScDescriptorFuncion[],
@@ -1264,6 +1459,8 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
+	// Qué hace: guarda en lote: create, update y delete de actividades de una función.
+	// Cómo: ejecuta todas las llamadas en paralelo y devuelve la primera respuesta con error si alguna falla.
 	guardarActividadesFuncion(
 		corrDescriptorPuesto: number,
 		corrFuncion: number,

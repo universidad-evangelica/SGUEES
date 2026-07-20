@@ -23,6 +23,7 @@ namespace SGUEES.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }
 
+        // Lista KPIs de funciones de la empresa en sesión; pasa filtros (descriptor, etc.) al servicio.
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> GetAll([FromQuery] SC_DESCRIPTOR_KPI_FUNCIONParam Data)
@@ -31,6 +32,7 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Obtiene un KPI por CORR_KPI_FUNCION, descriptor y empresa de sesión.
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> Get([FromQuery] SC_DESCRIPTOR_KPI_FUNCIONParam Data)
@@ -39,6 +41,7 @@ namespace SGUEES.Controllers
             return await _service.GetAsync(Data);
         }
 
+        // Lista KPIs del descriptor indicado (alias de GetAll para la pantalla del descriptor).
         [HttpGet("GetCORR_KPI_FUNCION_SC_DESCRIPTOR_PUESTO")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> GetCORR_KPI_FUNCION_SC_DESCRIPTOR_PUESTO([FromQuery] SC_DESCRIPTOR_KPI_FUNCIONParam Data)
@@ -47,27 +50,33 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Crea un KPI; rellena auditoría de sesión y delega al servicio.
         [HttpPost]
         [Authorize(Policy = "/sc-descriptor-puesto|C")]
         public async Task<IActionResult> Post(SC_DESCRIPTOR_KPI_FUNCIONTable Data)
         {
+            // Rellena usuario, estación, fechas y empresa antes de guardar.
             SetCreateAudit(Data);
 
             var resultado = await _service.CreateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Actualiza un KPI; toma CORR_KPI_FUNCION del query string y actualiza auditoría.
         [HttpPut]
         [Authorize(Policy = "/sc-descriptor-puesto|U")]
         public async Task<IActionResult> Put(SC_DESCRIPTOR_KPI_FUNCIONTable Data)
         {
+            // Copia CORR_KPI_FUNCION desde la URL al cuerpo del request.
             this.ApplyQueryKeys(Data, nameof(SC_DESCRIPTOR_KPI_FUNCIONTable.CORR_KPI_FUNCION));
+            // Rellena usuario, estación y fecha de modificación.
             SetUpdateAudit(Data);
 
             var resultado = await _service.UpdateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Elimina un KPI de la empresa en sesión.
         [HttpDelete]
         [Authorize(Policy = "/sc-descriptor-puesto|D")]
         public async Task<IActionResult> Delete([FromQuery] SC_DESCRIPTOR_KPI_FUNCIONTable Data)
@@ -78,17 +87,22 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Lee CORR_EMPRESA del token JWT del usuario autenticado.
+
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
+        // Lee el login del usuario desde el claim NameIdentifier.
+
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
+        // Rellena auditoría al crear: empresa, usuario, estación y fechas.
         private void SetCreateAudit(SC_DESCRIPTOR_KPI_FUNCIONTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -100,6 +114,7 @@ namespace SGUEES.Controllers
             Data.FECHA_ACTU = Data.FECHA_CREA;
         }
 
+        // Rellena auditoría al modificar: empresa, usuario, estación y fecha.
         private void SetUpdateAudit(SC_DESCRIPTOR_KPI_FUNCIONTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

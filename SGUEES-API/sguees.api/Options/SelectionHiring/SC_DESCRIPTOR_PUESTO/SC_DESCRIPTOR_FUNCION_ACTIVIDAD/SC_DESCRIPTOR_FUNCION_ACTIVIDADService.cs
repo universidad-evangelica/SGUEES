@@ -15,18 +15,22 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Obtiene el listado de actividad de la función aplicando los filtros recibidos.
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_FUNCION_ACTIVIDADParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un registro de actividad de la función con los identificadores recibidos.
         public async Task<CResult> GetAsync(SC_DESCRIPTOR_FUNCION_ACTIVIDADParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeActividad: true));
         }
 
+        // Valida y crea el registro de actividad de la función con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_FUNCION_ACTIVIDADTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Valida reglas de negocio del registro.
             var validation = Validate(Data);
             if (validation != null)
             {
@@ -36,6 +40,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida y actualiza el registro existente de actividad de la función.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_FUNCION_ACTIVIDADTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var validation = Validate(Data);
@@ -47,6 +52,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida las claves y elimina el registro de actividad de la función.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_FUNCION_ACTIVIDADTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_PUESTO <= 0 || Data.CORR_FUNCION <= 0 || Data.CORR_ACTIVIDAD <= 0)
@@ -57,6 +63,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Construye los parámetros de filtrado para consultar actividad de la función.
         private static List<CParameter> BuildParameters(SC_DESCRIPTOR_FUNCION_ACTIVIDADParam xWhere, bool includeActividad = false)
         {
             var p = new List<CParameter>
@@ -82,6 +89,7 @@ namespace SGUEES.Services
             return p;
         }
 
+        // Valida las claves y reglas de negocio requeridas para actividad de la función.
         private static CResult Validate(SC_DESCRIPTOR_FUNCION_ACTIVIDADTable Data)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -102,6 +110,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Construye un resultado uniforme para reportar errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult
@@ -110,7 +119,7 @@ namespace SGUEES.Services
                 Result = false,
                 RowsAffected = 0,
                 CodeHelper = 0,
-                ErrorCode = 1,
+                ErrorCode = 4101,
                 ErrorMessage = message,
                 ErrorSource = "",
             };

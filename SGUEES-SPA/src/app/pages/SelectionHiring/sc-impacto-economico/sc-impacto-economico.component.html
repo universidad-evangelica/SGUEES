@@ -1,4 +1,6 @@
-﻿<div class="sguees-mtto-view">
+<!-- Contenedor principal del mantenimiento de Impacto Económico. -->
+<div class="sguees-mtto-view">
+<!-- Toolbar: nuevo, guardar y cancelar. -->
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[subTituloVentana]="subTituloVentana"
@@ -11,6 +13,7 @@
 >
 </app-barra-data-mtto>
 
+<!-- Formulario de creación/edición (oculto en browse). -->
 <div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 	<dx-form
 		#fData
@@ -25,17 +28,17 @@
 	</dx-form>
 </div>
 
+<!-- Grilla del catálogo con acciones de mantenimiento. -->
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
 	[models]="models"
 	[columns]="columns"
 	[summary]="summary"
 	[keyExpr]="mttoGridKeyExpr"
-	[remoteOperations]="mttoRemoteOperations"
 	[pageSize]="mttoPageSize"
-	[hybridPaging]="mttoHybridPaging"
-	[apiPageSize]="mttoApiPageSize"
-	[apiPageSizes]="mttoApiPageSizes"
+	[allowedPageSizes]="mttoPageSizes"
+	[remoteOperations]="mttoRemoteOperations"
+	[repaintChangesOnly]="false"
 	[showSearch]="false"
 	[showAdd]="true"
 	[showRefresh]="true"
@@ -51,18 +54,18 @@
 	[columnHidingEnabled]="false"
 	[exportFileName]="'DescriptorImpactoEconomico'"
 	(refresh)="consultar()"
-	(apiPageSizeChange)="onApiPageSizeChange($event)"
 	(add)="nuevo()"
 	(activarInactivar)="activar_inactivar()"
 	(rowDblClick)="rowDblClick($event)"
 	(rowRemoving)="rowRemoving($event)"
 	(focusedRowChanged)="focusedRowChanged($event)"
-	(editClick)="editarClick($event)"
+	(editClick)="onEditClick($event)"
 >
 </app-data-grid-mtto>
 
 </div>
 
+<!-- Panel de carga durante operaciones asíncronas. -->
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"

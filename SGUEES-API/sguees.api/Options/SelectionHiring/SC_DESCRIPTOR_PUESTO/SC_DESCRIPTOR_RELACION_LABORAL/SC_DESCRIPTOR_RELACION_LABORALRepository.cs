@@ -20,6 +20,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Consulta la vista de relación laboral con los filtros indicados.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -61,6 +62,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Consulta un registro de relación laboral según los filtros indicados.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -103,6 +105,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta el registro de relación laboral y devuelve los datos persistidos.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_RELACION_LABORALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -152,6 +155,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza el registro de relación laboral identificado por sus claves.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_RELACION_LABORALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -211,6 +215,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Elimina el registro de relación laboral identificado por sus claves.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_RELACION_LABORALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -251,6 +256,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Construye los parámetros de escritura de relación laboral, incluida su auditoría.
         private static List<CParameter> BuildWriteParameters(SC_DESCRIPTOR_RELACION_LABORALTable Data)
         {
             return new List<CParameter>
@@ -270,6 +276,7 @@ namespace SGUEES.Repositories
             };
         }
 
+        // Normaliza el tipo de relación laboral antes de consultar o persistir.
         private static void NormalizeTipoRelacion(IEnumerable<SC_DESCRIPTOR_RELACION_LABORALView> items)
         {
             foreach (var item in items)
@@ -278,6 +285,7 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Normaliza el tipo de relación laboral antes de consultar o persistir.
         private static void NormalizeTipoRelacion(SC_DESCRIPTOR_RELACION_LABORALView item)
         {
             if (item == null)

@@ -1,3 +1,4 @@
+// Qué hace: define la ruta y declara el componente de nivel académico con sus dependencias UI.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
@@ -13,6 +14,7 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { PlaNivelAcademicoComponent } from './pla-nivel-academico.component';
 
+// Qué hace: ruta hija que renderiza PlaNivelAcademicoComponent en la raíz del módulo.
 const routes: Routes = [{ path: '', component: PlaNivelAcademicoComponent }];
 
 @NgModule({

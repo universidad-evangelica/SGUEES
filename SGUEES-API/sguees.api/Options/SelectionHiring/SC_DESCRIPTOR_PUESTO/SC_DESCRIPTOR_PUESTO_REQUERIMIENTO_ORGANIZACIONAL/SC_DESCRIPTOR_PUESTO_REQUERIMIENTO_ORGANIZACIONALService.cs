@@ -20,24 +20,29 @@ namespace SGUEES.Services
             _catalogoRepo = catalogoRepo;
         }
 
+        // Obtiene el listado de requerimiento organizacional aplicando los filtros recibidos.
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un registro de requerimiento organizacional con los identificadores recibidos.
         public async Task<CResult> GetAsync(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeCorr: true));
         }
 
+        // Valida y crea el registro de requerimiento organizacional con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Completa y valida el ítem contra el catálogo activo.
             var prepare = await PrepareFromCatalogAsync(Data, esNuevo: true);
             if (prepare != null)
             {
                 return prepare;
             }
 
+            // Valida reglas de negocio antes de crear.
             var validation = Validate(Data, esNuevo: true);
             if (validation != null)
             {
@@ -47,8 +52,10 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida y actualiza el registro existente de requerimiento organizacional.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Valida reglas de negocio antes de actualizar.
             var validation = Validate(Data, esNuevo: false);
             if (validation != null)
             {
@@ -58,6 +65,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida las claves y elimina el registro de requerimiento organizacional.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL <= 0)
@@ -68,85 +76,124 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Agrega al descriptor los registros activos de requerimiento organizacional que aún no existen.
         public async Task<CResult> SeedActivosDesdeCatalogoAsync(int corrEmpresa, int corrDescriptor, string usuario, string estacion)
         {
             if (corrEmpresa <= 0 || corrDescriptor <= 0)
             {
-                return new CResult
-                {
-                    Data = null,
-                    Result = true,
-                    RowsAffected = 0,
-                    CodeHelper = 0,
-                    ErrorCode = 0,
-                    ErrorMessage = "",
-                    ErrorSource = "",
-                };
+                return SeedSuccess(0);
             }
 
-            var existentes = await GetAllAsync(new SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALParam
+            try
             {
-                CORR_EMPRESA = corrEmpresa,
-                CORR_DESCRIPTOR_PUESTO = corrDescriptor,
-            });
-
-            if (existentes.Result && existentes.Data is List<SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALView> rows && rows.Count > 0)
-            {
-                return new CResult
-                {
-                    Data = rows,
-                    Result = true,
-                    RowsAffected = 0,
-                    CodeHelper = 0,
-                    ErrorCode = 0,
-                    ErrorMessage = "",
-                    ErrorSource = "",
-                };
-            }
-
-            var catalogo = await _catalogoRepo.GetCatalogoDescriptorAsync(corrEmpresa);
-            var ahora = DateTime.Now;
-            var creados = 0;
-
-            foreach (var item in catalogo)
-            {
-                if (item.CORR_REQUERIMIENTO_ORGANIZACIONAL <= 0)
-                {
-                    continue;
-                }
-
-                var descripcion = (item.DESCRIPCION ?? string.Empty).Trim();
-                if (string.IsNullOrWhiteSpace(descripcion))
-                {
-                    continue;
-                }
-
-                if (descripcion.Length > 150)
-                {
-                    descripcion = descripcion.Substring(0, 150);
-                }
-
-                var createResult = await CreateAsync(new SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable
+                var existentes = await GetAllAsync(new SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALParam
                 {
                     CORR_EMPRESA = corrEmpresa,
-                    CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL = 0,
-                    DESCRIPCION = descripcion,
                     CORR_DESCRIPTOR_PUESTO = corrDescriptor,
-                    CORR_REQUERIMIENTO_ORGANIZACIONAL = item.CORR_REQUERIMIENTO_ORGANIZACIONAL,
-                    USUARIO_CREA = usuario,
-                    ESTACION_CREA = estacion,
-                    FECHA_CREA = ahora,
-                    USUARIO_ACTU = usuario,
-                    ESTACION_ACTU = estacion,
-                    FECHA_ACTU = ahora,
-                }, usuario, estacion);
+                });
 
-                if (createResult.ErrorCode == 0)
+                if (!existentes.Result)
                 {
-                    creados++;
+                    return SeedError("No se pudieron consultar los requerimientos organizacionales del descriptor.");
                 }
-            }
 
+                var catalogoUsados = new HashSet<int>();
+                if (existentes.Data is List<SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALView> rows)
+                {
+                    foreach (var row in rows)
+                    {
+                        if (row.CORR_REQUERIMIENTO_ORGANIZACIONAL is > 0)
+                        {
+                            catalogoUsados.Add(row.CORR_REQUERIMIENTO_ORGANIZACIONAL.Value);
+                        }
+                    }
+                }
+
+                // Obtiene catálogo activo a sembrar en el descriptor.
+                var catalogo = await _catalogoRepo.GetCatalogoDescriptorAsync(corrEmpresa);
+                var ahora = DateTime.Now;
+                var creados = 0;
+                var pendientes = 0;
+                var fallidos = 0;
+
+                foreach (var item in catalogo)
+                {
+                    if (item.CORR_REQUERIMIENTO_ORGANIZACIONAL <= 0)
+                    {
+                        continue;
+                    }
+
+                    if (catalogoUsados.Contains(item.CORR_REQUERIMIENTO_ORGANIZACIONAL))
+                    {
+                        continue;
+                    }
+
+                    var descripcion = (item.DESCRIPCION ?? string.Empty).Trim();
+                    if (string.IsNullOrWhiteSpace(descripcion))
+                    {
+                        continue;
+                    }
+
+                    if (descripcion.Length > 150)
+                    {
+                        descripcion = descripcion.Substring(0, 150);
+                    }
+
+                    pendientes++;
+                    var createResult = await CreateAsync(new SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable
+                    {
+                        CORR_EMPRESA = corrEmpresa,
+                        CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL = 0,
+                        DESCRIPCION = descripcion,
+                        CORR_DESCRIPTOR_PUESTO = corrDescriptor,
+                        CORR_REQUERIMIENTO_ORGANIZACIONAL = item.CORR_REQUERIMIENTO_ORGANIZACIONAL,
+                        USUARIO_CREA = usuario,
+                        ESTACION_CREA = estacion,
+                        FECHA_CREA = ahora,
+                        USUARIO_ACTU = usuario,
+                        ESTACION_ACTU = estacion,
+                        FECHA_ACTU = ahora,
+                    }, usuario, estacion);
+
+                    if (createResult.ErrorCode == 0)
+                    {
+                        creados++;
+                        catalogoUsados.Add(item.CORR_REQUERIMIENTO_ORGANIZACIONAL);
+                    }
+                    else
+                    {
+                        fallidos++;
+                    }
+                }
+
+                if (pendientes == 0)
+                {
+                    return SeedSuccess(creados);
+                }
+
+                if (fallidos == 0)
+                {
+                    return SeedSuccess(creados);
+                }
+
+                if (creados > 0)
+                {
+                    return SeedWarning(
+                        creados,
+                        $"Se cargaron {creados} de {pendientes} requerimiento(s) organizacional(es) desde el catalogo.");
+                }
+
+                return SeedError("No se pudieron cargar los requerimientos organizacionales activos desde el catalogo.");
+            }
+            catch (Exception ex)
+            {
+                return SeedError($"No se pudieron cargar los requerimientos organizacionales desde el catalogo: {ex.Message}");
+            }
+        }
+
+        // Construye la respuesta exitosa del proceso de carga desde catálogo.
+        private static CResult SeedSuccess(int creados)
+        {
             return new CResult
             {
                 Data = null,
@@ -159,6 +206,37 @@ namespace SGUEES.Services
             };
         }
 
+        // Construye una advertencia cuando la carga desde catálogo queda parcial.
+        private static CResult SeedWarning(int creados, string message)
+        {
+            return new CResult
+            {
+                Data = null,
+                Result = true,
+                RowsAffected = creados,
+                CodeHelper = 0,
+                ErrorCode = 0,
+                ErrorMessage = message,
+                ErrorSource = "[SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService]",
+            };
+        }
+
+        // Construye la respuesta de error del proceso de carga desde catálogo.
+        private static CResult SeedError(string message)
+        {
+            return new CResult
+            {
+                Data = null,
+                Result = false,
+                RowsAffected = 0,
+                CodeHelper = 0,
+                ErrorCode = 4101,
+                ErrorMessage = message,
+                ErrorSource = "[SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService]",
+            };
+        }
+
+        // Completa y contrasta los datos de requerimiento organizacional con el catálogo activo.
         private async Task<CResult> PrepareFromCatalogAsync(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable Data, bool esNuevo)
         {
             if (!esNuevo || Data.CORR_REQUERIMIENTO_ORGANIZACIONAL is not > 0)
@@ -166,6 +244,7 @@ namespace SGUEES.Services
                 return null;
             }
 
+            // Consulta el requerimiento en el catálogo maestro.
             var catalogResult = await _catalogoRepo.GetAsync(new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
@@ -190,6 +269,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Construye los parámetros de filtrado para consultar requerimiento organizacional.
         private static List<CParameter> BuildParameters(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALParam xWhere, bool includeCorr = false)
         {
             var p = new List<CParameter>
@@ -215,6 +295,7 @@ namespace SGUEES.Services
             return p;
         }
 
+        // Valida las claves y reglas de negocio requeridas para requerimiento organizacional.
         private static CResult Validate(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable Data, bool esNuevo)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -252,6 +333,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Construye un resultado uniforme para reportar errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult
@@ -260,7 +342,7 @@ namespace SGUEES.Services
                 Result = false,
                 RowsAffected = 0,
                 CodeHelper = 0,
-                ErrorCode = 1,
+                ErrorCode = 4101,
                 ErrorMessage = message,
                 ErrorSource = "",
             };

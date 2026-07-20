@@ -1,4 +1,6 @@
+<!-- Pantalla de mantenimiento del Descriptor de Puesto. -->
 <div class="sguees-mtto-view">
+<!-- Barra superior: Nuevo, Guardar y Cancelar. -->
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[subTituloVentana]="subTituloVentana"
@@ -11,13 +13,17 @@
 >
 </app-barra-data-mtto>
 
+<!-- Formulario del descriptor (se oculta cuando solo se ve el listado). -->
 <div class="content-block dx-card responsive-paddings descriptor-form-card" *ngIf="!isBrowse()">
+	<!-- Pestañas principales: datos del descriptor e historial (bitácora). -->
 	<dx-tab-panel
 		#tabPanelPrincipal
 		class="descriptor-tab-panel"
 		[(selectedIndex)]="mainTabIndex"
 	>
+		<!-- Pestaña Descriptor: datos generales y secciones. -->
 		<dxi-item title="Descriptor" icon="file">
+			<!-- Datos generales: unidad, puesto, a quién reporta, formato, etc. -->
 			<div class="descriptor-generalidades">
 				<h3 class="descriptor-section-title">Generalidades</h3>
 
@@ -87,10 +93,12 @@
 				</dx-form>
 			</div>
 
+			<!-- Aviso: primero hay que guardar el descriptor para editar secciones. -->
 			<p class="descriptor-secciones-hint" *ngIf="!mostrarSeccionesDescriptor" role="status">
 				Guarde las generalidades del descriptor en modo edicion para habilitar objetivo, funciones y demas secciones.
 			</p>
 
+			<!-- Secciones del descriptor. Algunas solo aparecen en formato corto o extenso. -->
 			<dx-tab-panel
 				#tabPanelSecciones
 				class="descriptor-sub-tab-panel"
@@ -101,6 +109,7 @@
 				[swipeEnabled]="false"
 				(onSelectionChanged)="onSeccionTabSelectionChanged($event)"
 			>
+				<!-- Objetivo del puesto (texto libre). -->
 				<dxi-item title="Objetivo">
 					<div class="descriptor-sub-tab-content">
 						<h4 class="descriptor-sub-tab-heading">Objetivo</h4>
@@ -114,6 +123,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Funciones clave. En formato extenso se pueden abrir actividades por función. -->
 				<dxi-item title="Funciones">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
@@ -236,9 +246,10 @@
 							></dxi-column>
 							<dxi-column
 								caption="Actividades"
-								[width]="160"
+								[width]="200"
+								[minWidth]="180"
 								[allowEditing]="false"
-								[visible]="esFormatoExtensa"
+								[visible]="esFormatoExtenso"
 								cellTemplate="actividadesClaveTemplate"
 							></dxi-column>
 							<div *dxTemplate="let cellInfo of 'actividadesClaveTemplate'">
@@ -254,16 +265,17 @@
 							</div>
 						</dx-data-grid>
 
-						<p class="descriptor-funciones-note" *ngIf="esFormatoExtensa">
+						<p class="descriptor-funciones-note" *ngIf="esFormatoExtenso">
 							En version extensa, cada funcion clave permite registrar sus actividades.
 						</p>
-						<p class="descriptor-funciones-note" *ngIf="!esFormatoExtensa">
+						<p class="descriptor-funciones-note" *ngIf="!esFormatoExtenso">
 							En version corta solo se registran las funciones clave, sin actividades.
 						</p>
 					</div>
 				</dxi-item>
 
-				<dxi-item title="Funciones Secundarias" [visible]="esFormatoCorta">
+				<!-- Funciones secundarias (solo formato corto). -->
+				<dxi-item title="Funciones Secundarias" [visible]="esFormatoCorto">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
 							<h4 class="descriptor-sub-tab-heading">
@@ -387,7 +399,8 @@
 					</div>
 				</dxi-item>
 
-				<dxi-item title="KPIs" [visible]="esFormatoCorta">
+				<!-- Indicadores KPI (solo formato corto). -->
+				<dxi-item title="KPIs" [visible]="esFormatoCorto">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
 							<h4 class="descriptor-sub-tab-heading">
@@ -524,11 +537,12 @@
 							</dxi-column>
 							<div *dxTemplate="let cellInfo of 'CORR_FRECUENCIALookup'">
 								<app-data-lookup
-									[model]="mCORR_FRECUENCIA"
+									[model]="mCORR_FRECUENCIA_KPI_EDIT"
 									[value]="cellInfo.value"
 									(valueChange)="onKpiFrecuenciaLookupChanged($event, cellInfo)"
 									[valueExpr]="'CORR_FRECUENCIA'"
 									[displayExpr]="'NOMBRE_FRECUENCIA'"
+									[lookupColumns]="frecuenciasKpiLookupColumns"
 									[selectedRowKeys]="selectedLookUpCORR_FRECUENCIA"
 									[showClearButton]="true"
 								></app-data-lookup>
@@ -546,6 +560,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Perfil del puesto: datos personales, educación y experiencia. -->
 				<dxi-item title="Perfil">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-perfil-header">
@@ -561,15 +576,46 @@
 							[animationEnabled]="true"
 							[swipeEnabled]="false"
 						>
+							<!-- Datos del perfil: edad, sexo, disponibilidad, modalidad, etc. -->
 							<dxi-item title="Perfil" icon="card">
 								<div class="descriptor-perfil-tab-content">
+									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											*ngIf="!perfilEditando"
+											icon="edit"
+											text="Editar perfil"
+											type="default"
+											stylingMode="contained"
+											[disabled]="!model.CORR_DESCRIPTOR_PUESTO"
+											(onClick)="editarPerfil()"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											*ngIf="perfilEditando"
+											icon="save"
+											text="Guardar"
+											type="success"
+											stylingMode="contained"
+											(onClick)="guardarPerfil()"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+											*ngIf="perfilEditando"
+											icon="revert"
+											text="Cancelar edición"
+											type="danger"
+											stylingMode="contained"
+											(onClick)="cancelarEdicionPerfil()"
+										></dx-button>
+									</div>
 									<div class="descriptor-perfil-form">
 										<div class="descriptor-perfil-row">
 											<div class="descriptor-perfil-field">
 												<label class="descriptor-perfil-label">Edad Minima</label>
 												<dx-number-box
 													[(value)]="perfil.EDAD_MINIMA"
-													[readOnly]="readOnly"
+													[readOnly]="readOnly || !perfilEditando"
 													[min]="0"
 													[max]="120"
 													[step]="1"
@@ -583,7 +629,7 @@
 												<label class="descriptor-perfil-label">Edad Maxima</label>
 												<dx-number-box
 													[(value)]="perfil.EDAD_MAXIMA"
-													[readOnly]="readOnly"
+													[readOnly]="readOnly || !perfilEditando"
 													[min]="0"
 													[max]="120"
 													[step]="1"
@@ -600,7 +646,7 @@
 													[dataSource]="perfilSexoOptions"
 													valueExpr="Key"
 													displayExpr="Value"
-													[readOnly]="readOnly"
+													[readOnly]="readOnly || !perfilEditando"
 													[searchEnabled]="false"
 													(onValueChanged)="onPerfilSexoChanged($event)"
 												></dx-select-box>
@@ -612,7 +658,7 @@
 													[dataSource]="perfilEstadoFamiliarOptions"
 													valueExpr="Key"
 													displayExpr="Value"
-													[readOnly]="readOnly"
+													[readOnly]="readOnly || !perfilEditando"
 													[searchEnabled]="false"
 													(onValueChanged)="onPerfilEstadoFamiliarChanged($event)"
 												></dx-select-box>
@@ -623,27 +669,29 @@
 											<div class="descriptor-perfil-field">
 												<label class="descriptor-perfil-label">Disponibilidad</label>
 												<app-data-lookup
-													[model]="mCORR_DISPONIBILIDAD_HORARIO"
+													[model]="mCORR_DISPONIBILIDAD_HORARIO_EDIT"
 													[value]="perfil.CORR_DISPONIBILIDAD_HORARIO"
 													(valueChange)="onPerfilDisponibilidadChanged($event)"
 													[valueExpr]="'CORR_DISPONIBILIDAD_HORARIO'"
 													[displayExpr]="'NOMBRE_DISPONIBILIDAD_HORARIO'"
+													[lookupColumns]="disponibilidadHorarioLookupColumns"
 													[selectedRowKeys]="selectedLookUpCORR_DISPONIBILIDAD_HORARIO"
-													[readOnly]="readOnly"
-													[showClearButton]="true"
+													[readOnly]="readOnly || !perfilEditando"
+													[dropDownWidth]="420"
 												></app-data-lookup>
 											</div>
 											<div class="descriptor-perfil-field">
 												<label class="descriptor-perfil-label">Modalidad</label>
 												<app-data-lookup
-													[model]="mCORR_TIPO_MODALIDAD"
+													[model]="mCORR_TIPO_MODALIDAD_EDIT"
 													[value]="perfil.CORR_TIPO_MODALIDAD"
 													(valueChange)="onPerfilModalidadChanged($event)"
 													[valueExpr]="'CORR_TIPO_MODALIDAD'"
 													[displayExpr]="'MODALIDAD_NOMBRE'"
+													[lookupColumns]="tipoModalidadLookupColumns"
 													[selectedRowKeys]="selectedLookUpCORR_TIPO_MODALIDAD"
-													[readOnly]="readOnly"
-													[showClearButton]="true"
+													[readOnly]="readOnly || !perfilEditando"
+													[dropDownWidth]="420"
 												></app-data-lookup>
 											</div>
 											<div class="descriptor-perfil-field">
@@ -653,7 +701,7 @@
 													[dataSource]="perfilLicenciaOptions"
 													valueExpr="Key"
 													displayExpr="Value"
-													[readOnly]="readOnly"
+													[readOnly]="readOnly || !perfilEditando"
 													[searchEnabled]="false"
 													(onValueChanged)="onPerfilLicenciaChanged($event)"
 												></dx-select-box>
@@ -663,6 +711,7 @@
 								</div>
 							</dxi-item>
 
+							<!-- Educación requerida para el puesto. -->
 							<dxi-item title="Educacion" icon="bookmark">
 								<div class="descriptor-perfil-tab-content">
 									<div class="descriptor-funciones-header">
@@ -805,6 +854,7 @@
 								</div>
 							</dxi-item>
 
+							<!-- Experiencia laboral requerida para el puesto. -->
 							<dxi-item title="Experiencia" icon="folder">
 								<div class="descriptor-perfil-tab-content">
 									<div class="descriptor-funciones-header">
@@ -944,6 +994,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Competencias técnicas y conductuales. -->
 				<dxi-item title="Competencias">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-competencias-header">
@@ -959,6 +1010,7 @@
 							[animationEnabled]="true"
 							[swipeEnabled]="false"
 						>
+							<!-- Competencias técnicas (catálogo nivel 3). -->
 							<dxi-item title="Tecnicas" icon="toolbox">
 								<div class="descriptor-competencias-tab-content">
 									<div class="descriptor-funciones-header">
@@ -1073,9 +1125,10 @@
 											dataType="number"
 											alignment="left"
 										></dxi-column>
+										<!-- Columna para elegir la competencia técnica. -->
 										<dxi-column
 											dataField="CORR_COMPETENCIAS_TECNICAS"
-											caption="Competencia NIV3"
+											caption="Competencia"
 											[width]="140"
 											[minWidth]="120"
 											[allowSorting]="true"
@@ -1124,6 +1177,7 @@
 								</div>
 							</dxi-item>
 
+							<!-- Competencias conductuales. -->
 							<dxi-item title="Conductuales" icon="group">
 								<div class="descriptor-competencias-tab-content">
 									<div class="descriptor-funciones-header">
@@ -1245,6 +1299,7 @@
 											[minWidth]="120"
 											[allowSorting]="true"
 											[visible]="competenciasConductualesEditando"
+											[allowEditing]="competenciasConductualesEditando && !readOnly"
 											[calculateDisplayValue]="competenciaConductualCatalogDisplay"
 											[setCellValue]="setCompetenciaConductualCellValue"
 											[editCellTemplate]="'CORR_COMPETENCIAS_CONDUCTUALESLookup'"
@@ -1252,7 +1307,7 @@
 											<dxo-lookup
 												[dataSource]="mCORR_COMPETENCIAS_CONDUCTUALES"
 												valueExpr="CORR_COMPETENCIAS_CONDUCTUALES"
-												displayExpr="NOMBRE_COMPETENCIAS_CONDUCTUALES"
+												displayExpr="CODIGO_TIPO_PUESTO"
 											></dxo-lookup>
 										</dxi-column>
 										<div *dxTemplate="let cellInfo of 'CORR_COMPETENCIAS_CONDUCTUALESLookup'">
@@ -1261,7 +1316,7 @@
 												[value]="cellInfo.value"
 												(valueChange)="onCompetenciaConductualLookupChanged($event, cellInfo)"
 												[valueExpr]="'CORR_COMPETENCIAS_CONDUCTUALES'"
-												[displayExpr]="'NOMBRE_COMPETENCIAS_CONDUCTUALES'"
+												[displayExpr]="'CODIGO_TIPO_PUESTO'"
 												[lookupColumns]="competenciasConductualesLookupColumns"
 												[selectedRowKeys]="selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES"
 												[showClearButton]="true"
@@ -1273,13 +1328,14 @@
 											caption="Nombre (descriptor)"
 											[minWidth]="220"
 											[allowSorting]="true"
+											[allowEditing]="false"
 										></dxi-column>
 										<dxi-column
 											dataField="DESCRIPCION"
 											caption="Descripcion"
 											[minWidth]="220"
 											[allowSorting]="true"
-											[visible]="esFormatoExtensa"
+											[visible]="esFormatoExtenso"
 										></dxi-column>
 									</dx-data-grid>
 								</div>
@@ -1288,7 +1344,8 @@
 					</div>
 				</dxi-item>
 
-				<dxi-item title="Relaciones" [visible]="esFormatoExtensa">
+				<!-- Relaciones internas y externas (solo formato extenso). -->
+				<dxi-item title="Relaciones" [visible]="esFormatoExtenso">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-relaciones-header">
 							<h4 class="descriptor-sub-tab-heading">
@@ -1303,6 +1360,7 @@
 							[animationEnabled]="true"
 							[swipeEnabled]="false"
 						>
+							<!-- Relaciones internas. -->
 							<dxi-item title="Internas" icon="home">
 								<div class="descriptor-relaciones-tab-content">
 									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
@@ -1426,6 +1484,7 @@
 								</div>
 							</dxi-item>
 
+							<!-- Relaciones externas. -->
 							<dxi-item title="Externas" icon="globe">
 								<div class="descriptor-relaciones-tab-content">
 									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
@@ -1552,6 +1611,7 @@
 					</div>
 				</dxi-item>
 
+				<!-- Requerimientos organizacionales. -->
 				<dxi-item title="Requerimientos">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
@@ -1672,7 +1732,7 @@
 								[width]="140"
 								[minWidth]="120"
 								[allowSorting]="true"
-								[visible]="requerimientosOrganizacionalesEditando"
+								[visible]="requerimientosOrganizacionalesInsertando"
 								[calculateDisplayValue]="requerimientoOrganizacionalCatalogDisplay"
 								[setCellValue]="setRequerimientoOrganizacionalCellValue"
 								[editCellTemplate]="'CORR_REQUERIMIENTO_ORGANIZACIONALLookup'"
@@ -1706,7 +1766,8 @@
 					</div>
 				</dxi-item>
 
-				<dxi-item title="Riesgos" [visible]="esFormatoExtensa">
+				<!-- Riesgos del puesto (solo formato extenso). -->
+				<dxi-item title="Riesgos" [visible]="esFormatoExtenso">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
 							<h4 class="descriptor-sub-tab-heading">
@@ -1826,7 +1887,7 @@
 								[width]="140"
 								[minWidth]="120"
 								[allowSorting]="true"
-								[visible]="riesgosPuestoEditando"
+								[visible]="riesgosPuestoInsertando"
 								[calculateDisplayValue]="riesgoPuestoCatalogDisplay"
 								[setCellValue]="setRiesgoPuestoCellValue"
 								[editCellTemplate]="'CORR_RIESGO_PUESTOLookup'"
@@ -1863,60 +1924,198 @@
 								caption="Informacion"
 								[minWidth]="280"
 								[allowSorting]="true"
-								[calculateDisplayValue]="riesgoPuestoInformacionDisplay"
-								[cellTemplate]="'riesgoPuestoInformacionCell'"
-								[editCellTemplate]="'riesgoPuestoInformacionEdit'"
+								[editorOptions]="{ maxLength: 255, showClearButton: true }"
 							></dxi-column>
-							<div *dxTemplate="let cell of 'riesgoPuestoInformacionCell'">
-								<ng-container *ngIf="riesgoPuestoEsLista(cell.data); else riesgoInformacionTextoVista">
-									<ul class="descriptor-riesgo-lista-vista" *ngIf="parseRiesgoInformacionLista(cell.value).length; else riesgoListaVacia">
-										<li *ngFor="let item of parseRiesgoInformacionLista(cell.value)">{{ item }}</li>
-									</ul>
-									<ng-template #riesgoListaVacia>
-										<span class="descriptor-riesgo-lista-vacia">Sin items</span>
-									</ng-template>
-								</ng-container>
-								<ng-template #riesgoInformacionTextoVista>{{ cell.value }}</ng-template>
+						</dx-data-grid>
+					</div>
+				</dxi-item>
+
+				<!-- Responsabilidades del cargo (incluye impacto económico). -->
+				<dxi-item title="Responsabilidades">
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-funciones-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-card descriptor-funciones-icon" aria-hidden="true"></span>
+								Responsabilidades del cargo
+							</h4>
+						</div>
+
+						<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="add"
+								text="Agregar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="agregarResponsabilidadCargo()"
+								[disabled]="responsabilidadesCargoEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="save"
+								text="Guardar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="guardarResponsabilidadCargoEditado()"
+								[disabled]="!responsabilidadesCargoEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+								icon="revert"
+								text="Cancelar"
+								type="danger"
+								stylingMode="contained"
+								(onClick)="cancelarResponsabilidadCargoEditado()"
+								[disabled]="!responsabilidadesCargoEditando"
+							></dx-button>
+						</div>
+
+						<dx-data-grid
+							#gridResponsabilidadesCargo
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+							[dataSource]="responsabilidadesCargo"
+							keyExpr="_clientKey"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[width]="'100%'"
+							[wordWrapEnabled]="true"
+							[repaintChangesOnly]="false"
+							(onInitNewRow)="responsabilidadCargoInitNewRow($event)"
+							(onEditingStart)="onResponsabilidadCargoEditingStart($event)"
+							(onEditorPreparing)="onResponsabilidadCargoEditorPreparing($event)"
+							(onSaved)="onResponsabilidadCargoSaved($event)"
+							(onEditCanceled)="onResponsabilidadCargoEditCanceled($event)"
+							(onRowInserting)="responsabilidadCargoRowInserting($event)"
+							(onRowUpdating)="responsabilidadCargoRowUpdating($event)"
+							(onRowRemoving)="responsabilidadCargoRowRemoving($event)"
+							(onRowValidating)="responsabilidadCargoRowValidating($event)"
+						>
+							<dxo-editing
+								[mode]="'row'"
+								[refreshMode]="'reshape'"
+								[allowUpdating]="!readOnly"
+								[allowDeleting]="!readOnly"
+								[useIcons]="true"
+								[selectTextOnEditStart]="true"
+								[newRowPosition]="'first'"
+							></dxo-editing>
+							<dxo-paging [enabled]="false"></dxo-paging>
+							<dxi-column
+								type="buttons"
+								name="btnAcciones"
+								caption="Options"
+								[width]="104"
+								[minWidth]="104"
+								[fixed]="true"
+								fixedPosition="left"
+								alignment="center"
+								[allowResizing]="false"
+							>
+								<dxi-button
+									hint="Editar registro"
+									icon="edit"
+									stylingMode="text"
+									cssClass="sguees-grid-action-edit"
+									[visible]="responsabilidadCargoEditButtonVisible"
+									[onClick]="editarResponsabilidadCargoClick"
+								></dxi-button>
+								<dxi-button
+									name="delete"
+									hint="Eliminar registro"
+									icon="trash"
+									stylingMode="text"
+									cssClass="sguees-grid-action-delete"
+									[visible]="responsabilidadCargoDeleteButtonVisible"
+								></dxi-button>
+								<dxi-button name="save" [visible]="false"></dxi-button>
+								<dxi-button name="cancel" [visible]="false"></dxi-button>
+								<dxi-button name="edit" [visible]="false"></dxi-button>
+							</dxi-column>
+							<dxi-column
+								dataField="CORR_DESCRIPTOR_RESPONSABILIDAD"
+								caption="Codigo"
+								[width]="90"
+								[allowEditing]="false"
+								[allowSorting]="false"
+								alignment="left"
+								[calculateDisplayValue]="responsabilidadCargoCodigoDisplay"
+							></dxi-column>
+							<dxi-column
+								dataField="CORR_RESPONSABILIDAD"
+								caption="Responsabilidad"
+								[width]="140"
+								[minWidth]="120"
+								[allowSorting]="false"
+								[visible]="responsabilidadesCargoInsertando"
+								[calculateDisplayValue]="responsabilidadCargoCatalogDisplay"
+								[setCellValue]="setResponsabilidadCargoCellValue"
+								[editCellTemplate]="'CORR_RESPONSABILIDADLookup'"
+							>
+								<dxo-lookup
+									[dataSource]="mCORR_RESPONSABILIDAD"
+									valueExpr="CORR_RESPONSABILIDAD"
+									displayExpr="NOMBRE_RESPONSABILIDAD"
+								></dxo-lookup>
+							</dxi-column>
+							<div *dxTemplate="let cellInfo of 'CORR_RESPONSABILIDADLookup'">
+								<div class="descriptor-riesgo-lookup-cell">
+									<app-data-lookup
+										[model]="mCORR_RESPONSABILIDAD_DISPONIBLES"
+										[value]="cellInfo.value"
+										(valueChange)="onResponsabilidadCargoLookupChanged($event, cellInfo)"
+										[valueExpr]="'CORR_RESPONSABILIDAD'"
+										[displayExpr]="'NOMBRE_RESPONSABILIDAD'"
+										[lookupColumns]="responsabilidadesCargoLookupColumns"
+										[selectedRowKeys]="selectedLookUpCORR_RESPONSABILIDAD"
+										[showClearButton]="true"
+										[dropDownWidth]="520"
+									></app-data-lookup>
+								</div>
 							</div>
-							<div *dxTemplate="let cellInfo of 'riesgoPuestoInformacionEdit'">
-								<ng-container *ngIf="riesgoPuestoEsLista(cellInfo.data); else riesgoInformacionTextoEdit">
-									<div class="descriptor-riesgo-lista-editor">
-										<div
-											class="descriptor-riesgo-lista-editor__row"
-											*ngFor="let item of getRiesgoListaEditorItems(cellInfo); let i = index; trackBy: trackRiesgoListaItemIndex"
-										>
-											<dx-text-box
-												class="descriptor-riesgo-lista-editor__input"
-												[value]="item"
-												[showClearButton]="true"
-												[maxLength]="150"
-												(valueChange)="onRiesgoListaItemChanged(cellInfo, i, $event)"
-											></dx-text-box>
-											<dx-button
-												class="descriptor-riesgo-lista-editor__delete"
-												icon="trash"
-												stylingMode="text"
-												hint="Quitar item"
-												[disabled]="getRiesgoListaEditorItems(cellInfo).length <= 1"
-												(onClick)="eliminarRiesgoListaItem(cellInfo, i)"
-											></dx-button>
-										</div>
-										<dx-button
-											class="descriptor-riesgo-lista-editor__add"
-											icon="add"
-											text="Agregar item"
-											type="default"
-											stylingMode="contained"
-											(onClick)="agregarRiesgoListaItem(cellInfo)"
-										></dx-button>
-									</div>
-								</ng-container>
-								<ng-template #riesgoInformacionTextoEdit>
+							<dxi-column
+								dataField="NOMBRE_RESPONSABILIDAD"
+								caption="Nombre (descriptor)"
+								[minWidth]="220"
+								[allowSorting]="false"
+							></dxi-column>
+							<dxi-column
+								dataField="INFORMACION"
+								caption="Informacion"
+								[minWidth]="280"
+								[allowSorting]="false"
+								[calculateDisplayValue]="responsabilidadCargoInformacionDisplay"
+								[editCellTemplate]="'INFORMACIONResponsabilidadEdit'"
+								[editorOptions]="{ maxLength: 255, showClearButton: true }"
+							></dxi-column>
+							<div *dxTemplate="let cellInfo of 'INFORMACIONResponsabilidadEdit'">
+								<div
+									class="descriptor-riesgo-lookup-cell"
+									*ngIf="cellInfo.data?._esImpactoEconomico; else infoResponsabilidadTexto"
+								>
+									<app-data-lookup
+										[model]="mCORR_IMPACTO_ECONOMICO_EDIT"
+										[value]="cellInfo.data.CORR_IMPACTO_ECONOMICO"
+										(valueChange)="onImpactoEconomicoLookupChanged($event, cellInfo)"
+										[valueExpr]="'CORR_IMPACTO_ECONOMICO'"
+										[displayExpr]="'DESCRIPCION'"
+										[lookupColumns]="impactosEconomicosLookupColumns"
+										[selectedRowKeys]="selectedLookUpCORR_IMPACTO_ECONOMICO"
+										[showClearButton]="true"
+										[dropDownWidth]="520"
+									></app-data-lookup>
+								</div>
+								<ng-template #infoResponsabilidadTexto>
 									<dx-text-box
 										[value]="cellInfo.value"
+										(onValueChanged)="cellInfo.setValue($event.value)"
 										[maxLength]="255"
 										[showClearButton]="true"
-										(valueChange)="onRiesgoInformacionTextoChanged(cellInfo, $event)"
 									></dx-text-box>
 								</ng-template>
 							</div>
@@ -1924,28 +2123,95 @@
 					</div>
 				</dxi-item>
 
-				<dxi-item title="Responsabilidades">
-					<div class="descriptor-sub-tab-content descriptor-sub-tab-placeholder">
-						<h4 class="descriptor-sub-tab-heading">Responsabilidades</h4>
-						<p>Seccion en construccion.</p>
-					</div>
-				</dxi-item>
-
+				<!-- Entrenamiento: inducción, duración y responsable. -->
 				<dxi-item title="Entrenamiento">
-					<div class="descriptor-sub-tab-content descriptor-sub-tab-placeholder">
-						<h4 class="descriptor-sub-tab-heading">Entrenamiento</h4>
-						<p>Seccion en construccion.</p>
-					</div>
-				</dxi-item>
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-perfil-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-toolbox descriptor-perfil-icon" aria-hidden="true"></span>
+								Entrenamiento
+							</h4>
+							<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+								<dx-button
+									class="descriptor-deta-toolbar-btn"
+									*ngIf="!entrenamientoEditando"
+									icon="edit"
+									text="Editar entrenamiento"
+									type="default"
+									stylingMode="contained"
+									[disabled]="!model.CORR_DESCRIPTOR_PUESTO"
+									(onClick)="editarEntrenamiento()"
+								></dx-button>
+								<dx-button
+									class="descriptor-deta-toolbar-btn"
+									*ngIf="entrenamientoEditando"
+									icon="save"
+									text="Guardar"
+									type="success"
+									stylingMode="contained"
+									(onClick)="guardarEntrenamiento()"
+								></dx-button>
+								<dx-button
+									class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+									*ngIf="entrenamientoEditando"
+									icon="revert"
+									text="Cancelar edición"
+									type="danger"
+									stylingMode="contained"
+									(onClick)="cancelarEdicionEntrenamiento()"
+								></dx-button>
+							</div>
+						</div>
 
-				<dxi-item title="Resumen">
-					<div class="descriptor-sub-tab-content descriptor-sub-tab-placeholder">
-						<h4 class="descriptor-sub-tab-heading">Resumen</h4>
-						<p>Seccion en construccion.</p>
+						<div class="descriptor-perfil-tab-content">
+							<div class="descriptor-perfil-form">
+								<div class="descriptor-perfil-row descriptor-perfil-row--secondary">
+									<div class="descriptor-perfil-field">
+										<label class="descriptor-perfil-label">Tipo de Inducción</label>
+										<div
+											class="descriptor-lookup-field"
+											[class.descriptor-lookup-field--invalid]="induccionInvalida"
+										>
+											<app-data-lookup
+												[model]="mCORR_INDUCCION_EDIT"
+												[value]="model.CORR_INDUCCION"
+												(valueChange)="onEntrenamientoInduccionChanged($event)"
+												[valueExpr]="'CORR_INDUCCION'"
+												[displayExpr]="'NOMBRE_INDUCCION'"
+												[lookupColumns]="induccionesLookupColumns"
+												[selectedRowKeys]="selectedLookUpCORR_INDUCCION"
+												[readOnly]="readOnly || !entrenamientoEditando"
+												[dropDownWidth]="420"
+											></app-data-lookup>
+										</div>
+									</div>
+
+									<div class="descriptor-perfil-field">
+										<label class="descriptor-perfil-label">Duración</label>
+										<dx-text-box
+											[value]="model.SEMANAS_INDUCCION != null ? model.SEMANAS_INDUCCION + ' semanas' : ''"
+											[readOnly]="true"
+											placeholder="Duración del entrenamiento..."
+										></dx-text-box>
+									</div>
+
+									<div class="descriptor-perfil-field">
+										<label class="descriptor-perfil-label">Responsable</label>
+										<dx-text-box
+											[(value)]="model.RESPONSABLE"
+											[readOnly]="readOnly || !entrenamientoEditando"
+											[maxLength]="100"
+											placeholder="Responsables del entrenamiento..."
+										></dx-text-box>
+									</div>
+								</div>
+							</div>
+						</div>
 					</div>
 				</dxi-item>
 			</dx-tab-panel>
 
+			<!-- Aviso: el tab anterior no aplica al formato actual; elija otro. -->
 			<div
 				class="descriptor-seleccione-tab-card"
 				*ngIf="mostrarSeccionesDescriptor && mostrarAvisoSeleccioneTab"
@@ -1961,6 +2227,7 @@
 			</div>
 		</dxi-item>
 
+		<!-- Pestaña Bitácora: historial de estados del descriptor. -->
 		<dxi-item title="Bitácora" icon="event">
 			<div class="descriptor-bitacora">
 				<h3 class="descriptor-section-title descriptor-bitacora-title">
@@ -1977,6 +2244,7 @@
 	</dx-tab-panel>
 </div>
 
+<!-- Listado de descriptores (vista de consulta). -->
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
 	[models]="models"
@@ -2009,6 +2277,7 @@
 
 </div>
 
+<!-- Indicador de carga mientras esperan respuestas del servidor. -->
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"
@@ -2020,6 +2289,7 @@
 >
 </dx-load-panel>
 
+<!-- Ventana emergente: actividades de una función clave. -->
 <dx-popup
 	[(visible)]="actividadesPopupVisible"
 	[showTitle]="true"

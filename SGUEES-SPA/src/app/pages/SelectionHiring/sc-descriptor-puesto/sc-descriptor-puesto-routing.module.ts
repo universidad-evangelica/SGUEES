@@ -17,28 +17,30 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 import { ScDescriptorPuestoComponent } from './sc-descriptor-puesto.component';
 
+// Ruta lazy del mantenimiento: path vacío carga el componente principal del descriptor.
 const routes: Routes = [{ path: '', component: ScDescriptorPuestoComponent }];
 
+// Declara el componente y agrupa los módulos DevExtreme y layouts que usa la vista.
 @NgModule({
 	imports: [
-		RouterModule.forChild(routes),
-		CommonModule,
-		DxButtonModule,
-		DxDataGridModule,
-		DxDateBoxModule,
-		DxFormModule,
-		DxLoadPanelModule,
-		DxNumberBoxModule,
-		DxPopupModule,
-		DxSelectBoxModule,
-		DxTabPanelModule,
-		DxTextAreaModule,
-		DxTextBoxModule,
-		BarraDataMttoModule,
-		DataGridMttoModule,
-		DataLookupModule,
+		RouterModule.forChild(routes), // Registro de rutas hijas del feature.
+		CommonModule, // Directivas estructurales (*ngIf, *ngFor, pipes).
+		DxButtonModule, // Botones DevExtreme.
+		DxDataGridModule, // Grillas de datos DevExtreme.
+		DxDateBoxModule, // Selector de fechas DevExtreme.
+		DxFormModule, // Formularios DevExtreme.
+		DxLoadPanelModule, // Panel de carga/indicador de espera.
+		DxNumberBoxModule, // Campo numérico DevExtreme.
+		DxPopupModule, // Ventanas modales DevExtreme.
+		DxSelectBoxModule, // Select/combobox DevExtreme.
+		DxTabPanelModule, // Pestañas del descriptor (formato corto/extenso).
+		DxTextAreaModule, // Área de texto multilínea DevExtreme.
+		DxTextBoxModule, // Campo de texto DevExtreme.
+		BarraDataMttoModule, // Barra de acciones del mantenimiento (guardar, nuevo, etc.).
+		DataGridMttoModule, // Grid reutilizable con configuración de mantenimiento.
+		DataLookupModule, // Lookup reutilizable para catálogos.
 	],
-	exports: [RouterModule],
-	declarations: [ScDescriptorPuestoComponent],
+	exports: [RouterModule], // Permite reexportar rutas si el módulo padre lo requiere.
+	declarations: [ScDescriptorPuestoComponent], // Componente principal del descriptor de puesto.
 })
 export class ScDescriptorPuestoRoutingModule {}

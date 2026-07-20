@@ -1,7 +1,9 @@
+// Estilos locales del mantenimiento de Tipo de Puesto.
 :host {
 	display: block;
 }
 
+// Badge de estado activo/inactivo mostrado en la grilla.
 :host ::ng-deep .estado-badge {
 	display: inline-flex;
 	align-items: center;
@@ -30,6 +32,7 @@
 	box-shadow: none;
 }
 
+// Separación del formulario respecto a la barra de acciones.
 .pla-tipo-puesto-form-card {
 	margin-top: 38px;
 }
@@ -40,6 +43,7 @@
 	}
 }
 
+// Ajusta el toolbar de la grilla para pantallas muy pequeñas.
 @media (max-width: 575.98px) {
 	:host ::ng-deep {
 		.dx-datagrid-header-panel {

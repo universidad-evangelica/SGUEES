@@ -20,6 +20,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Consulta la vista de riesgo del puesto con los filtros indicados.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -59,6 +60,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Consulta un registro de riesgo del puesto según los filtros indicados.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -96,6 +98,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta el registro de riesgo del puesto y devuelve los datos persistidos.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -139,6 +142,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza el registro de riesgo del puesto identificado por sus claves.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -149,7 +153,6 @@ namespace SGUEES.Repositories
                 {
                     new CParameter() { ParameterName = "NOMBRE_RIESGO_PUESTO", Value = Data.NOMBRE_RIESGO_PUESTO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "INFORMACION", Value = Data.INFORMACION, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ES_LISTA", Value = Data.ES_LISTA, DbType = System.Data.DbType.Boolean },
                     new CParameter() { ParameterName = "CORR_RIESGO_PUESTO", Value = Data.CORR_RIESGO_PUESTO, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
@@ -193,6 +196,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Elimina el registro de riesgo del puesto identificado por sus claves.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -232,6 +236,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Construye los parámetros de escritura de riesgo del puesto, incluida su auditoría.
         private static List<CParameter> BuildWriteParameters(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable Data)
         {
             return new List<CParameter>
@@ -240,7 +245,6 @@ namespace SGUEES.Repositories
                 new CParameter() { ParameterName = "CORR_DESCRIPTOR_RIESGO", Value = Data.CORR_DESCRIPTOR_RIESGO, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "NOMBRE_RIESGO_PUESTO", Value = Data.NOMBRE_RIESGO_PUESTO, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "INFORMACION", Value = Data.INFORMACION, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "ES_LISTA", Value = Data.ES_LISTA, DbType = System.Data.DbType.Boolean },
                 new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "CORR_RIESGO_PUESTO", Value = Data.CORR_RIESGO_PUESTO, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },

@@ -1,3 +1,4 @@
+// Qué hace: declara la ruta del mantenimiento de gerencias y sus módulos de UI.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
@@ -9,8 +10,10 @@ import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { ToastModule } from 'primeng/toast';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
+import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 import { GenGerenciaComponent } from './gen-gerencia.component';
 
+// Qué hace: fija la ruta vacía; el path real lo define el lazy load del menú.
 const routes: Routes = [{ path: '', component: GenGerenciaComponent }];
 
 @NgModule({
@@ -24,6 +27,7 @@ const routes: Routes = [{ path: '', component: GenGerenciaComponent }];
 		DxTextBoxModule,
 		BarraDataMttoModule,
 		DataGridMttoModule,
+		DataLookupModule,
 		ToastModule,
 	],
 	exports: [RouterModule],

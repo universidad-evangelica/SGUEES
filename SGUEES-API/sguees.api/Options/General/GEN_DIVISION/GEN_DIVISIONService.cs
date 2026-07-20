@@ -1,6 +1,5 @@
+// Qué hace: aplica las reglas de negocio del catálogo divisiones antes de llamar al repositorio.
 using System.Collections.Generic;
-using System.Linq;
-using System.Text.Json;
 using System.Threading.Tasks;
 using eFramework.Core;
 using sguees.Models;
@@ -8,6 +7,7 @@ using sguees.Repositories;
 
 namespace sguees.Services
 {
+	// Qué hace: valida los datos de división y coordina su persistencia con el repositorio.
 	public class GEN_DIVISIONService : IGEN_DIVISIONService
 	{
 		private readonly IGEN_DIVISIONRepository _repo;
@@ -17,21 +17,15 @@ namespace sguees.Services
 			_repo = repo;
 		}
 
+		// Qué hace: lista las divisiones según los filtros recibidos.
+		// Cómo: llama a GetAllAsync del repositorio con los parámetros armados en BuildParameters.
 		public async Task<CResult> GetAllAsync(GEN_DIVISIONParam xWhere)
 		{
 			return await _repo.GetAllAsync(BuildParameters(xWhere));
 		}
 
-		public async Task<CResult> GetDistinctValuesAsync(GEN_DIVISIONParam xWhere)
-		{
-			if (string.IsNullOrWhiteSpace(xWhere.DISTINCT_FIELD))
-			{
-				return ValidationError("Debe indicar el campo para el filtro de encabezado.");
-			}
-
-			return await _repo.GetDistinctValuesAsync(BuildParameters(xWhere));
-		}
-
+		// Qué hace: entrega divisiones para lookups de otras vistas.
+		// Cómo: llama a GetDivisionesAsync del repositorio con CORR_EMPRESA.
 		public async Task<CResult> GetDivisionesAsync(GEN_DIVISIONParam xWhere)
 		{
 			var p = new List<CParameter>
@@ -42,6 +36,8 @@ namespace sguees.Services
 			return await _repo.GetDivisionesAsync(p);
 		}
 
+		// Qué hace: obtiene una división por su correlativo.
+		// Cómo: llama a GetAsync del repositorio con CORR_EMPRESA y CORR_DIVISION.
 		public async Task<CResult> GetAsync(GEN_DIVISIONParam xWhere)
 		{
 			var p = new List<CParameter>
@@ -53,130 +49,85 @@ namespace sguees.Services
 			return await _repo.GetAsync(p);
 		}
 
+		// Qué hace: crea una división nueva.
+		// Cómo: valida empresa y datos, normaliza campos, comprueba código único y llama a CreateAsync del repositorio.
 		public async Task<CResult> CreateAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
+			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+			if (empresaError != null)
+			{
+				return empresaError;
+			}
+
 			var validation = Validate(Data);
-			if (validation != null) return validation;
+			if (validation != null)
+			{
+				return validation;
+			}
 
 			Data.NOMBRE_DIVISION = Data.NOMBRE_DIVISION.Trim();
 			Data.CODIGO_DIVISION = Data.CODIGO_DIVISION.Trim();
 
 			var duplicate = await ValidateUniqueCodigoAsync(Data, null);
-			if (duplicate != null) return duplicate;
+			if (duplicate != null)
+			{
+				return duplicate;
+			}
 
 			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
+		// Qué hace: actualiza una división existente.
+		// Cómo: valida empresa, datos y código único; normaliza campos y llama a UpdateAsync del repositorio.
 		public async Task<CResult> UpdateAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
+			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+			if (empresaError != null)
+			{
+				return empresaError;
+			}
+
 			var validation = Validate(Data);
-			if (validation != null) return validation;
+			if (validation != null)
+			{
+				return validation;
+			}
 
 			Data.NOMBRE_DIVISION = Data.NOMBRE_DIVISION.Trim();
 			Data.CODIGO_DIVISION = Data.CODIGO_DIVISION.Trim();
 
 			var duplicate = await ValidateUniqueCodigoAsync(Data, Data.CORR_DIVISION);
-			if (duplicate != null) return duplicate;
+			if (duplicate != null)
+			{
+				return duplicate;
+			}
 
 			return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
+		// Qué hace: elimina una división.
+		// Cómo: valida empresa de sesión y llama a DeleteAsync del repositorio.
 		public async Task<CResult> DeleteAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
+			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+			if (empresaError != null)
+			{
+				return empresaError;
+			}
+
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
+		// Qué hace: arma el parámetro CORR_EMPRESA para filtrar en el repositorio.
 		private static List<CParameter> BuildParameters(GEN_DIVISIONParam xWhere)
 		{
-			var p = new List<CParameter>
+			return new List<CParameter>
 			{
 				new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-				new CParameter() { ParameterName = "BUSQUEDA", Value = xWhere.BUSQUEDA, DbType = System.Data.DbType.String },
-				new CParameter() { ParameterName = "PAGE", Value = xWhere.PAGE, DbType = System.Data.DbType.Int32 },
-				new CParameter() { ParameterName = "PAGE_SIZE", Value = xWhere.PAGE_SIZE, DbType = System.Data.DbType.Int32 },
-				new CParameter() { ParameterName = "DISTINCT_FIELD", Value = xWhere.DISTINCT_FIELD, DbType = System.Data.DbType.String },
-				new CParameter() { ParameterName = "HEADER_FILTER_SEARCH", Value = xWhere.HEADER_FILTER_SEARCH, DbType = System.Data.DbType.String },
-				new CParameter() { ParameterName = "SORT_FIELD", Value = xWhere.SORT_FIELD, DbType = System.Data.DbType.String },
-				new CParameter() { ParameterName = "SORT_DESC", Value = xWhere.SORT_DESC, DbType = System.Data.DbType.Boolean },
 			};
-
-			AddJsonParameter(p, "FILTER_ROW_JSON", xWhere.FILTER_ROW_JSON);
-			AddJsonParameter(p, "COLUMN_EXACT_JSON", xWhere.COLUMN_EXACT_JSON);
-			AddJsonParameter(p, "COLUMN_ANYOF_JSON", xWhere.COLUMN_ANYOF_JSON);
-			AddAnyOfFilters(p, xWhere.COLUMN_ANYOF_JSON);
-
-			return p;
 		}
 
-		private static void AddJsonParameter(List<CParameter> p, string parameterName, string json)
-		{
-			if (string.IsNullOrWhiteSpace(json))
-			{
-				return;
-			}
-
-			p.Add(new CParameter()
-			{
-				ParameterName = parameterName,
-				Value = json,
-				DbType = System.Data.DbType.String,
-			});
-		}
-
-		private static void AddAnyOfFilters(List<CParameter> p, string columnAnyOfJson)
-		{
-			if (string.IsNullOrWhiteSpace(columnAnyOfJson))
-			{
-				return;
-			}
-
-			try
-			{
-				var filters = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(columnAnyOfJson);
-				if (filters == null)
-				{
-					return;
-				}
-
-				foreach (var filter in filters)
-				{
-					if (filter.Value.ValueKind != JsonValueKind.Array)
-					{
-						continue;
-					}
-
-					var values = filter.Value
-						.EnumerateArray()
-						.Select(x => x.ValueKind switch
-						{
-							JsonValueKind.String => x.GetString(),
-							JsonValueKind.Number => x.GetRawText(),
-							JsonValueKind.True => "true",
-							JsonValueKind.False => "false",
-							JsonValueKind.Null => "__BLANK__",
-							_ => x.ToString(),
-						})
-						.Where(x => !string.IsNullOrWhiteSpace(x))
-						.ToList();
-
-					if (values.Count == 0)
-					{
-						continue;
-					}
-
-					p.Add(new CParameter()
-					{
-						ParameterName = $"{filter.Key}_ANYOF",
-						Value = string.Join('|', values),
-						DbType = System.Data.DbType.String,
-					});
-				}
-			}
-			catch (JsonException)
-			{
-			}
-		}
-
+		// Qué hace: valida campos obligatorios de la división antes de persistirla.
 		private static CResult Validate(GEN_DIVISIONTable Data)
 		{
 			if (Data == null)
@@ -207,6 +158,8 @@ namespace sguees.Services
 			return null;
 		}
 
+		// Qué hace: comprueba que el código de división sea único en la empresa.
+		// Cómo: llama a ExistsCodigoAsync del repositorio.
 		private async Task<CResult> ValidateUniqueCodigoAsync(GEN_DIVISIONTable Data, int? excludeCorr)
 		{
 			var exists = await _repo.ExistsCodigoAsync(
@@ -219,6 +172,27 @@ namespace sguees.Services
 				: null;
 		}
 
+		// Qué hace: verifica que la sesión tenga empresa válida.
+		private static CResult ValidateEmpresaSesion(int corrEmpresa)
+		{
+			if (corrEmpresa > 0)
+			{
+				return null;
+			}
+
+			return new CResult
+			{
+				Data = null,
+				Result = false,
+				CodeHelper = 0,
+				ErrorCode = 4100,
+				ErrorMessage = "No se pudo guardar la division porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
+				ErrorSource = "[GEN_DIVISIONService]",
+				RowsAffected = 0
+			};
+		}
+
+		// Qué hace: construye una respuesta uniforme para errores de validación.
 		private static CResult ValidationError(string message)
 		{
 			return new CResult

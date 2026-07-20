@@ -19,24 +19,29 @@ namespace SGUEES.Services
             _competenciasRepo = competenciasRepo;
         }
 
+        // Lista competencias conductuales del perfil; convierte filtros a parámetros SQL y consulta el repositorio.
         public async Task<CResult> GetAllAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene una competencia conductual por empresa, perfil e id del registro.
         public async Task<CResult> GetAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeCorr: true));
         }
 
+        // Completa datos desde el catálogo, valida que esté activa y crea en SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES.
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Busca la competencia en SC_COMPETENCIAS_CONDUCTUALES y copia nombre, tipo y descripción si faltan.
             var prepare = await PrepareFromCatalogAsync(Data, esNuevo: true);
             if (prepare != null)
             {
                 return prepare;
             }
 
+            // Revisa descriptor, perfil y longitudes antes de insertar.
             var validation = Validate(Data, esNuevo: true);
             if (validation != null)
             {
@@ -46,8 +51,10 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida y actualiza una competencia conductual en SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES.
         public async Task<CResult> UpdateAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Revisa id y longitudes antes de actualizar.
             var validation = Validate(Data, esNuevo: false);
             if (validation != null)
             {
@@ -57,6 +64,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida claves y elimina la competencia de SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES.
         public async Task<CResult> DeleteAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_EMPRESA <= 0 || Data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES <= 0)
@@ -67,6 +75,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Al crear: lee SC_COMPETENCIAS_CONDUCTUALES, exige activa y rellena nombre/tipo/descripción vacíos.
         private async Task<CResult> PrepareFromCatalogAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, bool esNuevo)
         {
             if (!esNuevo || Data.CORR_COMPETENCIAS_CONDUCTUALES is not > 0)
@@ -74,6 +83,7 @@ namespace SGUEES.Services
                 return null;
             }
 
+            // Consulta el catálogo maestro por CORR_COMPETENCIAS_CONDUCTUALES.
             var catalogResult = await _competenciasRepo.GetAsync(new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
@@ -95,6 +105,11 @@ namespace SGUEES.Services
                 Data.NOMBRE_COMPETENCIAS_CONDUCTUALES = catalog.NOMBRE_COMPETENCIAS_CONDUCTUALES?.Trim();
             }
 
+            if (string.IsNullOrWhiteSpace(Data.CODIGO_TIPO_PUESTO))
+            {
+                Data.CODIGO_TIPO_PUESTO = catalog.CODIGO_TIPO_PUESTO?.Trim();
+            }
+
             if (string.IsNullOrWhiteSpace(Data.DESCRIPCION))
             {
                 Data.DESCRIPCION = catalog.DESCRIPCION?.Trim();
@@ -103,6 +118,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Arma parámetros SQL: empresa; opcionalmente descriptor, perfil e id de competencia del perfil.
         private static List<CParameter> BuildParameters(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESParam xWhere, bool includeCorr = false)
         {
             var p = new List<CParameter>
@@ -133,6 +149,7 @@ namespace SGUEES.Services
             return p;
         }
 
+        // Revisa empresa, descriptor, perfil, competencia seleccionada y longitudes de texto.
         private static CResult Validate(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, bool esNuevo)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -165,22 +182,30 @@ namespace SGUEES.Services
                 return ValidationError("Debe indicar el nombre de la competencia conductual.");
             }
 
-            if (Data.NOMBRE_COMPETENCIAS_CONDUCTUALES.Trim().Length > 255)
+            if (Data.NOMBRE_COMPETENCIAS_CONDUCTUALES.Trim().Length > 150)
             {
-                return ValidationError("El nombre no puede superar 255 caracteres.");
+                return ValidationError("El nombre no puede superar 150 caracteres.");
             }
 
-            if (!string.IsNullOrEmpty(Data.DESCRIPCION) && Data.DESCRIPCION.Trim().Length > 255)
+            if (!string.IsNullOrEmpty(Data.DESCRIPCION) && Data.DESCRIPCION.Trim().Length > 500)
             {
-                return ValidationError("La descripcion no puede superar 255 caracteres.");
+                return ValidationError("La descripcion no puede superar 500 caracteres.");
             }
 
             Data.NOMBRE_COMPETENCIAS_CONDUCTUALES = Data.NOMBRE_COMPETENCIAS_CONDUCTUALES.Trim();
+            Data.CODIGO_TIPO_PUESTO = string.IsNullOrWhiteSpace(Data.CODIGO_TIPO_PUESTO)
+                ? null
+                : Data.CODIGO_TIPO_PUESTO.Trim();
+            if (Data.CODIGO_TIPO_PUESTO?.Length > 30)
+            {
+                Data.CODIGO_TIPO_PUESTO = Data.CODIGO_TIPO_PUESTO.Substring(0, 30);
+            }
             Data.DESCRIPCION = string.IsNullOrWhiteSpace(Data.DESCRIPCION) ? null : Data.DESCRIPCION.Trim();
 
             return null;
         }
 
+        // Devuelve un CResult con ErrorCode 4101 y el mensaje de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult
@@ -189,7 +214,7 @@ namespace SGUEES.Services
                 Result = false,
                 RowsAffected = 0,
                 CodeHelper = 0,
-                ErrorCode = 1,
+                ErrorCode = 4101,
                 ErrorMessage = message,
                 ErrorSource = "",
             };

@@ -1,3 +1,4 @@
+// Modelo TypeScript de inducción (campos del formulario y grilla).
 export interface ScInduccion {
 	CORR_EMPRESA: number;
 	CORR_INDUCCION: number;

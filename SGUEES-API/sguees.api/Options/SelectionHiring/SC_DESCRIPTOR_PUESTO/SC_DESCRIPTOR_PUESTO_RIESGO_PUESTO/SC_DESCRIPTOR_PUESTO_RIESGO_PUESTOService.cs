@@ -20,24 +20,29 @@ namespace SGUEES.Services
             _catalogoRepo = catalogoRepo;
         }
 
+        // Obtiene el listado de riesgo del puesto aplicando los filtros recibidos.
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un registro de riesgo del puesto con los identificadores recibidos.
         public async Task<CResult> GetAsync(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeCorr: true));
         }
 
+        // Valida y crea el registro de riesgo del puesto con sus datos de auditoría.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Completa y valida el ítem contra el catálogo activo.
             var prepare = await PrepareFromCatalogAsync(Data, esNuevo: true);
             if (prepare != null)
             {
                 return prepare;
             }
 
+            // Valida reglas de negocio antes de crear.
             var validation = Validate(Data, esNuevo: true);
             if (validation != null)
             {
@@ -47,8 +52,10 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida y actualiza el registro existente de riesgo del puesto.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            // Valida reglas de negocio antes de actualizar.
             var validation = Validate(Data, esNuevo: false);
             if (validation != null)
             {
@@ -58,6 +65,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Valida las claves y elimina el registro de riesgo del puesto.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_RIESGO <= 0)
@@ -68,87 +76,125 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Agrega al descriptor los registros activos de riesgo del puesto que aún no existen.
         public async Task<CResult> SeedActivosDesdeCatalogoAsync(int corrEmpresa, int corrDescriptor, string usuario, string estacion)
         {
             if (corrEmpresa <= 0 || corrDescriptor <= 0)
             {
-                return new CResult
-                {
-                    Data = null,
-                    Result = true,
-                    RowsAffected = 0,
-                    CodeHelper = 0,
-                    ErrorCode = 0,
-                    ErrorMessage = "",
-                    ErrorSource = "",
-                };
+                return SeedSuccess(0);
             }
 
-            var existentes = await GetAllAsync(new SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOParam
+            try
             {
-                CORR_EMPRESA = corrEmpresa,
-                CORR_DESCRIPTOR_PUESTO = corrDescriptor,
-            });
-
-            if (existentes.Result && existentes.Data is List<SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOView> rows && rows.Count > 0)
-            {
-                return new CResult
-                {
-                    Data = rows,
-                    Result = true,
-                    RowsAffected = 0,
-                    CodeHelper = 0,
-                    ErrorCode = 0,
-                    ErrorMessage = "",
-                    ErrorSource = "",
-                };
-            }
-
-            var catalogo = await _catalogoRepo.GetCatalogoDescriptorAsync(corrEmpresa);
-            var ahora = DateTime.Now;
-            var creados = 0;
-
-            foreach (var item in catalogo)
-            {
-                if (item.CORR_RIESGO_PUESTO <= 0)
-                {
-                    continue;
-                }
-
-                var nombre = (item.NOMBRE_RIESGO_PUESTO ?? string.Empty).Trim();
-                if (string.IsNullOrWhiteSpace(nombre))
-                {
-                    continue;
-                }
-
-                if (nombre.Length > 150)
-                {
-                    nombre = nombre.Substring(0, 150);
-                }
-
-                var createResult = await CreateAsync(new SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable
+                var existentes = await GetAllAsync(new SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOParam
                 {
                     CORR_EMPRESA = corrEmpresa,
-                    CORR_DESCRIPTOR_RIESGO = 0,
-                    NOMBRE_RIESGO_PUESTO = nombre,
-                    INFORMACION = null,
-                    ES_LISTA = item.ES_LISTA,
                     CORR_DESCRIPTOR_PUESTO = corrDescriptor,
-                    CORR_RIESGO_PUESTO = item.CORR_RIESGO_PUESTO,
-                    USUARIO_CREA = usuario,
-                    ESTACION_CREA = estacion,
-                    FECHA_CREA = ahora,
-                    USUARIO_ACTU = usuario,
-                    ESTACION_ACTU = estacion,
-                    FECHA_ACTU = ahora,
-                }, usuario, estacion);
+                });
 
-                if (createResult.ErrorCode == 0)
+                if (!existentes.Result)
                 {
-                    creados++;
+                    return SeedError("No se pudieron consultar los riesgos del descriptor.");
                 }
-            }
 
+                var catalogoUsados = new HashSet<int>();
+                if (existentes.Data is List<SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOView> rows)
+                {
+                    foreach (var row in rows)
+                    {
+                        if (row.CORR_RIESGO_PUESTO is > 0)
+                        {
+                            catalogoUsados.Add(row.CORR_RIESGO_PUESTO.Value);
+                        }
+                    }
+                }
+
+                // Obtiene catálogo activo a sembrar en el descriptor.
+                var catalogo = await _catalogoRepo.GetCatalogoDescriptorAsync(corrEmpresa);
+                var ahora = DateTime.Now;
+                var creados = 0;
+                var pendientes = 0;
+                var fallidos = 0;
+
+                foreach (var item in catalogo)
+                {
+                    if (item.CORR_RIESGO_PUESTO <= 0)
+                    {
+                        continue;
+                    }
+
+                    if (catalogoUsados.Contains(item.CORR_RIESGO_PUESTO))
+                    {
+                        continue;
+                    }
+
+                    var nombre = (item.NOMBRE_RIESGO_PUESTO ?? string.Empty).Trim();
+                    if (string.IsNullOrWhiteSpace(nombre))
+                    {
+                        continue;
+                    }
+
+                    if (nombre.Length > 150)
+                    {
+                        nombre = nombre.Substring(0, 150);
+                    }
+
+                    pendientes++;
+                    var createResult = await CreateAsync(new SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable
+                    {
+                        CORR_EMPRESA = corrEmpresa,
+                        CORR_DESCRIPTOR_RIESGO = 0,
+                        NOMBRE_RIESGO_PUESTO = nombre,
+                        INFORMACION = null,
+                        CORR_DESCRIPTOR_PUESTO = corrDescriptor,
+                        CORR_RIESGO_PUESTO = item.CORR_RIESGO_PUESTO,
+                        USUARIO_CREA = usuario,
+                        ESTACION_CREA = estacion,
+                        FECHA_CREA = ahora,
+                        USUARIO_ACTU = usuario,
+                        ESTACION_ACTU = estacion,
+                        FECHA_ACTU = ahora,
+                    }, usuario, estacion);
+
+                    if (createResult.ErrorCode == 0)
+                    {
+                        creados++;
+                        catalogoUsados.Add(item.CORR_RIESGO_PUESTO);
+                    }
+                    else
+                    {
+                        fallidos++;
+                    }
+                }
+
+                if (pendientes == 0)
+                {
+                    return SeedSuccess(creados);
+                }
+
+                if (fallidos == 0)
+                {
+                    return SeedSuccess(creados);
+                }
+
+                if (creados > 0)
+                {
+                    return SeedWarning(
+                        creados,
+                        $"Se cargaron {creados} de {pendientes} riesgo(s) del puesto desde el catalogo.");
+                }
+
+                return SeedError("No se pudieron cargar los riesgos activos del puesto desde el catalogo.");
+            }
+            catch (Exception ex)
+            {
+                return SeedError($"No se pudieron cargar los riesgos del puesto desde el catalogo: {ex.Message}");
+            }
+        }
+
+        // Construye la respuesta exitosa del proceso de carga desde catálogo.
+        private static CResult SeedSuccess(int creados)
+        {
             return new CResult
             {
                 Data = null,
@@ -161,6 +207,37 @@ namespace SGUEES.Services
             };
         }
 
+        // Construye una advertencia cuando la carga desde catálogo queda parcial.
+        private static CResult SeedWarning(int creados, string message)
+        {
+            return new CResult
+            {
+                Data = null,
+                Result = true,
+                RowsAffected = creados,
+                CodeHelper = 0,
+                ErrorCode = 0,
+                ErrorMessage = message,
+                ErrorSource = "[SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService]",
+            };
+        }
+
+        // Construye la respuesta de error del proceso de carga desde catálogo.
+        private static CResult SeedError(string message)
+        {
+            return new CResult
+            {
+                Data = null,
+                Result = false,
+                RowsAffected = 0,
+                CodeHelper = 0,
+                ErrorCode = 4101,
+                ErrorMessage = message,
+                ErrorSource = "[SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService]",
+            };
+        }
+
+        // Completa y contrasta los datos de riesgo del puesto con el catálogo activo.
         private async Task<CResult> PrepareFromCatalogAsync(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable Data, bool esNuevo)
         {
             if (!esNuevo || Data.CORR_RIESGO_PUESTO is not > 0)
@@ -168,6 +245,7 @@ namespace SGUEES.Services
                 return null;
             }
 
+            // Consulta el riesgo en el catálogo maestro.
             var catalogResult = await _catalogoRepo.GetAsync(new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
@@ -189,14 +267,10 @@ namespace SGUEES.Services
                 Data.NOMBRE_RIESGO_PUESTO = catalog.NOMBRE_RIESGO_PUESTO?.Trim();
             }
 
-            if (Data.ES_LISTA == null)
-            {
-                Data.ES_LISTA = catalog.ES_LISTA;
-            }
-
             return null;
         }
 
+        // Construye los parámetros de filtrado para consultar riesgo del puesto.
         private static List<CParameter> BuildParameters(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOParam xWhere, bool includeCorr = false)
         {
             var p = new List<CParameter>
@@ -222,6 +296,7 @@ namespace SGUEES.Services
             return p;
         }
 
+        // Valida las claves y reglas de negocio requeridas para riesgo del puesto.
         private static CResult Validate(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable Data, bool esNuevo)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -266,6 +341,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Construye un resultado uniforme para reportar errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult
@@ -274,7 +350,7 @@ namespace SGUEES.Services
                 Result = false,
                 RowsAffected = 0,
                 CodeHelper = 0,
-                ErrorCode = 1,
+                ErrorCode = 4101,
                 ErrorMessage = message,
                 ErrorSource = "",
             };

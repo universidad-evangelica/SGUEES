@@ -1,66 +1,80 @@
+<!-- Mantenimiento de gerencias: barra, formulario con lookup de división y grid -->
 <div class="sguees-mtto-view">
-<app-barra-data-mtto
-	[tituloVentana]="tituloVentana"
-	[isBrowse]="isBrowse()"
-	[isForm]="isForm()"
-	[showRibbon]="true"
-	[permiteAdd]="permiteAdd"
-	[showRefresh]="true"
-	[showExport]="permitePrint"
-	(nuevo)="nuevo()"
-	(guardar)="guardar()"
-	(cancelar)="cancelar()"
-	(consultar)="consultar()"
->
-</app-barra-data-mtto>
-
-<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
-	<dx-form
-		#fData
-		id="fData"
-		[formData]="model"
-		[labelLocation]="'top'"
-		[colCount]="10"
-		[colCountByScreen]="{ xs: 1, sm: 1, md: 4, lg: 10 }"
-		[showRequiredMark]="false"
-		[items]="items"
+	<!-- Acciones Nuevo / Guardar / Cancelar según estado del mtto -->
+	<app-barra-data-mtto
+		[tituloVentana]="tituloVentana"
+		[subTituloVentana]="subTituloVentana"
+		[isBrowse]="isBrowse()"
+		[isForm]="isForm()"
+		[permiteAdd]="permiteAdd"
+		(nuevo)="nuevo()"
+		(guardar)="guardar()"
+		(cancelar)="cancelar()"
 	>
-	</dx-form>
+	</app-barra-data-mtto>
+
+	<!-- Formulario de creación/edición; el lookup de división usa plantilla custom -->
+	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
+		<dx-form
+			#fData
+			id="fData"
+			[formData]="model"
+			[labelLocation]="'top'"
+			[colCount]="mttoFormColCount"
+			[colCountByScreen]="mttoFormColCountByScreen"
+			[showRequiredMark]="false"
+			[items]="items"
+		>
+			<!-- Selector de división; marca visual si falta selección al guardar -->
+			<div *dxTemplate="let cellInfo of 'CORR_DIVISIONLookup'">
+				<div class="division-lookup-field" [class.division-lookup-field--invalid]="divisionInvalida">
+					<app-data-lookup
+						[model]="mCORR_DIVISION"
+						[value]="model.CORR_DIVISION"
+						(valueChange)="onDivisionChanged($event)"
+						[valueExpr]="'CORR_DIVISION'"
+						[displayExpr]="'NOMBRE_DIVISION'"
+						[selectedRowKeys]="selectedLookUpCORR_DIVISION"
+						[readOnly]="readOnly"
+					>
+					</app-data-lookup>
+				</div>
+			</div>
+		</dx-form>
+	</div>
+
+	<!-- Listado de gerencias con paginación local -->
+	<app-data-grid-mtto
+		[isBrowse]="isBrowse()"
+		[models]="models"
+		[columns]="columns"
+		[summary]="summary"
+		[keyExpr]="mttoGridKeyExpr"
+		[pageSize]="mttoPageSize"
+		[allowedPageSizes]="mttoPageSizes"
+		[remoteOperations]="mttoRemoteOperations"
+		[repaintChangesOnly]="false"
+		[showSearch]="false"
+		[showAdd]="true"
+		[showRefresh]="true"
+		[showExport]="true"
+		[permitePrint]="permitePrint"
+		[permiteEditar]="getPermiteEditar"
+		[permiteDele]="getPermiteDele"
+		[responsiveColumnHiding]="false"
+		[columnHidingEnabled]="false"
+		[exportFileName]="'Gerencias'"
+		(refresh)="consultar()"
+		(add)="nuevo()"
+		(rowDblClick)="rowDblClick($event)"
+		(rowRemoving)="rowRemoving($event)"
+		(focusedRowChanged)="focusedRowChanged($event)"
+		(editClick)="onEditClick($event)"
+	>
+	</app-data-grid-mtto>
 </div>
 
-<app-data-grid-mtto
-	[isBrowse]="isBrowse()"
-	[models]="models"
-	[columns]="columns"
-	[summary]="summary"
-	[keyExpr]="mttoGridKeyExpr"
-	[remoteOperations]="mttoRemoteOperations"
-	[pageSize]="mttoPageSize"
-	[hybridPaging]="mttoHybridPaging"
-	[apiPageSize]="mttoApiPageSize"
-	[apiPageSizes]="mttoApiPageSizes"
-	[nativeToolbar]="true"
-	[unifiedToolbar]="false"
-	[showSearch]="false"
-	[showAdd]="false"
-	[showRefresh]="false"
-	[showExport]="false"
-	[permitePrint]="permitePrint"
-	[permiteEditar]="getPermiteEditar"
-	[permiteDele]="getPermiteDele"
-	[responsiveColumnHiding]="false"
-	[columnHidingEnabled]="false"
-	[exportFileName]="'Gerencias'"
-	(apiPageSizeChange)="onApiPageSizeChange($event)"
-	(rowDblClick)="rowDblClick($event)"
-	(rowRemoving)="rowRemoving($event)"
-	(focusedRowChanged)="focusedRowChanged($event)"
-	(editClick)="editarClick($event)"
->
-</app-data-grid-mtto>
-
-</div>
-
+<!-- Overlay de carga durante operaciones al API -->
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"
@@ -69,6 +83,5 @@
 	[showIndicator]="true"
 	[showPane]="true"
 	[shading]="true"
-	(onShown)="(loadingVisible)"
 >
 </dx-load-panel>

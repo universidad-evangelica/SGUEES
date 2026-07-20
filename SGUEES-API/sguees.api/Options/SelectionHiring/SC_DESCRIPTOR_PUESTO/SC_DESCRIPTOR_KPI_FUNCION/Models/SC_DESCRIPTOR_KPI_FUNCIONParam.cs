@@ -2,6 +2,8 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Filtros de consulta (query string) para listar/buscar SC_DESCRIPTOR_KPI_FUNCION por empresa,
+    // descriptor o identificador del indicador.
     public class SC_DESCRIPTOR_KPI_FUNCIONParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

@@ -65,7 +65,7 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 
 	getCORR_PAIS() {
 		this.appInfoService
-			.getLookUp('GEN_EMPRESA', 'GEN_ESTRUCTURA_TERRITORIAL', 'GetCORR_PAIS', undefined, environment.UrlGENERALAPI)
+			.getLookUp('GEN_EMPRESA', 'GEN_PAIS', 'GetCORR_PAIS', undefined, environment.UrlGENERALAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -89,7 +89,7 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 		}
 		const xWhere: IParam[] = [{ Parameter: 'CORR_PAIS', Value: pais }];
 		this.appInfoService
-			.getLookUp('GEN_EMPRESA', 'GEN_ESTRUCTURA_TERRITORIAL', 'GetCORR_DEPTO', xWhere, environment.UrlGENERALAPI)
+			.getLookUp('GEN_EMPRESA', 'GEN_DEPTO', 'GetCORR_DEPTO', xWhere, environment.UrlGENERALAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -117,7 +117,7 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 			{ Parameter: 'CORR_DEPTO', Value: depto },
 		];
 		this.appInfoService
-			.getLookUp('GEN_EMPRESA', 'GEN_ESTRUCTURA_TERRITORIAL', 'GetCORR_MUNICIPIO', xWhere, environment.UrlGENERALAPI)
+			.getLookUp('GEN_EMPRESA', 'GEN_MUNICIPIO', 'GetCORR_MUNICIPIO', xWhere, environment.UrlGENERALAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
