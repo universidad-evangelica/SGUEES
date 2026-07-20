@@ -16,34 +16,34 @@ namespace sguees.Controllers
 	[Route("[controller]")]
 	[ApiController]
 	
-	public class SC_TIPO_VACANTEController : ControllerBase
+	public class SC_SOLICITUD_EMPLEOController : ControllerBase
 	{
 		private readonly ISC_SOLICITUD_EMPLEOService _service;
 		
-		public SC_TIPO_VACANTEController(ISC_SOLICITUD_EMPLEOService service)
+		public SC_SOLICITUD_EMPLEOController(ISC_SOLICITUD_EMPLEOService service)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(_service));
 		}
 		
 		[HttpGet("GetAll")]
-		[Authorize(Policy = "/sc-tipo-vacante|R")]
-		public async Task<CResult> GetAll([FromQuery] SC_TIPO_VACANTEParam Data)
+		[Authorize(Policy = "/sc-solicitud-empleo|R")]
+		public async Task<CResult> GetAll([FromQuery] SC_SOLICITUD_EMPLEOParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			return await _service.GetAllAsync(Data);
 		}
 		
 		[HttpGet("Get")]
-		[Authorize(Policy = "/sc-tipo-vacante|R")]
-		public async Task<CResult> Get([FromQuery] SC_TIPO_VACANTEParam Data)
+		[Authorize(Policy = "/sc-solicitud-empleo|R")]
+		public async Task<CResult> Get([FromQuery] SC_SOLICITUD_EMPLEOParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			return await _service.GetAsync(Data);
 		}
 		
 		[HttpPost]
-		[Authorize(Policy = "/sc-tipo-vacante|C")]
-		public async Task<IActionResult> Post(SC_TIPO_VACANTETable Data)
+		[Authorize(Policy = "/sc-solicitud-empleo|C")]
+		public async Task<IActionResult> Post(SC_SOLICITUD_EMPLEOTable Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			Data.USUARIO_CREA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
@@ -63,8 +63,8 @@ namespace sguees.Controllers
 		}
 		
 		[HttpPut]
-		[Authorize(Policy = "/sc-tipo-vacante|U")]
-		public async Task<IActionResult> Put(SC_TIPO_VACANTETable Data)
+		[Authorize(Policy = "/sc-solicitud-empleo|U")]
+		public async Task<IActionResult> Put(SC_SOLICITUD_EMPLEOTable Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			Data.USUARIO_CREA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
@@ -83,8 +83,8 @@ namespace sguees.Controllers
 		}
 		
 		[HttpDelete]
-		[Authorize(Policy = "/sc-tipo-vacante|D")]
-		public async Task<IActionResult> Delete([FromQuery] SC_TIPO_VACANTETable Data)
+		[Authorize(Policy = "/sc-solicitud-empleo|D")]
+		public async Task<IActionResult> Delete([FromQuery] SC_SOLICITUD_EMPLEOTable Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			var resultado = await _service.DeleteAsync(Data, "Admin", "e-CoffeeTech");
@@ -96,52 +96,52 @@ namespace sguees.Controllers
 			}
 		}
 
-        [HttpPut("Desactivate")]
-        [Authorize(Policy = "/sc-tipo-contratacion|D")]
-        public async Task<IActionResult> Desactivate([FromQuery] SC_TIPO_VACANTETable Data)
-        {
-            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            Data.ACTIVO = false;
-            Data.USUARIO_ACTU = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
-            Data.FECHA_ACTU = DateTime.Now;
-            Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
-            var resultado = await _service.DesactivateAsync(Data, "Admin", "e-CoffeeTech");
-            if (resultado.ErrorCode == 0)
-            {
-                return Ok(resultado);
-            }
-            else
-            {
-                return BadRequest(resultado);
-            }
-        }
+        //[HttpPut("Desactivate")]
+        //[Authorize(Policy = "/sc-tipo-contratacion|D")]
+        //public async Task<IActionResult> Desactivate([FromQuery] SC_SOLICITUD_EMPLEOTable Data)
+        //{
+        //    Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+        //    Data.ACTIVO = false;
+        //    Data.USUARIO_ACTU = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
+        //    Data.FECHA_ACTU = DateTime.Now;
+        //    Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
+        //    var resultado = await _service.DesactivateAsync(Data, "Admin", "e-CoffeeTech");
+        //    if (resultado.ErrorCode == 0)
+        //    {
+        //        return Ok(resultado);
+        //    }
+        //    else
+        //    {
+        //        return BadRequest(resultado);
+        //    }
+        //}
 
-        [HttpPut("Reactivate")]
-        [Authorize(Policy = "/sc-tipo-contratacion|U")]
-        public async Task<IActionResult> Reactivate([FromQuery] SC_TIPO_VACANTETable Data)
-        {
-            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            Data.ACTIVO = true;
-            Data.USUARIO_ACTU = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
-            Data.FECHA_ACTU = DateTime.Now;
-            Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
-            var resultado = await _service.ReactivateAsync(Data, "Admin", "e-CoffeeTech");
-            if (resultado.ErrorCode == 0)
-            {
-                return Ok(resultado);
-            }
-            else
-            {
-                return BadRequest(resultado);
-            }
-        }
+        //[HttpPut("Reactivate")]
+        //[Authorize(Policy = "/sc-tipo-contratacion|U")]
+        //public async Task<IActionResult> Reactivate([FromQuery] SC_SOLICITUD_EMPLEOTable Data)
+        //{
+        //    Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+        //    Data.ACTIVO = true;
+        //    Data.USUARIO_ACTU = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
+        //    Data.FECHA_ACTU = DateTime.Now;
+        //    Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
+        //    var resultado = await _service.ReactivateAsync(Data, "Admin", "e-CoffeeTech");
+        //    if (resultado.ErrorCode == 0)
+        //    {
+        //        return Ok(resultado);
+        //    }
+        //    else
+        //    {
+        //        return BadRequest(resultado);
+        //    }
+        //}
 
-        [HttpGet("GetCORR_TIPO_VACANTE_SC_REQUISICION_PERSONAL")]
-        [Authorize(Policy = "/sc-tipo-contratacion|R")]
-        public async Task<CResult> GetCORR_TIPO_VACANTE_SC_REQUISICION_PERSONAL([FromQuery] SC_TIPO_VACANTEParam Data)
-        {
-            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            return await _service.GetAllAsync(Data);
-        }
+        //[HttpGet("GetCORR_TIPO_VACANTE_SC_REQUISICION_PERSONAL")]
+        //[Authorize(Policy = "/sc-tipo-contratacion|R")]
+        //public async Task<CResult> GetCORR_TIPO_VACANTE_SC_REQUISICION_PERSONAL([FromQuery] SC_SOLICITUD_EMPLEOParam Data)
+        //{
+        //    Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+        //    return await _service.GetAllAsync(Data);
+        //}
     }
 }

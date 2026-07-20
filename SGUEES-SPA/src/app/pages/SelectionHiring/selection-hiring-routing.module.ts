@@ -18,6 +18,7 @@ import { ScCompetenciasTecnicasComponent } from './sc-competencias-tecnicas/sc-c
 import { ScRequisicionObservadoresComponent } from './sc-requisicion-observadores/sc-requisicion-observadores.component';
 import { ScCompetenciasConductualesComponent } from './sc-competencias-conductuales/sc-competencias-conductuales.component';
 import { ScDescriptorPuestoComponent } from './sc-descriptor-puesto/sc-descriptor-puesto.component';
+import { ScSolicitudEmpleoComponent } from './sc-solicitud-empleo/sc-solicitud-empleo.component';
 
 
 const routes: Routes = [
@@ -140,6 +141,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./sc-descriptor-puesto/sc-descriptor-puesto.module').then(m => m.ScDescriptorPuestoModule)
+  },
+  {
+    path: 'sc-solicitud-empleo',
+    component: ScSolicitudEmpleoComponent,
+    data: { titulo: 'Solicitud de Empleo' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-solicitud-empleo/sc-solicitud-empleo.module').then(m => m.ScSolicitudEmpleoModule)
   }
 ];
 

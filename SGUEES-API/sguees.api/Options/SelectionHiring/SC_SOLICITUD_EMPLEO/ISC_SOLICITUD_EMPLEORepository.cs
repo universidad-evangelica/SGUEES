@@ -4,9 +4,9 @@ using sguees.Models;
 
 namespace sguees.Repositories
 {
-	public interface ISC_TIPO_VACANTERepository: IRepository<SC_TIPO_VACANTETable>
+	public interface ISC_SOLICITUD_EMPLEORepository: IRepository<SC_SOLICITUD_EMPLEOTable>
 	{
-        Task<CResult> DesactivateAsync(SC_TIPO_VACANTETable Data, string vLOGIN_SISTEMA, string vESTACION);
-        Task<CResult> ReactivateAsync(SC_TIPO_VACANTETable Data, string vLOGIN_SISTEMA, string vESTACION);
+        //Task<CResult> DesactivateAsync(SC_SOLICITUD_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+        //Task<CResult> ReactivateAsync(SC_SOLICITUD_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION);
     }
 }

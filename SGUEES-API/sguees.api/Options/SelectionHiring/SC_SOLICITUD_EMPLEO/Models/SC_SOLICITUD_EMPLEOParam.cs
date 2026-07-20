@@ -3,7 +3,7 @@ using eFramework.Data;
 
 namespace sguees.Models
 {
-	public class SC_TIPO_VACANTEParam: BaseParam
+	public class SC_SOLICITUD_EMPLEOParam: BaseParam
 	{
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_SOLICITUD_EMPLEO { get; set; }

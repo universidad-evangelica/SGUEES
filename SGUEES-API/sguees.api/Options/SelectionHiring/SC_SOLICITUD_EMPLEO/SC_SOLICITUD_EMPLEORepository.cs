@@ -9,11 +9,11 @@ using SGUEES.Models;
 
 namespace sguees.Repositories
 {
-	public class SC_TIPO_VACANTERepository: BaseRepository<SC_TIPO_VACANTETable>, ISC_SOLICITUD_EMPLEORepository
+	public class SC_SOLICITUD_EMPLEORepository: BaseRepository<SC_SOLICITUD_EMPLEOTable>, ISC_SOLICITUD_EMPLEORepository
 	{
-		private const string _TableName = "SC_TIPO_VACANTE";
+		private const string _TableName = "SC_SOLICITUD_EMPLEO";
 		
-		public SC_TIPO_VACANTERepository(IConfiguration config) : 
+		public SC_SOLICITUD_EMPLEORepository(IConfiguration config) : 
 				base(config.GetConnectionString("defaultConnection"),
 					 config.GetSection("DbProvider:defaultProvider").Value)
 		{
@@ -26,7 +26,7 @@ namespace sguees.Repositories
 			try
 			{
 				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
-				var response = new List<SC_TIPO_VACANTEView>().FromDataReader(reader).ToList();
+				var response = new List<SC_SOLICITUD_EMPLEOView>().FromDataReader(reader).ToList();
 				
 				reader.Close();
 				reader = null;
@@ -63,7 +63,7 @@ namespace sguees.Repositories
 			try
 			{
 				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
-				var response = new List<SC_TIPO_VACANTEView>().FromDataReader(reader).FirstOrDefault();
+				var response = new List<SC_SOLICITUD_EMPLEOView>().FromDataReader(reader).FirstOrDefault();
 				
 				reader.Close();
 				reader = null;
@@ -93,7 +93,7 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 		
-		public async Task<CResult> CreateAsync(SC_TIPO_VACANTETable Data, string vLOGIN_SISTEMA, string vESTACION)
+		public async Task<CResult> CreateAsync(SC_SOLICITUD_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
 			
@@ -102,9 +102,10 @@ namespace sguees.Repositories
 				var p = new List<CParameter>
 				{
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
-					new CParameter() {ParameterName="CORR_TIPO_VACANTE",Value=Data.CORR_TIPO_VACANTE,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput},
-					new CParameter() {ParameterName="NOMBRE_TIPO_VACANTE",Value=Data.NOMBRE_TIPO_VACANTE,DbType=System.Data.DbType.String},
-                    new CParameter() {ParameterName="REQUIERE_SUSTITUCION",Value=Data.REQUIERE_SUSTITUCION,DbType=System.Data.DbType.Boolean},
+					new CParameter() {ParameterName="CORR_SOLICITUD_EMPLEO",Value=Data.CORR_SOLICITUD_EMPLEO,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput},
+                    new CParameter() {ParameterName="FECHA_GENERACION",Value=Data.FECHA_GENERACION,DbType=System.Data.DbType.DateTime},
+                    new CParameter() {ParameterName="CORREO_INVITACION",Value=Data.CORREO_INVITACION,DbType=System.Data.DbType.String},
+                    new CParameter() {ParameterName="CORR_CANDIDATO",Value=null,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="ACTIVO",Value=Data.ACTIVO,DbType=System.Data.DbType.Boolean},
                     new CParameter() {ParameterName="USUARIO_CREA",Value=Data.USUARIO_CREA,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="ESTACION_CREA",Value=Data.ESTACION_CREA,DbType=System.Data.DbType.String},
@@ -119,13 +120,13 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
 				};
 				
-				var reader = await objData.Insert(_TableName,p,"CORR_TIPO_VACANTE",pWhere);
-				var response = new List<SC_TIPO_VACANTEView>().FromDataReader(reader).FirstOrDefault();
+				var reader = await objData.Insert(_TableName,p,"CORR_SOLICITUD_EMPLEO",pWhere);
+				var response = new List<SC_SOLICITUD_EMPLEOView>().FromDataReader(reader).FirstOrDefault();
 				
 				objResultado.Data = response;
 				objResultado.Result = true;
 				objResultado.RowsAffected = 1;
-				objResultado.CodeHelper = response.CORR_TIPO_VACANTE;
+				objResultado.CodeHelper = response.CORR_SOLICITUD_EMPLEO;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
 				objResultado.ErrorSource ="";
@@ -147,7 +148,7 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 		
-		public async Task<CResult> UpdateAsync(SC_TIPO_VACANTETable Data, string vLOGIN_SISTEMA, string vESTACION)
+		public async Task<CResult> UpdateAsync(SC_SOLICITUD_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
 			
@@ -155,9 +156,8 @@ namespace sguees.Repositories
 			{
 				var p = new List<CParameter>
 				{
-					new CParameter() {ParameterName="NOMBRE_TIPO_VACANTE",Value=Data.NOMBRE_TIPO_VACANTE,DbType=System.Data.DbType.String},
-                    new CParameter() {ParameterName="REQUIERE_SUSTITUCION",Value=Data.REQUIERE_SUSTITUCION,DbType=System.Data.DbType.Boolean},
-                    new CParameter() {ParameterName="ACTIVO",Value=Data.ACTIVO,DbType=System.Data.DbType.Boolean},
+                    new CParameter() {ParameterName="FECHA_GENERACION",Value=Data.FECHA_GENERACION,DbType=System.Data.DbType.DateTime},
+                    new CParameter() {ParameterName="CORREO_INVITACION",Value=Data.CORREO_INVITACION,DbType=System.Data.DbType.String},
                     new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="ESTACION_ACTU",Value=Data.ESTACION_ACTU,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="FECHA_ACTU",Value=Data.FECHA_ACTU,DbType=System.Data.DbType.DateTime},
@@ -166,11 +166,11 @@ namespace sguees.Repositories
 				var pWhere = new List<CParameter>
 				{
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
-					new CParameter() {ParameterName="CORR_TIPO_VACANTE",Value=Data.CORR_TIPO_VACANTE,DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="CORR_SOLICITUD_EMPLEO",Value=Data.CORR_SOLICITUD_EMPLEO,DbType=System.Data.DbType.Int32},
 				};
 				
 				var reader = await objData.Update(_TableName,p,pWhere);
-				var response = new List<SC_TIPO_VACANTEView>().FromDataReader(reader).FirstOrDefault();
+				var response = new List<SC_SOLICITUD_EMPLEOView>().FromDataReader(reader).FirstOrDefault();
 				
 				reader.Close();
 				reader = null;
@@ -178,7 +178,7 @@ namespace sguees.Repositories
 				objResultado.Data = response;
 				objResultado.Result = true;
 				objResultado.RowsAffected = 1;
-				objResultado.CodeHelper = response.CORR_TIPO_VACANTE;
+				objResultado.CodeHelper = response.CORR_SOLICITUD_EMPLEO;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
 				objResultado.ErrorSource ="";
@@ -200,7 +200,7 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 		
-		public async Task<CResult> DeleteAsync(SC_TIPO_VACANTETable Data, string vLOGIN_SISTEMA, string vESTACION)
+		public async Task<CResult> DeleteAsync(SC_SOLICITUD_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
 			
@@ -209,13 +209,13 @@ namespace sguees.Repositories
 				var pWhere = new List<CParameter>
 				{
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
-					new CParameter() {ParameterName="CORR_TIPO_VACANTE",Value=Data.CORR_TIPO_VACANTE,DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="CORR_SOLICITUD_EMPLEO",Value=Data.CORR_SOLICITUD_EMPLEO,DbType=System.Data.DbType.Int32},
 				};
 				
 				objResultado.RowsAffected = (int) await objData.Delete(_TableName,pWhere);
 				objResultado.Data = null;
 				objResultado.Result = true;
-				objResultado.CodeHelper = Data.CORR_TIPO_VACANTE;
+				objResultado.CodeHelper = Data.CORR_SOLICITUD_EMPLEO;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
 				objResultado.ErrorSource ="";
@@ -237,108 +237,108 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-        //Funcion para hacer update solo a ACTIVO para inactivar item
-        public async Task<CResult> DesactivateAsync(SC_TIPO_VACANTETable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult objResultado = new();
+        ////Funcion para hacer update solo a ACTIVO para inactivar item
+        //public async Task<CResult> DesactivateAsync(SC_TIPO_VACANTETable Data, string vLOGIN_SISTEMA, string vESTACION)
+        //{
+        //    CResult objResultado = new();
 
-            try
-            {
-                var p = new List<CParameter>
-                {
-                    new CParameter() {ParameterName="ACTIVO",Value=Data.ACTIVO,DbType=System.Data.DbType.Boolean},
-                    new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
-                    new CParameter() {ParameterName="ESTACION_ACTU",Value=Data.ESTACION_ACTU,DbType=System.Data.DbType.String},
-                    new CParameter() {ParameterName="FECHA_ACTU",Value=Data.FECHA_ACTU,DbType=System.Data.DbType.DateTime},
-                };
+        //    try
+        //    {
+        //        var p = new List<CParameter>
+        //        {
+        //            new CParameter() {ParameterName="ACTIVO",Value=Data.ACTIVO,DbType=System.Data.DbType.Boolean},
+        //            new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
+        //            new CParameter() {ParameterName="ESTACION_ACTU",Value=Data.ESTACION_ACTU,DbType=System.Data.DbType.String},
+        //            new CParameter() {ParameterName="FECHA_ACTU",Value=Data.FECHA_ACTU,DbType=System.Data.DbType.DateTime},
+        //        };
 
-                var pWhere = new List<CParameter>
-                {
-                    new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
-                    new CParameter() {ParameterName="CORR_TIPO_VACANTE",Value=Data.CORR_TIPO_VACANTE,DbType=System.Data.DbType.Int32},
-                };
+        //        var pWhere = new List<CParameter>
+        //        {
+        //            new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+        //            new CParameter() {ParameterName="CORR_TIPO_VACANTE",Value=Data.CORR_TIPO_VACANTE,DbType=System.Data.DbType.Int32},
+        //        };
 
-                var reader = await objData.Update(_TableName, p, pWhere);
-                var response = new List<SC_TIPO_VACANTEView>().FromDataReader(reader).FirstOrDefault();
+        //        var reader = await objData.Update(_TableName, p, pWhere);
+        //        var response = new List<SC_TIPO_VACANTEView>().FromDataReader(reader).FirstOrDefault();
 
-                reader.Close();
-                reader = null;
+        //        reader.Close();
+        //        reader = null;
 
-                objResultado.Data = response;
-                objResultado.Result = true;
-                objResultado.RowsAffected = 1;
-                objResultado.CodeHelper = response.CORR_TIPO_VACANTE;
-                objResultado.ErrorCode = 0;
-                objResultado.ErrorMessage = "";
-                objResultado.ErrorSource = "";
-            }
-            catch (System.Exception e)
-            {
-                objResultado.Data = null;
-                objResultado.Result = false;
-                objResultado.CodeHelper = 0;
-                objResultado.ErrorCode = -1;
-                objResultado.ErrorMessage = e.Message;
-                objResultado.ErrorSource += $"[{e.Source}]";
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
+        //        objResultado.Data = response;
+        //        objResultado.Result = true;
+        //        objResultado.RowsAffected = 1;
+        //        objResultado.CodeHelper = response.CORR_TIPO_VACANTE;
+        //        objResultado.ErrorCode = 0;
+        //        objResultado.ErrorMessage = "";
+        //        objResultado.ErrorSource = "";
+        //    }
+        //    catch (System.Exception e)
+        //    {
+        //        objResultado.Data = null;
+        //        objResultado.Result = false;
+        //        objResultado.CodeHelper = 0;
+        //        objResultado.ErrorCode = -1;
+        //        objResultado.ErrorMessage = e.Message;
+        //        objResultado.ErrorSource += $"[{e.Source}]";
+        //    }
+        //    finally
+        //    {
+        //        objData.objConnection.Close();
+        //    }
 
-            return objResultado;
-        }
+        //    return objResultado;
+        //}
 
-        //Funcion para hacer update solo a ACTIVO para reactivar item
-        public async Task<CResult> ReactivateAsync(SC_TIPO_VACANTETable Data, string vLOGIN_SISTEMA, string vESTACION)
-        {
-            CResult objResultado = new();
+        ////Funcion para hacer update solo a ACTIVO para reactivar item
+        //public async Task<CResult> ReactivateAsync(SC_TIPO_VACANTETable Data, string vLOGIN_SISTEMA, string vESTACION)
+        //{
+        //    CResult objResultado = new();
 
-            try
-            {
-                var p = new List<CParameter>
-                {
-                    new CParameter() {ParameterName="ACTIVO",Value=Data.ACTIVO,DbType=System.Data.DbType.Boolean},
-                    new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
-                    new CParameter() {ParameterName="ESTACION_ACTU",Value=Data.ESTACION_ACTU,DbType=System.Data.DbType.String},
-                    new CParameter() {ParameterName="FECHA_ACTU",Value=Data.FECHA_ACTU,DbType=System.Data.DbType.DateTime},
-                };
+        //    try
+        //    {
+        //        var p = new List<CParameter>
+        //        {
+        //            new CParameter() {ParameterName="ACTIVO",Value=Data.ACTIVO,DbType=System.Data.DbType.Boolean},
+        //            new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
+        //            new CParameter() {ParameterName="ESTACION_ACTU",Value=Data.ESTACION_ACTU,DbType=System.Data.DbType.String},
+        //            new CParameter() {ParameterName="FECHA_ACTU",Value=Data.FECHA_ACTU,DbType=System.Data.DbType.DateTime},
+        //        };
 
-                var pWhere = new List<CParameter>
-                {
-                    new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
-                    new CParameter() {ParameterName="CORR_TIPO_VACANTE",Value=Data.CORR_TIPO_VACANTE,DbType=System.Data.DbType.Int32},
-                };
+        //        var pWhere = new List<CParameter>
+        //        {
+        //            new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+        //            new CParameter() {ParameterName="CORR_TIPO_VACANTE",Value=Data.CORR_TIPO_VACANTE,DbType=System.Data.DbType.Int32},
+        //        };
 
-                var reader = await objData.Update(_TableName, p, pWhere);
-                var response = new List<SC_TIPO_VACANTEView>().FromDataReader(reader).FirstOrDefault();
+        //        var reader = await objData.Update(_TableName, p, pWhere);
+        //        var response = new List<SC_TIPO_VACANTEView>().FromDataReader(reader).FirstOrDefault();
 
-                reader.Close();
-                reader = null;
+        //        reader.Close();
+        //        reader = null;
 
-                objResultado.Data = response;
-                objResultado.Result = true;
-                objResultado.RowsAffected = 1;
-                objResultado.CodeHelper = response.CORR_TIPO_VACANTE;
-                objResultado.ErrorCode = 0;
-                objResultado.ErrorMessage = "";
-                objResultado.ErrorSource = "";
-            }
-            catch (System.Exception e)
-            {
-                objResultado.Data = null;
-                objResultado.Result = false;
-                objResultado.CodeHelper = 0;
-                objResultado.ErrorCode = -1;
-                objResultado.ErrorMessage = e.Message;
-                objResultado.ErrorSource += $"[{e.Source}]";
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
+        //        objResultado.Data = response;
+        //        objResultado.Result = true;
+        //        objResultado.RowsAffected = 1;
+        //        objResultado.CodeHelper = response.CORR_TIPO_VACANTE;
+        //        objResultado.ErrorCode = 0;
+        //        objResultado.ErrorMessage = "";
+        //        objResultado.ErrorSource = "";
+        //    }
+        //    catch (System.Exception e)
+        //    {
+        //        objResultado.Data = null;
+        //        objResultado.Result = false;
+        //        objResultado.CodeHelper = 0;
+        //        objResultado.ErrorCode = -1;
+        //        objResultado.ErrorMessage = e.Message;
+        //        objResultado.ErrorSource += $"[{e.Source}]";
+        //    }
+        //    finally
+        //    {
+        //        objData.objConnection.Close();
+        //    }
 
-            return objResultado;
-        }
+        //    return objResultado;
+        //}
     }
 }
