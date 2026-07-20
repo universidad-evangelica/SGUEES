@@ -99,12 +99,26 @@ namespace sguees.Repositories
 
             try
             {
+                var pConteo = new List<CParameter>
+                {
+                    new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+                    new CParameter() {ParameterName="CORR_FLUJO_PROCESO",Value=Data.CORR_FLUJO_PROCESO,DbType=System.Data.DbType.Int32},
+                };
+
+                var readerConteo = await objData.GetDataReader("V_SEG_FLUJO_PASO", pConteo);
+                var responseConteo = new List<SEG_FLUJO_PASOView>().FromDataReader(readerConteo).ToList();
+                readerConteo.Close();
+                readerConteo = null;
+
+                var pasosExistentes = responseConteo.Count;
+                decimal ordenSiguiente = pasosExistentes + 1;
+
                 var p = new List<CParameter>
                 {
                     new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_PASO",Value=Data.CORR_PASO,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput},
                     new CParameter() {ParameterName="CORR_FLUJO_PROCESO",Value=Data.CORR_FLUJO_PROCESO,DbType=System.Data.DbType.Int32},
-                    new CParameter() {ParameterName="ORDEN",Value=Data.ORDEN,DbType=System.Data.DbType.Decimal},
+                    new CParameter() {ParameterName="ORDEN",Value=ordenSiguiente,DbType=System.Data.DbType.Decimal},
                     new CParameter() {ParameterName="NOMBRE_PASO",Value=Data.NOMBRE_PASO,DbType=System.Data.DbType.String},
                     new CParameter() {ParameterName="CORR_ACTOR_ORIGEN",Value=Data.CORR_ACTOR_ORIGEN,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_ESTADO_ORIGEN",Value=Data.CORR_ESTADO_ORIGEN,DbType=System.Data.DbType.Int32},
@@ -222,18 +236,15 @@ namespace sguees.Repositories
                 var pCheck = new List<CParameter>
                 {
                     new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
-                    new CParameter() {ParameterName="CORR_PASO",Value=Data.CORR_PASO,DbType=System.Data.DbType.Int32},
+                    new CParameter() {ParameterName="CORR_PASO_ACTUAL",Value=Data.CORR_PASO,DbType=System.Data.DbType.Int32},
                 };
 
                 var reader = await objData.GetDataReader("V_SEG_FLUJO_INSTANCIA", pCheck);
-                int count = 0;
-                if (reader.Read())
-                {
-                    count = Convert.ToInt32(reader["COUNT"]);
-                }
+                var responseInstancias = new List<SEG_FLUJO_INSTANCIAView>().FromDataReader(reader).ToList();
                 reader.Close();
                 reader = null;
 
+                var count = responseInstancias.Count;
                 if (count > 0)
                 {
                     objResultado.Data = null;

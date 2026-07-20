@@ -69,9 +69,7 @@
                     </div>
                     <div *dxTemplate="let cellInfo of 'CORR_UNIDAD_DESTINOTemplate'">
                         <div *ngIf="mostrarUnidadDestino; else unidadDestinoHint">
-                            <div style="font-size: 14px; font-weight: 500; margin-bottom: 8px; color: #3a3a3a;">
-                                Unidad destino (NULL->Inferira unidad documento)
-                            </div>
+                           
                             <dx-select-box
                                 [dataSource]="unidadesPaso"
                                 [(value)]="pasoModel.CORR_UNIDAD_DESTINO"
@@ -86,9 +84,21 @@
                         </div>
                         <ng-template #unidadDestinoHint>
                             <span style="color: #999; font-size: 12px; padding: 28px 0 6px; display: block;">
-                                Seleccione un actor destino que requiera unidad (1, 2 o 3)
+                                El actor seleccionado no requiere de unidad
                             </span>
                         </ng-template>
+                    </div>
+                      <div *dxTemplate="let cellInfo of 'CORR_ESTADO_ORIGENLookup'">
+                     <app-data-lookup
+                            [model]="mCORR_ESTADO_ORIGEN"
+                            [(value)]="pasoModel.CORR_ESTADO_ORIGEN"
+                            [valueExpr]="'CORR_ESTADO'"
+                            [displayExpr]="'NOMBRE_ESTADO'"
+                            [selectedRowKeys]="selectedLookUpCORR_ESTADO_ORIGEN"
+                            [readOnly]="pasoReadOnly"
+                          
+                        >
+                        </app-data-lookup>
                     </div>
                 </dx-form>
             </div>
@@ -100,9 +110,10 @@
                     [models]="pasos"
                     [columns]="columnsPasos"
                     [summary]="summaryPasos"
-                    [keyExpr]="'CORR_FLUJO_PASO'"
+                    [keyExpr]="'CORR_PASO'"
                     [permiteEditar]="getPermiteEditarPaso"
                     [permiteDele]="getPermiteDelePaso"
+                    [customButtons]="customButtonsPasos"
                     (rowDblClick)="rowDblClickPaso($event)"
                     (rowRemoving)="rowRemovingPaso($event)"
                     (focusedRowChanged)="focusedRowChangedPaso($event)"
@@ -133,6 +144,25 @@
     (editClick)="editarClick($event)"
 >
 </app-data-grid-mtto>
+
+<!-- Modal: Acciones del Paso -->
+<dx-popup
+    [(visible)]="modalAccionesVisible"
+    [title]="'Acciones del Paso: ' + (pasoSeleccionadoAcciones?.NOMBRE_PASO || '')"
+    [showCloseButton]="true"
+    [width]="'80%'"
+    [height]="'70%'"
+    [dragEnabled]="true"
+    [resizeEnabled]="true"
+    (onHidden)="cerrarModalAcciones()"
+>
+    <dxo-position at="center" my="center"></dxo-position>
+    <div *dxTemplate="let data of 'content'">
+        <dx-scroll-view width="100%" height="100%">
+            <!-- Aquí irá el grid de SEG_FLUJO_PASO_ACCION_ESTADO -->
+        </dx-scroll-view>
+    </div>
+</dx-popup>
 
 <dx-load-panel
     #loadPanel

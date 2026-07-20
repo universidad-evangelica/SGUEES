@@ -127,5 +127,13 @@ namespace sguees.Controllers
             
             return await _service.GetAllAsync(Data);
         }
+
+        [HttpGet("GetCORR_ESTADO_SEG_FLUJO_PROCESO")]
+        [Authorize(Policy = "/seg-flujo-proceso|R")]
+        public async Task<CResult> GetCORR_ESTADO_SEG_FLUJO_PROCESO([FromQuery] SEG_FLUJO_ESTADOParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
+        }
     }
 }

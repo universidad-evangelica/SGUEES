@@ -11,7 +11,7 @@ import { SegFlujoProceso } from './models/seg-flujo-proceso';
 import { SegFlujoProcesoService } from './seg-flujo-proceso.service';
 import { SegFlujoPasoService } from './seg-flujo-paso.service';
 import { SegFlujoPaso } from './models/seg-flujo-paso';
-
+import { IParam } from 'src/app/FxAPI/IParam';
 @Component({
     selector: 'app-seg-flujo-proceso',
     templateUrl: './seg-flujo-proceso.component.html',
@@ -31,6 +31,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
         this.columnsPasos = this.servicePaso.getColumns();
         this.summaryPasos = this.servicePaso.getSummary();
         this.itemsPasos = this.servicePaso.getItems();
+        this.actualizarVisibilidadLabelUnidad();
     }
 
     //#region <Declarando Variables>
@@ -39,8 +40,21 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
     mCORR_TIPO_DOCUMENTO: any;
     mCORR_ACTOR_ORIGEN: any;
     mCORR_ACTOR_DESTINO: any;
+    mCORR_ESTADO_ORIGEN: any;
     unidadesPaso: any[] = [];
     mostrarUnidadDestino: boolean = false;
+
+    // Modal acciones de paso
+    modalAccionesVisible = false;
+    pasoSeleccionadoAcciones: any = null;
+    customButtonsPasos = [
+        {
+            icon: 'folder',
+            hint: 'Ver acciones del paso',
+            stylingMode: 'text',
+            onClick: (e: any) => this.abrirModalAcciones(e),
+        },
+    ];
 
     // Variables para Pasos
     pasos: SegFlujoPaso[] = [];
@@ -54,6 +68,9 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
     selectedLookUpCORR_TIPO_DOCUMENTO(vRow: any): any {
         return vRow[0].CORR_TIPO_DOCUMENTO;
     }
+    selectedLookUpCORR_ESTADO_ORIGEN(vRow: any): any {
+        return vRow[0].CORR_ESTADO;
+    }
     // #endregion
 
     //#region <Inicializando Opciones>
@@ -63,6 +80,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
         this.getCORR_ACTOR_ORIGEN();
         this.getCORR_ACTOR_DESTINO();
         this.cargarUnidadesPaso();
+        this.cargarEstadosPaso(this.model.CORR_TIPO_DOCUMENTO);
         this.consultar();
     }
 
@@ -84,12 +102,33 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                 next: (response: any) => {
                     if (response.Result) {
                         this.mCORR_TIPO_DOCUMENTO = response.Data;
+                        this.cargarEstadosPasoDesdeModelo();
                     }
                 },
                 error: (error: any) => {
                     this.notifyFx(error, NotifyType.Error);
                 },
             });
+    }
+
+    cargarEstadosPasoDesdeModelo() {
+        this.cargarEstadosPaso(this.model?.CORR_TIPO_DOCUMENTO ?? 0);
+    }
+
+    actualizarVisibilidadLabelUnidad() {
+        this.itemsPasos = (this.itemsPasos || []).map((item: any) => {
+            if (item?.dataField !== 'CORR_UNIDAD_DESTINO') {
+                return item;
+            }
+
+            return {
+                ...item,
+                label: {
+                    ...(item.label || {}),
+                    visible: this.mostrarUnidadDestino,
+                },
+            };
+        });
     }
 
     getCORR_ACTOR_ORIGEN() {
@@ -162,8 +201,37 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
             });
     }
 
+    cargarEstadosPaso(corrTipoDocumento: number) {
+        if (!corrTipoDocumento || corrTipoDocumento <= 0) {
+            this.mCORR_ESTADO_ORIGEN = [];
+            return;
+        }
+
+        const xWhere: IParam[] = [{ Parameter: 'CORR_TIPO_DOCUMENTO', Value: corrTipoDocumento }];
+        this.appInfoService
+            .getLookUp(
+                'SEG_FLUJO_PROCESO',
+                'SEG_FLUJO_ESTADO',
+                'GetCORR_ESTADO',
+                xWhere,
+                environment.UrlGENERALAPI
+            )
+            .pipe(take(1))
+            .subscribe({
+                 next: (response: any) => {
+                    if (response.Result) {
+                        this.mCORR_ESTADO_ORIGEN = response.Data;
+                    }
+                },
+                error: (error: any) => {
+                    this.notifyFx(error, NotifyType.Error);
+                },
+            });
+    }
+
     onActorDestinoChanged(corrActor: number) {
-        this.mostrarUnidadDestino = corrActor !== 1 && corrActor !== 2 && corrActor !== 3;
+        this.mostrarUnidadDestino =  corrActor <=3 && corrActor !==1;
+        this.actualizarVisibilidadLabelUnidad();
         if (!this.mostrarUnidadDestino && this.pasoModel) {
             this.pasoModel.CORR_UNIDAD_DESTINO = null;
         }
@@ -194,6 +262,11 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                 });
         }
     }
+
+        override focusedRowChanged(e: any): void {
+            super.focusedRowChanged(e);
+            this.cargarEstadosPasoDesdeModelo();
+        }
     // #endregion
 
     //#region <Metodos Mtto>
@@ -208,7 +281,9 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
 
     override fillData(xModel?: SegFlujoProceso): SegFlujoProceso {
         if (xModel !== undefined) {
+            this.cargarPasos();
             return {
+                
                 CORR_EMPRESA: xModel.CORR_EMPRESA,
                 CORR_FLUJO_PROCESO: xModel.CORR_FLUJO_PROCESO,
                 CORR_TIPO_DOCUMENTO: xModel.CORR_TIPO_DOCUMENTO,
@@ -224,6 +299,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                 FECHA_ACTU: xModel.FECHA_ACTU,
                 NOMBRE_TIPO_DOCUMENTO: xModel.NOMBRE_TIPO_DOCUMENTO,
             };
+             
         } else {
             return {
                 CORR_EMPRESA: 1,
@@ -242,6 +318,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                 NOMBRE_TIPO_DOCUMENTO: '',
             };
         }
+        
     }
 
     consultar() {
@@ -440,7 +517,8 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
         this.pasoModel = {
             CORR_EMPRESA: 1,
             CORR_FLUJO_PROCESO: this.model.CORR_FLUJO_PROCESO,
-            CORR_FLUJO_PASO: 0,
+            CORR_PASO: 0,
+            CORR_ESTADO_ORIGEN: 0,
             CORR_ACTOR_ORIGEN: 0,
             CORR_ACTOR_DESTINO: 0,
             CORR_UNIDAD_DESTINO: null,
@@ -458,6 +536,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
         this.banderaMttoPaso = UpdateType.Add;
         this.pasoReadOnly = false;
         this.mostrarUnidadDestino = false;
+        this.actualizarVisibilidadLabelUnidad();
         this.habilitarPaso();
     }
 
@@ -505,7 +584,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
                     next: (response: any) => {
                         if (response.Result) {
                             const vIndex = this.pasos.findIndex(
-                                (item: any) => item.CORR_FLUJO_PASO === response.Data.CORR_FLUJO_PASO
+                                (item: any) => item.CORR_PASO === response.Data.CORR_PASO
                             );
                             this.pasos[vIndex] = response.Data;
                             this.pasoModel = null;
@@ -533,8 +612,9 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
         this.banderaMttoPaso = UpdateType.Browse;
         this.pasoReadOnly = false;
         this.mostrarUnidadDestino = false;
-        if (this.pasoModel && this.pasoModel.CORR_FLUJO_PASO > 0) {
-            const original = this.pasos.find(p => p.CORR_FLUJO_PASO === this.pasoModel?.CORR_FLUJO_PASO);
+        this.actualizarVisibilidadLabelUnidad();
+        if (this.pasoModel && this.pasoModel.CORR_PASO > 0) {
+            const original = this.pasos.find(p => p.CORR_PASO === this.pasoModel?.CORR_PASO);
             if (original) {
                 this.pasoModel = { ...original };
             }
@@ -549,7 +629,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
     editarPaso(event: any): void {
         const paso = event?.row?.data || event;
 
-        if (!paso || !paso.CORR_FLUJO_PASO) {
+        if (!paso || !paso.CORR_PASO) {
             console.warn('⚠️ Datos de paso no válidos:', paso);
             return;
         }
@@ -558,6 +638,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
         this.banderaMttoPaso = UpdateType.Update;
         this.pasoReadOnly = false;
         this.mostrarUnidadDestino = paso.CORR_ACTOR_DESTINO !== 1 && paso.CORR_ACTOR_DESTINO !== 2 && paso.CORR_ACTOR_DESTINO !== 3;
+        this.actualizarVisibilidadLabelUnidad();
         this.habilitarPaso();
     }
     //#endregion
@@ -595,7 +676,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
         if (!e.data) return;
 
         this.servicePaso
-            .delete(e.data.CORR_FLUJO_PASO)
+            .delete(e.data.CORR_PASO)
             .pipe(take(1))
             .subscribe({
                 next: (response: any) => {
@@ -629,6 +710,18 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
      */
     habilitarPaso(): void {
         this.pasoReadOnly = false;
+    }
+    //#endregion
+
+    //#region <Modal Acciones de Paso>
+    abrirModalAcciones(e: any): void {
+        this.pasoSeleccionadoAcciones = e.row?.data || null;
+        this.modalAccionesVisible = true;
+    }
+
+    cerrarModalAcciones(): void {
+        this.modalAccionesVisible = false;
+        this.pasoSeleccionadoAcciones = null;
     }
     //#endregion
 }

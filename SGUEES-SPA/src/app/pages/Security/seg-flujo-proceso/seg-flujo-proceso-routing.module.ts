@@ -10,6 +10,8 @@ import { DxTabPanelModule } from 'devextreme-angular/ui/tab-panel';
 import { DxDropDownBoxModule } from 'devextreme-angular/ui/drop-down-box';
 import { DxCheckBoxModule } from 'devextreme-angular/ui/check-box';
 import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
+import { DxPopupModule } from 'devextreme-angular/ui/popup';
+import { DxScrollViewModule } from 'devextreme-angular/ui/scroll-view';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
@@ -33,6 +35,8 @@ const routes: Routes = [{ path: '', component: SegFlujoProcesoComponent }];
         DataGridMttoModule,
         BarraDataMttoModule,
         DataLookupModule,
+        DxPopupModule,
+        DxScrollViewModule,
     ],
     exports: [RouterModule],
     declarations: [SegFlujoProcesoComponent],

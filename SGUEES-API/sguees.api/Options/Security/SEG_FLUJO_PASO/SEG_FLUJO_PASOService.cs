@@ -62,9 +62,6 @@ namespace sguees.Services
             if (Data.NOMBRE_PASO.Length > 100)
                 return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "El nombre del paso no puede exceder los 100 caracteres" };
 
-            if (Data.ORDEN <= 0)
-                return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "El orden del paso debe ser mayor a 0" };
-
             if (Data.CORR_FLUJO_PROCESO <= 0)
                 return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "Debe seleccionar un flujo" };
 

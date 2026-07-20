@@ -1,8 +1,9 @@
 export interface SegFlujoPaso {
     CORR_EMPRESA: number;
     CORR_FLUJO_PROCESO: number;
-    CORR_FLUJO_PASO: number;
+    CORR_PASO: number;
     NUMERO_PASO: number;
+    CORR_ESTADO_ORIGEN: number;
     CORR_ACTOR_ORIGEN: number;
     CORR_ACTOR_DESTINO: number;
     CORR_UNIDAD_DESTINO: number | null;

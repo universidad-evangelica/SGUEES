@@ -26,7 +26,9 @@ namespace sguees.Repositories
             {
                 var reader = await objData.GetDataReader("V_SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES", xWhere);
                 var response = new List<SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADESView>().FromDataReader(reader).ToList();
-
+                response = response
+                .OrderBy(x => x.CODIGO_UNIDAD)
+                 .ToList();
                 reader.Close();
                 reader = null;
 

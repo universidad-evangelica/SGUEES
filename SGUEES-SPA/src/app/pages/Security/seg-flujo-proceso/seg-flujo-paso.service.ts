@@ -23,29 +23,24 @@ export class SegFlujoPasoService {
     }
 
     update(model: SegFlujoPaso): Observable<IResult> {
-        let xWhere: IParam[] = [{ Parameter: 'CORR_FLUJO_PASO', Value: model.CORR_FLUJO_PASO }];
+        let xWhere: IParam[] = [{ Parameter: 'CORR_PASO', Value: model.CORR_PASO }];
         return this.repo.update(model, xWhere);
     }
 
-    delete(CORR_FLUJO_PASO: number): Observable<IResult> {
-        let xWhere: IParam[] = [{ Parameter: 'CORR_FLUJO_PASO', Value: CORR_FLUJO_PASO }];
+    delete(CORR_PASO: number): Observable<IResult> {
+        let xWhere: IParam[] = [{ Parameter: 'CORR_PASO', Value: CORR_PASO }];
         return this.repo.delete(xWhere);
     }
 
     getColumns(): any {
         return [
-            { dataField: 'CORR_FLUJO_PASO', caption: 'Corr.', width: 80 },
-            { dataField: 'NUMERO_PASO', caption: 'Número', width: 100 },
-            { dataField: 'NOMBRE_PASO', caption: 'Nombre', width: 200 },
-            { dataField: 'DESCRIPCION_PASO', caption: 'Descripción', width: 300 },
-            {
-                dataField: 'ACTIVO',
-                caption: 'Activo',
-                width: 80,
-                dataType: 'boolean',
-                customizeText: (e: any) => e.value ? 'Sí' : 'No',
-            },
-            { dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 120 },
+            { dataField: 'CORR_PASO', caption: 'Corr.', width: 100 },
+            { dataField: 'ORDEN', caption: 'Paso', width: 100 },
+            { dataField: 'NOMBRE_PASO', caption: 'Nombre del paso', width: 300 },
+            { dataField: 'NOMBRE_ACTOR', caption: 'Actor origen', width: 200 },
+            { dataField: 'NOMBRE_ACTOR_DESTINO', caption: 'Actor destino', width: 200 },
+        
+            { dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 150 },
             { dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 150, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
         ];
     }
@@ -54,7 +49,7 @@ export class SegFlujoPasoService {
         return {
             totalItems: [
                 {
-                    column: 'CORR_FLUJO_PASO',
+                    column: 'CORR_PASO',
                     summaryType: 'count',
                     valueFormat: '#,##0',
                     displayFormat: 'Cant: {0}',
@@ -67,7 +62,7 @@ export class SegFlujoPasoService {
         return [
             // Fila 1: total 8 cols
             {
-                dataField: 'CORR_FLUJO_PASO',
+                dataField: 'CORR_PASO',
                 label: { text: 'Corr.' },
                 colSpan: 1,
                 editorOptions: { readOnly: true },
@@ -96,29 +91,17 @@ export class SegFlujoPasoService {
             },
             {
                 dataField: 'CORR_UNIDAD_DESTINO',
-                label: { text: 'Unidad destino (NULL->Inferirá unidad documento)', visible: false },
-                colSpan: 2,
+                label: { text: 'Seleccione la unidad->Null resolvera a la instancia del documento', visible :false },
+                colSpan: 4,
                 template: 'CORR_UNIDAD_DESTINOTemplate',
             },
-            // Fila 2: total 8 cols
             {
-                dataField: 'DESCRIPCION_PASO',
-                label: { text: 'Descripción' },
-                colSpan: 7,
-                editorType: 'dxTextArea',
-                editorOptions: {
-                    placeholder: 'Descripción del paso...',
-                    showClearButton: true,
-                    maxLength: 500,
-                    minHeight: 100,
-                },
+                dataField: 'CORR_ESTADO_ORIGEN',
+                label: { text: 'Selecciones el estado de origen' },
+                colSpan: 4,
+                template: 'CORR_ESTADO_ORIGENLookup',
             },
-            {
-                dataField: 'ACTIVO',
-                label: { text: 'Activo' },
-                colSpan: 1,
-                editorType: 'dxCheckBox',
-            },
+          
         ];
     }
 
