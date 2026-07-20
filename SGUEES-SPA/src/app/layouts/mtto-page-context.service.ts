@@ -29,6 +29,7 @@ export class MttoPageContextService {
   private addHandler: (() => void) | null = null;
   private refreshHandler: (() => void) | null = null;
   private gridRefreshHandler: (() => void) | null = null;
+  private gridExportHandler: (() => void) | null = null;
 
   readonly changes$ = this.state$.asObservable();
 
@@ -53,8 +54,9 @@ export class MttoPageContextService {
     this.addHandler?.();
   }
 
-  registerGridHandlers(handlers?: { refresh?: () => void }): void {
+  registerGridHandlers(handlers?: { refresh?: () => void; export?: () => void }): void {
     this.gridRefreshHandler = handlers?.refresh ?? null;
+    this.gridExportHandler = handlers?.export ?? null;
   }
 
   triggerRefresh(): void {
@@ -64,10 +66,15 @@ export class MttoPageContextService {
     this.refreshHandler?.();
   }
 
+  triggerExport(): void {
+    this.gridExportHandler?.();
+  }
+
   reset(): void {
     this.addHandler = null;
     this.refreshHandler = null;
     this.gridRefreshHandler = null;
+    this.gridExportHandler = null;
     this.state$.next(INITIAL);
   }
 }

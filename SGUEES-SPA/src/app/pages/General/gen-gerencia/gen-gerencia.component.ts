@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
+
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
@@ -14,7 +15,6 @@ import { GenGerenciaService } from './gen-gerencia.service';
 @Component({
 	selector: 'app-gen-gerencia',
 	templateUrl: './gen-gerencia.component.html',
-	styleUrls: ['./gen-gerencia.component.scss'],
 })
 // Qué hace: coordina la grilla, el formulario y las llamadas al servicio de gerencias.
 // Cómo: extiende CBaseComponent y usa GenGerenciaService para el CRUD; carga divisiones vía getLookUp.
@@ -34,6 +34,13 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 	divisionInvalida = false;
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Gerencias';
+
+	private readonly pagedStoreCacheState: MttoPagedStoreCacheState = createMttoPagedStoreCacheState(
+		this.mttoPageSize,
+		this.mttoApiPageSize
+	);
+	private pagedStoreInflightKey: string | null = null;
+	private pagedStoreInflightPromise: Promise<MttoPagedStorePageResult> | null = null;
 
 	constructor(
 		public override appInfoService: AppInfoService,

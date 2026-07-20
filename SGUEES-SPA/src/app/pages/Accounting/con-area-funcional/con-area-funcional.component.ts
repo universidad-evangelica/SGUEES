@@ -16,8 +16,6 @@ export class ConAreaFuncionalComponent extends CBaseComponent implements OnInit 
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_AREA_FUNCIONAL';
 
-	private readonly maintenanceSubtitulo = 'Mantenimiento de áreas funcionales';
-
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -35,7 +33,6 @@ export class ConAreaFuncionalComponent extends CBaseComponent implements OnInit 
 
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.consultar();
 	}
 	// #endregion
@@ -43,7 +40,6 @@ export class ConAreaFuncionalComponent extends CBaseComponent implements OnInit 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
 		}
 	}
 

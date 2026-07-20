@@ -35,6 +35,9 @@
       *ngIf="gridVisible"
       class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise"
       [class.sguees-data-grid-mtto--unified]="isUnifiedActive"
+      [class.sguees-data-grid-mtto--grouping]="showGrouping"
+      [class.sguees-data-grid-mtto--native-toolbar]="nativeToolbar"
+      [class.sguees-data-grid-mtto--no-header-toolbar]="shouldHideNativeHeaderToolbar"
       [class.sguees-data-grid-mtto--hidden]="showEmptyState && isEmptyData && !loading"
       [class.sguees-grid-density-compact]="compactDensity"
       #gData
@@ -44,7 +47,7 @@
       [remoteOperations]="remoteOperations"
       [columnAutoWidth]="columnAutoWidth"
       [showBorders]="true"
-      [showColumnLines]="true"
+      [showColumnLines]="false"
       [showRowLines]="true"
       [rowAlternationEnabled]="true"
       [hoverStateEnabled]="true"
@@ -66,10 +69,18 @@
       (onContentReady)="OnContentReady($event)"
       [columns]="displayColumns.length ? displayColumns : columns"
       [summary]="summary"
-      [filterSyncEnabled]="filterSyncEnabled"
+      [filterSyncEnabled]="effectiveFilterSyncEnabled"
       [filterValue]="filterValue"
     >
-      <dxo-toolbar>
+      <dxo-toolbar *ngIf="useCustomToolbar">
+        <dxi-item
+          *ngIf="showGrouping"
+          name="groupPanel"
+          location="before"
+          locateInMenu="never"
+          cssClass="sguees-grid-toolbar-group-panel"
+        ></dxi-item>
+
         <dxi-item
           *ngIf="toolbarBeforeTemplate"
           location="before"
@@ -80,14 +91,14 @@
         </dxi-item>
 
         <dxi-item
-          *ngIf="isUnifiedActive && effectiveShowAdd"
+          *ngIf="isUnifiedActive && effectiveShowAdd && !nativeToolbar"
           location="before"
           widget="dxButton"
           [options]="optAdd"
         ></dxi-item>
 
         <dxi-item
-          *ngIf="isUnifiedActive && effectiveShowAdd && showPrimaryToolbarDivider"
+          *ngIf="isUnifiedActive && effectiveShowAdd && showPrimaryToolbarDivider && !nativeToolbar"
           location="before"
           locateInMenu="auto"
         >
@@ -95,14 +106,14 @@
         </dxi-item>
 
         <dxi-item
-          *ngIf="effectiveShowEstadoToolbar"
+          *ngIf="effectiveShowEstadoToolbarInGrid"
           location="before"
           widget="dxButton"
           [options]="optActivar"
         ></dxi-item>
 
         <dxi-item
-          *ngIf="effectiveShowEstadoToolbar"
+          *ngIf="effectiveShowEstadoToolbarInGrid"
           location="before"
           widget="dxButton"
           [options]="optDesactivar"
@@ -136,14 +147,14 @@
         ></dxi-item>
 
         <dxi-item
-          *ngIf="effectiveShowSearch"
+          *ngIf="effectiveShowSearch && !nativeToolbar"
           name="searchPanel"
           location="after"
           locateInMenu="auto"
         ></dxi-item>
 
         <dxi-item
-          *ngIf="effectiveShowRefresh"
+          *ngIf="effectiveShowRefresh && !nativeToolbar"
           location="after"
           locateInMenu="auto"
           showText="inMenu"
@@ -151,12 +162,12 @@
           [options]="optRefresh"
         ></dxi-item>
 
-        <dxi-item *ngIf="showActionsDivider" location="after" locateInMenu="auto">
+        <dxi-item *ngIf="showActionsDivider && !nativeToolbar" location="after" locateInMenu="auto">
           <div class="separator sguees-grid-toolbar-divider"></div>
         </dxi-item>
 
         <dxi-item
-          *ngIf="effectiveShowExport"
+          *ngIf="effectiveShowExport && !nativeToolbar"
           name="exportButton"
           location="after"
           locateInMenu="auto"
@@ -174,6 +185,12 @@
       </dxo-toolbar>
 
       <dxo-editing mode="row" [refreshMode]="'reshape'" [allowDeleting]="true" [useIcons]="true" [confirmDelete]="confirmDelete"></dxo-editing>
+      <dxo-selection
+        *ngIf="selectionMode === 'multiple'"
+        mode="multiple"
+        showCheckBoxesMode="always"
+        selectAllMode="page"
+      ></dxo-selection>
       <dxo-load-panel [enabled]="true"></dxo-load-panel>
 
       <dxo-search-panel
@@ -181,13 +198,23 @@
         [placeholder]="searchPlaceholder"
       ></dxo-search-panel>
       
-      <dxo-export [enabled]="effectiveShowExport" fileName="gData"></dxo-export>
+      <dxo-export [enabled]="exportFeatureEnabled" [fileName]="exportFileName"></dxo-export>
       <dxo-column-chooser [enabled]="showColumnChooser" mode="select"></dxo-column-chooser>
       <dxo-paging [enabled]="true" [pageSize]="activePageSize"></dxo-paging>
       
       <dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
 
       <dxo-header-filter [visible]="true"></dxo-header-filter>
+
+      <dxo-group-panel
+        [visible]="showGrouping"
+        emptyPanelText="Arrastre el encabezado de una columna aquí para agrupar"
+      ></dxo-group-panel>
+      <dxo-grouping [autoExpandAll]="true" [contextMenuEnabled]="true"></dxo-grouping>
+      <dxo-filter-panel
+        [visible]="showFilterPanel"
+        [customizeText]="onCustomizeFilterPanelText"
+      ></dxo-filter-panel>
 
       <dxo-pager
         [visible]="true"

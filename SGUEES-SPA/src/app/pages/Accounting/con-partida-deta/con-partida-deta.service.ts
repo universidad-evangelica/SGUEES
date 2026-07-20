@@ -17,13 +17,11 @@ export class ConPartidaDetaService {
 	}
 
 	getAll(param: any): Observable<IResult> {
-		let xWhere: IParam[] = [{ Parameter: 'CORR_PARTIDA', Value: param.CORR_PARTIDA }];
-		return this.repo.get(xWhere);
+		return this.repo.get(this.buildWhere(param));
 	}
 
 	get(param: any): Observable<IResult> {
-		let xWhere: IParam[] = [{ Parameter: 'CORR_PARTIDA_DETA', Value: param.CORR_PARTIDA_DETA }];
-		return this.repo.get(xWhere);
+		return this.repo.get(this.buildWhere(param, true));
 	}
 
 	insert(model: any): Observable<IResult> {
@@ -31,27 +29,24 @@ export class ConPartidaDetaService {
 	}
 
 	update(model: any): Observable<IResult> {
-		let xWhere: IParam[] = [{ Parameter: 'CORR_PARTIDA_DETA', Value: model.CORR_PARTIDA_DETA }];
-		return this.repo.update(model, xWhere);
+		return this.repo.update(model, this.buildWhere(model, true));
 	}
 
 	delete(model: any): Observable<IResult> {
+		return this.repo.delete(this.buildWhere(model, true));
+	}
+
+	private buildWhere(param: any, includeLine = false): IParam[] {
 		const xWhere: IParam[] = [
-			{ Parameter: 'CORR_PARTIDA_DETA', Value: model.CORR_PARTIDA_DETA },
+			{ Parameter: 'ANIO_PERIODO', Value: param.ANIO_PERIODO },
+			{ Parameter: 'MES_PERIODO', Value: param.MES_PERIODO },
+			{ Parameter: 'CORR_CLASE_PARTIDA', Value: param.CORR_CLASE_PARTIDA },
+			{ Parameter: 'CORR_PARTIDA', Value: param.CORR_PARTIDA },
 		];
-		if (model.CORR_PARTIDA) {
-			xWhere.push({ Parameter: 'CORR_PARTIDA', Value: model.CORR_PARTIDA });
+		if (includeLine && param.CORR_PARTIDA_DETA) {
+			xWhere.push({ Parameter: 'CORR_PARTIDA_DETA', Value: param.CORR_PARTIDA_DETA });
 		}
-		if (model.CORR_CLASE_PARTIDA) {
-			xWhere.push({ Parameter: 'CORR_CLASE_PARTIDA', Value: model.CORR_CLASE_PARTIDA });
-		}
-		if (model.ANIO_PERIODO) {
-			xWhere.push({ Parameter: 'ANIO_PERIODO', Value: model.ANIO_PERIODO });
-		}
-		if (model.MES_PERIODO) {
-			xWhere.push({ Parameter: 'MES_PERIODO', Value: model.MES_PERIODO });
-		}
-		return this.repo.delete(xWhere);
+		return xWhere;
 	}
 
 	getColumns(): any {

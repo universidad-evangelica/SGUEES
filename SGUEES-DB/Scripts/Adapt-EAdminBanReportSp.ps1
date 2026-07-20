@@ -1,0 +1,163 @@
+param(
+    [string]$SourceDir = "C:\Users\jonathan.avalos\Documents\proyecto para ERP\e-admin\e-Admin.db",
+    [string]$DestSpDir = "C:\Desarrollo GIT\SGUEES\SGUEES-DB\Stored Procedures",
+    [string]$DestViewDir = "C:\Desarrollo GIT\SGUEES\SGUEES-DB\Views"
+)
+
+function Adapt-SgueesBanSql {
+    param([string]$Content)
+
+    $c = $Content
+
+    $c = $c -replace '(?m)^\s*@CORR_SUSCRIPCION\s+int(?:=NULL)?,\s*\r?\n', ''
+    $c = $c -replace '(?m)^\s*@CORR_CONFI_PAIS\s+int(?:=NULL)?,\s*\r?\n', ''
+    $c = $c -replace '(?m)^\s*CORR_SUSCRIPCION int,\s*\r?\n', ''
+    $c = $c -replace '(?m)^\s*CORR_CONFI_PAIS int,\s*\r?\n', ''
+
+    if ($c -notmatch '@CORR_EMPRESA') {
+        $c = $c -replace '(?m)(CREATE PROCEDURE \[dbo\]\.\[[^\]]+\]\s*\(\s*\r?\n)', "`$1`t@CORR_EMPRESA INT,`r`n"
+    }
+
+    $joinPatterns = @(
+        @('A\.CORR_SUSCRIPCION=B\.CORR_SUSCRIPCION AND A\.CORR_CONFI_PAIS=B\.CORR_CONFI_PAIS AND A\.CORR_EMPRESA=B\.CORR_EMPRESA', 'A.CORR_EMPRESA=B.CORR_EMPRESA'),
+        @('B\.CORR_SUSCRIPCION=C\.CORR_SUSCRIPCION AND B\.CORR_CONFI_PAIS=C\.CORR_CONFI_PAIS AND B\.CORR_BANCO=C\.CORR_BANCO', 'B.CORR_EMPRESA=C.CORR_EMPRESA AND B.CORR_BANCO=C.CORR_BANCO'),
+        @('A\.CORR_SUSCRIPCION = D\.CORR_SUSCRIPCION AND A\.CORR_CONFI_PAIS = D\.CORR_CONFI_PAIS AND A\.CORR_EMPRESA = D\.CORR_EMPRESA', 'A.CORR_EMPRESA = D.CORR_EMPRESA'),
+        @('A\.CORR_SUSCRIPCION=C\.CORR_SUSCRIPCION AND A\.CORR_CONFI_PAIS=C\.CORR_CONFI_PAIS AND A\.CORR_EMPRESA=C\.CORR_EMPRESA', 'A.CORR_EMPRESA=C.CORR_EMPRESA'),
+        @('A\.CORR_SUSCRIPCION=D\.CORR_SUSCRIPCION AND A\.CORR_CONFI_PAIS=D\.CORR_CONFI_PAIS AND A\.CORR_EMPRESA=D\.CORR_EMPRESA', 'A.CORR_EMPRESA=D.CORR_EMPRESA'),
+        @('A\.CORR_SUSCRIPCION=B\.CORR_SUSCRIPCION AND A\.CORR_CONFI_PAIS=B\.CORR_CONFI_PAIS AND A\.CORR_EMPRESA=B\.CORR_EMPRESA AND A\.CORR_CUENTA_BANCO=B\.CORR_CUENTA_BANCO', 'A.CORR_EMPRESA=B.CORR_EMPRESA AND A.CORR_CUENTA_BANCO=B.CORR_CUENTA_BANCO'),
+        @('A\.CORR_SUSCRIPCION=B\.CORR_SUSCRIPCION AND A\.CORR_CONFI_PAIS=B\.CORR_CONFI_PAIS AND A\.CORR_EMPRESA=B\.CORR_EMPRESA AND A\.CORR_CUENTA_BANCO=B\.CORR_CUENTA_BANCARIA', 'A.CORR_EMPRESA=B.CORR_EMPRESA AND A.CORR_CUENTA_BANCO=B.CORR_CUENTA_BANCARIA'),
+        @('A\.CORR_SUSCRIPCION=E\.CORR_SUSCRIPCION AND A\.CORR_CONFI_PAIS=E\.CORR_CONFI_PAIS AND D\.CORR_EMPRESA=E\.CORR_EMPRESA', 'D.CORR_EMPRESA=E.CORR_EMPRESA'),
+        @('A\.CORR_CONFI_PAIS=B\.CORR_CONFI_PAIS AND A\.CORR_SUSCRIPCION=B\.CORR_SUSCRIPCION AND A\.CORR_GRUPO=B\.CORR_GRUPO', '')
+    )
+    foreach ($p in $joinPatterns) {
+        if ($p[1]) { $c = $c -replace $p[0], $p[1] }
+        else { $c = $c -replace $p[0], '' }
+    }
+
+    $c = $c -replace 'WHERE CORR_SUSCRIPCION=@CORR_SUSCRIPCION\s+AND CORR_CONFI_PAIS=@CORR_CONFI_PAIS\s+AND CORR_EMPRESA=@CORR_EMPRESA', 'WHERE CORR_EMPRESA=@CORR_EMPRESA'
+    $c = $c -replace 'WHERE A\.CORR_SUSCRIPCION=@CORR_SUSCRIPCION\s+AND A\.CORR_CONFI_PAIS=@CORR_CONFI_PAIS\s+AND A\.CORR_EMPRESA=@CORR_EMPRESA', 'WHERE A.CORR_EMPRESA=@CORR_EMPRESA'
+    $c = $c -replace 'AND A\.CORR_SUSCRIPCION=@CORR_SUSCRIPCION\s+AND A\.CORR_CONFI_PAIS=@CORR_CONFI_PAIS\s+AND A\.CORR_EMPRESA=@CORR_EMPRESA', 'AND A.CORR_EMPRESA=@CORR_EMPRESA'
+    $c = $c -replace 'WHERE\s+A\.CORR_SUSCRIPCION=@CORR_SUSCRIPCION\s*\r?\n\s*AND A\.CORR_CONFI_PAIS=@CORR_CONFI_PAIS\s*\r?\n', "WHERE`r`n"
+    $c = $c -replace 'AND A\.CORR_SUSCRIPCION=@CORR_SUSCRIPCION\s*\r?\n\s*AND A\.CORR_CONFI_PAIS=@CORR_CONFI_PAIS\s*\r?\n', ''
+
+    $c = $c -replace '(?m)^\s*@CORR_SUSCRIPCION,\s*\r?\n\s*@CORR_CONFI_PAIS,\s*\r?\n\s*@CORR_EMPRESA,', "`t`t@CORR_EMPRESA,"
+    $c = $c -replace '(?m)^\s*@CORR_SUSCRIPCION,\s*\r?\n\s*@CORR_CONFI_PAIS,\s*\r?\n', ''
+
+    $c = $c -replace '(?m)^\s*,A\.CORR_SUSCRIPCION\s*\r?\n\s*,A\.CORR_CONFI_PAIS\s*\r?\n', ''
+    $c = $c -replace '(?m)^\s*SELECT A\.CORR_SUSCRIPCION\s*\r?\n\s*,A\.CORR_CONFI_PAIS\s*\r?\n', 'SELECT '
+    $c = $c -replace '(?m)^\s*SELECT @CORR_SUSCRIPCION CORR_SUSCRIPCION,\s*@CORR_CONFI_PAIS CORR_CONFI_PAIS,\s*@CORR_EMPRESA CORR_EMPRESA,', 'SELECT @CORR_EMPRESA CORR_EMPRESA,'
+
+    $c = $c -replace 'PARTITION BY A\.CORR_SUSCRIPCION, A\.CORR_CONFI_PAIS, A\.CORR_EMPRESA, A\.CORR_CUENTA_BANCO', 'PARTITION BY A.CORR_EMPRESA, A.CORR_CUENTA_BANCO'
+    $c = $c -replace 'ORDER BY A\.CORR_SUSCRIPCION, A\.CORR_CONFI_PAIS, A\.CORR_EMPRESA,A\.NUMERO_DOCUMENTO', 'ORDER BY A.CORR_EMPRESA,A.NUMERO_DOCUMENTO'
+    $c = $c -replace 'ORDER BY A\.CORR_SUSCRIPCION, A\.CORR_CONFI_PAIS, A\.CORR_EMPRESA, A\.CORR_CUENTA_BANCO, C\.FECHA_MOVIMIENTO', 'ORDER BY A.CORR_EMPRESA, A.CORR_CUENTA_BANCO, C.FECHA_MOVIMIENTO'
+    $c = $c -replace 'GROUP BY A\.CORR_SUSCRIPCION,A\.CORR_CONFI_PAIS,A\.CORR_EMPRESA,', 'GROUP BY A.CORR_EMPRESA,'
+
+    $c = $c -replace '@NUMER_DOCUMENTO_INICIAL', '@NUMERO_DOCUMENTO_INICIAL'
+    $c = $c -replace 'NUMER_DOCUMENTO_INICIAL', 'NUMERO_DOCUMENTO_INICIAL'
+
+    $c = $c -replace 'INNER JOIN GEN_BANCO C ON B\.CORR_SUSCRIPCION=C\.CORR_SUSCRIPCION AND B\.CORR_CONFI_PAIS=C\.CORR_CONFI_PAIS AND B\.CORR_BANCO=C\.CORR_BANCO', 'INNER JOIN GEN_BANCO C ON B.CORR_EMPRESA=C.CORR_EMPRESA AND B.CORR_BANCO=C.CORR_BANCO'
+    $c = $c -replace 'INNER JOIN BAN_BANCO C ON B\.CORR_SUSCRIPCION=C\.CORR_SUSCRIPCION AND B\.CORR_CONFI_PAIS=C\.CORR_CONFI_PAIS AND B\.CORR_BANCO=C\.CORR_BANCO', 'INNER JOIN GEN_BANCO C ON B.CORR_EMPRESA=C.CORR_EMPRESA AND B.CORR_BANCO=C.CORR_BANCO'
+
+    $c = $c -replace '(?s)SELECT A\.CORR_SUSCRIPCION\s*,A\.CORR_CONFI_PAIS\s*,A\.CORR_EMPRESA\s*,CASE WHEN @COUNT=1 THEN A\.NOMBRE_EMPRESA ELSE B\.NOMBRE_GRUPO END NOMBRE_EMPRESA\s*,.*?FROM GEN_EMPRESA A\s*INNER JOIN GEN_GRUPO_EMPRESA B.*?WHERE\s+A\.CORR_SUSCRIPCION=@CORR_SUSCRIPCION\s*AND A\.CORR_CONFI_PAIS=@CORR_CONFI_PAIS\s*AND A\.CORR_EMPRESA=@CORR_EMPRESA',
+        "SELECT A.CORR_EMPRESA`r`n`t,A.NOMBRE_EMPRESA`r`n`t,'' PERIODO`r`n`t,LOGO_1 LOGO1`r`n`t,LOGO_2 LOGO2`r`n`t,'' TITULO_REPORTE`r`n`t,'' NOMBRE_SISTEMA`r`n`t,GETDATE() FECHA_IMPRESION`r`n`tFROM GEN_EMPRESA A`r`n`tWHERE A.CORR_EMPRESA=@CORR_EMPRESA"
+
+    $c = $c -replace 'CASE WHEN @COUNT_GRUPO>1 THEN E\.NOMBRE_GRUPO ELSE '''' END NOMBRE_GRUPO\s*,', ''
+    $c = $c -replace 'INNER JOIN V_GEN_EMPRESA E ON A\.CORR_SUSCRIPCION=E\.CORR_SUSCRIPCION AND A\.CORR_CONFI_PAIS=E\.CORR_CONFI_PAIS AND D\.CORR_EMPRESA=E\.CORR_EMPRESA', 'INNER JOIN V_GEN_EMPRESA E ON D.CORR_EMPRESA=E.CORR_EMPRESA'
+    $c = $c -replace 'SELECT @COUNT_GRUPO=COUNT\(DISTINCT CORR_GRUPO\)\s*FROM @EMPRESAS A\s*INNER JOIN GEN_EMPRESA B ON A\.CORR_EMPRESA=B\.CORR_EMPRESA AND @CORR_SUSCRIPCION=B\.CORR_SUSCRIPCION AND @CORR_CONFI_PAIS=B\.CORR_CONFI_PAIS\s*', ''
+
+    $c = $c -replace 'SELECT A\.CORR_SUSCRIPCION, A\.CORR_CONFI_PAIS, A\.CORR_EMPRESA,', 'SELECT A.CORR_EMPRESA,'
+
+    return $c
+}
+
+function Adapt-SgueesBanView {
+    param([string]$Content, [string]$Name)
+
+    $c = Adapt-SgueesBanSql -Content $Content
+
+    if ($Name -eq 'dbo.V_BAN_ENTREGA_CHEQUES.sql') {
+        $c = @"
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+
+CREATE VIEW [dbo].[V_BAN_ENTREGA_CHEQUES]
+AS
+SELECT A.CORR_EMPRESA
+      ,A.ANIO_PERIODO
+      ,A.MES_PERIODO
+      ,A.CORR_TIPO_MOVIMIENTO
+      ,A.CORR_DOCUMENTO
+      ,A.FECHA_EMISION
+      ,C.CORR_BANCO
+      ,C.NOMBRE_BANCO
+      ,A.NUMERO_DOCUMENTO
+      ,A.MONTO_DOCUMENTO
+      ,A.NOMBRE_BENEFICIARIO
+      ,ISNULL(A.ESTADO_ENTREGA,'EF') ESTADO_ENTREGA
+      ,CASE ISNULL(A.ESTADO_ENTREGA,'EF')
+       WHEN 'AC' THEN 'Activo'
+       WHEN 'EF' THEN 'En Firma'
+       WHEN 'EN' THEN 'Entregado'
+       ELSE '' END NOMBRE_ESTADO_ENTREGA
+      ,A.FECHA_ENTREGA
+      ,ISNULL(A.NOMBRE_RECIBE,'') NOMBRE_RECIBE
+FROM dbo.BAN_DOCUMENTO A
+INNER JOIN dbo.BAN_CUENTA_BANCARIA B
+  ON A.CORR_EMPRESA = B.CORR_EMPRESA AND A.CORR_CUENTA_BANCO = B.CORR_CUENTA_BANCO
+INNER JOIN dbo.GEN_BANCO C
+  ON B.CORR_EMPRESA = C.CORR_EMPRESA AND B.CORR_BANCO = C.CORR_BANCO
+INNER JOIN dbo.BAN_TIPO_MOVI_BANCARIO D
+  ON A.CORR_EMPRESA = D.CORR_EMPRESA AND A.CORR_TIPO_MOVIMIENTO = D.CORR_TIPO_MOVIMIENTO
+WHERE D.CLASE_MOVIMIENTO = 'CHQ'
+GO
+"@
+    }
+
+    return $c
+}
+
+$viewFiles = @(
+    'Views\dbo.V_BAN_CHEQUES_EMITIDOS.sql',
+    'Views\dbo.V_BAN_ENTREGA_CHEQUES.sql',
+    'Views\dbo.V_BAN_MOVIMIENTO.sql'
+)
+
+$spFiles = @(
+    'Stored Procedures\dbo.PRAL_GENE_BAN_SALDO_INICIAL.sql',
+    'Stored Procedures\dbo.PRAL_IMPR_BAN_CHEQUE_EMITIDOS.sql',
+    'Stored Procedures\dbo.PRAL_IMPR_BAN_ENTREGA_CHEQUES.sql',
+    'Stored Procedures\dbo.PRAL_IMPR_BAN_ESTADO_CUENTA.sql',
+    'Stored Procedures\dbo.PRAL_IMPR_BAN_ESTADO_CUENTA_ACUMULADO.sql'
+)
+
+foreach ($rel in $viewFiles) {
+    $src = Join-Path $SourceDir $rel
+    $name = Split-Path $rel -Leaf
+    $dst = Join-Path $DestViewDir $name
+    if (-not (Test-Path -LiteralPath $src)) {
+        Write-Warning "No encontrado: $src"
+        continue
+    }
+    $raw = Get-Content -LiteralPath $src -Raw -Encoding UTF8
+    $adapted = Adapt-SgueesBanView -Content $raw -Name $name
+    Set-Content -LiteralPath $dst -Value $adapted -Encoding UTF8
+    Write-Host "Vista adaptada: $name"
+}
+
+foreach ($rel in $spFiles) {
+    $src = Join-Path $SourceDir $rel
+    $name = Split-Path $rel -Leaf
+    $dst = Join-Path $DestSpDir $name
+    if (-not (Test-Path -LiteralPath $src)) {
+        Write-Warning "No encontrado: $src"
+        continue
+    }
+    $raw = Get-Content -LiteralPath $src -Raw -Encoding UTF8
+    $adapted = Adapt-SgueesBanSql -Content $raw
+    Set-Content -LiteralPath $dst -Value $adapted -Encoding UTF8
+    Write-Host "SP adaptado: $name"
+}
+
+Write-Host 'Adaptacion BAN reportes completada.'

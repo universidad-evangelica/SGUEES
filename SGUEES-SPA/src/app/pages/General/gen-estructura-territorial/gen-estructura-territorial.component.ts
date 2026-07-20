@@ -112,7 +112,6 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	ngOnInit(): void {
 		this.urlOpcion = this.resolveUrlOpcion();
 		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.model = this.fillPais();
 		this.modelUpdate = this.fillPais();
 		this.actualizarColumnas();
@@ -138,7 +137,6 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		super.AsignaStatus(xEstado);
 		this.syncToolbarContext();
 		if (xEstado === UpdateType.Browse && !this.vistaDetalle) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
 		}
 	}
 
@@ -302,7 +300,6 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.AsignaStatus(UpdateType.Browse);
 		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
 		this.actualizarColumnas();
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.syncToolbarContext();
 		setTimeout(() => this.consultar());
 	}

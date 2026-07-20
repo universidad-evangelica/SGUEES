@@ -1,0 +1,13 @@
+// Post-tema DevExtreme — línea bajo filter-row (bundle theme-dark / theme-light)
+// Fluent: .dx-datagrid-rowsview.dx-datagrid-after-headers { border-top: none }
+
+.dx-datagrid.sguees-data-grid-mtto {
+  > .dx-datagrid-rowsview.dx-datagrid-after-headers,
+  > .dx-datagrid-rowsview {
+    border-top: 1px solid var(--border-color) !important;
+  }
+
+  .dx-datagrid-headers .dx-datagrid-filter-row > td {
+    border-bottom: 1px solid var(--border-color) !important;
+  }
+}

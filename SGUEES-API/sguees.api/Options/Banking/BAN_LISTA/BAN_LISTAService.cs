@@ -52,5 +52,21 @@ namespace sguees.Services
 		{
 			return _repo.GetCLASE_BANCO();
 		}
+
+		public CResult GetESTADO_DOCUMENTO()
+		{
+			return _repo.GetESTADO_DOCUMENTO();
+		}
+
+		public CResult GetESTADO_CONCILIACION()
+		{
+			return _repo.GetESTADO_CONCILIACION();
+		}
+
+		public CResult GetCORR_PROVEEDOR() => _repo.GetCORR_PROVEEDOR();
+
+		public CResult GetCORR_EMPLEADO() => _repo.GetCORR_EMPLEADO();
+
+		public CResult GetCORR_CLIENTE() => _repo.GetCORR_CLIENTE();
 	}
 }

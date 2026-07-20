@@ -13,7 +13,6 @@ import { GenDivisionService } from './gen-division.service';
 @Component({
 	selector: 'app-gen-division',
 	templateUrl: './gen-division.component.html',
-	styleUrls: ['./gen-division.component.scss'],
 })
 // Qué hace: coordina la grilla, el formulario y las llamadas al servicio de divisiones.
 // Cómo: extiende CBaseComponent y usa GenDivisionService para el CRUD.

@@ -34,10 +34,6 @@ export class ConDepartamentoComponent extends CBaseComponent implements OnInit {
 
 
 
-	private readonly maintenanceSubtitulo = 'Mantenimiento de departamentos contables';
-
-
-
 	constructor(
 
 		public override appInfoService: AppInfoService,
@@ -72,8 +68,6 @@ export class ConDepartamentoComponent extends CBaseComponent implements OnInit {
 
 	ngOnInit(): void {
 
-		this.subTituloVentana = this.maintenanceSubtitulo;
-
 		this.consultar();
 
 	}
@@ -87,8 +81,6 @@ export class ConDepartamentoComponent extends CBaseComponent implements OnInit {
 		super.AsignaStatus(xEstado);
 
 		if (xEstado === UpdateType.Browse) {
-
-			this.subTituloVentana = this.maintenanceSubtitulo;
 
 		}
 

@@ -1,5 +1,11 @@
+<p-toast position="bottom-right" 
+    [showTransformOptions]="'translateY(100%)'" 
+    [hideTransitionOptions]="'500ms'" 
+    [showTransformOptions]="'translateX(100%)'">
+</p-toast>
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
+	[subTituloVentana]="subTituloVentana" --Esto debe de agregarse por componente ya que de etools no viene.
 	[isBrowse]="isBrowse()"
 	[isForm]="isForm()"
 	[permiteAdd]="permiteAdd"
@@ -9,15 +15,257 @@
 >
 </app-barra-data-mtto>
 <div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
-	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
-	</dx-form>
+
+	<!--
+		dx-tab-panel: pestañas debajo del formulario (patrón con-centro-costo / com-orden-compra).
+		Solo visible en agregar/editar (*ngIf del contenedor padre).
+	-->
+	<dx-tab-panel #tabPanelRequisicion class="requisicion-tab-panel" [selectedIndex]="0">
+		<!-- TAB 1: Detalle / Bitácora (data quemada; luego API) -->
+		<dxi-item title="Datos requisición" [icon]="'event'">
+				<dx-form class="mt-20" #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+					<div *dxTemplate="let cellInfo of 'CORR_TIPO_MODALIDADLookup'">
+						<app-data-lookup
+							[model]="mCORR_TIPO_MODALIDAD"
+							[(value)]="model.CORR_TIPO_MODALIDAD"
+							[selectedRowKeys]="selectedLookUpCORR_TIPO_MODALIDAD"
+							[readOnly]="readOnly"
+							[valueExpr]="'CORR_TIPO_MODALIDAD'"
+							[displayExpr]="'MODALIDAD_NOMBRE'"
+							[lookupColumns]="tipoModalidadLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+					<div *dxTemplate="let cellInfo of 'CORR_TIPO_CONTRATACIONLookup'">
+						<app-data-lookup
+							[model]="mCORR_TIPO_CONTRATACION"
+							[(value)]="model.CORR_TIPO_CONTRATACION"
+							[selectedRowKeys]="selectedLookUpCORR_TIPO_CONTRATACION"
+							[readOnly]="readOnly"
+							[valueExpr]="'CORR_TIPO_CONTRATACION'"
+							[displayExpr]="'NOMBRE_TIPO_CONTRATACION'"
+							[lookupColumns]="tipoContratacionLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+					<div *dxTemplate="let cellInfo of 'CORR_TIPO_VACANTELookup'">
+						<app-data-lookup
+							[model]="mCORR_TIPO_VACANTE"
+							[(value)]="model.CORR_TIPO_VACANTE"
+							[selectedRowKeys]="selectedLookUpCORR_TIPO_VACANTE"
+							[readOnly]="readOnly"
+							[valueExpr]="'CORR_TIPO_VACANTE'"
+							[displayExpr]="'NOMBRE_TIPO_VACANTE'"
+							[lookupColumns]="tipoVacanteLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+				</dx-form>
+				<div class="dx-grid-deta">
+					<dx-toolbar class="mb-20">
+						<dxi-item location="before">
+							<div *dxTemplate>
+								
+								<h5><i class="dx-icon dx-icon-group mr-20"></i>Observadores</h5>
+							</div>
+						</dxi-item>
+					</dx-toolbar>
+				<dx-data-grid
+					#gridObservadores
+					[dataSource]="modelsObservadores"
+					[columns]="columnsObservadores"
+					keyExpr="CORR_REQUISICION_OBSERVADORES"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
+					[columnAutoWidth]="true"
+					[height]="'100%'"
+					[width]="'100%'"
+				>
+					<dxo-toolbar>
+						<dxi-item location="before">
+							<div *dxTemplate>
+								<dx-button
+									icon="add"
+									text="Agregar"
+									type="success"
+									stylingMode="contained"
+									[width]="140"
+									[visible]="!readOnly"
+									(onClick)="abrirModalObservador()"
+								></dx-button>
+							</div>
+						</dxi-item>
+						<dxi-item name="searchPanel" location="after"></dxi-item>
+					</dxo-toolbar>
+					<div *dxTemplate="let cell of 'optionsTemplate'">
+						<dx-button
+							icon="trash"
+							type="danger"
+							stylingMode="text"
+							hint="Eliminar"
+							[visible]="!readOnly"
+							(onClick)="rowRemovingObservador(cell.data)">
+						</dx-button>
+					</div>
+					<dxo-search-panel [visible]="true"></dxo-search-panel>
+					<dxo-paging [pageSize]="10"></dxo-paging>
+					<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 20]"></dxo-pager>
+					<dxo-editing [allowUpdating]="false" [allowDeleting]="false" [allowAdding]="false"></dxo-editing>
+					<dxo-summary>
+						<dxi-total-item
+							column="CORR_REQUISICION_OBSERVADORES"
+							summaryType="count"
+							valueFormat="#,##0"
+							displayFormat="Cant: {0}"
+						></dxi-total-item>
+					</dxo-summary>
+				</dx-data-grid>
+			</div>
+
+		</dxi-item>
+
+		<!-- TAB 2: Bitácora requisición (solo lectura — GetCORR_BITACORA_SC_REQUISICION_PERSONAL) -->
+		<dxi-item title="Bitácora requisición" [icon]="'checklist'">
+			<div class="dx-grid-deta">
+				<dx-data-grid
+					#gridBitacora
+					[dataSource]="modelsBitacora"
+					[columns]="columnsBitacora"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
+					[columnAutoWidth]="true"
+					[height]="'100%'"
+					[width]="'100%'"
+				>
+					<dxo-search-panel [visible]="true"></dxo-search-panel>
+					<dxo-paging [pageSize]="10"></dxo-paging>
+					<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 20]"></dxo-pager>
+					<dxo-editing [allowUpdating]="false" [allowDeleting]="false" [allowAdding]="false"></dxo-editing>
+					<dxo-summary>
+						<dxi-total-item
+							column="LOGIN_SISTEMA"
+							summaryType="count"
+							valueFormat="#,##0"
+							displayFormat="Cant: {0}"
+						></dxi-total-item>
+					</dxo-summary>
+				</dx-data-grid>
+			</div>
+		</dxi-item>
+
+	</dx-tab-panel>
 </div>
+
+<!-- Segundo Card: observadores — patrón dx-data-grid -->
+<!-- <div class="content-block dx-card responsive-paddings mt-20" *ngIf="!isBrowse()">
+	<dx-tab-panel #tabPanelObservadores class="requisicion-tab-panel" [selectedIndex]="0">
+		<dxi-item title="Observadores" [icon]="'group'">
+			<div class="dx-grid-deta">
+				<dx-data-grid
+					#gridObservadores
+					[dataSource]="modelsObservadores"
+					[columns]="columnsObservadores"
+					keyExpr="CORR_REQUISICION_OBSERVADORES"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
+					[columnAutoWidth]="true"
+					[height]="'100%'"
+					[width]="'100%'"
+				>
+					<dxo-toolbar>
+						<dxi-item location="before">
+							<div *dxTemplate>
+								<dx-button
+									icon="add"
+									text="Agregar"
+									type="success"
+									stylingMode="contained"
+									[width]="140"
+									[visible]="!readOnly"
+									(onClick)="abrirModalObservador()"
+								></dx-button>
+							</div>
+						</dxi-item>
+						<dxi-item name="searchPanel" location="after"></dxi-item>
+					</dxo-toolbar>
+					<dxo-search-panel [visible]="true"></dxo-search-panel>
+					<dxo-paging [pageSize]="10"></dxo-paging>
+					<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 20]"></dxo-pager>
+					<dxo-editing [allowUpdating]="false" [allowDeleting]="false" [allowAdding]="false"></dxo-editing>
+					<dxo-summary>
+						<dxi-total-item
+							column="CORR_REQUISICION_OBSERVADORES"
+							summaryType="count"
+							valueFormat="#,##0"
+							displayFormat="Cant: {0}"
+						></dxi-total-item>
+					</dxo-summary>
+				</dx-data-grid>
+			</div>
+		</dxi-item>
+	</dx-tab-panel>
+</div> -->
+
+<!-- Modal: agregar observador a la requisición (lookup LOGIN_SISTEMA) -->
+<dx-popup
+	[(visible)]="popupObservadorVisible"
+	title="Agregar observador"
+	[width]="480"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[showCloseButton]="true"
+	[dragEnabled]="true"
+	[hideOnOutsideClick]="false"
+>
+	<div *dxTemplate="let data of 'content'">
+		<dx-form
+			#fObservador
+			[formData]="modelObservador"
+			[labelLocation]="'top'"
+			[colCount]="2"
+			[items]="itemsObservadorModal"
+		>
+			<div *dxTemplate="let cellInfo of 'LOGIN_SISTEMALookup'">
+				<app-data-lookup
+					[model]="mLOGIN_SISTEMA"
+					[(value)]="modelObservador.LOGIN_SISTEMA"
+					[selectedRowKeys]="selectedLookUpLOGIN_SISTEMA"
+					[readOnly]="false"
+					[valueExpr]="'LOGIN_SISTEMA'"
+					[displayExpr]="'NOMBRE_USUARIO'"
+					[lookupColumns]="loginSistemaLookupColumns"
+				>
+				</app-data-lookup>
+			</div>
+		</dx-form>
+		<div class="d-flex justify-content-end gap-2 mt-3" style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+			<dx-button text="Cancelar" stylingMode="outlined" (onClick)="cerrarModalObservador()"></dx-button>
+			<dx-button text="Guardar" type="default" stylingMode="contained" (onClick)="guardarObservadorRequisicion()"></dx-button>
+		</div>
+	</div>
+</dx-popup>
+
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
 	[models]="models"
 	[columns]="columns"
 	[summary]="summary"
-	[keyExpr]="'CORR_REQUISICION'"
+	[keyExpr]="'CORR_REQUISICION_PERSONAL'"
 	[permiteEditar]="getPermiteEditar"
 	[permiteDele]="getPermiteDele"
 	(rowDblClick)="rowDblClick($event)"

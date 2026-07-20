@@ -15,8 +15,10 @@ import { ScRequerimientoOrganizacionalComponent } from './sc-requerimiento-organ
 import { ScDisponibilidadHorarioComponent } from './sc-disponibilidad-horario/sc-disponibilidad-horario.component';
 import { ScImpactoEconomicoComponent } from './sc-impacto-economico/sc-impacto-economico.component';
 import { ScCompetenciasTecnicasComponent } from './sc-competencias-tecnicas/sc-competencias-tecnicas.component';
+import { ScRequisicionObservadoresComponent } from './sc-requisicion-observadores/sc-requisicion-observadores.component';
 import { ScCompetenciasConductualesComponent } from './sc-competencias-conductuales/sc-competencias-conductuales.component';
 import { ScDescriptorPuestoComponent } from './sc-descriptor-puesto/sc-descriptor-puesto.component';
+
 
 const routes: Routes = [
   {
@@ -34,7 +36,16 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./sc-requisicion-personal/sc-requisicion-personal.module').then(m => m.ScRequisicionPersonalModule)
-  },{
+  },
+  {
+    path: 'sc-requisicion-observadores',
+    component: ScRequisicionObservadoresComponent,
+    data: { titulo: 'Requisicion Observadores' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-requisicion-observadores/sc-requisicion-observadores.module').then(m => m.ScRequisicionObservadoresModule)
+  },
+  {
     path: 'sc-tipo-modalidad',
     component: ScTipoModalidadComponent,
     data: { titulo: 'Tipo de modalidad' },

@@ -74,8 +74,8 @@
   margin-top: 0;
 }
 
-.sguees-enterprise-content router-outlet + * > app-barra-data-mtto.sguees-mtto-chrome:has(+ app-data-grid-mtto),
-.sguees-enterprise-content router-outlet + * .view-wrapper > app-barra-data-mtto.sguees-mtto-chrome:has(+ app-data-grid-mtto) {
+.sguees-enterprise-content router-outlet + * > app-barra-data-mtto.sguees-mtto-chrome:has(+ app-data-grid-mtto):not(.sguees-barra-mtto--ribbon),
+.sguees-enterprise-content router-outlet + * .view-wrapper > app-barra-data-mtto.sguees-mtto-chrome:has(+ app-data-grid-mtto):not(.sguees-barra-mtto--ribbon) {
   border-radius: var(--sguees-radius-lg) var(--sguees-radius-lg) 0 0;
   box-shadow: var(--sguees-shadow-md);
   border-bottom: none;
@@ -85,6 +85,22 @@
 .sguees-enterprise-content router-outlet + * .view-wrapper > app-barra-data-mtto.sguees-mtto-chrome:has(+ app-data-grid-mtto) + app-data-grid-mtto .sguees-grid-module-card {
   box-shadow: none;
   border-radius: 0 0 var(--sguees-radius-lg) var(--sguees-radius-lg);
+}
+
+// Ribbon browse: barra y grid como tarjetas apiladas (radius completo en ambas)
+.sguees-enterprise-content router-outlet + * > app-barra-data-mtto.sguees-barra-mtto--ribbon:has(+ app-data-grid-mtto),
+.sguees-enterprise-content router-outlet + * .view-wrapper > app-barra-data-mtto.sguees-barra-mtto--ribbon:has(+ app-data-grid-mtto) {
+  border-radius: var(--sguees-radius-lg);
+  box-shadow: var(--sguees-shadow-md);
+  border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+  margin-bottom: var(--sguees-space-3);
+}
+
+.sguees-enterprise-content router-outlet + * > app-barra-data-mtto.sguees-barra-mtto--ribbon:has(+ app-data-grid-mtto) + app-data-grid-mtto .sguees-grid-module-card,
+.sguees-enterprise-content router-outlet + * .view-wrapper > app-barra-data-mtto.sguees-barra-mtto--ribbon:has(+ app-data-grid-mtto) + app-data-grid-mtto .sguees-grid-module-card {
+  border-radius: var(--sguees-radius-lg);
+  border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
+  box-shadow: var(--sguees-shadow-md);
 }
 
 // Fase 8B2 — unified standalone: radius completo (posterior a split legacy Fase 7)

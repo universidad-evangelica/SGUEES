@@ -223,6 +223,8 @@ export class AuthService {
 
 	async logOut(): Promise<void> {
 		localStorage.removeItem('token');
+		this.decodedToken = {} as any;
+		this.mainMenu = [];
 		this.router.navigate(['/login-form']);
 	}
 

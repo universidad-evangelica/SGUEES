@@ -20,8 +20,6 @@ export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
 	protected override mttoCampoEstado = 'ESTADO_TIPO_CHEQUE';
 	protected override mttoEstadoDescribeField = 'NOMBRE_TIPO_CHEQUE';
 
-	private readonly maintenanceSubtitulo = 'Mantenimiento de Tipos de Cheque';
-
 	//#region <Declarando Variales>
 	mCLASE_TIPO_CHEQUE: any;
 	mCUENTA_CONTABLE: any[] = [];
@@ -45,7 +43,6 @@ export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
 
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
@@ -57,7 +54,6 @@ export class BanTipoChequeComponent extends CBaseComponent implements OnInit {
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
 		}
 	}
 

@@ -77,11 +77,19 @@
                 "bundleName": "theme-light"
               },
               {
+                "input": "src/app/theme/styles/sguees-datagrid-filter-row.scss",
+                "bundleName": "theme-light"
+              },
+              {
                 "input": "devextreme/scss/bundles/dx.fluent.blue.dark.scss",
                 "bundleName": "theme-dark"
               },
               {
                 "input": "src/app/theme/styles/variables-dark.scss",
+                "bundleName": "theme-dark"
+              },
+              {
+                "input": "src/app/theme/styles/sguees-datagrid-filter-row.scss",
                 "bundleName": "theme-dark"
               }
             ],

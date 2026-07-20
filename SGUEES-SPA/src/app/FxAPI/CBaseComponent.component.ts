@@ -194,6 +194,9 @@ export class CBaseComponent {
 
 	//#region <Metodos Browse>
 	focusedRowChanged(e: any) {
+		if (!this.isBrowse()) {
+			return;
+		}
 		this.model = e.row.data;
 	}
 
@@ -278,10 +281,10 @@ export class CBaseComponent {
 		e?.event?.preventDefault?.();
 		const rowData = e?.row?.data ?? e?.data;
 		if (rowData) {
+			this.modelUpdate = { ...rowData };
 			this.model = this.fillData(rowData);
 		}
 		this.AsignaStatus(UpdateType.Update);
-		this.modelUpdate = this.fillData(this.model);
 		this.habilitar();
 		this.setFocus();
 	}
@@ -302,6 +305,9 @@ export class CBaseComponent {
 				}
 				cancelRow();
 			});
+		} else if (this.banderaMtto === UpdateType.Not_Defined) {
+			this.restaurarFilaGridConsulta(findIndex);
+			cancelRow();
 		} else {
 			cancelRow();
 		}
@@ -318,8 +324,8 @@ export class CBaseComponent {
 	rowDblClick(e: any) {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
+			this.modelUpdate = { ...rowData };
 			this.model = this.fillData(rowData);
-			this.modelUpdate = this.fillData(rowData);
 		}
 		this.AsignaStatus(UpdateType.Not_Defined);
 		this.subTituloVentana = RowStatus.Browse.toString();
@@ -329,6 +335,43 @@ export class CBaseComponent {
 			}
 			this.bloquear();
 		});
+	}
+
+	/** Restaura la fila del grid tras cancelar consulta (doble clic). */
+	protected restaurarFilaGridConsulta(findIndex?: (item: any) => boolean): void {
+		if (!Array.isArray(this.models) || !this.modelUpdate) {
+			return;
+		}
+
+		const snapshot = this.modelUpdate;
+		const index =
+			typeof findIndex === 'function'
+				? this.models.findIndex(findIndex)
+				: this.buscarIndiceFilaGrid(snapshot);
+
+		if (index < 0) {
+			return;
+		}
+
+		this.models[index] = { ...snapshot };
+		this.model = this.models[index];
+		this.refrescarGridMtto(false);
+	}
+
+	protected buscarIndiceFilaGrid(row: Record<string, unknown>): number {
+		if (!Array.isArray(this.models) || !row) {
+			return -1;
+		}
+
+		const keyExpr = this.mttoGridKeyExpr;
+		if (keyExpr) {
+			const idx = this.models.findIndex((item) => item?.[keyExpr] === row[keyExpr]);
+			if (idx >= 0) {
+				return idx;
+			}
+		}
+
+		return this.models.indexOf(row);
 	}
 
 	AsignaStatus(xEstado: UpdateType): void {
@@ -672,6 +715,7 @@ export class CBaseComponent {
 			isEmpresaFkErrorMessage(message) ||
 			value.includes('ya existe') ||
 			value.includes('duplicad') ||
+			value.includes('ya ha sido ingresado') ||
 			value.includes('asociados') ||
 			value.includes('hijos asociados')
 		) {

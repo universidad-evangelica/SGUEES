@@ -28,9 +28,22 @@ export class GenTipoDocumentoService {
 	}
 	// #endregion
 
-	getAll(param: any): Observable<IResult> {
-		let xWhere: IParam[] = [{ Parameter: 'CORR_TIPO_DOC', Value: param.CORR_TIPO_DOC }];
-
+	getAll(param: {
+		CORR_TIPO_DOC?: number;
+		PAGE?: number;
+		PAGE_SIZE?: number;
+		SORT_FIELD?: string;
+		SORT_DESC?: boolean;
+	}): Observable<IResult> {
+		const xWhere: IParam[] = [{ Parameter: 'CORR_TIPO_DOC', Value: param.CORR_TIPO_DOC ?? 0 }];
+		if (param.PAGE != null) {
+			xWhere.push(
+				{ Parameter: 'PAGE', Value: param.PAGE },
+				{ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE ?? 50 },
+				{ Parameter: 'SORT_FIELD', Value: param.SORT_FIELD ?? '' },
+				{ Parameter: 'SORT_DESC', Value: param.SORT_DESC ?? false }
+			);
+		}
 		return this.repo.get(xWhere);
 	}
 

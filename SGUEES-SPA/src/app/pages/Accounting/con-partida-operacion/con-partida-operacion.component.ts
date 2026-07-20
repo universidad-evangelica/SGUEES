@@ -289,7 +289,12 @@ export class ConPartidaOperacionComponent extends CBaseComponent implements OnIn
 		this.documentosConsulta = [];
 
 		this.detaService
-			.getAll({ CORR_PARTIDA: row.CORR_PARTIDA })
+			.getAll({
+				ANIO_PERIODO: row.ANIO_PERIODO,
+				MES_PERIODO: row.MES_PERIODO,
+				CORR_CLASE_PARTIDA: row.CORR_CLASE_PARTIDA,
+				CORR_PARTIDA: row.CORR_PARTIDA,
+			})
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {

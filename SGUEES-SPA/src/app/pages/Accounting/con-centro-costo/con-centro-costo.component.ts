@@ -48,10 +48,6 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 
 
-	private readonly maintenanceSubtitulo = 'Mantenimiento de centros de costo';
-
-
-
 	@ViewChild('gridPresupuesto', { static: false }) gridPresupuesto!: DxDataGridComponent;
 
 
@@ -126,8 +122,6 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 	ngOnInit(): void {
 
-		this.subTituloVentana = this.maintenanceSubtitulo;
-
 		this.inicializaOpciones();
 
 		this.llenaComboBox();
@@ -149,8 +143,6 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 		super.AsignaStatus(xEstado);
 
 		if (xEstado === UpdateType.Browse) {
-
-			this.subTituloVentana = this.maintenanceSubtitulo;
 
 		}
 

@@ -26,7 +26,6 @@ import { environment } from 'src/environments/environment';
 export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	@ViewChild('gridDetalle', { static: false }) gridDetalle!: DxDataGridComponent;
 	protected override etiquetaRegistro = 'la partida';
-	private readonly maintenanceSubtitulo = 'Mantenimiento de partidas contables';
 
 	detalles: ConPartidaDeta[] = [];
 	documentos: ConPartidaDoc[] = [];
@@ -96,7 +95,6 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		const today = this.appInfoService.getDate();
 		this.vFECHA_INICIAL = new Date(today.getFullYear(), today.getMonth(), 1);
 		this.vFECHA_FINAL = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
@@ -108,7 +106,6 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
 		}
 	}
 
@@ -326,6 +323,9 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 				finalizarCancelacion();
 			});
 		} else {
+			if (this.banderaMtto === UpdateType.Not_Defined) {
+				this.restaurarFilaGridConsulta((item: any) => item.CORR_PARTIDA === this.modelUpdate.CORR_PARTIDA);
+			}
 			this.AsignaStatus(UpdateType.Browse);
 			finalizarCancelacion();
 		}
@@ -364,16 +364,18 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	override getPermiteEditar(e: any): boolean {
+		const data = e?.row?.data ?? e?.data;
 		return (
 			this.permiteEdit &&
-			this.partidaEditablePorEstado(e?.row?.data?.ESTADO_PARTIDA)
+			this.partidaEditablePorEstado(data?.ESTADO_PARTIDA)
 		);
 	}
 
 	override getPermiteDele(e: any): boolean {
+		const data = e?.row?.data ?? e?.data;
 		return (
 			this.permiteDele &&
-			this.partidaEditablePorEstado(e?.row?.data?.ESTADO_PARTIDA)
+			this.partidaEditablePorEstado(data?.ESTADO_PARTIDA)
 		);
 	}
 
@@ -651,8 +653,18 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	}
 
 	consultarDetalles(refrescarBotones = false) {
+		if (!this.hasPartidaKeys()) {
+			this.detalles = [];
+			return;
+		}
+
 		this.detaService
-			.getAll({ CORR_PARTIDA: this.model.CORR_PARTIDA })
+			.getAll({
+				ANIO_PERIODO: this.model.ANIO_PERIODO,
+				MES_PERIODO: this.model.MES_PERIODO,
+				CORR_CLASE_PARTIDA: this.model.CORR_CLASE_PARTIDA,
+				CORR_PARTIDA: this.model.CORR_PARTIDA,
+			})
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {

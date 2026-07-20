@@ -77,5 +77,53 @@ namespace sguees.Controllers
 				ClientInfoHelper.GetClientStation(HttpContext));
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
+
+		[HttpGet("GetCORR_CUENTA_BANCO_BAN_DOCUMENTO")]
+		[Authorize(Policy = "/ban-documento|R")]
+		public async Task<CResult> GetCORR_CUENTA_BANCO_BAN_DOCUMENTO([FromQuery] BAN_CUENTA_BANCARIAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_CUENTA_BANCO_BAN_CHEQUE")]
+		[Authorize(Policy = "/ban-cheque|R")]
+		public async Task<CResult> GetCORR_CUENTA_BANCO_BAN_CHEQUE([FromQuery] BAN_CUENTA_BANCARIAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_CUENTA_BANCO_BAN_CHEQUE_IMPRIMIR")]
+		[Authorize(Policy = "/ban-cheque-imprimir|R")]
+		public async Task<CResult> GetCORR_CUENTA_BANCO_BAN_CHEQUE_IMPRIMIR([FromQuery] BAN_CUENTA_BANCARIAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_CUENTA_BANCO_BAN_SOLI_CHEQUE")]
+		[Authorize(Policy = "/ban-soli-cheque|R")]
+		public async Task<CResult> GetCORR_CUENTA_BANCO_BAN_SOLI_CHEQUE([FromQuery] BAN_CUENTA_BANCARIAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_CUENTA_BANCO_BAN_SOLI_CHEQUE_AUTORIZA")]
+		[Authorize(Policy = "/ban-soli-cheque-autoriza|R")]
+		public async Task<CResult> GetCORR_CUENTA_BANCO_BAN_SOLI_CHEQUE_AUTORIZA([FromQuery] BAN_CUENTA_BANCARIAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_CUENTA_BANCO_BAN_CONCILIA_BANCARIA")]
+		[Authorize(Policy = "/ban-concilia-bancaria|R")]
+		public async Task<CResult> GetCORR_CUENTA_BANCO_BAN_CONCILIA_BANCARIA([FromQuery] BAN_CUENTA_BANCARIAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
 	}
 }

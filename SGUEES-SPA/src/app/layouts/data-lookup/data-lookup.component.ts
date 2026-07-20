@@ -58,17 +58,27 @@ export class DataLookupComponent implements OnInit, OnChanges {
 		this.valueChange.emit(this.value);
 	}
 
-	selectionChanged(selectedRowKeys: any) {
-		if (selectedRowKeys.length > 0 && this.selectedRowKeys) {
-			const newValue = this.selectedRowKeys(selectedRowKeys);
-			if (this.setValue) {
-				this.setValue(newValue);
-			}
-			this.value = newValue;
-			this.internalValue = this.toLookupValue(newValue);
-			this.valueChange.emit(this.value);
-			this.claseOpend = false;
+	selectionChanged(e: any) {
+		const rows = e?.selectedRowsData;
+		if (!rows?.length) {
+			return;
 		}
+
+		let newValue = rows[0][this.valueExpr];
+		if (this.selectedRowKeys) {
+			newValue = this.selectedRowKeys(rows);
+		}
+		if (newValue === undefined || newValue === null) {
+			return;
+		}
+
+		if (this.setValue) {
+			this.setValue(newValue);
+		}
+		this.value = newValue;
+		this.internalValue = this.toLookupValue(newValue);
+		this.valueChange.emit(this.value);
+		this.claseOpend = false;
 	}
 
 	private syncInternalValue(): void {

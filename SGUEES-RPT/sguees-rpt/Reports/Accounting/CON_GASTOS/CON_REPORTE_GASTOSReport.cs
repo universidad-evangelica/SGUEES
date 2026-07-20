@@ -18,7 +18,7 @@ namespace sgueesRpt.Reports.Accounting.CON_GASTOS
 
 		public override string FullResourceName
 		{
-			get { return "sgueesRpt.Reports.Accounting.Embedded.CON_REPORTE_GASTOS.CON_REPORTE_GASTOSReport.rpt"; }
+			get { return "sgueesRpt.Reports.Accounting.CON_GASTOS.CON_REPORTE_GASTOSReport.rpt"; }
 			set { }
 		}
 	}

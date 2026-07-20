@@ -22,7 +22,7 @@ const routes: Routes = [
   {
     path: 'seg-config-opcion',
     component: SegConfigOpcionComponent,
-    data: { titulo: 'Configuracion de Opciones' },
+    data: { titulo: 'Configuración de Opciones' },
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./seg-config-opcion/seg-config-opcion.module').then(m => m.SegConfigOpcionModule)

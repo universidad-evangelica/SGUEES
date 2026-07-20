@@ -58,6 +58,13 @@ html, body {
   padding: 0;
 }
 
+.seg-opciones-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
 .title-text {
   font-size: 16px;
   font-weight: 500;

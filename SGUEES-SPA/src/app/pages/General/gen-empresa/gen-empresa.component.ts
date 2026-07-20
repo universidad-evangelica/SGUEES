@@ -21,8 +21,6 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 	protected override mttoGridKeyExpr = 'CORR_EMPRESA';
 	protected override mttoRemoteOperations = false;
 
-	private readonly maintenanceSubtitulo = 'Mantenimiento de empresas';
-
 	mCORR_PAIS: any;
 	mCORR_DEPTO: any;
 	mCORR_MUNICIPIO: any;
@@ -47,7 +45,6 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 	}
 
 	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
@@ -58,7 +55,6 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
 		}
 	}
 

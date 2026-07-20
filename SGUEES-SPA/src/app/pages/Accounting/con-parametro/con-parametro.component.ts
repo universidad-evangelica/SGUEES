@@ -16,8 +16,6 @@ export class ConParametroComponent extends CBaseComponent implements OnInit {
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_EMPRESA';
 
-	private readonly maintenanceSubtitulo = 'Mantenimiento de parámetros de contabilidad';
-
 	//#region <Declarando Variales>
 	readOnly = false;
 	// #endregion
@@ -35,7 +33,6 @@ export class ConParametroComponent extends CBaseComponent implements OnInit {
 
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
@@ -47,7 +44,6 @@ export class ConParametroComponent extends CBaseComponent implements OnInit {
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
 		}
 	}
 

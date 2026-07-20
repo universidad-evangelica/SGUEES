@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using System.Linq;
 using eFramework.Core;
 using sguees.Models;
 using sguees.Services;
@@ -76,6 +77,35 @@ namespace sguees.Controllers
 				User.Claims.ToList().SingleOrDefault(e => e.Type == System.Security.Claims.ClaimTypes.NameIdentifier).Value,
 				ClientInfoHelper.GetClientStation(HttpContext));
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
+		[HttpGet("GetCORR_TIPO_MOVIMIENTO_BAN_DOCUMENTO")]
+		[Authorize(Policy = "/ban-documento|R")]
+		public async Task<CResult> GetCORR_TIPO_MOVIMIENTO_BAN_DOCUMENTO([FromQuery] BAN_TIPO_MOVI_BANCARIOParam Data)
+			=> await GetTiposMoviLookupAsync(Data, soloCheques: false);
+
+		[HttpGet("GetCORR_TIPO_MOVIMIENTO_BAN_CHEQUE")]
+		[Authorize(Policy = "/ban-cheque|R")]
+		public async Task<CResult> GetCORR_TIPO_MOVIMIENTO_BAN_CHEQUE([FromQuery] BAN_TIPO_MOVI_BANCARIOParam Data)
+			=> await GetTiposMoviLookupAsync(Data, soloCheques: true);
+
+		[HttpGet("GetCORR_TIPO_MOVIMIENTO_BAN_SOLI_CHEQUE")]
+		[Authorize(Policy = "/ban-soli-cheque|R")]
+		public async Task<CResult> GetCORR_TIPO_MOVIMIENTO_BAN_SOLI_CHEQUE([FromQuery] BAN_TIPO_MOVI_BANCARIOParam Data)
+			=> await GetTiposMoviLookupAsync(Data, soloCheques: true);
+
+		private async Task<CResult> GetTiposMoviLookupAsync(BAN_TIPO_MOVI_BANCARIOParam Data, bool soloCheques)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			var resultado = await _service.GetAllAsync(Data);
+			if (resultado.Result && resultado.Data is List<BAN_TIPO_MOVI_BANCARIOView> lista)
+			{
+				resultado.Data = lista
+					.Where(x => soloCheques ? x.CLASE_MOVIMIENTO == "CHQ" : x.CLASE_MOVIMIENTO != "CHQ")
+					.ToList();
+				resultado.RowsAffected = ((List<BAN_TIPO_MOVI_BANCARIOView>)resultado.Data).Count;
+			}
+			return resultado;
 		}
 	}
 }

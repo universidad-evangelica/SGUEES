@@ -98,6 +98,7 @@ export function getNotifyTypeFromResponse(response: any, etiquetaRegistro = 'el 
 		response?.ErrorCode === 2627 ||
 		message.includes('ya existe') ||
 		message.includes('duplicad') ||
+		message.includes('ya ha sido ingresado') ||
 		message.includes('registros asociados') ||
 		message.includes('hijos asociados')
 	) {
@@ -108,5 +109,10 @@ export function getNotifyTypeFromResponse(response: any, etiquetaRegistro = 'el 
 }
 
 export function getNotifyTypeFromError(error: any, etiquetaRegistro = 'el registro'): NotifyType {
+	const body = error?.error;
+	if (body && typeof body === 'object' && body.ErrorMessage !== undefined) {
+		return getNotifyTypeFromResponse(body, etiquetaRegistro);
+	}
+
 	return isEmpresaFkErrorMessage(getApiErrorMessage(error)) ? NotifyType.Warning : NotifyType.Error;
 }

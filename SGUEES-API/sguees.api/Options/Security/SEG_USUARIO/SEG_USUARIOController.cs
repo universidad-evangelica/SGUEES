@@ -154,7 +154,7 @@ namespace sguees.Controllers
 			Data.ESTACION_CREA = ClientInfoHelper.GetClientStation(HttpContext);
 			Data.USUARIO_ACTU = Data.USUARIO_CREA;
 			Data.FECHA_ACTU = Data.FECHA_CREA;
-			Data.ESTACION_ACTU = Data.USUARIO_CREA;
+			Data.ESTACION_ACTU = Data.ESTACION_CREA;
 
 			var resultado = await _service.UpdateSEG_USUARIO_OPCIONAsync(Data, Data.USUARIO_CREA, Data.ESTACION_CREA);
 			if (resultado.ErrorCode == 0)
@@ -245,5 +245,20 @@ namespace sguees.Controllers
 
 			return BadRequest(resultado);
 		}
-	}
+
+        [HttpGet("GetLOGIN_SISTEMA_SC_REQUISICION_OBSERVADORES")]
+        [Authorize(Policy = "/sc-requisicion-observadores|R")]
+        public async Task<CResult> GetLOGIN_SISTEMA_SC_REQUISICION_OBSERVADORES([FromQuery] SEG_USUARIOParam Data)
+        {
+            //Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllSEG_USUARIO_LOOKUP(Data);
+        }
+
+		[HttpGet("GetLOGIN_SISTEMA_SC_REQUISICION_PERSONAL")]
+		[Authorize(Policy = "/sc-requisicion-personal|R")]
+		public async Task<CResult> GetLOGIN_SISTEMA_SC_REQUISICION_PERSONAL([FromQuery] SEG_USUARIOParam Data)
+		{
+			return await _service.GetAllSEG_USUARIO_LOOKUP(Data);
+		}
+    }
 }

@@ -16,6 +16,7 @@
 		<dx-data-grid
 			#dataGridLookup
 			[dataSource]="model"
+			[keyExpr]="valueExpr"
 			[columnAutoWidth]="lookupColumnAutoWidth"
 			[selection]="{ mode: 'single' }"
 			[hoverStateEnabled]="true"
@@ -23,7 +24,7 @@
 			[filterRow]="{ visible: true }"
 			[scrolling]="{ mode: 'infinite' }"
 			[filterSyncEnabled]="true"
-			(onSelectionChanged)="selectionChanged($event.selectedRowKeys)"
+			(onSelectionChanged)="selectionChanged($event)"
 			[height]="'100%'"
 			[width]="'100%'"
 			[columns]="columns"
