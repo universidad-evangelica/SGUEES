@@ -1,4 +1,5 @@
-// Lógica de negocio del catálogo frecuencia (validación y delegación al repositorio).
+// Qué hace: lógica de negocio del catálogo frecuencia.
+// Cómo: valida los datos y llama a ISC_FRECUENCIARepository para ejecutar el CRUD.
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -7,7 +8,8 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
-    // Valida datos y delega persistencia de frecuencia en el repositorio.
+    // Qué hace: servicio de frecuencia.
+    // Cómo: valida los datos y llama al repositorio para persistir la información.
     public class SC_FRECUENCIAService : ISC_FRECUENCIAService
     {
         private readonly ISC_FRECUENCIARepository _repo;
@@ -17,13 +19,15 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
-        // Delega en el repositorio la consulta del listado.
+        // Qué hace: obtiene el listado de frecuencias.
+        // Cómo: llama a GetAllAsync del repositorio con los parámetros armados por BuildParameters.
         public async Task<CResult> GetAllAsync(SC_FRECUENCIAParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
-        // Devuelve únicamente frecuencias activas de la empresa.
+        // Qué hace: obtiene solo las frecuencias activas de la empresa.
+        // Cómo: llama a GetFrecuenciasActivasAsync del repositorio filtrando por CORR_EMPRESA.
         public async Task<CResult> GetFrecuenciasActivasAsync(SC_FRECUENCIAParam xWhere)
         {
             var p = new List<CParameter>
@@ -34,7 +38,8 @@ namespace SGUEES.Services
             return await _repo.GetFrecuenciasActivasAsync(p);
         }
 
-        // Delega en el repositorio la consulta por llave.
+        // Qué hace: obtiene una frecuencia puntual.
+        // Cómo: llama a GetAsync del repositorio filtrando por CORR_EMPRESA y CORR_FRECUENCIA.
         public async Task<CResult> GetAsync(SC_FRECUENCIAParam xWhere)
         {
             var p = new List<CParameter>
@@ -46,7 +51,8 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
-        // Valida empresa y nombre antes de crear la frecuencia.
+        // Qué hace: crea una frecuencia.
+        // Cómo: valida la empresa de sesión y los datos con ValidateEmpresaSesion y Validate, normaliza con NormalizeData y llama a CreateAsync del repositorio.
         public async Task<CResult> CreateAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -65,7 +71,8 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida la llave y normaliza el nombre antes de actualizar.
+        // Qué hace: actualiza una frecuencia.
+        // Cómo: valida la empresa de sesión, los datos y el CORR_FRECUENCIA a actualizar, normaliza con NormalizeData y llama a UpdateAsync del repositorio.
         public async Task<CResult> UpdateAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -89,7 +96,8 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida empresa de sesión antes de eliminar.
+        // Qué hace: elimina una frecuencia.
+        // Cómo: valida la empresa de sesión con ValidateEmpresaSesion y llama a DeleteAsync del repositorio.
         public async Task<CResult> DeleteAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -101,7 +109,8 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida empresa y llave antes de cambiar el estado.
+        // Qué hace: cambia el estado activo/inactivo de una frecuencia.
+        // Cómo: valida la empresa de sesión y el CORR_FRECUENCIA a actualizar, y llama a ActivarInactivarAsync del repositorio.
         public async Task<CResult> ActivarInactivarAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -118,7 +127,8 @@ namespace SGUEES.Services
             return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Arma los parámetros de filtro para el repositorio.
+        // Qué hace: arma los parámetros de filtro para el repositorio.
+        // Cómo: construye la lista con CORR_EMPRESA a partir de xWhere.
         private static List<CParameter> BuildParameters(SC_FRECUENCIAParam xWhere)
         {
             return new List<CParameter>
@@ -127,14 +137,16 @@ namespace SGUEES.Services
             };
         }
 
-        // Limpia el nombre y aplica el estado activo predeterminado.
+        // Qué hace: normaliza los datos antes de guardar.
+        // Cómo: recorta espacios de NOMBRE_FRECUENCIA y aplica ESTADO_FRECUENCIA activo cuando no viene informado.
         private static void NormalizeData(SC_FRECUENCIATable Data)
         {
             Data.NOMBRE_FRECUENCIA = Data.NOMBRE_FRECUENCIA?.Trim();
             Data.ESTADO_FRECUENCIA ??= true;
         }
 
-        // Comprueba el nombre obligatorio y su longitud máxima.
+        // Qué hace: valida los datos obligatorios de la frecuencia.
+        // Cómo: comprueba que Data no sea nulo y que NOMBRE_FRECUENCIA no esté vacío ni supere 50 caracteres.
         private static CResult Validate(SC_FRECUENCIATable Data)
         {
             if (Data == null)
@@ -155,7 +167,8 @@ namespace SGUEES.Services
             return null;
         }
 
-        // Rechaza operaciones cuando no hay empresa en sesión.
+        // Qué hace: verifica que exista empresa en la sesión.
+        // Cómo: si corrEmpresa es mayor a cero devuelve null; de lo contrario devuelve un CResult con el error de empresa no asignada.
         private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
             if (corrEmpresa > 0)
@@ -175,7 +188,8 @@ namespace SGUEES.Services
             };
         }
 
-        // Construye un CResult de validación funcional.
+        // Qué hace: construye un resultado de error de validación.
+        // Cómo: arma un CResult con Result en false y el mensaje recibido.
         private static CResult ValidationError(string message)
         {
             return new CResult

@@ -1,4 +1,5 @@
-// Servicio de negocio del catálogo Frecuencia (validación, CRUD y config de grilla/form).
+// Qué hace: servicio de negocio del catálogo Frecuencia.
+// Cómo: valida los datos, ejecuta el CRUD a través del repositorio y arma la configuración de grilla y formulario.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -12,11 +13,13 @@ import { ScFrecuenciaRepository } from './sc-frecuencia.repository';
 const ESTADO_FIELD = 'ESTADO_FRECUENCIA';
 
 @Injectable({ providedIn: 'root' })
-// Encapsula validaciones y delega el CRUD en el repositorio de frecuencia.
+// Qué hace: servicio de frecuencia.
+// Cómo: valida los datos y llama a ScFrecuenciaRepository para ejecutar el CRUD.
 export class ScFrecuenciaService {
 	constructor(private repo: ScFrecuenciaRepository) {}
 
-	// Valida el nombre obligatorio y su longitud antes del guardado.
+	// Qué hace: valida el formulario de frecuencia antes de guardar.
+	// Cómo: revisa que NOMBRE_FRECUENCIA no esté vacío y no supere 50 caracteres, notificando con msg cuando falla.
 	esValido(model: ScFrecuencia, msg: Function): boolean {
 		if (!model.NOMBRE_FRECUENCIA || model.NOMBRE_FRECUENCIA.trim() === '') {
 			msg('Debe ingresar el nombre de la frecuencia.', NotifyType.Warning);
@@ -31,37 +34,44 @@ export class ScFrecuenciaService {
 		return true;
 	}
 
-	// Solicita al repositorio el listado con los filtros construidos.
+	// Qué hace: obtiene el listado de frecuencias.
+	// Cómo: llama a getAll del repositorio con el filtro construido por buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	// Solicita al repositorio el detalle por correlativo.
+	// Qué hace: obtiene una frecuencia puntual.
+	// Cómo: llama a get del repositorio filtrando por CORR_FRECUENCIA.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_FRECUENCIA', Value: param.CORR_FRECUENCIA }]);
 	}
 
-	// Delega en el repositorio la creación del registro.
+	// Qué hace: crea una nueva frecuencia.
+	// Cómo: llama a create del repositorio con el modelo recibido.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
-	// Delega en el repositorio la actualización con su llave.
+	// Qué hace: actualiza una frecuencia existente.
+	// Cómo: llama a update del repositorio con el modelo y su CORR_FRECUENCIA.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }]);
 	}
 
-	// Delega en el repositorio la eliminación por correlativo.
+	// Qué hace: elimina una frecuencia.
+	// Cómo: llama a delete del repositorio filtrando por CORR_FRECUENCIA.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }]);
 	}
 
-	// Delega en el repositorio el cambio de estado activo/inactivo.
+	// Qué hace: cambia el estado activo/inactivo de una frecuencia.
+	// Cómo: llama a activarInactivar del repositorio filtrando por CORR_FRECUENCIA.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }]);
 	}
 
-	// Define columnas y formatos de la grilla de mantenimiento.
+	// Qué hace: define columnas y formatos de la grilla de mantenimiento.
+	// Cómo: arma el arreglo de columnas (correlativo, nombre, estado y auditoría) usado por app-data-grid-mtto.
 	getColumns(): any {
 		return [
 			{
@@ -77,7 +87,8 @@ export class ScFrecuenciaService {
 		];
 	}
 
-	// Configura el contador de registros de la grilla.
+	// Qué hace: configura el contador de registros de la grilla.
+	// Cómo: define el resumen totalItems que cuenta CORR_FRECUENCIA.
 	getSummary(): any {
 		return {
 			totalItems: [
@@ -91,7 +102,8 @@ export class ScFrecuenciaService {
 		};
 	}
 
-	// Define los campos y reglas del formulario de frecuencia.
+	// Qué hace: define los campos y reglas del formulario de frecuencia.
+	// Cómo: arma el arreglo de items (correlativo, nombre y estado) usado por dx-form.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_FRECUENCIA', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -106,7 +118,8 @@ export class ScFrecuenciaService {
 		];
 	}
 
-	// Traduce los filtros del componente al formato esperado por la API.
+	// Qué hace: traduce los filtros del componente al formato esperado por la API.
+	// Cómo: agrega a xWhere el parámetro CORR_FRECUENCIA cuando viene informado en param.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

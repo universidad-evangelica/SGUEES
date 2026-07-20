@@ -1,4 +1,5 @@
-// Persistencia SQL del catálogo frecuencia (tabla/vista SC).
+// Qué hace: persistencia SQL del catálogo frecuencia.
+// Cómo: ejecuta el CRUD y consultas contra la tabla SC_FRECUENCIA y la vista V_SC_FRECUENCIA.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-    // Ejecuta CRUD y consultas sobre la tabla/vista de frecuencia.
+    // Qué hace: repositorio de frecuencia.
+    // Cómo: ejecuta GetAllAsync, GetAsync, CreateAsync, UpdateAsync, DeleteAsync, ActivarInactivarAsync y GetFrecuenciasActivasAsync sobre la tabla/vista SC_FRECUENCIA.
     public class SC_FRECUENCIARepository : BaseRepository<SC_FRECUENCIATable>, ISC_FRECUENCIARepository
     {
         private const string _TableName = "SC_FRECUENCIA";
@@ -25,7 +27,8 @@ namespace SGUEES.Repositories
         {
         }
 
-        // Lee el listado desde la vista filtrado por empresa.
+        // Qué hace: lee el listado de frecuencias.
+        // Cómo: consulta V_SC_FRECUENCIA filtrando por CORR_EMPRESA y ordena el resultado por CORR_FRECUENCIA.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -69,7 +72,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Lee un registro por llave desde la vista.
+        // Qué hace: lee una frecuencia puntual.
+        // Cómo: consulta V_SC_FRECUENCIA con los filtros recibidos y devuelve el primer registro.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -107,7 +111,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Inserta el registro y controla duplicados de nombre/código.
+        // Qué hace: inserta una frecuencia.
+        // Cómo: llama a objData.Insert sobre SC_FRECUENCIA con los parámetros armados y controla duplicados de nombre/código con IsDuplicateKeyError.
         public async Task<CResult> CreateAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -167,7 +172,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Actualiza el registro validando unicidad.
+        // Qué hace: actualiza una frecuencia.
+        // Cómo: llama a objData.Update sobre SC_FRECUENCIA filtrando por CORR_EMPRESA y CORR_FRECUENCIA, y controla duplicados con IsDuplicateKeyError.
         public async Task<CResult> UpdateAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -222,7 +228,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Elimina el registro; propaga errores de integridad.
+        // Qué hace: elimina una frecuencia.
+        // Cómo: llama a objData.Delete sobre SC_FRECUENCIA filtrando por CORR_EMPRESA y CORR_FRECUENCIA; ante error de integridad devuelve un mensaje de registros asociados.
         public async Task<CResult> DeleteAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -260,7 +267,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Invierte el estado activo/inactivo del registro.
+        // Qué hace: invierte el estado activo/inactivo de la frecuencia.
+        // Cómo: ejecuta el procedimiento PRAL_MTTO_CATALOGO_ESTADO_BIT y, si no hay error, vuelve a leer el registro desde V_SC_FRECUENCIA.
         public async Task<CResult> ActivarInactivarAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -333,7 +341,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Recupera frecuencias activas ordenadas para el lookup.
+        // Qué hace: recupera las frecuencias activas para el lookup.
+        // Cómo: ejecuta un SELECT sobre V_SC_FRECUENCIA filtrando por CORR_EMPRESA y ESTADO_FRECUENCIA activo, ordenado por NOMBRE_FRECUENCIA.
         public async Task<CResult> GetFrecuenciasActivasAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -387,7 +396,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Detecta errores de clave duplicada de SQL Server.
+        // Qué hace: detecta errores de clave duplicada de SQL Server.
+        // Cómo: revisa si el mensaje de la excepción contiene "duplicate key", "PRIMARY KEY" o "UNIQUE KEY".
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

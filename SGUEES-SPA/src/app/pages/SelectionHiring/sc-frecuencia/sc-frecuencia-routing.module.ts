@@ -1,4 +1,5 @@
-// Routing y declaraciones DevExtreme/layout de la vista Frecuencia.
+// Qué hace: routing y declaraciones DevExtreme/layout de la vista Frecuencia.
+// Cómo: registra la ruta del componente ScFrecuenciaComponent junto con los módulos DevExtreme y de layout que usa.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
@@ -14,7 +15,8 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { ToastModule } from 'primeng/toast';
 import { ScFrecuenciaComponent } from './sc-frecuencia.component';
 
-// Ruta lazy y declaraciones DevExtreme del mantenimiento de frecuencia.
+// Qué hace: ruta lazy del mantenimiento de frecuencia.
+// Cómo: asocia la ruta vacía ('') con ScFrecuenciaComponent.
 const routes: Routes = [{ path: '', component: ScFrecuenciaComponent }];
 
 @NgModule({
@@ -35,5 +37,6 @@ const routes: Routes = [{ path: '', component: ScFrecuenciaComponent }];
 	exports: [RouterModule],
 	declarations: [ScFrecuenciaComponent],
 })
-// Declara el componente y registra la ruta hija del catálogo.
+// Qué hace: módulo de routing de Frecuencia.
+// Cómo: declara ScFrecuenciaComponent, importa los módulos DevExtreme/layout necesarios y expone RouterModule con las rutas hijas del catálogo.
 export class ScFrecuenciaRoutingModule {}

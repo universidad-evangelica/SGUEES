@@ -1,8 +1,10 @@
-// Módulo Angular que importa el routing de Frecuencia.
+// Qué hace: módulo Angular de Frecuencia.
+// Cómo: importa ScFrecuenciaRoutingModule para registrar la ruta del catálogo.
 import { NgModule } from '@angular/core';
 import { ScFrecuenciaRoutingModule } from './sc-frecuencia-routing.module';
 
-// Módulo contenedor del mantenimiento de frecuencia.
+// Qué hace: módulo contenedor del mantenimiento de frecuencia.
+// Cómo: solo declara el import de ScFrecuenciaRoutingModule.
 @NgModule({
 	imports: [ScFrecuenciaRoutingModule],
 })

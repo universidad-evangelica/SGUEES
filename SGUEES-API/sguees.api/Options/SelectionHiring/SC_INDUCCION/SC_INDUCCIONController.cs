@@ -15,7 +15,7 @@ namespace SGUEES.Controllers
     [Authorize]
     [ApiController]
     [Route("[controller]")]
-    // Expone el CRUD y lookups de inducción con autorización por política.
+    // Qué hace: expone el CRUD y los lookups de inducción con autorización por política.
     public class SC_INDUCCIONController : ControllerBase
     {
         private readonly ISC_INDUCCIONService _service;
@@ -27,7 +27,8 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetCORR_INDUCCION_SC_DESCRIPTOR_PUESTO")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
-        // Provee inducciones activas para el descriptor.
+        // Qué hace: entrega las inducciones activas para el lookup del descriptor de puesto.
+        // Cómo: fija CORR_EMPRESA de la sesión y llama a GetCatalogoDescriptorAsync del servicio.
         public async Task<CResult> GetCORR_INDUCCION_SC_DESCRIPTOR_PUESTO(
             [FromQuery] SC_INDUCCIONParam Data)
         {
@@ -37,7 +38,8 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-induccion|R")]
-        // Atiende el listado y lo limita a la empresa de la sesión.
+        // Qué hace: lista las inducciones de la empresa en sesión.
+        // Cómo: fija CORR_EMPRESA y llama a GetAllAsync del servicio.
         public async Task<CResult> GetAll([FromQuery] SC_INDUCCIONParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -46,7 +48,8 @@ namespace SGUEES.Controllers
 
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-induccion|R")]
-        // Atiende la consulta de un registro dentro de la empresa de la sesión.
+        // Qué hace: obtiene una inducción de la empresa en sesión.
+        // Cómo: fija CORR_EMPRESA y llama a GetAsync del servicio.
         public async Task<CResult> Get([FromQuery] SC_INDUCCIONParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -55,7 +58,8 @@ namespace SGUEES.Controllers
 
         [HttpPost]
         [Authorize(Policy = "/sc-induccion|C")]
-        // Completa auditoría antes de crear la inducción.
+        // Qué hace: crea una inducción nueva.
+        // Cómo: completa la auditoría de creación y llama a CreateAsync del servicio.
         public async Task<IActionResult> Post(SC_INDUCCIONTable Data)
         {
             SetCreateAudit(Data);
@@ -66,7 +70,8 @@ namespace SGUEES.Controllers
 
         [HttpPut]
         [Authorize(Policy = "/sc-induccion|U")]
-        // Aplica la llave consultada y la auditoría antes de actualizar.
+        // Qué hace: actualiza una inducción existente.
+        // Cómo: copia la llave de la URL al cuerpo, completa la auditoría y llama a UpdateAsync del servicio.
         public async Task<IActionResult> Put(SC_INDUCCIONTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(SC_INDUCCIONTable.CORR_INDUCCION));
@@ -78,7 +83,8 @@ namespace SGUEES.Controllers
 
         [HttpDelete]
         [Authorize(Policy = "/sc-induccion|D")]
-        // Restringe la eliminación a la empresa de la sesión.
+        // Qué hace: elimina una inducción de la empresa en sesión.
+        // Cómo: fija CORR_EMPRESA y llama a DeleteAsync del servicio.
         public async Task<IActionResult> Delete([FromQuery] SC_INDUCCIONTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -89,7 +95,8 @@ namespace SGUEES.Controllers
 
         [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/sc-induccion|U")]
-        // Cambia el estado activo/inactivo del registro indicado.
+        // Qué hace: cambia el estado activo/inactivo de una inducción.
+        // Cómo: copia la llave de la URL, fija CORR_EMPRESA y llama a ActivarInactivarAsync del servicio.
         public async Task<IActionResult> ActivarInactivar(SC_INDUCCIONTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(SC_INDUCCIONTable.CORR_INDUCCION));
@@ -99,20 +106,21 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
-        // Lee CORR_EMPRESA del claim del usuario autenticado.
+        // Qué hace: obtiene CORR_EMPRESA del claim del usuario autenticado.
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
-        // Obtiene el identificador de usuario desde los claims.
+        // Qué hace: obtiene el identificador de usuario desde los claims.
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
-        // Completa empresa, usuario, estación y fechas del registro nuevo.
+        // Qué hace: completa los datos de auditoría de un registro nuevo.
+        // Cómo: fija empresa, usuario, estación y fechas; deja ESTADO_INDUCCION en true si viene vacío.
         private void SetCreateAudit(SC_INDUCCIONTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -125,7 +133,8 @@ namespace SGUEES.Controllers
             Data.ESTADO_INDUCCION ??= true;
         }
 
-        // Actualiza auditoría sin reemplazar la información de creación.
+        // Qué hace: completa los datos de auditoría de una actualización.
+        // Cómo: fija empresa, usuario, estación y fecha; conserva ESTADO_INDUCCION o lo deja en true si falta.
         private void SetUpdateAudit(SC_INDUCCIONTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

@@ -1,15 +1,18 @@
-// Parámetros de consulta/filtro de frecuencia.
+// Qué hace: parámetros de consulta/filtro de frecuencia.
+// Cómo: extiende BaseParam con los campos usados para buscar, paginar y ordenar el catálogo.
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
-    // Filtros y opciones de paginación/orden para consultas de frecuencia.
+    // Qué hace: representa los filtros y opciones de paginación/orden para consultar frecuencia.
+    // Cómo: además de las claves propias (CORR_EMPRESA, CORR_FRECUENCIA), hereda de BaseParam los campos genéricos de búsqueda, filtros de grilla, paginación y orden.
     public class SC_FRECUENCIAParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_FRECUENCIA { get; set; }
         public string BUSQUEDA { get; set; }
         public string NOMBRE_FRECUENCIA { get; set; }
+        // Filtra por estado activo/inactivo cuando se informa.
         public bool? ESTADO_FRECUENCIA { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }

@@ -1,4 +1,5 @@
-// Contrato del repositorio de frecuencia.
+// Qué hace: contrato del repositorio de frecuencia.
+// Cómo: extiende IRepository<SC_FRECUENCIATable> y agrega ActivarInactivarAsync y GetFrecuenciasActivasAsync.
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -9,9 +10,9 @@ namespace SGUEES.Repositories
 {
     public interface ISC_FRECUENCIARepository : IRepository<SC_FRECUENCIATable>
     {
-        // Define el cambio de estado activo/inactivo de la frecuencia.
+        // Qué hace: define el cambio de estado activo/inactivo de la frecuencia.
         Task<CResult> ActivarInactivarAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION);
-        // Define la consulta especializada de frecuencias requerida por el mantenimiento.
+        // Qué hace: define la consulta de frecuencias activas requerida por el mantenimiento.
         Task<CResult> GetFrecuenciasActivasAsync(List<CParameter> xWhere);
     }
 }

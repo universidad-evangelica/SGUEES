@@ -7,38 +7,44 @@ import { IResult } from 'src/app/FxAPI/IResult';
 import { environment } from 'src/environments/environment';
 
 @Injectable({ providedIn: 'root' })
-// Encapsula las llamadas HTTP al controlador del catálogo.
+// Qué hace: agrupa las llamadas HTTP al controlador SC_INDUCCION.
 export class ScInduccionRepository {
 	readonly xController = 'SC_INDUCCION';
 
 	constructor(private objData: CData) {}
 
-	// Consulta el listado aplicando los filtros recibidos.
+	// Qué hace: consulta el listado de inducciones.
+	// Cómo: GET GetAll al controlador SC_INDUCCION con los filtros recibidos.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	// Consulta un registro específico por sus filtros.
+	// Qué hace: consulta una inducción puntual.
+	// Cómo: GET Get al controlador SC_INDUCCION con la llave en xWhere.
 	get(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	// Envía al API la solicitud de creación.
+	// Qué hace: crea una inducción nueva.
+	// Cómo: POST con el modelo al controlador SC_INDUCCION.
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	// Envía al API la solicitud de actualización con sus claves.
+	// Qué hace: actualiza una inducción existente.
+	// Cómo: PUT con el modelo y la llave en xWhere al controlador SC_INDUCCION.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	// Envía al API la solicitud de eliminación.
+	// Qué hace: elimina una inducción.
+	// Cómo: DELETE con la llave en xWhere al controlador SC_INDUCCION.
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	// Envía al API el cambio de estado activo/inactivo.
+	// Qué hace: cambia el estado activo/inactivo de una inducción.
+	// Cómo: PUT a ActivarInactivar con el modelo y la llave en xWhere.
 	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

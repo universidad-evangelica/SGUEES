@@ -10,7 +10,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-    // Ejecuta CRUD y consultas sobre la tabla/vista de inducción.
+    // Qué hace: ejecuta el CRUD y las consultas SQL sobre la tabla y la vista de inducción.
     public class SC_INDUCCIONRepository : BaseRepository<SC_INDUCCIONTable>, ISC_INDUCCIONRepository
     {
         private const string _TableName = "SC_INDUCCION";
@@ -25,7 +25,8 @@ namespace SGUEES.Repositories
         {
         }
 
-        // Recupera inducciones activas ordenadas para el lookup del descriptor.
+        // Qué hace: recupera las inducciones activas para el lookup del descriptor.
+        // Cómo: SELECT directo a SC_INDUCCION filtrando por empresa y ESTADO_INDUCCION, ordenado por nombre y semanas.
         public async Task<List<SC_INDUCCIONView>> GetCatalogoDescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)
@@ -59,7 +60,8 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Lee el listado desde la vista filtrado por empresa.
+        // Qué hace: lista las inducciones de la vista V_SC_INDUCCION.
+        // Cómo: filtra por CORR_EMPRESA y ordena por CORR_INDUCCION.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -103,7 +105,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Lee un registro por llave desde la vista.
+        // Qué hace: obtiene una inducción de la vista V_SC_INDUCCION.
+        // Cómo: lee con los filtros recibidos en xWhere (empresa e id).
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -141,7 +144,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Inserta el registro y controla duplicados de nombre/código.
+        // Qué hace: inserta una inducción nueva.
+        // Cómo: llama a Insert sobre SC_INDUCCION y devuelve el registro creado leído desde la vista; controla claves duplicadas.
         public async Task<CResult> CreateAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -202,7 +206,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Actualiza el registro validando unicidad.
+        // Qué hace: actualiza una inducción existente.
+        // Cómo: llama a Update sobre SC_INDUCCION por CORR_EMPRESA y CORR_INDUCCION; controla claves duplicadas.
         public async Task<CResult> UpdateAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -258,7 +263,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Elimina el registro; propaga errores de integridad.
+        // Qué hace: elimina una inducción.
+        // Cómo: llama a Delete sobre SC_INDUCCION por CORR_EMPRESA y CORR_INDUCCION; informa si hay registros relacionados.
         public async Task<CResult> DeleteAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -296,7 +302,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Invierte el estado activo/inactivo del registro.
+        // Qué hace: cambia el estado activo/inactivo de una inducción.
+        // Cómo: ejecuta el stored procedure PRAL_MTTO_CATALOGO_ESTADO_BIT y devuelve el registro actualizado leído desde la vista.
         public async Task<CResult> ActivarInactivarAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -369,7 +376,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Detecta errores de clave duplicada de SQL Server.
+        // Qué hace: detecta errores de clave duplicada de SQL Server.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

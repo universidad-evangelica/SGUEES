@@ -1,4 +1,5 @@
-// Vista de mantenimiento de Frecuencia (CRUD del catálogo SC).
+// Qué hace: vista de mantenimiento de Frecuencia.
+// Cómo: administra el CRUD del catálogo SC_FRECUENCIA coordinando la grilla, el formulario y ScFrecuenciaService.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
@@ -17,7 +18,8 @@ const ESTADO_FIELD = 'ESTADO_FRECUENCIA';
 	templateUrl: './sc-frecuencia.component.html',
 	styleUrls: ['./sc-frecuencia.component.scss'],
 })
-// Orquesta grilla, formulario y llamadas al servicio de frecuencia.
+// Qué hace: componente de mantenimiento de Frecuencia.
+// Cómo: extiende CBaseComponent y coordina la grilla, el formulario y las llamadas a ScFrecuenciaService.
 export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
@@ -44,18 +46,21 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
-	// Expone el grid de mantenimiento al flujo base de CBaseComponent.
+	// Qué hace: entrega el grid de mantenimiento al flujo base de CBaseComponent.
+	// Cómo: devuelve la referencia dataGrid enlazada con @ViewChild, o null si aún no está disponible.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
-	// Inicializa subtítulo y carga el catálogo al abrir la vista.
+	// Qué hace: inicializa la vista al abrirla.
+	// Cómo: fija el subtítulo de mantenimiento y llama a consultar para cargar el catálogo.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.consultar();
 	}
 
-	// Restaura el subtítulo de mantenimiento al volver a modo consulta.
+	// Qué hace: reacciona a los cambios de estado del formulario (nuevo, editar, ver, browse).
+	// Cómo: llama a AsignaStatus del componente base y, al volver a modo Browse, restaura el subtítulo de mantenimiento.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -63,12 +68,14 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
-	// Construye el filtro por correlativo usado en consultas y eliminaciones.
+	// Qué hace: construye el filtro por correlativo.
+	// Cómo: devuelve un objeto con CORR_FRECUENCIA, usado en consultar y en rowRemoving.
 	fillParam(xCORR_FRECUENCIA?: number): any {
 		return { CORR_FRECUENCIA: xCORR_FRECUENCIA ?? 0 };
 	}
 
-	// Copia el registro seleccionado o crea el modelo inicial del formulario.
+	// Qué hace: construye el modelo de frecuencia para el formulario.
+	// Cómo: si recibe xModel copia sus campos; si no recibe nada, devuelve el modelo inicial para un registro nuevo.
 	override fillData(xModel?: ScFrecuencia): ScFrecuencia {
 		if (xModel !== undefined) {
 			return {
@@ -99,7 +106,8 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		};
 	}
 
-	// Carga las frecuencias y sincroniza el orden y la paginación de la grilla.
+	// Qué hace: carga las frecuencias y actualiza la grilla.
+	// Cómo: llama a consultarMtto con getAll del servicio y, al recibir los datos, ordena los registros y refresca la grilla.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -110,7 +118,8 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Mantiene los registros ordenados por correlativo tras cambios locales.
+	// Qué hace: mantiene los registros ordenados por correlativo.
+	// Cómo: si models es un arreglo, lo reordena de forma ascendente por CORR_FRECUENCIA.
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -119,7 +128,8 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		this.models = [...this.models].sort((a, b) => Number(a.CORR_FRECUENCIA) - Number(b.CORR_FRECUENCIA));
 	}
 
-	// Agrega o reemplaza en la grilla la respuesta del guardado.
+	// Qué hace: refleja en la grilla el registro recién guardado.
+	// Cómo: agrega el registro si es nuevo, o lo reemplaza por su llave (mttoGridKeyExpr) si ya existía, y luego ordena y refresca la grilla.
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
 		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
 			super.aplicarRegistroEnGrid(data, isAdd);
@@ -142,7 +152,8 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		this.refrescarGridTrasCarga(isAdd);
 	}
 
-	// Retira de la grilla el registro eliminado sin recargar el catálogo.
+	// Qué hace: retira de la grilla el registro eliminado.
+	// Cómo: filtra models excluyendo el registro con la llave indicada y refresca la grilla sin volver a consultar el catálogo.
 	protected override quitarRegistroDeGrid(keyValue: unknown): void {
 		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
 			super.quitarRegistroDeGrid(keyValue);
@@ -154,14 +165,16 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		this.refrescarGridTrasCarga(true);
 	}
 
-	// Espera la actualización de Angular antes de refrescar la grilla.
+	// Qué hace: refresca la grilla después de un cambio en los datos.
+	// Cómo: espera con setTimeout el ciclo de Angular y luego llama a dataGrid.refreshData.
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
 		}, 0);
 	}
 
-	// Abre el registro seleccionado en modo consulta.
+	// Qué hace: abre el registro seleccionado en modo consulta.
+	// Cómo: toma los datos de la fila, llama a fillData y a rowDblClick del componente base, y bloquea el formulario.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -175,7 +188,8 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Prepara el registro seleccionado y habilita sus campos editables.
+	// Qué hace: prepara el registro seleccionado para editarlo.
+	// Cómo: llama a fillData con los datos de la fila, luego a editarClick del componente base y habilita el formulario.
 	onEditClick(e: any): void {
 		if (!e?.row?.data) {
 			return;
@@ -189,7 +203,8 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Inicializa un registro nuevo solo si existe empresa en sesión.
+	// Qué hace: inicia el registro de una nueva frecuencia.
+	// Cómo: valida que haya empresa en sesión con asegurarEmpresaSesion, llama a nuevo del componente base y sincroniza el formulario con el modelo.
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -200,7 +215,8 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Valida el formulario antes de insertar o actualizar.
+	// Qué hace: valida el formulario y guarda la frecuencia.
+	// Cómo: combina model con los datos del formulario, valida con dataForm.instance.validate y llama a guardarMtto, que usa esValido, insert o update del servicio.
 	guardar(): void {
 		const formData = this.dataForm?.instance?.option('formData');
 		if (formData) {
@@ -220,7 +236,8 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Convierte restricciones FK al eliminar en advertencia controlada.
+	// Qué hace: convierte un error de llave foránea al eliminar en una advertencia controlada.
+	// Cómo: intercepta el error del observable con catchError y, si el mensaje indica registros relacionados, devuelve un resultado con Result en false; de lo contrario, propaga el error.
 	private convertirErrorMttoEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
@@ -253,12 +270,14 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
-	// Descarta la edición y restaura el registro original en la grilla.
+	// Qué hace: descarta la edición en curso.
+	// Cómo: llama a cancelar del componente base, que restaura en la grilla el registro cuyo CORR_FRECUENCIA coincide con modelUpdate.
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_FRECUENCIA === this.modelUpdate.CORR_FRECUENCIA);
 	}
 
-	// Solicita la eliminación y controla dependencias asociadas.
+	// Qué hace: elimina la frecuencia de la fila indicada.
+	// Cómo: llama a rowRemovingMtto con delete del servicio, envuelto en convertirErrorMttoEnWarning para controlar dependencias asociadas.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
@@ -266,19 +285,22 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Cambia el estado de la frecuencia seleccionada.
+	// Qué hace: cambia el estado de la frecuencia seleccionada.
+	// Cómo: llama a invocarActivarInactivar con activarInactivar del servicio.
 	activar_inactivar(): void {
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
-	// Deja el formulario en solo lectura (modo consulta).
+	// Qué hace: deja el formulario en solo lectura (modo consulta).
+	// Cómo: pone en readOnly los editores CORR_FRECUENCIA, NOMBRE_FRECUENCIA y ESTADO_FRECUENCIA del formulario.
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_FRECUENCIA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_FRECUENCIA')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ESTADO_FRECUENCIA')?.option('readOnly', true);
 	}
 
-	// Habilita campos editables; el estado queda bloqueado al editar.
+	// Qué hace: habilita los campos editables del formulario.
+	// Cómo: con setTimeout habilita NOMBRE_FRECUENCIA y bloquea CORR_FRECUENCIA; ESTADO_FRECUENCIA queda en solo lectura cuando se está editando (banderaMtto es Update).
 	override habilitar(): void {
 		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
 		setTimeout(() => {
@@ -288,7 +310,8 @@ export class ScFrecuenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Coloca el foco en el primer campo editable del formulario.
+	// Qué hace: ubica el foco al abrir el formulario.
+	// Cómo: con setTimeout enfoca el editor NOMBRE_FRECUENCIA.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('NOMBRE_FRECUENCIA')?.focus();
