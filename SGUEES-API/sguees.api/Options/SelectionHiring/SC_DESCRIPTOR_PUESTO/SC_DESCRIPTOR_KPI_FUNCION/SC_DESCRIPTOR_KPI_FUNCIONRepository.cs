@@ -20,7 +20,7 @@ namespace SGUEES.Repositories
         {
         }
 
-        // Consulta la vista de KPI de la función con los filtros indicados.
+        // Lee de V_SC_DESCRIPTOR_KPI_FUNCION con los filtros recibidos; ordena por CORR_KPI_FUNCION.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -60,7 +60,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Consulta un registro de KPI de la función según los filtros indicados.
+        // Lee un registro de V_SC_DESCRIPTOR_KPI_FUNCION con empresa, descriptor e id de KPI.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -98,7 +98,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Inserta el registro de KPI de la función y devuelve los datos persistidos.
+        // Inserta en SC_DESCRIPTOR_KPI_FUNCION y devuelve el registro creado leído desde la vista.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -143,7 +143,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Actualiza el registro de KPI de la función identificado por sus claves.
+        // Actualiza SC_DESCRIPTOR_KPI_FUNCION por empresa, descriptor e id; devuelve el registro.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -199,7 +199,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Elimina el registro de KPI de la función identificado por sus claves.
+        // Borra el registro de SC_DESCRIPTOR_KPI_FUNCION por empresa, descriptor e id.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -240,7 +240,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Construye los parámetros de escritura de KPI de la función, incluida su auditoría.
+        // Arma columnas y valores para insertar en SC_DESCRIPTOR_KPI_FUNCION, incluyendo auditoría.
         private static List<CParameter> BuildWriteParameters(SC_DESCRIPTOR_KPI_FUNCIONTable Data)
         {
             return new List<CParameter>

@@ -23,7 +23,7 @@ namespace SGUEES.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(service));
         }
 
-        // Obtiene el listado de KPI de la función aplicando los filtros recibidos.
+        // Lista KPIs de funciones de la empresa en sesión; pasa filtros (descriptor, etc.) al servicio.
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> GetAll([FromQuery] SC_DESCRIPTOR_KPI_FUNCIONParam Data)
@@ -32,7 +32,7 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
-        // Obtiene un registro de KPI de la función con los identificadores recibidos.
+        // Obtiene un KPI por CORR_KPI_FUNCION, descriptor y empresa de sesión.
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> Get([FromQuery] SC_DESCRIPTOR_KPI_FUNCIONParam Data)
@@ -41,7 +41,7 @@ namespace SGUEES.Controllers
             return await _service.GetAsync(Data);
         }
 
-        // Consulta el listado de KPI de la función asociado al descriptor.
+        // Lista KPIs del descriptor indicado (alias de GetAll para la pantalla del descriptor).
         [HttpGet("GetCORR_KPI_FUNCION_SC_DESCRIPTOR_PUESTO")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> GetCORR_KPI_FUNCION_SC_DESCRIPTOR_PUESTO([FromQuery] SC_DESCRIPTOR_KPI_FUNCIONParam Data)
@@ -50,33 +50,33 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
-        // Crea un registro de KPI de la función con la auditoría de la sesión.
+        // Crea un KPI; rellena auditoría de sesión y delega al servicio.
         [HttpPost]
         [Authorize(Policy = "/sc-descriptor-puesto|C")]
         public async Task<IActionResult> Post(SC_DESCRIPTOR_KPI_FUNCIONTable Data)
         {
-            // Completa auditoría de creación y empresa de sesión.
+            // Rellena usuario, estación, fechas y empresa antes de guardar.
             SetCreateAudit(Data);
 
             var resultado = await _service.CreateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
-        // Actualiza el registro de KPI de la función y su auditoría de modificación.
+        // Actualiza un KPI; toma CORR_KPI_FUNCION del query string y actualiza auditoría.
         [HttpPut]
         [Authorize(Policy = "/sc-descriptor-puesto|U")]
         public async Task<IActionResult> Put(SC_DESCRIPTOR_KPI_FUNCIONTable Data)
         {
-            // Aplica la llave primaria recibida por query string.
+            // Copia CORR_KPI_FUNCION desde la URL al cuerpo del request.
             this.ApplyQueryKeys(Data, nameof(SC_DESCRIPTOR_KPI_FUNCIONTable.CORR_KPI_FUNCION));
-            // Actualiza auditoría de modificación y empresa de sesión.
+            // Rellena usuario, estación y fecha de modificación.
             SetUpdateAudit(Data);
 
             var resultado = await _service.UpdateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
-        // Elimina el registro de KPI de la función solicitado para la empresa de la sesión.
+        // Elimina un KPI de la empresa en sesión.
         [HttpDelete]
         [Authorize(Policy = "/sc-descriptor-puesto|D")]
         public async Task<IActionResult> Delete([FromQuery] SC_DESCRIPTOR_KPI_FUNCIONTable Data)
@@ -87,7 +87,7 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
-        // Lee CORR_EMPRESA del claim de la sesión autenticada.
+        // Lee CORR_EMPRESA del token JWT del usuario autenticado.
 
         private int GetCorrEmpresa()
         {
@@ -95,14 +95,14 @@ namespace SGUEES.Controllers
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
-        // Obtiene el identificador de usuario desde los claims.
+        // Lee el login del usuario desde el claim NameIdentifier.
 
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
-        // Completa los datos de auditoría requeridos para una creación.
+        // Rellena auditoría al crear: empresa, usuario, estación y fechas.
         private void SetCreateAudit(SC_DESCRIPTOR_KPI_FUNCIONTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -114,7 +114,7 @@ namespace SGUEES.Controllers
             Data.FECHA_ACTU = Data.FECHA_CREA;
         }
 
-        // Completa los datos de auditoría requeridos para una actualización.
+        // Rellena auditoría al modificar: empresa, usuario, estación y fecha.
         private void SetUpdateAudit(SC_DESCRIPTOR_KPI_FUNCIONTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

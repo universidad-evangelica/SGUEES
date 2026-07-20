@@ -9,7 +9,7 @@ namespace SGUEES.Services
 {
     public class SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASService : ISC_PERFIL_PUESTO_COMPETENCIAS_TECNICASService
     {
-        // Valores permitidos de nivel de dominio técnico.
+        // Niveles de dominio técnico aceptados al guardar una competencia.
         private static readonly HashSet<string> NivelesDominioValidos = new(StringComparer.OrdinalIgnoreCase)
         {
             "BASICO",
@@ -28,29 +28,29 @@ namespace SGUEES.Services
             _competenciasRepo = competenciasRepo;
         }
 
-        // Obtiene el listado de competencia técnica del perfil aplicando los filtros recibidos.
+        // Lista competencias técnicas del perfil; convierte filtros a parámetros SQL y consulta el repositorio.
         public async Task<CResult> GetAllAsync(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
-        // Obtiene un registro de competencia técnica del perfil con los identificadores recibidos.
+        // Obtiene una competencia técnica por empresa, perfil e id del registro.
         public async Task<CResult> GetAsync(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeCorr: true));
         }
 
-        // Valida y crea el registro de competencia técnica del perfil con sus datos de auditoría.
+        // Completa datos desde el catálogo, valida nivel 3 y crea el registro en SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS.
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            // Completa y valida la competencia contra el catálogo activo.
+            // Busca la competencia en SC_COMPETENCIAS_TECNICAS y copia nombre, código y descripción si faltan.
             var prepare = await PrepareFromCatalogAsync(Data, esNuevo: true);
             if (prepare != null)
             {
                 return prepare;
             }
 
-            // Valida reglas de negocio antes de crear.
+            // Revisa descriptor, perfil, nivel de dominio y longitudes antes de insertar.
             var validation = Validate(Data, esNuevo: true);
             if (validation != null)
             {
@@ -60,10 +60,10 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida y actualiza el registro existente de competencia técnica del perfil.
+        // Valida y actualiza una competencia técnica existente en SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS.
         public async Task<CResult> UpdateAsync(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            // Valida reglas de negocio antes de actualizar.
+            // Revisa id, nivel de dominio y longitudes antes de actualizar.
             var validation = Validate(Data, esNuevo: false);
             if (validation != null)
             {
@@ -73,7 +73,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida las claves y elimina el registro de competencia técnica del perfil.
+        // Valida claves y elimina la competencia de SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS.
         public async Task<CResult> DeleteAsync(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_EMPRESA <= 0 || Data.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS <= 0)
@@ -84,7 +84,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Completa y contrasta los datos de competencia técnica del perfil con el catálogo activo.
+        // Al crear: lee SC_COMPETENCIAS_TECNICAS, exige nivel NIV3 y rellena nombre/código/descripción vacíos.
         private async Task<CResult> PrepareFromCatalogAsync(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable Data, bool esNuevo)
         {
             if (!esNuevo || Data.CORR_COMPETENCIAS_TECNICAS is not > 0)
@@ -92,7 +92,7 @@ namespace SGUEES.Services
                 return null;
             }
 
-            // Consulta la competencia técnica en el catálogo maestro.
+            // Consulta el catálogo maestro por CORR_COMPETENCIAS_TECNICAS.
             var catalogResult = await _competenciasRepo.GetAsync(new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
@@ -127,7 +127,7 @@ namespace SGUEES.Services
             return null;
         }
 
-        // Construye los parámetros de filtrado para consultar competencia técnica del perfil.
+        // Arma parámetros SQL: empresa; opcionalmente descriptor, perfil e id de competencia del perfil.
         private static List<CParameter> BuildParameters(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASParam xWhere, bool includeCorr = false)
         {
             var p = new List<CParameter>
@@ -158,7 +158,7 @@ namespace SGUEES.Services
             return p;
         }
 
-        // Valida las claves y reglas de negocio requeridas para competencia técnica del perfil.
+        // Revisa empresa, descriptor, perfil, competencia nivel 3, dominio y longitudes de texto.
         private static CResult Validate(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable Data, bool esNuevo)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -221,7 +221,7 @@ namespace SGUEES.Services
             return null;
         }
 
-        // Construye un resultado uniforme para reportar errores de validación.
+        // Devuelve un CResult con ErrorCode 4101 y el mensaje de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult

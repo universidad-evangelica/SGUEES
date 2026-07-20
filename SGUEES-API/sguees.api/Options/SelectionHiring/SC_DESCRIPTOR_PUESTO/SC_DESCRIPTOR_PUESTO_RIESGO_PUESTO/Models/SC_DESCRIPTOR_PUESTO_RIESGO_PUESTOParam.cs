@@ -2,7 +2,8 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
-    // filtros de consulta de SC_DESCRIPTOR_PUESTO_RIESGO_PUESTO.
+    // Filtros de consulta (query string) para listar/buscar SC_DESCRIPTOR_PUESTO_RIESGO_PUESTO por empresa,
+    // descriptor o identificador del riesgo.
     public class SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

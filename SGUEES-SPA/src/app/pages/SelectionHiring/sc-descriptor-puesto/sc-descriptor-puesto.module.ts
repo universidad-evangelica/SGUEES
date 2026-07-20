@@ -1,8 +1,8 @@
-// Modulo de feature: solo importa el routing (declaraciones viven en el routing module).
+// Módulo feature del descriptor de puesto: punto de entrada lazy-loaded.
 import { NgModule } from '@angular/core';
 import { ScDescriptorPuestoRoutingModule } from './sc-descriptor-puesto-routing.module';
 
-// Módulo feature del descriptor: solo reexporta el routing (declaraciones e imports DevExtreme viven allí).
+// Solo importa el routing module; declaraciones e imports DevExtreme viven allí.
 @NgModule({
 	imports: [ScDescriptorPuestoRoutingModule],
 })

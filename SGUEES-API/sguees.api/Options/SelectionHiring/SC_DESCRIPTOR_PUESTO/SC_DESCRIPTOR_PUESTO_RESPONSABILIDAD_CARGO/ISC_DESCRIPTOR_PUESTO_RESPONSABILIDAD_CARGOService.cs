@@ -4,6 +4,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+    // Contrato del servicio de SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO: reglas de negocio para las
+    // responsabilidades del cargo, incluida la precarga desde el catálogo.
     public interface ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService
     {
         // Obtiene el listado de responsabilidad del cargo aplicando los filtros recibidos.

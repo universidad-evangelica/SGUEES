@@ -4,6 +4,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+    // Contrato del servicio de SC_DESCRIPTOR_PUESTO: reglas de negocio para consultar, crear, actualizar
+    // y eliminar el encabezado del descriptor de puesto.
     public interface ISC_DESCRIPTOR_PUESTOService
     {
         // Obtiene el listado de descriptor de puesto aplicando los filtros recibidos.

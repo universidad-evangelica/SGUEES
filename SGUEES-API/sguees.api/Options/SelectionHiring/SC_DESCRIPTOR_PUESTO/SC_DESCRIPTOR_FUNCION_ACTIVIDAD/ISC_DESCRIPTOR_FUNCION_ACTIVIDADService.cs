@@ -4,6 +4,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+    // Contrato del servicio de SC_DESCRIPTOR_FUNCION_ACTIVIDAD: reglas de negocio para las actividades
+    // de una función del descriptor de puesto.
     public interface ISC_DESCRIPTOR_FUNCION_ACTIVIDADService
     {
         // Obtiene el listado de actividad de la función aplicando los filtros recibidos.

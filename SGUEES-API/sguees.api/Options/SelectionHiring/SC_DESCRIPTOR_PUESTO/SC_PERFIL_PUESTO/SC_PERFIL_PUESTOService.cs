@@ -16,23 +16,23 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
-        // Obtiene el listado de perfil del puesto aplicando los filtros recibidos.
+        // Lista perfiles del puesto; convierte filtros a parámetros SQL y consulta el repositorio.
         public async Task<CResult> GetAllAsync(SC_PERFIL_PUESTOParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
-        // Obtiene un registro de perfil del puesto con los identificadores recibidos.
+        // Obtiene un perfil por empresa, descriptor y CORR_PERFIL_PUESTO.
         public async Task<CResult> GetAsync(SC_PERFIL_PUESTOParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeDescriptor: true, includePerfil: true));
         }
 
-        // Valida y crea el registro de perfil del puesto con sus datos de auditoría.
+        // Normaliza catálogos, valida edades/sexo y crea el perfil en SC_PERFIL_PUESTO.
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             NormalizarCatalogos(Data);
-            // Valida reglas de negocio del registro.
+            // Revisa campos obligatorios y rangos antes de guardar.
             var validation = Validate(Data);
             if (validation != null)
             {
@@ -42,7 +42,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida y actualiza el registro existente de perfil del puesto.
+        // Normaliza catálogos, valida y actualiza el perfil en SC_PERFIL_PUESTO.
         public async Task<CResult> UpdateAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_PERFIL_PUESTO <= 0)
@@ -60,7 +60,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Construye los parámetros de filtrado para consultar perfil del puesto.
+        // Arma parámetros SQL: CORR_EMPRESA; opcionalmente descriptor y CORR_PERFIL_PUESTO.
         private static List<CParameter> BuildParameters(
             SC_PERFIL_PUESTOParam xWhere,
             bool includeDescriptor = false,
@@ -87,7 +87,7 @@ namespace SGUEES.Services
         private static readonly string[] SexosPermitidos = { "MASCULINO", "FEMENINO", "INDIFERENTE" };
         private static readonly string[] EstadosFamiliaresPermitidos = { "CASADO", "SOLTERO", "INDIFERENTE", "OTRO" };
 
-        // Valida las claves y reglas de negocio requeridas para perfil del puesto.
+        // Revisa empresa, descriptor guardado, edades, sexo y estado familiar permitidos.
         private static CResult Validate(SC_PERFIL_PUESTOTable Data)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -129,7 +129,7 @@ namespace SGUEES.Services
             return null;
         }
 
-        // Normaliza códigos de catálogo y recorta snapshots de nombre del perfil.
+        // Pone en mayúsculas sexo/estado familiar, recorta nombres de catálogo y limpia ids vacíos.
         private static void NormalizarCatalogos(SC_PERFIL_PUESTOTable Data)
         {
             if (!string.IsNullOrWhiteSpace(Data.SEXO))
@@ -171,7 +171,7 @@ namespace SGUEES.Services
             }
         }
 
-        // Construye un resultado uniforme para reportar errores de validación.
+        // Devuelve un CResult con ErrorCode 4101 y el mensaje de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult

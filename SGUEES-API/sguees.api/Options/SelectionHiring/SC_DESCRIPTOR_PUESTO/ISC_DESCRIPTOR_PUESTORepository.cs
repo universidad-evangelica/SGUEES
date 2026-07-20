@@ -5,6 +5,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+    // Contrato del repositorio de SC_DESCRIPTOR_PUESTO: CRUD base (heredado de IRepository) más las
+    // operaciones específicas del encabezado del descriptor de puesto.
     public interface ISC_DESCRIPTOR_PUESTORepository : IRepository<SC_DESCRIPTOR_PUESTOTable>
     {
         // Comprueba si el puesto ya tiene otro descriptor abierto en la empresa.

@@ -1,6 +1,6 @@
-<!-- Vista mtto Descriptor de Puesto: barra, formulario por tabs y grid de consulta. -->
+<!-- Pantalla de mantenimiento del Descriptor de Puesto. -->
 <div class="sguees-mtto-view">
-<!-- Barra estandar de mantenimiento (nuevo/guardar/cancelar). -->
+<!-- Barra superior: Nuevo, Guardar y Cancelar. -->
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[subTituloVentana]="subTituloVentana"
@@ -13,17 +13,17 @@
 >
 </app-barra-data-mtto>
 
-<!-- Formulario del descriptor (oculto en modo browse). -->
+<!-- Formulario del descriptor (se oculta cuando solo se ve el listado). -->
 <div class="content-block dx-card responsive-paddings descriptor-form-card" *ngIf="!isBrowse()">
-	<!-- Tabs principales: Descriptor (datos) y Bitacora. -->
+	<!-- Pestañas principales: datos del descriptor e historial (bitácora). -->
 	<dx-tab-panel
 		#tabPanelPrincipal
 		class="descriptor-tab-panel"
 		[(selectedIndex)]="mainTabIndex"
 	>
-		<!-- Tab Descriptor: encabezado + sub-tabs de secciones. -->
+		<!-- Pestaña Descriptor: datos generales y secciones. -->
 		<dxi-item title="Descriptor" icon="file">
-			<!-- Generalidades: unidad, puesto, reporta, formato y demas campos del header. -->
+			<!-- Datos generales: unidad, puesto, a quién reporta, formato, etc. -->
 			<div class="descriptor-generalidades">
 				<h3 class="descriptor-section-title">Generalidades</h3>
 
@@ -93,12 +93,12 @@
 				</dx-form>
 			</div>
 
-			<!-- Aviso hasta que el descriptor tenga correlativo guardado. -->
+			<!-- Aviso: primero hay que guardar el descriptor para editar secciones. -->
 			<p class="descriptor-secciones-hint" *ngIf="!mostrarSeccionesDescriptor" role="status">
 				Guarde las generalidades del descriptor en modo edicion para habilitar objetivo, funciones y demas secciones.
 			</p>
 
-			<!-- Sub-tabs de detalle; visibilidad de algunos depende de FORMATO corto/extenso. -->
+			<!-- Secciones del descriptor. Algunas solo aparecen en formato corto o extenso. -->
 			<dx-tab-panel
 				#tabPanelSecciones
 				class="descriptor-sub-tab-panel"
@@ -109,7 +109,7 @@
 				[swipeEnabled]="false"
 				(onSelectionChanged)="onSeccionTabSelectionChanged($event)"
 			>
-				<!-- Objetivo del puesto (texto libre en el encabezado del descriptor). -->
+				<!-- Objetivo del puesto (texto libre). -->
 				<dxi-item title="Objetivo">
 					<div class="descriptor-sub-tab-content">
 						<h4 class="descriptor-sub-tab-heading">Objetivo</h4>
@@ -123,7 +123,7 @@
 					</div>
 				</dxi-item>
 
-				<!-- Funciones clave (+ popup de actividades en formato extenso). -->
+				<!-- Funciones clave. En formato extenso se pueden abrir actividades por función. -->
 				<dxi-item title="Funciones">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
@@ -274,7 +274,7 @@
 					</div>
 				</dxi-item>
 
-				<!-- Funciones secundarias: solo formato corto. -->
+				<!-- Funciones secundarias (solo formato corto). -->
 				<dxi-item title="Funciones Secundarias" [visible]="esFormatoCorto">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
@@ -399,7 +399,7 @@
 					</div>
 				</dxi-item>
 
-				<!-- KPIs / indicadores: solo formato corto. -->
+				<!-- Indicadores KPI (solo formato corto). -->
 				<dxi-item title="KPIs" [visible]="esFormatoCorto">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
@@ -560,7 +560,7 @@
 					</div>
 				</dxi-item>
 
-				<!-- Perfil del puesto: datos demograficos + sub-tabs educacion/experiencia. -->
+				<!-- Perfil del puesto: datos personales, educación y experiencia. -->
 				<dxi-item title="Perfil">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-perfil-header">
@@ -576,7 +576,7 @@
 							[animationEnabled]="true"
 							[swipeEnabled]="false"
 						>
-							<!-- Datos demograficos del perfil (edad, sexo, modalidad, etc.). -->
+							<!-- Datos del perfil: edad, sexo, disponibilidad, modalidad, etc. -->
 							<dxi-item title="Perfil" icon="card">
 								<div class="descriptor-perfil-tab-content">
 									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
@@ -711,7 +711,7 @@
 								</div>
 							</dxi-item>
 
-							<!-- Educacion requerida del perfil. -->
+							<!-- Educación requerida para el puesto. -->
 							<dxi-item title="Educacion" icon="bookmark">
 								<div class="descriptor-perfil-tab-content">
 									<div class="descriptor-funciones-header">
@@ -854,7 +854,7 @@
 								</div>
 							</dxi-item>
 
-							<!-- Experiencia laboral requerida del perfil. -->
+							<!-- Experiencia laboral requerida para el puesto. -->
 							<dxi-item title="Experiencia" icon="folder">
 								<div class="descriptor-perfil-tab-content">
 									<div class="descriptor-funciones-header">
@@ -994,7 +994,7 @@
 					</div>
 				</dxi-item>
 
-				<!-- Competencias: sub-tabs tecnicas y conductuales del perfil. -->
+				<!-- Competencias técnicas y conductuales. -->
 				<dxi-item title="Competencias">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-competencias-header">
@@ -1010,7 +1010,7 @@
 							[animationEnabled]="true"
 							[swipeEnabled]="false"
 						>
-							<!-- Competencias tecnicas (catalogo NIV3) del perfil. -->
+							<!-- Competencias técnicas (catálogo nivel 3). -->
 							<dxi-item title="Tecnicas" icon="toolbox">
 								<div class="descriptor-competencias-tab-content">
 									<div class="descriptor-funciones-header">
@@ -1125,7 +1125,7 @@
 											dataType="number"
 											alignment="left"
 										></dxi-column>
-										<!-- Competencia NIV3 -->
+										<!-- Columna para elegir la competencia técnica. -->
 										<dxi-column
 											dataField="CORR_COMPETENCIAS_TECNICAS"
 											caption="Competencia"
@@ -1177,7 +1177,7 @@
 								</div>
 							</dxi-item>
 
-							<!-- Competencias conductuales del perfil. -->
+							<!-- Competencias conductuales. -->
 							<dxi-item title="Conductuales" icon="group">
 								<div class="descriptor-competencias-tab-content">
 									<div class="descriptor-funciones-header">
@@ -1344,7 +1344,7 @@
 					</div>
 				</dxi-item>
 
-				<!-- Relaciones laborales internas/externas: solo formato extenso. -->
+				<!-- Relaciones internas y externas (solo formato extenso). -->
 				<dxi-item title="Relaciones" [visible]="esFormatoExtenso">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-relaciones-header">
@@ -1360,7 +1360,7 @@
 							[animationEnabled]="true"
 							[swipeEnabled]="false"
 						>
-							<!-- Relaciones internas (TIPO_RELACION = I). -->
+							<!-- Relaciones internas. -->
 							<dxi-item title="Internas" icon="home">
 								<div class="descriptor-relaciones-tab-content">
 									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
@@ -1484,7 +1484,7 @@
 								</div>
 							</dxi-item>
 
-							<!-- Relaciones externas (TIPO_RELACION = E). -->
+							<!-- Relaciones externas. -->
 							<dxi-item title="Externas" icon="globe">
 								<div class="descriptor-relaciones-tab-content">
 									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
@@ -1611,7 +1611,7 @@
 					</div>
 				</dxi-item>
 
-				<!-- Requerimientos organizacionales del descriptor. -->
+				<!-- Requerimientos organizacionales. -->
 				<dxi-item title="Requerimientos">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
@@ -1766,7 +1766,7 @@
 					</div>
 				</dxi-item>
 
-				<!-- Riesgos del puesto: solo formato extenso. -->
+				<!-- Riesgos del puesto (solo formato extenso). -->
 				<dxi-item title="Riesgos" [visible]="esFormatoExtenso">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
@@ -1930,7 +1930,7 @@
 					</div>
 				</dxi-item>
 
-				<!-- Responsabilidades del cargo (+ fila virtual de impacto economico). -->
+				<!-- Responsabilidades del cargo (incluye impacto económico). -->
 				<dxi-item title="Responsabilidades">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
@@ -2123,7 +2123,7 @@
 					</div>
 				</dxi-item>
 
-				<!-- Entrenamiento: induccion, semanas y responsable (operacion dedicada del descriptor). -->
+				<!-- Entrenamiento: inducción, duración y responsable. -->
 				<dxi-item title="Entrenamiento">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-perfil-header">
@@ -2211,7 +2211,7 @@
 				</dxi-item>
 			</dx-tab-panel>
 
-			<!-- Card cuando el tab activo deja de aplicar tras cambiar formato. -->
+			<!-- Aviso: el tab anterior no aplica al formato actual; elija otro. -->
 			<div
 				class="descriptor-seleccione-tab-card"
 				*ngIf="mostrarSeccionesDescriptor && mostrarAvisoSeleccioneTab"
@@ -2227,7 +2227,7 @@
 			</div>
 		</dxi-item>
 
-		<!-- Tab Bitacora: historial de estados del descriptor. -->
+		<!-- Pestaña Bitácora: historial de estados del descriptor. -->
 		<dxi-item title="Bitácora" icon="event">
 			<div class="descriptor-bitacora">
 				<h3 class="descriptor-section-title descriptor-bitacora-title">
@@ -2244,7 +2244,7 @@
 	</dx-tab-panel>
 </div>
 
-<!-- Grid de consulta (modo browse) del mantenimiento. -->
+<!-- Listado de descriptores (vista de consulta). -->
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
 	[models]="models"
@@ -2277,7 +2277,7 @@
 
 </div>
 
-<!-- Overlay de carga durante operaciones asincronas. -->
+<!-- Indicador de carga mientras esperan respuestas del servidor. -->
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"
@@ -2289,7 +2289,7 @@
 >
 </dx-load-panel>
 
-<!-- Popup de actividades asociadas a una funcion clave. -->
+<!-- Ventana emergente: actividades de una función clave. -->
 <dx-popup
 	[(visible)]="actividadesPopupVisible"
 	[showTitle]="true"

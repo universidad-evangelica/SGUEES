@@ -4,6 +4,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+    // Contrato del servicio de SC_DESCRIPTOR_RELACION_LABORAL: reglas de negocio para las relaciones
+    // laborales del descriptor de puesto.
     public interface ISC_DESCRIPTOR_RELACION_LABORALService
     {
         // Obtiene el listado de relación laboral aplicando los filtros recibidos.

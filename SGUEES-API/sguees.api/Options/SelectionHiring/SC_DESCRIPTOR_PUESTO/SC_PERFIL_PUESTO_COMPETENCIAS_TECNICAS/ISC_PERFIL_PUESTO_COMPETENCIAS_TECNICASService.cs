@@ -4,6 +4,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+    // Contrato del servicio de SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS: reglas de negocio para las
+    // competencias técnicas del perfil de puesto.
     public interface ISC_PERFIL_PUESTO_COMPETENCIAS_TECNICASService
     {
         // Obtiene el listado de competencia técnica del perfil aplicando los filtros recibidos.

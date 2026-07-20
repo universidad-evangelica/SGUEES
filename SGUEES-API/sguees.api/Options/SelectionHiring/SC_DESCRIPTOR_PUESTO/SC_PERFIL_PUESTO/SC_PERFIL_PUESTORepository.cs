@@ -20,7 +20,7 @@ namespace SGUEES.Repositories
         {
         }
 
-        // Consulta la vista de perfil del puesto con los filtros indicados.
+        // Lee de V_SC_PERFIL_PUESTO con los filtros recibidos; ordena por CORR_PERFIL_PUESTO.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -60,7 +60,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Consulta un registro de perfil del puesto según los filtros indicados.
+        // Lee un registro de V_SC_PERFIL_PUESTO con empresa, descriptor e id de perfil.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -98,7 +98,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Inserta el registro de perfil del puesto y devuelve los datos persistidos.
+        // Inserta en SC_PERFIL_PUESTO y devuelve el registro creado leído desde la vista.
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -143,7 +143,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Actualiza el registro de perfil del puesto identificado por sus claves.
+        // Actualiza SC_PERFIL_PUESTO por empresa, descriptor e id; devuelve el registro.
         public async Task<CResult> UpdateAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -204,7 +204,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Elimina el registro de perfil del puesto identificado por sus claves.
+        // Borra el registro de SC_PERFIL_PUESTO por empresa, descriptor e id.
         public async Task<CResult> DeleteAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -245,7 +245,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Construye los parámetros de escritura de perfil del puesto, incluida su auditoría.
+        // Arma columnas y valores para insertar en SC_PERFIL_PUESTO, incluyendo auditoría.
         private static List<CParameter> BuildWriteParameters(SC_PERFIL_PUESTOTable Data)
         {
             return new List<CParameter>

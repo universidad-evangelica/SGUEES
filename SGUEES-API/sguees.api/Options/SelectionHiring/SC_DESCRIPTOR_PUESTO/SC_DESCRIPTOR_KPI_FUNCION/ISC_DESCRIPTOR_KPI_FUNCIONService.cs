@@ -4,6 +4,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+    // Contrato del servicio de SC_DESCRIPTOR_KPI_FUNCION: reglas de negocio para los indicadores (KPI)
+    // de desempeño del descriptor de puesto.
     public interface ISC_DESCRIPTOR_KPI_FUNCIONService
     {
         // Obtiene el listado de KPI de la función aplicando los filtros recibidos.

@@ -4,6 +4,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+    // Contrato del servicio de SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES: reglas de negocio para las
+    // competencias conductuales del perfil de puesto.
     public interface ISC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESService
     {
         // Obtiene el listado de competencia conductual del perfil aplicando los filtros recibidos.

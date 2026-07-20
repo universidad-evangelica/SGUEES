@@ -20,7 +20,7 @@ namespace SGUEES.Repositories
         {
         }
 
-        // Consulta la vista de competencia técnica del perfil con los filtros indicados.
+        // Lee de V_SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS con filtros; ordena por id.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -60,7 +60,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Consulta un registro de competencia técnica del perfil según los filtros indicados.
+        // Lee un registro de V_SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS con empresa e id.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -98,7 +98,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Inserta el registro de competencia técnica del perfil y devuelve los datos persistidos.
+        // Inserta en SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS y devuelve el registro leído desde la vista.
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -142,7 +142,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Actualiza el registro de competencia técnica del perfil identificado por sus claves.
+        // Actualiza SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS por empresa e id; devuelve el registro.
         public async Task<CResult> UpdateAsync(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -198,7 +198,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Elimina el registro de competencia técnica del perfil identificado por sus claves.
+        // Borra el registro de SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS por empresa e id.
         public async Task<CResult> DeleteAsync(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -238,7 +238,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Construye los parámetros de escritura de competencia técnica del perfil, incluida su auditoría.
+        // Arma columnas y valores para insertar en SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS, con auditoría.
         private static List<CParameter> BuildWriteParameters(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable Data)
         {
             return new List<CParameter>

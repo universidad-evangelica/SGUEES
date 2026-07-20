@@ -2,7 +2,8 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
-    // filtros de consulta de SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS.
+    // Filtros de consulta (query string) para listar/buscar SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS
+    // por empresa, descriptor, perfil o identificador de la competencia.
     public class SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

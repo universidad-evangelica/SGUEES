@@ -5,6 +5,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+    // Contrato del repositorio de SC_DESCRIPTOR_RELACION_LABORAL: acceso a datos de las relaciones laborales
+    // del descriptor de puesto.
     public interface ISC_DESCRIPTOR_RELACION_LABORALRepository
     {
         // Consulta la vista de relación laboral con los filtros indicados.

@@ -15,22 +15,22 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
-        // Obtiene el listado de KPI de la función aplicando los filtros recibidos.
+        // Lista KPIs del descriptor; convierte filtros a parámetros SQL y consulta el repositorio.
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_KPI_FUNCIONParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
-        // Obtiene un registro de KPI de la función con los identificadores recibidos.
+        // Obtiene un KPI por empresa, descriptor y CORR_KPI_FUNCION.
         public async Task<CResult> GetAsync(SC_DESCRIPTOR_KPI_FUNCIONParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeKpi: true));
         }
 
-        // Valida y crea el registro de KPI de la función con sus datos de auditoría.
+        // Valida indicador, frecuencia y meta; luego inserta en SC_DESCRIPTOR_KPI_FUNCION.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            // Valida reglas de negocio del registro.
+            // Revisa campos obligatorios y rangos antes de guardar.
             var validation = Validate(Data);
             if (validation != null)
             {
@@ -40,7 +40,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida y actualiza el registro existente de KPI de la función.
+        // Valida y actualiza un KPI existente en SC_DESCRIPTOR_KPI_FUNCION.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var validation = Validate(Data);
@@ -52,7 +52,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida las claves y elimina el registro de KPI de la función.
+        // Valida claves y elimina el KPI de SC_DESCRIPTOR_KPI_FUNCION.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_KPI_FUNCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_PUESTO <= 0 || Data.CORR_KPI_FUNCION <= 0)
@@ -63,7 +63,7 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Construye los parámetros de filtrado para consultar KPI de la función.
+        // Arma parámetros SQL: siempre CORR_EMPRESA; opcionalmente descriptor y CORR_KPI_FUNCION.
         private static List<CParameter> BuildParameters(SC_DESCRIPTOR_KPI_FUNCIONParam xWhere, bool includeKpi = false)
         {
             var p = new List<CParameter>
@@ -84,7 +84,7 @@ namespace SGUEES.Services
             return p;
         }
 
-        // Valida las claves y reglas de negocio requeridas para KPI de la función.
+        // Revisa empresa, descriptor guardado, longitudes y que la meta esté entre 0 y 100.
         private static CResult Validate(SC_DESCRIPTOR_KPI_FUNCIONTable Data)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -115,7 +115,7 @@ namespace SGUEES.Services
             return null;
         }
 
-        // Construye un resultado uniforme para reportar errores de validación.
+        // Devuelve un CResult con ErrorCode 4101 y el mensaje de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult

@@ -2,7 +2,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
-    // filtros de consulta de SC_DESCRIPTOR_PUESTO.
+    // Filtros de consulta (query string) para listar/buscar SC_DESCRIPTOR_PUESTO por empresa e identificador.
     public class SC_DESCRIPTOR_PUESTOParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

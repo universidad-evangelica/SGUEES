@@ -4,6 +4,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+    // Contrato del servicio de SC_PERFIL_PUESTO: reglas de negocio para el perfil (requisitos generales)
+    // del descriptor de puesto.
     public interface ISC_PERFIL_PUESTOService
     {
         // Obtiene el listado de perfil del puesto aplicando los filtros recibidos.

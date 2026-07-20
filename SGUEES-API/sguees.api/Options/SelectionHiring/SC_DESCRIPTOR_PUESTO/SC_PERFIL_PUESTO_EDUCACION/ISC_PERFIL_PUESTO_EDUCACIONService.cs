@@ -4,6 +4,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+    // Contrato del servicio de SC_PERFIL_PUESTO_EDUCACION: reglas de negocio para los requisitos de
+    // educación del perfil de puesto.
     public interface ISC_PERFIL_PUESTO_EDUCACIONService
     {
         // Obtiene el listado de educación del perfil aplicando los filtros recibidos.

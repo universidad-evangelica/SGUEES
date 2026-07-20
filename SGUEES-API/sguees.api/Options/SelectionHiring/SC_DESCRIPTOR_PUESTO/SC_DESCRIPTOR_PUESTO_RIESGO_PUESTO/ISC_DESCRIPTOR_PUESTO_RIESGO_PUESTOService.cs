@@ -4,6 +4,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+    // Contrato del servicio de SC_DESCRIPTOR_PUESTO_RIESGO_PUESTO: reglas de negocio para los riesgos del
+    // puesto, incluida la precarga desde el catálogo.
     public interface ISC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService
     {
         // Obtiene el listado de riesgo del puesto aplicando los filtros recibidos.

@@ -4,6 +4,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+    // Contrato del servicio de SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL: reglas de negocio para
+    // los requerimientos organizacionales del descriptor, incluida la precarga desde el catálogo.
     public interface ISC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService
     {
         // Obtiene el listado de requerimiento organizacional aplicando los filtros recibidos.

@@ -4,6 +4,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
+    // Contrato del servicio de SC_PERFIL_PUESTO_EXPERIENCIA: reglas de negocio para los requisitos de
+    // experiencia del perfil de puesto.
     public interface ISC_PERFIL_PUESTO_EXPERIENCIAService
     {
         // Obtiene el listado de experiencia del perfil aplicando los filtros recibidos.

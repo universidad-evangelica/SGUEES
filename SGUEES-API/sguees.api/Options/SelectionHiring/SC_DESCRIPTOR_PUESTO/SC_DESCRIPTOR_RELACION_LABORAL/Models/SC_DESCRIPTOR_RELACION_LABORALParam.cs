@@ -2,7 +2,8 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
-    // filtros de consulta de SC_DESCRIPTOR_RELACION_LABORAL.
+    // Filtros de consulta (query string) para listar/buscar SC_DESCRIPTOR_RELACION_LABORAL por empresa,
+    // descriptor, identificador o tipo de relación.
     public class SC_DESCRIPTOR_RELACION_LABORALParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

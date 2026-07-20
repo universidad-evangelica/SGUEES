@@ -2,7 +2,8 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
-    // filtros de consulta de SC_PERFIL_PUESTO.
+    // Filtros de consulta (query string) para listar/buscar SC_PERFIL_PUESTO por empresa, descriptor
+    // o identificador del perfil.
     public class SC_PERFIL_PUESTOParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

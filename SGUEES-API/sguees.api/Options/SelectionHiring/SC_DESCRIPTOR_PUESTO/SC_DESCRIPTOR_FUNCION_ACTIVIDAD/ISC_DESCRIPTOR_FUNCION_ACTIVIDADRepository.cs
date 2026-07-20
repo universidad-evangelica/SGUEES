@@ -5,6 +5,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+    // Contrato del repositorio de SC_DESCRIPTOR_FUNCION_ACTIVIDAD: acceso a datos de las actividades
+    // de una función del descriptor de puesto.
     public interface ISC_DESCRIPTOR_FUNCION_ACTIVIDADRepository
     {
         // Consulta la vista de actividad de la función con los filtros indicados.

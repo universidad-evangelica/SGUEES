@@ -2,7 +2,8 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
-    // filtros de consulta de SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL.
+    // Filtros de consulta (query string) para listar/buscar SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL
+    // por empresa, descriptor o identificador del requerimiento.
     public class SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

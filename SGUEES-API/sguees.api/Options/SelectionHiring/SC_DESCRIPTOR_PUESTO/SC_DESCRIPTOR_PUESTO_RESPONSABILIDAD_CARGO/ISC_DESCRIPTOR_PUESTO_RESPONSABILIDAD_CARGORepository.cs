@@ -5,6 +5,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+    // Contrato del repositorio de SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO: CRUD base (heredado de
+    // IRepository) más las operaciones específicas de las responsabilidades del cargo.
     public interface ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGORepository : IRepository<SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable>
     {
         // Obtiene todas las responsabilidades del descriptor sin restringirlas por formato.

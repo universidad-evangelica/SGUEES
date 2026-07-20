@@ -64,7 +64,7 @@ import { ScDescriptorPuestoService } from './sc-descriptor-puesto.service';
 	templateUrl: './sc-descriptor-puesto.component.html',
 	styleUrls: ['./sc-descriptor-puesto.component.scss'],
 })
-// Vista de mantenimiento del Descriptor de Puesto (encabezado + secciones por formato).
+// Pantalla para crear y editar descriptores de puesto: encabezado y secciones según el formato.
 export class ScDescriptorPuestoComponent extends CBaseComponent implements OnInit, OnDestroy {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 	@ViewChild('fHeaderData', { static: false }) headerForm!: DxFormComponent;
@@ -104,14 +104,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_PUESTO: MockPuesto[] = [];
 	mCORR_PUESTO_REPORTA: MockPuesto[] = [];
 	mCORR_FRECUENCIA: ScFrecuenciaLookup[] = [];
-	// Lookup del editor KPI: activas + solo la frecuencia de la fila en edición (si está inactiva).
+	// Al editar un KPI: frecuencias activas del catálogo más la ya guardada en la fila (aunque esté inactiva).
 	mCORR_FRECUENCIA_KPI_EDIT: ScFrecuenciaLookup[] = [];
 	frecuenciasKpiLookupColumns = [
 		{ dataField: 'CORR_FRECUENCIA', caption: 'Codigo', width: 90 },
 		{ dataField: 'NOMBRE_FRECUENCIA_CATALOGO', caption: 'Frecuencia', width: 280 },
 	];
 	mCORR_DISPONIBILIDAD_HORARIO: ScDisponibilidadHorarioLookup[] = [];
-	// Lookup de perfil: activas + la disponibilidad ya asociada (si está inactiva).
+	// Al editar el perfil: disponibilidades activas más la ya asociada (aunque esté inactiva).
 	mCORR_DISPONIBILIDAD_HORARIO_EDIT: ScDisponibilidadHorarioLookup[] = [];
 	disponibilidadHorarioLookupColumns = [
 		{ dataField: 'CORR_DISPONIBILIDAD_HORARIO', caption: 'Codigo', width: 90 },
@@ -124,7 +124,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ dataField: 'MODALIDAD_NOMBRE_CATALOGO', caption: 'Modalidad', width: 280 },
 	];
 	mCORR_INDUCCION: ScInduccionLookupItem[] = [];
-	// Lookup de entrenamiento: activas + la inducción ya asociada al descriptor (si está inactiva).
+	// Al editar entrenamiento: inducciones activas más la ya asociada al descriptor (aunque esté inactiva).
 	mCORR_INDUCCION_EDIT: ScInduccionLookupItem[] = [];
 	induccionesLookupColumns = [
 		{ dataField: 'CORR_INDUCCION', caption: 'Codigo', width: 90 },
@@ -141,7 +141,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_RESPONSABILIDAD: ScResponsabilidadCargoLookupItem[] = [];
 	mCORR_RESPONSABILIDAD_DISPONIBLES: ScResponsabilidadCargoLookupItem[] = [];
 	mCORR_IMPACTO_ECONOMICO: ScImpactoEconomicoLookupItem[] = [];
-	// Lookup de edición: activos + el impacto ya asociado (si está inactivo); DESCRIPCION puede ser snapshot.
+	// Al editar impacto económico: activos del catálogo más el ya guardado; DESCRIPCION puede ser el valor cerrado del descriptor.
 	mCORR_IMPACTO_ECONOMICO_EDIT: ScImpactoEconomicoLookupItem[] = [];
 	impactosEconomicosLookupColumns = [
 		{ dataField: 'CORR_IMPACTO_ECONOMICO', caption: 'Codigo', width: 90 },
@@ -155,14 +155,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		/*
 		{ dataField: 'GRUPO_NIV1', caption: 'Grupo NIV1', width: 180 },
 		{ dataField: 'GRUPO_NIV2', caption: 'Grupo NIV2', width: 180 },*/
-		{ dataField: 'CODIGO_COMPETENCIAS_TECNICAS_CATALOGO', caption: 'Codigo', width: 120 }, // Codigo NIV3
+		{ dataField: 'CODIGO_COMPETENCIAS_TECNICAS_CATALOGO', caption: 'Codigo', width: 120 }, // Código del nivel 3 del catálogo
 		//{ dataField: 'NIVEL', caption: 'Nivel', width: 80 },
-		{ dataField: 'NOMBRE_COMPETENCIAS_TECNICAS', caption: 'Competencia Técnica', width: 220 }, // Competencia NIV3
+		{ dataField: 'NOMBRE_COMPETENCIAS_TECNICAS', caption: 'Competencia Técnica', width: 220 }, // Nombre de la competencia (nivel 3)
 		//{ dataField: 'DESCRIPCION', caption: 'Definicion', width: 260 },
 	];
 	competenciasConductualesLookupColumns = [
 		//{ dataField: 'CORR_COMPETENCIAS_CONDUCTUALES', caption: 'Corr.', width: 90 },
-		{ dataField: 'CODIGO_TIPO_PUESTO_CATALOGO', caption: 'Codigo', width: 140 }, // Cod. tipo puesto o Grupo ocupacional
+		{ dataField: 'CODIGO_TIPO_PUESTO_CATALOGO', caption: 'Codigo', width: 140 }, // Código de tipo de puesto o grupo ocupacional
 		{ dataField: 'NOMBRE_COMPETENCIAS_CONDUCTUALES', caption: 'Competencia Conductual', width: 220 },
 	];
 	requerimientosOrganizacionalesLookupColumns = [
@@ -256,13 +256,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mostrarAvisoSeleccioneTab = false;
 	readonly actividadesPopupWrapperAttr = { class: 'descriptor-actividades-popup-wrapper' };
 	private actividadesPopupMediaQuery?: MediaQueryList;
+	// Qué hace: mantiene el popup de actividades a pantalla completa acorde al tamaño de la ventana.
+	// Cómo: se ejecuta cuando cambia el media query registrado y copia su resultado (matches) a actividadesPopupFullScreen.
 	private readonly onActividadesPopupMediaChange = (event: MediaQueryListEvent): void => {
 		this.actividadesPopupFullScreen = event.matches;
 	};
 
 	private readonly maintenanceSubtitulo = 'Descriptor de Puesto';
 
-	// Inyecta servicio, route y ChangeDetectorRef; configura el mtto base.
+	// Recibe servicios en el constructor y deja listas columnas, resumen y campos del encabezado.
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -331,11 +333,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.headerItems = this.service.getHeaderItems();
 	}
 
+	// Qué hace: expone al framework base la referencia del grid principal de mantenimiento.
+	// Cómo: devuelve la instancia de dataGrid enlazada con @ViewChild, o null si aún no está disponible.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
-	// Inicializa mtto, combos y consulta inicial del descriptor de puesto.
+	// Al abrir la vista: carga combos, consulta el listado y configura el popup de actividades.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.llenaComboBox();
@@ -343,12 +347,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.configurarActividadesPopupResponsive();
 	}
 
-	// Limpia suscripciones/timers al destruir el componente.
+	// Al salir de la vista: quita el listener que ajusta el popup de actividades.
 	ngOnDestroy(): void {
 		this.actividadesPopupMediaQuery?.removeEventListener('change', this.onActividadesPopupMediaChange);
 	}
 
-	// Ajusta el popup de actividades al ancho de pantalla para mantenerlo usable en mobile.
+	// En pantallas pequeñas abre el popup de actividades a pantalla completa.
 	private configurarActividadesPopupResponsive(): void {
 		if (typeof window === 'undefined' || !window.matchMedia) {
 			return;
@@ -359,8 +363,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actividadesPopupMediaQuery.addEventListener('change', this.onActividadesPopupMediaChange);
 	}
 
-	// Carga los catálogos generales que alimentan el encabezado y los grids de las distintas secciones.
-	// Cada lookup conserva su indicador de carga para no bloquear la vista mientras llegan respuestas paralelas.
+	// Pide a la API los catálogos del encabezado y de cada sección.
+	// Cada combo carga por separado para no bloquear la pantalla mientras llegan los datos.
 	llenaComboBox(): void {
 		this.mCORR_UNIDAD = [...MOCK_UNIDADES];
 		this.actualizarPuestosPorUnidad(this.model?.CORR_UNIDAD ?? null);
@@ -382,6 +386,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.getTIPO_REQUERIDO();
 	}
 
+	// Qué hace: carga el catálogo de formatos disponibles para el descriptor (corto/extenso).
+	// Cómo: llama a getLookUp GetFORMATO, guarda el resultado en mFORMATO y aplica el combo al encabezado.
 	getFORMATO(): void {
 		this.appInfoService
 			.getLookUp(
@@ -405,6 +411,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: carga el catálogo de niveles de dominio para las competencias técnicas del perfil.
+	// Cómo: llama a getLookUp GetNIVEL_DOMINIO y guarda el resultado en competenciaTecnicaNivelDominioOptions.
 	getNIVEL_DOMINIO(): void {
 		this.appInfoService
 			.getLookUp(
@@ -427,6 +435,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: carga el catálogo de sexo para el perfil del puesto.
+	// Cómo: llama a getLookUp GetSEXO y guarda el resultado en perfilSexoOptions.
 	getSEXO(): void {
 		this.appInfoService
 			.getLookUp(
@@ -449,6 +459,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: carga el catálogo de estado familiar para el perfil del puesto.
+	// Cómo: llama a getLookUp GetESTADO_FAMILIAR y guarda el resultado en perfilEstadoFamiliarOptions.
 	getESTADO_FAMILIAR(): void {
 		this.appInfoService
 			.getLookUp(
@@ -471,6 +483,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: carga el catálogo de licencias para el perfil del puesto.
+	// Cómo: llama a getLookUp GetLICENCIA y guarda el resultado en perfilLicenciaOptions.
 	getLICENCIA(): void {
 		this.appInfoService
 			.getLookUp(
@@ -493,6 +507,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: carga el catálogo de tipo requerido para la educación del perfil.
+	// Cómo: llama a getLookUp GetTIPO_REQUERIDO y guarda el resultado en educacionTipoRequeridoOptions.
 	getTIPO_REQUERIDO(): void {
 		this.appInfoService
 			.getLookUp(
@@ -515,7 +531,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Sincroniza el lookup de FORMATO del encabezado con el valor actual del modelo.
+	// Actualiza las opciones del campo FORMATO en el formulario con el catálogo cargado.
 	private aplicarFormatoLookupAlHeader(): void {
 		const item = this.headerItems?.find((x) => x.dataField === 'FORMATO');
 		if (!item) {
@@ -533,6 +549,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.headerForm?.instance?.itemOption('FORMATO', 'editorOptions', item.editorOptions);
 	}
 
+	// Qué hace: carga el catálogo de frecuencias usado por los KPIs de las funciones.
+	// Cómo: llama a getLookUp GetCORR_FRECUENCIA y guarda el resultado normalizado en mCORR_FRECUENCIA.
 	getCORR_FRECUENCIA(): void {
 		this.appInfoService
 			.getLookUp(
@@ -565,6 +583,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: carga el catálogo de disponibilidad horaria usado por el perfil del puesto.
+	// Cómo: llama a getLookUp GetCORR_DISPONIBILIDAD_HORARIO, guarda el resultado en mCORR_DISPONIBILIDAD_HORARIO
+	// y luego prepara la lista de edición con prepararDisponibilidadLookupParaPerfil.
 	getCORR_DISPONIBILIDAD_HORARIO(): void {
 		this.appInfoService
 			.getLookUp(
@@ -601,6 +622,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: carga el catálogo de tipos de modalidad usado por el perfil del puesto.
+	// Cómo: llama a getLookUp GetCORR_TIPO_MODALIDAD, guarda el resultado en mCORR_TIPO_MODALIDAD
+	// y luego prepara la lista de edición con prepararModalidadLookupParaPerfil.
 	getCORR_TIPO_MODALIDAD(): void {
 		this.appInfoService
 			.getLookUp(
@@ -635,6 +659,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: carga el catálogo de inducciones usado por la sección de entrenamiento.
+	// Cómo: llama al servicio getInduccionesLookup, guarda el resultado en mCORR_INDUCCION
+	// y luego prepara la lista de edición con prepararInduccionesLookupParaEntrenamiento.
 	getCORR_INDUCCION(): void {
 		this.service
 			.getInduccionesLookup()
@@ -667,6 +694,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: carga el catálogo de competencias técnicas (nivel 3) para la sección de perfil.
+	// Cómo: llama a getLookUp GetCORR_COMPETENCIAS_TECNICAS_NIV3, normaliza cada elemento en mCORR_COMPETENCIAS_TECNICAS
+	// y refresca las disponibles con actualizarCompetenciasTecnicasLookupDisponibles.
 	getCORR_COMPETENCIAS_TECNICAS_NIV3(): void {
 		this.appInfoService
 			.getLookUp(
@@ -728,6 +758,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: carga el catálogo de competencias conductuales para la sección de perfil.
+	// Cómo: llama a getLookUp GetCORR_COMPETENCIAS_CONDUCTUALES, normaliza cada elemento en mCORR_COMPETENCIAS_CONDUCTUALES
+	// y refresca las disponibles con actualizarCompetenciasConductualesLookupDisponibles.
 	getCORR_COMPETENCIAS_CONDUCTUALES(): void {
 		this.appInfoService
 			.getLookUp(
@@ -771,6 +804,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: carga el catálogo de requerimientos organizacionales.
+	// Cómo: llama a getLookUp GetCORR_REQUERIMIENTO_ORGANIZACIONAL, guarda el resultado en mCORR_REQUERIMIENTO_ORGANIZACIONAL
+	// y refresca las disponibles con actualizarRequerimientosOrganizacionalesLookupDisponibles.
 	getCORR_REQUERIMIENTO_ORGANIZACIONAL(): void {
 		this.appInfoService
 			.getLookUp(
@@ -803,6 +839,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: carga el catálogo de riesgos de puesto.
+	// Cómo: llama a getLookUp GetCORR_RIESGO_PUESTO, guarda el resultado en mCORR_RIESGO_PUESTO
+	// y refresca las disponibles con actualizarRiesgosPuestoLookupDisponibles.
 	getCORR_RIESGO_PUESTO(): void {
 		this.appInfoService
 			.getLookUp(
@@ -835,6 +874,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: carga el catálogo de responsabilidades de cargo.
+	// Cómo: llama a getLookUp GetCORR_RESPONSABILIDAD, normaliza cada elemento (incluye APLICA_DESCRIPTOR) en
+	// mCORR_RESPONSABILIDAD y refresca las disponibles con actualizarResponsabilidadesCargoLookupDisponibles.
 	getCORR_RESPONSABILIDAD(): void {
 		this.appInfoService
 			.getLookUp(
@@ -870,6 +912,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: carga el catálogo de impacto económico.
+	// Cómo: llama a getLookUp GetCORR_IMPACTO_ECONOMICO, guarda el resultado en mCORR_IMPACTO_ECONOMICO
+	// y luego prepara la lista de edición con prepararImpactosLookupParaEdicion.
 	getCORR_IMPACTO_ECONOMICO(): void {
 		this.appInfoService
 			.getLookUp(
@@ -906,58 +951,87 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: obtiene el correlativo de la unidad elegida en el lookup del encabezado.
+	// Cómo: lee CORR_UNIDAD de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_UNIDAD(vRow: any): number {
 		return vRow[0].CORR_UNIDAD;
 	}
 
+	// Qué hace: obtiene el correlativo del puesto elegido en el lookup del encabezado.
+	// Cómo: lee CORR_PUESTO de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_PUESTO(vRow: any): number {
 		return vRow[0].CORR_PUESTO;
 	}
 
+	// Qué hace: obtiene el correlativo del puesto al que reporta, elegido en el lookup del encabezado.
+	// Cómo: lee CORR_PUESTO de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_PUESTO_REPORTA(vRow: any): number {
 		return vRow[0].CORR_PUESTO;
 	}
 
+	// Qué hace: obtiene el correlativo de la frecuencia elegida en el lookup de KPIs.
+	// Cómo: lee CORR_FRECUENCIA de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_FRECUENCIA(vRow: any): number {
 		return vRow[0].CORR_FRECUENCIA;
 	}
 
+	// Qué hace: obtiene el correlativo de la disponibilidad horaria elegida en el lookup del perfil.
+	// Cómo: lee CORR_DISPONIBILIDAD_HORARIO de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_DISPONIBILIDAD_HORARIO(vRow: any): number {
 		return vRow[0].CORR_DISPONIBILIDAD_HORARIO;
 	}
 
+	// Qué hace: obtiene el correlativo de la modalidad elegida en el lookup del perfil.
+	// Cómo: lee CORR_TIPO_MODALIDAD de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_TIPO_MODALIDAD(vRow: any): number {
 		return vRow[0].CORR_TIPO_MODALIDAD;
 	}
 
+	// Qué hace: obtiene el correlativo de la inducción elegida en el lookup de entrenamiento.
+	// Cómo: lee CORR_INDUCCION de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_INDUCCION(vRow: any): number {
 		return vRow[0].CORR_INDUCCION;
 	}
 
+	// Qué hace: obtiene el correlativo de la competencia técnica elegida en el lookup del perfil.
+	// Cómo: lee CORR_COMPETENCIAS_TECNICAS de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_COMPETENCIAS_TECNICAS(vRow: any): number {
 		return vRow[0].CORR_COMPETENCIAS_TECNICAS;
 	}
 
+	// Qué hace: obtiene el correlativo de la competencia conductual elegida en el lookup del perfil.
+	// Cómo: lee CORR_COMPETENCIAS_CONDUCTUALES de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES(vRow: any): number {
 		return vRow[0].CORR_COMPETENCIAS_CONDUCTUALES;
 	}
 
+	// Qué hace: obtiene el correlativo del requerimiento organizacional elegido en el lookup.
+	// Cómo: lee CORR_REQUERIMIENTO_ORGANIZACIONAL de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_REQUERIMIENTO_ORGANIZACIONAL(vRow: any): number {
 		return vRow[0].CORR_REQUERIMIENTO_ORGANIZACIONAL;
 	}
 
+	// Qué hace: obtiene el correlativo del riesgo de puesto elegido en el lookup.
+	// Cómo: lee CORR_RIESGO_PUESTO de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_RIESGO_PUESTO(vRow: any): number {
 		return vRow[0].CORR_RIESGO_PUESTO;
 	}
 
+	// Qué hace: obtiene el correlativo de la responsabilidad de cargo elegida en el lookup.
+	// Cómo: lee CORR_RESPONSABILIDAD de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_RESPONSABILIDAD(vRow: any): number {
 		return vRow[0].CORR_RESPONSABILIDAD;
 	}
 
+	// Qué hace: obtiene el correlativo del impacto económico elegido en el lookup.
+	// Cómo: lee CORR_IMPACTO_ECONOMICO de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_IMPACTO_ECONOMICO(vRow: any): number {
 		return vRow[0].CORR_IMPACTO_ECONOMICO;
 	}
 
+	// Qué hace: reacciona a los cambios de estado del formulario (nuevo, editar, ver, browse).
+	// Cómo: llama al AsignaStatus base y, al volver a modo Browse (listado), limpia banderas de edición
+	// (perfil, entrenamiento, inducción inválida) y regresa el título y las pestañas a su estado inicial.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -970,13 +1044,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
-	// Arma el filtro IParam del descriptor (empresa + correlativo) para las consultas al repositorio.
+	// Arma el objeto de filtro (empresa + correlativo) que se envía en las consultas a la API.
 	fillParam(xCORR_DESCRIPTOR_PUESTO?: number): any {
 		return {
 			CORR_DESCRIPTOR_PUESTO: xCORR_DESCRIPTOR_PUESTO ?? 0,
 		};
 	}
 
+	// Qué hace: construye el modelo del encabezado del descriptor para el formulario.
+	// Cómo: si recibe xModel, copia sus campos (con valores por defecto para los opcionales);
+	// si no recibe nada, devuelve un modelo vacío con los valores iniciales para un registro nuevo.
 	override fillData(xModel?: ScDescriptorPuesto): ScDescriptorPuesto {
 		if (xModel !== undefined) {
 			return {
@@ -1040,7 +1117,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		};
 	}
 
-	// Carga el listado principal del mtto y luego enriquece/ordena filas antes de refrescar el grid.
+	// Consulta el listado de descriptores, completa nombres faltantes, ordena y refresca el grid.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -1052,7 +1129,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Completa nombres de unidad/puesto en filas que la API no trae resueltos.
+	// Rellena NOMBRE_UNIDAD y NOMBRE_PUESTO cuando la API no los devuelve.
 	private enriquecerFilasConsulta(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -1065,7 +1142,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}));
 	}
 
-	// Ordena el grid de consulta por CORR_DESCRIPTOR_PUESTO ascendente.
+	// Ordena el listado por correlativo de descriptor, de menor a mayor.
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -1076,13 +1153,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
-	// Repinta el data-grid-mtto tras consultar; resetPage vuelve a la primera pagina.
+	// Refresca el grid principal; si resetPage es true, vuelve a la primera página.
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
 		}, 0);
 	}
 
+	// Qué hace: prepara la pantalla para crear un nuevo descriptor de puesto.
+	// Cómo: valida que haya empresa en sesión, limpia validaciones y pestañas, llama al nuevo base,
+	// resetea el entrenamiento original y los datos de las pestañas, y sincroniza el formulario del encabezado.
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -1099,6 +1179,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		setTimeout(() => this.syncHeaderForm());
 	}
 
+	// Qué hace: prepara la pantalla para editar el descriptor de puesto seleccionado.
+	// Cómo: habilita edición, llama al editarClick base, guarda el entrenamiento original, carga los datos
+	// de las pestañas (cargarDatosTabs) y actualiza los combos de unidad/puesto según el registro.
 	override editarClick(e: any): void {
 		this.readOnly = false;
 		this.limpiarEstadoValidacionHeader();
@@ -1114,6 +1197,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		setTimeout(() => this.syncHeaderForm());
 	}
 
+	// Qué hace: abre el descriptor de puesto en modo solo lectura al hacer doble clic en una fila del grid.
+	// Cómo: toma los datos de la fila, carga el modelo, llama al rowDblClick base, carga los datos
+	// de las pestañas y bloquea el formulario.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -1133,8 +1219,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Distribuye la carga de detalles según el formato seleccionado; las secciones no aplicables se limpian
-	// para impedir que datos de una consulta anterior permanezcan visibles al cambiar de descriptor.
+	// Carga las secciones que aplican según formato corto o extenso.
+	// Las secciones que no aplican se vacían para no mostrar datos del descriptor anterior.
 	cargarDatosTabs(): void {
 		this.itemsTabBitacora = [];
 		this.entrenamientoOriginal = this.obtenerEntrenamientoActual();
@@ -1155,7 +1241,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarResponsabilidadesCargo();
 	}
 
-	// Vacia arrays y flags de todas las secciones al cambiar o cancelar el descriptor.
+	// Limpia listas y flags de edición de todas las secciones al cambiar o cancelar.
 	limpiarDatosTabs(): void {
 		this.itemsTabBitacora = [];
 		this.funcionesClave = [];
@@ -1191,14 +1277,20 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cerrarActividadesPopup();
 	}
 
+	// Qué hace: indica si el descriptor actual está en formato corto.
+	// Cómo: compara en mayúsculas el FORMATO del modelo contra la constante FORMATO_CORTO.
 	get esFormatoCorto(): boolean {
 		return (this.model?.FORMATO ?? '').toUpperCase() === FORMATO_CORTO;
 	}
 
+	// Qué hace: indica si el descriptor actual está en formato extenso.
+	// Cómo: compara en mayúsculas el FORMATO del modelo contra la constante FORMATO_EXTENSO.
 	get esFormatoExtenso(): boolean {
 		return (this.model?.FORMATO ?? '').toUpperCase() === FORMATO_EXTENSO;
 	}
 
+	// Qué hace: indica si deben mostrarse las secciones del descriptor (funciones, perfil, etc.).
+	// Cómo: solo se muestran cuando la pantalla está en modo formulario o consulta y el descriptor ya tiene correlativo.
 	get mostrarSeccionesDescriptor(): boolean {
 		return (
 			(this.isForm() || this.isConsulta()) &&
@@ -1206,8 +1298,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
-	// Gestiona en memoria la edición de funciones clave. El guardado real se delega al flujo del grid
-	// para mantener sincronizadas las actividades asociadas y los indicadores de edición.
+	// Controla agregar, editar y cancelar funciones clave en el grid.
+	// El guardado llama a la API y recarga la lista para mantener actividades e indicadores al día.
 	agregarFuncionClave(): void {
 		if (this.readOnly || this.funcionesClaveEditando || !this.requiereDescriptorGuardado()) {
 			return;
@@ -1216,6 +1308,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.funcionesClaveEditando = true;
 	}
 
+	// Qué hace: pone en modo edición la fila de función clave que el usuario seleccionó.
+	// Cómo: si no está bloqueado ni ya en edición, llama a editRow del grid y marca funcionesClaveEditando en true.
 	editarFuncionClaveClick(e: any): void {
 		if (this.readOnly || this.funcionesClaveEditando) {
 			return;
@@ -1224,15 +1318,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.funcionesClaveEditando = true;
 	}
 
+	// Qué hace: decide si el botón de editar debe verse en la fila de función clave.
+	// Cómo: delega en accionGridVisible.
 	funcionClaveEditButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
+	// Qué hace: decide si el botón de eliminar debe verse en la fila de función clave.
+	// Cómo: delega en accionGridVisible.
 	funcionClaveDeleteButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
-	// Confirma la fila del grid de funciones clave (saveEditData de DevExtreme).
+	// Guarda la fila en edición del grid de funciones clave.
 	guardarFuncionClaveEditada(): void {
 		const grid = this.gridFuncionesClave?.instance;
 		if (!grid || !this.funcionesClaveEditando) {
@@ -1242,13 +1340,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
-	// Descarta la edicion en curso de funciones clave y resetea flags locales.
+	// Cancela la edición de funciones clave y limpia los flags locales.
 	cancelarFuncionClaveEditada(): void {
 		this.cancelarEdicionGrid(this.gridFuncionesClave?.instance, () => {
 			this.funcionesClaveEditando = false;
 		});
 	}
 
+	// Qué hace: inicializa los valores por defecto de una nueva fila de función clave.
+	// Cómo: pone el correlativo en 0, limpia el nombre, fija el tipo en TIPO_FUNCION_CLAVE, el contador
+	// de actividades en 0 y genera una clave temporal de cliente con crearClientKey.
 	funcionClaveInitNewRow(e: any): void {
 		e.data.CORR_FUNCION = 0;
 		e.data.NOMBRE_FUNCION = '';
@@ -1257,22 +1358,31 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.data._clientKey = this.crearClientKey('fc');
 	}
 
+	// Qué hace: marca que el grid de funciones clave entró en edición.
+	// Cómo: pone funcionesClaveEditando en true.
 	onFuncionClaveEditingStart(_e: any): void {
 		this.funcionesClaveEditando = true;
 	}
 
+	// Qué hace: reacciona a que el grid de funciones clave terminó de guardar una fila.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag funcionesClaveEditando.
 	onFuncionClaveSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.funcionesClaveEditando = false;
 		});
 	}
 
+	// Qué hace: reacciona a que se canceló la edición del grid de funciones clave.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag funcionesClaveEditando.
 	onFuncionClaveEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.funcionesClaveEditando = false;
 		});
 	}
 
+	// Qué hace: valida los datos de la fila de función clave antes de guardarla.
+	// Cómo: combina datos viejos y nuevos y verifica que el nombre no esté vacío ni supere 255 caracteres,
+	// invalidando la fila con invalidarFila cuando corresponde.
 	funcionClaveRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.NOMBRE_FUNCION ?? '').trim()) {
@@ -1285,21 +1395,26 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Qué hace: inserta una nueva función clave desde el grid.
+	// Cómo: llama a persistirFuncionDesdeGrid (create) con TIPO_FUNCION_CLAVE y esNuevo en true.
 	funcionClaveRowInserting(e: any): void {
 		e.cancel = this.persistirFuncionDesdeGrid(e.data, TIPO_FUNCION_CLAVE, true);
 	}
 
+	// Qué hace: actualiza una función clave existente desde el grid.
+	// Cómo: combina datos viejos y nuevos y llama a persistirFuncionDesdeGrid (update) con esNuevo en false.
 	funcionClaveRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
 		e.cancel = this.persistirFuncionDesdeGrid(data, TIPO_FUNCION_CLAVE, false);
 	}
 
+	// Qué hace: elimina una función clave desde el grid.
+	// Cómo: llama a eliminarFuncionDesdeGrid (delete) con los datos de la fila.
 	funcionClaveRowRemoving(e: any): void {
 		e.cancel = this.eliminarFuncionDesdeGrid(e.data);
 	}
 
-	// Gestiona funciones secundarias con el ciclo agregar-editar-validar-cancelar del grid,
-	// pero sin actividades dependientes.
+	// Controla agregar, editar y cancelar funciones secundarias en el grid (sin actividades asociadas).
 	agregarFuncionSecundaria(): void {
 		if (
 			this.readOnly ||
@@ -1313,6 +1428,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.funcionesSecundariasEditando = true;
 	}
 
+	// Qué hace: pone en modo edición la fila de función secundaria que el usuario seleccionó.
+	// Cómo: si no está bloqueado ni ya en edición, llama a editRow del grid y marca funcionesSecundariasEditando en true.
 	editarFuncionSecundariaClick(e: any): void {
 		if (this.readOnly || this.funcionesSecundariasEditando) {
 			return;
@@ -1321,15 +1438,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.funcionesSecundariasEditando = true;
 	}
 
+	// Qué hace: decide si el botón de editar debe verse en la fila de función secundaria.
+	// Cómo: delega en accionGridVisible.
 	funcionSecundariaEditButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
+	// Qué hace: decide si el botón de eliminar debe verse en la fila de función secundaria.
+	// Cómo: delega en accionGridVisible.
 	funcionSecundariaDeleteButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
-	// Confirma la fila del grid de funciones secundarias.
+	// Guarda la fila en edición del grid de funciones secundarias.
 	guardarFuncionSecundariaEditada(): void {
 		const grid = this.gridFuncionesSecundarias?.instance;
 		if (!grid || !this.funcionesSecundariasEditando) {
@@ -1339,13 +1460,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
-	// Descarta la edicion en curso de funciones secundarias.
+	// Cancela la edición de funciones secundarias y limpia los flags locales.
 	cancelarFuncionSecundariaEditada(): void {
 		this.cancelarEdicionGrid(this.gridFuncionesSecundarias?.instance, () => {
 			this.funcionesSecundariasEditando = false;
 		});
 	}
 
+	// Qué hace: inicializa los valores por defecto de una nueva fila de función secundaria.
+	// Cómo: pone el correlativo en 0, limpia el nombre, fija el tipo en TIPO_FUNCION_SECUNDARIA
+	// y genera una clave temporal de cliente con crearClientKey.
 	funcionSecundariaInitNewRow(e: any): void {
 		e.data.CORR_FUNCION = 0;
 		e.data.NOMBRE_FUNCION = '';
@@ -1353,22 +1477,31 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.data._clientKey = this.crearClientKey('fs');
 	}
 
+	// Qué hace: marca que el grid de funciones secundarias entró en edición.
+	// Cómo: pone funcionesSecundariasEditando en true.
 	onFuncionSecundariaEditingStart(_e: any): void {
 		this.funcionesSecundariasEditando = true;
 	}
 
+	// Qué hace: reacciona a que el grid de funciones secundarias terminó de guardar una fila.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag funcionesSecundariasEditando.
 	onFuncionSecundariaSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.funcionesSecundariasEditando = false;
 		});
 	}
 
+	// Qué hace: reacciona a que se canceló la edición del grid de funciones secundarias.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag funcionesSecundariasEditando.
 	onFuncionSecundariaEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.funcionesSecundariasEditando = false;
 		});
 	}
 
+	// Qué hace: valida los datos de la fila de función secundaria antes de guardarla.
+	// Cómo: combina datos viejos y nuevos y verifica que el nombre no esté vacío ni supere 255 caracteres,
+	// invalidando la fila con invalidarFila cuando corresponde.
 	funcionSecundariaRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.NOMBRE_FUNCION ?? '').trim()) {
@@ -1381,21 +1514,29 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Qué hace: inserta una nueva función secundaria desde el grid.
+	// Cómo: llama a persistirFuncionDesdeGrid (create) con TIPO_FUNCION_SECUNDARIA y esNuevo en true.
 	funcionSecundariaRowInserting(e: any): void {
 		e.cancel = this.persistirFuncionDesdeGrid(e.data, TIPO_FUNCION_SECUNDARIA, true);
 	}
 
+	// Qué hace: actualiza una función secundaria existente desde el grid.
+	// Cómo: combina datos viejos y nuevos y llama a persistirFuncionDesdeGrid (update) con esNuevo en false.
 	funcionSecundariaRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
 		e.cancel = this.persistirFuncionDesdeGrid(data, TIPO_FUNCION_SECUNDARIA, false);
 	}
 
+	// Qué hace: elimina una función secundaria desde el grid.
+	// Cómo: llama a eliminarFuncionDesdeGrid (delete) con los datos de la fila.
 	funcionSecundariaRowRemoving(e: any): void {
 		e.cancel = this.eliminarFuncionDesdeGrid(e.data);
 	}
 
-	// Mantiene separadas las relaciones internas del formato extenso y fija su tipo antes de persistir,
-	// aunque ambos tipos de relación utilicen el mismo repositorio.
+	// Administra relaciones internas (solo formato extenso) y asigna TIPO_RELACION antes de guardar.
+	// Qué hace: abre una nueva fila para registrar una relación interna.
+	// Cómo: si no está bloqueado, ya en edición, fuera de formato extenso o sin descriptor guardado, sale;
+	// si no, llama a addRow del grid y marca relacionesInternasEditando en true.
 	agregarRelacionInterna(): void {
 		if (this.readOnly || this.relacionesInternasEditando || !this.esFormatoExtenso || !this.requiereDescriptorGuardado()) {
 			return;
@@ -1404,6 +1545,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.relacionesInternasEditando = true;
 	}
 
+	// Qué hace: pone en modo edición la fila de relación interna que el usuario seleccionó.
+	// Cómo: si no está bloqueado ni ya en edición, llama a editRow del grid y marca relacionesInternasEditando en true.
 	editarRelacionInternaClick(e: any): void {
 		if (this.readOnly || this.relacionesInternasEditando) {
 			return;
@@ -1412,15 +1555,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.relacionesInternasEditando = true;
 	}
 
+	// Qué hace: decide si el botón de editar debe verse en la fila de relación interna.
+	// Cómo: delega en accionGridVisible.
 	relacionInternaEditButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
+	// Qué hace: decide si el botón de eliminar debe verse en la fila de relación interna.
+	// Cómo: delega en accionGridVisible.
 	relacionInternaDeleteButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
-	// Confirma la fila del grid de relaciones internas.
+	// Guarda la fila en edición del grid de relaciones internas.
 	guardarRelacionInternaEditada(): void {
 		const grid = this.gridRelacionesInternas?.instance;
 		if (!grid || !this.relacionesInternasEditando) {
@@ -1430,13 +1577,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
-	// Descarta la edicion en curso de relaciones internas.
+	// Cancela la edición de relaciones internas y limpia los flags locales.
 	cancelarRelacionInternaEditada(): void {
 		this.cancelarEdicionGrid(this.gridRelacionesInternas?.instance, () => {
 			this.relacionesInternasEditando = false;
 		});
 	}
 
+	// Qué hace: inicializa los valores por defecto de una nueva fila de relación interna.
+	// Cómo: pone el correlativo en 0, fija el tipo en TIPO_RELACION_INTERNA, limpia puesto/área y motivo,
+	// y genera una clave temporal de cliente con crearClientKey.
 	relacionInternaInitNewRow(e: any): void {
 		e.data.CORR_RELACION_LABORAL = 0;
 		e.data.TIPO_RELACION = TIPO_RELACION_INTERNA;
@@ -1445,22 +1595,31 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.data._clientKey = this.crearClientKey('ri');
 	}
 
+	// Qué hace: marca que el grid de relaciones internas entró en edición.
+	// Cómo: pone relacionesInternasEditando en true.
 	onRelacionInternaEditingStart(_e: any): void {
 		this.relacionesInternasEditando = true;
 	}
 
+	// Qué hace: reacciona a que el grid de relaciones internas terminó de guardar una fila.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag relacionesInternasEditando.
 	onRelacionInternaSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.relacionesInternasEditando = false;
 		});
 	}
 
+	// Qué hace: reacciona a que se canceló la edición del grid de relaciones internas.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag relacionesInternasEditando.
 	onRelacionInternaEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.relacionesInternasEditando = false;
 		});
 	}
 
+	// Qué hace: valida los datos de la fila de relación interna antes de guardarla.
+	// Cómo: combina datos viejos y nuevos y verifica que el puesto/área no esté vacío ni supere 200 caracteres,
+	// y que el motivo no supere 255 caracteres, invalidando la fila con invalidarFila cuando corresponde.
 	relacionInternaRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.PUESTO_AREA ?? '').trim()) {
@@ -1477,20 +1636,29 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Qué hace: inserta una nueva relación interna desde el grid.
+	// Cómo: llama a persistirRelacionDesdeGrid (create) con TIPO_RELACION_INTERNA y esNuevo en true.
 	relacionInternaRowInserting(e: any): void {
 		e.cancel = this.persistirRelacionDesdeGrid(e.data, TIPO_RELACION_INTERNA, true);
 	}
 
+	// Qué hace: actualiza una relación interna existente desde el grid.
+	// Cómo: combina datos viejos y nuevos y llama a persistirRelacionDesdeGrid (update) con esNuevo en false.
 	relacionInternaRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
 		e.cancel = this.persistirRelacionDesdeGrid(data, TIPO_RELACION_INTERNA, false);
 	}
 
+	// Qué hace: elimina una relación interna desde el grid.
+	// Cómo: llama a eliminarRelacionDesdeGrid (delete) con los datos de la fila.
 	relacionInternaRowRemoving(e: any): void {
 		e.cancel = this.eliminarRelacionDesdeGrid(e.data);
 	}
 
-	// Aplica a relaciones externas el ciclo de edición del grid y evita su uso fuera del formato extenso.
+	// Administra relaciones externas en el grid; solo disponible en formato extenso.
+	// Qué hace: abre una nueva fila para registrar una relación externa.
+	// Cómo: si no está bloqueado, ya en edición, fuera de formato extenso o sin descriptor guardado, sale;
+	// si no, llama a addRow del grid y marca relacionesExternasEditando en true.
 	agregarRelacionExterna(): void {
 		if (this.readOnly || this.relacionesExternasEditando || !this.esFormatoExtenso || !this.requiereDescriptorGuardado()) {
 			return;
@@ -1499,6 +1667,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.relacionesExternasEditando = true;
 	}
 
+	// Qué hace: pone en modo edición la fila de relación externa que el usuario seleccionó.
+	// Cómo: si no está bloqueado ni ya en edición, llama a editRow del grid y marca relacionesExternasEditando en true.
 	editarRelacionExternaClick(e: any): void {
 		if (this.readOnly || this.relacionesExternasEditando) {
 			return;
@@ -1507,15 +1677,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.relacionesExternasEditando = true;
 	}
 
+	// Qué hace: decide si el botón de editar debe verse en la fila de relación externa.
+	// Cómo: delega en accionGridVisible.
 	relacionExternaEditButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
+	// Qué hace: decide si el botón de eliminar debe verse en la fila de relación externa.
+	// Cómo: delega en accionGridVisible.
 	relacionExternaDeleteButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
-	// Confirma la fila del grid de relaciones externas.
+	// Guarda la fila en edición del grid de relaciones externas.
 	guardarRelacionExternaEditada(): void {
 		const grid = this.gridRelacionesExternas?.instance;
 		if (!grid || !this.relacionesExternasEditando) {
@@ -1525,13 +1699,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
-	// Descarta la edicion en curso de relaciones externas.
+	// Cancela la edición de relaciones externas y limpia los flags locales.
 	cancelarRelacionExternaEditada(): void {
 		this.cancelarEdicionGrid(this.gridRelacionesExternas?.instance, () => {
 			this.relacionesExternasEditando = false;
 		});
 	}
 
+	// Qué hace: inicializa los valores por defecto de una nueva fila de relación externa.
+	// Cómo: pone el correlativo en 0, fija el tipo en TIPO_RELACION_EXTERNA, limpia puesto/área y motivo,
+	// y genera una clave temporal de cliente con crearClientKey.
 	relacionExternaInitNewRow(e: any): void {
 		e.data.CORR_RELACION_LABORAL = 0;
 		e.data.TIPO_RELACION = TIPO_RELACION_EXTERNA;
@@ -1540,22 +1717,31 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.data._clientKey = this.crearClientKey('re');
 	}
 
+	// Qué hace: marca que el grid de relaciones externas entró en edición.
+	// Cómo: pone relacionesExternasEditando en true.
 	onRelacionExternaEditingStart(_e: any): void {
 		this.relacionesExternasEditando = true;
 	}
 
+	// Qué hace: reacciona a que el grid de relaciones externas terminó de guardar una fila.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag relacionesExternasEditando.
 	onRelacionExternaSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.relacionesExternasEditando = false;
 		});
 	}
 
+	// Qué hace: reacciona a que se canceló la edición del grid de relaciones externas.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag relacionesExternasEditando.
 	onRelacionExternaEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.relacionesExternasEditando = false;
 		});
 	}
 
+	// Qué hace: valida los datos de la fila de relación externa antes de guardarla.
+	// Cómo: combina datos viejos y nuevos y verifica que el puesto/área no esté vacío ni supere 200 caracteres,
+	// y que el motivo no supere 255 caracteres, invalidando la fila con invalidarFila cuando corresponde.
 	relacionExternaRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.PUESTO_AREA ?? '').trim()) {
@@ -1572,21 +1758,28 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Qué hace: inserta una nueva relación externa desde el grid.
+	// Cómo: llama a persistirRelacionDesdeGrid (create) con TIPO_RELACION_EXTERNA y esNuevo en true.
 	relacionExternaRowInserting(e: any): void {
 		e.cancel = this.persistirRelacionDesdeGrid(e.data, TIPO_RELACION_EXTERNA, true);
 	}
 
+	// Qué hace: actualiza una relación externa existente desde el grid.
+	// Cómo: combina datos viejos y nuevos y llama a persistirRelacionDesdeGrid (update) con esNuevo en false.
 	relacionExternaRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
 		e.cancel = this.persistirRelacionDesdeGrid(data, TIPO_RELACION_EXTERNA, false);
 	}
 
+	// Qué hace: elimina una relación externa desde el grid.
+	// Cómo: llama a eliminarRelacionDesdeGrid (delete) con los datos de la fila.
 	relacionExternaRowRemoving(e: any): void {
 		e.cancel = this.eliminarRelacionDesdeGrid(e.data);
 	}
 
-	// Abre las actividades de una función clave persistida. Una función temporal no puede recibir
-	// actividades porque todavía no existe su llave compuesta en el servidor.
+	// Qué hace: abre el popup de actividades para la función clave indicada.
+	// Cómo: valida formato extenso y que la función tenga correlativo (avisa con notifyDescriptorWarning si no),
+	// guarda la función seleccionada, resetea el flag de edición y carga sus actividades con cargarActividadesPopup.
 	abrirActividades(funcion: ScDescriptorFuncion): void {
 		if (!this.esFormatoExtenso || !funcion) {
 			return;
@@ -1603,7 +1796,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarActividadesPopup(funcion);
 	}
 
-	// Cierra el popup de actividades y limpia la funcion seleccionada.
+	// Cierra el popup de actividades y quita la función seleccionada.
 	cerrarActividadesPopup(): void {
 		this.actividadesPopupVisible = false;
 		this.funcionActividadesSeleccionada = null;
@@ -1611,6 +1804,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actividadesEditando = false;
 	}
 
+	// Qué hace: abre una nueva fila para registrar una actividad de la función seleccionada.
+	// Cómo: si no está bloqueado, ya en edición o sin función seleccionada, sale; si no, llama a addRow
+	// del grid de actividades y marca actividadesEditando en true.
 	agregarActividad(): void {
 		if (this.readOnly || this.actividadesEditando || !this.funcionActividadesSeleccionada?.CORR_FUNCION) {
 			return;
@@ -1619,6 +1815,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actividadesEditando = true;
 	}
 
+	// Qué hace: pone en modo edición la fila de actividad que el usuario seleccionó.
+	// Cómo: si no está bloqueado ni ya en edición, llama a editRow del grid y marca actividadesEditando en true.
 	editarActividadClick(e: any): void {
 		if (this.readOnly || this.actividadesEditando) {
 			return;
@@ -1627,15 +1825,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actividadesEditando = true;
 	}
 
+	// Qué hace: decide si el botón de editar debe verse en la fila de actividad.
+	// Cómo: delega en accionGridVisible.
 	actividadEditButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
+	// Qué hace: decide si el botón de eliminar debe verse en la fila de actividad.
+	// Cómo: delega en accionGridVisible.
 	actividadDeleteButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
-	// Confirma la fila del grid de actividades del popup.
+	// Guarda la fila en edición del grid de actividades del popup.
 	guardarActividadEditada(): void {
 		const grid = this.gridActividades?.instance;
 		if (!grid || !this.actividadesEditando) {
@@ -1645,13 +1847,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
-	// Descarta la edicion en curso de actividades.
+	// Cancela la edición de actividades y limpia los flags locales.
 	cancelarActividadEditada(): void {
 		this.cancelarEdicionGrid(this.gridActividades?.instance, () => {
 			this.actividadesEditando = false;
 		});
 	}
 
+	// Qué hace: inicializa los valores por defecto de una nueva fila de actividad.
+	// Cómo: toma el correlativo de la función seleccionada, limpia el correlativo y nombre de actividad,
+	// y genera una clave temporal de cliente con crearClientKey.
 	actividadInitNewRow(e: any): void {
 		const funcion = this.funcionActividadesSeleccionada;
 		e.data.CORR_FUNCION = funcion?.CORR_FUNCION ?? 0;
@@ -1660,22 +1865,31 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.data._clientKey = this.crearClientKey('act');
 	}
 
+	// Qué hace: marca que el grid de actividades entró en edición.
+	// Cómo: pone actividadesEditando en true.
 	onActividadEditingStart(_e: any): void {
 		this.actividadesEditando = true;
 	}
 
+	// Qué hace: reacciona a que el grid de actividades terminó de guardar una fila.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag actividadesEditando.
 	onActividadSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.actividadesEditando = false;
 		});
 	}
 
+	// Qué hace: reacciona a que se canceló la edición del grid de actividades.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag actividadesEditando.
 	onActividadEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.actividadesEditando = false;
 		});
 	}
 
+	// Qué hace: valida los datos de la fila de actividad antes de guardarla.
+	// Cómo: combina datos viejos y nuevos y verifica que el nombre no esté vacío ni supere 255 caracteres,
+	// invalidando la fila con invalidarFila cuando corresponde.
 	actividadRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.NOMBRE_ACTIVIDAD ?? '').trim()) {
@@ -1688,21 +1902,30 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Qué hace: inserta una nueva actividad desde el grid.
+	// Cómo: llama a persistirActividadDesdeGrid (create) con esNuevo en true.
 	actividadRowInserting(e: any): void {
 		e.cancel = this.persistirActividadDesdeGrid(e.data, true);
 	}
 
+	// Qué hace: actualiza una actividad existente desde el grid.
+	// Cómo: combina datos viejos y nuevos y llama a persistirActividadDesdeGrid (update) con esNuevo en false.
 	actividadRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
 		e.cancel = this.persistirActividadDesdeGrid(data, false);
 	}
 
+	// Qué hace: elimina una actividad desde el grid.
+	// Cómo: llama a eliminarActividadDesdeGrid (delete) con los datos de la fila.
 	actividadRowRemoving(e: any): void {
 		e.cancel = this.eliminarActividadDesdeGrid(e.data);
 	}
 
-	// Administra los KPI exclusivos del formato corto y conserva el texto de frecuencia junto con su llave
-	// para mostrar la selección inmediatamente en la fila.
+	// Administra KPIs (solo formato corto) en el grid.
+	// Al elegir frecuencia, guarda código y nombre en la fila para mostrarlos de inmediato.
+	// Qué hace: abre una nueva fila para registrar un KPI de la función.
+	// Cómo: si no está bloqueado, ya en edición, fuera de formato corto o sin descriptor guardado, sale;
+	// si no, prepara el lookup de frecuencias, llama a addRow del grid y marca kpisEditando en true.
 	agregarKpi(): void {
 		if (this.readOnly || this.kpisEditando || !this.esFormatoCorto || !this.requiereDescriptorGuardado()) {
 			return;
@@ -1712,6 +1935,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.kpisEditando = true;
 	}
 
+	// Qué hace: pone en modo edición la fila de KPI que el usuario seleccionó.
+	// Cómo: si no está bloqueado ni ya en edición, prepara el lookup de frecuencias para esa fila,
+	// llama a editRow del grid y marca kpisEditando en true.
 	editarKpiClick(e: any): void {
 		if (this.readOnly || this.kpisEditando) {
 			return;
@@ -1721,15 +1947,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.kpisEditando = true;
 	}
 
+	// Qué hace: decide si el botón de editar debe verse en la fila de KPI.
+	// Cómo: delega en accionGridVisible.
 	kpiEditButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
+	// Qué hace: decide si el botón de eliminar debe verse en la fila de KPI.
+	// Cómo: delega en accionGridVisible.
 	kpiDeleteButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
-	// Confirma la fila del grid de KPIs (formato corto).
+	// Guarda la fila en edición del grid de KPIs.
 	guardarKpiEditado(): void {
 		const grid = this.gridKpis?.instance;
 		if (!grid || !this.kpisEditando) {
@@ -1739,7 +1969,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
-	// Descarta la edicion en curso de KPIs.
+	// Cancela la edición de KPIs y limpia los flags locales.
 	cancelarKpiEditado(): void {
 		this.cancelarEdicionGrid(this.gridKpis?.instance, () => {
 			this.kpisEditando = false;
@@ -1747,6 +1977,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: inicializa los valores por defecto de una nueva fila de KPI.
+	// Cómo: pone el correlativo en 0, limpia nombre del indicador, frecuencia y meta,
+	// y genera una clave temporal de cliente con crearClientKey.
 	kpiInitNewRow(e: any): void {
 		e.data.CORR_KPI_FUNCION = 0;
 		e.data.NOMBRE_INDICADOR = '';
@@ -1756,17 +1989,23 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.data._clientKey = this.crearClientKey('kpi');
 	}
 
+	// Qué hace: marca que el grid de KPIs entró en edición y prepara el lookup de frecuencias.
+	// Cómo: pone kpisEditando en true y llama a prepararFrecuenciasLookupParaEdicionKpi con la fila en edición.
 	onKpiEditingStart(e: any): void {
 		this.kpisEditando = true;
 		this.prepararFrecuenciasLookupParaEdicionKpi(e?.data);
 	}
 
+	// Qué hace: reacciona a que el grid de KPIs terminó de guardar una fila.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag kpisEditando.
 	onKpiSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.kpisEditando = false;
 		});
 	}
 
+	// Qué hace: reacciona a que se canceló la edición del grid de KPIs.
+	// Cómo: delega en finalizarEdicionGrid para limpiar el flag kpisEditando y recarga los KPIs con cargarKpis.
 	onKpiEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.kpisEditando = false;
@@ -1774,6 +2013,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarKpis(true);
 	}
 
+	// Qué hace: valida los datos de la fila de KPI antes de guardarla.
+	// Cómo: combina datos viejos y nuevos y verifica que el nombre del indicador no esté vacío ni supere
+	// 255 caracteres, invalidando la fila con invalidarFila cuando corresponde.
 	kpiRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.NOMBRE_INDICADOR ?? '').trim()) {
@@ -1786,23 +2028,34 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Qué hace: inserta un nuevo KPI desde el grid.
+	// Cómo: llama a persistirKpiDesdeGrid (create) con esNuevo en true.
 	kpiRowInserting(e: any): void {
 		e.cancel = this.persistirKpiDesdeGrid(e.data, true);
 	}
 
+	// Qué hace: actualiza un KPI existente desde el grid.
+	// Cómo: combina datos viejos y nuevos y llama a persistirKpiDesdeGrid (update) con esNuevo en false.
 	kpiRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
 		e.cancel = this.persistirKpiDesdeGrid(data, false);
 	}
 
+	// Qué hace: elimina un KPI desde el grid.
+	// Cómo: llama a eliminarKpiDesdeGrid (delete) con los datos de la fila.
 	kpiRowRemoving(e: any): void {
 		e.cancel = this.eliminarKpiDesdeGrid(e.data);
 	}
 
+	// Qué hace: define el texto que se muestra en la columna de frecuencia del grid de KPIs.
+	// Cómo: devuelve el NOMBRE_FRECUENCIA de la fila, o cadena vacía si no hay dato.
 	kpiFrecuenciaDisplay = (row: ScDescriptorKpiFuncion): string => {
 		return row?.NOMBRE_FRECUENCIA || '';
 	};
 
+	// Qué hace: aplica el cambio de frecuencia elegida en el lookup de la fila de KPI.
+	// Cómo: busca el nombre en el catálogo (o en la lista de edición), actualiza la celda y la fila
+	// en memoria, fija el valor en la celda y vuelve a preparar el lookup de frecuencias.
 	onKpiFrecuenciaLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && value > 0 ? Number(value) : null;
 		const fromCatalog = this.mCORR_FRECUENCIA.find(
@@ -1818,7 +2071,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			''
 		).trim();
 
-		// Aunque sea el mismo corr, forzar nombre del catálogo (re-selección tras renombre).
+		// Aunque no cambie el código, actualiza el nombre desde el catálogo (por si se renombró).
 		if (cellInfo?.data) {
 			cellInfo.data.CORR_FRECUENCIA = corr;
 			cellInfo.data.NOMBRE_FRECUENCIA = nombre;
@@ -1834,6 +2087,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.prepararFrecuenciasLookupParaEdicionKpi(cellInfo?.data);
 	}
 
+	// Qué hace: fija el valor de frecuencia y su nombre al editar la celda directamente en el grid de KPIs.
+	// Cómo: busca el nombre en el catálogo (o en la lista de edición) y actualiza CORR_FRECUENCIA y NOMBRE_FRECUENCIA
+	// en los nuevos datos de la fila.
 	setKpiFrecuenciaCellValue = (
 		newData: ScDescriptorKpiFuncion,
 		value: number | null,
@@ -1855,8 +2111,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		).trim();
 	};
 
-	// Los detalles de Perfil comparten CORR_PERFIL_PUESTO. Antes de agregar una fila se garantiza
-	// que el registro padre exista para evitar operaciones con una llave temporal.
+	// Educación, experiencia y competencias comparten el mismo perfil.
+	// Antes de agregar un detalle, guarda el perfil padre si aún no existe en la base de datos.
+	// Qué hace: abre una nueva fila para registrar un requisito de educación del perfil.
+	// Cómo: si no está bloqueado, ya en edición o sin descriptor guardado, sale; si no, asegura que el
+	// perfil exista (asegurarPerfilParaDetalle) y luego llama a addRow del grid y marca educacionEditando en true.
 	agregarEducacion(): void {
 		if (this.readOnly || this.educacionEditando || !this.requiereDescriptorGuardado()) {
 			return;
@@ -1868,6 +2127,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: pone en modo edición la fila de educación que el usuario seleccionó.
+	// Cómo: si no está bloqueado ni ya en edición, llama a editRow del grid y marca educacionEditando en true.
 	editarEducacionClick(e: any): void {
 		if (this.readOnly || this.educacionEditando) {
 			return;
@@ -1876,15 +2137,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.educacionEditando = true;
 	}
 
+	// Qué hace: decide si el botón de editar debe verse en la fila de educación.
+	// Cómo: delega en accionGridVisible.
 	educacionEditButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
+	// Qué hace: decide si el botón de eliminar debe verse en la fila de educación.
+	// Cómo: delega en accionGridVisible.
 	educacionDeleteButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
-	// Confirma la fila del grid de educacion del perfil.
+	// Guarda la fila en edición del grid de educación del perfil.
 	guardarEducacionEditada(): void {
 		const grid = this.gridEducacion?.instance;
 		if (!grid || !this.educacionEditando) {
@@ -1894,13 +2159,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
-	// Descarta la edicion en curso de educacion.
+	// Cancela la edición de educación y limpia los flags locales.
 	cancelarEducacionEditada(): void {
 		this.cancelarEdicionGrid(this.gridEducacion?.instance, () => {
 			this.educacionEditando = false;
 		});
 	}
 
+	// Qué hace: inicializa los valores por defecto de una nueva fila de educación.
+	// Cómo: pone el correlativo en 0, asocia el CORR_PERFIL_PUESTO actual, limpia requisito y
+	// especificaciones, fija TIPO_REQUERIDO en 'SI' y genera una clave temporal de cliente con crearClientKey.
 	educacionInitNewRow(e: any): void {
 		e.data.CORR_EDUCACION = 0;
 		e.data.CORR_PERFIL_PUESTO = Number(this.perfil?.CORR_PERFIL_PUESTO) || 0;
@@ -1910,22 +2178,31 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.data._clientKey = this.crearClientKey('edu');
 	}
 
+	// Qué hace: marca que el grid de educación entró en edición.
+	// Cómo: pone educacionEditando en true.
 	onEducacionEditingStart(_e: any): void {
 		this.educacionEditando = true;
 	}
 
+	// Qué hace: reacciona a que el grid de educación terminó de guardar una fila.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag educacionEditando.
 	onEducacionSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.educacionEditando = false;
 		});
 	}
 
+	// Qué hace: reacciona a que se canceló la edición del grid de educación.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag educacionEditando.
 	onEducacionEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.educacionEditando = false;
 		});
 	}
 
+	// Qué hace: valida los datos de la fila de educación antes de guardarla.
+	// Cómo: combina datos viejos y nuevos y verifica que el requisito no esté vacío ni supere 255 caracteres,
+	// y que las especificaciones no superen 255 caracteres, invalidando la fila con invalidarFila cuando corresponde.
 	educacionRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.REQUISITO ?? '').trim()) {
@@ -1942,19 +2219,28 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Qué hace: inserta un nuevo requisito de educación desde el grid.
+	// Cómo: llama a persistirEducacionDesdeGrid (create) con esNuevo en true.
 	educacionRowInserting(e: any): void {
 		e.cancel = this.persistirEducacionDesdeGrid(e.data, true);
 	}
 
+	// Qué hace: actualiza un requisito de educación existente desde el grid.
+	// Cómo: combina datos viejos y nuevos y llama a persistirEducacionDesdeGrid (update) con esNuevo en false.
 	educacionRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
 		e.cancel = this.persistirEducacionDesdeGrid(data, false);
 	}
 
+	// Qué hace: elimina un requisito de educación desde el grid.
+	// Cómo: llama a eliminarEducacionDesdeGrid (delete) con los datos de la fila.
 	educacionRowRemoving(e: any): void {
 		e.cancel = this.eliminarEducacionDesdeGrid(e.data);
 	}
 
+	// Qué hace: abre una nueva fila para registrar un requisito de experiencia del perfil.
+	// Cómo: si no está bloqueado, ya en edición o sin descriptor guardado, sale; si no, asegura que el
+	// perfil exista (asegurarPerfilParaDetalle) y luego llama a addRow del grid y marca experienciaEditando en true.
 	agregarExperiencia(): void {
 		if (this.readOnly || this.experienciaEditando || !this.requiereDescriptorGuardado()) {
 			return;
@@ -1966,6 +2252,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: pone en modo edición la fila de experiencia que el usuario seleccionó.
+	// Cómo: si no está bloqueado ni ya en edición, llama a editRow del grid y marca experienciaEditando en true.
 	editarExperienciaClick(e: any): void {
 		if (this.readOnly || this.experienciaEditando) {
 			return;
@@ -1974,15 +2262,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.experienciaEditando = true;
 	}
 
+	// Qué hace: decide si el botón de editar debe verse en la fila de experiencia.
+	// Cómo: delega en accionGridVisible.
 	experienciaEditButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
+	// Qué hace: decide si el botón de eliminar debe verse en la fila de experiencia.
+	// Cómo: delega en accionGridVisible.
 	experienciaDeleteButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
-	// Confirma la fila del grid de experiencia del perfil.
+	// Guarda la fila en edición del grid de experiencia del perfil.
 	guardarExperienciaEditada(): void {
 		const grid = this.gridExperiencia?.instance;
 		if (!grid || !this.experienciaEditando) {
@@ -1992,13 +2284,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
-	// Descarta la edicion en curso de experiencia.
+	// Cancela la edición de experiencia y limpia los flags locales.
 	cancelarExperienciaEditada(): void {
 		this.cancelarEdicionGrid(this.gridExperiencia?.instance, () => {
 			this.experienciaEditando = false;
 		});
 	}
 
+	// Qué hace: inicializa los valores por defecto de una nueva fila de experiencia.
+	// Cómo: pone el correlativo en 0, asocia el CORR_PERFIL_PUESTO actual, limpia el requisito,
+	// fija TIPO_REQUERIDO en 'SI' y genera una clave temporal de cliente con crearClientKey.
 	experienciaInitNewRow(e: any): void {
 		e.data.CORR_EXPERIENCIA = 0;
 		e.data.CORR_PERFIL_PUESTO = Number(this.perfil?.CORR_PERFIL_PUESTO) || 0;
@@ -2007,22 +2302,31 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.data._clientKey = this.crearClientKey('exp');
 	}
 
+	// Qué hace: marca que el grid de experiencia entró en edición.
+	// Cómo: pone experienciaEditando en true.
 	onExperienciaEditingStart(_e: any): void {
 		this.experienciaEditando = true;
 	}
 
+	// Qué hace: reacciona a que el grid de experiencia terminó de guardar una fila.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag experienciaEditando.
 	onExperienciaSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.experienciaEditando = false;
 		});
 	}
 
+	// Qué hace: reacciona a que se canceló la edición del grid de experiencia.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag experienciaEditando.
 	onExperienciaEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.experienciaEditando = false;
 		});
 	}
 
+	// Qué hace: valida los datos de la fila de experiencia antes de guardarla.
+	// Cómo: combina datos viejos y nuevos y verifica que el requisito no esté vacío ni supere 255 caracteres,
+	// invalidando la fila con invalidarFila cuando corresponde.
 	experienciaRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(data.REQUISITO ?? '').trim()) {
@@ -2035,21 +2339,29 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Qué hace: inserta un nuevo requisito de experiencia desde el grid.
+	// Cómo: llama a persistirExperienciaDesdeGrid (create) con esNuevo en true.
 	experienciaRowInserting(e: any): void {
 		e.cancel = this.persistirExperienciaDesdeGrid(e.data, true);
 	}
 
+	// Qué hace: actualiza un requisito de experiencia existente desde el grid.
+	// Cómo: combina datos viejos y nuevos y llama a persistirExperienciaDesdeGrid (update) con esNuevo en false.
 	experienciaRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
 		e.cancel = this.persistirExperienciaDesdeGrid(data, false);
 	}
 
+	// Qué hace: elimina un requisito de experiencia desde el grid.
+	// Cómo: llama a eliminarExperienciaDesdeGrid (delete) con los datos de la fila.
 	experienciaRowRemoving(e: any): void {
 		e.cancel = this.eliminarExperienciaDesdeGrid(e.data);
 	}
 
-	// Filtra el catálogo técnico contra las selecciones actuales y valida duplicados por llave de catálogo,
-	// no solo por el texto mostrado en el grid.
+	// Oculta competencias técnicas ya asignadas y valida que no se repita el mismo código de catálogo.
+	// Qué hace: abre una nueva fila para registrar una competencia técnica del perfil.
+	// Cómo: si no está bloqueado, ya en edición o sin descriptor guardado, sale; si no, asegura que el
+	// perfil exista, refresca las competencias disponibles y llama a addRow del grid marcando el flag de edición.
 	agregarCompetenciaTecnica(): void {
 		if (this.readOnly || this.competenciasTecnicasEditando || !this.requiereDescriptorGuardado()) {
 			return;
@@ -2062,6 +2374,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: pone en modo edición la fila de competencia técnica que el usuario seleccionó.
+	// Cómo: si no está bloqueado ni ya en edición, refresca las disponibles conservando la actual,
+	// llama a editRow del grid y marca competenciasTecnicasEditando en true.
 	editarCompetenciaTecnicaClick(e: any): void {
 		if (this.readOnly || this.competenciasTecnicasEditando) {
 			return;
@@ -2073,15 +2388,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.competenciasTecnicasEditando = true;
 	}
 
+	// Qué hace: decide si el botón de editar debe verse en la fila de competencia técnica.
+	// Cómo: delega en accionGridVisible.
 	competenciaTecnicaEditButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
+	// Qué hace: decide si el botón de eliminar debe verse en la fila de competencia técnica.
+	// Cómo: delega en accionGridVisible.
 	competenciaTecnicaDeleteButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
-	// Confirma la fila del grid de competencias tecnicas.
+	// Guarda la fila en edición del grid de competencias técnicas.
 	guardarCompetenciaTecnicaEditada(): void {
 		const grid = this.gridCompetenciasTecnicas?.instance;
 		if (!grid || !this.competenciasTecnicasEditando) {
@@ -2091,7 +2410,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
-	// Descarta la edicion en curso de competencias tecnicas.
+	// Cancela la edición de competencias técnicas y limpia los flags locales.
 	cancelarCompetenciaTecnicaEditada(): void {
 		this.cancelarEdicionGrid(this.gridCompetenciasTecnicas?.instance, () => {
 			this.competenciasTecnicasEditando = false;
@@ -2099,6 +2418,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: inicializa los valores por defecto de una nueva fila de competencia técnica.
+	// Cómo: limpia correlativos, código, nombre y descripción, fija NIVEL_DOMINIO en 'BASICO', genera
+	// una clave temporal de cliente con crearClientKey y refresca las competencias disponibles del lookup.
 	competenciaTecnicaInitNewRow(e: any): void {
 		e.data.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS = 0;
 		e.data.CORR_PERFIL_PUESTO = Number(this.perfil?.CORR_PERFIL_PUESTO) || 0;
@@ -2111,6 +2433,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actualizarCompetenciasTecnicasLookupDisponibles();
 	}
 
+	// Qué hace: marca que el grid de competencias técnicas entró en edición y refresca el lookup disponible.
+	// Cómo: llama a actualizarCompetenciasTecnicasLookupDisponibles conservando la competencia de la fila
+	// y pone competenciasTecnicasEditando en true.
 	onCompetenciaTecnicaEditingStart(e: any): void {
 		this.actualizarCompetenciasTecnicasLookupDisponibles(
 			Number(e?.data?.CORR_COMPETENCIAS_TECNICAS) || null
@@ -2118,12 +2443,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.competenciasTecnicasEditando = true;
 	}
 
+	// Qué hace: reacciona a que el grid de competencias técnicas terminó de guardar una fila.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag competenciasTecnicasEditando.
 	onCompetenciaTecnicaSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.competenciasTecnicasEditando = false;
 		});
 	}
 
+	// Qué hace: reacciona a que se canceló la edición del grid de competencias técnicas.
+	// Cómo: delega en finalizarEdicionGrid para limpiar el flag y recarga las competencias con cargarCompetenciasTecnicas.
 	onCompetenciaTecnicaEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.competenciasTecnicasEditando = false;
@@ -2131,6 +2460,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarCompetenciasTecnicas(true);
 	}
 
+	// Qué hace: valida los datos de la fila de competencia técnica antes de guardarla.
+	// Cómo: verifica que haya competencia seleccionada, nombre no vacío (máx. 150 caracteres), descripción
+	// (máx. 500), nivel de dominio válido y que no esté duplicada en el descriptor, invalidando con invalidarFila.
 	competenciaTecnicaRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(Number(data.CORR_COMPETENCIAS_TECNICAS) > 0)) {
@@ -2172,19 +2504,28 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Qué hace: inserta una nueva competencia técnica desde el grid.
+	// Cómo: llama a persistirCompetenciaTecnicaDesdeGrid (create) con esNuevo en true.
 	competenciaTecnicaRowInserting(e: any): void {
 		e.cancel = this.persistirCompetenciaTecnicaDesdeGrid(e.data, true);
 	}
 
+	// Qué hace: actualiza una competencia técnica existente desde el grid.
+	// Cómo: combina datos viejos y nuevos y llama a persistirCompetenciaTecnicaDesdeGrid (update) con esNuevo en false.
 	competenciaTecnicaRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
 		e.cancel = this.persistirCompetenciaTecnicaDesdeGrid(data, false);
 	}
 
+	// Qué hace: elimina una competencia técnica desde el grid.
+	// Cómo: llama a eliminarCompetenciaTecnicaDesdeGrid (delete) con los datos de la fila.
 	competenciaTecnicaRowRemoving(e: any): void {
 		e.cancel = this.eliminarCompetenciaTecnicaDesdeGrid(e.data);
 	}
 
+	// Qué hace: define el texto que se muestra en la columna de catálogo de competencia técnica.
+	// Cómo: usa el código guardado en la fila; si no hay, lo busca por correlativo en el catálogo
+	// (activo o disponible) y devuelve solo el código.
 	competenciaTecnicaCatalogDisplay = (row: ScPerfilPuestoCompetenciasTecnicas): string => {
 		const codigoFila = (row?.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim();
 		if (codigoFila) {
@@ -2199,12 +2540,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES.find(
 				(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === corr
 			);
-		// Columna Competencia (ya seleccionado): solo codigo, nunca el nombre.
+		// En la columna Competencia (solo lectura): mostrar solo el código, no el nombre.
 		return (catalog?.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim();
 	};
 
-	// Filtra el catalogo tecnico para ocultar competencias ya asignadas (conserva la de la fila editada).
-	// Si la conservada está inactiva y no viene del catálogo, se inyecta desde la fila del perfil.
+	// Arma el lookup de competencias técnicas: quita las ya usadas y deja la de la fila en edición.
+	// Si esa competencia está inactiva, la agrega al lookup con los datos guardados en la fila.
 	private actualizarCompetenciasTecnicasLookupDisponibles(
 		corrConservar: number | null = null
 	): void {
@@ -2281,6 +2622,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES = disponibles;
 	}
 
+	// Qué hace: aplica el cambio de competencia técnica elegida en el lookup de la fila.
+	// Cómo: busca código y nombre en el catálogo (o en la lista disponible), actualiza la celda y la fila
+	// en memoria, fija el valor en la celda y vuelve a preparar el lookup de competencias disponibles.
 	onCompetenciaTecnicaLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && value > 0 ? Number(value) : null;
 		const fromCatalog = this.mCORR_COMPETENCIAS_TECNICAS.find(
@@ -2302,7 +2646,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		).trim();
 		const descripcion = (fromCatalog?.DESCRIPCION ?? fromEdit?.DESCRIPCION ?? '').trim();
 
-		// Aunque sea el mismo corr, forzar codigo/nombre del catálogo (re-selección tras renombre).
+		// Aunque no cambie el código, actualiza código y nombre desde el catálogo (por si se renombró).
 		if (cellInfo?.data) {
 			cellInfo.data.CORR_COMPETENCIAS_TECNICAS = corr;
 			cellInfo.data.CODIGO_COMPETENCIAS_TECNICAS = codigo;
@@ -2322,6 +2666,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actualizarCompetenciasTecnicasLookupDisponibles(corr);
 	}
 
+	// Qué hace: fija el valor de competencia técnica y sus datos al editar la celda directamente en el grid.
+	// Cómo: busca código, nombre y descripción en el catálogo (o en la lista disponible) y actualiza
+	// esos campos en los nuevos datos de la fila.
 	setCompetenciaTecnicaCellValue = (
 		newData: ScPerfilPuestoCompetenciasTecnicas,
 		value: number | null,
@@ -2335,7 +2682,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			(item) => Number(item.CORR_COMPETENCIAS_TECNICAS) === Number(corr)
 		);
 		newData.CORR_COMPETENCIAS_TECNICAS = corr;
-		// Al elegir en el select, tomar codigo/nombre actuales del catálogo.
+		// Al elegir en el select, copia código y nombre actuales del catálogo a la fila.
 		newData.CODIGO_COMPETENCIAS_TECNICAS = (
 			fromCatalog?.CODIGO_COMPETENCIAS_TECNICAS_CATALOGO ??
 			fromCatalog?.CODIGO_COMPETENCIAS_TECNICAS ??
@@ -2350,6 +2697,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		newData.DESCRIPCION = (fromCatalog?.DESCRIPCION ?? fromEdit?.DESCRIPCION ?? '').trim();
 	};
 
+	// Qué hace: localiza en memoria la fila real de competencia técnica que corresponde a una fila del grid.
+	// Cómo: busca en competenciasTecnicas por _clientKey (fila nueva) o por CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS
+	// (fila existente); devuelve null si no hay coincidencia.
 	private resolverFilaCompetenciaTecnica(
 		row?: ScPerfilPuestoCompetenciasTecnicas | null
 	): ScPerfilPuestoCompetenciasTecnicas | null {
@@ -2368,8 +2718,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
-	// Mantiene disponibles únicamente las competencias conductuales aún no asignadas al perfil,
-	// conservando la opción de la fila editada para que no desaparezca del lookup.
+	// Oculta competencias conductuales ya asignadas al perfil, excepto la de la fila que se está editando.
+	// Qué hace: abre una nueva fila para registrar una competencia conductual del perfil.
+	// Cómo: si no está bloqueado, ya en edición o sin descriptor guardado, sale; si no, asegura que el
+	// perfil exista, refresca las disponibles y marca el flag antes de llamar a addRow del grid.
 	agregarCompetenciaConductual(): void {
 		if (this.readOnly || this.competenciasConductualesEditando || !this.requiereDescriptorGuardado()) {
 			return;
@@ -2382,6 +2734,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: pone en modo edición la fila de competencia conductual que el usuario seleccionó.
+	// Cómo: si no está bloqueado ni ya en edición, refresca las disponibles conservando la actual,
+	// marca el flag de edición y llama a editRow del grid.
 	editarCompetenciaConductualClick(e: any): void {
 		if (this.readOnly || this.competenciasConductualesEditando) {
 			return;
@@ -2395,15 +2750,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		setTimeout(() => grid.editRow(rowIndex));
 	}
 
+	// Qué hace: decide si el botón de editar debe verse en la fila de competencia conductual.
+	// Cómo: delega en accionGridVisible.
 	competenciaConductualEditButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
+	// Qué hace: decide si el botón de eliminar debe verse en la fila de competencia conductual.
+	// Cómo: delega en accionGridVisible.
 	competenciaConductualDeleteButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
-	// Confirma la fila del grid de competencias conductuales.
+	// Guarda la fila en edición del grid de competencias conductuales.
 	guardarCompetenciaConductualEditada(): void {
 		const grid = this.gridCompetenciasConductuales?.instance;
 		if (!grid || !this.competenciasConductualesEditando) {
@@ -2413,7 +2772,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
-	// Descarta la edicion en curso de competencias conductuales.
+	// Cancela la edición de competencias conductuales y limpia los flags locales.
 	cancelarCompetenciaConductualEditada(): void {
 		this.cancelarEdicionGrid(this.gridCompetenciasConductuales?.instance, () => {
 			this.competenciasConductualesEditando = false;
@@ -2421,6 +2780,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: inicializa los valores por defecto de una nueva fila de competencia conductual.
+	// Cómo: limpia correlativos, nombre y descripción, genera una clave temporal de cliente con
+	// crearClientKey y refresca las competencias conductuales disponibles del lookup.
 	competenciaConductualInitNewRow(e: any): void {
 		e.data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES = 0;
 		e.data.CORR_PERFIL_PUESTO = Number(this.perfil?.CORR_PERFIL_PUESTO) || 0;
@@ -2431,6 +2793,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actualizarCompetenciasConductualesLookupDisponibles();
 	}
 
+	// Qué hace: marca que el grid de competencias conductuales entró en edición y refresca el lookup disponible.
+	// Cómo: llama a actualizarCompetenciasConductualesLookupDisponibles conservando la competencia de la fila
+	// y pone competenciasConductualesEditando en true.
 	onCompetenciaConductualEditingStart(e: any): void {
 		this.actualizarCompetenciasConductualesLookupDisponibles(
 			Number(e?.data?.CORR_COMPETENCIAS_CONDUCTUALES) || null
@@ -2438,12 +2803,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.competenciasConductualesEditando = true;
 	}
 
+	// Qué hace: reacciona a que el grid de competencias conductuales terminó de guardar una fila.
+	// Cómo: delega en finalizarEdicionGrid, que limpia el flag competenciasConductualesEditando.
 	onCompetenciaConductualSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.competenciasConductualesEditando = false;
 		});
 	}
 
+	// Qué hace: reacciona a que se canceló la edición del grid de competencias conductuales.
+	// Cómo: delega en finalizarEdicionGrid para limpiar el flag y recarga las competencias con cargarCompetenciasConductuales.
 	onCompetenciaConductualEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.competenciasConductualesEditando = false;
@@ -2451,6 +2820,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarCompetenciasConductuales(true);
 	}
 
+	// Qué hace: valida los datos de la fila de competencia conductual antes de guardarla.
+	// Cómo: verifica que haya competencia seleccionada, nombre no vacío (máx. 150 caracteres), descripción
+	// (máx. 500) y que no esté duplicada en el descriptor, invalidando la fila con invalidarFila.
 	competenciaConductualRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(Number(data.CORR_COMPETENCIAS_CONDUCTUALES) > 0)) {
@@ -2487,19 +2859,28 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Qué hace: inserta una nueva competencia conductual desde el grid.
+	// Cómo: llama a persistirCompetenciaConductualDesdeGrid (create) con esNuevo en true.
 	competenciaConductualRowInserting(e: any): void {
 		e.cancel = this.persistirCompetenciaConductualDesdeGrid(e.data, true);
 	}
 
+	// Qué hace: actualiza una competencia conductual existente desde el grid.
+	// Cómo: combina datos viejos y nuevos y llama a persistirCompetenciaConductualDesdeGrid (update) con esNuevo en false.
 	competenciaConductualRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
 		e.cancel = this.persistirCompetenciaConductualDesdeGrid(data, false);
 	}
 
+	// Qué hace: elimina una competencia conductual desde el grid.
+	// Cómo: llama a eliminarCompetenciaConductualDesdeGrid (delete) con los datos de la fila.
 	competenciaConductualRowRemoving(e: any): void {
 		e.cancel = this.eliminarCompetenciaConductualDesdeGrid(e.data);
 	}
 
+	// Qué hace: define el texto que se muestra en la columna de catálogo de competencia conductual.
+	// Cómo: usa el código de tipo de puesto guardado en la fila; si no hay, lo busca por correlativo
+	// en el catálogo (activo o disponible) y devuelve solo ese código.
 	competenciaConductualCatalogDisplay = (row: ScPerfilPuestoCompetenciasConductuales): string => {
 		const codigo = (row?.CODIGO_TIPO_PUESTO ?? '').trim();
 		if (codigo) {
@@ -2521,8 +2902,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return (catalog?.CODIGO_TIPO_PUESTO ?? '').trim();
 	};
 
-	// Filtra el catalogo conductual para evitar duplicados en el perfil.
-	// Si la conservada está inactiva y no viene del catálogo, se inyecta desde la fila del perfil.
+	// Arma el lookup conductual: quita las ya usadas y deja la de la fila en edición.
+	// Si esa competencia está inactiva, la agrega al lookup con los datos guardados en la fila.
 	private actualizarCompetenciasConductualesLookupDisponibles(
 		corrConservar: number | null = null
 	): void {
@@ -2586,6 +2967,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES = disponibles;
 	}
 
+	// Qué hace: aplica el cambio de competencia conductual elegida en el lookup de la fila.
+	// Cómo: busca código y nombre en el catálogo (o en la lista disponible), actualiza la celda y la fila
+	// en memoria, fija el valor en la celda y vuelve a preparar el lookup de competencias disponibles.
 	onCompetenciaConductualLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && value > 0 ? Number(value) : null;
 		const fromCatalog = this.mCORR_COMPETENCIAS_CONDUCTUALES.find(
@@ -2609,7 +2993,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			? (fromCatalog?.DESCRIPCION ?? fromEdit?.DESCRIPCION ?? '').trim()
 			: '';
 
-		// Aunque sea el mismo corr, forzar codigo/nombre del catálogo (re-selección tras renombre).
+		// Aunque no cambie el código, actualiza código y nombre desde el catálogo (por si se renombró).
 		if (cellInfo?.data) {
 			cellInfo.data.CORR_COMPETENCIAS_CONDUCTUALES = corr;
 			cellInfo.data.CODIGO_TIPO_PUESTO = codigo;
@@ -2629,6 +3013,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actualizarCompetenciasConductualesLookupDisponibles(corr);
 	}
 
+	// Qué hace: fija el valor de competencia conductual y sus datos al editar la celda directamente en el grid.
+	// Cómo: busca código, nombre y descripción en el catálogo (o en la lista disponible) y actualiza
+	// esos campos en los nuevos datos de la fila.
 	setCompetenciaConductualCellValue = (
 		newData: ScPerfilPuestoCompetenciasConductuales,
 		value: number | null,
@@ -2658,6 +3045,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			: '';
 	};
 
+	// Qué hace: localiza en memoria la fila real de competencia conductual que corresponde a una fila del grid.
+	// Cómo: busca en competenciasConductuales por _clientKey (fila nueva) o por
+	// CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES (fila existente); devuelve null si no hay coincidencia.
 	private resolverFilaCompetenciaConductual(
 		row?: ScPerfilPuestoCompetenciasConductuales | null
 	): ScPerfilPuestoCompetenciasConductuales | null {
@@ -2676,7 +3066,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
-	// Sincroniza requerimientos con su catálogo y descarta opciones ya utilizadas para prevenir duplicados.
+	// Al editar requerimientos: actualiza textos desde el catálogo y oculta opciones ya usadas.
+	// Qué hace: abre una nueva fila para registrar un requerimiento organizacional.
+	// Cómo: si no está bloqueado, ya en edición o sin descriptor guardado, sale; si no, refresca el lookup
+	// disponible, marca los flags de inserción/edición y llama a addRow del grid.
 	agregarRequerimientoOrganizacional(): void {
 		if (this.readOnly || this.requerimientosOrganizacionalesEditando || !this.requiereDescriptorGuardado()) {
 			return;
@@ -2690,6 +3083,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: pone en modo edición la fila de requerimiento organizacional que el usuario seleccionó.
+	// Cómo: si no está bloqueado ni ya en edición, refresca el lookup disponible conservando el actual,
+	// marca los flags de edición (sin inserción) y llama a editRow del grid.
 	editarRequerimientoOrganizacionalClick(e: any): void {
 		if (this.readOnly || this.requerimientosOrganizacionalesEditando) {
 			return;
@@ -2707,15 +3103,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: decide si el botón de editar debe verse en la fila de requerimiento organizacional.
+	// Cómo: delega en accionGridVisible.
 	requerimientoOrganizacionalEditButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
+	// Qué hace: decide si el botón de eliminar debe verse en la fila de requerimiento organizacional.
+	// Cómo: delega en accionGridVisible.
 	requerimientoOrganizacionalDeleteButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
-	// Confirma la fila del grid de requerimientos organizacionales.
+	// Guarda la fila en edición del grid de requerimientos organizacionales.
 	guardarRequerimientoOrganizacionalEditado(): void {
 		const grid = this.gridRequerimientosOrganizacionales?.instance;
 		if (!grid || !this.requerimientosOrganizacionalesEditando) {
@@ -2725,7 +3125,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
-	// Descarta la edicion en curso de requerimientos.
+	// Cancela la edición de requerimientos y limpia los flags locales.
 	cancelarRequerimientoOrganizacionalEditado(): void {
 		this.cancelarEdicionGrid(this.gridRequerimientosOrganizacionales?.instance, () => {
 			this.requerimientosOrganizacionalesEditando = false;
@@ -2734,6 +3134,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: inicializa los valores por defecto de una nueva fila de requerimiento organizacional.
+	// Cómo: marca modo inserción, limpia correlativos y descripción, genera una clave temporal de cliente
+	// con crearClientKey y refresca el lookup de requerimientos disponibles.
 	requerimientoOrganizacionalInitNewRow(e: any): void {
 		this.requerimientosOrganizacionalesInsertando = true;
 		e.data.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL = 0;
@@ -2744,6 +3147,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actualizarRequerimientosOrganizacionalesLookupDisponibles();
 	}
 
+	// Qué hace: marca que el grid de requerimientos organizacionales entró en edición y refresca el lookup disponible.
+	// Cómo: determina si es inserción según el correlativo de la fila, llama a
+	// actualizarRequerimientosOrganizacionalesLookupDisponibles conservando el actual, marca el flag de edición
+	// y sincroniza las columnas visibles con syncRequerimientoOrganizacionalColumnas.
 	onRequerimientoOrganizacionalEditingStart(e: any): void {
 		this.requerimientosOrganizacionalesInsertando = !(
 			Number(e?.data?.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL) > 0
@@ -2755,6 +3162,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.syncRequerimientoOrganizacionalColumnas();
 	}
 
+	// Qué hace: reacciona a que el grid de requerimientos organizacionales terminó de guardar una fila.
+	// Cómo: delega en finalizarEdicionGrid, que limpia los flags de edición e inserción.
 	onRequerimientoOrganizacionalSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.requerimientosOrganizacionalesEditando = false;
@@ -2762,6 +3171,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: reacciona a que se canceló la edición del grid de requerimientos organizacionales.
+	// Cómo: delega en finalizarEdicionGrid para limpiar los flags y recarga los requerimientos con
+	// cargarRequerimientosOrganizacionales.
 	onRequerimientoOrganizacionalEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.requerimientosOrganizacionalesEditando = false;
@@ -2770,6 +3182,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarRequerimientosOrganizacionales(true);
 	}
 
+	// Qué hace: valida los datos de la fila de requerimiento organizacional antes de guardarla.
+	// Cómo: verifica que haya requerimiento seleccionado, descripción no vacía (máx. 150 caracteres) y que
+	// no esté duplicado en el descriptor, invalidando la fila con invalidarFila cuando corresponde.
 	requerimientoOrganizacionalRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(Number(data.CORR_REQUERIMIENTO_ORGANIZACIONAL) > 0)) {
@@ -2802,19 +3217,28 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Qué hace: inserta un nuevo requerimiento organizacional desde el grid.
+	// Cómo: llama a persistirRequerimientoOrganizacionalDesdeGrid (create) con esNuevo en true.
 	requerimientoOrganizacionalRowInserting(e: any): void {
 		e.cancel = this.persistirRequerimientoOrganizacionalDesdeGrid(e.data, true);
 	}
 
+	// Qué hace: actualiza un requerimiento organizacional existente desde el grid.
+	// Cómo: combina datos viejos y nuevos y llama a persistirRequerimientoOrganizacionalDesdeGrid (update)
+	// con esNuevo en false.
 	requerimientoOrganizacionalRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
 		e.cancel = this.persistirRequerimientoOrganizacionalDesdeGrid(data, false);
 	}
 
+	// Qué hace: elimina un requerimiento organizacional desde el grid.
+	// Cómo: llama a eliminarRequerimientoOrganizacionalDesdeGrid (delete) con los datos de la fila.
 	requerimientoOrganizacionalRowRemoving(e: any): void {
 		e.cancel = this.eliminarRequerimientoOrganizacionalDesdeGrid(e.data);
 	}
 
+	// Qué hace: define el texto que se muestra en la columna de catálogo del requerimiento organizacional.
+	// Cómo: devuelve el correlativo como texto, o cadena vacía si no es válido.
 	requerimientoOrganizacionalCatalogDisplay = (row: ScDescriptorPuestoRequerimientoOrganizacional): string => {
 		const corr = Number(row?.CORR_REQUERIMIENTO_ORGANIZACIONAL);
 		if (!(corr > 0)) {
@@ -2823,7 +3247,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return String(corr);
 	};
 
-	// Quita del lookup los requerimientos ya usados en el descriptor.
+	// Arma el lookup de requerimientos dejando solo los que aún no están en el descriptor.
 	private actualizarRequerimientosOrganizacionalesLookupDisponibles(
 		corrConservar: number | null = null
 	): void {
@@ -2847,6 +3271,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: aplica el cambio de requerimiento organizacional elegido en el lookup de la fila.
+	// Cómo: normaliza el valor a número (o null) y lo fija en la celda con setValue.
 	onRequerimientoOrganizacionalLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && value > 0 ? Number(value) : null;
 		cellInfo.setValue(corr);
@@ -2869,8 +3295,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		newData.DESCRIPCION = catalog?.DESCRIPCION ?? '';
 	};
 
-	// Gestiona riesgos e incluye el repintado diferido que DevExtreme necesita para reflejar
-	// los valores descriptivos derivados del lookup.
+	// Administra riesgos del puesto en el grid.
+	// Tras cambiar el lookup, vuelve a dibujar la fila para mostrar nombre e información actualizados.
+	// Qué hace: abre una nueva fila para registrar un riesgo del puesto.
+	// Cómo: si no está bloqueado, ya en edición o sin descriptor guardado, sale; si no, refresca el lookup
+	// disponible, marca los flags de inserción/edición y llama a addRow del grid.
 	agregarRiesgoPuesto(): void {
 		if (this.readOnly || this.riesgosPuestoEditando || !this.requiereDescriptorGuardado()) {
 			return;
@@ -2884,6 +3313,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: pone en modo edición la fila de riesgo de puesto que el usuario seleccionó.
+	// Cómo: si no está bloqueado ni ya en edición, refresca el lookup disponible conservando el actual,
+	// marca los flags de edición (sin inserción) y llama a editRow del grid.
 	editarRiesgoPuestoClick(e: any): void {
 		if (this.readOnly || this.riesgosPuestoEditando) {
 			return;
@@ -2899,15 +3331,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: decide si el botón de editar debe verse en la fila de riesgo de puesto.
+	// Cómo: delega en accionGridVisible.
 	riesgoPuestoEditButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
+	// Qué hace: decide si el botón de eliminar debe verse en la fila de riesgo de puesto.
+	// Cómo: delega en accionGridVisible.
 	riesgoPuestoDeleteButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
-	// Confirma la fila del grid de riesgos del puesto.
+	// Guarda la fila en edición del grid de riesgos del puesto.
 	guardarRiesgoPuestoEditado(): void {
 		const grid = this.gridRiesgosPuesto?.instance;
 		if (!grid || !this.riesgosPuestoEditando) {
@@ -2917,7 +3353,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
-	// Descarta la edicion en curso de riesgos.
+	// Cancela la edición de riesgos y limpia los flags locales.
 	cancelarRiesgoPuestoEditado(): void {
 		this.cancelarEdicionGrid(this.gridRiesgosPuesto?.instance, () => {
 			this.riesgosPuestoEditando = false;
@@ -2926,6 +3362,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: inicializa los valores por defecto de una nueva fila de riesgo de puesto.
+	// Cómo: marca modo inserción, limpia correlativos, nombre e información, genera una clave temporal
+	// de cliente con crearClientKey y refresca el lookup de riesgos disponibles.
 	riesgoPuestoInitNewRow(e: any): void {
 		this.riesgosPuestoInsertando = true;
 		e.data.CORR_DESCRIPTOR_RIESGO = 0;
@@ -2937,6 +3376,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actualizarRiesgosPuestoLookupDisponibles();
 	}
 
+	// Qué hace: marca que el grid de riesgos de puesto entró en edición y refresca el lookup disponible.
+	// Cómo: determina si es inserción según el correlativo de la fila, llama a
+	// actualizarRiesgosPuestoLookupDisponibles conservando el actual, marca el flag de edición y
+	// sincroniza las columnas visibles con syncRiesgoPuestoColumnas.
 	onRiesgoPuestoEditingStart(e: any): void {
 		this.riesgosPuestoInsertando = !(Number(e?.data?.CORR_DESCRIPTOR_RIESGO) > 0);
 		this.actualizarRiesgosPuestoLookupDisponibles(Number(e?.data?.CORR_RIESGO_PUESTO) || null);
@@ -2944,6 +3387,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.syncRiesgoPuestoColumnas();
 	}
 
+	// Qué hace: reacciona a que el grid de riesgos de puesto terminó de guardar una fila.
+	// Cómo: delega en finalizarEdicionGrid, que limpia los flags de edición e inserción.
 	onRiesgoPuestoSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.riesgosPuestoEditando = false;
@@ -2951,6 +3396,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: reacciona a que se canceló la edición del grid de riesgos de puesto.
+	// Cómo: delega en finalizarEdicionGrid para limpiar los flags y recarga los riesgos con cargarRiesgosPuesto.
 	onRiesgoPuestoEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.riesgosPuestoEditando = false;
@@ -2959,6 +3406,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarRiesgosPuesto(true);
 	}
 
+	// Qué hace: valida los datos de la fila de riesgo de puesto antes de guardarla.
+	// Cómo: verifica que haya riesgo seleccionado, nombre no vacío (máx. 150 caracteres) y que no esté
+	// duplicado en el descriptor, invalidando la fila con invalidarFila cuando corresponde.
 	riesgoPuestoRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (!(Number(data.CORR_RIESGO_PUESTO) > 0)) {
@@ -2996,19 +3446,27 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Qué hace: inserta un nuevo riesgo de puesto desde el grid.
+	// Cómo: llama a persistirRiesgoPuestoDesdeGrid (create) con esNuevo en true.
 	riesgoPuestoRowInserting(e: any): void {
 		e.cancel = this.persistirRiesgoPuestoDesdeGrid(e.data, true);
 	}
 
+	// Qué hace: actualiza un riesgo de puesto existente desde el grid.
+	// Cómo: combina datos viejos y nuevos y llama a persistirRiesgoPuestoDesdeGrid (update) con esNuevo en false.
 	riesgoPuestoRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
 		e.cancel = this.persistirRiesgoPuestoDesdeGrid(data, false);
 	}
 
+	// Qué hace: elimina un riesgo de puesto desde el grid.
+	// Cómo: llama a eliminarRiesgoPuestoDesdeGrid (delete) con los datos de la fila.
 	riesgoPuestoRowRemoving(e: any): void {
 		e.cancel = this.eliminarRiesgoPuestoDesdeGrid(e.data);
 	}
 
+	// Qué hace: define el texto que se muestra en la columna de catálogo del riesgo de puesto.
+	// Cómo: devuelve el correlativo como texto, o cadena vacía si no es válido.
 	riesgoPuestoCatalogDisplay = (row: ScDescriptorPuestoRiesgoPuesto): string => {
 		const corr = Number(row?.CORR_RIESGO_PUESTO);
 		if (!(corr > 0)) {
@@ -3017,7 +3475,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return String(corr);
 	};
 
-	// Filtra riesgos del catalogo ya asignados al descriptor.
+	// Arma el lookup de riesgos dejando solo los que aún no están en el descriptor.
 	private actualizarRiesgosPuestoLookupDisponibles(corrConservar: number | null = null): void {
 		const usados = new Set(
 			(this.riesgosPuesto || [])
@@ -3037,13 +3495,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: aplica el cambio de riesgo de puesto elegido en el lookup de la fila.
+	// Cómo: normaliza el valor, lo fija en la celda con setValue y repinta la fila con repintarFilaRiesgoPuestoLookup.
 	onRiesgoPuestoLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && value > 0 ? Number(value) : null;
 		cellInfo.setValue(corr);
 		this.repintarFilaRiesgoPuestoLookup(cellInfo);
 	}
 
-	// Fuerza repaint diferido de la fila tras cambiar el lookup (DevExtreme).
+	// Tras cambiar el riesgo en el lookup, vuelve a dibujar la fila en el grid.
 	private repintarFilaRiesgoPuestoLookup(cellInfo: any): void {
 		this.cdr.detectChanges();
 		setTimeout(() => {
@@ -3061,6 +3521,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: fija el valor de riesgo de puesto y su nombre al editar la celda directamente en el grid.
+	// Cómo: busca el nombre en el catálogo y actualiza CORR_RIESGO_PUESTO y NOMBRE_RIESGO_PUESTO en los
+	// nuevos datos de la fila.
 	setRiesgoPuestoCellValue = (
 		newData: ScDescriptorPuestoRiesgoPuesto,
 		value: number | null,
@@ -3074,8 +3537,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		newData.NOMBRE_RIESGO_PUESTO = catalog?.NOMBRE_RIESGO_PUESTO ?? '';
 	};
 
-	// Combina responsabilidades de catálogo con una fila virtual de impacto económico. Esa fila se muestra
-	// en el mismo grid, pero tiene reglas de edición y persistencia independientes.
+	// Muestra responsabilidades del catálogo y una fila extra de impacto económico en el mismo grid.
+	// La fila de impacto se edita y guarda por separado, en el encabezado del descriptor.
+	// Qué hace: abre una nueva fila para registrar una responsabilidad de cargo.
+	// Cómo: si no está bloqueado, ya en edición o sin descriptor guardado, sale; si no, refresca el lookup
+	// disponible, marca los flags de inserción/edición y llama a addRow del grid.
 	agregarResponsabilidadCargo(): void {
 		if (this.readOnly || this.responsabilidadesCargoEditando || !this.requiereDescriptorGuardado()) {
 			return;
@@ -3089,6 +3555,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: pone en modo edición la fila de responsabilidad de cargo (o impacto económico) que el usuario seleccionó.
+	// Cómo: si no está bloqueado ni ya en edición, prepara el lookup correspondiente (impacto económico o
+	// responsabilidades) y llama a editRow del grid marcando los flags de edición.
 	editarResponsabilidadCargoClick(e: any): void {
 		if (this.readOnly || this.responsabilidadesCargoEditando) {
 			return;
@@ -3110,10 +3579,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: decide si el botón de editar debe verse en la fila de responsabilidad de cargo.
+	// Cómo: delega en accionGridVisible.
 	responsabilidadCargoEditButtonVisible(e: any): boolean {
 		return this.accionGridVisible(e);
 	}
 
+	// Qué hace: decide si el botón de eliminar debe verse en la fila de responsabilidad de cargo.
+	// Cómo: oculta el botón para la fila de impacto económico (no se elimina); para el resto, delega en accionGridVisible.
 	responsabilidadCargoDeleteButtonVisible(e: any): boolean {
 		if (e?.row?.data?._esImpactoEconomico) {
 			return false;
@@ -3121,7 +3594,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return this.accionGridVisible(e);
 	}
 
-	// Confirma la fila del grid de responsabilidades (incluye impacto economico).
+	// Guarda la fila en edición del grid de responsabilidades (catálogo o impacto económico).
 	guardarResponsabilidadCargoEditado(): void {
 		const grid = this.gridResponsabilidadesCargo?.instance;
 		if (!grid || !this.responsabilidadesCargoEditando) {
@@ -3131,7 +3604,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		grid.saveEditData();
 	}
 
-	// Descarta la edicion en curso de responsabilidades.
+	// Cancela la edición de responsabilidades y limpia los flags locales.
 	cancelarResponsabilidadCargoEditado(): void {
 		this.cancelarEdicionGrid(this.gridResponsabilidadesCargo?.instance, () => {
 			this.responsabilidadesCargoEditando = false;
@@ -3140,6 +3613,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: inicializa los valores por defecto de una nueva fila de responsabilidad de cargo.
+	// Cómo: marca modo inserción, limpia correlativos, nombre e información, fija APLICA_DESCRIPTOR según
+	// el formato actual, genera una clave temporal de cliente con crearClientKey y refresca el lookup disponible.
 	responsabilidadCargoInitNewRow(e: any): void {
 		this.responsabilidadesCargoInsertando = true;
 		e.data.CORR_DESCRIPTOR_RESPONSABILIDAD = 0;
@@ -3152,11 +3628,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actualizarResponsabilidadesCargoLookupDisponibles();
 	}
 
+	// Qué hace: marca que el grid de responsabilidades entró en edición y prepara el lookup correspondiente.
+	// Cómo: si la fila es la de impacto económico, fija su nombre fijo, conserva la información ya guardada
+	// y prepara ese lookup; si no, refresca el lookup de responsabilidades conservando la actual. En ambos
+	// casos marca el flag de edición y sincroniza columnas con syncResponsabilidadCargoColumnas.
 	onResponsabilidadCargoEditingStart(e: any): void {
 		if (e?.data?._esImpactoEconomico) {
 			this.responsabilidadesCargoInsertando = false;
 			e.data.NOMBRE_RESPONSABILIDAD = IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR;
-			// Conserva INFORMACION del descriptor; no la reemplaza con el catálogo al entrar a editar.
+			// Al entrar a editar, conserva INFORMACION ya guardada; no la sobrescribe con el catálogo.
 			e.data.INFORMACION = (
 				e.data.INFORMACION ??
 				this.model?.DESCRIPCION_IMPACTO_ECONOMICO ??
@@ -3174,6 +3654,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.syncResponsabilidadCargoColumnas();
 	}
 
+	// Qué hace: bloquea la edición de nombre y correlativo de responsabilidad en la fila de impacto económico.
+	// Cómo: si la celda pertenece a la fila de impacto económico y es NOMBRE_RESPONSABILIDAD o
+	// CORR_RESPONSABILIDAD, fija el editor como readOnly y disabled.
 	onResponsabilidadCargoEditorPreparing(e: any): void {
 		if (e?.parentType !== 'dataRow' || !e?.row?.data?._esImpactoEconomico) {
 			return;
@@ -3188,6 +3671,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Qué hace: reacciona a que el grid de responsabilidades terminó de guardar una fila.
+	// Cómo: delega en finalizarEdicionGrid, que limpia los flags de edición e inserción.
 	onResponsabilidadCargoSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.responsabilidadesCargoEditando = false;
@@ -3195,6 +3680,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: reacciona a que se canceló la edición del grid de responsabilidades.
+	// Cómo: delega en finalizarEdicionGrid para limpiar los flags y recarga las responsabilidades con
+	// cargarResponsabilidadesCargo.
 	onResponsabilidadCargoEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.responsabilidadesCargoEditando = false;
@@ -3203,6 +3691,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarResponsabilidadesCargo(true);
 	}
 
+	// Qué hace: valida los datos de la fila de responsabilidad de cargo (o impacto económico) antes de guardarla.
+	// Cómo: si es la fila de impacto económico, solo valida la longitud de la información y normaliza sus
+	// campos; si no, verifica que haya responsabilidad seleccionada, nombre no vacío (máx. 150 caracteres),
+	// información (máx. 255) y que no esté duplicada, invalidando la fila con invalidarFila cuando corresponde.
 	responsabilidadCargoRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
 		if (data._esImpactoEconomico) {
@@ -3257,6 +3749,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
+	// Qué hace: inserta una nueva responsabilidad de cargo desde el grid.
+	// Cómo: si la fila es la de impacto económico, cancela (esa fila no se inserta); si no, llama a
+	// persistirResponsabilidadCargoDesdeGrid (create) con esNuevo en true.
 	responsabilidadCargoRowInserting(e: any): void {
 		if (e?.data?._esImpactoEconomico) {
 			e.cancel = true;
@@ -3265,6 +3760,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.cancel = this.persistirResponsabilidadCargoDesdeGrid(e.data, true);
 	}
 
+	// Qué hace: actualiza una responsabilidad de cargo o la fila de impacto económico desde el grid.
+	// Cómo: si es la fila de impacto económico, completa sus datos y llama a persistirImpactoEconomicoDesdeGrid
+	// (update); si no, combina datos viejos y nuevos y llama a persistirResponsabilidadCargoDesdeGrid (update)
+	// con esNuevo en false.
 	responsabilidadCargoRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
 		if (data._esImpactoEconomico) {
@@ -3281,6 +3780,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.cancel = this.persistirResponsabilidadCargoDesdeGrid(data, false);
 	}
 
+	// Qué hace: elimina una responsabilidad de cargo desde el grid.
+	// Cómo: si la fila es la de impacto económico, cancela (esa fila no se elimina); si no, llama a
+	// eliminarResponsabilidadCargoDesdeGrid (delete) con los datos de la fila.
 	responsabilidadCargoRowRemoving(e: any): void {
 		if (e?.data?._esImpactoEconomico) {
 			e.cancel = true;
@@ -3289,6 +3791,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.cancel = this.eliminarResponsabilidadCargoDesdeGrid(e.data);
 	}
 
+	// Qué hace: define el texto que se muestra en la columna de catálogo de responsabilidad de cargo.
+	// Cómo: devuelve vacío para la fila de impacto económico; para el resto, el correlativo como texto.
 	responsabilidadCargoCatalogDisplay = (row: ScDescriptorPuestoResponsabilidadCargo): string => {
 		if (row?._esImpactoEconomico) {
 			return '';
@@ -3300,6 +3804,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return String(corr);
 	};
 
+	// Qué hace: define el texto que se muestra en la columna de código del detalle de responsabilidad.
+	// Cómo: devuelve vacío para la fila de impacto económico; para el resto, el correlativo del detalle como texto.
 	responsabilidadCargoCodigoDisplay = (row: ScDescriptorPuestoResponsabilidadCargo): string => {
 		if (row?._esImpactoEconomico) {
 			return '';
@@ -3308,10 +3814,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return corr > 0 ? String(corr) : '';
 	};
 
+	// Qué hace: define el texto que se muestra en la columna de información de la responsabilidad.
+	// Cómo: devuelve el campo INFORMACION de la fila, recortado de espacios.
 	responsabilidadCargoInformacionDisplay = (row: ScDescriptorPuestoResponsabilidadCargo): string => {
 		return (row?.INFORMACION ?? '').trim();
 	};
 
+	// Qué hace: aplica el cambio de impacto económico elegido en el lookup de la fila especial de impacto.
+	// Cómo: busca la descripción en el catálogo (o en la lista de edición) para actualizar la fila.
 	onImpactoEconomicoLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && Number(value) > 0 ? Number(value) : null;
 		const fromCatalog = this.mCORR_IMPACTO_ECONOMICO.find(
@@ -3321,8 +3831,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			(item) => Number(item.CORR_IMPACTO_ECONOMICO) === Number(corr)
 		);
 
-		// Al elegir en el select (aunque sea el mismo corr), tomar el nombre actual del catálogo.
-		// No usar fromEdit.DESCRIPCION: ahí puede estar el snapshot viejo del descriptor.
+		// Al elegir impacto económico, copia el nombre actual del catálogo a la fila.
+		// No usar el texto viejo guardado en el descriptor si el catálogo cambió.
 		const descripcion =
 			corr == null
 				? ''
@@ -3349,7 +3859,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.prepararImpactosLookupParaEdicion();
 	}
 
-	// Filtra responsabilidades segun formato y seleccion actual.
+	// Arma el lookup de responsabilidades según formato del descriptor y las ya asignadas.
 	private actualizarResponsabilidadesCargoLookupDisponibles(corrConservar: number | null = null): void {
 		const usados = new Set(
 			(this.responsabilidadesCargo || [])
@@ -3370,25 +3880,29 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Normaliza APLICA_DESCRIPTOR a C/E/A para comparar con el formato.
+	// Convierte APLICA_DESCRIPTOR a C, E o A para saber si aplica al formato actual.
 	private normalizarAplicabilidadResponsabilidad(value: string | null | undefined): string {
 		const aplica = (value ?? 'AMBOS').trim().toUpperCase();
 		return aplica === 'CORTO' || aplica === 'EXTENSO' || aplica === 'AMBOS' ? aplica : 'AMBOS';
 	}
 
+	// Qué hace: indica si una responsabilidad del catálogo aplica al formato actual del descriptor (corto/extenso).
+	// Cómo: normaliza el valor con normalizarAplicabilidadResponsabilidad y lo compara contra 'AMBOS' o el formato actual.
 	private responsabilidadAplicaAlFormato(value: string | null | undefined): boolean {
 		const aplica = this.normalizarAplicabilidadResponsabilidad(value);
 		const formato = (this.model?.FORMATO ?? FORMATO_CORTO).trim().toUpperCase();
 		return aplica === 'AMBOS' || aplica === formato;
 	}
 
+	// Qué hace: aplica el cambio de responsabilidad de cargo elegida en el lookup de la fila.
+	// Cómo: normaliza el valor, lo fija en la celda con setValue y repinta la fila con repintarFilaResponsabilidadCargoLookup.
 	onResponsabilidadCargoLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && value > 0 ? Number(value) : null;
 		cellInfo.setValue(corr);
 		this.repintarFilaResponsabilidadCargoLookup(cellInfo);
 	}
 
-	// Repinta la fila tras lookup de responsabilidad para mostrar textos derivados.
+	// Tras elegir responsabilidad, vuelve a dibujar la fila para mostrar nombre e información.
 	private repintarFilaResponsabilidadCargoLookup(cellInfo: any): void {
 		this.cdr.detectChanges();
 		setTimeout(() => {
@@ -3406,6 +3920,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: fija el valor de responsabilidad de cargo y sus datos al editar la celda directamente en el grid.
+	// Cómo: busca el nombre y la aplicabilidad en el catálogo y actualiza CORR_RESPONSABILIDAD,
+	// NOMBRE_RESPONSABILIDAD y APLICA_DESCRIPTOR en los nuevos datos de la fila.
 	setResponsabilidadCargoCellValue = (
 		newData: ScDescriptorPuestoResponsabilidadCargo,
 		value: number | null,
@@ -3422,8 +3939,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	};
 
-	// Perfil se edita como una unidad: normaliza edades y catálogos, persiste el padre y luego actualiza
-	// la llave compartida por educación, experiencia y competencias.
+	// Qué hace: aplica el cambio de edad mínima del perfil.
+	// Cómo: si no está bloqueado y el perfil está en edición, normaliza el valor con normalizarEdadPerfil
+	// y lo guarda en perfil.EDAD_MINIMA.
 	onPerfilEdadMinimaChanged(e: any): void {
 		if (this.readOnly || !this.perfilEditando) {
 			return;
@@ -3431,6 +3949,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.perfil.EDAD_MINIMA = this.normalizarEdadPerfil(e?.value);
 	}
 
+	// Qué hace: aplica el cambio de edad máxima del perfil.
+	// Cómo: si no está bloqueado y el perfil está en edición, normaliza el valor con normalizarEdadPerfil
+	// y lo guarda en perfil.EDAD_MAXIMA.
 	onPerfilEdadMaximaChanged(e: any): void {
 		if (this.readOnly || !this.perfilEditando) {
 			return;
@@ -3438,6 +3959,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.perfil.EDAD_MAXIMA = this.normalizarEdadPerfil(e?.value);
 	}
 
+	// Qué hace: aplica el cambio de sexo requerido en el perfil.
+	// Cómo: si no está bloqueado y el perfil está en edición, guarda el valor recibido en mayúsculas
+	// (o el valor por defecto) en perfil.SEXO.
 	onPerfilSexoChanged(e: any): void {
 		if (this.readOnly || !this.perfilEditando) {
 			return;
@@ -3445,6 +3969,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.perfil.SEXO = `${e?.value ?? PERFIL_PUESTO_DEFAULT.SEXO}`.trim().toUpperCase();
 	}
 
+	// Qué hace: aplica el cambio de estado familiar requerido en el perfil.
+	// Cómo: si no está bloqueado y el perfil está en edición, guarda el valor recibido en mayúsculas
+	// (o el valor por defecto) en perfil.ESTADO_FAMILIAR.
 	onPerfilEstadoFamiliarChanged(e: any): void {
 		if (this.readOnly || !this.perfilEditando) {
 			return;
@@ -3452,6 +3979,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.perfil.ESTADO_FAMILIAR = `${e?.value ?? PERFIL_PUESTO_DEFAULT.ESTADO_FAMILIAR}`.trim().toUpperCase();
 	}
 
+	// Qué hace: aplica el cambio de disponibilidad horaria elegida en el lookup del perfil.
+	// Cómo: si no está bloqueado y el perfil está en edición, busca el nombre en el catálogo (o en la
+	// lista de edición), lo guarda junto al correlativo en el perfil y refresca el lookup de disponibilidad.
 	onPerfilDisponibilidadChanged(value: number | null): void {
 		if (this.readOnly || !this.perfilEditando) {
 			return;
@@ -3464,7 +3994,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			(row) => Number(row.CORR_DISPONIBILIDAD_HORARIO) === Number(corr)
 		);
 		this.perfil.CORR_DISPONIBILIDAD_HORARIO = corr;
-		// Al elegir en el select (aunque sea el mismo corr), tomar el nombre actual del catálogo.
+		// Al elegir en el select, copia el nombre actual del catálogo a la fila del perfil.
 		this.perfil.NOMBRE_DISPONIBILIDAD_HORARIO =
 			corr == null
 				? ''
@@ -3477,6 +4007,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.prepararDisponibilidadLookupParaPerfil();
 	}
 
+	// Qué hace: aplica el cambio de modalidad elegida en el lookup del perfil.
+	// Cómo: si no está bloqueado y el perfil está en edición, busca el nombre en el catálogo (o en la
+	// lista de edición), lo guarda junto al correlativo en el perfil y refresca el lookup de modalidad.
 	onPerfilModalidadChanged(value: number | null): void {
 		if (this.readOnly || !this.perfilEditando) {
 			return;
@@ -3501,6 +4034,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.prepararModalidadLookupParaPerfil();
 	}
 
+	// Qué hace: aplica el cambio de la casilla de licencia requerida en el perfil.
+	// Cómo: si no está bloqueado y el perfil está en edición, guarda en perfil.LICENCIA si el valor es exactamente true.
 	onPerfilLicenciaChanged(e: any): void {
 		if (this.readOnly || !this.perfilEditando) {
 			return;
@@ -3508,6 +4043,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.perfil.LICENCIA = e?.value === true;
 	}
 
+	// Qué hace: habilita la edición del perfil del puesto.
+	// Cómo: si no está bloqueado y el descriptor ya está guardado, respalda el perfil original, prepara
+	// los lookups de disponibilidad y modalidad, y marca perfilEditando en true.
 	editarPerfil(): void {
 		if (this.readOnly || !this.requiereDescriptorGuardado()) {
 			return;
@@ -3518,7 +4056,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.perfilEditando = true;
 	}
 
-	// Valida y persiste el perfil padre; actualiza CORR_PERFIL_PUESTO compartido por detalles.
+	// Valida el perfil, lo guarda en la API y actualiza el correlativo que usan educación, experiencia y competencias.
 	guardarPerfil(): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (this.readOnly || !this.perfilEditando || !corrDescriptor || corrDescriptor <= 0) {
@@ -3569,7 +4107,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Restaura el perfil desde la copia previa sin tocar detalles hijos.
+	// Cancela cambios del perfil restaurando la copia guardada al iniciar la edición.
 	cancelarEdicionPerfil(): void {
 		if (!this.perfilEditando) {
 			return;
@@ -3580,8 +4118,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.perfilEditando = false;
 	}
 
-	// Entrenamiento usa una operación específica del descriptor y conserva una copia previa
-	// para poder cancelar sin recargar todas las secciones.
+	// Edita inducción, semanas y responsable del descriptor.
+	// Guarda una copia al iniciar para poder cancelar sin volver a consultar todo.
 	editarEntrenamiento(): void {
 		if (this.readOnly || !this.requiereDescriptorGuardado()) {
 			return;
@@ -3592,6 +4130,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.entrenamientoEditando = true;
 	}
 
+	// Qué hace: aplica el cambio de inducción elegida en el lookup de entrenamiento.
+	// Cómo: si no está bloqueado y el entrenamiento está en edición, valida la selección, busca nombre y
+	// semanas en el catálogo (o en la lista de edición), los guarda en el modelo y refresca el lookup.
 	onEntrenamientoInduccionChanged(value: number | null): void {
 		if (this.readOnly || !this.entrenamientoEditando) {
 			return;
@@ -3609,7 +4150,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 
 		this.model.CORR_INDUCCION = corrInduccion;
-		// Al elegir en el select (aunque sea el mismo corr), tomar nombre/semanas del catálogo.
+		// Al elegir inducción, copia nombre y semanas actuales del catálogo al modelo.
 		this.model.NOMBRE_INDUCCION =
 			corrInduccion == null
 				? ''
@@ -3626,7 +4167,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.prepararInduccionesLookupParaEntrenamiento();
 	}
 
-	// Persiste induccion/semanas/responsable via updateEntrenamiento del servicio.
+	// Guarda inducción, semanas y responsable llamando a updateEntrenamiento en la API.
 	guardarEntrenamiento(): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		const corrInduccion = Number(this.model?.CORR_INDUCCION);
@@ -3692,7 +4233,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Restaura entrenamiento desde la copia previa sin recargar secciones.
+	// Cancela cambios de entrenamiento restaurando la copia guardada al iniciar la edición.
 	cancelarEdicionEntrenamiento(): void {
 		if (!this.entrenamientoEditando) {
 			return;
@@ -3702,7 +4243,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.entrenamientoEditando = false;
 	}
 
-	// Lee del modelo los campos de entrenamiento para edicion o cancelacion.
+	// Lee inducción, semanas y responsable del modelo para editar o cancelar.
 	private obtenerEntrenamientoActual(): {
 		CORR_INDUCCION: number | null;
 		NOMBRE_INDUCCION: string;
@@ -3720,8 +4261,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		};
 	}
 
-	// Replica el entrenamiento confirmado en el modelo activo y, si corresponde, en el grid principal
-	// para mantener ambos contextos consistentes sin una nueva consulta.
+	// Tras guardar entrenamiento, actualiza el modelo y el grid principal sin volver a consultar.
 	private sincronizarEntrenamiento(
 		entrenamiento: {
 			CORR_INDUCCION: number | null;
@@ -3749,7 +4289,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cdr.detectChanges();
 	}
 
-	// Convierte edad del perfil a number|null descartando valores invalidos.
+	// Convierte la edad del perfil a número; si no es válida, devuelve null.
 	private normalizarEdadPerfil(value: unknown): number | null {
 		if (value == null || value === '') {
 			return null;
@@ -3761,7 +4301,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return Math.min(120, Math.max(0, parsed));
 	}
 
-	// Limpia perfil y sus detalles al cambiar de descriptor o cancelar el formulario.
+	// Vacía perfil, educación, experiencia y competencias al cambiar de descriptor o cancelar.
 	private limpiarPerfil(): void {
 		this.perfil = { ...PERFIL_PUESTO_DEFAULT };
 		this.perfilOriginal = { ...this.perfil };
@@ -3782,8 +4322,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actualizarCompetenciasConductualesLookupDisponibles();
 	}
 
-	// Carga el perfil padre antes de sus detalles. La secuencia descarta respuestas antiguas
-	// cuando el usuario cambia de descriptor mientras una solicitud continúa en curso.
+	// Consulta el perfil del descriptor y luego sus detalles.
+	// Ignora respuestas tardías si el usuario ya seleccionó otro descriptor.
 	private cargarPerfil(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0) {
@@ -3829,15 +4369,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						return;
 					}
 
-					// 1 perfil por descriptor: si no existe, crearlo con valores por defecto.
+					// Cada descriptor tiene un perfil: si no existe, prepara uno local con valores por defecto.
 					this.crearPerfilPorDefecto(corrDescriptor, loadSeq, forzar);
 				},
 				error: (error) => this.notifyApiError(error),
 			});
 	}
 
-	// Si el descriptor no tiene perfil, crea el objeto local mínimo para presentar la sección
-	// sin asumir que el registro ya existe en la base de datos.
+	// Si no hay perfil en la base de datos, crea un objeto local vacío para mostrar la sección.
 	private crearPerfilPorDefecto(corrDescriptor: number, loadSeq: number, forzar = false): void {
 		this.perfil = {
 			...PERFIL_PUESTO_DEFAULT,
@@ -3895,8 +4434,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Carga los detalles del Perfil verificando que descriptor, perfil y secuencia sigan vigentes,
-	// lo que evita mezclar respuestas pertenecientes a otra selección.
+	// Carga educación del perfil; ignora la respuesta si el usuario ya cambió de descriptor.
 	private cargarEducacion(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
@@ -3932,7 +4470,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Consulta experiencia del perfil; ignora respuestas de otra secuencia/seleccion.
+	// Carga experiencia del perfil; ignora la respuesta si el usuario ya cambió de descriptor.
 	private cargarExperiencia(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
@@ -3967,7 +4505,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Carga competencias tecnicas del perfil y refresca el lookup disponible.
+	// Consulta competencias técnicas del perfil y actualiza el lookup de opciones disponibles.
 	private cargarCompetenciasTecnicas(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
@@ -4012,7 +4550,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Carga competencias conductuales del perfil y refresca el lookup disponible.
+	// Consulta competencias conductuales del perfil y actualiza el lookup de opciones disponibles.
 	private cargarCompetenciasConductuales(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
@@ -4056,8 +4594,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Carga secciones propias del descriptor y, cuando corresponde, incorpora filas calculadas
-	// que no provienen directamente del endpoint de detalle.
+	// Carga requerimientos del descriptor y actualiza el lookup; algunas filas se arman en pantalla.
 	private cargarRequerimientosOrganizacionales(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0) {
@@ -4098,7 +4635,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Carga riesgos del descriptor (formato extenso) y actualiza lookup disponible.
+	// Consulta riesgos del descriptor (formato extenso) y actualiza el lookup disponible.
 	private cargarRiesgosPuesto(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtenso) {
@@ -4135,7 +4672,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Carga responsabilidades y construye la fila virtual de impacto economico.
+	// Consulta responsabilidades y agrega la fila de impacto económico al grid.
 	private cargarResponsabilidadesCargo(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0) {
@@ -4183,6 +4720,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: construye la fila especial de impacto económico que se agrega al grid de responsabilidades.
+	// Cómo: arma un objeto con los datos de impacto económico tomados del modelo del descriptor y la
+	// marca con _esImpactoEconomico y una clave de cliente fija (IMPACTO_ECONOMICO_CLIENT_KEY).
 	private crearFilaImpactoEconomico(): ScDescriptorPuestoResponsabilidadCargo {
 		return {
 			CORR_DESCRIPTOR_PUESTO: Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0,
@@ -4196,9 +4736,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		};
 	}
 
-	// Activos del catálogo + el impacto ya asociado al descriptor (si está inactivo).
-	// DESCRIPCION (valor cerrado) puede conservar el snapshot del descriptor;
-	// DESCRIPCION_CATALOGO se usa en el popup para mostrar el catálogo tal cual.
+	// Impactos activos del catálogo más el ya guardado (aunque esté inactivo).
+	// DESCRIPCION en la fila puede ser el texto cerrado del descriptor; DESCRIPCION_CATALOGO es el del popup.
 	private prepararImpactosLookupParaEdicion(): void {
 		const porCorr = new Map<number, ScImpactoEconomicoLookupItem>();
 
@@ -4250,8 +4789,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
-	// Inicia las cargas condicionadas por formato: KPI para corto; funciones, actividades y relaciones
-	// para extenso. El parámetro forzar permite refrescar después de una persistencia.
+	// Recarga secciones según formato: KPI en corto; funciones y relaciones en extenso.
+	// Con forzar=true vuelve a consultar tras guardar una fila.
 	private cargarKpis(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoCorto) {
@@ -4286,9 +4825,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Activas del catálogo + solo la frecuencia ya asociada a la fila KPI en edición (si está inactiva).
-	// NOMBRE_FRECUENCIA (valor cerrado) puede conservar el snapshot del KPI;
-	// NOMBRE_FRECUENCIA_CATALOGO se usa en el popup para mostrar el catálogo tal cual.
+	// Frecuencias activas más la de la fila KPI en edición (aunque esté inactiva).
+	// NOMBRE_FRECUENCIA en la fila puede ser el texto cerrado del KPI; NOMBRE_FRECUENCIA_CATALOGO es el del popup.
 	private prepararFrecuenciasLookupParaEdicionKpi(row?: ScDescriptorKpiFuncion | null): void {
 		const fila = this.resolverFilaKpi(row);
 		const porCorr = new Map<number, ScFrecuenciaLookup>();
@@ -4338,6 +4876,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
+	// Qué hace: localiza en memoria el KPI real que corresponde a una fila del grid, si existe.
+	// Cómo: busca en this.kpis por _clientKey (fila nueva) o por CORR_KPI_FUNCION (fila existente);
+	// si no lo encuentra, devuelve la misma fila recibida.
 	private resolverFilaKpi(row?: ScDescriptorKpiFuncion | null): ScDescriptorKpiFuncion | null {
 		if (!row) {
 			return null;
@@ -4355,9 +4896,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return encontrada ?? row;
 	}
 
-	// Activas del catálogo + la disponibilidad ya asociada al perfil (si está inactiva).
-	// NOMBRE_DISPONIBILIDAD_HORARIO (valor cerrado) puede conservar el snapshot del perfil;
-	// NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO se usa en el popup para mostrar el catálogo tal cual.
+	// Disponibilidades activas más la ya asociada al perfil (aunque esté inactiva).
+	// NOMBRE en la fila puede ser el texto cerrado del perfil; NOMBRE_..._CATALOGO es el del popup.
 	private prepararDisponibilidadLookupParaPerfil(): void {
 		const porCorr = new Map<number, ScDisponibilidadHorarioLookup>();
 
@@ -4412,7 +4952,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
-	// Activas del catálogo + la modalidad ya asociada al perfil (si está inactiva).
+	// Modalidades activas más la ya asociada al perfil (aunque esté inactiva).
 	private prepararModalidadLookupParaPerfil(): void {
 		const porCorr = new Map<number, ScTipoModalidadLookup>();
 
@@ -4457,9 +4997,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
-	// Activas del catálogo + la inducción ya asociada al descriptor (si está inactiva).
-	// NOMBRE_INDUCCION (valor cerrado) puede conservar el snapshot del descriptor;
-	// NOMBRE_INDUCCION_CATALOGO se usa en el popup para mostrar el catálogo tal cual.
+	// Inducciones activas más la ya asociada al descriptor (aunque esté inactiva).
+	// NOMBRE_INDUCCION en el modelo puede ser el texto cerrado; NOMBRE_INDUCCION_CATALOGO es el del popup.
 	private prepararInduccionesLookupParaEntrenamiento(): void {
 		const porCorr = new Map<number, ScInduccionLookupItem>();
 
@@ -4507,7 +5046,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
-	// Carga funciones clave del descriptor y prepara contadores de actividades.
+	// Consulta funciones clave y calcula cuántas actividades tiene cada una.
 	private cargarFuncionesClave(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0) {
@@ -4549,7 +5088,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Carga actividades de la funcion clave abierta en el popup.
+	// Consulta las actividades de la función clave seleccionada en el popup.
 	private cargarActividadesPopup(funcion: ScDescriptorFuncion): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || !funcion?.CORR_FUNCION) {
@@ -4578,12 +5117,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Actualiza el contador visible de actividades en la fila de funcion clave.
+	// Actualiza en el grid cuántas actividades tiene la función clave.
 	private actualizarContadorActividades(funcion: ScDescriptorFuncion): void {
 		funcion.CANT_ACTIVIDADES = this.actividadesPopup.length;
 	}
 
-	// Carga funciones secundarias (solo formato corto).
+	// Consulta funciones secundarias; solo aplica en formato corto.
 	private cargarFuncionesSecundarias(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoCorto) {
@@ -4625,7 +5164,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Carga relaciones laborales internas (formato extenso).
+	// Consulta relaciones laborales internas; solo aplica en formato extenso.
 	private cargarRelacionesInternas(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtenso) {
@@ -4666,7 +5205,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Carga relaciones laborales externas (formato extenso).
+	// Consulta relaciones laborales externas; solo aplica en formato extenso.
 	private cargarRelacionesExternas(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corrDescriptor || corrDescriptor <= 0 || !this.esFormatoExtenso) {
@@ -4707,10 +5246,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: indica si la pestaña de bitácora tiene registros para mostrar.
+	// Cómo: verifica que itemsTabBitacora sea un arreglo con al menos un elemento.
 	get tieneBitacora(): boolean {
 		return Array.isArray(this.itemsTabBitacora) && this.itemsTabBitacora.length > 0;
 	}
 
+	// Qué hace: define el mensaje a mostrar cuando la bitácora está vacía.
+	// Cómo: si el descriptor aún no tiene correlativo, indica que debe guardarse primero; si ya existe,
+	// indica que no hay registros por el momento.
 	get mensajeBitacoraVacia(): string {
 		if (!this.model?.CORR_DESCRIPTOR_PUESTO) {
 			return 'La bitácora estará disponible después de guardar el descriptor.';
@@ -4719,11 +5263,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return 'No hay registros en la bitácora por el momento.';
 	}
 
-	// Cambiar formato puede ocultar secciones con ediciones activas. Antes de aplicarlo cancela esos estados,
-	// limpia datos incompatibles y selecciona la primera pestaña válida.
+	// Al cambiar formato: cancela ediciones abiertas, limpia secciones que ya no aplican y elige la primera pestaña válida.
 	onFormatoChanged(value: string, formatoAnteriorHint?: string): void {
 		const formatoNuevo = (value || FORMATO_CORTO).toUpperCase();
-		// El form a veces ya escribio FORMATO en model antes del evento; previousValue puede venir vacio.
+		// El formulario a veces ya actualizó FORMATO en el modelo; previousValue puede venir vacío.
 		const formatoAnterior = (
 			formatoAnteriorHint ??
 			this.ultimoFormatoAplicado ??
@@ -4758,7 +5301,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		if (cambioReal) {
 			if (this.esTabSeccionVisibleParaFormato(tabActualIndex, formatoNuevo)) {
-				// Volvio a un formato donde el tab si aplica: restaurar y quitar card.
+				// Si el formato vuelve a mostrar la pestaña actual, restáurala y oculta el aviso.
 				this.mostrarAvisoSeleccioneTab = false;
 				this.seleccionarTabSeccion(tabActualIndex);
 			} else {
@@ -4770,7 +5313,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			}
 		}
 
-		// Solo recargar secundarias si el usuario cambió de verdad el formato (no por sync del form).
+		// Recarga funciones secundarias solo si el usuario cambió el formato, no por sincronización del formulario.
 		if (cambioReal && this.esFormatoCorto && this.mostrarSeccionesDescriptor) {
 			this.cargarFuncionesSecundarias();
 			this.cargarKpis();
@@ -4783,7 +5326,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
-	// Revierte FORMATO en modelo y form cuando hay ediciones pendientes.
+	// Si hay ediciones abiertas, revierte FORMATO en modelo y formulario al valor anterior.
 	private restaurarFormatoAnterior(formatoAnterior: string): void {
 		const formato = formatoAnterior === FORMATO_EXTENSO ? FORMATO_EXTENSO : FORMATO_CORTO;
 		this.sincronizandoHeader = true;
@@ -4795,7 +5338,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Al cambiar formato, cancela grids de secciones que dejan de ser visibles.
+	// Al cambiar formato, cancela la edición en grids de secciones que se ocultan.
 	private cancelarEdicionesNoAplicablesFormato(formatoNuevo: string): void {
 		if (formatoNuevo === FORMATO_CORTO) {
 			if (this.riesgosPuestoEditando) {
@@ -4850,7 +5393,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ title: 'Entrenamiento', visibleEn: 'ambos' },
 	];
 
-	// Indica si el indice de sub-tab aplica al formato corto/extenso.
+	// Devuelve si la pestaña de sección aplica al formato corto o extenso actual.
 	private esTabSeccionVisibleParaFormato(index: number, formato: string): boolean {
 		const tab = this.seccionesTabsMeta[index];
 		if (!tab) {
@@ -4868,7 +5411,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return esExtensa;
 	}
 
-	// Fija el sub-tab visible y sincroniza el TabPanel de DevExtreme.
+	// Muestra la pestaña de sección indicada y actualiza el TabPanel.
 	private seleccionarTabSeccion(index: number): void {
 		this.subTabIndex = index;
 		this.ultimoTabSeccionValido = index;
@@ -4878,7 +5421,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Deja selectedIndex en -1 para mostrar la card de seleccionar tab.
+	// Oculta pestañas de sección y muestra el aviso de seleccionar una pestaña.
 	private dejarSinTabSeccionSeleccionado(): void {
 		this.subTabIndex = -1;
 		setTimeout(() => {
@@ -4887,7 +5430,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Actualiza subTabIndex y oculta el aviso al elegir un tab valido.
+	// Al elegir una pestaña válida, actualiza el índice y oculta el aviso.
 	onSeccionTabSelectionChanged(e: any): void {
 		const index = typeof e?.component?.option === 'function'
 			? e.component.option('selectedIndex')
@@ -4899,7 +5442,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
-	// Cambia unidad y limpia puesto/reporta para forzar nueva seleccion coherente.
+	// Al cambiar unidad, limpia puesto y reporta para obligar a elegirlos de nuevo.
 	onUnidadChanged(value: number | null): void {
 		this.model.CORR_UNIDAD = value;
 		this.model.CORR_PUESTO = null;
@@ -4911,7 +5454,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actualizarPuestosPorUnidad(value);
 	}
 
-	// Asigna puesto, deriva reporta/responsable y valida descriptor abierto.
+	// Al elegir puesto, copia reporta y responsable y valida que no haya otro descriptor abierto.
 	onPuestoChanged(value: number | null): void {
 		const corrPuesto = value != null ? Number(value) : null;
 		this.model.CORR_PUESTO = corrPuesto;
@@ -4922,8 +5465,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.validarDescriptorAbiertoPorPuesto(corrPuesto);
 	}
 
-	// En creación valida que el puesto no tenga otro descriptor en un estado que bloquee nuevas versiones.
-	// La secuencia evita que una respuesta tardía revierta una selección posterior.
+	// Al crear, verifica que el puesto no tenga otro descriptor que impida una nueva versión.
+	// Ignora respuestas tardías si el usuario ya eligió otro puesto.
 	private validarDescriptorAbiertoPorPuesto(corrPuesto: number | null): void {
 		if (!this.isForm() || this.banderaMtto !== UpdateType.Add || !corrPuesto || corrPuesto <= 0) {
 			return;
@@ -4947,7 +5490,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
-	// Actualiza el puesto al que reporta y limpia marca de invalidez.
+	// Al elegir puesto reporta, actualiza el modelo y quita la marca de inválido.
 	onPuestoReportaChanged(value: number | null): void {
 		this.model.CORR_PUESTO_REPORTA = value;
 		if (value != null && value > 0) {
@@ -4955,7 +5498,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
-	// Reacciona a cambios del form de encabezado (p.ej. FORMATO) sin loops de sync.
+	// Reacciona a cambios del formulario de encabezado (por ejemplo FORMATO) sin bucles de sincronización.
 	onHeaderFieldChanged(e: any): void {
 		if (this.sincronizandoHeader) {
 			return;
@@ -4966,13 +5509,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
-	// Placeholder del boton crear puesto hasta integrar PLA_PUESTO.
+	// Acción temporal del botón crear puesto hasta integrar el mantenimiento PLA_PUESTO.
 	crearPuestoProximamente(): void {
 		this.notifyFx('El mantenimiento de puestos (PLA_PUESTO) estara disponible proximamente.', NotifyType.Warning);
 	}
 
-	// Punto de entrada del guardado principal: bloquea detalles aún en edición, sincroniza el formulario
-	// con el modelo y ejecuta validaciones visuales y reglas de negocio.
+	// Guarda el descriptor: bloquea si hay secciones en edición, copia datos del formulario y valida.
+	// Luego llama a insert o update según corresponda.
 	guardar(): void {
 		const detallesEnEdicion = this.obtenerDetallesEnEdicion();
 		if (detallesEnEdicion.length > 0) {
@@ -5018,7 +5561,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.guardarMttoDescriptor();
 	}
 
-	// Lista nombres de secciones con edicion activa para bloquear guardar/cambio de formato.
+	// Devuelve los nombres de secciones con una fila en edición (para bloquear guardar o cambiar formato).
 	private obtenerDetallesEnEdicion(): string[] {
 		const detalles: Array<{ editando: boolean; nombre: string; tabIndex: number }> = [
 			{ editando: this.funcionesClaveEditando, nombre: 'Funciones clave', tabIndex: 1 },
@@ -5044,7 +5587,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return [...tabActual, ...otrosTabs].map((detalle) => detalle.nombre);
 	}
 
-	// Arma el warning que lista detalles en edicion antes de una accion.
+	// Arma el mensaje de aviso que indica qué secciones tienen edición pendiente.
 	private crearMensajeEdicionesPendientes(detallesEnEdicion: string[], accion: string): string {
 		const detalleActual = detallesEnEdicion[0];
 		const detallesAdicionales = detallesEnEdicion.slice(1);
@@ -5054,7 +5597,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return `Guarde o cancele la linea en edicion de ${detalleActual} antes de ${accion}.${mensajeAdicional}`;
 	}
 
-	// Ejecuta el alta o actualización del descriptor y centraliza la restauración de la vista tras la respuesta.
+	// Llama a insert o update del descriptor y, si sale bien, actualiza grid, modelo y secciones.
 	private guardarMttoDescriptor(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -5112,19 +5655,22 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: cancela la edición o creación del descriptor y restaura el registro previo en el grid.
+	// Cómo: limpia el resaltado de validación del encabezado y llama al cancelar base, comparando por
+	// CORR_DESCRIPTOR_PUESTO para ubicar la fila original.
 	override cancelar(): void {
 		this.limpiarEstadoValidacionHeader();
 		super.cancelar((item: any) => item.CORR_DESCRIPTOR_PUESTO === this.modelUpdate.CORR_DESCRIPTOR_PUESTO);
 	}
 
-	// Quita marcas visuales de campos invalidos del encabezado.
+	// Quita el resaltado rojo de unidad, puesto y reporta en el encabezado.
 	private limpiarEstadoValidacionHeader(): void {
 		this.unidadInvalido = false;
 		this.puestoInvalido = false;
 		this.puestoReportaInvalido = false;
 	}
 
-	// Marca unidad/puesto/reporta invalidos segun reglas de validacion.
+	// Marca en rojo unidad, puesto o reporta cuando no cumplen la validación.
 	private actualizarEstadoValidacionHeader(): void {
 		const unidad = Number(this.model?.CORR_UNIDAD);
 		const puesto = Number(this.model?.CORR_PUESTO);
@@ -5135,6 +5681,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.puestoReportaInvalido = Number.isNaN(reporta) || reporta <= 0;
 	}
 
+	// Qué hace: aplica el registro del descriptor (agregado o actualizado) en el grid principal.
+	// Cómo: si el dato recibido es un objeto, lo normaliza con fillData y completa NOMBRE_UNIDAD/NOMBRE_PUESTO
+	// si faltan, antes de delegar en aplicarRegistroEnGrid del framework base; si no, delega directamente.
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
 		if (data && typeof data === 'object') {
 			const record = this.fillData(data as ScDescriptorPuesto);
@@ -5147,6 +5696,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		super.aplicarRegistroEnGrid(data, isAdd);
 	}
 
+	// Qué hace: elimina el descriptor de puesto seleccionado en el grid.
+	// Cómo: delega en rowRemovingMtto del framework base, indicando como deleteFn una llamada a
+	// service.delete convertida a respuesta homogénea con convertirErrorOperacionEnRespuesta (delete).
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
@@ -5158,11 +5710,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: pone la pantalla en modo solo lectura.
+	// Cómo: marca readOnly en true y deshabilita la edición del formulario del encabezado.
 	override bloquear(): void {
 		this.readOnly = true;
 		this.headerForm?.instance?.option('readOnly', true);
 	}
 
+	// Qué hace: habilita la edición del formulario del encabezado.
+	// Cómo: marca readOnly en false y habilita el formulario, dejando como solo lectura los campos
+	// CORR_DESCRIPTOR_PUESTO, VERSION y ESTADO_DESCRIPTOR que no deben modificarse manualmente.
 	override habilitar(): void {
 		this.readOnly = false;
 		setTimeout(() => {
@@ -5173,29 +5730,34 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: pone el foco inicial en el campo FORMATO del encabezado.
+	// Cómo: llama a focus sobre el editor de FORMATO del formulario.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.headerForm?.instance?.getEditor('FORMATO')?.focus();
 		});
 	}
 
+	// Qué hace: obtiene el nombre de la unidad a partir de su correlativo.
+	// Cómo: busca en el catálogo local MOCK_UNIDADES y devuelve NOMBRE_UNIDAD, o cadena vacía si no la encuentra.
 	getNombreUnidad(corrUnidad: number | null | undefined): string {
 		const corr = Number(corrUnidad);
 		return MOCK_UNIDADES.find((item) => Number(item.CORR_UNIDAD) === corr)?.NOMBRE_UNIDAD ?? '';
 	}
 
+	// Qué hace: obtiene el nombre del puesto a partir de su correlativo.
+	// Cómo: busca en el catálogo local MOCK_PUESTOS y devuelve NOMBRE_PUESTO, o cadena vacía si no lo encuentra.
 	getNombrePuesto(corrPuesto: number | null | undefined): string {
 		const corr = Number(corrPuesto);
 		return MOCK_PUESTOS.find((item) => Number(item.CORR_PUESTO) === corr)?.NOMBRE_PUESTO ?? '';
 	}
 
-	// Muestra advertencia de negocio del descriptor (NotifyType.Warning).
+	// Muestra al usuario un aviso de regla de negocio (no error técnico).
 	private notifyDescriptorWarning(message: string): void {
 		this.notifyFx(message, NotifyType.Warning, { raw: true });
 	}
 
-	// Extrae mensajes de distintos formatos de respuesta y permite distinguir advertencias de negocio
-	// de errores técnicos al guardar o eliminar.
+	// Lee el mensaje de error de la respuesta de la API (varios formatos posibles).
 	private obtenerMensajeOperacion(value: any): string {
 		if (typeof value === 'string') {
 			return value.trim();
@@ -5215,7 +5777,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}`.trim();
 	}
 
-	// Unifica mensajes de API/errores para notificaciones al usuario.
+	// Normaliza el texto del mensaje (minúsculas, sin acentos) para comparar reglas.
 	private normalizarMensajeOperacion(message: string): string {
 		return `${message ?? ''}`
 			.normalize('NFD')
@@ -5223,12 +5785,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			.toLowerCase();
 	}
 
-	// Detecta si la respuesta de API es advertencia (no error fatal) por codigo/mensaje.
+	// Indica si la respuesta es aviso de negocio (duplicado, validación) y no error del servidor.
 	private esAdvertenciaOperacion(value: any, operacion: 'guardar' | 'eliminar'): boolean {
 		const errorCode = Number(value?.ErrorCode ?? value?.error?.ErrorCode);
 		const message = this.normalizarMensajeOperacion(this.obtenerMensajeOperacion(value));
 
-		// 4100 empresa / 4101 vacio-maximo-seleccion: advertencia de negocio, no error tecnico.
+		// Códigos 4100 y 4101: aviso de negocio, no fallo técnico.
 		if (errorCode === 4100 || errorCode === 4101) {
 			return true;
 		}
@@ -5271,7 +5833,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
-	// Notifica Result/ErrorMessage de API diferenciando advertencia vs error.
+	// Muestra el mensaje de la API como aviso o como error según el tipo de respuesta.
 	private notificarRespuestaOperacion(response: any, operacion: 'guardar' | 'eliminar'): void {
 		if (this.esAdvertenciaOperacion(response, operacion)) {
 			this.notifyDescriptorWarning(
@@ -5286,7 +5848,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.notifyApiResponse(response);
 	}
 
-	// Notifica errores HTTP/excepciones de operaciones del descriptor.
+	// Muestra errores de red o excepciones al guardar o eliminar.
 	private notificarErrorOperacion(error: any, operacion: 'guardar' | 'eliminar'): void {
 		if (this.esAdvertenciaOperacion(error, operacion)) {
 			this.notifyDescriptorWarning(
@@ -5301,6 +5863,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.notifyApiError(error);
 	}
 
+	// Qué hace: convierte un error de red de guardar/eliminar en una respuesta homogénea cuando es un aviso de negocio.
+	// Cómo: intercepta el error con catchError; si esAdvertenciaOperacion lo reconoce como aviso, devuelve un
+	// observable con Result en false y el mensaje de contexto; si no, propaga el error original con throwError.
 	private convertirErrorOperacionEnRespuesta<T>(
 		request: Observable<T>,
 		operacion: 'guardar' | 'eliminar',
@@ -5321,14 +5886,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
-	// Helpers compartidos por los grids: invalidación, sincronización de columnas dinámicas,
-	// finalización o cancelación de edición y manejo de llaves temporales.
+	// Utilidades comunes de los grids: marcar fila inválida, sincronizar formulario y cancelar edición.
 	private invalidarFila(e: any, message: string): void {
 		e.isValid = false;
 		e.errorText = message;
 		this.notifyDescriptorWarning(message);
 	}
 
+	// Qué hace: sincroniza el formulario del encabezado con el modelo actual sin disparar eventos de cambio.
+	// Cómo: activa la bandera sincronizandoHeader, actualiza el último formato aplicado y la visibilidad del
+	// aviso de pestaña, aplica el modelo como formData del formulario y libera la bandera tras un setTimeout.
 	private syncHeaderForm(): void {
 		this.sincronizandoHeader = true;
 		this.ultimoFormatoAplicado = (this.model?.FORMATO || FORMATO_CORTO).toUpperCase();
@@ -5339,11 +5906,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: fuerza que las funciones clave y secundarias se recarguen la próxima vez que se consulten.
+	// Cómo: incrementa los contadores de secuencia (funcionesClaveLoadSeq, funcionesSecundariasLoadSeq).
 	private resetearFuncionesTabsDirty(): void {
 		this.funcionesClaveLoadSeq++;
 		this.funcionesSecundariasLoadSeq++;
 	}
 
+	// Qué hace: valida que el descriptor ya esté guardado antes de permitir editar sus secciones.
+	// Cómo: si obtenerCorrDescriptor devuelve un correlativo válido, permite continuar; si no, avisa con
+	// notifyDescriptorWarning y devuelve false.
 	private requiereDescriptorGuardado(): boolean {
 		const corr = this.obtenerCorrDescriptor();
 		if (corr > 0) {
@@ -5356,54 +5928,76 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return false;
 	}
 
-	// Devuelve CORR_DESCRIPTOR_PUESTO del modelo activo o 0 si aun no existe.
+	// Devuelve el correlativo del descriptor en edición, o 0 si es registro nuevo.
 	private obtenerCorrDescriptor(): number {
 		return Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0;
 	}
 
+	// Qué hace: limpia el flag de edición del grid de funciones clave.
+	// Cómo: pone funcionesClaveEditando en false.
 	private resetearEdicionFuncionesClave(): void {
 		this.funcionesClaveEditando = false;
 	}
 
+	// Qué hace: limpia el flag de edición del grid de funciones secundarias.
+	// Cómo: pone funcionesSecundariasEditando en false.
 	private resetearEdicionFuncionesSecundarias(): void {
 		this.funcionesSecundariasEditando = false;
 	}
 
+	// Qué hace: limpia el flag de edición del grid de KPIs.
+	// Cómo: pone kpisEditando en false.
 	private resetearEdicionKpis(): void {
 		this.kpisEditando = false;
 	}
 
+	// Qué hace: limpia el flag de edición del grid de educación.
+	// Cómo: pone educacionEditando en false.
 	private resetearEdicionEducacion(): void {
 		this.educacionEditando = false;
 	}
 
+	// Qué hace: limpia el flag de edición del grid de experiencia.
+	// Cómo: pone experienciaEditando en false.
 	private resetearEdicionExperiencia(): void {
 		this.experienciaEditando = false;
 	}
 
+	// Qué hace: limpia el flag de edición del grid de competencias técnicas.
+	// Cómo: pone competenciasTecnicasEditando en false.
 	private resetearEdicionCompetenciasTecnicas(): void {
 		this.competenciasTecnicasEditando = false;
 	}
 
+	// Qué hace: limpia el flag de edición del grid de competencias conductuales.
+	// Cómo: pone competenciasConductualesEditando en false.
 	private resetearEdicionCompetenciasConductuales(): void {
 		this.competenciasConductualesEditando = false;
 	}
 
+	// Qué hace: limpia los flags de edición e inserción del grid de requerimientos organizacionales.
+	// Cómo: pone requerimientosOrganizacionalesEditando y requerimientosOrganizacionalesInsertando en false.
 	private resetearEdicionRequerimientosOrganizacionales(): void {
 		this.requerimientosOrganizacionalesEditando = false;
 		this.requerimientosOrganizacionalesInsertando = false;
 	}
 
+	// Qué hace: limpia los flags de edición e inserción del grid de riesgos de puesto.
+	// Cómo: pone riesgosPuestoEditando y riesgosPuestoInsertando en false.
 	private resetearEdicionRiesgosPuesto(): void {
 		this.riesgosPuestoEditando = false;
 		this.riesgosPuestoInsertando = false;
 	}
 
+	// Qué hace: limpia los flags de edición e inserción del grid de responsabilidades de cargo.
+	// Cómo: pone responsabilidadesCargoEditando y responsabilidadesCargoInsertando en false.
 	private resetearEdicionResponsabilidadesCargo(): void {
 		this.responsabilidadesCargoEditando = false;
 		this.responsabilidadesCargoInsertando = false;
 	}
 
+	// Qué hace: muestra u oculta la columna de catálogo del grid de requerimientos organizacionales.
+	// Cómo: fija la visibilidad de la columna CORR_REQUERIMIENTO_ORGANIZACIONAL según requerimientosOrganizacionalesInsertando.
 	private syncRequerimientoOrganizacionalColumnas(): void {
 		setTimeout(() => {
 			this.gridRequerimientosOrganizacionales?.instance?.columnOption(
@@ -5414,6 +6008,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: muestra u oculta la columna de catálogo del grid de riesgos de puesto.
+	// Cómo: fija la visibilidad de la columna CORR_RIESGO_PUESTO según riesgosPuestoInsertando.
 	private syncRiesgoPuestoColumnas(): void {
 		setTimeout(() => {
 			this.gridRiesgosPuesto?.instance?.columnOption(
@@ -5424,6 +6020,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: muestra u oculta la columna de catálogo del grid de responsabilidades de cargo.
+	// Cómo: fija la visibilidad de la columna CORR_RESPONSABILIDAD según responsabilidadesCargoInsertando.
 	private syncResponsabilidadCargoColumnas(): void {
 		setTimeout(() => {
 			this.gridResponsabilidadesCargo?.instance?.columnOption(
@@ -5434,10 +6032,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: limpia el flag de edición del grid de relaciones internas.
+	// Cómo: pone relacionesInternasEditando en false.
 	private resetearEdicionRelacionesInternas(): void {
 		this.relacionesInternasEditando = false;
 	}
 
+	// Qué hace: limpia el flag de edición del grid de relaciones externas.
+	// Cómo: pone relacionesExternasEditando en false.
 	private resetearEdicionRelacionesExternas(): void {
 		this.relacionesExternasEditando = false;
 	}
@@ -5471,7 +6073,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Cancela edicion DevExtreme del grid y ejecuta el reset de flags locales.
+	// Cancela la edición en el grid y limpia los flags locales de la sección.
 	private cancelarEdicionGrid(grid: any, clearFlag: () => void): void {
 		if (!grid) {
 			clearFlag();
@@ -5485,18 +6087,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				grid.repaint?.();
 			}
 		} catch {
-			// Si el grid ya se desmontó, igual liberamos el flag de edicion.
+			// Si el grid ya no está en pantalla, igual limpia el flag de edición.
 		}
 		clearFlag();
 	}
 
-	// Genera llave temporal de fila (_clientKey) para filas nuevas aun sin correlativo de BD.
+	// Crea una clave temporal (_clientKey) para filas nuevas que aún no tienen correlativo.
 	private crearClientKey(prefix: string): string {
 		return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
 	}
 
-	// Las persistencias de detalle convierten eventos cancelables de DevExtreme en promesas booleanas
-	// y actualizan la colección local solo después de una respuesta satisfactoria.
+	// Guarda una actividad desde el grid: llama a la API y recarga la lista si la respuesta es OK.
 	private persistirActividadDesdeGrid(data: ScDescriptorFuncionActividad, esNuevo: boolean): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const funcion = this.funcionActividadesSeleccionada;
@@ -5535,6 +6136,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: elimina una actividad desde el grid llamando a la API.
+	// Cómo: valida que haya función y actividad válidas, llama a service.eliminarActividad (delete) y,
+	// si sale bien, actualiza el contador de actividades de la función; resuelve true si hubo error.
 	private eliminarActividadDesdeGrid(data: ScDescriptorFuncionActividad): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const funcion = this.funcionActividadesSeleccionada;
@@ -5565,7 +6169,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Garantiza que el perfil padre esté persistido antes de operar sobre cualquiera de sus detalles.
+	// Si el perfil aún no está guardado, lo persiste antes de agregar o editar un detalle.
 	private asegurarPerfilParaDetalle(onReady: () => void): void {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
@@ -5607,8 +6211,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Las persistencias de Perfil conservan las llaves devueltas por la API y restauran los catálogos
-	// disponibles tras crear, actualizar o eliminar sus detalles.
+	// Guarda una fila de educación: llama a la API y recarga la lista si la respuesta es OK.
 	private persistirEducacionDesdeGrid(data: ScPerfilPuestoEducacion, esNuevo: boolean): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
@@ -5649,6 +6252,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: elimina un requisito de educación desde el grid llamando a la API.
+	// Cómo: valida que haya perfil y educación válidos, llama a service.eliminarEducacion (delete)
+	// y resuelve true si hubo error.
 	private eliminarEducacionDesdeGrid(data: ScPerfilPuestoEducacion): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO) || Number(data?.CORR_PERFIL_PUESTO);
@@ -5678,7 +6284,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Inserta o actualiza experiencia desde eventos del grid via el servicio.
+	// Guarda una fila de experiencia: llama a la API y recarga la lista si la respuesta es OK.
 	private persistirExperienciaDesdeGrid(data: ScPerfilPuestoExperiencia, esNuevo: boolean): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
@@ -5718,6 +6324,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: elimina un requisito de experiencia desde el grid llamando a la API.
+	// Cómo: valida que haya perfil y experiencia válidos, llama a service.eliminarExperiencia (delete)
+	// y resuelve true si hubo error.
 	private eliminarExperienciaDesdeGrid(data: ScPerfilPuestoExperiencia): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO) || Number(data?.CORR_PERFIL_PUESTO);
@@ -5747,7 +6356,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Persiste competencia tecnica y refresca lookup para evitar duplicados.
+	// Guarda una competencia técnica: llama a la API y actualiza el lookup disponible.
 	private persistirCompetenciaTecnicaDesdeGrid(
 		data: ScPerfilPuestoCompetenciasTecnicas,
 		esNuevo: boolean
@@ -5798,6 +6407,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: elimina una competencia técnica desde el grid llamando a la API.
+	// Cómo: valida que el detalle tenga correlativo, llama a service.eliminarCompetenciaTecnica (delete)
+	// y resuelve true si hubo error.
 	private eliminarCompetenciaTecnicaDesdeGrid(
 		data: ScPerfilPuestoCompetenciasTecnicas
 	): Promise<boolean> {
@@ -5827,7 +6439,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Persiste competencia conductual y refresca lookup disponible.
+	// Guarda una competencia conductual: llama a la API y actualiza el lookup disponible.
 	private persistirCompetenciaConductualDesdeGrid(
 		data: ScPerfilPuestoCompetenciasConductuales,
 		esNuevo: boolean
@@ -5877,6 +6489,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: elimina una competencia conductual desde el grid llamando a la API.
+	// Cómo: valida que el detalle tenga correlativo, llama a service.eliminarCompetenciaConductual (delete)
+	// y resuelve true si hubo error.
 	private eliminarCompetenciaConductualDesdeGrid(
 		data: ScPerfilPuestoCompetenciasConductuales
 	): Promise<boolean> {
@@ -5906,8 +6521,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Las persistencias de catálogos del descriptor mantienen filas y lookups sincronizados,
-	// incluida la fila especial de impacto económico.
+	// Guarda un requerimiento organizacional: llama a la API y recarga la lista.
 	private persistirRequerimientoOrganizacionalDesdeGrid(
 		data: ScDescriptorPuestoRequerimientoOrganizacional,
 		esNuevo: boolean
@@ -5954,6 +6568,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: elimina un requerimiento organizacional desde el grid llamando a la API.
+	// Cómo: valida que el detalle tenga correlativo, llama a service.eliminarRequerimientoOrganizacional
+	// (delete) y resuelve true si hubo error.
 	private eliminarRequerimientoOrganizacionalDesdeGrid(
 		data: ScDescriptorPuestoRequerimientoOrganizacional
 	): Promise<boolean> {
@@ -5983,7 +6600,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Persiste riesgo del puesto; evita dobles posts con flag de persistiendo.
+	// Guarda un riesgo del puesto; usa un flag para no enviar dos guardados a la vez.
 	private persistirRiesgoPuestoDesdeGrid(
 		data: ScDescriptorPuestoRiesgoPuesto,
 		esNuevo: boolean
@@ -6029,7 +6646,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						try {
 							this.gridRiesgosPuesto?.instance?.cancelEditData?.();
 						} catch {
-							// El grid puede haberse desmontado.
+							// El grid puede ya no estar en pantalla; se ignora el error.
 						}
 						this.cargarRiesgosPuesto(true);
 						resolve(true);
@@ -6043,6 +6660,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: elimina un riesgo de puesto desde el grid llamando a la API.
+	// Cómo: valida que el detalle tenga correlativo, llama a service.eliminarRiesgoPuesto (delete) y,
+	// si sale bien, recarga la lista con cargarRiesgosPuesto; resuelve true si hubo error.
 	private eliminarRiesgoPuestoDesdeGrid(data: ScDescriptorPuestoRiesgoPuesto): Promise<boolean> {
 		const corr = Number(data?.CORR_DESCRIPTOR_RIESGO);
 		if (!corr || corr <= 0) {
@@ -6071,7 +6691,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Persiste responsabilidad de catalogo (no la fila virtual de impacto).
+	// Guarda una responsabilidad del catálogo (no la fila de impacto económico).
 	private persistirResponsabilidadCargoDesdeGrid(
 		data: ScDescriptorPuestoResponsabilidadCargo,
 		esNuevo: boolean
@@ -6121,7 +6741,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						try {
 							this.gridResponsabilidadesCargo?.instance?.cancelEditData?.();
 						} catch {
-							// El grid puede haberse desmontado.
+							// El grid puede ya no estar en pantalla; se ignora el error.
 						}
 						this.cargarResponsabilidadesCargo(true);
 						resolve(true);
@@ -6135,6 +6755,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: elimina una responsabilidad de cargo desde el grid llamando a la API.
+	// Cómo: no permite eliminar la fila de impacto económico; valida el correlativo, llama a
+	// service.eliminarResponsabilidadCargo (delete) y, si sale bien, recarga la lista.
 	private eliminarResponsabilidadCargoDesdeGrid(
 		data: ScDescriptorPuestoResponsabilidadCargo
 	): Promise<boolean> {
@@ -6169,7 +6792,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Persiste CORR_IMPACTO_ECONOMICO en el descriptor desde la fila virtual.
+	// Guarda impacto económico actualizando el encabezado del descriptor desde la fila virtual.
 	private persistirImpactoEconomicoDesdeGrid(
 		data: ScDescriptorPuestoResponsabilidadCargo
 	): Promise<boolean> {
@@ -6212,7 +6835,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						try {
 							this.gridResponsabilidadesCargo?.instance?.cancelEditData?.();
 						} catch {
-							// El grid puede haberse desmontado.
+							// El grid puede ya no estar en pantalla; se ignora el error.
 						}
 						this.cargarResponsabilidadesCargo(true);
 						resolve(true);
@@ -6228,8 +6851,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Funciones, relaciones y KPI comparten el contrato de cancelación del grid, pero construyen payloads
-	// distintos y refrescan únicamente la sección afectada.
+	// Guarda una función clave o secundaria: arma el payload, llama a la API y recarga esa sección.
 	private persistirFuncionDesdeGrid(
 		data: ScDescriptorFuncion,
 		tipoFuncion: string,
@@ -6272,6 +6894,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: elimina una función clave o secundaria desde el grid llamando a la API.
+	// Cómo: valida que la función tenga correlativo, llama a service.eliminarFuncion (delete) y resuelve
+	// true si hubo error.
 	private eliminarFuncionDesdeGrid(data: ScDescriptorFuncion): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const corrFuncion = Number(data?.CORR_FUNCION);
@@ -6300,7 +6925,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Persiste relacion interna/externa segun TIPO_RELACION de la fila.
+	// Guarda una relación laboral interna o externa según el tipo de la fila.
 	private persistirRelacionDesdeGrid(
 		data: ScDescriptorRelacionLaboral,
 		tipoRelacion: string,
@@ -6344,6 +6969,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: elimina una relación laboral (interna o externa) desde el grid llamando a la API.
+	// Cómo: valida que la relación tenga correlativo, llama a service.eliminarRelacionLaboral (delete)
+	// y resuelve true si hubo error.
 	private eliminarRelacionDesdeGrid(data: ScDescriptorRelacionLaboral): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const corrRelacion = Number(data?.CORR_RELACION_LABORAL);
@@ -6372,7 +7000,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Persiste KPI del formato corto desde el grid.
+	// Guarda un KPI del formato corto desde el grid.
 	private persistirKpiDesdeGrid(data: ScDescriptorKpiFuncion, esNuevo: boolean): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const payload: ScDescriptorKpiFuncion = {
@@ -6407,6 +7035,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: elimina un KPI desde el grid llamando a la API.
+	// Cómo: valida que el KPI tenga correlativo, llama a service.eliminarKpi (delete) y resuelve
+	// true si hubo error.
 	private eliminarKpiDesdeGrid(data: ScDescriptorKpiFuncion): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const corrKpi = Number(data?.CORR_KPI_FUNCION);
@@ -6435,7 +7066,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Filtra puestos por unidad y copia al encabezado los datos derivados del puesto seleccionado.
+	// Filtra puestos de la unidad elegida y prepara la lista de puestos a los que puede reportar.
 	private actualizarPuestosPorUnidad(corrUnidad: number | null | undefined): void {
 		const corr = corrUnidad != null ? Number(corrUnidad) : null;
 		if (!corr || corr <= 0) {
@@ -6449,7 +7080,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.mCORR_PUESTO_REPORTA = MOCK_PUESTOS.filter((item) => reportaIds.has(Number(item.CORR_PUESTO)));
 	}
 
-	// Copia reporta/responsable del puesto seleccionado al modelo del encabezado.
+	// Al elegir puesto, copia reporta, responsable y opciones de reporta al encabezado.
 	private aplicarDatosPuestoSeleccionado(corrPuesto: number | null, limpiarSiNoExiste: boolean): void {
 		const corr = corrPuesto != null ? Number(corrPuesto) : null;
 		const puesto = MOCK_PUESTOS.find((item) => Number(item.CORR_PUESTO) === corr);
