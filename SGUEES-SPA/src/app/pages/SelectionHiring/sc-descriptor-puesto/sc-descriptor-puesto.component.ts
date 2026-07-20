@@ -124,9 +124,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_RESPONSABILIDAD: ScResponsabilidadCargoLookupItem[] = [];
 	mCORR_RESPONSABILIDAD_DISPONIBLES: ScResponsabilidadCargoLookupItem[] = [];
 	mCORR_IMPACTO_ECONOMICO: ScImpactoEconomicoLookupItem[] = [];
+	// Lookup de edición: activos + el impacto ya asociado (si está inactivo); DESCRIPCION puede ser snapshot.
+	mCORR_IMPACTO_ECONOMICO_EDIT: ScImpactoEconomicoLookupItem[] = [];
 	impactosEconomicosLookupColumns = [
 		{ dataField: 'CORR_IMPACTO_ECONOMICO', caption: 'Codigo', width: 90 },
-		{ dataField: 'DESCRIPCION', caption: 'Impacto economico', width: 360 },
+		{ dataField: 'DESCRIPCION_CATALOGO', caption: 'Impacto economico', width: 360 },
 	];
 	reportaLookupColumns = [
 		{ dataField: 'RESPONSABLE', caption: 'Nombre', width: 220 },
@@ -835,16 +837,23 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				next: (response: any) => {
 					if (!response?.Result || !Array.isArray(response.Data)) {
 						this.mCORR_IMPACTO_ECONOMICO = [];
+						this.prepararImpactosLookupParaEdicion();
 						return;
 					}
 
-					this.mCORR_IMPACTO_ECONOMICO = response.Data.map((item: any) => ({
-						CORR_IMPACTO_ECONOMICO: Number(item.CORR_IMPACTO_ECONOMICO),
-						DESCRIPCION: (item.DESCRIPCION ?? '').trim(),
-					}));
+					this.mCORR_IMPACTO_ECONOMICO = response.Data.map((item: any) => {
+						const descripcion = (item.DESCRIPCION ?? '').trim();
+						return {
+							CORR_IMPACTO_ECONOMICO: Number(item.CORR_IMPACTO_ECONOMICO),
+							DESCRIPCION: descripcion,
+							DESCRIPCION_CATALOGO: descripcion,
+						};
+					});
+					this.prepararImpactosLookupParaEdicion();
 				},
 				error: (error) => {
 					this.mCORR_IMPACTO_ECONOMICO = [];
+					this.prepararImpactosLookupParaEdicion();
 					this.notifyApiError(error);
 				},
 			});
@@ -2828,7 +2837,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (this.readOnly || this.responsabilidadesCargoEditando) {
 			return;
 		}
-		if (!e?.row?.data?._esImpactoEconomico) {
+		if (e?.row?.data?._esImpactoEconomico) {
+			this.prepararImpactosLookupParaEdicion();
+		} else {
 			this.actualizarResponsabilidadesCargoLookupDisponibles(
 				Number(e?.row?.data?.CORR_RESPONSABILIDAD) || null
 			);
@@ -2889,6 +2900,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (e?.data?._esImpactoEconomico) {
 			this.responsabilidadesCargoInsertando = false;
 			e.data.NOMBRE_RESPONSABILIDAD = IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR;
+			// Conserva INFORMACION del descriptor; no la reemplaza con el catálogo al entrar a editar.
+			e.data.INFORMACION = (
+				e.data.INFORMACION ??
+				this.model?.DESCRIPCION_IMPACTO_ECONOMICO ??
+				''
+			).trim();
+			this.prepararImpactosLookupParaEdicion();
 			this.responsabilidadesCargoEditando = true;
 			this.syncResponsabilidadCargoColumnas();
 			return;
@@ -3040,10 +3058,37 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	onImpactoEconomicoLookupChanged(value: number | null, cellInfo: any): void {
 		const corr = value != null && Number(value) > 0 ? Number(value) : null;
-		const catalog = this.mCORR_IMPACTO_ECONOMICO.find(
+		const fromCatalog = this.mCORR_IMPACTO_ECONOMICO.find(
 			(item) => Number(item.CORR_IMPACTO_ECONOMICO) === Number(corr)
 		);
-		const descripcion = (catalog?.DESCRIPCION ?? '').trim();
+		const fromEdit = this.mCORR_IMPACTO_ECONOMICO_EDIT.find(
+			(item) => Number(item.CORR_IMPACTO_ECONOMICO) === Number(corr)
+		);
+
+		const corrAsociado = Number(
+			cellInfo?.data?.CORR_IMPACTO_ECONOMICO ?? this.model?.CORR_IMPACTO_ECONOMICO
+		);
+		const descGuardada = (
+			cellInfo?.data?.INFORMACION ??
+			this.model?.DESCRIPCION_IMPACTO_ECONOMICO ??
+			''
+		).trim();
+
+		let descripcion = '';
+		if (corr != null) {
+			if (corr === corrAsociado && descGuardada) {
+				// Misma asociación: conservar el nombre ya guardado en el descriptor.
+				descripcion = descGuardada;
+			} else {
+				// Nueva opción: usar el nombre actual del catálogo.
+				descripcion = (
+					fromCatalog?.DESCRIPCION ??
+					fromEdit?.DESCRIPCION_CATALOGO ??
+					fromEdit?.DESCRIPCION ??
+					''
+				).trim();
+			}
+		}
 
 		cellInfo.setValue(descripcion);
 		if (cellInfo?.data) {
@@ -3051,6 +3096,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			cellInfo.data.NOMBRE_RESPONSABILIDAD = IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR;
 			cellInfo.data.INFORMACION = descripcion;
 		}
+		this.prepararImpactosLookupParaEdicion();
 	}
 
 	// Filtra responsabilidades segun formato y seleccion actual.
@@ -3818,6 +3864,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							})
 						).filter((item) => this.responsabilidadAplicaAlFormato(item.APLICA_DESCRIPTOR));
 						this.responsabilidadesCargo = [...filas, this.crearFilaImpactoEconomico()];
+						this.prepararImpactosLookupParaEdicion();
 						this.actualizarResponsabilidadesCargoLookupDisponibles();
 					}
 				},
@@ -3836,6 +3883,60 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			_esImpactoEconomico: true,
 			_clientKey: IMPACTO_ECONOMICO_CLIENT_KEY,
 		};
+	}
+
+	// Activos del catálogo + el impacto ya asociado al descriptor (si está inactivo).
+	// DESCRIPCION (valor cerrado) puede conservar el snapshot del descriptor;
+	// DESCRIPCION_CATALOGO se usa en el popup para mostrar el catálogo tal cual.
+	private prepararImpactosLookupParaEdicion(): void {
+		const porCorr = new Map<number, ScImpactoEconomicoLookupItem>();
+
+		for (const item of this.mCORR_IMPACTO_ECONOMICO ?? []) {
+			const corr = Number(item.CORR_IMPACTO_ECONOMICO);
+			if (corr > 0) {
+				const descripcionCatalogo = (item.DESCRIPCION_CATALOGO ?? item.DESCRIPCION ?? '').trim();
+				porCorr.set(corr, {
+					CORR_IMPACTO_ECONOMICO: corr,
+					DESCRIPCION: descripcionCatalogo,
+					DESCRIPCION_CATALOGO: descripcionCatalogo,
+				});
+			}
+		}
+
+		const filaImpacto = (this.responsabilidadesCargo || []).find((row) => row._esImpactoEconomico);
+		const corrAsociada = Number(
+			filaImpacto?.CORR_IMPACTO_ECONOMICO ?? this.model?.CORR_IMPACTO_ECONOMICO
+		);
+		const descDescriptor = (
+			filaImpacto?.INFORMACION ??
+			this.model?.DESCRIPCION_IMPACTO_ECONOMICO ??
+			''
+		).trim();
+
+		if (corrAsociada > 0) {
+			const existente = porCorr.get(corrAsociada);
+			if (existente) {
+				porCorr.set(corrAsociada, {
+					CORR_IMPACTO_ECONOMICO: corrAsociada,
+					DESCRIPCION: descDescriptor || existente.DESCRIPCION,
+					DESCRIPCION_CATALOGO: existente.DESCRIPCION_CATALOGO || existente.DESCRIPCION,
+				});
+			} else {
+				porCorr.set(corrAsociada, {
+					CORR_IMPACTO_ECONOMICO: corrAsociada,
+					DESCRIPCION: descDescriptor || `Impacto ${corrAsociada}`,
+					DESCRIPCION_CATALOGO: descDescriptor || `Impacto ${corrAsociada}`,
+				});
+			}
+		}
+
+		this.mCORR_IMPACTO_ECONOMICO_EDIT = Array.from(porCorr.values()).sort((a, b) =>
+			(a.DESCRIPCION_CATALOGO || a.DESCRIPCION || '').localeCompare(
+				b.DESCRIPCION_CATALOGO || b.DESCRIPCION || '',
+				'es',
+				{ sensitivity: 'base' }
+			)
+		);
 	}
 
 	// Inicia las cargas condicionadas por formato: KPI para corto; funciones, actividades y relaciones

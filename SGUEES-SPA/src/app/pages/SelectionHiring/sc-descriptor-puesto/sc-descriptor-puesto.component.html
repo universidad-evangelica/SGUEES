@@ -2093,7 +2093,7 @@
 									*ngIf="cellInfo.data?._esImpactoEconomico; else infoResponsabilidadTexto"
 								>
 									<app-data-lookup
-										[model]="mCORR_IMPACTO_ECONOMICO"
+										[model]="mCORR_IMPACTO_ECONOMICO_EDIT"
 										[value]="cellInfo.data.CORR_IMPACTO_ECONOMICO"
 										(valueChange)="onImpactoEconomicoLookupChanged($event, cellInfo)"
 										[valueExpr]="'CORR_IMPACTO_ECONOMICO'"

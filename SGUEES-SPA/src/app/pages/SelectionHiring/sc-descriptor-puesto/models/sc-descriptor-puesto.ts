@@ -94,7 +94,10 @@ export interface ScResponsabilidadCargoLookupItem {
 
 export interface ScImpactoEconomicoLookupItem {
 	CORR_IMPACTO_ECONOMICO: number;
+	// Texto mostrado en el valor cerrado del select (puede ser el snapshot del descriptor).
 	DESCRIPCION: string;
+	// Texto del catálogo para las columnas del popup (siempre el nombre actual del catálogo).
+	DESCRIPCION_CATALOGO?: string;
 }
 
 export const FORMATO_CORTO = 'CORTO';
