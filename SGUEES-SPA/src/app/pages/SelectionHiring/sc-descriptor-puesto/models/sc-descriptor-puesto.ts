@@ -31,7 +31,10 @@ export interface ScDescriptorPuesto {
 // Item de lookup de induccion (entrenamiento).
 export interface ScInduccionLookupItem {
 	CORR_INDUCCION: number;
+	// Texto del valor cerrado (puede ser snapshot del descriptor).
 	NOMBRE_INDUCCION: string;
+	// Texto del catálogo para el popup del select.
+	NOMBRE_INDUCCION_CATALOGO?: string;
 	SEMANAS_INDUCCION: number | null;
 }
 

@@ -2172,8 +2172,10 @@
 												(valueChange)="onEntrenamientoInduccionChanged($event)"
 												[valueExpr]="'CORR_INDUCCION'"
 												[displayExpr]="'NOMBRE_INDUCCION'"
+												[lookupColumns]="induccionesLookupColumns"
 												[selectedRowKeys]="selectedLookUpCORR_INDUCCION"
 												[readOnly]="readOnly || !entrenamientoEditando"
+												[dropDownWidth]="420"
 											></app-data-lookup>
 										</div>
 									</div>

@@ -205,16 +205,19 @@ export class ScDescriptorPuestoService {
 		return this.repo.getInducciones();
 	}
 
-	// El endpoint de entrenamiento recibe únicamente inducción y responsable; el identificador
-	// del descriptor viaja como parámetro de la operación específica.
+	// Persiste entrenamiento; envía también nombre/semanas del model (snapshot o recatalogación explícita).
 	actualizarEntrenamiento(
 		corrDescriptorPuesto: number,
 		corrInduccion: number | null,
-		responsable: string
+		responsable: string,
+		nombreInduccion: string = '',
+		semanasInduccion: number | null = null
 	): Observable<IResult> {
 		return this.repo.updateEntrenamiento(
 			{
 				CORR_INDUCCION: corrInduccion,
+				NOMBRE_INDUCCION: (nombreInduccion ?? '').trim(),
+				SEMANAS_INDUCCION: semanasInduccion,
 				RESPONSABLE: (responsable ?? '').trim(),
 			},
 			corrDescriptorPuesto

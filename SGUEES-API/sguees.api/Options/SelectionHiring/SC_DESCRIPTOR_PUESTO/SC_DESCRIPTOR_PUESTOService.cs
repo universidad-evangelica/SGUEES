@@ -214,18 +214,39 @@ namespace SGUEES.Services
                 return ValidationError("El responsable del entrenamiento no puede superar 100 caracteres.");
             }
 
-            // Obtiene inducción activa para copiar snapshot al descriptor.
-            var induccion = await _repo.GetInduccionActivaAsync(
-                Data.CORR_EMPRESA,
-                Data.CORR_INDUCCION.Value);
-            if (induccion == null)
+            // Conserva el snapshot del descriptor si no cambió la inducción,
+            // salvo que el cliente envíe nombre/semanas (p. ej. re-selección del catálogo renombrado).
+            var getActual = await _repo.GetAsync(new List<CParameter>
             {
-                return ValidationError("La induccion seleccionada no existe o se encuentra inactiva.");
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+            });
+            var actual = getActual?.Data as SC_DESCRIPTOR_PUESTOView;
+            var mismaInduccion = actual != null
+                && actual.CORR_INDUCCION.HasValue
+                && Data.CORR_INDUCCION == actual.CORR_INDUCCION;
+
+            if (mismaInduccion)
+            {
+                Data.NOMBRE_INDUCCION = !string.IsNullOrWhiteSpace(Data.NOMBRE_INDUCCION)
+                    ? Data.NOMBRE_INDUCCION.Trim()
+                    : actual.NOMBRE_INDUCCION;
+                Data.SEMANAS_INDUCCION = Data.SEMANAS_INDUCCION ?? actual.SEMANAS_INDUCCION;
+            }
+            else
+            {
+                var induccion = await _repo.GetInduccionActivaAsync(
+                    Data.CORR_EMPRESA,
+                    Data.CORR_INDUCCION.Value);
+                if (induccion == null)
+                {
+                    return ValidationError("La induccion seleccionada no existe o se encuentra inactiva.");
+                }
+
+                Data.NOMBRE_INDUCCION = induccion.NOMBRE_INDUCCION;
+                Data.SEMANAS_INDUCCION = induccion.SEMANAS_INDUCCION;
             }
 
-            // Copia snapshot de inducción al descriptor antes de persistir.
-            Data.NOMBRE_INDUCCION = induccion.NOMBRE_INDUCCION;
-            Data.SEMANAS_INDUCCION = induccion.SEMANAS_INDUCCION;
             Data.RESPONSABLE = Data.RESPONSABLE.Trim();
             Data.USUARIO_ACTU = vLOGIN_SISTEMA;
             Data.ESTACION_ACTU = vESTACION;

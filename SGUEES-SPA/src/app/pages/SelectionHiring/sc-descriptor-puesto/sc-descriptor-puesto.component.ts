@@ -113,6 +113,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_INDUCCION: ScInduccionLookupItem[] = [];
 	// Lookup de entrenamiento: activas + la inducción ya asociada al descriptor (si está inactiva).
 	mCORR_INDUCCION_EDIT: ScInduccionLookupItem[] = [];
+	induccionesLookupColumns = [
+		{ dataField: 'CORR_INDUCCION', caption: 'Codigo', width: 90 },
+		{ dataField: 'NOMBRE_INDUCCION_CATALOGO', caption: 'Induccion', width: 320 },
+	];
 	mCORR_COMPETENCIAS_TECNICAS: ScCompetenciaTecnicaLookupItem[] = [];
 	mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES: ScCompetenciaTecnicaLookupItem[] = [];
 	mCORR_COMPETENCIAS_CONDUCTUALES: ScCompetenciaConductualLookupItem[] = [];
@@ -606,12 +610,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						return;
 					}
 
-					this.mCORR_INDUCCION = response.Data.map((item: ScInduccionLookupItem) => ({
-						CORR_INDUCCION: Number(item.CORR_INDUCCION),
-						NOMBRE_INDUCCION: (item.NOMBRE_INDUCCION ?? '').trim(),
-						SEMANAS_INDUCCION:
-							item.SEMANAS_INDUCCION != null ? Number(item.SEMANAS_INDUCCION) : null,
-					}));
+					this.mCORR_INDUCCION = response.Data.map((item: ScInduccionLookupItem) => {
+						const nombre = (item.NOMBRE_INDUCCION ?? '').trim();
+						return {
+							CORR_INDUCCION: Number(item.CORR_INDUCCION),
+							NOMBRE_INDUCCION: nombre,
+							NOMBRE_INDUCCION_CATALOGO: nombre,
+							SEMANAS_INDUCCION:
+								item.SEMANAS_INDUCCION != null ? Number(item.SEMANAS_INDUCCION) : null,
+						};
+					});
 					this.prepararInduccionesLookupParaEntrenamiento();
 				},
 				error: (error) => {
@@ -3065,37 +3073,31 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			(item) => Number(item.CORR_IMPACTO_ECONOMICO) === Number(corr)
 		);
 
-		const corrAsociado = Number(
-			cellInfo?.data?.CORR_IMPACTO_ECONOMICO ?? this.model?.CORR_IMPACTO_ECONOMICO
-		);
-		const descGuardada = (
-			cellInfo?.data?.INFORMACION ??
-			this.model?.DESCRIPCION_IMPACTO_ECONOMICO ??
-			''
-		).trim();
+		// Al elegir en el select (aunque sea el mismo corr), tomar el nombre actual del catálogo.
+		// No usar fromEdit.DESCRIPCION: ahí puede estar el snapshot viejo del descriptor.
+		const descripcion =
+			corr == null
+				? ''
+				: (
+						fromCatalog?.DESCRIPCION_CATALOGO ??
+						fromCatalog?.DESCRIPCION ??
+						fromEdit?.DESCRIPCION_CATALOGO ??
+						''
+				  ).trim();
 
-		let descripcion = '';
-		if (corr != null) {
-			if (corr === corrAsociado && descGuardada) {
-				// Misma asociación: conservar el nombre ya guardado en el descriptor.
-				descripcion = descGuardada;
-			} else {
-				// Nueva opción: usar el nombre actual del catálogo.
-				descripcion = (
-					fromCatalog?.DESCRIPCION ??
-					fromEdit?.DESCRIPCION_CATALOGO ??
-					fromEdit?.DESCRIPCION ??
-					''
-				).trim();
-			}
+		const live = (this.responsabilidadesCargo || []).find((row) => row._esImpactoEconomico);
+		if (live) {
+			live.CORR_IMPACTO_ECONOMICO = corr;
+			live.NOMBRE_RESPONSABILIDAD = IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR;
+			live.INFORMACION = descripcion;
 		}
 
-		cellInfo.setValue(descripcion);
 		if (cellInfo?.data) {
 			cellInfo.data.CORR_IMPACTO_ECONOMICO = corr;
 			cellInfo.data.NOMBRE_RESPONSABILIDAD = IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR;
 			cellInfo.data.INFORMACION = descripcion;
 		}
+		cellInfo.setValue(descripcion);
 		this.prepararImpactosLookupParaEdicion();
 	}
 
@@ -3320,12 +3322,30 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (corrInduccion) {
 			this.induccionInvalida = false;
 		}
-		const induccion = this.mCORR_INDUCCION_EDIT.find(
+
+		const fromCatalog = this.mCORR_INDUCCION.find(
 			(item) => Number(item.CORR_INDUCCION) === Number(corrInduccion)
 		);
+		const fromEdit = this.mCORR_INDUCCION_EDIT.find(
+			(item) => Number(item.CORR_INDUCCION) === Number(corrInduccion)
+		);
+
 		this.model.CORR_INDUCCION = corrInduccion;
-		this.model.NOMBRE_INDUCCION = induccion?.NOMBRE_INDUCCION ?? '';
-		this.model.SEMANAS_INDUCCION = induccion?.SEMANAS_INDUCCION ?? null;
+		// Al elegir en el select (aunque sea el mismo corr), tomar nombre/semanas del catálogo.
+		this.model.NOMBRE_INDUCCION =
+			corrInduccion == null
+				? ''
+				: (
+						fromCatalog?.NOMBRE_INDUCCION ??
+						fromEdit?.NOMBRE_INDUCCION_CATALOGO ??
+						fromEdit?.NOMBRE_INDUCCION ??
+						''
+				  ).trim();
+		this.model.SEMANAS_INDUCCION =
+			corrInduccion == null
+				? null
+				: fromCatalog?.SEMANAS_INDUCCION ?? fromEdit?.SEMANAS_INDUCCION ?? null;
+		this.prepararInduccionesLookupParaEntrenamiento();
 	}
 
 	// Persiste induccion/semanas/responsable via updateEntrenamiento del servicio.
@@ -3348,7 +3368,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		this.loadingVisible = true;
 		this.service
-			.actualizarEntrenamiento(corrDescriptor, corrInduccion, responsable)
+			.actualizarEntrenamiento(
+				corrDescriptor,
+				corrInduccion,
+				responsable,
+				this.model?.NOMBRE_INDUCCION ?? '',
+				this.model?.SEMANAS_INDUCCION ?? null
+			)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -3364,13 +3390,18 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					const data = response.Data as Partial<ScDescriptorPuesto> | null;
 					const entrenamiento = {
 						CORR_INDUCCION: data?.CORR_INDUCCION ?? corrInduccion,
-						NOMBRE_INDUCCION: data?.NOMBRE_INDUCCION ?? induccion?.NOMBRE_INDUCCION ?? '',
+						NOMBRE_INDUCCION:
+							(data?.NOMBRE_INDUCCION ?? this.model?.NOMBRE_INDUCCION ?? induccion?.NOMBRE_INDUCCION ?? '').trim(),
 						SEMANAS_INDUCCION:
-							data?.SEMANAS_INDUCCION ?? induccion?.SEMANAS_INDUCCION ?? null,
+							data?.SEMANAS_INDUCCION ??
+							this.model?.SEMANAS_INDUCCION ??
+							induccion?.SEMANAS_INDUCCION ??
+							null,
 						RESPONSABLE: (data?.RESPONSABLE ?? responsable).trim(),
 					};
 					this.sincronizarEntrenamiento(entrenamiento);
 					this.entrenamientoOriginal = { ...entrenamiento };
+					this.prepararInduccionesLookupParaEntrenamiento();
 					this.induccionInvalida = false;
 					this.entrenamientoEditando = false;
 					this.loadingVisible = false;
@@ -4056,33 +4087,52 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Activas del catálogo + la inducción ya asociada al descriptor (si está inactiva).
+	// NOMBRE_INDUCCION (valor cerrado) puede conservar el snapshot del descriptor;
+	// NOMBRE_INDUCCION_CATALOGO se usa en el popup para mostrar el catálogo tal cual.
 	private prepararInduccionesLookupParaEntrenamiento(): void {
 		const porCorr = new Map<number, ScInduccionLookupItem>();
 
 		for (const item of this.mCORR_INDUCCION ?? []) {
 			const corr = Number(item.CORR_INDUCCION);
 			if (corr > 0) {
+				const nombreCatalogo = (item.NOMBRE_INDUCCION_CATALOGO ?? item.NOMBRE_INDUCCION ?? '').trim();
 				porCorr.set(corr, {
 					CORR_INDUCCION: corr,
-					NOMBRE_INDUCCION: item.NOMBRE_INDUCCION ?? '',
+					NOMBRE_INDUCCION: nombreCatalogo,
+					NOMBRE_INDUCCION_CATALOGO: nombreCatalogo,
 					SEMANAS_INDUCCION: item.SEMANAS_INDUCCION ?? null,
 				});
 			}
 		}
 
 		const corrAsociada = Number(this.model?.CORR_INDUCCION);
-		if (corrAsociada > 0 && !porCorr.has(corrAsociada)) {
-			porCorr.set(corrAsociada, {
-				CORR_INDUCCION: corrAsociada,
-				NOMBRE_INDUCCION: (this.model?.NOMBRE_INDUCCION ?? '').trim() || `Inducción ${corrAsociada}`,
-				SEMANAS_INDUCCION: this.model?.SEMANAS_INDUCCION ?? null,
-			});
+		const nombreDescriptor = (this.model?.NOMBRE_INDUCCION ?? '').trim();
+		if (corrAsociada > 0) {
+			const existente = porCorr.get(corrAsociada);
+			if (existente) {
+				porCorr.set(corrAsociada, {
+					CORR_INDUCCION: corrAsociada,
+					NOMBRE_INDUCCION: nombreDescriptor || existente.NOMBRE_INDUCCION,
+					NOMBRE_INDUCCION_CATALOGO:
+						existente.NOMBRE_INDUCCION_CATALOGO || existente.NOMBRE_INDUCCION,
+					SEMANAS_INDUCCION: this.model?.SEMANAS_INDUCCION ?? existente.SEMANAS_INDUCCION,
+				});
+			} else {
+				porCorr.set(corrAsociada, {
+					CORR_INDUCCION: corrAsociada,
+					NOMBRE_INDUCCION: nombreDescriptor || `Inducción ${corrAsociada}`,
+					NOMBRE_INDUCCION_CATALOGO: nombreDescriptor || `Inducción ${corrAsociada}`,
+					SEMANAS_INDUCCION: this.model?.SEMANAS_INDUCCION ?? null,
+				});
+			}
 		}
 
 		this.mCORR_INDUCCION_EDIT = Array.from(porCorr.values()).sort((a, b) =>
-			(a.NOMBRE_INDUCCION || '').localeCompare(b.NOMBRE_INDUCCION || '', 'es', {
-				sensitivity: 'base',
-			})
+			(a.NOMBRE_INDUCCION_CATALOGO || a.NOMBRE_INDUCCION || '').localeCompare(
+				b.NOMBRE_INDUCCION_CATALOGO || b.NOMBRE_INDUCCION || '',
+				'es',
+				{ sensitivity: 'base' }
+			)
 		);
 	}
 
