@@ -15,6 +15,7 @@ import { GenGerenciaService } from './gen-gerencia.service';
 @Component({
 	selector: 'app-gen-gerencia',
 	templateUrl: './gen-gerencia.component.html',
+	styleUrls: ['./gen-gerencia.component.scss'],
 })
 // Qué hace: coordina la grilla, el formulario y las llamadas al servicio de gerencias.
 // Cómo: extiende CBaseComponent y usa GenGerenciaService para el CRUD; carga divisiones vía getLookUp.
