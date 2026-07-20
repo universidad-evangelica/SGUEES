@@ -104,6 +104,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_PUESTO: MockPuesto[] = [];
 	mCORR_PUESTO_REPORTA: MockPuesto[] = [];
 	mCORR_FRECUENCIA: ScFrecuenciaLookup[] = [];
+	// Lookup del editor KPI: activas + solo la frecuencia de la fila en edición (si está inactiva).
+	mCORR_FRECUENCIA_KPI_EDIT: ScFrecuenciaLookup[] = [];
 	mCORR_DISPONIBILIDAD_HORARIO: ScDisponibilidadHorarioLookup[] = [];
 	mCORR_TIPO_MODALIDAD: ScTipoModalidadLookup[] = [];
 	mCORR_INDUCCION: ScInduccionLookupItem[] = [];
@@ -1634,6 +1636,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (this.readOnly || this.kpisEditando || !this.esFormatoCorto || !this.requiereDescriptorGuardado()) {
 			return;
 		}
+		this.prepararFrecuenciasLookupParaEdicionKpi(null);
 		this.gridKpis?.instance.addRow();
 		this.kpisEditando = true;
 	}
@@ -1642,6 +1645,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (this.readOnly || this.kpisEditando) {
 			return;
 		}
+		this.prepararFrecuenciasLookupParaEdicionKpi(e.row?.data);
 		e.component.editRow(e.row.rowIndex);
 		this.kpisEditando = true;
 	}
@@ -1681,8 +1685,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.data._clientKey = this.crearClientKey('kpi');
 	}
 
-	onKpiEditingStart(_e: any): void {
+	onKpiEditingStart(e: any): void {
 		this.kpisEditando = true;
+		this.prepararFrecuenciasLookupParaEdicionKpi(e?.data);
 	}
 
 	onKpiSaved(e: any): void {
@@ -1738,7 +1743,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		_currentRowData: ScDescriptorKpiFuncion
 	): void => {
 		const corr = value != null && Number(value) > 0 ? Number(value) : null;
-		const frecuencia = this.mCORR_FRECUENCIA.find(
+		const frecuencia = this.mCORR_FRECUENCIA_KPI_EDIT.find(
 			(item) => Number(item.CORR_FRECUENCIA) === Number(corr)
 		);
 		newData.CORR_FRECUENCIA = corr;
@@ -3773,6 +3778,53 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Activas del catálogo + solo la frecuencia ya asociada a la fila KPI en edición (si está inactiva).
+	private prepararFrecuenciasLookupParaEdicionKpi(row?: ScDescriptorKpiFuncion | null): void {
+		const fila = this.resolverFilaKpi(row);
+		const porCorr = new Map<number, ScFrecuenciaLookup>();
+
+		for (const item of this.mCORR_FRECUENCIA ?? []) {
+			const corr = Number(item.CORR_FRECUENCIA);
+			if (corr > 0) {
+				porCorr.set(corr, {
+					CORR_FRECUENCIA: corr,
+					NOMBRE_FRECUENCIA: item.NOMBRE_FRECUENCIA ?? '',
+				});
+			}
+		}
+
+		const corrAsociada = Number(fila?.CORR_FRECUENCIA);
+		if (corrAsociada > 0 && !porCorr.has(corrAsociada)) {
+			porCorr.set(corrAsociada, {
+				CORR_FRECUENCIA: corrAsociada,
+				NOMBRE_FRECUENCIA: (fila?.NOMBRE_FRECUENCIA ?? '').trim() || `Frecuencia ${corrAsociada}`,
+			});
+		}
+
+		this.mCORR_FRECUENCIA_KPI_EDIT = Array.from(porCorr.values()).sort((a, b) =>
+			(a.NOMBRE_FRECUENCIA || '').localeCompare(b.NOMBRE_FRECUENCIA || '', 'es', {
+				sensitivity: 'base',
+			})
+		);
+	}
+
+	private resolverFilaKpi(row?: ScDescriptorKpiFuncion | null): ScDescriptorKpiFuncion | null {
+		if (!row) {
+			return null;
+		}
+
+		const clientKey = row._clientKey;
+		const corrKpi = Number(row.CORR_KPI_FUNCION);
+		const encontrada =
+			this.kpis?.find(
+				(item) =>
+					(!!clientKey && item._clientKey === clientKey) ||
+					(corrKpi > 0 && Number(item.CORR_KPI_FUNCION) === corrKpi)
+			) ?? null;
+
+		return encontrada ?? row;
+	}
+
 	// Carga funciones clave del descriptor y prepara contadores de actividades.
 	private cargarFuncionesClave(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
@@ -4039,6 +4091,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		// Solo recargar secundarias si el usuario cambió de verdad el formato (no por sync del form).
 		if (cambioReal && this.esFormatoCorto && this.mostrarSeccionesDescriptor) {
 			this.cargarFuncionesSecundarias();
+			this.cargarKpis();
 		}
 
 		if (cambioReal && this.esFormatoExtenso && this.mostrarSeccionesDescriptor) {

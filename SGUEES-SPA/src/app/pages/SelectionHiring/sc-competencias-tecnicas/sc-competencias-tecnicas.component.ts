@@ -280,49 +280,33 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 
 		this.guardarMtto({
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this), isAdd),
-			insert: () =>
-				this.convertirErrorMttoEnWarning(
-					this.service.insert(this.service.prepararModeloParaGuardar(this.model, true))
-				),
-			update: () =>
-				this.convertirErrorMttoEnWarning(
-					this.service.update(this.service.prepararModeloParaGuardar(this.model, false))
-				),
+			insert: () => this.service.insert(this.service.prepararModeloParaGuardar(this.model, true)),
+			update: () => this.service.update(this.service.prepararModeloParaGuardar(this.model, false)),
 		});
 	}
 
-	// Convierte duplicados y relaciones existentes en advertencias controladas.
-	private convertirErrorMttoEnWarning<T>(request: Observable<T>, esEliminacion = false): Observable<T> {
+	// Convierte restricciones FK al eliminar en advertencia controlada.
+	private convertirErrorMttoEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
-				const message = this.obtenerMensajeApiLocal(error);
-				const normalized = message.toLowerCase();
-				const esDuplicado =
-					!esEliminacion &&
-					['ya existe', 'duplicad', 'primary key', 'unique key', 'mismo tiempo', 'llave primaria', 'clave primaria'].some(
-						(texto) => normalized.includes(texto)
-					);
-				const tieneRelacion =
-					esEliminacion &&
-					[
-						'foreign key',
-						'reference constraint',
-						'clave externa',
-						'clave foránea',
-						'llave foránea',
-						'hijos',
-						'registros relacionados',
-						'registros asociados',
-						'asociados',
-					].some((texto) => normalized.includes(texto));
+				const message = this.obtenerMensajeApiLocal(error).toLowerCase();
+				const tieneRelacion = [
+					'foreign key',
+					'reference constraint',
+					'clave externa',
+					'clave foránea',
+					'llave foránea',
+					'hijos',
+					'registros relacionados',
+					'registros asociados',
+					'asociados',
+				].some((texto) => message.includes(texto));
 
-				if (esDuplicado || tieneRelacion) {
+				if (tieneRelacion) {
 					return of({
 						Result: false,
 						ErrorCode: 2627,
-						ErrorMessage: tieneRelacion
-							? 'No se puede eliminar porque tiene registros relacionados.'
-							: this.obtenerMensajeCodigoDuplicado(),
+						ErrorMessage: 'No se puede eliminar porque tiene registros relacionados.',
 					} as T);
 				}
 
@@ -340,19 +324,6 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		return `${
 			error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.error?.message ?? error?.error ?? error?.message ?? error ?? ''
 		}`;
-	}
-
-	// Selecciona el mensaje de duplicidad correspondiente al nivel actual.
-	private obtenerMensajeCodigoDuplicado(): string {
-		if (this.model.NIVEL === SC_COMPETENCIA_NIVEL.DOS) {
-			return 'El sufijo de Nivel 2 ingresado está registrado para otra competencia técnica.';
-		}
-
-		if (this.model.NIVEL === SC_COMPETENCIA_NIVEL.UNO) {
-			return 'El código de Nivel 1 ingresado está registrado para otra competencia técnica.';
-		}
-
-		return 'El código generado está registrado para otra competencia técnica.';
 	}
 
 	// Descarta la edición y restaura el registro original en la grilla.
@@ -481,10 +452,7 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
-				this.convertirErrorMttoEnWarning(
-					this.service.delete(this.fillParam(e.data.CORR_COMPETENCIAS_TECNICAS)),
-					true
-				),
+				this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_COMPETENCIAS_TECNICAS))),
 		});
 	}
 

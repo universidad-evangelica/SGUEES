@@ -217,57 +217,36 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 
 		this.guardarMtto({
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
-			insert: () =>
-				this.convertirErrorMttoEnWarning(
-					this.service.insert(this.model),
-					'El nombre ingresado ya está registrado para otra inducción.'
-				),
-			update: () =>
-				this.convertirErrorMttoEnWarning(
-					this.service.update(this.model),
-					'El nombre ingresado ya está registrado para otra inducción.'
-				),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
 		});
 	}
 
-	// Convierte duplicados y relaciones existentes en advertencias controladas.
-	private convertirErrorMttoEnWarning<T>(
-		request: Observable<T>,
-		mensajeDuplicado?: string,
-		esEliminacion = false
-	): Observable<T> {
+	// Convierte restricciones FK al eliminar en advertencia controlada.
+	private convertirErrorMttoEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
 				const mensaje = `${
 					error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.error?.message ?? error?.error ?? error?.message ?? error ?? ''
 				}`;
 				const normalizado = mensaje.toLowerCase();
-				const esDuplicado =
-					!!mensajeDuplicado &&
-					['ya existe', 'duplicad', 'primary key', 'unique key', 'mismo tiempo', 'llave primaria', 'clave primaria'].some(
-						(texto) => normalizado.includes(texto)
-					);
-				const tieneRelacion =
-					esEliminacion &&
-					[
-						'foreign key',
-						'reference constraint',
-						'clave externa',
-						'clave foránea',
-						'llave foránea',
-						'hijos',
-						'registros relacionados',
-						'registros asociados',
-						'asociados',
-					].some((texto) => normalizado.includes(texto));
+				const tieneRelacion = [
+					'foreign key',
+					'reference constraint',
+					'clave externa',
+					'clave foránea',
+					'llave foránea',
+					'hijos',
+					'registros relacionados',
+					'registros asociados',
+					'asociados',
+				].some((texto) => normalizado.includes(texto));
 
-				if (esDuplicado || tieneRelacion) {
+				if (tieneRelacion) {
 					return of({
 						Result: false,
 						ErrorCode: 2627,
-						ErrorMessage: tieneRelacion
-							? 'No se puede eliminar porque tiene registros relacionados.'
-							: mensajeDuplicado,
+						ErrorMessage: 'No se puede eliminar porque tiene registros relacionados.',
 					} as T);
 				}
 
@@ -285,11 +264,7 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
-				this.convertirErrorMttoEnWarning(
-					this.service.delete(this.fillParam(e.data.CORR_INDUCCION)),
-					undefined,
-					true
-				),
+				this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_INDUCCION))),
 		});
 	}
 
