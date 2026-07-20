@@ -35,13 +35,6 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Gerencias';
 
-	private readonly pagedStoreCacheState: MttoPagedStoreCacheState = createMttoPagedStoreCacheState(
-		this.mttoPageSize,
-		this.mttoApiPageSize
-	);
-	private pagedStoreInflightKey: string | null = null;
-	private pagedStoreInflightPromise: Promise<MttoPagedStorePageResult> | null = null;
-
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
