@@ -1281,7 +1281,9 @@ export class ScDescriptorPuestoService {
 			SEXO: (perfil.SEXO ?? '').trim().toUpperCase() || null,
 			ESTADO_FAMILIAR: (perfil.ESTADO_FAMILIAR ?? '').trim().toUpperCase() || null,
 			CORR_DISPONIBILIDAD_HORARIO: perfil.CORR_DISPONIBILIDAD_HORARIO ?? null,
+			NOMBRE_DISPONIBILIDAD_HORARIO: (perfil.NOMBRE_DISPONIBILIDAD_HORARIO ?? '').trim() || null,
 			CORR_TIPO_MODALIDAD: perfil.CORR_TIPO_MODALIDAD ?? null,
+			NOMBRE_MODALIDAD: (perfil.NOMBRE_MODALIDAD ?? '').trim() || null,
 			LICENCIA: perfil.LICENCIA ?? false,
 		};
 

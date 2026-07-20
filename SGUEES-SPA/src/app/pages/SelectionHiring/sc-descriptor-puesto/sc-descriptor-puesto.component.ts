@@ -109,7 +109,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_DISPONIBILIDAD_HORARIO: ScDisponibilidadHorarioLookup[] = [];
 	// Lookup de perfil: activas + la disponibilidad ya asociada (si está inactiva).
 	mCORR_DISPONIBILIDAD_HORARIO_EDIT: ScDisponibilidadHorarioLookup[] = [];
+	disponibilidadHorarioLookupColumns = [
+		{ dataField: 'CORR_DISPONIBILIDAD_HORARIO', caption: 'Codigo', width: 90 },
+		{ dataField: 'NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO', caption: 'Disponibilidad', width: 280 },
+	];
 	mCORR_TIPO_MODALIDAD: ScTipoModalidadLookup[] = [];
+	mCORR_TIPO_MODALIDAD_EDIT: ScTipoModalidadLookup[] = [];
+	tipoModalidadLookupColumns = [
+		{ dataField: 'CORR_TIPO_MODALIDAD', caption: 'Codigo', width: 90 },
+		{ dataField: 'MODALIDAD_NOMBRE_CATALOGO', caption: 'Modalidad', width: 280 },
+	];
 	mCORR_INDUCCION: ScInduccionLookupItem[] = [];
 	// Lookup de entrenamiento: activas + la inducción ya asociada al descriptor (si está inactiva).
 	mCORR_INDUCCION_EDIT: ScInduccionLookupItem[] = [];
@@ -557,10 +566,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				next: (response: any) => {
 					if (response?.Result && Array.isArray(response.Data)) {
 						this.mCORR_DISPONIBILIDAD_HORARIO = response.Data.map(
-							(item: ScDisponibilidadHorarioLookup) => ({
-								CORR_DISPONIBILIDAD_HORARIO: Number(item.CORR_DISPONIBILIDAD_HORARIO),
-								NOMBRE_DISPONIBILIDAD_HORARIO: item.NOMBRE_DISPONIBILIDAD_HORARIO ?? '',
-							})
+							(item: ScDisponibilidadHorarioLookup) => {
+								const nombre = (item.NOMBRE_DISPONIBILIDAD_HORARIO ?? '').trim();
+								return {
+									CORR_DISPONIBILIDAD_HORARIO: Number(item.CORR_DISPONIBILIDAD_HORARIO),
+									NOMBRE_DISPONIBILIDAD_HORARIO: nombre,
+									NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO: nombre,
+								};
+							}
 						);
 					} else {
 						this.mCORR_DISPONIBILIDAD_HORARIO = [];
@@ -588,13 +601,24 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			.subscribe({
 				next: (response: any) => {
 					if (response?.Result && Array.isArray(response.Data)) {
-						this.mCORR_TIPO_MODALIDAD = response.Data.map((item: ScTipoModalidadLookup) => ({
-							CORR_TIPO_MODALIDAD: Number(item.CORR_TIPO_MODALIDAD),
-							MODALIDAD_NOMBRE: item.MODALIDAD_NOMBRE ?? '',
-						}));
+						this.mCORR_TIPO_MODALIDAD = response.Data.map((item: ScTipoModalidadLookup) => {
+							const nombre = (item.MODALIDAD_NOMBRE ?? '').trim();
+							return {
+								CORR_TIPO_MODALIDAD: Number(item.CORR_TIPO_MODALIDAD),
+								MODALIDAD_NOMBRE: nombre,
+								MODALIDAD_NOMBRE_CATALOGO: nombre,
+							};
+						});
+					} else {
+						this.mCORR_TIPO_MODALIDAD = [];
 					}
+					this.prepararModalidadLookupParaPerfil();
 				},
-				error: (error) => this.notifyApiError(error),
+				error: (error) => {
+					this.mCORR_TIPO_MODALIDAD = [];
+					this.prepararModalidadLookupParaPerfil();
+					this.notifyApiError(error);
+				},
 			});
 	}
 
@@ -3208,22 +3232,49 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (this.readOnly || !this.perfilEditando) {
 			return;
 		}
-		this.perfil.CORR_DISPONIBILIDAD_HORARIO = value != null && value > 0 ? Number(value) : null;
-		const item = this.mCORR_DISPONIBILIDAD_HORARIO_EDIT.find(
-			(row) => Number(row.CORR_DISPONIBILIDAD_HORARIO) === Number(this.perfil.CORR_DISPONIBILIDAD_HORARIO)
+		const corr = value != null && value > 0 ? Number(value) : null;
+		const fromCatalog = this.mCORR_DISPONIBILIDAD_HORARIO.find(
+			(row) => Number(row.CORR_DISPONIBILIDAD_HORARIO) === Number(corr)
 		);
-		this.perfil.NOMBRE_DISPONIBILIDAD_HORARIO = item?.NOMBRE_DISPONIBILIDAD_HORARIO ?? '';
+		const fromEdit = this.mCORR_DISPONIBILIDAD_HORARIO_EDIT.find(
+			(row) => Number(row.CORR_DISPONIBILIDAD_HORARIO) === Number(corr)
+		);
+		this.perfil.CORR_DISPONIBILIDAD_HORARIO = corr;
+		// Al elegir en el select (aunque sea el mismo corr), tomar el nombre actual del catálogo.
+		this.perfil.NOMBRE_DISPONIBILIDAD_HORARIO =
+			corr == null
+				? ''
+				: (
+						fromCatalog?.NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO ??
+						fromCatalog?.NOMBRE_DISPONIBILIDAD_HORARIO ??
+						fromEdit?.NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO ??
+						''
+				  ).trim();
+		this.prepararDisponibilidadLookupParaPerfil();
 	}
 
 	onPerfilModalidadChanged(value: number | null): void {
 		if (this.readOnly || !this.perfilEditando) {
 			return;
 		}
-		this.perfil.CORR_TIPO_MODALIDAD = value != null && value > 0 ? Number(value) : null;
-		const item = this.mCORR_TIPO_MODALIDAD.find(
-			(row) => Number(row.CORR_TIPO_MODALIDAD) === Number(this.perfil.CORR_TIPO_MODALIDAD)
+		const corr = value != null && value > 0 ? Number(value) : null;
+		const fromCatalog = this.mCORR_TIPO_MODALIDAD.find(
+			(row) => Number(row.CORR_TIPO_MODALIDAD) === Number(corr)
 		);
-		this.perfil.MODALIDAD_NOMBRE = item?.MODALIDAD_NOMBRE ?? '';
+		const fromEdit = this.mCORR_TIPO_MODALIDAD_EDIT.find(
+			(row) => Number(row.CORR_TIPO_MODALIDAD) === Number(corr)
+		);
+		this.perfil.CORR_TIPO_MODALIDAD = corr;
+		this.perfil.NOMBRE_MODALIDAD =
+			corr == null
+				? ''
+				: (
+						fromCatalog?.MODALIDAD_NOMBRE_CATALOGO ??
+						fromCatalog?.MODALIDAD_NOMBRE ??
+						fromEdit?.MODALIDAD_NOMBRE_CATALOGO ??
+						''
+				  ).trim();
+		this.prepararModalidadLookupParaPerfil();
 	}
 
 	onPerfilLicenciaChanged(e: any): void {
@@ -3239,6 +3290,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 		this.perfilOriginal = { ...this.perfil };
 		this.prepararDisponibilidadLookupParaPerfil();
+		this.prepararModalidadLookupParaPerfil();
 		this.perfilEditando = true;
 	}
 
@@ -3281,6 +3333,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.perfilExiste = Number(this.perfil.CORR_PERFIL_PUESTO) > 0;
 					this.perfilOriginal = { ...this.perfil };
 					this.prepararDisponibilidadLookupParaPerfil();
+					this.prepararModalidadLookupParaPerfil();
 					this.perfilEditando = false;
 					this.loadingVisible = false;
 					this.notifyFx('Perfil modificado con exito!', NotifyType.Success, { raw: true });
@@ -3299,6 +3352,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 		this.perfil = { ...this.perfilOriginal };
 		this.prepararDisponibilidadLookupParaPerfil();
+		this.prepararModalidadLookupParaPerfil();
 		this.perfilEditando = false;
 	}
 
@@ -3499,6 +3553,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.resetearEdicionCompetenciasTecnicas();
 		this.resetearEdicionCompetenciasConductuales();
 		this.prepararDisponibilidadLookupParaPerfil();
+		this.prepararModalidadLookupParaPerfil();
 		this.actualizarCompetenciasTecnicasLookupDisponibles();
 		this.actualizarCompetenciasConductualesLookupDisponibles();
 	}
@@ -3535,13 +3590,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							CORR_DISPONIBILIDAD_HORARIO: row.CORR_DISPONIBILIDAD_HORARIO ?? null,
 							NOMBRE_DISPONIBILIDAD_HORARIO: row.NOMBRE_DISPONIBILIDAD_HORARIO ?? '',
 							CORR_TIPO_MODALIDAD: row.CORR_TIPO_MODALIDAD ?? null,
-							MODALIDAD_NOMBRE: row.MODALIDAD_NOMBRE ?? '',
+							NOMBRE_MODALIDAD: row.NOMBRE_MODALIDAD ?? '',
 							LICENCIA: row.LICENCIA ?? PERFIL_PUESTO_DEFAULT.LICENCIA,
 						};
 						this.perfilOriginal = { ...this.perfil };
 						this.perfilEditando = false;
 						this.perfilExiste = true;
 						this.prepararDisponibilidadLookupParaPerfil();
+						this.prepararModalidadLookupParaPerfil();
 						this.cargarEducacion(forzar);
 						this.cargarExperiencia(forzar);
 						this.cargarCompetenciasTecnicas(forzar);
@@ -4054,32 +4110,101 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Activas del catálogo + la disponibilidad ya asociada al perfil (si está inactiva).
+	// NOMBRE_DISPONIBILIDAD_HORARIO (valor cerrado) puede conservar el snapshot del perfil;
+	// NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO se usa en el popup para mostrar el catálogo tal cual.
 	private prepararDisponibilidadLookupParaPerfil(): void {
 		const porCorr = new Map<number, ScDisponibilidadHorarioLookup>();
 
 		for (const item of this.mCORR_DISPONIBILIDAD_HORARIO ?? []) {
 			const corr = Number(item.CORR_DISPONIBILIDAD_HORARIO);
 			if (corr > 0) {
+				const nombreCatalogo = (
+					item.NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO ??
+					item.NOMBRE_DISPONIBILIDAD_HORARIO ??
+					''
+				).trim();
 				porCorr.set(corr, {
 					CORR_DISPONIBILIDAD_HORARIO: corr,
-					NOMBRE_DISPONIBILIDAD_HORARIO: item.NOMBRE_DISPONIBILIDAD_HORARIO ?? '',
+					NOMBRE_DISPONIBILIDAD_HORARIO: nombreCatalogo,
+					NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO: nombreCatalogo,
 				});
 			}
 		}
 
 		const corrAsociada = Number(this.perfil?.CORR_DISPONIBILIDAD_HORARIO);
-		if (corrAsociada > 0 && !porCorr.has(corrAsociada)) {
-			porCorr.set(corrAsociada, {
-				CORR_DISPONIBILIDAD_HORARIO: corrAsociada,
-				NOMBRE_DISPONIBILIDAD_HORARIO:
-					(this.perfil?.NOMBRE_DISPONIBILIDAD_HORARIO ?? '').trim() ||
-					`Disponibilidad ${corrAsociada}`,
-			});
+		const nombreDescriptor = (this.perfil?.NOMBRE_DISPONIBILIDAD_HORARIO ?? '').trim();
+		if (corrAsociada > 0) {
+			const existente = porCorr.get(corrAsociada);
+			if (existente) {
+				porCorr.set(corrAsociada, {
+					CORR_DISPONIBILIDAD_HORARIO: corrAsociada,
+					NOMBRE_DISPONIBILIDAD_HORARIO: nombreDescriptor || existente.NOMBRE_DISPONIBILIDAD_HORARIO,
+					NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO:
+						existente.NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO ||
+						existente.NOMBRE_DISPONIBILIDAD_HORARIO,
+				});
+			} else {
+				porCorr.set(corrAsociada, {
+					CORR_DISPONIBILIDAD_HORARIO: corrAsociada,
+					NOMBRE_DISPONIBILIDAD_HORARIO: nombreDescriptor || `Disponibilidad ${corrAsociada}`,
+					NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO:
+						nombreDescriptor || `Disponibilidad ${corrAsociada}`,
+				});
+			}
 		}
 
 		this.mCORR_DISPONIBILIDAD_HORARIO_EDIT = Array.from(porCorr.values()).sort((a, b) =>
-			(a.NOMBRE_DISPONIBILIDAD_HORARIO || '').localeCompare(
-				b.NOMBRE_DISPONIBILIDAD_HORARIO || '',
+			(
+				a.NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO ||
+				a.NOMBRE_DISPONIBILIDAD_HORARIO ||
+				''
+			).localeCompare(
+				b.NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO || b.NOMBRE_DISPONIBILIDAD_HORARIO || '',
+				'es',
+				{ sensitivity: 'base' }
+			)
+		);
+	}
+
+	// Activas del catálogo + la modalidad ya asociada al perfil (si está inactiva).
+	private prepararModalidadLookupParaPerfil(): void {
+		const porCorr = new Map<number, ScTipoModalidadLookup>();
+
+		for (const item of this.mCORR_TIPO_MODALIDAD ?? []) {
+			const corr = Number(item.CORR_TIPO_MODALIDAD);
+			if (corr > 0) {
+				const nombreCatalogo = (item.MODALIDAD_NOMBRE_CATALOGO ?? item.MODALIDAD_NOMBRE ?? '').trim();
+				porCorr.set(corr, {
+					CORR_TIPO_MODALIDAD: corr,
+					MODALIDAD_NOMBRE: nombreCatalogo,
+					MODALIDAD_NOMBRE_CATALOGO: nombreCatalogo,
+				});
+			}
+		}
+
+		const corrAsociada = Number(this.perfil?.CORR_TIPO_MODALIDAD);
+		const nombreDescriptor = (this.perfil?.NOMBRE_MODALIDAD ?? '').trim();
+		if (corrAsociada > 0) {
+			const existente = porCorr.get(corrAsociada);
+			if (existente) {
+				porCorr.set(corrAsociada, {
+					CORR_TIPO_MODALIDAD: corrAsociada,
+					MODALIDAD_NOMBRE: nombreDescriptor || existente.MODALIDAD_NOMBRE,
+					MODALIDAD_NOMBRE_CATALOGO:
+						existente.MODALIDAD_NOMBRE_CATALOGO || existente.MODALIDAD_NOMBRE,
+				});
+			} else {
+				porCorr.set(corrAsociada, {
+					CORR_TIPO_MODALIDAD: corrAsociada,
+					MODALIDAD_NOMBRE: nombreDescriptor || `Modalidad ${corrAsociada}`,
+					MODALIDAD_NOMBRE_CATALOGO: nombreDescriptor || `Modalidad ${corrAsociada}`,
+				});
+			}
+		}
+
+		this.mCORR_TIPO_MODALIDAD_EDIT = Array.from(porCorr.values()).sort((a, b) =>
+			(a.MODALIDAD_NOMBRE_CATALOGO || a.MODALIDAD_NOMBRE || '').localeCompare(
+				b.MODALIDAD_NOMBRE_CATALOGO || b.MODALIDAD_NOMBRE || '',
 				'es',
 				{ sensitivity: 'base' }
 			)

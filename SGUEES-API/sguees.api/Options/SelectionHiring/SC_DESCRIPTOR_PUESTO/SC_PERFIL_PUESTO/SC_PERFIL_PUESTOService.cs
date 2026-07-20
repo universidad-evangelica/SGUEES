@@ -129,7 +129,7 @@ namespace SGUEES.Services
             return null;
         }
 
-        // Normaliza los códigos de catálogo opcionales del perfil del puesto.
+        // Normaliza códigos de catálogo y recorta snapshots de nombre del perfil.
         private static void NormalizarCatalogos(SC_PERFIL_PUESTOTable Data)
         {
             if (!string.IsNullOrWhiteSpace(Data.SEXO))
@@ -140,6 +140,34 @@ namespace SGUEES.Services
             if (!string.IsNullOrWhiteSpace(Data.ESTADO_FAMILIAR))
             {
                 Data.ESTADO_FAMILIAR = Data.ESTADO_FAMILIAR.Trim().ToUpperInvariant();
+            }
+
+            Data.NOMBRE_DISPONIBILIDAD_HORARIO = string.IsNullOrWhiteSpace(Data.NOMBRE_DISPONIBILIDAD_HORARIO)
+                ? null
+                : Data.NOMBRE_DISPONIBILIDAD_HORARIO.Trim();
+            if (Data.NOMBRE_DISPONIBILIDAD_HORARIO?.Length > 150)
+            {
+                Data.NOMBRE_DISPONIBILIDAD_HORARIO = Data.NOMBRE_DISPONIBILIDAD_HORARIO.Substring(0, 150);
+            }
+
+            Data.NOMBRE_MODALIDAD = string.IsNullOrWhiteSpace(Data.NOMBRE_MODALIDAD)
+                ? null
+                : Data.NOMBRE_MODALIDAD.Trim();
+            if (Data.NOMBRE_MODALIDAD?.Length > 100)
+            {
+                Data.NOMBRE_MODALIDAD = Data.NOMBRE_MODALIDAD.Substring(0, 100);
+            }
+
+            if (!(Data.CORR_DISPONIBILIDAD_HORARIO > 0))
+            {
+                Data.CORR_DISPONIBILIDAD_HORARIO = null;
+                Data.NOMBRE_DISPONIBILIDAD_HORARIO = null;
+            }
+
+            if (!(Data.CORR_TIPO_MODALIDAD > 0))
+            {
+                Data.CORR_TIPO_MODALIDAD = null;
+                Data.NOMBRE_MODALIDAD = null;
             }
         }
 

@@ -15,7 +15,7 @@ namespace SGUEES.Models
         public int? CORR_DISPONIBILIDAD_HORARIO { get; set; }
         public string NOMBRE_DISPONIBILIDAD_HORARIO { get; set; }
         public int? CORR_TIPO_MODALIDAD { get; set; }
-        public string MODALIDAD_NOMBRE { get; set; }
+        public string NOMBRE_MODALIDAD { get; set; }
         public bool? LICENCIA { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }

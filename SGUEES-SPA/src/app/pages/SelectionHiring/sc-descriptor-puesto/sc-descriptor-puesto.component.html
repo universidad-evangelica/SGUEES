@@ -673,20 +673,24 @@
 													(valueChange)="onPerfilDisponibilidadChanged($event)"
 													[valueExpr]="'CORR_DISPONIBILIDAD_HORARIO'"
 													[displayExpr]="'NOMBRE_DISPONIBILIDAD_HORARIO'"
+													[lookupColumns]="disponibilidadHorarioLookupColumns"
 													[selectedRowKeys]="selectedLookUpCORR_DISPONIBILIDAD_HORARIO"
 													[readOnly]="readOnly || !perfilEditando"
+													[dropDownWidth]="420"
 												></app-data-lookup>
 											</div>
 											<div class="descriptor-perfil-field">
 												<label class="descriptor-perfil-label">Modalidad</label>
 												<app-data-lookup
-													[model]="mCORR_TIPO_MODALIDAD"
+													[model]="mCORR_TIPO_MODALIDAD_EDIT"
 													[value]="perfil.CORR_TIPO_MODALIDAD"
 													(valueChange)="onPerfilModalidadChanged($event)"
 													[valueExpr]="'CORR_TIPO_MODALIDAD'"
 													[displayExpr]="'MODALIDAD_NOMBRE'"
+													[lookupColumns]="tipoModalidadLookupColumns"
 													[selectedRowKeys]="selectedLookUpCORR_TIPO_MODALIDAD"
 													[readOnly]="readOnly || !perfilEditando"
+													[dropDownWidth]="420"
 												></app-data-lookup>
 											</div>
 											<div class="descriptor-perfil-field">
@@ -1293,6 +1297,7 @@
 											[width]="140"
 											[minWidth]="120"
 											[allowSorting]="true"
+											[visible]="competenciasConductualesEditando"
 											[allowEditing]="competenciasConductualesEditando && !readOnly"
 											[calculateDisplayValue]="competenciaConductualCatalogDisplay"
 											[setCellValue]="setCompetenciaConductualCellValue"
