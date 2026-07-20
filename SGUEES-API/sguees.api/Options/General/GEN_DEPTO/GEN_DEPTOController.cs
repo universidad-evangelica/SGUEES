@@ -11,15 +11,15 @@ using SGUEES.Services;
 
 namespace SGUEES.Controllers
 {
-	// API HTTP del catálogo de departamentos: autentica, aplica empresa de sesión y delega al servicio.
 	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
+	// Qué hace: expone el CRUD de departamentos y lookups para estructura territorial.
 	public class GEN_DEPTOController : ControllerBase
 	{
 		private readonly IGEN_DEPTOService _service;
 
-		// Inyecta el servicio de departamentos; falla si no está registrado.
+		// Qué hace: inyecta el servicio; falla si no está registrado.
 		public GEN_DEPTOController(IGEN_DEPTOService service)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(service));
@@ -27,7 +27,8 @@ namespace SGUEES.Controllers
 
 		[HttpGet("GetAll")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
-		// Atiende la consulta del listado de departamentos y la limita a la empresa de la sesión.
+		// Qué hace: lista departamentos y la limita a la empresa de la sesión.
+		// Cómo: llama a GetAllAsync del servicio.
 		public async Task<CResult> GetAll([FromQuery] GEN_DEPTOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -36,7 +37,8 @@ namespace SGUEES.Controllers
 
 		[HttpGet("Get")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
-		// Atiende la consulta de un departamento específico dentro de la empresa de la sesión.
+		// Qué hace: obtiene departamento específico dentro de la empresa de la sesión.
+		// Cómo: llama a GetAsync del servicio.
 		public async Task<CResult> Get([FromQuery] GEN_DEPTOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -45,7 +47,8 @@ namespace SGUEES.Controllers
 
 		[HttpGet("GetCORR_DEPTO_GEN_EMPRESA")]
 		[Authorize(Policy = "/gen-empresa|R")]
-		// Expone el catálogo de departamentos requerido por el mantenimiento relacionado y aplica el contexto de empresa.
+		// Qué hace: entrega el catálogo de departamentos requerido por el mantenimiento relacionado y aplica el contexto de empresa.
+		// Cómo: llama a GetAllAsync del servicio.
 		public async Task<CResult> GetCORR_DEPTO_GEN_EMPRESA([FromQuery] GEN_DEPTOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -59,7 +62,8 @@ namespace SGUEES.Controllers
 
 		[HttpGet("GetCORR_DEPTO_GEN_ESTRUCTURA_TERRITORIAL")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
-		// Expone el catálogo de departamentos requerido por el mantenimiento relacionado y aplica el contexto de empresa.
+		// Qué hace: entrega el catálogo de departamentos requerido por el mantenimiento relacionado y aplica el contexto de empresa.
+		// Cómo: llama a GetAllAsync del servicio.
 		public async Task<CResult> GetCORR_DEPTO_GEN_ESTRUCTURA_TERRITORIAL([FromQuery] GEN_DEPTOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -68,7 +72,8 @@ namespace SGUEES.Controllers
 
 		[HttpGet("GetCODIGO_DEPTO_COM_PROVEEDOR")]
 		[Authorize(Policy = "/com-proveedor|R")]
-		// Expone el catálogo de departamentos requerido por el mantenimiento relacionado y aplica el contexto de empresa.
+		// Qué hace: entrega el catálogo de departamentos requerido por el mantenimiento relacionado y aplica el contexto de empresa.
+		// Cómo: llama a GetAllAsync del servicio.
 		public async Task<CResult> GetCODIGO_DEPTO_COM_PROVEEDOR([FromQuery] GEN_DEPTOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -82,7 +87,8 @@ namespace SGUEES.Controllers
 
 		[HttpPost]
 		[Authorize(Policy = "/gen-estructura-territorial|C")]
-		// Prepara auditoría, crea el departamento y traduce el resultado al estado HTTP correspondiente.
+		// Qué hace: crea departamento
+		// Cómo: valida empresa, SetCreateAudit y CreateAsync del servicio.
 		public async Task<IActionResult> Post(GEN_DEPTOTable Data)
 		{
 			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
@@ -97,7 +103,8 @@ namespace SGUEES.Controllers
 
 		[HttpPut]
 		[Authorize(Policy = "/gen-estructura-territorial|U")]
-		// Aplica las claves de la solicitud, prepara auditoría y actualiza el departamento.
+		// Qué hace: actualiza departamento
+		// Cómo: ApplyQueryKeys/SetUpdateAudit y UpdateAsync del servicio.
 		public async Task<IActionResult> Put(GEN_DEPTOTable Data)
 		{
 			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
@@ -112,7 +119,8 @@ namespace SGUEES.Controllers
 
 		[HttpDelete]
 		[Authorize(Policy = "/gen-estructura-territorial|D")]
-		// Valida el contexto de empresa y elimina el departamento indicada por sus claves.
+		// Qué hace: elimina departamento indicada por sus claves.
+		// Cómo: ValidateEmpresaSesion y DeleteAsync del servicio.
 		public async Task<IActionResult> Delete([FromQuery] GEN_DEPTOTable Data)
 		{
 			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
@@ -124,20 +132,20 @@ namespace SGUEES.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
-		// Obtiene la empresa asociada a la sesión para aislar las operaciones del usuario.
+		// Qué hace: obtiene CORR_EMPRESA del token de sesión.
 		private int GetCorrEmpresa()
 		{
 			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
 			return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
 		}
 
-		// Obtiene el identificador del usuario autenticado para registrar la auditoría.
+		// Qué hace: obtiene el usuario autenticado para auditoría.
 		private string GetUsuario()
 		{
 			return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
 		}
 
-		// Verifica que la sesión tenga una empresa válida y prepara una respuesta controlada si falta.
+		// Qué hace: verifica que la sesión tenga una empresa válida antes de guardar.
 		private bool ValidateEmpresaSesion(out CResult resultado)
 		{
 			if (GetCorrEmpresa() > 0)
@@ -161,7 +169,7 @@ namespace SGUEES.Controllers
 			return false;
 		}
 
-		// Completa la empresa y los datos de auditoría requeridos para crear el registro.
+		// Qué hace: completa auditoría al crear un registro.
 		private void SetCreateAudit(GEN_DEPTOTable Data)
 		{
 			Data.USUARIO_CREA = GetUsuario();
@@ -172,7 +180,7 @@ namespace SGUEES.Controllers
 			Data.FECHA_ACTU = Data.FECHA_CREA;
 		}
 
-		// Completa la empresa y los datos de auditoría requeridos para actualizar el registro.
+		// Qué hace: completa auditoría al actualizar un registro.
 		private void SetUpdateAudit(GEN_DEPTOTable Data)
 		{
 			Data.USUARIO_ACTU = GetUsuario();

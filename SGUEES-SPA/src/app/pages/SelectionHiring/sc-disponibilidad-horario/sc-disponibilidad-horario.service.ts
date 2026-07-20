@@ -1,4 +1,5 @@
-// Servicio de negocio del catálogo Disponibilidad de Horario (validación, CRUD y config de grilla/form).
+// Qué hace: servicio de negocio del catálogo Disponibilidad de Horario.
+// Cómo: valida los datos, ejecuta el CRUD a través del repositorio y arma la configuración de grilla y formulario.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -12,11 +13,13 @@ import { ScDisponibilidadHorarioRepository } from './sc-disponibilidad-horario.r
 const ESTADO_FIELD = 'ESTADO_DISPONIBILIDAD_HORARIO';
 
 @Injectable({ providedIn: 'root' })
-// Encapsula validaciones y delega el CRUD en el repositorio de disponibilidad de horario.
+// Qué hace: servicio de disponibilidad de horario.
+// Cómo: valida los datos y llama a ScDisponibilidadHorarioRepository para ejecutar el CRUD.
 export class ScDisponibilidadHorarioService {
 	constructor(private repo: ScDisponibilidadHorarioRepository) {}
 
-	// Valida el nombre obligatorio y su longitud antes del guardado.
+	// Qué hace: valida el formulario de disponibilidad de horario antes de guardar.
+	// Cómo: revisa que NOMBRE_DISPONIBILIDAD_HORARIO no esté vacío y no supere 150 caracteres, notificando con msg cuando falla.
 	esValido(model: ScDisponibilidadHorario, msg: Function): boolean {
 		if (!model.NOMBRE_DISPONIBILIDAD_HORARIO || model.NOMBRE_DISPONIBILIDAD_HORARIO.trim() === '') {
 			msg('Debe ingresar el nombre de la disponibilidad de horario.', NotifyType.Warning);
@@ -31,37 +34,44 @@ export class ScDisponibilidadHorarioService {
 		return true;
 	}
 
-	// Solicita al repositorio el listado con los filtros construidos.
+	// Qué hace: obtiene el listado de disponibilidades de horario.
+	// Cómo: llama a getAll del repositorio con el filtro construido por buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	// Solicita al repositorio el detalle por correlativo.
+	// Qué hace: obtiene una disponibilidad de horario puntual.
+	// Cómo: llama a get del repositorio filtrando por CORR_DISPONIBILIDAD_HORARIO.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: param.CORR_DISPONIBILIDAD_HORARIO }]);
 	}
 
-	// Delega en el repositorio la creación del registro.
+	// Qué hace: crea una nueva disponibilidad de horario.
+	// Cómo: llama a create del repositorio con el modelo recibido.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
-	// Delega en el repositorio la actualización con su llave.
+	// Qué hace: actualiza una disponibilidad de horario existente.
+	// Cómo: llama a update del repositorio con el modelo y su CORR_DISPONIBILIDAD_HORARIO.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: model.CORR_DISPONIBILIDAD_HORARIO }]);
 	}
 
-	// Delega en el repositorio la eliminación por correlativo.
+	// Qué hace: elimina una disponibilidad de horario.
+	// Cómo: llama a delete del repositorio filtrando por CORR_DISPONIBILIDAD_HORARIO.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: model.CORR_DISPONIBILIDAD_HORARIO }]);
 	}
 
-	// Delega en el repositorio el cambio de estado activo/inactivo.
+	// Qué hace: cambia el estado activo/inactivo de una disponibilidad de horario.
+	// Cómo: llama a activarInactivar del repositorio filtrando por CORR_DISPONIBILIDAD_HORARIO.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: model.CORR_DISPONIBILIDAD_HORARIO }]);
 	}
 
-	// Define columnas y formatos de la grilla de mantenimiento.
+	// Qué hace: define columnas y formatos de la grilla de mantenimiento.
+	// Cómo: arma el arreglo de columnas (correlativo, nombre, estado y auditoría) usado por app-data-grid-mtto.
 	getColumns(): any {
 		return [
 			{
@@ -77,7 +87,8 @@ export class ScDisponibilidadHorarioService {
 		];
 	}
 
-	// Configura el contador de registros de la grilla.
+	// Qué hace: configura el contador de registros de la grilla.
+	// Cómo: define el resumen totalItems que cuenta CORR_DISPONIBILIDAD_HORARIO.
 	getSummary(): any {
 		return {
 			totalItems: [
@@ -91,7 +102,8 @@ export class ScDisponibilidadHorarioService {
 		};
 	}
 
-	// Define los campos y reglas del formulario de disponibilidad.
+	// Qué hace: define los campos y reglas del formulario de disponibilidad de horario.
+	// Cómo: arma el arreglo de items (correlativo, nombre y estado) usado por dx-form.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_DISPONIBILIDAD_HORARIO', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -106,7 +118,8 @@ export class ScDisponibilidadHorarioService {
 		];
 	}
 
-	// Traduce los filtros del componente al formato esperado por la API.
+	// Qué hace: traduce los filtros del componente al formato esperado por la API.
+	// Cómo: agrega a xWhere el parámetro CORR_DISPONIBILIDAD_HORARIO cuando viene informado en param.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

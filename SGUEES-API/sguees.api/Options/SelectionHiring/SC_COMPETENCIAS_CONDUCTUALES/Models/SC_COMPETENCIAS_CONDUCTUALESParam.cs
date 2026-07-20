@@ -1,9 +1,11 @@
-// Parámetros de consulta/filtro de competencia conductual.
+// Qué hace: parámetros de consulta/filtro de competencia conductual.
+// Cómo: extiende BaseParam con los campos usados para buscar, paginar y ordenar el catálogo.
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
-  // Filtros y opciones de paginación/orden para consultas de competencia conductual.
+  // Qué hace: representa los filtros y opciones de paginación/orden para consultar competencia conductual.
+  // Cómo: además de las claves propias (CORR_EMPRESA, CORR_COMPETENCIAS_CONDUCTUALES), hereda de BaseParam los campos genéricos de búsqueda, filtros de grilla, paginación y orden.
   public class SC_COMPETENCIAS_CONDUCTUALESParam : BaseParam
   {
     public int CORR_EMPRESA { get; set; }

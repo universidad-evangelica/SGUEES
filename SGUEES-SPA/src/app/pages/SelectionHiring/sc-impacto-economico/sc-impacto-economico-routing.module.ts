@@ -1,4 +1,5 @@
-// Routing y declaraciones DevExtreme/layout de la vista Impacto Económico.
+// Qué hace: routing y declaraciones DevExtreme/layout de la vista Impacto Económico.
+// Cómo: registra la ruta del componente ScImpactoEconomicoComponent junto con los módulos DevExtreme y de layout que usa.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
@@ -13,7 +14,8 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { ScImpactoEconomicoComponent } from './sc-impacto-economico.component';
 
-// Ruta lazy y declaraciones DevExtreme del mantenimiento de impacto económico.
+// Qué hace: ruta lazy del mantenimiento de impacto económico.
+// Cómo: asocia la ruta vacía ('') con ScImpactoEconomicoComponent.
 const routes: Routes = [{ path: '', component: ScImpactoEconomicoComponent }];
 
 @NgModule({
@@ -33,5 +35,6 @@ const routes: Routes = [{ path: '', component: ScImpactoEconomicoComponent }];
 	exports: [RouterModule],
 	declarations: [ScImpactoEconomicoComponent],
 })
-// Declara el componente y registra la ruta hija del catálogo.
+// Qué hace: módulo de routing de Impacto Económico.
+// Cómo: declara ScImpactoEconomicoComponent, importa los módulos DevExtreme/layout necesarios y expone RouterModule con las rutas hijas del catálogo.
 export class ScImpactoEconomicoRoutingModule {}

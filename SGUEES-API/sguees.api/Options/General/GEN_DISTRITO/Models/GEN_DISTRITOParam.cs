@@ -2,15 +2,15 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
-	// Parámetros de consulta/filtro de distritos (jerarquía territorial y grilla remota).
+	// Qué hace: define los parámetros de consulta y filtro de distritos (jerarquía territorial y grilla remota).
 	public class GEN_DISTRITOParam : BaseParam
 	{
-		// Empresa de sesión para aislar el contexto.
+		// Qué hace: correlativo de empresa (filtro de ámbito).
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_PAIS { get; set; }
 		public int CORR_DEPTO { get; set; }
 		public int CORR_MUNICIPIO { get; set; }
-		// Clave del distrito.
+		// Qué hace: correlativo del distrito.
 		public int CORR_DISTRITO { get; set; }
 		public string BUSQUEDA { get; set; }
 		public string NOMBRE_DISTRITO { get; set; }
@@ -20,7 +20,7 @@ namespace SGUEES.Models
 		public string USUARIO_ACTU { get; set; }
 		public string ESTACION_ACTU { get; set; }
 		public string FECHA_ACTU { get; set; }
-		// Opción y filtros remotos de grilla.
+		// Qué hace: opción y filtros remotos de grilla.
 		public int OPCION_CONSULTA { get; set; } = 0;
 		public string DISTINCT_FIELD { get; set; }
 		public string HEADER_FILTER_SEARCH { get; set; }

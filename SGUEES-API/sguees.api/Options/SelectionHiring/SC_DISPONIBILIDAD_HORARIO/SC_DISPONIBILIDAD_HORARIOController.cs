@@ -1,4 +1,5 @@
-// Endpoints REST del catálogo disponibilidad de horario.
+// Qué hace: endpoints REST del catálogo disponibilidad de horario.
+// Cómo: expone GetAll, Get, Post, Put, Delete y ActivarInactivar, llamando a ISC_DISPONIBILIDAD_HORARIOService.
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -15,7 +16,8 @@ namespace SGUEES.Controllers
     [Authorize]
     [ApiController]
     [Route("[controller]")]
-    // Expone el CRUD y lookups de disponibilidad de horario con autorización por política.
+    // Qué hace: controlador de disponibilidad de horario.
+    // Cómo: expone el CRUD y el lookup de disponibilidades activas, cada acción protegida con Authorize por política.
     public class SC_DISPONIBILIDAD_HORARIOController : ControllerBase
     {
         private readonly ISC_DISPONIBILIDAD_HORARIOService _service;
@@ -27,7 +29,8 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-disponibilidad-horario|R")]
-        // Atiende el listado y lo limita a la empresa de la sesión.
+        // Qué hace: atiende el listado de disponibilidades de horario.
+        // Cómo: fija CORR_EMPRESA de la sesión y llama a GetAllAsync del servicio.
         public async Task<CResult> GetAll([FromQuery] SC_DISPONIBILIDAD_HORARIOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -36,7 +39,8 @@ namespace SGUEES.Controllers
 
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-disponibilidad-horario|R")]
-        // Atiende la consulta de un registro dentro de la empresa de la sesión.
+        // Qué hace: atiende la consulta de una disponibilidad de horario puntual.
+        // Cómo: fija CORR_EMPRESA de la sesión y llama a GetAsync del servicio.
         public async Task<CResult> Get([FromQuery] SC_DISPONIBILIDAD_HORARIOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -45,7 +49,8 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetCORR_DISPONIBILIDAD_HORARIO_SC_DESCRIPTOR_PUESTO")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
-        // Provee disponibilidades activas para el descriptor.
+        // Qué hace: provee disponibilidades activas para el perfil del descriptor de puesto.
+        // Cómo: fija CORR_EMPRESA de la sesión y llama a GetDisponibilidadesActivasAsync del servicio.
         public async Task<CResult> GetCORR_DISPONIBILIDAD_HORARIO_SC_DESCRIPTOR_PUESTO([FromQuery] SC_DISPONIBILIDAD_HORARIOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -54,7 +59,8 @@ namespace SGUEES.Controllers
 
         [HttpPost]
         [Authorize(Policy = "/sc-disponibilidad-horario|C")]
-        // Completa auditoría antes de crear la disponibilidad.
+        // Qué hace: crea una disponibilidad de horario.
+        // Cómo: completa la auditoría con SetCreateAudit y llama a CreateAsync del servicio.
         public async Task<IActionResult> Post(SC_DISPONIBILIDAD_HORARIOTable Data)
         {
             SetCreateAudit(Data);
@@ -65,7 +71,8 @@ namespace SGUEES.Controllers
 
         [HttpPut]
         [Authorize(Policy = "/sc-disponibilidad-horario|U")]
-        // Aplica la llave consultada y la auditoría antes de actualizar.
+        // Qué hace: actualiza una disponibilidad de horario.
+        // Cómo: aplica las claves de la consulta con ApplyQueryKeys, completa la auditoría con SetUpdateAudit y llama a UpdateAsync del servicio.
         public async Task<IActionResult> Put(SC_DISPONIBILIDAD_HORARIOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(SC_DISPONIBILIDAD_HORARIOTable.CORR_DISPONIBILIDAD_HORARIO));
@@ -77,7 +84,8 @@ namespace SGUEES.Controllers
 
         [HttpDelete]
         [Authorize(Policy = "/sc-disponibilidad-horario|D")]
-        // Restringe la eliminación a la empresa de la sesión.
+        // Qué hace: elimina una disponibilidad de horario.
+        // Cómo: fija CORR_EMPRESA de la sesión y llama a DeleteAsync del servicio.
         public async Task<IActionResult> Delete([FromQuery] SC_DISPONIBILIDAD_HORARIOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -88,7 +96,8 @@ namespace SGUEES.Controllers
 
         [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/sc-disponibilidad-horario|U")]
-        // Cambia el estado activo/inactivo del registro indicado.
+        // Qué hace: cambia el estado activo/inactivo de una disponibilidad de horario.
+        // Cómo: aplica las claves de la consulta, fija CORR_EMPRESA de la sesión y llama a ActivarInactivarAsync del servicio.
         public async Task<IActionResult> ActivarInactivar(SC_DISPONIBILIDAD_HORARIOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(SC_DISPONIBILIDAD_HORARIOTable.CORR_DISPONIBILIDAD_HORARIO));
@@ -98,20 +107,23 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
-        // Lee CORR_EMPRESA del claim del usuario autenticado.
+        // Qué hace: obtiene la empresa de la sesión.
+        // Cómo: lee el claim CORR_EMPRESA del usuario autenticado.
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
-        // Obtiene el identificador de usuario desde los claims.
+        // Qué hace: obtiene el usuario de la sesión.
+        // Cómo: lee el claim NameIdentifier del usuario autenticado.
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
-        // Completa empresa, usuario, estación y fechas del registro nuevo.
+        // Qué hace: completa la auditoría de creación.
+        // Cómo: fija CORR_EMPRESA, usuario, estación y fechas de creación/actualización, y aplica ESTADO_DISPONIBILIDAD_HORARIO activo por defecto.
         private void SetCreateAudit(SC_DISPONIBILIDAD_HORARIOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -124,7 +136,8 @@ namespace SGUEES.Controllers
             Data.ESTADO_DISPONIBILIDAD_HORARIO ??= true;
         }
 
-        // Actualiza auditoría sin reemplazar la información de creación.
+        // Qué hace: completa la auditoría de actualización.
+        // Cómo: fija CORR_EMPRESA, usuario, estación y fecha de actualización, y aplica ESTADO_DISPONIBILIDAD_HORARIO activo si no viene informado.
         private void SetUpdateAudit(SC_DISPONIBILIDAD_HORARIOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

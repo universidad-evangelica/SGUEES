@@ -10,7 +10,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-    // Ejecuta CRUD y consultas sobre la tabla/vista de requerimiento organizacional.
+    // Qué hace: ejecuta el CRUD y las consultas SQL sobre la tabla y la vista de requerimiento organizacional.
     public class SC_REQUERIMIENTO_ORGANIZACIONALRepository : BaseRepository<SC_REQUERIMIENTO_ORGANIZACIONALTable>, ISC_REQUERIMIENTO_ORGANIZACIONALRepository
     {
         private const string _TableName = "SC_REQUERIMIENTO_ORGANIZACIONAL";
@@ -25,7 +25,8 @@ namespace SGUEES.Repositories
         {
         }
 
-        // Lee el listado desde la vista filtrado por empresa.
+        // Qué hace: lista los requerimientos organizacionales de la vista V_SC_REQUERIMIENTO_ORGANIZACIONAL.
+        // Cómo: filtra por CORR_EMPRESA y ordena por CORR_REQUERIMIENTO_ORGANIZACIONAL.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -69,7 +70,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Lee un registro por llave desde la vista.
+        // Qué hace: obtiene un requerimiento organizacional de la vista V_SC_REQUERIMIENTO_ORGANIZACIONAL.
+        // Cómo: lee con los filtros recibidos en xWhere (empresa e id).
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -107,7 +109,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Inserta el registro y controla duplicados de nombre/código.
+        // Qué hace: inserta un requerimiento organizacional nuevo.
+        // Cómo: llama a Insert sobre SC_REQUERIMIENTO_ORGANIZACIONAL y devuelve el registro creado leído desde la vista; controla claves duplicadas.
         public async Task<CResult> CreateAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -167,7 +170,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Actualiza el registro validando unicidad.
+        // Qué hace: actualiza un requerimiento organizacional existente.
+        // Cómo: llama a Update sobre SC_REQUERIMIENTO_ORGANIZACIONAL por CORR_EMPRESA y CORR_REQUERIMIENTO_ORGANIZACIONAL; controla claves duplicadas.
         public async Task<CResult> UpdateAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -222,7 +226,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Elimina el registro; propaga errores de integridad.
+        // Qué hace: elimina un requerimiento organizacional.
+        // Cómo: llama a Delete sobre SC_REQUERIMIENTO_ORGANIZACIONAL por CORR_EMPRESA y CORR_REQUERIMIENTO_ORGANIZACIONAL; informa si hay registros relacionados.
         public async Task<CResult> DeleteAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -260,7 +265,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Invierte el estado activo/inactivo del registro.
+        // Qué hace: cambia el estado activo/inactivo de un requerimiento organizacional.
+        // Cómo: ejecuta el stored procedure PRAL_MTTO_CATALOGO_ESTADO_BIT y devuelve el registro actualizado leído desde la vista.
         public async Task<CResult> ActivarInactivarAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -333,7 +339,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Comprueba si otro requerimiento utiliza la misma descripción.
+        // Qué hace: comprueba si otro requerimiento organizacional utiliza la misma descripción.
+        // Cómo: SELECT TOP 1 sobre la vista comparando descripción normalizada y excluyendo el correlativo indicado.
         public async Task<bool> ExistsDescripcionAsync(int corrEmpresa, string descripcion, int excludeCorr)
         {
             if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(descripcion))
@@ -366,7 +373,8 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Recupera requerimientos activos para el lookup del descriptor.
+        // Qué hace: recupera los requerimientos organizacionales activos para el lookup del descriptor.
+        // Cómo: SELECT directo a la vista filtrando por empresa y ESTADO_REQUERIMIENTO_ORGANIZACIONAL, ordenado por descripción.
         public async Task<List<SC_REQUERIMIENTO_ORGANIZACIONALView>> GetCatalogoDescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)
@@ -407,7 +415,7 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Detecta errores de clave duplicada de SQL Server.
+        // Qué hace: detecta errores de clave duplicada de SQL Server.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

@@ -1,4 +1,4 @@
-// Modelo de departamento (GEN_DEPTO) dentro de la cascada territorial.
+// Qué hace: define la estructura de un departamento en Angular (GEN_DEPTO).
 export interface GenDepto {
 	CORR_PAIS: number;
 	CORR_DEPTO: number;

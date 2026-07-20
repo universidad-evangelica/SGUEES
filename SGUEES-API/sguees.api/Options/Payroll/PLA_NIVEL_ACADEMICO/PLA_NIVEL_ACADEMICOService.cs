@@ -1,3 +1,4 @@
+// Qué hace: aplica las reglas de negocio del catálogo nivel académico antes de llamar al repositorio.
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -6,7 +7,7 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
-    // Valida y orquesta el mantenimiento de nivel académico vía repositorio.
+    // Qué hace: valida los datos de nivel académico y coordina su persistencia con el repositorio.
     public class PLA_NIVEL_ACADEMICOService : IPLA_NIVEL_ACADEMICOService
     {
         private readonly IPLA_NIVEL_ACADEMICORepository _repo;
@@ -16,13 +17,15 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
-        // Consulta todos los niveles académicos de la empresa indicada.
+        // Qué hace: lista los niveles académicos según los filtros recibidos.
+        // Cómo: llama a GetAllAsync del repositorio con los parámetros armados en BuildParameters.
         public async Task<CResult> GetAllAsync(PLA_NIVEL_ACADEMICOParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
-        // Obtiene un nivel por empresa y correlativo.
+        // Qué hace: obtiene un nivel académico por su correlativo.
+        // Cómo: llama a GetAsync del repositorio con CORR_EMPRESA y CORR_NIVEL_ACADEMICO.
         public async Task<CResult> GetAsync(PLA_NIVEL_ACADEMICOParam xWhere)
         {
             var p = new List<CParameter>
@@ -34,7 +37,8 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
-        // Valida y normaliza los datos antes de crear el nivel académico.
+        // Qué hace: crea un nivel académico nuevo.
+        // Cómo: valida empresa de sesión y datos con Validate, normaliza el nombre y llama a CreateAsync del repositorio.
         public async Task<CResult> CreateAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -53,7 +57,8 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida la empresa, los datos y el identificador antes de actualizar.
+        // Qué hace: actualiza un nivel académico existente.
+        // Cómo: valida empresa, datos y llave; normaliza el nombre y llama a UpdateAsync del repositorio.
         public async Task<CResult> UpdateAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -77,7 +82,8 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Verifica la empresa de sesión antes de solicitar la eliminación.
+        // Qué hace: elimina un nivel académico de la empresa en sesión.
+        // Cómo: valida la empresa con ValidateEmpresaSesion y llama a DeleteAsync del repositorio.
         public async Task<CResult> DeleteAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -89,7 +95,8 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida el registro antes de cambiar su estado activo o inactivo.
+        // Qué hace: cambia el estado activo/inactivo de un nivel académico.
+        // Cómo: valida empresa y llave, luego llama a ActivarInactivarAsync del repositorio.
         public async Task<CResult> ActivarInactivarAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -106,7 +113,7 @@ namespace SGUEES.Services
             return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Construye los parámetros que limitan la consulta a la empresa actual.
+        // Qué hace: arma los parámetros de consulta limitados a la empresa actual.
         private static List<CParameter> BuildParameters(PLA_NIVEL_ACADEMICOParam xWhere)
         {
             return new List<CParameter>
@@ -115,14 +122,16 @@ namespace SGUEES.Services
             };
         }
 
-        // Limpia el nombre y aplica el estado activo cuando no fue informado.
+        // Qué hace: normaliza el nombre y el estado antes de persistir.
+        // Cómo: recorta NOMBRE_NIVEL_ACADEMICO y deja ESTADO_NIVEL_ACADEMICO en true si no fue informado.
         private static void NormalizeData(PLA_NIVEL_ACADEMICOTable Data)
         {
             Data.NOMBRE_NIVEL_ACADEMICO = Data.NOMBRE_NIVEL_ACADEMICO?.Trim();
             Data.ESTADO_NIVEL_ACADEMICO ??= true;
         }
 
-        // Comprueba los datos obligatorios y la longitud permitida del nombre.
+        // Qué hace: valida los datos obligatorios del nivel académico.
+        // Cómo: revisa que el nombre no esté vacío y no supere 150 caracteres.
         private static CResult Validate(PLA_NIVEL_ACADEMICOTable Data)
         {
             if (Data == null)
@@ -143,7 +152,7 @@ namespace SGUEES.Services
             return null;
         }
 
-        // Devuelve una respuesta controlada cuando la sesión no tiene empresa.
+        // Qué hace: devuelve error controlado cuando la sesión no tiene empresa asignada.
         private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
             if (corrEmpresa > 0)
@@ -163,7 +172,7 @@ namespace SGUEES.Services
             };
         }
 
-        // Crea una respuesta uniforme para los errores de validación.
+        // Qué hace: construye una respuesta uniforme para errores de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult

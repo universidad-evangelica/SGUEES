@@ -1,4 +1,4 @@
-// Modelo de municipio (GEN_MUNICIPIO) dentro de la cascada territorial.
+// Qué hace: define la estructura de un municipio en Angular (GEN_MUNICIPIO).
 export interface GenMunicipio {
 	CORR_DEPTO: number;
 	CORR_MUNICIPIO: number;

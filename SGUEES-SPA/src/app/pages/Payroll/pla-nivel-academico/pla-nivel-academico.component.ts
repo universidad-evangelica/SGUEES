@@ -1,3 +1,4 @@
+// Vista de mantenimiento de Nivel Académico (CRUD del catálogo Payroll).
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
@@ -9,7 +10,7 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { PlaNivelAcademico } from './models/pla-nivel-academico';
 import { PlaNivelAcademicoService } from './pla-nivel-academico.service';
 
-// Campo de estado usado por la grilla y el activar/inactivar.
+// Qué hace: identifica el campo de estado usado por la grilla y activar/inactivar.
 const ESTADO_FIELD = 'ESTADO_NIVEL_ACADEMICO';
 
 @Component({
@@ -17,7 +18,8 @@ const ESTADO_FIELD = 'ESTADO_NIVEL_ACADEMICO';
 	templateUrl: './pla-nivel-academico.component.html',
 	styleUrls: ['./pla-nivel-academico.component.scss'],
 })
-// Vista de mantenimiento del catálogo Payroll de nivel académico.
+// Qué hace: coordina la grilla, el formulario y las llamadas al servicio de nivel académico.
+// Cómo: extiende CBaseComponent y usa PlaNivelAcademicoService para el CRUD y el cambio de estado.
 export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
@@ -39,24 +41,26 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		private service: PlaNivelAcademicoService
 	) {
 		super(appInfoService, router);
-		// Configura grilla y formulario desde el servicio.
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 	}
 
-	// Expone la grilla al flujo común de mantenimiento.
+	// Qué hace: entrega la referencia del grid de mantenimiento al framework base.
+	// Cómo: devuelve dataGrid enlazado con @ViewChild, o null si aún no está disponible.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
-	// Inicializa subtítulo y carga el catálogo al entrar.
+	// Qué hace: prepara la pantalla al abrirla.
+	// Cómo: fija el subtítulo de mantenimiento y llama a consultar para cargar el catálogo.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.consultar();
 	}
 
-	// Restaura el subtítulo al volver al modo browse.
+	// Qué hace: reacciona a los cambios de estado del formulario.
+	// Cómo: llama a AsignaStatus base y, al volver a modo Browse, restaura el subtítulo de mantenimiento.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -64,12 +68,14 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		}
 	}
 
-	// Construye el filtro que se envía al consultar o eliminar un nivel académico.
+	// Qué hace: construye el filtro por correlativo de nivel académico.
+	// Cómo: devuelve un objeto con CORR_NIVEL_ACADEMICO, usado en consultar y en rowRemoving.
 	fillParam(xCORR_NIVEL_ACADEMICO?: number): any {
 		return { CORR_NIVEL_ACADEMICO: xCORR_NIVEL_ACADEMICO ?? 0 };
 	}
 
-	// Crea una copia del registro seleccionado o devuelve el modelo inicial del formulario.
+	// Qué hace: construye el modelo de nivel académico para el formulario.
+	// Cómo: si recibe xModel copia sus campos; si no recibe nada, devuelve un modelo vacío con los valores iniciales.
 	override fillData(xModel?: PlaNivelAcademico): PlaNivelAcademico {
 		if (xModel !== undefined) {
 			return {
@@ -100,7 +106,8 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		};
 	}
 
-	// Carga los niveles académicos y sincroniza el orden y la paginación de la grilla.
+	// Qué hace: carga el listado de niveles académicos y refresca la grilla.
+	// Cómo: llama a consultarMtto con getAll del servicio; al recibir los datos ordena por correlativo y refresca el grid.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -111,7 +118,8 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		});
 	}
 
-	// Mantiene los registros ordenados por correlativo después de cada cambio local.
+	// Qué hace: mantiene los registros ordenados por correlativo.
+	// Cómo: ordena this.models de forma ascendente por CORR_NIVEL_ACADEMICO.
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -120,7 +128,8 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		this.models = [...this.models].sort((a, b) => Number(a.CORR_NIVEL_ACADEMICO) - Number(b.CORR_NIVEL_ACADEMICO));
 	}
 
-	// Incorpora en la grilla la respuesta del guardado sin volver a consultar la API.
+	// Qué hace: agrega o reemplaza en la grilla el registro recién guardado.
+	// Cómo: si isAdd agrega el registro a models; si no, busca por CORR_NIVEL_ACADEMICO y lo reemplaza; luego ordena y refresca.
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
 		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
 			super.aplicarRegistroEnGrid(data, isAdd);
@@ -143,7 +152,8 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		this.refrescarGridTrasCarga(isAdd);
 	}
 
-	// Retira el registro eliminado del arreglo visible y reinicia la página.
+	// Qué hace: retira de la grilla el registro eliminado.
+	// Cómo: filtra models excluyendo el CORR_NIVEL_ACADEMICO eliminado y refresca la grilla.
 	protected override quitarRegistroDeGrid(keyValue: unknown): void {
 		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
 			super.quitarRegistroDeGrid(keyValue);
@@ -155,14 +165,16 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		this.refrescarGridTrasCarga(true);
 	}
 
-	// Espera a que Angular actualice los datos antes de refrescar la grilla.
+	// Qué hace: refresca la grilla después de un cambio en los datos.
+	// Cómo: usa setTimeout para esperar el ciclo de Angular y llama a dataGrid.refreshData.
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
 		}, 0);
 	}
 
-	// Abre en modo consulta el registro seleccionado y bloquea sus campos.
+	// Qué hace: abre el registro seleccionado en modo consulta al hacer doble clic.
+	// Cómo: toma los datos de la fila, llama al rowDblClick base y sincroniza el formulario en modo solo lectura.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -176,7 +188,8 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		});
 	}
 
-	// Prepara el registro seleccionado para edición y habilita sus campos permitidos.
+	// Qué hace: prepara el registro seleccionado para editarlo desde el botón de la grilla.
+	// Cómo: carga el modelo, llama a editarClick y habilita los campos del formulario.
 	onEditClick(e: any): void {
 		if (!e?.row?.data) {
 			return;
@@ -190,7 +203,8 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		});
 	}
 
-	// Inicializa un registro nuevo únicamente cuando existe una empresa en sesión.
+	// Qué hace: inicia un registro nuevo de nivel académico.
+	// Cómo: valida que haya empresa en sesión con asegurarEmpresaSesion, llama al nuevo base y sincroniza el formulario.
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -201,7 +215,8 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		});
 	}
 
-	// Valida el formulario y ejecuta la inserción o actualización según el estado actual.
+	// Qué hace: guarda el nivel académico (crea o actualiza según corresponda).
+	// Cómo: toma los datos del formulario, valida con esValido y llama a guardarMtto con insert/update del servicio.
 	guardar(): void {
 		const formData = this.dataForm?.instance?.option('formData');
 		if (formData) {
@@ -221,7 +236,8 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		});
 	}
 
-	// Convierte errores de llave duplicada en una advertencia entendible para el usuario.
+	// Qué hace: convierte un error de llave duplicada en una advertencia controlada.
+	// Cómo: intercepta el error de insert/update y, si el código o mensaje indica duplicado, devuelve un IResult con advertencia.
 	private convertirDuplicadoEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
@@ -241,7 +257,8 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		);
 	}
 
-	// Convierte errores por relaciones existentes en una advertencia de eliminación.
+	// Qué hace: convierte un error de llave foránea al eliminar en una advertencia controlada.
+	// Cómo: intercepta el error de delete y, si el mensaje indica una relación, devuelve un IResult con advertencia.
 	private convertirEliminacionRelacionadaEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
@@ -260,14 +277,16 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		);
 	}
 
-	// Reconoce mensajes de distintas capas que corresponden a registros duplicados.
+	// Qué hace: detecta si un mensaje de error corresponde a un registro duplicado.
+	// Cómo: busca fragmentos conocidos de errores de unicidad en el texto normalizado.
 	private esErrorDuplicadoLocal(message: string): boolean {
 		return ['ya existe', 'duplicad', 'primary key', 'unique key', 'mismo tiempo', 'llave primaria', 'clave primaria'].some(
 			(fragment) => message.includes(fragment)
 		);
 	}
 
-	// Reconoce mensajes que indican dependencias asociadas al registro.
+	// Qué hace: detecta si un mensaje de error indica registros relacionados.
+	// Cómo: busca fragmentos conocidos de errores de integridad referencial en el texto normalizado.
 	private esErrorRelacionadosLocal(message: string): boolean {
 		return [
 			'foreign key',
@@ -280,7 +299,8 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		].some((fragment) => message.includes(fragment));
 	}
 
-	// Extrae de las variantes de respuesta de la API el mensaje útil del error.
+	// Qué hace: extrae el mensaje útil de error desde las distintas formas de respuesta de la API.
+	// Cómo: revisa error como string, error.error y las propiedades ErrorMessage/message del objeto recibido.
 	private obtenerMensajeApiLocal(error: any): string {
 		if (typeof error === 'string') {
 			return error;
@@ -293,12 +313,14 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		return `${error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.message ?? error ?? ''}`;
 	}
 
-	// Cancela y recupera el registro original por correlativo.
+	// Qué hace: descarta la edición y restaura el registro original en la grilla.
+	// Cómo: llama a cancelar base comparando por CORR_NIVEL_ACADEMICO.
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_NIVEL_ACADEMICO === this.modelUpdate.CORR_NIVEL_ACADEMICO);
 	}
 
-	// Solicita la eliminación y controla el caso de registros relacionados.
+	// Qué hace: elimina el registro seleccionado en la grilla.
+	// Cómo: llama a rowRemovingMtto con delete del servicio, convirtiendo errores de relación en advertencia.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
@@ -308,19 +330,22 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		});
 	}
 
-	// Cambia el estado del nivel seleccionado mediante el flujo común de mantenimiento.
+	// Qué hace: cambia el estado activo/inactivo del nivel académico seleccionado.
+	// Cómo: llama a invocarActivarInactivar con activarInactivar del servicio.
 	activar_inactivar(): void {
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
-	// Bloquea todos los editores en modo consulta.
+	// Qué hace: deja el formulario en solo lectura (modo consulta).
+	// Cómo: pone readOnly en true a los editores de correlativo, nombre y estado.
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_NIVEL_ACADEMICO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_NIVEL_ACADEMICO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ESTADO_NIVEL_ACADEMICO')?.option('readOnly', true);
 	}
 
-	// Habilita campos editables; el estado queda fijo al actualizar.
+	// Qué hace: habilita los campos editables del formulario.
+	// Cómo: habilita el nombre; bloquea el estado cuando la operación es de actualización.
 	override habilitar(): void {
 		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
 		setTimeout(() => {
@@ -330,7 +355,8 @@ export class PlaNivelAcademicoComponent extends CBaseComponent implements OnInit
 		});
 	}
 
-	// Coloca el foco en el nombre al abrir el formulario.
+	// Qué hace: coloca el foco en el primer campo editable del formulario.
+	// Cómo: enfoca el editor de NOMBRE_NIVEL_ACADEMICO con setTimeout.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('NOMBRE_NIVEL_ACADEMICO')?.focus();

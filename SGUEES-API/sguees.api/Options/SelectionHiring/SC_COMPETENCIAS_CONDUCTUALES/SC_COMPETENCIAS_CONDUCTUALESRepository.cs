@@ -1,4 +1,5 @@
-// Persistencia SQL del catálogo competencias conductuales (tabla/vista SC).
+// Qué hace: persistencia SQL del catálogo competencias conductuales.
+// Cómo: ejecuta el CRUD y consultas contra la tabla SC_COMPETENCIAS_CONDUCTUALES y la vista V_SC_COMPETENCIAS_CONDUCTUALES.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-  // Ejecuta CRUD y consultas sobre la tabla/vista de competencia conductual.
+  // Qué hace: repositorio de competencias conductuales.
+  // Cómo: ejecuta GetAllAsync, GetAsync, CreateAsync, UpdateAsync, DeleteAsync, ActivarInactivarAsync, ExistsNombreAsync y GetCatalogoDescriptorAsync sobre la tabla/vista SC_COMPETENCIAS_CONDUCTUALES.
   public class SC_COMPETENCIAS_CONDUCTUALESRepository : BaseRepository<SC_COMPETENCIAS_CONDUCTUALESTable>, ISC_COMPETENCIAS_CONDUCTUALESRepository
   {
     private const string _TableName = "SC_COMPETENCIAS_CONDUCTUALES";
@@ -42,7 +44,8 @@ namespace SGUEES.Repositories
     {
     }
 
-    // Lee el listado desde la vista filtrado por empresa.
+    // Qué hace: lee el listado de competencias conductuales.
+    // Cómo: consulta V_SC_COMPETENCIAS_CONDUCTUALES filtrando por CORR_EMPRESA y ordena el resultado por CORR_COMPETENCIAS_CONDUCTUALES.
     public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
     {
       CResult objResultado = new();
@@ -86,7 +89,8 @@ namespace SGUEES.Repositories
       return objResultado;
     }
 
-    // Lee un registro por llave desde la vista.
+    // Qué hace: lee una competencia conductual puntual.
+    // Cómo: consulta V_SC_COMPETENCIAS_CONDUCTUALES con los filtros recibidos y devuelve el primer registro.
     public async Task<CResult> GetAsync(List<CParameter> xWhere)
     {
       CResult objResultado = new();
@@ -124,7 +128,8 @@ namespace SGUEES.Repositories
       return objResultado;
     }
 
-    // Inserta el registro y controla duplicados de nombre/código.
+    // Qué hace: inserta una competencia conductual.
+    // Cómo: llama a objData.Insert sobre SC_COMPETENCIAS_CONDUCTUALES con los parámetros armados y controla duplicados de nombre/código con IsDuplicateKeyError.
     public async Task<CResult> CreateAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
     {
       CResult objResultado = new();
@@ -186,7 +191,8 @@ namespace SGUEES.Repositories
       return objResultado;
     }
 
-    // Actualiza el registro validando unicidad.
+    // Qué hace: actualiza una competencia conductual.
+    // Cómo: llama a objData.Update sobre SC_COMPETENCIAS_CONDUCTUALES filtrando por CORR_EMPRESA y CORR_COMPETENCIAS_CONDUCTUALES, y controla duplicados con IsDuplicateKeyError.
     public async Task<CResult> UpdateAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
     {
       CResult objResultado = new();
@@ -243,7 +249,8 @@ namespace SGUEES.Repositories
       return objResultado;
     }
 
-    // Elimina el registro; propaga errores de integridad.
+    // Qué hace: elimina una competencia conductual.
+    // Cómo: llama a objData.Delete sobre SC_COMPETENCIAS_CONDUCTUALES filtrando por CORR_EMPRESA y CORR_COMPETENCIAS_CONDUCTUALES; ante error de integridad devuelve un mensaje de registros asociados.
     public async Task<CResult> DeleteAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
     {
       CResult objResultado = new();
@@ -281,7 +288,8 @@ namespace SGUEES.Repositories
       return objResultado;
     }
 
-    // Invierte el estado activo/inactivo del registro.
+    // Qué hace: invierte el estado activo/inactivo de la competencia conductual.
+    // Cómo: ejecuta el procedimiento PRAL_MTTO_CATALOGO_ESTADO_BIT y, si no hay error, vuelve a leer el registro desde V_SC_COMPETENCIAS_CONDUCTUALES.
     public async Task<CResult> ActivarInactivarAsync(SC_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
     {
       CResult objResultado = new();
@@ -354,7 +362,8 @@ namespace SGUEES.Repositories
       return objResultado;
     }
 
-    // Comprueba si otra competencia de la empresa utiliza el mismo nombre.
+    // Qué hace: comprueba si otra competencia conductual de la empresa utiliza el mismo nombre.
+    // Cómo: ejecuta un SELECT sobre V_SC_COMPETENCIAS_CONDUCTUALES comparando el nombre normalizado y excluyendo el correlativo indicado.
     public async Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr)
     {
       if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nombre))
@@ -387,7 +396,8 @@ namespace SGUEES.Repositories
       }
     }
 
-    // Detecta errores de clave duplicada de SQL Server.
+    // Qué hace: detecta errores de clave duplicada de SQL Server.
+    // Cómo: revisa si el mensaje de la excepción contiene "duplicate key", "PRIMARY KEY" o "UNIQUE KEY".
     private static bool IsDuplicateKeyError(Exception e)
     {
       return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
@@ -395,7 +405,8 @@ namespace SGUEES.Repositories
         e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
     }
 
-    // Recupera competencias activas ordenadas para el lookup del descriptor.
+    // Qué hace: recupera las competencias conductuales activas para el lookup del descriptor.
+    // Cómo: ejecuta un SELECT sobre V_SC_COMPETENCIAS_CONDUCTUALES filtrando por CORR_EMPRESA y ESTADO_COMPETENCIAS_CONDUCTUALES activo, ordenado por NOMBRE_COMPETENCIAS_CONDUCTUALES.
     public async Task<List<SC_COMPETENCIAS_CONDUCTUALESView>> GetCatalogoDescriptorAsync(int corrEmpresa)
     {
       if (corrEmpresa <= 0)

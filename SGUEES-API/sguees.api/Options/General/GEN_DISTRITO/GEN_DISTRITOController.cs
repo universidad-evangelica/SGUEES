@@ -11,15 +11,15 @@ using SGUEES.Services;
 
 namespace SGUEES.Controllers
 {
-	// API HTTP del catálogo de distritos: autentica, aplica empresa de sesión y delega al servicio.
 	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
+	// Qué hace: expone el CRUD de distritos y lookups para estructura territorial.
 	public class GEN_DISTRITOController : ControllerBase
 	{
 		private readonly IGEN_DISTRITOService _service;
 
-		// Inyecta el servicio de distritos; falla si no está registrado.
+		// Qué hace: inyecta el servicio; falla si no está registrado.
 		public GEN_DISTRITOController(IGEN_DISTRITOService service)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(service));
@@ -27,7 +27,8 @@ namespace SGUEES.Controllers
 
 		[HttpGet("GetAll")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
-		// Atiende la consulta del listado de distritos y la limita a la empresa de la sesión.
+		// Qué hace: lista distritos y la limita a la empresa de la sesión.
+		// Cómo: llama a GetAllAsync del servicio.
 		public async Task<CResult> GetAll([FromQuery] GEN_DISTRITOParam data)
 		{
 			data.CORR_EMPRESA = GetCorrEmpresa();
@@ -36,7 +37,8 @@ namespace SGUEES.Controllers
 
 		[HttpGet("Get")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
-		// Atiende la consulta de un distrito específico dentro de la empresa de la sesión.
+		// Qué hace: obtiene distrito específico dentro de la empresa de la sesión.
+		// Cómo: llama a GetAsync del servicio.
 		public async Task<CResult> Get([FromQuery] GEN_DISTRITOParam data)
 		{
 			data.CORR_EMPRESA = GetCorrEmpresa();
@@ -45,7 +47,8 @@ namespace SGUEES.Controllers
 
 		[HttpGet("GetCORR_DISTRITO_GEN_ESTRUCTURA_TERRITORIAL")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
-		// Expone el catálogo de distritos requerido por el mantenimiento relacionado y aplica el contexto de empresa.
+		// Qué hace: entrega el catálogo de distritos requerido por el mantenimiento relacionado y aplica el contexto de empresa.
+		// Cómo: llama a GetAllAsync del servicio.
 		public async Task<CResult> GetCORR_DISTRITO_GEN_ESTRUCTURA_TERRITORIAL([FromQuery] GEN_DISTRITOParam data)
 		{
 			data.CORR_EMPRESA = GetCorrEmpresa();
@@ -54,7 +57,8 @@ namespace SGUEES.Controllers
 
 		[HttpPost]
 		[Authorize(Policy = "/gen-estructura-territorial|C")]
-		// Prepara auditoría, crea el distrito y traduce el resultado al estado HTTP correspondiente.
+		// Qué hace: crea distrito
+		// Cómo: valida empresa, SetCreateAudit y CreateAsync del servicio.
 		public async Task<IActionResult> Post(GEN_DISTRITOTable data)
 		{
 			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
@@ -69,7 +73,8 @@ namespace SGUEES.Controllers
 
 		[HttpPut]
 		[Authorize(Policy = "/gen-estructura-territorial|U")]
-		// Aplica las claves de la solicitud, prepara auditoría y actualiza el distrito.
+		// Qué hace: actualiza distrito
+		// Cómo: ApplyQueryKeys/SetUpdateAudit y UpdateAsync del servicio.
 		public async Task<IActionResult> Put(GEN_DISTRITOTable data)
 		{
 			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
@@ -84,7 +89,8 @@ namespace SGUEES.Controllers
 
 		[HttpDelete]
 		[Authorize(Policy = "/gen-estructura-territorial|D")]
-		// Valida el contexto de empresa y elimina el distrito indicada por sus claves.
+		// Qué hace: elimina distrito indicada por sus claves.
+		// Cómo: ValidateEmpresaSesion y DeleteAsync del servicio.
 		public async Task<IActionResult> Delete([FromQuery] GEN_DISTRITOTable data)
 		{
 			if (!ValidateEmpresaSesion(out var resultadoEmpresa))
@@ -96,14 +102,14 @@ namespace SGUEES.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
-		// Obtiene la empresa asociada a la sesión para aislar las operaciones del usuario.
+		// Qué hace: obtiene CORR_EMPRESA del token de sesión.
 		private int GetCorrEmpresa()
 		{
 			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
 			return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
 		}
 
-		// Obtiene el identificador del usuario autenticado para registrar la auditoría.
+		// Qué hace: obtiene el usuario autenticado para auditoría.
 		private string GetUsuario()
 		{
 			return User.Claims.FirstOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value
@@ -111,7 +117,7 @@ namespace SGUEES.Controllers
 				?? "Sistema";
 		}
 
-		// Verifica que la sesión tenga una empresa válida y prepara una respuesta controlada si falta.
+		// Qué hace: verifica que la sesión tenga una empresa válida antes de guardar.
 		private bool ValidateEmpresaSesion(out CResult resultado)
 		{
 			if (GetCorrEmpresa() > 0)
@@ -135,7 +141,7 @@ namespace SGUEES.Controllers
 			return false;
 		}
 
-		// Completa la empresa y los datos de auditoría requeridos para crear el registro.
+		// Qué hace: completa auditoría al crear un registro.
 		private void SetCreateAudit(GEN_DISTRITOTable data)
 		{
 			data.USUARIO_CREA = GetUsuario();
@@ -146,7 +152,7 @@ namespace SGUEES.Controllers
 			data.FECHA_ACTU = data.FECHA_CREA;
 		}
 
-		// Completa la empresa y los datos de auditoría requeridos para actualizar el registro.
+		// Qué hace: completa auditoría al actualizar un registro.
 		private void SetUpdateAudit(GEN_DISTRITOTable data)
 		{
 			data.USUARIO_ACTU = GetUsuario();

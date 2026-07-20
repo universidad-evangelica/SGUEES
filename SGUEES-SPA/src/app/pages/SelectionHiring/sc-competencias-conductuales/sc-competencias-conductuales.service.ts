@@ -1,4 +1,5 @@
-// Servicio de negocio del catálogo Competencias Conductuales (validación, CRUD y config de grilla/form).
+// Qué hace: servicio de negocio del catálogo Competencias Conductuales.
+// Cómo: valida los datos, ejecuta el CRUD a través del repositorio y arma la configuración de grilla y formulario.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -12,11 +13,13 @@ import { ScCompetenciasConductualesRepository } from './sc-competencias-conductu
 const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_CONDUCTUALES';
 
 @Injectable({ providedIn: 'root' })
-// Encapsula validaciones y delega el CRUD en el repositorio de competencia conductual.
+// Qué hace: servicio de competencias conductuales.
+// Cómo: valida los datos y llama a ScCompetenciasConductualesRepository para ejecutar el CRUD.
 export class ScCompetenciasConductualesService {
 	constructor(private repo: ScCompetenciasConductualesRepository) {}
 
-	// Valida tipo de puesto, nombre y descripción antes del guardado.
+	// Qué hace: valida el formulario de competencia conductual antes de guardar.
+	// Cómo: revisa CORR_TIPO_PUESTO, NOMBRE_COMPETENCIAS_CONDUCTUALES y DESCRIPCION, notificando con msg cuando falla.
 	esValido(model: ScCompetenciasConductuales, msg: Function): boolean {
 		if (!model.CORR_TIPO_PUESTO || model.CORR_TIPO_PUESTO <= 0) {
 			msg('Debe seleccionar el tipo de puesto.', NotifyType.Warning);
@@ -46,41 +49,48 @@ export class ScCompetenciasConductualesService {
 		return true;
 	}
 
-	// Solicita al repositorio el listado con los filtros construidos.
+	// Qué hace: obtiene el listado de competencias conductuales.
+	// Cómo: llama a getAll del repositorio con el filtro construido por buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	// Solicita al repositorio el detalle por correlativo.
+	// Qué hace: obtiene una competencia conductual puntual.
+	// Cómo: llama a get del repositorio filtrando por CORR_COMPETENCIAS_CONDUCTUALES.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_COMPETENCIAS_CONDUCTUALES', Value: param.CORR_COMPETENCIAS_CONDUCTUALES }]);
 	}
 
-	// Delega en el repositorio la creación del registro.
+	// Qué hace: crea una nueva competencia conductual.
+	// Cómo: llama a create del repositorio con el modelo recibido.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
-	// Delega en el repositorio la actualización con su llave.
+	// Qué hace: actualiza una competencia conductual existente.
+	// Cómo: llama a update del repositorio con el modelo y su CORR_COMPETENCIAS_CONDUCTUALES.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [
 			{ Parameter: 'CORR_COMPETENCIAS_CONDUCTUALES', Value: model.CORR_COMPETENCIAS_CONDUCTUALES },
 		]);
 	}
 
-	// Delega en el repositorio la eliminación por correlativo.
+	// Qué hace: elimina una competencia conductual.
+	// Cómo: llama a delete del repositorio filtrando por CORR_COMPETENCIAS_CONDUCTUALES.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_COMPETENCIAS_CONDUCTUALES', Value: model.CORR_COMPETENCIAS_CONDUCTUALES }]);
 	}
 
-	// Delega en el repositorio el cambio de estado activo/inactivo.
+	// Qué hace: cambia el estado activo/inactivo de una competencia conductual.
+	// Cómo: llama a activarInactivar del repositorio filtrando por CORR_COMPETENCIAS_CONDUCTUALES.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [
 			{ Parameter: 'CORR_COMPETENCIAS_CONDUCTUALES', Value: model.CORR_COMPETENCIAS_CONDUCTUALES },
 		]);
 	}
 
-	// Define columnas y formatos de la grilla de mantenimiento.
+	// Qué hace: define columnas y formatos de la grilla de mantenimiento.
+	// Cómo: arma el arreglo de columnas (correlativo, nombre, descripción, tipo puesto, estado y auditoría) usado por app-data-grid-mtto.
 	getColumns(): any {
 		return [
 			{
@@ -98,7 +108,8 @@ export class ScCompetenciasConductualesService {
 		];
 	}
 
-	// Configura el contador de registros de la grilla.
+	// Qué hace: configura el contador de registros de la grilla.
+	// Cómo: define el resumen totalItems que cuenta CORR_COMPETENCIAS_CONDUCTUALES.
 	getSummary(): any {
 		return {
 			totalItems: [
@@ -112,7 +123,8 @@ export class ScCompetenciasConductualesService {
 		};
 	}
 
-	// Define los campos y reglas del formulario de competencia conductual.
+	// Qué hace: define los campos y reglas del formulario de competencia conductual.
+	// Cómo: arma el arreglo de items (correlativo, tipo puesto, nombre, estado y descripción) usado por dx-form.
 	getItems(): any {
 		return [
 			{
@@ -163,7 +175,8 @@ export class ScCompetenciasConductualesService {
 		];
 	}
 
-	// Traduce los filtros del componente al formato esperado por la API.
+	// Qué hace: traduce los filtros del componente al formato esperado por la API.
+	// Cómo: agrega a xWhere el parámetro CORR_COMPETENCIAS_CONDUCTUALES cuando viene informado en param.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

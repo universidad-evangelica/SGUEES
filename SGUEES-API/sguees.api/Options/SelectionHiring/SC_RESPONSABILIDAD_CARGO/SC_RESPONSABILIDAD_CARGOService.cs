@@ -1,4 +1,4 @@
-// Lógica de negocio del catálogo responsabilidad del cargo (validación y delegación al repositorio).
+// Qué hace: aplica las reglas de negocio del catálogo responsabilidad del cargo antes de llamar al repositorio.
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -7,7 +7,7 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
-    // Valida datos y delega persistencia de responsabilidad del cargo en el repositorio.
+    // Qué hace: valida los datos de responsabilidad del cargo y coordina su persistencia con el repositorio.
     public class SC_RESPONSABILIDAD_CARGOService : ISC_RESPONSABILIDAD_CARGOService
     {
         private readonly ISC_RESPONSABILIDAD_CARGORepository _repo;
@@ -17,13 +17,15 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
-        // Delega en el repositorio la consulta del listado.
+        // Qué hace: lista las responsabilidades del cargo según los filtros recibidos.
+        // Cómo: llama a GetAllAsync del repositorio con los parámetros armados en BuildParameters.
         public async Task<CResult> GetAllAsync(SC_RESPONSABILIDAD_CARGOParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
-        // Delega en el repositorio la consulta por llave.
+        // Qué hace: obtiene una responsabilidad del cargo por su correlativo.
+        // Cómo: llama a GetAsync del repositorio con CORR_EMPRESA y CORR_RESPONSABILIDAD.
         public async Task<CResult> GetAsync(SC_RESPONSABILIDAD_CARGOParam xWhere)
         {
             var p = new List<CParameter>
@@ -35,7 +37,8 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
-        // Devuelve responsabilidades activas y aplicables al descriptor.
+        // Qué hace: entrega las responsabilidades del cargo activas disponibles para el descriptor.
+        // Cómo: llama a GetCatalogoDescriptorAsync del repositorio y arma el CResult con el listado.
         public async Task<CResult> GetCatalogoDescriptorAsync(SC_RESPONSABILIDAD_CARGOParam xWhere)
         {
             var rows = await _repo.GetCatalogoDescriptorAsync(xWhere.CORR_EMPRESA);
@@ -51,7 +54,8 @@ namespace SGUEES.Services
             };
         }
 
-        // Valida nombre, aplicación y unicidad antes de crear.
+        // Qué hace: crea una responsabilidad del cargo nueva.
+        // Cómo: valida empresa de sesión y datos con Validate, normaliza los campos y llama a CreateAsync del repositorio.
         public async Task<CResult> CreateAsync(SC_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -76,7 +80,8 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida la llave y excluye el registro actual al comprobar duplicados.
+        // Qué hace: actualiza una responsabilidad del cargo existente.
+        // Cómo: valida empresa, datos y llave; normaliza los campos y llama a UpdateAsync del repositorio.
         public async Task<CResult> UpdateAsync(SC_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -106,7 +111,8 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida empresa de sesión antes de eliminar.
+        // Qué hace: elimina una responsabilidad del cargo.
+        // Cómo: valida la empresa de sesión y llama a DeleteAsync del repositorio.
         public async Task<CResult> DeleteAsync(SC_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -118,7 +124,8 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida empresa y llave antes de cambiar el estado.
+        // Qué hace: cambia el estado activo/inactivo de una responsabilidad del cargo.
+        // Cómo: valida empresa y llave; llama a ActivarInactivarAsync del repositorio.
         public async Task<CResult> ActivarInactivarAsync(SC_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -135,7 +142,7 @@ namespace SGUEES.Services
             return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Arma los parámetros de filtro para el repositorio.
+        // Qué hace: arma el parámetro CORR_EMPRESA para filtrar en el repositorio.
         private static List<CParameter> BuildParameters(SC_RESPONSABILIDAD_CARGOParam xWhere)
         {
             return new List<CParameter>
@@ -144,7 +151,8 @@ namespace SGUEES.Services
             };
         }
 
-        // Limpia el nombre y estandariza el tipo de descriptor.
+        // Qué hace: normaliza los datos antes de guardar.
+        // Cómo: recorta espacios del nombre, estandariza APLICA_DESCRIPTOR y fija ESTADO_RESPONSABILIDAD en true si viene vacío.
         private static void NormalizeData(SC_RESPONSABILIDAD_CARGOTable Data)
         {
             Data.NOMBRE_RESPONSABILIDAD = Data.NOMBRE_RESPONSABILIDAD?.Trim();
@@ -152,7 +160,8 @@ namespace SGUEES.Services
             Data.ESTADO_RESPONSABILIDAD ??= true;
         }
 
-        // Comprueba nombre y valores permitidos de aplicación al descriptor.
+        // Qué hace: valida los datos de la responsabilidad del cargo.
+        // Cómo: revisa que existan datos, que el nombre no esté vacío ni supere 150 caracteres, y que APLICA_DESCRIPTOR sea CORTO, EXTENSO o AMBOS.
         private static CResult Validate(SC_RESPONSABILIDAD_CARGOTable Data)
         {
             if (Data == null)
@@ -179,7 +188,8 @@ namespace SGUEES.Services
             return null;
         }
 
-        // Verifica que el nombre no pertenezca a otra responsabilidad de la empresa.
+        // Qué hace: verifica que el nombre no pertenezca a otra responsabilidad de la empresa.
+        // Cómo: llama a ExistsNombreAsync del repositorio excluyendo el correlativo indicado.
         private async Task<CResult> ValidateUniqueNombreAsync(SC_RESPONSABILIDAD_CARGOTable Data, int? excludeCorr)
         {
             var exists = await _repo.ExistsNombreAsync(
@@ -192,7 +202,8 @@ namespace SGUEES.Services
                 : null;
         }
 
-        // Rechaza operaciones cuando no hay empresa en sesión.
+        // Qué hace: valida que exista empresa en la sesión.
+        // Cómo: si CORR_EMPRESA es mayor a 0 permite continuar; si no, devuelve un CResult de error.
         private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
             if (corrEmpresa > 0)
@@ -212,7 +223,7 @@ namespace SGUEES.Services
             };
         }
 
-        // Construye un CResult de validación funcional.
+        // Qué hace: construye un CResult de error de validación con el mensaje recibido.
         private static CResult ValidationError(string message)
         {
             return new CResult

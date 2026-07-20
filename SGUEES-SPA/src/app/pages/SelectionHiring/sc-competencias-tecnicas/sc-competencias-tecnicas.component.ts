@@ -1,4 +1,5 @@
-// Vista de mantenimiento de Competencias Técnicas (CRUD del catálogo SC).
+// Qué hace: vista de mantenimiento de Competencias Técnicas.
+// Cómo: administra el CRUD del catálogo SC_COMPETENCIAS_TECNICAS coordinando la grilla, el formulario jerárquico y ScCompetenciasTecnicasService.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
@@ -23,7 +24,8 @@ const ESTADO_FIELD = 'ESTADO_COMPETENCIAS_TECNICAS';
 	templateUrl: './sc-competencias-tecnicas.component.html',
 	styleUrls: ['./sc-competencias-tecnicas.component.scss'],
 })
-// Orquesta grilla, formulario y llamadas al servicio de competencia técnica.
+// Qué hace: componente de mantenimiento de Competencias Técnicas.
+// Cómo: extiende CBaseComponent y coordina la grilla, el formulario jerárquico y las llamadas a ScCompetenciasTecnicasService.
 export class ScCompetenciasTecnicasComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
@@ -70,19 +72,22 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.refreshFormItems();
 	}
 
-	// Expone el grid de mantenimiento al flujo base de CBaseComponent.
+	// Qué hace: entrega el grid de mantenimiento al flujo base de CBaseComponent.
+	// Cómo: devuelve la referencia dataGrid enlazada con @ViewChild, o null si aún no está disponible.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
-	// Inicializa subtítulo y carga el catálogo al abrir la vista.
+	// Qué hace: inicializa la vista al abrirla.
+	// Cómo: fija el subtítulo de mantenimiento, llama a getNIVEL para cargar los niveles y consultar para cargar el catálogo.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.getNIVEL();
 		this.consultar();
 	}
 
-	// Carga el catálogo de niveles (NIV1/NIV2/NIV3) para el lookup del formulario.
+	// Qué hace: carga el catálogo de niveles (NIV1/NIV2/NIV3) para el lookup del formulario.
+	// Cómo: llama a getLookUp con SC_LISTA/GetNIVEL, guarda el resultado en mNIVEL y reconstruye los items con refreshFormItems.
 	getNIVEL(): void {
 		this.appInfoService
 			.getLookUp(
@@ -110,7 +115,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 			});
 	}
 
-	// Restaura el subtítulo de mantenimiento al volver a modo consulta.
+	// Qué hace: reacciona a los cambios de estado del formulario (nuevo, editar, ver, browse).
+	// Cómo: llama a AsignaStatus del componente base y, al volver a modo Browse, restaura el subtítulo de mantenimiento.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -118,7 +124,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		}
 	}
 
-	// Inicializa un registro nuevo solo si existe empresa en sesión.
+	// Qué hace: inicia un registro nuevo en el formulario.
+	// Cómo: valida la empresa con asegurarEmpresaSesion, llama a nuevo del base, reinicia padres y modelo con fillData, y reconstruye los items con refreshFormItems.
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -134,7 +141,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
-	// Prepara el registro seleccionado y habilita sus campos editables.
+	// Qué hace: abre un registro existente en modo edición.
+	// Cómo: prepara el modelo con fillData, llama a editarClick y carga los padres con cargarPadres según el nivel antes de habilitar el formulario.
 	onEditClick(e: any): void {
 		if (!e?.row?.data) {
 			return;
@@ -156,12 +164,14 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
-	// Construye el filtro por correlativo usado en consultas y eliminaciones.
+	// Qué hace: construye el filtro por correlativo.
+	// Cómo: devuelve un objeto con CORR_COMPETENCIAS_TECNICAS, usado en consultar y en rowRemoving.
 	fillParam(xCORR_COMPETENCIAS_TECNICAS?: number): any {
 		return { CORR_COMPETENCIAS_TECNICAS: xCORR_COMPETENCIAS_TECNICAS ?? 0 };
 	}
 
-	// Normaliza el nivel y separa prefijo y sufijo para presentar el formulario.
+	// Qué hace: construye el modelo de competencia técnica para el formulario.
+	// Cómo: si recibe xModel copia sus campos y separa prefijo/sufijo del código; si no recibe nada, devuelve el modelo inicial para un registro nuevo.
 	override fillData(xModel?: ScCompetenciasTecnicas): ScCompetenciasTecnicas {
 		if (xModel !== undefined) {
 			const model = {
@@ -198,7 +208,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		};
 	}
 
-	// Carga las competencias y sincroniza el orden y la paginación de la grilla.
+	// Qué hace: carga las competencias técnicas y actualiza la grilla.
+	// Cómo: llama a consultarMtto con getAll del servicio y, al recibir los datos, ordena los registros y refresca la grilla.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -209,7 +220,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
-	// Mantiene los registros ordenados por correlativo tras cambios locales.
+	// Qué hace: mantiene los registros ordenados por correlativo.
+	// Cómo: si models es un arreglo, lo reordena de forma ascendente por CORR_COMPETENCIAS_TECNICAS.
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -220,7 +232,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		);
 	}
 
-	// Agrega o reemplaza en la grilla la respuesta del guardado.
+	// Qué hace: refleja en la grilla el registro recién guardado.
+	// Cómo: agrega el registro si es nuevo, o lo reemplaza por su llave (mttoGridKeyExpr) si ya existía, y luego ordena y refresca la grilla.
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
 		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
 			super.aplicarRegistroEnGrid(data, isAdd);
@@ -243,7 +256,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.refrescarGridTrasCarga(isAdd);
 	}
 
-	// Retira de la grilla el registro eliminado sin recargar el catálogo.
+	// Qué hace: retira de la grilla el registro eliminado sin recargar el catálogo.
+	// Cómo: filtra models por mttoGridKeyExpr y refresca la grilla con refrescarGridTrasCarga.
 	protected override quitarRegistroDeGrid(keyValue: unknown): void {
 		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
 			super.quitarRegistroDeGrid(keyValue);
@@ -255,14 +269,16 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.refrescarGridTrasCarga(true);
 	}
 
-	// Espera la actualización de Angular antes de refrescar la grilla.
+	// Qué hace: espera la actualización de Angular antes de refrescar la grilla.
+	// Cómo: usa setTimeout para llamar a refreshData del dataGrid con resetPage opcional.
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
 		}, 0);
 	}
 
-	// Valida la jerarquía y prepara el modelo según el nivel antes de guardar.
+	// Qué hace: valida y guarda la competencia técnica según su nivel jerárquico.
+	// Cómo: sincroniza formData, valida con esValido y prepararModeloParaGuardar del servicio, y ejecuta insert o update mediante guardarMtto.
 	guardar(): void {
 		const isAdd = this.banderaMtto === UpdateType.Add;
 		const formData = this.dataForm?.instance?.option('formData');
@@ -285,7 +301,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
-	// Convierte restricciones FK al eliminar en advertencia controlada.
+	// Qué hace: convierte errores de integridad referencial en advertencia controlada al eliminar.
+	// Cómo: intercepta el Observable con catchError, detecta mensajes de clave foránea con obtenerMensajeApiLocal y devuelve un resultado con ErrorCode 2627.
 	private convertirErrorMttoEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
@@ -315,7 +332,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		);
 	}
 
-	// Extrae el mensaje útil de las distintas formas de error del API.
+	// Qué hace: extrae el mensaje útil de las distintas formas de error del API.
+	// Cómo: evalúa ErrorMessage, error.message y otras variantes del objeto de error recibido.
 	private obtenerMensajeApiLocal(error: any): string {
 		if (typeof error === 'string') {
 			return error;
@@ -326,13 +344,15 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		}`;
 	}
 
-	// Descarta la edición y restaura el registro original en la grilla.
+	// Qué hace: descarta la edición y restaura el registro original en la grilla.
+	// Cómo: reinicia padreInvalido y llama a cancelar del base filtrando por CORR_COMPETENCIAS_TECNICAS del modelUpdate.
 	override cancelar(): void {
 		this.padreInvalido = false;
 		super.cancelar((item: any) => item.CORR_COMPETENCIAS_TECNICAS === this.modelUpdate.CORR_COMPETENCIAS_TECNICAS);
 	}
 
-	// Sincroniza el modelo con la fila enfocada en modo consulta.
+	// Qué hace: sincroniza el modelo con la fila enfocada en modo consulta.
+	// Cómo: si hay datos de fila y el modo es Browse, actualiza model y modelUpdate con fillData y bloquea el formulario.
 	override focusedRowChanged(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (!rowData || !this.isBrowse()) {
@@ -344,7 +364,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.bloquear();
 	}
 
-	// Abre el registro y carga los padres válidos para su nivel.
+	// Qué hace: abre el registro al hacer doble clic y carga los padres válidos para su nivel.
+	// Cómo: prepara el modelo con fillData, llama a rowDblClick del base y ejecuta cargarPadres según NIVEL antes de bloquear el formulario.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (!rowData) {
@@ -370,7 +391,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
-	// Reinicia campos dependientes y carga la jerarquía del nivel seleccionado.
+	// Qué hace: reacciona al cambio de nivel jerárquico en el formulario.
+	// Cómo: reinicia padre, código y nombre, reconstruye los items con refreshFormItems y carga los padres con cargarPadres según el nivel seleccionado.
 	onNivelChanged(value: string | null): void {
 		const nivel = `${value ?? this.model.NIVEL ?? SC_COMPETENCIA_NIVEL.UNO}`;
 		this.padreInvalido = false;
@@ -391,7 +413,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		}
 	}
 
-	// Aplica el padre y genera o prepara el código según el nivel hijo.
+	// Qué hace: reacciona al cambio de competencia padre en el formulario.
+	// Cómo: actualiza CORR_COMPETENCIAS_TECNICAS_PADRE, aplica CODIGO_PREFIJO en nivel 2 o solicita el siguiente código con getNextCodigo en nivel 3.
 	onPadreChanged(value: number | null): void {
 		const corrPadre = value != null && Number(value) > 0 ? Number(value) : null;
 		this.model.CORR_COMPETENCIAS_TECNICAS_PADRE = corrPadre;
@@ -440,7 +463,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		}
 	}
 
-	// Exige un padre para competencias de niveles dos y tres.
+	// Qué hace: marca si falta seleccionar padre en niveles 2 y 3.
+	// Cómo: evalúa NIVEL y CORR_COMPETENCIAS_TECNICAS_PADRE del modelo y actualiza padreInvalido.
 	private actualizarEstadoValidacionPadre(): void {
 		const requierePadre =
 			this.model?.NIVEL === SC_COMPETENCIA_NIVEL.DOS ||
@@ -448,7 +472,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.padreInvalido = requierePadre && !this.model?.CORR_COMPETENCIAS_TECNICAS_PADRE;
 	}
 
-	// Solicita la eliminación y controla competencias hijas o relacionadas.
+	// Qué hace: solicita la eliminación de la competencia técnica seleccionada.
+	// Cómo: llama a rowRemovingMtto con delete del servicio envuelto en convertirErrorMttoEnWarning para controlar errores de integridad.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
@@ -456,12 +481,14 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
-	// Cambia el estado del registro; delega en invocarActivarInactivar del base.
+	// Qué hace: cambia el estado activo/inactivo del registro seleccionado.
+	// Cómo: llama a invocarActivarInactivar del base con activarInactivar del servicio.
 	activar_inactivar(): void {
 		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
-	// Deja el formulario en solo lectura (modo consulta).
+	// Qué hace: deja el formulario en solo lectura (modo consulta).
+	// Cómo: marca readOnly en true en los editores del dx-form según el campo.
 	override bloquear(): void {
 		this.dataForm?.instance?.getEditor('CORR_COMPETENCIAS_TECNICAS')?.option('readOnly', true);
 		this.dataForm?.instance?.getEditor('NIVEL')?.option('readOnly', true);
@@ -474,7 +501,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.dataForm?.instance?.getEditor('ESTADO_COMPETENCIAS_TECNICAS')?.option('readOnly', true);
 	}
 
-	// Habilita campos editables; el estado queda bloqueado al editar.
+	// Qué hace: habilita los campos editables del formulario según el nivel y el modo.
+	// Cómo: ajusta readOnly en cada editor del dx-form; el estado queda bloqueado al editar y el código en nivel 3 permanece de solo lectura.
 	override habilitar(): void {
 		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
 		setTimeout(() => {
@@ -490,7 +518,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
-	// Coloca el foco en el primer campo editable del formulario.
+	// Qué hace: coloca el foco en el primer campo editable del formulario.
+	// Cómo: en nivel 1 enfoca CODIGO_COMPETENCIAS_TECNICAS; en niveles 2 y 3 enfoca CORR_COMPETENCIAS_TECNICAS_PADRE.
 	override setFocus(): void {
 		setTimeout(() => {
 			if (this.model.NIVEL === SC_COMPETENCIA_NIVEL.UNO) {
@@ -502,17 +531,20 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		});
 	}
 
-	// Devuelve la clave del nivel seleccionado en el lookup.
+	// Qué hace: devuelve la clave del nivel seleccionado en el lookup.
+	// Cómo: retorna la propiedad Key de la primera fila recibida en vRow.
 	selectedLookUpNIVEL(vRow: any): string {
 		return vRow[0].Key;
 	}
 
-	// Devuelve la clave del padre seleccionado en el lookup.
+	// Qué hace: devuelve la clave del padre seleccionado en el lookup.
+	// Cómo: retorna CORR_COMPETENCIAS_TECNICAS de la primera fila recibida en vRow.
 	selectedLookUpCORR_COMPETENCIAS_TECNICAS_PADRE(vRow: any): number {
 		return vRow[0].CORR_COMPETENCIAS_TECNICAS;
 	}
 
-	// Reconstruye los editores según nivel, modo y disponibilidad de padres.
+	// Qué hace: reconstruye los editores del formulario según nivel, modo y padres disponibles.
+	// Cómo: llama a getItems del servicio con el contexto actual y bloquea el formulario si no está en modo Add o Update.
 	private refreshFormItems(): void {
 		this.items = this.service.getItems({
 			nivel: `${this.model?.NIVEL ?? SC_COMPETENCIA_NIVEL.UNO}`,
@@ -529,7 +561,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		}
 	}
 
-	// Carga los candidatos padre e incluye inactivos durante consulta o edición.
+	// Qué hace: carga los candidatos padre para el nivel jerárquico indicado.
+	// Cómo: llama a getLookUp con GetCORR_COMPETENCIAS_TECNICAS_PADRE, normaliza cada registro con mapPadreLookupItem y completa el padre actual con agregarPadreActualSiNoExiste.
 	private cargarPadres(nivelPadre: string): void {
 		const incluirInactivos = this.banderaMtto !== UpdateType.Add;
 		const xWhere: Array<{ Parameter: string; Value: any }> = [{ Parameter: 'NIVEL_PADRE', Value: nivelPadre }];
@@ -561,7 +594,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 			});
 	}
 
-	// Normaliza un registro padre y construye su texto visible en el lookup.
+	// Qué hace: normaliza un registro padre para mostrarlo en el lookup.
+	// Cómo: recorta código, nombre y descripción, y construye NOMBRE_DISPLAY combinando código y descripción o nombre.
 	private mapPadreLookupItem(item: any): ScCompetenciaPadreOption {
 		const codigo = (item.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim();
 		const nombre = (item.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim();
@@ -581,7 +615,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		};
 	}
 
-	// Conserva el padre actual aunque ya no forme parte del lookup normal.
+	// Qué hace: conserva el padre actual aunque ya no forme parte del lookup activo.
+	// Cómo: busca el padre en padres o models, lo enriquece con mapPadreLookupItem o lo agrega con agregarPadreActual, y ejecuta onDone al finalizar.
 	private agregarPadreActualSiNoExiste(onDone: () => void): void {
 		if (this.banderaMtto === UpdateType.Add || !this.model?.CORR_COMPETENCIAS_TECNICAS_PADRE) {
 			onDone();
@@ -622,7 +657,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		onDone();
 	}
 
-	// Inserta en el lookup el padre actual cuando no viene en la lista activa.
+	// Qué hace: inserta en el lookup el padre actual cuando no viene en la lista activa.
+	// Cómo: construye la opción con mapPadreLookupItem usando datos del modelo o del padre local, la antepone a padres y actualiza registroSeleccionadoInactivo.
 	private agregarPadreActual(padre?: ScCompetenciasTecnicas): void {
 		const item = this.mapPadreLookupItem({
 			CORR_COMPETENCIAS_TECNICAS: this.model.CORR_COMPETENCIAS_TECNICAS_PADRE,
@@ -637,7 +673,8 @@ export class ScCompetenciasTecnicasComponent extends CBaseComponent implements O
 		this.actualizarEstadoRegistroSeleccionado();
 	}
 
-	// Indica si el padre seleccionado está inactivo para advertir al usuario.
+	// Qué hace: indica si el padre seleccionado está inactivo para advertir al usuario.
+	// Cómo: busca el padre en padres por CORR_COMPETENCIAS_TECNICAS_PADRE y actualiza registroSeleccionadoInactivo según ESTADO_COMPETENCIAS_TECNICAS.
 	private actualizarEstadoRegistroSeleccionado(): void {
 		const padre = this.padres.find((item) => item.CORR_COMPETENCIAS_TECNICAS === this.model?.CORR_COMPETENCIAS_TECNICAS_PADRE);
 		this.registroSeleccionadoInactivo = padre?.ESTADO_COMPETENCIAS_TECNICAS === false;

@@ -1,3 +1,4 @@
+// Qué hace: aplica las reglas de negocio del catálogo divisiones antes de llamar al repositorio.
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -6,24 +7,25 @@ using sguees.Repositories;
 
 namespace sguees.Services
 {
-	// Capa de servicio de divisiones: valida/normaliza y delega la persistencia al repositorio.
+	// Qué hace: valida los datos de división y coordina su persistencia con el repositorio.
 	public class GEN_DIVISIONService : IGEN_DIVISIONService
 	{
 		private readonly IGEN_DIVISIONRepository _repo;
 
-		// Inyecta el repositorio de divisiones para operaciones de datos.
 		public GEN_DIVISIONService(IGEN_DIVISIONRepository repo)
 		{
 			_repo = repo;
 		}
 
-		// Construye los filtros y solicita al repositorio el listado de divisiones.
+		// Qué hace: lista las divisiones según los filtros recibidos.
+		// Cómo: llama a GetAllAsync del repositorio con los parámetros armados en BuildParameters.
 		public async Task<CResult> GetAllAsync(GEN_DIVISIONParam xWhere)
 		{
 			return await _repo.GetAllAsync(BuildParameters(xWhere));
 		}
 
-		// Prepara los filtros del catálogo y solicita al repositorio las divisiones disponibles.
+		// Qué hace: entrega divisiones para lookups de otras vistas.
+		// Cómo: llama a GetDivisionesAsync del repositorio con CORR_EMPRESA.
 		public async Task<CResult> GetDivisionesAsync(GEN_DIVISIONParam xWhere)
 		{
 			var p = new List<CParameter>
@@ -34,7 +36,8 @@ namespace sguees.Services
 			return await _repo.GetDivisionesAsync(p);
 		}
 
-		// Valida las claves de consulta y solicita al repositorio el detalle de la división.
+		// Qué hace: obtiene una división por su correlativo.
+		// Cómo: llama a GetAsync del repositorio con CORR_EMPRESA y CORR_DIVISION.
 		public async Task<CResult> GetAsync(GEN_DIVISIONParam xWhere)
 		{
 			var p = new List<CParameter>
@@ -46,7 +49,8 @@ namespace sguees.Services
 			return await _repo.GetAsync(p);
 		}
 
-		// Normaliza y valida la división, comprueba duplicados y solicita su creación.
+		// Qué hace: crea una división nueva.
+		// Cómo: valida empresa y datos, normaliza campos, comprueba código único y llama a CreateAsync del repositorio.
 		public async Task<CResult> CreateAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -73,7 +77,8 @@ namespace sguees.Services
 			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
-		// Normaliza y valida la división, comprueba duplicados y solicita su actualización.
+		// Qué hace: actualiza una división existente.
+		// Cómo: valida empresa, datos y código único; normaliza campos y llama a UpdateAsync del repositorio.
 		public async Task<CResult> UpdateAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -100,7 +105,8 @@ namespace sguees.Services
 			return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
-		// Valida la identidad de la división y solicita su eliminación al repositorio.
+		// Qué hace: elimina una división.
+		// Cómo: valida empresa de sesión y llama a DeleteAsync del repositorio.
 		public async Task<CResult> DeleteAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -112,7 +118,7 @@ namespace sguees.Services
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
-		// Convierte los filtros recibidos en parámetros seguros para el repositorio.
+		// Qué hace: arma el parámetro CORR_EMPRESA para filtrar en el repositorio.
 		private static List<CParameter> BuildParameters(GEN_DIVISIONParam xWhere)
 		{
 			return new List<CParameter>
@@ -121,7 +127,7 @@ namespace sguees.Services
 			};
 		}
 
-		// Valida las claves y campos obligatorios de la división antes de persistirla.
+		// Qué hace: valida campos obligatorios de la división antes de persistirla.
 		private static CResult Validate(GEN_DIVISIONTable Data)
 		{
 			if (Data == null)
@@ -152,7 +158,8 @@ namespace sguees.Services
 			return null;
 		}
 
-		// Comprueba que el código de la división sea único dentro de la empresa.
+		// Qué hace: comprueba que el código de división sea único en la empresa.
+		// Cómo: llama a ExistsCodigoAsync del repositorio.
 		private async Task<CResult> ValidateUniqueCodigoAsync(GEN_DIVISIONTable Data, int? excludeCorr)
 		{
 			var exists = await _repo.ExistsCodigoAsync(
@@ -165,7 +172,7 @@ namespace sguees.Services
 				: null;
 		}
 
-		// Verifica que la sesión tenga una empresa válida y prepara una respuesta controlada si falta.
+		// Qué hace: verifica que la sesión tenga empresa válida.
 		private static CResult ValidateEmpresaSesion(int corrEmpresa)
 		{
 			if (corrEmpresa > 0)
@@ -185,7 +192,7 @@ namespace sguees.Services
 			};
 		}
 
-		// Construye una respuesta uniforme para devolver errores de validación al cliente.
+		// Qué hace: construye una respuesta uniforme para errores de validación.
 		private static CResult ValidationError(string message)
 		{
 			return new CResult

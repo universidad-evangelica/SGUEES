@@ -2,11 +2,11 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
-    // Parámetros de consulta/filtro del catálogo de tipo de puesto.
+    // Qué hace: agrupa los parámetros de consulta y filtro del catálogo de tipo de puesto.
     public class PLA_TIPO_PUESTOParam : BaseParam
     {
-        public int CORR_EMPRESA { get; set; } // Filtro por empresa de sesión
-        public int CORR_TIPO_PUESTO { get; set; } // Filtro por PK
+        public int CORR_EMPRESA { get; set; }
+        public int CORR_TIPO_PUESTO { get; set; }
         public string BUSQUEDA { get; set; }
         public string NOMBRE_TIPO_PUESTO { get; set; }
         public string CODIGO_TIPO_PUESTO { get; set; }

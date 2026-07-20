@@ -1,4 +1,4 @@
-// Declara la ruta de estructura territorial y dependencias (grid, form, popup).
+// Qué hace: declara la ruta de estructura territorial y sus módulos de UI.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
@@ -10,7 +10,7 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { GenEstructuraTerritorialComponent } from './gen-estructura-territorial.component';
 
-// Ruta vacía: el path lo define el lazy load del menú.
+// Qué hace: fija la ruta vacía; el path real lo define el lazy load del menú.
 const routes: Routes = [{ path: '', component: GenEstructuraTerritorialComponent }];
 
 @NgModule({

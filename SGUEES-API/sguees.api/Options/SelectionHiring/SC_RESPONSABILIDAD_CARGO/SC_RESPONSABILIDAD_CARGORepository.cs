@@ -10,7 +10,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-    // Ejecuta CRUD y consultas sobre la tabla/vista de responsabilidad del cargo.
+    // Qué hace: ejecuta el CRUD y las consultas SQL sobre la tabla y la vista de responsabilidad del cargo.
     public class SC_RESPONSABILIDAD_CARGORepository : BaseRepository<SC_RESPONSABILIDAD_CARGOTable>, ISC_RESPONSABILIDAD_CARGORepository
     {
         private const string _TableName = "SC_RESPONSABILIDAD_CARGO";
@@ -25,7 +25,8 @@ namespace SGUEES.Repositories
         {
         }
 
-        // Lee el listado desde la vista filtrado por empresa.
+        // Qué hace: lista las responsabilidades del cargo de la vista V_SC_RESPONSABILIDAD_CARGO.
+        // Cómo: filtra por CORR_EMPRESA y ordena por CORR_RESPONSABILIDAD.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -69,7 +70,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Lee un registro por llave desde la vista.
+        // Qué hace: obtiene una responsabilidad del cargo de la vista V_SC_RESPONSABILIDAD_CARGO.
+        // Cómo: lee con los filtros recibidos en xWhere (empresa e id).
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -107,7 +109,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Inserta el registro y controla duplicados de nombre/código.
+        // Qué hace: inserta una responsabilidad del cargo nueva.
+        // Cómo: llama a Insert sobre SC_RESPONSABILIDAD_CARGO y devuelve el registro creado leído desde la vista; controla claves duplicadas.
         public async Task<CResult> CreateAsync(SC_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -168,7 +171,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Actualiza el registro validando unicidad.
+        // Qué hace: actualiza una responsabilidad del cargo existente.
+        // Cómo: llama a Update sobre SC_RESPONSABILIDAD_CARGO por CORR_EMPRESA y CORR_RESPONSABILIDAD; controla claves duplicadas.
         public async Task<CResult> UpdateAsync(SC_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -224,7 +228,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Elimina el registro; propaga errores de integridad.
+        // Qué hace: elimina una responsabilidad del cargo.
+        // Cómo: llama a Delete sobre SC_RESPONSABILIDAD_CARGO por CORR_EMPRESA y CORR_RESPONSABILIDAD; informa si hay registros relacionados.
         public async Task<CResult> DeleteAsync(SC_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -262,7 +267,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Invierte el estado activo/inactivo del registro.
+        // Qué hace: cambia el estado activo/inactivo de una responsabilidad del cargo.
+        // Cómo: ejecuta el stored procedure PRAL_MTTO_CATALOGO_ESTADO_BIT y devuelve el registro actualizado leído desde la vista.
         public async Task<CResult> ActivarInactivarAsync(SC_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -335,7 +341,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Recupera responsabilidades activas para el lookup del descriptor.
+        // Qué hace: recupera las responsabilidades del cargo activas para el lookup del descriptor.
+        // Cómo: SELECT directo a la vista filtrando por empresa y ESTADO_RESPONSABILIDAD, ordenado por nombre.
         public async Task<List<SC_RESPONSABILIDAD_CARGOView>> GetCatalogoDescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)
@@ -377,7 +384,8 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Comprueba si otra responsabilidad utiliza el mismo nombre.
+        // Qué hace: comprueba si otra responsabilidad del cargo utiliza el mismo nombre.
+        // Cómo: SELECT TOP 1 sobre la vista comparando nombre normalizado y excluyendo el correlativo indicado.
         public async Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr)
         {
             if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nombre))
@@ -410,7 +418,7 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Detecta errores de clave duplicada de SQL Server.
+        // Qué hace: detecta errores de clave duplicada de SQL Server.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

@@ -1,4 +1,4 @@
-// Capa de negocio: validación, columnas/formulario y orquestación hacia el repositorio de gerencias.
+// Qué hace: agrupa las reglas de negocio del catálogo Gerencias.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -9,10 +9,11 @@ import { GenGerencia } from './models/gen-gerencia';
 import { GenGerenciaRepository } from './gen-gerencia.repository';
 
 @Injectable({ providedIn: 'root' })
+// Qué hace: valida los datos de gerencia y coordina el CRUD con el repositorio.
 export class GenGerenciaService {
 	constructor(private repo: GenGerenciaRepository) {}
 
-	// Valida los campos obligatorios y sus longitudes antes de guardar la gerencia.
+	// Qué hace: valida los datos de la gerencia antes de guardar.
 	esValido(model: GenGerencia, msg: Function): boolean {
 		if (!model.CORR_DIVISION || model.CORR_DIVISION <= 0) {
 			msg('Debe seleccionar la division.', NotifyType.Warning);
@@ -42,32 +43,37 @@ export class GenGerenciaService {
 		return true;
 	}
 
-	// Solicita al repositorio el listado de gerencias con los filtros construidos.
+	// Qué hace: lista las gerencias según los filtros recibidos.
+	// Cómo: llama a getAll del repositorio con los filtros armados en buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	// Solicita al repositorio el detalle de la gerencia indicada.
+	// Qué hace: obtiene una gerencia por su correlativo.
+	// Cómo: llama a get del repositorio con CORR_GERENCIA.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_GERENCIA', Value: param.CORR_GERENCIA }]);
 	}
 
-	// Delega en el repositorio la creación de la gerencia.
+	// Qué hace: crea una gerencia nueva.
+	// Cómo: llama a create del repositorio con el modelo recibido.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
-	// Delega en el repositorio la actualización de la gerencia y sus claves.
+	// Qué hace: actualiza una gerencia existente.
+	// Cómo: llama a update del repositorio con el modelo y CORR_GERENCIA.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_GERENCIA', Value: model.CORR_GERENCIA }]);
 	}
 
-	// Delega en el repositorio la eliminación de la gerencia indicada.
+	// Qué hace: elimina una gerencia.
+	// Cómo: llama a delete del repositorio con CORR_GERENCIA.
 	delete(param: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_GERENCIA', Value: param.CORR_GERENCIA }]);
 	}
 
-	// Define las columnas y formatos usados por la cuadrícula del mantenimiento.
+	// Qué hace: define las columnas del grid de gerencias.
 	getColumns(): any {
 		return [
 			{
@@ -85,14 +91,14 @@ export class GenGerenciaService {
 		];
 	}
 
-	// Configura el contador de registros mostrado en la cuadrícula.
+	// Qué hace: define el resumen de conteo del grid de gerencias.
 	getSummary(): any {
 		return {
 			totalItems: [{ column: 'CORR_GERENCIA', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
 		};
 	}
 
-	// Define los campos, editores y validaciones que presenta el formulario.
+	// Qué hace: define los campos y validaciones del formulario de gerencia.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_GERENCIA', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -131,7 +137,7 @@ export class GenGerenciaService {
 		];
 	}
 
-	// Transforma los parámetros del componente en filtros compatibles con el repositorio.
+	// Qué hace: arma los filtros enviados al repositorio.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 
@@ -146,17 +152,17 @@ export class GenGerenciaService {
 export const EMPRESA_WARNING_ERROR_CODE = 4100;
 export const EMPRESA_REGISTRO_ETIQUETA = 'la gerencia';
 
-// Genera el mensaje funcional usado cuando la sesión no tiene una empresa asignada.
+// Qué hace: genera el mensaje cuando la sesión no tiene empresa asignada.
 export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
 	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
 }
 
-// Identifica respuestas controladas relacionadas con la empresa de la sesión.
+// Qué hace: identifica respuestas controladas por falta de empresa en sesión.
 export function isEmpresaWarningResponse(response: any): boolean {
 	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
 }
 
-// Detecta errores técnicos vinculados con la empresa y permite mostrarlos como advertencia.
+// Qué hace: detecta errores técnicos de empresa para mostrarlos como advertencia.
 export function isEmpresaFkErrorMessage(message: string): boolean {
 	const value = `${message ?? ''}`.toLowerCase();
 	return (

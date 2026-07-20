@@ -1,4 +1,5 @@
-// Servicio de negocio del catálogo Responsabilidad del Cargo (validación, CRUD y config de grilla/form).
+// Qué hace: agrupa las reglas de negocio del catálogo Responsabilidad del Cargo.
+// Cómo: valida los datos y llama al repositorio para el CRUD y el cambio de estado; define columnas y campos del formulario.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -12,11 +13,12 @@ import { ScResponsabilidadCargoRepository } from './sc-responsabilidad-cargo.rep
 const ESTADO_FIELD = 'ESTADO_RESPONSABILIDAD';
 
 @Injectable({ providedIn: 'root' })
-// Encapsula validaciones y delega el CRUD en el repositorio de responsabilidad del cargo.
+// Qué hace: valida los datos de responsabilidad del cargo y coordina el CRUD con el repositorio.
 export class ScResponsabilidadCargoService {
 	constructor(private repo: ScResponsabilidadCargoRepository) {}
 
-	// Valida nombre y aplicación al descriptor antes del guardado.
+	// Qué hace: valida los datos de la responsabilidad del cargo antes de guardar.
+	// Cómo: revisa que el nombre no esté vacío, no supere 150 caracteres y que APLICA_DESCRIPTOR sea CORTO, EXTENSO o AMBOS.
 	esValido(model: ScResponsabilidadCargo, msg: Function): boolean {
 		if (!model.NOMBRE_RESPONSABILIDAD || model.NOMBRE_RESPONSABILIDAD.trim() === '') {
 			msg('Debe ingresar el nombre de la responsabilidad de cargo.', NotifyType.Warning);
@@ -36,37 +38,43 @@ export class ScResponsabilidadCargoService {
 		return true;
 	}
 
-	// Solicita al repositorio el listado con los filtros construidos.
+	// Qué hace: lista las responsabilidades del cargo según los filtros recibidos.
+	// Cómo: llama a getAll del repositorio con los parámetros armados en buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	// Solicita al repositorio el detalle por correlativo.
+	// Qué hace: obtiene una responsabilidad del cargo por su correlativo.
+	// Cómo: llama a get del repositorio con CORR_RESPONSABILIDAD como filtro.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_RESPONSABILIDAD', Value: param.CORR_RESPONSABILIDAD }]);
 	}
 
-	// Delega en el repositorio la creación del registro.
+	// Qué hace: crea una responsabilidad del cargo nueva.
+	// Cómo: llama a create del repositorio con el modelo recibido.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
-	// Delega en el repositorio la actualización con su llave.
+	// Qué hace: actualiza una responsabilidad del cargo existente.
+	// Cómo: llama a update del repositorio con el modelo y CORR_RESPONSABILIDAD como llave.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_RESPONSABILIDAD', Value: model.CORR_RESPONSABILIDAD }]);
 	}
 
-	// Delega en el repositorio la eliminación por correlativo.
+	// Qué hace: elimina una responsabilidad del cargo.
+	// Cómo: llama a delete del repositorio con CORR_RESPONSABILIDAD como filtro.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_RESPONSABILIDAD', Value: model.CORR_RESPONSABILIDAD }]);
 	}
 
-	// Delega en el repositorio el cambio de estado activo/inactivo.
+	// Qué hace: cambia el estado activo/inactivo de una responsabilidad del cargo.
+	// Cómo: llama a activarInactivar del repositorio con CORR_RESPONSABILIDAD como filtro.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_RESPONSABILIDAD', Value: model.CORR_RESPONSABILIDAD }]);
 	}
 
-	// Define columnas y formatos de la grilla de mantenimiento.
+	// Qué hace: define las columnas de la grilla de mantenimiento.
 	getColumns(): any {
 		return [
 			{
@@ -83,7 +91,7 @@ export class ScResponsabilidadCargoService {
 		];
 	}
 
-	// Configura el contador de registros de la grilla.
+	// Qué hace: define el resumen (contador) de la grilla.
 	getSummary(): any {
 		return {
 			totalItems: [
@@ -97,7 +105,7 @@ export class ScResponsabilidadCargoService {
 		};
 	}
 
-	// Define los campos y opciones de aplicación al descriptor.
+	// Qué hace: define los campos y las reglas de validación del formulario.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_RESPONSABILIDAD', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -124,7 +132,7 @@ export class ScResponsabilidadCargoService {
 		];
 	}
 
-	// Traduce los filtros del componente al formato esperado por la API.
+	// Qué hace: arma los filtros de consulta a partir de los parámetros recibidos.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 
@@ -135,4 +143,3 @@ export class ScResponsabilidadCargoService {
 		return xWhere;
 	}
 }
-

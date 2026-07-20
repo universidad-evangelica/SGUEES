@@ -10,7 +10,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-    // Ejecuta CRUD y consultas sobre la tabla/vista de riesgo del puesto.
+    // Qué hace: ejecuta el CRUD y las consultas SQL sobre la tabla y la vista de riesgo del puesto.
     public class SC_RIESGO_PUESTORepository : BaseRepository<SC_RIESGO_PUESTOTable>, ISC_RIESGO_PUESTORepository
     {
         private const string _TableName = "SC_RIESGO_PUESTO";
@@ -25,7 +25,8 @@ namespace SGUEES.Repositories
         {
         }
 
-        // Lee el listado desde la vista filtrado por empresa.
+        // Qué hace: lista los riesgos del puesto de la vista V_SC_RIESGO_PUESTO.
+        // Cómo: filtra por CORR_EMPRESA y ordena por CORR_RIESGO_PUESTO.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -69,7 +70,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Lee un registro por llave desde la vista.
+        // Qué hace: obtiene un riesgo del puesto de la vista V_SC_RIESGO_PUESTO.
+        // Cómo: lee con los filtros recibidos en xWhere (empresa e id).
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -107,7 +109,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Inserta el registro y controla duplicados de nombre/código.
+        // Qué hace: inserta un riesgo del puesto nuevo.
+        // Cómo: llama a Insert sobre SC_RIESGO_PUESTO y devuelve el registro creado leído desde la vista; controla claves duplicadas.
         public async Task<CResult> CreateAsync(SC_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -167,7 +170,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Actualiza el registro validando unicidad.
+        // Qué hace: actualiza un riesgo del puesto existente.
+        // Cómo: llama a Update sobre SC_RIESGO_PUESTO por CORR_EMPRESA y CORR_RIESGO_PUESTO; controla claves duplicadas.
         public async Task<CResult> UpdateAsync(SC_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -222,7 +226,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Elimina el registro; propaga errores de integridad.
+        // Qué hace: elimina un riesgo del puesto.
+        // Cómo: llama a Delete sobre SC_RIESGO_PUESTO por CORR_EMPRESA y CORR_RIESGO_PUESTO; informa si hay registros relacionados.
         public async Task<CResult> DeleteAsync(SC_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -260,7 +265,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Invierte el estado activo/inactivo del registro.
+        // Qué hace: cambia el estado activo/inactivo de un riesgo del puesto.
+        // Cómo: ejecuta el stored procedure PRAL_MTTO_CATALOGO_ESTADO_BIT y devuelve el registro actualizado leído desde la vista.
         public async Task<CResult> ActivarInactivarAsync(SC_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -333,7 +339,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Recupera riesgos activos para el lookup del descriptor.
+        // Qué hace: recupera los riesgos del puesto activos para el lookup del descriptor.
+        // Cómo: SELECT directo a V_SC_RIESGO_PUESTO filtrando por empresa y ESTADO_RIESGO_PUESTO, ordenado por nombre.
         public async Task<List<SC_RIESGO_PUESTOView>> GetCatalogoDescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)
@@ -374,7 +381,8 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Comprueba si otro riesgo utiliza el mismo nombre.
+        // Qué hace: comprueba si otro riesgo del puesto utiliza el mismo nombre.
+        // Cómo: SELECT TOP 1 sobre V_SC_RIESGO_PUESTO comparando nombre normalizado y excluyendo el correlativo indicado.
         public async Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr)
         {
             if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nombre))
@@ -407,7 +415,7 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Detecta errores de clave duplicada de SQL Server.
+        // Qué hace: detecta errores de clave duplicada de SQL Server.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

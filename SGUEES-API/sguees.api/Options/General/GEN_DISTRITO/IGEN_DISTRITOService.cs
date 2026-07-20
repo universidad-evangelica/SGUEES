@@ -4,18 +4,18 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
-	// Contrato del servicio de distritos (consultas, alta, baja y actualización).
+	// Qué hace: define el contrato del servicio de distritos (consultas, creación, eliminación y actualización).
 	public interface IGEN_DISTRITOService
 	{
-		// Define la consulta del listado de distritos según los filtros recibidos.
+		// Qué hace: lista distritos según los filtros recibidos.
 		Task<CResult> GetAllAsync(GEN_DISTRITOParam xWhere);
-		// Define la consulta de un distrito específico por sus claves.
+		// Qué hace: obtiene distrito específico por sus claves.
 		Task<CResult> GetAsync(GEN_DISTRITOParam xWhere);
-		// Define la creación validada de un distrito con su información de auditoría.
+		// Qué hace: crea distrito con su información de auditoría.
 		Task<CResult> CreateAsync(GEN_DISTRITOTable data, string vLoginSistema, string vEstacion);
-		// Define la actualización validada de un distrito con su información de auditoría.
+		// Qué hace: actualiza distrito con su información de auditoría.
 		Task<CResult> UpdateAsync(GEN_DISTRITOTable data, string vLoginSistema, string vEstacion);
-		// Define la eliminación de un distrito identificado por sus claves.
+		// Qué hace: elimina distrito identificado por sus claves.
 		Task<CResult> DeleteAsync(GEN_DISTRITOTable data, string vLoginSistema, string vEstacion);
 	}
 }

@@ -1,3 +1,4 @@
+// Qué hace: ejecuta el CRUD y las consultas SQL sobre GEN_GERENCIA y V_GEN_GERENCIA.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,20 +10,20 @@ using sguees.Models;
 
 namespace sguees.Repositories
 {
-	// Acceso a datos de GEN_GERENCIA / V_GEN_GERENCIA: CRUD y comprobación de duplicados.
+	// Qué hace: persiste y consulta gerencias en la base de datos.
 	public class GEN_GERENCIARepository : BaseRepository<GEN_GERENCIATable>, IGEN_GERENCIARepository
 	{
 		private const string _TableName = "GEN_GERENCIA";
 		private const string _ViewName = "V_GEN_GERENCIA";
 
-		// Configura la conexión y el proveedor de BD desde appsettings.
 		public GEN_GERENCIARepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
 				config.GetSection("DbProvider:defaultProvider").Value)
 		{
 		}
 
-		// Consulta la vista de gerencias aplicando el contexto de empresa y devuelve el listado ordenado.
+		// Qué hace: lista las gerencias de la vista V_GEN_GERENCIA.
+		// Cómo: consulta GetDataReader sobre la vista filtrando por CORR_EMPRESA.
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -66,7 +67,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Consulta una gerencia por sus claves y devuelve el primer registro coincidente.
+		// Qué hace: obtiene una gerencia de V_GEN_GERENCIA.
+		// Cómo: consulta GetDataReader con las claves recibidas y devuelve el primer registro.
 		public async Task<CResult> GetAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -104,7 +106,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Inserta la gerencia, recupera el registro creado y normaliza errores de clave duplicada.
+		// Qué hace: inserta una gerencia nueva.
+		// Cómo: llama a Insert sobre GEN_GERENCIA y devuelve el registro creado desde la vista.
 		public async Task<CResult> CreateAsync(GEN_GERENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
@@ -165,7 +168,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Actualiza la gerencia por sus claves y devuelve el registro resultante.
+		// Qué hace: actualiza una gerencia existente.
+		// Cómo: llama a Update sobre GEN_GERENCIA con las claves CORR_EMPRESA y CORR_GERENCIA.
 		public async Task<CResult> UpdateAsync(GEN_GERENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
@@ -222,7 +226,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Elimina la gerencia por sus claves y convierte restricciones relacionadas en un resultado controlado.
+		// Qué hace: elimina una gerencia.
+		// Cómo: llama a Delete sobre GEN_GERENCIA con CORR_EMPRESA y CORR_GERENCIA.
 		public async Task<CResult> DeleteAsync(GEN_GERENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
@@ -260,7 +265,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Comprueba si ya existe una gerencia con el valor normalizado, excluyendo el registro en edición.
+		// Qué hace: comprueba si ya existe una gerencia con el mismo código.
+		// Cómo: ejecuta una consulta SQL sobre V_GEN_GERENCIA excluyendo el correlativo en edición.
 		public async Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr)
 		{
 			if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(codigo))
@@ -293,7 +299,7 @@ namespace sguees.Repositories
 			}
 		}
 
-		// Reconoce excepciones de claves únicas para devolver un mensaje funcional en lugar del error técnico.
+		// Qué hace: detecta errores de clave duplicada de SQL Server.
 		private static bool IsDuplicateKeyError(Exception e)
 		{
 			return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

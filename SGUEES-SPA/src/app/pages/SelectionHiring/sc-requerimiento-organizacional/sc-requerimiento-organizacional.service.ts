@@ -1,4 +1,5 @@
-// Servicio de negocio del catálogo Requerimiento Organizacional (validación, CRUD y config de grilla/form).
+// Qué hace: agrupa las reglas de negocio del catálogo Requerimiento Organizacional.
+// Cómo: valida los datos y llama al repositorio para el CRUD y el cambio de estado; define columnas y campos del formulario.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -12,11 +13,12 @@ import { ScRequerimientoOrganizacionalRepository } from './sc-requerimiento-orga
 const ESTADO_FIELD = 'ESTADO_REQUERIMIENTO_ORGANIZACIONAL';
 
 @Injectable({ providedIn: 'root' })
-// Encapsula validaciones y delega el CRUD en el repositorio de requerimiento organizacional.
+// Qué hace: valida los datos de requerimiento organizacional y coordina el CRUD con el repositorio.
 export class ScRequerimientoOrganizacionalService {
 	constructor(private repo: ScRequerimientoOrganizacionalRepository) {}
 
-	// Valida la descripción obligatoria y su longitud antes del guardado.
+	// Qué hace: valida los datos del requerimiento organizacional antes de guardar.
+	// Cómo: revisa que la descripción no esté vacía y no supere 200 caracteres.
 	esValido(model: ScRequerimientoOrganizacional, msg: Function): boolean {
 		if (!model.DESCRIPCION || model.DESCRIPCION.trim() === '') {
 			msg('Debe ingresar la descripcion de requerimiento organizacional.', NotifyType.Warning);
@@ -31,37 +33,43 @@ export class ScRequerimientoOrganizacionalService {
 		return true;
 	}
 
-	// Solicita al repositorio el listado con los filtros construidos.
+	// Qué hace: lista los requerimientos organizacionales según los filtros recibidos.
+	// Cómo: llama a getAll del repositorio con los parámetros armados en buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	// Solicita al repositorio el detalle por correlativo.
+	// Qué hace: obtiene un requerimiento organizacional por su correlativo.
+	// Cómo: llama a get del repositorio con CORR_REQUERIMIENTO_ORGANIZACIONAL como filtro.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_REQUERIMIENTO_ORGANIZACIONAL', Value: param.CORR_REQUERIMIENTO_ORGANIZACIONAL }]);
 	}
 
-	// Delega en el repositorio la creación del registro.
+	// Qué hace: crea un requerimiento organizacional nuevo.
+	// Cómo: llama a create del repositorio con el modelo recibido.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
-	// Delega en el repositorio la actualización con su llave.
+	// Qué hace: actualiza un requerimiento organizacional existente.
+	// Cómo: llama a update del repositorio con el modelo y CORR_REQUERIMIENTO_ORGANIZACIONAL como llave.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_REQUERIMIENTO_ORGANIZACIONAL', Value: model.CORR_REQUERIMIENTO_ORGANIZACIONAL }]);
 	}
 
-	// Delega en el repositorio la eliminación por correlativo.
+	// Qué hace: elimina un requerimiento organizacional.
+	// Cómo: llama a delete del repositorio con CORR_REQUERIMIENTO_ORGANIZACIONAL como filtro.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_REQUERIMIENTO_ORGANIZACIONAL', Value: model.CORR_REQUERIMIENTO_ORGANIZACIONAL }]);
 	}
 
-	// Delega en el repositorio el cambio de estado activo/inactivo.
+	// Qué hace: cambia el estado activo/inactivo de un requerimiento organizacional.
+	// Cómo: llama a activarInactivar del repositorio con CORR_REQUERIMIENTO_ORGANIZACIONAL como filtro.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_REQUERIMIENTO_ORGANIZACIONAL', Value: model.CORR_REQUERIMIENTO_ORGANIZACIONAL }]);
 	}
 
-	// Define columnas y formatos de la grilla de mantenimiento.
+	// Qué hace: define las columnas de la grilla de mantenimiento.
 	getColumns(): any {
 		return [
 			{
@@ -77,7 +85,7 @@ export class ScRequerimientoOrganizacionalService {
 		];
 	}
 
-	// Configura el contador de registros de la grilla.
+	// Qué hace: define el resumen (contador) de la grilla.
 	getSummary(): any {
 		return {
 			totalItems: [
@@ -91,7 +99,7 @@ export class ScRequerimientoOrganizacionalService {
 		};
 	}
 
-	// Define los campos y reglas del formulario del requerimiento.
+	// Qué hace: define los campos y las reglas de validación del formulario.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_REQUERIMIENTO_ORGANIZACIONAL', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -106,7 +114,7 @@ export class ScRequerimientoOrganizacionalService {
 		];
 	}
 
-	// Traduce los filtros del componente al formato esperado por la API.
+	// Qué hace: arma los filtros de consulta a partir de los parámetros recibidos.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

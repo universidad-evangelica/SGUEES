@@ -9,20 +9,21 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-	// Acceso a datos de GEN_DEPTO / V_GEN_DEPTO: CRUD y comprobación de duplicados.
+	// Qué hace: ejecuta el CRUD y las consultas SQL sobre GEN_DEPTO y V_GEN_DEPTO.
 	public class GEN_DEPTORepository : BaseRepository<GEN_DEPTOTable>, IGEN_DEPTORepository
 	{
 		private const string _TableName = "GEN_DEPTO";
 		private const string _ViewName = "V_GEN_DEPTO";
 
-		// Configura la conexión y el proveedor de BD desde appsettings.
+		// Qué hace: configura conexión y proveedor desde appsettings.
 		public GEN_DEPTORepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
 				config.GetSection("DbProvider:defaultProvider").Value)
 		{
 		}
 
-		// Consulta la vista de departamentos aplicando el contexto de empresa y devuelve el listado ordenado.
+		// Qué hace: lista departamentos desde la vista.
+		// Cómo: GetDataReader sobre la vista y ordena el resultado.
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -66,7 +67,8 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
-		// Consulta un departamento por sus claves y devuelve el primer registro coincidente.
+		// Qué hace: obtiene departamento por claves.
+		// Cómo: GetDataReader y FirstOrDefault.
 		public async Task<CResult> GetAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -104,7 +106,8 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
-		// Inserta el departamento, recupera el registro creado y normaliza errores de clave duplicada.
+		// Qué hace: inserta departamento.
+		// Cómo: Insert sobre la tabla y mapea clave duplicada.
 		public async Task<CResult> CreateAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -164,7 +167,8 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
-		// Actualiza el departamento por sus claves y devuelve el registro resultante.
+		// Qué hace: actualiza departamento.
+		// Cómo: Update sobre la tabla con las claves.
 		public async Task<CResult> UpdateAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -220,7 +224,8 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
-		// Elimina el departamento por sus claves y convierte restricciones relacionadas en un resultado controlado.
+		// Qué hace: elimina departamento.
+		// Cómo: Delete sobre la tabla; captura FK como mensaje controlado.
 		public async Task<CResult> DeleteAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -258,7 +263,8 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
-		// Comprueba si ya existe un departamento con el valor normalizado, excluyendo el registro en edición.
+		// Qué hace: comprueba si ya existe un departamento con el mismo valor.
+		// Cómo: consulta dinámica excluyendo el correlativo en edición.
 		public async Task<bool> ExistsDeptoByFieldAsync(int corrPais, string fieldName, string normalizedValue, int excludeCorrPais, int excludeCorrDepto)
 		{
 			if (!IsAllowedDeptoField(fieldName) || string.IsNullOrWhiteSpace(normalizedValue))
@@ -300,11 +306,11 @@ namespace SGUEES.Repositories
 			}
 		}
 
-		// Restringe los campos del departamento permitidos en la consulta dinámica de duplicados.
+		// Qué hace: restringe los campos del departamento en consultas de duplicados.
 		private static bool IsAllowedDeptoField(string fieldName) =>
 			fieldName is "NOMBRE_DEPTO" or "CODIGO_DEPTO";
 
-		// Reconoce excepciones de claves únicas para devolver un mensaje funcional en lugar del error técnico.
+		// Qué hace: detecta errores de clave duplicada de SQL Server.
 		private static bool IsDuplicateKeyError(Exception e)
 		{
 			return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

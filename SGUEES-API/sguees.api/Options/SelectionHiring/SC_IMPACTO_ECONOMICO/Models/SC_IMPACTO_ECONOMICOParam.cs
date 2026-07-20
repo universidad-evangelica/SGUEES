@@ -3,7 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
-    // Parámetros GetAll (A+P) y Get por PK. Sin filtros remotos legacy.
+    // Qué hace: agrupa los parámetros de GetAll (A+P) y Get por PK.
     public class SC_IMPACTO_ECONOMICOParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

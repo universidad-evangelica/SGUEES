@@ -1,4 +1,7 @@
-// Estilos locales del mantenimiento de Impacto Economico.
+// Qué hace: estilos locales del mantenimiento de Impacto Económico.
+// Cómo: define la insignia de estado y ajusta el espaciado/responsivo de la tarjeta de formulario y la grilla.
+
+// Insignia de estado (activo/inactivo) mostrada en la grilla.
 :host ::ng-deep .estado-badge {
 	display: inline-flex;
 	align-items: center;

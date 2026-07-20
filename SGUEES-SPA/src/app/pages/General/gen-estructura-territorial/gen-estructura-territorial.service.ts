@@ -1,4 +1,4 @@
-// Capa de negocio territorial: validación, columnas/forms y CRUD país + hijos vía repositorios.
+// Qué hace: agrupa las reglas de negocio de estructura territorial (país y niveles hijos).
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -17,6 +17,7 @@ import { GenEstructuraTerritorialRepository } from './gen-estructura-territorial
 @Injectable({
 	providedIn: 'root',
 })
+// Qué hace: valida y coordina el CRUD de país, departamento, municipio y distrito con sus repositorios.
 export class GenEstructuraTerritorialService {
 	private readonly requiredMessage = 'Este campo es obligatorio';
 
@@ -27,7 +28,8 @@ export class GenEstructuraTerritorialService {
 		private repoDistrito: GenDistritoRepository
 	) {}
 
-	// Valida identidad, campos obligatorios y longitudes del país antes de guardarlo.
+	// Qué hace: valida los datos del país antes de guardar.
+	// Cómo: revisa correlativo en edición, campos obligatorios y longitudes máximas.
 	esValidoPais(model: GenPais, msg: Function, isUpdate = false): boolean {
 		if (isUpdate && (!model?.CORR_PAIS || model.CORR_PAIS <= 0)) {
 			msg('No se pudo identificar el país a modificar.', NotifyType.Warning);
@@ -70,7 +72,8 @@ export class GenEstructuraTerritorialService {
 		return true;
 	}
 
-	// Valida las claves jerárquicas y los datos obligatorios del nivel territorial antes de guardarlo.
+	// Qué hace: valida depto, municipio o distrito según el nivel recibido.
+	// Cómo: revisa claves padre, correlativo en edición, nombre y código cuando aplica.
 	esValidoNivel(
 		nivel: TerritorialNivel,
 		model: GenDepto | GenMunicipio | GenDistrito,
@@ -168,23 +171,27 @@ export class GenEstructuraTerritorialService {
 		return true;
 	}
 
-	// Solicita al repositorio el listado completo de países.
+	// Qué hace: lista todos los países.
+	// Cómo: llama a getAllPaises del repositorio GenEstructuraTerritorialRepository.
 	getAllPaises(): Observable<IResult> {
 		return this.repo.getAllPaises([]);
 	}
 
-	// Normaliza el país y solicita su creación al repositorio.
+	// Qué hace: crea un país nuevo.
+	// Cómo: llama a createPais del repositorio con buildPaisPayload.
 	insertPais(model: GenPais): Observable<IResult> {
 		return this.repo.createPais(this.buildPaisPayload(model));
 	}
 
-	// Normaliza el país y solicita su actualización usando su correlativo.
+	// Qué hace: actualiza un país existente.
+	// Cómo: llama a updatePais del repositorio con el payload y CORR_PAIS.
 	updatePais(model: GenPais): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_PAIS', Value: model.CORR_PAIS }];
 		return this.repo.updatePais(this.buildPaisPayload(model), xWhere);
 	}
 
-	// Normaliza y limita el modelo del país a los campos aceptados por el API.
+	// Qué hace: arma el cuerpo enviado al API de país.
+	// Cómo: toma solo los campos de negocio y aplica trim a los textos.
 	buildPaisPayload(model: GenPais): Pick<GenPais, 'CORR_PAIS' | 'NOMBRE_PAIS' | 'CODIGO_PAIS' | 'NACIONALIDAD' | 'NOMBRE_CORTO'> {
 		return {
 			CORR_PAIS: Number(model.CORR_PAIS) || 0,
@@ -195,23 +202,27 @@ export class GenEstructuraTerritorialService {
 		};
 	}
 
-	// Construye la clave del país y solicita su eliminación al repositorio.
+	// Qué hace: elimina un país.
+	// Cómo: llama a deletePais del repositorio con CORR_PAIS.
 	deletePais(model: GenPais): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_PAIS', Value: model.CORR_PAIS }];
 		return this.repo.deletePais(xWhere);
 	}
 
-	// Solicita al repositorio la creación del departamento.
+	// Qué hace: crea un departamento nuevo.
+	// Cómo: llama a create del GenDeptoRepository.
 	insertDepto(model: GenDepto): Observable<IResult> {
 		return this.repoDepto.create(model);
 	}
 
-	// Solicita al repositorio la actualización del departamento.
+	// Qué hace: actualiza un departamento existente.
+	// Cómo: llama a update del GenDeptoRepository.
 	updateDepto(model: GenDepto): Observable<IResult> {
 		return this.repoDepto.update(model);
 	}
 
-	// Construye la clave territorial y solicita la eliminación del departamento.
+	// Qué hace: elimina un departamento.
+	// Cómo: llama a delete del GenDeptoRepository con CORR_PAIS y CORR_DEPTO.
 	deleteDepto(model: GenDepto): Observable<IResult> {
 		const xWhere: IParam[] = [
 			{ Parameter: 'CORR_PAIS', Value: model.CORR_PAIS },
@@ -220,17 +231,20 @@ export class GenEstructuraTerritorialService {
 		return this.repoDepto.delete(xWhere);
 	}
 
-	// Solicita al repositorio la creación del municipio.
+	// Qué hace: crea un municipio nuevo.
+	// Cómo: llama a create del GenMunicipioRepository.
 	insertMunicipio(model: GenMunicipio): Observable<IResult> {
 		return this.repoMunicipio.create(model);
 	}
 
-	// Solicita al repositorio la actualización del municipio.
+	// Qué hace: actualiza un municipio existente.
+	// Cómo: llama a update del GenMunicipioRepository.
 	updateMunicipio(model: GenMunicipio): Observable<IResult> {
 		return this.repoMunicipio.update(model);
 	}
 
-	// Construye la clave territorial y solicita la eliminación del municipio.
+	// Qué hace: elimina un municipio.
+	// Cómo: llama a delete del GenMunicipioRepository con las claves territoriales.
 	deleteMunicipio(model: GenMunicipio): Observable<IResult> {
 		const xWhere: IParam[] = [
 			{ Parameter: 'CORR_PAIS', Value: model.CORR_PAIS },
@@ -240,29 +254,32 @@ export class GenEstructuraTerritorialService {
 		return this.repoMunicipio.delete(xWhere);
 	}
 
-	// Configura el total de países mostrado al pie de la cuadrícula.
+	// Qué hace: define el resumen de conteo del grid de países.
 	getPaisListSummary(): any {
 		return {
 			totalItems: [{ column: 'CORR_PAIS', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
 		};
 	}
 
-	// Crea la regla obligatoria reutilizada por los campos del formulario territorial.
+	// Qué hace: crea la regla required reutilizada en los formularios territoriales.
 	private requiredRule() {
 		return [{ type: 'required', message: this.requiredMessage }];
 	}
 
-	// Solicita al repositorio la creación del distrito.
+	// Qué hace: crea un distrito nuevo.
+	// Cómo: llama a create del GenDistritoRepository.
 	insertDistrito(model: GenDistrito): Observable<IResult> {
 		return this.repoDistrito.create(model);
 	}
 
-	// Solicita al repositorio la actualización del distrito.
+	// Qué hace: actualiza un distrito existente.
+	// Cómo: llama a update del GenDistritoRepository.
 	updateDistrito(model: GenDistrito): Observable<IResult> {
 		return this.repoDistrito.update(model);
 	}
 
-	// Construye la clave territorial y solicita la eliminación del distrito.
+	// Qué hace: elimina un distrito.
+	// Cómo: llama a delete del GenDistritoRepository con las claves territoriales.
 	deleteDistrito(model: GenDistrito): Observable<IResult> {
 		const xWhere: IParam[] = [
 			{ Parameter: 'CORR_PAIS', Value: model.CORR_PAIS },
@@ -273,7 +290,7 @@ export class GenEstructuraTerritorialService {
 		return this.repoDistrito.delete(xWhere);
 	}
 
-	// Columnas del listado de países; las acciones las aporta app-data-grid-mtto.
+	// Qué hace: define las columnas del grid de países.
 	getPaisColumns(): any[] {
 		return [
 			{ dataField: 'CORR_PAIS', caption: 'Corr.', width: 100, dataType: 'number', filterOperations: ['=', '<', '>', '<=', '>='] },
@@ -285,7 +302,7 @@ export class GenEstructuraTerritorialService {
 		];
 	}
 
-	// Define los campos, límites y validaciones del formulario de país.
+	// Qué hace: define los campos y validaciones del formulario de país.
 	getPaisItems(): any[] {
 		return [
 			{
@@ -325,14 +342,15 @@ export class GenEstructuraTerritorialService {
 		];
 	}
 
-	// Configura el contador de registros para una cuadrícula territorial hija.
+	// Qué hace: define el resumen de conteo de un grid hijo territorial.
 	getChildSummary(nombreField: string): any {
 		return {
 			totalItems: [{ column: nombreField, summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
 		};
 	}
 
-	// Construye las columnas del listado de departamentos con sus acciones permitidas.
+	// Qué hace: define las columnas del grid de departamentos.
+	// Cómo: llama a getChildColumns con los campos de GEN_DEPTO.
 	getDeptoColumns(onEditClick: Function, onDeleteClick: Function, canEdit = true, canDelete = true): any[] {
 		return this.getChildColumns(
 			'CORR_DEPTO',
@@ -347,7 +365,8 @@ export class GenEstructuraTerritorialService {
 		);
 	}
 
-	// Construye las columnas del listado de municipios con sus acciones permitidas.
+	// Qué hace: define las columnas del grid de municipios.
+	// Cómo: llama a getChildColumns con los campos de GEN_MUNICIPIO.
 	getMunicipioColumns(onEditClick: Function, onDeleteClick: Function, canEdit = true, canDelete = true): any[] {
 		return this.getChildColumns(
 			'CORR_MUNICIPIO',
@@ -362,7 +381,8 @@ export class GenEstructuraTerritorialService {
 		);
 	}
 
-	// Construye las columnas del listado de distritos con sus acciones permitidas.
+	// Qué hace: define las columnas del grid de distritos.
+	// Cómo: llama a getChildColumns con los campos de GEN_DISTRITO (sin código).
 	getDistritoColumns(onEditClick: Function, onDeleteClick: Function, canEdit = true, canDelete = true): any[] {
 		return this.getChildColumns(
 			'CORR_DISTRITO',
@@ -377,28 +397,31 @@ export class GenEstructuraTerritorialService {
 		);
 	}
 
-	// Define los campos editables del formulario de departamento.
+	// Qué hace: define los campos del formulario de departamento.
+	// Cómo: llama a getChildItems con CORR_DEPTO, NOMBRE_DEPTO y CODIGO_DEPTO.
 	getDeptoItems(): any[] {
 		return this.getChildItems('CORR_DEPTO', 'NOMBRE_DEPTO', 'Nombre departamento', 'CODIGO_DEPTO', 'Código departamento');
 	}
 
-	// Define los campos editables del formulario de municipio.
+	// Qué hace: define los campos del formulario de municipio.
+	// Cómo: llama a getChildItems con CORR_MUNICIPIO, NOMBRE_MUNICIPIO y CODIGO_MUNICIPIO.
 	getMunicipioItems(): any[] {
 		return this.getChildItems('CORR_MUNICIPIO', 'NOMBRE_MUNICIPIO', 'Nombre municipio', 'CODIGO_MUNICIPIO', 'Código municipio');
 	}
 
-	// Define los campos editables del formulario de distrito.
+	// Qué hace: define los campos del formulario de distrito.
+	// Cómo: llama a getChildItems con CORR_DISTRITO y NOMBRE_DISTRITO.
 	getDistritoItems(): any[] {
 		return this.getChildItems('CORR_DISTRITO', 'NOMBRE_DISTRITO', 'Nombre distrito', null, null);
 	}
 
-	// Genera el título del formulario emergente según el nivel y la operación activa.
+	// Qué hace: arma el título del popup según nivel y operación.
 	getPopupTitle(nivel: TerritorialNivel, isAdd: boolean): string {
 		const labels = { depto: 'departamento', municipio: 'municipio', distrito: 'distrito' };
 		return isAdd ? `Nuevo ${labels[nivel]}` : `Editar ${labels[nivel]}`;
 	}
 
-	// Construye la configuración común de columnas y acciones para los niveles territoriales hijos.
+	// Qué hace: construye columnas comunes para grids hijos con botones editar/eliminar.
 	private getChildColumns(
 		corrField: string,
 		nombreField: string,
@@ -458,7 +481,7 @@ export class GenEstructuraTerritorialService {
 		return columns;
 	}
 
-	// Construye la configuración común de campos y validaciones para los formularios territoriales hijos.
+	// Qué hace: construye campos comunes para formularios hijos (corr, nombre y código opcional).
 	private getChildItems(
 		corrField: string,
 		nombreField: string,
@@ -493,17 +516,17 @@ export class GenEstructuraTerritorialService {
 export const EMPRESA_WARNING_ERROR_CODE = 4100;
 export const EMPRESA_REGISTRO_ETIQUETA = 'la estructura territorial';
 
-// Genera el mensaje funcional usado cuando la sesión no tiene una empresa asignada.
+// Qué hace: genera el mensaje cuando la sesión no tiene empresa asignada.
 export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
 	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
 }
 
-// Identifica respuestas controladas relacionadas con la empresa de la sesión.
+// Qué hace: identifica respuestas controladas por falta de empresa en sesión.
 export function isEmpresaWarningResponse(response: any): boolean {
 	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
 }
 
-// Detecta errores técnicos vinculados con la empresa y permite mostrarlos como advertencia.
+// Qué hace: detecta errores técnicos de empresa para mostrarlos como advertencia.
 export function isEmpresaFkErrorMessage(message: string): boolean {
 	const value = `${message ?? ''}`.toLowerCase();
 	return (

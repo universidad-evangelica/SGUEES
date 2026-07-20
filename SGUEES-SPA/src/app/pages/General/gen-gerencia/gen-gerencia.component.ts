@@ -16,7 +16,8 @@ import { GenGerenciaService } from './gen-gerencia.service';
 	templateUrl: './gen-gerencia.component.html',
 	styleUrls: ['./gen-gerencia.component.scss'],
 })
-// Orquesta grid, formulario, lookup de división y llamadas al servicio de gerencias.
+// Qué hace: coordina la grilla, el formulario y las llamadas al servicio de gerencias.
+// Cómo: extiende CBaseComponent y usa GenGerenciaService para el CRUD; carga divisiones vía getLookUp.
 export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
@@ -46,19 +47,22 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
-	// Expone el grid de mantenimiento al flujo base de CBaseComponent.
+	// Qué hace: entrega el grid de mantenimiento al flujo base.
+	// Cómo: retorna dataGrid o null.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
-	// Inicializa la vista y carga la información necesaria para comenzar el mantenimiento.
+	// Qué hace: prepara la pantalla al abrirla.
+	// Cómo: fija el subtítulo, carga divisiones con getLookUp y llama a consultar.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.llenaComboBox();
 		this.consultar();
 	}
 
-	// Sincroniza el estado del mantenimiento con la presentación y las acciones disponibles.
+	// Qué hace: sincroniza el estado del mantenimiento con la barra.
+	// Cómo: llama a AsignaStatus base y restaura subtítulo en Browse.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -66,12 +70,14 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
-	// Inicia la carga de catálogos requeridos por los campos de selección del formulario.
+	// Qué hace: inicia la carga de catálogos del formulario.
+	// Cómo: llama a getCORR_DIVISION.
 	llenaComboBox(): void {
 		this.getCORR_DIVISION();
 	}
 
-	// Carga las divisiones disponibles para la empresa y alimenta el selector del formulario.
+	// Qué hace: carga divisiones para el lookup del formulario.
+	// Cómo: getLookUp GEN_DIVISION GetCORR_DIVISION.
 	getCORR_DIVISION(): void {
 		this.appInfoService
 			.getLookUp('GEN_GERENCIA', 'GEN_DIVISION', 'GetCORR_DIVISION', undefined, environment.UrlGENERALAPI)
@@ -88,17 +94,19 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 			});
 	}
 
-	// Resuelve la división asociada a una fila para mostrarla en el selector.
+	// Qué hace: resuelve la división de una fila para el lookup.
+	// Cómo: retorna CORR_DIVISION de la primera fila.
 	selectedLookUpCORR_DIVISION(vRow: any): any {
 		return vRow[0].CORR_DIVISION;
 	}
 
-	// Construye los filtros enviados al API para consultar el registro seleccionado.
+	// Qué hace: arma el filtro por CORR_GERENCIA.
 	fillParam(xCORR_GERENCIA?: number): any {
 		return { CORR_GERENCIA: xCORR_GERENCIA ?? 0 };
 	}
 
-	// Transforma los datos recibidos en el modelo editable y crea sus valores iniciales cuando corresponde.
+	// Qué hace: construye el modelo editable del formulario.
+	// Cómo: copia campos de xModel o devuelve valores iniciales.
 	override fillData(xModel?: GenGerencia): GenGerencia {
 		if (xModel !== undefined) {
 			return {
@@ -135,7 +143,8 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		};
 	}
 
-	// Carga el listado desde el servicio, ordena los resultados y actualiza la cuadrícula.
+	// Qué hace: carga el listado de gerencias en el grid.
+	// Cómo: llama a getAll del GenGerenciaService mediante consultarMtto.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
@@ -146,7 +155,8 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Ordena una copia del listado por correlativo para mantener una presentación estable.
+	// Qué hace: ordena el listado por correlativo.
+	// Cómo: crea una copia ordenada de this.models.
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -155,7 +165,8 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		this.models = [...this.models].sort((a, b) => Number(a.CORR_GERENCIA) - Number(b.CORR_GERENCIA));
 	}
 
-	// Integra el registro guardado al listado local y mantiene su orden sin recargar toda la consulta.
+	// Qué hace: integra el registro guardado en el listado local.
+	// Cómo: inserta o reemplaza por clave y reordena.
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
 		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
 			super.aplicarRegistroEnGrid(data, isAdd);
@@ -178,7 +189,8 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		this.refrescarGridTrasCarga(isAdd);
 	}
 
-	// Retira del listado local el registro eliminado y refresca la cuadrícula.
+	// Qué hace: quita el registro eliminado del listado local.
+	// Cómo: filtra por clave y refresca el grid.
 	protected override quitarRegistroDeGrid(keyValue: unknown): void {
 		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
 			super.quitarRegistroDeGrid(keyValue);
@@ -190,14 +202,16 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		this.refrescarGridTrasCarga(true);
 	}
 
-	// Actualiza la cuadrícula después de una carga y opcionalmente reinicia su paginación.
+	// Qué hace: refresca el grid tras una carga.
+	// Cómo: llama a refreshData en el siguiente tick.
 	private refrescarGridTrasCarga(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
 		}, 0);
 	}
 
-	// Abre el registro seleccionado desde la cuadrícula y prepara sus datos para consulta.
+	// Qué hace: abre el registro en modo consulta al hacer doble clic.
+	// Cómo: llena model/modelUpdate, bloquea el formulario.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -213,7 +227,8 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Carga la fila seleccionada y habilita el formulario para su modificación.
+	// Qué hace: abre la fila seleccionada para edición.
+	// Cómo: llena el modelo, llama a editarClick y habilitar.
 	onEditClick(e: any): void {
 		if (!e?.row?.data) {
 			return;
@@ -230,7 +245,8 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Prepara un modelo vacío y abre el formulario para registrar un nuevo elemento.
+	// Qué hace: inicia la creación de un registro nuevo.
+	// Cómo: valida empresa de sesión y llama a nuevo del base.
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -244,7 +260,7 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Actualiza la división seleccionada y marca el campo cuando la selección no es válida.
+	// Qué hace: actualiza CORR_DIVISION y limpia el error visual si es válida.
 	onDivisionChanged(value: number | null): void {
 		this.model.CORR_DIVISION = value;
 		if (value != null && value > 0) {
@@ -252,7 +268,8 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
-	// Valida el formulario y ejecuta la creación o actualización según el estado del mantenimiento.
+	// Qué hace: valida y guarda la gerencia (creación o actualización).
+	// Cómo: llama a insert o update del GenGerenciaService según banderaMtto.
 	guardar(): void {
 		const formData = this.dataForm?.instance?.option('formData');
 		if (formData) {
@@ -273,7 +290,8 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Convierte errores de código duplicado en una respuesta controlada para mostrar una advertencia clara.
+	// Qué hace: convierte errores de código duplicado en advertencia controlada.
+	// Cómo: intercepta ErrorCode 2601/2627 o mensajes de duplicado.
 	private convertirCodigoDuplicadoEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
@@ -292,7 +310,8 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
-	// Convierte restricciones de integridad al eliminar en una advertencia comprensible para el usuario.
+	// Qué hace: convierte errores de integridad al eliminar en advertencia.
+	// Cómo: intercepta ErrorCode 547 o mensajes de FK/relacionados.
 	private convertirEliminacionRelacionadaEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
@@ -311,14 +330,14 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
-	// Reconoce variantes del mensaje de base de datos que indican un registro duplicado.
+	// Qué hace: detecta mensajes de registro duplicado.
 	private esErrorDuplicadoLocal(message: string): boolean {
 		return ['ya existe', 'duplicad', 'primary key', 'unique key', 'mismo tiempo', 'llave primaria', 'clave primaria'].some(
 			(fragment) => message.includes(fragment)
 		);
 	}
 
-	// Reconoce mensajes de integridad referencial para evitar mostrar errores técnicos.
+	// Qué hace: detecta mensajes de integridad referencial.
 	private esErrorRelacionadosLocal(message: string): boolean {
 		return [
 			'foreign key',
@@ -331,7 +350,7 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		].some((fragment) => message.includes(fragment));
 	}
 
-	// Extrae el mensaje útil de las distintas formas de error que puede devolver el API.
+	// Qué hace: obtiene el mensaje usable desde un error del API.
 	private obtenerMensajeApiLocal(error: any): string {
 		if (typeof error === 'string') {
 			return error;
@@ -344,13 +363,15 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		return `${error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.message ?? error ?? ''}`;
 	}
 
-	// Descarta la edición actual y restaura el estado de consulta del mantenimiento.
+	// Qué hace: cancela la edición y vuelve a modo consulta.
+	// Cómo: llama a cancelar del base con la clave del registro.
 	override cancelar(): void {
 		this.divisionInvalida = false;
 		super.cancelar((item: any) => item.CORR_GERENCIA === this.modelUpdate.CORR_GERENCIA);
 	}
 
-	// Canaliza la eliminación de la fila y convierte restricciones relacionadas en mensajes controlados.
+	// Qué hace: elimina la gerencia seleccionada en el grid.
+	// Cómo: llama a delete del servicio vía rowRemovingMtto.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
@@ -358,7 +379,8 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Deja el formulario en solo lectura (modo consulta); también marca el lookup.
+	// Qué hace: deja el formulario en solo lectura (modo consulta).
+	// Cómo: marca readOnly en correlativo, nombre, código y lookup.
 	override bloquear(): void {
 		this.readOnly = true;
 		this.dataForm?.instance?.getEditor('CORR_GERENCIA')?.option('readOnly', true);
@@ -366,7 +388,7 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		this.dataForm?.instance?.getEditor('CODIGO_GERENCIA')?.option('readOnly', true);
 	}
 
-	// Habilita nombre y código; el correlativo sigue bloqueado.
+	// Qué hace: habilita nombre y código; deja el correlativo bloqueado.
 	override habilitar(): void {
 		this.readOnly = false;
 		setTimeout(() => {
@@ -376,7 +398,7 @@ export class GenGerenciaComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	// Enfoca el nombre para agilizar la captura.
+	// Qué hace: enfoca el campo nombre para agilizar la captura.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm?.instance?.getEditor('NOMBRE_GERENCIA')?.focus();

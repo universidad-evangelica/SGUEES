@@ -4,20 +4,20 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
-	// Contrato del servicio de municipios (consultas, lookups, alta, baja y actualización).
+	// Qué hace: define el contrato del servicio de municipios (consultas, lookups, creación, eliminación y actualización).
 	public interface IGEN_MUNICIPIOService
 	{
-		// Define la consulta del listado de municipios según los filtros recibidos.
+		// Qué hace: lista municipios según los filtros recibidos.
 		Task<CResult> GetAllAsync(GEN_MUNICIPIOParam xWhere);
-		// Define la consulta de un municipio específico por sus claves.
+		// Qué hace: obtiene municipio específico por sus claves.
 		Task<CResult> GetAsync(GEN_MUNICIPIOParam xWhere);
-		// Define la consulta del catálogo de municipios usado por mantenimientos relacionados.
+		// Qué hace: lista el catálogo de municipios para mantenimientos relacionados.
 		Task<CResult> GetMunicipiosByCodigoDeptoAsync(GEN_MUNICIPIOParam xWhere);
-		// Define la creación validada de un municipio con su información de auditoría.
+		// Qué hace: crea municipio con su información de auditoría.
 		Task<CResult> CreateAsync(GEN_MUNICIPIOTable data, string vLoginSistema, string vEstacion);
-		// Define la actualización validada de un municipio con su información de auditoría.
+		// Qué hace: actualiza municipio con su información de auditoría.
 		Task<CResult> UpdateAsync(GEN_MUNICIPIOTable data, string vLoginSistema, string vEstacion);
-		// Define la eliminación de un municipio identificado por sus claves.
+		// Qué hace: elimina municipio identificado por sus claves.
 		Task<CResult> DeleteAsync(GEN_MUNICIPIOTable data, string vLoginSistema, string vEstacion);
 	}
 }

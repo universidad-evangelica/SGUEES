@@ -1,4 +1,5 @@
-// Lógica de negocio del catálogo competencias técnicas (validación y delegación al repositorio).
+// Qué hace: lógica de negocio del catálogo competencias técnicas.
+// Cómo: valida los datos jerárquicos y llama a ISC_COMPETENCIAS_TECNICASRepository para ejecutar el CRUD.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,8 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
-    // Valida datos y delega persistencia de competencia técnica en el repositorio.
+    // Qué hace: servicio de competencias técnicas.
+    // Cómo: valida los datos jerárquicos y llama al repositorio para persistir la información.
     public class SC_COMPETENCIAS_TECNICASService : ISC_COMPETENCIAS_TECNICASService
     {
         private readonly ISC_COMPETENCIAS_TECNICASRepository _repo;
@@ -20,13 +22,15 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
-        // Delega en el repositorio la consulta del listado.
+        // Qué hace: obtiene el listado de competencias técnicas.
+        // Cómo: llama a GetAllAsync del repositorio con los parámetros armados por BuildParameters.
         public async Task<CResult> GetAllAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
-        // Delega en el repositorio la consulta por llave.
+        // Qué hace: obtiene una competencia técnica puntual.
+        // Cómo: llama a GetAsync del repositorio filtrando por CORR_EMPRESA y CORR_COMPETENCIAS_TECNICAS.
         public async Task<CResult> GetAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             var p = new List<CParameter>
@@ -38,7 +42,8 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
-        // Carga padres del nivel solicitado y construye su texto de lookup.
+        // Qué hace: obtiene los posibles padres para el lookup jerárquico.
+        // Cómo: valida NIVEL_PADRE, llama a GetPadresByNivelAsync del repositorio y construye NOMBRE_DISPLAY con BuildLookupDisplay.
         public async Task<CResult> GetPadresAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             if (string.IsNullOrWhiteSpace(xWhere.NIVEL_PADRE))
@@ -81,7 +86,8 @@ namespace SGUEES.Services
             };
         }
 
-        // Agrupa competencias de nivel tres por sus ancestros para el descriptor.
+        // Qué hace: obtiene el catálogo de nivel 3 agrupado para el descriptor de puesto.
+        // Cómo: llama a GetCatalogoNivel3DescriptorAsync del repositorio y arma GRUPO_NIV1, GRUPO_NIV2 y NOMBRE_DISPLAY por registro.
         public async Task<CResult> GetCatalogoNivel3DescriptorAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             var rows = await _repo.GetCatalogoNivel3DescriptorAsync(xWhere.CORR_EMPRESA);
@@ -123,7 +129,8 @@ namespace SGUEES.Services
             };
         }
 
-        // Valida el padre de nivel dos y calcula el siguiente código de nivel tres.
+        // Qué hace: calcula el siguiente código de nivel 3 para un padre de nivel 2.
+        // Cómo: valida CORR_COMPETENCIAS_TECNICAS_PADRE, consulta el padre con GetAsync y genera el código con BuildNextCodigoLevel3Async.
         public async Task<CResult> GetNextCodigoAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             if (xWhere.CORR_COMPETENCIAS_TECNICAS_PADRE is not > 0)
@@ -157,7 +164,8 @@ namespace SGUEES.Services
             };
         }
 
-        // Prepara la jerarquía y valida la unicidad antes de crear.
+        // Qué hace: crea una competencia técnica.
+        // Cómo: valida la empresa con ValidateEmpresaSesion, normaliza con PrepareForSaveAsync, verifica unicidad con ValidateUniqueCodigoAsync y llama a CreateAsync del repositorio.
         public async Task<CResult> CreateAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -182,7 +190,8 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Conserva la estructura de nodos con hijos y valida antes de actualizar.
+        // Qué hace: actualiza una competencia técnica existente.
+        // Cómo: valida la empresa, consulta el registro actual con GetAsync, preserva jerarquía si tiene hijos, valida con PrepareForSaveAsync y llama a UpdateAsync del repositorio.
         public async Task<CResult> UpdateAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -226,7 +235,8 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Impide eliminar competencias que todavía poseen nodos hijos.
+        // Qué hace: elimina una competencia técnica.
+        // Cómo: valida la empresa con ValidateEmpresaSesion, verifica hijos con HasChildrenAsync y llama a DeleteAsync del repositorio.
         public async Task<CResult> DeleteAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -243,7 +253,8 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida empresa y llave antes de cambiar el estado.
+        // Qué hace: cambia el estado activo/inactivo de una competencia técnica.
+        // Cómo: valida la empresa con ValidateEmpresaSesion, verifica CORR_COMPETENCIAS_TECNICAS y llama a ActivarInactivarAsync del repositorio.
         public async Task<CResult> ActivarInactivarAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -260,7 +271,8 @@ namespace SGUEES.Services
             return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Normaliza y valida código, padre y nombre según el nivel jerárquico.
+        // Qué hace: normaliza y valida código, padre y nombre según el nivel jerárquico.
+        // Cómo: ejecuta ValidateBase, NormalizeNivel y aplica reglas por NIV1, NIV2 o NIV3 antes de create o update.
         private async Task<CResult> PrepareForSaveAsync(
             SC_COMPETENCIAS_TECNICASTable Data,
             bool isCreate,
@@ -418,7 +430,8 @@ namespace SGUEES.Services
             return null;
         }
 
-        // Incrementa el mayor sufijo numérico usado por los hermanos de nivel tres.
+        // Qué hace: calcula el siguiente código de nivel 3 a partir de los hermanos existentes.
+        // Cómo: llama a GetSiblingCodigosLevel3Async del repositorio, obtiene el mayor sufijo numérico y lo incrementa con formato D2.
         private async Task<string> BuildNextCodigoLevel3Async(int corrEmpresa, SC_COMPETENCIAS_TECNICASView parent)
         {
             var parentCodigo = parent.CODIGO_COMPETENCIAS_TECNICAS ?? string.Empty;
@@ -445,7 +458,8 @@ namespace SGUEES.Services
             return parentCodigo + (max + 1).ToString("D2");
         }
 
-        // Verifica que el código no pertenezca a otra competencia de la empresa.
+        // Qué hace: verifica que el código no pertenezca a otra competencia de la empresa.
+        // Cómo: llama a ExistsCodigoAsync del repositorio y devuelve ValidationError si ya existe otro registro.
         private async Task<CResult> ValidateUniqueCodigoAsync(SC_COMPETENCIAS_TECNICASTable Data, int? excludeCorr)
         {
             var exclude = excludeCorr ?? 0;
@@ -459,13 +473,15 @@ namespace SGUEES.Services
                 : null;
         }
 
-        // Consulta en el repositorio si la competencia aún tiene hijos.
+        // Qué hace: consulta si la competencia aún tiene nodos hijos asociados.
+        // Cómo: llama a HasChildrenAsync del repositorio filtrando por CORR_EMPRESA y CORR_COMPETENCIAS_TECNICAS.
         private Task<bool> HasChildrenAsync(int corrEmpresa, int corrCompetencia)
         {
             return _repo.HasChildrenAsync(corrEmpresa, corrCompetencia);
         }
 
-        // Valida presencia de datos y nivel antes de las reglas por jerarquía.
+        // Qué hace: valida presencia de datos y nivel antes de las reglas por jerarquía.
+        // Cómo: rechaza el guardado si Data es nulo o NIVEL está vacío, devolviendo ValidationError.
         private static CResult ValidateBase(SC_COMPETENCIAS_TECNICASTable Data)
         {
             if (Data == null)
@@ -481,7 +497,8 @@ namespace SGUEES.Services
             return null;
         }
 
-        // Convierte las variantes aceptadas de nivel al formato NIV1, NIV2 o NIV3.
+        // Qué hace: convierte las variantes aceptadas de nivel al formato NIV1, NIV2 o NIV3.
+        // Cómo: normaliza el texto recibido y reconoce valores como NIV1, 1 o NIVEL1.
         private static string NormalizeNivel(string nivel)
         {
             var value = nivel?.Trim().ToUpperInvariant();
@@ -507,7 +524,8 @@ namespace SGUEES.Services
             return value;
         }
 
-        // Combina código y nombre en una etiqueta legible para lookups.
+        // Qué hace: combina código y nombre en una etiqueta legible para lookups.
+        // Cómo: concatena codigo y nombre cuando ambos existen; si falta uno, devuelve el disponible o "(Sin nombre)".
         private static string BuildLookupDisplay(string codigo, string nombre)
         {
             var code = codigo?.Trim() ?? string.Empty;
@@ -531,7 +549,8 @@ namespace SGUEES.Services
             return "(Sin nombre)";
         }
 
-        // Arma los parámetros de filtro para el repositorio.
+        // Qué hace: arma los parámetros de filtro para el repositorio.
+        // Cómo: construye la lista CParameter con CORR_EMPRESA a partir de SC_COMPETENCIAS_TECNICASParam.
         private static List<CParameter> BuildParameters(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             return new List<CParameter>
@@ -540,7 +559,8 @@ namespace SGUEES.Services
             };
         }
 
-        // Rechaza operaciones cuando no hay empresa en sesión.
+        // Qué hace: rechaza operaciones cuando no hay empresa en sesión.
+        // Cómo: devuelve null si corrEmpresa es mayor que cero; en caso contrario, un CResult con ErrorCode 4100.
         private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
             if (corrEmpresa > 0)
@@ -560,7 +580,8 @@ namespace SGUEES.Services
             };
         }
 
-        // Construye un CResult de validación funcional.
+        // Qué hace: construye un CResult de validación funcional.
+        // Cómo: arma un resultado con Result false, ErrorCode -1 y el mensaje recibido.
         private static CResult ValidationError(string message)
         {
             return new CResult

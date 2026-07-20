@@ -9,27 +9,32 @@ import { environment } from 'src/environments/environment';
 @Injectable({
 	providedIn: 'root',
 })
+// Qué hace: agrupa las llamadas HTTP al controlador GEN_DEPTO.
 export class GenDeptoRepository {
 	readonly xController = 'GEN_DEPTO';
 
 	constructor(private objData: CData) {}
 
-	// Consulta el listado de departamentos aplicando los filtros recibidos.
+	// Qué hace: consulta el listado de departamentos.
+	// Cómo: GET GetAll al controlador GEN_DEPTO con los filtros recibidos.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlGENERALAPI);
 	}
 
-	// Envía al API la solicitud para crear el departamento.
+	// Qué hace: crea un departamento nuevo.
+	// Cómo: POST con el modelo al controlador GEN_DEPTO.
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlGENERALAPI);
 	}
 
-	// Envía al API la solicitud para actualizar el departamento identificada por sus claves.
+	// Qué hace: actualiza un departamento existente.
+	// Cómo: PUT con el modelo al controlador GEN_DEPTO.
 	update(model: any): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', [], environment.UrlGENERALAPI);
 	}
 
-	// Envía al API la solicitud para eliminar el departamento indicada por sus claves.
+	// Qué hace: elimina un departamento.
+	// Cómo: DELETE con la llave en xWhere al controlador GEN_DEPTO.
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlGENERALAPI);
 	}

@@ -1,4 +1,5 @@
-// Servicio de negocio del catálogo Competencias Técnicas (validación, CRUD y config de grilla/form).
+// Qué hace: servicio de negocio del catálogo Competencias Técnicas.
+// Cómo: valida los datos, ejecuta el CRUD a través del repositorio y arma la configuración de grilla y formulario jerárquico.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -24,11 +25,13 @@ export interface ScCompetenciaFormContext {
 @Injectable({
 	providedIn: 'root',
 })
-// Encapsula validaciones y delega el CRUD en el repositorio de competencia técnica.
+// Qué hace: servicio de competencias técnicas.
+// Cómo: valida los datos y llama a ScCompetenciasTecnicasRepository para ejecutar el CRUD.
 export class ScCompetenciasTecnicasService {
 	constructor(private repo: ScCompetenciasTecnicasRepository) {}
 
-	// Aplica las reglas de código, padre y nombre correspondientes a cada nivel.
+	// Qué hace: valida el formulario de competencia técnica antes de guardar.
+	// Cómo: revisa código, padre, nombre y descripción según el NIVEL (NIV1, NIV2 o NIV3), notificando con msg cuando falla.
 	esValido(model: ScCompetenciasTecnicas, msg: Function, isAdd: boolean): boolean {
 		if (!model.NIVEL) {
 			msg('Debe seleccionar el nivel de la competencia.', NotifyType.Warning);
@@ -99,7 +102,8 @@ export class ScCompetenciasTecnicasService {
 		return true;
 	}
 
-	// Compone el código jerárquico y retira campos auxiliares antes de enviar.
+	// Qué hace: prepara el modelo para enviarlo al API según el nivel jerárquico.
+	// Cómo: compone CODIGO_COMPETENCIAS_TECNICAS, normaliza campos por NIVEL y elimina propiedades auxiliares (CODIGO_PREFIJO, CODIGO_SUFIJO, CODIGO_PADRE, NOMBRE_PADRE).
 	prepararModeloParaGuardar(model: ScCompetenciasTecnicas, isAdd: boolean): ScCompetenciasTecnicas {
 		const payload = { ...model };
 		payload.DESCRIPCION = payload.DESCRIPCION?.trim() ?? '';
@@ -136,42 +140,50 @@ export class ScCompetenciasTecnicasService {
 		return payload;
 	}
 
-	// Solicita al repositorio el listado con los filtros construidos.
+	// Qué hace: obtiene el listado de competencias técnicas.
+	// Cómo: llama a getAll del repositorio con el filtro construido por buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	// Solicita al repositorio el detalle por correlativo.
+	// Qué hace: obtiene una competencia técnica puntual.
+	// Cómo: llama a get del repositorio filtrando por CORR_COMPETENCIAS_TECNICAS.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_COMPETENCIAS_TECNICAS', Value: param.CORR_COMPETENCIAS_TECNICAS }]);
 	}
 
-	// Solicita el siguiente código disponible para un padre de nivel dos.
+	// Qué hace: obtiene el siguiente código disponible para un padre de nivel 2.
+	// Cómo: llama a getNextCodigo del repositorio filtrando por CORR_COMPETENCIAS_TECNICAS_PADRE.
 	getNextCodigo(corrPadre: number): Observable<IResult> {
 		return this.repo.getNextCodigo([{ Parameter: 'CORR_COMPETENCIAS_TECNICAS_PADRE', Value: corrPadre }]);
 	}
 
-	// Delega en el repositorio la creación del registro.
+	// Qué hace: crea una nueva competencia técnica.
+	// Cómo: llama a create del repositorio con el modelo recibido.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
-	// Delega en el repositorio la actualización con su llave.
+	// Qué hace: actualiza una competencia técnica existente.
+	// Cómo: llama a update del repositorio con el modelo y su CORR_COMPETENCIAS_TECNICAS.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_COMPETENCIAS_TECNICAS', Value: model.CORR_COMPETENCIAS_TECNICAS }]);
 	}
 
-	// Delega en el repositorio la eliminación por correlativo.
+	// Qué hace: elimina una competencia técnica.
+	// Cómo: llama a delete del repositorio filtrando por CORR_COMPETENCIAS_TECNICAS.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_COMPETENCIAS_TECNICAS', Value: model.CORR_COMPETENCIAS_TECNICAS }]);
 	}
 
-	// Delega en el repositorio el cambio de estado activo/inactivo.
+	// Qué hace: cambia el estado activo/inactivo de una competencia técnica.
+	// Cómo: llama a activarInactivar del repositorio filtrando por CORR_COMPETENCIAS_TECNICAS.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_COMPETENCIAS_TECNICAS', Value: model.CORR_COMPETENCIAS_TECNICAS }]);
 	}
 
-	// Define columnas y formatos de la grilla de mantenimiento.
+	// Qué hace: define columnas y formatos de la grilla de mantenimiento.
+	// Cómo: arma el arreglo de columnas (correlativo, código, nombre, definición, nivel, padre, estado y auditoría) usado por app-data-grid-mtto.
 	getColumns(): any {
 		return [
 			{
@@ -191,7 +203,8 @@ export class ScCompetenciasTecnicasService {
 		];
 	}
 
-	// Configura el contador de registros de la grilla.
+	// Qué hace: configura el contador de registros de la grilla.
+	// Cómo: define el resumen totalItems que cuenta CORR_COMPETENCIAS_TECNICAS.
 	getSummary(): any {
 		return {
 			totalItems: [
@@ -205,7 +218,8 @@ export class ScCompetenciasTecnicasService {
 		};
 	}
 
-	// Construye dinámicamente el formulario según el nivel y sus padres.
+	// Qué hace: define los campos y reglas del formulario según el nivel jerárquico.
+	// Cómo: arma dinámicamente el arreglo de items (nivel, padre, código, nombre, estado y definición) usado por dx-form según el contexto recibido.
 	getItems(ctx: ScCompetenciaFormContext): any[] {
 		const isNivel1 = ctx.nivel === SC_COMPETENCIA_NIVEL.UNO;
 		const isNivel2 = ctx.nivel === SC_COMPETENCIA_NIVEL.DOS;
@@ -308,7 +322,8 @@ export class ScCompetenciasTecnicasService {
 		return items;
 	}
 
-	// Traduce los filtros del componente al formato esperado por la API.
+	// Qué hace: traduce los filtros del componente al formato esperado por la API.
+	// Cómo: agrega a xWhere el parámetro CORR_COMPETENCIAS_TECNICAS cuando viene informado en param.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 
@@ -323,16 +338,20 @@ export class ScCompetenciasTecnicasService {
 export const EMPRESA_WARNING_ERROR_CODE = 4100;
 export const EMPRESA_REGISTRO_ETIQUETA = 'la competencia técnica';
 
+// Qué hace: construye el mensaje de advertencia por ausencia de empresa en sesión.
+// Cómo: interpola etiquetaRegistro en una cadena fija orientada al usuario.
 export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
 	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
 }
 
-// Identifica la respuesta controlada por ausencia de empresa en sesión.
+// Qué hace: identifica la respuesta controlada por ausencia de empresa en sesión.
+// Cómo: compara ErrorCode de la respuesta con EMPRESA_WARNING_ERROR_CODE (4100).
 export function isEmpresaWarningResponse(response: any): boolean {
 	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
 }
 
-// Reconoce variantes del error de relación con la empresa.
+// Qué hace: reconoce variantes del error de relación con la empresa.
+// Cómo: busca en el mensaje textos como gen_empresa, foreign key, clave externa o ausencia de empresa asignada.
 export function isEmpresaFkErrorMessage(message: string): boolean {
 	const value = `${message ?? ''}`.toLowerCase();
 	return (

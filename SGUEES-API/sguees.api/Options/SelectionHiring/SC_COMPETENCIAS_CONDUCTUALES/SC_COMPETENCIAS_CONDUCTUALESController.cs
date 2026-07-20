@@ -1,4 +1,5 @@
-// Endpoints REST del catálogo competencias conductuales.
+// Qué hace: endpoints REST del catálogo competencias conductuales.
+// Cómo: expone GetAll, Get, Post, Put, Delete, ActivarInactivar y GetCORR_COMPETENCIAS_CONDUCTUALES_SC_DESCRIPTOR_PUESTO, llamando a ISC_COMPETENCIAS_CONDUCTUALESService.
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -15,7 +16,8 @@ namespace SGUEES.Controllers
   [Authorize]
   [ApiController]
   [Route("[controller]")]
-  // Expone el CRUD y lookups de competencia conductual con autorización por política.
+  // Qué hace: controlador de competencias conductuales.
+  // Cómo: expone el CRUD y el lookup de competencias activas para el descriptor, cada acción protegida con Authorize por política.
   public class SC_COMPETENCIAS_CONDUCTUALESController : ControllerBase
   {
     private readonly ISC_COMPETENCIAS_CONDUCTUALESService _service;
@@ -27,7 +29,8 @@ namespace SGUEES.Controllers
 
     [HttpGet("GetAll")]
     [Authorize(Policy = "/sc-competencias-conductuales|R")]
-    // Atiende el listado y lo limita a la empresa de la sesión.
+    // Qué hace: atiende el listado de competencias conductuales.
+    // Cómo: fija CORR_EMPRESA de la sesión y llama a GetAllAsync del servicio.
     public async Task<CResult> GetAll([FromQuery] SC_COMPETENCIAS_CONDUCTUALESParam Data)
     {
       Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -36,7 +39,8 @@ namespace SGUEES.Controllers
 
     [HttpGet("Get")]
     [Authorize(Policy = "/sc-competencias-conductuales|R")]
-    // Atiende la consulta de un registro dentro de la empresa de la sesión.
+    // Qué hace: atiende la consulta de una competencia conductual puntual.
+    // Cómo: fija CORR_EMPRESA de la sesión y llama a GetAsync del servicio.
     public async Task<CResult> Get([FromQuery] SC_COMPETENCIAS_CONDUCTUALESParam Data)
     {
       Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -45,7 +49,8 @@ namespace SGUEES.Controllers
 
     [HttpPost]
     [Authorize(Policy = "/sc-competencias-conductuales|C")]
-    // Completa auditoría y crea la competencia en la empresa de la sesión.
+    // Qué hace: crea una competencia conductual.
+    // Cómo: completa la auditoría con SetCreateAudit y llama a CreateAsync del servicio.
     public async Task<IActionResult> Post(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       SetCreateAudit(Data);
@@ -56,7 +61,8 @@ namespace SGUEES.Controllers
 
     [HttpPut]
     [Authorize(Policy = "/sc-competencias-conductuales|U")]
-    // Aplica la llave consultada y la auditoría antes de actualizar.
+    // Qué hace: actualiza una competencia conductual.
+    // Cómo: aplica las claves de la consulta con ApplyQueryKeys, completa la auditoría con SetUpdateAudit y llama a UpdateAsync del servicio.
     public async Task<IActionResult> Put(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       this.ApplyQueryKeys(Data, nameof(SC_COMPETENCIAS_CONDUCTUALESTable.CORR_COMPETENCIAS_CONDUCTUALES));
@@ -68,7 +74,8 @@ namespace SGUEES.Controllers
 
     [HttpDelete]
     [Authorize(Policy = "/sc-competencias-conductuales|D")]
-    // Restringe la eliminación a la empresa de la sesión.
+    // Qué hace: elimina una competencia conductual.
+    // Cómo: fija CORR_EMPRESA de la sesión y llama a DeleteAsync del servicio.
     public async Task<IActionResult> Delete([FromQuery] SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -79,7 +86,8 @@ namespace SGUEES.Controllers
 
     [HttpPut("ActivarInactivar")]
     [Authorize(Policy = "/sc-competencias-conductuales|U")]
-    // Cambia el estado activo/inactivo del registro indicado.
+    // Qué hace: cambia el estado activo/inactivo de una competencia conductual.
+    // Cómo: aplica las claves de la consulta, fija CORR_EMPRESA de la sesión y llama a ActivarInactivarAsync del servicio.
     public async Task<IActionResult> ActivarInactivar(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       this.ApplyQueryKeys(Data, nameof(SC_COMPETENCIAS_CONDUCTUALESTable.CORR_COMPETENCIAS_CONDUCTUALES));
@@ -91,27 +99,31 @@ namespace SGUEES.Controllers
 
     [HttpGet("GetCORR_COMPETENCIAS_CONDUCTUALES_SC_DESCRIPTOR_PUESTO")]
     [Authorize(Policy = "/sc-descriptor-puesto|R")]
-    // Provee el catálogo activo de competencias para el descriptor.
+    // Qué hace: provee competencias conductuales activas para el descriptor de puesto.
+    // Cómo: fija CORR_EMPRESA de la sesión y llama a GetCatalogoDescriptorAsync del servicio.
     public async Task<CResult> GetCORR_COMPETENCIAS_CONDUCTUALES_SC_DESCRIPTOR_PUESTO([FromQuery] SC_COMPETENCIAS_CONDUCTUALESParam Data)
     {
       Data.CORR_EMPRESA = GetCorrEmpresa();
       return await _service.GetCatalogoDescriptorAsync(Data);
     }
 
-    // Lee CORR_EMPRESA del claim del usuario autenticado.
+    // Qué hace: obtiene la empresa de la sesión.
+    // Cómo: lee el claim CORR_EMPRESA del usuario autenticado.
     private int GetCorrEmpresa()
     {
       var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
       return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
     }
 
-    // Obtiene el identificador de usuario desde los claims.
+    // Qué hace: obtiene el usuario de la sesión.
+    // Cómo: lee el claim NameIdentifier del usuario autenticado.
     private string GetUsuario()
     {
       return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
     }
 
-    // Completa empresa, usuario, estación y fechas del registro nuevo.
+    // Qué hace: completa la auditoría de creación.
+    // Cómo: fija CORR_EMPRESA, usuario, estación y fechas de creación/actualización, y aplica ESTADO_COMPETENCIAS_CONDUCTUALES activo por defecto.
     private void SetCreateAudit(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -124,7 +136,8 @@ namespace SGUEES.Controllers
       Data.ESTADO_COMPETENCIAS_CONDUCTUALES ??= true;
     }
 
-    // Actualiza auditoría sin reemplazar la información de creación.
+    // Qué hace: completa la auditoría de actualización.
+    // Cómo: fija CORR_EMPRESA, usuario, estación y fecha de actualización, y aplica ESTADO_COMPETENCIAS_CONDUCTUALES activo si no viene informado.
     private void SetUpdateAudit(SC_COMPETENCIAS_CONDUCTUALESTable Data)
     {
       Data.CORR_EMPRESA = GetCorrEmpresa();

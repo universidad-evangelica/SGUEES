@@ -1,3 +1,4 @@
+// Endpoints REST del catálogo Payroll de tipo de puesto.
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -11,10 +12,10 @@ using SGUEES.Services;
 
 namespace SGUEES.Controllers
 {
-    // Endpoints REST del catálogo Payroll de tipo de puesto.
     [Authorize]
     [ApiController]
     [Route("[controller]")]
+    // Qué hace: expone el CRUD del catálogo de tipo de puesto con autorización por política.
     public class PLA_TIPO_PUESTOController : ControllerBase
     {
         private readonly IPLA_TIPO_PUESTOService _service;
@@ -26,7 +27,8 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetAll")]
         [Authorize(Policy = "/pla-tipo-puesto|R")]
-        // Completa la empresa desde la sesión antes de consultar el catálogo.
+        // Qué hace: lista los tipos de puesto de la empresa en sesión.
+        // Cómo: fija CORR_EMPRESA y llama a GetAllAsync del servicio.
         public async Task<CResult> GetAll([FromQuery] PLA_TIPO_PUESTOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -35,7 +37,8 @@ namespace SGUEES.Controllers
 
         [HttpGet("Get")]
         [Authorize(Policy = "/pla-tipo-puesto|R")]
-        // Obtiene un tipo filtrando por empresa de sesión.
+        // Qué hace: obtiene un tipo de puesto de la empresa en sesión.
+        // Cómo: fija CORR_EMPRESA y llama a GetAsync del servicio.
         public async Task<CResult> Get([FromQuery] PLA_TIPO_PUESTOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -44,7 +47,8 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetCORR_TIPO_PUESTO_SC_COMPETENCIAS_CONDUCTUALES")]
         [Authorize(Policy = "/sc-competencias-conductuales|R")]
-        // Provee el catálogo de tipos de puesto para competencias conductuales.
+        // Qué hace: entrega el catálogo de tipos de puesto para competencias conductuales.
+        // Cómo: fija CORR_EMPRESA de la sesión y llama a GetAllAsync del servicio.
         public async Task<CResult> GetCORR_TIPO_PUESTO_SC_COMPETENCIAS_CONDUCTUALES([FromQuery] PLA_TIPO_PUESTOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -53,7 +57,8 @@ namespace SGUEES.Controllers
 
         [HttpPost]
         [Authorize(Policy = "/pla-tipo-puesto|C")]
-        // Asigna la auditoría de creación y devuelve el resultado del guardado.
+        // Qué hace: crea un tipo de puesto nuevo.
+        // Cómo: completa la auditoría de creación y llama a CreateAsync del servicio.
         public async Task<IActionResult> Post(PLA_TIPO_PUESTOTable Data)
         {
             SetCreateAudit(Data);
@@ -64,7 +69,8 @@ namespace SGUEES.Controllers
 
         [HttpPut]
         [Authorize(Policy = "/pla-tipo-puesto|U")]
-        // Aplica la llave de la consulta y la auditoría antes de actualizar.
+        // Qué hace: actualiza un tipo de puesto existente.
+        // Cómo: copia la llave de la URL al cuerpo, completa la auditoría y llama a UpdateAsync del servicio.
         public async Task<IActionResult> Put(PLA_TIPO_PUESTOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(PLA_TIPO_PUESTOTable.CORR_TIPO_PUESTO));
@@ -76,7 +82,8 @@ namespace SGUEES.Controllers
 
         [HttpDelete]
         [Authorize(Policy = "/pla-tipo-puesto|D")]
-        // Restringe la eliminación a la empresa de la sesión actual.
+        // Qué hace: elimina un tipo de puesto de la empresa en sesión.
+        // Cómo: fija CORR_EMPRESA y llama a DeleteAsync del servicio.
         public async Task<IActionResult> Delete([FromQuery] PLA_TIPO_PUESTOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -87,7 +94,8 @@ namespace SGUEES.Controllers
 
         [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/pla-tipo-puesto|U")]
-        // Identifica el registro y solicita el cambio de estado en su empresa.
+        // Qué hace: cambia el estado activo/inactivo de un tipo de puesto.
+        // Cómo: copia la llave de la URL, fija CORR_EMPRESA y llama a ActivarInactivarAsync del servicio.
         public async Task<IActionResult> ActivarInactivar(PLA_TIPO_PUESTOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(PLA_TIPO_PUESTOTable.CORR_TIPO_PUESTO));
@@ -97,20 +105,21 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
-        // Lee CORR_EMPRESA del claim del usuario autenticado.
+        // Qué hace: obtiene CORR_EMPRESA del claim del usuario autenticado.
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
-        // Obtiene el login del usuario desde los claims.
+        // Qué hace: obtiene el identificador de usuario desde los claims.
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
-        // Completa empresa, usuario, estación y fechas para un registro nuevo.
+        // Qué hace: completa los datos de auditoría de un registro nuevo.
+        // Cómo: fija empresa, usuario, estación y fechas; deja ESTADO_TIPO_PUESTO en true si viene vacío.
         private void SetCreateAudit(PLA_TIPO_PUESTOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -123,7 +132,8 @@ namespace SGUEES.Controllers
             Data.ESTADO_TIPO_PUESTO ??= true;
         }
 
-        // Actualiza los datos de auditoría sin reemplazar la información de creación.
+        // Qué hace: completa los datos de auditoría de una actualización.
+        // Cómo: fija empresa, usuario, estación y fecha; conserva ESTADO_TIPO_PUESTO o lo deja en true si falta.
         private void SetUpdateAudit(PLA_TIPO_PUESTOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

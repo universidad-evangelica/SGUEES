@@ -1,4 +1,5 @@
-// Routing y declaraciones DevExtreme/layout de la vista Riesgo del Puesto.
+// Qué hace: routing y declaraciones DevExtreme/layout de la vista Riesgo del Puesto.
+// Cómo: registra la ruta del componente ScRiesgoPuestoComponent junto con los módulos DevExtreme y de layout que usa.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
@@ -14,7 +15,8 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { ToastModule } from 'primeng/toast';
 import { ScRiesgoPuestoComponent } from './sc-riesgo-puesto.component';
 
-// Ruta lazy y declaraciones DevExtreme del mantenimiento de riesgo de puesto.
+// Qué hace: ruta lazy del mantenimiento de riesgo del puesto.
+// Cómo: asocia la ruta vacía ('') con ScRiesgoPuestoComponent.
 const routes: Routes = [{ path: '', component: ScRiesgoPuestoComponent }];
 
 @NgModule({
@@ -35,6 +37,6 @@ const routes: Routes = [{ path: '', component: ScRiesgoPuestoComponent }];
 	exports: [RouterModule],
 	declarations: [ScRiesgoPuestoComponent],
 })
-// Declara el componente y registra la ruta hija del catálogo.
+// Qué hace: módulo de routing de Riesgo del Puesto.
+// Cómo: declara ScRiesgoPuestoComponent, importa los módulos DevExtreme/layout necesarios y expone RouterModule con las rutas hijas del catálogo.
 export class ScRiesgoPuestoRoutingModule {}
-

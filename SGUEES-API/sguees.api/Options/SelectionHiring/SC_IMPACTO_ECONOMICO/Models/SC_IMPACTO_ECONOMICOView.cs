@@ -3,7 +3,7 @@ using System;
 
 namespace SGUEES.Models
 {
-    // Campos expuestos por la vista de consulta de impacto económico.
+    // Qué hace: representa los campos expuestos por la vista de consulta de impacto económico.
     public class SC_IMPACTO_ECONOMICOView
     {
         public int CORR_EMPRESA { get; set; }

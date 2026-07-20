@@ -1,8 +1,8 @@
-// Módulo Angular que importa el routing de Requerimiento Organizacional.
+// Qué hace: módulo contenedor del mantenimiento de requerimiento organizacional.
+// Cómo: importa ScRequerimientoOrganizacionalRoutingModule para registrar la ruta lazy del catálogo.
 import { NgModule } from '@angular/core';
 import { ScRequerimientoOrganizacionalRoutingModule } from './sc-requerimiento-organizacional-routing.module';
 
-// Módulo contenedor del mantenimiento de requerimiento organizacional.
 @NgModule({
 	imports: [ScRequerimientoOrganizacionalRoutingModule],
 })

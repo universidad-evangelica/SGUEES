@@ -6,10 +6,10 @@ using sguees.Models;
 
 namespace sguees.Repositories
 {
-	// Contrato del repositorio de gerencias; extiende IRepository con chequeo de duplicados.
+// Qué hace: define el contrato del repositorio de gerencias con comprobación de duplicados.
 	public interface IGEN_GERENCIARepository : IRepository<GEN_GERENCIATable>
 	{
-		// Define la comprobación de duplicados de la gerencia dentro de su ámbito funcional.
+		// Qué hace: comprueba si ya existe una gerencia con el mismo código.
 		Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr);
 	}
 }

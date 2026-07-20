@@ -2,14 +2,14 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
-	// Parámetros de consulta/filtro de departamentos (empresa, país y grilla remota).
+	// Qué hace: define los parámetros de consulta y filtro de departamentos (empresa, país y grilla remota).
 	public class GEN_DEPTOParam : BaseParam
 	{
-		// Empresa de sesión para aislar el contexto.
+		// Qué hace: correlativo de empresa (filtro de ámbito).
 		public int CORR_EMPRESA { get; set; }
-		// Filtro/clave por país.
+		// Qué hace: correlativo/filtro por país.
 		public int CORR_PAIS { get; set; }
-		// Clave del departamento.
+		// Qué hace: correlativo del departamento.
 		public int CORR_DEPTO { get; set; }
 		public string CODIGO_DEPTO { get; set; }
 		public string BUSQUEDA { get; set; }
@@ -19,7 +19,7 @@ namespace SGUEES.Models
 		public string USUARIO_ACTU { get; set; }
 		public string ESTACION_ACTU { get; set; }
 		public string FECHA_ACTU { get; set; }
-		// Paginación y filtros remotos de grilla.
+		// Qué hace: parámetros de paginación y filtros remotos.
 		public int PAGE { get; set; } = 1;
 		public int PAGE_SIZE { get; set; } = 10;
 		public int OPCION_CONSULTA { get; set; } = 0;

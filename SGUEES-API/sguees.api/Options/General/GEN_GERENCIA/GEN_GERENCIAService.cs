@@ -1,3 +1,4 @@
+// Qué hace: aplica las reglas de negocio del catálogo gerencias antes de llamar al repositorio.
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -6,24 +7,25 @@ using sguees.Repositories;
 
 namespace sguees.Services
 {
-	// Capa de servicio de gerencias: valida/normaliza y delega la persistencia al repositorio.
+	// Qué hace: valida los datos de gerencia y coordina su persistencia con el repositorio.
 	public class GEN_GERENCIAService : IGEN_GERENCIAService
 	{
 		private readonly IGEN_GERENCIARepository _repo;
 
-		// Inyecta el repositorio de gerencias para operaciones de datos.
 		public GEN_GERENCIAService(IGEN_GERENCIARepository repo)
 		{
 			_repo = repo;
 		}
 
-		// Construye los filtros y solicita al repositorio el listado de gerencias.
+		// Qué hace: lista las gerencias según los filtros recibidos.
+		// Cómo: llama a GetAllAsync del repositorio con los parámetros armados en BuildParameters.
 		public async Task<CResult> GetAllAsync(GEN_GERENCIAParam xWhere)
 		{
 			return await _repo.GetAllAsync(BuildParameters(xWhere));
 		}
 
-		// Valida las claves de consulta y solicita al repositorio el detalle de la gerencia.
+		// Qué hace: obtiene una gerencia por su correlativo.
+		// Cómo: llama a GetAsync del repositorio con CORR_EMPRESA y CORR_GERENCIA.
 		public async Task<CResult> GetAsync(GEN_GERENCIAParam xWhere)
 		{
 			var p = new List<CParameter>
@@ -35,7 +37,8 @@ namespace sguees.Services
 			return await _repo.GetAsync(p);
 		}
 
-		// Normaliza y valida la gerencia, comprueba duplicados y solicita su creación.
+		// Qué hace: crea una gerencia nueva.
+		// Cómo: valida empresa y datos, normaliza campos, comprueba código único y llama a CreateAsync del repositorio.
 		public async Task<CResult> CreateAsync(GEN_GERENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -62,7 +65,8 @@ namespace sguees.Services
 			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
-		// Normaliza y valida la gerencia, comprueba duplicados y solicita su actualización.
+		// Qué hace: actualiza una gerencia existente.
+		// Cómo: valida empresa, datos y código único; normaliza campos y llama a UpdateAsync del repositorio.
 		public async Task<CResult> UpdateAsync(GEN_GERENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -89,7 +93,8 @@ namespace sguees.Services
 			return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
-		// Valida la identidad de la gerencia y solicita su eliminación al repositorio.
+		// Qué hace: elimina una gerencia.
+		// Cómo: valida empresa de sesión y llama a DeleteAsync del repositorio.
 		public async Task<CResult> DeleteAsync(GEN_GERENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -101,7 +106,7 @@ namespace sguees.Services
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
-		// Convierte los filtros recibidos en parámetros seguros para el repositorio.
+		// Qué hace: arma el parámetro CORR_EMPRESA para filtrar en el repositorio.
 		private static List<CParameter> BuildParameters(GEN_GERENCIAParam xWhere)
 		{
 			return new List<CParameter>
@@ -110,7 +115,7 @@ namespace sguees.Services
 			};
 		}
 
-		// Valida las claves y campos obligatorios de la gerencia antes de persistirla.
+		// Qué hace: valida campos obligatorios de la gerencia antes de persistirla.
 		private static CResult Validate(GEN_GERENCIATable Data)
 		{
 			if (Data == null)
@@ -146,7 +151,8 @@ namespace sguees.Services
 			return null;
 		}
 
-		// Comprueba que el código de la gerencia sea único dentro de la empresa.
+		// Qué hace: comprueba que el código de gerencia sea único en la empresa.
+		// Cómo: llama a ExistsCodigoAsync del repositorio.
 		private async Task<CResult> ValidateUniqueCodigoAsync(GEN_GERENCIATable Data, int? excludeCorr)
 		{
 			var exists = await _repo.ExistsCodigoAsync(
@@ -159,7 +165,7 @@ namespace sguees.Services
 				: null;
 		}
 
-		// Verifica que la sesión tenga una empresa válida y prepara una respuesta controlada si falta.
+		// Qué hace: verifica que la sesión tenga empresa válida.
 		private static CResult ValidateEmpresaSesion(int corrEmpresa)
 		{
 			if (corrEmpresa > 0)
@@ -179,7 +185,7 @@ namespace sguees.Services
 			};
 		}
 
-		// Construye una respuesta uniforme para devolver errores de validación al cliente.
+		// Qué hace: construye una respuesta uniforme para errores de validación.
 		private static CResult ValidationError(string message)
 		{
 			return new CResult

@@ -1,4 +1,4 @@
-// Modelo de país (encabezado GEN_PAIS).
+// Qué hace: define la estructura del país encabezado (GEN_PAIS) y los niveles territoriales hijos.
 export interface GenPais {
 	CORR_PAIS: number;
 	NOMBRE_PAIS: string;

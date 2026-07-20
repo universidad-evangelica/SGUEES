@@ -2,12 +2,12 @@ using System;
 
 namespace sguees.Models
 {
-	// Proyección de lectura de V_GEN_DIVISION para listados y detalle.
+	// Qué hace: define la proyección de lectura de V_GEN_DIVISION.
 	public class GEN_DIVISIONView
 	{
-		// Ámbito de empresa.
+		// Qué hace: correlativo de empresa.
 		public int CORR_EMPRESA { get; set; }
-		// PK de la división.
+		// Qué hace: correlativo de la división.
 		public int CORR_DIVISION { get; set; }
 		public string NOMBRE_DIVISION { get; set; }
 		public string CODIGO_DIVISION { get; set; }

@@ -4,18 +4,18 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
-	// Contrato del servicio de departamentos (consultas, alta, baja y actualización).
+	// Qué hace: define el contrato del servicio de departamentos (consultas, creación, eliminación y actualización).
 	public interface IGEN_DEPTOService
 	{
-		// Define la consulta del listado de departamentos según los filtros recibidos.
+		// Qué hace: lista departamentos según los filtros recibidos.
 		Task<CResult> GetAllAsync(GEN_DEPTOParam xWhere);
-		// Define la consulta de un departamento específico por sus claves.
+		// Qué hace: obtiene departamento específico por sus claves.
 		Task<CResult> GetAsync(GEN_DEPTOParam xWhere);
-		// Define la creación validada de un departamento con su información de auditoría.
+		// Qué hace: crea departamento con su información de auditoría.
 		Task<CResult> CreateAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion);
-		// Define la actualización validada de un departamento con su información de auditoría.
+		// Qué hace: actualiza departamento con su información de auditoría.
 		Task<CResult> UpdateAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion);
-		// Define la eliminación de un departamento identificado por sus claves.
+		// Qué hace: elimina departamento identificado por sus claves.
 		Task<CResult> DeleteAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion);
 	}
 }

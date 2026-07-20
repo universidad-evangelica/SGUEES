@@ -1,4 +1,5 @@
-// Persistencia SQL del catálogo disponibilidad de horario (tabla/vista SC).
+// Qué hace: persistencia SQL del catálogo disponibilidad de horario.
+// Cómo: ejecuta el CRUD y consultas contra la tabla SC_DISPONIBILIDAD_HORARIO y la vista V_SC_DISPONIBILIDAD_HORARIO.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-    // Ejecuta CRUD y consultas sobre la tabla/vista de disponibilidad de horario.
+    // Qué hace: repositorio de disponibilidad de horario.
+    // Cómo: ejecuta GetAllAsync, GetAsync, CreateAsync, UpdateAsync, DeleteAsync, ActivarInactivarAsync y GetDisponibilidadesActivasAsync sobre la tabla/vista SC_DISPONIBILIDAD_HORARIO.
     public class SC_DISPONIBILIDAD_HORARIORepository : BaseRepository<SC_DISPONIBILIDAD_HORARIOTable>, ISC_DISPONIBILIDAD_HORARIORepository
     {
         private const string _TableName = "SC_DISPONIBILIDAD_HORARIO";
@@ -25,7 +27,8 @@ namespace SGUEES.Repositories
         {
         }
 
-        // Lee el listado desde la vista filtrado por empresa.
+        // Qué hace: lee el listado de disponibilidades de horario.
+        // Cómo: consulta V_SC_DISPONIBILIDAD_HORARIO filtrando por CORR_EMPRESA y ordena el resultado por CORR_DISPONIBILIDAD_HORARIO.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -69,7 +72,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Lee un registro por llave desde la vista.
+        // Qué hace: lee una disponibilidad de horario por llave.
+        // Cómo: consulta V_SC_DISPONIBILIDAD_HORARIO con los filtros recibidos y devuelve el primer registro encontrado.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -107,7 +111,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Inserta el registro y controla duplicados de nombre/código.
+        // Qué hace: inserta una disponibilidad de horario.
+        // Cómo: llama a objData.Insert sobre SC_DISPONIBILIDAD_HORARIO y devuelve el registro creado desde la vista.
         public async Task<CResult> CreateAsync(SC_DISPONIBILIDAD_HORARIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -167,7 +172,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Actualiza el registro validando unicidad.
+        // Qué hace: actualiza una disponibilidad de horario.
+        // Cómo: llama a objData.Update sobre SC_DISPONIBILIDAD_HORARIO filtrando por CORR_EMPRESA y CORR_DISPONIBILIDAD_HORARIO.
         public async Task<CResult> UpdateAsync(SC_DISPONIBILIDAD_HORARIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -222,7 +228,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Elimina el registro; propaga errores de integridad.
+        // Qué hace: elimina una disponibilidad de horario.
+        // Cómo: llama a objData.Delete sobre SC_DISPONIBILIDAD_HORARIO filtrando por CORR_EMPRESA y CORR_DISPONIBILIDAD_HORARIO.
         public async Task<CResult> DeleteAsync(SC_DISPONIBILIDAD_HORARIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -260,7 +267,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Invierte el estado activo/inactivo del registro.
+        // Qué hace: cambia el estado activo/inactivo de una disponibilidad de horario.
+        // Cómo: ejecuta PRAL_MTTO_CATALOGO_ESTADO_BIT y, si no hay error, vuelve a leer el registro desde V_SC_DISPONIBILIDAD_HORARIO.
         public async Task<CResult> ActivarInactivarAsync(SC_DISPONIBILIDAD_HORARIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -333,7 +341,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Recupera disponibilidades activas ordenadas para el lookup.
+        // Qué hace: obtiene disponibilidades de horario activas para lookups.
+        // Cómo: ejecuta una consulta SQL sobre V_SC_DISPONIBILIDAD_HORARIO filtrando por CORR_EMPRESA y ESTADO_DISPONIBILIDAD_HORARIO activo.
         public async Task<CResult> GetDisponibilidadesActivasAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -387,7 +396,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Detecta errores de clave duplicada de SQL Server.
+        // Qué hace: detecta errores de clave duplicada de SQL Server.
+        // Cómo: revisa si el mensaje de la excepción contiene duplicate key, PRIMARY KEY o UNIQUE KEY.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

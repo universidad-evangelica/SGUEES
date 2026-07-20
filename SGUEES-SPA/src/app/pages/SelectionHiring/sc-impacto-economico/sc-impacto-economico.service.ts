@@ -1,4 +1,5 @@
-// Servicio de negocio del catálogo Impacto Económico (validación, CRUD y config de grilla/form).
+// Qué hace: agrupa las reglas de negocio del catálogo Impacto Económico.
+// Cómo: valida los datos y llama al repositorio para el CRUD y el cambio de estado; define columnas y campos del formulario.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -12,11 +13,12 @@ import { ScImpactoEconomicoRepository } from './sc-impacto-economico.repository'
 const ESTADO_FIELD = 'ESTADO_IMPACTO_ECONOMICO';
 
 @Injectable({ providedIn: 'root' })
-// Encapsula validaciones y delega el CRUD en el repositorio de impacto económico.
+// Qué hace: valida los datos de impacto económico y coordina el CRUD con el repositorio.
 export class ScImpactoEconomicoService {
 	constructor(private repo: ScImpactoEconomicoRepository) {}
 
-	// Valida la descripción obligatoria y su longitud antes del guardado.
+	// Qué hace: valida los datos del impacto económico antes de guardar.
+	// Cómo: revisa que la descripción no esté vacía y no supere 150 caracteres.
 	esValido(model: ScImpactoEconomico, msg: Function): boolean {
 		if (!model.DESCRIPCION || model.DESCRIPCION.trim() === '') {
 			msg('Debe ingresar la descripcion del impacto economico.', NotifyType.Warning);
@@ -31,37 +33,43 @@ export class ScImpactoEconomicoService {
 		return true;
 	}
 
-	// Solicita al repositorio el listado con los filtros construidos.
+	// Qué hace: lista los impactos económicos según los filtros recibidos.
+	// Cómo: llama a getAll del repositorio con los parámetros armados en buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	// Solicita al repositorio el detalle por correlativo.
+	// Qué hace: obtiene un impacto económico por su correlativo.
+	// Cómo: llama a get del repositorio con CORR_IMPACTO_ECONOMICO como filtro.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: param.CORR_IMPACTO_ECONOMICO }]);
 	}
 
-	// Delega en el repositorio la creación del registro.
+	// Qué hace: crea un impacto económico nuevo.
+	// Cómo: llama a create del repositorio con el modelo recibido.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
-	// Delega en el repositorio la actualización con su llave.
+	// Qué hace: actualiza un impacto económico existente.
+	// Cómo: llama a update del repositorio con el modelo y CORR_IMPACTO_ECONOMICO como llave.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO }]);
 	}
 
-	// Delega en el repositorio la eliminación por correlativo.
+	// Qué hace: elimina un impacto económico.
+	// Cómo: llama a delete del repositorio con CORR_IMPACTO_ECONOMICO como filtro.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO }]);
 	}
 
-	// Delega en el repositorio el cambio de estado activo/inactivo.
+	// Qué hace: cambia el estado activo/inactivo de un impacto económico.
+	// Cómo: llama a activarInactivar del repositorio con CORR_IMPACTO_ECONOMICO como filtro.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_IMPACTO_ECONOMICO', Value: model.CORR_IMPACTO_ECONOMICO }]);
 	}
 
-	// Define columnas y formatos de la grilla de mantenimiento.
+	// Qué hace: define las columnas de la grilla de mantenimiento.
 	getColumns(): any {
 		return [
 			{
@@ -77,14 +85,14 @@ export class ScImpactoEconomicoService {
 		];
 	}
 
-	// Configura el contador de registros de la grilla.
+	// Qué hace: define el resumen (contador) de la grilla.
 	getSummary(): any {
 		return {
 			totalItems: [{ column: 'CORR_IMPACTO_ECONOMICO', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
 		};
 	}
 
-	// Define los campos y reglas del formulario de impacto económico.
+	// Qué hace: define los campos y las reglas de validación del formulario.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_IMPACTO_ECONOMICO', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -100,7 +108,7 @@ export class ScImpactoEconomicoService {
 		];
 	}
 
-	// Traduce los filtros del componente al formato esperado por la API.
+	// Qué hace: arma los filtros de consulta a partir de los parámetros recibidos.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

@@ -1,4 +1,4 @@
-// Modelo TypeScript de riesgo del puesto (campos del formulario y grilla).
+// Qué hace: define el modelo TypeScript de riesgo del puesto para formulario y grilla.
 export interface ScRiesgoPuesto {
 	CORR_EMPRESA: number;
 	CORR_RIESGO_PUESTO: number;

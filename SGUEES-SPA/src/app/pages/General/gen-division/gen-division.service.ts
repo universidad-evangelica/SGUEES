@@ -1,4 +1,4 @@
-// Capa de negocio: validación, columnas/formulario y orquestación hacia el repositorio de divisiones.
+// Qué hace: agrupa las reglas de negocio del catálogo Divisiones.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -9,10 +9,11 @@ import { GenDivision } from './models/gen-division';
 import { GenDivisionRepository } from './gen-division.repository';
 
 @Injectable({ providedIn: 'root' })
+// Qué hace: valida los datos de división y coordina el CRUD con el repositorio.
 export class GenDivisionService {
 	constructor(private repo: GenDivisionRepository) {}
 
-	// Valida los campos obligatorios y sus longitudes antes de guardar la división.
+	// Qué hace: valida los datos de la división antes de guardar.
 	esValido(model: GenDivision, msg: Function): boolean {
 		if (!model.NOMBRE_DIVISION || model.NOMBRE_DIVISION.trim() === '') {
 			msg('Debe ingresar el nombre de division.', NotifyType.Warning);
@@ -37,32 +38,37 @@ export class GenDivisionService {
 		return true;
 	}
 
-	// Solicita al repositorio el listado de divisiones con los filtros construidos.
+	// Qué hace: lista las divisiones según los filtros recibidos.
+	// Cómo: llama a getAll del repositorio con los filtros armados en buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	// Solicita al repositorio el detalle de la división indicada.
+	// Qué hace: obtiene una división por su correlativo.
+	// Cómo: llama a get del repositorio con CORR_DIVISION.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_DIVISION', Value: param.CORR_DIVISION }]);
 	}
 
-	// Delega en el repositorio la creación de la división.
+	// Qué hace: crea una división nueva.
+	// Cómo: llama a create del repositorio con el modelo recibido.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
-	// Delega en el repositorio la actualización de la división y sus claves.
+	// Qué hace: actualiza una división existente.
+	// Cómo: llama a update del repositorio con el modelo y CORR_DIVISION.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_DIVISION', Value: model.CORR_DIVISION }]);
 	}
 
-	// Delega en el repositorio la eliminación de la división indicada.
+	// Qué hace: elimina una división.
+	// Cómo: llama a delete del repositorio con CORR_DIVISION.
 	delete(param: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_DIVISION', Value: param.CORR_DIVISION }]);
 	}
 
-	// Define las columnas y formatos usados por la cuadrícula del mantenimiento.
+	// Qué hace: define las columnas del grid de divisiones.
 	getColumns(): any {
 		return [
 			{
@@ -78,14 +84,14 @@ export class GenDivisionService {
 		];
 	}
 
-	// Configura el contador de registros mostrado en la cuadrícula.
+	// Qué hace: define el resumen de conteo del grid de divisiones.
 	getSummary(): any {
 		return {
 			totalItems: [{ column: 'CORR_DIVISION', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
 		};
 	}
 
-	// Define los campos, editores y validaciones que presenta el formulario.
+	// Qué hace: define los campos y validaciones del formulario de división.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_DIVISION', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -106,7 +112,7 @@ export class GenDivisionService {
 		];
 	}
 
-	// Transforma los parámetros del componente en filtros compatibles con el repositorio.
+	// Qué hace: arma los filtros enviados al repositorio.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 
@@ -121,17 +127,17 @@ export class GenDivisionService {
 export const EMPRESA_WARNING_ERROR_CODE = 4100;
 export const EMPRESA_REGISTRO_ETIQUETA = 'la division';
 
-// Genera el mensaje funcional usado cuando la sesión no tiene una empresa asignada.
+// Qué hace: genera el mensaje cuando la sesión no tiene empresa asignada.
 export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
 	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
 }
 
-// Identifica respuestas controladas relacionadas con la empresa de la sesión.
+// Qué hace: identifica respuestas controladas por falta de empresa en sesión.
 export function isEmpresaWarningResponse(response: any): boolean {
 	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
 }
 
-// Detecta errores técnicos vinculados con la empresa y permite mostrarlos como advertencia.
+// Qué hace: detecta errores técnicos de empresa para mostrarlos como advertencia.
 export function isEmpresaFkErrorMessage(message: string): boolean {
 	const value = `${message ?? ''}`.toLowerCase();
 	return (

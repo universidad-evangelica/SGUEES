@@ -1,4 +1,5 @@
-// Estilos de la vista territorial: form país, cascada de 3 grids y popup CRUD.
+// Qué hace: estilos de la vista territorial (form país, cascada de 3 grids y popup).
+// Cómo: define espaciado del form, layout de paneles y ajustes de toolbar en móvil.
 .territorial-form-card {
 	margin-top: var(--sguees-space-4, 16px);
 }
@@ -9,7 +10,7 @@
 	}
 }
 
-// En móvil: toolbar del grid en varias filas para que no se recorte.
+// Qué hace: en móvil, toolbar del grid en varias filas para que no se recorte.
 @media (max-width: 575.98px) {
 	:host ::ng-deep {
 		.dx-datagrid-header-panel {
@@ -129,7 +130,7 @@
 	opacity: 0.72;
 }
 
-// Resaltado de fila seleccionada en depto/municipio.
+// Qué hace: resaltado de fila seleccionada en depto/municipio.
 :host ::ng-deep .territorial-panel--cascade .dx-data-row.territorial-row-selected > td {
 	background-color: var(--sguees-grid-row-selected, rgba(56, 139, 253, 0.22)) !important;
 	color: var(--sguees-text-primary, var(--base-text-color)) !important;

@@ -4,20 +4,20 @@ using sguees.Models;
 
 namespace sguees.Services
 {
-	// Contrato del servicio de divisiones (consultas, catálogo, alta, baja y actualización).
+	// Qué hace: define el contrato del servicio de divisiones (consultas, catálogo, creación, eliminación y actualización).
 	public interface IGEN_DIVISIONService
 	{
-		// Define la consulta del listado de divisiones según los filtros recibidos.
+		// Qué hace: lista las divisiones según los filtros recibidos.
 		Task<CResult> GetAllAsync(GEN_DIVISIONParam xWhere);
-		// Define la consulta del catálogo de divisiones usado por mantenimientos relacionados.
+		// Qué hace: lista el catálogo de divisiones para mantenimientos relacionados.
 		Task<CResult> GetDivisionesAsync(GEN_DIVISIONParam xWhere);
-		// Define la consulta de una división específica por sus claves.
+		// Qué hace: obtiene una división por sus claves.
 		Task<CResult> GetAsync(GEN_DIVISIONParam xWhere);
-		// Define la creación validada de una división con su información de auditoría.
+		// Qué hace: crea una división con auditoría.
 		Task<CResult> CreateAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
-		// Define la actualización validada de una división con su información de auditoría.
+		// Qué hace: actualiza una división con auditoría.
 		Task<CResult> UpdateAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
-		// Define la eliminación de una división identificada por sus claves.
+		// Qué hace: elimina una división por sus claves.
 		Task<CResult> DeleteAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
 }

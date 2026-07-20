@@ -6,10 +6,10 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-	// Contrato del repositorio de departamentos; extiende IRepository con chequeo de duplicados.
+	// Qué hace: define el contrato del repositorio de departamentos con comprobación de duplicados.
 	public interface IGEN_DEPTORepository : IRepository<GEN_DEPTOTable>
 	{
-		// Define la comprobación de duplicados del departamento dentro de su ámbito funcional.
+		// Qué hace: comprueba duplicados de departamento dentro de su ámbito funcional.
 		Task<bool> ExistsDeptoByFieldAsync(int corrPais, string fieldName, string normalizedValue, int excludeCorrPais, int excludeCorrDepto);
 	}
 }

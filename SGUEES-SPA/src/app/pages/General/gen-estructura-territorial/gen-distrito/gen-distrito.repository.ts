@@ -9,27 +9,32 @@ import { environment } from 'src/environments/environment';
 @Injectable({
 	providedIn: 'root',
 })
+// Qué hace: agrupa las llamadas HTTP al controlador GEN_DISTRITO.
 export class GenDistritoRepository {
 	readonly xController = 'GEN_DISTRITO';
 
 	constructor(private objData: CData) {}
 
-	// Consulta el listado de distritos aplicando los filtros recibidos.
+	// Qué hace: consulta el listado de distritos.
+	// Cómo: GET GetAll al controlador GEN_DISTRITO con los filtros recibidos.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlGENERALAPI);
 	}
 
-	// Envía al API la solicitud para crear el distrito.
+	// Qué hace: crea un distrito nuevo.
+	// Cómo: POST con el modelo al controlador GEN_DISTRITO.
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlGENERALAPI);
 	}
 
-	// Envía al API la solicitud para actualizar el distrito identificada por sus claves.
+	// Qué hace: actualiza un distrito existente.
+	// Cómo: PUT con el modelo al controlador GEN_DISTRITO.
 	update(model: any): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', [], environment.UrlGENERALAPI);
 	}
 
-	// Envía al API la solicitud para eliminar el distrito indicada por sus claves.
+	// Qué hace: elimina un distrito.
+	// Cómo: DELETE con la llave en xWhere al controlador GEN_DISTRITO.
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlGENERALAPI);
 	}

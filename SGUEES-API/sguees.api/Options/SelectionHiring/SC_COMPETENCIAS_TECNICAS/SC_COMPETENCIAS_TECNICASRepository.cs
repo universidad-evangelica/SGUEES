@@ -1,4 +1,5 @@
-// Persistencia SQL del catálogo competencias técnicas (tabla/vista SC).
+// Qué hace: persistencia SQL del catálogo competencias técnicas.
+// Cómo: ejecuta CRUD y consultas jerárquicas sobre la tabla SC_COMPETENCIAS_TECNICAS y la vista V_SC_COMPETENCIAS_TECNICAS.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,8 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-    // Ejecuta CRUD y consultas sobre la tabla/vista de competencia técnica.
+    // Qué hace: repositorio de competencias técnicas.
+    // Cómo: ejecuta GetAllAsync, GetAsync, CreateAsync, UpdateAsync, DeleteAsync, ActivarInactivarAsync y consultas auxiliares sobre SQL Server.
     public class SC_COMPETENCIAS_TECNICASRepository : BaseRepository<SC_COMPETENCIAS_TECNICASTable>, ISC_COMPETENCIAS_TECNICASRepository
     {
         private const string _TableName = "SC_COMPETENCIAS_TECNICAS";
@@ -25,7 +27,8 @@ namespace SGUEES.Repositories
         {
         }
 
-        // Lee el listado desde la vista filtrado por empresa.
+        // Qué hace: lee el listado desde la vista filtrado por empresa.
+        // Cómo: llama a GetDataReader sobre V_SC_COMPETENCIAS_TECNICAS con CORR_EMPRESA y ordena por CORR_COMPETENCIAS_TECNICAS.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -69,7 +72,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Lee un registro por llave desde la vista.
+        // Qué hace: lee un registro por llave desde la vista.
+        // Cómo: llama a GetDataReader sobre V_SC_COMPETENCIAS_TECNICAS con los filtros recibidos y devuelve el primer registro.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -107,7 +111,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Inserta el registro y controla duplicados de nombre/código.
+        // Qué hace: inserta el registro en la tabla.
+        // Cómo: llama a Insert sobre SC_COMPETENCIAS_TECNICAS con los parámetros del modelo y devuelve la vista del registro creado.
         public async Task<CResult> CreateAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -171,7 +176,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Actualiza el registro validando unicidad.
+        // Qué hace: actualiza el registro en la tabla.
+        // Cómo: llama a Update sobre SC_COMPETENCIAS_TECNICAS con los parámetros del modelo y las claves de pWhere.
         public async Task<CResult> UpdateAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -228,7 +234,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Elimina el registro; propaga errores de integridad.
+        // Qué hace: elimina el registro de la tabla.
+        // Cómo: llama a Delete sobre SC_COMPETENCIAS_TECNICAS con CORR_EMPRESA y CORR_COMPETENCIAS_TECNICAS; traduce errores de integridad a mensaje controlado.
         public async Task<CResult> DeleteAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -266,7 +273,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Comprueba si otra competencia de la empresa utiliza el mismo código.
+        // Qué hace: comprueba si otra competencia de la empresa utiliza el mismo código.
+        // Cómo: ejecuta una consulta SQL sobre V_SC_COMPETENCIAS_TECNICAS filtrando por CORR_EMPRESA, CODIGO y excludeCorr.
         public async Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr)
         {
             if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(codigo))
@@ -299,7 +307,8 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Recupera candidatos padre por nivel y estado.
+        // Qué hace: recupera candidatos padre por nivel y estado.
+        // Cómo: ejecuta una consulta SQL sobre V_SC_COMPETENCIAS_TECNICAS filtrando por CORR_EMPRESA, NIVEL y opcionalmente ESTADO.
         public async Task<List<SC_COMPETENCIAS_TECNICASView>> GetPadresByNivelAsync(int corrEmpresa, string nivel, bool? soloActivos)
         {
             if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nivel))
@@ -340,7 +349,8 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Une los tres niveles activos para construir el catálogo del descriptor.
+        // Qué hace: une los tres niveles activos para construir el catálogo del descriptor.
+        // Cómo: ejecuta un JOIN SQL entre V_SC_COMPETENCIAS_TECNICAS de niveles 1, 2 y 3 filtrando por CORR_EMPRESA y estado activo.
         public async Task<List<SC_COMPETENCIAS_TECNICASView>> GetCatalogoNivel3DescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)
@@ -402,7 +412,8 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Recupera códigos hermanos para calcular el siguiente sufijo.
+        // Qué hace: recupera códigos hermanos para calcular el siguiente sufijo de nivel 3.
+        // Cómo: ejecuta una consulta SQL sobre V_SC_COMPETENCIAS_TECNICAS filtrando por CORR_EMPRESA, CORR_PADRE y prefijo del código padre.
         public async Task<List<string>> GetSiblingCodigosLevel3Async(int corrEmpresa, int corrPadre, string parentCodigoPrefix)
         {
             if (corrEmpresa <= 0 || corrPadre <= 0 || string.IsNullOrWhiteSpace(parentCodigoPrefix))
@@ -441,7 +452,8 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Determina si una competencia conserva nodos hijos asociados.
+        // Qué hace: determina si una competencia conserva nodos hijos asociados.
+        // Cómo: ejecuta una consulta SQL sobre V_SC_COMPETENCIAS_TECNICAS filtrando por CORR_EMPRESA y CORR_COMPETENCIAS_TECNICAS_PADRE.
         public async Task<bool> HasChildrenAsync(int corrEmpresa, int corrCompetencia)
         {
             if (corrEmpresa <= 0 || corrCompetencia <= 0)
@@ -472,7 +484,8 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Invierte el estado activo/inactivo del registro.
+        // Qué hace: invierte el estado activo/inactivo del registro.
+        // Cómo: ejecuta PRAL_MTTO_CATALOGO_ESTADO_BIT y, si no hay error, relee el registro con GetDataReader sobre V_SC_COMPETENCIAS_TECNICAS.
         public async Task<CResult> ActivarInactivarAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -545,7 +558,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Detecta errores de clave duplicada de SQL Server.
+        // Qué hace: detecta errores de clave duplicada de SQL Server.
+        // Cómo: busca en el mensaje de excepción textos como duplicate key, PRIMARY KEY o UNIQUE KEY.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

@@ -2,12 +2,12 @@ using System;
 
 namespace SGUEES.Models
 {
-	// Proyección de lectura de V_GEN_DEPTO (incluye nombre del país).
+	// Qué hace: define la proyección de lectura de V_GEN_DEPTO (incluye nombre del país).
 	public class GEN_DEPTOView
 	{
-		// FK al país padre.
+		// Qué hace: FK al país padre.
 		public int CORR_PAIS { get; set; }
-		// PK del departamento.
+		// Qué hace: correlativo del departamento.
 		public int CORR_DEPTO { get; set; }
 		public string NOMBRE_DEPTO { get; set; }
 		public string CODIGO_DEPTO { get; set; }
@@ -17,7 +17,7 @@ namespace SGUEES.Models
 		public string USUARIO_ACTU { get; set; }
 		public string ESTACION_ACTU { get; set; }
 		public DateTime? FECHA_ACTU { get; set; }
-		// Nombre descriptivo del país relacionado.
+		// Qué hace: nombre descriptivo del país relacionado.
 		public string NOMBRE_PAIS { get; set; }
 	}
 }

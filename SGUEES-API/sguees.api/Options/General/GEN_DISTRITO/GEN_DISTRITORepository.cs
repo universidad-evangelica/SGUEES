@@ -9,20 +9,21 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-	// Acceso a datos de GEN_DISTRITO / V_GEN_DISTRITO: CRUD y comprobación de duplicados.
+	// Qué hace: ejecuta el CRUD y las consultas SQL sobre GEN_DISTRITO y V_GEN_DISTRITO.
 	public class GEN_DISTRITORepository : BaseRepository<GEN_DISTRITOTable>, IGEN_DISTRITORepository
 	{
 		private const string _TableName = "GEN_DISTRITO";
 		private const string _ViewName = "V_GEN_DISTRITO";
 
-		// Configura la conexión y el proveedor de BD desde appsettings.
+		// Qué hace: configura conexión y proveedor desde appsettings.
 		public GEN_DISTRITORepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
 				config.GetSection("DbProvider:defaultProvider").Value)
 		{
 		}
 
-		// Consulta la vista de distritos aplicando el contexto de empresa y devuelve el listado ordenado.
+		// Qué hace: lista distritos desde la vista.
+		// Cómo: GetDataReader sobre la vista y ordena el resultado.
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -62,7 +63,8 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
-		// Consulta un distrito por sus claves y devuelve el primer registro coincidente.
+		// Qué hace: obtiene distrito por claves.
+		// Cómo: GetDataReader y FirstOrDefault.
 		public async Task<CResult> GetAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -100,7 +102,8 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
-		// Inserta el distrito, recupera el registro creado y normaliza errores de clave duplicada.
+		// Qué hace: inserta distrito.
+		// Cómo: Insert sobre la tabla y mapea clave duplicada.
 		public async Task<CResult> CreateAsync(GEN_DISTRITOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -163,7 +166,8 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
-		// Actualiza el distrito por sus claves y devuelve el registro resultante.
+		// Qué hace: actualiza distrito.
+		// Cómo: Update sobre la tabla con las claves.
 		public async Task<CResult> UpdateAsync(GEN_DISTRITOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -220,7 +224,8 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
-		// Elimina el distrito por sus claves y convierte restricciones relacionadas en un resultado controlado.
+		// Qué hace: elimina distrito.
+		// Cómo: Delete sobre la tabla; captura FK como mensaje controlado.
 		public async Task<CResult> DeleteAsync(GEN_DISTRITOTable data, string vLoginSistema, string vEstacion)
 		{
 			CResult objResultado = new();
@@ -260,7 +265,8 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
-		// Comprueba si ya existe un distrito con el valor normalizado, excluyendo el registro en edición.
+		// Qué hace: comprueba si ya existe un distrito con el mismo valor.
+		// Cómo: consulta dinámica excluyendo el correlativo en edición.
 		public Task<bool> ExistsDistritoByFieldAsync(int corrPais, int corrDepto, int corrMunicipio, string fieldName, string normalizedValue, int excludeCorrPais, int excludeCorrDepto, int excludeCorrMunicipio, int excludeCorrDistrito)
 		{
 			if (!IsAllowedDistritoField(fieldName) || string.IsNullOrWhiteSpace(normalizedValue))
@@ -298,7 +304,7 @@ namespace SGUEES.Repositories
 			return ExistsByQueryAsync(sql, parameters);
 		}
 
-		// Ejecuta la consulta de existencia y garantiza el cierre de la conexión utilizada.
+		// Qué hace: ejecuta la consulta de existencia y cierra la conexión.
 		private async Task<bool> ExistsByQueryAsync(string sql, List<CParameter> parameters)
 		{
 			try
@@ -314,11 +320,11 @@ namespace SGUEES.Repositories
 			}
 		}
 
-		// Restringe los campos del distrito permitidos en la consulta dinámica de duplicados.
+		// Qué hace: restringe los campos del distrito en consultas de duplicados.
 		private static bool IsAllowedDistritoField(string fieldName) =>
 			fieldName is "NOMBRE_DISTRITO";
 
-		// Reconoce excepciones de claves únicas para devolver un mensaje funcional en lugar del error técnico.
+		// Qué hace: detecta errores de clave duplicada de SQL Server.
 		private static bool IsDuplicateKeyError(Exception e)
 		{
 			return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

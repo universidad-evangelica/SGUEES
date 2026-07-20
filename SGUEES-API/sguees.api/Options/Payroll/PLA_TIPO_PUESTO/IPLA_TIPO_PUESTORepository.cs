@@ -6,14 +6,14 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-    // Contrato de acceso a datos de PLA_TIPO_PUESTO.
+    // Qué hace: define el contrato de acceso a datos de PLA_TIPO_PUESTO.
     public interface IPLA_TIPO_PUESTORepository : IRepository<PLA_TIPO_PUESTOTable>
     {
-        // Ejecuta el procedimiento común de cambio de estado.
+        // Qué hace: cambia el estado activo/inactivo mediante el procedimiento común de catálogo.
         Task<CResult> ActivarInactivarAsync(PLA_TIPO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
-        // Indica si el nombre ya existe en la empresa.
+        // Qué hace: indica si el nombre ya existe en la empresa.
         Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr);
-        // Indica si el código ya existe en la empresa.
+        // Qué hace: indica si el código ya existe en la empresa.
         Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr);
     }
 }

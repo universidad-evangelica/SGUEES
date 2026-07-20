@@ -4,18 +4,18 @@ using SGUEES.Models;
 
 namespace SGUEES.Services
 {
-	// Contrato del servicio de países (consultas, alta, baja y actualización).
+	// Qué hace: define el contrato del servicio de países (consultas, creación, eliminación y actualización).
 	public interface IGEN_PAISService
 	{
-		// Define la consulta del listado de países según los filtros recibidos.
+		// Qué hace: lista países según los filtros recibidos.
 		Task<CResult> GetAllAsync(GEN_PAISParam xWhere);
-		// Define la consulta de un país específico por sus claves.
+		// Qué hace: obtiene país específico por sus claves.
 		Task<CResult> GetAsync(GEN_PAISParam xWhere);
-		// Define la creación validada de un país con su información de auditoría.
+		// Qué hace: crea país con su información de auditoría.
 		Task<CResult> CreateAsync(GEN_PAISTable Data, string vLOGIN_SISTEMA, string vESTACION);
-		// Define la actualización validada de un país con su información de auditoría.
+		// Qué hace: actualiza país con su información de auditoría.
 		Task<CResult> UpdateAsync(GEN_PAISTable Data, string vLOGIN_SISTEMA, string vESTACION);
-		// Define la eliminación de un país identificado por sus claves.
+		// Qué hace: elimina país identificado por sus claves.
 		Task<CResult> DeleteAsync(GEN_PAISTable Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
 }

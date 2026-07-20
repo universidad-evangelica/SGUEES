@@ -3,16 +3,15 @@ using eFramework.Data;
 
 namespace sguees.Models
 {
-	// Entidad de persistencia de la tabla GEN_DIVISION (divisiones por empresa).
+	// Qué hace: define la entidad de persistencia de la tabla GEN_DIVISION.
 	public class GEN_DIVISIONTable : BaseEntity
 	{
-		// FK/ámbito de empresa.
+		// Qué hace: correlativo de empresa (ámbito del registro).
 		public int CORR_EMPRESA { get; set; }
-		// PK de la división dentro de la empresa.
+		// Qué hace: correlativo de la división (clave primaria relativa).
 		public int CORR_DIVISION { get; set; }
 		public string NOMBRE_DIVISION { get; set; }
 		public string CODIGO_DIVISION { get; set; }
-		// Auditoría de creación/actualización.
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }
 		public DateTime FECHA_CREA { get; set; }

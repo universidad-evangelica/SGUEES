@@ -6,24 +6,26 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
-	// Capa de servicio de distritos: valida/normaliza y delega la persistencia al repositorio.
+	// Qué hace: aplica las reglas de negocio del catálogo distritos antes de llamar al repositorio.
 	public class GEN_DISTRITOService : IGEN_DISTRITOService
 	{
 		private readonly IGEN_DISTRITORepository _repo;
 
-		// Inyecta el repositorio de distritos para operaciones de datos.
+		// Qué hace: inyecta el repositorio de distritos para operaciones de datos.
 		public GEN_DISTRITOService(IGEN_DISTRITORepository repo)
 		{
 			_repo = repo;
 		}
 
-		// Construye los filtros y solicita al repositorio el listado de distritos.
+		// Qué hace: lista distritos.
+		// Cómo: llama a GetAllAsync del repositorio con BuildParameters.
 		public async Task<CResult> GetAllAsync(GEN_DISTRITOParam xWhere)
 		{
 			return await _repo.GetAllAsync(BuildParameters(xWhere));
 		}
 
-		// Valida las claves de consulta y solicita al repositorio el detalle de el distrito.
+		// Qué hace: obtiene el distrito.
+		// Cómo: llama a GetAsync del repositorio con las claves.
 		public async Task<CResult> GetAsync(GEN_DISTRITOParam xWhere)
 		{
 			var validation = ValidateCorrEmpresa(xWhere.CORR_EMPRESA);
@@ -43,7 +45,8 @@ namespace SGUEES.Services
 			return await _repo.GetAsync(p);
 		}
 
-		// Normaliza y valida el distrito, comprueba duplicados y solicita su creación.
+		// Qué hace: crea distrito
+		// Cómo: Validate, NormalizeData, ValidateDuplicatesAsync y CreateAsync del repositorio.
 		public async Task<CResult> CreateAsync(GEN_DISTRITOTable data, string vLoginSistema, string vEstacion)
 		{
 			var validation = Validate(data);
@@ -62,7 +65,8 @@ namespace SGUEES.Services
 			return await _repo.CreateAsync(data, vLoginSistema, vEstacion);
 		}
 
-		// Normaliza y valida el distrito, comprueba duplicados y solicita su actualización.
+		// Qué hace: actualiza distrito
+		// Cómo: Validate, NormalizeData, ValidateDuplicatesAsync y UpdateAsync del repositorio.
 		public async Task<CResult> UpdateAsync(GEN_DISTRITOTable data, string vLoginSistema, string vEstacion)
 		{
 			var validation = Validate(data);
@@ -81,13 +85,14 @@ namespace SGUEES.Services
 			return await _repo.UpdateAsync(data, vLoginSistema, vEstacion);
 		}
 
-		// Valida la identidad de el distrito y solicita su eliminación al repositorio.
+		// Qué hace: elimina el distrito
+		// Cómo: llama a DeleteAsync del repositorio.
 		public async Task<CResult> DeleteAsync(GEN_DISTRITOTable data, string vLoginSistema, string vEstacion)
 		{
 			return await _repo.DeleteAsync(data, vLoginSistema, vEstacion);
 		}
 
-		// Convierte los filtros recibidos en parámetros seguros para el repositorio.
+		// Qué hace: arma los parámetros de filtro para el repositorio.
 		private static List<CParameter> BuildParameters(GEN_DISTRITOParam xWhere)
 		{
 			var p = new List<CParameter>();
@@ -109,13 +114,13 @@ namespace SGUEES.Services
 			return p;
 		}
 
-		// Limpia espacios en los textos antes de validar y persistir el registro.
+		// Qué hace: aplica trim a los textos antes de validar y guardar.
 		private static void NormalizeData(GEN_DISTRITOTable data)
 		{
 			data.NOMBRE_DISTRITO = data.NOMBRE_DISTRITO?.Trim();
 		}
 
-		// Valida las claves y campos obligatorios de el distrito antes de persistirla.
+		// Qué hace: valida campos obligatorios de el distrito antes de persistirla.
 		private static CResult Validate(GEN_DISTRITOTable data)
 		{
 			if (data == null)
@@ -136,7 +141,8 @@ namespace SGUEES.Services
 			return null;
 		}
 
-		// Comprueba que los datos únicos de el distrito no están registrados en el mismo ámbito.
+		// Qué hace: comprueba unicidad de el distrito no están registrados en el mismo ámbito.
+		// Cómo: llama a ExistsByFieldAsync del repositorio.
 		private async Task<CResult> ValidateDuplicatesAsync(GEN_DISTRITOTable data, bool isUpdate)
 		{
 			var excludeCorrPais = isUpdate ? data.CORR_PAIS : 0;
@@ -161,13 +167,13 @@ namespace SGUEES.Services
 			return null;
 		}
 
-		// Normaliza el texto para realizar comparaciones consistentes de duplicados.
+		// Qué hace: normaliza texto para comparar duplicados.
 		private static string NormalizeText(string value)
 		{
 			return (value ?? string.Empty).Trim().ToUpperInvariant();
 		}
 
-		// Comprueba que el registro pertenezca a una empresa válida de la sesión.
+		// Qué hace: verifica que la sesión tenga una empresa válida.
 		private static CResult ValidateCorrEmpresa(int corrEmpresa)
 		{
 			if (corrEmpresa > 0)
@@ -188,7 +194,7 @@ namespace SGUEES.Services
 			};
 		}
 
-		// Construye una respuesta controlada para informar un conflicto por datos duplicados.
+		// Qué hace: arma respuesta controlada de duplicado (ErrorCode 2627).
 		private static CResult DuplicateWarning(string message)
 		{
 			return new CResult
@@ -203,7 +209,7 @@ namespace SGUEES.Services
 			};
 		}
 
-		// Construye una respuesta uniforme para devolver errores de validación al cliente.
+		// Qué hace: arma respuesta uniforme de error de validación.
 		private static CResult ValidationError(string message)
 		{
 			return new CResult

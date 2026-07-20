@@ -1,4 +1,5 @@
-// Routing y declaraciones DevExtreme/layout de la vista Competencias Conductuales.
+// Qué hace: routing y declaraciones DevExtreme/layout de la vista Competencias Conductuales.
+// Cómo: registra la ruta del componente ScCompetenciasConductualesComponent junto con los módulos DevExtreme y de layout que usa.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
@@ -15,7 +16,8 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 import { ScCompetenciasConductualesComponent } from './sc-competencias-conductuales.component';
 
-// Ruta lazy y declaraciones DevExtreme del mantenimiento de competencias conductuales.
+// Qué hace: ruta lazy del mantenimiento de competencias conductuales.
+// Cómo: asocia la ruta vacía ('') con ScCompetenciasConductualesComponent.
 const routes: Routes = [{ path: '', component: ScCompetenciasConductualesComponent }];
 
 @NgModule({
@@ -37,5 +39,6 @@ const routes: Routes = [{ path: '', component: ScCompetenciasConductualesCompone
 	exports: [RouterModule],
 	declarations: [ScCompetenciasConductualesComponent],
 })
-// Declara el componente y registra la ruta hija del catálogo.
+// Qué hace: módulo de routing de Competencias Conductuales.
+// Cómo: declara ScCompetenciasConductualesComponent, importa los módulos DevExtreme/layout necesarios y expone RouterModule con las rutas hijas del catálogo.
 export class ScCompetenciasConductualesRoutingModule {}

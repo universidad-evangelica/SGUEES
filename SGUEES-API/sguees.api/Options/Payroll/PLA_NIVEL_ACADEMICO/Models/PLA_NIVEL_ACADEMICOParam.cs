@@ -2,11 +2,11 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
-    // Parámetros de consulta/filtro del catálogo de nivel académico.
+    // Qué hace: agrupa los parámetros de consulta y filtro del catálogo de nivel académico.
     public class PLA_NIVEL_ACADEMICOParam : BaseParam
     {
-        public int CORR_EMPRESA { get; set; } // Filtro por empresa de sesión
-        public int CORR_NIVEL_ACADEMICO { get; set; } // Filtro por PK
+        public int CORR_EMPRESA { get; set; }
+        public int CORR_NIVEL_ACADEMICO { get; set; }
         public string BUSQUEDA { get; set; }
         public string NOMBRE_NIVEL_ACADEMICO { get; set; }
         public bool? ESTADO_NIVEL_ACADEMICO { get; set; }

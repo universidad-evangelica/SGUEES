@@ -6,24 +6,26 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
-	// Capa de servicio de departamentos: valida/normaliza y delega la persistencia al repositorio.
+	// Qué hace: aplica las reglas de negocio del catálogo departamentos antes de llamar al repositorio.
 	public class GEN_DEPTOService : IGEN_DEPTOService
 	{
 		private readonly IGEN_DEPTORepository _repo;
 
-		// Inyecta el repositorio de departamentos para operaciones de datos.
+		// Qué hace: inyecta el repositorio de departamentos para operaciones de datos.
 		public GEN_DEPTOService(IGEN_DEPTORepository repo)
 		{
 			_repo = repo;
 		}
 
-		// Construye los filtros y solicita al repositorio el listado de departamentos.
+		// Qué hace: lista departamentos.
+		// Cómo: llama a GetAllAsync del repositorio con BuildParameters.
 		public async Task<CResult> GetAllAsync(GEN_DEPTOParam xWhere)
 		{
 			return await _repo.GetAllAsync(BuildParameters(xWhere));
 		}
 
-		// Valida las claves de consulta y solicita al repositorio el detalle de el departamento.
+		// Qué hace: obtiene el departamento.
+		// Cómo: llama a GetAsync del repositorio con las claves.
 		public async Task<CResult> GetAsync(GEN_DEPTOParam xWhere)
 		{
 			var validation = ValidateCorrEmpresa(xWhere.CORR_EMPRESA, "la estructura territorial");
@@ -41,7 +43,8 @@ namespace SGUEES.Services
 			return await _repo.GetAsync(p);
 		}
 
-		// Normaliza y valida el departamento, comprueba duplicados y solicita su creación.
+		// Qué hace: crea departamento
+		// Cómo: Validate, NormalizeData, ValidateDuplicatesAsync y CreateAsync del repositorio.
 		public async Task<CResult> CreateAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion)
 		{
 			var validation = ValidateDepto(data);
@@ -60,7 +63,8 @@ namespace SGUEES.Services
 			return await _repo.CreateAsync(data, vLoginSistema, vEstacion);
 		}
 
-		// Normaliza y valida el departamento, comprueba duplicados y solicita su actualización.
+		// Qué hace: actualiza departamento
+		// Cómo: Validate, NormalizeData, ValidateDuplicatesAsync y UpdateAsync del repositorio.
 		public async Task<CResult> UpdateAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion)
 		{
 			var validation = ValidateDepto(data);
@@ -79,13 +83,14 @@ namespace SGUEES.Services
 			return await _repo.UpdateAsync(data, vLoginSistema, vEstacion);
 		}
 
-		// Valida la identidad de el departamento y solicita su eliminación al repositorio.
+		// Qué hace: elimina el departamento
+		// Cómo: llama a DeleteAsync del repositorio.
 		public async Task<CResult> DeleteAsync(GEN_DEPTOTable data, string vLoginSistema, string vEstacion)
 		{
 			return await _repo.DeleteAsync(data, vLoginSistema, vEstacion);
 		}
 
-		// Convierte los filtros recibidos en parámetros seguros para el repositorio.
+		// Qué hace: arma los parámetros de filtro para el repositorio.
 		private static List<CParameter> BuildParameters(GEN_DEPTOParam xWhere)
 		{
 			var p = new List<CParameter>();
@@ -97,14 +102,14 @@ namespace SGUEES.Services
 			return p;
 		}
 
-		// Limpia espacios en los textos del departamento antes de validarlo y persistirlo.
+		// Qué hace: aplica trim a los textos del departamento antes de guardar.
 		private static void NormalizeDepto(GEN_DEPTOTable data)
 		{
 			data.NOMBRE_DEPTO = data.NOMBRE_DEPTO?.Trim();
 			data.CODIGO_DEPTO = data.CODIGO_DEPTO?.Trim();
 		}
 
-		// Valida las claves y campos obligatorios del departamento antes de persistirlo.
+		// Qué hace: valida campos obligatorios del departamento antes de guardar.
 		private static CResult ValidateDepto(GEN_DEPTOTable data)
 		{
 			if (data == null)
@@ -130,7 +135,7 @@ namespace SGUEES.Services
 			return null;
 		}
 
-		// Comprueba que el registro pertenezca a una empresa válida de la sesión.
+		// Qué hace: verifica que la sesión tenga una empresa válida.
 		private static CResult ValidateCorrEmpresa(int corrEmpresa, string etiquetaRegistro)
 		{
 			if (corrEmpresa > 0)
@@ -151,7 +156,8 @@ namespace SGUEES.Services
 			};
 		}
 
-		// Comprueba que el nombre y código del departamento no están repetidos dentro del país.
+		// Qué hace: comprueba unicidad de nombre y código del departamento en el país.
+		// Cómo: llama a ExistsByFieldAsync del repositorio.
 		private async Task<CResult> ValidateDeptoDuplicatesAsync(GEN_DEPTOTable data, bool isUpdate)
 		{
 			var excludeCorrPais = isUpdate ? data.CORR_PAIS : 0;
@@ -170,13 +176,13 @@ namespace SGUEES.Services
 			return null;
 		}
 
-		// Normaliza el texto para realizar comparaciones consistentes de duplicados.
+		// Qué hace: normaliza texto para comparar duplicados.
 		private static string NormalizeText(string value)
 		{
 			return (value ?? string.Empty).Trim().ToUpperInvariant();
 		}
 
-		// Construye una respuesta controlada para informar un conflicto por datos duplicados.
+		// Qué hace: arma respuesta controlada de duplicado (ErrorCode 2627).
 		private static CResult DuplicateWarning(string message)
 		{
 			return new CResult
@@ -191,7 +197,7 @@ namespace SGUEES.Services
 			};
 		}
 
-		// Construye una respuesta uniforme para devolver errores de validación al cliente.
+		// Qué hace: arma respuesta uniforme de error de validación.
 		private static CResult ValidationError(string message)
 		{
 			return new CResult

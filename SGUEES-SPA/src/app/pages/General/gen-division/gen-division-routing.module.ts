@@ -1,4 +1,4 @@
-// Declara la ruta del mantenimiento de divisiones y sus dependencias de UI.
+// Qué hace: declara la ruta del mantenimiento de divisiones y sus módulos de UI.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
@@ -11,7 +11,7 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { GenDivisionComponent } from './gen-division.component';
 
-// Ruta vacía: el path lo define el lazy load del menú.
+// Qué hace: fija la ruta vacía; el path real lo define el lazy load del menú.
 const routes: Routes = [{ path: '', component: GenDivisionComponent }];
 
 @NgModule({

@@ -1,3 +1,5 @@
+// Qué hace: agrupa las reglas de negocio del catálogo Nivel Académico.
+// Cómo: valida los datos y llama al repositorio para el CRUD y el cambio de estado; define columnas y campos del formulario.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -10,12 +12,13 @@ import { PlaNivelAcademicoRepository } from './pla-nivel-academico.repository';
 
 const ESTADO_FIELD = 'ESTADO_NIVEL_ACADEMICO';
 
-// Orquesta validación, columnas/formulario y llamadas al repositorio.
 @Injectable({ providedIn: 'root' })
+// Qué hace: valida los datos de nivel académico y coordina el CRUD con el repositorio.
 export class PlaNivelAcademicoService {
 	constructor(private repo: PlaNivelAcademicoRepository) {}
 
-	// Valida que el nombre obligatorio respete la longitud permitida.
+	// Qué hace: valida los datos del nivel académico antes de guardar.
+	// Cómo: revisa que el nombre no esté vacío y no supere 150 caracteres.
 	esValido(model: PlaNivelAcademico, msg: Function): boolean {
 		if (!model.NOMBRE_NIVEL_ACADEMICO || model.NOMBRE_NIVEL_ACADEMICO.trim() === '') {
 			msg('Debe ingresar el nombre del nivel academico.', NotifyType.Warning);
@@ -30,37 +33,43 @@ export class PlaNivelAcademicoService {
 		return true;
 	}
 
-	// Consulta los niveles aplicando únicamente los filtros informados.
+	// Qué hace: lista los niveles académicos según los filtros recibidos.
+	// Cómo: llama a getAll del repositorio con los parámetros armados en buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	// Obtiene un nivel por correlativo.
+	// Qué hace: obtiene un nivel académico por su correlativo.
+	// Cómo: llama a get del repositorio con CORR_NIVEL_ACADEMICO como filtro.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: param.CORR_NIVEL_ACADEMICO }]);
 	}
 
-	// Delega la inserción al repositorio.
+	// Qué hace: crea un nivel académico nuevo.
+	// Cómo: llama a create del repositorio con el modelo recibido.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
-	// Delega la actualización identificando el correlativo.
+	// Qué hace: actualiza un nivel académico existente.
+	// Cómo: llama a update del repositorio con el modelo y CORR_NIVEL_ACADEMICO como llave.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }]);
 	}
 
-	// Delega la eliminación por correlativo.
+	// Qué hace: elimina un nivel académico.
+	// Cómo: llama a delete del repositorio con CORR_NIVEL_ACADEMICO como filtro.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }]);
 	}
 
-	// Delega el cambio de estado activo/inactivo.
+	// Qué hace: cambia el estado activo/inactivo de un nivel académico.
+	// Cómo: llama a activarInactivar del repositorio con CORR_NIVEL_ACADEMICO como filtro.
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_NIVEL_ACADEMICO', Value: model.CORR_NIVEL_ACADEMICO }]);
 	}
 
-	// Define las columnas y filtros mostrados en la grilla del mantenimiento.
+	// Qué hace: define las columnas de la grilla de mantenimiento.
 	getColumns(): any {
 		return [
 			{
@@ -76,7 +85,7 @@ export class PlaNivelAcademicoService {
 		];
 	}
 
-	// Resumen de cantidad de registros en la grilla.
+	// Qué hace: define el resumen (contador) de la grilla.
 	getSummary(): any {
 		return {
 			totalItems: [
@@ -90,7 +99,7 @@ export class PlaNivelAcademicoService {
 		};
 	}
 
-	// Define los campos, editores y reglas de validación del formulario.
+	// Qué hace: define los campos y las reglas de validación del formulario.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_NIVEL_ACADEMICO', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -105,7 +114,7 @@ export class PlaNivelAcademicoService {
 		];
 	}
 
-	// Traduce los filtros de pantalla al formato esperado por el repositorio.
+	// Qué hace: arma los filtros de consulta a partir de los parámetros recibidos.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

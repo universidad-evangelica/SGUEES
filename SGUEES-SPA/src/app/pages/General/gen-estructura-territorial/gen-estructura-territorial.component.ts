@@ -1,4 +1,4 @@
-// Vista de estructura territorial: país + cascada depto/municipio/distrito.
+// Qué hace: vista de estructura territorial (país + cascada depto/municipio/distrito).
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import Menu from 'devextreme/ui/menu';
@@ -26,7 +26,7 @@ import {
 	isEmpresaWarningResponse,
 } from './gen-estructura-territorial.service';
 
-// Extiende el diálogo custom de DevExtreme para fijar ancho/clase del popup de confirmación.
+// Qué hace: amplía CustomDialogOptions con ancho y clase del popup de confirmación.
 type TerritorialConfirmDialogOptions = CustomDialogOptions & {
 	popupOptions?: {
 		width?: number;
@@ -39,7 +39,8 @@ type TerritorialConfirmDialogOptions = CustomDialogOptions & {
 	templateUrl: './gen-estructura-territorial.component.html',
 	styleUrls: ['./gen-estructura-territorial.component.scss'],
 })
-// Listado de países y documento con cascada territorial (CRUD hijos vía popup).
+// Qué hace: coordina el listado de países y la cascada territorial depto/municipio/distrito.
+// Cómo: extiende CBaseComponent y usa GenEstructuraTerritorialService con popups para los niveles hijos.
 export class GenEstructuraTerritorialComponent extends CBaseComponent implements OnInit {
 	@ViewChild('paisGrid', { static: false }) dataGrid?: DataGridMttoComponent;
 	@ViewChild('deptoGrid', { static: false }) deptoGrid?: DataGridMttoComponent;
@@ -50,7 +51,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	protected override etiquetaRegistro = 'el país';
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_PAIS';
-	// Paginado / filtro / orden en cliente (API devuelve todos los países).
+	// Qué hace: deja paginado/filtro/orden en cliente (el API entrega todos los países).
 	protected override mttoRemoteOperations = false;
 
 	readonly cascadeGridHeight = 530;
@@ -106,7 +107,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.distritoSummary = this.service.getChildSummary('NOMBRE_DISTRITO');
 	}
 
-	// Inicializa la vista y carga la información necesaria para comenzar el mantenimiento.
+	// Qué hace: prepara la pantalla al abrirla.
+	// Cómo: resuelve permisos, columnas, toolbar y llama a consultar.
 	ngOnInit(): void {
 		this.urlOpcion = this.resolveUrlOpcion();
 		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
@@ -118,17 +120,20 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.consultar();
 	}
 
-	// Expone el grid de países al flujo base de CBaseComponent.
+	// Qué hace: entrega el grid de países al flujo base de CBaseComponent.
+	// Cómo: retorna dataGrid o null.
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
 		return this.dataGrid ?? null;
 	}
 
-	// Ancho del popup de hijos: casi full-width en pantallas pequeñas.
+	// Qué hace: calcula el ancho del popup de niveles hijos.
+	// Cómo: casi full-width en pantalla pequeña; 520px en el resto.
 	get popupWidth(): number | string {
 		return this.screen(window.innerWidth) === 'sm' ? 'calc(100vw - 24px)' : 520;
 	}
 
-	// Sincroniza el estado del mantenimiento con la presentación y las acciones disponibles.
+	// Qué hace: sincroniza el estado del mantenimiento con la barra y el subtítulo.
+	// Cómo: llama a AsignaStatus base, syncToolbarContext y restaura subtítulo en Browse.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		this.syncToolbarContext();
@@ -137,7 +142,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 	}
 
-	// Abre el registro seleccionado desde la cuadrícula y prepara sus datos para consulta.
+	// Qué hace: abre el documento país al hacer doble clic en el grid.
+	// Cómo: llama a abrirDocumentoPais con la fila seleccionada.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -145,7 +151,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 	}
 
-	// Edit del grid → documento país (form editable + cascada); Guardar/Cancelar del padre.
+	// Qué hace: abre el documento país desde el botón editar del grid.
+	// Cómo: llama a abrirDocumentoPais con la fila seleccionada.
 	editarPaisDesdeGrid(e: any): void {
 		const rowData = e?.row?.data ?? e?.data;
 		if (rowData) {
@@ -153,7 +160,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 	}
 
-	// Arma el modelo de país editable o valores iniciales para un alta.
+	// Qué hace: construye el modelo de país para el formulario.
+	// Cómo: si recibe xModel copia sus campos; si no, devuelve valores iniciales vacíos.
 	fillPais(xModel?: GenPais): GenPais {
 		if (xModel) {
 			return { ...xModel };
@@ -173,12 +181,14 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
-	// Transforma los datos recibidos en el modelo editable y crea sus valores iniciales cuando corresponde.
+	// Qué hace: adapta fillData del base al modelo de país.
+	// Cómo: llama a fillPais.
 	override fillData(xModel?: GenPais): GenPais {
 		return this.fillPais(xModel);
 	}
 
-	// Arma el modelo de departamento ligado al país seleccionado.
+	// Qué hace: construye el modelo de departamento para el popup.
+	// Cómo: toma CORR_PAIS del país seleccionado y completa el resto desde xModel.
 	fillDepto(xModel?: GenDepto): GenDepto {
 		return {
 			CORR_PAIS: this.selectedPais?.CORR_PAIS ?? 0,
@@ -194,7 +204,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
-	// Arma el modelo de municipio ligado a país y departamento seleccionados.
+	// Qué hace: construye el modelo de municipio para el popup.
+	// Cómo: toma país/depto seleccionados y completa el resto desde xModel.
 	fillMunicipio(xModel?: GenMunicipio): GenMunicipio {
 		return {
 			CORR_PAIS: this.selectedPais?.CORR_PAIS ?? 0,
@@ -211,7 +222,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
-	// Arma el modelo de distrito ligado a la jerarquía territorial seleccionada.
+	// Qué hace: construye el modelo de distrito para el popup.
+	// Cómo: toma la jerarquía seleccionada y completa el resto desde xModel.
 	fillDistrito(xModel?: GenDistrito): GenDistrito {
 		return {
 			CORR_PAIS: this.selectedPais?.CORR_PAIS ?? xModel?.CORR_PAIS ?? 0,
@@ -228,7 +240,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
-	// Carga el listado desde el servicio, ordena los resultados y actualiza la cuadrícula.
+	// Qué hace: carga el listado de países en el grid.
+	// Cómo: llama a getAllPaises del servicio mediante consultarMtto.
 	consultar(resetPage = false): void {
 		this.consultarMtto({
 			load: () => this.service.getAllPaises(),
@@ -239,7 +252,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	// Ordena los países por correlativo sin alterar directamente el arreglo recibido.
+	// Qué hace: ordena el listado de países por CORR_PAIS.
+	// Cómo: crea una copia ordenada de this.models.
 	private ordenarPaisesPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
@@ -248,14 +262,16 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.models = [...this.models].sort((a, b) => Number(a.CORR_PAIS) - Number(b.CORR_PAIS));
 	}
 
-	// Actualiza la cuadrícula de países y conserva el contexto visual solicitado.
+	// Qué hace: refresca el grid de países.
+	// Cómo: llama a refreshData del dataGrid en el siguiente tick.
 	private refrescarGridPaises(resetPage = false): void {
 		setTimeout(() => {
 			this.dataGrid?.refreshData(resetPage);
 		}, 0);
 	}
 
-	// Abre el documento país (form habilitado + cascada); barra = Guardar/Cancelar del padre.
+	// Qué hace: abre el documento país con formulario y cascada.
+	// Cómo: fija Update, limpia hijos, carga departamentos y habilita el formulario.
 	abrirDocumentoPais(pais: GenPais, desdeAlta = false): void {
 		if (!desdeAlta && !this.permiteEdit) {
 			this.notifyFx('No tiene permiso para editar registros.', NotifyType.Warning);
@@ -275,7 +291,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	// Sale del documento al listado de países (Cancelar / tras flujo de cierre).
+	// Qué hace: regresa del documento país al listado.
+	// Cómo: limpia selección, pasa a Browse y llama a consultar.
 	salirAListado(): void {
 		this.vistaDetalle = false;
 		this.selectedPais = undefined;
@@ -290,7 +307,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		setTimeout(() => this.consultar());
 	}
 
-	// Prepara un modelo vacío y abre el formulario para registrar un nuevo elemento.
+	// Qué hace: inicia la creación de un país desde el listado.
+	// Cómo: ignora si está en documento; si no, llama a nuevo del base.
 	override nuevo(): void {
 		if (this.vistaDetalle) {
 			return;
@@ -298,7 +316,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		super.nuevo();
 	}
 
-	// Valida el formulario y ejecuta la creación o actualización según el estado del mantenimiento.
+	// Qué hace: valida y guarda el país (creación o actualización).
+	// Cómo: llama a insertPais o updatePais del servicio según banderaMtto.
 	guardar(): void {
 		const formData = this.dataForm?.instance?.option('formData') as GenPais | undefined;
 		if (formData) {
@@ -335,7 +354,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	// Descarta la edición actual y restaura el estado de consulta del mantenimiento.
+	// Qué hace: cancela la edición del país y vuelve al listado o a Browse.
+	// Cómo: confirma si hay cambios y llama a salirAListado o limpia el modelo.
 	override cancelar(): void {
 		const finalizar = () => {
 			if (this.vistaDetalle) {
@@ -357,7 +377,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		finalizar();
 	}
 
-	// Canaliza la eliminación de la fila y convierte restricciones relacionadas en mensajes controlados.
+	// Qué hace: elimina el país seleccionado en el grid.
+	// Cómo: llama a deletePais del servicio vía rowRemovingMtto.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () => this.convertirEliminacionRelacionadaEnWarning(this.service.deletePais(e.data)),
@@ -365,7 +386,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	// Carga los municipios del departamento enfocado y limpia selecciones hijas obsoletas.
+	// Qué hace: responde al foco de un departamento en la cascada.
+	// Cómo: fija selectedDepto, limpia municipio y llama a getCORR_MUNICIPIO/getCORR_DISTRITO.
 	onDeptoFocused(e: any): void {
 		const row = (e?.row?.data ?? e?.data) as GenDepto;
 		if (!row?.CORR_DEPTO) {
@@ -383,7 +405,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.getCORR_DISTRITO();
 	}
 
-	// Carga los distritos del municipio enfocado y actualiza la selección en cascada.
+	// Qué hace: responde al foco de un municipio en la cascada.
+	// Cómo: fija selectedMunicipio y llama a getCORR_DISTRITO.
 	onMunicipioFocused(e: any): void {
 		const row = (e?.row?.data ?? e?.data) as GenMunicipio;
 		if (!row?.CORR_MUNICIPIO) {
@@ -403,7 +426,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.getCORR_DISTRITO();
 	}
 
-	// Abre el formulario emergente para crear un departamento dentro del país seleccionado.
+	// Qué hace: abre el popup para crear un departamento.
+	// Cómo: valida permiso y país; llama a abrirPopup con nivel depto.
 	nuevoDepto(): void {
 		if (!this.permiteAdd) {
 			this.notifyFx('No tiene permiso para crear registros.', NotifyType.Warning);
@@ -416,7 +440,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.abrirPopup('depto', true);
 	}
 
-	// Abre el formulario emergente para crear un municipio dentro del departamento seleccionado.
+	// Qué hace: abre el popup para crear un municipio.
+	// Cómo: valida permiso y depto; llama a abrirPopup con nivel municipio.
 	nuevoMunicipio(): void {
 		if (!this.permiteAdd) {
 			this.notifyFx('No tiene permiso para crear registros.', NotifyType.Warning);
@@ -429,7 +454,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.abrirPopup('municipio', true);
 	}
 
-	// Abre el formulario emergente para crear un distrito dentro del municipio seleccionado.
+	// Qué hace: abre el popup para crear un distrito.
+	// Cómo: valida permiso y municipio; llama a abrirPopup con nivel distrito.
 	nuevoDistrito(): void {
 		if (!this.permiteAdd) {
 			this.notifyFx('No tiene permiso para crear registros.', NotifyType.Warning);
@@ -442,14 +468,16 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.abrirPopup('distrito', true);
 	}
 
-	// Abre el departamento seleccionado en el formulario emergente de edición.
+	// Qué hace: abre el popup para editar el departamento de la fila.
+	// Cómo: llama a abrirPopup con nivel depto y la fila.
 	onEditDeptoClick(e: any): void {
 		if (e?.row?.data) {
 			this.abrirPopup('depto', false, e.row.data);
 		}
 	}
 
-	// Solicita confirmación antes de eliminar el departamento seleccionado.
+	// Qué hace: confirma y elimina el departamento de la fila.
+	// Cómo: llama a confirmAction y luego eliminarDepto.
 	onDeleteDeptoClick(e: any): void {
 		const row = e?.row?.data as GenDepto;
 		if (!row) {
@@ -458,14 +486,16 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.confirmAction('Eliminar departamento', `Desea eliminar "${row.NOMBRE_DEPTO}"?`, () => this.eliminarDepto(row));
 	}
 
-	// Abre el municipio seleccionado en el formulario emergente de edición.
+	// Qué hace: abre el popup para editar el municipio de la fila.
+	// Cómo: llama a abrirPopup con nivel municipio y la fila.
 	onEditMunicipioClick(e: any): void {
 		if (e?.row?.data) {
 			this.abrirPopup('municipio', false, e.row.data);
 		}
 	}
 
-	// Solicita confirmación antes de eliminar el municipio seleccionado.
+	// Qué hace: confirma y elimina el municipio de la fila.
+	// Cómo: llama a confirmAction y luego eliminarMunicipio.
 	onDeleteMunicipioClick(e: any): void {
 		const row = e?.row?.data as GenMunicipio;
 		if (!row) {
@@ -474,14 +504,16 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.confirmAction('Eliminar municipio', `Desea eliminar "${row.NOMBRE_MUNICIPIO}"?`, () => this.eliminarMunicipio(row));
 	}
 
-	// Abre el distrito seleccionado en el formulario emergente de edición.
+	// Qué hace: abre el popup para editar el distrito de la fila.
+	// Cómo: llama a abrirPopup con nivel distrito y la fila.
 	onEditDistritoClick(e: any): void {
 		if (e?.row?.data) {
 			this.abrirPopup('distrito', false, e.row.data);
 		}
 	}
 
-	// Solicita confirmación antes de eliminar el distrito seleccionado.
+	// Qué hace: confirma y elimina el distrito de la fila.
+	// Cómo: llama a confirmAction y luego eliminarDistrito.
 	onDeleteDistritoClick(e: any): void {
 		const row = e?.row?.data as GenDistrito;
 		if (!row) {
@@ -490,7 +522,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.confirmAction('Eliminar distrito', `Desea eliminar "${row.NOMBRE_DISTRITO}"?`, () => this.eliminarDistrito(row));
 	}
 
-	// Valida el formulario territorial emergente y prepara el guardado del nivel seleccionado.
+	// Qué hace: valida y guarda el registro del popup territorial.
+	// Cómo: llama a esValidoNivel del servicio y luego ejecutarGuardarPopup.
 	guardarPopup(): void {
 		if (this.popupSaving) {
 			return;
@@ -525,7 +558,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.ejecutarGuardarPopup();
 	}
 
-	// Completa en el modelo emergente las claves de sus niveles territoriales superiores.
+	// Qué hace: completa en el popup las claves de los niveles padres.
+	// Cómo: copia CORR_PAIS/DEPTO/MUNICIPIO desde la selección actual.
 	private reforzarContextoPopup(model: GenDepto | GenMunicipio | GenDistrito): GenDepto | GenMunicipio | GenDistrito {
 		if (this.popupNivel === 'depto') {
 			return {
@@ -550,13 +584,15 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
-	// Cierra el guardado emergente y restaura sus indicadores de procesamiento.
+	// Qué hace: cierra el estado de guardado del popup.
+	// Cómo: limpia popupSaving y loadingVisible.
 	private finalizarGuardadoPopup(): void {
 		this.popupSaving = false;
 		this.loadingVisible = false;
 	}
 
-	// Ejecuta la petición de alta o edición y refresca el nivel territorial afectado.
+	// Qué hace: ejecuta la creación o edición del popup y refresca el nivel territorial afectado.
+	// Cómo: llama a getPopupRequest y, al terminar, refrescarNivel con popupNivel.
 	private ejecutarGuardarPopup(): void {
 		this.getPopupRequest()
 			.pipe(take(1))
@@ -578,29 +614,34 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			});
 	}
 
-	// Cierra el formulario emergente y limpia su estado temporal.
+	// Qué hace: cierra el popup territorial.
+	// Cómo: pone popupVisible en false.
 	cerrarPopup(): void {
 		this.popupVisible = false;
 	}
 
-	// Deja correlativos de país en solo lectura.
+	// Qué hace: deja los correlativos del formulario país en solo lectura.
+	// Cómo: llama a bloquearCamposCorr sobre dataForm.
 	override bloquear(): void {
 		this.bloquearCamposCorr(this.dataForm);
 	}
 
-	// En edición del documento país solo bloquea correlativos (resto editable).
+	// Qué hace: habilita el formulario país dejando correlativos bloqueados.
+	// Cómo: llama a bloquearCamposCorr en el siguiente tick.
 	override habilitar(): void {
 		setTimeout(() => this.bloquearCamposCorr(this.dataForm));
 	}
 
-	// Enfoca el nombre del país para agilizar la captura.
+	// Qué hace: enfoca el campo nombre del país.
+	// Cómo: llama a focus del editor NOMBRE_PAIS.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm?.instance?.getEditor('NOMBRE_PAIS')?.focus();
 		});
 	}
 
-	// Carga los departamentos del país seleccionado y reinicia los niveles territoriales inferiores.
+	// Qué hace: carga los departamentos del país seleccionado.
+	// Cómo: getLookUp GEN_DEPTO GetCORR_DEPTO y refresca deptoGrid.
 	getCORR_DEPTO(corrPais?: number): void {
 		const pais = corrPais ?? this.selectedPais?.CORR_PAIS;
 		if (!pais) {
@@ -642,7 +683,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			});
 	}
 
-	// Carga los municipios del departamento seleccionado y reinicia sus distritos.
+	// Qué hace: carga los municipios del departamento seleccionado.
+	// Cómo: getLookUp GEN_MUNICIPIO GetCORR_MUNICIPIO y refresca municipioGrid.
 	getCORR_MUNICIPIO(corrPais?: number, corrDepto?: number): void {
 		const pais = corrPais ?? this.selectedPais?.CORR_PAIS;
 		const depto = corrDepto ?? this.selectedDepto?.CORR_DEPTO;
@@ -688,7 +730,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			});
 	}
 
-	// Carga los distritos asociados al municipio seleccionado.
+	// Qué hace: carga los distritos del municipio seleccionado.
+	// Cómo: getLookUp GEN_DISTRITO GetCORR_DISTRITO y refresca distritoGrid.
 	getCORR_DISTRITO(corrPais?: number, corrDepto?: number, corrMunicipio?: number): void {
 		const pais = corrPais ?? this.selectedPais?.CORR_PAIS;
 		const depto = corrDepto ?? this.selectedDepto?.CORR_DEPTO;
@@ -736,7 +779,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			});
 	}
 
-	// Regenera las columnas de los niveles territoriales según los permisos actuales.
+	// Qué hace: regenera columnas de país y cascada según permisos.
+	// Cómo: llama a getPaisColumns/getDeptoColumns/getMunicipioColumns/getDistritoColumns.
 	private actualizarColumnas(): void {
 		this.columns = this.service.getPaisColumns();
 		this.deptoColumns = this.service.getDeptoColumns(this.onEditDeptoClick, this.onDeleteDeptoClick, this.permiteEdit, this.permiteDele);
@@ -754,7 +798,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
-	// Obtiene la ruta funcional activa para sincronizar permisos y contexto de la barra de acciones.
+	// Qué hace: resuelve la URL de opción para permisos.
+	// Cómo: recorre ActivatedRoute hasta encontrar path; fallback gen-estructura-territorial.
 	private resolveUrlOpcion(): string {
 		let route: ActivatedRoute | null = this.router;
 		while (route) {
@@ -767,13 +812,14 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return '/gen-estructura-territorial';
 	}
 
-	// Publica el contexto del mantenimiento territorial usado por las acciones de la barra.
+	// Qué hace: publica el contexto de la barra de acciones.
+	// Cómo: llama a pageContext.updateFromBarra con add y refresh.
 	private syncToolbarContext(): void {
 		this.pageContext.updateFromBarra(
 			{
 				titulo: this.tituloVentana,
 				subtitle: this.subTituloVentana,
-				// En documento el Nuevo de país no sale (isForm); permiteAdd real alimenta la cascada.
+				// Qué hace: en documento el Nuevo de país no sale (isForm); permiteAdd alimenta la cascada.
 				permiteAdd: this.permiteAdd,
 				showRefresh: !this.vistaDetalle,
 				unifiedToolbar: !this.vistaDetalle,
@@ -787,7 +833,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
-	// Descarta selecciones de niveles inferiores cuando cambia el nivel territorial padre.
+	// Qué hace: limpia selecciones e hijas de la cascada.
+	// Cómo: vacía depto/municipio/distrito y refresca los tres grids.
 	private limpiarSeleccionHijos(): void {
 		this.selectedDepto = undefined;
 		this.selectedMunicipio = undefined;
@@ -802,14 +849,16 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	// Conecta los eventos de las cuadrículas territoriales para mantener selección y filtros en cascada.
+	// Qué hace: inicializa los tres grids de la cascada.
+	// Cómo: llama a vincularGridCascade para depto, municipio y distrito.
 	private inicializarGridsCascade(): void {
 		this.vincularGridCascade(this.deptoGrid, 'depto');
 		this.vincularGridCascade(this.municipioGrid, 'municipio');
 		this.vincularGridCascade(this.distritoGrid, 'distrito');
 	}
 
-	// Configura scroll/altura del grid hijo y engancha resaltado de fila seleccionada.
+	// Qué hace: configura scroll/altura y resaltado del grid hijo.
+	// Cómo: ajusta opciones DevExtreme y engancha contentReady/rowPrepared.
 	private vincularGridCascade(
 		grid: DataGridMttoComponent | undefined,
 		tipo: 'depto' | 'municipio' | 'distrito'
@@ -854,7 +903,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.cascadeGridHooks.add(instance);
 	}
 
-	// Ajusta los menús de filtro para que no pierdan el contexto de la cuadrícula territorial.
+	// Qué hace: ancla overlays de filtro al body para la cascada.
+	// Cómo: fija container del headerFilter y de los submenús dx-filter-menu.
 	private parchearOverlaysFiltroCascade(instance: any): void {
 		const headerFilterView = instance.getView?.('headerFilterView');
 		const headerFilterPopup = headerFilterView?.getPopupContainer?.();
@@ -886,7 +936,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	// Repinta las filas visibles para reflejar las selecciones territoriales actuales.
+	// Qué hace: actualiza el resaltado visual de la cascada.
+	// Cómo: reinicializa grids y repinta filas visibles de depto/municipio.
 	private actualizarResaltadoCascade(): void {
 		setTimeout(() => {
 			this.inicializarGridsCascade();
@@ -895,7 +946,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	// Solicita a la cuadrícula volver a dibujar únicamente sus filas visibles.
+	// Qué hace: repinta solo las filas visibles de un grid.
+	// Cómo: llama a repaintRows con los índices visibles.
 	private repintarFilasVisibles(grid: DataGridMttoComponent | undefined): void {
 		const instance = grid?.gData?.instance;
 		if (!instance) {
@@ -912,12 +964,14 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 	}
 
-	// Compara las claves compuestas para identificar el mismo departamento.
+	// Qué hace: compara si dos departamentos son el mismo.
+	// Cómo: iguala CORR_PAIS y CORR_DEPTO.
 	private esMismoDepto(data: GenDepto, selected: GenDepto): boolean {
 		return Number(data.CORR_PAIS) === Number(selected.CORR_PAIS) && Number(data.CORR_DEPTO) === Number(selected.CORR_DEPTO);
 	}
 
-	// Compara las claves compuestas para identificar el mismo municipio.
+	// Qué hace: compara si dos municipios son el mismo.
+	// Cómo: iguala CORR_PAIS, CORR_DEPTO y CORR_MUNICIPIO.
 	private esMismoMunicipio(data: GenMunicipio, selected: GenMunicipio): boolean {
 		return (
 			Number(data.CORR_PAIS) === Number(selected.CORR_PAIS) &&
@@ -926,7 +980,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
-	// Configura el modelo y el contexto padre antes de mostrar el formulario territorial emergente.
+	// Qué hace: abre el popup del nivel territorial indicado.
+	// Cómo: arma modelo/items con fill y getItems del servicio.
 	private abrirPopup(nivel: TerritorialNivel, isAdd: boolean, row?: GenDepto | GenMunicipio | GenDistrito): void {
 		this.popupNivel = nivel;
 		this.popupIsAdd = isAdd;
@@ -950,7 +1005,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	// Selecciona la operación de creación o actualización correspondiente al nivel territorial activo.
+	// Qué hace: elige la petición create/update del nivel activo del popup.
+	// Cómo: llama a insert/update del servicio y convertirDuplicadoEnWarning.
 	private getPopupRequest() {
 		if (this.popupNivel === 'depto') {
 			const model = this.popupModel as GenDepto;
@@ -976,7 +1032,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
-	// Recarga el nivel territorial modificado y también los niveles dependientes cuando aplica.
+	// Qué hace: recarga el nivel territorial modificado.
+	// Cómo: llama a getCORR_DEPTO, getCORR_MUNICIPIO o getCORR_DISTRITO.
 	private refrescarNivel(nivel: TerritorialNivel): void {
 		if (nivel === 'depto') {
 			this.getCORR_DEPTO();
@@ -989,7 +1046,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.getCORR_DISTRITO();
 	}
 
-	// Construye y ejecuta la eliminación del departamento seleccionado.
+	// Qué hace: elimina un departamento.
+	// Cómo: llama a deleteDepto del servicio vía eliminarNivel.
 	private eliminarDepto(row: GenDepto): void {
 		this.eliminarNivel(
 			this.convertirEliminacionRelacionadaEnWarning(this.service.deleteDepto(row)),
@@ -998,7 +1056,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
-	// Construye y ejecuta la eliminación del municipio seleccionado.
+	// Qué hace: elimina un municipio.
+	// Cómo: llama a deleteMunicipio del servicio vía eliminarNivel.
 	private eliminarMunicipio(row: GenMunicipio): void {
 		this.eliminarNivel(
 			this.convertirEliminacionRelacionadaEnWarning(this.service.deleteMunicipio(row)),
@@ -1007,7 +1066,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
-	// Construye y ejecuta la eliminación del distrito seleccionado.
+	// Qué hace: elimina un distrito.
+	// Cómo: llama a deleteDistrito del servicio vía eliminarNivel.
 	private eliminarDistrito(row: GenDistrito): void {
 		this.eliminarNivel(
 			this.convertirEliminacionRelacionadaEnWarning(this.service.deleteDistrito(row)),
@@ -1016,7 +1076,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
-	// Ejecuta una eliminación territorial, actualiza las listas afectadas y normaliza sus mensajes.
+	// Qué hace: ejecuta la eliminación de un nivel y refresca la cascada.
+	// Cómo: suscribe la request, limpia hijos y llama a refrescarNivel.
 	private eliminarNivel(request: any, nivel: TerritorialNivel, etiqueta: string): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -1055,7 +1116,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	// Determina si una respuesta de eliminación debe mostrarse como advertencia o error.
+	// Qué hace: elige Warning o Error tras una eliminación fallida.
+	// Cómo: usa isEmpresaFkErrorMessage e isRelatedDeleteWarningMessage.
 	private getDeleteNotifyType(message: string): NotifyType {
 		if (isEmpresaFkErrorMessage(message) || this.isRelatedDeleteWarningMessage(message)) {
 			return NotifyType.Warning;
@@ -1063,7 +1125,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return NotifyType.Error;
 	}
 
-	// Convierte respuestas/errores de duplicado en advertencia controlada con mensaje claro.
+	// Qué hace: convierte errores de duplicado en respuesta controlada.
+	// Cómo: intercepta ErrorCode 2601/2627 o mensajes de duplicado.
 	private convertirDuplicadoEnWarning<T>(request: Observable<T>, errorMessage: string): Observable<T> {
 		return request.pipe(
 			map((response: any) => {
@@ -1099,7 +1162,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
-	// Convierte restricciones de integridad al eliminar en una advertencia comprensible para el usuario.
+	// Qué hace: convierte errores de integridad al eliminar en advertencia.
+	// Cómo: intercepta ErrorCode 547 o mensajes de FK/relacionados.
 	private convertirEliminacionRelacionadaEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
@@ -1118,7 +1182,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
-	// Detecta mensajes que indican dependencias asociadas al registro que se intenta eliminar.
+	// Qué hace: detecta mensajes de registros relacionados al eliminar.
 	private isRelatedDeleteWarningMessage(message: string): boolean {
 		const value = `${message ?? ''}`.toLowerCase();
 		return [
@@ -1132,7 +1196,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		].some((fragment) => value.includes(fragment));
 	}
 
-	// Mantiene las claves correlativas como solo lectura dentro del formulario emergente.
+	// Qué hace: deja correlativos en solo lectura en el formulario.
+	// Cómo: marca readOnly en CORR_PAIS/DEPTO/MUNICIPIO/DISTRITO.
 	private bloquearCamposCorr(form?: DxFormComponent): void {
 		const corrFields = ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO', 'CORR_DISTRITO'];
 		corrFields.forEach((field) => {
@@ -1140,7 +1205,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	// Solicita confirmación al usuario y ejecuta la acción únicamente cuando es aceptada.
+	// Qué hace: muestra confirmación Si/No y ejecuta la acción si acepta.
+	// Cómo: usa custom de DevExtreme y luego fn.
 	private confirmAction(title: string, message: string, fn: () => void): void {
 		const dialog = custom({
 			title,
@@ -1162,7 +1228,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	// Normaliza errores HTTP y de base de datos en un mensaje útil para la interfaz.
+	// Qué hace: obtiene un mensaje usable desde errores HTTP/API.
+	// Cómo: prioriza ErrorMessage y detecta fallos de conexión.
 	private getErrorMessage(error: any): string {
 		const connectionMessage =
 			'No se pudo comunicar con el servidor. Verifique que la API esté en ejecución e intente nuevamente.';
@@ -1203,7 +1270,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return coerced || 'Ocurrio un error al procesar la solicitud.';
 	}
 
-	// Clasifica el error para presentarlo con el nivel de notificación adecuado.
+	// Qué hace: elige el tipo de notificación para un error.
+	// Cómo: usa getNotifyType o detecta empresa/duplicado.
 	private getErrorNotifyType(error: any): NotifyType {
 		const body = error?.error;
 		if (body && typeof body === 'object' && body.ErrorCode !== undefined) {
@@ -1218,7 +1286,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return NotifyType.Error;
 	}
 
-	// Detecta mensajes que representan conflictos por registros duplicados.
+	// Qué hace: detecta mensajes de registro duplicado.
 	private isDuplicateWarningMessage(message: string): boolean {
 		const value = `${message ?? ''}`.toLowerCase();
 		return [
@@ -1235,7 +1303,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		].some((fragment) => value.includes(fragment));
 	}
 
-	// Determina el tipo de notificación a partir del código y contenido de la respuesta.
+	// Qué hace: elige Warning o Error según la respuesta del API.
+	// Cómo: revisa ErrorCode 4100/2601/2627 y mensajes de duplicado.
 	private getNotifyType(response: any): NotifyType {
 		const errorCode = Number(response?.ErrorCode);
 		if (isEmpresaWarningResponse(response) || errorCode === 4100) {
@@ -1247,7 +1316,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			: NotifyType.Error;
 	}
 
-	// Convierte mensajes técnicos conocidos en advertencias claras para el usuario.
+	// Qué hace: traduce mensajes técnicos a texto claro para el usuario.
+	// Cómo: mapea empresa, duplicado y relacionados a mensajes funcionales.
 	private getWarningMessage(message: string): string {
 		const cleanMessage = `${message ?? ''}`.replace(/^error:\s*/i, '').trim();
 		const value = cleanMessage.toLowerCase();

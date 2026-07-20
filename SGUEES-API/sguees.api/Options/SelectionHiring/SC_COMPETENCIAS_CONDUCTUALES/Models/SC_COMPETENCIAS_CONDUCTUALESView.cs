@@ -1,9 +1,11 @@
-// DTO de lectura de competencia conductual (proyección de la vista SQL).
+// Qué hace: DTO de lectura de competencia conductual.
+// Cómo: proyecta los campos de la vista V_SC_COMPETENCIAS_CONDUCTUALES usada por las consultas.
 using System;
 
 namespace SGUEES.Models
 {
-    // Campos expuestos por la vista de consulta de competencia conductual.
+    // Qué hace: representa los campos de la vista V_SC_COMPETENCIAS_CONDUCTUALES.
+    // Cómo: expone el correlativo, tipo de puesto, nombre, descripción, estado y los campos de auditoría devueltos por las consultas.
     public class SC_COMPETENCIAS_CONDUCTUALESView
     {
         public int CORR_EMPRESA { get; set; }
@@ -11,6 +13,7 @@ namespace SGUEES.Models
         public int? CORR_TIPO_PUESTO { get; set; }
         public string NOMBRE_COMPETENCIAS_CONDUCTUALES { get; set; }
         public string DESCRIPCION { get; set; }
+        // Indica si la competencia conductual está activa (true) o inactiva (false).
         public bool? ESTADO_COMPETENCIAS_CONDUCTUALES { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }

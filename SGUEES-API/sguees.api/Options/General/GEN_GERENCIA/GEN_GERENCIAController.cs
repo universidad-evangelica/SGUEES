@@ -1,3 +1,4 @@
+// Qué hace: endpoints REST del catálogo gerencias.
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -11,15 +12,14 @@ using sguees.Services;
 
 namespace sguees.Controllers
 {
-	// API HTTP del catálogo de gerencias: autentica, aplica empresa de sesión y delega al servicio.
 	[Authorize]
 	[ApiController]
 	[Route("[controller]")]
+	// Qué hace: expone el CRUD de gerencias con autorización por política.
 	public class GEN_GERENCIAController : ControllerBase
 	{
 		private readonly IGEN_GERENCIAService _service;
 
-		// Inyecta el servicio de gerencias; falla si no está registrado.
 		public GEN_GERENCIAController(IGEN_GERENCIAService service)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(service));
@@ -27,7 +27,8 @@ namespace sguees.Controllers
 
 		[HttpGet("GetAll")]
 		[Authorize(Policy = "/gen-gerencia|R")]
-		// Atiende la consulta del listado de gerencias y la limita a la empresa de la sesión.
+		// Qué hace: lista las gerencias de la empresa en sesión.
+		// Cómo: fija CORR_EMPRESA y llama a GetAllAsync del servicio.
 		public async Task<CResult> GetAll([FromQuery] GEN_GERENCIAParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -36,7 +37,8 @@ namespace sguees.Controllers
 
 		[HttpGet("Get")]
 		[Authorize(Policy = "/gen-gerencia|R")]
-		// Atiende la consulta de una gerencia específica dentro de la empresa de la sesión.
+		// Qué hace: obtiene una gerencia de la empresa en sesión.
+		// Cómo: fija CORR_EMPRESA y llama a GetAsync del servicio.
 		public async Task<CResult> Get([FromQuery] GEN_GERENCIAParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -45,7 +47,8 @@ namespace sguees.Controllers
 
 		[HttpPost]
 		[Authorize(Policy = "/gen-gerencia|C")]
-		// Prepara auditoría, crea la gerencia y traduce el resultado al estado HTTP correspondiente.
+		// Qué hace: crea una gerencia nueva.
+		// Cómo: completa la auditoría de creación y llama a CreateAsync del servicio.
 		public async Task<IActionResult> Post(GEN_GERENCIATable Data)
 		{
 			SetCreateAudit(Data);
@@ -56,7 +59,8 @@ namespace sguees.Controllers
 
 		[HttpPut]
 		[Authorize(Policy = "/gen-gerencia|U")]
-		// Aplica las claves de la solicitud, prepara auditoría y actualiza la gerencia.
+		// Qué hace: actualiza una gerencia existente.
+		// Cómo: copia la llave de la URL al cuerpo, completa la auditoría y llama a UpdateAsync del servicio.
 		public async Task<IActionResult> Put(GEN_GERENCIATable Data)
 		{
 			this.ApplyQueryKeys(Data, nameof(GEN_GERENCIATable.CORR_GERENCIA));
@@ -68,7 +72,8 @@ namespace sguees.Controllers
 
 		[HttpDelete]
 		[Authorize(Policy = "/gen-gerencia|D")]
-		// Valida el contexto de empresa y elimina la gerencia indicada por sus claves.
+		// Qué hace: elimina una gerencia.
+		// Cómo: fija CORR_EMPRESA y llama a DeleteAsync del servicio.
 		public async Task<IActionResult> Delete([FromQuery] GEN_GERENCIATable Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -77,20 +82,20 @@ namespace sguees.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
-		// Obtiene la empresa asociada a la sesión para aislar las operaciones del usuario.
+		// Qué hace: obtiene CORR_EMPRESA del token de sesión.
 		private int GetCorrEmpresa()
 		{
 			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
 			return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
 		}
 
-		// Obtiene el identificador del usuario autenticado para registrar la auditoría.
+		// Qué hace: obtiene el usuario autenticado para auditoría.
 		private string GetUsuario()
 		{
 			return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
 		}
 
-		// Completa la empresa y los datos de auditoría requeridos para crear el registro.
+		// Qué hace: completa auditoría y empresa al crear un registro.
 		private void SetCreateAudit(GEN_GERENCIATable Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -102,7 +107,7 @@ namespace sguees.Controllers
 			Data.FECHA_ACTU = Data.FECHA_CREA;
 		}
 
-		// Completa la empresa y los datos de auditoría requeridos para actualizar el registro.
+		// Qué hace: completa auditoría y empresa al actualizar un registro.
 		private void SetUpdateAudit(GEN_GERENCIATable Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();

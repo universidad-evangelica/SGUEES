@@ -1,3 +1,4 @@
+// Endpoints REST del catálogo Payroll de nivel académico.
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -11,10 +12,10 @@ using SGUEES.Services;
 
 namespace SGUEES.Controllers
 {
-    // Endpoints REST del catálogo Payroll de nivel académico.
     [Authorize]
     [ApiController]
     [Route("[controller]")]
+    // Qué hace: expone el CRUD del catálogo de nivel académico con autorización por política.
     public class PLA_NIVEL_ACADEMICOController : ControllerBase
     {
         private readonly IPLA_NIVEL_ACADEMICOService _service;
@@ -26,7 +27,8 @@ namespace SGUEES.Controllers
 
         [HttpGet("GetAll")]
         [Authorize(Policy = "/pla-nivel-academico|R")]
-        // Completa la empresa desde la sesión antes de consultar el catálogo.
+        // Qué hace: lista los niveles académicos de la empresa en sesión.
+        // Cómo: fija CORR_EMPRESA y llama a GetAllAsync del servicio.
         public async Task<CResult> GetAll([FromQuery] PLA_NIVEL_ACADEMICOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -35,7 +37,8 @@ namespace SGUEES.Controllers
 
         [HttpGet("Get")]
         [Authorize(Policy = "/pla-nivel-academico|R")]
-        // Obtiene un nivel filtrando por empresa de sesión.
+        // Qué hace: obtiene un nivel académico de la empresa en sesión.
+        // Cómo: fija CORR_EMPRESA y llama a GetAsync del servicio.
         public async Task<CResult> Get([FromQuery] PLA_NIVEL_ACADEMICOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -44,7 +47,8 @@ namespace SGUEES.Controllers
 
         [HttpPost]
         [Authorize(Policy = "/pla-nivel-academico|C")]
-        // Asigna la auditoría de creación y devuelve el resultado del guardado.
+        // Qué hace: crea un nivel académico nuevo.
+        // Cómo: completa la auditoría de creación y llama a CreateAsync del servicio.
         public async Task<IActionResult> Post(PLA_NIVEL_ACADEMICOTable Data)
         {
             SetCreateAudit(Data);
@@ -55,7 +59,8 @@ namespace SGUEES.Controllers
 
         [HttpPut]
         [Authorize(Policy = "/pla-nivel-academico|U")]
-        // Aplica la llave de la consulta y la auditoría antes de actualizar.
+        // Qué hace: actualiza un nivel académico existente.
+        // Cómo: copia la llave de la URL al cuerpo, completa la auditoría y llama a UpdateAsync del servicio.
         public async Task<IActionResult> Put(PLA_NIVEL_ACADEMICOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(PLA_NIVEL_ACADEMICOTable.CORR_NIVEL_ACADEMICO));
@@ -67,7 +72,8 @@ namespace SGUEES.Controllers
 
         [HttpDelete]
         [Authorize(Policy = "/pla-nivel-academico|D")]
-        // Restringe la eliminación a la empresa de la sesión actual.
+        // Qué hace: elimina un nivel académico de la empresa en sesión.
+        // Cómo: fija CORR_EMPRESA y llama a DeleteAsync del servicio.
         public async Task<IActionResult> Delete([FromQuery] PLA_NIVEL_ACADEMICOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -78,7 +84,8 @@ namespace SGUEES.Controllers
 
         [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/pla-nivel-academico|U")]
-        // Identifica el registro y solicita el cambio de estado en su empresa.
+        // Qué hace: cambia el estado activo/inactivo de un nivel académico.
+        // Cómo: copia la llave de la URL, fija CORR_EMPRESA y llama a ActivarInactivarAsync del servicio.
         public async Task<IActionResult> ActivarInactivar(PLA_NIVEL_ACADEMICOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(PLA_NIVEL_ACADEMICOTable.CORR_NIVEL_ACADEMICO));
@@ -88,20 +95,21 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
-        // Lee CORR_EMPRESA del claim del usuario autenticado.
+        // Qué hace: obtiene CORR_EMPRESA del claim del usuario autenticado.
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
-        // Obtiene el login del usuario desde los claims.
+        // Qué hace: obtiene el identificador de usuario desde los claims.
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
-        // Completa empresa, usuario, estación y fechas para un registro nuevo.
+        // Qué hace: completa los datos de auditoría de un registro nuevo.
+        // Cómo: fija empresa, usuario, estación y fechas; deja ESTADO_NIVEL_ACADEMICO en true si viene vacío.
         private void SetCreateAudit(PLA_NIVEL_ACADEMICOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -114,7 +122,8 @@ namespace SGUEES.Controllers
             Data.ESTADO_NIVEL_ACADEMICO ??= true;
         }
 
-        // Actualiza los datos de auditoría sin reemplazar la información de creación.
+        // Qué hace: completa los datos de auditoría de una actualización.
+        // Cómo: fija empresa, usuario, estación y fecha; conserva ESTADO_NIVEL_ACADEMICO o lo deja en true si falta.
         private void SetUpdateAudit(PLA_NIVEL_ACADEMICOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

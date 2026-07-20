@@ -1,4 +1,4 @@
-// Modelo TypeScript de impacto económico (campos del formulario y grilla).
+// Qué hace: define el modelo TypeScript de impacto económico para formulario y grilla.
 export interface ScImpactoEconomico {
 	CORR_EMPRESA: number;
 	CORR_IMPACTO_ECONOMICO: number;

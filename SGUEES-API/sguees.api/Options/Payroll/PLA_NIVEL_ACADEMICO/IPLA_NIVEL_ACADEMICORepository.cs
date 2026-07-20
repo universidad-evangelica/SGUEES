@@ -6,12 +6,12 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-    // Contrato de acceso a datos de PLA_NIVEL_ACADEMICO.
+    // Qué hace: define el contrato de acceso a datos de PLA_NIVEL_ACADEMICO.
     public interface IPLA_NIVEL_ACADEMICORepository : IRepository<PLA_NIVEL_ACADEMICOTable>
     {
-        // Ejecuta el procedimiento común de cambio de estado.
+        // Qué hace: cambia el estado activo/inactivo mediante el procedimiento común de catálogo.
         Task<CResult> ActivarInactivarAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION);
-        // Indica si el nombre ya existe en la empresa.
+        // Qué hace: indica si el nombre ya existe en la empresa.
         Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr);
     }
 }

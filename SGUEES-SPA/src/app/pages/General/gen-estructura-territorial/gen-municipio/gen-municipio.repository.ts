@@ -9,27 +9,32 @@ import { environment } from 'src/environments/environment';
 @Injectable({
 	providedIn: 'root',
 })
+// Qué hace: agrupa las llamadas HTTP al controlador GEN_MUNICIPIO.
 export class GenMunicipioRepository {
 	readonly xController = 'GEN_MUNICIPIO';
 
 	constructor(private objData: CData) {}
 
-	// Consulta el listado de municipios aplicando los filtros recibidos.
+	// Qué hace: consulta el listado de municipios.
+	// Cómo: GET GetAll al controlador GEN_MUNICIPIO con los filtros recibidos.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlGENERALAPI);
 	}
 
-	// Envía al API la solicitud para crear el municipio.
+	// Qué hace: crea un municipio nuevo.
+	// Cómo: POST con el modelo al controlador GEN_MUNICIPIO.
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlGENERALAPI);
 	}
 
-	// Envía al API la solicitud para actualizar el municipio identificada por sus claves.
+	// Qué hace: actualiza un municipio existente.
+	// Cómo: PUT con el modelo al controlador GEN_MUNICIPIO.
 	update(model: any): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', [], environment.UrlGENERALAPI);
 	}
 
-	// Envía al API la solicitud para eliminar el municipio indicada por sus claves.
+	// Qué hace: elimina un municipio.
+	// Cómo: DELETE con la llave en xWhere al controlador GEN_MUNICIPIO.
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlGENERALAPI);
 	}

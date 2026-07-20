@@ -1,3 +1,4 @@
+// Qué hace: persiste y consulta el catálogo PLA_NIVEL_ACADEMICO en SQL Server.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,7 +10,6 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-    // Persistencia SQL del catálogo PLA_NIVEL_ACADEMICO.
     public class PLA_NIVEL_ACADEMICORepository : BaseRepository<PLA_NIVEL_ACADEMICOTable>, IPLA_NIVEL_ACADEMICORepository
     {
         private const string _TableName = "PLA_NIVEL_ACADEMICO";
@@ -24,7 +24,8 @@ namespace SGUEES.Repositories
         {
         }
 
-        // Consulta la vista por empresa y devuelve los niveles ordenados.
+        // Qué hace: lista los niveles académicos de la empresa.
+        // Cómo: lee V_PLA_NIVEL_ACADEMICO filtrando por CORR_EMPRESA y ordena por CORR_NIVEL_ACADEMICO.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -68,7 +69,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Recupera un nivel académico específico con los filtros recibidos.
+        // Qué hace: obtiene un nivel académico por filtros.
+        // Cómo: lee V_PLA_NIVEL_ACADEMICO con los parámetros recibidos en xWhere.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -106,7 +108,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Inserta el registro y devuelve la fila creada desde la vista.
+        // Qué hace: inserta un nivel académico nuevo.
+        // Cómo: ejecuta Insert sobre PLA_NIVEL_ACADEMICO y devuelve la fila creada desde V_PLA_NIVEL_ACADEMICO.
         public async Task<CResult> CreateAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -166,7 +169,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Actualiza el nivel de la empresa y devuelve su estado persistido.
+        // Qué hace: actualiza un nivel académico existente.
+        // Cómo: ejecuta Update sobre PLA_NIVEL_ACADEMICO por CORR_EMPRESA y CORR_NIVEL_ACADEMICO, y devuelve la fila desde la vista.
         public async Task<CResult> UpdateAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -221,7 +225,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Elimina el nivel por empresa y correlativo, controlando relaciones existentes.
+        // Qué hace: elimina un nivel académico.
+        // Cómo: ejecuta Delete sobre PLA_NIVEL_ACADEMICO por CORR_EMPRESA y CORR_NIVEL_ACADEMICO.
         public async Task<CResult> DeleteAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -259,7 +264,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Ejecuta el procedimiento común de cambio de estado y recarga el registro.
+        // Qué hace: cambia el estado activo/inactivo de un nivel académico.
+        // Cómo: ejecuta PRAL_MTTO_CATALOGO_ESTADO_BIT y recarga el registro desde V_PLA_NIVEL_ACADEMICO.
         public async Task<CResult> ActivarInactivarAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -332,7 +338,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Comprueba si otro nivel de la empresa ya utiliza el mismo nombre.
+        // Qué hace: verifica si otro nivel de la empresa ya usa el mismo nombre.
+        // Cómo: consulta V_PLA_NIVEL_ACADEMICO con SQL directo excluyendo el correlativo indicado.
         public async Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr)
         {
             if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nombre))
@@ -365,7 +372,8 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Identifica errores de unicidad reportados con distintos textos por SQL Server.
+        // Qué hace: detecta errores de unicidad reportados por SQL Server.
+        // Cómo: busca fragmentos conocidos en el mensaje de la excepción.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

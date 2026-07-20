@@ -7,38 +7,44 @@ import { IResult } from 'src/app/FxAPI/IResult';
 import { environment } from 'src/environments/environment';
 
 @Injectable({ providedIn: 'root' })
-// Encapsula las llamadas HTTP al controlador del catálogo.
+// Qué hace: agrupa las llamadas HTTP al controlador SC_IMPACTO_ECONOMICO.
 export class ScImpactoEconomicoRepository {
 	readonly xController = 'SC_IMPACTO_ECONOMICO';
 
 	constructor(private objData: CData) {}
 
-	// Consulta el listado aplicando los filtros recibidos.
+	// Qué hace: consulta el listado de impactos económicos.
+	// Cómo: GET GetAll al controlador SC_IMPACTO_ECONOMICO con los filtros recibidos.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	// Consulta un registro específico por sus filtros.
+	// Qué hace: consulta un impacto económico puntual.
+	// Cómo: GET Get al controlador SC_IMPACTO_ECONOMICO con la llave en xWhere.
 	get(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	// Envía al API la solicitud de creación.
+	// Qué hace: crea un impacto económico nuevo.
+	// Cómo: POST con el modelo al controlador SC_IMPACTO_ECONOMICO.
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	// Envía al API la solicitud de actualización con sus claves.
+	// Qué hace: actualiza un impacto económico existente.
+	// Cómo: PUT con el modelo y la llave en xWhere al controlador SC_IMPACTO_ECONOMICO.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	// Envía al API la solicitud de eliminación.
+	// Qué hace: elimina un impacto económico.
+	// Cómo: DELETE con la llave en xWhere al controlador SC_IMPACTO_ECONOMICO.
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	// Envía al API el cambio de estado activo/inactivo.
+	// Qué hace: cambia el estado activo/inactivo de un impacto económico.
+	// Cómo: PUT a ActivarInactivar con el modelo y la llave en xWhere.
 	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}

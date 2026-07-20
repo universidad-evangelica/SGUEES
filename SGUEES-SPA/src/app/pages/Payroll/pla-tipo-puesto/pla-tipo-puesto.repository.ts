@@ -1,3 +1,4 @@
+// Acceso HTTP al API Tipo de Puesto (controller PLA_TIPO_PUESTO).
 import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { environment } from 'src/environments/environment';
@@ -8,38 +9,44 @@ import { CData } from 'src/app/FxAPI/CData';
 @Injectable({
 	providedIn: 'root',
 })
-// Acceso HTTP al controlador PLA_TIPO_PUESTO.
+// Qué hace: agrupa las llamadas HTTP al controlador PLA_TIPO_PUESTO.
 export class PlaTipoPuestoRepository {
 	readonly xController = 'PLA_TIPO_PUESTO';
 
 	constructor(private objData: CData) {}
 
-	// Solicita a la API el listado de tipos de puesto con los filtros recibidos.
+	// Qué hace: consulta el listado de tipos de puesto.
+	// Cómo: GET GetAll al controlador PLA_TIPO_PUESTO con los filtros recibidos.
 	getAll(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
-	// Solicita un tipo de puesto específico por filtros.
+	// Qué hace: consulta un tipo de puesto puntual.
+	// Cómo: GET Get al controlador PLA_TIPO_PUESTO con la llave en xWhere.
 	get(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
-	// Envía un nuevo tipo de puesto al endpoint de mantenimiento.
+	// Qué hace: crea un tipo de puesto nuevo.
+	// Cómo: POST con el modelo al controlador PLA_TIPO_PUESTO.
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlTALENTOHUMANONAPI);
 	}
 
-	// Actualiza el tipo identificado por los parámetros de búsqueda.
+	// Qué hace: actualiza un tipo de puesto existente.
+	// Cómo: PUT con el modelo y la llave en xWhere al controlador PLA_TIPO_PUESTO.
 	update(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
-	// Elimina el tipo identificado por los parámetros de búsqueda.
+	// Qué hace: elimina un tipo de puesto.
+	// Cómo: DELETE con la llave en xWhere al controlador PLA_TIPO_PUESTO.
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
 
-	// Llama al endpoint de activar/inactivar del catálogo.
+	// Qué hace: cambia el estado activo/inactivo de un tipo de puesto.
+	// Cómo: PUT a ActivarInactivar con el modelo y la llave en xWhere.
 	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}

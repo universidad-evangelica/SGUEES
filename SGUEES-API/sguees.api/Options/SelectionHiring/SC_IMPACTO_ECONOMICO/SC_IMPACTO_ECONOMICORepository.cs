@@ -10,7 +10,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-    // Ejecuta CRUD y consultas sobre la tabla/vista de impacto económico.
+    // Qué hace: ejecuta el CRUD y las consultas SQL sobre la tabla y la vista de impacto económico.
     public class SC_IMPACTO_ECONOMICORepository : BaseRepository<SC_IMPACTO_ECONOMICOTable>, ISC_IMPACTO_ECONOMICORepository
     {
         private const string _TableName = "SC_IMPACTO_ECONOMICO";
@@ -24,7 +24,8 @@ namespace SGUEES.Repositories
         {
         }
 
-        // Recupera impactos activos ordenados para el lookup del descriptor.
+        // Qué hace: recupera los impactos económicos activos para el lookup del descriptor.
+        // Cómo: SELECT directo a V_SC_IMPACTO_ECONOMICO filtrando por empresa y ESTADO_IMPACTO_ECONOMICO, ordenado por DESCRIPCION.
         public async Task<List<SC_IMPACTO_ECONOMICOView>> GetCatalogoDescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)
@@ -59,7 +60,8 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Lee el listado desde la vista filtrado por empresa.
+        // Qué hace: lista los impactos económicos de la vista V_SC_IMPACTO_ECONOMICO.
+        // Cómo: filtra por CORR_EMPRESA y ordena por CORR_IMPACTO_ECONOMICO.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -103,7 +105,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Lee un registro por llave desde la vista.
+        // Qué hace: obtiene un impacto económico de la vista V_SC_IMPACTO_ECONOMICO.
+        // Cómo: lee con los filtros recibidos en xWhere (empresa e id).
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -141,7 +144,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Inserta el registro y controla duplicados de nombre/código.
+        // Qué hace: inserta un impacto económico nuevo.
+        // Cómo: llama a Insert sobre SC_IMPACTO_ECONOMICO y devuelve el registro creado leído desde la vista; controla claves duplicadas.
         public async Task<CResult> CreateAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -201,7 +205,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Actualiza el registro validando unicidad.
+        // Qué hace: actualiza un impacto económico existente.
+        // Cómo: llama a Update sobre SC_IMPACTO_ECONOMICO por CORR_EMPRESA y CORR_IMPACTO_ECONOMICO; controla claves duplicadas.
         public async Task<CResult> UpdateAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -257,7 +262,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Elimina el registro; propaga errores de integridad.
+        // Qué hace: elimina un impacto económico.
+        // Cómo: llama a Delete sobre SC_IMPACTO_ECONOMICO por CORR_EMPRESA y CORR_IMPACTO_ECONOMICO; informa si hay registros relacionados.
         public async Task<CResult> DeleteAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -294,7 +300,8 @@ namespace SGUEES.Repositories
 
             return objResultado;
         }
-        // Invierte el estado activo/inactivo del registro.
+        // Qué hace: cambia el estado activo/inactivo de un impacto económico.
+        // Cómo: ejecuta el stored procedure PRAL_MTTO_CATALOGO_ESTADO_BIT y devuelve el registro actualizado leído desde la vista.
         public async Task<CResult> ActivarInactivarAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -367,7 +374,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Detecta errores de clave duplicada de SQL Server.
+        // Qué hace: detecta errores de clave duplicada de SQL Server.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

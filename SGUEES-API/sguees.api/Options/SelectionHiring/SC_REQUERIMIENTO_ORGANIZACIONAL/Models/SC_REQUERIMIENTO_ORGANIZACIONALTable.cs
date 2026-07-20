@@ -10,6 +10,7 @@ namespace SGUEES.Models
         public int CORR_EMPRESA { get; set; }
         public int CORR_REQUERIMIENTO_ORGANIZACIONAL { get; set; }
         public string DESCRIPCION { get; set; }
+        // Estado del catálogo: true = activo, false = inactivo.
         public bool? ESTADO_REQUERIMIENTO_ORGANIZACIONAL { get; set; } = true;
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }

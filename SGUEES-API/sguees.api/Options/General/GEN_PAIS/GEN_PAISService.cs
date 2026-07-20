@@ -6,24 +6,26 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
-	// Capa de servicio de países: valida/normaliza y delega la persistencia al repositorio.
+	// Qué hace: aplica las reglas de negocio del catálogo países antes de llamar al repositorio.
 	public class GEN_PAISService : IGEN_PAISService
 	{
 		private readonly IGEN_PAISRepository _repo;
 
-		// Inyecta el repositorio de países para operaciones de datos.
+		// Qué hace: inyecta el repositorio de países para operaciones de datos.
 		public GEN_PAISService(IGEN_PAISRepository repo)
 		{
 			_repo = repo;
 		}
 
-		// Construye los filtros y solicita al repositorio el listado de países.
+		// Qué hace: lista países.
+		// Cómo: llama a GetAllAsync del repositorio con BuildParameters.
 		public async Task<CResult> GetAllAsync(GEN_PAISParam xWhere)
 		{
 			return await _repo.GetAllAsync(BuildParameters(xWhere));
 		}
 
-		// Valida las claves de consulta y solicita al repositorio el detalle de el país.
+		// Qué hace: obtiene el país.
+		// Cómo: llama a GetAsync del repositorio con las claves.
 		public async Task<CResult> GetAsync(GEN_PAISParam xWhere)
 		{
 			var p = new List<CParameter>
@@ -34,7 +36,8 @@ namespace SGUEES.Services
 			return await _repo.GetAsync(p);
 		}
 
-		// Normaliza y valida el país, comprueba duplicados y solicita su creación.
+		// Qué hace: crea país
+		// Cómo: Validate, NormalizeData, ValidateDuplicatesAsync y CreateAsync del repositorio.
 		public async Task<CResult> CreateAsync(GEN_PAISTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			var validation = Validate(Data);
@@ -53,7 +56,8 @@ namespace SGUEES.Services
 			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
-		// Normaliza y valida el país, comprueba duplicados y solicita su actualización.
+		// Qué hace: actualiza país
+		// Cómo: Validate, NormalizeData, ValidateDuplicatesAsync y UpdateAsync del repositorio.
 		public async Task<CResult> UpdateAsync(GEN_PAISTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			if (Data == null)
@@ -82,19 +86,20 @@ namespace SGUEES.Services
 			return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
-		// Valida la identidad de el país y solicita su eliminación al repositorio.
+		// Qué hace: elimina el país
+		// Cómo: llama a DeleteAsync del repositorio.
 		public async Task<CResult> DeleteAsync(GEN_PAISTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
-		// Convierte los filtros recibidos en parámetros seguros para el repositorio.
+		// Qué hace: arma los parámetros de filtro para el repositorio.
 		private static List<CParameter> BuildParameters(GEN_PAISParam xWhere)
 		{
 			return new List<CParameter>();
 		}
 
-		// Limpia espacios en los textos antes de validar y persistir el registro.
+		// Qué hace: aplica trim a los textos antes de validar y guardar.
 		private static void NormalizeData(GEN_PAISTable Data)
 		{
 			Data.NOMBRE_PAIS = Data.NOMBRE_PAIS?.Trim();
@@ -103,7 +108,7 @@ namespace SGUEES.Services
 			Data.NOMBRE_CORTO = Data.NOMBRE_CORTO?.Trim();
 		}
 
-		// Valida las claves y campos obligatorios de el país antes de persistirla.
+		// Qué hace: valida campos obligatorios de el país antes de persistirla.
 		private static CResult Validate(GEN_PAISTable Data)
 		{
 			if (Data == null)
@@ -144,7 +149,8 @@ namespace SGUEES.Services
 			return null;
 		}
 
-		// Comprueba que los datos únicos de el país no están registrados en el mismo ámbito.
+		// Qué hace: comprueba unicidad de el país no están registrados en el mismo ámbito.
+		// Cómo: llama a ExistsByFieldAsync del repositorio.
 		private async Task<CResult> ValidateDuplicatesAsync(GEN_PAISTable Data, bool isUpdate)
 		{
 			var excludeCorrPais = isUpdate ? Data.CORR_PAIS : 0;
@@ -172,13 +178,13 @@ namespace SGUEES.Services
 			return null;
 		}
 
-		// Normaliza el texto para realizar comparaciones consistentes de duplicados.
+		// Qué hace: normaliza texto para comparar duplicados.
 		private static string NormalizeText(string value)
 		{
 			return (value ?? string.Empty).Trim().ToUpperInvariant();
 		}
 
-		// Construye una respuesta controlada para informar un conflicto por datos duplicados.
+		// Qué hace: arma respuesta controlada de duplicado (ErrorCode 2627).
 		private static CResult DuplicateWarning(string message)
 		{
 			return new CResult
@@ -193,7 +199,7 @@ namespace SGUEES.Services
 			};
 		}
 
-		// Construye una respuesta uniforme para devolver errores de validación al cliente.
+		// Qué hace: arma respuesta uniforme de error de validación.
 		private static CResult ValidationError(string message)
 		{
 			return new CResult

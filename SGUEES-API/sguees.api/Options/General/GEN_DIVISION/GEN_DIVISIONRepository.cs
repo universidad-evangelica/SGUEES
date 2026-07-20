@@ -9,20 +9,21 @@ using sguees.Models;
 
 namespace sguees.Repositories
 {
-	// Acceso a datos de GEN_DIVISION / V_GEN_DIVISION: CRUD y comprobación de duplicados.
+	// Qué hace: ejecuta el CRUD y las consultas SQL sobre GEN_DIVISION y V_GEN_DIVISION.
 	public class GEN_DIVISIONRepository : BaseRepository<GEN_DIVISIONTable>, IGEN_DIVISIONRepository
 	{
 		private const string _TableName = "GEN_DIVISION";
 		private const string _ViewName = "V_GEN_DIVISION";
 
-		// Configura la conexión y el proveedor de BD desde appsettings.
+		// Qué hace: configura conexión y proveedor desde appsettings.
 		public GEN_DIVISIONRepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
 				config.GetSection("DbProvider:defaultProvider").Value)
 		{
 		}
 
-		// Consulta la vista de divisiones aplicando el contexto de empresa y devuelve el listado ordenado.
+		// Qué hace: lista divisiones desde V_GEN_DIVISION.
+		// Cómo: GetDataReader filtrando por CORR_EMPRESA y ordena.
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -66,7 +67,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Consulta una división por sus claves y devuelve el primer registro coincidente.
+		// Qué hace: obtiene una división por claves.
+		// Cómo: GetDataReader y FirstOrDefault.
 		public async Task<CResult> GetAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -104,7 +106,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Inserta la división, recupera el registro creado y normaliza errores de clave duplicada.
+		// Qué hace: inserta una división nueva.
+		// Cómo: Insert sobre GEN_DIVISION y mapea clave duplicada.
 		public async Task<CResult> CreateAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
@@ -164,7 +167,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Actualiza la división por sus claves y devuelve el registro resultante.
+		// Qué hace: actualiza una división existente.
+		// Cómo: Update sobre GEN_DIVISION con las claves.
 		public async Task<CResult> UpdateAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
@@ -220,7 +224,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Elimina la división por sus claves y convierte restricciones relacionadas en un resultado controlado.
+		// Qué hace: elimina una división.
+		// Cómo: Delete sobre GEN_DIVISION; captura FK como mensaje controlado.
 		public async Task<CResult> DeleteAsync(GEN_DIVISIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
@@ -258,7 +263,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Consulta el catálogo de divisiones requerido por otros mantenimientos y ordena sus resultados.
+		// Qué hace: lista divisiones para lookups.
+		// Cómo: GetDataReader sobre la vista y ordena.
 		public async Task<CResult> GetDivisionesAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -303,7 +309,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Comprueba si ya existe una división con el valor normalizado, excluyendo el registro en edición.
+		// Qué hace: comprueba si ya existe una división con el mismo código.
+		// Cómo: consulta SQL sobre V_GEN_DIVISION excluyendo el correlativo en edición.
 		public async Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr)
 		{
 			if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(codigo))
@@ -336,7 +343,7 @@ namespace sguees.Repositories
 			}
 		}
 
-		// Reconoce excepciones de claves únicas para devolver un mensaje funcional en lugar del error técnico.
+		// Qué hace: detecta errores de clave duplicada de SQL Server.
 		private static bool IsDuplicateKeyError(Exception e)
 		{
 			return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

@@ -1,4 +1,4 @@
-// Lógica de negocio del catálogo requerimiento organizacional (validación y delegación al repositorio).
+// Qué hace: aplica las reglas de negocio del catálogo requerimiento organizacional antes de llamar al repositorio.
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -7,7 +7,7 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
-    // Valida datos y delega persistencia de requerimiento organizacional en el repositorio.
+    // Qué hace: valida los datos de requerimiento organizacional y coordina su persistencia con el repositorio.
     public class SC_REQUERIMIENTO_ORGANIZACIONALService : ISC_REQUERIMIENTO_ORGANIZACIONALService
     {
         private readonly ISC_REQUERIMIENTO_ORGANIZACIONALRepository _repo;
@@ -17,13 +17,15 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
-        // Delega en el repositorio la consulta del listado.
+        // Qué hace: lista los requerimientos organizacionales según los filtros recibidos.
+        // Cómo: llama a GetAllAsync del repositorio con los parámetros armados en BuildParameters.
         public async Task<CResult> GetAllAsync(SC_REQUERIMIENTO_ORGANIZACIONALParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
-        // Delega en el repositorio la consulta por llave.
+        // Qué hace: obtiene un requerimiento organizacional por su correlativo.
+        // Cómo: llama a GetAsync del repositorio con CORR_EMPRESA y CORR_REQUERIMIENTO_ORGANIZACIONAL.
         public async Task<CResult> GetAsync(SC_REQUERIMIENTO_ORGANIZACIONALParam xWhere)
         {
             var p = new List<CParameter>
@@ -35,7 +37,8 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
-        // Valida empresa, descripción y unicidad antes de crear.
+        // Qué hace: crea un requerimiento organizacional nuevo.
+        // Cómo: valida empresa de sesión y datos con Validate, normaliza la descripción y llama a CreateAsync del repositorio.
         public async Task<CResult> CreateAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -60,7 +63,8 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida la llave y excluye el registro actual al comprobar duplicados.
+        // Qué hace: actualiza un requerimiento organizacional existente.
+        // Cómo: valida empresa, datos y llave; normaliza la descripción y llama a UpdateAsync del repositorio.
         public async Task<CResult> UpdateAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -90,7 +94,8 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida empresa de sesión antes de eliminar.
+        // Qué hace: elimina un requerimiento organizacional.
+        // Cómo: valida la empresa de sesión y llama a DeleteAsync del repositorio.
         public async Task<CResult> DeleteAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -102,7 +107,8 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida empresa y llave antes de cambiar el estado.
+        // Qué hace: cambia el estado activo/inactivo de un requerimiento organizacional.
+        // Cómo: valida empresa y llave; llama a ActivarInactivarAsync del repositorio.
         public async Task<CResult> ActivarInactivarAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
@@ -119,7 +125,8 @@ namespace SGUEES.Services
             return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Devuelve los requerimientos activos disponibles para el descriptor.
+        // Qué hace: entrega los requerimientos organizacionales activos disponibles para el descriptor.
+        // Cómo: llama a GetCatalogoDescriptorAsync del repositorio y arma el CResult con el listado.
         public async Task<CResult> GetCatalogoDescriptorAsync(SC_REQUERIMIENTO_ORGANIZACIONALParam xWhere)
         {
             var rows = await _repo.GetCatalogoDescriptorAsync(xWhere.CORR_EMPRESA);
@@ -135,7 +142,7 @@ namespace SGUEES.Services
             };
         }
 
-        // Arma los parámetros de filtro para el repositorio.
+        // Qué hace: arma el parámetro CORR_EMPRESA para filtrar en el repositorio.
         private static List<CParameter> BuildParameters(SC_REQUERIMIENTO_ORGANIZACIONALParam xWhere)
         {
             return new List<CParameter>
@@ -144,14 +151,16 @@ namespace SGUEES.Services
             };
         }
 
-        // Limpia la descripción y aplica el estado activo predeterminado.
+        // Qué hace: normaliza los datos antes de guardar.
+        // Cómo: recorta espacios de la descripción y fija ESTADO_REQUERIMIENTO_ORGANIZACIONAL en true si viene vacío.
         private static void NormalizeData(SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
         {
             Data.DESCRIPCION = Data.DESCRIPCION?.Trim();
             Data.ESTADO_REQUERIMIENTO_ORGANIZACIONAL ??= true;
         }
 
-        // Comprueba la descripción obligatoria y su longitud máxima.
+        // Qué hace: valida los datos del requerimiento organizacional.
+        // Cómo: revisa que existan datos, que la descripción no esté vacía ni supere 200 caracteres.
         private static CResult Validate(SC_REQUERIMIENTO_ORGANIZACIONALTable Data)
         {
             if (Data == null)
@@ -172,7 +181,8 @@ namespace SGUEES.Services
             return null;
         }
 
-        // Verifica que la descripción no pertenezca a otro registro de la empresa.
+        // Qué hace: verifica que la descripción no pertenezca a otro requerimiento de la empresa.
+        // Cómo: llama a ExistsDescripcionAsync del repositorio excluyendo el correlativo indicado.
         private async Task<CResult> ValidateUniqueDescripcionAsync(SC_REQUERIMIENTO_ORGANIZACIONALTable Data, int? excludeCorr)
         {
             var exists = await _repo.ExistsDescripcionAsync(
@@ -185,7 +195,8 @@ namespace SGUEES.Services
                 : null;
         }
 
-        // Rechaza operaciones cuando no hay empresa en sesión.
+        // Qué hace: valida que exista empresa en la sesión.
+        // Cómo: si CORR_EMPRESA es mayor a 0 permite continuar; si no, devuelve un CResult de error.
         private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
             if (corrEmpresa > 0)
@@ -205,7 +216,7 @@ namespace SGUEES.Services
             };
         }
 
-        // Construye un CResult de validación funcional.
+        // Qué hace: construye un CResult de error de validación con el mensaje recibido.
         private static CResult ValidationError(string message)
         {
             return new CResult
