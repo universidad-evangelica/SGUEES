@@ -146,6 +146,11 @@ export class SegUsuarioComponent extends CBaseComponent implements OnInit {
 		this.consultarSEG_USUARIO_OPCION();
 	}
 
+	override rowDblClick(e: any): void {
+		super.rowDblClick(e);
+		this.consultarSEG_USUARIO_OPCION();
+	}
+
 	guardar(): void {
 		this.guardarMtto({
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
