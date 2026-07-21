@@ -1331,7 +1331,7 @@
 											caption="Nombre (descriptor)"
 											[minWidth]="220"
 											[allowSorting]="true"
-											[allowEditing]="false"
+											[allowEditing]="competenciasConductualesEditando && !readOnly"
 										></dxi-column>
 										<dxi-column
 											dataField="DESCRIPCION"
@@ -1339,6 +1339,7 @@
 											[minWidth]="220"
 											[allowSorting]="true"
 											[visible]="esFormatoExtenso"
+											[allowEditing]="competenciasConductualesEditando && !readOnly"
 										></dxi-column>
 									</dx-data-grid>
 								</div>
