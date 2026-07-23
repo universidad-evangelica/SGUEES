@@ -55,14 +55,13 @@ export class SegFlujoPasoActorDestinoService {
 
     getColumns(): any {
         return [
-            { dataField: 'CORR_PASO_ACTOR_DESTINO', caption: 'Corr.', width: 80 },
-            { dataField: 'NOMBRE_ACTOR', caption: 'Actor Destino', width: 200 },
-            { dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', minWidth: 200 },
-            { dataField: 'ORDEN', caption: 'Orden', width: 100 },
+            { dataField: 'CORR_PASO_ACTOR_DESTINO', caption: 'Corr.', width: 100 },
+            { dataField: 'NOMBRE_ACTOR', caption: 'Actor Destino', width: 400 },
+            { dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', minWidth: 400 },
             {
                 dataField: 'ACTIVO',
                 caption: 'Activo',
-                width: 100,
+                width: 200,
                 dataType: 'boolean',
                 customizeText: (e: any) => (e.value ? 'Sí' : 'No'),
             },
