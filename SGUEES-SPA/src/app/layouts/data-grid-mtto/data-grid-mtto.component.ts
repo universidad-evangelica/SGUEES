@@ -79,6 +79,9 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() showRefresh?: boolean;
   @Input() showExport = true;
   @Input() showColumnChooser = false;
+  @Input() actionColumnWidth = 125;
+  @Input() actionColumnMinWidth = 125;
+  @Input() propagateAddToPageContext = true;
   /** null = adoptar contexto barra (header-only). false = toolbar legacy 7B. */
   @Input() unifiedToolbar: boolean | null = null;
   @Input() searchPlaceholder = 'Buscar...';
@@ -301,7 +304,9 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
     this.add.emit();
-    this.pageContext.triggerAdd();
+    if (this.propagateAddToPageContext) {
+      this.pageContext.triggerAdd();
+    }
   }
 
   refreshData(resetPage = true): void {
@@ -360,8 +365,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       type: 'buttons',
       name: 'btnAcciones',
       caption: 'Options',
-      width: 125,
-      minWidth: 125,
+      width: this.actionColumnWidth,
+      minWidth: this.actionColumnMinWidth,
       allowResizing: false,
       fixed: true,
       fixedPosition: 'left',

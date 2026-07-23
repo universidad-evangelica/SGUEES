@@ -3,7 +3,7 @@ export interface SegFlujoPaso {
     CORR_FLUJO_PROCESO: number;
     CORR_PASO: number;
     NUMERO_PASO: number;
-    CORR_ESTADO_ORIGEN: number;
+    CORR_ESTADO_ORIGEN: number | null;
     CORR_ACTOR_ORIGEN: number;
     CORR_ACTOR_DESTINO: number;
     CORR_UNIDAD_DESTINO: number | null;

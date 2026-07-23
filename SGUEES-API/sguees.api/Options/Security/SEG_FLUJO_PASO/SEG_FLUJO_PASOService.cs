@@ -68,9 +68,7 @@ namespace sguees.Services
             if (Data.CORR_ACTOR_ORIGEN <= 0)
                 return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "Debe seleccionar un actor" };
 
-            if (Data.CORR_ESTADO_ORIGEN <= 0)
-                return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "Debe seleccionar un estado origen" };
-
+           
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 

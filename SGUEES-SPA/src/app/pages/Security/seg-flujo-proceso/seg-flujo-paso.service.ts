@@ -39,7 +39,7 @@ export class SegFlujoPasoService {
             { dataField: 'NOMBRE_PASO', caption: 'Nombre del paso', width: 300 },
             { dataField: 'NOMBRE_ACTOR', caption: 'Actor origen', width: 200 },
             { dataField: 'NOMBRE_ACTOR_DESTINO', caption: 'Actor destino', width: 200 },
-        
+            { dataField: 'NOMBRE_ESTADO_ORIGEN', caption: 'Estado origen', width: 150 },
             { dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 150 },
             { dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 150, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
         ];
