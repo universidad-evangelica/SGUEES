@@ -1,0 +1,130 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.con-reporte-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.con-reporte-shell__cabecera {
+  flex: 0 0 auto;
+  margin-bottom: 0;
+  padding-top: var(--sguees-space-2, 8px);
+}
+
+.con-reporte-shell__titulo {
+  margin: 0;
+  padding-left: var(--sguees-space-1, 4px);
+  line-height: 2.5;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.con-reporte-shell__separador-titulo {
+  flex: 0 0 auto;
+  height: 1.5rem;
+  min-height: 2.5rem;
+  width: 100%;
+}
+
+.bgOcultar {
+  background-color: transparent !important;
+  justify-content: center;
+}
+
+.bordeGrid {
+  margin-top: 0;
+}
+
+.con-reporte-shell__panel-filtros {
+  width: 260px;
+  height: 100%;
+}
+
+::ng-deep .con-reporte-shell__drawer {
+  flex: 0 0 auto;
+  width: 100%;
+  margin-top: 0;
+
+  &.dx-drawer {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .dx-drawer-wrapper {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100% !important;
+  }
+
+  .dx-drawer-panel-content {
+    height: 100% !important;
+  }
+
+  .dx-drawer-content {
+    display: flex;
+    flex-direction: column;
+    height: 100% !important;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .options {
+    padding: 20px;
+    width: 260px;
+    height: 100%;
+    box-sizing: border-box;
+    overflow-y: auto;
+    background-color: rgba(191, 191, 191, 0.15);
+  }
+
+  .option {
+    margin-top: 10px;
+  }
+
+  .field-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    opacity: 0.75;
+  }
+}
+
+.con-reporte-shell__viewport {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--sguees-surface-card, var(--card-background));
+}
+
+::ng-deep .con-reporte-shell__viewport .con-reporte-shell__grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100% !important;
+
+  .con-reporte-col-wrap {
+    white-space: normal !important;
+    word-break: break-word;
+    line-height: 1.35;
+  }
+
+  .dx-datagrid {
+    height: 100% !important;
+  }
+}
+
+.con-reporte-shell__pdf {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  border: 0;
+}

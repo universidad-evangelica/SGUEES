@@ -14,7 +14,7 @@
 	flex-wrap: wrap;
 	gap: 16px;
 	align-items: flex-end;
-	margin-bottom: 16px;
+	margin-bottom: 12px;
 	flex-shrink: 0;
 }
 
@@ -32,19 +32,77 @@
 	font-weight: 500;
 }
 
-.import-actions {
+.import-toolbar-actions {
 	display: flex;
-	gap: 8px;
-	align-items: center;
+	align-items: flex-end;
+	padding-bottom: 2px;
 }
 
 .preview-grid {
-	margin-top: 8px;
 	flex: 1 1 auto;
 	min-height: 280px;
 }
 
 .import-shell--modal .preview-grid {
 	min-height: 0;
-	height: calc(100% - 96px);
+}
+
+.import-footer {
+	display: flex;
+	justify-content: flex-start;
+	align-items: center;
+	gap: 12px;
+	flex-shrink: 0;
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid var(--sguees-border-subtle, var(--border-color, #ddd));
+}
+
+.import-footer ::ng-deep .import-footer-btn.dx-button {
+	min-height: 48px;
+	min-width: 180px;
+	padding-inline: 24px;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.import-footer ::ng-deep .import-footer-btn--cancel.dx-button.dx-button-mode-contained.dx-button-danger {
+	background-color: #dc3545;
+	border-color: #dc3545;
+	color: #fff;
+}
+
+.import-footer ::ng-deep .import-footer-btn--cancel.dx-button.dx-button-mode-contained.dx-button-danger .dx-icon {
+	color: #fff;
+}
+
+.import-footer ::ng-deep .import-footer-btn--cancel.dx-button.dx-button-mode-contained.dx-button-danger.dx-state-hover,
+.import-footer ::ng-deep .import-footer-btn--cancel.dx-button.dx-button-mode-contained.dx-button-danger.dx-state-focused {
+	background-color: #c82333;
+	border-color: #bd2130;
+	color: #fff;
+}
+
+.import-footer ::ng-deep .import-footer-btn--save.dx-button.dx-button-mode-contained.dx-button-success {
+	background-color: #28a745;
+	border-color: #28a745;
+	color: #fff;
+}
+
+.import-footer ::ng-deep .import-footer-btn--save.dx-button.dx-button-mode-contained.dx-button-success .dx-icon {
+	color: #fff;
+}
+
+.import-footer ::ng-deep .import-footer-btn--save.dx-button.dx-button-mode-contained.dx-button-success.dx-state-hover,
+.import-footer ::ng-deep .import-footer-btn--save.dx-button.dx-button-mode-contained.dx-button-success.dx-state-focused {
+	background-color: #218838;
+	border-color: #1e7e34;
+	color: #fff;
+}
+
+.import-footer ::ng-deep .import-footer-btn--save.dx-button.dx-button-mode-contained.dx-button-success.dx-state-disabled {
+	background-color: #94d3a2;
+	border-color: #94d3a2;
+	color: #fff;
+	opacity: 0.85;
 }

@@ -5,8 +5,9 @@ using Microsoft.AspNetCore.Authorization;
 using System.Linq;
 using System.Security.Claims;
 using eFramework.Core;
-using  sguees.Models;
-using  sguees.Services;
+using sguees.Models;
+using sguees.Services;
+using sguees.api.Shared;
 
 namespace sguees.Controllers
 {
@@ -41,7 +42,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/com-banco|C")]
 		public async Task<IActionResult> Post(COM_BANCOTable Data)
 		{
-			
+			Data.ESTADO_BANCO ??= true;
 			var resultado = await _service.CreateAsync(Data, "Admin", "e-CoffeeTech");
 			if (resultado.ErrorCode == 0)
 			{
@@ -55,6 +56,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/com-banco|U")]
 		public async Task<IActionResult> Put(COM_BANCOTable Data)
 		{
+			this.ApplyQueryKeys(Data, nameof(COM_BANCOTable.CORR_BANCO));
 			var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
 			if (resultado.ErrorCode == 0)
 			{
@@ -89,6 +91,20 @@ namespace sguees.Controllers
 		public async Task<CResult> GetCORR_BANCO_COM_PROVEEDOR_ACTU([FromQuery] COM_BANCOParam Data)
 		{
 			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpPut("ActivarInactivar")]
+		[Authorize(Policy = "/com-banco|U")]
+		public async Task<IActionResult> ActivarInactivar(COM_BANCOTable Data)
+		{
+			this.ApplyQueryKeys(Data, nameof(COM_BANCOTable.CORR_BANCO));
+			var resultado = await _service.ActivarInactivarAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
+		private string GetUsuario()
+		{
+			return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
 		}
 	}
 }

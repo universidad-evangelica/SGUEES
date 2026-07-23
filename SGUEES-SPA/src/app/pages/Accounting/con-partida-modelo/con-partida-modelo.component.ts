@@ -20,10 +20,13 @@ import { environment } from 'src/environments/environment';
 })
 export class ConPartidaModeloComponent extends CBaseComponent implements OnInit {
 	@ViewChild('gridDetalle', { static: false }) gridDetalle!: DxDataGridComponent;
+
+	//#region <Declarando Variales>
 	detalles: ConPartidaModeloDeta[] = [];
 	readOnly = false;
 	mESTADO_PARTIDA: any;
 	btnVolver = 'Volver a Partidas';
+	// #endregion
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -38,6 +41,7 @@ export class ConPartidaModeloComponent extends CBaseComponent implements OnInit 
 		this.items = this.service.getItems();
 	}
 
+	//#region <Inicializando Opciones>
 	ngOnInit(): void {
 		this.inicializaOpciones();
 		this.llenaComboBox();
@@ -45,7 +49,9 @@ export class ConPartidaModeloComponent extends CBaseComponent implements OnInit 
 	}
 
 	inicializaOpciones() {}
+	// #endregion
 
+	//#region <Manejo de Combos>
 	llenaComboBox() {
 		this.getESTADO_PARTIDA();
 	}
@@ -65,9 +71,14 @@ export class ConPartidaModeloComponent extends CBaseComponent implements OnInit 
 				},
 			});
 	}
+	//#endregion
 
-	fillParam(xKey?: any): any {
-		return { CORR_PARTIDA: xKey || 0 };
+	//#region <Metodos Mtto>
+	fillParam(xCORR_PARTIDA?: number): any {
+		if (xCORR_PARTIDA == undefined) {
+			xCORR_PARTIDA = 0;
+		}
+		return { CORR_PARTIDA: xCORR_PARTIDA };
 	}
 
 	override fillData(xModel?: ConPartidaModelo): ConPartidaModelo {
@@ -295,6 +306,30 @@ export class ConPartidaModeloComponent extends CBaseComponent implements OnInit 
 				},
 			});
 	}
+
+	override bloquear(): void {
+		this.dataForm.instance.getEditor('NOMBRE_CLASE_PARTIDA')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CORR_PARTIDA')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NUMERO_DOCUMENTO')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NOMBRE_PARTIDA')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('ESTADO_PARTIDA')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('CLASE_PARTIDA')?.option('readOnly', true);
+		this.readOnly = true;
+	}
+
+	override habilitar(): void {
+		this.readOnly = false;
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('CORR_PARTIDA')?.option('readOnly', true);
+		});
+	}
+
+	override setFocus() {
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('NOMBRE_PARTIDA')?.focus();
+		});
+	}
+	//#endregion
 
 	selectedLookUpLista(vRow: any): any {
 		return vRow[0].Key;

@@ -3,11 +3,13 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Qué hace: representa la entidad de escritura de la tabla PLA_TIPO_PUESTO.
     public class PLA_TIPO_PUESTOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_TIPO_PUESTO { get; set; }
         public string NOMBRE_TIPO_PUESTO { get; set; }
+        public string CODIGO_TIPO_PUESTO { get; set; }
         public bool? ESTADO_TIPO_PUESTO { get; set; } = true;
         public string USUARIO_CREA { get; set; }
         public DateTime FECHA_CREA { get; set; }

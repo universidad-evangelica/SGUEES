@@ -1,3 +1,5 @@
+// Qué hace: routing y declaraciones DevExtreme/layout de la vista Competencias Técnicas.
+// Cómo: registra la ruta del componente ScCompetenciasTecnicasComponent junto con los módulos DevExtreme y de layout que usa.
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
@@ -11,9 +13,12 @@ import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { DxTooltipModule } from 'devextreme-angular/ui/tooltip';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
+import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 import { ToastModule } from 'primeng/toast';
 import { ScCompetenciasTecnicasComponent } from './sc-competencias-tecnicas.component';
 
+// Qué hace: ruta lazy del mantenimiento de competencias técnicas.
+// Cómo: asocia la ruta vacía ('') con ScCompetenciasTecnicasComponent.
 const routes: Routes = [{ path: '', component: ScCompetenciasTecnicasComponent }];
 
 @NgModule({
@@ -30,9 +35,12 @@ const routes: Routes = [{ path: '', component: ScCompetenciasTecnicasComponent }
 		DxTooltipModule,
 		BarraDataMttoModule,
 		DataGridMttoModule,
+		DataLookupModule,
 		ToastModule,
 	],
 	exports: [RouterModule],
 	declarations: [ScCompetenciasTecnicasComponent],
 })
+// Qué hace: módulo de routing de Competencias Técnicas.
+// Cómo: declara ScCompetenciasTecnicasComponent, importa los módulos DevExtreme/layout necesarios y expone RouterModule con las rutas hijas del catálogo.
 export class ScCompetenciasTecnicasRoutingModule {}

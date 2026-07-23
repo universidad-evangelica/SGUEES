@@ -1,4 +1,5 @@
-﻿using System;
+// Endpoints REST del catálogo impacto económico.
+using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ namespace SGUEES.Controllers
     [Authorize]
     [ApiController]
     [Route("[controller]")]
+    // Qué hace: expone el CRUD y los lookups de impacto económico con autorización por política.
     public class SC_IMPACTO_ECONOMICOController : ControllerBase
     {
         private readonly ISC_IMPACTO_ECONOMICOService _service;
@@ -23,8 +25,21 @@ namespace SGUEES.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(_service));
         }
 
+        [HttpGet("GetCORR_IMPACTO_ECONOMICO_SC_DESCRIPTOR_PUESTO")]
+        [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        // Qué hace: entrega los impactos económicos activos para el lookup del descriptor de puesto.
+        // Cómo: fija CORR_EMPRESA de la sesión y llama a GetCatalogoDescriptorAsync del servicio.
+        public async Task<CResult> GetCORR_IMPACTO_ECONOMICO_SC_DESCRIPTOR_PUESTO(
+            [FromQuery] SC_IMPACTO_ECONOMICOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetCatalogoDescriptorAsync(Data);
+        }
+
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-impacto-economico|R")]
+        // Qué hace: lista los impactos económicos de la empresa en sesión.
+        // Cómo: fija CORR_EMPRESA y llama a GetAllAsync del servicio.
         public async Task<CResult> GetAll([FromQuery] SC_IMPACTO_ECONOMICOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -33,6 +48,8 @@ namespace SGUEES.Controllers
 
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-impacto-economico|R")]
+        // Qué hace: obtiene un impacto económico de la empresa en sesión.
+        // Cómo: fija CORR_EMPRESA y llama a GetAsync del servicio.
         public async Task<CResult> Get([FromQuery] SC_IMPACTO_ECONOMICOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -41,103 +58,69 @@ namespace SGUEES.Controllers
 
         [HttpPost]
         [Authorize(Policy = "/sc-impacto-economico|C")]
+        // Qué hace: crea un impacto económico nuevo.
+        // Cómo: completa la auditoría de creación y llama a CreateAsync del servicio.
         public async Task<IActionResult> Post(SC_IMPACTO_ECONOMICOTable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
             SetCreateAudit(Data);
 
-            var resultado = await _service.CreateAsync(Data, Data.ESTACION_CREA, "e-CoffeeTech");
+            var resultado = await _service.CreateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
         [HttpPut]
         [Authorize(Policy = "/sc-impacto-economico|U")]
+        // Qué hace: actualiza un impacto económico existente.
+        // Cómo: copia la llave de la URL al cuerpo, completa la auditoría y llama a UpdateAsync del servicio.
         public async Task<IActionResult> Put(SC_IMPACTO_ECONOMICOTable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
+            this.ApplyQueryKeys(Data, nameof(SC_IMPACTO_ECONOMICOTable.CORR_IMPACTO_ECONOMICO));
             SetUpdateAudit(Data);
 
-            var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
+            var resultado = await _service.UpdateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
         [HttpDelete]
         [Authorize(Policy = "/sc-impacto-economico|D")]
+        // Qué hace: elimina un impacto económico de la empresa en sesión.
+        // Cómo: fija CORR_EMPRESA y llama a DeleteAsync del servicio.
         public async Task<IActionResult> Delete([FromQuery] SC_IMPACTO_ECONOMICOTable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
+            Data.CORR_EMPRESA = GetCorrEmpresa();
 
-            SetUpdateAudit(Data);
-
-            var resultado = await _service.DeleteAsync(Data, "Admin", "e-CoffeeTech");
+            var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
-        [HttpPut("Activar")]
+        [HttpPut("ActivarInactivar")]
         [Authorize(Policy = "/sc-impacto-economico|U")]
-        public async Task<IActionResult> Activar(SC_IMPACTO_ECONOMICOTable Data)
+        // Qué hace: cambia el estado activo/inactivo de un impacto económico.
+        // Cómo: copia la llave de la URL, fija CORR_EMPRESA y llama a ActivarInactivarAsync del servicio.
+        public async Task<IActionResult> ActivarInactivar(SC_IMPACTO_ECONOMICOTable Data)
         {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
+            this.ApplyQueryKeys(Data, nameof(SC_IMPACTO_ECONOMICOTable.CORR_IMPACTO_ECONOMICO));
+            Data.CORR_EMPRESA = GetCorrEmpresa();
 
-            SetUpdateAudit(Data);
-            Data.ESTADO_IMPACTO_ECONOMICO = true;
-
-            var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
-            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
-        }
-
-        [HttpPut("Desactivar")]
-        [Authorize(Policy = "/sc-impacto-economico|U")]
-        public async Task<IActionResult> Desactivar(SC_IMPACTO_ECONOMICOTable Data)
-        {
-            if (!ValidateEmpresaSesion(out var resultadoEmpresa))
-                return BadRequest(resultadoEmpresa);
-
-            SetUpdateAudit(Data);
-
-            var resultado = await _service.DesactivarAsync(Data, "Admin", "e-CoffeeTech");
+            var resultado = await _service.ActivarInactivarAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Qué hace: obtiene CORR_EMPRESA del claim del usuario autenticado.
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
         }
 
-        private bool ValidateEmpresaSesion(out CResult resultado)
-        {
-            if (GetCorrEmpresa() > 0)
-            {
-                resultado = null;
-                return true;
-            }
-
-            resultado = new CResult
-            {
-                Data = null,
-                Result = false,
-                CodeHelper = 0,
-                ErrorCode = 4100,
-                ErrorMessage = "No se pudo guardar el impacto económico porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
-                ErrorSource = "[SC_IMPACTO_ECONOMICOController]",
-                RowsAffected = 0
-            };
-
-            return false;
-        }
-
+        // Qué hace: obtiene el identificador de usuario desde los claims.
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
+        // Qué hace: completa los datos de auditoría de un registro nuevo.
+        // Cómo: fija empresa, usuario, estación y fechas; deja ESTADO_IMPACTO_ECONOMICO en true si viene vacío.
         private void SetCreateAudit(SC_IMPACTO_ECONOMICOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -150,6 +133,8 @@ namespace SGUEES.Controllers
             Data.ESTADO_IMPACTO_ECONOMICO ??= true;
         }
 
+        // Qué hace: completa los datos de auditoría de una actualización.
+        // Cómo: fija empresa, usuario, estación y fecha; conserva ESTADO_IMPACTO_ECONOMICO o lo deja en true si falta.
         private void SetUpdateAudit(SC_IMPACTO_ECONOMICOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();

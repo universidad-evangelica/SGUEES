@@ -58,7 +58,13 @@ export class ConPartidaService {
 	}
 
 	delete(model: any): Observable<IResult> {
-		let xWhere: IParam[] = [{ Parameter: 'CORR_PARTIDA', Value: model.CORR_PARTIDA }];
+		let xWhere: IParam[] = [
+			{ Parameter: 'CORR_EMPRESA', Value: model.CORR_EMPRESA },
+			{ Parameter: 'ANIO_PERIODO', Value: model.ANIO_PERIODO },
+			{ Parameter: 'MES_PERIODO', Value: model.MES_PERIODO },
+			{ Parameter: 'CORR_CLASE_PARTIDA', Value: model.CORR_CLASE_PARTIDA },
+			{ Parameter: 'CORR_PARTIDA', Value: model.CORR_PARTIDA },
+		];
 		return this.repo.delete(xWhere);
 	}
 
@@ -100,20 +106,37 @@ export class ConPartidaService {
 
 	getColumns(): any {
 		return [
-			{ dataField: 'ANIO_PERIODO', caption: 'Año' },
-			{ dataField: 'MES_PERIODO', caption: 'Mes' },
-			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase' },
-			{ dataField: 'CORR_PARTIDA', caption: 'No. Partida' },
-			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date' },
-			{ dataField: 'NUMERO_DOCUMENTO', caption: 'No. Documento' },
-			{ dataField: 'NOMBRE_PARTIDA', caption: 'Concepto' },
-			{ dataField: 'NOMBRE_ESTADO_PARTIDA', caption: 'Estado' },
+			{ dataField: 'ANIO_PERIODO', caption: 'Año', width: 80, groupIndex: 0 },
+			{ dataField: 'MES_PERIODO', caption: 'Mes', width: 70, groupIndex: 1 },
+			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase', width: 200 },
+			{ dataField: 'CORR_PARTIDA', caption: 'No. Partida', width: 150 },
+			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date', width: 150 },
+			{ dataField: 'NUMERO_DOCUMENTO', caption: 'No. Documento', width: 180 },
+			{ dataField: 'NOMBRE_PARTIDA', caption: 'Concepto', width: 950 },
+			{ dataField: 'NOMBRE_ESTADO_PARTIDA', caption: 'Estado', width: 150 },
 		];
 	}
 
 	getSummary(): any {
 		return {
-			totalItems: [{ column: 'ANIO_PERIODO', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
+			groupItems: [
+				{
+					column: 'CORR_PARTIDA',
+					summaryType: 'count',
+					valueFormat: '#,##0',
+					displayFormat: 'Cant: {0}',
+					alignByColumn: true,
+					showInGroupFooter: true,
+				},
+			],
+			totalItems: [
+				{
+					column: 'CORR_PARTIDA',
+					summaryType: 'count',
+					valueFormat: '#,##0',
+					displayFormat: 'Cant: {0}',
+				},
+			],
 		};
 	}
 
@@ -162,10 +185,11 @@ export class ConPartidaService {
 				colSpan: 2,
 				editorOptions: { placeholder: 'No. Documento...' },
 			},
+			{ itemType: 'empty', colSpan: 2 },
 			{
 				dataField: 'NOMBRE_PARTIDA',
 				label: { text: 'Concepto' },
-				colSpan: 4,
+				colSpan: 8,
 				editorType: 'dxTextArea',
 				editorOptions: { height: 64, placeholder: 'Concepto...' },
 			},

@@ -1,4 +1,5 @@
-﻿using System;
+// Persistencia SQL del catálogo riesgo del puesto (tabla/vista SC).
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,9 +10,14 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+    // Qué hace: ejecuta el CRUD y las consultas SQL sobre la tabla y la vista de riesgo del puesto.
     public class SC_RIESGO_PUESTORepository : BaseRepository<SC_RIESGO_PUESTOTable>, ISC_RIESGO_PUESTORepository
     {
         private const string _TableName = "SC_RIESGO_PUESTO";
+        private const string _ViewName = "V_SC_RIESGO_PUESTO";
+        private const string _CampoPk = "CORR_RIESGO_PUESTO";
+        private const string _CampoEstado = "ESTADO_RIESGO_PUESTO";
+        private const bool _UsaEmpresa = true;
 
         public SC_RIESGO_PUESTORepository(IConfiguration config) :
             base(config.GetConnectionString("defaultConnection"),
@@ -19,76 +25,29 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Qué hace: lista los riesgos del puesto de la vista V_SC_RIESGO_PUESTO.
+        // Cómo: filtra por CORR_EMPRESA y ordena por CORR_RIESGO_PUESTO.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
 
             try
             {
-                var dbWhere = xWhere.Where(x => x.ParameterName == "CORR_EMPRESA").ToList();
-                var estado = xWhere.Where(x => x.ParameterName == "ESTADO_RIESGO_PUESTO").Select(x => x.Value as bool?).FirstOrDefault();
-                var busqueda = xWhere.Where(x => x.ParameterName == "BUSQUEDA").Select(x => x.Value?.ToString()).FirstOrDefault();
-                var columnFilters = new Dictionary<string, string>
-                {
-                    { "CORR_RIESGO_PUESTO", GetFilterValue(xWhere, "CORR_RIESGO_PUESTO") },
-                    { "NOMBRE_RIESGO_PUESTO", GetFilterValue(xWhere, "NOMBRE_RIESGO_PUESTO") },
-                    { "USUARIO_CREA", GetFilterValue(xWhere, "USUARIO_CREA") },
-                    { "ESTACION_CREA", GetFilterValue(xWhere, "ESTACION_CREA") },
-                    { "FECHA_CREA", GetFilterValue(xWhere, "FECHA_CREA") },
-                    { "USUARIO_ACTU", GetFilterValue(xWhere, "USUARIO_ACTU") },
-                    { "ESTACION_ACTU", GetFilterValue(xWhere, "ESTACION_ACTU") },
-                    { "FECHA_ACTU", GetFilterValue(xWhere, "FECHA_ACTU") },
-                }
-                    .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+                var dbWhere = xWhere
+                    .Where(x => x.ParameterName == "CORR_EMPRESA")
                     .ToList();
-                var page = xWhere.Where(x => x.ParameterName == "PAGE").Select(x => Convert.ToInt32(x.Value ?? 1)).FirstOrDefault();
-                var pageSize = xWhere.Where(x => x.ParameterName == "PAGE_SIZE").Select(x => Convert.ToInt32(x.Value ?? 10)).FirstOrDefault();
 
-                page = page < 1 ? 1 : page;
-                pageSize = pageSize < 1 ? 10 : Math.Min(pageSize, 100);
-
-                var reader = await objData.GetDataReader("V_" + _TableName, dbWhere);
-                var response = new List<SC_RIESGO_PUESTOView>().FromDataReader(reader).ToList();
+                var reader = await objData.GetDataReader(_ViewName, dbWhere);
+                var response = new List<SC_RIESGO_PUESTOView>().FromDataReader(reader)
+                    .OrderBy(x => x.CORR_RIESGO_PUESTO)
+                    .ToList();
 
                 reader.Close();
                 reader = null;
 
-                if (estado.HasValue)
-                {
-                    response = response.Where(x => (x.ESTADO_RIESGO_PUESTO ?? false) == estado.Value).ToList();
-                }
-
-                if (!string.IsNullOrWhiteSpace(busqueda))
-                {
-                    var search = busqueda.Trim();
-                    response = response
-                        .Where(x =>
-                            Contains(x.CORR_EMPRESA.ToString(), search) ||
-                            Contains(x.CORR_RIESGO_PUESTO.ToString(), search) ||
-                            Contains(x.NOMBRE_RIESGO_PUESTO, search) ||
-                            Contains((x.ESTADO_RIESGO_PUESTO ?? false) ? "Activo" : "Inactivo", search) ||
-                            Contains(x.USUARIO_CREA, search) ||
-                            Contains(x.ESTACION_CREA, search) ||
-                            Contains(x.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm"), search) ||
-                            Contains(x.USUARIO_ACTU, search) ||
-                            Contains(x.ESTACION_ACTU, search) ||
-                            Contains(x.FECHA_ACTU?.ToString("dd/MM/yyyy HH:mm"), search))
-                        .ToList();
-                }
-
-                foreach (var columnFilter in columnFilters)
-                {
-                    response = response.Where(x => Contains(GetColumnValue(x, columnFilter.Key), columnFilter.Value)).ToList();
-                }
-
-                response = response.OrderBy(x => x.CORR_EMPRESA).ThenBy(x => x.CORR_RIESGO_PUESTO).ToList();
-
-                var totalRows = response.Count;
-                var pageData = response.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-                objResultado.Data = pageData;
+                objResultado.Data = response;
                 objResultado.Result = true;
-                objResultado.RowsAffected = totalRows;
+                objResultado.RowsAffected = response.Count;
                 objResultado.CodeHelper = 0;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
@@ -111,43 +70,15 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        private static string GetFilterValue(List<CParameter> xWhere, string parameterName)
-        {
-            return xWhere.Where(x => x.ParameterName == parameterName).Select(x => x.Value?.ToString()).FirstOrDefault();
-        }
-
-        private static string GetColumnValue(SC_RIESGO_PUESTOView row, string columnName)
-        {
-            switch (columnName)
-            {
-                case "CORR_RIESGO_PUESTO":
-                    return row.CORR_RIESGO_PUESTO.ToString();
-                case "NOMBRE_RIESGO_PUESTO":
-                    return row.NOMBRE_RIESGO_PUESTO;
-                case "USUARIO_CREA":
-                    return row.USUARIO_CREA;
-                case "ESTACION_CREA":
-                    return row.ESTACION_CREA;
-                case "FECHA_CREA":
-                    return row.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm");
-                case "USUARIO_ACTU":
-                    return row.USUARIO_ACTU;
-                case "ESTACION_ACTU":
-                    return row.ESTACION_ACTU;
-                case "FECHA_ACTU":
-                    return row.FECHA_ACTU?.ToString("dd/MM/yyyy HH:mm");
-                default:
-                    return null;
-            }
-        }
-
+        // Qué hace: obtiene un riesgo del puesto de la vista V_SC_RIESGO_PUESTO.
+        // Cómo: lee con los filtros recibidos en xWhere (empresa e id).
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
 
             try
             {
-                var reader = await objData.GetDataReader("V_" + _TableName, xWhere);
+                var reader = await objData.GetDataReader(_ViewName, xWhere);
                 var response = new List<SC_RIESGO_PUESTOView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
@@ -178,6 +109,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: inserta un riesgo del puesto nuevo.
+        // Cómo: llama a Insert sobre SC_RIESGO_PUESTO y devuelve el registro creado leído desde la vista; controla claves duplicadas.
         public async Task<CResult> CreateAsync(SC_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -203,7 +136,7 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
                 };
 
-                var reader = await objData.Insert(_TableName, p, "CORR_RIESGO_PUESTO", pWhere);
+                var reader = await objData.Insert(_TableName, p, _CampoPk, pWhere);
                 var response = new List<SC_RIESGO_PUESTOView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
@@ -237,6 +170,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: actualiza un riesgo del puesto existente.
+        // Cómo: llama a Update sobre SC_RIESGO_PUESTO por CORR_EMPRESA y CORR_RIESGO_PUESTO; controla claves duplicadas.
         public async Task<CResult> UpdateAsync(SC_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -246,7 +181,6 @@ namespace SGUEES.Repositories
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "NOMBRE_RIESGO_PUESTO", Value = Data.NOMBRE_RIESGO_PUESTO, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ESTADO_RIESGO_PUESTO", Value = Data.ESTADO_RIESGO_PUESTO ?? true, DbType = System.Data.DbType.Boolean },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -274,11 +208,14 @@ namespace SGUEES.Repositories
             }
             catch (Exception e)
             {
+                var duplicateKey = IsDuplicateKeyError(e);
                 objResultado.Data = null;
                 objResultado.Result = false;
                 objResultado.CodeHelper = 0;
-                objResultado.ErrorCode = -1;
-                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorCode = duplicateKey ? 2627 : -1;
+                objResultado.ErrorMessage = duplicateKey
+                    ? "No se pudo guardar el registro porque otro usuario guardo un registro al mismo tiempo. Intente nuevamente."
+                    : e.Message;
                 objResultado.ErrorSource += $"[{e.Source}]";
             }
             finally
@@ -289,6 +226,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: elimina un riesgo del puesto.
+        // Cómo: llama a Delete sobre SC_RIESGO_PUESTO por CORR_EMPRESA y CORR_RIESGO_PUESTO; informa si hay registros relacionados.
         public async Task<CResult> DeleteAsync(SC_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -326,12 +265,157 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        private static bool Contains(string value, string search)
+        // Qué hace: cambia el estado activo/inactivo de un riesgo del puesto.
+        // Cómo: ejecuta el stored procedure PRAL_MTTO_CATALOGO_ESTADO_BIT y devuelve el registro actualizado leído desde la vista.
+        public async Task<CResult> ActivarInactivarAsync(SC_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            return !string.IsNullOrWhiteSpace(value) &&
-                value.Contains(search, StringComparison.OrdinalIgnoreCase);
+            CResult objResultado = new();
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "NOMBRE_TABLA", Value = _TableName, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CAMPO_PK", Value = _CampoPk, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CAMPO_ESTADO", Value = _CampoEstado, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "USA_EMPRESA", Value = _UsaEmpresa, DbType = System.Data.DbType.Boolean },
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_RELATIVO", Value = Data.CORR_RIESGO_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+                    new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+                    new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
+                };
+
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_CATALOGO_ESTADO_BIT", true, p);
+
+                if ((int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value == 0)
+                {
+                    var xWhere = new List<CParameter>
+                    {
+                        new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                        new CParameter() { ParameterName = "CORR_RIESGO_PUESTO", Value = Data.CORR_RIESGO_PUESTO, DbType = System.Data.DbType.Int32 },
+                    };
+
+                    var readerGet = await objData.GetDataReader(_ViewName, xWhere);
+                    var response = new List<SC_RIESGO_PUESTOView>().FromDataReader(readerGet).FirstOrDefault();
+
+                    readerGet.Close();
+
+                    objResultado.Data = response;
+                    objResultado.Result = true;
+                    objResultado.RowsAffected = 1;
+                    objResultado.CodeHelper = response?.CORR_RIESGO_PUESTO ?? Data.CORR_RIESGO_PUESTO;
+                    objResultado.ErrorCode = 0;
+                    objResultado.ErrorMessage = string.Empty;
+                    objResultado.ErrorSource = string.Empty;
+                }
+                else
+                {
+                    objResultado.Data = null;
+                    objResultado.Result = false;
+                    objResultado.RowsAffected = 0;
+                    objResultado.CodeHelper = Data.CORR_RIESGO_PUESTO;
+                    objResultado.ErrorCode = (int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
+                    objResultado.ErrorMessage = (string)objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value;
+                    objResultado.ErrorSource = "C" + _TableName + ".Mtto(" + UpdateType.Update.ToString() + ")";
+                }
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = Data.CORR_RIESGO_PUESTO;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
         }
 
+        // Qué hace: recupera los riesgos del puesto activos para el lookup del descriptor.
+        // Cómo: SELECT directo a V_SC_RIESGO_PUESTO filtrando por empresa y ESTADO_RIESGO_PUESTO, ordenado por nombre.
+        public async Task<List<SC_RIESGO_PUESTOView>> GetCatalogoDescriptorAsync(int corrEmpresa)
+        {
+            if (corrEmpresa <= 0)
+            {
+                return new List<SC_RIESGO_PUESTOView>();
+            }
+
+            const string sql = @"SELECT
+                  A.CORR_EMPRESA,
+                  A.CORR_RIESGO_PUESTO,
+                  A.NOMBRE_RIESGO_PUESTO,
+                  A.ESTADO_RIESGO_PUESTO,
+                  A.USUARIO_CREA,
+                  A.ESTACION_CREA,
+                  A.FECHA_CREA,
+                  A.USUARIO_ACTU,
+                  A.ESTACION_ACTU,
+                  A.FECHA_ACTU
+                FROM V_SC_RIESGO_PUESTO A
+                WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+                  AND ISNULL(A.ESTADO_RIESGO_PUESTO, 1) = 1
+                ORDER BY A.NOMBRE_RIESGO_PUESTO, A.CORR_RIESGO_PUESTO";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                });
+
+                var response = new List<SC_RIESGO_PUESTOView>().FromDataReader(reader).ToList();
+                reader.Close();
+                return response;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
+        // Qué hace: comprueba si otro riesgo del puesto utiliza el mismo nombre.
+        // Cómo: SELECT TOP 1 sobre V_SC_RIESGO_PUESTO comparando nombre normalizado y excluyendo el correlativo indicado.
+        public async Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr)
+        {
+            if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nombre))
+            {
+                return false;
+            }
+
+            const string sql = @"SELECT TOP 1 1 AS FOUND
+                FROM V_SC_RIESGO_PUESTO
+                WHERE CORR_EMPRESA = @CORR_EMPRESA
+                AND UPPER(LTRIM(RTRIM(NOMBRE_RIESGO_PUESTO))) = UPPER(LTRIM(RTRIM(@NOMBRE)))
+                AND (@EXCLUDE_CORR <= 0 OR CORR_RIESGO_PUESTO <> @EXCLUDE_CORR)";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "NOMBRE", Value = nombre.Trim(), DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "EXCLUDE_CORR", Value = excludeCorr, DbType = System.Data.DbType.Int32 },
+                });
+
+                var exists = reader.Read();
+                reader.Close();
+                return exists;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
+        // Qué hace: detecta errores de clave duplicada de SQL Server.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

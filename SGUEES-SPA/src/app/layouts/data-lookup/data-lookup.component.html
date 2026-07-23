@@ -1,13 +1,14 @@
 <dx-drop-down-box
 	#dataLookUp
 	[dataSource]="model"
-	[(value)]="value"
+	[(value)]="internalValue"
 	[valueExpr]="valueExpr"
 	[displayExpr]="displayExpr"
 	[deferRendering]="false"
 	[showClearButton]="showClearButton"
 	[readOnly]="readOnly"
 	[(opened)]="claseOpend"
+	[dropDownOptions]="dropDownOptions"
 	(onOptionChanged)="onGridBoxOptionChanged($event)"
   (onValueChanged)="onValueChanged($event)"
 >
@@ -15,14 +16,15 @@
 		<dx-data-grid
 			#dataGridLookup
 			[dataSource]="model"
-			[columnAutoWidth]="true"
+			[keyExpr]="valueExpr"
+			[columnAutoWidth]="lookupColumnAutoWidth"
 			[selection]="{ mode: 'single' }"
 			[hoverStateEnabled]="true"
 			[paging]="{ enabled: false, pageSize: 10 }"
 			[filterRow]="{ visible: true }"
 			[scrolling]="{ mode: 'infinite' }"
 			[filterSyncEnabled]="true"
-			(onSelectionChanged)="selectionChanged($event.selectedRowKeys)"
+			(onSelectionChanged)="selectionChanged($event)"
 			[height]="'100%'"
 			[width]="'100%'"
 			[columns]="columns"

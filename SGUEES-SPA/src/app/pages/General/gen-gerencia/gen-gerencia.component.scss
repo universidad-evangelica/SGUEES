@@ -1,0 +1,80 @@
+// Qué hace: estilos locales del mantenimiento de gerencias.
+// Cómo: separa el card del formulario, marca el lookup inválido y ajusta el toolbar en móvil.
+
+.gerencia-form-card {
+	margin-top: 38px;
+}
+
+:host ::ng-deep .division-lookup-field--invalid .dx-dropdownbox.dx-texteditor {
+	border-color: var(--error-color, #d9534f);
+}
+
+:host ::ng-deep .division-lookup-field--invalid .dx-dropdownbox.dx-texteditor.dx-state-hover,
+:host ::ng-deep .division-lookup-field--invalid .dx-dropdownbox.dx-texteditor.dx-state-focused {
+	border-color: var(--error-color, #d9534f);
+}
+
+:host ::ng-deep .division-lookup-field--invalid .dx-dropdownbox.dx-texteditor .dx-dropdowneditor-icon {
+	color: var(--error-color, #d9534f);
+}
+
+@media (max-width: 991.98px) {
+	.gerencia-form-card {
+		margin-top: 16px;
+	}
+}
+
+@media (max-width: 575.98px) {
+	:host ::ng-deep {
+		.dx-datagrid-header-panel {
+			padding: 12px !important;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar,
+		.dx-datagrid-header-panel .dx-toolbar-items-container {
+			height: auto !important;
+			min-height: 0;
+			overflow: visible;
+			flex-wrap: wrap;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-before,
+		.dx-datagrid-header-panel .dx-toolbar-after {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 8px;
+			position: static !important;
+			transform: none !important;
+			left: auto !important;
+			right: auto !important;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-before {
+			flex: 1 1 100%;
+			width: 100% !important;
+			max-width: 100%;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-after {
+			flex: 1 1 100%;
+			width: 100% !important;
+			max-width: 100%;
+			justify-content: flex-start;
+			margin-left: 0 !important;
+			padding-left: 0 !important;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-after .dx-item {
+			margin-left: 0;
+		}
+
+		.dx-datagrid-header-panel .dx-toolbar-after .dx-button-has-text {
+			flex: 1 1 auto;
+		}
+	}
+
+	.gerencia-form-card {
+		margin-top: 12px;
+	}
+}

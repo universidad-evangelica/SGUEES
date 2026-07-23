@@ -32,6 +32,7 @@ const routes: Routes = [{ path: '', component: ConTipoCentroCostoComponent }];
 		DataLookupModule,
 		BarraDataMttoModule,
 	],
+	exports: [RouterModule],
 	declarations: [ConTipoCentroCostoComponent],
 })
 export class ConTipoCentroCostoRoutingModule {}

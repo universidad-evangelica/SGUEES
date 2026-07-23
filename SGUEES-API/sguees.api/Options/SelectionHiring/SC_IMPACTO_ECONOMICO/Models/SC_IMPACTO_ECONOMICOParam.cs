@@ -1,22 +1,17 @@
-﻿using eFramework.Data;
+// Parámetros de consulta/filtro de impacto económico.
+using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Qué hace: agrupa los parámetros de GetAll (A+P) y Get por PK.
     public class SC_IMPACTO_ECONOMICOParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_IMPACTO_ECONOMICO { get; set; }
-        public string BUSQUEDA { get; set; }
-        public string DESCRIPCION { get; set; }
-        public bool? ESTADO_IMPACTO_ECONOMICO { get; set; }
-        public string USUARIO_CREA { get; set; }
-        public string ESTACION_CREA { get; set; }
-        public string FECHA_CREA { get; set; }
-        public string USUARIO_ACTU { get; set; }
-        public string ESTACION_ACTU { get; set; }
-        public string FECHA_ACTU { get; set; }
+
         public int PAGE { get; set; } = 1;
         public int PAGE_SIZE { get; set; } = 10;
-        public int OPCION_CONSULTA { get; set; } = 0;
+        public string SORT_FIELD { get; set; }
+        public bool? SORT_DESC { get; set; }
     }
 }

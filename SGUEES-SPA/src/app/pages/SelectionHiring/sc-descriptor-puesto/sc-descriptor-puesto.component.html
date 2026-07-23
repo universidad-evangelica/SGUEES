@@ -1,0 +1,2423 @@
+<!-- Pantalla de mantenimiento del Descriptor de Puesto. -->
+<div class="sguees-mtto-view">
+<!-- Barra superior: Nuevo, Guardar y Cancelar. -->
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[showRibbon]="true"
+	[showExport]="permitePrint"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="permiteAdd"
+	[showRefresh]="true"
+	(consultar)="consultar()"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+>
+</app-barra-data-mtto>
+
+<!-- Formulario del descriptor (se oculta cuando solo se ve el listado). -->
+<div class="content-block dx-card responsive-paddings descriptor-form-card" *ngIf="!isBrowse()">
+	<!-- Pestañas principales: datos del descriptor e historial (bitácora). -->
+	<dx-tab-panel
+		#tabPanelPrincipal
+		class="descriptor-tab-panel"
+		[(selectedIndex)]="mainTabIndex"
+	>
+		<!-- Pestaña Descriptor: datos generales y secciones. -->
+		<dxi-item title="Descriptor" icon="file">
+			<!-- Datos generales: unidad, puesto, a quién reporta, formato, etc. -->
+			<div class="descriptor-generalidades">
+				<h3 class="descriptor-section-title">Generalidades</h3>
+
+				<dx-form
+					#fHeaderData
+					id="fHeaderData"
+					[formData]="model"
+					[labelLocation]="'top'"
+					[colCount]="8"
+					[showRequiredMark]="false"
+					[items]="headerItems"
+					[readOnly]="readOnly"
+					(onFieldDataChanged)="onHeaderFieldChanged($event)"
+				>
+					<div *dxTemplate="let cellInfo of 'CORR_UNIDADLookup'">
+						<div class="descriptor-lookup-field" [class.descriptor-lookup-field--invalid]="unidadInvalido">
+							<app-data-lookup
+								[model]="mCORR_UNIDAD"
+								[value]="model.CORR_UNIDAD"
+								(valueChange)="onUnidadChanged($event)"
+								[valueExpr]="'CORR_UNIDAD'"
+								[displayExpr]="'NOMBRE_UNIDAD'"
+								[selectedRowKeys]="selectedLookUpCORR_UNIDAD"
+								[readOnly]="readOnly"
+							></app-data-lookup>
+						</div>
+					</div>
+
+					<div *dxTemplate="let cellInfo of 'CORR_PUESTOLookup'">
+						<div class="descriptor-puesto-row descriptor-lookup-field" [class.descriptor-lookup-field--invalid]="puestoInvalido">
+							<app-data-lookup
+								class="descriptor-puesto-select"
+								[model]="mCORR_PUESTO"
+								[value]="model.CORR_PUESTO"
+								(valueChange)="onPuestoChanged($event)"
+								[valueExpr]="'CORR_PUESTO'"
+								[displayExpr]="'NOMBRE_PUESTO'"
+								[selectedRowKeys]="selectedLookUpCORR_PUESTO"
+								[readOnly]="readOnly || !model.CORR_UNIDAD"
+							></app-data-lookup>
+							<dx-button
+								icon="plus"
+								type="default"
+								stylingMode="contained"
+								hint="Crear puesto"
+								[disabled]="readOnly"
+								(onClick)="crearPuestoProximamente()"
+							></dx-button>
+						</div>
+					</div>
+
+					<div *dxTemplate="let cellInfo of 'CORR_PUESTO_REPORTALookup'">
+						<div class="descriptor-lookup-field" [class.descriptor-lookup-field--invalid]="puestoReportaInvalido">
+							<app-data-lookup
+								[model]="mCORR_PUESTO_REPORTA"
+								[value]="model.CORR_PUESTO_REPORTA"
+								(valueChange)="onPuestoReportaChanged($event)"
+								[valueExpr]="'CORR_PUESTO'"
+								[displayExpr]="'RESPONSABLE'"
+								[lookupColumns]="reportaLookupColumns"
+								[selectedRowKeys]="selectedLookUpCORR_PUESTO_REPORTA"
+								[readOnly]="readOnly || !model.CORR_PUESTO"
+							></app-data-lookup>
+						</div>
+						<div class="descriptor-help-text">Se carga segun el puesto seleccionado.</div>
+					</div>
+				</dx-form>
+			</div>
+
+			<!-- Aviso: primero hay que guardar el descriptor para editar secciones. -->
+			<p class="descriptor-secciones-hint" *ngIf="!mostrarSeccionesDescriptor" role="status">
+				Guarde las generalidades del descriptor en modo edicion para habilitar objetivo, funciones y demas secciones.
+			</p>
+
+			<!-- Secciones del descriptor. Algunas solo aparecen en formato corto o extenso. -->
+			<dx-tab-panel
+				#tabPanelSecciones
+				class="descriptor-sub-tab-panel"
+				[class.descriptor-sub-tab-panel--sin-seleccion]="mostrarAvisoSeleccioneTab"
+				*ngIf="mostrarSeccionesDescriptor"
+				[(selectedIndex)]="subTabIndex"
+				[animationEnabled]="true"
+				[swipeEnabled]="false"
+				(onSelectionChanged)="onSeccionTabSelectionChanged($event)"
+			>
+				<!-- Objetivo del puesto (texto libre). -->
+				<dxi-item title="Objetivo">
+					<div class="descriptor-sub-tab-content">
+						<h4 class="descriptor-sub-tab-heading">Objetivo</h4>
+						<dx-text-area
+							[(value)]="model.OBJETIVO_PUESTO"
+							[readOnly]="readOnly"
+							[height]="180"
+							placeholder="Describa el objetivo..."
+							[maxLength]="255"
+						></dx-text-area>
+					</div>
+				</dxi-item>
+
+				<!-- Funciones clave. En formato extenso se pueden abrir actividades por función. -->
+				<dxi-item title="Funciones">
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-funciones-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-bulletlist descriptor-funciones-icon" aria-hidden="true"></span>
+								Funciones Claves
+							</h4>
+						</div>
+
+						<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="add"
+								text="Agregar Funcion Clave"
+								type="success"
+								stylingMode="contained"
+								(onClick)="agregarFuncionClave()"
+								[disabled]="funcionesClaveEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="save"
+								text="Guardar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="guardarFuncionClaveEditada()"
+								[disabled]="!funcionesClaveEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+								icon="revert"
+								text="Cancelar"
+								type="danger"
+								stylingMode="contained"
+								(onClick)="cancelarFuncionClaveEditada()"
+								[disabled]="!funcionesClaveEditando"
+							></dx-button>
+						</div>
+
+						<dx-data-grid
+							#gridFuncionesClave
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+							[dataSource]="funcionesClave"
+							keyExpr="_clientKey"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[width]="'100%'"
+							[wordWrapEnabled]="true"
+							[repaintChangesOnly]="false"
+							(onInitNewRow)="funcionClaveInitNewRow($event)"
+							(onEditingStart)="onFuncionClaveEditingStart($event)"
+							(onSaved)="onFuncionClaveSaved($event)"
+							(onEditCanceled)="onFuncionClaveEditCanceled($event)"
+							(onRowInserting)="funcionClaveRowInserting($event)"
+							(onRowUpdating)="funcionClaveRowUpdating($event)"
+							(onRowRemoving)="funcionClaveRowRemoving($event)"
+							(onRowValidating)="funcionClaveRowValidating($event)"
+						>
+							<dxo-editing
+								[mode]="'row'"
+								[refreshMode]="'reshape'"
+								[allowUpdating]="!readOnly"
+								[allowDeleting]="!readOnly"
+								[useIcons]="true"
+								[selectTextOnEditStart]="true"
+								[newRowPosition]="'first'"
+							></dxo-editing>
+							<dxo-paging [enabled]="false"></dxo-paging>
+							<dxi-column
+								type="buttons"
+								name="btnAcciones"
+								caption="Options"
+								[width]="104"
+								[minWidth]="104"
+								[fixed]="true"
+								fixedPosition="left"
+								alignment="center"
+								[allowResizing]="false"
+							>
+								<dxi-button
+									hint="Editar registro"
+									icon="edit"
+									stylingMode="text"
+									cssClass="sguees-grid-action-edit"
+									[visible]="funcionClaveEditButtonVisible"
+									[onClick]="editarFuncionClaveClick"
+								></dxi-button>
+								<dxi-button
+									name="delete"
+									hint="Eliminar registro"
+									icon="trash"
+									stylingMode="text"
+									cssClass="sguees-grid-action-delete"
+									[visible]="funcionClaveDeleteButtonVisible"
+								></dxi-button>
+								<dxi-button name="save" [visible]="false"></dxi-button>
+								<dxi-button name="cancel" [visible]="false"></dxi-button>
+								<dxi-button name="edit" [visible]="false"></dxi-button>
+							</dxi-column>
+							<dxi-column
+								dataField="CORR_FUNCION"
+								caption="Codigo"
+								[width]="90"
+								[allowEditing]="false"
+								[allowSorting]="true"
+								dataType="number"
+								alignment="left"
+							></dxi-column>
+							<dxi-column
+								dataField="NOMBRE_FUNCION"
+								caption="Nombre de la funcion clave"
+								[minWidth]="260"
+								[allowSorting]="true"
+							></dxi-column>
+							<dxi-column
+								caption="Actividades"
+								[width]="200"
+								[minWidth]="180"
+								[allowEditing]="false"
+								[visible]="esFormatoExtenso"
+								cellTemplate="actividadesClaveTemplate"
+							></dxi-column>
+							<div *dxTemplate="let cellInfo of 'actividadesClaveTemplate'">
+								<button
+									type="button"
+									class="descriptor-actividades-trigger"
+									[disabled]="readOnly || funcionesClaveEditando"
+									(click)="abrirActividades(cellInfo.data)"
+								>
+									<span>Actividades</span>
+									<span class="descriptor-actividades-badge">{{ cellInfo.data?.CANT_ACTIVIDADES || 0 }}</span>
+								</button>
+							</div>
+						</dx-data-grid>
+
+						<p class="descriptor-funciones-note" *ngIf="esFormatoExtenso">
+							En version extensa, cada funcion clave permite registrar sus actividades.
+						</p>
+						<p class="descriptor-funciones-note" *ngIf="!esFormatoExtenso">
+							En version corta solo se registran las funciones clave, sin actividades.
+						</p>
+					</div>
+				</dxi-item>
+
+				<!-- Funciones secundarias (solo formato corto). -->
+				<dxi-item title="Funciones Secundarias" [visible]="esFormatoCorto">
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-funciones-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-chart descriptor-funciones-icon" aria-hidden="true"></span>
+								Funciones Secundarias
+							</h4>
+						</div>
+
+						<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="add"
+								text="Agregar Funcion Secundaria"
+								type="success"
+								stylingMode="contained"
+								(onClick)="agregarFuncionSecundaria()"
+								[disabled]="funcionesSecundariasEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="save"
+								text="Guardar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="guardarFuncionSecundariaEditada()"
+								[disabled]="!funcionesSecundariasEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+								icon="revert"
+								text="Cancelar"
+								type="danger"
+								stylingMode="contained"
+								(onClick)="cancelarFuncionSecundariaEditada()"
+								[disabled]="!funcionesSecundariasEditando"
+							></dx-button>
+						</div>
+
+						<dx-data-grid
+							#gridFuncionesSecundarias
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+							[dataSource]="funcionesSecundarias"
+							keyExpr="_clientKey"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[width]="'100%'"
+							[wordWrapEnabled]="true"
+							[repaintChangesOnly]="false"
+							(onInitNewRow)="funcionSecundariaInitNewRow($event)"
+							(onEditingStart)="onFuncionSecundariaEditingStart($event)"
+							(onSaved)="onFuncionSecundariaSaved($event)"
+							(onEditCanceled)="onFuncionSecundariaEditCanceled($event)"
+							(onRowInserting)="funcionSecundariaRowInserting($event)"
+							(onRowUpdating)="funcionSecundariaRowUpdating($event)"
+							(onRowRemoving)="funcionSecundariaRowRemoving($event)"
+							(onRowValidating)="funcionSecundariaRowValidating($event)"
+						>
+							<dxo-editing
+								[mode]="'row'"
+								[refreshMode]="'reshape'"
+								[allowUpdating]="!readOnly"
+								[allowDeleting]="!readOnly"
+								[useIcons]="true"
+								[selectTextOnEditStart]="true"
+								[newRowPosition]="'first'"
+							></dxo-editing>
+							<dxo-paging [enabled]="false"></dxo-paging>
+							<dxi-column
+								type="buttons"
+								name="btnAcciones"
+								caption="Options"
+								[width]="104"
+								[minWidth]="104"
+								[fixed]="true"
+								fixedPosition="left"
+								alignment="center"
+								[allowResizing]="false"
+							>
+								<dxi-button
+									hint="Editar registro"
+									icon="edit"
+									stylingMode="text"
+									cssClass="sguees-grid-action-edit"
+									[visible]="funcionSecundariaEditButtonVisible"
+									[onClick]="editarFuncionSecundariaClick"
+								></dxi-button>
+								<dxi-button
+									name="delete"
+									hint="Eliminar registro"
+									icon="trash"
+									stylingMode="text"
+									cssClass="sguees-grid-action-delete"
+									[visible]="funcionSecundariaDeleteButtonVisible"
+								></dxi-button>
+								<dxi-button name="save" [visible]="false"></dxi-button>
+								<dxi-button name="cancel" [visible]="false"></dxi-button>
+								<dxi-button name="edit" [visible]="false"></dxi-button>
+							</dxi-column>
+							<dxi-column
+								dataField="CORR_FUNCION"
+								caption="Codigo"
+								[width]="90"
+								[allowEditing]="false"
+								[allowSorting]="true"
+								dataType="number"
+								alignment="left"
+							></dxi-column>
+							<dxi-column
+								dataField="NOMBRE_FUNCION"
+								caption="Descripcion de la funcion secundaria"
+								[minWidth]="280"
+								[allowSorting]="true"
+							></dxi-column>
+						</dx-data-grid>
+					</div>
+				</dxi-item>
+
+				<!-- Indicadores KPI (solo formato corto). -->
+				<dxi-item title="KPIs" [visible]="esFormatoCorto">
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-funciones-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-chart descriptor-funciones-icon" aria-hidden="true"></span>
+								KPIs
+							</h4>
+						</div>
+
+						<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="add"
+								text="Agregar KPI"
+								type="success"
+								stylingMode="contained"
+								(onClick)="agregarKpi()"
+								[disabled]="kpisEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="save"
+								text="Guardar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="guardarKpiEditado()"
+								[disabled]="!kpisEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+								icon="revert"
+								text="Cancelar"
+								type="danger"
+								stylingMode="contained"
+								(onClick)="cancelarKpiEditado()"
+								[disabled]="!kpisEditando"
+							></dx-button>
+						</div>
+
+						<dx-data-grid
+							#gridKpis
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+							[dataSource]="kpis"
+							keyExpr="_clientKey"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[width]="'100%'"
+							[wordWrapEnabled]="true"
+							[repaintChangesOnly]="false"
+							(onInitNewRow)="kpiInitNewRow($event)"
+							(onEditingStart)="onKpiEditingStart($event)"
+							(onSaved)="onKpiSaved($event)"
+							(onEditCanceled)="onKpiEditCanceled($event)"
+							(onRowInserting)="kpiRowInserting($event)"
+							(onRowUpdating)="kpiRowUpdating($event)"
+							(onRowRemoving)="kpiRowRemoving($event)"
+							(onRowValidating)="kpiRowValidating($event)"
+						>
+							<dxo-editing
+								[mode]="'row'"
+								[refreshMode]="'reshape'"
+								[allowUpdating]="!readOnly"
+								[allowDeleting]="!readOnly"
+								[useIcons]="true"
+								[selectTextOnEditStart]="true"
+								[newRowPosition]="'first'"
+							></dxo-editing>
+							<dxo-paging [enabled]="false"></dxo-paging>
+							<dxi-column
+								type="buttons"
+								name="btnAcciones"
+								caption="Options"
+								[width]="104"
+								[minWidth]="104"
+								[fixed]="true"
+								fixedPosition="left"
+								alignment="center"
+								[allowResizing]="false"
+							>
+								<dxi-button
+									hint="Editar registro"
+									icon="edit"
+									stylingMode="text"
+									cssClass="sguees-grid-action-edit"
+									[visible]="kpiEditButtonVisible"
+									[onClick]="editarKpiClick"
+								></dxi-button>
+								<dxi-button
+									name="delete"
+									hint="Eliminar registro"
+									icon="trash"
+									stylingMode="text"
+									cssClass="sguees-grid-action-delete"
+									[visible]="kpiDeleteButtonVisible"
+								></dxi-button>
+								<dxi-button name="save" [visible]="false"></dxi-button>
+								<dxi-button name="cancel" [visible]="false"></dxi-button>
+								<dxi-button name="edit" [visible]="false"></dxi-button>
+							</dxi-column>
+							<dxi-column
+								dataField="CORR_KPI_FUNCION"
+								caption="Codigo"
+								[width]="90"
+								[allowEditing]="false"
+								[allowSorting]="true"
+								dataType="number"
+								alignment="left"
+							></dxi-column>
+							<dxi-column
+								dataField="NOMBRE_INDICADOR"
+								caption="Indicador"
+								[minWidth]="240"
+								[allowSorting]="true"
+							></dxi-column>
+							<dxi-column
+								dataField="CORR_FRECUENCIA"
+								caption="Frecuencia"
+								[width]="200"
+								[allowSorting]="true"
+								[calculateDisplayValue]="kpiFrecuenciaDisplay"
+								[setCellValue]="setKpiFrecuenciaCellValue"
+								[editCellTemplate]="'CORR_FRECUENCIALookup'"
+							>
+								<dxo-lookup
+									[dataSource]="mCORR_FRECUENCIA"
+									valueExpr="CORR_FRECUENCIA"
+									displayExpr="NOMBRE_FRECUENCIA"
+								></dxo-lookup>
+							</dxi-column>
+							<div *dxTemplate="let cellInfo of 'CORR_FRECUENCIALookup'">
+								<app-data-lookup
+									[model]="mCORR_FRECUENCIA_KPI_EDIT"
+									[value]="cellInfo.value"
+									(valueChange)="onKpiFrecuenciaLookupChanged($event, cellInfo)"
+									[valueExpr]="'CORR_FRECUENCIA'"
+									[displayExpr]="'NOMBRE_FRECUENCIA'"
+									[lookupColumns]="frecuenciasKpiLookupColumns"
+									[selectedRowKeys]="selectedLookUpCORR_FRECUENCIA"
+									[showClearButton]="true"
+								></app-data-lookup>
+							</div>
+							<dxi-column
+								dataField="META"
+								caption="Meta"
+								[width]="110"
+								dataType="number"
+								[allowSorting]="true"
+								[format]="'#0'"
+								[editorOptions]="{ min: 0, max: 100, step: 1, showSpinButtons: false, format: '#0' }"
+							></dxi-column>
+						</dx-data-grid>
+					</div>
+				</dxi-item>
+
+				<!-- Perfil del puesto: datos personales, educación y experiencia. -->
+				<dxi-item title="Perfil">
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-perfil-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-user descriptor-perfil-icon" aria-hidden="true"></span>
+								Perfil del Puesto
+							</h4>
+						</div>
+
+						<dx-tab-panel
+							class="descriptor-perfil-tab-panel"
+							[(selectedIndex)]="perfilSubTabIndex"
+							[animationEnabled]="true"
+							[swipeEnabled]="false"
+						>
+							<!-- Datos del perfil: edad, sexo, disponibilidad, modalidad, etc. -->
+							<dxi-item title="Perfil" icon="card">
+								<div class="descriptor-perfil-tab-content">
+									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											*ngIf="!perfilEditando"
+											icon="edit"
+											text="Editar perfil"
+											type="default"
+											stylingMode="contained"
+											[disabled]="!model.CORR_DESCRIPTOR_PUESTO"
+											(onClick)="editarPerfil()"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											*ngIf="perfilEditando"
+											icon="save"
+											text="Guardar"
+											type="success"
+											stylingMode="contained"
+											(onClick)="guardarPerfil()"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+											*ngIf="perfilEditando"
+											icon="revert"
+											text="Cancelar edición"
+											type="danger"
+											stylingMode="contained"
+											(onClick)="cancelarEdicionPerfil()"
+										></dx-button>
+									</div>
+									<div class="descriptor-perfil-form">
+										<div class="descriptor-perfil-row">
+											<div class="descriptor-perfil-field">
+												<label class="descriptor-perfil-label">Edad Minima</label>
+												<dx-number-box
+													[(value)]="perfil.EDAD_MINIMA"
+													[readOnly]="readOnly || !perfilEditando"
+													[min]="0"
+													[max]="120"
+													[step]="1"
+													[format]="'#0'"
+													[showSpinButtons]="false"
+													[showClearButton]="false"
+													(onValueChanged)="onPerfilEdadMinimaChanged($event)"
+												></dx-number-box>
+											</div>
+											<div class="descriptor-perfil-field">
+												<label class="descriptor-perfil-label">Edad Maxima</label>
+												<dx-number-box
+													[(value)]="perfil.EDAD_MAXIMA"
+													[readOnly]="readOnly || !perfilEditando"
+													[min]="0"
+													[max]="120"
+													[step]="1"
+													[format]="'#0'"
+													[showSpinButtons]="false"
+													[showClearButton]="false"
+													(onValueChanged)="onPerfilEdadMaximaChanged($event)"
+												></dx-number-box>
+											</div>
+											<div class="descriptor-perfil-field">
+												<label class="descriptor-perfil-label">Sexo</label>
+												<dx-select-box
+													[(value)]="perfil.SEXO"
+													[dataSource]="perfilSexoOptions"
+													valueExpr="Key"
+													displayExpr="Value"
+													[readOnly]="readOnly || !perfilEditando"
+													[searchEnabled]="false"
+													(onValueChanged)="onPerfilSexoChanged($event)"
+												></dx-select-box>
+											</div>
+											<div class="descriptor-perfil-field">
+												<label class="descriptor-perfil-label">Estado Familiar</label>
+												<dx-select-box
+													[(value)]="perfil.ESTADO_FAMILIAR"
+													[dataSource]="perfilEstadoFamiliarOptions"
+													valueExpr="Key"
+													displayExpr="Value"
+													[readOnly]="readOnly || !perfilEditando"
+													[searchEnabled]="false"
+													(onValueChanged)="onPerfilEstadoFamiliarChanged($event)"
+												></dx-select-box>
+											</div>
+										</div>
+
+										<div class="descriptor-perfil-row descriptor-perfil-row--secondary">
+											<div class="descriptor-perfil-field">
+												<label class="descriptor-perfil-label">Disponibilidad</label>
+												<app-data-lookup
+													[model]="mCORR_DISPONIBILIDAD_HORARIO_EDIT"
+													[value]="perfil.CORR_DISPONIBILIDAD_HORARIO"
+													(valueChange)="onPerfilDisponibilidadChanged($event)"
+													[valueExpr]="'CORR_DISPONIBILIDAD_HORARIO'"
+													[displayExpr]="'NOMBRE_DISPONIBILIDAD_HORARIO'"
+													[lookupColumns]="disponibilidadHorarioLookupColumns"
+													[selectedRowKeys]="selectedLookUpCORR_DISPONIBILIDAD_HORARIO"
+													[readOnly]="readOnly || !perfilEditando"
+													[dropDownWidth]="420"
+												></app-data-lookup>
+											</div>
+											<div class="descriptor-perfil-field">
+												<label class="descriptor-perfil-label">Modalidad</label>
+												<app-data-lookup
+													[model]="mCORR_TIPO_MODALIDAD_EDIT"
+													[value]="perfil.CORR_TIPO_MODALIDAD"
+													(valueChange)="onPerfilModalidadChanged($event)"
+													[valueExpr]="'CORR_TIPO_MODALIDAD'"
+													[displayExpr]="'MODALIDAD_NOMBRE'"
+													[lookupColumns]="tipoModalidadLookupColumns"
+													[selectedRowKeys]="selectedLookUpCORR_TIPO_MODALIDAD"
+													[readOnly]="readOnly || !perfilEditando"
+													[dropDownWidth]="420"
+												></app-data-lookup>
+											</div>
+											<div class="descriptor-perfil-field">
+												<label class="descriptor-perfil-label">Licencia</label>
+												<dx-select-box
+													[(value)]="perfil.LICENCIA"
+													[dataSource]="perfilLicenciaOptions"
+													valueExpr="Key"
+													displayExpr="Value"
+													[readOnly]="readOnly || !perfilEditando"
+													[searchEnabled]="false"
+													(onValueChanged)="onPerfilLicenciaChanged($event)"
+												></dx-select-box>
+											</div>
+										</div>
+									</div>
+								</div>
+							</dxi-item>
+
+							<!-- Educación requerida para el puesto. -->
+							<dxi-item title="Educacion" icon="bookmark">
+								<div class="descriptor-perfil-tab-content">
+									<div class="descriptor-funciones-header">
+										<h4 class="descriptor-sub-tab-heading">
+											<span class="dx-icon-bookmark descriptor-funciones-icon" aria-hidden="true"></span>
+											Educacion
+										</h4>
+									</div>
+
+									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="add"
+											text="Agregar Educacion"
+											type="success"
+											stylingMode="contained"
+											(onClick)="agregarEducacion()"
+											[disabled]="educacionEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="save"
+											text="Guardar"
+											type="success"
+											stylingMode="contained"
+											(onClick)="guardarEducacionEditada()"
+											[disabled]="!educacionEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+											icon="revert"
+											text="Cancelar"
+											type="danger"
+											stylingMode="contained"
+											(onClick)="cancelarEducacionEditada()"
+											[disabled]="!educacionEditando"
+										></dx-button>
+									</div>
+
+									<dx-data-grid
+										#gridEducacion
+										class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+										[dataSource]="educaciones"
+										keyExpr="_clientKey"
+										[columnAutoWidth]="false"
+										[showBorders]="true"
+										[showColumnLines]="true"
+										[showRowLines]="true"
+										[rowAlternationEnabled]="true"
+										[hoverStateEnabled]="true"
+										[allowColumnResizing]="true"
+										[columnResizingMode]="'widget'"
+										[wordWrapEnabled]="true"
+										[width]="'100%'"
+										[repaintChangesOnly]="false"
+										(onInitNewRow)="educacionInitNewRow($event)"
+										(onEditingStart)="onEducacionEditingStart($event)"
+										(onSaved)="onEducacionSaved($event)"
+										(onEditCanceled)="onEducacionEditCanceled($event)"
+										(onRowInserting)="educacionRowInserting($event)"
+										(onRowUpdating)="educacionRowUpdating($event)"
+										(onRowRemoving)="educacionRowRemoving($event)"
+										(onRowValidating)="educacionRowValidating($event)"
+									>
+										<dxo-editing
+											[mode]="'row'"
+											[refreshMode]="'reshape'"
+											[allowUpdating]="!readOnly"
+											[allowDeleting]="!readOnly"
+											[useIcons]="true"
+											[selectTextOnEditStart]="true"
+											[newRowPosition]="'first'"
+										></dxo-editing>
+										<dxo-paging [enabled]="false"></dxo-paging>
+										<dxi-column
+											type="buttons"
+											name="btnAcciones"
+											caption="Options"
+											[width]="104"
+											[minWidth]="104"
+											[fixed]="true"
+											fixedPosition="left"
+											alignment="center"
+											[allowResizing]="false"
+										>
+											<dxi-button
+												hint="Editar registro"
+												icon="edit"
+												stylingMode="text"
+												cssClass="sguees-grid-action-edit"
+												[visible]="educacionEditButtonVisible"
+												[onClick]="editarEducacionClick"
+											></dxi-button>
+											<dxi-button
+												name="delete"
+												hint="Eliminar registro"
+												icon="trash"
+												stylingMode="text"
+												cssClass="sguees-grid-action-delete"
+												[visible]="educacionDeleteButtonVisible"
+											></dxi-button>
+											<dxi-button name="save" [visible]="false"></dxi-button>
+											<dxi-button name="cancel" [visible]="false"></dxi-button>
+											<dxi-button name="edit" [visible]="false"></dxi-button>
+										</dxi-column>
+										<dxi-column
+											dataField="CORR_EDUCACION"
+											caption="Codigo"
+											[width]="90"
+											[allowEditing]="false"
+											[allowSorting]="true"
+											dataType="number"
+											alignment="left"
+										></dxi-column>
+										<dxi-column
+											dataField="REQUISITO"
+											caption="Requisito"
+											[minWidth]="220"
+											[allowSorting]="true"
+										></dxi-column>
+										<dxi-column
+											dataField="ESPECIFICACIONES"
+											caption="Especificaciones"
+											[minWidth]="220"
+											[allowSorting]="true"
+										></dxi-column>
+										<dxi-column
+											dataField="TIPO_REQUERIDO"
+											caption="Tipo requerido"
+											[width]="150"
+											[allowSorting]="true"
+										>
+											<dxo-lookup
+												[dataSource]="educacionTipoRequeridoOptions"
+												valueExpr="Key"
+												displayExpr="Value"
+											></dxo-lookup>
+										</dxi-column>
+									</dx-data-grid>
+								</div>
+							</dxi-item>
+
+							<!-- Experiencia laboral requerida para el puesto. -->
+							<dxi-item title="Experiencia" icon="folder">
+								<div class="descriptor-perfil-tab-content">
+									<div class="descriptor-funciones-header">
+										<h4 class="descriptor-sub-tab-heading">
+											<span class="dx-icon-folder descriptor-funciones-icon" aria-hidden="true"></span>
+											Experiencia
+										</h4>
+									</div>
+
+									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="add"
+											text="Agregar Experiencia"
+											type="success"
+											stylingMode="contained"
+											(onClick)="agregarExperiencia()"
+											[disabled]="experienciaEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="save"
+											text="Guardar"
+											type="success"
+											stylingMode="contained"
+											(onClick)="guardarExperienciaEditada()"
+											[disabled]="!experienciaEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+											icon="revert"
+											text="Cancelar"
+											type="danger"
+											stylingMode="contained"
+											(onClick)="cancelarExperienciaEditada()"
+											[disabled]="!experienciaEditando"
+										></dx-button>
+									</div>
+
+									<dx-data-grid
+										#gridExperiencia
+										class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+										[dataSource]="experiencias"
+										keyExpr="_clientKey"
+										[columnAutoWidth]="false"
+										[showBorders]="true"
+										[showColumnLines]="true"
+										[showRowLines]="true"
+										[rowAlternationEnabled]="true"
+										[hoverStateEnabled]="true"
+										[allowColumnResizing]="true"
+										[columnResizingMode]="'widget'"
+										[wordWrapEnabled]="true"
+										[width]="'100%'"
+										[repaintChangesOnly]="false"
+										(onInitNewRow)="experienciaInitNewRow($event)"
+										(onEditingStart)="onExperienciaEditingStart($event)"
+										(onSaved)="onExperienciaSaved($event)"
+										(onEditCanceled)="onExperienciaEditCanceled($event)"
+										(onRowInserting)="experienciaRowInserting($event)"
+										(onRowUpdating)="experienciaRowUpdating($event)"
+										(onRowRemoving)="experienciaRowRemoving($event)"
+										(onRowValidating)="experienciaRowValidating($event)"
+									>
+										<dxo-editing
+											[mode]="'row'"
+											[refreshMode]="'reshape'"
+											[allowUpdating]="!readOnly"
+											[allowDeleting]="!readOnly"
+											[useIcons]="true"
+											[selectTextOnEditStart]="true"
+											[newRowPosition]="'first'"
+										></dxo-editing>
+										<dxo-paging [enabled]="false"></dxo-paging>
+										<dxi-column
+											type="buttons"
+											name="btnAcciones"
+											caption="Options"
+											[width]="104"
+											[minWidth]="104"
+											[fixed]="true"
+											fixedPosition="left"
+											alignment="center"
+											[allowResizing]="false"
+										>
+											<dxi-button
+												hint="Editar registro"
+												icon="edit"
+												stylingMode="text"
+												cssClass="sguees-grid-action-edit"
+												[visible]="experienciaEditButtonVisible"
+												[onClick]="editarExperienciaClick"
+											></dxi-button>
+											<dxi-button
+												name="delete"
+												hint="Eliminar registro"
+												icon="trash"
+												stylingMode="text"
+												cssClass="sguees-grid-action-delete"
+												[visible]="experienciaDeleteButtonVisible"
+											></dxi-button>
+											<dxi-button name="save" [visible]="false"></dxi-button>
+											<dxi-button name="cancel" [visible]="false"></dxi-button>
+											<dxi-button name="edit" [visible]="false"></dxi-button>
+										</dxi-column>
+										<dxi-column
+											dataField="CORR_EXPERIENCIA"
+											caption="Codigo"
+											[width]="90"
+											[allowEditing]="false"
+											[allowSorting]="true"
+											dataType="number"
+											alignment="left"
+										></dxi-column>
+										<dxi-column
+											dataField="REQUISITO"
+											caption="Requisito"
+											[minWidth]="280"
+											[allowSorting]="true"
+										></dxi-column>
+										<dxi-column
+											dataField="TIPO_REQUERIDO"
+											caption="Tipo requerido"
+											[width]="150"
+											[allowSorting]="true"
+										>
+											<dxo-lookup
+												[dataSource]="educacionTipoRequeridoOptions"
+												valueExpr="Key"
+												displayExpr="Value"
+											></dxo-lookup>
+										</dxi-column>
+									</dx-data-grid>
+								</div>
+							</dxi-item>
+						</dx-tab-panel>
+					</div>
+				</dxi-item>
+
+				<!-- Competencias técnicas y conductuales. -->
+				<dxi-item title="Competencias">
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-competencias-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-preferences descriptor-competencias-icon" aria-hidden="true"></span>
+								Competencias
+							</h4>
+						</div>
+
+						<dx-tab-panel
+							class="descriptor-competencias-tab-panel"
+							[(selectedIndex)]="competenciasSubTabIndex"
+							[animationEnabled]="true"
+							[swipeEnabled]="false"
+						>
+							<!-- Competencias técnicas (catálogo nivel 3). -->
+							<dxi-item title="Tecnicas" icon="toolbox">
+								<div class="descriptor-competencias-tab-content">
+									<div class="descriptor-funciones-header">
+										<h4 class="descriptor-sub-tab-heading">
+											<span class="dx-icon-toolbox descriptor-funciones-icon" aria-hidden="true"></span>
+											Competencias tecnicas
+										</h4>
+									</div>
+
+									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="add"
+											text="Agregar competencia"
+											type="success"
+											stylingMode="contained"
+											(onClick)="agregarCompetenciaTecnica()"
+											[disabled]="competenciasTecnicasEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="save"
+											text="Guardar"
+											type="success"
+											stylingMode="contained"
+											(onClick)="guardarCompetenciaTecnicaEditada()"
+											[disabled]="!competenciasTecnicasEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+											icon="revert"
+											text="Cancelar"
+											type="danger"
+											stylingMode="contained"
+											(onClick)="cancelarCompetenciaTecnicaEditada()"
+											[disabled]="!competenciasTecnicasEditando"
+										></dx-button>
+									</div>
+
+									<dx-data-grid
+										#gridCompetenciasTecnicas
+										class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+										[dataSource]="competenciasTecnicas"
+										keyExpr="_clientKey"
+										[columnAutoWidth]="false"
+										[showBorders]="true"
+										[showColumnLines]="true"
+										[showRowLines]="true"
+										[rowAlternationEnabled]="true"
+										[hoverStateEnabled]="true"
+										[allowColumnResizing]="true"
+										[columnResizingMode]="'widget'"
+										[width]="'100%'"
+										[wordWrapEnabled]="true"
+										[repaintChangesOnly]="false"
+										(onInitNewRow)="competenciaTecnicaInitNewRow($event)"
+										(onEditingStart)="onCompetenciaTecnicaEditingStart($event)"
+										(onSaved)="onCompetenciaTecnicaSaved($event)"
+										(onEditCanceled)="onCompetenciaTecnicaEditCanceled($event)"
+										(onRowInserting)="competenciaTecnicaRowInserting($event)"
+										(onRowUpdating)="competenciaTecnicaRowUpdating($event)"
+										(onRowRemoving)="competenciaTecnicaRowRemoving($event)"
+										(onRowValidating)="competenciaTecnicaRowValidating($event)"
+									>
+										<dxo-editing
+											[mode]="'row'"
+											[refreshMode]="'reshape'"
+											[allowUpdating]="!readOnly"
+											[allowDeleting]="!readOnly"
+											[useIcons]="true"
+											[selectTextOnEditStart]="true"
+											[newRowPosition]="'first'"
+										></dxo-editing>
+										<dxo-paging [enabled]="false"></dxo-paging>
+										<dxi-column
+											type="buttons"
+											name="btnAcciones"
+											caption="Options"
+											[width]="104"
+											[minWidth]="104"
+											[fixed]="true"
+											fixedPosition="left"
+											alignment="center"
+											[allowResizing]="false"
+										>
+											<dxi-button
+												hint="Editar registro"
+												icon="edit"
+												stylingMode="text"
+												cssClass="sguees-grid-action-edit"
+												[visible]="competenciaTecnicaEditButtonVisible"
+												[onClick]="editarCompetenciaTecnicaClick"
+											></dxi-button>
+											<dxi-button
+												name="delete"
+												hint="Eliminar registro"
+												icon="trash"
+												stylingMode="text"
+												cssClass="sguees-grid-action-delete"
+												[visible]="competenciaTecnicaDeleteButtonVisible"
+											></dxi-button>
+											<dxi-button name="save" [visible]="false"></dxi-button>
+											<dxi-button name="cancel" [visible]="false"></dxi-button>
+											<dxi-button name="edit" [visible]="false"></dxi-button>
+										</dxi-column>
+										<dxi-column
+											dataField="CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS"
+											caption="Codigo"
+											[width]="90"
+											[allowEditing]="false"
+											[allowSorting]="true"
+											dataType="number"
+											alignment="left"
+										></dxi-column>
+										<!-- Columna para elegir la competencia técnica. -->
+										<dxi-column
+											dataField="CORR_COMPETENCIAS_TECNICAS"
+											caption="Competencia"
+											[width]="140"
+											[minWidth]="120"
+											[allowSorting]="true"
+											[calculateDisplayValue]="competenciaTecnicaCatalogDisplay"
+											[setCellValue]="setCompetenciaTecnicaCellValue"
+											[editCellTemplate]="'CORR_COMPETENCIAS_TECNICASLookup'"
+										>
+											<dxo-lookup
+												[dataSource]="mCORR_COMPETENCIAS_TECNICAS"
+												valueExpr="CORR_COMPETENCIAS_TECNICAS"
+												displayExpr="CODIGO_COMPETENCIAS_TECNICAS"
+											></dxo-lookup>
+										</dxi-column>
+										<div *dxTemplate="let cellInfo of 'CORR_COMPETENCIAS_TECNICASLookup'">
+											<app-data-lookup
+												[model]="mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES"
+												[value]="cellInfo.value"
+												(valueChange)="onCompetenciaTecnicaLookupChanged($event, cellInfo)"
+												[valueExpr]="'CORR_COMPETENCIAS_TECNICAS'"
+												[displayExpr]="'CODIGO_COMPETENCIAS_TECNICAS'"
+												[lookupColumns]="competenciasTecnicasLookupColumns"
+												[selectedRowKeys]="selectedLookUpCORR_COMPETENCIAS_TECNICAS"
+												[showClearButton]="true"
+												[dropDownWidth]="760"
+											></app-data-lookup>
+										</div>
+										<dxi-column
+											dataField="NOMBRE_COMPETENCIAS_TECNICAS"
+											caption="Nombre (descriptor)"
+											[minWidth]="220"
+											[allowSorting]="true"
+										></dxi-column>
+										<dxi-column
+											dataField="NIVEL_DOMINIO"
+											caption="Nivel dominio"
+											[width]="150"
+											[allowSorting]="true"
+										>
+											<dxo-lookup
+												[dataSource]="competenciaTecnicaNivelDominioOptions"
+												valueExpr="Key"
+												displayExpr="Value"
+											></dxo-lookup>
+										</dxi-column>
+									</dx-data-grid>
+								</div>
+							</dxi-item>
+
+							<!-- Competencias conductuales. -->
+							<dxi-item title="Conductuales" icon="group">
+								<div class="descriptor-competencias-tab-content">
+									<div class="descriptor-funciones-header">
+										<h4 class="descriptor-sub-tab-heading">
+											<span class="dx-icon-group descriptor-funciones-icon" aria-hidden="true"></span>
+											Competencias conductuales
+										</h4>
+									</div>
+
+									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="add"
+											text="Agregar competencia"
+											type="success"
+											stylingMode="contained"
+											(onClick)="agregarCompetenciaConductual()"
+											[disabled]="competenciasConductualesEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="save"
+											text="Guardar"
+											type="success"
+											stylingMode="contained"
+											(onClick)="guardarCompetenciaConductualEditada()"
+											[disabled]="!competenciasConductualesEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+											icon="revert"
+											text="Cancelar"
+											type="danger"
+											stylingMode="contained"
+											(onClick)="cancelarCompetenciaConductualEditada()"
+											[disabled]="!competenciasConductualesEditando"
+										></dx-button>
+									</div>
+
+									<dx-data-grid
+										#gridCompetenciasConductuales
+										class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+										[dataSource]="competenciasConductuales"
+										keyExpr="_clientKey"
+										[columnAutoWidth]="false"
+										[showBorders]="true"
+										[showColumnLines]="true"
+										[showRowLines]="true"
+										[rowAlternationEnabled]="true"
+										[hoverStateEnabled]="true"
+										[allowColumnResizing]="true"
+										[columnResizingMode]="'widget'"
+										[width]="'100%'"
+										[wordWrapEnabled]="true"
+										[repaintChangesOnly]="false"
+										(onInitNewRow)="competenciaConductualInitNewRow($event)"
+										(onEditingStart)="onCompetenciaConductualEditingStart($event)"
+										(onSaved)="onCompetenciaConductualSaved($event)"
+										(onEditCanceled)="onCompetenciaConductualEditCanceled($event)"
+										(onRowInserting)="competenciaConductualRowInserting($event)"
+										(onRowUpdating)="competenciaConductualRowUpdating($event)"
+										(onRowRemoving)="competenciaConductualRowRemoving($event)"
+										(onRowValidating)="competenciaConductualRowValidating($event)"
+									>
+										<dxo-editing
+											[mode]="'row'"
+											[refreshMode]="'reshape'"
+											[allowUpdating]="!readOnly"
+											[allowDeleting]="!readOnly"
+											[useIcons]="true"
+											[selectTextOnEditStart]="true"
+											[newRowPosition]="'first'"
+										></dxo-editing>
+										<dxo-paging [enabled]="false"></dxo-paging>
+										<dxi-column
+											type="buttons"
+											name="btnAcciones"
+											caption="Options"
+											[width]="104"
+											[minWidth]="104"
+											[fixed]="true"
+											fixedPosition="left"
+											alignment="center"
+											[allowResizing]="false"
+										>
+											<dxi-button
+												hint="Editar registro"
+												icon="edit"
+												stylingMode="text"
+												cssClass="sguees-grid-action-edit"
+												[visible]="competenciaConductualEditButtonVisible"
+												[onClick]="editarCompetenciaConductualClick"
+											></dxi-button>
+											<dxi-button
+												name="delete"
+												hint="Eliminar registro"
+												icon="trash"
+												stylingMode="text"
+												cssClass="sguees-grid-action-delete"
+												[visible]="competenciaConductualDeleteButtonVisible"
+											></dxi-button>
+											<dxi-button name="save" [visible]="false"></dxi-button>
+											<dxi-button name="cancel" [visible]="false"></dxi-button>
+											<dxi-button name="edit" [visible]="false"></dxi-button>
+										</dxi-column>
+										<dxi-column
+											dataField="CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES"
+											caption="Codigo"
+											[width]="90"
+											[allowEditing]="false"
+											[allowSorting]="true"
+											dataType="number"
+											alignment="left"
+										></dxi-column>
+										<dxi-column
+											dataField="CORR_COMPETENCIAS_CONDUCTUALES"
+											caption="Competencia"
+											[width]="140"
+											[minWidth]="120"
+											[allowSorting]="true"
+											[visible]="competenciasConductualesEditando"
+											[allowEditing]="competenciasConductualesEditando && !readOnly"
+											[calculateDisplayValue]="competenciaConductualCatalogDisplay"
+											[setCellValue]="setCompetenciaConductualCellValue"
+											[editCellTemplate]="'CORR_COMPETENCIAS_CONDUCTUALESLookup'"
+										>
+											<dxo-lookup
+												[dataSource]="mCORR_COMPETENCIAS_CONDUCTUALES"
+												valueExpr="CORR_COMPETENCIAS_CONDUCTUALES"
+												displayExpr="CODIGO_TIPO_PUESTO"
+											></dxo-lookup>
+										</dxi-column>
+										<div *dxTemplate="let cellInfo of 'CORR_COMPETENCIAS_CONDUCTUALESLookup'">
+											<app-data-lookup
+												[model]="mCORR_COMPETENCIAS_CONDUCTUALES_DISPONIBLES"
+												[value]="cellInfo.value"
+												(valueChange)="onCompetenciaConductualLookupChanged($event, cellInfo)"
+												[valueExpr]="'CORR_COMPETENCIAS_CONDUCTUALES'"
+												[displayExpr]="'CODIGO_TIPO_PUESTO'"
+												[lookupColumns]="competenciasConductualesLookupColumns"
+												[selectedRowKeys]="selectedLookUpCORR_COMPETENCIAS_CONDUCTUALES"
+												[showClearButton]="true"
+												[dropDownWidth]="520"
+											></app-data-lookup>
+										</div>
+										<dxi-column
+											dataField="NOMBRE_COMPETENCIAS_CONDUCTUALES"
+											caption="Nombre (descriptor)"
+											[minWidth]="220"
+											[allowSorting]="true"
+											[allowEditing]="competenciasConductualesEditando && !readOnly"
+										></dxi-column>
+										<dxi-column
+											dataField="DESCRIPCION"
+											caption="Descripcion"
+											[minWidth]="220"
+											[allowSorting]="true"
+											[visible]="esFormatoExtenso"
+											[allowEditing]="competenciasConductualesEditando && !readOnly"
+										></dxi-column>
+									</dx-data-grid>
+								</div>
+							</dxi-item>
+						</dx-tab-panel>
+					</div>
+				</dxi-item>
+
+				<!-- Relaciones internas y externas (solo formato extenso). -->
+				<dxi-item title="Relaciones" [visible]="esFormatoExtenso">
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-relaciones-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-group descriptor-relaciones-icon" aria-hidden="true"></span>
+								Relaciones Laborales
+							</h4>
+						</div>
+
+						<dx-tab-panel
+							class="descriptor-relaciones-tab-panel"
+							[(selectedIndex)]="relacionesSubTabIndex"
+							[animationEnabled]="true"
+							[swipeEnabled]="false"
+						>
+							<!-- Relaciones internas. -->
+							<dxi-item title="Internas" icon="home">
+								<div class="descriptor-relaciones-tab-content">
+									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="add"
+											text="Agregar Relacion Interna"
+											type="success"
+											stylingMode="contained"
+											(onClick)="agregarRelacionInterna()"
+											[disabled]="relacionesInternasEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="save"
+											text="Guardar"
+											type="success"
+											stylingMode="contained"
+											(onClick)="guardarRelacionInternaEditada()"
+											[disabled]="!relacionesInternasEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+											icon="revert"
+											text="Cancelar"
+											type="danger"
+											stylingMode="contained"
+											(onClick)="cancelarRelacionInternaEditada()"
+											[disabled]="!relacionesInternasEditando"
+										></dx-button>
+									</div>
+
+									<dx-data-grid
+										#gridRelacionesInternas
+										class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+										[dataSource]="relacionesInternas"
+										keyExpr="_clientKey"
+										[columnAutoWidth]="false"
+										[showBorders]="true"
+										[showColumnLines]="true"
+										[showRowLines]="true"
+										[rowAlternationEnabled]="true"
+										[hoverStateEnabled]="true"
+										[allowColumnResizing]="true"
+										[columnResizingMode]="'widget'"
+										[width]="'100%'"
+										[wordWrapEnabled]="true"
+										[repaintChangesOnly]="false"
+										(onInitNewRow)="relacionInternaInitNewRow($event)"
+										(onEditingStart)="onRelacionInternaEditingStart($event)"
+										(onSaved)="onRelacionInternaSaved($event)"
+										(onEditCanceled)="onRelacionInternaEditCanceled($event)"
+										(onRowInserting)="relacionInternaRowInserting($event)"
+										(onRowUpdating)="relacionInternaRowUpdating($event)"
+										(onRowRemoving)="relacionInternaRowRemoving($event)"
+										(onRowValidating)="relacionInternaRowValidating($event)"
+									>
+										<dxo-editing
+											[mode]="'row'"
+											[refreshMode]="'reshape'"
+											[allowUpdating]="!readOnly"
+											[allowDeleting]="!readOnly"
+											[useIcons]="true"
+											[selectTextOnEditStart]="true"
+											[newRowPosition]="'first'"
+										></dxo-editing>
+										<dxo-paging [enabled]="false"></dxo-paging>
+										<dxi-column
+											type="buttons"
+											name="btnAcciones"
+											caption="Options"
+											[width]="104"
+											[minWidth]="104"
+											[fixed]="true"
+											fixedPosition="left"
+											alignment="center"
+											[allowResizing]="false"
+										>
+											<dxi-button
+												hint="Editar registro"
+												icon="edit"
+												stylingMode="text"
+												cssClass="sguees-grid-action-edit"
+												[visible]="relacionInternaEditButtonVisible"
+												[onClick]="editarRelacionInternaClick"
+											></dxi-button>
+											<dxi-button
+												name="delete"
+												hint="Eliminar registro"
+												icon="trash"
+												stylingMode="text"
+												cssClass="sguees-grid-action-delete"
+												[visible]="relacionInternaDeleteButtonVisible"
+											></dxi-button>
+											<dxi-button name="save" [visible]="false"></dxi-button>
+											<dxi-button name="cancel" [visible]="false"></dxi-button>
+											<dxi-button name="edit" [visible]="false"></dxi-button>
+										</dxi-column>
+										<dxi-column
+											dataField="CORR_RELACION_LABORAL"
+											caption="Codigo"
+											[width]="90"
+											[allowEditing]="false"
+											[allowSorting]="true"
+											dataType="number"
+											alignment="left"
+										></dxi-column>
+										<dxi-column
+											dataField="PUESTO_AREA"
+											caption="Puesto / Area"
+											[minWidth]="220"
+											[allowSorting]="true"
+										></dxi-column>
+										<dxi-column
+											dataField="MOTIVO_RELACION"
+											caption="Motivo de la relacion"
+											[minWidth]="260"
+											[allowSorting]="true"
+										></dxi-column>
+									</dx-data-grid>
+								</div>
+							</dxi-item>
+
+							<!-- Relaciones externas. -->
+							<dxi-item title="Externas" icon="globe">
+								<div class="descriptor-relaciones-tab-content">
+									<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="add"
+											text="Agregar Relacion Externa"
+											type="success"
+											stylingMode="contained"
+											(onClick)="agregarRelacionExterna()"
+											[disabled]="relacionesExternasEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn"
+											icon="save"
+											text="Guardar"
+											type="success"
+											stylingMode="contained"
+											(onClick)="guardarRelacionExternaEditada()"
+											[disabled]="!relacionesExternasEditando"
+										></dx-button>
+										<dx-button
+											class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+											icon="revert"
+											text="Cancelar"
+											type="danger"
+											stylingMode="contained"
+											(onClick)="cancelarRelacionExternaEditada()"
+											[disabled]="!relacionesExternasEditando"
+										></dx-button>
+									</div>
+
+									<dx-data-grid
+										#gridRelacionesExternas
+										class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+										[dataSource]="relacionesExternas"
+										keyExpr="_clientKey"
+										[columnAutoWidth]="false"
+										[showBorders]="true"
+										[showColumnLines]="true"
+										[showRowLines]="true"
+										[rowAlternationEnabled]="true"
+										[hoverStateEnabled]="true"
+										[allowColumnResizing]="true"
+										[columnResizingMode]="'widget'"
+										[width]="'100%'"
+										[wordWrapEnabled]="true"
+										[repaintChangesOnly]="false"
+										(onInitNewRow)="relacionExternaInitNewRow($event)"
+										(onEditingStart)="onRelacionExternaEditingStart($event)"
+										(onSaved)="onRelacionExternaSaved($event)"
+										(onEditCanceled)="onRelacionExternaEditCanceled($event)"
+										(onRowInserting)="relacionExternaRowInserting($event)"
+										(onRowUpdating)="relacionExternaRowUpdating($event)"
+										(onRowRemoving)="relacionExternaRowRemoving($event)"
+										(onRowValidating)="relacionExternaRowValidating($event)"
+									>
+										<dxo-editing
+											[mode]="'row'"
+											[refreshMode]="'reshape'"
+											[allowUpdating]="!readOnly"
+											[allowDeleting]="!readOnly"
+											[useIcons]="true"
+											[selectTextOnEditStart]="true"
+											[newRowPosition]="'first'"
+										></dxo-editing>
+										<dxo-paging [enabled]="false"></dxo-paging>
+										<dxi-column
+											type="buttons"
+											name="btnAcciones"
+											caption="Options"
+											[width]="104"
+											[minWidth]="104"
+											[fixed]="true"
+											fixedPosition="left"
+											alignment="center"
+											[allowResizing]="false"
+										>
+											<dxi-button
+												hint="Editar registro"
+												icon="edit"
+												stylingMode="text"
+												cssClass="sguees-grid-action-edit"
+												[visible]="relacionExternaEditButtonVisible"
+												[onClick]="editarRelacionExternaClick"
+											></dxi-button>
+											<dxi-button
+												name="delete"
+												hint="Eliminar registro"
+												icon="trash"
+												stylingMode="text"
+												cssClass="sguees-grid-action-delete"
+												[visible]="relacionExternaDeleteButtonVisible"
+											></dxi-button>
+											<dxi-button name="save" [visible]="false"></dxi-button>
+											<dxi-button name="cancel" [visible]="false"></dxi-button>
+											<dxi-button name="edit" [visible]="false"></dxi-button>
+										</dxi-column>
+										<dxi-column
+											dataField="CORR_RELACION_LABORAL"
+											caption="Codigo"
+											[width]="90"
+											[allowEditing]="false"
+											[allowSorting]="true"
+											dataType="number"
+											alignment="left"
+										></dxi-column>
+										<dxi-column
+											dataField="PUESTO_AREA"
+											caption="Puesto / Area"
+											[minWidth]="220"
+											[allowSorting]="true"
+										></dxi-column>
+										<dxi-column
+											dataField="MOTIVO_RELACION"
+											caption="Motivo de la relacion"
+											[minWidth]="260"
+											[allowSorting]="true"
+										></dxi-column>
+									</dx-data-grid>
+								</div>
+							</dxi-item>
+						</dx-tab-panel>
+					</div>
+				</dxi-item>
+
+				<!-- Requerimientos organizacionales. -->
+				<dxi-item title="Requerimientos">
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-funciones-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-check descriptor-funciones-icon" aria-hidden="true"></span>
+								Requerimientos Organizacionales
+							</h4>
+						</div>
+
+						<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="add"
+								text="Agregar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="agregarRequerimientoOrganizacional()"
+								[disabled]="requerimientosOrganizacionalesEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="save"
+								text="Guardar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="guardarRequerimientoOrganizacionalEditado()"
+								[disabled]="!requerimientosOrganizacionalesEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+								icon="revert"
+								text="Cancelar"
+								type="danger"
+								stylingMode="contained"
+								(onClick)="cancelarRequerimientoOrganizacionalEditado()"
+								[disabled]="!requerimientosOrganizacionalesEditando"
+							></dx-button>
+						</div>
+
+						<dx-data-grid
+							#gridRequerimientosOrganizacionales
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+							[dataSource]="requerimientosOrganizacionales"
+							keyExpr="_clientKey"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[width]="'100%'"
+							[wordWrapEnabled]="true"
+							[repaintChangesOnly]="false"
+							(onInitNewRow)="requerimientoOrganizacionalInitNewRow($event)"
+							(onEditingStart)="onRequerimientoOrganizacionalEditingStart($event)"
+							(onSaved)="onRequerimientoOrganizacionalSaved($event)"
+							(onEditCanceled)="onRequerimientoOrganizacionalEditCanceled($event)"
+							(onRowInserting)="requerimientoOrganizacionalRowInserting($event)"
+							(onRowUpdating)="requerimientoOrganizacionalRowUpdating($event)"
+							(onRowRemoving)="requerimientoOrganizacionalRowRemoving($event)"
+							(onRowValidating)="requerimientoOrganizacionalRowValidating($event)"
+						>
+							<dxo-editing
+								[mode]="'row'"
+								[refreshMode]="'reshape'"
+								[allowUpdating]="!readOnly"
+								[allowDeleting]="!readOnly"
+								[useIcons]="true"
+								[selectTextOnEditStart]="true"
+								[newRowPosition]="'first'"
+							></dxo-editing>
+							<dxo-paging [enabled]="false"></dxo-paging>
+							<dxi-column
+								type="buttons"
+								name="btnAcciones"
+								caption="Options"
+								[width]="104"
+								[minWidth]="104"
+								[fixed]="true"
+								fixedPosition="left"
+								alignment="center"
+								[allowResizing]="false"
+							>
+								<dxi-button
+									hint="Editar registro"
+									icon="edit"
+									stylingMode="text"
+									cssClass="sguees-grid-action-edit"
+									[visible]="requerimientoOrganizacionalEditButtonVisible"
+									[onClick]="editarRequerimientoOrganizacionalClick"
+								></dxi-button>
+								<dxi-button
+									name="delete"
+									hint="Eliminar registro"
+									icon="trash"
+									stylingMode="text"
+									cssClass="sguees-grid-action-delete"
+									[visible]="requerimientoOrganizacionalDeleteButtonVisible"
+								></dxi-button>
+								<dxi-button name="save" [visible]="false"></dxi-button>
+								<dxi-button name="cancel" [visible]="false"></dxi-button>
+								<dxi-button name="edit" [visible]="false"></dxi-button>
+							</dxi-column>
+							<dxi-column
+								dataField="CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL"
+								caption="Codigo"
+								[width]="90"
+								[allowEditing]="false"
+								[allowSorting]="true"
+								dataType="number"
+								alignment="left"
+							></dxi-column>
+							<dxi-column
+								dataField="CORR_REQUERIMIENTO_ORGANIZACIONAL"
+								caption="Requerimiento"
+								[width]="140"
+								[minWidth]="120"
+								[allowSorting]="true"
+								[visible]="requerimientosOrganizacionalesInsertando"
+								[calculateDisplayValue]="requerimientoOrganizacionalCatalogDisplay"
+								[setCellValue]="setRequerimientoOrganizacionalCellValue"
+								[editCellTemplate]="'CORR_REQUERIMIENTO_ORGANIZACIONALLookup'"
+							>
+								<dxo-lookup
+									[dataSource]="mCORR_REQUERIMIENTO_ORGANIZACIONAL"
+									valueExpr="CORR_REQUERIMIENTO_ORGANIZACIONAL"
+									displayExpr="DESCRIPCION"
+								></dxo-lookup>
+							</dxi-column>
+							<div *dxTemplate="let cellInfo of 'CORR_REQUERIMIENTO_ORGANIZACIONALLookup'">
+								<app-data-lookup
+									[model]="mCORR_REQUERIMIENTO_ORGANIZACIONAL_DISPONIBLES"
+									[value]="cellInfo.value"
+									(valueChange)="onRequerimientoOrganizacionalLookupChanged($event, cellInfo)"
+									[valueExpr]="'CORR_REQUERIMIENTO_ORGANIZACIONAL'"
+									[displayExpr]="'DESCRIPCION'"
+									[lookupColumns]="requerimientosOrganizacionalesLookupColumns"
+									[selectedRowKeys]="selectedLookUpCORR_REQUERIMIENTO_ORGANIZACIONAL"
+									[showClearButton]="true"
+									[dropDownWidth]="520"
+								></app-data-lookup>
+							</div>
+							<dxi-column
+								dataField="DESCRIPCION"
+								caption="Descripcion"
+								[minWidth]="280"
+								[allowSorting]="true"
+							></dxi-column>
+						</dx-data-grid>
+					</div>
+				</dxi-item>
+
+				<!-- Riesgos del puesto (solo formato extenso). -->
+				<dxi-item title="Riesgos" [visible]="esFormatoExtenso">
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-funciones-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-warning descriptor-funciones-icon" aria-hidden="true"></span>
+								Riesgos del puesto
+							</h4>
+						</div>
+
+						<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="add"
+								text="Agregar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="agregarRiesgoPuesto()"
+								[disabled]="riesgosPuestoEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="save"
+								text="Guardar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="guardarRiesgoPuestoEditado()"
+								[disabled]="!riesgosPuestoEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+								icon="revert"
+								text="Cancelar"
+								type="danger"
+								stylingMode="contained"
+								(onClick)="cancelarRiesgoPuestoEditado()"
+								[disabled]="!riesgosPuestoEditando"
+							></dx-button>
+						</div>
+
+						<dx-data-grid
+							#gridRiesgosPuesto
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+							[dataSource]="riesgosPuesto"
+							keyExpr="_clientKey"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[width]="'100%'"
+							[wordWrapEnabled]="true"
+							[repaintChangesOnly]="false"
+							(onInitNewRow)="riesgoPuestoInitNewRow($event)"
+							(onEditingStart)="onRiesgoPuestoEditingStart($event)"
+							(onSaved)="onRiesgoPuestoSaved($event)"
+							(onEditCanceled)="onRiesgoPuestoEditCanceled($event)"
+							(onRowInserting)="riesgoPuestoRowInserting($event)"
+							(onRowUpdating)="riesgoPuestoRowUpdating($event)"
+							(onRowRemoving)="riesgoPuestoRowRemoving($event)"
+							(onRowValidating)="riesgoPuestoRowValidating($event)"
+						>
+							<dxo-editing
+								[mode]="'row'"
+								[refreshMode]="'reshape'"
+								[allowUpdating]="!readOnly"
+								[allowDeleting]="!readOnly"
+								[useIcons]="true"
+								[selectTextOnEditStart]="true"
+								[newRowPosition]="'first'"
+							></dxo-editing>
+							<dxo-paging [enabled]="false"></dxo-paging>
+							<dxi-column
+								type="buttons"
+								name="btnAcciones"
+								caption="Options"
+								[width]="104"
+								[minWidth]="104"
+								[fixed]="true"
+								fixedPosition="left"
+								alignment="center"
+								[allowResizing]="false"
+							>
+								<dxi-button
+									hint="Editar registro"
+									icon="edit"
+									stylingMode="text"
+									cssClass="sguees-grid-action-edit"
+									[visible]="riesgoPuestoEditButtonVisible"
+									[onClick]="editarRiesgoPuestoClick"
+								></dxi-button>
+								<dxi-button
+									name="delete"
+									hint="Eliminar registro"
+									icon="trash"
+									stylingMode="text"
+									cssClass="sguees-grid-action-delete"
+									[visible]="riesgoPuestoDeleteButtonVisible"
+								></dxi-button>
+								<dxi-button name="save" [visible]="false"></dxi-button>
+								<dxi-button name="cancel" [visible]="false"></dxi-button>
+								<dxi-button name="edit" [visible]="false"></dxi-button>
+							</dxi-column>
+							<dxi-column
+								dataField="CORR_DESCRIPTOR_RIESGO"
+								caption="Codigo"
+								[width]="90"
+								[allowEditing]="false"
+								[allowSorting]="true"
+								dataType="number"
+								alignment="left"
+							></dxi-column>
+							<dxi-column
+								dataField="CORR_RIESGO_PUESTO"
+								caption="Riesgo"
+								[width]="140"
+								[minWidth]="120"
+								[allowSorting]="true"
+								[visible]="riesgosPuestoInsertando"
+								[calculateDisplayValue]="riesgoPuestoCatalogDisplay"
+								[setCellValue]="setRiesgoPuestoCellValue"
+								[editCellTemplate]="'CORR_RIESGO_PUESTOLookup'"
+							>
+								<dxo-lookup
+									[dataSource]="mCORR_RIESGO_PUESTO"
+									valueExpr="CORR_RIESGO_PUESTO"
+									displayExpr="NOMBRE_RIESGO_PUESTO"
+								></dxo-lookup>
+							</dxi-column>
+							<div *dxTemplate="let cellInfo of 'CORR_RIESGO_PUESTOLookup'">
+								<div class="descriptor-riesgo-lookup-cell">
+									<app-data-lookup
+										[model]="mCORR_RIESGO_PUESTO_DISPONIBLES"
+										[value]="cellInfo.value"
+										(valueChange)="onRiesgoPuestoLookupChanged($event, cellInfo)"
+										[valueExpr]="'CORR_RIESGO_PUESTO'"
+										[displayExpr]="'NOMBRE_RIESGO_PUESTO'"
+										[lookupColumns]="riesgosPuestoLookupColumns"
+										[selectedRowKeys]="selectedLookUpCORR_RIESGO_PUESTO"
+										[showClearButton]="true"
+										[dropDownWidth]="520"
+									></app-data-lookup>
+								</div>
+							</div>
+							<dxi-column
+								dataField="NOMBRE_RIESGO_PUESTO"
+								caption="Nombre (descriptor)"
+								[minWidth]="220"
+								[allowSorting]="true"
+							></dxi-column>
+							<dxi-column
+								dataField="INFORMACION"
+								caption="Informacion"
+								[minWidth]="280"
+								[allowSorting]="true"
+								[editorOptions]="{ maxLength: 255, showClearButton: true }"
+							></dxi-column>
+						</dx-data-grid>
+					</div>
+				</dxi-item>
+
+				<!-- Responsabilidades del cargo (incluye impacto económico). -->
+				<dxi-item title="Responsabilidades">
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-funciones-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-card descriptor-funciones-icon" aria-hidden="true"></span>
+								Responsabilidades del cargo
+							</h4>
+						</div>
+
+						<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="add"
+								text="Agregar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="agregarResponsabilidadCargo()"
+								[disabled]="responsabilidadesCargoEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="save"
+								text="Guardar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="guardarResponsabilidadCargoEditado()"
+								[disabled]="!responsabilidadesCargoEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+								icon="revert"
+								text="Cancelar"
+								type="danger"
+								stylingMode="contained"
+								(onClick)="cancelarResponsabilidadCargoEditado()"
+								[disabled]="!responsabilidadesCargoEditando"
+							></dx-button>
+						</div>
+
+						<dx-data-grid
+							#gridResponsabilidadesCargo
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+							[dataSource]="responsabilidadesCargo"
+							keyExpr="_clientKey"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[width]="'100%'"
+							[wordWrapEnabled]="true"
+							[repaintChangesOnly]="false"
+							(onInitNewRow)="responsabilidadCargoInitNewRow($event)"
+							(onEditingStart)="onResponsabilidadCargoEditingStart($event)"
+							(onEditorPreparing)="onResponsabilidadCargoEditorPreparing($event)"
+							(onSaved)="onResponsabilidadCargoSaved($event)"
+							(onEditCanceled)="onResponsabilidadCargoEditCanceled($event)"
+							(onRowInserting)="responsabilidadCargoRowInserting($event)"
+							(onRowUpdating)="responsabilidadCargoRowUpdating($event)"
+							(onRowRemoving)="responsabilidadCargoRowRemoving($event)"
+							(onRowValidating)="responsabilidadCargoRowValidating($event)"
+						>
+							<dxo-editing
+								[mode]="'row'"
+								[refreshMode]="'reshape'"
+								[allowUpdating]="!readOnly"
+								[allowDeleting]="!readOnly"
+								[useIcons]="true"
+								[selectTextOnEditStart]="true"
+								[newRowPosition]="'first'"
+							></dxo-editing>
+							<dxo-paging [enabled]="false"></dxo-paging>
+							<dxi-column
+								type="buttons"
+								name="btnAcciones"
+								caption="Options"
+								[width]="104"
+								[minWidth]="104"
+								[fixed]="true"
+								fixedPosition="left"
+								alignment="center"
+								[allowResizing]="false"
+							>
+								<dxi-button
+									hint="Editar registro"
+									icon="edit"
+									stylingMode="text"
+									cssClass="sguees-grid-action-edit"
+									[visible]="responsabilidadCargoEditButtonVisible"
+									[onClick]="editarResponsabilidadCargoClick"
+								></dxi-button>
+								<dxi-button
+									name="delete"
+									hint="Eliminar registro"
+									icon="trash"
+									stylingMode="text"
+									cssClass="sguees-grid-action-delete"
+									[visible]="responsabilidadCargoDeleteButtonVisible"
+								></dxi-button>
+								<dxi-button name="save" [visible]="false"></dxi-button>
+								<dxi-button name="cancel" [visible]="false"></dxi-button>
+								<dxi-button name="edit" [visible]="false"></dxi-button>
+							</dxi-column>
+							<dxi-column
+								dataField="CORR_DESCRIPTOR_RESPONSABILIDAD"
+								caption="Codigo"
+								[width]="90"
+								[allowEditing]="false"
+								[allowSorting]="false"
+								alignment="left"
+								[calculateDisplayValue]="responsabilidadCargoCodigoDisplay"
+							></dxi-column>
+							<dxi-column
+								dataField="CORR_RESPONSABILIDAD"
+								caption="Responsabilidad"
+								[width]="140"
+								[minWidth]="120"
+								[allowSorting]="false"
+								[visible]="responsabilidadesCargoInsertando"
+								[calculateDisplayValue]="responsabilidadCargoCatalogDisplay"
+								[setCellValue]="setResponsabilidadCargoCellValue"
+								[editCellTemplate]="'CORR_RESPONSABILIDADLookup'"
+							>
+								<dxo-lookup
+									[dataSource]="mCORR_RESPONSABILIDAD"
+									valueExpr="CORR_RESPONSABILIDAD"
+									displayExpr="NOMBRE_RESPONSABILIDAD"
+								></dxo-lookup>
+							</dxi-column>
+							<div *dxTemplate="let cellInfo of 'CORR_RESPONSABILIDADLookup'">
+								<div class="descriptor-riesgo-lookup-cell">
+									<app-data-lookup
+										[model]="mCORR_RESPONSABILIDAD_DISPONIBLES"
+										[value]="cellInfo.value"
+										(valueChange)="onResponsabilidadCargoLookupChanged($event, cellInfo)"
+										[valueExpr]="'CORR_RESPONSABILIDAD'"
+										[displayExpr]="'NOMBRE_RESPONSABILIDAD'"
+										[lookupColumns]="responsabilidadesCargoLookupColumns"
+										[selectedRowKeys]="selectedLookUpCORR_RESPONSABILIDAD"
+										[showClearButton]="true"
+										[dropDownWidth]="520"
+									></app-data-lookup>
+								</div>
+							</div>
+							<dxi-column
+								dataField="NOMBRE_RESPONSABILIDAD"
+								caption="Nombre (descriptor)"
+								[minWidth]="220"
+								[allowSorting]="false"
+							></dxi-column>
+							<dxi-column
+								dataField="INFORMACION"
+								caption="Informacion"
+								[minWidth]="280"
+								[allowSorting]="false"
+								[calculateDisplayValue]="responsabilidadCargoInformacionDisplay"
+								[editCellTemplate]="'INFORMACIONResponsabilidadEdit'"
+								[editorOptions]="{ maxLength: 255, showClearButton: true }"
+							></dxi-column>
+							<div *dxTemplate="let cellInfo of 'INFORMACIONResponsabilidadEdit'">
+								<div
+									class="descriptor-riesgo-lookup-cell"
+									*ngIf="cellInfo.data?._esImpactoEconomico; else infoResponsabilidadTexto"
+								>
+									<app-data-lookup
+										[model]="mCORR_IMPACTO_ECONOMICO_EDIT"
+										[value]="cellInfo.data.CORR_IMPACTO_ECONOMICO"
+										(valueChange)="onImpactoEconomicoLookupChanged($event, cellInfo)"
+										[valueExpr]="'CORR_IMPACTO_ECONOMICO'"
+										[displayExpr]="'DESCRIPCION'"
+										[lookupColumns]="impactosEconomicosLookupColumns"
+										[selectedRowKeys]="selectedLookUpCORR_IMPACTO_ECONOMICO"
+										[showClearButton]="true"
+										[dropDownWidth]="520"
+									></app-data-lookup>
+								</div>
+								<ng-template #infoResponsabilidadTexto>
+									<dx-text-box
+										[value]="cellInfo.value"
+										(onValueChanged)="cellInfo.setValue($event.value)"
+										[maxLength]="255"
+										[showClearButton]="true"
+									></dx-text-box>
+								</ng-template>
+							</div>
+						</dx-data-grid>
+					</div>
+				</dxi-item>
+
+				<!-- Entrenamiento: inducción, duración y responsable. -->
+				<dxi-item title="Entrenamiento">
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-perfil-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-toolbox descriptor-perfil-icon" aria-hidden="true"></span>
+								Entrenamiento
+							</h4>
+							<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+								<dx-button
+									class="descriptor-deta-toolbar-btn"
+									*ngIf="!entrenamientoEditando"
+									icon="edit"
+									text="Editar entrenamiento"
+									type="default"
+									stylingMode="contained"
+									[disabled]="!model.CORR_DESCRIPTOR_PUESTO"
+									(onClick)="editarEntrenamiento()"
+								></dx-button>
+								<dx-button
+									class="descriptor-deta-toolbar-btn"
+									*ngIf="entrenamientoEditando"
+									icon="save"
+									text="Guardar"
+									type="success"
+									stylingMode="contained"
+									(onClick)="guardarEntrenamiento()"
+								></dx-button>
+								<dx-button
+									class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+									*ngIf="entrenamientoEditando"
+									icon="revert"
+									text="Cancelar edición"
+									type="danger"
+									stylingMode="contained"
+									(onClick)="cancelarEdicionEntrenamiento()"
+								></dx-button>
+							</div>
+						</div>
+
+						<div class="descriptor-perfil-tab-content">
+							<div class="descriptor-perfil-form">
+								<div class="descriptor-perfil-row descriptor-perfil-row--secondary">
+									<div class="descriptor-perfil-field">
+										<label class="descriptor-perfil-label">Tipo de Inducción</label>
+										<div
+											class="descriptor-lookup-field"
+											[class.descriptor-lookup-field--invalid]="induccionInvalida"
+										>
+											<app-data-lookup
+												[model]="mCORR_INDUCCION_EDIT"
+												[value]="model.CORR_INDUCCION"
+												(valueChange)="onEntrenamientoInduccionChanged($event)"
+												[valueExpr]="'CORR_INDUCCION'"
+												[displayExpr]="'NOMBRE_INDUCCION'"
+												[lookupColumns]="induccionesLookupColumns"
+												[selectedRowKeys]="selectedLookUpCORR_INDUCCION"
+												[readOnly]="readOnly || !entrenamientoEditando"
+												[dropDownWidth]="420"
+											></app-data-lookup>
+										</div>
+									</div>
+
+									<div class="descriptor-perfil-field">
+										<label class="descriptor-perfil-label">Duración</label>
+										<dx-text-box
+											[value]="model.SEMANAS_INDUCCION != null ? model.SEMANAS_INDUCCION + ' semanas' : ''"
+											[readOnly]="true"
+											placeholder="Duración del entrenamiento..."
+										></dx-text-box>
+									</div>
+
+									<div class="descriptor-perfil-field">
+										<label class="descriptor-perfil-label">Responsable</label>
+										<dx-text-box
+											[(value)]="model.RESPONSABLE"
+											[readOnly]="readOnly || !entrenamientoEditando"
+											[maxLength]="100"
+											placeholder="Responsables del entrenamiento..."
+										></dx-text-box>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</dxi-item>
+			</dx-tab-panel>
+
+			<!-- Aviso: el tab anterior no aplica al formato actual; elija otro. -->
+			<div
+				class="descriptor-seleccione-tab-card"
+				*ngIf="mostrarSeccionesDescriptor && mostrarAvisoSeleccioneTab"
+				role="status"
+			>
+				<span class="dx-icon-info descriptor-seleccione-tab-card__icon" aria-hidden="true"></span>
+				<div class="descriptor-seleccione-tab-card__body">
+					<strong>Seleccione un tab</strong>
+					<p>
+						El tab anterior no esta disponible en el formato actual. Elija uno de los tabs disponibles.
+					</p>
+				</div>
+			</div>
+		</dxi-item>
+
+		<!-- Pestaña Bitácora: historial de estados del descriptor. -->
+		<dxi-item title="Bitácora" icon="event">
+			<div class="descriptor-bitacora">
+				<h3 class="descriptor-section-title descriptor-bitacora-title">
+					<span class="dx-icon-clock descriptor-bitacora-title-icon" aria-hidden="true"></span>
+					Bitácora del Descriptor
+				</h3>
+
+				<div class="descriptor-bitacora-empty" *ngIf="!tieneBitacora" role="status">
+					<span class="dx-icon-info descriptor-bitacora-empty-icon" aria-hidden="true"></span>
+					<span class="descriptor-bitacora-empty-text">{{ mensajeBitacoraVacia }}</span>
+				</div>
+			</div>
+		</dxi-item>
+	</dx-tab-panel>
+</div>
+
+<!-- Listado de descriptores (vista de consulta). -->
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="mttoGridKeyExpr"
+	[pageSize]="mttoPageSize"
+	[allowedPageSizes]="mttoPageSizes"
+	[remoteOperations]="mttoRemoteOperations"
+	[repaintChangesOnly]="false"
+	[nativeToolbar]="true"
+	[unifiedToolbar]="false"
+	[showSearch]="false"
+	[showAdd]="false"
+	[showRefresh]="false"
+	[showExport]="false"
+	[focusedRowKey]="gridFocusedRowKey"
+	[permitePrint]="permitePrint"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	[responsiveColumnHiding]="false"
+	[columnHidingEnabled]="false"
+	[exportFileName]="'DescriptorPuesto'"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+
+</div>
+
+<!-- Indicador de carga mientras esperan respuestas del servidor. -->
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>
+
+<!-- Ventana emergente: actividades de una función clave. -->
+<dx-popup
+	[(visible)]="actividadesPopupVisible"
+	[showTitle]="true"
+	[title]="'Actividades - ' + (funcionActividadesSeleccionada?.NOMBRE_FUNCION || 'Funcion clave')"
+	[fullScreen]="actividadesPopupFullScreen"
+	[width]="820"
+	[height]="'auto'"
+	[maxHeight]="560"
+	[wrapperAttr]="actividadesPopupWrapperAttr"
+	[showCloseButton]="true"
+	(onHiding)="cerrarActividadesPopup()"
+>
+	<div class="descriptor-actividades-popup" *dxTemplate="let data of 'content'">
+		<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+			<dx-button
+				class="descriptor-deta-toolbar-btn"
+				icon="add"
+				text="Agregar Actividad"
+				type="success"
+				stylingMode="contained"
+				(onClick)="agregarActividad()"
+				[disabled]="actividadesEditando"
+			></dx-button>
+			<dx-button
+				class="descriptor-deta-toolbar-btn"
+				icon="save"
+				text="Guardar"
+				type="success"
+				stylingMode="contained"
+				(onClick)="guardarActividadEditada()"
+				[disabled]="!actividadesEditando"
+			></dx-button>
+			<dx-button
+				class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+				icon="revert"
+				text="Cancelar"
+				type="danger"
+				stylingMode="contained"
+				(onClick)="cancelarActividadEditada()"
+				[disabled]="!actividadesEditando"
+			></dx-button>
+		</div>
+
+		<dx-data-grid
+			#gridActividades
+			class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+			[dataSource]="actividadesPopup"
+			keyExpr="_clientKey"
+			[columnAutoWidth]="false"
+			[showBorders]="true"
+			[showColumnLines]="true"
+			[showRowLines]="true"
+			[rowAlternationEnabled]="true"
+			[hoverStateEnabled]="true"
+			[allowColumnResizing]="true"
+			[columnResizingMode]="'widget'"
+			[width]="'100%'"
+			[wordWrapEnabled]="true"
+			[repaintChangesOnly]="false"
+			(onInitNewRow)="actividadInitNewRow($event)"
+			(onEditingStart)="onActividadEditingStart($event)"
+			(onSaved)="onActividadSaved($event)"
+			(onEditCanceled)="onActividadEditCanceled($event)"
+			(onRowInserting)="actividadRowInserting($event)"
+			(onRowUpdating)="actividadRowUpdating($event)"
+			(onRowRemoving)="actividadRowRemoving($event)"
+			(onRowValidating)="actividadRowValidating($event)"
+		>
+			<dxo-editing
+				[mode]="'row'"
+				[refreshMode]="'reshape'"
+				[allowUpdating]="!readOnly"
+				[allowDeleting]="!readOnly"
+				[useIcons]="true"
+				[selectTextOnEditStart]="true"
+				[newRowPosition]="'first'"
+			></dxo-editing>
+			<dxo-paging [enabled]="false"></dxo-paging>
+			<dxi-column
+				type="buttons"
+				name="btnAcciones"
+				caption="Options"
+				[width]="104"
+				[minWidth]="104"
+				[fixed]="true"
+				fixedPosition="left"
+				alignment="center"
+				[allowResizing]="false"
+			>
+				<dxi-button
+					hint="Editar registro"
+					icon="edit"
+					stylingMode="text"
+					cssClass="sguees-grid-action-edit"
+					[visible]="actividadEditButtonVisible"
+					[onClick]="editarActividadClick"
+				></dxi-button>
+				<dxi-button
+					name="delete"
+					hint="Eliminar registro"
+					icon="trash"
+					stylingMode="text"
+					cssClass="sguees-grid-action-delete"
+					[visible]="actividadDeleteButtonVisible"
+				></dxi-button>
+				<dxi-button name="save" [visible]="false"></dxi-button>
+				<dxi-button name="cancel" [visible]="false"></dxi-button>
+				<dxi-button name="edit" [visible]="false"></dxi-button>
+			</dxi-column>
+			<dxi-column
+				dataField="CORR_ACTIVIDAD"
+				caption="Codigo"
+				[width]="90"
+				[allowEditing]="false"
+				[allowSorting]="true"
+				dataType="number"
+				alignment="left"
+			></dxi-column>
+			<dxi-column
+				dataField="NOMBRE_ACTIVIDAD"
+				caption="Nombre de la actividad"
+				[minWidth]="280"
+				[allowSorting]="true"
+			></dxi-column>
+		</dx-data-grid>
+	</div>
+</dx-popup>

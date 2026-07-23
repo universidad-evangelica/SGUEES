@@ -2,12 +2,11 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { take } from 'rxjs/operators';
 import ExcelJS from 'exceljs';
+import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
-import { ConClasePartidaService } from '../con-clase-partida/con-clase-partida.service';
-import { ConCentroCostoService } from '../con-centro-costo/con-centro-costo.service';
 import { ConCentroCosto } from '../con-centro-costo/models/con-centro-costo';
 import { ConPartidaImportRow } from './models/con-partida-importar-excel';
 import { ConPartidaImportarExcelService } from './con-partida-importar-excel.service';
@@ -33,9 +32,7 @@ export class ConPartidaImportarExcelComponent extends CBaseComponent implements 
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private routerNavigate: Router,
-		private service: ConPartidaImportarExcelService,
-		private clasePartidaService: ConClasePartidaService,
-		private centroCostoService: ConCentroCostoService
+		private service: ConPartidaImportarExcelService
 	) {
 		super(appInfoService, router);
 		this.previewColumns = this.service.getPreviewColumns();
@@ -51,16 +48,13 @@ export class ConPartidaImportarExcelComponent extends CBaseComponent implements 
 	}
 
 	llenaComboBox() {
-		this.clasePartidaService
-			.getAll({ CORR_CLASE_PARTIDA: 0 })
+		this.appInfoService
+			.getLookUp('CON_PARTIDA', 'CON_CLASE_PARTIDA', 'GetCORR_CLASE_PARTIDA', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
-						this.mCORR_CLASE_PARTIDA = (response.Data || []).map((item: any) => ({
-							Key: item.CORR_CLASE_PARTIDA,
-							Value: `${item.CORR_CLASE_PARTIDA} - ${item.NOMBRE_CLASE_PARTIDA}`,
-						}));
+						this.mCORR_CLASE_PARTIDA = response.Data;
 					}
 				},
 				error: (error: any) => {
@@ -70,8 +64,8 @@ export class ConPartidaImportarExcelComponent extends CBaseComponent implements 
 	}
 
 	cargarCentrosCosto() {
-		this.centroCostoService
-			.getAll({ CORR_CENTRO_COSTO: 0 })
+		this.appInfoService
+			.getLookUp('CON_PARTIDA', 'CON_CENTRO_COSTO', 'GetCORR_CENTRO_COSTO', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -85,7 +79,14 @@ export class ConPartidaImportarExcelComponent extends CBaseComponent implements 
 			});
 	}
 
-	selectedClasePartida = (vRow: any): any => vRow[0].Key;
+	selectedClasePartida = (vRow: any): any => vRow[0].CORR_CLASE_PARTIDA;
+
+	readonly onCustomizeFilterPanelText = (e: { filterValue?: unknown; text?: string }): string => {
+		if (e.filterValue == null) {
+			return 'Crear filtro';
+		}
+		return e.text ? `Filtro: ${e.text}` : 'Filtros activos';
+	};
 
 	canImportar(): boolean {
 		return this.corrClasePartida > 0 && this.previewRows.length > 0;
@@ -226,7 +227,7 @@ export class ConPartidaImportarExcelComponent extends CBaseComponent implements 
 		return byCodigo?.CORR_CENTRO_COSTO;
 	}
 
-	importar() {
+	guardar(): void {
 		const rows = this.previewRows.map(({ _rowId, ...row }) => row);
 		if (!this.service.esValido(this.corrClasePartida, rows, this.notifyFx)) {
 			return;
@@ -254,6 +255,48 @@ export class ConPartidaImportarExcelComponent extends CBaseComponent implements 
 					this.notifyFx(error, NotifyType.Error);
 				},
 			});
+	}
+
+	async descargarPlantilla(): Promise<void> {
+		try {
+			const workbook = new ExcelJS.Workbook();
+			const sheet = workbook.addWorksheet('Partidas');
+			sheet.addRow([
+				'Fecha',
+				'No. Documento',
+				'Cuenta',
+				'Cod. CC',
+				'Concepto',
+				'Cargo',
+				'Abono',
+			]);
+			sheet.getRow(1).font = { bold: true };
+			sheet.columns = [
+				{ width: 14 },
+				{ width: 18 },
+				{ width: 14 },
+				{ width: 12 },
+				{ width: 36 },
+				{ width: 14 },
+				{ width: 14 },
+			];
+			const buffer = await workbook.xlsx.writeBuffer();
+			this.downloadBlob(buffer, 'Plantilla_Importacion_Partidas.xlsx');
+		} catch (error: any) {
+			this.notifyFx(error?.message || 'No se pudo generar la plantilla Excel', NotifyType.Error);
+		}
+	}
+
+	private downloadBlob(buffer: ArrayBuffer, fileName: string): void {
+		const blob = new Blob([buffer], {
+			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+		});
+		const url = URL.createObjectURL(blob);
+		const anchor = document.createElement('a');
+		anchor.href = url;
+		anchor.download = fileName;
+		anchor.click();
+		URL.revokeObjectURL(url);
 	}
 
 	cancelarModal(): void {

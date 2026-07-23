@@ -1,60 +1,65 @@
-﻿import { Component, OnInit, ViewChild } from '@angular/core';
+// Vista de mantenimiento de Impacto Económico (CRUD del catálogo SC).
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import CustomStore from 'devextreme/data/custom_store';
-import { custom } from 'devextreme/ui/dialog';
-import { MessageService } from 'primeng/api';
-import { lastValueFrom } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
-import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
-import { AuthService } from 'src/app/shared/services/auth.service';
 import { ScImpactoEconomico } from './models/sc-impacto-economico';
-import {
-	EMPRESA_REGISTRO_ETIQUETA,
-	getEmpresaWarningMessage,
-	isEmpresaFkErrorMessage,
-	isEmpresaWarningResponse,
-	ScImpactoEconomicoService,
-} from './sc-impacto-economico.service';
+import { ScImpactoEconomicoService } from './sc-impacto-economico.service';
 
-type EstadoFiltro = boolean | null;
+const ESTADO_FIELD = 'ESTADO_IMPACTO_ECONOMICO';
 
 @Component({
 	selector: 'app-sc-impacto-economico',
 	templateUrl: './sc-impacto-economico.component.html',
 	styleUrls: ['./sc-impacto-economico.component.scss'],
 })
+// Qué hace: coordina la grilla, el formulario y las llamadas al servicio de impacto económico.
+// Cómo: extiende CBaseComponent y usa ScImpactoEconomicoService para el CRUD y el cambio de estado.
 export class ScImpactoEconomicoComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
-	readonly pageSizes = [5, 10, 25, 50, 100];
+	protected override etiquetaRegistro = 'el impacto económico';
+	protected override requiereEmpresaSesion = true;
+	protected override mttoPageSize = 5;
+	protected override mttoPageSizes = [5, 10, 25, 50, 100];
+	protected override mttoGridKeyExpr = 'CORR_IMPACTO_ECONOMICO';
+	protected override mttoCampoEstado = ESTADO_FIELD;
+	protected override mttoEstadoDescribeField = 'DESCRIPCION';
+	protected override mttoParchearGridTrasGuardar = true;
+	protected override mttoRemoteOperations = false;
+
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Impacto Economico';
 
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: ScImpactoEconomicoService,
-		private messageService: MessageService,
-		private authService: AuthService
+		private service: ScImpactoEconomicoService
 	) {
 		super(appInfoService, router);
-		this.onEditClick = this.onEditClick.bind(this);
-		this.onEliminarClick = this.onEliminarClick.bind(this);
-		this.onActivarClick = this.onActivarClick.bind(this);
-		this.onDesactivarClick = this.onDesactivarClick.bind(this);
-		this.columns = this.service.getColumns(this.onEditClick, this.onEliminarClick, this.onActivarClick, this.onDesactivarClick, this.permiteEdit, this.permiteDele);
+		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 	}
 
-	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.configurarDataSource();
+	// Qué hace: entrega la referencia del grid de mantenimiento al framework base.
+	// Cómo: devuelve dataGrid enlazado con @ViewChild, o null si aún no está disponible.
+	protected override getMttoDataGrid(): DataGridMttoComponent | null {
+		return this.dataGrid ?? null;
 	}
 
+	// Qué hace: prepara la pantalla al abrirla.
+	// Cómo: fija el subtítulo de mantenimiento y llama a consultar para cargar el catálogo.
+	ngOnInit(): void {
+		this.subTituloVentana = this.maintenanceSubtitulo;
+		this.consultar();
+	}
+
+	// Qué hace: reacciona a los cambios de estado del formulario.
+	// Cómo: llama a AsignaStatus base y, al volver a modo Browse, restaura el subtítulo de mantenimiento.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -62,49 +67,14 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
-	override rowDblClick(e: any): void {
-		const rowData = e?.data ?? e?.row?.data;
-		if (rowData) {
-			this.model = this.fillData(rowData);
-			this.modelUpdate = this.fillData(rowData);
-		}
-		super.rowDblClick(e);
-		setTimeout(() => {
-			if (!this.dataForm?.instance) {
-				return;
-			}
-			this.dataForm.instance.option('formData', this.model);
-			this.bloquear();
-		});
+	// Qué hace: construye el filtro por correlativo de impacto económico.
+	// Cómo: devuelve un objeto con CORR_IMPACTO_ECONOMICO, usado en consultar y en rowRemoving.
+	fillParam(xCORR_IMPACTO_ECONOMICO?: number): any {
+		return { CORR_IMPACTO_ECONOMICO: xCORR_IMPACTO_ECONOMICO ?? 0 };
 	}
 
-	onEditClick(e: any): void {
-		if (!e?.row?.data) {
-			return;
-		}
-
-		this.model = e.row.data;
-		this.editarClick(e);
-	}
-
-	fillParam(
-		xCORR_IMPACTO_ECONOMICO?: number,
-		page = 1,
-		pageSize = 5,
-		busqueda = '',
-		estado: EstadoFiltro = null,
-		columnFilters: Record<string, any> = {}
-	): any {
-		return {
-			CORR_IMPACTO_ECONOMICO: xCORR_IMPACTO_ECONOMICO ?? 0,
-			BUSQUEDA: busqueda,
-			ESTADO_IMPACTO_ECONOMICO: estado,
-			PAGE: page,
-			PAGE_SIZE: pageSize,
-			...columnFilters,
-		};
-	}
-
+	// Qué hace: construye el modelo de impacto económico para el formulario.
+	// Cómo: si recibe xModel copia sus campos; si no recibe nada, devuelve un modelo vacío con los valores iniciales.
 	override fillData(xModel?: ScImpactoEconomico): ScImpactoEconomico {
 		if (xModel !== undefined) {
 			return {
@@ -135,281 +105,204 @@ export class ScImpactoEconomicoComponent extends CBaseComponent implements OnIni
 		};
 	}
 
-	consultar(): void {
-		this.dataGrid?.refreshData(true);
-	}
-
-	override nuevo(): void {
-		if (!this.validarEmpresaSesion()) {
-			return;
-		}
-		super.nuevo();
-	}
-
-	override notifyFx(xMessage: string, xType: NotifyType): void {
-		const cleanMessage = `${xMessage ?? ''}`.replace(/^error:\s*/i, '').trim();
-		const warningDetail = this.getWarningMessage(xMessage);
-		const isWarning = xType === NotifyType.Warning || warningDetail !== cleanMessage;
-		const severity = xType === NotifyType.Success ? 'success' : isWarning ? 'warn' : 'error';
-		const summary = xType === NotifyType.Success ? 'Éxito' : isWarning ? 'Advertencia' : 'Error';
-		const detail = isWarning ? warningDetail : cleanMessage;
-		this.messageService.add({ severity, summary, detail });
-	}
-
-	guardar(): void {
-		if (!this.validarEmpresaSesion()) {
-			return;
-		}
-
-		const formData = this.dataForm?.instance?.option('formData');
-		if (formData) {
-			this.model = { ...this.model, ...formData };
-		}
-
-		const formValidation = this.dataForm?.instance?.validate();
-		if (formValidation && !formValidation.isValid) {
-			this.service.esValido(this.model, this.notifyFx.bind(this));
-			return;
-		}
-
-		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
-			return;
-		}
-
-		this.loadingVisible = true;
-		const isAdd = this.banderaMtto === UpdateType.Add;
-		const action = isAdd ? this.service.insert(this.model) : this.service.update(this.model);
-
-		action.pipe(take(1)).subscribe({
-			next: (response: any) => {
-				if (response.Result) {
-					this.model = response.Data;
-					this.AsignaStatus(UpdateType.Browse);
-					this.consultar();
-					this.notifyFx(isAdd ? 'Registro creado con exito!' : 'Registro modificado con exito!', NotifyType.Success);
-				} else {
-					this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
-				}
-				this.loadingVisible = false;
-			},
-			error: (error: any) => {
-				this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
-				this.loadingVisible = false;
+	// Qué hace: carga el listado de impactos económicos y refresca la grilla.
+	// Cómo: llama a consultarMtto con getAll del servicio; al recibir los datos ordena por correlativo y refresca el grid.
+	consultar(resetPage = false): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+			onData: () => {
+				this.ordenarModelsPorCorr();
+				this.refrescarGridTrasCarga(resetPage);
 			},
 		});
 	}
 
+	// Qué hace: mantiene los registros ordenados por correlativo.
+	// Cómo: ordena this.models de forma ascendente por CORR_IMPACTO_ECONOMICO.
+	private ordenarModelsPorCorr(): void {
+		if (!Array.isArray(this.models)) {
+			return;
+		}
+
+		this.models = [...this.models].sort((a, b) => Number(a.CORR_IMPACTO_ECONOMICO) - Number(b.CORR_IMPACTO_ECONOMICO));
+	}
+
+	// Qué hace: agrega o reemplaza en la grilla el registro recién guardado.
+	// Cómo: si isAdd agrega el registro a models; si no, busca por CORR_IMPACTO_ECONOMICO y lo reemplaza; luego ordena y refresca.
+	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
+		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
+			super.aplicarRegistroEnGrid(data, isAdd);
+			return;
+		}
+
+		const record = this.fillData(data as ScImpactoEconomico);
+		const key = this.mttoGridKeyExpr as keyof ScImpactoEconomico;
+
+		if (isAdd) {
+			this.models = [...this.models, record];
+		} else {
+			const index = this.models.findIndex((item) => item?.[key] === record[key]);
+			if (index >= 0) {
+				this.models = this.models.map((item, i) => (i === index ? this.fillData({ ...item, ...record }) : item));
+			}
+		}
+
+		this.ordenarModelsPorCorr();
+		this.refrescarGridTrasCarga(isAdd);
+	}
+
+	// Qué hace: retira de la grilla el registro eliminado.
+	// Cómo: filtra models excluyendo el CORR_IMPACTO_ECONOMICO eliminado y refresca la grilla.
+	protected override quitarRegistroDeGrid(keyValue: unknown): void {
+		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
+			super.quitarRegistroDeGrid(keyValue);
+			return;
+		}
+
+		const key = this.mttoGridKeyExpr as keyof ScImpactoEconomico;
+		this.models = this.models.filter((item) => item?.[key] !== keyValue);
+		this.refrescarGridTrasCarga(true);
+	}
+
+	// Qué hace: refresca la grilla después de un cambio en los datos.
+	// Cómo: usa setTimeout para esperar el ciclo de Angular y llama a dataGrid.refreshData.
+	private refrescarGridTrasCarga(resetPage = false): void {
+		setTimeout(() => {
+			this.dataGrid?.refreshData(resetPage);
+		}, 0);
+	}
+
+	// Qué hace: abre el registro seleccionado en modo consulta al hacer doble clic.
+	// Cómo: toma los datos de la fila, llama al rowDblClick base y sincroniza el formulario en modo solo lectura.
+	override rowDblClick(e: any): void {
+		const rowData = e?.data ?? e?.row?.data;
+		if (rowData) {
+			this.model = this.fillData(rowData);
+			this.modelUpdate = this.fillData(rowData);
+		}
+		super.rowDblClick(e);
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+			this.bloquear();
+		});
+	}
+
+	// Qué hace: prepara el registro seleccionado para editarlo desde el botón de la grilla.
+	// Cómo: carga el modelo, llama a editarClick y habilita los campos del formulario.
+	onEditClick(e: any): void {
+		if (!e?.row?.data) {
+			return;
+		}
+
+		this.model = this.fillData(e.row.data);
+		this.editarClick(e);
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+			this.habilitar();
+		});
+	}
+
+	// Qué hace: inicia un registro nuevo de impacto económico.
+	// Cómo: valida que haya empresa en sesión con asegurarEmpresaSesion, llama al nuevo base y sincroniza el formulario.
+	override nuevo(): void {
+		if (!this.asegurarEmpresaSesion()) {
+			return;
+		}
+		super.nuevo();
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+		});
+	}
+
+	// Qué hace: guarda el impacto económico (crea o actualiza según corresponda).
+	// Cómo: valida con esValido y llama a guardarMtto con insert/update del servicio.
+	guardar(): void {
+		this.guardarMtto({
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
+		});
+	}
+
+	// Qué hace: convierte un error de llave foránea al eliminar en una advertencia controlada.
+	// Cómo: intercepta el error de la petición y, si el mensaje indica una relación, devuelve un IResult con advertencia.
+	private convertirErrorMttoEnWarning<T>(request: Observable<T>): Observable<T> {
+		return request.pipe(
+			catchError((error: any) => {
+				const mensaje = `${
+					error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.error?.message ?? error?.error ?? error?.message ?? error ?? ''
+				}`;
+				const normalizado = mensaje.toLowerCase();
+				const tieneRelacion = [
+					'foreign key',
+					'reference constraint',
+					'clave externa',
+					'clave foránea',
+					'llave foránea',
+					'hijos',
+					'registros relacionados',
+					'registros asociados',
+					'asociados',
+				].some((texto) => normalizado.includes(texto));
+
+				if (tieneRelacion) {
+					return of({
+						Result: false,
+						ErrorCode: 2627,
+						ErrorMessage: 'No se puede eliminar porque tiene registros relacionados.',
+					} as T);
+				}
+
+				return throwError(() => error);
+			})
+		);
+	}
+
+	// Qué hace: descarta la edición y restaura el registro original en la grilla.
+	// Cómo: llama a cancelar base comparando por CORR_IMPACTO_ECONOMICO.
 	override cancelar(): void {
-		this.model = this.modelUpdate;
-		this.AsignaStatus(UpdateType.Browse);
-		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
+		super.cancelar((item: any) => item.CORR_IMPACTO_ECONOMICO === this.modelUpdate.CORR_IMPACTO_ECONOMICO);
 	}
 
-	onActivarClick(e: any): void {
-		const row = e.row?.data as ScImpactoEconomico;
-		if (!row) {
-			return;
-		}
-
-		this.confirmEstado('Activar registro', 'Desea activar el impacto economico "' + row.DESCRIPCION + '"?', () => this.cambiarEstado(row, true));
-	}
-
-	onEliminarClick(e: any): void {
-		const row = e.row?.data as ScImpactoEconomico;
-		if (!row) {
-			return;
-		}
-
-		this.confirmEstado('Eliminar registro', 'Desea eliminar "' + row.DESCRIPCION + '"?', () => this.eliminarRegistro(row));
-	}
-
-	onDesactivarClick(e: any): void {
-		const row = e.row?.data as ScImpactoEconomico;
-		if (!row) {
-			return;
-		}
-
-		this.confirmEstado('Desactivar registro', 'Desea desactivar el impacto economico "' + row.DESCRIPCION + '"?', () => this.cambiarEstado(row, false));
-	}
-
+	// Qué hace: elimina el registro seleccionado en la grilla.
+	// Cómo: llama a rowRemovingMtto con delete del servicio, convirtiendo errores de relación en advertencia.
 	rowRemoving(e: any): void {
-		e.cancel = true;
-		this.onEliminarClick({ row: { data: e.data } });
+		this.rowRemovingMtto(e, {
+			deleteFn: () =>
+				this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_IMPACTO_ECONOMICO))),
+		});
 	}
 
+	// Qué hace: cambia el estado activo/inactivo del impacto económico seleccionado.
+	// Cómo: llama a invocarActivarInactivar con activarInactivar del servicio.
+	activar_inactivar(): void {
+		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
+	}
+
+	// Qué hace: deja el formulario en solo lectura (modo consulta).
+	// Cómo: pone readOnly en true a los editores de correlativo, descripción y estado.
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_IMPACTO_ECONOMICO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('DESCRIPCION')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ESTADO_IMPACTO_ECONOMICO')?.option('readOnly', true);
 	}
 
+	// Qué hace: habilita los campos editables del formulario.
+	// Cómo: habilita la descripción; bloquea el estado cuando la operación es de actualización.
+	override habilitar(): void {
+		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('CORR_IMPACTO_ECONOMICO')?.option('readOnly', true);
+			this.dataForm.instance.getEditor('DESCRIPCION')?.option('readOnly', false);
+			this.dataForm.instance.getEditor('ESTADO_IMPACTO_ECONOMICO')?.option('readOnly', estadoSoloLectura);
+		});
+	}
+
+	// Qué hace: coloca el foco en el primer campo editable del formulario.
+	// Cómo: enfoca el editor de DESCRIPCION con setTimeout.
 	override setFocus(): void {
-		setTimeout(() => this.dataForm.instance.getEditor('DESCRIPCION')?.focus());
-	}
-
-	private configurarDataSource(): void {
-		this.models = new CustomStore({
-			key: 'CORR_IMPACTO_ECONOMICO',
-			loadMode: 'processed',
-			cacheRawData: false,
-			load: async (loadOptions: any) => {
-				const takeRows = loadOptions.take || 5;
-				const skipRows = loadOptions.skip || 0;
-				const page = Math.floor(skipRows / takeRows) + 1;
-				const gridFilters = this.getGridFilters(loadOptions.filter);
-				const estado = gridFilters.estado;
-				const busqueda = '';
-				const response = await lastValueFrom(this.service.getAll(this.fillParam(0, page, takeRows, busqueda, estado, gridFilters.columnas)));
-
-				if (!response.Result) {
-					throw new Error(response.ErrorMessage || 'No se pudieron cargar los registros de impacto economico.');
-				}
-
-				return { data: response.Data || [], totalCount: response.RowsAffected || 0 };
-			},
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('DESCRIPCION')?.focus();
 		});
-	}
-
-	private getGridFilters(filter: any): { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } {
-		const result: { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } = { busqueda: '', estado: null, columnas: {} };
-
-		const visit = (node: any): void => {
-			if (!Array.isArray(node)) {
-				return;
-			}
-
-			if (typeof node[0] === 'string' && node.length >= 3) {
-				const field = node[0];
-				const value = node[2];
-
-				if (field === 'ESTADO_IMPACTO_ECONOMICO') {
-					if (value === '__ALL__' || value === null || value === undefined) {
-						result.estado = null;
-						return;
-					}
-
-					result.estado = value === true || value === 'true';
-					return;
-				}
-
-				if (value !== null && value !== undefined && String(value).trim()) {
-					result.columnas[field] = value;
-				}
-				return;
-			}
-
-			node.forEach((child) => visit(child));
-		};
-
-		visit(filter);
-		return result;
-	}
-
-	private cambiarEstado(row: ScImpactoEconomico, activo: boolean): void {
-		const request = { ...row, ESTADO_IMPACTO_ECONOMICO: activo };
-		const action = activo ? this.service.activar(request) : this.service.desactivar(request);
-
-		this.loadingVisible = true;
-		action.pipe(take(1)).subscribe({
-			next: (response: any) => {
-				if (response.Result) {
-					this.consultar();
-					this.notifyFx(activo ? 'Registro activado con exito!' : 'Registro desactivado con exito!', NotifyType.Success);
-				} else {
-					this.notifyFx(response.ErrorMessage || 'No se pudo cambiar el estado del registro.', NotifyType.Error);
-				}
-				this.loadingVisible = false;
-			},
-			error: (error: any) => {
-				this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
-				this.loadingVisible = false;
-			},
-		});
-	}
-
-	private eliminarRegistro(row: ScImpactoEconomico): void {
-		this.loadingVisible = true;
-		this.service.delete(row).pipe(take(1)).subscribe({
-			next: (response: any) => {
-				if (response.Result) {
-					this.consultar();
-					this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-				} else {
-					this.notifyFx(response.ErrorMessage || 'No se puede eliminar el registro porque tiene registros asociados.', NotifyType.Warning);
-				}
-				this.loadingVisible = false;
-			},
-			error: (error: any) => {
-				this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
-				this.loadingVisible = false;
-			},
-		});
-	}
-
-	private confirmEstado(title: string, message: string, fn: () => void): void {
-		const dialog = custom({
-			title,
-			messageHtml: '<div class="sguees-confirm-message">' + message + '</div>',
-			buttons: [
-				{ text: 'Si', type: 'default', onClick: () => true },
-				{ text: 'No', onClick: () => false },
-			],
-		});
-
-		dialog.show().then((accepted: boolean) => {
-			if (accepted) {
-				fn();
-			}
-		});
-	}
-
-	private getErrorMessage(error: any): string {
-		if (typeof error === 'string' && error.trim()) {
-			return error;
-		}
-
-		return error?.error?.ErrorMessage || error?.error?.message || error?.message || 'Ocurrio un error al procesar la solicitud.';
-	}
-
-	private getNotifyType(response: any): NotifyType {
-		if (isEmpresaWarningResponse(response)) {
-			return NotifyType.Warning;
-		}
-		const message = (response?.ErrorMessage || '').toLowerCase();
-		return response?.ErrorCode === 2627 || message.includes('ya existe') || message.includes('duplicad')
-			? NotifyType.Warning
-			: NotifyType.Error;
-	}
-
-	private getErrorNotifyType(error: any): NotifyType {
-		return isEmpresaFkErrorMessage(this.getErrorMessage(error)) ? NotifyType.Warning : NotifyType.Error;
-	}
-
-	private getCorrEmpresaSesion(): number {
-		const value = Number(this.authService.decodedToken?.CORR_EMPRESA ?? 0);
-		return Number.isFinite(value) ? value : 0;
-	}
-
-	private validarEmpresaSesion(): boolean {
-		if (this.getCorrEmpresaSesion() > 0) {
-			return true;
-		}
-		this.notifyFx(getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA), NotifyType.Warning);
-		return false;
-	}
-
-	private getWarningMessage(message: string): string {
-		const cleanMessage = `${message ?? ''}`.replace(/^error:\s*/i, '').trim();
-		const value = cleanMessage.toLowerCase();
-		if (isEmpresaFkErrorMessage(cleanMessage) || value.includes('no tiene una empresa asignada')) {
-			return getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA);
-		}
-		if (value.includes('ya existe') || value.includes('duplicad')) {
-			return 'Ya existe un registro con ese código. Escriba otro código para continuar.';
-		}
-		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados')) {
-			return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';
-		}
-		return cleanMessage;
 	}
 }

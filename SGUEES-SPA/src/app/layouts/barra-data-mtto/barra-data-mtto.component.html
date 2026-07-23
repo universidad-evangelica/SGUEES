@@ -8,25 +8,61 @@
       [breadcrumbs]="breadcrumbs ?? null"
       variant="enterprise"
     >
-      <ng-container *ngTemplateOutlet="barraToolbar"></ng-container>
     </app-page-header>
   </div>
 
-  <ng-container *ngIf="showPageHeader">
+  <div class="sguees-barra-mtto__ribbon-row" *ngIf="showRibbonBrowse">
+    <dx-tab-panel
+      class="sguees-barra-ribbon"
+      [selectedIndex]="ribbonTabIndex"
+      (onSelectionChanged)="onRibbonTabChanged($event)"
+      [animationEnabled]="true"
+      [swipeEnabled]="false"
+    >
+      <dxi-item [title]="ribbonPrincipalTitle">
+        <div class="sguees-barra-ribbon-panel">
+          <ng-container *ngTemplateOutlet="barraToolbar"></ng-container>
+        </div>
+      </dxi-item>
+
+      <dxi-item *ngFor="let tab of visibleRibbonTabs" [title]="tab.title">
+        <div class="sguees-barra-ribbon-panel">
+          <ng-container *ngTemplateOutlet="tab.templateRef"></ng-container>
+        </div>
+      </dxi-item>
+    </dx-tab-panel>
+  </div>
+
+  <div class="sguees-barra-mtto__toolbar-row" *ngIf="showToolbarRow && !showRibbonBrowse">
     <ng-container *ngTemplateOutlet="barraToolbar"></ng-container>
-  </ng-container>
+  </div>
 </div>
 
 <ng-template #barraToolbar>
-  <dx-toolbar class="theme-dependent sguees-barra-toolbar sguees-barra-toolbar--inline sguees-barra-toolbar--grouped">
+  <dx-toolbar
+    class="theme-dependent sguees-barra-toolbar sguees-barra-toolbar--grouped"
+    [class.sguees-barra-toolbar--inline]="!isBrowse"
+  >
     <dxi-item location="before" widget="dxButton" [options]="optNuevo"></dxi-item>
     <dxi-item *ngIf="!isBrowse && isForm" location="before" widget="dxButton" [options]="optGuardar"></dxi-item>
     <dxi-item *ngIf="!isBrowse" location="before" widget="dxButton" [options]="optCancelar"></dxi-item>
-    <dxi-item location="before" locateInMenu="auto" menuItemTemplate="menuSeparatorTemplate">
+    <dxi-item *ngIf="showPrimaryToolbarDivider" location="before" locateInMenu="auto" menuItemTemplate="menuSeparatorTemplate">
       <div *dxTemplate>
         <div class="toolbar-separator sguees-toolbar-divider"></div>
       </div>
     </dxi-item>
+    <dxi-item
+      *ngIf="effectiveShowEstadoToolbar"
+      location="before"
+      widget="dxButton"
+      [options]="optActivar"
+    ></dxi-item>
+    <dxi-item
+      *ngIf="effectiveShowEstadoToolbar"
+      location="before"
+      widget="dxButton"
+      [options]="optDesactivar"
+    ></dxi-item>
     <dxi-item [location]="btn1Location" widget="dxButton" [options]="optBtn1" locateInMenu="auto"></dxi-item>
     <dxi-item [location]="btn2Location" widget="dxButton" [options]="optBtn2" locateInMenu="auto"></dxi-item>
     <dxi-item [location]="btn3Location" widget="dxButton" [options]="optBtn3" locateInMenu="auto"></dxi-item>
@@ -38,6 +74,7 @@
         <ng-content select="[toolbarExtra]"></ng-content>
       </div>
     </dxi-item>
+    <dxi-item location="after" locateInMenu="auto" widget="dxButton" [options]="optExport"></dxi-item>
     <dxi-item location="after" locateInMenu="auto" widget="dxButton" showText="inMenu" [options]="optRefresh"></dxi-item>
     <dxi-item location="after" widget="dxDateBox" [options]="optFechaInicial" locateInMenu="auto"></dxi-item>
     <dxi-item location="after" widget="dxDateBox" [options]="optFechaFinal" locateInMenu="auto"></dxi-item>

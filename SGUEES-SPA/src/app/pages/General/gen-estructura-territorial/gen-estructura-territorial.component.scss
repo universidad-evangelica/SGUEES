@@ -1,13 +1,16 @@
+// Qué hace: estilos de la vista territorial (form país, cascada de 3 grids y popup).
+// Cómo: define espaciado del form, layout de paneles y ajustes de toolbar en móvil.
 .territorial-form-card {
-	margin-top: 38px;
+	margin-top: var(--sguees-space-4, 16px);
 }
 
 @media (max-width: 991.98px) {
 	.territorial-form-card {
-		margin-top: 16px;
+		margin-top: var(--sguees-space-3, 12px);
 	}
 }
 
+// Qué hace: en móvil, toolbar del grid en varias filas para que no se recorte.
 @media (max-width: 575.98px) {
 	:host ::ng-deep {
 		.dx-datagrid-header-panel {
@@ -57,44 +60,14 @@
 			flex: 1 1 auto;
 		}
 	}
-
-	.territorial-form-card {
-		margin-top: 12px;
-	}
-
-	.territorial-form-toolbar__actions {
-		width: 100%;
-	}
-
-	.territorial-form-toolbar__actions .dx-button {
-		flex: 1 1 auto;
-		min-width: 0;
-	}
 }
 
-.territorial-form-toolbar {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: flex-end;
-	gap: 16px;
-	margin-bottom: 20px;
-}
-
-.territorial-form-toolbar__actions {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 10px;
-}
-
+// Contenedor de la cascada debajo del form del país.
 .territorial-cascade {
 	margin-top: 24px;
 }
 
-.territorial-cascade--paused {
-	pointer-events: none;
-	opacity: 0.72;
-}
-
+// Tres columnas en desktop; se apilan en breakpoint inferior.
 .territorial-panels {
 	display: grid;
 	grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -107,6 +80,7 @@
 	min-width: 0;
 }
 
+// Ajustes DevExtreme para grids hijos sin pager y con filtros visibles.
 :host ::ng-deep .territorial-panel--cascade {
 	app-data-grid-mtto,
 	.sguees-data-grid-mtto-host,
@@ -151,10 +125,12 @@
 	width: 100%;
 }
 
+// Opacidad cuando aún no hay padre seleccionado (municipio/distrito).
 .territorial-panel--disabled {
 	opacity: 0.72;
 }
 
+// Qué hace: resaltado de fila seleccionada en depto/municipio.
 :host ::ng-deep .territorial-panel--cascade .dx-data-row.territorial-row-selected > td {
 	background-color: var(--sguees-grid-row-selected, rgba(56, 139, 253, 0.22)) !important;
 	color: var(--sguees-text-primary, var(--base-text-color)) !important;

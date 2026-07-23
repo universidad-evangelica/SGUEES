@@ -1,0 +1,78 @@
+/* ============================================================================
+   Sincronización SEGURA: solo INSERT de opciones faltantes del tipo -> usuario
+   NO actualiza permisos existentes. NO elimina nada.
+   ============================================================================ */
+SET NOCOUNT ON;
+
+DECLARE @USR varchar(30) = N'admin';
+DECLARE @EST varchar(50) = N'SISTEMA';
+DECLARE @HOY datetime = GETDATE();
+
+BEGIN TRY
+	BEGIN TRAN;
+
+	INSERT INTO SEG_USUARIO_OPCION
+	(
+		LOGIN_SISTEMA,
+		CODIGO_SISTEMA,
+		CODIGO_MENU,
+		CODIGO_OPCION,
+		NUEVO,
+		MODIFICAR,
+		ELIMINAR,
+		IMPRIMIR,
+		USUARIO_CREA,
+		FECHA_CREA,
+		ESTACION_CREA,
+		USUARIO_ACTU,
+		FECHA_ACTU,
+		ESTACION_ACTU
+	)
+	SELECT
+		U.LOGIN_SISTEMA,
+		T.CODIGO_SISTEMA,
+		T.CODIGO_MENU,
+		T.CODIGO_OPCION,
+		T.NUEVO,
+		T.MODIFICAR,
+		T.ELIMINAR,
+		T.IMPRIMIR,
+		@USR,
+		@HOY,
+		@EST,
+		@USR,
+		@HOY,
+		@EST
+	FROM SEG_TIPO_USUARIO_OPCION T
+	INNER JOIN SEG_USUARIO U ON U.TIPO_USUARIO = T.TIPO_USUARIO
+	WHERE EXISTS
+	(
+		SELECT 1
+		FROM SEG_CONFIG_OPCION C
+		WHERE C.CODIGO_SISTEMA = T.CODIGO_SISTEMA
+		AND C.CODIGO_MENU = T.CODIGO_MENU
+		AND C.CODIGO_OPCION = T.CODIGO_OPCION
+	)
+	AND NOT EXISTS
+	(
+		SELECT 1
+		FROM SEG_USUARIO_OPCION O
+		WHERE O.LOGIN_SISTEMA = U.LOGIN_SISTEMA
+		AND O.CODIGO_SISTEMA = T.CODIGO_SISTEMA
+		AND O.CODIGO_MENU = T.CODIGO_MENU
+		AND O.CODIGO_OPCION = T.CODIGO_OPCION
+	);
+
+	PRINT N'Opciones insertadas en usuarios: ' + CAST(@@ROWCOUNT AS nvarchar(20));
+
+	COMMIT TRAN;
+	PRINT N'Sincronización segura completada.';
+END TRY
+BEGIN CATCH
+	IF @@TRANCOUNT > 0
+		ROLLBACK TRAN;
+
+	DECLARE @Err nvarchar(4000) = ERROR_MESSAGE();
+	RAISERROR(N'Error en sincronización: %s', 16, 1, @Err);
+END CATCH;
+GO

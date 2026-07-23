@@ -1,4 +1,6 @@
-﻿import { CommonModule } from '@angular/common';
+// Qué hace: routing y declaraciones DevExtreme/layout de la vista Requerimiento Organizacional.
+// Cómo: registra la ruta del componente ScRequerimientoOrganizacionalComponent junto con los módulos DevExtreme y de layout que usa.
+import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
@@ -13,6 +15,8 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { ToastModule } from 'primeng/toast';
 import { ScRequerimientoOrganizacionalComponent } from './sc-requerimiento-organizacional.component';
 
+// Qué hace: ruta lazy del mantenimiento de requerimiento organizacional.
+// Cómo: asocia la ruta vacía ('') con ScRequerimientoOrganizacionalComponent.
 const routes: Routes = [{ path: '', component: ScRequerimientoOrganizacionalComponent }];
 
 @NgModule({
@@ -33,5 +37,6 @@ const routes: Routes = [{ path: '', component: ScRequerimientoOrganizacionalComp
 	exports: [RouterModule],
 	declarations: [ScRequerimientoOrganizacionalComponent],
 })
+// Qué hace: módulo de routing de Requerimiento Organizacional.
+// Cómo: declara ScRequerimientoOrganizacionalComponent, importa los módulos DevExtreme/layout necesarios y expone RouterModule con las rutas hijas del catálogo.
 export class ScRequerimientoOrganizacionalRoutingModule {}
-

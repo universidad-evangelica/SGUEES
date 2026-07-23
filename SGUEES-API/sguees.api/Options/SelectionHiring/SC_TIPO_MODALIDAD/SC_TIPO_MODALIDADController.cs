@@ -94,5 +94,22 @@ namespace sguees.Controllers
 				return BadRequest(resultado);
 			}
 		}
-	}
+
+        [HttpGet("GetCORR_TIPO_MODALIDAD_SC_REQUISICION_PERSONAL")]
+        [Authorize(Policy = "/sc-tipo-modalidad|R")]
+        public async Task<CResult> GetCORR_TIPO_MODALIDAD_SC_TIPO_MODALIDAD([FromQuery] SC_TIPO_MODALIDADParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
+        }
+
+		
+        [HttpGet("GetCORR_TIPO_MODALIDAD_SC_DESCRIPTOR_PUESTO")]
+        [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        public async Task<CResult> GetCORR_TIPO_MODALIDAD_SC_DESCRIPTOR_PUESTO([FromQuery] SC_TIPO_MODALIDADParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
+        }
+    }
 }

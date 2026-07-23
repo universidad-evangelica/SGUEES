@@ -1,15 +1,31 @@
+<div class="sguees-mtto-view">
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
+
 	[isBrowse]="isBrowse()"
 	[isForm]="isForm()"
+	[showRibbon]="true"
 	[permiteAdd]="permiteAdd"
+	[showRefresh]="true"
+	[showExport]="permitePrint"
 	(nuevo)="nuevo()"
 	(guardar)="guardar()"
 	(cancelar)="cancelar()"
+	(consultar)="consultar()"
 >
 </app-barra-data-mtto>
-<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
-	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+
+<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
+	<dx-form
+		#fData
+		id="fData"
+		[formData]="model"
+		[labelLocation]="'top'"
+		[colCount]="mttoFormColCount"
+		[colCountByScreen]="mttoFormColCountByScreen"
+		[showRequiredMark]="false"
+		[items]="items"
+	>
 		<div *dxTemplate="let cellInfo of 'CLASE_CENTRO_COSTOLookup'">
 			<app-data-lookup
 				[model]="mCLASE_CENTRO_COSTO"
@@ -21,21 +37,38 @@
 		</div>
 	</dx-form>
 </div>
+
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
 	[models]="models"
 	[columns]="columns"
 	[summary]="summary"
-	[keyExpr]="'CORR_TIPO_CENTRO_COSTO'"
-	[columnAutoWidth]="true"
+	[keyExpr]="mttoGridKeyExpr"
+	[pageSize]="mttoPageSize"
+	[allowedPageSizes]="mttoPageSizes"
+	[remoteOperations]="mttoRemoteOperations"
+	[showSearch]="false"
+	[nativeToolbar]="true"
+	[unifiedToolbar]="false"
+	[showAdd]="false"
+	[showRefresh]="false"
+	[showExport]="false"
+	[focusedRowKey]="gridFocusedRowKey"
+	[permitePrint]="permitePrint"
 	[permiteEditar]="getPermiteEditar"
 	[permiteDele]="getPermiteDele"
+	[responsiveColumnHiding]="false"
+	[columnHidingEnabled]="false"
+	[exportFileName]="'TiposCentroCosto'"
 	(rowDblClick)="rowDblClick($event)"
 	(rowRemoving)="rowRemoving($event)"
 	(focusedRowChanged)="focusedRowChanged($event)"
 	(editClick)="editarClick($event)"
 >
 </app-data-grid-mtto>
+
+</div>
+
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"

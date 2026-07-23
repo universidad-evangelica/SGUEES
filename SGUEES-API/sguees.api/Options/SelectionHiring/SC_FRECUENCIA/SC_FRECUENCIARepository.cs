@@ -1,3 +1,5 @@
+// Qué hace: persistencia SQL del catálogo frecuencia.
+// Cómo: ejecuta el CRUD y consultas contra la tabla SC_FRECUENCIA y la vista V_SC_FRECUENCIA.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,9 +11,15 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+    // Qué hace: repositorio de frecuencia.
+    // Cómo: ejecuta GetAllAsync, GetAsync, CreateAsync, UpdateAsync, DeleteAsync, ActivarInactivarAsync y GetFrecuenciasActivasAsync sobre la tabla/vista SC_FRECUENCIA.
     public class SC_FRECUENCIARepository : BaseRepository<SC_FRECUENCIATable>, ISC_FRECUENCIARepository
     {
         private const string _TableName = "SC_FRECUENCIA";
+        private const string _ViewName = "V_SC_FRECUENCIA";
+        private const string _CampoPk = "CORR_FRECUENCIA";
+        private const string _CampoEstado = "ESTADO_FRECUENCIA";
+        private const bool _UsaEmpresa = true;
 
         public SC_FRECUENCIARepository(IConfiguration config) :
             base(config.GetConnectionString("defaultConnection"),
@@ -19,6 +27,8 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Qué hace: lee el listado de frecuencias.
+        // Cómo: consulta V_SC_FRECUENCIA filtrando por CORR_EMPRESA y ordena el resultado por CORR_FRECUENCIA.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -29,94 +39,17 @@ namespace SGUEES.Repositories
                     .Where(x => x.ParameterName == "CORR_EMPRESA")
                     .ToList();
 
-                var estado = xWhere
-                    .Where(x => x.ParameterName == "ESTADO_FRECUENCIA")
-                    .Select(x => x.Value as bool?)
-                    .FirstOrDefault();
-
-                var busqueda = xWhere
-                    .Where(x => x.ParameterName == "BUSQUEDA")
-                    .Select(x => x.Value?.ToString())
-                    .FirstOrDefault();
-                var columnFilters = new Dictionary<string, string>
-                {
-                    { "CORR_FRECUENCIA", GetFilterValue(xWhere, "CORR_FRECUENCIA") },
-                    { "NOMBRE_FRECUENCIA", GetFilterValue(xWhere, "NOMBRE_FRECUENCIA") },
-                    { "USUARIO_CREA", GetFilterValue(xWhere, "USUARIO_CREA") },
-                    { "ESTACION_CREA", GetFilterValue(xWhere, "ESTACION_CREA") },
-                    { "FECHA_CREA", GetFilterValue(xWhere, "FECHA_CREA") },
-                    { "USUARIO_ACTU", GetFilterValue(xWhere, "USUARIO_ACTU") },
-                    { "ESTACION_ACTU", GetFilterValue(xWhere, "ESTACION_ACTU") },
-                    { "FECHA_ACTU", GetFilterValue(xWhere, "FECHA_ACTU") },
-                }
-                    .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+                var reader = await objData.GetDataReader(_ViewName, dbWhere);
+                var response = new List<SC_FRECUENCIAView>().FromDataReader(reader)
+                    .OrderBy(x => x.CORR_FRECUENCIA)
                     .ToList();
-
-                var page = xWhere
-                    .Where(x => x.ParameterName == "PAGE")
-                    .Select(x => Convert.ToInt32(x.Value ?? 1))
-                    .FirstOrDefault();
-
-                var pageSize = xWhere
-                    .Where(x => x.ParameterName == "PAGE_SIZE")
-                    .Select(x => Convert.ToInt32(x.Value ?? 10))
-                    .FirstOrDefault();
-
-                page = page < 1 ? 1 : page;
-                pageSize = pageSize < 1 ? 10 : Math.Min(pageSize, 100);
-
-                var reader = await objData.GetDataReader("V_" + _TableName, dbWhere);
-                var response = new List<SC_FRECUENCIAView>().FromDataReader(reader).ToList();
 
                 reader.Close();
                 reader = null;
 
-                if (estado.HasValue)
-                {
-                    response = response
-                        .Where(x => (x.ESTADO_FRECUENCIA ?? false) == estado.Value)
-                        .ToList();
-                }
-
-                if (!string.IsNullOrWhiteSpace(busqueda))
-                {
-                    var search = busqueda.Trim();
-                    response = response
-                        .Where(x =>
-                            Contains(x.CORR_EMPRESA.ToString(), search) ||
-                            Contains(x.CORR_FRECUENCIA.ToString(), search) ||
-                            Contains(x.NOMBRE_FRECUENCIA, search) ||
-                            Contains((x.ESTADO_FRECUENCIA ?? false) ? "Activo" : "Inactivo", search) ||
-                            Contains(x.USUARIO_CREA, search) ||
-                            Contains(x.ESTACION_CREA, search) ||
-                            Contains(x.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm"), search) ||
-                            Contains(x.USUARIO_ACTU, search) ||
-                            Contains(x.ESTACION_ACTU, search) ||
-                            Contains(x.FECHA_ACTU?.ToString("dd/MM/yyyy HH:mm"), search))
-                        .ToList();
-                }
-
-                foreach (var columnFilter in columnFilters)
-                {
-                    response = response
-                        .Where(x => Contains(GetColumnValue(x, columnFilter.Key), columnFilter.Value))
-                        .ToList();
-                }
-
-                response = response
-                    .OrderBy(x => x.CORR_EMPRESA)
-                    .ThenBy(x => x.CORR_FRECUENCIA)
-                    .ToList();
-
-                var totalRows = response.Count;
-                var pageData = response
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
-
-                objResultado.Data = pageData;
+                objResultado.Data = response;
                 objResultado.Result = true;
-                objResultado.RowsAffected = totalRows;
+                objResultado.RowsAffected = response.Count;
                 objResultado.CodeHelper = 0;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
@@ -139,46 +72,15 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        private static string GetFilterValue(List<CParameter> xWhere, string parameterName)
-        {
-            return xWhere
-                .Where(x => x.ParameterName == parameterName)
-                .Select(x => x.Value?.ToString())
-                .FirstOrDefault();
-        }
-
-        private static string GetColumnValue(SC_FRECUENCIAView row, string columnName)
-        {
-            switch (columnName)
-            {
-                case "CORR_FRECUENCIA":
-                    return row.CORR_FRECUENCIA.ToString();
-                case "NOMBRE_FRECUENCIA":
-                    return row.NOMBRE_FRECUENCIA;
-                case "USUARIO_CREA":
-                    return row.USUARIO_CREA;
-                case "ESTACION_CREA":
-                    return row.ESTACION_CREA;
-                case "FECHA_CREA":
-                    return row.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm");
-                case "USUARIO_ACTU":
-                    return row.USUARIO_ACTU;
-                case "ESTACION_ACTU":
-                    return row.ESTACION_ACTU;
-                case "FECHA_ACTU":
-                    return row.FECHA_ACTU?.ToString("dd/MM/yyyy HH:mm");
-                default:
-                    return null;
-            }
-        }
-
+        // Qué hace: lee una frecuencia puntual.
+        // Cómo: consulta V_SC_FRECUENCIA con los filtros recibidos y devuelve el primer registro.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
 
             try
             {
-                var reader = await objData.GetDataReader("V_" + _TableName, xWhere);
+                var reader = await objData.GetDataReader(_ViewName, xWhere);
                 var response = new List<SC_FRECUENCIAView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
@@ -209,6 +111,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: inserta una frecuencia.
+        // Cómo: llama a objData.Insert sobre SC_FRECUENCIA con los parámetros armados y controla duplicados de nombre/código con IsDuplicateKeyError.
         public async Task<CResult> CreateAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -234,7 +138,7 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
                 };
 
-                var reader = await objData.Insert(_TableName, p, "CORR_FRECUENCIA", pWhere);
+                var reader = await objData.Insert(_TableName, p, _CampoPk, pWhere);
                 var response = new List<SC_FRECUENCIAView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
@@ -268,6 +172,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: actualiza una frecuencia.
+        // Cómo: llama a objData.Update sobre SC_FRECUENCIA filtrando por CORR_EMPRESA y CORR_FRECUENCIA, y controla duplicados con IsDuplicateKeyError.
         public async Task<CResult> UpdateAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -277,7 +183,6 @@ namespace SGUEES.Repositories
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "NOMBRE_FRECUENCIA", Value = Data.NOMBRE_FRECUENCIA, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ESTADO_FRECUENCIA", Value = Data.ESTADO_FRECUENCIA ?? true, DbType = System.Data.DbType.Boolean },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -305,11 +210,14 @@ namespace SGUEES.Repositories
             }
             catch (Exception e)
             {
+                var duplicateKey = IsDuplicateKeyError(e);
                 objResultado.Data = null;
                 objResultado.Result = false;
                 objResultado.CodeHelper = 0;
-                objResultado.ErrorCode = -1;
-                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorCode = duplicateKey ? 2627 : -1;
+                objResultado.ErrorMessage = duplicateKey
+                    ? "No se pudo guardar el registro porque otro usuario guardo un registro al mismo tiempo. Intente nuevamente."
+                    : e.Message;
                 objResultado.ErrorSource += $"[{e.Source}]";
             }
             finally
@@ -320,6 +228,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: elimina una frecuencia.
+        // Cómo: llama a objData.Delete sobre SC_FRECUENCIA filtrando por CORR_EMPRESA y CORR_FRECUENCIA; ante error de integridad devuelve un mensaje de registros asociados.
         public async Task<CResult> DeleteAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -357,12 +267,137 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        private static bool Contains(string value, string search)
+        // Qué hace: invierte el estado activo/inactivo de la frecuencia.
+        // Cómo: ejecuta el procedimiento PRAL_MTTO_CATALOGO_ESTADO_BIT y, si no hay error, vuelve a leer el registro desde V_SC_FRECUENCIA.
+        public async Task<CResult> ActivarInactivarAsync(SC_FRECUENCIATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            return !string.IsNullOrWhiteSpace(value) &&
-                value.Contains(search, StringComparison.OrdinalIgnoreCase);
+            CResult objResultado = new();
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "NOMBRE_TABLA", Value = _TableName, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CAMPO_PK", Value = _CampoPk, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CAMPO_ESTADO", Value = _CampoEstado, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "USA_EMPRESA", Value = _UsaEmpresa, DbType = System.Data.DbType.Boolean },
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_RELATIVO", Value = Data.CORR_FRECUENCIA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+                    new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+                    new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
+                };
+
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_CATALOGO_ESTADO_BIT", true, p);
+
+                if ((int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value == 0)
+                {
+                    var xWhere = new List<CParameter>
+                    {
+                        new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                        new CParameter() { ParameterName = "CORR_FRECUENCIA", Value = Data.CORR_FRECUENCIA, DbType = System.Data.DbType.Int32 },
+                    };
+
+                    var readerGet = await objData.GetDataReader(_ViewName, xWhere);
+                    var response = new List<SC_FRECUENCIAView>().FromDataReader(readerGet).FirstOrDefault();
+
+                    readerGet.Close();
+
+                    objResultado.Data = response;
+                    objResultado.Result = true;
+                    objResultado.RowsAffected = 1;
+                    objResultado.CodeHelper = response?.CORR_FRECUENCIA ?? Data.CORR_FRECUENCIA;
+                    objResultado.ErrorCode = 0;
+                    objResultado.ErrorMessage = string.Empty;
+                    objResultado.ErrorSource = string.Empty;
+                }
+                else
+                {
+                    objResultado.Data = null;
+                    objResultado.Result = false;
+                    objResultado.RowsAffected = 0;
+                    objResultado.CodeHelper = Data.CORR_FRECUENCIA;
+                    objResultado.ErrorCode = (int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
+                    objResultado.ErrorMessage = (string)objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value;
+                    objResultado.ErrorSource = "C" + _TableName + ".Mtto(" + UpdateType.Update.ToString() + ")";
+                }
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = Data.CORR_FRECUENCIA;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
         }
 
+        // Qué hace: recupera las frecuencias activas para el lookup.
+        // Cómo: ejecuta un SELECT sobre V_SC_FRECUENCIA filtrando por CORR_EMPRESA y ESTADO_FRECUENCIA activo, ordenado por NOMBRE_FRECUENCIA.
+        public async Task<CResult> GetFrecuenciasActivasAsync(List<CParameter> xWhere)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                const string sql = @"SELECT
+                        CORR_EMPRESA,
+                        CORR_FRECUENCIA,
+                        NOMBRE_FRECUENCIA,
+                        ESTADO_FRECUENCIA,
+                        USUARIO_CREA,
+                        ESTACION_CREA,
+                        FECHA_CREA,
+                        USUARIO_ACTU,
+                        ESTACION_ACTU,
+                        FECHA_ACTU
+                    FROM V_SC_FRECUENCIA
+                    WHERE CORR_EMPRESA = @CORR_EMPRESA
+                      AND ISNULL(ESTADO_FRECUENCIA, 1) = 1
+                    ORDER BY NOMBRE_FRECUENCIA";
+
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, xWhere);
+                var response = new List<SC_FRECUENCIAView>().FromDataReader(reader).ToList();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
+                objResultado.Result = true;
+                objResultado.RowsAffected = response.Count;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+                objResultado.ErrorSource = "";
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        // Qué hace: detecta errores de clave duplicada de SQL Server.
+        // Cómo: revisa si el mensaje de la excepción contiene "duplicate key", "PRIMARY KEY" o "UNIQUE KEY".
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

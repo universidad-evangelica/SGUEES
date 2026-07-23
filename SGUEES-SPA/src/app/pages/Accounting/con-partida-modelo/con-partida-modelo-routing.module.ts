@@ -32,6 +32,7 @@ const routes: Routes = [{ path: '', component: ConPartidaModeloComponent }];
 		DataLookupModule,
 		BarraDataMttoModule,
 	],
+	exports: [RouterModule],
 	declarations: [ConPartidaModeloComponent],
 })
 export class ConPartidaModeloRoutingModule {}

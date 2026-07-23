@@ -120,9 +120,6 @@
     <Content Include="Web.config">
       <SubType>Designer</SubType>
     </Content>
-    <Content Include="Reports\Accounting\*.rpt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
@@ -132,6 +129,7 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Layouts\CrystalReportBinder.cs" />
     <Compile Include="Layouts\eDocResult.cs" />
     <Compile Include="Layouts\Login\LoginRequest.cs" />
     <Compile Include="Layouts\Utils.cs" />
@@ -168,9 +166,37 @@
     <Compile Include="Reports\Shop\ShopController.cs" />
     <Compile Include="Reports\Shop\COM_REPO_SUJETO_EXCLUIDOView.cs" />
     <Compile Include="Reports\Accounting\AccountingController.cs" />
-    <Compile Include="Reports\Accounting\AccountingReports.cs" />
-    <Compile Include="Reports\Accounting\Models\ConReportePdfRequest.cs" />
+    <Compile Include="Reports\Accounting\ConReportData.cs" />
+    <Compile Include="Reports\Accounting\ConReportExportHelper.cs" />
+    <Compile Include="Reports\Accounting\BALANCE_COMPROBACION\BALANCE_COMPROBACION_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\BALANCE_COMPROBACION\BALANCE_COMPROBACIONReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\BALANCE_COMPROBACION_MES\BALANCE_COMPROBACION_MES_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\BALANCE_COMPROBACION_MES\BALANCE_COMPROBACION_MESReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\BALANCE_GENERAL\BALANCE_GENERAL_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\BALANCE_GENERAL\BALANCE_GENERALReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\BALANCE_GENERAL_VERTICAL\BALANCE_GENERAL_VERTICAL_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\BALANCE_GENERAL_VERTICAL\BALANCE_GENERAL_VERTICALReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Reports\Accounting\CON_GASTOS\CON_GASTOS_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\CON_GASTOS\CON_REPORTE_GASTOSReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\CON_GASTOS\ConGastosReportExporter.cs" />
+    <Compile Include="Reports\Accounting\CON_LIBRO_DIARIO\CON_LIBRO_DIARIO_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\CON_LIBRO_DIARIO\CON_LIBRO_DIARIOReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\CON_LIBRO_INVENTARIO\CON_LIBRO_INVENTARIO_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\CON_LIBRO_INVENTARIO\CON_LIBRO_INVENTARIOReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Reports\Accounting\CON_PARTIDA\CON_PARTIDA_IMPRView.cs" />
     <Compile Include="Reports\Accounting\CON_PARTIDA\ConPartidaReportData.cs" />
     <Compile Include="Reports\Accounting\CON_PARTIDA\PARTIDA_CONTABLEReportExporter.cs" />
@@ -178,6 +204,87 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>PARTIDA_CONTABLEReport.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\CON_REPORTE_CATALOGO_PRESUPUESTO\CON_REPORTE_CATALOGO_PRESUPUESTO_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\CON_REPORTE_CATALOGO_PRESUPUESTO\CON_REPORTE_CATALOGO_PRESUPUESTOReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\CON_REPORTE_GASTOS_PRESUPUESTO\CON_REPORTE_GASTOS_PRESUPUESTO_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\CON_REPORTE_GASTOS_PRESUPUESTO\CON_REPORTE_GASTOS_PRESUPUESTOReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\ESTADO_RESULTADOS\ESTADO_RESULTADOS_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\ESTADO_RESULTADOS\ESTADO_RESULTADOSReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\LIBRO_DIARIO_AUXILIAR\LIBRO_DIARIO_AUXILIAR_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\LIBRO_DIARIO_AUXILIAR\LIBRO_DIARIO_AUXILIARReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\LIBRO_DIARIO_AUXILIAR_HORIZONTAL\LIBRO_DIARIO_AUXILIAR_HORIZONTAL_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\LIBRO_DIARIO_AUXILIAR_HORIZONTAL\LIBRO_DIARIO_AUXILIAR_HORIZONTALReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\LIBRO_DIARIO_AUXILIAR_MES\LIBRO_DIARIO_AUXILIAR_MES_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\LIBRO_DIARIO_AUXILIAR_MES\LIBRO_DIARIO_AUXILIAR_MESReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\LIBRO_DIARIO_MAYOR\LIBRO_DIARIO_MAYOR_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\LIBRO_DIARIO_MAYOR\LIBRO_DIARIO_MAYORReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\LIBRO_DIARIO_MAYOR_H\LIBRO_DIARIO_MAYOR_H_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\LIBRO_DIARIO_MAYOR_H\LIBRO_DIARIO_MAYOR_HReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\LIBRO_INTEGRACION_CONTABLE\LIBRO_INTEGRACION_CONTABLE_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\LIBRO_INTEGRACION_CONTABLE\LIBRO_INTEGRACION_CONTABLEReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\LIBRO_INTEGRACION_CONTABLE_CC\LIBRO_INTEGRACION_CONTABLE_CC_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\LIBRO_INTEGRACION_CONTABLE_CC\LIBRO_INTEGRACION_CONTABLE_CCReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\R_CON_BALANCE_GENERAL_PORCENTAJE\R_CON_BALANCE_GENERAL_PORCENTAJE_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\R_CON_BALANCE_GENERAL_PORCENTAJE\R_CON_BALANCE_GENERAL_PORCENTAJEReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\R_CON_BALANCE_GENERAL_PORCENTAJE_AC\R_CON_BALANCE_GENERAL_PORCENTAJE_AC_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\R_CON_BALANCE_GENERAL_PORCENTAJE_AC\R_CON_BALANCE_GENERAL_PORCENTAJE_ACReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\R_CON_BALANCE_GENERAL_PORCENTAJE_PA_CP\R_CON_BALANCE_GENERAL_PORCENTAJE_PA_CP_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\R_CON_BALANCE_GENERAL_PORCENTAJE_PA_CP\R_CON_BALANCE_GENERAL_PORCENTAJE_PA_CPReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\R_CON_BALANCE_SALDOS_AUXI\R_CON_BALANCE_SALDOS_AUXI_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\R_CON_BALANCE_SALDOS_AUXI\R_CON_BALANCE_SALDOS_AUXIReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\R_CON_IMPUESTO_F14\R_CON_IMPUESTO_F14_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\R_CON_IMPUESTO_F14\R_CON_IMPUESTO_F14Report.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Accounting\R_CON_LIBRO_MAYOR\R_CON_LIBRO_MAYOR_IMPRView.cs" />
+    <Compile Include="Reports\Accounting\R_CON_LIBRO_MAYOR\R_CON_LIBRO_MAYORReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Banking\BankingController.cs" />
+    <Compile Include="Reports\Banking\BAN_CHEQUE_EMITIDOS\BAN_CHEQUE_EMITIDOS_IMPRView.cs" />
+    <Compile Include="Reports\Banking\BAN_CHEQUE_EMITIDOS\BAN_CHEQUE_EMITIDOSReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Banking\BAN_ESTADO_CUENTA\BAN_ESTADO_CUENTA_IMPRView.cs" />
+    <Compile Include="Reports\Banking\BAN_ESTADO_CUENTA\BAN_ESTADO_CUENTAReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Banking\BAN_ESTADO_CUENTA_ACUMULADO\BAN_ESTADO_CUENTA_ACUMULADO_IMPRView.cs" />
+    <Compile Include="Reports\Banking\BAN_ESTADO_CUENTA_ACUMULADO\BAN_ESTADO_CUENTA_ACUMULADOReport.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Banking\BAN_ENTREGA_CHEQUES\BAN_ENTREGA_CHEQUES_IMPRView.cs" />
+    <Compile Include="Reports\Banking\BAN_ENTREGA_CHEQUES\BAN_ENTREGA_CHEQUESReport.cs">
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Reports\Shop\COM_VL_FSEE\COM_VL_FSEEReport.cs">
@@ -226,6 +333,33 @@
       <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
       <LastGenOutput>PARTIDA_CONTABLEReport.cs</LastGenOutput>
     </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Accounting\BALANCE_COMPROBACION\BALANCE_COMPROBACIONReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\BALANCE_COMPROBACION_MES\BALANCE_COMPROBACION_MESReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\BALANCE_GENERAL\BALANCE_GENERALReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\BALANCE_GENERAL_VERTICAL\BALANCE_GENERAL_VERTICALReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\CON_GASTOS\CON_REPORTE_GASTOSReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\CON_LIBRO_DIARIO\CON_LIBRO_DIARIOReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\CON_LIBRO_INVENTARIO\CON_LIBRO_INVENTARIOReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\CON_REPORTE_CATALOGO_PRESUPUESTO\CON_REPORTE_CATALOGO_PRESUPUESTOReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\CON_REPORTE_GASTOS_PRESUPUESTO\CON_REPORTE_GASTOS_PRESUPUESTOReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\ESTADO_RESULTADOS\ESTADO_RESULTADOSReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\LIBRO_DIARIO_AUXILIAR\LIBRO_DIARIO_AUXILIARReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\LIBRO_DIARIO_AUXILIAR_HORIZONTAL\LIBRO_DIARIO_AUXILIAR_HORIZONTALReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\LIBRO_DIARIO_AUXILIAR_MES\LIBRO_DIARIO_AUXILIAR_MESReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\LIBRO_DIARIO_MAYOR\LIBRO_DIARIO_MAYORReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\LIBRO_DIARIO_MAYOR_H\LIBRO_DIARIO_MAYOR_HReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\LIBRO_INTEGRACION_CONTABLE\LIBRO_INTEGRACION_CONTABLEReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\LIBRO_INTEGRACION_CONTABLE_CC\LIBRO_INTEGRACION_CONTABLE_CCReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\R_CON_BALANCE_GENERAL_PORCENTAJE\R_CON_BALANCE_GENERAL_PORCENTAJEReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\R_CON_BALANCE_GENERAL_PORCENTAJE_AC\R_CON_BALANCE_GENERAL_PORCENTAJE_ACReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\R_CON_BALANCE_GENERAL_PORCENTAJE_PA_CP\R_CON_BALANCE_GENERAL_PORCENTAJE_PA_CPReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\R_CON_BALANCE_SALDOS_AUXI\R_CON_BALANCE_SALDOS_AUXIReport.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\R_CON_IMPUESTO_F14\R_CON_IMPUESTO_F14Report.rpt" />
+    <EmbeddedResource Include="Reports\Accounting\R_CON_LIBRO_MAYOR\R_CON_LIBRO_MAYORReport.rpt" />
+    <EmbeddedResource Include="Reports\Banking\BAN_CHEQUE_EMITIDOS\BAN_CHEQUE_EMITIDOSReport.rpt" />
+    <EmbeddedResource Include="Reports\Banking\BAN_ESTADO_CUENTA\BAN_ESTADO_CUENTAReport.rpt" />
+    <EmbeddedResource Include="Reports\Banking\BAN_ESTADO_CUENTA_ACUMULADO\BAN_ESTADO_CUENTA_ACUMULADOReport.rpt" />
+    <EmbeddedResource Include="Reports\Banking\BAN_ENTREGA_CHEQUES\BAN_ENTREGA_CHEQUESReport.rpt" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{C0C07587-41A7-46C8-8FBD-3F9C8EBE2DDC}" />

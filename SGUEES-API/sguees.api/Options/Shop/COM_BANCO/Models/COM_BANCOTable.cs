@@ -10,5 +10,6 @@ namespace sguees.Models
 		public string NOMBRE_BANCO_CORTO { get; set; }
 		public string CLASE_BANCO { get; set; }
 		public string CODIGO_TRANSACION_UNI { get; set; }
+		public bool? ESTADO_BANCO { get; set; } = true;
 	}
 }

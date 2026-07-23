@@ -1,6 +1,6 @@
 using System;
 
-namespace sgueesRpt.Models
+namespace sgueesRpt.Reports.Accounting.CON_GASTOS
 {
 	/// <summary>
 	/// Dataset para CON_REPORTE_GASTOS.rpt (copiar desde e-Admin a Reports/Accounting/CON_GASTOSReport.rpt).

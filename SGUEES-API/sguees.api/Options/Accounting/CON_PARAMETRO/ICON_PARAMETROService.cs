@@ -11,5 +11,6 @@ namespace sguees.Services
 		Task<CResult> CreateAsync(CON_PARAMETROTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(CON_PARAMETROTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(CON_PARAMETROTable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> GetMonedasAsync(int corrEmpresa);
 	}
 }

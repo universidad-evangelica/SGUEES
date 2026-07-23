@@ -147,6 +147,14 @@ namespace sguees.Repositories
 			CResult objResultado = new();
 			try
 			{
+				if (Data.ANIO_PERIODO <= 0 || Data.MES_PERIODO <= 0 || Data.CORR_CLASE_PARTIDA <= 0 || Data.CORR_PARTIDA <= 0)
+				{
+					objResultado.Result = false;
+					objResultado.ErrorCode = -1;
+					objResultado.ErrorMessage = "Debe indicar año, mes, clase y número de partida para eliminar.";
+					return objResultado;
+				}
+
 				var pWhere = new List<CParameter>
 				{
 					new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
@@ -155,6 +163,37 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="CORR_CLASE_PARTIDA",Value=Data.CORR_CLASE_PARTIDA,DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="CORR_PARTIDA",Value=Data.CORR_PARTIDA,DbType=System.Data.DbType.Int32},
 				};
+
+				var readerEstado = await objData.GetDataReader(System.Data.CommandType.Text, @"
+					SELECT ESTADO_PARTIDA
+					FROM CON_PARTIDA
+					WHERE CORR_EMPRESA=@CORR_EMPRESA
+					  AND ANIO_PERIODO=@ANIO_PERIODO
+					  AND MES_PERIODO=@MES_PERIODO
+					  AND CORR_CLASE_PARTIDA=@CORR_CLASE_PARTIDA
+					  AND CORR_PARTIDA=@CORR_PARTIDA", pWhere);
+				var estado = readerEstado.Read()
+					? readerEstado["ESTADO_PARTIDA"]?.ToString()
+					: null;
+				readerEstado.Close();
+
+				if (string.IsNullOrWhiteSpace(estado))
+				{
+					objResultado.Result = false;
+					objResultado.ErrorCode = -1;
+					objResultado.ErrorMessage = "La partida indicada no existe.";
+					return objResultado;
+				}
+
+				if (estado != "DI")
+				{
+					objResultado.Result = false;
+					objResultado.ErrorCode = -1;
+					objResultado.ErrorMessage = "Solo se pueden eliminar partidas en estado DIGITADO.";
+					return objResultado;
+				}
+
+				await objData.Delete(_DetaTableName, pWhere);
 				await objData.Delete(_TableName, pWhere);
 				objResultado.Data = null; objResultado.Result = true; objResultado.RowsAffected = 1;
 				objResultado.CodeHelper = 0; objResultado.ErrorCode = 0; objResultado.ErrorMessage = ""; objResultado.ErrorSource = "";
@@ -345,13 +384,13 @@ namespace sguees.Repositories
 					new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA ?? "", DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? "", DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
-					new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Decimal, Direction = System.Data.ParameterDirection.InputOutput },
+					new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
 					new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = "", DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
 				};
 
 				await objData.ExecCmd(System.Data.CommandType.StoredProcedure, spName, true, p);
 
-				if ((decimal)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value == 0)
+				if ((int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value == 0)
 				{
 					var xWhere = new List<CParameter>
 					{
@@ -379,7 +418,7 @@ namespace sguees.Repositories
 					objResultado.Result = false;
 					objResultado.RowsAffected = 0;
 					objResultado.CodeHelper = Data.CORR_PARTIDA;
-					objResultado.ErrorCode = (int)(decimal)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
+					objResultado.ErrorCode = (int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
 					objResultado.ErrorMessage = (string)objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value;
 					objResultado.ErrorSource = "C" + _TableName + ".Mtto(" + spName + ")";
 				}

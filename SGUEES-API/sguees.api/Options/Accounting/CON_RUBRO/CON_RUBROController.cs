@@ -64,5 +64,19 @@ namespace sguees.Controllers
 			var resultado = await _service.DeleteAsync(Data, "", "");
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
+
+		// --- CON_CATALOGO_CUENTA ---
+
+		[HttpGet("GetCODIGO_RUBRO_CON_CATALOGO_CUENTA")]
+		[Authorize(Policy = "/con-catalogo-cuenta|R")]
+		public async Task<CResult> GetCODIGO_RUBRO_CON_CATALOGO_CUENTA([FromQuery] CON_RUBROParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			if (string.IsNullOrEmpty(Data.CODIGO_RUBRO))
+			{
+				Data.CODIGO_RUBRO = string.Empty;
+			}
+			return await _service.GetAllAsync(Data);
+		}
 	}
 }

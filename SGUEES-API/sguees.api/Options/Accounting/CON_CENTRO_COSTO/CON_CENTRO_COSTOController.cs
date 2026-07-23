@@ -93,15 +93,68 @@ namespace sguees.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
-		[HttpGet("GetCORR_CENTRO_COSTO_PLA_DEPARTAMENTO")]
-        [Authorize(Policy = "/pla-departamento|R")]
-        public async Task<CResult> GetCORR_CENTRO_COSTO_PLA_DEPARTAMENTO([FromQuery] CON_CENTRO_COSTOParam Data)
-        {
-			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            return await _service.GetAllAsync(Data);
-        }
+		// --- PLA_DEPARTAMENTO ---
 
-		
-		
+		[HttpGet("GetCORR_CENTRO_COSTO_PLA_DEPARTAMENTO")]
+		[Authorize(Policy = "/pla-departamento|R")]
+		public async Task<CResult> GetCORR_CENTRO_COSTO_PLA_DEPARTAMENTO([FromQuery] CON_CENTRO_COSTOParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		// --- BAN_CUENTA_BANCARIA ---
+
+		[HttpGet("GetCORR_CENTRO_COSTO_BAN_CUENTA_BANCARIA")]
+		[Authorize(Policy = "/ban-cuenta-bancaria|R")]
+		public async Task<CResult> GetCORR_CENTRO_COSTO_BAN_CUENTA_BANCARIA([FromQuery] CON_CENTRO_COSTOParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		// --- CON_PARTIDA ---
+
+		[HttpGet("GetCORR_CENTRO_COSTO_CON_PARTIDA")]
+		[Authorize(Policy = "/con-partida|R")]
+		public async Task<CResult> GetCORR_CENTRO_COSTO_CON_PARTIDA([FromQuery] CON_CENTRO_COSTOParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_CENTRO_COSTO_BAN_DOCUMENTO")]
+		[Authorize(Policy = "/ban-documento|R")]
+		public async Task<CResult> GetCORR_CENTRO_COSTO_BAN_DOCUMENTO([FromQuery] CON_CENTRO_COSTOParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_CENTRO_COSTO_BAN_CHEQUE")]
+		[Authorize(Policy = "/ban-cheque|R")]
+		public async Task<CResult> GetCORR_CENTRO_COSTO_BAN_CHEQUE([FromQuery] CON_CENTRO_COSTOParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_CENTRO_COSTO_BAN_SOLI_CHEQUE")]
+		[Authorize(Policy = "/ban-soli-cheque|R")]
+		public async Task<CResult> GetCORR_CENTRO_COSTO_BAN_SOLI_CHEQUE([FromQuery] CON_CENTRO_COSTOParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		// --- CON_CTA_CENTRO_COSTO (cuenta ↔ centro) ---
+
+		[HttpGet("GetCORR_CENTRO_COSTO_CON_CTA_CENTRO_COSTO")]
+		[Authorize(Policy = "/con-catalogo-cuenta-centro-costo|R")]
+		public async Task<CResult> GetCORR_CENTRO_COSTO_CON_CTA_CENTRO_COSTO([FromQuery] CON_CENTRO_COSTOParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
 	}
 }

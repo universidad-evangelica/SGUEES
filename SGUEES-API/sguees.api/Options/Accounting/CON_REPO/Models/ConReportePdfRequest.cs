@@ -6,6 +6,7 @@ namespace sguees.Models
 	{
 		public string RptName { get; set; }
 		public List<Dictionary<string, object>> Data { get; set; } = new List<Dictionary<string, object>>();
+		public string DetailTableName { get; set; }
 		public string PdfFileName { get; set; }
 	}
 }

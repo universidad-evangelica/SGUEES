@@ -1,61 +1,69 @@
 import { NgModule } from '@angular/core';
-
 import { RouterModule, Routes } from '@angular/router';
-
 import { CommonModule } from '@angular/common';
 
-import { DxFormModule } from 'devextreme-angular/ui/form';
-
 import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
-
 import { DxLoadPanelModule } from 'devextreme-angular/ui/load-panel';
-
-import { DxPopupModule } from 'devextreme-angular/ui/popup';
-
 import { DxButtonModule } from 'devextreme-angular/ui/button';
+import { DxDateBoxModule } from 'devextreme-angular/ui/date-box';
+import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
+import { DxNumberBoxModule } from 'devextreme-angular/ui/number-box';
+import { DxCheckBoxModule } from 'devextreme-angular/ui/check-box';
+import { DxBoxModule } from 'devextreme-angular/ui/box';
+import { DxDrawerModule } from 'devextreme-angular/ui/drawer';
+import { DxToolbarModule } from 'devextreme-angular/ui/toolbar';
 
-import { DxBoxModule, DxDrawerModule, DxToolbarModule } from 'devextreme-angular';
+import { ConReporteShellComponent } from './shell/con-reporte-shell.component';
+import { ConReporteLibroDiarioAuxiliarComponent } from './libro-diario-auxiliar/con-reporte-libro-diario-auxiliar.component';
+import { ConReporteLibroDiarioAuxiliarMesComponent } from './libro-diario-auxiliar-mes/con-reporte-libro-diario-auxiliar-mes.component';
+import { ConReporteLibroDiarioMayorComponent } from './libro-diario-mayor/con-reporte-libro-diario-mayor.component';
+import { ConReporteBalanceComprobacionComponent } from './balance-comprobacion/con-reporte-balance-comprobacion.component';
+import { ConReporteBalanceComprobacionMesComponent } from './balance-comprobacion-mes/con-reporte-balance-comprobacion-mes.component';
+import { ConReporteBalanceGeneralComponent } from './balance-general/con-reporte-balance-general.component';
+import { ConReporteEstadoResultadosComponent } from './estado-resultados/con-reporte-estado-resultados.component';
+import { ConReporteBalanceGeneralVerticalComponent } from './balance-general-vertical/con-reporte-balance-general-vertical.component';
 
-import { ConReporteComponent } from './con-reporte.component';
+import { buildConReporteRoutes } from './con-reporte.routes';
 
-
-
-const routes: Routes = [{ path: '', component: ConReporteComponent }];
-
-
+const routes: Routes = buildConReporteRoutes([]);
 
 @NgModule({
-
 	imports: [
-
 		RouterModule.forChild(routes),
-
 		CommonModule,
-
-		DxFormModule,
-
 		DxDataGridModule,
-
 		DxLoadPanelModule,
-
-		DxPopupModule,
-
 		DxButtonModule,
-
+		DxDateBoxModule,
+		DxSelectBoxModule,
+		DxNumberBoxModule,
+		DxCheckBoxModule,
 		DxBoxModule,
-
-		DxToolbarModule,
-
 		DxDrawerModule,
-
+		DxToolbarModule,
 	],
-
-	exports: [RouterModule],
-
-	declarations: [ConReporteComponent],
-
+	exports: [
+		RouterModule,
+		ConReporteShellComponent,
+		ConReporteLibroDiarioAuxiliarComponent,
+		ConReporteLibroDiarioAuxiliarMesComponent,
+		ConReporteLibroDiarioMayorComponent,
+		ConReporteBalanceComprobacionComponent,
+		ConReporteBalanceComprobacionMesComponent,
+		ConReporteBalanceGeneralComponent,
+		ConReporteEstadoResultadosComponent,
+		ConReporteBalanceGeneralVerticalComponent,
+	],
+	declarations: [
+		ConReporteShellComponent,
+		ConReporteLibroDiarioAuxiliarComponent,
+		ConReporteLibroDiarioAuxiliarMesComponent,
+		ConReporteLibroDiarioMayorComponent,
+		ConReporteBalanceComprobacionComponent,
+		ConReporteBalanceComprobacionMesComponent,
+		ConReporteBalanceGeneralComponent,
+		ConReporteEstadoResultadosComponent,
+		ConReporteBalanceGeneralVerticalComponent,
+	],
 })
-
 export class ConReporteRoutingModule {}
-
-

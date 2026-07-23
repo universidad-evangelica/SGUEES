@@ -1,0 +1,183 @@
+<div class="sguees-mtto-view">
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[showRibbon]="true"
+	[permiteAdd]="permiteAdd"
+	[showRefresh]="true"
+	[showExport]="permitePrint"
+	[showEstadoToolbar]="true"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="permiteEdit"
+	[focusedRow]="isBrowse() ? model : null"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+	(consultar)="consultar()"
+	(activarInactivar)="activar_inactivar()"
+>
+</app-barra-data-mtto>
+
+<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
+	<dx-form
+		#fData
+		id="fData"
+		[formData]="model"
+		[labelLocation]="'top'"
+		[colCount]="mttoFormColCount"
+		[colCountByScreen]="mttoFormColCountByScreen"
+		[showRequiredMark]="false"
+		[items]="items"
+	>
+		<div *dxTemplate="let cellInfo of 'CORR_LINEALookup'">
+			<app-data-lookup
+				[model]="mCORR_LINEA"
+				[(value)]="model.CORR_LINEA"
+				[selectedRowKeys]="selectedLookUpCORR_LINEA"
+				[readOnly]="readOnly"
+				[valueExpr]="'CORR_LINEA'"
+				[displayExpr]="'NOMBRE_LINEA_TRABAJO'"
+				[lookupColumns]="lineaLookupColumns"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_CLASE_PARTIDALookup'">
+			<app-data-lookup
+				[model]="mCORR_CLASE_PARTIDA"
+				[(value)]="model.CORR_CLASE_PARTIDA"
+				[selectedRowKeys]="selectedLookUpCORR_CLASE_PARTIDA"
+				[readOnly]="readOnly"
+				[valueExpr]="'CORR_CLASE_PARTIDA'"
+				[displayExpr]="'NOMBRE_CLASE_PARTIDA'"
+				[lookupColumns]="clasePartidaLookupColumns"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'SUMA_RESTALookup'">
+			<app-data-lookup
+				[model]="mSUMA_RESTA"
+				[(value)]="model.SUMA_RESTA"
+				[selectedRowKeys]="selectedLookUpNumerico"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CLASE_MOVIMIENTOLookup'">
+			<app-data-lookup
+				[model]="mCLASE_MOVIMIENTO"
+				[(value)]="model.CLASE_MOVIMIENTO"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CUENTA_CONTABLE_GASTOLookup'">
+			<app-data-lookup
+				[model]="mCUENTA_CONTABLE"
+				[(value)]="model.CUENTA_CONTABLE_GASTO"
+				[selectedRowKeys]="selectedLookUpCUENTA_CONTABLE"
+				[readOnly]="readOnly"
+				[valueExpr]="'CUENTA_CONTABLE'"
+				[displayExpr]="'CUENTA_CONTABLE'"
+				[lookupColumns]="cuentaLookupColumns"
+				[showClearButton]="true"
+			>
+			</app-data-lookup>
+		</div>
+	</dx-form>
+
+	<section class="sguees-section-card" *ngIf="model?.CORR_TIPO_MOVIMIENTO > 0">
+		<header class="concilia-section-head">
+			<span class="concilia-section-title">Movimientos según banco</span>
+			<span class="concilia-section-subtitle">Códigos de movimiento por banco para importación de conciliación</span>
+		</header>
+		<dx-data-grid
+			#gridSegunBanco
+			class="theme-dependent sguees-data-grid-mtto"
+			[dataSource]="segunBancoDetalle"
+			[keyExpr]="['CORR_BANCO', 'CODIGO_MOVIMIENTO']"
+			[showBorders]="true"
+			[columnAutoWidth]="false"
+			[height]="260"
+			(onInitNewRow)="segunBancoInitNewRow($event)"
+			(onRowInserting)="segunBancoRowInserting($event)"
+			(onRowUpdating)="segunBancoRowUpdating($event)"
+			(onRowRemoving)="segunBancoRowRemoving($event)"
+			(onRowValidating)="segunBancoRowValidating($event)"
+		>
+			<dxo-editing
+				mode="row"
+				[allowAdding]="puedeEditarSegunBanco()"
+				[allowUpdating]="puedeEditarSegunBanco()"
+				[allowDeleting]="puedeEditarSegunBanco()"
+				[useIcons]="true"
+			></dxo-editing>
+			<dxi-column dataField="NOMBRE_BANCO" caption="Banco" [width]="180" [allowEditing]="false"></dxi-column>
+			<dxi-column dataField="CORR_BANCO" caption="Banco" [visible]="false" [editCellTemplate]="'bancoTemplate'">
+				<dxo-lookup [dataSource]="mCORR_BANCO" valueExpr="CORR_BANCO" displayExpr="NOMBRE_BANCO"></dxo-lookup>
+			</dxi-column>
+			<dxi-column dataField="CODIGO_MOVIMIENTO" caption="Código banco" [width]="120"></dxi-column>
+			<dxi-column dataField="NOMBRE_MOVIMIENTO_SEGUN_BANCO" caption="Nombre según banco" [minWidth]="220"></dxi-column>
+			<div *dxTemplate="let cellInfo of 'bancoTemplate'">
+				<app-data-lookup
+					[setValue]="cellInfo.setValue"
+					[model]="mCORR_BANCO"
+					[(value)]="cellInfo.value"
+					[selectedRowKeys]="selectedLookUpCORR_BANCO"
+					[valueExpr]="'CORR_BANCO'"
+					[displayExpr]="'NOMBRE_BANCO'"
+					[lookupColumns]="bancoLookupColumns"
+				></app-data-lookup>
+			</div>
+		</dx-data-grid>
+	</section>
+</div>
+
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="mttoGridKeyExpr"
+	[pageSize]="mttoPageSize"
+	[allowedPageSizes]="mttoPageSizes"
+	[remoteOperations]="mttoRemoteOperations"
+	[nativeToolbar]="true"
+	[unifiedToolbar]="false"
+	[showSearch]="false"
+	[showAdd]="false"
+	[showRefresh]="false"
+	[showExport]="false"
+	[showEstadoToolbar]="true"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="permiteEdit"
+	[focusedRowKey]="gridFocusedRowKey"
+	[permitePrint]="permitePrint"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	[responsiveColumnHiding]="false"
+	[columnHidingEnabled]="false"
+	[exportFileName]="'TiposMovimientoBancario'"
+	(activarInactivar)="activar_inactivar()"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+
+</div>
+
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>

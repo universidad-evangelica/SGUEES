@@ -21,7 +21,7 @@ export class ConReporteService {
 			return false;
 		}
 		if (!definicion?.SP_DISPONIBLE) {
-			msg('Este reporte aun no esta disponible en SGUEES', NotifyType.Warning);
+			msg('Este reporte aún no está disponible en SGUEES', NotifyType.Warning);
 			return false;
 		}
 		if (this.usaFiltro(definicion, 'FECHA_INICIAL') && !filtro.FECHA_INICIAL) {
@@ -33,15 +33,11 @@ export class ConReporteService {
 			return false;
 		}
 		if (this.usaFiltro(definicion, 'ANIO_PERIODO') && !filtro.ANIO_PERIODO) {
-			msg('Indique el ano', NotifyType.Warning);
+			msg('Indique el año', NotifyType.Warning);
 			return false;
 		}
 		if (this.usaFiltro(definicion, 'MES_PERIODO') && !filtro.MES_PERIODO) {
 			msg('Indique el mes', NotifyType.Warning);
-			return false;
-		}
-		if (this.usaFiltro(definicion, 'CORR_CONFI_REPORTE') && !filtro.CORR_CONFI_REPORTE) {
-			msg('Seleccione la configuracion de reporte', NotifyType.Warning);
 			return false;
 		}
 		return true;
@@ -51,12 +47,32 @@ export class ConReporteService {
 		return definicion?.FILTROS?.includes(filtro) ?? false;
 	}
 
-	buildPayload(codigo: string, filtro: ConReporteFiltro): ConReporteFiltro {
+	armarFiltroEnvio(codigo: string, filtro: ConReporteFiltro): ConReporteFiltro {
+		const hoy = new Date();
 		return {
 			...filtro,
 			CODIGO_REPORTE: codigo,
+			FECHA_INICIAL: this.convertirFechaIso(filtro.FECHA_INICIAL),
+			FECHA_FINAL: this.convertirFechaIso(filtro.FECHA_FINAL),
+			FECHA_IMPRESION: this.convertirFechaIso(filtro.FECHA_IMPRESION ?? hoy),
 			CUENTA_DEPARTAMENTO: filtro.CUENTA_DEPARTAMENTO || filtro.CUENTA_CONTABLE || null,
 		};
+	}
+
+	private convertirFechaIso(value: Date | string | null | undefined): string | null {
+		if (!value) {
+			return null;
+		}
+
+		const date = value instanceof Date ? value : new Date(value);
+		if (Number.isNaN(date.getTime())) {
+			return null;
+		}
+
+		const year = date.getFullYear();
+		const month = String(date.getMonth() + 1).padStart(2, '0');
+		const day = String(date.getDate()).padStart(2, '0');
+		return `${year}-${month}-${day}`;
 	}
 
 	esPdfDisponible(definicion: ConReporteDefinicion | null | undefined): boolean {
@@ -67,7 +83,7 @@ export class ConReporteService {
 		return !!definicion?.CONSULTA_GRID;
 	}
 
-	getPDF(codigo: string, filtro: ConReporteFiltro): Observable<Blob> {
-		return this.repo.getPDF(this.buildPayload(codigo, filtro));
+	obtenerPdf(codigo: string, filtro: ConReporteFiltro): Observable<Blob> {
+		return this.repo.obtenerPdf(this.armarFiltroEnvio(codigo, filtro));
 	}
 }

@@ -1,0 +1,325 @@
+---
+description: Estándar SGUEES — mtto básico, A+, A+P, lookup, detalle. SPA + API + menú BD. Plantillas en DOCS/plantillas/.
+alwaysApply: true
+---
+
+# SGUEES — Estándar Mantenimientos (mtto)
+
+Al migrar o crear pantallas, seguir **este proceso completo** (SPA + API + menú BD). No improvisar estructura distinta.
+
+**Fuente de verdad IA:** `DOCS/plantillas/` + `DOCS/PROMPT-MTTO.md` + `DOCS/ESTANDAR-MTTO.md`  
+**Contrato HTTP PUT/DELETE:** `DOCS/plantillas/mtto-api-crud-http.md`  
+**Barra / toolbar:** `DOCS/plantillas/mtto-barra-patron.md` (proceso = Compras; catálogo = título + Nuevo en grid)  
+**Onboarding equipo:** `DOCS/GUIA-EQUIPO-MTTO.md`  
+**Piloto vivo (solo comparar):** `gen-banco` (A+), `sc-impacto-economico` (A+P). No copiar ciego.
+
+## Flujo rápido — lo que el usuario dice y yo entrego
+
+El usuario puede decir solo:
+
+> *"Ya tengo la tabla, la vista SQL, [con/sin detalle]"*
+
+**Yo hago todo el trabajo** sin pedir estructura adicional salvo dudas de negocio.
+
+### Lo que el usuario aporta (mínimo)
+
+| Dato | Ejemplo |
+|------|---------|
+| Tabla(s) | `GEN_BANCO`, `CON_PARTIDA` + `CON_PARTIDA_DETA` |
+| Vista(s) | `V_GEN_BANCO`, `V_CON_PARTIDA`, `V_CON_PARTIDA_DETA` |
+| Tipo (opcional) | simple / con lookup / con detalle |
+| Módulo | Bancos, Contabilidad, Compras, General… |
+| Menú destino | `PROCESO`, `GENERAL`, nombre opción |
+
+Si no indica tipo, **inferirlo** de tablas/vistas (1 tabla = A/B/A+/A+P; encabezado+deta = C).
+**Paginado servidor:** si no queda claro, **preguntar** (A+ = memoria / A+P = BD). Ver `PROMPT-MTTO.md`.
+
+### Elegir plantilla (catálogos)
+
+| Situación | Plantilla |
+|-----------|-----------|
+| Catálogo simple, &lt; ~500 filas | `DOCS/plantillas/mtto-a-plus.md` |
+| Catálogo + activo/inactivo (`bit`) | `mtto-a-plus.md` o `mtto-a-p-paginado.md` + `mtto-a-plus-estado-catalogo.md` |
+| Catálogo grande / auditoría / paginado servidor | `mtto-a-p-paginado.md` |
+| Documento con estados DI/AP/AN | `mtto-estado-transaccional.md` — **no** patrón bit |
+| Barra / botones proceso vs catálogo | `mtto-barra-patron.md` — **obligatorio** al armar HTML |
+
+**A+ vs A+P:** A+ = 1× `consultarMtto` → array, paginado cliente (sin selector tamaño/"Todos" en pager). A+P híbrido = `CustomStore`, filas visibles 15; selector del pager = lote API (50/100/Todos) → `PAGE`/`PAGE_SIZE`.
+
+### Lo que yo entrego (completo)
+
+1. **BD** — vista si falta; SP `PRAL_DATA_*` / `PRAL_MTTO_*` si aplica; script menú (`SEG_OPCION_SISTEMA`, `SEG_CONFIG_OPCION`, permisos) con UTF-8.
+2. **API** — `Models`, `Repository`, `Service`, `Controller`; lookups `GetCAMPO_TABLA` y entradas en `*_LISTA` si hay combos.
+3. **SPA** — carpeta pantalla completa (tipo A, B o C según corresponda); routing en módulo padre; `exports: [RouterModule]`.
+4. **Verificación** — compilar API, lints SPA, checklist del tipo aplicado.
+
+### Cómo decidir el tipo desde la vista
+
+- **A) Básico:** una tabla/vista, sin FK combo complejo ni grid hijo.
+- **B) + lookup:** columnas FK o códigos lista (`CLASE_*`, `CORR_*`, `ESTADO_*`) → `getLookUp` + endpoints.
+- **C) Con detalle:** tabla encabezado + tabla `*_DETA` (o similar) → patrón `com-documento` / `con-partida`.
+
+### Frase disparadora
+
+Cuando el usuario diga *"mira ya tengo la tabla y la vista"* → leer vista(s) en `SGUEES-DB/Views/`, revisar tabla(s) en `SGUEES-DB/Tables/`, copiar patrón del módulo vecino y generar **API + SPA + menú BD** sin reinventar.
+
+---
+
+## Tipos de mtto
+
+| Tipo | Referencia / plantilla | Cuándo |
+|------|------------------------|--------|
+| **A) Básico** | `gen-banco`, `con-tipo-centro-costo` | Catálogo simple legacy |
+| **A+) Catálogo reforzado** | `DOCS/plantillas/mtto-a-plus.md` | **Recomendado** — `CBaseComponent` + padre |
+| **A+P) Paginado servidor** | `DOCS/plantillas/mtto-a-p-paginado.md` | Catálogo grande, auditoría |
+| **B) + lookup** | `con-centro-costo`, `ban-cuenta-bancaria` | Form con combos `getLookUp` |
+| **C) Con detalle** | `com-documento`, `con-partida` | Encabezado + grid detalle |
+
+---
+
+## A+) Catálogo reforzado — SPA (preferido para catálogos nuevos)
+
+**Plantilla:** `DOCS/plantillas/mtto-a-plus.md`  
+**Piloto:** `General/gen-banco`
+
+**Flags opt-in en hijo:**
+```typescript
+protected override etiquetaRegistro = 'el banco';
+protected override requiereEmpresaSesion = true;
+protected override mttoGridKeyExpr = 'CORR_BANCO';
+// override opcional: mttoPageSize, mttoPageSizes
+```
+
+**Guardar / eliminar — sin segunda petición:**
+```typescript
+guardar(): void {
+  this.guardarMtto({
+    esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+    insert: () => this.service.insert(this.model),
+    update: () => this.service.update(this.model),
+    // NO onSuccess: () => this.consultar()
+  });
+}
+// rowRemovingMtto(e, { deleteFn }) — sin reload manual
+```
+
+**HTML grid:** `[pageSize]="mttoPageSize"` `[allowedPageSizes]="mttoPageSizes"` `[remoteOperations]="mttoRemoteOperations"` `[keyExpr]="mttoGridKeyExpr"` `(editClick)="editarClick($event)"`.
+
+**Estado catálogo (bit):** extensión [mtto-a-plus-estado-catalogo.md](DOCS/plantillas/mtto-a-plus-estado-catalogo.md) — aplica a **A+ y A+P**. Toolbar + `activar_inactivar()` + `Put ActivarInactivar` + SP toggle.
+
+**Utilidades:** `SGUEES-SPA/src/app/shared/mtto/`  
+**Padre:** `FxAPI/CBaseComponent.component.ts`
+
+---
+
+## A+P) Catálogo paginado servidor — SPA
+
+**Plantilla:** `DOCS/plantillas/mtto-a-p-paginado.md`  
+**Piloto:** `SelectionHiring/sc-impacto-economico`  
+**Solo usar si el catálogo lo requiere** — la mayoría de catálogos nuevos son **A+** (sin paginar en BD).
+
+```typescript
+protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
+protected override mttoGridKeyExpr = 'CORR_XXX';
+protected override mttoHybridPaging = true;
+protected override mttoPageSize = 15;
+protected override mttoApiPageSize = 50;
+@ViewChild(DataGridMttoComponent) dataGrid!: DataGridMttoComponent;
+protected override getMttoDataGrid() { return this.dataGrid ?? null; }
+```
+
+- Filter row = cliente, **no** llama API.
+- **Lote API (pager inferior):** `(apiPageSizeChange)` → `syncMttoHybridApiPageSize` → `loadMttoHybridDisplayPage` (display siempre 15; cruce de lotes soportado).
+- `guardarMtto` / `rowRemovingMtto` parchean `CustomStore` vía padre.
+- API: pagina en SQL (`OFFSET/FETCH`). Legacy puede estar en memoria hasta migrar.
+
+---
+
+## A) Mtto básico — SPA (legacy / sin padre extendido)
+
+**Archivos:** `component.ts/html`, `service.ts`, `routing.module.ts`, `models/`.
+
+**TS — 4 regiones:**
+1. `Declarando Variables`
+2. `Inicializando Opciones` → `ngOnInit`: `inicializaOpciones()` → `llenaComboBox()` → `consultar()`
+3. `Manejo de Combos` (si aplica)
+4. `Metodos Mtto` → `fillParam`, `fillData`, `guardar()` inline, `bloquear`, `habilitar`, `setFocus`
+
+**HTML:** `app-barra-data-mtto` + `dx-form` + `app-data-grid-mtto`. **Sin** `[columnAutoWidth]="true"` en grid principal.
+
+**Routing:** `DataGridMttoModule`, `DataLookupModule`, `BarraDataMttoModule`, **`exports: [RouterModule]`**.
+
+---
+
+## B) Mtto básico + lookup — SPA
+
+Todo lo del tipo A, más:
+
+**Combos solo vía `getLookUp`:**
+```typescript
+this.appInfoService.getLookUp('TABLA_ORIGEN', 'CONTROLADOR', 'GetCAMPO', where, urlAPI)
+```
+
+| Origen lookup | API endpoint | Ejemplo |
+|---------------|--------------|---------|
+| **Lista estática** | `MOD_LISTA` → `GetCAMPO` | `BAN_LISTA.GetCLASE_BANCO` |
+| **Cross-tabla** | `GetCAMPO_TABLA_ORIGEN` en **controlador de la entidad** (cuenta, centro, lista) | `CON_CATALOGO_CUENTA.GetCUENTA_CONTABLE_CON_PARTIDA` con permiso `/con-partida|R` |
+
+El permiso del endpoint es el de la **pantalla consumidora**, no el del catálogo origen.
+
+**HTML form:** template `CAMPOLookup` + `app-data-lookup`.
+**Multi-columna:** `[lookupColumns]="[{ dataField, caption, width }]"` (popup ancho automático en `app-data-lookup`).
+**Grid detalle (si aplica en tipo C):** `editCellTemplate` + `app-data-lookup` + `lookupColumns`.
+
+**API:** crear endpoint lookup con permiso `/tabla-origen|R`. **NO** `service.getAll()` para combos cuando corresponde lookup.
+**Excepción:** datos filtrados en runtime (ej. centros por cuenta en detalle partida).
+
+---
+
+## C) Mtto con detalle — SPA
+
+Base de A/B, más:
+
+- **Barra:** patrón proceso Compras (`mtto-barra-patron.md`) — `showDates` / `btn1`–`btnN` en HTML; grid principal **sin** `showAdd` / `showRefresh`. TS solo textos en `refrescarBotones()`.
+- **Agregar detalle sin guardar encabezado:** permitir `addRow()` sin exigir PK.
+- **`guardarEncabezadoParaDetalle()`** → `insert` encabezado → `UpdateType.Update` → callback guarda línea.
+- **`detalleRowInserting/Updating/Removing`** con `e.cancel = Promise`.
+- **Bloqueo por estado:** `readOnly` si `ESTADO !== 'DI'` (no reestructurar pantalla entera).
+- **Grid detalle:** `dx-data-grid` propio, `columnAutoWidth=false`.
+- **Lookups en celdas:** `editCellTemplate` + `app-data-lookup` + `lookupColumns`.
+- **Toolbar extendida** solo si el negocio lo requiere (aplicar, imprimir, importar).
+
+### Arquitectura padre / detalle
+
+| Capa | Regla |
+|------|-------|
+| **SPA** | Solo archivos del **padre** (component, routing, module). Detalle: modelo en `models/`, service/repository sin pantalla propia. UI del grid detalle en el padre. |
+| **API** | Lógica del detalle en carpeta separada bajo el padre (`PADRE/PADRE_DETA/`). |
+| **Permisos** | Detalle usa permisos del **padre** (`/ruta-padre|R/C/U/D`). Sin menú ni opción propia para detalle. |
+
+**Referencias:** `com-documento` (Compras), `con-partida` (Contabilidad).
+
+---
+
+## Permisos API (obligatorio)
+
+**Regla:** ¿Quién consume? → permiso en `[Authorize]`. ¿De dónde salen datos? → ese controlador consulta.
+
+| Caso | API | Permiso |
+|------|-----|---------|
+| CRUD propio | `MI_TABLAController` | `/mi-ruta\|R/C/U/D` |
+| Detalle | `PADRE_DETAController` | permiso del **padre** |
+| Combo cross-tabla | `CONTROLADOR_ORIGEN` / `GetCAMPO_TABLA_ORIGEN` | `/url-consumidor\|R` |
+| Grilla con datos ajenos | Repo `objData.Get(CONTROLADOR, 'GetCAMPO_TABLA_ORIGEN')` | mismo — **no** `getLookUp` |
+| Lista | `MOD_LISTA` / `GetCAMPO_TABLA_ORIGEN` | `/url-consumidor\|R` |
+
+**Prohibido:** `GetAll` nativo de catálogo ajeno con permiso de esa pantalla ajena.
+
+Ref. asignación: `con-catalogo-cuenta-centro-costo` — grillas vía `CON_CATALOGO_CUENTA` + `CON_CENTRO_COSTO` con `Get*_CON_CTA_CENTRO_COSTO`.
+
+**Tipo A+ / A+P:** `shared/mtto/` + métodos opt-in en `CBaseComponent`. Plantillas: `DOCS/plantillas/`. Prompt: `DOCS/PROMPT-MTTO.md`.
+
+### CRUD HTTP (todos los catálogos A+ / A+P)
+
+Ver `DOCS/plantillas/mtto-api-crud-http.md`.
+
+| Verbo | SPA | API |
+|-------|-----|-----|
+| **PUT** | Body + query — `CData.Put` fusiona PK si body trae `0` | `this.ApplyQueryKeys(Data, nameof(...PK))` en Put/Activar/Desactivar |
+| **DELETE** | Solo query — PK desde `e.data` del grid | `[FromQuery]` — **sin** `ApplyQueryKeys` |
+
+Service: `update(model, [{ Parameter: 'CORR_XXX', Value: model.CORR_XXX }])` — patrón `gen-banco`. **No** `ApplyPrimaryKeyFromQuery` privado por controller.
+
+**Auditoría en grid:** si `V_*` trae `USUARIO_*`/`FECHA_*`/`ESTACION_*` → solo usuario y fechas al **final** con `buildAuditGridColumns()`; sin `ESTACION_*` en columnas.
+
+Doc equipo: `DOCS/ESTANDAR-MTTO.md` — secciones **Tipo A+**, **A+P**, **Estados**, **Permisos**, **CRUD HTTP**, **Auditoría grid**.
+
+---
+
+## Menú y seguridad (BD) — obligatorio en migraciones
+
+Al dar de alta una pantalla nueva, **siempre** configurar menú en BD:
+
+1. **`SEG_OPCION_SISTEMA`** — `CODIGO_OPCION`, `NOMBRE_OPCION` (NVARCHAR, acentos reales), `URL_OPCION` (`/ruta-spa`).
+2. **`SEG_OPCION_SISTEMA_SUITE`** — vincular a `SGUEES`.
+3. **`SEG_CONFIG_OPCION`** — `CODIGO_SISTEMA`, `CODIGO_MENU`, `ORDEN_MENU`, `ORDEN_OPCION` (orden correcto; opción principal no al final).
+4. **`SEG_USUARIO_OPCION`** — permisos; `CODIGO_MENU` debe coincidir con `SEG_CONFIG_OPCION` (sin duplicados en menús distintos).
+
+**Scripts de referencia:**
+- Reorganizar menú módulo: `SGUEES-DB/Scripts/MENU_CONTABILIDAD_REORG.sql` (modelo idempotente).
+- UTF-8 + orden: `SGUEES-DB/Scripts/FIX_MENU_UTF8_AND_CONTABILIDAD.sql`.
+
+**Ejecutar siempre:** `sqlcmd -S <srv> -d SGUEES -U <user> -f 65001 -i <script.sql>`
+
+**Reglas menú:**
+- Una opción = un `CODIGO_OPCION` = una entrada en `SEG_CONFIG_OPCION`.
+- `URL_OPCION` con `/` inicial, coincide con ruta Angular.
+- Tras cambios de menú: usuario debe **cerrar sesión y reingresar** (menú viene del API al login).
+- Menú lateral SPA usa `menuKey` único (no `path` vacío como clave).
+
+---
+
+## Texto y codificación (UTF-8)
+
+- **Código fuente:** UTF-8 (`.editorconfig`). Acentos reales: `Parámetros`, `Catálogo`, `Períodos`, `éxito` — nunca `ParÃ¡metros` ni ASCII sin tilde.
+- **BD menú:** `NOMBRE_OPCION`, `NOMBRE_MENU`, `NOMBRE_SISTEMA` en **NVARCHAR**; literales SQL con prefijo `N'...'`.
+- **Captions/labels** en `service.ts` y `titulo` en routing: español correcto con tildes.
+
+---
+
+## NO aplicar patrón mtto completo
+
+Procesos: aplicar/anular/desaplicar, importar Excel, reportes, consultas, cierre/apertura. Solo reutilizar servicios/lookups donde aplique.
+
+---
+
+## Checklist por tipo
+
+### A+) Catálogo reforzado (preferido)
+- [ ] Plantilla `DOCS/plantillas/mtto-a-plus.md` aplicada
+- [ ] `CBaseComponent` + 4 regiones + `mttoGridKeyExpr`
+- [ ] `guardarMtto` **sin** `onSuccess: () => consultar()`
+- [ ] `rowRemovingMtto` **sin** reload manual
+- [ ] `(editClick)="editarClick($event)"` — sin botones edit custom
+- [ ] Sin `p-toast` local, sin `.scss` propio, sin `override notifyFx`
+- [ ] HTML: `.sguees-mtto-view` + bindings `mttoPageSize` / `mttoRemoteOperations` / `keyExpr`
+- [ ] CRUD HTTP: `mtto-api-crud-http.md` (`CData.Put` + `ApplyQueryKeys`; Delete solo query)
+- [ ] Auditoría al final: `buildAuditGridColumns()` si la vista trae campos de auditoría
+- [ ] Menú BD si pantalla nueva
+
+### A+P) Paginado servidor
+- [ ] Plantilla `mtto-a-p-paginado.md`
+- [ ] `CustomStore` + `remoteOperations: { paging: true, sorting: true, filtering: false }`
+- [ ] `mttoHybridPaging` + lote (`mttoApiPageSize`) ≠ display (`mttoPageSize`)
+- [ ] `getMttoDataGrid()` con `@ViewChild(DataGridMttoComponent)`
+- [ ] `(apiPageSizeChange)` + `syncMttoHybridApiPageSize` + `loadMttoHybridDisplayPage`
+- [ ] API `ReadPagedViewAsync` + `_AllowedSortFields` (no SQL crudo ni paginación en memoria)
+- [ ] CRUD HTTP: `mtto-api-crud-http.md`
+
+### A) Básico (legacy)
+- [ ] `CBaseComponent` + 4 regiones + `ngOnInit` trio
+- [ ] `fillParam` / `fillData` / `guardar()` inline
+- [ ] `bloquear` / `habilitar` / `setFocus`
+- [ ] `app-barra-data-mtto` + `app-data-grid-mtto`
+- [ ] Routing: `DataLookupModule` + `exports: [RouterModule]`
+- [ ] Menú BD: opción + config + permisos
+- [ ] Sin `columnAutoWidth` en grid principal
+
+### B) Básico + lookup
+- [ ] Todo lo de A
+- [ ] Combos → `getLookUp` (+ endpoint API si falta)
+- [ ] `app-data-lookup` en templates; `lookupColumns` si multi-columna
+- [ ] Permiso API lookup: `/tabla-origen|R`
+
+### C) Con detalle
+- [ ] Todo lo de A/B según combos del encabezado
+- [ ] `guardarEncabezadoParaDetalle` + detalle antes de PK
+- [ ] `detalleRowInserting/Updating/Removing` con Promise
+- [ ] `readOnly` por estado; grid detalle separado
+- [ ] Lookups en celdas con `lookupColumns`
+
+### Siempre
+- [ ] Leer plantilla correcta en `DOCS/plantillas/` antes de codificar
+- [ ] Cambio mínimo: no refactorizar lógica no solicitada
+- [ ] Scripts SQL con `-f 65001`; textos NVARCHAR en menú
+- [ ] `docs/CHECKLIST-PR-MTTO.md` si aplica

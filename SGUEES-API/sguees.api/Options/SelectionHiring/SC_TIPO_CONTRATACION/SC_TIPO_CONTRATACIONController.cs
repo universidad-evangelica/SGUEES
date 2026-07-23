@@ -1,11 +1,12 @@
-using sguees.api.Shared;
 using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading.Tasks;
 using eFramework.Core;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using sguees.api.Shared;
+using sguees.Models;
 using  SGUEES.Models;
 using  SGUEES.Services;
 
@@ -135,6 +136,14 @@ namespace SGUEES.Controllers
             {
                 return BadRequest(resultado);
             }
+        }
+
+        [HttpGet("GetCORR_TIPO_CONTRATACION_SC_REQUISICION_PERSONAL")]
+        [Authorize(Policy = "/sc-tipo-contratacion|R")]
+        public async Task<CResult> GetCORR_TIPO_CONTRATACION_SC_REQUISICION_PERSONAL([FromQuery] SC_TIPO_CONTRATACIONParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
         }
 
     }

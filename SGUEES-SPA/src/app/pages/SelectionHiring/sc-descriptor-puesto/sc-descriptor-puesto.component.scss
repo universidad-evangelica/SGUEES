@@ -1,0 +1,877 @@
+// Estilos del mtto Descriptor de Puesto: layout de formulario, tabs, grids de detalle y popup.
+// Tarjeta del formulario y tipografia de secciones.
+.descriptor-form-card {
+	margin-bottom: 16px;
+}
+
+.descriptor-section-title {
+	margin: 0 0 12px;
+	font-size: 1.05rem;
+	font-weight: 600;
+}
+
+// Encabezado de generalidades y lookup de puesto.
+.descriptor-generalidades {
+	margin-top: 15px;
+	margin-bottom: 16px;
+}
+
+.descriptor-puesto-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.descriptor-puesto-select {
+	flex: 1;
+}
+
+.descriptor-help-text {
+	margin-top: 4px;
+	font-size: 12px;
+	opacity: 0.75;
+}
+
+// Sub-tabs de secciones; --sin-seleccion oculta el contenido hasta elegir un tab.
+.descriptor-sub-tab-panel {
+	margin-top: 8px;
+}
+
+:host ::ng-deep .descriptor-sub-tab-panel .dx-multiview-item,
+:host ::ng-deep .descriptor-sub-tab-panel .dx-multiview-item-content {
+	overflow: visible;
+}
+
+:host ::ng-deep .descriptor-sub-tab-panel--sin-seleccion .dx-multiview-wrapper {
+	display: none;
+}
+
+.descriptor-secciones-hint {
+	margin: 12px 0 0;
+	padding: 14px 16px;
+	border-radius: 10px;
+	border: 1px dashed color-mix(in srgb, var(--base-text-color) 18%, transparent);
+	background: color-mix(in srgb, var(--base-text-color) 4%, transparent);
+	font-size: 0.92rem;
+	line-height: 1.45;
+	opacity: 0.85;
+}
+
+// Aviso cuando el formato actual no incluye el tab que estaba activo.
+.descriptor-seleccione-tab-card {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	margin: 12px 0 0;
+	padding: 16px 18px;
+	border-radius: 10px;
+	border: 1px solid color-mix(in srgb, var(--base-accent, #3b82f6) 35%, var(--border-color, transparent));
+	background: color-mix(in srgb, var(--base-accent, #3b82f6) 10%, transparent);
+	box-shadow: 0 1px 2px color-mix(in srgb, #000 12%, transparent);
+}
+
+.descriptor-seleccione-tab-card__icon {
+	margin-top: 2px;
+	font-size: 1.15rem;
+	opacity: 0.9;
+}
+
+.descriptor-seleccione-tab-card__body {
+	min-width: 0;
+}
+
+.descriptor-seleccione-tab-card__body strong {
+	display: block;
+	margin-bottom: 4px;
+	font-size: 0.95rem;
+}
+
+.descriptor-seleccione-tab-card__body p {
+	margin: 0;
+	font-size: 0.9rem;
+	line-height: 1.45;
+	opacity: 0.9;
+}
+
+.descriptor-sub-tab-pill {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 22px;
+	height: 22px;
+	margin-right: 8px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.descriptor-sub-tab-content {
+	padding: 12px 4px 4px;
+	min-width: 0;
+}
+
+.descriptor-sub-tab-heading {
+	margin: 0 0 12px;
+	font-size: 1rem;
+	font-weight: 600;
+}
+
+.descriptor-sub-tab-placeholder p {
+	margin: 0;
+	opacity: 0.8;
+}
+
+// Bitacora del descriptor (tab principal).
+.descriptor-bitacora {
+	margin-top: 15px;
+}
+
+.descriptor-bitacora-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.descriptor-bitacora-title-icon {
+	font-size: 1.1rem;
+	opacity: 0.9;
+}
+
+.descriptor-bitacora-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	min-height: 120px;
+	padding: 24px 20px;
+	border: 1px solid color-mix(in srgb, var(--base-text-color) 12%, transparent);
+	border-radius: 12px;
+	background: color-mix(in srgb, var(--base-text-color) 4%, transparent);
+	text-align: center;
+}
+
+.descriptor-bitacora-empty-icon {
+	font-size: 1rem;
+	opacity: 0.85;
+	flex-shrink: 0;
+}
+
+.descriptor-bitacora-empty-text {
+	font-size: 0.95rem;
+	line-height: 1.45;
+	color: var(--sguees-text-secondary, color-mix(in srgb, var(--base-text-color) 72%, transparent));
+}
+
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor,
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-dropdownbox.dx-texteditor,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-selectbox.dx-texteditor,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-dropdownbox.dx-texteditor {
+	border-color: var(--error-color, #d9534f);
+}
+
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor.dx-state-hover,
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor.dx-state-focused,
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-dropdownbox.dx-texteditor.dx-state-hover,
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-dropdownbox.dx-texteditor.dx-state-focused,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-selectbox.dx-texteditor.dx-state-hover,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-selectbox.dx-texteditor.dx-state-focused,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-dropdownbox.dx-texteditor.dx-state-hover,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-dropdownbox.dx-texteditor.dx-state-focused {
+	border-color: var(--error-color, #d9534f);
+}
+
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor .dx-dropdowneditor-icon,
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-dropdownbox.dx-texteditor .dx-dropdowneditor-icon,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-selectbox.dx-texteditor .dx-dropdowneditor-icon,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-dropdownbox.dx-texteditor .dx-dropdowneditor-icon {
+	color: var(--error-color, #d9534f);
+}
+
+:host ::ng-deep .descriptor-grid-badge-col {
+	overflow: visible !important;
+}
+
+:host ::ng-deep .descriptor-grid-badge-col .dx-datagrid-text-content {
+	overflow: visible !important;
+	text-overflow: clip !important;
+}
+
+:host ::ng-deep .descriptor-badge-cell {
+	overflow: visible !important;
+	text-overflow: clip !important;
+}
+
+:host ::ng-deep .descriptor-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-width: 76px;
+	max-width: none;
+	flex-shrink: 0;
+	padding: 5px 12px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 800;
+	letter-spacing: 0.02em;
+	line-height: 1;
+	text-transform: uppercase;
+	white-space: nowrap;
+	overflow: visible;
+}
+
+:host ::ng-deep .descriptor-badge__icon {
+	font-size: 13px;
+	line-height: 1;
+	display: inline-flex;
+	align-items: center;
+	flex-shrink: 0;
+}
+
+:host ::ng-deep .descriptor-badge__label {
+	overflow: visible;
+	text-overflow: clip;
+	white-space: nowrap;
+}
+
+:host ::ng-deep .descriptor-badge--version {
+	color: #60a5fa;
+	background: rgba(59, 130, 246, 0.14);
+	border: 1px solid rgba(59, 130, 246, 0.45);
+	text-transform: none;
+}
+
+:host ::ng-deep .descriptor-badge--formato-corta {
+	color: #4ade80;
+	background: rgba(34, 197, 94, 0.18);
+	border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+:host ::ng-deep .descriptor-badge--formato-extensa {
+	--descriptor-extensa-tone: #8b5cf6;
+	color: color-mix(in srgb, var(--descriptor-extensa-tone) 58%, var(--base-text-color));
+	background: color-mix(in srgb, var(--descriptor-extensa-tone) 17%, transparent);
+	border: 1px solid color-mix(in srgb, var(--descriptor-extensa-tone) 42%, var(--border-color));
+}
+
+:host ::ng-deep .descriptor-badge--formato-default {
+	color: color-mix(in srgb, var(--sguees-text-secondary, #64748b) 72%, var(--base-text-color));
+	background: color-mix(in srgb, var(--base-text-color) 8%, transparent);
+	border: 1px solid color-mix(in srgb, var(--base-text-color) 20%, var(--border-color));
+}
+
+:host ::ng-deep .descriptor-badge--estado-activo {
+	color: #4ade80;
+	background: rgba(34, 197, 94, 0.18);
+	border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+:host ::ng-deep .descriptor-badge--estado-inactivo {
+	color: #f87171;
+	background: rgba(239, 68, 68, 0.18);
+	border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+:host ::ng-deep .descriptor-badge--estado-borrador {
+	color: #fbbf24;
+	background: rgba(245, 158, 11, 0.16);
+	border: 1px solid rgba(245, 158, 11, 0.38);
+}
+
+:host ::ng-deep .descriptor-badge--estado-enviado {
+	color: #60a5fa;
+	background: rgba(59, 130, 246, 0.16);
+	border: 1px solid rgba(59, 130, 246, 0.38);
+}
+
+:host ::ng-deep .descriptor-badge--estado-revision {
+	color: #c4b5fd;
+	background: rgba(139, 92, 246, 0.16);
+	border: 1px solid rgba(139, 92, 246, 0.38);
+}
+
+:host ::ng-deep .descriptor-badge--estado-default {
+	color: #cbd5e1;
+	background: rgba(148, 163, 184, 0.12);
+	border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+// Cabeceras y tablas de funciones/KPIs.
+.descriptor-funciones-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 12px;
+}
+
+.descriptor-funciones-icon {
+	margin-right: 8px;
+	font-size: 1rem;
+}
+
+.descriptor-funciones-table-wrap {
+	overflow-x: auto;
+	overflow-y: visible;
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior-x: contain;
+	max-width: 100%;
+	border: 1px solid color-mix(in srgb, var(--base-text-color) 12%, transparent);
+	border-radius: 12px;
+	scrollbar-width: thin;
+	scrollbar-color: color-mix(in srgb, var(--base-text-color) 35%, transparent)
+		color-mix(in srgb, var(--base-text-color) 8%, transparent);
+
+	&::-webkit-scrollbar {
+		height: 8px;
+	}
+
+	&::-webkit-scrollbar-track {
+		background: color-mix(in srgb, var(--base-text-color) 8%, transparent);
+		border-radius: 0 0 12px 12px;
+	}
+
+	&::-webkit-scrollbar-thumb {
+		background: color-mix(in srgb, var(--base-text-color) 32%, transparent);
+		border-radius: 999px;
+		border: 2px solid transparent;
+		background-clip: padding-box;
+	}
+
+	&::-webkit-scrollbar-thumb:hover {
+		background: color-mix(in srgb, var(--base-text-color) 48%, transparent);
+		background-clip: padding-box;
+	}
+}
+
+.descriptor-funciones-table {
+	width: 100%;
+	min-width: 0;
+	border-collapse: collapse;
+	table-layout: fixed;
+}
+
+.descriptor-funciones-table-wrap--extensa .descriptor-funciones-table {
+	min-width: 640px;
+}
+
+.descriptor-funciones-table-wrap--kpis .descriptor-funciones-table {
+	min-width: 846px;
+}
+
+.descriptor-funciones-table-wrap--kpis .descriptor-funciones-col-nombre {
+	width: 400px;
+	min-width: 320px;
+	max-width: 400px;
+}
+
+.descriptor-funciones-table-wrap--kpis .descriptor-funciones-col-frecuencia {
+	width: 190px;
+	min-width: 180px;
+}
+
+.descriptor-funciones-table-wrap--kpis .descriptor-funciones-col-meta {
+	width: 98px;
+	min-width: 98px;
+	max-width: 98px;
+	padding: 10px 6px;
+	white-space: nowrap;
+}
+
+.descriptor-funciones-table-wrap--kpis .descriptor-kpi-meta-field {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	width: 100%;
+}
+
+.descriptor-funciones-table-wrap--kpis .descriptor-funciones-col-accion {
+	width: 110px;
+	min-width: 110px;
+	max-width: 110px;
+	padding-left: 8px;
+	padding-right: 8px;
+}
+
+.descriptor-funciones-col-frecuencia {
+	width: 180px;
+	min-width: 180px;
+}
+
+.descriptor-funciones-table-wrap:not(.descriptor-funciones-table-wrap--kpis):not(.descriptor-funciones-table-wrap--extensa)
+	.descriptor-funciones-col-nombre {
+	min-width: 0;
+}
+
+.descriptor-funciones-col-meta {
+	width: 120px;
+	min-width: 120px;
+}
+
+.descriptor-kpi-meta-suffix {
+	font-size: 0.95rem;
+	font-weight: 600;
+	opacity: 0.85;
+	flex-shrink: 0;
+}
+
+:host ::ng-deep .descriptor-funciones-table-wrap .descriptor-funciones-col-frecuencia app-data-lookup,
+:host ::ng-deep .descriptor-funciones-table-wrap .descriptor-funciones-col-frecuencia .dx-dropdownbox {
+	width: 100%;
+	min-width: 0;
+}
+
+.descriptor-funciones-table th,
+.descriptor-funciones-table td {
+	padding: 10px 12px;
+	border-bottom: 1px solid color-mix(in srgb, var(--base-text-color) 10%, transparent);
+	vertical-align: middle;
+}
+
+.descriptor-funciones-table th {
+	font-size: 12px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	opacity: 0.85;
+}
+
+.descriptor-funciones-col-codigo {
+	width: 72px;
+	min-width: 72px;
+	text-align: center;
+}
+
+.descriptor-funciones-col-nombre {
+	min-width: 220px;
+	width: auto;
+}
+
+.descriptor-funciones-col-actividades {
+	width: 200px;
+	min-width: 180px;
+}
+
+.descriptor-funciones-col-accion {
+	width: 110px;
+	min-width: 110px;
+	text-align: center;
+}
+
+:host ::ng-deep .descriptor-funciones-table-wrap .descriptor-funciones-col-nombre .dx-texteditor {
+	width: 100%;
+	min-width: 0;
+}
+
+:host ::ng-deep .descriptor-funciones-table-wrap--extensa .descriptor-funciones-col-nombre .dx-texteditor,
+:host ::ng-deep .descriptor-funciones-table-wrap--kpis .descriptor-funciones-col-nombre .dx-texteditor {
+	min-width: 200px;
+}
+
+:host ::ng-deep .descriptor-funciones-table-wrap--kpis .descriptor-funciones-col-nombre .dx-texteditor {
+	min-width: 0;
+}
+
+:host ::ng-deep .descriptor-funciones-table-wrap--kpis .descriptor-kpi-meta-field .dx-numberbox {
+	flex: 1 1 auto;
+	width: auto;
+	min-width: 0;
+	max-width: none;
+}
+
+:host ::ng-deep .descriptor-funciones-table-wrap--kpis .descriptor-kpi-meta-field .dx-numberbox-spin-button {
+	display: none;
+}
+
+.descriptor-funciones-empty {
+	text-align: center;
+	opacity: 0.75;
+	padding: 18px 12px;
+}
+
+// Toolbar Agregar/Guardar/Cancelar compartida por grids de detalle.
+.descriptor-deta-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 14px;
+	padding: 10px 12px;
+	background: var(--sguees-surface-subtle, color-mix(in srgb, var(--base-text-color) 6%, transparent));
+	border: 1px solid var(--border-color, color-mix(in srgb, var(--base-text-color) 12%, transparent));
+	border-radius: var(--sguees-radius-md, 10px);
+}
+
+:host ::ng-deep .descriptor-deta-toolbar-btn .dx-button {
+	min-width: 150px;
+	min-height: 40px;
+	padding-inline: 16px;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+:host ::ng-deep .descriptor-deta-toolbar-btn--cancel .dx-button {
+	min-width: 140px;
+}
+
+:host ::ng-deep .descriptor-deta-datagrid {
+	.dx-link-save,
+	.dx-link-cancel {
+		display: none !important;
+	}
+}
+
+:host ::ng-deep .descriptor-deta-datagrid--wrap-text {
+	.dx-datagrid-rowsview .dx-row > td,
+	.dx-datagrid-rowsview .dx-datagrid-text-content {
+		white-space: normal !important;
+		word-break: break-word;
+		overflow-wrap: anywhere;
+		text-overflow: clip !important;
+	}
+
+	.dx-datagrid-rowsview .dx-row.dx-edit-row > td {
+		vertical-align: top !important;
+	}
+}
+
+// Celdas de lookup y listas editables (riesgos / requerimientos).
+.descriptor-riesgo-lookup-cell {
+	display: block;
+	width: 100%;
+	min-height: 36px;
+	padding-top: 2px;
+	box-sizing: border-box;
+}
+
+:host ::ng-deep .descriptor-riesgo-lookup-cell app-data-lookup,
+:host ::ng-deep .descriptor-riesgo-lookup-cell .dx-dropdownbox {
+	display: block;
+	width: 100%;
+	min-height: 36px;
+}
+
+:host ::ng-deep .descriptor-riesgo-lookup-cell .dx-dropdownbox .dx-texteditor-container,
+:host ::ng-deep .descriptor-riesgo-lookup-cell .dx-dropdownbox .dx-texteditor-input-container {
+	min-height: 34px;
+	align-items: center;
+}
+
+.descriptor-riesgo-lista-vista {
+	margin: 0;
+	padding-left: 18px;
+}
+
+.descriptor-riesgo-lista-vista li {
+	margin: 0 0 4px;
+}
+
+.descriptor-riesgo-lista-vacia {
+	opacity: 0.65;
+	font-style: italic;
+}
+
+.descriptor-riesgo-lista-editor {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	width: 100%;
+	padding: 8px 10px;
+	box-sizing: border-box;
+}
+
+.descriptor-riesgo-lista-editor__row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.descriptor-riesgo-lista-editor__input {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.descriptor-riesgo-lista-editor__delete {
+	flex: 0 0 auto;
+}
+
+.descriptor-riesgo-lista-editor__add {
+	align-self: flex-start;
+	margin-top: 2px;
+}
+
+.descriptor-funciones-note {
+	margin: 12px 0 0;
+	font-size: 12px;
+	opacity: 0.75;
+}
+
+// Perfil, competencias y relaciones: headers y paneles internos.
+.descriptor-perfil-header {
+	margin-bottom: 12px;
+}
+
+.descriptor-perfil-icon {
+	margin-right: 8px;
+	font-size: 1rem;
+}
+
+.descriptor-perfil-tab-panel {
+	margin-top: 4px;
+}
+
+:host ::ng-deep .descriptor-perfil-tab-panel .dx-multiview-item,
+:host ::ng-deep .descriptor-perfil-tab-panel .dx-multiview-item-content {
+	overflow: visible;
+}
+
+.descriptor-perfil-tab-content {
+	padding: 16px 4px 4px;
+}
+
+.descriptor-competencias-header {
+	margin-bottom: 12px;
+}
+
+.descriptor-competencias-icon {
+	margin-right: 8px;
+	font-size: 1rem;
+}
+
+.descriptor-competencias-tab-panel {
+	margin-top: 4px;
+}
+
+:host ::ng-deep .descriptor-competencias-tab-panel .dx-multiview-item,
+:host ::ng-deep .descriptor-competencias-tab-panel .dx-multiview-item-content {
+	overflow: visible;
+}
+
+.descriptor-competencias-tab-content {
+	padding: 16px 4px 4px;
+}
+
+.descriptor-relaciones-header {
+	margin-bottom: 4px;
+}
+
+.descriptor-relaciones-icon {
+	margin-right: 8px;
+	font-size: 1rem;
+}
+
+.descriptor-relaciones-tab-panel {
+	margin-top: 4px;
+}
+
+:host ::ng-deep .descriptor-relaciones-tab-panel .dx-multiview-item,
+:host ::ng-deep .descriptor-relaciones-tab-panel .dx-multiview-item-content {
+	overflow: visible;
+}
+
+.descriptor-relaciones-tab-content {
+	padding: 16px 4px 4px;
+}
+
+.descriptor-competencias-tecnicas-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	align-items: flex-end;
+	margin-bottom: 12px;
+}
+
+.descriptor-competencias-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 280px;
+	max-width: 520px;
+	flex: 1 1 320px;
+}
+
+.descriptor-competencias-field--lookup {
+	max-width: 640px;
+	flex: 1 1 420px;
+}
+
+.descriptor-competencias-label {
+	font-size: 12px;
+	font-weight: 600;
+	opacity: 0.85;
+}
+
+:host ::ng-deep .descriptor-competencias-field .dx-selectbox,
+:host ::ng-deep .descriptor-competencias-field app-data-lookup,
+:host ::ng-deep .descriptor-competencias-field .dx-dropdownbox {
+	width: 100%;
+}
+
+:host ::ng-deep .descriptor-competencias-tab-panel .dx-tab {
+	min-width: 140px;
+}
+
+:host ::ng-deep .descriptor-relaciones-tab-panel .dx-tab {
+	min-width: 140px;
+}
+
+.descriptor-perfil-form {
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+.descriptor-perfil-row {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 16px;
+}
+
+.descriptor-perfil-row--secondary {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.descriptor-perfil-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-width: 0;
+}
+
+.descriptor-perfil-label {
+	font-size: 12px;
+	font-weight: 600;
+	opacity: 0.85;
+}
+
+:host ::ng-deep .descriptor-perfil-field .dx-texteditor,
+:host ::ng-deep .descriptor-perfil-field app-data-lookup,
+:host ::ng-deep .descriptor-perfil-field .dx-dropdownbox {
+	width: 100%;
+}
+
+:host ::ng-deep .descriptor-perfil-tab-panel .dx-tab {
+	min-width: 120px;
+}
+
+// Boton/badge que abre el popup de actividades desde la fila de funcion clave.
+.descriptor-actividades-trigger {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 7px 12px;
+	border: none;
+	border-radius: 8px;
+	background: #2563eb;
+	color: #fff;
+	font-weight: 600;
+	cursor: pointer;
+	white-space: nowrap;
+}
+
+.descriptor-actividades-trigger:disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+
+.descriptor-actividades-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 22px;
+	height: 22px;
+	padding: 0 6px;
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.2);
+	font-size: 12px;
+	font-weight: 700;
+}
+
+.descriptor-actividades-popup {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	padding: 4px;
+	min-height: 0;
+}
+
+.descriptor-actividades-popup-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-top: 15px;
+	flex-wrap: wrap;
+}
+
+.descriptor-actividades-popup-actions-right {
+	display: flex;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+// Layout del popup de actividades (incluye fullscreen responsive).
+:host ::ng-deep .descriptor-actividades-popup-wrapper .dx-popup-content {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+:host ::ng-deep .descriptor-actividades-popup-wrapper.dx-popup-fullscreen .dx-popup-content {
+	height: 100%;
+	padding: 12px 16px;
+	box-sizing: border-box;
+}
+
+:host ::ng-deep .descriptor-actividades-popup-wrapper.dx-popup-fullscreen .descriptor-actividades-popup {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+}
+
+:host ::ng-deep .descriptor-actividades-popup-wrapper.dx-popup-fullscreen .descriptor-funciones-table-wrap {
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+}
+
+@media (max-width: 991.98px) {
+	.descriptor-actividades-popup-actions {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.descriptor-actividades-popup-actions-right {
+		width: 100%;
+		flex-direction: column;
+	}
+
+	:host ::ng-deep .descriptor-actividades-popup-actions .dx-button,
+	:host ::ng-deep .descriptor-actividades-popup-actions-right .dx-button {
+		width: 100%;
+	}
+
+	.descriptor-funciones-col-accion {
+		width: 56px;
+		min-width: 56px;
+	}
+
+	.descriptor-perfil-row,
+	.descriptor-perfil-row--secondary {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 575.98px) {
+	.descriptor-actividades-popup {
+		padding: 0;
+	}
+
+	.descriptor-funciones-table th {
+		font-size: 11px;
+	}
+
+	.descriptor-funciones-table th,
+	.descriptor-funciones-table td {
+		padding: 8px;
+	}
+}

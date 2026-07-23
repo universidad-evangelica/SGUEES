@@ -1,13 +1,17 @@
+// DTO de lectura de inducción (proyección de la vista SQL).
 using System;
 
 namespace SGUEES.Models
 {
+    // Campos expuestos por la vista de consulta de inducción.
     public class SC_INDUCCIONView
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_INDUCCION { get; set; }
         public string NOMBRE_INDUCCION { get; set; }
+        // Duración de la inducción, en semanas.
         public int SEMANAS_INDUCCION { get; set; }
+        // Estado del catálogo: true = activo, false = inactivo.
         public bool? ESTADO_INDUCCION { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }

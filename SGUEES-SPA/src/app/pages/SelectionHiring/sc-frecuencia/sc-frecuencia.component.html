@@ -1,63 +1,78 @@
-﻿<p-toast
-	position="bottom-right"
-	[showTransformOptions]="'translateY(100%)'"
-	[hideTransitionOptions]="'500ms'"
-	[showTransformOptions]="'translateX(100%)'"
-></p-toast>
-
+<!-- Contenedor principal del mantenimiento de Frecuencia. -->
 <div class="sguees-mtto-view">
+<!-- Toolbar: nuevo, guardar y cancelar. -->
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
-	[subTituloVentana]="subTituloVentana"
+	[showRibbon]="true"
+	[showExport]="permitePrint"
 	[isBrowse]="isBrowse()"
 	[isForm]="isForm()"
 	[permiteAdd]="permiteAdd"
+	[showRefresh]="true"
+	[showEstadoToolbar]="true"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="permiteEdit"
+	[focusedRow]="isBrowse() ? model : null"
+	(consultar)="consultar()"
 	(nuevo)="nuevo()"
 	(guardar)="guardar()"
 	(cancelar)="cancelar()"
+	(activarInactivar)="activar_inactivar()"
 >
 </app-barra-data-mtto>
 
-<div class="content-block dx-card responsive-paddings frecuencia-page frecuencia-form-card" *ngIf="!isBrowse()">
+	<!-- Formulario de creación/edición (oculto en browse). -->
+<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 	<dx-form
 		#fData
 		id="fData"
 		[formData]="model"
 		[labelLocation]="'top'"
-		[colCount]="8"
-		[colCountByScreen]="{ xs: 1, sm: 1, md: 4, lg: 8 }"
+		[colCount]="mttoFormColCount"
+		[colCountByScreen]="mttoFormColCountByScreen"
 		[showRequiredMark]="false"
 		[items]="items"
 	>
 	</dx-form>
 </div>
 
+<!-- Grilla del catálogo con acciones de mantenimiento. -->
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
 	[models]="models"
 	[columns]="columns"
 	[summary]="summary"
-	[keyExpr]="'CORR_FRECUENCIA'"
-	[remoteOperations]="{ paging: true, filtering: true }"
-	[pageSize]="5"
-	[allowedPageSizes]="pageSizes"
+	[keyExpr]="mttoGridKeyExpr"
+	[pageSize]="mttoPageSize"
+	[allowedPageSizes]="mttoPageSizes"
+	[remoteOperations]="mttoRemoteOperations"
+	[repaintChangesOnly]="false"
+	[nativeToolbar]="true"
+	[unifiedToolbar]="false"
 	[showSearch]="false"
-	[showAdd]="true"
-	[showRefresh]="true"
-	[showExport]="true"
+	[showAdd]="false"
+	[showRefresh]="false"
+	[showExport]="false"
+	[showEstadoToolbar]="true"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="permiteEdit"
+	[focusedRowKey]="gridFocusedRowKey"
 	[permitePrint]="permitePrint"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
 	[responsiveColumnHiding]="false"
 	[columnHidingEnabled]="false"
 	[exportFileName]="'Frecuencia'"
-	(refresh)="consultar()"
-	(add)="nuevo()"
 	(rowDblClick)="rowDblClick($event)"
 	(rowRemoving)="rowRemoving($event)"
 	(focusedRowChanged)="focusedRowChanged($event)"
-></app-data-grid-mtto>
+	(editClick)="onEditClick($event)"
+>
+</app-data-grid-mtto>
 
 </div>
 
+<!-- Panel de carga durante operaciones asíncronas. -->
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"

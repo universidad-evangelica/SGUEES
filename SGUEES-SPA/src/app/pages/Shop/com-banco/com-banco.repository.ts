@@ -28,4 +28,8 @@ export class ComBancoRepository {
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlCOMPRASAPI);
 	}
+
+	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlCOMPRASAPI);
+	}
 }

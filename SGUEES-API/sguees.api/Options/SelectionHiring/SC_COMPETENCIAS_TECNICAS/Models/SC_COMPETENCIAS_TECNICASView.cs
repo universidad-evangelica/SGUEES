@@ -1,7 +1,11 @@
+// Qué hace: DTO de lectura de competencia técnica.
+// Cómo: proyecta los campos expuestos por la vista SQL V_SC_COMPETENCIAS_TECNICAS, incluidos datos de padre y nivel 1.
 using System;
 
 namespace SGUEES.Models
 {
+    // Qué hace: modelo de consulta de competencia técnica.
+    // Cómo: agrupa correlativos, código, nombre, definición, nivel, estado, auditoría y columnas de jerarquía.
     public class SC_COMPETENCIAS_TECNICASView
     {
         public int CORR_EMPRESA { get; set; }
@@ -22,5 +26,7 @@ namespace SGUEES.Models
         public string NOMBRE_PADRE { get; set; }
         public string DESCRIPCION_PADRE { get; set; }
         public string NIVEL_PADRE { get; set; }
+        public string CODIGO_NIV1 { get; set; }
+        public string NOMBRE_NIV1 { get; set; }
     }
 }

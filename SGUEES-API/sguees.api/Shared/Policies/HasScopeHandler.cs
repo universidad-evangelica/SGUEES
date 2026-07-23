@@ -19,17 +19,26 @@ namespace sguees.api.Policies
                 ClaimName = requirement.PolicyName;
             }
             
-            if (!context.User.HasClaim(c => c.Type == ClaimName))
-                return Task.CompletedTask;
-
-            // Obteniendo el Claim para verificar si existe el permiso a verificar
-            var scopes = context.User.FindFirst(c => c.Type == ClaimName).Value;
-
-            // Succeed si el permiso se encuentra en el Claim
-            if (scopes.Contains(requirement.PolicyValue))
-                context.Succeed(requirement);
-
+            TrySucceedFromClaim(context, requirement, ClaimName);
             return Task.CompletedTask;
+        }
+
+        private static bool TrySucceedFromClaim(
+            AuthorizationHandlerContext context,
+            HasScopeRequirement requirement,
+            string claimName)
+        {
+            if (!context.User.HasClaim(c => c.Type == claimName))
+                return false;
+
+            var scopes = context.User.FindFirst(c => c.Type == claimName)?.Value ?? string.Empty;
+            if (scopes.Contains(requirement.PolicyValue))
+            {
+                context.Succeed(requirement);
+                return true;
+            }
+
+            return false;
         }
     }
 }

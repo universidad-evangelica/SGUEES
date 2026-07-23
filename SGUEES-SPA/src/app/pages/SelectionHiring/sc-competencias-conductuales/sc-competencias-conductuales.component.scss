@@ -1,0 +1,16 @@
+// Qué hace: estilos locales del mantenimiento de Competencias Conductuales.
+// Cómo: resalta en rojo el borde del lookup de tipo de puesto cuando la validación lo marca como inválido.
+
+// Estado visual inválido del lookup de tipo de puesto.
+:host ::ng-deep .tipo-puesto-lookup-field--invalid .dx-dropdownbox.dx-texteditor {
+	border-color: var(--error-color, #d9534f);
+}
+
+:host ::ng-deep .tipo-puesto-lookup-field--invalid .dx-dropdownbox.dx-texteditor.dx-state-hover,
+:host ::ng-deep .tipo-puesto-lookup-field--invalid .dx-dropdownbox.dx-texteditor.dx-state-focused {
+	border-color: var(--error-color, #d9534f);
+}
+
+:host ::ng-deep .tipo-puesto-lookup-field--invalid .dx-dropdownbox.dx-texteditor .dx-dropdowneditor-icon {
+	color: var(--error-color, #d9534f);
+}

@@ -18,6 +18,7 @@ const routes: Routes = [{ path: '', component: ConCatalogoCuentaCentroCostoCompo
 		DxLoadPanelModule,
 		DxButtonModule,
 	],
+	exports: [RouterModule],
 	declarations: [ConCatalogoCuentaCentroCostoComponent],
 })
 export class ConCatalogoCuentaCentroCostoRoutingModule {}

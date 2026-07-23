@@ -60,5 +60,47 @@ namespace sguees.Controllers
 			var resultado = await _service.DeleteAsync(Data, "", "");
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
+
+		[HttpGet("GetCORR_CLASE_PARTIDA_BAN_TIPO_MOVI_BANCARIO")]
+		[Authorize(Policy = "/ban-tipo-movi-bancario|R")]
+		public async Task<CResult> GetCORR_CLASE_PARTIDA_BAN_TIPO_MOVI_BANCARIO([FromQuery] CON_CLASE_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		// --- CON_PARTIDA ---
+
+		[HttpGet("GetCORR_CLASE_PARTIDA_CON_PARTIDA")]
+		[Authorize(Policy = "/con-partida|R")]
+		public async Task<CResult> GetCORR_CLASE_PARTIDA_CON_PARTIDA([FromQuery] CON_CLASE_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_CLASE_PARTIDA_CON_PARTIDA_APLICAR")]
+		[Authorize(Policy = "/con-partida-aplicar|R")]
+		public async Task<CResult> GetCORR_CLASE_PARTIDA_CON_PARTIDA_APLICAR([FromQuery] CON_CLASE_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_CLASE_PARTIDA_CON_PARTIDA_DESAPLICAR")]
+		[Authorize(Policy = "/con-partida-desaplicar|R")]
+		public async Task<CResult> GetCORR_CLASE_PARTIDA_CON_PARTIDA_DESAPLICAR([FromQuery] CON_CLASE_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		[HttpGet("GetCORR_CLASE_PARTIDA_CON_PARTIDA_ANULAR")]
+		[Authorize(Policy = "/con-partida-anular|R")]
+		public async Task<CResult> GetCORR_CLASE_PARTIDA_CON_PARTIDA_ANULAR([FromQuery] CON_CLASE_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
 	}
 }

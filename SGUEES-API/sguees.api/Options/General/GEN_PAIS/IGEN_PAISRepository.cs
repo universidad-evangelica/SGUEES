@@ -1,9 +1,13 @@
+using System.Threading.Tasks;
 using eFramework.Data;
-using sguees.Models;
+using SGUEES.Models;
 
-namespace sguees.Repositories
+namespace SGUEES.Repositories
 {
-	public interface IGEN_PAISRepository: IRepository<GEN_PAISTable>
+	// Qué hace: define el contrato del repositorio de países con comprobación de duplicados.
+	public interface IGEN_PAISRepository : IRepository<GEN_PAISTable>
 	{
+		// Qué hace: comprueba duplicados de país dentro de su ámbito funcional.
+		Task<bool> ExistsByFieldAsync(string fieldName, string normalizedValue, int excludeCorrPais);
 	}
 }

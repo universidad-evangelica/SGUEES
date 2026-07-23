@@ -4,30 +4,23 @@ import { take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
+import { IParam } from 'src/app/FxAPI/IParam';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { GenEmpresa } from './models/gen-empresa';
 import { GenEmpresaService } from './gen-empresa.service';
-import { IParam } from 'src/app/FxAPI/IParam';
+
 @Component({
 	selector: 'app-gen-empresa',
 	templateUrl: './gen-empresa.component.html',
-	styleUrls: ['./gen-empresa.component.scss'],
 })
 export class GenEmpresaComponent extends CBaseComponent implements OnInit {
-	constructor(
-		public override appInfoService: AppInfoService,
-		public override router: ActivatedRoute,
-		private service: GenEmpresaService
-	) {
-		super(appInfoService, router);
-		this.columns = this.service.getColumns();
-		this.summary = this.service.getSummary();
-		this.items = this.service.getItems();
-	}
+	protected override etiquetaRegistro = 'la empresa';
+	protected override requiereEmpresaSesion = false;
+	protected override mttoGridKeyExpr = 'CORR_EMPRESA';
+	protected override mttoRemoteOperations = false;
 
-	//#region <Declarando Variales>
 	mCORR_PAIS: any;
 	mCORR_DEPTO: any;
 	mCORR_MUNICIPIO: any;
@@ -39,9 +32,18 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 	logo1Preview: string | null = null;
 	logo2Preview: string | null = null;
 	selloPreview: string | null = null;
-	// #endregion
 
-	//#region <Inicializando Opciones>
+	constructor(
+		public override appInfoService: AppInfoService,
+		public override router: ActivatedRoute,
+		private service: GenEmpresaService
+	) {
+		super(appInfoService, router);
+		this.columns = this.service.getColumns();
+		this.summary = this.service.getSummary();
+		this.items = this.service.getItems();
+	}
+
 	ngOnInit(): void {
 		this.inicializaOpciones();
 		this.llenaComboBox();
@@ -49,13 +51,15 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 	}
 
 	inicializaOpciones() {}
-	// #endregion
 
-	//#region <Manejo de Combos>
+	override AsignaStatus(xEstado: UpdateType): void {
+		super.AsignaStatus(xEstado);
+		if (xEstado === UpdateType.Browse) {
+		}
+	}
+
 	llenaComboBox() {
 		this.getCORR_PAIS();
-		this.getCORR_DEPTO();
-		this.getCORR_MUNICIPIO();
 		this.getCORR_SECTOR_ECONOMICO();
 	}
 
@@ -67,15 +71,23 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 				next: (response: any) => {
 					if (response.Result) {
 						this.mCORR_PAIS = response.Data;
+					} else {
+						this.notifyApiResponse(response);
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
-	getCORR_DEPTO() {
-		let xWhere: IParam[] = [{ Parameter: 'CORR_PAIS', Value: 1 }];
+
+	getCORR_DEPTO(corrPais?: number) {
+		const pais = corrPais ?? this.model?.CORR_PAIS;
+		if (!pais) {
+			this.mCORR_DEPTO = [];
+			return;
+		}
+		const xWhere: IParam[] = [{ Parameter: 'CORR_PAIS', Value: pais }];
 		this.appInfoService
 			.getLookUp('GEN_EMPRESA', 'GEN_DEPTO', 'GetCORR_DEPTO', xWhere, environment.UrlGENERALAPI)
 			.pipe(take(1))
@@ -83,15 +95,27 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 				next: (response: any) => {
 					if (response.Result) {
 						this.mCORR_DEPTO = response.Data;
+					} else {
+						this.notifyApiResponse(response);
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
-	getCORR_MUNICIPIO() {
-		let xWhere: IParam[] = [{ Parameter: 'CORR_DEPTO', Value: 1 }];
+
+	getCORR_MUNICIPIO(corrPais?: number, corrDepto?: number) {
+		const pais = corrPais ?? this.model?.CORR_PAIS;
+		const depto = corrDepto ?? this.model?.CORR_DEPTO;
+		if (!pais || !depto) {
+			this.mCORR_MUNICIPIO = [];
+			return;
+		}
+		const xWhere: IParam[] = [
+			{ Parameter: 'CORR_PAIS', Value: pais },
+			{ Parameter: 'CORR_DEPTO', Value: depto },
+		];
 		this.appInfoService
 			.getLookUp('GEN_EMPRESA', 'GEN_MUNICIPIO', 'GetCORR_MUNICIPIO', xWhere, environment.UrlGENERALAPI)
 			.pipe(take(1))
@@ -99,234 +123,132 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 				next: (response: any) => {
 					if (response.Result) {
 						this.mCORR_MUNICIPIO = response.Data;
+					} else {
+						this.notifyApiResponse(response);
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
+
 	getCORR_SECTOR_ECONOMICO() {
 		this.appInfoService
-			.getLookUp('GEN_EMPRESA', 'GEN_SECTOR_ECONOMICO', 'GetCORR_SECTOR_ECONOMICO', undefined, environment.UrlGENERALAPI)
+			.getLookUp(
+				'GEN_EMPRESA',
+				'GEN_SECTOR_ECONOMICO',
+				'GetCORR_SECTOR_ECONOMICO',
+				undefined,
+				environment.UrlGENERALAPI
+			)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
 						this.mCORR_SECTOR_ECONOMICO = response.Data;
+					} else {
+						this.notifyApiResponse(response);
 					}
 				},
 				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
+					this.notifyApiError(error);
 				},
 			});
 	}
 
 	onPaisChange(value: number): void {
-		console.log('Pais seleccionado:', value);
-
-		let xWhere: IParam[] = [{ Parameter: 'CORR_PAIS', Value: value }];
-		this.appInfoService
-			.getLookUp('GEN_EMPRESA', 'GEN_DEPTO', 'GetCORR_DEPTO', xWhere, environment.UrlGENERALAPI)
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.mCORR_DEPTO = response.Data;
-					}
-				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+		this.model.CORR_DEPTO = 0;
+		this.model.CORR_MUNICIPIO = 0;
+		this.mCORR_MUNICIPIO = [];
+		this.getCORR_DEPTO(value);
 	}
 
 	onDeptoChange(value: number): void {
-		console.log('Depto seleccionado:', value);
-
-		let xWhere: IParam[] = [{ Parameter: 'CORR_DEPTO', Value: value }];
-		this.appInfoService
-			.getLookUp('GEN_EMPRESA', 'GEN_MUNICIPIO', 'GetCORR_MUNICIPIO', xWhere, environment.UrlGENERALAPI)
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.mCORR_MUNICIPIO = response.Data;
-					}
-				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+		this.model.CORR_MUNICIPIO = 0;
+		this.getCORR_MUNICIPIO(this.model.CORR_PAIS, value);
 	}
 
-	//#endregion
-
-	//#region <Metodos Mtto>
 	fillParam(xCORR_EMPRESA?: number): any {
-		if (xCORR_EMPRESA == undefined) {
-			xCORR_EMPRESA = 0;
-		}
 		return {
-			CORR_EMPRESA: xCORR_EMPRESA,
+			CORR_EMPRESA: xCORR_EMPRESA ?? 0,
 		};
 	}
 
 	override fillData(xModel?: GenEmpresa): GenEmpresa {
 		if (xModel !== undefined) {
-			return {
-				CORR_EMPRESA: xModel.CORR_EMPRESA,
-				NOMBRE_EMPRESA: xModel.NOMBRE_EMPRESA,
-				NOMBRE_COMERCIAL: xModel.NOMBRE_COMERCIAL,
-				NOMBRE_REPRESENTANTE_LEGAL: xModel.NOMBRE_REPRESENTANTE_LEGAL,
-				GIRO_EMPRESA: xModel.GIRO_EMPRESA,
-				DIRECCION_EMPRESA: xModel.DIRECCION_EMPRESA,
-				NUMERO_NIT: xModel.NUMERO_NIT,
-				NUMERO_NRC: xModel.NUMERO_NRC,
-				NOMBRE_CONTACTO: xModel.NOMBRE_CONTACTO,
-				TELEFONO_1: xModel.TELEFONO_1,
-				TELEFONO_2: xModel.TELEFONO_2,
-				FAX: xModel.FAX,
-				CORREO_ELECTRONICO: xModel.CORREO_ELECTRONICO,
-				LOGO_1: xModel.LOGO_1,
-				LOGO_2: xModel.LOGO_2,
-				TAMANO_EMPRESA: xModel.TAMANO_EMPRESA,
-				NATURAL_JURIDICO: xModel.NATURAL_JURIDICO,
-				CODIGO_EMPRESA: xModel.CODIGO_EMPRESA,
-				CORR_PAIS: xModel.CORR_PAIS,
-				CORR_DEPTO: xModel.CORR_DEPTO,
-				CORR_MUNICIPIO: xModel.CORR_MUNICIPIO,
-				NOMBRE_EMPRESA_LARGO: xModel.NOMBRE_EMPRESA_LARGO,
-				DIRECCION_EMPRESA_LARGO: xModel.DIRECCION_EMPRESA_LARGO,
-				SELLO: xModel.SELLO,
-				CODIGO_POSTAL: xModel.CODIGO_POSTAL,
-				TIPO_INGRESO_ISR: xModel.TIPO_INGRESO_ISR,
-				CORR_SECTOR_ECONOMICO: xModel.CORR_SECTOR_ECONOMICO,
-				USA_CAMPOS_LIBRO_IVA: xModel.USA_CAMPOS_LIBRO_IVA,
-				PERMITE_EDITAR_CAMPOS_LIBRO_IVA: xModel.PERMITE_EDITAR_CAMPOS_LIBRO_IVA,
-				USUARIO_CREA: xModel.USUARIO_CREA,
-				FECHA_CREA: xModel.FECHA_CREA,
-				ESTACION_CREA: xModel.ESTACION_CREA,
-				USUARIO_ACTU: xModel.USUARIO_ACTU,
-				FECHA_ACTU: xModel.FECHA_ACTU,
-				ESTACION_ACTU: xModel.ESTACION_ACTU,
-				NOMBRE_PAIS: xModel.NOMBRE_PAIS,
-				NOMBRE_DEPTO: xModel.NOMBRE_DEPTO,
-				NOMBRE_MUNICIPIO: xModel.NOMBRE_MUNICIPIO,
-				NOMBRE_SECTOR_ECONOMICO: xModel.NOMBRE_SECTOR_ECONOMICO,
-			};
-		} else {
-			return {
-			CORR_EMPRESA: 1,
-				NOMBRE_EMPRESA: '',
-				NOMBRE_COMERCIAL: '',
-				NOMBRE_REPRESENTANTE_LEGAL: '',
-				GIRO_EMPRESA: '',
-				DIRECCION_EMPRESA: '',
-				NUMERO_NIT: '',
-				NUMERO_NRC: '',
-				NOMBRE_CONTACTO: '',
-				TELEFONO_1: '',
-				TELEFONO_2: '',
-				FAX: '',
-				CORREO_ELECTRONICO: '',
-				LOGO_1: null,
-				LOGO_2: null,
-				TAMANO_EMPRESA: '',
-				NATURAL_JURIDICO: '',
-				CODIGO_EMPRESA: '',
-				CORR_PAIS: 0,
-				CORR_DEPTO: 0,
-				CORR_MUNICIPIO: 0,
-				NOMBRE_EMPRESA_LARGO: '',
-				DIRECCION_EMPRESA_LARGO: '',
-				SELLO: null,
-				CODIGO_POSTAL: '',
-				TIPO_INGRESO_ISR: 0,
-				CORR_SECTOR_ECONOMICO: 0,
-				USA_CAMPOS_LIBRO_IVA: true,
-				PERMITE_EDITAR_CAMPOS_LIBRO_IVA: true,
-				USUARIO_CREA: '',
-				FECHA_CREA: new Date(),
-				ESTACION_CREA: '',
-				USUARIO_ACTU: '',
-				FECHA_ACTU: new Date(),
-				ESTACION_ACTU: '',
-				NOMBRE_PAIS: '',
-				NOMBRE_DEPTO: '',
-				NOMBRE_MUNICIPIO: '',
-				NOMBRE_SECTOR_ECONOMICO: '',
-			};
+			return { ...xModel };
 		}
+
+		return {
+			CORR_EMPRESA: 0,
+			NOMBRE_EMPRESA: '',
+			NOMBRE_COMERCIAL: '',
+			NOMBRE_REPRESENTANTE_LEGAL: '',
+			GIRO_EMPRESA: '',
+			DIRECCION_EMPRESA: '',
+			NUMERO_NIT: '',
+			NUMERO_NRC: '',
+			NOMBRE_CONTACTO: '',
+			TELEFONO_1: '',
+			TELEFONO_2: '',
+			FAX: '',
+			CORREO_ELECTRONICO: '',
+			LOGO_1: null,
+			LOGO_2: null,
+			TAMANO_EMPRESA: '',
+			NATURAL_JURIDICO: '',
+			CODIGO_EMPRESA: '',
+			CORR_PAIS: 0,
+			CORR_DEPTO: 0,
+			CORR_MUNICIPIO: 0,
+			NOMBRE_EMPRESA_LARGO: '',
+			DIRECCION_EMPRESA_LARGO: '',
+			SELLO: null,
+			CODIGO_POSTAL: '',
+			TIPO_INGRESO_ISR: 0,
+			CORR_SECTOR_ECONOMICO: 0,
+			USA_CAMPOS_LIBRO_IVA: true,
+			PERMITE_EDITAR_CAMPOS_LIBRO_IVA: true,
+			USUARIO_CREA: '',
+			FECHA_CREA: new Date(),
+			ESTACION_CREA: '',
+			USUARIO_ACTU: '',
+			FECHA_ACTU: new Date(),
+			ESTACION_ACTU: '',
+			NOMBRE_PAIS: '',
+			NOMBRE_DEPTO: '',
+			NOMBRE_MUNICIPIO: '',
+			NOMBRE_SECTOR_ECONOMICO: '',
+		};
 	}
 
-	consultar() {
-		this.service
-			.getAll(this.fillParam())
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.models = response.Data;
-					}
-				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+	consultar(): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+		});
+	}
+
+	override editarClick(e: any): void {
+		super.editarClick(e);
+		this.clearImageState();
+		if (this.model?.CORR_PAIS) {
+			this.getCORR_DEPTO(this.model.CORR_PAIS);
+		}
+		if (this.model?.CORR_PAIS && this.model?.CORR_DEPTO) {
+			this.getCORR_MUNICIPIO(this.model.CORR_PAIS, this.model.CORR_DEPTO);
+		}
 	}
 
 	guardar(): void {
-		if (!this.service.esValido(this.model, this.notifyFx)) {
-			return;
-		}
-
-		const formData = this.buildEmpresaFormData();
-		this.loadingVisible = true;
-		if (this.banderaMtto === UpdateType.Add) {
-			this.service
-				.insertWithImages(formData)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.models.push(response.Data);
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro creado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		} else if (this.banderaMtto === UpdateType.Update) {
-			this.service
-				.updateWithImages(formData, this.model.CORR_EMPRESA)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							const vIndex = this.models.findIndex((item: any) => item.CORR_EMPRESA === response.Data.CORR_EMPRESA);
-							this.models[vIndex] = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, NotifyType.Error);
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(error, NotifyType.Error);
-						this.loadingVisible = false;
-					},
-				});
-		}
+		this.guardarMtto({
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			insert: () => this.service.insertWithImages(this.buildEmpresaFormData()),
+			update: () => this.service.updateWithImages(this.buildEmpresaFormData(), this.model.CORR_EMPRESA),
+			onSuccess: () => this.clearImageState(),
+			successAddMessage: 'Empresa creada con éxito.',
+			successUpdateMessage: 'Empresa modificada con éxito.',
+		});
 	}
 
 	private buildEmpresaFormData(): FormData {
@@ -429,7 +351,7 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 		}
 
 		if (!file.type.startsWith('image/')) {
-			this.notifyFx('El archivo seleccionado no es una imagen.', NotifyType.Error);
+			this.notifyFx('El archivo seleccionado no es una imagen.', NotifyType.Warning);
 			if (tipo === 'logo1') {
 				this.logo1File = null;
 				this.logo1Preview = null;
@@ -464,56 +386,13 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 		this.selloPreview = null;
 	}
 
-	rowRemoving(e: any) {
-		this.service
-			.delete(this.fillParam(e.data.CORR_EMPRESA))
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-						e.component.refresh();
-					} else {
-						e.cancel = true;
-						this.notifyFx(response.ErrorMessage, NotifyType.Error);
-					}
-				},
-				error: (error: any) => {
-					e.cancel = true;
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+	rowRemoving(e: any): void {
+		this.rowRemovingMtto(e, {
+			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_EMPRESA)),
+		});
 	}
 
 	override bloquear(): void {
-		this.dataForm.instance.getEditor('NOMBRE_EMPRESA')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('NOMBRE_COMERCIAL')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('NOMBRE_REPRESENTANTE_LEGAL')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('GIRO_EMPRESA')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('DIRECCION_EMPRESA')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('NUMERO_NIT')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('NUMERO_NRC')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('NOMBRE_CONTACTO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('TELEFONO_1')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('TELEFONO_2')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('FAX')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORREO_ELECTRONICO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('LOGO_1')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('LOGO_2')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('TAMANO_EMPRESA')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('NATURAL_JURIDICO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CODIGO_EMPRESA')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_PAIS')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_DEPTO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_MUNICIPIO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('NOMBRE_EMPRESA_LARGO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('DIRECCION_EMPRESA_LARGO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('SELLO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CODIGO_POSTAL')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('TIPO_INGRESO_ISR')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_SECTOR_ECONOMICO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('USA_CAMPOS_LIBRO_IVA')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('PERMITE_EDITAR_CAMPOS_LIBRO_IVA')?.option('readOnly', true);
 		this.readOnly = true;
 	}
 
@@ -526,7 +405,6 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 			this.dataForm.instance.getEditor('NOMBRE_EMPRESA')?.focus();
 		});
 	}
-	//#endregion
 
 	selectedLookUpPais(vRow: any): any {
 		return vRow[0].CORR_PAIS;

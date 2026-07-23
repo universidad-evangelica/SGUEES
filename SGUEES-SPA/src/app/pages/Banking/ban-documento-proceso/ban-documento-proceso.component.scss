@@ -1,0 +1,116 @@
+.filtros {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	align-items: flex-end;
+}
+
+.proceso-layout {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 20px 24px !important;
+}
+
+.proceso-grid {
+	width: 100%;
+	min-width: 0;
+}
+
+:host ::ng-deep .proceso-grid .sguees-grid-unified-module--standalone {
+	padding: 0;
+	border: none;
+	box-shadow: none;
+	background: transparent;
+}
+
+:host ::ng-deep .proceso-grid .sguees-grid-module-card {
+	border: none;
+	box-shadow: none;
+	padding: 0;
+	background: transparent;
+}
+
+:host ::ng-deep .proceso-grid .dx-datagrid-header-panel {
+	padding-inline: 0 !important;
+}
+
+.filtro-label {
+	margin-bottom: 6px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.filtro-acciones {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.filtro-control {
+	min-width: 220px;
+}
+
+.filtro-wide .filtro-control {
+	min-width: 280px;
+}
+
+.filtro-hint {
+	margin-top: 4px;
+	font-size: 12px;
+	color: var(--texteditor-label-color, #666);
+	max-width: 320px;
+}
+
+.sin-registros-msg {
+	margin-top: 12px;
+	padding: 14px 18px;
+	border-radius: 8px;
+	background: var(--card-background, #f8f9fa);
+	border: 1px dashed var(--border-color, #ccc);
+	color: var(--texteditor-label-color, #666);
+	font-size: 14px;
+}
+
+.documento-consulta-toolbar {
+	display: flex;
+	justify-content: flex-start;
+	gap: 10px;
+	margin-bottom: 12px;
+}
+
+.documento-edit-shell {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sguees-content-gap, 16px);
+}
+
+.documento-form-card,
+.documento-detalle-card {
+	margin-bottom: 0;
+}
+
+.documento-section-head {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-bottom: var(--sguees-space-4, 16px);
+	padding-bottom: var(--sguees-space-3, 12px);
+	border-bottom: 1px solid var(--border-color);
+}
+
+.documento-section-title {
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--sguees-text-primary);
+}
+
+.documento-section-subtitle {
+	font-size: 13px;
+	color: var(--sguees-text-secondary, #666);
+}
+
+.documento-consulta-grid {
+	min-height: 320px;
+}

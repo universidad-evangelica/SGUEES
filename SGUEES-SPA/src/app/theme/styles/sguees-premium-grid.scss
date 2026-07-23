@@ -104,14 +104,108 @@
     background: var(--sguees-surface-subtle, var(--background-gray-color));
   }
 
+  .dx-datagrid-filter-row td.dx-command-edit {
+    background: var(--sguees-grid-header-bg, var(--card-background));
+  }
+
   .dx-datagrid-filter-panel {
-    padding: var(--sguees-space-2) var(--sguees-space-3);
-    font-size: var(--sguees-font-size-sm);
+    padding: var(--sguees-space-3) var(--sguees-space-4);
+    font-size: var(--sguees-font-size-base);
     color: var(--sguees-text-secondary);
+    border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
+    background: var(--sguees-surface-subtle, var(--background-gray-color));
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sguees-space-2);
+
+    .dx-datagrid-filter-panel-text {
+      font-weight: var(--sguees-font-weight-semibold, 600);
+      color: var(--sguees-text-primary, var(--base-text-color));
+    }
+
+    .dx-datagrid-filter-panel-clear-filter,
+    .dx-icon-clear {
+      color: var(--accent-color, #337ab7);
+      font-weight: var(--sguees-font-weight-semibold, 600);
+    }
+  }
+
+  /* Agrupación — panel, filas de grupo y totales parciales */
+  .dx-datagrid-group-panel {
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sguees-space-2);
+    padding: var(--sguees-space-3) var(--sguees-space-4);
+    border: none;
+    border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+    border-radius: 0;
+    background: var(--sguees-surface-subtle, var(--background-gray-color));
+  }
+
+  .dx-group-panel-message {
+    font-size: var(--sguees-font-size-sm);
+    font-weight: var(--sguees-font-weight-semibold);
+    color: var(--sguees-text-secondary, var(--texteditor-label-color));
+  }
+
+  .dx-group-panel-item {
+    font-size: var(--sguees-font-size-sm);
+    font-weight: var(--sguees-font-weight-semibold);
+    border-radius: var(--sguees-radius-sm);
+    padding: 4px 10px;
+    background: color-mix(in srgb, var(--accent-color, #337ab7) 12%, transparent);
+    color: var(--sguees-text-primary, var(--base-text-color));
+  }
+
+  .dx-datagrid-rowsview .dx-group-row > td {
+    padding: var(--sguees-space-2) var(--sguees-grid-cell-px);
+    font-size: var(--sguees-font-size-base);
+    font-weight: var(--sguees-font-weight-semibold);
+    color: var(--sguees-text-primary, var(--base-text-color));
+    background: color-mix(in srgb, var(--accent-color, #337ab7) 8%, var(--sguees-surface-subtle, var(--card-background)));
+    border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+  }
+
+  .dx-datagrid-rowsview .dx-group-row .dx-datagrid-group-opened,
+  .dx-datagrid-rowsview .dx-group-row .dx-datagrid-group-closed {
+    color: var(--accent-color, #337ab7);
+  }
+
+  .dx-datagrid-group-footer td,
+  .dx-datagrid-total-footer td {
+    padding: var(--sguees-grid-cell-py) var(--sguees-grid-cell-px);
+    font-size: var(--sguees-font-size-sm);
+    font-weight: var(--sguees-font-weight-semibold);
+    background: var(--sguees-grid-row-alt, var(--background-gray-color));
+    border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
+    overflow: visible;
+  }
+
+  .dx-datagrid-group-footer .dx-datagrid-summary-item,
+  .dx-datagrid-total-footer .dx-datagrid-summary-item {
+    overflow: visible;
+    white-space: nowrap;
+    display: inline-block;
+    min-width: 72px;
+  }
+
+  .dx-datagrid-rowsview .dx-data-row.dx-group-row + .dx-data-row > td {
+    border-top: none;
   }
 
   .sguees-grid-col-actions {
     text-align: center;
+    border-right: 1px solid var(--sguees-border-subtle, var(--border-color));
+
+    .dx-datagrid-rowsview &,
+    &.dx-command-edit {
+      white-space: nowrap;
+    }
 
     .dx-datagrid-headers & {
       font-size: var(--sguees-font-size-xs);

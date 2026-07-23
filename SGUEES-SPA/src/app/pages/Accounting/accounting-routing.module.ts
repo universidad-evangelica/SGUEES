@@ -48,18 +48,7 @@ import { ConPartidaModeloComponent } from './con-partida-modelo/con-partida-mode
 
 import { ConPartidaModeloSeleccionComponent } from './con-partida-modelo-seleccion/con-partida-modelo-seleccion.component';
 
-import { ConReporteComponent } from './con-reporte/con-reporte.component';
-
-const reporteRoutes = [
-	{ path: 'con-reporte-libro-diario-auxiliar', codigo: 'LIBRO_DIARIO_AUXILIAR', titulo: 'Libro Diario Auxiliar' },
-	{ path: 'con-reporte-libro-diario-auxiliar-mes', codigo: 'LIBRO_DIARIO_AUXILIAR_MES', titulo: 'Libro Diario Auxiliar - Saldo Mes' },
-	{ path: 'con-reporte-libro-diario-mayor', codigo: 'LIBRO_DIARIO_MAYOR', titulo: 'Libro Diario Mayor' },
-	{ path: 'con-reporte-balance-comprobacion', codigo: 'BALANCE_COMPROBACION', titulo: 'Balance de Comprobacion' },
-	{ path: 'con-reporte-balance-comprobacion-mes', codigo: 'BALANCE_COMPROBACION_MES', titulo: 'Balance de Comprobacion - Saldo Mes' },
-	{ path: 'con-reporte-balance-general', codigo: 'BALANCE_GENERAL', titulo: 'Balance General' },
-	{ path: 'con-reporte-estado-resultados', codigo: 'ESTADO_RESULTADOS', titulo: 'Estado de Resultados' },
-	{ path: 'con-reporte-balance-general-vertical', codigo: 'BALANCE_GENERAL_VERTICAL', titulo: 'Balance General Vertical' },
-];
+import { buildConReporteRoutes } from './con-reporte/con-reporte.routes';
 
 const routes: Routes = [
 
@@ -407,13 +396,7 @@ const routes: Routes = [
 
   },
 
-  ...reporteRoutes.map((r) => ({
-    path: r.path,
-    component: ConReporteComponent,
-    data: { titulo: r.titulo, codigo: r.codigo },
-    canActivate: [ AuthGuardService ],
-    loadChildren: () => import('./con-reporte/con-reporte.module').then(m => m.ConReporteModule),
-  })),
+  ...buildConReporteRoutes([AuthGuardService]),
 
 ];
 

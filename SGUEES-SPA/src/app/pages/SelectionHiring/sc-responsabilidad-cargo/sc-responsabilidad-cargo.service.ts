@@ -1,136 +1,111 @@
-﻿import { Injectable } from '@angular/core';
-import dxSelectBox from 'devextreme/ui/select_box';
+// Qué hace: agrupa las reglas de negocio del catálogo Responsabilidad del Cargo.
+// Cómo: valida los datos y llama al repositorio para el CRUD y el cambio de estado; define columnas y campos del formulario.
+import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 import { ScResponsabilidadCargo } from './models/sc-responsabilidad-cargo';
 import { ScResponsabilidadCargoRepository } from './sc-responsabilidad-cargo.repository';
 
+const ESTADO_FIELD = 'ESTADO_RESPONSABILIDAD';
+
 @Injectable({ providedIn: 'root' })
+// Qué hace: valida los datos de responsabilidad del cargo y coordina el CRUD con el repositorio.
 export class ScResponsabilidadCargoService {
 	constructor(private repo: ScResponsabilidadCargoRepository) {}
 
+	// Qué hace: valida los datos de la responsabilidad del cargo antes de guardar.
+	// Cómo: revisa que el nombre no esté vacío, no supere 150 caracteres y que APLICA_DESCRIPTOR sea CORTO, EXTENSO o AMBOS.
 	esValido(model: ScResponsabilidadCargo, msg: Function): boolean {
 		if (!model.NOMBRE_RESPONSABILIDAD || model.NOMBRE_RESPONSABILIDAD.trim() === '') {
-			msg('Debe ingresar el nombre de responsabilidad de cargo.', NotifyType.Warning);
+			msg('Debe ingresar el nombre de la responsabilidad de cargo.', NotifyType.Warning);
 			return false;
 		}
 
 		if (model.NOMBRE_RESPONSABILIDAD.trim().length > 150) {
-			msg('El nombre de responsabilidad de cargo no puede superar 150 caracteres.', NotifyType.Warning);
+			msg('El nombre de la responsabilidad de cargo no puede superar 150 caracteres.', NotifyType.Warning);
+			return false;
+		}
+
+		if (!['CORTO', 'EXTENSO', 'AMBOS'].includes((model.APLICA_DESCRIPTOR ?? '').toUpperCase())) {
+			msg('Debe indicar si la responsabilidad aplica al descriptor CORTO, EXTENSO o AMBOS.', NotifyType.Warning);
 			return false;
 		}
 
 		return true;
 	}
 
+	// Qué hace: lista las responsabilidades del cargo según los filtros recibidos.
+	// Cómo: llama a getAll del repositorio con los parámetros armados en buildWhere.
 	getAll(param: any): Observable<IResult> {
-		const xWhere: IParam[] = [];
-		const columnFilters = ['CORR_RESPONSABILIDAD', 'NOMBRE_RESPONSABILIDAD', 'USUARIO_CREA', 'ESTACION_CREA', 'FECHA_CREA', 'USUARIO_ACTU', 'ESTACION_ACTU', 'FECHA_ACTU'];
-		if (param.BUSQUEDA) xWhere.push({ Parameter: 'BUSQUEDA', Value: param.BUSQUEDA });
-		if (param.ESTADO_RESPONSABILIDAD !== null && param.ESTADO_RESPONSABILIDAD !== undefined) xWhere.push({ Parameter: 'ESTADO_RESPONSABILIDAD', Value: param.ESTADO_RESPONSABILIDAD });
-		if (param.PAGE) xWhere.push({ Parameter: 'PAGE', Value: param.PAGE });
-		if (param.PAGE_SIZE) xWhere.push({ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE });
-		columnFilters.forEach((field) => {
-			const value = param[field];
-			if (this.hasColumnFilter(value, field)) xWhere.push({ Parameter: field, Value: value });
-		});
-		return this.repo.getAll(xWhere);
+		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	private hasColumnFilter(value: any, field: string): boolean {
-		if (value === null || value === undefined || String(value).trim() === '') return false;
-		return !(field === 'CORR_RESPONSABILIDAD' && Number(value) === 0);
-	}
-
+	// Qué hace: obtiene una responsabilidad del cargo por su correlativo.
+	// Cómo: llama a get del repositorio con CORR_RESPONSABILIDAD como filtro.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_RESPONSABILIDAD', Value: param.CORR_RESPONSABILIDAD }]);
 	}
 
-	insert(model: any): Observable<IResult> { return this.repo.create(model); }
-	update(model: any): Observable<IResult> { return this.repo.update(model, [{ Parameter: 'CORR_RESPONSABILIDAD', Value: model.CORR_RESPONSABILIDAD }]); }
-	delete(model: any): Observable<IResult> { return this.repo.delete([{ Parameter: 'CORR_RESPONSABILIDAD', Value: model.CORR_RESPONSABILIDAD }]); }
-	activar(model: any): Observable<IResult> { return this.repo.activar(model, [{ Parameter: 'CORR_RESPONSABILIDAD', Value: model.CORR_RESPONSABILIDAD }]); }
-	desactivar(model: any): Observable<IResult> { return this.repo.desactivar(model, [{ Parameter: 'CORR_RESPONSABILIDAD', Value: model.CORR_RESPONSABILIDAD }]); }
+	// Qué hace: crea una responsabilidad del cargo nueva.
+	// Cómo: llama a create del repositorio con el modelo recibido.
+	insert(model: any): Observable<IResult> {
+		return this.repo.create(model);
+	}
 
-	getColumns(onEditClick: Function, onDeleteClick: Function, onActivarClick: Function, onDesactivarClick: Function, canEdit = true, canDelete = true): any {
-		const editHint = canEdit ? 'Editar registro' : 'No tiene permiso para editar registros.';
-		const deleteHint = canDelete ? 'Eliminar registro' : 'No tiene permiso para eliminar registros.';
-		const activarHint = canEdit ? 'Activar registro' : 'No tiene permiso para activar registros.';
-		const desactivarHint = canEdit ? 'Desactivar registro' : 'No tiene permiso para desactivar registros.';
-		const editCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-edit';
-		const deleteCssClass = canDelete ? 'sguees-grid-action-delete' : 'sguees-action-no-delete';
-		const activateCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-activate';
-		const deactivateCssClass = canEdit ? 'sguees-grid-action-delete' : 'sguees-action-no-deactivate';
-		const editClick = canEdit ? onEditClick : () => undefined;
-		const deleteClick = canDelete ? onDeleteClick : () => undefined;
-		const activarClick = canEdit ? onActivarClick : () => undefined;
-		const desactivarClick = canEdit ? onDesactivarClick : () => undefined;
+	// Qué hace: actualiza una responsabilidad del cargo existente.
+	// Cómo: llama a update del repositorio con el modelo y CORR_RESPONSABILIDAD como llave.
+	update(model: any): Observable<IResult> {
+		return this.repo.update(model, [{ Parameter: 'CORR_RESPONSABILIDAD', Value: model.CORR_RESPONSABILIDAD }]);
+	}
 
+	// Qué hace: elimina una responsabilidad del cargo.
+	// Cómo: llama a delete del repositorio con CORR_RESPONSABILIDAD como filtro.
+	delete(model: any): Observable<IResult> {
+		return this.repo.delete([{ Parameter: 'CORR_RESPONSABILIDAD', Value: model.CORR_RESPONSABILIDAD }]);
+	}
+
+	// Qué hace: cambia el estado activo/inactivo de una responsabilidad del cargo.
+	// Cómo: llama a activarInactivar del repositorio con CORR_RESPONSABILIDAD como filtro.
+	activarInactivar(model: any): Observable<IResult> {
+		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_RESPONSABILIDAD', Value: model.CORR_RESPONSABILIDAD }]);
+	}
+
+	// Qué hace: define las columnas de la grilla de mantenimiento.
+	getColumns(): any {
 		return [
 			{
-				type: 'buttons', name: 'btnAcciones', caption: 'Options', width: 150, minWidth: 150,
-				allowResizing: false, fixed: true, fixedPosition: 'left', alignment: 'center',
-				buttons: [
-					{ hint: editHint, icon: 'edit', stylingMode: 'text', cssClass: editCssClass, onClick: editClick },
-					{ hint: deleteHint, icon: 'trash', stylingMode: 'text', cssClass: deleteCssClass, onClick: deleteClick },
-					{ hint: activarHint, icon: 'refresh', stylingMode: 'text', cssClass: activateCssClass, visible: (event: any) => !event.row?.data?.ESTADO_RESPONSABILIDAD, onClick: activarClick },
-					{ hint: desactivarHint, icon: 'close', stylingMode: 'text', cssClass: deactivateCssClass, visible: (event: any) => !!event.row?.data?.ESTADO_RESPONSABILIDAD, onClick: desactivarClick },
-				],
+				dataField: 'CORR_RESPONSABILIDAD',
+				caption: 'Corr.',
+				width: 90,
+				dataType: 'number',
+				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
-			{ dataField: 'CORR_RESPONSABILIDAD', caption: 'Corr.', width: 100 },
 			{ dataField: 'NOMBRE_RESPONSABILIDAD', caption: 'Responsabilidad', width: 300 },
-			{
-				dataField: 'ESTADO_RESPONSABILIDAD',
-				caption: 'Estado',
-				width: 140,
-				allowFiltering: true,
-				allowHeaderFiltering: true,
-				cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					const badge = document.createElement('span');
-					badge.classList.add('estado-badge', cellInfo.value ? 'estado-badge--activo' : 'estado-badge--inactivo');
-					badge.textContent = cellInfo.value ? 'Activo' : 'Inactivo';
-					cellElement.innerHTML = '';
-					cellElement.appendChild(badge);
-				},
-				lookup: {
-					dataSource: [{ value: true, text: 'Activo' }, { value: false, text: 'Inactivo' }],
-					valueExpr: 'value',
-					displayExpr: 'text',
-				},
-				filterCellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					new dxSelectBox(cellElement, {
-						dataSource: [{ value: true, text: 'Activo' }, { value: false, text: 'Inactivo' }],
-						displayExpr: 'text',
-						valueExpr: 'value',
-						value: cellInfo.value,
-						placeholder: 'Seleccione...',
-						showClearButton: false,
-						onValueChanged: (event: any) => cellInfo.setValue(event.value),
-					});
-				},
-				calculateFilterExpression: (filterValue: any) => {
-					if (filterValue === '__ALL__' || filterValue === null || filterValue === undefined) {
-						return null;
-					}
-
-					return ['ESTADO_RESPONSABILIDAD', '=', filterValue];
-				},
-			},
-			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
-			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
-			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
-			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
-			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
-			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{ dataField: 'APLICA_DESCRIPTOR', caption: 'Aplica descriptor', width: 150 },
+			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
+			...buildAuditGridColumns({ withDateTimeFilter: true }),
 		];
 	}
 
+	// Qué hace: define el resumen (contador) de la grilla.
 	getSummary(): any {
-		return { totalItems: [{ column: 'CORR_RESPONSABILIDAD', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }] };
+		return {
+			totalItems: [
+				{
+					column: 'CORR_RESPONSABILIDAD',
+					summaryType: 'count',
+					valueFormat: '#,##0',
+					displayFormat: 'Cant: {0}',
+				},
+			],
+		};
 	}
 
+	// Qué hace: define los campos y las reglas de validación del formulario.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_RESPONSABILIDAD', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -141,30 +116,30 @@ export class ScResponsabilidadCargoService {
 				editorOptions: { placeholder: 'Nombre responsabilidad...', showClearButton: true, maxLength: 150 },
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
+			{
+				dataField: 'APLICA_DESCRIPTOR',
+				label: { text: 'Aplica al descriptor' },
+				editorType: 'dxSelectBox',
+				colSpan: 2,
+				editorOptions: {
+					dataSource: ['CORTO', 'EXTENSO', 'AMBOS'],
+					placeholder: 'Seleccione...',
+					showClearButton: false,
+				},
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
+			},
 			{ dataField: 'ESTADO_RESPONSABILIDAD', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
 	}
-}
 
-export const EMPRESA_WARNING_ERROR_CODE = 4100;
-export const EMPRESA_REGISTRO_ETIQUETA = 'la responsabilidad de cargo';
+	// Qué hace: arma los filtros de consulta a partir de los parámetros recibidos.
+	private buildWhere(param: any): IParam[] {
+		const xWhere: IParam[] = [];
 
-export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
-	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
-}
+		if (param.CORR_RESPONSABILIDAD) {
+			xWhere.push({ Parameter: 'CORR_RESPONSABILIDAD', Value: param.CORR_RESPONSABILIDAD });
+		}
 
-export function isEmpresaWarningResponse(response: any): boolean {
-	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
-}
-
-export function isEmpresaFkErrorMessage(message: string): boolean {
-	const value = `${message ?? ''}`.toLowerCase();
-	return (
-		value.includes('gen_empresa') ||
-		value.includes('foreign key') ||
-		value.includes('clave externa') ||
-		value.includes('reference constraint') ||
-		value.includes('conflicted with the foreign key') ||
-		value.includes('no tiene una empresa asignada')
-	);
+		return xWhere;
+	}
 }

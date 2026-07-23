@@ -1,0 +1,294 @@
+<div class="sguees-mtto-view">
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[showRibbon]="true"
+	[permiteAdd]="permiteAdd"
+	[showRefresh]="true"
+	[showExport]="permitePrint"
+	[showEstadoToolbar]="true"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="permiteEdit"
+	[focusedRow]="isBrowse() ? model : null"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+	(consultar)="consultar()"
+	(activarInactivar)="activar_inactivar()"
+>
+</app-barra-data-mtto>
+
+<div *ngIf="!isBrowse()" class="cuenta-edit-shell">
+	<section class="sguees-section-card cuenta-form-card content-block dx-card responsive-paddings">
+		<header class="cuenta-section-head">
+			<span class="cuenta-section-title">Datos de la cuenta</span>
+			<span class="cuenta-section-subtitle">Encabezado de la cuenta bancaria</span>
+		</header>
+	<dx-form
+		#fData
+		id="fData"
+		[formData]="model"
+		[labelLocation]="'top'"
+		[colCount]="mttoFormColCount"
+		[colCountByScreen]="mttoFormColCountByScreen"
+		[showRequiredMark]="false"
+		[items]="items"
+	>
+		<div *dxTemplate="let cellInfo of 'CORR_BANCOLookup'">
+			<app-data-lookup
+				[model]="mCORR_BANCO"
+				[(value)]="model.CORR_BANCO"
+				[selectedRowKeys]="selectedLookUpCORR_BANCO"
+				[readOnly]="readOnly"
+				[valueExpr]="'CORR_BANCO'"
+				[displayExpr]="'NOMBRE_BANCO'"
+				[lookupColumns]="bancoLookupColumns"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'TIPO_CUENTA_BANCOLookup'">
+			<app-data-lookup
+				[model]="mTIPO_CUENTA_BANCO"
+				[(value)]="model.TIPO_CUENTA_BANCO"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CLASE_CHEQUELookup'">
+			<app-data-lookup
+				[model]="mCLASE_CHEQUE"
+				[(value)]="model.CLASE_CHEQUE"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_CENTRO_COSTOLookup'">
+			<app-data-lookup
+				[model]="mCORR_CENTRO_COSTO"
+				[(value)]="model.CORR_CENTRO_COSTO"
+				[selectedRowKeys]="selectedLookUpCORR_CENTRO_COSTO"
+				[readOnly]="readOnly"
+				[valueExpr]="'CORR_CENTRO_COSTO'"
+				[displayExpr]="'NOMBRE_CENTRO'"
+				[lookupColumns]="centroCostoLookupColumns"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_MONEDALookup'">
+			<app-data-lookup
+				[model]="mCORR_MONEDA"
+				[(value)]="model.CORR_MONEDA"
+				[selectedRowKeys]="selectedLookUpCORR_MONEDA"
+				[readOnly]="readOnly"
+				[valueExpr]="'CORR_MONEDA'"
+				[displayExpr]="'NOMBRE_MONEDA'"
+				[lookupColumns]="monedaLookupColumns"
+			>
+			</app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CUENTA_CONTABLELookup'">
+			<app-data-lookup
+				[model]="mCUENTA_CONTABLE"
+				[(value)]="model.CUENTA_CONTABLE"
+				[selectedRowKeys]="selectedLookUpCUENTA_CONTABLE"
+				[readOnly]="readOnly"
+				[valueExpr]="'CUENTA_CONTABLE'"
+				[displayExpr]="'CUENTA_CONTABLE'"
+				[lookupColumns]="cuentaLookupColumns"
+				[showClearButton]="true"
+			>
+			</app-data-lookup>
+		</div>
+	</dx-form>
+	</section>
+
+	<section class="sguees-section-card cuenta-chequera-card content-block dx-card responsive-paddings">
+	<dx-tab-panel class="cuenta-chequera-tab-panel" [selectedIndex]="0">
+		<dxi-item title="Chequeras" icon="orderedlist">
+			<div class="dx-grid-deta cuenta-chequera-grid">
+				<div class="cuenta-chequera-toolbar" *ngIf="puedeEditarChequera()">
+					<dx-button
+						class="cuenta-chequera-toolbar-btn"
+						icon="add"
+						text="Agregar Chequera"
+						type="success"
+						stylingMode="contained"
+						(onClick)="agregarChequera()"
+						[disabled]="chequeraEditando"
+					></dx-button>
+					<dx-button
+						class="cuenta-chequera-toolbar-btn"
+						icon="save"
+						text="Guardar"
+						type="success"
+						stylingMode="contained"
+						(onClick)="guardarChequeraEditada()"
+						[disabled]="!chequeraEditando"
+					></dx-button>
+					<dx-button
+						class="cuenta-chequera-toolbar-btn cuenta-chequera-toolbar-btn--cancel"
+						icon="revert"
+						text="Cancelar"
+						type="danger"
+						stylingMode="contained"
+						(onClick)="cancelarChequeraEditada()"
+						[disabled]="!chequeraEditando"
+					></dx-button>
+				</div>
+				<dx-data-grid
+					#gridChequera
+					class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise cuenta-chequera-datagrid"
+					[dataSource]="chequeras"
+					keyExpr="CORR_CHEQUERA"
+					[columnAutoWidth]="false"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
+					[focusedRowEnabled]="true"
+					[autoNavigateToFocusedRow]="true"
+					[height]="'100%'"
+					[width]="'100%'"
+					(onInitNewRow)="chequeraInitNewRow($event)"
+					(onRowInserting)="chequeraRowInserting($event)"
+					(onRowUpdating)="chequeraRowUpdating($event)"
+					(onRowRemoving)="chequeraRowRemoving($event)"
+					(onRowValidating)="chequeraRowValidating($event)"
+					(onEditorPreparing)="onChequeraEditorPreparing($event)"
+					(onEditingStart)="onChequeraEditingStart($event)"
+					(onSaved)="onChequeraSaved($event)"
+					(onEditCanceled)="onChequeraEditCanceled($event)"
+				>
+					<dxo-editing
+						mode="row"
+						refreshMode="reshape"
+						[allowAdding]="puedeEditarChequera()"
+						[allowUpdating]="puedeEditarChequera()"
+						[allowDeleting]="puedeEditarChequera()"
+						[useIcons]="true"
+						[selectTextOnEditStart]="true"
+					></dxo-editing>
+					<dxo-search-panel [visible]="true"></dxo-search-panel>
+					<dxo-paging [enabled]="false"></dxo-paging>
+					<dxi-column
+						type="buttons"
+						name="btnAcciones"
+						caption="Options"
+						[width]="104"
+						[minWidth]="104"
+						[fixed]="true"
+						fixedPosition="left"
+						alignment="center"
+						[allowResizing]="false"
+					>
+						<dxi-button
+							hint="Editar registro"
+							icon="edit"
+							stylingMode="text"
+							cssClass="sguees-grid-action-edit"
+							[visible]="chequeraEditButtonVisible"
+							[onClick]="editarChequeraClick"
+						></dxi-button>
+						<dxi-button
+							name="delete"
+							hint="Eliminar registro"
+							icon="trash"
+							stylingMode="text"
+							cssClass="sguees-grid-action-delete"
+							[visible]="chequeraDeleteButtonVisible"
+						></dxi-button>
+						<dxi-button name="save" [visible]="false"></dxi-button>
+						<dxi-button name="cancel" [visible]="false"></dxi-button>
+						<dxi-button name="edit" [visible]="false"></dxi-button>
+					</dxi-column>
+					<dxi-column
+						dataField="CORR_CHEQUERA"
+						caption="Corr."
+						[width]="80"
+						[allowEditing]="false"
+					></dxi-column>
+					<dxi-column
+						dataField="NUMERO_CHEQUE_INICIAL"
+						caption="Cheque inicial"
+						[width]="200"
+						dataType="number"
+					></dxi-column>
+					<dxi-column
+						dataField="NUMERO_CHEQUE_FINAL"
+						caption="Cheque final"
+						[width]="200"
+						dataType="number"
+					></dxi-column>
+					<dxi-column
+						dataField="NUMERO_CHEQUE_ACTUAL"
+						caption="Cheque actual"
+						[width]="200"
+						dataType="number"
+					></dxi-column>
+					<dxi-column dataField="SERIE_CHEQUE" caption="Serie" [width]="200"></dxi-column>
+					<dxi-column dataField="ESTADO_CHEQUERA" caption="Estado" [width]="180">
+						<dxo-lookup
+							[dataSource]="mESTADO_CHEQUERA"
+							valueExpr="Key"
+							displayExpr="Value"
+						></dxo-lookup>
+					</dxi-column>
+				</dx-data-grid>
+			</div>
+		</dxi-item>
+	</dx-tab-panel>
+	</section>
+</div>
+
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="mttoGridKeyExpr"
+	[pageSize]="mttoPageSize"
+	[allowedPageSizes]="mttoPageSizes"
+	[remoteOperations]="mttoRemoteOperations"
+	[nativeToolbar]="true"
+	[unifiedToolbar]="false"
+	[showSearch]="false"
+	[showAdd]="false"
+	[showRefresh]="false"
+	[showExport]="false"
+	[showEstadoToolbar]="true"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="permiteEdit"
+	[focusedRowKey]="gridFocusedRowKey"
+	[permitePrint]="permitePrint"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	[responsiveColumnHiding]="false"
+	[columnHidingEnabled]="false"
+	[exportFileName]="'CuentasBancarias'"
+	(activarInactivar)="activar_inactivar()"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+
+</div>
+
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>

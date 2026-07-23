@@ -1,0 +1,28 @@
+<app-ban-reporte-shell
+	[tituloVentana]="tituloVentana"
+	[codigoReporte]="codigoReporte"
+	[filtro]="filtro"
+	[definicion]="definicion"
+	[datos]="datos"
+	[columnas]="columnas"
+	[mCuentasBanco]="mCuentasBanco"
+	[mTiposMovimiento]="mTiposMovimiento"
+	[mostrarPdf]="mostrarPdf"
+	[pdfUrl]="pdfUrl"
+	[muestraGrid]="muestraGrid"
+	[muestraBotonConsultar]="muestraBotonConsultar"
+	[muestraBotonVistaPrevia]="muestraBotonVistaPrevia"
+	(consultar)="consultar()"
+	(vistaPrevia)="obtenerPdf()"
+	(limpiar)="limpiar()"
+	(exportar)="alExportar($event)"
+></app-ban-reporte-shell>
+
+<dx-load-panel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+></dx-load-panel>

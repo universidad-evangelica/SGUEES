@@ -19,6 +19,7 @@ namespace sguees.Repositories
 		CResult GetCLASE_DOCUMENTO();
 		CResult GetLIBRO_IVA();
 		CResult GetMES();
+		CResult GetCLASE_BANCO();
 		
 		
 	}

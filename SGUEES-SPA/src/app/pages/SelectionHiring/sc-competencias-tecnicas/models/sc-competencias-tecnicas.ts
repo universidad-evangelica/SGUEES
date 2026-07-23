@@ -1,3 +1,5 @@
+// Qué hace: modelo TypeScript de competencia técnica.
+// Cómo: define los campos del formulario y la grilla, incluidos los auxiliares de jerarquía y auditoría.
 export const SC_COMPETENCIA_NIVEL = {
 	UNO: 'NIV1',
 	DOS: 'NIV2',
@@ -26,11 +28,14 @@ export interface ScCompetenciasTecnicas {
 	CODIGO_SUFIJO?: string;
 }
 
+// Qué hace: opción de competencia padre para el lookup del formulario.
+// Cómo: expone correlativo, código, nombre, definición, texto visible y estado del registro padre.
 export interface ScCompetenciaPadreOption {
 	CORR_COMPETENCIAS_TECNICAS: number;
 	CODIGO_COMPETENCIAS_TECNICAS: string;
 	NOMBRE_COMPETENCIAS_TECNICAS?: string;
 	DESCRIPCION?: string;
+	NOMBRE_DISPLAY?: string;
 	NIVEL?: string;
 	ESTADO_COMPETENCIAS_TECNICAS?: boolean;
 }

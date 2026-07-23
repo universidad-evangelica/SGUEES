@@ -1,3 +1,4 @@
+// Qué hace: persiste y consulta el catálogo PLA_NIVEL_ACADEMICO en SQL Server.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +13,10 @@ namespace SGUEES.Repositories
     public class PLA_NIVEL_ACADEMICORepository : BaseRepository<PLA_NIVEL_ACADEMICOTable>, IPLA_NIVEL_ACADEMICORepository
     {
         private const string _TableName = "PLA_NIVEL_ACADEMICO";
+        private const string _ViewName = "V_PLA_NIVEL_ACADEMICO";
+        private const string _CampoPk = "CORR_NIVEL_ACADEMICO";
+        private const string _CampoEstado = "ESTADO_NIVEL_ACADEMICO";
+        private const bool _UsaEmpresa = true;
 
         public PLA_NIVEL_ACADEMICORepository(IConfiguration config) :
             base(config.GetConnectionString("defaultConnection"),
@@ -19,6 +24,8 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Qué hace: lista los niveles académicos de la empresa.
+        // Cómo: lee V_PLA_NIVEL_ACADEMICO filtrando por CORR_EMPRESA y ordena por CORR_NIVEL_ACADEMICO.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -29,95 +36,17 @@ namespace SGUEES.Repositories
                     .Where(x => x.ParameterName == "CORR_EMPRESA")
                     .ToList();
 
-                var estado = xWhere
-                    .Where(x => x.ParameterName == "ESTADO_NIVEL_ACADEMICO")
-                    .Select(x => x.Value as bool?)
-                    .FirstOrDefault();
-
-                var busqueda = xWhere
-                    .Where(x => x.ParameterName == "BUSQUEDA")
-                    .Select(x => x.Value?.ToString())
-                    .FirstOrDefault();
-
-                var columnFilters = new Dictionary<string, string>
-                {
-                    { "CORR_NIVEL_ACADEMICO", GetFilterValue(xWhere, "CORR_NIVEL_ACADEMICO") },
-                    { "NOMBRE_NIVEL_ACADEMICO", GetFilterValue(xWhere, "NOMBRE_NIVEL_ACADEMICO") },
-                    { "USUARIO_CREA", GetFilterValue(xWhere, "USUARIO_CREA") },
-                    { "FECHA_CREA", GetFilterValue(xWhere, "FECHA_CREA") },
-                    { "ESTACION_CREA", GetFilterValue(xWhere, "ESTACION_CREA") },
-                    { "USUARIO_ACTU", GetFilterValue(xWhere, "USUARIO_ACTU") },
-                    { "FECHA_ACTU", GetFilterValue(xWhere, "FECHA_ACTU") },
-                    { "ESTACION_ACTU", GetFilterValue(xWhere, "ESTACION_ACTU") },
-                }
-                    .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+                var reader = await objData.GetDataReader(_ViewName, dbWhere);
+                var response = new List<PLA_NIVEL_ACADEMICOView>().FromDataReader(reader)
+                    .OrderBy(x => x.CORR_NIVEL_ACADEMICO)
                     .ToList();
-
-                var page = xWhere
-                    .Where(x => x.ParameterName == "PAGE")
-                    .Select(x => Convert.ToInt32(x.Value ?? 1))
-                    .FirstOrDefault();
-
-                var pageSize = xWhere
-                    .Where(x => x.ParameterName == "PAGE_SIZE")
-                    .Select(x => Convert.ToInt32(x.Value ?? 10))
-                    .FirstOrDefault();
-
-                page = page < 1 ? 1 : page;
-                pageSize = pageSize < 1 ? 10 : Math.Min(pageSize, 100);
-
-                var reader = await objData.GetDataReader("V_" + _TableName, dbWhere);
-                var response = new List<PLA_NIVEL_ACADEMICOView>().FromDataReader(reader).ToList();
 
                 reader.Close();
                 reader = null;
 
-                if (estado.HasValue)
-                {
-                    response = response
-                        .Where(x => (x.ESTADO_NIVEL_ACADEMICO ?? false) == estado.Value)
-                        .ToList();
-                }
-
-                if (!string.IsNullOrWhiteSpace(busqueda))
-                {
-                    var search = busqueda.Trim();
-                    response = response
-                        .Where(x =>
-                            Contains(x.CORR_EMPRESA.ToString(), search) ||
-                            Contains(x.CORR_NIVEL_ACADEMICO.ToString(), search) ||
-                            Contains(x.NOMBRE_NIVEL_ACADEMICO, search) ||
-                            Contains((x.ESTADO_NIVEL_ACADEMICO ?? false) ? "Activo" : "Inactivo", search) ||
-                            Contains(x.USUARIO_CREA, search) ||
-                            Contains(x.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm"), search) ||
-                            Contains(x.ESTACION_CREA, search) ||
-                            Contains(x.USUARIO_ACTU, search) ||
-                            Contains(x.FECHA_ACTU?.ToString("dd/MM/yyyy HH:mm"), search) ||
-                            Contains(x.ESTACION_ACTU, search))
-                        .ToList();
-                }
-
-                foreach (var columnFilter in columnFilters)
-                {
-                    response = response
-                        .Where(x => Contains(GetColumnValue(x, columnFilter.Key), columnFilter.Value))
-                        .ToList();
-                }
-
-                response = response
-                    .OrderBy(x => x.CORR_EMPRESA)
-                    .ThenBy(x => x.CORR_NIVEL_ACADEMICO)
-                    .ToList();
-
-                var totalRows = response.Count;
-                var pageData = response
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
-
-                objResultado.Data = pageData;
+                objResultado.Data = response;
                 objResultado.Result = true;
-                objResultado.RowsAffected = totalRows;
+                objResultado.RowsAffected = response.Count;
                 objResultado.CodeHelper = 0;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
@@ -140,46 +69,15 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        private static string GetFilterValue(List<CParameter> xWhere, string parameterName)
-        {
-            return xWhere
-                .Where(x => x.ParameterName == parameterName)
-                .Select(x => x.Value?.ToString())
-                .FirstOrDefault();
-        }
-
-        private static string GetColumnValue(PLA_NIVEL_ACADEMICOView row, string columnName)
-        {
-            switch (columnName)
-            {
-                case "CORR_NIVEL_ACADEMICO":
-                    return row.CORR_NIVEL_ACADEMICO.ToString();
-                case "NOMBRE_NIVEL_ACADEMICO":
-                    return row.NOMBRE_NIVEL_ACADEMICO;
-                case "USUARIO_CREA":
-                    return row.USUARIO_CREA;
-                case "FECHA_CREA":
-                    return row.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm");
-                case "ESTACION_CREA":
-                    return row.ESTACION_CREA;
-                case "USUARIO_ACTU":
-                    return row.USUARIO_ACTU;
-                case "FECHA_ACTU":
-                    return row.FECHA_ACTU?.ToString("dd/MM/yyyy HH:mm");
-                case "ESTACION_ACTU":
-                    return row.ESTACION_ACTU;
-                default:
-                    return null;
-            }
-        }
-
+        // Qué hace: obtiene un nivel académico por filtros.
+        // Cómo: lee V_PLA_NIVEL_ACADEMICO con los parámetros recibidos en xWhere.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
 
             try
             {
-                var reader = await objData.GetDataReader("V_" + _TableName, xWhere);
+                var reader = await objData.GetDataReader(_ViewName, xWhere);
                 var response = new List<PLA_NIVEL_ACADEMICOView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
@@ -210,6 +108,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: inserta un nivel académico nuevo.
+        // Cómo: ejecuta Insert sobre PLA_NIVEL_ACADEMICO y devuelve la fila creada desde V_PLA_NIVEL_ACADEMICO.
         public async Task<CResult> CreateAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -223,11 +123,11 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "NOMBRE_NIVEL_ACADEMICO", Value = Data.NOMBRE_NIVEL_ACADEMICO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTADO_NIVEL_ACADEMICO", Value = Data.ESTADO_NIVEL_ACADEMICO ?? true, DbType = System.Data.DbType.Boolean },
                     new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime },
                     new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
                 };
 
                 var pWhere = new List<CParameter>
@@ -235,7 +135,7 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
                 };
 
-                var reader = await objData.Insert(_TableName, p, "CORR_NIVEL_ACADEMICO", pWhere);
+                var reader = await objData.Insert(_TableName, p, _CampoPk, pWhere);
                 var response = new List<PLA_NIVEL_ACADEMICOView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
@@ -269,6 +169,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: actualiza un nivel académico existente.
+        // Cómo: ejecuta Update sobre PLA_NIVEL_ACADEMICO por CORR_EMPRESA y CORR_NIVEL_ACADEMICO, y devuelve la fila desde la vista.
         public async Task<CResult> UpdateAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -278,10 +180,9 @@ namespace SGUEES.Repositories
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "NOMBRE_NIVEL_ACADEMICO", Value = Data.NOMBRE_NIVEL_ACADEMICO, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ESTADO_NIVEL_ACADEMICO", Value = Data.ESTADO_NIVEL_ACADEMICO ?? true, DbType = System.Data.DbType.Boolean },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
                 };
 
                 var pWhere = new List<CParameter>
@@ -306,11 +207,14 @@ namespace SGUEES.Repositories
             }
             catch (Exception e)
             {
+                var duplicateKey = IsDuplicateKeyError(e);
                 objResultado.Data = null;
                 objResultado.Result = false;
                 objResultado.CodeHelper = 0;
-                objResultado.ErrorCode = -1;
-                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorCode = duplicateKey ? 2627 : -1;
+                objResultado.ErrorMessage = duplicateKey
+                    ? "No se pudo guardar el registro porque otro usuario guardo un registro al mismo tiempo. Intente nuevamente."
+                    : e.Message;
                 objResultado.ErrorSource += $"[{e.Source}]";
             }
             finally
@@ -321,6 +225,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: elimina un nivel académico.
+        // Cómo: ejecuta Delete sobre PLA_NIVEL_ACADEMICO por CORR_EMPRESA y CORR_NIVEL_ACADEMICO.
         public async Task<CResult> DeleteAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -347,7 +253,7 @@ namespace SGUEES.Repositories
                 objResultado.Result = false;
                 objResultado.CodeHelper = 0;
                 objResultado.ErrorCode = -1;
-                objResultado.ErrorMessage = "No se puede eliminar el nivel academico porque tiene registros asociados.";
+                objResultado.ErrorMessage = "No se puede eliminar el nivel academico porque tiene registros asociados en otras tablas.";
                 objResultado.ErrorSource += $"[{e.Source}]";
             }
             finally
@@ -358,12 +264,116 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        private static bool Contains(string value, string search)
+        // Qué hace: cambia el estado activo/inactivo de un nivel académico.
+        // Cómo: ejecuta PRAL_MTTO_CATALOGO_ESTADO_BIT y recarga el registro desde V_PLA_NIVEL_ACADEMICO.
+        public async Task<CResult> ActivarInactivarAsync(PLA_NIVEL_ACADEMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            return !string.IsNullOrWhiteSpace(value) &&
-                value.Contains(search, StringComparison.OrdinalIgnoreCase);
+            CResult objResultado = new();
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "NOMBRE_TABLA", Value = _TableName, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CAMPO_PK", Value = _CampoPk, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CAMPO_ESTADO", Value = _CampoEstado, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "USA_EMPRESA", Value = _UsaEmpresa, DbType = System.Data.DbType.Boolean },
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_RELATIVO", Value = Data.CORR_NIVEL_ACADEMICO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+                    new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+                    new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
+                };
+
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_CATALOGO_ESTADO_BIT", true, p);
+
+                if ((int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value == 0)
+                {
+                    var xWhere = new List<CParameter>
+                    {
+                        new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                        new CParameter() { ParameterName = "CORR_NIVEL_ACADEMICO", Value = Data.CORR_NIVEL_ACADEMICO, DbType = System.Data.DbType.Int32 },
+                    };
+
+                    var readerGet = await objData.GetDataReader(_ViewName, xWhere);
+                    var response = new List<PLA_NIVEL_ACADEMICOView>().FromDataReader(readerGet).FirstOrDefault();
+
+                    readerGet.Close();
+
+                    objResultado.Data = response;
+                    objResultado.Result = true;
+                    objResultado.RowsAffected = 1;
+                    objResultado.CodeHelper = response?.CORR_NIVEL_ACADEMICO ?? Data.CORR_NIVEL_ACADEMICO;
+                    objResultado.ErrorCode = 0;
+                    objResultado.ErrorMessage = string.Empty;
+                    objResultado.ErrorSource = string.Empty;
+                }
+                else
+                {
+                    objResultado.Data = null;
+                    objResultado.Result = false;
+                    objResultado.RowsAffected = 0;
+                    objResultado.CodeHelper = Data.CORR_NIVEL_ACADEMICO;
+                    objResultado.ErrorCode = (int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
+                    objResultado.ErrorMessage = (string)objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value;
+                    objResultado.ErrorSource = "C" + _TableName + ".Mtto(" + UpdateType.Update.ToString() + ")";
+                }
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = Data.CORR_NIVEL_ACADEMICO;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
         }
 
+        // Qué hace: verifica si otro nivel de la empresa ya usa el mismo nombre.
+        // Cómo: consulta V_PLA_NIVEL_ACADEMICO con SQL directo excluyendo el correlativo indicado.
+        public async Task<bool> ExistsNombreAsync(int corrEmpresa, string nombre, int excludeCorr)
+        {
+            if (corrEmpresa <= 0 || string.IsNullOrWhiteSpace(nombre))
+            {
+                return false;
+            }
+
+            const string sql = @"SELECT TOP 1 1 AS FOUND
+                FROM V_PLA_NIVEL_ACADEMICO
+                WHERE CORR_EMPRESA = @CORR_EMPRESA
+                AND UPPER(LTRIM(RTRIM(NOMBRE_NIVEL_ACADEMICO))) = UPPER(LTRIM(RTRIM(@NOMBRE)))
+                AND (@EXCLUDE_CORR <= 0 OR CORR_NIVEL_ACADEMICO <> @EXCLUDE_CORR)";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "NOMBRE", Value = nombre.Trim(), DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "EXCLUDE_CORR", Value = excludeCorr, DbType = System.Data.DbType.Int32 },
+                });
+
+                var exists = reader.Read();
+                reader.Close();
+                return exists;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
+        // Qué hace: detecta errores de unicidad reportados por SQL Server.
+        // Cómo: busca fragmentos conocidos en el mensaje de la excepción.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

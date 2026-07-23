@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -44,21 +45,36 @@ namespace sguees.Services
 				return null;
 			}
 
-			if (!CON_REPORTERegistry.TryGet(param.CODIGO_REPORTE, out var definition))
+			var token = _repoUser.GenerateRptToken(loginSistema);
+			switch (param.CODIGO_REPORTE?.Trim().ToUpperInvariant())
 			{
-				return null;
+				case "LIBRO_DIARIO_AUXILIAR":
+					return await _repoRpt.GetConLibroDiarioAuxiliarImprAsync(
+						(List<LIBRO_DIARIO_AUXILIAR_IMPRView>)consulta.Data, token);
+				case "LIBRO_DIARIO_AUXILIAR_MES":
+					return await _repoRpt.GetConLibroDiarioAuxiliarMesImprAsync(
+						(List<LIBRO_DIARIO_AUXILIAR_MES_IMPRView>)consulta.Data, token);
+				case "LIBRO_DIARIO_MAYOR":
+					return await _repoRpt.GetConLibroDiarioMayorImprAsync(
+						(List<LIBRO_DIARIO_MAYOR_IMPRView>)consulta.Data, token);
+				case "BALANCE_COMPROBACION":
+					return await _repoRpt.GetConBalanceComprobacionImprAsync(
+						(List<BALANCE_COMPROBACION_IMPRView>)consulta.Data, token);
+				case "BALANCE_COMPROBACION_MES":
+					return await _repoRpt.GetConBalanceComprobacionMesImprAsync(
+						(List<BALANCE_COMPROBACION_MES_IMPRView>)consulta.Data, token);
+				case "BALANCE_GENERAL":
+					return await _repoRpt.GetConBalanceGeneralImprAsync(
+						(List<BALANCE_GENERAL_IMPRView>)consulta.Data, token);
+				case "ESTADO_RESULTADOS":
+					return await _repoRpt.GetConEstadoResultadosImprAsync(
+						(List<ESTADO_RESULTADOS_IMPRView>)consulta.Data, token);
+				case "BALANCE_GENERAL_VERTICAL":
+					return await _repoRpt.GetConBalanceGeneralVerticalImprAsync(
+						(List<BALANCE_GENERAL_VERTICAL_IMPRView>)consulta.Data, token);
+				default:
+					return null;
 			}
-
-			var request = new ConReportePdfRequest
-			{
-				RptName = param.CODIGO_REPORTE,
-				Data = (System.Collections.Generic.List<System.Collections.Generic.Dictionary<string, object>>)consulta.Data,
-				PdfFileName = definition.RptFile + ".pdf",
-			};
-
-			return await _repoRpt.GetConReporteImprByCodigoAsync(
-				request,
-				_repoUser.GenerateRptToken(loginSistema));
 		}
 	}
 }

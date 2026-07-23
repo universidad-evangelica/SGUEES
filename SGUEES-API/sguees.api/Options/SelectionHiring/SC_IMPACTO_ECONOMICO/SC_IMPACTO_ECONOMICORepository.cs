@@ -1,4 +1,5 @@
-﻿using System;
+// Persistencia SQL del catálogo impacto económico (tabla/vista SC).
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,86 +10,79 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+    // Qué hace: ejecuta el CRUD y las consultas SQL sobre la tabla y la vista de impacto económico.
     public class SC_IMPACTO_ECONOMICORepository : BaseRepository<SC_IMPACTO_ECONOMICOTable>, ISC_IMPACTO_ECONOMICORepository
     {
         private const string _TableName = "SC_IMPACTO_ECONOMICO";
-
+        private const string _ViewName = "V_SC_IMPACTO_ECONOMICO";
+        private const string _CampoPk = "CORR_IMPACTO_ECONOMICO";
+        private const string _CampoEstado = "ESTADO_IMPACTO_ECONOMICO";
+        private const bool _UsaEmpresa = true;
         public SC_IMPACTO_ECONOMICORepository(IConfiguration config) :
             base(config.GetConnectionString("defaultConnection"),
                 config.GetSection("DbProvider:defaultProvider").Value)
         {
         }
 
+        // Qué hace: recupera los impactos económicos activos para el lookup del descriptor.
+        // Cómo: SELECT directo a V_SC_IMPACTO_ECONOMICO filtrando por empresa y ESTADO_IMPACTO_ECONOMICO, ordenado por DESCRIPCION.
+        public async Task<List<SC_IMPACTO_ECONOMICOView>> GetCatalogoDescriptorAsync(int corrEmpresa)
+        {
+            if (corrEmpresa <= 0)
+            {
+                return new List<SC_IMPACTO_ECONOMICOView>();
+            }
+
+            const string sql = @"SELECT
+                  A.CORR_EMPRESA,
+                  A.CORR_IMPACTO_ECONOMICO,
+                  A.DESCRIPCION,
+                  A.ESTADO_IMPACTO_ECONOMICO
+                FROM V_SC_IMPACTO_ECONOMICO A
+                WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+                  AND ISNULL(A.ESTADO_IMPACTO_ECONOMICO, 1) = 1
+                ORDER BY A.DESCRIPCION, A.CORR_IMPACTO_ECONOMICO";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                });
+
+                var response = new List<SC_IMPACTO_ECONOMICOView>().FromDataReader(reader).ToList();
+                reader.Close();
+                return response;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
+        // Qué hace: lista los impactos económicos de la vista V_SC_IMPACTO_ECONOMICO.
+        // Cómo: filtra por CORR_EMPRESA y ordena por CORR_IMPACTO_ECONOMICO.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
 
             try
             {
-                var dbWhere = xWhere.Where(x => x.ParameterName == "CORR_EMPRESA").ToList();
-                var estado = xWhere.Where(x => x.ParameterName == "ESTADO_IMPACTO_ECONOMICO").Select(x => x.Value as bool?).FirstOrDefault();
-                var busqueda = xWhere.Where(x => x.ParameterName == "BUSQUEDA").Select(x => x.Value?.ToString()).FirstOrDefault();
-                var columnFilters = new Dictionary<string, string>
-                {
-                    { "CORR_IMPACTO_ECONOMICO", GetFilterValue(xWhere, "CORR_IMPACTO_ECONOMICO") },
-                    { "DESCRIPCION", GetFilterValue(xWhere, "DESCRIPCION") },
-                    { "USUARIO_CREA", GetFilterValue(xWhere, "USUARIO_CREA") },
-                    { "ESTACION_CREA", GetFilterValue(xWhere, "ESTACION_CREA") },
-                    { "FECHA_CREA", GetFilterValue(xWhere, "FECHA_CREA") },
-                    { "USUARIO_ACTU", GetFilterValue(xWhere, "USUARIO_ACTU") },
-                    { "ESTACION_ACTU", GetFilterValue(xWhere, "ESTACION_ACTU") },
-                    { "FECHA_ACTU", GetFilterValue(xWhere, "FECHA_ACTU") },
-                }
-                    .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+                var dbWhere = xWhere
+                    .Where(x => x.ParameterName == "CORR_EMPRESA")
                     .ToList();
-                var page = xWhere.Where(x => x.ParameterName == "PAGE").Select(x => Convert.ToInt32(x.Value ?? 1)).FirstOrDefault();
-                var pageSize = xWhere.Where(x => x.ParameterName == "PAGE_SIZE").Select(x => Convert.ToInt32(x.Value ?? 10)).FirstOrDefault();
 
-                page = page < 1 ? 1 : page;
-                pageSize = pageSize < 1 ? 10 : Math.Min(pageSize, 100);
-
-                var reader = await objData.GetDataReader("V_" + _TableName, dbWhere);
-                var response = new List<SC_IMPACTO_ECONOMICOView>().FromDataReader(reader).ToList();
+                var reader = await objData.GetDataReader(_ViewName, dbWhere);
+                var response = new List<SC_IMPACTO_ECONOMICOView>().FromDataReader(reader)
+                    .OrderBy(x => x.CORR_IMPACTO_ECONOMICO)
+                    .ToList();
 
                 reader.Close();
                 reader = null;
 
-                if (estado.HasValue)
-                {
-                    response = response.Where(x => (x.ESTADO_IMPACTO_ECONOMICO ?? false) == estado.Value).ToList();
-                }
-
-                if (!string.IsNullOrWhiteSpace(busqueda))
-                {
-                    var search = busqueda.Trim();
-                    response = response
-                        .Where(x =>
-                            Contains(x.CORR_EMPRESA.ToString(), search) ||
-                            Contains(x.CORR_IMPACTO_ECONOMICO.ToString(), search) ||
-                            Contains(x.DESCRIPCION, search) ||
-                            Contains((x.ESTADO_IMPACTO_ECONOMICO ?? false) ? "Activo" : "Inactivo", search) ||
-                            Contains(x.USUARIO_CREA, search) ||
-                            Contains(x.ESTACION_CREA, search) ||
-                            Contains(x.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm"), search) ||
-                            Contains(x.USUARIO_ACTU, search) ||
-                            Contains(x.ESTACION_ACTU, search) ||
-                            Contains(x.FECHA_ACTU?.ToString("dd/MM/yyyy HH:mm"), search))
-                        .ToList();
-                }
-
-                foreach (var columnFilter in columnFilters)
-                {
-                    response = response.Where(x => Contains(GetColumnValue(x, columnFilter.Key), columnFilter.Value)).ToList();
-                }
-
-                response = response.OrderBy(x => x.CORR_EMPRESA).ThenBy(x => x.CORR_IMPACTO_ECONOMICO).ToList();
-
-                var totalRows = response.Count;
-                var pageData = response.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-                objResultado.Data = pageData;
+                objResultado.Data = response;
                 objResultado.Result = true;
-                objResultado.RowsAffected = totalRows;
+                objResultado.RowsAffected = response.Count;
                 objResultado.CodeHelper = 0;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
@@ -111,43 +105,15 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        private static string GetFilterValue(List<CParameter> xWhere, string parameterName)
-        {
-            return xWhere.Where(x => x.ParameterName == parameterName).Select(x => x.Value?.ToString()).FirstOrDefault();
-        }
-
-        private static string GetColumnValue(SC_IMPACTO_ECONOMICOView row, string columnName)
-        {
-            switch (columnName)
-            {
-                case "CORR_IMPACTO_ECONOMICO":
-                    return row.CORR_IMPACTO_ECONOMICO.ToString();
-                case "DESCRIPCION":
-                    return row.DESCRIPCION;
-                case "USUARIO_CREA":
-                    return row.USUARIO_CREA;
-                case "ESTACION_CREA":
-                    return row.ESTACION_CREA;
-                case "FECHA_CREA":
-                    return row.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm");
-                case "USUARIO_ACTU":
-                    return row.USUARIO_ACTU;
-                case "ESTACION_ACTU":
-                    return row.ESTACION_ACTU;
-                case "FECHA_ACTU":
-                    return row.FECHA_ACTU?.ToString("dd/MM/yyyy HH:mm");
-                default:
-                    return null;
-            }
-        }
-
+        // Qué hace: obtiene un impacto económico de la vista V_SC_IMPACTO_ECONOMICO.
+        // Cómo: lee con los filtros recibidos en xWhere (empresa e id).
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
 
             try
             {
-                var reader = await objData.GetDataReader("V_" + _TableName, xWhere);
+                var reader = await objData.GetDataReader(_ViewName, xWhere);
                 var response = new List<SC_IMPACTO_ECONOMICOView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
@@ -178,6 +144,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: inserta un impacto económico nuevo.
+        // Cómo: llama a Insert sobre SC_IMPACTO_ECONOMICO y devuelve el registro creado leído desde la vista; controla claves duplicadas.
         public async Task<CResult> CreateAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -237,6 +205,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: actualiza un impacto económico existente.
+        // Cómo: llama a Update sobre SC_IMPACTO_ECONOMICO por CORR_EMPRESA y CORR_IMPACTO_ECONOMICO; controla claves duplicadas.
         public async Task<CResult> UpdateAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -274,11 +244,14 @@ namespace SGUEES.Repositories
             }
             catch (Exception e)
             {
+                var duplicateKey = IsDuplicateKeyError(e);
                 objResultado.Data = null;
                 objResultado.Result = false;
                 objResultado.CodeHelper = 0;
-                objResultado.ErrorCode = -1;
-                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorCode = duplicateKey ? 2627 : -1;
+                objResultado.ErrorMessage = duplicateKey
+                    ? "No se pudo guardar el registro porque otro usuario guardo un registro al mismo tiempo. Intente nuevamente."
+                    : e.Message;
                 objResultado.ErrorSource += $"[{e.Source}]";
             }
             finally
@@ -289,6 +262,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: elimina un impacto económico.
+        // Cómo: llama a Delete sobre SC_IMPACTO_ECONOMICO por CORR_EMPRESA y CORR_IMPACTO_ECONOMICO; informa si hay registros relacionados.
         public async Task<CResult> DeleteAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -315,7 +290,80 @@ namespace SGUEES.Repositories
                 objResultado.Result = false;
                 objResultado.CodeHelper = 0;
                 objResultado.ErrorCode = -1;
-                objResultado.ErrorMessage = "No se puede eliminar el descriptor de impacto economico porque tiene registros asociados en otras tablas.";
+                objResultado.ErrorMessage = "No se puede eliminar el impacto economico porque tiene registros asociados en otras tablas.";
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+        // Qué hace: cambia el estado activo/inactivo de un impacto económico.
+        // Cómo: ejecuta el stored procedure PRAL_MTTO_CATALOGO_ESTADO_BIT y devuelve el registro actualizado leído desde la vista.
+        public async Task<CResult> ActivarInactivarAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "NOMBRE_TABLA", Value = _TableName, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CAMPO_PK", Value = _CampoPk, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CAMPO_ESTADO", Value = _CampoEstado, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "USA_EMPRESA", Value = _UsaEmpresa, DbType = System.Data.DbType.Boolean },
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_RELATIVO", Value = Data.CORR_IMPACTO_ECONOMICO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+                    new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+                    new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
+                };
+
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_CATALOGO_ESTADO_BIT", true, p);
+
+                if ((int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value == 0)
+                {
+                    var xWhere = new List<CParameter>
+                    {
+                        new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                        new CParameter() { ParameterName = "CORR_IMPACTO_ECONOMICO", Value = Data.CORR_IMPACTO_ECONOMICO, DbType = System.Data.DbType.Int32 },
+                    };
+
+                    var readerGet = await objData.GetDataReader(_ViewName, xWhere);
+                    var response = new List<SC_IMPACTO_ECONOMICOView>().FromDataReader(readerGet).FirstOrDefault();
+
+                    readerGet.Close();
+
+                    objResultado.Data = response;
+                    objResultado.Result = true;
+                    objResultado.RowsAffected = 1;
+                    objResultado.CodeHelper = response?.CORR_IMPACTO_ECONOMICO ?? Data.CORR_IMPACTO_ECONOMICO;
+                    objResultado.ErrorCode = 0;
+                    objResultado.ErrorMessage = string.Empty;
+                    objResultado.ErrorSource = string.Empty;
+                }
+                else
+                {
+                    objResultado.Data = null;
+                    objResultado.Result = false;
+                    objResultado.RowsAffected = 0;
+                    objResultado.CodeHelper = Data.CORR_IMPACTO_ECONOMICO;
+                    objResultado.ErrorCode = (int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
+                    objResultado.ErrorMessage = (string)objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value;
+                    objResultado.ErrorSource = "C" + _TableName + ".Mtto(" + UpdateType.Update.ToString() + ")";
+                }
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = Data.CORR_IMPACTO_ECONOMICO;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
                 objResultado.ErrorSource += $"[{e.Source}]";
             }
             finally
@@ -326,12 +374,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        private static bool Contains(string value, string search)
-        {
-            return !string.IsNullOrWhiteSpace(value) &&
-                value.Contains(search, StringComparison.OrdinalIgnoreCase);
-        }
-
+        // Qué hace: detecta errores de clave duplicada de SQL Server.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

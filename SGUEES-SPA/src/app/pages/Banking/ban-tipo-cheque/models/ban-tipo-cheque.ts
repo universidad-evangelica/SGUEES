@@ -1,0 +1,16 @@
+export interface BanTipoCheque {
+	CORR_EMPRESA: number;
+	CORR_TIPO_CHEQUE: number;
+	NOMBRE_TIPO_CHEQUE: string;
+	CUENTA_CONTABLE: string;
+	CLASE_TIPO_CHEQUE: string;
+	CONTABILIZAR_LUEGO_DE_IMPRIMIR: boolean;
+	ESTADO_TIPO_CHEQUE: boolean;
+	NOMBRE_CLASE_TIPO_CHEQUE?: string;
+	USUARIO_CREA?: string;
+	FECHA_CREA?: Date;
+	ESTACION_CREA?: string;
+	USUARIO_ACTU?: string;
+	FECHA_ACTU?: Date;
+	ESTACION_ACTU?: string;
+}

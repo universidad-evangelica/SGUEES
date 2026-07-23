@@ -1,60 +1,66 @@
+// Qué hace: vista de mantenimiento de Disponibilidad de Horario.
+// Cómo: administra el CRUD del catálogo SC_DISPONIBILIDAD_HORARIO coordinando la grilla, el formulario y ScDisponibilidadHorarioService.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import CustomStore from 'devextreme/data/custom_store';
-import { custom } from 'devextreme/ui/dialog';
-import { MessageService } from 'primeng/api';
-import { lastValueFrom } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
-import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
-import { AuthService } from 'src/app/shared/services/auth.service';
 import { ScDisponibilidadHorario } from './models/sc-disponibilidad-horario';
-import {
-	EMPRESA_REGISTRO_ETIQUETA,
-	getEmpresaWarningMessage,
-	isEmpresaFkErrorMessage,
-	isEmpresaWarningResponse,
-	ScDisponibilidadHorarioService,
-} from './sc-disponibilidad-horario.service';
+import { ScDisponibilidadHorarioService } from './sc-disponibilidad-horario.service';
 
-type EstadoFiltro = boolean | null;
+const ESTADO_FIELD = 'ESTADO_DISPONIBILIDAD_HORARIO';
 
 @Component({
 	selector: 'app-sc-disponibilidad-horario',
 	templateUrl: './sc-disponibilidad-horario.component.html',
 	styleUrls: ['./sc-disponibilidad-horario.component.scss'],
 })
+// Qué hace: componente de mantenimiento de Disponibilidad de Horario.
+// Cómo: extiende CBaseComponent y coordina la grilla, el formulario y las llamadas a ScDisponibilidadHorarioService.
 export class ScDisponibilidadHorarioComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
-	readonly pageSizes = [5, 10, 25, 50, 100];
+	protected override etiquetaRegistro = 'la disponibilidad de horario';
+	protected override requiereEmpresaSesion = true;
+	protected override mttoPageSize = 5;
+	protected override mttoPageSizes = [5, 10, 25, 50, 100];
+	protected override mttoGridKeyExpr = 'CORR_DISPONIBILIDAD_HORARIO';
+	protected override mttoCampoEstado = ESTADO_FIELD;
+	protected override mttoEstadoDescribeField = 'NOMBRE_DISPONIBILIDAD_HORARIO';
+	protected override mttoParchearGridTrasGuardar = true;
+	protected override mttoRemoteOperations = false;
+
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Disponibilidad de Horario';
 
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: ScDisponibilidadHorarioService,
-		private messageService: MessageService,
-		private authService: AuthService
+		private service: ScDisponibilidadHorarioService
 	) {
 		super(appInfoService, router);
-		this.onEditClick = this.onEditClick.bind(this);
-		this.onEliminarClick = this.onEliminarClick.bind(this);
-		this.onActivarClick = this.onActivarClick.bind(this);
-		this.onDesactivarClick = this.onDesactivarClick.bind(this);
-		this.columns = this.service.getColumns(this.onEditClick, this.onEliminarClick, this.onActivarClick, this.onDesactivarClick, this.permiteEdit, this.permiteDele);
+		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 	}
 
-	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.configurarDataSource();
+	// Qué hace: entrega el grid de mantenimiento al flujo base de CBaseComponent.
+	// Cómo: devuelve la referencia dataGrid enlazada con @ViewChild, o null si aún no está disponible.
+	protected override getMttoDataGrid(): DataGridMttoComponent | null {
+		return this.dataGrid ?? null;
 	}
 
+	// Qué hace: inicializa la vista al abrirla.
+	// Cómo: fija el subtítulo de mantenimiento y llama a consultar para cargar el catálogo.
+	ngOnInit(): void {
+		this.subTituloVentana = this.maintenanceSubtitulo;
+		this.consultar();
+	}
+
+	// Qué hace: reacciona a los cambios de estado del formulario (nuevo, editar, ver, browse).
+	// Cómo: llama a AsignaStatus del componente base y, al volver a modo Browse, restaura el subtítulo de mantenimiento.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -62,49 +68,14 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 		}
 	}
 
-	override rowDblClick(e: any): void {
-		const rowData = e?.data ?? e?.row?.data;
-		if (rowData) {
-			this.model = this.fillData(rowData);
-			this.modelUpdate = this.fillData(rowData);
-		}
-		super.rowDblClick(e);
-		setTimeout(() => {
-			if (!this.dataForm?.instance) {
-				return;
-			}
-			this.dataForm.instance.option('formData', this.model);
-			this.bloquear();
-		});
+	// Qué hace: construye el filtro por correlativo.
+	// Cómo: devuelve un objeto con CORR_DISPONIBILIDAD_HORARIO, usado en consultar y en rowRemoving.
+	fillParam(xCORR_DISPONIBILIDAD_HORARIO?: number): any {
+		return { CORR_DISPONIBILIDAD_HORARIO: xCORR_DISPONIBILIDAD_HORARIO ?? 0 };
 	}
 
-	onEditClick(e: any): void {
-		if (!e?.row?.data) {
-			return;
-		}
-
-		this.model = e.row.data;
-		this.editarClick(e);
-	}
-
-	fillParam(
-		xCORR_DISPONIBILIDAD_HORARIO?: number,
-		page = 1,
-		pageSize = 5,
-		busqueda = '',
-		estado: EstadoFiltro = null,
-		columnFilters: Record<string, any> = {}
-	): any {
-		return {
-			CORR_DISPONIBILIDAD_HORARIO: xCORR_DISPONIBILIDAD_HORARIO ?? 0,
-			BUSQUEDA: busqueda,
-			ESTADO_DISPONIBILIDAD_HORARIO: estado,
-			PAGE: page,
-			PAGE_SIZE: pageSize,
-			...columnFilters,
-		};
-	}
-
+	// Qué hace: construye el modelo de disponibilidad de horario para el formulario.
+	// Cómo: si recibe xModel copia sus campos; si no recibe nada, devuelve el modelo inicial para un registro nuevo.
 	override fillData(xModel?: ScDisponibilidadHorario): ScDisponibilidadHorario {
 		if (xModel !== undefined) {
 			return {
@@ -113,11 +84,11 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 				NOMBRE_DISPONIBILIDAD_HORARIO: xModel.NOMBRE_DISPONIBILIDAD_HORARIO,
 				ESTADO_DISPONIBILIDAD_HORARIO: xModel.ESTADO_DISPONIBILIDAD_HORARIO,
 				USUARIO_CREA: xModel.USUARIO_CREA,
-				FECHA_CREA: xModel.FECHA_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
+				FECHA_CREA: xModel.FECHA_CREA,
 				USUARIO_ACTU: xModel.USUARIO_ACTU,
-				FECHA_ACTU: xModel.FECHA_ACTU,
 				ESTACION_ACTU: xModel.ESTACION_ACTU,
+				FECHA_ACTU: xModel.FECHA_ACTU,
 			};
 		}
 
@@ -127,40 +98,128 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 			NOMBRE_DISPONIBILIDAD_HORARIO: '',
 			ESTADO_DISPONIBILIDAD_HORARIO: true,
 			USUARIO_CREA: '',
-			FECHA_CREA: new Date(),
 			ESTACION_CREA: '',
+			FECHA_CREA: new Date(),
 			USUARIO_ACTU: '',
-			FECHA_ACTU: new Date(),
 			ESTACION_ACTU: '',
+			FECHA_ACTU: new Date(),
 		};
 	}
 
-	consultar(): void {
-		this.dataGrid?.refreshData(true);
+	// Qué hace: carga las disponibilidades de horario y actualiza la grilla.
+	// Cómo: llama a consultarMtto con getAll del servicio y, al recibir los datos, ordena los registros y refresca la grilla.
+	consultar(resetPage = false): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+			onData: () => {
+				this.ordenarModelsPorCorr();
+				this.refrescarGridTrasCarga(resetPage);
+			},
+		});
 	}
 
+	// Qué hace: mantiene los registros ordenados por correlativo.
+	// Cómo: si models es un arreglo, lo reordena de forma ascendente por CORR_DISPONIBILIDAD_HORARIO.
+	private ordenarModelsPorCorr(): void {
+		if (!Array.isArray(this.models)) {
+			return;
+		}
+
+		this.models = [...this.models].sort(
+			(a, b) => Number(a.CORR_DISPONIBILIDAD_HORARIO) - Number(b.CORR_DISPONIBILIDAD_HORARIO)
+		);
+	}
+
+	// Qué hace: refleja en la grilla el registro recién guardado.
+	// Cómo: agrega el registro si es nuevo, o lo reemplaza por su llave (mttoGridKeyExpr) si ya existía, y luego ordena y refresca la grilla.
+	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
+		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
+			super.aplicarRegistroEnGrid(data, isAdd);
+			return;
+		}
+
+		const record = this.fillData(data as ScDisponibilidadHorario);
+		const key = this.mttoGridKeyExpr as keyof ScDisponibilidadHorario;
+
+		if (isAdd) {
+			this.models = [...this.models, record];
+		} else {
+			const index = this.models.findIndex((item) => item?.[key] === record[key]);
+			if (index >= 0) {
+				this.models = this.models.map((item, i) => (i === index ? this.fillData({ ...item, ...record }) : item));
+			}
+		}
+
+		this.ordenarModelsPorCorr();
+		this.refrescarGridTrasCarga(isAdd);
+	}
+
+	// Qué hace: retira de la grilla el registro eliminado.
+	// Cómo: filtra models excluyendo el registro con la llave indicada y refresca la grilla sin volver a consultar el catálogo.
+	protected override quitarRegistroDeGrid(keyValue: unknown): void {
+		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
+			super.quitarRegistroDeGrid(keyValue);
+			return;
+		}
+
+		const key = this.mttoGridKeyExpr as keyof ScDisponibilidadHorario;
+		this.models = this.models.filter((item) => item?.[key] !== keyValue);
+		this.refrescarGridTrasCarga(true);
+	}
+
+	// Qué hace: refresca la grilla después de un cambio en los datos.
+	// Cómo: espera con setTimeout el ciclo de Angular y luego llama a dataGrid.refreshData.
+	private refrescarGridTrasCarga(resetPage = false): void {
+		setTimeout(() => {
+			this.dataGrid?.refreshData(resetPage);
+		}, 0);
+	}
+
+	// Qué hace: abre el registro seleccionado en modo consulta.
+	// Cómo: toma los datos de la fila, llama a fillData y a rowDblClick del componente base, y bloquea el formulario.
+	override rowDblClick(e: any): void {
+		const rowData = e?.data ?? e?.row?.data;
+		if (rowData) {
+			this.model = this.fillData(rowData);
+			this.modelUpdate = this.fillData(rowData);
+		}
+		super.rowDblClick(e);
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+			this.bloquear();
+		});
+	}
+
+	// Qué hace: prepara el registro seleccionado para editarlo.
+	// Cómo: llama a fillData con los datos de la fila, luego a editarClick del componente base y habilita el formulario.
+	onEditClick(e: any): void {
+		if (!e?.row?.data) {
+			return;
+		}
+
+		this.model = this.fillData(e.row.data);
+		this.editarClick(e);
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+			this.habilitar();
+		});
+	}
+
+	// Qué hace: inicia el registro de una nueva disponibilidad de horario.
+	// Cómo: valida que haya empresa en sesión con asegurarEmpresaSesion, llama a nuevo del componente base y sincroniza el formulario con el modelo.
 	override nuevo(): void {
-		if (!this.validarEmpresaSesion()) {
+		if (!this.asegurarEmpresaSesion()) {
 			return;
 		}
 		super.nuevo();
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+		});
 	}
 
-	override notifyFx(xMessage: string, xType: NotifyType): void {
-		const cleanMessage = `${xMessage ?? ''}`.replace(/^error:\s*/i, '').trim();
-		const warningDetail = this.getWarningMessage(xMessage);
-		const isWarning = xType === NotifyType.Warning || warningDetail !== cleanMessage;
-		const severity = xType === NotifyType.Success ? 'success' : isWarning ? 'warn' : 'error';
-		const summary = xType === NotifyType.Success ? 'Éxito' : isWarning ? 'Advertencia' : 'Error';
-		const detail = isWarning ? warningDetail : cleanMessage;
-		this.messageService.add({ severity, summary, detail });
-	}
-
+	// Qué hace: valida el formulario y guarda la disponibilidad de horario.
+	// Cómo: combina model con los datos del formulario, valida con dataForm.instance.validate y llama a guardarMtto, que usa esValido, insert o update del servicio.
 	guardar(): void {
-		if (!this.validarEmpresaSesion()) {
-			return;
-		}
-
 		const formData = this.dataForm?.instance?.option('formData');
 		if (formData) {
 			this.model = { ...this.model, ...formData };
@@ -172,306 +231,92 @@ export class ScDisponibilidadHorarioComponent extends CBaseComponent implements 
 			return;
 		}
 
-		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
-			return;
-		}
-
-		this.loadingVisible = true;
-		if (this.banderaMtto === UpdateType.Add) {
-			this.service
-				.insert(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.consultar();
-							this.notifyFx('Registro creado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
-						this.loadingVisible = false;
-					},
-				});
-		} else if (this.banderaMtto === UpdateType.Update) {
-			this.service
-				.update(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.consultar();
-							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
-						this.loadingVisible = false;
-					},
-				});
-		}
+		this.guardarMtto({
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
+		});
 	}
 
+	// Qué hace: convierte un error de llave foránea al eliminar en una advertencia controlada.
+	// Cómo: intercepta el error del observable con catchError y, si el mensaje indica registros relacionados, devuelve un resultado con Result en false; de lo contrario, propaga el error.
+	private convertirErrorMttoEnWarning<T>(request: Observable<T>): Observable<T> {
+		return request.pipe(
+			catchError((error: any) => {
+				const mensaje = `${
+					error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.error?.message ?? error?.error ?? error?.message ?? error ?? ''
+				}`;
+				const normalizado = mensaje.toLowerCase();
+				const tieneRelacion = [
+					'foreign key',
+					'reference constraint',
+					'clave externa',
+					'clave foránea',
+					'llave foránea',
+					'hijos',
+					'registros relacionados',
+					'registros asociados',
+					'asociados',
+				].some((texto) => normalizado.includes(texto));
+
+				if (tieneRelacion) {
+					return of({
+						Result: false,
+						ErrorCode: 2627,
+						ErrorMessage: 'No se puede eliminar porque tiene registros relacionados.',
+					} as T);
+				}
+
+				return throwError(() => error);
+			})
+		);
+	}
+
+	// Qué hace: descarta la edición en curso.
+	// Cómo: llama a cancelar del componente base, que restaura en la grilla el registro cuyo CORR_DISPONIBILIDAD_HORARIO coincide con modelUpdate.
 	override cancelar(): void {
-		this.model = this.modelUpdate;
-		this.AsignaStatus(UpdateType.Browse);
-		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
+		super.cancelar((item: any) => item.CORR_DISPONIBILIDAD_HORARIO === this.modelUpdate.CORR_DISPONIBILIDAD_HORARIO);
 	}
 
-	onActivarClick(e: any): void {
-		const row = e.row?.data as ScDisponibilidadHorario;
-		if (!row) {
-			return;
-		}
-
-		this.confirmEstado(
-			'Activar registro',
-			`Desea activar la disponibilidad de horario "${row.NOMBRE_DISPONIBILIDAD_HORARIO}"?`,
-			() => this.cambiarEstado(row, true)
-		);
-	}
-
-	onEliminarClick(e: any): void {
-		const row = e.row?.data as ScDisponibilidadHorario;
-		if (!row) {
-			return;
-		}
-
-		this.confirmEstado(
-			'Eliminar registro',
-			`Desea eliminar "${row.NOMBRE_DISPONIBILIDAD_HORARIO}"?`,
-			() => this.eliminarRegistro(row)
-		);
-	}
-
-	onDesactivarClick(e: any): void {
-		const row = e.row?.data as ScDisponibilidadHorario;
-		if (!row) {
-			return;
-		}
-
-		this.confirmEstado(
-			'Desactivar registro',
-			`Desea desactivar "${row.NOMBRE_DISPONIBILIDAD_HORARIO}"?`,
-			() => this.cambiarEstado(row, false)
-		);
-	}
-
+	// Qué hace: elimina la disponibilidad de horario de la fila indicada.
+	// Cómo: llama a rowRemovingMtto con delete del servicio, envuelto en convertirErrorMttoEnWarning para controlar dependencias asociadas.
 	rowRemoving(e: any): void {
-		e.cancel = true;
-		this.onEliminarClick({ row: { data: e.data } });
+		this.rowRemovingMtto(e, {
+			deleteFn: () =>
+				this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_DISPONIBILIDAD_HORARIO))),
+		});
 	}
 
+	// Qué hace: cambia el estado de la disponibilidad de horario seleccionada.
+	// Cómo: llama a invocarActivarInactivar con activarInactivar del servicio.
+	activar_inactivar(): void {
+		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
+	}
+
+	// Qué hace: deja el formulario en solo lectura (modo consulta).
+	// Cómo: pone en readOnly los editores CORR_DISPONIBILIDAD_HORARIO, NOMBRE_DISPONIBILIDAD_HORARIO y ESTADO_DISPONIBILIDAD_HORARIO del formulario.
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_DISPONIBILIDAD_HORARIO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_DISPONIBILIDAD_HORARIO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ESTADO_DISPONIBILIDAD_HORARIO')?.option('readOnly', true);
 	}
 
+	// Qué hace: habilita los campos editables del formulario.
+	// Cómo: con setTimeout habilita NOMBRE_DISPONIBILIDAD_HORARIO y bloquea CORR_DISPONIBILIDAD_HORARIO; ESTADO_DISPONIBILIDAD_HORARIO queda en solo lectura cuando se está editando (banderaMtto es Update).
+	override habilitar(): void {
+		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('CORR_DISPONIBILIDAD_HORARIO')?.option('readOnly', true);
+			this.dataForm.instance.getEditor('NOMBRE_DISPONIBILIDAD_HORARIO')?.option('readOnly', false);
+			this.dataForm.instance.getEditor('ESTADO_DISPONIBILIDAD_HORARIO')?.option('readOnly', estadoSoloLectura);
+		});
+	}
+
+	// Qué hace: ubica el foco al abrir el formulario.
+	// Cómo: con setTimeout enfoca el editor NOMBRE_DISPONIBILIDAD_HORARIO.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('NOMBRE_DISPONIBILIDAD_HORARIO')?.focus();
 		});
-	}
-
-	private configurarDataSource(): void {
-		this.models = new CustomStore({
-			key: 'CORR_DISPONIBILIDAD_HORARIO',
-			loadMode: 'processed',
-			cacheRawData: false,
-			load: async (loadOptions: any) => {
-				const takeRows = loadOptions.take || 5;
-				const skipRows = loadOptions.skip || 0;
-				const page = Math.floor(skipRows / takeRows) + 1;
-				const gridFilters = this.getGridFilters(loadOptions.filter);
-				const estado = gridFilters.estado;
-				const busqueda = '';
-				const response = await lastValueFrom(this.service.getAll(this.fillParam(0, page, takeRows, busqueda, estado, gridFilters.columnas)));
-
-				if (!response.Result) {
-					throw new Error(response.ErrorMessage || 'No se pudo cargar la disponibilidad de horario.');
-				}
-
-				return {
-					data: response.Data || [],
-					totalCount: response.RowsAffected || 0,
-				};
-			},
-		});
-	}
-
-	private getGridFilters(filter: any): { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } {
-		const result: { busqueda: string; estado: EstadoFiltro; columnas: Record<string, any> } = {
-			busqueda: '',
-			estado: null,
-			columnas: {},
-		};
-
-		const visit = (node: any): void => {
-			if (!Array.isArray(node)) {
-				return;
-			}
-
-			if (typeof node[0] === 'string' && node.length >= 3) {
-				const field = node[0];
-				const value = node[2];
-
-				if (field === 'ESTADO_DISPONIBILIDAD_HORARIO') {
-					if (value === '__ALL__' || value === null || value === undefined) {
-						result.estado = null;
-						return;
-					}
-
-					result.estado = value === true || value === 'true';
-					return;
-				}
-
-				if (value !== null && value !== undefined && `${value}`.trim()) {
-					result.columnas[field] = value;
-				}
-				return;
-			}
-
-			node.forEach((child) => visit(child));
-		};
-
-		visit(filter);
-		return result;
-	}
-
-	private cambiarEstado(row: ScDisponibilidadHorario, activo: boolean): void {
-		const request = { ...row, ESTADO_DISPONIBILIDAD_HORARIO: activo };
-		const action = activo ? this.service.activar(request) : this.service.desactivar(request);
-
-		this.loadingVisible = true;
-		action.pipe(take(1)).subscribe({
-			next: (response: any) => {
-				if (response.Result) {
-					this.consultar();
-					this.notifyFx(activo ? 'Registro activado con exito!' : 'Registro desactivado con exito!', NotifyType.Success);
-				} else {
-					this.notifyFx(response.ErrorMessage || 'No se pudo cambiar el estado del registro.', NotifyType.Error);
-				}
-				this.loadingVisible = false;
-			},
-			error: (error: any) => {
-				this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
-				this.loadingVisible = false;
-			},
-		});
-	}
-
-	private eliminarRegistro(row: ScDisponibilidadHorario): void {
-		this.loadingVisible = true;
-		this.service
-			.delete(row)
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.consultar();
-						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-					} else {
-						this.notifyFx(
-							response.ErrorMessage || 'No se puede eliminar la disponibilidad de horario porque tiene registros asociados en otras tablas.',
-							NotifyType.Warning
-						);
-					}
-					this.loadingVisible = false;
-				},
-				error: (error: any) => {
-					this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
-					this.loadingVisible = false;
-				},
-			});
-	}
-
-	private confirmEstado(title: string, message: string, fn: () => void): void {
-		const dialog = custom({
-			title,
-			messageHtml: `<div class="sguees-confirm-message">${message}</div>`,
-			buttons: [
-				{
-					text: 'Si',
-					type: 'default',
-					onClick: () => true,
-				},
-				{
-					text: 'No',
-					onClick: () => false,
-				},
-			],
-		});
-
-		dialog.show().then((accepted: boolean) => {
-			if (accepted) {
-				fn();
-			}
-		});
-	}
-
-	private getErrorMessage(error: any): string {
-		if (typeof error === 'string' && error.trim()) {
-			return error;
-		}
-
-		return (
-			error?.error?.ErrorMessage ||
-			error?.error?.message ||
-			error?.message ||
-			'Ocurrio un error al procesar la solicitud.'
-		);
-	}
-
-	private getNotifyType(response: any): NotifyType {
-		if (isEmpresaWarningResponse(response)) {
-			return NotifyType.Warning;
-		}
-		const message = (response?.ErrorMessage || '').toLowerCase();
-		return response?.ErrorCode === 2627 || message.includes('ya existe') || message.includes('duplicad')
-			? NotifyType.Warning
-			: NotifyType.Error;
-	}
-
-	private getErrorNotifyType(error: any): NotifyType {
-		return isEmpresaFkErrorMessage(this.getErrorMessage(error)) ? NotifyType.Warning : NotifyType.Error;
-	}
-
-	private getCorrEmpresaSesion(): number {
-		const value = Number(this.authService.decodedToken?.CORR_EMPRESA ?? 0);
-		return Number.isFinite(value) ? value : 0;
-	}
-
-	private validarEmpresaSesion(): boolean {
-		if (this.getCorrEmpresaSesion() > 0) {
-			return true;
-		}
-		this.notifyFx(getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA), NotifyType.Warning);
-		return false;
-	}
-
-	private getWarningMessage(message: string): string {
-		const cleanMessage = `${message ?? ''}`.replace(/^error:\s*/i, '').trim();
-		const value = cleanMessage.toLowerCase();
-		if (isEmpresaFkErrorMessage(cleanMessage) || value.includes('no tiene una empresa asignada')) {
-			return getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA);
-		}
-		if (value.includes('ya existe') || value.includes('duplicad')) {
-			return 'Ya existe un registro con ese código. Escriba otro código para continuar.';
-		}
-		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados')) {
-			return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';
-		}
-		return cleanMessage;
 	}
 }

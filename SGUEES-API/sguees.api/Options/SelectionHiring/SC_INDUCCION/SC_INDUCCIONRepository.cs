@@ -1,3 +1,4 @@
+// Persistencia SQL del catálogo inducción (tabla/vista SC).
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,9 +10,14 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+    // Qué hace: ejecuta el CRUD y las consultas SQL sobre la tabla y la vista de inducción.
     public class SC_INDUCCIONRepository : BaseRepository<SC_INDUCCIONTable>, ISC_INDUCCIONRepository
     {
         private const string _TableName = "SC_INDUCCION";
+        private const string _ViewName = "V_SC_INDUCCION";
+        private const string _CampoPk = "CORR_INDUCCION";
+        private const string _CampoEstado = "ESTADO_INDUCCION";
+        private const bool _UsaEmpresa = true;
 
         public SC_INDUCCIONRepository(IConfiguration config) :
             base(config.GetConnectionString("defaultConnection"),
@@ -19,78 +25,64 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Qué hace: recupera las inducciones activas para el lookup del descriptor.
+        // Cómo: SELECT directo a SC_INDUCCION filtrando por empresa y ESTADO_INDUCCION, ordenado por nombre y semanas.
+        public async Task<List<SC_INDUCCIONView>> GetCatalogoDescriptorAsync(int corrEmpresa)
+        {
+            if (corrEmpresa <= 0)
+            {
+                return new List<SC_INDUCCIONView>();
+            }
+
+            const string sql = @"SELECT
+                  A.CORR_INDUCCION,
+                  A.NOMBRE_INDUCCION,
+                  A.SEMANAS_INDUCCION
+                FROM SC_INDUCCION A
+                WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+                  AND ISNULL(A.ESTADO_INDUCCION, 1) = 1
+                ORDER BY A.NOMBRE_INDUCCION, A.SEMANAS_INDUCCION, A.CORR_INDUCCION";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                });
+
+                var response = new List<SC_INDUCCIONView>().FromDataReader(reader).ToList();
+                reader.Close();
+                return response;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
+        // Qué hace: lista las inducciones de la vista V_SC_INDUCCION.
+        // Cómo: filtra por CORR_EMPRESA y ordena por CORR_INDUCCION.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
 
             try
             {
-                var dbWhere = xWhere.Where(x => x.ParameterName == "CORR_EMPRESA").ToList();
-                var estado = xWhere.Where(x => x.ParameterName == "ESTADO_INDUCCION").Select(x => x.Value as bool?).FirstOrDefault();
-                var busqueda = xWhere.Where(x => x.ParameterName == "BUSQUEDA").Select(x => x.Value?.ToString()).FirstOrDefault();
-                var columnFilters = new Dictionary<string, string>
-                {
-                    { "CORR_INDUCCION", GetFilterValue(xWhere, "CORR_INDUCCION") },
-                    { "NOMBRE_INDUCCION", GetFilterValue(xWhere, "NOMBRE_INDUCCION") },
-                    { "SEMANAS_INDUCCION", GetFilterValue(xWhere, "SEMANAS_INDUCCION") },
-                    { "USUARIO_CREA", GetFilterValue(xWhere, "USUARIO_CREA") },
-                    { "ESTACION_CREA", GetFilterValue(xWhere, "ESTACION_CREA") },
-                    { "FECHA_CREA", GetFilterValue(xWhere, "FECHA_CREA") },
-                    { "USUARIO_ACTU", GetFilterValue(xWhere, "USUARIO_ACTU") },
-                    { "ESTACION_ACTU", GetFilterValue(xWhere, "ESTACION_ACTU") },
-                    { "FECHA_ACTU", GetFilterValue(xWhere, "FECHA_ACTU") },
-                }
-                    .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+                var dbWhere = xWhere
+                    .Where(x => x.ParameterName == "CORR_EMPRESA")
                     .ToList();
-                var page = xWhere.Where(x => x.ParameterName == "PAGE").Select(x => Convert.ToInt32(x.Value ?? 1)).FirstOrDefault();
-                var pageSize = xWhere.Where(x => x.ParameterName == "PAGE_SIZE").Select(x => Convert.ToInt32(x.Value ?? 10)).FirstOrDefault();
 
-                page = page < 1 ? 1 : page;
-                pageSize = pageSize < 1 ? 10 : Math.Min(pageSize, 100);
-
-                var reader = await objData.GetDataReader("V_" + _TableName, dbWhere);
-                var response = new List<SC_INDUCCIONView>().FromDataReader(reader).ToList();
+                var reader = await objData.GetDataReader(_ViewName, dbWhere);
+                var response = new List<SC_INDUCCIONView>().FromDataReader(reader)
+                    .OrderBy(x => x.CORR_INDUCCION)
+                    .ToList();
 
                 reader.Close();
                 reader = null;
 
-                if (estado.HasValue)
-                {
-                    response = response.Where(x => (x.ESTADO_INDUCCION ?? false) == estado.Value).ToList();
-                }
-
-                if (!string.IsNullOrWhiteSpace(busqueda))
-                {
-                    var search = busqueda.Trim();
-                    response = response
-                        .Where(x =>
-                            Contains(x.CORR_EMPRESA.ToString(), search) ||
-                            Contains(x.CORR_INDUCCION.ToString(), search) ||
-                            Contains(x.NOMBRE_INDUCCION, search) ||
-                            Contains(x.SEMANAS_INDUCCION.ToString(), search) ||
-                            Contains((x.ESTADO_INDUCCION ?? false) ? "Activo" : "Inactivo", search) ||
-                            Contains(x.USUARIO_CREA, search) ||
-                            Contains(x.ESTACION_CREA, search) ||
-                            Contains(x.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm"), search) ||
-                            Contains(x.USUARIO_ACTU, search) ||
-                            Contains(x.ESTACION_ACTU, search) ||
-                            Contains(x.FECHA_ACTU?.ToString("dd/MM/yyyy HH:mm"), search))
-                        .ToList();
-                }
-
-                foreach (var columnFilter in columnFilters)
-                {
-                    response = response.Where(x => Contains(GetColumnValue(x, columnFilter.Key), columnFilter.Value)).ToList();
-                }
-
-                response = response.OrderBy(x => x.CORR_EMPRESA).ThenBy(x => x.CORR_INDUCCION).ToList();
-
-                var totalRows = response.Count;
-                var pageData = response.Skip((page - 1) * pageSize).Take(pageSize).ToList();
-
-                objResultado.Data = pageData;
+                objResultado.Data = response;
                 objResultado.Result = true;
-                objResultado.RowsAffected = totalRows;
+                objResultado.RowsAffected = response.Count;
                 objResultado.CodeHelper = 0;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
@@ -113,45 +105,15 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        private static string GetFilterValue(List<CParameter> xWhere, string parameterName)
-        {
-            return xWhere.Where(x => x.ParameterName == parameterName).Select(x => x.Value?.ToString()).FirstOrDefault();
-        }
-
-        private static string GetColumnValue(SC_INDUCCIONView row, string columnName)
-        {
-            switch (columnName)
-            {
-                case "CORR_INDUCCION":
-                    return row.CORR_INDUCCION.ToString();
-                case "NOMBRE_INDUCCION":
-                    return row.NOMBRE_INDUCCION;
-                case "SEMANAS_INDUCCION":
-                    return row.SEMANAS_INDUCCION.ToString();
-                case "USUARIO_CREA":
-                    return row.USUARIO_CREA;
-                case "ESTACION_CREA":
-                    return row.ESTACION_CREA;
-                case "FECHA_CREA":
-                    return row.FECHA_CREA?.ToString("dd/MM/yyyy HH:mm");
-                case "USUARIO_ACTU":
-                    return row.USUARIO_ACTU;
-                case "ESTACION_ACTU":
-                    return row.ESTACION_ACTU;
-                case "FECHA_ACTU":
-                    return row.FECHA_ACTU?.ToString("dd/MM/yyyy HH:mm");
-                default:
-                    return null;
-            }
-        }
-
+        // Qué hace: obtiene una inducción de la vista V_SC_INDUCCION.
+        // Cómo: lee con los filtros recibidos en xWhere (empresa e id).
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
 
             try
             {
-                var reader = await objData.GetDataReader("V_" + _TableName, xWhere);
+                var reader = await objData.GetDataReader(_ViewName, xWhere);
                 var response = new List<SC_INDUCCIONView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
@@ -182,6 +144,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: inserta una inducción nueva.
+        // Cómo: llama a Insert sobre SC_INDUCCION y devuelve el registro creado leído desde la vista; controla claves duplicadas.
         public async Task<CResult> CreateAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -208,7 +172,7 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
                 };
 
-                var reader = await objData.Insert(_TableName, p, "CORR_INDUCCION", pWhere);
+                var reader = await objData.Insert(_TableName, p, _CampoPk, pWhere);
                 var response = new List<SC_INDUCCIONView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
@@ -242,6 +206,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: actualiza una inducción existente.
+        // Cómo: llama a Update sobre SC_INDUCCION por CORR_EMPRESA y CORR_INDUCCION; controla claves duplicadas.
         public async Task<CResult> UpdateAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -252,7 +218,6 @@ namespace SGUEES.Repositories
                 {
                     new CParameter() { ParameterName = "NOMBRE_INDUCCION", Value = Data.NOMBRE_INDUCCION, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "SEMANAS_INDUCCION", Value = Data.SEMANAS_INDUCCION, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "ESTADO_INDUCCION", Value = Data.ESTADO_INDUCCION ?? true, DbType = System.Data.DbType.Boolean },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -280,11 +245,14 @@ namespace SGUEES.Repositories
             }
             catch (Exception e)
             {
+                var duplicateKey = IsDuplicateKeyError(e);
                 objResultado.Data = null;
                 objResultado.Result = false;
                 objResultado.CodeHelper = 0;
-                objResultado.ErrorCode = -1;
-                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorCode = duplicateKey ? 2627 : -1;
+                objResultado.ErrorMessage = duplicateKey
+                    ? "No se pudo guardar el registro porque otro usuario guardo un registro al mismo tiempo. Intente nuevamente."
+                    : e.Message;
                 objResultado.ErrorSource += $"[{e.Source}]";
             }
             finally
@@ -295,6 +263,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: elimina una inducción.
+        // Cómo: llama a Delete sobre SC_INDUCCION por CORR_EMPRESA y CORR_INDUCCION; informa si hay registros relacionados.
         public async Task<CResult> DeleteAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -332,12 +302,81 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        private static bool Contains(string value, string search)
+        // Qué hace: cambia el estado activo/inactivo de una inducción.
+        // Cómo: ejecuta el stored procedure PRAL_MTTO_CATALOGO_ESTADO_BIT y devuelve el registro actualizado leído desde la vista.
+        public async Task<CResult> ActivarInactivarAsync(SC_INDUCCIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            return !string.IsNullOrWhiteSpace(value) &&
-                value.Contains(search, StringComparison.OrdinalIgnoreCase);
+            CResult objResultado = new();
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "NOMBRE_TABLA", Value = _TableName, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CAMPO_PK", Value = _CampoPk, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CAMPO_ESTADO", Value = _CampoEstado, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "USA_EMPRESA", Value = _UsaEmpresa, DbType = System.Data.DbType.Boolean },
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_RELATIVO", Value = Data.CORR_INDUCCION, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+                    new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+                    new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
+                };
+
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_CATALOGO_ESTADO_BIT", true, p);
+
+                if ((int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value == 0)
+                {
+                    var xWhere = new List<CParameter>
+                    {
+                        new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                        new CParameter() { ParameterName = "CORR_INDUCCION", Value = Data.CORR_INDUCCION, DbType = System.Data.DbType.Int32 },
+                    };
+
+                    var readerGet = await objData.GetDataReader(_ViewName, xWhere);
+                    var response = new List<SC_INDUCCIONView>().FromDataReader(readerGet).FirstOrDefault();
+
+                    readerGet.Close();
+
+                    objResultado.Data = response;
+                    objResultado.Result = true;
+                    objResultado.RowsAffected = 1;
+                    objResultado.CodeHelper = response?.CORR_INDUCCION ?? Data.CORR_INDUCCION;
+                    objResultado.ErrorCode = 0;
+                    objResultado.ErrorMessage = string.Empty;
+                    objResultado.ErrorSource = string.Empty;
+                }
+                else
+                {
+                    objResultado.Data = null;
+                    objResultado.Result = false;
+                    objResultado.RowsAffected = 0;
+                    objResultado.CodeHelper = Data.CORR_INDUCCION;
+                    objResultado.ErrorCode = (int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
+                    objResultado.ErrorMessage = (string)objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value;
+                    objResultado.ErrorSource = "C" + _TableName + ".Mtto(" + UpdateType.Update.ToString() + ")";
+                }
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = Data.CORR_INDUCCION;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
         }
 
+        // Qué hace: detecta errores de clave duplicada de SQL Server.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

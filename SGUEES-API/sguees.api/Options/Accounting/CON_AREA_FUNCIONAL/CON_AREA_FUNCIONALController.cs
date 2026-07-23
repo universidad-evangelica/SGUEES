@@ -65,5 +65,13 @@ namespace sguees.Controllers
 			var resultado = await _service.DeleteAsync(Data, "", "");
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
+
+		[HttpGet("GetCORR_AREA_FUNCIONAL_CON_CENTRO_COSTO")]
+		[Authorize(Policy = "/con-centro-costo|R")]
+		public async Task<CResult> GetCORR_AREA_FUNCIONAL_CON_CENTRO_COSTO([FromQuery] CON_AREA_FUNCIONALParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
 	}
 }
