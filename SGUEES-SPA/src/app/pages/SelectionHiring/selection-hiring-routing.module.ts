@@ -15,6 +15,8 @@ import { ScRequerimientoOrganizacionalComponent } from './sc-requerimiento-organ
 import { ScDisponibilidadHorarioComponent } from './sc-disponibilidad-horario/sc-disponibilidad-horario.component';
 import { ScImpactoEconomicoComponent } from './sc-impacto-economico/sc-impacto-economico.component';
 import { ScCompetenciasTecnicasComponent } from './sc-competencias-tecnicas/sc-competencias-tecnicas.component';
+import { SC_OrganigramaEstructuralUnidadesComponent } from './sc-organigrama-estructural-unidades/sc-organigrama-estructural-unidades.component';
+import { SC_OrganigramaEstructuralNivelComponent } from './sc-organigrama-estructural-nivel/sc-organigrama-estructural-nivel.component';
 import { ScRequisicionObservadoresComponent } from './sc-requisicion-observadores/sc-requisicion-observadores.component';
 import { ScCompetenciasConductualesComponent } from './sc-competencias-conductuales/sc-competencias-conductuales.component';
 import { ScDescriptorPuestoComponent } from './sc-descriptor-puesto/sc-descriptor-puesto.component';
@@ -126,6 +128,20 @@ const routes: Routes = [
     loadChildren: () => import('./sc-competencias-tecnicas/sc-competencias-tecnicas.module').then(m => m.ScCompetenciasTecnicasModule)
   },
   {
+    path: 'sc-organigrama-estructural-unidades',
+    component: SC_OrganigramaEstructuralUnidadesComponent,
+    data: { titulo: 'Organigrama institucional' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-organigrama-estructural-unidades/sc-organigrama-estructural-unidades.module').then(m => m.SC_OrganigramaEstructuralUnidadesModule)
+  },
+  {
+    path: 'sc-organigrama-estructural-nivel',
+    component: SC_OrganigramaEstructuralNivelComponent,
+    data: { titulo: 'Niveles del Organigrama' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-organigrama-estructural-nivel/sc-organigrama-estructural-nivel.module').then(m => m.SC_OrganigramaEstructuralNivelModule)
     path: 'sc-competencias-conductuales',
     component: ScCompetenciasConductualesComponent,
     data: { titulo: 'Competencias Conductuales' },

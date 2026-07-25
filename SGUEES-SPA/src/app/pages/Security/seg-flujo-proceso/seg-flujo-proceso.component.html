@@ -1,0 +1,456 @@
+<app-barra-data-mtto
+    [tituloVentana]="tituloVentana"
+    [isBrowse]="isBrowse()"
+    [isForm]="isForm()"
+    [permiteAdd]="permiteAdd"
+    (nuevo)="nuevo()"
+    (guardar)="guardar()"
+    (cancelar)="cancelar()"
+>
+</app-barra-data-mtto>
+
+<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+    <dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+        <!-- Template para combo de Tipo Documento -->
+        <div *dxTemplate="let cellInfo of 'CORR_TIPO_DOCUMENTOLookup'">
+            <app-data-lookup
+                [model]="mCORR_TIPO_DOCUMENTO"
+                [(value)]="model.CORR_TIPO_DOCUMENTO"
+                [valueExpr]="'CORR_TIPO_DOCUMENTO'"
+                [displayExpr]="'NOMBRE_TIPO'"
+                [selectedRowKeys]="selectedLookUpCORR_TIPO_DOCUMENTO"
+                [readOnly]="readOnly"
+            >
+            </app-data-lookup>
+        </div>
+    </dx-form>
+</div>
+
+<dx-tab-panel #tabPanel [selectedIndex]="0" *ngIf="!isBrowse() && model.CORR_FLUJO_PROCESO > 0">
+    <dxi-item title="Pasos del Flujo" [icon]="'tasks'">
+        <div class="paso-section-card">
+            <!-- Barra de herramientas de Pasos -->
+            <app-barra-data-mtto
+                [tituloVentana]="'Pasos'"
+                [isBrowse]="isPasoBrowse()"
+                [isForm]="isPasoForm()"
+                [permiteAdd]="getPermiteAddPaso"
+                (nuevo)="nuevoPaso()"
+                (guardar)="guardarPaso()"
+                (cancelar)="cancelarPaso()"
+            >
+            </app-barra-data-mtto>
+
+            <!-- Formulario de Paso (se muestra cuando NO está en browse) -->
+            <div *ngIf="!isPasoBrowse()" style="margin-top: 15px;">
+                <dx-form #fPaso id="fPaso" [formData]="pasoModel" [labelLocation]="'top'" [colCount]="8" [items]="itemsPasos">
+                    <div *dxTemplate="let cellInfo of 'CORR_ACTOR_ORIGENLookup'">
+                        <app-data-lookup
+                            [model]="mCORR_ACTOR_ORIGEN"
+                            [(value)]="pasoModel.CORR_ACTOR_ORIGEN"
+                            [valueExpr]="'CORR_ACTOR'"
+                            [displayExpr]="'NOMBRE_ACTOR'"
+                            [selectedRowKeys]="selectedLookUpCORR_ACTOR_ORIGEN"
+                            [readOnly]="pasoReadOnly"
+                        >
+                        </app-data-lookup>
+                    </div>
+                     <div *dxTemplate="let cellInfo of 'CORR_ACTOR_DESTINOLookup'">
+                     <app-data-lookup
+                            [model]="mCORR_ACTOR_DESTINO"
+                            [(value)]="pasoModel.CORR_ACTOR_DESTINO"
+                            [valueExpr]="'CORR_ACTOR'"
+                            [displayExpr]="'NOMBRE_ACTOR'"
+                            [selectedRowKeys]="selectedLookUpCORR_ACTOR_DESTINO"
+                            [readOnly]="pasoReadOnly"
+                            (valueChange)="onActorDestinoChanged($event)"
+                        >
+                        </app-data-lookup>
+                    </div>
+                    <div *dxTemplate="let cellInfo of 'CORR_UNIDAD_DESTINOTemplate'">
+                        <div *ngIf="mostrarUnidadDestino; else unidadDestinoHint">
+                           
+                            <dx-select-box
+                                [dataSource]="unidadesPaso"
+                                [(value)]="pasoModel.CORR_UNIDAD_DESTINO"
+                                displayExpr="NOMBRE_UNIDAD_TREE"
+                                valueExpr="CORR_UNIDAD"
+                                placeholder="Seleccionar unidad destino..."
+                                [showClearButton]="true"
+                                [searchEnabled]="true"
+                                [searchTimeout]="200"
+                            >
+                            </dx-select-box>
+                        </div>
+                        <ng-template #unidadDestinoHint>
+                            <span style="color: #999; font-size: 12px; padding: 28px 0 6px; display: block;">
+                                El actor seleccionado no requiere de unidad
+                            </span>
+                        </ng-template>
+                    </div>
+                          <div *dxTemplate="let cellInfo of 'CORR_ESTADO_ORIGENLookup'">
+                        <app-data-lookup
+                            *ngIf="mostrarEstadoOrigenPaso"
+                            [model]="mCORR_ESTADO_ORIGEN"
+                            [(value)]="pasoModel.CORR_ESTADO_ORIGEN"
+                            [valueExpr]="'CORR_ESTADO'"
+                            [displayExpr]="'NOMBRE_ESTADO'"
+                            [selectedRowKeys]="selectedLookUpCORR_ESTADO_ORIGEN"
+                            [readOnly]="pasoReadOnly"
+                          
+                        >
+                        </app-data-lookup>
+                    </div>
+                </dx-form>
+            </div>
+
+            <!-- Grid de Pasos (siempre visible) -->
+            <div style="margin-top: 15px;">
+                <app-data-grid-mtto
+                    [isBrowse]="isPasoBrowse()"
+                    [models]="pasos"
+                    [columns]="columnsPasos"
+                    [summary]="summaryPasos"
+                    [keyExpr]="'CORR_PASO'"
+                    [actionColumnWidth]="180"
+                    [actionColumnMinWidth]="180"
+                    [propagateAddToPageContext]="false"
+                    [permiteEditar]="getPermiteEditarPaso"
+                    [permiteDele]="getPermiteDelePaso"
+                    [customButtons]="customButtonsPasos"
+                    (add)="nuevoPaso()"
+                    (rowDblClick)="rowDblClickPaso($event)"
+                    (rowRemoving)="rowRemovingPaso($event)"
+                    (focusedRowChanged)="focusedRowChangedPaso($event)"
+                    (editClick)="editarClickPaso($event)"
+                >
+                </app-data-grid-mtto>
+            </div>
+        </div>
+    </dxi-item>
+    <dxi-item title="Mensajes por Estado" [icon]="'mail'">
+        <div class="mensaje-placeholder">
+            <p>Aquí se gestionarán los mensajes por estado</p>
+        </div>
+    </dxi-item>
+</dx-tab-panel>
+
+<app-data-grid-mtto
+    [isBrowse]="isBrowse()"
+    [models]="models"
+    [columns]="columns"
+    [summary]="summary"
+    [keyExpr]="'CORR_FLUJO_PROCESO'"
+    [permiteEditar]="getPermiteEditar"
+    [permiteDele]="getPermiteDele"
+    (rowDblClick)="rowDblClick($event)"
+    (rowRemoving)="rowRemoving($event)"
+    (focusedRowChanged)="focusedRowChanged($event)"
+    (editClick)="editarClick($event)"
+>
+</app-data-grid-mtto>
+
+<!-- Modal: Acciones del Paso -->
+<dx-popup
+    [(visible)]="modalAccionesVisible"
+    [wrapperAttr]="{ class: 'paso-acciones-popup' }"
+    [title]="'Acciones del Paso: ' + (pasoSeleccionadoAcciones?.NOMBRE_PASO || '')"
+    [showCloseButton]="true"
+    [width]="'88%'"
+    [height]="'70%'"
+    [dragEnabled]="true"
+    [resizeEnabled]="true"
+    (onHidden)="cerrarModalAcciones()"
+>
+    <dxo-position at="center" my="center"></dxo-position>
+    <div *dxTemplate="let data of 'content'">
+        <dx-scroll-view width="100%" height="100%">
+
+            <!-- Barra de herramientas Acción-Estado -->
+            <app-barra-data-mtto
+                [tituloVentana]="'Acciones / Estado'"
+                [isBrowse]="isAccionEstadoBrowse()"
+                [isForm]="isAccionEstadoForm()"
+                [permiteAdd]="permiteAdd"
+                (nuevo)="nuevoAccionEstado()"
+                (guardar)="guardarAccionEstado()"
+                (cancelar)="cancelarAccionEstado()"
+            >
+            </app-barra-data-mtto>
+
+            <!-- Formulario Acción-Estado -->
+            <div *ngIf="isAccionEstadoForm()" style="margin-top: 15px;">
+                <dx-form
+                    [formData]="accionEstadoModel"
+                    [labelLocation]="'top'"
+                    [colCount]="8"
+                    [items]="itemsAccionEstado"
+                    [readOnly]="accionEstadoReadOnly"
+                >
+                    <div *dxTemplate="let cellInfo of 'CORR_ESTADO_DESTINOLookup'">
+                        <app-data-lookup
+                            [model]="mCORR_ESTADO_ORIGEN"
+                            [(value)]="accionEstadoModel.CORR_ESTADO_DESTINO"
+                            [valueExpr]="'CORR_ESTADO'"
+                            [displayExpr]="'NOMBRE_ESTADO'"
+                            [selectedRowKeys]="selectedLookUpCORR_ESTADO_DESTINO"
+                            [readOnly]="accionEstadoReadOnly"
+                        >
+                        </app-data-lookup>
+                    </div>
+                    <div *dxTemplate="let cellInfo of 'CORR_TIPO_MOVIMIENTOLookup'">
+                        <app-data-lookup
+                            [model]="mCORR_TIPO_MOVIMIENTO"
+                            [(value)]="accionEstadoModel.CORR_TIPO_MOVIMIENTO"
+                            [valueExpr]="'CORR_TIPO_MOVIMIENTO'"
+                            [displayExpr]="'NOMBRE_TIPO'"
+                            [selectedRowKeys]="selectedLookUpCORR_TIPO_MOVIMIENTO"
+                            [readOnly]="accionEstadoReadOnly"
+                        >
+                        </app-data-lookup>
+                    </div>
+                    <div *dxTemplate="let cellInfo of 'CORR_TIPO_NOTIFICACIONLookup'">
+                        <app-data-lookup
+                            [model]="mCORR_TIPO_NOTIFICACION"
+                            [(value)]="accionEstadoModel.CORR_TIPO_NOTIFICACION"
+                            [valueExpr]="'CORR_TIPO_NOTIFICACION'"
+                            [displayExpr]="'NOMBRE_TIPO'"
+                            [selectedRowKeys]="selectedLookUpCORR_TIPO_NOTIFICACION"
+                            [readOnly]="accionEstadoReadOnly"
+                        >
+                        </app-data-lookup>
+                    </div>
+                    <div *dxTemplate="let cellInfo of 'CORR_PASO_DESTINOLookup'">
+                        <app-data-lookup
+                            [model]="mCORR_PASO_DESTINO"
+                            [(value)]="accionEstadoModel.CORR_PASO_DESTINO"
+                            [valueExpr]="'CORR_PASO'"
+                            [displayExpr]="'NOMBRE_PASO_DESTINO'"
+                            [selectedRowKeys]="selectedLookUpCORR_PASO_DESTINO"
+                            [readOnly]="accionEstadoReadOnly"
+                        >
+                        </app-data-lookup>
+                    </div>
+                </dx-form>
+            </div>
+
+            <!-- Grid Acción-Estado -->
+            <div style="margin-top: 15px;">
+                <app-data-grid-mtto
+                    [isBrowse]="isAccionEstadoBrowse()"
+                    [models]="accionesEstado"
+                    [columns]="columnsAccionEstado"
+                    [summary]="summaryAccionEstado"
+                    [keyExpr]="'CORR_ACCION'"
+                    [propagateAddToPageContext]="false"
+                    [permiteEditar]="permiteEdit"
+                    [permiteDele]="permiteDele"
+                    [gridHeight]="350"
+                    (add)="nuevoAccionEstado()"
+                    (rowRemoving)="rowRemovingAccionEstado($event)"
+                    (focusedRowChanged)="focusedRowChangedAccionEstado($event)"
+                    (editClick)="editarAccionEstado($event)"
+                    (rowDblClick)="editarAccionEstado($event)"
+                >
+                </app-data-grid-mtto>
+            </div>
+
+        </dx-scroll-view>
+    </div>
+</dx-popup>
+
+<!-- Modal: Mensajes por Estado (Notificaciones) -->
+<dx-popup
+    [(visible)]="modalNotificacionesVisible"
+    [wrapperAttr]="{ class: 'paso-notificaciones-popup' }"
+    [title]="'Mensajes por Estado - Paso: ' + (pasoSeleccionadoNotificaciones?.NOMBRE_PASO || '')"
+    [showCloseButton]="true"
+    [width]="'88%'"
+    [height]="'70%'"
+    [dragEnabled]="true"
+    [resizeEnabled]="true"
+    (onHidden)="cerrarModalNotificaciones()"
+>
+    <dxo-position at="center" my="center"></dxo-position>
+    <div *dxTemplate="let data of 'content'">
+        <dx-scroll-view width="100%" height="100%">
+
+            <!-- Barra de herramientas Estado-Mensaje -->
+            <app-barra-data-mtto
+                [tituloVentana]="'Mensajes por Estado'"
+                [isBrowse]="isEstadoMensajeBrowse()"
+                [isForm]="isEstadoMensajeForm()"
+                [permiteAdd]="permiteAdd"
+                (nuevo)="nuevoEstadoMensaje()"
+                (guardar)="guardarEstadoMensaje()"
+                (cancelar)="cancelarEstadoMensaje()"
+            >
+            </app-barra-data-mtto>
+
+            <!-- Formulario Estado-Mensaje -->
+            <div *ngIf="isEstadoMensajeForm()" style="margin-top: 15px;">
+                <dx-form
+                    [formData]="estadoMensajeModel"
+                    [labelLocation]="'top'"
+                    [colCount]="8"
+                    [items]="itemsEstadoMensaje"
+                    [readOnly]="estadoMensajeReadOnly"
+                >
+                    <div *dxTemplate="let cellInfo of 'CORR_ESTADO_MENSAJELookup'">
+                        <app-data-lookup
+                            [model]="mCORR_ESTADO_ORIGEN"
+                            [(value)]="estadoMensajeModel.CORR_ESTADO"
+                            [valueExpr]="'CORR_ESTADO'"
+                            [displayExpr]="'NOMBRE_ESTADO'"
+                            [selectedRowKeys]="selectedLookUpCORR_ESTADO_MENSAJE"
+                            [readOnly]="estadoMensajeReadOnly"
+                        >
+                        </app-data-lookup>
+                    </div>
+                    <div *dxTemplate="let cellInfo of 'CORR_ACTOR_MENSAJELookup'">
+                        <app-data-lookup
+                            [model]="mCORR_ACTOR_ORIGEN"
+                            [(value)]="estadoMensajeModel.CORR_ACTOR"
+                            [valueExpr]="'CORR_ACTOR'"
+                            [displayExpr]="'NOMBRE_ACTOR'"
+                            [selectedRowKeys]="selectedLookUpCORR_ACTOR_MENSAJE"
+                            [readOnly]="estadoMensajeReadOnly"
+                            [showClearButton]="true"
+                        >
+                        </app-data-lookup>
+                    </div>
+                </dx-form>
+            </div>
+
+            <!-- Grid Estado-Mensaje -->
+            <div style="margin-top: 15px;">
+                <app-data-grid-mtto
+                    [isBrowse]="isEstadoMensajeBrowse()"
+                    [models]="estadosMensaje"
+                    [columns]="columnsEstadoMensaje"
+                    [summary]="summaryEstadoMensaje"
+                    [keyExpr]="'CORR_ESTADO_MENSAJE'"
+                    [propagateAddToPageContext]="false"
+                    [permiteEditar]="permiteEdit"
+                    [permiteDele]="permiteDele"
+                    [gridHeight]="350"
+                    (add)="nuevoEstadoMensaje()"
+                    (rowRemoving)="rowRemovingEstadoMensaje($event)"
+                    (focusedRowChanged)="focusedRowChangedEstadoMensaje($event)"
+                    (editClick)="editarEstadoMensaje($event)"
+                    (rowDblClick)="editarEstadoMensaje($event)"
+                >
+                </app-data-grid-mtto>
+            </div>
+
+        </dx-scroll-view>
+    </div>
+</dx-popup>
+
+<!-- Modal: Actores Destino del Paso -->
+<dx-popup
+    [(visible)]="modalActoresVisible"
+    [wrapperAttr]="{ class: 'paso-actores-popup' }"
+    [title]="'Actores Destino - Paso: ' + (pasoSeleccionadoActores?.NOMBRE_PASO || '')"
+    [showCloseButton]="true"
+    [width]="'80%'"
+    [height]="'65%'"
+    [dragEnabled]="true"
+    [resizeEnabled]="true"
+    (onHidden)="cerrarModalActores()"
+>
+    <dxo-position at="center" my="center"></dxo-position>
+    <div *dxTemplate="let data of 'content'">
+        <dx-scroll-view width="100%" height="100%">
+
+            <!-- Barra de herramientas Actor Destino -->
+            <app-barra-data-mtto
+                [tituloVentana]="'Actores Destino'"
+                [isBrowse]="isActorDestinoBrowse()"
+                [isForm]="isActorDestinoForm()"
+                [permiteAdd]="permiteAdd"
+                (nuevo)="nuevoActorDestino()"
+                (guardar)="guardarActorDestino()"
+                (cancelar)="cancelarActorDestino()"
+            >
+            </app-barra-data-mtto>
+
+            <!-- Formulario Actor Destino -->
+            <div *ngIf="isActorDestinoForm()" style="margin-top: 15px;">
+                <dx-form
+                    [formData]="actorDestinoModel"
+                    [labelLocation]="'top'"
+                    [colCount]="8"
+                    [items]="itemsActorDestino"
+                    [readOnly]="actorDestinoReadOnly"
+                >
+                    <div *dxTemplate="let cellInfo of 'CORR_ACTOR_ACTOR_DESTINOLookup'">
+                        <app-data-lookup
+                            [model]="mCORR_ACTOR_DESTINO"
+                            [(value)]="actorDestinoModel.CORR_ACTOR"
+                            [valueExpr]="'CORR_ACTOR'"
+                            [displayExpr]="'NOMBRE_ACTOR'"
+                            [selectedRowKeys]="selectedLookUpCORR_ACTOR_ACTOR_DESTINO"
+                            [readOnly]="actorDestinoReadOnly"
+                            (valueChange)="onActorDestinoModalChanged($event)"
+                        >
+                        </app-data-lookup>
+                    </div>
+                    <div *dxTemplate="let cellInfo of 'CORR_UNIDAD_ACTOR_DESTINOTemplate'">
+                        <div *ngIf="mostrarUnidadActorModal; else unidadActorHint">
+                            <dx-select-box
+                                [dataSource]="unidadesPaso"
+                                [(value)]="actorDestinoModel.CORR_UNIDAD"
+                                displayExpr="NOMBRE_UNIDAD_TREE"
+                                valueExpr="CORR_UNIDAD"
+                                placeholder="Seleccionar unidad destino..."
+                                [showClearButton]="true"
+                                [searchEnabled]="true"
+                                [searchTimeout]="200"
+                            >
+                            </dx-select-box>
+                        </div>
+                        <ng-template #unidadActorHint>
+                            <span style="color: #999; font-size: 12px; padding: 28px 0 6px; display: block;">
+                                El actor seleccionado no requiere de unidad
+                            </span>
+                        </ng-template>
+                    </div>
+                </dx-form>
+            </div>
+
+            <!-- Grid Actor Destino -->
+            <div style="margin-top: 15px;">
+                <app-data-grid-mtto
+                    [isBrowse]="isActorDestinoBrowse()"
+                    [models]="actoresDestino"
+                    [columns]="columnsActorDestino"
+                    [summary]="summaryActorDestino"
+                    [keyExpr]="'CORR_PASO_ACTOR_DESTINO'"
+                    [propagateAddToPageContext]="false"
+                    [permiteEditar]="permiteEdit"
+                    [permiteDele]="permiteDele"
+                    [gridHeight]="350"
+                    (add)="nuevoActorDestino()"
+                    (rowRemoving)="rowRemovingActorDestino($event)"
+                    (focusedRowChanged)="focusedRowChangedActorDestino($event)"
+                    (editClick)="editarActorDestino($event)"
+                    (rowDblClick)="editarActorDestino($event)"
+                >
+                </app-data-grid-mtto>
+            </div>
+
+        </dx-scroll-view>
+    </div>
+</dx-popup>
+
+<dx-load-panel
+    #loadPanel
+    shadingColor="rgba(0,0,0,0.4)"
+    [position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+    [(visible)]="loadingVisible"
+    [showIndicator]="true"
+    [showPane]="true"
+    [shading]="true"
+>
+</dx-load-panel>
