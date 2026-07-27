@@ -459,61 +459,57 @@ export class BanDocumentoService {
 
 
 
-		if (esCheque) {
+		items.push({
 
-			items.push({
+			dataField: 'CORR_TIPO_CHEQUE',
 
-				dataField: 'CORR_TIPO_CHEQUE',
+			label: { text: esCheque ? 'Tipo cheque' : 'Tipo beneficiario' },
 
-				label: { text: 'Tipo cheque' },
+			colSpan: 2,
+
+			template: 'CORR_TIPO_CHEQUELookup',
+
+		});
+
+		items.push(
+
+			{
+
+				dataField: 'CORR_PROVEEDOR',
+
+				label: { text: 'Proveedor' },
 
 				colSpan: 2,
 
-				template: 'CORR_TIPO_CHEQUELookup',
+				template: 'CORR_PROVEEDORLookup',
 
-			});
+			},
 
-			items.push(
+			{
 
-				{
+				dataField: 'CORR_EMPLEADO',
 
-					dataField: 'CORR_PROVEEDOR',
+				label: { text: 'Empleado' },
 
-					label: { text: 'Proveedor' },
+				colSpan: 2,
 
-					colSpan: 2,
+				template: 'CORR_EMPLEADOLookup',
 
-					template: 'CORR_PROVEEDORLookup',
+			},
 
-				},
+			{
 
-				{
+				dataField: 'CORR_CLIENTE',
 
-					dataField: 'CORR_EMPLEADO',
+				label: { text: 'Cliente' },
 
-					label: { text: 'Empleado' },
+				colSpan: 2,
 
-					colSpan: 2,
+				template: 'CORR_CLIENTELookup',
 
-					template: 'CORR_EMPLEADOLookup',
+			}
 
-				},
-
-				{
-
-					dataField: 'CORR_CLIENTE',
-
-					label: { text: 'Cliente' },
-
-					colSpan: 2,
-
-					template: 'CORR_CLIENTELookup',
-
-				}
-
-			);
-
-		}
+		);
 
 
 
@@ -525,7 +521,7 @@ export class BanDocumentoService {
 
 				label: { text: 'Beneficiario' },
 
-				colSpan: esCheque ? 2 : 4,
+				colSpan: 2,
 
 				editorOptions: { showClearButton: true, maxLength: 255 },
 

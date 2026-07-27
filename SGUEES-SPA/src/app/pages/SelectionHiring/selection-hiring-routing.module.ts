@@ -142,6 +142,8 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./sc-organigrama-estructural-nivel/sc-organigrama-estructural-nivel.module').then(m => m.SC_OrganigramaEstructuralNivelModule)
+  },
+  {
     path: 'sc-competencias-conductuales',
     component: ScCompetenciasConductualesComponent,
     data: { titulo: 'Competencias Conductuales' },

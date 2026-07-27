@@ -41,6 +41,9 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 	mCORR_CUENTA_BANCO: any[] = [];
 	mCORR_TIPO_CHEQUE: any[] = [];
 	mESTADO_DOCUMENTO: any;
+	mCORR_PROVEEDOR: any[] = [];
+	mCORR_EMPLEADO: any[] = [];
+	mCORR_CLIENTE: any[] = [];
 	mCUENTA_CONTABLE: any[] = [];
 	mCORR_CENTRO_COSTO: any[] = [];
 
@@ -63,6 +66,18 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 	tipoChequeLookupColumns: any[] = [
 		{ dataField: 'CORR_TIPO_CHEQUE', caption: 'Código', width: 80 },
 		{ dataField: 'NOMBRE_TIPO_CHEQUE', caption: 'Tipo cheque', width: 280 },
+	];
+	proveedorLookupColumns: any[] = [
+		{ dataField: 'CODIGO_PROVEEDOR', caption: 'Código', width: 100 },
+		{ dataField: 'NOMBRE_PROVEEDOR', caption: 'Proveedor', width: 280 },
+	];
+	empleadoLookupColumns: any[] = [
+		{ dataField: 'CORR_EMPLEADO', caption: 'Código', width: 80 },
+		{ dataField: 'NOMBRE_EMPLEADO', caption: 'Empleado', width: 280 },
+	];
+	clienteLookupColumns: any[] = [
+		{ dataField: 'CODIGO_CLIENTE', caption: 'Código', width: 100 },
+		{ dataField: 'NOMBRE_CLIENTE', caption: 'Cliente', width: 280 },
 	];
 
 	centrosPorCuentaCache: Record<string, any[]> = {};
@@ -93,6 +108,13 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		this.detalleEditButtonVisible = this.detalleEditButtonVisible.bind(this);
 		this.detalleDeleteButtonVisible = this.detalleDeleteButtonVisible.bind(this);
 		this.customizeItem = this.customizeItem.bind(this);
+		this.selectedLookUpLista = this.selectedLookUpLista.bind(this);
+		this.selectedLookUpCORR_TIPO_MOVIMIENTO = this.selectedLookUpCORR_TIPO_MOVIMIENTO.bind(this);
+		this.selectedLookUpCORR_CUENTA_BANCO = this.selectedLookUpCORR_CUENTA_BANCO.bind(this);
+		this.selectedLookUpCORR_TIPO_CHEQUE = this.selectedLookUpCORR_TIPO_CHEQUE.bind(this);
+		this.selectedLookUpCORR_PROVEEDOR = this.selectedLookUpCORR_PROVEEDOR.bind(this);
+		this.selectedLookUpCORR_EMPLEADO = this.selectedLookUpCORR_EMPLEADO.bind(this);
+		this.selectedLookUpCORR_CLIENTE = this.selectedLookUpCORR_CLIENTE.bind(this);
 	}
 
 	ngOnInit(): void {
@@ -110,7 +132,11 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		this.getMES_PERIODO();
 		this.getCORR_TIPO_MOVIMIENTO();
 		this.getCORR_CUENTA_BANCO();
+		this.getCORR_TIPO_CHEQUE();
 		this.getESTADO_DOCUMENTO();
+		this.getCORR_PROVEEDOR();
+		this.getCORR_EMPLEADO();
+		this.getCORR_CLIENTE();
 		this.getCUENTA_CONTABLE();
 		this.getCORR_CENTRO_COSTO();
 	}
@@ -167,6 +193,75 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 				next: (response: any) => {
 					if (response.Result) {
 						this.mCORR_TIPO_CHEQUE = response.Data;
+						this.aplicarTipoBeneficiarioDefault();
+					}
+				},
+				error: (error: any) => this.notifyFx(error, NotifyType.Error),
+			});
+	}
+
+	private aplicarTipoBeneficiarioDefault(forzar = false): void {
+		if (!this.model || !this.mCORR_TIPO_CHEQUE?.length) {
+			return;
+		}
+
+		const tipoDefault =
+			this.mCORR_TIPO_CHEQUE.find((item: any) => item.CLASE_TIPO_CHEQUE === 'PR') ||
+			this.mCORR_TIPO_CHEQUE.find((item: any) =>
+				String(item.NOMBRE_TIPO_CHEQUE || '')
+					.toLowerCase()
+					.includes('proveedor')
+			);
+
+		if (!tipoDefault) {
+			return;
+		}
+
+		if (this.model.CORR_TIPO_CHEQUE > 0 && !forzar) {
+			this.syncClaseTipoChequeFromLookup();
+			return;
+		}
+
+		this.model.CORR_TIPO_CHEQUE = tipoDefault.CORR_TIPO_CHEQUE;
+		this.applyTipoBeneficiarioSelection(tipoDefault);
+	}
+
+	getCORR_PROVEEDOR() {
+		this.appInfoService
+			.getLookUp(this.lookupOpcion, 'GEN_PROVEEDOR', 'GetCORR_PROVEEDOR', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.mCORR_PROVEEDOR = response.Data || [];
+					}
+				},
+				error: (error: any) => this.notifyFx(error, NotifyType.Error),
+			});
+	}
+
+	getCORR_EMPLEADO() {
+		this.appInfoService
+			.getLookUp(this.lookupOpcion, 'GEN_EMPLEADO', 'GetCORR_EMPLEADO', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.mCORR_EMPLEADO = response.Data || [];
+					}
+				},
+				error: (error: any) => this.notifyFx(error, NotifyType.Error),
+			});
+	}
+
+	getCORR_CLIENTE() {
+		this.appInfoService
+			.getLookUp(this.lookupOpcion, 'GEN_CLIENTE', 'GetCORR_CLIENTE', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.mCORR_CLIENTE = response.Data || [];
 					}
 				},
 				error: (error: any) => this.notifyFx(error, NotifyType.Error),
@@ -245,10 +340,14 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 			NUMERO_DOCUMENTO: 0,
 			FECHA_EMISION: today,
 			NOMBRE_PARTIDA: '',
+			CORR_PROVEEDOR: 0,
+			CORR_EMPLEADO: 0,
+			CORR_CLIENTE: 0,
 			NOMBRE_BENEFICIARIO: '',
 			MONTO_DOCUMENTO: 0,
 			ESTADO_DOCUMENTO: 'DI',
 			CORR_TIPO_CHEQUE: 0,
+			CLASE_TIPO_CHEQUE: '',
 			ESTA_CONTABILIZADO: false,
 			CANTIDAD_LETRAS: '',
 		};
@@ -296,6 +395,7 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 				if (isAdd) {
 					this.AsignaStatus(UpdateType.Update);
 					this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
+					this.syncClaseTipoChequeFromLookup();
 					this.habilitar();
 					this.consultarDetalles();
 				} else {
@@ -354,25 +454,33 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 
 	private aplicarReadOnlyFormulario(soloLectura: boolean): void {
 		this.readOnly = soloLectura;
-		setTimeout(() => {
-			const form = this.dataForm?.instance;
-			if (!form) {
-				return;
-			}
-			(
-				[
-					'MES_PERIODO',
-					'CORR_TIPO_MOVIMIENTO',
-					'CORR_CUENTA_BANCO',
-					'FECHA_EMISION',
-					'NOMBRE_BENEFICIARIO',
-					'NOMBRE_PARTIDA',
-					'MONTO_DOCUMENTO',
-				] as const
-			).forEach((campo) => {
-				form.getEditor(campo)?.option('readOnly', soloLectura);
-			});
+		setTimeout(() => this.aplicarReadOnlyEditoresDirectos(soloLectura));
+	}
+
+	private aplicarReadOnlyEditoresDirectos(soloLectura: boolean): void {
+		const form = this.dataForm?.instance;
+		if (!form) {
+			return;
+		}
+		(
+			[
+				'MES_PERIODO',
+				'CORR_TIPO_MOVIMIENTO',
+				'CORR_CUENTA_BANCO',
+				'FECHA_EMISION',
+				'CORR_TIPO_CHEQUE',
+				'CORR_PROVEEDOR',
+				'CORR_EMPLEADO',
+				'CORR_CLIENTE',
+				'NOMBRE_PARTIDA',
+				'MONTO_DOCUMENTO',
+			] as const
+		).forEach((campo) => {
+			form.getEditor(campo)?.option('readOnly', soloLectura);
 		});
+		form
+			.getEditor('NOMBRE_BENEFICIARIO')
+			?.option('readOnly', soloLectura || this.beneficiarioAutoDesdeLookup());
 	}
 
 	documentoEditablePorEstado(estado?: string): boolean {
@@ -406,10 +514,164 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		return this.model?.CLASE_MOVIMIENTO === 'CHQ';
 	}
 
-	customizeItem(_item: any): void {}
+	getClaseTipoChequeActiva(): string {
+		if (this.model?.CLASE_TIPO_CHEQUE) {
+			return this.model.CLASE_TIPO_CHEQUE;
+		}
+		const tipo = this.mCORR_TIPO_CHEQUE?.find(
+			(item: any) => item.CORR_TIPO_CHEQUE === this.model?.CORR_TIPO_CHEQUE
+		);
+		return tipo?.CLASE_TIPO_CHEQUE || '';
+	}
+
+	beneficiarioAutoDesdeLookup(): boolean {
+		const clase = this.getClaseTipoChequeActiva();
+		return clase === 'PR' || clase === 'EM' || clase === 'CL';
+	}
+
+	private syncClaseTipoChequeFromLookup(): void {
+		const tipo = this.mCORR_TIPO_CHEQUE?.find(
+			(item: any) => item.CORR_TIPO_CHEQUE === this.model?.CORR_TIPO_CHEQUE
+		);
+		if (tipo) {
+			this.model.CLASE_TIPO_CHEQUE = tipo.CLASE_TIPO_CHEQUE || '';
+			this.model.NOMBRE_TIPO_CHEQUE = tipo.NOMBRE_TIPO_CHEQUE || this.model.NOMBRE_TIPO_CHEQUE || '';
+		}
+	}
+
+	private actualizarVisibilidadBeneficiarioForm(): void {
+		setTimeout(() => {
+			const form = this.dataForm?.instance;
+			if (!form) {
+				return;
+			}
+			form.repaint();
+			const soloLectura = this.isConsulta()
+				? true
+				: !this.documentoEditablePorEstado(this.model?.ESTADO_DOCUMENTO);
+			this.readOnly = soloLectura;
+			this.aplicarReadOnlyEditoresDirectos(soloLectura);
+		});
+	}
+
+	private formUsaLookupBeneficiario(): boolean {
+		const clase = this.getClaseTipoChequeActiva();
+		return clase === 'PR' || clase === 'EM' || clase === 'CL';
+	}
+
+	private applyTipoBeneficiarioSelection(tipo: any): void {
+		this.model.CLASE_TIPO_CHEQUE = tipo?.CLASE_TIPO_CHEQUE || '';
+		this.model.NOMBRE_TIPO_CHEQUE = tipo?.NOMBRE_TIPO_CHEQUE || '';
+		this.model.CORR_PROVEEDOR = 0;
+		this.model.CORR_EMPLEADO = 0;
+		this.model.CORR_CLIENTE = 0;
+		this.model.NOMBRE_BENEFICIARIO = '';
+		this.actualizarVisibilidadBeneficiarioForm();
+	}
+
+	onTipoBeneficiarioChanged(value: number): void {
+		if (!value) {
+			this.model.CLASE_TIPO_CHEQUE = '';
+			this.model.NOMBRE_TIPO_CHEQUE = '';
+			this.model.CORR_PROVEEDOR = 0;
+			this.model.CORR_EMPLEADO = 0;
+			this.model.CORR_CLIENTE = 0;
+			this.model.NOMBRE_BENEFICIARIO = '';
+			this.actualizarVisibilidadBeneficiarioForm();
+			return;
+		}
+		const tipo = this.mCORR_TIPO_CHEQUE?.find((item: any) => item.CORR_TIPO_CHEQUE === value);
+		if (tipo) {
+			this.applyTipoBeneficiarioSelection(tipo);
+		}
+	}
+
+	private nombreDesdeTercero(lista: any[], value: number, corrField: string, nombreField: string): string {
+		if (!value) {
+			return '';
+		}
+		const item = lista?.find((x: any) => x[corrField] === value);
+		return item?.[nombreField] || '';
+	}
+
+	onProveedorChanged(value: number): void {
+		this.model.NOMBRE_BENEFICIARIO = this.nombreDesdeTercero(
+			this.mCORR_PROVEEDOR,
+			value,
+			'CORR_PROVEEDOR',
+			'NOMBRE_PROVEEDOR'
+		);
+	}
+
+	onEmpleadoChanged(value: number): void {
+		this.model.NOMBRE_BENEFICIARIO = this.nombreDesdeTercero(
+			this.mCORR_EMPLEADO,
+			value,
+			'CORR_EMPLEADO',
+			'NOMBRE_EMPLEADO'
+		);
+	}
+
+	onClienteChanged(value: number): void {
+		this.model.NOMBRE_BENEFICIARIO = this.nombreDesdeTercero(
+			this.mCORR_CLIENTE,
+			value,
+			'CORR_CLIENTE',
+			'NOMBRE_CLIENTE'
+		);
+	}
+
+	customizeItem(item: any): void {
+		if (item?.itemType !== 'simple') {
+			return;
+		}
+
+		const clase = this.getClaseTipoChequeActiva();
+		const usaLookupBenef = this.formUsaLookupBeneficiario();
+
+		if (item.dataField === 'CORR_PROVEEDOR') {
+			item.visible = clase === 'PR';
+			return;
+		}
+
+		if (item.dataField === 'CORR_EMPLEADO') {
+			item.visible = clase === 'EM';
+			return;
+		}
+
+		if (item.dataField === 'CORR_CLIENTE') {
+			item.visible = clase === 'CL';
+			return;
+		}
+
+		if (item.dataField === 'NOMBRE_BENEFICIARIO') {
+			item.editorOptions = {
+				...(item.editorOptions || {}),
+				readOnly: this.readOnly || this.beneficiarioAutoDesdeLookup(),
+			};
+			return;
+		}
+
+		if (
+			item.dataField === 'FECHA_EMISION' ||
+			item.dataField === 'MONTO_DOCUMENTO' ||
+			item.dataField === 'NOMBRE_PARTIDA'
+		) {
+			item.editorOptions = {
+				...(item.editorOptions || {}),
+				readOnly: this.readOnly,
+			};
+		}
+
+		if (item.dataField === 'NOMBRE_PARTIDA') {
+			item.colSpan = usaLookupBenef ? 6 : 8;
+		}
+	}
 
 	override rowDblClick(e: any): void {
 		super.rowDblClick(e);
+		this.syncClaseTipoChequeFromLookup();
+		this.actualizarVisibilidadBeneficiarioForm();
 		this.consultarDetalles();
 	}
 
@@ -423,6 +685,8 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 		super.editarClick(e);
+		this.syncClaseTipoChequeFromLookup();
+		this.actualizarVisibilidadBeneficiarioForm();
 		this.consultarDetalles();
 		this.habilitar();
 	}
@@ -432,6 +696,7 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 		super.nuevo();
+		this.aplicarTipoBeneficiarioDefault(true);
 		this.detalles = [];
 		this.detalleEditando = false;
 		this.detalleEdicionExplicita = false;
@@ -988,7 +1253,27 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 	}
 
 	selectedLookUpCORR_TIPO_CHEQUE(vRow: any): any {
-		return vRow[0].CORR_TIPO_CHEQUE;
+		const tipo = vRow[0];
+		this.applyTipoBeneficiarioSelection(tipo);
+		return tipo?.CORR_TIPO_CHEQUE;
+	}
+
+	selectedLookUpCORR_PROVEEDOR(vRow: any): any {
+		const item = vRow[0];
+		this.model.NOMBRE_BENEFICIARIO = item?.NOMBRE_PROVEEDOR || '';
+		return item?.CORR_PROVEEDOR ?? 0;
+	}
+
+	selectedLookUpCORR_EMPLEADO(vRow: any): any {
+		const item = vRow[0];
+		this.model.NOMBRE_BENEFICIARIO = item?.NOMBRE_EMPLEADO || '';
+		return item?.CORR_EMPLEADO ?? 0;
+	}
+
+	selectedLookUpCORR_CLIENTE(vRow: any): any {
+		const item = vRow[0];
+		this.model.NOMBRE_BENEFICIARIO = item?.NOMBRE_CLIENTE || '';
+		return item?.CORR_CLIENTE ?? 0;
 	}
 
 	selectedLookUpCUENTA_CONTABLE(vRow: any): any {

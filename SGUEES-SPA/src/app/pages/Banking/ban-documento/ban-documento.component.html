@@ -68,7 +68,56 @@
 				</app-data-lookup>
 			</div>
 			<div *dxTemplate="let cellInfo of 'CORR_TIPO_CHEQUELookup'">
-				<!-- reservado para pantalla de cheques -->
+				<app-data-lookup
+					[model]="mCORR_TIPO_CHEQUE"
+					[(value)]="model.CORR_TIPO_CHEQUE"
+					[selectedRowKeys]="selectedLookUpCORR_TIPO_CHEQUE"
+					[readOnly]="readOnly"
+					[valueExpr]="'CORR_TIPO_CHEQUE'"
+					[displayExpr]="'NOMBRE_TIPO_CHEQUE'"
+					[lookupColumns]="tipoChequeLookupColumns"
+					(valueChange)="onTipoBeneficiarioChanged($event)"
+				>
+				</app-data-lookup>
+			</div>
+			<div *dxTemplate="let cellInfo of 'CORR_PROVEEDORLookup'">
+				<app-data-lookup
+					[model]="mCORR_PROVEEDOR"
+					[(value)]="model.CORR_PROVEEDOR"
+					[selectedRowKeys]="selectedLookUpCORR_PROVEEDOR"
+					[readOnly]="readOnly"
+					[valueExpr]="'CORR_PROVEEDOR'"
+					[displayExpr]="'NOMBRE_PROVEEDOR'"
+					[lookupColumns]="proveedorLookupColumns"
+					(valueChange)="onProveedorChanged($event)"
+				>
+				</app-data-lookup>
+			</div>
+			<div *dxTemplate="let cellInfo of 'CORR_EMPLEADOLookup'">
+				<app-data-lookup
+					[model]="mCORR_EMPLEADO"
+					[(value)]="model.CORR_EMPLEADO"
+					[selectedRowKeys]="selectedLookUpCORR_EMPLEADO"
+					[readOnly]="readOnly"
+					[valueExpr]="'CORR_EMPLEADO'"
+					[displayExpr]="'NOMBRE_EMPLEADO'"
+					[lookupColumns]="empleadoLookupColumns"
+					(valueChange)="onEmpleadoChanged($event)"
+				>
+				</app-data-lookup>
+			</div>
+			<div *dxTemplate="let cellInfo of 'CORR_CLIENTELookup'">
+				<app-data-lookup
+					[model]="mCORR_CLIENTE"
+					[(value)]="model.CORR_CLIENTE"
+					[selectedRowKeys]="selectedLookUpCORR_CLIENTE"
+					[readOnly]="readOnly"
+					[valueExpr]="'CORR_CLIENTE'"
+					[displayExpr]="'NOMBRE_CLIENTE'"
+					[lookupColumns]="clienteLookupColumns"
+					(valueChange)="onClienteChanged($event)"
+				>
+				</app-data-lookup>
 			</div>
 			<div *dxTemplate="let cellInfo of 'ESTADO_DOCUMENTOLookup'">
 				<app-data-lookup
