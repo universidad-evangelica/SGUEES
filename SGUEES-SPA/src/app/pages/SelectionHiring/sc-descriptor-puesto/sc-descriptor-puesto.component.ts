@@ -199,7 +199,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	educacionEditando = false;
 	experienciaEditando = false;
 	competenciasTecnicasEditando = false;
+	competenciasTecnicasInsertando = false;
 	competenciasConductualesEditando = false;
+	competenciasConductualesInsertando = false;
 	requerimientosOrganizacionalesEditando = false;
 	requerimientosOrganizacionalesInsertando = false;
 	riesgosPuestoEditando = false;
@@ -2419,10 +2421,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: inicializa los valores por defecto de una nueva fila de competencia técnica.
-	// Cómo: limpia correlativos, código, nombre y descripción, fija NIVEL_DOMINIO en 'BASICO', genera
-	// una clave temporal de cliente con crearClientKey y refresca las competencias disponibles del lookup.
+	// Cómo: marca modo inserción, limpia catálogo, código, nombre y descripción, fija NIVEL_DOMINIO en
+	// 'BASICO', genera una clave temporal de cliente con crearClientKey y refresca las competencias
+	// disponibles del lookup.
 	competenciaTecnicaInitNewRow(e: any): void {
-		e.data.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS = 0;
+		this.competenciasTecnicasInsertando = true;
+		e.data._esNuevo = true;
 		e.data.CORR_PERFIL_PUESTO = Number(this.perfil?.CORR_PERFIL_PUESTO) || 0;
 		e.data.CORR_COMPETENCIAS_TECNICAS = null;
 		e.data.CODIGO_COMPETENCIAS_TECNICAS = '';
@@ -2434,28 +2438,34 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: marca que el grid de competencias técnicas entró en edición y refresca el lookup disponible.
-	// Cómo: llama a actualizarCompetenciasTecnicasLookupDisponibles conservando la competencia de la fila
-	// y pone competenciasTecnicasEditando en true.
+	// Cómo: determina si es inserción según _esNuevo de la fila, llama a
+	// actualizarCompetenciasTecnicasLookupDisponibles conservando la competencia actual, marca el flag de
+	// edición y sincroniza las columnas visibles con syncCompetenciaTecnicaColumnas.
 	onCompetenciaTecnicaEditingStart(e: any): void {
+		this.competenciasTecnicasInsertando = !!e?.data?._esNuevo;
 		this.actualizarCompetenciasTecnicasLookupDisponibles(
 			Number(e?.data?.CORR_COMPETENCIAS_TECNICAS) || null
 		);
 		this.competenciasTecnicasEditando = true;
+		this.syncCompetenciaTecnicaColumnas();
 	}
 
 	// Qué hace: reacciona a que el grid de competencias técnicas terminó de guardar una fila.
-	// Cómo: delega en finalizarEdicionGrid, que limpia el flag competenciasTecnicasEditando.
+	// Cómo: delega en finalizarEdicionGrid, que limpia los flags de edición e inserción.
 	onCompetenciaTecnicaSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.competenciasTecnicasEditando = false;
+			this.competenciasTecnicasInsertando = false;
 		});
 	}
 
 	// Qué hace: reacciona a que se canceló la edición del grid de competencias técnicas.
-	// Cómo: delega en finalizarEdicionGrid para limpiar el flag y recarga las competencias con cargarCompetenciasTecnicas.
+	// Cómo: delega en finalizarEdicionGrid para limpiar los flags y recarga las competencias con
+	// cargarCompetenciasTecnicas.
 	onCompetenciaTecnicaEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.competenciasTecnicasEditando = false;
+			this.competenciasTecnicasInsertando = false;
 		});
 		this.cargarCompetenciasTecnicas(true);
 	}
@@ -2698,8 +2708,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	};
 
 	// Qué hace: localiza en memoria la fila real de competencia técnica que corresponde a una fila del grid.
-	// Cómo: busca en competenciasTecnicas por _clientKey (fila nueva) o por CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS
-	// (fila existente); devuelve null si no hay coincidencia.
+	// Cómo: busca en competenciasTecnicas por _clientKey (fila nueva) o por CORR_COMPETENCIAS_TECNICAS
+	// (fila existente, parte de la llave natural); devuelve null si no hay coincidencia.
 	private resolverFilaCompetenciaTecnica(
 		row?: ScPerfilPuestoCompetenciasTecnicas | null
 	): ScPerfilPuestoCompetenciasTecnicas | null {
@@ -2707,13 +2717,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return null;
 		}
 		const clientKey = row._clientKey;
-		const corrDetalle = Number(row.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS);
+		const corrCatalogo = Number(row.CORR_COMPETENCIAS_TECNICAS);
 		return (
 			(this.competenciasTecnicas || []).find(
 				(item) =>
 					(!!clientKey && item._clientKey === clientKey) ||
-					(corrDetalle > 0 &&
-						Number(item.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS) === corrDetalle)
+					(!row._esNuevo &&
+						corrCatalogo > 0 &&
+						Number(item.CORR_COMPETENCIAS_TECNICAS) === corrCatalogo)
 			) ?? null
 		);
 	}
@@ -2781,10 +2792,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: inicializa los valores por defecto de una nueva fila de competencia conductual.
-	// Cómo: limpia correlativos, nombre y descripción, genera una clave temporal de cliente con
-	// crearClientKey y refresca las competencias conductuales disponibles del lookup.
+	// Cómo: marca modo inserción, limpia catálogo, nombre y descripción, genera una clave temporal de
+	// cliente con crearClientKey y refresca las competencias conductuales disponibles del lookup.
 	competenciaConductualInitNewRow(e: any): void {
-		e.data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES = 0;
+		this.competenciasConductualesInsertando = true;
+		e.data._esNuevo = true;
 		e.data.CORR_PERFIL_PUESTO = Number(this.perfil?.CORR_PERFIL_PUESTO) || 0;
 		e.data.CORR_COMPETENCIAS_CONDUCTUALES = null;
 		e.data.NOMBRE_COMPETENCIAS_CONDUCTUALES = '';
@@ -2794,28 +2806,34 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: marca que el grid de competencias conductuales entró en edición y refresca el lookup disponible.
-	// Cómo: llama a actualizarCompetenciasConductualesLookupDisponibles conservando la competencia de la fila
-	// y pone competenciasConductualesEditando en true.
+	// Cómo: determina si es inserción según _esNuevo de la fila, llama a
+	// actualizarCompetenciasConductualesLookupDisponibles conservando la competencia actual, marca el flag
+	// de edición y sincroniza las columnas visibles con syncCompetenciaConductualColumnas.
 	onCompetenciaConductualEditingStart(e: any): void {
+		this.competenciasConductualesInsertando = !!e?.data?._esNuevo;
 		this.actualizarCompetenciasConductualesLookupDisponibles(
 			Number(e?.data?.CORR_COMPETENCIAS_CONDUCTUALES) || null
 		);
 		this.competenciasConductualesEditando = true;
+		this.syncCompetenciaConductualColumnas();
 	}
 
 	// Qué hace: reacciona a que el grid de competencias conductuales terminó de guardar una fila.
-	// Cómo: delega en finalizarEdicionGrid, que limpia el flag competenciasConductualesEditando.
+	// Cómo: delega en finalizarEdicionGrid, que limpia los flags de edición e inserción.
 	onCompetenciaConductualSaved(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.competenciasConductualesEditando = false;
+			this.competenciasConductualesInsertando = false;
 		});
 	}
 
 	// Qué hace: reacciona a que se canceló la edición del grid de competencias conductuales.
-	// Cómo: delega en finalizarEdicionGrid para limpiar el flag y recarga las competencias con cargarCompetenciasConductuales.
+	// Cómo: delega en finalizarEdicionGrid para limpiar los flags y recarga las competencias con
+	// cargarCompetenciasConductuales.
 	onCompetenciaConductualEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.competenciasConductualesEditando = false;
+			this.competenciasConductualesInsertando = false;
 		});
 		this.cargarCompetenciasConductuales(true);
 	}
@@ -3046,8 +3064,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	};
 
 	// Qué hace: localiza en memoria la fila real de competencia conductual que corresponde a una fila del grid.
-	// Cómo: busca en competenciasConductuales por _clientKey (fila nueva) o por
-	// CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES (fila existente); devuelve null si no hay coincidencia.
+	// Cómo: busca en competenciasConductuales por _clientKey (fila nueva) o por CORR_COMPETENCIAS_CONDUCTUALES
+	// (fila existente, parte de la llave natural); devuelve null si no hay coincidencia.
 	private resolverFilaCompetenciaConductual(
 		row?: ScPerfilPuestoCompetenciasConductuales | null
 	): ScPerfilPuestoCompetenciasConductuales | null {
@@ -3055,13 +3073,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return null;
 		}
 		const clientKey = row._clientKey;
-		const corrDetalle = Number(row.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES);
+		const corrCatalogo = Number(row.CORR_COMPETENCIAS_CONDUCTUALES);
 		return (
 			(this.competenciasConductuales || []).find(
 				(item) =>
 					(!!clientKey && item._clientKey === clientKey) ||
-					(corrDetalle > 0 &&
-						Number(item.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES) === corrDetalle)
+					(!row._esNuevo &&
+						corrCatalogo > 0 &&
+						Number(item.CORR_COMPETENCIAS_CONDUCTUALES) === corrCatalogo)
 			) ?? null
 		);
 	}
@@ -3135,11 +3154,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: inicializa los valores por defecto de una nueva fila de requerimiento organizacional.
-	// Cómo: marca modo inserción, limpia correlativos y descripción, genera una clave temporal de cliente
+	// Cómo: marca modo inserción, limpia catálogo y descripción, genera una clave temporal de cliente
 	// con crearClientKey y refresca el lookup de requerimientos disponibles.
 	requerimientoOrganizacionalInitNewRow(e: any): void {
 		this.requerimientosOrganizacionalesInsertando = true;
-		e.data.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL = 0;
+		e.data._esNuevo = true;
 		e.data.CORR_DESCRIPTOR_PUESTO = Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0;
 		e.data.CORR_REQUERIMIENTO_ORGANIZACIONAL = null;
 		e.data.DESCRIPCION = '';
@@ -3148,13 +3167,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: marca que el grid de requerimientos organizacionales entró en edición y refresca el lookup disponible.
-	// Cómo: determina si es inserción según el correlativo de la fila, llama a
+	// Cómo: determina si es inserción según _esNuevo de la fila, llama a
 	// actualizarRequerimientosOrganizacionalesLookupDisponibles conservando el actual, marca el flag de edición
 	// y sincroniza las columnas visibles con syncRequerimientoOrganizacionalColumnas.
 	onRequerimientoOrganizacionalEditingStart(e: any): void {
-		this.requerimientosOrganizacionalesInsertando = !(
-			Number(e?.data?.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL) > 0
-		);
+		this.requerimientosOrganizacionalesInsertando = !!e?.data?._esNuevo;
 		this.actualizarRequerimientosOrganizacionalesLookupDisponibles(
 			Number(e?.data?.CORR_REQUERIMIENTO_ORGANIZACIONAL) || null
 		);
@@ -3363,11 +3380,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: inicializa los valores por defecto de una nueva fila de riesgo de puesto.
-	// Cómo: marca modo inserción, limpia correlativos, nombre e información, genera una clave temporal
+	// Cómo: marca modo inserción, limpia catálogo, nombre e información, genera una clave temporal
 	// de cliente con crearClientKey y refresca el lookup de riesgos disponibles.
 	riesgoPuestoInitNewRow(e: any): void {
 		this.riesgosPuestoInsertando = true;
-		e.data.CORR_DESCRIPTOR_RIESGO = 0;
+		e.data._esNuevo = true;
 		e.data.CORR_DESCRIPTOR_PUESTO = Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0;
 		e.data.CORR_RIESGO_PUESTO = null;
 		e.data.NOMBRE_RIESGO_PUESTO = '';
@@ -3377,11 +3394,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: marca que el grid de riesgos de puesto entró en edición y refresca el lookup disponible.
-	// Cómo: determina si es inserción según el correlativo de la fila, llama a
+	// Cómo: determina si es inserción según _esNuevo de la fila, llama a
 	// actualizarRiesgosPuestoLookupDisponibles conservando el actual, marca el flag de edición y
 	// sincroniza las columnas visibles con syncRiesgoPuestoColumnas.
 	onRiesgoPuestoEditingStart(e: any): void {
-		this.riesgosPuestoInsertando = !(Number(e?.data?.CORR_DESCRIPTOR_RIESGO) > 0);
+		this.riesgosPuestoInsertando = !!e?.data?._esNuevo;
 		this.actualizarRiesgosPuestoLookupDisponibles(Number(e?.data?.CORR_RIESGO_PUESTO) || null);
 		this.riesgosPuestoEditando = true;
 		this.syncRiesgoPuestoColumnas();
@@ -3614,11 +3631,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: inicializa los valores por defecto de una nueva fila de responsabilidad de cargo.
-	// Cómo: marca modo inserción, limpia correlativos, nombre e información, fija APLICA_DESCRIPTOR según
+	// Cómo: marca modo inserción, limpia catálogo, nombre e información, fija APLICA_DESCRIPTOR según
 	// el formato actual, genera una clave temporal de cliente con crearClientKey y refresca el lookup disponible.
 	responsabilidadCargoInitNewRow(e: any): void {
 		this.responsabilidadesCargoInsertando = true;
-		e.data.CORR_DESCRIPTOR_RESPONSABILIDAD = 0;
+		e.data._esNuevo = true;
 		e.data.CORR_DESCRIPTOR_PUESTO = Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0;
 		e.data.CORR_RESPONSABILIDAD = null;
 		e.data.NOMBRE_RESPONSABILIDAD = '';
@@ -3648,7 +3665,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		this.responsabilidadesCargoInsertando = !(Number(e?.data?.CORR_DESCRIPTOR_RESPONSABILIDAD) > 0);
+		this.responsabilidadesCargoInsertando = !!e?.data?._esNuevo;
 		this.actualizarResponsabilidadesCargoLookupDisponibles(Number(e?.data?.CORR_RESPONSABILIDAD) || null);
 		this.responsabilidadesCargoEditando = true;
 		this.syncResponsabilidadCargoColumnas();
@@ -3706,7 +3723,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				...(e.newData || {}),
 				NOMBRE_RESPONSABILIDAD: IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR,
 				CORR_RESPONSABILIDAD: null,
-				CORR_DESCRIPTOR_RESPONSABILIDAD: 0,
 			};
 			return;
 		}
@@ -3805,12 +3821,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	};
 
 	// Qué hace: define el texto que se muestra en la columna de código del detalle de responsabilidad.
-	// Cómo: devuelve vacío para la fila de impacto económico; para el resto, el correlativo del detalle como texto.
+	// Cómo: devuelve vacío para la fila de impacto económico; para el resto, el correlativo del catálogo
+	// (parte de la llave natural) como texto.
 	responsabilidadCargoCodigoDisplay = (row: ScDescriptorPuestoResponsabilidadCargo): string => {
 		if (row?._esImpactoEconomico) {
 			return '';
 		}
-		const corr = Number(row?.CORR_DESCRIPTOR_RESPONSABILIDAD);
+		const corr = Number(row?.CORR_RESPONSABILIDAD);
 		return corr > 0 ? String(corr) : '';
 	};
 
@@ -4531,16 +4548,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.competenciasTecnicas = response.Data.map(
 							(item: ScPerfilPuestoCompetenciasTecnicas) => ({
 								CORR_PERFIL_PUESTO: item.CORR_PERFIL_PUESTO ?? corrPerfil,
-								CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS:
-									item.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS,
 								NOMBRE_COMPETENCIAS_TECNICAS: item.NOMBRE_COMPETENCIAS_TECNICAS ?? '',
 								CODIGO_COMPETENCIAS_TECNICAS: item.CODIGO_COMPETENCIAS_TECNICAS ?? '',
 								DESCRIPCION: item.DESCRIPCION ?? '',
 								NIVEL_DOMINIO: (item.NIVEL_DOMINIO ?? 'BASICO').toUpperCase(),
 								CORR_COMPETENCIAS_TECNICAS: item.CORR_COMPETENCIAS_TECNICAS ?? null,
-								_clientKey:
-									item.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS ||
-									this.crearClientKey('ct'),
+								_esNuevo: false,
+								_clientKey: item.CORR_COMPETENCIAS_TECNICAS || this.crearClientKey('ct'),
 							})
 						);
 						this.actualizarCompetenciasTecnicasLookupDisponibles();
@@ -4576,15 +4590,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.competenciasConductuales = response.Data.map(
 							(item: ScPerfilPuestoCompetenciasConductuales) => ({
 								CORR_PERFIL_PUESTO: item.CORR_PERFIL_PUESTO ?? corrPerfil,
-								CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES:
-									item.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES,
 								NOMBRE_COMPETENCIAS_CONDUCTUALES: item.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '',
 								DESCRIPCION: item.DESCRIPCION ?? '',
 								CORR_COMPETENCIAS_CONDUCTUALES: item.CORR_COMPETENCIAS_CONDUCTUALES ?? null,
 								CODIGO_TIPO_PUESTO: item.CODIGO_TIPO_PUESTO ?? '',
-								_clientKey:
-									item.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES ||
-									this.crearClientKey('cc'),
+								_esNuevo: false,
+								_clientKey: item.CORR_COMPETENCIAS_CONDUCTUALES || this.crearClientKey('cc'),
 							})
 						);
 						this.actualizarCompetenciasConductualesLookupDisponibles();
@@ -4619,13 +4630,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.requerimientosOrganizacionales = response.Data.map(
 							(item: ScDescriptorPuestoRequerimientoOrganizacional) => ({
 								CORR_DESCRIPTOR_PUESTO: item.CORR_DESCRIPTOR_PUESTO ?? corrDescriptor,
-								CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL:
-									item.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL,
 								DESCRIPCION: item.DESCRIPCION ?? '',
 								CORR_REQUERIMIENTO_ORGANIZACIONAL: item.CORR_REQUERIMIENTO_ORGANIZACIONAL ?? null,
+								_esNuevo: false,
 								_clientKey:
-									item.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL ||
-									this.crearClientKey('ro'),
+									item.CORR_REQUERIMIENTO_ORGANIZACIONAL || this.crearClientKey('ro'),
 							})
 						);
 						this.actualizarRequerimientosOrganizacionalesLookupDisponibles();
@@ -4659,11 +4668,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.resetearEdicionRiesgosPuesto();
 						this.riesgosPuesto = response.Data.map((item: ScDescriptorPuestoRiesgoPuesto) => ({
 							CORR_DESCRIPTOR_PUESTO: item.CORR_DESCRIPTOR_PUESTO ?? corrDescriptor,
-							CORR_DESCRIPTOR_RIESGO: item.CORR_DESCRIPTOR_RIESGO,
 							NOMBRE_RIESGO_PUESTO: item.NOMBRE_RIESGO_PUESTO ?? '',
 							INFORMACION: item.INFORMACION ?? '',
 							CORR_RIESGO_PUESTO: item.CORR_RIESGO_PUESTO ?? null,
-							_clientKey: item.CORR_DESCRIPTOR_RIESGO || this.crearClientKey('rp'),
+							_esNuevo: false,
+							_clientKey: item.CORR_RIESGO_PUESTO || this.crearClientKey('rp'),
 						}));
 						this.actualizarRiesgosPuestoLookupDisponibles();
 					}
@@ -4701,14 +4710,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						const filas = data.map(
 							(item: ScDescriptorPuestoResponsabilidadCargo): ScDescriptorPuestoResponsabilidadCargo => ({
 								CORR_DESCRIPTOR_PUESTO: item.CORR_DESCRIPTOR_PUESTO ?? corrDescriptor,
-								CORR_DESCRIPTOR_RESPONSABILIDAD: item.CORR_DESCRIPTOR_RESPONSABILIDAD,
 								NOMBRE_RESPONSABILIDAD: item.NOMBRE_RESPONSABILIDAD ?? '',
 								INFORMACION: item.INFORMACION ?? '',
 								APLICA_DESCRIPTOR: this.normalizarAplicabilidadResponsabilidad(
 									item.APLICA_DESCRIPTOR
 								),
 								CORR_RESPONSABILIDAD: item.CORR_RESPONSABILIDAD ?? null,
-								_clientKey: item.CORR_DESCRIPTOR_RESPONSABILIDAD || this.crearClientKey('rc'),
+								_esNuevo: false,
+								_clientKey: item.CORR_RESPONSABILIDAD || this.crearClientKey('rc'),
 							})
 						).filter((item) => this.responsabilidadAplicaAlFormato(item.APLICA_DESCRIPTOR));
 						this.responsabilidadesCargo = [...filas, this.crearFilaImpactoEconomico()];
@@ -4726,7 +4735,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private crearFilaImpactoEconomico(): ScDescriptorPuestoResponsabilidadCargo {
 		return {
 			CORR_DESCRIPTOR_PUESTO: Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0,
-			CORR_DESCRIPTOR_RESPONSABILIDAD: 0,
 			CORR_RESPONSABILIDAD: null,
 			NOMBRE_RESPONSABILIDAD: IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR,
 			INFORMACION: (this.model?.DESCRIPCION_IMPACTO_ECONOMICO ?? '').trim(),
@@ -5963,16 +5971,18 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.experienciaEditando = false;
 	}
 
-	// Qué hace: limpia el flag de edición del grid de competencias técnicas.
-	// Cómo: pone competenciasTecnicasEditando en false.
+	// Qué hace: limpia los flags de edición e inserción del grid de competencias técnicas.
+	// Cómo: pone competenciasTecnicasEditando y competenciasTecnicasInsertando en false.
 	private resetearEdicionCompetenciasTecnicas(): void {
 		this.competenciasTecnicasEditando = false;
+		this.competenciasTecnicasInsertando = false;
 	}
 
-	// Qué hace: limpia el flag de edición del grid de competencias conductuales.
-	// Cómo: pone competenciasConductualesEditando en false.
+	// Qué hace: limpia los flags de edición e inserción del grid de competencias conductuales.
+	// Cómo: pone competenciasConductualesEditando y competenciasConductualesInsertando en false.
 	private resetearEdicionCompetenciasConductuales(): void {
 		this.competenciasConductualesEditando = false;
+		this.competenciasConductualesInsertando = false;
 	}
 
 	// Qué hace: limpia los flags de edición e inserción del grid de requerimientos organizacionales.
@@ -5996,12 +6006,36 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.responsabilidadesCargoInsertando = false;
 	}
 
+	// Qué hace: muestra u oculta la columna de catálogo del grid de competencias técnicas.
+	// Cómo: fija la visibilidad de la columna lookupCompetenciaTecnica según competenciasTecnicasInsertando.
+	private syncCompetenciaTecnicaColumnas(): void {
+		setTimeout(() => {
+			this.gridCompetenciasTecnicas?.instance?.columnOption(
+				'lookupCompetenciaTecnica',
+				'visible',
+				this.competenciasTecnicasInsertando
+			);
+		});
+	}
+
+	// Qué hace: muestra u oculta la columna de catálogo del grid de competencias conductuales.
+	// Cómo: fija la visibilidad de la columna lookupCompetenciaConductual según competenciasConductualesInsertando.
+	private syncCompetenciaConductualColumnas(): void {
+		setTimeout(() => {
+			this.gridCompetenciasConductuales?.instance?.columnOption(
+				'lookupCompetenciaConductual',
+				'visible',
+				this.competenciasConductualesInsertando
+			);
+		});
+	}
+
 	// Qué hace: muestra u oculta la columna de catálogo del grid de requerimientos organizacionales.
-	// Cómo: fija la visibilidad de la columna CORR_REQUERIMIENTO_ORGANIZACIONAL según requerimientosOrganizacionalesInsertando.
+	// Cómo: fija la visibilidad de la columna lookupRequerimientoOrganizacional según requerimientosOrganizacionalesInsertando.
 	private syncRequerimientoOrganizacionalColumnas(): void {
 		setTimeout(() => {
 			this.gridRequerimientosOrganizacionales?.instance?.columnOption(
-				'CORR_REQUERIMIENTO_ORGANIZACIONAL',
+				'lookupRequerimientoOrganizacional',
 				'visible',
 				this.requerimientosOrganizacionalesInsertando
 			);
@@ -6009,11 +6043,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: muestra u oculta la columna de catálogo del grid de riesgos de puesto.
-	// Cómo: fija la visibilidad de la columna CORR_RIESGO_PUESTO según riesgosPuestoInsertando.
+	// Cómo: fija la visibilidad de la columna lookupRiesgoPuesto según riesgosPuestoInsertando.
 	private syncRiesgoPuestoColumnas(): void {
 		setTimeout(() => {
 			this.gridRiesgosPuesto?.instance?.columnOption(
-				'CORR_RIESGO_PUESTO',
+				'lookupRiesgoPuesto',
 				'visible',
 				this.riesgosPuestoInsertando
 			);
@@ -6021,11 +6055,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: muestra u oculta la columna de catálogo del grid de responsabilidades de cargo.
-	// Cómo: fija la visibilidad de la columna CORR_RESPONSABILIDAD según responsabilidadesCargoInsertando.
+	// Cómo: fija la visibilidad de la columna lookupResponsabilidadCargo según responsabilidadesCargoInsertando.
 	private syncResponsabilidadCargoColumnas(): void {
 		setTimeout(() => {
 			this.gridResponsabilidadesCargo?.instance?.columnOption(
-				'CORR_RESPONSABILIDAD',
+				'lookupResponsabilidadCargo',
 				'visible',
 				this.responsabilidadesCargoInsertando
 			);
@@ -6374,14 +6408,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const payload: ScPerfilPuestoCompetenciasTecnicas = {
 			...data,
 			CORR_PERFIL_PUESTO: corrPerfil,
-			CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS: esNuevo
-				? 0
-				: Number(data.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS) || 0,
 			CORR_COMPETENCIAS_TECNICAS: Number(data.CORR_COMPETENCIAS_TECNICAS) || null,
 			CODIGO_COMPETENCIAS_TECNICAS: (data.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim(),
 			NOMBRE_COMPETENCIAS_TECNICAS: (data.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim(),
 			DESCRIPCION: (data.DESCRIPCION ?? '').trim(),
 			NIVEL_DOMINIO: (data.NIVEL_DOMINIO ?? 'BASICO').trim().toUpperCase(),
+			_esNuevo: esNuevo,
 		};
 
 		return new Promise((resolve) => {
@@ -6396,6 +6428,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							return;
 						}
 						this.competenciasTecnicasEditando = false;
+						this.competenciasTecnicasInsertando = false;
 						this.cargarCompetenciasTecnicas(true);
 						resolve(false);
 					},
@@ -6408,19 +6441,21 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: elimina una competencia técnica desde el grid llamando a la API.
-	// Cómo: valida que el detalle tenga correlativo, llama a service.eliminarCompetenciaTecnica (delete)
-	// y resuelve true si hubo error.
+	// Cómo: valida la llave natural (descriptor, perfil y catálogo), llama a
+	// service.eliminarCompetenciaTecnica (delete) y resuelve true si hubo error.
 	private eliminarCompetenciaTecnicaDesdeGrid(
 		data: ScPerfilPuestoCompetenciasTecnicas
 	): Promise<boolean> {
-		const corr = Number(data?.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS);
-		if (!corr || corr <= 0) {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
+		const corr = Number(data?.CORR_COMPETENCIAS_TECNICAS);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corrPerfil || corrPerfil <= 0 || !corr || corr <= 0) {
 			return Promise.resolve(false);
 		}
 
 		return new Promise((resolve) => {
 			this.service
-				.eliminarCompetenciaTecnica(corr)
+				.eliminarCompetenciaTecnica(corrDescriptor, corrPerfil, corr)
 				.pipe(take(1))
 				.subscribe({
 					next: (response) => {
@@ -6457,13 +6492,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const payload: ScPerfilPuestoCompetenciasConductuales = {
 			...data,
 			CORR_PERFIL_PUESTO: corrPerfil,
-			CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES: esNuevo
-				? 0
-				: Number(data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES) || 0,
 			CORR_COMPETENCIAS_CONDUCTUALES: Number(data.CORR_COMPETENCIAS_CONDUCTUALES) || null,
 			CODIGO_TIPO_PUESTO: (data.CODIGO_TIPO_PUESTO ?? '').trim(),
 			NOMBRE_COMPETENCIAS_CONDUCTUALES: (data.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim(),
 			DESCRIPCION: this.esFormatoExtenso ? (data.DESCRIPCION ?? '').trim() : '',
+			_esNuevo: esNuevo,
 		};
 
 		return new Promise((resolve) => {
@@ -6478,6 +6511,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							return;
 						}
 						this.competenciasConductualesEditando = false;
+						this.competenciasConductualesInsertando = false;
 						this.cargarCompetenciasConductuales(true);
 						resolve(false);
 					},
@@ -6490,19 +6524,21 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: elimina una competencia conductual desde el grid llamando a la API.
-	// Cómo: valida que el detalle tenga correlativo, llama a service.eliminarCompetenciaConductual (delete)
-	// y resuelve true si hubo error.
+	// Cómo: valida la llave natural (descriptor, perfil y catálogo), llama a
+	// service.eliminarCompetenciaConductual (delete) y resuelve true si hubo error.
 	private eliminarCompetenciaConductualDesdeGrid(
 		data: ScPerfilPuestoCompetenciasConductuales
 	): Promise<boolean> {
-		const corr = Number(data?.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES);
-		if (!corr || corr <= 0) {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
+		const corr = Number(data?.CORR_COMPETENCIAS_CONDUCTUALES);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corrPerfil || corrPerfil <= 0 || !corr || corr <= 0) {
 			return Promise.resolve(false);
 		}
 
 		return new Promise((resolve) => {
 			this.service
-				.eliminarCompetenciaConductual(corr)
+				.eliminarCompetenciaConductual(corrDescriptor, corrPerfil, corr)
 				.pipe(take(1))
 				.subscribe({
 					next: (response) => {
@@ -6538,11 +6574,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const payload: ScDescriptorPuestoRequerimientoOrganizacional = {
 			...data,
 			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
-			CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL: esNuevo
-				? 0
-				: Number(data.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL) || 0,
 			CORR_REQUERIMIENTO_ORGANIZACIONAL: Number(data.CORR_REQUERIMIENTO_ORGANIZACIONAL) || null,
 			DESCRIPCION: (data.DESCRIPCION ?? '').trim(),
+			_esNuevo: esNuevo,
 		};
 
 		return new Promise((resolve) => {
@@ -6569,19 +6603,20 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: elimina un requerimiento organizacional desde el grid llamando a la API.
-	// Cómo: valida que el detalle tenga correlativo, llama a service.eliminarRequerimientoOrganizacional
-	// (delete) y resuelve true si hubo error.
+	// Cómo: valida la llave natural (descriptor y catálogo), llama a
+	// service.eliminarRequerimientoOrganizacional (delete) y resuelve true si hubo error.
 	private eliminarRequerimientoOrganizacionalDesdeGrid(
 		data: ScDescriptorPuestoRequerimientoOrganizacional
 	): Promise<boolean> {
-		const corr = Number(data?.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL);
-		if (!corr || corr <= 0) {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corr = Number(data?.CORR_REQUERIMIENTO_ORGANIZACIONAL);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corr || corr <= 0) {
 			return Promise.resolve(false);
 		}
 
 		return new Promise((resolve) => {
 			this.service
-				.eliminarRequerimientoOrganizacional(corr)
+				.eliminarRequerimientoOrganizacional(corrDescriptor, corr)
 				.pipe(take(1))
 				.subscribe({
 					next: (response) => {
@@ -6621,10 +6656,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const payload: ScDescriptorPuestoRiesgoPuesto = {
 			...data,
 			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
-			CORR_DESCRIPTOR_RIESGO: esNuevo ? 0 : Number(data.CORR_DESCRIPTOR_RIESGO) || 0,
 			CORR_RIESGO_PUESTO: Number(data.CORR_RIESGO_PUESTO) || null,
 			NOMBRE_RIESGO_PUESTO: (data.NOMBRE_RIESGO_PUESTO ?? '').trim(),
 			INFORMACION: (data.INFORMACION ?? '').trim(),
+			_esNuevo: esNuevo,
 		};
 
 		this.riesgoPuestoPersistiendo = true;
@@ -6661,17 +6696,18 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: elimina un riesgo de puesto desde el grid llamando a la API.
-	// Cómo: valida que el detalle tenga correlativo, llama a service.eliminarRiesgoPuesto (delete) y,
-	// si sale bien, recarga la lista con cargarRiesgosPuesto; resuelve true si hubo error.
+	// Cómo: valida la llave natural (descriptor y catálogo), llama a service.eliminarRiesgoPuesto
+	// (delete) y, si sale bien, recarga la lista con cargarRiesgosPuesto; resuelve true si hubo error.
 	private eliminarRiesgoPuestoDesdeGrid(data: ScDescriptorPuestoRiesgoPuesto): Promise<boolean> {
-		const corr = Number(data?.CORR_DESCRIPTOR_RIESGO);
-		if (!corr || corr <= 0) {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corr = Number(data?.CORR_RIESGO_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corr || corr <= 0) {
 			return Promise.resolve(false);
 		}
 
 		return new Promise((resolve) => {
 			this.service
-				.eliminarRiesgoPuesto(corr)
+				.eliminarRiesgoPuesto(corrDescriptor, corr)
 				.pipe(take(1))
 				.subscribe({
 					next: (response) => {
@@ -6716,10 +6752,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const payload: ScDescriptorPuestoResponsabilidadCargo = {
 			...data,
 			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
-			CORR_DESCRIPTOR_RESPONSABILIDAD: esNuevo ? 0 : Number(data.CORR_DESCRIPTOR_RESPONSABILIDAD) || 0,
 			CORR_RESPONSABILIDAD: Number(data.CORR_RESPONSABILIDAD) || null,
 			NOMBRE_RESPONSABILIDAD: (data.NOMBRE_RESPONSABILIDAD ?? '').trim(),
 			INFORMACION: (data.INFORMACION ?? '').trim(),
+			_esNuevo: esNuevo,
 		};
 
 		this.responsabilidadCargoPersistiendo = true;
@@ -6756,8 +6792,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: elimina una responsabilidad de cargo desde el grid llamando a la API.
-	// Cómo: no permite eliminar la fila de impacto económico; valida el correlativo, llama a
-	// service.eliminarResponsabilidadCargo (delete) y, si sale bien, recarga la lista.
+	// Cómo: no permite eliminar la fila de impacto económico; valida la llave natural (descriptor y
+	// catálogo), llama a service.eliminarResponsabilidadCargo (delete) y, si sale bien, recarga la lista.
 	private eliminarResponsabilidadCargoDesdeGrid(
 		data: ScDescriptorPuestoResponsabilidadCargo
 	): Promise<boolean> {
@@ -6765,14 +6801,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return Promise.resolve(true);
 		}
 
-		const corr = Number(data?.CORR_DESCRIPTOR_RESPONSABILIDAD);
-		if (!corr || corr <= 0) {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		const corr = Number(data?.CORR_RESPONSABILIDAD);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corr || corr <= 0) {
 			return Promise.resolve(false);
 		}
 
 		return new Promise((resolve) => {
 			this.service
-				.eliminarResponsabilidadCargo(corr)
+				.eliminarResponsabilidadCargo(corrDescriptor, corr)
 				.pipe(take(1))
 				.subscribe({
 					next: (response) => {

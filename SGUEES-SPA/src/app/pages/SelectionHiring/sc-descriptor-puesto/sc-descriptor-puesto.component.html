@@ -1120,7 +1120,8 @@
 											<dxi-button name="edit" [visible]="false"></dxi-button>
 										</dxi-column>
 										<dxi-column
-											dataField="CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS"
+											name="codigoCompetenciaTecnica"
+											dataField="CORR_COMPETENCIAS_TECNICAS"
 											caption="Codigo"
 											[width]="90"
 											[allowEditing]="false"
@@ -1128,13 +1129,15 @@
 											dataType="number"
 											alignment="left"
 										></dxi-column>
-										<!-- Columna para elegir la competencia técnica. -->
+										<!-- Columna para elegir la competencia técnica; solo visible al insertar (llave natural, no editable luego). -->
 										<dxi-column
+											name="lookupCompetenciaTecnica"
 											dataField="CORR_COMPETENCIAS_TECNICAS"
 											caption="Competencia"
 											[width]="140"
 											[minWidth]="120"
 											[allowSorting]="true"
+											[visible]="competenciasTecnicasInsertando"
 											[calculateDisplayValue]="competenciaTecnicaCatalogDisplay"
 											[setCellValue]="setCompetenciaTecnicaCellValue"
 											[editCellTemplate]="'CORR_COMPETENCIAS_TECNICASLookup'"
@@ -1287,7 +1290,8 @@
 											<dxi-button name="edit" [visible]="false"></dxi-button>
 										</dxi-column>
 										<dxi-column
-											dataField="CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES"
+											name="codigoCompetenciaConductual"
+											dataField="CORR_COMPETENCIAS_CONDUCTUALES"
 											caption="Codigo"
 											[width]="90"
 											[allowEditing]="false"
@@ -1295,14 +1299,15 @@
 											dataType="number"
 											alignment="left"
 										></dxi-column>
+										<!-- Columna para elegir la competencia conductual; solo visible al insertar (llave natural, no editable luego). -->
 										<dxi-column
+											name="lookupCompetenciaConductual"
 											dataField="CORR_COMPETENCIAS_CONDUCTUALES"
 											caption="Competencia"
 											[width]="140"
 											[minWidth]="120"
 											[allowSorting]="true"
-											[visible]="competenciasConductualesEditando"
-											[allowEditing]="competenciasConductualesEditando && !readOnly"
+											[visible]="competenciasConductualesInsertando"
 											[calculateDisplayValue]="competenciaConductualCatalogDisplay"
 											[setCellValue]="setCompetenciaConductualCellValue"
 											[editCellTemplate]="'CORR_COMPETENCIAS_CONDUCTUALESLookup'"
@@ -1722,7 +1727,8 @@
 								<dxi-button name="edit" [visible]="false"></dxi-button>
 							</dxi-column>
 							<dxi-column
-								dataField="CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL"
+								name="codigoRequerimientoOrganizacional"
+								dataField="CORR_REQUERIMIENTO_ORGANIZACIONAL"
 								caption="Codigo"
 								[width]="90"
 								[allowEditing]="false"
@@ -1731,6 +1737,7 @@
 								alignment="left"
 							></dxi-column>
 							<dxi-column
+								name="lookupRequerimientoOrganizacional"
 								dataField="CORR_REQUERIMIENTO_ORGANIZACIONAL"
 								caption="Requerimiento"
 								[width]="140"
@@ -1877,7 +1884,8 @@
 								<dxi-button name="edit" [visible]="false"></dxi-button>
 							</dxi-column>
 							<dxi-column
-								dataField="CORR_DESCRIPTOR_RIESGO"
+								name="codigoRiesgoPuesto"
+								dataField="CORR_RIESGO_PUESTO"
 								caption="Codigo"
 								[width]="90"
 								[allowEditing]="false"
@@ -1886,6 +1894,7 @@
 								alignment="left"
 							></dxi-column>
 							<dxi-column
+								name="lookupRiesgoPuesto"
 								dataField="CORR_RIESGO_PUESTO"
 								caption="Riesgo"
 								[width]="140"
@@ -2042,7 +2051,8 @@
 								<dxi-button name="edit" [visible]="false"></dxi-button>
 							</dxi-column>
 							<dxi-column
-								dataField="CORR_DESCRIPTOR_RESPONSABILIDAD"
+								name="codigoResponsabilidadCargo"
+								dataField="CORR_RESPONSABILIDAD"
 								caption="Codigo"
 								[width]="90"
 								[allowEditing]="false"
@@ -2051,6 +2061,7 @@
 								[calculateDisplayValue]="responsabilidadCargoCodigoDisplay"
 							></dxi-column>
 							<dxi-column
+								name="lookupResponsabilidadCargo"
 								dataField="CORR_RESPONSABILIDAD"
 								caption="Responsabilidad"
 								[width]="140"
@@ -2271,6 +2282,7 @@
 	[permiteDele]="getPermiteDele"
 	[responsiveColumnHiding]="false"
 	[columnHidingEnabled]="false"
+	[showGrouping]="true"
 	[exportFileName]="'DescriptorPuesto'"
 	(rowDblClick)="rowDblClick($event)"
 	(rowRemoving)="rowRemoving($event)"

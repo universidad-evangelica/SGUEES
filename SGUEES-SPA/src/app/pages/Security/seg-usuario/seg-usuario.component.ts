@@ -273,8 +273,6 @@ export class SegUsuarioComponent extends CBaseComponent implements OnInit {
 	}
 
 	opcionDetalleRowUpdated(e: any): void {
-		this.syncSeleccionOpcionFila(e.data, e.data.SELECCION);
-
 		if (!this.esOpcionDetalleValida(e.data)) {
 			this.notifyFx('La opción no tiene códigos válidos para guardar.', NotifyType.Error);
 			return;

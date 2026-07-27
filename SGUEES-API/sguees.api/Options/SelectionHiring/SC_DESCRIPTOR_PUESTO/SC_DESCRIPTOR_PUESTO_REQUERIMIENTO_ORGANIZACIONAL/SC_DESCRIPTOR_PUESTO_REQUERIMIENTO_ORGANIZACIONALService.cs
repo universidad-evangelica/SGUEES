@@ -68,7 +68,7 @@ namespace SGUEES.Services
         // Valida las claves y elimina el registro de requerimiento organizacional.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL <= 0)
+            if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_PUESTO <= 0 || Data.CORR_REQUERIMIENTO_ORGANIZACIONAL <= 0)
             {
                 return ValidationError("Debe indicar el requerimiento organizacional del descriptor a eliminar.");
             }
@@ -102,9 +102,9 @@ namespace SGUEES.Services
                 {
                     foreach (var row in rows)
                     {
-                        if (row.CORR_REQUERIMIENTO_ORGANIZACIONAL is > 0)
+                        if (row.CORR_REQUERIMIENTO_ORGANIZACIONAL > 0)
                         {
-                            catalogoUsados.Add(row.CORR_REQUERIMIENTO_ORGANIZACIONAL.Value);
+                            catalogoUsados.Add(row.CORR_REQUERIMIENTO_ORGANIZACIONAL);
                         }
                     }
                 }
@@ -143,7 +143,6 @@ namespace SGUEES.Services
                     var createResult = await CreateAsync(new SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable
                     {
                         CORR_EMPRESA = corrEmpresa,
-                        CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL = 0,
                         DESCRIPCION = descripcion,
                         CORR_DESCRIPTOR_PUESTO = corrDescriptor,
                         CORR_REQUERIMIENTO_ORGANIZACIONAL = item.CORR_REQUERIMIENTO_ORGANIZACIONAL,
@@ -239,7 +238,7 @@ namespace SGUEES.Services
         // Completa y contrasta los datos de requerimiento organizacional con el catálogo activo.
         private async Task<CResult> PrepareFromCatalogAsync(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable Data, bool esNuevo)
         {
-            if (!esNuevo || Data.CORR_REQUERIMIENTO_ORGANIZACIONAL is not > 0)
+            if (!esNuevo || Data.CORR_REQUERIMIENTO_ORGANIZACIONAL <= 0)
             {
                 return null;
             }
@@ -248,7 +247,7 @@ namespace SGUEES.Services
             var catalogResult = await _catalogoRepo.GetAsync(new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_REQUERIMIENTO_ORGANIZACIONAL", Value = Data.CORR_REQUERIMIENTO_ORGANIZACIONAL.Value, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_REQUERIMIENTO_ORGANIZACIONAL", Value = Data.CORR_REQUERIMIENTO_ORGANIZACIONAL, DbType = System.Data.DbType.Int32 },
             });
 
             if (!catalogResult.Result || catalogResult.Data is not SC_REQUERIMIENTO_ORGANIZACIONALView catalog)
@@ -282,12 +281,12 @@ namespace SGUEES.Services
                 p.Add(new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = xWhere.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 });
             }
 
-            if (includeCorr && xWhere.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL > 0)
+            if (includeCorr && xWhere.CORR_REQUERIMIENTO_ORGANIZACIONAL > 0)
             {
                 p.Add(new CParameter()
                 {
-                    ParameterName = "CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL",
-                    Value = xWhere.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL,
+                    ParameterName = "CORR_REQUERIMIENTO_ORGANIZACIONAL",
+                    Value = xWhere.CORR_REQUERIMIENTO_ORGANIZACIONAL,
                     DbType = System.Data.DbType.Int32,
                 });
             }
@@ -303,17 +302,17 @@ namespace SGUEES.Services
                 return ValidationError("La empresa de sesion no es valida.");
             }
 
-            if (Data.CORR_DESCRIPTOR_PUESTO is not > 0)
+            if (Data.CORR_DESCRIPTOR_PUESTO <= 0)
             {
                 return ValidationError("Debe guardar el descriptor antes de registrar requerimientos organizacionales.");
             }
 
-            if (esNuevo && Data.CORR_REQUERIMIENTO_ORGANIZACIONAL is not > 0)
+            if (esNuevo && Data.CORR_REQUERIMIENTO_ORGANIZACIONAL <= 0)
             {
                 return ValidationError("Debe seleccionar un requerimiento organizacional.");
             }
 
-            if (!esNuevo && Data.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL <= 0)
+            if (!esNuevo && Data.CORR_REQUERIMIENTO_ORGANIZACIONAL <= 0)
             {
                 return ValidationError("Debe indicar el requerimiento organizacional del descriptor a actualizar.");
             }

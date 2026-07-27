@@ -68,7 +68,7 @@ namespace SGUEES.Services
         // Valida las claves y elimina el registro de responsabilidad del cargo.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_RESPONSABILIDAD <= 0)
+            if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_PUESTO <= 0 || Data.CORR_RESPONSABILIDAD <= 0)
             {
                 return ValidationError("Debe indicar la responsabilidad del descriptor a eliminar.");
             }
@@ -125,7 +125,6 @@ namespace SGUEES.Services
                     var createResult = await CreateAsync(new SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable
                     {
                         CORR_EMPRESA = corrEmpresa,
-                        CORR_DESCRIPTOR_RESPONSABILIDAD = 0,
                         NOMBRE_RESPONSABILIDAD = nombre,
                         INFORMACION = null,
                         APLICA_DESCRIPTOR = NormalizarAplicacion(item.APLICA_DESCRIPTOR),
@@ -229,13 +228,13 @@ namespace SGUEES.Services
 
             var existentes = await _repo.GetAllSinFiltroFormatoAsync(
                 Data.CORR_EMPRESA,
-                Data.CORR_DESCRIPTOR_PUESTO.GetValueOrDefault());
+                Data.CORR_DESCRIPTOR_PUESTO);
 
             // Consulta la responsabilidad en el catálogo maestro.
             var catalogResult = await _catalogoRepo.GetAsync(new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_RESPONSABILIDAD", Value = Data.CORR_RESPONSABILIDAD.Value, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_RESPONSABILIDAD", Value = Data.CORR_RESPONSABILIDAD, DbType = System.Data.DbType.Int32 },
             });
 
             if (!catalogResult.Result || catalogResult.Data is not SC_RESPONSABILIDAD_CARGOView catalog)
@@ -251,7 +250,7 @@ namespace SGUEES.Services
             var aplicaDescriptor = NormalizarAplicacion(catalog.APLICA_DESCRIPTOR);
             if (ExisteMismaAplicacion(
                 existentes,
-                Data.CORR_RESPONSABILIDAD.Value,
+                Data.CORR_RESPONSABILIDAD,
                 aplicaDescriptor))
             {
                 return ValidationError("La responsabilidad de cargo ya esta registrada en el descriptor para ese formato.");
@@ -288,12 +287,12 @@ namespace SGUEES.Services
                 p.Add(new CParameter() { ParameterName = "FORMATO", Value = formato, DbType = System.Data.DbType.String });
             }
 
-            if (includeCorr && xWhere.CORR_DESCRIPTOR_RESPONSABILIDAD > 0)
+            if (includeCorr && xWhere.CORR_RESPONSABILIDAD > 0)
             {
                 p.Add(new CParameter()
                 {
-                    ParameterName = "CORR_DESCRIPTOR_RESPONSABILIDAD",
-                    Value = xWhere.CORR_DESCRIPTOR_RESPONSABILIDAD,
+                    ParameterName = "CORR_RESPONSABILIDAD",
+                    Value = xWhere.CORR_RESPONSABILIDAD,
                     DbType = System.Data.DbType.Int32,
                 });
             }
@@ -309,17 +308,17 @@ namespace SGUEES.Services
                 return ValidationError("La empresa de sesion no es valida.");
             }
 
-            if (Data.CORR_DESCRIPTOR_PUESTO is not > 0)
+            if (Data.CORR_DESCRIPTOR_PUESTO <= 0)
             {
                 return ValidationError("Debe guardar el descriptor antes de registrar responsabilidades del cargo.");
             }
 
-            if (esNuevo && Data.CORR_RESPONSABILIDAD is not > 0)
+            if (esNuevo && Data.CORR_RESPONSABILIDAD <= 0)
             {
                 return ValidationError("Debe seleccionar una responsabilidad de cargo.");
             }
 
-            if (!esNuevo && Data.CORR_DESCRIPTOR_RESPONSABILIDAD <= 0)
+            if (!esNuevo && Data.CORR_RESPONSABILIDAD <= 0)
             {
                 return ValidationError("Debe indicar la responsabilidad del descriptor a actualizar.");
             }
