@@ -60,7 +60,9 @@ namespace SGUEES.Controllers
         {
             this.ApplyQueryKeys(
                 Data,
-                nameof(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS));
+                nameof(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable.CORR_DESCRIPTOR_PUESTO),
+                nameof(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable.CORR_PERFIL_PUESTO),
+                nameof(SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASTable.CORR_COMPETENCIAS_TECNICAS));
             // Actualiza auditoría de modificación y empresa de sesión.
             SetUpdateAudit(Data);
 

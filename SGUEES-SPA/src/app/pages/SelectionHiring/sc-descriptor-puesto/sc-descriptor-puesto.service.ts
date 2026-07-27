@@ -1024,7 +1024,8 @@ export class ScDescriptorPuestoService {
 	}
 
 	// Qué hace: guarda una competencia técnica del perfil.
-	// Cómo: arma el objeto con catálogo y descripción; llama a create o update según tenga correlativo del vínculo.
+	// Cómo: arma el objeto con catálogo y descripción; decide crear o actualizar segun row._esNuevo,
+	// usando descriptor + perfil + catálogo como llave natural en el update.
 	persistirCompetenciaTecnica(
 		corrDescriptorPuesto: number,
 		corrPerfilPuesto: number,
@@ -1032,34 +1033,47 @@ export class ScDescriptorPuestoService {
 	): Observable<IResult> {
 		const corrDescriptor = Number(corrDescriptorPuesto);
 		const corrPerfil = Number(corrPerfilPuesto);
+		const corrCompetencia = Number(row.CORR_COMPETENCIAS_TECNICAS) || 0;
 		const payload = {
 			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
 			CORR_PERFIL_PUESTO: corrPerfil,
-			CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS: row.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS ?? 0,
 			CODIGO_COMPETENCIAS_TECNICAS: (row.CODIGO_COMPETENCIAS_TECNICAS ?? '').trim() || null,
 			NOMBRE_COMPETENCIAS_TECNICAS: (row.NOMBRE_COMPETENCIAS_TECNICAS ?? '').trim() || null,
 			DESCRIPCION: (row.DESCRIPCION ?? '').trim() || null,
 			NIVEL_DOMINIO: (row.NIVEL_DOMINIO ?? '').trim().toUpperCase() || null,
-			CORR_COMPETENCIAS_TECNICAS: row.CORR_COMPETENCIAS_TECNICAS ?? null,
+			CORR_COMPETENCIAS_TECNICAS: corrCompetencia || null,
 		};
 
-		if (!row.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS || row.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS <= 0) {
+		if (row._esNuevo) {
 			return this.competenciasTecnicasRepo.create(payload);
 		}
 
 		return this.competenciasTecnicasRepo.update(payload, [
-			{
-				Parameter: 'CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS',
-				Value: row.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS,
-			},
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_PERFIL_PUESTO', Value: corrPerfil },
+			{ Parameter: 'CORR_COMPETENCIAS_TECNICAS', Value: corrCompetencia },
 		]);
 	}
 
 	// Qué hace: elimina una competencia técnica del perfil.
-	// Cómo: valida la llave; si falta devuelve error local, si no llama a delete del repositorio.
-	eliminarCompetenciaTecnica(corrPerfilPuestoCompetenciasTecnicas: number): Observable<IResult> {
-		const corr = Number(corrPerfilPuestoCompetenciasTecnicas);
-		if (!corr || corr <= 0) {
+	// Cómo: valida la llave natural (descriptor, perfil y catálogo); si falta devuelve error local,
+	// si no llama a delete del repositorio con esa llave compuesta.
+	eliminarCompetenciaTecnica(
+		corrDescriptorPuesto: number,
+		corrPerfilPuesto: number,
+		corrCompetenciasTecnicas: number
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrPerfil = Number(corrPerfilPuesto);
+		const corrCompetencia = Number(corrCompetenciasTecnicas);
+		if (
+			!corrDescriptor ||
+			corrDescriptor <= 0 ||
+			!corrPerfil ||
+			corrPerfil <= 0 ||
+			!corrCompetencia ||
+			corrCompetencia <= 0
+		) {
 			return of({
 				Result: false,
 				Data: null,
@@ -1070,7 +1084,9 @@ export class ScDescriptorPuestoService {
 		}
 
 		return this.competenciasTecnicasRepo.delete([
-			{ Parameter: 'CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS', Value: corr },
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_PERFIL_PUESTO', Value: corrPerfil },
+			{ Parameter: 'CORR_COMPETENCIAS_TECNICAS', Value: corrCompetencia },
 		]);
 	}
 
@@ -1084,7 +1100,8 @@ export class ScDescriptorPuestoService {
 	}
 
 	// Qué hace: guarda una competencia conductual del perfil.
-	// Cómo: arma el objeto y llama a create o update según tenga correlativo del vínculo.
+	// Cómo: arma el objeto y decide crear o actualizar segun row._esNuevo, usando descriptor + perfil +
+	// catálogo como llave natural en el update.
 	persistirCompetenciaConductual(
 		corrDescriptorPuesto: number,
 		corrPerfilPuesto: number,
@@ -1092,36 +1109,46 @@ export class ScDescriptorPuestoService {
 	): Observable<IResult> {
 		const corrDescriptor = Number(corrDescriptorPuesto);
 		const corrPerfil = Number(corrPerfilPuesto);
+		const corrCompetencia = Number(row.CORR_COMPETENCIAS_CONDUCTUALES) || 0;
 		const payload = {
 			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
 			CORR_PERFIL_PUESTO: corrPerfil,
-			CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES: row.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES ?? 0,
 			CODIGO_TIPO_PUESTO: (row.CODIGO_TIPO_PUESTO ?? '').trim() || null,
 			NOMBRE_COMPETENCIAS_CONDUCTUALES: (row.NOMBRE_COMPETENCIAS_CONDUCTUALES ?? '').trim() || null,
 			DESCRIPCION: (row.DESCRIPCION ?? '').trim() || null,
-			CORR_COMPETENCIAS_CONDUCTUALES: row.CORR_COMPETENCIAS_CONDUCTUALES ?? null,
+			CORR_COMPETENCIAS_CONDUCTUALES: corrCompetencia || null,
 		};
 
-		if (
-			!row.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES ||
-			row.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES <= 0
-		) {
+		if (row._esNuevo) {
 			return this.competenciasConductualesRepo.create(payload);
 		}
 
 		return this.competenciasConductualesRepo.update(payload, [
-			{
-				Parameter: 'CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES',
-				Value: row.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES,
-			},
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_PERFIL_PUESTO', Value: corrPerfil },
+			{ Parameter: 'CORR_COMPETENCIAS_CONDUCTUALES', Value: corrCompetencia },
 		]);
 	}
 
 	// Qué hace: elimina una competencia conductual del perfil.
-	// Cómo: valida la llave; si falta devuelve error local, si no llama a delete del repositorio.
-	eliminarCompetenciaConductual(corrPerfilPuestoCompetenciasConductuales: number): Observable<IResult> {
-		const corr = Number(corrPerfilPuestoCompetenciasConductuales);
-		if (!corr || corr <= 0) {
+	// Cómo: valida la llave natural (descriptor, perfil y catálogo); si falta devuelve error local,
+	// si no llama a delete del repositorio con esa llave compuesta.
+	eliminarCompetenciaConductual(
+		corrDescriptorPuesto: number,
+		corrPerfilPuesto: number,
+		corrCompetenciasConductuales: number
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrPerfil = Number(corrPerfilPuesto);
+		const corrCompetencia = Number(corrCompetenciasConductuales);
+		if (
+			!corrDescriptor ||
+			corrDescriptor <= 0 ||
+			!corrPerfil ||
+			corrPerfil <= 0 ||
+			!corrCompetencia ||
+			corrCompetencia <= 0
+		) {
 			return of({
 				Result: false,
 				Data: null,
@@ -1132,7 +1159,9 @@ export class ScDescriptorPuestoService {
 		}
 
 		return this.competenciasConductualesRepo.delete([
-			{ Parameter: 'CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES', Value: corr },
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_PERFIL_PUESTO', Value: corrPerfil },
+			{ Parameter: 'CORR_COMPETENCIAS_CONDUCTUALES', Value: corrCompetencia },
 		]);
 	}
 
@@ -1144,39 +1173,40 @@ export class ScDescriptorPuestoService {
 	}
 
 	// Qué hace: guarda un requerimiento organizacional del descriptor.
-	// Cómo: arma el objeto con catálogo y descripción; llama a create o update según tenga correlativo.
+	// Cómo: arma el objeto con catálogo y descripción; decide crear o actualizar segun row._esNuevo,
+	// usando descriptor + catálogo como llave natural en el update.
 	persistirRequerimientoOrganizacional(
 		corrDescriptorPuesto: number,
 		row: ScDescriptorPuestoRequerimientoOrganizacional
 	): Observable<IResult> {
 		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrRequerimiento = Number(row.CORR_REQUERIMIENTO_ORGANIZACIONAL) || 0;
 		const payload = {
 			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
-			CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL: row.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL ?? 0,
 			DESCRIPCION: (row.DESCRIPCION ?? '').trim() || null,
-			CORR_REQUERIMIENTO_ORGANIZACIONAL: row.CORR_REQUERIMIENTO_ORGANIZACIONAL ?? null,
+			CORR_REQUERIMIENTO_ORGANIZACIONAL: corrRequerimiento || null,
 		};
 
-		if (
-			!row.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL ||
-			row.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL <= 0
-		) {
+		if (row._esNuevo) {
 			return this.requerimientosOrganizacionalesRepo.create(payload);
 		}
 
 		return this.requerimientosOrganizacionalesRepo.update(payload, [
-			{
-				Parameter: 'CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL',
-				Value: row.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL,
-			},
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_REQUERIMIENTO_ORGANIZACIONAL', Value: corrRequerimiento },
 		]);
 	}
 
 	// Qué hace: elimina un requerimiento organizacional del descriptor.
-	// Cómo: valida la llave; si falta devuelve error local, si no llama a delete del repositorio.
-	eliminarRequerimientoOrganizacional(corrDescriptorRequerimientoOrganizacional: number): Observable<IResult> {
-		const corr = Number(corrDescriptorRequerimientoOrganizacional);
-		if (!corr || corr <= 0) {
+	// Cómo: valida la llave natural (descriptor y catálogo); si falta devuelve error local, si no
+	// llama a delete del repositorio con esa llave compuesta.
+	eliminarRequerimientoOrganizacional(
+		corrDescriptorPuesto: number,
+		corrRequerimientoOrganizacional: number
+	): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corr = Number(corrRequerimientoOrganizacional);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corr || corr <= 0) {
 			return of({
 				Result: false,
 				Data: null,
@@ -1187,7 +1217,8 @@ export class ScDescriptorPuestoService {
 		}
 
 		return this.requerimientosOrganizacionalesRepo.delete([
-			{ Parameter: 'CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL', Value: corr },
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_REQUERIMIENTO_ORGANIZACIONAL', Value: corr },
 		]);
 	}
 
@@ -1199,37 +1230,38 @@ export class ScDescriptorPuestoService {
 	}
 
 	// Qué hace: guarda un riesgo del puesto vinculado al descriptor.
-	// Cómo: arma el objeto y llama a create o update según tenga correlativo.
+	// Cómo: arma el objeto y decide crear o actualizar segun row._esNuevo, usando descriptor + catálogo
+	// como llave natural en el update.
 	persistirRiesgoPuesto(
 		corrDescriptorPuesto: number,
 		row: ScDescriptorPuestoRiesgoPuesto
 	): Observable<IResult> {
 		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrRiesgo = Number(row.CORR_RIESGO_PUESTO) || 0;
 		const payload = {
 			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
-			CORR_DESCRIPTOR_RIESGO: row.CORR_DESCRIPTOR_RIESGO ?? 0,
 			NOMBRE_RIESGO_PUESTO: (row.NOMBRE_RIESGO_PUESTO ?? '').trim() || null,
 			INFORMACION: (row.INFORMACION ?? '').trim() || null,
-			CORR_RIESGO_PUESTO: row.CORR_RIESGO_PUESTO ?? null,
+			CORR_RIESGO_PUESTO: corrRiesgo || null,
 		};
 
-		if (!row.CORR_DESCRIPTOR_RIESGO || row.CORR_DESCRIPTOR_RIESGO <= 0) {
+		if (row._esNuevo) {
 			return this.riesgosPuestoRepo.create(payload);
 		}
 
 		return this.riesgosPuestoRepo.update(payload, [
-			{
-				Parameter: 'CORR_DESCRIPTOR_RIESGO',
-				Value: row.CORR_DESCRIPTOR_RIESGO,
-			},
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_RIESGO_PUESTO', Value: corrRiesgo },
 		]);
 	}
 
 	// Qué hace: elimina un riesgo del puesto vinculado al descriptor.
-	// Cómo: valida la llave; si falta devuelve error local, si no llama a delete del repositorio.
-	eliminarRiesgoPuesto(corrDescriptorRiesgo: number): Observable<IResult> {
-		const corr = Number(corrDescriptorRiesgo);
-		if (!corr || corr <= 0) {
+	// Cómo: valida la llave natural (descriptor y catálogo); si falta devuelve error local, si no
+	// llama a delete del repositorio con esa llave compuesta.
+	eliminarRiesgoPuesto(corrDescriptorPuesto: number, corrRiesgoPuesto: number): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corr = Number(corrRiesgoPuesto);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corr || corr <= 0) {
 			return of({
 				Result: false,
 				Data: null,
@@ -1240,7 +1272,8 @@ export class ScDescriptorPuestoService {
 		}
 
 		return this.riesgosPuestoRepo.delete([
-			{ Parameter: 'CORR_DESCRIPTOR_RIESGO', Value: corr },
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_RIESGO_PUESTO', Value: corr },
 		]);
 	}
 
@@ -1254,38 +1287,39 @@ export class ScDescriptorPuestoService {
 	}
 
 	// Qué hace: guarda una responsabilidad del cargo vinculada al descriptor.
-	// Cómo: arma el objeto y llama a create o update según tenga correlativo.
+	// Cómo: arma el objeto y decide crear o actualizar segun row._esNuevo, usando descriptor + catálogo
+	// como llave natural en el update.
 	persistirResponsabilidadCargo(
 		corrDescriptorPuesto: number,
 		row: ScDescriptorPuestoResponsabilidadCargo
 	): Observable<IResult> {
 		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corrResponsabilidad = Number(row.CORR_RESPONSABILIDAD) || 0;
 		const payload = {
 			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
-			CORR_DESCRIPTOR_RESPONSABILIDAD: row.CORR_DESCRIPTOR_RESPONSABILIDAD ?? 0,
 			NOMBRE_RESPONSABILIDAD: (row.NOMBRE_RESPONSABILIDAD ?? '').trim() || null,
 			INFORMACION: (row.INFORMACION ?? '').trim() || null,
 			APLICA_DESCRIPTOR: (row.APLICA_DESCRIPTOR ?? 'AMBOS').trim().toUpperCase(),
-			CORR_RESPONSABILIDAD: row.CORR_RESPONSABILIDAD ?? null,
+			CORR_RESPONSABILIDAD: corrResponsabilidad || null,
 		};
 
-		if (!row.CORR_DESCRIPTOR_RESPONSABILIDAD || row.CORR_DESCRIPTOR_RESPONSABILIDAD <= 0) {
+		if (row._esNuevo) {
 			return this.responsabilidadesCargoRepo.create(payload);
 		}
 
 		return this.responsabilidadesCargoRepo.update(payload, [
-			{
-				Parameter: 'CORR_DESCRIPTOR_RESPONSABILIDAD',
-				Value: row.CORR_DESCRIPTOR_RESPONSABILIDAD,
-			},
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_RESPONSABILIDAD', Value: corrResponsabilidad },
 		]);
 	}
 
 	// Qué hace: elimina una responsabilidad del cargo vinculada al descriptor.
-	// Cómo: valida la llave; si falta devuelve error local, si no llama a delete del repositorio.
-	eliminarResponsabilidadCargo(corrDescriptorResponsabilidad: number): Observable<IResult> {
-		const corr = Number(corrDescriptorResponsabilidad);
-		if (!corr || corr <= 0) {
+	// Cómo: valida la llave natural (descriptor y catálogo); si falta devuelve error local, si no
+	// llama a delete del repositorio con esa llave compuesta.
+	eliminarResponsabilidadCargo(corrDescriptorPuesto: number, corrResponsabilidad: number): Observable<IResult> {
+		const corrDescriptor = Number(corrDescriptorPuesto);
+		const corr = Number(corrResponsabilidad);
+		if (!corrDescriptor || corrDescriptor <= 0 || !corr || corr <= 0) {
 			return of({
 				Result: false,
 				Data: null,
@@ -1296,7 +1330,8 @@ export class ScDescriptorPuestoService {
 		}
 
 		return this.responsabilidadesCargoRepo.delete([
-			{ Parameter: 'CORR_DESCRIPTOR_RESPONSABILIDAD', Value: corr },
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_RESPONSABILIDAD', Value: corr },
 		]);
 	}
 

@@ -69,7 +69,8 @@ namespace SGUEES.Controllers
         {
             this.ApplyQueryKeys(
                 Data,
-                nameof(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable.CORR_DESCRIPTOR_REQUERIMIENTO_ORGANIZACIONAL));
+                nameof(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable.CORR_DESCRIPTOR_PUESTO),
+                nameof(SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALTable.CORR_REQUERIMIENTO_ORGANIZACIONAL));
             // Actualiza auditoría de modificación y empresa de sesión.
             SetUpdateAudit(Data);
 

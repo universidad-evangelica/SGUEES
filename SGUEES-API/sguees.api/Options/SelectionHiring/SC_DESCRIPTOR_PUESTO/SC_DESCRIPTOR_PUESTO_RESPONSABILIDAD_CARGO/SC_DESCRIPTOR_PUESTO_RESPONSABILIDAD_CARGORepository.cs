@@ -48,7 +48,7 @@ namespace SGUEES.Repositories
                       )";
                 var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, xWhere);
                 var response = new List<SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOView>().FromDataReader(reader)
-                    .OrderBy(x => x.CORR_DESCRIPTOR_RESPONSABILIDAD)
+                    .OrderBy(x => x.CORR_RESPONSABILIDAD)
                     .ToList();
 
                 reader.Close();
@@ -93,7 +93,7 @@ namespace SGUEES.Repositories
                 });
                 var response = new List<SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOView>()
                     .FromDataReader(reader)
-                    .OrderBy(x => x.CORR_DESCRIPTOR_RESPONSABILIDAD)
+                    .OrderBy(x => x.CORR_RESPONSABILIDAD)
                     .ToList();
                 reader.Close();
                 return response;
@@ -175,12 +175,15 @@ namespace SGUEES.Repositories
             try
             {
                 var p = BuildWriteParameters(Data);
+                // Llave compuesta completa para que el SELECT posterior al INSERT identifique el registro.
                 var pWhere = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_RESPONSABILIDAD", Value = Data.CORR_RESPONSABILIDAD, DbType = System.Data.DbType.Int32 },
                 };
 
-                var reader = await objData.Insert(_TableName, p, "CORR_DESCRIPTOR_RESPONSABILIDAD", pWhere);
+                var reader = await objData.Insert(_TableName, p, "", pWhere);
                 var response = new List<SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
@@ -189,7 +192,7 @@ namespace SGUEES.Repositories
                 objResultado.Data = response;
                 objResultado.Result = true;
                 objResultado.RowsAffected = 1;
-                objResultado.CodeHelper = response?.CORR_DESCRIPTOR_RESPONSABILIDAD ?? 0;
+                objResultado.CodeHelper = response?.CORR_RESPONSABILIDAD ?? 0;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
                 objResultado.ErrorSource = "";
@@ -218,11 +221,11 @@ namespace SGUEES.Repositories
 
             try
             {
+                // No se actualiza CORR_RESPONSABILIDAD: forma parte de la llave compuesta.
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "NOMBRE_RESPONSABILIDAD", Value = Data.NOMBRE_RESPONSABILIDAD, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "INFORMACION", Value = Data.INFORMACION, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "CORR_RESPONSABILIDAD", Value = Data.CORR_RESPONSABILIDAD, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -231,7 +234,8 @@ namespace SGUEES.Repositories
                 var pWhere = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_RESPONSABILIDAD", Value = Data.CORR_DESCRIPTOR_RESPONSABILIDAD, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_RESPONSABILIDAD", Value = Data.CORR_RESPONSABILIDAD, DbType = System.Data.DbType.Int32 },
                 };
 
                 var reader = await objData.Update(_TableName, p, pWhere);
@@ -243,7 +247,7 @@ namespace SGUEES.Repositories
                 objResultado.Data = response;
                 objResultado.Result = true;
                 objResultado.RowsAffected = response == null ? 0 : 1;
-                objResultado.CodeHelper = response?.CORR_DESCRIPTOR_RESPONSABILIDAD ?? Data.CORR_DESCRIPTOR_RESPONSABILIDAD;
+                objResultado.CodeHelper = response?.CORR_RESPONSABILIDAD ?? Data.CORR_RESPONSABILIDAD;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
                 objResultado.ErrorSource = "";
@@ -275,7 +279,8 @@ namespace SGUEES.Repositories
                 var pWhere = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_RESPONSABILIDAD", Value = Data.CORR_DESCRIPTOR_RESPONSABILIDAD, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_RESPONSABILIDAD", Value = Data.CORR_RESPONSABILIDAD, DbType = System.Data.DbType.Int32 },
                 };
 
                 await objData.Delete(_TableName, pWhere);
@@ -311,7 +316,6 @@ namespace SGUEES.Repositories
             return new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_DESCRIPTOR_RESPONSABILIDAD", Value = Data.CORR_DESCRIPTOR_RESPONSABILIDAD, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "NOMBRE_RESPONSABILIDAD", Value = Data.NOMBRE_RESPONSABILIDAD, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "INFORMACION", Value = Data.INFORMACION, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "APLICA_DESCRIPTOR", Value = Data.APLICA_DESCRIPTOR, DbType = System.Data.DbType.String },

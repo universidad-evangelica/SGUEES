@@ -29,7 +29,7 @@ namespace SGUEES.Repositories
             {
                 var reader = await objData.GetDataReader(_ViewName, xWhere);
                 var response = new List<SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASView>().FromDataReader(reader)
-                    .OrderBy(x => x.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS)
+                    .OrderBy(x => x.CORR_COMPETENCIAS_TECNICAS)
                     .ToList();
 
                 reader.Close();
@@ -106,12 +106,16 @@ namespace SGUEES.Repositories
             try
             {
                 var p = BuildWriteParameters(Data);
+                // Llave compuesta completa para que el SELECT posterior al INSERT identifique el registro.
                 var pWhere = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_PERFIL_PUESTO", Value = Data.CORR_PERFIL_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_COMPETENCIAS_TECNICAS", Value = Data.CORR_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.Int32 },
                 };
 
-                var reader = await objData.Insert(_TableName, p, "CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS", pWhere);
+                var reader = await objData.Insert(_TableName, p, "", pWhere);
                 var response = new List<SC_PERFIL_PUESTO_COMPETENCIAS_TECNICASView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
@@ -120,7 +124,7 @@ namespace SGUEES.Repositories
                 objResultado.Data = response;
                 objResultado.Result = true;
                 objResultado.RowsAffected = 1;
-                objResultado.CodeHelper = response?.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS ?? 0;
+                objResultado.CodeHelper = response?.CORR_COMPETENCIAS_TECNICAS ?? 0;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
                 objResultado.ErrorSource = "";
@@ -149,13 +153,13 @@ namespace SGUEES.Repositories
 
             try
             {
+                // No se actualiza CORR_COMPETENCIAS_TECNICAS: forma parte de la llave compuesta.
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "NOMBRE_COMPETENCIAS_TECNICAS", Value = Data.NOMBRE_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "CODIGO_COMPETENCIAS_TECNICAS", Value = Data.CODIGO_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "DESCRIPCION", Value = Data.DESCRIPCION, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "NIVEL_DOMINIO", Value = Data.NIVEL_DOMINIO, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "CORR_COMPETENCIAS_TECNICAS", Value = Data.CORR_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -164,7 +168,9 @@ namespace SGUEES.Repositories
                 var pWhere = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS", Value = Data.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_PERFIL_PUESTO", Value = Data.CORR_PERFIL_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_COMPETENCIAS_TECNICAS", Value = Data.CORR_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.Int32 },
                 };
 
                 var reader = await objData.Update(_TableName, p, pWhere);
@@ -176,7 +182,7 @@ namespace SGUEES.Repositories
                 objResultado.Data = response;
                 objResultado.Result = true;
                 objResultado.RowsAffected = response == null ? 0 : 1;
-                objResultado.CodeHelper = response?.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS ?? Data.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS;
+                objResultado.CodeHelper = response?.CORR_COMPETENCIAS_TECNICAS ?? Data.CORR_COMPETENCIAS_TECNICAS;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
                 objResultado.ErrorSource = "";
@@ -208,7 +214,9 @@ namespace SGUEES.Repositories
                 var pWhere = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS", Value = Data.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_PERFIL_PUESTO", Value = Data.CORR_PERFIL_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_COMPETENCIAS_TECNICAS", Value = Data.CORR_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.Int32 },
                 };
 
                 await objData.Delete(_TableName, pWhere);
@@ -244,7 +252,6 @@ namespace SGUEES.Repositories
             return new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS", Value = Data.CORR_PERFIL_PUESTO_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "CODIGO_COMPETENCIAS_TECNICAS", Value = Data.CODIGO_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "NOMBRE_COMPETENCIAS_TECNICAS", Value = Data.NOMBRE_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "DESCRIPCION", Value = Data.DESCRIPCION, DbType = System.Data.DbType.String },

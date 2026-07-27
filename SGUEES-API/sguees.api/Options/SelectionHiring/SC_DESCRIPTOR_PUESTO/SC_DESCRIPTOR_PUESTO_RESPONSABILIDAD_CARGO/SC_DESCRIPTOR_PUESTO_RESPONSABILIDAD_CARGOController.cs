@@ -69,7 +69,8 @@ namespace SGUEES.Controllers
         {
             this.ApplyQueryKeys(
                 Data,
-                nameof(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable.CORR_DESCRIPTOR_RESPONSABILIDAD));
+                nameof(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable.CORR_DESCRIPTOR_PUESTO),
+                nameof(SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOTable.CORR_RESPONSABILIDAD));
             // Actualiza auditoría de modificación y empresa de sesión.
             SetUpdateAudit(Data);
 

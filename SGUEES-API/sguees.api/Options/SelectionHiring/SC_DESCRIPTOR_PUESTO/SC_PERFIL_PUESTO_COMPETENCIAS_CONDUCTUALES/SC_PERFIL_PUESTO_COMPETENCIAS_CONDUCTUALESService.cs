@@ -67,7 +67,7 @@ namespace SGUEES.Services
         // Valida claves y elimina la competencia de SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES.
         public async Task<CResult> DeleteAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            if (Data.CORR_EMPRESA <= 0 || Data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES <= 0)
+            if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_PUESTO <= 0 || Data.CORR_PERFIL_PUESTO <= 0 || Data.CORR_COMPETENCIAS_CONDUCTUALES <= 0)
             {
                 return ValidationError("Debe indicar la competencia conductual del perfil a eliminar.");
             }
@@ -78,7 +78,7 @@ namespace SGUEES.Services
         // Al crear: lee SC_COMPETENCIAS_CONDUCTUALES, exige activa y rellena nombre/tipo/descripción vacíos.
         private async Task<CResult> PrepareFromCatalogAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, bool esNuevo)
         {
-            if (!esNuevo || Data.CORR_COMPETENCIAS_CONDUCTUALES is not > 0)
+            if (!esNuevo || Data.CORR_COMPETENCIAS_CONDUCTUALES <= 0)
             {
                 return null;
             }
@@ -87,7 +87,7 @@ namespace SGUEES.Services
             var catalogResult = await _competenciasRepo.GetAsync(new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_COMPETENCIAS_CONDUCTUALES", Value = Data.CORR_COMPETENCIAS_CONDUCTUALES.Value, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_COMPETENCIAS_CONDUCTUALES", Value = Data.CORR_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.Int32 },
             });
 
             if (!catalogResult.Result || catalogResult.Data is not SC_COMPETENCIAS_CONDUCTUALESView catalog)
@@ -136,12 +136,12 @@ namespace SGUEES.Services
                 p.Add(new CParameter() { ParameterName = "CORR_PERFIL_PUESTO", Value = xWhere.CORR_PERFIL_PUESTO, DbType = System.Data.DbType.Int32 });
             }
 
-            if (includeCorr && xWhere.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES > 0)
+            if (includeCorr && xWhere.CORR_COMPETENCIAS_CONDUCTUALES > 0)
             {
                 p.Add(new CParameter()
                 {
-                    ParameterName = "CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES",
-                    Value = xWhere.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES,
+                    ParameterName = "CORR_COMPETENCIAS_CONDUCTUALES",
+                    Value = xWhere.CORR_COMPETENCIAS_CONDUCTUALES,
                     DbType = System.Data.DbType.Int32,
                 });
             }
@@ -157,22 +157,22 @@ namespace SGUEES.Services
                 return ValidationError("La empresa de sesion no es valida.");
             }
 
-            if (Data.CORR_DESCRIPTOR_PUESTO is not > 0)
+            if (Data.CORR_DESCRIPTOR_PUESTO <= 0)
             {
                 return ValidationError("Debe guardar el descriptor antes de registrar competencias conductuales.");
             }
 
-            if (Data.CORR_PERFIL_PUESTO is not > 0)
+            if (Data.CORR_PERFIL_PUESTO <= 0)
             {
                 return ValidationError("Debe guardar el perfil del puesto antes de registrar competencias conductuales.");
             }
 
-            if (esNuevo && Data.CORR_COMPETENCIAS_CONDUCTUALES is not > 0)
+            if (esNuevo && Data.CORR_COMPETENCIAS_CONDUCTUALES <= 0)
             {
                 return ValidationError("Debe seleccionar una competencia conductual.");
             }
 
-            if (!esNuevo && Data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES <= 0)
+            if (!esNuevo && Data.CORR_COMPETENCIAS_CONDUCTUALES <= 0)
             {
                 return ValidationError("Debe indicar la competencia conductual del perfil a actualizar.");
             }

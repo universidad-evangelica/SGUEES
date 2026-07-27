@@ -69,7 +69,8 @@ namespace SGUEES.Controllers
         {
             this.ApplyQueryKeys(
                 Data,
-                nameof(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable.CORR_DESCRIPTOR_RIESGO));
+                nameof(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable.CORR_DESCRIPTOR_PUESTO),
+                nameof(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable.CORR_RIESGO_PUESTO));
             // Actualiza auditoría de modificación y empresa de sesión.
             SetUpdateAudit(Data);
 

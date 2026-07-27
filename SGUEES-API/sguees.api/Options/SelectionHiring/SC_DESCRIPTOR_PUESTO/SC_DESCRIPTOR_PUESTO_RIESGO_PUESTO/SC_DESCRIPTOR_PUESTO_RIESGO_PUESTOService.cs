@@ -68,7 +68,7 @@ namespace SGUEES.Services
         // Valida las claves y elimina el registro de riesgo del puesto.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_RIESGO <= 0)
+            if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_PUESTO <= 0 || Data.CORR_RIESGO_PUESTO <= 0)
             {
                 return ValidationError("Debe indicar el riesgo del descriptor a eliminar.");
             }
@@ -102,9 +102,9 @@ namespace SGUEES.Services
                 {
                     foreach (var row in rows)
                     {
-                        if (row.CORR_RIESGO_PUESTO is > 0)
+                        if (row.CORR_RIESGO_PUESTO > 0)
                         {
-                            catalogoUsados.Add(row.CORR_RIESGO_PUESTO.Value);
+                            catalogoUsados.Add(row.CORR_RIESGO_PUESTO);
                         }
                     }
                 }
@@ -143,7 +143,6 @@ namespace SGUEES.Services
                     var createResult = await CreateAsync(new SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable
                     {
                         CORR_EMPRESA = corrEmpresa,
-                        CORR_DESCRIPTOR_RIESGO = 0,
                         NOMBRE_RIESGO_PUESTO = nombre,
                         INFORMACION = null,
                         CORR_DESCRIPTOR_PUESTO = corrDescriptor,
@@ -240,7 +239,7 @@ namespace SGUEES.Services
         // Completa y contrasta los datos de riesgo del puesto con el catálogo activo.
         private async Task<CResult> PrepareFromCatalogAsync(SC_DESCRIPTOR_PUESTO_RIESGO_PUESTOTable Data, bool esNuevo)
         {
-            if (!esNuevo || Data.CORR_RIESGO_PUESTO is not > 0)
+            if (!esNuevo || Data.CORR_RIESGO_PUESTO <= 0)
             {
                 return null;
             }
@@ -249,7 +248,7 @@ namespace SGUEES.Services
             var catalogResult = await _catalogoRepo.GetAsync(new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_RIESGO_PUESTO", Value = Data.CORR_RIESGO_PUESTO.Value, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_RIESGO_PUESTO", Value = Data.CORR_RIESGO_PUESTO, DbType = System.Data.DbType.Int32 },
             });
 
             if (!catalogResult.Result || catalogResult.Data is not SC_RIESGO_PUESTOView catalog)
@@ -283,12 +282,12 @@ namespace SGUEES.Services
                 p.Add(new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = xWhere.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 });
             }
 
-            if (includeCorr && xWhere.CORR_DESCRIPTOR_RIESGO > 0)
+            if (includeCorr && xWhere.CORR_RIESGO_PUESTO > 0)
             {
                 p.Add(new CParameter()
                 {
-                    ParameterName = "CORR_DESCRIPTOR_RIESGO",
-                    Value = xWhere.CORR_DESCRIPTOR_RIESGO,
+                    ParameterName = "CORR_RIESGO_PUESTO",
+                    Value = xWhere.CORR_RIESGO_PUESTO,
                     DbType = System.Data.DbType.Int32,
                 });
             }
@@ -304,17 +303,17 @@ namespace SGUEES.Services
                 return ValidationError("La empresa de sesion no es valida.");
             }
 
-            if (Data.CORR_DESCRIPTOR_PUESTO is not > 0)
+            if (Data.CORR_DESCRIPTOR_PUESTO <= 0)
             {
                 return ValidationError("Debe guardar el descriptor antes de registrar riesgos del puesto.");
             }
 
-            if (esNuevo && Data.CORR_RIESGO_PUESTO is not > 0)
+            if (esNuevo && Data.CORR_RIESGO_PUESTO <= 0)
             {
                 return ValidationError("Debe seleccionar un riesgo de puesto.");
             }
 
-            if (!esNuevo && Data.CORR_DESCRIPTOR_RIESGO <= 0)
+            if (!esNuevo && Data.CORR_RIESGO_PUESTO <= 0)
             {
                 return ValidationError("Debe indicar el riesgo del descriptor a actualizar.");
             }
