@@ -1,177 +1,944 @@
 <p-toast position="bottom-right"></p-toast>
 
-<div id="page-formulario-empleo" class="login-split">
-  <aside
-    class="login-brand-panel"
-    aria-label="Universidad Evangélica de El Salvador"
-  >
-    <div class="login-brand-overlay" aria-hidden="true"></div>
+<div id="page-formulario-empleo" class="portal" [class.portal--wizard]="enWizard">
+	<div class="portal__media" aria-hidden="true"></div>
+	<div class="portal__veil" aria-hidden="true"></div>
 
-    <div class="login-brand-content">
-      <h2 class="login-brand-title">
-        <span class="login-brand-title__line">Universidad Evangélica</span>
+	<div class="portal__stage" [class.portal__stage--wide]="enWizard">
 
-        <span class="login-brand-title__line">de El Salvador</span>
-      </h2>
+		<!-- Validando -->
+		<section class="portal-panel portal-panel--state" *ngIf="validandoToken" aria-live="polite">
+			<dx-load-indicator width="44px" height="44px" [visible]="true"></dx-load-indicator>
+			<p class="portal-panel__hint">Validando enlace…</p>
+		</section>
 
-      <p class="login-brand-subtitle">Sistema de Gestión Universitaria</p>
-    </div>
-  </aside>
+		<!-- Completado -->
+		<section class="portal-panel portal-panel--state" *ngIf="!validandoToken && completado" aria-live="polite">
+			<div class="portal-status portal-status--ok" aria-hidden="true">
+				<i class="dx-icon dx-icon-check"></i>
+			</div>
+			<h2 class="portal-panel__title">Solicitud enviada</h2>
+			<p class="portal-panel__text">
+				Tus datos fueron recibidos correctamente. El enlace ya no puede utilizarse nuevamente.
+			</p>
+		</section>
 
-  <main class="login-auth-panel" role="main">
-    <div class="login-auth-center">
-      <div class="login-glass-card">
-        <header class="login-auth-header">
-          <div class="login-logo-zone">
-            <img
-              id="logo-uees"
-              src="assets/img/logo-xx.png"
-              alt="Universidad Evangélica de El Salvador"
-            />
-          </div>
+		<!-- Token inválido -->
+		<section
+			class="portal-panel portal-panel--state"
+			*ngIf="!validandoToken && !tokenValido && !completado"
+			aria-live="polite"
+		>
+			<div class="portal-status portal-status--err" aria-hidden="true">
+				<i class="dx-icon dx-icon-close"></i>
+			</div>
+			<h2 class="portal-panel__title">Enlace no disponible</h2>
+			<p class="portal-panel__text">{{ mensajeToken }}</p>
+		</section>
 
-          <h1 id="login-title">Formulario de empleo</h1>
+		<!-- 0. Bienvenida -->
+		<section
+			class="portal-panel portal-panel--welcome"
+			*ngIf="!validandoToken && tokenValido && !completado && pasoActual === 0"
+			aria-labelledby="portal-welcome-title"
+		>
+			<img
+				class="portal-logo"
+				src="assets/img/logo-xx.png"
+				alt="Universidad Evangélica de El Salvador"
+			/>
 
-          <p class="login-subtitle">
-            Completa tus datos para responder la invitación.
-          </p>
-        </header>
+			<h1 id="portal-welcome-title" class="portal-headline">
+				Bienvenido al Portal de Candidatos
+			</h1>
 
-        <div class="reset-success" *ngIf="validandoToken">
-          <dx-load-indicator
-            width="40px"
-            height="40px"
-            [visible]="true"
-          ></dx-load-indicator>
+			<p class="portal-lead">
+				Has sido invitado a participar en un proceso de selección de la
+				Universidad Evangélica de El Salvador.
+			</p>
 
-          <p class="reset-success__message">Validando enlace...</p>
-        </div>
+			<ul class="portal-notices">
+				<li class="portal-notices__item">
+					<span class="portal-notices__check" aria-hidden="true">✓</span>
+					<span>Toda la información será tratada confidencialmente.</span>
+				</li>
+				<li class="portal-notices__item">
+					<span class="portal-notices__check" aria-hidden="true">✓</span>
+					<span>Puedes completar el formulario una única vez.</span>
+				</li>
+				<li class="portal-notices__item">
+					<span class="portal-notices__check" aria-hidden="true">✓</span>
+					<span>Los campos marcados con (*) son obligatorios.</span>
+				</li>
+			</ul>
 
-        <div class="reset-success" *ngIf="!validandoToken && completado">
-          <div class="reset-success__icon" aria-hidden="true">
-            <i class="dx-icon dx-icon-check"></i>
-          </div>
+			<button type="button" class="portal-cta" (click)="comenzarSolicitud()">
+				<span>Comenzar solicitud</span>
+				<span class="portal-cta__arrow" aria-hidden="true">→</span>
+			</button>
 
-          <h2 class="reset-success__title">Información enviada</h2>
+			<p class="portal-foot">© Universidad Evangélica de El Salvador</p>
+		</section>
 
-          <p class="reset-success__message">
-            Tus datos fueron recibidos correctamente. El enlace ya no puede
-            utilizarse nuevamente.
-          </p>
-        </div>
+		<!-- Wizard 1-6 -->
+		<section
+			class="portal-panel portal-panel--wizard"
+			*ngIf="enWizard"
+			[attr.aria-label]="pasoMeta?.titulo"
+		>
+			<header class="wizard-chrome">
+				<div class="wizard-chrome__brand">
+					<img src="assets/img/logo-xx.png" alt="" class="wizard-chrome__logo" />
+					<div>
+						<p class="wizard-chrome__eyebrow">Portal de Candidatos UEES</p>
+						<h2 class="wizard-chrome__title">{{ pasoMeta?.titulo }}</h2>
+					</div>
+				</div>
 
-        <div
-          class="reset-success"
-          *ngIf="!validandoToken && !tokenValido && !completado"
-        >
-          <div class="reset-success__icon" aria-hidden="true">
-            <i class="dx-icon dx-icon-close"></i>
-          </div>
+				<div class="wizard-progress">
+					<div class="wizard-progress__meta">
+						<strong>{{ progresoPct }}%</strong>
+						<span>{{ progresoLabel }}</span>
+					</div>
+					<dx-progress-bar
+						[min]="0"
+						[max]="100"
+						[value]="progresoPct"
+						[showStatus]="false"
+						[width]="'100%'"
+						height="10"
+					></dx-progress-bar>
+					<p class="wizard-progress__motivation">{{ pasoMeta?.motivacion }}</p>
+				</div>
 
-          <h2 class="reset-success__title">Enlace no disponible</h2>
+				<nav class="wizard-stepper" aria-label="Pasos del formulario">
+					<button
+						type="button"
+						class="wizard-stepper__item"
+						*ngFor="let s of steps"
+						[class.is-active]="s.id === pasoActual"
+						[class.is-done]="s.id < pasoActual"
+						[disabled]="s.id > pasoActual + 1"
+						(click)="irAPaso(s.id)"
+						[attr.aria-current]="s.id === pasoActual ? 'step' : null"
+					>
+						<span class="wizard-stepper__num" aria-hidden="true">
+							<i *ngIf="s.id < pasoActual" class="dx-icon dx-icon-check"></i>
+							<ng-container *ngIf="s.id >= pasoActual">{{ s.id }}</ng-container>
+						</span>
+						<span class="wizard-stepper__label">{{ s.corto }}</span>
+					</button>
+				</nav>
+			</header>
 
-          <p class="reset-success__message">{{ mensajeToken }}</p>
-        </div>
+			<dx-scroll-view class="wizard-body" [useNative]="true" height="100%">
+				<div class="wizard-body__inner">
 
-        <form
-          class="reset-password-form"
-          *ngIf="!validandoToken && tokenValido && !completado"
-          (submit)="onSubmit($event)"
-        >
-          <dx-form
-            [formData]="formData"
-            [disabled]="enviando"
-            [showColonAfterLabel]="true"
-            [showRequiredMark]="true"
-            labelLocation="top"
-          >
-            <dxi-item dataField="NOMBRE1" editorType="dxTextBox">
-              <dxo-label text="Primer nombre"></dxo-label>
+					<!-- PASO 1: Datos Personales -->
+					<div class="wizard-step" *ngIf="pasoActual === 1">
+						<div class="wizard-section">
+							<h3 class="wizard-section__title">Información básica</h3>
 
-              <dxi-validation-rule
-                type="required"
-                message="El primer nombre es requerido"
-              ></dxi-validation-rule>
+							<div class="wizard-basics">
+								<div class="wizard-basics__names">
+									<div class="wizard-field">
+										<label class="wizard-label">Primer nombre *</label>
+										<dx-text-box stylingMode="outlined" [(value)]="formData.NOMBRE1" [maxLength]="50"></dx-text-box>
+									</div>
+									<div class="wizard-field">
+										<label class="wizard-label">Segundo nombre</label>
+										<dx-text-box stylingMode="outlined" [(value)]="formData.NOMBRE2" [maxLength]="50"></dx-text-box>
+									</div>
+									<div class="wizard-field">
+										<label class="wizard-label">Primer apellido *</label>
+										<dx-text-box stylingMode="outlined" [(value)]="formData.APELLIDO1" [maxLength]="50"></dx-text-box>
+									</div>
+									<div class="wizard-field">
+										<label class="wizard-label">Segundo apellido</label>
+										<dx-text-box stylingMode="outlined" [(value)]="formData.APELLIDO2" [maxLength]="50"></dx-text-box>
+									</div>
+								</div>
 
-              <dxi-validation-rule
-                type="stringLength"
-                [max]="50"
-                message="Máximo 50 caracteres"
-              ></dxi-validation-rule>
-            </dxi-item>
+								<div class="wizard-basics__photo">
+									<span class="wizard-label">Fotografía</span>
+									<label class="wizard-photo-drop" [class.has-photo]="!!formData.FOTO_URL">
+										<input
+											type="file"
+											accept="image/*"
+											hidden
+											(change)="onFotoFileChange($event)"
+										/>
+										<img
+											*ngIf="formData.FOTO_URL"
+											[src]="formData.FOTO_URL"
+											alt="Fotografía del candidato"
+										/>
+										<span *ngIf="!formData.FOTO_URL" class="wizard-photo-drop__placeholder">
+											<i class="dx-icon dx-icon-image" aria-hidden="true"></i>
+											<span>Haz clic para subir tu fotografía</span>
+										</span>
+										<span *ngIf="formData.FOTO_URL" class="wizard-photo-drop__hint">
+											Cambiar fotografía
+										</span>
+									</label>
+								</div>
+							</div>
 
-            <dxi-item dataField="NOMBRE2" editorType="dxTextBox">
-              <dxo-label text="Segundo nombre"></dxo-label>
+							<div class="wizard-grid wizard-grid--2">
+								<div class="wizard-field">
+									<label class="wizard-label">Fecha de nacimiento *</label>
+									<dx-date-box stylingMode="outlined"
+										[value]="formData.FECHA_NACIMIENTO"
+										type="date"
+										displayFormat="dd/MM/yyyy"
+										[max]="hoy"
+										(onValueChanged)="onFechaNacimientoChanged($event.value)"
+									></dx-date-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Edad</label>
+									<dx-number-box stylingMode="outlined" [value]="formData.EDAD" [readOnly]="true" [showSpinButtons]="false"></dx-number-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Sexo *</label>
+									<dx-select-box stylingMode="outlined"
+										[(value)]="formData.SEXO"
+										[items]="sexoOptions"
+										displayExpr="text"
+										valueExpr="value"
+										[searchEnabled]="false"
+									></dx-select-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Estado civil</label>
+									<dx-select-box stylingMode="outlined"
+										[(value)]="formData.ESTADO_CIVIL"
+										[items]="estadoCivilOptions"
+										displayExpr="text"
+										valueExpr="value"
+									></dx-select-box>
+								</div>
+								<div class="wizard-field wizard-field--span2">
+									<label class="wizard-label">Nacionalidad</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.NACIONALIDAD"></dx-text-box>
+								</div>
+							</div>
+						</div>
 
-              <dxi-validation-rule
-                type="stringLength"
-                [max]="50"
-                message="Máximo 50 caracteres"
-              ></dxi-validation-rule>
-            </dxi-item>
+						<div class="wizard-section">
+							<h3 class="wizard-section__title">Información de contacto</h3>
+							<div class="wizard-grid wizard-grid--2">
+								<div class="wizard-field">
+									<label class="wizard-label">Correo *</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.CORREO" mode="email"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Celular *</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.CELULAR"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Teléfono</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.TELEFONO"></dx-text-box>
+								</div>
+								<div class="wizard-field wizard-field--span2">
+									<label class="wizard-label">Dirección *</label>
+									<dx-text-area stylingMode="outlined" [(value)]="formData.DIRECCION" [height]="70"></dx-text-area>
+								</div>
+							</div>
+						</div>
 
-            <dxi-item dataField="APELLIDO1" editorType="dxTextBox">
-              <dxo-label text="Primer apellido"></dxo-label>
+						<div class="wizard-section">
+							<h3 class="wizard-section__title">Documentación</h3>
+							<div class="wizard-grid wizard-grid--2">
+								<div class="wizard-field">
+									<label class="wizard-label">DUI *</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.DUI"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Pasaporte</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.PASAPORTE"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">ISSS</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.ISSS"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">NUP</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.NUP"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">AFP</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.AFP"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Nombre AFP</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.NOMBRE_AFP"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Licencia</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.LICENCIA"></dx-text-box>
+								</div>
+							</div>
+						</div>
 
-              <dxi-validation-rule
-                type="required"
-                message="El primer apellido es requerido"
-              ></dxi-validation-rule>
+						<div class="wizard-section">
+							<h3 class="wizard-section__title">Información laboral</h3>
+							<div class="wizard-grid wizard-grid--2">
+								<div class="wizard-field wizard-field--span2">
+									<label class="wizard-label">Plaza solicitada</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.PLAZA_SOLICITADA"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Pretensión salarial</label>
+									<dx-number-box stylingMode="outlined"
+										[(value)]="formData.PRETENSION_SALARIAL"
+										[format]="'$#,##0.00'"
+										[min]="0"
+									></dx-number-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Disponibilidad</label>
+									<dx-select-box stylingMode="outlined"
+										[(value)]="formData.DISPONIBILIDAD"
+										[items]="disponibilidadOptions"
+										displayExpr="text"
+										valueExpr="value"
+									></dx-select-box>
+								</div>
+							</div>
+						</div>
 
-              <dxi-validation-rule
-                type="stringLength"
-                [max]="50"
-                message="Máximo 50 caracteres"
-              ></dxi-validation-rule>
-            </dxi-item>
+						<div class="wizard-section">
+							<h3 class="wizard-section__title">Información adicional</h3>
+							<div class="wizard-grid wizard-grid--2">
+								<div class="wizard-field">
+									<label class="wizard-label">Religión</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.RELIGION"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Iglesia</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.IGLESIA"></dx-text-box>
+								</div>
+								<div class="wizard-field wizard-field--span2">
+									<label class="wizard-label">Dirección Iglesia</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.DIRECCION_IGLESIA"></dx-text-box>
+								</div>
+							</div>
 
-            <dxi-item dataField="APELLIDO2" editorType="dxTextBox">
-              <dxo-label text="Segundo apellido"></dxo-label>
+							<div class="wizard-checks">
+								<dx-check-box
+									[(value)]="formData.ES_CONTRIBUYENTE_CCF"
+									text="¿Contribuyente CCF?"
+								></dx-check-box>
+								<dx-check-box
+									[(value)]="formData.ES_JUBILADO"
+									text="¿Jubilado?"
+								></dx-check-box>
+								<dx-check-box
+									[(value)]="formData.POSEE_DISCAPACIDAD"
+									text="¿Posee discapacidad?"
+								></dx-check-box>
+							</div>
 
-              <dxi-validation-rule
-                type="stringLength"
-                [max]="50"
-                message="Máximo 50 caracteres"
-              ></dxi-validation-rule>
-            </dxi-item>
+							<div class="wizard-field" *ngIf="formData.POSEE_DISCAPACIDAD">
+								<label class="wizard-label">Tipo de discapacidad</label>
+								<dx-text-box stylingMode="outlined" [(value)]="formData.TIPO_DISCAPACIDAD"></dx-text-box>
+							</div>
+						</div>
+					</div>
 
-            <!-- Agregar aquí los nuevos campos del formulario de solicitud de empleo. -->
+					<!-- PASO 2: Información Familiar -->
+					<div class="wizard-step" *ngIf="pasoActual === 2">
+						<div class="wizard-section">
+							<h3 class="wizard-section__title">Familiares directos</h3>
+							<div class="wizard-familiar" *ngFor="let f of familiaresDirectos">
+								<h4 class="wizard-familiar__label">{{ f.ETIQUETA }}</h4>
+								<div class="wizard-grid wizard-grid--2">
+									<div class="wizard-field">
+										<label class="wizard-label">Nombre</label>
+										<dx-text-box stylingMode="outlined" [(value)]="f.NOMBRE"></dx-text-box>
+									</div>
+									<div class="wizard-field">
+										<label class="wizard-label">Ocupación</label>
+										<dx-text-box stylingMode="outlined" [(value)]="f.OCUPACION"></dx-text-box>
+									</div>
+									<div class="wizard-field">
+										<label class="wizard-label">Fecha nacimiento</label>
+										<dx-date-box stylingMode="outlined"
+											[(value)]="f.FECHA_NACIMIENTO"
+											type="date"
+											displayFormat="dd/MM/yyyy"
+										></dx-date-box>
+									</div>
+									<div class="wizard-field">
+										<label class="wizard-label">Domicilio</label>
+										<dx-text-box stylingMode="outlined" [(value)]="f.DOMICILIO"></dx-text-box>
+									</div>
+								</div>
+							</div>
+						</div>
 
-            <dxi-item itemType="button" cssClass="submit-button-row">
-              <dxo-button-options
-                type="default"
-                [useSubmitBehavior]="true"
-                [template]="'enviarFormularioTemplate'"
-                [elementAttr]="{ class: 'submit-button' }"
-              >
-              </dxo-button-options>
-            </dxi-item>
+						<div class="wizard-section">
+							<div class="wizard-section__head">
+								<h3 class="wizard-section__title">Hijos</h3>
+								<dx-button
+									text="Agregar hijo"
+									icon="plus"
+									type="default"
+									stylingMode="outlined"
+									(onClick)="abrirModalNuevo('hijo')"
+								></dx-button>
+							</div>
+							<dx-data-grid
+								[dataSource]="hijos"
+								keyExpr="ID"
+								[showBorders]="true"
+								[columnAutoWidth]="true"
+								[rowAlternationEnabled]="true"
+								[hoverStateEnabled]="true"
+								[noDataText]="'Sin hijos registrados. Use Agregar hijo.'"
+							>
+								<dxi-column dataField="NOMBRE" caption="Nombre"></dxi-column>
+								<dxi-column dataField="EDAD" caption="Edad" dataType="number" width="80"></dxi-column>
+								<dxi-column
+									dataField="SEXO"
+									caption="Sexo"
+									width="120"
+									[calculateCellValue]="sexoDisplay"
+								></dxi-column>
+								<dxi-column
+									dataField="FECHA_NACIMIENTO"
+									caption="Fecha nacimiento"
+									dataType="date"
+									format="dd/MM/yyyy"
+								></dxi-column>
+								<dxi-column caption="" width="100" [allowSorting]="false" cellTemplate="accionesHijo"></dxi-column>
+								<div *dxTemplate="let cell of 'accionesHijo'" class="wizard-grid-actions">
+									<dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirModalEditar('hijo', cell.data)"></dx-button>
+									<dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('hijo', cell.data)"></dx-button>
+								</div>
+							</dx-data-grid>
+						</div>
 
-            <ng-container *dxTemplate="let item of 'enviarFormularioTemplate'">
-              <span class="dx-button-text">
-                <dx-load-indicator
-                  *ngIf="enviando"
-                  width="24px"
-                  height="24px"
-                  [visible]="true"
-                ></dx-load-indicator>
+						<div class="wizard-section">
+							<h3 class="wizard-section__title">Contacto de emergencia</h3>
+							<div class="wizard-grid wizard-grid--2">
+								<div class="wizard-field">
+									<label class="wizard-label">Nombre *</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.EMERGENCIA_NOMBRE"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Parentesco</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.EMERGENCIA_PARENTESCO"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Teléfono *</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.EMERGENCIA_TELEFONO"></dx-text-box>
+								</div>
+							</div>
+						</div>
+					</div>
 
-                <ng-container *ngIf="!enviando"
-                  >Enviar información</ng-container
-                >
-              </span>
-            </ng-container>
-          </dx-form>
-        </form>
+					<!-- PASO 3: Formación Académica -->
+					<div class="wizard-step" *ngIf="pasoActual === 3">
+						<div class="wizard-section">
+							<div class="wizard-section__head">
+								<h3 class="wizard-section__title">Estudios</h3>
+								<dx-button
+									text="Agregar estudio"
+									icon="plus"
+									type="default"
+									stylingMode="outlined"
+									(onClick)="abrirModalNuevo('estudio')"
+								></dx-button>
+							</div>
+							<dx-data-grid
+								[dataSource]="estudios"
+								keyExpr="ID"
+								[showBorders]="true"
+								[columnAutoWidth]="true"
+								[rowAlternationEnabled]="true"
+								[noDataText]="'Sin estudios. Use Agregar estudio.'"
+							>
+								<dxi-column dataField="NIVEL" caption="Nivel"></dxi-column>
+								<dxi-column dataField="INSTITUCION" caption="Institución"></dxi-column>
+								<dxi-column dataField="DESDE" caption="Desde" dataType="date" format="MM/yyyy"></dxi-column>
+								<dxi-column dataField="HASTA" caption="Hasta" dataType="date" format="MM/yyyy"></dxi-column>
+								<dxi-column dataField="TITULO" caption="Título obtenido"></dxi-column>
+								<dxi-column caption="" width="100" [allowSorting]="false" cellTemplate="accionesEstudio"></dxi-column>
+								<div *dxTemplate="let cell of 'accionesEstudio'" class="wizard-grid-actions">
+									<dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirModalEditar('estudio', cell.data)"></dx-button>
+									<dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('estudio', cell.data)"></dx-button>
+								</div>
+							</dx-data-grid>
+						</div>
 
-        <footer class="login-footer">
-          <span class="login-footer__copyright"
-            >© Universidad Evangélica de El Salvador</span
-          >
+						<div class="wizard-section">
+							<div class="wizard-section__head">
+								<h3 class="wizard-section__title">Idiomas</h3>
+								<dx-button
+									text="Agregar idioma"
+									icon="plus"
+									type="default"
+									stylingMode="outlined"
+									(onClick)="abrirModalNuevo('idioma')"
+								></dx-button>
+							</div>
+							<dx-data-grid
+								[dataSource]="idiomas"
+								keyExpr="ID"
+								[showBorders]="true"
+								[columnAutoWidth]="true"
+								[rowAlternationEnabled]="true"
+								[noDataText]="'Sin idiomas. Use Agregar idioma.'"
+							>
+								<dxi-column dataField="IDIOMA" caption="Idioma"></dxi-column>
+								<dxi-column dataField="NIVEL" caption="Nivel" width="140"></dxi-column>
+								<dxi-column caption="" width="100" [allowSorting]="false" cellTemplate="accionesIdioma"></dxi-column>
+								<div *dxTemplate="let cell of 'accionesIdioma'" class="wizard-grid-actions">
+									<dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirModalEditar('idioma', cell.data)"></dx-button>
+									<dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('idioma', cell.data)"></dx-button>
+								</div>
+							</dx-data-grid>
+						</div>
 
-          <span class="login-footer__version">SGUEES</span>
-        </footer>
-      </div>
-    </div>
-  </main>
+						<div class="wizard-section">
+							<div class="wizard-section__head">
+								<h3 class="wizard-section__title">Competencias tecnológicas</h3>
+								<dx-button
+									text="Agregar herramienta"
+									icon="plus"
+									type="default"
+									stylingMode="outlined"
+									(onClick)="abrirModalNuevo('competencia')"
+								></dx-button>
+							</div>
+							<p class="wizard-section__hint">
+								Ejemplos: Excel, Power BI, SAP, Office, Photoshop, AutoCAD…
+							</p>
+							<dx-data-grid
+								[dataSource]="competencias"
+								keyExpr="ID"
+								[showBorders]="true"
+								[columnAutoWidth]="true"
+								[rowAlternationEnabled]="true"
+								[noDataText]="'Sin competencias. Use Agregar herramienta.'"
+							>
+								<dxi-column dataField="HERRAMIENTA" caption="Herramienta"></dxi-column>
+								<dxi-column dataField="NIVEL" caption="Nivel" width="140"></dxi-column>
+								<dxi-column caption="" width="100" [allowSorting]="false" cellTemplate="accionesComp"></dxi-column>
+								<div *dxTemplate="let cell of 'accionesComp'" class="wizard-grid-actions">
+									<dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirModalEditar('competencia', cell.data)"></dx-button>
+									<dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('competencia', cell.data)"></dx-button>
+								</div>
+							</dx-data-grid>
+						</div>
+					</div>
+
+					<!-- PASO 4: Experiencia Laboral -->
+					<div class="wizard-step" *ngIf="pasoActual === 4">
+						<div class="wizard-section">
+							<div class="wizard-section__head">
+								<h3 class="wizard-section__title">Experiencia laboral</h3>
+								<dx-button
+									text="Agregar experiencia"
+									icon="plus"
+									type="default"
+									stylingMode="outlined"
+									(onClick)="abrirModalNuevo('experiencia')"
+								></dx-button>
+							</div>
+							<dx-data-grid
+								[dataSource]="experiencias"
+								keyExpr="ID"
+								[showBorders]="true"
+								[columnAutoWidth]="false"
+								[rowAlternationEnabled]="true"
+								[wordWrapEnabled]="true"
+								[noDataText]="'Sin experiencia. Use Agregar experiencia.'"
+							>
+								<dxi-column dataField="EMPRESA" caption="Empresa" width="160"></dxi-column>
+								<dxi-column dataField="TELEFONO" caption="Teléfono" width="110"></dxi-column>
+								<dxi-column dataField="CARGO" caption="Cargo" width="140"></dxi-column>
+								<dxi-column dataField="JEFE_INMEDIATO" caption="Jefe inmediato" width="140"></dxi-column>
+								<dxi-column dataField="FECHA_INICIO" caption="Inicio" dataType="date" format="dd/MM/yyyy" width="110"></dxi-column>
+								<dxi-column dataField="FECHA_FIN" caption="Fin" dataType="date" format="dd/MM/yyyy" width="110"></dxi-column>
+								<dxi-column dataField="SALARIO_INICIAL" caption="Salario inicial" dataType="number" format="$#,##0.00" width="120"></dxi-column>
+								<dxi-column dataField="SALARIO_FINAL" caption="Salario final" dataType="number" format="$#,##0.00" width="120"></dxi-column>
+								<dxi-column dataField="MOTIVO_SALIDA" caption="Motivo salida" width="160"></dxi-column>
+								<dxi-column caption="" width="100" [allowSorting]="false" [fixed]="true" fixedPosition="right" cellTemplate="accionesExp"></dxi-column>
+								<div *dxTemplate="let cell of 'accionesExp'" class="wizard-grid-actions">
+									<dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirModalEditar('experiencia', cell.data)"></dx-button>
+									<dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('experiencia', cell.data)"></dx-button>
+								</div>
+							</dx-data-grid>
+						</div>
+					</div>
+
+					<!-- PASO 5: Información Adicional -->
+					<div class="wizard-step" *ngIf="pasoActual === 5">
+						<div class="wizard-section">
+							<h3 class="wizard-section__title">Familiares en la UEES</h3>
+							<dx-check-box
+								[(value)]="formData.TIENE_FAMILIARES_UEES"
+								text="¿Tiene familiares laborando en la UEES?"
+							></dx-check-box>
+
+							<div *ngIf="formData.TIENE_FAMILIARES_UEES" class="wizard-section__nested">
+								<div class="wizard-section__head">
+									<span></span>
+									<dx-button
+										text="Agregar familiar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirModalNuevo('familiarUees')"
+									></dx-button>
+								</div>
+								<dx-data-grid
+									[dataSource]="familiaresUees"
+									keyExpr="ID"
+									[showBorders]="true"
+									[columnAutoWidth]="true"
+									[rowAlternationEnabled]="true"
+									[noDataText]="'Sin familiares. Use Agregar familiar.'"
+								>
+									<dxi-column dataField="NOMBRE" caption="Nombre"></dxi-column>
+									<dxi-column dataField="PARENTESCO" caption="Parentesco"></dxi-column>
+									<dxi-column dataField="UNIDAD" caption="Unidad"></dxi-column>
+									<dxi-column dataField="TELEFONO" caption="Teléfono"></dxi-column>
+									<dxi-column caption="" width="100" [allowSorting]="false" cellTemplate="accionesFam"></dxi-column>
+									<div *dxTemplate="let cell of 'accionesFam'" class="wizard-grid-actions">
+										<dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirModalEditar('familiarUees', cell.data)"></dx-button>
+										<dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('familiarUees', cell.data)"></dx-button>
+									</div>
+								</dx-data-grid>
+							</div>
+						</div>
+
+						<div class="wizard-section">
+							<h3 class="wizard-section__title">Disponibilidad y perfil</h3>
+							<div class="wizard-checks">
+								<dx-check-box
+									[(value)]="formData.DISPONIBILIDAD_VIAJAR"
+									text="Disponibilidad para viajar"
+								></dx-check-box>
+								<dx-check-box
+									[(value)]="formData.DISPONIBILIDAD_INMEDIATA"
+									text="Disponibilidad inmediata"
+								></dx-check-box>
+								<dx-check-box
+									[(value)]="formData.CAMBIO_RESIDENCIA"
+									text="Disponibilidad de cambio de residencia"
+								></dx-check-box>
+							</div>
+							<div class="wizard-grid wizard-grid--2">
+								<div class="wizard-field">
+									<label class="wizard-label">LinkedIn</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.LINKEDIN"></dx-text-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Portafolio / sitio web</label>
+									<dx-text-box stylingMode="outlined" [(value)]="formData.PORTAFOLIO"></dx-text-box>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- PASO 6: Confirmación -->
+					<div class="wizard-step" *ngIf="pasoActual === 6">
+						<div class="wizard-section">
+							<h3 class="wizard-section__title">Resumen de tu solicitud</h3>
+							<ul class="wizard-summary">
+								<li *ngFor="let item of resumenChecks" class="wizard-summary__item">
+									<span class="wizard-summary__check" aria-hidden="true">✓</span>
+									<span>{{ item.label }}</span>
+									<button type="button" class="wizard-summary__link" (click)="irAPaso(item.paso)">
+										Revisar
+									</button>
+								</li>
+							</ul>
+						</div>
+
+						<div class="wizard-section">
+							<h3 class="wizard-section__title">Declaraciones</h3>
+							<div class="wizard-checks wizard-checks--stack">
+								<dx-check-box
+									[(value)]="formData.DECLARA_VERDAD"
+									text="Declaro que la información proporcionada es verdadera."
+								></dx-check-box>
+								<dx-check-box
+									[(value)]="formData.AUTORIZA_VERIFICACION"
+									text="Autorizo a la Universidad a realizar las verificaciones correspondientes."
+								></dx-check-box>
+							</div>
+
+							<div class="wizard-grid wizard-grid--2">
+								<div class="wizard-field">
+									<label class="wizard-label">Fecha</label>
+									<dx-date-box stylingMode="outlined"
+										[value]="formData.FECHA_DECLARACION"
+										type="date"
+										displayFormat="dd/MM/yyyy"
+										[readOnly]="true"
+									></dx-date-box>
+								</div>
+								<div class="wizard-field">
+									<label class="wizard-label">Firma electrónica (opcional)</label>
+									<dx-text-box stylingMode="outlined"
+										[(value)]="formData.FIRMA_ELECTRONICA"
+									></dx-text-box>
+								</div>
+							</div>
+						</div>
+					</div>
+
+				</div>
+			</dx-scroll-view>
+
+			<footer class="wizard-nav">
+				<dx-button
+					[text]="pasoActual === 1 ? 'Volver' : 'Anterior'"
+					stylingMode="outlined"
+					type="normal"
+					icon="chevronprev"
+					(onClick)="anterior()"
+					[disabled]="enviando"
+				></dx-button>
+
+				<dx-button
+					*ngIf="pasoActual < 6"
+					text="Siguiente"
+					type="normal"
+					icon="chevronnext"
+					(onClick)="siguiente()"
+				></dx-button>
+
+				<dx-button
+					*ngIf="pasoActual === 6"
+					text="Enviar solicitud"
+					type="success"
+					icon="email"
+					[disabled]="enviando || !formData.DECLARA_VERDAD || !formData.AUTORIZA_VERIFICACION"
+					(onClick)="onSubmit()"
+					[elementAttr]="{ class: 'wizard-nav__submit' }"
+				>
+				</dx-button>
+
+				<span class="wizard-nav__loading" *ngIf="enviando">
+					<dx-load-indicator width="24px" height="24px" [visible]="true"></dx-load-indicator>
+					Enviando…
+				</span>
+			</footer>
+		</section>
+
+	</div>
+
+	<dx-popup
+		[(visible)]="modalVisible"
+		[showTitle]="true"
+		[title]="modalTitulo"
+		[width]="modalAncho"
+		[maxWidth]="'96vw'"
+		[height]="'auto'"
+		[maxHeight]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+	>
+		<div *dxTemplate="let data of 'content'" class="wizard-modal">
+			<div class="wizard-modal__body" *ngIf="modalTipo === 'hijo'">
+				<div class="wizard-grid wizard-grid--2">
+					<div class="wizard-field wizard-field--span2">
+						<label class="wizard-label">Nombre *</label>
+						<dx-text-box stylingMode="outlined" [(value)]="modalDraft.NOMBRE"></dx-text-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Sexo</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[dataSource]="sexoOptions"
+							displayExpr="text"
+							valueExpr="value"
+							[(value)]="modalDraft.SEXO"
+						></dx-select-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Fecha de nacimiento</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="dd/MM/yyyy"
+							[value]="modalDraft.FECHA_NACIMIENTO"
+							(onValueChanged)="onModalHijoFechaChanged($event.value)"
+						></dx-date-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Edad</label>
+						<dx-number-box stylingMode="outlined" [value]="modalDraft.EDAD" [readOnly]="true"></dx-number-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="wizard-modal__body" *ngIf="modalTipo === 'estudio'">
+				<div class="wizard-grid wizard-grid--2">
+					<div class="wizard-field">
+						<label class="wizard-label">Nivel *</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[dataSource]="nivelAcademicoOptions"
+							[(value)]="modalDraft.NIVEL"
+						></dx-select-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Institución *</label>
+						<dx-text-box stylingMode="outlined" [(value)]="modalDraft.INSTITUCION"></dx-text-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Desde</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="MM/yyyy"
+							[calendarOptions]="{ zoomLevel: 'year', maxZoomLevel: 'year' }"
+							[(value)]="modalDraft.DESDE"
+						></dx-date-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Hasta</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="MM/yyyy"
+							[calendarOptions]="{ zoomLevel: 'year', maxZoomLevel: 'year' }"
+							[(value)]="modalDraft.HASTA"
+						></dx-date-box>
+					</div>
+					<div class="wizard-field wizard-field--span2">
+						<label class="wizard-label">Título obtenido</label>
+						<dx-text-box stylingMode="outlined" [(value)]="modalDraft.TITULO"></dx-text-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="wizard-modal__body" *ngIf="modalTipo === 'idioma'">
+				<div class="wizard-grid wizard-grid--2">
+					<div class="wizard-field">
+						<label class="wizard-label">Idioma *</label>
+						<dx-text-box stylingMode="outlined" [(value)]="modalDraft.IDIOMA"></dx-text-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Nivel *</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[dataSource]="nivelIdiomaOptions"
+							[(value)]="modalDraft.NIVEL"
+						></dx-select-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="wizard-modal__body" *ngIf="modalTipo === 'competencia'">
+				<div class="wizard-grid wizard-grid--2">
+					<div class="wizard-field">
+						<label class="wizard-label">Herramienta *</label>
+						<dx-text-box stylingMode="outlined" [(value)]="modalDraft.HERRAMIENTA"></dx-text-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Nivel *</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[dataSource]="nivelCompetenciaOptions"
+							[(value)]="modalDraft.NIVEL"
+						></dx-select-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="wizard-modal__body" *ngIf="modalTipo === 'experiencia'">
+				<div class="wizard-grid wizard-grid--2">
+					<div class="wizard-field">
+						<label class="wizard-label">Empresa *</label>
+						<dx-text-box stylingMode="outlined" [(value)]="modalDraft.EMPRESA"></dx-text-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Teléfono</label>
+						<dx-text-box stylingMode="outlined" [(value)]="modalDraft.TELEFONO"></dx-text-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Cargo *</label>
+						<dx-text-box stylingMode="outlined" [(value)]="modalDraft.CARGO"></dx-text-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Jefe inmediato</label>
+						<dx-text-box stylingMode="outlined" [(value)]="modalDraft.JEFE_INMEDIATO"></dx-text-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Fecha inicio</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="dd/MM/yyyy"
+							[(value)]="modalDraft.FECHA_INICIO"
+						></dx-date-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Fecha fin</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="dd/MM/yyyy"
+							[(value)]="modalDraft.FECHA_FIN"
+						></dx-date-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Salario inicial</label>
+						<dx-number-box
+							stylingMode="outlined"
+							[(value)]="modalDraft.SALARIO_INICIAL"
+							format="$#,##0.00"
+						></dx-number-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Salario final</label>
+						<dx-number-box
+							stylingMode="outlined"
+							[(value)]="modalDraft.SALARIO_FINAL"
+							format="$#,##0.00"
+						></dx-number-box>
+					</div>
+					<div class="wizard-field wizard-field--span2">
+						<label class="wizard-label">Motivo de salida</label>
+						<dx-text-box stylingMode="outlined" [(value)]="modalDraft.MOTIVO_SALIDA"></dx-text-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="wizard-modal__body" *ngIf="modalTipo === 'familiarUees'">
+				<div class="wizard-grid wizard-grid--2">
+					<div class="wizard-field wizard-field--span2">
+						<label class="wizard-label">Nombre *</label>
+						<dx-text-box stylingMode="outlined" [(value)]="modalDraft.NOMBRE"></dx-text-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Parentesco</label>
+						<dx-text-box stylingMode="outlined" [(value)]="modalDraft.PARENTESCO"></dx-text-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Unidad</label>
+						<dx-text-box stylingMode="outlined" [(value)]="modalDraft.UNIDAD"></dx-text-box>
+					</div>
+					<div class="wizard-field">
+						<label class="wizard-label">Teléfono</label>
+						<dx-text-box stylingMode="outlined" [(value)]="modalDraft.TELEFONO"></dx-text-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="wizard-modal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarModal()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarModal()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
 </div>
