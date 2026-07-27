@@ -1091,6 +1091,21 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
     }
     //#endregion
 
+    onFlujoPopupShown(e: { component?: { repaint?: () => void } }): void {
+        const popup = e?.component;
+        if (!popup?.repaint) {
+            return;
+        }
+        popup.repaint();
+        setTimeout(() => popup.repaint?.(), 0);
+        setTimeout(() => popup.repaint?.(), 120);
+    }
+
+    get tituloModalNotificaciones(): string {
+        const paso = this.pasoSeleccionadoNotificaciones?.NOMBRE_PASO?.trim();
+        return paso ? `Mensajes por Estado — ${paso}` : 'Mensajes por Estado';
+    }
+
     //#region <Modal Notificaciones (Estado Mensaje)>
     abrirModalNotificaciones(e: any): void {
         this.pasoSeleccionadoNotificaciones = e.row?.data || null;

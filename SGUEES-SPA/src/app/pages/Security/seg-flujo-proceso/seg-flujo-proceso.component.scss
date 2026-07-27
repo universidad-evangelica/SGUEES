@@ -1,73 +1,167 @@
-.flujo-tab-panel {
-    margin-top: 20px;
+.flujo-edit-shell {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sguees-content-gap, 16px);
 }
 
-.paso-section-card {
-    background-color: #fff;
-    border-radius: 4px;
-    padding: 15px;
+.flujo-form-card,
+.flujo-detalle-card {
+	margin-bottom: 0;
+}
+
+.flujo-section-head {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-bottom: var(--sguees-space-4, 16px);
+	padding-bottom: var(--sguees-space-3, 12px);
+	border-bottom: 1px solid var(--border-color);
+}
+
+.flujo-section-title {
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--sguees-text-primary);
+}
+
+.flujo-section-subtitle {
+	font-size: 12px;
+	color: var(--sguees-text-secondary, var(--texteditor-label-color));
+}
+
+.flujo-tab-panel {
+	margin-top: 0;
+}
+
+.flujo-paso-grid {
+	.flujo-paso-toolbar {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px;
+		margin-bottom: 14px;
+		padding: 10px 12px;
+		background: var(--sguees-surface-subtle, #eef1f6);
+		border: 1px solid var(--border-color);
+		border-radius: var(--sguees-radius-md, 10px);
+	}
+
+	::ng-deep .flujo-paso-toolbar-btn .dx-button {
+		min-width: 150px;
+		min-height: var(--sguees-toolbar-height, 44px);
+		padding-inline: 16px;
+		font-size: 14px;
+		font-weight: 600;
+	}
+
+	::ng-deep .flujo-paso-toolbar-btn--cancel .dx-button {
+		min-width: 140px;
+	}
+}
+
+.seg-flujo-modal-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 12px;
+
+	::ng-deep .dx-button {
+		min-height: var(--sguees-toolbar-height, 44px);
+	}
+}
+
+.seg-flujo-modal-form {
+	margin-bottom: 14px;
+}
+
+.seg-flujo-modal-grid {
+	margin-top: 0;
+}
+
+.flujo-unidad-hint {
+	color: var(--sguees-text-secondary, #999);
+	font-size: 12px;
+	padding: 28px 0 6px;
+	display: block;
 }
 
 .mensaje-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 300px;
-    background-color: #f8f9fa;
-    border-radius: 4px;
-    padding: 20px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 300px;
+	background-color: var(--sguees-surface-subtle, #f8f9fa);
+	border-radius: var(--sguees-radius-md, 10px);
+	padding: 20px;
 
-    p {
-        font-size: 16px;
-        color: #6c757d;
-        text-align: center;
-        margin: 0;
-    }
+	p {
+		font-size: 16px;
+		color: var(--sguees-text-secondary, #6c757d);
+		text-align: center;
+		margin: 0;
+	}
 }
 
+:host ::ng-deep .seg-flujo-paso-popup .dx-toolbar-label > div,
 :host ::ng-deep .paso-acciones-popup .dx-toolbar-label > div {
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    word-break: break-word;
+	white-space: normal !important;
+	overflow: visible !important;
+	text-overflow: clip !important;
+	word-break: break-word;
 }
 
+:host ::ng-deep .seg-flujo-paso-popup .dx-popup-title,
 :host ::ng-deep .paso-acciones-popup .dx-popup-title {
-    padding-right: 42px;
+	padding-right: 42px;
 }
 
+:host ::ng-deep .seg-flujo-paso-popup .dx-toolbar-label,
 :host ::ng-deep .paso-acciones-popup .dx-toolbar-label {
-    width: 100% !important;
-    max-width: none !important;
-    overflow: visible !important;
+	width: 100% !important;
+	max-width: none !important;
+	overflow: visible !important;
 }
 
+:host ::ng-deep .seg-flujo-paso-popup .dx-popup-title .dx-toolbar-label .dx-toolbar-item-content,
 :host ::ng-deep .paso-acciones-popup .dx-popup-title .dx-toolbar-label .dx-toolbar-item-content {
-    white-space: normal !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
+	white-space: normal !important;
+	overflow: visible !important;
+	text-overflow: clip !important;
 }
 
+:host ::ng-deep .seg-flujo-paso-popup .dx-popup-title .dx-toolbar-before,
 :host ::ng-deep .paso-acciones-popup .dx-popup-title .dx-toolbar-before {
-    width: calc(100% - 44px);
-    max-width: calc(100% - 44px);
-    overflow: visible;
+	width: calc(100% - 44px);
+	max-width: calc(100% - 44px);
+	overflow: visible;
 }
 
+:host ::ng-deep .seg-flujo-paso-popup .dx-popup-title .dx-toolbar-after,
 :host ::ng-deep .paso-acciones-popup .dx-popup-title .dx-toolbar-after {
-    width: 44px;
-    min-width: 44px;
-    display: flex;
-    justify-content: flex-end;
+	width: 44px;
+	min-width: 44px;
+	display: flex;
+	justify-content: flex-end;
 }
 
+:host ::ng-deep .seg-flujo-paso-popup .dx-closebutton,
 :host ::ng-deep .paso-acciones-popup .dx-closebutton {
-    opacity: 1;
-    visibility: visible;
-    width: 36px;
-    height: 36px;
+	opacity: 1;
+	visibility: visible;
+	width: 36px;
+	height: 36px;
 }
 
+:host ::ng-deep .seg-flujo-paso-popup .dx-closebutton .dx-icon,
 :host ::ng-deep .paso-acciones-popup .dx-closebutton .dx-icon {
-    color: #2b2b2b;
+	color: var(--sguees-text-primary, #2b2b2b);
+}
+
+:host ::ng-deep .seg-flujo-paso-popup .sguees-page-header__title,
+:host ::ng-deep .seg-flujo-paso-popup .sguees-grid-header__title {
+	white-space: normal;
+	overflow: visible;
+	text-overflow: clip;
+	word-break: break-word;
 }
