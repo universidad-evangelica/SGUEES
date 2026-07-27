@@ -105,7 +105,7 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="CORR_SOLICITUD_EMPLEO",Value=Data.CORR_SOLICITUD_EMPLEO,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput},
                     new CParameter() {ParameterName="FECHA_GENERACION",Value=Data.FECHA_GENERACION,DbType=System.Data.DbType.DateTime},
                     new CParameter() {ParameterName="CORREO_INVITACION",Value=Data.CORREO_INVITACION,DbType=System.Data.DbType.String},
-                    new CParameter() {ParameterName="CORR_CANDIDATO",Value=null,DbType=System.Data.DbType.Int32},
+                    new CParameter() {ParameterName="CORR_PERSONA_DATOS",Value=null,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="ACTIVO",Value=Data.ACTIVO,DbType=System.Data.DbType.Boolean},
                     new CParameter() {ParameterName="USUARIO_CREA",Value=Data.USUARIO_CREA,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="ESTACION_CREA",Value=Data.ESTACION_CREA,DbType=System.Data.DbType.String},

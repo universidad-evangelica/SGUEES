@@ -6,6 +6,7 @@ import { FormsModule } from '@angular/forms';
 import { SideNavOuterToolbarModule, SingleCardModule } from './layouts';
 import { AppFooterModule } from './shared/components/library/app-footer/app-footer.component';
 import { ResetPasswordFormModule } from './shared/components/library/reset-password-form/reset-password-form.component';
+import { FormularioEmpleoFormModule } from './shared/components/library/formulario-empleo-form/formulario-empleo-form.component';
 import { CreateAccountFormModule } from './shared/components/library/create-account-form/create-account-form.component';
 import { ChangePasswordFormModule } from './shared/components/library/change-password-form/change-password-form.component';
 import { LoginFormModule } from './shared/components/library/login-form/login-form.component';
@@ -71,6 +72,7 @@ export function tokenGetterLocal(): string {
     SingleCardModule,
     AppFooterModule,
     ResetPasswordFormModule,
+    FormularioEmpleoFormModule,
     CreateAccountFormModule,
     ChangePasswordFormModule,
     UnauthenticatedContentModule,

@@ -3,7 +3,7 @@ export interface ScSolicitudEmpleo {
 	CORR_SOLICITUD_EMPLEO: number;
 	FECHA_GENERACION: Date;
 	CORREO_INVITACION: string;
-	CORR_CANDIDATO: number;
+	CORR_PERSONA_DATOS: number;
 	ACTIVO: boolean;
 	USUARIO_CREA: string;
 	ESTACION_CREA: string;

@@ -67,12 +67,9 @@ namespace sguees.Controllers
 		public async Task<IActionResult> Put(SC_SOLICITUD_EMPLEOTable Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-			Data.USUARIO_CREA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
-			Data.ESTACION_CREA = ClientInfoHelper.GetClientStation(HttpContext);
-			Data.FECHA_CREA = DateTime.Now;
-			Data.USUARIO_ACTU = Data.USUARIO_CREA;
-			Data.ESTACION_ACTU = Data.ESTACION_CREA;
-			Data.FECHA_ACTU = Data.FECHA_CREA;
+			Data.USUARIO_ACTU = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
+			Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
+			Data.FECHA_ACTU = DateTime.Now;
 			var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
 			if (resultado.ErrorCode == 0)
 			{

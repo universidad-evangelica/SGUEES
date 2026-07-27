@@ -64,12 +64,30 @@ export class ScSolicitudEmpleoService {
 		return this.repo.desactivate(xWhere);
 	}
 
+	getAllToken(corrSolicitudEmpleo: number): Observable<IResult> {
+		return this.repo.getAllToken([
+			{ Parameter: 'CORR_SOLICITUD_EMPLEO', Value: corrSolicitudEmpleo },
+		]);
+	}
+
+	generarToken(corrSolicitudEmpleo: number): Observable<IResult> {
+		return this.repo.generarToken({
+			CORR_SOLICITUD_EMPLEO: corrSolicitudEmpleo,
+		});
+	}
+
+	getPersonaDatos(corrPersonaDatos: number): Observable<IResult> {
+		return this.repo.getPersonaDatos([
+			{ Parameter: 'CORR_PERSONA_DATOS', Value: corrPersonaDatos },
+		]);
+	}
+
 	getColumns(): any {
 		return [
 			{ dataField: 'CORR_SOLICITUD_EMPLEO', caption: 'Corr.', width: 100 },
 			{ dataField: 'FECHA_GENERACION', caption: 'Fecha Generación', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
 			{ dataField: 'CORREO_INVITACION', caption: 'Correo Invitación', width: 250 },
-			{ dataField: 'CORR_CANDIDATO', caption: 'Corr. Candidato', width: 200 },
+			{ dataField: 'CORR_PERSONA_DATOS', caption: 'Corr. Persona datos', width: 200 },
 			{ dataField: 'ACTIVO', caption: 'Activo', width: 200, dataType: 'boolean', alignment: 'center' },
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 250 },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 250 },
@@ -100,9 +118,46 @@ export class ScSolicitudEmpleoService {
 				colSpan: 2,
 			},
 			{
-				dataField: 'CORR_CANDIDATO',
-				label: { text: 'Corr. Candidato' },
+				dataField: 'CORR_PERSONA_DATOS',
+				label: { text: 'Corr. Persona datos' },
 				colSpan: 2,
+			},
+		];
+	}
+
+	getTokenColumns(): any {
+		return [
+			{ dataField: 'CORR_TOKEN', caption: 'Corr.', width: 80 },
+			{ dataField: 'TOKEN_HASH', caption: 'Token', width: 170 },
+			{ dataField: 'FECHA_GENERACION', caption: 'Fecha generación', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{ dataField: 'FECHA_EXPIRACION', caption: 'Fecha expiración', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{ dataField: 'FECHA_UTILIZACION', caption: 'Fecha utilización', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
+			{ dataField: 'ESTADO_TOKEN', caption: 'Estado', width: 140, cellTemplate: 'estadoTokenTemplate' },
+			{ dataField: 'CORREO_DESTINO', caption: 'Correo destino', width: 260 },
+		];
+	}
+
+	getPersonaDatosItems(): any {
+		return [
+			{
+				dataField: 'NOMBRE1',
+				label: { text: 'Primer nombre' },
+				editorOptions: { readOnly: true },
+			},
+			{
+				dataField: 'NOMBRE2',
+				label: { text: 'Segundo nombre' },
+				editorOptions: { readOnly: true },
+			},
+			{
+				dataField: 'APELLIDO1',
+				label: { text: 'Primer apellido' },
+				editorOptions: { readOnly: true },
+			},
+			{
+				dataField: 'APELLIDO2',
+				label: { text: 'Segundo apellido' },
+				editorOptions: { readOnly: true },
 			},
 		];
 	}

@@ -15,25 +15,27 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 
 import { ScSolicitudEmpleoComponent } from './sc-solicitud-empleo.component';
 import { ToastModule } from "primeng/toast"; //importar el modulo de Toast para primeNG
+import { DxToolbarModule } from "devextreme-angular/ui/toolbar";
 
 const routes: Routes = [{ path: '', component: ScSolicitudEmpleoComponent }];
 
 @NgModule({
 	imports: [
-		RouterModule.forChild(routes),
-		CommonModule,
-		DxFormModule,
-		DxDataGridModule,
-		DxButtonModule,
-		DxLoadPanelModule,
-		DxDropDownBoxModule,
-		DxCheckBoxModule,
-		DxTabPanelModule,
-		DataGridMttoModule,
-		BarraDataMttoModule,
-		DataLookupModule,
-		ToastModule
-	],
+    RouterModule.forChild(routes),
+    CommonModule,
+    DxFormModule,
+    DxDataGridModule,
+    DxButtonModule,
+    DxLoadPanelModule,
+    DxDropDownBoxModule,
+    DxCheckBoxModule,
+    DxTabPanelModule,
+    DataGridMttoModule,
+    BarraDataMttoModule,
+    DataLookupModule,
+    ToastModule,
+    DxToolbarModule
+],
 	exports: [RouterModule],
 	declarations: [ScSolicitudEmpleoComponent],
 })

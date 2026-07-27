@@ -1,1 +1,356 @@
+/* ===========================
+   Margin - Todas las direcciones
+=========================== */
 
+.m-0  { margin: 0 !important; }
+.m-4  { margin: 4px !important; }
+.m-8  { margin: 8px !important; }
+.m-12 { margin: 12px !important; }
+.m-16 { margin: 16px !important; }
+.m-20 { margin: 20px !important; }
+.m-24 { margin: 24px !important; }
+.m-32 { margin: 32px !important; }
+
+/* ===========================
+   Margin Top
+=========================== */
+
+.mt-0  { margin-top: 0 !important; }
+.mt-4  { margin-top: 4px !important; }
+.mt-8  { margin-top: 8px !important; }
+.mt-12 { margin-top: 12px !important; }
+.mt-16 { margin-top: 16px !important; }
+.mt-20 { margin-top: 20px !important; }
+.mt-24 { margin-top: 24px !important; }
+.mt-32 { margin-top: 32px !important; }
+
+/* ===========================
+   Margin Bottom
+=========================== */
+
+.mb-0  { margin-bottom: 0 !important; }
+.mb-4  { margin-bottom: 4px !important; }
+.mb-8  { margin-bottom: 8px !important; }
+.mb-12 { margin-bottom: 12px !important; }
+.mb-16 { margin-bottom: 16px !important; }
+.mb-20 { margin-bottom: 20px !important; }
+.mb-24 { margin-bottom: 24px !important; }
+.mb-32 { margin-bottom: 32px !important; }
+
+/* ===========================
+   Margin Left
+=========================== */
+
+.ml-0  { margin-left: 0 !important; }
+.ml-4  { margin-left: 4px !important; }
+.ml-8  { margin-left: 8px !important; }
+.ml-12 { margin-left: 12px !important; }
+.ml-16 { margin-left: 16px !important; }
+.ml-20 { margin-left: 20px !important; }
+.ml-24 { margin-left: 24px !important; }
+.ml-32 { margin-left: 32px !important; }
+
+/* ===========================
+   Margin Right
+=========================== */
+
+.mr-0  { margin-right: 0 !important; }
+.mr-4  { margin-right: 4px !important; }
+.mr-8  { margin-right: 8px !important; }
+.mr-12 { margin-right: 12px !important; }
+.mr-16 { margin-right: 16px !important; }
+.mr-20 { margin-right: 20px !important; }
+.mr-24 { margin-right: 24px !important; }
+.mr-32 { margin-right: 32px !important; }
+
+/* ===========================
+   Margin Horizontal
+=========================== */
+
+.mx-0  { margin-left: 0 !important; margin-right: 0 !important; }
+.mx-4  { margin-left: 4px !important; margin-right: 4px !important; }
+.mx-8  { margin-left: 8px !important; margin-right: 8px !important; }
+.mx-12 { margin-left: 12px !important; margin-right: 12px !important; }
+.mx-16 { margin-left: 16px !important; margin-right: 16px !important; }
+.mx-20 { margin-left: 20px !important; margin-right: 20px !important; }
+.mx-24 { margin-left: 24px !important; margin-right: 24px !important; }
+.mx-32 { margin-left: 32px !important; margin-right: 32px !important; }
+
+/* ===========================
+   Margin Vertical
+=========================== */
+
+.my-0  { margin-top: 0 !important; margin-bottom: 0 !important; }
+.my-4  { margin-top: 4px !important; margin-bottom: 4px !important; }
+.my-8  { margin-top: 8px !important; margin-bottom: 8px !important; }
+.my-12 { margin-top: 12px !important; margin-bottom: 12px !important; }
+.my-16 { margin-top: 16px !important; margin-bottom: 16px !important; }
+.my-20 { margin-top: 20px !important; margin-bottom: 20px !important; }
+.my-24 { margin-top: 24px !important; margin-bottom: 24px !important; }
+.my-32 { margin-top: 32px !important; margin-bottom: 32px !important; }
+
+/* ===========================
+   Padding - Todas las direcciones
+=========================== */
+
+.p-0  { padding: 0 !important; }
+.p-4  { padding: 4px !important; }
+.p-8  { padding: 8px !important; }
+.p-12 { padding: 12px !important; }
+.p-16 { padding: 16px !important; }
+.p-20 { padding: 20px !important; }
+.p-24 { padding: 24px !important; }
+.p-32 { padding: 32px !important; }
+
+/* ===========================
+   Padding Top
+=========================== */
+
+.pt-0  { padding-top: 0 !important; }
+.pt-4  { padding-top: 4px !important; }
+.pt-8  { padding-top: 8px !important; }
+.pt-12 { padding-top: 12px !important; }
+.pt-16 { padding-top: 16px !important; }
+.pt-20 { padding-top: 20px !important; }
+.pt-24 { padding-top: 24px !important; }
+.pt-32 { padding-top: 32px !important; }
+
+/* ===========================
+   Padding Bottom
+=========================== */
+
+.pb-0  { padding-bottom: 0 !important; }
+.pb-4  { padding-bottom: 4px !important; }
+.pb-8  { padding-bottom: 8px !important; }
+.pb-12 { padding-bottom: 12px !important; }
+.pb-16 { padding-bottom: 16px !important; }
+.pb-20 { padding-bottom: 20px !important; }
+.pb-24 { padding-bottom: 24px !important; }
+.pb-32 { padding-bottom: 32px !important; }
+
+/* ===========================
+   Padding Left
+=========================== */
+
+.pl-0  { padding-left: 0 !important; }
+.pl-4  { padding-left: 4px !important; }
+.pl-8  { padding-left: 8px !important; }
+.pl-12 { padding-left: 12px !important; }
+.pl-16 { padding-left: 16px !important; }
+.pl-20 { padding-left: 20px !important; }
+.pl-24 { padding-left: 24px !important; }
+.pl-32 { padding-left: 32px !important; }
+
+/* ===========================
+   Padding Right
+=========================== */
+
+.pr-0  { padding-right: 0 !important; }
+.pr-4  { padding-right: 4px !important; }
+.pr-8  { padding-right: 8px !important; }
+.pr-12 { padding-right: 12px !important; }
+.pr-16 { padding-right: 16px !important; }
+.pr-20 { padding-right: 20px !important; }
+.pr-24 { padding-right: 24px !important; }
+.pr-32 { padding-right: 32px !important; }
+
+/* ===========================
+   Padding Horizontal
+=========================== */
+
+.px-0  { padding-left: 0 !important; padding-right: 0 !important; }
+.px-4  { padding-left: 4px !important; padding-right: 4px !important; }
+.px-8  { padding-left: 8px !important; padding-right: 8px !important; }
+.px-12 { padding-left: 12px !important; padding-right: 12px !important; }
+.px-16 { padding-left: 16px !important; padding-right: 16px !important; }
+.px-20 { padding-left: 20px !important; padding-right: 20px !important; }
+.px-24 { padding-left: 24px !important; padding-right: 24px !important; }
+.px-32 { padding-left: 32px !important; padding-right: 32px !important; }
+
+/* ===========================
+   Padding Vertical
+=========================== */
+
+.py-0  { padding-top: 0 !important; padding-bottom: 0 !important; }
+.py-4  { padding-top: 4px !important; padding-bottom: 4px !important; }
+.py-8  { padding-top: 8px !important; padding-bottom: 8px !important; }
+.py-12 { padding-top: 12px !important; padding-bottom: 12px !important; }
+.py-16 { padding-top: 16px !important; padding-bottom: 16px !important; }
+.py-20 { padding-top: 20px !important; padding-bottom: 20px !important; }
+.py-24 { padding-top: 24px !important; padding-bottom: 24px !important; }
+.py-32 { padding-top: 32px !important; padding-bottom: 32px !important; }
+
+
+.estado-chip{
+    display:inline-block;
+    padding:4px 12px;
+    border-radius:16px;
+    color:white;
+    font-size:12px;
+    font-weight:600;
+}
+
+.estado-success{
+    color: #4ade80;
+    background: rgba(34, 197, 94, 0.18);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    box-shadow: none;
+ 
+}
+
+.estado-success{
+    color: #22c55e;
+    background: rgba(34, 197, 94, 0.18);
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    box-shadow: none;
+}
+
+.estado-danger{
+    color: #f44336;
+    background: rgba(244, 67, 54, 0.18);
+    border: 1px solid rgba(244, 67, 54, 0.35);
+    box-shadow: none;
+}
+
+.estado-warning{
+    color: #ff9800;
+    background: rgba(255, 152, 0, 0.18);
+    border: 1px solid rgba(255, 152, 0, 0.35);
+    box-shadow: none;
+}
+
+.estado-default{
+    color: #607d8b;
+    background: rgba(96, 125, 139, 0.18);
+    border: 1px solid rgba(96, 125, 139, 0.35);
+    box-shadow: none;
+}
+
+.estado-info{
+    color: #2196f3;
+    background: rgba(33, 150, 243, 0.18);
+    border: 1px solid rgba(33, 150, 243, 0.35);
+    box-shadow: none;
+}
+
+.participante-tab-panel {
+	margin-top: 4px;
+}
+
+.persona-datos-panel {
+	padding: 8px 4px 16px;
+}
+
+.persona-datos-header {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 16px 18px;
+	margin-bottom: 16px;
+	border-radius: 12px;
+	background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(14, 165, 233, 0.06));
+	border: 1px solid rgba(37, 99, 235, 0.12);
+}
+
+.persona-avatar {
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 18px;
+	font-weight: 700;
+	letter-spacing: 0.5px;
+	color: #1d4ed8;
+	background: #fff;
+	border: 1px solid rgba(37, 99, 235, 0.2);
+	box-shadow: 0 6px 16px rgba(37, 99, 235, 0.08);
+	flex-shrink: 0;
+}
+
+.persona-datos-title {
+	min-width: 0;
+}
+
+.persona-nombre {
+	font-size: 18px;
+	font-weight: 650;
+	color: #0f172a;
+	line-height: 1.3;
+	word-break: break-word;
+}
+
+.persona-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-top: 6px;
+	font-size: 13px;
+	color: #64748b;
+}
+
+.persona-badge {
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 10px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 650;
+	letter-spacing: 0.2px;
+	color: #1d4ed8;
+	background: rgba(37, 99, 235, 0.1);
+	border: 1px solid rgba(37, 99, 235, 0.18);
+}
+
+.persona-datos-form {
+	padding: 4px 8px 0;
+}
+
+.persona-datos-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	min-height: 180px;
+	padding: 28px 20px;
+	border-radius: 12px;
+	border: 1px dashed var(--sguees-border-subtle, var(--border-color));
+	background: var(--sguees-surface-subtle, var(--background-gray-color));
+	color: var(--sguees-text-secondary);
+}
+
+.persona-empty-icon {
+	width: 52px;
+	height: 52px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-bottom: 12px;
+	background: rgba(37, 99, 235, 0.08);
+	color: #2563eb;
+}
+
+.persona-empty-icon .dx-icon {
+	font-size: 22px;
+}
+
+.persona-datos-empty h4 {
+	margin: 0 0 6px;
+	font-size: 16px;
+	font-weight: 650;
+	color: #334155;
+}
+
+.persona-datos-empty p {
+	margin: 0 0 4px;
+	font-size: 14px;
+}
+
+.persona-datos-empty span {
+	font-size: 12px;
+	color: #94a3b8;
+}
