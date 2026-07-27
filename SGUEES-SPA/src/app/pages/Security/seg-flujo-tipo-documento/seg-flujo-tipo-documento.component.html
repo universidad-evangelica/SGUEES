@@ -1,6 +1,10 @@
 <!-- Barra de herramientas principal -->
 <app-barra-data-mtto
     [tituloVentana]="tituloVentana"
+    [showRibbon]="true"
+    [showExport]="permitePrint"
+    [showRefresh]="true"
+	[showEstadoToolbar]="true"
     [isBrowse]="isBrowse()"
     [isForm]="isForm()"
     [permiteAdd]="permiteAdd"
@@ -36,7 +40,7 @@
 
         <!-- Barra de herramientas de Estados -->
         <app-barra-data-mtto
-            [tituloVentana]="'Estados'"
+         
             [isBrowse]="isEstadoBrowse()"
             [isForm]="isEstadoForm()"
             [permiteAdd]="getPermiteAddEstado"
@@ -47,18 +51,21 @@
         </app-barra-data-mtto>
 
         <!-- Formulario de Estado (se muestra cuando NO está en browse) -->
-        <div *ngIf="!isEstadoBrowse()" style="margin-top: 15px;">
+        <div *ngIf="!isEstadoBrowse()" >
             <dx-form #fDataEstado id="fDataEstado" [formData]="estadoModel" [labelLocation]="'top'" [colCount]="8" [items]="estadoItems">
             </dx-form>
         </div>
 
         <!-- Grid de Estados (siempre visible) -->
-        <div style="margin-top: 15px;">
+        <div >
             <app-data-grid-mtto
                 [isBrowse]="isEstadoBrowse()"
                 [models]="estadoModels"
                 [columns]="estadoColumns"
                 [keyExpr]="'CORR_ESTADO'"
+                [showSearch]="false"
+                [showExport]="false"
+                [showRefresh]="false"
                 [permiteEditar]="getPermiteEditarEstado"
                 [permiteDele]="getPermiteDeleEstado"
                 (rowDblClick)="rowDblClickEstado($event)"
@@ -90,6 +97,11 @@
     [columns]="columns"
     [summary]="summary"
     [keyExpr]="'CORR_TIPO_DOCUMENTO'"
+     [unifiedToolbar]="false"
+    [showAdd]="false"
+    [showSearch]="false"
+    [showExport]="false"
+    [showRefresh]="false"
     [permiteEditar]="getPermiteEditar"
     [permiteDele]="getPermiteDele"
     (rowDblClick)="rowDblClick($event)"

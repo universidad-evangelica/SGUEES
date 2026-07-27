@@ -9,8 +9,8 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { SegFlujoTipoDocumento } from './models/seg-flujo-tipo-documento';
 import { SegFlujoTipoDocumentoService } from './seg-flujo-tipo-documento.service';
-import { SegFlujoEstadoService } from './seg-flujo-estado.service';
-import { SegFlujoEstado } from './models/seg-flujo-estado';
+import { SegFlujoEstadoService } from './seg-flujo-estado/seg-flujo-estado.service';
+import { SegFlujoEstado } from './seg-flujo-estado/models/seg-flujo-estado';
 import { MttoPageContextService } from 'src/app/layouts/mtto-page-context.service';
 
 @Component({

@@ -3,6 +3,10 @@
     [tituloVentana]="tituloVentana"
     [isBrowse]="isBrowse()"
     [isForm]="isForm()"
+    [showExport]="permitePrint"
+    [showRibbon]="true"
+    [showRefresh]="true"
+	[showEstadoToolbar]="true"
     [permiteAdd]="permiteAdd"
     (nuevo)="nuevo()"
     (guardar)="guardar()"
@@ -34,7 +38,6 @@
 
         <!-- Barra de herramientas de Asignaciones -->
         <app-barra-data-mtto
-            [tituloVentana]="'Asignaciones'"
             [isBrowse]="isAsignacionBrowse()"
             [isForm]="isAsignacionForm()"
             [permiteAdd]="getPermiteAddAsignacion"
@@ -84,7 +87,7 @@
         </div>
 
         <!-- Grid de Asignaciones (siempre visible) -->
-        <div style="margin-top: 15px;">
+        <div >
             <app-data-grid-mtto
                 [isBrowse]="isAsignacionBrowse()"
                 [models]="asignacionModels"
@@ -111,6 +114,11 @@
     [columns]="columns"
     [summary]="summary"
     [keyExpr]="'CORR_ACTOR'"
+    [unifiedToolbar]="false"
+    [showAdd]="false"
+    [showSearch]="false"
+    [showExport]="false"
+    [showRefresh]="false"
     [permiteEditar]="getPermiteEditar"
     [permiteDele]="getPermiteDele"
     (rowDblClick)="rowDblClick($event)"

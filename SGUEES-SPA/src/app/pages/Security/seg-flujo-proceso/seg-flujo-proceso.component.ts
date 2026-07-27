@@ -9,15 +9,15 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { SegFlujoProceso } from './models/seg-flujo-proceso';
 import { SegFlujoProcesoService } from './seg-flujo-proceso.service';
-import { SegFlujoPasoService } from './seg-flujo-paso.service';
-import { SegFlujoPaso } from './models/seg-flujo-paso';
+import { SegFlujoPasoService } from './seg-flujo-paso/seg-flujo-paso.service';
+import { SegFlujoPaso } from './seg-flujo-paso/models/seg-flujo-paso';
 import { IParam } from 'src/app/FxAPI/IParam';
-import { SegFlujoPasoAccionEstadoService } from './seg-flujo-paso-accion-estado.service';
-import { SegFlujoPasoAccionEstado } from './models/seg-flujo-paso-accion-estado';
-import { SegFlujoEstadoMensajeService } from './seg-flujo-estado-mensaje.service';
-import { SegFlujoEstadoMensaje } from './models/seg-flujo-estado-mensaje';
-import { SegFlujoPasoActorDestinoService } from './seg-flujo-paso-actor-destino.service';
-import { SegFlujoPasoActorDestino } from './models/seg-flujo-paso-actor-destino';
+import { SegFlujoPasoAccionEstadoService } from './seg-flujo-paso-accion-estado/seg-flujo-paso-accion-estado.service';
+import { SegFlujoPasoAccionEstado } from './seg-flujo-paso-accion-estado/models/seg-flujo-paso-accion-estado';
+import { SegFlujoEstadoMensajeService } from './seg-flujo-estado-mensaje/seg-flujo-estado-mensaje.service';
+import { SegFlujoEstadoMensaje } from './seg-flujo-estado-mensaje/models/seg-flujo-estado-mensaje';
+import { SegFlujoPasoActorDestinoService } from './seg-flujo-paso-actor-destino/seg-flujo-paso-actor-destino.service';
+import { SegFlujoPasoActorDestino } from './seg-flujo-paso-actor-destino/models/seg-flujo-paso-actor-destino';
 @Component({
     selector: 'app-seg-flujo-proceso',
     templateUrl: './seg-flujo-proceso.component.html',
@@ -82,8 +82,8 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
     banderaAccionEstado: UpdateType = UpdateType.Browse;
     customButtonsPasos = [
         {
-            icon: 'overflow',
-            hint: 'Ver acciones del paso',
+            icon: 'optionsgear',
+            hint: 'Configuración de acciones del paso',
             stylingMode: 'text',
             onClick: (e: any) => this.abrirModalAcciones(e),
         },

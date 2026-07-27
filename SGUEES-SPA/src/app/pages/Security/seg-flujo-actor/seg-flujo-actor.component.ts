@@ -9,8 +9,8 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { SegFlujoActor } from './models/seg-flujo-actor';
 import { SegFlujoActorService } from './seg-flujo-actor.service';
-import { SegFlujoActorAsignacionService } from './seg-flujo-actor-asignacion.service';
-import { SegFlujoActorAsignacion } from './models/seg-flujo-actor-asignacion';
+import { SegFlujoActorAsignacionService } from './seg-flujo-actor-asignacion/seg-flujo-actor-asignacion.service';
+import { SegFlujoActorAsignacion } from './seg-flujo-actor-asignacion/models/seg-flujo-actor-asignacion';
 import { MttoPageContextService } from 'src/app/layouts/mtto-page-context.service';
 import { IParam } from 'src/app/FxAPI/IParam';
 

@@ -133,7 +133,6 @@
 
     <!-- Barra de herramientas de Jefes -->
     <app-barra-data-mtto
-        [tituloVentana]="'Jefes'"
         [isBrowse]="isJefeBrowse()"
         [isForm]="isJefeForm()"
         [permiteAdd]="getPermiteAddJefe"
@@ -144,7 +143,7 @@
     </app-barra-data-mtto>
 
     <!-- Formulario de Jefe -->
-    <div *ngIf="!isJefeBrowse()" style="margin-top: 15px;">
+    <div *ngIf="!isJefeBrowse()" >
         <dx-form #fDataJefe id="fDataJefe" [formData]="jefeModel" [labelLocation]="'top'" [colCount]="8" [items]="jefesItems">
             <!-- Template para combo de empleados -->
             <div *dxTemplate="let cellInfo of 'CORR_EMPLEADOLookup'">
@@ -184,7 +183,7 @@
     </div>
 
     <!-- Grid de Jefes -->
-    <div style="margin-top: 15px;">
+    <div >
         <app-data-grid-mtto
             [isBrowse]="isJefeBrowse()"
             [models]="jefesModels"
