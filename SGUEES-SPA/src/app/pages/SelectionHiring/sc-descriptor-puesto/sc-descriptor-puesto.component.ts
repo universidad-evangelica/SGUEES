@@ -253,6 +253,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		RESPONSABLE: '',
 	};
 	private sincronizandoHeader = false;
+	// Evita procesar dos veces el mismo cambio de puesto: app-data-lookup emite valueChange
+	// en selectionChanged y otra vez en onValueChanged del DropDownBox.
+	private omitirProximoCambioPuesto = false;
 	private ultimoFormatoAplicado: string | null = null;
 	private ultimoTabSeccionValido = 0;
 	mostrarAvisoSeleccioneTab = false;
@@ -5463,7 +5466,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Al elegir puesto, copia reporta y responsable y valida que no haya otro descriptor abierto.
+	// Cómo: ignora el segundo valueChange duplicado del lookup (selectionChanged + onValueChanged)
+	// para no mostrar dos veces el aviso de descriptor existente.
 	onPuestoChanged(value: number | null): void {
+		if (this.omitirProximoCambioPuesto) {
+			this.omitirProximoCambioPuesto = false;
+			return;
+		}
+		// El lookup suele emitir dos valueChange seguidos al seleccionar una fila.
+		this.omitirProximoCambioPuesto = true;
+		setTimeout(() => {
+			this.omitirProximoCambioPuesto = false;
+		}, 0);
+
 		const corrPuesto = value != null ? Number(value) : null;
 		this.model.CORR_PUESTO = corrPuesto;
 		if (corrPuesto != null && corrPuesto > 0) {
