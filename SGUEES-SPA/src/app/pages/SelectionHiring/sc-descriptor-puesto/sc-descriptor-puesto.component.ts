@@ -5605,7 +5605,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return `Guarde o cancele la linea en edicion de ${detalleActual} antes de ${accion}.${mensajeAdicional}`;
 	}
 
-	// Llama a insert o update del descriptor y, si sale bien, actualiza grid, modelo y secciones.
+	// Qué hace: llama a insert o update del descriptor; al crear permanece en el formulario con tabs,
+	// al editar vuelve a la tabla de descriptores.
+	// Cómo: si isAdd, pasa a Update, carga tabs y sincroniza el encabezado; si no, pasa a Browse.
 	private guardarMttoDescriptor(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -5629,17 +5631,24 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.modelUpdate = this.fillData(descriptor);
 					this.aplicarRegistroEnGrid(descriptor, isAdd);
 					this.limpiarEstadoValidacionHeader();
-					this.readOnly = false;
-					this.AsignaStatus(UpdateType.Update);
-					this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
-					this.cargarDatosTabs();
-					setTimeout(() => {
-						this.syncHeaderForm();
-						if (conservarAvisoSeleccioneTab) {
-							this.dejarSinTabSeccionSeleccionado();
-							this.mostrarAvisoSeleccioneTab = true;
-						}
-					});
+
+					if (isAdd) {
+						// Crear: se queda en el descriptor en modo edición y muestra los tabs.
+						this.readOnly = false;
+						this.AsignaStatus(UpdateType.Update);
+						this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
+						this.cargarDatosTabs();
+						setTimeout(() => {
+							this.syncHeaderForm();
+							if (conservarAvisoSeleccioneTab) {
+								this.dejarSinTabSeccionSeleccionado();
+								this.mostrarAvisoSeleccioneTab = true;
+							}
+						});
+					} else {
+						// Editar: vuelve a la tabla de descriptores.
+						this.AsignaStatus(UpdateType.Browse);
+					}
 
 					this.notifyFx(
 						isAdd ? 'Registro creado con exito!' : 'Registro modificado con exito!',
