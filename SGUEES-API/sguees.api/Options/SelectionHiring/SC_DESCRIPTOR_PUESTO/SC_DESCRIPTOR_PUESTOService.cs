@@ -267,6 +267,26 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        /// <summary>
+        /// Lookup sc-requisicion-personal: descriptores por CORR_EMPRESA + CORR_UNIDAD.
+        /// Método nuevo; no modifica GetAllAsync / GetAsync existentes.
+        /// </summary>
+        public async Task<CResult> GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(SC_DESCRIPTOR_PUESTOParam xWhere)
+        {
+            if (xWhere == null || xWhere.CORR_UNIDAD <= 0)
+            {
+                return ValidationError("Debe seleccionar una unidad para listar los descriptores de puesto.");
+            }
+
+            var p = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_UNIDAD", Value = xWhere.CORR_UNIDAD, DbType = System.Data.DbType.Int32 },
+            };
+
+            return await _repo.GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(p);
+        }
+
         // Arma la lista de parámetros SQL con CORR_EMPRESA para filtrar consultas.
         private static List<CParameter> BuildParameters(SC_DESCRIPTOR_PUESTOParam xWhere)
         {

@@ -48,6 +48,8 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	mCORR_TIPO_CONTRATACION: any[] = [];
 	mCORR_TIPO_VACANTE: any[] = [];
 	mLOGIN_SISTEMA: any[] = [];
+	mCORR_UNIDAD: any[] = [];
+	mCORR_DESCRIPTOR_PUESTO: any[] = [];
 
 	/** Columnas del grid del tab (definidas en service.getTabDetalleColumns). */
 	columnsTabDetalle: any[] = [];
@@ -87,6 +89,16 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	tipoVacanteLookupColumns: any[] = [
 		{ dataField: 'CORR_TIPO_VACANTE', caption: 'Vacante', width: 120 },
 		{ dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Tipo Vacante', width: 280 },
+	];
+
+	unidadLookupColumns: any[] = [
+		{ dataField: 'CORR_UNIDAD', caption: 'Unidad', width: 120 },
+		{ dataField: 'NOMBRE_UNIDAD', caption: 'Nombre Unidad', width: 250 },
+	];
+
+	descriptorPuestoLookupColumns: any[] = [
+		{ dataField: 'CORR_DESCRIPTOR_PUESTO', caption: 'Descriptor Puesto', width: 120 },
+		{ dataField: 'NOMBRE_PUESTO', caption: 'Nombre Puesto', width: 250 },
 	];
 
 	ngOnInit(): void {
@@ -239,7 +251,10 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		super.nuevo();
 		this.limpiarDatosTabs();
 		this.cerrarModalObservador();
+		this.mCORR_DESCRIPTOR_PUESTO = []; // Sin unidad aún → sin listado de descriptores
 		// Ocultar campos condicionales al iniciar un registro nuevo
+		this.model.ES_PERMANENTE = true;
+		this.model.REQUIERE_SUSTITUCION = false;
 		setTimeout(() => {
 			this.aplicarVisibilidadTiempoContrato(true); // ES_PERMANENTE=true → ocultar TIEMPO_CONTRATO
 			this.aplicarVisibilidadEmpleadoSustituto(false); // REQUIERE_SUSTITUCION=false → ocultar sustituto
@@ -250,8 +265,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	override editarClick(e: any): void {
 		super.editarClick(e);
 		this.cargarDatosTabs();
-		// Sincronizar visibilidad de campos condicionales según el registro cargado
+		// Precargar descriptores de la unidad del registro + visibilidad de campos condicionales
 		setTimeout(() => {
+			this.getCORR_DESCRIPTOR_PUESTO();
 			this.sincronizarVisibilidadTiempoContrato();
 			this.sincronizarVisibilidadEmpleadoSustituto();
 		}, 0);
@@ -261,8 +277,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	override rowDblClick(e: any): void {
 		super.rowDblClick(e);
 		this.cargarDatosTabs();
-		// Sincronizar visibilidad de campos condicionales según el registro cargado
+		// Precargar descriptores de la unidad del registro + visibilidad de campos condicionales
 		setTimeout(() => {
+			this.getCORR_DESCRIPTOR_PUESTO();
 			this.sincronizarVisibilidadTiempoContrato();
 			this.sincronizarVisibilidadEmpleadoSustituto();
 		}, 0);
@@ -278,6 +295,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.getCORR_TIPO_CONTRATACION();
 		this.getCORR_TIPO_VACANTE();
 		this.getLOGIN_SISTEMA();
+		this.getCORR_UNIDAD();
 	}	
 
 	//listado de catalogos
@@ -348,6 +366,49 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		});
 	}
 
+	getCORR_UNIDAD(){
+		this.appInfoService
+		.getLookUp('SC_REQUISICION_PERSONAL', 'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES', 'GetCORR_UNIDAD', undefined, environment.UrlSELECCIONCONTRATACIONAPI)
+		.pipe(take(1))
+		.subscribe({
+			next: (response: any) => {
+				if (response.Result) {
+					this.mCORR_UNIDAD = response.Data;
+				}
+			},
+			error: (error: any) => {
+				this.notifyFx(error, NotifyType.Error);
+				//this.messageService.add({ severity: 'error', summary: 'Error', detail: error.message });
+			},
+		});
+	}
+
+	getCORR_DESCRIPTOR_PUESTO(corrUnidad?: number): void {
+		const unidad = corrUnidad ?? this.model?.CORR_UNIDAD;
+		if (!unidad || unidad <= 0) {
+			this.mCORR_DESCRIPTOR_PUESTO = [];
+			return;
+		}
+
+		this.service
+			.getDescriptorPuesto({ CORR_UNIDAD: unidad })
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.mCORR_DESCRIPTOR_PUESTO = response.Data ?? [];
+					} else {
+						this.mCORR_DESCRIPTOR_PUESTO = [];
+						this.notifyFx(response.ErrorMessage, NotifyType.Error);
+					}
+				},
+				error: (error: any) => {
+					this.mCORR_DESCRIPTOR_PUESTO = [];
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
 
 	fillParam(xCORR_REQUISICION?: number): any {
 		if (xCORR_REQUISICION == undefined) {
@@ -363,9 +424,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			return {
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_REQUISICION_PERSONAL: xModel.CORR_REQUISICION_PERSONAL,
-				CORR_DESCRIPTOR: xModel.CORR_DESCRIPTOR,
-				CORR_DEPARTAMENTO: xModel.CORR_DEPARTAMENTO,
-				CORR_PUESTO: xModel.CORR_PUESTO,
+				CORR_DESCRIPTOR_PUESTO: xModel.CORR_DESCRIPTOR_PUESTO,
+				CORR_UNIDAD: xModel.CORR_UNIDAD,
+				NOMBRE_PUESTO_SOLICITADO: xModel.NOMBRE_PUESTO_SOLICITADO,
 				CORR_TIPO_MODALIDAD: xModel.CORR_TIPO_MODALIDAD,
 				CORR_TIPO_CONTRATACION: xModel.CORR_TIPO_CONTRATACION,
 				CORR_TIPO_VACANTE: xModel.CORR_TIPO_VACANTE,
@@ -374,13 +435,14 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				FECHA_REQUISICION: xModel.FECHA_REQUISICION,
 				JUSTIFICACION: xModel.JUSTIFICACION,
 				CORR_EMPLEADO_SUSTITUTO: xModel.CORR_EMPLEADO_SUSTITUTO,
-				SALARIO_MINIMO: xModel.SALARIO_MINIMO,
-				SALARIO_MAXIMO: xModel.SALARIO_MAXIMO,
+				SALARIO: xModel.SALARIO,
 				CORR_ESTADO_REQUISICION: xModel.CORR_ESTADO_REQUISICION,
 				FECHA_APROBACION: xModel.FECHA_APROBACION,
 				FECHA_CIERRE: xModel.FECHA_CIERRE,
 				TIEMPO_CONTRATO: xModel.TIEMPO_CONTRATO,
 				HORARIO: xModel.HORARIO,
+				ES_PERMANENTE: xModel.ES_PERMANENTE,
+				REQUIERE_SUSTITUCION: xModel.REQUIERE_SUSTITUCION,
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				FECHA_CREA: xModel.FECHA_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
@@ -393,9 +455,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		return {
 			CORR_EMPRESA: 1,
 			CORR_REQUISICION_PERSONAL: 0,
-			CORR_DESCRIPTOR: 0,
-			CORR_DEPARTAMENTO: 0,
-			CORR_PUESTO: 0,
+			CORR_DESCRIPTOR_PUESTO: 0,
+			CORR_UNIDAD: 0,
+			NOMBRE_PUESTO_SOLICITADO: '',
 			CORR_TIPO_MODALIDAD: 0,
 			CORR_TIPO_CONTRATACION: 0,
 			CORR_TIPO_VACANTE: 0,
@@ -404,13 +466,14 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			FECHA_REQUISICION: new Date(),
 			JUSTIFICACION: '',
 			CORR_EMPLEADO_SUSTITUTO: '',
-			SALARIO_MINIMO: 0,
-			SALARIO_MAXIMO: 0,
-			CORR_ESTADO_REQUISICION: 0,
+			SALARIO: 0,
+			CORR_ESTADO_REQUISICION: 1, // Default: Borrador
 			FECHA_APROBACION: null,
 			FECHA_CIERRE: null,
 			TIEMPO_CONTRATO: 0,
 			HORARIO: '',
+			ES_PERMANENTE: true, // Nuevo: ocultar TIEMPO_CONTRATO hasta elegir contratación
+			REQUIERE_SUSTITUCION: false, // Nuevo: ocultar sustituto hasta elegir vacante
 			USUARIO_CREA: '',
 			FECHA_CREA: new Date(),
 			ESTACION_CREA: '',
@@ -440,7 +503,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	}
 
 	guardar(): void {
-		if (!this.service.esValido(this.model, this.notifyFx)) {
+		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
 			return;
 		}
 
@@ -591,8 +654,17 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.dataForm.instance.getEditor('PLAZAS_CUBIERTAS')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('SALARIO_MINIMO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('SALARIO_MAXIMO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_ESTADO_REQUISICION')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('JUSTIFICACION')?.option('readOnly', true);
+	}
+
+	/** Label del chip de estado (solo lectura). */
+	getEstadoRequisicionLabel(corrEstado?: number): string {
+		return this.service.getEstadoRequisicionLabel(corrEstado ?? this.model?.CORR_ESTADO_REQUISICION);
+	}
+
+	/** Clase CSS del chip de estado (solo lectura). */
+	getEstadoRequisicionBadgeClass(corrEstado?: number): string {
+		return this.service.getEstadoRequisicionBadgeClass(corrEstado ?? this.model?.CORR_ESTADO_REQUISICION);
 	}
 
 	override setFocus() {
@@ -618,6 +690,30 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	}
 
 	/**
+	 * Al elegir unidad: limpia el descriptor dependiente y recarga el listado
+	 * vía GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL (filtrado por CORR_UNIDAD).
+	 * Arrow function para conservar this (se pasa a app-data-lookup).
+	 */
+	selectedLookUpCORR_UNIDAD = (vRow: any): any => {
+		const corrUnidad = vRow[0].CORR_UNIDAD;
+		// Cambió la unidad → el descriptor anterior ya no aplica
+		this.model.CORR_DESCRIPTOR_PUESTO = 0;
+		this.model.NOMBRE_PUESTO = '';
+		this.mCORR_DESCRIPTOR_PUESTO = [];
+		// Diferir la carga para no remontar el lookup de unidad a mitad de la selección
+		setTimeout(() => this.getCORR_DESCRIPTOR_PUESTO(corrUnidad), 0);
+		return corrUnidad;
+	};
+
+	/**
+	 * Al elegir descriptor: guarda también NOMBRE_PUESTO (snapshot del lookup).
+	 */
+	selectedLookUpCORR_DESCRIPTOR_PUESTO = (vRow: any): any => {
+		this.model.NOMBRE_PUESTO = vRow?.[0]?.NOMBRE_PUESTO ?? '';
+		return vRow[0].CORR_DESCRIPTOR_PUESTO;
+	};
+
+	/**
 	 * Arrow function para conservar el contexto del componente (this),
 	 * ya que se pasa como referencia a app-data-lookup [selectedRowKeys].
 	 * Además de retornar el valor, alterna la visibilidad de TIEMPO_CONTRATO.
@@ -625,6 +721,11 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	selectedLookUpCORR_TIPO_CONTRATACION = (vRow: any): any => {
 		const corr = vRow[0].CORR_TIPO_CONTRATACION;
 		const esPermanente = vRow?.[0]?.ES_PERMANENTE;
+		this.model.ES_PERMANENTE = esPermanente === true;
+		// Si pasa a permanente, limpiar meses que ya no aplican.
+		if (this.model.ES_PERMANENTE) {
+			this.model.TIEMPO_CONTRATO = 0;
+		}
 		// Diferir itemOption: si se ejecuta aquí, el form remonta el template
 		// del lookup y el drop-down queda sin texto aunque el model sí tenga valor.
 		setTimeout(() => this.aplicarVisibilidadTiempoContrato(esPermanente), 0);
@@ -647,7 +748,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		form.itemOption('TIEMPO_CONTRATO', 'visible', mostrarTiempoContrato);
 		// Visible: TIEMPO(2)+HORARIO(6)=8
 		// Oculto:  HORARIO(8)=8  → filas siguientes (sustituto / justificación) arrancan a colSpan 8
-		form.itemOption('HORARIO', 'colSpan', mostrarTiempoContrato ? 4 : 6);
+		form.itemOption('HORARIO', 'colSpan', mostrarTiempoContrato ? 5 : 7);
 	}
 
 	/**
@@ -660,7 +761,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			(x: any) => Number(x.CORR_TIPO_CONTRATACION) === Number(corr)
 		);
 		// Sin tipo seleccionado → tratar como permanente (ocultar TIEMPO_CONTRATO)
-		this.aplicarVisibilidadTiempoContrato(item ? item.ES_PERMANENTE : true);
+		const esPermanente = item ? item.ES_PERMANENTE : true;
+		this.model.ES_PERMANENTE = esPermanente === true;
+		this.aplicarVisibilidadTiempoContrato(esPermanente);
 	}
 
 		/**
@@ -670,6 +773,11 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	selectedLookUpCORR_TIPO_VACANTE = (vRow: any): any => {
 		const corr = vRow[0].CORR_TIPO_VACANTE;
 		const requiereSustitucion = vRow?.[0]?.REQUIERE_SUSTITUCION;
+		this.model.REQUIERE_SUSTITUCION = requiereSustitucion === true;
+		// Si ya no requiere sustitución, limpiar el empleado seleccionado.
+		if (!this.model.REQUIERE_SUSTITUCION) {
+			this.model.CORR_EMPLEADO_SUSTITUTO = '';
+		}
 		// Diferir itemOption para no remontar el lookup a mitad de la selección
 		setTimeout(() => this.aplicarVisibilidadEmpleadoSustituto(requiereSustitucion), 0);
 		return corr;
@@ -703,7 +811,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			(x: any) => Number(x.CORR_TIPO_VACANTE) === Number(corr)
 		);
 		// Sin vacante seleccionada → ocultar sustituto
-		this.aplicarVisibilidadEmpleadoSustituto(item ? item.REQUIERE_SUSTITUCION : false);
+		const requiereSustitucion = item ? item.REQUIERE_SUSTITUCION : false;
+		this.model.REQUIERE_SUSTITUCION = requiereSustitucion === true;
+		this.aplicarVisibilidadEmpleadoSustituto(requiereSustitucion);
 	}
 
 

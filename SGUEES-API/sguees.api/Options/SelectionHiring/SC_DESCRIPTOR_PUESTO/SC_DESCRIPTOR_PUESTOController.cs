@@ -6,6 +6,7 @@ using eFramework.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sguees.api.Shared;
+using sguees.Models;
 using SGUEES.Models;
 using SGUEES.Services;
 
@@ -139,6 +140,15 @@ namespace SGUEES.Controllers
             {
                 Data.ESTADO_DESCRIPTOR = "BORRADOR";
             }
+        }
+
+        //SC_REQUISICION_PERSONAL — lookup dependiente por CORR_UNIDAD
+        [HttpGet("GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL")]
+        [Authorize(Policy = "/sc-requisicion-personal|R")]
+        public async Task<CResult> GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL([FromQuery] SC_DESCRIPTOR_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(Data);
         }
     }
 }
