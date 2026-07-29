@@ -4829,12 +4829,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			}
 		}
 
-		this.mCORR_IMPACTO_ECONOMICO_EDIT = Array.from(porCorr.values()).sort((a, b) =>
-			(a.DESCRIPCION_CATALOGO || a.DESCRIPCION || '').localeCompare(
-				b.DESCRIPCION_CATALOGO || b.DESCRIPCION || '',
-				'es',
-				{ sensitivity: 'base' }
-			)
+		this.mCORR_IMPACTO_ECONOMICO_EDIT = Array.from(porCorr.values()).sort(
+			(a, b) => Number(a.CORR_IMPACTO_ECONOMICO) - Number(b.CORR_IMPACTO_ECONOMICO)
 		);
 	}
 
@@ -4916,12 +4912,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			}
 		}
 
-		this.mCORR_FRECUENCIA_KPI_EDIT = Array.from(porCorr.values()).sort((a, b) =>
-			(a.NOMBRE_FRECUENCIA_CATALOGO || a.NOMBRE_FRECUENCIA || '').localeCompare(
-				b.NOMBRE_FRECUENCIA_CATALOGO || b.NOMBRE_FRECUENCIA || '',
-				'es',
-				{ sensitivity: 'base' }
-			)
+		this.mCORR_FRECUENCIA_KPI_EDIT = Array.from(porCorr.values()).sort(
+			(a, b) => Number(a.CORR_FRECUENCIA) - Number(b.CORR_FRECUENCIA)
 		);
 	}
 
@@ -4988,16 +4980,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			}
 		}
 
-		this.mCORR_DISPONIBILIDAD_HORARIO_EDIT = Array.from(porCorr.values()).sort((a, b) =>
-			(
-				a.NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO ||
-				a.NOMBRE_DISPONIBILIDAD_HORARIO ||
-				''
-			).localeCompare(
-				b.NOMBRE_DISPONIBILIDAD_HORARIO_CATALOGO || b.NOMBRE_DISPONIBILIDAD_HORARIO || '',
-				'es',
-				{ sensitivity: 'base' }
-			)
+		this.mCORR_DISPONIBILIDAD_HORARIO_EDIT = Array.from(porCorr.values()).sort(
+			(a, b) => Number(a.CORR_DISPONIBILIDAD_HORARIO) - Number(b.CORR_DISPONIBILIDAD_HORARIO)
 		);
 	}
 
@@ -5037,12 +5021,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			}
 		}
 
-		this.mCORR_TIPO_MODALIDAD_EDIT = Array.from(porCorr.values()).sort((a, b) =>
-			(a.MODALIDAD_NOMBRE_CATALOGO || a.MODALIDAD_NOMBRE || '').localeCompare(
-				b.MODALIDAD_NOMBRE_CATALOGO || b.MODALIDAD_NOMBRE || '',
-				'es',
-				{ sensitivity: 'base' }
-			)
+		this.mCORR_TIPO_MODALIDAD_EDIT = Array.from(porCorr.values()).sort(
+			(a, b) => Number(a.CORR_TIPO_MODALIDAD) - Number(b.CORR_TIPO_MODALIDAD)
 		);
 	}
 
@@ -5089,12 +5069,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			}
 		}
 
-		this.mCORR_INDUCCION_EDIT = Array.from(porCorr.values()).sort((a, b) =>
-			(a.NOMBRE_INDUCCION_CATALOGO || a.NOMBRE_INDUCCION || '').localeCompare(
-				b.NOMBRE_INDUCCION_CATALOGO || b.NOMBRE_INDUCCION || '',
-				'es',
-				{ sensitivity: 'base' }
-			)
+		this.mCORR_INDUCCION_EDIT = Array.from(porCorr.values()).sort(
+			(a, b) => Number(a.CORR_INDUCCION) - Number(b.CORR_INDUCCION)
 		);
 	}
 

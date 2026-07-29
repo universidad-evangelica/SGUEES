@@ -26,7 +26,7 @@ namespace SGUEES.Repositories
         }
 
         // Qué hace: recupera las inducciones activas para el lookup del descriptor.
-        // Cómo: SELECT directo a SC_INDUCCION filtrando por empresa y ESTADO_INDUCCION, ordenado por nombre y tiempo.
+        // Cómo: SELECT directo a SC_INDUCCION filtrando por empresa y ESTADO_INDUCCION, ordenado por correlativo.
         public async Task<List<SC_INDUCCIONView>> GetCatalogoDescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)
@@ -42,7 +42,7 @@ namespace SGUEES.Repositories
                 FROM SC_INDUCCION A
                 WHERE A.CORR_EMPRESA = @CORR_EMPRESA
                   AND ISNULL(A.ESTADO_INDUCCION, 1) = 1
-                ORDER BY A.NOMBRE_INDUCCION, A.TIEMPO_INDUCCION, A.CORR_INDUCCION";
+                ORDER BY A.CORR_INDUCCION";
 
             try
             {

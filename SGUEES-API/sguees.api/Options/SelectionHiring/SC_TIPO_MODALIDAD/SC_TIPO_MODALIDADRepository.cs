@@ -25,7 +25,9 @@ namespace sguees.Repositories
 			try
 			{
 				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
-				var response = new List<SC_TIPO_MODALIDADView>().FromDataReader(reader).ToList();
+				var response = new List<SC_TIPO_MODALIDADView>().FromDataReader(reader)
+					.OrderBy(x => x.CORR_TIPO_MODALIDAD)
+					.ToList();
 				
 				reader.Close();
 				reader = null;
