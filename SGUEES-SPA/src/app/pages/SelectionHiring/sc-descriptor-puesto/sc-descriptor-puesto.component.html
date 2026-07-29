@@ -1166,6 +1166,7 @@
 											caption="Nombre (descriptor)"
 											[minWidth]="220"
 											[allowSorting]="true"
+											[allowEditing]="false"
 										></dxi-column>
 										<dxi-column
 											dataField="NIVEL_DOMINIO"
@@ -1331,20 +1332,22 @@
 												[dropDownWidth]="520"
 											></app-data-lookup>
 										</div>
+										<!-- Habilitar edición de nombre: [allowEditing]="competenciasConductualesEditando && !readOnly" -->
 										<dxi-column
 											dataField="NOMBRE_COMPETENCIAS_CONDUCTUALES"
 											caption="Nombre (descriptor)"
 											[minWidth]="220"
 											[allowSorting]="true"
-											[allowEditing]="competenciasConductualesEditando && !readOnly"
+											[allowEditing]="false"
 										></dxi-column>
+										<!-- Habilitar edición de descripción: [allowEditing]="competenciasConductualesEditando && !readOnly" -->
 										<dxi-column
 											dataField="DESCRIPCION"
 											caption="Descripcion"
 											[minWidth]="220"
 											[allowSorting]="true"
 											[visible]="esFormatoExtenso"
-											[allowEditing]="competenciasConductualesEditando && !readOnly"
+											[allowEditing]="false"
 										></dxi-column>
 									</dx-data-grid>
 								</div>

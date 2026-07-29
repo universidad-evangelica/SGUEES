@@ -2785,7 +2785,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: decide si el botón de editar debe verse en la fila de competencia conductual.
 	// Cómo: delega en accionGridVisible.
 	competenciaConductualEditButtonVisible(e: any): boolean {
-		return this.accionGridVisible(e);
+		//return this.accionGridVisible(e);
+		return false;
 	}
 
 	// Qué hace: decide si el botón de eliminar debe verse en la fila de competencia conductual.
