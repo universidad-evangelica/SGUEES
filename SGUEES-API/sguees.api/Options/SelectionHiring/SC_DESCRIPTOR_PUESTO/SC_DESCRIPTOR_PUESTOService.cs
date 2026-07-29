@@ -214,7 +214,7 @@ namespace SGUEES.Services
                 return ValidationError("El responsable del entrenamiento no puede superar 100 caracteres.");
             }
 
-            // Si la inducción no cambió, conserva nombre y semanas guardados (salvo que el cliente envíe nuevos valores).
+            // Si la inducción no cambió, conserva nombre y tiempo/unidad guardados (salvo que el cliente envíe nuevos valores).
             var getActual = await _repo.GetAsync(new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
@@ -230,7 +230,10 @@ namespace SGUEES.Services
                 Data.NOMBRE_INDUCCION = !string.IsNullOrWhiteSpace(Data.NOMBRE_INDUCCION)
                     ? Data.NOMBRE_INDUCCION.Trim()
                     : actual.NOMBRE_INDUCCION;
-                Data.SEMANAS_INDUCCION = Data.SEMANAS_INDUCCION ?? actual.SEMANAS_INDUCCION;
+                Data.TIEMPO_INDUCCION = Data.TIEMPO_INDUCCION ?? actual.TIEMPO_INDUCCION;
+                Data.UNIDAD_TIEMPO = !string.IsNullOrWhiteSpace(Data.UNIDAD_TIEMPO)
+                    ? Data.UNIDAD_TIEMPO
+                    : actual.UNIDAD_TIEMPO;
             }
             else
             {
@@ -243,7 +246,8 @@ namespace SGUEES.Services
                 }
 
                 Data.NOMBRE_INDUCCION = induccion.NOMBRE_INDUCCION;
-                Data.SEMANAS_INDUCCION = induccion.SEMANAS_INDUCCION;
+                Data.TIEMPO_INDUCCION = induccion.TIEMPO_INDUCCION;
+                Data.UNIDAD_TIEMPO = induccion.UNIDAD_TIEMPO;
             }
 
             Data.RESPONSABLE = Data.RESPONSABLE.Trim();

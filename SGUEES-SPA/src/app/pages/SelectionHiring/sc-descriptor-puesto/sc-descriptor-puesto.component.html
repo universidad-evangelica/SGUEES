@@ -552,12 +552,12 @@
 							</div>
 							<dxi-column
 								dataField="META"
-								caption="Meta"
+								caption="Meta %"
 								[width]="110"
 								dataType="number"
 								[allowSorting]="true"
 								[format]="'#0'"
-								[editorOptions]="{ min: 0, max: 100, step: 1, showSpinButtons: false, format: '#0' }"
+								[editorOptions]="{ step: 1, showSpinButtons: false, format: '#0' }"
 							></dxi-column>
 						</dx-data-grid>
 					</div>
@@ -1931,6 +1931,7 @@
 								caption="Nombre (descriptor)"
 								[minWidth]="220"
 								[allowSorting]="true"
+								[allowEditing]="false"
 							></dxi-column>
 							<dxi-column
 								dataField="INFORMACION"
@@ -2098,6 +2099,7 @@
 								caption="Nombre (descriptor)"
 								[minWidth]="220"
 								[allowSorting]="false"
+								[allowEditing]="false"
 							></dxi-column>
 							<dxi-column
 								dataField="INFORMACION"
@@ -2203,8 +2205,9 @@
 
 									<div class="descriptor-perfil-field">
 										<label class="descriptor-perfil-label">Duración</label>
+										<!-- Duración calculada: TIEMPO_INDUCCION + UNIDAD_TIEMPO del plan seleccionado. -->
 										<dx-text-box
-											[value]="model.SEMANAS_INDUCCION != null ? model.SEMANAS_INDUCCION + ' semanas' : ''"
+											[value]="model.TIEMPO_INDUCCION != null ? (model.TIEMPO_INDUCCION + ' ' + (model.UNIDAD_TIEMPO || '')).trim() : ''"
 											[readOnly]="true"
 											placeholder="Duración del entrenamiento..."
 										></dx-text-box>

@@ -29,8 +29,10 @@ namespace SGUEES.Models
         public int? CORR_INDUCCION { get; set; }
         // Snapshot: nombre de la inducción tomado del catálogo (o conservado si no cambia, ver ActualizarEntrenamientoAsync).
         public string NOMBRE_INDUCCION { get; set; }
-        // Snapshot: semanas de duración de la inducción tomadas del catálogo.
-        public int? SEMANAS_INDUCCION { get; set; }
+        // Snapshot: cantidad de tiempo de la inducción tomada del catálogo.
+        public int? TIEMPO_INDUCCION { get; set; }
+        // Snapshot: unidad del tiempo de inducción ('Semanas' o 'Meses') tomada del catálogo.
+        public string UNIDAD_TIEMPO { get; set; }
         // Responsable de dar seguimiento al entrenamiento/inducción del puesto.
         public string RESPONSABLE { get; set; }
         // Tipo de formato del descriptor: CORTO o EXTENSO.

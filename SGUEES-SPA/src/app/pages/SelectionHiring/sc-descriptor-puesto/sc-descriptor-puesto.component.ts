@@ -37,6 +37,7 @@ import {
 	ScDescriptorPuestoResponsabilidadCargo,
 } from './sc-descriptor-puesto-responsabilidad-cargo/models/sc-descriptor-puesto-responsabilidad-cargo';
 import {
+	FORMATO_AMBOS,
 	FORMATO_CORTO,
 	FORMATO_EXTENSO,
 	MOCK_PUESTOS,
@@ -249,7 +250,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	private entrenamientoOriginal = {
 		CORR_INDUCCION: null as number | null,
 		NOMBRE_INDUCCION: '',
-		SEMANAS_INDUCCION: null as number | null,
+		TIEMPO_INDUCCION: null as number | null,
+		UNIDAD_TIEMPO: null as string | null,
 		RESPONSABLE: '',
 	};
 	private sincronizandoHeader = false;
@@ -685,8 +687,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							CORR_INDUCCION: Number(item.CORR_INDUCCION),
 							NOMBRE_INDUCCION: nombre,
 							NOMBRE_INDUCCION_CATALOGO: nombre,
-							SEMANAS_INDUCCION:
-								item.SEMANAS_INDUCCION != null ? Number(item.SEMANAS_INDUCCION) : null,
+							TIEMPO_INDUCCION:
+								item.TIEMPO_INDUCCION != null ? Number(item.TIEMPO_INDUCCION) : null,
+							UNIDAD_TIEMPO: (item.UNIDAD_TIEMPO ?? '').trim() || null,
 						};
 					});
 					this.prepararInduccionesLookupParaEntrenamiento();
@@ -1075,7 +1078,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				DESCRIPCION_IMPACTO_ECONOMICO: xModel.DESCRIPCION_IMPACTO_ECONOMICO ?? '',
 				CORR_INDUCCION: xModel.CORR_INDUCCION,
 				NOMBRE_INDUCCION: xModel.NOMBRE_INDUCCION ?? '',
-				SEMANAS_INDUCCION: xModel.SEMANAS_INDUCCION ?? null,
+				TIEMPO_INDUCCION: xModel.TIEMPO_INDUCCION ?? null,
+				UNIDAD_TIEMPO: xModel.UNIDAD_TIEMPO ?? null,
 				RESPONSABLE: xModel.RESPONSABLE ?? '',
 				FORMATO: xModel.FORMATO ?? FORMATO_CORTO,
 				VERSION: xModel.VERSION ?? 1,
@@ -1106,7 +1110,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			DESCRIPCION_IMPACTO_ECONOMICO: '',
 			CORR_INDUCCION: null,
 			NOMBRE_INDUCCION: '',
-			SEMANAS_INDUCCION: null,
+			TIEMPO_INDUCCION: null,
+			UNIDAD_TIEMPO: null,
 			RESPONSABLE: '',
 			FORMATO: FORMATO_CORTO,
 			VERSION: 1,
@@ -1282,16 +1287,20 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cerrarActividadesPopup();
 	}
 
-	// Qué hace: indica si el descriptor actual está en formato corto.
-	// Cómo: compara en mayúsculas el FORMATO del modelo contra la constante FORMATO_CORTO.
+	// Qué hace: indica si el descriptor actual muestra las secciones del formato corto.
+	// Cómo: compara en mayúsculas el FORMATO del modelo contra FORMATO_CORTO o FORMATO_AMBOS
+	// (AMBOS muestra las secciones de ambos formatos a la vez).
 	get esFormatoCorto(): boolean {
-		return (this.model?.FORMATO ?? '').toUpperCase() === FORMATO_CORTO;
+		const formato = (this.model?.FORMATO ?? '').toUpperCase();
+		return formato === FORMATO_CORTO || formato === FORMATO_AMBOS;
 	}
 
-	// Qué hace: indica si el descriptor actual está en formato extenso.
-	// Cómo: compara en mayúsculas el FORMATO del modelo contra la constante FORMATO_EXTENSO.
+	// Qué hace: indica si el descriptor actual muestra las secciones del formato extenso.
+	// Cómo: compara en mayúsculas el FORMATO del modelo contra FORMATO_EXTENSO o FORMATO_AMBOS
+	// (AMBOS muestra las secciones de ambos formatos a la vez).
 	get esFormatoExtenso(): boolean {
-		return (this.model?.FORMATO ?? '').toUpperCase() === FORMATO_EXTENSO;
+		const formato = (this.model?.FORMATO ?? '').toUpperCase();
+		return formato === FORMATO_EXTENSO || formato === FORMATO_AMBOS;
 	}
 
 	// Qué hace: indica si deben mostrarse las secciones del descriptor (funciones, perfil, etc.).
@@ -2030,6 +2039,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if ((data.NOMBRE_INDICADOR ?? '').trim().length > 255) {
 			this.invalidarFila(e, 'El nombre del indicador no puede superar 255 caracteres.');
 			return;
+		}
+
+		// Alineado con la API: META opcional, pero si viene debe estar entre 0 y 100.
+		if (data.META != null && data.META !== '') {
+			const meta = Number(data.META);
+			if (!Number.isFinite(meta) || meta < 0 || meta > 100) {
+				this.invalidarFila(e, 'La meta debe estar entre 0 y 100.');
+				return;
+			}
 		}
 	}
 
@@ -3635,7 +3653,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	// Qué hace: inicializa los valores por defecto de una nueva fila de responsabilidad de cargo.
 	// Cómo: marca modo inserción, limpia catálogo, nombre e información, fija APLICA_DESCRIPTOR según
-	// el formato actual, genera una clave temporal de cliente con crearClientKey y refresca el lookup disponible.
+	// el formato actual (AMBOS si el descriptor es AMBOS, o el formato normalizado CORTO/EXTENSO),
+	// genera una clave temporal de cliente con crearClientKey y refresca el lookup disponible.
 	responsabilidadCargoInitNewRow(e: any): void {
 		this.responsabilidadesCargoInsertando = true;
 		e.data._esNuevo = true;
@@ -3643,7 +3662,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.data.CORR_RESPONSABILIDAD = null;
 		e.data.NOMBRE_RESPONSABILIDAD = '';
 		e.data.INFORMACION = '';
-		e.data.APLICA_DESCRIPTOR = this.model?.FORMATO ?? FORMATO_CORTO;
+		const formatoActual = (this.model?.FORMATO ?? FORMATO_CORTO).trim().toUpperCase();
+		e.data.APLICA_DESCRIPTOR = formatoActual === FORMATO_AMBOS ? FORMATO_AMBOS : formatoActual;
 		e.data._clientKey = this.crearClientKey('rc');
 		this.actualizarResponsabilidadesCargoLookupDisponibles();
 	}
@@ -3906,11 +3926,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return aplica === 'CORTO' || aplica === 'EXTENSO' || aplica === 'AMBOS' ? aplica : 'AMBOS';
 	}
 
-	// Qué hace: indica si una responsabilidad del catálogo aplica al formato actual del descriptor (corto/extenso).
-	// Cómo: normaliza el valor con normalizarAplicabilidadResponsabilidad y lo compara contra 'AMBOS' o el formato actual.
+	// Qué hace: indica si una responsabilidad del catálogo aplica al formato actual del descriptor (corto/extenso/ambos).
+	// Cómo: si el descriptor está en formato AMBOS, todas aplican; si no, normaliza el valor con
+	// normalizarAplicabilidadResponsabilidad y lo compara contra 'AMBOS' o el formato actual.
 	private responsabilidadAplicaAlFormato(value: string | null | undefined): boolean {
-		const aplica = this.normalizarAplicabilidadResponsabilidad(value);
 		const formato = (this.model?.FORMATO ?? FORMATO_CORTO).trim().toUpperCase();
+		if (formato === FORMATO_AMBOS) {
+			return true;
+		}
+		const aplica = this.normalizarAplicabilidadResponsabilidad(value);
 		return aplica === 'AMBOS' || aplica === formato;
 	}
 
@@ -4138,7 +4162,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.perfilEditando = false;
 	}
 
-	// Edita inducción, semanas y responsable del descriptor.
+	// Edita inducción, tiempo/unidad y responsable del descriptor.
 	// Guarda una copia al iniciar para poder cancelar sin volver a consultar todo.
 	editarEntrenamiento(): void {
 		if (this.readOnly || !this.requiereDescriptorGuardado()) {
@@ -4152,7 +4176,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	// Qué hace: aplica el cambio de inducción elegida en el lookup de entrenamiento.
 	// Cómo: si no está bloqueado y el entrenamiento está en edición, valida la selección, busca nombre y
-	// semanas en el catálogo (o en la lista de edición), los guarda en el modelo y refresca el lookup.
+	// tiempo/unidad en el catálogo (o en la lista de edición), los guarda en el modelo y refresca el lookup.
 	onEntrenamientoInduccionChanged(value: number | null): void {
 		if (this.readOnly || !this.entrenamientoEditando) {
 			return;
@@ -4170,7 +4194,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 
 		this.model.CORR_INDUCCION = corrInduccion;
-		// Al elegir inducción, copia nombre y semanas actuales del catálogo al modelo.
+		// Al elegir inducción, copia nombre, tiempo y unidad actuales del catálogo al modelo.
 		this.model.NOMBRE_INDUCCION =
 			corrInduccion == null
 				? ''
@@ -4180,14 +4204,18 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						fromEdit?.NOMBRE_INDUCCION ??
 						''
 				  ).trim();
-		this.model.SEMANAS_INDUCCION =
+		this.model.TIEMPO_INDUCCION =
 			corrInduccion == null
 				? null
-				: fromCatalog?.SEMANAS_INDUCCION ?? fromEdit?.SEMANAS_INDUCCION ?? null;
+				: fromCatalog?.TIEMPO_INDUCCION ?? fromEdit?.TIEMPO_INDUCCION ?? null;
+		this.model.UNIDAD_TIEMPO =
+			corrInduccion == null
+				? null
+				: fromCatalog?.UNIDAD_TIEMPO ?? fromEdit?.UNIDAD_TIEMPO ?? null;
 		this.prepararInduccionesLookupParaEntrenamiento();
 	}
 
-	// Guarda inducción, semanas y responsable llamando a updateEntrenamiento en la API.
+	// Guarda inducción, tiempo/unidad y responsable llamando a updateEntrenamiento en la API.
 	guardarEntrenamiento(): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		const corrInduccion = Number(this.model?.CORR_INDUCCION);
@@ -4212,7 +4240,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				corrInduccion,
 				responsable,
 				this.model?.NOMBRE_INDUCCION ?? '',
-				this.model?.SEMANAS_INDUCCION ?? null
+				this.model?.TIEMPO_INDUCCION ?? null,
+				this.model?.UNIDAD_TIEMPO ?? null
 			)
 			.pipe(take(1))
 			.subscribe({
@@ -4231,10 +4260,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						CORR_INDUCCION: data?.CORR_INDUCCION ?? corrInduccion,
 						NOMBRE_INDUCCION:
 							(data?.NOMBRE_INDUCCION ?? this.model?.NOMBRE_INDUCCION ?? induccion?.NOMBRE_INDUCCION ?? '').trim(),
-						SEMANAS_INDUCCION:
-							data?.SEMANAS_INDUCCION ??
-							this.model?.SEMANAS_INDUCCION ??
-							induccion?.SEMANAS_INDUCCION ??
+						TIEMPO_INDUCCION:
+							data?.TIEMPO_INDUCCION ??
+							this.model?.TIEMPO_INDUCCION ??
+							induccion?.TIEMPO_INDUCCION ??
+							null,
+						UNIDAD_TIEMPO:
+							data?.UNIDAD_TIEMPO ??
+							this.model?.UNIDAD_TIEMPO ??
+							induccion?.UNIDAD_TIEMPO ??
 							null,
 						RESPONSABLE: (data?.RESPONSABLE ?? responsable).trim(),
 					};
@@ -4263,11 +4297,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.entrenamientoEditando = false;
 	}
 
-	// Lee inducción, semanas y responsable del modelo para editar o cancelar.
+	// Lee inducción, tiempo/unidad y responsable del modelo para editar o cancelar.
 	private obtenerEntrenamientoActual(): {
 		CORR_INDUCCION: number | null;
 		NOMBRE_INDUCCION: string;
-		SEMANAS_INDUCCION: number | null;
+		TIEMPO_INDUCCION: number | null;
+		UNIDAD_TIEMPO: string | null;
 		RESPONSABLE: string;
 	} {
 		return {
@@ -4276,7 +4311,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					? Number(this.model.CORR_INDUCCION)
 					: null,
 			NOMBRE_INDUCCION: this.model?.NOMBRE_INDUCCION ?? '',
-			SEMANAS_INDUCCION: this.model?.SEMANAS_INDUCCION ?? null,
+			TIEMPO_INDUCCION: this.model?.TIEMPO_INDUCCION ?? null,
+			UNIDAD_TIEMPO: this.model?.UNIDAD_TIEMPO ?? null,
 			RESPONSABLE: this.model?.RESPONSABLE ?? '',
 		};
 	}
@@ -4286,7 +4322,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		entrenamiento: {
 			CORR_INDUCCION: number | null;
 			NOMBRE_INDUCCION: string;
-			SEMANAS_INDUCCION: number | null;
+			TIEMPO_INDUCCION: number | null;
+			UNIDAD_TIEMPO: string | null;
 			RESPONSABLE: string;
 		},
 		actualizarGrid = true
@@ -5021,7 +5058,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					CORR_INDUCCION: corr,
 					NOMBRE_INDUCCION: nombreCatalogo,
 					NOMBRE_INDUCCION_CATALOGO: nombreCatalogo,
-					SEMANAS_INDUCCION: item.SEMANAS_INDUCCION ?? null,
+					TIEMPO_INDUCCION: item.TIEMPO_INDUCCION ?? null,
+					UNIDAD_TIEMPO: item.UNIDAD_TIEMPO ?? null,
 				});
 			}
 		}
@@ -5036,14 +5074,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					NOMBRE_INDUCCION: nombreDescriptor || existente.NOMBRE_INDUCCION,
 					NOMBRE_INDUCCION_CATALOGO:
 						existente.NOMBRE_INDUCCION_CATALOGO || existente.NOMBRE_INDUCCION,
-					SEMANAS_INDUCCION: this.model?.SEMANAS_INDUCCION ?? existente.SEMANAS_INDUCCION,
+					TIEMPO_INDUCCION: this.model?.TIEMPO_INDUCCION ?? existente.TIEMPO_INDUCCION,
+					UNIDAD_TIEMPO: this.model?.UNIDAD_TIEMPO ?? existente.UNIDAD_TIEMPO,
 				});
 			} else {
 				porCorr.set(corrAsociada, {
 					CORR_INDUCCION: corrAsociada,
 					NOMBRE_INDUCCION: nombreDescriptor || `Inducción ${corrAsociada}`,
 					NOMBRE_INDUCCION_CATALOGO: nombreDescriptor || `Inducción ${corrAsociada}`,
-					SEMANAS_INDUCCION: this.model?.SEMANAS_INDUCCION ?? null,
+					TIEMPO_INDUCCION: this.model?.TIEMPO_INDUCCION ?? null,
+					UNIDAD_TIEMPO: this.model?.UNIDAD_TIEMPO ?? null,
 				});
 			}
 		}
@@ -5338,8 +5378,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Si hay ediciones abiertas, revierte FORMATO en modelo y formulario al valor anterior.
+	// Cómo: conserva EXTENSO o AMBOS tal cual; cualquier otro valor cae a CORTO por defecto.
 	private restaurarFormatoAnterior(formatoAnterior: string): void {
-		const formato = formatoAnterior === FORMATO_EXTENSO ? FORMATO_EXTENSO : FORMATO_CORTO;
+		const formato =
+			formatoAnterior === FORMATO_EXTENSO || formatoAnterior === FORMATO_AMBOS
+				? formatoAnterior
+				: FORMATO_CORTO;
 		this.sincronizandoHeader = true;
 		this.model.FORMATO = formato;
 		this.ultimoFormatoAplicado = formato;
@@ -5404,15 +5448,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ title: 'Entrenamiento', visibleEn: 'ambos' },
 	];
 
-	// Devuelve si la pestaña de sección aplica al formato corto o extenso actual.
+	// Devuelve si la pestaña de sección aplica al formato corto, extenso o ambos actual.
+	// Cómo: en formato AMBOS se muestran las pestañas de ambos formatos a la vez.
 	private esTabSeccionVisibleParaFormato(index: number, formato: string): boolean {
 		const tab = this.seccionesTabsMeta[index];
 		if (!tab) {
 			return false;
 		}
 		const fmt = (formato || '').toUpperCase();
-		const esCorta = fmt === FORMATO_CORTO;
-		const esExtensa = fmt === FORMATO_EXTENSO;
+		const esAmbos = fmt === FORMATO_AMBOS;
+		const esCorta = fmt === FORMATO_CORTO || esAmbos;
+		const esExtensa = fmt === FORMATO_EXTENSO || esAmbos;
 		if (tab.visibleEn === 'ambos') {
 			return true;
 		}

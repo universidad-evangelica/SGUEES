@@ -26,7 +26,7 @@ namespace SGUEES.Repositories
         }
 
         // Qué hace: recupera las inducciones activas para el lookup del descriptor.
-        // Cómo: SELECT directo a SC_INDUCCION filtrando por empresa y ESTADO_INDUCCION, ordenado por nombre y semanas.
+        // Cómo: SELECT directo a SC_INDUCCION filtrando por empresa y ESTADO_INDUCCION, ordenado por nombre y tiempo.
         public async Task<List<SC_INDUCCIONView>> GetCatalogoDescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)
@@ -37,11 +37,12 @@ namespace SGUEES.Repositories
             const string sql = @"SELECT
                   A.CORR_INDUCCION,
                   A.NOMBRE_INDUCCION,
-                  A.SEMANAS_INDUCCION
+                  A.TIEMPO_INDUCCION,
+                  A.UNIDAD_TIEMPO
                 FROM SC_INDUCCION A
                 WHERE A.CORR_EMPRESA = @CORR_EMPRESA
                   AND ISNULL(A.ESTADO_INDUCCION, 1) = 1
-                ORDER BY A.NOMBRE_INDUCCION, A.SEMANAS_INDUCCION, A.CORR_INDUCCION";
+                ORDER BY A.NOMBRE_INDUCCION, A.TIEMPO_INDUCCION, A.CORR_INDUCCION";
 
             try
             {
@@ -157,7 +158,8 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "CORR_INDUCCION", Value = Data.CORR_INDUCCION, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
                     new CParameter() { ParameterName = "NOMBRE_INDUCCION", Value = Data.NOMBRE_INDUCCION, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "SEMANAS_INDUCCION", Value = Data.SEMANAS_INDUCCION, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "TIEMPO_INDUCCION", Value = Data.TIEMPO_INDUCCION, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "UNIDAD_TIEMPO", Value = Data.UNIDAD_TIEMPO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTADO_INDUCCION", Value = Data.ESTADO_INDUCCION ?? true, DbType = System.Data.DbType.Boolean },
                     new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },
@@ -217,7 +219,8 @@ namespace SGUEES.Repositories
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "NOMBRE_INDUCCION", Value = Data.NOMBRE_INDUCCION, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "SEMANAS_INDUCCION", Value = Data.SEMANAS_INDUCCION, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "TIEMPO_INDUCCION", Value = Data.TIEMPO_INDUCCION, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "UNIDAD_TIEMPO", Value = Data.UNIDAD_TIEMPO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },

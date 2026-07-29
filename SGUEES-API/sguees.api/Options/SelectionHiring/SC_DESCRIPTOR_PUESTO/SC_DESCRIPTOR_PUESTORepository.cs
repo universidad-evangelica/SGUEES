@@ -218,13 +218,14 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Busca en SC_INDUCCION una inducción activa (ESTADO_INDUCCION = 1) por empresa e id.
+        // Qué hace: busca en SC_INDUCCION una inducción activa (ESTADO_INDUCCION = 1) por empresa e id.
         public async Task<SC_INDUCCIONView> GetInduccionActivaAsync(int corrEmpresa, int corrInduccion)
         {
             const string sql = @"SELECT TOP 1
                   A.CORR_INDUCCION,
                   A.NOMBRE_INDUCCION,
-                  A.SEMANAS_INDUCCION
+                  A.TIEMPO_INDUCCION,
+                  A.UNIDAD_TIEMPO
                 FROM SC_INDUCCION A
                 WHERE A.CORR_EMPRESA = @CORR_EMPRESA
                   AND A.CORR_INDUCCION = @CORR_INDUCCION
@@ -248,7 +249,7 @@ namespace SGUEES.Repositories
             }
         }
 
-        // Escribe en SC_DESCRIPTOR_PUESTO solo inducción, semanas, responsable y auditoría de modificación.
+        // Qué hace: escribe en SC_DESCRIPTOR_PUESTO solo inducción, tiempo/unidad, responsable y auditoría de modificación.
         public async Task<CResult> ActualizarEntrenamientoAsync(
             SC_DESCRIPTOR_PUESTOTable Data,
             string vLOGIN_SISTEMA,
@@ -262,7 +263,8 @@ namespace SGUEES.Repositories
                 {
                     new CParameter() { ParameterName = "CORR_INDUCCION", Value = Data.CORR_INDUCCION, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "NOMBRE_INDUCCION", Value = Data.NOMBRE_INDUCCION, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "SEMANAS_INDUCCION", Value = Data.SEMANAS_INDUCCION, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "TIEMPO_INDUCCION", Value = Data.TIEMPO_INDUCCION, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "UNIDAD_TIEMPO", Value = Data.UNIDAD_TIEMPO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "RESPONSABLE", Value = Data.RESPONSABLE, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },

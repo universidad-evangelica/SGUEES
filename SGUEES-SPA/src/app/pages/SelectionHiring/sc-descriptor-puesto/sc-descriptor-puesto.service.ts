@@ -34,6 +34,7 @@ import { ScDescriptorPuestoResponsabilidadCargo } from './sc-descriptor-puesto-r
 import { ScDescriptorPuestoResponsabilidadCargoRepository } from './sc-descriptor-puesto-responsabilidad-cargo/sc-descriptor-puesto-responsabilidad-cargo.repository';
 import {
 	ESTADOS_DESCRIPTOR_BLOQUEO_CREACION,
+	FORMATO_AMBOS,
 	FORMATO_CORTO,
 	FORMATO_EXTENSO,
 	ScDescriptorPuesto,
@@ -209,20 +210,22 @@ export class ScDescriptorPuestoService {
 		return this.repo.getInducciones();
 	}
 
-	// Qué hace: guarda inducción, semanas y responsable del entrenamiento.
+	// Qué hace: guarda inducción, tiempo/unidad y responsable del entrenamiento.
 	// Cómo: llama a la API ActualizarEntrenamiento con el correlativo del descriptor.
 	actualizarEntrenamiento(
 		corrDescriptorPuesto: number,
 		corrInduccion: number | null,
 		responsable: string,
 		nombreInduccion: string = '',
-		semanasInduccion: number | null = null
+		tiempoInduccion: number | null = null,
+		unidadTiempo: string | null = null
 	): Observable<IResult> {
 		return this.repo.updateEntrenamiento(
 			{
 				CORR_INDUCCION: corrInduccion,
 				NOMBRE_INDUCCION: (nombreInduccion ?? '').trim(),
-				SEMANAS_INDUCCION: semanasInduccion,
+				TIEMPO_INDUCCION: tiempoInduccion,
+				UNIDAD_TIEMPO: (unidadTiempo ?? '').trim() || null,
 				RESPONSABLE: (responsable ?? '').trim(),
 			},
 			corrDescriptorPuesto
@@ -520,7 +523,7 @@ export class ScDescriptorPuestoService {
 		cellElement.appendChild(badge);
 	}
 
-	// Qué hace: devuelve la etiqueta legible del formato (Corta o Extensa).
+	// Qué hace: devuelve la etiqueta legible del formato (Corta, Extensa o Ambos).
 	private getFormatoBadgeLabel(formato: string | null | undefined): string {
 		const value = (formato ?? '').toUpperCase();
 		if (value === FORMATO_EXTENSO) {
@@ -528,6 +531,9 @@ export class ScDescriptorPuestoService {
 		}
 		if (value === FORMATO_CORTO) {
 			return 'Corta';
+		}
+		if (value === FORMATO_AMBOS) {
+			return 'Ambos';
 		}
 		return formato ?? '';
 	}
@@ -540,6 +546,9 @@ export class ScDescriptorPuestoService {
 		}
 		if (value === FORMATO_CORTO) {
 			return 'descriptor-badge--formato-corta';
+		}
+		if (value === FORMATO_AMBOS) {
+			return 'descriptor-badge--formato-ambos';
 		}
 		return 'descriptor-badge--formato-default';
 	}

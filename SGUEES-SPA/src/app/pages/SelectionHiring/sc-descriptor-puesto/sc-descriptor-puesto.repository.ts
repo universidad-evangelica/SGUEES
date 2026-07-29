@@ -47,7 +47,7 @@ export class ScDescriptorPuestoRepository {
 		);
 	}
 
-	// Qué hace: guarda solo inducción, semanas y responsable.
+	// Qué hace: guarda solo inducción, tiempo/unidad y responsable.
 	// Cómo: PUT a ActualizarEntrenamiento, pasando el correlativo del descriptor.
 	updateEntrenamiento(model: any, corrDescriptorPuesto: number): Observable<IResult> {
 		return this.objData.Put(
