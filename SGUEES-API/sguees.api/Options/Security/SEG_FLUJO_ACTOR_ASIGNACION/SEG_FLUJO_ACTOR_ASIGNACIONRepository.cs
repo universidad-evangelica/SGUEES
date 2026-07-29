@@ -207,15 +207,30 @@ namespace sguees.Repositories
 
             try
             {
+                // Soft delete: desactivar la asignación
+                var p = new List<CParameter>
+                {
+                    new CParameter() {ParameterName="ACTIVO",Value=false,DbType=System.Data.DbType.Boolean},
+                    new CParameter() {ParameterName="USUARIO_ACTU",Value=vLOGIN_SISTEMA,DbType=System.Data.DbType.String},
+                    new CParameter() {ParameterName="ESTACION_ACTU",Value=vESTACION,DbType=System.Data.DbType.String},
+                    new CParameter() {ParameterName="FECHA_ACTU",Value=System.DateTime.Now,DbType=System.Data.DbType.DateTime},
+                };
+
                 var pWhere = new List<CParameter>
                 {
                     new CParameter() {ParameterName="CORR_EMPRESA",Value=Data.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_ASIGNACION",Value=Data.CORR_ASIGNACION,DbType=System.Data.DbType.Int32},
                 };
 
-                objResultado.RowsAffected = (int)await objData.Delete(_TableName, pWhere);
-                objResultado.Data = null;
+                var reader = await objData.Update(_TableName, p, pWhere);
+                var response = new List<SEG_FLUJO_ACTOR_ASIGNACIONView>().FromDataReader(reader).FirstOrDefault();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
                 objResultado.Result = true;
+                objResultado.RowsAffected = 1;
                 objResultado.CodeHelper = Data.CORR_ASIGNACION;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
