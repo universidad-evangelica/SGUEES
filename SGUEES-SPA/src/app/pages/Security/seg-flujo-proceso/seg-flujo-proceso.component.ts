@@ -714,6 +714,7 @@ export class SegFlujoProcesoComponent extends CBaseComponent implements OnInit {
             NUMERO_PASO: 0,
             NOMBRE_PASO: '',
             DESCRIPCION_PASO: '',
+            PERMITE_AUTO_APROBACION: false,
             ACTIVO: true,
             USUARIO_CREA: '',
             ESTACION_CREA: '',

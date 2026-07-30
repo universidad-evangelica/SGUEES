@@ -15,6 +15,7 @@ namespace sguees.Models
         public int? CORR_PASO_RETORNO { get; set; }
         public int? CORR_UNIDAD_DESTINO { get; set; }
         public int? CORR_ACTOR_DESTINO { get; set; }
+        public bool PERMITE_AUTO_APROBACION { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }
         public DateTime FECHA_CREA { get; set; }

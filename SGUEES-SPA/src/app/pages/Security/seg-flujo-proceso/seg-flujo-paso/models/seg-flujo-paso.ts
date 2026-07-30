@@ -9,6 +9,7 @@ export interface SegFlujoPaso {
     CORR_UNIDAD_DESTINO: number | null;
     NOMBRE_PASO: string;
     DESCRIPCION_PASO: string;
+    PERMITE_AUTO_APROBACION: boolean;
     ACTIVO: boolean;
     USUARIO_CREA: string;
     ESTACION_CREA: string;
