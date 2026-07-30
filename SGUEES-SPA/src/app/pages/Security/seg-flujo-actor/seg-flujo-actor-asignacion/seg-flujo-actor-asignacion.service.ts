@@ -109,6 +109,12 @@ export class SegFlujoActorAsignacionService {
                 template: 'CORR_UNIDADTemplate',
             },
             {
+                dataField: 'LOGIN_SISTEMA',
+                label: { text: 'Empleado' },
+                colSpan: 3,
+                template: 'LOGIN_SISTEMATemplate',
+            },
+            {
                 dataField: 'ACTIVO',
                 label: { text: 'Activo' },
                 colSpan: 1,
