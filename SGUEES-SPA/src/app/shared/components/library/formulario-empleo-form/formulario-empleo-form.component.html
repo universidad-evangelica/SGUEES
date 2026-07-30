@@ -197,7 +197,7 @@
 								</div>
 								<div class="wizard-field">
 									<label class="wizard-label">Edad</label>
-									<dx-number-box stylingMode="outlined" [value]="formData.EDAD" [readOnly]="true" [showSpinButtons]="false"></dx-number-box>
+									<dx-number-box stylingMode="outlined" [value]="formData.EDAD" [showSpinButtons]="false"></dx-number-box>
 								</div>
 								<div class="wizard-field">
 									<label class="wizard-label">Sexo *</label>
@@ -255,7 +255,7 @@
 									<dx-text-box stylingMode="outlined" [(value)]="formData.DUI"></dx-text-box>
 								</div>
 								<div class="wizard-field">
-									<label class="wizard-label">Pasaporte</label>
+									<label class="wizard-label">Pasaporte (si es extranjero)</label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.PASAPORTE"></dx-text-box>
 								</div>
 								<div class="wizard-field">
@@ -460,12 +460,12 @@
 								[rowAlternationEnabled]="true"
 								[noDataText]="'Sin estudios. Use Agregar estudio.'"
 							>
-								<dxi-column dataField="NIVEL" caption="Nivel"></dxi-column>
-								<dxi-column dataField="INSTITUCION" caption="Institución"></dxi-column>
-								<dxi-column dataField="DESDE" caption="Desde" dataType="date" format="MM/yyyy"></dxi-column>
-								<dxi-column dataField="HASTA" caption="Hasta" dataType="date" format="MM/yyyy"></dxi-column>
-								<dxi-column dataField="TITULO" caption="Título obtenido"></dxi-column>
-								<dxi-column caption="" width="100" [allowSorting]="false" cellTemplate="accionesEstudio"></dxi-column>
+								<dxi-column dataField="NIVEL" caption="Nivel" [minWidth]="120" [hidingPriority]="4"></dxi-column>
+								<dxi-column dataField="INSTITUCION" caption="Institución" [minWidth]="140" [hidingPriority]="3"></dxi-column>
+								<dxi-column dataField="DESDE" caption="Desde" dataType="date" format="MM/yyyy" [minWidth]="90" [hidingPriority]="2"></dxi-column>
+								<dxi-column dataField="HASTA" caption="Hasta" dataType="date" format="MM/yyyy" [minWidth]="90" [hidingPriority]="1"></dxi-column>
+								<dxi-column dataField="TITULO" caption="Título obtenido" [minWidth]="140" [hidingPriority]="0"></dxi-column>
+								<dxi-column caption="" [width]="90" [allowSorting]="false" cellTemplate="accionesEstudio"></dxi-column>
 								<div *dxTemplate="let cell of 'accionesEstudio'" class="wizard-grid-actions">
 									<dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirModalEditar('estudio', cell.data)"></dx-button>
 									<dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('estudio', cell.data)"></dx-button>
@@ -552,21 +552,21 @@
 								[dataSource]="experiencias"
 								keyExpr="ID"
 								[showBorders]="true"
-								[columnAutoWidth]="false"
+								[columnAutoWidth]="true"
 								[rowAlternationEnabled]="true"
 								[wordWrapEnabled]="true"
 								[noDataText]="'Sin experiencia. Use Agregar experiencia.'"
 							>
-								<dxi-column dataField="EMPRESA" caption="Empresa" width="160"></dxi-column>
-								<dxi-column dataField="TELEFONO" caption="Teléfono" width="110"></dxi-column>
-								<dxi-column dataField="CARGO" caption="Cargo" width="140"></dxi-column>
-								<dxi-column dataField="JEFE_INMEDIATO" caption="Jefe inmediato" width="140"></dxi-column>
-								<dxi-column dataField="FECHA_INICIO" caption="Inicio" dataType="date" format="dd/MM/yyyy" width="110"></dxi-column>
-								<dxi-column dataField="FECHA_FIN" caption="Fin" dataType="date" format="dd/MM/yyyy" width="110"></dxi-column>
-								<dxi-column dataField="SALARIO_INICIAL" caption="Salario inicial" dataType="number" format="$#,##0.00" width="120"></dxi-column>
-								<dxi-column dataField="SALARIO_FINAL" caption="Salario final" dataType="number" format="$#,##0.00" width="120"></dxi-column>
-								<dxi-column dataField="MOTIVO_SALIDA" caption="Motivo salida" width="160"></dxi-column>
-								<dxi-column caption="" width="100" [allowSorting]="false" [fixed]="true" fixedPosition="right" cellTemplate="accionesExp"></dxi-column>
+								<dxi-column dataField="EMPRESA" caption="Empresa" [minWidth]="140" [hidingPriority]="8"></dxi-column>
+								<dxi-column dataField="TELEFONO" caption="Teléfono" [minWidth]="110" [hidingPriority]="4"></dxi-column>
+								<dxi-column dataField="CARGO" caption="Cargo" [minWidth]="130" [hidingPriority]="7"></dxi-column>
+								<dxi-column dataField="JEFE_INMEDIATO" caption="Jefe inmediato" [minWidth]="130" [hidingPriority]="3"></dxi-column>
+								<dxi-column dataField="FECHA_INICIO" caption="Inicio" dataType="date" format="dd/MM/yyyy" [minWidth]="100" [hidingPriority]="6"></dxi-column>
+								<dxi-column dataField="FECHA_FIN" caption="Fin" dataType="date" format="dd/MM/yyyy" [minWidth]="100" [hidingPriority]="5"></dxi-column>
+								<dxi-column dataField="SALARIO_INICIAL" caption="Salario inicial" dataType="number" format="$#,##0.00" [minWidth]="110" [hidingPriority]="2"></dxi-column>
+								<dxi-column dataField="SALARIO_FINAL" caption="Salario final" dataType="number" format="$#,##0.00" [minWidth]="110" [hidingPriority]="1"></dxi-column>
+								<dxi-column dataField="MOTIVO_SALIDA" caption="Motivo salida" [minWidth]="140" [hidingPriority]="0"></dxi-column>
+								<dxi-column caption="" [width]="90" [allowSorting]="false" cellTemplate="accionesExp"></dxi-column>
 								<div *dxTemplate="let cell of 'accionesExp'" class="wizard-grid-actions">
 									<dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirModalEditar('experiencia', cell.data)"></dx-button>
 									<dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('experiencia', cell.data)"></dx-button>
@@ -616,33 +616,8 @@
 							</div>
 						</div>
 
-						<div class="wizard-section">
-							<h3 class="wizard-section__title">Disponibilidad y perfil</h3>
-							<div class="wizard-checks">
-								<dx-check-box
-									[(value)]="formData.DISPONIBILIDAD_VIAJAR"
-									text="Disponibilidad para viajar"
-								></dx-check-box>
-								<dx-check-box
-									[(value)]="formData.DISPONIBILIDAD_INMEDIATA"
-									text="Disponibilidad inmediata"
-								></dx-check-box>
-								<dx-check-box
-									[(value)]="formData.CAMBIO_RESIDENCIA"
-									text="Disponibilidad de cambio de residencia"
-								></dx-check-box>
-							</div>
-							<div class="wizard-grid wizard-grid--2">
-								<div class="wizard-field">
-									<label class="wizard-label">LinkedIn</label>
-									<dx-text-box stylingMode="outlined" [(value)]="formData.LINKEDIN"></dx-text-box>
-								</div>
-								<div class="wizard-field">
-									<label class="wizard-label">Portafolio / sitio web</label>
-									<dx-text-box stylingMode="outlined" [(value)]="formData.PORTAFOLIO"></dx-text-box>
-								</div>
-							</div>
-						</div>
+						<!-- 
+						 -->
 					</div>
 
 					<!-- PASO 6: Confirmación -->

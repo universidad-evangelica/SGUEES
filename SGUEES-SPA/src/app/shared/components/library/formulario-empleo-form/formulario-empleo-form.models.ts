@@ -76,8 +76,8 @@ export interface FormularioEmpleoData {
 	NOMBRE2: string;
 	APELLIDO1: string;
 	APELLIDO2: string;
-	FECHA_NACIMIENTO: Date | null;
-	EDAD: number | null;
+	FECHA_NACIMIENTO: Date | '';
+	EDAD: number | 0;
 	SEXO: string;
 	ESTADO_CIVIL: string;
 	NACIONALIDAD: string;
@@ -99,7 +99,7 @@ export interface FormularioEmpleoData {
 
 	// Laboral
 	PLAZA_SOLICITADA: string;
-	PRETENSION_SALARIAL: number | null;
+	PRETENSION_SALARIAL: number | 0;
 	DISPONIBILIDAD: string;
 
 	// Adicional personales
@@ -118,11 +118,11 @@ export interface FormularioEmpleoData {
 
 	// Información adicional (paso 5)
 	TIENE_FAMILIARES_UEES: boolean;
-	DISPONIBILIDAD_VIAJAR: boolean;
-	DISPONIBILIDAD_INMEDIATA: boolean;
-	CAMBIO_RESIDENCIA: boolean;
-	LINKEDIN: string;
-	PORTAFOLIO: string;
+	// DISPONIBILIDAD_VIAJAR: boolean;
+	// DISPONIBILIDAD_INMEDIATA: boolean;
+	// CAMBIO_RESIDENCIA: boolean;
+	// LINKEDIN: string;
+	// PORTAFOLIO: string;
 
 	// Confirmación
 	DECLARA_VERDAD: boolean;
@@ -138,8 +138,8 @@ export function createEmptyFormData(): FormularioEmpleoData {
 		NOMBRE2: '',
 		APELLIDO1: '',
 		APELLIDO2: '',
-		FECHA_NACIMIENTO: null,
-		EDAD: null,
+		FECHA_NACIMIENTO: '',
+		EDAD: 0,
 		SEXO: '',
 		ESTADO_CIVIL: '',
 		NACIONALIDAD: 'Salvadoreña',
@@ -155,7 +155,7 @@ export function createEmptyFormData(): FormularioEmpleoData {
 		NOMBRE_AFP: '',
 		LICENCIA: '',
 		PLAZA_SOLICITADA: '',
-		PRETENSION_SALARIAL: null,
+		PRETENSION_SALARIAL: 0,
 		DISPONIBILIDAD: '',
 		RELIGION: '',
 		IGLESIA: '',
@@ -168,11 +168,11 @@ export function createEmptyFormData(): FormularioEmpleoData {
 		EMERGENCIA_PARENTESCO: '',
 		EMERGENCIA_TELEFONO: '',
 		TIENE_FAMILIARES_UEES: false,
-		DISPONIBILIDAD_VIAJAR: false,
-		DISPONIBILIDAD_INMEDIATA: false,
-		CAMBIO_RESIDENCIA: false,
-		LINKEDIN: '',
-		PORTAFOLIO: '',
+		// DISPONIBILIDAD_VIAJAR: false,
+		// DISPONIBILIDAD_INMEDIATA: false,
+		// CAMBIO_RESIDENCIA: false,
+		// LINKEDIN: '',
+		// PORTAFOLIO: '',
 		DECLARA_VERDAD: false,
 		AUTORIZA_VERIFICACION: false,
 		FECHA_DECLARACION: new Date(),

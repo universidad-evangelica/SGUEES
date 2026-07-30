@@ -80,6 +80,9 @@
 	position: relative;
 	z-index: 1;
 	width: min(100% - 32px, 560px);
+	// Evita que contenido ancho (grillas) fuerce el tamaño mínimo del grid item.
+	min-width: 0;
+	max-width: 100%;
 	max-height: calc(100vh - 24px);
 	transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -119,6 +122,7 @@
 		text-align: left;
 		height: 100%;
 		max-height: 100%;
+		min-width: 0;
 		padding: 0;
 		overflow: hidden;
 		gap: 0;
@@ -409,16 +413,27 @@
 .wizard-body {
 	flex: 1 1 auto;
 	min-height: 0;
+	min-width: 0;
 	width: 100%;
+	max-width: 100%;
 
 	&__inner {
 		padding: 18px 22px 12px;
+		min-width: 0;
+		max-width: 100%;
 	}
+}
+
+.wizard-step {
+	min-width: 0;
+	max-width: 100%;
 }
 
 .wizard-section {
 	margin-bottom: 16px;
 	padding: 16px 18px;
+	min-width: 0;
+	max-width: 100%;
 	border-radius: 14px;
 	background: #f8fafc;
 	border: 1px solid var(--portal-line);
@@ -790,6 +805,24 @@
 	.wizard-section .dx-datagrid {
 		border-radius: 12px;
 		overflow: hidden;
+	}
+
+	.wizard-section dx-data-grid {
+		display: block;
+		width: 100%;
+		max-width: 100%;
+		min-width: 0;
+	}
+
+	// Fila expandible que DevExtreme genera al ocultar columnas por espacio.
+	.wizard-section .dx-datagrid .dx-adaptive-detail-row .dx-field-item-label-text {
+		font-size: 12px;
+		font-weight: 650;
+		color: var(--portal-brand);
+	}
+
+	.wizard-section .dx-datagrid .dx-adaptive-detail-row .dx-datagrid-content {
+		background: #f1f5f9;
 	}
 }
 
