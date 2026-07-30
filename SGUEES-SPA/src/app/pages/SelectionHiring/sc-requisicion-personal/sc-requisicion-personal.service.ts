@@ -17,54 +17,54 @@ export class ScRequisicionPersonalService {
     esValido(model: ScRequisicionPersonal, msg: Function): boolean {
 
         if (model.FECHA_REQUISICION == null) {
-        msg('Debe digitar la fecha de requisición', NotifyType.Error);
+        msg('Debe digitar la fecha de requisición', NotifyType.Warning);
         return false;
         }
 
         if (model.NOMBRE_PUESTO_SOLICITADO == '' || model.NOMBRE_PUESTO_SOLICITADO == null) {
-        msg('Debe digitar el nombre del puesto solicitado', NotifyType.Error)
+        msg('Debe digitar el nombre del puesto solicitado', NotifyType.Warning);
         return false;
         }
 
         if (model.CORR_UNIDAD == 0 || model.CORR_UNIDAD == null) {
-            msg('Debe seleccionar la unidad organizativa', NotifyType.Error);
+            msg('Debe seleccionar la unidad organizativa', NotifyType.Warning);
             return false;
         }
 
         if (model.CORR_DESCRIPTOR_PUESTO == 0 || model.CORR_DESCRIPTOR_PUESTO == null) {
-            msg('Debe seleccionar el descriptor del puesto', NotifyType.Error);
+            msg('Debe seleccionar el descriptor del puesto', NotifyType.Warning);
             return false;
         }
 
         if (model.CORR_TIPO_MODALIDAD == 0 || model.CORR_TIPO_MODALIDAD == null) {
-            msg('Debe seleccionar el tipo de modalidad', NotifyType.Error);
+            msg('Debe seleccionar el tipo de modalidad', NotifyType.Warning);
             return false;
         }
 
         if (model.CORR_TIPO_CONTRATACION == 0 || model.CORR_TIPO_CONTRATACION == null) {
-            msg('Debe seleccionar el tipo de contratación', NotifyType.Error);
+            msg('Debe seleccionar el tipo de contratación', NotifyType.Warning);
             return false;
         }
 
         if (model.CORR_TIPO_VACANTE == 0 || model.CORR_TIPO_VACANTE == null) {
-            msg('Debe seleccionar el tipo de vacante', NotifyType.Error);
+            msg('Debe seleccionar el tipo de vacante', NotifyType.Warning);
             return false;
         }
 
         if (model.CANTIDAD_PLAZAS == 0 || model.CANTIDAD_PLAZAS == null) {
-            msg('Debe digitar la cantidad de plazas', NotifyType.Error);
+            msg('Debe digitar la cantidad de plazas', NotifyType.Warning);
             return false;
         }
 
         if (model.SALARIO == 0 || model.SALARIO == null) {
-            msg('Debe digitar el salario', NotifyType.Error);
+            msg('Debe digitar el salario', NotifyType.Warning);
             return false;
         }
 
         // Solo aplica si la contratación NO es permanente (flag UI desde lookup).
         if (model.ES_PERMANENTE !== true) {
             if (model.TIEMPO_CONTRATO == null || model.TIEMPO_CONTRATO <= 0) {
-                msg('Debe digitar el tiempo de contrato (meses)', NotifyType.Error);
+                msg('Debe digitar el tiempo de contrato (meses)', NotifyType.Warning);
                 return false;
             }
         }
@@ -72,7 +72,7 @@ export class ScRequisicionPersonalService {
         // Solo aplica si el tipo de vacante requiere sustitución (flag UI desde lookup).
         if (model.REQUIERE_SUSTITUCION === true) {
             if (model.CORR_EMPLEADO_SUSTITUTO == null || model.CORR_EMPLEADO_SUSTITUTO === '' || model.CORR_EMPLEADO_SUSTITUTO === '0') {
-                msg('Debe seleccionar el empleado sustituto', NotifyType.Error);
+                msg('Debe seleccionar el empleado sustituto', NotifyType.Warning);
                 return false;
             }
         }
