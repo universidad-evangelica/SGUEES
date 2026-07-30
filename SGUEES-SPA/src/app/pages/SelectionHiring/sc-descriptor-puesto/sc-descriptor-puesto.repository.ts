@@ -47,18 +47,6 @@ export class ScDescriptorPuestoRepository {
 		);
 	}
 
-	// Qué hace: guarda solo inducción, tiempo/unidad y responsable.
-	// Cómo: PUT a ActualizarEntrenamiento, pasando el correlativo del descriptor.
-	updateEntrenamiento(model: any, corrDescriptorPuesto: number): Observable<IResult> {
-		return this.objData.Put(
-			model,
-			this.xController,
-			'ActualizarEntrenamiento',
-			[{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto }],
-			environment.UrlSELECCIONCONTRATACIONAPI
-		);
-	}
-
 	// Qué hace: elimina un descriptor.
 	// Cómo: DELETE con la llave en xWhere.
 	delete(xWhere: IParam[]): Observable<IResult> {

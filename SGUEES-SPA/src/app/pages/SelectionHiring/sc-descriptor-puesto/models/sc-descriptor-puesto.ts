@@ -11,10 +11,6 @@ export interface ScDescriptorPuesto {
 	OBJETIVO_PUESTO: string; // Objetivo general del puesto.
 	CORR_IMPACTO_ECONOMICO: number | null; // Catálogo de impacto económico institucional.
 	DESCRIPCION_IMPACTO_ECONOMICO?: string; // Texto del impacto económico (snapshot o catálogo).
-	CORR_INDUCCION: number | null; // Catálogo de plan de inducción asignado.
-	NOMBRE_INDUCCION?: string; // Nombre del plan de inducción mostrado en pantalla.
-	TIEMPO_INDUCCION?: number | null; // Duración del plan de inducción (junto a UNIDAD_TIEMPO).
-	UNIDAD_TIEMPO?: string | null; // Unidad de tiempo de la inducción (Semanas o Meses).
 	RESPONSABLE: string; // Nombre del responsable del puesto.
 	FORMATO: string; // Formato del descriptor: CORTO, EXTENSO o AMBOS.
 	VERSION: number | null; // Número de versión del descriptor.

@@ -67,27 +67,6 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
-        // Guarda el entrenamiento del descriptor (inducción, semanas, responsable) con auditoría de sesión.
-        [HttpPut("ActualizarEntrenamiento")]
-        [Authorize(Policy = "/sc-descriptor-puesto|U")]
-        public async Task<IActionResult> ActualizarEntrenamiento(SC_DESCRIPTOR_PUESTOTable Data)
-        {
-            if (Data != null)
-            {
-                // Copia CORR_DESCRIPTOR_PUESTO desde la URL al cuerpo del request.
-                this.ApplyQueryKeys(Data, nameof(SC_DESCRIPTOR_PUESTOTable.CORR_DESCRIPTOR_PUESTO));
-                Data.CORR_EMPRESA = GetCorrEmpresa();
-                // Rellena usuario, estación y fecha de modificación.
-                SetUpdateAudit(Data);
-            }
-
-            var resultado = await _service.ActualizarEntrenamientoAsync(
-                Data,
-                GetUsuario(),
-                ClientInfoHelper.GetClientStation(HttpContext));
-            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
-        }
-
         // Elimina un descriptor de la empresa en sesión; borra también sus registros hijos.
         [HttpDelete]
         [Authorize(Policy = "/sc-descriptor-puesto|D")]

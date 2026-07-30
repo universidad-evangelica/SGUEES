@@ -47,11 +47,11 @@ namespace SGUEES.Controllers
             return await _service.GetAsync(Data);
         }
 
-        [HttpGet("GetCORR_FRECUENCIA_SC_DESCRIPTOR_KPI_FUNCION")]
+        [HttpGet("GetCORR_FRECUENCIA_SC_DESCRIPTOR_PUESTO_KPI_FUNCION")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         // Qué hace: provee frecuencias activas para los indicadores del descriptor de puesto.
         // Cómo: fija CORR_EMPRESA de la sesión y llama a GetFrecuenciasActivasAsync del servicio.
-        public async Task<CResult> GetCORR_FRECUENCIA_SC_DESCRIPTOR_KPI_FUNCION([FromQuery] SC_FRECUENCIAParam Data)
+        public async Task<CResult> GetCORR_FRECUENCIA_SC_DESCRIPTOR_PUESTO_KPI_FUNCION([FromQuery] SC_FRECUENCIAParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
             return await _service.GetFrecuenciasActivasAsync(Data);
