@@ -344,6 +344,7 @@ export class ScDescriptorPuestoService {
 							typeof e.value === 'string' && e.value.trim() !== '',
 					},
 				],
+				visible: false,
 			},
 			{
 				dataField: 'CORR_UNIDAD',
