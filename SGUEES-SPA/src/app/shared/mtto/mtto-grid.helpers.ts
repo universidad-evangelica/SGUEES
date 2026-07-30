@@ -192,7 +192,7 @@ export function buildEstadoToolbarOptions(options: EstadoToolbarOptions): {
 		optActivar: {
 			text: 'Activar',
 			icon: 'refresh',
-			type: 'default',
+			type: 'success',
 			stylingMode: 'contained',
 			height: 44,
 			visible: hasRow && !activo,
@@ -204,7 +204,7 @@ export function buildEstadoToolbarOptions(options: EstadoToolbarOptions): {
 		optDesactivar: {
 			text: 'Desactivar',
 			icon: 'close',
-			type: 'default',
+			type: 'danger',
 			stylingMode: 'contained',
 			height: 44,
 			visible: hasRow && activo,

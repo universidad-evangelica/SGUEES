@@ -544,6 +544,24 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.activarInactivar.emit();
   }
 
+  /** Actualiza la fila enfocada del toolbar tras Activar/Desactivar (mismo CORR). */
+  actualizarFocusedRowData(data: Record<string, unknown> | null | undefined): void {
+    if (!this.isBrowse || !data || !this.keyExpr) {
+      return;
+    }
+
+    const keyField = this.keyExpr as string;
+    const key = data[keyField];
+    const focusedKey = this.focusedRowData?.[keyField] ?? this.focusedRowKey;
+    if (!this.isValidFocusedRowKey(key) || key !== focusedKey) {
+      return;
+    }
+
+    this.focusedRowData = { ...data };
+    this.rebuildToolbarOptions();
+    this.cdr.markForCheck();
+  }
+
   onRefreshClick(): void {
     this.refresh.emit();
   }
