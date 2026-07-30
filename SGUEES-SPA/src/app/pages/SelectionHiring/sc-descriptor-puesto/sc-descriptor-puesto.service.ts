@@ -208,11 +208,6 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
-	// Qué hace: carga el catálogo de inducciones para el bloque de entrenamiento.
-	getInduccionesLookup(): Observable<IResult> {
-		return this.repo.getInducciones();
-	}
-
 	// Qué hace: elimina un descriptor por su correlativo.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO }]);

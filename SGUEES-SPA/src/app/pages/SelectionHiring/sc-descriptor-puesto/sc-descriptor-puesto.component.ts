@@ -667,11 +667,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: carga el catálogo de inducciones activas para el grid de entrenamiento del descriptor.
-	// Cómo: llama al servicio getInduccionesLookup, guarda el resultado en mCORR_INDUCCION
+	// Cómo: llama a getLookUp GetCORR_INDUCCION, guarda el resultado en mCORR_INDUCCION
 	// y refresca las disponibles con actualizarInduccionesLookupDisponibles.
 	getCORR_INDUCCION(): void {
-		this.service
-			.getInduccionesLookup()
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO_INDUCCION',
+				'SC_INDUCCION',
+				'GetCORR_INDUCCION',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {

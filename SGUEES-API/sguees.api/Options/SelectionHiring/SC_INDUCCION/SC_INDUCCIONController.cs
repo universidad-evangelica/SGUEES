@@ -25,11 +25,11 @@ namespace SGUEES.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(_service));
         }
 
-        [HttpGet("GetCORR_INDUCCION_SC_DESCRIPTOR_PUESTO")]
+        [HttpGet("GetCORR_INDUCCION_SC_DESCRIPTOR_PUESTO_INDUCCION")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
-        // Qué hace: entrega las inducciones activas para el lookup del descriptor de puesto.
+        // Qué hace: entrega las inducciones activas para el lookup de entrenamiento del descriptor.
         // Cómo: fija CORR_EMPRESA de la sesión y llama a GetCatalogoDescriptorAsync del servicio.
-        public async Task<CResult> GetCORR_INDUCCION_SC_DESCRIPTOR_PUESTO(
+        public async Task<CResult> GetCORR_INDUCCION_SC_DESCRIPTOR_PUESTO_INDUCCION(
             [FromQuery] SC_INDUCCIONParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
