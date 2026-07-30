@@ -1770,11 +1770,13 @@
 									[dropDownWidth]="520"
 								></app-data-lookup>
 							</div>
+							<!-- se agregó para no permitir edición de descripción: [allowEditing]="false" -->
 							<dxi-column
 								dataField="DESCRIPCION"
 								caption="Descripcion"
 								[minWidth]="280"
 								[allowSorting]="true"
+								[allowEditing]="false"
 							></dxi-column>
 						</dx-data-grid>
 					</div>
