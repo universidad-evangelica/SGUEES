@@ -106,7 +106,7 @@ export class SegFlujoPasoService {
                 label: { text: 'Permite auto aprobación' },
                 colSpan: 1,
                 editorType: 'dxCheckBox',
-                editorOptions: { value: false },
+               
             },
           
         ];
