@@ -34,6 +34,8 @@ export interface ScInduccionLookupItem {
 	NOMBRE_INDUCCION_CATALOGO?: string;
 	TIEMPO_INDUCCION: number | null; // Duración del plan (junto a UNIDAD_TIEMPO).
 	UNIDAD_TIEMPO: string | null; // Unidad de tiempo del plan (Semanas o Meses).
+	// Duración unida para el popup: valor entero + unidad (ej. "2 Semanas").
+	DURACION_DISPLAY?: string;
 }
 
 // Lookups temporales de unidad/puesto mientras PLA_PUESTO no está integrado.

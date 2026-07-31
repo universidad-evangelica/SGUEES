@@ -495,6 +495,11 @@
 	padding: 18px 12px;
 }
 
+// Separación entre el input Responsable y la toolbar de inducciones.
+.descriptor-entrenamiento-responsable {
+	margin-bottom: 18px;
+}
+
 // Toolbar Agregar/Guardar/Cancelar compartida por grids de detalle.
 .descriptor-deta-toolbar {
 	display: flex;

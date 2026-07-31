@@ -130,7 +130,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	mCORR_INDUCCION_DISPONIBLES: ScInduccionLookupItem[] = [];
 	induccionesLookupColumns = [
 		{ dataField: 'CORR_INDUCCION', caption: 'Codigo', width: 90 },
-		{ dataField: 'NOMBRE_INDUCCION_CATALOGO', caption: 'Induccion', width: 320 },
+		{ dataField: 'NOMBRE_INDUCCION_CATALOGO', caption: 'Induccion', width: 280 },
+		{ dataField: 'DURACION_DISPLAY', caption: 'Duracion', width: 120 },
 	];
 	mCORR_COMPETENCIAS_TECNICAS: ScCompetenciaTecnicaLookupItem[] = [];
 	mCORR_COMPETENCIAS_TECNICAS_DISPONIBLES: ScCompetenciaTecnicaLookupItem[] = [];
@@ -689,13 +690,18 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 					this.mCORR_INDUCCION = response.Data.map((item: ScInduccionLookupItem) => {
 						const nombre = (item.NOMBRE_INDUCCION ?? '').trim();
+						const tiempo =
+							item.TIEMPO_INDUCCION != null ? Number(item.TIEMPO_INDUCCION) : null;
+						const unidad = (item.UNIDAD_TIEMPO ?? '').trim() || null;
+						const duracion =
+							tiempo == null ? '' : `${tiempo} ${unidad ?? ''}`.trim();
 						return {
 							CORR_INDUCCION: Number(item.CORR_INDUCCION),
 							NOMBRE_INDUCCION: nombre,
 							NOMBRE_INDUCCION_CATALOGO: nombre,
-							TIEMPO_INDUCCION:
-								item.TIEMPO_INDUCCION != null ? Number(item.TIEMPO_INDUCCION) : null,
-							UNIDAD_TIEMPO: (item.UNIDAD_TIEMPO ?? '').trim() || null,
+							TIEMPO_INDUCCION: tiempo,
+							UNIDAD_TIEMPO: unidad,
+							DURACION_DISPLAY: duracion,
 						};
 					});
 					this.actualizarInduccionesLookupDisponibles();
