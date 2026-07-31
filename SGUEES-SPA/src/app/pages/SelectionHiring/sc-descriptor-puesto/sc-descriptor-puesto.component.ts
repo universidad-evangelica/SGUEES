@@ -31,7 +31,11 @@ import { ScPerfilPuestoCompetenciasTecnicas } from './sc-perfil-puesto-competenc
 import { ScPerfilPuestoCompetenciasConductuales } from './sc-perfil-puesto-competencias-conductuales/models/sc-perfil-puesto-competencias-conductuales';
 import { ScDescriptorPuestoRequerimientoOrganizacional } from './sc-descriptor-puesto-requerimiento-organizacional/models/sc-descriptor-puesto-requerimiento-organizacional';
 import { ScDescriptorPuestoRiesgoPuesto } from './sc-descriptor-puesto-riesgo-puesto/models/sc-descriptor-puesto-riesgo-puesto';
-import { ScDescriptorPuestoInduccion } from './sc-descriptor-puesto-induccion/models/sc-descriptor-puesto-induccion';
+import {
+	RESPONSABLE_ENTRENAMIENTO_CLIENT_KEY,
+	RESPONSABLE_ENTRENAMIENTO_NOMBRE,
+	ScDescriptorPuestoInduccion,
+} from './sc-descriptor-puesto-induccion/models/sc-descriptor-puesto-induccion';
 import {
 	IMPACTO_ECONOMICO_CLIENT_KEY,
 	IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR,
@@ -3590,14 +3594,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Qué hace: pone en modo edición la fila de inducción que el usuario seleccionó.
-	// Cómo: si no está bloqueado ni ya en edición, refresca el lookup disponible conservando el actual,
-	// marca los flags de edición (sin inserción) y llama a editRow del grid.
+	// Qué hace: pone en modo edición la fila de inducción o la de responsable.
+	// Cómo: si no está bloqueado ni ya en edición, refresca lookup (salvo responsable),
+	// marca flags y llama a editRow del grid.
 	editarInduccionClick(e: any): void {
 		if (this.readOnly || this.induccionesEditando) {
 			return;
 		}
-		this.actualizarInduccionesLookupDisponibles(Number(e?.row?.data?.CORR_INDUCCION) || null);
+		if (!e?.row?.data?._esResponsableEntrenamiento) {
+			this.actualizarInduccionesLookupDisponibles(Number(e?.row?.data?.CORR_INDUCCION) || null);
+		}
 		this.induccionesInsertando = false;
 		this.induccionesEditando = true;
 		const rowIndex = e.row.rowIndex;
@@ -3608,16 +3614,20 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Qué hace: decide si el botón de editar debe verse en la fila de inducción.
-	// Cómo: delega en accionGridVisible.
+	// Qué hace: decide si el botón de editar debe verse.
+	// Cómo: usa accionGridVisible para ocultar el lápiz en la fila que está en edición
+	// (si return true fijo, el lápiz sigue visible aunque esa fila ya se esté editando).
 	induccionEditButtonVisible(e: any): boolean {
-		//return this.accionGridVisible(e);
-		return false;
+		if (!e?.row?.data?._esResponsableEntrenamiento) { return false; }
+		return this.accionGridVisible(e);
 	}
 
 	// Qué hace: decide si el botón de eliminar debe verse en la fila de inducción.
-	// Cómo: delega en accionGridVisible.
+	// Cómo: oculta eliminar en la fila de responsable; para el resto, delega en accionGridVisible.
 	induccionDeleteButtonVisible(e: any): boolean {
+		if (e?.row?.data?._esResponsableEntrenamiento) {
+			return false;
+		}
 		return this.accionGridVisible(e);
 	}
 
@@ -3654,15 +3664,68 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actualizarInduccionesLookupDisponibles();
 	}
 
-	// Qué hace: marca que el grid de inducciones entró en edición y refresca el lookup disponible.
-	// Cómo: determina si es inserción según _esNuevo de la fila, llama a
-	// actualizarInduccionesLookupDisponibles conservando la actual, marca el flag de edición y
-	// sincroniza las columnas visibles con syncInduccionColumnas.
+	// Qué hace: marca que el grid de inducciones entró en edición y prepara la fila.
+	// Cómo: si es responsable, fija nombre e información desde el encabezado; si no, refresca lookup.
 	onInduccionEditingStart(e: any): void {
+		if (e?.data?._esResponsableEntrenamiento) {
+			this.induccionesInsertando = false;
+			e.data.NOMBRE_INDUCCION = RESPONSABLE_ENTRENAMIENTO_NOMBRE;
+			e.data.TIEMPO_INDUCCION = (
+				e.data.TIEMPO_INDUCCION ??
+				this.model?.RESPONSABLE ??
+				''
+			)
+				.toString()
+				.trim();
+			this.induccionesEditando = true;
+			this.syncInduccionColumnas();
+			return;
+		}
+
 		this.induccionesInsertando = !!e?.data?._esNuevo;
 		this.actualizarInduccionesLookupDisponibles(Number(e?.data?.CORR_INDUCCION) || null);
 		this.induccionesEditando = true;
 		this.syncInduccionColumnas();
+	}
+
+	// Qué hace: controla qué celdas se pueden editar según el tipo de fila.
+	// Cómo: solo en la fila Responsable se puede escribir Información; el resto queda bloqueado.
+	onInduccionEditorPreparing(e: any): void {
+		// Solo aplica a celdas de datos (no encabezados ni filtros).
+		if (e?.parentType !== 'dataRow') {
+			return;
+		}
+
+		// Fila fija "Responsable" (virtual, no es inducción del catálogo).
+		if (e?.row?.data?._esResponsableEntrenamiento) {
+			// Bloquea Codigo e Induccion/Nombre: en esa fila el nombre debe quedar fijo como "Responsable".
+			if (e.dataField === 'CORR_INDUCCION' || e.dataField === 'NOMBRE_INDUCCION') {
+				e.editorOptions = {
+					...(e.editorOptions || {}),
+					readOnly: true,
+					//disabled: true,
+				};
+			}
+			// Informacion (TIEMPO_INDUCCION): aquí sí se escribe el texto libre del responsable.
+			if (e.dataField === 'TIEMPO_INDUCCION') {
+				e.editorOptions = {
+					...(e.editorOptions || {}),
+					maxLength: 100,
+					showClearButton: true,
+				};
+			}
+			// No aplica las reglas de las filas de inducción de abajo.
+			return;
+		}
+
+		// Filas de inducción: Nombre e Informacion vienen del catálogo; no se editan a mano.
+		if (e.dataField === 'NOMBRE_INDUCCION' || e.dataField === 'TIEMPO_INDUCCION') {
+			e.editorOptions = {
+				...(e.editorOptions || {}),
+				readOnly: true,
+				//disabled: true,
+			};
+		}
 	}
 
 	// Qué hace: reacciona a que el grid de inducciones terminó de guardar una fila.
@@ -3685,10 +3748,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: valida los datos de la fila de inducción antes de guardarla.
-	// Cómo: verifica que haya inducción seleccionada y que no esté duplicada en el descriptor,
-	// invalidando la fila con invalidarFila cuando corresponde.
+	// Cómo: la fila de responsable no valida catálogo; para el resto verifica inducción y duplicados.
 	induccionRowValidating(e: any): void {
 		const data = { ...(e.oldData || {}), ...(e.newData || {}) };
+		if (data._esResponsableEntrenamiento) {
+			return;
+		}
+
 		if (!(Number(data.CORR_INDUCCION) > 0)) {
 			this.invalidarFila(e, 'Debe seleccionar una induccion.');
 			return;
@@ -3697,6 +3763,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const corrCatalogo = Number(data.CORR_INDUCCION);
 		const clientKey = data._clientKey ?? e?.key;
 		const duplicada = (this.induccionesDescriptor || []).some((row) => {
+			if (row._esResponsableEntrenamiento) {
+				return false;
+			}
 			if (!(Number(row.CORR_INDUCCION) > 0)) {
 				return false;
 			}
@@ -3712,27 +3781,44 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: inserta una nueva inducción desde el grid.
-	// Cómo: llama a persistirInduccionDesdeGrid (create) con esNuevo en true.
+	// Cómo: si es la fila de responsable, cancela; si no, persiste create.
 	induccionRowInserting(e: any): void {
+		if (e?.data?._esResponsableEntrenamiento) {
+			e.cancel = true;
+			return;
+		}
 		e.cancel = this.persistirInduccionDesdeGrid(e.data, true);
 	}
 
-	// Qué hace: actualiza una inducción existente desde el grid.
-	// Cómo: combina datos viejos y nuevos y llama a persistirInduccionDesdeGrid (update) con esNuevo en false.
+	// Qué hace: actualiza una inducción o la fila de responsable desde el grid.
+	// Cómo: responsable actualiza el encabezado; el resto la tabla intermedia.
 	induccionRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
+		if (data._esResponsableEntrenamiento) {
+			data.NOMBRE_INDUCCION = RESPONSABLE_ENTRENAMIENTO_NOMBRE;
+			data.TIEMPO_INDUCCION = (data.TIEMPO_INDUCCION ?? '').toString().trim();
+			e.cancel = this.persistirResponsableEntrenamientoDesdeGrid(data);
+			return;
+		}
 		e.cancel = this.persistirInduccionDesdeGrid(data, false);
 	}
 
 	// Qué hace: elimina una inducción desde el grid.
-	// Cómo: llama a eliminarInduccionDesdeGrid (delete) con los datos de la fila.
+	// Cómo: si es la fila de responsable, cancela; si no, elimina.
 	induccionRowRemoving(e: any): void {
+		if (e?.data?._esResponsableEntrenamiento) {
+			e.cancel = true;
+			return;
+		}
 		e.cancel = this.eliminarInduccionDesdeGrid(e.data);
 	}
 
 	// Qué hace: define el texto que se muestra en la columna de catálogo de la inducción.
-	// Cómo: devuelve el correlativo como texto, o cadena vacía si no es válido.
+	// Cómo: vacío en fila de responsable; si no, el correlativo como texto.
 	induccionCatalogDisplay = (row: ScDescriptorPuestoInduccion): string => {
+		if (row?._esResponsableEntrenamiento) {
+			return '';
+		}
 		const corr = Number(row?.CORR_INDUCCION);
 		if (!(corr > 0)) {
 			return '';
@@ -4779,14 +4865,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 					if (response?.Result && Array.isArray(response.Data)) {
 						this.resetearEdicionInducciones();
-						this.induccionesDescriptor = response.Data.map((item: ScDescriptorPuestoInduccion) => ({
-							CORR_DESCRIPTOR_PUESTO: item.CORR_DESCRIPTOR_PUESTO ?? corrDescriptor,
-							CORR_INDUCCION: item.CORR_INDUCCION ?? null,
-							NOMBRE_INDUCCION: item.NOMBRE_INDUCCION ?? '',
-							TIEMPO_INDUCCION: (item.TIEMPO_INDUCCION ?? '').toString().trim() || null,
-							_esNuevo: false,
-							_clientKey: item.CORR_INDUCCION || this.crearClientKey('ind'),
-						}));
+						this.induccionesDescriptor = [
+							...response.Data.map((item: ScDescriptorPuestoInduccion) => ({
+								CORR_DESCRIPTOR_PUESTO: item.CORR_DESCRIPTOR_PUESTO ?? corrDescriptor,
+								CORR_INDUCCION: item.CORR_INDUCCION ?? null,
+								NOMBRE_INDUCCION: item.NOMBRE_INDUCCION ?? '',
+								TIEMPO_INDUCCION: (item.TIEMPO_INDUCCION ?? '').toString().trim() || null,
+								_esNuevo: false,
+								_clientKey: item.CORR_INDUCCION || this.crearClientKey('ind'),
+							})),
+							this.crearFilaResponsableEntrenamiento(),
+						];
 						this.actualizarInduccionesLookupDisponibles();
 					}
 				},
@@ -4840,6 +4929,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				},
 				error: (error) => this.notifyApiError(error),
 			});
+	}
+
+	// Qué hace: construye la fila fija de responsable al final del grid de entrenamiento.
+	// Cómo: Nombre = "Responsable"; Información = RESPONSABLE del encabezado del descriptor.
+	private crearFilaResponsableEntrenamiento(): ScDescriptorPuestoInduccion {
+		return {
+			CORR_DESCRIPTOR_PUESTO: Number(this.model?.CORR_DESCRIPTOR_PUESTO) || 0,
+			CORR_INDUCCION: null,
+			NOMBRE_INDUCCION: RESPONSABLE_ENTRENAMIENTO_NOMBRE,
+			TIEMPO_INDUCCION: (this.model?.RESPONSABLE ?? '').trim(),
+			_esResponsableEntrenamiento: true,
+			_clientKey: RESPONSABLE_ENTRENAMIENTO_CLIENT_KEY,
+		};
 	}
 
 	// Qué hace: construye la fila especial de impacto económico que se agrega al grid de responsabilidades.
@@ -6842,6 +6944,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		data: ScDescriptorPuestoInduccion,
 		esNuevo: boolean
 	): Promise<boolean> {
+		if (data?._esResponsableEntrenamiento) {
+			return Promise.resolve(true);
+		}
+
 		if (this.induccionPersistiendo) {
 			return Promise.resolve(true);
 		}
@@ -6898,9 +7004,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: elimina una inducción del descriptor desde el grid llamando a la API.
-	// Cómo: valida la llave natural (descriptor y catálogo), llama a service.eliminarInduccionDescriptor
-	// (delete) y, si sale bien, recarga la lista con cargarInduccionesDescriptor; resuelve true si hubo error.
+	// Cómo: no permite eliminar la fila de responsable; valida llave, llama delete y recarga.
 	private eliminarInduccionDesdeGrid(data: ScDescriptorPuestoInduccion): Promise<boolean> {
+		if (data?._esResponsableEntrenamiento) {
+			return Promise.resolve(true);
+		}
+
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const corr = Number(data?.CORR_INDUCCION);
 		if (!corrDescriptor || corrDescriptor <= 0 || !corr || corr <= 0) {
@@ -6923,6 +7032,60 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					},
 					error: (error) => {
 						this.notificarErrorOperacion(error, 'eliminar');
+						resolve(true);
+					},
+				});
+		});
+	}
+
+	// Guarda el responsable del entrenamiento actualizando el encabezado del descriptor.
+	private persistirResponsableEntrenamientoDesdeGrid(
+		data: ScDescriptorPuestoInduccion
+	): Promise<boolean> {
+		const corrDescriptor = this.obtenerCorrDescriptor();
+		if (!corrDescriptor || corrDescriptor <= 0) {
+			this.notifyFx(
+				'Debe guardar el descriptor antes de registrar el responsable.',
+				NotifyType.Warning
+			);
+			return Promise.resolve(true);
+		}
+
+		const responsableAnterior = this.model.RESPONSABLE;
+		this.model.RESPONSABLE = (data?.TIEMPO_INDUCCION ?? '').toString().trim();
+
+		return new Promise((resolve) => {
+			this.service
+				.update(this.model)
+				.pipe(take(1))
+				.subscribe({
+					next: (response) => {
+						if (!response?.Result) {
+							this.model.RESPONSABLE = responsableAnterior;
+							this.notificarRespuestaOperacion(response, 'guardar');
+							this.cargarInduccionesDescriptor(true);
+							resolve(true);
+							return;
+						}
+
+						if (response.Data) {
+							this.model = this.fillData(response.Data);
+							this.modelUpdate = this.fillData(response.Data);
+						}
+
+						this.induccionesEditando = false;
+						try {
+							this.gridInducciones?.instance?.cancelEditData?.();
+						} catch {
+							// El grid puede ya no estar en pantalla; se ignora el error.
+						}
+						this.cargarInduccionesDescriptor(true);
+						resolve(true);
+					},
+					error: (error) => {
+						this.model.RESPONSABLE = responsableAnterior;
+						this.notificarErrorOperacion(error, 'guardar');
+						this.cargarInduccionesDescriptor(true);
 						resolve(true);
 					},
 				});
