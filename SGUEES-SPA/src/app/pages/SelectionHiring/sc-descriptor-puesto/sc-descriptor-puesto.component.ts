@@ -3611,7 +3611,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: decide si el botón de editar debe verse en la fila de inducción.
 	// Cómo: delega en accionGridVisible.
 	induccionEditButtonVisible(e: any): boolean {
-		return this.accionGridVisible(e);
+		//return this.accionGridVisible(e);
+		return false;
 	}
 
 	// Qué hace: decide si el botón de eliminar debe verse en la fila de inducción.
@@ -3649,7 +3650,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		e.data.CORR_INDUCCION = null;
 		e.data.NOMBRE_INDUCCION = '';
 		e.data.TIEMPO_INDUCCION = null;
-		e.data.UNIDAD_TIEMPO = null;
 		e.data._clientKey = this.crearClientKey('ind');
 		this.actualizarInduccionesLookupDisponibles();
 	}
@@ -3740,13 +3740,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return String(corr);
 	};
 
-	// Qué hace: calcula el texto de duración (tiempo + unidad) para la columna de solo lectura.
-	induccionDuracionDisplay = (row: ScDescriptorPuestoInduccion): string => {
-		if (row?.TIEMPO_INDUCCION == null) {
+	// Qué hace: une tiempo + unidad del catálogo en un texto (ej. "2 Semanas") para el snapshot.
+	formatearDuracionInduccion(
+		tiempo: number | null | undefined,
+		unidad: string | null | undefined
+	): string {
+		if (tiempo == null) {
 			return '';
 		}
-		return `${row.TIEMPO_INDUCCION} ${row.UNIDAD_TIEMPO || ''}`.trim();
-	};
+		return `${tiempo} ${(unidad ?? '').trim()}`.trim();
+	}
 
 	// Qué hace: aplica el cambio de inducción elegida en el lookup de la fila.
 	// Cómo: normaliza el valor, lo fija en la celda con setValue y repinta la fila con repintarFilaInduccionLookup.
@@ -3775,8 +3778,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: fija el valor de inducción, nombre y duración al editar la celda directamente en el grid.
-	// Cómo: busca el snapshot en el catálogo y actualiza CORR_INDUCCION, NOMBRE_INDUCCION, TIEMPO_INDUCCION
-	// y UNIDAD_TIEMPO en los nuevos datos de la fila.
+	// Cómo: busca el snapshot en el catálogo y actualiza CORR_INDUCCION, NOMBRE_INDUCCION y
+	// TIEMPO_INDUCCION (texto unido, ej. "2 Semanas") en los nuevos datos de la fila.
 	setInduccionCellValue = (
 		newData: ScDescriptorPuestoInduccion,
 		value: number | null,
@@ -3788,8 +3791,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 		newData.CORR_INDUCCION = corr;
 		newData.NOMBRE_INDUCCION = catalog?.NOMBRE_INDUCCION ?? '';
-		newData.TIEMPO_INDUCCION = catalog?.TIEMPO_INDUCCION ?? null;
-		newData.UNIDAD_TIEMPO = catalog?.UNIDAD_TIEMPO ?? null;
+		newData.TIEMPO_INDUCCION =
+			this.formatearDuracionInduccion(catalog?.TIEMPO_INDUCCION, catalog?.UNIDAD_TIEMPO) || null;
 	};
 
 	// Muestra responsabilidades del catálogo y una fila extra de impacto económico en el mismo grid.
@@ -4780,8 +4783,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							CORR_DESCRIPTOR_PUESTO: item.CORR_DESCRIPTOR_PUESTO ?? corrDescriptor,
 							CORR_INDUCCION: item.CORR_INDUCCION ?? null,
 							NOMBRE_INDUCCION: item.NOMBRE_INDUCCION ?? '',
-							TIEMPO_INDUCCION: item.TIEMPO_INDUCCION ?? null,
-							UNIDAD_TIEMPO: item.UNIDAD_TIEMPO ?? null,
+							TIEMPO_INDUCCION: (item.TIEMPO_INDUCCION ?? '').toString().trim() || null,
 							_esNuevo: false,
 							_clientKey: item.CORR_INDUCCION || this.crearClientKey('ind'),
 						}));
@@ -6858,8 +6860,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
 			CORR_INDUCCION: Number(data.CORR_INDUCCION) || null,
 			NOMBRE_INDUCCION: (data.NOMBRE_INDUCCION ?? '').trim(),
-			TIEMPO_INDUCCION: data.TIEMPO_INDUCCION ?? null,
-			UNIDAD_TIEMPO: data.UNIDAD_TIEMPO ?? null,
+			TIEMPO_INDUCCION: (data.TIEMPO_INDUCCION ?? '').toString().trim() || null,
 			_esNuevo: esNuevo,
 		};
 

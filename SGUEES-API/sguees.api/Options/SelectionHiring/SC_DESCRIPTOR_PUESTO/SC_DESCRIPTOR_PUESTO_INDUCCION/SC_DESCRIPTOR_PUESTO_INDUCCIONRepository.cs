@@ -159,8 +159,7 @@ namespace SGUEES.Repositories
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "NOMBRE_INDUCCION", Value = Data.NOMBRE_INDUCCION, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "TIEMPO_INDUCCION", Value = Data.TIEMPO_INDUCCION, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "UNIDAD_TIEMPO", Value = Data.UNIDAD_TIEMPO, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "TIEMPO_INDUCCION", Value = Data.TIEMPO_INDUCCION, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -254,8 +253,7 @@ namespace SGUEES.Repositories
                 new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "CORR_INDUCCION", Value = Data.CORR_INDUCCION, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "NOMBRE_INDUCCION", Value = Data.NOMBRE_INDUCCION, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "TIEMPO_INDUCCION", Value = Data.TIEMPO_INDUCCION, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "UNIDAD_TIEMPO", Value = Data.UNIDAD_TIEMPO, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "TIEMPO_INDUCCION", Value = Data.TIEMPO_INDUCCION, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime },

@@ -1283,8 +1283,7 @@ export class ScDescriptorPuestoService {
 			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
 			CORR_INDUCCION: corrInduccion || null,
 			NOMBRE_INDUCCION: (row.NOMBRE_INDUCCION ?? '').trim() || null,
-			TIEMPO_INDUCCION: row.TIEMPO_INDUCCION ?? null,
-			UNIDAD_TIEMPO: (row.UNIDAD_TIEMPO ?? '').trim() || null,
+			TIEMPO_INDUCCION: (row.TIEMPO_INDUCCION ?? '').trim() || null,
 		};
 
 		if (row._esNuevo) {

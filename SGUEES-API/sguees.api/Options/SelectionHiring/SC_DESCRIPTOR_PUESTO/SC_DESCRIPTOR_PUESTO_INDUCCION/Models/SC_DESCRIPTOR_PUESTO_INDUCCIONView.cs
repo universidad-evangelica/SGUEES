@@ -12,10 +12,8 @@ namespace SGUEES.Models
         public int CORR_INDUCCION { get; set; }
         // Snapshot: nombre de la inducción guardado en el registro.
         public string NOMBRE_INDUCCION { get; set; }
-        // Snapshot: cantidad de tiempo de la inducción guardada en el registro.
-        public int? TIEMPO_INDUCCION { get; set; }
-        // Snapshot: unidad del tiempo de inducción ('Semanas' o 'Meses') guardada en el registro.
-        public string UNIDAD_TIEMPO { get; set; }
+        // Snapshot: duración unida (ej. "2 Semanas") guardada en el registro.
+        public string TIEMPO_INDUCCION { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }
         public DateTime? FECHA_CREA { get; set; }

@@ -100,12 +100,25 @@ namespace SGUEES.Services
                 return ValidationError("La induccion seleccionada esta inactiva.");
             }
 
-            // Snapshot: siempre se toma el nombre, tiempo y unidad vigentes del catálogo al agregar.
+            // Snapshot: nombre y duración unida (ej. "2 Semanas") vigentes del catálogo al agregar.
             Data.NOMBRE_INDUCCION = catalog.NOMBRE_INDUCCION?.Trim();
-            Data.TIEMPO_INDUCCION = catalog.TIEMPO_INDUCCION;
-            Data.UNIDAD_TIEMPO = catalog.UNIDAD_TIEMPO;
+            Data.TIEMPO_INDUCCION = BuildDuracionSnapshot(catalog.TIEMPO_INDUCCION, catalog.UNIDAD_TIEMPO);
 
             return null;
+        }
+
+        // Une el valor entero y la unidad del catálogo en un solo texto (ej. "2 Semanas").
+        private static string BuildDuracionSnapshot(int? tiempo, string unidad)
+        {
+            if (tiempo == null)
+            {
+                return null;
+            }
+
+            var unidadTexto = (unidad ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(unidadTexto)
+                ? tiempo.Value.ToString()
+                : $"{tiempo.Value} {unidadTexto}";
         }
 
         // Construye los parámetros de filtrado para consultar inducciones del descriptor.
@@ -165,6 +178,19 @@ namespace SGUEES.Services
             }
 
             Data.NOMBRE_INDUCCION = Data.NOMBRE_INDUCCION.Trim();
+
+            if (!string.IsNullOrWhiteSpace(Data.TIEMPO_INDUCCION))
+            {
+                Data.TIEMPO_INDUCCION = Data.TIEMPO_INDUCCION.Trim();
+                if (Data.TIEMPO_INDUCCION.Length > 25)
+                {
+                    return ValidationError("La duracion de la induccion no puede superar 25 caracteres.");
+                }
+            }
+            else
+            {
+                Data.TIEMPO_INDUCCION = null;
+            }
 
             return null;
         }

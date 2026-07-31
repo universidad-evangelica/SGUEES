@@ -14,10 +14,8 @@ namespace SGUEES.Models
         public int CORR_INDUCCION { get; set; }
         // Snapshot: nombre de la inducción tomado del catálogo al momento de agregarla.
         public string NOMBRE_INDUCCION { get; set; }
-        // Snapshot: cantidad de tiempo de la inducción tomada del catálogo.
-        public int? TIEMPO_INDUCCION { get; set; }
-        // Snapshot: unidad del tiempo de inducción ('Semanas' o 'Meses') tomada del catálogo.
-        public string UNIDAD_TIEMPO { get; set; }
+        // Snapshot: duración unida (ej. "2 Semanas") tomada del catálogo al agregarla.
+        public string TIEMPO_INDUCCION { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }
         public DateTime? FECHA_CREA { get; set; }
