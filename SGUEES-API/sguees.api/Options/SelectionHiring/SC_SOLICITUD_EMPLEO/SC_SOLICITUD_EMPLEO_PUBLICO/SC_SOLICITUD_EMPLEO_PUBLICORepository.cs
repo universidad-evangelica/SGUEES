@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 using eFramework.Core;
 using eFramework.Data;
@@ -206,10 +207,49 @@ namespace sguees.Repositories
                 var parametros = new List<CParameter>
                 {
                     new() { ParameterName = "@TOKEN_HASH", Value = tokenHash, DbType = DbType.String },
-                    new() { ParameterName = "@NOMBRE1", Value = data.NOMBRE1, DbType = DbType.String },
-                    new() { ParameterName = "@NOMBRE2", Value = data.NOMBRE2, DbType = DbType.String },
-                    new() { ParameterName = "@APELLIDO1", Value = data.APELLIDO1, DbType = DbType.String },
-                    new() { ParameterName = "@APELLIDO2", Value = data.APELLIDO2, DbType = DbType.String },
+                    new() { ParameterName = "@NOMBRE1", Value = ToDbValue(data.NOMBRE1), DbType = DbType.String },
+                    new() { ParameterName = "@NOMBRE2", Value = ToDbValue(data.NOMBRE2), DbType = DbType.String },
+                    new() { ParameterName = "@APELLIDO1", Value = ToDbValue(data.APELLIDO1), DbType = DbType.String },
+                    new() { ParameterName = "@APELLIDO2", Value = ToDbValue(data.APELLIDO2), DbType = DbType.String },
+                    new() { ParameterName = "@FECHA_NACIMIENTO", Value = data.FECHA_NACIMIENTO, DbType = DbType.Date },
+                    new() { ParameterName = "@EDAD", Value = data.EDAD, DbType = DbType.Int32 },
+                    new() { ParameterName = "@ESTADO_CIVIL", Value = ToDbValue(data.ESTADO_CIVIL), DbType = DbType.String },
+                    new() { ParameterName = "@NACIONALIDAD", Value = ToDbValue(data.NACIONALIDAD), DbType = DbType.String },
+                    new() { ParameterName = "@CORREO", Value = ToDbValue(data.CORREO), DbType = DbType.String },
+                    new() { ParameterName = "@CELULAR", Value = ToDbValue(data.CELULAR), DbType = DbType.String },
+                    new() { ParameterName = "@TELEFONO", Value = ToDbValue(data.TELEFONO), DbType = DbType.String },
+                    new() { ParameterName = "@DIRECCION", Value = ToDbValue(data.DIRECCION), DbType = DbType.String },
+                    new() { ParameterName = "@DUI", Value = ToDbValue(data.DUI), DbType = DbType.String },
+                    new() { ParameterName = "@PASAPORTE", Value = ToDbValue(data.PASAPORTE), DbType = DbType.String },
+                    new() { ParameterName = "@ISSS", Value = ToDbValue(data.ISSS), DbType = DbType.String },
+                    new() { ParameterName = "@AFP", Value = ToDbValue(data.AFP), DbType = DbType.String },
+                    new() { ParameterName = "@NOMBRE_AFP", Value = ToDbValue(data.NOMBRE_AFP), DbType = DbType.String },
+                    new() { ParameterName = "@LICENCIA", Value = ToDbValue(data.LICENCIA), DbType = DbType.String },
+                    new() { ParameterName = "@PLAZA_SOLICITADA", Value = ToDbValue(data.PLAZA_SOLICITADA), DbType = DbType.String },
+                    new() { ParameterName = "@PRETENSION_SALARIAL", Value = data.PRETENSION_SALARIAL, DbType = DbType.Int32 },
+                    new() { ParameterName = "@DISPONIBILIDAD", Value = ToDbValue(data.DISPONIBILIDAD), DbType = DbType.String },
+                    new() { ParameterName = "@RELIGION", Value = ToDbValue(data.RELIGION), DbType = DbType.String },
+                    new() { ParameterName = "@IGLESIA", Value = ToDbValue(data.IGLESIA), DbType = DbType.String },
+                    new() { ParameterName = "@DIRECCION_IGLESIA", Value = ToDbValue(data.DIRECCION_IGLESIA), DbType = DbType.String },
+                    new() { ParameterName = "@ES_CONTRIBUYENTE_CCF", Value = data.ES_CONTRIBUYENTE_CCF, DbType = DbType.Boolean },
+                    new() { ParameterName = "@ES_JUBILADO", Value = data.ES_JUBILADO, DbType = DbType.Boolean },
+                    new() { ParameterName = "@POSEE_DISCAPACIDAD", Value = data.POSEE_DISCAPACIDAD, DbType = DbType.Boolean },
+                    new() { ParameterName = "@TIPO_DISCAPACIDAD", Value = ToDbValue(data.TIPO_DISCAPACIDAD), DbType = DbType.String },
+                    new() { ParameterName = "@EMERGENCIA_NOMBRE", Value = ToDbValue(data.EMERGENCIA_NOMBRE), DbType = DbType.String },
+                    new() { ParameterName = "@EMERGENCIA_PARENTESCO", Value = ToDbValue(data.EMERGENCIA_PARENTESCO), DbType = DbType.String },
+                    new() { ParameterName = "@EMERGENCIA_TELEFONO", Value = ToDbValue(data.EMERGENCIA_TELEFONO), DbType = DbType.String },
+                    new() { ParameterName = "@TIENE_FAMILIARES_UEES", Value = data.TIENE_FAMILIARES_UEES, DbType = DbType.Boolean },
+                    new() { ParameterName = "@DECLARA_VERDAD", Value = data.DECLARA_VERDAD, DbType = DbType.Boolean },
+                    new() { ParameterName = "@AUTORIZA_VERIFICACION", Value = data.AUTORIZA_VERIFICACION, DbType = DbType.Boolean },
+                    new() { ParameterName = "@FECHA_DECLARACION", Value = data.FECHA_DECLARACION, DbType = DbType.DateTime },
+                    new() { ParameterName = "@FIRMA_ELECTRONICA", Value = ToDbValue(data.FIRMA_ELECTRONICA), DbType = DbType.String },
+                    new() { ParameterName = "@FAMILIARES_DIRECTOS_JSON", Value = JsonSerializer.Serialize(data.FAMILIARES_DIRECTOS ?? new()), DbType = DbType.String },
+                    new() { ParameterName = "@HIJOS_JSON", Value = JsonSerializer.Serialize(data.HIJOS ?? new()), DbType = DbType.String },
+                    new() { ParameterName = "@ESTUDIOS_JSON", Value = JsonSerializer.Serialize(data.ESTUDIOS ?? new()), DbType = DbType.String },
+                    new() { ParameterName = "@IDIOMAS_JSON", Value = JsonSerializer.Serialize(data.IDIOMAS ?? new()), DbType = DbType.String },
+                    new() { ParameterName = "@COMPETENCIAS_JSON", Value = JsonSerializer.Serialize(data.COMPETENCIAS ?? new()), DbType = DbType.String },
+                    new() { ParameterName = "@EXPERIENCIAS_JSON", Value = JsonSerializer.Serialize(data.EXPERIENCIAS ?? new()), DbType = DbType.String },
+                    new() { ParameterName = "@FAMILIARES_UEES_JSON", Value = JsonSerializer.Serialize(data.FAMILIARES_UEES ?? new()), DbType = DbType.String },
                 };
 
                 var reader = await objData.GetDataReader(
@@ -238,6 +278,11 @@ namespace sguees.Repositories
             }
 
             return resultado;
+        }
+
+        private static object ToDbValue(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? System.DBNull.Value : value;
         }
 
         private static void SetError(CResult resultado, System.Exception error)

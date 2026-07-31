@@ -200,16 +200,6 @@
 									<dx-number-box stylingMode="outlined" [value]="formData.EDAD" [showSpinButtons]="false"></dx-number-box>
 								</div>
 								<div class="wizard-field">
-									<label class="wizard-label">Sexo *</label>
-									<dx-select-box stylingMode="outlined"
-										[(value)]="formData.SEXO"
-										[items]="sexoOptions"
-										displayExpr="text"
-										valueExpr="value"
-										[searchEnabled]="false"
-									></dx-select-box>
-								</div>
-								<div class="wizard-field">
 									<label class="wizard-label">Estado civil</label>
 									<dx-select-box stylingMode="outlined"
 										[(value)]="formData.ESTADO_CIVIL"
@@ -218,7 +208,7 @@
 										valueExpr="value"
 									></dx-select-box>
 								</div>
-								<div class="wizard-field wizard-field--span2">
+								<div class="wizard-field">
 									<label class="wizard-label">Nacionalidad</label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.NACIONALIDAD"></dx-text-box>
 								</div>
@@ -261,10 +251,6 @@
 								<div class="wizard-field">
 									<label class="wizard-label">ISSS</label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.ISSS"></dx-text-box>
-								</div>
-								<div class="wizard-field">
-									<label class="wizard-label">NUP</label>
-									<dx-text-box stylingMode="outlined" [(value)]="formData.NUP"></dx-text-box>
 								</div>
 								<div class="wizard-field">
 									<label class="wizard-label">AFP</label>

@@ -19,6 +19,7 @@ import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 import { ThemeService } from 'src/app/shared/services';
 import {
+	CompletarFormularioEmpleoPayload,
 	CompetenciaRow,
 	createEmptyFormData,
 	createFamiliaresDirectos,
@@ -351,6 +352,11 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			return;
 		}
 
+		if (!this.formData.FECHA_NACIMIENTO) {
+			this.mostrarError('Debes indicar la fecha de nacimiento.');
+			return;
+		}
+
 		if (!this.formData.DECLARA_VERDAD || !this.formData.AUTORIZA_VERIFICACION) {
 			this.mostrarError('Debes aceptar las declaraciones para enviar la solicitud.');
 			return;
@@ -360,18 +366,9 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 		this.formData.FECHA_DECLARACION = new Date();
 
 		try {
+			const payload = this.construirPayloadCompletar();
 			const response: any = await firstValueFrom(
-				this.service.completar({
-					TOKEN: this.token,
-					...this.formData,
-					FAMILIARES_DIRECTOS: this.familiaresDirectos,
-					HIJOS: this.hijos,
-					ESTUDIOS: this.estudios,
-					IDIOMAS: this.idiomas,
-					COMPETENCIAS: this.competencias,
-					EXPERIENCIAS: this.experiencias,
-					FAMILIARES_UEES: this.familiaresUees,
-				})
+				this.service.completar(payload)
 			);
 
 			if (response.Result) {
@@ -510,18 +507,98 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 		}
 	}
 
-	private calcularEdad(fecha: Date | null): number | null {
+	private construirPayloadCompletar(): CompletarFormularioEmpleoPayload {
+		const { FOTO_URL, ...datosPersistibles } = this.formData;
+		void FOTO_URL;
+
+		return {
+			TOKEN: this.token,
+			...datosPersistibles,
+			FECHA_NACIMIENTO: this.toDateOnly(this.formData.FECHA_NACIMIENTO),
+			FAMILIARES_DIRECTOS: this.familiaresDirectos
+				.filter((familiar) => this.tieneDatosFamiliarDirecto(familiar))
+				.map((familiar) => ({
+					TIPO: familiar.TIPO,
+					NOMBRE: familiar.NOMBRE,
+					DOMICILIO: familiar.DOMICILIO,
+					FECHA_NACIMIENTO: familiar.FECHA_NACIMIENTO,
+					OCUPACION: familiar.OCUPACION,
+				})),
+			HIJOS: this.hijos.map((hijo) => ({
+				NOMBRE: hijo.NOMBRE,
+				EDAD: hijo.EDAD,
+				SEXO: hijo.SEXO,
+				FECHA_NACIMIENTO: hijo.FECHA_NACIMIENTO,
+			})),
+			ESTUDIOS: this.estudios.map((estudio) => ({
+				NIVEL: estudio.NIVEL,
+				INSTITUCION: estudio.INSTITUCION,
+				DESDE: estudio.DESDE,
+				HASTA: estudio.HASTA,
+				TITULO: estudio.TITULO,
+			})),
+			IDIOMAS: this.idiomas.map((idioma) => ({
+				IDIOMA: idioma.IDIOMA,
+				NIVEL: idioma.NIVEL,
+			})),
+			COMPETENCIAS: this.competencias.map((competencia) => ({
+				HERRAMIENTA: competencia.HERRAMIENTA,
+				NIVEL: competencia.NIVEL,
+			})),
+			EXPERIENCIAS: this.experiencias.map((experiencia) => ({
+				EMPRESA: experiencia.EMPRESA,
+				TELEFONO: experiencia.TELEFONO,
+				CARGO: experiencia.CARGO,
+				JEFE_INMEDIATO: experiencia.JEFE_INMEDIATO,
+				FECHA_INICIO: experiencia.FECHA_INICIO,
+				FECHA_FIN: experiencia.FECHA_FIN,
+				SALARIO_INICIAL: experiencia.SALARIO_INICIAL,
+				SALARIO_FINAL: experiencia.SALARIO_FINAL,
+				MOTIVO_SALIDA: experiencia.MOTIVO_SALIDA,
+			})),
+			FAMILIARES_UEES: this.formData.TIENE_FAMILIARES_UEES
+				? this.familiaresUees.map((familiar) => ({
+						NOMBRE: familiar.NOMBRE,
+						PARENTESCO: familiar.PARENTESCO,
+						UNIDAD: familiar.UNIDAD,
+						TELEFONO: familiar.TELEFONO,
+				  }))
+				: [],
+		};
+	}
+
+	private tieneDatosFamiliarDirecto(familiar: FamiliarDirecto): boolean {
+		return (
+			!!familiar.NOMBRE.trim() ||
+			!!familiar.DOMICILIO.trim() ||
+			familiar.FECHA_NACIMIENTO !== null ||
+			!!familiar.OCUPACION.trim()
+		);
+	}
+
+	private toDateOnly(fecha: Date): string {
+		const date = new Date(fecha);
+		const year = date.getFullYear();
+		const month = `${date.getMonth() + 1}`.padStart(2, '0');
+		const day = `${date.getDate()}`.padStart(2, '0');
+		return `${year}-${month}-${day}`;
+	}
+
+	private calcularEdad(fecha: Date | null): number {
 		if (!fecha) {
-			return null;
+			return 0;
 		}
 		const birth = new Date(fecha);
+		if (Number.isNaN(birth.getTime())) {
+			return 0;
+		}
 		const today = new Date();
 		let age = today.getFullYear() - birth.getFullYear();
 		const m = today.getMonth() - birth.getMonth();
 		if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
 			age--;
 		}
-		return age >= 0 ? age : null;
+		return age >= 0 ? age : 0;
 	}
 
 	private mostrarError(mensaje: string): void {

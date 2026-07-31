@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
@@ -173,21 +174,111 @@ namespace sguees.Services
 
         public async Task<CResult> CompletarAsync(SC_SOLICITUD_EMPLEO_COMPLETARParam data)
         {
-            var token = data?.TOKEN?.Trim();
-            if (string.IsNullOrWhiteSpace(token) ||
-                string.IsNullOrWhiteSpace(data.NOMBRE1) ||
-                string.IsNullOrWhiteSpace(data.APELLIDO1))
+            if (data == null)
             {
                 return Error("Debe completar los campos requeridos.");
             }
 
-            data.NOMBRE1 = data.NOMBRE1.Trim();
-            data.NOMBRE2 = data.NOMBRE2?.Trim();
-            data.APELLIDO1 = data.APELLIDO1.Trim();
-            data.APELLIDO2 = data.APELLIDO2?.Trim();
+            TrimStrings(data);
+            var token = data.TOKEN;
 
-            // Agregar aquí la normalización de nuevos campos del formulario de solicitud de empleo.
+            data.FAMILIARES_DIRECTOS ??= new();
+            data.HIJOS ??= new();
+            data.ESTUDIOS ??= new();
+            data.IDIOMAS ??= new();
+            data.COMPETENCIAS ??= new();
+            data.EXPERIENCIAS ??= new();
+            data.FAMILIARES_UEES ??= new();
+
+            TrimStrings(data.FAMILIARES_DIRECTOS);
+            TrimStrings(data.HIJOS);
+            TrimStrings(data.ESTUDIOS);
+            TrimStrings(data.IDIOMAS);
+            TrimStrings(data.COMPETENCIAS);
+            TrimStrings(data.EXPERIENCIAS);
+            TrimStrings(data.FAMILIARES_UEES);
+
+            data.FAMILIARES_DIRECTOS = data.FAMILIARES_DIRECTOS
+                .Where(TieneDatosFamiliarDirecto)
+                .ToList();
+
+            if (!data.TIENE_FAMILIARES_UEES)
+            {
+                data.FAMILIARES_UEES.Clear();
+            }
+
+            if (string.IsNullOrWhiteSpace(token) ||
+                string.IsNullOrWhiteSpace(data.NOMBRE1) ||
+                string.IsNullOrWhiteSpace(data.APELLIDO1) ||
+                data.FECHA_NACIMIENTO == default ||
+                string.IsNullOrWhiteSpace(data.CORREO) ||
+                string.IsNullOrWhiteSpace(data.CELULAR) ||
+                string.IsNullOrWhiteSpace(data.DIRECCION) ||
+                string.IsNullOrWhiteSpace(data.DUI) ||
+                string.IsNullOrWhiteSpace(data.EMERGENCIA_NOMBRE) ||
+                string.IsNullOrWhiteSpace(data.EMERGENCIA_TELEFONO) ||
+                !data.DECLARA_VERDAD ||
+                !data.AUTORIZA_VERIFICACION ||
+                data.FECHA_DECLARACION == default)
+            {
+                return Error("Debe completar los campos requeridos.");
+            }
+
+            if (data.POSEE_DISCAPACIDAD && string.IsNullOrWhiteSpace(data.TIPO_DISCAPACIDAD))
+            {
+                return Error("Debe indicar el tipo de discapacidad.");
+            }
+
             return await _repo.CompletarAsync(CalcularTokenHash(token), data);
+        }
+
+        private static void TrimStrings<T>(IEnumerable<T> items)
+        {
+            foreach (var item in items)
+            {
+                TrimStrings(item);
+            }
+        }
+
+        private static void TrimStrings(object data)
+        {
+            if (data == null)
+            {
+                return;
+            }
+
+            foreach (var property in data.GetType().GetProperties()
+                         .Where(property => property.CanRead &&
+                                            property.CanWrite &&
+                                            property.PropertyType == typeof(string)))
+            {
+                if (property.GetValue(data) is string value)
+                {
+                    property.SetValue(data, value.Trim());
+                }
+            }
+        }
+
+        private static bool TieneDatosFamiliarDirecto(SC_PERSONA_FAMILIARTable familiar)
+        {
+            if (familiar == null)
+            {
+                return false;
+            }
+
+            var propiedadesDatos = new[] { "NOMBRE", "DOMICILIO", "FECHA_NACIMIENTO", "OCUPACION" };
+            return propiedadesDatos.Any(nombre =>
+            {
+                var valor = familiar.GetType().GetProperty(nombre)?.GetValue(familiar);
+                return valor switch
+                {
+                    null => false,
+                    string texto => !string.IsNullOrWhiteSpace(texto),
+                    DateOnly fecha => fecha != default,
+                    DateTime fecha => fecha != default,
+                    _ => true,
+                };
+            });
         }
 
         private async Task<COM_PARAMETROView> ObtenerParametroCorreoAsync(int corrEmpresa)

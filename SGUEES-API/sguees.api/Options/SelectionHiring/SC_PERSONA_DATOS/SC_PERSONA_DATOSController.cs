@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using eFramework.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using sguees.api.Shared;
 using sguees.Models;
 using sguees.Services;
 
@@ -25,7 +26,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/sc-persona-datos|R")]
 		public async Task<CResult> GetAll([FromQuery] SC_PERSONA_DATOSParam Data)
 		{
-			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			Data.CORR_EMPRESA = GetCorrEmpresa();
 			return await _service.GetAllAsync(Data);
 		}
 
@@ -33,7 +34,7 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/sc-persona-datos|R")]
 		public async Task<CResult> Get([FromQuery] SC_PERSONA_DATOSParam Data)
 		{
-			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			Data.CORR_EMPRESA = GetCorrEmpresa();
 			return await _service.GetAsync(Data);
 		}
 
@@ -41,9 +42,9 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/sc-persona-datos|C")]
 		public async Task<IActionResult> Post(SC_PERSONA_DATOSTable Data)
 		{
-			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			Data.CORR_EMPRESA = GetCorrEmpresa();
 
-			var resultado = await _service.CreateAsync(Data, "Admin", "e-CoffeeTech");
+			var resultado = await _service.CreateAsync(Data, string.Empty, string.Empty);
 			if (resultado.ErrorCode == 0)
 			{
 				return StatusCode(201, resultado);
@@ -58,9 +59,10 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/sc-persona-datos|U")]
 		public async Task<IActionResult> Put(SC_PERSONA_DATOSTable Data)
 		{
-			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			this.ApplyQueryKeys(Data, nameof(SC_PERSONA_DATOSTable.CORR_PERSONA_DATOS));
+			Data.CORR_EMPRESA = GetCorrEmpresa();
 
-			var resultado = await _service.UpdateAsync(Data, "Admin", "e-CoffeeTech");
+			var resultado = await _service.UpdateAsync(Data, string.Empty, string.Empty);
 			if (resultado.ErrorCode == 0)
 			{
 				return StatusCode(201, resultado);
@@ -75,9 +77,9 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/sc-persona-datos|D")]
 		public async Task<IActionResult> Delete([FromQuery] SC_PERSONA_DATOSTable Data)
 		{
-			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			Data.CORR_EMPRESA = GetCorrEmpresa();
 
-			var resultado = await _service.DeleteAsync(Data, "Admin", "e-CoffeeTech");
+			var resultado = await _service.DeleteAsync(Data, string.Empty, string.Empty);
 			if (resultado.ErrorCode == 0)
 			{
 				return Ok(resultado);
@@ -92,8 +94,14 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/sc-solicitud-empleo|R")]
 		public async Task<CResult> GetCORR_PERSONA_DATOS_SC_SOLICITUD_EMPLEO([FromQuery] SC_PERSONA_DATOSParam Data)
 		{
-			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			Data.CORR_EMPRESA = GetCorrEmpresa();
 			return await _service.GetAsync(Data);
+		}
+
+		private int GetCorrEmpresa()
+		{
+			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
+			return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
 		}
 	}
 }

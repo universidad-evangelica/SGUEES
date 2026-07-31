@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { environment } from 'src/environments/environment';
+import { CompletarFormularioEmpleoPayload } from './formulario-empleo-form.models';
 
 @Injectable({
 	providedIn: 'root',
@@ -20,7 +21,7 @@ export class FormularioEmpleoFormService {
 		);
 	}
 
-	completar(data: any): Observable<IResult> {
+	completar(data: CompletarFormularioEmpleoPayload): Observable<IResult> {
 		return this.http.post<IResult>(
 			`${environment.UrlSELECCIONCONTRATACIONAPI}${this.controller}/Completar`,
 			data

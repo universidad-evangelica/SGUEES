@@ -76,9 +76,8 @@ export interface FormularioEmpleoData {
 	NOMBRE2: string;
 	APELLIDO1: string;
 	APELLIDO2: string;
-	FECHA_NACIMIENTO: Date | '';
-	EDAD: number | 0;
-	SEXO: string;
+	FECHA_NACIMIENTO: Date | null;
+	EDAD: number;
 	ESTADO_CIVIL: string;
 	NACIONALIDAD: string;
 
@@ -92,7 +91,6 @@ export interface FormularioEmpleoData {
 	DUI: string;
 	PASAPORTE: string;
 	ISSS: string;
-	NUP: string;
 	AFP: string;
 	NOMBRE_AFP: string;
 	LICENCIA: string;
@@ -131,6 +129,29 @@ export interface FormularioEmpleoData {
 	FIRMA_ELECTRONICA: string;
 }
 
+export type FamiliarDirectoPayload = Omit<FamiliarDirecto, 'ETIQUETA'>;
+export type HijoPayload = Omit<HijoRow, 'ID'>;
+export type EstudioPayload = Omit<EstudioRow, 'ID'>;
+export type IdiomaPayload = Omit<IdiomaRow, 'ID'>;
+export type CompetenciaPayload = Omit<CompetenciaRow, 'ID'>;
+export type ExperienciaPayload = Omit<ExperienciaRow, 'ID'>;
+export type FamiliarUeesPayload = Omit<FamiliarUeesRow, 'ID'>;
+
+/** Contrato SPA para Completar. Excluye campos exclusivos de UI como FOTO_URL e ID. */
+export interface CompletarFormularioEmpleoPayload
+	extends Omit<FormularioEmpleoData, 'FOTO_URL' | 'FECHA_NACIMIENTO'> {
+	TOKEN: string;
+	/** DateOnly requerido por la API, en formato local yyyy-MM-dd. */
+	FECHA_NACIMIENTO: string;
+	FAMILIARES_DIRECTOS: FamiliarDirectoPayload[];
+	HIJOS: HijoPayload[];
+	ESTUDIOS: EstudioPayload[];
+	IDIOMAS: IdiomaPayload[];
+	COMPETENCIAS: CompetenciaPayload[];
+	EXPERIENCIAS: ExperienciaPayload[];
+	FAMILIARES_UEES: FamiliarUeesPayload[];
+}
+
 export function createEmptyFormData(): FormularioEmpleoData {
 	return {
 		FOTO_URL: '',
@@ -138,9 +159,8 @@ export function createEmptyFormData(): FormularioEmpleoData {
 		NOMBRE2: '',
 		APELLIDO1: '',
 		APELLIDO2: '',
-		FECHA_NACIMIENTO: '',
+		FECHA_NACIMIENTO: null,
 		EDAD: 0,
-		SEXO: '',
 		ESTADO_CIVIL: '',
 		NACIONALIDAD: 'Salvadoreña',
 		CORREO: '',
@@ -150,7 +170,6 @@ export function createEmptyFormData(): FormularioEmpleoData {
 		DUI: '',
 		PASAPORTE: '',
 		ISSS: '',
-		NUP: '',
 		AFP: '',
 		NOMBRE_AFP: '',
 		LICENCIA: '',
