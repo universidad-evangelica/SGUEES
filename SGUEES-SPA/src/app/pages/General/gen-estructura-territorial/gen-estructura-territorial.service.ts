@@ -514,12 +514,6 @@ export class GenEstructuraTerritorialService {
 }
 
 export const EMPRESA_WARNING_ERROR_CODE = 4100;
-export const EMPRESA_REGISTRO_ETIQUETA = 'la estructura territorial';
-
-// Qué hace: genera el mensaje cuando la sesión no tiene empresa asignada.
-export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
-	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
-}
 
 // Qué hace: identifica respuestas controladas por falta de empresa en sesión.
 export function isEmpresaWarningResponse(response: any): boolean {

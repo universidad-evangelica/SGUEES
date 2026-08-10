@@ -22,7 +22,7 @@
 	</app-barra-data-mtto>
 
 	<!-- Formulario de creación/edición (oculto en browse). -->
-	<div class="content-block dx-card responsive-paddings pla-puesto-page pla-puesto-form-card" *ngIf="!isBrowse()">
+	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 		<dx-form
 			#fData
 			id="fData"
@@ -115,5 +115,6 @@
 	[showIndicator]="true"
 	[showPane]="true"
 	[shading]="true"
+	(onShown)="(loadingVisible)"
 >
 </dx-load-panel>

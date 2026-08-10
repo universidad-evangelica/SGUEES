@@ -65,9 +65,9 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
-		this.readOnly = xEstado === UpdateType.Browse || xEstado === UpdateType.Consult;
 		if (xEstado === UpdateType.Browse) {
 			this.subTituloVentana = this.maintenanceSubtitulo;
+			this.readOnly = false;
 		}
 	}
 
@@ -324,72 +324,43 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 
 		this.guardarMtto({
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
-			insert: () => this.convertirDuplicadoEnWarning(this.service.insert(this.model)),
-			update: () => this.convertirDuplicadoEnWarning(this.service.update(this.model)),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
 		});
 	}
 
-	private convertirDuplicadoEnWarning<T>(request: Observable<T>): Observable<T> {
+	// Qué hace: convierte un error de llave foránea al eliminar en una advertencia controlada.
+	// Cómo: intercepta el error de la petición y, si el mensaje indica una relación, devuelve un IResult con advertencia.
+	private convertirErrorMttoEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
-				const message = this.obtenerMensajeApiLocal(error);
-				const normalized = message.toLowerCase();
-				const errorCode = Number(error?.ErrorCode ?? error?.error?.ErrorCode);
-				if (errorCode === 2601 || errorCode === 2627 || this.esErrorDuplicadoLocal(normalized)) {
-					return of({
-						Result: false,
-						ErrorCode: 2627,
-						ErrorMessage: 'El nombre de puesto ingresado esta registrado. Escriba otro nombre para continuar.',
-					} as T);
-				}
-				return throwError(() => error);
-			})
-		);
-	}
+				const mensaje = `${
+					error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.error?.message ?? error?.error ?? error?.message ?? error ?? ''
+				}`;
+				const normalizado = mensaje.toLowerCase();
+				const tieneRelacion = [
+					'foreign key',
+					'reference constraint',
+					'clave externa',
+					'clave foránea',
+					'llave foránea',
+					'hijos',
+					'registros relacionados',
+					'registros asociados',
+					'asociados',
+				].some((texto) => normalizado.includes(texto));
 
-	private convertirEliminacionRelacionadaEnWarning<T>(request: Observable<T>): Observable<T> {
-		return request.pipe(
-			catchError((error: any) => {
-				const message = this.obtenerMensajeApiLocal(error).toLowerCase();
-				const errorCode = Number(error?.ErrorCode ?? error?.error?.ErrorCode);
-				if (errorCode === 547 || this.esErrorRelacionadosLocal(message)) {
+				if (tieneRelacion) {
 					return of({
 						Result: false,
 						ErrorCode: 2627,
 						ErrorMessage: 'No se puede eliminar porque tiene registros relacionados.',
 					} as T);
 				}
+
 				return throwError(() => error);
 			})
 		);
-	}
-
-	private esErrorDuplicadoLocal(message: string): boolean {
-		return ['ya existe', 'duplicad', 'primary key', 'unique key', 'mismo tiempo', 'llave primaria', 'clave primaria'].some(
-			(fragment) => message.includes(fragment)
-		);
-	}
-
-	private esErrorRelacionadosLocal(message: string): boolean {
-		return [
-			'foreign key',
-			'reference constraint',
-			'restricción reference',
-			'restriccion reference',
-			'hijos',
-			'relacionad',
-			'asociad',
-		].some((fragment) => message.includes(fragment));
-	}
-
-	private obtenerMensajeApiLocal(error: any): string {
-		if (typeof error === 'string') {
-			return error;
-		}
-		if (typeof error?.error === 'string') {
-			return error.error;
-		}
-		return `${error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.message ?? error ?? ''}`;
 	}
 
 	override cancelar(): void {
@@ -399,7 +370,7 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
-				this.convertirEliminacionRelacionadaEnWarning(this.service.delete(this.fillParam(e.data.CORR_PUESTO))),
+				this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_PUESTO))),
 		});
 	}
 

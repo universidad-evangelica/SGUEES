@@ -19,9 +19,7 @@ import { GenDistrito } from './gen-distrito/models/gen-distrito';
 import { GenMunicipio } from './gen-municipio/models/gen-municipio';
 import { GenPais, TerritorialNivel } from './models/gen-pais';
 import {
-	EMPRESA_REGISTRO_ETIQUETA,
 	GenEstructuraTerritorialService,
-	getEmpresaWarningMessage,
 	isEmpresaFkErrorMessage,
 	isEmpresaWarningResponse,
 } from './gen-estructura-territorial.service';
@@ -56,7 +54,6 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 
 	readonly cascadeGridHeight = 530;
 	protected override mttoParchearGridTrasGuardar = true;
-	private readonly maintenanceSubtitulo = 'Estructura territorial';
 	private readonly cascadeGridHooks = new WeakSet<object>();
 
 	vistaDetalle = false;
@@ -131,13 +128,11 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return this.screen(window.innerWidth) === 'sm' ? 'calc(100vw - 24px)' : 520;
 	}
 
-	// Qué hace: sincroniza el estado del mantenimiento con la barra y el subtítulo.
-	// Cómo: llama a AsignaStatus base, syncToolbarContext y restaura subtítulo en Browse.
+	// Qué hace: sincroniza el estado del mantenimiento con la barra.
+	// Cómo: llama a AsignaStatus base y syncToolbarContext.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		this.syncToolbarContext();
-		if (xEstado === UpdateType.Browse && !this.vistaDetalle) {
-		}
 	}
 
 	// Qué hace: abre el documento país al hacer doble clic en el grid.
@@ -378,7 +373,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	// Cómo: llama a deletePais del servicio vía rowRemovingMtto.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.convertirEliminacionRelacionadaEnWarning(this.service.deletePais(e.data)),
+			deleteFn: () => this.convertirErrorMttoEnWarning(this.service.deletePais(e.data)),
 			successMessage: 'País eliminado con éxito.',
 		});
 	}
@@ -1047,7 +1042,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	// Cómo: llama a deleteDepto del servicio vía eliminarNivel.
 	private eliminarDepto(row: GenDepto): void {
 		this.eliminarNivel(
-			this.convertirEliminacionRelacionadaEnWarning(this.service.deleteDepto(row)),
+			this.convertirErrorMttoEnWarning(this.service.deleteDepto(row)),
 			'depto',
 			'departamento'
 		);
@@ -1057,7 +1052,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	// Cómo: llama a deleteMunicipio del servicio vía eliminarNivel.
 	private eliminarMunicipio(row: GenMunicipio): void {
 		this.eliminarNivel(
-			this.convertirEliminacionRelacionadaEnWarning(this.service.deleteMunicipio(row)),
+			this.convertirErrorMttoEnWarning(this.service.deleteMunicipio(row)),
 			'municipio',
 			'municipio'
 		);
@@ -1067,7 +1062,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	// Cómo: llama a deleteDistrito del servicio vía eliminarNivel.
 	private eliminarDistrito(row: GenDistrito): void {
 		this.eliminarNivel(
-			this.convertirEliminacionRelacionadaEnWarning(this.service.deleteDistrito(row)),
+			this.convertirErrorMttoEnWarning(this.service.deleteDistrito(row)),
 			'distrito',
 			'distrito'
 		);
@@ -1159,9 +1154,9 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
-	// Qué hace: convierte errores de integridad al eliminar en advertencia.
-	// Cómo: intercepta ErrorCode 547 o mensajes de FK/relacionados.
-	private convertirEliminacionRelacionadaEnWarning<T>(request: Observable<T>): Observable<T> {
+	// Qué hace: convierte un error de llave foránea al eliminar en una advertencia controlada.
+	// Cómo: intercepta ErrorCode 547 o mensajes de FK/relacionados (mismo patrón sc-riesgo-puesto; mantiene chequeos de empresa del dominio territorial).
+	private convertirErrorMttoEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
 				const message = this.getErrorMessage(error).toLowerCase();
@@ -1311,22 +1306,5 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return errorCode === 2601 || errorCode === 2627 || this.isDuplicateWarningMessage(message)
 			? NotifyType.Warning
 			: NotifyType.Error;
-	}
-
-	// Qué hace: traduce mensajes técnicos a texto claro para el usuario.
-	// Cómo: mapea empresa, duplicado y relacionados a mensajes funcionales.
-	private getWarningMessage(message: string): string {
-		const cleanMessage = `${message ?? ''}`.replace(/^error:\s*/i, '').trim();
-		const value = cleanMessage.toLowerCase();
-		if (isEmpresaFkErrorMessage(cleanMessage) || value.includes('no tiene una empresa asignada')) {
-			return getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA);
-		}
-		if (this.isDuplicateWarningMessage(cleanMessage)) {
-			return cleanMessage;
-		}
-		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados') || value.includes('relacionados')) {
-			return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';
-		}
-		return cleanMessage;
 	}
 }

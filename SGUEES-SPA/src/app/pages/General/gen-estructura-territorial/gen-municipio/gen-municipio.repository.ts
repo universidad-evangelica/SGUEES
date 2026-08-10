@@ -15,12 +15,6 @@ export class GenMunicipioRepository {
 
 	constructor(private objData: CData) {}
 
-	// Qué hace: consulta el listado de municipios.
-	// Cómo: GET GetAll al controlador GEN_MUNICIPIO con los filtros recibidos.
-	getAll(xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlGENERALAPI);
-	}
-
 	// Qué hace: crea un municipio nuevo.
 	// Cómo: POST con el modelo al controlador GEN_MUNICIPIO.
 	create(model: any): Observable<IResult> {
