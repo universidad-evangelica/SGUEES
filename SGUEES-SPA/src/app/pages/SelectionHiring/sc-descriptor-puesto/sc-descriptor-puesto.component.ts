@@ -7166,10 +7166,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							return;
 						}
 
-						if (response.Data) {
-							this.model = this.fillData(response.Data);
-							this.modelUpdate = this.fillData(response.Data);
-						}
+						// Solo aplica RESPONSABLE; no reemplaza el modelo (conserva Reporta a u otros cambios no guardados).
 						this.model.RESPONSABLE = textoGuardado;
 						if (this.modelUpdate) {
 							this.modelUpdate.RESPONSABLE = textoGuardado;
@@ -7360,9 +7357,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							return;
 						}
 
-						if (response.Data) {
-							this.model = this.fillData(response.Data);
-							this.modelUpdate = this.fillData(response.Data);
+						// Solo aplica impacto económico; no reemplaza el resto del encabezado en memoria.
+						const corrImpactoGuardado = corrImpacto > 0 ? corrImpacto : null;
+						const descripcionGuardada = (data?.INFORMACION ?? '').trim();
+						this.model.CORR_IMPACTO_ECONOMICO = corrImpactoGuardado;
+						this.model.DESCRIPCION_IMPACTO_ECONOMICO = descripcionGuardada;
+						if (this.modelUpdate) {
+							this.modelUpdate.CORR_IMPACTO_ECONOMICO = corrImpactoGuardado;
+							this.modelUpdate.DESCRIPCION_IMPACTO_ECONOMICO = descripcionGuardada;
 						}
 
 						this.responsabilidadesCargoEditando = false;
