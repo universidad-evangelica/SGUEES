@@ -95,6 +95,16 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Qué hace: entrega puestos para el lookup de asignación a unidades.
+        // Cómo: fija CORR_EMPRESA de sesión y llama GetAllAsync (autorizado para gen-unidades-puesto).
+        [HttpGet("GetCORR_PUESTO_GEN_UNIDADES_PUESTO")]
+        [Authorize(Policy = "/gen-unidades-puesto|R")]
+        public async Task<CResult> GetCORR_PUESTO_GEN_UNIDADES_PUESTO([FromQuery] PLA_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetAllAsync(Data);
+        }
+
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
