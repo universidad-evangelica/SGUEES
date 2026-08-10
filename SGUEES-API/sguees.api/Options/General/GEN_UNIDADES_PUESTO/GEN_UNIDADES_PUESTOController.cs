@@ -71,6 +71,16 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Qué hace: entrega puestos asignados a una unidad para el descriptor de puesto.
+        // Cómo: fija CORR_EMPRESA; filtra por CORR_UNIDAD de query y llama GetAllAsync.
+        [HttpGet("GetCORR_PUESTO_SC_DESCRIPTOR_PUESTO")]
+        [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        public async Task<CResult> GetCORR_PUESTO_SC_DESCRIPTOR_PUESTO([FromQuery] GEN_UNIDADES_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetAllAsync(Data);
+        }
+
         // Qué hace: obtiene CORR_EMPRESA del claim del usuario autenticado.
         // Cómo: busca el claim CORR_EMPRESA y lo parsea a int; si falta, retorna 0.
         private int GetCorrEmpresa()

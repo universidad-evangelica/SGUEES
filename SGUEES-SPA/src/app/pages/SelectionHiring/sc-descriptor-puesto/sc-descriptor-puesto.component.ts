@@ -45,14 +45,13 @@ import {
 	FORMATO_AMBOS,
 	FORMATO_CORTO,
 	FORMATO_EXTENSO,
-	MOCK_PUESTOS,
-	MOCK_UNIDADES,
-	MockPuesto,
-	MockUnidad,
 	PERFIL_PUESTO_DEFAULT,
 	ScCompetenciaConductualLookupItem,
 	ScCompetenciaTecnicaLookupItem,
+	ScDescriptorJefeLookup,
 	ScDescriptorPuesto,
+	ScDescriptorPuestoLookup,
+	ScDescriptorUnidadLookup,
 	ScImpactoEconomicoLookupItem,
 	ScInduccionLookupItem,
 	ScRequerimientoOrganizacionalLookupItem,
@@ -107,9 +106,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	puestoInvalido = false;
 	puestoReportaInvalido = false;
 
-	mCORR_UNIDAD: MockUnidad[] = [];
-	mCORR_PUESTO: MockPuesto[] = [];
-	mCORR_PUESTO_REPORTA: MockPuesto[] = [];
+	mCORR_UNIDAD: ScDescriptorUnidadLookup[] = [];
+	mCORR_PUESTO: ScDescriptorPuestoLookup[] = [];
+	mCORR_PUESTO_REPORTA: ScDescriptorJefeLookup[] = [];
 	mCORR_FRECUENCIA: ScFrecuenciaLookup[] = [];
 	// Al editar un KPI: frecuencias activas del catálogo más la ya guardada en la fila (aunque esté inactiva).
 	mCORR_FRECUENCIA_KPI_EDIT: ScFrecuenciaLookup[] = [];
@@ -155,7 +154,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ dataField: 'DESCRIPCION_CATALOGO', caption: 'Impacto economico', width: 360 },
 	];
 	reportaLookupColumns = [
-		{ dataField: 'RESPONSABLE', caption: 'Nombre', width: 220 },
+		{ dataField: 'NOMBRE_EMPLEADO', caption: 'Nombre', width: 220 },
 		{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260 },
 	];
 	competenciasTecnicasLookupColumns = [
@@ -378,7 +377,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Pide a la API los catálogos del encabezado y de cada sección.
 	// Cada combo carga por separado para no bloquear la pantalla mientras llegan los datos.
 	llenaComboBox(): void {
-		this.mCORR_UNIDAD = [...MOCK_UNIDADES];
+		this.getCORR_UNIDAD();
 		this.actualizarPuestosPorUnidad(this.model?.CORR_UNIDAD ?? null);
 		this.getCORR_FRECUENCIA();
 		this.getCORR_DISPONIBILIDAD_HORARIO();
@@ -396,6 +395,52 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.getESTADO_FAMILIAR();
 		this.getLICENCIA();
 		this.getTIPO_REQUERIDO();
+	}
+
+	// Qué hace: carga las unidades permitidas al rol del usuario (SC_UNIDADES_TIPO_USUARIO).
+	// Cómo: lookup GetCORR_UNIDAD vía UrlSELECCIONCONTRATACIONAPI; el API filtra por TIPO_USUARIO del token.
+	getCORR_UNIDAD(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_UNIDADES_TIPO_USUARIO',
+				'GetCORR_UNIDAD',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result || !Array.isArray(response.Data)) {
+						this.mCORR_UNIDAD = [];
+						this.asegurarUnidadSeleccionadaEnLookup();
+						return;
+					}
+
+					const vistos = new Set<number>();
+					this.mCORR_UNIDAD = response.Data
+						.map((item: any) => ({
+							CORR_UNIDAD: Number(item.CORR_UNIDAD),
+							CODIGO_UNIDAD: (item.CODIGO_UNIDAD ?? '').trim(),
+							NOMBRE_UNIDAD: (item.NOMBRE_UNIDAD ?? '').trim(),
+							ACTIVO: item.ACTIVO !== false,
+						}))
+						.filter((item: ScDescriptorUnidadLookup) => {
+							const corr = Number(item.CORR_UNIDAD);
+							if (!corr || corr <= 0 || vistos.has(corr)) {
+								return false;
+							}
+							vistos.add(corr);
+							return true;
+						});
+					this.asegurarUnidadSeleccionadaEnLookup();
+				},
+				error: (error) => {
+					this.mCORR_UNIDAD = [];
+					this.asegurarUnidadSeleccionadaEnLookup();
+					this.notifyApiError(error);
+				},
+			});
 	}
 
 	// Qué hace: carga el catálogo de formatos disponibles para el descriptor (corto/extenso).
@@ -987,10 +1032,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return vRow[0].CORR_PUESTO;
 	}
 
-	// Qué hace: obtiene el correlativo del puesto al que reporta, elegido en el lookup del encabezado.
-	// Cómo: lee CORR_PUESTO de la primera fila seleccionada del lookup.
+	// Qué hace: obtiene el correlativo del jefe (empleado) elegido en Reporta a.
+	// Cómo: lee CORR_EMPLEADO de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_PUESTO_REPORTA(vRow: any): number {
-		return vRow[0].CORR_PUESTO;
+		return vRow[0].CORR_EMPLEADO;
 	}
 
 	// Qué hace: obtiene el correlativo de la frecuencia elegida en el lookup de KPIs.
@@ -1203,6 +1248,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		super.editarClick(e);
 		this.resetearFuncionesTabsDirty();
 		this.cargarDatosTabs();
+		this.asegurarUnidadSeleccionadaEnLookup();
 		this.actualizarPuestosPorUnidad(this.model.CORR_UNIDAD);
 		if (this.model.CORR_PUESTO) {
 			this.aplicarDatosPuestoSeleccionado(this.model.CORR_PUESTO, false);
@@ -1223,7 +1269,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		super.rowDblClick(e);
 		this.resetearFuncionesTabsDirty();
 		this.cargarDatosTabs();
+		this.asegurarUnidadSeleccionadaEnLookup();
 		this.actualizarPuestosPorUnidad(this.model.CORR_UNIDAD);
+		if (this.model.CORR_PUESTO) {
+			this.aplicarDatosPuestoSeleccionado(this.model.CORR_PUESTO, false);
+		}
 		setTimeout(() => {
 			this.syncHeaderForm();
 			this.bloquear();
@@ -5628,8 +5678,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.model.CORR_PUESTO = null;
 		this.model.CORR_PUESTO_REPORTA = null;
 		this.model.RESPONSABLE = '';
+		this.model.NOMBRE_PUESTO = '';
+		this.mCORR_PUESTO_REPORTA = [];
 		if (value != null && value > 0) {
 			this.unidadInvalido = false;
+			this.model.NOMBRE_UNIDAD = this.getNombreUnidad(value);
+		} else {
+			this.model.NOMBRE_UNIDAD = '';
 		}
 		this.actualizarPuestosPorUnidad(value);
 	}
@@ -5682,12 +5737,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
-	// Al elegir puesto reporta, actualiza el modelo y quita la marca de inválido.
+	// Al elegir jefe en Reporta a, guarda CORR_EMPLEADO y el NOMBRE_EMPLEADO en RESPONSABLE.
 	onPuestoReportaChanged(value: number | null): void {
-		this.model.CORR_PUESTO_REPORTA = value;
-		if (value != null && value > 0) {
+		const corrEmpleado = value != null ? Number(value) : null;
+		this.model.CORR_PUESTO_REPORTA = corrEmpleado;
+		const jefe = this.mCORR_PUESTO_REPORTA.find((item) => Number(item.CORR_EMPLEADO) === Number(corrEmpleado));
+		this.model.RESPONSABLE = (jefe?.NOMBRE_EMPLEADO ?? '').trim();
+		if (corrEmpleado != null && corrEmpleado > 0) {
 			this.puestoReportaInvalido = false;
 		}
+		this.syncHeaderForm();
 	}
 
 	// Reacciona a cambios del formulario de encabezado (por ejemplo FORMATO) sin bucles de sincronización.
@@ -5940,17 +5999,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: obtiene el nombre de la unidad a partir de su correlativo.
-	// Cómo: busca en el catálogo local MOCK_UNIDADES y devuelve NOMBRE_UNIDAD, o cadena vacía si no la encuentra.
+	// Cómo: busca en mCORR_UNIDAD (unidades del rol) y devuelve NOMBRE_UNIDAD.
 	getNombreUnidad(corrUnidad: number | null | undefined): string {
 		const corr = Number(corrUnidad);
-		return MOCK_UNIDADES.find((item) => Number(item.CORR_UNIDAD) === corr)?.NOMBRE_UNIDAD ?? '';
+		return this.mCORR_UNIDAD.find((item) => Number(item.CORR_UNIDAD) === corr)?.NOMBRE_UNIDAD ?? '';
 	}
 
 	// Qué hace: obtiene el nombre del puesto a partir de su correlativo.
-	// Cómo: busca en el catálogo local MOCK_PUESTOS y devuelve NOMBRE_PUESTO, o cadena vacía si no lo encuentra.
+	// Cómo: busca en mCORR_PUESTO (puestos de la unidad) y devuelve NOMBRE_PUESTO.
 	getNombrePuesto(corrPuesto: number | null | undefined): string {
 		const corr = Number(corrPuesto);
-		return MOCK_PUESTOS.find((item) => Number(item.CORR_PUESTO) === corr)?.NOMBRE_PUESTO ?? '';
+		return this.mCORR_PUESTO.find((item) => Number(item.CORR_PUESTO) === corr)?.NOMBRE_PUESTO ?? '';
 	}
 
 	// Muestra al usuario un aviso de regla de negocio (no error técnico).
@@ -7468,7 +7527,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Filtra puestos de la unidad elegida y prepara la lista de puestos a los que puede reportar.
+	// Qué hace: carga los puestos de GEN_UNIDADES_PUESTO para la unidad elegida.
+	// Cómo: lookup GetCORR_PUESTO con CORR_UNIDAD; si el puesto del descriptor no viene, lo agrega desde el registro.
 	private actualizarPuestosPorUnidad(corrUnidad: number | null | undefined): void {
 		const corr = corrUnidad != null ? Number(corrUnidad) : null;
 		if (!corr || corr <= 0) {
@@ -7477,28 +7537,196 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		this.mCORR_PUESTO = MOCK_PUESTOS.filter((item) => Number(item.CORR_UNIDAD) === corr);
-		const reportaIds = new Set(this.mCORR_PUESTO.map((item) => Number(item.CORR_PUESTO_REPORTA)));
-		this.mCORR_PUESTO_REPORTA = MOCK_PUESTOS.filter((item) => reportaIds.has(Number(item.CORR_PUESTO)));
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'GEN_UNIDADES_PUESTO',
+				'GetCORR_PUESTO',
+				[{ Parameter: 'CORR_UNIDAD', Value: corr }],
+				environment.UrlGENERALAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result || !Array.isArray(response.Data)) {
+						this.mCORR_PUESTO = [];
+						this.asegurarPuestoSeleccionadoEnLookup(corr);
+						return;
+					}
+
+					this.mCORR_PUESTO = response.Data.map((item: any) => ({
+						CORR_PUESTO: Number(item.CORR_PUESTO),
+						NOMBRE_PUESTO: (item.NOMBRE_PUESTO ?? '').trim(),
+						CORR_UNIDAD: Number(item.CORR_UNIDAD ?? corr),
+					}));
+					this.asegurarPuestoSeleccionadoEnLookup(corr);
+				},
+				error: (error) => {
+					this.mCORR_PUESTO = [];
+					this.asegurarPuestoSeleccionadoEnLookup(corr);
+					this.notifyApiError(error);
+				},
+			});
 	}
 
-	// Al elegir puesto, copia reporta, responsable y opciones de reporta al encabezado.
+	// Qué hace: al elegir puesto, limpia reporta y carga los jefes activos de la unidad.
+	// Cómo: no auto-asigna jefe; el usuario elige en Reporta a (NOMBRE_EMPLEADO).
 	private aplicarDatosPuestoSeleccionado(corrPuesto: number | null, limpiarSiNoExiste: boolean): void {
 		const corr = corrPuesto != null ? Number(corrPuesto) : null;
-		const puesto = MOCK_PUESTOS.find((item) => Number(item.CORR_PUESTO) === corr);
-		if (!puesto) {
+		if (!corr || corr <= 0) {
 			if (limpiarSiNoExiste) {
 				this.model.CORR_PUESTO_REPORTA = null;
 				this.model.RESPONSABLE = '';
+				this.mCORR_PUESTO_REPORTA = [];
+			}
+			this.syncHeaderForm();
+			return;
+		}
+
+		const nombreLookup = this.getNombrePuesto(corr);
+		if (nombreLookup) {
+			this.model.NOMBRE_PUESTO = nombreLookup;
+		}
+		if (limpiarSiNoExiste) {
+			this.model.CORR_PUESTO_REPORTA = null;
+			this.model.RESPONSABLE = '';
+		}
+		this.cargarJefesPorUnidad(this.model.CORR_UNIDAD);
+		this.syncHeaderForm();
+	}
+
+	// Qué hace: carga jefes de la unidad (SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES) con NOMBRE_EMPLEADO.
+	// Cómo: lookup GetCORR_EMPLEADO; si el jefe del descriptor no viene, lo agrega desde RESPONSABLE guardado.
+	private cargarJefesPorUnidad(corrUnidad: number | null | undefined): void {
+		const corr = corrUnidad != null ? Number(corrUnidad) : null;
+		if (!corr || corr <= 0) {
+			this.mCORR_PUESTO_REPORTA = [];
+			return;
+		}
+
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES',
+				'GetCORR_EMPLEADO',
+				[{ Parameter: 'CORR_UNIDAD', Value: corr }],
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result || !Array.isArray(response.Data)) {
+						this.mCORR_PUESTO_REPORTA = [];
+						this.asegurarJefeSeleccionadoEnLookup(corr);
+						return;
+					}
+
+					const vistos = new Set<number>();
+					this.mCORR_PUESTO_REPORTA = response.Data
+						.filter((item: any) => item?.ACTIVO !== false)
+						.map((item: any) => ({
+							CORR_EMPLEADO: Number(item.CORR_EMPLEADO),
+							NOMBRE_EMPLEADO: (item.NOMBRE_EMPLEADO ?? '').trim(),
+							CORR_PUESTO: item.CORR_PUESTO != null ? Number(item.CORR_PUESTO) : null,
+							NOMBRE_PUESTO: (item.NOMBRE_PUESTO ?? '').trim(),
+							CORR_UNIDAD: Number(item.CORR_UNIDAD ?? corr),
+							ACTIVO: item.ACTIVO !== false,
+						}))
+						.filter((item: ScDescriptorJefeLookup) => {
+							const id = Number(item.CORR_EMPLEADO);
+							if (!id || id <= 0 || vistos.has(id)) {
+								return false;
+							}
+							vistos.add(id);
+							return true;
+						});
+
+					this.asegurarJefeSeleccionadoEnLookup(corr);
+				},
+				error: (error) => {
+					this.mCORR_PUESTO_REPORTA = [];
+					this.asegurarJefeSeleccionadoEnLookup(corr);
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: si el descriptor ya tiene unidad y no está en el lookup del rol, la agrega con el nombre guardado.
+	// Cómo: usa CORR_UNIDAD + NOMBRE_UNIDAD del model (BD); no es caché, solo para poder mostrar el valor al editar.
+	private asegurarUnidadSeleccionadaEnLookup(): void {
+		const corr = Number(this.model?.CORR_UNIDAD);
+		if (!corr || corr <= 0) {
+			return;
+		}
+		if (this.mCORR_UNIDAD.some((item) => Number(item.CORR_UNIDAD) === corr)) {
+			return;
+		}
+
+		const nombre = (this.model?.NOMBRE_UNIDAD ?? '').trim() || `Unidad ${corr}`;
+		this.mCORR_UNIDAD = [
+			...this.mCORR_UNIDAD,
+			{
+				CORR_UNIDAD: corr,
+				NOMBRE_UNIDAD: nombre,
+				ACTIVO: true,
+			},
+		];
+	}
+
+	// Qué hace: si el descriptor ya tiene puesto y no está en GEN_UNIDADES_PUESTO, lo agrega con el nombre guardado.
+	// Cómo: usa CORR_PUESTO + NOMBRE_PUESTO del model (BD) para que el combo lo muestre al editar.
+	private asegurarPuestoSeleccionadoEnLookup(corrUnidad: number): void {
+		const corr = Number(this.model?.CORR_PUESTO);
+		if (!corr || corr <= 0) {
+			return;
+		}
+		if (this.mCORR_PUESTO.some((item) => Number(item.CORR_PUESTO) === corr)) {
+			return;
+		}
+
+		const nombre = (this.model?.NOMBRE_PUESTO ?? '').trim() || `Puesto ${corr}`;
+		this.mCORR_PUESTO = [
+			...this.mCORR_PUESTO,
+			{
+				CORR_PUESTO: corr,
+				NOMBRE_PUESTO: nombre,
+				CORR_UNIDAD: corrUnidad,
+			},
+		];
+	}
+
+	// Qué hace: si el descriptor ya tiene jefe (Reporta a) y no está en jefes activos, lo agrega con RESPONSABLE.
+	// Cómo: usa CORR_PUESTO_REPORTA (= CORR_EMPLEADO) + RESPONSABLE del model (BD).
+	private asegurarJefeSeleccionadoEnLookup(corrUnidad: number): void {
+		const corrEmpleado = Number(this.model?.CORR_PUESTO_REPORTA);
+		if (!corrEmpleado || corrEmpleado <= 0) {
+			return;
+		}
+
+		const existente = this.mCORR_PUESTO_REPORTA.find(
+			(item) => Number(item.CORR_EMPLEADO) === corrEmpleado
+		);
+		if (existente) {
+			if (!(this.model.RESPONSABLE ?? '').trim()) {
+				this.model.RESPONSABLE = (existente.NOMBRE_EMPLEADO ?? '').trim();
+				this.syncHeaderForm();
 			}
 			return;
 		}
 
-		this.model.CORR_PUESTO_REPORTA = puesto.CORR_PUESTO_REPORTA;
-		this.model.RESPONSABLE = puesto.RESPONSABLE;
-		this.mCORR_PUESTO_REPORTA = MOCK_PUESTOS.filter(
-			(item) => Number(item.CORR_PUESTO) === Number(puesto.CORR_PUESTO_REPORTA)
-		);
-		this.syncHeaderForm();
+		const nombre = (this.model?.RESPONSABLE ?? '').trim() || `Empleado ${corrEmpleado}`;
+		this.mCORR_PUESTO_REPORTA = [
+			...this.mCORR_PUESTO_REPORTA,
+			{
+				CORR_EMPLEADO: corrEmpleado,
+				NOMBRE_EMPLEADO: nombre,
+				CORR_UNIDAD: corrUnidad,
+				ACTIVO: true,
+			},
+		];
+		if (!(this.model.RESPONSABLE ?? '').trim()) {
+			this.model.RESPONSABLE = nombre;
+			this.syncHeaderForm();
+		}
 	}
 }

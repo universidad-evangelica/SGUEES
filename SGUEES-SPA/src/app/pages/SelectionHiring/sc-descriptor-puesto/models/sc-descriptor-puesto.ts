@@ -5,13 +5,13 @@ export interface ScDescriptorPuesto {
 	CORR_PUESTO: number | null; // Puesto organizacional al que aplica el descriptor.
 	CORR_UNIDAD: number | null; // Unidad organizacional del puesto.
 	FECHA_EMISION: Date | string | null; // Fecha en que se emitió el descriptor.
-	CORR_PUESTO_REPORTA: number | null; // Puesto al que reporta (jefe inmediato).
+	CORR_PUESTO_REPORTA: number | null; // Empleado jefe (CORR_EMPLEADO) al que reporta.
 	FECHA_REVISION: Date | string | null; // Fecha de la última revisión del documento.
 	NUM_PERSONAL_CARGO: number | null; // Cantidad de personas a cargo del titular.
 	OBJETIVO_PUESTO: string; // Objetivo general del puesto.
 	CORR_IMPACTO_ECONOMICO: number | null; // Catálogo de impacto económico institucional.
 	DESCRIPCION_IMPACTO_ECONOMICO?: string; // Texto del impacto económico (snapshot o catálogo).
-	RESPONSABLE: string; // Nombre del responsable del puesto.
+	RESPONSABLE: string; // Nombre del responsable del puesto (NOMBRE_EMPLEADO del jefe).
 	FORMATO: string; // Formato del descriptor: CORTO, EXTENSO o AMBOS.
 	VERSION: number | null; // Número de versión del descriptor.
 	ESTADO_DESCRIPTOR: string; // Estado del flujo (BORRADOR, ACTIVO, etc.).
@@ -25,6 +25,31 @@ export interface ScDescriptorPuesto {
 	NOMBRE_UNIDAD?: string; // Nombre de la unidad (join o lookup).
 }
 
+/** Unidad permitida al rol del usuario (SC_UNIDADES_TIPO_USUARIO). */
+export interface ScDescriptorUnidadLookup {
+	CORR_UNIDAD: number;
+	CODIGO_UNIDAD?: string;
+	NOMBRE_UNIDAD: string;
+	ACTIVO?: boolean;
+}
+
+/** Puesto asignado a una unidad (GEN_UNIDADES_PUESTO). */
+export interface ScDescriptorPuestoLookup {
+	CORR_PUESTO: number;
+	NOMBRE_PUESTO: string;
+	CORR_UNIDAD?: number;
+}
+
+/** Jefe de unidad para Reporta a (SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES + GEN_EMPLEADO). */
+export interface ScDescriptorJefeLookup {
+	CORR_EMPLEADO: number;
+	NOMBRE_EMPLEADO: string;
+	CORR_PUESTO?: number | null;
+	NOMBRE_PUESTO?: string | null;
+	CORR_UNIDAD?: number;
+	ACTIVO?: boolean;
+}
+
 // Item de lookup de inducción (entrenamiento).
 export interface ScInduccionLookupItem {
 	CORR_INDUCCION: number; // Identificador del plan de inducción.
@@ -36,25 +61,6 @@ export interface ScInduccionLookupItem {
 	UNIDAD_TIEMPO: string | null; // Unidad de tiempo del plan (Semanas o Meses).
 	// Duración unida para el popup: valor entero + unidad (ej. "2 Semanas").
 	DURACION_DISPLAY?: string;
-}
-
-// Lookups temporales de unidad/puesto mientras PLA_PUESTO no está integrado.
-export interface MockUnidad {
-	CORR_UNIDAD: number; // Identificador de la unidad organizacional.
-	NOMBRE_UNIDAD: string; // Nombre descriptivo de la unidad.
-}
-
-export interface MockPuesto {
-	CORR_PUESTO: number; // Identificador del puesto.
-	CORR_UNIDAD: number; // Unidad a la que pertenece el puesto.
-	NOMBRE_PUESTO: string; // Nombre del puesto.
-	CORR_PUESTO_REPORTA: number; // Puesto al que reporta.
-	RESPONSABLE: string; // Nombre del titular del puesto.
-}
-
-export interface MockPuestoReporta {
-	CORR_PUESTO_REPORTA: number; // Identificador del puesto superior.
-	NOMBRE_PUESTO_REPORTA: string; // Nombre del jefe o puesto al que reporta.
 }
 
 // Catálogo de competencias técnicas (NIV3) para el lookup del grid.
@@ -129,61 +135,6 @@ export const TIPO_RELACION_EXTERNA = 'E';
 // Estados que impiden crear otra versión abierta del mismo puesto.
 export const ESTADOS_DESCRIPTOR_BLOQUEO_CREACION = ['BORRADOR', 'ENVIADO', 'REVISADO', 'ACTIVO'];
 
-// Datos mock de unidades organizacionales (temporal hasta integrar PLA_PUESTO).
-export const MOCK_UNIDADES: MockUnidad[] = [
-	{ CORR_UNIDAD: 3, NOMBRE_UNIDAD: 'Gerencia General' },
-	{ CORR_UNIDAD: 4, NOMBRE_UNIDAD: 'Gerencia de Talento Humano' },
-	{ CORR_UNIDAD: 5, NOMBRE_UNIDAD: 'Subgerencia de Tecnologia de Informacion' },
-];
-
-// Datos mock de puestos organizacionales (temporal hasta integrar PLA_PUESTO).
-export const MOCK_PUESTOS: MockPuesto[] = [
-	{
-		CORR_PUESTO: 1,
-		CORR_UNIDAD: 4,
-		NOMBRE_PUESTO: 'Gerente de Talento Humano',
-		CORR_PUESTO_REPORTA: 5,
-		RESPONSABLE: 'Maria Lopez',
-	},
-	{
-		CORR_PUESTO: 2,
-		CORR_UNIDAD: 4,
-		NOMBRE_PUESTO: 'Analista de Reclutamiento y Seleccion',
-		CORR_PUESTO_REPORTA: 1,
-		RESPONSABLE: 'Carlos Perez',
-	},
-	{
-		CORR_PUESTO: 3,
-		CORR_UNIDAD: 5,
-		NOMBRE_PUESTO: 'Subgerente de Tecnologia de Informacion',
-		CORR_PUESTO_REPORTA: 5,
-		RESPONSABLE: 'Ana Garcia',
-	},
-	{
-		CORR_PUESTO: 4,
-		CORR_UNIDAD: 5,
-		NOMBRE_PUESTO: 'Desarrollador de Software',
-		CORR_PUESTO_REPORTA: 3,
-		RESPONSABLE: 'Luis Ramirez',
-	},
-	{
-		CORR_PUESTO: 5,
-		CORR_UNIDAD: 3,
-		NOMBRE_PUESTO: 'Gerente General',
-		CORR_PUESTO_REPORTA: 1,
-		RESPONSABLE: 'Sofia Mendez',
-	},
-];
-
-// Datos mock de puestos superiores para el lookup de "reporta a" (temporal).
-export const MOCK_PUESTOS_REPORTA: MockPuestoReporta[] = [
-	{ CORR_PUESTO_REPORTA: 1, NOMBRE_PUESTO_REPORTA: 'Maria Lopez' },
-	{ CORR_PUESTO_REPORTA: 2, NOMBRE_PUESTO_REPORTA: 'Carlos Perez' },
-	{ CORR_PUESTO_REPORTA: 3, NOMBRE_PUESTO_REPORTA: 'Ana Garcia' },
-	{ CORR_PUESTO_REPORTA: 4, NOMBRE_PUESTO_REPORTA: 'Luis Ramirez' },
-	{ CORR_PUESTO_REPORTA: 5, NOMBRE_PUESTO_REPORTA: 'Sofia Mendez' },
-];
-
 // Valores por defecto al crear el perfil local si aún no existe en BD.
 export const PERFIL_PUESTO_DEFAULT = {
 	EDAD_MINIMA: null as number | null,
@@ -196,21 +147,3 @@ export const PERFIL_PUESTO_DEFAULT = {
 	NOMBRE_MODALIDAD: '',
 	LICENCIA: false,
 };
-
-// Datos mock de bitácora hasta integrar el endpoint real.
-export const MOCK_BITACORA = [
-	{
-		CORR_DESCRIPTOR_PUESTO: 0,
-		NOMBRE_ESTADO: 'Borrador',
-		USUARIO: 'admin',
-		OBSERVACIONES: 'Descriptor creado',
-		FECHA: '2026-07-01T10:30:00',
-	},
-	{
-		CORR_DESCRIPTOR_PUESTO: 0,
-		NOMBRE_ESTADO: 'En revision',
-		USUARIO: 'rrhh',
-		OBSERVACIONES: 'Enviado a revision',
-		FECHA: '2026-07-03T14:15:00',
-	},
-];

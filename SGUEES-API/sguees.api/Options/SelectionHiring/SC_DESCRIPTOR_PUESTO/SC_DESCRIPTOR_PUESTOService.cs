@@ -248,7 +248,7 @@ namespace SGUEES.Services
 
             if (!Data.CORR_PUESTO_REPORTA.HasValue || Data.CORR_PUESTO_REPORTA <= 0)
             {
-                return ValidationError("Debe seleccionar el puesto al que reporta.");
+                return ValidationError("Debe seleccionar a quien reporta (jefe de la unidad).");
             }
 
             if (!Data.FECHA_EMISION.HasValue)

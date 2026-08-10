@@ -1,6 +1,7 @@
 // Qué hace: endpoints REST de unidades asignadas por tipo de usuario (tabla intermedia).
 // Cómo: expone GetAll, Get, Post, Delete y ActivarInactivar, llamando a ISC_UNIDADES_TIPO_USUARIOService.
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -87,12 +88,42 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        // Qué hace: entrega las unidades asignadas al rol del usuario para el descriptor de puesto.
+        // Cómo: fija CORR_EMPRESA y TIPO_USUARIO del token; GetAllAsync; deja solo asignaciones activas.
+        [HttpGet("GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO")]
+        [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        public async Task<CResult> GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO([FromQuery] SC_UNIDADES_TIPO_USUARIOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            Data.TIPO_USUARIO = GetTipoUsuario();
+            var resultado = await _service.GetAllAsync(Data);
+            if (resultado.Result && resultado.Data is List<SC_UNIDADES_TIPO_USUARIOView> list)
+            {
+                var activos = list
+                    .Where(x => x.ACTIVO != false)
+                    .OrderBy(x => x.NOMBRE_UNIDAD)
+                    .ToList();
+                resultado.Data = activos;
+                resultado.RowsAffected = activos.Count;
+            }
+
+            return resultado;
+        }
+
         // Qué hace: obtiene CORR_EMPRESA del claim del usuario autenticado.
         // Cómo: busca el claim CORR_EMPRESA y lo parsea a int; si falta, retorna 0.
         private int GetCorrEmpresa()
         {
             var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
             return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
+        }
+
+        // Qué hace: obtiene el tipo de usuario (rol) del token.
+        // Cómo: lee el claim TIPO_USUARIO; si falta o no es numérico, retorna 0.
+        private int GetTipoUsuario()
+        {
+            var claim = User.Claims.FirstOrDefault(e => e.Type == "TIPO_USUARIO");
+            return claim != null && int.TryParse(claim.Value, out var tipoUsuario) ? tipoUsuario : 0;
         }
 
         // Qué hace: obtiene el identificador de usuario desde los claims.

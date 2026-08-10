@@ -95,7 +95,7 @@ export class ScDescriptorPuestoService {
 		}
 
 		if (!model.CORR_PUESTO_REPORTA || model.CORR_PUESTO_REPORTA <= 0) {
-			msg('Debe seleccionar el puesto al que reporta.', NotifyType.Warning);
+			msg('Debe seleccionar a quien reporta (jefe de la unidad).', NotifyType.Warning);
 			return false;
 		}
 

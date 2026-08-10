@@ -84,14 +84,14 @@
 								[model]="mCORR_PUESTO_REPORTA"
 								[value]="model.CORR_PUESTO_REPORTA"
 								(valueChange)="onPuestoReportaChanged($event)"
-								[valueExpr]="'CORR_PUESTO'"
-								[displayExpr]="'RESPONSABLE'"
+								[valueExpr]="'CORR_EMPLEADO'"
+								[displayExpr]="'NOMBRE_EMPLEADO'"
 								[lookupColumns]="reportaLookupColumns"
 								[selectedRowKeys]="selectedLookUpCORR_PUESTO_REPORTA"
 								[readOnly]="readOnly || !model.CORR_PUESTO"
 							></app-data-lookup>
 						</div>
-						<div class="descriptor-help-text">Se carga segun el puesto seleccionado.</div>
+						<div class="descriptor-help-text">Jefes activos de la unidad seleccionada.</div>
 					</div>
 				</dx-form>
 			</div>
