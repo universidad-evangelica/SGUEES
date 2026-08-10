@@ -1,0 +1,271 @@
+<!-- Contenedor principal: unidades por tipo de usuario (rol). -->
+<div class="sguees-mtto-view sc-unidades-tipo-usuario-view">
+	<!-- Toolbar: consultar, guardar y cancelar (sin nuevo ni estado en barra mtto). -->
+	<app-barra-data-mtto
+		[tituloVentana]="tituloVentana"
+		[showRibbon]="true"
+		[showExport]="false"
+		[isBrowse]="isBrowse()"
+		[isForm]="isForm()"
+		[permiteAdd]="false"
+		[showRefresh]="true"
+		[showEstadoToolbar]="false"
+		(consultar)="consultar()"
+		(guardar)="guardar()"
+		(cancelar)="cancelar()"
+	>
+	</app-barra-data-mtto>
+
+	<!-- Detalle del rol: tab Unidades (sin modal). -->
+	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
+		<div class="unidades-detalle-header">
+			<span class="unidades-detalle-header__label">Rol</span>
+			<strong class="unidades-detalle-header__value">
+				{{ rolSeleccionado?.TIPO_USUARIO }} — {{ rolSeleccionado?.NOMBRE_TIPO_USUARIO || 'Sin nombre' }}
+			</strong>
+		</div>
+
+		<dx-tab-panel class="unidades-detalle-tabs" [animationEnabled]="true" [swipeEnabled]="false">
+			<dxi-item title="Unidades" icon="hierarchy">
+				<div class="descriptor-sub-tab-content unidades-detalle-tab-content">
+					<div class="descriptor-funciones-header">
+						<h4 class="descriptor-sub-tab-heading">
+							<span class="dx-icon-hierarchy descriptor-funciones-icon" aria-hidden="true"></span>
+							Unidades
+						</h4>
+					</div>
+
+					<!-- Toolbar del detalle: agregar/guardar/cancelar línea + Activar/Desactivar. -->
+					<div class="descriptor-deta-toolbar">
+						<dx-button
+							class="descriptor-deta-toolbar-btn"
+							icon="add"
+							text="Agregar Unidad"
+							type="success"
+							stylingMode="contained"
+							(onClick)="agregarUnidad()"
+							[disabled]="unidadesEditando"
+						></dx-button>
+						<dx-button
+							class="descriptor-deta-toolbar-btn"
+							icon="save"
+							text="Guardar"
+							type="success"
+							stylingMode="contained"
+							(onClick)="guardarUnidadEditada()"
+							[disabled]="!unidadesEditando"
+						></dx-button>
+						<dx-button
+							class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+							icon="revert"
+							text="Cancelar"
+							type="danger"
+							stylingMode="contained"
+							(onClick)="cancelarUnidadEditada()"
+							[disabled]="!unidadesEditando"
+						></dx-button>
+						<!-- Mismo patrón sc-frecuencia (buildEstadoToolbarOptions): un botón según ACTIVO. -->
+						<dx-button
+							*ngIf="mostrarActivarUnidad"
+							class="descriptor-deta-toolbar-btn"
+							icon="refresh"
+							text="Activar"
+							type="success"
+							stylingMode="contained"
+							(onClick)="activar_inactivar()"
+						></dx-button>
+						<dx-button
+							*ngIf="mostrarDesactivarUnidad"
+							class="descriptor-deta-toolbar-btn"
+							icon="close"
+							text="Desactivar"
+							type="danger"
+							stylingMode="contained"
+							(onClick)="activar_inactivar()"
+						></dx-button>
+					</div>
+
+					<!-- Grilla de unidades asignadas al rol (edición por fila / insert vía API). -->
+					<dx-data-grid
+						#gridUnidades
+						class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid"
+						[dataSource]="unidadesDetalle"
+						keyExpr="CORR_UNIDAD"
+						[columnAutoWidth]="false"
+						[showBorders]="true"
+						[showColumnLines]="true"
+						[showRowLines]="true"
+						[rowAlternationEnabled]="true"
+						[hoverStateEnabled]="true"
+						[allowColumnResizing]="true"
+						[columnResizingMode]="'widget'"
+						[width]="'100%'"
+						[repaintChangesOnly]="false"
+						[focusedRowEnabled]="true"
+						[focusedRowKey]="unidadFocusedKey"
+						(onFocusedRowChanged)="onUnidadFocusedRowChanged($event)"
+						(onRowClick)="onUnidadRowClick($event)"
+						(onInitNewRow)="unidadInitNewRow($event)"
+						(onEditingStart)="onUnidadEditingStart($event)"
+						(onSaved)="onUnidadSaved($event)"
+						(onEditCanceled)="onUnidadEditCanceled($event)"
+						(onRowInserting)="unidadRowInserting($event)"
+						(onRowRemoving)="unidadRowRemoving($event)"
+						(onRowValidating)="unidadRowValidating($event)"
+					>
+						<dxo-editing
+							[mode]="'row'"
+							[refreshMode]="'reshape'"
+							[allowUpdating]="false"
+							[allowDeleting]="true"
+							[useIcons]="true"
+							[selectTextOnEditStart]="true"
+							[newRowPosition]="'first'"
+						></dxo-editing>
+						<dxo-paging [enabled]="false"></dxo-paging>
+
+						<dxi-column
+							type="buttons"
+							name="btnAcciones"
+							caption="Options"
+							[width]="104"
+							[minWidth]="104"
+							[fixed]="true"
+							fixedPosition="left"
+							alignment="center"
+							[allowResizing]="false"
+						>
+							<dxi-button
+								name="delete"
+								hint="Eliminar registro"
+								icon="trash"
+								stylingMode="text"
+								cssClass="sguees-grid-action-delete"
+								[visible]="unidadDeleteButtonVisible"
+							></dxi-button>
+							<dxi-button name="save" [visible]="false"></dxi-button>
+							<dxi-button name="cancel" [visible]="false"></dxi-button>
+							<dxi-button name="edit" [visible]="false"></dxi-button>
+						</dxi-column>
+
+						<dxi-column
+							name="codigoUnidadCorr"
+							dataField="CORR_UNIDAD"
+							caption="Codigo"
+							[width]="90"
+							[allowEditing]="false"
+							[allowSorting]="true"
+							dataType="number"
+							alignment="left"
+						></dxi-column>
+						<!-- Solo visible al insertar (mismo patrón competencias tecnicas). -->
+						<dxi-column
+							name="lookupUnidad"
+							dataField="CORR_UNIDAD"
+							caption="Unidad"
+							[width]="140"
+							[minWidth]="120"
+							[allowSorting]="true"
+							[visible]="unidadesInsertando"
+							[calculateDisplayValue]="unidadCatalogDisplay"
+							[setCellValue]="setUnidadCellValue"
+							[editCellTemplate]="'CORR_UNIDADLookup'"
+						>
+							<dxo-lookup
+								[dataSource]="mCORR_UNIDAD"
+								valueExpr="CORR_UNIDAD"
+								displayExpr="NOMBRE_UNIDAD"
+							></dxo-lookup>
+						</dxi-column>
+						<div *dxTemplate="let cellInfo of 'CORR_UNIDADLookup'">
+							<app-data-lookup
+								[model]="mCORR_UNIDAD_DISPONIBLES"
+								[value]="cellInfo.value"
+								(valueChange)="onUnidadLookupChanged($event, cellInfo)"
+								[valueExpr]="'CORR_UNIDAD'"
+								[displayExpr]="'NOMBRE_UNIDAD'"
+								[lookupColumns]="unidadesLookupColumns"
+								[selectedRowKeys]="selectedLookUpCORR_UNIDAD"
+								[showClearButton]="true"
+								[dropDownWidth]="520"
+							></app-data-lookup>
+						</div>
+						<dxi-column
+							dataField="CODIGO_UNIDAD"
+							caption="Codigo unidad"
+							[width]="130"
+							[allowEditing]="false"
+							[allowSorting]="true"
+						></dxi-column>
+						<dxi-column
+							dataField="NOMBRE_UNIDAD"
+							caption="Nombre de la unidad"
+							[minWidth]="220"
+							[allowEditing]="false"
+							[allowSorting]="true"
+						></dxi-column>
+						<dxi-column
+							dataField="ACTIVO"
+							caption="Estado"
+							[width]="120"
+							[allowEditing]="false"
+							[allowSorting]="true"
+							cellTemplate="estadoUnidadTemplate"
+						></dxi-column>
+						<div *dxTemplate="let cellInfo of 'estadoUnidadTemplate'">
+							<span
+								class="estado-badge"
+								[class.estado-badge--activo]="cellInfo.value !== false"
+								[class.estado-badge--inactivo]="cellInfo.value === false"
+							>
+								{{ cellInfo.value === false ? 'Inactivo' : 'Activo' }}
+							</span>
+						</div>
+					</dx-data-grid>
+				</div>
+			</dxi-item>
+		</dx-tab-panel>
+	</div>
+
+	<!-- Grilla global de roles con botón Asignar unidades. -->
+	<app-data-grid-mtto
+		[isBrowse]="isBrowse()"
+		[models]="models"
+		[columns]="columns"
+		[summary]="summary"
+		[keyExpr]="mttoGridKeyExpr"
+		[pageSize]="mttoPageSize"
+		[allowedPageSizes]="mttoPageSizes"
+		[remoteOperations]="mttoRemoteOperations"
+		[repaintChangesOnly]="false"
+		[nativeToolbar]="true"
+		[unifiedToolbar]="false"
+		[showSearch]="false"
+		[showAdd]="false"
+		[showRefresh]="false"
+		[showExport]="false"
+		[showEstadoToolbar]="false"
+		[focusedRowKey]="gridFocusedRowKey"
+		[permitePrint]="false"
+		[permiteEditar]="false"
+		[permiteDele]="false"
+		[responsiveColumnHiding]="false"
+		[columnHidingEnabled]="false"
+		[showGrouping]="true"
+		[exportFileName]="'UnidadesTipoUsuario'"
+		(focusedRowChanged)="focusedRowChanged($event)"
+	>
+	</app-data-grid-mtto>
+</div>
+
+<!-- Panel de carga durante operaciones asíncronas. -->
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>

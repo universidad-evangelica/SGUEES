@@ -20,6 +20,7 @@ import { SC_OrganigramaEstructuralNivelComponent } from './sc-organigrama-estruc
 import { ScRequisicionObservadoresComponent } from './sc-requisicion-observadores/sc-requisicion-observadores.component';
 import { ScCompetenciasConductualesComponent } from './sc-competencias-conductuales/sc-competencias-conductuales.component';
 import { ScDescriptorPuestoComponent } from './sc-descriptor-puesto/sc-descriptor-puesto.component';
+import { ScUnidadesTipoUsuarioComponent } from './sc-unidades-tipo-usuario/sc-unidades-tipo-usuario.component';
 
 
 const routes: Routes = [
@@ -158,6 +159,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./sc-descriptor-puesto/sc-descriptor-puesto.module').then(m => m.ScDescriptorPuestoModule)
+  },
+  {
+    path: 'sc-unidades-tipo-usuario',
+    component: ScUnidadesTipoUsuarioComponent,
+    data: { titulo: 'Configuración de Unidades para Descriptores' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-unidades-tipo-usuario/sc-unidades-tipo-usuario.module').then(m => m.ScUnidadesTipoUsuarioModule)
   }
 ];
 

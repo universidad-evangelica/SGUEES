@@ -90,9 +90,18 @@ namespace sguees.Controllers
 			}
 		}
 
-		[HttpGet("GetTIPO_USUARIO_SEG_USUARIO")]
+        [HttpGet("GetTIPO_USUARIO_SEG_USUARIO")]
 		[Authorize(Policy = "/seg-usuario|R")]
 		public async Task<CResult> GetTIPO_USUARIO_SEG_USUARIO([FromQuery] SEG_TIPO_USUARIOParam Data)
+		{
+			return await _service.GetAllAsync(Data);
+		}
+
+		// Qué hace: entrega tipos de usuario (roles) para la grilla de unidades por rol.
+		// Cómo: llama GetAllAsync de SEG_TIPO_USUARIO (autorizado para sc-unidades-tipo-usuario).
+		[HttpGet("GetTIPO_USUARIO_SC_UNIDADES_TIPO_USUARIO")]
+		[Authorize(Policy = "/sc-unidades-tipo-usuario|R")]
+		public async Task<CResult> GetTIPO_USUARIO_SC_UNIDADES_TIPO_USUARIO([FromQuery] SEG_TIPO_USUARIOParam Data)
 		{
 			return await _service.GetAllAsync(Data);
 		}
