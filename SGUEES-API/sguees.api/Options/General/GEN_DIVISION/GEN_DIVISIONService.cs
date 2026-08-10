@@ -167,9 +167,14 @@ namespace sguees.Services
 				Data.CODIGO_DIVISION,
 				excludeCorr ?? 0);
 
-			return exists
-				? ValidationError($"Ya existe una division con el codigo {Data.CODIGO_DIVISION}.")
-				: null;
+			if (!exists)
+			{
+				return null;
+			}
+
+			var codigo = (Data.CODIGO_DIVISION ?? string.Empty).Trim();
+			return DuplicateWarning(
+				$"Ya existe una division con el codigo {codigo}. Escriba otro codigo para continuar.");
 		}
 
 		// Qué hace: verifica que la sesión tenga empresa válida.
@@ -187,6 +192,21 @@ namespace sguees.Services
 				CodeHelper = 0,
 				ErrorCode = 4100,
 				ErrorMessage = "No se pudo guardar la division porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
+				ErrorSource = "[GEN_DIVISIONService]",
+				RowsAffected = 0
+			};
+		}
+
+		// Qué hace: arma respuesta controlada de duplicado (ErrorCode 2627 → Warning en el front).
+		private static CResult DuplicateWarning(string message)
+		{
+			return new CResult
+			{
+				Data = null,
+				Result = false,
+				CodeHelper = 0,
+				ErrorCode = 2627,
+				ErrorMessage = message,
 				ErrorSource = "[GEN_DIVISIONService]",
 				RowsAffected = 0
 			};

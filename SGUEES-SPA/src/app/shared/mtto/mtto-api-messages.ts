@@ -29,6 +29,23 @@ export function isEmpresaFkErrorMessage(message: string): boolean {
 	);
 }
 
+/** Warning de negocio: duplicados, relaciones, concurrencia — no falla técnica. */
+export function isBusinessWarningMessage(message: string): boolean {
+	const value = cleanApiMessage(message).toLowerCase();
+	return (
+		value.includes('ya existe') ||
+		value.includes('duplicad') ||
+		value.includes('ya está registrad') ||
+		value.includes('ya esta registrad') ||
+		value.includes('ya ha sido ingresado') ||
+		value.includes('registros asociados') ||
+		value.includes('hijos asociados') ||
+		value.includes('registros relacionados') ||
+		value.includes('otro usuario') ||
+		value.includes('mismo tiempo')
+	);
+}
+
 export function cleanApiMessage(message: unknown): string {
 	return `${message ?? ''}`.replace(/^error:\s*/i, '').trim();
 }
@@ -40,8 +57,14 @@ export function mapApiErrorMessage(message: string, etiquetaRegistro = 'el regis
 	if (isEmpresaFkErrorMessage(cleanMessage) || value.includes('no tiene una empresa asignada')) {
 		return getEmpresaWarningMessage(etiquetaRegistro);
 	}
-	if (value.includes('ya existe') || value.includes('duplicad')) {
-		return 'Ya existe un registro con ese código. Escriba otro código para continuar.';
+	// Conserva el mensaje de la API para que se vea el atributo (nombre, código, etc.).
+	if (
+		value.includes('ya existe') ||
+		value.includes('duplicad') ||
+		value.includes('ya está registrad') ||
+		value.includes('ya esta registrad')
+	) {
+		return cleanMessage;
 	}
 	if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados')) {
 		return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';
@@ -77,7 +100,7 @@ export function getApiErrorMessage(error: any): string {
 		return API_CONNECTION_MESSAGE;
 	}
 
-	const apiMessage = error?.error?.ErrorMessage || error?.error?.message || error?.message;
+	const apiMessage = error?.error?.ErrorMessage || error?.ErrorMessage || error?.error?.message || error?.message;
 	if (typeof apiMessage === 'string' && apiMessage.trim()) {
 		if (isConnectionFailure(apiMessage)) {
 			return API_CONNECTION_MESSAGE;
@@ -93,15 +116,8 @@ export function getNotifyTypeFromResponse(response: any, etiquetaRegistro = 'el 
 		return NotifyType.Warning;
 	}
 
-	const message = (response?.ErrorMessage || '').toLowerCase();
-	if (
-		response?.ErrorCode === 2627 ||
-		message.includes('ya existe') ||
-		message.includes('duplicad') ||
-		message.includes('ya ha sido ingresado') ||
-		message.includes('registros asociados') ||
-		message.includes('hijos asociados')
-	) {
+	const message = response?.ErrorMessage || '';
+	if (Number(response?.ErrorCode) === 2627 || isBusinessWarningMessage(message)) {
 		return NotifyType.Warning;
 	}
 
@@ -110,9 +126,19 @@ export function getNotifyTypeFromResponse(response: any, etiquetaRegistro = 'el 
 
 export function getNotifyTypeFromError(error: any, etiquetaRegistro = 'el registro'): NotifyType {
 	const body = error?.error;
-	if (body && typeof body === 'object' && body.ErrorMessage !== undefined) {
+	if (body && typeof body === 'object' && (body.ErrorMessage !== undefined || body.ErrorCode !== undefined)) {
 		return getNotifyTypeFromResponse(body, etiquetaRegistro);
 	}
 
-	return isEmpresaFkErrorMessage(getApiErrorMessage(error)) ? NotifyType.Warning : NotifyType.Error;
+	// BadRequest con CResult intacto (sin pasar por string del interceptor).
+	if (error && typeof error === 'object' && (error.ErrorMessage !== undefined || error.ErrorCode !== undefined)) {
+		return getNotifyTypeFromResponse(error, etiquetaRegistro);
+	}
+
+	const message = getApiErrorMessage(error);
+	if (isEmpresaFkErrorMessage(message) || isBusinessWarningMessage(message)) {
+		return NotifyType.Warning;
+	}
+
+	return NotifyType.Error;
 }

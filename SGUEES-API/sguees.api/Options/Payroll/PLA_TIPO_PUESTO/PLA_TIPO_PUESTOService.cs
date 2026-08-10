@@ -190,7 +190,7 @@ namespace SGUEES.Services
         }
 
         // Qué hace: valida que el código no pertenezca a otro registro de la empresa.
-        // Cómo: llama a ExistsCodigoAsync del repositorio y devuelve ValidationError si ya existe.
+        // Cómo: llama a ExistsCodigoAsync del repositorio y devuelve DuplicateWarning si ya existe.
         private async Task<CResult> ValidateUniqueCodigoAsync(PLA_TIPO_PUESTOTable Data, int? excludeCorr)
         {
             var exists = await _repo.ExistsCodigoAsync(
@@ -198,13 +198,18 @@ namespace SGUEES.Services
                 Data.CODIGO_TIPO_PUESTO,
                 excludeCorr ?? 0);
 
-            return exists
-                ? ValidationError($"Ya existe un tipo de puesto con el codigo {Data.CODIGO_TIPO_PUESTO}.")
-                : null;
+            if (!exists)
+            {
+                return null;
+            }
+
+            var codigo = (Data.CODIGO_TIPO_PUESTO ?? string.Empty).Trim();
+            return DuplicateWarning(
+                $"Ya existe un tipo de puesto con el codigo {codigo}. Escriba otro codigo para continuar.");
         }
 
         // Qué hace: valida que el nombre no pertenezca a otro registro de la empresa.
-        // Cómo: llama a ExistsNombreAsync del repositorio y devuelve ValidationError si ya existe.
+        // Cómo: llama a ExistsNombreAsync del repositorio y devuelve DuplicateWarning si ya existe.
         private async Task<CResult> ValidateUniqueNombreAsync(PLA_TIPO_PUESTOTable Data, int? excludeCorr)
         {
             var exists = await _repo.ExistsNombreAsync(
@@ -212,9 +217,14 @@ namespace SGUEES.Services
                 Data.NOMBRE_TIPO_PUESTO,
                 excludeCorr ?? 0);
 
-            return exists
-                ? ValidationError($"Ya existe un tipo de puesto con el nombre {Data.NOMBRE_TIPO_PUESTO}.")
-                : null;
+            if (!exists)
+            {
+                return null;
+            }
+
+            var nombre = (Data.NOMBRE_TIPO_PUESTO ?? string.Empty).Trim();
+            return DuplicateWarning(
+                $"Ya existe un tipo de puesto con el nombre {nombre}. Escriba otro nombre para continuar.");
         }
 
         // Qué hace: devuelve error controlado cuando la sesión no tiene empresa asignada.
@@ -232,6 +242,21 @@ namespace SGUEES.Services
                 CodeHelper = 0,
                 ErrorCode = 4100,
                 ErrorMessage = "No se pudo guardar el tipo de puesto porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
+                ErrorSource = "[PLA_TIPO_PUESTOService]",
+                RowsAffected = 0
+            };
+        }
+
+        // Qué hace: arma respuesta controlada de duplicado (ErrorCode 2627 → Warning en el front).
+        private static CResult DuplicateWarning(string message)
+        {
+            return new CResult
+            {
+                Data = null,
+                Result = false,
+                CodeHelper = 0,
+                ErrorCode = 2627,
+                ErrorMessage = message,
                 ErrorSource = "[PLA_TIPO_PUESTOService]",
                 RowsAffected = 0
             };
