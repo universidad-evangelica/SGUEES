@@ -61,6 +61,15 @@ namespace sguees.Controllers
 			return await _service.GetAllAsync(Data);
 		}
 
+		// Qué hace: resuelve NOMBRE_EMPLEADO por CORR_EMPLEADO para el combo Reporta a del descriptor.
+		[HttpGet("GetCORR_EMPLEADO_SC_DESCRIPTOR_PUESTO")]
+		[Authorize(Policy = "/sc-descriptor-puesto|R")]
+		public async Task<CResult> GetCORR_EMPLEADO_SC_DESCRIPTOR_PUESTO([FromQuery] GEN_EMPLEADOParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetAllAsync(Data);
+		}
+
 		private int GetCorrEmpresa()
 		{
 			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");

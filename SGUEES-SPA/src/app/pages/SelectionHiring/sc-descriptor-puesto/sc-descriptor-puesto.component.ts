@@ -217,6 +217,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	induccionesEditando = false;
 	induccionesInsertando = false;
 	private induccionPersistiendo = false;
+	private responsableEntrenamientoPersistiendo = false;
 	responsabilidadesCargoEditando = false;
 	responsabilidadesCargoInsertando = false;
 	private responsabilidadCargoPersistiendo = false;
@@ -1108,6 +1109,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.subTituloVentana = this.maintenanceSubtitulo;
 			this.mainTabIndex = 0;
 			this.subTabIndex = 0;
+			// Quita unidades agregadas solo para editar (fuera de permisos del rol).
+			this.getCORR_UNIDAD();
 		}
 	}
 
@@ -1236,6 +1239,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		super.nuevo();
 		this.limpiarDatosTabs();
 		this.actualizarPuestosPorUnidad(null);
+		// Recarga unidades del rol; no debe quedar la unidad temporal agregada al editar.
+		this.getCORR_UNIDAD();
 		setTimeout(() => this.syncHeaderForm());
 	}
 
@@ -3788,12 +3793,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: reacciona a que se canceló la edición del grid de inducciones.
-	// Cómo: delega en finalizarEdicionGrid para limpiar los flags y recarga las inducciones con cargarInduccionesDescriptor.
+	// Cómo: limpia flags; si es guardado de Responsable no recarga (evita flash del nombre anterior).
 	onInduccionEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.induccionesEditando = false;
 			this.induccionesInsertando = false;
 		});
+		if (this.responsableEntrenamientoPersistiendo) {
+			return;
+		}
 		this.cargarInduccionesDescriptor(true);
 	}
 
@@ -5737,15 +5745,22 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
-	// Al elegir jefe en Reporta a, guarda CORR_EMPLEADO y el NOMBRE_EMPLEADO en RESPONSABLE.
+	// Al elegir jefe en Reporta a: guarda CORR_EMPLEADO.
+	// Solo al crear el descriptor copia el nombre a RESPONSABLE. En edición no lo sobrescribe.
 	onPuestoReportaChanged(value: number | null): void {
 		const corrEmpleado = value != null ? Number(value) : null;
 		this.model.CORR_PUESTO_REPORTA = corrEmpleado;
-		const jefe = this.mCORR_PUESTO_REPORTA.find((item) => Number(item.CORR_EMPLEADO) === Number(corrEmpleado));
-		this.model.RESPONSABLE = (jefe?.NOMBRE_EMPLEADO ?? '').trim();
 		if (corrEmpleado != null && corrEmpleado > 0) {
 			this.puestoReportaInvalido = false;
 		}
+
+		if (this.banderaMtto === UpdateType.Add) {
+			const jefe = this.mCORR_PUESTO_REPORTA.find(
+				(item) => Number(item.CORR_EMPLEADO) === Number(corrEmpleado)
+			);
+			this.model.RESPONSABLE = (jefe?.NOMBRE_EMPLEADO ?? '').trim();
+		}
+
 		this.syncHeaderForm();
 	}
 
@@ -5779,7 +5794,20 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		const formData = this.headerForm?.instance?.option('formData');
 		if (formData) {
-			this.model = { ...this.model, ...formData };
+			// RESPONSABLE no es campo del form; en edición es texto libre del grid Entrenamiento.
+			const { RESPONSABLE: _responsableFormIgnorado, ...restoForm } = formData;
+			this.model = { ...this.model, ...restoForm };
+		}
+
+		// Solo al crear se toma RESPONSABLE del Reporta a seleccionado.
+		if (this.banderaMtto === UpdateType.Add) {
+			const jefe = this.mCORR_PUESTO_REPORTA.find(
+				(item) => Number(item.CORR_EMPLEADO) === Number(this.model.CORR_PUESTO_REPORTA)
+			);
+			const nombre = (jefe?.NOMBRE_EMPLEADO ?? '').trim();
+			if (nombre) {
+				this.model.RESPONSABLE = nombre;
+			}
 		}
 
 		this.model.NOMBRE_UNIDAD = this.getNombreUnidad(this.model.CORR_UNIDAD);
@@ -7097,7 +7125,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Guarda el responsable del entrenamiento actualizando el encabezado del descriptor.
+	// Guarda el responsable del entrenamiento (texto libre) en RESPONSABLE del descriptor.
+	// Cómo: solo este camino modifica RESPONSABLE en edición; actualiza la fila local para evitar flash.
 	private persistirResponsableEntrenamientoDesdeGrid(
 		data: ScDescriptorPuestoInduccion
 	): Promise<boolean> {
@@ -7110,8 +7139,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return Promise.resolve(true);
 		}
 
+		if (this.responsableEntrenamientoPersistiendo) {
+			return Promise.resolve(true);
+		}
+
+		const textoGuardado = (data?.TIEMPO_INDUCCION ?? '').toString().trim();
 		const responsableAnterior = this.model.RESPONSABLE;
-		this.model.RESPONSABLE = (data?.TIEMPO_INDUCCION ?? '').toString().trim();
+		this.model.RESPONSABLE = textoGuardado;
+		this.aplicarTextoResponsableEntrenamientoLocal(textoGuardado);
+		this.responsableEntrenamientoPersistiendo = true;
 
 		return new Promise((resolve) => {
 			this.service
@@ -7120,9 +7156,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				.subscribe({
 					next: (response) => {
 						if (!response?.Result) {
+							this.responsableEntrenamientoPersistiendo = false;
 							this.model.RESPONSABLE = responsableAnterior;
+							this.aplicarTextoResponsableEntrenamientoLocal(
+								(responsableAnterior ?? '').toString().trim()
+							);
 							this.notificarRespuestaOperacion(response, 'guardar');
-							this.cargarInduccionesDescriptor(true);
 							resolve(true);
 							return;
 						}
@@ -7131,6 +7170,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							this.model = this.fillData(response.Data);
 							this.modelUpdate = this.fillData(response.Data);
 						}
+						this.model.RESPONSABLE = textoGuardado;
+						if (this.modelUpdate) {
+							this.modelUpdate.RESPONSABLE = textoGuardado;
+						}
+						this.aplicarTextoResponsableEntrenamientoLocal(textoGuardado);
 
 						this.induccionesEditando = false;
 						try {
@@ -7138,16 +7182,45 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						} catch {
 							// El grid puede ya no estar en pantalla; se ignora el error.
 						}
-						this.cargarInduccionesDescriptor(true);
+						this.responsableEntrenamientoPersistiendo = false;
+						this.cdr.detectChanges();
 						resolve(true);
 					},
 					error: (error) => {
+						this.responsableEntrenamientoPersistiendo = false;
 						this.model.RESPONSABLE = responsableAnterior;
+						this.aplicarTextoResponsableEntrenamientoLocal(
+							(responsableAnterior ?? '').toString().trim()
+						);
 						this.notificarErrorOperacion(error, 'guardar');
-						this.cargarInduccionesDescriptor(true);
 						resolve(true);
 					},
 				});
+		});
+	}
+
+	// Qué hace: actualiza en memoria la fila fija Responsable del grid de Entrenamiento.
+	private aplicarTextoResponsableEntrenamientoLocal(texto: string): void {
+		const nombre = (texto ?? '').trim();
+		const rows = this.induccionesDescriptor ?? [];
+		if (!rows.length) {
+			return;
+		}
+
+		this.induccionesDescriptor = rows.map((row) => {
+			if (
+				!row._esResponsableEntrenamiento &&
+				row._clientKey !== RESPONSABLE_ENTRENAMIENTO_CLIENT_KEY
+			) {
+				return row;
+			}
+			return {
+				...row,
+				NOMBRE_INDUCCION: RESPONSABLE_ENTRENAMIENTO_NOMBRE,
+				TIEMPO_INDUCCION: nombre,
+				_esResponsableEntrenamiento: true,
+				_clientKey: RESPONSABLE_ENTRENAMIENTO_CLIENT_KEY,
+			};
 		});
 	}
 
@@ -7651,9 +7724,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Qué hace: si el descriptor ya tiene unidad y no está en el lookup del rol, la agrega con el nombre guardado.
-	// Cómo: usa CORR_UNIDAD + NOMBRE_UNIDAD del model (BD); no es caché, solo para poder mostrar el valor al editar.
+	// Qué hace: si el descriptor ya tiene unidad y no está en el lookup del rol, la agrega solo al editar/ver.
+	// Cómo: usa CORR_UNIDAD + NOMBRE_UNIDAD del model; no aplica en Nuevo ni Browse (evita dejarla pegada).
 	private asegurarUnidadSeleccionadaEnLookup(): void {
+		if (this.banderaMtto === UpdateType.Add || this.banderaMtto === UpdateType.Browse) {
+			return;
+		}
+
 		const corr = Number(this.model?.CORR_UNIDAD);
 		if (!corr || corr <= 0) {
 			return;
@@ -7695,8 +7772,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		];
 	}
 
-	// Qué hace: si el descriptor ya tiene jefe (Reporta a) y no está en jefes activos, lo agrega con RESPONSABLE.
-	// Cómo: usa CORR_PUESTO_REPORTA (= CORR_EMPLEADO) + RESPONSABLE del model (BD).
+	// Qué hace: conserva Reporta a en el combo aunque el jefe esté inactivo (nombre real de GEN_EMPLEADO).
+	// Cómo: no usa RESPONSABLE de BD como etiqueta (evita textos viejos). En alta, si RESPONSABLE está vacío, lo inicializa.
 	private asegurarJefeSeleccionadoEnLookup(corrUnidad: number): void {
 		const corrEmpleado = Number(this.model?.CORR_PUESTO_REPORTA);
 		if (!corrEmpleado || corrEmpleado <= 0) {
@@ -7707,26 +7784,86 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			(item) => Number(item.CORR_EMPLEADO) === corrEmpleado
 		);
 		if (existente) {
-			if (!(this.model.RESPONSABLE ?? '').trim()) {
-				this.model.RESPONSABLE = (existente.NOMBRE_EMPLEADO ?? '').trim();
-				this.syncHeaderForm();
+			if (
+				this.banderaMtto === UpdateType.Add &&
+				!(this.model.RESPONSABLE ?? '').trim()
+			) {
+				const nombreReal = (existente.NOMBRE_EMPLEADO ?? '').trim();
+				if (nombreReal) {
+					this.model.RESPONSABLE = nombreReal;
+					this.syncHeaderForm();
+				}
 			}
 			return;
 		}
 
-		const nombre = (this.model?.RESPONSABLE ?? '').trim() || `Empleado ${corrEmpleado}`;
-		this.mCORR_PUESTO_REPORTA = [
-			...this.mCORR_PUESTO_REPORTA,
-			{
-				CORR_EMPLEADO: corrEmpleado,
-				NOMBRE_EMPLEADO: nombre,
-				CORR_UNIDAD: corrUnidad,
-				ACTIVO: true,
-			},
-		];
-		if (!(this.model.RESPONSABLE ?? '').trim()) {
-			this.model.RESPONSABLE = nombre;
-			this.syncHeaderForm();
-		}
+		this.resolverNombreEmpleadoReporta(corrUnidad, corrEmpleado);
+	}
+
+	// Qué hace: obtiene NOMBRE_EMPLEADO real para mostrar Reporta a si el jefe ya no está activo.
+	private resolverNombreEmpleadoReporta(corrUnidad: number, corrEmpleado: number): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'GEN_EMPLEADO',
+				'GetCORR_EMPLEADO',
+				[{ Parameter: 'CORR_EMPLEADO', Value: corrEmpleado }],
+				environment.UrlGENERALAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (Number(this.model?.CORR_PUESTO_REPORTA) !== corrEmpleado) {
+						return;
+					}
+
+					let nombre = '';
+					if (response?.Result && Array.isArray(response.Data) && response.Data.length > 0) {
+						nombre = (response.Data[0]?.NOMBRE_EMPLEADO ?? '').toString().trim();
+					}
+					if (!nombre) {
+						nombre = `Empleado ${corrEmpleado}`;
+					}
+
+					if (!this.mCORR_PUESTO_REPORTA.some((item) => Number(item.CORR_EMPLEADO) === corrEmpleado)) {
+						this.mCORR_PUESTO_REPORTA = [
+							...this.mCORR_PUESTO_REPORTA,
+							{
+								CORR_EMPLEADO: corrEmpleado,
+								NOMBRE_EMPLEADO: nombre,
+								CORR_UNIDAD: corrUnidad,
+								ACTIVO: false,
+							},
+						];
+					}
+
+					if (
+						this.banderaMtto === UpdateType.Add &&
+						!(this.model.RESPONSABLE ?? '').trim()
+					) {
+						this.model.RESPONSABLE = nombre;
+					}
+					this.syncHeaderForm();
+				},
+				error: (error) => {
+					if (Number(this.model?.CORR_PUESTO_REPORTA) !== corrEmpleado) {
+						return;
+					}
+					const nombre = `Empleado ${corrEmpleado}`;
+					if (!this.mCORR_PUESTO_REPORTA.some((item) => Number(item.CORR_EMPLEADO) === corrEmpleado)) {
+						this.mCORR_PUESTO_REPORTA = [
+							...this.mCORR_PUESTO_REPORTA,
+							{
+								CORR_EMPLEADO: corrEmpleado,
+								NOMBRE_EMPLEADO: nombre,
+								CORR_UNIDAD: corrUnidad,
+								ACTIVO: false,
+							},
+						];
+					}
+					this.syncHeaderForm();
+					this.notifyApiError(error);
+				},
+			});
 	}
 }
