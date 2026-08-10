@@ -48,7 +48,6 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 
 	readonly puestosLookupColumns = [
 		{ dataField: 'CORR_PUESTO', caption: 'Corr.', width: 80 },
-		{ dataField: 'CODIGO_PUESTO', caption: 'Codigo', width: 100 },
 		{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260 },
 	];
 
