@@ -218,95 +218,6 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Busca en SC_INDUCCION una inducción activa (ESTADO_INDUCCION = 1) por empresa e id.
-        public async Task<SC_INDUCCIONView> GetInduccionActivaAsync(int corrEmpresa, int corrInduccion)
-        {
-            const string sql = @"SELECT TOP 1
-                  A.CORR_INDUCCION,
-                  A.NOMBRE_INDUCCION,
-                  A.SEMANAS_INDUCCION
-                FROM SC_INDUCCION A
-                WHERE A.CORR_EMPRESA = @CORR_EMPRESA
-                  AND A.CORR_INDUCCION = @CORR_INDUCCION
-                  AND ISNULL(A.ESTADO_INDUCCION, 1) = 1";
-
-            try
-            {
-                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_INDUCCION", Value = corrInduccion, DbType = System.Data.DbType.Int32 },
-                });
-
-                var response = new List<SC_INDUCCIONView>().FromDataReader(reader).FirstOrDefault();
-                reader.Close();
-                return response;
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-        }
-
-        // Escribe en SC_DESCRIPTOR_PUESTO solo inducción, semanas, responsable y auditoría de modificación.
-        public async Task<CResult> ActualizarEntrenamientoAsync(
-            SC_DESCRIPTOR_PUESTOTable Data,
-            string vLOGIN_SISTEMA,
-            string vESTACION)
-        {
-            CResult objResultado = new();
-
-            try
-            {
-                var p = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "CORR_INDUCCION", Value = Data.CORR_INDUCCION, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "NOMBRE_INDUCCION", Value = Data.NOMBRE_INDUCCION, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "SEMANAS_INDUCCION", Value = Data.SEMANAS_INDUCCION, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "RESPONSABLE", Value = Data.RESPONSABLE, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
-                };
-
-                var pWhere = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
-                };
-
-                var reader = await objData.Update(_TableName, p, pWhere);
-                var response = new List<SC_DESCRIPTOR_PUESTOView>().FromDataReader(reader).FirstOrDefault();
-                reader.Close();
-
-                objResultado.Data = response;
-                objResultado.Result = response != null;
-                objResultado.RowsAffected = response == null ? 0 : 1;
-                objResultado.CodeHelper = Data.CORR_DESCRIPTOR_PUESTO;
-                objResultado.ErrorCode = response == null ? -1 : 0;
-                objResultado.ErrorMessage = response == null
-                    ? "No se encontro el descriptor de puesto para la empresa de la sesion."
-                    : "";
-                objResultado.ErrorSource = response == null ? "[SC_DESCRIPTOR_PUESTORepository]" : "";
-            }
-            catch (Exception e)
-            {
-                objResultado.Data = null;
-                objResultado.Result = false;
-                objResultado.RowsAffected = 0;
-                objResultado.CodeHelper = Data.CORR_DESCRIPTOR_PUESTO;
-                objResultado.ErrorCode = -1;
-                objResultado.ErrorMessage = e.Message;
-                objResultado.ErrorSource += $"[{e.Source}]";
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-
-            return objResultado;
-        }
-
         // Borra tablas hijas en orden (detalle → encabezados) y luego el registro en SC_DESCRIPTOR_PUESTO.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
@@ -321,11 +232,12 @@ namespace SGUEES.Repositories
                 };
 
                 // Primero elimina detalle y encabezados del descriptor y del perfil; al final el descriptor.
-                await objData.Delete("SC_DESCRIPTOR_FUNCION_ACTIVIDAD", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_FUNCION", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_KPI_FUNCION", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_RELACION_LABORAL", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_FUNCION_ACTIVIDAD", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_FUNCION", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_KPI_FUNCION", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_RELACION_LABORAL", pWhere);
                 await objData.Delete("SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_INDUCCION", pWhere);
                 await objData.Delete("SC_PERFIL_PUESTO_EDUCACION", pWhere);
                 await objData.Delete("SC_PERFIL_PUESTO_EXPERIENCIA", pWhere);
                 await objData.Delete("SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS", pWhere);

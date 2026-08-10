@@ -11,11 +11,8 @@ export interface ScDescriptorPuesto {
 	OBJETIVO_PUESTO: string; // Objetivo general del puesto.
 	CORR_IMPACTO_ECONOMICO: number | null; // Catálogo de impacto económico institucional.
 	DESCRIPCION_IMPACTO_ECONOMICO?: string; // Texto del impacto económico (snapshot o catálogo).
-	CORR_INDUCCION: number | null; // Catálogo de plan de inducción asignado.
-	NOMBRE_INDUCCION?: string; // Nombre del plan de inducción mostrado en pantalla.
-	SEMANAS_INDUCCION?: number | null; // Duración en semanas del plan de inducción.
 	RESPONSABLE: string; // Nombre del responsable del puesto.
-	FORMATO: string; // Formato del descriptor: CORTO o EXTENSO.
+	FORMATO: string; // Formato del descriptor: CORTO, EXTENSO o AMBOS.
 	VERSION: number | null; // Número de versión del descriptor.
 	ESTADO_DESCRIPTOR: string; // Estado del flujo (BORRADOR, ACTIVO, etc.).
 	USUARIO_CREA: string; // Usuario que creó el registro.
@@ -35,7 +32,10 @@ export interface ScInduccionLookupItem {
 	NOMBRE_INDUCCION: string;
 	// Texto del catálogo para el popup del select.
 	NOMBRE_INDUCCION_CATALOGO?: string;
-	SEMANAS_INDUCCION: number | null; // Duración en semanas del plan.
+	TIEMPO_INDUCCION: number | null; // Duración del plan (junto a UNIDAD_TIEMPO).
+	UNIDAD_TIEMPO: string | null; // Unidad de tiempo del plan (Semanas o Meses).
+	// Duración unida para el popup: valor entero + unidad (ej. "2 Semanas").
+	DURACION_DISPLAY?: string;
 }
 
 // Lookups temporales de unidad/puesto mientras PLA_PUESTO no está integrado.
@@ -114,6 +114,8 @@ export interface ScImpactoEconomicoLookupItem {
 export const FORMATO_CORTO = 'CORTO';
 // Valor del formato extenso del descriptor.
 export const FORMATO_EXTENSO = 'EXTENSO';
+// Valor del formato ambos (corto + extenso) del descriptor.
+export const FORMATO_AMBOS = 'AMBOS';
 
 // Tipo de función clave en el descriptor.
 export const TIPO_FUNCION_CLAVE = 'CLAVE';

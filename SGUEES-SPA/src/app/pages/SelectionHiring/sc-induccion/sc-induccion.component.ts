@@ -2,11 +2,13 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
+import { environment } from 'src/environments/environment';
 import { ScInduccion } from './models/sc-induccion';
 import { ScInduccionService } from './sc-induccion.service';
 
@@ -33,6 +35,7 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 	protected override mttoRemoteOperations = false;
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Inducción';
+	mUNIDAD_TIEMPO: Array<{ Key: any; Value: string }> = [];
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -42,7 +45,7 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
-		this.items = this.service.getItems();
+		this.refreshFormItems();
 	}
 
 	// Qué hace: entrega la referencia del grid de mantenimiento al framework base.
@@ -52,10 +55,46 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 	}
 
 	// Qué hace: prepara la pantalla al abrirla.
-	// Cómo: fija el subtítulo de mantenimiento y llama a consultar para cargar el catálogo.
+	// Cómo: fija el subtítulo, carga unidades de tiempo con getLookUp y consulta el catálogo.
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
+		this.getUNIDAD_TIEMPO();
 		this.consultar();
+	}
+
+	// Qué hace: carga Semanas/Meses desde SC_LISTA para el SelectBox de unidad.
+	// Cómo: llama a getLookUp SC_INDUCCION/SC_LISTA/GetUNIDAD_TIEMPO_INDUCCION, guarda en mUNIDAD_TIEMPO y refresca items.
+	getUNIDAD_TIEMPO(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_INDUCCION',
+				'SC_LISTA',
+				'GetUNIDAD_TIEMPO_INDUCCION',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.mUNIDAD_TIEMPO = response.Data;
+					} else {
+						this.mUNIDAD_TIEMPO = [];
+					}
+					this.refreshFormItems();
+				},
+				error: (error: any) => {
+					this.mUNIDAD_TIEMPO = [];
+					this.notifyFx(error, NotifyType.Error);
+					this.refreshFormItems();
+				},
+			});
+	}
+
+	// Qué hace: reconstruye los items del formulario con la lista de unidades cargada.
+	// Cómo: llama a getItems del servicio pasando mUNIDAD_TIEMPO.
+	private refreshFormItems(): void {
+		this.items = this.service.getItems({ unidadesTiempo: this.mUNIDAD_TIEMPO });
 	}
 
 	// Qué hace: reacciona a los cambios de estado del formulario.
@@ -81,7 +120,8 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_INDUCCION: xModel.CORR_INDUCCION,
 				NOMBRE_INDUCCION: xModel.NOMBRE_INDUCCION,
-				SEMANAS_INDUCCION: xModel.SEMANAS_INDUCCION,
+				TIEMPO_INDUCCION: xModel.TIEMPO_INDUCCION,
+				UNIDAD_TIEMPO: xModel.UNIDAD_TIEMPO,
 				ESTADO_INDUCCION: xModel.ESTADO_INDUCCION,
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
@@ -96,7 +136,8 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 			CORR_EMPRESA: 1,
 			CORR_INDUCCION: 0,
 			NOMBRE_INDUCCION: '',
-			SEMANAS_INDUCCION: 1,
+			TIEMPO_INDUCCION: 1,
+			UNIDAD_TIEMPO: 'Semanas',
 			ESTADO_INDUCCION: true,
 			USUARIO_CREA: '',
 			ESTACION_CREA: '',
@@ -293,22 +334,24 @@ export class ScInduccionComponent extends CBaseComponent implements OnInit {
 	}
 
 	// Qué hace: deja el formulario en solo lectura (modo consulta).
-	// Cómo: pone readOnly en true a los editores de correlativo, nombre, semanas y estado.
+	// Cómo: pone readOnly en true a los editores de correlativo, nombre, tiempo, unidad y estado.
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_INDUCCION')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_INDUCCION')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('SEMANAS_INDUCCION')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('TIEMPO_INDUCCION')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('UNIDAD_TIEMPO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ESTADO_INDUCCION')?.option('readOnly', true);
 	}
 
 	// Qué hace: habilita los campos editables del formulario.
-	// Cómo: habilita nombre y semanas; bloquea el estado cuando la operación es de actualización.
+	// Cómo: habilita nombre, tiempo y unidad; bloquea el estado cuando la operación es de actualización.
 	override habilitar(): void {
 		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_INDUCCION')?.option('readOnly', true);
 			this.dataForm.instance.getEditor('NOMBRE_INDUCCION')?.option('readOnly', false);
-			this.dataForm.instance.getEditor('SEMANAS_INDUCCION')?.option('readOnly', false);
+			this.dataForm.instance.getEditor('TIEMPO_INDUCCION')?.option('readOnly', false);
+			this.dataForm.instance.getEditor('UNIDAD_TIEMPO')?.option('readOnly', false);
 			this.dataForm.instance.getEditor('ESTADO_INDUCCION')?.option('readOnly', estadoSoloLectura);
 		});
 	}

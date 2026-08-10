@@ -25,7 +25,7 @@ namespace SGUEES.Repositories
         }
 
         // Qué hace: recupera los impactos económicos activos para el lookup del descriptor.
-        // Cómo: SELECT directo a V_SC_IMPACTO_ECONOMICO filtrando por empresa y ESTADO_IMPACTO_ECONOMICO, ordenado por DESCRIPCION.
+        // Cómo: SELECT directo a V_SC_IMPACTO_ECONOMICO filtrando por empresa y ESTADO_IMPACTO_ECONOMICO, ordenado por CORR_IMPACTO_ECONOMICO.
         public async Task<List<SC_IMPACTO_ECONOMICOView>> GetCatalogoDescriptorAsync(int corrEmpresa)
         {
             if (corrEmpresa <= 0)
@@ -41,7 +41,7 @@ namespace SGUEES.Repositories
                 FROM V_SC_IMPACTO_ECONOMICO A
                 WHERE A.CORR_EMPRESA = @CORR_EMPRESA
                   AND ISNULL(A.ESTADO_IMPACTO_ECONOMICO, 1) = 1
-                ORDER BY A.DESCRIPCION, A.CORR_IMPACTO_ECONOMICO";
+                ORDER BY A.CORR_IMPACTO_ECONOMICO";
 
             try
             {

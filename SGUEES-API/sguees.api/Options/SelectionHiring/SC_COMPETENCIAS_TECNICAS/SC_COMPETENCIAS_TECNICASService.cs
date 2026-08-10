@@ -459,7 +459,7 @@ namespace SGUEES.Services
         }
 
         // Qué hace: verifica que el código no pertenezca a otra competencia de la empresa.
-        // Cómo: llama a ExistsCodigoAsync del repositorio y devuelve ValidationError si ya existe otro registro.
+        // Cómo: llama a ExistsCodigoAsync del repositorio y devuelve DuplicateWarning si ya existe otro registro.
         private async Task<CResult> ValidateUniqueCodigoAsync(SC_COMPETENCIAS_TECNICASTable Data, int? excludeCorr)
         {
             var exclude = excludeCorr ?? 0;
@@ -468,9 +468,14 @@ namespace SGUEES.Services
                 Data.CODIGO_COMPETENCIAS_TECNICAS,
                 exclude);
 
-            return exists
-                ? ValidationError($"Ya existe una competencia con el codigo {Data.CODIGO_COMPETENCIAS_TECNICAS}.")
-                : null;
+            if (!exists)
+            {
+                return null;
+            }
+
+            var codigo = (Data.CODIGO_COMPETENCIAS_TECNICAS ?? string.Empty).Trim();
+            return DuplicateWarning(
+                $"Ya existe una competencia con el codigo {codigo}. Escriba otro codigo para continuar.");
         }
 
         // Qué hace: consulta si la competencia aún tiene nodos hijos asociados.
@@ -575,6 +580,21 @@ namespace SGUEES.Services
                 CodeHelper = 0,
                 ErrorCode = 4100,
                 ErrorMessage = "No se pudo guardar la competencia tecnica porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
+                ErrorSource = "[SC_COMPETENCIAS_TECNICASService]",
+                RowsAffected = 0
+            };
+        }
+
+        // Qué hace: arma respuesta controlada de duplicado (ErrorCode 2627 → Warning en el front).
+        private static CResult DuplicateWarning(string message)
+        {
+            return new CResult
+            {
+                Data = null,
+                Result = false,
+                CodeHelper = 0,
+                ErrorCode = 2627,
+                ErrorMessage = message,
                 ErrorSource = "[SC_COMPETENCIAS_TECNICASService]",
                 RowsAffected = 0
             };

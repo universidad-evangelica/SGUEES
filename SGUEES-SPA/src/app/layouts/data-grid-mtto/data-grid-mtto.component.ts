@@ -544,6 +544,24 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.activarInactivar.emit();
   }
 
+  /** Actualiza la fila enfocada del toolbar tras Activar/Desactivar (mismo CORR). */
+  actualizarFocusedRowData(data: Record<string, unknown> | null | undefined): void {
+    if (!this.isBrowse || !data || !this.keyExpr) {
+      return;
+    }
+
+    const keyField = this.keyExpr as string;
+    const key = data[keyField];
+    const focusedKey = this.focusedRowData?.[keyField] ?? this.focusedRowKey;
+    if (!this.isValidFocusedRowKey(key) || key !== focusedKey) {
+      return;
+    }
+
+    this.focusedRowData = { ...data };
+    this.rebuildToolbarOptions();
+    this.cdr.markForCheck();
+  }
+
   onRefreshClick(): void {
     this.refresh.emit();
   }
@@ -569,16 +587,33 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  refreshData(resetPage = true): void {
+  // Qué hace: refresca el grid (Options fixed alineada) y conserva la página actual.
+  // Cómo: grid.refresh() evita el descuadre; no hace pageIndex(0) para que al eliminar se quede en la página.
+  refreshData(_resetPage = true): void {
     const grid = this.gData?.instance;
     if (!grid) {
       return;
     }
 
-    if (resetPage) {
-      grid.pageIndex(0);
+    const pageIndex = grid.pageIndex();
+    const reloadPromise = grid.refresh();
+    const afterReload = () => {
+      const instance = this.gData?.instance;
+      if (!instance) {
+        return;
+      }
+      const pageCount = Math.max(1, instance.pageCount?.() ?? 1);
+      const restored = Math.min(Math.max(0, pageIndex), pageCount - 1);
+      if (instance.pageIndex() !== restored) {
+        instance.pageIndex(restored);
+      }
+    };
+
+    if (reloadPromise && typeof (reloadPromise as Promise<unknown>).then === 'function') {
+      (reloadPromise as Promise<unknown>).then(afterReload).catch(afterReload);
+    } else {
+      setTimeout(afterReload);
     }
-    grid.refresh();
   }
 
   private resolveGridHeight(): void {

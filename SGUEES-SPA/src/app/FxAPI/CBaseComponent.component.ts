@@ -228,7 +228,7 @@ export class CBaseComponent {
 	}
 
 	protected notificarSeleccionRequerida(): void {
-		this.notifyFx('Seleccione un registro en el grid.', NotifyType.Warning, { raw: true });
+		this.notifyFx('No hay ningún registro seleccionado. Seleccione uno para continuar.', NotifyType.Warning, { raw: true });
 	}
 
 	getPermiteEditar(e: any): boolean {
@@ -620,6 +620,8 @@ export class CBaseComponent {
 					if (shouldPatch) {
 						this.aplicarRegistroEnGrid(response.Data, false);
 					}
+					// Sincroniza modelo y toolbar con el ESTADO_* recién invertido (botón Activar/Desactivar y mensajes).
+					this.sincronizarSeleccionTrasCambioEstado(response.Data);
 					options.onSuccess?.();
 					this.notifyFx(
 						options.eraActivo
@@ -638,6 +640,21 @@ export class CBaseComponent {
 				this.loadingVisible = false;
 			},
 		});
+	}
+
+	/** Actualiza this.model y el focusedRow del grid tras Activar/Desactivar. */
+	protected sincronizarSeleccionTrasCambioEstado(data: unknown): void {
+		if (!data || typeof data !== 'object' || !this.mttoGridKeyExpr) {
+			return;
+		}
+
+		const record = data as Record<string, unknown>;
+		const key = this.mttoGridKeyExpr;
+		if (this.model && this.model[key] === record[key]) {
+			this.model = this.fillData(record);
+		}
+
+		this.getMttoDataGrid()?.actualizarFocusedRowData(record);
 	}
 
 	/** Toolbar Activar/Desactivar — un solo flujo; el SP invierte el bit en BD. */
@@ -685,6 +702,7 @@ export class CBaseComponent {
 					if (shouldPatch) {
 						this.aplicarRegistroEnGrid(response.Data, false);
 					}
+					this.sincronizarSeleccionTrasCambioEstado(response.Data);
 					options.onSuccess?.();
 					this.notifyFx(
 						options.activo

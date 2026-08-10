@@ -342,7 +342,7 @@ namespace SGUEES.Repositories
         }
 
         // Qué hace: recupera las frecuencias activas para el lookup.
-        // Cómo: ejecuta un SELECT sobre V_SC_FRECUENCIA filtrando por CORR_EMPRESA y ESTADO_FRECUENCIA activo, ordenado por NOMBRE_FRECUENCIA.
+        // Cómo: ejecuta un SELECT sobre V_SC_FRECUENCIA filtrando por CORR_EMPRESA y ESTADO_FRECUENCIA activo, ordenado por CORR_FRECUENCIA.
         public async Task<CResult> GetFrecuenciasActivasAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -363,7 +363,7 @@ namespace SGUEES.Repositories
                     FROM V_SC_FRECUENCIA
                     WHERE CORR_EMPRESA = @CORR_EMPRESA
                       AND ISNULL(ESTADO_FRECUENCIA, 1) = 1
-                    ORDER BY NOMBRE_FRECUENCIA";
+                    ORDER BY CORR_FRECUENCIA";
 
                 var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, xWhere);
                 var response = new List<SC_FRECUENCIAView>().FromDataReader(reader).ToList();

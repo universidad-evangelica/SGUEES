@@ -10,8 +10,10 @@ namespace SGUEES.Models
         public int CORR_EMPRESA { get; set; }
         public int CORR_INDUCCION { get; set; }
         public string NOMBRE_INDUCCION { get; set; }
-        // Duración de la inducción, en semanas.
-        public int SEMANAS_INDUCCION { get; set; }
+        // Cantidad de tiempo que dura la inducción (se interpreta junto con UNIDAD_TIEMPO).
+        public int TIEMPO_INDUCCION { get; set; }
+        // Unidad del tiempo de inducción: solo 'Semanas' o 'Meses' (coincide exacto con el CHECK de la tabla).
+        public string UNIDAD_TIEMPO { get; set; }
         // Estado del catálogo: true = activo, false = inactivo.
         public bool? ESTADO_INDUCCION { get; set; } = true;
         public string USUARIO_CREA { get; set; }

@@ -67,6 +67,18 @@ namespace SGUEES.Repositories
             {
                 new() { Key = "CORTO", Value = "Version corta" },
                 new() { Key = "EXTENSO", Value = "Version extensa" },
+                new() { Key = "AMBOS", Value = "Ambos" },
+            });
+        }
+
+        // Qué hace: entrega las unidades de tiempo válidas para el catálogo de inducción.
+        // Cómo: lista fija que coincide exacto con el CHECK de SC_INDUCCION.UNIDAD_TIEMPO ('Semanas'/'Meses').
+        public CResult GetUNIDAD_TIEMPO_INDUCCION()
+        {
+            return Ok(new List<SC_LISTAView>
+            {
+                new() { Key = "Semanas", Value = "Semanas" },
+                new() { Key = "Meses", Value = "Meses" },
             });
         }
 

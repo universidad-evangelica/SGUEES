@@ -197,9 +197,14 @@ namespace SGUEES.Services
                 Data.NOMBRE_RESPONSABILIDAD,
                 excludeCorr ?? 0);
 
-            return exists
-                ? ValidationError($"Ya existe una responsabilidad de cargo con el nombre {Data.NOMBRE_RESPONSABILIDAD}.")
-                : null;
+            if (!exists)
+            {
+                return null;
+            }
+
+            var nombre = (Data.NOMBRE_RESPONSABILIDAD ?? string.Empty).Trim();
+            return DuplicateWarning(
+                $"Ya existe una responsabilidad de cargo con el nombre {nombre}. Escriba otro nombre para continuar.");
         }
 
         // Qué hace: valida que exista empresa en la sesión.
@@ -218,6 +223,21 @@ namespace SGUEES.Services
                 CodeHelper = 0,
                 ErrorCode = 4100,
                 ErrorMessage = "No se pudo guardar la responsabilidad de cargo porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
+                ErrorSource = "[SC_RESPONSABILIDAD_CARGOService]",
+                RowsAffected = 0
+            };
+        }
+
+        // Qué hace: arma respuesta controlada de duplicado (ErrorCode 2627 → Warning en el front).
+        private static CResult DuplicateWarning(string message)
+        {
+            return new CResult
+            {
+                Data = null,
+                Result = false,
+                CodeHelper = 0,
+                ErrorCode = 2627,
+                ErrorMessage = message,
                 ErrorSource = "[SC_RESPONSABILIDAD_CARGOService]",
                 RowsAffected = 0
             };
