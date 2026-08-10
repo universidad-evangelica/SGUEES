@@ -180,6 +180,7 @@
 						[autoNavigateToFocusedRow]="true"
 						[height]="'100%'"
 						[width]="'100%'"
+						(onContentReady)="onDetalleGridContentReady($event)"
 						(onRowInserting)="detalleRowInserting($event)"
 						(onRowUpdating)="detalleRowUpdating($event)"
 						(onRowRemoving)="detalleRowRemoving($event)"

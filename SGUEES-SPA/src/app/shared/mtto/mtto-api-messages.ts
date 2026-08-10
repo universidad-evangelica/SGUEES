@@ -80,7 +80,36 @@ function isConnectionFailure(value: unknown): boolean {
 	}
 
 	const lower = text.toLowerCase();
-	return lower.includes('http failure') || lower.includes('progress event');
+	if (lower.includes('progress event')) {
+		return true;
+	}
+
+	// Solo fallos de red (status 0). No confundir con 401/403/500 de Angular HttpClient.
+	if (lower.includes('http failure')) {
+		return (
+			lower.includes(': 0 ') ||
+			lower.includes('unknown error') ||
+			lower.includes('net::err_') ||
+			lower.includes('failed to fetch')
+		);
+	}
+
+	return false;
+}
+
+function getHttpStatusMessage(status: number): string | null {
+	switch (status) {
+		case 401:
+			return 'Su sesión expiró o no está autorizado. Cierre sesión e ingrese nuevamente.';
+		case 403:
+			return 'No tiene permiso para realizar esta operación.';
+		case 404:
+			return 'El servicio solicitado no existe en la API. Verifique que la API esté actualizada.';
+		case 500:
+			return 'Ocurrió un error interno en el servidor. Revise la consola de la API e intente nuevamente.';
+		default:
+			return status > 0 ? `Error del servidor (HTTP ${status}).` : null;
+	}
 }
 
 export function getApiErrorMessage(error: any): string {
@@ -100,7 +129,21 @@ export function getApiErrorMessage(error: any): string {
 		return API_CONNECTION_MESSAGE;
 	}
 
-	const apiMessage = error?.error?.ErrorMessage || error?.ErrorMessage || error?.error?.message || error?.message;
+	const httpStatus = Number(error?.status ?? 0);
+	if (httpStatus === 0) {
+		return API_CONNECTION_MESSAGE;
+	}
+
+	const body = error?.error;
+	if (body && typeof body === 'object' && typeof body.ErrorMessage === 'string' && body.ErrorMessage.trim()) {
+		return body.ErrorMessage;
+	}
+
+	if (typeof body === 'string' && body.trim() && !isConnectionFailure(body)) {
+		return cleanApiMessage(body);
+	}
+
+	const apiMessage = error?.ErrorMessage || body?.message || error?.message;
 	if (typeof apiMessage === 'string' && apiMessage.trim()) {
 		if (isConnectionFailure(apiMessage)) {
 			return API_CONNECTION_MESSAGE;
@@ -108,7 +151,7 @@ export function getApiErrorMessage(error: any): string {
 		return apiMessage;
 	}
 
-	return API_CONNECTION_MESSAGE;
+	return getHttpStatusMessage(httpStatus) ?? API_CONNECTION_MESSAGE;
 }
 
 export function getNotifyTypeFromResponse(response: any, etiquetaRegistro = 'el registro'): NotifyType {

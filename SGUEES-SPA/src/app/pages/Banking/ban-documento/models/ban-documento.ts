@@ -9,6 +9,10 @@ export interface BanDocumento {
 	CORR_CUENTA_BANCO: number;
 	NOMBRE_CUENTA_BANCO?: string;
 	NUMERO_CUENTA_BANCO?: string;
+	CORR_CUENTA_BANCO_DESTINO?: number;
+	NOMBRE_CUENTA_BANCO_DESTINO?: string;
+	NUMERO_CUENTA_DESTINO_TERCERO?: string;
+	MONTO_DESTINO?: number;
 	NUMERO_DOCUMENTO: number;
 	FECHA_EMISION: Date;
 	NOMBRE_PARTIDA: string;

@@ -144,6 +144,11 @@ namespace sguees.Repositories
 					return objResultado;
 				}
 
+				static string Trunc(string? value, int maxLen)
+					=> (value ?? string.Empty).Trim().Length <= maxLen
+						? (value ?? string.Empty).Trim()
+						: (value ?? string.Empty).Trim()[..maxLen];
+
 				var table = new DataTable();
 				table.Columns.Add("CORR", typeof(int));
 				table.Columns.Add("NUMERO_REFERENCIA_BANCO", typeof(string));
@@ -158,9 +163,9 @@ namespace sguees.Repositories
 				{
 					table.Rows.Add(
 						row.CORR,
-						row.NUMERO_REFERENCIA_BANCO ?? string.Empty,
-						row.CODIGO_TIPO_MOVIMIENTO ?? string.Empty,
-						row.NOMBRE_TIPO_MOVIMIENTO ?? string.Empty,
+						Trunc(row.NUMERO_REFERENCIA_BANCO, 255),
+						Trunc(row.CODIGO_TIPO_MOVIMIENTO, 30),
+						Trunc(row.NOMBRE_TIPO_MOVIMIENTO, 255),
 						row.FECHA_MOVIMIENTO,
 						row.MONTO_CARGO,
 						row.MONTO_ABONO,

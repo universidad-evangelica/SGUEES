@@ -94,6 +94,14 @@ namespace sguees.Controllers
 		public async Task<CResult> GetCORR_TIPO_MOVIMIENTO_BAN_SOLI_CHEQUE([FromQuery] BAN_TIPO_MOVI_BANCARIOParam Data)
 			=> await GetTiposMoviLookupAsync(Data, soloCheques: true);
 
+		[HttpGet("GetCORR_TIPO_MOVIMIENTO_BAN_CONCILIA_BANCARIA")]
+		[Authorize(Policy = "/ban-concilia-bancaria|R")]
+		public async Task<CResult> GetCORR_TIPO_MOVIMIENTO_BAN_CONCILIA_BANCARIA([FromQuery] BAN_TIPO_MOVI_BANCARIOParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
 		private async Task<CResult> GetTiposMoviLookupAsync(BAN_TIPO_MOVI_BANCARIOParam Data, bool soloCheques)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);

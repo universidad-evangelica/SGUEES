@@ -1,0 +1,15 @@
+/*
+  Fix PROME: filtrar tipo movimiento por CORR_BANCO al importar Excel.
+*/
+SET NOCOUNT ON;
+GO
+
+IF OBJECT_ID(N'dbo.PRAL_GENE_BAN_CONCILIA_BANCARIA_MOV_EXCEL', N'P') IS NOT NULL
+    DROP PROCEDURE dbo.PRAL_GENE_BAN_CONCILIA_BANCARIA_MOV_EXCEL;
+GO
+
+:r "C:\Desarrollo GIT\SGUEES\SGUEES-DB\Stored Procedures\dbo.PRAL_GENE_BAN_CONCILIA_BANCARIA_MOV_EXCEL.sql"
+GO
+
+PRINT N'=== FIX PROME import filter by CORR_BANCO OK ===';
+GO

@@ -19,7 +19,7 @@ import {
 import { BanConciliaBancariaDeta } from './models/ban-concilia-bancaria-deta';
 import { BanConciliaBancariaService } from './ban-concilia-bancaria.service';
 import { BanConciliaBancariaDetaService } from './ban-concilia-bancaria-deta/ban-concilia-bancaria-deta.service';
-import { parseBanConciliaExcel } from './ban-concilia-excel.parser';
+import { parseBanConciliaImportFile } from './ban-concilia-excel.parser';
 
 @Component({
 	selector: 'app-ban-concilia-bancaria',
@@ -29,7 +29,7 @@ import { parseBanConciliaExcel } from './ban-concilia-excel.parser';
 export class BanConciliaBancariaComponent extends CBaseComponent implements OnInit {
 	@ViewChild('gridDetalleBanco', { static: false }) gridDetalleBanco!: DxDataGridComponent;
 	@ViewChild('gridPendientes', { static: false }) gridPendientes!: DxDataGridComponent;
-	@ViewChild('excelInput', { static: false }) excelInput!: ElementRef<HTMLInputElement>;
+	@ViewChild('importInput', { static: false }) importInput!: ElementRef<HTMLInputElement>;
 
 	protected override etiquetaRegistro = 'la conciliación bancaria';
 	protected override requiereEmpresaSesion = true;
@@ -39,10 +39,14 @@ export class BanConciliaBancariaComponent extends CBaseComponent implements OnIn
 	readOnly = false;
 	detalles: BanConciliaBancariaDeta[] = [];
 	pendientes: BanConciliaBancariaPendiente[] = [];
-	resumen: BanConciliaBancariaResumen[] = [];
+	resumenMas: BanConciliaBancariaResumen[] = [];
+	resumenMenos: BanConciliaBancariaResumen[] = [];
 	movimientos: BanConciliaBancariaMovi[] = [];
+	lineasTrabajo: { CORR_LINEA: number; NOMBRE_LINEA_TRABAJO: string }[] = [];
+	filtroLineaTrabajo: number | null = null;
 	detalleEditando = false;
 	private detalleEdicionExplicita = false;
+	tabConciliaIndex = 0;
 
 	btnAplicar = '';
 	btnDesAplicar = '';
@@ -62,11 +66,18 @@ export class BanConciliaBancariaComponent extends CBaseComponent implements OnIn
 		{ dataField: 'CORR_TIPO_MOVIMIENTO', caption: 'Código', width: 80 },
 		{ dataField: 'NOMBRE_TIPO_MOVIMIENTO', caption: 'Tipo movimiento', width: 280 },
 	];
+	lineaTrabajoLookupColumns: any[] = [
+		{ dataField: 'CORR_LINEA', caption: 'Código', width: 80 },
+		{ dataField: 'NOMBRE_LINEA_TRABAJO', caption: 'Línea de trabajo', width: 320 },
+	];
 
-	resumenColumns: any[] = [];
+	resumenLineaColumns: any[] = [];
 	detaColumns: any[] = [];
 	pendienteColumns: any[] = [];
 	moviColumns: any[] = [];
+	detaSummary: any;
+	resumenSummary: any;
+	moviSummary: any;
 
 	vFECHA_INICIAL: Date = new Date();
 	vFECHA_FINAL: Date = new Date();
@@ -82,10 +93,13 @@ export class BanConciliaBancariaComponent extends CBaseComponent implements OnIn
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
-		this.resumenColumns = this.service.getResumenColumns();
+		this.resumenLineaColumns = this.service.getResumenLineaColumns();
 		this.detaColumns = this.service.getDetaColumns();
 		this.pendienteColumns = this.service.getPendienteColumns();
 		this.moviColumns = this.service.getMoviColumns();
+		this.detaSummary = this.buildDetaSummary();
+		this.resumenSummary = this.buildResumenSummary();
+		this.moviSummary = this.buildMoviSummary();
 
 		this.editarDetalleClick = this.editarDetalleClick.bind(this);
 		this.detalleEditButtonVisible = this.detalleEditButtonVisible.bind(this);
@@ -111,7 +125,7 @@ export class BanConciliaBancariaComponent extends CBaseComponent implements OnIn
 
 	getCORR_CUENTA_BANCO() {
 		this.appInfoService
-			.getLookUp(this.lookupOpcion, 'BAN_CUENTA_BANCARIA', 'GetCORR_CUENTA_BANCO_BAN_CONCILIA_BANCARIA', undefined, environment.UrlCONTAAPI)
+			.getLookUp(this.lookupOpcion, 'BAN_CUENTA_BANCARIA', 'GetCORR_CUENTA_BANCO', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -139,7 +153,7 @@ export class BanConciliaBancariaComponent extends CBaseComponent implements OnIn
 
 	getESTADO_CONCILIACION() {
 		this.appInfoService
-			.getLookUp(this.lookupOpcion, 'BAN_LISTA', 'GetESTADO_CONCILIACION_BAN_CONCILIA_BANCARIA', undefined, environment.UrlCONTAAPI)
+			.getLookUp(this.lookupOpcion, 'BAN_LISTA', 'GetESTADO_CONCILIACION', undefined, environment.UrlCONTAAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -278,15 +292,21 @@ export class BanConciliaBancariaComponent extends CBaseComponent implements OnIn
 
 	private aplicarReadOnlyFormulario(soloLectura: boolean): void {
 		this.readOnly = soloLectura;
+		const bloquearCuentaSaldos = soloLectura || this.banderaMtto === UpdateType.Update;
 		setTimeout(() => {
 			const form = this.dataForm?.instance;
 			if (!form) {
 				return;
 			}
-			(['CORR_CUENTA_BANCO', 'FECHA_CONCILIACION', 'SALDO_CUENTA_BANCO', 'SALDO_CUENTA_CONTA'] as const).forEach((campo) => {
-				form.getEditor(campo)?.option('readOnly', soloLectura);
-			});
+			form.getEditor('CORR_CUENTA_BANCO')?.option('readOnly', bloquearCuentaSaldos);
+			form.getEditor('SALDO_CUENTA_BANCO')?.option('readOnly', bloquearCuentaSaldos);
+			form.getEditor('SALDO_CUENTA_CONTA')?.option('readOnly', bloquearCuentaSaldos);
+			form.getEditor('FECHA_CONCILIACION')?.option('readOnly', soloLectura);
 		});
+	}
+
+	get cuentaYSaldosReadOnly(): boolean {
+		return this.readOnly || this.banderaMtto === UpdateType.Update;
 	}
 
 	editablePorEstado(estado?: string): boolean {
@@ -346,10 +366,78 @@ export class BanConciliaBancariaComponent extends CBaseComponent implements OnIn
 	limpiarTabs(): void {
 		this.detalles = [];
 		this.pendientes = [];
-		this.resumen = [];
+		this.resumenMas = [];
+		this.resumenMenos = [];
 		this.movimientos = [];
+		this.lineasTrabajo = [];
+		this.filtroLineaTrabajo = null;
 		this.detalleEditando = false;
 		this.detalleEdicionExplicita = false;
+	}
+
+	get totalResumenMas(): number {
+		return this.resumenMas.reduce((sum, row) => sum + (row.MONTO ?? 0), 0);
+	}
+
+	get totalResumenMenos(): number {
+		return this.resumenMenos.reduce((sum, row) => sum + (row.MONTO ?? 0), 0);
+	}
+
+	get subtotalDespuesMas(): number {
+		return (this.model?.SALDO_CUENTA_BANCO ?? 0) + this.totalResumenMas;
+	}
+
+	get saldoFinalConcilia(): number {
+		if (this.model?.SEGUN_LIBROS != null && this.model.SEGUN_LIBROS !== 0) {
+			return this.model.SEGUN_LIBROS;
+		}
+		return this.subtotalDespuesMas - this.totalResumenMenos;
+	}
+
+	get movimientosFiltrados(): BanConciliaBancariaMovi[] {
+		if (!this.filtroLineaTrabajo) {
+			return this.movimientos;
+		}
+		return this.movimientos.filter((row) => row.CORR_LINEA === this.filtroLineaTrabajo);
+	}
+
+	resumenGridHeight(rowCount: number): number {
+		return Math.max(72, rowCount * 32 + 52);
+	}
+
+	private buildResumenSummary(): any {
+		return {
+			totalItems: [{ column: 'MONTO', summaryType: 'sum', valueFormat: '#,##0.00', displayFormat: '{0}' }],
+		};
+	}
+
+	private buildMoviSummary(): any {
+		return {
+			totalItems: [{ column: 'MONTO', summaryType: 'sum', valueFormat: '#,##0.00', displayFormat: '{0}' }],
+		};
+	}
+
+	private actualizarLineasTrabajo(): void {
+		const map = new Map<number, string>();
+		[...this.resumenMas, ...this.resumenMenos].forEach((row) => {
+			map.set(row.CORR_LINEA, row.NOMBRE_LINEA_TRABAJO);
+		});
+		this.lineasTrabajo = Array.from(map.entries()).map(([CORR_LINEA, NOMBRE_LINEA_TRABAJO]) => ({
+			CORR_LINEA,
+			NOMBRE_LINEA_TRABAJO,
+		}));
+	}
+
+	private buildDetaSummary(): any {
+		return {
+			totalItems: [
+				{ column: 'FECHA_MOVIMIENTO', summaryType: 'count', displayFormat: 'Cant. {0}' },
+				{ column: 'MONTO_CARGO', summaryType: 'sum', valueFormat: '#,##0.00', displayFormat: '{0}' },
+				{ column: 'MONTO_ABONO', summaryType: 'sum', valueFormat: '#,##0.00', displayFormat: '{0}' },
+				{ column: 'MONTO_CARGO_CONTA', summaryType: 'sum', valueFormat: '#,##0.00', displayFormat: '{0}' },
+				{ column: 'MONTO_ABONO_CONTA', summaryType: 'sum', valueFormat: '#,##0.00', displayFormat: '{0}' },
+			],
+		};
 	}
 
 	cargarDetalleTabs(): void {
@@ -405,15 +493,9 @@ export class BanConciliaBancariaComponent extends CBaseComponent implements OnIn
 			.pipe(take(1))
 			.subscribe({
 				next: ({ aumenta, disminuye }: any) => {
-					const rowsAumenta = (aumenta.Result ? aumenta.Data || [] : []).map((row: BanConciliaBancariaResumen) => ({
-						...row,
-						TIPO_RESUMEN: 'Aumenta',
-					}));
-					const rowsDisminuye = (disminuye.Result ? disminuye.Data || [] : []).map((row: BanConciliaBancariaResumen) => ({
-						...row,
-						TIPO_RESUMEN: 'Disminuye',
-					}));
-					this.resumen = [...rowsAumenta, ...rowsDisminuye];
+					this.resumenMas = aumenta.Result ? aumenta.Data || [] : [];
+					this.resumenMenos = disminuye.Result ? disminuye.Data || [] : [];
+					this.actualizarLineasTrabajo();
 				},
 				error: (error: any) => this.notifyFx(error, NotifyType.Error),
 			});
@@ -439,7 +521,7 @@ export class BanConciliaBancariaComponent extends CBaseComponent implements OnIn
 			this.btnDesAplicar = this.model.ESTADO_CONCILIACION === 'AP' ? 'Des-Aplicar' : '';
 			this.btnGenerar = this.model.ESTADO_CONCILIACION === 'DI' ? 'Generar' : '';
 			this.btnReconstruir = this.model.ESTADO_CONCILIACION === 'DI' ? 'Reconstruir' : '';
-			this.btnImportar = this.model.ESTADO_CONCILIACION === 'DI' ? 'Importar Excel' : '';
+			this.btnImportar = this.model.ESTADO_CONCILIACION === 'DI' ? this.getEtiquetaImportar() : '';
 		} else {
 			this.btnAplicar = '';
 			this.btnDesAplicar = '';
@@ -449,15 +531,29 @@ export class BanConciliaBancariaComponent extends CBaseComponent implements OnIn
 		}
 	}
 
-	importarExcelClick(): void {
+	private getEtiquetaImportar(): string {
+		const cuenta = this.mCORR_CUENTA_BANCO?.find(
+			(row: any) => row.CORR_CUENTA_BANCO === this.model?.CORR_CUENTA_BANCO
+		);
+		const clase = (cuenta?.CLASE_BANCO ?? '').toUpperCase();
+		if (clase === 'BAG' || clase === 'BAGRI') {
+			return 'Importar CSV';
+		}
+		if (clase === 'CREDO') {
+			return 'Importar Excel/CSV';
+		}
+		return 'Importar Excel';
+	}
+
+	importarArchivoClick(): void {
 		if (!this.puedeEditarDetalle()) {
 			this.notifyFx('Solo se puede importar en conciliaciones DIGITADAS.', NotifyType.Warning);
 			return;
 		}
-		this.excelInput?.nativeElement?.click();
+		this.importInput?.nativeElement?.click();
 	}
 
-	async onExcelSelected(event: Event): Promise<void> {
+	async onImportFileSelected(event: Event): Promise<void> {
 		const input = event.target as HTMLInputElement;
 		const file = input.files?.[0];
 		input.value = '';
@@ -477,7 +573,7 @@ export class BanConciliaBancariaComponent extends CBaseComponent implements OnIn
 
 		this.loadingVisible = true;
 		try {
-			const rows = await parseBanConciliaExcel(file, claseBanco);
+			const rows = await parseBanConciliaImportFile(file, claseBanco);
 			if (!rows.length) {
 				this.notifyFx('El archivo no contiene movimientos válidos.', NotifyType.Warning);
 				return;

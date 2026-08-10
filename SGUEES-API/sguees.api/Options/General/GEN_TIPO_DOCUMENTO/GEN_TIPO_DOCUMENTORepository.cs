@@ -236,7 +236,7 @@ namespace sguees.Repositories
 			try
 			{
 				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
-				var response = new List<GEN_TIPO_DOCUMENTO_RUBROView>().FromDataReader(reader).ToList();
+				var response = new List<GEN_TIPO_DOCUMENTOView>().FromDataReader(reader).ToList();
 				
 				reader.Close();
 				reader = null;

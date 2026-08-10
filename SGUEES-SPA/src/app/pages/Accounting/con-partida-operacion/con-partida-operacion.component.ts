@@ -11,8 +11,8 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { environment } from 'src/environments/environment';
 import { ConPartidaService } from '../con-partida/con-partida.service';
-import { ConPartidaDetaService } from '../con-partida-deta/con-partida-deta.service';
-import { ConPartidaDocService } from '../con-partida/con-partida-doc.service';
+import { ConPartidaDetaService } from '../con-partida/con-partida-deta/con-partida-deta.service';
+import { ConPartidaDocService } from '../con-partida/con-partida-doc/con-partida-doc.service';
 import { ConPartidaOperacionModo, ConPartidaOperacionService } from './con-partida-operacion.service';
 
 @Component({

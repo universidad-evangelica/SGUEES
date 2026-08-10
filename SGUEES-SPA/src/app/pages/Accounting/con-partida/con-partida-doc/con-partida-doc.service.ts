@@ -3,14 +3,13 @@ import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 
-import { ConPartidaRepository } from './con-partida.repository';
-import { ConPartidaDoc } from './models/con-partida-doc';
+import { ConPartidaDocRepository } from './con-partida-doc.repository';
 
 @Injectable({
 	providedIn: 'root',
 })
 export class ConPartidaDocService {
-	constructor(private repo: ConPartidaRepository) {}
+	constructor(private repo: ConPartidaDocRepository) {}
 
 	getAllDetaDoc(param: any): Observable<IResult> {
 		const xWhere: IParam[] = [
@@ -19,7 +18,7 @@ export class ConPartidaDocService {
 			{ Parameter: 'CORR_CLASE_PARTIDA', Value: param.CORR_CLASE_PARTIDA },
 			{ Parameter: 'CORR_PARTIDA', Value: param.CORR_PARTIDA },
 		];
-		return this.repo.getAllDetaDoc(xWhere);
+		return this.repo.getAll(xWhere);
 	}
 
 	getColumns(): any[] {

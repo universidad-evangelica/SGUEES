@@ -37,10 +37,6 @@ export class ConPartidaRepository {
 		return this.objData.Put(model, this.xController, 'CrearModelo', xWhere, environment.UrlCONTAAPI);
 	}
 
-	getAllDetaDoc(xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Get(this.xController, 'GetAllDetaDoc', xWhere, environment.UrlCONTAAPI);
-	}
-
 	getPDF(model: any): Observable<Blob> {
 		return this.objData.PostBlob(model, this.xController, 'getPDF', environment.UrlCONTAAPI);
 	}

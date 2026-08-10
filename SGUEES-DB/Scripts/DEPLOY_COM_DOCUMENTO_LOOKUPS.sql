@@ -1,0 +1,26 @@
+/*
+  Lookups com-documento — vistas + catálogos base.
+  Uso:
+    sqlcmd -S 192.168.0.250 -U erp -d SGUEES -f 65001 -i DEPLOY_COM_DOCUMENTO_LOOKUPS.sql
+*/
+SET NOCOUNT ON;
+GO
+
+:r SEED_COM_DOCUMENTO_CATALOGOS.sql
+GO
+
+IF OBJECT_ID(N'dbo.V_COM_PROVEEDOR_COMPRAS', N'V') IS NOT NULL
+	DROP VIEW dbo.V_COM_PROVEEDOR_COMPRAS;
+GO
+:r "..\Views\dbo.V_COM_PROVEEDOR_COMPRAS_LOOKUP.sql"
+GO
+
+PRINT N'=== Verificación lookups com-documento ===';
+SELECT COUNT(*) AS tipo_doc_compras FROM V_GEN_TIPO_DOCUMENTO WHERE USAR_COMPRAS = 1;
+SELECT COUNT(*) AS tipo_gasto FROM V_GEN_TIPO_GASTO;
+SELECT COUNT(*) AS condicion_pago FROM V_COM_CONDICION_PAGO;
+SELECT COUNT(*) AS proveedor_compras FROM V_COM_PROVEEDOR_COMPRAS;
+GO
+
+PRINT N'=== DEPLOY_COM_DOCUMENTO_LOOKUPS completado ===';
+GO

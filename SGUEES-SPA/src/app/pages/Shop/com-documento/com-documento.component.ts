@@ -138,8 +138,7 @@ export class ComDocumentoComponent extends CBaseComponent implements OnInit {
 	//#region <Manejo de Combos>
 	llenaComboBox() {
 		this.getCORR_TIPO_DOC();
-		this.getCORR_PROVEEDOR();
-    this.getCORR_PROVEEDOR_COMPRAS()
+		this.getCORR_PROVEEDOR_COMPRAS();
 		this.getCORR_CONDICION_PAGO();
 		this.getESTADO_DOCUMENTO();
 		this.getCORR_TIPO_GASTO();

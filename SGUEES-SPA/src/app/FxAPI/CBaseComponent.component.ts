@@ -420,6 +420,11 @@ export class CBaseComponent {
 		this.sgueesNotify.show(message, type);
 	}
 
+	/** Recalcula columnas cuando el grid vive en tab-panel o tarjeta recién visible. */
+	onDetalleGridContentReady(e: { component?: { updateDimensions?: () => void } }): void {
+		setTimeout(() => e.component?.updateDimensions?.());
+	}
+
 	asegurarEmpresaSesion(): boolean {
 		if (!this.requiereEmpresaSesion) {
 			return true;

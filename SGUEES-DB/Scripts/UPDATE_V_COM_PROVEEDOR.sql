@@ -1,0 +1,30 @@
+/*
+  Actualiza V_COM_PROVEEDOR (linked server 4 partes + UNION proveedores/personal).
+  Uso:
+    sqlcmd -S 192.168.0.250 -U erp -d SGUEES -f 65001 -i UPDATE_V_COM_PROVEEDOR.sql
+*/
+SET NOCOUNT ON;
+GO
+
+:r "..\Tables\dbo.CLA_COM_PROVEEDOR_SECTOR.sql"
+GO
+
+IF OBJECT_ID(N'dbo.V_COM_PROVEEDOR_COMPRAS', N'V') IS NOT NULL
+	DROP VIEW dbo.V_COM_PROVEEDOR_COMPRAS;
+GO
+IF OBJECT_ID(N'dbo.V_COM_PROVEEDOR', N'V') IS NOT NULL
+	DROP VIEW dbo.V_COM_PROVEEDOR;
+GO
+
+:r "..\Views\dbo.V_COM_PROVEEDOR.sql"
+GO
+
+:r "..\Views\dbo.V_COM_PROVEEDOR_COMPRAS_LOOKUP.sql"
+GO
+
+SELECT COUNT(*) AS proveedores FROM dbo.V_COM_PROVEEDOR;
+SELECT COUNT(*) AS proveedores_compras FROM dbo.V_COM_PROVEEDOR_COMPRAS;
+GO
+
+PRINT N'=== UPDATE_V_COM_PROVEEDOR completado ===';
+GO
