@@ -90,7 +90,7 @@ const routes: Routes = [
   {
     path: 'gen-unidades-puesto',
     component: GenUnidadesPuestoComponent,
-    data: { titulo: 'Puestos por Unidad' },
+    data: { titulo: 'Asignación de Puestos a Unidades' },
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-unidades-puesto/gen-unidades-puesto.module').then(m => m.GenUnidadesPuestoModule)
