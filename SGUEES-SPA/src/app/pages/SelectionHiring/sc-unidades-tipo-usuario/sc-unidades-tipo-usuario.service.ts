@@ -65,8 +65,11 @@ export class ScUnidadesTipoUsuarioService {
 	}
 
 	// Qué hace: columnas de la grilla global de roles (mismo patrón mtto).
-	// Cómo: arma Codigo, Nombre del rol y la celda-botón Asignar unidades con badge de cantidad.
-	getColumns(onAsignar: (rol: ScUnidadesTipoUsuarioRol) => void): any[] {
+	// Cómo: arma Codigo, Nombre del rol y la celda Asignar unidades (solo si canAsignar/permiteAdd).
+	getColumns(
+		onAsignar: (rol: ScUnidadesTipoUsuarioRol) => void,
+		canAsignar: () => boolean = () => true
+	): any[] {
 		return [
 			{
 				dataField: 'TIPO_USUARIO',
@@ -84,6 +87,15 @@ export class ScUnidadesTipoUsuarioService {
 				allowFiltering: false,
 				cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
 					cellElement.innerHTML = '';
+					const cant = String(cellInfo?.data?.CANT_UNIDADES ?? 0);
+					// Sin permiso de agregar (C): solo muestra el contador, sin botón.
+					if (!canAsignar()) {
+						const badge = document.createElement('span');
+						badge.className = 'descriptor-actividades-badge';
+						badge.textContent = cant;
+						cellElement.appendChild(badge);
+						return;
+					}
 					const button = document.createElement('button');
 					button.type = 'button';
 					button.className = 'descriptor-actividades-trigger';
@@ -91,7 +103,7 @@ export class ScUnidadesTipoUsuarioService {
 					label.textContent = 'Asignar unidades';
 					const badge = document.createElement('span');
 					badge.className = 'descriptor-actividades-badge';
-					badge.textContent = String(cellInfo?.data?.CANT_UNIDADES ?? 0);
+					badge.textContent = cant;
 					button.appendChild(label);
 					button.appendChild(badge);
 					button.addEventListener('click', (ev) => {

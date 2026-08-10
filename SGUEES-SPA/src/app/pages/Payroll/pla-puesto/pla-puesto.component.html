@@ -1,0 +1,119 @@
+<!-- Contenedor principal del mantenimiento de puesto. -->
+<div class="sguees-mtto-view">
+	<!-- Toolbar: nuevo, guardar, cancelar y activar/inactivar. -->
+	<app-barra-data-mtto
+		[tituloVentana]="tituloVentana"
+		[showRibbon]="true"
+		[showExport]="permitePrint"
+		[isBrowse]="isBrowse()"
+		[isForm]="isForm()"
+		[permiteAdd]="permiteAdd"
+		[showRefresh]="true"
+		[showEstadoToolbar]="true"
+		[campoEstado]="mttoCampoEstado"
+		[puedeCambiarEstado]="permiteEdit"
+		[focusedRow]="isBrowse() ? model : null"
+		(consultar)="consultar()"
+		(nuevo)="nuevo()"
+		(guardar)="guardar()"
+		(cancelar)="cancelar()"
+		(activarInactivar)="activar_inactivar()"
+	>
+	</app-barra-data-mtto>
+
+	<!-- Formulario de creación/edición (oculto en browse). -->
+	<div class="content-block dx-card responsive-paddings pla-puesto-page pla-puesto-form-card" *ngIf="!isBrowse()">
+		<dx-form
+			#fData
+			id="fData"
+			[formData]="model"
+			[labelLocation]="'top'"
+			[colCount]="mttoFormColCount"
+			[colCountByScreen]="mttoFormColCountByScreen"
+			[showRequiredMark]="false"
+			[items]="items"
+		>
+			<div *dxTemplate="let cellInfo of 'CORR_TIPO_PUESTOLookup'">
+				<app-data-lookup
+					[model]="mCORR_TIPO_PUESTO"
+					[value]="model.CORR_TIPO_PUESTO"
+					(valueChange)="onTipoPuestoChanged($event)"
+					[valueExpr]="'CORR_TIPO_PUESTO'"
+					[displayExpr]="'NOMBRE_TIPO_PUESTO'"
+					[selectedRowKeys]="selectedLookUpCORR_TIPO_PUESTO"
+					[showClearButton]="true"
+					[readOnly]="readOnly"
+				></app-data-lookup>
+			</div>
+			<div *dxTemplate="let cellInfo of 'CORR_GERENCIALookup'">
+				<app-data-lookup
+					[model]="mCORR_GERENCIA"
+					[value]="model.CORR_GERENCIA"
+					(valueChange)="onGerenciaChanged($event)"
+					[valueExpr]="'CORR_GERENCIA'"
+					[displayExpr]="'NOMBRE_GERENCIA'"
+					[selectedRowKeys]="selectedLookUpCORR_GERENCIA"
+					[showClearButton]="true"
+					[readOnly]="readOnly"
+				></app-data-lookup>
+			</div>
+			<div *dxTemplate="let cellInfo of 'CORR_NIVEL_ACADEMICOLookup'">
+				<app-data-lookup
+					[model]="mCORR_NIVEL_ACADEMICO"
+					[value]="model.CORR_NIVEL_ACADEMICO"
+					(valueChange)="onNivelAcademicoChanged($event)"
+					[valueExpr]="'CORR_NIVEL_ACADEMICO'"
+					[displayExpr]="'NOMBRE_NIVEL_ACADEMICO'"
+					[selectedRowKeys]="selectedLookUpCORR_NIVEL_ACADEMICO"
+					[showClearButton]="true"
+					[readOnly]="readOnly"
+				></app-data-lookup>
+			</div>
+		</dx-form>
+	</div>
+
+	<!-- Grilla del catálogo con acciones de mantenimiento. -->
+	<app-data-grid-mtto
+		[isBrowse]="isBrowse()"
+		[models]="models"
+		[columns]="columns"
+		[summary]="summary"
+		[keyExpr]="mttoGridKeyExpr"
+		[pageSize]="mttoPageSize"
+		[allowedPageSizes]="mttoPageSizes"
+		[remoteOperations]="mttoRemoteOperations"
+		[repaintChangesOnly]="false"
+		[nativeToolbar]="true"
+		[unifiedToolbar]="false"
+		[showSearch]="false"
+		[showAdd]="false"
+		[showRefresh]="false"
+		[showExport]="false"
+		[showEstadoToolbar]="true"
+		[campoEstado]="mttoCampoEstado"
+		[puedeCambiarEstado]="permiteEdit"
+		[focusedRowKey]="gridFocusedRowKey"
+		[permitePrint]="permitePrint"
+		[permiteEditar]="getPermiteEditar"
+		[permiteDele]="getPermiteDele"
+		[responsiveColumnHiding]="false"
+		[columnHidingEnabled]="false"
+		[exportFileName]="'Puestos'"
+		(rowDblClick)="rowDblClick($event)"
+		(rowRemoving)="rowRemoving($event)"
+		(focusedRowChanged)="focusedRowChanged($event)"
+		(editClick)="onEditClick($event)"
+	></app-data-grid-mtto>
+</div>
+
+<!-- Overlay de carga durante operaciones asíncronas. -->
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>

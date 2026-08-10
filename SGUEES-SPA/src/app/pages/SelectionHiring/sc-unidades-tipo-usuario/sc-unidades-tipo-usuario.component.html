@@ -38,6 +38,7 @@
 					<!-- Toolbar del detalle: agregar/guardar/cancelar línea + Activar/Desactivar. -->
 					<div class="descriptor-deta-toolbar">
 						<dx-button
+							*ngIf="permiteAdd"
 							class="descriptor-deta-toolbar-btn"
 							icon="add"
 							text="Agregar Unidad"
@@ -117,7 +118,7 @@
 							[mode]="'row'"
 							[refreshMode]="'reshape'"
 							[allowUpdating]="false"
-							[allowDeleting]="true"
+							[allowDeleting]="permiteDele"
 							[useIcons]="true"
 							[selectTextOnEditStart]="true"
 							[newRowPosition]="'first'"

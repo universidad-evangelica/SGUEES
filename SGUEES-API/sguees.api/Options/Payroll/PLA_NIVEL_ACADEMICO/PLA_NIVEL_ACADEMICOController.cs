@@ -45,6 +45,16 @@ namespace SGUEES.Controllers
             return await _service.GetAsync(Data);
         }
 
+        // Qué hace: entrega niveles académicos para el lookup del mantenimiento de puestos.
+        // Cómo: fija CORR_EMPRESA y llama a GetAllAsync (autorizado para pla-puesto).
+        [HttpGet("GetCORR_NIVEL_ACADEMICO_PLA_PUESTO")]
+        [Authorize(Policy = "/pla-puesto|R")]
+        public async Task<CResult> GetCORR_NIVEL_ACADEMICO_PLA_PUESTO([FromQuery] PLA_NIVEL_ACADEMICOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetAllAsync(Data);
+        }
+
         [HttpPost]
         [Authorize(Policy = "/pla-nivel-academico|C")]
         // Qué hace: crea un nivel académico nuevo.

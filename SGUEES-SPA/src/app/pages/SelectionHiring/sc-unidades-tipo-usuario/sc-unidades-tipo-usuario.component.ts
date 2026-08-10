@@ -66,7 +66,10 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 		super(appInfoService, router);
 		this.unidadDeleteButtonVisible = this.unidadDeleteButtonVisible.bind(this);
 		this.selectedLookUpCORR_UNIDAD = this.selectedLookUpCORR_UNIDAD.bind(this);
-		this.columns = this.service.getColumns((rol) => this.abrirAsignarUnidades(rol));
+		this.columns = this.service.getColumns(
+			(rol) => this.abrirAsignarUnidades(rol),
+			() => this.permiteAdd
+		);
 		this.summary = this.service.getSummary();
 	}
 
@@ -306,9 +309,9 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 	}
 
 	// Qué hace: abre el detalle del rol (modo form) con el tab Unidades.
-	// Cómo: fija rolSeleccionado/model, limpia selección, pasa a UpdateType.Update y carga unidades del rol.
+	// Cómo: exige permiso de agregar (C); fija rolSeleccionado/model, limpia selección, pasa a Update y carga unidades.
 	abrirAsignarUnidades(rol: ScUnidadesTipoUsuarioRol): void {
-		if (!rol?.TIPO_USUARIO) {
+		if (!this.permiteAdd || !rol?.TIPO_USUARIO) {
 			return;
 		}
 		this.rolSeleccionado = this.fillData(rol);
@@ -343,9 +346,9 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 	}
 
 	// Qué hace: inicia una nueva fila de unidad en la grilla del detalle.
-	// Cómo: actualiza el lookup de disponibles, marca insertando/editando y llama addRow del grid.
+	// Cómo: exige permiso de agregar (C); actualiza lookup, marca insertando/editando y llama addRow.
 	agregarUnidad(): void {
-		if (this.unidadesEditando || !this.rolSeleccionado) {
+		if (!this.permiteAdd || this.unidadesEditando || !this.rolSeleccionado) {
 			return;
 		}
 		this.actualizarUnidadesLookupDisponibles();
@@ -357,8 +360,11 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 	}
 
 	// Qué hace: controla la visibilidad del botón Eliminar en Options.
-	// Cómo: oculta el delete de la fila en edición (mismo patrón accionGridVisible / editRowKey).
+	// Cómo: exige permiso de eliminar (D); oculta el delete de la fila en edición (editRowKey).
 	unidadDeleteButtonVisible(e: any): boolean {
+		if (!this.permiteDele) {
+			return false;
+		}
 		const editKey = e?.component?.option?.('editing.editRowKey');
 		if (editKey == null) {
 			return !!e?.row?.data && !e?.row?.isNewRow;
@@ -480,10 +486,10 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 	}
 
 	// Qué hace: elimina la asignación unidad-rol vía API (cancela el remove local del grid).
-	// Cómo: e.cancel = true; si no hay edición, llama delete y recarga el detalle.
+	// Cómo: e.cancel = true; exige permiso D y que no haya edición; llama delete y recarga.
 	unidadRowRemoving(e: any): void {
 		e.cancel = true;
-		if (this.unidadesEditando) {
+		if (!this.permiteDele || this.unidadesEditando) {
 			return;
 		}
 		const data = e.data as ScUnidadesTipoUsuario;
