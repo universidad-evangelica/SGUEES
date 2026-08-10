@@ -176,6 +176,55 @@ namespace SGUEES.Services
             return result;
         }
 
+        // Actualiza solo RESPONSABLE desde el editable de Entrenamiento.
+        public async Task<CResult> UpdateResponsableAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            if (Data.CORR_DESCRIPTOR_PUESTO <= 0)
+            {
+                return ValidationError("No se pudo identificar el descriptor de puesto a actualizar.");
+            }
+
+            Data.RESPONSABLE = string.IsNullOrWhiteSpace(Data.RESPONSABLE) ? null : Data.RESPONSABLE.Trim();
+            if (!string.IsNullOrWhiteSpace(Data.RESPONSABLE) && Data.RESPONSABLE.Length > 100)
+            {
+                return ValidationError("El responsable no puede exceder 100 caracteres.");
+            }
+
+            return await _repo.UpdateResponsableAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        // Actualiza solo impacto económico desde la fila virtual de Responsabilidades.
+        public async Task<CResult> UpdateImpactoEconomicoAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            if (Data.CORR_DESCRIPTOR_PUESTO <= 0)
+            {
+                return ValidationError("No se pudo identificar el descriptor de puesto a actualizar.");
+            }
+
+            Data.DESCRIPCION_IMPACTO_ECONOMICO = string.IsNullOrWhiteSpace(Data.DESCRIPCION_IMPACTO_ECONOMICO)
+                ? null
+                : Data.DESCRIPCION_IMPACTO_ECONOMICO.Trim();
+
+            if (!string.IsNullOrWhiteSpace(Data.DESCRIPCION_IMPACTO_ECONOMICO) && Data.DESCRIPCION_IMPACTO_ECONOMICO.Length > 255)
+            {
+                return ValidationError("La descripcion del impacto economico no puede exceder 255 caracteres.");
+            }
+
+            return await _repo.UpdateImpactoEconomicoAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
 	// Valida empresa y elimina el descriptor con sus registros relacionados.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {

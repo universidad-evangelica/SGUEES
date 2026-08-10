@@ -208,6 +208,29 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: guarda solo el texto libre de Responsable (Entrenamiento).
+	updateResponsable(model: any): Observable<IResult> {
+		return this.repo.updateResponsable(
+			{
+				CORR_DESCRIPTOR_PUESTO: model.CORR_DESCRIPTOR_PUESTO,
+				RESPONSABLE: model.RESPONSABLE ?? '',
+			},
+			[{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO }]
+		);
+	}
+
+	// Qué hace: guarda solo impacto económico del descriptor.
+	updateImpactoEconomico(model: any): Observable<IResult> {
+		return this.repo.updateImpactoEconomico(
+			{
+				CORR_DESCRIPTOR_PUESTO: model.CORR_DESCRIPTOR_PUESTO,
+				CORR_IMPACTO_ECONOMICO: model.CORR_IMPACTO_ECONOMICO ?? null,
+				DESCRIPCION_IMPACTO_ECONOMICO: model.DESCRIPCION_IMPACTO_ECONOMICO ?? '',
+			},
+			[{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO }]
+		);
+	}
+
 	// Qué hace: elimina un descriptor por su correlativo.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO }]);

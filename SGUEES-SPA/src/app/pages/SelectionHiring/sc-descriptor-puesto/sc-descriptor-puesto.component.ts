@@ -7151,7 +7151,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		return new Promise((resolve) => {
 			this.service
-				.update(this.model)
+				.updateResponsable(this.model)
 				.pipe(take(1))
 				.subscribe({
 					next: (response) => {
@@ -7347,7 +7347,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		return new Promise((resolve) => {
 			this.service
-				.update(this.model)
+				.updateImpactoEconomico(this.model)
 				.pipe(take(1))
 				.subscribe({
 					next: (response) => {
