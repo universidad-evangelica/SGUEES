@@ -2,10 +2,12 @@
 // Cómo: lee V_GEN_UNIDADES_PUESTO y escribe en GEN_UNIDADES_PUESTO vía CData (Insert/Delete).
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
 using eFramework.Data;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using SGUEES.Models;
 
@@ -17,11 +19,13 @@ namespace SGUEES.Repositories
     {
         private const string _TableName = "GEN_UNIDADES_PUESTO";
         private const string _ViewName = "V_GEN_UNIDADES_PUESTO";
+        private readonly string _connectionString;
 
         public GEN_UNIDADES_PUESTORepository(IConfiguration config) :
             base(config.GetConnectionString("defaultConnection"),
                 config.GetSection("DbProvider:defaultProvider").Value)
         {
+            _connectionString = config.GetConnectionString("defaultConnection") ?? string.Empty;
         }
 
         // Qué hace: indica si ya existe la asignación empresa-unidad-puesto.
@@ -222,6 +226,66 @@ namespace SGUEES.Repositories
             finally
             {
                 objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        // Qué hace: asigna de una vez todos los puestos activos del catálogo a la unidad.
+        // Cómo: un INSERT...SELECT parametrizado; NOT EXISTS omite los ya asignados; RowsAffected = insertados.
+        public async Task<CResult> AsignarTodosPuestosAsync(GEN_UNIDADES_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                const string sql = @"
+                INSERT INTO GEN_UNIDADES_PUESTO (
+                    CORR_EMPRESA, CORR_UNIDAD, CORR_PUESTO,
+                    USUARIO_CREA, ESTACION_CREA, FECHA_CREA,
+                    USUARIO_ACTU, ESTACION_ACTU, FECHA_ACTU
+                )
+                SELECT
+                    @CORR_EMPRESA, @CORR_UNIDAD, P.CORR_PUESTO,
+                    @USUARIO, @ESTACION, GETDATE(),
+                    @USUARIO, @ESTACION, GETDATE()
+                FROM PLA_PUESTO P
+                WHERE P.CORR_EMPRESA = @CORR_EMPRESA
+                AND ISNULL(P.ESTADO_PUESTO, 1) = 1
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM GEN_UNIDADES_PUESTO X
+                    WHERE X.CORR_EMPRESA = P.CORR_EMPRESA
+                    AND X.CORR_UNIDAD = @CORR_UNIDAD
+                    AND X.CORR_PUESTO = P.CORR_PUESTO
+                );";
+
+                await using var conn = new SqlConnection(_connectionString);
+                await conn.OpenAsync();
+                await using var cmd = new SqlCommand(sql, conn);
+                cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = Data.CORR_EMPRESA });
+                cmd.Parameters.Add(new SqlParameter("@CORR_UNIDAD", SqlDbType.Int) { Value = Data.CORR_UNIDAD });
+                cmd.Parameters.Add(new SqlParameter("@USUARIO", SqlDbType.VarChar, 50) { Value = vLOGIN_SISTEMA ?? string.Empty });
+                cmd.Parameters.Add(new SqlParameter("@ESTACION", SqlDbType.VarChar, 50) { Value = vESTACION ?? string.Empty });
+
+                var rows = await cmd.ExecuteNonQueryAsync();
+
+                objResultado.Data = new { ASIGNADOS = rows };
+                objResultado.Result = true;
+                objResultado.RowsAffected = rows;
+                objResultado.CodeHelper = Data.CORR_UNIDAD;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = string.Empty;
+                objResultado.ErrorSource = string.Empty;
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
             }
 
             return objResultado;

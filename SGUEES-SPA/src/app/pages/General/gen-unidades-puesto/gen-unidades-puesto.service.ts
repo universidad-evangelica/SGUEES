@@ -30,6 +30,12 @@ export class GenUnidadesPuestoService {
 		return this.repo.create(model);
 	}
 
+	// Qué hace: asigna a la unidad todos los puestos activos que aún no tenga.
+	// Cómo: llama a asignarTodosPuestos del repositorio (INSERT...SELECT en el API).
+	asignarTodosPuestos(model: Partial<GenUnidadesPuesto>): Observable<IResult> {
+		return this.repo.asignarTodosPuestos(model);
+	}
+
 	// Qué hace: elimina una asignación unidad-puesto.
 	// Cómo: llama a delete del repositorio filtrando por CORR_UNIDAD y CORR_PUESTO.
 	delete(model: GenUnidadesPuesto): Observable<IResult> {

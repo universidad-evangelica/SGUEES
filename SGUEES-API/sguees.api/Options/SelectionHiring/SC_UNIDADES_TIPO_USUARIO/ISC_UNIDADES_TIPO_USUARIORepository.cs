@@ -11,5 +11,6 @@ namespace SGUEES.Repositories
     {
         Task<bool> ExistsAsync(int corrEmpresa, int corrUnidad, int tipoUsuario);
         Task<CResult> ActivarInactivarAsync(SC_UNIDADES_TIPO_USUARIOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+        Task<CResult> AsignarTodasUnidadesAsync(SC_UNIDADES_TIPO_USUARIOTable Data, string vLOGIN_SISTEMA, string vESTACION);
     }
 }

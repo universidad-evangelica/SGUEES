@@ -100,6 +100,24 @@ namespace SGUEES.Services
             return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Qué hace: asigna al rol todas las unidades activas que aún no tenga.
+        // Cómo: valida empresa y TIPO_USUARIO; delega el INSERT...SELECT en el repositorio.
+        public async Task<CResult> AsignarTodasUnidadesAsync(SC_UNIDADES_TIPO_USUARIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            if (Data.TIPO_USUARIO <= 0)
+            {
+                return ValidationError("Debe indicar el rol (tipo de usuario).");
+            }
+
+            return await _repo.AsignarTodasUnidadesAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
         // Qué hace: comprueba que la unidad exista en organigrama y esté activa.
         // Cómo: consulta SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES por empresa y CORR_UNIDAD.
         private async Task<CResult> PrepareFromUnidadAsync(SC_UNIDADES_TIPO_USUARIOTable Data)

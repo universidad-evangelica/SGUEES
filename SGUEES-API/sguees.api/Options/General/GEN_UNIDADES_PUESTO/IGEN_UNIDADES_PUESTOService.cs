@@ -12,5 +12,6 @@ namespace SGUEES.Services
         Task<CResult> GetAsync(GEN_UNIDADES_PUESTOParam xWhere);
         Task<CResult> CreateAsync(GEN_UNIDADES_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> DeleteAsync(GEN_UNIDADES_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+        Task<CResult> AsignarTodosPuestosAsync(GEN_UNIDADES_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
     }
 }

@@ -27,6 +27,12 @@ export class GenUnidadesPuestoRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlGENERALAPI);
 	}
 
+	// Qué hace: asigna a la unidad todos los puestos activos pendientes en una sola petición.
+	// Cómo: llama a Post AsignarTodosPuestos del controller GEN_UNIDADES_PUESTO.
+	asignarTodosPuestos(model: any): Observable<IResult> {
+		return this.objData.Post(model, this.xController, 'AsignarTodosPuestos', environment.UrlGENERALAPI);
+	}
+
 	// Qué hace: elimina una asignación unidad-puesto.
 	// Cómo: llama a Delete del controller con CORR_UNIDAD y CORR_PUESTO en xWhere.
 	delete(xWhere: IParam[]): Observable<IResult> {

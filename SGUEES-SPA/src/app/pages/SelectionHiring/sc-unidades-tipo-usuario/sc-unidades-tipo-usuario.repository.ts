@@ -27,6 +27,12 @@ export class ScUnidadesTipoUsuarioRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// Qué hace: asigna al rol todas las unidades activas pendientes en una sola petición.
+	// Cómo: llama a Post AsignarTodasUnidades del controller SC_UNIDADES_TIPO_USUARIO.
+	asignarTodasUnidades(model: any): Observable<IResult> {
+		return this.objData.Post(model, this.xController, 'AsignarTodasUnidades', environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
 	// Qué hace: elimina una asignación unidad-rol.
 	// Cómo: llama a Delete del controller con CORR_UNIDAD y TIPO_USUARIO en xWhere.
 	delete(xWhere: IParam[]): Observable<IResult> {

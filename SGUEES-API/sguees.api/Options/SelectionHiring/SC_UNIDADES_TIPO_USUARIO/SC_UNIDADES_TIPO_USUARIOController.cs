@@ -60,6 +60,18 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        [HttpPost("AsignarTodasUnidades")]
+        [Authorize(Policy = "/sc-unidades-tipo-usuario|C")]
+        // Qué hace: asigna al rol todas las unidades activas del organigrama en una sola operación.
+        // Cómo: completa auditoría y llama a AsignarTodasUnidadesAsync (INSERT...SELECT en el repositorio).
+        public async Task<IActionResult> AsignarTodasUnidades(SC_UNIDADES_TIPO_USUARIOTable Data)
+        {
+            SetCreateAudit(Data);
+
+            var resultado = await _service.AsignarTodasUnidadesAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+        }
+
         [HttpDelete]
         [Authorize(Policy = "/sc-unidades-tipo-usuario|D")]
         // Qué hace: elimina una asignación de unidad a un tipo de usuario.

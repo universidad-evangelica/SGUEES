@@ -2,10 +2,12 @@
 // Cómo: lee V_SC_UNIDADES_TIPO_USUARIO y escribe en SC_UNIDADES_TIPO_USUARIO vía CData (Insert/Update/Delete).
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
 using eFramework.Data;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using SGUEES.Models;
 
@@ -17,11 +19,13 @@ namespace SGUEES.Repositories
     {
         private const string _TableName = "SC_UNIDADES_TIPO_USUARIO";
         private const string _ViewName = "V_SC_UNIDADES_TIPO_USUARIO";
+        private readonly string _connectionString;
 
         public SC_UNIDADES_TIPO_USUARIORepository(IConfiguration config) :
             base(config.GetConnectionString("defaultConnection"),
                 config.GetSection("DbProvider:defaultProvider").Value)
         {
+            _connectionString = config.GetConnectionString("defaultConnection") ?? string.Empty;
         }
 
         // Qué hace: indica si ya existe la asignación empresa-unidad-rol.
@@ -292,6 +296,66 @@ namespace SGUEES.Repositories
             finally
             {
                 objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        // Qué hace: asigna de una vez todas las unidades activas del organigrama al rol.
+        // Cómo: un INSERT...SELECT parametrizado; NOT EXISTS omite las ya asignadas; RowsAffected = insertadas.
+        public async Task<CResult> AsignarTodasUnidadesAsync(SC_UNIDADES_TIPO_USUARIOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                const string sql = @"
+                INSERT INTO SC_UNIDADES_TIPO_USUARIO (
+                    CORR_EMPRESA, CORR_UNIDAD, TIPO_USUARIO, ACTIVO,
+                    USUARIO_CREA, ESTACION_CREA, FECHA_CREA,
+                    USUARIO_ACTU, ESTACION_ACTU, FECHA_ACTU
+                )
+                SELECT
+                    @CORR_EMPRESA, U.CORR_UNIDAD, @TIPO_USUARIO, 1,
+                    @USUARIO, @ESTACION, GETDATE(),
+                    @USUARIO, @ESTACION, GETDATE()
+                FROM SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES U
+                WHERE U.CORR_EMPRESA = @CORR_EMPRESA
+                AND ISNULL(U.ACTIVO, 1) = 1
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM SC_UNIDADES_TIPO_USUARIO X
+                    WHERE X.CORR_EMPRESA = U.CORR_EMPRESA
+                    AND X.CORR_UNIDAD = U.CORR_UNIDAD
+                    AND X.TIPO_USUARIO = @TIPO_USUARIO
+                );";
+
+                await using var conn = new SqlConnection(_connectionString);
+                await conn.OpenAsync();
+                await using var cmd = new SqlCommand(sql, conn);
+                cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = Data.CORR_EMPRESA });
+                cmd.Parameters.Add(new SqlParameter("@TIPO_USUARIO", SqlDbType.Int) { Value = Data.TIPO_USUARIO });
+                cmd.Parameters.Add(new SqlParameter("@USUARIO", SqlDbType.VarChar, 50) { Value = vLOGIN_SISTEMA ?? string.Empty });
+                cmd.Parameters.Add(new SqlParameter("@ESTACION", SqlDbType.VarChar, 50) { Value = vESTACION ?? string.Empty });
+
+                var rows = await cmd.ExecuteNonQueryAsync();
+
+                objResultado.Data = new { ASIGNADAS = rows };
+                objResultado.Result = true;
+                objResultado.RowsAffected = rows;
+                objResultado.CodeHelper = Data.TIPO_USUARIO;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = string.Empty;
+                objResultado.ErrorSource = string.Empty;
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
             }
 
             return objResultado;

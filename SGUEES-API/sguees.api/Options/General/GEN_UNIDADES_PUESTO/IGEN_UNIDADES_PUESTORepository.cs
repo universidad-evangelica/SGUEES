@@ -9,5 +9,6 @@ namespace SGUEES.Repositories
     public interface IGEN_UNIDADES_PUESTORepository : IRepository<GEN_UNIDADES_PUESTOTable>
     {
         Task<bool> ExistsAsync(int corrEmpresa, int corrUnidad, int corrPuesto);
+        Task<CResult> AsignarTodosPuestosAsync(GEN_UNIDADES_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
     }
 }

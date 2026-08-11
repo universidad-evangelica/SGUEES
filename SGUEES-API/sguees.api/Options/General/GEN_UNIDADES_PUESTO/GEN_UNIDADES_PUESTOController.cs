@@ -59,6 +59,18 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        [HttpPost("AsignarTodosPuestos")]
+        [Authorize(Policy = "/gen-unidades-puesto|C")]
+        // Qué hace: asigna a la unidad todos los puestos activos del catálogo en una sola operación.
+        // Cómo: completa auditoría y llama a AsignarTodosPuestosAsync (INSERT...SELECT en el repositorio).
+        public async Task<IActionResult> AsignarTodosPuestos(GEN_UNIDADES_PUESTOTable Data)
+        {
+            SetCreateAudit(Data);
+
+            var resultado = await _service.AsignarTodosPuestosAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+        }
+
         [HttpDelete]
         [Authorize(Policy = "/gen-unidades-puesto|D")]
         // Qué hace: elimina una asignación de puesto a una unidad.

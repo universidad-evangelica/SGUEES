@@ -30,6 +30,12 @@ export class ScUnidadesTipoUsuarioService {
 		return this.repo.create(model);
 	}
 
+	// Qué hace: asigna al rol todas las unidades activas que aún no tenga.
+	// Cómo: llama a asignarTodasUnidades del repositorio (INSERT...SELECT en el API).
+	asignarTodasUnidades(model: Partial<ScUnidadesTipoUsuario>): Observable<IResult> {
+		return this.repo.asignarTodasUnidades(model);
+	}
+
 	// Qué hace: elimina una asignación unidad-rol.
 	// Cómo: llama a delete del repositorio filtrando por CORR_UNIDAD y TIPO_USUARIO.
 	delete(model: ScUnidadesTipoUsuario): Observable<IResult> {

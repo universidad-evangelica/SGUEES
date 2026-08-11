@@ -243,7 +243,7 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 
 	// Qué hace: carga el catálogo de unidades del organigrama para el lookup.
 	// Cómo: lookup GetCORR_UNIDAD vía UrlGENERALAPI; filtra inactivas y actualiza las disponibles.
-	getCORR_UNIDAD(onLoaded?: () => void): void {
+	getCORR_UNIDAD(): void {
 		this.appInfoService
 			.getLookUp(
 				'SC_UNIDADES_TIPO_USUARIO',
@@ -258,7 +258,6 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 					if (!response?.Result || !Array.isArray(response.Data)) {
 						this.mCORR_UNIDAD = [];
 						this.mCORR_UNIDAD_DISPONIBLES = [];
-						onLoaded?.();
 						return;
 					}
 
@@ -271,13 +270,11 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 							ACTIVO: item.ACTIVO !== false,
 						}));
 					this.actualizarUnidadesLookupDisponibles();
-					onLoaded?.();
 				},
 				error: (error) => {
 					this.mCORR_UNIDAD = [];
 					this.mCORR_UNIDAD_DISPONIBLES = [];
 					this.notifyApiError(error);
-					onLoaded?.();
 				},
 			});
 	}
@@ -831,129 +828,36 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 	}
 
 	// Qué hace: asigna al rol todas las unidades activas que aún no tenga.
-	// Cómo: asegura el catálogo, consulta asignaciones actuales e inserta en serie las pendientes.
+	// Cómo: una sola petición Asignar (INSERT...SELECT en el API); luego refresca.
 	private ejecutarAsignarTodasUnidades(rol: ScUnidadesTipoUsuarioRol): void {
-		const continuar = (): void => {
-			const catalogo = (this.mCORR_UNIDAD ?? []).filter(
-				(item) => item.ACTIVO !== false && Number(item.CORR_UNIDAD) > 0
-			);
-			if (!catalogo.length) {
-				this.asignandoTodasUnidades = false;
-				this.notifyFx('No hay unidades activas en el organigrama.', NotifyType.Warning);
-				return;
-			}
-
-			this.asignandoTodasUnidades = true;
-			this.loadingVisible = true;
-			this.service
-				.getAll(Number(rol.TIPO_USUARIO))
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (!response?.Result) {
-							this.asignandoTodasUnidades = false;
-							this.loadingVisible = false;
-							this.notifyApiResponse(response);
-							return;
-						}
-
-						const asignadas = new Set(
-							(response.Data ?? [])
-								.map((item: ScUnidadesTipoUsuario) => Number(item.CORR_UNIDAD))
-								.filter((corr: number) => corr > 0)
-						);
-						const pendientes = catalogo.filter(
-							(item) => !asignadas.has(Number(item.CORR_UNIDAD))
-						);
-						if (!pendientes.length) {
-							this.asignandoTodasUnidades = false;
-							this.loadingVisible = false;
-							this.notifyFx('Todas las unidades ya estan asignadas a este rol.', NotifyType.Warning);
-							return;
-						}
-
-						this.procesarAsignacionMasiva(rol, pendientes, 0, 0);
-					},
-					error: (error) => {
-						this.asignandoTodasUnidades = false;
-						this.loadingVisible = false;
-						this.notifyApiError(error);
-					},
-				});
-		};
-
-		if (this.mCORR_UNIDAD?.length) {
-			continuar();
-			return;
-		}
-
+		this.asignandoTodasUnidades = true;
 		this.loadingVisible = true;
-		this.getCORR_UNIDAD(() => {
-			this.loadingVisible = false;
-			continuar();
-		});
-	}
-
-	// Qué hace: inserta una a una las unidades pendientes del rol.
-	// Cómo: llama insert del servicio; si es duplicado (2627) omite y sigue; al terminar refresca.
-	private procesarAsignacionMasiva(
-		rol: ScUnidadesTipoUsuarioRol,
-		unidades: ScUnidadLookupItem[],
-		index: number,
-		omitidas: number
-	): void {
-		if (index >= unidades.length) {
-			this.asignandoTodasUnidades = false;
-			this.loadingVisible = false;
-			const asignadas = unidades.length - omitidas;
-			if (omitidas > 0) {
-				this.notifyFx(
-					`Se asignaron ${asignadas} unidad(es). ${omitidas} omitida(s) porque ya existian.`,
-					NotifyType.Warning
-				);
-			} else {
-				this.notifyFx(`Se asignaron ${asignadas} unidad(es) al rol.`, NotifyType.Success, {
-					raw: true,
-				});
-			}
-			this.refrescarTrasAsignacionMasiva(rol);
-			return;
-		}
-
-		const unidad = unidades[index];
-		const data: ScUnidadesTipoUsuario = {
-			CORR_EMPRESA: 0,
-			CORR_UNIDAD: Number(unidad.CORR_UNIDAD),
-			CODIGO_UNIDAD: unidad.CODIGO_UNIDAD ?? '',
-			NOMBRE_UNIDAD: unidad.NOMBRE_UNIDAD ?? '',
-			TIPO_USUARIO: Number(rol.TIPO_USUARIO),
-			ACTIVO: true,
-		};
-
 		this.service
-			.insert(data)
+			.asignarTodasUnidades({ TIPO_USUARIO: Number(rol.TIPO_USUARIO) })
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
-					if (response?.Result) {
-						this.procesarAsignacionMasiva(rol, unidades, index + 1, omitidas);
-						return;
-					}
-					if (Number(response?.ErrorCode) === 2627) {
-						this.procesarAsignacionMasiva(rol, unidades, index + 1, omitidas + 1);
+					this.asignandoTodasUnidades = false;
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
 						return;
 					}
 
-					this.asignandoTodasUnidades = false;
-					this.loadingVisible = false;
-					this.notifyApiResponse(response);
+					const cant = Number(response.RowsAffected ?? 0);
+					if (cant <= 0) {
+						this.notifyFx('Todas las unidades ya estan asignadas a este rol.', NotifyType.Warning);
+					} else {
+						this.notifyFx(`Se asignaron ${cant} unidad(es) al rol.`, NotifyType.Success, {
+							raw: true,
+						});
+					}
 					this.refrescarTrasAsignacionMasiva(rol);
 				},
 				error: (error) => {
 					this.asignandoTodasUnidades = false;
 					this.loadingVisible = false;
 					this.notifyApiError(error);
-					this.refrescarTrasAsignacionMasiva(rol);
 				},
 			});
 	}
