@@ -390,7 +390,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 	}
 
 	// Qué hace: descarta la línea en edición de puestos.
-	// Cómo: cancelEditData del grid, limpia flags y recarga el detalle de la unidad.
+	// Cómo: cancelEditData del grid y limpia flags (sin recargar GetAll).
 	cancelarPuestoEditado(): void {
 		const grid = this.gridPuestos?.instance;
 		if (grid) {
@@ -398,7 +398,6 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 		}
 		this.puestosEditando = false;
 		this.puestosInsertando = false;
-		this.cargarPuestosDetalle();
 	}
 
 	// Qué hace: inicializa los valores de una fila nueva de puesto.
@@ -432,7 +431,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 	}
 
 	// Qué hace: inserta la asignación unidad-puesto vía API (cancela el insert local del grid).
-	// Cómo: e.cancel = true, valida, llama insert del servicio y recarga el detalle si ok.
+	// Cómo: e.cancel = true, valida, llama insert y parchea la grilla con response.Data (sin GetAll).
 	puestoRowInserting(e: any): void {
 		e.cancel = true;
 		const data = { ...(e.data as GenUnidadesPuesto) };
@@ -457,7 +456,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 					this.gridPuestos?.instance?.cancelEditData();
 					this.puestosEditando = false;
 					this.puestosInsertando = false;
-					this.cargarPuestosDetalle();
+					this.aplicarPuestoEnDetalle(this.mapPuestoAsignado(response.Data ?? data, data), true);
 				},
 				error: (error) => {
 					this.loadingVisible = false;
@@ -467,7 +466,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 	}
 
 	// Qué hace: elimina la asignación unidad-puesto vía API (cancela el remove local del grid).
-	// Cómo: e.cancel = true; exige permiso D y que no haya edición; llama delete y recarga.
+	// Cómo: e.cancel = true; exige permiso D; llama delete y quita la fila en memoria (sin GetAll).
 	puestoRowRemoving(e: any): void {
 		e.cancel = true;
 		if (!this.permiteDele || this.puestosEditando) {
@@ -489,7 +488,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 					if (Number(this.puestoFocusedKey) === Number(data.CORR_PUESTO)) {
 						this.limpiarSeleccionPuesto();
 					}
-					this.cargarPuestosDetalle();
+					this.quitarPuestoDeDetalle(Number(data.CORR_PUESTO));
 				},
 				error: (error) => {
 					this.loadingVisible = false;
@@ -546,6 +545,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 	};
 
 	// Qué hace: cierra el detalle y vuelve a la grilla de unidades.
+	// Cómo: limpia estado local y AsignaStatus Browse; el contador ya quedó parcheado en memoria.
 	private cerrarDetallePuestos(): void {
 		this.puestosEditando = false;
 		this.puestosInsertando = false;
@@ -554,7 +554,6 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 		this.unidadSeleccionada = null;
 		this.AsignaStatus(UpdateType.Browse);
 		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
-		this.consultarAsignaciones();
 	}
 
 	// Qué hace: fija puestoFocusedKey y puestoSeleccionado.
@@ -731,7 +730,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 	}
 
 	// Qué hace: asigna a la unidad todos los puestos activos que aún no tenga.
-	// Cómo: una sola petición Asignar (INSERT...SELECT en el API); luego refresca.
+	// Cómo: una sola petición AsignarTodosPuestos (INSERT...SELECT); luego parchea memoria sin GetAll.
 	private ejecutarAsignarTodosPuestos(unidad: GenUnidadesPuestoUnidad): void {
 		this.asignandoTodosPuestos = true;
 		this.loadingVisible = true;
@@ -755,7 +754,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 							raw: true,
 						});
 					}
-					this.refrescarTrasAsignacionMasiva(unidad);
+					this.aplicarAsignacionMasivaEnMemoria(unidad, cant);
 				},
 				error: (error) => {
 					this.asignandoTodosPuestos = false;
@@ -765,16 +764,107 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 			});
 	}
 
-	// Qué hace: refresca el detalle o la grilla de unidades tras la asignación masiva.
-	// Cómo: si el detalle abierto es la misma unidad recarga puestos; si no, recarga asignaciones del browse.
-	private refrescarTrasAsignacionMasiva(unidad: GenUnidadesPuestoUnidad): void {
+	// Qué hace: arma la fila de puesto asignado para la grilla del detalle.
+	// Cómo: usa response.Data, el fallback de la línea y el catálogo mCORR_PUESTO para completar nombres.
+	private mapPuestoAsignado(source: any, fallback?: GenUnidadesPuesto): GenUnidadesPuesto {
+		const corrPuesto = Number(source?.CORR_PUESTO ?? fallback?.CORR_PUESTO ?? 0);
+		const catalog = this.mCORR_PUESTO.find((item) => Number(item.CORR_PUESTO) === corrPuesto);
+		const unidad = this.unidadSeleccionada;
+		return {
+			CORR_EMPRESA: Number(source?.CORR_EMPRESA ?? fallback?.CORR_EMPRESA ?? 0),
+			CORR_UNIDAD: Number(source?.CORR_UNIDAD ?? fallback?.CORR_UNIDAD ?? unidad?.CORR_UNIDAD ?? 0),
+			CODIGO_UNIDAD: (source?.CODIGO_UNIDAD ?? fallback?.CODIGO_UNIDAD ?? unidad?.CODIGO_UNIDAD ?? '').toString().trim(),
+			NOMBRE_UNIDAD: (source?.NOMBRE_UNIDAD ?? fallback?.NOMBRE_UNIDAD ?? unidad?.NOMBRE_UNIDAD ?? '').toString().trim(),
+			CORR_PUESTO: corrPuesto,
+			CODIGO_PUESTO: (source?.CODIGO_PUESTO ?? fallback?.CODIGO_PUESTO ?? catalog?.CODIGO_PUESTO ?? '').toString().trim(),
+			NOMBRE_PUESTO: (source?.NOMBRE_PUESTO ?? fallback?.NOMBRE_PUESTO ?? catalog?.NOMBRE_PUESTO ?? '').toString().trim(),
+			_clientKey: `p-${source?.CORR_UNIDAD ?? unidad?.CORR_UNIDAD}-${corrPuesto}`,
+		};
+	}
+
+	// Qué hace: agrega o actualiza un puesto en el detalle y el contador, sin GetAll.
+	// Cómo: si isAdd y no existe, lo inserta; sincroniza asignaciones, lookup y CANT_PUESTOS.
+	private aplicarPuestoEnDetalle(record: GenUnidadesPuesto, isAdd: boolean): void {
+		const corr = Number(record.CORR_PUESTO);
+		if (!corr) {
+			return;
+		}
+
+		const existe = (this.puestosDetalle ?? []).some((item) => Number(item.CORR_PUESTO) === corr);
+		if (isAdd && !existe) {
+			this.puestosDetalle = [...(this.puestosDetalle ?? []), record].sort(
+				(a, b) => Number(a.CORR_PUESTO) - Number(b.CORR_PUESTO)
+			);
+			this.asignaciones = [...(this.asignaciones ?? []), record];
+		} else {
+			this.puestosDetalle = (this.puestosDetalle ?? []).map((item) =>
+				Number(item.CORR_PUESTO) === corr ? { ...item, ...record } : item
+			);
+		}
+
+		this.actualizarPuestosLookupDisponibles();
+		this.actualizarContadorPuestos(this.unidadSeleccionada);
+		this.cdr.detectChanges();
+	}
+
+	// Qué hace: quita un puesto del detalle en memoria.
+	// Cómo: filtra puestosDetalle y asignaciones por CORR_PUESTO; actualiza lookup y contador.
+	private quitarPuestoDeDetalle(corrPuesto: number): void {
+		this.puestosDetalle = (this.puestosDetalle ?? []).filter(
+			(item) => Number(item.CORR_PUESTO) !== corrPuesto
+		);
+		this.asignaciones = (this.asignaciones ?? []).filter(
+			(item) =>
+				!(
+					Number(item.CORR_UNIDAD) === Number(this.unidadSeleccionada?.CORR_UNIDAD) &&
+					Number(item.CORR_PUESTO) === corrPuesto
+				)
+		);
+		this.actualizarPuestosLookupDisponibles();
+		this.actualizarContadorPuestos(this.unidadSeleccionada);
+		this.cdr.detectChanges();
+	}
+
+	// Qué hace: refleja en memoria el resultado de asignar todos los puestos.
+	// Cómo: en detalle agrega los del catálogo que falten; en browse suma RowsAffected al contador.
+	private aplicarAsignacionMasivaEnMemoria(unidad: GenUnidadesPuestoUnidad, asignados: number): void {
+		if (asignados <= 0) {
+			return;
+		}
+
 		if (
 			!this.isBrowse() &&
 			Number(this.unidadSeleccionada?.CORR_UNIDAD) === Number(unidad.CORR_UNIDAD)
 		) {
-			this.cargarPuestosDetalle();
+			const ya = new Set(
+				(this.puestosDetalle ?? []).map((item) => Number(item.CORR_PUESTO)).filter((corr) => corr > 0)
+			);
+			const nuevos = (this.mCORR_PUESTO ?? [])
+				.filter((item) => item.ESTADO_PUESTO !== false && !ya.has(Number(item.CORR_PUESTO)))
+				.map((item) =>
+					this.mapPuestoAsignado({
+						CORR_UNIDAD: unidad.CORR_UNIDAD,
+						CODIGO_UNIDAD: unidad.CODIGO_UNIDAD,
+						NOMBRE_UNIDAD: unidad.NOMBRE_UNIDAD,
+						CORR_PUESTO: item.CORR_PUESTO,
+						CODIGO_PUESTO: item.CODIGO_PUESTO,
+						NOMBRE_PUESTO: item.NOMBRE_PUESTO,
+					})
+				);
+			this.puestosDetalle = [...(this.puestosDetalle ?? []), ...nuevos].sort(
+				(a, b) => Number(a.CORR_PUESTO) - Number(b.CORR_PUESTO)
+			);
+			this.asignaciones = [...(this.asignaciones ?? []), ...nuevos];
+			this.actualizarPuestosLookupDisponibles();
+			this.actualizarContadorPuestos(this.unidadSeleccionada);
+			this.cdr.detectChanges();
 			return;
 		}
-		this.consultarAsignaciones();
+
+		this.models = ((this.models as GenUnidadesPuestoUnidad[]) ?? []).map((item) =>
+			Number(item.CORR_UNIDAD) === Number(unidad.CORR_UNIDAD)
+				? { ...item, CANT_PUESTOS: Number(item.CANT_PUESTOS ?? 0) + asignados }
+				: item
+		);
 	}
 }

@@ -461,7 +461,7 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 	}
 
 	// Qué hace: descarta la línea en edición de unidades.
-	// Cómo: cancelEditData del grid, limpia flags y recarga el detalle del rol.
+	// Cómo: cancelEditData del grid y limpia flags (sin recargar GetAll).
 	cancelarUnidadEditada(): void {
 		const grid = this.gridUnidades?.instance;
 		if (grid) {
@@ -469,7 +469,6 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 		}
 		this.unidadesEditando = false;
 		this.unidadesInsertando = false;
-		this.cargarUnidadesDetalle();
 	}
 
 	// Qué hace: inicializa los valores de una fila nueva de unidad.
@@ -507,7 +506,7 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 	}
 
 	// Qué hace: inserta la asignación unidad-rol vía API (cancela el insert local del grid).
-	// Cómo: e.cancel = true, valida, llama insert del servicio y recarga el detalle si ok.
+	// Cómo: e.cancel = true, valida, llama insert y parchea la grilla con response.Data (sin GetAll).
 	unidadRowInserting(e: any): void {
 		e.cancel = true;
 		const data = { ...(e.data as ScUnidadesTipoUsuario) };
@@ -532,7 +531,7 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 					this.gridUnidades?.instance?.cancelEditData();
 					this.unidadesEditando = false;
 					this.unidadesInsertando = false;
-					this.cargarUnidadesDetalle();
+					this.aplicarUnidadEnDetalle(this.mapUnidadAsignada(response.Data ?? data, data), true);
 				},
 				error: (error) => {
 					this.loadingVisible = false;
@@ -542,7 +541,7 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 	}
 
 	// Qué hace: elimina la asignación unidad-rol vía API (cancela el remove local del grid).
-	// Cómo: e.cancel = true; exige permiso D y que no haya edición; llama delete y recarga.
+	// Cómo: e.cancel = true; exige permiso D; llama delete y quita la fila en memoria (sin GetAll).
 	unidadRowRemoving(e: any): void {
 		e.cancel = true;
 		if (!this.permiteDele || this.unidadesEditando) {
@@ -564,7 +563,7 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 					if (Number(this.unidadFocusedKey) === Number(data.CORR_UNIDAD)) {
 						this.limpiarSeleccionUnidad();
 					}
-					this.cargarUnidadesDetalle();
+					this.quitarUnidadDeDetalle(Number(data.CORR_UNIDAD));
 				},
 				error: (error) => {
 					this.loadingVisible = false;
@@ -626,7 +625,7 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 	};
 
 	// Qué hace: cierra el detalle y vuelve a la grilla de roles.
-	// Cómo: limpia estado local, AsignaStatus Browse, relee permisos y refresca asignaciones.
+	// Cómo: limpia estado local y AsignaStatus Browse; el contador ya quedó parcheado en memoria.
 	private cerrarDetalleUnidades(): void {
 		this.unidadesEditando = false;
 		this.unidadesInsertando = false;
@@ -635,7 +634,6 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 		this.rolSeleccionado = null;
 		this.AsignaStatus(UpdateType.Browse);
 		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
-		this.consultarAsignaciones();
 	}
 
 	// Qué hace: fija unidadFocusedKey y unidadSeleccionada para Activar/Desactivar.
@@ -828,7 +826,7 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 	}
 
 	// Qué hace: asigna al rol todas las unidades activas que aún no tenga.
-	// Cómo: una sola petición Asignar (INSERT...SELECT en el API); luego refresca.
+	// Cómo: una sola petición AsignarTodasUnidades (INSERT...SELECT); luego parchea memoria sin GetAll.
 	private ejecutarAsignarTodasUnidades(rol: ScUnidadesTipoUsuarioRol): void {
 		this.asignandoTodasUnidades = true;
 		this.loadingVisible = true;
@@ -852,7 +850,7 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 							raw: true,
 						});
 					}
-					this.refrescarTrasAsignacionMasiva(rol);
+					this.aplicarAsignacionMasivaEnMemoria(rol, cant);
 				},
 				error: (error) => {
 					this.asignandoTodasUnidades = false;
@@ -862,16 +860,114 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 			});
 	}
 
-	// Qué hace: refresca el detalle o la grilla de roles tras la asignación masiva.
-	// Cómo: si el detalle abierto es el mismo rol recarga unidades; si no, recarga asignaciones del browse.
-	private refrescarTrasAsignacionMasiva(rol: ScUnidadesTipoUsuarioRol): void {
+	// Qué hace: arma la fila de unidad asignada para la grilla del detalle.
+	// Cómo: usa response.Data, el fallback de la línea y el catálogo mCORR_UNIDAD para completar nombres.
+	private mapUnidadAsignada(source: any, fallback?: ScUnidadesTipoUsuario): ScUnidadesTipoUsuario {
+		const corrUnidad = Number(source?.CORR_UNIDAD ?? fallback?.CORR_UNIDAD ?? 0);
+		const catalog = this.mCORR_UNIDAD.find((item) => Number(item.CORR_UNIDAD) === corrUnidad);
+		const rol = this.rolSeleccionado;
+		return {
+			CORR_EMPRESA: Number(source?.CORR_EMPRESA ?? fallback?.CORR_EMPRESA ?? 0),
+			CORR_UNIDAD: corrUnidad,
+			CODIGO_UNIDAD: (source?.CODIGO_UNIDAD ?? fallback?.CODIGO_UNIDAD ?? catalog?.CODIGO_UNIDAD ?? '').toString().trim(),
+			NOMBRE_UNIDAD: (source?.NOMBRE_UNIDAD ?? fallback?.NOMBRE_UNIDAD ?? catalog?.NOMBRE_UNIDAD ?? '').toString().trim(),
+			TIPO_USUARIO: Number(source?.TIPO_USUARIO ?? fallback?.TIPO_USUARIO ?? rol?.TIPO_USUARIO ?? 0),
+			NOMBRE_TIPO_USUARIO: (
+				source?.NOMBRE_TIPO_USUARIO ??
+				fallback?.NOMBRE_TIPO_USUARIO ??
+				rol?.NOMBRE_TIPO_USUARIO ??
+				''
+			)
+				.toString()
+				.trim(),
+			ACTIVO: source?.ACTIVO !== false && fallback?.ACTIVO !== false,
+			_clientKey: `u-${source?.TIPO_USUARIO ?? rol?.TIPO_USUARIO}-${corrUnidad}`,
+		};
+	}
+
+	// Qué hace: agrega o actualiza una unidad en el detalle y el contador, sin GetAll.
+	// Cómo: si isAdd y no existe, la inserta; sincroniza asignaciones, lookup y CANT_UNIDADES.
+	private aplicarUnidadEnDetalle(record: ScUnidadesTipoUsuario, isAdd: boolean): void {
+		const corr = Number(record.CORR_UNIDAD);
+		if (!corr) {
+			return;
+		}
+
+		const existe = (this.unidadesDetalle ?? []).some((item) => Number(item.CORR_UNIDAD) === corr);
+		if (isAdd && !existe) {
+			this.unidadesDetalle = [...(this.unidadesDetalle ?? []), record].sort(
+				(a, b) => Number(a.CORR_UNIDAD) - Number(b.CORR_UNIDAD)
+			);
+			this.asignaciones = [...(this.asignaciones ?? []), record];
+		} else {
+			this.unidadesDetalle = (this.unidadesDetalle ?? []).map((item) =>
+				Number(item.CORR_UNIDAD) === corr ? { ...item, ...record } : item
+			);
+		}
+
+		this.actualizarUnidadesLookupDisponibles();
+		this.actualizarContadorUnidades(this.rolSeleccionado);
+		this.cdr.detectChanges();
+	}
+
+	// Qué hace: quita una unidad del detalle en memoria.
+	// Cómo: filtra unidadesDetalle y asignaciones por CORR_UNIDAD; actualiza lookup y contador.
+	private quitarUnidadDeDetalle(corrUnidad: number): void {
+		this.unidadesDetalle = (this.unidadesDetalle ?? []).filter(
+			(item) => Number(item.CORR_UNIDAD) !== corrUnidad
+		);
+		this.asignaciones = (this.asignaciones ?? []).filter(
+			(item) =>
+				!(
+					Number(item.TIPO_USUARIO) === Number(this.rolSeleccionado?.TIPO_USUARIO) &&
+					Number(item.CORR_UNIDAD) === corrUnidad
+				)
+		);
+		this.actualizarUnidadesLookupDisponibles();
+		this.actualizarContadorUnidades(this.rolSeleccionado);
+		this.cdr.detectChanges();
+	}
+
+	// Qué hace: refleja en memoria el resultado de asignar todas las unidades.
+	// Cómo: en detalle agrega las del catálogo que falten; en browse suma RowsAffected al contador.
+	private aplicarAsignacionMasivaEnMemoria(rol: ScUnidadesTipoUsuarioRol, asignadas: number): void {
+		if (asignadas <= 0) {
+			return;
+		}
+
 		if (
 			!this.isBrowse() &&
 			Number(this.rolSeleccionado?.TIPO_USUARIO) === Number(rol.TIPO_USUARIO)
 		) {
-			this.cargarUnidadesDetalle();
+			const ya = new Set(
+				(this.unidadesDetalle ?? []).map((item) => Number(item.CORR_UNIDAD)).filter((corr) => corr > 0)
+			);
+			const nuevas = (this.mCORR_UNIDAD ?? [])
+				.filter((item) => item.ACTIVO !== false && !ya.has(Number(item.CORR_UNIDAD)))
+				.map((item) =>
+					this.mapUnidadAsignada({
+						TIPO_USUARIO: rol.TIPO_USUARIO,
+						NOMBRE_TIPO_USUARIO: rol.NOMBRE_TIPO_USUARIO,
+						CORR_UNIDAD: item.CORR_UNIDAD,
+						CODIGO_UNIDAD: item.CODIGO_UNIDAD,
+						NOMBRE_UNIDAD: item.NOMBRE_UNIDAD,
+						ACTIVO: true,
+					})
+				);
+			this.unidadesDetalle = [...(this.unidadesDetalle ?? []), ...nuevas].sort(
+				(a, b) => Number(a.CORR_UNIDAD) - Number(b.CORR_UNIDAD)
+			);
+			this.asignaciones = [...(this.asignaciones ?? []), ...nuevas];
+			this.actualizarUnidadesLookupDisponibles();
+			this.actualizarContadorUnidades(this.rolSeleccionado);
+			this.cdr.detectChanges();
 			return;
 		}
-		this.consultarAsignaciones();
+
+		this.models = ((this.models as ScUnidadesTipoUsuarioRol[]) ?? []).map((item) =>
+			Number(item.TIPO_USUARIO) === Number(rol.TIPO_USUARIO)
+				? { ...item, CANT_UNIDADES: Number(item.CANT_UNIDADES ?? 0) + asignadas }
+				: item
+		);
 	}
 }
