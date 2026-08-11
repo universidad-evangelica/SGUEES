@@ -107,7 +107,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	puestoReportaInvalido = false;
 
 	mCORR_UNIDAD: ScDescriptorUnidadLookup[] = [];
+	// Al editar: unidades del catálogo más la ya guardada; NOMBRE_UNIDAD puede ser el snapshot del descriptor.
+	mCORR_UNIDAD_EDIT: ScDescriptorUnidadLookup[] = [];
+	unidadLookupColumns = [
+		{ dataField: 'CODIGO_UNIDAD', caption: 'Codigo', width: 90 },
+		{ dataField: 'NOMBRE_UNIDAD_CATALOGO', caption: 'Unidad', width: 280 },
+	];
 	mCORR_PUESTO: ScDescriptorPuestoLookup[] = [];
+	// Al editar: puestos del catálogo más el ya guardado; NOMBRE_PUESTO puede ser el snapshot del descriptor.
+	mCORR_PUESTO_EDIT: ScDescriptorPuestoLookup[] = [];
+	puestoLookupColumns = [
+		{ dataField: 'CORR_PUESTO', caption: 'Codigo', width: 90 },
+		{ dataField: 'NOMBRE_PUESTO_CATALOGO', caption: 'Puesto', width: 280 },
+	];
 	mCORR_PUESTO_REPORTA: ScDescriptorJefeLookup[] = [];
 	mCORR_FRECUENCIA: ScFrecuenciaLookup[] = [];
 	// Al editar un KPI: frecuencias activas del catálogo más la ya guardada en la fila (aunque esté inactiva).
@@ -414,18 +426,22 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				next: (response: any) => {
 					if (!response?.Result || !Array.isArray(response.Data)) {
 						this.mCORR_UNIDAD = [];
-						this.asegurarUnidadSeleccionadaEnLookup();
+						this.prepararUnidadLookupParaDescriptor();
 						return;
 					}
 
 					const vistos = new Set<number>();
 					this.mCORR_UNIDAD = response.Data
-						.map((item: any) => ({
-							CORR_UNIDAD: Number(item.CORR_UNIDAD),
-							CODIGO_UNIDAD: (item.CODIGO_UNIDAD ?? '').trim(),
-							NOMBRE_UNIDAD: (item.NOMBRE_UNIDAD ?? '').trim(),
-							ACTIVO: item.ACTIVO !== false,
-						}))
+						.map((item: any) => {
+							const nombre = (item.NOMBRE_UNIDAD ?? '').trim();
+							return {
+								CORR_UNIDAD: Number(item.CORR_UNIDAD),
+								CODIGO_UNIDAD: (item.CODIGO_UNIDAD ?? '').trim(),
+								NOMBRE_UNIDAD: nombre,
+								NOMBRE_UNIDAD_CATALOGO: nombre,
+								ACTIVO: item.ACTIVO !== false,
+							};
+						})
 						.filter((item: ScDescriptorUnidadLookup) => {
 							const corr = Number(item.CORR_UNIDAD);
 							if (!corr || corr <= 0 || vistos.has(corr)) {
@@ -434,11 +450,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							vistos.add(corr);
 							return true;
 						});
-					this.asegurarUnidadSeleccionadaEnLookup();
+					this.prepararUnidadLookupParaDescriptor();
 				},
 				error: (error) => {
 					this.mCORR_UNIDAD = [];
-					this.asegurarUnidadSeleccionadaEnLookup();
+					this.prepararUnidadLookupParaDescriptor();
 					this.notifyApiError(error);
 				},
 			});
@@ -1253,7 +1269,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		super.editarClick(e);
 		this.resetearFuncionesTabsDirty();
 		this.cargarDatosTabs();
-		this.asegurarUnidadSeleccionadaEnLookup();
+		this.prepararUnidadLookupParaDescriptor();
 		this.actualizarPuestosPorUnidad(this.model.CORR_UNIDAD);
 		if (this.model.CORR_PUESTO) {
 			this.aplicarDatosPuestoSeleccionado(this.model.CORR_PUESTO, false);
@@ -1274,7 +1290,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		super.rowDblClick(e);
 		this.resetearFuncionesTabsDirty();
 		this.cargarDatosTabs();
-		this.asegurarUnidadSeleccionadaEnLookup();
+		this.prepararUnidadLookupParaDescriptor();
 		this.actualizarPuestosPorUnidad(this.model.CORR_UNIDAD);
 		if (this.model.CORR_PUESTO) {
 			this.aplicarDatosPuestoSeleccionado(this.model.CORR_PUESTO, false);
@@ -5681,20 +5697,29 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Al cambiar unidad, limpia puesto y reporta para obligar a elegirlos de nuevo.
+	// Cómo: si el correlativo no cambió (bind del lookup) conserva el snapshot; si el usuario elige otra,
+	// copia el nombre actual del catálogo y recarga puestos.
 	onUnidadChanged(value: number | null): void {
-		this.model.CORR_UNIDAD = value;
+		const corr = value != null && value > 0 ? Number(value) : null;
+		if (Number(this.model.CORR_UNIDAD ?? 0) === Number(corr ?? 0)) {
+			this.prepararUnidadLookupParaDescriptor();
+			return;
+		}
+
+		this.model.CORR_UNIDAD = corr;
 		this.model.CORR_PUESTO = null;
 		this.model.CORR_PUESTO_REPORTA = null;
 		this.model.RESPONSABLE = '';
 		this.model.NOMBRE_PUESTO = '';
 		this.mCORR_PUESTO_REPORTA = [];
-		if (value != null && value > 0) {
+		if (corr != null && corr > 0) {
 			this.unidadInvalido = false;
-			this.model.NOMBRE_UNIDAD = this.getNombreUnidad(value);
+			this.model.NOMBRE_UNIDAD = this.getNombreUnidadCatalogo(corr);
 		} else {
 			this.model.NOMBRE_UNIDAD = '';
 		}
-		this.actualizarPuestosPorUnidad(value);
+		this.prepararUnidadLookupParaDescriptor();
+		this.actualizarPuestosPorUnidad(corr);
 	}
 
 	// Al elegir puesto, copia reporta y responsable y valida que no haya otro descriptor abierto.
@@ -5712,6 +5737,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}, 0);
 
 		const corrPuesto = value != null ? Number(value) : null;
+		if (Number(this.model.CORR_PUESTO ?? 0) === Number(corrPuesto ?? 0)) {
+			this.prepararPuestoLookupParaDescriptor();
+			return;
+		}
 		this.model.CORR_PUESTO = corrPuesto;
 		if (corrPuesto != null && corrPuesto > 0) {
 			this.puestoInvalido = false;
@@ -5737,10 +5766,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			)
 		) {
 			this.model.CORR_PUESTO = null;
+			this.model.NOMBRE_PUESTO = '';
 			this.model.CORR_PUESTO_REPORTA = null;
 			this.model.RESPONSABLE = '';
 			this.puestoInvalido = true;
 			this.mCORR_PUESTO_REPORTA = [];
+			this.prepararPuestoLookupParaDescriptor();
 			this.syncHeaderForm();
 		}
 	}
@@ -5810,8 +5841,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			}
 		}
 
-		this.model.NOMBRE_UNIDAD = this.getNombreUnidad(this.model.CORR_UNIDAD);
-		this.model.NOMBRE_PUESTO = this.getNombrePuesto(this.model.CORR_PUESTO);
+		if (!(this.model.NOMBRE_UNIDAD ?? '').trim()) {
+			this.model.NOMBRE_UNIDAD = this.getNombreUnidadCatalogo(this.model.CORR_UNIDAD);
+		}
+		if (!(this.model.NOMBRE_PUESTO ?? '').trim()) {
+			this.model.NOMBRE_PUESTO = this.getNombrePuestoCatalogo(this.model.CORR_PUESTO);
+		}
 
 		this.actualizarEstadoValidacionHeader();
 		const formValidation = this.headerForm?.instance?.validate();
@@ -6027,17 +6062,41 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: obtiene el nombre de la unidad a partir de su correlativo.
-	// Cómo: busca en mCORR_UNIDAD (unidades del rol) y devuelve NOMBRE_UNIDAD.
+	// Cómo: usa el nombre vivo del catálogo (no el snapshot del descriptor).
 	getNombreUnidad(corrUnidad: number | null | undefined): string {
+		return this.getNombreUnidadCatalogo(corrUnidad);
+	}
+
+	// Qué hace: obtiene el nombre actual del catálogo de unidades.
+	private getNombreUnidadCatalogo(corrUnidad: number | null | undefined): string {
 		const corr = Number(corrUnidad);
-		return this.mCORR_UNIDAD.find((item) => Number(item.CORR_UNIDAD) === corr)?.NOMBRE_UNIDAD ?? '';
+		const fromCatalog = this.mCORR_UNIDAD.find((item) => Number(item.CORR_UNIDAD) === corr);
+		const fromEdit = this.mCORR_UNIDAD_EDIT.find((item) => Number(item.CORR_UNIDAD) === corr);
+		return (
+			fromCatalog?.NOMBRE_UNIDAD_CATALOGO ??
+			fromCatalog?.NOMBRE_UNIDAD ??
+			fromEdit?.NOMBRE_UNIDAD_CATALOGO ??
+			''
+		).trim();
 	}
 
 	// Qué hace: obtiene el nombre del puesto a partir de su correlativo.
-	// Cómo: busca en mCORR_PUESTO (puestos de la unidad) y devuelve NOMBRE_PUESTO.
+	// Cómo: usa el nombre vivo del catálogo (no el snapshot del descriptor).
 	getNombrePuesto(corrPuesto: number | null | undefined): string {
+		return this.getNombrePuestoCatalogo(corrPuesto);
+	}
+
+	// Qué hace: obtiene el nombre actual del catálogo de puestos.
+	private getNombrePuestoCatalogo(corrPuesto: number | null | undefined): string {
 		const corr = Number(corrPuesto);
-		return this.mCORR_PUESTO.find((item) => Number(item.CORR_PUESTO) === corr)?.NOMBRE_PUESTO ?? '';
+		const fromCatalog = this.mCORR_PUESTO.find((item) => Number(item.CORR_PUESTO) === corr);
+		const fromEdit = this.mCORR_PUESTO_EDIT.find((item) => Number(item.CORR_PUESTO) === corr);
+		return (
+			fromCatalog?.NOMBRE_PUESTO_CATALOGO ??
+			fromCatalog?.NOMBRE_PUESTO ??
+			fromEdit?.NOMBRE_PUESTO_CATALOGO ??
+			''
+		).trim();
 	}
 
 	// Muestra al usuario un aviso de regla de negocio (no error técnico).
@@ -7608,6 +7667,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const corr = corrUnidad != null ? Number(corrUnidad) : null;
 		if (!corr || corr <= 0) {
 			this.mCORR_PUESTO = [];
+			this.mCORR_PUESTO_EDIT = [];
 			this.mCORR_PUESTO_REPORTA = [];
 			return;
 		}
@@ -7625,20 +7685,24 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				next: (response: any) => {
 					if (!response?.Result || !Array.isArray(response.Data)) {
 						this.mCORR_PUESTO = [];
-						this.asegurarPuestoSeleccionadoEnLookup(corr);
+						this.prepararPuestoLookupParaDescriptor();
 						return;
 					}
 
-					this.mCORR_PUESTO = response.Data.map((item: any) => ({
-						CORR_PUESTO: Number(item.CORR_PUESTO),
-						NOMBRE_PUESTO: (item.NOMBRE_PUESTO ?? '').trim(),
-						CORR_UNIDAD: Number(item.CORR_UNIDAD ?? corr),
-					}));
-					this.asegurarPuestoSeleccionadoEnLookup(corr);
+					this.mCORR_PUESTO = response.Data.map((item: any) => {
+						const nombre = (item.NOMBRE_PUESTO ?? '').trim();
+						return {
+							CORR_PUESTO: Number(item.CORR_PUESTO),
+							NOMBRE_PUESTO: nombre,
+							NOMBRE_PUESTO_CATALOGO: nombre,
+							CORR_UNIDAD: Number(item.CORR_UNIDAD ?? corr),
+						};
+					});
+					this.prepararPuestoLookupParaDescriptor();
 				},
 				error: (error) => {
 					this.mCORR_PUESTO = [];
-					this.asegurarPuestoSeleccionadoEnLookup(corr);
+					this.prepararPuestoLookupParaDescriptor();
 					this.notifyApiError(error);
 				},
 			});
@@ -7658,14 +7722,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		const nombreLookup = this.getNombrePuesto(corr);
-		if (nombreLookup) {
-			this.model.NOMBRE_PUESTO = nombreLookup;
-		}
 		if (limpiarSiNoExiste) {
+			this.model.NOMBRE_PUESTO = this.getNombrePuestoCatalogo(corr);
 			this.model.CORR_PUESTO_REPORTA = null;
 			this.model.RESPONSABLE = '';
 		}
+		this.prepararPuestoLookupParaDescriptor();
 		this.cargarJefesPorUnidad(this.model.CORR_UNIDAD);
 		this.syncHeaderForm();
 	}
@@ -7726,52 +7788,95 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Qué hace: si el descriptor ya tiene unidad y no está en el lookup del rol, la agrega solo al editar/ver.
-	// Cómo: usa CORR_UNIDAD + NOMBRE_UNIDAD del model; no aplica en Nuevo ni Browse (evita dejarla pegada).
-	private asegurarUnidadSeleccionadaEnLookup(): void {
-		if (this.banderaMtto === UpdateType.Add || this.banderaMtto === UpdateType.Browse) {
-			return;
+	// Qué hace: arma el lookup de unidad con el nombre guardado en el descriptor (snapshot).
+	// Cómo: lista el catálogo vivo y, si hay unidad asociada, muestra NOMBRE_UNIDAD del descriptor
+	// en el combo; el dropdown sigue viendo NOMBRE_UNIDAD_CATALOGO.
+	private prepararUnidadLookupParaDescriptor(): void {
+		const porCorr = new Map<number, ScDescriptorUnidadLookup>();
+
+		for (const item of this.mCORR_UNIDAD ?? []) {
+			const corr = Number(item.CORR_UNIDAD);
+			if (corr > 0) {
+				const nombreCatalogo = (item.NOMBRE_UNIDAD_CATALOGO ?? item.NOMBRE_UNIDAD ?? '').trim();
+				porCorr.set(corr, {
+					CORR_UNIDAD: corr,
+					CODIGO_UNIDAD: item.CODIGO_UNIDAD,
+					NOMBRE_UNIDAD: nombreCatalogo,
+					NOMBRE_UNIDAD_CATALOGO: nombreCatalogo,
+					ACTIVO: item.ACTIVO !== false,
+				});
+			}
 		}
 
-		const corr = Number(this.model?.CORR_UNIDAD);
-		if (!corr || corr <= 0) {
-			return;
-		}
-		if (this.mCORR_UNIDAD.some((item) => Number(item.CORR_UNIDAD) === corr)) {
-			return;
+		const corrAsociada = Number(this.model?.CORR_UNIDAD);
+		const nombreDescriptor = (this.model?.NOMBRE_UNIDAD ?? '').trim();
+		if (corrAsociada > 0) {
+			const existente = porCorr.get(corrAsociada);
+			if (existente) {
+				porCorr.set(corrAsociada, {
+					...existente,
+					NOMBRE_UNIDAD: nombreDescriptor || existente.NOMBRE_UNIDAD,
+					NOMBRE_UNIDAD_CATALOGO:
+						existente.NOMBRE_UNIDAD_CATALOGO || existente.NOMBRE_UNIDAD,
+				});
+			} else {
+				porCorr.set(corrAsociada, {
+					CORR_UNIDAD: corrAsociada,
+					NOMBRE_UNIDAD: nombreDescriptor || `Unidad ${corrAsociada}`,
+					NOMBRE_UNIDAD_CATALOGO: nombreDescriptor || `Unidad ${corrAsociada}`,
+					ACTIVO: true,
+				});
+			}
 		}
 
-		const nombre = (this.model?.NOMBRE_UNIDAD ?? '').trim() || `Unidad ${corr}`;
-		this.mCORR_UNIDAD = [
-			...this.mCORR_UNIDAD,
-			{
-				CORR_UNIDAD: corr,
-				NOMBRE_UNIDAD: nombre,
-				ACTIVO: true,
-			},
-		];
+		this.mCORR_UNIDAD_EDIT = Array.from(porCorr.values()).sort(
+			(a, b) => Number(a.CORR_UNIDAD) - Number(b.CORR_UNIDAD)
+		);
 	}
 
-	// Qué hace: si el descriptor ya tiene puesto y no está en GEN_UNIDADES_PUESTO, lo agrega con el nombre guardado.
-	// Cómo: usa CORR_PUESTO + NOMBRE_PUESTO del model (BD) para que el combo lo muestre al editar.
-	private asegurarPuestoSeleccionadoEnLookup(corrUnidad: number): void {
-		const corr = Number(this.model?.CORR_PUESTO);
-		if (!corr || corr <= 0) {
-			return;
-		}
-		if (this.mCORR_PUESTO.some((item) => Number(item.CORR_PUESTO) === corr)) {
-			return;
+	// Qué hace: arma el lookup de puesto con el nombre guardado en el descriptor (snapshot).
+	// Cómo: lista el catálogo vivo y, si hay puesto asociado, muestra NOMBRE_PUESTO del descriptor
+	// en el combo; el dropdown sigue viendo NOMBRE_PUESTO_CATALOGO.
+	private prepararPuestoLookupParaDescriptor(): void {
+		const porCorr = new Map<number, ScDescriptorPuestoLookup>();
+
+		for (const item of this.mCORR_PUESTO ?? []) {
+			const corr = Number(item.CORR_PUESTO);
+			if (corr > 0) {
+				const nombreCatalogo = (item.NOMBRE_PUESTO_CATALOGO ?? item.NOMBRE_PUESTO ?? '').trim();
+				porCorr.set(corr, {
+					CORR_PUESTO: corr,
+					NOMBRE_PUESTO: nombreCatalogo,
+					NOMBRE_PUESTO_CATALOGO: nombreCatalogo,
+					CORR_UNIDAD: item.CORR_UNIDAD,
+				});
+			}
 		}
 
-		const nombre = (this.model?.NOMBRE_PUESTO ?? '').trim() || `Puesto ${corr}`;
-		this.mCORR_PUESTO = [
-			...this.mCORR_PUESTO,
-			{
-				CORR_PUESTO: corr,
-				NOMBRE_PUESTO: nombre,
-				CORR_UNIDAD: corrUnidad,
-			},
-		];
+		const corrAsociada = Number(this.model?.CORR_PUESTO);
+		const nombreDescriptor = (this.model?.NOMBRE_PUESTO ?? '').trim();
+		if (corrAsociada > 0) {
+			const existente = porCorr.get(corrAsociada);
+			if (existente) {
+				porCorr.set(corrAsociada, {
+					...existente,
+					NOMBRE_PUESTO: nombreDescriptor || existente.NOMBRE_PUESTO,
+					NOMBRE_PUESTO_CATALOGO:
+						existente.NOMBRE_PUESTO_CATALOGO || existente.NOMBRE_PUESTO,
+				});
+			} else {
+				porCorr.set(corrAsociada, {
+					CORR_PUESTO: corrAsociada,
+					NOMBRE_PUESTO: nombreDescriptor || `Puesto ${corrAsociada}`,
+					NOMBRE_PUESTO_CATALOGO: nombreDescriptor || `Puesto ${corrAsociada}`,
+					CORR_UNIDAD: Number(this.model?.CORR_UNIDAD) || undefined,
+				});
+			}
+		}
+
+		this.mCORR_PUESTO_EDIT = Array.from(porCorr.values()).sort(
+			(a, b) => Number(a.CORR_PUESTO) - Number(b.CORR_PUESTO)
+		);
 	}
 
 	// Qué hace: conserva Reporta a en el combo aunque el jefe esté inactivo (nombre real de GEN_EMPLEADO).

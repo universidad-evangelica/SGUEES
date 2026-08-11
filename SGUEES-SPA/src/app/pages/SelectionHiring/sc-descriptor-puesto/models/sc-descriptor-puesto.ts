@@ -30,6 +30,7 @@ export interface ScDescriptorUnidadLookup {
 	CORR_UNIDAD: number;
 	CODIGO_UNIDAD?: string;
 	NOMBRE_UNIDAD: string;
+	NOMBRE_UNIDAD_CATALOGO?: string;
 	ACTIVO?: boolean;
 }
 
@@ -37,6 +38,7 @@ export interface ScDescriptorUnidadLookup {
 export interface ScDescriptorPuestoLookup {
 	CORR_PUESTO: number;
 	NOMBRE_PUESTO: string;
+	NOMBRE_PUESTO_CATALOGO?: string;
 	CORR_UNIDAD?: number;
 }
 

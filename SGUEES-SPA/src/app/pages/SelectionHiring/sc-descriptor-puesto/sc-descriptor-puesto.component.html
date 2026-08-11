@@ -41,31 +41,37 @@
 					[readOnly]="readOnly"
 					(onFieldDataChanged)="onHeaderFieldChanged($event)"
 				>
+					<!-- Motivo: el combo muestra el nombre guardado en el descriptor; el dropdown lista el catálogo actual. -->
 					<div *dxTemplate="let cellInfo of 'CORR_UNIDADLookup'">
 						<div class="descriptor-lookup-field" [class.descriptor-lookup-field--invalid]="unidadInvalido">
 							<app-data-lookup
-								[model]="mCORR_UNIDAD"
+								[model]="mCORR_UNIDAD_EDIT"
 								[value]="model.CORR_UNIDAD"
 								(valueChange)="onUnidadChanged($event)"
 								[valueExpr]="'CORR_UNIDAD'"
 								[displayExpr]="'NOMBRE_UNIDAD'"
+								[lookupColumns]="unidadLookupColumns"
 								[selectedRowKeys]="selectedLookUpCORR_UNIDAD"
 								[readOnly]="readOnly"
+								[dropDownWidth]="420"
 							></app-data-lookup>
 						</div>
 					</div>
 
+					<!-- Motivo: el combo muestra el nombre guardado en el descriptor; el dropdown lista el catálogo actual. -->
 					<div *dxTemplate="let cellInfo of 'CORR_PUESTOLookup'">
 						<div class="descriptor-puesto-row descriptor-lookup-field" [class.descriptor-lookup-field--invalid]="puestoInvalido">
 							<app-data-lookup
 								class="descriptor-puesto-select"
-								[model]="mCORR_PUESTO"
+								[model]="mCORR_PUESTO_EDIT"
 								[value]="model.CORR_PUESTO"
 								(valueChange)="onPuestoChanged($event)"
 								[valueExpr]="'CORR_PUESTO'"
 								[displayExpr]="'NOMBRE_PUESTO'"
+								[lookupColumns]="puestoLookupColumns"
 								[selectedRowKeys]="selectedLookUpCORR_PUESTO"
 								[readOnly]="readOnly || !model.CORR_UNIDAD"
+								[dropDownWidth]="420"
 							></app-data-lookup>
 							<dx-button
 								icon="plus"
