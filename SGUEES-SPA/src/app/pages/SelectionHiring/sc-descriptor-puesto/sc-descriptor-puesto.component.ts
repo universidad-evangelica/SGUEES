@@ -1117,7 +1117,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	// Qué hace: reacciona a los cambios de estado del formulario (nuevo, editar, ver, browse).
 	// Cómo: llama al AsignaStatus base y, al volver a modo Browse (listado), limpia banderas de edición
-	// (perfil) y regresa el título y las pestañas a su estado inicial.
+	// (perfil) y regresa el título y las pestañas a su estado inicial. El lookup de unidad no se recarga:
+	// mCORR_UNIDAD ya es el catálogo del rol; la unidad temporal solo vive en mCORR_UNIDAD_EDIT.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -1125,8 +1126,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.subTituloVentana = this.maintenanceSubtitulo;
 			this.mainTabIndex = 0;
 			this.subTabIndex = 0;
-			// Quita unidades agregadas solo para editar (fuera de permisos del rol).
-			this.getCORR_UNIDAD();
 		}
 	}
 
@@ -1255,8 +1254,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		super.nuevo();
 		this.limpiarDatosTabs();
 		this.actualizarPuestosPorUnidad(null);
-		// Recarga unidades del rol; no debe quedar la unidad temporal agregada al editar.
-		this.getCORR_UNIDAD();
+		// El modelo nuevo no trae unidad; arma el lookup solo con el catálogo ya cargado (sin GET).
+		this.prepararUnidadLookupParaDescriptor();
 		setTimeout(() => this.syncHeaderForm());
 	}
 
@@ -1383,7 +1382,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Controla agregar, editar y cancelar funciones clave en el grid.
-	// El guardado llama a la API y recarga la lista para mantener actividades e indicadores al día.
+	// El guardado llama a la API y parchea la fila con response.Data (sin GetAll).
 	agregarFuncionClave(): void {
 		if (this.readOnly || this.funcionesClaveEditando || !this.requiereDescriptorGuardado()) {
 			return;
@@ -1482,14 +1481,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: inserta una nueva función clave desde el grid.
 	// Cómo: llama a persistirFuncionDesdeGrid (create) con TIPO_FUNCION_CLAVE y esNuevo en true.
 	funcionClaveRowInserting(e: any): void {
-		e.cancel = this.persistirFuncionDesdeGrid(e.data, TIPO_FUNCION_CLAVE, true);
+		const data = { ...(e.data as ScDescriptorPuestoFuncion) };
+		e.cancel = true;
+		this.persistirFuncionDesdeGrid(data, TIPO_FUNCION_CLAVE, true);
 	}
 
 	// Qué hace: actualiza una función clave existente desde el grid.
 	// Cómo: combina datos viejos y nuevos y llama a persistirFuncionDesdeGrid (update) con esNuevo en false.
 	funcionClaveRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
-		e.cancel = this.persistirFuncionDesdeGrid(data, TIPO_FUNCION_CLAVE, false);
+		e.cancel = true;
+		this.persistirFuncionDesdeGrid(data, TIPO_FUNCION_CLAVE, false);
 	}
 
 	// Qué hace: elimina una función clave desde el grid.
@@ -1601,14 +1603,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: inserta una nueva función secundaria desde el grid.
 	// Cómo: llama a persistirFuncionDesdeGrid (create) con TIPO_FUNCION_SECUNDARIA y esNuevo en true.
 	funcionSecundariaRowInserting(e: any): void {
-		e.cancel = this.persistirFuncionDesdeGrid(e.data, TIPO_FUNCION_SECUNDARIA, true);
+		const data = { ...(e.data as ScDescriptorPuestoFuncion) };
+		e.cancel = true;
+		this.persistirFuncionDesdeGrid(data, TIPO_FUNCION_SECUNDARIA, true);
 	}
 
 	// Qué hace: actualiza una función secundaria existente desde el grid.
 	// Cómo: combina datos viejos y nuevos y llama a persistirFuncionDesdeGrid (update) con esNuevo en false.
 	funcionSecundariaRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
-		e.cancel = this.persistirFuncionDesdeGrid(data, TIPO_FUNCION_SECUNDARIA, false);
+		e.cancel = true;
+		this.persistirFuncionDesdeGrid(data, TIPO_FUNCION_SECUNDARIA, false);
 	}
 
 	// Qué hace: elimina una función secundaria desde el grid.
@@ -1723,14 +1728,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: inserta una nueva relación interna desde el grid.
 	// Cómo: llama a persistirRelacionDesdeGrid (create) con TIPO_RELACION_INTERNA y esNuevo en true.
 	relacionInternaRowInserting(e: any): void {
-		e.cancel = this.persistirRelacionDesdeGrid(e.data, TIPO_RELACION_INTERNA, true);
+		const data = { ...(e.data as ScDescriptorPuestoRelacionLaboral) };
+		e.cancel = true;
+		this.persistirRelacionDesdeGrid(data, TIPO_RELACION_INTERNA, true);
 	}
 
 	// Qué hace: actualiza una relación interna existente desde el grid.
 	// Cómo: combina datos viejos y nuevos y llama a persistirRelacionDesdeGrid (update) con esNuevo en false.
 	relacionInternaRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
-		e.cancel = this.persistirRelacionDesdeGrid(data, TIPO_RELACION_INTERNA, false);
+		e.cancel = true;
+		this.persistirRelacionDesdeGrid(data, TIPO_RELACION_INTERNA, false);
 	}
 
 	// Qué hace: elimina una relación interna desde el grid.
@@ -1845,14 +1853,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: inserta una nueva relación externa desde el grid.
 	// Cómo: llama a persistirRelacionDesdeGrid (create) con TIPO_RELACION_EXTERNA y esNuevo en true.
 	relacionExternaRowInserting(e: any): void {
-		e.cancel = this.persistirRelacionDesdeGrid(e.data, TIPO_RELACION_EXTERNA, true);
+		const data = { ...(e.data as ScDescriptorPuestoRelacionLaboral) };
+		e.cancel = true;
+		this.persistirRelacionDesdeGrid(data, TIPO_RELACION_EXTERNA, true);
 	}
 
 	// Qué hace: actualiza una relación externa existente desde el grid.
 	// Cómo: combina datos viejos y nuevos y llama a persistirRelacionDesdeGrid (update) con esNuevo en false.
 	relacionExternaRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
-		e.cancel = this.persistirRelacionDesdeGrid(data, TIPO_RELACION_EXTERNA, false);
+		e.cancel = true;
+		this.persistirRelacionDesdeGrid(data, TIPO_RELACION_EXTERNA, false);
 	}
 
 	// Qué hace: elimina una relación externa desde el grid.
@@ -1989,14 +2000,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: inserta una nueva actividad desde el grid.
 	// Cómo: llama a persistirActividadDesdeGrid (create) con esNuevo en true.
 	actividadRowInserting(e: any): void {
-		e.cancel = this.persistirActividadDesdeGrid(e.data, true);
+		const data = { ...(e.data as ScDescriptorPuestoFuncionActividad) };
+		e.cancel = true;
+		this.persistirActividadDesdeGrid(data, true);
 	}
 
 	// Qué hace: actualiza una actividad existente desde el grid.
 	// Cómo: combina datos viejos y nuevos y llama a persistirActividadDesdeGrid (update) con esNuevo en false.
 	actividadRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
-		e.cancel = this.persistirActividadDesdeGrid(data, false);
+		e.cancel = true;
+		this.persistirActividadDesdeGrid(data, false);
 	}
 
 	// Qué hace: elimina una actividad desde el grid.
@@ -2057,7 +2071,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	cancelarKpiEditado(): void {
 		this.cancelarEdicionGrid(this.gridKpis?.instance, () => {
 			this.kpisEditando = false;
-			this.cargarKpis(true);
 		});
 	}
 
@@ -2089,12 +2102,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: reacciona a que se canceló la edición del grid de KPIs.
-	// Cómo: delega en finalizarEdicionGrid para limpiar el flag kpisEditando y recarga los KPIs con cargarKpis.
+	// Cómo: delega en finalizarEdicionGrid para limpiar el flag kpisEditando.
 	onKpiEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.kpisEditando = false;
 		});
-		this.cargarKpis(true);
 	}
 
 	// Qué hace: valida los datos de la fila de KPI antes de guardarla.
@@ -2124,14 +2136,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: inserta un nuevo KPI desde el grid.
 	// Cómo: llama a persistirKpiDesdeGrid (create) con esNuevo en true.
 	kpiRowInserting(e: any): void {
-		e.cancel = this.persistirKpiDesdeGrid(e.data, true);
+		const data = { ...(e.data as ScDescriptorPuestoKpiFuncion) };
+		e.cancel = true;
+		this.persistirKpiDesdeGrid(data, true);
 	}
 
 	// Qué hace: actualiza un KPI existente desde el grid.
 	// Cómo: combina datos viejos y nuevos y llama a persistirKpiDesdeGrid (update) con esNuevo en false.
 	kpiRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
-		e.cancel = this.persistirKpiDesdeGrid(data, false);
+		e.cancel = true;
+		this.persistirKpiDesdeGrid(data, false);
 	}
 
 	// Qué hace: elimina un KPI desde el grid.
@@ -2315,14 +2330,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: inserta un nuevo requisito de educación desde el grid.
 	// Cómo: llama a persistirEducacionDesdeGrid (create) con esNuevo en true.
 	educacionRowInserting(e: any): void {
-		e.cancel = this.persistirEducacionDesdeGrid(e.data, true);
+		const data = { ...(e.data as ScPerfilPuestoEducacion) };
+		e.cancel = true;
+		this.persistirEducacionDesdeGrid(data, true);
 	}
 
 	// Qué hace: actualiza un requisito de educación existente desde el grid.
 	// Cómo: combina datos viejos y nuevos y llama a persistirEducacionDesdeGrid (update) con esNuevo en false.
 	educacionRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
-		e.cancel = this.persistirEducacionDesdeGrid(data, false);
+		e.cancel = true;
+		this.persistirEducacionDesdeGrid(data, false);
 	}
 
 	// Qué hace: elimina un requisito de educación desde el grid.
@@ -2435,14 +2453,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: inserta un nuevo requisito de experiencia desde el grid.
 	// Cómo: llama a persistirExperienciaDesdeGrid (create) con esNuevo en true.
 	experienciaRowInserting(e: any): void {
-		e.cancel = this.persistirExperienciaDesdeGrid(e.data, true);
+		const data = { ...(e.data as ScPerfilPuestoExperiencia) };
+		e.cancel = true;
+		this.persistirExperienciaDesdeGrid(data, true);
 	}
 
 	// Qué hace: actualiza un requisito de experiencia existente desde el grid.
 	// Cómo: combina datos viejos y nuevos y llama a persistirExperienciaDesdeGrid (update) con esNuevo en false.
 	experienciaRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
-		e.cancel = this.persistirExperienciaDesdeGrid(data, false);
+		e.cancel = true;
+		this.persistirExperienciaDesdeGrid(data, false);
 	}
 
 	// Qué hace: elimina un requisito de experiencia desde el grid.
@@ -2507,7 +2528,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	cancelarCompetenciaTecnicaEditada(): void {
 		this.cancelarEdicionGrid(this.gridCompetenciasTecnicas?.instance, () => {
 			this.competenciasTecnicasEditando = false;
-			this.cargarCompetenciasTecnicas(true);
+			this.competenciasTecnicasInsertando = false;
 		});
 	}
 
@@ -2551,14 +2572,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: reacciona a que se canceló la edición del grid de competencias técnicas.
-	// Cómo: delega en finalizarEdicionGrid para limpiar los flags y recarga las competencias con
-	// cargarCompetenciasTecnicas.
+	// Cómo: delega en finalizarEdicionGrid para limpiar los flags de edición.
 	onCompetenciaTecnicaEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.competenciasTecnicasEditando = false;
 			this.competenciasTecnicasInsertando = false;
 		});
-		this.cargarCompetenciasTecnicas(true);
 	}
 
 	// Qué hace: valida los datos de la fila de competencia técnica antes de guardarla.
@@ -2608,14 +2627,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: inserta una nueva competencia técnica desde el grid.
 	// Cómo: llama a persistirCompetenciaTecnicaDesdeGrid (create) con esNuevo en true.
 	competenciaTecnicaRowInserting(e: any): void {
-		e.cancel = this.persistirCompetenciaTecnicaDesdeGrid(e.data, true);
+		const data = { ...(e.data as ScPerfilPuestoCompetenciasTecnicas) };
+		e.cancel = true;
+		this.persistirCompetenciaTecnicaDesdeGrid(data, true);
 	}
 
 	// Qué hace: actualiza una competencia técnica existente desde el grid.
 	// Cómo: combina datos viejos y nuevos y llama a persistirCompetenciaTecnicaDesdeGrid (update) con esNuevo en false.
 	competenciaTecnicaRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
-		e.cancel = this.persistirCompetenciaTecnicaDesdeGrid(data, false);
+		e.cancel = true;
+		this.persistirCompetenciaTecnicaDesdeGrid(data, false);
 	}
 
 	// Qué hace: elimina una competencia técnica desde el grid.
@@ -2879,7 +2901,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	cancelarCompetenciaConductualEditada(): void {
 		this.cancelarEdicionGrid(this.gridCompetenciasConductuales?.instance, () => {
 			this.competenciasConductualesEditando = false;
-			this.cargarCompetenciasConductuales(true);
+			this.competenciasConductualesInsertando = false;
 		});
 	}
 
@@ -2920,14 +2942,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: reacciona a que se canceló la edición del grid de competencias conductuales.
-	// Cómo: delega en finalizarEdicionGrid para limpiar los flags y recarga las competencias con
-	// cargarCompetenciasConductuales.
+	// Cómo: delega en finalizarEdicionGrid para limpiar los flags de edición.
 	onCompetenciaConductualEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.competenciasConductualesEditando = false;
 			this.competenciasConductualesInsertando = false;
 		});
-		this.cargarCompetenciasConductuales(true);
 	}
 
 	// Qué hace: valida los datos de la fila de competencia conductual antes de guardarla.
@@ -2972,14 +2992,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: inserta una nueva competencia conductual desde el grid.
 	// Cómo: llama a persistirCompetenciaConductualDesdeGrid (create) con esNuevo en true.
 	competenciaConductualRowInserting(e: any): void {
-		e.cancel = this.persistirCompetenciaConductualDesdeGrid(e.data, true);
+		const data = { ...(e.data as ScPerfilPuestoCompetenciasConductuales) };
+		e.cancel = true;
+		this.persistirCompetenciaConductualDesdeGrid(data, true);
 	}
 
 	// Qué hace: actualiza una competencia conductual existente desde el grid.
 	// Cómo: combina datos viejos y nuevos y llama a persistirCompetenciaConductualDesdeGrid (update) con esNuevo en false.
 	competenciaConductualRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
-		e.cancel = this.persistirCompetenciaConductualDesdeGrid(data, false);
+		e.cancel = true;
+		this.persistirCompetenciaConductualDesdeGrid(data, false);
 	}
 
 	// Qué hace: elimina una competencia conductual desde el grid.
@@ -3242,7 +3265,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cancelarEdicionGrid(this.gridRequerimientosOrganizacionales?.instance, () => {
 			this.requerimientosOrganizacionalesEditando = false;
 			this.requerimientosOrganizacionalesInsertando = false;
-			this.cargarRequerimientosOrganizacionales(true);
 		});
 	}
 
@@ -3282,14 +3304,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: reacciona a que se canceló la edición del grid de requerimientos organizacionales.
-	// Cómo: delega en finalizarEdicionGrid para limpiar los flags y recarga los requerimientos con
-	// cargarRequerimientosOrganizacionales.
+	// Cómo: delega en finalizarEdicionGrid para limpiar los flags de edición.
 	onRequerimientoOrganizacionalEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.requerimientosOrganizacionalesEditando = false;
 			this.requerimientosOrganizacionalesInsertando = false;
 		});
-		this.cargarRequerimientosOrganizacionales(true);
 	}
 
 	// Qué hace: valida los datos de la fila de requerimiento organizacional antes de guardarla.
@@ -3330,7 +3350,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: inserta un nuevo requerimiento organizacional desde el grid.
 	// Cómo: llama a persistirRequerimientoOrganizacionalDesdeGrid (create) con esNuevo en true.
 	requerimientoOrganizacionalRowInserting(e: any): void {
-		e.cancel = this.persistirRequerimientoOrganizacionalDesdeGrid(e.data, true);
+		const data = { ...(e.data as ScDescriptorPuestoRequerimientoOrganizacional) };
+		e.cancel = true;
+		this.persistirRequerimientoOrganizacionalDesdeGrid(data, true);
 	}
 
 	// Qué hace: actualiza un requerimiento organizacional existente desde el grid.
@@ -3338,7 +3360,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// con esNuevo en false.
 	requerimientoOrganizacionalRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
-		e.cancel = this.persistirRequerimientoOrganizacionalDesdeGrid(data, false);
+		e.cancel = true;
+		this.persistirRequerimientoOrganizacionalDesdeGrid(data, false);
 	}
 
 	// Qué hace: elimina un requerimiento organizacional desde el grid.
@@ -3468,7 +3491,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cancelarEdicionGrid(this.gridRiesgosPuesto?.instance, () => {
 			this.riesgosPuestoEditando = false;
 			this.riesgosPuestoInsertando = false;
-			this.cargarRiesgosPuesto(true);
 		});
 	}
 
@@ -3507,13 +3529,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: reacciona a que se canceló la edición del grid de riesgos de puesto.
-	// Cómo: delega en finalizarEdicionGrid para limpiar los flags y recarga los riesgos con cargarRiesgosPuesto.
+	// Cómo: delega en finalizarEdicionGrid para limpiar los flags de edición.
 	onRiesgoPuestoEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.riesgosPuestoEditando = false;
 			this.riesgosPuestoInsertando = false;
 		});
-		this.cargarRiesgosPuesto(true);
 	}
 
 	// Qué hace: valida los datos de la fila de riesgo de puesto antes de guardarla.
@@ -3559,14 +3580,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: inserta un nuevo riesgo de puesto desde el grid.
 	// Cómo: llama a persistirRiesgoPuestoDesdeGrid (create) con esNuevo en true.
 	riesgoPuestoRowInserting(e: any): void {
-		e.cancel = this.persistirRiesgoPuestoDesdeGrid(e.data, true);
+		const data = { ...(e.data as ScDescriptorPuestoRiesgoPuesto) };
+		e.cancel = true;
+		this.persistirRiesgoPuestoDesdeGrid(data, true);
 	}
 
 	// Qué hace: actualiza un riesgo de puesto existente desde el grid.
 	// Cómo: combina datos viejos y nuevos y llama a persistirRiesgoPuestoDesdeGrid (update) con esNuevo en false.
 	riesgoPuestoRowUpdating(e: any): void {
 		const data = { ...e.oldData, ...e.newData };
-		e.cancel = this.persistirRiesgoPuestoDesdeGrid(data, false);
+		e.cancel = true;
+		this.persistirRiesgoPuestoDesdeGrid(data, false);
 	}
 
 	// Qué hace: elimina un riesgo de puesto desde el grid.
@@ -3717,7 +3741,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cancelarEdicionGrid(this.gridInducciones?.instance, () => {
 			this.induccionesEditando = false;
 			this.induccionesInsertando = false;
-			this.cargarInduccionesDescriptor(true);
 		});
 	}
 
@@ -3809,16 +3832,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: reacciona a que se canceló la edición del grid de inducciones.
-	// Cómo: limpia flags; si es guardado de Responsable no recarga (evita flash del nombre anterior).
+	// Cómo: delega en finalizarEdicionGrid para limpiar los flags de edición.
 	onInduccionEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.induccionesEditando = false;
 			this.induccionesInsertando = false;
 		});
-		if (this.responsableEntrenamientoPersistiendo) {
-			return;
-		}
-		this.cargarInduccionesDescriptor(true);
 	}
 
 	// Qué hace: valida los datos de la fila de inducción antes de guardarla.
@@ -3861,7 +3880,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			e.cancel = true;
 			return;
 		}
-		e.cancel = this.persistirInduccionDesdeGrid(e.data, true);
+		const data = { ...(e.data as ScDescriptorPuestoInduccion) };
+		e.cancel = true;
+		this.persistirInduccionDesdeGrid(data, true);
 	}
 
 	// Qué hace: actualiza una inducción o la fila de responsable desde el grid.
@@ -3871,10 +3892,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (data._esResponsableEntrenamiento) {
 			data.NOMBRE_INDUCCION = RESPONSABLE_ENTRENAMIENTO_NOMBRE;
 			data.TIEMPO_INDUCCION = (data.TIEMPO_INDUCCION ?? '').toString().trim();
-			e.cancel = this.persistirResponsableEntrenamientoDesdeGrid(data);
+			e.cancel = true;
+			this.persistirResponsableEntrenamientoDesdeGrid(data);
 			return;
 		}
-		e.cancel = this.persistirInduccionDesdeGrid(data, false);
+		e.cancel = true;
+		this.persistirInduccionDesdeGrid(data, false);
 	}
 
 	// Qué hace: elimina una inducción desde el grid.
@@ -4027,7 +4050,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cancelarEdicionGrid(this.gridResponsabilidadesCargo?.instance, () => {
 			this.responsabilidadesCargoEditando = false;
 			this.responsabilidadesCargoInsertando = false;
-			this.cargarResponsabilidadesCargo(true);
 		});
 	}
 
@@ -4101,14 +4123,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: reacciona a que se canceló la edición del grid de responsabilidades.
-	// Cómo: delega en finalizarEdicionGrid para limpiar los flags y recarga las responsabilidades con
-	// cargarResponsabilidadesCargo.
+	// Cómo: delega en finalizarEdicionGrid para limpiar los flags de edición.
 	onResponsabilidadCargoEditCanceled(e: any): void {
 		this.finalizarEdicionGrid(e, () => {
 			this.responsabilidadesCargoEditando = false;
 			this.responsabilidadesCargoInsertando = false;
 		});
-		this.cargarResponsabilidadesCargo(true);
 	}
 
 	// Qué hace: valida los datos de la fila de responsabilidad de cargo (o impacto económico) antes de guardarla.
@@ -4176,7 +4196,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			e.cancel = true;
 			return;
 		}
-		e.cancel = this.persistirResponsabilidadCargoDesdeGrid(e.data, true);
+		const data = { ...(e.data as ScDescriptorPuestoResponsabilidadCargo) };
+		e.cancel = true;
+		this.persistirResponsabilidadCargoDesdeGrid(data, true);
 	}
 
 	// Qué hace: actualiza una responsabilidad de cargo o la fila de impacto económico desde el grid.
@@ -4193,10 +4215,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				live?.CORR_IMPACTO_ECONOMICO ?? data.CORR_IMPACTO_ECONOMICO ?? null;
 			data.INFORMACION = (live?.INFORMACION ?? data.INFORMACION ?? '').trim();
 			data.NOMBRE_RESPONSABILIDAD = IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR;
-			e.cancel = this.persistirImpactoEconomicoDesdeGrid(data);
+			e.cancel = true;
+			this.persistirImpactoEconomicoDesdeGrid(data);
 			return;
 		}
-		e.cancel = this.persistirResponsabilidadCargoDesdeGrid(data, false);
+		e.cancel = true;
+		this.persistirResponsabilidadCargoDesdeGrid(data, false);
 	}
 
 	// Qué hace: elimina una responsabilidad de cargo desde el grid.
@@ -6489,7 +6513,60 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
 	}
 
-	// Guarda una actividad desde el grid: llama a la API y recarga la lista si la respuesta es OK.
+	// Qué hace: cierra el editor del grid (evita dejar la fila en "guardando").
+	// Cómo: llama cancelEditData del dx-data-grid, igual que en sc-unidades-tipo-usuario.
+	private cerrarEditorGrid(grid?: DxDataGridComponent | null): void {
+		try {
+			grid?.instance?.cancelEditData?.();
+		} catch {
+			// El grid puede ya no estar en pantalla.
+		}
+	}
+
+	// Qué hace: toma la fila de insert/update (response.Data) o el payload si no viene.
+	// Cómo: si Data es arreglo usa el primer objeto; si es objeto lo fusiona con el fallback.
+	private extraerFilaRespuesta<T>(response: any, fallback: T): T {
+		const data = response?.Data;
+		if (Array.isArray(data) && data.length > 0 && data[0] && typeof data[0] === 'object') {
+			return { ...fallback, ...data[0] } as T;
+		}
+		if (data && typeof data === 'object') {
+			return { ...fallback, ...data } as T;
+		}
+		return fallback;
+	}
+
+	// Qué hace: agrega o reemplaza una fila en memoria por correlativo, sin GetAll.
+	// Cómo: en update busca por clave y reemplaza; en insert agrega al final.
+	private aplicarFilaPorClave<T>(
+		lista: T[],
+		record: T,
+		getKey: (item: T) => number,
+		esNuevo: boolean
+	): T[] {
+		const key = Number(getKey(record));
+		const actual = lista ?? [];
+		if (!esNuevo && key > 0) {
+			const idx = actual.findIndex((item) => Number(getKey(item)) === key);
+			if (idx >= 0) {
+				const next = [...actual];
+				next[idx] = { ...actual[idx], ...record };
+				return next;
+			}
+		}
+		return [...actual, record];
+	}
+
+	// Qué hace: deja las filas especiales (responsable / impacto) al final del grid.
+	// Cómo: separa las filas marcadas y las concatena después del resto.
+	private colocarFilaEspecialAlFinal<T>(lista: T[], esEspecial: (item: T) => boolean): T[] {
+		const actual = lista ?? [];
+		const especiales = actual.filter(esEspecial);
+		const resto = actual.filter((item) => !esEspecial(item));
+		return [...resto, ...especiales];
+	}
+
+	// Guarda una actividad desde el grid: llama a la API y parchea la fila con response.Data.
 	private persistirActividadDesdeGrid(data: ScDescriptorPuestoFuncionActividad, esNuevo: boolean): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const funcion = this.funcionActividadesSeleccionada;
@@ -6516,8 +6593,23 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							resolve(true);
 							return;
 						}
+						this.cerrarEditorGrid(this.gridActividades);
 						this.actividadesEditando = false;
-						this.cargarActividadesPopup(funcion);
+						const saved = this.extraerFilaRespuesta(response, payload);
+						const corr = Number(saved.CORR_ACTIVIDAD) || Number(response?.CodeHelper) || 0;
+						const record: ScDescriptorPuestoFuncionActividad = {
+							CORR_FUNCION: saved.CORR_FUNCION ?? funcion.CORR_FUNCION,
+							CORR_ACTIVIDAD: corr,
+							NOMBRE_ACTIVIDAD: saved.NOMBRE_ACTIVIDAD ?? payload.NOMBRE_ACTIVIDAD ?? '',
+							_clientKey: corr || this.crearClientKey('act'),
+						};
+						this.actividadesPopup = this.aplicarFilaPorClave(
+							this.actividadesPopup,
+							record,
+							(row) => Number(row.CORR_ACTIVIDAD),
+							esNuevo
+						);
+						this.actualizarContadorActividades(funcion);
 						resolve(false);
 					},
 					error: (error) => {
@@ -6603,7 +6695,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Guarda una fila de educación: llama a la API y recarga la lista si la respuesta es OK.
+	// Guarda una fila de educación: llama a la API y parchea la fila con response.Data.
 	private persistirEducacionDesdeGrid(data: ScPerfilPuestoEducacion, esNuevo: boolean): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
@@ -6632,8 +6724,24 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							resolve(true);
 							return;
 						}
+						this.cerrarEditorGrid(this.gridEducacion);
 						this.educacionEditando = false;
-						this.cargarEducacion(true);
+						const saved = this.extraerFilaRespuesta(response, payload);
+						const corr = Number(saved.CORR_EDUCACION) || Number(response?.CodeHelper) || 0;
+						const record: ScPerfilPuestoEducacion = {
+							CORR_PERFIL_PUESTO: saved.CORR_PERFIL_PUESTO ?? corrPerfil,
+							CORR_EDUCACION: corr,
+							REQUISITO: saved.REQUISITO ?? payload.REQUISITO ?? '',
+							ESPECIFICACIONES: saved.ESPECIFICACIONES ?? payload.ESPECIFICACIONES ?? '',
+							TIPO_REQUERIDO: (saved.TIPO_REQUERIDO ?? payload.TIPO_REQUERIDO ?? 'SI').toUpperCase(),
+							_clientKey: corr || this.crearClientKey('edu'),
+						};
+						this.educaciones = this.aplicarFilaPorClave(
+							this.educaciones,
+							record,
+							(row) => Number(row.CORR_EDUCACION),
+							esNuevo
+						);
 						resolve(false);
 					},
 					error: (error) => {
@@ -6676,7 +6784,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Guarda una fila de experiencia: llama a la API y recarga la lista si la respuesta es OK.
+	// Guarda una fila de experiencia: llama a la API y parchea la fila con response.Data.
 	private persistirExperienciaDesdeGrid(data: ScPerfilPuestoExperiencia, esNuevo: boolean): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const corrPerfil = Number(this.perfil?.CORR_PERFIL_PUESTO);
@@ -6704,8 +6812,23 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							resolve(true);
 							return;
 						}
+						this.cerrarEditorGrid(this.gridExperiencia);
 						this.experienciaEditando = false;
-						this.cargarExperiencia(true);
+						const saved = this.extraerFilaRespuesta(response, payload);
+						const corr = Number(saved.CORR_EXPERIENCIA) || Number(response?.CodeHelper) || 0;
+						const record: ScPerfilPuestoExperiencia = {
+							CORR_PERFIL_PUESTO: saved.CORR_PERFIL_PUESTO ?? corrPerfil,
+							CORR_EXPERIENCIA: corr,
+							REQUISITO: saved.REQUISITO ?? payload.REQUISITO ?? '',
+							TIPO_REQUERIDO: (saved.TIPO_REQUERIDO ?? payload.TIPO_REQUERIDO ?? 'SI').toUpperCase(),
+							_clientKey: corr || this.crearClientKey('exp'),
+						};
+						this.experiencias = this.aplicarFilaPorClave(
+							this.experiencias,
+							record,
+							(row) => Number(row.CORR_EXPERIENCIA),
+							esNuevo
+						);
 						resolve(false);
 					},
 					error: (error) => {
@@ -6785,9 +6908,33 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							resolve(true);
 							return;
 						}
+						this.cerrarEditorGrid(this.gridCompetenciasTecnicas);
 						this.competenciasTecnicasEditando = false;
 						this.competenciasTecnicasInsertando = false;
-						this.cargarCompetenciasTecnicas(true);
+						const saved = this.extraerFilaRespuesta(response, payload);
+						const corr =
+							Number(saved.CORR_COMPETENCIAS_TECNICAS) ||
+							Number(payload.CORR_COMPETENCIAS_TECNICAS) ||
+							0;
+						const record: ScPerfilPuestoCompetenciasTecnicas = {
+							CORR_PERFIL_PUESTO: saved.CORR_PERFIL_PUESTO ?? corrPerfil,
+							NOMBRE_COMPETENCIAS_TECNICAS:
+								saved.NOMBRE_COMPETENCIAS_TECNICAS ?? payload.NOMBRE_COMPETENCIAS_TECNICAS ?? '',
+							CODIGO_COMPETENCIAS_TECNICAS:
+								saved.CODIGO_COMPETENCIAS_TECNICAS ?? payload.CODIGO_COMPETENCIAS_TECNICAS ?? '',
+							DESCRIPCION: saved.DESCRIPCION ?? payload.DESCRIPCION ?? '',
+							NIVEL_DOMINIO: (saved.NIVEL_DOMINIO ?? payload.NIVEL_DOMINIO ?? 'BASICO').toUpperCase(),
+							CORR_COMPETENCIAS_TECNICAS: corr || null,
+							_esNuevo: false,
+							_clientKey: corr || this.crearClientKey('ct'),
+						};
+						this.competenciasTecnicas = this.aplicarFilaPorClave(
+							this.competenciasTecnicas,
+							record,
+							(row) => Number(row.CORR_COMPETENCIAS_TECNICAS),
+							esNuevo
+						);
+						this.actualizarCompetenciasTecnicasLookupDisponibles();
 						resolve(false);
 					},
 					error: (error) => {
@@ -6868,9 +7015,33 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							resolve(true);
 							return;
 						}
+						this.cerrarEditorGrid(this.gridCompetenciasConductuales);
 						this.competenciasConductualesEditando = false;
 						this.competenciasConductualesInsertando = false;
-						this.cargarCompetenciasConductuales(true);
+						const saved = this.extraerFilaRespuesta(response, payload);
+						const corr =
+							Number(saved.CORR_COMPETENCIAS_CONDUCTUALES) ||
+							Number(payload.CORR_COMPETENCIAS_CONDUCTUALES) ||
+							0;
+						const record: ScPerfilPuestoCompetenciasConductuales = {
+							CORR_PERFIL_PUESTO: saved.CORR_PERFIL_PUESTO ?? corrPerfil,
+							NOMBRE_COMPETENCIAS_CONDUCTUALES:
+								saved.NOMBRE_COMPETENCIAS_CONDUCTUALES ??
+								payload.NOMBRE_COMPETENCIAS_CONDUCTUALES ??
+								'',
+							DESCRIPCION: saved.DESCRIPCION ?? payload.DESCRIPCION ?? '',
+							CORR_COMPETENCIAS_CONDUCTUALES: corr || null,
+							CODIGO_TIPO_PUESTO: saved.CODIGO_TIPO_PUESTO ?? payload.CODIGO_TIPO_PUESTO ?? '',
+							_esNuevo: false,
+							_clientKey: corr || this.crearClientKey('cc'),
+						};
+						this.competenciasConductuales = this.aplicarFilaPorClave(
+							this.competenciasConductuales,
+							record,
+							(row) => Number(row.CORR_COMPETENCIAS_CONDUCTUALES),
+							esNuevo
+						);
+						this.actualizarCompetenciasConductualesLookupDisponibles();
 						resolve(false);
 					},
 					error: (error) => {
@@ -6915,7 +7086,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
-	// Guarda un requerimiento organizacional: llama a la API y recarga la lista.
+	// Guarda un requerimiento organizacional: llama a la API y parchea la fila con response.Data.
 	private persistirRequerimientoOrganizacionalDesdeGrid(
 		data: ScDescriptorPuestoRequerimientoOrganizacional,
 		esNuevo: boolean
@@ -6948,8 +7119,28 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							resolve(true);
 							return;
 						}
+						this.cerrarEditorGrid(this.gridRequerimientosOrganizacionales);
 						this.requerimientosOrganizacionalesEditando = false;
-						this.cargarRequerimientosOrganizacionales(true);
+						this.requerimientosOrganizacionalesInsertando = false;
+						const saved = this.extraerFilaRespuesta(response, payload);
+						const corr =
+							Number(saved.CORR_REQUERIMIENTO_ORGANIZACIONAL) ||
+							Number(payload.CORR_REQUERIMIENTO_ORGANIZACIONAL) ||
+							0;
+						const record: ScDescriptorPuestoRequerimientoOrganizacional = {
+							CORR_DESCRIPTOR_PUESTO: saved.CORR_DESCRIPTOR_PUESTO ?? corrDescriptor,
+							DESCRIPCION: saved.DESCRIPCION ?? payload.DESCRIPCION ?? '',
+							CORR_REQUERIMIENTO_ORGANIZACIONAL: corr || null,
+							_esNuevo: false,
+							_clientKey: corr || this.crearClientKey('ro'),
+						};
+						this.requerimientosOrganizacionales = this.aplicarFilaPorClave(
+							this.requerimientosOrganizacionales,
+							record,
+							(row) => Number(row.CORR_REQUERIMIENTO_ORGANIZACIONAL),
+							esNuevo
+						);
+						this.actualizarRequerimientosOrganizacionalesLookupDisponibles();
 						resolve(false);
 					},
 					error: (error) => {
@@ -7035,14 +7226,28 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							return;
 						}
 
+						this.cerrarEditorGrid(this.gridRiesgosPuesto);
 						this.riesgosPuestoEditando = false;
-						try {
-							this.gridRiesgosPuesto?.instance?.cancelEditData?.();
-						} catch {
-							// El grid puede ya no estar en pantalla; se ignora el error.
-						}
-						this.cargarRiesgosPuesto(true);
-						resolve(true);
+						this.riesgosPuestoInsertando = false;
+						const saved = this.extraerFilaRespuesta(response, payload);
+						const corr =
+							Number(saved.CORR_RIESGO_PUESTO) || Number(payload.CORR_RIESGO_PUESTO) || 0;
+						const record: ScDescriptorPuestoRiesgoPuesto = {
+							CORR_DESCRIPTOR_PUESTO: saved.CORR_DESCRIPTOR_PUESTO ?? corrDescriptor,
+							CORR_RIESGO_PUESTO: corr || null,
+							NOMBRE_RIESGO_PUESTO: saved.NOMBRE_RIESGO_PUESTO ?? payload.NOMBRE_RIESGO_PUESTO ?? '',
+							INFORMACION: saved.INFORMACION ?? payload.INFORMACION ?? '',
+							_esNuevo: false,
+							_clientKey: corr || this.crearClientKey('rp'),
+						};
+						this.riesgosPuesto = this.aplicarFilaPorClave(
+							this.riesgosPuesto,
+							record,
+							(row) => Number(row.CORR_RIESGO_PUESTO),
+							esNuevo
+						);
+						this.actualizarRiesgosPuestoLookupDisponibles();
+						resolve(false);
 					},
 					error: (error) => {
 						this.riesgoPuestoPersistiendo = false;
@@ -7055,7 +7260,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	// Qué hace: elimina un riesgo de puesto desde el grid llamando a la API.
 	// Cómo: valida la llave natural (descriptor y catálogo), llama a service.eliminarRiesgoPuesto
-	// (delete) y, si sale bien, recarga la lista con cargarRiesgosPuesto; resuelve true si hubo error.
+	// (delete) y, si sale bien, quita la fila en memoria; resuelve true si hubo error.
 	private eliminarRiesgoPuestoDesdeGrid(data: ScDescriptorPuestoRiesgoPuesto): Promise<boolean> {
 		const corrDescriptor = this.obtenerCorrDescriptor();
 		const corr = Number(data?.CORR_RIESGO_PUESTO);
@@ -7074,8 +7279,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							resolve(true);
 							return;
 						}
-						this.cargarRiesgosPuesto(true);
-						resolve(true);
+						this.riesgosPuesto = (this.riesgosPuesto || []).filter(
+							(row) => Number(row.CORR_RIESGO_PUESTO) !== corr
+						);
+						this.actualizarRiesgosPuestoLookupDisponibles();
+						resolve(false);
 					},
 					error: (error) => {
 						this.notificarErrorOperacion(error, 'eliminar');
@@ -7131,14 +7339,32 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							return;
 						}
 
+						this.cerrarEditorGrid(this.gridInducciones);
 						this.induccionesEditando = false;
-						try {
-							this.gridInducciones?.instance?.cancelEditData?.();
-						} catch {
-							// El grid puede ya no estar en pantalla; se ignora el error.
-						}
-						this.cargarInduccionesDescriptor(true);
-						resolve(true);
+						this.induccionesInsertando = false;
+						const saved = this.extraerFilaRespuesta(response, payload);
+						const corr = Number(saved.CORR_INDUCCION) || Number(payload.CORR_INDUCCION) || 0;
+						const record: ScDescriptorPuestoInduccion = {
+							CORR_DESCRIPTOR_PUESTO: saved.CORR_DESCRIPTOR_PUESTO ?? corrDescriptor,
+							CORR_INDUCCION: corr || null,
+							NOMBRE_INDUCCION: saved.NOMBRE_INDUCCION ?? payload.NOMBRE_INDUCCION ?? '',
+							TIEMPO_INDUCCION:
+								(saved.TIEMPO_INDUCCION ?? payload.TIEMPO_INDUCCION ?? '').toString().trim() ||
+								null,
+							_esNuevo: false,
+							_clientKey: corr || this.crearClientKey('ind'),
+						};
+						this.induccionesDescriptor = this.colocarFilaEspecialAlFinal(
+							this.aplicarFilaPorClave(
+								this.induccionesDescriptor,
+								record,
+								(row) => Number(row.CORR_INDUCCION),
+								esNuevo
+							),
+							(row) => !!row._esResponsableEntrenamiento
+						);
+						this.actualizarInduccionesLookupDisponibles();
+						resolve(false);
 					},
 					error: (error) => {
 						this.induccionPersistiendo = false;
@@ -7150,7 +7376,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: elimina una inducción del descriptor desde el grid llamando a la API.
-	// Cómo: no permite eliminar la fila de responsable; valida llave, llama delete y recarga.
+	// Cómo: no permite eliminar la fila de responsable; valida llave, llama delete y quita la fila en memoria.
 	private eliminarInduccionDesdeGrid(data: ScDescriptorPuestoInduccion): Promise<boolean> {
 		if (data?._esResponsableEntrenamiento) {
 			return Promise.resolve(true);
@@ -7173,8 +7399,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							resolve(true);
 							return;
 						}
-						this.cargarInduccionesDescriptor(true);
-						resolve(true);
+						this.induccionesDescriptor = (this.induccionesDescriptor || []).filter(
+							(row) =>
+								!!row._esResponsableEntrenamiento || Number(row.CORR_INDUCCION) !== corr
+						);
+						this.actualizarInduccionesLookupDisponibles();
+						resolve(false);
 					},
 					error: (error) => {
 						this.notificarErrorOperacion(error, 'eliminar');
@@ -7232,15 +7462,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						}
 						this.aplicarTextoResponsableEntrenamientoLocal(textoGuardado);
 
+						this.cerrarEditorGrid(this.gridInducciones);
 						this.induccionesEditando = false;
-						try {
-							this.gridInducciones?.instance?.cancelEditData?.();
-						} catch {
-							// El grid puede ya no estar en pantalla; se ignora el error.
-						}
 						this.responsableEntrenamientoPersistiendo = false;
 						this.cdr.detectChanges();
-						resolve(true);
+						resolve(false);
 					},
 					error: (error) => {
 						this.responsableEntrenamientoPersistiendo = false;
@@ -7252,6 +7478,29 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						resolve(true);
 					},
 				});
+		});
+	}
+
+	// Qué hace: actualiza en memoria la fila fija de impacto económico del grid de responsabilidades.
+	// Cómo: recorre responsabilidadesCargo y reescribe solo la fila marcada como impacto.
+	private aplicarImpactoEconomicoLocal(corrImpacto: number | null, informacion: string): void {
+		const rows = this.responsabilidadesCargo ?? [];
+		if (!rows.length) {
+			return;
+		}
+
+		this.responsabilidadesCargo = rows.map((row) => {
+			if (!row._esImpactoEconomico && row._clientKey !== IMPACTO_ECONOMICO_CLIENT_KEY) {
+				return row;
+			}
+			return {
+				...row,
+				NOMBRE_RESPONSABILIDAD: IMPACTO_ECONOMICO_NOMBRE_DESCRIPTOR,
+				INFORMACION: (informacion ?? '').trim(),
+				CORR_IMPACTO_ECONOMICO: corrImpacto,
+				_esImpactoEconomico: true,
+				_clientKey: IMPACTO_ECONOMICO_CLIENT_KEY,
+			};
 		});
 	}
 
@@ -7326,14 +7575,32 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							return;
 						}
 
+						this.cerrarEditorGrid(this.gridResponsabilidadesCargo);
 						this.responsabilidadesCargoEditando = false;
-						try {
-							this.gridResponsabilidadesCargo?.instance?.cancelEditData?.();
-						} catch {
-							// El grid puede ya no estar en pantalla; se ignora el error.
-						}
-						this.cargarResponsabilidadesCargo(true);
-						resolve(true);
+						this.responsabilidadesCargoInsertando = false;
+						const saved = this.extraerFilaRespuesta(response, payload);
+						const corr =
+							Number(saved.CORR_RESPONSABILIDAD) || Number(payload.CORR_RESPONSABILIDAD) || 0;
+						const record: ScDescriptorPuestoResponsabilidadCargo = {
+							CORR_DESCRIPTOR_PUESTO: saved.CORR_DESCRIPTOR_PUESTO ?? corrDescriptor,
+							CORR_RESPONSABILIDAD: corr || null,
+							NOMBRE_RESPONSABILIDAD:
+								saved.NOMBRE_RESPONSABILIDAD ?? payload.NOMBRE_RESPONSABILIDAD ?? '',
+							INFORMACION: saved.INFORMACION ?? payload.INFORMACION ?? '',
+							_esNuevo: false,
+							_clientKey: corr || this.crearClientKey('rc'),
+						};
+						this.responsabilidadesCargo = this.colocarFilaEspecialAlFinal(
+							this.aplicarFilaPorClave(
+								this.responsabilidadesCargo,
+								record,
+								(row) => Number(row.CORR_RESPONSABILIDAD),
+								esNuevo
+							),
+							(row) => !!row._esImpactoEconomico
+						);
+						this.actualizarResponsabilidadesCargoLookupDisponibles();
+						resolve(false);
 					},
 					error: (error) => {
 						this.responsabilidadCargoPersistiendo = false;
@@ -7346,7 +7613,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	// Qué hace: elimina una responsabilidad de cargo desde el grid llamando a la API.
 	// Cómo: no permite eliminar la fila de impacto económico; valida la llave natural (descriptor y
-	// catálogo), llama a service.eliminarResponsabilidadCargo (delete) y, si sale bien, recarga la lista.
+	// catálogo), llama a service.eliminarResponsabilidadCargo (delete) y, si sale bien, quita la fila en memoria.
 	private eliminarResponsabilidadCargoDesdeGrid(
 		data: ScDescriptorPuestoResponsabilidadCargo
 	): Promise<boolean> {
@@ -7371,8 +7638,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							resolve(true);
 							return;
 						}
-						this.cargarResponsabilidadesCargo(true);
-						resolve(true);
+						this.responsabilidadesCargo = (this.responsabilidadesCargo || []).filter(
+							(row) =>
+								!!row._esImpactoEconomico || Number(row.CORR_RESPONSABILIDAD) !== corr
+						);
+						this.actualizarResponsabilidadesCargoLookupDisponibles();
+						resolve(false);
 					},
 					error: (error) => {
 						this.notificarErrorOperacion(error, 'eliminar');
@@ -7410,8 +7681,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						if (!response?.Result) {
 							this.model.CORR_IMPACTO_ECONOMICO = corrAnterior;
 							this.model.DESCRIPCION_IMPACTO_ECONOMICO = descripcionAnterior;
+							this.aplicarImpactoEconomicoLocal(
+								corrAnterior ?? null,
+								(descripcionAnterior ?? '').toString().trim()
+							);
 							this.notificarRespuestaOperacion(response, 'guardar');
-							this.cargarResponsabilidadesCargo(true);
 							resolve(true);
 							return;
 						}
@@ -7425,28 +7699,27 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							this.modelUpdate.CORR_IMPACTO_ECONOMICO = corrImpactoGuardado;
 							this.modelUpdate.DESCRIPCION_IMPACTO_ECONOMICO = descripcionGuardada;
 						}
+						this.aplicarImpactoEconomicoLocal(corrImpactoGuardado, descripcionGuardada);
 
+						this.cerrarEditorGrid(this.gridResponsabilidadesCargo);
 						this.responsabilidadesCargoEditando = false;
-						try {
-							this.gridResponsabilidadesCargo?.instance?.cancelEditData?.();
-						} catch {
-							// El grid puede ya no estar en pantalla; se ignora el error.
-						}
-						this.cargarResponsabilidadesCargo(true);
-						resolve(true);
+						resolve(false);
 					},
 					error: (error) => {
 						this.model.CORR_IMPACTO_ECONOMICO = corrAnterior;
 						this.model.DESCRIPCION_IMPACTO_ECONOMICO = descripcionAnterior;
+						this.aplicarImpactoEconomicoLocal(
+							corrAnterior ?? null,
+							(descripcionAnterior ?? '').toString().trim()
+						);
 						this.notificarErrorOperacion(error, 'guardar');
-						this.cargarResponsabilidadesCargo(true);
 						resolve(true);
 					},
 				});
 		});
 	}
 
-	// Guarda una función clave o secundaria: arma el payload, llama a la API y recarga esa sección.
+	// Guarda una función clave o secundaria: arma el payload, llama a la API y parchea la fila con response.Data.
 	private persistirFuncionDesdeGrid(
 		data: ScDescriptorPuestoFuncion,
 		tipoFuncion: string,
@@ -7472,12 +7745,38 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							return;
 						}
 
-						if (tipoFuncion === TIPO_FUNCION_CLAVE) {
+						const esClave = tipoFuncion === TIPO_FUNCION_CLAVE;
+						this.cerrarEditorGrid(esClave ? this.gridFuncionesClave : this.gridFuncionesSecundarias);
+						if (esClave) {
 							this.funcionesClaveEditando = false;
-							this.cargarFuncionesClave(true);
 						} else {
 							this.funcionesSecundariasEditando = false;
-							this.cargarFuncionesSecundarias(true);
+						}
+						const saved = this.extraerFilaRespuesta(response, payload);
+						const corr = Number(saved.CORR_FUNCION) || Number(response?.CodeHelper) || 0;
+						const record: ScDescriptorPuestoFuncion = {
+							CORR_FUNCION: corr,
+							NOMBRE_FUNCION: saved.NOMBRE_FUNCION ?? payload.NOMBRE_FUNCION ?? '',
+							TIPO_FUNCION: tipoFuncion,
+							CANT_ACTIVIDADES: Number(
+								saved.CANT_ACTIVIDADES ?? (esNuevo ? 0 : data.CANT_ACTIVIDADES ?? 0)
+							),
+							_clientKey: corr || this.crearClientKey(esClave ? 'fc' : 'fs'),
+						};
+						if (esClave) {
+							this.funcionesClave = this.aplicarFilaPorClave(
+								this.funcionesClave,
+								record,
+								(row) => Number(row.CORR_FUNCION),
+								esNuevo
+							);
+						} else {
+							this.funcionesSecundarias = this.aplicarFilaPorClave(
+								this.funcionesSecundarias,
+								record,
+								(row) => Number(row.CORR_FUNCION),
+								esNuevo
+							);
 						}
 						resolve(false);
 					},
@@ -7547,12 +7846,39 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							return;
 						}
 
-						if (tipoRelacion === TIPO_RELACION_INTERNA) {
+						const esInterna = tipoRelacion === TIPO_RELACION_INTERNA;
+						this.cerrarEditorGrid(
+							esInterna ? this.gridRelacionesInternas : this.gridRelacionesExternas
+						);
+						if (esInterna) {
 							this.relacionesInternasEditando = false;
-							this.cargarRelacionesInternas(true);
 						} else {
 							this.relacionesExternasEditando = false;
-							this.cargarRelacionesExternas(true);
+						}
+						const saved = this.extraerFilaRespuesta(response, payload);
+						const corr =
+							Number(saved.CORR_RELACION_LABORAL) || Number(response?.CodeHelper) || 0;
+						const record: ScDescriptorPuestoRelacionLaboral = {
+							CORR_RELACION_LABORAL: corr,
+							TIPO_RELACION: tipoRelacion,
+							PUESTO_AREA: saved.PUESTO_AREA ?? payload.PUESTO_AREA ?? '',
+							MOTIVO_RELACION: saved.MOTIVO_RELACION ?? payload.MOTIVO_RELACION ?? '',
+							_clientKey: corr || this.crearClientKey(esInterna ? 'ri' : 're'),
+						};
+						if (esInterna) {
+							this.relacionesInternas = this.aplicarFilaPorClave(
+								this.relacionesInternas,
+								record,
+								(row) => Number(row.CORR_RELACION_LABORAL),
+								esNuevo
+							);
+						} else {
+							this.relacionesExternas = this.aplicarFilaPorClave(
+								this.relacionesExternas,
+								record,
+								(row) => Number(row.CORR_RELACION_LABORAL),
+								esNuevo
+							);
 						}
 						resolve(false);
 					},
@@ -7618,8 +7944,24 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							resolve(true);
 							return;
 						}
+						this.cerrarEditorGrid(this.gridKpis);
 						this.kpisEditando = false;
-						this.cargarKpis(true);
+						const saved = this.extraerFilaRespuesta(response, payload);
+						const corr = Number(saved.CORR_KPI_FUNCION) || Number(response?.CodeHelper) || 0;
+						const record: ScDescriptorPuestoKpiFuncion = {
+							CORR_KPI_FUNCION: corr,
+							NOMBRE_INDICADOR: saved.NOMBRE_INDICADOR ?? payload.NOMBRE_INDICADOR ?? '',
+							CORR_FRECUENCIA: saved.CORR_FRECUENCIA ?? payload.CORR_FRECUENCIA ?? null,
+							NOMBRE_FRECUENCIA: saved.NOMBRE_FRECUENCIA ?? payload.NOMBRE_FRECUENCIA ?? '',
+							META: saved.META ?? payload.META ?? null,
+							_clientKey: corr || this.crearClientKey('kpi'),
+						};
+						this.kpis = this.aplicarFilaPorClave(
+							this.kpis,
+							record,
+							(row) => Number(row.CORR_KPI_FUNCION),
+							esNuevo
+						);
 						resolve(false);
 					},
 					error: (error) => {
