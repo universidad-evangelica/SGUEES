@@ -252,6 +252,7 @@ export class ScDescriptorPuestoService {
 			{
 				dataField: 'FORMATO',
 				caption: 'Formato',
+				visible: false,
 				width: 132,
 				cssClass: 'descriptor-grid-badge-col',
 				allowHeaderFiltering: false,
