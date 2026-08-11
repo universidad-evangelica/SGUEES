@@ -846,7 +846,7 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 					if (cant <= 0) {
 						this.notifyFx('Todas las unidades ya estan asignadas a este rol.', NotifyType.Warning);
 					} else {
-						this.notifyFx(`Se asignaron ${cant} unidad(es) al rol.`, NotifyType.Success, {
+						this.notifyFx(`Se asignaron ${cant} unidades al rol.`, NotifyType.Success, {
 							raw: true,
 						});
 					}
