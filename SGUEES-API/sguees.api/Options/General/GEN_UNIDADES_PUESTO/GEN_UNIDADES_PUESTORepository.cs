@@ -291,6 +291,48 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: elimina de una vez todos los puestos asignados a la unidad.
+        // Cómo: DELETE parametrizado por empresa y unidad; RowsAffected = eliminados.
+        public async Task<CResult> QuitarTodosPuestosAsync(GEN_UNIDADES_PUESTOTable Data, string vUSER_SISTEMA, string vESTACION)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                const string sql = @"
+                DELETE FROM GEN_UNIDADES_PUESTO
+                WHERE CORR_EMPRESA = @CORR_EMPRESA
+                AND CORR_UNIDAD = @CORR_UNIDAD;";
+
+                await using var conn = new SqlConnection(_connectionString);
+                await conn.OpenAsync();
+                await using var cmd = new SqlCommand(sql, conn);
+                cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = Data.CORR_EMPRESA });
+                cmd.Parameters.Add(new SqlParameter("@CORR_UNIDAD", SqlDbType.Int) { Value = Data.CORR_UNIDAD });
+
+                var rows = await cmd.ExecuteNonQueryAsync();
+
+                objResultado.Data = new { ELIMINADOS = rows };
+                objResultado.Result = true;
+                objResultado.RowsAffected = rows;
+                objResultado.CodeHelper = Data.CORR_UNIDAD;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = string.Empty;
+                objResultado.ErrorSource = string.Empty;
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+
+            return objResultado;
+        }
+
         // Qué hace: arma los parámetros de escritura de la tabla.
         // Cómo: mapea todos los campos de GEN_UNIDADES_PUESTOTable a CParameter.
         private static List<CParameter> BuildWriteParameters(GEN_UNIDADES_PUESTOTable Data)

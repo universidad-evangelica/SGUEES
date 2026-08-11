@@ -114,6 +114,30 @@ namespace SGUEES.Services
             return await _repo.AsignarTodosPuestosAsync(Data, vUSER_SISTEMA, vESTACION);
         }
 
+        // Qué hace: quita de una vez todos los puestos asignados a la unidad.
+        // Cómo: valida empresa y unidad; delega el DELETE masivo en el repositorio.
+        public async Task<CResult> QuitarTodosPuestosAsync(GEN_UNIDADES_PUESTOTable Data, string vUSER_SISTEMA, string vESTACION)
+        {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            if (Data.CORR_UNIDAD <= 0)
+            {
+                return ValidationError("Debe indicar la unidad.");
+            }
+
+            var prepareUnidad = await PrepareFromUnidadAsync(Data);
+            if (prepareUnidad != null)
+            {
+                return prepareUnidad;
+            }
+
+            return await _repo.QuitarTodosPuestosAsync(Data, vUSER_SISTEMA, vESTACION);
+        }
+
         // Qué hace: comprueba que la unidad exista en organigrama y esté activa.
         // Cómo: consulta SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES por empresa y CORR_UNIDAD.
         private async Task<CResult> PrepareFromUnidadAsync(GEN_UNIDADES_PUESTOTable Data)

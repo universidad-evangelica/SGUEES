@@ -71,6 +71,18 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
         }
 
+        [HttpPost("QuitarTodosPuestos")]
+        [Authorize(Policy = "/gen-unidades-puesto|D")]
+        // Qué hace: quita de la unidad todos los puestos asignados en una sola operación.
+        // Cómo: fija CORR_EMPRESA de sesión y llama a QuitarTodosPuestosAsync (DELETE masivo en el repositorio).
+        public async Task<IActionResult> QuitarTodosPuestos(GEN_UNIDADES_PUESTOTable Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+
+            var resultado = await _service.QuitarTodosPuestosAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+        }
+
         [HttpDelete]
         [Authorize(Policy = "/gen-unidades-puesto|D")]
         // Qué hace: elimina una asignación de puesto a una unidad.

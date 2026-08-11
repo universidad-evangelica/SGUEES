@@ -292,7 +292,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 	}
 
 	// Qué hace: guarda altas y bajas según el checkbox del modal.
-	// Cómo: inserta los marcados nuevos y elimina los desmarcados que ya estaban asignados; parchea memoria.
+	// Cómo: todos marcados → API masiva asignar; ninguno marcado → API masiva quitar; parcial → foreach.
 	guardarAsignacionModal(): void {
 		if (this.asignandoPuestosModal) {
 			return;
@@ -305,6 +305,12 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 		}
 
 		const corrUnidad = Number(unidad.CORR_UNIDAD);
+		const lista = this.puestosModal ?? [];
+		if (!lista.length) {
+			this.notifyFx('No hay puestos para asignar.', NotifyType.Warning);
+			return;
+		}
+
 		const asignadosActuales = new Set(
 			(this.asignaciones ?? [])
 				.filter((item) => Number(item.CORR_UNIDAD) === corrUnidad)
@@ -312,18 +318,131 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 				.filter((corr) => corr > 0)
 		);
 
-		const aInsertar = (this.puestosModal ?? []).filter(
+		const aInsertar = lista.filter(
 			(item) => !!item.SELECCION && !asignadosActuales.has(Number(item.CORR_PUESTO))
 		);
-		const aEliminar = (this.puestosModal ?? []).filter(
+		const aEliminar = lista.filter(
 			(item) => !item.SELECCION && asignadosActuales.has(Number(item.CORR_PUESTO))
 		);
+		const todosMarcados = lista.every((item) => !!item.SELECCION);
+		const ningunoMarcado = lista.every((item) => !item.SELECCION);
 
 		if (!aInsertar.length && !aEliminar.length) {
 			this.notifyFx('No hay cambios por guardar.', NotifyType.Warning);
 			return;
 		}
 
+		// Qué hace: si el usuario marcó todos, usa la API masiva (sin foreach de insert).
+		if (todosMarcados) {
+			this.guardarAsignacionModalMasiva(unidad, aInsertar.length);
+			return;
+		}
+
+		// Qué hace: si no marcó ninguno, usa la API masiva de quitar (sin foreach de delete).
+		if (ningunoMarcado) {
+			this.guardarQuitarTodosModalMasiva(unidad, aEliminar.length);
+			return;
+		}
+
+		this.guardarAsignacionModalUnoAUno(unidad, corrUnidad, aInsertar, aEliminar);
+	}
+
+	// Qué hace: asigna todos los puestos faltantes con la API masiva desde el modal.
+	// Cómo: llama asignarTodosPuestos, parchea memoria y cierra el popup.
+	private guardarAsignacionModalMasiva(unidad: GenUnidadesPuestoUnidad, pendientes: number): void {
+		this.asignandoPuestosModal = true;
+		this.loadingVisible = true;
+		this.service
+			.asignarTodosPuestos({ CORR_UNIDAD: Number(unidad.CORR_UNIDAD) })
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.asignandoPuestosModal = false;
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+
+					const cant = Number(response.RowsAffected ?? pendientes ?? 0);
+					if (cant <= 0) {
+						this.notifyFx('Todos los puestos ya estan asignados a esta unidad.', NotifyType.Warning);
+					} else {
+						this.notifyFx(
+							cant === 1
+								? '1 puesto asignado.'
+								: `Se asignaron ${cant} puestos a la unidad.`,
+							NotifyType.Success,
+							{ raw: true }
+						);
+						this.aplicarAsignacionMasivaEnMemoria(unidad, cant);
+					}
+
+					this.popupAsignarVisible = false;
+					this.puestosModal = [];
+					this.unidadSeleccionada = null;
+					this.cdr.detectChanges();
+				},
+				error: (error) => {
+					this.asignandoPuestosModal = false;
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: quita todos los puestos de la unidad con la API masiva desde el modal.
+	// Cómo: llama quitarTodosPuestos, limpia asignaciones en memoria y cierra el popup.
+	private guardarQuitarTodosModalMasiva(unidad: GenUnidadesPuestoUnidad, pendientes: number): void {
+		this.asignandoPuestosModal = true;
+		this.loadingVisible = true;
+		this.service
+			.quitarTodosPuestos({ CORR_UNIDAD: Number(unidad.CORR_UNIDAD) })
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.asignandoPuestosModal = false;
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+
+					const cant = Number(response.RowsAffected ?? pendientes ?? 0);
+					if (cant <= 0) {
+						this.notifyFx('La unidad no tenia puestos asignados.', NotifyType.Warning);
+					} else {
+						this.notifyFx(
+							cant === 1
+								? '1 puesto quitado.'
+								: `Se quitaron ${cant} puestos de la unidad.`,
+							NotifyType.Success,
+							{ raw: true }
+						);
+						this.aplicarQuitarTodosEnMemoria(unidad);
+					}
+
+					this.popupAsignarVisible = false;
+					this.puestosModal = [];
+					this.unidadSeleccionada = null;
+					this.cdr.detectChanges();
+				},
+				error: (error) => {
+					this.asignandoPuestosModal = false;
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: sincroniza altas/bajas del modal uno a uno.
+	// Cómo: inserta los nuevos marcados y elimina los desmarcados; parchea memoria.
+	private guardarAsignacionModalUnoAUno(
+		unidad: GenUnidadesPuestoUnidad,
+		corrUnidad: number,
+		aInsertar: GenPuestoAsignarItem[],
+		aEliminar: GenPuestoAsignarItem[]
+	): void {
 		type OperacionModal = {
 			tipo: 'insert' | 'delete';
 			puesto: GenPuestoAsignarItem;
@@ -627,6 +746,26 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 
 		if (this.popupAsignarVisible && Number(this.unidadSeleccionada?.CORR_UNIDAD) === Number(unidad.CORR_UNIDAD)) {
 			this.puestosModal = this.armarPuestosParaModal(Number(unidad.CORR_UNIDAD));
+		}
+		this.cdr.detectChanges();
+	}
+
+	// Qué hace: limpia en memoria todos los puestos de la unidad tras quitar masivo.
+	private aplicarQuitarTodosEnMemoria(unidad: GenUnidadesPuestoUnidad): void {
+		const corrUnidad = Number(unidad.CORR_UNIDAD);
+		if (!corrUnidad) {
+			return;
+		}
+
+		this.asignaciones = (this.asignaciones ?? []).filter(
+			(item) => Number(item.CORR_UNIDAD) !== corrUnidad
+		);
+		this.models = ((this.models as GenUnidadesPuestoUnidad[]) ?? []).map((item) =>
+			Number(item.CORR_UNIDAD) === corrUnidad ? { ...item, CANT_PUESTOS: 0 } : item
+		);
+
+		if (this.popupAsignarVisible && Number(this.unidadSeleccionada?.CORR_UNIDAD) === corrUnidad) {
+			this.puestosModal = this.armarPuestosParaModal(corrUnidad);
 		}
 		this.cdr.detectChanges();
 	}

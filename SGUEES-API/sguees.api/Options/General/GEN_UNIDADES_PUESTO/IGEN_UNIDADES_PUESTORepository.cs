@@ -1,5 +1,5 @@
 // Qué hace: contrato del repositorio de puestos por unidad.
-// Cómo: extiende IRepository y agrega ExistsAsync para la PK compuesta.
+// Cómo: extiende IRepository y agrega ExistsAsync, AsignarTodos y QuitarTodos.
 using System.Threading.Tasks;
 using eFramework.Core;
 using eFramework.Data;
@@ -10,6 +10,7 @@ namespace SGUEES.Repositories
     public interface IGEN_UNIDADES_PUESTORepository : IRepository<GEN_UNIDADES_PUESTOTable>
     {
         Task<bool> ExistsAsync(int corrEmpresa, int corrUnidad, int corrPuesto);
-        Task<CResult> AsignarTodosPuestosAsync(GEN_UNIDADES_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+        Task<CResult> AsignarTodosPuestosAsync(GEN_UNIDADES_PUESTOTable Data, string vUSER_SISTEMA, string vESTACION);
+        Task<CResult> QuitarTodosPuestosAsync(GEN_UNIDADES_PUESTOTable Data, string vUSER_SISTEMA, string vESTACION);
     }
 }
