@@ -750,7 +750,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 					if (cant <= 0) {
 						this.notifyFx('Todos los puestos ya estan asignados a esta unidad.', NotifyType.Warning);
 					} else {
-						this.notifyFx(`Se asignaron ${cant} puesto(s) a la unidad.`, NotifyType.Success, {
+						this.notifyFx(`Se asignaron ${cant} puestos a la unidad.`, NotifyType.Success, {
 							raw: true,
 						});
 					}
