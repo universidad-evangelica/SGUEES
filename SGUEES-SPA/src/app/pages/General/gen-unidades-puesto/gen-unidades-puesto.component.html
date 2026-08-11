@@ -1,6 +1,6 @@
 <!-- Contenedor principal: puestos por unidad del organigrama. -->
 <div class="sguees-mtto-view gen-unidades-puesto-view">
-	<!-- Toolbar: en browse, Asignar puestos / Asignar todos (seleccionar unidad primero). -->
+	<!-- Toolbar: Asignar puestos (modal) / Asignar todos. -->
 	<app-barra-data-mtto
 		[tituloVentana]="tituloVentana"
 		[showRibbon]="true"
@@ -23,193 +23,12 @@
 		[btn2Width]="250"
 		(btn2Click)="onAsignarTodosHeader()"
 		(consultar)="consultar()"
-		(guardar)="guardar()"
-		(cancelar)="cancelar()"
 	>
 	</app-barra-data-mtto>
 
-	<!-- Detalle de la unidad: tab Puestos (sin modal). -->
-	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
-		<div class="unidades-detalle-header">
-			<span class="unidades-detalle-header__label">Unidad</span>
-			<strong class="unidades-detalle-header__value">
-				{{ unidadSeleccionada?.CORR_UNIDAD }} — {{ unidadSeleccionada?.NOMBRE_UNIDAD || 'Sin nombre' }}
-			</strong>
-		</div>
-
-		<dx-tab-panel class="unidades-detalle-tabs" [animationEnabled]="true" [swipeEnabled]="false">
-			<dxi-item title="Puestos" icon="card">
-				<div class="descriptor-sub-tab-content unidades-detalle-tab-content">
-					<div class="descriptor-funciones-header">
-						<h4 class="descriptor-sub-tab-heading">
-							<span class="dx-icon-card descriptor-funciones-icon" aria-hidden="true"></span>
-							Puestos
-						</h4>
-					</div>
-
-					<!-- Toolbar del detalle: agregar/asignar todos/guardar/cancelar línea. -->
-					<div class="descriptor-deta-toolbar">
-						<dx-button
-							*ngIf="permiteAdd"
-							class="descriptor-deta-toolbar-btn"
-							icon="add"
-							text="Agregar Puesto"
-							type="success"
-							stylingMode="contained"
-							(onClick)="agregarPuesto()"
-							[disabled]="puestosEditando || asignandoTodosPuestos"
-						></dx-button>
-						<!-- Asigna de una vez los puestos del catálogo que la unidad aún no tiene. -->
-						<dx-button
-							*ngIf="permiteAdd"
-							class="descriptor-deta-toolbar-btn"
-							icon="selectall"
-							text="Asignar todos los puestos"
-							type="default"
-							stylingMode="contained"
-							(onClick)="confirmarAsignarTodosPuestos(unidadSeleccionada)"
-							[disabled]="puestosEditando || asignandoTodosPuestos"
-						></dx-button>
-						<dx-button
-							class="descriptor-deta-toolbar-btn"
-							icon="save"
-							text="Guardar"
-							type="success"
-							stylingMode="contained"
-							(onClick)="guardarPuestoEditado()"
-							[disabled]="!puestosEditando"
-						></dx-button>
-						<dx-button
-							class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
-							icon="revert"
-							text="Cancelar"
-							type="danger"
-							stylingMode="contained"
-							(onClick)="cancelarPuestoEditado()"
-							[disabled]="!puestosEditando"
-						></dx-button>
-					</div>
-
-					<!-- Grilla de puestos asignados a la unidad (edición por fila / insert vía API). -->
-					<dx-data-grid
-						#gridPuestos
-						class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid"
-						[dataSource]="puestosDetalle"
-						keyExpr="CORR_PUESTO"
-						[columnAutoWidth]="false"
-						[showBorders]="true"
-						[showColumnLines]="true"
-						[showRowLines]="true"
-						[rowAlternationEnabled]="true"
-						[hoverStateEnabled]="true"
-						[allowColumnResizing]="true"
-						[columnResizingMode]="'widget'"
-						[width]="'100%'"
-						[repaintChangesOnly]="false"
-						[focusedRowEnabled]="true"
-						[focusedRowKey]="puestoFocusedKey"
-						(onFocusedRowChanged)="onPuestoFocusedRowChanged($event)"
-						(onRowClick)="onPuestoRowClick($event)"
-						(onInitNewRow)="puestoInitNewRow($event)"
-						(onEditingStart)="onPuestoEditingStart($event)"
-						(onSaved)="onPuestoSaved($event)"
-						(onEditCanceled)="onPuestoEditCanceled($event)"
-						(onRowInserting)="puestoRowInserting($event)"
-						(onRowRemoving)="puestoRowRemoving($event)"
-						(onRowValidating)="puestoRowValidating($event)"
-					>
-						<dxo-editing
-							[mode]="'row'"
-							[refreshMode]="'reshape'"
-							[allowUpdating]="false"
-							[allowDeleting]="permiteDele"
-							[useIcons]="true"
-							[selectTextOnEditStart]="true"
-							[newRowPosition]="'first'"
-						></dxo-editing>
-						<dxo-paging [enabled]="false"></dxo-paging>
-
-						<dxi-column
-							type="buttons"
-							name="btnAcciones"
-							caption="Options"
-							[width]="104"
-							[minWidth]="104"
-							[fixed]="true"
-							fixedPosition="left"
-							alignment="center"
-							[allowResizing]="false"
-						>
-							<dxi-button
-								name="delete"
-								hint="Eliminar registro"
-								icon="trash"
-								stylingMode="text"
-								cssClass="sguees-grid-action-delete"
-								[visible]="puestoDeleteButtonVisible"
-							></dxi-button>
-							<dxi-button name="save" [visible]="false"></dxi-button>
-							<dxi-button name="cancel" [visible]="false"></dxi-button>
-							<dxi-button name="edit" [visible]="false"></dxi-button>
-						</dxi-column>
-
-						<dxi-column
-							name="codigoPuestoCorr"
-							dataField="CORR_PUESTO"
-							caption="Codigo"
-							[width]="90"
-							[allowEditing]="false"
-							[allowSorting]="true"
-							dataType="number"
-							alignment="left"
-						></dxi-column>
-						<!-- Solo visible al insertar (mismo patrón sc-unidades-tipo-usuario). -->
-						<dxi-column
-							name="lookupPuesto"
-							dataField="CORR_PUESTO"
-							caption="Puesto"
-							[width]="140"
-							[minWidth]="120"
-							[allowSorting]="true"
-							[visible]="puestosInsertando"
-							[calculateDisplayValue]="puestoCatalogDisplay"
-							[setCellValue]="setPuestoCellValue"
-							[editCellTemplate]="'CORR_PUESTOLookup'"
-						>
-							<dxo-lookup
-								[dataSource]="mCORR_PUESTO"
-								valueExpr="CORR_PUESTO"
-								displayExpr="NOMBRE_PUESTO"
-							></dxo-lookup>
-						</dxi-column>
-						<div *dxTemplate="let cellInfo of 'CORR_PUESTOLookup'">
-							<app-data-lookup
-								[model]="mCORR_PUESTO_DISPONIBLES"
-								[value]="cellInfo.value"
-								(valueChange)="onPuestoLookupChanged($event, cellInfo)"
-								[valueExpr]="'CORR_PUESTO'"
-								[displayExpr]="'NOMBRE_PUESTO'"
-								[lookupColumns]="puestosLookupColumns"
-								[selectedRowKeys]="selectedLookUpCORR_PUESTO"
-								[showClearButton]="true"
-								[dropDownWidth]="520"
-							></app-data-lookup>
-						</div>
-						<dxi-column
-							dataField="NOMBRE_PUESTO"
-							caption="Nombre del puesto"
-							[minWidth]="220"
-							[allowEditing]="false"
-							[allowSorting]="true"
-						></dxi-column>
-					</dx-data-grid>
-				</div>
-			</dxi-item>
-		</dx-tab-panel>
-	</div>
-
 	<!-- Grilla global de unidades: seleccionar fila y usar los botones del ribbon. -->
 	<app-data-grid-mtto
+		#dataGrid
 		[isBrowse]="isBrowse()"
 		[models]="models"
 		[columns]="columns"
@@ -238,6 +57,112 @@
 	>
 	</app-data-grid-mtto>
 </div>
+
+<!-- Modal: elegir puestos a asignar a la unidad (checkbox + Todos / Ninguno / Guardar). -->
+<dx-popup
+	[(visible)]="popupAsignarVisible"
+	[showTitle]="true"
+	[title]="popupAsignarTitulo"
+	[width]="780"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[maxHeight]="'calc(100vh - 48px)'"
+	[showCloseButton]="true"
+	[dragEnabled]="false"
+	[wrapperAttr]="{ class: 'unidades-puesto-asignar-popup' }"
+	(onHiding)="cerrarPopupAsignar()"
+>
+	<!-- Toolbar de selección masiva y guardado. -->
+	<div class="unidades-puesto-popup-toolbar">
+		<dx-button
+			icon="check"
+			text="Todos"
+			type="success"
+			stylingMode="contained"
+			(onClick)="selectTodos()"
+			[disabled]="asignandoPuestosModal || !puestosModal.length"
+		></dx-button>
+		<dx-button
+			icon="close"
+			text="Ninguno"
+			type="danger"
+			stylingMode="contained"
+			(onClick)="selectNinguno()"
+			[disabled]="asignandoPuestosModal || !puestosModal.length"
+		></dx-button>
+		<dx-button
+			icon="save"
+			text="Guardar"
+			type="default"
+			stylingMode="contained"
+			(onClick)="guardarAsignacionModal()"
+			[disabled]="asignandoPuestosModal || !puestosModal.length"
+		></dx-button>
+	</div>
+
+	<!-- Grid del modal: altura por contenido (sin hueco ni scroll vacío). -->
+	<dx-data-grid
+		#gridAsignarPuestos
+		class="theme-dependent sguees-data-grid-mtto unidades-puesto-popup-grid"
+		[dataSource]="puestosModal"
+		keyExpr="CORR_PUESTO"
+		[columnAutoWidth]="false"
+		[showBorders]="true"
+		[showColumnLines]="true"
+		[showRowLines]="true"
+		[rowAlternationEnabled]="true"
+		[hoverStateEnabled]="true"
+		[allowColumnResizing]="true"
+		[columnResizingMode]="'widget'"
+		[width]="'100%'"
+		[repaintChangesOnly]="false"
+	>
+		<dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+		<dxo-pager
+			[visible]="true"
+			[showPageSizeSelector]="true"
+			[allowedPageSizes]="[5, 10, 25, 50]"
+			[showInfo]="true"
+		></dxo-pager>
+		<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+		<dxo-header-filter [visible]="true"></dxo-header-filter>
+		<dxo-scrolling [mode]="'standard'"></dxo-scrolling>
+		<dxo-load-panel [enabled]="false"></dxo-load-panel>
+		<dxo-editing
+			[mode]="'cell'"
+			[allowUpdating]="true"
+			[allowAdding]="false"
+			[allowDeleting]="false"
+			[useIcons]="false"
+		></dxo-editing>
+
+		<dxi-column
+			dataField="SELECCION"
+			caption=""
+			[width]="70"
+			dataType="boolean"
+			[allowSorting]="false"
+			[allowFiltering]="false"
+			[allowHeaderFiltering]="false"
+			[allowEditing]="true"
+			alignment="center"
+		></dxi-column>
+		<dxi-column
+			dataField="CORR_PUESTO"
+			caption="Codigo"
+			[width]="100"
+			dataType="number"
+			alignment="left"
+			[allowEditing]="false"
+		></dxi-column>
+		<dxi-column
+			dataField="NOMBRE_PUESTO"
+			caption="Puesto"
+			[minWidth]="220"
+			[allowEditing]="false"
+		></dxi-column>
+	</dx-data-grid>
+</dx-popup>
 
 <!-- Panel de carga durante operaciones asíncronas. -->
 <dx-load-panel

@@ -1,113 +1,46 @@
-// Qué hace: estilos locales de puestos por unidad.
-// Cómo: botón Asignar puesto, detalle descriptor (toolbar/grid) — mismo diseño sc-unidades-tipo-usuario.
+// Qué hace: estilos locales de puestos por unidad (modal de asignación).
+// Cómo: toolbar Todos/Ninguno/Guardar; alinea celdas del grid del popup (sin columna fixed).
 
-:host ::ng-deep .descriptor-actividades-trigger {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	padding: 7px 12px;
-	border: none;
-	border-radius: 8px;
-	background: #2563eb;
-	color: #fff;
-	font-weight: 600;
-	cursor: pointer;
-	white-space: nowrap;
-}
-
-:host ::ng-deep .descriptor-actividades-trigger:disabled {
-	opacity: 0.55;
-	cursor: not-allowed;
-}
-
-:host ::ng-deep .descriptor-actividades-badge {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	min-width: 22px;
-	height: 22px;
-	padding: 0 6px;
-	border-radius: 999px;
-	background: rgba(255, 255, 255, 0.2);
-	font-size: 12px;
-	font-weight: 700;
-}
-
-.unidades-detalle-header {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: baseline;
-	gap: 8px 14px;
-	margin-bottom: 14px;
-}
-
-.unidades-detalle-header__label {
-	opacity: 0.75;
-	font-size: 13px;
-	text-transform: uppercase;
-	letter-spacing: 0.04em;
-}
-
-.unidades-detalle-header__value {
-	font-size: 16px;
-}
-
-.unidades-detalle-tab-content {
-	display: flex;
-	flex-direction: column;
-	gap: 14px;
-}
-
-.descriptor-sub-tab-content {
-	padding: 12px 4px 4px;
-	min-width: 0;
-}
-
-.descriptor-funciones-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	margin-bottom: 12px;
-}
-
-.descriptor-sub-tab-heading {
-	margin: 0 0 12px;
-	font-size: 1rem;
-	font-weight: 600;
-}
-
-.descriptor-funciones-icon {
-	margin-right: 8px;
-	font-size: 1rem;
-}
-
-.descriptor-deta-toolbar {
+.unidades-puesto-popup-toolbar {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 10px;
-	margin-bottom: 14px;
-	padding: 10px 12px;
-	background: var(--sguees-surface-subtle, color-mix(in srgb, var(--base-text-color) 6%, transparent));
-	border: 1px solid var(--border-color, color-mix(in srgb, var(--base-text-color) 12%, transparent));
-	border-radius: var(--sguees-radius-md, 10px);
+	margin-bottom: 12px;
 }
 
-:host ::ng-deep .descriptor-deta-toolbar-btn .dx-button {
-	min-width: 150px;
-	min-height: 40px;
-	padding-inline: 16px;
-	font-size: 14px;
+:host ::ng-deep .unidades-puesto-popup-toolbar .dx-button {
+	min-width: 120px;
+	min-height: 36px;
 	font-weight: 600;
 }
 
-:host ::ng-deep .descriptor-deta-toolbar-btn--cancel .dx-button {
-	min-width: 140px;
+/* El dx-popup se ancla al body; altura por contenido (sin forzar scroll interno vacío). */
+::ng-deep .unidades-puesto-asignar-popup .dx-popup-content {
+	box-sizing: border-box;
+	overflow: visible;
+	padding-bottom: 8px;
 }
 
-:host ::ng-deep .descriptor-deta-datagrid {
-	.dx-link-save,
-	.dx-link-cancel {
-		display: none !important;
+/* Qué hace: evita descuadre visual entre checkbox y columnas de texto.
+   Cómo: centra celdas en vertical y quita flex forzado del estilo enterprise. */
+::ng-deep .unidades-puesto-asignar-popup .unidades-puesto-popup-grid {
+	flex: none;
+	min-height: auto;
+	width: 100%;
+
+	.dx-datagrid-headers .dx-header-row > td,
+	.dx-datagrid-filter-row > td,
+	.dx-datagrid-rowsview .dx-data-row > td {
+		vertical-align: middle;
+	}
+
+	.dx-datagrid-rowsview .dx-data-row > td {
+		padding-top: 8px;
+		padding-bottom: 8px;
+	}
+
+	.dx-checkbox {
+		margin: 0 auto;
 	}
 }
