@@ -5,7 +5,7 @@ import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
-import { ScUnidadesTipoUsuario, ScUnidadesTipoUsuarioRol } from './models/sc-unidades-tipo-usuario';
+import { ScUnidadesTipoUsuario } from './models/sc-unidades-tipo-usuario';
 import { ScUnidadesTipoUsuarioRepository } from './sc-unidades-tipo-usuario.repository';
 
 @Injectable({ providedIn: 'root' })
@@ -65,12 +65,17 @@ export class ScUnidadesTipoUsuarioService {
 	}
 
 	// Qué hace: columnas de la grilla global de roles (mismo patrón mtto).
-	// Cómo: arma Codigo, Nombre del rol y la celda Asignar unidades (solo si canAsignar/permiteAdd).
-	getColumns(
-		onAsignar: (rol: ScUnidadesTipoUsuarioRol) => void,
-		canAsignar: () => boolean = () => true
-	): any[] {
+	// Cómo: arma Codigo, Nombre del rol y el contador; oculta Options (acciones van en el ribbon).
+	getColumns(): any[] {
 		return [
+			{
+				name: 'btnAcciones',
+				type: 'buttons',
+				visible: false,
+				allowFiltering: false,
+				allowSorting: false,
+				buttons: [],
+			},
 			{
 				dataField: 'TIPO_USUARIO',
 				caption: 'Codigo',
@@ -80,39 +85,12 @@ export class ScUnidadesTipoUsuarioService {
 			},
 			{ dataField: 'NOMBRE_TIPO_USUARIO', caption: 'Rol / Tipo de usuario', width: 320 },
 			{
+				dataField: 'CANT_UNIDADES',
 				caption: 'Unidades',
-				width: 220,
-				minWidth: 200,
-				allowSorting: false,
-				allowFiltering: false,
-				cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
-					cellElement.innerHTML = '';
-					const cant = String(cellInfo?.data?.CANT_UNIDADES ?? 0);
-					// Sin permiso de agregar (C): solo muestra el contador, sin botón.
-					if (!canAsignar()) {
-						const badge = document.createElement('span');
-						badge.className = 'descriptor-actividades-badge';
-						badge.textContent = cant;
-						cellElement.appendChild(badge);
-						return;
-					}
-					const button = document.createElement('button');
-					button.type = 'button';
-					button.className = 'descriptor-actividades-trigger';
-					const label = document.createElement('span');
-					label.textContent = 'Asignar unidades';
-					const badge = document.createElement('span');
-					badge.className = 'descriptor-actividades-badge';
-					badge.textContent = cant;
-					button.appendChild(label);
-					button.appendChild(badge);
-					button.addEventListener('click', (ev) => {
-						ev.preventDefault();
-						ev.stopPropagation();
-						onAsignar(cellInfo?.data);
-					});
-					cellElement.appendChild(button);
-				},
+				width: 120,
+				dataType: 'number',
+				alignment: 'center',
+				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
 		];
 	}

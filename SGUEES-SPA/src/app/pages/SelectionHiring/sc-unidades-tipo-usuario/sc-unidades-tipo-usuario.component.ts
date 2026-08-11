@@ -47,6 +47,7 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 
 	mCORR_UNIDAD: ScUnidadLookupItem[] = [];
 	mCORR_UNIDAD_DISPONIBLES: ScUnidadLookupItem[] = [];
+	asignandoTodasUnidades = false;
 
 	readonly unidadesLookupColumns = [
 		{ dataField: 'CORR_UNIDAD', caption: 'Corr.', width: 80 },
@@ -66,11 +67,20 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 		super(appInfoService, router);
 		this.unidadDeleteButtonVisible = this.unidadDeleteButtonVisible.bind(this);
 		this.selectedLookUpCORR_UNIDAD = this.selectedLookUpCORR_UNIDAD.bind(this);
-		this.columns = this.service.getColumns(
-			(rol) => this.abrirAsignarUnidades(rol),
-			() => this.permiteAdd
-		);
+		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
+	}
+
+	// Qué hace: texto del botón Asignar unidades en el ribbon (solo browse con permiso C).
+	// Cómo: si no es browse o no hay permiso, devuelve vacío para ocultar btn1.
+	get textoBtnAsignarUnidades(): string {
+		return this.isBrowse() && this.permiteAdd ? 'Asignar unidades' : '';
+	}
+
+	// Qué hace: texto del botón Asignar todas en el ribbon (solo browse con permiso C).
+	// Cómo: si no es browse o no hay permiso, devuelve vacío para ocultar btn2.
+	get textoBtnAsignarTodas(): string {
+		return this.isBrowse() && this.permiteAdd ? 'Asignar todas las unidades' : '';
 	}
 
 	// Qué hace: entrega el grid de roles al flujo base de CBaseComponent.
@@ -233,7 +243,7 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 
 	// Qué hace: carga el catálogo de unidades del organigrama para el lookup.
 	// Cómo: lookup GetCORR_UNIDAD vía UrlGENERALAPI; filtra inactivas y actualiza las disponibles.
-	getCORR_UNIDAD(): void {
+	getCORR_UNIDAD(onLoaded?: () => void): void {
 		this.appInfoService
 			.getLookUp(
 				'SC_UNIDADES_TIPO_USUARIO',
@@ -248,6 +258,7 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 					if (!response?.Result || !Array.isArray(response.Data)) {
 						this.mCORR_UNIDAD = [];
 						this.mCORR_UNIDAD_DISPONIBLES = [];
+						onLoaded?.();
 						return;
 					}
 
@@ -260,11 +271,13 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 							ACTIVO: item.ACTIVO !== false,
 						}));
 					this.actualizarUnidadesLookupDisponibles();
+					onLoaded?.();
 				},
 				error: (error) => {
 					this.mCORR_UNIDAD = [];
 					this.mCORR_UNIDAD_DISPONIBLES = [];
 					this.notifyApiError(error);
+					onLoaded?.();
 				},
 			});
 	}
@@ -308,6 +321,28 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 			});
 	}
 
+	// Qué hace: abre el detalle de unidades del rol seleccionado en la grilla.
+	// Cómo: toma el rol del browse; si no hay fila, avisa y no abre.
+	onAsignarUnidadesHeader(): void {
+		const rol = this.obtenerRolSeleccionadoBrowse();
+		if (!rol) {
+			this.notifyFx('Debe seleccionar un rol.', NotifyType.Warning);
+			return;
+		}
+		this.abrirAsignarUnidades(rol);
+	}
+
+	// Qué hace: asigna todas las unidades al rol seleccionado en la grilla.
+	// Cómo: toma el rol del browse; si no hay fila, avisa; si hay, confirma y asigna.
+	onAsignarTodasHeader(): void {
+		const rol = this.obtenerRolSeleccionadoBrowse();
+		if (!rol) {
+			this.notifyFx('Debe seleccionar un rol.', NotifyType.Warning);
+			return;
+		}
+		this.confirmarAsignarTodasUnidades(rol);
+	}
+
 	// Qué hace: abre el detalle del rol (modo form) con el tab Unidades.
 	// Cómo: exige permiso de agregar (C); fija rolSeleccionado/model, limpia selección, pasa a Update y carga unidades.
 	abrirAsignarUnidades(rol: ScUnidadesTipoUsuarioRol): void {
@@ -323,6 +358,30 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 		this.AsignaStatus(UpdateType.Update);
 		this.subTituloVentana = `Unidades - ${this.rolSeleccionado.NOMBRE_TIPO_USUARIO || 'Rol'}`;
 		this.cargarUnidadesDetalle();
+	}
+
+	// Qué hace: pide confirmación para asignar todas las unidades del organigrama a un rol.
+	// Cómo: exige permiso C y rol válido; si hay línea en edición avisa; confirmaAccion y ejecuta la carga masiva.
+	confirmarAsignarTodasUnidades(rol?: ScUnidadesTipoUsuarioRol | null): void {
+		if (!this.permiteAdd || this.asignandoTodasUnidades) {
+			return;
+		}
+		const destino = rol ?? this.rolSeleccionado;
+		if (!destino?.TIPO_USUARIO) {
+			this.notifyFx('Debe indicar el rol.', NotifyType.Warning);
+			return;
+		}
+		if (this.unidadesEditando) {
+			this.notifyFx('Cancele o guarde la linea en edicion antes de asignar todas las unidades.', NotifyType.Warning);
+			return;
+		}
+
+		const nombre = (destino.NOMBRE_TIPO_USUARIO ?? '').trim() || 'el rol seleccionado';
+		this.confirmaAccion(
+			'Asignar todas las unidades',
+			`¿Desea asignar todas las unidades del organigrama a ${nombre}?`,
+			() => this.ejecutarAsignarTodasUnidades(destino)
+		);
 	}
 
 	// Qué hace: acción Guardar de la barra superior del detalle.
@@ -754,10 +813,161 @@ export class ScUnidadesTipoUsuarioComponent extends CBaseComponent implements On
 		});
 	}
 
+	// Qué hace: obtiene el rol marcado en la grilla browse.
+	// Cómo: usa model.TIPO_USUARIO cargado por focusedRowChanged; si falta, retorna null.
+	private obtenerRolSeleccionadoBrowse(): ScUnidadesTipoUsuarioRol | null {
+		const rol = this.model as ScUnidadesTipoUsuarioRol;
+		if (!rol?.TIPO_USUARIO) {
+			return null;
+		}
+		return rol;
+	}
+
 	// Qué hace: genera una key temporal para filas nuevas del grid.
 	// Cómo: incrementa clientKeySeq y combina con timestamp.
 	private nextClientKey(): string {
 		this.clientKeySeq += 1;
 		return `u-new-${Date.now()}-${this.clientKeySeq}`;
+	}
+
+	// Qué hace: asigna al rol todas las unidades activas que aún no tenga.
+	// Cómo: asegura el catálogo, consulta asignaciones actuales e inserta en serie las pendientes.
+	private ejecutarAsignarTodasUnidades(rol: ScUnidadesTipoUsuarioRol): void {
+		const continuar = (): void => {
+			const catalogo = (this.mCORR_UNIDAD ?? []).filter(
+				(item) => item.ACTIVO !== false && Number(item.CORR_UNIDAD) > 0
+			);
+			if (!catalogo.length) {
+				this.asignandoTodasUnidades = false;
+				this.notifyFx('No hay unidades activas en el organigrama.', NotifyType.Warning);
+				return;
+			}
+
+			this.asignandoTodasUnidades = true;
+			this.loadingVisible = true;
+			this.service
+				.getAll(Number(rol.TIPO_USUARIO))
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (!response?.Result) {
+							this.asignandoTodasUnidades = false;
+							this.loadingVisible = false;
+							this.notifyApiResponse(response);
+							return;
+						}
+
+						const asignadas = new Set(
+							(response.Data ?? [])
+								.map((item: ScUnidadesTipoUsuario) => Number(item.CORR_UNIDAD))
+								.filter((corr: number) => corr > 0)
+						);
+						const pendientes = catalogo.filter(
+							(item) => !asignadas.has(Number(item.CORR_UNIDAD))
+						);
+						if (!pendientes.length) {
+							this.asignandoTodasUnidades = false;
+							this.loadingVisible = false;
+							this.notifyFx('Todas las unidades ya estan asignadas a este rol.', NotifyType.Warning);
+							return;
+						}
+
+						this.procesarAsignacionMasiva(rol, pendientes, 0, 0);
+					},
+					error: (error) => {
+						this.asignandoTodasUnidades = false;
+						this.loadingVisible = false;
+						this.notifyApiError(error);
+					},
+				});
+		};
+
+		if (this.mCORR_UNIDAD?.length) {
+			continuar();
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.getCORR_UNIDAD(() => {
+			this.loadingVisible = false;
+			continuar();
+		});
+	}
+
+	// Qué hace: inserta una a una las unidades pendientes del rol.
+	// Cómo: llama insert del servicio; si es duplicado (2627) omite y sigue; al terminar refresca.
+	private procesarAsignacionMasiva(
+		rol: ScUnidadesTipoUsuarioRol,
+		unidades: ScUnidadLookupItem[],
+		index: number,
+		omitidas: number
+	): void {
+		if (index >= unidades.length) {
+			this.asignandoTodasUnidades = false;
+			this.loadingVisible = false;
+			const asignadas = unidades.length - omitidas;
+			if (omitidas > 0) {
+				this.notifyFx(
+					`Se asignaron ${asignadas} unidad(es). ${omitidas} omitida(s) porque ya existian.`,
+					NotifyType.Warning
+				);
+			} else {
+				this.notifyFx(`Se asignaron ${asignadas} unidad(es) al rol.`, NotifyType.Success, {
+					raw: true,
+				});
+			}
+			this.refrescarTrasAsignacionMasiva(rol);
+			return;
+		}
+
+		const unidad = unidades[index];
+		const data: ScUnidadesTipoUsuario = {
+			CORR_EMPRESA: 0,
+			CORR_UNIDAD: Number(unidad.CORR_UNIDAD),
+			CODIGO_UNIDAD: unidad.CODIGO_UNIDAD ?? '',
+			NOMBRE_UNIDAD: unidad.NOMBRE_UNIDAD ?? '',
+			TIPO_USUARIO: Number(rol.TIPO_USUARIO),
+			ACTIVO: true,
+		};
+
+		this.service
+			.insert(data)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result) {
+						this.procesarAsignacionMasiva(rol, unidades, index + 1, omitidas);
+						return;
+					}
+					if (Number(response?.ErrorCode) === 2627) {
+						this.procesarAsignacionMasiva(rol, unidades, index + 1, omitidas + 1);
+						return;
+					}
+
+					this.asignandoTodasUnidades = false;
+					this.loadingVisible = false;
+					this.notifyApiResponse(response);
+					this.refrescarTrasAsignacionMasiva(rol);
+				},
+				error: (error) => {
+					this.asignandoTodasUnidades = false;
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+					this.refrescarTrasAsignacionMasiva(rol);
+				},
+			});
+	}
+
+	// Qué hace: refresca el detalle o la grilla de roles tras la asignación masiva.
+	// Cómo: si el detalle abierto es el mismo rol recarga unidades; si no, recarga asignaciones del browse.
+	private refrescarTrasAsignacionMasiva(rol: ScUnidadesTipoUsuarioRol): void {
+		if (
+			!this.isBrowse() &&
+			Number(this.rolSeleccionado?.TIPO_USUARIO) === Number(rol.TIPO_USUARIO)
+		) {
+			this.cargarUnidadesDetalle();
+			return;
+		}
+		this.consultarAsignaciones();
 	}
 }

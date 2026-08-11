@@ -45,6 +45,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 
 	mCORR_PUESTO: GenPuestoLookupItem[] = [];
 	mCORR_PUESTO_DISPONIBLES: GenPuestoLookupItem[] = [];
+	asignandoTodosPuestos = false;
 
 	readonly puestosLookupColumns = [
 		{ dataField: 'CORR_PUESTO', caption: 'Corr.', width: 80 },
@@ -63,11 +64,20 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 		super(appInfoService, router);
 		this.puestoDeleteButtonVisible = this.puestoDeleteButtonVisible.bind(this);
 		this.selectedLookUpCORR_PUESTO = this.selectedLookUpCORR_PUESTO.bind(this);
-		this.columns = this.service.getColumns(
-			(unidad) => this.abrirAsignarPuestos(unidad),
-			() => this.permiteAdd
-		);
+		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
+	}
+
+	// Qué hace: texto del botón Asignar puestos en el ribbon (solo browse con permiso C).
+	// Cómo: si no es browse o no hay permiso, devuelve vacío para ocultar btn1.
+	get textoBtnAsignarPuestos(): string {
+		return this.isBrowse() && this.permiteAdd ? 'Asignar puestos' : '';
+	}
+
+	// Qué hace: texto del botón Asignar todos en el ribbon (solo browse con permiso C).
+	// Cómo: si no es browse o no hay permiso, devuelve vacío para ocultar btn2.
+	get textoBtnAsignarTodos(): string {
+		return this.isBrowse() && this.permiteAdd ? 'Asignar todos los puestos' : '';
 	}
 
 	// Qué hace: entrega el grid de unidades al flujo base de CBaseComponent.
@@ -169,7 +179,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 
 	// Qué hace: carga el catálogo de puestos para el lookup del detalle.
 	// Cómo: lookup GetCORR_PUESTO vía UrlTALENTOHUMANONAPI; filtra inactivos y actualiza los disponibles.
-	getCORR_PUESTO(): void {
+	getCORR_PUESTO(onLoaded?: () => void): void {
 		this.appInfoService
 			.getLookUp(
 				'GEN_UNIDADES_PUESTO',
@@ -184,6 +194,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 					if (!response?.Result || !Array.isArray(response.Data)) {
 						this.mCORR_PUESTO = [];
 						this.mCORR_PUESTO_DISPONIBLES = [];
+						onLoaded?.();
 						return;
 					}
 
@@ -196,11 +207,13 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 							ESTADO_PUESTO: item.ESTADO_PUESTO !== false,
 						}));
 					this.actualizarPuestosLookupDisponibles();
+					onLoaded?.();
 				},
 				error: (error) => {
 					this.mCORR_PUESTO = [];
 					this.mCORR_PUESTO_DISPONIBLES = [];
 					this.notifyApiError(error);
+					onLoaded?.();
 				},
 			});
 	}
@@ -243,6 +256,28 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 			});
 	}
 
+	// Qué hace: abre el detalle de puestos de la unidad seleccionada en la grilla.
+	// Cómo: toma la unidad del browse; si no hay fila, avisa y no abre.
+	onAsignarPuestosHeader(): void {
+		const unidad = this.obtenerUnidadSeleccionadaBrowse();
+		if (!unidad) {
+			this.notifyFx('Debe seleccionar una unidad.', NotifyType.Warning);
+			return;
+		}
+		this.abrirAsignarPuestos(unidad);
+	}
+
+	// Qué hace: asigna todos los puestos a la unidad seleccionada en la grilla.
+	// Cómo: toma la unidad del browse; si no hay fila, avisa; si hay, confirma y asigna.
+	onAsignarTodosHeader(): void {
+		const unidad = this.obtenerUnidadSeleccionadaBrowse();
+		if (!unidad) {
+			this.notifyFx('Debe seleccionar una unidad.', NotifyType.Warning);
+			return;
+		}
+		this.confirmarAsignarTodosPuestos(unidad);
+	}
+
 	// Qué hace: abre el detalle de la unidad (modo form) con el tab Puestos.
 	// Cómo: exige permiso de agregar (C); fija unidadSeleccionada/model, limpia selección, pasa a Update y carga puestos.
 	abrirAsignarPuestos(unidad: GenUnidadesPuestoUnidad): void {
@@ -258,6 +293,30 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 		this.AsignaStatus(UpdateType.Update);
 		this.subTituloVentana = `Puestos - ${this.unidadSeleccionada.NOMBRE_UNIDAD || 'Unidad'}`;
 		this.cargarPuestosDetalle();
+	}
+
+	// Qué hace: pide confirmación para asignar todos los puestos del catálogo a una unidad.
+	// Cómo: exige permiso C y unidad válida; si hay línea en edición avisa; confirmaAccion y ejecuta la carga masiva.
+	confirmarAsignarTodosPuestos(unidad?: GenUnidadesPuestoUnidad | null): void {
+		if (!this.permiteAdd || this.asignandoTodosPuestos) {
+			return;
+		}
+		const destino = unidad ?? this.unidadSeleccionada;
+		if (!destino?.CORR_UNIDAD) {
+			this.notifyFx('Debe indicar la unidad.', NotifyType.Warning);
+			return;
+		}
+		if (this.puestosEditando) {
+			this.notifyFx('Cancele o guarde la linea en edicion antes de asignar todos los puestos.', NotifyType.Warning);
+			return;
+		}
+
+		const nombre = (destino.NOMBRE_UNIDAD ?? '').trim() || 'la unidad seleccionada';
+		this.confirmaAccion(
+			'Asignar todos los puestos',
+			`¿Desea asignar todos los puestos del catalogo a ${nombre}?`,
+			() => this.ejecutarAsignarTodosPuestos(destino)
+		);
 	}
 
 	// Qué hace: acción Guardar de la barra superior del detalle.
@@ -658,9 +717,161 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 		});
 	}
 
+	// Qué hace: obtiene la unidad marcada en la grilla browse.
+	// Cómo: usa model.CORR_UNIDAD cargado por focusedRowChanged; si falta, retorna null.
+	private obtenerUnidadSeleccionadaBrowse(): GenUnidadesPuestoUnidad | null {
+		const unidad = this.model as GenUnidadesPuestoUnidad;
+		if (!unidad?.CORR_UNIDAD) {
+			return null;
+		}
+		return unidad;
+	}
+
 	// Qué hace: genera una key temporal para filas nuevas del grid.
 	private nextClientKey(): string {
 		this.clientKeySeq += 1;
 		return `tmp-${Date.now()}-${this.clientKeySeq}`;
+	}
+
+	// Qué hace: asigna a la unidad todos los puestos activos que aún no tenga.
+	// Cómo: asegura el catálogo, consulta asignaciones actuales e inserta en serie los pendientes.
+	private ejecutarAsignarTodosPuestos(unidad: GenUnidadesPuestoUnidad): void {
+		const continuar = (): void => {
+			const catalogo = (this.mCORR_PUESTO ?? []).filter(
+				(item) => item.ESTADO_PUESTO !== false && Number(item.CORR_PUESTO) > 0
+			);
+			if (!catalogo.length) {
+				this.asignandoTodosPuestos = false;
+				this.notifyFx('No hay puestos activos en el catalogo.', NotifyType.Warning);
+				return;
+			}
+
+			this.asignandoTodosPuestos = true;
+			this.loadingVisible = true;
+			this.service
+				.getAll(Number(unidad.CORR_UNIDAD))
+				.pipe(take(1))
+				.subscribe({
+					next: (response: any) => {
+						if (!response?.Result) {
+							this.asignandoTodosPuestos = false;
+							this.loadingVisible = false;
+							this.notifyApiResponse(response);
+							return;
+						}
+
+						const asignados = new Set(
+							(response.Data ?? [])
+								.map((item: GenUnidadesPuesto) => Number(item.CORR_PUESTO))
+								.filter((corr: number) => corr > 0)
+						);
+						const pendientes = catalogo.filter(
+							(item) => !asignados.has(Number(item.CORR_PUESTO))
+						);
+						if (!pendientes.length) {
+							this.asignandoTodosPuestos = false;
+							this.loadingVisible = false;
+							this.notifyFx('Todos los puestos ya estan asignados a esta unidad.', NotifyType.Warning);
+							return;
+						}
+
+						this.procesarAsignacionMasiva(unidad, pendientes, 0, 0);
+					},
+					error: (error) => {
+						this.asignandoTodosPuestos = false;
+						this.loadingVisible = false;
+						this.notifyApiError(error);
+					},
+				});
+		};
+
+		if (this.mCORR_PUESTO?.length) {
+			continuar();
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.getCORR_PUESTO(() => {
+			this.loadingVisible = false;
+			continuar();
+		});
+	}
+
+	// Qué hace: inserta uno a uno los puestos pendientes de la unidad.
+	// Cómo: llama insert del servicio; si es duplicado (2627) omite y sigue; al terminar refresca.
+	private procesarAsignacionMasiva(
+		unidad: GenUnidadesPuestoUnidad,
+		puestos: GenPuestoLookupItem[],
+		index: number,
+		omitidos: number
+	): void {
+		if (index >= puestos.length) {
+			this.asignandoTodosPuestos = false;
+			this.loadingVisible = false;
+			const asignados = puestos.length - omitidos;
+			if (omitidos > 0) {
+				this.notifyFx(
+					`Se asignaron ${asignados} puesto(s). ${omitidos} omitido(s) porque ya existian.`,
+					NotifyType.Warning
+				);
+			} else {
+				this.notifyFx(`Se asignaron ${asignados} puesto(s) a la unidad.`, NotifyType.Success, {
+					raw: true,
+				});
+			}
+			this.refrescarTrasAsignacionMasiva(unidad);
+			return;
+		}
+
+		const puesto = puestos[index];
+		const data: GenUnidadesPuesto = {
+			CORR_EMPRESA: 0,
+			CORR_UNIDAD: Number(unidad.CORR_UNIDAD),
+			CODIGO_UNIDAD: unidad.CODIGO_UNIDAD ?? '',
+			NOMBRE_UNIDAD: unidad.NOMBRE_UNIDAD ?? '',
+			CORR_PUESTO: Number(puesto.CORR_PUESTO),
+			CODIGO_PUESTO: puesto.CODIGO_PUESTO ?? '',
+			NOMBRE_PUESTO: puesto.NOMBRE_PUESTO ?? '',
+		};
+
+		this.service
+			.insert(data)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result) {
+						this.procesarAsignacionMasiva(unidad, puestos, index + 1, omitidos);
+						return;
+					}
+					if (Number(response?.ErrorCode) === 2627) {
+						this.procesarAsignacionMasiva(unidad, puestos, index + 1, omitidos + 1);
+						return;
+					}
+
+					this.asignandoTodosPuestos = false;
+					this.loadingVisible = false;
+					this.notifyApiResponse(response);
+					this.refrescarTrasAsignacionMasiva(unidad);
+				},
+				error: (error) => {
+					this.asignandoTodosPuestos = false;
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+					this.refrescarTrasAsignacionMasiva(unidad);
+				},
+			});
+	}
+
+	// Qué hace: refresca el detalle o la grilla de unidades tras la asignación masiva.
+	// Cómo: si el detalle abierto es la misma unidad recarga puestos; si no, recarga asignaciones del browse.
+	private refrescarTrasAsignacionMasiva(unidad: GenUnidadesPuestoUnidad): void {
+		if (
+			!this.isBrowse() &&
+			Number(this.unidadSeleccionada?.CORR_UNIDAD) === Number(unidad.CORR_UNIDAD)
+		) {
+			this.cargarPuestosDetalle();
+			return;
+		}
+		this.consultarAsignaciones();
 	}
 }

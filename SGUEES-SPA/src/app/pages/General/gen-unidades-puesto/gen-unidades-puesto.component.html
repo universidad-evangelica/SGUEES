@@ -1,6 +1,6 @@
 <!-- Contenedor principal: puestos por unidad del organigrama. -->
 <div class="sguees-mtto-view gen-unidades-puesto-view">
-	<!-- Toolbar: consultar, guardar y cancelar (sin nuevo ni estado en barra mtto). -->
+	<!-- Toolbar: en browse, Asignar puestos / Asignar todos (seleccionar unidad primero). -->
 	<app-barra-data-mtto
 		[tituloVentana]="tituloVentana"
 		[showRibbon]="true"
@@ -10,6 +10,18 @@
 		[permiteAdd]="false"
 		[showRefresh]="true"
 		[showEstadoToolbar]="false"
+		[btn1]="textoBtnAsignarPuestos"
+		[btn1Icon]="'card'"
+		[btn1Type]="'default'"
+		[btn1Mode]="'contained'"
+		[btn1Width]="200"
+		(btn1Click)="onAsignarPuestosHeader()"
+		[btn2]="textoBtnAsignarTodos"
+		[btn2Icon]="'selectall'"
+		[btn2Type]="'success'"
+		[btn2Mode]="'contained'"
+		[btn2Width]="250"
+		(btn2Click)="onAsignarTodosHeader()"
 		(consultar)="consultar()"
 		(guardar)="guardar()"
 		(cancelar)="cancelar()"
@@ -35,7 +47,7 @@
 						</h4>
 					</div>
 
-					<!-- Toolbar del detalle: agregar/guardar/cancelar línea. -->
+					<!-- Toolbar del detalle: agregar/asignar todos/guardar/cancelar línea. -->
 					<div class="descriptor-deta-toolbar">
 						<dx-button
 							*ngIf="permiteAdd"
@@ -45,7 +57,18 @@
 							type="success"
 							stylingMode="contained"
 							(onClick)="agregarPuesto()"
-							[disabled]="puestosEditando"
+							[disabled]="puestosEditando || asignandoTodosPuestos"
+						></dx-button>
+						<!-- Asigna de una vez los puestos del catálogo que la unidad aún no tiene. -->
+						<dx-button
+							*ngIf="permiteAdd"
+							class="descriptor-deta-toolbar-btn"
+							icon="selectall"
+							text="Asignar todos los puestos"
+							type="default"
+							stylingMode="contained"
+							(onClick)="confirmarAsignarTodosPuestos(unidadSeleccionada)"
+							[disabled]="puestosEditando || asignandoTodosPuestos"
 						></dx-button>
 						<dx-button
 							class="descriptor-deta-toolbar-btn"
@@ -185,7 +208,7 @@
 		</dx-tab-panel>
 	</div>
 
-	<!-- Grilla global de unidades con botón Asignar puesto. -->
+	<!-- Grilla global de unidades: seleccionar fila y usar los botones del ribbon. -->
 	<app-data-grid-mtto
 		[isBrowse]="isBrowse()"
 		[models]="models"

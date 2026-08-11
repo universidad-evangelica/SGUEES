@@ -1,6 +1,6 @@
 <!-- Contenedor principal: unidades por tipo de usuario (rol). -->
 <div class="sguees-mtto-view sc-unidades-tipo-usuario-view">
-	<!-- Toolbar: consultar, guardar y cancelar (sin nuevo ni estado en barra mtto). -->
+	<!-- Toolbar: en browse, Asignar unidades / Asignar todas (seleccionar rol primero). -->
 	<app-barra-data-mtto
 		[tituloVentana]="tituloVentana"
 		[showRibbon]="true"
@@ -10,6 +10,18 @@
 		[permiteAdd]="false"
 		[showRefresh]="true"
 		[showEstadoToolbar]="false"
+		[btn1]="textoBtnAsignarUnidades"
+		[btn1Icon]="'hierarchy'"
+		[btn1Type]="'default'"
+		[btn1Mode]="'contained'"
+		[btn1Width]="210"
+		(btn1Click)="onAsignarUnidadesHeader()"
+		[btn2]="textoBtnAsignarTodas"
+		[btn2Icon]="'selectall'"
+		[btn2Type]="'success'"
+		[btn2Mode]="'contained'"
+		[btn2Width]="260"
+		(btn2Click)="onAsignarTodasHeader()"
 		(consultar)="consultar()"
 		(guardar)="guardar()"
 		(cancelar)="cancelar()"
@@ -35,7 +47,7 @@
 						</h4>
 					</div>
 
-					<!-- Toolbar del detalle: agregar/guardar/cancelar línea + Activar/Desactivar. -->
+					<!-- Toolbar del detalle: agregar/asignar todas/guardar/cancelar línea + Activar/Desactivar. -->
 					<div class="descriptor-deta-toolbar">
 						<dx-button
 							*ngIf="permiteAdd"
@@ -45,7 +57,18 @@
 							type="success"
 							stylingMode="contained"
 							(onClick)="agregarUnidad()"
-							[disabled]="unidadesEditando"
+							[disabled]="unidadesEditando || asignandoTodasUnidades"
+						></dx-button>
+						<!-- Asigna de una vez las unidades del organigrama que el rol aún no tiene. -->
+						<dx-button
+							*ngIf="permiteAdd"
+							class="descriptor-deta-toolbar-btn"
+							icon="selectall"
+							text="Asignar todas las unidades"
+							type="default"
+							stylingMode="contained"
+							(onClick)="confirmarAsignarTodasUnidades(rolSeleccionado)"
+							[disabled]="unidadesEditando || asignandoTodasUnidades"
 						></dx-button>
 						<dx-button
 							class="descriptor-deta-toolbar-btn"
@@ -228,7 +251,7 @@
 		</dx-tab-panel>
 	</div>
 
-	<!-- Grilla global de roles con botón Asignar unidades. -->
+	<!-- Grilla global de roles: seleccionar fila y usar los botones del ribbon. -->
 	<app-data-grid-mtto
 		[isBrowse]="isBrowse()"
 		[models]="models"
