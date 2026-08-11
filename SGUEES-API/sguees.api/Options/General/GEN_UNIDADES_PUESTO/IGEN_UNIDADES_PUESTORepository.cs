@@ -1,6 +1,7 @@
 // Qué hace: contrato del repositorio de puestos por unidad.
 // Cómo: extiende IRepository y agrega ExistsAsync para la PK compuesta.
 using System.Threading.Tasks;
+using eFramework.Core;
 using eFramework.Data;
 using SGUEES.Models;
 
