@@ -328,7 +328,10 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 		const ningunoMarcado = lista.every((item) => !item.SELECCION);
 
 		if (!aInsertar.length && !aEliminar.length) {
-			this.notifyFx('No hay cambios por guardar.', NotifyType.Warning);
+			this.notifyFx('Cambios guardados con exito!', NotifyType.Success, { raw: true });
+			this.popupAsignarVisible = false;
+			this.puestosModal = [];
+			this.unidadSeleccionada = null;
 			return;
 		}
 
