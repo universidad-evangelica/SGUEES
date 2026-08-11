@@ -383,7 +383,7 @@ export class ScDescriptorPuestoService {
 			{
 				dataField: 'CORR_PUESTO_REPORTA',
 				label: { text: 'Reporta a' },
-				colSpan: 2,
+				colSpan: 3,
 				template: 'CORR_PUESTO_REPORTALookup',
 				validationRules: [
 					{
