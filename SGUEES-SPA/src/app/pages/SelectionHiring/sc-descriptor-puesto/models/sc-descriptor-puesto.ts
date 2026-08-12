@@ -25,7 +25,7 @@ export interface ScDescriptorPuesto {
 	NOMBRE_UNIDAD?: string; // Nombre de la unidad (join o lookup).
 }
 
-/** Unidad permitida al rol del usuario (SC_UNIDADES_TIPO_USUARIO). */
+/** Unidad permitida al usuario de sesión (SC_UNIDADES_USUARIO). */
 export interface ScDescriptorUnidadLookup {
 	CORR_UNIDAD: number;
 	CODIGO_UNIDAD?: string;

@@ -1,6 +1,7 @@
 // Qué hace: endpoints REST de unidades asignadas directamente a usuarios.
 // Cómo: expone consulta, creación, eliminación y operaciones masivas con políticas específicas.
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -87,6 +88,28 @@ namespace SGUEES.Controllers
             Data.CORR_EMPRESA = GetCorrEmpresa();
             var result = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
             return result.ErrorCode == 0 ? Ok(result) : BadRequest(result);
+        }
+
+        // Qué hace: entrega las unidades asignadas al usuario de sesión para el descriptor de puesto.
+        // Cómo: fija CORR_EMPRESA y LOGIN_SISTEMA del token; GetAllAsync; ordena por nombre de unidad.
+        [HttpGet("GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO")]
+        [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        public async Task<CResult> GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO([FromQuery] SC_UNIDADES_USUARIOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            Data.LOGIN_SISTEMA = GetUsuario();
+            var resultado = await _service.GetAllAsync(Data);
+            if (resultado.Result && resultado.Data is List<SC_UNIDADES_USUARIOView> list)
+            {
+                var ordenados = list
+                    .OrderBy(x => x.NOMBRE_UNIDAD)
+                    .ThenBy(x => x.CORR_UNIDAD)
+                    .ToList();
+                resultado.Data = ordenados;
+                resultado.RowsAffected = ordenados.Count;
+            }
+
+            return resultado;
         }
 
         // Qué hace: obtiene CORR_EMPRESA del usuario autenticado.

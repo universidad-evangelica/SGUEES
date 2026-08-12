@@ -117,7 +117,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Al editar: puestos del catálogo más el ya guardado; NOMBRE_PUESTO puede ser el snapshot del descriptor.
 	mCORR_PUESTO_EDIT: ScDescriptorPuestoLookup[] = [];
 	puestoLookupColumns = [
-		{ dataField: 'CORR_PUESTO', caption: 'Codigo', width: 90 },
+		//{ dataField: 'CORR_PUESTO', caption: 'Codigo', width: 90 },
 		{ dataField: 'NOMBRE_PUESTO_CATALOGO', caption: 'Puesto', width: 280 },
 	];
 	mCORR_PUESTO_REPORTA: ScDescriptorJefeLookup[] = [];
@@ -410,13 +410,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.getTIPO_REQUERIDO();
 	}
 
-	// Qué hace: carga las unidades permitidas al rol del usuario (SC_UNIDADES_TIPO_USUARIO).
-	// Cómo: lookup GetCORR_UNIDAD vía UrlSELECCIONCONTRATACIONAPI; el API filtra por TIPO_USUARIO del token.
+	// Qué hace: carga las unidades permitidas al usuario de sesión (SC_UNIDADES_USUARIO).
+	// Cómo: lookup GetCORR_UNIDAD vía UrlSELECCIONCONTRATACIONAPI; el API filtra por LOGIN_SISTEMA del token.
 	getCORR_UNIDAD(): void {
 		this.appInfoService
 			.getLookUp(
 				'SC_DESCRIPTOR_PUESTO',
-				'SC_UNIDADES_TIPO_USUARIO',
+				'SC_UNIDADES_USUARIO',
 				'GetCORR_UNIDAD',
 				undefined,
 				environment.UrlSELECCIONCONTRATACIONAPI
@@ -1118,7 +1118,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: reacciona a los cambios de estado del formulario (nuevo, editar, ver, browse).
 	// Cómo: llama al AsignaStatus base y, al volver a modo Browse (listado), limpia banderas de edición
 	// (perfil) y regresa el título y las pestañas a su estado inicial. El lookup de unidad no se recarga:
-	// mCORR_UNIDAD ya es el catálogo del rol; la unidad temporal solo vive en mCORR_UNIDAD_EDIT.
+	// mCORR_UNIDAD ya es el catálogo del usuario; la unidad temporal solo vive en mCORR_UNIDAD_EDIT.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -6514,7 +6514,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: cierra el editor del grid (evita dejar la fila en "guardando").
-	// Cómo: llama cancelEditData del dx-data-grid, igual que en sc-unidades-tipo-usuario.
+	// Cómo: llama cancelEditData del dx-data-grid (mismo patrón de detalles sin GetAll).
 	private cerrarEditorGrid(grid?: DxDataGridComponent | null): void {
 		try {
 			grid?.instance?.cancelEditData?.();
