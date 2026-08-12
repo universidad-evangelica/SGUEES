@@ -64,15 +64,15 @@ export class ScUnidadesUsuarioComponent extends CBaseComponent implements OnInit
 	}
 
 	// Qué hace: muestra la acción de asignación individual.
-	// Cómo: habilita el texto únicamente en browse con permiso de creación.
+	// Cómo: habilita el texto únicamente en browse con permiso de modificar (U).
 	get textoBtnAsignarUnidades(): string {
-		return this.isBrowse() && this.permiteAdd ? 'Asignar unidades' : '';
+		return this.isBrowse() && this.permiteEdit ? 'Asignar unidades' : '';
 	}
 
 	// Qué hace: muestra la acción masiva.
-	// Cómo: habilita el texto únicamente en browse con permiso de creación.
+	// Cómo: habilita el texto únicamente en browse con permiso de modificar (U).
 	get textoBtnAsignarTodas(): string {
-		return this.isBrowse() && this.permiteAdd ? 'Asignar todas las unidades' : '';
+		return this.isBrowse() && this.permiteEdit ? 'Asignar todas las unidades' : '';
 	}
 
 	// Qué hace: integra el grid con CBaseComponent.
@@ -219,8 +219,11 @@ export class ScUnidadesUsuarioComponent extends CBaseComponent implements OnInit
 	}
 
 	// Qué hace: abre el popup para el usuario enfocado.
-	// Cómo: valida selección y construye las unidades con sus checkboxes.
+	// Cómo: exige permiso U, valida selección y arma checkboxes.
 	onAsignarUnidadesHeader(): void {
+		if (!this.permiteEdit) {
+			return;
+		}
 		const usuario = this.obtenerUsuarioSeleccionadoBrowse();
 		if (!usuario) {
 			this.notifyFx('Debe seleccionar un usuario.', NotifyType.Warning);
@@ -270,7 +273,7 @@ export class ScUnidadesUsuarioComponent extends CBaseComponent implements OnInit
 	// Qué hace: guarda las diferencias de selección.
 	// Cómo: todos usa asignación masiva, ninguno retiro masivo, parcial operaciones individuales.
 	guardarAsignacionModal(): void {
-		if (this.asignandoUnidadesModal) {
+		if (!this.permiteEdit || this.asignandoUnidadesModal) {
 			return;
 		}
 		const usuario = this.usuarioSeleccionado;
@@ -309,7 +312,7 @@ export class ScUnidadesUsuarioComponent extends CBaseComponent implements OnInit
 	// Qué hace: confirma asignar todas las unidades desde el ribbon.
 	// Cómo: muestra diálogo y ejecuta el endpoint masivo si se acepta.
 	private confirmarAsignarTodasUnidades(usuario: ScUnidadesUsuarioBrowse): void {
-		if (!this.permiteAdd || this.asignandoTodasUnidades || this.asignandoUnidadesModal) {
+		if (!this.permiteEdit || this.asignandoTodasUnidades || this.asignandoUnidadesModal) {
 			return;
 		}
 		const nombre = usuario.NOMBRE_USUARIO || usuario.LOGIN_SISTEMA;

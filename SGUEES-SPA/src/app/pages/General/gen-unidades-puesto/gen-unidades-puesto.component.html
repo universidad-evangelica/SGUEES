@@ -72,8 +72,8 @@
 	[wrapperAttr]="{ class: 'unidades-puesto-asignar-popup' }"
 	(onHiding)="cerrarPopupAsignar()"
 >
-	<!-- Toolbar de selección masiva y guardado. -->
-	<div class="unidades-puesto-popup-toolbar">
+	<!-- Toolbar: solo con permiso modificar (U). -->
+	<div class="unidades-puesto-popup-toolbar" *ngIf="permiteEdit">
 		<dx-button
 			icon="check"
 			text="Todos"
@@ -130,7 +130,7 @@
 		<dxo-load-panel [enabled]="false"></dxo-load-panel>
 		<dxo-editing
 			[mode]="'cell'"
-			[allowUpdating]="true"
+			[allowUpdating]="permiteEdit"
 			[allowAdding]="false"
 			[allowDeleting]="false"
 			[useIcons]="false"
@@ -144,7 +144,7 @@
 			[allowSorting]="false"
 			[allowFiltering]="false"
 			[allowHeaderFiltering]="false"
-			[allowEditing]="true"
+			[allowEditing]="permiteEdit"
 			alignment="center"
 		></dxi-column>
 		<dxi-column

@@ -66,14 +66,14 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 		return nombre ? `Asignar puestos - ${nombre}` : 'Asignar puestos';
 	}
 
-	// Qué hace: texto del botón Asignar puestos en el ribbon (solo browse con permiso C).
+	// Qué hace: texto del botón Asignar puestos en el ribbon (solo browse con permiso U).
 	get textoBtnAsignarPuestos(): string {
-		return this.isBrowse() && this.permiteAdd ? 'Asignar puestos' : '';
+		return this.isBrowse() && this.permiteEdit ? 'Asignar puestos' : '';
 	}
 
-	// Qué hace: texto del botón Asignar todos en el ribbon (solo browse con permiso C).
+	// Qué hace: texto del botón Asignar todos en el ribbon (solo browse con permiso U).
 	get textoBtnAsignarTodos(): string {
-		return this.isBrowse() && this.permiteAdd ? 'Asignar todos los puestos' : '';
+		return this.isBrowse() && this.permiteEdit ? 'Asignar todos los puestos' : '';
 	}
 
 	// Qué hace: entrega el grid de unidades al flujo base de CBaseComponent.
@@ -249,7 +249,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 	// Qué hace: abre el popup con todos los puestos del catálogo.
 	// Cómo: marca SELECCION=true en los ya asignados a la unidad y muestra el dx-popup.
 	abrirAsignarPuestos(unidad: GenUnidadesPuestoUnidad): void {
-		if (!this.permiteAdd || !unidad?.CORR_UNIDAD) {
+		if (!this.permiteEdit || !unidad?.CORR_UNIDAD) {
 			return;
 		}
 		if (this.asignandoPuestosModal || this.asignandoTodosPuestos) {
@@ -294,7 +294,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 	// Qué hace: guarda altas y bajas según el checkbox del modal.
 	// Cómo: todos marcados → API masiva asignar; ninguno marcado → API masiva quitar; parcial → foreach.
 	guardarAsignacionModal(): void {
-		if (this.asignandoPuestosModal) {
+		if (!this.permiteEdit || this.asignandoPuestosModal) {
 			return;
 		}
 
@@ -563,7 +563,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 
 	// Qué hace: pide confirmación para asignar todos los puestos del catálogo a una unidad.
 	confirmarAsignarTodosPuestos(unidad?: GenUnidadesPuestoUnidad | null): void {
-		if (!this.permiteAdd || this.asignandoTodosPuestos || this.asignandoPuestosModal) {
+		if (!this.permiteEdit || this.asignandoTodosPuestos || this.asignandoPuestosModal) {
 			return;
 		}
 		const destino = unidad ?? this.unidadSeleccionada;
