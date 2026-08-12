@@ -112,21 +112,21 @@ namespace sguees.Controllers
             return await _service.GetAllAsync(Data);
         }
 
-        // Qué hace: entrega unidades del organigrama para el lookup de asignación por rol.
-        // Cómo: fija CORR_EMPRESA de sesión y llama GetAllAsync (autorizado para sc-unidades-tipo-usuario).
-        [HttpGet("GetCORR_UNIDAD_SC_UNIDADES_TIPO_USUARIO")]
-        [Authorize(Policy = "/sc-unidades-tipo-usuario|R")]
-        public async Task<CResult> GetCORR_UNIDAD_SC_UNIDADES_TIPO_USUARIO([FromQuery] SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADESParam Data)
-        {
-            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            return await _service.GetAllAsync(Data);
-        }
-
         // Qué hace: entrega unidades del organigrama para el browse de puestos por unidad.
         // Cómo: fija CORR_EMPRESA de sesión y llama GetAllAsync (autorizado para gen-unidades-puesto).
         [HttpGet("GetCORR_UNIDAD_GEN_UNIDADES_PUESTO")]
         [Authorize(Policy = "/gen-unidades-puesto|R")]
         public async Task<CResult> GetCORR_UNIDAD_GEN_UNIDADES_PUESTO([FromQuery] SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADESParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
+        }
+
+        // Qué hace: entrega unidades del organigrama para asignarlas a usuarios.
+        // Cómo: fija CORR_EMPRESA de sesión y devuelve el catálogo mediante GetAllAsync.
+        [HttpGet("GetCORR_UNIDAD_SC_UNIDADES_USUARIO")]
+        [Authorize(Policy = "/sc-unidades-usuario|R")]
+        public async Task<CResult> GetCORR_UNIDAD_SC_UNIDADES_USUARIO([FromQuery] SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADESParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetAllAsync(Data);

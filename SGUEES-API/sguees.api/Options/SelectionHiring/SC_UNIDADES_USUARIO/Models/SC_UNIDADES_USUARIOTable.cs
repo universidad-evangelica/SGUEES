@@ -1,16 +1,15 @@
-// Qué hace: campos de escritura de SC_UNIDADES_TIPO_USUARIO (unidades visibles por tipo de usuario/rol).
-// Cómo: representa la fila de la tabla intermedia con ACTIVO y auditoría.
+// Qué hace: campos de escritura de SC_UNIDADES_USUARIO.
+// Cómo: representa la asignación empresa-unidad-usuario con auditoría y sin campo ACTIVO.
 using System;
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
-    public class SC_UNIDADES_TIPO_USUARIOTable : BaseEntity
+    public class SC_UNIDADES_USUARIOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_UNIDAD { get; set; }
-        public int TIPO_USUARIO { get; set; }
-        public bool? ACTIVO { get; set; }
+        public string LOGIN_SISTEMA { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }
         public DateTime? FECHA_CREA { get; set; }

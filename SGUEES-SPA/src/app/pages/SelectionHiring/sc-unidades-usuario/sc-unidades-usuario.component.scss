@@ -1,0 +1,46 @@
+// Qué hace: estilos locales del popup de unidades por usuario.
+// Cómo: ordena botones y alinea encabezados, filas y checkboxes.
+.unidades-usuario-popup-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 12px;
+}
+
+:host ::ng-deep .unidades-usuario-popup-toolbar .dx-button {
+	min-width: 120px;
+	min-height: 36px;
+	font-weight: 600;
+}
+
+/* Qué hace: mantiene el popup ajustado a su contenido.
+   Cómo: evita scroll interno vacío y conserva el espacio inferior. */
+::ng-deep .unidades-usuario-asignar-popup .dx-popup-content {
+	box-sizing: border-box;
+	overflow: visible;
+	padding-bottom: 8px;
+}
+
+/* Qué hace: alinea checkbox y columnas del grid.
+   Cómo: centra verticalmente y elimina el alto flexible heredado. */
+::ng-deep .unidades-usuario-asignar-popup .unidades-usuario-popup-grid {
+	flex: none;
+	min-height: auto;
+	width: 100%;
+
+	.dx-datagrid-headers .dx-header-row > td,
+	.dx-datagrid-filter-row > td,
+	.dx-datagrid-rowsview .dx-data-row > td {
+		vertical-align: middle;
+	}
+
+	.dx-datagrid-rowsview .dx-data-row > td {
+		padding-top: 8px;
+		padding-bottom: 8px;
+	}
+
+	.dx-checkbox {
+		margin: 0 auto;
+	}
+}
