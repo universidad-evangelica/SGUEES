@@ -110,7 +110,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Al editar: unidades del catálogo más la ya guardada; NOMBRE_UNIDAD puede ser el snapshot del descriptor.
 	mCORR_UNIDAD_EDIT: ScDescriptorUnidadLookup[] = [];
 	unidadLookupColumns = [
-		{ dataField: 'CODIGO_UNIDAD', caption: 'Codigo', width: 90 },
+		//{ dataField: 'CORR_UNIDAD', caption: 'Codigo', width: 90 },
 		{ dataField: 'NOMBRE_UNIDAD_CATALOGO', caption: 'Unidad', width: 280 },
 	];
 	mCORR_PUESTO: ScDescriptorPuestoLookup[] = [];
