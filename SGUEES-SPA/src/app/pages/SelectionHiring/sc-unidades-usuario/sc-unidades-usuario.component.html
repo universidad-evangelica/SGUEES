@@ -72,7 +72,7 @@
 	[wrapperAttr]="{ class: 'unidades-usuario-asignar-popup' }"
 	(onHiding)="cerrarPopupAsignar()"
 >
-	<!-- Acciones del popup: solo con permiso modificar (U). -->
+	<!-- Acciones de escritura: Todos/Ninguno/Guardar solo con permiso modificar (U). -->
 	<div class="unidades-usuario-popup-toolbar" *ngIf="permiteEdit">
 		<dx-button
 			icon="check"

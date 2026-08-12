@@ -66,12 +66,12 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 		return nombre ? `Asignar puestos - ${nombre}` : 'Asignar puestos';
 	}
 
-	// Qué hace: texto del botón Asignar puestos en el ribbon (solo browse con permiso U).
+	// Qué hace: texto del botón Asignar puestos en el ribbon (abre modal; no exige U).
 	get textoBtnAsignarPuestos(): string {
-		return this.isBrowse() && this.permiteEdit ? 'Asignar puestos' : '';
+		return this.isBrowse() ? 'Asignar puestos' : '';
 	}
 
-	// Qué hace: texto del botón Asignar todos en el ribbon (solo browse con permiso U).
+	// Qué hace: texto del botón Asignar todos en el ribbon (escribe; exige U).
 	get textoBtnAsignarTodos(): string {
 		return this.isBrowse() && this.permiteEdit ? 'Asignar todos los puestos' : '';
 	}
@@ -249,7 +249,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 	// Qué hace: abre el popup con todos los puestos del catálogo.
 	// Cómo: marca SELECCION=true en los ya asignados a la unidad y muestra el dx-popup.
 	abrirAsignarPuestos(unidad: GenUnidadesPuestoUnidad): void {
-		if (!this.permiteEdit || !unidad?.CORR_UNIDAD) {
+		if (!unidad?.CORR_UNIDAD) {
 			return;
 		}
 		if (this.asignandoPuestosModal || this.asignandoTodosPuestos) {

@@ -63,14 +63,12 @@ export class ScUnidadesUsuarioComponent extends CBaseComponent implements OnInit
 		return nombre ? `Asignar unidades - ${nombre}` : 'Asignar unidades';
 	}
 
-	// Qué hace: muestra la acción de asignación individual.
-	// Cómo: habilita el texto únicamente en browse con permiso de modificar (U).
+	// Qué hace: muestra Asignar unidades (solo abre el modal; no exige U).
 	get textoBtnAsignarUnidades(): string {
-		return this.isBrowse() && this.permiteEdit ? 'Asignar unidades' : '';
+		return this.isBrowse() ? 'Asignar unidades' : '';
 	}
 
-	// Qué hace: muestra la acción masiva.
-	// Cómo: habilita el texto únicamente en browse con permiso de modificar (U).
+	// Qué hace: muestra Asignar todas (escribe; exige U).
 	get textoBtnAsignarTodas(): string {
 		return this.isBrowse() && this.permiteEdit ? 'Asignar todas las unidades' : '';
 	}
@@ -219,11 +217,8 @@ export class ScUnidadesUsuarioComponent extends CBaseComponent implements OnInit
 	}
 
 	// Qué hace: abre el popup para el usuario enfocado.
-	// Cómo: exige permiso U, valida selección y arma checkboxes.
+	// Cómo: valida selección y arma checkboxes (lectura siempre; guardar exige U).
 	onAsignarUnidadesHeader(): void {
-		if (!this.permiteEdit) {
-			return;
-		}
 		const usuario = this.obtenerUsuarioSeleccionadoBrowse();
 		if (!usuario) {
 			this.notifyFx('Debe seleccionar un usuario.', NotifyType.Warning);
