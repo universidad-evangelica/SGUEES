@@ -205,24 +205,24 @@ namespace SGUEES.Repositories
         public async Task<CResult> AsignarTodasUnidadesAsync(SC_UNIDADES_USUARIOTable Data, string vUSER_SISTEMA, string vESTACION)
         {
             const string sql = @"
-INSERT INTO SC_UNIDADES_USUARIO (
-    CORR_EMPRESA, CORR_UNIDAD, LOGIN_SISTEMA,
-    USUARIO_CREA, ESTACION_CREA, FECHA_CREA,
-    USUARIO_ACTU, ESTACION_ACTU, FECHA_ACTU
-)
-SELECT
-    @CORR_EMPRESA, U.CORR_UNIDAD, @LOGIN_SISTEMA,
-    @USUARIO, @ESTACION, GETDATE(),
-    @USUARIO, @ESTACION, GETDATE()
-FROM SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES U
-WHERE U.CORR_EMPRESA = @CORR_EMPRESA
-AND ISNULL(U.ACTIVO, 1) = 1
-AND NOT EXISTS (
-    SELECT 1 FROM SC_UNIDADES_USUARIO X
-    WHERE X.CORR_EMPRESA = U.CORR_EMPRESA
-    AND X.CORR_UNIDAD = U.CORR_UNIDAD
-    AND X.LOGIN_SISTEMA = @LOGIN_SISTEMA
-);";
+            INSERT INTO SC_UNIDADES_USUARIO (
+                CORR_EMPRESA, CORR_UNIDAD, LOGIN_SISTEMA,
+                USUARIO_CREA, ESTACION_CREA, FECHA_CREA,
+                USUARIO_ACTU, ESTACION_ACTU, FECHA_ACTU
+            )
+            SELECT
+                @CORR_EMPRESA, U.CORR_UNIDAD, @LOGIN_SISTEMA,
+                @USUARIO, @ESTACION, GETDATE(),
+                @USUARIO, @ESTACION, GETDATE()
+            FROM SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES U
+            WHERE U.CORR_EMPRESA = @CORR_EMPRESA
+            AND ISNULL(U.ACTIVO, 1) = 1
+            AND NOT EXISTS (
+                SELECT 1 FROM SC_UNIDADES_USUARIO X
+                WHERE X.CORR_EMPRESA = U.CORR_EMPRESA
+                AND X.CORR_UNIDAD = U.CORR_UNIDAD
+                AND X.LOGIN_SISTEMA = @LOGIN_SISTEMA
+            );";
             return await ExecuteBulkAsync(sql, Data, vUSER_SISTEMA, vESTACION, true);
         }
 
@@ -231,9 +231,9 @@ AND NOT EXISTS (
         public async Task<CResult> QuitarTodasUnidadesAsync(SC_UNIDADES_USUARIOTable Data, string vUSER_SISTEMA, string vESTACION)
         {
             const string sql = @"
-DELETE FROM SC_UNIDADES_USUARIO
-WHERE CORR_EMPRESA = @CORR_EMPRESA
-AND LOGIN_SISTEMA = @LOGIN_SISTEMA;";
+            DELETE FROM SC_UNIDADES_USUARIO
+            WHERE CORR_EMPRESA = @CORR_EMPRESA
+            AND LOGIN_SISTEMA = @LOGIN_SISTEMA;";
             return await ExecuteBulkAsync(sql, Data, vUSER_SISTEMA, vESTACION, false);
         }
 
