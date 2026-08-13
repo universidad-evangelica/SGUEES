@@ -13,10 +13,12 @@
   (onValueChanged)="onValueChanged($event)"
 >
 	<div *dxTemplate="let dg of 'content'">
+		<!-- Motivo: selectedRowKeys sigue al valor; si se limpia el combo, el grid desmarca la fila. -->
 		<dx-data-grid
 			#dataGridLookup
 			[dataSource]="model"
 			[keyExpr]="valueExpr"
+			[selectedRowKeys]="gridSelectedKeys"
 			[columnAutoWidth]="lookupColumnAutoWidth"
 			[selection]="{ mode: 'single' }"
 			[hoverStateEnabled]="true"

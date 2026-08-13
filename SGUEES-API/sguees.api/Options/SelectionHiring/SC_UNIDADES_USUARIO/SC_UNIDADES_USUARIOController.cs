@@ -90,26 +90,15 @@ namespace SGUEES.Controllers
             return result.ErrorCode == 0 ? Ok(result) : BadRequest(result);
         }
 
-        // Qué hace: entrega las unidades asignadas al usuario de sesión para el descriptor de puesto.
-        // Cómo: fija CORR_EMPRESA y LOGIN_SISTEMA del token; GetAllAsync; ordena por nombre de unidad.
+        // Qué hace: entrega las unidades efectivas del usuario de sesión para el lookup del descriptor.
+        // Cómo: fija CORR_EMPRESA y LOGIN_SISTEMA del token y ejecuta PRAL_DATA_SC_UNIDADES_USUARIO.
         [HttpGet("GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO([FromQuery] SC_UNIDADES_USUARIOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
             Data.LOGIN_SISTEMA = GetUsuario();
-            var resultado = await _service.GetAllAsync(Data);
-            if (resultado.Result && resultado.Data is List<SC_UNIDADES_USUARIOView> list)
-            {
-                var ordenados = list
-                    .OrderBy(x => x.NOMBRE_UNIDAD)
-                    .ThenBy(x => x.CORR_UNIDAD)
-                    .ToList();
-                resultado.Data = ordenados;
-                resultado.RowsAffected = ordenados.Count;
-            }
-
-            return resultado;
+            return await _service.GetUnidadesUsuarioAsync(Data);
         }
 
         // Qué hace: obtiene CORR_EMPRESA del usuario autenticado.

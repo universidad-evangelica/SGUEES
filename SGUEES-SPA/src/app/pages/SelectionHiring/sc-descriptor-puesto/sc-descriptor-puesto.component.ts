@@ -410,8 +410,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.getTIPO_REQUERIDO();
 	}
 
-	// Qué hace: carga las unidades permitidas al usuario de sesión (SC_UNIDADES_USUARIO).
-	// Cómo: lookup GetCORR_UNIDAD vía UrlSELECCIONCONTRATACIONAPI; el API filtra por LOGIN_SISTEMA del token.
+	// Qué hace: carga las unidades efectivas del usuario de sesión (puesto + configuradas).
+	// Cómo: lookup GetCORR_UNIDAD → GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO; el API ejecuta PRAL_DATA_SC_UNIDADES_USUARIO.
 	getCORR_UNIDAD(): void {
 		this.appInfoService
 			.getLookUp(

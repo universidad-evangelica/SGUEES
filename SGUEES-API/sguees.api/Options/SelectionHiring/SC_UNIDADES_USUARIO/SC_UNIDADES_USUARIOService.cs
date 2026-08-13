@@ -31,6 +31,11 @@ namespace SGUEES.Services
         public async Task<CResult> GetAllAsync(SC_UNIDADES_USUARIOParam xWhere) =>
             await _repo.GetAllAsync(BuildParameters(xWhere));
 
+        // Qué hace: obtiene las unidades del usuario de sesión vía procedimiento.
+        // Cómo: pasa CORR_EMPRESA y LOGIN_SISTEMA a PRAL_DATA_SC_UNIDADES_USUARIO.
+        public async Task<CResult> GetUnidadesUsuarioAsync(SC_UNIDADES_USUARIOParam xWhere) =>
+            await _repo.GetUnidadesUsuarioAsync(BuildParametersSpUnidades(xWhere));
+
         // Qué hace: obtiene una asignación concreta.
         // Cómo: incluye las llaves recibidas y consulta el repositorio.
         public async Task<CResult> GetAsync(SC_UNIDADES_USUARIOParam xWhere) =>
@@ -154,6 +159,14 @@ namespace SGUEES.Services
                 ? null
                 : ValidationError("No se encontro el usuario.");
         }
+
+        // Qué hace: arma los parámetros del procedimiento de unidades del usuario.
+        // Cómo: envía solo CORR_EMPRESA y LOGIN_SISTEMA, que son los argumentos del SP.
+        private static List<CParameter> BuildParametersSpUnidades(SC_UNIDADES_USUARIOParam xWhere) => new()
+        {
+            new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+            new CParameter() { ParameterName = "LOGIN_SISTEMA", Value = xWhere.LOGIN_SISTEMA ?? string.Empty, DbType = System.Data.DbType.String },
+        };
 
         // Qué hace: arma filtros de consulta.
         // Cómo: siempre incluye empresa; agrega unidad y LOGIN_SISTEMA cuando corresponden.

@@ -17,6 +17,7 @@ namespace SGUEES.Repositories
     {
         private const string _TableName = "SC_UNIDADES_USUARIO";
         private const string _ViewName = "V_SC_UNIDADES_USUARIO";
+        private const string _SpDataUnidadesUsuario = "PRAL_DATA_SC_UNIDADES_USUARIO";
         private readonly string _connectionString;
 
         public SC_UNIDADES_USUARIORepository(IConfiguration config)
@@ -48,6 +49,37 @@ namespace SGUEES.Repositories
                 var reader = await objData.GetDataReader(_ViewName, xWhere);
                 var response = new List<SC_UNIDADES_USUARIOView>().FromDataReader(reader)
                     .OrderBy(x => x.LOGIN_SISTEMA)
+                    .ThenBy(x => x.CORR_UNIDAD)
+                    .ToList();
+                reader.Close();
+                result.Data = response;
+                result.Result = true;
+                result.RowsAffected = response.Count;
+                result.ErrorCode = 0;
+                result.ErrorMessage = string.Empty;
+                result.ErrorSource = string.Empty;
+            }
+            catch (Exception e)
+            {
+                SetError(result, e);
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+            return result;
+        }
+
+        // Qué hace: lista las unidades efectivas del usuario (puesto + configuradas).
+        // Cómo: ejecuta PRAL_DATA_SC_UNIDADES_USUARIO con CORR_EMPRESA y LOGIN_SISTEMA.
+        public async Task<CResult> GetUnidadesUsuarioAsync(List<CParameter> xWhere)
+        {
+            CResult result = new();
+            try
+            {
+                var reader = await objData.GetDataReader(CommandType.StoredProcedure, _SpDataUnidadesUsuario, xWhere);
+                var response = new List<SC_UNIDADES_USUARIOView>().FromDataReader(reader)
+                    .OrderBy(x => x.CODIGO_UNIDAD)
                     .ThenBy(x => x.CORR_UNIDAD)
                     .ToList();
                 reader.Close();
