@@ -6,11 +6,11 @@ GO
 --   tiene acceso, sin repetir ninguna unidad.
 -- Fuentes de unidades (se unen):
 --   A) Por puesto real del empleado: GEN_EMPLEADO_PUESTO.CORR_UNIDAD (activo)
---   B) Por configuración manual: SC_UNIDADES_USUARIO
--- Importante:
---   NO se usa GEN_UNIDADES_PUESTO aquí (ese catálogo dice en qué unidades
---   puede existir un puesto; no dónde trabaja la persona).
---   La unidad real del empleado está en GEN_EMPLEADO_PUESTO.CORR_UNIDAD.
+--   B) Por jefatura activa: SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES
+--   C) Por configuración manual: SC_UNIDADES_USUARIO
+-- Ejemplo:
+--   Coordinador de Desarrollo que además es jefe de Subgerencia ve Subgerencia
+--   aunque su puesto no esté en esa unidad.
 -- =============================================================================
 CREATE PROCEDURE [dbo].[PRAL_DATA_SC_UNIDADES_USUARIO]
 @CORR_EMPRESA INT,                 -- Empresa en la que el usuario está logueado
@@ -46,8 +46,6 @@ BEGIN
 	-- PASO 2: UnidadesPorPuesto
 	-- Qué hace: obtiene las unidades donde el empleado tiene puesto activo.
 	-- Cómo: lee CORR_UNIDAD directo de GEN_EMPLEADO_PUESTO (ESTADO = 1).
-	--       Ejemplo: Analista en Subgerencia → solo sale Subgerencia, aunque
-	--       el puesto exista también en otras unidades del catálogo.
 	----------------------------------------------------------------------------
 	UnidadesPorPuesto AS
 	(
@@ -63,7 +61,27 @@ BEGIN
 	),
 
 	----------------------------------------------------------------------------
-	-- PASO 3: UnidadesConfiguradas
+	-- PASO 3: UnidadesComoJefe
+	-- Qué hace: unidades donde la persona es jefe activo, aunque su puesto
+	--           no pertenezca a esa unidad.
+	-- Cómo: cruza el empleado con SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES
+	--       filtrando ACTIVO = 1.
+	----------------------------------------------------------------------------
+	UnidadesComoJefe AS
+	(
+		SELECT DISTINCT
+			JU.CORR_EMPRESA,
+			JU.CORR_UNIDAD
+		FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES JU
+		INNER JOIN EmpleadoLogin EL
+			ON EL.CORR_EMPRESA = JU.CORR_EMPRESA
+		   AND EL.CORR_EMPLEADO = JU.CORR_EMPLEADO
+		WHERE JU.CORR_EMPRESA = @CORR_EMPRESA
+		  AND JU.ACTIVO = CONVERT(BIT, 1)
+	),
+
+	----------------------------------------------------------------------------
+	-- PASO 4: UnidadesConfiguradas
 	-- Qué hace: trae las unidades asignadas manualmente al usuario.
 	-- Cómo: lee SC_UNIDADES_USUARIO filtrando por empresa + login.
 	----------------------------------------------------------------------------
@@ -78,25 +96,24 @@ BEGIN
 	),
 
 	----------------------------------------------------------------------------
-	-- PASO 4: UnidadesUnion
-	-- Qué hace: junta unidades por puesto + unidades configuradas.
+	-- PASO 5: UnidadesUnion
+	-- Qué hace: junta puesto + jefatura + configuración.
 	-- Cómo: UNION (no UNION ALL) elimina duplicados.
-	--       Si la misma unidad viene de ambas fuentes, sale una sola vez.
+	--       Si la misma unidad viene de varias fuentes, sale una sola vez.
 	----------------------------------------------------------------------------
 	UnidadesUnion AS
 	(
 		SELECT CORR_EMPRESA, CORR_UNIDAD FROM UnidadesPorPuesto
 		UNION
+		SELECT CORR_EMPRESA, CORR_UNIDAD FROM UnidadesComoJefe
+		UNION
 		SELECT CORR_EMPRESA, CORR_UNIDAD FROM UnidadesConfiguradas
 	)
 
 	----------------------------------------------------------------------------
-	-- PASO 5: Resultado final
-	-- Qué hace: muestra las unidades con código/nombre del organigrama y
-	--           banderas de origen (por puesto / configurada / ambas).
-	-- Cómo: LEFT JOIN a SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES para nombres;
-	--       LEFT JOIN a las CTE de origen para armar ES_POR_PUESTO y
-	--       ES_CONFIGURADA.
+	-- PASO 6: Resultado final
+	-- Qué hace: muestra las unidades con código/nombre y banderas de origen.
+	-- Cómo: LEFT JOIN al organigrama y a cada CTE de origen.
 	----------------------------------------------------------------------------
 	SELECT
 		U.CORR_EMPRESA,                                                          -- Empresa
@@ -106,6 +123,8 @@ BEGIN
 		@LOGIN AS LOGIN_SISTEMA,                                                 -- Login consultado
 		CONVERT(BIT, CASE WHEN PP.CORR_UNIDAD IS NOT NULL THEN 1 ELSE 0 END)
 			AS ES_POR_PUESTO,                                                    -- 1 = viene de GEN_EMPLEADO_PUESTO
+		CONVERT(BIT, CASE WHEN JF.CORR_UNIDAD IS NOT NULL THEN 1 ELSE 0 END)
+			AS ES_JEFE_UNIDAD,                                                   -- 1 = es jefe activo de esa unidad
 		CONVERT(BIT, CASE WHEN CF.CORR_UNIDAD IS NOT NULL THEN 1 ELSE 0 END)
 			AS ES_CONFIGURADA                                                    -- 1 = viene de SC_UNIDADES_USUARIO
 	FROM UnidadesUnion U
@@ -115,6 +134,9 @@ BEGIN
 	LEFT JOIN UnidadesPorPuesto PP
 		ON PP.CORR_EMPRESA = U.CORR_EMPRESA
 	   AND PP.CORR_UNIDAD = U.CORR_UNIDAD
+	LEFT JOIN UnidadesComoJefe JF
+		ON JF.CORR_EMPRESA = U.CORR_EMPRESA
+	   AND JF.CORR_UNIDAD = U.CORR_UNIDAD
 	LEFT JOIN UnidadesConfiguradas CF
 		ON CF.CORR_EMPRESA = U.CORR_EMPRESA
 	   AND CF.CORR_UNIDAD = U.CORR_UNIDAD
@@ -124,21 +146,16 @@ GO
 
 /*
 ================================================================================
-CÓMO PROBAR (después de crear/recrear el SP en tu sesión)
+CÓMO PROBAR (después de recrear el SP en tu sesión)
 ================================================================================
 
--- Cesar Lopez: puesto 7 SOLO en unidad 5 + config SC 1..8
+-- Cesar Lopez: puesto unidad 5 + jefe activo en 5 y 6 + config 1..8
 EXEC dbo.PRAL_DATA_SC_UNIDADES_USUARIO
 	@CORR_EMPRESA = 1,
 	@LOGIN_SISTEMA = 'cesar.lopez';
 
--- Daniel Palacios: solo unidad 5 por puesto (sin config SC)
+-- Daniel Palacios
 EXEC dbo.PRAL_DATA_SC_UNIDADES_USUARIO
 	@CORR_EMPRESA = 1,
 	@LOGIN_SISTEMA = 'dpalacios';
-
--- Solo configuración
-EXEC dbo.PRAL_DATA_SC_UNIDADES_USUARIO
-	@CORR_EMPRESA = 1,
-	@LOGIN_SISTEMA = 'alexanderr';
 */
