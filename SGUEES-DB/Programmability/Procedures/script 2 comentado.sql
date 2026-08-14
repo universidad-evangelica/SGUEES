@@ -5,7 +5,7 @@ GO
 --   Con la empresa y el login del usuario, devolver las unidades a las que
 --   tiene acceso, sin repetir ninguna unidad.
 -- Fuentes de unidades (se unen):
---   A) Por puesto real del empleado: GEN_EMPLEADO_PUESTO.CORR_UNIDAD (activo)
+--   A) Por puesto real del empleado: GEN_EMPLEADO_PUESTO.CORR_UNIDAD
 --   B) Por jefatura activa: SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES
 --   C) Por configuración manual: SC_UNIDADES_USUARIO
 -- Ejemplo:
@@ -44,8 +44,9 @@ BEGIN
 
 	----------------------------------------------------------------------------
 	-- PASO 2: UnidadesPorPuesto
-	-- Qué hace: obtiene las unidades donde el empleado tiene puesto activo.
-	-- Cómo: lee CORR_UNIDAD directo de GEN_EMPLEADO_PUESTO (ESTADO = 1).
+	-- Qué hace: obtiene las unidades donde el empleado tiene puesto.
+	-- Cómo: lee CORR_UNIDAD directo de GEN_EMPLEADO_PUESTO.
+	--       Ya no existe ESTADO_EMPLEADO_PUESTO; la fila en la intermedia basta.
 	----------------------------------------------------------------------------
 	UnidadesPorPuesto AS
 	(
@@ -57,7 +58,6 @@ BEGIN
 			ON EL.CORR_EMPRESA = EP.CORR_EMPRESA
 		   AND EL.CORR_EMPLEADO = EP.CORR_EMPLEADO
 		WHERE EP.CORR_EMPRESA = @CORR_EMPRESA
-		  AND EP.ESTADO_EMPLEADO_PUESTO = CONVERT(BIT, 1)
 	),
 
 	----------------------------------------------------------------------------

@@ -13,6 +13,7 @@ namespace SGUEES.Models
         public string LOGIN_SISTEMA { get; set; }
         public string NOMBRE_USUARIO { get; set; }
         public bool ES_POR_PUESTO { get; set; }
+        public bool ES_JEFE_UNIDAD { get; set; }
         public bool ES_CONFIGURADA { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }

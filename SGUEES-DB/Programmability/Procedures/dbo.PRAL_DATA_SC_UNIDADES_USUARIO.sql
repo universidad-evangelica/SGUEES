@@ -3,7 +3,7 @@ GO
 -- =============================================================================
 -- Qué hace: Devuelve las unidades del usuario por empresa (sin duplicados) a
 --   partir de:
---   1) Unidades de sus puestos activos en GEN_EMPLEADO_PUESTO (CORR_UNIDAD).
+--   1) Unidades de sus puestos en GEN_EMPLEADO_PUESTO (CORR_UNIDAD).
 --   2) Unidades donde es jefe activo (SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES).
 --   3) Unidades configuradas en SC_UNIDADES_USUARIO.
 -- Cómo lo hace: Filtra por @CORR_EMPRESA y @LOGIN_SISTEMA, resuelve el empleado
@@ -38,8 +38,8 @@ BEGIN
 	),
 	UnidadesPorPuesto AS
 	(
-		-- Qué hace: unidades donde el empleado tiene puesto activo.
-		-- Cómo: lee CORR_UNIDAD de GEN_EMPLEADO_PUESTO (ESTADO = 1).
+		-- Qué hace: unidades donde el empleado tiene puesto.
+		-- Cómo: lee CORR_UNIDAD de GEN_EMPLEADO_PUESTO (ya no hay ESTADO_EMPLEADO_PUESTO).
 		SELECT DISTINCT
 			EP.CORR_EMPRESA,
 			EP.CORR_UNIDAD
@@ -48,7 +48,6 @@ BEGIN
 			ON EL.CORR_EMPRESA = EP.CORR_EMPRESA
 		   AND EL.CORR_EMPLEADO = EP.CORR_EMPLEADO
 		WHERE EP.CORR_EMPRESA = @CORR_EMPRESA
-		  AND EP.ESTADO_EMPLEADO_PUESTO = CONVERT(BIT, 1)
 	),
 	UnidadesComoJefe AS
 	(

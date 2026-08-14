@@ -410,7 +410,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.getTIPO_REQUERIDO();
 	}
 
-	// Qué hace: carga las unidades efectivas del usuario de sesión (puesto + configuradas).
+	// Qué hace: carga las unidades efectivas del usuario de sesión (puesto + jefe + configuradas).
 	// Cómo: lookup GetCORR_UNIDAD → GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO; el API ejecuta PRAL_DATA_SC_UNIDADES_USUARIO.
 	getCORR_UNIDAD(): void {
 		this.appInfoService

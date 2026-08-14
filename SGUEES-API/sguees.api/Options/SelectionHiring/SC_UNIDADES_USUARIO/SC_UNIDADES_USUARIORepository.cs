@@ -70,7 +70,7 @@ namespace SGUEES.Repositories
             return result;
         }
 
-        // Qué hace: lista las unidades efectivas del usuario (puesto + configuradas).
+        // Qué hace: lista las unidades efectivas del usuario (puesto + jefe + configuradas).
         // Cómo: ejecuta PRAL_DATA_SC_UNIDADES_USUARIO con CORR_EMPRESA y LOGIN_SISTEMA.
         public async Task<CResult> GetUnidadesUsuarioAsync(List<CParameter> xWhere)
         {
