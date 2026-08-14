@@ -260,5 +260,14 @@ namespace sguees.Controllers
 		{
 			return await _service.GetAllSEG_USUARIO_LOOKUP(Data);
 		}
+
+		// Qué hace: entrega usuarios para el mantenimiento de unidades por usuario.
+		// Cómo: reutiliza el lookup de SEG_USUARIO protegido por la política de lectura de la vista.
+		[HttpGet("GetLOGIN_SISTEMA_SC_UNIDADES_USUARIO")]
+		[Authorize(Policy = "/sc-unidades-usuario|R")]
+		public async Task<CResult> GetLOGIN_SISTEMA_SC_UNIDADES_USUARIO([FromQuery] SEG_USUARIOParam Data)
+		{
+			return await _service.GetAllSEG_USUARIO_LOOKUP(Data);
+		}
     }
 }

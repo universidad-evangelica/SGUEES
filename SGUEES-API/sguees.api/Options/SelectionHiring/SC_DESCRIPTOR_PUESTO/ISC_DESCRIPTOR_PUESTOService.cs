@@ -16,6 +16,10 @@ namespace SGUEES.Services
         Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         // Valida y actualiza el registro existente de descriptor de puesto.
         Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+        // Actualiza solo RESPONSABLE (editable de Entrenamiento).
+        Task<CResult> UpdateResponsableAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+        // Actualiza solo impacto económico (fila virtual de Responsabilidades).
+        Task<CResult> UpdateImpactoEconomicoAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         // Valida las claves y elimina el registro de descriptor de puesto.
         Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
     }

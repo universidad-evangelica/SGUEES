@@ -36,6 +36,28 @@ export class ScDescriptorPuestoRepository {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// Qué hace: actualiza solo RESPONSABLE (Entrenamiento).
+	updateResponsable(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'UpdateResponsable',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	// Qué hace: actualiza solo impacto económico.
+	updateImpactoEconomico(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'UpdateImpactoEconomico',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
 	// Qué hace: elimina un descriptor.
 	// Cómo: DELETE con la llave en xWhere.
 	delete(xWhere: IParam[]): Observable<IResult> {

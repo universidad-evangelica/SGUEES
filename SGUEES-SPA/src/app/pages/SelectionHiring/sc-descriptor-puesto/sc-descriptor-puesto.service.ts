@@ -95,7 +95,7 @@ export class ScDescriptorPuestoService {
 		}
 
 		if (!model.CORR_PUESTO_REPORTA || model.CORR_PUESTO_REPORTA <= 0) {
-			msg('Debe seleccionar el puesto al que reporta.', NotifyType.Warning);
+			msg('Debe seleccionar a quien reporta (jefe de la unidad).', NotifyType.Warning);
 			return false;
 		}
 
@@ -208,6 +208,29 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: guarda solo el texto libre de Responsable (Entrenamiento).
+	updateResponsable(model: any): Observable<IResult> {
+		return this.repo.updateResponsable(
+			{
+				CORR_DESCRIPTOR_PUESTO: model.CORR_DESCRIPTOR_PUESTO,
+				RESPONSABLE: model.RESPONSABLE ?? '',
+			},
+			[{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO }]
+		);
+	}
+
+	// Qué hace: guarda solo impacto económico del descriptor.
+	updateImpactoEconomico(model: any): Observable<IResult> {
+		return this.repo.updateImpactoEconomico(
+			{
+				CORR_DESCRIPTOR_PUESTO: model.CORR_DESCRIPTOR_PUESTO,
+				CORR_IMPACTO_ECONOMICO: model.CORR_IMPACTO_ECONOMICO ?? null,
+				DESCRIPCION_IMPACTO_ECONOMICO: model.DESCRIPCION_IMPACTO_ECONOMICO ?? '',
+			},
+			[{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO }]
+		);
+	}
+
 	// Qué hace: elimina un descriptor por su correlativo.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO }]);
@@ -229,6 +252,7 @@ export class ScDescriptorPuestoService {
 			{
 				dataField: 'FORMATO',
 				caption: 'Formato',
+				visible: false,
 				width: 132,
 				cssClass: 'descriptor-grid-badge-col',
 				allowHeaderFiltering: false,
@@ -359,7 +383,7 @@ export class ScDescriptorPuestoService {
 			{
 				dataField: 'CORR_PUESTO_REPORTA',
 				label: { text: 'Reporta a' },
-				colSpan: 2,
+				colSpan: 3,
 				template: 'CORR_PUESTO_REPORTALookup',
 				validationRules: [
 					{

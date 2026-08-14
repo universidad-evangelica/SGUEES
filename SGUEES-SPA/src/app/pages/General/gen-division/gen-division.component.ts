@@ -209,7 +209,7 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 	}
 
 	// Qué hace: valida y guarda la división (creación o actualización).
-	// Cómo: llama a insert o update del GenDivisionService según banderaMtto.
+	// Cómo: sincroniza formData, valida con esValido y llama a guardarMtto con insert/update (mismo patrón sc-riesgo-puesto).
 	guardar(): void {
 		const formData = this.dataForm?.instance?.option('formData');
 		if (formData) {
@@ -224,39 +224,33 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 
 		this.guardarMtto({
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
-			insert: () => this.convertirCodigoDuplicadoEnWarning(this.service.insert(this.model)),
-			update: () => this.convertirCodigoDuplicadoEnWarning(this.service.update(this.model)),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
 		});
 	}
 
-	// Qué hace: convierte errores de código duplicado en advertencia controlada.
-	// Cómo: intercepta ErrorCode 2601/2627 o mensajes de duplicado.
-	private convertirCodigoDuplicadoEnWarning<T>(request: Observable<T>): Observable<T> {
+	// Qué hace: convierte un error de llave foránea al eliminar en una advertencia controlada.
+	// Cómo: intercepta el error de la petición y, si el mensaje indica una relación, devuelve un IResult con advertencia.
+	private convertirErrorMttoEnWarning<T>(request: Observable<T>): Observable<T> {
 		return request.pipe(
 			catchError((error: any) => {
-				const message = this.obtenerMensajeApiLocal(error).toLowerCase();
-				const errorCode = Number(error?.ErrorCode ?? error?.error?.ErrorCode);
-				if (errorCode === 2601 || errorCode === 2627 || this.esErrorDuplicadoLocal(message)) {
-					return of({
-						Result: false,
-						ErrorCode: 2627,
-						ErrorMessage: 'El código de división ingresado está registrado. Escriba otro código para continuar.',
-					} as T);
-				}
+				const mensaje = `${
+					error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.error?.message ?? error?.error ?? error?.message ?? error ?? ''
+				}`;
+				const normalizado = mensaje.toLowerCase();
+				const tieneRelacion = [
+					'foreign key',
+					'reference constraint',
+					'clave externa',
+					'clave foránea',
+					'llave foránea',
+					'hijos',
+					'registros relacionados',
+					'registros asociados',
+					'asociados',
+				].some((texto) => normalizado.includes(texto));
 
-				return throwError(() => error);
-			})
-		);
-	}
-
-	// Qué hace: convierte errores de integridad al eliminar en advertencia.
-	// Cómo: intercepta ErrorCode 547 o mensajes de FK/relacionados.
-	private convertirEliminacionRelacionadaEnWarning<T>(request: Observable<T>): Observable<T> {
-		return request.pipe(
-			catchError((error: any) => {
-				const message = this.obtenerMensajeApiLocal(error).toLowerCase();
-				const errorCode = Number(error?.ErrorCode ?? error?.error?.ErrorCode);
-				if (errorCode === 547 || this.esErrorRelacionadosLocal(message)) {
+				if (tieneRelacion) {
 					return of({
 						Result: false,
 						ErrorCode: 2627,
@@ -269,39 +263,6 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
-	// Qué hace: detecta mensajes de registro duplicado.
-	private esErrorDuplicadoLocal(message: string): boolean {
-		return ['ya existe', 'duplicad', 'primary key', 'unique key', 'mismo tiempo', 'llave primaria', 'clave primaria'].some(
-			(fragment) => message.includes(fragment)
-		);
-	}
-
-	// Qué hace: detecta mensajes de integridad referencial.
-	private esErrorRelacionadosLocal(message: string): boolean {
-		return [
-			'foreign key',
-			'reference constraint',
-			'restricción reference',
-			'restriccion reference',
-			'hijos',
-			'relacionad',
-			'asociad',
-		].some((fragment) => message.includes(fragment));
-	}
-
-	// Qué hace: obtiene el mensaje usable desde un error del API.
-	private obtenerMensajeApiLocal(error: any): string {
-		if (typeof error === 'string') {
-			return error;
-		}
-
-		if (typeof error?.error === 'string') {
-			return error.error;
-		}
-
-		return `${error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.message ?? error ?? ''}`;
-	}
-
 	// Qué hace: cancela la edición y vuelve a modo consulta.
 	// Cómo: llama a cancelar del base con la clave del registro.
 	override cancelar(): void {
@@ -309,11 +270,11 @@ export class GenDivisionComponent extends CBaseComponent implements OnInit {
 	}
 
 	// Qué hace: elimina la división seleccionada en el grid.
-	// Cómo: llama a delete del servicio vía rowRemovingMtto.
+	// Cómo: llama a delete del servicio vía rowRemovingMtto, convirtiendo errores de relación en advertencia.
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
-				this.convertirEliminacionRelacionadaEnWarning(this.service.delete(this.fillParam(e.data.CORR_DIVISION))),
+				this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_DIVISION))),
 		});
 	}
 

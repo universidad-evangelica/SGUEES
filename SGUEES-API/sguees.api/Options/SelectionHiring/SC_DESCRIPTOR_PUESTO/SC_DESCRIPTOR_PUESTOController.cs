@@ -67,6 +67,30 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Actualiza solo RESPONSABLE (texto libre del grid Entrenamiento).
+        [HttpPut("UpdateResponsable")]
+        [Authorize(Policy = "/sc-descriptor-puesto|U")]
+        public async Task<IActionResult> UpdateResponsable(SC_DESCRIPTOR_PUESTOTable Data)
+        {
+            this.ApplyQueryKeys(Data, nameof(SC_DESCRIPTOR_PUESTOTable.CORR_DESCRIPTOR_PUESTO));
+            SetUpdateAudit(Data);
+
+            var resultado = await _service.UpdateResponsableAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+        }
+
+        // Actualiza solo impacto económico (fila virtual de Responsabilidades).
+        [HttpPut("UpdateImpactoEconomico")]
+        [Authorize(Policy = "/sc-descriptor-puesto|U")]
+        public async Task<IActionResult> UpdateImpactoEconomico(SC_DESCRIPTOR_PUESTOTable Data)
+        {
+            this.ApplyQueryKeys(Data, nameof(SC_DESCRIPTOR_PUESTOTable.CORR_DESCRIPTOR_PUESTO));
+            SetUpdateAudit(Data);
+
+            var resultado = await _service.UpdateImpactoEconomicoAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+        }
+
         // Elimina un descriptor de la empresa en sesión; borra también sus registros hijos.
         [HttpDelete]
         [Authorize(Policy = "/sc-descriptor-puesto|D")]

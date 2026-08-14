@@ -15,12 +15,6 @@ export class GenDeptoRepository {
 
 	constructor(private objData: CData) {}
 
-	// Qué hace: consulta el listado de departamentos.
-	// Cómo: GET GetAll al controlador GEN_DEPTO con los filtros recibidos.
-	getAll(xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlGENERALAPI);
-	}
-
 	// Qué hace: crea un departamento nuevo.
 	// Cómo: POST con el modelo al controlador GEN_DEPTO.
 	create(model: any): Observable<IResult> {

@@ -24,6 +24,9 @@ export class DataLookupComponent implements OnInit, OnChanges {
 	claseOpend = false;
 	columns: any[] = [];
 	internalValue: any;
+	// Qué hace: selección del grid del dropdown, alineada con el valor del combo.
+	// Cómo: array estable; vacío cuando no hay valor para poder reelegir la misma fila.
+	gridSelectedKeys: any[] = [];
 
 	constructor() {}
 
@@ -48,13 +51,19 @@ export class DataLookupComponent implements OnInit, OnChanges {
 	}
 
 	onValueChanged(e: any) {
+		let nextValue: any;
 		if (e.value === null || e.value === undefined || e.value === '') {
-			this.value = e.value;
-			this.internalValue = e.value;
+			nextValue = e.value;
 		} else {
-			this.value = this.fromLookupValue(e.value);
-			this.internalValue = this.toLookupValue(this.value);
+			nextValue = this.fromLookupValue(e.value);
 		}
+		if (this.sameLookupValue(nextValue, this.value)) {
+			this.syncGridSelectedKeys();
+			return;
+		}
+		this.value = nextValue;
+		this.internalValue = this.toLookupValue(this.value);
+		this.syncGridSelectedKeys();
 		this.valueChange.emit(this.value);
 	}
 
@@ -72,17 +81,57 @@ export class DataLookupComponent implements OnInit, OnChanges {
 			return;
 		}
 
+		if (this.sameLookupValue(newValue, this.value)) {
+			this.claseOpend = false;
+			return;
+		}
+
 		if (this.setValue) {
 			this.setValue(newValue);
 		}
 		this.value = newValue;
 		this.internalValue = this.toLookupValue(newValue);
+		this.syncGridSelectedKeys();
 		this.valueChange.emit(this.value);
 		this.claseOpend = false;
 	}
 
 	private syncInternalValue(): void {
 		this.internalValue = this.toLookupValue(this.value);
+		this.syncGridSelectedKeys();
+	}
+
+	// Qué hace: deja el grid con la misma selección que el valor del combo.
+	// Cómo: si el valor está vacío, selectedRowKeys = [] para que un nuevo clic sí dispare selección.
+	private syncGridSelectedKeys(): void {
+		const next =
+			this.internalValue === null || this.internalValue === undefined || this.internalValue === ''
+				? []
+				: [this.internalValue];
+		if (this.sameKeys(this.gridSelectedKeys, next)) {
+			return;
+		}
+		this.gridSelectedKeys = next;
+	}
+
+	private sameLookupValue(a: any, b: any): boolean {
+		if (a === b) {
+			return true;
+		}
+		if (a == null || a === '' || b == null || b === '') {
+			return a == null || a === '' ? b == null || b === '' : false;
+		}
+		return String(a) === String(b);
+	}
+
+	private sameKeys(current: any[], next: any[]): boolean {
+		if (current.length !== next.length) {
+			return false;
+		}
+		if (current.length === 0) {
+			return true;
+		}
+		return this.sameLookupValue(current[0], next[0]);
 	}
 
 	private toLookupValue(v: any): any {

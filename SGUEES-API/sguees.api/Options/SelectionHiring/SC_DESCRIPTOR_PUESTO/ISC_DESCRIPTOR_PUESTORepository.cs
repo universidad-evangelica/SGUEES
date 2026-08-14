@@ -11,5 +11,9 @@ namespace SGUEES.Repositories
     {
         // Comprueba si el puesto ya tiene otro descriptor abierto en la empresa.
         Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(int corrEmpresa, int corrPuesto, int excludeCorrDescriptor);
+        // Actualiza solo RESPONSABLE (Entrenamiento).
+        Task<CResult> UpdateResponsableAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+        // Actualiza solo impacto económico.
+        Task<CResult> UpdateImpactoEconomicoAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
     }
 }

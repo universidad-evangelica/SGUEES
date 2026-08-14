@@ -12,6 +12,7 @@ import { GenEstructuraTerritorialComponent } from './gen-estructura-territorial/
 import { GenDivisionComponent } from './gen-division/gen-division.component';
 import { GenGerenciaComponent } from './gen-gerencia/gen-gerencia.component';
 import { GenBancoComponent } from './gen-banco/gen-banco.component';
+import { GenUnidadesPuestoComponent } from './gen-unidades-puesto/gen-unidades-puesto.component';
 
 const routes: Routes = [
   {
@@ -85,6 +86,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-banco/gen-banco.module').then(m => m.GenBancoModule)
+  },
+  {
+    path: 'gen-unidades-puesto',
+    component: GenUnidadesPuestoComponent,
+    data: { titulo: 'Asignación de Puestos a Unidades' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-unidades-puesto/gen-unidades-puesto.module').then(m => m.GenUnidadesPuestoModule)
   }
 ];
 
