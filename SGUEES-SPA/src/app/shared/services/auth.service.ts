@@ -431,7 +431,8 @@ export class AuthGuardService implements CanActivate {
 		let routerUrl: string;
 		let routerList: Array<any>;
 
-    const isAuthForm = ['login-form', 'recuperar-contrasena', 'reset-password', 'create-account', 'change-password/:recoveryCode', 'change-password'].includes(
+    const isPublicForm = route.routeConfig?.path === 'formulario-empleo';
+    const isAuthForm = ['login-form', 'recuperar-contrasena', 'reset-password', 'formulario-empleo', 'create-account', 'change-password/:recoveryCode', 'change-password'].includes(
 			route.routeConfig?.path || defaultPath
 		);
 
@@ -456,7 +457,7 @@ export class AuthGuardService implements CanActivate {
 		// eslint-disable-next-line prefer-const
 		routerUrl = '/' + routerList[0];
 
-		if (isLoggedIn && isAuthForm) {
+		if (isLoggedIn && isAuthForm && !isPublicForm) {
 			this.authService.lastAuthenticatedPath = defaultPath;
 			this.router.navigate([defaultPath]);
 			return false;

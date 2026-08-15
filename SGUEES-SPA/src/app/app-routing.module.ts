@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 //import { BrowserModule } from '@angular/platform-browser';
 import { LoginFormComponent } from './shared/components/library/login-form/login-form.component';
 import { ResetPasswordFormComponent } from './shared/components/library/reset-password-form/reset-password-form.component';
+import { FormularioEmpleoFormComponent } from './shared/components/library/formulario-empleo-form/formulario-empleo-form.component';
 import { CreateAccountFormComponent } from './shared/components/library/create-account-form/create-account-form.component';
 import { ChangePasswordFormComponent } from './shared/components/library/change-password-form/change-password-form.component';
 import { AuthGuardService } from './shared/services';
@@ -49,6 +50,11 @@ const routes: Routes = [
   {
     path: 'reset-password',
     component: ResetPasswordFormComponent,
+    canActivate: [AuthGuardService],
+  },
+  {
+    path: 'formulario-empleo',
+    component: FormularioEmpleoFormComponent,
     canActivate: [AuthGuardService],
   },
   {
