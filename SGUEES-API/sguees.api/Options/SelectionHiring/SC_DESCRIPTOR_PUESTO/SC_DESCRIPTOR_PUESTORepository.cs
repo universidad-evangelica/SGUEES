@@ -21,6 +21,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Lee de la vista V_SC_DESCRIPTOR_PUESTO filtrando por CORR_EMPRESA; ordena por id.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -64,6 +65,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Lee un registro de V_SC_DESCRIPTOR_PUESTO con los filtros recibidos (empresa + id).
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -101,6 +103,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta en SC_DESCRIPTOR_PUESTO y devuelve el registro creado leído desde la vista.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -147,6 +150,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza SC_DESCRIPTOR_PUESTO por CORR_EMPRESA + CORR_DESCRIPTOR_PUESTO y devuelve el registro.
         public async Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -162,9 +166,8 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "FECHA_REVISION", Value = ToSqlDate(Data.FECHA_REVISION), DbType = System.Data.DbType.Date },
                     new CParameter() { ParameterName = "NUM_PERSONAL_CARGO", Value = Data.NUM_PERSONAL_CARGO, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "OBJETIVO_PUESTO", Value = Data.OBJETIVO_PUESTO, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "CORR_IMPACTO_ECONOMICO", Value = Data.CORR_IMPACTO_ECONOMICO, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_INDUCCION", Value = Data.CORR_INDUCCION, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "RESPONSABLE", Value = Data.RESPONSABLE, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "NOMBRE_PUESTO", Value = Data.NOMBRE_PUESTO, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "NOMBRE_UNIDAD", Value = Data.NOMBRE_UNIDAD, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FORMATO", Value = Data.FORMATO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "VERSION", Value = Data.VERSION, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "ESTADO_DESCRIPTOR", Value = Data.ESTADO_DESCRIPTOR, DbType = System.Data.DbType.String },
@@ -213,6 +216,118 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza solo RESPONSABLE (editable de Entrenamiento).
+        public async Task<CResult> UpdateResponsableAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "RESPONSABLE", Value = Data.RESPONSABLE, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
+                };
+
+                var pWhere = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                };
+
+                var reader = await objData.Update(_TableName, p, pWhere);
+                var response = new List<SC_DESCRIPTOR_PUESTOView>().FromDataReader(reader).FirstOrDefault();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
+                objResultado.Result = true;
+                objResultado.RowsAffected = response == null ? 0 : 1;
+                objResultado.CodeHelper = response?.CORR_DESCRIPTOR_PUESTO ?? Data.CORR_DESCRIPTOR_PUESTO;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+                objResultado.ErrorSource = "";
+            }
+            catch (Exception e)
+            {
+                var duplicateKey = IsDuplicateKeyError(e);
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = duplicateKey ? 2627 : -1;
+                objResultado.ErrorMessage = duplicateKey
+                    ? "No se pudo guardar el registro porque otro usuario guardo un registro al mismo tiempo. Intente nuevamente."
+                    : e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        // Actualiza solo impacto económico (fila virtual de Responsabilidades).
+        public async Task<CResult> UpdateImpactoEconomicoAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_IMPACTO_ECONOMICO", Value = Data.CORR_IMPACTO_ECONOMICO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "DESCRIPCION_IMPACTO_ECONOMICO", Value = Data.DESCRIPCION_IMPACTO_ECONOMICO, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
+                };
+
+                var pWhere = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                };
+
+                var reader = await objData.Update(_TableName, p, pWhere);
+                var response = new List<SC_DESCRIPTOR_PUESTOView>().FromDataReader(reader).FirstOrDefault();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
+                objResultado.Result = true;
+                objResultado.RowsAffected = response == null ? 0 : 1;
+                objResultado.CodeHelper = response?.CORR_DESCRIPTOR_PUESTO ?? Data.CORR_DESCRIPTOR_PUESTO;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+                objResultado.ErrorSource = "";
+            }
+            catch (Exception e)
+            {
+                var duplicateKey = IsDuplicateKeyError(e);
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = duplicateKey ? 2627 : -1;
+                objResultado.ErrorMessage = duplicateKey
+                    ? "No se pudo guardar el registro porque otro usuario guardo un registro al mismo tiempo. Intente nuevamente."
+                    : e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        // Borra tablas hijas en orden (detalle → encabezados) y luego el registro en SC_DESCRIPTOR_PUESTO.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -225,8 +340,20 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
                 };
 
-                // Solo elimina el perfil de puesto vinculado al descriptor.
+                // Primero elimina detalle y encabezados del descriptor y del perfil; al final el descriptor.
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_FUNCION_ACTIVIDAD", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_FUNCION", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_KPI_FUNCION", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_RELACION_LABORAL", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_INDUCCION", pWhere);
+                await objData.Delete("SC_PERFIL_PUESTO_EDUCACION", pWhere);
+                await objData.Delete("SC_PERFIL_PUESTO_EXPERIENCIA", pWhere);
+                await objData.Delete("SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS", pWhere);
+                await objData.Delete("SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES", pWhere);
                 await objData.Delete("SC_PERFIL_PUESTO", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL", pWhere);
+                await objData.Delete("SC_DESCRIPTOR_PUESTO_RIESGO_PUESTO", pWhere);
 
                 objResultado.RowsAffected = (int)await objData.Delete(_TableName, pWhere);
                 objResultado.Data = null;
@@ -253,6 +380,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Arma la lista de columnas y valores para insertar o actualizar en SC_DESCRIPTOR_PUESTO.
         private static List<CParameter> BuildWriteParameters(SC_DESCRIPTOR_PUESTOTable Data, bool includeAuditCreate = true)
         {
             var p = new List<CParameter>
@@ -266,8 +394,10 @@ namespace SGUEES.Repositories
                 new CParameter() { ParameterName = "FECHA_REVISION", Value = ToSqlDate(Data.FECHA_REVISION), DbType = System.Data.DbType.Date },
                 new CParameter() { ParameterName = "NUM_PERSONAL_CARGO", Value = Data.NUM_PERSONAL_CARGO, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "OBJETIVO_PUESTO", Value = Data.OBJETIVO_PUESTO, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "NOMBRE_PUESTO", Value = Data.NOMBRE_PUESTO, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "NOMBRE_UNIDAD", Value = Data.NOMBRE_UNIDAD, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "CORR_IMPACTO_ECONOMICO", Value = Data.CORR_IMPACTO_ECONOMICO, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_INDUCCION", Value = Data.CORR_INDUCCION, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "DESCRIPCION_IMPACTO_ECONOMICO", Value = Data.DESCRIPCION_IMPACTO_ECONOMICO, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "RESPONSABLE", Value = Data.RESPONSABLE, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "FORMATO", Value = Data.FORMATO, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "VERSION", Value = Data.VERSION, DbType = System.Data.DbType.Int32 },
@@ -287,6 +417,7 @@ namespace SGUEES.Repositories
             return p;
         }
 
+        // Convierte fechas anteriores a 1753 en NULL porque SQL Server no las acepta.
         private static object ToSqlDate(DateTime? fecha)
         {
             if (!fecha.HasValue || fecha.Value.Year < 1753)
@@ -297,6 +428,7 @@ namespace SGUEES.Repositories
             return fecha.Value.Date;
         }
 
+        // Detecta error de clave duplicada en SQL para devolver un mensaje claro al usuario.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||
@@ -304,6 +436,7 @@ namespace SGUEES.Repositories
                 e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
         }
 
+        // Consulta SC_DESCRIPTOR_PUESTO: true si el puesto ya tiene descriptor en BORRADOR, ENVIADO, REVISADO o ACTIVO.
         public async Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(int corrEmpresa, int corrPuesto, int excludeCorrDescriptor)
         {
             if (corrEmpresa <= 0 || corrPuesto <= 0)

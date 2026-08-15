@@ -1,4 +1,5 @@
-﻿import { CommonModule } from '@angular/common';
+// Routing y declaraciones DevExtreme/layout de la vista Inducción.
+import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
@@ -14,6 +15,7 @@ import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtt
 import { ToastModule } from 'primeng/toast';
 import { ScInduccionComponent } from './sc-induccion.component';
 
+// Ruta lazy y declaraciones DevExtreme del mantenimiento de inducción.
 const routes: Routes = [{ path: '', component: ScInduccionComponent }];
 
 @NgModule({
@@ -35,5 +37,6 @@ const routes: Routes = [{ path: '', component: ScInduccionComponent }];
 	exports: [RouterModule],
 	declarations: [ScInduccionComponent],
 })
+// Declara el componente y registra la ruta hija del catálogo.
 export class ScInduccionRoutingModule {}
 

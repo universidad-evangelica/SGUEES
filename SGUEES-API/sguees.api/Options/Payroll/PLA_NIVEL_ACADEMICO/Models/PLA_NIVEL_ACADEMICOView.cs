@@ -2,6 +2,7 @@ using System;
 
 namespace SGUEES.Models
 {
+    // Qué hace: representa una fila leída desde V_PLA_NIVEL_ACADEMICO para consultas.
     public class PLA_NIVEL_ACADEMICOView
     {
         public int CORR_EMPRESA { get; set; }

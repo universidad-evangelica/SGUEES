@@ -6,6 +6,7 @@
      - Líneas Trabajo - Conciliación Bancaria
      - Tipos de Cheques
      - Tipos de Movimientos Bancarios
+     - Parámetros Bancarios
    Idempotente. Asigna permisos CRUD al usuario admin.
    ============================================================================
    Ejecutar:
@@ -53,7 +54,8 @@ INSERT INTO @Opciones (CODIGO, NOMBRE, URL, ORD) VALUES
     (N'BAN_CUENTA_BANCARIA',              N'Cuentas Bancarias',                       N'/ban-cuenta-bancaria',              1),
     (N'BAN_LINEA_TRABAJO_CONCILIACION',   N'Líneas Trabajo - Conciliación Bancaria',  N'/ban-linea-trabajo-conciliacion',   2),
     (N'BAN_TIPO_CHEQUE',                  N'Tipos de Cheques',                        N'/ban-tipo-cheque',                  3),
-    (N'BAN_TIPO_MOVI_BANCARIO',           N'Tipos de Movimientos Bancarios',          N'/ban-tipo-movi-bancario',           4);
+    (N'BAN_TIPO_MOVI_BANCARIO',           N'Tipos de Movimientos Bancarios',          N'/ban-tipo-movi-bancario',           4),
+    (N'BAN_PARAMETRO',                    N'Parámetros Bancarios',                    N'/ban-parametro',                    5);
 
 MERGE SEG_OPCION_SISTEMA AS T
 USING @Opciones AS S ON T.CODIGO_OPCION = S.CODIGO

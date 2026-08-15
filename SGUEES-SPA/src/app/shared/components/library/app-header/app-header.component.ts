@@ -30,14 +30,16 @@ export class AppHeaderComponent implements OnInit {
   user: IUser | null = { user: '' };
 
   userMenuItems = [{
-    text: 'Perfil',
-    icon: 'card',
+    text: 'Mi perfil',
+    hint: 'Ver datos y seguridad',
+    icon: 'user',
     onClick: () => {
       this.router.navigate(['/profile']);
     }
   },
   {
     text: 'Salir',
+    hint: 'Cerrar sesión del sistema',
     icon: 'runner',
     onClick: () => {
       this.authService.logOut();

@@ -26,7 +26,7 @@
   flex: 1;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
   padding: 0;
   border-radius: var(--sguees-radius-lg);
   box-shadow: var(--sguees-shadow-md);
@@ -81,6 +81,7 @@
       padding-top: var(--sguees-space-8);
       border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
     }
+
   }
 }
 
@@ -99,6 +100,74 @@
   }
 }
 
+:host ::ng-deep .sguees-grid-toolbar-group-panel {
+  flex: 1 1 100%;
+  width: 100%;
+  max-width: 100%;
+
+  .dx-toolbar-item-content {
+    width: 100%;
+    overflow: visible;
+  }
+
+  .dx-datagrid-group-panel {
+    width: 100%;
+    min-height: 44px;
+    padding: var(--sguees-space-2) var(--sguees-space-3);
+    border: none;
+    border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+    border-radius: 0;
+    background: var(--sguees-surface-subtle, rgba(0, 0, 0, 0.02));
+  }
+
+  .dx-group-panel-message {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sguees-text-secondary, var(--texteditor-label-color));
+  }
+}
+
+.sguees-data-grid-mtto--native-estado-toolbar {
+  ::ng-deep .dx-datagrid-header-panel .dx-toolbar {
+    padding: var(--sguees-space-2) 0;
+    min-height: 0;
+  }
+}
+
+.sguees-data-grid-mtto--native-toolbar {
+  ::ng-deep .dx-datagrid-header-panel .dx-toolbar {
+    padding: var(--sguees-space-2) 0;
+    min-height: 0;
+  }
+}
+
+:host ::ng-deep .dx-datagrid-header-panel .dx-toolbar {
+  .dx-toolbar-item {
+    flex-shrink: 0;
+  }
+
+  .dx-button.sguees-barra-btn-standard {
+    min-width: 140px;
+    flex-shrink: 0;
+
+    .dx-button-text {
+      white-space: nowrap;
+      overflow: visible;
+      text-overflow: clip;
+    }
+  }
+}
+
+.sguees-data-grid-mtto--grouping {
+  ::ng-deep .dx-datagrid-header-panel {
+    padding-bottom: 0;
+  }
+
+  ::ng-deep .dx-datagrid-headers {
+    border-top: none;
+  }
+}
+
 .sguees-data-grid-mtto--hidden {
   position: absolute;
   width: 1px;
@@ -111,6 +180,17 @@
 
 .sguees-data-grid-mtto {
   width: 100%;
+}
+
+:host ::ng-deep .dx-datagrid.sguees-data-grid-mtto {
+  > .dx-datagrid-rowsview.dx-datagrid-after-headers,
+  > .dx-datagrid-rowsview {
+    border-top: 1px solid var(--border-color) !important;
+  }
+
+  .dx-datagrid-headers .dx-datagrid-filter-row > td {
+    border-bottom: 1px solid var(--border-color) !important;
+  }
 }
 
 @media (max-width: 991.98px) {

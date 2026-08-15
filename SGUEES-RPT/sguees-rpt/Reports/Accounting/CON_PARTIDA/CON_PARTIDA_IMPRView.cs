@@ -1,6 +1,6 @@
 using System;
 
-namespace sgueesRpt.Models
+namespace sgueesRpt.Reports.Accounting.CON_PARTIDA
 {
 	public class CON_PARTIDA_IMPRView
 	{

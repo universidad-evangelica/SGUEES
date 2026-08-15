@@ -38,10 +38,6 @@ export class ConPeriodoContableComponent extends CBaseComponent implements OnIni
 
 	readonly periodoGridKeyExpr: string[] = ['ANIO_PERIODO', 'MES_PERIODO'];
 
-
-
-	private readonly maintenanceSubtitulo = 'Mantenimiento de períodos contables';
-
 	private pendingRemoveRow: ConPeriodoContable | null = null;
 
 
@@ -80,8 +76,6 @@ export class ConPeriodoContableComponent extends CBaseComponent implements OnIni
 
 	ngOnInit(): void {
 
-		this.subTituloVentana = this.maintenanceSubtitulo;
-
 		this.inicializaOpciones();
 
 		this.llenaComboBox();
@@ -103,8 +97,6 @@ export class ConPeriodoContableComponent extends CBaseComponent implements OnIni
 		super.AsignaStatus(xEstado);
 
 		if (xEstado === UpdateType.Browse) {
-
-			this.subTituloVentana = this.maintenanceSubtitulo;
 
 		}
 

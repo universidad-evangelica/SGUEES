@@ -26,7 +26,10 @@ import {
   attachRemoteHeaderFilters,
   syncHeaderFiltersFromPageData,
 } from 'src/app/shared/utils/remote-header-filter.util';
-import { buildEstadoToolbarOptions } from 'src/app/shared/mtto/mtto-grid.helpers';
+import {
+  buildEstadoToolbarOptions,
+  computeToolbarBtnWidth,
+} from 'src/app/shared/mtto/mtto-grid.helpers';
 
 import { exportDataGrid } from 'devextreme/excel_exporter';
 import ExcelJS from 'exceljs';
@@ -70,6 +73,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Output() refresh = new EventEmitter<void>();
   @Output() add = new EventEmitter<void>();
   @Input() filterValue: any = null;
+  /** null = auto: sincroniza filter row / header filter con panel inferior cuando showFilterPanel. */
+  @Input() filterSyncEnabled: boolean | null = null;
   @Input() showEmptyState = false;
   @Input() emptyTitle = 'Sin registros';
   @Input() emptyMessage = 'No hay datos para mostrar. Use «Nuevo» o actualice la consulta.';
@@ -87,6 +92,15 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() showRefresh?: boolean;
   @Input() showExport = true;
   @Input() showColumnChooser = false;
+  /** Panel de agrupación (arrastrar columnas). Con toolbar custom DX 24 requiere ítem `groupPanel`. */
+  @Input() showGrouping = false;
+  /** Barra inferior con filtros activos y acción limpiar. */
+  @Input() showFilterPanel = true;
+  /**
+   * Grid estilo AdminFE: sin `<dxo-toolbar>` custom.
+   * Acciones en barra/ribbon; DX pinta group panel, export, etc. nativamente.
+   */
+  @Input() nativeToolbar = false;
   /** null = adoptar contexto barra (header-only). false = toolbar legacy 7B. */
   @Input() unifiedToolbar: boolean | null = null;
   @Input() searchPlaceholder = 'Buscar...';
@@ -106,11 +120,15 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() exportFileName = 'Data';
   /** false cuando el hijo confirma en rowRemoving (evita doble diálogo DevExtreme + confirmaAccion). */
   @Input() confirmDelete = true;
+  /** Selección múltiple con casillas (procesos batch: contabilizar, autorizar, etc.). */
+  @Input() selectionMode: 'none' | 'multiple' = 'none';
   @Input() headerFilterLoader?: RemoteHeaderFilterLoader;
   /** null = auto (A+P sin filtro remoto: header filter desde página cargada). */
   @Input() syncHeaderFilterWithPage: boolean | null = null;
   /** v1.1 — Activar/Desactivar en toolbar junto a Agregar (fila seleccionada). */
   @Input() showEstadoToolbar = false;
+  /** null = auto: con nativeToolbar el estado va en barra/ribbon, no en grid. */
+  @Input() showEstadoToolbarInGrid: boolean | null = null;
   @Input() campoEstado = '';
   @Input() puedeCambiarEstado = true;
   /** PK a restaurar al volver a browse (ej. tras cancelar Nuevo). */
@@ -134,10 +152,23 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   permissionTooltipMessage = '';
   resolvedGridHeight: string | number = 670;
   hasFocusedRow = false;
-  filterSyncEnabled = false;
   gridVisible = true;
   activePageSize = 5;
   displayColumns: any[] = [];
+
+  readonly onCustomizeFilterPanelText = (e: { filterValue?: unknown; text?: string }): string => {
+    if (e.filterValue == null) {
+      return 'Crear filtro';
+    }
+    return e.text ? `Filtro: ${e.text}` : 'Filtros activos';
+  };
+
+  get effectiveFilterSyncEnabled(): boolean {
+    if (this.filterSyncEnabled !== null) {
+      return this.filterSyncEnabled;
+    }
+    return this.showFilterPanel;
+  }
 
   private showEditActions = true;
   private showDeleteActions = true;
@@ -157,7 +188,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   };
 
   get showPrimaryToolbarDivider(): boolean {
-    return this.effectiveShowEstadoToolbar;
+    return this.effectiveShowEstadoToolbarInGrid;
   }
 
   get isEmptyData(): boolean {
@@ -221,7 +252,29 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   get effectiveShowExport(): boolean {
-    return this.showExport;
+    return this.showExport && !this.nativeToolbar;
+  }
+
+  /** Export Excel habilitado en DX aunque el botón viva en barra/ribbon. */
+  get exportFeatureEnabled(): boolean {
+    return !!this.permitePrint && (this.showExport || this.nativeToolbar);
+  }
+
+  /** Toolbar nativa DX oculta si export/búsqueda/chooser viven en barra o están apagados. */
+  get shouldHideNativeHeaderToolbar(): boolean {
+    if (!this.nativeToolbar) {
+      return false;
+    }
+    // Panel de agrupación vive en header-panel; no ocultar toolbar si hay grouping.
+    if (this.showGrouping) {
+      return false;
+    }
+    return !this.effectiveShowExport && !this.showColumnChooser && !this.effectiveShowSearch;
+  }
+
+  /** Con nativeToolbar + grouping: toolbar mínima solo con groupPanel (acciones en ribbon). */
+  get useCustomToolbar(): boolean {
+    return !this.nativeToolbar || this.showGrouping;
   }
 
   get effectiveShowSearch(): boolean {
@@ -246,6 +299,16 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
 
   get effectiveShowEstadoToolbar(): boolean {
     return this.isBrowse && this.showEstadoToolbar && !!this.campoEstado;
+  }
+
+  get effectiveShowEstadoToolbarInGrid(): boolean {
+    if (!this.effectiveShowEstadoToolbar) {
+      return false;
+    }
+    if (this.showEstadoToolbarInGrid !== null) {
+      return this.showEstadoToolbarInGrid;
+    }
+    return !this.nativeToolbar;
   }
 
   get isRemotePagingActive(): boolean {
@@ -318,9 +381,13 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.isDeleteActionVisible = this.isDeleteActionVisible.bind(this);
   }
 
-  /** Solo filas de datos (no encabezado de grupo) — patrón AdminFE / VEN_DOCUMENTO. */
+  /** Solo filas de datos (no encabezado / pie de grupo). */
   private isGridDataRow(e: any): boolean {
-    return !e?.row?.rowType || e.row.rowType === 'data';
+    const rowType = e?.row?.rowType;
+    if (rowType) {
+      return rowType === 'data';
+    }
+    return !!(e?.row?.data ?? e?.data);
   }
 
   isEditActionVisible(e: any): boolean {
@@ -356,16 +423,9 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       this.cdr.markForCheck();
     });
     this.permiteAddEffective = this.pageContext.snapshot.permiteAdd;
-    this.pageContext.registerGridHandlers({
-      refresh: () => {
-        if (this.shouldHandleBarraRefresh()) {
-          this.onRefreshClick();
-        }
-      },
-    });
+    this.registerPageContextHandlers();
     this.resolveGridHeight();
     this.columnHidingActive = this.columnHidingEnabled;
-    this.filterSyncEnabled = this.filterValue != null && this.filterValue !== '';
     this.resolveActionVisibility();
     this.resolveDisplayColumns();
     this.updateFocusedRowState();
@@ -386,9 +446,6 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     }
     if (changes['columnHidingEnabled']) {
       this.columnHidingActive = this.columnHidingEnabled;
-    }
-    if (changes['filterValue']) {
-      this.filterSyncEnabled = this.filterValue != null && this.filterValue !== '';
     }
     if (changes['permiteEditar'] || changes['permiteDele'] || changes['customButtons']) {
       this.resolveActionVisibility();
@@ -412,6 +469,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       changes['subtitle'] ||
       changes['unifiedToolbar'] ||
       changes['showEstadoToolbar'] ||
+      changes['showEstadoToolbarInGrid'] ||
+      changes['nativeToolbar'] ||
       changes['campoEstado'] ||
       changes['puedeCambiarEstado']
     ) {
@@ -422,9 +481,17 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       changes['customButtons'] ||
       changes['headerFilterLoader'] ||
       changes['remoteOperations'] ||
-      changes['syncHeaderFilterWithPage']
+      changes['syncHeaderFilterWithPage'] ||
+      changes['showGrouping']
     ) {
       this.resolveDisplayColumns();
+    }
+    if (
+      changes['showGrouping'] ||
+      changes['nativeToolbar'] ||
+      changes['showExport']
+    ) {
+      this.syncNativeHeaderToolbar();
     }
     this.cdr.markForCheck();
   }
@@ -448,6 +515,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       icon: 'refresh',
       stylingMode: 'text',
       height: 44,
+      width: computeToolbarBtnWidth('Actualizar'),
+      elementAttr: { class: 'sguees-barra-btn-standard' },
       onClick: this.onRefreshClick,
     };
     this.optAdd = {
@@ -456,12 +525,15 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       type: 'default',
       stylingMode: 'contained',
       height: 44,
-      elementAttr: canAdd ? undefined : { class: 'sguees-action-no-add' },
+      width: computeToolbarBtnWidth('Nuevo'),
+      elementAttr: {
+        class: canAdd ? 'sguees-barra-btn-standard' : 'sguees-barra-btn-standard sguees-action-no-add',
+      },
       hint: canAdd ? 'Nuevo' : 'No tiene permiso para crear registros.',
       onClick: this.onAddClick,
     };
 
-    if (this.effectiveShowEstadoToolbar) {
+    if (this.effectiveShowEstadoToolbarInGrid) {
       const estadoOpts = buildEstadoToolbarOptions({
         campoEstado: this.campoEstado,
         focusedRow: this.isBrowse ? this.focusedRowData : null,
@@ -478,6 +550,24 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
 
   onActivarInactivarClick(): void {
     this.activarInactivar.emit();
+  }
+
+  /** Actualiza la fila enfocada del toolbar tras Activar/Desactivar (mismo CORR). */
+  actualizarFocusedRowData(data: Record<string, unknown> | null | undefined): void {
+    if (!this.isBrowse || !data || !this.keyExpr) {
+      return;
+    }
+
+    const keyField = this.keyExpr as string;
+    const key = data[keyField];
+    const focusedKey = this.focusedRowData?.[keyField] ?? this.focusedRowKey;
+    if (!this.isValidFocusedRowKey(key) || key !== focusedKey) {
+      return;
+    }
+
+    this.focusedRowData = { ...data };
+    this.rebuildToolbarOptions();
+    this.cdr.markForCheck();
   }
 
   onRefreshClick(): void {
@@ -505,16 +595,33 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  refreshData(resetPage = true): void {
+  // Qué hace: refresca el grid (Options fixed alineada) y conserva la página actual.
+  // Cómo: grid.refresh() evita el descuadre; no hace pageIndex(0) para que al eliminar se quede en la página.
+  refreshData(_resetPage = true): void {
     const grid = this.gData?.instance;
     if (!grid) {
       return;
     }
 
-    if (resetPage) {
-      grid.pageIndex(0);
+    const pageIndex = grid.pageIndex();
+    const reloadPromise = grid.refresh();
+    const afterReload = () => {
+      const instance = this.gData?.instance;
+      if (!instance) {
+        return;
+      }
+      const pageCount = Math.max(1, instance.pageCount?.() ?? 1);
+      const restored = Math.min(Math.max(0, pageIndex), pageCount - 1);
+      if (instance.pageIndex() !== restored) {
+        instance.pageIndex(restored);
+      }
+    };
+
+    if (reloadPromise && typeof (reloadPromise as Promise<unknown>).then === 'function') {
+      (reloadPromise as Promise<unknown>).then(afterReload).catch(afterReload);
+    } else {
+      setTimeout(afterReload);
     }
-    grid.refresh();
   }
 
   private resolveGridHeight(): void {
@@ -667,6 +774,7 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       allowFiltering: false,
       allowHeaderFiltering: false,
       allowSorting: false,
+      allowGrouping: false,
       allowResizing: false,
       fixed: true,
       fixedPosition: 'left',
@@ -901,6 +1009,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
     this.bindPermissionTooltipHandlers(gridElement);
+    this.syncNativeHeaderToolbar(e?.component);
+    this.registerPageContextHandlers();
     if (this.effectiveSyncHeaderFilterWithPage) {
       this.syncPageHeaderFilters(e?.component);
     }
@@ -1000,6 +1110,11 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   OnToolbarPreparing(e: any): void {
+    if (this.shouldHideNativeHeaderToolbar) {
+      e.toolbarOptions.visible = false;
+      return;
+    }
+
     const exportItem = e?.toolbarOptions?.items?.find((item: any) => item?.name === 'exportButton');
     if (!exportItem) {
       return;
@@ -1017,16 +1132,41 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
     };
   }
 
-  onExporting(e: any): void {
-    if (!this.permitePrint) {
-      e.cancel = true;
+  private syncNativeHeaderToolbar(instance?: any): void {
+    const grid = instance ?? this.gData?.instance;
+    if (!grid || !this.nativeToolbar) {
       return;
     }
+    grid.option('toolbar', { visible: !this.shouldHideNativeHeaderToolbar });
+  }
 
+  exportGrid(): void {
+    if (!this.permitePrint) {
+      return;
+    }
+    const instance = this.gData?.instance;
+    if (!instance) {
+      return;
+    }
+    this.runExcelExport(instance);
+  }
+
+  private registerPageContextHandlers(): void {
+    this.pageContext.registerGridHandlers({
+      refresh: () => {
+        if (this.shouldHandleBarraRefresh()) {
+          this.onRefreshClick();
+        }
+      },
+      export: () => this.exportGrid(),
+    });
+  }
+
+  private runExcelExport(component: unknown): void {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Data');
 
-    function setAlternatingRowsBackground(gridCell: any, excelCell: any): void {
+    const setAlternatingRowsBackground = (gridCell: any, excelCell: any): void => {
       if (gridCell.rowType === 'header' || gridCell.rowType === 'data') {
         if (excelCell.fullAddress.row % 2 === 0) {
           excelCell.fill = {
@@ -1037,11 +1177,11 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
           };
         }
       }
-    }
+    };
 
     exportDataGrid({
       worksheet,
-      component: e.component,
+      component: component as Parameters<typeof exportDataGrid>[0]['component'],
       keepColumnWidths: true,
       autoFilterEnabled: true,
       topLeftCell: { row: 1, column: 1 },
@@ -1053,6 +1193,36 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
         saveAs(new Blob([buffer], { type: 'application/octet-stream' }), `${this.exportFileName}.xlsx`);
       });
     });
+  }
+
+  onExporting(e: any): void {
+    if (!this.permitePrint) {
+      e.cancel = true;
+      return;
+    }
+
+    e.cancel = true;
+    this.runExcelExport(e.component);
+  }
+
+  selectAllOnPage(): void {
+    const grid = this.gData?.instance;
+    if (!grid) {
+      return;
+    }
+    grid.selectAll();
+  }
+
+  clearSelection(): void {
+    const grid = this.gData?.instance;
+    if (!grid) {
+      return;
+    }
+    grid.clearSelection();
+  }
+
+  getSelectedRows(): any[] {
+    return this.gData?.instance?.getSelectedRowsData?.() ?? [];
   }
 }
 

@@ -1,60 +1,114 @@
-import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
-import { environment } from 'src/environments/environment';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { map } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { IParam } from 'src/app/FxAPI/IParam';
+import { IResult } from 'src/app/FxAPI/IResult';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { SegOpcionSistemaRepository } from './seg-opcion-sistema.repository';
+import { SegOpcionSistema } from './models/seg-opcion-sistema';
 
 @Injectable({
-  providedIn: 'root',
+	providedIn: 'root',
 })
 export class SegOpcionSistemaService {
-  readonly urlMtto = environment.UrlSEGURIDADAPI + 'SEG_OPCION_SISTEMA/';
+	constructor(private repo: SegOpcionSistemaRepository) {}
 
-  constructor(private http: HttpClient) {}
+	esValido(model: SegOpcionSistema, msg: Function): boolean {
+		if (!model.CODIGO_OPCION?.trim()) {
+			msg('Debe ingresar el código de la opción.', NotifyType.Warning);
+			return false;
+		}
+		if (!model.NOMBRE_OPCION?.trim()) {
+			msg('Debe ingresar el nombre de la opción.', NotifyType.Warning);
+			return false;
+		}
+		if (!model.URL_OPCION?.trim()) {
+			msg('Debe ingresar la URL de la opción.', NotifyType.Warning);
+			return false;
+		}
+		return true;
+	}
 
-  getAll(param: any): Observable<any[]> {
-    let parametros = new HttpParams();
+	getAll(param: any): Observable<IResult> {
+		const xWhere: IParam[] = [{ Parameter: 'CODIGO_OPCION', Value: param.CODIGO_OPCION ?? '' }];
+		return this.repo.get(xWhere);
+	}
 
-    if (param != null) {
-      parametros = parametros.append('CORR_SUSCRIPCION', param.CORR_SUSCRIPCION);
-      parametros = parametros.append('CORR_CONFI_PAIS', param.CORR_CONFI_PAIS);
-    }
+	insert(model: SegOpcionSistema): Observable<IResult> {
+		return this.repo.create({
+			...model,
+			IMAGEN_OPCION: model.IMAGEN_OPCION ?? '',
+		});
+	}
 
-    return this.http.get<any[]>(this.urlMtto, { params: parametros });
-  }
+	update(model: SegOpcionSistema): Observable<IResult> {
+		const xWhere: IParam[] = [{ Parameter: 'CODIGO_OPCION', Value: model.CODIGO_OPCION }];
+		return this.repo.update(
+			{
+				...model,
+				IMAGEN_OPCION: model.IMAGEN_OPCION ?? '',
+			},
+			xWhere
+		);
+	}
 
-  get(id: number, param: any): Observable<any> {
-    let parametros = new HttpParams();
+	delete(param: any): Observable<IResult> {
+		const xWhere: IParam[] = [{ Parameter: 'CODIGO_OPCION', Value: param.CODIGO_OPCION }];
+		return this.repo.delete(xWhere);
+	}
 
-    if (param != null) {
-      parametros = parametros.append('CORR_EMPRESA', param.CORR_EMPRESA);
-    }
+	getColumns(): any {
+		return [
+			{ dataField: 'CODIGO_OPCION', caption: 'Código', width: 180 },
+			{ dataField: 'NOMBRE_OPCION', caption: 'Nombre opción', width: 260 },
+			{ dataField: 'URL_OPCION', caption: 'URL', width: 220 },
+			{ dataField: 'IMAGEN_OPCION', caption: 'Imagen', width: 120 },
+			...buildAuditGridColumns(),
+		];
+	}
 
-    return this.http.get<any>(this.urlMtto + id, { params: parametros });
-  }
+	getSummary(): any {
+		return {
+			totalItems: [
+				{
+					column: 'CODIGO_OPCION',
+					summaryType: 'count',
+					valueFormat: '#,##0',
+					displayFormat: 'Cant: {0}',
+				},
+			],
+		};
+	}
 
-  insert(model: any): any {
-    return this.http.post(this.urlMtto, model).pipe(
-      map((response: any) => response)
-    );
-  }
-
-  update(model: any): any {
-    return this.http.put(this.urlMtto, model).pipe(
-      map((response: any) => response)
-    );
-  }
-
-  delete(id: number, param: any): any {
-    let parametros = new HttpParams();
-
-    if (param != null) {
-      parametros = parametros.append('CORR_SUSCRIPCION', param.CORR_SUSCRIPCION);
-      parametros = parametros.append('CORR_CONFI_PAIS', param.CORR_CONFI_PAIS);
-    }
-
-    return this.http.delete(this.urlMtto + id, { params: parametros }).pipe(
-      map((response: any) => response)
-    );
-  }
+	getItems(): any {
+		return [
+			{
+				dataField: 'CODIGO_OPCION',
+				label: { text: 'Código opción' },
+				colSpan: 1,
+				editorOptions: { placeholder: 'Código...', showClearButton: true, maxLength: 30 },
+				validationRules: [{ type: 'required', message: 'El código es obligatorio' }],
+			},
+			{
+				dataField: 'NOMBRE_OPCION',
+				label: { text: 'Nombre opción' },
+				colSpan: 2,
+				editorOptions: { placeholder: 'Nombre...', showClearButton: true, maxLength: 100 },
+				validationRules: [{ type: 'required', message: 'El nombre es obligatorio' }],
+			},
+			{
+				dataField: 'URL_OPCION',
+				label: { text: 'URL opción' },
+				colSpan: 2,
+				editorOptions: { placeholder: '/ruta-spa', showClearButton: true },
+				validationRules: [{ type: 'required', message: 'La URL es obligatoria' }],
+			},
+			{
+				dataField: 'IMAGEN_OPCION',
+				label: { text: 'Imagen opción' },
+				colSpan: 1,
+				editorOptions: { placeholder: 'Icono (opcional)', showClearButton: true, maxLength: 25 },
+			},
+		];
+	}
 }

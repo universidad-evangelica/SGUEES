@@ -29,8 +29,49 @@ export function isEmpresaFkErrorMessage(message: string): boolean {
 	);
 }
 
+/** Warning de negocio: duplicados, relaciones, concurrencia — no falla técnica. */
+export function isBusinessWarningMessage(message: string): boolean {
+	const value = cleanApiMessage(message).toLowerCase();
+	return (
+		value.includes('ya existe') ||
+		value.includes('duplicad') ||
+		value.includes('ya está registrad') ||
+		value.includes('ya esta registrad') ||
+		value.includes('ya ha sido ingresado') ||
+		value.includes('registros asociados') ||
+		value.includes('hijos asociados') ||
+		value.includes('registros relacionados') ||
+		value.includes('otro usuario') ||
+		value.includes('mismo tiempo')
+	);
+}
+
+export const SESSION_EXPIRED_MESSAGE =
+	'Su sesión expiró. Ingrese nuevamente para continuar.';
+
 export function cleanApiMessage(message: unknown): string {
 	return `${message ?? ''}`.replace(/^error:\s*/i, '').trim();
+}
+
+export function isUnauthorizedError(error: unknown): boolean {
+	if (error && typeof error === 'object' && Number((error as any).status) === 401) {
+		return true;
+	}
+
+	const message =
+		typeof error === 'string'
+			? error
+			: getApiErrorMessage(error);
+	const lower = cleanApiMessage(message).toLowerCase();
+
+	return (
+		lower === 'unauthorized' ||
+		lower.includes('sesión expir') ||
+		lower.includes('sesion expir') ||
+		lower.includes('session expir') ||
+		lower.includes('no está autorizado') ||
+		lower.includes('no esta autorizado')
+	);
 }
 
 export function mapApiErrorMessage(message: string, etiquetaRegistro = 'el registro'): string {
@@ -40,8 +81,14 @@ export function mapApiErrorMessage(message: string, etiquetaRegistro = 'el regis
 	if (isEmpresaFkErrorMessage(cleanMessage) || value.includes('no tiene una empresa asignada')) {
 		return getEmpresaWarningMessage(etiquetaRegistro);
 	}
-	if (value.includes('ya existe') || value.includes('duplicad')) {
-		return 'Ya existe un registro con ese código. Escriba otro código para continuar.';
+	// Conserva el mensaje de la API para que se vea el atributo (nombre, código, etc.).
+	if (
+		value.includes('ya existe') ||
+		value.includes('duplicad') ||
+		value.includes('ya está registrad') ||
+		value.includes('ya esta registrad')
+	) {
+		return cleanMessage;
 	}
 	if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados')) {
 		return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';
@@ -57,7 +104,36 @@ function isConnectionFailure(value: unknown): boolean {
 	}
 
 	const lower = text.toLowerCase();
-	return lower.includes('http failure') || lower.includes('progress event');
+	if (lower.includes('progress event')) {
+		return true;
+	}
+
+	// Solo fallos de red (status 0). No confundir con 401/403/500 de Angular HttpClient.
+	if (lower.includes('http failure')) {
+		return (
+			lower.includes(': 0 ') ||
+			lower.includes('unknown error') ||
+			lower.includes('net::err_') ||
+			lower.includes('failed to fetch')
+		);
+	}
+
+	return false;
+}
+
+function getHttpStatusMessage(status: number): string | null {
+	switch (status) {
+		case 401:
+			return SESSION_EXPIRED_MESSAGE;
+		case 403:
+			return 'No tiene permiso para realizar esta operación.';
+		case 404:
+			return 'El servicio solicitado no existe en la API. Verifique que la API esté actualizada.';
+		case 500:
+			return 'Ocurrió un error interno en el servidor. Revise la consola de la API e intente nuevamente.';
+		default:
+			return status > 0 ? `Error del servidor (HTTP ${status}).` : null;
+	}
 }
 
 export function getApiErrorMessage(error: any): string {
@@ -77,7 +153,21 @@ export function getApiErrorMessage(error: any): string {
 		return API_CONNECTION_MESSAGE;
 	}
 
-	const apiMessage = error?.error?.ErrorMessage || error?.error?.message || error?.message;
+	const httpStatus = Number(error?.status ?? 0);
+	if (httpStatus === 0) {
+		return API_CONNECTION_MESSAGE;
+	}
+
+	const body = error?.error;
+	if (body && typeof body === 'object' && typeof body.ErrorMessage === 'string' && body.ErrorMessage.trim()) {
+		return body.ErrorMessage;
+	}
+
+	if (typeof body === 'string' && body.trim() && !isConnectionFailure(body)) {
+		return cleanApiMessage(body);
+	}
+
+	const apiMessage = error?.ErrorMessage || body?.message || error?.message;
 	if (typeof apiMessage === 'string' && apiMessage.trim()) {
 		if (isConnectionFailure(apiMessage)) {
 			return API_CONNECTION_MESSAGE;
@@ -85,7 +175,7 @@ export function getApiErrorMessage(error: any): string {
 		return apiMessage;
 	}
 
-	return API_CONNECTION_MESSAGE;
+	return getHttpStatusMessage(httpStatus) ?? API_CONNECTION_MESSAGE;
 }
 
 export function getNotifyTypeFromResponse(response: any, etiquetaRegistro = 'el registro'): NotifyType {
@@ -93,15 +183,8 @@ export function getNotifyTypeFromResponse(response: any, etiquetaRegistro = 'el 
 		return NotifyType.Warning;
 	}
 
-	const message = (response?.ErrorMessage || '').toLowerCase();
-	if (
-		response?.ErrorCode === 2627 ||
-		message.includes('ya existe') ||
-		message.includes('duplicad') ||
-		message.includes('ya ha sido ingresado') ||
-		message.includes('registros asociados') ||
-		message.includes('hijos asociados')
-	) {
+	const message = response?.ErrorMessage || '';
+	if (Number(response?.ErrorCode) === 2627 || isBusinessWarningMessage(message)) {
 		return NotifyType.Warning;
 	}
 
@@ -110,9 +193,19 @@ export function getNotifyTypeFromResponse(response: any, etiquetaRegistro = 'el 
 
 export function getNotifyTypeFromError(error: any, etiquetaRegistro = 'el registro'): NotifyType {
 	const body = error?.error;
-	if (body && typeof body === 'object' && body.ErrorMessage !== undefined) {
+	if (body && typeof body === 'object' && (body.ErrorMessage !== undefined || body.ErrorCode !== undefined)) {
 		return getNotifyTypeFromResponse(body, etiquetaRegistro);
 	}
 
-	return isEmpresaFkErrorMessage(getApiErrorMessage(error)) ? NotifyType.Warning : NotifyType.Error;
+	// BadRequest con CResult intacto (sin pasar por string del interceptor).
+	if (error && typeof error === 'object' && (error.ErrorMessage !== undefined || error.ErrorCode !== undefined)) {
+		return getNotifyTypeFromResponse(error, etiquetaRegistro);
+	}
+
+	const message = getApiErrorMessage(error);
+	if (isEmpresaFkErrorMessage(message) || isBusinessWarningMessage(message)) {
+		return NotifyType.Warning;
+	}
+
+	return NotifyType.Error;
 }

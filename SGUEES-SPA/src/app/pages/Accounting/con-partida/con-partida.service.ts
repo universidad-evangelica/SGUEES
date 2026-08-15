@@ -106,20 +106,37 @@ export class ConPartidaService {
 
 	getColumns(): any {
 		return [
-			{ dataField: 'ANIO_PERIODO', caption: 'Año', width: 80 },
-			{ dataField: 'MES_PERIODO', caption: 'Mes', width: 70 },
-			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase', width: 160 },
-			{ dataField: 'CORR_PARTIDA', caption: 'No. Partida', width: 100 },
-			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date', width: 110 },
-			{ dataField: 'NUMERO_DOCUMENTO', caption: 'No. Documento', width: 130 },
-			{ dataField: 'NOMBRE_PARTIDA', caption: 'Concepto', width: 280 },
-			{ dataField: 'NOMBRE_ESTADO_PARTIDA', caption: 'Estado', width: 110 },
+			{ dataField: 'ANIO_PERIODO', caption: 'Año', width: 80, groupIndex: 0 },
+			{ dataField: 'MES_PERIODO', caption: 'Mes', width: 70, groupIndex: 1 },
+			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase', width: 200 },
+			{ dataField: 'CORR_PARTIDA', caption: 'No. Partida', width: 150 },
+			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date', width: 150 },
+			{ dataField: 'NUMERO_DOCUMENTO', caption: 'No. Documento', width: 180 },
+			{ dataField: 'NOMBRE_PARTIDA', caption: 'Concepto', width: 950 },
+			{ dataField: 'NOMBRE_ESTADO_PARTIDA', caption: 'Estado', width: 150 },
 		];
 	}
 
 	getSummary(): any {
 		return {
-			totalItems: [{ column: 'ANIO_PERIODO', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
+			groupItems: [
+				{
+					column: 'CORR_PARTIDA',
+					summaryType: 'count',
+					valueFormat: '#,##0',
+					displayFormat: 'Cant: {0}',
+					alignByColumn: true,
+					showInGroupFooter: true,
+				},
+			],
+			totalItems: [
+				{
+					column: 'CORR_PARTIDA',
+					summaryType: 'count',
+					valueFormat: '#,##0',
+					displayFormat: 'Cant: {0}',
+				},
+			],
 		};
 	}
 

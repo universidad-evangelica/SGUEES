@@ -20,6 +20,7 @@ namespace SGUEES.Repositories
         {
         }
 
+        // Lee de V_SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES con filtros; ordena por id.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -28,7 +29,7 @@ namespace SGUEES.Repositories
             {
                 var reader = await objData.GetDataReader(_ViewName, xWhere);
                 var response = new List<SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESView>().FromDataReader(reader)
-                    .OrderBy(x => x.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES)
+                    .OrderBy(x => x.CORR_COMPETENCIAS_CONDUCTUALES)
                     .ToList();
 
                 reader.Close();
@@ -59,6 +60,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Lee un registro de V_SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES con empresa e id.
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -96,6 +98,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Inserta en SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES y devuelve el registro leído desde la vista.
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -103,12 +106,16 @@ namespace SGUEES.Repositories
             try
             {
                 var p = BuildWriteParameters(Data);
+                // Llave compuesta completa para que el SELECT posterior al INSERT identifique el registro.
                 var pWhere = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_PERFIL_PUESTO", Value = Data.CORR_PERFIL_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_COMPETENCIAS_CONDUCTUALES", Value = Data.CORR_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.Int32 },
                 };
 
-                var reader = await objData.Insert(_TableName, p, "CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES", pWhere);
+                var reader = await objData.Insert(_TableName, p, "", pWhere);
                 var response = new List<SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
@@ -117,7 +124,7 @@ namespace SGUEES.Repositories
                 objResultado.Data = response;
                 objResultado.Result = true;
                 objResultado.RowsAffected = 1;
-                objResultado.CodeHelper = response?.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES ?? 0;
+                objResultado.CodeHelper = response?.CORR_COMPETENCIAS_CONDUCTUALES ?? 0;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
                 objResultado.ErrorSource = "";
@@ -139,17 +146,19 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Actualiza SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES por empresa e id; devuelve el registro.
         public async Task<CResult> UpdateAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
 
             try
             {
+                // No se actualiza CORR_COMPETENCIAS_CONDUCTUALES: forma parte de la llave compuesta.
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "NOMBRE_COMPETENCIAS_CONDUCTUALES", Value = Data.NOMBRE_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CODIGO_TIPO_PUESTO", Value = Data.CODIGO_TIPO_PUESTO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "DESCRIPCION", Value = Data.DESCRIPCION, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "CORR_COMPETENCIAS_CONDUCTUALES", Value = Data.CORR_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -158,7 +167,9 @@ namespace SGUEES.Repositories
                 var pWhere = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES", Value = Data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_PERFIL_PUESTO", Value = Data.CORR_PERFIL_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_COMPETENCIAS_CONDUCTUALES", Value = Data.CORR_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.Int32 },
                 };
 
                 var reader = await objData.Update(_TableName, p, pWhere);
@@ -170,7 +181,7 @@ namespace SGUEES.Repositories
                 objResultado.Data = response;
                 objResultado.Result = true;
                 objResultado.RowsAffected = response == null ? 0 : 1;
-                objResultado.CodeHelper = response?.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES ?? Data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES;
+                objResultado.CodeHelper = response?.CORR_COMPETENCIAS_CONDUCTUALES ?? Data.CORR_COMPETENCIAS_CONDUCTUALES;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
                 objResultado.ErrorSource = "";
@@ -192,6 +203,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Borra el registro de SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES por empresa e id.
         public async Task<CResult> DeleteAsync(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -201,7 +213,9 @@ namespace SGUEES.Repositories
                 var pWhere = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES", Value = Data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_PERFIL_PUESTO", Value = Data.CORR_PERFIL_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_COMPETENCIAS_CONDUCTUALES", Value = Data.CORR_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.Int32 },
                 };
 
                 await objData.Delete(_TableName, pWhere);
@@ -231,12 +245,13 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Arma columnas y valores para insertar en SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES, con auditoría.
         private static List<CParameter> BuildWriteParameters(SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALESTable Data)
         {
             return new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES", Value = Data.CORR_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CODIGO_TIPO_PUESTO", Value = Data.CODIGO_TIPO_PUESTO, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "NOMBRE_COMPETENCIAS_CONDUCTUALES", Value = Data.NOMBRE_COMPETENCIAS_CONDUCTUALES, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "DESCRIPCION", Value = Data.DESCRIPCION, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },

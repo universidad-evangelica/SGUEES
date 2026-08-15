@@ -1,21 +1,25 @@
+// Qué hace: servicio de negocio del catálogo Disponibilidad de Horario.
+// Cómo: valida los datos, ejecuta el CRUD a través del repositorio y arma la configuración de grilla y formulario.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
-import { buildRemoteGridWhere, createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
-import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 import { ScDisponibilidadHorario } from './models/sc-disponibilidad-horario';
 import { ScDisponibilidadHorarioRepository } from './sc-disponibilidad-horario.repository';
 
 const ESTADO_FIELD = 'ESTADO_DISPONIBILIDAD_HORARIO';
 
-@Injectable({
-	providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
+// Qué hace: servicio de disponibilidad de horario.
+// Cómo: valida los datos y llama a ScDisponibilidadHorarioRepository para ejecutar el CRUD.
 export class ScDisponibilidadHorarioService {
 	constructor(private repo: ScDisponibilidadHorarioRepository) {}
 
+	// Qué hace: valida el formulario de disponibilidad de horario antes de guardar.
+	// Cómo: revisa que NOMBRE_DISPONIBILIDAD_HORARIO no esté vacío y no supere 150 caracteres, notificando con msg cuando falla.
 	esValido(model: ScDisponibilidadHorario, msg: Function): boolean {
 		if (!model.NOMBRE_DISPONIBILIDAD_HORARIO || model.NOMBRE_DISPONIBILIDAD_HORARIO.trim() === '') {
 			msg('Debe ingresar el nombre de la disponibilidad de horario.', NotifyType.Warning);
@@ -30,127 +34,76 @@ export class ScDisponibilidadHorarioService {
 		return true;
 	}
 
+	// Qué hace: obtiene el listado de disponibilidades de horario.
+	// Cómo: llama a getAll del repositorio con el filtro construido por buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	getDistinctValues(param: any): Observable<IResult> {
-		return this.repo.getDistinctValues(this.buildWhere(param));
-	}
-
+	// Qué hace: obtiene una disponibilidad de horario puntual.
+	// Cómo: llama a get del repositorio filtrando por CORR_DISPONIBILIDAD_HORARIO.
 	get(param: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: param.CORR_DISPONIBILIDAD_HORARIO }];
-		return this.repo.get(xWhere);
+		return this.repo.get([{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: param.CORR_DISPONIBILIDAD_HORARIO }]);
 	}
 
+	// Qué hace: crea una nueva disponibilidad de horario.
+	// Cómo: llama a create del repositorio con el modelo recibido.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Qué hace: actualiza una disponibilidad de horario existente.
+	// Cómo: llama a update del repositorio con el modelo y su CORR_DISPONIBILIDAD_HORARIO.
 	update(model: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: model.CORR_DISPONIBILIDAD_HORARIO }];
-		return this.repo.update(model, xWhere);
+		return this.repo.update(model, [{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: model.CORR_DISPONIBILIDAD_HORARIO }]);
 	}
 
+	// Qué hace: elimina una disponibilidad de horario.
+	// Cómo: llama a delete del repositorio filtrando por CORR_DISPONIBILIDAD_HORARIO.
 	delete(model: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: model.CORR_DISPONIBILIDAD_HORARIO }];
-		return this.repo.delete(xWhere);
+		return this.repo.delete([{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: model.CORR_DISPONIBILIDAD_HORARIO }]);
 	}
 
-	activar(model: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: model.CORR_DISPONIBILIDAD_HORARIO }];
-		return this.repo.activar(model, xWhere);
+	// Qué hace: cambia el estado activo/inactivo de una disponibilidad de horario.
+	// Cómo: llama a activarInactivar del repositorio filtrando por CORR_DISPONIBILIDAD_HORARIO.
+	activarInactivar(model: any): Observable<IResult> {
+		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: model.CORR_DISPONIBILIDAD_HORARIO }]);
 	}
 
-	desactivar(model: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: model.CORR_DISPONIBILIDAD_HORARIO }];
-		return this.repo.desactivar(model, xWhere);
-	}
-
-	getColumns(onEditClick: Function, onDeleteClick: Function, onActivarClick: Function, onDesactivarClick: Function, canEdit = true, canDelete = true): any {
-		const editHint = canEdit ? 'Editar registro' : 'No tiene permiso para editar registros.';
-		const deleteHint = canDelete ? 'Eliminar registro' : 'No tiene permiso para eliminar registros.';
-		const activarHint = canEdit ? 'Activar registro' : 'No tiene permiso para activar registros.';
-		const desactivarHint = canEdit ? 'Desactivar registro' : 'No tiene permiso para desactivar registros.';
-		const editCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-edit';
-		const deleteCssClass = canDelete ? 'sguees-grid-action-delete' : 'sguees-action-no-delete';
-		const activateCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-activate';
-		const deactivateCssClass = canEdit ? 'sguees-grid-action-delete' : 'sguees-action-no-deactivate';
-		const editClick = canEdit ? onEditClick : () => undefined;
-		const deleteClick = canDelete ? onDeleteClick : () => undefined;
-		const activarClick = canEdit ? onActivarClick : () => undefined;
-		const desactivarClick = canEdit ? onDesactivarClick : () => undefined;
-
+	// Qué hace: define columnas y formatos de la grilla de mantenimiento.
+	// Cómo: arma el arreglo de columnas (correlativo, nombre, estado y auditoría) usado por app-data-grid-mtto.
+	getColumns(): any {
 		return [
-			{
-				type: 'buttons',
-				name: 'btnAcciones',
-				caption: 'Options',
-				width: 150,
-				minWidth: 150,
-				allowResizing: false,
-				fixed: true,
-				fixedPosition: 'left',
-				alignment: 'center',
-				buttons: [
-					{ hint: editHint, icon: 'edit', stylingMode: 'text', cssClass: editCssClass, onClick: editClick },
-					{ hint: deleteHint, icon: 'trash', stylingMode: 'text', cssClass: deleteCssClass, onClick: deleteClick },
-					{
-						hint: activarHint,
-						icon: 'refresh',
-						stylingMode: 'text',
-						cssClass: activateCssClass,
-						visible: (e: any) => !e.row?.data?.ESTADO_DISPONIBILIDAD_HORARIO,
-						onClick: activarClick,
-					},
-					{
-						hint: desactivarHint,
-						icon: 'close',
-						stylingMode: 'text',
-						cssClass: deactivateCssClass,
-						visible: (e: any) => !!e.row?.data?.ESTADO_DISPONIBILIDAD_HORARIO,
-						onClick: desactivarClick,
-					},
-				],
-			},
 			{
 				dataField: 'CORR_DISPONIBILIDAD_HORARIO',
 				caption: 'Corr.',
-				width: 100,
+				width: 90,
 				dataType: 'number',
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
 			{ dataField: 'NOMBRE_DISPONIBILIDAD_HORARIO', caption: 'Disponibilidad de Horario', width: 300 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
-			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
-			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
-			{
-				dataField: 'FECHA_CREA',
-				caption: 'Fecha Crea',
-				width: 200,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-				calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA'),
-			},
-			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
-			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
-			{
-				dataField: 'FECHA_ACTU',
-				caption: 'Fecha Actu',
-				width: 200,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-				calculateFilterExpression: createDateTimeFilterExpression('FECHA_ACTU'),
-			},
+			...buildAuditGridColumns({ withDateTimeFilter: true }),
 		];
 	}
 
+	// Qué hace: configura el contador de registros de la grilla.
+	// Cómo: define el resumen totalItems que cuenta CORR_DISPONIBILIDAD_HORARIO.
 	getSummary(): any {
 		return {
-			totalItems: [{ column: 'CORR_DISPONIBILIDAD_HORARIO', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
+			totalItems: [
+				{
+					column: 'CORR_DISPONIBILIDAD_HORARIO',
+					summaryType: 'count',
+					valueFormat: '#,##0',
+					displayFormat: 'Cant: {0}',
+				},
+			],
 		};
 	}
 
+	// Qué hace: define los campos y reglas del formulario de disponibilidad de horario.
+	// Cómo: arma el arreglo de items (correlativo, nombre y estado) usado por dx-form.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_DISPONIBILIDAD_HORARIO', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -165,30 +118,15 @@ export class ScDisponibilidadHorarioService {
 		];
 	}
 
+	// Qué hace: traduce los filtros del componente al formato esperado por la API.
+	// Cómo: agrega a xWhere el parámetro CORR_DISPONIBILIDAD_HORARIO cuando viene informado en param.
 	private buildWhere(param: any): IParam[] {
-		return buildRemoteGridWhere(param, ESTADO_FIELD);
+		const xWhere: IParam[] = [];
+
+		if (param.CORR_DISPONIBILIDAD_HORARIO) {
+			xWhere.push({ Parameter: 'CORR_DISPONIBILIDAD_HORARIO', Value: param.CORR_DISPONIBILIDAD_HORARIO });
+		}
+
+		return xWhere;
 	}
-}
-
-export const EMPRESA_WARNING_ERROR_CODE = 4100;
-export const EMPRESA_REGISTRO_ETIQUETA = 'la disponibilidad de horario';
-
-export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
-	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
-}
-
-export function isEmpresaWarningResponse(response: any): boolean {
-	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
-}
-
-export function isEmpresaFkErrorMessage(message: string): boolean {
-	const value = `${message ?? ''}`.toLowerCase();
-	return (
-		value.includes('gen_empresa') ||
-		value.includes('foreign key') ||
-		value.includes('clave externa') ||
-		value.includes('reference constraint') ||
-		value.includes('conflicted with the foreign key') ||
-		value.includes('no tiene una empresa asignada')
-	);
 }

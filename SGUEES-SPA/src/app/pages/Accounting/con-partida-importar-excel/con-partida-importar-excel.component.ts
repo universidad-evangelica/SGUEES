@@ -81,6 +81,13 @@ export class ConPartidaImportarExcelComponent extends CBaseComponent implements 
 
 	selectedClasePartida = (vRow: any): any => vRow[0].CORR_CLASE_PARTIDA;
 
+	readonly onCustomizeFilterPanelText = (e: { filterValue?: unknown; text?: string }): string => {
+		if (e.filterValue == null) {
+			return 'Crear filtro';
+		}
+		return e.text ? `Filtro: ${e.text}` : 'Filtros activos';
+	};
+
 	canImportar(): boolean {
 		return this.corrClasePartida > 0 && this.previewRows.length > 0;
 	}
@@ -220,7 +227,7 @@ export class ConPartidaImportarExcelComponent extends CBaseComponent implements 
 		return byCodigo?.CORR_CENTRO_COSTO;
 	}
 
-	importar() {
+	guardar(): void {
 		const rows = this.previewRows.map(({ _rowId, ...row }) => row);
 		if (!this.service.esValido(this.corrClasePartida, rows, this.notifyFx)) {
 			return;
@@ -248,6 +255,48 @@ export class ConPartidaImportarExcelComponent extends CBaseComponent implements 
 					this.notifyFx(error, NotifyType.Error);
 				},
 			});
+	}
+
+	async descargarPlantilla(): Promise<void> {
+		try {
+			const workbook = new ExcelJS.Workbook();
+			const sheet = workbook.addWorksheet('Partidas');
+			sheet.addRow([
+				'Fecha',
+				'No. Documento',
+				'Cuenta',
+				'Cod. CC',
+				'Concepto',
+				'Cargo',
+				'Abono',
+			]);
+			sheet.getRow(1).font = { bold: true };
+			sheet.columns = [
+				{ width: 14 },
+				{ width: 18 },
+				{ width: 14 },
+				{ width: 12 },
+				{ width: 36 },
+				{ width: 14 },
+				{ width: 14 },
+			];
+			const buffer = await workbook.xlsx.writeBuffer();
+			this.downloadBlob(buffer, 'Plantilla_Importacion_Partidas.xlsx');
+		} catch (error: any) {
+			this.notifyFx(error?.message || 'No se pudo generar la plantilla Excel', NotifyType.Error);
+		}
+	}
+
+	private downloadBlob(buffer: ArrayBuffer, fileName: string): void {
+		const blob = new Blob([buffer], {
+			type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+		});
+		const url = URL.createObjectURL(blob);
+		const anchor = document.createElement('a');
+		anchor.href = url;
+		anchor.download = fileName;
+		anchor.click();
+		URL.revokeObjectURL(url);
 	}
 
 	cancelarModal(): void {

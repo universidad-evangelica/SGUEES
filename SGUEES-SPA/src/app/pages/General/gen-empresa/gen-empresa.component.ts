@@ -21,8 +21,6 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 	protected override mttoGridKeyExpr = 'CORR_EMPRESA';
 	protected override mttoRemoteOperations = false;
 
-	private readonly maintenanceSubtitulo = 'Mantenimiento de empresas';
-
 	mCORR_PAIS: any;
 	mCORR_DEPTO: any;
 	mCORR_MUNICIPIO: any;
@@ -47,7 +45,6 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 	}
 
 	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
@@ -58,7 +55,6 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
 		}
 	}
 
@@ -69,7 +65,7 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 
 	getCORR_PAIS() {
 		this.appInfoService
-			.getLookUp('GEN_EMPRESA', 'GEN_ESTRUCTURA_TERRITORIAL', 'GetCORR_PAIS', undefined, environment.UrlGENERALAPI)
+			.getLookUp('GEN_EMPRESA', 'GEN_PAIS', 'GetCORR_PAIS', undefined, environment.UrlGENERALAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -93,7 +89,7 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 		}
 		const xWhere: IParam[] = [{ Parameter: 'CORR_PAIS', Value: pais }];
 		this.appInfoService
-			.getLookUp('GEN_EMPRESA', 'GEN_ESTRUCTURA_TERRITORIAL', 'GetCORR_DEPTO', xWhere, environment.UrlGENERALAPI)
+			.getLookUp('GEN_EMPRESA', 'GEN_DEPTO', 'GetCORR_DEPTO', xWhere, environment.UrlGENERALAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -121,7 +117,7 @@ export class GenEmpresaComponent extends CBaseComponent implements OnInit {
 			{ Parameter: 'CORR_DEPTO', Value: depto },
 		];
 		this.appInfoService
-			.getLookUp('GEN_EMPRESA', 'GEN_ESTRUCTURA_TERRITORIAL', 'GetCORR_MUNICIPIO', xWhere, environment.UrlGENERALAPI)
+			.getLookUp('GEN_EMPRESA', 'GEN_MUNICIPIO', 'GetCORR_MUNICIPIO', xWhere, environment.UrlGENERALAPI)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {

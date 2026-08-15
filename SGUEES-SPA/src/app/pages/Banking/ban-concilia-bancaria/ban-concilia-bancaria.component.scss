@@ -1,0 +1,207 @@
+@import '../ban-documento/ban-documento.component.scss';
+
+.concilia-edit-shell {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sguees-content-gap, 16px);
+}
+
+.concilia-form-card,
+.concilia-workspace-card {
+	margin-bottom: 0;
+}
+
+.concilia-form {
+	::ng-deep .dx-field-item-content .dx-texteditor,
+	::ng-deep .dx-field-item-content .dx-textarea {
+		width: 100%;
+	}
+}
+
+.concilia-workspace-card {
+	::ng-deep .concilia-side-tabs {
+		border: none;
+
+		.dx-tabpanel-tabs {
+			min-width: 120px;
+			border-right: 1px solid var(--border-color);
+		}
+
+		.dx-tabpanel-container,
+		.dx-multiview-wrapper,
+		.dx-multiview-item,
+		.dx-multiview-item-content {
+			border: none;
+		}
+
+		.dx-tabs-wrapper,
+		.dx-tabs {
+			border: none;
+		}
+
+		.dx-tab {
+			justify-content: flex-start;
+			font-weight: 600;
+			border-right: none;
+			border-left: none;
+			box-shadow: none;
+		}
+
+		.dx-multiview-item-content {
+			padding: 0 0 0 12px;
+		}
+	}
+}
+
+.concilia-tab-content {
+	min-height: 420px;
+}
+
+.concilia-general-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 10px;
+	padding: 8px 10px;
+	border: 1px solid var(--border-color);
+	border-radius: var(--sguees-radius-md, 10px);
+	background: var(--sguees-surface-subtle, rgba(127, 127, 127, 0.08));
+}
+
+.concilia-general-label {
+	font-weight: 600;
+	color: var(--sguees-text-primary);
+	white-space: nowrap;
+}
+
+.concilia-linea-select {
+	flex: 1;
+	min-width: 220px;
+	max-width: 520px;
+}
+
+.concilia-pane-title {
+	font-weight: 600;
+	margin-bottom: 8px;
+	color: var(--sguees-text-primary);
+
+	&--secondary {
+		margin-top: 12px;
+	}
+}
+
+.concilia-resumen-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.concilia-resumen-block {
+	border: 1px solid var(--border-color);
+	border-radius: var(--sguees-radius-md, 10px);
+	overflow: hidden;
+	background: var(--sguees-surface-subtle, rgba(127, 127, 127, 0.08));
+}
+
+.concilia-resumen-title {
+	padding: 8px 12px;
+	font-weight: 700;
+	font-size: 13px;
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+	border-bottom: 1px solid var(--border-color);
+	background: color-mix(in srgb, var(--accent-color, #2563eb) 14%, transparent);
+	color: var(--sguees-text-primary);
+}
+
+.concilia-resumen-total,
+.concilia-saldo-final {
+	display: flex;
+	justify-content: flex-end;
+	align-items: baseline;
+	gap: 12px;
+	padding: 8px 12px;
+	font-size: 13px;
+	color: var(--sguees-text-primary);
+	background: var(--sguees-surface-subtle, rgba(127, 127, 127, 0.08));
+	border-top: 1px solid var(--border-color);
+
+	strong {
+		font-size: 15px;
+		font-variant-numeric: tabular-nums;
+		color: var(--sguees-text-primary);
+	}
+}
+
+.concilia-saldo-final {
+	margin-top: 4px;
+	padding: 10px 14px;
+	border: 1px solid var(--border-color);
+	border-radius: var(--sguees-radius-md, 10px);
+	background: var(--sguees-surface-subtle, rgba(127, 127, 127, 0.08));
+	font-size: 14px;
+
+	strong {
+		font-size: 16px;
+	}
+}
+
+.concilia-resumen-block,
+.concilia-grid-general,
+.concilia-grid-resumen {
+	::ng-deep .dx-datagrid-headers,
+	::ng-deep .dx-datagrid-rowsview,
+	::ng-deep .dx-datagrid-total-footer {
+		background: transparent;
+		color: var(--sguees-text-primary);
+	}
+
+	::ng-deep .dx-datagrid-total-footer > .dx-datagrid-content {
+		background: var(--sguees-surface-subtle, rgba(127, 127, 127, 0.12));
+	}
+
+	::ng-deep .dx-footer-row td {
+		color: var(--sguees-text-primary);
+		font-weight: 600;
+	}
+}
+
+.concilia-detalle-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.concilia-deta-toolbar,
+.concilia-action-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.concilia-action-bar {
+	margin-bottom: 4px;
+}
+
+.concilia-grid-detalle,
+.concilia-grid-pendientes,
+.concilia-grid-general {
+	width: 100%;
+}
+
+@media (max-width: 900px) {
+	.concilia-workspace-card {
+		::ng-deep .concilia-side-tabs .dx-tabpanel-tabs {
+			min-width: 96px;
+		}
+	}
+
+	.concilia-general-toolbar {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.concilia-linea-select {
+		max-width: none;
+	}
+}

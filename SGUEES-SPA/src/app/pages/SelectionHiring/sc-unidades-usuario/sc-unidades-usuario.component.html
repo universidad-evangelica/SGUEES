@@ -1,0 +1,176 @@
+<!-- Contenedor principal: usuarios con cantidad de unidades asignadas. -->
+<div class="sguees-mtto-view unidades-usuario-view">
+	<!-- Ribbon: abre el popup o asigna todas las unidades al usuario seleccionado. -->
+	<app-barra-data-mtto
+		[tituloVentana]="tituloVentana"
+		[showRibbon]="true"
+		[showExport]="false"
+		[isBrowse]="isBrowse()"
+		[isForm]="isForm()"
+		[permiteAdd]="false"
+		[showRefresh]="true"
+		[showEstadoToolbar]="false"
+		[btn1]="textoBtnAsignarUnidades"
+		[btn1Icon]="'card'"
+		[btn1Type]="'default'"
+		[btn1Mode]="'contained'"
+		[btn1Width]="200"
+		(btn1Click)="onAsignarUnidadesHeader()"
+		[btn2]="textoBtnAsignarTodas"
+		[btn2Icon]="'selectall'"
+		[btn2Type]="'success'"
+		[btn2Mode]="'contained'"
+		[btn2Width]="260"
+		(btn2Click)="onAsignarTodasHeader()"
+		(consultar)="consultar()"
+	>
+	</app-barra-data-mtto>
+
+	<!-- Grilla browse: muestra usuarios y su contador de unidades. -->
+	<app-data-grid-mtto
+		#dataGrid
+		[isBrowse]="isBrowse()"
+		[models]="models"
+		[columns]="columns"
+		[summary]="summary"
+		[keyExpr]="mttoGridKeyExpr"
+		[pageSize]="mttoPageSize"
+		[allowedPageSizes]="mttoPageSizes"
+		[remoteOperations]="mttoRemoteOperations"
+		[repaintChangesOnly]="false"
+		[nativeToolbar]="true"
+		[unifiedToolbar]="false"
+		[showSearch]="false"
+		[showAdd]="false"
+		[showRefresh]="false"
+		[showExport]="false"
+		[showEstadoToolbar]="false"
+		[focusedRowKey]="gridFocusedRowKey"
+		[permitePrint]="false"
+		[permiteEditar]="false"
+		[permiteDele]="false"
+		[responsiveColumnHiding]="false"
+		[columnHidingEnabled]="false"
+		[showGrouping]="true"
+		[exportFileName]="'UnidadesUsuario'"
+		(focusedRowChanged)="focusedRowChanged($event)"
+	>
+	</app-data-grid-mtto>
+</div>
+
+<!-- Popup: selección de unidades asignadas al usuario. -->
+<dx-popup
+	[(visible)]="popupAsignarVisible"
+	[showTitle]="true"
+	[title]="popupAsignarTitulo"
+	[width]="780"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[maxHeight]="'calc(100vh - 48px)'"
+	[showCloseButton]="true"
+	[dragEnabled]="false"
+	[wrapperAttr]="{ class: 'unidades-usuario-asignar-popup' }"
+	(onHiding)="cerrarPopupAsignar()"
+>
+	<!-- Acciones de escritura: Todos/Ninguno/Guardar solo con permiso modificar (U). -->
+	<div class="unidades-usuario-popup-toolbar" *ngIf="permiteEdit">
+		<dx-button
+			icon="check"
+			text="Todos"
+			type="success"
+			stylingMode="contained"
+			(onClick)="selectTodos()"
+			[disabled]="asignandoUnidadesModal || !unidadesModal.length"
+		></dx-button>
+		<dx-button
+			icon="close"
+			text="Ninguno"
+			type="danger"
+			stylingMode="contained"
+			(onClick)="selectNinguno()"
+			[disabled]="asignandoUnidadesModal || !unidadesModal.length"
+		></dx-button>
+		<dx-button
+			icon="save"
+			text="Guardar"
+			type="default"
+			stylingMode="contained"
+			(onClick)="guardarAsignacionModal()"
+			[disabled]="asignandoUnidadesModal || !unidadesModal.length"
+		></dx-button>
+	</div>
+
+	<!-- Grilla editable únicamente en la columna de selección. -->
+	<dx-data-grid
+		#gridAsignarUnidades
+		class="theme-dependent sguees-data-grid-mtto unidades-usuario-popup-grid"
+		[dataSource]="unidadesModal"
+		keyExpr="CORR_UNIDAD"
+		[columnAutoWidth]="false"
+		[showBorders]="true"
+		[showColumnLines]="true"
+		[showRowLines]="true"
+		[rowAlternationEnabled]="true"
+		[hoverStateEnabled]="true"
+		[allowColumnResizing]="true"
+		[columnResizingMode]="'widget'"
+		[width]="'100%'"
+		[repaintChangesOnly]="false"
+	>
+		<dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+		<dxo-pager
+			[visible]="true"
+			[showPageSizeSelector]="true"
+			[allowedPageSizes]="[5, 10, 25, 50]"
+			[showInfo]="true"
+		></dxo-pager>
+		<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+		<dxo-header-filter [visible]="true"></dxo-header-filter>
+		<dxo-scrolling [mode]="'standard'"></dxo-scrolling>
+		<dxo-load-panel [enabled]="false"></dxo-load-panel>
+		<dxo-editing
+			[mode]="'cell'"
+			[allowUpdating]="permiteEdit"
+			[allowAdding]="false"
+			[allowDeleting]="false"
+			[useIcons]="false"
+		></dxo-editing>
+		<dxi-column
+			dataField="SELECCION"
+			caption=""
+			[width]="70"
+			dataType="boolean"
+			[allowSorting]="false"
+			[allowFiltering]="false"
+			[allowHeaderFiltering]="false"
+			[allowEditing]="permiteEdit"
+			alignment="center"
+		></dxi-column>
+		<dxi-column
+			dataField="CORR_UNIDAD"
+			caption="Codigo"
+			[width]="100"
+			dataType="number"
+			alignment="left"
+			[allowEditing]="false"
+		></dxi-column>
+		<dxi-column
+			dataField="NOMBRE_UNIDAD"
+			caption="Unidad"
+			[minWidth]="220"
+			[allowEditing]="false"
+		></dxi-column>
+	</dx-data-grid>
+</dx-popup>
+
+<!-- Panel de carga durante consultas y guardados. -->
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>

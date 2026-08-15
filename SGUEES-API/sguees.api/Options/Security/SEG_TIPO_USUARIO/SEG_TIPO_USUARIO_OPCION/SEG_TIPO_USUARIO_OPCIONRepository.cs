@@ -241,12 +241,9 @@ namespace sguees.Repositories
 				if ((int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value == 0)
 				{
 					var xWhere = new List<CParameter>();
-                    xWhere.Add(new CParameter() {ParameterName="@TIPO_CONSULTA",Value=3,DbType=System.Data.DbType.Int32});
+                    xWhere.Add(new CParameter() {ParameterName="@TIPO_CONSULTA",Value=1,DbType=System.Data.DbType.Int32});
                     xWhere.Add(new CParameter() {ParameterName="@TIPO_USUARIO",Value=Data.TIPO_USUARIO,DbType=System.Data.DbType.Int32});
-                    xWhere.Add(new CParameter() {ParameterName="@CODIGO_SISTEMA",Value=Data.CODIGO_SISTEMA,DbType=System.Data.DbType.String});
-                    xWhere.Add(new CParameter() {ParameterName="@CODIGO_MENU",Value=Data.CODIGO_MENU,DbType=System.Data.DbType.String});
-                    xWhere.Add(new CParameter() {ParameterName="@CODIGO_OPCION",Value=Data.CODIGO_OPCION,DbType=System.Data.DbType.String});
-                    xWhere.Add(new CParameter() {ParameterName="@OPCION_CONSULTA",Value=1,DbType=System.Data.DbType.Int32});
+                    xWhere.Add(new CParameter() {ParameterName="@OPCION_CONSULTA",Value=0,DbType=System.Data.DbType.Int32});
                 
 					var readerGet = await objData.GetDataReader(System.Data.CommandType.StoredProcedure,"PRAL_DATA_"+_TableName,xWhere);
                     var response = new List<SEG_TIPO_USUARIO_OPCIONView>().FromDataReader(readerGet).ToList();

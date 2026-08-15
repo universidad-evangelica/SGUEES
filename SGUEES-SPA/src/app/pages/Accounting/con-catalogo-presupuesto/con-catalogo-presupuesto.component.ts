@@ -16,8 +16,6 @@ export class ConCatalogoPresupuestoComponent extends CBaseComponent implements O
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CUENTA_CONTABLE';
 
-	private readonly maintenanceSubtitulo = 'Mantenimiento de presupuestos';
-
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -35,7 +33,6 @@ export class ConCatalogoPresupuestoComponent extends CBaseComponent implements O
 
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.consultar();
 	}
 	// #endregion
@@ -43,7 +40,6 @@ export class ConCatalogoPresupuestoComponent extends CBaseComponent implements O
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
 		}
 	}
 

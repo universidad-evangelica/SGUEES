@@ -1,3 +1,4 @@
+// Persistencia SQL del catálogo impacto económico (tabla/vista SC).
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
+    // Qué hace: ejecuta el CRUD y las consultas SQL sobre la tabla y la vista de impacto económico.
     public class SC_IMPACTO_ECONOMICORepository : BaseRepository<SC_IMPACTO_ECONOMICOTable>, ISC_IMPACTO_ECONOMICORepository
     {
         private const string _TableName = "SC_IMPACTO_ECONOMICO";
@@ -16,42 +18,71 @@ namespace SGUEES.Repositories
         private const string _CampoPk = "CORR_IMPACTO_ECONOMICO";
         private const string _CampoEstado = "ESTADO_IMPACTO_ECONOMICO";
         private const bool _UsaEmpresa = true;
-        private const string _DefaultSortField = "CORR_IMPACTO_ECONOMICO";
-
-        private static readonly string[] _AllowedSortFields =
-        {
-            "CORR_IMPACTO_ECONOMICO",
-            "DESCRIPCION",
-            "ESTADO_IMPACTO_ECONOMICO",
-            "USUARIO_CREA",
-            "ESTACION_CREA",
-            "FECHA_CREA",
-            "USUARIO_ACTU",
-            "ESTACION_ACTU",
-            "FECHA_ACTU",
-        };
-
         public SC_IMPACTO_ECONOMICORepository(IConfiguration config) :
             base(config.GetConnectionString("defaultConnection"),
                 config.GetSection("DbProvider:defaultProvider").Value)
         {
         }
 
+        // Qué hace: recupera los impactos económicos activos para el lookup del descriptor.
+        // Cómo: SELECT directo a V_SC_IMPACTO_ECONOMICO filtrando por empresa y ESTADO_IMPACTO_ECONOMICO, ordenado por CORR_IMPACTO_ECONOMICO.
+        public async Task<List<SC_IMPACTO_ECONOMICOView>> GetCatalogoDescriptorAsync(int corrEmpresa)
+        {
+            if (corrEmpresa <= 0)
+            {
+                return new List<SC_IMPACTO_ECONOMICOView>();
+            }
+
+            const string sql = @"SELECT
+                  A.CORR_EMPRESA,
+                  A.CORR_IMPACTO_ECONOMICO,
+                  A.DESCRIPCION,
+                  A.ESTADO_IMPACTO_ECONOMICO
+                FROM V_SC_IMPACTO_ECONOMICO A
+                WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+                  AND ISNULL(A.ESTADO_IMPACTO_ECONOMICO, 1) = 1
+                ORDER BY A.CORR_IMPACTO_ECONOMICO";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                });
+
+                var response = new List<SC_IMPACTO_ECONOMICOView>().FromDataReader(reader).ToList();
+                reader.Close();
+                return response;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
+        // Qué hace: lista los impactos económicos de la vista V_SC_IMPACTO_ECONOMICO.
+        // Cómo: filtra por CORR_EMPRESA y ordena por CORR_IMPACTO_ECONOMICO.
         public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
 
             try
             {
-                var paged = await ReadPagedViewAsync<SC_IMPACTO_ECONOMICOView>(
-                    _ViewName,
-                    xWhere,
-                    _AllowedSortFields,
-                    _DefaultSortField);
+                var dbWhere = xWhere
+                    .Where(x => x.ParameterName == "CORR_EMPRESA")
+                    .ToList();
 
-                objResultado.Data = paged.PageData;
+                var reader = await objData.GetDataReader(_ViewName, dbWhere);
+                var response = new List<SC_IMPACTO_ECONOMICOView>().FromDataReader(reader)
+                    .OrderBy(x => x.CORR_IMPACTO_ECONOMICO)
+                    .ToList();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
                 objResultado.Result = true;
-                objResultado.RowsAffected = paged.TotalRows;
+                objResultado.RowsAffected = response.Count;
                 objResultado.CodeHelper = 0;
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
@@ -74,6 +105,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: obtiene un impacto económico de la vista V_SC_IMPACTO_ECONOMICO.
+        // Cómo: lee con los filtros recibidos en xWhere (empresa e id).
         public async Task<CResult> GetAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -111,6 +144,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: inserta un impacto económico nuevo.
+        // Cómo: llama a Insert sobre SC_IMPACTO_ECONOMICO y devuelve el registro creado leído desde la vista; controla claves duplicadas.
         public async Task<CResult> CreateAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -170,6 +205,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: actualiza un impacto económico existente.
+        // Cómo: llama a Update sobre SC_IMPACTO_ECONOMICO por CORR_EMPRESA y CORR_IMPACTO_ECONOMICO; controla claves duplicadas.
         public async Task<CResult> UpdateAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -225,6 +262,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: elimina un impacto económico.
+        // Cómo: llama a Delete sobre SC_IMPACTO_ECONOMICO por CORR_EMPRESA y CORR_IMPACTO_ECONOMICO; informa si hay registros relacionados.
         public async Task<CResult> DeleteAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -261,6 +300,8 @@ namespace SGUEES.Repositories
 
             return objResultado;
         }
+        // Qué hace: cambia el estado activo/inactivo de un impacto económico.
+        // Cómo: ejecuta el stored procedure PRAL_MTTO_CATALOGO_ESTADO_BIT y devuelve el registro actualizado leído desde la vista.
         public async Task<CResult> ActivarInactivarAsync(SC_IMPACTO_ECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
@@ -333,6 +374,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: detecta errores de clave duplicada de SQL Server.
         private static bool IsDuplicateKeyError(Exception e)
         {
             return e.Message.Contains("duplicate key", StringComparison.OrdinalIgnoreCase) ||

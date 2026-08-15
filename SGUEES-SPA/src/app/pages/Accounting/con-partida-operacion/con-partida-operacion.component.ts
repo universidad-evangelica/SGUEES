@@ -11,8 +11,8 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { environment } from 'src/environments/environment';
 import { ConPartidaService } from '../con-partida/con-partida.service';
-import { ConPartidaDetaService } from '../con-partida-deta/con-partida-deta.service';
-import { ConPartidaDocService } from '../con-partida/con-partida-doc.service';
+import { ConPartidaDetaService } from '../con-partida/con-partida-deta/con-partida-deta.service';
+import { ConPartidaDocService } from '../con-partida/con-partida-doc/con-partida-doc.service';
 import { ConPartidaOperacionModo, ConPartidaOperacionService } from './con-partida-operacion.service';
 
 @Component({
@@ -289,7 +289,12 @@ export class ConPartidaOperacionComponent extends CBaseComponent implements OnIn
 		this.documentosConsulta = [];
 
 		this.detaService
-			.getAll({ CORR_PARTIDA: row.CORR_PARTIDA })
+			.getAll({
+				ANIO_PERIODO: row.ANIO_PERIODO,
+				MES_PERIODO: row.MES_PERIODO,
+				CORR_CLASE_PARTIDA: row.CORR_CLASE_PARTIDA,
+				CORR_PARTIDA: row.CORR_PARTIDA,
+			})
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {

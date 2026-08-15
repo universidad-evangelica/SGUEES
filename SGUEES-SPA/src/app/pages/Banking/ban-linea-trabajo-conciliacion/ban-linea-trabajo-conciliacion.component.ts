@@ -20,8 +20,6 @@ export class BanLineaTrabajoConciliacionComponent extends CBaseComponent impleme
 	protected override mttoCampoEstado = 'ESTADO_LINEA';
 	protected override mttoEstadoDescribeField = 'NOMBRE_LINEA_TRABAJO';
 
-	private readonly maintenanceSubtitulo = 'Mantenimiento de Líneas de Trabajo - Conciliación';
-
 	//#region <Declarando Variales>
 	mAUMENTA_DISMINUYE: any;
 	readOnly = false;
@@ -40,7 +38,6 @@ export class BanLineaTrabajoConciliacionComponent extends CBaseComponent impleme
 
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
@@ -52,7 +49,6 @@ export class BanLineaTrabajoConciliacionComponent extends CBaseComponent impleme
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
 		}
 	}
 

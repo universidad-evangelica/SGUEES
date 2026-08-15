@@ -1,7 +1,8 @@
+// Qué hace: lógica de negocio del catálogo competencias técnicas.
+// Cómo: valida los datos jerárquicos y llama a ISC_COMPETENCIAS_TECNICASRepository para ejecutar el CRUD.
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -10,6 +11,8 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
+    // Qué hace: servicio de competencias técnicas.
+    // Cómo: valida los datos jerárquicos y llama al repositorio para persistir la información.
     public class SC_COMPETENCIAS_TECNICASService : ISC_COMPETENCIAS_TECNICASService
     {
         private readonly ISC_COMPETENCIAS_TECNICASRepository _repo;
@@ -19,21 +22,15 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Qué hace: obtiene el listado de competencias técnicas.
+        // Cómo: llama a GetAllAsync del repositorio con los parámetros armados por BuildParameters.
         public async Task<CResult> GetAllAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
-        public async Task<CResult> GetDistinctValuesAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
-        {
-            if (string.IsNullOrWhiteSpace(xWhere.DISTINCT_FIELD))
-            {
-                return ValidationError("Debe indicar el campo para el filtro de encabezado.");
-            }
-
-            return await _repo.GetDistinctValuesAsync(BuildParameters(xWhere));
-        }
-
+        // Qué hace: obtiene una competencia técnica puntual.
+        // Cómo: llama a GetAsync del repositorio filtrando por CORR_EMPRESA y CORR_COMPETENCIAS_TECNICAS.
         public async Task<CResult> GetAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             var p = new List<CParameter>
@@ -45,6 +42,8 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
+        // Qué hace: obtiene los posibles padres para el lookup jerárquico.
+        // Cómo: valida NIVEL_PADRE, llama a GetPadresByNivelAsync del repositorio y construye NOMBRE_DISPLAY con BuildLookupDisplay.
         public async Task<CResult> GetPadresAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             if (string.IsNullOrWhiteSpace(xWhere.NIVEL_PADRE))
@@ -87,6 +86,8 @@ namespace SGUEES.Services
             };
         }
 
+        // Qué hace: obtiene el catálogo de nivel 3 agrupado para el descriptor de puesto.
+        // Cómo: llama a GetCatalogoNivel3DescriptorAsync del repositorio y arma GRUPO_NIV1, GRUPO_NIV2 y NOMBRE_DISPLAY por registro.
         public async Task<CResult> GetCatalogoNivel3DescriptorAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             var rows = await _repo.GetCatalogoNivel3DescriptorAsync(xWhere.CORR_EMPRESA);
@@ -128,6 +129,8 @@ namespace SGUEES.Services
             };
         }
 
+        // Qué hace: calcula el siguiente código de nivel 3 para un padre de nivel 2.
+        // Cómo: valida CORR_COMPETENCIAS_TECNICAS_PADRE, consulta el padre con GetAsync y genera el código con BuildNextCodigoLevel3Async.
         public async Task<CResult> GetNextCodigoAsync(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
             if (xWhere.CORR_COMPETENCIAS_TECNICAS_PADRE is not > 0)
@@ -161,8 +164,16 @@ namespace SGUEES.Services
             };
         }
 
+        // Qué hace: crea una competencia técnica.
+        // Cómo: valida la empresa con ValidateEmpresaSesion, normaliza con PrepareForSaveAsync, verifica unicidad con ValidateUniqueCodigoAsync y llama a CreateAsync del repositorio.
         public async Task<CResult> CreateAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
             var prepare = await PrepareForSaveAsync(Data, true);
             if (prepare != null)
             {
@@ -179,8 +190,16 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Qué hace: actualiza una competencia técnica existente.
+        // Cómo: valida la empresa, consulta el registro actual con GetAsync, preserva jerarquía si tiene hijos, valida con PrepareForSaveAsync y llama a UpdateAsync del repositorio.
         public async Task<CResult> UpdateAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
             var current = await GetAsync(new SC_COMPETENCIAS_TECNICASParam
             {
                 CORR_EMPRESA = Data.CORR_EMPRESA,
@@ -216,8 +235,16 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Qué hace: elimina una competencia técnica.
+        // Cómo: valida la empresa con ValidateEmpresaSesion, verifica hijos con HasChildrenAsync y llama a DeleteAsync del repositorio.
         public async Task<CResult> DeleteAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
             if (await HasChildrenAsync(Data.CORR_EMPRESA, Data.CORR_COMPETENCIAS_TECNICAS))
             {
                 return ValidationError("No se puede eliminar la competencia porque tiene registros hijos asociados.");
@@ -226,12 +253,26 @@ namespace SGUEES.Services
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        public async Task<CResult> DesactivarAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        // Qué hace: cambia el estado activo/inactivo de una competencia técnica.
+        // Cómo: valida la empresa con ValidateEmpresaSesion, verifica CORR_COMPETENCIAS_TECNICAS y llama a ActivarInactivarAsync del repositorio.
+        public async Task<CResult> ActivarInactivarAsync(SC_COMPETENCIAS_TECNICASTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            Data.ESTADO_COMPETENCIAS_TECNICAS = false;
-            return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            if (Data.CORR_COMPETENCIAS_TECNICAS <= 0)
+            {
+                return ValidationError("No se pudo identificar la competencia tecnica a actualizar.");
+            }
+
+            return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Qué hace: normaliza y valida código, padre y nombre según el nivel jerárquico.
+        // Cómo: ejecuta ValidateBase, NormalizeNivel y aplica reglas por NIV1, NIV2 o NIV3 antes de create o update.
         private async Task<CResult> PrepareForSaveAsync(
             SC_COMPETENCIAS_TECNICASTable Data,
             bool isCreate,
@@ -389,6 +430,8 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Qué hace: calcula el siguiente código de nivel 3 a partir de los hermanos existentes.
+        // Cómo: llama a GetSiblingCodigosLevel3Async del repositorio, obtiene el mayor sufijo numérico y lo incrementa con formato D2.
         private async Task<string> BuildNextCodigoLevel3Async(int corrEmpresa, SC_COMPETENCIAS_TECNICASView parent)
         {
             var parentCodigo = parent.CODIGO_COMPETENCIAS_TECNICAS ?? string.Empty;
@@ -415,6 +458,8 @@ namespace SGUEES.Services
             return parentCodigo + (max + 1).ToString("D2");
         }
 
+        // Qué hace: verifica que el código no pertenezca a otra competencia de la empresa.
+        // Cómo: llama a ExistsCodigoAsync del repositorio y devuelve DuplicateWarning si ya existe otro registro.
         private async Task<CResult> ValidateUniqueCodigoAsync(SC_COMPETENCIAS_TECNICASTable Data, int? excludeCorr)
         {
             var exclude = excludeCorr ?? 0;
@@ -423,16 +468,25 @@ namespace SGUEES.Services
                 Data.CODIGO_COMPETENCIAS_TECNICAS,
                 exclude);
 
-            return exists
-                ? ValidationError($"Ya existe una competencia con el codigo {Data.CODIGO_COMPETENCIAS_TECNICAS}.")
-                : null;
+            if (!exists)
+            {
+                return null;
+            }
+
+            var codigo = (Data.CODIGO_COMPETENCIAS_TECNICAS ?? string.Empty).Trim();
+            return DuplicateWarning(
+                $"Ya existe una competencia con el codigo {codigo}. Escriba otro codigo para continuar.");
         }
 
+        // Qué hace: consulta si la competencia aún tiene nodos hijos asociados.
+        // Cómo: llama a HasChildrenAsync del repositorio filtrando por CORR_EMPRESA y CORR_COMPETENCIAS_TECNICAS.
         private Task<bool> HasChildrenAsync(int corrEmpresa, int corrCompetencia)
         {
             return _repo.HasChildrenAsync(corrEmpresa, corrCompetencia);
         }
 
+        // Qué hace: valida presencia de datos y nivel antes de las reglas por jerarquía.
+        // Cómo: rechaza el guardado si Data es nulo o NIVEL está vacío, devolviendo ValidationError.
         private static CResult ValidateBase(SC_COMPETENCIAS_TECNICASTable Data)
         {
             if (Data == null)
@@ -448,6 +502,8 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Qué hace: convierte las variantes aceptadas de nivel al formato NIV1, NIV2 o NIV3.
+        // Cómo: normaliza el texto recibido y reconoce valores como NIV1, 1 o NIVEL1.
         private static string NormalizeNivel(string nivel)
         {
             var value = nivel?.Trim().ToUpperInvariant();
@@ -473,6 +529,8 @@ namespace SGUEES.Services
             return value;
         }
 
+        // Qué hace: combina código y nombre en una etiqueta legible para lookups.
+        // Cómo: concatena codigo y nombre cuando ambos existen; si falta uno, devuelve el disponible o "(Sin nombre)".
         private static string BuildLookupDisplay(string codigo, string nombre)
         {
             var code = codigo?.Trim() ?? string.Empty;
@@ -496,113 +554,54 @@ namespace SGUEES.Services
             return "(Sin nombre)";
         }
 
+        // Qué hace: arma los parámetros de filtro para el repositorio.
+        // Cómo: construye la lista CParameter con CORR_EMPRESA a partir de SC_COMPETENCIAS_TECNICASParam.
         private static List<CParameter> BuildParameters(SC_COMPETENCIAS_TECNICASParam xWhere)
         {
-            var p = new List<CParameter>
+            return new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "BUSQUEDA", Value = xWhere.BUSQUEDA, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "ESTADO_COMPETENCIAS_TECNICAS", Value = xWhere.ESTADO_COMPETENCIAS_TECNICAS, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "NIVEL", Value = string.IsNullOrWhiteSpace(xWhere.NIVEL) ? null : NormalizeNivel(xWhere.NIVEL), DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "NIVEL_PADRE", Value = string.IsNullOrWhiteSpace(xWhere.NIVEL_PADRE) ? null : NormalizeNivel(xWhere.NIVEL_PADRE), DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "CORR_COMPETENCIAS_TECNICAS_PADRE", Value = xWhere.CORR_COMPETENCIAS_TECNICAS_PADRE, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "PAGE", Value = xWhere.PAGE, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "PAGE_SIZE", Value = xWhere.PAGE_SIZE, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "DISTINCT_FIELD", Value = xWhere.DISTINCT_FIELD, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "HEADER_FILTER_SEARCH", Value = xWhere.HEADER_FILTER_SEARCH, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "SORT_FIELD", Value = xWhere.SORT_FIELD, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "SORT_DESC", Value = xWhere.SORT_DESC, DbType = System.Data.DbType.Boolean },
             };
-
-            AddJsonParameter(p, "FILTER_ROW_JSON", xWhere.FILTER_ROW_JSON);
-            AddJsonParameter(p, "COLUMN_EXACT_JSON", xWhere.COLUMN_EXACT_JSON);
-            AddJsonParameter(p, "COLUMN_ANYOF_JSON", xWhere.COLUMN_ANYOF_JSON);
-            AddAnyOfFilters(p, xWhere.COLUMN_ANYOF_JSON);
-
-            return p;
         }
 
-        private static void AddJsonParameter(List<CParameter> p, string parameterName, string json)
+        // Qué hace: rechaza operaciones cuando no hay empresa en sesión.
+        // Cómo: devuelve null si corrEmpresa es mayor que cero; en caso contrario, un CResult con ErrorCode 4100.
+        private static CResult ValidateEmpresaSesion(int corrEmpresa)
         {
-            if (string.IsNullOrWhiteSpace(json))
+            if (corrEmpresa > 0)
             {
-                return;
+                return null;
             }
 
-            p.Add(new CParameter()
+            return new CResult
             {
-                ParameterName = parameterName,
-                Value = json,
-                DbType = System.Data.DbType.String,
-            });
+                Data = null,
+                Result = false,
+                CodeHelper = 0,
+                ErrorCode = 4100,
+                ErrorMessage = "No se pudo guardar la competencia tecnica porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
+                ErrorSource = "[SC_COMPETENCIAS_TECNICASService]",
+                RowsAffected = 0
+            };
         }
 
-        private static void AddAnyOfFilters(List<CParameter> p, string columnAnyOfJson)
+        // Qué hace: arma respuesta controlada de duplicado (ErrorCode 2627 → Warning en el front).
+        private static CResult DuplicateWarning(string message)
         {
-            if (string.IsNullOrWhiteSpace(columnAnyOfJson))
+            return new CResult
             {
-                return;
-            }
-
-            try
-            {
-                var filters = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(columnAnyOfJson);
-                if (filters == null)
-                {
-                    return;
-                }
-
-                foreach (var filter in filters)
-                {
-                    if (filter.Value.ValueKind != JsonValueKind.Array)
-                    {
-                        continue;
-                    }
-
-                    var values = filter.Value
-                        .EnumerateArray()
-                        .Select(x => x.ValueKind switch
-                        {
-                            JsonValueKind.String => x.GetString(),
-                            JsonValueKind.Number => x.GetRawText(),
-                            JsonValueKind.True => "true",
-                            JsonValueKind.False => "false",
-                            JsonValueKind.Null => "__BLANK__",
-                            _ => x.ToString(),
-                        })
-                        .Where(x => !string.IsNullOrWhiteSpace(x))
-                        .ToList();
-
-                    if (values.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    p.Add(new CParameter()
-                    {
-                        ParameterName = $"{filter.Key}_ANYOF",
-                        Value = string.Join('|', values),
-                        DbType = System.Data.DbType.String,
-                    });
-                }
-            }
-            catch (JsonException)
-            {
-            }
+                Data = null,
+                Result = false,
+                CodeHelper = 0,
+                ErrorCode = 2627,
+                ErrorMessage = message,
+                ErrorSource = "[SC_COMPETENCIAS_TECNICASService]",
+                RowsAffected = 0
+            };
         }
 
-        private static void AddColumnFilter(List<CParameter> p, string parameterName, object value, System.Data.DbType dbType)
-        {
-            if (value == null ||
-                value is string text && string.IsNullOrWhiteSpace(text) ||
-                value is int number && number <= 0)
-            {
-                return;
-            }
-
-            p.Add(new CParameter() { ParameterName = parameterName, Value = value, DbType = dbType });
-        }
-
+        // Qué hace: construye un CResult de validación funcional.
+        // Cómo: arma un resultado con Result false, ErrorCode -1 y el mensaje recibido.
         private static CResult ValidationError(string message)
         {
             return new CResult

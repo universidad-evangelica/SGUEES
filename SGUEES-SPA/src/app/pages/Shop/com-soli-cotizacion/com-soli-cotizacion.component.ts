@@ -610,6 +610,8 @@ export class ComSoliCotizacionComponent
 
   override cancelar(): void {
 		const cancelRow = () => {
+      this.loadingVisible = false;
+      this.popupVisible = false;
 			this.AsignaStatus(UpdateType.Browse);
 			this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
       this.refrescarBotones();
@@ -740,17 +742,21 @@ export class ComSoliCotizacionComponent
         .subscribe({
           next: (response: any) => {
             if (response.Result) {
-              this.loadingVisible = false;
               this.notifyFx(
                 'Registro Actualizado con exito!',
                 NotifyType.Success
               );
               resolve(false);
+            } else {
+              this.notifyFx(response.ErrorMessage, NotifyType.Error);
+              reject(response.ErrorMessage);
             }
+            this.loadingVisible = false;
           },
           error: (error: any) => {
             this.loadingVisible = false;
             this.notifyFx(error, NotifyType.Error);
+            reject(error);
           },
         });
     });
@@ -956,8 +962,10 @@ export class ComSoliCotizacionComponent
               this.mCOM_SOLICITUD_DETA_DISPONIBLE = null;
               this.dataSolicitudDisponible.instance.refresh(true);
             }
-            this.loadingVisible = false;
+          } else {
+            this.notifyFx(response.ErrorMessage, NotifyType.Error);
           }
+          this.loadingVisible = false;
         },
         error: (error: any) => {
           this.notifyFx(error, NotifyType.Error);
@@ -1060,17 +1068,19 @@ export class ComSoliCotizacionComponent
   }
 
   hidePopup() {
+    const cerrarPopup = () => {
+      this.loadingVisible = false;
+      this.popupVisible = false;
+    };
     if (this.banderaMtto == UpdateType.Add) {
       this.confirmaCancelar(() => {
-        this.popupVisible = false;
+        cerrarPopup();
         this.AsignaStatus(UpdateType.Browse);
         this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
       });
     } else if (this.banderaMtto == UpdateType.Update) {
       this.confirmaCancelar(() => {
-        this.popupVisible = false;
-        //this.AsignaStatus(UpdateType.Browse);
-        //this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
+        cerrarPopup();
       });
     }
   }
@@ -1156,6 +1166,7 @@ export class ComSoliCotizacionComponent
                 this.readOnly = false;
               } else {
                 this.notifyFx(response.ErrorMessage, NotifyType.Error);
+                this.loadingVisible = false;
               }
             },
             error: (error: any) => {
@@ -1177,7 +1188,6 @@ export class ComSoliCotizacionComponent
                   NotifyType.Success
                 );
                 this.popupVisible = false;
-                this.loadingVisible = false;
                 this.consultarCOM_SOLI_COTIZACION_DETA();
                 this.consultarDocumentos();
                 this.ConsultarProveedores(
@@ -1190,6 +1200,7 @@ export class ComSoliCotizacionComponent
               } else {
                 this.notifyFx(response.ErrorMessage, NotifyType.Error);
               }
+              this.loadingVisible = false;
             },
             error: (error: any) => {
               this.notifyFx(error, NotifyType.Error);

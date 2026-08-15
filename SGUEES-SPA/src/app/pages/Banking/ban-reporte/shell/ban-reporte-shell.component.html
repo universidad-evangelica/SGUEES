@@ -1,0 +1,125 @@
+<div class="ban-reporte-shell">
+	<dx-box class="content-block ban-reporte-shell__cabecera" direction="row" width="100%" [height]="'auto'">
+		<dxi-item ratio="0" baseSize="28" class="bgOcultar">
+			<dx-toolbar class="bgOcultar" [items]="contenidoToolbar"></dx-toolbar>
+		</dxi-item>
+		<dxi-item ratio="1">
+			<h2 class="ban-reporte-shell__titulo">{{ tituloVentana }}</h2>
+		</dxi-item>
+	</dx-box>
+
+	<div class="ban-reporte-shell__separador-titulo" #separadorTitulo aria-hidden="true"></div>
+
+	<dx-drawer
+		class="ban-reporte-shell__drawer"
+		[openedStateMode]="'shrink'"
+		[position]="'before'"
+		[revealMode]="'slide'"
+		[opened]="true"
+		[height]="altoDrawer"
+		template="template"
+		[width]="'100%'"
+		[(opened)]="panelFiltrosAbierto"
+		[closeOnOutsideClick]="false"
+	>
+		<div *dxTemplate="let data of 'template'" class="ban-reporte-shell__panel-filtros">
+			<div class="options">
+				<div class="option" *ngIf="usaFiltro('FECHA_INICIAL')">
+					<div>Fecha Inicial:</div>
+					<dx-date-box
+						[(value)]="filtro.FECHA_INICIAL"
+						[useMaskBehavior]="true"
+						type="date"
+						displayFormat="dd/MM/yyyy"
+						width="'100%'"
+						[showClearButton]="true"
+					></dx-date-box>
+				</div>
+				<div class="option" *ngIf="usaFiltro('FECHA_FINAL')">
+					<div>Fecha Final:</div>
+					<dx-date-box
+						[(value)]="filtro.FECHA_FINAL"
+						[useMaskBehavior]="true"
+						type="date"
+						displayFormat="dd/MM/yyyy"
+						width="'100%'"
+						[showClearButton]="true"
+					></dx-date-box>
+				</div>
+				<div class="option" *ngIf="usaFiltro('CORR_CUENTA_BANCO')">
+					<div>Cuenta bancaria:</div>
+					<dx-select-box
+						[(value)]="filtro.CORR_CUENTA_BANCO"
+						[dataSource]="mCuentasBanco"
+						displayExpr="NOMBRE_CUENTA_BANCO"
+						valueExpr="CORR_CUENTA_BANCO"
+						[searchEnabled]="true"
+						[showClearButton]="true"
+						width="'100%'"
+					></dx-select-box>
+				</div>
+				<div class="option" *ngIf="usaFiltro('CORR_TIPO_MOVIMIENTO')">
+					<div>Tipo movimiento:</div>
+					<dx-select-box
+						[(value)]="filtro.CORR_TIPO_MOVIMIENTO"
+						[dataSource]="mTiposMovimiento"
+						displayExpr="NOMBRE_TIPO_MOVIMIENTO"
+						valueExpr="CORR_TIPO_MOVIMIENTO"
+						[searchEnabled]="true"
+						[showClearButton]="true"
+						width="'100%'"
+					></dx-select-box>
+				</div>
+				<div class="option" *ngIf="usaFiltro('NUMERO_DOCUMENTO_INICIAL')">
+					<div>No. cheque inicial:</div>
+					<dx-number-box [(value)]="filtro.NUMERO_DOCUMENTO_INICIAL" [min]="0" [showSpinButtons]="true" width="'100%'"></dx-number-box>
+				</div>
+				<div class="option" *ngIf="usaFiltro('NUMERO_DOCUMENTO_FINAL')">
+					<div>No. cheque final:</div>
+					<dx-number-box [(value)]="filtro.NUMERO_DOCUMENTO_FINAL" [min]="0" [showSpinButtons]="true" width="'100%'"></dx-number-box>
+				</div>
+				<div class="option">
+					<dx-button text="Limpiar" type="normal" stylingMode="outlined" icon="clearformat" (onClick)="limpiar.emit()"></dx-button>
+				</div>
+				<div class="option" *ngIf="muestraBotonConsultar">
+					<dx-button text="Consultar" type="default" (onClick)="consultar.emit()"></dx-button>
+				</div>
+				<div class="option" *ngIf="muestraBotonVistaPrevia">
+					<dx-button text="Vista Previa" type="default" (onClick)="vistaPrevia.emit()"></dx-button>
+				</div>
+			</div>
+		</div>
+
+		<div class="ban-reporte-shell__viewport">
+			<dx-data-grid
+				*ngIf="muestraGrid && !mostrarPdf"
+				#gridReporte
+				class="ban-reporte-shell__grid bordeGrid"
+				[dataSource]="datos"
+				[columns]="columnas"
+				[columnAutoWidth]="false"
+				[wordWrapEnabled]="true"
+				[showBorders]="true"
+				[height]="'100%'"
+				[width]="'100%'"
+				(onExporting)="alExportar($event)"
+				(onContentReady)="alGridListo()"
+			>
+				<dxo-search-panel [visible]="true"></dxo-search-panel>
+				<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+				<dxo-export [enabled]="true" [fileName]="codigoReporte"></dxo-export>
+				<dxo-paging [enabled]="false"></dxo-paging>
+			</dx-data-grid>
+			<object
+				*ngIf="(!muestraGrid || mostrarPdf) && pdfUrl"
+				class="ban-reporte-shell__pdf"
+				[data]="pdfUrl"
+				type="application/pdf"
+				width="100%"
+				height="100%"
+			>
+				<embed [src]="pdfUrl" type="application/pdf" />
+			</object>
+		</div>
+	</dx-drawer>
+</div>

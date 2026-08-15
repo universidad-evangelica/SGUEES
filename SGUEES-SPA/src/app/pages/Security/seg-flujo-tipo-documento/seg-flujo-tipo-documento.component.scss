@@ -1,0 +1,39 @@
+/* ======================================================
+   PANTALLA DE EDICIÓN / ALTA
+   Basado en el patrón de ConPartida
+====================================================== */
+
+/* Contenedor general de la pantalla de edición */
+.tipo-documento-edit-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sguees-content-gap, 16px);
+    margin-bottom: 16px;
+}
+
+/* Tarjetas de sección */
+.tipo-documento-form-card,
+.tipo-documento-estados-card {
+    margin-bottom: 0;
+}
+
+/* Encabezado de cada sección */
+.tipo-documento-section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: var(--sguees-space-4, 16px);
+    padding-bottom: var(--sguees-space-3, 12px);
+  
+}
+
+.tipo-documento-section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--sguees-text-primary, #333);
+}
+
+.tipo-documento-section-subtitle {
+    font-size: 12px;
+    color: var(--sguees-text-secondary, #666);
+}

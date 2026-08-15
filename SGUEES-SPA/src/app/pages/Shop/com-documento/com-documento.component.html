@@ -1,7 +1,9 @@
+<div class="sguees-mtto-view">
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[isBrowse]="isBrowse()"
 	[isForm]="isForm()"
+	[showRibbon]="true"
 	[permiteAdd]="permiteAdd"
 	(nuevo)="nuevo()"
 	(guardar)="guardar()"
@@ -411,6 +413,7 @@
 
 >
 </app-data-grid-mtto>
+</div>
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"

@@ -1,12 +1,5 @@
-.division-form-card {
-	margin-top: 38px;
-}
-
-@media (max-width: 991.98px) {
-	.division-form-card {
-		margin-top: 16px;
-	}
-}
+// Qué hace: estilos locales del mantenimiento de divisiones.
+// Cómo: ajusta el toolbar del grid en móvil (mismo patrón sc-riesgo-puesto).
 
 @media (max-width: 575.98px) {
 	:host ::ng-deep {
@@ -56,9 +49,5 @@
 		.dx-datagrid-header-panel .dx-toolbar-after .dx-button-has-text {
 			flex: 1 1 auto;
 		}
-	}
-
-	.division-form-card {
-		margin-top: 12px;
 	}
 }

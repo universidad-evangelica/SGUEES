@@ -15,8 +15,6 @@ export class GenSectorEconomicoComponent extends CBaseComponent implements OnIni
 	protected override requiereEmpresaSesion = false;
 	protected override mttoGridKeyExpr = 'CORR_SECTOR_ECONOMICO';
 	protected override mttoRemoteOperations = false;
-
-	private readonly maintenanceSubtitulo = 'Mantenimiento de sectores económicos';
 	readOnly = false;
 
 	constructor(
@@ -31,7 +29,6 @@ export class GenSectorEconomicoComponent extends CBaseComponent implements OnIni
 	}
 
 	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
@@ -42,7 +39,6 @@ export class GenSectorEconomicoComponent extends CBaseComponent implements OnIni
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
 		}
 	}
 

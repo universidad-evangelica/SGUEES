@@ -38,10 +38,6 @@ export class ConCatalogoCuentaComponent extends CBaseComponent implements OnInit
 
 
 
-	private readonly maintenanceSubtitulo = 'Mantenimiento de catálogo de cuentas';
-
-
-
 	//#region <Declarando Variales>
 
 	mCLASE_RUBRO: any;
@@ -92,8 +88,6 @@ export class ConCatalogoCuentaComponent extends CBaseComponent implements OnInit
 
 	ngOnInit(): void {
 
-		this.subTituloVentana = this.maintenanceSubtitulo;
-
 		this.inicializaOpciones();
 
 		this.llenaComboBox();
@@ -115,8 +109,6 @@ export class ConCatalogoCuentaComponent extends CBaseComponent implements OnInit
 		super.AsignaStatus(xEstado);
 
 		if (xEstado === UpdateType.Browse) {
-
-			this.subTituloVentana = this.maintenanceSubtitulo;
 
 		}
 

@@ -30,6 +30,7 @@ import {
 	getNotifyTypeFromError,
 	getNotifyTypeFromResponse,
 	isEmpresaFkErrorMessage,
+	isUnauthorizedError,
 	mapApiErrorMessage,
 } from 'src/app/shared/mtto/mtto-api-messages';
 
@@ -194,6 +195,9 @@ export class CBaseComponent {
 
 	//#region <Metodos Browse>
 	focusedRowChanged(e: any) {
+		if (!this.isBrowse()) {
+			return;
+		}
 		this.model = e.row.data;
 	}
 
@@ -225,7 +229,7 @@ export class CBaseComponent {
 	}
 
 	protected notificarSeleccionRequerida(): void {
-		this.notifyFx('Seleccione un registro en el grid.', NotifyType.Warning, { raw: true });
+		this.notifyFx('No hay ningún registro seleccionado. Seleccione uno para continuar.', NotifyType.Warning, { raw: true });
 	}
 
 	getPermiteEditar(e: any): boolean {
@@ -278,10 +282,10 @@ export class CBaseComponent {
 		e?.event?.preventDefault?.();
 		const rowData = e?.row?.data ?? e?.data;
 		if (rowData) {
+			this.modelUpdate = { ...rowData };
 			this.model = this.fillData(rowData);
 		}
 		this.AsignaStatus(UpdateType.Update);
-		this.modelUpdate = this.fillData(this.model);
 		this.habilitar();
 		this.setFocus();
 	}
@@ -302,6 +306,9 @@ export class CBaseComponent {
 				}
 				cancelRow();
 			});
+		} else if (this.banderaMtto === UpdateType.Not_Defined) {
+			this.restaurarFilaGridConsulta(findIndex);
+			cancelRow();
 		} else {
 			cancelRow();
 		}
@@ -318,8 +325,8 @@ export class CBaseComponent {
 	rowDblClick(e: any) {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
+			this.modelUpdate = { ...rowData };
 			this.model = this.fillData(rowData);
-			this.modelUpdate = this.fillData(rowData);
 		}
 		this.AsignaStatus(UpdateType.Not_Defined);
 		this.subTituloVentana = RowStatus.Browse.toString();
@@ -329,6 +336,43 @@ export class CBaseComponent {
 			}
 			this.bloquear();
 		});
+	}
+
+	/** Restaura la fila del grid tras cancelar consulta (doble clic). */
+	protected restaurarFilaGridConsulta(findIndex?: (item: any) => boolean): void {
+		if (!Array.isArray(this.models) || !this.modelUpdate) {
+			return;
+		}
+
+		const snapshot = this.modelUpdate;
+		const index =
+			typeof findIndex === 'function'
+				? this.models.findIndex(findIndex)
+				: this.buscarIndiceFilaGrid(snapshot);
+
+		if (index < 0) {
+			return;
+		}
+
+		this.models[index] = { ...snapshot };
+		this.model = this.models[index];
+		this.refrescarGridMtto(false);
+	}
+
+	protected buscarIndiceFilaGrid(row: Record<string, unknown>): number {
+		if (!Array.isArray(this.models) || !row) {
+			return -1;
+		}
+
+		const keyExpr = this.mttoGridKeyExpr;
+		if (keyExpr) {
+			const idx = this.models.findIndex((item) => item?.[keyExpr] === row[keyExpr]);
+			if (idx >= 0) {
+				return idx;
+			}
+		}
+
+		return this.models.indexOf(row);
 	}
 
 	AsignaStatus(xEstado: UpdateType): void {
@@ -352,6 +396,10 @@ export class CBaseComponent {
 	}
 
 	notifyFx(xMessage: string, xType: NotifyType, options?: { raw?: boolean }): void {
+		if (this.sessionAuth?.isHandlingSessionExpiry || isUnauthorizedError(xMessage)) {
+			return;
+		}
+
 		if (options?.raw || xType === NotifyType.Success) {
 			this.sgueesNotify.show(cleanApiMessage(xMessage) || xMessage, xType);
 			return;
@@ -372,9 +420,18 @@ export class CBaseComponent {
 	}
 
 	notifyApiError(error: any): void {
+		if (this.sessionAuth?.isHandlingSessionExpiry || isUnauthorizedError(error)) {
+			return;
+		}
+
 		const type = getNotifyTypeFromError(error, this.etiquetaRegistro);
 		const message = mapApiErrorMessage(getApiErrorMessage(error), this.etiquetaRegistro);
 		this.sgueesNotify.show(message, type);
+	}
+
+	/** Recalcula columnas cuando el grid vive en tab-panel o tarjeta recién visible. */
+	onDetalleGridContentReady(e: { component?: { updateDimensions?: () => void } }): void {
+		setTimeout(() => e.component?.updateDimensions?.());
 	}
 
 	asegurarEmpresaSesion(): boolean {
@@ -577,6 +634,8 @@ export class CBaseComponent {
 					if (shouldPatch) {
 						this.aplicarRegistroEnGrid(response.Data, false);
 					}
+					// Sincroniza modelo y toolbar con el ESTADO_* recién invertido (botón Activar/Desactivar y mensajes).
+					this.sincronizarSeleccionTrasCambioEstado(response.Data);
 					options.onSuccess?.();
 					this.notifyFx(
 						options.eraActivo
@@ -595,6 +654,21 @@ export class CBaseComponent {
 				this.loadingVisible = false;
 			},
 		});
+	}
+
+	/** Actualiza this.model y el focusedRow del grid tras Activar/Desactivar. */
+	protected sincronizarSeleccionTrasCambioEstado(data: unknown): void {
+		if (!data || typeof data !== 'object' || !this.mttoGridKeyExpr) {
+			return;
+		}
+
+		const record = data as Record<string, unknown>;
+		const key = this.mttoGridKeyExpr;
+		if (this.model && this.model[key] === record[key]) {
+			this.model = this.fillData(record);
+		}
+
+		this.getMttoDataGrid()?.actualizarFocusedRowData(record);
 	}
 
 	/** Toolbar Activar/Desactivar — un solo flujo; el SP invierte el bit en BD. */
@@ -642,6 +716,7 @@ export class CBaseComponent {
 					if (shouldPatch) {
 						this.aplicarRegistroEnGrid(response.Data, false);
 					}
+					this.sincronizarSeleccionTrasCambioEstado(response.Data);
 					options.onSuccess?.();
 					this.notifyFx(
 						options.activo

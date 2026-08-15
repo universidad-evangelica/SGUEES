@@ -1,49 +1,38 @@
 <div class="sguees-mtto-view">
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
-	[subTituloVentana]="subTituloVentana"
 	[isBrowse]="isBrowse()"
 	[isForm]="isForm()"
+	[showRibbon]="true"
 	[permiteAdd]="permiteAdd"
 	[showRefresh]="true"
+	[showExport]="permitePrint"
 	[showDates]="true"
-	[(FECHA_INICIAL)]="vFECHA_INICIAL"
-	[(FECHA_FINAL)]="vFECHA_FINAL"
 	(nuevo)="nuevo()"
 	(guardar)="guardar()"
 	(cancelar)="cancelar()"
 	(consultar)="consultar()"
+	[(FECHA_INICIAL)]="vFECHA_INICIAL"
+	[(FECHA_FINAL)]="vFECHA_FINAL"
 	[btn1]="btnImprimir"
 	[btn1Icon]="'print'"
-	[btn1Type]="'default'"
+	[btn1Width]="150"
 	(btn1Click)="imprimirPartida()"
-	[btn1Width]="140"
-	[btn1Mode]="'outlined'"
+	[btn1Type]="'success'"
 	[btn2]="btnImportarExcel"
 	[btn2Icon]="'exportxlsx'"
-	[btn2Type]="'default'"
-	(btn2Click)="irImportarExcel()"
 	[btn2Width]="200"
-	[btn2Mode]="'outlined'"
+	(btn2Click)="irImportarExcel()"
 	[btn3]="btnCrearModelo"
 	[btn3Icon]="'copy'"
-	[btn3Type]="'default'"
-	(btn3Click)="CrearModelo()"
 	[btn3Width]="200"
-	[btn3Mode]="'outlined'"
+	(btn3Click)="CrearModelo()"
 	[btn4]="btnGenerarDesdeModelo"
 	[btn4Icon]="'paste'"
-	[btn4Type]="'default'"
-	(btn4Click)="irGenerarDesdeModelo()"
 	[btn4Width]="200"
-	[btn4Mode]="'outlined'"
+	(btn4Click)="irGenerarDesdeModelo()"
 >
-</app-barra-data-mtto>
-
-<ng-template #procesosContablesToolbar>
-	<div
-		class="partida-procesos-strip partida-procesos-strip--toolbar"
-	>
+	<ng-template barraRibbonTabTitle="Procesos contables" [barraRibbonTabVisible]="showProcesosEnGrid">
 		<div class="partida-procesos-left">
 			<div class="partida-procesos-header">
 				<div class="partida-procesos-title">Procesos Contables</div>
@@ -62,8 +51,7 @@
 						[showSpinButtons]="true"
 						[width]="90"
 						[height]="44"
-					>
-					</dx-number-box>
+					></dx-number-box>
 					<dx-number-box
 						[(value)]="vMES_PERIODO_CIERRE"
 						[min]="1"
@@ -71,8 +59,7 @@
 						[showSpinButtons]="true"
 						[width]="70"
 						[height]="44"
-					>
-					</dx-number-box>
+					></dx-number-box>
 				</div>
 			</div>
 
@@ -84,8 +71,7 @@
 					type="default"
 					stylingMode="contained"
 					(onClick)="ejecutarPartidaEspecial('APE')"
-				>
-				</dx-button>
+				></dx-button>
 				<dx-button
 					*ngIf="btnPartidaLiquidacion"
 					text="Liquidación"
@@ -93,8 +79,7 @@
 					stylingMode="contained"
 					type="success"
 					(onClick)="ejecutarPartidaEspecial('LIQ')"
-				>
-				</dx-button>
+				></dx-button>
 				<dx-button
 					*ngIf="btnPartidaCierre"
 					text="Cierre"
@@ -102,12 +87,13 @@
 					type="danger"
 					stylingMode="contained"
 					(onClick)="ejecutarPartidaEspecial('CIE')"
-				>
-				</dx-button>
+				></dx-button>
 			</div>
 		</div>
-	</div>
-</ng-template>
+	</ng-template>
+
+	
+</app-barra-data-mtto>
 
 <div *ngIf="!isBrowse()" class="partida-edit-shell">
 	<section class="sguees-section-card partida-form-card">
@@ -199,6 +185,7 @@
 					[autoNavigateToFocusedRow]="true"
 					[height]="'100%'"
 					[width]="'100%'"
+					(onContentReady)="onDetalleGridContentReady($event)"
 					(onRowInserting)="detalleRowInserting($event)"
 					(onRowUpdating)="detalleRowUpdating($event)"
 					(onRowRemoving)="detalleRowRemoving($event)"
@@ -416,14 +403,18 @@
 	[keyExpr]="['ANIO_PERIODO', 'MES_PERIODO', 'CORR_CLASE_PARTIDA', 'CORR_PARTIDA']"
 	[columnAutoWidth]="false"
 	[showSearch]="false"
-	[showExport]="true"
+	[nativeToolbar]="true"
+	[unifiedToolbar]="false"
+	[showAdd]="false"
+	[showRefresh]="false"
+	[showExport]="false"
+	[showGrouping]="true"
 	[permitePrint]="permitePrint"
 	[exportFileName]="'PartidasContables'"
 	[permiteEditar]="getPermiteEditar"
 	[permiteDele]="getPermiteDele"
 	[responsiveColumnHiding]="false"
 	[columnHidingEnabled]="false"
-	[toolbarBeforeTemplate]="showProcesosEnGrid ? procesosContablesToolbar : null"
 	(rowDblClick)="rowDblClick($event)"
 	(rowRemoving)="rowRemoving($event)"
 	(focusedRowChanged)="focusedRowChanged($event)"

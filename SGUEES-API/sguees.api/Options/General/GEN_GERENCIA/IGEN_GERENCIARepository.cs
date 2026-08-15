@@ -6,9 +6,10 @@ using sguees.Models;
 
 namespace sguees.Repositories
 {
+// Qué hace: define el contrato del repositorio de gerencias con comprobación de duplicados.
 	public interface IGEN_GERENCIARepository : IRepository<GEN_GERENCIATable>
 	{
-		Task<CResult> GetDistinctValuesAsync(List<CParameter> xWhere);
+		// Qué hace: comprueba si ya existe una gerencia con el mismo código.
 		Task<bool> ExistsCodigoAsync(int corrEmpresa, string codigo, int excludeCorr);
 	}
 }

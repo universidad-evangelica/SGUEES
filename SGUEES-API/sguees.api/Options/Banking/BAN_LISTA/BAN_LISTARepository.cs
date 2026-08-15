@@ -184,5 +184,98 @@ namespace sguees.Repositories
 
             return objResultado;
         }
+
+        public CResult GetESTADO_DOCUMENTO()
+        {
+            CResult objResultado = new();
+
+            objResultado.Data = new List<BAN_LISTAView>()
+            {
+                new() { Key = "DI", Value = "Digitado" },
+                new() { Key = "AP", Value = "Aplicado" },
+                new() { Key = "IM", Value = "Impreso" },
+                new() { Key = "AN", Value = "Anulado" },
+                new() { Key = "SO", Value = "Solicitando Autorización" },
+                new() { Key = "VA", Value = "Validación" },
+            };
+
+            objResultado.Result = true;
+            objResultado.RowsAffected = 1;
+            objResultado.CodeHelper = 0;
+            objResultado.ErrorCode = 0;
+            objResultado.ErrorMessage = "";
+            objResultado.ErrorSource = "";
+
+            return objResultado;
+        }
+
+        public CResult GetESTADO_CONCILIACION()
+        {
+            CResult objResultado = new();
+
+            objResultado.Data = new List<BAN_LISTAView>()
+            {
+                new() { Key = "DI", Value = "Digitada" },
+                new() { Key = "AP", Value = "Aplicada" },
+                new() { Key = "AN", Value = "Anulada" },
+            };
+
+            objResultado.Result = true;
+            objResultado.RowsAffected = 3;
+            objResultado.CodeHelper = 0;
+            objResultado.ErrorCode = 0;
+            objResultado.ErrorMessage = "";
+            objResultado.ErrorSource = "";
+
+            return objResultado;
+        }
+
+        /// <summary>Listas temporales de prueba; migrar a GEN_PROVEEDOR / GEN_EMPLEADO / catálogo clientes.</summary>
+        public CResult GetCORR_PROVEEDOR()
+        {
+            CResult objResultado = new();
+
+            objResultado.Data = new List<BAN_LISTAView>()
+            {
+                new() { Key = 1, Value = "Proveedor Prueba 1" },
+                new() { Key = 2, Value = "Proveedor Prueba 2" },
+            };
+
+            objResultado.Result = true;
+            objResultado.RowsAffected = 2;
+            return objResultado;
+        }
+
+        /// <summary>Listas temporales de prueba; migrar a GEN_EMPLEADO.</summary>
+        public CResult GetCORR_EMPLEADO()
+        {
+            CResult objResultado = new();
+
+            objResultado.Data = new List<BAN_LISTAView>()
+            {
+                new() { Key = 1, Value = "Empleado Prueba 1" },
+                new() { Key = 2, Value = "Empleado Prueba 2" },
+            };
+
+            objResultado.Result = true;
+            objResultado.RowsAffected = 2;
+            return objResultado;
+        }
+
+        /// <summary>Listas temporales de prueba; migrar a catálogo de clientes.</summary>
+        public CResult GetCORR_CLIENTE()
+        {
+            CResult objResultado = new();
+
+            objResultado.Data = new List<BAN_LISTAView>()
+            {
+                new() { Key = 1, Value = "Cliente Prueba 1" },
+                new() { Key = 2, Value = "Cliente Prueba 2" },
+            };
+
+            objResultado.Result = true;
+            objResultado.RowsAffected = 2;
+            return objResultado;
+        }
     }
 }

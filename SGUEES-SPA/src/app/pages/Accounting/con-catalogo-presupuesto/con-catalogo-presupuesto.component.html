@@ -4,19 +4,19 @@
 
 	[tituloVentana]="tituloVentana"
 
-	[subTituloVentana]="subTituloVentana"
 
 	[isBrowse]="isBrowse()"
 
 	[isForm]="isForm()"
 
+	[showRibbon]="true"
 	[permiteAdd]="permiteAdd"
-
+	[showRefresh]="true"
+	[showExport]="permitePrint"
 	(nuevo)="nuevo()"
-
 	(guardar)="guardar()"
-
 	(cancelar)="cancelar()"
+	(consultar)="consultar()"
 
 >
 
@@ -71,12 +71,11 @@
 	[remoteOperations]="mttoRemoteOperations"
 
 	[showSearch]="false"
-
-	[showAdd]="true"
-
-	[showRefresh]="true"
-
-	[showExport]="true"
+	[nativeToolbar]="true"
+	[unifiedToolbar]="false"
+	[showAdd]="false"
+	[showRefresh]="false"
+	[showExport]="false"
 
 	[focusedRowKey]="gridFocusedRowKey"
 
@@ -91,11 +90,6 @@
 	[columnHidingEnabled]="false"
 
 	[exportFileName]="'Presupuestos'"
-
-	(refresh)="consultar()"
-
-	(add)="nuevo()"
-
 	(rowDblClick)="rowDblClick($event)"
 
 	(rowRemoving)="rowRemoving($event)"

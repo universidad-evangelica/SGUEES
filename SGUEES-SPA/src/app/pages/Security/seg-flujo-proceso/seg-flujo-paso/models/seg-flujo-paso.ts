@@ -1,0 +1,20 @@
+export interface SegFlujoPaso {
+    CORR_EMPRESA: number;
+    CORR_FLUJO_PROCESO: number;
+    CORR_PASO: number;
+    NUMERO_PASO: number;
+    CORR_ESTADO_ORIGEN: number | null;
+    CORR_ACTOR_ORIGEN: number;
+    CORR_ACTOR_DESTINO: number;
+    CORR_UNIDAD_DESTINO: number | null;
+    NOMBRE_PASO: string;
+    DESCRIPCION_PASO: string;
+    PERMITE_AUTO_APROBACION: boolean;
+    ACTIVO: boolean;
+    USUARIO_CREA: string;
+    ESTACION_CREA: string;
+    FECHA_CREA: Date;
+    USUARIO_ACTU: string;
+    ESTACION_ACTU: string;
+    FECHA_ACTU: Date;
+}

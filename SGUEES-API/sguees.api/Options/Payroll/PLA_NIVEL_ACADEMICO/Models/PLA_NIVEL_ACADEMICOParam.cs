@@ -2,6 +2,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Qué hace: agrupa los parámetros de consulta y filtro del catálogo de nivel académico.
     public class PLA_NIVEL_ACADEMICOParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }

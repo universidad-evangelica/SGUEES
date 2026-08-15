@@ -1,0 +1,40 @@
+<button
+  type="button"
+  class="theme-switcher__button"
+  [class.theme-switcher__button--dark]="isDark"
+  [class.theme-switcher__button--light]="!isDark"
+  [attr.aria-label]="isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+  [attr.title]="isDark ? 'Tema oscuro — cambiar a claro' : 'Tema claro — cambiar a oscuro'"
+  (click)="toggleTheme()"
+>
+  <span class="theme-switcher__track">
+    <span class="theme-switcher__icon theme-switcher__icon--sun" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false">
+        <circle cx="12" cy="12" r="4.5" fill="currentColor" />
+        <g stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <line x1="12" y1="2.5" x2="12" y2="5" />
+          <line x1="12" y1="19" x2="12" y2="21.5" />
+          <line x1="2.5" y1="12" x2="5" y2="12" />
+          <line x1="19" y1="12" x2="21.5" y2="12" />
+          <line x1="5.3" y1="5.3" x2="7.1" y2="7.1" />
+          <line x1="16.9" y1="16.9" x2="18.7" y2="18.7" />
+          <line x1="16.9" y1="7.1" x2="18.7" y2="5.3" />
+          <line x1="5.3" y1="18.7" x2="7.1" y2="16.9" />
+        </g>
+      </svg>
+    </span>
+
+    <span class="theme-switcher__thumb" aria-hidden="true"></span>
+
+    <span class="theme-switcher__icon theme-switcher__icon--moon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false">
+        <path
+          d="M15.5 4.2a7.8 7.8 0 1 0 4.3 14.3 6.2 6.2 0 0 1-4.3-14.3Z"
+          fill="currentColor"
+        />
+        <circle cx="18.2" cy="5.8" r="0.9" fill="currentColor" />
+        <circle cx="20.1" cy="8.4" r="0.55" fill="currentColor" />
+      </svg>
+    </span>
+  </span>
+</button>

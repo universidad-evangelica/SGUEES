@@ -272,7 +272,7 @@ namespace sgueesRpt.Layouts
 
 			configure?.Invoke(report);
 
-			report.SetDataSource(Utils.CreateDataTable(data));
+			CrystalReportBinder.ApplyPushDataTable(report, Utils.CreateDataTable(data));
 
 			Stream stream = report.ExportToStream(ExportFormatType.PortableDocFormat);
 
@@ -323,7 +323,7 @@ namespace sgueesRpt.Layouts
 
 			report.Load(Utils.getRuta(modulo, rptName));
 
-			report.SetDataSource(Utils.CreateDataTable(data));
+			CrystalReportBinder.ApplyPushDataTable(report, Utils.CreateDataTable(data));
 
 			Stream stream = report.ExportToStream(ExportFormatType.PortableDocFormat);
 
@@ -351,7 +351,7 @@ namespace sgueesRpt.Layouts
 
 			report.Load(Utils.getRuta(modulo, rptName));
 
-			report.SetDataSource(CreateDataTableFromRows(data));
+			CrystalReportBinder.ApplyPushDataTable(report, CreateDataTableFromRows(data));
 
 			Stream stream = report.ExportToStream(ExportFormatType.PortableDocFormat);
 
@@ -368,7 +368,7 @@ namespace sgueesRpt.Layouts
 		{
 			var report = new ReportDocument();
 			report.Load(Utils.getRuta(modulo, rptName));
-			report.SetDataSource(data);
+			CrystalReportBinder.ApplyPushDataSet(report, data);
 			Stream stream = report.ExportToStream(ExportFormatType.PortableDocFormat);
 			return new eDocResult(stream, request, pdfFileName);
 		}

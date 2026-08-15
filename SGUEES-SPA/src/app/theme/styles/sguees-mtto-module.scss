@@ -79,6 +79,22 @@
   box-shadow: var(--sguees-shadow-sm);
   overflow: hidden;
 
+  &.sguees-barra-mtto--ribbon {
+    border-radius: var(--sguees-radius-lg);
+  }
+
+  &.sguees-barra-mtto--ribbon:has(+ .sguees-data-grid-mtto-host) {
+    margin-bottom: var(--sguees-space-3);
+    border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+    box-shadow: var(--sguees-shadow-md);
+  }
+
+  &.sguees-barra-mtto--ribbon + .sguees-data-grid-mtto-host .sguees-grid-module-card {
+    border-radius: var(--sguees-radius-lg);
+    border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
+    box-shadow: var(--sguees-shadow-md);
+  }
+
   .sguees-barra-mtto {
     margin-bottom: 0;
   }

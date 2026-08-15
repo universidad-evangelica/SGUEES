@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using eFramework.Core;
@@ -141,7 +140,7 @@ namespace sguees.Repositories
 				reader.Close();
 				EnrichPrintRows(param.CODIGO_REPORTE, param, definition, rows);
 				result.Result = true;
-				result.Data = ToImprViews(rows);
+				result.Data = ConReportImprFactory.ToImprViews(param.CODIGO_REPORTE, rows);
 				result.RowsAffected = rows.Count;
 			}
 			catch (Exception e)
@@ -401,86 +400,5 @@ namespace sguees.Repositories
 
 		private static CParameter P(string name, object value, DbType type) =>
 			new CParameter { ParameterName = name, Value = value ?? DBNull.Value, DbType = type };
-
-		private static List<CON_REPORTE_IMPRView> ToImprViews(List<Dictionary<string, object>> rows)
-		{
-			var views = new List<CON_REPORTE_IMPRView>();
-			if (rows == null)
-			{
-				return views;
-			}
-
-			foreach (var row in rows)
-			{
-				views.Add(MapToView(row));
-			}
-
-			return views;
-		}
-
-		private static CON_REPORTE_IMPRView MapToView(Dictionary<string, object> row)
-		{
-			var view = new CON_REPORTE_IMPRView();
-			if (row == null)
-			{
-				return view;
-			}
-
-			foreach (var property in typeof(CON_REPORTE_IMPRView).GetProperties(BindingFlags.Public | BindingFlags.Instance))
-			{
-				if (!property.CanWrite || !TryGetRowValue(row, property.Name, out var rawValue))
-				{
-					continue;
-				}
-
-				if (rawValue == null || rawValue == DBNull.Value)
-				{
-					continue;
-				}
-
-				try
-				{
-					var targetType = Nullable.GetUnderlyingType(property.PropertyType) ?? property.PropertyType;
-					if (targetType == typeof(bool) && rawValue is not bool)
-					{
-						property.SetValue(view, Convert.ToInt32(rawValue) != 0);
-					}
-					else if (targetType == typeof(byte[]) && rawValue is byte[] bytes)
-					{
-						property.SetValue(view, bytes);
-					}
-					else
-					{
-						property.SetValue(view, Convert.ChangeType(rawValue, targetType));
-					}
-				}
-				catch
-				{
-					// Columna opcional o tipo incompatible con la vista compartida.
-				}
-			}
-
-			return view;
-		}
-
-		private static bool TryGetRowValue(Dictionary<string, object> row, string key, out object value)
-		{
-			if (row.TryGetValue(key, out value))
-			{
-				return true;
-			}
-
-			foreach (var item in row)
-			{
-				if (string.Equals(item.Key, key, StringComparison.OrdinalIgnoreCase))
-				{
-					value = item.Value;
-					return true;
-				}
-			}
-
-			value = null;
-			return false;
-		}
 	}
 }

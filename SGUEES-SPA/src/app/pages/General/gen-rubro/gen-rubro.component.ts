@@ -1,11 +1,24 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import CustomStore from 'devextreme/data/custom_store';
+import { lastValueFrom } from 'rxjs';
 import { take } from 'rxjs/internal/operators/take';
 import { environment } from 'src/environments/environment';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
+import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
+import { getApiErrorMessage } from 'src/app/shared/mtto/mtto-api-messages';
+import {
+	createMttoPagedStoreCacheState,
+	invalidateMttoPagedStoreCache,
+	loadMttoHybridDisplayPage,
+	MttoPagedStoreCacheState,
+	MttoPagedStorePageResult,
+	resolveMttoHybridLoadPlan,
+	syncMttoHybridApiPageSize,
+} from 'src/app/shared/mtto/mtto-paged-store.helpers';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { GenRubro } from './models/gen-rubro';
 import { GenRubroService } from './gen-rubro.service';
@@ -14,9 +27,25 @@ import { IParam } from 'src/app/FxAPI/IParam';
 @Component({
 	selector: 'app-gen-rubro',
 	templateUrl: './gen-rubro.component.html',
-	styleUrls: ['./gen-rubro.component.scss'],
 })
 export class GenRubroComponent extends CBaseComponent implements OnInit {
+	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
+
+	protected override etiquetaRegistro = 'el rubro';
+	protected override requiereEmpresaSesion = true;
+	protected override mttoHybridPaging = true;
+	protected override mttoPageSize = 15;
+	protected override mttoApiPageSize = 50;
+	protected override mttoApiPageSizes: (number | 'all')[] = [50, 100, 'all'];
+	protected override mttoRemoteOperations = { paging: true, sorting: true, filtering: false };
+	protected override mttoGridKeyExpr = 'CORR_RUBRO';
+
+	private readonly pagedStoreCacheState: MttoPagedStoreCacheState = createMttoPagedStoreCacheState(
+		this.mttoPageSize,
+		this.mttoApiPageSize
+	);
+	private pagedStoreInflightKey: string | null = null;
+	private pagedStoreInflightPromise: Promise<MttoPagedStorePageResult> | null = null;
 
   //#region <Declarando Variales>
   mCLASE_RUBRO: any;
@@ -39,11 +68,15 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
 		this.items = this.service.getItems();
 	}
 
+	protected override getMttoDataGrid(): DataGridMttoComponent | null {
+		return this.dataGrid ?? null;
+	}
+
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
 		this.inicializaOpciones();
 		this.llenaComboBox();
-		this.consultar();
+		this.configurarDataSource();
 	}
 
 	inicializaOpciones() {}
@@ -138,12 +171,19 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
 	//#endregion
 
 	//#region <Metodos Mtto>
-	fillParam(xCORR_RUBRO?: number): any {
-		if (xCORR_RUBRO == undefined) {
-			xCORR_RUBRO = 0;
-		}
+	fillParam(
+		xCORR_RUBRO?: number,
+		page = 1,
+		pageSize = this.mttoApiPageSize,
+		sortField = '',
+		sortDesc = false
+	): any {
 		return {
-			CORR_RUBRO: xCORR_RUBRO,
+			CORR_RUBRO: xCORR_RUBRO ?? 0,
+			PAGE: page,
+			PAGE_SIZE: pageSize,
+			SORT_FIELD: sortField,
+			SORT_DESC: sortDesc,
 		};
 	}
 
@@ -202,23 +242,29 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
     this.consultarGEN_RUBRO_IMPUESTO();
     this.consultarGEN_RUBRO_SUMA();
   }
-  consultar() {
-		this.service
-			.getAll(this.fillParam())
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.models = response.Data;
-					}
-				},
-				error: (error: any) => {
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+  consultar(resetPage = true): void {
+		invalidateMttoPagedStoreCache(this.pagedStoreCacheState);
+		this.pagedStoreInflightKey = null;
+		this.pagedStoreInflightPromise = null;
+		this.refrescarGridMtto(resetPage);
+	}
+
+	onApiPageSizeChange(apiPageSize: number): void {
+		this.mttoApiPageSize = apiPageSize;
+		syncMttoHybridApiPageSize(this.pagedStoreCacheState, apiPageSize);
+		this.pagedStoreInflightKey = null;
+		this.pagedStoreInflightPromise = null;
 	}
 
 	guardar(xTieneDetalle?: Function, data?: any): void {
+		if (!xTieneDetalle) {
+			this.guardarMtto({
+				esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+				insert: () => this.service.insert(this.model),
+				update: () => this.service.update(this.model),
+			});
+			return;
+		}
 		if (!this.service.esValido(this.model, this.notifyFx)) {
 			return;
 		}
@@ -231,11 +277,11 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
 				.subscribe({
 					next: (response: any) => {
 						if (response.Result) {
-							this.models.push(response.Data);
 							this.model = response.Data;
 							if (xTieneDetalle) {
 								this.AsignaStatus(UpdateType.Update);
 								data.CORR_RUBRO = response.Data.CORR_RUBRO;
+								this.consultar(false);
 								xTieneDetalle(data);
 							} else {
 								this.AsignaStatus(UpdateType.Browse);
@@ -259,9 +305,8 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
 					next: (response: any) => {
 						if (response.Result) {
 							this.model = response.Data;
-							const vIndex = this.models.findIndex((item: any) => item.CORR_RUBRO === response.Data.CORR_RUBRO);
-							this.models[vIndex] = response.Data;
 							this.AsignaStatus(UpdateType.Browse);
+							this.consultar(false);
 							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
 						} else {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
@@ -281,24 +326,9 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
 	}
 
 	rowRemoving(e: any) {
-		this.service
-			.delete(this.fillParam(e.data.CORR_RUBRO))
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-						e.component.refresh();
-					} else {
-						e.cancel = true;
-						this.notifyFx(response.ErrorMessage, NotifyType.Error);
-					}
-				},
-				error: (error: any) => {
-					e.cancel = true;
-					this.notifyFx(error, NotifyType.Error);
-				},
-			});
+		this.rowRemovingMtto(e, {
+			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_RUBRO)),
+		});
 	}
 
 	override bloquear(): void {
@@ -557,4 +587,74 @@ export class GenRubroComponent extends CBaseComponent implements OnInit {
     }
   }
   // #endregion
+
+	private configurarDataSource(): void {
+		this.models = new CustomStore({
+			key: this.mttoGridKeyExpr,
+			loadMode: 'processed',
+			cacheRawData: false,
+			load: async (loadOptions: any) => {
+				const loadGeneration = this.pagedStoreCacheState.loadGeneration;
+
+				try {
+					const plan = resolveMttoHybridLoadPlan(
+						loadOptions,
+						this.pagedStoreCacheState,
+						this.mttoGridKeyExpr,
+						this.mttoPageSize
+					);
+
+					if (this.pagedStoreInflightKey === plan.displayKey && this.pagedStoreInflightPromise) {
+						return this.pagedStoreInflightPromise;
+					}
+
+					this.pagedStoreInflightKey = plan.displayKey;
+					this.pagedStoreInflightPromise = loadMttoHybridDisplayPage(
+						plan,
+						this.pagedStoreCacheState,
+						(apiPage, apiPageSize, sortField, sortDesc) =>
+							this.fetchPaged(apiPage, apiPageSize, sortField, sortDesc, loadGeneration),
+						this.mttoPageSize
+					);
+
+					try {
+						return await this.pagedStoreInflightPromise;
+					} finally {
+						if (this.pagedStoreInflightKey === plan.displayKey) {
+							this.pagedStoreInflightKey = null;
+							this.pagedStoreInflightPromise = null;
+						}
+					}
+				} catch (error) {
+					this.notifyApiError(error);
+					throw new Error(getApiErrorMessage(error));
+				}
+			},
+		});
+	}
+
+	private async fetchPaged(
+		page: number,
+		pageSize: number,
+		sortField: string,
+		sortDesc: boolean,
+		loadGeneration: number
+	): Promise<MttoPagedStorePageResult> {
+		const response = await lastValueFrom(
+			this.service.getAll(this.fillParam(0, page, pageSize, sortField, sortDesc))
+		);
+
+		if (loadGeneration !== this.pagedStoreCacheState.loadGeneration) {
+			return { data: [], totalCount: 0 };
+		}
+
+		if (!response.Result) {
+			throw new Error(response.ErrorMessage || 'No se pudo cargar los rubros.');
+		}
+
+		return {
+			data: response.Data || [],
+			totalCount: response.RowsAffected || 0,
+		};
+	}
 }

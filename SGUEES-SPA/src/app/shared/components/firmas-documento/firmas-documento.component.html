@@ -1,0 +1,40 @@
+<div class="firmas-container">
+    <div class="firmas-header" *ngIf="mostrarTitulo">
+        <h5 class="firmas-title">
+            <i class="dx-icon dx-icon-edit"></i>
+            Firmas del Documento
+        </h5>
+        <span class="firmas-badge" *ngIf="firmas && firmas.length > 0">
+            {{ firmas.length }} firmas
+        </span>
+    </div>
+
+    <div *ngIf="loading" class="firmas-loading">
+        <dx-load-indicator [visible]="true"></dx-load-indicator>
+    </div>
+
+    <div *ngIf="!loading && firmas && firmas.length === 0" class="firmas-empty">
+        <span>No hay firmas registradas para este documento</span>
+    </div>
+
+  <!-- DESPUÉS -->
+<app-data-grid-mtto
+    *ngIf="firmas && firmas.length > 0"
+    [isBrowse]="true"
+    [models]="firmas"
+    [columns]="columns"
+    [keyExpr]="'ORDEN_FIRMA'"
+    [permiteEditar]="false"
+    [permiteDele]="false"
+    [showSearch]="false"
+    [showAdd]="false"
+    [showExport]="false"
+    [showRefresh]="false"
+    [titulo]="''"
+    [unifiedToolbar]="false"
+    [gridHeight]="'auto'"
+    [pageSize]="100"
+    class="firmas-grid-container"
+>
+</app-data-grid-mtto>
+</div>

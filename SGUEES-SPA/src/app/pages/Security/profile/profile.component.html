@@ -1,121 +1,235 @@
-<div class="view-wrapper list-page">
+<div class="sguees-profile-view">
+  <div class="profile-page-bg" aria-hidden="true">
+    <span class="profile-page-bg__orb profile-page-bg__orb--1"></span>
+    <span class="profile-page-bg__orb profile-page-bg__orb--2"></span>
+    <span class="profile-page-bg__orb profile-page-bg__orb--3"></span>
+    <span class="profile-page-bg__grid"></span>
+  </div>
+
   <app-barra-data-mtto
-	[tituloVentana]="tituloVentana"
-	[isBrowse]="true"
-	[permiteAdd]="false"
+    [tituloVentana]="tituloVentana"
+    [isBrowse]="true"
+    [permiteAdd]="false"
   >
   </app-barra-data-mtto>
 
-  <dx-form
-    #fData
-    id="form"
-    [formData]="model"
-    labelLocation="left"
-    [colCount]="8"
-  >
-    <dxi-item itemType="group" [colCount]="1" [colSpan]="1">
-      <dxi-item  [colSpan]="1">
-        <div class="form-avatar"><img src="assets/img/user.png" alt="Profile Background"></div>
-      </dxi-item>
-    </dxi-item>
-    <dxi-item itemType="group" [colCount]="1" [colSpan]="3">
-      <dxi-item
-        dataField="LOGIN_SISTEMA"
-        [label]="{ text: 'Usuario' }"
-        [colSpan]="1"
-        [editorOptions]="{
-        placeholder: 'Usuario...',
-        showClearButton: false,
-        readOnly: true,
-        elementAttr: largeTextOptions}"
-        >
-      </dxi-item>
-      <dxi-item
-        dataField="NOMBRE_USUARIO"
-        [label]="{ text: 'Nombre Usuario' }"
-        [colSpan]="1"
-        [editorOptions]="{
-        placeholder: 'Nombre Usuario...',
-        showClearButton: false,
-        readOnly: true,
-        elementAttr: largeTextOptions}"
-        >
-      </dxi-item>
-      <dxi-item [colSpan]="1" [label]="{ text: ' '}">
-        <dx-button
-          class="myButton"
-          [icon]="'edit'"
-          [text]="'Cambiar Clave'"
-          [type]="'default'"
-          [width]="250"
-          (onClick)="mostrarPopup()">
-        </dx-button>
-        <dx-popup
-          [width]="400"
-          [height]="350"
-          [showTitle]="true"
-          [title]="'Cambiar Clave'"
-          [dragEnabled]="false"
-          [closeOnOutsideClick]="false"
-          [showCloseButton]="false"
-          [shading]="true"
-          [(visible)]="popupVisible"
-        >
-          <div *dxTemplate="let data of 'content'">
-            <dx-form
-            #fCambiaClave
-            id="fCambiaClave"
-            [formData]="cambiarClave"
-            labelLocation="top"
-            [colCount]="1"
-            >
-              <dxi-item dataField="CLAVE_USUARIO" [label]="{ text: 'Clave Actual' }" colSpan="1" [editorOptions]="{ mode: 'password' }">
-                <dxi-validation-rule type="required" message="Debe especificar la clave Actual">
-                </dxi-validation-rule>
-              </dxi-item>
-              <dxi-item dataField="CLAVE_USUARIO_NUEVA" [label]="{ text: 'Clave Nueva' }" colSpan="1" [editorOptions]="{ mode: 'password' }">
-                <dxi-validation-rule type="required" message="Debe especificar una clave">
-                </dxi-validation-rule>
-              </dxi-item>
-              <dxi-item dataField="CLAVE_CONFIRMAR" [label]="{ text: 'Confirmar Clave' }" colSpan="1" [editorOptions]="{ mode: 'password' }">
-                <dxi-validation-rule type="required" message="Debe especificar la confirmación de la clave">
-                </dxi-validation-rule>
-              </dxi-item>
-              <dxi-item itemType="group" colCount="2">
-                <dxi-item colSpan="1" [template]="'btnCambiar'">
-                </dxi-item>
-                <dxi-item colSpan="1" [template]="'btnCancelar'">
-                </dxi-item>
-              </dxi-item>
-              <div *dxTemplate="let cellInfo of 'btnCambiar'">
-                <dx-button id="button"
-                  class="myButton"
-                  [text]="'Cambiar'"
-                  type="default"
-                  [icon]="'save'"
-                  stylingMode="contained"
-                  [width]="'100%'"
-                  [useSubmitBehavior]="true"
-                  (click)="cambioClave()"></dx-button>
-              </div>
-              <div *dxTemplate="let cellInfo of 'btnCancelar'">
-                <dx-button id="button"
-                  class="myButton"
-                  [text]="'Cancelar'"
-                  [icon]="'close'"
-                  type="default"
-                  stylingMode="contained"
-                  [width]="'100%'"
-                  routerLinkActive="router-link-active"
-                  (click)="hidePopup()">
-                </dx-button>
-              </div>
-            </dx-form>
+  <div class="profile-layout">
+    <section class="profile-hero-card profile-animate profile-animate--1">
+      <div class="profile-hero-banner">
+        <div class="profile-hero-banner__mesh"></div>
+        <div class="profile-hero-banner__glow"></div>
+        <div class="profile-hero-banner__shine"></div>
+        <span class="profile-hero-banner__chip">
+          <i class="dx-icon dx-icon-globe"></i>
+          Instancia {{ instanciaLabel }}
+        </span>
+      </div>
+
+      <div class="profile-hero-body">
+        <div class="profile-avatar-wrap">
+          <span class="profile-avatar-ring"></span>
+          <span class="profile-avatar-ring profile-avatar-ring--secondary"></span>
+          <img class="profile-avatar" [src]="urlPhotoUser" alt="Avatar de usuario" />
+          <span class="profile-avatar__initials">{{ userInitials }}</span>
+          <span class="profile-status-dot" title="Sesión activa"></span>
+        </div>
+
+        <div class="profile-hero-text">
+          <span class="profile-hero-eyebrow">
+            <i class="dx-icon dx-icon-user"></i>
+            Mi cuenta
+          </span>
+          <h2 class="profile-hero-name">{{ model.NOMBRE_USUARIO }}</h2>
+
+          <div class="profile-hero-meta">
+            <div class="profile-hero-meta__item profile-hero-meta__item--empresa">
+              <span class="profile-hero-meta__label">
+                <i class="dx-icon dx-icon-home"></i>
+                Empresa
+              </span>
+              <span class="profile-hero-meta__value profile-hero-meta__value--empresa">{{ empresaLabel }}</span>
+            </div>
           </div>
-        </dx-popup>
-      </dxi-item>
-    </dxi-item>
-    <dxi-item itemType="empty" [colCount]="1" [colSpan]="4">
-    </dxi-item>
-  </dx-form>
+
+          <div class="profile-hero-badges">
+            <span class="profile-badge profile-badge--success">
+              <span class="profile-badge__pulse"></span>
+              <i class="dx-icon dx-icon-check"></i>
+              {{ estadoLabel }}
+            </span>
+            <span class="profile-badge profile-badge--info">
+              <i class="dx-icon dx-icon-key"></i>
+              Acceso seguro
+            </span>
+          </div>
+        </div>
+
+        <div class="profile-hero-actions">
+          <dx-button
+            class="profile-hero-cta"
+            icon="key"
+            text="Cambiar clave"
+            type="default"
+            stylingMode="contained"
+            (onClick)="mostrarPopup()"
+          >
+          </dx-button>
+        </div>
+      </div>
+
+      <div class="profile-stats">
+        <article
+          *ngFor="let stat of profileStats; let i = index"
+          class="profile-stat"
+          [class]="'profile-stat profile-stat--' + (i + 1)"
+        >
+          <span class="profile-stat__icon">
+            <i class="dx-icon" [ngClass]="'dx-icon-' + stat.icon"></i>
+          </span>
+          <div class="profile-stat__content">
+            <span class="profile-stat__label">{{ stat.label }}</span>
+            <span class="profile-stat__value">{{ stat.value }}</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <div class="profile-grid">
+      <article class="profile-card profile-card--info profile-animate profile-animate--2">
+        <span class="profile-card__corner profile-card__corner--tl"></span>
+        <span class="profile-card__corner profile-card__corner--br"></span>
+        <div class="profile-card__header">
+          <span class="profile-card__icon profile-card__icon--info">
+            <i class="dx-icon dx-icon-card"></i>
+          </span>
+          <div>
+            <h3>Información de cuenta</h3>
+            <p>Identidad y credenciales de acceso</p>
+          </div>
+        </div>
+
+        <div class="profile-fields profile-fields--tiles">
+          <div class="profile-field profile-field--tile">
+            <span class="profile-field__icon">
+              <i class="dx-icon dx-icon-user"></i>
+            </span>
+            <div class="profile-field__body">
+              <span class="profile-field__label">Usuario</span>
+              <span class="profile-field__value">{{ model.LOGIN_SISTEMA }}</span>
+            </div>
+          </div>
+          <div class="profile-field profile-field--tile">
+            <span class="profile-field__icon profile-field__icon--violet">
+              <i class="dx-icon dx-icon-group"></i>
+            </span>
+            <div class="profile-field__body">
+              <span class="profile-field__label">Nombre completo</span>
+              <span class="profile-field__value">{{ model.NOMBRE_USUARIO }}</span>
+            </div>
+          </div>
+          <div class="profile-field profile-field--tile">
+            <span class="profile-field__icon profile-field__icon--emerald">
+              <i class="dx-icon dx-icon-home"></i>
+            </span>
+            <div class="profile-field__body">
+              <span class="profile-field__label">Empresa sesión</span>
+              <span class="profile-field__value">{{ empresaLabel }}</span>
+            </div>
+          </div>
+          <div class="profile-field profile-field--tile">
+            <span class="profile-field__icon profile-field__icon--cyan">
+              <i class="dx-icon dx-icon-email"></i>
+            </span>
+            <div class="profile-field__body">
+              <span class="profile-field__label">Correo electrónico</span>
+              <span class="profile-field__value">{{ model.CORREO_ELECTRONICO || 'Sin correo registrado' }}</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="profile-card profile-card--security profile-animate profile-animate--3">
+        <span class="profile-card__corner profile-card__corner--tl"></span>
+        <span class="profile-card__corner profile-card__corner--br"></span>
+        <div class="profile-card__header">
+          <span class="profile-card__icon profile-card__icon--security">
+            <i class="dx-icon dx-icon-lock"></i>
+          </span>
+          <div>
+            <h3>Centro de seguridad</h3>
+            <p>Proteja su acceso al sistema</p>
+          </div>
+        </div>
+
+        <div class="profile-security-panel">
+          <div class="profile-security-visual">
+            <span class="profile-security-visual__ring"></span>
+            <span class="profile-security-visual__icon">
+              <i class="dx-icon dx-icon-key"></i>
+            </span>
+          </div>
+          <div class="profile-security-copy">
+            <p class="profile-security-hint">
+              Mantenga su contraseña actualizada y no la comparta con otras personas.
+            </p>
+            <ul class="profile-security-tips">
+              <li *ngFor="let tip of securityTips">
+                <i class="dx-icon dx-icon-check"></i>
+                {{ tip }}
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="profile-security-footer">
+          <div class="profile-security-footer__text">
+            <strong>¿Listo para actualizar?</strong>
+            <span>El cambio aplica de inmediato en su próximo inicio de sesión.</span>
+          </div>
+          <dx-button
+            class="profile-change-password-btn"
+            icon="key"
+            text="Cambiar clave ahora"
+            type="default"
+            stylingMode="contained"
+            (onClick)="mostrarPopup()"
+          >
+          </dx-button>
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <dx-popup
+    class="profile-password-popup"
+    [width]="480"
+    [height]="'auto'"
+    [maxHeight]="'92vh'"
+    [showTitle]="false"
+    [dragEnabled]="false"
+    [closeOnOutsideClick]="false"
+    [showCloseButton]="true"
+    [shading]="true"
+    [wrapperAttr]="{ class: 'profile-password-popup-wrapper' }"
+    [(visible)]="popupVisible"
+    (onHiding)="hidePopup()"
+  >
+    <div *dxTemplate="let data of 'content'">
+      <change-password-form
+        [loading]="savingPassword"
+        (submitted)="onPasswordSubmit($event)"
+        (cancelled)="hidePopup()"
+      ></change-password-form>
+    </div>
+  </dx-popup>
+
+  <dx-load-panel
+    shadingColor="rgba(0,0,0,0.3)"
+    [(visible)]="loadingVisible"
+    [showIndicator]="true"
+    [showPane]="true"
+    [shading]="true"
+    message="Cargando perfil..."
+  >
+  </dx-load-panel>
 </div>

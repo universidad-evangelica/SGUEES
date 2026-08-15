@@ -185,6 +185,7 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="@SYS_ESTACION",Value=vESTACION,DbType=System.Data.DbType.String },
 					new CParameter() {ParameterName="@SYS_NUMERO_ERROR",Value=0,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput },
 					new CParameter() {ParameterName="@SYS_MENSAJE_ERROR",Value="",DbType=System.Data.DbType.String,Direction=System.Data.ParameterDirection.InputOutput, Size = 4000 },
+					new CParameter() {ParameterName="@CORR_SECTOR",Value=Data.CORR_SECTOR,DbType=System.Data.DbType.Int32},
 				};
 				
 				var vRowsAffected = await objData.ExecCmd(System.Data.CommandType.StoredProcedure,"PRAL_MTTO_"+_TableName,true,p);
@@ -286,6 +287,7 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="@SYS_FILAS_AFECTADAS",Value=0,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput},
 					new CParameter() {ParameterName="@SYS_NUMERO_ERROR",Value=0,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput},
 					new CParameter() {ParameterName="@SYS_MENSAJE_ERROR",Value="",DbType=System.Data.DbType.String,Direction=System.Data.ParameterDirection.InputOutput,Size = 4000},
+					new CParameter() {ParameterName="@CORR_SECTOR",Value=Data.CORR_SECTOR,DbType=System.Data.DbType.Int32},
 				};
 
 				

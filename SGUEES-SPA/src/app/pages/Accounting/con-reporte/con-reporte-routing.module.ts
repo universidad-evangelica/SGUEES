@@ -23,7 +23,9 @@ import { ConReporteBalanceGeneralComponent } from './balance-general/con-reporte
 import { ConReporteEstadoResultadosComponent } from './estado-resultados/con-reporte-estado-resultados.component';
 import { ConReporteBalanceGeneralVerticalComponent } from './balance-general-vertical/con-reporte-balance-general-vertical.component';
 
-const routes: Routes = [];
+import { buildConReporteRoutes } from './con-reporte.routes';
+
+const routes: Routes = buildConReporteRoutes([]);
 
 @NgModule({
 	imports: [

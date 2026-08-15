@@ -1,0 +1,41 @@
+// Grillas de detalle (partida, documento bancario, cheque, etc.)
+// No usar compresión de headers enterprise ni tablas más estrechas que el contenedor.
+
+.documento-deta-datagrid,
+.partida-deta-datagrid,
+.descriptor-deta-datagrid,
+.cuenta-chequera-datagrid {
+	width: 100%;
+
+	.dx-datagrid-headers .dx-header-row > td {
+		text-transform: none;
+		letter-spacing: normal;
+		font-size: var(--sguees-font-size-base, 14px);
+		font-weight: 600;
+		white-space: nowrap;
+	}
+
+	.dx-datagrid-headers,
+	.dx-datagrid-rowsview,
+	.dx-datagrid-total-footer {
+		width: 100%;
+	}
+
+	.dx-datagrid-table {
+		width: 100% !important;
+		min-width: 100%;
+		table-layout: fixed;
+	}
+
+	.dx-command-edit,
+	td.sguees-grid-col-actions {
+		width: 104px !important;
+		min-width: 104px !important;
+		max-width: 104px !important;
+	}
+
+	.dx-datagrid-rowsview .dx-datagrid-table .dx-row > td:last-child:not(.dx-command-edit),
+	.dx-datagrid-headers .dx-datagrid-table .dx-row > td:last-child:not(.dx-command-edit) {
+		width: auto !important;
+	}
+}

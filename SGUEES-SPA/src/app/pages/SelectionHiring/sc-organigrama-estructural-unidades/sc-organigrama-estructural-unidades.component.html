@@ -1,0 +1,198 @@
+<!-- ================================================ -->
+<!-- BARRA DE HERRAMIENTAS PRINCIPAL                   -->
+<!-- ================================================ -->
+<app-barra-data-mtto
+    [tituloVentana]="tituloVentana"
+    [isBrowse]="true"
+    [isForm]="false"
+    [permiteAdd]="false"
+    [showRefresh]="true"
+    (consultar)="consultar()"
+>
+</app-barra-data-mtto>
+
+<!-- ================================================ -->
+<!-- ÁRBOL DE UNIDADES (visible cuando !mostrarFormulario) -->
+<!-- ================================================ -->
+<section class="sguees-section-card" *ngIf="!mostrarFormulario">
+    <app-mtto-header
+        [title]="'Unidades del Organigrama'"
+        [subtitle]="'Vista jerarquica de la estructura organizativa'"
+    >
+        <dx-button
+            text="Actualizar"
+            icon="refresh"
+            stylingMode="text"
+            (onClick)="consultar()"
+        >
+        </dx-button>
+        <dx-button
+            *ngIf="permiteAdd"
+            text="Nuevo"
+            type="default"
+            stylingMode="contained"
+            icon="plus"
+            (onClick)="nuevo()"
+        >
+        </dx-button>
+    </app-mtto-header>
+
+<dx-tree-view
+    #treeView
+    [dataSource]="unidades"
+    dataStructure="plain"
+    keyExpr="CORR_UNIDAD"
+    displayExpr="NOMBRE_UNIDAD_TREE"
+    parentIdExpr="CORR_UNIDAD_PADRE"
+    [showCheckBoxesMode]="'none'"
+    [searchEnabled]="true"
+    [searchTimeout]="200"
+    [selectionMode]="'single'"
+    itemTemplate="unidadItem"
+    (onItemClick)="onUnidadSeleccionada($event)"
+>
+    <div *dxTemplate="let itemData of 'unidadItem'" class="unidad-tree-row">
+        <span class="unidad-tree-row__text">{{ itemData.NOMBRE_UNIDAD_TREE }}</span>
+
+        <dx-button
+            *ngIf="permiteDele"
+            icon="trash"
+            hint="Eliminar registro"
+            stylingMode="text"
+            elementAttr="{ class: 'sguees-grid-action-delete' }"
+            (onClick)="onTreeDeleteClick(itemData, $event)"
+        >
+        </dx-button>
+    </div>
+</dx-tree-view>
+</section>
+
+<!-- ================================================ -->
+<!-- FORMULARIO DE UNIDAD (visible cuando mostrarFormulario) -->
+<!-- ================================================ -->
+<section class="sguees-section-card" *ngIf="mostrarFormulario">
+    <app-barra-data-mtto
+        [tituloVentana]="'Unidad'"
+        [isBrowse]="isBrowse()"
+        [isForm]="isForm()"
+        [permiteAdd]="false"
+        (guardar)="guardar()"
+        (cancelar)="cancelarUnidadGestion()"
+    >
+    </app-barra-data-mtto>
+    <div class="content-block dx-card responsive-paddings" style="margin-top: 15px;">
+       <dx-form #fData id="fData" [formData]="unidadModel" [labelLocation]="'top'" [colCount]="8" [items]="items">
+		<div *dxTemplate="let cellInfo of 'CORR_NIVELESLookup'">
+			<app-data-lookup
+            [model]="mCORR_NIVEL"
+            [(value)]="unidadModel.CORR_NIVEL"
+            [valueExpr]="'CORR_NIVEL'"
+            [displayExpr]="'NOMBRE_NIVEL'"
+            (valueChange)="onNivelChange($event)"
+            [selectedRowKeys]="selectedLookUpCORR_NIVEL"
+			[readOnly]="readOnly"
+            >
+            </app-data-lookup>
+		</div>
+		<div *dxTemplate="let cellInfo of 'CORR_UNIDADESLookup'">
+        <app-data-lookup
+            [model]="mCORR_UNIDAD"
+            [(value)]="unidadModel.CORR_UNIDAD_PADRE"
+            [valueExpr]="'CORR_UNIDAD'"
+            [displayExpr]="'NOMBRE_UNIDAD_TREE'"
+            [selectedRowKeys]="selectedLookUpCORR_UNIDAD"
+            [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+</div>
+	</dx-form>
+    </div>
+</section>
+
+<!-- ================================================ -->
+<!-- LOAD PANEL                                       -->
+<!-- ================================================ -->
+<dx-load-panel
+    #loadPanel
+    shadingColor="rgba(0,0,0,0.4)"
+    [position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+    [(visible)]="loadingVisible"
+    [showIndicator]="true"
+    [showPane]="true"
+    [shading]="true"
+>
+</dx-load-panel>
+<!-- SECCIÓN 3: Gestión de Jefes (SOLO si existe la unidad) -->
+<section class="sguees-section-card organigrama-section-card" *ngIf="mostrarFormulario && unidadModel && unidadModel.CORR_UNIDAD > 0">
+    <header class="organigrama-section-head">
+        <span class="organigrama-section-title">Jefes de la Unidad</span>
+        <span class="organigrama-section-subtitle">Empleados asignados como jefes de {{ unidadModel.NOMBRE_UNIDAD }}</span>
+    </header>
+
+    <!-- Barra de herramientas de Jefes -->
+    <app-barra-data-mtto
+        [isBrowse]="isJefeBrowse()"
+        [isForm]="isJefeForm()"
+        [permiteAdd]="getPermiteAddJefe"
+        (nuevo)="nuevoJefe()"
+        (guardar)="guardarJefe()"
+        (cancelar)="cancelarJefe()"
+    >
+    </app-barra-data-mtto>
+
+    <!-- Formulario de Jefe -->
+    <div *ngIf="!isJefeBrowse()" >
+        <dx-form #fDataJefe id="fDataJefe" [formData]="jefeModel" [labelLocation]="'top'" [colCount]="8" [items]="jefesItems">
+            <!-- Template para combo de empleados -->
+            <div *dxTemplate="let cellInfo of 'CORR_EMPLEADOLookup'">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <!-- Filtro de unidad -->
+                    <dx-select-box
+                        [dataSource]="unidades"
+                        [value]="filtroUnidadJefe"
+                        displayExpr="NOMBRE_UNIDAD_TREE"
+                        valueExpr="CORR_UNIDAD"
+                        placeholder="Filtrar por unidad..."
+                        [showClearButton]="true"
+                        (onValueChanged)="onFiltroUnidadJefeChanged($event.value)"
+                        style="width: 250px;"
+                    >
+                    </dx-select-box>
+                    
+                    <!-- Selector de empleado -->
+                    <app-data-lookup
+                        [model]="empleadosDisponibles"
+                        [(value)]="jefeModel.CORR_EMPLEADO"
+                        [valueExpr]="'CORR_EMPLEADO'"
+                        [displayExpr]="'NOMBRE_EMPLEADO'"
+                        [lookupColumns]="[
+                            { dataField: 'NOMBRE_EMPLEADO', caption: 'Empleado', width: 200 },
+                            { dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 200 },
+                            { dataField: 'UNIDAD_EMPLEADO', caption: 'Unidad', width: 200 }
+                        ]"
+                        [selectedRowKeys]="selectedLookUpEMPLEADO"
+                        [readOnly]="jefeReadOnly"
+                        style="flex: 1;"
+                    >
+                    </app-data-lookup>
+                </div>
+            </div>
+        </dx-form>
+    </div>
+
+    <!-- Grid de Jefes -->
+    <div >
+        <app-data-grid-mtto
+            [isBrowse]="isJefeBrowse()"
+            [models]="jefesModels"
+            [columns]="jefesColumns"
+            [keyExpr]="'CORR_JEFE'"
+            [permiteEditar]="getPermiteEditarJefe"
+            [permiteDele]="getPermiteDeleJefe"
+            (rowDblClick)="rowDblClickJefe($event)"
+            (rowRemoving)="eliminarJefe($event)"
+            (editClick)="editarJefe($event)"
+        >
+        </app-data-grid-mtto>
+    </div>
+</section>

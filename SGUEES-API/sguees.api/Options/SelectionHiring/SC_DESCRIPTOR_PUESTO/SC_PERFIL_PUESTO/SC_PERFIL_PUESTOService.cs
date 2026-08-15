@@ -16,19 +16,23 @@ namespace SGUEES.Services
             _repo = repo;
         }
 
+        // Lista perfiles del puesto; convierte filtros a parámetros SQL y consulta el repositorio.
         public async Task<CResult> GetAllAsync(SC_PERFIL_PUESTOParam xWhere)
         {
             return await _repo.GetAllAsync(BuildParameters(xWhere));
         }
 
+        // Obtiene un perfil por empresa, descriptor y CORR_PERFIL_PUESTO.
         public async Task<CResult> GetAsync(SC_PERFIL_PUESTOParam xWhere)
         {
             return await _repo.GetAsync(BuildParameters(xWhere, includeDescriptor: true, includePerfil: true));
         }
 
+        // Normaliza catálogos, valida edades/sexo y crea el perfil en SC_PERFIL_PUESTO.
         public async Task<CResult> CreateAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             NormalizarCatalogos(Data);
+            // Revisa campos obligatorios y rangos antes de guardar.
             var validation = Validate(Data);
             if (validation != null)
             {
@@ -38,6 +42,7 @@ namespace SGUEES.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Normaliza catálogos, valida y actualiza el perfil en SC_PERFIL_PUESTO.
         public async Task<CResult> UpdateAsync(SC_PERFIL_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             if (Data.CORR_PERFIL_PUESTO <= 0)
@@ -55,6 +60,7 @@ namespace SGUEES.Services
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Arma parámetros SQL: CORR_EMPRESA; opcionalmente descriptor y CORR_PERFIL_PUESTO.
         private static List<CParameter> BuildParameters(
             SC_PERFIL_PUESTOParam xWhere,
             bool includeDescriptor = false,
@@ -81,6 +87,7 @@ namespace SGUEES.Services
         private static readonly string[] SexosPermitidos = { "MASCULINO", "FEMENINO", "INDIFERENTE" };
         private static readonly string[] EstadosFamiliaresPermitidos = { "CASADO", "SOLTERO", "INDIFERENTE", "OTRO" };
 
+        // Revisa empresa, descriptor guardado, edades, sexo y estado familiar permitidos.
         private static CResult Validate(SC_PERFIL_PUESTOTable Data)
         {
             if (Data.CORR_EMPRESA <= 0)
@@ -122,6 +129,7 @@ namespace SGUEES.Services
             return null;
         }
 
+        // Pone en mayúsculas sexo/estado familiar, recorta nombres de catálogo y limpia ids vacíos.
         private static void NormalizarCatalogos(SC_PERFIL_PUESTOTable Data)
         {
             if (!string.IsNullOrWhiteSpace(Data.SEXO))
@@ -133,8 +141,37 @@ namespace SGUEES.Services
             {
                 Data.ESTADO_FAMILIAR = Data.ESTADO_FAMILIAR.Trim().ToUpperInvariant();
             }
+
+            Data.NOMBRE_DISPONIBILIDAD_HORARIO = string.IsNullOrWhiteSpace(Data.NOMBRE_DISPONIBILIDAD_HORARIO)
+                ? null
+                : Data.NOMBRE_DISPONIBILIDAD_HORARIO.Trim();
+            if (Data.NOMBRE_DISPONIBILIDAD_HORARIO?.Length > 150)
+            {
+                Data.NOMBRE_DISPONIBILIDAD_HORARIO = Data.NOMBRE_DISPONIBILIDAD_HORARIO.Substring(0, 150);
+            }
+
+            Data.NOMBRE_MODALIDAD = string.IsNullOrWhiteSpace(Data.NOMBRE_MODALIDAD)
+                ? null
+                : Data.NOMBRE_MODALIDAD.Trim();
+            if (Data.NOMBRE_MODALIDAD?.Length > 100)
+            {
+                Data.NOMBRE_MODALIDAD = Data.NOMBRE_MODALIDAD.Substring(0, 100);
+            }
+
+            if (!(Data.CORR_DISPONIBILIDAD_HORARIO > 0))
+            {
+                Data.CORR_DISPONIBILIDAD_HORARIO = null;
+                Data.NOMBRE_DISPONIBILIDAD_HORARIO = null;
+            }
+
+            if (!(Data.CORR_TIPO_MODALIDAD > 0))
+            {
+                Data.CORR_TIPO_MODALIDAD = null;
+                Data.NOMBRE_MODALIDAD = null;
+            }
         }
 
+        // Devuelve un CResult con ErrorCode 4101 y el mensaje de validación.
         private static CResult ValidationError(string message)
         {
             return new CResult
@@ -143,7 +180,7 @@ namespace SGUEES.Services
                 Result = false,
                 RowsAffected = 0,
                 CodeHelper = 0,
-                ErrorCode = 1,
+                ErrorCode = 4101,
                 ErrorMessage = message,
                 ErrorSource = "",
             };

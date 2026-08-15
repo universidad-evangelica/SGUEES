@@ -1,3 +1,5 @@
+// Estilos del mtto Descriptor de Puesto: layout de formulario, tabs, grids de detalle y popup.
+// Tarjeta del formulario y tipografia de secciones.
 .descriptor-form-card {
 	margin-bottom: 16px;
 }
@@ -8,6 +10,7 @@
 	font-weight: 600;
 }
 
+// Encabezado de generalidades y lookup de puesto.
 .descriptor-generalidades {
 	margin-top: 15px;
 	margin-bottom: 16px;
@@ -29,6 +32,7 @@
 	opacity: 0.75;
 }
 
+// Sub-tabs de secciones; --sin-seleccion oculta el contenido hasta elegir un tab.
 .descriptor-sub-tab-panel {
 	margin-top: 8px;
 }
@@ -53,6 +57,7 @@
 	opacity: 0.85;
 }
 
+// Aviso cuando el formato actual no incluye el tab que estaba activo.
 .descriptor-seleccione-tab-card {
 	display: flex;
 	align-items: flex-start;
@@ -116,6 +121,7 @@
 	opacity: 0.8;
 }
 
+// Bitacora del descriptor (tab principal).
 .descriptor-bitacora {
 	margin-top: 15px;
 }
@@ -156,16 +162,28 @@
 	color: var(--sguees-text-secondary, color-mix(in srgb, var(--base-text-color) 72%, transparent));
 }
 
-:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor {
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor,
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-dropdownbox.dx-texteditor,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-selectbox.dx-texteditor,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-dropdownbox.dx-texteditor {
 	border-color: var(--error-color, #d9534f);
 }
 
 :host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor.dx-state-hover,
-:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor.dx-state-focused {
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor.dx-state-focused,
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-dropdownbox.dx-texteditor.dx-state-hover,
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-dropdownbox.dx-texteditor.dx-state-focused,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-selectbox.dx-texteditor.dx-state-hover,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-selectbox.dx-texteditor.dx-state-focused,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-dropdownbox.dx-texteditor.dx-state-hover,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-dropdownbox.dx-texteditor.dx-state-focused {
 	border-color: var(--error-color, #d9534f);
 }
 
-:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor .dx-dropdowneditor-icon {
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor .dx-dropdowneditor-icon,
+:host ::ng-deep .descriptor-lookup-field--invalid .dx-dropdownbox.dx-texteditor .dx-dropdowneditor-icon,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-selectbox.dx-texteditor .dx-dropdowneditor-icon,
+:host ::ng-deep .descriptor-lookup-field--invalid.dx-dropdownbox.dx-texteditor .dx-dropdowneditor-icon {
 	color: var(--error-color, #d9534f);
 }
 
@@ -236,6 +254,13 @@
 	border: 1px solid color-mix(in srgb, var(--descriptor-extensa-tone) 42%, var(--border-color));
 }
 
+:host ::ng-deep .descriptor-badge--formato-ambos {
+	--descriptor-ambos-tone: #f59e0b;
+	color: color-mix(in srgb, var(--descriptor-ambos-tone) 58%, var(--base-text-color));
+	background: color-mix(in srgb, var(--descriptor-ambos-tone) 17%, transparent);
+	border: 1px solid color-mix(in srgb, var(--descriptor-ambos-tone) 42%, var(--border-color));
+}
+
 :host ::ng-deep .descriptor-badge--formato-default {
 	color: color-mix(in srgb, var(--sguees-text-secondary, #64748b) 72%, var(--base-text-color));
 	background: color-mix(in srgb, var(--base-text-color) 8%, transparent);
@@ -278,6 +303,7 @@
 	border: 1px solid rgba(148, 163, 184, 0.3);
 }
 
+// Cabeceras y tablas de funciones/KPIs.
 .descriptor-funciones-header {
 	display: flex;
 	align-items: center;
@@ -428,8 +454,8 @@
 }
 
 .descriptor-funciones-col-actividades {
-	width: 170px;
-	min-width: 170px;
+	width: 200px;
+	min-width: 180px;
 }
 
 .descriptor-funciones-col-accion {
@@ -469,6 +495,7 @@
 	padding: 18px 12px;
 }
 
+// Toolbar Agregar/Guardar/Cancelar compartida por grids de detalle.
 .descriptor-deta-toolbar {
 	display: flex;
 	flex-wrap: wrap;
@@ -514,6 +541,7 @@
 	}
 }
 
+// Celdas de lookup y listas editables (riesgos / requerimientos).
 .descriptor-riesgo-lookup-cell {
 	display: block;
 	width: 100%;
@@ -584,6 +612,7 @@
 	opacity: 0.75;
 }
 
+// Perfil, competencias y relaciones: headers y paneles internos.
 .descriptor-perfil-header {
 	margin-bottom: 12px;
 }
@@ -731,6 +760,7 @@
 	min-width: 120px;
 }
 
+// Boton/badge que abre el popup de actividades desde la fila de funcion clave.
 .descriptor-actividades-trigger {
 	display: inline-flex;
 	align-items: center;
@@ -742,6 +772,7 @@
 	color: #fff;
 	font-weight: 600;
 	cursor: pointer;
+	white-space: nowrap;
 }
 
 .descriptor-actividades-trigger:disabled {
@@ -785,6 +816,7 @@
 	flex-wrap: wrap;
 }
 
+// Layout del popup de actividades (incluye fullscreen responsive).
 :host ::ng-deep .descriptor-actividades-popup-wrapper .dx-popup-content {
 	display: flex;
 	flex-direction: column;

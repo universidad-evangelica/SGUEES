@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Web.Http;
 using sgueesRpt.Layouts;
-using sgueesRpt.Models;
 using sgueesRpt.Reports.Accounting;
 
 namespace sgueesRpt.Reports.Accounting.CON_GASTOS

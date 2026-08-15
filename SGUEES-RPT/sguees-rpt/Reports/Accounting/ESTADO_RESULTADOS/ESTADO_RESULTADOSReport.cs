@@ -6,6 +6,6 @@ namespace sgueesRpt.Reports.Accounting.ESTADO_RESULTADOS
 	{
 		public override string ResourceName { get { return "ESTADO_RESULTADOSReport.rpt"; } set { } }
 		public override bool NewGenerator { get { return true; } set { } }
-		public override string FullResourceName { get { return "sgueesRpt.Reports.Accounting.Embedded.ESTADO_RESULTADOS.ESTADO_RESULTADOSReport.rpt"; } set { } }
+		public override string FullResourceName { get { return "sgueesRpt.Reports.Accounting.ESTADO_RESULTADOS.ESTADO_RESULTADOSReport.rpt"; } set { } }
 	}
 }

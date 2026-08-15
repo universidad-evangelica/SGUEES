@@ -1,43 +1,30 @@
+// Qué hace: vista de estructura territorial (país + cascada depto/municipio/distrito).
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import CustomStore from 'devextreme/data/custom_store';
 import Menu from 'devextreme/ui/menu';
 import { DxFormComponent } from 'devextreme-angular';
 import { custom, CustomDialogOptions } from 'devextreme/ui/dialog';
-import { lastValueFrom } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError, map, take } from 'rxjs/operators';
+import { environment } from 'src/environments/environment';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
+import { IParam } from 'src/app/FxAPI/IParam';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
-import { AuthService } from 'src/app/shared/services/auth.service';
 import { MttoPageContextService } from 'src/app/layouts/mtto-page-context.service';
-import {
-	cloneRemoteGridFilters,
-	hasRemoteFilterRowSearch,
-	parseRemoteGridFilters,
-	ParsedGridFilters,
-} from 'src/app/shared/utils/remote-grid-filter.util';
-import {
-	getColumnHeaderFilterSelection,
-	invertExcludedHeaderFilterValues,
-} from 'src/app/shared/utils/remote-header-filter.util';
 import { GenDepto } from './gen-depto/models/gen-depto';
 import { GenDistrito } from './gen-distrito/models/gen-distrito';
 import { GenMunicipio } from './gen-municipio/models/gen-municipio';
 import { GenPais, TerritorialNivel } from './models/gen-pais';
 import {
-	EMPRESA_REGISTRO_ETIQUETA,
 	GenEstructuraTerritorialService,
-	getEmpresaWarningMessage,
 	isEmpresaFkErrorMessage,
 	isEmpresaWarningResponse,
 } from './gen-estructura-territorial.service';
 
-const GRID_FILTER_CONFIG = { estadoField: '__NONE__' };
-type TerritorialGridLevel = 'pais' | 'depto' | 'municipio' | 'distrito';
-
+// Qué hace: amplía CustomDialogOptions con ancho y clase del popup de confirmación.
 type TerritorialConfirmDialogOptions = CustomDialogOptions & {
 	popupOptions?: {
 		width?: number;
@@ -50,6 +37,8 @@ type TerritorialConfirmDialogOptions = CustomDialogOptions & {
 	templateUrl: './gen-estructura-territorial.component.html',
 	styleUrls: ['./gen-estructura-territorial.component.scss'],
 })
+// Qué hace: coordina el listado de países y la cascada territorial depto/municipio/distrito.
+// Cómo: extiende CBaseComponent y usa GenEstructuraTerritorialService con popups para los niveles hijos.
 export class GenEstructuraTerritorialComponent extends CBaseComponent implements OnInit {
 	@ViewChild('paisGrid', { static: false }) dataGrid?: DataGridMttoComponent;
 	@ViewChild('deptoGrid', { static: false }) deptoGrid?: DataGridMttoComponent;
@@ -60,13 +49,11 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	protected override etiquetaRegistro = 'el país';
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_PAIS';
-	/** A+: paginado / filtro / orden en cliente (API devuelve todos los países). */
+	// Qué hace: deja paginado/filtro/orden en cliente (el API entrega todos los países).
 	protected override mttoRemoteOperations = false;
 
 	readonly cascadeGridHeight = 530;
-	readonly cascadeRemoteOperations = { filtering: true, sorting: true };
-	readonly popupFormColCountByScreen = { xs: 1, sm: 1, md: 2, lg: 2 };
-	private readonly maintenanceSubtitulo = 'Estructura territorial';
+	protected override mttoParchearGridTrasGuardar = true;
 	private readonly cascadeGridHooks = new WeakSet<object>();
 
 	vistaDetalle = false;
@@ -74,9 +61,9 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	selectedDepto?: GenDepto;
 	selectedMunicipio?: GenMunicipio;
 
-	deptoModels: any;
-	municipioModels: any;
-	distritoModels: any;
+	deptoModels: GenDepto[] = [];
+	municipioModels: GenMunicipio[] = [];
+	distritoModels: GenDistrito[] = [];
 
 	deptoColumns: any[] = [];
 	municipioColumns: any[] = [];
@@ -93,11 +80,12 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 	popupTitle = '';
 	private popupSaving = false;
 
+	readonly popupFormColCountByScreen = { xs: 1, sm: 1, md: 2, lg: 2 };
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private service: GenEstructuraTerritorialService,
-		private authService: AuthService,
 		private pageContext: MttoPageContextService
 	) {
 		super(appInfoService, router);
@@ -116,29 +104,39 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.distritoSummary = this.service.getChildSummary('NOMBRE_DISTRITO');
 	}
 
+	// Qué hace: prepara la pantalla al abrirla.
+	// Cómo: resuelve permisos, columnas, toolbar y llama a consultar.
 	ngOnInit(): void {
 		this.urlOpcion = this.resolveUrlOpcion();
 		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.model = this.fillPais();
 		this.modelUpdate = this.fillPais();
 		this.actualizarColumnas();
 		this.syncToolbarContext();
-		this.configurarDataSourcePaises();
+		this.consultar();
 	}
 
+	// Qué hace: entrega el grid de países al flujo base de CBaseComponent.
+	// Cómo: retorna dataGrid o null.
+	protected override getMttoDataGrid(): DataGridMttoComponent | null {
+		return this.dataGrid ?? null;
+	}
+
+	// Qué hace: calcula el ancho del popup de niveles hijos.
+	// Cómo: casi full-width en pantalla pequeña; 520px en el resto.
 	get popupWidth(): number | string {
 		return this.screen(window.innerWidth) === 'sm' ? 'calc(100vw - 24px)' : 520;
 	}
 
+	// Qué hace: sincroniza el estado del mantenimiento con la barra.
+	// Cómo: llama a AsignaStatus base y syncToolbarContext.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		this.syncToolbarContext();
-		if (xEstado === UpdateType.Browse && !this.vistaDetalle) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
-		}
 	}
 
+	// Qué hace: abre el documento país al hacer doble clic en el grid.
+	// Cómo: llama a abrirDocumentoPais con la fila seleccionada.
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -146,7 +144,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 	}
 
-	/** Edit del grid → documento país (form editable + cascada), Guardar/Cancelar del padre. */
+	// Qué hace: abre el documento país desde el botón editar del grid.
+	// Cómo: llama a abrirDocumentoPais con la fila seleccionada.
 	editarPaisDesdeGrid(e: any): void {
 		const rowData = e?.row?.data ?? e?.data;
 		if (rowData) {
@@ -154,6 +153,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 	}
 
+	// Qué hace: construye el modelo de país para el formulario.
+	// Cómo: si recibe xModel copia sus campos; si no, devuelve valores iniciales vacíos.
 	fillPais(xModel?: GenPais): GenPais {
 		if (xModel) {
 			return { ...xModel };
@@ -173,10 +174,14 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
+	// Qué hace: adapta fillData del base al modelo de país.
+	// Cómo: llama a fillPais.
 	override fillData(xModel?: GenPais): GenPais {
 		return this.fillPais(xModel);
 	}
 
+	// Qué hace: construye el modelo de departamento para el popup.
+	// Cómo: toma CORR_PAIS del país seleccionado y completa el resto desde xModel.
 	fillDepto(xModel?: GenDepto): GenDepto {
 		return {
 			CORR_PAIS: this.selectedPais?.CORR_PAIS ?? 0,
@@ -192,6 +197,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
+	// Qué hace: construye el modelo de municipio para el popup.
+	// Cómo: toma país/depto seleccionados y completa el resto desde xModel.
 	fillMunicipio(xModel?: GenMunicipio): GenMunicipio {
 		return {
 			CORR_PAIS: this.selectedPais?.CORR_PAIS ?? 0,
@@ -208,6 +215,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
+	// Qué hace: construye el modelo de distrito para el popup.
+	// Cómo: toma la jerarquía seleccionada y completa el resto desde xModel.
 	fillDistrito(xModel?: GenDistrito): GenDistrito {
 		return {
 			CORR_PAIS: this.selectedPais?.CORR_PAIS ?? xModel?.CORR_PAIS ?? 0,
@@ -224,95 +233,38 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
-	fillParam(
-		busqueda = '',
-		gridFilters: ParsedGridFilters = { estado: null, filterRow: {}, filterRowExact: {}, headerAnyOf: {} },
-		distinctField = '',
-		headerFilterSearch = '',
-		sortField = '',
-		sortDesc = false,
-		extra: Record<string, any> = {}
-	): any {
-		return {
-			BUSQUEDA: busqueda,
-			DISTINCT_FIELD: distinctField,
-			HEADER_FILTER_SEARCH: headerFilterSearch,
-			SORT_FIELD: sortField,
-			SORT_DESC: sortDesc,
-			gridFilters,
-			...extra,
-		};
-	}
-
-	fillCascadeParam(
-		busqueda = '',
-		gridFilters: ParsedGridFilters = { estado: null, filterRow: {}, filterRowExact: {}, headerAnyOf: {} },
-		distinctField = '',
-		headerFilterSearch = '',
-		sortField = '',
-		sortDesc = false,
-		extra: Record<string, any> = {}
-	): any {
-		return {
-			BUSQUEDA: busqueda,
-			DISTINCT_FIELD: distinctField,
-			HEADER_FILTER_SEARCH: headerFilterSearch,
-			SORT_FIELD: sortField,
-			SORT_DESC: sortDesc,
-			gridFilters,
-			...extra,
-		};
-	}
-
-	loadHeaderFilterValuesDeptos = (field: string, searchValue?: string): Promise<unknown[]> =>
-		this.loadHeaderFilterValues('depto', field, searchValue);
-
-	loadHeaderFilterValuesMunicipios = (field: string, searchValue?: string): Promise<unknown[]> =>
-		this.loadHeaderFilterValues('municipio', field, searchValue);
-
-	loadHeaderFilterValuesDistritos = (field: string, searchValue?: string): Promise<unknown[]> =>
-		this.loadHeaderFilterValues('distrito', field, searchValue);
-
-	private loadHeaderFilterValues(level: TerritorialGridLevel, field: string, searchValue?: string): Promise<unknown[]> {
-		const grid = this.getGridByLevel(level)?.gData?.instance;
-		const combinedFilter = grid?.getCombinedFilter?.(false);
-		const gridFilters = parseRemoteGridFilters(combinedFilter, grid, GRID_FILTER_CONFIG);
-		const hasFilterRowSearch = hasRemoteFilterRowSearch(gridFilters);
-		const filtersForDistinct: ParsedGridFilters = {
-			estado: null,
-			filterRow: hasFilterRowSearch ? gridFilters.filterRow : {},
-			filterRowExact: hasFilterRowSearch ? gridFilters.filterRowExact : {},
-			headerAnyOf: {},
-		};
-
-		const scope = this.getScopeForLevel(level);
-		const request = this.fillCascadeParam('', filtersForDistinct, field, searchValue ?? '', '', false, scope);
-		const distinctCall =
-			level === 'pais'
-				? this.service.getDistinctValuesPaises(request)
-				: level === 'depto'
-					? this.service.getDistinctValuesDeptos(request)
-					: level === 'municipio'
-						? this.service.getDistinctValuesMunicipios(request)
-						: this.service.getDistinctValuesDistritos(request);
-
-		return lastValueFrom(distinctCall).then((response) => {
-			if (!response.Result) {
-				throw new Error(response.ErrorMessage || 'No se pudieron cargar los valores del filtro.');
-			}
-
-			return response.Data ?? [];
+	// Qué hace: carga el listado de países en el grid.
+	// Cómo: llama a getAllPaises del servicio mediante consultarMtto.
+	consultar(resetPage = false): void {
+		this.consultarMtto({
+			load: () => this.service.getAllPaises(),
+			onData: () => {
+				this.ordenarPaisesPorCorr();
+				this.refrescarGridPaises(resetPage);
+			},
 		});
 	}
 
-	consultar(): void {
-		this.dataGrid?.refreshData(true);
+	// Qué hace: ordena el listado de países por CORR_PAIS.
+	// Cómo: crea una copia ordenada de this.models.
+	private ordenarPaisesPorCorr(): void {
+		if (!Array.isArray(this.models)) {
+			return;
+		}
+
+		this.models = [...this.models].sort((a, b) => Number(a.CORR_PAIS) - Number(b.CORR_PAIS));
 	}
 
-	/**
-	 * Abre el documento país (como partida): form habilitado + cascada.
-	 * Barra = Guardar / Cancelar del padre.
-	 */
+	// Qué hace: refresca el grid de países.
+	// Cómo: llama a refreshData del dataGrid en el siguiente tick.
+	private refrescarGridPaises(resetPage = false): void {
+		setTimeout(() => {
+			this.dataGrid?.refreshData(resetPage);
+		}, 0);
+	}
+
+	// Qué hace: abre el documento país con formulario y cascada.
+	// Cómo: fija Update, limpia hijos, carga departamentos y habilita el formulario.
 	abrirDocumentoPais(pais: GenPais, desdeAlta = false): void {
 		if (!desdeAlta && !this.permiteEdit) {
 			this.notifyFx('No tiene permiso para editar registros.', NotifyType.Warning);
@@ -324,16 +276,16 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.modelUpdate = this.fillPais(pais);
 		this.AsignaStatus(UpdateType.Update);
 		this.limpiarSeleccionHijos();
-		this.configurarDataSourceHijos();
+		this.getCORR_DEPTO();
 		setTimeout(() => {
 			this.habilitar();
 			this.setFocus();
-			this.refrescarDeptos(true);
 			this.inicializarGridsCascade();
 		});
 	}
 
-	/** Sale del documento al listado (Cancelar / tras eliminar). */
+	// Qué hace: regresa del documento país al listado.
+	// Cómo: limpia selección, pasa a Browse y refresca el grid en memoria (sin GetAll).
 	salirAListado(): void {
 		this.vistaDetalle = false;
 		this.selectedPais = undefined;
@@ -343,11 +295,13 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.AsignaStatus(UpdateType.Browse);
 		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
 		this.actualizarColumnas();
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.syncToolbarContext();
-		setTimeout(() => this.consultar());
+		this.ordenarPaisesPorCorr();
+		this.refrescarGridPaises(false);
 	}
 
+	// Qué hace: inicia la creación de un país desde el listado.
+	// Cómo: ignora si está en documento; si no, llama a nuevo del base.
 	override nuevo(): void {
 		if (this.vistaDetalle) {
 			return;
@@ -355,15 +309,9 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		super.nuevo();
 	}
 
+	// Qué hace: valida y guarda el país (creación o actualización).
+	// Cómo: llama a insertPais o updatePais del servicio según banderaMtto.
 	guardar(): void {
-		if (!this.validarEmpresaSesion()) {
-			return;
-		}
-
-		if (this.loadingVisible) {
-			return;
-		}
-
 		const formData = this.dataForm?.instance?.option('formData') as GenPais | undefined;
 		if (formData) {
 			this.model = { ...this.model, ...formData };
@@ -376,41 +324,31 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			return;
 		}
 
-		if (!this.service.esValidoPais(this.model, this.notifyFx.bind(this), !isAdd)) {
-			return;
-		}
-
-		this.loadingVisible = true;
-		this.ejecutarGuardarPais(isAdd);
-	}
-
-	private ejecutarGuardarPais(isAdd: boolean): void {
-		const request = isAdd ? this.service.insertPais(this.model) : this.service.updatePais(this.model);
-
-		request.pipe(take(1)).subscribe({
-			next: (response: any) => {
-				if (response.Result) {
-					const savedPais = response.Data as GenPais;
-					if (isAdd) {
-						this.abrirDocumentoPais(savedPais, true);
-						this.notifyFx('País creado con éxito.', NotifyType.Success);
-					} else {
-						// Igual que mtto padre: tras Guardar vuelve al grid principal.
-						this.salirAListado();
-						this.notifyFx('País modificado con éxito.', NotifyType.Success);
-					}
+		this.guardarMtto({
+			esValido: () => this.service.esValidoPais(this.model, this.notifyFx.bind(this), !isAdd),
+			insert: () =>
+				this.convertirDuplicadoEnWarning(
+					this.service.insertPais(this.model),
+					'El código de país ingresado está registrado. Escriba otro código para continuar.'
+				),
+			update: () =>
+				this.convertirDuplicadoEnWarning(
+					this.service.updatePais(this.model),
+					'El código de país ingresado está registrado. Escriba otro código para continuar.'
+				),
+			onSuccess: (data: unknown) => {
+				const savedPais = data as GenPais;
+				if (isAdd) {
+					this.abrirDocumentoPais(savedPais, true);
 				} else {
-					this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
+					this.salirAListado();
 				}
-				this.loadingVisible = false;
-			},
-			error: (error: any) => {
-				this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
-				this.loadingVisible = false;
 			},
 		});
 	}
 
+	// Qué hace: cancela la edición del país y vuelve al listado o a Browse.
+	// Cómo: confirma si hay cambios y llama a salirAListado o limpia el modelo.
 	override cancelar(): void {
 		const finalizar = () => {
 			if (this.vistaDetalle) {
@@ -432,18 +370,17 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		finalizar();
 	}
 
+	// Qué hace: elimina el país seleccionado en el grid.
+	// Cómo: llama a deletePais del servicio vía rowRemovingMtto.
 	rowRemoving(e: any): void {
-		if (!this.validarEmpresaSesion()) {
-			e.cancel = true;
-			return;
-		}
-		// Una sola confirmación: nativa DevExtreme (confirmDelete). No confirmAction extra.
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.service.deletePais(e.data),
+			deleteFn: () => this.convertirErrorMttoEnWarning(this.service.deletePais(e.data)),
 			successMessage: 'País eliminado con éxito.',
 		});
 	}
 
+	// Qué hace: responde al foco de un departamento en la cascada.
+	// Cómo: fija selectedDepto, limpia municipio y llama a getCORR_MUNICIPIO/getCORR_DISTRITO.
 	onDeptoFocused(e: any): void {
 		const row = (e?.row?.data ?? e?.data) as GenDepto;
 		if (!row?.CORR_DEPTO) {
@@ -457,11 +394,12 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.selectedMunicipio = undefined;
 		this.inicializarGridsCascade();
 		this.actualizarResaltadoCascade();
-		this.configurarDataSourceMunicipios();
-		this.refrescarMunicipios(true);
-		this.refrescarDistritos(true);
+		this.getCORR_MUNICIPIO();
+		this.getCORR_DISTRITO();
 	}
 
+	// Qué hace: responde al foco de un municipio en la cascada.
+	// Cómo: fija selectedMunicipio y llama a getCORR_DISTRITO.
 	onMunicipioFocused(e: any): void {
 		const row = (e?.row?.data ?? e?.data) as GenMunicipio;
 		if (!row?.CORR_MUNICIPIO) {
@@ -478,10 +416,11 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.selectedMunicipio = row;
 		this.inicializarGridsCascade();
 		this.actualizarResaltadoCascade();
-		this.configurarDataSourceDistritos();
-		this.refrescarDistritos(true);
+		this.getCORR_DISTRITO();
 	}
 
+	// Qué hace: abre el popup para crear un departamento.
+	// Cómo: valida permiso y país; llama a abrirPopup con nivel depto.
 	nuevoDepto(): void {
 		if (!this.permiteAdd) {
 			this.notifyFx('No tiene permiso para crear registros.', NotifyType.Warning);
@@ -494,6 +433,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.abrirPopup('depto', true);
 	}
 
+	// Qué hace: abre el popup para crear un municipio.
+	// Cómo: valida permiso y depto; llama a abrirPopup con nivel municipio.
 	nuevoMunicipio(): void {
 		if (!this.permiteAdd) {
 			this.notifyFx('No tiene permiso para crear registros.', NotifyType.Warning);
@@ -506,6 +447,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.abrirPopup('municipio', true);
 	}
 
+	// Qué hace: abre el popup para crear un distrito.
+	// Cómo: valida permiso y municipio; llama a abrirPopup con nivel distrito.
 	nuevoDistrito(): void {
 		if (!this.permiteAdd) {
 			this.notifyFx('No tiene permiso para crear registros.', NotifyType.Warning);
@@ -518,12 +461,16 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.abrirPopup('distrito', true);
 	}
 
+	// Qué hace: abre el popup para editar el departamento de la fila.
+	// Cómo: llama a abrirPopup con nivel depto y la fila.
 	onEditDeptoClick(e: any): void {
 		if (e?.row?.data) {
 			this.abrirPopup('depto', false, e.row.data);
 		}
 	}
 
+	// Qué hace: confirma y elimina el departamento de la fila.
+	// Cómo: llama a confirmAction y luego eliminarDepto.
 	onDeleteDeptoClick(e: any): void {
 		const row = e?.row?.data as GenDepto;
 		if (!row) {
@@ -532,12 +479,16 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.confirmAction('Eliminar departamento', `Desea eliminar "${row.NOMBRE_DEPTO}"?`, () => this.eliminarDepto(row));
 	}
 
+	// Qué hace: abre el popup para editar el municipio de la fila.
+	// Cómo: llama a abrirPopup con nivel municipio y la fila.
 	onEditMunicipioClick(e: any): void {
 		if (e?.row?.data) {
 			this.abrirPopup('municipio', false, e.row.data);
 		}
 	}
 
+	// Qué hace: confirma y elimina el municipio de la fila.
+	// Cómo: llama a confirmAction y luego eliminarMunicipio.
 	onDeleteMunicipioClick(e: any): void {
 		const row = e?.row?.data as GenMunicipio;
 		if (!row) {
@@ -546,12 +497,16 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.confirmAction('Eliminar municipio', `Desea eliminar "${row.NOMBRE_MUNICIPIO}"?`, () => this.eliminarMunicipio(row));
 	}
 
+	// Qué hace: abre el popup para editar el distrito de la fila.
+	// Cómo: llama a abrirPopup con nivel distrito y la fila.
 	onEditDistritoClick(e: any): void {
 		if (e?.row?.data) {
 			this.abrirPopup('distrito', false, e.row.data);
 		}
 	}
 
+	// Qué hace: confirma y elimina el distrito de la fila.
+	// Cómo: llama a confirmAction y luego eliminarDistrito.
 	onDeleteDistritoClick(e: any): void {
 		const row = e?.row?.data as GenDistrito;
 		if (!row) {
@@ -560,13 +515,15 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.confirmAction('Eliminar distrito', `Desea eliminar "${row.NOMBRE_DISTRITO}"?`, () => this.eliminarDistrito(row));
 	}
 
+	// Qué hace: valida y guarda el registro del popup territorial.
+	// Cómo: llama a esValidoNivel del servicio y luego ejecutarGuardarPopup.
 	guardarPopup(): void {
 		if (this.popupSaving) {
 			return;
 		}
 		this.popupSaving = true;
 
-		if (!this.validarEmpresaSesion()) {
+		if (!this.asegurarEmpresaSesion()) {
 			this.popupSaving = false;
 			return;
 		}
@@ -594,6 +551,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.ejecutarGuardarPopup();
 	}
 
+	// Qué hace: completa en el popup las claves de los niveles padres.
+	// Cómo: copia CORR_PAIS/DEPTO/MUNICIPIO desde la selección actual.
 	private reforzarContextoPopup(model: GenDepto | GenMunicipio | GenDistrito): GenDepto | GenMunicipio | GenDistrito {
 		if (this.popupNivel === 'depto') {
 			return {
@@ -618,11 +577,15 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		};
 	}
 
+	// Qué hace: cierra el estado de guardado del popup.
+	// Cómo: limpia popupSaving y loadingVisible.
 	private finalizarGuardadoPopup(): void {
 		this.popupSaving = false;
 		this.loadingVisible = false;
 	}
 
+	// Qué hace: ejecuta la creación o edición del popup y parchea el grid del nivel afectado.
+	// Cómo: llama a getPopupRequest y, al terminar, aplica response.Data en memoria (sin GetAll).
 	private ejecutarGuardarPopup(): void {
 		this.getPopupRequest()
 			.pipe(take(1))
@@ -630,7 +593,7 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 				next: (response: any) => {
 					if (response.Result) {
 						this.popupVisible = false;
-						this.refrescarNivel(this.popupNivel);
+						this.aplicarNivelDesdeRespuesta(response);
 						this.notifyFx(this.popupIsAdd ? 'Registro creado con éxito.' : 'Registro modificado con éxito.', NotifyType.Success);
 					} else {
 						this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
@@ -644,39 +607,173 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			});
 	}
 
+	// Qué hace: cierra el popup territorial.
+	// Cómo: pone popupVisible en false.
 	cerrarPopup(): void {
 		this.popupVisible = false;
 	}
 
+	// Qué hace: deja los correlativos del formulario país en solo lectura.
+	// Cómo: llama a bloquearCamposCorr sobre dataForm.
 	override bloquear(): void {
 		this.bloquearCamposCorr(this.dataForm);
 	}
 
+	// Qué hace: habilita el formulario país dejando correlativos bloqueados.
+	// Cómo: llama a bloquearCamposCorr en el siguiente tick.
 	override habilitar(): void {
 		setTimeout(() => this.bloquearCamposCorr(this.dataForm));
 	}
 
+	// Qué hace: enfoca el campo nombre del país.
+	// Cómo: llama a focus del editor NOMBRE_PAIS.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm?.instance?.getEditor('NOMBRE_PAIS')?.focus();
 		});
 	}
 
-	refrescarDeptos(force = false): void {
-		this.deptoGrid?.refreshData(force);
-		setTimeout(() => this.inicializarGridsCascade());
+	// Qué hace: carga los departamentos del país seleccionado.
+	// Cómo: getLookUp GEN_DEPTO GetCORR_DEPTO y refresca deptoGrid.
+	getCORR_DEPTO(corrPais?: number): void {
+		const pais = corrPais ?? this.selectedPais?.CORR_PAIS;
+		if (!pais) {
+			this.deptoModels = [];
+			return;
+		}
+
+		const xWhere: IParam[] = [{ Parameter: 'CORR_PAIS', Value: pais }];
+		this.loadingVisible = true;
+		this.appInfoService
+			.getLookUp(
+				'GEN_ESTRUCTURA_TERRITORIAL',
+				'GEN_DEPTO',
+				'GetCORR_DEPTO',
+				xWhere,
+				environment.UrlGENERALAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.deptoModels = response.Data;
+					} else {
+						this.deptoModels = [];
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+						}
+					}
+					setTimeout(() => {
+						this.deptoGrid?.refreshData(true);
+						this.inicializarGridsCascade();
+					});
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					this.notifyApiError(error);
+					this.loadingVisible = false;
+				},
+			});
 	}
 
-	refrescarMunicipios(force = false): void {
-		this.municipioGrid?.refreshData(force);
-		setTimeout(() => this.inicializarGridsCascade());
+	// Qué hace: carga los municipios del departamento seleccionado.
+	// Cómo: getLookUp GEN_MUNICIPIO GetCORR_MUNICIPIO y refresca municipioGrid.
+	getCORR_MUNICIPIO(corrPais?: number, corrDepto?: number): void {
+		const pais = corrPais ?? this.selectedPais?.CORR_PAIS;
+		const depto = corrDepto ?? this.selectedDepto?.CORR_DEPTO;
+		if (!pais || !depto) {
+			this.municipioModels = [];
+			return;
+		}
+
+		const xWhere: IParam[] = [
+			{ Parameter: 'CORR_PAIS', Value: pais },
+			{ Parameter: 'CORR_DEPTO', Value: depto },
+		];
+		this.loadingVisible = true;
+		this.appInfoService
+			.getLookUp(
+				'GEN_ESTRUCTURA_TERRITORIAL',
+				'GEN_MUNICIPIO',
+				'GetCORR_MUNICIPIO',
+				xWhere,
+				environment.UrlGENERALAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.municipioModels = response.Data;
+					} else {
+						this.municipioModels = [];
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+						}
+					}
+					setTimeout(() => {
+						this.municipioGrid?.refreshData(true);
+						this.inicializarGridsCascade();
+					});
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					this.notifyApiError(error);
+					this.loadingVisible = false;
+				},
+			});
 	}
 
-	refrescarDistritos(force = false): void {
-		this.distritoGrid?.refreshData(force);
-		setTimeout(() => this.inicializarGridsCascade());
+	// Qué hace: carga los distritos del municipio seleccionado.
+	// Cómo: getLookUp GEN_DISTRITO GetCORR_DISTRITO y refresca distritoGrid.
+	getCORR_DISTRITO(corrPais?: number, corrDepto?: number, corrMunicipio?: number): void {
+		const pais = corrPais ?? this.selectedPais?.CORR_PAIS;
+		const depto = corrDepto ?? this.selectedDepto?.CORR_DEPTO;
+		const municipio = corrMunicipio ?? this.selectedMunicipio?.CORR_MUNICIPIO;
+		if (!pais || !depto || !municipio) {
+			this.distritoModels = [];
+			return;
+		}
+
+		const xWhere: IParam[] = [
+			{ Parameter: 'CORR_PAIS', Value: pais },
+			{ Parameter: 'CORR_DEPTO', Value: depto },
+			{ Parameter: 'CORR_MUNICIPIO', Value: municipio },
+		];
+		this.loadingVisible = true;
+		this.appInfoService
+			.getLookUp(
+				'GEN_ESTRUCTURA_TERRITORIAL',
+				'GEN_DISTRITO',
+				'GetCORR_DISTRITO',
+				xWhere,
+				environment.UrlGENERALAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result && Array.isArray(response.Data)) {
+						this.distritoModels = response.Data;
+					} else {
+						this.distritoModels = [];
+						if (!response?.Result) {
+							this.notifyApiResponse(response);
+						}
+					}
+					setTimeout(() => {
+						this.distritoGrid?.refreshData(true);
+						this.inicializarGridsCascade();
+					});
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					this.notifyApiError(error);
+					this.loadingVisible = false;
+				},
+			});
 	}
 
+	// Qué hace: regenera columnas de país y cascada según permisos.
+	// Cómo: llama a getPaisColumns/getDeptoColumns/getMunicipioColumns/getDistritoColumns.
 	private actualizarColumnas(): void {
 		this.columns = this.service.getPaisColumns();
 		this.deptoColumns = this.service.getDeptoColumns(this.onEditDeptoClick, this.onDeleteDeptoClick, this.permiteEdit, this.permiteDele);
@@ -694,6 +791,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
+	// Qué hace: resuelve la URL de opción para permisos.
+	// Cómo: recorre ActivatedRoute hasta encontrar path; fallback gen-estructura-territorial.
 	private resolveUrlOpcion(): string {
 		let route: ActivatedRoute | null = this.router;
 		while (route) {
@@ -706,12 +805,14 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return '/gen-estructura-territorial';
 	}
 
+	// Qué hace: publica el contexto de la barra de acciones.
+	// Cómo: llama a pageContext.updateFromBarra con add y refresh.
 	private syncToolbarContext(): void {
 		this.pageContext.updateFromBarra(
 			{
 				titulo: this.tituloVentana,
 				subtitle: this.subTituloVentana,
-				// En documento el Nuevo de país no sale (isForm); permiteAdd real alimenta la cascada.
+				// Qué hace: en documento el Nuevo de país no sale (isForm); permiteAdd alimenta la cascada.
 				permiteAdd: this.permiteAdd,
 				showRefresh: !this.vistaDetalle,
 				unifiedToolbar: !this.vistaDetalle,
@@ -725,114 +826,32 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
-	private configurarDataSourcePaises(): void {
-		this.models = new CustomStore({
-			key: 'CORR_PAIS',
-			loadMode: 'raw',
-			load: async () => {
-				try {
-					const response = await lastValueFrom(this.service.getAllPaises(this.fillParam()));
-					if (!response.Result) {
-						throw new Error(response.ErrorMessage || 'No se pudo cargar los países.');
-					}
-					return response.Data || [];
-				} catch (error) {
-					const message = this.getErrorMessage(error);
-					this.notifyFx(message, NotifyType.Error);
-					throw new Error(message);
-				}
-			},
-		});
-	}
-
-	private configurarDataSourceHijos(): void {
-		this.configurarDataSourceDeptos();
-		this.configurarDataSourceMunicipios();
-		this.configurarDataSourceDistritos();
-	}
-
-	private configurarDataSourceDeptos(): void {
-		this.deptoModels = new CustomStore({
-			key: ['CORR_PAIS', 'CORR_DEPTO'],
-			loadMode: 'processed',
-			cacheRawData: false,
-			load: async (loadOptions: any) => this.loadCascadeLevel('depto', loadOptions),
-		});
-	}
-
-	private configurarDataSourceMunicipios(): void {
-		this.municipioModels = new CustomStore({
-			key: ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO'],
-			loadMode: 'processed',
-			cacheRawData: false,
-			load: async (loadOptions: any) => this.loadCascadeLevel('municipio', loadOptions),
-		});
-	}
-
-	private configurarDataSourceDistritos(): void {
-		this.distritoModels = new CustomStore({
-			key: ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO', 'CORR_DISTRITO'],
-			loadMode: 'processed',
-			cacheRawData: false,
-			load: async (loadOptions: any) => this.loadCascadeLevel('distrito', loadOptions),
-		});
-	}
-
-	private async loadCascadeLevel(level: TerritorialGridLevel, loadOptions: any): Promise<{ data: unknown[]; totalCount: number }> {
-		try {
-			const scope = this.getScopeForLevel(level);
-		if (!scope.CORR_PAIS) {
-			return { data: [], totalCount: 0 };
-		}
-		if (level === 'municipio' && !scope.CORR_DEPTO) {
-			return { data: [], totalCount: 0 };
-		}
-		if (level === 'distrito' && !scope.CORR_MUNICIPIO) {
-			return { data: [], totalCount: 0 };
-		}
-
-		const grid = this.getGridByLevel(level)?.gData?.instance;
-		const gridFilters = parseRemoteGridFilters(loadOptions.filter, grid, GRID_FILTER_CONFIG);
-		this.applyIncludeHeaderFilters(grid, gridFilters);
-		await this.resolveExcludeHeaderFilters(grid, gridFilters, level);
-		await this.removeHeaderFiltersOverriddenByFilterRow(gridFilters, level);
-
-		const sort = this.getGridSort(loadOptions.sort);
-		const request = this.fillCascadeParam('', gridFilters, '', '', sort?.field ?? '', sort?.desc ?? false, scope);
-		const response = await lastValueFrom(
-			level === 'depto'
-				? this.service.getAllDeptos(request)
-				: level === 'municipio'
-					? this.service.getAllMunicipios(request)
-					: this.service.getAllDistritos(request)
-		);
-
-		if (!response.Result) {
-			const labels = { depto: 'departamentos', municipio: 'municipios', distrito: 'distritos' };
-			throw new Error(response.ErrorMessage || `No se pudo cargar los ${labels[level]}.`);
-		}
-
-		const data = response.Data || [];
-		return { data, totalCount: data.length };
-		} catch (error) {
-			const message = this.getErrorMessage(error);
-			this.notifyFx(message, NotifyType.Error);
-			throw new Error(message);
-		}
-	}
-
+	// Qué hace: limpia selecciones e hijas de la cascada.
+	// Cómo: vacía depto/municipio/distrito y refresca los tres grids.
 	private limpiarSeleccionHijos(): void {
 		this.selectedDepto = undefined;
 		this.selectedMunicipio = undefined;
+		this.deptoModels = [];
+		this.municipioModels = [];
+		this.distritoModels = [];
 		this.actualizarResaltadoCascade();
+		setTimeout(() => {
+			this.deptoGrid?.refreshData(true);
+			this.municipioGrid?.refreshData(true);
+			this.distritoGrid?.refreshData(true);
+		});
 	}
 
+	// Qué hace: inicializa los tres grids de la cascada.
+	// Cómo: llama a vincularGridCascade para depto, municipio y distrito.
 	private inicializarGridsCascade(): void {
 		this.vincularGridCascade(this.deptoGrid, 'depto');
 		this.vincularGridCascade(this.municipioGrid, 'municipio');
 		this.vincularGridCascade(this.distritoGrid, 'distrito');
 	}
 
+	// Qué hace: configura scroll/altura y resaltado del grid hijo.
+	// Cómo: ajusta opciones DevExtreme y engancha contentReady/rowPrepared.
 	private vincularGridCascade(
 		grid: DataGridMttoComponent | undefined,
 		tipo: 'depto' | 'municipio' | 'distrito'
@@ -877,6 +896,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		this.cascadeGridHooks.add(instance);
 	}
 
+	// Qué hace: ancla overlays de filtro al body para la cascada.
+	// Cómo: fija container del headerFilter y de los submenús dx-filter-menu.
 	private parchearOverlaysFiltroCascade(instance: any): void {
 		const headerFilterView = instance.getView?.('headerFilterView');
 		const headerFilterPopup = headerFilterView?.getPopupContainer?.();
@@ -908,6 +929,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Qué hace: actualiza el resaltado visual de la cascada.
+	// Cómo: reinicializa grids y repinta filas visibles de depto/municipio.
 	private actualizarResaltadoCascade(): void {
 		setTimeout(() => {
 			this.inicializarGridsCascade();
@@ -916,6 +939,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Qué hace: repinta solo las filas visibles de un grid.
+	// Cómo: llama a repaintRows con los índices visibles.
 	private repintarFilasVisibles(grid: DataGridMttoComponent | undefined): void {
 		const instance = grid?.gData?.instance;
 		if (!instance) {
@@ -932,10 +957,14 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		}
 	}
 
+	// Qué hace: compara si dos departamentos son el mismo.
+	// Cómo: iguala CORR_PAIS y CORR_DEPTO.
 	private esMismoDepto(data: GenDepto, selected: GenDepto): boolean {
 		return Number(data.CORR_PAIS) === Number(selected.CORR_PAIS) && Number(data.CORR_DEPTO) === Number(selected.CORR_DEPTO);
 	}
 
+	// Qué hace: compara si dos municipios son el mismo.
+	// Cómo: iguala CORR_PAIS, CORR_DEPTO y CORR_MUNICIPIO.
 	private esMismoMunicipio(data: GenMunicipio, selected: GenMunicipio): boolean {
 		return (
 			Number(data.CORR_PAIS) === Number(selected.CORR_PAIS) &&
@@ -944,6 +973,116 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		);
 	}
 
+	// Qué hace: compara si dos distritos son el mismo.
+	// Cómo: iguala país, departamento, municipio y distrito.
+	private esMismoDistrito(data: GenDistrito, selected: GenDistrito): boolean {
+		return (
+			Number(data.CORR_PAIS) === Number(selected.CORR_PAIS) &&
+			Number(data.CORR_DEPTO) === Number(selected.CORR_DEPTO) &&
+			Number(data.CORR_MUNICIPIO) === Number(selected.CORR_MUNICIPIO) &&
+			Number(data.CORR_DISTRITO) === Number(selected.CORR_DISTRITO)
+		);
+	}
+
+	// Qué hace: toma la fila de insert/update (response.Data) o el payload si no viene.
+	// Cómo: si Data es arreglo usa el primer objeto; si es objeto lo fusiona con el fallback.
+	private extraerFilaRespuesta<T>(response: any, fallback: T): T {
+		const data = response?.Data;
+		if (Array.isArray(data) && data.length > 0 && data[0] && typeof data[0] === 'object') {
+			return { ...fallback, ...data[0] } as T;
+		}
+		if (data && typeof data === 'object') {
+			return { ...fallback, ...data } as T;
+		}
+		return fallback;
+	}
+
+	// Qué hace: agrega o reemplaza una fila en memoria por llave, sin GetAll.
+	// Cómo: en update busca con esMismo y reemplaza; en insert agrega al final.
+	private aplicarFilaEnLista<T>(lista: T[], record: T, esMismo: (a: T, b: T) => boolean, esNuevo: boolean): T[] {
+		const actual = lista ?? [];
+		if (!esNuevo) {
+			const idx = actual.findIndex((item) => esMismo(item, record));
+			if (idx >= 0) {
+				const next = [...actual];
+				next[idx] = { ...actual[idx], ...record };
+				return next;
+			}
+		}
+		return [...actual, record];
+	}
+
+	// Qué hace: quita una fila de la lista en memoria.
+	// Cómo: filtra con el predicado coincide.
+	private quitarFilaDeLista<T>(lista: T[], coincide: (item: T) => boolean): T[] {
+		return (lista ?? []).filter((item) => !coincide(item));
+	}
+
+	// Qué hace: aplica response.Data del popup al grid del nivel activo.
+	// Cómo: extrae la fila, la fusiona y refresca solo ese grid.
+	private aplicarNivelDesdeRespuesta(response: any): void {
+		if (this.popupNivel === 'depto') {
+			const saved = this.extraerFilaRespuesta(response, this.popupModel as GenDepto);
+			if (!(Number(saved.CORR_DEPTO) > 0) && Number(response?.CodeHelper) > 0) {
+				saved.CORR_DEPTO = Number(response.CodeHelper);
+			}
+			this.deptoModels = this.aplicarFilaEnLista(
+				this.deptoModels,
+				saved,
+				(a, b) => this.esMismoDepto(a, b),
+				this.popupIsAdd
+			);
+			if (this.selectedDepto && this.esMismoDepto(this.selectedDepto, saved)) {
+				this.selectedDepto = saved;
+			}
+			this.refrescarGridsHijos();
+			return;
+		}
+
+		if (this.popupNivel === 'municipio') {
+			const saved = this.extraerFilaRespuesta(response, this.popupModel as GenMunicipio);
+			if (!(Number(saved.CORR_MUNICIPIO) > 0) && Number(response?.CodeHelper) > 0) {
+				saved.CORR_MUNICIPIO = Number(response.CodeHelper);
+			}
+			this.municipioModels = this.aplicarFilaEnLista(
+				this.municipioModels,
+				saved,
+				(a, b) => this.esMismoMunicipio(a, b),
+				this.popupIsAdd
+			);
+			if (this.selectedMunicipio && this.esMismoMunicipio(this.selectedMunicipio, saved)) {
+				this.selectedMunicipio = saved;
+			}
+			this.refrescarGridsHijos();
+			return;
+		}
+
+		const saved = this.extraerFilaRespuesta(response, this.popupModel as GenDistrito);
+		if (!(Number(saved.CORR_DISTRITO) > 0) && Number(response?.CodeHelper) > 0) {
+			saved.CORR_DISTRITO = Number(response.CodeHelper);
+		}
+		this.distritoModels = this.aplicarFilaEnLista(
+			this.distritoModels,
+			saved,
+			(a, b) => this.esMismoDistrito(a, b),
+			this.popupIsAdd
+		);
+		this.refrescarGridsHijos();
+	}
+
+	// Qué hace: refresca los grids de la cascada tras un parche en memoria.
+	// Cómo: llama refreshData y reengancha altura/resaltado.
+	private refrescarGridsHijos(): void {
+		setTimeout(() => {
+			this.deptoGrid?.refreshData(false);
+			this.municipioGrid?.refreshData(false);
+			this.distritoGrid?.refreshData(false);
+			this.inicializarGridsCascade();
+		});
+	}
+
+	// Qué hace: abre el popup del nivel territorial indicado.
+	// Cómo: arma modelo/items con fill y getItems del servicio.
 	private abrirPopup(nivel: TerritorialNivel, isAdd: boolean, row?: GenDepto | GenMunicipio | GenDistrito): void {
 		this.popupNivel = nivel;
 		this.popupIsAdd = isAdd;
@@ -967,236 +1106,75 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
-	protected override getMttoDataGrid(): DataGridMttoComponent | null {
-		return this.dataGrid ?? null;
-	}
-
-	private getGridByLevel(level: TerritorialGridLevel): DataGridMttoComponent | undefined {
-		switch (level) {
-			case 'pais':
-				return this.dataGrid;
-			case 'depto':
-				return this.deptoGrid;
-			case 'municipio':
-				return this.municipioGrid;
-			case 'distrito':
-				return this.distritoGrid;
-		}
-	}
-
-	private getScopeForLevel(level: TerritorialGridLevel): Record<string, number> {
-		const scope: Record<string, number> = {};
-		if (this.selectedPais?.CORR_PAIS) {
-			scope.CORR_PAIS = this.selectedPais.CORR_PAIS;
-		}
-		if (level !== 'depto' && this.selectedDepto?.CORR_DEPTO) {
-			scope.CORR_DEPTO = this.selectedDepto.CORR_DEPTO;
-		}
-		if (level === 'distrito' && this.selectedMunicipio?.CORR_MUNICIPIO) {
-			scope.CORR_MUNICIPIO = this.selectedMunicipio.CORR_MUNICIPIO;
-		}
-		return scope;
-	}
-
-	private getGridSort(sort: any): { field: string; desc: boolean } | null {
-		if (!Array.isArray(sort) || !sort.length) {
-			return null;
-		}
-
-		const first = sort[0];
-		if (!first?.selector) {
-			return null;
-		}
-
-		return {
-			field: `${first.selector}`,
-			desc: !!first.desc,
-		};
-	}
-
-	private async removeHeaderFiltersOverriddenByFilterRow(
-		result: ParsedGridFilters,
-		level: TerritorialGridLevel
-	): Promise<void> {
-		if (!hasRemoteFilterRowSearch(result)) {
-			return;
-		}
-
-		for (const dataField of Object.keys(result.headerAnyOf)) {
-			const headerValues = result.headerAnyOf[dataField];
-			if (!headerValues?.length) {
-				continue;
-			}
-
-			const availableValues = await this.getAvailableHeaderValuesForFilterRow(dataField, result, level);
-			if (!availableValues.length) {
-				continue;
-			}
-
-			if (!this.hasAnyMatchingHeaderValue(headerValues, availableValues)) {
-				delete result.headerAnyOf[dataField];
-			}
-		}
-	}
-
-	private async getAvailableHeaderValuesForFilterRow(
-		dataField: string,
-		result: ParsedGridFilters,
-		level: TerritorialGridLevel
-	): Promise<unknown[]> {
-		const filtersForDistinct: ParsedGridFilters = {
-			estado: result.estado,
-			filterRow: { ...result.filterRow },
-			filterRowExact: { ...result.filterRowExact },
-			headerAnyOf: {},
-		};
-		const scope = this.getScopeForLevel(level);
-		const request =
-			level === 'pais'
-				? this.fillParam('', filtersForDistinct, dataField, '')
-				: this.fillCascadeParam('', filtersForDistinct, dataField, '', '', false, scope);
-		const distinctCall =
-			level === 'pais'
-				? this.service.getDistinctValuesPaises(request)
-				: level === 'depto'
-					? this.service.getDistinctValuesDeptos(request)
-					: level === 'municipio'
-						? this.service.getDistinctValuesMunicipios(request)
-						: this.service.getDistinctValuesDistritos(request);
-
-		const response = await lastValueFrom(distinctCall);
-		return response.Result ? response.Data ?? [] : [];
-	}
-
-	private hasAnyMatchingHeaderValue(headerValues: unknown[], availableValues: unknown[]): boolean {
-		const availableKeys = new Set(availableValues.map((value) => this.getHeaderFilterComparableKey(value)));
-		return headerValues.some((value) => availableKeys.has(this.getHeaderFilterComparableKey(value)));
-	}
-
-	private getHeaderFilterComparableKey(value: unknown): string {
-		if (value === null || value === undefined || value === '__BLANK__') {
-			return '__blank__';
-		}
-
-		if (typeof value === 'boolean') {
-			return value ? 'true' : 'false';
-		}
-
-		const text = `${value}`.trim().toLowerCase();
-		if (!text) {
-			return '__blank__';
-		}
-
-		if (text === 'activo') {
-			return 'true';
-		}
-
-		if (text === 'inactivo') {
-			return 'false';
-		}
-
-		return text;
-	}
-	private applyIncludeHeaderFilters(grid: any, result: ParsedGridFilters): void {
-		if (!grid?.getVisibleColumns) {
-			return;
-		}
-
-		for (const column of grid.getVisibleColumns()) {
-			const dataField = column?.dataField;
-			if (!dataField || column.allowHeaderFiltering === false) {
-				continue;
-			}
-
-			const selection = getColumnHeaderFilterSelection(grid, dataField);
-			if (!selection || selection.filterType !== 'include' || !selection.values.length) {
-				continue;
-			}
-
-			result.headerAnyOf[dataField] = selection.values;
-		}
-	}
-	private async resolveExcludeHeaderFilters(grid: any, result: ParsedGridFilters, level: TerritorialGridLevel): Promise<void> {
-		if (!grid?.getVisibleColumns) {
-			return;
-		}
-
-		for (const column of grid.getVisibleColumns()) {
-			const dataField = column?.dataField;
-			if (!dataField || column.allowHeaderFiltering === false) {
-				continue;
-			}
-
-			const selection = getColumnHeaderFilterSelection(grid, dataField);
-			if (!selection || selection.filterType !== 'exclude' || !selection.values.length) {
-				continue;
-			}
-
-			const filtersForDistinct = cloneRemoteGridFilters(result);
-			delete filtersForDistinct.headerAnyOf[dataField];
-			delete filtersForDistinct.filterRow[dataField];
-			delete filtersForDistinct.filterRowExact[dataField];
-
-			const scope = this.getScopeForLevel(level);
-			const request = this.fillCascadeParam('', filtersForDistinct, dataField, '', '', false, scope);
-			const distinctCall =
-				level === 'pais'
-					? this.service.getDistinctValuesPaises(request)
-					: level === 'depto'
-						? this.service.getDistinctValuesDeptos(request)
-						: level === 'municipio'
-							? this.service.getDistinctValuesMunicipios(request)
-							: this.service.getDistinctValuesDistritos(request);
-
-			const response = await lastValueFrom(distinctCall);
-			if (!response.Result) {
-				continue;
-			}
-
-			const included = invertExcludedHeaderFilterValues(selection.values, response.Data ?? []);
-			result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
-		}
-	}
-
+	// Qué hace: elige la petición create/update del nivel activo del popup.
+	// Cómo: llama a insert/update del servicio y convertirDuplicadoEnWarning.
 	private getPopupRequest() {
 		if (this.popupNivel === 'depto') {
 			const model = this.popupModel as GenDepto;
-			return this.popupIsAdd ? this.service.insertDepto(model) : this.service.updateDepto(model);
+			const request = this.popupIsAdd ? this.service.insertDepto(model) : this.service.updateDepto(model);
+			return this.convertirDuplicadoEnWarning(
+				request,
+				'El código de departamento ingresado está registrado. Escriba otro código para continuar.'
+			);
 		}
 		if (this.popupNivel === 'municipio') {
 			const model = this.popupModel as GenMunicipio;
-			return this.popupIsAdd ? this.service.insertMunicipio(model) : this.service.updateMunicipio(model);
+			const request = this.popupIsAdd ? this.service.insertMunicipio(model) : this.service.updateMunicipio(model);
+			return this.convertirDuplicadoEnWarning(
+				request,
+				'El código de municipio ingresado está registrado. Escriba otro código para continuar.'
+			);
 		}
 		const model = this.popupModel as GenDistrito;
-		return this.popupIsAdd ? this.service.insertDistrito(model) : this.service.updateDistrito(model);
+		const request = this.popupIsAdd ? this.service.insertDistrito(model) : this.service.updateDistrito(model);
+		return this.convertirDuplicadoEnWarning(
+			request,
+			'El identificador del distrito está registrado. Recargue los datos e intente nuevamente.'
+		);
 	}
 
-	private refrescarNivel(nivel: TerritorialNivel): void {
-		if (nivel === 'depto') {
-			this.refrescarDeptos(true);
-			return;
-		}
-		if (nivel === 'municipio') {
-			this.refrescarMunicipios(true);
-			return;
-		}
-		this.refrescarDistritos(true);
-	}
-
+	// Qué hace: elimina un departamento.
+	// Cómo: llama a deleteDepto del servicio vía eliminarNivel.
 	private eliminarDepto(row: GenDepto): void {
-		this.eliminarNivel(this.service.deleteDepto(row), 'depto', 'departamento');
+		this.eliminarNivel(
+			this.convertirErrorMttoEnWarning(this.service.deleteDepto(row)),
+			'depto',
+			'departamento',
+			row
+		);
 	}
 
+	// Qué hace: elimina un municipio.
+	// Cómo: llama a deleteMunicipio del servicio vía eliminarNivel.
 	private eliminarMunicipio(row: GenMunicipio): void {
-		this.eliminarNivel(this.service.deleteMunicipio(row), 'municipio', 'municipio');
+		this.eliminarNivel(
+			this.convertirErrorMttoEnWarning(this.service.deleteMunicipio(row)),
+			'municipio',
+			'municipio',
+			row
+		);
 	}
 
+	// Qué hace: elimina un distrito.
+	// Cómo: llama a deleteDistrito del servicio vía eliminarNivel.
 	private eliminarDistrito(row: GenDistrito): void {
-		this.eliminarNivel(this.service.deleteDistrito(row), 'distrito', 'distrito');
+		this.eliminarNivel(
+			this.convertirErrorMttoEnWarning(this.service.deleteDistrito(row)),
+			'distrito',
+			'distrito',
+			row
+		);
 	}
 
-	private eliminarNivel(request: any, nivel: TerritorialNivel, etiqueta: string): void {
-		if (!this.validarEmpresaSesion()) {
+	// Qué hace: ejecuta la eliminación de un nivel y quita la fila en memoria.
+	// Cómo: suscribe la request, limpia hijos y parchea el grid local (sin GetAll).
+	private eliminarNivel(
+		request: any,
+		nivel: TerritorialNivel,
+		etiqueta: string,
+		row: GenDepto | GenMunicipio | GenDistrito
+	): void {
+		if (!this.asegurarEmpresaSesion()) {
 			return;
 		}
 
@@ -1207,15 +1185,30 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 					if (nivel === 'depto') {
 						this.selectedDepto = undefined;
 						this.selectedMunicipio = undefined;
-						this.configurarDataSourceMunicipios();
-						this.configurarDataSourceDistritos();
+						this.municipioModels = [];
+						this.distritoModels = [];
+						this.deptoModels = this.quitarFilaDeLista(
+							this.deptoModels,
+							(item) => this.esMismoDepto(item, row as GenDepto)
+						);
 						this.actualizarResaltadoCascade();
+						this.refrescarGridsHijos();
 					} else if (nivel === 'municipio') {
 						this.selectedMunicipio = undefined;
-						this.configurarDataSourceDistritos();
+						this.distritoModels = [];
+						this.municipioModels = this.quitarFilaDeLista(
+							this.municipioModels,
+							(item) => this.esMismoMunicipio(item, row as GenMunicipio)
+						);
 						this.actualizarResaltadoCascade();
+						this.refrescarGridsHijos();
+					} else {
+						this.distritoModels = this.quitarFilaDeLista(
+							this.distritoModels,
+							(item) => this.esMismoDistrito(item, row as GenDistrito)
+						);
+						this.refrescarGridsHijos();
 					}
-					this.refrescarNivel(nivel);
 					this.notifyFx(`${etiqueta} eliminado con éxito.`, NotifyType.Success);
 				} else {
 					this.notifyFx(
@@ -1233,20 +1226,88 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Qué hace: elige Warning o Error tras una eliminación fallida.
+	// Cómo: usa isEmpresaFkErrorMessage e isRelatedDeleteWarningMessage.
 	private getDeleteNotifyType(message: string): NotifyType {
-		const value = `${message ?? ''}`.toLowerCase();
-		if (
-			isEmpresaFkErrorMessage(message) ||
-			value.includes('relacionados') ||
-			value.includes('asociados') ||
-			value.includes('registros asociados') ||
-			value.includes('hijos asociados')
-		) {
+		if (isEmpresaFkErrorMessage(message) || this.isRelatedDeleteWarningMessage(message)) {
 			return NotifyType.Warning;
 		}
 		return NotifyType.Error;
 	}
 
+	// Qué hace: convierte errores de duplicado en respuesta controlada.
+	// Cómo: intercepta ErrorCode 2601/2627 o mensajes de duplicado.
+	private convertirDuplicadoEnWarning<T>(request: Observable<T>, errorMessage: string): Observable<T> {
+		return request.pipe(
+			map((response: any) => {
+				const message = `${response?.ErrorMessage ?? ''}`.toLowerCase();
+				const errorCode = Number(response?.ErrorCode);
+				if (
+					response?.Result === false &&
+					(errorCode === 2601 || errorCode === 2627 || this.isDuplicateWarningMessage(message))
+				) {
+					return {
+						...response,
+						ErrorCode: 2627,
+						ErrorMessage: response?.ErrorMessage || errorMessage,
+					} as T;
+				}
+
+				return response as T;
+			}),
+			catchError((error: any) => {
+				const apiMessage = this.getErrorMessage(error).replace(/^error:\s*/i, '').trim();
+				const message = apiMessage.toLowerCase();
+				const errorCode = Number(error?.ErrorCode ?? error?.error?.ErrorCode);
+				if (errorCode === 2601 || errorCode === 2627 || this.isDuplicateWarningMessage(message)) {
+					return of({
+						Result: false,
+						ErrorCode: 2627,
+						ErrorMessage: apiMessage || errorMessage,
+					} as T);
+				}
+
+				return throwError(() => error);
+			})
+		);
+	}
+
+	// Qué hace: convierte un error de llave foránea al eliminar en una advertencia controlada.
+	// Cómo: intercepta ErrorCode 547 o mensajes de FK/relacionados (mismo patrón sc-riesgo-puesto; mantiene chequeos de empresa del dominio territorial).
+	private convertirErrorMttoEnWarning<T>(request: Observable<T>): Observable<T> {
+		return request.pipe(
+			catchError((error: any) => {
+				const message = this.getErrorMessage(error).toLowerCase();
+				const errorCode = Number(error?.ErrorCode ?? error?.error?.ErrorCode);
+				if (errorCode === 547 || isEmpresaFkErrorMessage(message) || this.isRelatedDeleteWarningMessage(message)) {
+					return of({
+						Result: false,
+						ErrorCode: 2627,
+						ErrorMessage: 'No se puede eliminar porque tiene registros relacionados.',
+					} as T);
+				}
+
+				return throwError(() => error);
+			})
+		);
+	}
+
+	// Qué hace: detecta mensajes de registros relacionados al eliminar.
+	private isRelatedDeleteWarningMessage(message: string): boolean {
+		const value = `${message ?? ''}`.toLowerCase();
+		return [
+			'foreign key',
+			'reference constraint',
+			'restricción reference',
+			'restriccion reference',
+			'hijos',
+			'relacionad',
+			'asociad',
+		].some((fragment) => value.includes(fragment));
+	}
+
+	// Qué hace: deja correlativos en solo lectura en el formulario.
+	// Cómo: marca readOnly en CORR_PAIS/DEPTO/MUNICIPIO/DISTRITO.
 	private bloquearCamposCorr(form?: DxFormComponent): void {
 		const corrFields = ['CORR_PAIS', 'CORR_DEPTO', 'CORR_MUNICIPIO', 'CORR_DISTRITO'];
 		corrFields.forEach((field) => {
@@ -1254,6 +1315,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Qué hace: muestra confirmación Si/No y ejecuta la acción si acepta.
+	// Cómo: usa custom de DevExtreme y luego fn.
 	private confirmAction(title: string, message: string, fn: () => void): void {
 		const dialog = custom({
 			title,
@@ -1275,6 +1338,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		});
 	}
 
+	// Qué hace: obtiene un mensaje usable desde errores HTTP/API.
+	// Cómo: prioriza ErrorMessage y detecta fallos de conexión.
 	private getErrorMessage(error: any): string {
 		const connectionMessage =
 			'No se pudo comunicar con el servidor. Verifique que la API esté en ejecución e intente nuevamente.';
@@ -1295,6 +1360,10 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 			return connectionMessage;
 		}
 
+		if (typeof error?.error === 'string' && error.error.trim()) {
+			return error.error.trim();
+		}
+
 		const apiMessage = error?.error?.ErrorMessage || error?.error?.message || error?.message;
 		if (typeof apiMessage === 'string' && apiMessage.trim()) {
 			if (apiMessage === '[object ProgressEvent]' || apiMessage.toLowerCase().includes('http failure')) {
@@ -1311,6 +1380,8 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return coerced || 'Ocurrio un error al procesar la solicitud.';
 	}
 
+	// Qué hace: elige el tipo de notificación para un error.
+	// Cómo: usa getNotifyType o detecta empresa/duplicado.
 	private getErrorNotifyType(error: any): NotifyType {
 		const body = error?.error;
 		if (body && typeof body === 'object' && body.ErrorCode !== undefined) {
@@ -1325,52 +1396,33 @@ export class GenEstructuraTerritorialComponent extends CBaseComponent implements
 		return NotifyType.Error;
 	}
 
+	// Qué hace: detecta mensajes de registro duplicado.
 	private isDuplicateWarningMessage(message: string): boolean {
 		const value = `${message ?? ''}`.toLowerCase();
-		return (
-			value.includes('ya existe') ||
-			value.includes('duplicad') ||
-			value.includes('registrad') ||
-			value.includes('otro usuario guard') ||
-			value.includes('mismo tiempo')
-		);
+		return [
+			'ya existe',
+			'ya está registrado',
+			'ya esta registrado',
+			'duplicad',
+			'primary key',
+			'unique key',
+			'mismo tiempo',
+			'llave primaria',
+			'clave primaria',
+			'otro usuario guard',
+		].some((fragment) => value.includes(fragment));
 	}
 
-	private getCorrEmpresaSesion(): number {
-		const value = Number(this.authService.decodedToken?.CORR_EMPRESA ?? 0);
-		return Number.isFinite(value) ? value : 0;
-	}
-
-	private validarEmpresaSesion(): boolean {
-		if (this.getCorrEmpresaSesion() > 0) {
-			return true;
-		}
-		this.notifyFx(getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA), NotifyType.Warning);
-		return false;
-	}
-
+	// Qué hace: elige Warning o Error según la respuesta del API.
+	// Cómo: revisa ErrorCode 4100/2601/2627 y mensajes de duplicado.
 	private getNotifyType(response: any): NotifyType {
-		if (isEmpresaWarningResponse(response)) {
+		const errorCode = Number(response?.ErrorCode);
+		if (isEmpresaWarningResponse(response) || errorCode === 4100) {
 			return NotifyType.Warning;
 		}
 		const message = (response?.ErrorMessage || '').toLowerCase();
-		return response?.ErrorCode === 2627 || this.isDuplicateWarningMessage(message)
+		return errorCode === 2601 || errorCode === 2627 || this.isDuplicateWarningMessage(message)
 			? NotifyType.Warning
 			: NotifyType.Error;
-	}
-
-	private getWarningMessage(message: string): string {
-		const cleanMessage = `${message ?? ''}`.replace(/^error:\s*/i, '').trim();
-		const value = cleanMessage.toLowerCase();
-		if (isEmpresaFkErrorMessage(cleanMessage) || value.includes('no tiene una empresa asignada')) {
-			return getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA);
-		}
-		if (this.isDuplicateWarningMessage(cleanMessage)) {
-			return cleanMessage;
-		}
-		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados') || value.includes('relacionados')) {
-			return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';
-		}
-		return cleanMessage;
 	}
 }

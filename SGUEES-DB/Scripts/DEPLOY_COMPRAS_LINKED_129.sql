@@ -1,0 +1,48 @@
+/*
+  Compras — linked servers hacia 129 + vistas base proveedor.
+  Requisito: tablas COM_PROVEEDOR, COM_BANCO, COM_CONDICION_PAGO (ver Tables/).
+
+  Ejecutar en SGUEES (250):
+
+    cd "C:\Desarrollo GIT\SGUEES\SGUEES-DB\Scripts"
+    sqlcmd -S 192.168.0.250 -U erp -d master -f 65001 -i SETUP_CLASS_UEES_LINKED_SERVER.sql
+    sqlcmd -S 192.168.0.250 -U erp -d master -f 65001 -i SETUP_E_ADMIN_FE_LINKED_SERVER.sql
+    sqlcmd -S 192.168.0.250 -U erp -d SGUEES -f 65001 -i DEPLOY_COMPRAS_LINKED_129.sql
+*/
+SET NOCOUNT ON;
+GO
+
+PRINT N'=== Vistas Compras (CLASS / e-AdminFE via linked server 129) ===';
+
+IF OBJECT_ID(N'dbo.V_COM_PROVEEDOR', N'V') IS NOT NULL DROP VIEW dbo.V_COM_PROVEEDOR;
+IF OBJECT_ID(N'dbo.V_COM_PROVEEDOR_DISPONIBLE', N'V') IS NOT NULL DROP VIEW dbo.V_COM_PROVEEDOR_DISPONIBLE;
+IF OBJECT_ID(N'dbo.V_COM_ACTIVIDAD_ECONOMICA', N'V') IS NOT NULL DROP VIEW dbo.V_COM_ACTIVIDAD_ECONOMICA;
+IF OBJECT_ID(N'dbo.V_GEN_TIPO_DIP', N'V') IS NOT NULL DROP VIEW dbo.V_GEN_TIPO_DIP;
+IF OBJECT_ID(N'dbo.V_GEN_FORMA_PAGO', N'V') IS NOT NULL DROP VIEW dbo.V_GEN_FORMA_PAGO;
+GO
+
+:r "..\Views\dbo.V_GEN_TIPO_DIP.sql"
+GO
+:r "..\Views\dbo.V_GEN_FORMA_PAGO.sql"
+GO
+:r "..\Views\dbo.V_COM_ACTIVIDAD_ECONOMICA.sql"
+GO
+:r "..\Views\dbo.V_COM_PROVEEDOR_DISPONIBLE.sql"
+GO
+:r "..\Views\dbo.V_COM_PROVEEDOR.sql"
+GO
+
+IF OBJECT_ID(N'dbo.PRAL_DATA_COM_PROVEEDOR', N'P') IS NOT NULL DROP PROCEDURE dbo.PRAL_DATA_COM_PROVEEDOR;
+IF OBJECT_ID(N'dbo.PRAL_MTTO_COM_PROVEEDOR', N'P') IS NOT NULL DROP PROCEDURE dbo.PRAL_MTTO_COM_PROVEEDOR;
+GO
+:r "..\Programmability\Procedures\dbo.PRAL_DATA_COM_PROVEEDOR.sql"
+GO
+:r "..\Programmability\Procedures\dbo.PRAL_MTTO_COM_PROVEEDOR.sql"
+GO
+
+PRINT N'=== Verificación proveedor ===';
+SELECT TOP 3 CORR_PROVEEDOR, NOMBRE_PROVEEDOR FROM dbo.V_COM_PROVEEDOR;
+GO
+
+PRINT N'=== DEPLOY_COMPRAS_LINKED_129 completado ===';
+GO

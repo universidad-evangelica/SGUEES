@@ -1,13 +1,17 @@
+// Parámetros de consulta/filtro de requerimiento organizacional.
 using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Filtros y opciones de paginación/orden para consultas de requerimiento organizacional.
     public class SC_REQUERIMIENTO_ORGANIZACIONALParam : BaseParam
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_REQUERIMIENTO_ORGANIZACIONAL { get; set; }
+        // Texto libre de búsqueda para filtros del listado.
         public string BUSQUEDA { get; set; }
         public string DESCRIPCION { get; set; }
+        // Estado del catálogo: true = activo, false = inactivo.
         public bool? ESTADO_REQUERIMIENTO_ORGANIZACIONAL { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }

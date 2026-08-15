@@ -40,5 +40,6 @@ namespace sguees.Models
 		public DateTime FECHA_ACTU { get; set; }
 		public string ESTACION_ACTU { get; set; }
 		public int CORR_CONDICION_PAGO { get; set; }
+		public int CORR_SECTOR { get; set; }
 	}
 }

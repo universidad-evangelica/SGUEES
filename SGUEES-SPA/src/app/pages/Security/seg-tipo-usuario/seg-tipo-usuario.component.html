@@ -1,144 +1,155 @@
+<div class="sguees-mtto-view">
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[isBrowse]="isBrowse()"
 	[isForm]="isForm()"
+	[showRibbon]="true"
 	[permiteAdd]="permiteAdd"
+	[showRefresh]="true"
+	[showExport]="permitePrint"
 	(nuevo)="nuevo()"
 	(guardar)="guardar()"
 	(cancelar)="cancelar()"
+	(consultar)="consultar()"
 >
 </app-barra-data-mtto>
-<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
-	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
-	</dx-form>
-  <div class="form">
-    <div class="dx-fieldset dx-fieldset2">
-      <div class="dx-field">
-        <dx-data-grid
-          #DataTipoUsuarioOpcion
-          [dataSource]="mSEG_TIPO_USUARIO_OPCION"
-          [columnAutoWidth]="false"
-          [showBorders]="true"
-          [showColumnLines]="true"
-          [showRowLines]="true"
-          [rowAlternationEnabled]="true"
-          [hoverStateEnabled]="true"
-          [allowColumnResizing]="true"
-          [columnResizingMode]="'widget'"
-          [repaintChangesOnly]="true"
-          [height]="'100%'"
-          [width]="'100%'"
-          [keyExpr]="['CODIGO_SISTEMA', 'CODIGO_MENU', 'CODIGO_OPCION']"
-          (onRowUpdated)="gDataSegTipoUsuarioOpcionRowInserting($event)"
-        >
-          <dxo-editing
-            mode="cell"
-            [refreshMode]="'reshape'"
-            [allowUpdating]="!readOnly"
-            [useIcons]="true"
-            [selectTextOnEditStart]="true"
-          >
-            <dxo-toolbar>
-              <dxi-item location="before">
-                <dx-button
-                  stylingMode="contained"
-                  text="Todos"
-                  type="danger"
-                  width="136"
-                  icon="check"
-                  [visible]="true"
-                >
-                </dx-button>
-              </dxi-item>
-              <dxi-item name="searchPanel"></dxi-item>
-            </dxo-toolbar>
-          </dxo-editing>
-          <dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
-          <dxo-load-panel [enabled]="true"></dxo-load-panel>
-          <dxo-search-panel [visible]="true"></dxo-search-panel>
-          <dxo-export [enabled]="false" fileName="Detalle"></dxo-export>
-          <dxi-column
-            dataField="SELECCION"
-            caption=""
-            [dataType]="'boolean'"
-            width="5%"
-          >
-          </dxi-column>
-          <dxi-column
-            dataField="NOMBRE_SISTEMA"
-            caption="Sistema"
-            width="15%"
-            [allowEditing]="false"
-          >
-          </dxi-column>
-          <dxi-column
-            dataField="NOMBRE_MENU"
-            caption="Menú"
-            width="12%"
-            [allowEditing]="false"
-          ></dxi-column>
-          <dxi-column
-            dataField="NOMBRE_OPCION"
-            caption="Opción"
-            width="28%"
-            [allowEditing]="false"
-          ></dxi-column>
-          <dxi-column
-            dataField="NUEVO"
-            caption="Nuevo"
-            width="12%"
-          ></dxi-column>
-          <dxi-column
-            dataField="MODIFICAR"
-            caption="Modificar"
-            width="12%"
-          ></dxi-column>
-          <dxi-column
-            dataField="ELIMINAR"
-            caption="Eliminar"
-            width="12%"
-          ></dxi-column>
-          <dxi-column
-            dataField="IMPRIMIR"
-            caption="Imprimir"
-            width="12%"
-          ></dxi-column>
-          <dxo-summary>
-            <dxi-total-item
-              column="CODIGO_OPCION"
-              summaryType="count"
-              valueFormat="#,##0"
-              displayFormat="Cant: {0}"
-            >
-            </dxi-total-item>
-          </dxo-summary>
-        </dx-data-grid>
-      </div>
-    </div>
-  </div>
+
+<div *ngIf="!isBrowse()" class="seg-tipo-usuario-edit-shell">
+	<section class="sguees-section-card content-block dx-card responsive-paddings sguees-mtto-form-card">
+		<header class="seg-section-head">
+			<span class="seg-section-title">Datos del tipo de usuario</span>
+			<span class="seg-section-subtitle">Encabezado del catálogo</span>
+		</header>
+		<dx-form
+			#fData
+			id="fData"
+			[formData]="model"
+			[labelLocation]="'top'"
+			[colCount]="mttoFormColCount"
+			[colCountByScreen]="mttoFormColCountByScreen"
+			[showRequiredMark]="false"
+			[items]="items"
+		>
+		</dx-form>
+	</section>
+
+	<section class="sguees-section-card content-block dx-card responsive-paddings">
+		<dx-tab-panel class="seg-opciones-tab-panel" [selectedIndex]="0">
+			<dxi-item title="Opciones del sistema" icon="key">
+				<div class="dx-grid-deta seg-opciones-grid">
+					<div class="seg-opciones-toolbar" *ngIf="!readOnly">
+						<dx-button
+							icon="selectall"
+							text="Todos"
+							type="success"
+							stylingMode="contained"
+							(onClick)="seleccionarTodosOpciones()"
+						></dx-button>
+						<dx-button
+							icon="unselectall"
+							text="Ninguno"
+							type="danger"
+							stylingMode="contained"
+							(onClick)="seleccionarNingunoOpciones()"
+						></dx-button>
+					</div>
+					<dx-data-grid
+						class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise"
+						[dataSource]="mSEG_TIPO_USUARIO_OPCION"
+						[columns]="opcionDetalleColumns"
+						[columnAutoWidth]="false"
+						[showBorders]="true"
+						[showColumnLines]="true"
+						[showRowLines]="true"
+						[rowAlternationEnabled]="true"
+						[hoverStateEnabled]="true"
+						[allowColumnResizing]="true"
+						[columnResizingMode]="'widget'"
+						[repaintChangesOnly]="true"
+						[height]="'100%'"
+						[width]="'100%'"
+						[keyExpr]="['CODIGO_SISTEMA', 'CODIGO_MENU', 'CODIGO_OPCION']"
+						(onCellValueChanged)="opcionDetalleCellValueChanged($event)"
+						(onRowUpdated)="opcionDetalleRowUpdated($event)"
+					>
+						<dxo-editing
+							mode="cell"
+							[refreshMode]="'reshape'"
+							[allowUpdating]="!readOnly"
+							[useIcons]="true"
+							[selectTextOnEditStart]="true"
+						></dxo-editing>
+						<dxo-keyboard-navigation [editOnKeyPress]="true"></dxo-keyboard-navigation>
+						<dxo-load-panel [enabled]="true"></dxo-load-panel>
+						<dxo-search-panel [visible]="true"></dxo-search-panel>
+						<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+						<dxo-header-filter [visible]="true"></dxo-header-filter>
+						<dxo-group-panel
+							[visible]="true"
+							emptyPanelText="Arrastre el encabezado de una columna aquí para agrupar"
+						></dxo-group-panel>
+						<dxo-grouping [autoExpandAll]="true" [contextMenuEnabled]="true"></dxo-grouping>
+						<dxo-filter-panel [visible]="true"></dxo-filter-panel>
+						<dxo-paging [enabled]="true" [pageSize]="opcionDetallePageSize"></dxo-paging>
+						<dxo-pager
+							[visible]="true"
+							[showInfo]="true"
+							[showNavigationButtons]="true"
+							[showPageSizeSelector]="false"
+						></dxo-pager>
+						<dxo-summary>
+							<dxi-total-item
+								column="NOMBRE_OPCION"
+								summaryType="count"
+								valueFormat="#,##0"
+								displayFormat="Cant: {0}"
+							></dxi-total-item>
+						</dxo-summary>
+					</dx-data-grid>
+				</div>
+			</dxi-item>
+		</dx-tab-panel>
+	</section>
 </div>
+
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"
 	[models]="models"
 	[columns]="columns"
 	[summary]="summary"
-	[keyExpr]="'TIPO_USUARIO'"
+	[keyExpr]="mttoGridKeyExpr"
+	[pageSize]="mttoPageSize"
+	[allowedPageSizes]="mttoPageSizes"
+	[remoteOperations]="mttoRemoteOperations"
+	[nativeToolbar]="true"
+	[unifiedToolbar]="false"
+	[showSearch]="false"
+	[showAdd]="false"
+	[showRefresh]="false"
+	[showExport]="false"
+	[focusedRowKey]="gridFocusedRowKey"
+	[permitePrint]="permitePrint"
 	[permiteEditar]="getPermiteEditar"
 	[permiteDele]="getPermiteDele"
+	[responsiveColumnHiding]="false"
+	[columnHidingEnabled]="false"
+	[showGrouping]="true"
+	[showFilterPanel]="true"
+	[exportFileName]="'TiposUsuario'"
 	(rowDblClick)="rowDblClick($event)"
 	(rowRemoving)="rowRemoving($event)"
 	(focusedRowChanged)="focusedRowChanged($event)"
 	(editClick)="editarClick($event)"
 >
 </app-data-grid-mtto>
+</div>
+
 <dx-load-panel
-	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"
 	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
 	[(visible)]="loadingVisible"
 	[showIndicator]="true"
 	[showPane]="true"
 	[shading]="true"
-	(onShown)="(loadingVisible)"
 >
 </dx-load-panel>

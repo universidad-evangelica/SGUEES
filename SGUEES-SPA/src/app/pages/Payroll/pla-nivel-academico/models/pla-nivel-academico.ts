@@ -1,3 +1,4 @@
+// Modelo TypeScript de nivel académico (campos del formulario y grilla).
 export interface PlaNivelAcademico {
 	CORR_EMPRESA: number;
 	CORR_NIVEL_ACADEMICO: number;

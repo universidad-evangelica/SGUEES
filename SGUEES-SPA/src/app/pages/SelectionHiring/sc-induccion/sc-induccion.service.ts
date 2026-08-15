@@ -1,210 +1,198 @@
+// Qué hace: agrupa las reglas de negocio del catálogo Inducción.
+// Cómo: valida los datos y llama al repositorio para el CRUD y el cambio de estado; define columnas y campos del formulario.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
-import { buildRemoteGridWhere, createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
-import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
-import { ScInduccion } from './models/sc-induccion';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
+import {
+	ScInduccion,
+	UNIDAD_TIEMPO_MESES,
+	UNIDAD_TIEMPO_SEMANAS,
+} from './models/sc-induccion';
 import { ScInduccionRepository } from './sc-induccion.repository';
 
 const ESTADO_FIELD = 'ESTADO_INDUCCION';
+const TIEMPO_INDUCCION_MIN = 1;
+const TIEMPO_INDUCCION_MAX = 100;
+
+type ScInduccionFormOptions = {
+	unidadesTiempo?: Array<{ Key: any; Value: string }>;
+};
 
 @Injectable({ providedIn: 'root' })
+// Qué hace: valida los datos de inducción y coordina el CRUD con el repositorio.
 export class ScInduccionService {
 	constructor(private repo: ScInduccionRepository) {}
 
+	// Qué hace: valida los datos de la inducción antes de guardar.
+	// Cómo: revisa nombre (máx. 100), tiempo entre 1 y 100 (si está fuera muestra aviso y no guarda) y unidad Semanas/Meses.
 	esValido(model: ScInduccion, msg: Function): boolean {
 		if (!model.NOMBRE_INDUCCION || model.NOMBRE_INDUCCION.trim() === '') {
 			msg('Debe ingresar el nombre de induccion.', NotifyType.Warning);
 			return false;
 		}
 
-		if (model.NOMBRE_INDUCCION.trim().length > 200) {
-			msg('El nombre de induccion no puede superar 200 caracteres.', NotifyType.Warning);
+		if (model.NOMBRE_INDUCCION.trim().length > 100) {
+			msg('El nombre de induccion no puede superar 100 caracteres.', NotifyType.Warning);
 			return false;
 		}
 
-		if (!model.SEMANAS_INDUCCION || model.SEMANAS_INDUCCION <= 0) {
-			msg('Debe ingresar semanas de induccion mayores a 0.', NotifyType.Warning);
+		const tiempo = Number(model.TIEMPO_INDUCCION);
+		if (!Number.isFinite(tiempo) || tiempo < TIEMPO_INDUCCION_MIN || tiempo > TIEMPO_INDUCCION_MAX) {
+			msg('El tiempo de induccion debe estar entre 1 y 100.', NotifyType.Warning);
+			return false;
+		}
+
+		const unidad = (model.UNIDAD_TIEMPO ?? '').trim();
+		if (unidad !== UNIDAD_TIEMPO_SEMANAS && unidad !== UNIDAD_TIEMPO_MESES) {
+			msg('Debe seleccionar la unidad de tiempo (Semanas o Meses).', NotifyType.Warning);
 			return false;
 		}
 
 		return true;
 	}
 
+	// Qué hace: lista las inducciones según los filtros recibidos.
+	// Cómo: llama a getAll del repositorio con los parámetros armados en buildWhere.
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	getDistinctValues(param: any): Observable<IResult> {
-		return this.repo.getDistinctValues(this.buildWhere(param));
-	}
-
+	// Qué hace: obtiene una inducción por su correlativo.
+	// Cómo: llama a get del repositorio con CORR_INDUCCION como filtro.
 	get(param: any): Observable<IResult> {
 		return this.repo.get([{ Parameter: 'CORR_INDUCCION', Value: param.CORR_INDUCCION }]);
 	}
 
+	// Qué hace: crea una inducción nueva.
+	// Cómo: llama a create del repositorio con el modelo recibido.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Qué hace: actualiza una inducción existente.
+	// Cómo: llama a update del repositorio con el modelo y CORR_INDUCCION como llave.
 	update(model: any): Observable<IResult> {
 		return this.repo.update(model, [{ Parameter: 'CORR_INDUCCION', Value: model.CORR_INDUCCION }]);
 	}
 
+	// Qué hace: elimina una inducción.
+	// Cómo: llama a delete del repositorio con CORR_INDUCCION como filtro.
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_INDUCCION', Value: model.CORR_INDUCCION }]);
 	}
 
-	activar(model: any): Observable<IResult> {
-		return this.repo.activar(model, [{ Parameter: 'CORR_INDUCCION', Value: model.CORR_INDUCCION }]);
+	// Qué hace: cambia el estado activo/inactivo de una inducción.
+	// Cómo: llama a activarInactivar del repositorio con CORR_INDUCCION como filtro.
+	activarInactivar(model: any): Observable<IResult> {
+		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_INDUCCION', Value: model.CORR_INDUCCION }]);
 	}
 
-	desactivar(model: any): Observable<IResult> {
-		return this.repo.desactivar(model, [{ Parameter: 'CORR_INDUCCION', Value: model.CORR_INDUCCION }]);
-	}
-
-	getColumns(onEditClick: Function, onDeleteClick: Function, onActivarClick: Function, onDesactivarClick: Function, canEdit = true, canDelete = true): any {
-		const editHint = canEdit ? 'Editar registro' : 'No tiene permiso para editar registros.';
-		const deleteHint = canDelete ? 'Eliminar registro' : 'No tiene permiso para eliminar registros.';
-		const activarHint = canEdit ? 'Activar registro' : 'No tiene permiso para activar registros.';
-		const desactivarHint = canEdit ? 'Desactivar registro' : 'No tiene permiso para desactivar registros.';
-		const editCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-edit';
-		const deleteCssClass = canDelete ? 'sguees-grid-action-delete' : 'sguees-action-no-delete';
-		const activateCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-activate';
-		const deactivateCssClass = canEdit ? 'sguees-grid-action-delete' : 'sguees-action-no-deactivate';
-		const editClick = canEdit ? onEditClick : () => undefined;
-		const deleteClick = canDelete ? onDeleteClick : () => undefined;
-		const activarClick = canEdit ? onActivarClick : () => undefined;
-		const desactivarClick = canEdit ? onDesactivarClick : () => undefined;
-
+	// Qué hace: define las columnas de la grilla de mantenimiento.
+	// Cómo: arma columnas de correlativo, nombre, tiempo, unidad, estado y auditoría.
+	getColumns(): any {
 		return [
-			{
-				type: 'buttons',
-				name: 'btnAcciones',
-				caption: 'Options',
-				width: 150,
-				minWidth: 150,
-				allowResizing: false,
-				fixed: true,
-				fixedPosition: 'left',
-				alignment: 'center',
-				buttons: [
-					{ hint: editHint, icon: 'edit', stylingMode: 'text', cssClass: editCssClass, onClick: editClick },
-					{ hint: deleteHint, icon: 'trash', stylingMode: 'text', cssClass: deleteCssClass, onClick: deleteClick },
-					{
-						hint: activarHint,
-						icon: 'refresh',
-						stylingMode: 'text',
-						cssClass: activateCssClass,
-						visible: (event: any) => !event.row?.data?.ESTADO_INDUCCION,
-						onClick: activarClick,
-					},
-					{
-						hint: desactivarHint,
-						icon: 'close',
-						stylingMode: 'text',
-						cssClass: deactivateCssClass,
-						visible: (event: any) => !!event.row?.data?.ESTADO_INDUCCION,
-						onClick: desactivarClick,
-					},
-				],
-			},
 			{
 				dataField: 'CORR_INDUCCION',
 				caption: 'Corr.',
+				width: 90,
+				dataType: 'number',
+				filterOperations: ['=', '<', '>', '<=', '>='],
+			},
+			{ dataField: 'NOMBRE_INDUCCION', caption: 'Induccion', width: 280 },
+			{
+				dataField: 'TIEMPO_INDUCCION',
+				caption: 'Tiempo',
 				width: 100,
 				dataType: 'number',
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
-			{ dataField: 'NOMBRE_INDUCCION', caption: 'Induccion', width: 300 },
-			{
-				dataField: 'SEMANAS_INDUCCION',
-				caption: 'Semanas',
-				width: 120,
-				dataType: 'number',
-				filterOperations: ['=', '<', '>', '<=', '>='],
-			},
+			{ dataField: 'UNIDAD_TIEMPO', caption: 'Unidad', width: 120 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
-			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
-			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
-			{
-				dataField: 'FECHA_CREA',
-				caption: 'Fecha Crea',
-				width: 200,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-				calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA'),
-			},
-			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
-			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
-			{
-				dataField: 'FECHA_ACTU',
-				caption: 'Fecha Actu',
-				width: 200,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-				calculateFilterExpression: createDateTimeFilterExpression('FECHA_ACTU'),
-			},
+			...buildAuditGridColumns({ withDateTimeFilter: true }),
 		];
 	}
 
+	// Qué hace: define el resumen (contador) de la grilla.
+	// Cómo: cuenta filas sobre CORR_INDUCCION con formato Cant: {0}.
 	getSummary(): any {
 		return {
-			totalItems: [{ column: 'CORR_INDUCCION', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
+			totalItems: [
+				{
+					column: 'CORR_INDUCCION',
+					summaryType: 'count',
+					valueFormat: '#,##0',
+					displayFormat: 'Cant: {0}',
+				},
+			],
 		};
 	}
 
-	getItems(): any {
+	// Qué hace: define los campos y las reglas de validación del formulario.
+	// Cómo: usa unidadesTiempo (getLookUp SC_LISTA) como dataSource del SelectBox de UNIDAD_TIEMPO;
+	//       el tiempo se valida entre 1 y 100 al guardar (sin recortar el valor al escribir).
+	getItems(options?: ScInduccionFormOptions): any {
+		const unidadesTiempo = options?.unidadesTiempo ?? [];
+
 		return [
 			{ dataField: 'CORR_INDUCCION', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
 			{
 				dataField: 'NOMBRE_INDUCCION',
 				label: { text: 'Nombre induccion' },
 				colSpan: 5,
-				editorOptions: { placeholder: 'Nombre induccion...', showClearButton: true, maxLength: 200 },
+				editorOptions: { placeholder: 'Nombre induccion...', showClearButton: true, maxLength: 100 },
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{
-				dataField: 'SEMANAS_INDUCCION',
-				label: { text: 'Semanas' },
+				dataField: 'TIEMPO_INDUCCION',
+				label: { text: 'Tiempo' },
 				editorType: 'dxNumberBox',
 				colSpan: 2,
-				editorOptions: { min: 1, showSpinButtons: true },
+				editorOptions: {
+					step: 1,
+					showSpinButtons: true,
+					format: '#0',
+				},
 				validationRules: [
 					{ type: 'required', message: 'Este campo es obligatorio' },
-					{ type: 'range', min: 1, message: 'Las semanas deben ser mayores a 0' },
+					{
+						type: 'range',
+						min: TIEMPO_INDUCCION_MIN,
+						max: TIEMPO_INDUCCION_MAX,
+						message: 'El tiempo debe estar entre 1 y 100',
+					},
 				],
+			},
+			{
+				dataField: 'UNIDAD_TIEMPO',
+				label: { text: 'Unidad de tiempo' },
+				editorType: 'dxSelectBox',
+				colSpan: 2,
+				editorOptions: {
+					dataSource: unidadesTiempo,
+					valueExpr: 'Key',
+					displayExpr: 'Value',
+					searchEnabled: false,
+					showClearButton: false,
+				},
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{ dataField: 'ESTADO_INDUCCION', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
 	}
 
+	// Qué hace: arma los filtros de consulta a partir de los parámetros recibidos.
+	// Cómo: agrega CORR_INDUCCION a xWhere solo cuando viene informado.
 	private buildWhere(param: any): IParam[] {
-		return buildRemoteGridWhere(param, ESTADO_FIELD);
+		const xWhere: IParam[] = [];
+
+		if (param.CORR_INDUCCION) {
+			xWhere.push({ Parameter: 'CORR_INDUCCION', Value: param.CORR_INDUCCION });
+		}
+
+		return xWhere;
 	}
-}
-
-export const EMPRESA_WARNING_ERROR_CODE = 4100;
-export const EMPRESA_REGISTRO_ETIQUETA = 'la inducción';
-
-export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
-	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
-}
-
-export function isEmpresaWarningResponse(response: any): boolean {
-	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
-}
-
-export function isEmpresaFkErrorMessage(message: string): boolean {
-	const value = `${message ?? ''}`.toLowerCase();
-	return (
-		value.includes('gen_empresa') ||
-		value.includes('foreign key') ||
-		value.includes('clave externa') ||
-		value.includes('reference constraint') ||
-		value.includes('conflicted with the foreign key') ||
-		value.includes('no tiene una empresa asignada')
-	);
 }

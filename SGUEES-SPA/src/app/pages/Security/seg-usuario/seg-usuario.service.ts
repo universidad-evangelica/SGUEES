@@ -3,13 +3,14 @@ import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 
 import { SegUsuarioRepository } from './seg-usuario.repository';
 import { SegUsuario } from './models/seg-usuario';
 import { environment } from 'src/environments/environment';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { AuthService } from 'src/app/shared/services';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 import { SegUsuarioOpcionRepository } from './seg-usuario-opcion/seg-usuario-opcion.repository';
 
@@ -17,35 +18,47 @@ import { SegUsuarioOpcionRepository } from './seg-usuario-opcion/seg-usuario-opc
 	providedIn: 'root',
 })
 export class SegUsuarioService {
-  readonly urlMtto = environment.UrlSEGURIDADAPI + 'SEG_USUARIO/';
-  jwtHelper = new JwtHelperService();
-	constructor(
-              private http: HttpClient,
-              private authService: AuthService,
-              private repo: SegUsuarioRepository,
-              private repodeta: SegUsuarioOpcionRepository) {}
+	readonly urlMtto = environment.UrlSEGURIDADAPI + 'SEG_USUARIO/';
+	jwtHelper = new JwtHelperService();
 
-	//#region <Validadores>
+	constructor(
+		private http: HttpClient,
+		private authService: AuthService,
+		private repo: SegUsuarioRepository,
+		private repodeta: SegUsuarioOpcionRepository
+	) {}
+
 	esValido(model: SegUsuario, msg: Function): boolean {
-		// if (model.NOMBRE_ROL == '') {
-		// msg('Debe digitar el nombre del Rol', NotifyType.Error)
-		// return false;
-		// }
+		if (!model.LOGIN_SISTEMA?.trim()) {
+			msg('Debe digitar el login del usuario', NotifyType.Error);
+			return false;
+		}
+		if (!model.NOMBRE_USUARIO?.trim()) {
+			msg('Debe digitar el nombre del usuario', NotifyType.Error);
+			return false;
+		}
+		if (!model.TIPO_USUARIO) {
+			msg('Debe seleccionar el tipo de usuario', NotifyType.Error);
+			return false;
+		}
 
 		return true;
 	}
-	// #endregion
 
 	getAll(param: any): Observable<IResult> {
-		let xWhere: IParam[] = [{ Parameter: 'LOGIN_SISTEMA', Value: param.LOGIN_SISTEMA }];
+		const xWhere: IParam[] = [{ Parameter: 'LOGIN_SISTEMA', Value: param.LOGIN_SISTEMA }];
 
 		return this.repo.get(xWhere);
 	}
 
 	get(param: any): Observable<IResult> {
-		let xWhere: IParam[] = [{ Parameter: 'LOGIN_SISTEMA', Value: param.LOGIN_SISTEMA }];
+		const xWhere: IParam[] = [{ Parameter: 'LOGIN_SISTEMA', Value: param.LOGIN_SISTEMA }];
 
 		return this.repo.get(xWhere);
+	}
+
+	getPerfil(): Observable<IResult> {
+		return this.http.get<IResult>(this.urlMtto + 'perfil');
 	}
 
 	insert(model: any): Observable<IResult> {
@@ -53,36 +66,44 @@ export class SegUsuarioService {
 	}
 
 	update(model: any): Observable<IResult> {
-		let xWhere: IParam[] = [{ Parameter: 'LOGIN_SISTEMA', Value: model.LOGIN_SISTEMA }];
+		const xWhere: IParam[] = [{ Parameter: 'LOGIN_SISTEMA', Value: model.LOGIN_SISTEMA }];
 
 		return this.repo.update(model, xWhere);
 	}
 
 	delete(model: any): Observable<IResult> {
-		let xWhere: IParam[] = [
-      { Parameter: 'LOGIN_SISTEMA', Value: model.LOGIN_SISTEMA },
-      { Parameter: 'NOMBRE_USUARIO', Value: "12sdf" },
-      { Parameter: 'CORREO_ELECTRONICO', Value: "123dfd "},
-    ];
+		const xWhere: IParam[] = [
+			{ Parameter: 'LOGIN_SISTEMA', Value: model.LOGIN_SISTEMA },
+			{ Parameter: 'NOMBRE_USUARIO', Value: '12sdf' },
+			{ Parameter: 'CORREO_ELECTRONICO', Value: '123dfd ' },
+		];
 
 		return this.repo.delete(xWhere);
 	}
 
 	getColumns(): any {
 		return [
-			{ dataField: 'LOGIN_SISTEMA', caption: 'Login', width: 85 },
+			{ dataField: 'LOGIN_SISTEMA', caption: 'Login', width: 110 },
 			{ dataField: 'NOMBRE_USUARIO', caption: 'Nombre Completo Usuario', width: 250 },
-			{ dataField: 'CORREO_ELECTRONICO', caption: 'Correo Electronico', width: 170 },
-			{ dataField: 'NOMBRE_TIPO_USUARIO', caption: 'Tipo Usuario', width: 250 },
-			{ dataField: 'NOMBRE_ESTADO_USUARIO', caption: 'Estado Usuario', width: 170 },
-			{ dataField: 'IDIOMA', caption: 'Idioma', width: 75 },
+			{ dataField: 'CORREO_ELECTRONICO', caption: 'Correo Electrónico', width: 190 },
+			{ dataField: 'NOMBRE_TIPO_USUARIO', caption: 'Tipo Usuario', width: 220 },
+			{ dataField: 'NOMBRE_ESTADO_USUARIO', caption: 'Estado Usuario', width: 150 },
+			{ dataField: 'IDIOMA', caption: 'Idioma', width: 80 },
 			{ dataField: 'USUARIO_AD', caption: 'Usuario AD', width: 120 },
-			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 150 },
-			{ dataField: 'FECHA_CREA', caption: 'Fecha Crea', width: 125, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
-			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 150 },
-			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 150 },
-			{ dataField: 'FECHA_ACTU', caption: 'Fecha Actu', width: 125, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
-			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 150 },
+			...buildAuditGridColumns(),
+		];
+	}
+
+	getOpcionDetalleColumns(): any[] {
+		return [
+			{ dataField: 'SELECCION', caption: '', dataType: 'boolean', width: 100 },
+			{ dataField: 'NOMBRE_SISTEMA', caption: 'Sistema', width: 300, allowEditing: false },
+			{ dataField: 'NOMBRE_MENU', caption: 'Menú', width: 300, allowEditing: false },
+			{ dataField: 'NOMBRE_OPCION', caption: 'Opción', width: 400, allowEditing: false },
+			{ dataField: 'NUEVO', caption: 'Nuevo', width: 150, dataType: 'boolean' },
+			{ dataField: 'MODIFICAR', caption: 'Modificar', width: 150, dataType: 'boolean' },
+			{ dataField: 'ELIMINAR', caption: 'Eliminar', width: 150, dataType: 'boolean' },
+			{ dataField: 'IMPRIMIR', caption: 'Imprimir', width: 150, dataType: 'boolean' },
 		];
 	}
 
@@ -94,8 +115,8 @@ export class SegUsuarioService {
 
 	getItems(): any {
 		return [
-			{ dataField: 'LOGIN_SISTEMA', label: { text: 'Login.' }, colSpan: 2 },
-      {
+			{ dataField: 'LOGIN_SISTEMA', label: { text: 'Login' }, colSpan: 2 },
+			{
 				dataField: 'NOMBRE_USUARIO',
 				label: { text: 'Nombre Completo Usuario' },
 				colSpan: 4,
@@ -103,9 +124,9 @@ export class SegUsuarioService {
 			},
 			{
 				dataField: 'CORREO_ELECTRONICO',
-				label: { text: 'Correo Electronico' },
+				label: { text: 'Correo Electrónico' },
 				colSpan: 2,
-				editorOptions: { placeholder: 'Correo Electronico...', showClearButton: true },
+				editorOptions: { placeholder: 'Correo Electrónico...', showClearButton: true },
 			},
 			{
 				dataField: 'USUARIO_AD',
@@ -118,7 +139,7 @@ export class SegUsuarioService {
 				label: { text: 'Tipo Usuario' },
 				colSpan: 2,
 				editorOptions: { placeholder: 'Tipo Usuario...', showClearButton: true },
-        template: 'TIPO_USUARIOLookup',
+				template: 'TIPO_USUARIOLookup',
 			},
 			{
 				dataField: 'ESTADO_USUARIO',
@@ -126,87 +147,48 @@ export class SegUsuarioService {
 				colSpan: 2,
 				editorOptions: { placeholder: 'Estado Usuario...', showClearButton: false },
 				template: 'ESTADO_USUARIOLookup',
-			}
+			},
 		];
 	}
 
-   //#region <Detalle Opciones>
+	getAllSEG_USUARIO_OPCION(model: any): Observable<IResult> {
+		const xWhere: IParam[] = [{ Parameter: 'LOGIN_SISTEMA', Value: model.LOGIN_SISTEMA }];
 
-   getAllSEG_USUARIO_OPCION(model: any): Observable<IResult> {
-    let xWhere: IParam[] = [
-      { Parameter: 'LOGIN_SISTEMA', Value: model.LOGIN_SISTEMA },
-    ];
+		return this.repodeta.get(xWhere);
+	}
 
-    return this.repodeta.get(xWhere);
-  }
-  insertUpdateSEG_USUARIO_OPCION(model: any): Observable<IResult> {
-		let xWhere: IParam[] = [
+	insertUpdateSEG_USUARIO_OPCION(model: any): Observable<IResult> {
+		const xWhere: IParam[] = [
 			{ Parameter: 'LOGIN_SISTEMA', Value: model.LOGIN_SISTEMA },
 			{ Parameter: 'CODIGO_SISTEMA', Value: model.CODIGO_SISTEMA },
-      { Parameter: 'CODIGO_MENU', Value: model.CODIGO_MENU },
+			{ Parameter: 'CODIGO_MENU', Value: model.CODIGO_MENU },
 			{ Parameter: 'CODIGO_OPCION', Value: model.CODIGO_OPCION },
 		];
 
 		return this.repodeta.update(model, xWhere);
 	}
-  // getUsuarioOpcion(id: number, param: any): Observable<any> {
-  //   let parametros = new HttpParams();
 
-  //   if (param != null) {
-  //     parametros = parametros.append('CORR_EMPRESA', param.CORR_EMPRESA);
-  //     parametros = parametros.append('LOGIN_SISTEMA', param.LOGIN_SISTEMA);
-  //   }
+	cambioClavePerfil(model: {
+		CLAVE_USUARIO: string;
+		CLAVE_USUARIO_NUEVA: string;
+		CLAVE_CONFIRMAR: string;
+	}): Observable<IResult> {
+		return this.http.post<IResult>(this.urlMtto + 'perfil/cambio-clave', model);
+	}
 
-  //   return this.http.get<any>(this.urlMtto + id, { params: parametros });
-  // }
+	cambioClave(model: any) {
+		return this.http.post(this.urlMtto + 'CambioClave', model).pipe(
+			map((response: any) => {
+				const user = response;
+				if (user) {
+					localStorage.setItem('token', user.token);
+					this.authService.decodedToken = this.jwtHelper.decodeToken(user.token);
+				}
+			})
+		);
+	}
 
-  // insertUsuarioOpcion(model: any): any {
-  //   return this.http.post(this.urlMtto, model).pipe(
-  //     map((response: any) => response)
-  //   );
-  // }
-
-  // updateUsuarioOpcion(model: any): any {
-  //   return this.http.put(this.urlMtto, model).pipe(
-  //     map((response: any) => response)
-  //   );
-  // }
-
-  // deleteUsuarioOpcion(id: number, param: any): any {
-  //   let parametros = new HttpParams();
-
-  //   if (param != null) {
-  //     parametros = parametros.append('CORR_EMPRESA', param.CORR_EMPRESA);
-  //     parametros = parametros.append('LOGIN_SISTEMA', param.LOGIN_SISTEMA);
-  //   }
-
-  //   return this.http.delete(this.urlMtto + 'DeleteUsuarioOpcion/' + id, { params: parametros }).pipe(
-  //     map((response: any) => response)
-  //   );
-  // }
-
-  //#endregion
-  cambioClave(model: any) {
-    return this.http.post(this.urlMtto + 'CambioClave', model).pipe(
-      map((response: any) => {
-        const user = response;
-        if (user) {
-          localStorage.setItem('token', user.token);
-          this.authService.decodedToken = this.jwtHelper.decodeToken(user.token);
-        }
-      })
-    );
-  }
-
-  reasignarClave(model: any) {
-    // return this.http.post(this.urlMtto + 'ReasignarClave', model).pipe(
-    //   map((response: any) => {
-    //   })
-    // );
-  }
-
-  restablecerContrasena(LOGIN_SISTEMA: string): Observable<IResult> {
-    return this.http.post<IResult>(this.urlMtto + 'RestablecerContrasena', { LOGIN_SISTEMA });
-  }
-
+	restablecerContrasena(LOGIN_SISTEMA: string): Observable<IResult> {
+		return this.http.post<IResult>(this.urlMtto + 'RestablecerContrasena', { LOGIN_SISTEMA });
+	}
 }

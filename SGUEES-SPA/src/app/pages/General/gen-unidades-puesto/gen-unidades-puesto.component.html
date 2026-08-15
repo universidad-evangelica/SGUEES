@@ -1,0 +1,177 @@
+<!-- Contenedor principal: puestos por unidad del organigrama. -->
+<div class="sguees-mtto-view gen-unidades-puesto-view">
+	<!-- Toolbar: Asignar puestos (modal) / Asignar todos. -->
+	<app-barra-data-mtto
+		[tituloVentana]="tituloVentana"
+		[showRibbon]="true"
+		[showExport]="false"
+		[isBrowse]="isBrowse()"
+		[isForm]="isForm()"
+		[permiteAdd]="false"
+		[showRefresh]="true"
+		[showEstadoToolbar]="false"
+		[btn1]="textoBtnAsignarPuestos"
+		[btn1Icon]="'card'"
+		[btn1Type]="'default'"
+		[btn1Mode]="'contained'"
+		[btn1Width]="200"
+		(btn1Click)="onAsignarPuestosHeader()"
+		[btn2]="textoBtnAsignarTodos"
+		[btn2Icon]="'selectall'"
+		[btn2Type]="'success'"
+		[btn2Mode]="'contained'"
+		[btn2Width]="250"
+		(btn2Click)="onAsignarTodosHeader()"
+		(consultar)="consultar()"
+	>
+	</app-barra-data-mtto>
+
+	<!-- Grilla global de unidades: seleccionar fila y usar los botones del ribbon. -->
+	<app-data-grid-mtto
+		#dataGrid
+		[isBrowse]="isBrowse()"
+		[models]="models"
+		[columns]="columns"
+		[summary]="summary"
+		[keyExpr]="mttoGridKeyExpr"
+		[pageSize]="mttoPageSize"
+		[allowedPageSizes]="mttoPageSizes"
+		[remoteOperations]="mttoRemoteOperations"
+		[repaintChangesOnly]="false"
+		[nativeToolbar]="true"
+		[unifiedToolbar]="false"
+		[showSearch]="false"
+		[showAdd]="false"
+		[showRefresh]="false"
+		[showExport]="false"
+		[showEstadoToolbar]="false"
+		[focusedRowKey]="gridFocusedRowKey"
+		[permitePrint]="false"
+		[permiteEditar]="false"
+		[permiteDele]="false"
+		[responsiveColumnHiding]="false"
+		[columnHidingEnabled]="false"
+		[showGrouping]="true"
+		[exportFileName]="'UnidadesPuesto'"
+		(focusedRowChanged)="focusedRowChanged($event)"
+	>
+	</app-data-grid-mtto>
+</div>
+
+<!-- Modal: elegir puestos a asignar a la unidad (checkbox + Todos / Ninguno / Guardar). -->
+<dx-popup
+	[(visible)]="popupAsignarVisible"
+	[showTitle]="true"
+	[title]="popupAsignarTitulo"
+	[width]="780"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[maxHeight]="'calc(100vh - 48px)'"
+	[showCloseButton]="true"
+	[dragEnabled]="false"
+	[wrapperAttr]="{ class: 'unidades-puesto-asignar-popup' }"
+	(onHiding)="cerrarPopupAsignar()"
+>
+	<!-- Toolbar de escritura: Todos/Ninguno/Guardar solo con permiso modificar (U). -->
+	<div class="unidades-puesto-popup-toolbar" *ngIf="permiteEdit">
+		<dx-button
+			icon="check"
+			text="Todos"
+			type="success"
+			stylingMode="contained"
+			(onClick)="selectTodos()"
+			[disabled]="asignandoPuestosModal || !puestosModal.length"
+		></dx-button>
+		<dx-button
+			icon="close"
+			text="Ninguno"
+			type="danger"
+			stylingMode="contained"
+			(onClick)="selectNinguno()"
+			[disabled]="asignandoPuestosModal || !puestosModal.length"
+		></dx-button>
+		<dx-button
+			icon="save"
+			text="Guardar"
+			type="default"
+			stylingMode="contained"
+			(onClick)="guardarAsignacionModal()"
+			[disabled]="asignandoPuestosModal || !puestosModal.length"
+		></dx-button>
+	</div>
+
+	<!-- Grid del modal: altura por contenido (sin hueco ni scroll vacío). -->
+	<dx-data-grid
+		#gridAsignarPuestos
+		class="theme-dependent sguees-data-grid-mtto unidades-puesto-popup-grid"
+		[dataSource]="puestosModal"
+		keyExpr="CORR_PUESTO"
+		[columnAutoWidth]="false"
+		[showBorders]="true"
+		[showColumnLines]="true"
+		[showRowLines]="true"
+		[rowAlternationEnabled]="true"
+		[hoverStateEnabled]="true"
+		[allowColumnResizing]="true"
+		[columnResizingMode]="'widget'"
+		[width]="'100%'"
+		[repaintChangesOnly]="false"
+	>
+		<dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+		<dxo-pager
+			[visible]="true"
+			[showPageSizeSelector]="true"
+			[allowedPageSizes]="[5, 10, 25, 50]"
+			[showInfo]="true"
+		></dxo-pager>
+		<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+		<dxo-header-filter [visible]="true"></dxo-header-filter>
+		<dxo-scrolling [mode]="'standard'"></dxo-scrolling>
+		<dxo-load-panel [enabled]="false"></dxo-load-panel>
+		<dxo-editing
+			[mode]="'cell'"
+			[allowUpdating]="permiteEdit"
+			[allowAdding]="false"
+			[allowDeleting]="false"
+			[useIcons]="false"
+		></dxo-editing>
+
+		<dxi-column
+			dataField="SELECCION"
+			caption=""
+			[width]="70"
+			dataType="boolean"
+			[allowSorting]="false"
+			[allowFiltering]="false"
+			[allowHeaderFiltering]="false"
+			[allowEditing]="permiteEdit"
+			alignment="center"
+		></dxi-column>
+		<dxi-column
+			dataField="CORR_PUESTO"
+			caption="Codigo"
+			[width]="100"
+			dataType="number"
+			alignment="left"
+			[allowEditing]="false"
+		></dxi-column>
+		<dxi-column
+			dataField="NOMBRE_PUESTO"
+			caption="Puesto"
+			[minWidth]="220"
+			[allowEditing]="false"
+		></dxi-column>
+	</dx-data-grid>
+</dx-popup>
+
+<!-- Panel de carga durante operaciones asíncronas. -->
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+>
+</dx-load-panel>

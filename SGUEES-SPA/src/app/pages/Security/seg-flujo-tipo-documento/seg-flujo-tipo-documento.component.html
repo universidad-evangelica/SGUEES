@@ -1,0 +1,128 @@
+<!-- Barra de herramientas principal -->
+<app-barra-data-mtto
+    [tituloVentana]="tituloVentana"
+    [showRibbon]="true"
+    [showExport]="permitePrint"
+    [showRefresh]="true"
+	[showEstadoToolbar]="true"
+    [isBrowse]="isBrowse()"
+    [isForm]="isForm()"
+    [permiteAdd]="permiteAdd"
+    [showRefresh]="true"
+    (nuevo)="nuevo()"
+    (guardar)="guardar()"
+    (cancelar)="cancelar()"
+    (consultar)="consultar()"
+>
+</app-barra-data-mtto>
+
+<!-- ================================================ -->
+<!-- PANTALLA DE EDICIÓN / CREACIÓN (SOLO !isBrowse) -->
+<!-- ================================================ -->
+<div *ngIf="!isBrowse()" class="tipo-documento-edit-shell">
+    
+    <!-- SECCIÓN 1: Formulario del Tipo Documento -->
+    <section class="sguees-section-card tipo-documento-form-card">
+        <header class="tipo-documento-section-head">
+            <span class="tipo-documento-section-title">Datos del Tipo Documento</span>
+            <span class="tipo-documento-section-subtitle">Información general del tipo de documento</span>
+        </header>
+        <dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
+        </dx-form>
+    </section>
+
+    <!-- SECCIÓN 2: Gestión de Estados (SOLO si existe el documento) -->
+    <section class="sguees-section-card tipo-documento-estados-card" *ngIf="model && model.CORR_TIPO_DOCUMENTO > 0">
+        <header class="tipo-documento-section-head">
+            <span class="tipo-documento-section-title">Estados del Documento</span>
+            <span class="tipo-documento-section-subtitle">Estados asociados al tipo de documento {{ model.NOMBRE_TIPO }}</span>
+        </header>
+
+        <!-- Barra de herramientas de Estados -->
+        <app-barra-data-mtto
+         
+            [isBrowse]="isEstadoBrowse()"
+            [isForm]="isEstadoForm()"
+            [permiteAdd]="getPermiteAddEstado"
+            (nuevo)="nuevoEstado()"
+            (guardar)="guardarEstado()"
+            (cancelar)="cancelarEstado()"
+        >
+        </app-barra-data-mtto>
+
+        <!-- Formulario de Estado (se muestra cuando NO está en browse) -->
+        <div *ngIf="!isEstadoBrowse()" >
+            <dx-form #fDataEstado id="fDataEstado" [formData]="estadoModel" [labelLocation]="'top'" [colCount]="8" [items]="estadoItems">
+            </dx-form>
+        </div>
+
+        <!-- Grid de Estados (siempre visible) -->
+        <div >
+            <app-data-grid-mtto
+                [isBrowse]="isEstadoBrowse()"
+                [models]="estadoModels"
+                [columns]="estadoColumns"
+                [keyExpr]="'CORR_ESTADO'"
+                [showSearch]="false"
+                [showExport]="false"
+                [showRefresh]="false"
+                [permiteEditar]="getPermiteEditarEstado"
+                [permiteDele]="getPermiteDeleEstado"
+                (rowDblClick)="rowDblClickEstado($event)"
+                (rowRemoving)="rowRemovingEstado($event)"
+                (editClick)="editarEstado($event)"
+            >
+                <!-- Template para checkboxes en el grid de estados -->
+                <ng-template let-row="row" #checkTemplate>
+                    <dx-check-box [value]="row.data.ES_INICIAL" [disabled]="true"></dx-check-box>
+                </ng-template>
+                <ng-template let-row="row" #checkTemplateFinal>
+                    <dx-check-box [value]="row.data.ES_FINAL" [disabled]="true"></dx-check-box>
+                </ng-template>
+                <ng-template let-row="row" #activoTemplate>
+                    <dx-check-box [value]="row.data.ACTIVO" [disabled]="true"></dx-check-box>
+                </ng-template>
+            </app-data-grid-mtto>
+        </div>
+    </section>
+
+</div>
+
+<!-- ================================================ -->
+<!-- GRID PRINCIPAL (siempre visible) -->
+<!-- ================================================ -->
+<app-data-grid-mtto
+    [isBrowse]="isBrowse()"
+    [models]="models"
+    [columns]="columns"
+    [summary]="summary"
+    [keyExpr]="'CORR_TIPO_DOCUMENTO'"
+     [unifiedToolbar]="false"
+    [showAdd]="false"
+    [showSearch]="false"
+    [showExport]="false"
+    [showRefresh]="false"
+    [permiteEditar]="getPermiteEditar"
+    [permiteDele]="getPermiteDele"
+    (rowDblClick)="rowDblClick($event)"
+    (rowRemoving)="rowRemoving($event)"
+    (focusedRowChanged)="focusedRowChanged($event)"
+    (editClick)="editarClick($event)"
+>
+    <!-- Template para checkbox ACTIVO en el grid principal -->
+    <ng-template let-row="row" #activoTemplatePrincipal>
+        <dx-check-box [value]="row.data.ACTIVO" [disabled]="true"></dx-check-box>
+    </ng-template>
+</app-data-grid-mtto>
+
+<!-- Load Panel -->
+<dx-load-panel
+    #loadPanel
+    shadingColor="rgba(0,0,0,0.4)"
+    [position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+    [(visible)]="loadingVisible"
+    [showIndicator]="true"
+    [showPane]="true"
+    [shading]="true"
+>
+</dx-load-panel>

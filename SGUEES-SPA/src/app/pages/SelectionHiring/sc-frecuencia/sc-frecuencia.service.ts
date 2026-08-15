@@ -1,21 +1,25 @@
+// Qué hace: servicio de negocio del catálogo Frecuencia.
+// Cómo: valida los datos, ejecuta el CRUD a través del repositorio y arma la configuración de grilla y formulario.
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
-import { buildRemoteGridWhere, createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
-import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
+import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 import { ScFrecuencia } from './models/sc-frecuencia';
 import { ScFrecuenciaRepository } from './sc-frecuencia.repository';
 
 const ESTADO_FIELD = 'ESTADO_FRECUENCIA';
 
-@Injectable({
-	providedIn: 'root',
-})
+@Injectable({ providedIn: 'root' })
+// Qué hace: servicio de frecuencia.
+// Cómo: valida los datos y llama a ScFrecuenciaRepository para ejecutar el CRUD.
 export class ScFrecuenciaService {
 	constructor(private repo: ScFrecuenciaRepository) {}
 
+	// Qué hace: valida el formulario de frecuencia antes de guardar.
+	// Cómo: revisa que NOMBRE_FRECUENCIA no esté vacío y no supere 50 caracteres, notificando con msg cuando falla.
 	esValido(model: ScFrecuencia, msg: Function): boolean {
 		if (!model.NOMBRE_FRECUENCIA || model.NOMBRE_FRECUENCIA.trim() === '') {
 			msg('Debe ingresar el nombre de la frecuencia.', NotifyType.Warning);
@@ -30,127 +34,76 @@ export class ScFrecuenciaService {
 		return true;
 	}
 
+	// Qué hace: obtiene el listado de frecuencias.
+	// Cómo: llama a getAll del repositorio con el filtro construido por buildWhere.
 	getAll(param: any): Observable<IResult> {
-		return this.repo.get(this.buildWhere(param));
+		return this.repo.getAll(this.buildWhere(param));
 	}
 
-	getDistinctValues(param: any): Observable<IResult> {
-		return this.repo.getDistinctValues(this.buildWhere(param));
-	}
-
+	// Qué hace: obtiene una frecuencia puntual.
+	// Cómo: llama a get del repositorio filtrando por CORR_FRECUENCIA.
 	get(param: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_FRECUENCIA', Value: param.CORR_FRECUENCIA }];
-		return this.repo.get(xWhere);
+		return this.repo.get([{ Parameter: 'CORR_FRECUENCIA', Value: param.CORR_FRECUENCIA }]);
 	}
 
+	// Qué hace: crea una nueva frecuencia.
+	// Cómo: llama a create del repositorio con el modelo recibido.
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
 
+	// Qué hace: actualiza una frecuencia existente.
+	// Cómo: llama a update del repositorio con el modelo y su CORR_FRECUENCIA.
 	update(model: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }];
-		return this.repo.update(model, xWhere);
+		return this.repo.update(model, [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }]);
 	}
 
+	// Qué hace: elimina una frecuencia.
+	// Cómo: llama a delete del repositorio filtrando por CORR_FRECUENCIA.
 	delete(model: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }];
-		return this.repo.delete(xWhere);
+		return this.repo.delete([{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }]);
 	}
 
-	activar(model: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }];
-		return this.repo.activar(model, xWhere);
+	// Qué hace: cambia el estado activo/inactivo de una frecuencia.
+	// Cómo: llama a activarInactivar del repositorio filtrando por CORR_FRECUENCIA.
+	activarInactivar(model: any): Observable<IResult> {
+		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }]);
 	}
 
-	desactivar(model: any): Observable<IResult> {
-		const xWhere: IParam[] = [{ Parameter: 'CORR_FRECUENCIA', Value: model.CORR_FRECUENCIA }];
-		return this.repo.desactivar(model, xWhere);
-	}
-
-	getColumns(onEditClick: Function, onDeleteClick: Function, onActivarClick: Function, onDesactivarClick: Function, canEdit = true, canDelete = true): any {
-		const editHint = canEdit ? 'Editar registro' : 'No tiene permiso para editar registros.';
-		const deleteHint = canDelete ? 'Eliminar registro' : 'No tiene permiso para eliminar registros.';
-		const activarHint = canEdit ? 'Activar registro' : 'No tiene permiso para activar registros.';
-		const desactivarHint = canEdit ? 'Desactivar registro' : 'No tiene permiso para desactivar registros.';
-		const editCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-edit';
-		const deleteCssClass = canDelete ? 'sguees-grid-action-delete' : 'sguees-action-no-delete';
-		const activateCssClass = canEdit ? 'sguees-grid-action-edit' : 'sguees-action-no-activate';
-		const deactivateCssClass = canEdit ? 'sguees-grid-action-delete' : 'sguees-action-no-deactivate';
-		const editClick = canEdit ? onEditClick : () => undefined;
-		const deleteClick = canDelete ? onDeleteClick : () => undefined;
-		const activarClick = canEdit ? onActivarClick : () => undefined;
-		const desactivarClick = canEdit ? onDesactivarClick : () => undefined;
-
+	// Qué hace: define columnas y formatos de la grilla de mantenimiento.
+	// Cómo: arma el arreglo de columnas (correlativo, nombre, estado y auditoría) usado por app-data-grid-mtto.
+	getColumns(): any {
 		return [
-			{
-				type: 'buttons',
-				name: 'btnAcciones',
-				caption: 'Options',
-				width: 150,
-				minWidth: 150,
-				allowResizing: false,
-				fixed: true,
-				fixedPosition: 'left',
-				alignment: 'center',
-				buttons: [
-					{ hint: editHint, icon: 'edit', stylingMode: 'text', cssClass: editCssClass, onClick: editClick },
-					{ hint: deleteHint, icon: 'trash', stylingMode: 'text', cssClass: deleteCssClass, onClick: deleteClick },
-					{
-						hint: activarHint,
-						icon: 'refresh',
-						stylingMode: 'text',
-						cssClass: activateCssClass,
-						visible: (e: any) => !e.row?.data?.ESTADO_FRECUENCIA,
-						onClick: activarClick,
-					},
-					{
-						hint: desactivarHint,
-						icon: 'close',
-						stylingMode: 'text',
-						cssClass: deactivateCssClass,
-						visible: (e: any) => !!e.row?.data?.ESTADO_FRECUENCIA,
-						onClick: desactivarClick,
-					},
-				],
-			},
 			{
 				dataField: 'CORR_FRECUENCIA',
 				caption: 'Corr.',
-				width: 100,
+				width: 90,
 				dataType: 'number',
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
 			{ dataField: 'NOMBRE_FRECUENCIA', caption: 'Frecuencia', width: 300 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
-			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 200 },
-			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 200 },
-			{
-				dataField: 'FECHA_CREA',
-				caption: 'Fecha Crea',
-				width: 200,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-				calculateFilterExpression: createDateTimeFilterExpression('FECHA_CREA'),
-			},
-			{ dataField: 'USUARIO_ACTU', caption: 'Usuario Actu', width: 200 },
-			{ dataField: 'ESTACION_ACTU', caption: 'Estacion Actu', width: 200 },
-			{
-				dataField: 'FECHA_ACTU',
-				caption: 'Fecha Actu',
-				width: 200,
-				dataType: 'datetime',
-				format: 'dd/MM/yyyy HH:mm',
-				calculateFilterExpression: createDateTimeFilterExpression('FECHA_ACTU'),
-			},
+			...buildAuditGridColumns({ withDateTimeFilter: true }),
 		];
 	}
 
+	// Qué hace: configura el contador de registros de la grilla.
+	// Cómo: define el resumen totalItems que cuenta CORR_FRECUENCIA.
 	getSummary(): any {
 		return {
-			totalItems: [{ column: 'CORR_FRECUENCIA', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
+			totalItems: [
+				{
+					column: 'CORR_FRECUENCIA',
+					summaryType: 'count',
+					valueFormat: '#,##0',
+					displayFormat: 'Cant: {0}',
+				},
+			],
 		};
 	}
 
+	// Qué hace: define los campos y reglas del formulario de frecuencia.
+	// Cómo: arma el arreglo de items (correlativo, nombre y estado) usado por dx-form.
 	getItems(): any {
 		return [
 			{ dataField: 'CORR_FRECUENCIA', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
@@ -165,30 +118,15 @@ export class ScFrecuenciaService {
 		];
 	}
 
+	// Qué hace: traduce los filtros del componente al formato esperado por la API.
+	// Cómo: agrega a xWhere el parámetro CORR_FRECUENCIA cuando viene informado en param.
 	private buildWhere(param: any): IParam[] {
-		return buildRemoteGridWhere(param, ESTADO_FIELD);
+		const xWhere: IParam[] = [];
+
+		if (param.CORR_FRECUENCIA) {
+			xWhere.push({ Parameter: 'CORR_FRECUENCIA', Value: param.CORR_FRECUENCIA });
+		}
+
+		return xWhere;
 	}
-}
-
-export const EMPRESA_WARNING_ERROR_CODE = 4100;
-export const EMPRESA_REGISTRO_ETIQUETA = 'la frecuencia';
-
-export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
-	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
-}
-
-export function isEmpresaWarningResponse(response: any): boolean {
-	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
-}
-
-export function isEmpresaFkErrorMessage(message: string): boolean {
-	const value = `${message ?? ''}`.toLowerCase();
-	return (
-		value.includes('gen_empresa') ||
-		value.includes('foreign key') ||
-		value.includes('clave externa') ||
-		value.includes('reference constraint') ||
-		value.includes('conflicted with the foreign key') ||
-		value.includes('no tiene una empresa asignada')
-	);
 }

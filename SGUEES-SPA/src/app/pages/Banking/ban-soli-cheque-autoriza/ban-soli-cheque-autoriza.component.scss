@@ -1,0 +1,23 @@
+.filtros {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+	align-items: flex-end;
+}
+
+.filtro-label {
+	margin-bottom: 6px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.filtro-acciones {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.filtro-control {
+	min-width: 220px;
+}

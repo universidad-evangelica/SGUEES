@@ -1,83 +1,65 @@
+// Vista de mantenimiento de Riesgo del Puesto (CRUD del catálogo SC).
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import CustomStore from 'devextreme/data/custom_store';
-import { custom } from 'devextreme/ui/dialog';
-import { MessageService } from 'primeng/api';
-import { lastValueFrom } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { Observable, of, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
-import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
-import { AuthService } from 'src/app/shared/services/auth.service';
-import {
-	cloneRemoteGridFilters,
-	ESTADO_ACTIVO_INACTIVO_LABELS,
-	hasRemoteFilterRowSearch,
-	parseRemoteGridFilters,
-	ParsedGridFilters,
-} from 'src/app/shared/utils/remote-grid-filter.util';
-import {
-	getColumnHeaderFilterSelection,
-	invertExcludedHeaderFilterValues,
-	normalizeBooleanHeaderFilterValue,
-	resolveBooleanExcludeHeaderFilter,
-} from 'src/app/shared/utils/remote-header-filter.util';
 import { ScRiesgoPuesto } from './models/sc-riesgo-puesto';
-import {
-	EMPRESA_REGISTRO_ETIQUETA,
-	getEmpresaWarningMessage,
-	isEmpresaFkErrorMessage,
-	isEmpresaWarningResponse,
-	ScRiesgoPuestoService,
-} from './sc-riesgo-puesto.service';
+import { ScRiesgoPuestoService } from './sc-riesgo-puesto.service';
 
 const ESTADO_FIELD = 'ESTADO_RIESGO_PUESTO';
-const ES_LISTA_FIELD = 'ES_LISTA';
-const ES_LISTA_LABELS = { trueLabel: 'Lista', falseLabel: 'Texto plano' };
-
-const GRID_FILTER_CONFIG = {
-	estadoField: ESTADO_FIELD,
-	booleanColumns: {
-		[ESTADO_FIELD]: ESTADO_ACTIVO_INACTIVO_LABELS,
-		[ES_LISTA_FIELD]: ES_LISTA_LABELS,
-	},
-};
 
 @Component({
 	selector: 'app-sc-riesgo-puesto',
 	templateUrl: './sc-riesgo-puesto.component.html',
 	styleUrls: ['./sc-riesgo-puesto.component.scss'],
 })
+// Qué hace: coordina la grilla, el formulario y las llamadas al servicio de riesgo del puesto.
+// Cómo: extiende CBaseComponent y usa ScRiesgoPuestoService para el CRUD y el cambio de estado.
 export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
-	readonly pageSizes = [5, 10, 25, 50, 100];
+	protected override etiquetaRegistro = 'el riesgo de puesto';
+	protected override requiereEmpresaSesion = true;
+	protected override mttoPageSize = 5;
+	protected override mttoPageSizes = [5, 10, 25, 50, 100];
+	protected override mttoGridKeyExpr = 'CORR_RIESGO_PUESTO';
+	protected override mttoCampoEstado = ESTADO_FIELD;
+	protected override mttoEstadoDescribeField = 'NOMBRE_RIESGO_PUESTO';
+	protected override mttoParchearGridTrasGuardar = true;
+	protected override mttoRemoteOperations = false;
+
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Riesgo de Puesto';
 
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: ScRiesgoPuestoService,
-		private messageService: MessageService,
-		private authService: AuthService
+		private service: ScRiesgoPuestoService
 	) {
 		super(appInfoService, router);
-		this.onEditClick = this.onEditClick.bind(this);
-		this.onEliminarClick = this.onEliminarClick.bind(this);
-		this.onActivarClick = this.onActivarClick.bind(this);
-		this.onDesactivarClick = this.onDesactivarClick.bind(this);
-		this.columns = this.service.getColumns(this.onEditClick, this.onEliminarClick, this.onActivarClick, this.onDesactivarClick, this.permiteEdit, this.permiteDele);
+		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 	}
 
-	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.configurarDataSource();
+	// Qué hace: entrega la referencia del grid de mantenimiento al framework base.
+	// Cómo: devuelve dataGrid enlazado con @ViewChild, o null si aún no está disponible.
+	protected override getMttoDataGrid(): DataGridMttoComponent | null {
+		return this.dataGrid ?? null;
 	}
 
+	// Qué hace: prepara la pantalla al abrirla.
+	// Cómo: fija el subtítulo de mantenimiento y llama a consultar para cargar el catálogo.
+	ngOnInit(): void {
+		this.subTituloVentana = this.maintenanceSubtitulo;
+		this.consultar();
+	}
+
+	// Qué hace: reacciona a los cambios de estado del formulario.
+	// Cómo: llama a AsignaStatus base y, al volver a modo Browse, restaura el subtítulo de mantenimiento.
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
@@ -85,80 +67,14 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
-	override rowDblClick(e: any): void {
-		const rowData = e?.data ?? e?.row?.data;
-		if (rowData) {
-			this.model = this.fillData(rowData);
-			this.modelUpdate = this.fillData(rowData);
-		}
-		super.rowDblClick(e);
-		setTimeout(() => {
-			if (!this.dataForm?.instance) {
-				return;
-			}
-			this.dataForm.instance.option('formData', this.model);
-			this.bloquear();
-		});
+	// Qué hace: construye el filtro por correlativo de riesgo del puesto.
+	// Cómo: devuelve un objeto con CORR_RIESGO_PUESTO, usado en consultar y en rowRemoving.
+	fillParam(xCORR_RIESGO_PUESTO?: number): any {
+		return { CORR_RIESGO_PUESTO: xCORR_RIESGO_PUESTO ?? 0 };
 	}
 
-	onEditClick(e: any): void {
-		if (!e?.row?.data) {
-			return;
-		}
-
-		this.model = e.row.data;
-		this.editarClick(e);
-	}
-
-	fillParam(
-		xCORR_RIESGO_PUESTO?: number,
-		page = 1,
-		pageSize = 5,
-		busqueda = '',
-		gridFilters: ParsedGridFilters = { estado: null, filterRow: {}, filterRowExact: {}, headerAnyOf: {} },
-		distinctField = '',
-		headerFilterSearch = '',
-		sortField = '',
-		sortDesc = false
-	): any {
-		return {
-			CORR_RIESGO_PUESTO: xCORR_RIESGO_PUESTO ?? 0,
-			BUSQUEDA: busqueda,
-			PAGE: page,
-			PAGE_SIZE: pageSize,
-			DISTINCT_FIELD: distinctField,
-			HEADER_FILTER_SEARCH: headerFilterSearch,
-			SORT_FIELD: sortField,
-			SORT_DESC: sortDesc,
-			gridFilters,
-		};
-	}
-
-	loadHeaderFilterValues = (field: string, searchValue?: string): Promise<unknown[]> => {
-		const grid = this.dataGrid?.gData?.instance;
-		const combinedFilter = grid?.getCombinedFilter?.(false);
-		const gridFilters = parseRemoteGridFilters(combinedFilter, grid, GRID_FILTER_CONFIG);
-		const hasFilterRowSearch = hasRemoteFilterRowSearch(gridFilters);
-		const filtersForDistinct: ParsedGridFilters = {
-			estado: hasFilterRowSearch ? gridFilters.estado : null,
-			filterRow: hasFilterRowSearch ? gridFilters.filterRow : {},
-			filterRowExact: hasFilterRowSearch ? gridFilters.filterRowExact : {},
-			headerAnyOf: {},
-		};
-
-		return lastValueFrom(
-			this.service.getDistinctValues(
-				this.fillParam(0, 1, 0, '', filtersForDistinct, field, searchValue ?? '')
-			)
-		).then((response) => {
-			if (!response.Result) {
-				throw new Error(response.ErrorMessage || 'No se pudieron cargar los valores del filtro.');
-			}
-
-			return response.Data ?? [];
-		});
-	};
-
+	// Qué hace: construye el modelo de riesgo del puesto para el formulario.
+	// Cómo: si recibe xModel copia sus campos; si no recibe nada, devuelve un modelo vacío con los valores iniciales.
 	override fillData(xModel?: ScRiesgoPuesto): ScRiesgoPuesto {
 		if (xModel !== undefined) {
 			return {
@@ -166,7 +82,6 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 				CORR_RIESGO_PUESTO: xModel.CORR_RIESGO_PUESTO,
 				NOMBRE_RIESGO_PUESTO: xModel.NOMBRE_RIESGO_PUESTO,
 				ESTADO_RIESGO_PUESTO: xModel.ESTADO_RIESGO_PUESTO,
-				ES_LISTA: !!xModel.ES_LISTA,
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
 				FECHA_CREA: xModel.FECHA_CREA,
@@ -181,7 +96,6 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 			CORR_RIESGO_PUESTO: 0,
 			NOMBRE_RIESGO_PUESTO: '',
 			ESTADO_RIESGO_PUESTO: true,
-			ES_LISTA: false,
 			USUARIO_CREA: '',
 			ESTACION_CREA: '',
 			FECHA_CREA: new Date(),
@@ -191,32 +105,118 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 		};
 	}
 
-	consultar(): void {
-		this.dataGrid?.refreshData(true);
+	// Qué hace: carga el listado de riesgos del puesto y refresca la grilla.
+	// Cómo: llama a consultarMtto con getAll del servicio; al recibir los datos ordena por correlativo y refresca el grid.
+	consultar(resetPage = false): void {
+		this.consultarMtto({
+			load: () => this.service.getAll(this.fillParam()),
+			onData: () => {
+				this.ordenarModelsPorCorr();
+				this.refrescarGridTrasCarga(resetPage);
+			},
+		});
 	}
 
+	// Qué hace: mantiene los registros ordenados por correlativo.
+	// Cómo: ordena this.models de forma ascendente por CORR_RIESGO_PUESTO.
+	private ordenarModelsPorCorr(): void {
+		if (!Array.isArray(this.models)) {
+			return;
+		}
+
+		this.models = [...this.models].sort((a, b) => Number(a.CORR_RIESGO_PUESTO) - Number(b.CORR_RIESGO_PUESTO));
+	}
+
+	// Qué hace: agrega o reemplaza en la grilla el registro recién guardado.
+	// Cómo: si isAdd agrega el registro a models; si no, busca por CORR_RIESGO_PUESTO y lo reemplaza; luego ordena y refresca.
+	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
+		if (!this.mttoGridKeyExpr || !data || typeof data !== 'object' || !Array.isArray(this.models)) {
+			super.aplicarRegistroEnGrid(data, isAdd);
+			return;
+		}
+
+		const record = this.fillData(data as ScRiesgoPuesto);
+		const key = this.mttoGridKeyExpr as keyof ScRiesgoPuesto;
+
+		if (isAdd) {
+			this.models = [...this.models, record];
+		} else {
+			const index = this.models.findIndex((item) => item?.[key] === record[key]);
+			if (index >= 0) {
+				this.models = this.models.map((item, i) => (i === index ? this.fillData({ ...item, ...record }) : item));
+			}
+		}
+
+		this.ordenarModelsPorCorr();
+		this.refrescarGridTrasCarga(isAdd);
+	}
+
+	// Qué hace: retira de la grilla el registro eliminado.
+	// Cómo: filtra models excluyendo el CORR_RIESGO_PUESTO eliminado y refresca la grilla.
+	protected override quitarRegistroDeGrid(keyValue: unknown): void {
+		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
+			super.quitarRegistroDeGrid(keyValue);
+			return;
+		}
+
+		const key = this.mttoGridKeyExpr as keyof ScRiesgoPuesto;
+		this.models = this.models.filter((item) => item?.[key] !== keyValue);
+		this.refrescarGridTrasCarga(true);
+	}
+
+	// Qué hace: refresca la grilla después de un cambio en los datos.
+	// Cómo: usa setTimeout para esperar el ciclo de Angular y llama a dataGrid.refreshData.
+	private refrescarGridTrasCarga(resetPage = false): void {
+		setTimeout(() => {
+			this.dataGrid?.refreshData(resetPage);
+		}, 0);
+	}
+
+	// Qué hace: abre el registro seleccionado en modo consulta al hacer doble clic.
+	// Cómo: toma los datos de la fila, llama al rowDblClick base y sincroniza el formulario en modo solo lectura.
+	override rowDblClick(e: any): void {
+		const rowData = e?.data ?? e?.row?.data;
+		if (rowData) {
+			this.model = this.fillData(rowData);
+			this.modelUpdate = this.fillData(rowData);
+		}
+		super.rowDblClick(e);
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+			this.bloquear();
+		});
+	}
+
+	// Qué hace: prepara el registro seleccionado para editarlo desde el botón de la grilla.
+	// Cómo: carga el modelo, llama a editarClick y habilita los campos del formulario.
+	onEditClick(e: any): void {
+		if (!e?.row?.data) {
+			return;
+		}
+
+		this.model = this.fillData(e.row.data);
+		this.editarClick(e);
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+			this.habilitar();
+		});
+	}
+
+	// Qué hace: inicia un registro nuevo de riesgo del puesto.
+	// Cómo: valida que haya empresa en sesión con asegurarEmpresaSesion, llama al nuevo base y sincroniza el formulario.
 	override nuevo(): void {
-		if (!this.validarEmpresaSesion()) {
+		if (!this.asegurarEmpresaSesion()) {
 			return;
 		}
 		super.nuevo();
+		setTimeout(() => {
+			this.dataForm?.instance?.option('formData', this.model);
+		});
 	}
 
-	override notifyFx(xMessage: string, xType: NotifyType): void {
-		const cleanMessage = this.getErrorMessage(xMessage).replace(/^error:\s*/i, '').trim();
-		const warningDetail = this.getWarningMessage(cleanMessage);
-		const isWarning = xType === NotifyType.Warning || warningDetail !== cleanMessage;
-		const severity = xType === NotifyType.Success ? 'success' : isWarning ? 'warn' : 'error';
-		const summary = xType === NotifyType.Success ? '\u00c9xito' : isWarning ? 'Advertencia' : 'Error';
-		const detail = isWarning ? warningDetail : cleanMessage;
-		this.messageService.add({ severity, summary, detail });
-	}
-
+	// Qué hace: guarda el riesgo del puesto (crea o actualiza según corresponda).
+	// Cómo: sincroniza formData, valida con esValido y llama a guardarMtto con insert/update del servicio.
 	guardar(): void {
-		if (!this.validarEmpresaSesion()) {
-			return;
-		}
-
 		const formData = this.dataForm?.instance?.option('formData');
 		if (formData) {
 			this.model = { ...this.model, ...formData };
@@ -228,506 +228,92 @@ export class ScRiesgoPuestoComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 
-		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
-			return;
-		}
-
-		this.loadingVisible = true;
-		if (this.banderaMtto === UpdateType.Add) {
-			this.service
-				.insert(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.consultar();
-							this.notifyFx('Registro creado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
-						this.loadingVisible = false;
-					},
-				});
-		} else if (this.banderaMtto === UpdateType.Update) {
-			this.service
-				.update(this.model)
-				.pipe(take(1))
-				.subscribe({
-					next: (response: any) => {
-						if (response.Result) {
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							this.consultar();
-							this.notifyFx('Registro modificado con exito!', NotifyType.Success);
-						} else {
-							this.notifyFx(response.ErrorMessage, this.getNotifyType(response));
-						}
-						this.loadingVisible = false;
-					},
-					error: (error: any) => {
-						this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
-						this.loadingVisible = false;
-					},
-				});
-		}
+		this.guardarMtto({
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			insert: () => this.service.insert(this.model),
+			update: () => this.service.update(this.model),
+		});
 	}
 
+	// Qué hace: convierte un error de llave foránea al eliminar en una advertencia controlada.
+	// Cómo: intercepta el error de la petición y, si el mensaje indica una relación, devuelve un IResult con advertencia.
+	private convertirErrorMttoEnWarning<T>(request: Observable<T>): Observable<T> {
+		return request.pipe(
+			catchError((error: any) => {
+				const mensaje = `${
+					error?.ErrorMessage ?? error?.error?.ErrorMessage ?? error?.error?.message ?? error?.error ?? error?.message ?? error ?? ''
+				}`;
+				const normalizado = mensaje.toLowerCase();
+				const tieneRelacion = [
+					'foreign key',
+					'reference constraint',
+					'clave externa',
+					'clave foránea',
+					'llave foránea',
+					'hijos',
+					'registros relacionados',
+					'registros asociados',
+					'asociados',
+				].some((texto) => normalizado.includes(texto));
+
+				if (tieneRelacion) {
+					return of({
+						Result: false,
+						ErrorCode: 2627,
+						ErrorMessage: 'No se puede eliminar porque tiene registros relacionados.',
+					} as T);
+				}
+
+				return throwError(() => error);
+			})
+		);
+	}
+
+	// Qué hace: descarta la edición y restaura el registro original en la grilla.
+	// Cómo: llama a cancelar base comparando por CORR_RIESGO_PUESTO.
 	override cancelar(): void {
-		this.model = this.modelUpdate;
-		this.AsignaStatus(UpdateType.Browse);
-		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
+		super.cancelar((item: any) => item.CORR_RIESGO_PUESTO === this.modelUpdate.CORR_RIESGO_PUESTO);
 	}
 
-	onActivarClick(e: any): void {
-		const row = e.row?.data as ScRiesgoPuesto;
-		if (!row) {
-			return;
-		}
-
-		this.confirmEstado(
-			'Activar registro',
-			`Desea activar el riesgo de puesto "${row.NOMBRE_RIESGO_PUESTO}"?`,
-			() => this.cambiarEstado(row, true)
-		);
-	}
-
-	onEliminarClick(e: any): void {
-		const row = e.row?.data as ScRiesgoPuesto;
-		if (!row) {
-			return;
-		}
-
-		this.confirmEstado(
-			'Eliminar registro',
-			`Desea eliminar "${row.NOMBRE_RIESGO_PUESTO}"?`,
-			() => this.eliminarRegistro(row)
-		);
-	}
-
-	onDesactivarClick(e: any): void {
-		const row = e.row?.data as ScRiesgoPuesto;
-		if (!row) {
-			return;
-		}
-
-		this.confirmEstado(
-			'Desactivar registro',
-			`Desea desactivar "${row.NOMBRE_RIESGO_PUESTO}"?`,
-			() => this.cambiarEstado(row, false)
-		);
-	}
-
+	// Qué hace: elimina el registro seleccionado en la grilla.
+	// Cómo: llama a rowRemovingMtto con delete del servicio, convirtiendo errores de relación en advertencia.
 	rowRemoving(e: any): void {
-		e.cancel = true;
-		this.onEliminarClick({ row: { data: e.data } });
+		this.rowRemovingMtto(e, {
+			deleteFn: () =>
+				this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_RIESGO_PUESTO))),
+		});
 	}
 
+	// Qué hace: cambia el estado activo/inactivo del riesgo del puesto seleccionado.
+	// Cómo: llama a invocarActivarInactivar con activarInactivar del servicio.
+	activar_inactivar(): void {
+		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
+	}
+
+	// Qué hace: deja el formulario en solo lectura (modo consulta).
+	// Cómo: pone readOnly en true a los editores de correlativo, nombre y estado.
 	override bloquear(): void {
 		this.dataForm.instance.getEditor('CORR_RIESGO_PUESTO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_RIESGO_PUESTO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ESTADO_RIESGO_PUESTO')?.option('readOnly', true);
 	}
 
+	// Qué hace: habilita los campos editables del formulario.
+	// Cómo: habilita NOMBRE_RIESGO_PUESTO; bloquea el estado cuando la operación es de actualización.
+	override habilitar(): void {
+		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
+		setTimeout(() => {
+			this.dataForm.instance.getEditor('CORR_RIESGO_PUESTO')?.option('readOnly', true);
+			this.dataForm.instance.getEditor('NOMBRE_RIESGO_PUESTO')?.option('readOnly', false);
+			this.dataForm.instance.getEditor('ESTADO_RIESGO_PUESTO')?.option('readOnly', estadoSoloLectura);
+		});
+	}
+
+	// Qué hace: coloca el foco en el primer campo editable del formulario.
+	// Cómo: enfoca el editor de NOMBRE_RIESGO_PUESTO con setTimeout.
 	override setFocus(): void {
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('NOMBRE_RIESGO_PUESTO')?.focus();
 		});
 	}
-
-	private configurarDataSource(): void {
-		this.models = new CustomStore({
-			key: 'CORR_RIESGO_PUESTO',
-			loadMode: 'processed',
-			cacheRawData: false,
-			load: async (loadOptions: any) => {
-				try {
-					const takeRows = loadOptions.take || 5;
-				const skipRows = loadOptions.skip || 0;
-				const page = Math.floor(skipRows / takeRows) + 1;
-				const grid = this.dataGrid?.gData?.instance;
-
-				const gridFilters = parseRemoteGridFilters(loadOptions.filter, grid, GRID_FILTER_CONFIG);
-				this.applyIncludeHeaderFilters(grid, gridFilters);
-				await this.resolveExcludeHeaderFilters(grid, gridFilters);
-				await this.removeHeaderFiltersOverriddenByFilterRow(gridFilters);
-
-				const sort = this.getGridSort(loadOptions.sort);
-				const response = await lastValueFrom(
-					this.service.getAll(
-						this.fillParam(
-							0,
-							page,
-							takeRows,
-							'',
-							gridFilters,
-							'',
-							'',
-							sort?.field ?? '',
-							sort?.desc ?? false
-						)
-					)
-				);
-
-				if (!response.Result) {
-					throw new Error(response.ErrorMessage || 'No se pudo cargar el riesgo de puesto.');
-				}
-
-				return {
-					data: response.Data || [],
-					totalCount: response.RowsAffected || 0,
-				};
-				} catch (error) {
-					const message = this.getErrorMessage(error);
-					this.notifyFx(message, NotifyType.Error);
-					throw new Error(message);
-				}
-			},
-		});
-	}
-
-	private async removeHeaderFiltersOverriddenByFilterRow(result: ParsedGridFilters): Promise<void> {
-		if (!hasRemoteFilterRowSearch(result)) {
-			return;
-		}
-
-		for (const dataField of Object.keys(result.headerAnyOf)) {
-			const headerValues = result.headerAnyOf[dataField];
-			if (!headerValues?.length) {
-				continue;
-			}
-
-			const availableValues = await this.getAvailableHeaderValuesForFilterRow(dataField, result);
-			if (!availableValues.length) {
-				continue;
-			}
-
-			if (!this.hasAnyMatchingHeaderValue(headerValues, availableValues)) {
-				delete result.headerAnyOf[dataField];
-			}
-		}
-	}
-
-	private async getAvailableHeaderValuesForFilterRow(dataField: string, result: ParsedGridFilters): Promise<unknown[]> {
-		const filtersForDistinct: ParsedGridFilters = {
-			estado: result.estado,
-			filterRow: { ...result.filterRow },
-			filterRowExact: { ...result.filterRowExact },
-			headerAnyOf: {},
-		};
-
-		const response = await lastValueFrom(
-			this.service.getDistinctValues(this.fillParam(0, 1, 0, '', filtersForDistinct, dataField, ''))
-		);
-
-		return response.Result ? response.Data ?? [] : [];
-	}
-
-	private hasAnyMatchingHeaderValue(headerValues: unknown[], availableValues: unknown[]): boolean {
-		const availableKeys = new Set(availableValues.map((value) => this.getHeaderFilterComparableKey(value)));
-		return headerValues.some((value) => availableKeys.has(this.getHeaderFilterComparableKey(value)));
-	}
-
-	private getHeaderFilterComparableKey(value: unknown): string {
-		if (value === null || value === undefined || value === '__BLANK__') {
-			return '__blank__';
-		}
-
-		if (typeof value === 'boolean') {
-			return value ? 'true' : 'false';
-		}
-
-		const text = `${value}`.trim().toLowerCase();
-		if (!text) {
-			return '__blank__';
-		}
-
-		if (text === 'activo') {
-			return 'true';
-		}
-
-		if (text === 'inactivo') {
-			return 'false';
-		}
-
-		return text;
-	}
-	private applyIncludeHeaderFilters(grid: any, result: ParsedGridFilters): void {
-		if (!grid?.getVisibleColumns) {
-			return;
-		}
-
-		for (const column of grid.getVisibleColumns()) {
-			const dataField = column?.dataField;
-			if (!dataField || column.allowHeaderFiltering === false) {
-				continue;
-			}
-
-			const selection = getColumnHeaderFilterSelection(grid, dataField);
-			if (!selection || selection.filterType !== 'include' || !selection.values.length) {
-				continue;
-			}
-
-			const booleanLabels = GRID_FILTER_CONFIG.booleanColumns?.[dataField];
-			result.headerAnyOf[dataField] = booleanLabels
-				? selection.values.map((value) => normalizeBooleanHeaderFilterValue(value, booleanLabels))
-				: selection.values;
-		}
-	}
-	private async resolveExcludeHeaderFilters(grid: any, result: ParsedGridFilters): Promise<void> {
-		if (!grid?.getVisibleColumns) {
-			return;
-		}
-
-		for (const column of grid.getVisibleColumns()) {
-			const dataField = column?.dataField;
-			if (!dataField || column.allowHeaderFiltering === false) {
-				continue;
-			}
-
-			const selection = getColumnHeaderFilterSelection(grid, dataField);
-			if (!selection || selection.filterType !== 'exclude' || !selection.values.length) {
-				continue;
-			}
-
-			const booleanIncluded = resolveBooleanExcludeHeaderFilter(
-				column,
-				selection.values,
-				GRID_FILTER_CONFIG.booleanColumns?.[dataField]
-			);
-			if (booleanIncluded !== null) {
-				result.headerAnyOf[dataField] = booleanIncluded.length ? booleanIncluded : ['__NO_MATCH__'];
-				continue;
-			}
-
-			const filtersForDistinct = cloneRemoteGridFilters(result);
-			delete filtersForDistinct.headerAnyOf[dataField];
-			delete filtersForDistinct.filterRow[dataField];
-			delete filtersForDistinct.filterRowExact[dataField];
-
-			const response = await lastValueFrom(
-				this.service.getDistinctValues(this.fillParam(0, 1, 0, '', filtersForDistinct, dataField, ''))
-			);
-
-			if (!response.Result) {
-				continue;
-			}
-
-			const included = invertExcludedHeaderFilterValues(selection.values, response.Data ?? []);
-			result.headerAnyOf[dataField] = included.length ? included : ['__NO_MATCH__'];
-		}
-	}
-
-	private getGridSort(sort: any): { field: string; desc: boolean } | null {
-		if (!Array.isArray(sort) || !sort.length) {
-			return null;
-		}
-
-		const first = sort[0];
-		if (!first?.selector) {
-			return null;
-		}
-
-		return {
-			field: `${first.selector}`,
-			desc: !!first.desc,
-		};
-	}
-
-	private cambiarEstado(row: ScRiesgoPuesto, activo: boolean): void {
-		const request = { ...row, ESTADO_RIESGO_PUESTO: activo };
-		const action = activo ? this.service.activar(request) : this.service.desactivar(request);
-
-		this.loadingVisible = true;
-		action.pipe(take(1)).subscribe({
-			next: (response: any) => {
-				if (response.Result) {
-					this.consultar();
-					this.notifyFx(activo ? 'Registro activado con exito!' : 'Registro desactivado con exito!', NotifyType.Success);
-				} else {
-					this.notifyFx(response.ErrorMessage || 'No se pudo cambiar el estado del registro.', NotifyType.Error);
-				}
-				this.loadingVisible = false;
-			},
-			error: (error: any) => {
-				this.notifyFx(this.getErrorMessage(error), NotifyType.Error);
-				this.loadingVisible = false;
-			},
-		});
-	}
-
-	private eliminarRegistro(row: ScRiesgoPuesto): void {
-		this.loadingVisible = true;
-		this.service
-			.delete(row)
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					if (response.Result) {
-						this.consultar();
-						this.notifyFx('Registro eliminado con exito!', NotifyType.Success);
-					} else {
-						this.notifyFx(
-							response.ErrorMessage || 'No se puede eliminar el riesgo de puesto porque tiene registros asociados en otras tablas.',
-							NotifyType.Warning
-						);
-					}
-					this.loadingVisible = false;
-				},
-				error: (error: any) => {
-					this.notifyFx(this.getErrorMessage(error), this.getErrorNotifyType(error));
-					this.loadingVisible = false;
-				},
-			});
-	}
-
-	private confirmEstado(title: string, message: string, fn: () => void): void {
-		const dialog = custom({
-			title,
-			messageHtml: `<div class="sguees-confirm-message">${message}</div>`,
-			buttons: [
-				{
-					text: 'Si',
-					type: 'default',
-					onClick: () => true,
-				},
-				{
-					text: 'No',
-					onClick: () => false,
-				},
-			],
-		});
-
-		dialog.show().then((accepted: boolean) => {
-			if (accepted) {
-				fn();
-			}
-		});
-	}
-
-	private getErrorMessage(error: any): string {
-		const connectionMessage =
-			'No se pudo comunicar con el servidor. Verifique que la API esté en ejecución e intente nuevamente.';
-
-		if (typeof error === 'string') {
-			const trimmed = error.trim();
-			if (!trimmed || trimmed === '[object ProgressEvent]' || trimmed.toLowerCase().includes('http failure')) {
-				return connectionMessage;
-			}
-			return trimmed;
-		}
-
-		if (error instanceof ProgressEvent || Object.prototype.toString.call(error) === '[object ProgressEvent]') {
-			return connectionMessage;
-		}
-
-		if (error?.error instanceof ProgressEvent) {
-			return connectionMessage;
-		}
-
-		const apiMessage = error?.error?.ErrorMessage || error?.error?.message || error?.message;
-		if (typeof apiMessage === 'string' && apiMessage.trim()) {
-			if (apiMessage === '[object ProgressEvent]' || apiMessage.toLowerCase().includes('http failure')) {
-				return connectionMessage;
-			}
-			return apiMessage;
-		}
-
-		const coerced = `${error ?? ''}`.trim();
-		if (coerced === '[object ProgressEvent]' || coerced === '[object Object]') {
-			return connectionMessage;
-		}
-
-		return coerced || 'Ocurrio un error al procesar la solicitud.';
-	}
-
-	private getNotifyType(response: any): NotifyType {
-		if (isEmpresaWarningResponse(response)) {
-			return NotifyType.Warning;
-		}
-		return this.isValidationWarningResponse(response) ? NotifyType.Warning : NotifyType.Error;
-	}
-
-	private getErrorNotifyType(error: any): NotifyType {
-		const body = error?.error;
-		if (body && typeof body === 'object' && body.ErrorMessage !== undefined) {
-			return this.getNotifyType(body);
-		}
-
-		return this.isValidationWarningMessage(this.getErrorMessage(error)) ? NotifyType.Warning : NotifyType.Error;
-	}
-
-	private isValidationWarningResponse(response: any): boolean {
-		if (!response || response.Result !== false) {
-			return false;
-		}
-
-		if (response.ErrorCode === 2627) {
-			return true;
-		}
-
-		return this.isValidationWarningMessage(response.ErrorMessage);
-	}
-
-	private isValidationWarningMessage(message: string): boolean {
-		const value = `${message ?? ''}`.toLowerCase();
-		if (isEmpresaFkErrorMessage(message) || value.includes('no tiene una empresa asignada')) {
-			return true;
-		}
-
-		return (
-			value.includes('ya existe') ||
-			value.includes('duplicad') ||
-			value.includes('registrad') ||
-			value.includes('otro usuario guard') ||
-			value.includes('mismo tiempo') ||
-			value.includes('hijos asociados') ||
-			value.includes('registros asociados') ||
-			value.includes('registros hijos') ||
-			value.includes('tiene registros hijos') ||
-			value.includes('relacionados') ||
-			value.includes('asociados en otras tablas')
-		);
-	}
-
-	private getCorrEmpresaSesion(): number {
-		const value = Number(this.authService.decodedToken?.CORR_EMPRESA ?? 0);
-		return Number.isFinite(value) ? value : 0;
-	}
-
-	private validarEmpresaSesion(): boolean {
-		if (this.getCorrEmpresaSesion() > 0) {
-			return true;
-		}
-		this.notifyFx(getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA), NotifyType.Warning);
-		return false;
-	}
-
-	private getWarningMessage(message: string): string {
-		const cleanMessage = `${message ?? ''}`.replace(/^error:\s*/i, '').trim();
-		const value = cleanMessage.toLowerCase();
-		if (isEmpresaFkErrorMessage(cleanMessage) || value.includes('no tiene una empresa asignada')) {
-			return getEmpresaWarningMessage(EMPRESA_REGISTRO_ETIQUETA);
-		}
-		if (
-			value.includes('ya existe') ||
-			value.includes('duplicad') ||
-			value.includes('registrad') ||
-			value.includes('ya está registrado') ||
-			value.includes('ya esta registrado')
-		) {
-			return cleanMessage;
-		}
-		if (value.includes('hijos asociados') || value.includes('registros asociados') || value.includes('asociados')) {
-			return 'No se puede eliminar porque tiene registros relacionados. Revise los datos asociados antes de continuar.';
-		}
-		return cleanMessage;
-	}
 }
-
-

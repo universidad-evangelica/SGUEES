@@ -178,6 +178,34 @@ namespace sguees.Controllers
             return _service.GetMES();
         }
 
+        [HttpGet("GetMES_BAN_DOCUMENTO")]
+        [Authorize(Policy = "/ban-documento|R")]
+        public CResult GetMES_BAN_DOCUMENTO()
+        {
+            return _service.GetMES();
+        }
+
+        [HttpGet("GetMES_BAN_CHEQUE")]
+        [Authorize(Policy = "/ban-cheque|R")]
+        public CResult GetMES_BAN_CHEQUE()
+        {
+            return _service.GetMES();
+        }
+
+        [HttpGet("GetMES_BAN_CHEQUE_IMPRIMIR")]
+        [Authorize(Policy = "/ban-cheque-imprimir|R")]
+        public CResult GetMES_BAN_CHEQUE_IMPRIMIR()
+        {
+            return _service.GetMES();
+        }
+
+        [HttpGet("GetMES_BAN_SOLI_CHEQUE")]
+        [Authorize(Policy = "/ban-soli-cheque|R")]
+        public CResult GetMES_BAN_SOLI_CHEQUE()
+        {
+            return _service.GetMES();
+        }
+
         [HttpGet("GetCLASE_BANCO_GEN_BANCO")]
         [Authorize(Policy = "/gen-banco|R")]
         public CResult GetCLASE_BANCO_GEN_BANCO()

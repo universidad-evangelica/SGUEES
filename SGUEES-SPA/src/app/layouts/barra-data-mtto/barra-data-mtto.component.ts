@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
 import {
+  AfterContentInit,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
+  ContentChildren,
   EventEmitter,
   HostBinding,
   Input,
@@ -11,15 +13,19 @@ import {
   OnDestroy,
   OnInit,
   Output,
+  QueryList,
   SimpleChanges,
 } from '@angular/core';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
+import { DxTabPanelModule } from 'devextreme-angular/ui/tab-panel';
 import { DxToolbarModule } from 'devextreme-angular/ui/toolbar';
 import {
   BreadcrumbItem,
   PageHeaderModule,
 } from 'src/app/shared/components/library/page-header/page-header.component';
 import { MttoPageContextService } from 'src/app/layouts/mtto-page-context.service';
+import { BarraRibbonTabDirective } from './barra-ribbon-tab.directive';
+import { buildEstadoToolbarOptions, computeToolbarBtnWidth } from 'src/app/shared/mtto/mtto-grid.helpers';
 
 export type { BreadcrumbItem } from 'src/app/shared/components/library/page-header/page-header.component';
 
@@ -36,7 +42,7 @@ export type BarraLayoutMode = 'legacy' | 'header-only';
   host: { class: 'sguees-barra-mtto-premium sguees-mtto-chrome' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
+export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, AfterContentInit {
   @Input() tituloVentana: string = '';
   @Input() subTituloVentana: string = '';
   @Input() subtitle?: string;
@@ -44,10 +50,19 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() breadcrumbs?: BreadcrumbItem[];
   /** Fase 8B: header-only = toolbar browse en grid; legacy = comportamiento 7A. */
   @Input() layoutMode: BarraLayoutMode = 'header-only';
+  /** Browse con pestañas: Principal (toolbar estándar) + extras proyectadas desde el hijo. */
+  @Input() showRibbon = false;
+  @Input() ribbonPrincipalTitle = 'Principal';
   @Input() isBrowse: boolean = false;
   @Input() isForm: boolean = false;
   @Input() permiteAdd: boolean = false;
   @Input() showRefresh: boolean = true;
+  @Input() showExport = false;
+  @Input() permiteExport = true;
+  @Input() showEstadoToolbar = false;
+  @Input() campoEstado = '';
+  @Input() puedeCambiarEstado = true;
+  @Input() focusedRow: Record<string, unknown> | null = null;
   @Input() showDates: boolean = false;
   @Input() items: any[] = [];
   @Input() FECHA_INICIAL: Date = new Date();
@@ -58,6 +73,8 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Output() guardar = new EventEmitter<any>();
   @Output() cancelar = new EventEmitter<any>();
   @Output() consultar = new EventEmitter<any>();
+  @Output() exportar = new EventEmitter<any>();
+  @Output() activarInactivar = new EventEmitter<void>();
 
   @Input() btn1: string = '';
   @Input() btn1Icon: string = '';
@@ -65,7 +82,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() btn1Type: string = 'default';
   @Input() btn1Height: number = 44;
   @Input() btn1Width: number = 0;
-  @Input() btn1Mode: string = 'outlined';
+  @Input() btn1Mode: string = 'contained';
   @Output() btn1Click = new EventEmitter<any>();
 
   @Input() btn2: string = '';
@@ -74,7 +91,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() btn2Type: string = 'default';
   @Input() btn2Height: number = 44;
   @Input() btn2Width: number = 0;
-  @Input() btn2Mode: string = 'outlined';
+  @Input() btn2Mode: string = 'contained';
   @Output() btn2Click = new EventEmitter<any>();
 
   @Input() btn3: string = '';
@@ -83,7 +100,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() btn3Type: string = 'default';
   @Input() btn3Height: number = 44;
   @Input() btn3Width: number = 0;
-  @Input() btn3Mode: string = 'outlined';
+  @Input() btn3Mode: string = 'contained';
   @Output() btn3Click = new EventEmitter<any>();
 
   @Input() btn4: string = '';
@@ -92,7 +109,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() btn4Type: string = 'default';
   @Input() btn4Height: number = 44;
   @Input() btn4Width: number = 0;
-  @Input() btn4Mode: string = 'outlined';
+  @Input() btn4Mode: string = 'contained';
   @Output() btn4Click = new EventEmitter<any>();
 
   @Input() btn5: string = '';
@@ -101,7 +118,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() btn5Type: string = 'default';
   @Input() btn5Height: number = 44;
   @Input() btn5Width: number = 0;
-  @Input() btn5Mode: string = 'outlined';
+  @Input() btn5Mode: string = 'contained';
   @Output() btn5Click = new EventEmitter<any>();
 
   @Input() btn6: string = '';
@@ -110,13 +127,14 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() btn6Type: string = 'default';
   @Input() btn6Height: number = 44;
   @Input() btn6Width: number = 0;
-  @Input() btn6Mode: string = 'outlined';
+  @Input() btn6Mode: string = 'contained';
   @Output() btn6Click = new EventEmitter<any>();
 
   optNuevo: Record<string, unknown> = {};
   optGuardar: Record<string, unknown> = {};
   optCancelar: Record<string, unknown> = {};
   optRefresh: Record<string, unknown> = {};
+  optExport: Record<string, unknown> = {};
   optBtn1: Record<string, unknown> = {};
   optBtn2: Record<string, unknown> = {};
   optBtn3: Record<string, unknown> = {};
@@ -125,6 +143,15 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   optBtn6: Record<string, unknown> = {};
   optFechaInicial: Record<string, unknown> = {};
   optFechaFinal: Record<string, unknown> = {};
+  optActivar: Record<string, unknown> = {};
+  optDesactivar: Record<string, unknown> = {};
+
+  ribbonTabIndex = 0;
+
+  @ContentChildren(BarraRibbonTabDirective)
+  ribbonTabDirectives!: QueryList<BarraRibbonTabDirective>;
+
+  private ribbonTabsSubscribed = false;
 
   /** Subtítulo para page-header / contexto: `subtitle` tiene prioridad sobre `subtituloVentana`. */
   get resolvedSubtitle(): string {
@@ -147,10 +174,13 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   /**
    * Fila de acciones.
    * header-only browse: acciones en el grid unificado (sin segunda barra vacía),
-   * salvo fechas/botones extra que aún viven solo en la barra.
+   * salvo fechas/botones extra / ribbon que aún viven en la barra.
    * header-only consulta/edición: Guardar-Cancelar en barra.
    */
   get showToolbarRow(): boolean {
+    if (this.showRibbonBrowse) {
+      return false;
+    }
     if (!this.isBrowse) {
       return true;
     }
@@ -160,10 +190,26 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
     return true;
   }
 
-  /** Browse con fechas o btn1–6: la barra sigue mostrando toolbar (aún no migrados al grid). */
+  /** Browse con ribbon: pestaña Principal + extras del hijo. */
+  get showRibbonBrowse(): boolean {
+    return this.showRibbon && this.isBrowse;
+  }
+
+  get visibleRibbonTabs(): BarraRibbonTabDirective[] {
+    return (
+      this.ribbonTabDirectives?.filter(
+        (tab) => tab.barraRibbonTabVisible !== false && !!tab.title?.trim(),
+      ) ?? []
+    );
+  }
+
+  /** Browse con fechas, btn1–6 o ribbon: la barra sigue mostrando toolbar. */
   get browseNeedsBarraToolbar(): boolean {
     return (
+      this.showRibbon ||
       this.showDates ||
+      this.showExport ||
+      this.effectiveShowEstadoToolbar ||
       !!this.btn1 ||
       !!this.btn2 ||
       !!this.btn3 ||
@@ -180,6 +226,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
     }
     return (
       this.permiteAdd ||
+      this.effectiveShowEstadoToolbar ||
       !!this.btn1 ||
       !!this.btn2 ||
       !!this.btn3 ||
@@ -187,6 +234,10 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
       !!this.btn5 ||
       !!this.btn6
     );
+  }
+
+  get effectiveShowEstadoToolbar(): boolean {
+    return this.isBrowse && this.showEstadoToolbar && !!this.campoEstado?.trim();
   }
 
   get isHeaderOnlyMode(): boolean {
@@ -214,6 +265,11 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
     return this.layoutMode === 'legacy';
   }
 
+  @HostBinding('class.sguees-barra-mtto--ribbon')
+  get hostRibbon(): boolean {
+    return this.showRibbonBrowse;
+  }
+
   constructor(
     private cdr: ChangeDetectorRef,
     private pageContext: MttoPageContextService,
@@ -222,6 +278,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.OnGuardar = this.OnGuardar.bind(this);
     this.OnCancelar = this.OnCancelar.bind(this);
     this.OnConsultar = this.OnConsultar.bind(this);
+    this.OnExportar = this.OnExportar.bind(this);
     this.Onbtn1Click = this.Onbtn1Click.bind(this);
     this.Onbtn2Click = this.Onbtn2Click.bind(this);
     this.Onbtn3Click = this.Onbtn3Click.bind(this);
@@ -230,11 +287,16 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
     this.Onbtn6Click = this.Onbtn6Click.bind(this);
     this.OnValueChangeFECHA_INICIAL = this.OnValueChangeFECHA_INICIAL.bind(this);
     this.OnValueChangeFECHA_FINAL = this.OnValueChangeFECHA_FINAL.bind(this);
+    this.OnActivarInactivar = this.OnActivarInactivar.bind(this);
   }
 
   ngOnInit(): void {
     this.syncPageContext();
     this.rebuildToolbarOptions();
+  }
+
+  ngAfterContentInit(): void {
+    this.bindRibbonTabChanges();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -247,7 +309,8 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
       changes['layoutMode'] ||
       changes['permiteAdd'] ||
       changes['showRefresh'] ||
-      changes['isBrowse'];
+      changes['isBrowse'] ||
+      changes['showRibbon'];
 
     if (headerContextChange) {
       this.syncPageContext();
@@ -260,6 +323,13 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
       changes['showRefresh'] ||
       changes['showDates'] ||
       changes['layoutMode'] ||
+      changes['showRibbon'] ||
+      changes['showExport'] ||
+      changes['permiteExport'] ||
+      changes['showEstadoToolbar'] ||
+      changes['campoEstado'] ||
+      changes['puedeCambiarEstado'] ||
+      changes['focusedRow'] ||
       changes['btn1'] ||
       changes['btn2'] ||
       changes['btn3'] ||
@@ -308,6 +378,8 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
       icon: 'plus',
       text: 'Nuevo',
       type: 'default',
+      width: computeToolbarBtnWidth('Nuevo'),
+      elementAttr: { class: 'sguees-barra-btn-standard' },
       onClick: this.OnNuevo,
       visible: browseToolbarInBarra && this.permiteAdd && this.isBrowse,
     };
@@ -316,6 +388,8 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
       icon: 'save',
       text: 'Guardar',
       type: 'success',
+      width: computeToolbarBtnWidth('Guardar'),
+      elementAttr: { class: 'sguees-barra-btn-standard' },
       onClick: this.OnGuardar,
     };
     this.optCancelar = {
@@ -323,6 +397,8 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
       icon: 'clear',
       text: 'Cancelar',
       type: 'danger',
+      width: computeToolbarBtnWidth('Cancelar'),
+      elementAttr: { class: 'sguees-barra-btn-standard' },
       onClick: this.OnCancelar,
     };
     this.optRefresh = {
@@ -332,6 +408,21 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
       visible: browseToolbarInBarra && this.isBrowse && this.showRefresh,
       stylingMode: 'text',
       height: 44,
+    };
+    this.optExport = {
+      text: 'Exportar',
+      icon: 'exportxlsx',
+      type: 'default',
+      stylingMode: 'outlined',
+      height: 44,
+      width: computeToolbarBtnWidth('Exportar', 180),
+      onClick: this.OnExportar,
+      visible: browseToolbarInBarra && this.isBrowse && this.showExport,
+      disabled: !this.permiteExport,
+      elementAttr: { class: 'sguees-barra-btn-export sguees-barra-btn-standard' },
+      hint: this.permiteExport
+        ? 'Exportar'
+        : 'No tiene permiso para exportar registros.',
     };
     this.optBtn1 = this.buildExtraBtn(
       this.btn1, this.btn1Icon, this.btn1Type, this.btn1Mode, this.Onbtn1Click, this.btn1Height, this.btn1Width,
@@ -362,20 +453,38 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
       useMaskBehavior: true,
       type: 'date',
       displayFormat: 'dd/MM/yyyy',
-      width: '120',
+      width: 156,
+      height: 44,
       visible: browseToolbarInBarra && this.isBrowse && this.showDates,
       value: this.FECHA_INICIAL,
       onValueChanged: this.OnValueChangeFECHA_INICIAL,
+      elementAttr: { class: 'sguees-barra-datebox' },
     };
     this.optFechaFinal = {
       useMaskBehavior: true,
       type: 'date',
       displayFormat: 'dd/MM/yyyy',
-      width: '120',
+      width: 156,
+      height: 44,
       visible: browseToolbarInBarra && this.isBrowse && this.showDates,
       value: this.FECHA_FINAL,
       onValueChanged: this.OnValueChangeFECHA_FINAL,
+      elementAttr: { class: 'sguees-barra-datebox' },
     };
+
+    if (this.effectiveShowEstadoToolbar) {
+      const estadoOpts = buildEstadoToolbarOptions({
+        campoEstado: this.campoEstado,
+        focusedRow: this.focusedRow,
+        puedeCambiarEstado: this.puedeCambiarEstado,
+        onActivarInactivar: this.OnActivarInactivar,
+      });
+      this.optActivar = estadoOpts.optActivar;
+      this.optDesactivar = estadoOpts.optDesactivar;
+    } else {
+      this.optActivar = { visible: false };
+      this.optDesactivar = { visible: false };
+    }
 
     this.cdr.markForCheck();
   }
@@ -391,16 +500,18 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
     browseToolbarInBarra = true,
   ): Record<string, unknown> {
     const opt: Record<string, unknown> = {
-      stylingMode: mode || 'outlined',
+      stylingMode: mode || 'contained',
       height,
       icon,
       text,
       type,
       onClick,
       visible: text !== '' && (browseToolbarInBarra || !this.isBrowse),
+      elementAttr: { class: 'sguees-barra-btn-standard sguees-barra-btn-action' },
     };
-    if (width > 0) {
-      opt.width = width;
+    const resolvedWidth = computeToolbarBtnWidth(text, width);
+    if (resolvedWidth) {
+      opt.width = resolvedWidth;
     }
     return opt;
   }
@@ -416,6 +527,16 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   }
   OnConsultar(): void {
     this.pageContext.triggerRefresh();
+  }
+  OnExportar(): void {
+    if (!this.permiteExport) {
+      return;
+    }
+    this.pageContext.triggerExport();
+    this.exportar.emit();
+  }
+  OnActivarInactivar(): void {
+    this.activarInactivar.emit();
   }
   Onbtn1Click(): void {
     this.btn1Click.emit();
@@ -441,11 +562,37 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy {
   OnValueChangeFECHA_FINAL(e: { value?: Date }): void {
     this.FECHA_FINALChange.emit(e.value);
   }
+
+  onRibbonTabChanged(e: { component?: { option: (name: string) => number } }): void {
+    const index = e?.component?.option('selectedIndex');
+    if (typeof index === 'number') {
+      this.ribbonTabIndex = index;
+    }
+  }
+
+  private bindRibbonTabChanges(): void {
+    if (this.ribbonTabsSubscribed || !this.ribbonTabDirectives) {
+      return;
+    }
+    this.ribbonTabsSubscribed = true;
+    this.clampRibbonTabIndex();
+    this.ribbonTabDirectives.changes.subscribe(() => {
+      this.clampRibbonTabIndex();
+      this.cdr.markForCheck();
+    });
+  }
+
+  private clampRibbonTabIndex(): void {
+    const maxIndex = this.visibleRibbonTabs.length;
+    if (this.ribbonTabIndex > maxIndex) {
+      this.ribbonTabIndex = 0;
+    }
+  }
 }
 
 @NgModule({
-  imports: [DxButtonModule, DxToolbarModule, CommonModule, PageHeaderModule],
-  declarations: [BarraDataMttoComponent],
-  exports: [BarraDataMttoComponent],
+  imports: [DxButtonModule, DxTabPanelModule, DxToolbarModule, CommonModule, PageHeaderModule],
+  declarations: [BarraDataMttoComponent, BarraRibbonTabDirective],
+  exports: [BarraDataMttoComponent, BarraRibbonTabDirective],
 })
 export class BarraDataMttoModule {}

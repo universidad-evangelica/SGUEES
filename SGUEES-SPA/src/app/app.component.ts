@@ -18,7 +18,6 @@ export class AppComponent implements OnInit, OnDestroy {
               private themeService: ThemeService,
               private screen: ScreenService,
               public appInfo: AppInfoService) {
-    themeService.setAppTheme();
   }
 
   isAuthenticated() {

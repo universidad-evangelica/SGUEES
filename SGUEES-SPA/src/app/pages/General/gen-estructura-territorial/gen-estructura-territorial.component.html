@@ -1,11 +1,15 @@
+<!-- Estructura territorial: listado de países y documento con cascada -->
 <div class="sguees-mtto-view">
+	<!-- Acciones del mantenimiento (en documento: Guardar/Cancelar del país) -->
 	<app-barra-data-mtto
 		[tituloVentana]="tituloVentana"
-		[subTituloVentana]="subTituloVentana"
+		[showRibbon]="true"
+		[showExport]="permitePrint"
 		[isBrowse]="isBrowse()"
 		[isForm]="isForm()"
 		[permiteAdd]="permiteAdd"
 		[showRefresh]="!vistaDetalle"
+		(consultar)="consultar()"
 		(nuevo)="nuevo()"
 		(guardar)="guardar()"
 		(cancelar)="cancelar()"
@@ -14,6 +18,7 @@
 
 	<!-- Lista de países (entrada al módulo) -->
 	<ng-container *ngIf="!vistaDetalle">
+		<!-- Creación de país desde listado (formulario encima del grid) -->
 		<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 			<dx-form
 				#fData
@@ -28,6 +33,7 @@
 			</dx-form>
 		</div>
 
+		<!-- Grid de países: doble clic o editar abre el documento -->
 		<app-data-grid-mtto
 			#paisGrid
 			[isBrowse]="isBrowse()"
@@ -38,18 +44,18 @@
 			[remoteOperations]="mttoRemoteOperations"
 			[pageSize]="mttoPageSize"
 			[allowedPageSizes]="mttoPageSizes"
+			[nativeToolbar]="true"
+			[unifiedToolbar]="false"
 			[showSearch]="false"
-			[showAdd]="true"
-			[showRefresh]="true"
-			[showExport]="true"
+			[showAdd]="false"
+			[showRefresh]="false"
+			[showExport]="false"
 			[permitePrint]="permitePrint"
 			[permiteEditar]="getPermiteEditar"
 			[permiteDele]="getPermiteDele"
 			[responsiveColumnHiding]="false"
 			[columnHidingEnabled]="false"
 			[exportFileName]="'Paises'"
-			(refresh)="consultar()"
-			(add)="nuevo()"
 			(editClick)="editarPaisDesdeGrid($event)"
 			(rowDblClick)="rowDblClick($event)"
 			(rowRemoving)="rowRemoving($event)"
@@ -58,6 +64,7 @@
 
 	<!-- Documento país + cascada (flujo tipo partida: Guardar / Cancelar del padre) -->
 	<ng-container *ngIf="vistaDetalle">
+		<!-- Datos del país seleccionado -->
 		<div class="content-block dx-card responsive-paddings sguees-mtto-form-card territorial-form-card">
 			<dx-form
 				#fData
@@ -72,8 +79,10 @@
 			</dx-form>
 		</div>
 
+		<!-- Tres paneles: depto → municipio → distrito (selección en cascada) -->
 		<div class="territorial-cascade" *ngIf="selectedPais">
 			<div class="territorial-panels" [style.--territorial-cascade-grid-height.px]="cascadeGridHeight">
+						<!-- Departamentos del país -->
 						<div class="territorial-panel territorial-panel--cascade">
 							<app-data-grid-mtto
 								#deptoGrid
@@ -82,8 +91,7 @@
 								[columns]="deptoColumns"
 								[summary]="deptoSummary"
 								[keyExpr]="'CORR_DEPTO'"
-								[remoteOperations]="cascadeRemoteOperations"
-								[headerFilterLoader]="loadHeaderFilterValuesDeptos"
+								[remoteOperations]="mttoRemoteOperations"
 								[gridHeight]="cascadeGridHeight"
 								[repaintChangesOnly]="false"
 								[unifiedToolbar]="true"
@@ -96,13 +104,14 @@
 								[columnHidingEnabled]="false"
 								[titulo]="'Departamentos'"
 								[subtitle]="selectedPais?.NOMBRE_PAIS || ''"
-								(refresh)="refrescarDeptos()"
+								(refresh)="getCORR_DEPTO()"
 								(add)="nuevoDepto()"
 								(rowClick)="onDeptoFocused($event)"
 								(focusedRowChanged)="onDeptoFocused($event)"
 							></app-data-grid-mtto>
 						</div>
 
+						<!-- Municipios del departamento enfocado -->
 						<div class="territorial-panel territorial-panel--cascade" [class.territorial-panel--disabled]="!selectedDepto">
 							<app-data-grid-mtto
 								#municipioGrid
@@ -111,8 +120,7 @@
 								[columns]="municipioColumns"
 								[summary]="municipioSummary"
 								[keyExpr]="'CORR_MUNICIPIO'"
-								[remoteOperations]="cascadeRemoteOperations"
-								[headerFilterLoader]="loadHeaderFilterValuesMunicipios"
+								[remoteOperations]="mttoRemoteOperations"
 								[gridHeight]="cascadeGridHeight"
 								[repaintChangesOnly]="false"
 								[unifiedToolbar]="true"
@@ -125,13 +133,14 @@
 								[columnHidingEnabled]="false"
 								[titulo]="'Municipios'"
 								[subtitle]="selectedDepto?.NOMBRE_DEPTO || ''"
-								(refresh)="refrescarMunicipios()"
+								(refresh)="getCORR_MUNICIPIO()"
 								(add)="nuevoMunicipio()"
 								(rowClick)="onMunicipioFocused($event)"
 								(focusedRowChanged)="onMunicipioFocused($event)"
 							></app-data-grid-mtto>
 						</div>
 
+						<!-- Distritos del municipio enfocado -->
 						<div class="territorial-panel territorial-panel--cascade" [class.territorial-panel--disabled]="!selectedMunicipio">
 							<app-data-grid-mtto
 								#distritoGrid
@@ -140,8 +149,7 @@
 								[columns]="districtoColumns"
 								[summary]="distritoSummary"
 								[keyExpr]="'CORR_DISTRITO'"
-								[remoteOperations]="cascadeRemoteOperations"
-								[headerFilterLoader]="loadHeaderFilterValuesDistritos"
+								[remoteOperations]="mttoRemoteOperations"
 								[gridHeight]="cascadeGridHeight"
 								[repaintChangesOnly]="false"
 								[unifiedToolbar]="true"
@@ -154,7 +162,7 @@
 								[columnHidingEnabled]="false"
 								[titulo]="'Distritos'"
 								[subtitle]="selectedMunicipio?.NOMBRE_MUNICIPIO || ''"
-								(refresh)="refrescarDistritos()"
+								(refresh)="getCORR_DISTRITO()"
 								(add)="nuevoDistrito()"
 							></app-data-grid-mtto>
 						</div>
@@ -163,6 +171,7 @@
 	</ng-container>
 </div>
 
+<!-- Popup CRUD de depto / municipio / distrito -->
 <dx-popup
 	[(visible)]="popupVisible"
 	[showTitle]="true"
@@ -191,6 +200,7 @@
 	</div>
 </dx-popup>
 
+<!-- Overlay de carga durante operaciones al API -->
 <dx-load-panel
 	shadingColor="rgba(0,0,0,0.4)"
 	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"

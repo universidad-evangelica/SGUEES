@@ -18,8 +18,6 @@ export class ConClasePartidaComponent extends CBaseComponent implements OnInit {
 	protected override requiereEmpresaSesion = true;
 	protected override mttoGridKeyExpr = 'CORR_CLASE_PARTIDA';
 
-	private readonly maintenanceSubtitulo = 'Mantenimiento de clases de partida';
-
 	//#region <Declarando Variales>
 	mLINEA_AUMENTA: any[] = [];
 	mLINEA_DISMINUYE: any[] = [];
@@ -43,7 +41,6 @@ export class ConClasePartidaComponent extends CBaseComponent implements OnInit {
 
 	//#region <Inicializando Opciones>
 	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.llenaComboBox();
 		this.consultar();
 	}
@@ -52,7 +49,6 @@ export class ConClasePartidaComponent extends CBaseComponent implements OnInit {
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
 		}
 	}
 

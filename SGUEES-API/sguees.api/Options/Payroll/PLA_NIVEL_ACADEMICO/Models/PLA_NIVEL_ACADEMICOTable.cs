@@ -3,6 +3,7 @@ using eFramework.Data;
 
 namespace SGUEES.Models
 {
+    // Qué hace: representa la entidad de escritura de la tabla PLA_NIVEL_ACADEMICO.
     public class PLA_NIVEL_ACADEMICOTable : BaseEntity
     {
         public int CORR_EMPRESA { get; set; }

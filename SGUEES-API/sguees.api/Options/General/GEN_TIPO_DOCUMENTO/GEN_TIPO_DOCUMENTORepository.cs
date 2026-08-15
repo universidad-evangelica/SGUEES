@@ -11,6 +11,21 @@ namespace sguees.Repositories
 	public class GEN_TIPO_DOCUMENTORepository: BaseRepository<GEN_TIPO_DOCUMENTOTable>, IGEN_TIPO_DOCUMENTORepository
 	{
 		private const string _TableName = "GEN_TIPO_DOCUMENTO";
+		private const string _ViewName = "V_GEN_TIPO_DOCUMENTO";
+		private const string _DefaultSortField = "CORR_TIPO_DOC";
+
+		private static readonly string[] _AllowedSortFields =
+		{
+			"CORR_TIPO_DOC",
+			"NOMBRE_TIPO_DOC",
+			"NOMBRE_CORTO_TIPO_DOC",
+			"USAR_COMPRAS",
+			"USAR_VENTAS",
+			"NOMBRE_CLASE_DOCUMENTO",
+			"NOMBRE_SUMA_RESTA",
+			"NOMBRE_LIBRO_IVA",
+			"ES_ELECTRONICO",
+		};
 		
 		public GEN_TIPO_DOCUMENTORepository(IConfiguration config) : 
 				base(config.GetConnectionString("defaultConnection"),
@@ -24,15 +39,15 @@ namespace sguees.Repositories
 			
 			try
 			{
-				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
-				var response = new List<GEN_TIPO_DOCUMENTOView>().FromDataReader(reader).ToList();
-				
-				reader.Close();
-				reader = null;
-				
-				objResultado.Data = response;
+				var paged = await ReadPagedViewAsync<GEN_TIPO_DOCUMENTOView>(
+					_ViewName,
+					xWhere,
+					_AllowedSortFields,
+					_DefaultSortField);
+
+				objResultado.Data = paged.PageData;
 				objResultado.Result = true;
-				objResultado.RowsAffected = response.Count;
+				objResultado.RowsAffected = paged.TotalRows;
 				objResultado.CodeHelper =  0;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
@@ -221,7 +236,7 @@ namespace sguees.Repositories
 			try
 			{
 				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
-				var response = new List<GEN_TIPO_DOCUMENTO_RUBROView>().FromDataReader(reader).ToList();
+				var response = new List<GEN_TIPO_DOCUMENTOView>().FromDataReader(reader).ToList();
 				
 				reader.Close();
 				reader = null;
