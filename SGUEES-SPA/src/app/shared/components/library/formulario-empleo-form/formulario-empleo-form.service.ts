@@ -27,4 +27,14 @@ export class FormularioEmpleoFormService {
 			data
 		);
 	}
+
+	subirFoto(token: string, file: File): Observable<IResult> {
+		const formData = new FormData();
+		formData.append('TOKEN', token);
+		formData.append('file', file, file.name);
+		return this.http.post<IResult>(
+			`${environment.UrlSELECCIONCONTRATACIONAPI}${this.controller}/SubirFoto`,
+			formData
+		);
+	}
 }

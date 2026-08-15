@@ -1,4 +1,4 @@
-<p-toast position="bottom-right"></p-toast>
+<!-- <p-toast position="bottom-right"></p-toast> -->
 
 <div id="page-formulario-empleo" class="portal" [class.portal--wizard]="enWizard">
 	<div class="portal__media" aria-hidden="true"></div>
@@ -100,6 +100,7 @@
 						<strong>{{ progresoPct }}%</strong>
 						<span>{{ progresoLabel }}</span>
 					</div>
+					<p class="wizard-progress__detail">{{ progresoDetalle }}</p>
 					<dx-progress-bar
 						[min]="0"
 						[max]="100"
@@ -117,14 +118,14 @@
 						class="wizard-stepper__item"
 						*ngFor="let s of steps"
 						[class.is-active]="s.id === pasoActual"
-						[class.is-done]="s.id < pasoActual"
+						[class.is-done]="pasoCompleto(s.id)"
 						[disabled]="s.id > pasoActual + 1"
 						(click)="irAPaso(s.id)"
 						[attr.aria-current]="s.id === pasoActual ? 'step' : null"
 					>
 						<span class="wizard-stepper__num" aria-hidden="true">
-							<i *ngIf="s.id < pasoActual" class="dx-icon dx-icon-check"></i>
-							<ng-container *ngIf="s.id >= pasoActual">{{ s.id }}</ng-container>
+							<i *ngIf="pasoCompleto(s.id)" class="dx-icon dx-icon-check"></i>
+							<ng-container *ngIf="!pasoCompleto(s.id)">{{ s.id }}</ng-container>
 						</span>
 						<span class="wizard-stepper__label">{{ s.corto }}</span>
 					</button>
@@ -142,19 +143,19 @@
 							<div class="wizard-basics">
 								<div class="wizard-basics__names">
 									<div class="wizard-field">
-										<label class="wizard-label">Primer nombre *</label>
+										<label class="wizard-label">Primer nombre <span class="campo-required">*</span></label>
 										<dx-text-box stylingMode="outlined" [(value)]="formData.NOMBRE1" [maxLength]="50"></dx-text-box>
 									</div>
 									<div class="wizard-field">
-										<label class="wizard-label">Segundo nombre</label>
+										<label class="wizard-label">Segundo nombre <span class="campo-required">*</span></label>
 										<dx-text-box stylingMode="outlined" [(value)]="formData.NOMBRE2" [maxLength]="50"></dx-text-box>
 									</div>
 									<div class="wizard-field">
-										<label class="wizard-label">Primer apellido *</label>
+										<label class="wizard-label">Primer apellido <span class="campo-required">*</span></label>
 										<dx-text-box stylingMode="outlined" [(value)]="formData.APELLIDO1" [maxLength]="50"></dx-text-box>
 									</div>
 									<div class="wizard-field">
-										<label class="wizard-label">Segundo apellido</label>
+										<label class="wizard-label">Segundo apellido <span class="campo-required">*</span></label>
 										<dx-text-box stylingMode="outlined" [(value)]="formData.APELLIDO2" [maxLength]="50"></dx-text-box>
 									</div>
 								</div>
@@ -186,7 +187,7 @@
 
 							<div class="wizard-grid wizard-grid--2">
 								<div class="wizard-field">
-									<label class="wizard-label">Fecha de nacimiento *</label>
+									<label class="wizard-label">Fecha de nacimiento <span class="campo-required">*</span></label>
 									<dx-date-box stylingMode="outlined"
 										[value]="formData.FECHA_NACIMIENTO"
 										type="date"
@@ -200,7 +201,7 @@
 									<dx-number-box stylingMode="outlined" [value]="formData.EDAD" [showSpinButtons]="false"></dx-number-box>
 								</div>
 								<div class="wizard-field">
-									<label class="wizard-label">Estado civil</label>
+									<label class="wizard-label">Estado civil <span class="campo-required">*</span></label>
 									<dx-select-box stylingMode="outlined"
 										[(value)]="formData.ESTADO_CIVIL"
 										[items]="estadoCivilOptions"
@@ -219,19 +220,19 @@
 							<h3 class="wizard-section__title">Información de contacto</h3>
 							<div class="wizard-grid wizard-grid--2">
 								<div class="wizard-field">
-									<label class="wizard-label">Correo *</label>
+									<label class="wizard-label">Correo <span class="campo-required">*</span></label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.CORREO" mode="email"></dx-text-box>
 								</div>
 								<div class="wizard-field">
-									<label class="wizard-label">Celular *</label>
+									<label class="wizard-label">Celular <span class="campo-required">*</span></label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.CELULAR"></dx-text-box>
 								</div>
 								<div class="wizard-field">
 									<label class="wizard-label">Teléfono</label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.TELEFONO"></dx-text-box>
 								</div>
-								<div class="wizard-field wizard-field--span2">
-									<label class="wizard-label">Dirección *</label>
+								<div class="wizard-field ">
+									<label class="wizard-label">Dirección <span class="campo-required">*</span></label>
 									<dx-text-area stylingMode="outlined" [(value)]="formData.DIRECCION" [height]="70"></dx-text-area>
 								</div>
 							</div>
@@ -241,7 +242,7 @@
 							<h3 class="wizard-section__title">Documentación</h3>
 							<div class="wizard-grid wizard-grid--2">
 								<div class="wizard-field">
-									<label class="wizard-label">DUI *</label>
+									<label class="wizard-label">DUI <span class="campo-required">*</span></label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.DUI"></dx-text-box>
 								</div>
 								<div class="wizard-field">
@@ -253,11 +254,11 @@
 									<dx-text-box stylingMode="outlined" [(value)]="formData.ISSS"></dx-text-box>
 								</div>
 								<div class="wizard-field">
-									<label class="wizard-label">AFP</label>
+									<label class="wizard-label">AFP <span class="campo-required">*</span></label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.AFP"></dx-text-box>
 								</div>
 								<div class="wizard-field">
-									<label class="wizard-label">Nombre AFP</label>
+									<label class="wizard-label">Nombre AFP <span class="campo-required">*</span></label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.NOMBRE_AFP"></dx-text-box>
 								</div>
 								<div class="wizard-field">
@@ -271,11 +272,11 @@
 							<h3 class="wizard-section__title">Información laboral</h3>
 							<div class="wizard-grid wizard-grid--2">
 								<div class="wizard-field wizard-field--span2">
-									<label class="wizard-label">Plaza solicitada</label>
+									<label class="wizard-label">Plaza solicitada <span class="campo-required">*</span></label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.PLAZA_SOLICITADA"></dx-text-box>
 								</div>
 								<div class="wizard-field">
-									<label class="wizard-label">Pretensión salarial</label>
+									<label class="wizard-label">Pretensión salarial <span class="campo-required">*</span></label>
 									<dx-number-box stylingMode="outlined"
 										[(value)]="formData.PRETENSION_SALARIAL"
 										[format]="'$#,##0.00'"
@@ -283,7 +284,7 @@
 									></dx-number-box>
 								</div>
 								<div class="wizard-field">
-									<label class="wizard-label">Disponibilidad</label>
+									<label class="wizard-label">Disponibilidad <span class="campo-required">*</span></label>
 									<dx-select-box stylingMode="outlined"
 										[(value)]="formData.DISPONIBILIDAD"
 										[items]="disponibilidadOptions"
@@ -326,7 +327,7 @@
 								></dx-check-box>
 							</div>
 
-							<div class="wizard-field" *ngIf="formData.POSEE_DISCAPACIDAD">
+							<div class="wizard-field mt-14" *ngIf="formData.POSEE_DISCAPACIDAD">
 								<label class="wizard-label">Tipo de discapacidad</label>
 								<dx-text-box stylingMode="outlined" [(value)]="formData.TIPO_DISCAPACIDAD"></dx-text-box>
 							</div>
@@ -410,7 +411,7 @@
 							<h3 class="wizard-section__title">Contacto de emergencia</h3>
 							<div class="wizard-grid wizard-grid--2">
 								<div class="wizard-field">
-									<label class="wizard-label">Nombre *</label>
+									<label class="wizard-label">Nombre <span class="campo-required">*</span></label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.EMERGENCIA_NOMBRE"></dx-text-box>
 								</div>
 								<div class="wizard-field">
@@ -418,7 +419,7 @@
 									<dx-text-box stylingMode="outlined" [(value)]="formData.EMERGENCIA_PARENTESCO"></dx-text-box>
 								</div>
 								<div class="wizard-field">
-									<label class="wizard-label">Teléfono *</label>
+									<label class="wizard-label">Teléfono <span class="campo-required">*</span></label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.EMERGENCIA_TELEFONO"></dx-text-box>
 								</div>
 							</div>
@@ -609,11 +610,41 @@
 					<!-- PASO 6: Confirmación -->
 					<div class="wizard-step" *ngIf="pasoActual === 6">
 						<div class="wizard-section">
-							<h3 class="wizard-section__title">Resumen de tu solicitud</h3>
+							<h3 class="wizard-section__title">Completitud de tu solicitud</h3>
+							<div class="wizard-progress-summary">
+								<div class="wizard-progress-summary__hero">
+									<strong>{{ progreso.porcentaje }}%</strong>
+									<span>Llenaste {{ formatoProgreso(progreso.total) }} campos</span>
+								</div>
+								<div class="wizard-progress-summary__split">
+									<div class="wizard-progress-summary__card">
+										<span class="wizard-progress-summary__kicker">Requeridos</span>
+										<strong>{{ formatoProgreso(progreso.requeridos) }}</strong>
+									</div>
+									<div class="wizard-progress-summary__card">
+										<span class="wizard-progress-summary__kicker">Opcionales</span>
+										<strong>{{ formatoProgreso(progreso.opcionales) }}</strong>
+									</div>
+								</div>
+							</div>
+
 							<ul class="wizard-summary">
-								<li *ngFor="let item of resumenChecks" class="wizard-summary__item">
-									<span class="wizard-summary__check" aria-hidden="true">✓</span>
-									<span>{{ item.label }}</span>
+								<li
+									*ngFor="let item of progreso.pasos"
+									class="wizard-summary__item"
+									[class.is-complete]="item.completoRequeridos"
+									[class.is-partial]="!item.completoRequeridos"
+								>
+									<span class="wizard-summary__check" aria-hidden="true">
+										{{ item.completoRequeridos ? '✓' : '!' }}
+									</span>
+									<div class="wizard-summary__body">
+										<span class="wizard-summary__title">{{ item.label }}</span>
+										<span class="wizard-summary__meta">
+											Req. {{ formatoProgreso(item.requeridos) }}
+											· Opc. {{ formatoProgreso(item.opcionales) }}
+										</span>
+									</div>
 									<button type="button" class="wizard-summary__link" (click)="irAPaso(item.paso)">
 										Revisar
 									</button>
@@ -623,7 +654,43 @@
 
 						<div class="wizard-section">
 							<h3 class="wizard-section__title">Declaraciones</h3>
-							<div class="wizard-checks wizard-checks--stack">
+							<p class="wizard-progress-summary__note">
+								Este bloque es independiente del porcentaje de campos. Debes aceptar las declaraciones para enviar.
+							</p>
+							<ul class="wizard-summary wizard-summary--decls">
+								<li
+									class="wizard-summary__item"
+									[class.is-complete]="progreso.declaraciones.declaraVerdad"
+									[class.is-partial]="!progreso.declaraciones.declaraVerdad"
+								>
+									<span class="wizard-summary__check" aria-hidden="true">
+										{{ progreso.declaraciones.declaraVerdad ? '✓' : '○' }}
+									</span>
+									<span>Declaración de veracidad</span>
+								</li>
+								<li
+									class="wizard-summary__item"
+									[class.is-complete]="progreso.declaraciones.autorizaVerificacion"
+									[class.is-partial]="!progreso.declaraciones.autorizaVerificacion"
+								>
+									<span class="wizard-summary__check" aria-hidden="true">
+										{{ progreso.declaraciones.autorizaVerificacion ? '✓' : '○' }}
+									</span>
+									<span>Autorización de verificación</span>
+								</li>
+								<li
+									class="wizard-summary__item"
+									[class.is-complete]="progreso.declaraciones.firmaElectronica"
+									[class.is-partial]="!progreso.declaraciones.firmaElectronica"
+								>
+									<span class="wizard-summary__check" aria-hidden="true">
+										{{ progreso.declaraciones.firmaElectronica ? '✓' : '○' }}
+									</span>
+									<span>Firma electrónica (opcional)</span>
+								</li>
+							</ul>
+
+							<div class="wizard-checks wizard-checks--stack mb-12 mt-14">
 								<dx-check-box
 									[(value)]="formData.DECLARA_VERDAD"
 									text="Declaro que la información proporcionada es verdadera."
@@ -634,7 +701,7 @@
 								></dx-check-box>
 							</div>
 
-							<div class="wizard-grid wizard-grid--2">
+							<div class="wizard-grid wizard-grid--2 mb-4">
 								<div class="wizard-field">
 									<label class="wizard-label">Fecha</label>
 									<dx-date-box stylingMode="outlined"
@@ -664,7 +731,7 @@
 					type="normal"
 					icon="chevronprev"
 					(onClick)="anterior()"
-					[disabled]="enviando"
+					[disabled]="enviando || fotoSubiendo"
 				></dx-button>
 
 				<dx-button
@@ -680,15 +747,15 @@
 					text="Enviar solicitud"
 					type="success"
 					icon="email"
-					[disabled]="enviando || !formData.DECLARA_VERDAD || !formData.AUTORIZA_VERIFICACION"
+					[disabled]="enviando || fotoSubiendo || !formData.DECLARA_VERDAD || !formData.AUTORIZA_VERIFICACION"
 					(onClick)="onSubmit()"
 					[elementAttr]="{ class: 'wizard-nav__submit' }"
 				>
 				</dx-button>
 
-				<span class="wizard-nav__loading" *ngIf="enviando">
+				<span class="wizard-nav__loading" *ngIf="enviando || fotoSubiendo">
 					<dx-load-indicator width="24px" height="24px" [visible]="true"></dx-load-indicator>
-					Enviando…
+					{{ enviando ? 'Enviando…' : 'Subiendo fotografía…' }}
 				</span>
 			</footer>
 		</section>

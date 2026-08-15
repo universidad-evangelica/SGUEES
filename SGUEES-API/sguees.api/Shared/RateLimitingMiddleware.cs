@@ -57,6 +57,7 @@ namespace sguees.api.Shared
                 "/seg_usuario/restablecer-contrasena",
                 "/seg_usuario/reset-password",
                 "/sc_solicitud_empleo_publico/validartoken",
+                "/sc_solicitud_empleo_publico/subirfoto",
                 "/sc_solicitud_empleo_publico/completar"
             };
         }

@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using eFramework.Core;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using sguees.Models;
 using sguees.Services;
@@ -24,6 +25,15 @@ namespace sguees.Controllers
         public async Task<CResult> ValidarToken([FromQuery] SC_SOLICITUD_EMPLEO_PUBLICOParam data)
         {
             return await _service.ValidarTokenAsync(data);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("SubirFoto")]
+        [RequestSizeLimit(6 * 1024 * 1024)]
+        public async Task<IActionResult> SubirFoto([FromForm] string TOKEN, IFormFile file)
+        {
+            var resultado = await _service.SubirFotoAsync(TOKEN, file);
+            return resultado.Result ? Ok(resultado) : BadRequest(resultado);
         }
 
         [AllowAnonymous]

@@ -14,8 +14,29 @@
   (nuevo)="nuevo()"
   (guardar)="guardar()"
   (cancelar)="cancelar()"
+  [showRefresh]="true"
+  
 >
 </app-barra-data-mtto>
+
+<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+<div class="solicitud-header">
+    <div class="solicitud-header__title">
+        <i class="dx-icon dx-icon-group"></i>
+        <h5>Datos Solicitud Empleo</h5>
+    </div>
+</div>
+
+<dx-form
+    class="mt-20"
+    #fData
+    id="fData"
+    [formData]="model"
+    [labelLocation]="'top'"
+    [colCount]="8"
+    [items]="items">
+</dx-form>
+</div>
 
 <div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
   <dx-tab-panel
@@ -24,104 +45,6 @@
     [selectedIndex]="0"
     (onSelectionChanged)="tabSelectionChanged($event)"
   >
-    <dxi-item title="Datos Solicitud Empleo" [icon]="'event'">
-      <dx-form
-        class="mt-20"
-        #fData
-        id="fData"
-        [formData]="model"
-        [labelLocation]="'top'"
-        [colCount]="8"
-        [items]="items"
-      >
-      </dx-form>
-
-      <div class="dx-grid-deta">
-        <dx-toolbar class="mb-20">
-          <dxi-item location="before">
-            <div *dxTemplate>
-              <h5>
-                <i class="dx-icon dx-icon-card mr-20"></i>Datos Participante:
-              </h5>
-            </div>
-          </dxi-item>
-        </dx-toolbar>
-      </div>
-
-      <dx-tab-panel
-        class="participante-tab-panel"
-        [animationEnabled]="false"
-        [swipeEnabled]="false"
-        [selectedIndex]="0"
-      >
-        <dxi-item title="Personales" [icon]="'user'">
-          <div
-            class="persona-datos-panel"
-            *ngIf="tienePersonaDatos; else sinPersonaDatos"
-          >
-            <div class="persona-datos-header">
-              <div class="persona-avatar" aria-hidden="true">
-                {{ inicialesPersona }}
-              </div>
-
-              <div class="persona-datos-title">
-                <div class="persona-nombre">{{ nombreCompletoPersona }}</div>
-
-                <div class="persona-meta">
-                  <span class="persona-badge">Solo lectura</span>
-
-                  <span>Corr. {{ personaDatos?.CORR_PERSONA_DATOS }}</span>
-                </div>
-              </div>
-            </div>
-
-            <dx-form
-              class="persona-datos-form"
-              [formData]="personaDatos"
-              [readOnly]="true"
-              [labelLocation]="'top'"
-              [colCount]="2"
-              [items]="personaDatosItems"
-            >
-            </dx-form>
-          </div>
-
-          <ng-template #sinPersonaDatos>
-            <div class="persona-datos-empty mt-20" *ngIf="!cargandoPersonaDatos">
-              <div class="persona-empty-icon">
-                <i class="dx-icon dx-icon-user"></i>
-              </div>
-
-              <h4>Sin datos personales</h4>
-
-              <p>
-                Aún no hay información del participante para esta solicitud.
-              </p>
-
-              <span
-                >Se mostrará aquí cuando complete el formulario de empleo.</span
-              >
-            </div>
-
-            <div class="persona-datos-empty" *ngIf="cargandoPersonaDatos">
-              <p>Cargando datos del participante...</p>
-            </div>
-          </ng-template>
-        </dxi-item>
-
-        <dxi-item title="Familiares" [icon]="'group'">
-          <div class="persona-datos-empty mt-20">
-            <p>Sección pendiente.</p>
-          </div>
-        </dxi-item>
-
-        <dxi-item title="Estudios" [icon]="'bookmark'">
-          <div class="persona-datos-empty mt-20">
-            <p>Sección pendiente.</p>
-          </div>
-        </dxi-item>
-      </dx-tab-panel>
-    </dxi-item>
 
     <dxi-item title="Token/Bitacora" [icon]="'checklist'">
       <div class="dx-grid-deta">
@@ -182,6 +105,598 @@
         </dx-data-grid>
       </div>
     </dxi-item>
+
+    <dxi-item title="Datos Solicitud" [icon]="'accountbox'">
+      <ng-container *ngIf="tienePersonaDatos; else sinPersonaDatos">
+        <div class="persona-datos-content">
+          <div class="persona-datos-header">
+            <button
+              *ngIf="fotoPersonaUrl"
+              type="button"
+              class="persona-avatar persona-avatar--foto"
+              (click)="abrirFotoPreview()"
+              aria-label="Ver fotografía del participante"
+            >
+              <img
+                class="persona-avatar__img"
+                [src]="fotoPersonaUrl"
+                alt="Fotografía del participante"
+              />
+              <span class="persona-avatar__hover" aria-hidden="true">
+                <i class="dx-icon dx-icon-eyeopen"></i>
+                <span>Ver</span>
+              </span>
+            </button>
+            <div *ngIf="!fotoPersonaUrl" class="persona-avatar" aria-hidden="true">
+              {{ inicialesPersona }}
+            </div>
+            <div class="persona-datos-title">
+              <div class="persona-nombre">{{ nombreCompletoPersona }}</div>
+              <div class="persona-meta">
+                <span class="persona-badge">Solo lectura</span>
+                <span>Corr. {{ personaDatos?.CORR_PERSONA_DATOS }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <dx-tab-panel
+          class="participante-tab-panel"
+          [animationEnabled]="false"
+          [swipeEnabled]="false"
+          [selectedIndex]="0"
+        >
+          <dxi-item title="Personales" [icon]="'user'">
+            <div class="rd-panel">
+              <section class="rd-section">
+                <h4 class="rd-section__title">Identidad</h4>
+                <div class="rd-grid">
+                  <div class="rd-field">
+                    <span class="rd-label">Primer nombre</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.NOMBRE1)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Segundo nombre</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.NOMBRE2)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Primer apellido</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.APELLIDO1)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Segundo apellido</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.APELLIDO2)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Fecha nacimiento</span
+                    ><span class="rd-value">{{
+                      fechaLectura(personaDatos?.FECHA_NACIMIENTO)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Edad</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.EDAD)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Estado civil</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.ESTADO_CIVIL)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Nacionalidad</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.NACIONALIDAD)
+                    }}</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="rd-section">
+                <h4 class="rd-section__title">Contacto</h4>
+                <div class="rd-grid">
+                  <div class="rd-field">
+                    <span class="rd-label">Correo</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.CORREO)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Celular</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.CELULAR)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Teléfono</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.TELEFONO)
+                    }}</span>
+                  </div>
+                  <div class="rd-field rd-field--wide">
+                    <span class="rd-label">Dirección</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.DIRECCION)
+                    }}</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="rd-section">
+                <h4 class="rd-section__title">Documentación</h4>
+                <div class="rd-grid">
+                  <div class="rd-field">
+                    <span class="rd-label">DUI</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.DUI)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Pasaporte</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.PASAPORTE)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">ISSS</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.ISSS)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">AFP</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.AFP)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Nombre AFP</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.NOMBRE_AFP)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Licencia</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.LICENCIA)
+                    }}</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="rd-section">
+                <h4 class="rd-section__title">Laboral</h4>
+                <div class="rd-grid">
+                  <div class="rd-field rd-field--wide">
+                    <span class="rd-label">Plaza solicitada</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.PLAZA_SOLICITADA)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Pretensión salarial</span
+                    ><span class="rd-value">{{
+                      montoLectura(personaDatos?.PRETENSION_SALARIAL)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Disponibilidad</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.DISPONIBILIDAD)
+                    }}</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="rd-section">
+                <h4 class="rd-section__title">Información adicional</h4>
+                <div class="rd-grid">
+                  <div class="rd-field">
+                    <span class="rd-label">Religión</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.RELIGION)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Iglesia</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.IGLESIA)
+                    }}</span>
+                  </div>
+                  <div class="rd-field rd-field--wide">
+                    <span class="rd-label">Dirección iglesia</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.DIRECCION_IGLESIA)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Contribuyente CCF</span
+                    ><span class="rd-value">{{
+                      siNo(personaDatos?.ES_CONTRIBUYENTE_CCF)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Jubilado</span
+                    ><span class="rd-value">{{
+                      siNo(personaDatos?.ES_JUBILADO)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Posee discapacidad</span
+                    ><span class="rd-value">{{
+                      siNo(personaDatos?.POSEE_DISCAPACIDAD)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Tipo discapacidad</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.TIPO_DISCAPACIDAD)
+                    }}</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="rd-section">
+                <h4 class="rd-section__title">Emergencia</h4>
+                <div class="rd-grid">
+                  <div class="rd-field">
+                    <span class="rd-label">Nombre</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.EMERGENCIA_NOMBRE)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Parentesco</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.EMERGENCIA_PARENTESCO)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Teléfono</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.EMERGENCIA_TELEFONO)
+                    }}</span>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </dxi-item>
+
+          <dxi-item title="Familiares" [icon]="'group'">
+            <div class="rd-panel">
+              <section class="rd-section">
+                <h4 class="rd-section__title">Familiares directos</h4>
+                <div
+                  class="rd-cards"
+                  *ngIf="familiares.length; else sinFamiliares"
+                >
+                  <article class="rd-card" *ngFor="let item of familiares">
+                    <header class="rd-card__header">
+                      {{ etiquetaFamiliar(item.TIPO) }}
+                    </header>
+                    <div class="rd-grid">
+                      <div class="rd-field">
+                        <span class="rd-label">Nombre</span
+                        ><span class="rd-value">{{
+                          textoLectura(item.NOMBRE)
+                        }}</span>
+                      </div>
+                      <div class="rd-field">
+                        <span class="rd-label">Ocupación</span
+                        ><span class="rd-value">{{
+                          textoLectura(item.OCUPACION)
+                        }}</span>
+                      </div>
+                      <div class="rd-field">
+                        <span class="rd-label">Fecha nacimiento</span
+                        ><span class="rd-value">{{
+                          fechaLectura(item.FECHA_NACIMIENTO)
+                        }}</span>
+                      </div>
+                      <div class="rd-field rd-field--wide">
+                        <span class="rd-label">Domicilio</span
+                        ><span class="rd-value">{{
+                          textoLectura(item.DOMICILIO)
+                        }}</span>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+                <ng-template #sinFamiliares>
+                  <p class="rd-empty">Sin familiares directos registrados.</p>
+                </ng-template>
+              </section>
+
+              <section class="rd-section">
+                <h4 class="rd-section__title">Hijos</h4>
+                <div class="rd-cards" *ngIf="hijos.length; else sinHijos">
+                  <article class="rd-card" *ngFor="let item of hijos">
+                    <header class="rd-card__header">
+                      {{ textoLectura(item.NOMBRE) }}
+                    </header>
+                    <div class="rd-grid">
+                      <div class="rd-field">
+                        <span class="rd-label">Edad</span
+                        ><span class="rd-value">{{
+                          textoLectura(item.EDAD)
+                        }}</span>
+                      </div>
+                      <div class="rd-field">
+                        <span class="rd-label">Sexo</span
+                        ><span class="rd-value">{{
+                          textoLectura(item.SEXO)
+                        }}</span>
+                      </div>
+                      <div class="rd-field">
+                        <span class="rd-label">Fecha nacimiento</span
+                        ><span class="rd-value">{{
+                          fechaLectura(item.FECHA_NACIMIENTO)
+                        }}</span>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+                <ng-template #sinHijos>
+                  <p class="rd-empty">Sin hijos registrados.</p>
+                </ng-template>
+              </section>
+            </div>
+          </dxi-item>
+
+          <dxi-item title="Formación" [icon]="'bookmark'">
+            <div class="rd-panel">
+              <section class="rd-section">
+                <h4 class="rd-section__title">Estudios</h4>
+                <div class="rd-cards" *ngIf="estudios.length; else sinEstudios">
+                  <article class="rd-card" *ngFor="let item of estudios">
+                    <header class="rd-card__header">
+                      {{ textoLectura(item.NIVEL) }}
+                    </header>
+                    <div class="rd-grid">
+                      <div class="rd-field rd-field--wide">
+                        <span class="rd-label">Institución</span
+                        ><span class="rd-value">{{
+                          textoLectura(item.INSTITUCION)
+                        }}</span>
+                      </div>
+                      <div class="rd-field rd-field--wide">
+                        <span class="rd-label">Título</span
+                        ><span class="rd-value">{{
+                          textoLectura(item.TITULO)
+                        }}</span>
+                      </div>
+                      <div class="rd-field">
+                        <span class="rd-label">Desde</span
+                        ><span class="rd-value">{{
+                          fechaLectura(item.DESDE)
+                        }}</span>
+                      </div>
+                      <div class="rd-field">
+                        <span class="rd-label">Hasta</span
+                        ><span class="rd-value">{{
+                          fechaLectura(item.HASTA)
+                        }}</span>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+                <ng-template #sinEstudios>
+                  <p class="rd-empty">Sin estudios registrados.</p>
+                </ng-template>
+              </section>
+
+              <section class="rd-section">
+                <h4 class="rd-section__title">Idiomas</h4>
+                <div class="rd-chips" *ngIf="idiomas.length; else sinIdiomas">
+                  <div class="rd-chip" *ngFor="let item of idiomas">
+                    <strong>{{ textoLectura(item.IDIOMA) }}</strong>
+                    <span>{{ textoLectura(item.NIVEL) }}</span>
+                  </div>
+                </div>
+                <ng-template #sinIdiomas>
+                  <p class="rd-empty">Sin idiomas registrados.</p>
+                </ng-template>
+              </section>
+
+              <section class="rd-section">
+                <h4 class="rd-section__title">Competencias tecnológicas</h4>
+                <div
+                  class="rd-chips"
+                  *ngIf="competencias.length; else sinCompetencias"
+                >
+                  <div class="rd-chip" *ngFor="let item of competencias">
+                    <strong>{{ textoLectura(item.HERRAMIENTA) }}</strong>
+                    <span>{{ textoLectura(item.NIVEL) }}</span>
+                  </div>
+                </div>
+                <ng-template #sinCompetencias>
+                  <p class="rd-empty">Sin competencias registradas.</p>
+                </ng-template>
+              </section>
+            </div>
+          </dxi-item>
+
+          <dxi-item title="Experiencia" [icon]="'card'">
+            <div class="rd-panel">
+              <section class="rd-section">
+                <h4 class="rd-section__title">Experiencia laboral</h4>
+                <div
+                  class="rd-cards"
+                  *ngIf="experiencias.length; else sinExperiencias"
+                >
+                  <article class="rd-card" *ngFor="let item of experiencias">
+                    <header class="rd-card__header">
+                      {{ textoLectura(item.EMPRESA) }}
+                    </header>
+                    <div class="rd-grid">
+                      <div class="rd-field">
+                        <span class="rd-label">Cargo</span
+                        ><span class="rd-value">{{
+                          textoLectura(item.CARGO)
+                        }}</span>
+                      </div>
+                      <div class="rd-field">
+                        <span class="rd-label">Teléfono</span
+                        ><span class="rd-value">{{
+                          textoLectura(item.TELEFONO)
+                        }}</span>
+                      </div>
+                      <div class="rd-field">
+                        <span class="rd-label">Jefe inmediato</span
+                        ><span class="rd-value">{{
+                          textoLectura(item.JEFE_INMEDIATO)
+                        }}</span>
+                      </div>
+                      <div class="rd-field">
+                        <span class="rd-label">Inicio</span
+                        ><span class="rd-value">{{
+                          fechaLectura(item.FECHA_INICIO)
+                        }}</span>
+                      </div>
+                      <div class="rd-field">
+                        <span class="rd-label">Fin</span
+                        ><span class="rd-value">{{
+                          fechaLectura(item.FECHA_FIN)
+                        }}</span>
+                      </div>
+                      <div class="rd-field">
+                        <span class="rd-label">Salario inicial</span
+                        ><span class="rd-value">{{
+                          montoLectura(item.SALARIO_INICIAL)
+                        }}</span>
+                      </div>
+                      <div class="rd-field">
+                        <span class="rd-label">Salario final</span
+                        ><span class="rd-value">{{
+                          montoLectura(item.SALARIO_FINAL)
+                        }}</span>
+                      </div>
+                      <div class="rd-field rd-field--wide">
+                        <span class="rd-label">Motivo salida</span
+                        ><span class="rd-value">{{
+                          textoLectura(item.MOTIVO_SALIDA)
+                        }}</span>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+                <ng-template #sinExperiencias>
+                  <p class="rd-empty">Sin experiencia laboral registrada.</p>
+                </ng-template>
+              </section>
+            </div>
+          </dxi-item>
+
+          <dxi-item title="Adicional" [icon]="'tips'">
+            <div class="rd-panel">
+              <section class="rd-section">
+                <h4 class="rd-section__title">Familiares en la UEES</h4>
+                <div class="rd-grid rd-grid--single mb-12">
+                  <div class="rd-field">
+                    <span class="rd-label">Declara familiares en UEES</span>
+                    <span class="rd-value">{{
+                      siNo(personaDatos?.TIENE_FAMILIARES_UEES)
+                    }}</span>
+                  </div>
+                </div>
+                <div
+                  class="rd-cards"
+                  *ngIf="familiaresUees.length; else sinFamiliaresUees"
+                >
+                  <article class="rd-card" *ngFor="let item of familiaresUees">
+                    <header class="rd-card__header">
+                      {{ textoLectura(item.NOMBRE) }}
+                    </header>
+                    <div class="rd-grid">
+                      <div class="rd-field">
+                        <span class="rd-label">Parentesco</span
+                        ><span class="rd-value">{{
+                          textoLectura(item.PARENTESCO)
+                        }}</span>
+                      </div>
+                      <div class="rd-field">
+                        <span class="rd-label">Unidad</span
+                        ><span class="rd-value">{{
+                          textoLectura(item.UNIDAD)
+                        }}</span>
+                      </div>
+                      <div class="rd-field">
+                        <span class="rd-label">Teléfono</span
+                        ><span class="rd-value">{{
+                          textoLectura(item.TELEFONO)
+                        }}</span>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+                <ng-template #sinFamiliaresUees>
+                  <p class="rd-empty">Sin familiares UEES registrados.</p>
+                </ng-template>
+              </section>
+            </div>
+          </dxi-item>
+
+          <dxi-item title="Confirmación" [icon]="'check'">
+            <div class="rd-panel">
+              <section class="rd-section">
+                <h4 class="rd-section__title">Declaración y envío</h4>
+                <div class="rd-grid">
+                  <div class="rd-field">
+                    <span class="rd-label">Declara verdad</span
+                    ><span class="rd-value">{{
+                      siNo(personaDatos?.DECLARA_VERDAD)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Autoriza verificación</span
+                    ><span class="rd-value">{{
+                      siNo(personaDatos?.AUTORIZA_VERIFICACION)
+                    }}</span>
+                  </div>
+                  <div class="rd-field">
+                    <span class="rd-label">Fecha declaración</span
+                    ><span class="rd-value">{{
+                      fechaHoraLectura(personaDatos?.FECHA_DECLARACION)
+                    }}</span>
+                  </div>
+                  <div class="rd-field rd-field--wide">
+                    <span class="rd-label">Firma electrónica</span
+                    ><span class="rd-value">{{
+                      textoLectura(personaDatos?.FIRMA_ELECTRONICA)
+                    }}</span>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </dxi-item>
+        </dx-tab-panel>
+      </ng-container>
+
+      <ng-template #sinPersonaDatos>
+        <div class="persona-datos-empty mt-20" *ngIf="!cargandoPersonaDatos">
+          <div class="persona-empty-icon">
+            <i class="dx-icon dx-icon-user"></i>
+          </div>
+          <h4>Sin datos personales</h4>
+          <p>Aún no hay información del participante para esta solicitud.</p>
+          <span>Se mostrará aquí cuando complete el formulario de empleo.</span>
+        </div>
+        <div class="persona-datos-empty" *ngIf="cargandoPersonaDatos">
+          <p>Cargando datos del participante...</p>
+        </div>
+      </ng-template>
+    </dxi-item>
+    
   </dx-tab-panel>
 </div>
 
@@ -198,6 +713,7 @@
   (rowRemoving)="rowRemoving($event)"
   (focusedRowChanged)="focusedRowChanged($event)"
   (editClick)="editarClick($event)"
+
 >
 </app-data-grid-mtto>
 
@@ -212,3 +728,27 @@
   (onShown)="(loadingVisible)"
 >
 </dx-load-panel>
+
+<div
+  class="persona-foto-lightbox"
+  *ngIf="fotoPreviewVisible && fotoPersonaUrl"
+  (click)="cerrarFotoPreview()"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Fotografía del participante"
+>
+  <button
+    type="button"
+    class="persona-foto-lightbox__close"
+    (click)="cerrarFotoPreview(); $event.stopPropagation()"
+    aria-label="Cerrar fotografía"
+  >
+    <i class="dx-icon dx-icon-close"></i>
+  </button>
+  <img
+    class="persona-foto-lightbox__img"
+    [src]="fotoPersonaUrl"
+    alt="Fotografía del participante"
+    (click)="$event.stopPropagation()"
+  />
+</div>

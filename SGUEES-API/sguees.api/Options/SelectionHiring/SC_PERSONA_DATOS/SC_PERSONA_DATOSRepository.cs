@@ -260,6 +260,7 @@ namespace sguees.Repositories
 				new CParameter() { ParameterName = "AUTORIZA_VERIFICACION", Value = Data.AUTORIZA_VERIFICACION, DbType = System.Data.DbType.Boolean },
 				new CParameter() { ParameterName = "FECHA_DECLARACION", Value = Data.FECHA_DECLARACION, DbType = System.Data.DbType.DateTime },
 				new CParameter() { ParameterName = "FIRMA_ELECTRONICA", Value = ToDbValue(Data.FIRMA_ELECTRONICA), DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "FOTO_URL", Value = ToDbValue(Data.FOTO_URL), DbType = System.Data.DbType.String },
 			};
 		}
 

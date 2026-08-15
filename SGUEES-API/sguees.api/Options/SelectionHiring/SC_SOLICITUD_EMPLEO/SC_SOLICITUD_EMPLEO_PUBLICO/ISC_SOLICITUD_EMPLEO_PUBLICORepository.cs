@@ -13,5 +13,7 @@ namespace sguees.Repositories
         Task<CResult> ActualizarEstadoTokenAsync(int corrEmpresa, int corrToken, string estadoToken);
         Task<CResult> ValidarTokenAsync(string tokenHash);
         Task<CResult> CompletarAsync(string tokenHash, SC_SOLICITUD_EMPLEO_COMPLETARParam data);
+        Task<int> ObtenerCorrEmpresaPorTokenHashAsync(string tokenHash);
+        Task<CResult> ActualizarFotoUrlAsync(int corrPersonaDatos, int corrEmpresa, string fotoUrl);
     }
 }

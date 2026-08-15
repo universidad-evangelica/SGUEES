@@ -9,6 +9,8 @@ namespace sguees.Models
 		public int CORR_SOLICITUD_EMPLEO { get; set; }
         public DateTime FECHA_GENERACION { get; set; }
         public string CORREO_INVITACION { get; set; }
+        public string DUI { get; set; } //Documento identidad
+        public string NOMBRE { get; set; }
         public int? CORR_PERSONA_DATOS { get; set; } = null; //Se llena al completar el formulario público
         public bool ACTIVO { get; set; } = true; //Activo o inactivo
 

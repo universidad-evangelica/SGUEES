@@ -4,8 +4,10 @@ using System.Net.Mail;
 using System.Security.Cryptography;
 using System.Text;
 using eFramework.Core;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using sguees.api.Shared;
 using sguees.Models;
 using sguees.Repositories;
 
@@ -17,17 +19,20 @@ namespace sguees.Services
         private readonly ICOM_PARAMETRORepository _repoParametro;
         private readonly IConfiguration _configuration;
         private readonly ILogger<SC_SOLICITUD_EMPLEO_PUBLICOService> _logger;
+        private readonly PersonaFotoStorage _fotoStorage;
 
         public SC_SOLICITUD_EMPLEO_PUBLICOService(
             ISC_SOLICITUD_EMPLEO_PUBLICORepository repo,
             ICOM_PARAMETRORepository repoParametro,
             IConfiguration configuration,
-            ILogger<SC_SOLICITUD_EMPLEO_PUBLICOService> logger)
+            ILogger<SC_SOLICITUD_EMPLEO_PUBLICOService> logger,
+            PersonaFotoStorage fotoStorage)
         {
             _repo = repo;
             _repoParametro = repoParametro;
             _configuration = configuration;
             _logger = logger;
+            _fotoStorage = fotoStorage;
         }
 
         public Task<CResult> GetAllTokenAsync(SC_SOLICITUD_EMPLEO_TOKENParam data)
@@ -156,7 +161,7 @@ namespace sguees.Services
             var resultado = await _repo.ActualizarEstadoTokenAsync(
                 data.CORR_EMPRESA,
                 tokenGenerado.CORR_TOKEN,
-                "PENDIENTE");
+                "ENVIADO");
             OcultarTokenHash(resultado);
             return resultado;
         }
@@ -170,6 +175,41 @@ namespace sguees.Services
             }
 
             return await _repo.ValidarTokenAsync(CalcularTokenHash(token));
+        }
+
+        public async Task<CResult> SubirFotoAsync(string token, IFormFile file)
+        {
+            var tokenLimpio = token?.Trim();
+            if (string.IsNullOrWhiteSpace(tokenLimpio))
+            {
+                return Error("El enlace es inválido, expiró o ya fue utilizado.");
+            }
+
+            var tokenHash = CalcularTokenHash(tokenLimpio);
+            var validacion = await _repo.ValidarTokenAsync(tokenHash);
+            if (!validacion.Result || validacion.Data is not SC_SOLICITUD_EMPLEO_PUBLICOView vista || !vista.VALIDO)
+            {
+                return Error("El enlace es inválido, expiró o ya fue utilizado.");
+            }
+
+            var guardado = await _fotoStorage.SaveTempAsync(tokenHash, file);
+            if (!guardado.Ok)
+            {
+                return Error(guardado.Error);
+            }
+
+            return new CResult
+            {
+                Result = true,
+                Data = new SC_SOLICITUD_EMPLEO_FOTOView
+                {
+                    SUBIDO = true,
+                    NOMBRE_ARCHIVO = guardado.FileName,
+                },
+                ErrorCode = 0,
+                ErrorMessage = "",
+                RowsAffected = 1,
+            };
         }
 
         public async Task<CResult> CompletarAsync(SC_SOLICITUD_EMPLEO_COMPLETARParam data)
@@ -229,7 +269,45 @@ namespace sguees.Services
                 return Error("Debe indicar el tipo de discapacidad.");
             }
 
-            return await _repo.CompletarAsync(CalcularTokenHash(token), data);
+            var tokenHash = CalcularTokenHash(token);
+            var resultado = await _repo.CompletarAsync(tokenHash, data);
+            if (!resultado.Result || resultado.Data is not SC_SOLICITUD_EMPLEO_COMPLETARView completado || !completado.COMPLETADO)
+            {
+                return resultado;
+            }
+
+            try
+            {
+                var corrEmpresa = completado.CORR_EMPRESA > 0
+                    ? completado.CORR_EMPRESA
+                    : await _repo.ObtenerCorrEmpresaPorTokenHashAsync(tokenHash);
+                if (corrEmpresa <= 0 || completado.CORR_PERSONA_DATOS <= 0)
+                {
+                    return resultado;
+                }
+
+                var fotoUrl = _fotoStorage.MoveTempToFinal(tokenHash, corrEmpresa, completado.CORR_PERSONA_DATOS);
+                if (!string.IsNullOrWhiteSpace(fotoUrl))
+                {
+                    var actualizoFoto = await _repo.ActualizarFotoUrlAsync(completado.CORR_PERSONA_DATOS, corrEmpresa, fotoUrl);
+                    if (!actualizoFoto.Result)
+                    {
+                        _logger.LogWarning(
+                            "[SC_SOLICITUD_EMPLEO] Solicitud completada pero no se actualizó FOTO_URL de la persona {CorrPersona}. {Error}",
+                            completado.CORR_PERSONA_DATOS,
+                            actualizoFoto.ErrorMessage);
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "[SC_SOLICITUD_EMPLEO] Solicitud completada pero falló el anclaje de la fotografía de la persona {CorrPersona}.",
+                    completado.CORR_PERSONA_DATOS);
+            }
+
+            return resultado;
         }
 
         private static void TrimStrings<T>(IEnumerable<T> items)

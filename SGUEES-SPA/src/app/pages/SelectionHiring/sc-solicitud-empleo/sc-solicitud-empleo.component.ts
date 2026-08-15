@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { take } from 'rxjs/operators';
+import { forkJoin, of } from 'rxjs';
+import { catchError, take } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 import { MessageService } from 'primeng/api';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
@@ -9,7 +10,16 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { ScSolicitudEmpleo } from './models/sc-solicitud-empleo';
 import { ScSolicitudEmpleoToken } from './models/sc-solicitud-empleo-token';
-import { ScPersonaDatos } from './models/sc-persona-datos';
+import {
+	ScPersonaCompetencia,
+	ScPersonaDatos,
+	ScPersonaEstudio,
+	ScPersonaExperiencia,
+	ScPersonaFamiliar,
+	ScPersonaFamiliarUees,
+	ScPersonaHijo,
+	ScPersonaIdioma,
+} from './models/sc-persona-datos';
 import { ScSolicitudEmpleoService } from './sc-solicitud-empleo.service';
 import { confirm } from 'devextreme/ui/dialog';
 
@@ -18,7 +28,7 @@ import { confirm } from 'devextreme/ui/dialog';
 	templateUrl: './sc-solicitud-empleo.component.html',
 	styleUrls: ['./sc-solicitud-empleo.component.scss'],
 })
-export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit {
+export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit, OnDestroy {
 	//#region <Declarando Variales>
 	//this para insertar otros iconos en options de la tabla
 	customButtons: any[] = [];
@@ -26,8 +36,16 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	tokenColumns: any[] = [];
 	generandoToken = false;
 	personaDatos: ScPersonaDatos | null = null;
-	personaDatosItems: any[] = [];
+	familiares: ScPersonaFamiliar[] = [];
+	hijos: ScPersonaHijo[] = [];
+	estudios: ScPersonaEstudio[] = [];
+	idiomas: ScPersonaIdioma[] = [];
+	competencias: ScPersonaCompetencia[] = [];
+	experiencias: ScPersonaExperiencia[] = [];
+	familiaresUees: ScPersonaFamiliarUees[] = [];
 	cargandoPersonaDatos = false;
+	fotoPersonaUrl: string | null = null;
+	fotoPreviewVisible = false;
 	// #endregion
 
 	constructor(
@@ -41,33 +59,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 		this.tokenColumns = this.service.getTokenColumns();
-		this.personaDatosItems = this.service.getPersonaDatosItems();
-		//seccion customButtons en options
-		// this.customButtons = [
-		// 	{
-		// 		//Reactivar
-		// 		hint: 'Reactivar registro',
-		// 		icon: 'refresh',
-		// 		stylingMode: 'text',
-
-		// 		visible: (e: any) =>
-		// 			e.row?.data?.ACTIVO === false,
-
-		// 		onClick: this.reactivar
-		// 	},
-
-		// 	{
-		// 		//Desactivar
-		// 		hint: 'Inactivar registro',
-		// 		icon: 'close',
-		// 		stylingMode: 'text',
-
-		// 		visible: (e: any) =>
-		// 			e.row?.data?.ACTIVO === true,
-
-		// 		onClick: this.desactivar
-		// 	}
-		// ];
 	}
 
 	//#region <Inicializando Opciones>
@@ -75,6 +66,10 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.inicializaOpciones();
 		this.llenaComboBox();
 		this.consultar();
+	}
+
+	ngOnDestroy(): void {
+		this.revocarFotoPersona();
 	}
 
 	inicializaOpciones() {}
@@ -103,6 +98,8 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 				CORR_SOLICITUD_EMPLEO: xModel.CORR_SOLICITUD_EMPLEO,
 				FECHA_GENERACION: xModel.FECHA_GENERACION,
 				CORREO_INVITACION: xModel.CORREO_INVITACION,
+				DUI: xModel.DUI,
+				NOMBRE: xModel.NOMBRE,
 				CORR_PERSONA_DATOS: xModel.CORR_PERSONA_DATOS,
 				ACTIVO: xModel.ACTIVO,
 				USUARIO_CREA: xModel.USUARIO_CREA,
@@ -118,6 +115,8 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 				CORR_SOLICITUD_EMPLEO: 0,
 				FECHA_GENERACION: new Date(),
 				CORREO_INVITACION: '',
+				DUI: '',
+				NOMBRE: '',
 				CORR_PERSONA_DATOS: 0,
 				ACTIVO: true,
 				USUARIO_CREA: '',
@@ -134,10 +133,10 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 		switch ((estado || '').toUpperCase()) {
 
-			case 'UTILIZADO':
+			case 'COMPLETADO':
 				return 'estado-success';
 
-			case 'PENDIENTE':
+			case 'ENVIADO':
 				return 'estado-info';
 
 			case 'EXPIRADO':
@@ -175,8 +174,136 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	}
 
 	limpiarPersonaDatos(): void {
+		this.revocarFotoPersona();
 		this.personaDatos = null;
+		this.familiares = [];
+		this.hijos = [];
+		this.estudios = [];
+		this.idiomas = [];
+		this.competencias = [];
+		this.experiencias = [];
+		this.familiaresUees = [];
 		this.cargandoPersonaDatos = false;
+	}
+
+	abrirFotoPreview(): void {
+		if (!this.fotoPersonaUrl) {
+			return;
+		}
+		this.fotoPreviewVisible = true;
+	}
+
+	cerrarFotoPreview(): void {
+		this.fotoPreviewVisible = false;
+	}
+
+	@HostListener('document:keydown.escape')
+	cerrarFotoPreviewConEscape(): void {
+		if (this.fotoPreviewVisible) {
+			this.cerrarFotoPreview();
+		}
+	}
+
+	private revocarFotoPersona(): void {
+		this.cerrarFotoPreview();
+		if (this.fotoPersonaUrl) {
+			URL.revokeObjectURL(this.fotoPersonaUrl);
+			this.fotoPersonaUrl = null;
+		}
+	}
+
+	private cargarFotoPersona(corrPersonaDatos: number, fotoUrl?: string): void {
+		this.revocarFotoPersona();
+		if (corrPersonaDatos <= 0 || !`${fotoUrl ?? ''}`.trim()) {
+			return;
+		}
+
+		this.service
+			.getPersonaFoto(corrPersonaDatos)
+			.pipe(take(1))
+			.subscribe({
+				next: (blob) => {
+					if (blob && blob.size > 0 && (blob.type || '').startsWith('image/')) {
+						this.fotoPersonaUrl = URL.createObjectURL(blob);
+					}
+				},
+				error: () => {
+					this.fotoPersonaUrl = null;
+				},
+			});
+	}
+
+	textoLectura(valor: any): string {
+		if (valor === null || valor === undefined) {
+			return '—';
+		}
+		const texto = String(valor).trim();
+		return texto.length > 0 ? texto : '—';
+	}
+
+	siNo(valor: boolean | null | undefined): string {
+		return valor ? 'Sí' : 'No';
+	}
+
+	fechaLectura(valor: string | Date | null | undefined): string {
+		if (!valor) {
+			return '—';
+		}
+		const fecha = valor instanceof Date ? valor : new Date(valor);
+		if (Number.isNaN(fecha.getTime())) {
+			return '—';
+		}
+		const dd = String(fecha.getDate()).padStart(2, '0');
+		const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+		const yyyy = fecha.getFullYear();
+		return `${dd}/${mm}/${yyyy}`;
+	}
+
+	fechaHoraLectura(valor: string | Date | null | undefined): string {
+		if (!valor) {
+			return '—';
+		}
+		const fecha = valor instanceof Date ? valor : new Date(valor);
+		if (Number.isNaN(fecha.getTime())) {
+			return '—';
+		}
+		const dd = String(fecha.getDate()).padStart(2, '0');
+		const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+		const yyyy = fecha.getFullYear();
+		const hh = String(fecha.getHours()).padStart(2, '0');
+		const mi = String(fecha.getMinutes()).padStart(2, '0');
+		return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+	}
+
+	montoLectura(valor: number | null | undefined): string {
+		if (valor === null || valor === undefined || Number.isNaN(Number(valor))) {
+			return '—';
+		}
+		return Number(valor).toLocaleString('es-SV', {
+			minimumFractionDigits: 0,
+			maximumFractionDigits: 2,
+		});
+	}
+
+	etiquetaFamiliar(tipo: string): string {
+		switch ((tipo || '').toUpperCase()) {
+			case 'PADRE':
+				return 'Padre';
+			case 'MADRE':
+				return 'Madre';
+			case 'ESPOSO':
+				return 'Esposo(a)';
+			default:
+				return this.textoLectura(tipo);
+		}
+	}
+
+	private asArray<T>(data: any): T[] {
+		return Array.isArray(data) ? data : [];
+	}
+
+	private emptyResult() {
+		return of({ Result: true, Data: [] } as any);
 	}
 
 	consultarPersonaDatos(): void {
@@ -187,21 +314,40 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		}
 
 		this.cargandoPersonaDatos = true;
-		this.service
-			.getPersonaDatos(corrPersonaDatos)
+		const coleccion = (controller: string) =>
+			this.service.getPersonaColeccion(controller, corrPersonaDatos).pipe(catchError(() => this.emptyResult()));
+
+		forkJoin({
+			persona: this.service.getPersonaDatos(corrPersonaDatos),
+			familiares: coleccion('SC_PERSONA_FAMILIAR'),
+			hijos: coleccion('SC_PERSONA_HIJOS'),
+			estudios: coleccion('SC_PERSONA_ESTUDIO'),
+			idiomas: coleccion('SC_PERSONA_IDIOMAS'),
+			competencias: coleccion('SC_PERSONA_COMPETENCIAS_TECNICAS'),
+			experiencias: coleccion('SC_PERSONA_EXPERIENCIA_LABORAL'),
+			familiaresUees: coleccion('SC_PERSONA_FAMILIAR_UEES'),
+		})
 			.pipe(take(1))
 			.subscribe({
-				next: (response: any) => {
-					if (response.Result && response.Data) {
-						this.personaDatos = response.Data;
+				next: (response) => {
+					if (response.persona?.Result && response.persona?.Data) {
+						this.personaDatos = response.persona.Data;
+						this.cargarFotoPersona(corrPersonaDatos, this.personaDatos?.FOTO_URL);
 					} else {
 						this.personaDatos = null;
+						this.revocarFotoPersona();
 					}
+					this.familiares = this.asArray(response.familiares?.Data);
+					this.hijos = this.asArray(response.hijos?.Data);
+					this.estudios = this.asArray(response.estudios?.Data);
+					this.idiomas = this.asArray(response.idiomas?.Data);
+					this.competencias = this.asArray(response.competencias?.Data);
+					this.experiencias = this.asArray(response.experiencias?.Data);
+					this.familiaresUees = this.asArray(response.familiaresUees?.Data);
 					this.cargandoPersonaDatos = false;
 				},
 				error: (error: any) => {
-					this.personaDatos = null;
-					this.cargandoPersonaDatos = false;
+					this.limpiarPersonaDatos();
 					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
 				},
 			});
@@ -294,7 +440,7 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		}
 
 		const tokenVigente = this.tokens.some((item) =>
-			item.ESTADO_TOKEN === 'GENERADO' || item.ESTADO_TOKEN === 'PENDIENTE'
+			item.ESTADO_TOKEN === 'GENERADO' || item.ESTADO_TOKEN === 'ENVIADO'
 		);
 		if (tokenVigente) {
 			const aceptar = await confirm(
@@ -347,7 +493,7 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	}
 
 	guardar(): void {
-		if (!this.service.esValido(this.model, this.notifyFx)) {
+		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
 			return;
 		}
 
@@ -437,8 +583,20 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.dataForm.instance.getEditor('CORR_SOLICITUD_EMPLEO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('FECHA_GENERACION')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CORREO_INVITACION')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('DUI')?.option('readOnly', true);
+		this.dataForm.instance.getEditor('NOMBRE')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('CORR_PERSONA_DATOS')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ACTIVO')?.option('readOnly', true);
+	}
+
+	override habilitar(): void {
+		setTimeout(() => this.aplicarEstadoCamposIdentidad());
+	}
+
+	private aplicarEstadoCamposIdentidad(): void {
+		const personaCompleta = (this.model?.CORR_PERSONA_DATOS ?? 0) > 0;
+		this.dataForm?.instance?.getEditor('DUI')?.option('readOnly', personaCompleta);
+		this.dataForm?.instance?.getEditor('NOMBRE')?.option('readOnly', personaCompleta);
 	}
 
 	override setFocus() {

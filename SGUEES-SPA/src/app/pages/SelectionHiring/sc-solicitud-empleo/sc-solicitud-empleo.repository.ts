@@ -12,6 +12,13 @@ export class ScSolicitudEmpleoRepository {
 	readonly xController = 'SC_SOLICITUD_EMPLEO';
 	readonly xControllerToken = 'SC_SOLICITUD_EMPLEO_TOKEN';
 	readonly xControllerPersonaDatos = 'SC_PERSONA_DATOS';
+	readonly xControllerFamiliar = 'SC_PERSONA_FAMILIAR';
+	readonly xControllerHijos = 'SC_PERSONA_HIJOS';
+	readonly xControllerEstudio = 'SC_PERSONA_ESTUDIO';
+	readonly xControllerIdiomas = 'SC_PERSONA_IDIOMAS';
+	readonly xControllerCompetencias = 'SC_PERSONA_COMPETENCIAS_TECNICAS';
+	readonly xControllerExperiencia = 'SC_PERSONA_EXPERIENCIA_LABORAL';
+	readonly xControllerFamiliarUees = 'SC_PERSONA_FAMILIAR_UEES';
 
 	constructor(private objData: CData) {}
 
@@ -51,6 +58,19 @@ export class ScSolicitudEmpleoRepository {
 		return this.objData.Get(
 			this.xControllerPersonaDatos,
 			'GetCORR_PERSONA_DATOS_SC_SOLICITUD_EMPLEO',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	getPersonaColeccion(controller: string, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(controller, 'GetAll_SC_SOLICITUD_EMPLEO', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
+	getPersonaFoto(xWhere: IParam[]): Observable<Blob> {
+		return this.objData.GetBlob(
+			this.xControllerPersonaDatos,
+			'GetFoto_SC_SOLICITUD_EMPLEO',
 			xWhere,
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);

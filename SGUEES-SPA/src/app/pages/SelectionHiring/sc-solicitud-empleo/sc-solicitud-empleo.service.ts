@@ -15,10 +15,20 @@ export class ScSolicitudEmpleoService {
 
 	//#region <Validadores>
 	esValido(model: ScSolicitudEmpleo, msg: Function): boolean {
-		// if (model.NOMBRE_ROL == '') {
-		// msg('Debe digitar el nombre del Rol', NotifyType.Error)
-		// return false;
-		// }
+		if (!`${model.CORREO_INVITACION ?? ''}`.trim()) {
+			msg('Debe digitar el correo de invitación', NotifyType.Warning);
+			return false;
+		}
+
+		if (!`${model.DUI ?? ''}`.trim()) {
+			msg('Debe digitar el DUI', NotifyType.Warning);
+			return false;
+		}
+
+		if (!`${model.NOMBRE ?? ''}`.trim()) {
+			msg('Debe digitar el nombre', NotifyType.Warning);
+			return false;
+		}
 
 		return true;
 	}
@@ -82,12 +92,25 @@ export class ScSolicitudEmpleoService {
 		]);
 	}
 
+	getPersonaColeccion(controller: string, corrPersonaDatos: number): Observable<IResult> {
+		return this.repo.getPersonaColeccion(controller, [
+			{ Parameter: 'CORR_PERSONA_DATOS', Value: corrPersonaDatos },
+		]);
+	}
+
+	getPersonaFoto(corrPersonaDatos: number): Observable<Blob> {
+		return this.repo.getPersonaFoto([
+			{ Parameter: 'CORR_PERSONA_DATOS', Value: corrPersonaDatos },
+		]);
+	}
+
 	getColumns(): any {
 		return [
 			{ dataField: 'CORR_SOLICITUD_EMPLEO', caption: 'Corr.', width: 100 },
 			{ dataField: 'FECHA_GENERACION', caption: 'Fecha Generación', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
 			{ dataField: 'CORREO_INVITACION', caption: 'Correo Invitación', width: 250 },
-			{ dataField: 'CORR_PERSONA_DATOS', caption: 'Corr. Persona datos', width: 200 },
+			{ dataField: 'DUI', caption: 'DUI', width: 140 },
+			{ dataField: 'NOMBRE', caption: 'Participante', width: 250 },
 			{ dataField: 'ACTIVO', caption: 'Activo', width: 200, dataType: 'boolean', alignment: 'center' },
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 250 },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 250 },
@@ -118,10 +141,20 @@ export class ScSolicitudEmpleoService {
 				colSpan: 2,
 			},
 			{
-				dataField: 'CORR_PERSONA_DATOS',
-				label: { text: 'Corr. Persona datos' },
+				dataField: 'DUI',
+				label: { text: 'DUI' },
+				colSpan: 1,
+			},
+			{
+				dataField: 'NOMBRE',
+				label: { text: 'Participante' },
 				colSpan: 2,
 			},
+			// {
+			// 	dataField: 'CORR_PERSONA_DATOS',
+			// 	label: { text: 'Corr. Persona datos' },
+			// 	colSpan: 2,
+			// },
 		];
 	}
 
@@ -132,33 +165,8 @@ export class ScSolicitudEmpleoService {
 			{ dataField: 'FECHA_GENERACION', caption: 'Fecha generación', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
 			{ dataField: 'FECHA_EXPIRACION', caption: 'Fecha expiración', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
 			{ dataField: 'FECHA_UTILIZACION', caption: 'Fecha utilización', width: 170, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
-			{ dataField: 'ESTADO_TOKEN', caption: 'Estado', width: 140, cellTemplate: 'estadoTokenTemplate' },
+			{ dataField: 'ESTADO_TOKEN', caption: 'Estado Token', width: 140, cellTemplate: 'estadoTokenTemplate' },
 			{ dataField: 'CORREO_DESTINO', caption: 'Correo destino', width: 260 },
-		];
-	}
-
-	getPersonaDatosItems(): any {
-		return [
-			{
-				dataField: 'NOMBRE1',
-				label: { text: 'Primer nombre' },
-				editorOptions: { readOnly: true },
-			},
-			{
-				dataField: 'NOMBRE2',
-				label: { text: 'Segundo nombre' },
-				editorOptions: { readOnly: true },
-			},
-			{
-				dataField: 'APELLIDO1',
-				label: { text: 'Primer apellido' },
-				editorOptions: { readOnly: true },
-			},
-			{
-				dataField: 'APELLIDO2',
-				label: { text: 'Segundo apellido' },
-				editorOptions: { readOnly: true },
-			},
 		];
 	}
 }

@@ -49,5 +49,6 @@ namespace sguees.Models
         public bool AUTORIZA_VERIFICACION { get; set; }
         public DateTime FECHA_DECLARACION { get; set; }
         public string FIRMA_ELECTRONICA { get; set; }
+        public string FOTO_URL { get; set; }
     }
 }

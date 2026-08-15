@@ -105,6 +105,8 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="CORR_SOLICITUD_EMPLEO",Value=Data.CORR_SOLICITUD_EMPLEO,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput},
                     new CParameter() {ParameterName="FECHA_GENERACION",Value=Data.FECHA_GENERACION,DbType=System.Data.DbType.DateTime},
                     new CParameter() {ParameterName="CORREO_INVITACION",Value=Data.CORREO_INVITACION,DbType=System.Data.DbType.String},
+                    new CParameter() {ParameterName="DUI",Value=Data.DUI,DbType=System.Data.DbType.String},
+                    new CParameter() {ParameterName="NOMBRE",Value=Data.NOMBRE,DbType=System.Data.DbType.String},
                     new CParameter() {ParameterName="CORR_PERSONA_DATOS",Value=null,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="ACTIVO",Value=Data.ACTIVO,DbType=System.Data.DbType.Boolean},
                     new CParameter() {ParameterName="USUARIO_CREA",Value=Data.USUARIO_CREA,DbType=System.Data.DbType.String},
@@ -162,6 +164,12 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="ESTACION_ACTU",Value=Data.ESTACION_ACTU,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="FECHA_ACTU",Value=Data.FECHA_ACTU,DbType=System.Data.DbType.DateTime},
 				};
+
+				if ((Data.CORR_PERSONA_DATOS ?? 0) <= 0)
+				{
+					p.Insert(2, new CParameter() { ParameterName = "DUI", Value = Data.DUI, DbType = System.Data.DbType.String });
+					p.Insert(3, new CParameter() { ParameterName = "NOMBRE", Value = Data.NOMBRE, DbType = System.Data.DbType.String });
+				}
 				
 				var pWhere = new List<CParameter>
 				{

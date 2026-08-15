@@ -20,6 +20,9 @@ namespace sguees.Controllers
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-persona-datos|R")]
         public async Task<CResult> GetAll([FromQuery] SC_PERSONA_COMPETENCIAS_TECNICASParam Data) { Data.CORR_EMPRESA = Empresa(); return await _service.GetAllAsync(Data); }
+        [HttpGet("GetAll_SC_SOLICITUD_EMPLEO")]
+        [Authorize(Policy = "/sc-solicitud-empleo|R")]
+        public async Task<CResult> GetAll_SC_SOLICITUD_EMPLEO([FromQuery] SC_PERSONA_COMPETENCIAS_TECNICASParam Data) { Data.CORR_EMPRESA = Empresa(); return await _service.GetAllAsync(Data); }
         [HttpGet("Get")]
         [Authorize(Policy = "/sc-persona-datos|R")]
         public async Task<CResult> Get([FromQuery] SC_PERSONA_COMPETENCIAS_TECNICASParam Data) { Data.CORR_EMPRESA = Empresa(); return await _service.GetAsync(Data); }

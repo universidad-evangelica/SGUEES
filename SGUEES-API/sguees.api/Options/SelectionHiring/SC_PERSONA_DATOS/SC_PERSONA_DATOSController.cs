@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -16,10 +17,12 @@ namespace sguees.Controllers
 	public class SC_PERSONA_DATOSController : ControllerBase
 	{
 		private readonly ISC_PERSONA_DATOSService _service;
+		private readonly PersonaFotoStorage _fotoStorage;
 
-		public SC_PERSONA_DATOSController(ISC_PERSONA_DATOSService service)
+		public SC_PERSONA_DATOSController(ISC_PERSONA_DATOSService service, PersonaFotoStorage fotoStorage)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(_service));
+			_fotoStorage = fotoStorage ?? throw new ArgumentNullException(nameof(fotoStorage));
 		}
 
 		[HttpGet("GetAll")]
@@ -96,6 +99,34 @@ namespace sguees.Controllers
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
 			return await _service.GetAsync(Data);
+		}
+
+		[HttpGet("GetFoto_SC_SOLICITUD_EMPLEO")]
+		[Authorize(Policy = "/sc-solicitud-empleo|R")]
+		public async Task<IActionResult> GetFoto_SC_SOLICITUD_EMPLEO([FromQuery] SC_PERSONA_DATOSParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			var resultado = await _service.GetAsync(Data);
+			if (!resultado.Result || resultado.Data is not SC_PERSONA_DATOSView persona || string.IsNullOrWhiteSpace(persona.FOTO_URL))
+			{
+				return NotFound();
+			}
+
+			if (!_fotoStorage.TryResolveFinalFile(persona.FOTO_URL, out var physicalPath))
+			{
+				return NotFound();
+			}
+
+			var contentType = Path.GetExtension(physicalPath).ToLowerInvariant() switch
+			{
+				".png" => "image/png",
+				".webp" => "image/webp",
+				_ => "image/jpeg",
+			};
+
+			var stream = new FileStream(physicalPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+			Response.RegisterForDispose(stream);
+			return File(stream, contentType);
 		}
 
 		private int GetCorrEmpresa()
