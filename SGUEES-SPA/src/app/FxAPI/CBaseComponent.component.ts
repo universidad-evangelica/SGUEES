@@ -30,6 +30,7 @@ import {
 	getNotifyTypeFromError,
 	getNotifyTypeFromResponse,
 	isEmpresaFkErrorMessage,
+	isUnauthorizedError,
 	mapApiErrorMessage,
 } from 'src/app/shared/mtto/mtto-api-messages';
 
@@ -395,6 +396,10 @@ export class CBaseComponent {
 	}
 
 	notifyFx(xMessage: string, xType: NotifyType, options?: { raw?: boolean }): void {
+		if (this.sessionAuth?.isHandlingSessionExpiry || isUnauthorizedError(xMessage)) {
+			return;
+		}
+
 		if (options?.raw || xType === NotifyType.Success) {
 			this.sgueesNotify.show(cleanApiMessage(xMessage) || xMessage, xType);
 			return;
@@ -415,6 +420,10 @@ export class CBaseComponent {
 	}
 
 	notifyApiError(error: any): void {
+		if (this.sessionAuth?.isHandlingSessionExpiry || isUnauthorizedError(error)) {
+			return;
+		}
+
 		const type = getNotifyTypeFromError(error, this.etiquetaRegistro);
 		const message = mapApiErrorMessage(getApiErrorMessage(error), this.etiquetaRegistro);
 		this.sgueesNotify.show(message, type);

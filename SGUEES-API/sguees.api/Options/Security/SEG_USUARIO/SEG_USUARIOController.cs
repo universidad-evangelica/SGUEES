@@ -29,8 +29,6 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/seg-usuario|R")]
 		public async Task<CResult> GetAll([FromQuery] SEG_USUARIOParam Data)
 		{
-			Data.LOGIN_SISTEMA = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
-
 			return await _service.GetAllAsync(Data);
 		}
 
@@ -135,6 +133,54 @@ namespace sguees.Controllers
 				return BadRequest(Response);
 
 			return Ok(Response);
+		}
+
+		[HttpGet("perfil")]
+		[Authorize]
+		public async Task<IActionResult> GetPerfil()
+		{
+			var loginSistema = User.Claims.FirstOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value;
+			var codigoSuite = User.Claims.FirstOrDefault(e => e.Type == "CODIGO_SUITE")?.Value ?? "SGUEES";
+
+			if (string.IsNullOrWhiteSpace(loginSistema))
+			{
+				return Unauthorized();
+			}
+
+			var response = await _service.GetPerfilSesionAsync(loginSistema, codigoSuite);
+			if (response.Result == false)
+			{
+				return BadRequest(response);
+			}
+
+			return Ok(response);
+		}
+
+		[HttpPost("perfil/cambio-clave")]
+		[Authorize]
+		public async Task<IActionResult> CambioClavePerfil(SEG_USUARIO_CAMBIO_CLAVE_PERFILParam data)
+		{
+			var loginSistema = User.Claims.FirstOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value;
+			var codigoSuite = User.Claims.FirstOrDefault(e => e.Type == "CODIGO_SUITE")?.Value ?? "SGUEES";
+
+			if (string.IsNullOrWhiteSpace(loginSistema))
+			{
+				return Unauthorized();
+			}
+
+			if (data == null)
+			{
+				return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = "Datos inválidos" });
+			}
+
+			data.CODIGO_SUITE = codigoSuite;
+			var response = await _service.CambioClavePerfilAsync(loginSistema, data);
+			if (response.Result == false)
+			{
+				return BadRequest(response);
+			}
+
+			return Ok(response);
 		}
 
 		#region "Detalle de opciones"
@@ -246,13 +292,12 @@ namespace sguees.Controllers
 			return BadRequest(resultado);
 		}
 
-        [HttpGet("GetLOGIN_SISTEMA_SC_REQUISICION_OBSERVADORES")]
-        [Authorize(Policy = "/sc-requisicion-observadores|R")]
-        public async Task<CResult> GetLOGIN_SISTEMA_SC_REQUISICION_OBSERVADORES([FromQuery] SEG_USUARIOParam Data)
-        {
-            //Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            return await _service.GetAllSEG_USUARIO_LOOKUP(Data);
-        }
+		[HttpGet("GetLOGIN_SISTEMA_SC_REQUISICION_OBSERVADORES")]
+		[Authorize(Policy = "/sc-requisicion-observadores|R")]
+		public async Task<CResult> GetLOGIN_SISTEMA_SC_REQUISICION_OBSERVADORES([FromQuery] SEG_USUARIOParam Data)
+		{
+			return await _service.GetAllSEG_USUARIO_LOOKUP(Data);
+		}
 
 		[HttpGet("GetLOGIN_SISTEMA_SC_REQUISICION_PERSONAL")]
 		[Authorize(Policy = "/sc-requisicion-personal|R")]
@@ -269,5 +314,5 @@ namespace sguees.Controllers
 		{
 			return await _service.GetAllSEG_USUARIO_LOOKUP(Data);
 		}
-    }
+	}
 }

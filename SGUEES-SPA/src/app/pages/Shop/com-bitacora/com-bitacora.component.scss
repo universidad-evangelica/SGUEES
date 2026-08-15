@@ -1,43 +1,25 @@
-::ng-deep .options {
-  padding: 20px;
-  bottom: 0;
-  right: 0;
-  width: 260px;
-  height: 500px;
-  top: 0;
-  background-color: rgba(191, 191, 191, 0.15);
-}
-::ng-deep .caption {
-  font-size: 18px;
-  font-weight: 500;
-}
-::ng-deep .option {
-  margin-top: 10px;
+.shop-ribbon-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sguees-space-4);
+  width: 100%;
 }
 
-::ng-deep label {
-  font-weight: bold;
+.shop-ribbon-filtros__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sguees-space-2);
+  min-width: 240px;
+  flex: 1 1 280px;
+
+  label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--sguees-text-secondary, inherit);
+  }
 }
 
-
-.bgOcultar{
-  background-color: transparent !important;
-  justify-content: center;
-}
-
-.bordeGrid{
-  margin-top: 0px;
-}
-
-
-::ng-deep #form-container {
-  margin: 10px 10px 30px;
-}
-
-::ng-deep .long-title h3 {
-  font-family: 'Segoe UI Light', 'Helvetica Neue Light', 'Segoe UI', 'Helvetica Neue', 'Trebuchet MS', Verdana;
-  font-weight: 400;
-  font-size: 20px;
-  text-align: center;
-  margin: 5px 5px 15px 5px;
+.sguees-mtto-grid {
+  margin-top: var(--sguees-space-3);
 }

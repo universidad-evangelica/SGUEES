@@ -64,6 +64,7 @@ export class ComProveedorComponent extends CBaseComponent implements OnInit {
   popupCambiarClaveVisible = false;
   vFocucedRowClave: any;
   mCORR_CONDICION_PAGO: any;
+  mCORR_SECTOR: any;
   PDF!: SafeUrl;
   popupVisiblePdf=false;
 	// #endregion
@@ -107,6 +108,7 @@ export class ComProveedorComponent extends CBaseComponent implements OnInit {
     this.getESTADO_USUARIO();
     this.getCORR_TIPO_DOCUMENTO();
     this.getCORR_CONDICION_PAGO();
+    this.getCORR_SECTOR();
 	}
 
 	getCORR_TIPO_DIP() {
@@ -306,6 +308,21 @@ export class ComProveedorComponent extends CBaseComponent implements OnInit {
 				},
 			});
 	}
+  getCORR_SECTOR() {
+		this.appInfoService
+			.getLookUp('COM_PROVEEDOR', 'GEN_SECTOR', 'getCORR_SECTOR', undefined, environment.UrlCOMPRASAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.mCORR_SECTOR = response.Data;
+					}
+				},
+				error: (error: any) => {
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
 	//#endregion
 
 	//#region <Metodos Mtto>
@@ -366,6 +383,8 @@ export class ComProveedorComponent extends CBaseComponent implements OnInit {
 				FECHA_ACTU: xModel.FECHA_ACTU,
 				ESTACION_ACTU: xModel.ESTACION_ACTU,
         CORR_CONDICION_PAGO: xModel.CORR_CONDICION_PAGO,
+        CORR_SECTOR: xModel.CORR_SECTOR,
+        NOMBRE_SECTOR: xModel.NOMBRE_SECTOR,
 			};
 		} else {
 			return {
@@ -414,6 +433,8 @@ export class ComProveedorComponent extends CBaseComponent implements OnInit {
 				FECHA_ACTU: new Date(),
 				ESTACION_ACTU: '',
         CORR_CONDICION_PAGO: 0,
+        CORR_SECTOR: 0,
+        NOMBRE_SECTOR: '',
 			};
 		}
 	}
@@ -572,6 +593,7 @@ export class ComProveedorComponent extends CBaseComponent implements OnInit {
 		this.dataForm.instance.getEditor('ESTADO_PROVEEDOR')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('ESTADO_PROVEEDOR_WEB')?.option('readOnly', true);
     this.dataForm.instance.getEditor('CORR_CONDICION_PAGO')?.option('readOnly', true);
+    this.dataForm.instance.getEditor('CORR_SECTOR')?.option('readOnly', true);
 		this.readOnly = true;
 	}
 
@@ -634,6 +656,9 @@ export class ComProveedorComponent extends CBaseComponent implements OnInit {
 	}
   selectedLookUpCORR_CONDICION_PAGO(vRow: any): any {
 		return vRow[0].CORR_CONDICION_PAGO;
+	}
+  selectedLookUpCORR_SECTOR(vRow: any): any {
+		return vRow[0].CORR_SECTOR;
 	}
   consultarCOM_PROVEEDOR_USUARIO() {
 		this.service

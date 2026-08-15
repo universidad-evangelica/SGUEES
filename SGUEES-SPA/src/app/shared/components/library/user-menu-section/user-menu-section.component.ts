@@ -1,7 +1,6 @@
 import { Component, NgModule, Input, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
-import { DxListModule, DxListTypes } from 'devextreme-angular/ui/list';
 import { AuthService, IUser } from 'src/app/shared/services/auth.service';
 
 @Component({
@@ -17,24 +16,29 @@ export class UserMenuSectionComponent {
   @Input()
   showAvatar!: boolean;
 
-  @ViewChild('userInfoList', { read: ElementRef }) userInfoList: ElementRef<HTMLElement>;
+  @ViewChild('actionsContainer', { read: ElementRef }) actionsContainer?: ElementRef<HTMLElement>;
 
   @Input()
   user!: IUser | null;
 
   urlPhotoUser = 'assets/img/user.png'; //this.authService.decodedToken.URL_FOTO_PERFIL;
-  nameUser = this.authService.decodedToken.unique_name;
+  nameUser = this.authService.decodedToken?.unique_name ?? 'Usuario';
+  loginUser = this.authService.decodedToken?.nameid ?? '';
 
   constructor(private authService: AuthService) {}
 
-  handleListItemClick(e: DxListTypes.ItemClickEvent) {
-    e.itemData?.onClick();
+  handleActionClick(item: { onClick?: () => void }) {
+    item?.onClick?.();
+  }
+
+  focusFirstAction(): void {
+    const firstButton = this.actionsContainer?.nativeElement?.querySelector('button');
+    (firstButton as HTMLButtonElement | undefined)?.focus();
   }
 }
 
 @NgModule({
   imports: [
-    DxListModule,
     CommonModule,
   ],
   declarations: [UserMenuSectionComponent],

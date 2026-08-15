@@ -1,9 +1,9 @@
-SET QUOTED_IDENTIFIER ON
+﻿SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
 /*
-  Lookup documentos compras — proveedores + empleados (P) con prefijo en nombre.
+  Lookup documentos compras â€” proveedores + empleados (P) con prefijo en nombre.
   Basado en V_COM_PROVEEDOR (linked server CLASS ya resuelto).
 */
 CREATE VIEW [dbo].[V_COM_PROVEEDOR_COMPRAS]
@@ -62,6 +62,6 @@ SELECT
 	P.CORR_CONDICION_PAGO,
 	P.NOMBRE_CONDICION_PAGO
 FROM dbo.V_COM_PROVEEDOR P
-INNER JOIN [CLASS_UEES].[CLASS_UEES].dbo.CLIENTES C ON P.CORR_PROVEEDOR = C.CLIIDU
+INNER JOIN [CLASS_UEES].[CLASS_UEES].[CLASS_UEES].dbo.CLIENTES C ON P.CORR_PROVEEDOR = C.CLIIDU
 WHERE C.CLITIP IN ('V', 'P')
 GO

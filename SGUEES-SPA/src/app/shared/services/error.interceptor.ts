@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Injector } from '@angular/core';
 import {
 	HttpInterceptor,
 	HttpRequest,
@@ -8,10 +8,17 @@ import {
 	HTTP_INTERCEPTORS,
 } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
-import { catchError, retry } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
+import { AuthService } from './auth.service';
+import { SESSION_EXPIRED_MESSAGE } from '../mtto/mtto-api-messages';
 
 @Injectable()
 export class ErrorInterceptor implements HttpInterceptor {
+	private readonly authService: AuthService;
+
+	constructor(private injector: Injector) {
+		this.authService = this.injector.get(AuthService);
+	}
 	intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
 		return next.handle(req).pipe(
 			catchError(error => {
@@ -43,7 +50,8 @@ export class ErrorInterceptor implements HttpInterceptor {
 					}
 
 					if (error.status === 401) {
-						return throwError(() => error.statusText);
+						this.authService.handleSessionExpired();
+						return throwError(() => SESSION_EXPIRED_MESSAGE);
 					}
 					const applicationError = error.headers.get('Application-Error');
 					if (applicationError) {

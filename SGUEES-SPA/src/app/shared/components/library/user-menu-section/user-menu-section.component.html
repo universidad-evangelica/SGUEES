@@ -1,19 +1,41 @@
-<div>
-  <div class="user-info">
-    <div class="image-container" *ngIf="showAvatar">
-      <div
-        [style.backgroundImage]="'url(' + urlPhotoUser + ')'"
-        class="user-image"
-      ></div>
+<div class="sguees-user-menu">
+  <div class="sguees-user-menu__header">
+    <div class="sguees-user-menu__header-bg" aria-hidden="true"></div>
+    <div class="sguees-user-menu__avatar">
+      <span class="sguees-user-menu__avatar-ring"></span>
+      <img [src]="urlPhotoUser" alt="" />
     </div>
-    <div class="user-name">{{ nameUser }}</div>
+    <div class="sguees-user-menu__meta">
+      <span class="sguees-user-menu__name">{{ nameUser }}</span>
+      <span class="sguees-user-menu__login">&#64;{{ loginUser }}</span>
+      <span class="sguees-user-menu__status">
+        <span class="sguees-user-menu__status-dot"></span>
+        Sesión activa
+      </span>
+    </div>
   </div>
-  <dx-list
-    #userInfoList
-    [items]="menuItems"
-    [elementAttr]="{
-      class: 'user-info-list'
-    }"
-    (onItemClick)="handleListItemClick($event)"
-  ></dx-list>
+
+  <div class="sguees-user-menu__actions" #actionsContainer>
+    <button
+      *ngFor="let item of menuItems"
+      type="button"
+      class="sguees-user-menu__action"
+      [class.sguees-user-menu__action--danger]="item.text === 'Salir'"
+      (click)="handleActionClick(item)"
+    >
+      <span class="sguees-user-menu__action-icon">
+        <i class="dx-icon" [ngClass]="'dx-icon-' + item.icon"></i>
+      </span>
+      <span class="sguees-user-menu__action-copy">
+        <span class="sguees-user-menu__action-text">{{ item.text }}</span>
+        <span class="sguees-user-menu__action-hint">{{ item.hint }}</span>
+      </span>
+      <i class="dx-icon dx-icon-chevronright sguees-user-menu__action-arrow"></i>
+    </button>
+  </div>
+
+  <div class="sguees-user-menu__footer">
+    <i class="dx-icon dx-icon-globe"></i>
+    SGUEES · Portal empresarial
+  </div>
 </div>

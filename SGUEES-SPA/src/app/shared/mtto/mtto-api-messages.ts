@@ -46,8 +46,32 @@ export function isBusinessWarningMessage(message: string): boolean {
 	);
 }
 
+export const SESSION_EXPIRED_MESSAGE =
+	'Su sesión expiró. Ingrese nuevamente para continuar.';
+
 export function cleanApiMessage(message: unknown): string {
 	return `${message ?? ''}`.replace(/^error:\s*/i, '').trim();
+}
+
+export function isUnauthorizedError(error: unknown): boolean {
+	if (error && typeof error === 'object' && Number((error as any).status) === 401) {
+		return true;
+	}
+
+	const message =
+		typeof error === 'string'
+			? error
+			: getApiErrorMessage(error);
+	const lower = cleanApiMessage(message).toLowerCase();
+
+	return (
+		lower === 'unauthorized' ||
+		lower.includes('sesión expir') ||
+		lower.includes('sesion expir') ||
+		lower.includes('session expir') ||
+		lower.includes('no está autorizado') ||
+		lower.includes('no esta autorizado')
+	);
 }
 
 export function mapApiErrorMessage(message: string, etiquetaRegistro = 'el registro'): string {
@@ -100,7 +124,7 @@ function isConnectionFailure(value: unknown): boolean {
 function getHttpStatusMessage(status: number): string | null {
 	switch (status) {
 		case 401:
-			return 'Su sesión expiró o no está autorizado. Cierre sesión e ingrese nuevamente.';
+			return SESSION_EXPIRED_MESSAGE;
 		case 403:
 			return 'No tiene permiso para realizar esta operación.';
 		case 404:

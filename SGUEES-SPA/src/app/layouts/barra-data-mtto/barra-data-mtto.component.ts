@@ -25,7 +25,7 @@ import {
 } from 'src/app/shared/components/library/page-header/page-header.component';
 import { MttoPageContextService } from 'src/app/layouts/mtto-page-context.service';
 import { BarraRibbonTabDirective } from './barra-ribbon-tab.directive';
-import { buildEstadoToolbarOptions } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { buildEstadoToolbarOptions, computeToolbarBtnWidth } from 'src/app/shared/mtto/mtto-grid.helpers';
 
 export type { BreadcrumbItem } from 'src/app/shared/components/library/page-header/page-header.component';
 
@@ -82,7 +82,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Input() btn1Type: string = 'default';
   @Input() btn1Height: number = 44;
   @Input() btn1Width: number = 0;
-  @Input() btn1Mode: string = 'outlined';
+  @Input() btn1Mode: string = 'contained';
   @Output() btn1Click = new EventEmitter<any>();
 
   @Input() btn2: string = '';
@@ -91,7 +91,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Input() btn2Type: string = 'default';
   @Input() btn2Height: number = 44;
   @Input() btn2Width: number = 0;
-  @Input() btn2Mode: string = 'outlined';
+  @Input() btn2Mode: string = 'contained';
   @Output() btn2Click = new EventEmitter<any>();
 
   @Input() btn3: string = '';
@@ -100,7 +100,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Input() btn3Type: string = 'default';
   @Input() btn3Height: number = 44;
   @Input() btn3Width: number = 0;
-  @Input() btn3Mode: string = 'outlined';
+  @Input() btn3Mode: string = 'contained';
   @Output() btn3Click = new EventEmitter<any>();
 
   @Input() btn4: string = '';
@@ -109,7 +109,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Input() btn4Type: string = 'default';
   @Input() btn4Height: number = 44;
   @Input() btn4Width: number = 0;
-  @Input() btn4Mode: string = 'outlined';
+  @Input() btn4Mode: string = 'contained';
   @Output() btn4Click = new EventEmitter<any>();
 
   @Input() btn5: string = '';
@@ -118,7 +118,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Input() btn5Type: string = 'default';
   @Input() btn5Height: number = 44;
   @Input() btn5Width: number = 0;
-  @Input() btn5Mode: string = 'outlined';
+  @Input() btn5Mode: string = 'contained';
   @Output() btn5Click = new EventEmitter<any>();
 
   @Input() btn6: string = '';
@@ -127,7 +127,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Input() btn6Type: string = 'default';
   @Input() btn6Height: number = 44;
   @Input() btn6Width: number = 0;
-  @Input() btn6Mode: string = 'outlined';
+  @Input() btn6Mode: string = 'contained';
   @Output() btn6Click = new EventEmitter<any>();
 
   optNuevo: Record<string, unknown> = {};
@@ -378,6 +378,8 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       icon: 'plus',
       text: 'Nuevo',
       type: 'default',
+      width: computeToolbarBtnWidth('Nuevo'),
+      elementAttr: { class: 'sguees-barra-btn-standard' },
       onClick: this.OnNuevo,
       visible: browseToolbarInBarra && this.permiteAdd && this.isBrowse,
     };
@@ -386,6 +388,8 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       icon: 'save',
       text: 'Guardar',
       type: 'success',
+      width: computeToolbarBtnWidth('Guardar'),
+      elementAttr: { class: 'sguees-barra-btn-standard' },
       onClick: this.OnGuardar,
     };
     this.optCancelar = {
@@ -393,6 +397,8 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       icon: 'clear',
       text: 'Cancelar',
       type: 'danger',
+      width: computeToolbarBtnWidth('Cancelar'),
+      elementAttr: { class: 'sguees-barra-btn-standard' },
       onClick: this.OnCancelar,
     };
     this.optRefresh = {
@@ -409,11 +415,11 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       type: 'default',
       stylingMode: 'outlined',
       height: 44,
-      width: 180,
+      width: computeToolbarBtnWidth('Exportar', 180),
       onClick: this.OnExportar,
       visible: browseToolbarInBarra && this.isBrowse && this.showExport,
       disabled: !this.permiteExport,
-      elementAttr: { class: 'sguees-barra-btn-export' },
+      elementAttr: { class: 'sguees-barra-btn-export sguees-barra-btn-standard' },
       hint: this.permiteExport
         ? 'Exportar'
         : 'No tiene permiso para exportar registros.',
@@ -494,16 +500,18 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     browseToolbarInBarra = true,
   ): Record<string, unknown> {
     const opt: Record<string, unknown> = {
-      stylingMode: mode || 'outlined',
+      stylingMode: mode || 'contained',
       height,
       icon,
       text,
       type,
       onClick,
       visible: text !== '' && (browseToolbarInBarra || !this.isBrowse),
+      elementAttr: { class: 'sguees-barra-btn-standard sguees-barra-btn-action' },
     };
-    if (width > 0) {
-      opt.width = width;
+    const resolvedWidth = computeToolbarBtnWidth(text, width);
+    if (resolvedWidth) {
+      opt.width = resolvedWidth;
     }
     return opt;
   }

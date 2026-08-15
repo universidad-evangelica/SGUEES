@@ -160,6 +160,27 @@
     border-radius: var(--sguees-radius-sm);
   }
 
+  ::ng-deep .dx-toolbar-item {
+    flex-shrink: 0;
+  }
+
+  ::ng-deep .dx-button.sguees-barra-btn-standard,
+  ::ng-deep .dx-button.sguees-barra-btn-action,
+  ::ng-deep .dx-button.sguees-barra-btn-export {
+    min-width: 140px;
+    flex-shrink: 0;
+
+    .dx-button-text {
+      white-space: nowrap;
+      overflow: visible;
+      text-overflow: clip;
+    }
+
+    .dx-button-content {
+      padding-inline: 14px;
+    }
+  }
+
   ::ng-deep .sguees-barra-datebox.dx-datebox,
   ::ng-deep .dx-datebox.sguees-barra-datebox {
     min-height: var(--sguees-toolbar-height, 44px);

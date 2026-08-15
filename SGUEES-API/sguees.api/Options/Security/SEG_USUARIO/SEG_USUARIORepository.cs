@@ -552,7 +552,7 @@ namespace sguees.Repositories
 			}
 		}
 
-public async Task<CResult> RegistrarLoginHistorialAsync(string loginSistema, string ipAddress, string navegador, string codigoSuite, bool exitoso, string mensaje, bool esCambioClave = false)
+		public async Task<CResult> RegistrarLoginHistorialAsync(string loginSistema, string ipAddress, string navegador, string codigoSuite, bool exitoso, string mensaje, bool esCambioClave = false)
 	{
 		CResult objResultado = new CResult();
 		try
@@ -644,6 +644,66 @@ public async Task<CResult> RegistrarLoginHistorialAsync(string loginSistema, str
 			finally
 			{
 				objData.objConnection.Close();
+			}
+		}
+
+		public async Task<System.DateTime?> GetUltimoAccesoExitosoAsync(string loginSistema)
+		{
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "@LOGIN_SISTEMA", Value = loginSistema, DbType = System.Data.DbType.String },
+				};
+
+				const string sql = @"
+SELECT TOP 1 FECHA_LOGIN
+FROM SEG_USUARIO_LOGIN_HISTORIAL
+WHERE LOGIN_SISTEMA = @LOGIN_SISTEMA
+  AND EXITOSO = 1
+ORDER BY FECHA_LOGIN DESC";
+
+				var result = await objData.ExecCmd(System.Data.CommandType.Text, sql, false, p);
+				if (result == null || result == System.DBNull.Value)
+				{
+					return null;
+				}
+
+				return System.Convert.ToDateTime(result);
+			}
+			catch
+			{
+				return null;
+			}
+		}
+
+		public async Task<string> GetNombreEmpresaAsync(int corrEmpresa)
+		{
+			if (corrEmpresa <= 0)
+			{
+				return string.Empty;
+			}
+
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				};
+
+				const string sql = @"
+SELECT TOP 1 NOMBRE_EMPRESA
+FROM GEN_EMPRESA
+WHERE CORR_EMPRESA = @CORR_EMPRESA";
+
+				var result = await objData.ExecCmd(System.Data.CommandType.Text, sql, false, p);
+				return result == null || result == System.DBNull.Value
+					? string.Empty
+					: System.Convert.ToString(result)?.Trim() ?? string.Empty;
+			}
+			catch
+			{
+				return string.Empty;
 			}
 		}
 

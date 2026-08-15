@@ -57,6 +57,10 @@ export class SegUsuarioService {
 		return this.repo.get(xWhere);
 	}
 
+	getPerfil(): Observable<IResult> {
+		return this.http.get<IResult>(this.urlMtto + 'perfil');
+	}
+
 	insert(model: any): Observable<IResult> {
 		return this.repo.create(model);
 	}
@@ -162,6 +166,14 @@ export class SegUsuarioService {
 		];
 
 		return this.repodeta.update(model, xWhere);
+	}
+
+	cambioClavePerfil(model: {
+		CLAVE_USUARIO: string;
+		CLAVE_USUARIO_NUEVA: string;
+		CLAVE_CONFIRMAR: string;
+	}): Observable<IResult> {
+		return this.http.post<IResult>(this.urlMtto + 'perfil/cambio-clave', model);
 	}
 
 	cambioClave(model: any) {

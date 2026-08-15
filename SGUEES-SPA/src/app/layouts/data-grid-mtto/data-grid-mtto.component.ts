@@ -26,7 +26,10 @@ import {
   attachRemoteHeaderFilters,
   syncHeaderFiltersFromPageData,
 } from 'src/app/shared/utils/remote-header-filter.util';
-import { buildEstadoToolbarOptions } from 'src/app/shared/mtto/mtto-grid.helpers';
+import {
+  buildEstadoToolbarOptions,
+  computeToolbarBtnWidth,
+} from 'src/app/shared/mtto/mtto-grid.helpers';
 
 import { exportDataGrid } from 'devextreme/excel_exporter';
 import ExcelJS from 'exceljs';
@@ -512,6 +515,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       icon: 'refresh',
       stylingMode: 'text',
       height: 44,
+      width: computeToolbarBtnWidth('Actualizar'),
+      elementAttr: { class: 'sguees-barra-btn-standard' },
       onClick: this.onRefreshClick,
     };
     this.optAdd = {
@@ -520,7 +525,10 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
       type: 'default',
       stylingMode: 'contained',
       height: 44,
-      elementAttr: canAdd ? undefined : { class: 'sguees-action-no-add' },
+      width: computeToolbarBtnWidth('Nuevo'),
+      elementAttr: {
+        class: canAdd ? 'sguees-barra-btn-standard' : 'sguees-barra-btn-standard sguees-action-no-add',
+      },
       hint: canAdd ? 'Nuevo' : 'No tiene permiso para crear registros.',
       onClick: this.onAddClick,
     };

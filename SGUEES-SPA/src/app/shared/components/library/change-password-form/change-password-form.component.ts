@@ -1,74 +1,115 @@
 import { CommonModule } from '@angular/common';
-import { Component, NgModule, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { Component, EventEmitter, Input, NgModule, Output, ViewChild } from '@angular/core';
 import { ValidationCallbackData } from 'devextreme-angular/common';
-import { DxFormModule } from 'devextreme-angular/ui/form';
+import { DxButtonModule } from 'devextreme-angular/ui/button';
+import { DxFormComponent, DxFormModule } from 'devextreme-angular/ui/form';
 import { DxLoadIndicatorModule } from 'devextreme-angular/ui/load-indicator';
 import notify from 'devextreme/ui/notify';
+import {
+  evaluatePasswordPolicy,
+  passwordsMatch,
+  PasswordPolicyCheck,
+} from 'src/app/shared/utils/password-policy';
 
-import { Subscription } from 'rxjs';
-import { AuthService } from 'src/app/shared/services/auth.service';
+export interface ChangePasswordFormValue {
+  CLAVE_USUARIO: string;
+  CLAVE_USUARIO_NUEVA: string;
+  CLAVE_CONFIRMAR: string;
+}
 
 @Component({
-  selector: 'app-change-password-form',
+  selector: 'change-password-form',
   templateUrl: './change-password-form.component.html',
+  styleUrls: ['./change-password-form.component.scss'],
 })
-export class ChangePasswordFormComponent implements OnInit, OnDestroy {
-  loading = false;
+export class ChangePasswordFormComponent {
+  @Input() loading = false;
+  @Input() showCancel = true;
 
-  formData: any = {};
+  @Output() submitted = new EventEmitter<ChangePasswordFormValue>();
+  @Output() cancelled = new EventEmitter<void>();
 
-  recoveryCode = '';
-  loginSistema = '';
+  @ViewChild(DxFormComponent) form!: DxFormComponent;
 
-  paramMapSubscription: Subscription;
-  queryParamSubscription: Subscription;
+  formData: ChangePasswordFormValue = {
+    CLAVE_USUARIO: '',
+    CLAVE_USUARIO_NUEVA: '',
+    CLAVE_CONFIRMAR: '',
+  };
 
-  constructor(private authService: AuthService, private router: Router, private route: ActivatedRoute) { }
+  passwordPolicy: PasswordPolicyCheck = evaluatePasswordPolicy('');
 
-  ngOnInit() {
-    this.paramMapSubscription = this.route.paramMap.subscribe((params) => {
-      this.recoveryCode = params.get('recoveryCode') || '';
-    });
+  readonly newPasswordEditorOptions = {
+    stylingMode: 'filled',
+    placeholder: 'Nueva contraseña',
+    mode: 'password',
+    inputAttr: { autocomplete: 'new-password' },
+    onValueChanged: () => this.onNewPasswordChanged(),
+  };
 
-    this.queryParamSubscription = this.route.queryParamMap.subscribe((params) => {
-      this.loginSistema = params.get('login') || '';
-      if (!this.recoveryCode) {
-        this.recoveryCode = params.get('token') || '';
-      }
-    });
+  readonly validateNewPasswordPolicy = (e: ValidationCallbackData) =>
+    evaluatePasswordPolicy(`${e.value ?? ''}`).isValid;
+
+  readonly validatePasswordConfirm = (e: ValidationCallbackData) =>
+    passwordsMatch(this.formData.CLAVE_USUARIO_NUEVA, `${e.value ?? ''}`);
+
+  readonly validateDifferentFromCurrent = (e: ValidationCallbackData) => {
+    const nueva = `${e.value ?? ''}`;
+    const actual = `${this.formData.CLAVE_USUARIO ?? ''}`;
+    return !actual || !nueva || actual !== nueva;
+  };
+
+  onNewPasswordChanged(): void {
+    this.passwordPolicy = evaluatePasswordPolicy(this.formData.CLAVE_USUARIO_NUEVA);
   }
 
-  async onSubmit(e: Event) {
-    e.preventDefault();
-    const { password } = this.formData;
-    this.loading = true;
+  resetForm(): void {
+    this.formData = {
+      CLAVE_USUARIO: '',
+      CLAVE_USUARIO_NUEVA: '',
+      CLAVE_CONFIRMAR: '',
+    };
+    this.passwordPolicy = evaluatePasswordPolicy('');
+    this.form?.instance?.resetValues();
+  }
 
-    const result = await this.authService.changePassword(password, this.recoveryCode, this.loginSistema);
-    this.loading = false;
+  submitForm(event: Event): void {
+    event.preventDefault();
 
-    if (result.isOk) {
-      this.router.navigate(['/login-form']);
-    } else {
-      notify(result.message, 'error', 2000);
+    const validation = this.form?.instance?.validate();
+    if (validation && !validation.isValid) {
+      notify({ message: 'Revise los campos marcados antes de continuar.', width: 'auto', shading: false }, 'warning', 3000);
+      return;
     }
+
+    if (!passwordsMatch(this.formData.CLAVE_USUARIO_NUEVA, this.formData.CLAVE_CONFIRMAR)) {
+      notify({ message: 'Las contraseñas no coinciden.', width: 'auto', shading: false }, 'warning', 3000);
+      return;
+    }
+
+    const policy = evaluatePasswordPolicy(this.formData.CLAVE_USUARIO_NUEVA);
+    if (!policy.isValid) {
+      notify({ message: policy.message, width: 'auto', shading: false }, 'warning', 3000);
+      return;
+    }
+
+    if (this.formData.CLAVE_USUARIO === this.formData.CLAVE_USUARIO_NUEVA) {
+      notify({ message: 'La nueva contraseña debe ser diferente a la actual.', width: 'auto', shading: false }, 'warning', 3000);
+      return;
+    }
+
+    this.submitted.emit({ ...this.formData });
   }
 
-  confirmPassword = (e: ValidationCallbackData) => e.value === this.formData.password;
-
-  ngOnDestroy(): void {
-    this.paramMapSubscription.unsubscribe();
-    this.queryParamSubscription.unsubscribe();
+  cancelForm(): void {
+    this.resetForm();
+    this.cancelled.emit();
   }
 }
+
 @NgModule({
-  imports: [
-    CommonModule,
-    RouterModule,
-    DxFormModule,
-    DxLoadIndicatorModule,
-  ],
+  imports: [CommonModule, DxFormModule, DxButtonModule, DxLoadIndicatorModule],
   declarations: [ChangePasswordFormComponent],
   exports: [ChangePasswordFormComponent],
 })
-export class ChangePasswordFormModule { }
+export class ChangePasswordFormModule {}
