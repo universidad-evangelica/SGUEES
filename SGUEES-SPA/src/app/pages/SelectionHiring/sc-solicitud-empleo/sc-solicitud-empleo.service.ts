@@ -20,10 +20,10 @@ export class ScSolicitudEmpleoService {
 			return false;
 		}
 
-		if (!`${model.DUI ?? ''}`.trim()) {
-			msg('Debe digitar el DUI', NotifyType.Warning);
-			return false;
-		}
+		// if (!`${model.DUI ?? ''}`.trim()) {
+		// 	msg('Debe digitar el DUI', NotifyType.Warning);
+		// 	return false;
+		// }
 
 		if (!`${model.NOMBRE ?? ''}`.trim()) {
 			msg('Debe digitar el nombre', NotifyType.Warning);
@@ -109,7 +109,7 @@ export class ScSolicitudEmpleoService {
 			{ dataField: 'CORR_SOLICITUD_EMPLEO', caption: 'Corr.', width: 100 },
 			{ dataField: 'FECHA_GENERACION', caption: 'Fecha Generación', width: 200, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
 			{ dataField: 'CORREO_INVITACION', caption: 'Correo Invitación', width: 250 },
-			{ dataField: 'DUI', caption: 'DUI', width: 140 },
+			{ dataField: 'DUI', caption: 'Doc. Identidad', width: 150 },
 			{ dataField: 'NOMBRE', caption: 'Participante', width: 250 },
 			{ dataField: 'ACTIVO', caption: 'Activo', width: 200, dataType: 'boolean', alignment: 'center' },
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 250 },

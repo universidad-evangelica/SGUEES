@@ -474,7 +474,7 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 						this.messageService.add({
 							severity: 'success',
 							summary: 'Éxito',
-							detail: 'Token generado y correo de invitación enviado.',
+							detail: 'La solicitud ha sido generada y enviada correctamente.',
 						});
 						this.consultarToken();
 					} else {

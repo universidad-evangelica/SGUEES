@@ -15,7 +15,10 @@
   (guardar)="guardar()"
   (cancelar)="cancelar()"
   [showRefresh]="true"
-  
+  [showRibbon]="true"
+  [showRefresh]="true"
+  (consultar)="true"
+  [showExport]="true"
 >
 </app-barra-data-mtto>
 
@@ -70,7 +73,7 @@
               <div *dxTemplate>
                 <dx-button
                   icon="add"
-                  text="Generación/Envio token"
+                  text="Enviar solicitud"
                   type="success"
                   stylingMode="contained"
                   [disabled]="!puedeGenerarToken()"
@@ -236,7 +239,7 @@
                 <h4 class="rd-section__title">Documentación</h4>
                 <div class="rd-grid">
                   <div class="rd-field">
-                    <span class="rd-label">DUI</span
+                    <span class="rd-label">Documento Identidad</span
                     ><span class="rd-value">{{
                       textoLectura(personaDatos?.DUI)
                     }}</span>
@@ -708,11 +711,14 @@
   [keyExpr]="'CORR_SOLICITUD_EMPLEO'"
   [permiteEditar]="getPermiteEditar"
   [permiteDele]="getPermiteDele"
-  [customButtons]="customButtons"
   (rowDblClick)="rowDblClick($event)"
   (rowRemoving)="rowRemoving($event)"
   (focusedRowChanged)="focusedRowChanged($event)"
   (editClick)="editarClick($event)"
+  [showSearch]="false"
+  [showExport]="false"
+  [showRefresh]="false"
+  [showGrouping]="true"
 
 >
 </app-data-grid-mtto>
