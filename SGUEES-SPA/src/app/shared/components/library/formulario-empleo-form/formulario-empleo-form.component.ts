@@ -89,7 +89,7 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 	private modalEditId: number | null = null;
 
 	private nextRowId = 1;
-	private temaAnterior: 'light' | 'dark' = 'light';
+	private temaAnteriorId = '';
 
 	readonly sexoOptions = [
 		{ value: 'M', text: 'Masculino' },
@@ -215,9 +215,9 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnInit(): void {
-		this.temaAnterior = this.themeService.getCurrentTheme();
-		if (this.temaAnterior !== 'light') {
-			this.themeService.setAppTheme('light');
+		this.temaAnteriorId = this.themeService.getCurrentThemeId();
+		if (this.themeService.currentTheme !== 'light') {
+			this.themeService.setAppTheme('fluent-blue-light');
 		}
 
 		this.token = this.route.snapshot.queryParamMap.get('token')?.trim() ?? '';
@@ -225,8 +225,8 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 	}
 
 	ngOnDestroy(): void {
-		if (this.temaAnterior !== this.themeService.getCurrentTheme()) {
-			this.themeService.setAppTheme(this.temaAnterior);
+		if (this.temaAnteriorId && this.temaAnteriorId !== this.themeService.getCurrentThemeId()) {
+			this.themeService.setAppTheme(this.temaAnteriorId);
 		}
 	}
 
