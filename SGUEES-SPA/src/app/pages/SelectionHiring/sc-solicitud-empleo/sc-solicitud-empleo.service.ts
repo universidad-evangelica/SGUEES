@@ -134,6 +134,12 @@ export class ScSolicitudEmpleoService {
 				dataField: 'FECHA_GENERACION',
 				label: { text: 'Fecha Generación' },
 				colSpan: 2,
+				// DateBox con formato local; evita mostrar el ISO crudo de la API (…Z).
+				editorType: 'dxDateBox',
+				editorOptions: {
+					type: 'datetime',
+					displayFormat: 'dd/MM/yyyy HH:mm',
+				},
 			},
 			{
 				dataField: 'CORREO_INVITACION',
@@ -142,7 +148,7 @@ export class ScSolicitudEmpleoService {
 			},
 			{
 				dataField: 'DUI',
-				label: { text: 'DUI' },
+				label: { text: 'Doc. Identidad' },
 				colSpan: 1,
 			},
 			{

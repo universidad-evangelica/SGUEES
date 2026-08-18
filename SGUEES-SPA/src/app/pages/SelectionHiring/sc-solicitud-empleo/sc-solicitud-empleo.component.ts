@@ -96,7 +96,8 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 			return {
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_SOLICITUD_EMPLEO: xModel.CORR_SOLICITUD_EMPLEO,
-				FECHA_GENERACION: xModel.FECHA_GENERACION,
+				// La API envía ISO (ej. 2026-08-17T17:18:48Z); DateBox necesita un Date real.
+				FECHA_GENERACION: this.parseFecha(xModel.FECHA_GENERACION),
 				CORREO_INVITACION: xModel.CORREO_INVITACION,
 				DUI: xModel.DUI,
 				NOMBRE: xModel.NOMBRE,
@@ -104,10 +105,10 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 				ACTIVO: xModel.ACTIVO,
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
-				FECHA_CREA: xModel.FECHA_CREA,
+				FECHA_CREA: this.parseFecha(xModel.FECHA_CREA),
 				USUARIO_ACTU: xModel.USUARIO_ACTU,
 				ESTACION_ACTU: xModel.ESTACION_ACTU,
-				FECHA_ACTU: xModel.FECHA_ACTU,
+				FECHA_ACTU: this.parseFecha(xModel.FECHA_ACTU),
 			};
 		} else {
 			return {
@@ -127,6 +128,20 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 				FECHA_ACTU: new Date(),
 			};
 		}
+	}
+
+	/** Convierte string ISO o Date a Date válido para el formulario. */
+	private parseFecha(valor: Date | string | null | undefined): Date {
+		if (valor instanceof Date && !Number.isNaN(valor.getTime())) {
+			return valor;
+		}
+		if (valor) {
+			const fecha = new Date(valor);
+			if (!Number.isNaN(fecha.getTime())) {
+				return fecha;
+			}
+		}
+		return new Date();
 	}
 
 	getEstadoClass(estado: string): string {
@@ -505,10 +520,15 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 				.subscribe({
 					next: (response: any) => {
 						if (response.Result) {
-							this.models.push(response.Data);
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							//this.notifyFx('Registro creado con exito!', NotifyType.Success);
+							// Alta: se queda en el formulario (Update) con el correlativo ya asignado
+							// para continuar token y demás procesos sin volver al grid.
+							const registro = this.fillData(response.Data);
+							this.models.push(registro);
+							this.model = registro;
+							this.modelUpdate = this.fillData(registro);
+							this.AsignaStatus(UpdateType.Update);
+							this.habilitar();
+							this.consultarToken();
 							this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro creado con exito!' });
 						} else {
 							//this.notifyFx(response.ErrorMessage, NotifyType.Error);
