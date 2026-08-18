@@ -51,6 +51,8 @@ export interface FormularioProgressContext {
 	familiaresUees: FamiliarUeesRow[];
 	/** Mayor paso de contenido alcanzado (1–6), para chips de pasos solo opcionales. */
 	maxPasoAlcanzado: PortalPaso;
+	/** false = eventual: no contar el paso 5 (familiares UEES). */
+	esFormularioCompleto?: boolean;
 }
 
 const PASO_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
@@ -247,8 +249,10 @@ export function calcularProgresoFormulario(ctx: FormularioProgressContext): Form
 		{ paso: 2, data: p2 },
 		{ paso: 3, data: p3 },
 		{ paso: 4, data: p4 },
-		{ paso: 5, data: p5 },
 	];
+	if (ctx.esFormularioCompleto !== false) {
+		porPaso.push({ paso: 5, data: p5 });
+	}
 
 	const pasos: PasoProgressResumen[] = porPaso.map(({ paso, data }) => {
 		const completoRequeridos =

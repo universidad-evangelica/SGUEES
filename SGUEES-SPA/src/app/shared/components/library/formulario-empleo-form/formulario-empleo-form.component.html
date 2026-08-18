@@ -116,10 +116,10 @@
 					<button
 						type="button"
 						class="wizard-stepper__item"
-						*ngFor="let s of steps"
+						*ngFor="let s of pasosVisibles"
 						[class.is-active]="s.id === pasoActual"
 						[class.is-done]="pasoCompleto(s.id)"
-						[disabled]="s.id > pasoActual + 1"
+						[disabled]="!puedeNavegarAPaso(s.id)"
 						(click)="irAPaso(s.id)"
 						[attr.aria-current]="s.id === pasoActual ? 'step' : null"
 					>
@@ -562,8 +562,8 @@
 						</div>
 					</div>
 
-					<!-- PASO 5: Información Adicional -->
-					<div class="wizard-step" *ngIf="pasoActual === 5">
+					<!-- PASO 5: Información Adicional (solo si ES_PERMANENTE; tipo 0/null muestra todos) -->
+					<div class="wizard-step" *ngIf="pasoActual === 5 && esFormularioCompleto">
 						<div class="wizard-section">
 							<h3 class="wizard-section__title">Familiares en la UEES</h3>
 							<dx-check-box
