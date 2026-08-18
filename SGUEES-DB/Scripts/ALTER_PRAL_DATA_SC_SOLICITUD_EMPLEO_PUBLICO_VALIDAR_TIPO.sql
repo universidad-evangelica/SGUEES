@@ -4,8 +4,9 @@ SET QUOTED_IDENTIFIER ON;
 SET ANSI_NULLS ON;
 GO
 
-/* ValidarToken: devuelve tipo de contratación de la solicitud (JOIN catálogo).
-   SPA: CORR 0/null → mostrar todos; ES_PERMANENTE = 0 → ocultar paso 5. */
+/* ValidarToken: tipo de contratación + correo de invitación.
+   SPA: CORR 0/null → mostrar todos; ES_PERMANENTE = 0 → ocultar paso 5.
+   CORREO_INVITACION se precarga en el formulario público (el candidato verifica). */
 
 CREATE OR ALTER PROCEDURE dbo.PRAL_DATA_SC_SOLICITUD_EMPLEO_PUBLICO_VALIDAR
     @TOKEN_HASH varchar(64)
@@ -25,7 +26,9 @@ BEGIN
         T.FECHA_EXPIRACION,
         ISNULL(S.CORR_TIPO_CONTRATACION, 0) AS CORR_TIPO_CONTRATACION,
         TC.NOMBRE_TIPO_CONTRATACION,
-        CAST(ISNULL(TC.ES_PERMANENTE, 0) AS bit) AS ES_PERMANENTE
+        CAST(ISNULL(TC.ES_PERMANENTE, 0) AS bit) AS ES_PERMANENTE,
+        /* Solicitud primero; si viene vacío, el correo al que se envió el token. */
+        LTRIM(RTRIM(ISNULL(NULLIF(S.CORREO_INVITACION, ''), T.CORREO_DESTINO))) AS CORREO_INVITACION
     FROM dbo.SC_SOLICITUD_EMPLEO_TOKEN T
     INNER JOIN dbo.SC_SOLICITUD_EMPLEO S
         ON S.CORR_EMPRESA = T.CORR_EMPRESA

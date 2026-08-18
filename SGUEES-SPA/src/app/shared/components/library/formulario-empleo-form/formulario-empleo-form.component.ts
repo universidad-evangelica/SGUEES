@@ -184,6 +184,7 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 		return formatoBucket(bucket);
 	}
 
+	/** Pasos que ve el candidato. El id interno no se renumera (Envío sigue siendo 6). */
 	get pasosVisibles(): PortalStepMeta[] {
 		return this.steps.filter((s) => this.mostrarPaso(s.id));
 	}
@@ -479,6 +480,7 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			const response: any = await firstValueFrom(this.service.validarToken(this.token));
 			this.tokenValido = response.Result === true && response.Data?.VALIDO === true;
 			this.esFormularioCompleto = this.resolverFormularioCompleto(response.Data);
+			this.aplicarCorreoInvitacion(response.Data);
 			this.mensajeToken = this.tokenValido
 				? ''
 				: 'El enlace es inválido, expiró o ya fue utilizado.';
@@ -486,6 +488,21 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			this.mensajeToken = 'No fue posible validar el enlace. Inténtalo nuevamente.';
 		} finally {
 			this.validandoToken = false;
+		}
+	}
+
+	/** Precarga el correo de la solicitud para que el candidato solo lo verifique. */
+	private aplicarCorreoInvitacion(data: any): void {
+		if (!this.tokenValido) {
+			return;
+		}
+		// No pisa una corrección del candidato si ValidarToken se vuelve a llamar.
+		if (`${this.formData.CORREO ?? ''}`.trim()) {
+			return;
+		}
+		const correo = `${data?.CORREO_INVITACION ?? ''}`.trim();
+		if (correo) {
+			this.formData.CORREO = correo;
 		}
 	}
 

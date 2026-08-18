@@ -113,10 +113,11 @@
 				</div>
 
 				<nav class="wizard-stepper" aria-label="Pasos del formulario">
+					<!-- i+1 = número visible (eventual: Envío = 5). s.id sigue siendo el paso interno (Envío = 6). -->
 					<button
 						type="button"
 						class="wizard-stepper__item"
-						*ngFor="let s of pasosVisibles"
+						*ngFor="let s of pasosVisibles; let i = index"
 						[class.is-active]="s.id === pasoActual"
 						[class.is-done]="pasoCompleto(s.id)"
 						[disabled]="!puedeNavegarAPaso(s.id)"
@@ -125,7 +126,7 @@
 					>
 						<span class="wizard-stepper__num" aria-hidden="true">
 							<i *ngIf="pasoCompleto(s.id)" class="dx-icon dx-icon-check"></i>
-							<ng-container *ngIf="!pasoCompleto(s.id)">{{ s.id }}</ng-container>
+							<ng-container *ngIf="!pasoCompleto(s.id)">{{ i + 1 }}</ng-container>
 						</span>
 						<span class="wizard-stepper__label">{{ s.corto }}</span>
 					</button>
@@ -220,6 +221,7 @@
 							<h3 class="wizard-section__title">Información de contacto</h3>
 							<div class="wizard-grid wizard-grid--2">
 								<div class="wizard-field">
+									<!-- Precargado desde CORREO_INVITACION (ValidarToken). Editable por si hay que corregir. -->
 									<label class="wizard-label">Correo <span class="campo-required">*</span></label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.CORREO" mode="email"></dx-text-box>
 								</div>
