@@ -28,6 +28,21 @@ namespace SGUEES.Services
 			return await _repo.GetAllAsync(p);
 		}
 
+		/// <summary>
+		/// Combo de solicitud de empleo: mismos datos que GetAll, filtrados a vigentes.
+		/// No se usa en el mantenimiento del catálogo (allí se listan también inactivos).
+		/// </summary>
+		public async Task<CResult> GetAllActivosAsync(SC_TIPO_CONTRATACIONParam xWhere)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+				new CParameter() {ParameterName="ACTIVO",Value=true,DbType=System.Data.DbType.Int32},
+			};
+
+			return await _repo.GetAllAsync(p);
+		}
+
 		public async Task<CResult> GetAsync(SC_TIPO_CONTRATACIONParam xWhere)
 		{
 			var p = new List<CParameter>

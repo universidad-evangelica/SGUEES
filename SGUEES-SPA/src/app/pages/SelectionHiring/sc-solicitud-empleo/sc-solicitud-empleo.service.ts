@@ -30,6 +30,11 @@ export class ScSolicitudEmpleoService {
 			return false;
 		}
 
+		if (!model.CORR_TIPO_CONTRATACION || Number(model.CORR_TIPO_CONTRATACION) <= 0) {
+			msg('Debe seleccionar el tipo de contratación', NotifyType.Warning);
+			return false;
+		}
+
 		return true;
 	}
 	// #endregion
@@ -111,6 +116,8 @@ export class ScSolicitudEmpleoService {
 			{ dataField: 'CORREO_INVITACION', caption: 'Correo Invitación', width: 250 },
 			{ dataField: 'DUI', caption: 'Doc. Identidad', width: 150 },
 			{ dataField: 'NOMBRE', caption: 'Participante', width: 250 },
+			{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo Solicitud', width: 220 },
+			{ dataField: 'ES_PERMANENTE', caption: 'Es permanente ?', width: 150, dataType: 'boolean', alignment: 'center' },
 			{ dataField: 'ACTIVO', caption: 'Activo', width: 200, dataType: 'boolean', alignment: 'center' },
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario Crea', width: 250 },
 			{ dataField: 'ESTACION_CREA', caption: 'Estacion Crea', width: 250 },
@@ -133,13 +140,18 @@ export class ScSolicitudEmpleoService {
 			{
 				dataField: 'FECHA_GENERACION',
 				label: { text: 'Fecha Generación' },
-				colSpan: 2,
+				colSpan: 1,
 				// DateBox con formato local; evita mostrar el ISO crudo de la API (…Z).
 				editorType: 'dxDateBox',
 				editorOptions: {
 					type: 'datetime',
 					displayFormat: 'dd/MM/yyyy HH:mm',
 				},
+			},
+			{
+				dataField: 'NOMBRE',
+				label: { text: 'Participante' },
+				colSpan: 2,
 			},
 			{
 				dataField: 'CORREO_INVITACION',
@@ -152,9 +164,10 @@ export class ScSolicitudEmpleoService {
 				colSpan: 1,
 			},
 			{
-				dataField: 'NOMBRE',
-				label: { text: 'Participante' },
+				dataField: 'CORR_TIPO_CONTRATACION',
+				label: { text: 'Tipo de contratación' },
 				colSpan: 2,
+				template: 'CORR_TIPO_CONTRATACIONLookup',
 			},
 			// {
 			// 	dataField: 'CORR_PERSONA_DATOS',

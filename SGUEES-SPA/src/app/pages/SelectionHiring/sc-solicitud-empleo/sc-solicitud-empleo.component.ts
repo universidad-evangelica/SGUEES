@@ -46,6 +46,13 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	cargandoPersonaDatos = false;
 	fotoPersonaUrl: string | null = null;
 	fotoPreviewVisible = false;
+	/** Datos del combo Tipo de contratación (solo ACTIVO = 1). */
+	mCORR_TIPO_CONTRATACION: any[] = [];
+	tipoContratacionLookupColumns: any[] = [
+		{ dataField: 'CORR_TIPO_CONTRATACION', caption: 'Corr.', width: 80 },
+		{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo de contratación', width: 260 },
+		{ dataField: 'ES_PERMANENTE', caption: 'Es permanente ?', width: 140, dataType: 'boolean' },
+	];
 	// #endregion
 
 	constructor(
@@ -77,7 +84,43 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 	//#region <Manejo de Combos>
 	llenaComboBox() {
+		this.getCORR_TIPO_CONTRATACION();
 	}
+
+	/**
+	 * Carga el catálogo para el lookup del encabezado.
+	 * getLookUp arma: SC_TIPO_CONTRATACION / GetCORR_TIPO_CONTRATACION_SC_SOLICITUD_EMPLEO
+	 * (permiso /sc-solicitud-empleo|R; solo tipos activos).
+	 */
+	getCORR_TIPO_CONTRATACION(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_SOLICITUD_EMPLEO',
+				'SC_TIPO_CONTRATACION',
+				'GetCORR_TIPO_CONTRATACION',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.mCORR_TIPO_CONTRATACION = response.Data;
+					}
+				},
+				error: (error: any) => {
+					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
+				},
+			});
+	}
+
+	/**
+	 * Valor que queda en model.CORR_TIPO_CONTRATACION al elegir una fila del lookup.
+	 * ES_PERMANENTE no se copia al guardar: lo recalcula la vista.
+	 */
+	selectedLookUpCORR_TIPO_CONTRATACION = (vRow: any): any => {
+		return vRow[0].CORR_TIPO_CONTRATACION;
+	};
 
 	//#endregion
 
@@ -101,6 +144,9 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 				CORREO_INVITACION: xModel.CORREO_INVITACION,
 				DUI: xModel.DUI,
 				NOMBRE: xModel.NOMBRE,
+				CORR_TIPO_CONTRATACION: xModel.CORR_TIPO_CONTRATACION,
+				NOMBRE_TIPO_CONTRATACION: xModel.NOMBRE_TIPO_CONTRATACION,
+				ES_PERMANENTE: xModel.ES_PERMANENTE,
 				CORR_PERSONA_DATOS: xModel.CORR_PERSONA_DATOS,
 				ACTIVO: xModel.ACTIVO,
 				USUARIO_CREA: xModel.USUARIO_CREA,
@@ -118,6 +164,9 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 				CORREO_INVITACION: '',
 				DUI: '',
 				NOMBRE: '',
+				CORR_TIPO_CONTRATACION: 0,
+				NOMBRE_TIPO_CONTRATACION: '',
+				ES_PERMANENTE: false,
 				CORR_PERSONA_DATOS: 0,
 				ACTIVO: true,
 				USUARIO_CREA: '',

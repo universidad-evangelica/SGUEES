@@ -7,6 +7,8 @@ namespace SGUEES.Services
 	public interface ISC_TIPO_CONTRATACIONService
 	{
 		Task<CResult> GetAllAsync(SC_TIPO_CONTRATACIONParam xWhere);
+		/// <summary>Lookup de solicitud de empleo: solo tipos con ACTIVO = 1.</summary>
+		Task<CResult> GetAllActivosAsync(SC_TIPO_CONTRATACIONParam xWhere);
 		Task<CResult> GetAsync(SC_TIPO_CONTRATACIONParam xWhere);
 		Task<CResult> CreateAsync(SC_TIPO_CONTRATACIONTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(SC_TIPO_CONTRATACIONTable Data, string vLOGIN_SISTEMA, string vESTACION);

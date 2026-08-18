@@ -38,6 +38,19 @@
     [labelLocation]="'top'"
     [colCount]="8"
     [items]="items">
+    <!-- Lookup: guarda CORR_TIPO_CONTRATACION; el nombre y ES_PERMANENTE salen de la vista al consultar. -->
+    <div *dxTemplate="let cellInfo of 'CORR_TIPO_CONTRATACIONLookup'">
+      <app-data-lookup
+        [model]="mCORR_TIPO_CONTRATACION"
+        [(value)]="model.CORR_TIPO_CONTRATACION"
+        [selectedRowKeys]="selectedLookUpCORR_TIPO_CONTRATACION"
+        [readOnly]="isConsulta()"
+        [valueExpr]="'CORR_TIPO_CONTRATACION'"
+        [displayExpr]="'NOMBRE_TIPO_CONTRATACION'"
+        [lookupColumns]="tipoContratacionLookupColumns"
+      >
+      </app-data-lookup>
+    </div>
 </dx-form>
 </div>
 
