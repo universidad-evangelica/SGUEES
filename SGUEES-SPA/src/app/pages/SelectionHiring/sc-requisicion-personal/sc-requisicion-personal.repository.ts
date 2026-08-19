@@ -38,4 +38,17 @@ export class ScRequisicionPersonalRepository {
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
+
+	/**
+	 * Lookup de descriptores por unidad (endpoint en SC_DESCRIPTOR_PUESTO:
+	 * GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL).
+	 */
+	getDescriptorPuesto(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(
+			'SC_DESCRIPTOR_PUESTO',
+			'GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }

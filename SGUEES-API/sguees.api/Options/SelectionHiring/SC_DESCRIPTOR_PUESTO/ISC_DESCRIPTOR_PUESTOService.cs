@@ -22,5 +22,6 @@ namespace SGUEES.Services
         Task<CResult> UpdateImpactoEconomicoAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         // Valida las claves y elimina el registro de descriptor de puesto.
         Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+        Task<CResult> GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(SC_DESCRIPTOR_PUESTOParam xWhere);
     }
 }

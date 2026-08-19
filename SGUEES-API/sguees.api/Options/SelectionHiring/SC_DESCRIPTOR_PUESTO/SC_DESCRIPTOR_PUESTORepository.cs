@@ -469,5 +469,49 @@ namespace SGUEES.Repositories
                 objData.objConnection.Close();
             }
         }
+
+        /// <summary>
+        /// Lookup para sc-requisicion-personal: lista descriptores de V_SC_DESCRIPTOR_PUESTO
+        /// filtrados por CORR_EMPRESA + CORR_UNIDAD (no altera GetAllAsync).
+        /// </summary>
+        public async Task<CResult> GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(List<CParameter> xWhere)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                var reader = await objData.GetDataReader(_ViewName, xWhere);
+                var response = new List<SC_DESCRIPTOR_PUESTOView>().FromDataReader(reader)
+                    .OrderBy(x => x.NOMBRE_PUESTO)
+                    .ThenBy(x => x.CORR_DESCRIPTOR_PUESTO)
+                    .ToList();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
+                objResultado.Result = true;
+                objResultado.RowsAffected = response.Count;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+                objResultado.ErrorSource = "";
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
     }
 }

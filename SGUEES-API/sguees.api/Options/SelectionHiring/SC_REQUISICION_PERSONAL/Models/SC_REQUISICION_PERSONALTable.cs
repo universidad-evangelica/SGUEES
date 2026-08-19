@@ -8,9 +8,9 @@ namespace SGUEES.Models
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_REQUISICION_PERSONAL { get; set; }
-        public int CORR_DESCRIPTOR { get; set; }
-        public int CORR_DEPARTAMENTO { get; set; }
-        public int CORR_PUESTO { get; set; }
+        public int CORR_DESCRIPTOR_PUESTO { get; set; }
+        public int CORR_UNIDAD { get; set; }
+        public string NOMBRE_PUESTO_SOLICITADO { get; set; }
         public int CORR_TIPO_MODALIDAD { get; set; }
         public int CORR_TIPO_CONTRATACION { get; set; }
         public int CORR_TIPO_VACANTE { get; set; }
@@ -20,8 +20,7 @@ namespace SGUEES.Models
         [MaxLength(500)]
         public string JUSTIFICACION { get; set; }
         public string CORR_EMPLEADO_SUSTITUTO { get; set; }
-        public decimal SALARIO_MINIMO { get; set; }
-        public decimal SALARIO_MAXIMO { get; set; }
+        public decimal SALARIO { get; set; }
         public int CORR_ESTADO_REQUISICION { get; set; }
         public DateTime? FECHA_APROBACION { get; set; }
         public DateTime? FECHA_CIERRE { get; set; }

@@ -7,5 +7,7 @@ namespace SGUEES.Models
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_DESCRIPTOR_PUESTO { get; set; }
+        /// <summary>Filtro para lookup de sc-requisicion-personal (descriptores por unidad).</summary>
+        public int CORR_UNIDAD { get; set; }
     }
 }

@@ -54,6 +54,7 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo de contratación', width: 260 },
 		{ dataField: 'ES_PERMANENTE', caption: 'Es permanente ?', width: 140, dataType: 'boolean' },
 	];
+
 	/** Requisiciones vinculadas a la solicitud actual (tab Requisición Solicitud). */
 	requisicionesSolicitud: ScSolicitudRequisicion[] = [];
 	popupRequisicionVisible = false;
@@ -768,6 +769,7 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 							this.habilitar();
 							this.consultarToken();
 							this.consultarRequisicionesSolicitud();
+
 							this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro creado con exito!' });
 						} else {
 							//this.notifyFx(response.ErrorMessage, NotifyType.Error);
