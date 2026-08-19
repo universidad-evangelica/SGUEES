@@ -179,3 +179,131 @@
 .py-20 { padding-top: 20px !important; padding-bottom: 20px !important; }
 .py-24 { padding-top: 24px !important; padding-bottom: 24px !important; }
 .py-32 { padding-top: 32px !important; padding-bottom: 32px !important; }
+
+.alert{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    padding:16px;
+    border-radius:6px;
+    border:1px solid;
+}
+
+.alert i{
+    font-size:22px;
+    margin-top:2px;
+}
+
+/* Info */
+.alert-info{
+    color:#2196f3;
+    background:rgba(33,150,243,.12);
+    border-color:rgba(33,150,243,.30);
+}
+
+/* Success */
+.alert-success{
+    color:#22c55e;
+    background:rgba(34,197,94,.12);
+    border-color:rgba(34,197,94,.30);
+}
+
+/* Warning */
+.alert-warning{
+    color:#ff9800;
+    background:rgba(255,152,0,.12);
+    border-color:rgba(255,152,0,.30);
+}
+
+/* Error */
+.alert-danger{
+    color:#f44336;
+    background:rgba(244,67,54,.12);
+    border-color:rgba(244,67,54,.30);
+}
+
+.alert-sm{
+    padding: 6px 10px;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.alert-md{
+    padding: 12px 16px;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.alert-lg{
+    padding: 18px 20px;
+    gap: 12px;
+    font-size: 16px;
+}
+
+/* Chip estado requisición (solo lectura / indicador de flujo) */
+.estado-req-chip {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 28px;
+	min-width: 110px;
+	padding: 6px 20px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	line-height: 1.2;
+	white-space: nowrap;
+	user-select: none;
+	pointer-events: none;
+}
+
+.estado-req--borrador {
+	color: #94a3b8;
+	background: rgba(148, 163, 184, 0.16);
+	border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.estado-req--aprobacion {
+	color: #60a5fa;
+	background: rgba(59, 130, 246, 0.16);
+	border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.estado-req--devuelta {
+	color: #fbbf24;
+	background: rgba(245, 158, 11, 0.16);
+	border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.estado-req--rechazada,
+.estado-req--cancelada {
+	color: #f87171;
+	background: rgba(239, 68, 68, 0.16);
+	border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.estado-req--aprobada,
+.estado-req--publicada {
+	color: #4ade80;
+	background: rgba(34, 197, 94, 0.16);
+	border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.estado-req--proceso {
+	color: #38bdf8;
+	background: rgba(14, 165, 233, 0.16);
+	border: 1px solid rgba(14, 165, 233, 0.35);
+}
+
+.estado-req--parcial {
+	color: #fb923c;
+	background: rgba(249, 115, 22, 0.16);
+	border: 1px solid rgba(249, 115, 22, 0.4);
+}
+
+.estado-req--cerrada {
+	color: #34d399;
+	background: rgba(16, 185, 129, 0.18);
+	border: 1px solid rgba(16, 185, 129, 0.4);
+}

@@ -5,6 +5,7 @@ import { IResult } from 'src/app/FxAPI/IResult';
 
 import { ScRequisicionPersonalRepository } from './sc-requisicion-personal.repository';
 import { ScRequisicionPersonal } from './models/sc-requisicion-personal';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
 
 @Injectable({
 	providedIn: 'root',
@@ -14,10 +15,67 @@ export class ScRequisicionPersonalService {
 
     //#region <Validadores>
     esValido(model: ScRequisicionPersonal, msg: Function): boolean {
-        // if (model.NOMBRE_ROL == '') {
-        // msg('Debe digitar el nombre del Rol', NotifyType.Error)
-        // return false;
-        // }
+
+        if (model.FECHA_REQUISICION == null) {
+        msg('Debe digitar la fecha de requisición', NotifyType.Warning);
+        return false;
+        }
+
+        if (model.NOMBRE_PUESTO_SOLICITADO == '' || model.NOMBRE_PUESTO_SOLICITADO == null) {
+        msg('Debe digitar el nombre del puesto solicitado', NotifyType.Warning);
+        return false;
+        }
+
+        if (model.CORR_UNIDAD == 0 || model.CORR_UNIDAD == null) {
+            msg('Debe seleccionar la unidad organizativa', NotifyType.Warning);
+            return false;
+        }
+
+        if (model.CORR_DESCRIPTOR_PUESTO == 0 || model.CORR_DESCRIPTOR_PUESTO == null) {
+            msg('Debe seleccionar el descriptor del puesto', NotifyType.Warning);
+            return false;
+        }
+
+        if (model.CORR_TIPO_MODALIDAD == 0 || model.CORR_TIPO_MODALIDAD == null) {
+            msg('Debe seleccionar el tipo de modalidad', NotifyType.Warning);
+            return false;
+        }
+
+        if (model.CORR_TIPO_CONTRATACION == 0 || model.CORR_TIPO_CONTRATACION == null) {
+            msg('Debe seleccionar el tipo de contratación', NotifyType.Warning);
+            return false;
+        }
+
+        if (model.CORR_TIPO_VACANTE == 0 || model.CORR_TIPO_VACANTE == null) {
+            msg('Debe seleccionar el tipo de vacante', NotifyType.Warning);
+            return false;
+        }
+
+        if (model.CANTIDAD_PLAZAS == 0 || model.CANTIDAD_PLAZAS == null) {
+            msg('Debe digitar la cantidad de plazas', NotifyType.Warning);
+            return false;
+        }
+
+        if (model.SALARIO == 0 || model.SALARIO == null) {
+            msg('Debe digitar el salario', NotifyType.Warning);
+            return false;
+        }
+
+        // Solo aplica si la contratación NO es permanente (flag UI desde lookup).
+        if (model.ES_PERMANENTE !== true) {
+            if (model.TIEMPO_CONTRATO == null || model.TIEMPO_CONTRATO <= 0) {
+                msg('Debe digitar el tiempo de contrato (meses)', NotifyType.Warning);
+                return false;
+            }
+        }
+
+        // Solo aplica si el tipo de vacante requiere sustitución (flag UI desde lookup).
+        if (model.REQUIERE_SUSTITUCION === true) {
+            if (model.CORR_EMPLEADO_SUSTITUTO == null || model.CORR_EMPLEADO_SUSTITUTO === '' || model.CORR_EMPLEADO_SUSTITUTO === '0') {
+                msg('Debe seleccionar el empleado sustituto', NotifyType.Warning);
+                return false;
+            }
+        }
 
         return true;
     }
@@ -50,6 +108,60 @@ export class ScRequisicionPersonalService {
 
         return `${year}-${month}-${day}`;
     }
+
+    /** Catálogo de estados de la requisición (flujo; el cambio lo hace otro proceso). */
+	readonly estadosRequisicion: { CORR_ESTADO_REQUISICION: number; ESTADO_REQUISICION: string }[] = [
+		{ CORR_ESTADO_REQUISICION: 1, ESTADO_REQUISICION: 'Borrador' },
+		{ CORR_ESTADO_REQUISICION: 2, ESTADO_REQUISICION: 'En Aprobación' },
+		{ CORR_ESTADO_REQUISICION: 3, ESTADO_REQUISICION: 'Devuelta' },
+		{ CORR_ESTADO_REQUISICION: 4, ESTADO_REQUISICION: 'Rechazada' },
+		{ CORR_ESTADO_REQUISICION: 5, ESTADO_REQUISICION: 'Aprobada' },
+		{ CORR_ESTADO_REQUISICION: 6, ESTADO_REQUISICION: 'Publicada' },
+		{ CORR_ESTADO_REQUISICION: 7, ESTADO_REQUISICION: 'En Reclutamiento' },
+		{ CORR_ESTADO_REQUISICION: 8, ESTADO_REQUISICION: 'En Selección' },
+		{ CORR_ESTADO_REQUISICION: 9, ESTADO_REQUISICION: 'En Contratación' },
+		{ CORR_ESTADO_REQUISICION: 10, ESTADO_REQUISICION: 'Parcial Cubierta' },
+		{ CORR_ESTADO_REQUISICION: 11, ESTADO_REQUISICION: 'Cerrada' },
+		{ CORR_ESTADO_REQUISICION: 12, ESTADO_REQUISICION: 'Cancelada' },
+	];
+
+	/** Texto del chip según CORR_ESTADO_REQUISICION (default Borrador si viene vacío). */
+	getEstadoRequisicionLabel(corrEstado: number | null | undefined): string {
+		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
+		const item = this.estadosRequisicion.find((x) => x.CORR_ESTADO_REQUISICION === corr);
+		return item?.ESTADO_REQUISICION ?? 'Borrador';
+	}
+
+	/** Clase CSS del chip según el estado (solo lectura / indicador de flujo). */
+	getEstadoRequisicionBadgeClass(corrEstado: number | null | undefined): string {
+		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
+		switch (corr) {
+			case 1:
+				return 'estado-req--borrador';
+			case 2:
+				return 'estado-req--aprobacion';
+			case 3:
+				return 'estado-req--devuelta';
+			case 4:
+				return 'estado-req--rechazada';
+			case 5:
+				return 'estado-req--aprobada';
+			case 6:
+				return 'estado-req--publicada';
+			case 7:
+			case 8:
+			case 9:
+				return 'estado-req--proceso';
+			case 10:
+				return 'estado-req--parcial';
+			case 11:
+				return 'estado-req--cerrada';
+			case 12:
+				return 'estado-req--cancelada';
+			default:
+				return 'estado-req--borrador';
+		}
+	}
 
     getAll(param: any): Observable<IResult> {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_REQUISICION_PERSONAL', Value: param.CORR_REQUISICION_PERSONAL }];
@@ -103,19 +215,32 @@ export class ScRequisicionPersonalService {
 		return this.repo.getBitacora(xWhere);
 	}
 
-
+	/**
+	 * Descriptores de puesto filtrados por CORR_UNIDAD
+	 * (API: SC_DESCRIPTOR_PUESTO/GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL).
+	 */
+    getDescriptorPuesto(param?: any): Observable<IResult> {
+        const xWhere: IParam[] = [];
+        if (param?.CORR_UNIDAD != null && param.CORR_UNIDAD > 0) {
+            xWhere.push({ Parameter: 'CORR_UNIDAD', Value: param.CORR_UNIDAD });
+        }
+        return this.repo.getDescriptorPuesto(xWhere);
+    }
 
     getColumns(): any {
         return [
             { dataField: 'CORR_REQUISICION_PERSONAL', caption: 'Corr.', width: 85 },
             { dataField: 'FECHA_REQUISICION', caption: 'Fecha', width: 130, dataType: 'date', format: 'dd/MM/yyyy' },
-            { dataField: 'CORR_DEPARTAMENTO', caption: 'Departamento', width: 130 },
-            { dataField: 'CANTIDAD_PLAZAS', caption: 'Cant. Plazas', width: 120 },
-            { dataField: 'SALARIO_MINIMO', caption: 'Sal. Mínimo', width: 120, format: '#,##0.00' },
-            { dataField: 'SALARIO_MAXIMO', caption: 'Sal. Máximo', width: 120, format: '#,##0.00' },
-            { dataField: 'TIEMPO_CONTRATO', caption: 'Tiempo Contrato', width: 140 },
-            { dataField: 'HORARIO', caption: 'Horario', width: 150 },
-            { dataField: 'JUSTIFICACION', caption: 'Justificacion', width: 200 },
+            { dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 250 },
+            //{ dataField: 'NOMBRE_PUESTO', caption: 'Descriptor Puesto', width: 250 },
+            { dataField: 'MODALIDAD_NOMBRE', caption: 'Modalidad', width: 120 },
+            { dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo Contrato', width: 140 },
+            { dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Tipo Vacante', width: 200 },
+            { dataField: 'CANTIDAD_PLAZAS', caption: 'No. Plazas', width: 120 },
+            { dataField: 'SALARIO', caption: 'Salario', width: 120, format: '#,##0.00' },
+            { dataField: 'TIEMPO_CONTRATO', caption: 'Contrato (Meses)', width: 170 },
+            { dataField: 'HORARIO', caption: 'Horario', width: 200 },
+            { dataField: 'JUSTIFICACION', caption: 'Justificacion', width: 250 },
             { dataField: 'FECHA_CREA', caption: 'Fecha creación', width: 150, dataType: 'date', format: 'dd/MM/yyyy' },
             { dataField: 'USUARIO_CREA', caption: 'Usuario creación', width: 150 },
             { dataField: 'FECHA_ACTU', caption: 'Fecha actualización', width: 150, dataType: 'date', format: 'dd/MM/yyyy' },
@@ -132,28 +257,18 @@ export class ScRequisicionPersonalService {
     getItems(): any {
         return [
             { dataField: 'CORR_REQUISICION_PERSONAL', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
-                                {
-                                    dataField: 'CORR_ESTADO_REQUISICION',
-                                    label: { text: 'Estado requisición' },
-                                    colSpan: 2,
-                                    editorType: 'dxSelectBox',
-                                    editorOptions: { 
-                                        dataSource: [
-                                        { CORR_ESTADO_REQUISICION: 1, ESTADO_REQUISICION: 'Borrador' },
-                                        { CORR_ESTADO_REQUISICION: 2, ESTADO_REQUISICION: 'En Aprobacion' },
-                                        { CORR_ESTADO_REQUISICION: 3, ESTADO_REQUISICION: 'Devuelta' },
-                                        ],
-                                        displayExpr: 'ESTADO_REQUISICION',
-                                        valueExpr: 'CORR_ESTADO_REQUISICION',
-                                        placeholder: 'Seleccione un estado...',
-                                        searchEnabled: true,
-                                        showClearButton: true,
-                                    }
-                                },
+								// Solo lectura: el cambio de estado lo hace otro proceso (chip/badge).
+                                
+								{
+									dataField: 'CORR_ESTADO_REQUISICION',
+									label: { text: 'Estado requisición' },
+									colSpan: 1,
+									template: 'CORR_ESTADO_REQUISICIONChip',
+								},
                                 {
                                     dataField: 'FECHA_REQUISICION',
                                     label: { text: 'Fecha requisición' },
-                                    colSpan: 1,
+                                    colSpan: 2,
                                     editorType: 'dxDateBox',
                                     editorOptions: {
                                         type: 'date',
@@ -163,40 +278,21 @@ export class ScRequisicionPersonalService {
                                     }
                                 },
                                 {
-                                    dataField: 'CORR_DESCRIPTOR',
-                                    label: { text: 'Descriptor' },
-                                    colSpan: 2,
-                                    editorType: 'dxSelectBox',
-                                    editorOptions: { 
-                                        dataSource: [
-                                        { CORR_DESCRIPTOR: 1, DESCRIPTOR: 'Todos' },
-                                        { CORR_DESCRIPTOR: 2, DESCRIPTOR: 'Analista programador' },
-                                        { CORR_DESCRIPTOR: 3, DESCRIPTOR: 'Soporte' },
-                                        ],
-                                        displayExpr: 'DESCRIPTOR',
-                                        valueExpr: 'CORR_DESCRIPTOR',
-                                        placeholder: 'Seleccione un descriptor...',
-                                        searchEnabled: true,
-                                        showClearButton: true,
-                                    }
+                                    dataField: 'NOMBRE_PUESTO_SOLICITADO',
+                                    label: { text: 'Nombre puesto solicitado' },
+                                    colSpan: 4,
                                 },
                                 {
-                                    dataField: 'CORR_PUESTO',
-                                    label: { text: 'Puesto' },
-                                    colSpan: 2,
-                                    editorType: 'dxSelectBox',
-                                    editorOptions: { 
-                                        dataSource: [
-                                        { CORR_PUESTO: 1, PUESTO: 'Todos' },
-                                        { CORR_PUESTO: 2, PUESTO: 'Analista programador' },
-                                        { CORR_PUESTO: 3, PUESTO: 'Soporte' },
-                                        ],
-                                        displayExpr: 'PUESTO',
-                                        valueExpr: 'CORR_PUESTO',
-                                        placeholder: 'Seleccione un puesto...',
-                                        searchEnabled: true,
-                                        showClearButton: true,
-                                    }
+                                    dataField: 'CORR_UNIDAD',
+                                    label: { text: 'Unidad Organizativa' },
+                                    colSpan: 4,
+                                    template: 'CORR_UNIDADLookup',
+                                },
+                                {
+                                    dataField: 'CORR_DESCRIPTOR_PUESTO',
+                                    label: { text: 'Descriptor Puesto' },
+                                    colSpan: 4,
+                                    template: 'CORR_DESCRIPTOR_PUESTOLookup',
                                 },
                                 {
                                     dataField: 'CORR_TIPO_MODALIDAD',
@@ -231,15 +327,8 @@ export class ScRequisicionPersonalService {
                                     editorOptions: { min: 0, showSpinButtons: true },
                                 },
                                 {
-                                    dataField: 'SALARIO_MINIMO',
-                                    label: { text: 'Salario mínimo' },
-                                    colSpan: 1,
-                                    editorType: 'dxNumberBox',
-                                    editorOptions: { min: 0, format: '#,##0.00' },
-                                },
-                                {
-                                    dataField: 'SALARIO_MAXIMO',
-                                    label: { text: 'Salario máximo' },
+                                    dataField: 'SALARIO',
+                                    label: { text: 'Salario' },
                                     colSpan: 1,
                                     editorType: 'dxNumberBox',
                                     editorOptions: { min: 0, format: '#,##0.00' },
@@ -277,6 +366,11 @@ export class ScRequisicionPersonalService {
                                         searchEnabled: true,
                                         showClearButton: true,
                                     }
+                                },
+                                {
+                                    itemType: 'simple',
+                                    colSpan: 8,
+                                    template: 'alertJustificacion'
                                 },
 								{
 									dataField: 'JUSTIFICACION',
