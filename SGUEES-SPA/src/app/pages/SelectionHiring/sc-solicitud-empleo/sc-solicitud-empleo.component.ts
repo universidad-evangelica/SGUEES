@@ -21,6 +21,7 @@ import {
 	ScPersonaIdioma,
 } from './models/sc-persona-datos';
 import { ScSolicitudEmpleoService } from './sc-solicitud-empleo.service';
+import { ScSolicitudRequisicion } from './models/sc-solicitud-requisicion';
 import { confirm } from 'devextreme/ui/dialog';
 
 @Component({
@@ -53,6 +54,13 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo de contratación', width: 260 },
 		{ dataField: 'ES_PERMANENTE', caption: 'Es permanente ?', width: 140, dataType: 'boolean' },
 	];
+	/** Requisiciones vinculadas a la solicitud actual (tab Requisición Solicitud). */
+	requisicionesSolicitud: ScSolicitudRequisicion[] = [];
+	popupRequisicionVisible = false;
+	requisicionesModal: any[] = [];
+	requisicionPickerColumns: any[] = [];
+	requisicionSeleccionada: any = null;
+	vinculandoRequisicion = false;
 	// #endregion
 
 	constructor(
@@ -66,6 +74,7 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
 		this.tokenColumns = this.service.getTokenColumns();
+		this.requisicionPickerColumns = this.service.getRequisicionPickerColumns();
 	}
 
 	//#region <Inicializando Opciones>
@@ -420,18 +429,21 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	override nuevo(): void {
 		super.nuevo();
 		this.tokens = [];
+		this.requisicionesSolicitud = [];
 		this.limpiarPersonaDatos();
 	}
 
 	override editarClick(e: any): void {
 		super.editarClick(e);
 		this.consultarPersonaDatos();
+		this.consultarRequisicionesSolicitud();
 		this.consultarToken();
 	}
 
 	override rowDblClick(e: any): void {
 		super.rowDblClick(e);
 		this.consultarPersonaDatos();
+		this.consultarRequisicionesSolicitud();
 		this.consultarToken();
 	}
 
@@ -475,9 +487,182 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	}
 
 	tabSelectionChanged(e: any): void {
-		if (e.component.option('selectedIndex') === 1) {
+		const index = e.component.option('selectedIndex');
+		if (index === 0) {
+			this.consultarRequisicionesSolicitud();
+		} else if (index === 1) {
 			this.consultarToken();
 		}
+	}
+
+	/** Habilita el botón verde cuando la solicitud ya tiene correlativo y no es solo consulta. */
+	puedeSeleccionarRequisicion(): boolean {
+		return (
+			this.permiteEdit &&
+			!this.isConsulta() &&
+			(this.model?.CORR_SOLICITUD_EMPLEO ?? 0) > 0
+		);
+	}
+
+	consultarRequisicionesSolicitud(): void {
+		const corrSolicitudEmpleo = this.model?.CORR_SOLICITUD_EMPLEO ?? 0;
+		if (corrSolicitudEmpleo <= 0) {
+			this.requisicionesSolicitud = [];
+			return;
+		}
+
+		this.service
+			.getAllRequisicionSolicitud(corrSolicitudEmpleo)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.requisicionesSolicitud = response.Data ?? [];
+					}
+				},
+				error: (error: any) => {
+					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
+				},
+			});
+	}
+
+	abrirModalRequisicion(): void {
+		if (!this.puedeSeleccionarRequisicion()) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Requisición',
+				detail: 'Guarde la solicitud antes de vincular requisiciones.',
+			});
+			return;
+		}
+
+		this.requisicionSeleccionada = null;
+		this.popupRequisicionVisible = true;
+		this.cargarRequisicionesModal();
+	}
+
+	cerrarModalRequisicion(): void {
+		this.popupRequisicionVisible = false;
+		this.requisicionSeleccionada = null;
+	}
+
+	/** Carga requisiciones para el modal; excluye las ya vinculadas (sin duplicados). */
+	private cargarRequisicionesModal(): void {
+		this.service
+			.getRequisicionesParaModal()
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response.Result) {
+						this.messageService.add({
+							severity: 'error',
+							summary: 'Error',
+							detail: response.ErrorMessage ?? 'No se pudo cargar el listado de requisiciones.',
+						});
+						return;
+					}
+
+					const vinculadas = new Set(
+						(this.requisicionesSolicitud ?? []).map((item) => Number(item.CORR_REQUISICION_PERSONAL))
+					);
+					this.requisicionesModal = (response.Data ?? []).filter(
+						(item: any) => !vinculadas.has(Number(item.CORR_REQUISICION_PERSONAL))
+					);
+				},
+				error: (error: any) => {
+					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
+				},
+			});
+	}
+
+	onRequisicionModalSelectionChanged(e: any): void {
+		this.requisicionSeleccionada = e.selectedRowsData?.[0] ?? null;
+	}
+
+	insertarRequisicionSeleccionada(): void {
+		if (!this.requisicionSeleccionada) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Requisición',
+				detail: 'Seleccione una requisición del listado.',
+			});
+			return;
+		}
+
+		const corrRequisicion = Number(this.requisicionSeleccionada.CORR_REQUISICION_PERSONAL);
+		const corrSolicitud = this.model.CORR_SOLICITUD_EMPLEO;
+		this.vinculandoRequisicion = true;
+
+		this.service
+			.insertRequisicionSolicitud(corrSolicitud, corrRequisicion)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.messageService.add({
+							severity: 'success',
+							summary: 'Éxito',
+							detail: 'Requisición vinculada correctamente.',
+						});
+						this.cerrarModalRequisicion();
+						this.consultarRequisicionesSolicitud();
+					} else {
+						this.messageService.add({
+							severity: 'error',
+							summary: 'Error',
+							detail: response.ErrorMessage ?? 'No se pudo vincular la requisición.',
+						});
+					}
+					this.vinculandoRequisicion = false;
+				},
+				error: (error: any) => {
+					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
+					this.vinculandoRequisicion = false;
+				},
+			});
+	}
+
+	async quitarRequisicion(item: ScSolicitudRequisicion): Promise<void> {
+		if (!this.puedeSeleccionarRequisicion()) {
+			return;
+		}
+
+		const aceptar = await confirm(
+			'¿Desea quitar esta requisición de la solicitud?',
+			'Confirmación'
+		);
+		if (!aceptar) {
+			return;
+		}
+
+		this.service
+			.deleteRequisicionSolicitud(item.CORR_SOLICITUD_REQUISICION)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.messageService.add({
+							severity: 'success',
+							summary: 'Éxito',
+							detail: 'Requisición desvinculada.',
+						});
+						this.consultarRequisicionesSolicitud();
+					} else {
+						this.messageService.add({
+							severity: 'error',
+							summary: 'Error',
+							detail: response.ErrorMessage ?? 'No se pudo quitar la requisición.',
+						});
+					}
+				},
+				error: (error: any) => {
+					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
+				},
+			});
+	}
+
+	estadoRequisicionLabel(corrEstado: number | null | undefined): string {
+		return this.service.getEstadoRequisicionLabel(corrEstado);
 	}
 
 	puedeGenerarToken(): boolean {
@@ -486,6 +671,10 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		}
 
 		if ((this.model?.CORR_PERSONA_DATOS ?? 0) > 0 || !this.model?.CORREO_INVITACION) {
+			return false;
+		}
+
+		if (this.isConsulta()) {
 			return false;
 		}
 
@@ -578,6 +767,7 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 							this.AsignaStatus(UpdateType.Update);
 							this.habilitar();
 							this.consultarToken();
+							this.consultarRequisicionesSolicitud();
 							this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro creado con exito!' });
 						} else {
 							//this.notifyFx(response.ErrorMessage, NotifyType.Error);

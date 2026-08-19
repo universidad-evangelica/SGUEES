@@ -112,5 +112,16 @@ namespace SGUEES.Controllers
 
             return await _service.GetAllAsyncBitacoraByCORR_REQUISICION(Data);
         }
+
+        /// <summary>
+        /// Listado para modal en sc-solicitud-empleo (permiso del consumidor, no de requisición).
+        /// </summary>
+        [HttpGet("GetAll_SC_SOLICITUD_EMPLEO")]
+        [Authorize(Policy = "/sc-solicitud-empleo|R")]
+        public async Task<CResult> GetAll_SC_SOLICITUD_EMPLEO([FromQuery] SC_REQUISICION_PERSONALParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllForSolicitudEmpleoAsync(Data);
+        }
     }
 }

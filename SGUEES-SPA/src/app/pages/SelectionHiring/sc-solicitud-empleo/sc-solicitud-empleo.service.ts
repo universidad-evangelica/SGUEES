@@ -6,12 +6,16 @@ import { NotifyType } from 'src/app/shared/models/NotifyType';
 
 import { ScSolicitudEmpleoRepository } from './sc-solicitud-empleo.repository';
 import { ScSolicitudEmpleo } from './models/sc-solicitud-empleo';
+import { ScRequisicionPersonalService } from '../sc-requisicion-personal/sc-requisicion-personal.service';
 
 @Injectable({
 	providedIn: 'root',
 })
 export class ScSolicitudEmpleoService {
-	constructor(private repo: ScSolicitudEmpleoRepository) {}
+	constructor(
+		private repo: ScSolicitudEmpleoRepository,
+		private requisicionPersonalService: ScRequisicionPersonalService
+	) {}
 
 	//#region <Validadores>
 	esValido(model: ScSolicitudEmpleo, msg: Function): boolean {
@@ -107,6 +111,52 @@ export class ScSolicitudEmpleoService {
 		return this.repo.getPersonaFoto([
 			{ Parameter: 'CORR_PERSONA_DATOS', Value: corrPersonaDatos },
 		]);
+	}
+
+	/** Requisiciones ya vinculadas a la solicitud (cards del tab). */
+	getAllRequisicionSolicitud(corrSolicitudEmpleo: number): Observable<IResult> {
+		return this.repo.getAllRequisicionSolicitud([
+			{ Parameter: 'CORR_SOLICITUD_EMPLEO', Value: corrSolicitudEmpleo },
+		]);
+	}
+
+	/** Listado del modal; filtros de estado quedan comentados en API. */
+	getRequisicionesParaModal(): Observable<IResult> {
+		return this.repo.getRequisicionesParaModal([
+			{ Parameter: 'CORR_REQUISICION_PERSONAL', Value: 0 },
+		]);
+	}
+
+	insertRequisicionSolicitud(corrSolicitudEmpleo: number, corrRequisicionPersonal: number): Observable<IResult> {
+		return this.repo.insertRequisicionSolicitud({
+			CORR_SOLICITUD_EMPLEO: corrSolicitudEmpleo,
+			CORR_REQUISICION_PERSONAL: corrRequisicionPersonal,
+		});
+	}
+
+	deleteRequisicionSolicitud(corrSolicitudRequisicion: number): Observable<IResult> {
+		return this.repo.deleteRequisicionSolicitud([
+			{ Parameter: 'CORR_SOLICITUD_REQUISICION', Value: corrSolicitudRequisicion },
+		]);
+	}
+
+	getEstadoRequisicionLabel(corrEstado: number | null | undefined): string {
+		return this.requisicionPersonalService.getEstadoRequisicionLabel(corrEstado);
+	}
+
+	/** Columnas del grid del modal (nombres, sin auditoría). */
+	getRequisicionPickerColumns(): any[] {
+		return [
+			{ dataField: 'CORR_REQUISICION_PERSONAL', caption: 'No.', width: 70 },
+			{ dataField: 'FECHA_REQUISICION', caption: 'Fecha', width: 110, dataType: 'date', format: 'dd/MM/yyyy' },
+			{ dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 200 },
+			{ dataField: 'NOMBRE_PUESTO_SOLICITADO', caption: 'Puesto', width: 200 },
+			{ dataField: 'MODALIDAD_NOMBRE', caption: 'Modalidad', width: 120 },
+			{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Contrato', width: 130 },
+			{ dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Vacante', width: 150 },
+			{ dataField: 'CANTIDAD_PLAZAS', caption: 'Plazas', width: 80 },
+			{ dataField: 'SALARIO', caption: 'Salario', width: 100, format: '#,##0.00' },
+		];
 	}
 
 	getColumns(): any {

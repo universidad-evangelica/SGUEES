@@ -62,7 +62,113 @@
     (onSelectionChanged)="tabSelectionChanged($event)"
   >
 
-    <dxi-item title="Token/Bitacora" [icon]="'checklist'">
+    <dxi-item title="Requisición Solicitud" [icon]="'bookmark'">
+      <div class="rd-panel">
+        <dx-toolbar class="mb-0">
+          <dxi-item location="before">
+            <div *dxTemplate>
+              <dx-button
+                icon="add"
+                text="Seleccionar requisicion"
+                type="success"
+                stylingMode="contained"
+                [disabled]="!puedeSeleccionarRequisicion()"
+                (onClick)="abrirModalRequisicion()"
+              ></dx-button>
+            </div>
+          </dxi-item>
+        </dx-toolbar>
+
+        <div class="rd-cards" *ngIf="requisicionesSolicitud.length; else sinRequisicionesSolicitud">
+          <article class="rd-card" *ngFor="let item of requisicionesSolicitud">
+            <header class="rd-card__header rd-card__header--actions">
+              <span>
+                Requisición {{ item.CORR_REQUISICION_PERSONAL }} —
+                {{ textoLectura(item.NOMBRE_PUESTO_SOLICITADO) }}
+              </span>
+              <dx-button
+                *ngIf="puedeSeleccionarRequisicion()"
+                icon="trash"
+                hint="Quitar requisición"
+                stylingMode="text"
+                type="danger"
+                (onClick)="quitarRequisicion(item)"
+              ></dx-button>
+            </header>
+            <div class="rd-grid">
+              <div class="rd-field">
+                <span class="rd-label">Fecha requisición</span>
+                <span class="rd-value">{{ fechaLectura(item.FECHA_REQUISICION) }}</span>
+              </div>
+              <div class="rd-field">
+                <span class="rd-label">Estado</span>
+                <span class="rd-value">{{ estadoRequisicionLabel(item.CORR_ESTADO_REQUISICION) }}</span>
+              </div>
+              <div class="rd-field rd-field--wide">
+                <span class="rd-label">Unidad</span>
+                <span class="rd-value">{{ textoLectura(item.NOMBRE_UNIDAD) }}</span>
+              </div>
+              <div class="rd-field rd-field--wide">
+                <span class="rd-label">Puesto solicitado</span>
+                <span class="rd-value">{{ textoLectura(item.NOMBRE_PUESTO_SOLICITADO) }}</span>
+              </div>
+              <div class="rd-field">
+                <span class="rd-label">Modalidad</span>
+                <span class="rd-value">{{ textoLectura(item.MODALIDAD_NOMBRE) }}</span>
+              </div>
+              <div class="rd-field">
+                <span class="rd-label">Tipo contratación</span>
+                <span class="rd-value">{{ textoLectura(item.NOMBRE_TIPO_CONTRATACION) }}</span>
+              </div>
+              <div class="rd-field">
+                <span class="rd-label">Tipo vacante</span>
+                <span class="rd-value">{{ textoLectura(item.NOMBRE_TIPO_VACANTE) }}</span>
+              </div>
+              <div class="rd-field">
+                <span class="rd-label">Plazas</span>
+                <span class="rd-value">{{ textoLectura(item.CANTIDAD_PLAZAS) }}</span>
+              </div>
+              <div class="rd-field">
+                <span class="rd-label">Plazas cubiertas</span>
+                <span class="rd-value">{{ textoLectura(item.PLAZAS_CUBIERTAS) }}</span>
+              </div>
+              <div class="rd-field">
+                <span class="rd-label">Salario</span>
+                <span class="rd-value">{{ textoLectura(item.SALARIO) }}</span>
+              </div>
+              <div class="rd-field" *ngIf="item.TIEMPO_CONTRATO">
+                <span class="rd-label">Tiempo contrato (meses)</span>
+                <span class="rd-value">{{ textoLectura(item.TIEMPO_CONTRATO) }}</span>
+              </div>
+              <div class="rd-field rd-field--wide">
+                <span class="rd-label">Horario</span>
+                <span class="rd-value">{{ textoLectura(item.HORARIO) }}</span>
+              </div>
+              <div class="rd-field rd-field--wide" *ngIf="item.CORR_EMPLEADO_SUSTITUTO">
+                <span class="rd-label">Empleado sustituto</span>
+                <span class="rd-value">{{ textoLectura(item.CORR_EMPLEADO_SUSTITUTO) }}</span>
+              </div>
+              <div class="rd-field rd-field--wide" *ngIf="item.JUSTIFICACION">
+                <span class="rd-label">Justificación</span>
+                <span class="rd-value">{{ textoLectura(item.JUSTIFICACION) }}</span>
+              </div>
+            </div>
+          </article>
+        </div>
+        <ng-template #sinRequisicionesSolicitud>
+          <div class="persona-datos-empty">
+            <div class="persona-empty-icon">
+              <i class="dx-icon dx-icon-bookmark"></i>
+            </div>
+            <h4>Sin requisiciones</h4>
+            <p>Aún no hay requisiciones de personal asociadas a esta solicitud.</p>
+            <span>Seleccione una requisición usando el botón superior.</span>
+          </div>
+        </ng-template>
+      </div>
+    </dxi-item>
+
+    <dxi-item title="Bitacora Solicitud" [icon]="'checklist'">
       <div class="dx-grid-deta">
         <dx-data-grid
           #gridBitacora
@@ -715,6 +821,54 @@
     
   </dx-tab-panel>
 </div>
+
+<!-- Modal: elegir requisición de personal para vincular (solo persiste CORR_REQUISICION_PERSONAL). -->
+<dx-popup
+  [(visible)]="popupRequisicionVisible"
+  title="Seleccionar requisición"
+  [width]="1250"
+  [maxWidth]="'calc(100vw - 24px)'"
+  [height]="520"
+  [showCloseButton]="true"
+  [dragEnabled]="true"
+  [hideOnOutsideClick]="false"
+>
+  <div *dxTemplate="let data of 'content'">
+    <dx-data-grid
+      [dataSource]="requisicionesModal"
+      [columns]="requisicionPickerColumns"
+      [keyExpr]="'CORR_REQUISICION_PERSONAL'"
+      [showBorders]="true"
+      [hoverStateEnabled]="true"
+      [rowAlternationEnabled]="true"
+      [columnAutoWidth]="true"
+      [height]="360"
+      [noDataText]="'No hay requisiciones disponibles para vincular.'"
+      (onSelectionChanged)="onRequisicionModalSelectionChanged($event)"
+    >
+      <dxo-selection mode="single"></dxo-selection>
+      <dxo-search-panel [visible]="true"></dxo-search-panel>
+      <dxo-paging [pageSize]="8"></dxo-paging>
+    </dx-data-grid>
+    <div
+      class="d-flex justify-content-end gap-2 mt-3"
+      style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px"
+    >
+      <dx-button
+        text="Cancelar"
+        stylingMode="outlined"
+        (onClick)="cerrarModalRequisicion()"
+      ></dx-button>
+      <dx-button
+        text="Insertar"
+        type="default"
+        stylingMode="contained"
+        [disabled]="!requisicionSeleccionada || vinculandoRequisicion"
+        (onClick)="insertarRequisicionSeleccionada()"
+      ></dx-button>
+    </div>
+  </div>
+</dx-popup>
 
 <app-data-grid-mtto
   [isBrowse]="isBrowse()"

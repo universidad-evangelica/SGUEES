@@ -19,6 +19,8 @@ export class ScSolicitudEmpleoRepository {
 	readonly xControllerCompetencias = 'SC_PERSONA_COMPETENCIAS_TECNICAS';
 	readonly xControllerExperiencia = 'SC_PERSONA_EXPERIENCIA_LABORAL';
 	readonly xControllerFamiliarUees = 'SC_PERSONA_FAMILIAR_UEES';
+	readonly xControllerRequisicion = 'SC_SOLICITUD_REQUISICION';
+	readonly xControllerRequisicionPersonal = 'SC_REQUISICION_PERSONAL';
 
 	constructor(private objData: CData) {}
 
@@ -71,6 +73,29 @@ export class ScSolicitudEmpleoRepository {
 		return this.objData.GetBlob(
 			this.xControllerPersonaDatos,
 			'GetFoto_SC_SOLICITUD_EMPLEO',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	/** Vínculos solicitud ↔ requisición (V_SC_SOLICITUD_REQUISICION). */
+	getAllRequisicionSolicitud(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xControllerRequisicion, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
+	insertRequisicionSolicitud(model: any): Observable<IResult> {
+		return this.objData.Post(model, this.xControllerRequisicion, '', environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
+	deleteRequisicionSolicitud(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Delete(this.xControllerRequisicion, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
+	/** Catálogo para modal (permiso solicitud; filtros de estado en API comentados). */
+	getRequisicionesParaModal(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(
+			this.xControllerRequisicionPersonal,
+			'GetAll_SC_SOLICITUD_EMPLEO',
 			xWhere,
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);

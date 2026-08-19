@@ -496,7 +496,7 @@
 }
 
 .rd-card {
-	padding: 12px;
+	padding: 20px;
 	border-radius: var(--sguees-radius-md, 10px);
 	border: 1px solid var(--sguees-border-subtle, var(--border-color));
 	background: var(--sguees-surface-subtle, var(--background-gray-color));
@@ -507,6 +507,13 @@
 	font-size: 14px;
 	font-weight: 700;
 	color: var(--sguees-text-primary, var(--base-text-color));
+}
+
+.rd-card__header--actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
 }
 
 .rd-chips {
