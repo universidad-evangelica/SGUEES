@@ -1,10 +1,16 @@
-<ng-container *ngIf="isAuthenticated(); else unauthenticated">
-  <app-side-nav-outer-toolbar>
-    <router-outlet></router-outlet>
-  </app-side-nav-outer-toolbar>
-
+<ng-container *ngIf="isPublicPortal; else appShell">
+  <router-outlet></router-outlet>
 </ng-container>
 
-<ng-template #unauthenticated>
-  <app-unauthenticated-content></app-unauthenticated-content>
+<ng-template #appShell>
+  <ng-container *ngIf="isAuthenticated(); else unauthenticated">
+    <app-side-nav-outer-toolbar>
+      <router-outlet></router-outlet>
+    </app-side-nav-outer-toolbar>
+  </ng-container>
+
+  <ng-template #unauthenticated>
+    <app-unauthenticated-content></app-unauthenticated-content>
+  </ng-template>
 </ng-template>
+

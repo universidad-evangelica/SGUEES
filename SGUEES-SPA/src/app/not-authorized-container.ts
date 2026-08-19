@@ -58,8 +58,6 @@ export class NotAuthorizedContainerComponent {
 
       case 'reset-password': return 'Recuperar contraseña';
 
-      case 'formulario-empleo': return 'Formulario de empleo';
-
       case 'create-account': return 'Crear cuenta';
 
       case 'change-password': return 'Cambiar contraseña';
@@ -81,8 +79,6 @@ export class NotAuthorizedContainerComponent {
       case 'recuperar-contrasena':
 
       case 'reset-password': return 'Ingrese su usuario y le enviaremos un enlace al correo registrado para restablecer su contraseña.';
-
-      case 'formulario-empleo': return 'Complete sus datos para responder la invitación de empleo.';
 
       default: return '';
 

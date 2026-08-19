@@ -11,6 +11,7 @@ namespace sguees.Models
         public string CORREO_INVITACION { get; set; }
         public string DUI { get; set; } //Documento identidad
         public string NOMBRE { get; set; }
+        public int CORR_TIPO_CONTRATACION { get; set; } //FK catálogo; ES_PERMANENTE no se persiste aquí
         public int? CORR_PERSONA_DATOS { get; set; } = null; //Se llena al completar el formulario público
         public bool ACTIVO { get; set; } = true; //Activo o inactivo
 

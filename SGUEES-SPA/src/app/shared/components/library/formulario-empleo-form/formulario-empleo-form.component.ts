@@ -90,6 +90,12 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 
 	private nextRowId = 1;
 	private temaAnteriorId = '';
+	/**
+	 * Visibilidad del formulario según tipo de contratación de la solicitud.
+	 * true (o tipo 0/null) = permanente / mostrar todos.
+	 * false = eventual: por ahora solo se oculta el paso 5.
+	 */
+	esFormularioCompleto = true;
 
 	readonly sexoOptions = [
 		{ value: 'M', text: 'Masculino' },
@@ -150,6 +156,7 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			experiencias: this.experiencias,
 			familiaresUees: this.familiaresUees,
 			maxPasoAlcanzado: this.maxPasoAlcanzado,
+			esFormularioCompleto: this.esFormularioCompleto,
 		});
 	}
 
@@ -175,6 +182,22 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 
 	formatoProgreso(bucket: ProgressBucket): string {
 		return formatoBucket(bucket);
+	}
+
+	/** Pasos que ve el candidato. El id interno no se renumera (Envío sigue siendo 6). */
+	get pasosVisibles(): PortalStepMeta[] {
+		return this.steps.filter((s) => this.mostrarPaso(s.id));
+	}
+
+	/**
+	 * Punto único para mostrar/ocultar pasos según ES_PERMANENTE.
+	 * Hoy: paso 5 (familiares UEES) solo si el tipo es permanente o no hay tipo.
+	 */
+	mostrarPaso(paso: PortalPaso): boolean {
+		if (paso === 5 && !this.esFormularioCompleto) {
+			return false;
+		}
+		return true;
 	}
 
 	pasoCompleto(paso: PortalPaso): boolean {
@@ -240,13 +263,23 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 	}
 
 	irAPaso(paso: PortalPaso): void {
-		if (paso < 1 || paso > this.totalPasos) {
+		if (paso < 1 || paso > this.totalPasos || !this.mostrarPaso(paso)) {
 			return;
 		}
-		if (paso <= this.pasoActual || paso === this.pasoActual + 1) {
+		if (paso <= this.pasoActual || paso === this.siguientePasoVisible(this.pasoActual)) {
 			this.pasoActual = paso;
 			this.registrarPasoAlcanzado(paso);
 		}
+	}
+
+	puedeNavegarAPaso(paso: PortalPaso): boolean {
+		if (!this.mostrarPaso(paso)) {
+			return false;
+		}
+		if (paso <= this.pasoActual) {
+			return true;
+		}
+		return paso === this.siguientePasoVisible(this.pasoActual);
 	}
 
 	anterior(): void {
@@ -254,7 +287,12 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			this.volverBienvenida();
 			return;
 		}
-		this.pasoActual = (this.pasoActual - 1) as PortalPaso;
+		const previo = this.anteriorPasoVisible(this.pasoActual);
+		if (previo < 1) {
+			this.volverBienvenida();
+			return;
+		}
+		this.pasoActual = previo;
 	}
 
 	siguiente(): void {
@@ -263,10 +301,30 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			this.mostrarError(errorPaso);
 			return;
 		}
-		if (this.pasoActual < this.totalPasos) {
-			this.pasoActual = (this.pasoActual + 1) as PortalPaso;
+		const siguiente = this.siguientePasoVisible(this.pasoActual);
+		if (siguiente > this.pasoActual) {
+			this.pasoActual = siguiente;
 			this.registrarPasoAlcanzado(this.pasoActual);
 		}
+	}
+
+	/** Siguiente paso visible (salta el 5 si el tipo es eventual). */
+	private siguientePasoVisible(desde: PortalPaso): PortalPaso {
+		for (let paso = desde + 1; paso <= this.totalPasos; paso++) {
+			if (this.mostrarPaso(paso as PortalPaso)) {
+				return paso as PortalPaso;
+			}
+		}
+		return desde;
+	}
+
+	private anteriorPasoVisible(desde: PortalPaso): PortalPaso {
+		for (let paso = desde - 1; paso >= 1; paso--) {
+			if (this.mostrarPaso(paso as PortalPaso)) {
+				return paso as PortalPaso;
+			}
+		}
+		return 0;
 	}
 
 	onFechaNacimientoChanged(value: Date | null): void {
@@ -409,6 +467,7 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 	async validarToken(): Promise<void> {
 		this.validandoToken = true;
 		this.tokenValido = false;
+		this.esFormularioCompleto = true;
 		this.pasoActual = 0;
 
 		if (!this.token) {
@@ -420,6 +479,8 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 		try {
 			const response: any = await firstValueFrom(this.service.validarToken(this.token));
 			this.tokenValido = response.Result === true && response.Data?.VALIDO === true;
+			this.esFormularioCompleto = this.resolverFormularioCompleto(response.Data);
+			this.aplicarCorreoInvitacion(response.Data);
 			this.mensajeToken = this.tokenValido
 				? ''
 				: 'El enlace es inválido, expiró o ya fue utilizado.';
@@ -428,6 +489,30 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 		} finally {
 			this.validandoToken = false;
 		}
+	}
+
+	/** Precarga el correo de la solicitud para que el candidato solo lo verifique. */
+	private aplicarCorreoInvitacion(data: any): void {
+		if (!this.tokenValido) {
+			return;
+		}
+		// No pisa una corrección del candidato si ValidarToken se vuelve a llamar.
+		if (`${this.formData.CORREO ?? ''}`.trim()) {
+			return;
+		}
+		const correo = `${data?.CORREO_INVITACION ?? ''}`.trim();
+		if (correo) {
+			this.formData.CORREO = correo;
+		}
+	}
+
+	/** Tipo 0/null → todos los campos. Eventual (ES_PERMANENTE false) → recortado. */
+	private resolverFormularioCompleto(data: any): boolean {
+		const corrTipo = Number(data?.CORR_TIPO_CONTRATACION ?? 0);
+		if (!Number.isFinite(corrTipo) || corrTipo <= 0) {
+			return true;
+		}
+		return data?.ES_PERMANENTE === true;
 	}
 
 	async onSubmit(): Promise<void> {
@@ -602,7 +687,7 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 		const { FOTO_URL, ...datosPersistibles } = this.formData;
 		void FOTO_URL;
 
-		return {
+		const payload: CompletarFormularioEmpleoPayload = {
 			TOKEN: this.token,
 			...datosPersistibles,
 			FECHA_NACIMIENTO: this.toDateOnly(this.formData.FECHA_NACIMIENTO),
@@ -647,7 +732,7 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 				SALARIO_FINAL: experiencia.SALARIO_FINAL,
 				MOTIVO_SALIDA: experiencia.MOTIVO_SALIDA,
 			})),
-			FAMILIARES_UEES: this.formData.TIENE_FAMILIARES_UEES
+			FAMILIARES_UEES: this.esFormularioCompleto && this.formData.TIENE_FAMILIARES_UEES
 				? this.familiaresUees.map((familiar) => ({
 						NOMBRE: familiar.NOMBRE,
 						PARENTESCO: familiar.PARENTESCO,
@@ -656,6 +741,12 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 				  }))
 				: [],
 		};
+
+		if (!this.esFormularioCompleto) {
+			payload.TIENE_FAMILIARES_UEES = false;
+		}
+
+		return payload;
 	}
 
 	private tieneDatosFamiliarDirecto(familiar: FamiliarDirecto): boolean {

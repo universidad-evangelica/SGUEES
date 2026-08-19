@@ -46,6 +46,13 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	cargandoPersonaDatos = false;
 	fotoPersonaUrl: string | null = null;
 	fotoPreviewVisible = false;
+	/** Datos del combo Tipo de contratación (solo ACTIVO = 1). */
+	mCORR_TIPO_CONTRATACION: any[] = [];
+	tipoContratacionLookupColumns: any[] = [
+		{ dataField: 'CORR_TIPO_CONTRATACION', caption: 'Corr.', width: 80 },
+		{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo de contratación', width: 260 },
+		{ dataField: 'ES_PERMANENTE', caption: 'Es permanente ?', width: 140, dataType: 'boolean' },
+	];
 	// #endregion
 
 	constructor(
@@ -77,7 +84,43 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 	//#region <Manejo de Combos>
 	llenaComboBox() {
+		this.getCORR_TIPO_CONTRATACION();
 	}
+
+	/**
+	 * Carga el catálogo para el lookup del encabezado.
+	 * getLookUp arma: SC_TIPO_CONTRATACION / GetCORR_TIPO_CONTRATACION_SC_SOLICITUD_EMPLEO
+	 * (permiso /sc-solicitud-empleo|R; solo tipos activos).
+	 */
+	getCORR_TIPO_CONTRATACION(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_SOLICITUD_EMPLEO',
+				'SC_TIPO_CONTRATACION',
+				'GetCORR_TIPO_CONTRATACION',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.mCORR_TIPO_CONTRATACION = response.Data;
+					}
+				},
+				error: (error: any) => {
+					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
+				},
+			});
+	}
+
+	/**
+	 * Valor que queda en model.CORR_TIPO_CONTRATACION al elegir una fila del lookup.
+	 * ES_PERMANENTE no se copia al guardar: lo recalcula la vista.
+	 */
+	selectedLookUpCORR_TIPO_CONTRATACION = (vRow: any): any => {
+		return vRow[0].CORR_TIPO_CONTRATACION;
+	};
 
 	//#endregion
 
@@ -96,18 +139,22 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 			return {
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_SOLICITUD_EMPLEO: xModel.CORR_SOLICITUD_EMPLEO,
-				FECHA_GENERACION: xModel.FECHA_GENERACION,
+				// La API envía ISO (ej. 2026-08-17T17:18:48Z); DateBox necesita un Date real.
+				FECHA_GENERACION: this.parseFecha(xModel.FECHA_GENERACION),
 				CORREO_INVITACION: xModel.CORREO_INVITACION,
 				DUI: xModel.DUI,
 				NOMBRE: xModel.NOMBRE,
+				CORR_TIPO_CONTRATACION: xModel.CORR_TIPO_CONTRATACION,
+				NOMBRE_TIPO_CONTRATACION: xModel.NOMBRE_TIPO_CONTRATACION,
+				ES_PERMANENTE: xModel.ES_PERMANENTE,
 				CORR_PERSONA_DATOS: xModel.CORR_PERSONA_DATOS,
 				ACTIVO: xModel.ACTIVO,
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
-				FECHA_CREA: xModel.FECHA_CREA,
+				FECHA_CREA: this.parseFecha(xModel.FECHA_CREA),
 				USUARIO_ACTU: xModel.USUARIO_ACTU,
 				ESTACION_ACTU: xModel.ESTACION_ACTU,
-				FECHA_ACTU: xModel.FECHA_ACTU,
+				FECHA_ACTU: this.parseFecha(xModel.FECHA_ACTU),
 			};
 		} else {
 			return {
@@ -117,6 +164,9 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 				CORREO_INVITACION: '',
 				DUI: '',
 				NOMBRE: '',
+				CORR_TIPO_CONTRATACION: 0,
+				NOMBRE_TIPO_CONTRATACION: '',
+				ES_PERMANENTE: false,
 				CORR_PERSONA_DATOS: 0,
 				ACTIVO: true,
 				USUARIO_CREA: '',
@@ -127,6 +177,20 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 				FECHA_ACTU: new Date(),
 			};
 		}
+	}
+
+	/** Convierte string ISO o Date a Date válido para el formulario. */
+	private parseFecha(valor: Date | string | null | undefined): Date {
+		if (valor instanceof Date && !Number.isNaN(valor.getTime())) {
+			return valor;
+		}
+		if (valor) {
+			const fecha = new Date(valor);
+			if (!Number.isNaN(fecha.getTime())) {
+				return fecha;
+			}
+		}
+		return new Date();
 	}
 
 	getEstadoClass(estado: string): string {
@@ -474,7 +538,7 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 						this.messageService.add({
 							severity: 'success',
 							summary: 'Éxito',
-							detail: 'Token generado y correo de invitación enviado.',
+							detail: 'La solicitud ha sido generada y enviada correctamente.',
 						});
 						this.consultarToken();
 					} else {
@@ -505,10 +569,15 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 				.subscribe({
 					next: (response: any) => {
 						if (response.Result) {
-							this.models.push(response.Data);
-							this.model = response.Data;
-							this.AsignaStatus(UpdateType.Browse);
-							//this.notifyFx('Registro creado con exito!', NotifyType.Success);
+							// Alta: se queda en el formulario (Update) con el correlativo ya asignado
+							// para continuar token y demás procesos sin volver al grid.
+							const registro = this.fillData(response.Data);
+							this.models.push(registro);
+							this.model = registro;
+							this.modelUpdate = this.fillData(registro);
+							this.AsignaStatus(UpdateType.Update);
+							this.habilitar();
+							this.consultarToken();
 							this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro creado con exito!' });
 						} else {
 							//this.notifyFx(response.ErrorMessage, NotifyType.Error);

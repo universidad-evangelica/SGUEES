@@ -146,5 +146,17 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        /// <summary>
+        /// Lookup para sc-solicitud-empleo. Permiso de la pantalla consumidora, no del catálogo.
+        /// SPA: getLookUp('SC_SOLICITUD_EMPLEO', 'SC_TIPO_CONTRATACION', 'GetCORR_TIPO_CONTRATACION', ...).
+        /// </summary>
+        [HttpGet("GetCORR_TIPO_CONTRATACION_SC_SOLICITUD_EMPLEO")]
+        [Authorize(Policy = "/sc-solicitud-empleo|R")]
+        public async Task<CResult> GetCORR_TIPO_CONTRATACION_SC_SOLICITUD_EMPLEO([FromQuery] SC_TIPO_CONTRATACIONParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllActivosAsync(Data);
+        }
+
     }
 }
