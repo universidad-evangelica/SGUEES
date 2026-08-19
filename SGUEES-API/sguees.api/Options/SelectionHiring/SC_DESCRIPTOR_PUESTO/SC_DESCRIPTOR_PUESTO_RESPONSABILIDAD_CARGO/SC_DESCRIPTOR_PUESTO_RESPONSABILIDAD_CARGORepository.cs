@@ -27,25 +27,39 @@ namespace SGUEES.Repositories
 
             try
             {
-                // Filtra por FORMATO: preferencia exacta; AMBOS solo si no hay fila específica.
-                const string sql = @"SELECT D.*
-                    FROM V_SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO D
-                    WHERE D.CORR_EMPRESA = @CORR_EMPRESA
-                      AND D.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
-                      AND (
-                        D.APLICA_DESCRIPTOR = @FORMATO
-                        OR (
-                          ISNULL(D.APLICA_DESCRIPTOR, 'AMBOS') = 'AMBOS'
-                          AND NOT EXISTS (
-                            SELECT 1
-                            FROM V_SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO E
-                            WHERE E.CORR_EMPRESA = D.CORR_EMPRESA
-                              AND E.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO
-                              AND E.CORR_RESPONSABILIDAD = D.CORR_RESPONSABILIDAD
-                              AND E.APLICA_DESCRIPTOR = @FORMATO
-                          )
-                        )
-                      )";
+                // Qué hace: decide si el descriptor está en formato AMBOS para no filtrar por APLICA_DESCRIPTOR.
+                // Cómo: busca el parámetro FORMATO recibido y lo compara (sin distinguir mayúsculas) contra "AMBOS".
+                var formatoParam = xWhere.Find(p => p.ParameterName == "FORMATO");
+                var esFormatoAmbos = string.Equals(
+                    formatoParam?.Value?.ToString()?.Trim(),
+                    "AMBOS",
+                    StringComparison.OrdinalIgnoreCase);
+
+                // Si el descriptor es AMBOS, trae todas las filas (CORTO, EXTENSO y AMBOS) sin filtrar por aplicabilidad;
+                // si no, filtra por FORMATO: preferencia exacta, AMBOS solo si no hay fila específica.
+                string sql = esFormatoAmbos
+                    ? @"SELECT D.*
+                        FROM V_SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO D
+                        WHERE D.CORR_EMPRESA = @CORR_EMPRESA
+                          AND D.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO"
+                    : @"SELECT D.*
+                        FROM V_SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO D
+                        WHERE D.CORR_EMPRESA = @CORR_EMPRESA
+                          AND D.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
+                          AND (
+                            D.APLICA_DESCRIPTOR = @FORMATO
+                            OR (
+                              ISNULL(D.APLICA_DESCRIPTOR, 'AMBOS') = 'AMBOS'
+                              AND NOT EXISTS (
+                                SELECT 1
+                                FROM V_SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO E
+                                WHERE E.CORR_EMPRESA = D.CORR_EMPRESA
+                                  AND E.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO
+                                  AND E.CORR_RESPONSABILIDAD = D.CORR_RESPONSABILIDAD
+                                  AND E.APLICA_DESCRIPTOR = @FORMATO
+                              )
+                            )
+                          )";
                 var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, xWhere);
                 var response = new List<SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOView>().FromDataReader(reader)
                     .OrderBy(x => x.CORR_RESPONSABILIDAD)

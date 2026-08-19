@@ -68,25 +68,28 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
-        // Guarda el entrenamiento del descriptor (inducción, semanas, responsable) con auditoría de sesión.
-        [HttpPut("ActualizarEntrenamiento")]
+        // Actualiza solo RESPONSABLE (texto libre del grid Entrenamiento).
+        [HttpPut("UpdateResponsable")]
         [Authorize(Policy = "/sc-descriptor-puesto|U")]
-        public async Task<IActionResult> ActualizarEntrenamiento(SC_DESCRIPTOR_PUESTOTable Data)
+        public async Task<IActionResult> UpdateResponsable(SC_DESCRIPTOR_PUESTOTable Data)
         {
-            if (Data != null)
-            {
-                // Copia CORR_DESCRIPTOR_PUESTO desde la URL al cuerpo del request.
-                this.ApplyQueryKeys(Data, nameof(SC_DESCRIPTOR_PUESTOTable.CORR_DESCRIPTOR_PUESTO));
-                Data.CORR_EMPRESA = GetCorrEmpresa();
-                // Rellena usuario, estación y fecha de modificación.
-                SetUpdateAudit(Data);
-            }
+            this.ApplyQueryKeys(Data, nameof(SC_DESCRIPTOR_PUESTOTable.CORR_DESCRIPTOR_PUESTO));
+            SetUpdateAudit(Data);
 
-            var resultado = await _service.ActualizarEntrenamientoAsync(
-                Data,
-                GetUsuario(),
-                ClientInfoHelper.GetClientStation(HttpContext));
-            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+            var resultado = await _service.UpdateResponsableAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+        }
+
+        // Actualiza solo impacto económico (fila virtual de Responsabilidades).
+        [HttpPut("UpdateImpactoEconomico")]
+        [Authorize(Policy = "/sc-descriptor-puesto|U")]
+        public async Task<IActionResult> UpdateImpactoEconomico(SC_DESCRIPTOR_PUESTOTable Data)
+        {
+            this.ApplyQueryKeys(Data, nameof(SC_DESCRIPTOR_PUESTOTable.CORR_DESCRIPTOR_PUESTO));
+            SetUpdateAudit(Data);
+
+            var resultado = await _service.UpdateImpactoEconomicoAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
         // Elimina un descriptor de la empresa en sesión; borra también sus registros hijos.

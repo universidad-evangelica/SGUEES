@@ -21,6 +21,7 @@ namespace sguees.Services
 		private readonly ISEG_USUARIORepository _repo;
 		private readonly ISEG_USUARIO_OPCIONRepository _SEG_USUARIO_OPCIONRepository;
         private readonly ICOM_PARAMETRORepository _repoParametro;
+		private readonly ISEG_SISTEMARepository _repoSistema;
 		private readonly IConfiguration _config;
 		private readonly ILogger<SEG_USUARIOService> _logger;
         private readonly IActiveDirectoryService _adService;
@@ -28,6 +29,7 @@ namespace sguees.Services
 		public SEG_USUARIOService(ISEG_USUARIORepository repo,
                                     ISEG_USUARIO_OPCIONRepository SEG_USUARIO_OPCIONRepository,
                                     ICOM_PARAMETRORepository repoParametro,
+                                    ISEG_SISTEMARepository repoSistema,
                                     IConfiguration config,
                                     ILogger<SEG_USUARIOService> logger,
                                     IActiveDirectoryService adService
@@ -36,6 +38,7 @@ namespace sguees.Services
 			_repo = repo;
 			_SEG_USUARIO_OPCIONRepository = SEG_USUARIO_OPCIONRepository;
             _repoParametro = repoParametro;
+			_repoSistema = repoSistema;
 			_config = config;
 			_logger = logger;
             _adService = adService;
@@ -481,6 +484,7 @@ namespace sguees.Services
                 // new Claim("URL_FOTO_PERFIL",Usuario.URL_FOTO_PERFIL),             
                 new Claim("CODIGO_SUITE", CodigoSuite ),
                 new Claim("CORR_EMPRESA", Usuario.CORR_EMPRESA.ToString()),
+                new Claim("NOMBRE_EMPRESA", Usuario.NOMBRE_EMPRESA ?? string.Empty),
             };
             var appIdentity = new ClaimsIdentity(claims);
             
@@ -907,6 +911,29 @@ namespace sguees.Services
                 };
             }
 
+            if (!string.IsNullOrWhiteSpace(Data.CLAVE_USUARIO))
+            {
+                if (!VerifyPasswordHash(Data.CLAVE_USUARIO, usuario.CLAVE_USUARIO, usuario.CLAVE_USUARIO_SAL))
+                {
+                    return new CResult
+                    {
+                        Result = false,
+                        ErrorCode = -1,
+                        ErrorMessage = "La clave actual no es correcta",
+                        RowsAffected = 0
+                    };
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(Data.CLAVE_USUARIO_NUEVA))
+            {
+                var validacionPolitica = ValidarPoliticaClave(Data.CLAVE_USUARIO_NUEVA);
+                if (!validacionPolitica.Result)
+                {
+                    return validacionPolitica;
+                }
+            }
+
             const int numeroUltimasClaves = 5;
             var historialClaves = await _repo.GetUltimasClavesAsync(Data.LOGIN_SISTEMA, numeroUltimasClaves);
             var esReutilizada = VerifyPasswordHash(Data.CLAVE_USUARIO_NUEVA, usuario.CLAVE_USUARIO, usuario.CLAVE_USUARIO_SAL);
@@ -1031,5 +1058,130 @@ namespace sguees.Services
             clientUrl = clientUrl.TrimEnd('/');
             return clientUrl + "/recuperar-contrasena?login=" + Uri.EscapeDataString(loginSistema) + "&token=" + Uri.EscapeDataString(token);
         }
+
+		public async Task<CResult> GetPerfilSesionAsync(string loginSistema, string codigoSuite)
+		{
+			var objResultado = new CResult();
+
+			try
+			{
+				var pWhere = new List<CParameter>
+				{
+					new() { ParameterName = "LOGIN_SISTEMA", Value = loginSistema, DbType = System.Data.DbType.String },
+				};
+
+				var objResultadoUsuario = await _repo.GetAsync(pWhere);
+				if (objResultadoUsuario.Result == false || objResultadoUsuario.Data == null)
+				{
+					objResultado.Result = false;
+					objResultado.ErrorMessage = objResultadoUsuario.ErrorMessage ?? "Usuario no encontrado";
+					objResultado.ErrorCode = -1;
+					return objResultado;
+				}
+
+				var usuario = (SEG_USUARIOView)objResultadoUsuario.Data;
+				var nombreEmpresa = usuario.NOMBRE_EMPRESA;
+				if (string.IsNullOrWhiteSpace(nombreEmpresa) && usuario.CORR_EMPRESA > 0)
+				{
+					nombreEmpresa = await _repo.GetNombreEmpresaAsync(usuario.CORR_EMPRESA);
+				}
+
+				var nombreInstancia = codigoSuite;
+				var pSistema = new List<CParameter>
+				{
+					new() { ParameterName = "CODIGO_SISTEMA", Value = codigoSuite, DbType = System.Data.DbType.String },
+				};
+				var objResultadoSistema = await _repoSistema.GetAsync(pSistema);
+				if (objResultadoSistema.Result && objResultadoSistema.Data is SEG_SISTEMAView sistema
+					&& !string.IsNullOrWhiteSpace(sistema.NOMBRE_SISTEMA))
+				{
+					nombreInstancia = sistema.NOMBRE_SISTEMA;
+				}
+
+				var ultimoAcceso = await _repo.GetUltimoAccesoExitosoAsync(loginSistema);
+				var sesionDescripcion = ultimoAcceso.HasValue
+					? ultimoAcceso.Value.ToString("dd/MM/yyyy HH:mm")
+					: "Sin acceso previo";
+
+				objResultado.Data = new SEG_USUARIO_PERFILView
+				{
+					LOGIN_SISTEMA = usuario.LOGIN_SISTEMA,
+					NOMBRE_USUARIO = usuario.NOMBRE_USUARIO,
+					CORREO_ELECTRONICO = usuario.CORREO_ELECTRONICO,
+					NOMBRE_EMPRESA = nombreEmpresa,
+					CORR_EMPRESA = usuario.CORR_EMPRESA,
+					NOMBRE_ESTADO_USUARIO = usuario.NOMBRE_ESTADO_USUARIO,
+					NOMBRE_TIPO_USUARIO = usuario.NOMBRE_TIPO_USUARIO,
+					CODIGO_SUITE = codigoSuite,
+					NOMBRE_INSTANCIA = nombreInstancia,
+					FECHA_ULTIMO_ACCESO = ultimoAcceso,
+					SESION_DESCRIPCION = sesionDescripcion,
+				};
+				objResultado.Result = true;
+				objResultado.RowsAffected = 1;
+				objResultado.ErrorCode = 0;
+				return objResultado;
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Result = false;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorCode = -1;
+				return objResultado;
+			}
+		}
+
+		public async Task<CResult> CambioClavePerfilAsync(string loginSistema, SEG_USUARIO_CAMBIO_CLAVE_PERFILParam data)
+		{
+			if (data == null)
+			{
+				return new CResult { Result = false, ErrorCode = -1, ErrorMessage = "Datos inválidos", RowsAffected = 0 };
+			}
+
+			if (!string.Equals(data.CLAVE_USUARIO_NUEVA, data.CLAVE_CONFIRMAR, System.StringComparison.Ordinal))
+			{
+				return new CResult { Result = false, ErrorCode = -1, ErrorMessage = "Las contraseñas no coinciden", RowsAffected = 0 };
+			}
+
+			if (string.Equals(data.CLAVE_USUARIO, data.CLAVE_USUARIO_NUEVA, System.StringComparison.Ordinal))
+			{
+				return new CResult { Result = false, ErrorCode = -1, ErrorMessage = "La nueva contraseña debe ser diferente a la actual", RowsAffected = 0 };
+			}
+
+			var cambioData = new SEG_USUARIO_LOGINParam
+			{
+				LOGIN_SISTEMA = loginSistema,
+				CLAVE_USUARIO = data.CLAVE_USUARIO,
+				CLAVE_USUARIO_NUEVA = data.CLAVE_USUARIO_NUEVA,
+				CODIGO_SUITE = data.CODIGO_SUITE ?? "SGUEES",
+			};
+
+			return await EjecutarCambioClaveAsync(cambioData, loginSistema, loginSistema, false);
+		}
+
+		private static CResult ValidarPoliticaClave(string clave)
+		{
+			if (string.IsNullOrWhiteSpace(clave))
+			{
+				return new CResult { Result = false, ErrorCode = -1, ErrorMessage = "Debe especificar una clave nueva", RowsAffected = 0 };
+			}
+
+			if (clave.Length < 8)
+			{
+				return new CResult { Result = false, ErrorCode = -1, ErrorMessage = "La contraseña debe tener al menos 8 caracteres", RowsAffected = 0 };
+			}
+
+			if (!System.Text.RegularExpressions.Regex.IsMatch(clave, @"\d"))
+			{
+				return new CResult { Result = false, ErrorCode = -1, ErrorMessage = "La contraseña debe contener números (0-9)", RowsAffected = 0 };
+			}
+
+			if (!System.Text.RegularExpressions.Regex.IsMatch(clave, @"[A-Za-z]"))
+			{
+				return new CResult { Result = false, ErrorCode = -1, ErrorMessage = "La contraseña debe contener letras (A-Z)", RowsAffected = 0 };
+			}
+
+			return new CResult { Result = true, ErrorCode = 0, RowsAffected = 0 };
+		}
 	}
 }

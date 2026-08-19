@@ -40,5 +40,15 @@ header {
       text-align: center;
       padding: 0;
     }
+
+    ::ng-deep .dx-toolbar-item.header-theme-switcher {
+      min-width: 0;
+      padding-inline: 8px 6px;
+
+      .dx-item-content {
+        display: flex;
+        align-items: center;
+      }
+    }
   }
 }

@@ -3,6 +3,20 @@ import dxSelectBox from 'devextreme/ui/select_box';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { createDateTimeFilterExpression } from 'src/app/shared/utils/remote-header-filter.util';
 
+/** Ancho mínimo legible para botones toolbar (icono + texto sin truncar). */
+export function computeToolbarBtnWidth(label: string, explicitWidth = 0): number | undefined {
+	const text = label?.trim();
+	if (!text) {
+		return explicitWidth > 0 ? explicitWidth : undefined;
+	}
+	const estimated = Math.ceil(text.length * 9.5 + 64);
+	const minReadable = Math.max(140, estimated);
+	if (explicitWidth > 0) {
+		return Math.max(explicitWidth, minReadable);
+	}
+	return minReadable;
+}
+
 export function patchMttoArrayModels(models: unknown[], data: Record<string, unknown>, isAdd: boolean, keyField: string): void {
 	if (!Array.isArray(models) || !data || !keyField) {
 		return;
@@ -192,9 +206,10 @@ export function buildEstadoToolbarOptions(options: EstadoToolbarOptions): {
 		optActivar: {
 			text: 'Activar',
 			icon: 'refresh',
-			type: 'default',
+			type: 'success',
 			stylingMode: 'contained',
 			height: 44,
+			width: computeToolbarBtnWidth('Activar'),
 			visible: hasRow && !activo,
 			disabled: !canEdit,
 			elementAttr: canEdit ? undefined : { class: 'sguees-action-no-activate' },
@@ -204,9 +219,10 @@ export function buildEstadoToolbarOptions(options: EstadoToolbarOptions): {
 		optDesactivar: {
 			text: 'Desactivar',
 			icon: 'close',
-			type: 'default',
+			type: 'danger',
 			stylingMode: 'contained',
 			height: 44,
+			width: computeToolbarBtnWidth('Desactivar'),
 			visible: hasRow && activo,
 			disabled: !canEdit,
 			elementAttr: canEdit ? undefined : { class: 'sguees-action-no-deactivate' },

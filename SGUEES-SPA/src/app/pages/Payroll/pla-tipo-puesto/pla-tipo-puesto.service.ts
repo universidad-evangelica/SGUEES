@@ -138,32 +138,3 @@ export class PlaTipoPuestoService {
 		return xWhere;
 	}
 }
-
-export const EMPRESA_WARNING_ERROR_CODE = 4100;
-export const EMPRESA_REGISTRO_ETIQUETA = 'el tipo de puesto';
-
-// Qué hace: construye el mensaje mostrado cuando el usuario no tiene empresa asignada.
-// Cómo: interpola la etiqueta del registro en un texto fijo de advertencia.
-export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
-	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
-}
-
-// Qué hace: indica si la respuesta de la API corresponde a falta de empresa.
-// Cómo: compara ErrorCode de la respuesta con EMPRESA_WARNING_ERROR_CODE.
-export function isEmpresaWarningResponse(response: any): boolean {
-	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
-}
-
-// Qué hace: detecta variantes del error de relación con empresa devueltas por la API.
-// Cómo: busca fragmentos conocidos en el mensaje normalizado a minúsculas.
-export function isEmpresaFkErrorMessage(message: string): boolean {
-	const value = `${message ?? ''}`.toLowerCase();
-	return (
-		value.includes('gen_empresa') ||
-		value.includes('foreign key') ||
-		value.includes('clave externa') ||
-		value.includes('reference constraint') ||
-		value.includes('conflicted with the foreign key') ||
-		value.includes('no tiene una empresa asignada')
-	);
-}

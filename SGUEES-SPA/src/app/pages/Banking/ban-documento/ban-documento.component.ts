@@ -111,6 +111,7 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		this.selectedLookUpLista = this.selectedLookUpLista.bind(this);
 		this.selectedLookUpCORR_TIPO_MOVIMIENTO = this.selectedLookUpCORR_TIPO_MOVIMIENTO.bind(this);
 		this.selectedLookUpCORR_CUENTA_BANCO = this.selectedLookUpCORR_CUENTA_BANCO.bind(this);
+		this.selectedLookUpCORR_CUENTA_BANCO_DESTINO = this.selectedLookUpCORR_CUENTA_BANCO_DESTINO.bind(this);
 		this.selectedLookUpCORR_TIPO_CHEQUE = this.selectedLookUpCORR_TIPO_CHEQUE.bind(this);
 		this.selectedLookUpCORR_PROVEEDOR = this.selectedLookUpCORR_PROVEEDOR.bind(this);
 		this.selectedLookUpCORR_EMPLEADO = this.selectedLookUpCORR_EMPLEADO.bind(this);
@@ -201,7 +202,7 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 	}
 
 	private aplicarTipoBeneficiarioDefault(forzar = false): void {
-		if (!this.model || !this.mCORR_TIPO_CHEQUE?.length) {
+		if (!this.requiereDatosBeneficiario() || !this.model || !this.mCORR_TIPO_CHEQUE?.length) {
 			return;
 		}
 
@@ -337,6 +338,9 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 			CLASE_MOVIMIENTO: '',
 			CORR_DOCUMENTO: 0,
 			CORR_CUENTA_BANCO: 0,
+			CORR_CUENTA_BANCO_DESTINO: 0,
+			NUMERO_CUENTA_DESTINO_TERCERO: '',
+			MONTO_DESTINO: 0,
 			NUMERO_DOCUMENTO: 0,
 			FECHA_EMISION: today,
 			NOMBRE_PARTIDA: '',
@@ -370,6 +374,8 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 			);
 			return;
 		}
+
+		this.syncMontoDestinoDesdeDocumento();
 
 		this.guardarMtto({
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this), this.esCheque),
@@ -514,6 +520,76 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		return this.model?.CLASE_MOVIMIENTO === 'CHQ';
 	}
 
+	esTransferenciaTercero(): boolean {
+		return this.model?.CLASE_MOVIMIENTO === 'TTE';
+	}
+
+	esTransferenciaPropio(): boolean {
+		return this.model?.CLASE_MOVIMIENTO === 'TPR';
+	}
+
+	requiereDatosBeneficiario(): boolean {
+		return !this.esCheque && this.esTransferenciaTercero();
+	}
+
+	requiereMontoDestino(): boolean {
+		return this.esTransferenciaPropio() || this.esTransferenciaTercero();
+	}
+
+	private limpiarDatosBeneficiario(): void {
+		if (!this.model) {
+			return;
+		}
+		this.model.CORR_TIPO_CHEQUE = 0;
+		this.model.CLASE_TIPO_CHEQUE = '';
+		this.model.NOMBRE_TIPO_CHEQUE = '';
+		this.model.CORR_PROVEEDOR = 0;
+		this.model.CORR_EMPLEADO = 0;
+		this.model.CORR_CLIENTE = 0;
+		this.model.NOMBRE_BENEFICIARIO = '';
+	}
+
+	private limpiarCuentaDestino(): void {
+		if (!this.model) {
+			return;
+		}
+		this.model.CORR_CUENTA_BANCO_DESTINO = 0;
+		this.model.NOMBRE_CUENTA_BANCO_DESTINO = '';
+		this.model.NUMERO_CUENTA_DESTINO_TERCERO = '';
+	}
+
+	private syncMontoDestinoDesdeDocumento(): void {
+		if (!this.model || !this.requiereMontoDestino()) {
+			return;
+		}
+		if (!this.model.MONTO_DESTINO || this.model.MONTO_DESTINO <= 0) {
+			this.model.MONTO_DESTINO = this.model.MONTO_DOCUMENTO ?? 0;
+		}
+	}
+
+	private onClaseMovimientoActualizada(): void {
+		if (!this.requiereDatosBeneficiario()) {
+			this.limpiarDatosBeneficiario();
+		} else if (!this.model.CORR_TIPO_CHEQUE || this.model.CORR_TIPO_CHEQUE <= 0) {
+			this.aplicarTipoBeneficiarioDefault(true);
+		} else {
+			this.syncClaseTipoChequeFromLookup();
+		}
+		if (!this.esTransferenciaPropio()) {
+			this.model.CORR_CUENTA_BANCO_DESTINO = 0;
+			this.model.NOMBRE_CUENTA_BANCO_DESTINO = '';
+		}
+		if (!this.esTransferenciaTercero()) {
+			this.model.NUMERO_CUENTA_DESTINO_TERCERO = '';
+		}
+		if (!this.requiereMontoDestino()) {
+			this.model.MONTO_DESTINO = 0;
+		} else {
+			this.syncMontoDestinoDesdeDocumento();
+		}
+		this.actualizarVisibilidadBeneficiarioForm();
+	}
+
 	getClaseTipoChequeActiva(): string {
 		if (this.model?.CLASE_TIPO_CHEQUE) {
 			return this.model.CLASE_TIPO_CHEQUE;
@@ -546,17 +622,13 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 				return;
 			}
 			form.repaint();
+			form.updateDimensions();
 			const soloLectura = this.isConsulta()
 				? true
 				: !this.documentoEditablePorEstado(this.model?.ESTADO_DOCUMENTO);
 			this.readOnly = soloLectura;
 			this.aplicarReadOnlyEditoresDirectos(soloLectura);
 		});
-	}
-
-	private formUsaLookupBeneficiario(): boolean {
-		const clase = this.getClaseTipoChequeActiva();
-		return clase === 'PR' || clase === 'EM' || clase === 'CL';
 	}
 
 	private applyTipoBeneficiarioSelection(tipo: any): void {
@@ -622,29 +694,72 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 	}
 
 	customizeItem(item: any): void {
+		if (item?.itemType === 'group') {
+			if (item.name === 'grpTransferencia') {
+				item.visible = this.esTransferenciaPropio() || this.esTransferenciaTercero();
+			} else if (item.name === 'grpBeneficiario') {
+				item.visible = this.requiereDatosBeneficiario();
+			}
+			return;
+		}
+
 		if (item?.itemType !== 'simple') {
 			return;
 		}
 
 		const clase = this.getClaseTipoChequeActiva();
-		const usaLookupBenef = this.formUsaLookupBeneficiario();
+		const requiereBenef = this.requiereDatosBeneficiario();
+		const requiereCuentaDestino = this.esTransferenciaPropio();
+		const requiereCuentaTercero = this.esTransferenciaTercero();
+		const requiereMontoDest = this.requiereMontoDestino();
+
+		if (item.dataField === 'CORR_CUENTA_BANCO_DESTINO') {
+			item.visible = requiereCuentaDestino;
+			return;
+		}
+
+		if (item.dataField === 'NUMERO_CUENTA_DESTINO_TERCERO') {
+			item.visible = requiereCuentaTercero;
+			item.editorOptions = {
+				...(item.editorOptions || {}),
+				readOnly: this.readOnly,
+			};
+			return;
+		}
+
+		if (item.dataField === 'MONTO_DESTINO') {
+			item.visible = requiereMontoDest;
+			item.editorOptions = {
+				...(item.editorOptions || {}),
+				readOnly: this.readOnly,
+				format: '#,##0.00',
+				min: 0,
+			};
+			return;
+		}
+
+		if (item.dataField === 'CORR_TIPO_CHEQUE') {
+			item.visible = requiereBenef;
+			return;
+		}
 
 		if (item.dataField === 'CORR_PROVEEDOR') {
-			item.visible = clase === 'PR';
+			item.visible = requiereBenef && clase === 'PR';
 			return;
 		}
 
 		if (item.dataField === 'CORR_EMPLEADO') {
-			item.visible = clase === 'EM';
+			item.visible = requiereBenef && clase === 'EM';
 			return;
 		}
 
 		if (item.dataField === 'CORR_CLIENTE') {
-			item.visible = clase === 'CL';
+			item.visible = requiereBenef && clase === 'CL';
 			return;
 		}
 
 		if (item.dataField === 'NOMBRE_BENEFICIARIO') {
+			item.visible = requiereBenef;
 			item.editorOptions = {
 				...(item.editorOptions || {}),
 				readOnly: this.readOnly || this.beneficiarioAutoDesdeLookup(),
@@ -655,16 +770,13 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		if (
 			item.dataField === 'FECHA_EMISION' ||
 			item.dataField === 'MONTO_DOCUMENTO' ||
-			item.dataField === 'NOMBRE_PARTIDA'
+			item.dataField === 'NOMBRE_PARTIDA' ||
+			item.dataField === 'CANTIDAD_LETRAS'
 		) {
 			item.editorOptions = {
 				...(item.editorOptions || {}),
-				readOnly: this.readOnly,
+				readOnly: this.readOnly || item.dataField === 'CANTIDAD_LETRAS',
 			};
-		}
-
-		if (item.dataField === 'NOMBRE_PARTIDA') {
-			item.colSpan = usaLookupBenef ? 6 : 8;
 		}
 	}
 
@@ -696,7 +808,6 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 		super.nuevo();
-		this.aplicarTipoBeneficiarioDefault(true);
 		this.detalles = [];
 		this.detalleEditando = false;
 		this.detalleEdicionExplicita = false;
@@ -1242,13 +1353,39 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		const tipo = vRow[0];
 		this.model.NOMBRE_TIPO_MOVIMIENTO = tipo?.NOMBRE_TIPO_MOVIMIENTO || '';
 		this.model.CLASE_MOVIMIENTO = tipo?.CLASE_MOVIMIENTO || '';
-		if (this.model.CLASE_MOVIMIENTO !== 'CHQ') {
-			this.model.CORR_TIPO_CHEQUE = 0;
-		}
+		this.onClaseMovimientoActualizada();
 		return tipo?.CORR_TIPO_MOVIMIENTO;
 	}
 
 	selectedLookUpCORR_CUENTA_BANCO(vRow: any): any {
+		return vRow[0].CORR_CUENTA_BANCO;
+	}
+
+	getCuentasBancoDestino(): any[] {
+		const origen = this.model?.CORR_CUENTA_BANCO ?? 0;
+		if (!origen) {
+			return this.mCORR_CUENTA_BANCO ?? [];
+		}
+		return (this.mCORR_CUENTA_BANCO ?? []).filter((item: any) => item.CORR_CUENTA_BANCO !== origen);
+	}
+
+	onCuentaBancoOrigenChanged(value: number): void {
+		if (
+			this.model?.CORR_CUENTA_BANCO_DESTINO &&
+			this.model.CORR_CUENTA_BANCO_DESTINO === value
+		) {
+			this.limpiarCuentaDestino();
+		}
+		this.actualizarVisibilidadBeneficiarioForm();
+	}
+
+	onCuentaBancoDestinoChanged(value: number): void {
+		const cuenta = this.mCORR_CUENTA_BANCO?.find((item: any) => item.CORR_CUENTA_BANCO === value);
+		this.model.NOMBRE_CUENTA_BANCO_DESTINO = cuenta?.NOMBRE_CUENTA_BANCO || '';
+		this.model.NUMERO_CUENTA_DESTINO_TERCERO = cuenta?.NUMERO_CUENTA_BANCO || '';
+	}
+
+	selectedLookUpCORR_CUENTA_BANCO_DESTINO(vRow: any): any {
 		return vRow[0].CORR_CUENTA_BANCO;
 	}
 
@@ -1288,8 +1425,6 @@ export class BanDocumentoComponent extends CBaseComponent implements OnInit {
 		const tipo = this.mCORR_TIPO_MOVIMIENTO.find((item: any) => item.CORR_TIPO_MOVIMIENTO === value);
 		this.model.NOMBRE_TIPO_MOVIMIENTO = tipo?.NOMBRE_TIPO_MOVIMIENTO || '';
 		this.model.CLASE_MOVIMIENTO = tipo?.CLASE_MOVIMIENTO || '';
-		if (this.model.CLASE_MOVIMIENTO !== 'CHQ') {
-			this.model.CORR_TIPO_CHEQUE = 0;
-		}
+		this.onClaseMovimientoActualizada();
 	}
 }

@@ -42,6 +42,8 @@ namespace sguees.Services
                 p.Add(new CParameter() {ParameterName="CORR_UNIDAD",Value=xWhere.CORR_UNIDAD,DbType=System.Data.DbType.Int32});
             }
 
+            p.Add(new CParameter() {ParameterName="ACTIVO",Value=true,DbType=System.Data.DbType.Boolean});
+
             return await _repo.GetAllAsync(p);
         }
 

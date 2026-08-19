@@ -1,8 +1,10 @@
 @use "variables.scss" as *;
+@use "app/theme/styles/sguees-datagrid-filter-row.scss";
 @use "app/theme/styles/design-tokens.scss";
 @use "app/theme/styles/dx-global-overrides.scss";
 @use "app/theme/styles/fluent-enterprise.scss";
 @use "app/theme/styles/sguees-premium-grid.scss";
+@use "app/theme/styles/sguees-detail-grid.scss";
 @use "app/theme/styles/sguees-premium-forms.scss";
 @use "app/theme/styles/sguees-micro-ux.scss";
 @use "app/theme/styles/sguees-mtto-module.scss";

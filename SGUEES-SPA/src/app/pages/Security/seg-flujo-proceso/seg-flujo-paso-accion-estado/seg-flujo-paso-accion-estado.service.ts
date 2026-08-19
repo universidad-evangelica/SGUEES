@@ -66,7 +66,7 @@ export class SegFlujoPasoAccionEstadoService {
 
     getColumns(): any {
         return [
-            { dataField: 'CORR_ACCION', caption: 'Corr.', width: 100 },
+            { dataField: 'CORR_ACCION', caption: 'Accion', width: 100 },
             { dataField: 'NOMBRE_ESTADO', caption: 'Estado Destino', width: 200 },
             { dataField: 'TIPO_MOVIMIENTO', caption: 'Tipo Movimiento', width: 250 },
             { dataField: 'TIPO_NOTIFICACION', caption: 'Tipo Notificación', width: 250 },

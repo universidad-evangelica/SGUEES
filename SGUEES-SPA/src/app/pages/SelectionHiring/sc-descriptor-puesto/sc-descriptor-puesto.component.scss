@@ -254,6 +254,13 @@
 	border: 1px solid color-mix(in srgb, var(--descriptor-extensa-tone) 42%, var(--border-color));
 }
 
+:host ::ng-deep .descriptor-badge--formato-ambos {
+	--descriptor-ambos-tone: #f59e0b;
+	color: color-mix(in srgb, var(--descriptor-ambos-tone) 58%, var(--base-text-color));
+	background: color-mix(in srgb, var(--descriptor-ambos-tone) 17%, transparent);
+	border: 1px solid color-mix(in srgb, var(--descriptor-ambos-tone) 42%, var(--border-color));
+}
+
 :host ::ng-deep .descriptor-badge--formato-default {
 	color: color-mix(in srgb, var(--sguees-text-secondary, #64748b) 72%, var(--base-text-color));
 	background: color-mix(in srgb, var(--base-text-color) 8%, transparent);

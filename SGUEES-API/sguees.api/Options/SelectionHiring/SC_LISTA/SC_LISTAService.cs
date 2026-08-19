@@ -42,6 +42,11 @@ namespace SGUEES.Services
             return _repo.GetFORMATO();
         }
 
+        public CResult GetUNIDAD_TIEMPO_INDUCCION()
+        {
+            return _repo.GetUNIDAD_TIEMPO_INDUCCION();
+        }
+
         public CResult GetNIVEL()
         {
             return _repo.GetNIVEL();

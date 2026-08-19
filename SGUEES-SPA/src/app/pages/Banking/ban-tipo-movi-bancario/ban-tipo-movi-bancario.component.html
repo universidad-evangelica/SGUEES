@@ -88,50 +88,150 @@
 		</div>
 	</dx-form>
 
-	<section class="sguees-section-card" *ngIf="model?.CORR_TIPO_MOVIMIENTO > 0">
-		<header class="concilia-section-head">
-			<span class="concilia-section-title">Movimientos según banco</span>
-			<span class="concilia-section-subtitle">Códigos de movimiento por banco para importación de conciliación</span>
-		</header>
-		<dx-data-grid
-			#gridSegunBanco
-			class="theme-dependent sguees-data-grid-mtto"
-			[dataSource]="segunBancoDetalle"
-			[keyExpr]="['CORR_BANCO', 'CODIGO_MOVIMIENTO']"
-			[showBorders]="true"
-			[columnAutoWidth]="false"
-			[height]="260"
-			(onInitNewRow)="segunBancoInitNewRow($event)"
-			(onRowInserting)="segunBancoRowInserting($event)"
-			(onRowUpdating)="segunBancoRowUpdating($event)"
-			(onRowRemoving)="segunBancoRowRemoving($event)"
-			(onRowValidating)="segunBancoRowValidating($event)"
-		>
-			<dxo-editing
-				mode="row"
-				[allowAdding]="puedeEditarSegunBanco()"
-				[allowUpdating]="puedeEditarSegunBanco()"
-				[allowDeleting]="puedeEditarSegunBanco()"
-				[useIcons]="true"
-			></dxo-editing>
-			<dxi-column dataField="NOMBRE_BANCO" caption="Banco" [width]="180" [allowEditing]="false"></dxi-column>
-			<dxi-column dataField="CORR_BANCO" caption="Banco" [visible]="false" [editCellTemplate]="'bancoTemplate'">
-				<dxo-lookup [dataSource]="mCORR_BANCO" valueExpr="CORR_BANCO" displayExpr="NOMBRE_BANCO"></dxo-lookup>
-			</dxi-column>
-			<dxi-column dataField="CODIGO_MOVIMIENTO" caption="Código banco" [width]="120"></dxi-column>
-			<dxi-column dataField="NOMBRE_MOVIMIENTO_SEGUN_BANCO" caption="Nombre según banco" [minWidth]="220"></dxi-column>
-			<div *dxTemplate="let cellInfo of 'bancoTemplate'">
-				<app-data-lookup
-					[setValue]="cellInfo.setValue"
-					[model]="mCORR_BANCO"
-					[(value)]="cellInfo.value"
-					[selectedRowKeys]="selectedLookUpCORR_BANCO"
-					[valueExpr]="'CORR_BANCO'"
-					[displayExpr]="'NOMBRE_BANCO'"
-					[lookupColumns]="bancoLookupColumns"
-				></app-data-lookup>
-			</div>
-		</dx-data-grid>
+	<section class="sguees-section-card documento-detalle-card" *ngIf="isForm()">
+		<dx-tab-panel class="documento-tab-panel" [selectedIndex]="0">
+			<dxi-item title="Movimientos según banco" icon="detailslayout">
+				<div class="dx-grid-deta documento-deta-grid">
+					<div class="documento-deta-toolbar" *ngIf="puedeEditarSegunBanco()">
+						<dx-button
+							class="documento-deta-toolbar-btn"
+							icon="add"
+							text="Agregar Detalle"
+							type="success"
+							stylingMode="contained"
+							(onClick)="agregarSegunBanco()"
+							[disabled]="segunBancoEditando"
+						></dx-button>
+						<dx-button
+							class="documento-deta-toolbar-btn"
+							icon="save"
+							text="Guardar"
+							type="success"
+							stylingMode="contained"
+							(onClick)="guardarSegunBancoEditado()"
+							[disabled]="!segunBancoEditando"
+						></dx-button>
+						<dx-button
+							class="documento-deta-toolbar-btn documento-deta-toolbar-btn--cancel"
+							icon="revert"
+							text="Cancelar"
+							type="danger"
+							stylingMode="contained"
+							(onClick)="cancelarSegunBancoEditado()"
+							[disabled]="!segunBancoEditando"
+						></dx-button>
+					</div>
+					<dx-data-grid
+						#gridSegunBanco
+						class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise documento-deta-datagrid"
+						[dataSource]="segunBancoDetalle"
+						[keyExpr]="['CORR_BANCO', 'CODIGO_MOVIMIENTO']"
+						[columnAutoWidth]="false"
+						[showBorders]="true"
+						[showColumnLines]="true"
+						[showRowLines]="true"
+						[rowAlternationEnabled]="true"
+						[hoverStateEnabled]="true"
+						[allowColumnResizing]="true"
+						[columnResizingMode]="'widget'"
+						[focusedRowEnabled]="true"
+						[autoNavigateToFocusedRow]="true"
+						[height]="280"
+						[width]="'100%'"
+						(onContentReady)="onDetalleGridContentReady($event)"
+						(onInitNewRow)="segunBancoInitNewRow($event)"
+						(onRowInserting)="segunBancoRowInserting($event)"
+						(onRowUpdating)="segunBancoRowUpdating($event)"
+						(onRowRemoving)="segunBancoRowRemoving($event)"
+						(onRowValidating)="segunBancoRowValidating($event)"
+						(onEditingStart)="onSegunBancoEditingStart($event)"
+						(onSaved)="onSegunBancoSaved($event)"
+						(onEditCanceled)="onSegunBancoEditCanceled($event)"
+					>
+						<dxo-toolbar>
+							<dxi-item name="searchPanel" location="after"></dxi-item>
+						</dxo-toolbar>
+						<dxo-editing
+							mode="row"
+							[refreshMode]="'reshape'"
+							[allowAdding]="puedeEditarSegunBanco()"
+							[allowUpdating]="puedeEditarSegunBanco()"
+							[allowDeleting]="puedeEditarSegunBanco()"
+							[useIcons]="true"
+							[selectTextOnEditStart]="true"
+						></dxo-editing>
+						<dxo-search-panel [visible]="true"></dxo-search-panel>
+						<dxo-paging [enabled]="false"></dxo-paging>
+						<dxi-column
+							type="buttons"
+							name="btnAcciones"
+							caption="Options"
+							[width]="104"
+							[minWidth]="104"
+							alignment="center"
+							[allowResizing]="false"
+						>
+							<dxi-button
+								hint="Editar registro"
+								icon="edit"
+								stylingMode="text"
+								cssClass="sguees-grid-action-edit"
+								[visible]="segunBancoEditButtonVisible"
+								[onClick]="editarSegunBancoClick"
+							></dxi-button>
+							<dxi-button
+								name="delete"
+								hint="Eliminar registro"
+								icon="trash"
+								stylingMode="text"
+								cssClass="sguees-grid-action-delete"
+								[visible]="segunBancoDeleteButtonVisible"
+							></dxi-button>
+							<dxi-button name="save" [visible]="false"></dxi-button>
+							<dxi-button name="cancel" [visible]="false"></dxi-button>
+							<dxi-button name="edit" [visible]="false"></dxi-button>
+						</dxi-column>
+						<dxi-column
+							dataField="CORR_BANCO"
+							caption="Banco"
+							[width]="220"
+							[minWidth]="180"
+							[calculateDisplayValue]="bancoNombreDisplay"
+							[setCellValue]="bancoSetCellValue"
+							[editCellTemplate]="'CORR_BANCOLookup'"
+						>
+							<dxo-lookup
+								[dataSource]="mCORR_BANCO"
+								valueExpr="CORR_BANCO"
+								displayExpr="NOMBRE_BANCO"
+							></dxo-lookup>
+						</dxi-column>
+						<dxi-column
+							dataField="CODIGO_MOVIMIENTO"
+							caption="Código banco"
+							[width]="130"
+							[minWidth]="110"
+						></dxi-column>
+						<dxi-column
+							dataField="NOMBRE_MOVIMIENTO_SEGUN_BANCO"
+							caption="Nombre según banco"
+							[minWidth]="240"
+						></dxi-column>
+						<div *dxTemplate="let cellInfo of 'CORR_BANCOLookup'">
+							<app-data-lookup
+								[setValue]="cellInfo.setValue"
+								[model]="mCORR_BANCO"
+								[(value)]="cellInfo.value"
+								[selectedRowKeys]="selectedLookUpCORR_BANCO"
+								[valueExpr]="'CORR_BANCO'"
+								[displayExpr]="'NOMBRE_BANCO'"
+								[lookupColumns]="bancoLookupColumns"
+							></app-data-lookup>
+						</div>
+					</dx-data-grid>
+				</div>
+			</dxi-item>
+		</dx-tab-panel>
 	</section>
 </div>
 

@@ -98,8 +98,15 @@ export class SegFlujoPasoService {
             {
                 dataField: 'CORR_ESTADO_ORIGEN',
                 label: { text: 'Selecciones el estado de origen' },
-                colSpan: 4,
+                colSpan: 3,
                 template: 'CORR_ESTADO_ORIGENLookup',
+            },
+            {
+                dataField: 'PERMITE_AUTO_APROBACION',
+                label: { text: 'Permite auto aprobación' },
+                colSpan: 1,
+                editorType: 'dxCheckBox',
+               
             },
           
         ];

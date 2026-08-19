@@ -64,6 +64,20 @@
 					[valueExpr]="'CORR_CUENTA_BANCO'"
 					[displayExpr]="'NOMBRE_CUENTA_BANCO'"
 					[lookupColumns]="cuentaBancoLookupColumns"
+					(valueChange)="onCuentaBancoOrigenChanged($event)"
+				>
+				</app-data-lookup>
+			</div>
+			<div *dxTemplate="let cellInfo of 'CORR_CUENTA_BANCO_DESTINOLookup'">
+				<app-data-lookup
+					[model]="getCuentasBancoDestino()"
+					[(value)]="model.CORR_CUENTA_BANCO_DESTINO"
+					[selectedRowKeys]="selectedLookUpCORR_CUENTA_BANCO_DESTINO"
+					[readOnly]="readOnly"
+					[valueExpr]="'CORR_CUENTA_BANCO'"
+					[displayExpr]="'NOMBRE_CUENTA_BANCO'"
+					[lookupColumns]="cuentaBancoLookupColumns"
+					(valueChange)="onCuentaBancoDestinoChanged($event)"
 				>
 				</app-data-lookup>
 			</div>
@@ -181,6 +195,7 @@
 						[autoNavigateToFocusedRow]="true"
 						[height]="'100%'"
 						[width]="'100%'"
+						(onContentReady)="onDetalleGridContentReady($event)"
 						(onRowInserting)="detalleRowInserting($event)"
 						(onRowUpdating)="detalleRowUpdating($event)"
 						(onRowRemoving)="detalleRowRemoving($event)"

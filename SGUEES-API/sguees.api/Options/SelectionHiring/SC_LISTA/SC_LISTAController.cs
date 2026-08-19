@@ -60,6 +60,13 @@ namespace SGUEES.Controllers
             return _service.GetFORMATO();
         }
 
+        [HttpGet("GetUNIDAD_TIEMPO_INDUCCION_SC_INDUCCION")]
+        [Authorize(Policy = "/sc-induccion|R")]
+        public CResult GetUNIDAD_TIEMPO_INDUCCION_SC_INDUCCION()
+        {
+            return _service.GetUNIDAD_TIEMPO_INDUCCION();
+        }
+
         [HttpGet("GetNIVEL_SC_COMPETENCIAS_TECNICAS")]
         [Authorize(Policy = "/sc-competencias-tecnicas|R")]
         public CResult GetNIVEL_SC_COMPETENCIAS_TECNICAS()

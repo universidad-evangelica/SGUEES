@@ -7,10 +7,20 @@ import { IResult } from 'src/app/FxAPI/IResult';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
-import { ScInduccion } from './models/sc-induccion';
+import {
+	ScInduccion,
+	UNIDAD_TIEMPO_MESES,
+	UNIDAD_TIEMPO_SEMANAS,
+} from './models/sc-induccion';
 import { ScInduccionRepository } from './sc-induccion.repository';
 
 const ESTADO_FIELD = 'ESTADO_INDUCCION';
+const TIEMPO_INDUCCION_MIN = 1;
+const TIEMPO_INDUCCION_MAX = 100;
+
+type ScInduccionFormOptions = {
+	unidadesTiempo?: Array<{ Key: any; Value: string }>;
+};
 
 @Injectable({ providedIn: 'root' })
 // Qué hace: valida los datos de inducción y coordina el CRUD con el repositorio.
@@ -18,20 +28,27 @@ export class ScInduccionService {
 	constructor(private repo: ScInduccionRepository) {}
 
 	// Qué hace: valida los datos de la inducción antes de guardar.
-	// Cómo: revisa que el nombre no esté vacío, no supere 200 caracteres y que las semanas sean mayores a 0.
+	// Cómo: revisa nombre (máx. 100), tiempo entre 1 y 100 (si está fuera muestra aviso y no guarda) y unidad Semanas/Meses.
 	esValido(model: ScInduccion, msg: Function): boolean {
 		if (!model.NOMBRE_INDUCCION || model.NOMBRE_INDUCCION.trim() === '') {
 			msg('Debe ingresar el nombre de induccion.', NotifyType.Warning);
 			return false;
 		}
 
-		if (model.NOMBRE_INDUCCION.trim().length > 200) {
-			msg('El nombre de induccion no puede superar 200 caracteres.', NotifyType.Warning);
+		if (model.NOMBRE_INDUCCION.trim().length > 100) {
+			msg('El nombre de induccion no puede superar 100 caracteres.', NotifyType.Warning);
 			return false;
 		}
 
-		if (!model.SEMANAS_INDUCCION || model.SEMANAS_INDUCCION <= 0) {
-			msg('Debe ingresar semanas de induccion mayores a 0.', NotifyType.Warning);
+		const tiempo = Number(model.TIEMPO_INDUCCION);
+		if (!Number.isFinite(tiempo) || tiempo < TIEMPO_INDUCCION_MIN || tiempo > TIEMPO_INDUCCION_MAX) {
+			msg('El tiempo de induccion debe estar entre 1 y 100.', NotifyType.Warning);
+			return false;
+		}
+
+		const unidad = (model.UNIDAD_TIEMPO ?? '').trim();
+		if (unidad !== UNIDAD_TIEMPO_SEMANAS && unidad !== UNIDAD_TIEMPO_MESES) {
+			msg('Debe seleccionar la unidad de tiempo (Semanas o Meses).', NotifyType.Warning);
 			return false;
 		}
 
@@ -75,6 +92,7 @@ export class ScInduccionService {
 	}
 
 	// Qué hace: define las columnas de la grilla de mantenimiento.
+	// Cómo: arma columnas de correlativo, nombre, tiempo, unidad, estado y auditoría.
 	getColumns(): any {
 		return [
 			{
@@ -84,20 +102,22 @@ export class ScInduccionService {
 				dataType: 'number',
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
-			{ dataField: 'NOMBRE_INDUCCION', caption: 'Induccion', width: 300 },
+			{ dataField: 'NOMBRE_INDUCCION', caption: 'Induccion', width: 280 },
 			{
-				dataField: 'SEMANAS_INDUCCION',
-				caption: 'Semanas',
-				width: 120,
+				dataField: 'TIEMPO_INDUCCION',
+				caption: 'Tiempo',
+				width: 100,
 				dataType: 'number',
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
+			{ dataField: 'UNIDAD_TIEMPO', caption: 'Unidad', width: 120 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
 			...buildAuditGridColumns({ withDateTimeFilter: true }),
 		];
 	}
 
 	// Qué hace: define el resumen (contador) de la grilla.
+	// Cómo: cuenta filas sobre CORR_INDUCCION con formato Cant: {0}.
 	getSummary(): any {
 		return {
 			totalItems: [
@@ -112,32 +132,60 @@ export class ScInduccionService {
 	}
 
 	// Qué hace: define los campos y las reglas de validación del formulario.
-	getItems(): any {
+	// Cómo: usa unidadesTiempo (getLookUp SC_LISTA) como dataSource del SelectBox de UNIDAD_TIEMPO;
+	//       el tiempo se valida entre 1 y 100 al guardar (sin recortar el valor al escribir).
+	getItems(options?: ScInduccionFormOptions): any {
+		const unidadesTiempo = options?.unidadesTiempo ?? [];
+
 		return [
 			{ dataField: 'CORR_INDUCCION', label: { text: 'Corr.' }, colSpan: 1, editorOptions: { readOnly: true } },
 			{
 				dataField: 'NOMBRE_INDUCCION',
 				label: { text: 'Nombre induccion' },
 				colSpan: 5,
-				editorOptions: { placeholder: 'Nombre induccion...', showClearButton: true, maxLength: 200 },
+				editorOptions: { placeholder: 'Nombre induccion...', showClearButton: true, maxLength: 100 },
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{
-				dataField: 'SEMANAS_INDUCCION',
-				label: { text: 'Semanas' },
+				dataField: 'TIEMPO_INDUCCION',
+				label: { text: 'Tiempo' },
 				editorType: 'dxNumberBox',
 				colSpan: 2,
-				editorOptions: { min: 1, showSpinButtons: true },
+				editorOptions: {
+					step: 1,
+					showSpinButtons: true,
+					format: '#0',
+				},
 				validationRules: [
 					{ type: 'required', message: 'Este campo es obligatorio' },
-					{ type: 'range', min: 1, message: 'Las semanas deben ser mayores a 0' },
+					{
+						type: 'range',
+						min: TIEMPO_INDUCCION_MIN,
+						max: TIEMPO_INDUCCION_MAX,
+						message: 'El tiempo debe estar entre 1 y 100',
+					},
 				],
+			},
+			{
+				dataField: 'UNIDAD_TIEMPO',
+				label: { text: 'Unidad de tiempo' },
+				editorType: 'dxSelectBox',
+				colSpan: 2,
+				editorOptions: {
+					dataSource: unidadesTiempo,
+					valueExpr: 'Key',
+					displayExpr: 'Value',
+					searchEnabled: false,
+					showClearButton: false,
+				},
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{ dataField: 'ESTADO_INDUCCION', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
 	}
 
 	// Qué hace: arma los filtros de consulta a partir de los parámetros recibidos.
+	// Cómo: agrega CORR_INDUCCION a xWhere solo cuando viene informado.
 	private buildWhere(param: any): IParam[] {
 		const xWhere: IParam[] = [];
 

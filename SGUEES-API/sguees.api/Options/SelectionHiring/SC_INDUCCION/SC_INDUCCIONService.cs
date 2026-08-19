@@ -148,7 +148,8 @@ namespace SGUEES.Services
         }
 
         // Qué hace: valida los datos de la inducción.
-        // Cómo: revisa que existan datos, que el nombre no esté vacío ni supere 200 caracteres, y que las semanas sean mayores a 0.
+        // Cómo: revisa que existan datos, que el nombre no esté vacío ni supere 100 caracteres, que el tiempo esté entre 1 y 100
+        // y que la unidad de tiempo sea exactamente 'Semanas' o 'Meses' (coincide con el CHECK de la tabla).
         private static CResult Validate(SC_INDUCCIONTable Data)
         {
             if (Data == null)
@@ -161,14 +162,19 @@ namespace SGUEES.Services
                 return ValidationError("Debe ingresar el nombre de induccion.");
             }
 
-            if (Data.NOMBRE_INDUCCION.Trim().Length > 200)
+            if (Data.NOMBRE_INDUCCION.Trim().Length > 100)
             {
-                return ValidationError("El nombre de induccion no puede superar 200 caracteres.");
+                return ValidationError("El nombre de induccion no puede superar 100 caracteres.");
             }
 
-            if (Data.SEMANAS_INDUCCION <= 0)
+            if (Data.TIEMPO_INDUCCION < 1 || Data.TIEMPO_INDUCCION > 100)
             {
-                return ValidationError("Debe ingresar semanas de induccion mayores a 0.");
+                return ValidationError("Debe ingresar un tiempo de induccion entre 1 y 100.");
+            }
+
+            if (Data.UNIDAD_TIEMPO != "Semanas" && Data.UNIDAD_TIEMPO != "Meses")
+            {
+                return ValidationError("La unidad de tiempo de induccion debe ser Semanas o Meses.");
             }
 
             return null;

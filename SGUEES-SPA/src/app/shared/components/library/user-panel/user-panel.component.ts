@@ -31,7 +31,7 @@ export class UserPanelComponent {
 
   handleDropDownButtonContentReady({ component }) {
     component.registerKeyHandler('downArrow', () => {
-      this.userMenuSection.userInfoList.nativeElement.focus();
+      this.userMenuSection?.focusFirstAction();
     });
   }
 }

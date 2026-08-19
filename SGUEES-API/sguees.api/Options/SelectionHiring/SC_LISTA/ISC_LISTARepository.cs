@@ -10,6 +10,7 @@ namespace SGUEES.Repositories
         CResult GetLICENCIA();
         CResult GetTIPO_REQUERIDO();
         CResult GetFORMATO();
+        CResult GetUNIDAD_TIEMPO_INDUCCION();
         CResult GetNIVEL();
     }
 }

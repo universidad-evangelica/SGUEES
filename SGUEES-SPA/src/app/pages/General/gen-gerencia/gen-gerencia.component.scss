@@ -1,9 +1,5 @@
 // Qué hace: estilos locales del mantenimiento de gerencias.
-// Cómo: separa el card del formulario, marca el lookup inválido y ajusta el toolbar en móvil.
-
-.gerencia-form-card {
-	margin-top: 38px;
-}
+// Cómo: marca el lookup de división inválido y ajusta el toolbar del grid en móvil (mismo patrón sc-riesgo-puesto).
 
 :host ::ng-deep .division-lookup-field--invalid .dx-dropdownbox.dx-texteditor {
 	border-color: var(--error-color, #d9534f);
@@ -16,12 +12,6 @@
 
 :host ::ng-deep .division-lookup-field--invalid .dx-dropdownbox.dx-texteditor .dx-dropdowneditor-icon {
 	color: var(--error-color, #d9534f);
-}
-
-@media (max-width: 991.98px) {
-	.gerencia-form-card {
-		margin-top: 16px;
-	}
 }
 
 @media (max-width: 575.98px) {
@@ -72,9 +62,5 @@
 		.dx-datagrid-header-panel .dx-toolbar-after .dx-button-has-text {
 			flex: 1 1 auto;
 		}
-	}
-
-	.gerencia-form-card {
-		margin-top: 12px;
 	}
 }

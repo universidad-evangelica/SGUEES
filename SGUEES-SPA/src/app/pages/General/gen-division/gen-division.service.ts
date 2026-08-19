@@ -123,29 +123,3 @@ export class GenDivisionService {
 		return xWhere;
 	}
 }
-
-export const EMPRESA_WARNING_ERROR_CODE = 4100;
-export const EMPRESA_REGISTRO_ETIQUETA = 'la division';
-
-// Qué hace: genera el mensaje cuando la sesión no tiene empresa asignada.
-export function getEmpresaWarningMessage(etiquetaRegistro = EMPRESA_REGISTRO_ETIQUETA): string {
-	return `No se pudo guardar ${etiquetaRegistro} porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.`;
-}
-
-// Qué hace: identifica respuestas controladas por falta de empresa en sesión.
-export function isEmpresaWarningResponse(response: any): boolean {
-	return response?.ErrorCode === EMPRESA_WARNING_ERROR_CODE;
-}
-
-// Qué hace: detecta errores técnicos de empresa para mostrarlos como advertencia.
-export function isEmpresaFkErrorMessage(message: string): boolean {
-	const value = `${message ?? ''}`.toLowerCase();
-	return (
-		value.includes('gen_empresa') ||
-		value.includes('foreign key') ||
-		value.includes('clave externa') ||
-		value.includes('reference constraint') ||
-		value.includes('conflicted with the foreign key') ||
-		value.includes('no tiene una empresa asignada')
-	);
-}

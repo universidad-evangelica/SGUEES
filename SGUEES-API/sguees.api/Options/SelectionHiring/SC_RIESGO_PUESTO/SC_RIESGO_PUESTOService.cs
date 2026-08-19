@@ -190,9 +190,14 @@ namespace SGUEES.Services
                 Data.NOMBRE_RIESGO_PUESTO,
                 excludeCorr ?? 0);
 
-            return exists
-                ? ValidationError($"Ya existe un riesgo de puesto con el nombre {Data.NOMBRE_RIESGO_PUESTO}.")
-                : null;
+            if (!exists)
+            {
+                return null;
+            }
+
+            var nombre = (Data.NOMBRE_RIESGO_PUESTO ?? string.Empty).Trim();
+            return DuplicateWarning(
+                $"Ya existe un riesgo de puesto con el nombre {nombre}. Escriba otro nombre para continuar.");
         }
 
         // Qué hace: valida que exista empresa en la sesión.
@@ -211,6 +216,21 @@ namespace SGUEES.Services
                 CodeHelper = 0,
                 ErrorCode = 4100,
                 ErrorMessage = "No se pudo guardar el riesgo de puesto porque su usuario no tiene una empresa asignada. Solicite que le configuren una empresa por defecto en el sistema.",
+                ErrorSource = "[SC_RIESGO_PUESTOService]",
+                RowsAffected = 0
+            };
+        }
+
+        // Qué hace: arma respuesta controlada de duplicado (ErrorCode 2627 → Warning en el front).
+        private static CResult DuplicateWarning(string message)
+        {
+            return new CResult
+            {
+                Data = null,
+                Result = false,
+                CodeHelper = 0,
+                ErrorCode = 2627,
+                ErrorMessage = message,
                 ErrorSource = "[SC_RIESGO_PUESTOService]",
                 RowsAffected = 0
             };

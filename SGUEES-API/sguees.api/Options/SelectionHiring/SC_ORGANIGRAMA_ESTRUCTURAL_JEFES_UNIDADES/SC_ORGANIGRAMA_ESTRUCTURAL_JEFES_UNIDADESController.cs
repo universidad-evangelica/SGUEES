@@ -31,6 +31,17 @@ namespace sguees.Controllers
             return await _service.GetByUnidadAsync(Data);
         }
 
+        // Qué hace: entrega jefes activos de una unidad (con NOMBRE_EMPLEADO) para Reporta a del descriptor.
+        // Cómo: fija CORR_EMPRESA, ACTIVO=1 y llama GetByUnidadAsync filtrando por CORR_UNIDAD.
+        [HttpGet("GetCORR_EMPLEADO_SC_DESCRIPTOR_PUESTO")]
+        [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        public async Task<CResult> GetCORR_EMPLEADO_SC_DESCRIPTOR_PUESTO([FromQuery] SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADESParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            Data.ACTIVO = 1;
+            return await _service.GetByUnidadAsync(Data);
+        }
+
         [HttpGet("GetEmpleadosByUnidad")]
         [Authorize(Policy = "/sc-organigrama-estructural-unidades|R")]
         public async Task<CResult> GetEmpleadosByUnidad([FromQuery] SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADESParam Data)

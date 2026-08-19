@@ -1,0 +1,46 @@
+// Qué hace: estilos locales de puestos por unidad (modal de asignación).
+// Cómo: toolbar Todos/Ninguno/Guardar; alinea celdas del grid del popup (sin columna fixed).
+
+.unidades-puesto-popup-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 12px;
+}
+
+:host ::ng-deep .unidades-puesto-popup-toolbar .dx-button {
+	min-width: 120px;
+	min-height: 36px;
+	font-weight: 600;
+}
+
+/* El dx-popup se ancla al body; altura por contenido (sin forzar scroll interno vacío). */
+::ng-deep .unidades-puesto-asignar-popup .dx-popup-content {
+	box-sizing: border-box;
+	overflow: visible;
+	padding-bottom: 8px;
+}
+
+/* Qué hace: evita descuadre visual entre checkbox y columnas de texto.
+   Cómo: centra celdas en vertical y quita flex forzado del estilo enterprise. */
+::ng-deep .unidades-puesto-asignar-popup .unidades-puesto-popup-grid {
+	flex: none;
+	min-height: auto;
+	width: 100%;
+
+	.dx-datagrid-headers .dx-header-row > td,
+	.dx-datagrid-filter-row > td,
+	.dx-datagrid-rowsview .dx-data-row > td {
+		vertical-align: middle;
+	}
+
+	.dx-datagrid-rowsview .dx-data-row > td {
+		padding-top: 8px;
+		padding-bottom: 8px;
+	}
+
+	.dx-checkbox {
+		margin: 0 auto;
+	}
+}

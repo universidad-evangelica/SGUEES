@@ -15,12 +15,6 @@ export class GenDistritoRepository {
 
 	constructor(private objData: CData) {}
 
-	// Qué hace: consulta el listado de distritos.
-	// Cómo: GET GetAll al controlador GEN_DISTRITO con los filtros recibidos.
-	getAll(xWhere: IParam[]): Observable<IResult> {
-		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlGENERALAPI);
-	}
-
 	// Qué hace: crea un distrito nuevo.
 	// Cómo: POST con el modelo al controlador GEN_DISTRITO.
 	create(model: any): Observable<IResult> {

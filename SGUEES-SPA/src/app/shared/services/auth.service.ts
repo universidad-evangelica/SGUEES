@@ -8,6 +8,13 @@ import { Observable, lastValueFrom, of } from 'rxjs';
 import notify from 'devextreme/ui/notify';
 
 const defaultPath = '/';
+const SESSION_CONTEXT_KEY = 'sguees_session_context';
+
+interface SessionContext {
+	NOMBRE_EMPRESA?: string;
+	CODIGO_SUITE?: string;
+	NOMBRE_INSTANCIA?: string;
+}
 
 export interface IUser {
   user: string;
@@ -36,11 +43,16 @@ export class AuthService {
 	public urlIntentaAcceder = '';
 
 	private _lastAuthenticatedPath: string = defaultPath;
+	private sessionContext: SessionContext = {};
+
 	set lastAuthenticatedPath(value: string) {
 		this._lastAuthenticatedPath = value;
 	}
 
-	constructor(private router: Router, private http: HttpClient) {}
+	constructor(private router: Router, private http: HttpClient) {
+		this.loadSessionContext();
+		this.ensureDecodedToken();
+	}
 
   private extractErrorMessage(error: any, fallback: string): string {
     const payload = error?.error;
@@ -89,11 +101,7 @@ export class AuthService {
             {
               // Verificar si requiere cambio de contraseña
               if (!response.Data.REQUIERE_CAMBIO_CLAVE) {
-                // Solo guardar token si NO requiere cambio de contraseña
-                localStorage.setItem('token', response.Data.TOKEN);
-                this.decodedToken = this.jwtHelper.decodeToken(response.Data.TOKEN);
-                this.mainMenu = response.Data.OPCIONES;
-                console.log(this.mainMenu)
+                this.applyLoginSession(response.Data);
               }
               // Siempre retornar la respuesta completa (incluyendo REQUIERE_CAMBIO_CLAVE)
             } else {
@@ -209,20 +217,138 @@ export class AuthService {
 			return 0;
 		}
 
-		if (!this.decodedToken) {
-			this.decodedToken = this.jwtHelper.decodeToken(token);
-		}
+		this.ensureDecodedToken();
 
 		const value = Number(this.decodedToken?.CORR_EMPRESA ?? 0);
 		return Number.isFinite(value) ? value : 0;
+	}
+
+	getNombreEmpresaSesion(): string {
+		const fromToken = `${this.decodedToken?.NOMBRE_EMPRESA ?? ''}`.trim();
+		const fromSession = `${this.sessionContext.NOMBRE_EMPRESA ?? ''}`.trim();
+
+		if (fromToken) {
+			return fromToken;
+		}
+
+		if (fromSession) {
+			return fromSession;
+		}
+
+		const corrEmpresa = this.getCorrEmpresaSesion();
+		return corrEmpresa > 0 ? `Empresa #${corrEmpresa}` : 'Sin empresa asignada';
+	}
+
+	getInstanciaSesion(): string {
+		const fromSessionName = `${this.sessionContext.NOMBRE_INSTANCIA ?? ''}`.trim();
+		if (fromSessionName) {
+			return fromSessionName;
+		}
+
+		const fromToken = `${this.decodedToken?.CODIGO_SUITE ?? ''}`.trim();
+		const fromSession = `${this.sessionContext.CODIGO_SUITE ?? ''}`.trim();
+
+		return fromToken || fromSession || 'SGUEES';
+	}
+
+	applyLoginSession(loginData: any): void {
+		if (!loginData?.TOKEN) {
+			return;
+		}
+
+		localStorage.setItem('token', loginData.TOKEN);
+		this.decodedToken = this.jwtHelper.decodeToken(loginData.TOKEN);
+		this.mainMenu = loginData.OPCIONES;
+		this.persistSessionContext({
+			NOMBRE_EMPRESA: loginData.NOMBRE_EMPRESA ?? '',
+			CODIGO_SUITE: loginData.CODIGO_SUITE ?? this.decodedToken?.CODIGO_SUITE ?? 'SGUEES',
+		});
+	}
+
+	updateSessionContext(context: SessionContext): void {
+		this.persistSessionContext(context);
+	}
+
+	private loadSessionContext(): void {
+		try {
+			const raw = localStorage.getItem(SESSION_CONTEXT_KEY);
+			this.sessionContext = raw ? JSON.parse(raw) : {};
+		} catch {
+			this.sessionContext = {};
+		}
+	}
+
+	private persistSessionContext(context: SessionContext): void {
+		this.sessionContext = {
+			...this.sessionContext,
+			...context,
+		};
+		localStorage.setItem(SESSION_CONTEXT_KEY, JSON.stringify(this.sessionContext));
+	}
+
+	private clearSessionContext(): void {
+		this.sessionContext = {};
+		localStorage.removeItem(SESSION_CONTEXT_KEY);
+	}
+
+	private ensureDecodedToken(): void {
+		if (this.decodedToken) {
+			return;
+		}
+
+		const token = localStorage.getItem('token') || '';
+		if (!token || this.jwtHelper.isTokenExpired(token)) {
+			return;
+		}
+
+		try {
+			this.decodedToken = this.jwtHelper.decodeToken(token);
+		} catch {
+			this.decodedToken = null;
+		}
 	}
 
 	tieneEmpresaAsignada(): boolean {
 		return this.getCorrEmpresaSesion() > 0;
 	}
 
+	private handlingSessionExpiry = false;
+
+	get isHandlingSessionExpiry(): boolean {
+		return this.handlingSessionExpiry;
+	}
+
+	handleSessionExpired(): void {
+		if (this.handlingSessionExpiry) {
+			return;
+		}
+
+		this.handlingSessionExpiry = true;
+		localStorage.removeItem('token');
+		this.clearSessionContext();
+		this.decodedToken = {} as any;
+		this.mainMenu = [];
+
+		notify(
+			{
+				message: 'Su sesión expiró. Ingrese nuevamente para continuar.',
+				width: 'auto',
+				shading: false,
+				closeOnClick: true,
+				closeOnOutsideClick: true,
+			},
+			'warning',
+			8000
+		);
+
+		void this.router.navigate(['/login-form']).finally(() => {
+			this.handlingSessionExpiry = false;
+		});
+	}
+
 	async logOut(): Promise<void> {
 		localStorage.removeItem('token');
+		this.clearSessionContext();
 		this.decodedToken = {} as any;
 		this.mainMenu = [];
 		this.router.navigate(['/login-form']);
@@ -305,7 +431,8 @@ export class AuthGuardService implements CanActivate {
 		let routerUrl: string;
 		let routerList: Array<any>;
 
-    const isAuthForm = ['login-form', 'recuperar-contrasena', 'reset-password', 'create-account', 'change-password/:recoveryCode', 'change-password'].includes(
+    const isPublicForm = route.routeConfig?.path === 'formulario-empleo';
+    const isAuthForm = ['login-form', 'recuperar-contrasena', 'reset-password', 'formulario-empleo', 'create-account', 'change-password/:recoveryCode', 'change-password'].includes(
 			route.routeConfig?.path || defaultPath
 		);
 
@@ -330,7 +457,7 @@ export class AuthGuardService implements CanActivate {
 		// eslint-disable-next-line prefer-const
 		routerUrl = '/' + routerList[0];
 
-		if (isLoggedIn && isAuthForm) {
+		if (isLoggedIn && isAuthForm && !isPublicForm) {
 			this.authService.lastAuthenticatedPath = defaultPath;
 			this.router.navigate([defaultPath]);
 			return false;

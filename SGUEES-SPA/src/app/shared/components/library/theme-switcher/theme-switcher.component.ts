@@ -1,32 +1,40 @@
 import {
-  Component, NgModule,
+  Component, NgModule, OnDestroy, OnInit,
 } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
-import { DxButtonModule } from 'devextreme-angular';
 import { ThemeService } from 'src/app/shared/services';
 
 @Component({
   selector: 'theme-switcher',
-  template: `
-    <dx-button
-      class="theme-button"
-      stylingMode="text"
-      [icon]="themeService.currentTheme !== 'dark' ? 'moon' : 'sun'"
-      (onClick)="onButtonClick()"
-    ></dx-button>
-`,
-  styleUrls: [],
+  templateUrl: './theme-switcher.component.html',
+  styleUrls: ['./theme-switcher.component.scss'],
 })
-export class ThemeSwitcherComponent {
-  constructor(public themeService: ThemeService) {}
+export class ThemeSwitcherComponent implements OnInit, OnDestroy {
+  isDark = true;
 
-  onButtonClick () {
+  private themeSub?: Subscription;
+
+  constructor(private themeService: ThemeService) {}
+
+  ngOnInit(): void {
+    this.isDark = this.themeService.isDark.value;
+    this.themeSub = this.themeService.isDark.subscribe((value) => {
+      this.isDark = value;
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.themeSub?.unsubscribe();
+  }
+
+  toggleTheme(): void {
     this.themeService.switchTheme();
   }
 }
 
 @NgModule({
-  imports: [CommonModule, DxButtonModule],
+  imports: [CommonModule],
   declarations: [ThemeSwitcherComponent],
   exports: [ThemeSwitcherComponent],
 })

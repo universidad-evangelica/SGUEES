@@ -141,6 +141,23 @@
   }
 }
 
+:host ::ng-deep .dx-datagrid-header-panel .dx-toolbar {
+  .dx-toolbar-item {
+    flex-shrink: 0;
+  }
+
+  .dx-button.sguees-barra-btn-standard {
+    min-width: 140px;
+    flex-shrink: 0;
+
+    .dx-button-text {
+      white-space: nowrap;
+      overflow: visible;
+      text-overflow: clip;
+    }
+  }
+}
+
 .sguees-data-grid-mtto--grouping {
   ::ng-deep .dx-datagrid-header-panel {
     padding-bottom: 0;

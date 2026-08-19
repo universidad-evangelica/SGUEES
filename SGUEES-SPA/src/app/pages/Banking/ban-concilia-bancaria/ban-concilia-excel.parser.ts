@@ -1,6 +1,25 @@
 import ExcelJS from 'exceljs';
 import { BanConciliaImportRow } from './models/ban-concilia-import-row';
 
+function truncImportText(value: string | undefined, maxLen: number): string {
+	return (value ?? '').trim().slice(0, maxLen);
+}
+
+const IMPORT_LIMITS = {
+	NUMERO_REFERENCIA_BANCO: 255,
+	CODIGO_TIPO_MOVIMIENTO: 30,
+	NOMBRE_TIPO_MOVIMIENTO: 255,
+} as const;
+
+function normalizeImportRow(row: BanConciliaImportRow): BanConciliaImportRow {
+	return {
+		...row,
+		NUMERO_REFERENCIA_BANCO: truncImportText(row.NUMERO_REFERENCIA_BANCO, IMPORT_LIMITS.NUMERO_REFERENCIA_BANCO),
+		CODIGO_TIPO_MOVIMIENTO: truncImportText(row.CODIGO_TIPO_MOVIMIENTO, IMPORT_LIMITS.CODIGO_TIPO_MOVIMIENTO),
+		NOMBRE_TIPO_MOVIMIENTO: truncImportText(row.NOMBRE_TIPO_MOVIMIENTO, IMPORT_LIMITS.NOMBRE_TIPO_MOVIMIENTO),
+	};
+}
+
 function cellText(cell: any): string {
 	const v = cell?.value;
 	if (v == null) {
@@ -146,7 +165,121 @@ function parseAvanz(rows: string[][]): BanConciliaImportRow[] {
 	return result;
 }
 
-export async function parseBanConciliaExcel(file: File, claseBanco: string): Promise<BanConciliaImportRow[]> {
+function normalizeClaseBanco(claseBanco: string): string {
+	const clase = (claseBanco ?? '').trim().toUpperCase();
+	if (clase === 'BPM') {
+		return 'PROME';
+	}
+	if (clase === 'BAG') {
+		return 'BAGRI';
+	}
+	return clase;
+}
+
+function parseCsvLines(text: string): string[] {
+	return text.split(/\r?\n/);
+}
+
+function trimCsvColumn(value: string | undefined): string {
+	return (value ?? '').trim().replace(/^,+|,+$|,$/g, '').trim();
+}
+
+/** Credomatic: CSV/TXT con columnas Fecha, Ref, Código, Descripción, Débito, Crédito (e-Admin FillData). */
+function parseCreditoCsv(text: string): BanConciliaImportRow[] {
+	const filas = parseCsvLines(text);
+	const lineasEncabezado = 5;
+	const lineasPie = 7;
+	const result: BanConciliaImportRow[] = [];
+	let corr = 0;
+
+	for (let i = lineasEncabezado; i <= filas.length - 1 - lineasPie; i++) {
+		const line = filas[i];
+		if (!line?.trim()) {
+			continue;
+		}
+		const columnas = line.split(',');
+		if (columnas.length < 6) {
+			continue;
+		}
+		const fecha = cellDate({ value: trimCsvColumn(columnas[0]) });
+		if (!fecha) {
+			continue;
+		}
+		corr += 1;
+		result.push(
+			normalizeImportRow({
+				CORR: corr,
+				FECHA_MOVIMIENTO: fecha,
+				NUMERO_REFERENCIA_BANCO: `${trimCsvColumn(columnas[1])} - ${trimCsvColumn(columnas[3])}`,
+				CODIGO_TIPO_MOVIMIENTO: trimCsvColumn(columnas[2]),
+				NOMBRE_TIPO_MOVIMIENTO: trimCsvColumn(columnas[3]),
+				MONTO_CARGO: cellNumber({ value: trimCsvColumn(columnas[4]) }),
+				MONTO_ABONO: cellNumber({ value: trimCsvColumn(columnas[5]) }),
+			})
+		);
+	}
+	return result;
+}
+
+/** Banco Agrícola: archivo de ancho fijo (e-Admin FillDataAgricola). */
+function parseAgricolaFixedWidth(text: string): BanConciliaImportRow[] {
+	const filas = parseCsvLines(text);
+	const lineasEncabezado = 6;
+	const lineasPie = 1;
+	const result: BanConciliaImportRow[] = [];
+	let corr = 0;
+
+	for (let i = lineasEncabezado; i <= filas.length - 1 - lineasPie; i++) {
+		const xFila = filas[i];
+		if (!xFila || xFila.length < 177) {
+			continue;
+		}
+		const fecha = cellDate({ value: xFila.substring(24, 34).trim() });
+		if (!fecha) {
+			continue;
+		}
+		const codigo = xFila.substring(64, 79).trim();
+		const descripcion = xFila.substring(80, 120).trim();
+		const referencia = xFila.substring(120, 145).trim();
+		let cargo = 0;
+		let abono = 0;
+		const montoCargo = xFila.substring(146, 161).trim();
+		if (montoCargo) {
+			cargo = cellNumber({ value: montoCargo.replace(/\$/g, '') });
+		}
+		const montoAbono = xFila.substring(162, 177).trim();
+		if (montoAbono) {
+			abono = cellNumber({ value: montoAbono.replace(/\$/g, '') });
+		}
+		corr += 1;
+		result.push(
+			normalizeImportRow({
+				CORR: corr,
+				FECHA_MOVIMIENTO: fecha,
+				NUMERO_REFERENCIA_BANCO: referencia,
+				CODIGO_TIPO_MOVIMIENTO: codigo,
+				NOMBRE_TIPO_MOVIMIENTO: descripcion,
+				MONTO_CARGO: cargo,
+				MONTO_ABONO: abono,
+			})
+		);
+	}
+	return result;
+}
+
+function parseRowsByClase(rows: string[][], clase: string): BanConciliaImportRow[] {
+	let parsed: BanConciliaImportRow[];
+	if (clase === 'PROME') {
+		parsed = parsePromer(rows);
+	} else if (clase === 'AVANZ') {
+		parsed = parseAvanz(rows);
+	} else {
+		parsed = parseCreditoLafis(rows);
+	}
+	return parsed.map(normalizeImportRow);
+}
+
+async function parseBanConciliaExcelInternal(file: File, clase: string): Promise<BanConciliaImportRow[]> {
 	const buffer = await file.arrayBuffer();
 	const workbook = new ExcelJS.Workbook();
 	await workbook.xlsx.load(buffer);
@@ -160,12 +293,34 @@ export async function parseBanConciliaExcel(file: File, claseBanco: string): Pro
 		rows.push(rowValues(row));
 	});
 
-	const clase = (claseBanco ?? '').toUpperCase();
-	if (clase === 'PROME') {
-		return parsePromer(rows);
+	return parseRowsByClase(rows, clase);
+}
+
+export async function parseBanConciliaImportFile(file: File, claseBanco: string): Promise<BanConciliaImportRow[]> {
+	const clase = normalizeClaseBanco(claseBanco);
+	const ext = (file.name.split('.').pop() ?? '').toLowerCase();
+
+	if (ext === 'csv' || ext === 'txt') {
+		const text = await file.text();
+		if (clase === 'BAGRI') {
+			return parseAgricolaFixedWidth(text);
+		}
+		if (clase === 'CREDO') {
+			return parseCreditoCsv(text);
+		}
+		throw new Error(
+			'Este banco no admite importación CSV/TXT. Use Excel o verifique la clase del banco (Agrícola = CSV, Credomatic = CSV/Excel).'
+		);
 	}
-	if (clase === 'AVANZ') {
-		return parseAvanz(rows);
+
+	if (ext === 'xlsx' || ext === 'xls') {
+		return parseBanConciliaExcelInternal(file, clase);
 	}
-	return parseCreditoLafis(rows);
+
+	throw new Error('Formato no soportado. Use Excel (.xlsx, .xls) o CSV/TXT según el banco.');
+}
+
+/** @deprecated Use parseBanConciliaImportFile */
+export async function parseBanConciliaExcel(file: File, claseBanco: string): Promise<BanConciliaImportRow[]> {
+	return parseBanConciliaImportFile(file, claseBanco);
 }

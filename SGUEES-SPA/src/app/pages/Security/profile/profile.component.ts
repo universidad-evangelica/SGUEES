@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { loadMessages } from 'devextreme/localization';
 import esMessages from 'devextreme/localization/messages/es.json';
 import notify from 'devextreme/ui/notify';
@@ -10,6 +10,12 @@ import { ActivatedRoute } from '@angular/router';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { SegUsuario } from 'src/app/pages/Security/seg-usuario/models/seg-usuario';
 import { SegUsuarioService } from 'src/app/pages/Security/seg-usuario/seg-usuario.service';
+import { SegUsuarioPerfil } from './models/seg-usuario-perfil';
+import { take } from 'rxjs/operators';
+import {
+  ChangePasswordFormComponent,
+  ChangePasswordFormValue,
+} from 'src/app/shared/components/library/change-password-form/change-password-form.component';
 
 
 @Component({
@@ -63,20 +69,60 @@ export class ProfileComponent {
     ],
   };
 
-  cambiarClave: any = {
-    LOGIN_SISTEMA: '',
-    CLAVE_USUARIO: '',
-    CLAVE_USUARIO_NUEVA: '',
-    CLAVE_CONFIRMAR: ''
-  };
-  buttonClave: any;
-  buttonClaveNueva: any;
-  buttonConfirmClave: any;
-  modeClave: string;
-  modeClaveNueva: string;
-  modeConfimClave: string;
   popupVisible = false;
-  largeTextOptions: any = { style: 'font-size: 48px; font-weight: 500;' };
+  loadingVisible = false;
+  savingPassword = false;
+  perfilData: SegUsuarioPerfil | null = null;
+
+  @ViewChild(ChangePasswordFormComponent) changePasswordForm?: ChangePasswordFormComponent;
+
+  get userInitials(): string {
+    const name = `${this.model.NOMBRE_USUARIO ?? ''}`.trim();
+    if (!name) {
+      return `${this.model.LOGIN_SISTEMA ?? 'U'}`.slice(0, 2).toUpperCase();
+    }
+
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+
+  readonly securityTips = [
+    'Use letras, números y símbolos',
+    'Evite datos personales obvios',
+    'No reutilice claves de otros sistemas',
+  ];
+
+  get empresaLabel(): string {
+    return this.perfilData?.NOMBRE_EMPRESA?.trim()
+      || this.authService.getNombreEmpresaSesion();
+  }
+
+  get instanciaLabel(): string {
+    return this.perfilData?.NOMBRE_INSTANCIA?.trim()
+      || this.authService.getInstanciaSesion();
+  }
+
+  get estadoLabel(): string {
+    return this.perfilData?.NOMBRE_ESTADO_USUARIO?.trim()
+      || this.model.NOMBRE_ESTADO_USUARIO
+      || '—';
+  }
+
+  get sesionLabel(): string {
+    return this.perfilData?.SESION_DESCRIPCION?.trim() || 'En línea';
+  }
+
+  get profileStats(): Array<{ icon: string; label: string; value: string }> {
+    return [
+      { icon: 'globe', label: 'Instancia', value: this.instanciaLabel },
+      { icon: 'check', label: 'Estado', value: this.estadoLabel },
+      { icon: 'event', label: 'Último acceso', value: this.sesionLabel },
+    ];
+  }
 
   param: any = {
     TIPO_CONSULTA: 1,
@@ -91,32 +137,7 @@ export class ProfileComponent {
     private authService: AuthService
   ) {
     loadMessages(esMessages);
-    this.modeClave = 'password';
-    this.buttonClave = {
-      icon: 'mdi mdi-eye',
-      type: 'default',
-      onClick: () => {
-        this.modeClave = this.modeClave === 'text' ? 'password' : 'text';
-      }
-    };
-    this.modeClaveNueva = 'password';
-    this.buttonClaveNueva = {
-      icon: 'mdi mdi-eye',
-      type: 'default',
-      onClick: () => {
-        this.modeClaveNueva = this.modeClaveNueva === 'text' ? 'password' : 'text';
-      }
-    };
-    this.modeConfimClave = 'password';
-    this.buttonConfirmClave = {
-      icon: 'mdi mdi-eye',
-      type: 'default',
-      onClick: () => {
-        this.modeConfimClave = this.modeConfimClave === 'text' ? 'password' : 'text';
-      }
-    };
-    // locale(this.appInfoService.getLocale);
-}
+  }
 
   // eslint-disable-next-line @angular-eslint/use-lifecycle-interface
   ngOnInit(): void {
@@ -135,12 +156,35 @@ export class ProfileComponent {
   }
 
   consultar() {
-  //   this.param.TIPO_CONSULTA = 2;
-  //   this.param.OPCION_CONSULTA = 0;
-  //   this.service.get(this.param).pipe(take(1)).subscribe((model: any[]) => {
-  //     this.models = model;
-  //   });
+    this.loadingVisible = true;
+    this.service
+      .getPerfil()
+      .pipe(take(1))
+      .subscribe({
+        next: (response: any) => {
+          if (response?.Result && response?.Data) {
+            this.perfilData = response.Data as SegUsuarioPerfil;
+            this.model.LOGIN_SISTEMA = this.perfilData.LOGIN_SISTEMA || this.model.LOGIN_SISTEMA;
+            this.model.NOMBRE_USUARIO = this.perfilData.NOMBRE_USUARIO || this.model.NOMBRE_USUARIO;
+            this.model.CORREO_ELECTRONICO = this.perfilData.CORREO_ELECTRONICO || '';
+            this.model.NOMBRE_ESTADO_USUARIO = this.perfilData.NOMBRE_ESTADO_USUARIO || '';
+            this.model.NOMBRE_TIPO_USUARIO = this.perfilData.NOMBRE_TIPO_USUARIO || '';
 
+            this.authService.updateSessionContext({
+              NOMBRE_EMPRESA: this.perfilData.NOMBRE_EMPRESA,
+              CODIGO_SUITE: this.perfilData.CODIGO_SUITE,
+              NOMBRE_INSTANCIA: this.perfilData.NOMBRE_INSTANCIA,
+            });
+          } else if (response?.ErrorMessage) {
+            notify({ message: response.ErrorMessage, width: 'auto', shading: false }, 'warning', 4000);
+          }
+          this.loadingVisible = false;
+        },
+        error: (error: any) => {
+          this.loadingVisible = false;
+          notify({ message: error, width: 'auto', shading: false }, 'error', 5000);
+        },
+      });
   }
 
   mostrarPopup() {
@@ -149,33 +193,36 @@ export class ProfileComponent {
 
   hidePopup() {
     this.popupVisible = false;
-    this.cambiarClave.LOGIN_SISTEMA = '';
-    this.cambiarClave.CLAVE_USUARIO = '';
-    this.cambiarClave.CLAVE_USUARIO_NUEVA = '';
-    this.cambiarClave.CLAVE_CONFIRMAR = '';
+    this.savingPassword = false;
+    this.changePasswordForm?.resetForm();
   }
 
-  cambioClave() {
-    this.cambiarClave.LOGIN_SISTEMA = this.authService.decodedToken.nameid;
-    if (this.cambiarClave.CLAVE_USUARIO === '') {
-      return notify({ message: 'La clave anterior no coinciden', width: 'auto', shading: false }, 'warning', 2000);
-    }
-    if (this.cambiarClave.CLAVE_USUARIO_NUEVA !== this.cambiarClave.CLAVE_CONFIRMAR) {
-      return notify({ message: 'Las claves no coinciden', width: 'auto', shading: false }, 'warning', 2000);
-    }
-    this.service.cambioClave(this.cambiarClave).subscribe(
-      () => {
-        notify({ message: 'Clave cambiada con exito!', width: 'auto', shading: false }, 'success', 1500);
-        this.popupVisible = false;
-        this.cambiarClave.LOGIN_SISTEMA = '';
-        this.cambiarClave.CLAVE_USUARIO = '';
-        this.cambiarClave.CLAVE_USUARIO_NUEVA = '';
-        this.cambiarClave.CLAVE_CONFIRMAR = '';
-      },
-      error => {
-        notify({ message: error, width: 'auto', shading: false, closeOnClick: true, closeOnOutsideClick: true}, 'error', 50000);
-      }
-    );
+  onPasswordSubmit(formValue: ChangePasswordFormValue) {
+    this.savingPassword = true;
+    this.service
+      .cambioClavePerfil(formValue)
+      .pipe(take(1))
+      .subscribe({
+        next: (response: any) => {
+          this.savingPassword = false;
+          if (response?.Result) {
+            notify({ message: 'Contraseña cambiada con éxito.', width: 'auto', shading: false }, 'success', 2500);
+            this.hidePopup();
+            return;
+          }
+
+          notify({
+            message: response?.ErrorMessage || 'No se pudo cambiar la contraseña.',
+            width: 'auto',
+            shading: false,
+          }, 'error', 5000);
+        },
+        error: (error: any) => {
+          this.savingPassword = false;
+          const message = error?.error?.ErrorMessage || error?.message || error || 'Error al cambiar la contraseña.';
+          notify({ message, width: 'auto', shading: false, closeOnClick: true }, 'error', 6000);
+        },
+      });
   }
 
   logout() {

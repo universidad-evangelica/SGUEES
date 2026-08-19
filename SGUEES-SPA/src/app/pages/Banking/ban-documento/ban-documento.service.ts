@@ -104,6 +104,33 @@ export class BanDocumentoService {
 
 		}
 
+		if (model.CLASE_MOVIMIENTO === 'TPR') {
+			if (!model.CORR_CUENTA_BANCO_DESTINO || model.CORR_CUENTA_BANCO_DESTINO <= 0) {
+				msg('Debe seleccionar la cuenta bancaria destino', NotifyType.Error);
+				return false;
+			}
+			if (model.CORR_CUENTA_BANCO_DESTINO === model.CORR_CUENTA_BANCO) {
+				msg('La cuenta destino debe ser diferente a la cuenta origen', NotifyType.Error);
+				return false;
+			}
+		}
+
+		if (model.CLASE_MOVIMIENTO === 'TTE') {
+			if (!model.NUMERO_CUENTA_DESTINO_TERCERO?.trim()) {
+				msg('Debe indicar la cuenta bancaria destino del tercero', NotifyType.Error);
+				return false;
+			}
+		}
+
+		if (model.CLASE_MOVIMIENTO === 'TPR' || model.CLASE_MOVIMIENTO === 'TTE') {
+			const montoDestino =
+				model.MONTO_DESTINO && model.MONTO_DESTINO > 0 ? model.MONTO_DESTINO : model.MONTO_DOCUMENTO;
+			if (!montoDestino || montoDestino <= 0) {
+				msg('Debe indicar el monto destino', NotifyType.Error);
+				return false;
+			}
+		}
+
 		return true;
 
 	}
@@ -353,214 +380,169 @@ export class BanDocumentoService {
 
 
 
-	getItems(esCheque: boolean): any {
-
-		const items: any[] = [
-
+	getItems(esCheque: boolean): any[] {
+		return [
 			{
-
-				dataField: 'ANIO_PERIODO',
-
-				label: { text: 'Año' },
-
-				colSpan: 2,
-
-				editorOptions: { readOnly: true },
-
-			},
-
-			{
-
-				dataField: 'MES_PERIODO',
-
-				label: { text: 'Mes' },
-
-				colSpan: 2,
-
-				template: 'MES_PERIODOLookup',
-
-			},
-
-			{
-
-				dataField: 'CORR_TIPO_MOVIMIENTO',
-
-				label: { text: 'Tipo movimiento' },
-
-				colSpan: 3,
-
-				template: 'CORR_TIPO_MOVIMIENTOLookup',
-
-			},
-
-			{
-
-				dataField: 'ESTADO_DOCUMENTO',
-
-				label: { text: 'Estado' },
-
-				colSpan: 3,
-
-				template: 'ESTADO_DOCUMENTOLookup',
-
-			},
-
-			{
-
-				dataField: 'CORR_DOCUMENTO',
-
-				label: { text: 'No. documento' },
-
-				colSpan: 2,
-
-				editorOptions: { readOnly: true },
-
-			},
-
-			{
-
-				dataField: 'NUMERO_DOCUMENTO',
-
-				label: { text: 'Número' },
-
-				colSpan: 2,
-
-				editorOptions: { readOnly: true },
-
-			},
-
-			{
-
-				dataField: 'CORR_CUENTA_BANCO',
-
-				label: { text: 'Cuenta bancaria' },
-
-				colSpan: 4,
-
-				template: 'CORR_CUENTA_BANCOLookup',
-
-			},
-
-			{
-
-				dataField: 'FECHA_EMISION',
-
-				label: { text: 'Fecha emisión' },
-
-				colSpan: 2,
-
-				editorType: 'dxDateBox',
-
-				editorOptions: { type: 'date', displayFormat: 'dd/MM/yyyy' },
-
-			},
-
-		];
-
-
-
-		items.push({
-
-			dataField: 'CORR_TIPO_CHEQUE',
-
-			label: { text: esCheque ? 'Tipo cheque' : 'Tipo beneficiario' },
-
-			colSpan: 2,
-
-			template: 'CORR_TIPO_CHEQUELookup',
-
-		});
-
-		items.push(
-
-			{
-
-				dataField: 'CORR_PROVEEDOR',
-
-				label: { text: 'Proveedor' },
-
-				colSpan: 2,
-
-				template: 'CORR_PROVEEDORLookup',
-
-			},
-
-			{
-
-				dataField: 'CORR_EMPLEADO',
-
-				label: { text: 'Empleado' },
-
-				colSpan: 2,
-
-				template: 'CORR_EMPLEADOLookup',
-
-			},
-
-			{
-
-				dataField: 'CORR_CLIENTE',
-
-				label: { text: 'Cliente' },
-
-				colSpan: 2,
-
-				template: 'CORR_CLIENTELookup',
-
-			}
-
-		);
-
-
-
-		items.push(
-
-			{
-
-				dataField: 'NOMBRE_BENEFICIARIO',
-
-				label: { text: 'Beneficiario' },
-
-				colSpan: 2,
-
-				editorOptions: { showClearButton: true, maxLength: 255 },
-
-			},
-
-			{
-
-				dataField: 'MONTO_DOCUMENTO',
-
-				label: { text: 'Monto' },
-
-				colSpan: 2,
-
-				editorType: 'dxNumberBox',
-
-				editorOptions: { format: '#,##0.00', min: 0 },
-
-			},
-
-			{
-
-				dataField: 'NOMBRE_PARTIDA',
-
-				label: { text: 'Concepto' },
-
+				itemType: 'group',
+				colCount: 8,
 				colSpan: 8,
-
-				editorType: 'dxTextArea',
-
-				editorOptions: { height: 64, maxLength: 1000 },
-
-			}
-
-		);
-
-
-
-		return items;
-
+				items: [
+					{
+						dataField: 'ANIO_PERIODO',
+						label: { text: 'Año' },
+						colSpan: 2,
+						editorOptions: { readOnly: true },
+					},
+					{
+						dataField: 'MES_PERIODO',
+						label: { text: 'Mes' },
+						colSpan: 2,
+						template: 'MES_PERIODOLookup',
+					},
+					{
+						dataField: 'FECHA_EMISION',
+						label: { text: 'Fecha' },
+						colSpan: 2,
+						editorType: 'dxDateBox',
+						editorOptions: { type: 'date', displayFormat: 'dd/MM/yyyy' },
+					},
+					{
+						dataField: 'ESTADO_DOCUMENTO',
+						label: { text: 'Estado' },
+						colSpan: 2,
+						template: 'ESTADO_DOCUMENTOLookup',
+					},
+					{
+						dataField: 'CORR_DOCUMENTO',
+						label: { text: 'Corr.' },
+						colSpan: 1,
+						editorOptions: { readOnly: true },
+					},
+					{
+						dataField: 'CORR_TIPO_MOVIMIENTO',
+						label: { text: 'Tipo' },
+						colSpan: 4,
+						template: 'CORR_TIPO_MOVIMIENTOLookup',
+					},
+					{
+						dataField: 'NUMERO_DOCUMENTO',
+						label: { text: 'No. Doc' },
+						colSpan: 3,
+						editorOptions: { readOnly: true },
+					},
+					{
+						dataField: 'CORR_CUENTA_BANCO',
+						label: { text: 'Cuenta' },
+						colSpan: 5,
+						template: 'CORR_CUENTA_BANCOLookup',
+					},
+					{
+						dataField: 'MONTO_DOCUMENTO',
+						label: { text: 'Monto' },
+						colSpan: 2,
+						editorType: 'dxNumberBox',
+						editorOptions: { format: '#,##0.00', min: 0 },
+					},
+					{
+						dataField: 'ESTA_CONTABILIZADO',
+						label: { text: 'Contabilizado' },
+						colSpan: 1,
+						editorType: 'dxCheckBox',
+						editorOptions: { readOnly: true },
+					},
+				],
+			},
+			{
+				itemType: 'group',
+				name: 'grpTransferencia',
+				colCount: 8,
+				colSpan: 8,
+				visible: false,
+				items: [
+					{
+						dataField: 'CORR_CUENTA_BANCO_DESTINO',
+						label: { text: 'Destino' },
+						colSpan: 6,
+						template: 'CORR_CUENTA_BANCO_DESTINOLookup',
+					},
+					{
+						dataField: 'NUMERO_CUENTA_DESTINO_TERCERO',
+						label: { text: 'Destino' },
+						colSpan: 6,
+						editorOptions: { showClearButton: true, maxLength: 50 },
+					},
+					{
+						dataField: 'MONTO_DESTINO',
+						label: { text: 'Destino' },
+						colSpan: 2,
+						editorType: 'dxNumberBox',
+						editorOptions: { format: '#,##0.00', min: 0 },
+					},
+				],
+			},
+			{
+				itemType: 'group',
+				name: 'grpBeneficiario',
+				colCount: 8,
+				colSpan: 8,
+				visible: false,
+				items: [
+					{
+						dataField: 'CORR_TIPO_CHEQUE',
+						label: { text: esCheque ? 'Tipo cheque' : 'Tipo beneficiario' },
+						colSpan: 2,
+						template: 'CORR_TIPO_CHEQUELookup',
+					},
+					{
+						dataField: 'CORR_PROVEEDOR',
+						label: { text: 'Proveedor' },
+						colSpan: 2,
+						template: 'CORR_PROVEEDORLookup',
+					},
+					{
+						dataField: 'CORR_EMPLEADO',
+						label: { text: 'Empleado' },
+						colSpan: 2,
+						template: 'CORR_EMPLEADOLookup',
+					},
+					{
+						dataField: 'CORR_CLIENTE',
+						label: { text: 'Cliente' },
+						colSpan: 2,
+						template: 'CORR_CLIENTELookup',
+					},
+					{
+						dataField: 'NOMBRE_BENEFICIARIO',
+						label: { text: 'Beneficiario' },
+						colSpan: 4,
+						editorOptions: { showClearButton: true, maxLength: 255 },
+					},
+				],
+			},
+			{
+				itemType: 'group',
+				name: 'grpConcepto',
+				colCount: 8,
+				colSpan: 8,
+				cssClass: 'documento-form-concepto',
+				items: [
+					{
+						dataField: 'NOMBRE_PARTIDA',
+						label: { text: 'Concepto' },
+						colSpan: 4,
+						editorType: 'dxTextArea',
+						editorOptions: { height: 72, maxLength: 1000 },
+					},
+					{
+						dataField: 'CANTIDAD_LETRAS',
+						label: { text: 'Cantidad en letras' },
+						colSpan: 4,
+						editorType: 'dxTextArea',
+						editorOptions: { height: 72, readOnly: true },
+					},
+				],
+			},
+		];
 	}
 
 	getConsultaViewItems(esCheque: boolean): any[] {

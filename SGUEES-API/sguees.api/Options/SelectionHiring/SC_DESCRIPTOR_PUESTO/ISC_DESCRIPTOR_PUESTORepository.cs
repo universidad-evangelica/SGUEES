@@ -17,5 +17,9 @@ namespace SGUEES.Repositories
         Task<CResult> ActualizarEntrenamientoAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         /// <summary>Lookup sc-requisicion-personal: descriptores por empresa + CORR_UNIDAD.</summary>
         Task<CResult> GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(List<CParameter> xWhere);
+        // Actualiza solo RESPONSABLE (Entrenamiento).
+        Task<CResult> UpdateResponsableAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+        // Actualiza solo impacto económico.
+        Task<CResult> UpdateImpactoEconomicoAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
     }
 }

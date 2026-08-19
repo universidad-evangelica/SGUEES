@@ -176,18 +176,9 @@ namespace SGUEES.Services
             return result;
         }
 
-        // Valida inducción y responsable; completa nombre/semanas desde catálogo o conserva snapshot previo.
-        public async Task<CResult> ActualizarEntrenamientoAsync(
-            SC_DESCRIPTOR_PUESTOTable Data,
-            string vLOGIN_SISTEMA,
-            string vESTACION)
+        // Actualiza solo RESPONSABLE desde el editable de Entrenamiento.
+        public async Task<CResult> UpdateResponsableAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            if (Data == null)
-            {
-                return ValidationError("No se recibieron datos del entrenamiento.");
-            }
-
-            // Rechaza si CORR_EMPRESA no viene en la sesión.
             var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
             if (empresaError != null)
             {
@@ -199,62 +190,42 @@ namespace SGUEES.Services
                 return ValidationError("No se pudo identificar el descriptor de puesto a actualizar.");
             }
 
-            if (!Data.CORR_INDUCCION.HasValue || Data.CORR_INDUCCION <= 0)
+            Data.RESPONSABLE = string.IsNullOrWhiteSpace(Data.RESPONSABLE) ? null : Data.RESPONSABLE.Trim();
+            if (!string.IsNullOrWhiteSpace(Data.RESPONSABLE) && Data.RESPONSABLE.Length > 100)
             {
-                return ValidationError("Debe seleccionar una induccion.");
+                return ValidationError("El responsable no puede exceder 100 caracteres.");
             }
 
-            if (string.IsNullOrWhiteSpace(Data.RESPONSABLE))
-            {
-                return ValidationError("Debe ingresar el responsable del entrenamiento.");
-            }
-
-            if (Data.RESPONSABLE.Trim().Length > 100)
-            {
-                return ValidationError("El responsable del entrenamiento no puede superar 100 caracteres.");
-            }
-
-            // Si la inducción no cambió, conserva nombre y semanas guardados (salvo que el cliente envíe nuevos valores).
-            var getActual = await _repo.GetAsync(new List<CParameter>
-            {
-                new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
-            });
-            var actual = getActual?.Data as SC_DESCRIPTOR_PUESTOView;
-            var mismaInduccion = actual != null
-                && actual.CORR_INDUCCION.HasValue
-                && Data.CORR_INDUCCION == actual.CORR_INDUCCION;
-
-            if (mismaInduccion)
-            {
-                Data.NOMBRE_INDUCCION = !string.IsNullOrWhiteSpace(Data.NOMBRE_INDUCCION)
-                    ? Data.NOMBRE_INDUCCION.Trim()
-                    : actual.NOMBRE_INDUCCION;
-                Data.SEMANAS_INDUCCION = Data.SEMANAS_INDUCCION ?? actual.SEMANAS_INDUCCION;
-            }
-            else
-            {
-                var induccion = await _repo.GetInduccionActivaAsync(
-                    Data.CORR_EMPRESA,
-                    Data.CORR_INDUCCION.Value);
-                if (induccion == null)
-                {
-                    return ValidationError("La induccion seleccionada no existe o se encuentra inactiva.");
-                }
-
-                Data.NOMBRE_INDUCCION = induccion.NOMBRE_INDUCCION;
-                Data.SEMANAS_INDUCCION = induccion.SEMANAS_INDUCCION;
-            }
-
-            Data.RESPONSABLE = Data.RESPONSABLE.Trim();
-            Data.USUARIO_ACTU = vLOGIN_SISTEMA;
-            Data.ESTACION_ACTU = vESTACION;
-            Data.FECHA_ACTU = DateTime.Now;
-
-            return await _repo.ActualizarEntrenamientoAsync(Data, vLOGIN_SISTEMA, vESTACION);
+            return await _repo.UpdateResponsableAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
-        // Valida empresa y elimina el descriptor con sus registros relacionados.
+        // Actualiza solo impacto económico desde la fila virtual de Responsabilidades.
+        public async Task<CResult> UpdateImpactoEconomicoAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            if (Data.CORR_DESCRIPTOR_PUESTO <= 0)
+            {
+                return ValidationError("No se pudo identificar el descriptor de puesto a actualizar.");
+            }
+
+            Data.DESCRIPCION_IMPACTO_ECONOMICO = string.IsNullOrWhiteSpace(Data.DESCRIPCION_IMPACTO_ECONOMICO)
+                ? null
+                : Data.DESCRIPCION_IMPACTO_ECONOMICO.Trim();
+
+            if (!string.IsNullOrWhiteSpace(Data.DESCRIPCION_IMPACTO_ECONOMICO) && Data.DESCRIPCION_IMPACTO_ECONOMICO.Length > 255)
+            {
+                return ValidationError("La descripcion del impacto economico no puede exceder 255 caracteres.");
+            }
+
+            return await _repo.UpdateImpactoEconomicoAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+	// Valida empresa y elimina el descriptor con sus registros relacionados.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             // Rechaza si CORR_EMPRESA no viene en la sesión.
@@ -346,7 +317,7 @@ namespace SGUEES.Services
 
             if (!Data.CORR_PUESTO_REPORTA.HasValue || Data.CORR_PUESTO_REPORTA <= 0)
             {
-                return ValidationError("Debe seleccionar el puesto al que reporta.");
+                return ValidationError("Debe seleccionar a quien reporta (jefe de la unidad).");
             }
 
             if (!Data.FECHA_EMISION.HasValue)

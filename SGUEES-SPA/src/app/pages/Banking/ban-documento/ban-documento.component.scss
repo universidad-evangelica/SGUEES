@@ -9,6 +9,26 @@
 	margin-bottom: 0;
 }
 
+.documento-form {
+	::ng-deep .dx-field-item-content .dx-texteditor,
+	::ng-deep .dx-field-item-content .dx-textarea {
+		width: 100%;
+	}
+
+	::ng-deep .dx-field-item-content .dx-texteditor-container,
+	::ng-deep .dx-field-item-content .dx-texteditor-input-container {
+		width: 100%;
+	}
+
+	::ng-deep .dx-field-item:has(.dx-form-group) {
+		width: 100%;
+	}
+
+	::ng-deep .documento-form-concepto .dx-textarea {
+		min-height: 72px;
+	}
+}
+
 .documento-section-head {
 	display: flex;
 	flex-direction: column;

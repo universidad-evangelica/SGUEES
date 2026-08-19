@@ -41,31 +41,37 @@
 					[readOnly]="readOnly"
 					(onFieldDataChanged)="onHeaderFieldChanged($event)"
 				>
+					<!-- Motivo: el combo muestra el nombre guardado en el descriptor; el dropdown lista el catálogo actual. -->
 					<div *dxTemplate="let cellInfo of 'CORR_UNIDADLookup'">
 						<div class="descriptor-lookup-field" [class.descriptor-lookup-field--invalid]="unidadInvalido">
 							<app-data-lookup
-								[model]="mCORR_UNIDAD"
+								[model]="mCORR_UNIDAD_EDIT"
 								[value]="model.CORR_UNIDAD"
 								(valueChange)="onUnidadChanged($event)"
 								[valueExpr]="'CORR_UNIDAD'"
 								[displayExpr]="'NOMBRE_UNIDAD'"
+								[lookupColumns]="unidadLookupColumns"
 								[selectedRowKeys]="selectedLookUpCORR_UNIDAD"
 								[readOnly]="readOnly"
+								[dropDownWidth]="420"
 							></app-data-lookup>
 						</div>
 					</div>
 
+					<!-- Motivo: el combo muestra el nombre guardado en el descriptor; el dropdown lista el catálogo actual. -->
 					<div *dxTemplate="let cellInfo of 'CORR_PUESTOLookup'">
 						<div class="descriptor-puesto-row descriptor-lookup-field" [class.descriptor-lookup-field--invalid]="puestoInvalido">
 							<app-data-lookup
 								class="descriptor-puesto-select"
-								[model]="mCORR_PUESTO"
+								[model]="mCORR_PUESTO_EDIT"
 								[value]="model.CORR_PUESTO"
 								(valueChange)="onPuestoChanged($event)"
 								[valueExpr]="'CORR_PUESTO'"
 								[displayExpr]="'NOMBRE_PUESTO'"
+								[lookupColumns]="puestoLookupColumns"
 								[selectedRowKeys]="selectedLookUpCORR_PUESTO"
 								[readOnly]="readOnly || !model.CORR_UNIDAD"
+								[dropDownWidth]="420"
 							></app-data-lookup>
 							<dx-button
 								icon="plus"
@@ -84,14 +90,14 @@
 								[model]="mCORR_PUESTO_REPORTA"
 								[value]="model.CORR_PUESTO_REPORTA"
 								(valueChange)="onPuestoReportaChanged($event)"
-								[valueExpr]="'CORR_PUESTO'"
-								[displayExpr]="'RESPONSABLE'"
+								[valueExpr]="'CORR_EMPLEADO'"
+								[displayExpr]="'NOMBRE_EMPLEADO'"
 								[lookupColumns]="reportaLookupColumns"
 								[selectedRowKeys]="selectedLookUpCORR_PUESTO_REPORTA"
 								[readOnly]="readOnly || !model.CORR_PUESTO"
 							></app-data-lookup>
 						</div>
-						<div class="descriptor-help-text">Se carga segun el puesto seleccionado.</div>
+						<div class="descriptor-help-text">Jefes activos de la unidad seleccionada.</div>
 					</div>
 				</dx-form>
 			</div>
@@ -552,12 +558,12 @@
 							</div>
 							<dxi-column
 								dataField="META"
-								caption="Meta"
+								caption="Meta %"
 								[width]="110"
 								dataType="number"
 								[allowSorting]="true"
 								[format]="'#0'"
-								[editorOptions]="{ min: 0, max: 100, step: 1, showSpinButtons: false, format: '#0' }"
+								[editorOptions]="{ step: 1, showSpinButtons: false, format: '#0' }"
 							></dxi-column>
 						</dx-data-grid>
 					</div>
@@ -1166,6 +1172,7 @@
 											caption="Nombre (descriptor)"
 											[minWidth]="220"
 											[allowSorting]="true"
+											[allowEditing]="false"
 										></dxi-column>
 										<dxi-column
 											dataField="NIVEL_DOMINIO"
@@ -1331,20 +1338,22 @@
 												[dropDownWidth]="520"
 											></app-data-lookup>
 										</div>
+										<!-- Habilitar edición de nombre: [allowEditing]="competenciasConductualesEditando && !readOnly" -->
 										<dxi-column
 											dataField="NOMBRE_COMPETENCIAS_CONDUCTUALES"
 											caption="Nombre (descriptor)"
 											[minWidth]="220"
 											[allowSorting]="true"
-											[allowEditing]="competenciasConductualesEditando && !readOnly"
+											[allowEditing]="false"
 										></dxi-column>
+										<!-- Habilitar edición de descripción: [allowEditing]="competenciasConductualesEditando && !readOnly" -->
 										<dxi-column
 											dataField="DESCRIPCION"
 											caption="Descripcion"
 											[minWidth]="220"
 											[allowSorting]="true"
 											[visible]="esFormatoExtenso"
-											[allowEditing]="competenciasConductualesEditando && !readOnly"
+											[allowEditing]="false"
 										></dxi-column>
 									</dx-data-grid>
 								</div>
@@ -1767,11 +1776,13 @@
 									[dropDownWidth]="520"
 								></app-data-lookup>
 							</div>
+							<!-- se agregó para no permitir edición de descripción: [allowEditing]="false" -->
 							<dxi-column
 								dataField="DESCRIPCION"
 								caption="Descripcion"
 								[minWidth]="280"
 								[allowSorting]="true"
+								[allowEditing]="false"
 							></dxi-column>
 						</dx-data-grid>
 					</div>
@@ -1931,6 +1942,7 @@
 								caption="Nombre (descriptor)"
 								[minWidth]="220"
 								[allowSorting]="true"
+								[allowEditing]="false"
 							></dxi-column>
 							<dxi-column
 								dataField="INFORMACION"
@@ -2098,6 +2110,7 @@
 								caption="Nombre (descriptor)"
 								[minWidth]="220"
 								[allowSorting]="false"
+								[allowEditing]="false"
 							></dxi-column>
 							<dxi-column
 								dataField="INFORMACION"
@@ -2138,90 +2151,171 @@
 					</div>
 				</dxi-item>
 
-				<!-- Entrenamiento: inducción, duración y responsable. -->
+				<!-- Entrenamiento: inducciones del descriptor; al final, fila fija de responsable. -->
 				<dxi-item title="Entrenamiento">
 					<div class="descriptor-sub-tab-content">
-						<div class="descriptor-perfil-header">
+						<div class="descriptor-funciones-header">
 							<h4 class="descriptor-sub-tab-heading">
-								<span class="dx-icon-toolbox descriptor-perfil-icon" aria-hidden="true"></span>
+								<span class="dx-icon-toolbox descriptor-funciones-icon" aria-hidden="true"></span>
 								Entrenamiento
 							</h4>
-							<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
-								<dx-button
-									class="descriptor-deta-toolbar-btn"
-									*ngIf="!entrenamientoEditando"
-									icon="edit"
-									text="Editar entrenamiento"
-									type="default"
-									stylingMode="contained"
-									[disabled]="!model.CORR_DESCRIPTOR_PUESTO"
-									(onClick)="editarEntrenamiento()"
-								></dx-button>
-								<dx-button
-									class="descriptor-deta-toolbar-btn"
-									*ngIf="entrenamientoEditando"
-									icon="save"
-									text="Guardar"
-									type="success"
-									stylingMode="contained"
-									(onClick)="guardarEntrenamiento()"
-								></dx-button>
-								<dx-button
-									class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
-									*ngIf="entrenamientoEditando"
-									icon="revert"
-									text="Cancelar edición"
-									type="danger"
-									stylingMode="contained"
-									(onClick)="cancelarEdicionEntrenamiento()"
-								></dx-button>
-							</div>
 						</div>
 
-						<div class="descriptor-perfil-tab-content">
-							<div class="descriptor-perfil-form">
-								<div class="descriptor-perfil-row descriptor-perfil-row--secondary">
-									<div class="descriptor-perfil-field">
-										<label class="descriptor-perfil-label">Tipo de Inducción</label>
-										<div
-											class="descriptor-lookup-field"
-											[class.descriptor-lookup-field--invalid]="induccionInvalida"
-										>
-											<app-data-lookup
-												[model]="mCORR_INDUCCION_EDIT"
-												[value]="model.CORR_INDUCCION"
-												(valueChange)="onEntrenamientoInduccionChanged($event)"
-												[valueExpr]="'CORR_INDUCCION'"
-												[displayExpr]="'NOMBRE_INDUCCION'"
-												[lookupColumns]="induccionesLookupColumns"
-												[selectedRowKeys]="selectedLookUpCORR_INDUCCION"
-												[readOnly]="readOnly || !entrenamientoEditando"
-												[dropDownWidth]="420"
-											></app-data-lookup>
-										</div>
-									</div>
+						<div class="descriptor-deta-toolbar" *ngIf="!readOnly">
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="add"
+								text="Agregar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="agregarInduccion()"
+								[disabled]="induccionesEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="save"
+								text="Guardar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="guardarInduccionEditada()"
+								[disabled]="!induccionesEditando"
+							></dx-button>
+							<dx-button
+								class="descriptor-deta-toolbar-btn descriptor-deta-toolbar-btn--cancel"
+								icon="revert"
+								text="Cancelar"
+								type="danger"
+								stylingMode="contained"
+								(onClick)="cancelarInduccionEditada()"
+								[disabled]="!induccionesEditando"
+							></dx-button>
+						</div>
 
-									<div class="descriptor-perfil-field">
-										<label class="descriptor-perfil-label">Duración</label>
-										<dx-text-box
-											[value]="model.SEMANAS_INDUCCION != null ? model.SEMANAS_INDUCCION + ' semanas' : ''"
-											[readOnly]="true"
-											placeholder="Duración del entrenamiento..."
-										></dx-text-box>
-									</div>
-
-									<div class="descriptor-perfil-field">
-										<label class="descriptor-perfil-label">Responsable</label>
-										<dx-text-box
-											[(value)]="model.RESPONSABLE"
-											[readOnly]="readOnly || !entrenamientoEditando"
-											[maxLength]="100"
-											placeholder="Responsables del entrenamiento..."
-										></dx-text-box>
-									</div>
+						<dx-data-grid
+							#gridInducciones
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid descriptor-deta-datagrid--wrap-text"
+							[dataSource]="induccionesDescriptor"
+							keyExpr="_clientKey"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[width]="'100%'"
+							[wordWrapEnabled]="true"
+							[repaintChangesOnly]="false"
+							(onInitNewRow)="induccionInitNewRow($event)"
+							(onEditingStart)="onInduccionEditingStart($event)"
+							(onEditorPreparing)="onInduccionEditorPreparing($event)"
+							(onSaved)="onInduccionSaved($event)"
+							(onEditCanceled)="onInduccionEditCanceled($event)"
+							(onRowInserting)="induccionRowInserting($event)"
+							(onRowUpdating)="induccionRowUpdating($event)"
+							(onRowRemoving)="induccionRowRemoving($event)"
+							(onRowValidating)="induccionRowValidating($event)"
+						>
+							<dxo-editing
+								[mode]="'row'"
+								[refreshMode]="'reshape'"
+								[allowUpdating]="!readOnly"
+								[allowDeleting]="!readOnly"
+								[useIcons]="true"
+								[selectTextOnEditStart]="true"
+								[newRowPosition]="'first'"
+							></dxo-editing>
+							<dxo-paging [enabled]="false"></dxo-paging>
+							<dxi-column
+								type="buttons"
+								name="btnAcciones"
+								caption="Options"
+								[width]="104"
+								[minWidth]="104"
+								[fixed]="true"
+								fixedPosition="left"
+								alignment="center"
+								[allowResizing]="false"
+							>
+								<dxi-button
+									hint="Editar registro"
+									icon="edit"
+									stylingMode="text"
+									cssClass="sguees-grid-action-edit"
+									[visible]="induccionEditButtonVisible"
+									[onClick]="editarInduccionClick"
+								></dxi-button>
+								<dxi-button
+									name="delete"
+									hint="Eliminar registro"
+									icon="trash"
+									stylingMode="text"
+									cssClass="sguees-grid-action-delete"
+									[visible]="induccionDeleteButtonVisible"
+								></dxi-button>
+								<dxi-button name="save" [visible]="false"></dxi-button>
+								<dxi-button name="cancel" [visible]="false"></dxi-button>
+								<dxi-button name="edit" [visible]="false"></dxi-button>
+							</dxi-column>
+							<dxi-column
+								name="codigoInduccion"
+								dataField="CORR_INDUCCION"
+								caption="Codigo"
+								[width]="90"
+								[allowEditing]="false"
+								[allowSorting]="true"
+								dataType="number"
+								alignment="left"
+							></dxi-column>
+							<dxi-column
+								name="lookupInduccion"
+								dataField="CORR_INDUCCION"
+								caption="Induccion"
+								[width]="140"
+								[minWidth]="120"
+								[allowSorting]="true"
+								[visible]="induccionesInsertando"
+								[calculateDisplayValue]="induccionCatalogDisplay"
+								[setCellValue]="setInduccionCellValue"
+								[editCellTemplate]="'CORR_INDUCCIONLookup'"
+							>
+								<dxo-lookup
+									[dataSource]="mCORR_INDUCCION"
+									valueExpr="CORR_INDUCCION"
+									displayExpr="NOMBRE_INDUCCION"
+								></dxo-lookup>
+							</dxi-column>
+							<div *dxTemplate="let cellInfo of 'CORR_INDUCCIONLookup'">
+								<div class="descriptor-riesgo-lookup-cell">
+									<app-data-lookup
+										[model]="mCORR_INDUCCION_DISPONIBLES"
+										[value]="cellInfo.value"
+										(valueChange)="onInduccionLookupChanged($event, cellInfo)"
+										[valueExpr]="'CORR_INDUCCION'"
+										[displayExpr]="'NOMBRE_INDUCCION'"
+										[lookupColumns]="induccionesLookupColumns"
+										[selectedRowKeys]="selectedLookUpCORR_INDUCCION"
+										[showClearButton]="true"
+										[dropDownWidth]="520"
+									></app-data-lookup>
 								</div>
 							</div>
-						</div>
+							<dxi-column
+								dataField="NOMBRE_INDUCCION"
+								caption="Nombre (descriptor)"
+								[minWidth]="220"
+								[allowSorting]="true"
+								[allowEditing]="false"
+							></dxi-column>
+							<dxi-column
+								dataField="TIEMPO_INDUCCION"
+								caption="Informacion"
+								[minWidth]="220"
+								[allowSorting]="false"
+								[editorOptions]="{ maxLength: 100, showClearButton: true }"
+							></dxi-column>
+						</dx-data-grid>
 					</div>
 				</dxi-item>
 			</dx-tab-panel>

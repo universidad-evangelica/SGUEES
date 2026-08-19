@@ -342,7 +342,7 @@ namespace SGUEES.Repositories
         }
 
         // Qué hace: obtiene disponibilidades de horario activas para lookups.
-        // Cómo: ejecuta una consulta SQL sobre V_SC_DISPONIBILIDAD_HORARIO filtrando por CORR_EMPRESA y ESTADO_DISPONIBILIDAD_HORARIO activo.
+        // Cómo: ejecuta una consulta SQL sobre V_SC_DISPONIBILIDAD_HORARIO filtrando por CORR_EMPRESA y ESTADO_DISPONIBILIDAD_HORARIO activo, ordenado por CORR_DISPONIBILIDAD_HORARIO.
         public async Task<CResult> GetDisponibilidadesActivasAsync(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -363,7 +363,7 @@ namespace SGUEES.Repositories
                     FROM V_SC_DISPONIBILIDAD_HORARIO
                     WHERE CORR_EMPRESA = @CORR_EMPRESA
                       AND ISNULL(ESTADO_DISPONIBILIDAD_HORARIO, 1) = 1
-                    ORDER BY NOMBRE_DISPONIBILIDAD_HORARIO";
+                    ORDER BY CORR_DISPONIBILIDAD_HORARIO";
 
                 var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, xWhere);
                 var response = new List<SC_DISPONIBILIDAD_HORARIOView>().FromDataReader(reader).ToList();

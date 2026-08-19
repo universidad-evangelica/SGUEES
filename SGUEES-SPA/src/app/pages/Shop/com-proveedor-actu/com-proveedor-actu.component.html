@@ -1,38 +1,15 @@
-<div class="view-wrapper list-page">
-  <!-- <app-barra-data-mtto
-	[tituloVentana]="tituloVentana"
-	[isBrowse]="isBrowse()"
-	[isForm]="isForm()"
-	[permiteAdd]="false"
-	(nuevo)="nuevo()"
-	(guardar)="guardar()"
-  (consultar)="consultar()"
-  [showRefresh]="true"
+<div class="sguees-mtto-view">
+  <app-barra-data-mtto
+    [tituloVentana]="tituloVentana"
+    [isBrowse]="isBrowse()"
+    [isForm]="isForm()"
+    [permiteAdd]="false"
+    (guardar)="guardar()"
+    (cancelar)="cancelar()"
   >
-  </app-barra-data-mtto> -->
+  </app-barra-data-mtto>
 
-  <dx-toolbar class="theme-dependent">
-    <dxi-item location="before">
-      <span class="toolbar-header">{{ tituloVentana }}</span>
-    </dxi-item>
-    <dxi-item
-      location="before"
-      widget="dxButton"
-      [options]="{
-        icon: 'save',
-        text: 'Guardar',
-        type: 'success',
-        stylingMode: 'contained',
-        height: '30',
-        width: '110',
-        onClick: guardar,
-        visible: true
-      }"
-    ></dxi-item>
-  </dx-toolbar>
-
-
-  <div *ngIf="!isBrowse()">
+  <div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
     <dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="6" [items]="items">
       <dxi-item
       [dataField]="'CORR_PROVEEDOR'"

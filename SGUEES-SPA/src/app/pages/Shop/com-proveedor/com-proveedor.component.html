@@ -1,4 +1,4 @@
-<div class="view-wrapper list-page">
+<div class="sguees-mtto-view">
   <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[isBrowse]="isBrowse()"
@@ -7,8 +7,6 @@
 	(nuevo)="nuevo()"
 	(guardar)="guardar()"
 	(cancelar)="cancelar()"
-  (consultar)="consultar()"
-  [showRefresh]="true"
   >
   </app-barra-data-mtto>
 
@@ -209,6 +207,13 @@
       [editorOptions] ="{ placeholder: '', showClearButton: false }"
       [template]="'CORR_CONDICION_PAGOLookup'">
       </dxi-item>
+      <dxi-item
+      [dataField]="'CORR_SECTOR'"
+      [label]="{ text: 'Sector' }"
+      [colSpan]="1"
+      [editorOptions] ="{ placeholder: '', showClearButton: false }"
+      [template]="'CORR_SECTORLookup'">
+      </dxi-item>
 
       <div *dxTemplate="let cellInfo of 'CORR_TIPO_DIPLookup'">
         <app-data-lookup
@@ -321,6 +326,17 @@
           [valueExpr]="'CORR_CONDICION_PAGO'"
           [displayExpr]="'NOMBRE_CONDICION_PAGO'"
           [selectedRowKeys]="selectedLookUpCORR_CONDICION_PAGO"
+          [readOnly]="readOnly"
+        >
+        </app-data-lookup>
+      </div>
+      <div *dxTemplate="let cellInfo of 'CORR_SECTORLookup'">
+        <app-data-lookup
+          [model]="mCORR_SECTOR"
+          [(value)]="model.CORR_SECTOR"
+          [valueExpr]="'CORR_SECTOR'"
+          [displayExpr]="'NOMBRE_SECTOR'"
+          [selectedRowKeys]="selectedLookUpCORR_SECTOR"
           [readOnly]="readOnly"
         >
         </app-data-lookup>
@@ -538,6 +554,10 @@
     [columns]="columns"
     [summary]="summary"
     [keyExpr]="'CORR_PROVEEDOR'"
+    [showAdd]="false"
+    [showRefresh]="true"
+    [showExport]="true"
+    (refresh)="consultar()"
     [permiteEditar]="getPermiteEditar"
     [permiteDele]="false"
     (rowDblClick)="rowDblClick($event)"

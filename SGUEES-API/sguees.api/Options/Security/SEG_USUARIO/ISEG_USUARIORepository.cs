@@ -13,5 +13,7 @@ namespace sguees.Repositories
 	Task<CResult> RegistrarLoginHistorialAsync(string loginSistema, string ipAddress, string navegador, string codigoSuite, bool exitoso, string mensaje, bool esCambioClave = false);
 		Task<SEG_USUARIO_EXPIRACION_CLAVEView> ValidarExpiracionClaveAsync(string loginSistema);
 		Task<List<SEG_USUARIO_CLAVE_HISTORIALView>> GetUltimasClavesAsync(string loginSistema, int numeroUltimasClaves);
+		Task<System.DateTime?> GetUltimoAccesoExitosoAsync(string loginSistema);
+		Task<string> GetNombreEmpresaAsync(int corrEmpresa);
 	}
 }

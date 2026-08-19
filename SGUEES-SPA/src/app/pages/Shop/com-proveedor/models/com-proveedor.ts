@@ -44,4 +44,6 @@ export interface ComProveedor {
 	FECHA_ACTU: Date;
 	ESTACION_ACTU: string;
   CORR_CONDICION_PAGO: number;
+  CORR_SECTOR: number;
+  NOMBRE_SECTOR: string;
 }

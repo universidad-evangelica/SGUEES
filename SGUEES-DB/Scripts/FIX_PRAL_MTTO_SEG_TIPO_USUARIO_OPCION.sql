@@ -1,8 +1,10 @@
 /* ============================================================================
-   PRAL_MTTO_SEG_TIPO_USUARIO_OPCION — propagación segura
+   PRAL_MTTO_SEG_TIPO_USUARIO_OPCION — propagación alta/baja
    - Al AGREGAR opción al tipo: inserta en usuarios del mismo TIPO_USUARIO
      (solo si existe en SEG_CONFIG_OPCION y el usuario no la tiene)
-   - NO elimina ni sobrescribe permisos existentes del usuario
+   - Al QUITAR opción del tipo (delete o permisos en cero): elimina la opción
+     en SEG_USUARIO_OPCION de todos los usuarios de ese TIPO_USUARIO
+   - Update de permisos del tipo: NO sobrescribe permisos del usuario
    ============================================================================
    Ejecutar:
      sqlcmd -S <servidor> -U <usuario> -d SGUEES -f 65001 -i FIX_PRAL_MTTO_SEG_TIPO_USUARIO_OPCION.sql
@@ -108,6 +110,15 @@ BEGIN
 		BEGIN
 			IF @NUEVO=0 AND @MODIFICAR=0 AND @ELIMINAR=0 AND @IMPRIMIR=0
 			BEGIN
+				/* Propagar baja a usuarios del mismo tipo */
+				DELETE O
+				FROM SEG_USUARIO_OPCION O
+				INNER JOIN SEG_USUARIO U ON U.LOGIN_SISTEMA = O.LOGIN_SISTEMA
+				WHERE U.TIPO_USUARIO = @TIPO_USUARIO
+				AND O.CODIGO_SISTEMA = @CODIGO_SISTEMA
+				AND O.CODIGO_MENU = @CODIGO_MENU
+				AND O.CODIGO_OPCION = @CODIGO_OPCION
+
 				DELETE FROM SEG_TIPO_USUARIO_OPCION
 				WHERE TIPO_USUARIO=@TIPO_USUARIO
 				AND CODIGO_SISTEMA=@CODIGO_SISTEMA
@@ -131,6 +142,15 @@ BEGIN
 		END ELSE
 		IF @TIPO_ACTUALIZA=3 --Eliminar
 		BEGIN
+			/* Propagar baja a usuarios del mismo tipo */
+			DELETE O
+			FROM SEG_USUARIO_OPCION O
+			INNER JOIN SEG_USUARIO U ON U.LOGIN_SISTEMA = O.LOGIN_SISTEMA
+			WHERE U.TIPO_USUARIO = @TIPO_USUARIO
+			AND O.CODIGO_SISTEMA = @CODIGO_SISTEMA
+			AND O.CODIGO_MENU = @CODIGO_MENU
+			AND O.CODIGO_OPCION = @CODIGO_OPCION
+
 			DELETE FROM SEG_TIPO_USUARIO_OPCION
 			WHERE TIPO_USUARIO=@TIPO_USUARIO
 			AND CODIGO_SISTEMA=@CODIGO_SISTEMA
@@ -169,5 +189,5 @@ FINA:
 END
 GO
 
-PRINT N'PRAL_MTTO_SEG_TIPO_USUARIO_OPCION actualizado (propagación segura, sin borrar permisos de usuario).';
+PRINT N'PRAL_MTTO_SEG_TIPO_USUARIO_OPCION actualizado (propagación alta/baja a usuarios del tipo).';
 GO

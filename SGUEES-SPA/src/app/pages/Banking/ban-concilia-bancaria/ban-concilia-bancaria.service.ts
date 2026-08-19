@@ -121,21 +121,24 @@ export class BanConciliaBancariaService {
 
 	getItems(): any[] {
 		return [
-			{ dataField: 'CORR_CUENTA_BANCO', label: { text: 'Cuenta bancaria' }, colSpan: 4, template: 'CORR_CUENTA_BANCOLookup' },
-			{ dataField: 'CORR_CONCILIACION', label: { text: 'No. conciliación' }, colSpan: 2, editorOptions: { readOnly: true } },
+			{
+				dataField: 'CORR_CONCILIACION',
+				label: { text: 'Correlativo' },
+				colSpan: 1,
+				editorOptions: { readOnly: true },
+			},
 			{
 				dataField: 'FECHA_CONCILIACION',
-				label: { text: 'Fecha conciliación' },
+				label: { text: 'Fecha' },
 				colSpan: 2,
 				editorType: 'dxDateBox',
 				editorOptions: { type: 'date', displayFormat: 'dd/MM/yyyy' },
 			},
 			{
-				dataField: 'SALDO_CUENTA_BANCO',
-				label: { text: 'Saldo banco' },
-				colSpan: 2,
-				editorType: 'dxNumberBox',
-				editorOptions: { format: '#,##0.00' },
+				dataField: 'CORR_CUENTA_BANCO',
+				label: { text: 'Cuenta bancaria' },
+				colSpan: 5,
+				template: 'CORR_CUENTA_BANCOLookup',
 			},
 			{
 				dataField: 'SALDO_CUENTA_CONTA',
@@ -144,58 +147,74 @@ export class BanConciliaBancariaService {
 				editorType: 'dxNumberBox',
 				editorOptions: { format: '#,##0.00' },
 			},
-			{ dataField: 'ESTADO_CONCILIACION', label: { text: 'Estado' }, colSpan: 2, template: 'ESTADO_CONCILIACIONLookup' },
 			{
-				dataField: 'SEGUN_LIBROS',
-				label: { text: 'Según libros' },
+				dataField: 'SALDO_CUENTA_BANCO',
+				label: { text: 'Saldo bancario' },
 				colSpan: 2,
 				editorType: 'dxNumberBox',
-				editorOptions: { readOnly: true, format: '#,##0.00' },
+				editorOptions: { format: '#,##0.00' },
 			},
+			{
+				dataField: 'ESTADO_CONCILIACION',
+				label: { text: 'Estado' },
+				colSpan: 2,
+				template: 'ESTADO_CONCILIACIONLookup',
+			},
+			{ itemType: 'empty', colSpan: 2 },
 		];
 	}
 
-	getResumenColumns(): any[] {
+	getResumenLineaColumns(): any[] {
 		return [
-			{ dataField: 'TIPO_RESUMEN', caption: 'Tipo', width: 120 },
-			{ dataField: 'NOMBRE_LINEA_TRABAJO', caption: 'Línea trabajo', minWidth: 220 },
-			{ dataField: 'MONTO', caption: 'Monto', width: 130, format: '#,##0.00', alignment: 'right' },
+			{ dataField: 'NOMBRE_LINEA_TRABAJO', caption: 'Línea de trabajo', minWidth: 320 },
+			{ dataField: 'MONTO', caption: 'Monto', width: 140, format: '#,##0.00', alignment: 'right' },
 		];
 	}
 
 	getDetaColumns(): any[] {
 		return [
-			{ dataField: 'FECHA_MOVIMIENTO', caption: 'Fecha', dataType: 'date', width: 110 },
-			{ dataField: 'NOMBRE_TIPO_MOVIMIENTO', caption: 'Tipo movimiento', width: 160 },
-			{ dataField: 'NUMERO_REFERENCIA_BANCO', caption: 'Referencia', width: 140 },
-			{ dataField: 'MONTO_CARGO', caption: 'Cargo', width: 110, format: '#,##0.00', alignment: 'right' },
-			{ dataField: 'MONTO_ABONO', caption: 'Abono', width: 110, format: '#,##0.00', alignment: 'right' },
-			{ dataField: 'NUMERO_DOCUMENTO', caption: 'Doc. contable', width: 120 },
-			{ dataField: 'NOMBRE_TRAN', caption: 'Descripción', minWidth: 180 },
+			{ dataField: 'FECHA_MOVIMIENTO', caption: 'Fecha', dataType: 'date', width: 100 },
+			{ dataField: 'NOMBRE_TIPO_MOVIMIENTO', caption: 'Tipo mov.', width: 130 },
+			{ dataField: 'NUMERO_REFERENCIA_BANCO', caption: 'Referencia', width: 110 },
+			{ dataField: 'CODIGO_TRANSACCION', caption: 'Código', width: 90 },
+			{ dataField: 'DESCRIPCION_TRANSACCION', caption: 'Descripción', minWidth: 140 },
+			{ dataField: 'MONTO_CARGO', caption: 'Cargo', width: 100, format: '#,##0.00', alignment: 'right' },
+			{ dataField: 'MONTO_ABONO', caption: 'Abono', width: 100, format: '#,##0.00', alignment: 'right' },
+			{ dataField: 'ANIO_PERIODO', caption: 'Año', width: 60 },
+			{ dataField: 'MES_PERIODO', caption: 'Mes', width: 50 },
+			{ dataField: 'NUMERO_DOCUMENTO', caption: 'No. doc.', width: 90 },
+			{ dataField: 'NOMBRE_CORTO_CLASE', caption: 'Clase part.', width: 90 },
+			{ dataField: 'NOMBRE_TRAN', caption: 'Detalle transacción', minWidth: 180 },
+			{ dataField: 'MONTO_CARGO_CONTA', caption: 'Cargo conta', width: 100, format: '#,##0.00', alignment: 'right' },
+			{ dataField: 'MONTO_ABONO_CONTA', caption: 'Abono conta', width: 100, format: '#,##0.00', alignment: 'right' },
 		];
 	}
 
 	getPendienteColumns(): any[] {
 		return [
-			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date', width: 110 },
-			{ dataField: 'NUMERO_DOCUMENTO', caption: 'Documento', width: 120 },
-			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase', width: 140 },
-			{ dataField: 'MONTO_CARGO', caption: 'Cargo', width: 110, format: '#,##0.00', alignment: 'right' },
-			{ dataField: 'MONTO_ABONO', caption: 'Abono', width: 110, format: '#,##0.00', alignment: 'right' },
-			{ dataField: 'NOMBRE_TRAN', caption: 'Descripción', minWidth: 180 },
-			{ dataField: 'ESTA_CONCILIA', caption: 'Conciliado', dataType: 'boolean', width: 90 },
+			{ dataField: 'ANIO_PERIODO', caption: 'Año', width: 60 },
+			{ dataField: 'MES_PERIODO', caption: 'Mes', width: 50 },
+			{ dataField: 'NUMERO_DOCUMENTO', caption: 'No. doc.', width: 90 },
+			{ dataField: 'FECHA_PARTIDA', caption: 'Fecha', dataType: 'date', width: 100 },
+			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase part.', width: 100 },
+			{ dataField: 'MONTO_CARGO', caption: 'Cargo', width: 100, format: '#,##0.00', alignment: 'right' },
+			{ dataField: 'MONTO_ABONO', caption: 'Abono', width: 100, format: '#,##0.00', alignment: 'right' },
+			{ dataField: 'NOMBRE_TRAN', caption: 'Descripción del movimiento', minWidth: 200 },
 		];
 	}
 
 	getMoviColumns(): any[] {
 		return [
-			{ dataField: 'NOMBRE_LINEA_TRABAJO', caption: 'Línea trabajo', width: 180 },
-			{ dataField: 'FECHA_MOVIMIENTO', caption: 'Fecha', dataType: 'date', width: 110 },
-			{ dataField: 'NUMERO_DOCUMENTO', caption: 'Documento', width: 120 },
-			{ dataField: 'NUMERO_REFERENCIA_BANCO', caption: 'Referencia banco', width: 140 },
-			{ dataField: 'MONTO_CARGO', caption: 'Cargo', width: 110, format: '#,##0.00', alignment: 'right' },
-			{ dataField: 'MONTO_ABONO', caption: 'Abono', width: 110, format: '#,##0.00', alignment: 'right' },
-			{ dataField: 'NOMBRE_TRAN', caption: 'Descripción', minWidth: 200 },
+			{ dataField: 'CORR_MOVIMIENTO', caption: 'Corr.', width: 60 },
+			{ dataField: 'ANIO_PERIODO', caption: 'Año', width: 60 },
+			{ dataField: 'MES_PERIODO', caption: 'Mes', width: 50 },
+			{ dataField: 'FECHA_MOVIMIENTO', caption: 'Fecha', dataType: 'date', width: 100 },
+			{ dataField: 'NUMERO_DOCUMENTO', caption: 'No. partida', width: 90 },
+			{ dataField: 'NOMBRE_CLASE_PARTIDA', caption: 'Clase', width: 80 },
+			{ dataField: 'NOMBRE_TIPO_MOVIMIENTO', caption: 'Tipo de movimiento', width: 140 },
+			{ dataField: 'NUMERO_REFERENCIA_BANCO', caption: 'No. referencia', width: 110 },
+			{ dataField: 'NOMBRE_TRAN', caption: 'Detalle transacción', minWidth: 200 },
+			{ dataField: 'MONTO', caption: 'Monto', width: 110, format: '#,##0.00', alignment: 'right' },
 		];
 	}
 }

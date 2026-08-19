@@ -31,6 +31,9 @@ namespace sguees.Models
 		public int? CORR_TIPO_CHEQUE { get; set; }
 		public int? CORR_CHEQUERA { get; set; }
 		public string SERIE_CHEQUE { get; set; }
+		public int? CORR_CUENTA_BANCO_DESTINO { get; set; }
+		public string NUMERO_CUENTA_DESTINO_TERCERO { get; set; }
+		public decimal? MONTO_DESTINO { get; set; }
 		public int? CORR_MONEDA { get; set; }
 		public decimal? FACTOR_CAMBIO { get; set; }
 		public string OPERADOR { get; set; }

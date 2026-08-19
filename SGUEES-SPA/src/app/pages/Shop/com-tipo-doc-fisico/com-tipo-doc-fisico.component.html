@@ -1,3 +1,4 @@
+<div class="sguees-mtto-view">
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[isBrowse]="isBrowse()"
@@ -8,7 +9,7 @@
 	(cancelar)="cancelar()"
 >
 </app-barra-data-mtto>
-<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 	<dx-form #fData id="fData" [formData]="model" [labelLocation]="'top'" [colCount]="8" [items]="items">
 	</dx-form>
 </div>
@@ -18,6 +19,11 @@
 	[columns]="columns"
 	[summary]="summary"
 	[keyExpr]="'CORR_TIPO_DOCUMENTO'"
+	[showAdd]="true"
+	[showRefresh]="true"
+	[showExport]="true"
+	(add)="nuevo()"
+	(refresh)="consultar()"
 	[permiteEditar]="getPermiteEditar"
 	[permiteDele]="getPermiteDele"
 	(rowDblClick)="rowDblClick($event)"
@@ -26,6 +32,7 @@
 	(editClick)="editarClick($event)"
 >
 </app-data-grid-mtto>
+</div>
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"

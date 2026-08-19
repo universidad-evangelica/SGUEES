@@ -50,5 +50,7 @@ namespace sguees.Models
 		public string ESTACION_ACTU { get; set; }
 		public int CORR_CONDICION_PAGO { get; set; }
 		public string NOMBRE_CONDICION_PAGO { get; set; }
+		public int CORR_SECTOR { get; set; }
+		public string NOMBRE_SECTOR { get; set; }
 	}
 }

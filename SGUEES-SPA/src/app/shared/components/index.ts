@@ -15,6 +15,7 @@ export * from './library/password-text-box/password-text-box.component';
 export * from './library/pictured-item-select-box/pictured-item-select-box.component';
 export * from './library/profile-card/profile-card.component';
 export * from './library/reset-password-form/reset-password-form.component';
+export * from './library/formulario-empleo-form/formulario-empleo-form.component';
 export * from './library/side-navigation-menu/side-navigation-menu.component';
 export * from './library/status-indicator/status-indicator.component';
 export * from './library/status-select-box/status-select-box.component';

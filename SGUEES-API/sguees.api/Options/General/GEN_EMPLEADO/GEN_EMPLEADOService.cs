@@ -21,6 +21,10 @@ namespace sguees.Services
 			{
 				new() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
 			};
+			if (xWhere.CORR_EMPLEADO > 0)
+			{
+				p.Add(new() { ParameterName = "CORR_EMPLEADO", Value = xWhere.CORR_EMPLEADO, DbType = System.Data.DbType.Int32 });
+			}
 			return await _repo.GetAllAsync(p);
 		}
 

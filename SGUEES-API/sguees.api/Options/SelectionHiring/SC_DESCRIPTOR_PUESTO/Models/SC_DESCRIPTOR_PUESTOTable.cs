@@ -25,12 +25,6 @@ namespace SGUEES.Models
         public int? CORR_IMPACTO_ECONOMICO { get; set; }
         // Snapshot: descripción del impacto económico tomada del catálogo al momento de guardar.
         public string DESCRIPCION_IMPACTO_ECONOMICO { get; set; }
-        // FK al catálogo SC_INDUCCION seleccionado para el entrenamiento del puesto.
-        public int? CORR_INDUCCION { get; set; }
-        // Snapshot: nombre de la inducción tomado del catálogo (o conservado si no cambia, ver ActualizarEntrenamientoAsync).
-        public string NOMBRE_INDUCCION { get; set; }
-        // Snapshot: semanas de duración de la inducción tomadas del catálogo.
-        public int? SEMANAS_INDUCCION { get; set; }
         // Responsable de dar seguimiento al entrenamiento/inducción del puesto.
         public string RESPONSABLE { get; set; }
         // Tipo de formato del descriptor: CORTO o EXTENSO.

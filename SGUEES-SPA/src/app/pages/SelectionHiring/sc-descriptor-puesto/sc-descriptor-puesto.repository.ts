@@ -5,7 +5,7 @@ import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
 import { environment } from 'src/environments/environment';
 
-// Llama a la API del encabezado del descriptor (SC_DESCRIPTOR_PUESTO) y del entrenamiento.
+// Llama a la API del encabezado del descriptor (SC_DESCRIPTOR_PUESTO).
 @Injectable({ providedIn: 'root' })
 export class ScDescriptorPuestoRepository {
 	readonly xController = 'SC_DESCRIPTOR_PUESTO';
@@ -36,25 +36,24 @@ export class ScDescriptorPuestoRepository {
 		return this.objData.Put(model, this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
-	// Qué hace: carga el catálogo de inducciones para el bloque Entrenamiento.
-	// Cómo: GET al controlador SC_INDUCCION (acción de lookup del descriptor).
-	getInducciones(): Observable<IResult> {
-		return this.objData.Get(
-			'SC_INDUCCION',
-			'GetCORR_INDUCCION_SC_DESCRIPTOR_PUESTO',
-			[],
+	// Qué hace: actualiza solo RESPONSABLE (Entrenamiento).
+	updateResponsable(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'UpdateResponsable',
+			xWhere,
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
 	}
 
-	// Qué hace: guarda solo inducción, semanas y responsable.
-	// Cómo: PUT a ActualizarEntrenamiento, pasando el correlativo del descriptor.
-	updateEntrenamiento(model: any, corrDescriptorPuesto: number): Observable<IResult> {
+	// Qué hace: actualiza solo impacto económico.
+	updateImpactoEconomico(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(
 			model,
 			this.xController,
-			'ActualizarEntrenamiento',
-			[{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto }],
+			'UpdateImpactoEconomico',
+			xWhere,
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
 	}

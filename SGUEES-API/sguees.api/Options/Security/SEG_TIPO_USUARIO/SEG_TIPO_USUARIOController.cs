@@ -90,7 +90,7 @@ namespace sguees.Controllers
 			}
 		}
 
-		[HttpGet("GetTIPO_USUARIO_SEG_USUARIO")]
+        [HttpGet("GetTIPO_USUARIO_SEG_USUARIO")]
 		[Authorize(Policy = "/seg-usuario|R")]
 		public async Task<CResult> GetTIPO_USUARIO_SEG_USUARIO([FromQuery] SEG_TIPO_USUARIOParam Data)
 		{

@@ -123,12 +123,10 @@
 >
 </dx-load-panel>
 <!-- SECCIÓN 3: Gestión de Jefes (SOLO si existe la unidad) -->
-<section class="sguees-section-card" *ngIf="mostrarFormulario && unidadModel && unidadModel.CORR_UNIDAD > 0">
-    <header class="tipo-documento-section-head">
-        <span class="tipo-documento-section-title">Jefes de la Unidad</span>
-        <span class="tipo-documento-section-subtitle">
-            Empleados asignados como jefes de {{ unidadModel.NOMBRE_UNIDAD }}
-        </span>
+<section class="sguees-section-card organigrama-section-card" *ngIf="mostrarFormulario && unidadModel && unidadModel.CORR_UNIDAD > 0">
+    <header class="organigrama-section-head">
+        <span class="organigrama-section-title">Jefes de la Unidad</span>
+        <span class="organigrama-section-subtitle">Empleados asignados como jefes de {{ unidadModel.NOMBRE_UNIDAD }}</span>
     </header>
 
     <!-- Barra de herramientas de Jefes -->
