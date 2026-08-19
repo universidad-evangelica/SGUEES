@@ -470,6 +470,50 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Qué hace: busca una inducción activa por empresa e id.
+        // Cómo: consulta SC_INDUCCION con ESTADO_INDUCCION = 1 y devuelve la fila o null.
+        public async Task<SC_INDUCCIONView> GetInduccionActivaAsync(int corrEmpresa, int corrInduccion)
+        {
+            if (corrEmpresa <= 0 || corrInduccion <= 0)
+            {
+                return null;
+            }
+
+            const string sql = @"SELECT
+                  A.CORR_INDUCCION,
+                  A.NOMBRE_INDUCCION,
+                  A.TIEMPO_INDUCCION,
+                  A.UNIDAD_TIEMPO
+                FROM SC_INDUCCION A
+                WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+                  AND A.CORR_INDUCCION = @CORR_INDUCCION
+                  AND ISNULL(A.ESTADO_INDUCCION, 1) = 1";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_INDUCCION", Value = corrInduccion, DbType = System.Data.DbType.Int32 },
+                });
+
+                var response = new List<SC_INDUCCIONView>().FromDataReader(reader).FirstOrDefault();
+                reader.Close();
+                return response;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
+        // Qué hace: guarda el bloque de entrenamiento del descriptor (campo RESPONSABLE).
+        // Cómo: reutiliza UpdateResponsableAsync, que actualiza solo esa columna y auditoría.
+        public Task<CResult> ActualizarEntrenamientoAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            return UpdateResponsableAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
         /// <summary>
         /// Lookup para sc-requisicion-personal: lista descriptores de V_SC_DESCRIPTOR_PUESTO
         /// filtrados por CORR_EMPRESA + CORR_UNIDAD (no altera GetAllAsync).
