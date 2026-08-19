@@ -11,10 +11,6 @@ namespace SGUEES.Repositories
     {
         // Comprueba si el puesto ya tiene otro descriptor abierto en la empresa.
         Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(int corrEmpresa, int corrPuesto, int excludeCorrDescriptor);
-        // Busca la inducción activa asociada a la empresa y al identificador recibido.
-        Task<SC_INDUCCIONView> GetInduccionActivaAsync(int corrEmpresa, int corrInduccion);
-        // Valida y persiste los datos de entrenamiento asociados al descriptor.
-        Task<CResult> ActualizarEntrenamientoAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         /// <summary>Lookup sc-requisicion-personal: descriptores por empresa + CORR_UNIDAD.</summary>
         Task<CResult> GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(List<CParameter> xWhere);
         // Actualiza solo RESPONSABLE (Entrenamiento).
