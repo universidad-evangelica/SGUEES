@@ -27,6 +27,16 @@ namespace sguees.Controllers
             return await _service.ValidarTokenAsync(data);
         }
 
+        /// <summary>
+        /// Precarga del formulario público cuando YA_TIENE_DATOS (reabrir link).
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("GetDatos")]
+        public async Task<CResult> GetDatos([FromQuery] SC_SOLICITUD_EMPLEO_PUBLICOParam data)
+        {
+            return await _service.GetDatosAsync(data);
+        }
+
         [AllowAnonymous]
         [HttpPost("SubirFoto")]
         [RequestSizeLimit(6 * 1024 * 1024)]

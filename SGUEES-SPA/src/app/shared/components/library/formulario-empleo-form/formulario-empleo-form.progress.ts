@@ -145,20 +145,20 @@ function buildPaso1(form: FormularioEmpleoData): { requeridos: ProgressBucket; o
 	const opcionales = emptyBucket();
 
 	add(requeridos, isFilledText(form.NOMBRE1));
-	add(requeridos, isFilledText(form.NOMBRE2));
 	add(requeridos, isFilledText(form.APELLIDO1));
-	add(requeridos, isFilledText(form.APELLIDO2));
 	add(requeridos, isFilledDate(form.FECHA_NACIMIENTO));
 	add(requeridos, isFilledText(form.ESTADO_CIVIL));
 	add(requeridos, isFilledText(form.CORREO));
 	add(requeridos, isFilledText(form.CELULAR));
 	add(requeridos, isFilledText(form.DIRECCION));
 	add(requeridos, isFilledText(form.DUI));
-	add(requeridos, isFilledText(form.AFP));
-	add(requeridos, isFilledText(form.NOMBRE_AFP));
 	add(requeridos, isFilledText(form.PLAZA_SOLICITADA));
 	add(requeridos, isFilledText(form.DISPONIBILIDAD));
 
+	add(opcionales, isFilledText(form.NOMBRE2));
+	add(opcionales, isFilledText(form.APELLIDO2));
+	add(opcionales, isFilledText(form.AFP));
+	add(opcionales, isFilledText(form.NOMBRE_AFP));
 	add(opcionales, isFilledText(form.FOTO_URL));
 	add(opcionales, isFilledNumber(form.EDAD));
 	add(opcionales, isFilledText(form.NACIONALIDAD));

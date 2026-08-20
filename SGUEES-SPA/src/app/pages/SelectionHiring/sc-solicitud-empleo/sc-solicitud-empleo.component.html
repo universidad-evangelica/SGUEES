@@ -221,7 +221,7 @@
 
           <div *dxTemplate="let cell of 'estadoTokenTemplate'">
             <span class="estado-chip" [ngClass]="getEstadoClass(cell.value)">
-              {{ cell.value }}
+              {{ formatEstadoToken(cell.value) }}
             </span>
           </div>
         </dx-data-grid>

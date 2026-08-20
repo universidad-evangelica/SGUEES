@@ -177,6 +177,17 @@ namespace sguees.Services
             return await _repo.ValidarTokenAsync(CalcularTokenHash(token));
         }
 
+        public async Task<CResult> GetDatosAsync(SC_SOLICITUD_EMPLEO_PUBLICOParam data)
+        {
+            var token = data?.TOKEN?.Trim();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return TokenInvalido();
+            }
+
+            return await _repo.GetDatosByTokenAsync(CalcularTokenHash(token));
+        }
+
         public async Task<CResult> SubirFotoAsync(string token, IFormFile file)
         {
             var tokenLimpio = token?.Trim();

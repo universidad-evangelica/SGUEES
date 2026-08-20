@@ -210,7 +210,11 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 			case 'COMPLETADO':
 				return 'estado-success';
 
+			case 'EN_PROCESO':
+				return 'estado-proceso';
+
 			case 'ENVIADO':
+			case 'GENERADO':
 				return 'estado-info';
 
 			case 'EXPIRADO':
@@ -223,6 +227,15 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 				return 'estado-default';
 		}
 
+	}
+
+	/** Etiqueta amigable: EN_PROCESO → EN PROCESO. */
+	formatEstadoToken(estado: string): string {
+		const raw = `${estado || ''}`.trim().toUpperCase();
+		if (raw === 'EN_PROCESO') {
+			return 'EN PROCESO';
+		}
+		return raw || '—';
 	}
 
 	get tienePersonaDatos(): boolean {
@@ -694,7 +707,9 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		}
 
 		const tokenVigente = this.tokens.some((item) =>
-			item.ESTADO_TOKEN === 'GENERADO' || item.ESTADO_TOKEN === 'ENVIADO'
+			item.ESTADO_TOKEN === 'GENERADO' ||
+			item.ESTADO_TOKEN === 'ENVIADO' ||
+			item.ESTADO_TOKEN === 'EN_PROCESO'
 		);
 		if (tokenVigente) {
 			const aceptar = await confirm(

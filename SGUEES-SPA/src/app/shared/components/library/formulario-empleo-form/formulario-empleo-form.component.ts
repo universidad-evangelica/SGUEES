@@ -61,8 +61,13 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 	tokenValido = false;
 	enviando = false;
 	fotoSubiendo = false;
+	/** True solo tras guardar exitoso en esta sesión (toast); no bloquea reentrada. */
 	completado = false;
 	mensajeToken = '';
+	/** Vigencia del token (banner suave mientras edita). */
+	fechaExpiracionToken: Date | null = null;
+	/** Ya había datos guardados al abrir el enlace. */
+	yaTieneDatos = false;
 
 	/** 0 = bienvenida; 1–6 = pasos del wizard */
 	pasoActual: PortalPaso = 0;
@@ -103,11 +108,11 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 	];
 
 	readonly estadoCivilOptions = [
-		{ value: 'Soltero(a)', text: 'Soltero(a)' },
-		{ value: 'Casado(a)', text: 'Casado(a)' },
-		{ value: 'Acompañado(a)', text: 'Acompañado(a)' },
-		{ value: 'Divorciado(a)', text: 'Divorciado(a)' },
-		{ value: 'Viudo(a)', text: 'Viudo(a)' },
+		{ value: 'Soltero', text: 'Soltero' },
+		{ value: 'Casado', text: 'Casado' },
+		{ value: 'Acompañado', text: 'Acompañado' },
+		{ value: 'Divorciado', text: 'Divorciado' },
+		{ value: 'Viudo', text: 'Viudo' },
 	];
 
 	readonly disponibilidadOptions = [
@@ -138,7 +143,7 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 	) {}
 
 	get enWizard(): boolean {
-		return this.tokenValido && !this.completado && this.pasoActual >= 1;
+		return this.tokenValido && this.pasoActual >= 1;
 	}
 
 	get pasoMeta(): PortalStepMeta | undefined {
@@ -467,11 +472,14 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 	async validarToken(): Promise<void> {
 		this.validandoToken = true;
 		this.tokenValido = false;
+		this.completado = false;
+		this.yaTieneDatos = false;
+		this.fechaExpiracionToken = null;
 		this.esFormularioCompleto = true;
 		this.pasoActual = 0;
 
 		if (!this.token) {
-			this.mensajeToken = 'El enlace es inválido, expiró o ya fue utilizado.';
+			this.mensajeToken = 'El enlace es inválido, expiró o ya no está vigente.';
 			this.validandoToken = false;
 			return;
 		}
@@ -480,10 +488,17 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			const response: any = await firstValueFrom(this.service.validarToken(this.token));
 			this.tokenValido = response.Result === true && response.Data?.VALIDO === true;
 			this.esFormularioCompleto = this.resolverFormularioCompleto(response.Data);
+			this.fechaExpiracionToken = this.parseFechaApi(response.Data?.FECHA_EXPIRACION);
+			this.yaTieneDatos = response.Data?.YA_TIENE_DATOS === true;
 			this.aplicarCorreoInvitacion(response.Data);
 			this.mensajeToken = this.tokenValido
 				? ''
-				: 'El enlace es inválido, expiró o ya fue utilizado.';
+				: 'El enlace es inválido, expiró o ya no está vigente.';
+
+			// Reentrada: precargar todo lo que el candidato ya guardó (insert/update n veces).
+			if (this.tokenValido && this.yaTieneDatos) {
+				await this.precargarDatosGuardados();
+			}
 		} catch {
 			this.mensajeToken = 'No fue posible validar el enlace. Inténtalo nuevamente.';
 		} finally {
@@ -504,6 +519,162 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 		if (correo) {
 			this.formData.CORREO = correo;
 		}
+	}
+
+	/** Carga persona + grids desde GetDatos (misma sesión de token vigente). */
+	private async precargarDatosGuardados(): Promise<void> {
+		try {
+			const response: any = await firstValueFrom(this.service.getDatos(this.token));
+			if (!response?.Result || !response?.Data?.PERSONA) {
+				return;
+			}
+			this.mapearDatosGuardados(response.Data);
+		} catch {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Aviso',
+				detail: 'No se pudieron precargar tus datos guardados. Puedes continuar y volver a guardar.',
+				life: 5000,
+			});
+		}
+	}
+
+	private mapearDatosGuardados(data: any): void {
+		const p = data.PERSONA ?? {};
+		const fechaNac = this.parseFechaApi(p.FECHA_NACIMIENTO);
+
+		this.formData = {
+			...createEmptyFormData(),
+			FOTO_URL: `${p.FOTO_URL ?? ''}`.trim(),
+			NOMBRE1: `${p.NOMBRE1 ?? ''}`.trim(),
+			NOMBRE2: `${p.NOMBRE2 ?? ''}`.trim(),
+			APELLIDO1: `${p.APELLIDO1 ?? ''}`.trim(),
+			APELLIDO2: `${p.APELLIDO2 ?? ''}`.trim(),
+			FECHA_NACIMIENTO: fechaNac,
+			EDAD: Number(p.EDAD ?? 0) || this.calcularEdad(fechaNac),
+			ESTADO_CIVIL: `${p.ESTADO_CIVIL ?? ''}`.trim(),
+			NACIONALIDAD: `${p.NACIONALIDAD ?? 'Salvadoreña'}`.trim() || 'Salvadoreña',
+			CORREO: `${p.CORREO ?? ''}`.trim(),
+			CELULAR: `${p.CELULAR ?? ''}`.trim(),
+			TELEFONO: `${p.TELEFONO ?? ''}`.trim(),
+			DIRECCION: `${p.DIRECCION ?? ''}`.trim(),
+			DUI: `${p.DUI ?? ''}`.trim(),
+			PASAPORTE: `${p.PASAPORTE ?? ''}`.trim(),
+			ISSS: `${p.ISSS ?? ''}`.trim(),
+			AFP: `${p.AFP ?? ''}`.trim(),
+			NOMBRE_AFP: `${p.NOMBRE_AFP ?? ''}`.trim(),
+			LICENCIA: `${p.LICENCIA ?? ''}`.trim(),
+			PLAZA_SOLICITADA: `${p.PLAZA_SOLICITADA ?? ''}`.trim(),
+			PRETENSION_SALARIAL: Number(p.PRETENSION_SALARIAL ?? 0) || 0,
+			DISPONIBILIDAD: `${p.DISPONIBILIDAD ?? ''}`.trim(),
+			RELIGION: `${p.RELIGION ?? ''}`.trim(),
+			IGLESIA: `${p.IGLESIA ?? ''}`.trim(),
+			DIRECCION_IGLESIA: `${p.DIRECCION_IGLESIA ?? ''}`.trim(),
+			ES_CONTRIBUYENTE_CCF: !!p.ES_CONTRIBUYENTE_CCF,
+			ES_JUBILADO: !!p.ES_JUBILADO,
+			POSEE_DISCAPACIDAD: !!p.POSEE_DISCAPACIDAD,
+			TIPO_DISCAPACIDAD: `${p.TIPO_DISCAPACIDAD ?? ''}`.trim(),
+			EMERGENCIA_NOMBRE: `${p.EMERGENCIA_NOMBRE ?? ''}`.trim(),
+			EMERGENCIA_PARENTESCO: `${p.EMERGENCIA_PARENTESCO ?? ''}`.trim(),
+			EMERGENCIA_TELEFONO: `${p.EMERGENCIA_TELEFONO ?? ''}`.trim(),
+			TIENE_FAMILIARES_UEES: !!p.TIENE_FAMILIARES_UEES,
+			DECLARA_VERDAD: !!p.DECLARA_VERDAD,
+			AUTORIZA_VERIFICACION: !!p.AUTORIZA_VERIFICACION,
+			FECHA_DECLARACION: this.parseFechaApi(p.FECHA_DECLARACION) ?? new Date(),
+			FIRMA_ELECTRONICA: `${p.FIRMA_ELECTRONICA ?? ''}`.trim(),
+		};
+
+		const baseFamiliares = createFamiliaresDirectos();
+		const famApi: any[] = Array.isArray(data.FAMILIARES_DIRECTOS) ? data.FAMILIARES_DIRECTOS : [];
+		this.familiaresDirectos = baseFamiliares.map((slot) => {
+			const found = famApi.find((f) => `${f?.TIPO ?? ''}`.toUpperCase() === slot.TIPO);
+			if (!found) {
+				return slot;
+			}
+			return {
+				...slot,
+				NOMBRE: `${found.NOMBRE ?? ''}`.trim(),
+				DOMICILIO: `${found.DOMICILIO ?? ''}`.trim(),
+				FECHA_NACIMIENTO: this.parseFechaApi(found.FECHA_NACIMIENTO),
+				OCUPACION: `${found.OCUPACION ?? ''}`.trim(),
+			};
+		});
+
+		this.hijos = (Array.isArray(data.HIJOS) ? data.HIJOS : []).map((h: any) => ({
+			ID: this.nextRowId++,
+			NOMBRE: `${h.NOMBRE ?? ''}`.trim(),
+			EDAD: h.EDAD == null || h.EDAD === '' ? null : Number(h.EDAD),
+			SEXO: `${h.SEXO ?? ''}`.trim(),
+			FECHA_NACIMIENTO: this.parseFechaApi(h.FECHA_NACIMIENTO),
+		}));
+
+		this.estudios = (Array.isArray(data.ESTUDIOS) ? data.ESTUDIOS : []).map((e: any) => ({
+			ID: this.nextRowId++,
+			NIVEL: `${e.NIVEL ?? ''}`.trim(),
+			INSTITUCION: `${e.INSTITUCION ?? ''}`.trim(),
+			DESDE: this.parseFechaApi(e.DESDE),
+			HASTA: this.parseFechaApi(e.HASTA),
+			TITULO: `${e.TITULO ?? ''}`.trim(),
+		}));
+
+		this.idiomas = (Array.isArray(data.IDIOMAS) ? data.IDIOMAS : []).map((i: any) => ({
+			ID: this.nextRowId++,
+			IDIOMA: `${i.IDIOMA ?? ''}`.trim(),
+			NIVEL: `${i.NIVEL ?? ''}`.trim(),
+		}));
+
+		this.competencias = (Array.isArray(data.COMPETENCIAS) ? data.COMPETENCIAS : []).map((c: any) => ({
+			ID: this.nextRowId++,
+			HERRAMIENTA: `${c.HERRAMIENTA ?? ''}`.trim(),
+			NIVEL: `${c.NIVEL ?? ''}`.trim(),
+		}));
+
+		this.experiencias = (Array.isArray(data.EXPERIENCIAS) ? data.EXPERIENCIAS : []).map((x: any) => ({
+			ID: this.nextRowId++,
+			EMPRESA: `${x.EMPRESA ?? ''}`.trim(),
+			TELEFONO: `${x.TELEFONO ?? ''}`.trim(),
+			CARGO: `${x.CARGO ?? ''}`.trim(),
+			JEFE_INMEDIATO: `${x.JEFE_INMEDIATO ?? ''}`.trim(),
+			FECHA_INICIO: this.parseFechaApi(x.FECHA_INICIO),
+			FECHA_FIN: this.parseFechaApi(x.FECHA_FIN),
+			SALARIO_INICIAL: x.SALARIO_INICIAL == null || x.SALARIO_INICIAL === '' ? null : Number(x.SALARIO_INICIAL),
+			SALARIO_FINAL: x.SALARIO_FINAL == null || x.SALARIO_FINAL === '' ? null : Number(x.SALARIO_FINAL),
+			MOTIVO_SALIDA: `${x.MOTIVO_SALIDA ?? ''}`.trim(),
+		}));
+
+		this.familiaresUees = (Array.isArray(data.FAMILIARES_UEES) ? data.FAMILIARES_UEES : []).map((f: any) => ({
+			ID: this.nextRowId++,
+			NOMBRE: `${f.NOMBRE ?? ''}`.trim(),
+			PARENTESCO: `${f.PARENTESCO ?? ''}`.trim(),
+			UNIDAD: `${f.UNIDAD ?? ''}`.trim(),
+			TELEFONO: `${f.TELEFONO ?? ''}`.trim(),
+		}));
+	}
+
+	/** Acepta ISO string, Date o DateOnly { year, month, day }. */
+	private parseFechaApi(value: any): Date | null {
+		if (value == null || value === '') {
+			return null;
+		}
+		if (value instanceof Date) {
+			return Number.isNaN(value.getTime()) ? null : value;
+		}
+		if (typeof value === 'object' && value.year != null && value.month != null && value.day != null) {
+			const d = new Date(Number(value.year), Number(value.month) - 1, Number(value.day));
+			return Number.isNaN(d.getTime()) ? null : d;
+		}
+		const raw = `${value}`.trim();
+		if (!raw) {
+			return null;
+		}
+		// yyyy-MM-dd → local (evita desfase UTC)
+		const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+		if (m) {
+			const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+			return Number.isNaN(d.getTime()) ? null : d;
+		}
+		const d = new Date(raw);
+		return Number.isNaN(d.getTime()) ? null : d;
 	}
 
 	/** Tipo 0/null → todos los campos. Eventual (ES_PERMANENTE false) → recortado. */
@@ -532,7 +703,7 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 		}
 
 		if (!this.formData.DECLARA_VERDAD || !this.formData.AUTORIZA_VERIFICACION) {
-			this.mostrarError('Debes aceptar las declaraciones para enviar la solicitud.');
+			this.mostrarError('Debes aceptar las declaraciones para guardar la solicitud.');
 			return;
 		}
 
@@ -546,17 +717,19 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			);
 
 			if (response.Result) {
-				this.completado = true;
-				this.tokenValido = false;
-				this.pasoActual = 0;
+				// Mejores prácticas: toast + permanecer editando (reentrada hasta vigencia).
+				this.completado = false;
+				this.yaTieneDatos = true;
+				this.tokenValido = true;
 				this.messageService.add({
 					severity: 'success',
-					summary: 'Éxito',
-					detail: 'La solicitud fue enviada correctamente.',
-					life: 4000,
+					summary: 'Datos guardados',
+					detail:
+						'Tu información se guardó correctamente. Puedes corregirla y volver a guardar mientras el enlace esté vigente.',
+					life: 6000,
 				});
 			} else {
-				this.mostrarError(response.ErrorMessage || 'No fue posible enviar la solicitud.');
+				this.mostrarError(response.ErrorMessage || 'No fue posible guardar la solicitud.');
 			}
 		} catch (error: any) {
 			const mensaje = this.extraerMensajeErrorHttp(error);
@@ -778,17 +951,17 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			return { mensaje: 'El primer nombre es requerido.', paso: 1 };
 		}
 
-		if (!`${this.formData.NOMBRE2 ?? ''}`.trim()) {
-			return { mensaje: 'El segundo nombre es requerido.', paso: 1 };
-		}
+		// if (!`${this.formData.NOMBRE2 ?? ''}`.trim()) {
+		// 	return { mensaje: 'El segundo nombre es requerido.', paso: 1 };
+		// }
 
 		if (!`${this.formData.APELLIDO1 ?? ''}`.trim()) {
 			return { mensaje: 'El primer apellido es requerido.', paso: 1 };
 		}
 
-		if (!`${this.formData.APELLIDO2 ?? ''}`.trim()) {
-			return { mensaje: 'El segundo apellido es requerido.', paso: 1 };
-		}
+		// if (!`${this.formData.APELLIDO2 ?? ''}`.trim()) {
+		// 	return { mensaje: 'El segundo apellido es requerido.', paso: 1 };
+		// }
 
 		if (!this.formData.FECHA_NACIMIENTO) {
 			return { mensaje: 'Debes indicar la fecha de nacimiento.', paso: 1 };
@@ -811,13 +984,13 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			return { mensaje: 'El DUI es requerido.', paso: 1 };
 		}
 
-		if (!`${this.formData.AFP ?? ''}`.trim()) {
-			return { mensaje: 'El número AFP es requerido.', paso: 1 };
-		}
+		// if (!`${this.formData.AFP ?? ''}`.trim()) {
+		// 	return { mensaje: 'El número AFP es requerido.', paso: 1 };
+		// }
 
-		if	 (!`${this.formData.NOMBRE_AFP ?? ''}`.trim()) {
-			return { mensaje: 'El nombre AFP es requerido.', paso: 1 };
-		}
+		// if	 (!`${this.formData.NOMBRE_AFP ?? ''}`.trim()) {
+		// 	return { mensaje: 'El nombre AFP es requerido.', paso: 1 };
+		// }
 
 		if (!`${this.formData.PLAZA_SOLICITADA ?? ''}`.trim()) {
 			return { mensaje: 'La plaza solicitada es requerida.', paso: 1 };
@@ -846,7 +1019,7 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 	private extraerMensajeErrorHttp(error: any): string {
 		const body = error?.error;
 		if (!body) {
-			return 'No fue posible enviar la solicitud. El enlace pudo expirar o ya fue utilizado.';
+			return 'No fue posible guardar la solicitud. El enlace pudo expirar o ya no está vigente.';
 		}
 
 		if (typeof body === 'string' && body.trim()) {
@@ -875,7 +1048,7 @@ export class FormularioEmpleoFormComponent implements OnInit, OnDestroy {
 			}
 		}
 
-		return 'No fue posible enviar la solicitud. El enlace pudo expirar o ya fue utilizado.';
+		return 'No fue posible guardar la solicitud. El enlace pudo expirar o ya no está vigente.';
 	}
 
 	private toDateOnly(fecha: Date): string {

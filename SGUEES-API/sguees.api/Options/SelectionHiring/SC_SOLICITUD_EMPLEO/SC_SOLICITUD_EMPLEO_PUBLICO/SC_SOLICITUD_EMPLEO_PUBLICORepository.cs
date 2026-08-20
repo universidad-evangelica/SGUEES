@@ -185,7 +185,7 @@ namespace sguees.Repositories
                 resultado.ErrorCode = 0;
                 resultado.ErrorMessage = response.VALIDO
                     ? ""
-                    : "El enlace es inválido, expiró o ya fue utilizado.";
+                    : "El enlace es inválido, expiró o ya no está vigente.";
             }
             catch (System.Exception e)
             {
@@ -197,6 +197,102 @@ namespace sguees.Repositories
             }
 
             return resultado;
+        }
+
+        /// <summary>
+        /// Reentrada: valida token y, si YA_TIENE_DATOS, carga persona + colecciones desde vistas.
+        /// </summary>
+        public async Task<CResult> GetDatosByTokenAsync(string tokenHash)
+        {
+            CResult resultado = new();
+            try
+            {
+                var validacion = await ValidarTokenAsync(tokenHash);
+                if (!validacion.Result ||
+                    validacion.Data is not SC_SOLICITUD_EMPLEO_PUBLICOView vista ||
+                    !vista.VALIDO)
+                {
+                    return validacion.Result
+                        ? TokenInvalidoResult()
+                        : validacion;
+                }
+
+                if (!vista.YA_TIENE_DATOS || vista.CORR_PERSONA_DATOS <= 0 || vista.CORR_EMPRESA <= 0)
+                {
+                    resultado.Data = new SC_SOLICITUD_EMPLEO_PUBLICO_DATOSView();
+                    resultado.Result = true;
+                    resultado.RowsAffected = 0;
+                    resultado.ErrorCode = 0;
+                    resultado.ErrorMessage = "";
+                    return resultado;
+                }
+
+                var wherePersona = PersonaWhere(vista.CORR_EMPRESA, vista.CORR_PERSONA_DATOS);
+
+                var personaReader = await objData.GetDataReader("V_SC_PERSONA_DATOS", wherePersona);
+                var persona = new List<SC_PERSONA_DATOSView>().FromDataReader(personaReader).FirstOrDefault();
+                personaReader.Close();
+
+                var datos = new SC_SOLICITUD_EMPLEO_PUBLICO_DATOSView
+                {
+                    PERSONA = persona,
+                    FAMILIARES_DIRECTOS = await ReadListAsync<SC_PERSONA_FAMILIARView>("V_SC_PERSONA_FAMILIAR", wherePersona),
+                    HIJOS = await ReadListAsync<SC_PERSONA_HIJOSView>("V_SC_PERSONA_HIJOS", wherePersona),
+                    ESTUDIOS = await ReadListAsync<SC_PERSONA_ESTUDIOView>("V_SC_PERSONA_ESTUDIO", wherePersona),
+                    IDIOMAS = await ReadListAsync<SC_PERSONA_IDIOMASView>("V_SC_PERSONA_IDIOMAS", wherePersona),
+                    COMPETENCIAS = await ReadListAsync<SC_PERSONA_COMPETENCIAS_TECNICASView>("V_SC_PERSONA_COMPETENCIAS_TECNICAS", wherePersona),
+                    EXPERIENCIAS = await ReadListAsync<SC_PERSONA_EXPERIENCIA_LABORALView>("V_SC_PERSONA_EXPERIENCIA_LABORAL", wherePersona),
+                    FAMILIARES_UEES = await ReadListAsync<SC_PERSONA_FAMILIAR_UEESView>("V_SC_PERSONA_FAMILIAR_UEES", wherePersona),
+                };
+
+                resultado.Data = datos;
+                resultado.Result = persona != null;
+                resultado.RowsAffected = persona == null ? 0 : 1;
+                resultado.ErrorCode = persona == null ? -1 : 0;
+                resultado.ErrorMessage = persona == null
+                    ? "No se encontraron datos del candidato para este enlace."
+                    : "";
+            }
+            catch (System.Exception e)
+            {
+                SetError(resultado, e);
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return resultado;
+        }
+
+        private static List<CParameter> PersonaWhere(int corrEmpresa, int corrPersonaDatos)
+        {
+            return new List<CParameter>
+            {
+                new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+                new() { ParameterName = "CORR_PERSONA_DATOS", Value = corrPersonaDatos, DbType = DbType.Int32 },
+            };
+        }
+
+        private async Task<List<T>> ReadListAsync<T>(string viewName, List<CParameter> where)
+            where T : class, new()
+        {
+            var reader = await objData.GetDataReader(viewName, where);
+            var list = new List<T>().FromDataReader(reader).ToList();
+            reader.Close();
+            return list;
+        }
+
+        private static CResult TokenInvalidoResult()
+        {
+            return new CResult
+            {
+                Result = true,
+                Data = new SC_SOLICITUD_EMPLEO_PUBLICOView { VALIDO = false },
+                RowsAffected = 0,
+                ErrorCode = 0,
+                ErrorMessage = "El enlace es inválido, expiró o ya no está vigente.",
+            };
         }
 
         public async Task<CResult> CompletarAsync(

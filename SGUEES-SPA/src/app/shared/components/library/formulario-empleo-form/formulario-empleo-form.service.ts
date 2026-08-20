@@ -21,6 +21,15 @@ export class FormularioEmpleoFormService {
 		);
 	}
 
+	/** Precarga persona + colecciones cuando el candidato reabre el enlace. */
+	getDatos(token: string): Observable<IResult> {
+		const params = new HttpParams().set('TOKEN', token);
+		return this.http.get<IResult>(
+			`${environment.UrlSELECCIONCONTRATACIONAPI}${this.controller}/GetDatos`,
+			{ params }
+		);
+	}
+
 	completar(data: CompletarFormularioEmpleoPayload): Observable<IResult> {
 		return this.http.post<IResult>(
 			`${environment.UrlSELECCIONCONTRATACIONAPI}${this.controller}/Completar`,

@@ -12,6 +12,8 @@ namespace sguees.Repositories
         Task<CResult> GenerarTokenAsync(SC_SOLICITUD_EMPLEO_TOKENTable data);
         Task<CResult> ActualizarEstadoTokenAsync(int corrEmpresa, int corrToken, string estadoToken);
         Task<CResult> ValidarTokenAsync(string tokenHash);
+        /// <summary>Precarga persona + colecciones si el token ya tiene datos guardados.</summary>
+        Task<CResult> GetDatosByTokenAsync(string tokenHash);
         Task<CResult> CompletarAsync(string tokenHash, SC_SOLICITUD_EMPLEO_COMPLETARParam data);
         Task<int> ObtenerCorrEmpresaPorTokenHashAsync(string tokenHash);
         Task<CResult> ActualizarFotoUrlAsync(int corrPersonaDatos, int corrEmpresa, string fotoUrl);

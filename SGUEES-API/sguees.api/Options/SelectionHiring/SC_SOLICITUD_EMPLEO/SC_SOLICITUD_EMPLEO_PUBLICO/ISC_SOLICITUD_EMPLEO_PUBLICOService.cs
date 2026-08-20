@@ -10,6 +10,8 @@ namespace sguees.Services
         Task<CResult> GetAllTokenAsync(SC_SOLICITUD_EMPLEO_TOKENParam data);
         Task<CResult> GenerarTokenAsync(SC_SOLICITUD_EMPLEO_GENERAR_TOKENParam data);
         Task<CResult> ValidarTokenAsync(SC_SOLICITUD_EMPLEO_PUBLICOParam data);
+        /// <summary>Devuelve datos ya guardados del candidato (reentrada del enlace).</summary>
+        Task<CResult> GetDatosAsync(SC_SOLICITUD_EMPLEO_PUBLICOParam data);
         Task<CResult> CompletarAsync(SC_SOLICITUD_EMPLEO_COMPLETARParam data);
         Task<CResult> SubirFotoAsync(string token, IFormFile file);
     }
