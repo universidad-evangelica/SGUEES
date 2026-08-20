@@ -52,16 +52,64 @@ namespace sguees.Services
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
-        ////Funcion para inactivar un registro, no se borra de la base de datos, solo se cambia el estado a inactivo
-        //public async Task<CResult> DesactivateAsync(SC_SOLICITUD_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        //{
-        //    return await _repo.DesactivateAsync(Data, vLOGIN_SISTEMA, vESTACION);
-        //}
+		public async Task<CResult> ActualizarPersonaDatosAsync(
+			int corrEmpresa,
+			string usuario,
+			string estacion,
+			SC_SOLICITUD_EMPLEO_PERSONA_ACTUALIZARParam data)
+		{
+			if (data == null)
+			{
+				return new CResult
+				{
+					Result = false,
+					ErrorCode = -1,
+					ErrorMessage = "Debe completar los campos requeridos.",
+				};
+			}
 
-        ////Funcion para reactivar un registro, no se borra de la base de datos, solo se cambia el estado a activo
-        //public async Task<CResult> ReactivateAsync(SC_SOLICITUD_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION)
-        //{
-        //    return await _repo.ReactivateAsync(Data, vLOGIN_SISTEMA, vESTACION);
-        //}
-    }
+			data.FAMILIARES_DIRECTOS ??= new();
+			data.HIJOS ??= new();
+			data.ESTUDIOS ??= new();
+			data.IDIOMAS ??= new();
+			data.COMPETENCIAS ??= new();
+			data.EXPERIENCIAS ??= new();
+			data.FAMILIARES_UEES ??= new();
+
+			if (!data.TIENE_FAMILIARES_UEES)
+			{
+				data.FAMILIARES_UEES.Clear();
+			}
+
+			if (string.IsNullOrWhiteSpace(data.NOMBRE1) ||
+				string.IsNullOrWhiteSpace(data.APELLIDO1) ||
+				data.FECHA_NACIMIENTO == default ||
+				string.IsNullOrWhiteSpace(data.CORREO) ||
+				string.IsNullOrWhiteSpace(data.CELULAR) ||
+				string.IsNullOrWhiteSpace(data.DIRECCION) ||
+				string.IsNullOrWhiteSpace(data.DUI) ||
+				string.IsNullOrWhiteSpace(data.EMERGENCIA_NOMBRE) ||
+				string.IsNullOrWhiteSpace(data.EMERGENCIA_TELEFONO))
+			{
+				return new CResult
+				{
+					Result = false,
+					ErrorCode = -1,
+					ErrorMessage = "Debe completar los campos requeridos.",
+				};
+			}
+
+			if (data.POSEE_DISCAPACIDAD && string.IsNullOrWhiteSpace(data.TIPO_DISCAPACIDAD))
+			{
+				return new CResult
+				{
+					Result = false,
+					ErrorCode = -1,
+					ErrorMessage = "Debe indicar el tipo de discapacidad.",
+				};
+			}
+
+			return await _repo.ActualizarPersonaDatosAsync(corrEmpresa, usuario, estacion, data);
+		}
+	}
 }

@@ -286,6 +286,11 @@
 	border: 1px solid color-mix(in srgb, var(--accent-color, #1976d2) 28%, var(--sguees-border-subtle, var(--border-color)));
 }
 
+.persona-datos-actions {
+	margin-left: auto;
+	flex-shrink: 0;
+}
+
 .persona-avatar {
 	width: 48px;
 	height: 48px;

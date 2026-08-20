@@ -1,0 +1,662 @@
+<dx-popup
+  [visible]="visible"
+  (onHiding)="cerrar()"
+  [showTitle]="true"
+  title="Editar datos del candidato"
+  [width]="'92vw'"
+  [maxWidth]="1280"
+  [height]="'90vh'"
+  [dragEnabled]="false"
+  [showCloseButton]="true"
+  [hideOnOutsideClick]="false"
+  [shading]="true"
+>
+  <div *dxTemplate="let data of 'content'" class="editar-persona">
+    <ng-container *ngIf="draft as d">
+    <div class="editar-persona__header">
+      <div class="editar-persona__foto">
+        <div class="editar-persona__avatar" *ngIf="fotoMostrada; else avatarIniciales">
+          <img [src]="fotoMostrada" alt="Fotografía del candidato" />
+        </div>
+        <ng-template #avatarIniciales>
+          <div class="editar-persona__avatar editar-persona__avatar--iniciales">
+            {{ inicialesDraft }}
+          </div>
+        </ng-template>
+        <div class="editar-persona__foto-actions">
+          <input
+            #fotoInput
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            hidden
+            (change)="onFotoFileChange($event)"
+          />
+          <dx-button
+            text="Cambiar foto"
+            icon="photo"
+            type="default"
+            stylingMode="outlined"
+            [disabled]="fotoSubiendo || guardando"
+            (onClick)="fotoInput.click()"
+          ></dx-button>
+          <span class="editar-persona__foto-hint" *ngIf="fotoSubiendo">Subiendo…</span>
+        </div>
+      </div>
+      <div class="editar-persona__identidad">
+        <div class="editar-persona__nombre">{{ nombreCompletoDraft || 'Candidato' }}</div>
+        <div class="editar-persona__meta">Corr. {{ d.CORR_PERSONA_DATOS }}</div>
+      </div>
+    </div>
+
+    <dx-scroll-view class="editar-persona__scroll" [scrollByContent]="true" [scrollByThumb]="true">
+      <dx-tab-panel
+        class="editar-persona__tabs"
+        [animationEnabled]="false"
+        [swipeEnabled]="false"
+        [selectedIndex]="0"
+      >
+        <!-- Personales -->
+        <dxi-item title="Personales" [icon]="'user'">
+          <div class="ep-panel">
+            <section class="ep-section">
+              <h4 class="ep-section__title">Identidad</h4>
+              <div class="ep-grid">
+                <div class="ep-field">
+                  <label class="ep-label">Primer nombre <span class="req">*</span></label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.NOMBRE1"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Segundo nombre</label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.NOMBRE2"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Primer apellido <span class="req">*</span></label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.APELLIDO1"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Segundo apellido</label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.APELLIDO2"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Fecha nacimiento <span class="req">*</span></label>
+                  <dx-date-box
+                    stylingMode="outlined"
+                    type="date"
+                    displayFormat="dd/MM/yyyy"
+                    [value]="draft.FECHA_NACIMIENTO"
+                    (onValueChanged)="onFechaNacimientoChanged($event.value)"
+                  ></dx-date-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Edad</label>
+                  <dx-number-box
+                    stylingMode="outlined"
+                    [value]="draft.EDAD"
+                    [readOnly]="true"
+                  ></dx-number-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Estado civil</label>
+                  <dx-select-box
+                    stylingMode="outlined"
+                    [(value)]="draft.ESTADO_CIVIL"
+                    [items]="estadoCivilOptions"
+                    displayExpr="text"
+                    valueExpr="value"
+                  ></dx-select-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Nacionalidad</label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.NACIONALIDAD"></dx-text-box>
+                </div>
+              </div>
+            </section>
+
+            <section class="ep-section">
+              <h4 class="ep-section__title">Contacto</h4>
+              <div class="ep-grid">
+                <div class="ep-field">
+                  <label class="ep-label">Correo <span class="req">*</span></label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.CORREO" mode="email"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Celular <span class="req">*</span></label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.CELULAR"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Teléfono</label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.TELEFONO"></dx-text-box>
+                </div>
+                <div class="ep-field ep-field--wide">
+                  <label class="ep-label">Dirección <span class="req">*</span></label>
+                  <dx-text-area stylingMode="outlined" [(value)]="draft.DIRECCION" [height]="70"></dx-text-area>
+                </div>
+              </div>
+            </section>
+
+            <section class="ep-section">
+              <h4 class="ep-section__title">Documentación</h4>
+              <div class="ep-grid">
+                <div class="ep-field">
+                  <label class="ep-label">DUI <span class="req">*</span></label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.DUI"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Pasaporte</label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.PASAPORTE"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">ISSS</label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.ISSS"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">AFP</label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.AFP"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Nombre AFP</label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.NOMBRE_AFP"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Licencia</label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.LICENCIA"></dx-text-box>
+                </div>
+              </div>
+            </section>
+
+            <section class="ep-section">
+              <h4 class="ep-section__title">Laboral</h4>
+              <div class="ep-grid">
+                <div class="ep-field ep-field--wide">
+                  <label class="ep-label">Plaza solicitada</label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.PLAZA_SOLICITADA"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Pretensión salarial</label>
+                  <dx-number-box
+                    stylingMode="outlined"
+                    [(value)]="draft.PRETENSION_SALARIAL"
+                    format="$#,##0.00"
+                    [min]="0"
+                  ></dx-number-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Disponibilidad</label>
+                  <dx-select-box
+                    stylingMode="outlined"
+                    [(value)]="draft.DISPONIBILIDAD"
+                    [items]="disponibilidadOptions"
+                    displayExpr="text"
+                    valueExpr="value"
+                  ></dx-select-box>
+                </div>
+              </div>
+            </section>
+
+            <section class="ep-section">
+              <h4 class="ep-section__title">Datos adicionales</h4>
+              <div class="ep-grid">
+                <div class="ep-field">
+                  <label class="ep-label">Religión</label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.RELIGION"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Iglesia</label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.IGLESIA"></dx-text-box>
+                </div>
+                <div class="ep-field ep-field--wide">
+                  <label class="ep-label">Dirección iglesia</label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.DIRECCION_IGLESIA"></dx-text-box>
+                </div>
+                <div class="ep-field ep-field--check">
+                  <dx-check-box [(value)]="draft.ES_CONTRIBUYENTE_CCF" text="Es contribuyente CCF"></dx-check-box>
+                </div>
+                <div class="ep-field ep-field--check">
+                  <dx-check-box [(value)]="draft.ES_JUBILADO" text="Es jubilado"></dx-check-box>
+                </div>
+                <div class="ep-field ep-field--check">
+                  <dx-check-box [(value)]="draft.POSEE_DISCAPACIDAD" text="Posee discapacidad"></dx-check-box>
+                </div>
+                <div class="ep-field" *ngIf="draft.POSEE_DISCAPACIDAD">
+                  <label class="ep-label">Tipo discapacidad <span class="req">*</span></label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.TIPO_DISCAPACIDAD"></dx-text-box>
+                </div>
+              </div>
+            </section>
+
+            <section class="ep-section">
+              <h4 class="ep-section__title">Emergencia</h4>
+              <div class="ep-grid">
+                <div class="ep-field">
+                  <label class="ep-label">Nombre <span class="req">*</span></label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.EMERGENCIA_NOMBRE"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Parentesco</label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.EMERGENCIA_PARENTESCO"></dx-text-box>
+                </div>
+                <div class="ep-field">
+                  <label class="ep-label">Teléfono <span class="req">*</span></label>
+                  <dx-text-box stylingMode="outlined" [(value)]="draft.EMERGENCIA_TELEFONO"></dx-text-box>
+                </div>
+              </div>
+            </section>
+          </div>
+        </dxi-item>
+
+        <!-- Familiares -->
+        <dxi-item title="Familiares" [icon]="'group'">
+          <div class="ep-panel">
+            <section class="ep-section">
+              <div class="ep-section__head">
+                <h4 class="ep-section__title">Familiares directos</h4>
+              </div>
+              <div class="ep-cards">
+                <article class="ep-card" *ngFor="let f of familiaresDirectos; let i = index">
+                  <div class="ep-card__body">
+                    <div class="ep-card__title">{{ f.ETIQUETA }}</div>
+                    <div class="ep-card__summary">{{ resumenFamiliar(f) }}</div>
+                  </div>
+                  <div class="ep-card__actions">
+                    <dx-button
+                      icon="edit"
+                      stylingMode="text"
+                      hint="Editar"
+                      (onClick)="abrirSubmodalEditar('familiarDirecto', f, i)"
+                    ></dx-button>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            <section class="ep-section">
+              <div class="ep-section__head">
+                <h4 class="ep-section__title">Hijos</h4>
+                <dx-button
+                  text="Agregar"
+                  icon="plus"
+                  type="default"
+                  stylingMode="outlined"
+                  (onClick)="abrirSubmodalNuevo('hijo')"
+                ></dx-button>
+              </div>
+              <div class="ep-cards" *ngIf="draftHijos.length; else sinHijos">
+                <article class="ep-card" *ngFor="let row of draftHijos">
+                  <div class="ep-card__body">
+                    <div class="ep-card__summary">{{ resumenHijo(row) }}</div>
+                  </div>
+                  <div class="ep-card__actions">
+                    <dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirSubmodalEditar('hijo', row)"></dx-button>
+                    <dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('hijo', row)"></dx-button>
+                  </div>
+                </article>
+              </div>
+              <ng-template #sinHijos>
+                <p class="ep-empty">Sin hijos registrados.</p>
+              </ng-template>
+            </section>
+          </div>
+        </dxi-item>
+
+        <!-- Formación -->
+        <dxi-item title="Formación" [icon]="'bookmark'">
+          <div class="ep-panel">
+            <section class="ep-section">
+              <div class="ep-section__head">
+                <h4 class="ep-section__title">Estudios</h4>
+                <dx-button text="Agregar" icon="plus" type="default" stylingMode="outlined" (onClick)="abrirSubmodalNuevo('estudio')"></dx-button>
+              </div>
+              <div class="ep-cards" *ngIf="draftEstudios.length; else sinEstudios">
+                <article class="ep-card" *ngFor="let row of draftEstudios">
+                  <div class="ep-card__body">
+                    <div class="ep-card__summary">{{ resumenEstudio(row) }}</div>
+                  </div>
+                  <div class="ep-card__actions">
+                    <dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirSubmodalEditar('estudio', row)"></dx-button>
+                    <dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('estudio', row)"></dx-button>
+                  </div>
+                </article>
+              </div>
+              <ng-template #sinEstudios>
+                <p class="ep-empty">Sin estudios registrados.</p>
+              </ng-template>
+            </section>
+
+            <section class="ep-section">
+              <div class="ep-section__head">
+                <h4 class="ep-section__title">Idiomas</h4>
+                <dx-button text="Agregar" icon="plus" type="default" stylingMode="outlined" (onClick)="abrirSubmodalNuevo('idioma')"></dx-button>
+              </div>
+              <div class="ep-cards" *ngIf="draftIdiomas.length; else sinIdiomas">
+                <article class="ep-card" *ngFor="let row of draftIdiomas">
+                  <div class="ep-card__body">
+                    <div class="ep-card__summary">{{ resumenIdioma(row) }}</div>
+                  </div>
+                  <div class="ep-card__actions">
+                    <dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirSubmodalEditar('idioma', row)"></dx-button>
+                    <dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('idioma', row)"></dx-button>
+                  </div>
+                </article>
+              </div>
+              <ng-template #sinIdiomas>
+                <p class="ep-empty">Sin idiomas registrados.</p>
+              </ng-template>
+            </section>
+
+            <section class="ep-section">
+              <div class="ep-section__head">
+                <h4 class="ep-section__title">Competencias técnicas</h4>
+                <dx-button text="Agregar" icon="plus" type="default" stylingMode="outlined" (onClick)="abrirSubmodalNuevo('competencia')"></dx-button>
+              </div>
+              <div class="ep-cards" *ngIf="draftCompetencias.length; else sinCompetencias">
+                <article class="ep-card" *ngFor="let row of draftCompetencias">
+                  <div class="ep-card__body">
+                    <div class="ep-card__summary">{{ resumenCompetencia(row) }}</div>
+                  </div>
+                  <div class="ep-card__actions">
+                    <dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirSubmodalEditar('competencia', row)"></dx-button>
+                    <dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('competencia', row)"></dx-button>
+                  </div>
+                </article>
+              </div>
+              <ng-template #sinCompetencias>
+                <p class="ep-empty">Sin competencias registradas.</p>
+              </ng-template>
+            </section>
+          </div>
+        </dxi-item>
+
+        <!-- Experiencia -->
+        <dxi-item title="Experiencia" [icon]="'card'">
+          <div class="ep-panel">
+            <section class="ep-section">
+              <div class="ep-section__head">
+                <h4 class="ep-section__title">Experiencia laboral</h4>
+                <dx-button text="Agregar" icon="plus" type="default" stylingMode="outlined" (onClick)="abrirSubmodalNuevo('experiencia')"></dx-button>
+              </div>
+              <div class="ep-cards" *ngIf="draftExperiencias.length; else sinExperiencias">
+                <article class="ep-card" *ngFor="let row of draftExperiencias">
+                  <div class="ep-card__body">
+                    <div class="ep-card__summary">{{ resumenExperiencia(row) }}</div>
+                  </div>
+                  <div class="ep-card__actions">
+                    <dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirSubmodalEditar('experiencia', row)"></dx-button>
+                    <dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('experiencia', row)"></dx-button>
+                  </div>
+                </article>
+              </div>
+              <ng-template #sinExperiencias>
+                <p class="ep-empty">Sin experiencia laboral registrada.</p>
+              </ng-template>
+            </section>
+          </div>
+        </dxi-item>
+
+        <!-- Adicional -->
+        <dxi-item title="Adicional" [icon]="'tips'">
+          <div class="ep-panel">
+            <section class="ep-section">
+              <h4 class="ep-section__title">Familiares en la UEES</h4>
+              <div class="ep-field ep-field--check mb-12">
+                <dx-check-box
+                  [(value)]="draft.TIENE_FAMILIARES_UEES"
+                  text="Declara familiares en UEES"
+                ></dx-check-box>
+              </div>
+              <ng-container *ngIf="draft.TIENE_FAMILIARES_UEES">
+                <div class="ep-section__head">
+                  <h4 class="ep-section__title">Listado</h4>
+                  <dx-button
+                    text="Agregar"
+                    icon="plus"
+                    type="default"
+                    stylingMode="outlined"
+                    (onClick)="abrirSubmodalNuevo('familiarUees')"
+                  ></dx-button>
+                </div>
+                <div class="ep-cards" *ngIf="draftFamiliaresUees.length; else sinFamiliaresUees">
+                  <article class="ep-card" *ngFor="let row of draftFamiliaresUees">
+                    <div class="ep-card__body">
+                      <div class="ep-card__summary">{{ resumenFamiliarUees(row) }}</div>
+                    </div>
+                    <div class="ep-card__actions">
+                      <dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirSubmodalEditar('familiarUees', row)"></dx-button>
+                      <dx-button icon="trash" stylingMode="text" hint="Eliminar" (onClick)="eliminarFila('familiarUees', row)"></dx-button>
+                    </div>
+                  </article>
+                </div>
+                <ng-template #sinFamiliaresUees>
+                  <p class="ep-empty">Sin familiares UEES registrados.</p>
+                </ng-template>
+              </ng-container>
+            </section>
+          </div>
+        </dxi-item>
+      </dx-tab-panel>
+    </dx-scroll-view>
+
+    <footer class="editar-persona__footer">
+      <dx-button
+        text="Cancelar"
+        stylingMode="outlined"
+        type="normal"
+        [disabled]="guardando"
+        (onClick)="cerrar()"
+      ></dx-button>
+      <dx-button
+        text="Guardar cambios"
+        type="success"
+        icon="save"
+        [disabled]="guardando || fotoSubiendo"
+        (onClick)="guardar()"
+      ></dx-button>
+    </footer>
+    </ng-container>
+  </div>
+</dx-popup>
+
+<!-- Submodal colección -->
+<dx-popup
+  [(visible)]="submodalVisible"
+  [showTitle]="true"
+  [title]="submodalTitulo"
+  [width]="submodalAncho"
+  [maxWidth]="'96vw'"
+  [height]="'auto'"
+  [maxHeight]="'90vh'"
+  [dragEnabled]="false"
+  [showCloseButton]="true"
+  [hideOnOutsideClick]="false"
+  (onHiding)="cerrarSubmodal()"
+>
+  <div *dxTemplate="let data of 'content'" class="ep-submodal">
+    <div class="ep-submodal__body" *ngIf="submodalTipo === 'hijo'">
+      <div class="ep-grid">
+        <div class="ep-field ep-field--wide">
+          <label class="ep-label">Nombre *</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.NOMBRE"></dx-text-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Sexo</label>
+          <dx-select-box
+            stylingMode="outlined"
+            [items]="sexoOptions"
+            displayExpr="text"
+            valueExpr="value"
+            [(value)]="submodalDraft.SEXO"
+          ></dx-select-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Fecha de nacimiento</label>
+          <dx-date-box
+            stylingMode="outlined"
+            type="date"
+            displayFormat="dd/MM/yyyy"
+            [value]="submodalDraft.FECHA_NACIMIENTO"
+            (onValueChanged)="onSubmodalHijoFechaChanged($event.value)"
+          ></dx-date-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Edad</label>
+          <dx-number-box stylingMode="outlined" [value]="submodalDraft.EDAD" [readOnly]="true"></dx-number-box>
+        </div>
+      </div>
+    </div>
+
+    <div class="ep-submodal__body" *ngIf="submodalTipo === 'estudio'">
+      <div class="ep-grid">
+        <div class="ep-field">
+          <label class="ep-label">Nivel *</label>
+          <dx-select-box stylingMode="outlined" [items]="nivelAcademicoOptions" [(value)]="submodalDraft.NIVEL"></dx-select-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Institución *</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.INSTITUCION"></dx-text-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Desde</label>
+          <dx-date-box
+            stylingMode="outlined"
+            type="date"
+            displayFormat="MM/yyyy"
+            [calendarOptions]="{ zoomLevel: 'year', maxZoomLevel: 'year' }"
+            [(value)]="submodalDraft.DESDE"
+          ></dx-date-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Hasta</label>
+          <dx-date-box
+            stylingMode="outlined"
+            type="date"
+            displayFormat="MM/yyyy"
+            [calendarOptions]="{ zoomLevel: 'year', maxZoomLevel: 'year' }"
+            [(value)]="submodalDraft.HASTA"
+          ></dx-date-box>
+        </div>
+        <div class="ep-field ep-field--wide">
+          <label class="ep-label">Título obtenido</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.TITULO"></dx-text-box>
+        </div>
+      </div>
+    </div>
+
+    <div class="ep-submodal__body" *ngIf="submodalTipo === 'idioma'">
+      <div class="ep-grid">
+        <div class="ep-field">
+          <label class="ep-label">Idioma *</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.IDIOMA"></dx-text-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Nivel *</label>
+          <dx-select-box stylingMode="outlined" [items]="nivelIdiomaOptions" [(value)]="submodalDraft.NIVEL"></dx-select-box>
+        </div>
+      </div>
+    </div>
+
+    <div class="ep-submodal__body" *ngIf="submodalTipo === 'competencia'">
+      <div class="ep-grid">
+        <div class="ep-field">
+          <label class="ep-label">Herramienta *</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.HERRAMIENTA"></dx-text-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Nivel *</label>
+          <dx-select-box stylingMode="outlined" [items]="nivelCompetenciaOptions" [(value)]="submodalDraft.NIVEL"></dx-select-box>
+        </div>
+      </div>
+    </div>
+
+    <div class="ep-submodal__body" *ngIf="submodalTipo === 'experiencia'">
+      <div class="ep-grid">
+        <div class="ep-field">
+          <label class="ep-label">Empresa *</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.EMPRESA"></dx-text-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Teléfono</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.TELEFONO"></dx-text-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Cargo *</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.CARGO"></dx-text-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Jefe inmediato</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.JEFE_INMEDIATO"></dx-text-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Fecha inicio</label>
+          <dx-date-box stylingMode="outlined" type="date" displayFormat="dd/MM/yyyy" [(value)]="submodalDraft.FECHA_INICIO"></dx-date-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Fecha fin</label>
+          <dx-date-box stylingMode="outlined" type="date" displayFormat="dd/MM/yyyy" [(value)]="submodalDraft.FECHA_FIN"></dx-date-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Salario inicial</label>
+          <dx-number-box stylingMode="outlined" [(value)]="submodalDraft.SALARIO_INICIAL" format="$#,##0.00"></dx-number-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Salario final</label>
+          <dx-number-box stylingMode="outlined" [(value)]="submodalDraft.SALARIO_FINAL" format="$#,##0.00"></dx-number-box>
+        </div>
+        <div class="ep-field ep-field--wide">
+          <label class="ep-label">Motivo de salida</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.MOTIVO_SALIDA"></dx-text-box>
+        </div>
+      </div>
+    </div>
+
+    <div class="ep-submodal__body" *ngIf="submodalTipo === 'familiarDirecto'">
+      <div class="ep-grid">
+        <div class="ep-field ep-field--wide">
+          <label class="ep-label">Nombre</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.NOMBRE"></dx-text-box>
+        </div>
+        <div class="ep-field ep-field--wide">
+          <label class="ep-label">Domicilio</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.DOMICILIO"></dx-text-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Fecha de nacimiento</label>
+          <dx-date-box
+            stylingMode="outlined"
+            type="date"
+            displayFormat="dd/MM/yyyy"
+            [(value)]="submodalDraft.FECHA_NACIMIENTO"
+          ></dx-date-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Ocupación</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.OCUPACION"></dx-text-box>
+        </div>
+      </div>
+    </div>
+
+    <div class="ep-submodal__body" *ngIf="submodalTipo === 'familiarUees'">
+      <div class="ep-grid">
+        <div class="ep-field ep-field--wide">
+          <label class="ep-label">Nombre *</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.NOMBRE"></dx-text-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Parentesco</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.PARENTESCO"></dx-text-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Unidad</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.UNIDAD"></dx-text-box>
+        </div>
+        <div class="ep-field">
+          <label class="ep-label">Teléfono</label>
+          <dx-text-box stylingMode="outlined" [(value)]="submodalDraft.TELEFONO"></dx-text-box>
+        </div>
+      </div>
+    </div>
+
+    <div class="ep-submodal__footer">
+      <dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodal()"></dx-button>
+      <dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodal()"></dx-button>
+    </div>
+  </div>
+</dx-popup>

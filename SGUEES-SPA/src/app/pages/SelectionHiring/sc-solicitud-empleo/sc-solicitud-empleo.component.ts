@@ -47,6 +47,7 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	cargandoPersonaDatos = false;
 	fotoPersonaUrl: string | null = null;
 	fotoPreviewVisible = false;
+	editarPersonaVisible = false;
 	/** Datos del combo Tipo de contratación (solo ACTIVO = 1). */
 	mCORR_TIPO_CONTRATACION: any[] = [];
 	tipoContratacionLookupColumns: any[] = [
@@ -438,6 +439,19 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
 				},
 			});
+	}
+
+	/** Abre el modal de edición de datos del candidato. */
+	abrirEditarPersona(): void {
+		if (!this.permiteEdit || this.cargandoPersonaDatos || !this.tienePersonaDatos) {
+			return;
+		}
+		this.editarPersonaVisible = true;
+	}
+
+	/** Recarga persona + colecciones tras guardar en el modal. */
+	onPersonaDatosGuardados(): void {
+		this.consultarPersonaDatos();
 	}
 
 	override nuevo(): void {

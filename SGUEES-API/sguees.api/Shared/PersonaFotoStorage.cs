@@ -136,6 +136,44 @@ namespace sguees.api.Shared
             TryDeleteDirectory(TempDirectory(tokenHash));
         }
 
+        /// <summary>
+        /// Guarda fotografía definitiva (flujo autenticado RRHH / sc-solicitud-empleo).
+        /// </summary>
+        public async Task<(bool Ok, string Error, string RelativeUrl)> SaveFinalAsync(
+            int corrEmpresa,
+            int corrPersonaDatos,
+            IFormFile file)
+        {
+            var validation = Validate(file);
+            if (validation != null)
+            {
+                return (false, validation, null);
+            }
+
+            if (corrEmpresa <= 0 || corrPersonaDatos <= 0)
+            {
+                return (false, "Identificador de persona inválido.", null);
+            }
+
+            var extension = Path.GetExtension(file.FileName);
+            var fileName = "foto" + extension.ToLowerInvariant();
+            var finalDir = FinalDirectory(corrEmpresa, corrPersonaDatos);
+            Directory.CreateDirectory(finalDir);
+
+            foreach (var existing in Directory.EnumerateFiles(finalDir, "foto.*"))
+            {
+                File.Delete(existing);
+            }
+
+            var destination = Path.Combine(finalDir, fileName);
+            await using (var stream = new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            return (true, null, RelativeUrl(corrEmpresa, corrPersonaDatos, fileName));
+        }
+
         private static string Validate(IFormFile file)
         {
             if (file == null || file.Length <= 0)
