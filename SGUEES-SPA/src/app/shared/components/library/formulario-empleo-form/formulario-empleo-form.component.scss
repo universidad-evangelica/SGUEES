@@ -252,6 +252,34 @@
 	}
 }
 
+.portal-vigencia {
+	margin: 12px 0 0;
+	font-size: 13px;
+	line-height: 1.45;
+	color: #64748b;
+
+	strong {
+		color: #0f172a;
+		font-weight: 600;
+	}
+}
+
+.wizard-banner {
+	margin: 0 0 12px;
+	padding: 10px 14px;
+	border-radius: 12px;
+	font-size: 13px;
+	line-height: 1.45;
+	color: #0f766e;
+	background: rgba(13, 148, 136, 0.1);
+	border: 1px solid rgba(13, 148, 136, 0.25);
+
+	strong {
+		font-weight: 600;
+		color: #115e59;
+	}
+}
+
 .portal-cta {
 	display: inline-flex;
 	align-items: center;

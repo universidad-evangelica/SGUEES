@@ -16,6 +16,7 @@ import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-
 import { ScSolicitudEmpleoComponent } from './sc-solicitud-empleo.component';
 import { ToastModule } from "primeng/toast"; //importar el modulo de Toast para primeNG
 import { DxToolbarModule } from "devextreme-angular/ui/toolbar";
+import { DxPopupModule } from 'devextreme-angular/ui/popup';
 
 const routes: Routes = [{ path: '', component: ScSolicitudEmpleoComponent }];
 
@@ -34,7 +35,8 @@ const routes: Routes = [{ path: '', component: ScSolicitudEmpleoComponent }];
     BarraDataMttoModule,
     DataLookupModule,
     ToastModule,
-    DxToolbarModule
+    DxToolbarModule,
+    DxPopupModule
 ],
 	exports: [RouterModule],
 	declarations: [ScSolicitudEmpleoComponent],

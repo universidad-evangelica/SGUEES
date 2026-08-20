@@ -1,4 +1,4 @@
-<!-- <p-toast position="bottom-right"></p-toast> -->
+<p-toast position="bottom-right"></p-toast>
 
 <div id="page-formulario-empleo" class="portal" [class.portal--wizard]="enWizard">
 	<div class="portal__media" aria-hidden="true"></div>
@@ -12,21 +12,10 @@
 			<p class="portal-panel__hint">Validando enlace…</p>
 		</section>
 
-		<!-- Completado -->
-		<section class="portal-panel portal-panel--state" *ngIf="!validandoToken && completado" aria-live="polite">
-			<div class="portal-status portal-status--ok" aria-hidden="true">
-				<i class="dx-icon dx-icon-check"></i>
-			</div>
-			<h2 class="portal-panel__title">Solicitud enviada</h2>
-			<p class="portal-panel__text">
-				Tus datos fueron recibidos correctamente. El enlace ya no puede utilizarse nuevamente.
-			</p>
-		</section>
-
-		<!-- Token inválido -->
+		<!-- Token inválido / expirado / revocado -->
 		<section
 			class="portal-panel portal-panel--state"
-			*ngIf="!validandoToken && !tokenValido && !completado"
+			*ngIf="!validandoToken && !tokenValido"
 			aria-live="polite"
 		>
 			<div class="portal-status portal-status--err" aria-hidden="true">
@@ -39,7 +28,7 @@
 		<!-- 0. Bienvenida -->
 		<section
 			class="portal-panel portal-panel--welcome"
-			*ngIf="!validandoToken && tokenValido && !completado && pasoActual === 0"
+			*ngIf="!validandoToken && tokenValido && pasoActual === 0"
 			aria-labelledby="portal-welcome-title"
 		>
 			<img
@@ -64,7 +53,8 @@
 				</li>
 				<li class="portal-notices__item">
 					<span class="portal-notices__check" aria-hidden="true">✓</span>
-					<span>Puedes completar el formulario una única vez.</span>
+					<span *ngIf="!yaTieneDatos">Puedes guardar y corregir tus datos mientras el enlace esté vigente.</span>
+					<span *ngIf="yaTieneDatos">Ya tienes datos guardados: se precargarán para que puedas revisarlos o actualizarlos.</span>
 				</li>
 				<li class="portal-notices__item">
 					<span class="portal-notices__check" aria-hidden="true">✓</span>
@@ -72,8 +62,13 @@
 				</li>
 			</ul>
 
+			<p class="portal-vigencia" *ngIf="fechaExpiracionToken">
+				Enlace vigente hasta
+				<strong>{{ fechaExpiracionToken | date: 'dd/MM/yyyy HH:mm' }}</strong>.
+			</p>
+
 			<button type="button" class="portal-cta" (click)="comenzarSolicitud()">
-				<span>Comenzar solicitud</span>
+				<span>{{ yaTieneDatos ? 'Continuar solicitud' : 'Comenzar solicitud' }}</span>
 				<span class="portal-cta__arrow" aria-hidden="true">→</span>
 			</button>
 
@@ -133,6 +128,14 @@
 				</nav>
 			</header>
 
+			<p class="wizard-banner" *ngIf="fechaExpiracionToken || yaTieneDatos" role="status">
+				<span *ngIf="yaTieneDatos">Puedes corregir y volver a guardar. </span>
+				<span *ngIf="fechaExpiracionToken">
+					Vigencia del enlace:
+					<strong>{{ fechaExpiracionToken | date: 'dd/MM/yyyy HH:mm' }}</strong>.
+				</span>
+			</p>
+
 			<dx-scroll-view class="wizard-body" [useNative]="true" height="100%">
 				<div class="wizard-body__inner">
 
@@ -148,7 +151,7 @@
 										<dx-text-box stylingMode="outlined" [(value)]="formData.NOMBRE1" [maxLength]="50"></dx-text-box>
 									</div>
 									<div class="wizard-field">
-										<label class="wizard-label">Segundo nombre <span class="campo-required">*</span></label>
+										<label class="wizard-label">Segundo nombre </label>
 										<dx-text-box stylingMode="outlined" [(value)]="formData.NOMBRE2" [maxLength]="50"></dx-text-box>
 									</div>
 									<div class="wizard-field">
@@ -156,7 +159,7 @@
 										<dx-text-box stylingMode="outlined" [(value)]="formData.APELLIDO1" [maxLength]="50"></dx-text-box>
 									</div>
 									<div class="wizard-field">
-										<label class="wizard-label">Segundo apellido <span class="campo-required">*</span></label>
+										<label class="wizard-label">Segundo apellido </label>
 										<dx-text-box stylingMode="outlined" [(value)]="formData.APELLIDO2" [maxLength]="50"></dx-text-box>
 									</div>
 								</div>
@@ -256,11 +259,11 @@
 									<dx-text-box stylingMode="outlined" [(value)]="formData.ISSS"></dx-text-box>
 								</div>
 								<div class="wizard-field">
-									<label class="wizard-label">AFP <span class="campo-required">*</span></label>
+									<label class="wizard-label">AFP</label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.AFP"></dx-text-box>
 								</div>
 								<div class="wizard-field">
-									<label class="wizard-label">Nombre AFP <span class="campo-required">*</span></label>
+									<label class="wizard-label">Nombre AFP</label>
 									<dx-text-box stylingMode="outlined" [(value)]="formData.NOMBRE_AFP"></dx-text-box>
 								</div>
 								<div class="wizard-field">
@@ -746,9 +749,9 @@
 
 				<dx-button
 					*ngIf="pasoActual === 6"
-					text="Enviar solicitud"
+					text="Guardar solicitud"
 					type="success"
-					icon="email"
+					icon="save"
 					[disabled]="enviando || fotoSubiendo || !formData.DECLARA_VERDAD || !formData.AUTORIZA_VERIFICACION"
 					(onClick)="onSubmit()"
 					[elementAttr]="{ class: 'wizard-nav__submit' }"

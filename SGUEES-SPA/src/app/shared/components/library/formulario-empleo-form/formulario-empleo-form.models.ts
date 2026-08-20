@@ -203,7 +203,7 @@ export function createFamiliaresDirectos(): FamiliarDirecto[] {
 	return [
 		{ TIPO: 'PADRE', ETIQUETA: 'Padre', NOMBRE: '', DOMICILIO: '', FECHA_NACIMIENTO: null, OCUPACION: '' },
 		{ TIPO: 'MADRE', ETIQUETA: 'Madre', NOMBRE: '', DOMICILIO: '', FECHA_NACIMIENTO: null, OCUPACION: '' },
-		{ TIPO: 'ESPOSO', ETIQUETA: 'Esposo(a)', NOMBRE: '', DOMICILIO: '', FECHA_NACIMIENTO: null, OCUPACION: '' },
+		{ TIPO: 'ESPOSO', ETIQUETA: 'Esposo', NOMBRE: '', DOMICILIO: '', FECHA_NACIMIENTO: null, OCUPACION: '' },
 	];
 }
 

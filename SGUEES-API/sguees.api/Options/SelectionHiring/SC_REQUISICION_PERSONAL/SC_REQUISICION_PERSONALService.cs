@@ -27,6 +27,22 @@ namespace SGUEES.Services
             return await _repo.GetAllAsync(p);
         }
 
+        /// <summary>
+        /// Requisiciones disponibles para vincular desde solicitud de empleo.
+        /// Por ahora trae todas; agregar filtros de estado aquí cuando el negocio lo defina.
+        /// </summary>
+        public async Task<CResult> GetAllForSolicitudEmpleoAsync(SC_REQUISICION_PERSONALParam xWhere)
+        {
+            var p = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                // Ejemplo futuro — solo requisiciones aprobadas/publicadas:
+                // new CParameter() { ParameterName = "CORR_ESTADO_REQUISICION", Value = 5, DbType = System.Data.DbType.Int32 },
+            };
+
+            return await _repo.GetAllAsync(p);
+        }
+
         public async Task<CResult> GetAsync(SC_REQUISICION_PERSONALParam xWhere)
         {
             var p = new List<CParameter>
