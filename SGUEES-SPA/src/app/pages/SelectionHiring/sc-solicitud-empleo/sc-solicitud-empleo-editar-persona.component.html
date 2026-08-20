@@ -11,50 +11,78 @@
   [hideOnOutsideClick]="false"
   [shading]="true"
 >
-  <div *dxTemplate="let data of 'content'" class="editar-persona">
-    <ng-container *ngIf="draft as d">
-    <div class="editar-persona__header">
-      <div class="editar-persona__foto">
-        <div class="editar-persona__avatar" *ngIf="fotoMostrada; else avatarIniciales">
-          <img [src]="fotoMostrada" alt="Fotografía del candidato" />
-        </div>
-        <ng-template #avatarIniciales>
-          <div class="editar-persona__avatar editar-persona__avatar--iniciales">
-            {{ inicialesDraft }}
-          </div>
-        </ng-template>
-        <div class="editar-persona__foto-actions">
-          <input
-            #fotoInput
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            hidden
-            (change)="onFotoFileChange($event)"
-          />
-          <dx-button
-            text="Cambiar foto"
-            icon="photo"
-            type="default"
-            stylingMode="outlined"
-            [disabled]="fotoSubiendo || guardando"
-            (onClick)="fotoInput.click()"
-          ></dx-button>
-          <span class="editar-persona__foto-hint" *ngIf="fotoSubiendo">Subiendo…</span>
-        </div>
-      </div>
-      <div class="editar-persona__identidad">
-        <div class="editar-persona__nombre">{{ nombreCompletoDraft || 'Candidato' }}</div>
-        <div class="editar-persona__meta">Corr. {{ d.CORR_PERSONA_DATOS }}</div>
-      </div>
+  <!-- Footer nativo del dx-popup: permanece fuera del área desplazable. -->
+  <dxi-toolbar-item toolbar="bottom" location="after">
+    <div class="editar-persona__footer-actions">
+      <dx-button
+        text="Cancelar"
+        stylingMode="outlined"
+        type="normal"
+        [disabled]="guardando"
+        (onClick)="cerrar()"
+      ></dx-button>
+      <dx-button
+        text="Guardar cambios"
+        type="success"
+        icon="save"
+        [disabled]="guardando || fotoSubiendo"
+        (onClick)="guardar()"
+      ></dx-button>
     </div>
+  </dxi-toolbar-item>
 
-    <dx-scroll-view class="editar-persona__scroll" [scrollByContent]="true" [scrollByThumb]="true">
-      <dx-tab-panel
-        class="editar-persona__tabs"
-        [animationEnabled]="false"
-        [swipeEnabled]="false"
-        [selectedIndex]="0"
-      >
+  <div *dxTemplate="let data of 'content'" class="editar-persona">
+    <!-- Único scroll, conforme al patrón documentado de DevExtreme 24.1. -->
+    <dx-scroll-view
+      class="editar-persona__scroll"
+      width="100%"
+      height="100%"
+      [scrollByContent]="true"
+      [scrollByThumb]="true"
+      [showScrollbar]="'onScroll'"
+    >
+      <ng-container *ngIf="draft as d">
+        <div class="editar-persona__header">
+          <div class="editar-persona__foto">
+            <div class="editar-persona__avatar" *ngIf="fotoMostrada; else avatarIniciales">
+              <img [src]="fotoMostrada" alt="Fotografía del candidato" />
+            </div>
+            <ng-template #avatarIniciales>
+              <div class="editar-persona__avatar editar-persona__avatar--iniciales">
+                {{ inicialesDraft }}
+              </div>
+            </ng-template>
+            <div class="editar-persona__foto-actions">
+              <input
+                #fotoInput
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                hidden
+                (change)="onFotoFileChange($event)"
+              />
+              <dx-button
+                text="Cambiar foto"
+                icon="photo"
+                type="default"
+                stylingMode="outlined"
+                [disabled]="fotoSubiendo || guardando"
+                (onClick)="fotoInput.click()"
+              ></dx-button>
+              <span class="editar-persona__foto-hint" *ngIf="fotoSubiendo">Subiendo…</span>
+            </div>
+          </div>
+          <div class="editar-persona__identidad">
+            <div class="editar-persona__nombre">{{ nombreCompletoDraft || 'Candidato' }}</div>
+            <div class="editar-persona__meta">Corr. {{ d.CORR_PERSONA_DATOS }}</div>
+          </div>
+        </div>
+
+        <dx-tab-panel
+          class="editar-persona__tabs"
+          [animationEnabled]="false"
+          [swipeEnabled]="false"
+          [selectedIndex]="0"
+        >
         <!-- Personales -->
         <dxi-item title="Personales" [icon]="'user'">
           <div class="ep-panel">
@@ -432,26 +460,9 @@
             </section>
           </div>
         </dxi-item>
-      </dx-tab-panel>
+        </dx-tab-panel>
+      </ng-container>
     </dx-scroll-view>
-
-    <footer class="editar-persona__footer">
-      <dx-button
-        text="Cancelar"
-        stylingMode="outlined"
-        type="normal"
-        [disabled]="guardando"
-        (onClick)="cerrar()"
-      ></dx-button>
-      <dx-button
-        text="Guardar cambios"
-        type="success"
-        icon="save"
-        [disabled]="guardando || fotoSubiendo"
-        (onClick)="guardar()"
-      ></dx-button>
-    </footer>
-    </ng-container>
   </div>
 </dx-popup>
 
