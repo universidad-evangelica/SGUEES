@@ -100,4 +100,51 @@ export class ScSolicitudEmpleoRepository {
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
 	}
+
+	/** RRHH: actualiza persona + colecciones (sin Confirmación). */
+	actualizarPersonaDatos(model: any): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'ActualizarPersonaDatos',
+			[],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	/** Sube/reemplaza fotografía del candidato (multipart). */
+	subirFotoPersona(corrPersonaDatos: number, file: File): Observable<IResult> {
+		const formData = new FormData();
+		formData.append('CORR_PERSONA_DATOS', String(corrPersonaDatos));
+		formData.append('file', file, file.name);
+		return this.objData.Post(
+			formData,
+			this.xController,
+			'SubirFotoPersona',
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	// /** Vínculos solicitud ↔ requisición (V_SC_SOLICITUD_REQUISICION). */
+	// getAllRequisicionSolicitud(xWhere: IParam[]): Observable<IResult> {
+	// 	return this.objData.Get(this.xControllerRequisicion, 'GetAll', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	// }
+
+	// insertRequisicionSolicitud(model: any): Observable<IResult> {
+	// 	return this.objData.Post(model, this.xControllerRequisicion, '', environment.UrlSELECCIONCONTRATACIONAPI);
+	// }
+
+	// deleteRequisicionSolicitud(xWhere: IParam[]): Observable<IResult> {
+	// 	return this.objData.Delete(this.xControllerRequisicion, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	// }
+
+	// /** Catálogo para modal (permiso solicitud; filtros de estado en API comentados). */
+	// getRequisicionesParaModal(xWhere: IParam[]): Observable<IResult> {
+	// 	return this.objData.Get(
+	// 		this.xControllerRequisicionPersonal,
+	// 		'GetAll_SC_SOLICITUD_EMPLEO',
+	// 		xWhere,
+	// 		environment.UrlSELECCIONCONTRATACIONAPI
+	// 	);
+	// }
 }

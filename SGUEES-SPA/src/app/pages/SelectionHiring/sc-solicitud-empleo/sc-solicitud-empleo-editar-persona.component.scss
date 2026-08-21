@@ -1,0 +1,235 @@
+.editar-persona {
+	height: 100%;
+	min-height: 0;
+	overflow: hidden;
+	color: var(--sguees-text-primary, var(--base-text-color));
+}
+
+.editar-persona__header {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 12px 14px;
+	margin-bottom: 8px;
+	border-radius: var(--sguees-radius-md, 10px);
+	background: color-mix(in srgb, var(--accent-color, #0d9488) 12%, var(--sguees-surface-subtle, var(--background-gray-color)));
+	border: 1px solid color-mix(in srgb, var(--accent-color, #0d9488) 28%, var(--sguees-border-subtle, var(--border-color)));
+}
+
+.editar-persona__foto {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-shrink: 0;
+}
+
+.editar-persona__avatar {
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	overflow: hidden;
+	border: 1px solid color-mix(in srgb, var(--accent-color, #0d9488) 30%, var(--sguees-border-subtle, var(--border-color)));
+	background: var(--sguees-surface-card, var(--card-background));
+	display: flex;
+	align-items: center;
+	justify-content: center;
+
+	img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+
+	&--iniciales {
+		font-size: 18px;
+		font-weight: 700;
+		letter-spacing: 0.5px;
+		color: var(--accent-color, #0d9488);
+	}
+}
+
+.editar-persona__foto-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.editar-persona__foto-hint {
+	font-size: 12px;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+}
+
+.editar-persona__identidad {
+	min-width: 0;
+}
+
+.editar-persona__nombre {
+	font-size: 17px;
+	font-weight: 650;
+	line-height: 1.3;
+	word-break: break-word;
+}
+
+.editar-persona__meta {
+	margin-top: 4px;
+	font-size: 13px;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+}
+
+.editar-persona__scroll {
+	width: 100%;
+	height: 100%;
+	min-height: 0;
+}
+
+.editar-persona__tabs {
+	padding: 0 2px 8px;
+}
+
+.editar-persona__footer-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.ep-panel {
+	padding: 8px 4px 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.ep-section {
+	padding: 12px 14px;
+	border-radius: var(--sguees-radius-md, 10px);
+	border: 1px solid var(--sguees-border-subtle, var(--border-color));
+	background: var(--sguees-surface-card, var(--card-background));
+}
+
+.ep-section__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 10px;
+
+	.ep-section__title {
+		margin-bottom: 0;
+	}
+}
+
+.ep-section__title {
+	margin: 0 0 10px;
+	font-size: 13px;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+}
+
+.ep-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px 14px;
+}
+
+.ep-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+
+	&--wide {
+		grid-column: 1 / -1;
+	}
+
+	&--check {
+		justify-content: center;
+		padding-top: 18px;
+	}
+}
+
+.ep-label {
+	font-size: 12px;
+	font-weight: 600;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+}
+
+.req {
+	color: #c62828;
+}
+
+.ep-cards {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.ep-card {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 12px;
+	border-radius: var(--sguees-radius-md, 10px);
+	border: 1px solid var(--sguees-border-subtle, var(--border-color));
+	background: color-mix(in srgb, var(--accent-color, #0d9488) 4%, var(--sguees-surface-subtle, var(--background-gray-color)));
+}
+
+.ep-card__body {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.ep-card__title {
+	font-size: 13px;
+	font-weight: 650;
+	margin-bottom: 2px;
+}
+
+.ep-card__summary {
+	font-size: 13px;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+	word-break: break-word;
+}
+
+.ep-card__actions {
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+}
+
+.ep-empty {
+	margin: 0;
+	font-size: 13px;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+}
+
+.ep-submodal {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.ep-submodal__footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	padding-top: 4px;
+	border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
+}
+
+.mb-12 {
+	margin-bottom: 12px;
+}
+
+@media (max-width: 720px) {
+	.ep-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.editar-persona__header {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+}

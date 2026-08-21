@@ -11,9 +11,10 @@ namespace sguees.Services
 		Task<CResult> CreateAsync(SC_SOLICITUD_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(SC_SOLICITUD_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(SC_SOLICITUD_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION);
-        //funcion para inactivar un registro, se actualiza el campo ACTIVO a false
-        //Task<CResult> DesactivateAsync(SC_SOLICITUD_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION);
-        ////funcion para reactivar un registro, se actualiza el campo ACTIVO a true
-        //Task<CResult> ReactivateAsync(SC_SOLICITUD_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION);
-    }
+		Task<CResult> ActualizarPersonaDatosAsync(
+			int corrEmpresa,
+			string usuario,
+			string estacion,
+			SC_SOLICITUD_EMPLEO_PERSONA_ACTUALIZARParam data);
+	}
 }

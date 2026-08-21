@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using eFramework.Core;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using sguees.api.Shared;
 using  sguees.Models;
@@ -93,52 +94,62 @@ namespace sguees.Controllers
 			}
 		}
 
-        //[HttpPut("Desactivate")]
-        //[Authorize(Policy = "/sc-tipo-contratacion|D")]
-        //public async Task<IActionResult> Desactivate([FromQuery] SC_SOLICITUD_EMPLEOTable Data)
-        //{
-        //    Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-        //    Data.ACTIVO = false;
-        //    Data.USUARIO_ACTU = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
-        //    Data.FECHA_ACTU = DateTime.Now;
-        //    Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
-        //    var resultado = await _service.DesactivateAsync(Data, "Admin", "e-CoffeeTech");
-        //    if (resultado.ErrorCode == 0)
-        //    {
-        //        return Ok(resultado);
-        //    }
-        //    else
-        //    {
-        //        return BadRequest(resultado);
-        //    }
-        //}
+		/// <summary>
+		/// RRHH: actualiza datos del candidato (persona + colecciones) de forma atómica.
+		/// No modifica la sección Confirmación.
+		/// </summary>
+		[HttpPut("ActualizarPersonaDatos")]
+		[Authorize(Policy = "/sc-solicitud-empleo|U")]
+		public async Task<IActionResult> ActualizarPersonaDatos([FromBody] SC_SOLICITUD_EMPLEO_PERSONA_ACTUALIZARParam data)
+		{
+			var corrEmpresa = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			var usuario = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? "RRHH";
+			var estacion = ClientInfoHelper.GetClientStation(HttpContext);
+			var resultado = await _service.ActualizarPersonaDatosAsync(corrEmpresa, usuario, estacion, data);
+			return resultado.Result ? Ok(resultado) : BadRequest(resultado);
+		}
 
-        //[HttpPut("Reactivate")]
-        //[Authorize(Policy = "/sc-tipo-contratacion|U")]
-        //public async Task<IActionResult> Reactivate([FromQuery] SC_SOLICITUD_EMPLEOTable Data)
-        //{
-        //    Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-        //    Data.ACTIVO = true;
-        //    Data.USUARIO_ACTU = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
-        //    Data.FECHA_ACTU = DateTime.Now;
-        //    Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
-        //    var resultado = await _service.ReactivateAsync(Data, "Admin", "e-CoffeeTech");
-        //    if (resultado.ErrorCode == 0)
-        //    {
-        //        return Ok(resultado);
-        //    }
-        //    else
-        //    {
-        //        return BadRequest(resultado);
-        //    }
-        //}
+		/// <summary>
+		/// Sube/reemplaza la fotografía del candidato (permiso U de la solicitud).
+		/// </summary>
+		[HttpPost("SubirFotoPersona")]
+		[Authorize(Policy = "/sc-solicitud-empleo|U")]
+		[RequestSizeLimit(6 * 1024 * 1024)]
+		public async Task<IActionResult> SubirFotoPersona(
+			[FromForm] int CORR_PERSONA_DATOS,
+			IFormFile file,
+			[FromServices] PersonaFotoStorage fotoStorage)
+		{
+			var corrEmpresa = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			if (CORR_PERSONA_DATOS <= 0)
+			{
+				return BadRequest(new CResult
+				{
+					Result = false,
+					ErrorCode = -1,
+					ErrorMessage = "Identificador de persona inválido.",
+				});
+			}
 
-        //[HttpGet("GetCORR_TIPO_VACANTE_SC_REQUISICION_PERSONAL")]
-        //[Authorize(Policy = "/sc-tipo-contratacion|R")]
-        //public async Task<CResult> GetCORR_TIPO_VACANTE_SC_REQUISICION_PERSONAL([FromQuery] SC_SOLICITUD_EMPLEOParam Data)
-        //{
-        //    Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-        //    return await _service.GetAllAsync(Data);
-        //}
-    }
+			var guardado = await fotoStorage.SaveFinalAsync(corrEmpresa, CORR_PERSONA_DATOS, file);
+			if (!guardado.Ok)
+			{
+				return BadRequest(new CResult
+				{
+					Result = false,
+					ErrorCode = -1,
+					ErrorMessage = guardado.Error,
+				});
+			}
+
+			return Ok(new CResult
+			{
+				Result = true,
+				ErrorCode = 0,
+				RowsAffected = 1,
+				Data = new { FOTO_URL = guardado.RelativeUrl },
+				ErrorMessage = "",
+			});
+		}
+	}
 }

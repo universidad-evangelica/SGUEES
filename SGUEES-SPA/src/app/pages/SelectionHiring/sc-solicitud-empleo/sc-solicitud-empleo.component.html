@@ -259,6 +259,18 @@
                 <span>Corr. {{ personaDatos?.CORR_PERSONA_DATOS }}</span>
               </div>
             </div>
+            <div
+              class="persona-datos-actions"
+              [attr.title]="!permiteEdit ? 'Sin permiso para editar' : null"
+            >
+              <dx-button
+                text="Editar Datos"
+                icon="edit"
+                type="default"
+                [disabled]="!permiteEdit || cargandoPersonaDatos || !tienePersonaDatos"
+                (onClick)="abrirEditarPersona()"
+              ></dx-button>
+            </div>
           </div>
         </div>
 
@@ -925,3 +937,18 @@
     (click)="$event.stopPropagation()"
   />
 </div>
+
+<app-sc-solicitud-empleo-editar-persona
+  [(visible)]="editarPersonaVisible"
+  [corrSolicitudEmpleo]="model.CORR_SOLICITUD_EMPLEO"
+  [fotoPreviewUrl]="fotoPersonaUrl"
+  [persona]="personaDatos"
+  [familiares]="familiares"
+  [hijos]="hijos"
+  [estudios]="estudios"
+  [idiomas]="idiomas"
+  [competencias]="competencias"
+  [experiencias]="experiencias"
+  [familiaresUees]="familiaresUees"
+  (saved)="onPersonaDatosGuardados()"
+></app-sc-solicitud-empleo-editar-persona>

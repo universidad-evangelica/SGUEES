@@ -113,6 +113,14 @@ export class ScSolicitudEmpleoService {
 		]);
 	}
 
+	actualizarPersonaDatos(model: any): Observable<IResult> {
+		return this.repo.actualizarPersonaDatos(model);
+	}
+
+	subirFotoPersona(corrPersonaDatos: number, file: File): Observable<IResult> {
+		return this.repo.subirFotoPersona(corrPersonaDatos, file);
+	}
+
 	/** Requisiciones ya vinculadas a la solicitud (cards del tab). */
 	getAllRequisicionSolicitud(corrSolicitudEmpleo: number): Observable<IResult> {
 		return this.repo.getAllRequisicionSolicitud([
