@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
+using eFramework.Data;
 using SGUEES.Models;
 using SGUEES.Repositories;
 
@@ -10,26 +12,69 @@ namespace SGUEES.Services
     public class SC_DESCRIPTOR_PUESTOService : ISC_DESCRIPTOR_PUESTOService
     {
         private readonly ISC_DESCRIPTOR_PUESTORepository _repo;
+        private readonly ISC_UNIDADES_USUARIORepository _unidadesUsuarioRepo;
         private readonly ISC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService _requerimientoOrganizacionalService;
         private readonly ISC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService _riesgoPuestoService;
         private readonly ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService _responsabilidadCargoService;
 
         public SC_DESCRIPTOR_PUESTOService(
             ISC_DESCRIPTOR_PUESTORepository repo,
+            ISC_UNIDADES_USUARIORepository unidadesUsuarioRepo,
             ISC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService requerimientoOrganizacionalService,
             ISC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService riesgoPuestoService,
             ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService responsabilidadCargoService)
         {
             _repo = repo;
+            _unidadesUsuarioRepo = unidadesUsuarioRepo;
             _requerimientoOrganizacionalService = requerimientoOrganizacionalService;
             _riesgoPuestoService = riesgoPuestoService;
             _responsabilidadCargoService = responsabilidadCargoService;
         }
 
-        // Lista todos los descriptores de la empresa; convierte filtros a parámetros SQL y consulta el repositorio.
+        // Qué hace: lista descriptores de la empresa visibles para el usuario de sesión.
+        // Cómo: lee V_SC_DESCRIPTOR_PUESTO y deja solo los cuyo CORR_UNIDAD
+        //       está en PRAL_DATA_SC_UNIDADES_USUARIO (puesto + jefe + configuradas).
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_PUESTOParam xWhere)
         {
-            return await _repo.GetAllAsync(BuildParameters(xWhere));
+            var result = await _repo.GetAllAsync(BuildParameters(xWhere));
+            if (!result.Result || result.Data == null)
+            {
+                return result;
+            }
+
+            var login = (xWhere?.LOGIN_SISTEMA ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(login))
+            {
+                result.Data = new List<SC_DESCRIPTOR_PUESTOView>();
+                result.RowsAffected = 0;
+                return result;
+            }
+
+            var unidadesResult = await _unidadesUsuarioRepo.GetUnidadesUsuarioAsync(
+                new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "LOGIN_SISTEMA", Value = login, DbType = System.Data.DbType.String },
+                });
+
+            if (!unidadesResult.Result)
+            {
+                return unidadesResult;
+            }
+
+            var unidadesPermitidas = (unidadesResult.Data as IEnumerable<SC_UNIDADES_USUARIOView> ?? Enumerable.Empty<SC_UNIDADES_USUARIOView>())
+                .Select(u => u.CORR_UNIDAD)
+                .Where(u => u > 0)
+                .ToHashSet();
+
+            var lista = (result.Data as IEnumerable<SC_DESCRIPTOR_PUESTOView> ?? Enumerable.Empty<SC_DESCRIPTOR_PUESTOView>())
+                .Where(d => d.CORR_UNIDAD.HasValue && unidadesPermitidas.Contains(d.CORR_UNIDAD.Value))
+                .OrderBy(d => d.CORR_DESCRIPTOR_PUESTO)
+                .ToList();
+
+            result.Data = lista;
+            result.RowsAffected = lista.Count;
+            return result;
         }
 
         // Obtiene un descriptor por empresa y CORR_DESCRIPTOR_PUESTO.

@@ -24,12 +24,15 @@ namespace SGUEES.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(_service));
         }
 
-        // Lista todos los descriptores de puesto de la empresa en sesión; pasa los filtros del query al servicio.
+        // Qué hace: lista descriptores de la empresa visibles para el usuario.
+        // Cómo: pasa CORR_EMPRESA y LOGIN_SISTEMA; el servicio filtra por
+        //       unidades de PRAL_DATA_SC_UNIDADES_USUARIO (puesto/jefe/config).
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> GetAll([FromQuery] SC_DESCRIPTOR_PUESTOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
+            Data.LOGIN_SISTEMA = GetUsuario();
             return await _service.GetAllAsync(Data);
         }
 
