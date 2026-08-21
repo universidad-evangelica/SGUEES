@@ -23,6 +23,8 @@ import { ScSolicitudEmpleoComponent } from './sc-solicitud-empleo.component';
 import { ScSolicitudEmpleoEditarPersonaComponent } from './sc-solicitud-empleo-editar-persona.component';
 import { ToastModule } from 'primeng/toast';
 import { DxToolbarModule } from 'devextreme-angular/ui/toolbar';
+import { ToastModule } from "primeng/toast"; //importar el modulo de Toast para primeNG
+import { DxToolbarModule } from "devextreme-angular/ui/toolbar";
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
 
 const routes: Routes = [{ path: '', component: ScSolicitudEmpleoComponent }];
@@ -51,6 +53,22 @@ const routes: Routes = [{ path: '', component: ScSolicitudEmpleoComponent }];
 		DxToolbarModule,
 		DxPopupModule,
 	],
+    RouterModule.forChild(routes),
+    CommonModule,
+    DxFormModule,
+    DxDataGridModule,
+    DxButtonModule,
+    DxLoadPanelModule,
+    DxDropDownBoxModule,
+    DxCheckBoxModule,
+    DxTabPanelModule,
+    DataGridMttoModule,
+    BarraDataMttoModule,
+    DataLookupModule,
+    ToastModule,
+    DxToolbarModule,
+    DxPopupModule
+],
 	exports: [RouterModule],
 	declarations: [ScSolicitudEmpleoComponent, ScSolicitudEmpleoEditarPersonaComponent],
 })
