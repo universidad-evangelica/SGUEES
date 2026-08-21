@@ -35,7 +35,7 @@ import { ScDescriptorPuestoInduccionRepository } from './sc-descriptor-puesto-in
 import { ScDescriptorPuestoResponsabilidadCargo } from './sc-descriptor-puesto-responsabilidad-cargo/models/sc-descriptor-puesto-responsabilidad-cargo';
 import { ScDescriptorPuestoResponsabilidadCargoRepository } from './sc-descriptor-puesto-responsabilidad-cargo/sc-descriptor-puesto-responsabilidad-cargo.repository';
 import {
-	ESTADOS_DESCRIPTOR_BLOQUEO_CREACION,
+	esEstadoDescriptorBloqueante,
 	FORMATO_AMBOS,
 	FORMATO_CORTO,
 	FORMATO_EXTENSO,
@@ -46,15 +46,6 @@ import {
 	TIPO_RELACION_INTERNA,
 } from './models/sc-descriptor-puesto';
 import { ScDescriptorPuestoRepository } from './sc-descriptor-puesto.repository';
-
-// Qué hace: textos legibles de cada estado del descriptor para los badges del grid.
-const ESTADO_DESCRIPTOR_LABELS: Record<string, string> = {
-	BORRADOR: 'Borrador',
-	ENVIADO: 'Enviado',
-	REVISADO: 'En revision',
-	ACTIVO: 'Activo',
-	INACTIVO: 'Inactivo',
-};
 
 // Qué hace: expone la lógica de negocio del descriptor y de todas sus secciones de detalle.
 @Injectable({ providedIn: 'root' })
@@ -132,8 +123,8 @@ export class ScDescriptorPuestoService {
 					return false;
 				}
 
-				const estado = (row.ESTADO_DESCRIPTOR ?? '').toUpperCase();
-				if (!ESTADOS_DESCRIPTOR_BLOQUEO_CREACION.includes(estado)) {
+				const estado = row.NOMBRE_ESTADO;
+				if (!esEstadoDescriptorBloqueante(estado)) {
 					return false;
 				}
 
@@ -173,7 +164,7 @@ export class ScDescriptorPuestoService {
 	buildMensajeDescriptorExistente(conflicto: ScDescriptorPuesto): string {
 		const codigo = this.buildCodigoDescriptor(conflicto.CORR_DESCRIPTOR_PUESTO);
 		const version = Number(conflicto.VERSION) > 0 ? Number(conflicto.VERSION) : 1;
-		const estado = (conflicto.ESTADO_DESCRIPTOR ?? '').toUpperCase();
+		const estado = (conflicto.NOMBRE_ESTADO ?? '').trim().toUpperCase();
 		const contexto = estado === 'ACTIVO' ? 'activo' : 'en proceso de aprobacion';
 
 		return (
@@ -267,18 +258,18 @@ export class ScDescriptorPuestoService {
 				},
 			},
 			{
-				dataField: 'ESTADO_DESCRIPTOR',
+				dataField: 'NOMBRE_ESTADO',
 				caption: 'Estado',
-				width: 152,
+				width: 168,
 				cssClass: 'descriptor-grid-badge-col',
 				allowHeaderFiltering: false,
 				calculateCellValue: (row: ScDescriptorPuesto) =>
-					this.getEstadoDescriptorLabel(row.ESTADO_DESCRIPTOR),
+					this.getEstadoDescriptorLabel(row.NOMBRE_ESTADO),
 				cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
 					this.renderBadge(
 						cellElement,
-						[this.getEstadoDescriptorBadgeClass(cellInfo.data?.ESTADO_DESCRIPTOR)],
-						this.getEstadoDescriptorLabel(cellInfo.data?.ESTADO_DESCRIPTOR)
+						[this.getEstadoDescriptorBadgeClass(cellInfo.data?.NOMBRE_ESTADO)],
+						this.getEstadoDescriptorLabel(cellInfo.data?.NOMBRE_ESTADO)
 					);
 				},
 			},
@@ -444,10 +435,18 @@ export class ScDescriptorPuestoService {
 				editorOptions: { min: 1, showSpinButtons: true, readOnly: true },
 			},
 			{
-				dataField: 'ESTADO_DESCRIPTOR',
+				dataField: 'NOMBRE_ESTADO',
 				label: { text: 'Estado' },
 				colSpan: 2,
 				editorType: 'dxTextBox',
+				editorOptions: { readOnly: true },
+			},
+			{
+				dataField: 'CORR_ESTADO',
+				label: { text: 'Corr. estado' },
+				visible: false,
+				colSpan: 1,
+				editorType: 'dxNumberBox',
 				editorOptions: { readOnly: true },
 			},
 		];
@@ -554,29 +553,33 @@ export class ScDescriptorPuestoService {
 		return 'descriptor-badge--formato-default';
 	}
 
-	// Qué hace: devuelve la etiqueta legible del estado del descriptor.
+	// Qué hace: devuelve la etiqueta del estado (nombre del flujo tal cual).
 	private getEstadoDescriptorLabel(estado: string | null | undefined): string {
-		const value = (estado ?? '').toUpperCase();
-		return ESTADO_DESCRIPTOR_LABELS[value] ?? (estado ?? '');
+		return (estado ?? '').trim() || '';
 	}
 
-	// Qué hace: devuelve la clase CSS del badge según el estado del descriptor.
+	// Qué hace: clase CSS del badge según el nombre del estado de flujo.
 	private getEstadoDescriptorBadgeClass(estado: string | null | undefined): string {
-		const value = (estado ?? '').toUpperCase();
-		switch (value) {
-			case 'ACTIVO':
-				return 'descriptor-badge--estado-activo';
-			case 'INACTIVO':
-				return 'descriptor-badge--estado-inactivo';
-			case 'BORRADOR':
-				return 'descriptor-badge--estado-borrador';
-			case 'ENVIADO':
-				return 'descriptor-badge--estado-enviado';
-			case 'REVISADO':
-				return 'descriptor-badge--estado-revision';
-			default:
-				return 'descriptor-badge--estado-default';
+		const value = (estado ?? '').trim().toUpperCase();
+		if (value === 'ACTIVO') {
+			return 'descriptor-badge--estado-activo';
 		}
+		if (value === 'INACTIVO') {
+			return 'descriptor-badge--estado-inactivo';
+		}
+		if (value === 'BORRADOR') {
+			return 'descriptor-badge--estado-borrador';
+		}
+		if (value.includes('OBSERV')) {
+			return 'descriptor-badge--estado-revision';
+		}
+		if (value.includes('ENVIADO')) {
+			return 'descriptor-badge--estado-enviado';
+		}
+		if (value.includes('APROB') || value.includes('REVIS')) {
+			return 'descriptor-badge--estado-revision';
+		}
+		return 'descriptor-badge--estado-default';
 	}
 
 	// Qué hace: lista funciones secundarias del descriptor.

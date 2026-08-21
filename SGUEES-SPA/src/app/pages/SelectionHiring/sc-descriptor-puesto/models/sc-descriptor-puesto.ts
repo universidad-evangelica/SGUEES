@@ -14,7 +14,8 @@ export interface ScDescriptorPuesto {
 	RESPONSABLE: string; // Nombre del responsable del puesto (NOMBRE_EMPLEADO del jefe).
 	FORMATO: string; // Formato del descriptor: CORTO, EXTENSO o AMBOS.
 	VERSION: number | null; // Número de versión del descriptor.
-	ESTADO_DESCRIPTOR: string; // Estado del flujo (BORRADOR, ACTIVO, etc.).
+	CORR_ESTADO: number | null; // FK al estado del flujo (SEG_FLUJO_ESTADO).
+	NOMBRE_ESTADO: string; // Nombre del estado de flujo (bandera UI).
 	USUARIO_CREA: string; // Usuario que creó el registro.
 	ESTACION_CREA: string; // Estación de trabajo de creación.
 	FECHA_CREA: Date | string | null; // Fecha y hora de creación.
@@ -134,8 +135,14 @@ export const TIPO_FUNCION_SECUNDARIA = 'SECUNDARIA';
 export const TIPO_RELACION_INTERNA = 'I';
 export const TIPO_RELACION_EXTERNA = 'E';
 
-// Estados que impiden crear otra versión abierta del mismo puesto.
-export const ESTADOS_DESCRIPTOR_BLOQUEO_CREACION = ['BORRADOR', 'ENVIADO', 'REVISADO', 'ACTIVO'];
+// Estados que NO permiten crear otra versión abierta del mismo puesto.
+// Cualquier estado distinto de Inactivo bloquea (Borrador, Enviado JI, Activo, etc.).
+export const NOMBRE_ESTADO_INACTIVO = 'Inactivo';
+
+export function esEstadoDescriptorBloqueante(nombreEstado: string | null | undefined): boolean {
+	const n = (nombreEstado ?? '').trim().toUpperCase();
+	return n !== '' && n !== NOMBRE_ESTADO_INACTIVO.toUpperCase();
+}
 
 // Valores por defecto al crear el perfil local si aún no existe en BD.
 export const PERFIL_PUESTO_DEFAULT = {

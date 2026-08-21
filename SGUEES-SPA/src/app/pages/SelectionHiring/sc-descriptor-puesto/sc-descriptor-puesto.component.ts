@@ -1156,7 +1156,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				RESPONSABLE: xModel.RESPONSABLE ?? '',
 				FORMATO: xModel.FORMATO ?? FORMATO_CORTO,
 				VERSION: xModel.VERSION ?? 1,
-				ESTADO_DESCRIPTOR: xModel.ESTADO_DESCRIPTOR ?? 'BORRADOR',
+				CORR_ESTADO: xModel.CORR_ESTADO ?? 11,
+				NOMBRE_ESTADO: xModel.NOMBRE_ESTADO ?? 'Borrador',
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
 				FECHA_CREA: xModel.FECHA_CREA,
@@ -1185,7 +1186,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			//FORMATO: FORMATO_CORTO,
 			FORMATO: FORMATO_AMBOS,
 			VERSION: 1,
-			ESTADO_DESCRIPTOR: 'BORRADOR',
+			CORR_ESTADO: 11,
+			NOMBRE_ESTADO: 'Borrador',
 			USUARIO_CREA: '',
 			ESTACION_CREA: '',
 			FECHA_CREA: hoy,
@@ -6066,14 +6068,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	// Qué hace: habilita la edición del formulario del encabezado.
 	// Cómo: marca readOnly en false y habilita el formulario, dejando como solo lectura los campos
-	// CORR_DESCRIPTOR_PUESTO, VERSION y ESTADO_DESCRIPTOR que no deben modificarse manualmente.
+	// CORR_DESCRIPTOR_PUESTO, VERSION y NOMBRE_ESTADO que no deben modificarse manualmente.
 	override habilitar(): void {
 		this.readOnly = false;
 		setTimeout(() => {
 			this.headerForm?.instance?.option('readOnly', false);
 			this.headerForm?.instance?.getEditor('CORR_DESCRIPTOR_PUESTO')?.option('readOnly', true);
 			this.headerForm?.instance?.getEditor('VERSION')?.option('readOnly', true);
-			this.headerForm?.instance?.getEditor('ESTADO_DESCRIPTOR')?.option('readOnly', true);
+			this.headerForm?.instance?.getEditor('NOMBRE_ESTADO')?.option('readOnly', true);
+			this.headerForm?.instance?.getEditor('CORR_ESTADO')?.option('readOnly', true);
 		});
 	}
 

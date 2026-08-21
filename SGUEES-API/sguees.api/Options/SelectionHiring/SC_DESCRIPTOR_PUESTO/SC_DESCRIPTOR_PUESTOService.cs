@@ -286,9 +286,13 @@ namespace SGUEES.Services
             Data.RESPONSABLE = string.IsNullOrWhiteSpace(Data.RESPONSABLE) ? null : Data.RESPONSABLE.Trim();
             // Convierte variantes antiguas del formato al valor canónico.
             Data.FORMATO = NormalizeFormato(Data.FORMATO);
-            Data.ESTADO_DESCRIPTOR = string.IsNullOrWhiteSpace(Data.ESTADO_DESCRIPTOR)
-                ? "BORRADOR"
-                : Data.ESTADO_DESCRIPTOR.Trim().ToUpperInvariant();
+            if (!Data.CORR_ESTADO.HasValue || Data.CORR_ESTADO <= 0)
+            {
+                Data.CORR_ESTADO = 11; // Borrador (SEG_FLUJO_ESTADO)
+            }
+            Data.NOMBRE_ESTADO = string.IsNullOrWhiteSpace(Data.NOMBRE_ESTADO)
+                ? "Borrador"
+                : Data.NOMBRE_ESTADO.Trim();
             Data.VERSION ??= 1;
         }
 

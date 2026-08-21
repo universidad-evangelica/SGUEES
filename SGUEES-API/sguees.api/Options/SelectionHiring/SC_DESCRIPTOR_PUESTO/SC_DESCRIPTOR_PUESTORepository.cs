@@ -170,7 +170,8 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "NOMBRE_UNIDAD", Value = Data.NOMBRE_UNIDAD, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FORMATO", Value = Data.FORMATO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "VERSION", Value = Data.VERSION, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "ESTADO_DESCRIPTOR", Value = Data.ESTADO_DESCRIPTOR, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CORR_ESTADO", Value = Data.CORR_ESTADO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "NOMBRE_ESTADO", Value = Data.NOMBRE_ESTADO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -401,7 +402,8 @@ namespace SGUEES.Repositories
                 new CParameter() { ParameterName = "RESPONSABLE", Value = Data.RESPONSABLE, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "FORMATO", Value = Data.FORMATO, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "VERSION", Value = Data.VERSION, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "ESTADO_DESCRIPTOR", Value = Data.ESTADO_DESCRIPTOR, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "CORR_ESTADO", Value = Data.CORR_ESTADO, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "NOMBRE_ESTADO", Value = Data.NOMBRE_ESTADO, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -436,7 +438,7 @@ namespace SGUEES.Repositories
                 e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
         }
 
-        // Consulta SC_DESCRIPTOR_PUESTO: true si el puesto ya tiene descriptor en BORRADOR, ENVIADO, REVISADO o ACTIVO.
+        // Consulta SC_DESCRIPTOR_PUESTO: true si el puesto ya tiene descriptor no Inactivo (flujo abierto o Activo).
         public async Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(int corrEmpresa, int corrPuesto, int excludeCorrDescriptor)
         {
             if (corrEmpresa <= 0 || corrPuesto <= 0)
@@ -448,7 +450,7 @@ namespace SGUEES.Repositories
                 FROM SC_DESCRIPTOR_PUESTO
                 WHERE CORR_EMPRESA = @CORR_EMPRESA
                   AND CORR_PUESTO = @CORR_PUESTO
-                  AND ESTADO_DESCRIPTOR IN ('BORRADOR', 'ENVIADO', 'REVISADO', 'ACTIVO')
+                  AND UPPER(LTRIM(RTRIM(ISNULL(NOMBRE_ESTADO, N'Borrador')))) <> N'INACTIVO'
                   AND (@EXCLUDE_CORR <= 0 OR CORR_DESCRIPTOR_PUESTO <> @EXCLUDE_CORR)";
 
             try

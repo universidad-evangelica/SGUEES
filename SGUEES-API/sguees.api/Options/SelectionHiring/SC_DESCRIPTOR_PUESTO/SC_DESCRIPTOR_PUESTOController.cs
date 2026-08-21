@@ -128,20 +128,30 @@ namespace SGUEES.Controllers
             Data.USUARIO_ACTU = Data.USUARIO_CREA;
             Data.ESTACION_ACTU = Data.ESTACION_CREA;
             Data.FECHA_ACTU = Data.FECHA_CREA;
-            Data.ESTADO_DESCRIPTOR ??= "BORRADOR";
+            // Estado inicial de flujo (Borrador) hasta que el SP de flujos sincronice.
+            Data.CORR_ESTADO ??= 11;
+            if (string.IsNullOrWhiteSpace(Data.NOMBRE_ESTADO))
+            {
+                Data.NOMBRE_ESTADO = "Borrador";
+            }
             Data.VERSION ??= 1;
         }
 
-        // Rellena auditoría al modificar: empresa, usuario, estación, fecha y estado BORRADOR si viene vacío.
+        // Rellena auditoría al modificar: empresa, usuario, estación, fecha.
+        // No pisa CORR_ESTADO/NOMBRE_ESTADO si ya vienen del flujo.
         private void SetUpdateAudit(SC_DESCRIPTOR_PUESTOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
             Data.USUARIO_ACTU = GetUsuario();
             Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
             Data.FECHA_ACTU = DateTime.Now;
-            if (string.IsNullOrWhiteSpace(Data.ESTADO_DESCRIPTOR))
+            if (!Data.CORR_ESTADO.HasValue || Data.CORR_ESTADO <= 0)
             {
-                Data.ESTADO_DESCRIPTOR = "BORRADOR";
+                Data.CORR_ESTADO = 11;
+            }
+            if (string.IsNullOrWhiteSpace(Data.NOMBRE_ESTADO))
+            {
+                Data.NOMBRE_ESTADO = "Borrador";
             }
         }
 
