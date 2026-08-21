@@ -95,6 +95,17 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Qué hace: ejecuta una operación del flujo del descriptor (Enviar/Aprobar/Observar/etc.).
+        // Cómo lo hace: Put Autoriza → PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA; Data = fila de la vista.
+        [HttpPut("Autoriza")]
+        [Authorize(Policy = "/sc-descriptor-puesto|U")]
+        public async Task<IActionResult> Autoriza(SC_DESCRIPTOR_PUESTO_AUTORIZAParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            var resultado = await _service.AutorizaAsync(Data, GetUsuario());
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+        }
+
         // Elimina un descriptor de la empresa en sesión; borra también sus registros hijos.
         [HttpDelete]
         [Authorize(Policy = "/sc-descriptor-puesto|D")]

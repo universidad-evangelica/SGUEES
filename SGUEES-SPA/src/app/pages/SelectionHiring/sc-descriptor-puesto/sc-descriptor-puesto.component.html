@@ -1,6 +1,6 @@
 <!-- Pantalla de mantenimiento del Descriptor de Puesto. -->
 <div class="sguees-mtto-view">
-<!-- Barra superior: Nuevo, Guardar y Cancelar. -->
+<!-- Barra superior: Nuevo, Guardar, Cancelar y acciones de flujo. -->
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
 	[showRibbon]="true"
@@ -13,6 +13,31 @@
 	(nuevo)="nuevo()"
 	(guardar)="guardar()"
 	(cancelar)="cancelar()"
+	[btn1]="btnEnviar"
+	[btn1Icon]="'send'"
+	[btn1Type]="'success'"
+	[btn1Width]="120"
+	(btn1Click)="abrirPopupFlujo(OPERACION_FLUJO.ENVIAR)"
+	[btn2]="btnAprobar"
+	[btn2Icon]="'check'"
+	[btn2Type]="'success'"
+	[btn2Width]="110"
+	(btn2Click)="abrirPopupFlujo(OPERACION_FLUJO.APROBAR)"
+	[btn3]="btnObservar"
+	[btn3Icon]="'comment'"
+	[btn3Type]="'danger'"
+	[btn3Width]="120"
+	(btn3Click)="abrirPopupFlujo(OPERACION_FLUJO.OBSERVAR)"
+	[btn4]="btnInactivar"
+	[btn4Icon]="'close'"
+	[btn4Type]="'default'"
+	[btn4Width]="120"
+	(btn4Click)="abrirPopupFlujo(OPERACION_FLUJO.INACTIVAR)"
+	[btn5]="btnReactivar"
+	[btn5Icon]="'refresh'"
+	[btn5Type]="'default'"
+	[btn5Width]="120"
+	(btn5Click)="abrirPopupFlujo(OPERACION_FLUJO.REACTIVAR)"
 >
 </app-barra-data-mtto>
 
@@ -2336,7 +2361,7 @@
 			</div>
 		</dxi-item>
 
-		<!-- Pestaña Bitácora: historial de estados del descriptor. -->
+		<!-- Pestaña Bitácora: historial del flujo vía app-firmas-documento (tipo 102). -->
 		<dxi-item title="Bitácora" icon="event">
 			<div class="descriptor-bitacora">
 				<h3 class="descriptor-section-title descriptor-bitacora-title">
@@ -2344,10 +2369,21 @@
 					Bitácora del Descriptor
 				</h3>
 
-				<div class="descriptor-bitacora-empty" *ngIf="!tieneBitacora" role="status">
+				<!-- Sin correlativo aún: el flujo no existe hasta guardar el descriptor. -->
+				<div class="descriptor-bitacora-empty" *ngIf="!tieneDocumentoBitacora" role="status">
 					<span class="dx-icon-info descriptor-bitacora-empty-icon" aria-hidden="true"></span>
 					<span class="descriptor-bitacora-empty-text">{{ mensajeBitacoraVacia }}</span>
 				</div>
+
+				<!-- Con correlativo: Shared Flujo carga V_SEG_FLUJO_BITACORA_FIRMAS por tipo + documento. -->
+				<app-firmas-documento
+					#firmasDocumento
+					*ngIf="tieneDocumentoBitacora"
+					[tipoDocumento]="tipoDocumentoFlujo"
+					[idDocumento]="model.CORR_DESCRIPTOR_PUESTO"
+					[mostrarTitulo]="false"
+				>
+				</app-firmas-documento>
 			</div>
 		</dxi-item>
 	</dx-tab-panel>
@@ -2525,5 +2561,38 @@
 				[allowSorting]="true"
 			></dxi-column>
 		</dx-data-grid>
+	</div>
+</dx-popup>
+
+<!-- Motivo: captura el comentario obligatorio de cada operación del flujo (Enviar/Aprobar/Observar/etc.). -->
+<dx-popup
+	[(visible)]="popupFlujoVisible"
+	[showTitle]="true"
+	[title]="tituloPopupFlujo"
+	[width]="520"
+	[height]="'auto'"
+	[maxHeight]="'80vh'"
+	[dragEnabled]="true"
+	[hideOnOutsideClick]="false"
+	[showCloseButton]="true"
+	(onHiding)="cancelarPopupFlujo()"
+>
+	<div class="descriptor-flujo-popup">
+		<p class="descriptor-flujo-popup__hint">{{ hintPopupFlujo }}</p>
+		<dx-text-area
+			[(value)]="observacionFlujo"
+			[height]="140"
+			[maxLength]="2000"
+			placeholder="Escriba el comentario / observacion..."
+		></dx-text-area>
+		<div class="descriptor-flujo-popup__actions">
+			<dx-button text="Cancelar" type="normal" stylingMode="outlined" (onClick)="cancelarPopupFlujo()"></dx-button>
+			<dx-button
+				[text]="textoBotonConfirmarFlujo"
+				type="default"
+				stylingMode="contained"
+				(onClick)="confirmarPopupFlujo()"
+			></dx-button>
+		</div>
 	</div>
 </dx-popup>

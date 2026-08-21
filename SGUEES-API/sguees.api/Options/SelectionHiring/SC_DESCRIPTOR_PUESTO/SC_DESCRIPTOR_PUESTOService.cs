@@ -89,7 +89,8 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
-        // Valida reglas de negocio, crea el descriptor y precarga catálogos (requerimientos, riesgos, responsabilidades).
+        // Valida reglas de negocio, crea el descriptor, precarga catálogos e inicia el flujo en Borrador
+        // (PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA OPERACION=1 / GUARDAR), igual que el simulador.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             // Rechaza si CORR_EMPRESA no viene en la sesión.
@@ -177,6 +178,47 @@ namespace SGUEES.Services
                 if (!string.IsNullOrWhiteSpace(seedResponsabilidades?.ErrorMessage))
                 {
                     seedMessages.Add(seedResponsabilidades.ErrorMessage.Trim());
+                }
+
+                // Qué hace: inicia el flujo en Borrador (igual que BLOQUE 2 del simulador).
+                // Cómo: OPERACION=1 GUARDAR crea instancia + bitácora; Solicitar (2) es el siguiente paso.
+                var unidadDocumento = Data.CORR_UNIDAD;
+                if ((!unidadDocumento.HasValue || unidadDocumento.Value <= 0) &&
+                    result.Data is SC_DESCRIPTOR_PUESTOView createdRow &&
+                    createdRow.CORR_UNIDAD.HasValue)
+                {
+                    unidadDocumento = createdRow.CORR_UNIDAD;
+                }
+
+                var autorizaBorrador = await _repo.AutorizaAsync(
+                    new SC_DESCRIPTOR_PUESTO_AUTORIZAParam
+                    {
+                        CORR_EMPRESA = Data.CORR_EMPRESA,
+                        CORR_DESCRIPTOR_PUESTO = corrDescriptor,
+                        CORR_UNIDAD_DOCUMENTO = unidadDocumento,
+                        OPERACION = 1,
+                        OBSERVACION =
+                            "Se guarda el descriptor por primera vez. Se crea la instancia de flujo y el documento queda en Borrador, listo para solicitar autorizacion.",
+                    },
+                    vLOGIN_SISTEMA);
+
+                if (!autorizaBorrador.Result || autorizaBorrador.ErrorCode != 0)
+                {
+                    result.Result = false;
+                    result.ErrorCode = autorizaBorrador.ErrorCode != 0 ? autorizaBorrador.ErrorCode : -1;
+                    result.ErrorMessage =
+                        "El descriptor se creo, pero no se pudo iniciar el flujo en Borrador: " +
+                        (autorizaBorrador.ErrorMessage ?? "error desconocido");
+                    result.ErrorSource = autorizaBorrador.ErrorSource;
+                    return result;
+                }
+
+                // Devuelve la fila ya sincronizada por el SP (estado Borrador en flujo).
+                if (autorizaBorrador.Data != null)
+                {
+                    result.Data = autorizaBorrador.Data;
+                    result.RowsAffected = autorizaBorrador.RowsAffected;
+                    result.CodeHelper = autorizaBorrador.CodeHelper;
                 }
 
                 if (seedMessages.Count > 0)
@@ -268,6 +310,40 @@ namespace SGUEES.Services
             }
 
             return await _repo.UpdateImpactoEconomicoAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        // Qué hace: ejecuta una operación del flujo (Enviar/Aprobar/Observar/Inactivar/Reactivar).
+        // Cómo lo hace: valida claves y OPERACION; delega al SP AUTORIZA; el repo relee la vista.
+        public async Task<CResult> AutorizaAsync(SC_DESCRIPTOR_PUESTO_AUTORIZAParam Data, string vLOGIN_SISTEMA)
+        {
+            var empresaError = ValidateEmpresaSesion(Data?.CORR_EMPRESA ?? 0);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            if (Data.CORR_DESCRIPTOR_PUESTO <= 0)
+            {
+                return ValidationError("Debe indicar el descriptor de puesto.");
+            }
+
+            if (Data.OPERACION < 1 || Data.OPERACION > 6)
+            {
+                return ValidationError("Operacion invalida. Use 1=GUARDAR, 2=ENVIAR, 3=APROBAR, 4=OBSERVAR, 5=INACTIVAR, 6=REACTIVAR.");
+            }
+
+            if (string.IsNullOrWhiteSpace(Data.OBSERVACION))
+            {
+                return ValidationError("El comentario / observacion es obligatorio.");
+            }
+
+            if (string.IsNullOrWhiteSpace(vLOGIN_SISTEMA))
+            {
+                return ValidationError("No se pudo identificar el usuario de sesion.");
+            }
+
+            Data.OBSERVACION = Data.OBSERVACION.Trim();
+            return await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());
         }
 
 	// Valida empresa y elimina el descriptor con sus registros relacionados.

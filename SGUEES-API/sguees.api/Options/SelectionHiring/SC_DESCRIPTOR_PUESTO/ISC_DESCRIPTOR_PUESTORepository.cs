@@ -17,5 +17,7 @@ namespace SGUEES.Repositories
         Task<CResult> UpdateResponsableAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         // Actualiza solo impacto económico.
         Task<CResult> UpdateImpactoEconomicoAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+        // Ejecuta PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA y relee la vista.
+        Task<CResult> AutorizaAsync(SC_DESCRIPTOR_PUESTO_AUTORIZAParam Data, string vLOGIN_SISTEMA);
     }
 }

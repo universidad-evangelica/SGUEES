@@ -45,6 +45,7 @@ import {
 	FORMATO_AMBOS,
 	FORMATO_CORTO,
 	FORMATO_EXTENSO,
+	OPERACION_FLUJO,
 	PERFIL_PUESTO_DEFAULT,
 	ScCompetenciaConductualLookupItem,
 	ScCompetenciaTecnicaLookupItem,
@@ -61,8 +62,15 @@ import {
 	TIPO_FUNCION_SECUNDARIA,
 	TIPO_RELACION_EXTERNA,
 	TIPO_RELACION_INTERNA,
+	esEstadoDescriptorEditable,
+	esEstadoDescriptorEliminable,
+	puedeAprobarUObservarDescriptor,
+	puedeEnviarDescriptor,
+	puedeInactivarDescriptor,
+	puedeReactivarDescriptor,
 } from './models/sc-descriptor-puesto';
 import { ScDescriptorPuestoService } from './sc-descriptor-puesto.service';
+import { FirmasDocumentoComponent } from 'src/app/shared/components/firmas-documento/firmas-documento.component';
 
 @Component({
 	selector: 'app-sc-descriptor-puesto',
@@ -74,6 +82,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 	@ViewChild('fHeaderData', { static: false }) headerForm!: DxFormComponent;
 	@ViewChild('tabPanelSecciones', { static: false }) tabPanelSecciones?: DxTabPanelComponent;
+	@ViewChild('firmasDocumento', { static: false }) firmasDocumento?: FirmasDocumentoComponent;
 	@ViewChild('gridFuncionesClave', { static: false }) gridFuncionesClave?: DxDataGridComponent;
 	@ViewChild('gridFuncionesSecundarias', { static: false }) gridFuncionesSecundarias?: DxDataGridComponent;
 	@ViewChild('gridKpis', { static: false }) gridKpis?: DxDataGridComponent;
@@ -197,7 +206,26 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	];
 
 	headerItems: any[] = [];
-	itemsTabBitacora: any[] = [];
+
+	// Qué hace: CORR_TIPO_DOCUMENTO del flujo Descriptor de Puesto (SEG_FLUJO).
+	// Cómo lo hace: se pasa a app-firmas-documento para filtrar la bitácora Shared.
+	readonly tipoDocumentoFlujo = 102;
+	readonly OPERACION_FLUJO = OPERACION_FLUJO;
+
+	// Qué hace: etiquetas de botones de flujo en la barra (vacío = oculto).
+	btnEnviar = '';
+	btnAprobar = '';
+	btnObservar = '';
+	btnInactivar = '';
+	btnReactivar = '';
+
+	// Qué hace: popup de comentario obligatorio antes de ejecutar Autoriza.
+	popupFlujoVisible = false;
+	operacionFlujoPendiente: number | null = null;
+	observacionFlujo = '';
+	tituloPopupFlujo = 'Comentario del flujo';
+	hintPopupFlujo = '';
+	textoBotonConfirmarFlujo = 'Confirmar';
 
 	funcionesClave: ScDescriptorPuestoFuncion[] = [];
 	funcionesSecundarias: ScDescriptorPuestoFuncion[] = [];
@@ -293,6 +321,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		private cdr: ChangeDetectorRef
 	) {
 		super(appInfoService, router);
+		this.getPermiteEditar = this.getPermiteEditar.bind(this);
+		this.getPermiteDele = this.getPermiteDele.bind(this);
 		this.selectedLookUpCORR_UNIDAD = this.selectedLookUpCORR_UNIDAD.bind(this);
 		this.selectedLookUpCORR_PUESTO = this.selectedLookUpCORR_PUESTO.bind(this);
 		this.selectedLookUpCORR_PUESTO_REPORTA = this.selectedLookUpCORR_PUESTO_REPORTA.bind(this);
@@ -1127,6 +1157,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.mainTabIndex = 0;
 			this.subTabIndex = 0;
 		}
+		// Qué hace: en listado o formulario muestra botones según el descriptor seleccionado/abierto.
+		this.refrescarBotonesFlujo();
+	}
+
+	// Qué hace: al enfocar una fila en la grilla, carga el modelo y refresca botones de flujo.
+	// Cómo: delega al base (asigna this.model) y recalcula Solicitar/Aprobar/etc. en el header.
+	override focusedRowChanged(e: any): void {
+		super.focusedRowChanged(e);
+		if (this.isBrowse()) {
+			this.refrescarBotonesFlujo();
+		}
 	}
 
 	// Arma el objeto de filtro (empresa + correlativo) que se envía en las consultas a la API.
@@ -1258,14 +1299,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.actualizarPuestosPorUnidad(null);
 		// El modelo nuevo no trae unidad; arma el lookup solo con el catálogo ya cargado (sin GET).
 		this.prepararUnidadLookupParaDescriptor();
+		this.refrescarBotonesFlujo();
 		setTimeout(() => this.syncHeaderForm());
 	}
 
 	// Qué hace: prepara la pantalla para editar el descriptor de puesto seleccionado.
-	// Cómo: habilita edición, llama al editarClick base, carga los datos
-	// de las pestañas (cargarDatosTabs) y actualiza los combos de unidad/puesto según el registro.
+	// Cómo: habilita edición solo si el estado lo permite; carga tabs y aplica bloqueo de flujo.
 	override editarClick(e: any): void {
-		this.readOnly = false;
 		this.limpiarEstadoValidacionHeader();
 		super.editarClick(e);
 		this.resetearFuncionesTabsDirty();
@@ -1275,6 +1315,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (this.model.CORR_PUESTO) {
 			this.aplicarDatosPuestoSeleccionado(this.model.CORR_PUESTO, false);
 		}
+		this.aplicarModoSegunEstadoFlujo();
 		setTimeout(() => this.syncHeaderForm());
 	}
 
@@ -1299,13 +1340,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		setTimeout(() => {
 			this.syncHeaderForm();
 			this.bloquear();
+			this.refrescarBotonesFlujo();
 		});
 	}
 
 	// Carga las secciones que aplican según formato corto o extenso.
 	// Las secciones que no aplican se vacían para no mostrar datos del descriptor anterior.
 	cargarDatosTabs(): void {
-		this.itemsTabBitacora = [];
 		this.cargarFuncionesClave();
 		if (this.esFormatoCorto) {
 			this.cargarFuncionesSecundarias();
@@ -1324,7 +1365,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	// Limpia listas y flags de edición de todas las secciones al cambiar o cancelar.
 	limpiarDatosTabs(): void {
-		this.itemsTabBitacora = [];
 		this.funcionesClave = [];
 		this.funcionesSecundarias = [];
 		this.kpis = [];
@@ -5520,21 +5560,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Qué hace: indica si la pestaña de bitácora tiene registros para mostrar.
-	// Cómo: verifica que itemsTabBitacora sea un arreglo con al menos un elemento.
-	get tieneBitacora(): boolean {
-		return Array.isArray(this.itemsTabBitacora) && this.itemsTabBitacora.length > 0;
+	// Qué hace: indica si ya hay documento para consultar la bitácora de flujo.
+	// Cómo lo hace: exige CORR_DESCRIPTOR_PUESTO > 0 (mismo id que CORR_DOCUMENTO en SEG_FLUJO).
+	get tieneDocumentoBitacora(): boolean {
+		return Number(this.model?.CORR_DESCRIPTOR_PUESTO) > 0;
 	}
 
-	// Qué hace: define el mensaje a mostrar cuando la bitácora está vacía.
-	// Cómo: si el descriptor aún no tiene correlativo, indica que debe guardarse primero; si ya existe,
-	// indica que no hay registros por el momento.
+	// Qué hace: mensaje cuando aún no se puede mostrar el componente de firmas/bitácora.
+	// Cómo lo hace: solo aplica sin correlativo; con id el vacío lo maneja app-firmas-documento.
 	get mensajeBitacoraVacia(): string {
-		if (!this.model?.CORR_DESCRIPTOR_PUESTO) {
-			return 'La bitácora estará disponible después de guardar el descriptor.';
-		}
-
-		return 'No hay registros en la bitácora por el momento.';
+		return 'La bitácora estará disponible después de guardar el descriptor.';
 	}
 
 	// Al cambiar formato: cancela ediciones abiertas, limpia secciones que ya no aplican y elige la primera pestaña válida.
@@ -5849,6 +5884,17 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
+		if (
+			this.banderaMtto !== UpdateType.Add &&
+			!esEstadoDescriptorEditable(this.model?.NOMBRE_ESTADO)
+		) {
+			this.notifyFx(
+				'Este descriptor ya no se puede editar porque esta en flujo o vigente.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
 		const formData = this.headerForm?.instance?.option('formData');
 		if (formData) {
 			// RESPONSABLE no es campo del form; en edición es texto libre del grid Entrenamiento.
@@ -5966,12 +6012,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 					if (isAdd) {
 						// Crear: se queda en el descriptor en modo edición y muestra los tabs.
+						// El API ya ejecuto GUARDAR(1): instancia + bitacora en Borrador.
 						this.readOnly = false;
 						this.AsignaStatus(UpdateType.Update);
 						this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
 						this.cargarDatosTabs();
+						this.aplicarModoSegunEstadoFlujo();
 						setTimeout(() => {
 							this.syncHeaderForm();
+							this.firmasDocumento?.refresh();
 							if (conservarAvisoSeleccioneTab) {
 								this.dejarSinTabSeccionSeleccionado();
 								this.mostrarAvisoSeleccioneTab = true;
@@ -6049,6 +6098,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Cómo: delega en rowRemovingMtto del framework base, indicando como deleteFn una llamada a
 	// service.delete convertida a respuesta homogénea con convertirErrorOperacionEnRespuesta (delete).
 	rowRemoving(e: any): void {
+		if (!esEstadoDescriptorEliminable(e?.data?.NOMBRE_ESTADO)) {
+			e.cancel = true;
+			this.notifyFx(
+				'No se puede eliminar el descriptor en el estado actual del flujo.',
+				NotifyType.Warning
+			);
+			return;
+		}
 		this.rowRemovingMtto(e, {
 			deleteFn: () =>
 				this.convertirErrorOperacionEnRespuesta(
@@ -6064,12 +6121,16 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	override bloquear(): void {
 		this.readOnly = true;
 		this.headerForm?.instance?.option('readOnly', true);
+		this.refrescarBotonesFlujo();
 	}
 
-	// Qué hace: habilita la edición del formulario del encabezado.
-	// Cómo: marca readOnly en false y habilita el formulario, dejando como solo lectura los campos
-	// CORR_DESCRIPTOR_PUESTO, VERSION y NOMBRE_ESTADO que no deben modificarse manualmente.
+	// Qué hace: habilita la edición del formulario del encabezado si el estado lo permite.
+	// Cómo: si el flujo ya avanzó, deja el form bloqueado; si no, habilita y fija campos de sistema.
 	override habilitar(): void {
+		if (!esEstadoDescriptorEditable(this.model?.NOMBRE_ESTADO) && this.banderaMtto !== UpdateType.Add) {
+			this.bloquear();
+			return;
+		}
 		this.readOnly = false;
 		setTimeout(() => {
 			this.headerForm?.instance?.option('readOnly', false);
@@ -6078,6 +6139,217 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.headerForm?.instance?.getEditor('NOMBRE_ESTADO')?.option('readOnly', true);
 			this.headerForm?.instance?.getEditor('CORR_ESTADO')?.option('readOnly', true);
 		});
+		this.refrescarBotonesFlujo();
+	}
+
+	// Qué hace: permite editar en el grid solo si el estado es Borrador/Observado.
+	override getPermiteEditar(e: any): boolean {
+		const data = e?.row?.data ?? e?.data;
+		return this.permiteEdit && esEstadoDescriptorEditable(data?.NOMBRE_ESTADO);
+	}
+
+	// Qué hace: permite eliminar en el grid solo si el estado es Borrador/Observado.
+	override getPermiteDele(e: any): boolean {
+		const data = e?.row?.data ?? e?.data;
+		return this.permiteDele && esEstadoDescriptorEliminable(data?.NOMBRE_ESTADO);
+	}
+
+	// Qué hace: aplica readOnly y botones según NOMBRE_ESTADO del flujo.
+	aplicarModoSegunEstadoFlujo(): void {
+		if (this.isBrowse()) {
+			this.refrescarBotonesFlujo();
+			return;
+		}
+		if (this.banderaMtto === UpdateType.Add || esEstadoDescriptorEditable(this.model?.NOMBRE_ESTADO)) {
+			this.habilitar();
+		} else {
+			this.bloquear();
+		}
+	}
+
+	// Qué hace: muestra/oculta botones de flujo según estado del descriptor actual.
+	// Cómo: aplica en listado (fila seleccionada) y en formulario; etiqueta ENVIAR = "Solicitar".
+	refrescarBotonesFlujo(): void {
+		if (!Number(this.model?.CORR_DESCRIPTOR_PUESTO)) {
+			this.limpiarBotonesFlujo();
+			return;
+		}
+
+		const estado = this.model?.NOMBRE_ESTADO;
+		const puedeAccion = this.permiteEdit;
+
+		this.btnEnviar = puedeAccion && puedeEnviarDescriptor(estado) ? 'Solicitar' : '';
+		this.btnAprobar = puedeAccion && puedeAprobarUObservarDescriptor(estado) ? 'Aprobar' : '';
+		this.btnObservar = puedeAccion && puedeAprobarUObservarDescriptor(estado) ? 'Observar' : '';
+		this.btnInactivar = puedeAccion && puedeInactivarDescriptor(estado) ? 'Inactivar' : '';
+		this.btnReactivar = puedeAccion && puedeReactivarDescriptor(estado) ? 'Reactivar' : '';
+	}
+
+	limpiarBotonesFlujo(): void {
+		this.btnEnviar = '';
+		this.btnAprobar = '';
+		this.btnObservar = '';
+		this.btnInactivar = '';
+		this.btnReactivar = '';
+	}
+
+	// Qué hace: abre el popup de comentario para la operación de flujo elegida.
+	abrirPopupFlujo(operacion: number): void {
+		if (!Number(this.model?.CORR_DESCRIPTOR_PUESTO)) {
+			this.notifyFx('Guarde el descriptor antes de ejecutar una accion de flujo.', NotifyType.Warning);
+			return;
+		}
+
+		const meta = this.metaOperacionFlujo(operacion);
+		if (!meta) {
+			return;
+		}
+
+		if (!meta.permitida(this.model?.NOMBRE_ESTADO)) {
+			this.notifyFx(`La accion ${meta.titulo} no aplica al estado actual.`, NotifyType.Warning);
+			return;
+		}
+
+		this.operacionFlujoPendiente = operacion;
+		this.tituloPopupFlujo = meta.titulo;
+		this.hintPopupFlujo = meta.hint;
+		this.textoBotonConfirmarFlujo = meta.boton;
+		this.observacionFlujo = meta.comentarioDefault;
+		this.popupFlujoVisible = true;
+	}
+
+	cancelarPopupFlujo(): void {
+		this.popupFlujoVisible = false;
+		this.operacionFlujoPendiente = null;
+		this.observacionFlujo = '';
+	}
+
+	confirmarPopupFlujo(): void {
+		const operacion = this.operacionFlujoPendiente;
+		const observacion = (this.observacionFlujo ?? '').trim();
+		if (!operacion) {
+			return;
+		}
+		if (!observacion) {
+			this.notifyFx('Debe ingresar un comentario / observacion.', NotifyType.Warning);
+			return;
+		}
+
+		this.popupFlujoVisible = false;
+		this.ejecutarAutorizaFlujo(operacion, observacion);
+	}
+
+	// Qué hace: llama PUT Autoriza y parchea CORR_ESTADO / NOMBRE_ESTADO en memoria.
+	private ejecutarAutorizaFlujo(operacion: number, observacion: string): void {
+		const corr = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corr) {
+			return;
+		}
+
+		const unidad =
+			operacion === OPERACION_FLUJO.ENVIAR || operacion === OPERACION_FLUJO.GUARDAR
+				? Number(this.model?.CORR_UNIDAD) || null
+				: null;
+
+		this.loadingVisible = true;
+		this.service
+			.autoriza({
+				CORR_DESCRIPTOR_PUESTO: corr,
+				OPERACION: operacion,
+				OBSERVACION: observacion,
+				CORR_UNIDAD_DOCUMENTO: unidad,
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (response?.Result && response.ErrorCode === 0) {
+						const descriptor = this.fillData(response.Data as ScDescriptorPuesto);
+						descriptor.NOMBRE_UNIDAD =
+							descriptor.NOMBRE_UNIDAD || this.getNombreUnidad(descriptor.CORR_UNIDAD);
+						descriptor.NOMBRE_PUESTO =
+							descriptor.NOMBRE_PUESTO || this.getNombrePuesto(descriptor.CORR_PUESTO);
+						this.model = descriptor;
+						this.modelUpdate = this.fillData(descriptor);
+						this.aplicarRegistroEnGrid(descriptor, false);
+						this.aplicarModoSegunEstadoFlujo();
+						this.firmasDocumento?.refresh();
+						this.notifyFx(
+							this.metaOperacionFlujo(operacion)?.exito ?? 'Operacion de flujo aplicada.',
+							NotifyType.Success
+						);
+						this.cancelarPopupFlujo();
+					} else {
+						this.notifyFx(
+							response?.ErrorMessage || 'No se pudo aplicar la operacion de flujo.',
+							NotifyType.Error
+						);
+					}
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyFx(error?.error?.ErrorMessage || error, NotifyType.Error);
+				},
+			});
+	}
+
+	private metaOperacionFlujo(operacion: number): {
+		titulo: string;
+		hint: string;
+		boton: string;
+		comentarioDefault: string;
+		exito: string;
+		permitida: (estado?: string | null) => boolean;
+	} | null {
+		switch (operacion) {
+			case OPERACION_FLUJO.ENVIAR:
+				return {
+					titulo: 'Solicitar autorizacion',
+					hint: 'El descriptor saldra de Borrador/Observado y avanzara al Jefe Inmediato.',
+					boton: 'Solicitar',
+					comentarioDefault: 'Se solicita autorizacion del descriptor de puesto.',
+					exito: 'Solicitud enviada.',
+					permitida: puedeEnviarDescriptor,
+				};
+			case OPERACION_FLUJO.APROBAR:
+				return {
+					titulo: 'Aprobar descriptor',
+					hint: 'Confirme la aprobacion. El documento avanzara al siguiente paso del flujo.',
+					boton: 'Aprobar',
+					comentarioDefault: 'Se aprueba el descriptor de puesto.',
+					exito: 'Descriptor aprobado.',
+					permitida: puedeAprobarUObservarDescriptor,
+				};
+			case OPERACION_FLUJO.OBSERVAR:
+				return {
+					titulo: 'Observar descriptor',
+					hint: 'Indique claramente las observaciones. El documento regresara a Borrador.',
+					boton: 'Observar',
+					comentarioDefault: '',
+					exito: 'Descriptor observado y retornado a Borrador.',
+					permitida: puedeAprobarUObservarDescriptor,
+				};
+			case OPERACION_FLUJO.INACTIVAR:
+				return {
+					titulo: 'Inactivar descriptor',
+					hint: 'El descriptor pasara de Activo a Inactivo en Vigencia.',
+					boton: 'Inactivar',
+					comentarioDefault: 'Se inactiva el descriptor de puesto.',
+					exito: 'Descriptor inactivado.',
+					permitida: puedeInactivarDescriptor,
+				};
+			case OPERACION_FLUJO.REACTIVAR:
+				return {
+					titulo: 'Reactivar descriptor',
+					hint: 'El descriptor Inactivo volvera a Borrador y debera recorrer nuevamente el flujo de autorizacion.',
+					boton: 'Reactivar',
+					comentarioDefault: 'Se reactiva el descriptor: vuelve a Borrador para nueva autorizacion.',
+					exito: 'Descriptor reactivado: vuelve a Borrador.',
+					permitida: puedeReactivarDescriptor,
+				};
+			default:
+				return null;
+		}
 	}
 
 	// Qué hace: pone el foco inicial en el campo FORMATO del encabezado.

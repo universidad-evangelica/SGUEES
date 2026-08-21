@@ -227,6 +227,24 @@ export class ScDescriptorPuestoService {
 		return this.repo.delete([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO }]);
 	}
 
+	// Qué hace: ejecuta una operación del flujo del descriptor.
+	// Cómo: PUT Autoriza con OPERACION, OBSERVACION y unidad (para NUEVO/ENVIAR).
+	autoriza(payload: {
+		CORR_DESCRIPTOR_PUESTO: number;
+		OPERACION: number;
+		OBSERVACION: string;
+		CORR_UNIDAD_DOCUMENTO?: number | null;
+		CORR_ACCION?: number | null;
+	}): Observable<IResult> {
+		return this.repo.autoriza({
+			CORR_DESCRIPTOR_PUESTO: payload.CORR_DESCRIPTOR_PUESTO,
+			OPERACION: payload.OPERACION,
+			OBSERVACION: payload.OBSERVACION,
+			CORR_UNIDAD_DOCUMENTO: payload.CORR_UNIDAD_DOCUMENTO ?? null,
+			CORR_ACCION: payload.CORR_ACCION ?? null,
+		});
+	}
+
 	// Qué hace: define las columnas del grid de consulta, incluidos badges de formato, estado y versión.
 	getColumns(): any[] {
 		return [

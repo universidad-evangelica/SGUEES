@@ -438,6 +438,99 @@ namespace SGUEES.Repositories
                 e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
         }
 
+        // Qué hace: mueve el flujo del descriptor vía PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA.
+        // Cómo lo hace: ExecCmd del SP; si MENSAJE_ERROR vacío, relee V_SC_DESCRIPTOR_PUESTO y lo
+        //              devuelve en Data (parche en memoria en el SPA; sin GetAll).
+        public async Task<CResult> AutorizaAsync(SC_DESCRIPTOR_PUESTO_AUTORIZAParam Data, string vLOGIN_SISTEMA)
+        {
+            CResult objResultado = new();
+            const string spName = "PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA";
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "@CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter()
+                    {
+                        ParameterName = "@CORR_UNIDAD_DOCUMENTO",
+                        Value = Data.CORR_UNIDAD_DOCUMENTO.HasValue && Data.CORR_UNIDAD_DOCUMENTO.Value > 0
+                            ? Data.CORR_UNIDAD_DOCUMENTO.Value
+                            : (object)DBNull.Value,
+                        DbType = System.Data.DbType.Int32,
+                    },
+                    new CParameter() { ParameterName = "@OPERACION", Value = Data.OPERACION, DbType = System.Data.DbType.Int32 },
+                    new CParameter()
+                    {
+                        ParameterName = "@CORR_ACCION",
+                        Value = Data.CORR_ACCION.HasValue && Data.CORR_ACCION.Value > 0
+                            ? Data.CORR_ACCION.Value
+                            : (object)DBNull.Value,
+                        DbType = System.Data.DbType.Int32,
+                    },
+                    new CParameter() { ParameterName = "@LOGIN_SISTEMA", Value = vLOGIN_SISTEMA ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@OBSERVACION", Value = Data.OBSERVACION ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@CORR_ESTADO", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+                    new CParameter() { ParameterName = "@MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 500 },
+                    new CParameter() { ParameterName = "@CORR_ACCION_USADA", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+                    new CParameter() { ParameterName = "@CORR_PASO_ACTUAL", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+                    new CParameter() { ParameterName = "@MODO", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 20 },
+                    new CParameter() { ParameterName = "@NOMBRE_ESTADO", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 100 },
+                };
+
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, spName, true, p);
+
+                var mensajeError = objData.objCommand.Parameters["@MENSAJE_ERROR"].Value?.ToString();
+                if (!string.IsNullOrWhiteSpace(mensajeError))
+                {
+                    objResultado.Data = null;
+                    objResultado.Result = false;
+                    objResultado.RowsAffected = 0;
+                    objResultado.CodeHelper = Data.CORR_DESCRIPTOR_PUESTO;
+                    objResultado.ErrorCode = -10;
+                    objResultado.ErrorMessage = mensajeError;
+                    objResultado.ErrorSource = "C" + _TableName + ".Autoriza";
+                    return objResultado;
+                }
+
+                var keyWhere = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                };
+
+                var readerGet = await objData.GetDataReader(_ViewName, keyWhere);
+                var response = new List<SC_DESCRIPTOR_PUESTOView>().FromDataReader(readerGet).FirstOrDefault();
+                readerGet.Close();
+
+                objResultado.Data = response;
+                objResultado.Result = response != null;
+                objResultado.RowsAffected = response == null ? 0 : 1;
+                objResultado.CodeHelper = Data.CORR_DESCRIPTOR_PUESTO;
+                objResultado.ErrorCode = response == null ? -1 : 0;
+                objResultado.ErrorMessage = response == null
+                    ? "La operacion de flujo se ejecuto pero no se pudo releer el descriptor."
+                    : string.Empty;
+                objResultado.ErrorSource = string.Empty;
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
         // Consulta SC_DESCRIPTOR_PUESTO: true si el puesto ya tiene descriptor no Inactivo (flujo abierto o Activo).
         public async Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(int corrEmpresa, int corrPuesto, int excludeCorrDescriptor)
         {
