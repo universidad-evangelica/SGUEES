@@ -64,6 +64,8 @@ import {
 	TIPO_RELACION_INTERNA,
 	esEstadoDescriptorEditable,
 	esEstadoDescriptorEliminable,
+	NOMBRE_ESTADO_APROBADO_JI,
+	normalizarNombreEstado,
 	puedeAprobarUObservarDescriptor,
 	puedeEnviarDescriptor,
 	puedeInactivarDescriptor,
@@ -6212,9 +6214,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						puedeReactivar: !!a.PUEDE_REACTIVAR,
 					};
 					// Qué hace: asigna textos de botones según flags ya filtrados por la API.
-					// Cómo: sin permiso U la API devuelve PUEDE_* en false aunque el usuario sea destinatario.
+					// Cómo: en Aprobado JI (Revision TH) el boton dice Revision; en JI/JTH dice Aprobar.
 					this.btnEnviar = this.accionesFlujo.puedeSolicitar ? 'Solicitar' : '';
-					this.btnAprobar = this.accionesFlujo.puedeAprobar ? 'Aprobar' : '';
+					this.btnAprobar = this.accionesFlujo.puedeAprobar
+						? this.textoBotonAprobarSegunPaso()
+						: '';
 					this.btnObservar = this.accionesFlujo.puedeObservar ? 'Observar' : '';
 					this.btnInactivar = this.accionesFlujo.puedeInactivar ? 'Inactivar' : '';
 					this.btnReactivar = this.accionesFlujo.puedeReactivar ? 'Reactivar' : '';
@@ -6241,6 +6245,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.btnObservar = '';
 		this.btnInactivar = '';
 		this.btnReactivar = '';
+	}
+
+	// Qué hace: texto del boton de avance segun el paso (Revision TH vs Aprobar JI/JTH).
+	// Cómo: estado Aprobado JI = paso Revision TH; el resto de autorizacion usa Aprobar.
+	private textoBotonAprobarSegunPaso(): string {
+		return normalizarNombreEstado(this.model?.NOMBRE_ESTADO) ===
+			NOMBRE_ESTADO_APROBADO_JI.toUpperCase()
+			? 'Revision'
+			: 'Aprobar';
 	}
 
 	// Qué hace: abre el popup de comentario para la operación de flujo elegida.
@@ -6389,15 +6402,29 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					exito: 'Solicitud enviada.',
 					permitida: puedeEnviarDescriptor,
 				};
-			case OPERACION_FLUJO.APROBAR:
-				return {
-					titulo: 'Aprobar descriptor',
-					hint: 'Confirme la aprobacion. El documento avanzara al siguiente paso del flujo.',
-					boton: 'Aprobar',
-					comentarioDefault: 'Se aprueba el descriptor de puesto.',
-					exito: 'Descriptor aprobado.',
-					permitida: puedeAprobarUObservarDescriptor,
-				};
+			case OPERACION_FLUJO.APROBAR: {
+				// Qué hace: en Revision TH (Aprobado JI) el texto es Revision; en JI/JTH sigue Aprobar.
+				const esRevisionTh =
+					normalizarNombreEstado(this.model?.NOMBRE_ESTADO) ===
+					NOMBRE_ESTADO_APROBADO_JI.toUpperCase();
+				return esRevisionTh
+					? {
+							titulo: 'Revision del descriptor',
+							hint: 'Confirme la revision de Talento Humano. El documento avanzara al Jefe de TH.',
+							boton: 'Revision',
+							comentarioDefault: 'Se revisa el descriptor de puesto (Talento Humano).',
+							exito: 'Revision de TH aplicada.',
+							permitida: puedeAprobarUObservarDescriptor,
+					  }
+					: {
+							titulo: 'Aprobar descriptor',
+							hint: 'Confirme la aprobacion. El documento avanzara al siguiente paso del flujo.',
+							boton: 'Aprobar',
+							comentarioDefault: 'Se aprueba el descriptor de puesto.',
+							exito: 'Descriptor aprobado.',
+							permitida: puedeAprobarUObservarDescriptor,
+					  };
+			}
 			case OPERACION_FLUJO.OBSERVAR:
 				return {
 					titulo: 'Observar descriptor',
