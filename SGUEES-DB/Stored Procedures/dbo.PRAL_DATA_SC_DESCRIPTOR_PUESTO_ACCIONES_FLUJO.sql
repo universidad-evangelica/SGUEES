@@ -17,7 +17,7 @@
 --   3) Revisa si el LOGIN es quien debe actuar en ese paso:
 --        a) Tiene notificación pendiente (no procesada).
 --        b) Está asignado al actor (TH / Jefe TH).
---        c) Es el jefe activo de la unidad del documento (JI).
+--        c) JI: jefe activo de la unidad PADRE del documento (igual que JEFE_INMEDIATO del motor).
 --   4) Une estado + si es destinatario → flags PUEDE_*.
 --
 -- Nota permisos:
@@ -48,6 +48,7 @@ BEGIN
 	DECLARE @NombrePaso VARCHAR(200);
 	DECLARE @IdActorOrigen INT;
 	DECLARE @UnidadDoc INT;
+	DECLARE @UnidadPadre INT;
 	DECLARE @EsDestinatario BIT = 0;
 	DECLARE @PuedeSolicitar BIT = 0;
 	DECLARE @PuedeAprobar BIT = 0;
@@ -141,25 +142,21 @@ BEGIN
 	   )
 		SET @EsDestinatario = 1;
 
-	-- c) JI por jefatura activa de la unidad del documento
+	-- c) JI: jefe de la unidad PADRE del documento (misma regla que SEG_SP_ResolverDestinatariosPaso / JEFE_INMEDIATO).
+	-- Cómo: Subgerencia (5) → padre Gerencia (3) → solo el jefe de Gerencia (ej. juanh), no el jefe de la Subgerencia.
 	IF @EsDestinatario = 0
 	   AND @IdActorOrigen = 3
 	   AND @UnidadDoc IS NOT NULL
-	   AND EXISTS (
-			SELECT 1
-			FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES J
-			INNER JOIN dbo.GEN_EMPLEADO E
-				ON E.CORR_EMPRESA = J.CORR_EMPRESA
-			   AND E.CORR_EMPLEADO = J.CORR_EMPLEADO
-			WHERE J.CORR_EMPRESA = @Empresa
-			  AND J.CORR_UNIDAD = @UnidadDoc
-			  AND J.ACTIVO = 1
-			  AND (
-					E.LOGIN_SISTEMA = @Login
-					OR E.LOGIN_SISTEMA_WEB = @Login
-			  )
-	   )
-		SET @EsDestinatario = 1;
+	BEGIN
+		SET @UnidadPadre = dbo.SEG_FN_ObtenerUnidadPadre(@UnidadDoc);
+		IF @UnidadPadre IS NOT NULL
+		   AND EXISTS (
+				SELECT 1
+				FROM dbo.SEG_FN_ObtenerJefesDeUnidad(@UnidadPadre) J
+				WHERE J.LoginDestino = @Login
+		   )
+			SET @EsDestinatario = 1;
+	END;
 
 	SET @EstadoNorm = UPPER(LTRIM(RTRIM(ISNULL(@NombreEstado, ''))));
 
