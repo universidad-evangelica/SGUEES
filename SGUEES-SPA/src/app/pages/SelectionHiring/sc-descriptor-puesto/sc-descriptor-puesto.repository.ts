@@ -75,4 +75,15 @@ export class ScDescriptorPuestoRepository {
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
 	}
+
+	// Qué hace: consulta qué botones de flujo puede ver el usuario sobre el descriptor.
+	// Cómo: GET GetAccionesFlujo; la API filtra destinatario (SP) + permiso U (token).
+	getAccionesFlujo(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'GetAccionesFlujo',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }

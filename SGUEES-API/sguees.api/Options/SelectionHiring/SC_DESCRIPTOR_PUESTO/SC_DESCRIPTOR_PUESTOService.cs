@@ -346,6 +346,66 @@ namespace SGUEES.Services
             return await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());
         }
 
+        // Qué hace: indica qué botones de flujo mostrar para el usuario de sesión.
+        // Cómo: ejecuta PRAL_DATA_SC_DESCRIPTOR_PUESTO_ACCIONES_FLUJO (destinatario + estado)
+        //       y luego aplica permiso U del JWT; sin U el usuario queda en solo consulta.
+        public async Task<CResult> GetAccionesFlujoAsync(SC_DESCRIPTOR_PUESTOParam xWhere, string permisoOpcion)
+        {
+            var empresaError = ValidateEmpresaSesion(xWhere?.CORR_EMPRESA ?? 0);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            if (xWhere.CORR_DESCRIPTOR_PUESTO <= 0)
+            {
+                return ValidationError("Debe indicar el descriptor de puesto.");
+            }
+
+            if (string.IsNullOrWhiteSpace(xWhere.LOGIN_SISTEMA))
+            {
+                return ValidationError("No se pudo identificar el usuario de sesion.");
+            }
+
+            xWhere.LOGIN_SISTEMA = xWhere.LOGIN_SISTEMA.Trim();
+            var result = await _repo.GetAccionesFlujoAsync(xWhere);
+            if (!result.Result || result.Data == null)
+            {
+                return result;
+            }
+
+            if (result.Data is SC_DESCRIPTOR_PUESTO_ACCIONES_FLUJOView acciones)
+            {
+                AplicarPermisoCrudpAccionesFlujo(acciones, permisoOpcion);
+            }
+
+            return result;
+        }
+
+        // Qué hace: apaga flags PUEDE_* de flujo si el login no tiene permiso U (Update).
+        // Cómo: todas las operaciones de Autoriza exigen policy |U; destinatario sin U = solo lectura.
+        private static void AplicarPermisoCrudpAccionesFlujo(
+            SC_DESCRIPTOR_PUESTO_ACCIONES_FLUJOView acciones,
+            string permisoOpcion)
+        {
+            if (acciones == null)
+            {
+                return;
+            }
+
+            var permiso = permisoOpcion ?? string.Empty;
+            if (permiso.Contains('U'))
+            {
+                return;
+            }
+
+            acciones.PUEDE_SOLICITAR = false;
+            acciones.PUEDE_APROBAR = false;
+            acciones.PUEDE_OBSERVAR = false;
+            acciones.PUEDE_INACTIVAR = false;
+            acciones.PUEDE_REACTIVAR = false;
+        }
+
 	// Valida empresa y elimina el descriptor con sus registros relacionados.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {

@@ -531,6 +531,74 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
+        // Qué hace: consulta flags PUEDE_* por destinatario y estado (SP).
+        // Cómo: PRAL_DATA_SC_DESCRIPTOR_PUESTO_ACCIONES_FLUJO; el Service aplica permiso U del JWT.
+        public async Task<CResult> GetAccionesFlujoAsync(SC_DESCRIPTOR_PUESTOParam xWhere)
+        {
+            CResult objResultado = new();
+            const string spName = "PRAL_DATA_SC_DESCRIPTOR_PUESTO_ACCIONES_FLUJO";
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "@CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@CORR_DESCRIPTOR_PUESTO", Value = xWhere.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@LOGIN_SISTEMA", Value = xWhere.LOGIN_SISTEMA ?? string.Empty, DbType = System.Data.DbType.String },
+                };
+
+                var reader = await objData.GetDataReader(System.Data.CommandType.StoredProcedure, spName, p);
+                var row = new SC_DESCRIPTOR_PUESTO_ACCIONES_FLUJOView();
+                if (reader.Read())
+                {
+                    row.CORR_DESCRIPTOR_PUESTO = reader["CORR_DESCRIPTOR_PUESTO"] != DBNull.Value
+                        ? Convert.ToInt32(reader["CORR_DESCRIPTOR_PUESTO"])
+                        : 0;
+                    row.NOMBRE_ESTADO = reader["NOMBRE_ESTADO"]?.ToString();
+                    row.CORR_PASO_ACTUAL = reader["CORR_PASO_ACTUAL"] != DBNull.Value
+                        ? Convert.ToInt32(reader["CORR_PASO_ACTUAL"])
+                        : (int?)null;
+                    row.NOMBRE_PASO = reader["NOMBRE_PASO"]?.ToString();
+                    row.ES_DESTINATARIO_PASO = reader["ES_DESTINATARIO_PASO"] != DBNull.Value
+                        && Convert.ToBoolean(reader["ES_DESTINATARIO_PASO"]);
+                    row.PUEDE_SOLICITAR = reader["PUEDE_SOLICITAR"] != DBNull.Value
+                        && Convert.ToBoolean(reader["PUEDE_SOLICITAR"]);
+                    row.PUEDE_APROBAR = reader["PUEDE_APROBAR"] != DBNull.Value
+                        && Convert.ToBoolean(reader["PUEDE_APROBAR"]);
+                    row.PUEDE_OBSERVAR = reader["PUEDE_OBSERVAR"] != DBNull.Value
+                        && Convert.ToBoolean(reader["PUEDE_OBSERVAR"]);
+                    row.PUEDE_INACTIVAR = reader["PUEDE_INACTIVAR"] != DBNull.Value
+                        && Convert.ToBoolean(reader["PUEDE_INACTIVAR"]);
+                    row.PUEDE_REACTIVAR = reader["PUEDE_REACTIVAR"] != DBNull.Value
+                        && Convert.ToBoolean(reader["PUEDE_REACTIVAR"]);
+                }
+                reader.Close();
+
+                objResultado.Data = row;
+                objResultado.Result = true;
+                objResultado.RowsAffected = 1;
+                objResultado.CodeHelper = row.CORR_DESCRIPTOR_PUESTO;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = string.Empty;
+                objResultado.ErrorSource = string.Empty;
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
         // Consulta SC_DESCRIPTOR_PUESTO: true si el puesto ya tiene descriptor no Inactivo (flujo abierto o Activo).
         public async Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(int corrEmpresa, int corrPuesto, int excludeCorrDescriptor)
         {

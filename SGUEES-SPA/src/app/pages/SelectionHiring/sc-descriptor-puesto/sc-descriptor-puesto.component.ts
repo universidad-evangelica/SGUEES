@@ -219,6 +219,18 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	btnInactivar = '';
 	btnReactivar = '';
 
+	// Qué hace: correlativo del descriptor para el que se pidieron acciones (evita carrera al cambiar fila).
+	private corrAccionesFlujoSolicitado = 0;
+
+	// Qué hace: último resultado de GetAccionesFlujo (destinatario + permiso U; validación al confirmar).
+	private accionesFlujo = {
+		puedeSolicitar: false,
+		puedeAprobar: false,
+		puedeObservar: false,
+		puedeInactivar: false,
+		puedeReactivar: false,
+	};
+
 	// Qué hace: popup de comentario obligatorio antes de ejecutar Autoriza.
 	popupFlujoVisible = false;
 	operacionFlujoPendiente: number | null = null;
@@ -6167,25 +6179,63 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
-	// Qué hace: muestra/oculta botones de flujo según estado del descriptor actual.
-	// Cómo: aplica en listado (fila seleccionada) y en formulario; etiqueta ENVIAR = "Solicitar".
+	// Qué hace: muestra/oculta botones de flujo según GetAccionesFlujo (destinatario + permiso U en API).
+	// Cómo: consulta el endpoint; la API cruza SP + claim CRUDP; el SPA solo pinta los flags finales.
 	refrescarBotonesFlujo(): void {
-		if (!Number(this.model?.CORR_DESCRIPTOR_PUESTO)) {
+		const corr = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corr) {
+			this.corrAccionesFlujoSolicitado = 0;
 			this.limpiarBotonesFlujo();
 			return;
 		}
 
-		const estado = this.model?.NOMBRE_ESTADO;
-		const puedeAccion = this.permiteEdit;
+		this.corrAccionesFlujoSolicitado = corr;
+		this.service
+			.getAccionesFlujo(corr)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (this.corrAccionesFlujoSolicitado !== corr) {
+						return;
+					}
+					if (!response?.Result || !response.Data) {
+						this.limpiarBotonesFlujo();
+						return;
+					}
 
-		this.btnEnviar = puedeAccion && puedeEnviarDescriptor(estado) ? 'Solicitar' : '';
-		this.btnAprobar = puedeAccion && puedeAprobarUObservarDescriptor(estado) ? 'Aprobar' : '';
-		this.btnObservar = puedeAccion && puedeAprobarUObservarDescriptor(estado) ? 'Observar' : '';
-		this.btnInactivar = puedeAccion && puedeInactivarDescriptor(estado) ? 'Inactivar' : '';
-		this.btnReactivar = puedeAccion && puedeReactivarDescriptor(estado) ? 'Reactivar' : '';
+					const a = response.Data;
+					this.accionesFlujo = {
+						puedeSolicitar: !!a.PUEDE_SOLICITAR,
+						puedeAprobar: !!a.PUEDE_APROBAR,
+						puedeObservar: !!a.PUEDE_OBSERVAR,
+						puedeInactivar: !!a.PUEDE_INACTIVAR,
+						puedeReactivar: !!a.PUEDE_REACTIVAR,
+					};
+					// Qué hace: asigna textos de botones según flags ya filtrados por la API.
+					// Cómo: sin permiso U la API devuelve PUEDE_* en false aunque el usuario sea destinatario.
+					this.btnEnviar = this.accionesFlujo.puedeSolicitar ? 'Solicitar' : '';
+					this.btnAprobar = this.accionesFlujo.puedeAprobar ? 'Aprobar' : '';
+					this.btnObservar = this.accionesFlujo.puedeObservar ? 'Observar' : '';
+					this.btnInactivar = this.accionesFlujo.puedeInactivar ? 'Inactivar' : '';
+					this.btnReactivar = this.accionesFlujo.puedeReactivar ? 'Reactivar' : '';
+					this.cdr.detectChanges();
+				},
+				error: () => {
+					if (this.corrAccionesFlujoSolicitado === corr) {
+						this.limpiarBotonesFlujo();
+					}
+				},
+			});
 	}
 
 	limpiarBotonesFlujo(): void {
+		this.accionesFlujo = {
+			puedeSolicitar: false,
+			puedeAprobar: false,
+			puedeObservar: false,
+			puedeInactivar: false,
+			puedeReactivar: false,
+		};
 		this.btnEnviar = '';
 		this.btnAprobar = '';
 		this.btnObservar = '';
@@ -6197,6 +6247,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	abrirPopupFlujo(operacion: number): void {
 		if (!Number(this.model?.CORR_DESCRIPTOR_PUESTO)) {
 			this.notifyFx('Guarde el descriptor antes de ejecutar una accion de flujo.', NotifyType.Warning);
+			return;
+		}
+
+		if (!this.usuarioPuedeOperacionFlujo(operacion)) {
+			this.notifyFx(
+				'No tiene permiso para esta accion en el paso actual del flujo.',
+				NotifyType.Warning
+			);
+			this.refrescarBotonesFlujo();
 			return;
 		}
 
@@ -6216,6 +6275,25 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.textoBotonConfirmarFlujo = meta.boton;
 		this.observacionFlujo = meta.comentarioDefault;
 		this.popupFlujoVisible = true;
+	}
+
+	// Qué hace: valida la operación contra los flags finales de GetAccionesFlujo.
+	// Cómo: los flags ya incluyen destinatario (SP) y permiso U (API); no repite permiteEdit aquí.
+	private usuarioPuedeOperacionFlujo(operacion: number): boolean {
+		switch (operacion) {
+			case OPERACION_FLUJO.ENVIAR:
+				return this.accionesFlujo.puedeSolicitar;
+			case OPERACION_FLUJO.APROBAR:
+				return this.accionesFlujo.puedeAprobar;
+			case OPERACION_FLUJO.OBSERVAR:
+				return this.accionesFlujo.puedeObservar;
+			case OPERACION_FLUJO.INACTIVAR:
+				return this.accionesFlujo.puedeInactivar;
+			case OPERACION_FLUJO.REACTIVAR:
+				return this.accionesFlujo.puedeReactivar;
+			default:
+				return false;
+		}
 	}
 
 	cancelarPopupFlujo(): void {

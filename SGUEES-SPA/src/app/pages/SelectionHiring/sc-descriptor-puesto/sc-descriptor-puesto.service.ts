@@ -245,6 +245,14 @@ export class ScDescriptorPuestoService {
 		});
 	}
 
+	// Qué hace: obtiene flags finales de acciones de flujo para el descriptor seleccionado.
+	// Cómo: GET GetAccionesFlujo; respuesta ya incluye destinatario + permiso U de sesión.
+	getAccionesFlujo(corrDescriptorPuesto: number): Observable<IResult> {
+		return this.repo.getAccionesFlujo([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+		]);
+	}
+
 	// Qué hace: define las columnas del grid de consulta, incluidos badges de formato, estado y versión.
 	getColumns(): any[] {
 		return [

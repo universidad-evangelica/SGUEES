@@ -19,5 +19,7 @@ namespace SGUEES.Repositories
         Task<CResult> UpdateImpactoEconomicoAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         // Ejecuta PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA y relee la vista.
         Task<CResult> AutorizaAsync(SC_DESCRIPTOR_PUESTO_AUTORIZAParam Data, string vLOGIN_SISTEMA);
+        // Acciones de flujo visibles para el login (destinatario del paso + estado).
+        Task<CResult> GetAccionesFlujoAsync(SC_DESCRIPTOR_PUESTOParam xWhere);
     }
 }

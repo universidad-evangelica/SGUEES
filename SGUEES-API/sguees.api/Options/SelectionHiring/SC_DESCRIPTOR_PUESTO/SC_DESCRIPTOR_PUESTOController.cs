@@ -106,6 +106,17 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Qué hace: indica qué botones de flujo mostrar para el usuario de sesión.
+        // Cómo: SP (destinatario + estado) + permiso U del JWT; sin U solo consulta.
+        [HttpGet("GetAccionesFlujo")]
+        [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        public async Task<CResult> GetAccionesFlujo([FromQuery] SC_DESCRIPTOR_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            Data.LOGIN_SISTEMA = GetUsuario();
+            return await _service.GetAccionesFlujoAsync(Data, GetPermisoOpcion());
+        }
+
         // Elimina un descriptor de la empresa en sesión; borra también sus registros hijos.
         [HttpDelete]
         [Authorize(Policy = "/sc-descriptor-puesto|D")]
@@ -130,6 +141,14 @@ namespace SGUEES.Controllers
         private string GetUsuario()
         {
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
+        }
+
+        // Qué hace: obtiene la cadena CRUDP de esta pantalla desde el token (ej. "CRUDP", "R").
+        // Cómo: el login graba un claim por URL_OPCION; GetAccionesFlujo lo usa para filtrar acciones.
+        private string GetPermisoOpcion()
+        {
+            const string urlOpcion = "/sc-descriptor-puesto";
+            return User.Claims.FirstOrDefault(c => c.Type == urlOpcion)?.Value ?? string.Empty;
         }
 
         // Rellena auditoría al crear: empresa, usuario, estación, fechas y valores por defecto (BORRADOR, versión 1).
