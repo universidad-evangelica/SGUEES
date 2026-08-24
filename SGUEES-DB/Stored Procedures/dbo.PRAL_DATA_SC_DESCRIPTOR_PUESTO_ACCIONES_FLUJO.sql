@@ -119,6 +119,9 @@ BEGIN
 		SET @EsDestinatario = 1;
 
 	-- b) Asignación fija del actor del paso (Analista TH / Jefe TH)
+	-- Qué hace: marca destinatario si el login está asignado al actor origen del paso.
+	-- Cómo lo hace: exige CORR_ACTOR + LOGIN + ACTIVO; filtra por unidad salvo cuando el
+	--   paso tiene CORR_UNIDAD_DESTINO NULL (todos los asignados activos al actor, igual que el motor v9.5).
 	IF @EsDestinatario = 0
 	   AND @IdActorOrigen IS NOT NULL
 	   AND EXISTS (
@@ -137,6 +140,13 @@ BEGIN
 						WHERE P2.CORR_EMPRESA = @Empresa
 						  AND P2.CORR_PASO = @IdPaso
 						  AND P2.CORR_UNIDAD_DESTINO = A.CORR_UNIDAD
+					)
+					OR EXISTS (
+						SELECT 1
+						FROM dbo.SEG_FLUJO_PASO P2
+						WHERE P2.CORR_EMPRESA = @Empresa
+						  AND P2.CORR_PASO = @IdPaso
+						  AND P2.CORR_UNIDAD_DESTINO IS NULL
 					)
 			  )
 	   )
