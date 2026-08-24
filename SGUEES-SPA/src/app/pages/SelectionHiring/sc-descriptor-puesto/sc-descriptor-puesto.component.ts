@@ -6433,15 +6433,21 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						);
 						this.cancelarPopupFlujo();
 					} else {
+						// Qué hace: avisos de negocio del flujo (no autorizado, sin destinatarios, etc.).
+						// Cómo: Warning en vez de Error para no alarmar; el mensaje sigue viniendo del motor/API.
 						this.notifyFx(
 							response?.ErrorMessage || 'No se pudo aplicar la operacion de flujo.',
-							NotifyType.Error
+							NotifyType.Warning
 						);
+						this.refrescarBotonesFlujo();
 					}
 				},
 				error: (error: any) => {
+					// Qué hace: falla técnica HTTP (red/servidor) al llamar Autoriza.
+					// Cómo: se muestra como Error (rojo); los avisos de negocio van en el next como Warning.
 					this.loadingVisible = false;
 					this.notifyFx(error?.error?.ErrorMessage || error, NotifyType.Error);
+					this.refrescarBotonesFlujo();
 				},
 			});
 	}
