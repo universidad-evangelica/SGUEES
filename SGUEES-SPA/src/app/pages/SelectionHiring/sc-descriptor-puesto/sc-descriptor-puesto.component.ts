@@ -6114,6 +6114,39 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		super.aplicarRegistroEnGrid(data, isAdd);
 	}
 
+	// Qué hace: quita el descriptor eliminado del grid y sincroniza botones de flujo del header.
+	// Cómo: filtra models; si era el seleccionado, limpia Solicitar/Aprobar/etc. (0 filas) o selecciona otra y refresca acciones.
+	protected override quitarRegistroDeGrid(keyValue: unknown): void {
+		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
+			super.quitarRegistroDeGrid(keyValue);
+			return;
+		}
+
+		const key = this.mttoGridKeyExpr;
+		const corrEliminado = Number(keyValue);
+		const eraSeleccionado = Number(this.model?.[key]) === corrEliminado;
+
+		this.models = this.models.filter(
+			(item: ScDescriptorPuesto) => Number(item?.[key as keyof ScDescriptorPuesto]) !== corrEliminado
+		);
+
+		if (eraSeleccionado) {
+			if (this.models.length === 0) {
+				this.model = this.fillData();
+				this.modelUpdate = this.fillData();
+				this.limpiarBotonesFlujo();
+			} else {
+				const siguiente = this.models[0];
+				this.model = this.fillData(siguiente);
+				this.modelUpdate = this.fillData(siguiente);
+				this.refrescarBotonesFlujo();
+			}
+		}
+
+		this.refrescarGridTrasCarga(false);
+		this.cdr.detectChanges();
+	}
+
 	// Qué hace: elimina el descriptor de puesto seleccionado en el grid.
 	// Cómo: delega en rowRemovingMtto del framework base, indicando como deleteFn una llamada a
 	// service.delete convertida a respuesta homogénea con convertirErrorOperacionEnRespuesta (delete).
