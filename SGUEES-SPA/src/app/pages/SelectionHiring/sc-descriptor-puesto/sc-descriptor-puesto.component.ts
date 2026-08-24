@@ -6530,7 +6530,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						hint: 'Confirme la aprobacion final. El descriptor quedara Activo en Vigencia.',
 						boton: 'Aprobar',
 						comentarioDefault: 'Se aprueba el descriptor de puesto.',
-						exito: 'Descriptor aprobado.',
+						exito: 'Descriptor aprobado y activo.',
 						permitida: puedeAprobarUObservarDescriptor,
 					};
 				}
