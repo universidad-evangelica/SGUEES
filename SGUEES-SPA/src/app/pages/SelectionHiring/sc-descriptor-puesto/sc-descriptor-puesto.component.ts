@@ -6433,23 +6433,52 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						);
 						this.cancelarPopupFlujo();
 					} else {
-						// Qué hace: avisos de negocio del flujo (no autorizado, sin destinatarios, etc.).
-						// Cómo: Warning en vez de Error para no alarmar; el mensaje sigue viniendo del motor/API.
+						// Qué hace: avisos de negocio del flujo con API 200 + Result=false.
 						this.notifyFx(
 							response?.ErrorMessage || 'No se pudo aplicar la operacion de flujo.',
-							NotifyType.Warning
+							NotifyType.Warning,
+							{ raw: true }
 						);
 						this.refrescarBotonesFlujo();
 					}
 				},
 				error: (error: any) => {
-					// Qué hace: falla técnica HTTP (red/servidor) al llamar Autoriza.
-					// Cómo: se muestra como Error (rojo); los avisos de negocio van en el next como Warning.
+					// Qué hace: el ErrorInterceptor convierte BadRequest en string "Error: …".
+					// Cómo: si el texto es de negocio del flujo → Warning; si no, Error técnico.
 					this.loadingVisible = false;
-					this.notifyFx(error?.error?.ErrorMessage || error, NotifyType.Error);
+					const mensaje = this.extraerMensajeErrorAutorizaFlujo(error);
+					const tipo = this.esAvisoNegocioFlujo(mensaje) ? NotifyType.Warning : NotifyType.Error;
+					this.notifyFx(mensaje, tipo, { raw: true });
 					this.refrescarBotonesFlujo();
 				},
 			});
+	}
+
+	// Qué hace: obtiene el texto usable del error de Autoriza (objeto HTTP o string del interceptor).
+	private extraerMensajeErrorAutorizaFlujo(error: any): string {
+		if (typeof error === 'string') {
+			return error.replace(/^\s*Error:\s*/i, '').trim();
+		}
+		const msg =
+			error?.error?.ErrorMessage ||
+			error?.ErrorMessage ||
+			error?.message ||
+			'';
+		return String(msg).replace(/^\s*Error:\s*/i, '').trim() || 'No se pudo aplicar la operacion de flujo.';
+	}
+
+	// Qué hace: detecta mensajes de negocio del motor de flujo (para mostrar Warning, no Error rojo).
+	private esAvisoNegocioFlujo(mensaje: string): boolean {
+		const t = (mensaje || '').toLowerCase();
+		return (
+			t.includes('flujo') ||
+			t.includes('destinatario') ||
+			t.includes('autorizado') ||
+			t.includes('operacion') ||
+			t.includes('paso') ||
+			t.includes('observacion') ||
+			t.includes('comentario')
+		);
 	}
 
 	private metaOperacionFlujo(operacion: number): {

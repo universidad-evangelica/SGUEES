@@ -97,13 +97,20 @@ namespace SGUEES.Controllers
 
         // Qué hace: ejecuta una operación del flujo del descriptor (Enviar/Aprobar/Observar/etc.).
         // Cómo lo hace: Put Autoriza → PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA; Data = fila de la vista.
+        // Nota HTTP: en falla de negocio (ErrorCode != 0) se responde 200 Ok con Result=false.
+        //           BadRequest(400) lo transforma el ErrorInterceptor del SPA en string y salía como Error rojo.
         [HttpPut("Autoriza")]
         [Authorize(Policy = "/sc-descriptor-puesto|U")]
         public async Task<IActionResult> Autoriza(SC_DESCRIPTOR_PUESTO_AUTORIZAParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
             var resultado = await _service.AutorizaAsync(Data, GetUsuario());
-            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+            if (resultado.ErrorCode == 0)
+            {
+                return StatusCode(201, resultado);
+            }
+
+            return Ok(resultado);
         }
 
         // Qué hace: indica qué botones de flujo mostrar para el usuario de sesión.
