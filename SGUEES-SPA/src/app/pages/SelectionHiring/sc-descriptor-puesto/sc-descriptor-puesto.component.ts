@@ -65,6 +65,8 @@ import {
 	esEstadoDescriptorEditable,
 	esEstadoDescriptorEliminable,
 	NOMBRE_ESTADO_APROBADO_JI,
+	NOMBRE_ESTADO_ENVIADO_JI,
+	NOMBRE_ESTADO_ENVIADO_JTH,
 	normalizarNombreEstado,
 	puedeAprobarUObservarDescriptor,
 	puedeEnviarDescriptor,
@@ -6404,6 +6406,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				? Number(this.model?.CORR_UNIDAD) || null
 				: null;
 
+		// Qué hace: reserva el mensaje de éxito con el estado previo al avance del flujo.
+		// Cómo: metaOperacionFlujo usa NOMBRE_ESTADO antes del parche en memoria.
+		const nombreEstadoAntesFlujo = this.model?.NOMBRE_ESTADO;
+		const mensajeExitoFlujo =
+			this.metaOperacionFlujo(operacion, nombreEstadoAntesFlujo)?.exito ??
+			'Operacion de flujo aplicada.';
+
 		this.loadingVisible = true;
 		this.service
 			.autoriza({
@@ -6427,10 +6436,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.aplicarRegistroEnGrid(descriptor, false);
 						this.aplicarModoSegunEstadoFlujo();
 						this.firmasDocumento?.refresh();
-						this.notifyFx(
-							this.metaOperacionFlujo(operacion)?.exito ?? 'Operacion de flujo aplicada.',
-							NotifyType.Success
-						);
+						this.notifyFx(mensajeExitoFlujo, NotifyType.Success);
 						this.cancelarPopupFlujo();
 					} else {
 						// Qué hace: avisos de negocio del flujo con API 200 + Result=false.
@@ -6481,7 +6487,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		);
 	}
 
-	private metaOperacionFlujo(operacion: number): {
+	private metaOperacionFlujo(
+		operacion: number,
+		nombreEstado: string | null | undefined = this.model?.NOMBRE_ESTADO
+	): {
 		titulo: string;
 		hint: string;
 		boton: string;
@@ -6500,27 +6509,43 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					permitida: puedeEnviarDescriptor,
 				};
 			case OPERACION_FLUJO.APROBAR: {
-				// Qué hace: en Revision TH (Aprobado JI) el texto es Revision; en JI/JTH sigue Aprobar.
-				const esRevisionTh =
-					normalizarNombreEstado(this.model?.NOMBRE_ESTADO) ===
-					NOMBRE_ESTADO_APROBADO_JI.toUpperCase();
-				return esRevisionTh
-					? {
-							titulo: 'Revision del descriptor',
-							hint: 'Confirme la revision de Talento Humano. El documento avanzara al Jefe de TH.',
-							boton: 'Revision',
-							comentarioDefault: 'Se revisa el descriptor de puesto (Talento Humano).',
-							exito: 'Revision de TH aplicada.',
-							permitida: puedeAprobarUObservarDescriptor,
-					  }
-					: {
-							titulo: 'Aprobar descriptor',
-							hint: 'Confirme la aprobacion. El documento avanzara al siguiente paso del flujo.',
-							boton: 'Aprobar',
-							comentarioDefault: 'Se aprueba el descriptor de puesto.',
-							exito: 'Descriptor aprobado.',
-							permitida: puedeAprobarUObservarDescriptor,
-					  };
+				// Qué hace: textos distintos segun quien aprueba (JI, Analista TH, Jefe TH).
+				const estadoNorm = normalizarNombreEstado(nombreEstado);
+				const esRevisionTh = estadoNorm === NOMBRE_ESTADO_APROBADO_JI.toUpperCase();
+				const esAprobacionJth = estadoNorm === NOMBRE_ESTADO_ENVIADO_JTH.toUpperCase();
+				const esAprobacionJi = estadoNorm === NOMBRE_ESTADO_ENVIADO_JI.toUpperCase();
+				if (esRevisionTh) {
+					return {
+						titulo: 'Revision del descriptor',
+						hint: 'Confirme la revision de Talento Humano. El documento avanzara al Jefe de TH.',
+						boton: 'Revision',
+						comentarioDefault: 'Se revisa el descriptor de puesto (Talento Humano).',
+						exito: 'Revision terminada. Enviado al Jefe de Talento Humano.',
+						permitida: puedeAprobarUObservarDescriptor,
+					};
+				}
+				if (esAprobacionJth) {
+					return {
+						titulo: 'Aprobar descriptor',
+						hint: 'Confirme la aprobacion final. El descriptor quedara Activo en Vigencia.',
+						boton: 'Aprobar',
+						comentarioDefault: 'Se aprueba el descriptor de puesto.',
+						exito: 'Descriptor aprobado.',
+						permitida: puedeAprobarUObservarDescriptor,
+					};
+				}
+				return {
+					titulo: 'Aprobar descriptor',
+					hint: esAprobacionJi
+						? 'Confirme la aprobacion del Jefe Inmediato. El documento avanzara a revision de TH.'
+						: 'Confirme la aprobacion. El documento avanzara al siguiente paso del flujo.',
+					boton: 'Aprobar',
+					comentarioDefault: 'Se aprueba el descriptor de puesto.',
+					exito: esAprobacionJi
+						? 'Aprobacion del Jefe Inmediato registrada. Enviado a revision de TH.'
+						: 'Aprobacion registrada.',
+					permitida: puedeAprobarUObservarDescriptor,
+				};
 			}
 			case OPERACION_FLUJO.OBSERVAR:
 				return {
