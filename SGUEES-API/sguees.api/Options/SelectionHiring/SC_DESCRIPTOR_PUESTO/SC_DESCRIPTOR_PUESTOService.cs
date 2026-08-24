@@ -107,18 +107,19 @@ namespace SGUEES.Services
                 return validation;
             }
 
-            if (Data.CORR_PUESTO.HasValue)
+            if (Data.CORR_PUESTO.HasValue && Data.CORR_UNIDAD.HasValue && Data.CORR_UNIDAD.Value > 0)
             {
-                // Impide crear si el puesto ya tiene un descriptor en BORRADOR, ENVIADO, REVISADO o ACTIVO.
+                // Impide crear si la misma unidad+puesto ya tiene descriptor en borrador, flujo o activo.
                 var exists = await _repo.ExistsDescriptorAbiertoPorPuestoAsync(
                     Data.CORR_EMPRESA,
+                    Data.CORR_UNIDAD.Value,
                     Data.CORR_PUESTO.Value,
                     0);
 
                 if (exists)
                 {
                     return ValidationError(
-                        "Ya existe un descriptor para este puesto que se encuentra en proceso de aprobacion o activo. Solo sera posible crear una nueva version cuando la version actual haya sido activada y posteriormente desactivada.");
+                        "Ya existe un descriptor para este puesto en esta unidad que se encuentra en proceso de aprobacion o activo. Solo sera posible crear una nueva version cuando la version actual haya sido activada y posteriormente desactivada.");
                 }
             }
 
@@ -313,7 +314,8 @@ namespace SGUEES.Services
         }
 
         // Qué hace: ejecuta una operación del flujo (Enviar/Aprobar/Observar/Inactivar/Reactivar).
-        // Cómo lo hace: valida claves y OPERACION; delega al SP AUTORIZA; el repo relee la vista.
+        // Cómo lo hace: valida claves y OPERACION; en REACTIVAR bloquea si hay otro descriptor abierto del puesto;
+        //              luego delega al SP AUTORIZA; el repo relee la vista.
         public async Task<CResult> AutorizaAsync(SC_DESCRIPTOR_PUESTO_AUTORIZAParam Data, string vLOGIN_SISTEMA)
         {
             var empresaError = ValidateEmpresaSesion(Data?.CORR_EMPRESA ?? 0);
@@ -340,6 +342,36 @@ namespace SGUEES.Services
             if (string.IsNullOrWhiteSpace(vLOGIN_SISTEMA))
             {
                 return ValidationError("No se pudo identificar el usuario de sesion.");
+            }
+
+            // Qué hace: en Reactivar (6), evita dos descriptores vivos de la misma unidad+puesto (igual que Create).
+            // Cómo: lee CORR_UNIDAD y CORR_PUESTO del descriptor actual y busca otro no Inactivo excluyendo el correlativo.
+            if (Data.OPERACION == 6)
+            {
+                var getResult = await GetAsync(new SC_DESCRIPTOR_PUESTOParam
+                {
+                    CORR_EMPRESA = Data.CORR_EMPRESA,
+                    CORR_DESCRIPTOR_PUESTO = Data.CORR_DESCRIPTOR_PUESTO,
+                });
+
+                if (getResult?.Data is SC_DESCRIPTOR_PUESTOView descriptor
+                    && descriptor.CORR_PUESTO.HasValue
+                    && descriptor.CORR_PUESTO.Value > 0
+                    && descriptor.CORR_UNIDAD.HasValue
+                    && descriptor.CORR_UNIDAD.Value > 0)
+                {
+                    var exists = await _repo.ExistsDescriptorAbiertoPorPuestoAsync(
+                        Data.CORR_EMPRESA,
+                        descriptor.CORR_UNIDAD.Value,
+                        descriptor.CORR_PUESTO.Value,
+                        Data.CORR_DESCRIPTOR_PUESTO);
+
+                    if (exists)
+                    {
+                        return ValidationError(
+                            "Ya existe un descriptor para este puesto en esta unidad que se encuentra en proceso de aprobacion o activo. Solo sera posible reactivar esta version cuando la version actual haya sido activada y posteriormente desactivada.");
+                    }
+                }
             }
 
             Data.OBSERVACION = Data.OBSERVACION.Trim();

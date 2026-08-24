@@ -103,15 +103,22 @@ export class ScDescriptorPuestoService {
 		return true;
 	}
 
-	// Qué hace: busca otro descriptor del mismo puesto en estado que impida crear una versión paralela.
-	// Cómo: filtra la lista por puesto y estado bloqueante; en edición excluye el registro actual.
+	// Qué hace: busca otro descriptor de la misma unidad+puesto que impida crear/reactivar en paralelo.
+	// Cómo: filtra por CORR_UNIDAD + CORR_PUESTO y estado bloqueante; en edición excluye el registro actual.
 	buscarDescriptorBloqueoPorPuesto(
 		model: ScDescriptorPuesto,
 		models: ScDescriptorPuesto[],
 		isAdd: boolean
 	): ScDescriptorPuesto | null {
 		const corrPuesto = Number(model.CORR_PUESTO);
-		if (!corrPuesto || corrPuesto <= 0 || !Array.isArray(models)) {
+		const corrUnidad = Number(model.CORR_UNIDAD);
+		if (
+			!corrPuesto ||
+			corrPuesto <= 0 ||
+			!corrUnidad ||
+			corrUnidad <= 0 ||
+			!Array.isArray(models)
+		) {
 			return null;
 		}
 
@@ -119,6 +126,9 @@ export class ScDescriptorPuestoService {
 
 		return (
 			models.find((row) => {
+				if (Number(row.CORR_UNIDAD) !== corrUnidad) {
+					return false;
+				}
 				if (Number(row.CORR_PUESTO) !== corrPuesto) {
 					return false;
 				}
@@ -133,7 +143,7 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
-	// Qué hace: impide guardar si ya existe otro descriptor bloqueante para el mismo puesto.
+	// Qué hace: impide guardar si ya existe otro descriptor bloqueante para la misma unidad y puesto.
 	// Cómo: usa buscarDescriptorBloqueoPorPuesto y muestra el mensaje de conflicto si encuentra uno.
 	validarDescriptorUnicoPorPuesto(
 		model: ScDescriptorPuesto,
@@ -160,7 +170,7 @@ export class ScDescriptorPuestoService {
 		return `DES-${String(corr).padStart(4, '0')}`;
 	}
 
-	// Qué hace: arma el mensaje de advertencia cuando ya existe un descriptor abierto del puesto.
+	// Qué hace: arma el mensaje de advertencia cuando ya existe un descriptor abierto de unidad+puesto.
 	buildMensajeDescriptorExistente(conflicto: ScDescriptorPuesto): string {
 		const codigo = this.buildCodigoDescriptor(conflicto.CORR_DESCRIPTOR_PUESTO);
 		const version = Number(conflicto.VERSION) > 0 ? Number(conflicto.VERSION) : 1;
@@ -168,8 +178,38 @@ export class ScDescriptorPuestoService {
 		const contexto = estado === 'ACTIVO' ? 'activo' : 'en proceso de aprobacion';
 
 		return (
-			`Ya existe un descriptor para este puesto que se encuentra ${contexto}. ` +
+			`Ya existe un descriptor para este puesto en esta unidad que se encuentra ${contexto}. ` +
 			`Solo sera posible crear una nueva version cuando la version actual ${codigo} version ${version} ` +
+			`haya sido activada y posteriormente desactivada.`
+		);
+	}
+
+	// Qué hace: impide reactivar si la misma unidad+puesto ya tiene otro descriptor en borrador, flujo o activo.
+	// Cómo: busca conflicto excluyendo el correlativo actual (Inactivo) y muestra el aviso.
+	validarPuedeReactivarDescriptor(
+		model: ScDescriptorPuesto,
+		models: ScDescriptorPuesto[],
+		msg: Function
+	): boolean {
+		const conflicto = this.buscarDescriptorBloqueoPorPuesto(model, models, false);
+		if (!conflicto) {
+			return true;
+		}
+
+		msg(this.buildMensajeDescriptorReactivar(conflicto), NotifyType.Warning);
+		return false;
+	}
+
+	// Qué hace: mensaje al intentar reactivar cuando ya hay otro descriptor abierto de la misma unidad+puesto.
+	buildMensajeDescriptorReactivar(conflicto: ScDescriptorPuesto): string {
+		const codigo = this.buildCodigoDescriptor(conflicto.CORR_DESCRIPTOR_PUESTO);
+		const version = Number(conflicto.VERSION) > 0 ? Number(conflicto.VERSION) : 1;
+		const estado = (conflicto.NOMBRE_ESTADO ?? '').trim().toUpperCase();
+		const contexto = estado === 'ACTIVO' ? 'activo' : 'en proceso de aprobacion';
+
+		return (
+			`Ya existe un descriptor para este puesto en esta unidad que se encuentra ${contexto}. ` +
+			`Solo sera posible reactivar esta version cuando la version actual ${codigo} version ${version} ` +
 			`haya sido activada y posteriormente desactivada.`
 		);
 	}

@@ -599,10 +599,14 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Consulta SC_DESCRIPTOR_PUESTO: true si el puesto ya tiene descriptor no Inactivo (flujo abierto o Activo).
-        public async Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(int corrEmpresa, int corrPuesto, int excludeCorrDescriptor)
+        // Consulta SC_DESCRIPTOR_PUESTO: true si la misma unidad+puesto ya tiene descriptor no Inactivo.
+        public async Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(
+            int corrEmpresa,
+            int corrUnidad,
+            int corrPuesto,
+            int excludeCorrDescriptor)
         {
-            if (corrEmpresa <= 0 || corrPuesto <= 0)
+            if (corrEmpresa <= 0 || corrUnidad <= 0 || corrPuesto <= 0)
             {
                 return false;
             }
@@ -610,6 +614,7 @@ namespace SGUEES.Repositories
             const string sql = @"SELECT TOP 1 1 AS FOUND
                 FROM SC_DESCRIPTOR_PUESTO
                 WHERE CORR_EMPRESA = @CORR_EMPRESA
+                  AND CORR_UNIDAD = @CORR_UNIDAD
                   AND CORR_PUESTO = @CORR_PUESTO
                   AND UPPER(LTRIM(RTRIM(ISNULL(NOMBRE_ESTADO, N'Borrador')))) <> N'INACTIVO'
                   AND (@EXCLUDE_CORR <= 0 OR CORR_DESCRIPTOR_PUESTO <> @EXCLUDE_CORR)";
@@ -619,6 +624,7 @@ namespace SGUEES.Repositories
                 var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_UNIDAD", Value = corrUnidad, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "CORR_PUESTO", Value = corrPuesto, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "EXCLUDE_CORR", Value = excludeCorrDescriptor, DbType = System.Data.DbType.Int32 },
                 });

@@ -223,6 +223,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	// Qué hace: correlativo del descriptor para el que se pidieron acciones (evita carrera al cambiar fila).
 	private corrAccionesFlujoSolicitado = 0;
+	// Qué hace: junta varios refrescos seguidos (AsignaStatus + focusedRow + modo) en un solo GetAccionesFlujo.
+	private refrescarBotonesFlujoTimer: ReturnType<typeof setTimeout> | null = null;
 
 	// Qué hace: último resultado de GetAccionesFlujo (destinatario + permiso U; validación al confirmar).
 	private accionesFlujo = {
@@ -415,9 +417,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.configurarActividadesPopupResponsive();
 	}
 
-	// Al salir de la vista: quita el listener que ajusta el popup de actividades.
+	// Al salir de la vista: quita el listener del popup y cancela el debounce de botones de flujo.
 	ngOnDestroy(): void {
 		this.actividadesPopupMediaQuery?.removeEventListener('change', this.onActividadesPopupMediaChange);
+		if (this.refrescarBotonesFlujoTimer != null) {
+			clearTimeout(this.refrescarBotonesFlujoTimer);
+			this.refrescarBotonesFlujoTimer = null;
+		}
 	}
 
 	// En pantallas pequeñas abre el popup de actividades a pantalla completa.
@@ -6034,7 +6040,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.aplicarModoSegunEstadoFlujo();
 						setTimeout(() => {
 							this.syncHeaderForm();
-							this.firmasDocumento?.refresh();
+							// Firmas: no refresh aquí; app-firmas-documento carga una vez al crearse (*ngIf + ngOnChanges).
 							if (conservarAvisoSeleccioneTab) {
 								this.dejarSinTabSeccionSeleccionado();
 								this.mostrarAvisoSeleccioneTab = true;
@@ -6135,7 +6141,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	override bloquear(): void {
 		this.readOnly = true;
 		this.headerForm?.instance?.option('readOnly', true);
-		this.refrescarBotonesFlujo();
 	}
 
 	// Qué hace: habilita la edición del formulario del encabezado si el estado lo permite.
@@ -6153,7 +6158,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.headerForm?.instance?.getEditor('NOMBRE_ESTADO')?.option('readOnly', true);
 			this.headerForm?.instance?.getEditor('CORR_ESTADO')?.option('readOnly', true);
 		});
-		this.refrescarBotonesFlujo();
 	}
 
 	// Qué hace: permite editar en el grid solo si el estado es Borrador/Observado.
@@ -6181,9 +6185,21 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
-	// Qué hace: muestra/oculta botones de flujo según GetAccionesFlujo (destinatario + permiso U en API).
-	// Cómo: consulta el endpoint; la API cruza SP + claim CRUDP; el SPA solo pinta los flags finales.
+	// Qué hace: agenda un refresco de botones de flujo (evita GetAccionesFlujo repetido al entrar/guardar).
+	// Cómo: debounce; AsignaStatus + focusedRow + aplicarModo quedan en una sola llamada.
 	refrescarBotonesFlujo(): void {
+		if (this.refrescarBotonesFlujoTimer != null) {
+			clearTimeout(this.refrescarBotonesFlujoTimer);
+		}
+		this.refrescarBotonesFlujoTimer = setTimeout(() => {
+			this.refrescarBotonesFlujoTimer = null;
+			this.ejecutarRefrescoBotonesFlujo();
+		}, 100);
+	}
+
+	// Qué hace: muestra/oculta botones según GetAccionesFlujo (destinatario + permiso U en API).
+	// Cómo: una petición por correlativo; la API cruza SP + claim CRUDP; el SPA pinta los flags finales.
+	private ejecutarRefrescoBotonesFlujo(): void {
 		const corr = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!corr) {
 			this.corrAccionesFlujoSolicitado = 0;
@@ -6279,6 +6295,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		if (!meta.permitida(this.model?.NOMBRE_ESTADO)) {
 			this.notifyFx(`La accion ${meta.titulo} no aplica al estado actual.`, NotifyType.Warning);
+			return;
+		}
+
+		// Qué hace: en Reactivar, bloquea si ya hay otro descriptor del puesto en borrador/flujo/activo.
+		// Cómo: misma regla que al crear (excluye el correlativo actual, que está Inactivo).
+		if (
+			operacion === OPERACION_FLUJO.REACTIVAR &&
+			!this.service.validarPuedeReactivarDescriptor(
+				this.model,
+				this.models,
+				this.notifyDescriptorWarning.bind(this)
+			)
+		) {
 			return;
 		}
 

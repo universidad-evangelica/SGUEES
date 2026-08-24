@@ -9,8 +9,8 @@ namespace SGUEES.Repositories
     // operaciones específicas del encabezado del descriptor de puesto.
     public interface ISC_DESCRIPTOR_PUESTORepository : IRepository<SC_DESCRIPTOR_PUESTOTable>
     {
-        // Comprueba si el puesto ya tiene otro descriptor abierto en la empresa.
-        Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(int corrEmpresa, int corrPuesto, int excludeCorrDescriptor);
+        // Comprueba si la unidad+puesto ya tiene otro descriptor abierto en la empresa.
+        Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(int corrEmpresa, int corrUnidad, int corrPuesto, int excludeCorrDescriptor);
         /// <summary>Lookup sc-requisicion-personal: descriptores por empresa + CORR_UNIDAD.</summary>
         Task<CResult> GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(List<CParameter> xWhere);
         // Actualiza solo RESPONSABLE (Entrenamiento).
