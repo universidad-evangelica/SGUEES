@@ -11,6 +11,9 @@ namespace SGUEES.Repositories
     {
         // Comprueba si la unidad+puesto ya tiene otro descriptor abierto en la empresa.
         Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(int corrEmpresa, int corrUnidad, int corrPuesto, int excludeCorrDescriptor);
+        // Qué hace: calcula la siguiente VERSION para empresa+unidad+puesto (MAX+1, o 1 si no hay filas).
+        // Cómo lo hace: MAX(VERSION) en SC_DESCRIPTOR_PUESTO excluyendo el corr actual (Update).
+        Task<int> GetNextVersionPorUnidadPuestoAsync(int corrEmpresa, int corrUnidad, int corrPuesto, int excludeCorrDescriptor);
         /// <summary>Lookup sc-requisicion-personal: descriptores por empresa + CORR_UNIDAD.</summary>
         Task<CResult> GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(List<CParameter> xWhere);
         // Actualiza solo RESPONSABLE (Entrenamiento).

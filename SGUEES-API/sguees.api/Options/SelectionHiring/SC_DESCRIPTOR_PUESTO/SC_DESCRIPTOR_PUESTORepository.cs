@@ -639,6 +639,55 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Qué hace: siguiente VERSION para la clave empresa+unidad+puesto.
+        // Cómo lo hace: ISNULL(MAX(VERSION),0)+1 excluyendo el descriptor actual en Update.
+        public async Task<int> GetNextVersionPorUnidadPuestoAsync(
+            int corrEmpresa,
+            int corrUnidad,
+            int corrPuesto,
+            int excludeCorrDescriptor)
+        {
+            if (corrEmpresa <= 0 || corrUnidad <= 0 || corrPuesto <= 0)
+            {
+                return 1;
+            }
+
+            const string sql = @"SELECT ISNULL(MAX(VERSION), 0) + 1 AS NEXT_VERSION
+                FROM SC_DESCRIPTOR_PUESTO
+                WHERE CORR_EMPRESA = @CORR_EMPRESA
+                  AND CORR_UNIDAD = @CORR_UNIDAD
+                  AND CORR_PUESTO = @CORR_PUESTO
+                  AND (@EXCLUDE_CORR <= 0 OR CORR_DESCRIPTOR_PUESTO <> @EXCLUDE_CORR)";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_UNIDAD", Value = corrUnidad, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_PUESTO", Value = corrPuesto, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "EXCLUDE_CORR", Value = excludeCorrDescriptor, DbType = System.Data.DbType.Int32 },
+                });
+
+                var nextVersion = 1;
+                if (reader.Read() && !reader.IsDBNull(0))
+                {
+                    nextVersion = Convert.ToInt32(reader.GetValue(0));
+                    if (nextVersion < 1)
+                    {
+                        nextVersion = 1;
+                    }
+                }
+
+                reader.Close();
+                return nextVersion;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
         /// <summary>
         /// Lookup para sc-requisicion-personal: lista descriptores de V_SC_DESCRIPTOR_PUESTO
         /// filtrados por CORR_EMPRESA + CORR_UNIDAD (no altera GetAllAsync).

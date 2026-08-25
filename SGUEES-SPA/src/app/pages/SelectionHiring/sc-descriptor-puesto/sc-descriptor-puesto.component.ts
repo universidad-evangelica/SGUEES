@@ -1318,6 +1318,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			RESPONSABLE: '',
 			//FORMATO: FORMATO_CORTO,
 			FORMATO: FORMATO_AMBOS,
+			// Placeholder UI; la VERSION definitiva la asigna el API (MAX+1 por unidad+puesto).
 			VERSION: 1,
 			CORR_ESTADO: 11,
 			NOMBRE_ESTADO: 'Borrador',
@@ -6569,10 +6570,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		const unidad =
-			operacion === OPERACION_FLUJO.ENVIAR || operacion === OPERACION_FLUJO.GUARDAR
-				? Number(this.model?.CORR_UNIDAD) || null
-				: null;
+		// Qué hace: envía la unidad actual del descriptor en cada paso del flujo.
+		// Cómo lo hace: EjecutarFlujoProceso usa @i_idUnidadDocumento para validar JI/Jefe aunque la instancia aún tenga la unidad anterior.
+		const unidad = Number(this.model?.CORR_UNIDAD) || null;
 
 		// Qué hace: reserva el mensaje de éxito con el estado previo al avance del flujo.
 		// Cómo: metaOperacionFlujo usa NOMBRE_ESTADO antes del parche en memoria.

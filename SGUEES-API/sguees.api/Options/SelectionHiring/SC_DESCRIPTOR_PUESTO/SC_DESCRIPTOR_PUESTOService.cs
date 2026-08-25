@@ -123,6 +123,10 @@ namespace SGUEES.Services
                 }
             }
 
+            // Qué hace: asigna VERSION = MAX(empresa+unidad+puesto)+1 antes del Insert.
+            // Cómo lo hace: consulta SC_DESCRIPTOR_PUESTO (incluye Inactivo) y fija Data.VERSION.
+            await AsignarSiguienteVersionAsync(Data, excludeCorrDescriptor: 0);
+
             // Recorta textos, normaliza formato y estado antes de escribir en la tabla.
             NormalizeData(Data);
             var result = await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
@@ -251,6 +255,48 @@ namespace SGUEES.Services
             if (Data.CORR_DESCRIPTOR_PUESTO <= 0)
             {
                 return ValidationError("No se pudo identificar el descriptor de puesto a actualizar.");
+            }
+
+            // Qué hace: si cambia unidad o puesto, recalcula VERSION y valida que no haya otro abierto.
+            // Cómo lo hace: lee la fila actual, compara claves y aplica MAX+1 excluyendo este corr.
+            var actualResult = await _repo.GetAsync(new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+            });
+
+            if (actualResult.ErrorCode != 0)
+            {
+                return actualResult;
+            }
+
+            var actual = actualResult.Data as SC_DESCRIPTOR_PUESTOView;
+            var unidadNueva = Data.CORR_UNIDAD ?? 0;
+            var puestoNuevo = Data.CORR_PUESTO ?? 0;
+            var unidadActual = actual?.CORR_UNIDAD ?? 0;
+            var puestoActual = actual?.CORR_PUESTO ?? 0;
+            var cambioUnidadOPuesto = unidadNueva != unidadActual || puestoNuevo != puestoActual;
+
+            if (cambioUnidadOPuesto && Data.CORR_PUESTO.HasValue && Data.CORR_UNIDAD.HasValue && Data.CORR_UNIDAD.Value > 0)
+            {
+                var exists = await _repo.ExistsDescriptorAbiertoPorPuestoAsync(
+                    Data.CORR_EMPRESA,
+                    Data.CORR_UNIDAD.Value,
+                    Data.CORR_PUESTO.Value,
+                    Data.CORR_DESCRIPTOR_PUESTO);
+
+                if (exists)
+                {
+                    return ValidationError(
+                        "Ya existe un descriptor para este puesto en esta unidad que se encuentra en proceso de aprobacion o activo. Solo sera posible crear una nueva version cuando la version actual haya sido activada y posteriormente desactivada.");
+                }
+
+                await AsignarSiguienteVersionAsync(Data, Data.CORR_DESCRIPTOR_PUESTO);
+            }
+            else if (actual?.VERSION.HasValue == true && actual.VERSION.Value > 0)
+            {
+                // Conserva la VERSION de BD si no cambió la clave unidad+puesto.
+                Data.VERSION = actual.VERSION;
             }
 
             // Recorta textos, normaliza formato y estado antes de escribir en la tabla.
@@ -506,7 +552,29 @@ namespace SGUEES.Services
             Data.NOMBRE_ESTADO = string.IsNullOrWhiteSpace(Data.NOMBRE_ESTADO)
                 ? "Borrador"
                 : Data.NOMBRE_ESTADO.Trim();
-            Data.VERSION ??= 1;
+            // VERSION la asigna AsignarSiguienteVersionAsync (Create / Update con cambio de clave).
+            if (!Data.VERSION.HasValue || Data.VERSION.Value <= 0)
+            {
+                Data.VERSION = 1;
+            }
+        }
+
+        // Qué hace: fija Data.VERSION = MAX(empresa+unidad+puesto)+1 (o 1 si no hay historial).
+        // Cómo lo hace: llama al repositorio; si faltan unidad/puesto, deja VERSION=1.
+        private async Task AsignarSiguienteVersionAsync(SC_DESCRIPTOR_PUESTOTable Data, int excludeCorrDescriptor)
+        {
+            if (!Data.CORR_PUESTO.HasValue || !Data.CORR_UNIDAD.HasValue
+                || Data.CORR_UNIDAD.Value <= 0 || Data.CORR_PUESTO.Value <= 0)
+            {
+                Data.VERSION = 1;
+                return;
+            }
+
+            Data.VERSION = await _repo.GetNextVersionPorUnidadPuestoAsync(
+                Data.CORR_EMPRESA,
+                Data.CORR_UNIDAD.Value,
+                Data.CORR_PUESTO.Value,
+                excludeCorrDescriptor);
         }
 
         // Revisa campos obligatorios y longitudes antes de guardar el descriptor.

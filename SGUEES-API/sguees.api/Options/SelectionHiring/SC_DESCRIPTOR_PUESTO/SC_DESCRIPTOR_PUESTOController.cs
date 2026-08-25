@@ -174,7 +174,7 @@ namespace SGUEES.Controllers
             {
                 Data.NOMBRE_ESTADO = "Borrador";
             }
-            Data.VERSION ??= 1;
+            // VERSION la calcula el Service (MAX+1 por empresa+unidad+puesto); no forzar 1 aquí.
         }
 
         // Rellena auditoría al modificar: empresa, usuario, estación, fecha.
