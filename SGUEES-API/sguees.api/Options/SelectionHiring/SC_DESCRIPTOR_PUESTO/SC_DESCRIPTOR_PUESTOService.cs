@@ -199,7 +199,7 @@ namespace SGUEES.Services
                         CORR_UNIDAD_DOCUMENTO = unidadDocumento,
                         OPERACION = 1,
                         OBSERVACION =
-                            "Se guarda el descriptor por primera vez. Se crea la instancia de flujo y el documento queda en Borrador, listo para solicitar autorizacion.",
+                            "Se creo el descriptor de puesto y se inicio el flujo en Borrador.",
                     },
                     vLOGIN_SISTEMA);
 

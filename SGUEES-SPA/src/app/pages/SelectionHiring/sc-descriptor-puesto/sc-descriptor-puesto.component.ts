@@ -237,6 +237,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	btnInactivar = '';
 	btnReactivar = '';
 
+	// Qué hace: false = Solicitar envía sin modal (modal queda para futuro).
+	usarPopupFlujoEnviar = false;
+
 	// Qué hace: correlativo del descriptor para el que se pidieron acciones (evita carrera al cambiar fila).
 	private corrAccionesFlujoSolicitado = 0;
 	// Qué hace: junta varios refrescos seguidos (AsignaStatus + focusedRow + modo) en un solo GetAccionesFlujo.
@@ -6491,6 +6494,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.hintPopupFlujo = meta.hint;
 		this.textoBotonConfirmarFlujo = meta.boton;
 		this.observacionFlujo = meta.comentarioDefault;
+
+		// Qué hace: Solicitar sin popup; otras operaciones sí abren modal.
+		if (operacion === OPERACION_FLUJO.ENVIAR && !this.usarPopupFlujoEnviar) {
+			this.confirmarPopupFlujo();
+			return;
+		}
+
 		this.popupFlujoVisible = true;
 	}
 
@@ -6644,7 +6654,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					titulo: 'Solicitar autorizacion',
 					hint: 'El descriptor saldra de Borrador/Observado y avanzara al Jefe Inmediato.',
 					boton: 'Solicitar',
-					comentarioDefault: 'Se solicita autorizacion del descriptor de puesto.',
+					comentarioDefault: 'Se ha remitido la solicitud de autorización del descriptor de puesto al Jefe Inmediato para su revisión y aprobación.',
 					exito: 'Solicitud enviada.',
 					permitida: puedeEnviarDescriptor,
 				};
