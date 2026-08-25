@@ -45,7 +45,7 @@ export class ScExpedienteCandidatoService {
 		return this.repo.delete([{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: model.CORR_EXPEDIENTE_CANDIDATO }]);
 	}
 
-	getDetalle(corrExpediente: number): Observable<IResult> {
+	getAllSolicitud(corrExpediente: number): Observable<IResult> {
 		return this.detalleRepo.getAll([
 			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
 		]);
@@ -64,6 +64,7 @@ export class ScExpedienteCandidatoService {
 		});
 	}
 
+	/** Columnas del grid principal (browse) del expediente. */
 	getColumns(): any {
 		return [
 			{
@@ -106,6 +107,7 @@ export class ScExpedienteCandidatoService {
 		};
 	}
 
+	/** Ítems del dx-form del encabezado. */
 	getItems(): any {
 		return [
 			{
@@ -125,13 +127,13 @@ export class ScExpedienteCandidatoService {
 			{
 				dataField: 'NOMBRE_PERSONA',
 				label: { text: 'Nombre persona' },
-				colSpan: 3,
+				colSpan: 2,
 				editorOptions: { readOnly: true },
 			},
 			{
 				dataField: 'DUI_PERSONA',
-				label: { text: 'DUI' },
-				colSpan: 1,
+				label: { text: 'Doc. Identidad' },
+				colSpan: 2,
 				editorOptions: { readOnly: true },
 			},
 			{
@@ -151,21 +153,25 @@ export class ScExpedienteCandidatoService {
 		];
 	}
 
-	getDetalleColumns(): any[] {
+	/**
+	 * Columnas del grid hijo Solicitudes Relacionadas.
+	 * Mismo estilo que getTokenColumns() de sc-solicitud-empleo (Bitácora).
+	 */
+	getSolicitudColumns(): any {
 		return [
-			{ dataField: 'CORR_EXPEDIENTE_SOLICITUD', caption: 'Corr.', width: 80, dataType: 'number' },
-			{ dataField: 'CORR_SOLICITUD_EMPLEO', caption: 'Solicitud', width: 100, dataType: 'number' },
+			{ dataField: 'CORR_EXPEDIENTE_SOLICITUD', caption: 'Corr.', width: 80 },
+			{ dataField: 'CORR_SOLICITUD_EMPLEO', caption: 'No. Solicitud Empleo', width: 180 },
 			{
 				dataField: 'FECHA_SOLICITUD',
 				caption: 'Fecha solicitud',
-				width: 140,
+				width: 180,
 				dataType: 'datetime',
 				format: 'dd/MM/yyyy HH:mm',
 			},
-			{ dataField: 'DUI_SOLICITUD', caption: 'DUI', width: 120 },
-			{ dataField: 'NOMBRE_SOLICITUD', caption: 'Nombre', width: 220 },
-			{ dataField: 'CORREO_INVITACION', caption: 'Correo', width: 220 },
-			{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo contratación', width: 180 },
+			// { dataField: 'DUI_SOLICITUD', caption: 'Doc. Identidad', width: 120 },
+			// { dataField: 'NOMBRE_SOLICITUD', caption: 'Nombre', width: 220 },
+			{ dataField: 'CORREO_INVITACION', caption: 'Correo Invitación', width: 300 },
+			{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo Contratación', width: 180 },
 			{ dataField: 'ACTIVO_SOLICITUD', caption: 'Activa', width: 90, dataType: 'boolean' },
 		];
 	}

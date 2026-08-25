@@ -25,8 +25,13 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	protected override mttoParchearGridTrasGuardar = true;
 	protected override mttoRemoteOperations = false;
 
+	/**
+	 * Grid hijo Solicitudes Relacionadas (equivalente a tokens / tokenColumns de Bitácora).
+	 * Data: V_SC_EXPEDIENTE_SOLICITUD vía getAllSolicitud().
+	 */
 	solicitudes: ScExpedienteSolicitud[] = [];
-	detalleColumns: any[] = [];
+	solicitudColumns: any[] = [];
+
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Expediente de Candidato';
 
 	constructor(
@@ -38,7 +43,8 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
-		this.detalleColumns = this.service.getDetalleColumns();
+		// Columnas del grid hijo (mismo patrón que getTokenColumns en sc-solicitud-empleo).
+		this.solicitudColumns = this.service.getSolicitudColumns();
 	}
 
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
@@ -54,6 +60,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
 			this.subTituloVentana = this.maintenanceSubtitulo;
+			// Al volver al browse se limpia el detalle (como tokens al salir del ítem).
 			this.solicitudes = [];
 		}
 	}
@@ -123,19 +130,27 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		}, 0);
 	}
 
-	private cargarSolicitudes(): void {
-		const corr = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
-		if (corr <= 0) {
+	/**
+	 * Carga solicitudes vinculadas al expediente abierto.
+	 * Equivalente a consultarToken() en sc-solicitud-empleo (Bitácora).
+	 */
+	consultarSolicitudes(): void {
+		const corrExpediente = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
+		if (corrExpediente <= 0) {
 			this.solicitudes = [];
 			return;
 		}
 
 		this.service
-			.getDetalle(corr)
+			.getAllSolicitud(corrExpediente)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
-					this.solicitudes = response?.Result ? response.Data ?? [] : [];
+					if (response.Result) {
+						this.solicitudes = response.Data ?? [];
+					} else {
+						this.solicitudes = [];
+					}
 				},
 				error: () => {
 					this.solicitudes = [];
@@ -153,7 +168,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
 			this.bloquear();
-			this.cargarSolicitudes();
+			this.consultarSolicitudes();
 		});
 	}
 
@@ -167,7 +182,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
 			this.habilitar();
-			this.cargarSolicitudes();
+			this.consultarSolicitudes();
 		});
 	}
 
@@ -188,7 +203,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
 			insert: () => this.service.insert(this.model),
 			update: () => this.service.update(this.model),
-			onSuccess: () => this.cargarSolicitudes(),
+			onSuccess: () => this.consultarSolicitudes(),
 		});
 	}
 
