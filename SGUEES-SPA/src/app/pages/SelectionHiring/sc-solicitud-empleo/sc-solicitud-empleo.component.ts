@@ -66,9 +66,20 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	vinculandoRequisicion = false;
 	/** Si la solicitud ya está asociada al expediente de su persona. */
 	asociacionExpedienteBloqueada = false;
-	btnAsociarExpediente = '';
 	asociandoExpediente = false;
 	ultimoMensajeAsociacion = '';
+
+	/**
+	 * Texto del botón "Asociar Expediente" evaluado en cada ciclo de CD.
+	 * Se usa un getter para evitar el race entre confirmaCancelar (async) y el reset
+	 * del estado del botón, que hacía que quedara visible al volver a modo Browse.
+	 */
+	get btnAsociarExpediente(): string {
+		if (this.asociacionExpedienteBloqueada) {
+			return '';
+		}
+		return this.motivoNoPuedeAsociarExpediente() === null ? 'Asociar Expediente' : '';
+	}
 	// #endregion
 
 	constructor(
@@ -114,7 +125,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		const motivo = this.motivoNoPuedeAsociarExpediente();
 		if (motivo) {
 			this.notifyFx(motivo, NotifyType.Warning);
-			this.actualizarBtnAsociarExpediente();
 			return;
 		}
 
@@ -170,7 +180,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		} finally {
 			this.asociandoExpediente = false;
 			this.loadingVisible = false;
-			this.actualizarBtnAsociarExpediente();
 		}
 	}
 
@@ -203,13 +212,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		return null;
 	}
 
-	/** Muestra el botón solo si: formulario + requisición vinculada + persona + DUI, y no está bloqueada. */
-	private actualizarBtnAsociarExpediente(): void {
-		const puede =
-			!this.asociacionExpedienteBloqueada && this.motivoNoPuedeAsociarExpediente() === null;
-		this.btnAsociarExpediente = puede ? 'Asociar Expediente' : '';
-	}
-
 	private async ejecutarAsociarExpediente(corrSolicitud: number, crearExpediente: boolean): Promise<void> {
 		const resp: any = await this.expedienteService.asociarSolicitud(corrSolicitud, crearExpediente).pipe(take(1)).toPromise();
 		const codigo = resp?.ErrorCode ?? -1;
@@ -222,7 +224,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 			}
 			this.asociacionExpedienteBloqueada = true;
 			this.ultimoMensajeAsociacion = mensaje || '';
-			this.actualizarBtnAsociarExpediente();
 			return;
 		}
 
@@ -239,7 +240,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	private bloquearAsociacionExpediente(mensaje?: string): void {
 		this.asociacionExpedienteBloqueada = true;
 		this.ultimoMensajeAsociacion = mensaje || '';
-		this.actualizarBtnAsociarExpediente();
 		if (mensaje) {
 			this.notifyFx(mensaje, NotifyType.Warning);
 		}
@@ -248,7 +248,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	private resetAsociacionExpediente(): void {
 		this.asociacionExpedienteBloqueada = false;
 		this.ultimoMensajeAsociacion = '';
-		this.actualizarBtnAsociarExpediente();
 	}
 
 	/**
@@ -605,7 +604,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	/** Recarga persona + colecciones tras guardar en el modal. */
 	onPersonaDatosGuardados(): void {
 		this.consultarPersonaDatos();
-		this.actualizarBtnAsociarExpediente();
 	}
 
 	override nuevo(): void {
@@ -622,7 +620,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.consultarPersonaDatos();
 		this.consultarRequisicionesSolicitud();
 		this.consultarToken();
-		this.actualizarBtnAsociarExpediente();
 	}
 
 	override rowDblClick(e: any): void {
@@ -631,7 +628,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.consultarPersonaDatos();
 		this.consultarRequisicionesSolicitud();
 		this.consultarToken();
-		this.actualizarBtnAsociarExpediente();
 	}
 
 	consultar() {
@@ -695,7 +691,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		const corrSolicitudEmpleo = this.model?.CORR_SOLICITUD_EMPLEO ?? 0;
 		if (corrSolicitudEmpleo <= 0) {
 			this.requisicionesSolicitud = [];
-			this.actualizarBtnAsociarExpediente();
 			return;
 		}
 
@@ -709,11 +704,9 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 					} else {
 						this.requisicionesSolicitud = [];
 					}
-					this.actualizarBtnAsociarExpediente();
 				},
 				error: (error: any) => {
 					this.requisicionesSolicitud = [];
-					this.actualizarBtnAsociarExpediente();
 					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
 				},
 			});
@@ -963,7 +956,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 							this.habilitar();
 							this.consultarToken();
 							this.consultarRequisicionesSolicitud();
-							this.actualizarBtnAsociarExpediente();
 
 							this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro creado con exito!' });
 						} else {
@@ -990,7 +982,6 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 							const vIndex = this.models.findIndex((item: any) => item.CORR_SOLICITUD_EMPLEO === response.Data.CORR_SOLICITUD_EMPLEO);
 							this.models[vIndex] = response.Data;
 							this.AsignaStatus(UpdateType.Browse);
-							this.actualizarBtnAsociarExpediente();
 							//this.notifyFx('Registro modificado con exito!', NotifyType.Success);
 							this.messageService.add({ severity: 'success', summary: 'Éxito', detail: 'Registro modificado con exito!' });
 						} else {

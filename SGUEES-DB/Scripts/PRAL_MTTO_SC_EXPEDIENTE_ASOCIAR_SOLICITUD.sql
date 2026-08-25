@@ -12,11 +12,13 @@ GO
 
   Códigos @SYS_NUMERO_ERROR (mensajes SOLO aquí):
     0    = PUEDE_ASOCIAR (consulta) / asociada con éxito (acción)
-    4101 = solicitud inválida / sin persona
+    4101 = solicitud no existe / sin persona / persona no encontrada
     4102 = DUI de solicitud no coincide con DUI de persona
     4103 = no existe expediente; se requiere confirmar creación
     4104 = la solicitud ya está asociada a ese expediente
    -1    = error no controlado
+
+  Nota: no usar @@ROWCOUNT después de IF/ELSE (queda en 0 y dispara 4101 en falso).
 
   Ejecutar: sqlcmd ... -f 65001 -i PRAL_MTTO_SC_EXPEDIENTE_ASOCIAR_SOLICITUD.sql
 */
@@ -45,7 +47,9 @@ BEGIN
         @DUI_PER_NORM varchar(25) = NULL,
         @CORR_EXP int = 0,
         @CORR_DET int = 0,
-        @FECHA datetime = GETDATE();
+        @FECHA datetime = GETDATE(),
+        @EXISTE_SOLICITUD bit = 0,
+        @EXISTE_PERSONA bit = 0;
 
     SET @SYS_FILAS_AFECTADAS = 0;
     SET @SYS_NUMERO_ERROR = 0;
@@ -57,44 +61,45 @@ BEGIN
         IF ISNULL(@SOLO_CONSULTA, 0) = 0
             BEGIN TRANSACTION;
 
-        IF ISNULL(@SOLO_CONSULTA, 0) = 1
-        BEGIN
-            SELECT
-                @CORR_PERSONA_DATOS = ISNULL(S.CORR_PERSONA_DATOS, 0),
-                @DUI_SOLICITUD = S.DUI
-            FROM dbo.SC_SOLICITUD_EMPLEO AS S
-            WHERE S.CORR_EMPRESA = @CORR_EMPRESA
-              AND S.CORR_SOLICITUD_EMPLEO = @CORR_SOLICITUD_EMPLEO;
-        END
-        ELSE
-        BEGIN
-            SELECT
-                @CORR_PERSONA_DATOS = ISNULL(S.CORR_PERSONA_DATOS, 0),
-                @DUI_SOLICITUD = S.DUI
-            FROM dbo.SC_SOLICITUD_EMPLEO AS S WITH (UPDLOCK, HOLDLOCK)
-            WHERE S.CORR_EMPRESA = @CORR_EMPRESA
-              AND S.CORR_SOLICITUD_EMPLEO = @CORR_SOLICITUD_EMPLEO;
-        END;
+        /* Una sola lectura; bandera propia (no @@ROWCOUNT tras IF/ELSE). */
+        SELECT
+            @EXISTE_SOLICITUD = 1,
+            @CORR_PERSONA_DATOS = ISNULL(S.CORR_PERSONA_DATOS, 0),
+            @DUI_SOLICITUD = S.DUI
+        FROM dbo.SC_SOLICITUD_EMPLEO AS S
+        WHERE S.CORR_EMPRESA = @CORR_EMPRESA
+          AND S.CORR_SOLICITUD_EMPLEO = @CORR_SOLICITUD_EMPLEO;
 
-        IF @@ROWCOUNT = 0 OR @CORR_PERSONA_DATOS <= 0
+        IF ISNULL(@EXISTE_SOLICITUD, 0) = 0
         BEGIN
             SET @ESTADO = N'SIN_PERSONA';
             SET @SYS_NUMERO_ERROR = 4101;
-            SET @SYS_MENSAJE_ERROR = N'La solicitud no existe o no tiene persona asociada (CORR_PERSONA_DATOS).';
+            SET @SYS_MENSAJE_ERROR = N'La solicitud de empleo no existe para la empresa de la sesión.';
             IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
             RETURN;
         END;
 
-        SELECT @DUI_PERSONA = P.DUI
+        IF @CORR_PERSONA_DATOS <= 0
+        BEGIN
+            SET @ESTADO = N'SIN_PERSONA';
+            SET @SYS_NUMERO_ERROR = 4101;
+            SET @SYS_MENSAJE_ERROR = N'La solicitud no tiene persona asociada (CORR_PERSONA_DATOS).';
+            IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        SELECT
+            @EXISTE_PERSONA = 1,
+            @DUI_PERSONA = P.DUI
         FROM dbo.SC_PERSONA_DATOS AS P
         WHERE P.CORR_EMPRESA = @CORR_EMPRESA
           AND P.CORR_PERSONA_DATOS = @CORR_PERSONA_DATOS;
 
-        IF @DUI_PERSONA IS NULL
+        IF ISNULL(@EXISTE_PERSONA, 0) = 0
         BEGIN
             SET @ESTADO = N'SIN_PERSONA';
             SET @SYS_NUMERO_ERROR = 4101;
-            SET @SYS_MENSAJE_ERROR = N'No se encontraron los datos de persona de la solicitud.';
+            SET @SYS_MENSAJE_ERROR = N'No se encontraron los datos de persona de la solicitud en SC_PERSONA_DATOS.';
             IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
             RETURN;
         END;
@@ -111,24 +116,13 @@ BEGIN
             RETURN;
         END;
 
-        IF ISNULL(@SOLO_CONSULTA, 0) = 1
-        BEGIN
-            SELECT @CORR_EXP = E.CORR_EXPEDIENTE_CANDIDATO
-            FROM dbo.SC_EXPEDIENTE_CANDIDATO AS E
-            WHERE E.CORR_EMPRESA = @CORR_EMPRESA
-              AND E.CORR_PERSONA_DATOS = @CORR_PERSONA_DATOS;
-        END
-        ELSE
-        BEGIN
-            SELECT @CORR_EXP = E.CORR_EXPEDIENTE_CANDIDATO
-            FROM dbo.SC_EXPEDIENTE_CANDIDATO AS E WITH (UPDLOCK, HOLDLOCK)
-            WHERE E.CORR_EMPRESA = @CORR_EMPRESA
-              AND E.CORR_PERSONA_DATOS = @CORR_PERSONA_DATOS;
-        END;
+        SELECT @CORR_EXP = E.CORR_EXPEDIENTE_CANDIDATO
+        FROM dbo.SC_EXPEDIENTE_CANDIDATO AS E
+        WHERE E.CORR_EMPRESA = @CORR_EMPRESA
+          AND E.CORR_PERSONA_DATOS = @CORR_PERSONA_DATOS;
 
         IF ISNULL(@CORR_EXP, 0) = 0
         BEGIN
-            /* Consulta o asociar sin confirmar creación */
             IF ISNULL(@SOLO_CONSULTA, 0) = 1 OR ISNULL(@CREAR_EXPEDIENTE, 0) = 0
             BEGIN
                 SET @ESTADO = N'SIN_EXPEDIENTE';
@@ -174,13 +168,13 @@ BEGIN
             RETURN;
         END;
 
-        /* Consulta: expediente existe y la solicitud aún no está asociada */
         IF ISNULL(@SOLO_CONSULTA, 0) = 1
         BEGIN
             SET @CORR_EXPEDIENTE_CANDIDATO = @CORR_EXP;
             SET @ESTADO = N'PUEDE_ASOCIAR';
             SET @SYS_NUMERO_ERROR = 0;
             SET @SYS_MENSAJE_ERROR = N'';
+            IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
             RETURN;
         END;
 
