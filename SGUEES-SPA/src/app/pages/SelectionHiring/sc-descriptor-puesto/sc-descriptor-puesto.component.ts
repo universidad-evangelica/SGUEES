@@ -239,6 +239,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	// Qué hace: false = Solicitar envía sin modal (modal queda para futuro).
 	usarPopupFlujoEnviar = false;
+	// Qué hace: false = Aprobar confirma sin modal (modal queda para futuro).
+	usarPopupFlujoAprobar = false;
 
 	// Qué hace: correlativo del descriptor para el que se pidieron acciones (evita carrera al cambiar fila).
 	private corrAccionesFlujoSolicitado = 0;
@@ -6501,6 +6503,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
+		if (operacion === OPERACION_FLUJO.APROBAR && !this.usarPopupFlujoAprobar) {
+			this.confirmarPopupFlujo();
+			return;
+		}
+
 		this.popupFlujoVisible = true;
 	}
 
@@ -6654,8 +6661,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					titulo: 'Solicitar autorizacion',
 					hint: 'El descriptor saldra de Borrador/Observado y avanzara al Jefe Inmediato.',
 					boton: 'Solicitar',
-					comentarioDefault: 'Se ha remitido la solicitud de autorización del descriptor de puesto al Jefe Inmediato para su revisión y aprobación.',
-					exito: 'Solicitud enviada.',
+					comentarioDefault: 'Se remitió la solicitud de autorización del descriptor de puesto al Jefe Inmediato para su revisión y aprobación.',
+					exito: 'Se ha remitido la solicitud de autorización del descriptor de puesto al Jefe Inmediato para su revisión y aprobación.',
 					permitida: puedeEnviarDescriptor,
 				};
 			case OPERACION_FLUJO.APROBAR: {
@@ -6669,7 +6676,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						titulo: 'Revision del descriptor',
 						hint: 'Confirme la revision de Talento Humano. El documento avanzara al Jefe de TH.',
 						boton: 'Revision',
-						comentarioDefault: 'Se revisa el descriptor de puesto (Talento Humano).',
+						comentarioDefault: 'El descriptor de puesto fue revisado por Talento Humano y remitido al Jefe de Talento Humano para su aprobación.',
 						exito: 'Revision terminada. Enviado al Jefe de Talento Humano.',
 						permitida: puedeAprobarUObservarDescriptor,
 					};
@@ -6690,10 +6697,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						? 'Confirme la aprobacion del Jefe Inmediato. El documento avanzara a revision de TH.'
 						: 'Confirme la aprobacion. El documento avanzara al siguiente paso del flujo.',
 					boton: 'Aprobar',
-					comentarioDefault: 'Se aprueba el descriptor de puesto.',
+					comentarioDefault: 'La solicitud del descriptor de puesto fue aprobada por el Jefe Inmediato y remitida a Talento Humano para su revisión.',
 					exito: esAprobacionJi
-						? 'Aprobacion del Jefe Inmediato registrada. Enviado a revision de TH.'
-						: 'Aprobacion registrada.',
+						? 'Aprobación del Jefe Inmediato registrada. Enviado a revisión de Talento Humano.'
+						: 'Aprobación registrada.',
 					permitida: puedeAprobarUObservarDescriptor,
 				};
 			}
