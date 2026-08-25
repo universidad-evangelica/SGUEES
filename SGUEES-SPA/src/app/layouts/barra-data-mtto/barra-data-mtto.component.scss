@@ -257,4 +257,30 @@
   }
 }
 
+/* Combos de filtro en header (combox1–combox4 via app-data-lookup), visibles solo en browse. */
+.sguees-barra-combox {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 160px;
+  max-width: 320px;
+  padding: 0 4px;
+
+  ::ng-deep dx-drop-down-box {
+    width: 100%;
+  }
+}
+
+.sguees-barra-combox__label {
+  font-size: 11px;
+  line-height: 1.1;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+/* Oculta sin destruir el combo (así sobrevive Nuevo→Cancelar). */
+.sguees-barra-combox--hidden {
+  display: none !important;
+}
+
 

@@ -38,6 +38,10 @@
 	[btn5Type]="'default'"
 	[btn5Width]="120"
 	(btn5Click)="abrirPopupFlujo(OPERACION_FLUJO.REACTIVAR)"
+	[combox1]="barraFiltroUnidad"
+	[combox2]="barraFiltroEstado"
+	(combox1Change)="onFiltroUnidadChanged($event)"
+	(combox2Change)="onFiltroEstadoChanged($event)"
 >
 </app-barra-data-mtto>
 

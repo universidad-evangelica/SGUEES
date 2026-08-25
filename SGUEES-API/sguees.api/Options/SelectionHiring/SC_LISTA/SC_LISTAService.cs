@@ -42,6 +42,12 @@ namespace SGUEES.Services
             return _repo.GetFORMATO();
         }
 
+        // Qué hace: estados del flujo del descriptor para el filtro del listado.
+        public CResult GetESTADO_DESCRIPTOR()
+        {
+            return _repo.GetESTADO_DESCRIPTOR();
+        }
+
         public CResult GetUNIDAD_TIEMPO_INDUCCION()
         {
             return _repo.GetUNIDAD_TIEMPO_INDUCCION();

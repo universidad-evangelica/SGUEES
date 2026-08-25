@@ -7,6 +7,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { catchError, take } from 'rxjs/operators';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
+import { BarraMttoCombox } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
@@ -126,6 +127,19 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		//{ dataField: 'CORR_UNIDAD', caption: 'Codigo', width: 90 },
 		{ dataField: 'NOMBRE_UNIDAD_CATALOGO', caption: 'Unidad', width: 280 },
 	];
+	// Qué hace: catálogo de estados del flujo para filtrar el listado (SC_LISTA GetESTADO_DESCRIPTOR).
+	mESTADO_DESCRIPTOR: Array<{ Key: string; Value: string }> = [];
+	estadoDescriptorLookupColumns = [
+		{ dataField: 'Value', caption: 'Estado', width: 220 },
+	];
+	// Qué hace: filtros opcionales del listado browse (null = todos).
+	filtroCorrUnidad: number | null = null;
+	filtroNombreEstado: string | null = null;
+	// Qué hace: configs para combox1/combox2 de la barra global (mismo patrón que btn1–btn6).
+	barraFiltroUnidad: BarraMttoCombox | null = null;
+	barraFiltroEstado: BarraMttoCombox | null = null;
+	// Qué hace: copia completa del GetAll antes de aplicar filtros de unidad/estado.
+	private modelsListadoCompleto: ScDescriptorPuesto[] = [];
 	mCORR_PUESTO: ScDescriptorPuestoLookup[] = [];
 	// Al editar: puestos del catálogo más el ya guardado; NOMBRE_PUESTO puede ser el snapshot del descriptor.
 	mCORR_PUESTO_EDIT: ScDescriptorPuestoLookup[] = [];
@@ -342,6 +356,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.getPermiteEditar = this.getPermiteEditar.bind(this);
 		this.getPermiteDele = this.getPermiteDele.bind(this);
 		this.selectedLookUpCORR_UNIDAD = this.selectedLookUpCORR_UNIDAD.bind(this);
+		this.selectedLookUpESTADO_DESCRIPTOR = this.selectedLookUpESTADO_DESCRIPTOR.bind(this);
 		this.selectedLookUpCORR_PUESTO = this.selectedLookUpCORR_PUESTO.bind(this);
 		this.selectedLookUpCORR_PUESTO_REPORTA = this.selectedLookUpCORR_PUESTO_REPORTA.bind(this);
 		this.selectedLookUpCORR_FRECUENCIA = this.selectedLookUpCORR_FRECUENCIA.bind(this);
@@ -442,7 +457,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Pide a la API los catálogos del encabezado y de cada sección.
 	// Cada combo carga por separado para no bloquear la pantalla mientras llegan los datos.
 	llenaComboBox(): void {
+		// Qué hace: deja listos combox1/combox2 en la barra desde el inicio (catálogos se llenan async).
+		this.syncBarraFiltros();
 		this.getCORR_UNIDAD();
+		this.getESTADO_DESCRIPTOR();
 		this.actualizarPuestosPorUnidad(this.model?.CORR_UNIDAD ?? null);
 		this.getCORR_FRECUENCIA();
 		this.getCORR_DISPONIBILIDAD_HORARIO();
@@ -503,10 +521,47 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							return true;
 						});
 					this.prepararUnidadLookupParaDescriptor();
+					this.syncBarraFiltros();
 				},
 				error: (error) => {
 					this.mCORR_UNIDAD = [];
 					this.prepararUnidadLookupParaDescriptor();
+					this.syncBarraFiltros();
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: carga los estados del flujo del descriptor para el filtro del listado.
+	// Cómo: getLookUp SC_LISTA / GetESTADO_DESCRIPTOR (lista fija alineada a NOMBRE_ESTADO).
+	getESTADO_DESCRIPTOR(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_DESCRIPTOR_PUESTO',
+				'SC_LISTA',
+				'GetESTADO_DESCRIPTOR',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result || !Array.isArray(response.Data)) {
+						this.mESTADO_DESCRIPTOR = [];
+						this.syncBarraFiltros();
+						return;
+					}
+					this.mESTADO_DESCRIPTOR = response.Data
+						.map((item: any) => ({
+							Key: String(item.Key ?? item.key ?? '').trim(),
+							Value: String(item.Value ?? item.value ?? '').trim(),
+						}))
+						.filter((item: { Key: string; Value: string }) => !!item.Key);
+					this.syncBarraFiltros();
+				},
+				error: (error) => {
+					this.mESTADO_DESCRIPTOR = [];
+					this.syncBarraFiltros();
 					this.notifyApiError(error);
 				},
 			});
@@ -1095,6 +1150,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return vRow[0].CORR_UNIDAD;
 	}
 
+	// Qué hace: obtiene la clave del estado elegido en el combo filtro del listado.
+	// Cómo: lee Key de la primera fila seleccionada del lookup.
+	selectedLookUpESTADO_DESCRIPTOR(vRow: any): string {
+		return String(vRow[0]?.Key ?? '').trim();
+	}
+
 	// Qué hace: obtiene el correlativo del puesto elegido en el lookup del encabezado.
 	// Cómo: lee CORR_PUESTO de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_PUESTO(vRow: any): number {
@@ -1178,6 +1239,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.subTituloVentana = this.maintenanceSubtitulo;
 			this.mainTabIndex = 0;
 			this.subTabIndex = 0;
+			this.syncBarraFiltros();
+			this.aplicarFiltrosListado(false);
 		}
 		// Qué hace: en listado o formulario muestra botones según el descriptor seleccionado/abierto.
 		this.refrescarBotonesFlujo();
@@ -1269,9 +1332,75 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			onData: () => {
 				this.enriquecerFilasConsulta();
 				this.ordenarModelsPorCorr();
-				this.refrescarGridTrasCarga(resetPage);
+				// Qué hace: guarda la lista completa (unidades asociadas) y aplica filtros del card.
+				this.modelsListadoCompleto = Array.isArray(this.models) ? [...this.models] : [];
+				this.aplicarFiltrosListado(resetPage);
 			},
 		});
+	}
+
+	// Qué hace: filtra el grid browse por unidad y/o estado sin volver a llamar GetAll.
+	// Cómo: parte de modelsListadoCompleto; null en filtro = no restringe ese criterio.
+	private aplicarFiltrosListado(resetPage = false): void {
+		let rows = Array.isArray(this.modelsListadoCompleto) ? [...this.modelsListadoCompleto] : [];
+		const corrUnidad = Number(this.filtroCorrUnidad);
+		if (corrUnidad > 0) {
+			rows = rows.filter((row) => Number(row.CORR_UNIDAD) === corrUnidad);
+		}
+		const estado = normalizarNombreEstado(this.filtroNombreEstado);
+		if (estado) {
+			rows = rows.filter((row) => normalizarNombreEstado(row.NOMBRE_ESTADO) === estado);
+		}
+		this.models = rows;
+		this.refrescarGridTrasCarga(resetPage);
+	}
+
+	// Qué hace: aplica el filtro de unidad del listado (clear = todas las asociadas).
+	onFiltroUnidadChanged(value: any): void {
+		const corr = Number(value);
+		this.filtroCorrUnidad = corr > 0 ? corr : null;
+		this.syncBarraFiltros();
+		if (this.isBrowse()) {
+			this.aplicarFiltrosListado(true);
+		}
+	}
+
+	// Qué hace: aplica el filtro de estado del listado (clear = todos los estados).
+	onFiltroEstadoChanged(value: any): void {
+		const nombre = String(value ?? '').trim();
+		this.filtroNombreEstado = nombre || null;
+		this.syncBarraFiltros();
+		if (this.isBrowse()) {
+			this.aplicarFiltrosListado(true);
+		}
+	}
+
+	// Qué hace: sincroniza combox1/combox2 de la barra con catálogos y filtros actuales (app-data-lookup).
+	private syncBarraFiltros(): void {
+		this.barraFiltroUnidad = {
+			label: 'Unidad',
+			model: this.mCORR_UNIDAD ?? [],
+			value: this.filtroCorrUnidad,
+			valueExpr: 'CORR_UNIDAD',
+			displayExpr: 'NOMBRE_UNIDAD',
+			lookupColumns: this.unidadLookupColumns,
+			selectedRowKeys: this.selectedLookUpCORR_UNIDAD,
+			showClearButton: true,
+			dropDownWidth: 420,
+			width: 350,
+		};
+		this.barraFiltroEstado = {
+			label: 'Estado',
+			model: this.mESTADO_DESCRIPTOR ?? [],
+			value: this.filtroNombreEstado,
+			valueExpr: 'Key',
+			displayExpr: 'Value',
+			lookupColumns: this.estadoDescriptorLookupColumns,
+			selectedRowKeys: this.selectedLookUpESTADO_DESCRIPTOR,
+			showClearButton: true,
+			dropDownWidth: 350,
+			width: 350,
+		};
 	}
 
 	// Rellena NOMBRE_UNIDAD y NOMBRE_PUESTO cuando la API no los devuelve.
@@ -6109,7 +6238,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			const record = this.fillData(data as ScDescriptorPuesto);
 			record.NOMBRE_UNIDAD = record.NOMBRE_UNIDAD || this.getNombreUnidad(record.CORR_UNIDAD);
 			record.NOMBRE_PUESTO = record.NOMBRE_PUESTO || this.getNombrePuesto(record.CORR_PUESTO);
+			// Qué hace: mantiene la fuente completa del listado alineada con el patch en memoria.
+			this.modelsListadoCompleto = this.aplicarFilaPorClave(
+				this.modelsListadoCompleto,
+				record,
+				(row) => Number(row.CORR_DESCRIPTOR_PUESTO),
+				isAdd
+			);
 			super.aplicarRegistroEnGrid(record, isAdd);
+			this.aplicarFiltrosListado(false);
 			return;
 		}
 
@@ -6128,6 +6265,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const corrEliminado = Number(keyValue);
 		const eraSeleccionado = Number(this.model?.[key]) === corrEliminado;
 
+		this.modelsListadoCompleto = (this.modelsListadoCompleto ?? []).filter(
+			(item: ScDescriptorPuesto) => Number(item?.[key as keyof ScDescriptorPuesto]) !== corrEliminado
+		);
 		this.models = this.models.filter(
 			(item: ScDescriptorPuesto) => Number(item?.[key as keyof ScDescriptorPuesto]) !== corrEliminado
 		);

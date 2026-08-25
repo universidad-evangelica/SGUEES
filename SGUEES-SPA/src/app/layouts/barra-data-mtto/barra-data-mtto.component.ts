@@ -26,10 +26,27 @@ import {
 import { MttoPageContextService } from 'src/app/layouts/mtto-page-context.service';
 import { BarraRibbonTabDirective } from './barra-ribbon-tab.directive';
 import { buildEstadoToolbarOptions, computeToolbarBtnWidth } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 
 export type { BreadcrumbItem } from 'src/app/shared/components/library/page-header/page-header.component';
 
 export type BarraLayoutMode = 'legacy' | 'header-only';
+
+/** Config de un combo (app-data-lookup / DropDownBox) en la barra (máx. 4: combox1–combox4). */
+export interface BarraMttoCombox {
+  label?: string;
+  /** Catálogo del lookup (mismo `model` de app-data-lookup). */
+  model: any[];
+  value: any;
+  valueExpr?: string;
+  displayExpr?: string;
+  showClearButton?: boolean;
+  lookupColumns?: any[] | null;
+  selectedRowKeys?: (rows: any[]) => any;
+  dropDownWidth?: number | string | null;
+  /** Ancho del control en el toolbar. */
+  width?: number;
+}
 
 /**
  * FASE 5.5: opciones DX estables (no crear objetos en template — evita loop CD + DevExtreme).
@@ -130,6 +147,16 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Input() btn6Mode: string = 'contained';
   @Output() btn6Click = new EventEmitter<any>();
 
+  // Qué hace: hasta 4 combos de filtro en el header (mismo patrón de slots que btn1–btn6).
+  @Input() combox1: BarraMttoCombox | null = null;
+  @Input() combox2: BarraMttoCombox | null = null;
+  @Input() combox3: BarraMttoCombox | null = null;
+  @Input() combox4: BarraMttoCombox | null = null;
+  @Output() combox1Change = new EventEmitter<any>();
+  @Output() combox2Change = new EventEmitter<any>();
+  @Output() combox3Change = new EventEmitter<any>();
+  @Output() combox4Change = new EventEmitter<any>();
+
   optNuevo: Record<string, unknown> = {};
   optGuardar: Record<string, unknown> = {};
   optCancelar: Record<string, unknown> = {};
@@ -195,6 +222,19 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     return this.showRibbon && this.isBrowse;
   }
 
+  get showCombox1(): boolean {
+    return this.isBrowse && !!this.combox1;
+  }
+  get showCombox2(): boolean {
+    return this.isBrowse && !!this.combox2;
+  }
+  get showCombox3(): boolean {
+    return this.isBrowse && !!this.combox3;
+  }
+  get showCombox4(): boolean {
+    return this.isBrowse && !!this.combox4;
+  }
+
   get visibleRibbonTabs(): BarraRibbonTabDirective[] {
     return (
       this.ribbonTabDirectives?.filter(
@@ -203,7 +243,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     );
   }
 
-  /** Browse con fechas, btn1–6 o ribbon: la barra sigue mostrando toolbar. */
+  /** Browse con fechas, btn1–6, combos o ribbon: la barra sigue mostrando toolbar. */
   get browseNeedsBarraToolbar(): boolean {
     return (
       this.showRibbon ||
@@ -215,7 +255,11 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       !!this.btn3 ||
       !!this.btn4 ||
       !!this.btn5 ||
-      !!this.btn6
+      !!this.btn6 ||
+      !!this.combox1 ||
+      !!this.combox2 ||
+      !!this.combox3 ||
+      !!this.combox4
     );
   }
 
@@ -232,7 +276,11 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       !!this.btn3 ||
       !!this.btn4 ||
       !!this.btn5 ||
-      !!this.btn6
+      !!this.btn6 ||
+      !!this.combox1 ||
+      !!this.combox2 ||
+      !!this.combox3 ||
+      !!this.combox4
     );
   }
 
@@ -336,6 +384,10 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       changes['btn4'] ||
       changes['btn5'] ||
       changes['btn6'] ||
+      changes['combox1'] ||
+      changes['combox2'] ||
+      changes['combox3'] ||
+      changes['combox4'] ||
       changes['FECHA_INICIAL'] ||
       changes['FECHA_FINAL']
     ) {
@@ -556,6 +608,40 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   Onbtn6Click(): void {
     this.btn6Click.emit();
   }
+
+  // Qué hace: emite el valor del combo (app-data-lookup); ignora si no cambió.
+  onCombox1Changed(value: any): void {
+    this.emitComboxChange(this.combox1, value, this.combox1Change);
+  }
+  onCombox2Changed(value: any): void {
+    this.emitComboxChange(this.combox2, value, this.combox2Change);
+  }
+  onCombox3Changed(value: any): void {
+    this.emitComboxChange(this.combox3, value, this.combox3Change);
+  }
+  onCombox4Changed(value: any): void {
+    this.emitComboxChange(this.combox4, value, this.combox4Change);
+  }
+
+  private emitComboxChange(
+    config: BarraMttoCombox | null,
+    next: any,
+    output: EventEmitter<any>,
+  ): void {
+    if (!config) {
+      return;
+    }
+    const prev = config.value ?? null;
+    const same =
+      next === prev ||
+      (next == null && (prev == null || prev === '')) ||
+      String(next ?? '') === String(prev ?? '');
+    if (same) {
+      return;
+    }
+    output.emit(next ?? null);
+  }
+
   OnValueChangeFECHA_INICIAL(e: { value?: Date }): void {
     this.FECHA_INICIALChange.emit(e.value);
   }
@@ -591,7 +677,14 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
 }
 
 @NgModule({
-  imports: [DxButtonModule, DxTabPanelModule, DxToolbarModule, CommonModule, PageHeaderModule],
+  imports: [
+    DxButtonModule,
+    DxTabPanelModule,
+    DxToolbarModule,
+    CommonModule,
+    PageHeaderModule,
+    DataLookupModule,
+  ],
   declarations: [BarraDataMttoComponent, BarraRibbonTabDirective],
   exports: [BarraDataMttoComponent, BarraRibbonTabDirective],
 })
