@@ -239,8 +239,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	// Qué hace: false = Solicitar envía sin modal (modal queda para futuro).
 	usarPopupFlujoEnviar = false;
-	// Qué hace: false = Aprobar confirma sin modal (modal queda para futuro).
+	// Qué hace: false = Aprobar JI/JTH confirma sin modal (modal queda para futuro).
 	usarPopupFlujoAprobar = false;
+	// Qué hace: true = Revisión TH sí pide modal; false = envía con comentario default.
+	usarPopupFlujoRevision = false;
 
 	// Qué hace: correlativo del descriptor para el que se pidieron acciones (evita carrera al cambiar fila).
 	private corrAccionesFlujoSolicitado = 0;
@@ -6497,15 +6499,24 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.textoBotonConfirmarFlujo = meta.boton;
 		this.observacionFlujo = meta.comentarioDefault;
 
-		// Qué hace: Solicitar sin popup; otras operaciones sí abren modal.
+		// Qué hace: bypass de modal por operación (Solicitar / Aprobar JI-JTH / Revisión TH van separados).
 		if (operacion === OPERACION_FLUJO.ENVIAR && !this.usarPopupFlujoEnviar) {
 			this.confirmarPopupFlujo();
 			return;
 		}
-
-		if (operacion === OPERACION_FLUJO.APROBAR && !this.usarPopupFlujoAprobar) {
-			this.confirmarPopupFlujo();
-			return;
+		if (operacion === OPERACION_FLUJO.APROBAR) {
+			const esRevisionTh =
+				normalizarNombreEstado(this.model?.NOMBRE_ESTADO) ===
+				NOMBRE_ESTADO_APROBADO_JI.toUpperCase();
+			if (esRevisionTh) {
+				if (!this.usarPopupFlujoRevision) {
+					this.confirmarPopupFlujo();
+					return;
+				}
+			} else if (!this.usarPopupFlujoAprobar) {
+				this.confirmarPopupFlujo();
+				return;
+			}
 		}
 
 		this.popupFlujoVisible = true;
@@ -6677,7 +6688,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						hint: 'Confirme la revision de Talento Humano. El documento avanzara al Jefe de TH.',
 						boton: 'Revision',
 						comentarioDefault: 'El descriptor de puesto fue revisado por Talento Humano y remitido al Jefe de Talento Humano para su aprobación.',
-						exito: 'Revision terminada. Enviado al Jefe de Talento Humano.',
+						exito: 'Revisión terminada. Descriptor de puesto enviado al Jefe de Talento Humano para su aprobación.',
 						permitida: puedeAprobarUObservarDescriptor,
 					};
 				}
@@ -6686,8 +6697,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						titulo: 'Aprobar descriptor',
 						hint: 'Confirme la aprobacion final. El descriptor quedara Activo en Vigencia.',
 						boton: 'Aprobar',
-						comentarioDefault: 'Se aprueba el descriptor de puesto.',
-						exito: 'Descriptor aprobado y activo.',
+						comentarioDefault: 'La solicitud del descriptor de puesto fue aprobada por el Jefe de Talento Humano. El descriptor de puesto quedó Activo en Vigencia.',
+						exito: 'Aprobación del Jefe de Talento Humano registrada. Descriptor de puesto queda Activo en Vigencia.',
 						permitida: puedeAprobarUObservarDescriptor,
 					};
 				}
@@ -6727,7 +6738,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					titulo: 'Reactivar descriptor',
 					hint: 'El descriptor Inactivo volvera a Borrador y debera recorrer nuevamente el flujo de autorizacion.',
 					boton: 'Reactivar',
-					comentarioDefault: 'Se reactiva el descriptor: vuelve a Borrador para nueva autorizacion.',
+					comentarioDefault: 'Se reactiva el descriptor: vuelve a Borrador para nueva autorización.',
 					exito: 'Descriptor reactivado: vuelve a Borrador.',
 					permitida: puedeReactivarDescriptor,
 				};
