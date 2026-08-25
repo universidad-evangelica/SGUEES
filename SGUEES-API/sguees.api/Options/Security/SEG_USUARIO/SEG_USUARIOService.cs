@@ -20,7 +20,7 @@ namespace sguees.Services
 	{
 		private readonly ISEG_USUARIORepository _repo;
 		private readonly ISEG_USUARIO_OPCIONRepository _SEG_USUARIO_OPCIONRepository;
-        private readonly ICOM_PARAMETRORepository _repoParametro;
+        private readonly IGEN_PARAMETRO_SMTPRepository _repoParametroSmtp;
 		private readonly ISEG_SISTEMARepository _repoSistema;
 		private readonly IConfiguration _config;
 		private readonly ILogger<SEG_USUARIOService> _logger;
@@ -28,7 +28,7 @@ namespace sguees.Services
 		
 		public SEG_USUARIOService(ISEG_USUARIORepository repo,
                                     ISEG_USUARIO_OPCIONRepository SEG_USUARIO_OPCIONRepository,
-                                    ICOM_PARAMETRORepository repoParametro,
+                                    IGEN_PARAMETRO_SMTPRepository repoParametroSmtp,
                                     ISEG_SISTEMARepository repoSistema,
                                     IConfiguration config,
                                     ILogger<SEG_USUARIOService> logger,
@@ -37,7 +37,7 @@ namespace sguees.Services
 		{
 			_repo = repo;
 			_SEG_USUARIO_OPCIONRepository = SEG_USUARIO_OPCIONRepository;
-            _repoParametro = repoParametro;
+            _repoParametroSmtp = repoParametroSmtp;
 			_repoSistema = repoSistema;
 			_config = config;
 			_logger = logger;
@@ -678,11 +678,11 @@ namespace sguees.Services
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = usuario.CORR_EMPRESA, DbType = System.Data.DbType.Int32 }
                 };
-                var objParametro = await _repoParametro.GetAsync(pParametro);
-                COM_PARAMETROView parametro = null;
+                var objParametro = await _repoParametroSmtp.GetAsync(pParametro);
+                GEN_PARAMETRO_SMTPView parametro = null;
                 if (objParametro.Result && objParametro.Data != null)
                 {
-                    parametro = (COM_PARAMETROView)objParametro.Data;
+                    parametro = (GEN_PARAMETRO_SMTPView)objParametro.Data;
                 }
 
                 if (parametro == null ||
@@ -692,10 +692,10 @@ namespace sguees.Services
                     string.IsNullOrWhiteSpace(parametro.CORREO_REMITENTE) ||
                     parametro.PUERTO_CORREO <= 0)
                 {
-                    var objParametros = await _repoParametro.GetAllAsync(new List<CParameter>());
+                    var objParametros = await _repoParametroSmtp.GetAllAsync(new List<CParameter>());
                     if (objParametros.Result && objParametros.Data != null)
                     {
-                        var lista = (List<COM_PARAMETROView>)objParametros.Data;
+                        var lista = (List<GEN_PARAMETRO_SMTPView>)objParametros.Data;
                         parametro = lista.FirstOrDefault(p =>
                             !string.IsNullOrWhiteSpace(p.SERVIDOR_CORREO) &&
                             !string.IsNullOrWhiteSpace(p.USUARIO_REMITENTE) &&
@@ -712,7 +712,7 @@ namespace sguees.Services
                     string.IsNullOrWhiteSpace(parametro.CORREO_REMITENTE) ||
                     parametro.PUERTO_CORREO <= 0)
                 {
-                    _logger.LogWarning("[ForgotPassword] No hay configuración SMTP válida en COM_PARAMETRO para empresa {CorrEmpresa}.", usuario.CORR_EMPRESA);
+                    _logger.LogWarning("[ForgotPassword] No hay configuración SMTP válida en GEN_PARAMETRO_SMTP para empresa {CorrEmpresa}.", usuario.CORR_EMPRESA);
                     return respuestaGenerica;
                 }
 
