@@ -1,0 +1,96 @@
+<div class="sguees-mtto-view">
+  <app-barra-data-mtto
+    [tituloVentana]="tituloVentana"
+    [showRibbon]="true"
+    [showExport]="permitePrint"
+    [isBrowse]="isBrowse()"
+    [isForm]="isForm()"
+    [permiteAdd]="permiteAdd"
+    [showRefresh]="true"
+    (consultar)="consultar()"
+    (nuevo)="nuevo()"
+    (guardar)="guardar()"
+    (cancelar)="cancelar()"
+  >
+  </app-barra-data-mtto>
+
+  <div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
+    <dx-form
+      #fData
+      id="fData"
+      [formData]="model"
+      [labelLocation]="'top'"
+      [colCount]="mttoFormColCount"
+      [colCountByScreen]="mttoFormColCountByScreen"
+      [showRequiredMark]="false"
+      [items]="items"
+    >
+    </dx-form>
+
+    <div class="mt-20" *ngIf="(model?.CORR_EXPEDIENTE_CANDIDATO ?? 0) > 0">
+      <h5>Solicitudes asociadas</h5>
+      <dx-data-grid
+        [dataSource]="solicitudes"
+        keyExpr="CORR_EXPEDIENTE_SOLICITUD"
+        [columnAutoWidth]="false"
+        [showBorders]="true"
+        [rowAlternationEnabled]="true"
+        [hoverStateEnabled]="true"
+      >
+        <dxo-paging [pageSize]="10"></dxo-paging>
+        <dxo-filter-row [visible]="true"></dxo-filter-row>
+        <dxi-column
+          *ngFor="let col of detalleColumns"
+          [dataField]="col.dataField"
+          [caption]="col.caption"
+          [width]="col.width"
+          [dataType]="col.dataType"
+          [format]="col.format"
+        >
+        </dxi-column>
+      </dx-data-grid>
+    </div>
+  </div>
+
+  <app-data-grid-mtto
+    [isBrowse]="isBrowse()"
+    [models]="models"
+    [columns]="columns"
+    [summary]="summary"
+    [keyExpr]="mttoGridKeyExpr"
+    [pageSize]="mttoPageSize"
+    [allowedPageSizes]="mttoPageSizes"
+    [remoteOperations]="mttoRemoteOperations"
+    [repaintChangesOnly]="false"
+    [nativeToolbar]="true"
+    [unifiedToolbar]="false"
+    [showSearch]="false"
+    [showAdd]="false"
+    [showRefresh]="false"
+    [showExport]="false"
+    [focusedRowKey]="gridFocusedRowKey"
+    [permitePrint]="permitePrint"
+    [permiteEditar]="getPermiteEditar"
+    [permiteDele]="getPermiteDele"
+    [responsiveColumnHiding]="false"
+    [columnHidingEnabled]="false"
+    [exportFileName]="'ExpedienteCandidato'"
+    (rowDblClick)="rowDblClick($event)"
+    (rowRemoving)="rowRemoving($event)"
+    (focusedRowChanged)="focusedRowChanged($event)"
+    (editClick)="onEditClick($event)"
+  >
+  </app-data-grid-mtto>
+</div>
+
+<dx-load-panel
+  #loadPanel
+  shadingColor="rgba(0,0,0,0.4)"
+  [position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+  [(visible)]="loadingVisible"
+  [showIndicator]="true"
+  [showPane]="true"
+  [shading]="true"
+  (onShown)="(loadingVisible)"
+>
+</dx-load-panel>

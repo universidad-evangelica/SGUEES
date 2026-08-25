@@ -23,6 +23,7 @@ import {
 import { ScSolicitudEmpleoService } from './sc-solicitud-empleo.service';
 import { ScSolicitudRequisicion } from './models/sc-solicitud-requisicion';
 import { confirm } from 'devextreme/ui/dialog';
+import { ScExpedienteCandidatoService } from '../sc-expediente-candidato/sc-expediente-candidato.service';
 
 @Component({
 	selector: 'app-sc-solicitud-empleo',
@@ -63,12 +64,17 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	requisicionPickerColumns: any[] = [];
 	requisicionSeleccionada: any = null;
 	vinculandoRequisicion = false;
+	/** Si la solicitud ya está asociada al expediente de su persona. */
+	asociacionExpedienteBloqueada = false;
+	btnAsociarExpediente = 'Asociar Expediente';
+	asociandoExpediente = false;
 	// #endregion
 
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private service: ScSolicitudEmpleoService,
+		private expedienteService: ScExpedienteCandidatoService,
 		private messageService: MessageService
 	) {
 		super(appInfoService, router);
@@ -96,6 +102,120 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	//#region <Manejo de Combos>
 	llenaComboBox() {
 		this.getCORR_TIPO_CONTRATACION();
+	}
+
+	/* Asociar solicitud al expediente de candidato (API: GetEstadoAsociacion / AsociarSolicitud). */
+	async asociarExpediente(): Promise<void> {
+		if (this.asociandoExpediente) {
+			return;
+		}
+
+		const corrSolicitud = this.model?.CORR_SOLICITUD_EMPLEO ?? 0;
+		const corrPersona = this.model?.CORR_PERSONA_DATOS ?? 0;
+
+		if (this.isBrowse() || corrSolicitud <= 0) {
+			this.notifyFx('Seleccione o abra una solicitud guardada para asociar el expediente.', NotifyType.Warning);
+			return;
+		}
+
+		if (corrPersona <= 0) {
+			this.notifyFx('La solicitud no tiene persona asociada (CORR_PERSONA_DATOS).', NotifyType.Warning);
+			return;
+		}
+
+		if (this.asociacionExpedienteBloqueada) {
+			this.notifyFx('La solicitud ya está asociada al expediente de candidato Prueb.', NotifyType.Warning);
+			return;
+		}
+
+		this.asociandoExpediente = true;
+		this.loadingVisible = true;
+
+		try {
+			const estadoResp: any = await this.expedienteService.getEstadoAsociacion(corrSolicitud).pipe(take(1)).toPromise();
+			if (!estadoResp?.Result || !estadoResp.Data) {
+				this.notifyFx(estadoResp?.ErrorMessage || 'No se pudo consultar el estado de asociación.', NotifyType.Error);
+				return;
+			}
+
+			const estado = `${estadoResp.Data.ESTADO ?? ''}`.toUpperCase();
+			const mensaje = estadoResp.Data.MENSAJE || '';
+
+			if (estado === 'SIN_PERSONA' || estado === 'DUI_NO_COINCIDE') {
+				this.notifyFx(mensaje || 'No se puede asociar el expediente.', NotifyType.Warning);
+				return;
+			}
+
+			if (estado === 'YA_ASOCIADA') {
+				this.bloquearAsociacionExpediente(mensaje);
+				return;
+			}
+
+			if (estado === 'SIN_EXPEDIENTE') {
+				const aceptar = await confirm(
+					'No existe un expediente para esta persona. ¿Desea crear el expediente y asociar la solicitud?',
+					'Crear expediente'
+				);
+				if (!aceptar) {
+					return;
+				}
+				await this.ejecutarAsociarExpediente(corrSolicitud, true);
+				return;
+			}
+
+			if (estado === 'PUEDE_ASOCIAR') {
+				await this.ejecutarAsociarExpediente(corrSolicitud, false);
+				return;
+			}
+
+			this.notifyFx(mensaje || 'Estado de asociación no reconocido.', NotifyType.Warning);
+		} catch (error: any) {
+			this.notifyFx(error?.ErrorMessage || error?.message || error || 'Error al asociar expediente.', NotifyType.Error);
+		} finally {
+			this.asociandoExpediente = false;
+			this.loadingVisible = false;
+		}
+	}
+
+	private async ejecutarAsociarExpediente(corrSolicitud: number, crearExpediente: boolean): Promise<void> {
+		const resp: any = await this.expedienteService.asociarSolicitud(corrSolicitud, crearExpediente).pipe(take(1)).toPromise();
+		const data = resp?.Data;
+		const codigo = resp?.ErrorCode ?? -1;
+		const estado = `${data?.ESTADO ?? ''}`.toUpperCase();
+		const mensaje = data?.MENSAJE || resp?.ErrorMessage || '';
+
+		if (codigo === 0 || estado === 'ASOCIADA') {
+			const corrExp = data?.CORR_EXPEDIENTE_CANDIDATO ?? resp?.CodeHelper ?? 0;
+			this.notifyFx(
+				mensaje || `Solicitud asociada al expediente ${corrExp} correctamente.`,
+				NotifyType.Success
+			);
+			this.bloquearAsociacionExpediente('La solicitud ya está asociada a este expediente de candidato Prueba.');
+			return;
+		}
+
+		if (codigo === 4104 || estado === 'YA_ASOCIADA') {
+			this.bloquearAsociacionExpediente(mensaje);
+			return;
+		}
+
+		if (codigo === 4103 || estado === 'SIN_EXPEDIENTE') {
+			this.notifyFx(mensaje || 'Se requiere confirmar la creación del expediente.', NotifyType.Warning);
+			return;
+		}
+
+		this.notifyFx(mensaje || 'No se pudo asociar la solicitud al expediente.', NotifyType.Warning);
+	}
+
+	private bloquearAsociacionExpediente(mensaje?: string): void {
+		this.asociacionExpedienteBloqueada = true;
+		this.btnAsociarExpediente = '';
+		this.notifyFx(mensaje || 'La solicitud ya está asociada a este expediente de candidato Prueba.', NotifyType.Warning);
+	}
+
+	private resetAsociacionExpediente(): void {
+		this.asociacionExpedienteBloqueada = false;
+		this.btnAsociarExpediente = 'Asociar Expediente';
 	}
 
 	/**
@@ -459,10 +579,12 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.tokens = [];
 		this.requisicionesSolicitud = [];
 		this.limpiarPersonaDatos();
+		this.resetAsociacionExpediente();
 	}
 
 	override editarClick(e: any): void {
 		super.editarClick(e);
+		this.resetAsociacionExpediente();
 		this.consultarPersonaDatos();
 		this.consultarRequisicionesSolicitud();
 		this.consultarToken();
@@ -470,6 +592,7 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 	override rowDblClick(e: any): void {
 		super.rowDblClick(e);
+		this.resetAsociacionExpediente();
 		this.consultarPersonaDatos();
 		this.consultarRequisicionesSolicitud();
 		this.consultarToken();
@@ -843,6 +966,7 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_SOLICITUD_EMPLEO === this.modelUpdate.CORR_SOLICITUD_EMPLEO);
+		this.resetAsociacionExpediente();
 	}
 
 	rowRemoving(e: any) {
