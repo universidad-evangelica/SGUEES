@@ -134,7 +134,7 @@ namespace sguees.Services
                 UseSSL = parametroCorreo.USA_SSL_CORREO,
                 User = parametroCorreo.USUARIO_REMITENTE.Trim(),
                 Password = parametroCorreo.CONTRASENA_REMITENTE,
-                FromName = parametroCorreo.NOMBRE_EMPRESA?.Trim() ?? parametroCorreo.USUARIO_REMITENTE.Trim(),
+                FromName = parametroCorreo.USUARIO_REMITENTE.Trim(),
                 FromAddress = parametroCorreo.CORREO_REMITENTE.Trim(),
                 BodyType = "html",
             };
