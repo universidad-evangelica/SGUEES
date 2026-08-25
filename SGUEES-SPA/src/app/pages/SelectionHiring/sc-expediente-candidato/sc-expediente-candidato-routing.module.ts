@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
+import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxCheckBoxModule } from 'devextreme-angular/ui/check-box';
 import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
 import { DxDateBoxModule } from 'devextreme-angular/ui/date-box';
@@ -18,6 +19,7 @@ const routes: Routes = [{ path: '', component: ScExpedienteCandidatoComponent }]
 	imports: [
 		RouterModule.forChild(routes),
 		CommonModule,
+		DxButtonModule,
 		DxCheckBoxModule,
 		DxDataGridModule,
 		DxDateBoxModule,

@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { DxDataGridComponent } from 'devextreme-angular';
 import { take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
@@ -16,6 +17,7 @@ import { ScExpedienteCandidatoService } from './sc-expediente-candidato.service'
 })
 export class ScExpedienteCandidatoComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
+	@ViewChild('gridSolicitudes', { static: false }) gridSolicitudes?: DxDataGridComponent;
 
 	protected override etiquetaRegistro = 'el expediente de candidato';
 	protected override requiereEmpresaSesion = true;
@@ -31,8 +33,23 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	 */
 	solicitudes: ScExpedienteSolicitud[] = [];
 	solicitudColumns: any[] = [];
+	solicitudSearchText = '';
+
+	/** Avatar temporal; luego se enlazará por URL desde persona. */
+	readonly avatarUrl =
+		'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face';
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Expediente de Candidato';
+
+	/** Muestra tarjeta resumen cuando el expediente ya tiene PK. */
+	get mostrarResumenExpediente(): boolean {
+		return (this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0) > 0;
+	}
+
+	/** FECHA_ACTU con respaldo en FECHA_CREA para el encabezado. */
+	get ultimaActualizacion(): Date | string | null | undefined {
+		return this.model?.FECHA_ACTU || this.model?.FECHA_CREA || null;
+	}
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -62,6 +79,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.subTituloVentana = this.maintenanceSubtitulo;
 			// Al volver al browse se limpia el detalle (como tokens al salir del ítem).
 			this.solicitudes = [];
+			this.limpiarBusquedaSolicitudes();
 		}
 	}
 
@@ -151,6 +169,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 					} else {
 						this.solicitudes = [];
 					}
+					if (this.solicitudSearchText) {
+						setTimeout(() => this.onSolicitudSearchChanged({ value: this.solicitudSearchText }));
+					}
 				},
 				error: () => {
 					this.solicitudes = [];
@@ -210,6 +231,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_EXPEDIENTE_CANDIDATO === this.modelUpdate.CORR_EXPEDIENTE_CANDIDATO);
 		this.solicitudes = [];
+		this.limpiarBusquedaSolicitudes();
 	}
 
 	rowRemoving(e: any): void {
@@ -243,5 +265,51 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_PERSONA_DATOS')?.focus();
 		});
+	}
+
+	/** Texto seguro para campos de solo lectura en el resumen. */
+	textoLectura(valor: unknown): string {
+		if (valor === null || valor === undefined) {
+			return '—';
+		}
+		const texto = String(valor).trim();
+		return texto.length > 0 ? texto : '—';
+	}
+
+	/** Fecha/hora para metadatos del encabezado (dd/MM/yyyy HH:mm). */
+	fechaHoraLectura(valor: Date | string | null | undefined): string {
+		if (!valor) {
+			return '—';
+		}
+		const fecha = valor instanceof Date ? valor : new Date(valor);
+		if (Number.isNaN(fecha.getTime())) {
+			return '—';
+		}
+		const dd = String(fecha.getDate()).padStart(2, '0');
+		const mm = String(fecha.getMonth() + 1).padStart(2, '0');
+		const yyyy = fecha.getFullYear();
+		const hh = String(fecha.getHours()).padStart(2, '0');
+		const min = String(fecha.getMinutes()).padStart(2, '0');
+		return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
+	}
+
+	/** En pausa: navegación al expediente completo pendiente de implementar. */
+	verExpedienteCompleto(): void {
+		// Sin acción por ahora.
+	}
+
+	/** Filtra el grid hijo desde la búsqueda del encabezado. */
+	onSolicitudSearchChanged(e: { value?: string }): void {
+		this.gridSolicitudes?.instance?.searchByText(e?.value ?? '');
+	}
+
+	private limpiarBusquedaSolicitudes(): void {
+		this.solicitudSearchText = '';
+		this.gridSolicitudes?.instance?.searchByText('');
+	}
+
+	/** En pausa: alta manual desde esta pantalla pendiente; hoy se usa Asociar Expediente. */
+	nuevaSolicitudPausa(): void {
+		// Sin acción por ahora.
 	}
 }

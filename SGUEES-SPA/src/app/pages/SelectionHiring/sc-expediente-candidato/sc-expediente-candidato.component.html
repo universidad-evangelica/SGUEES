@@ -15,18 +15,147 @@
   >
   </app-barra-data-mtto>
 
-  <!-- Formulario del encabezado SC_EXPEDIENTE_CANDIDATO (solo en modo ítem). -->
   <div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
 
-    <div class="solicitud-header">
-      <div class="solicitud-header__title">
-          <i class="dx-icon dx-icon-group"></i>
-          <h5>Datos Expediente</h5>
+    <!-- Panel único: Datos del Expediente + Solicitudes asociadas (ítem existente). -->
+    <section class="expediente-panel" *ngIf="mostrarResumenExpediente">
+      <div class="expediente-panel__heading">
+                  <div class="expediente-section-title">
+            <i class="dx-icon dx-icon-group"></i>
+            <h5>Datos Expediente</h5>
+          </div>
       </div>
-    </div>
+
+      <div class="expediente-divider expediente-divider--horizontal" aria-hidden="true"></div>
+
+      <div class="expediente-panel__datos">
+        <div class="expediente-panel__profile">
+          <!-- Avatar temporal; luego se enlazará por URL desde persona. -->
+          <div class="expediente-avatar" aria-hidden="true">
+            <img class="expediente-avatar__img" [src]="avatarUrl" alt="" />
+          </div>
+
+          <div class="expediente-panel__identity">
+            <h2 class="expediente-nombre">{{ textoLectura(model?.NOMBRE_PERSONA) }}</h2>
+            <div class="expediente-badges">
+              <span class="expediente-badge expediente-badge--id">
+                Expediente #{{ model?.CORR_EXPEDIENTE_CANDIDATO }}
+              </span>
+              <span
+                class="expediente-badge expediente-badge--estado"
+                [class.expediente-badge--inactivo]="!model?.ACTIVO"
+              >
+                <span class="expediente-badge__dot" aria-hidden="true"></span>
+                {{ model?.ACTIVO ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+            <div class="expediente-dui">DUI: {{ textoLectura(model?.DUI_PERSONA) }}</div>
+          </div>
+        </div>
+
+        <div class="expediente-divider expediente-divider--vertical" aria-hidden="true"></div>
+
+        <div class="expediente-panel__meta">
+          <div class="expediente-meta-item">
+            <span class="expediente-meta-label">Generado:</span>
+            <span class="expediente-meta-value">{{ fechaHoraLectura(model?.FECHA_GENERACION) }}</span>
+          </div>
+          <div class="expediente-meta-item">
+            <span class="expediente-meta-label">Última actualización:</span>
+            <span class="expediente-meta-value">{{ fechaHoraLectura(ultimaActualizacion) }}</span>
+          </div>
+        </div>
+
+        <div class="expediente-panel__actions">
+          <!-- Funcionalidad en pausa: sin navegación por ahora. -->
+          <dx-button
+            text="Ver expediente completo"
+            icon="export"
+            type="default"
+            stylingMode="outlined"
+            (onClick)="verExpedienteCompleto()"
+          ></dx-button>
+        </div>
+      </div>
+
+      <div class="expediente-divider expediente-divider--horizontal mb-12" aria-hidden="true"></div>
+
+      <div class="expediente-panel__solicitudes">
+        <div class="expediente-panel__solicitudes-header">
+          <div class="expediente-section-title">
+            <i class="dx-icon dx-icon-bookmark"></i>
+            <h5>Solicitudes asociadas</h5>
+          </div>
+
+          <div class="expediente-panel__solicitudes-tools">
+            <dx-text-box
+              class="expediente-solicitud-search"
+              [(value)]="solicitudSearchText"
+              [showClearButton]="true"
+              placeholder="Buscar solicitud..."
+              mode="search"
+              (onValueChanged)="onSolicitudSearchChanged($event)"
+            ></dx-text-box>
+
+            <!-- En pausa: el alta de vínculo se hace desde sc-solicitud-empleo (Asociar Expediente). -->
+            <!-- <dx-button
+              icon="add"
+              text="Nueva solicitud"
+              type="default"
+              stylingMode="contained"
+              (onClick)="nuevaSolicitudPausa()"
+            ></dx-button> -->
+          </div>
+        </div>
+
+        <div class="dx-grid-deta">
+          <dx-data-grid
+            #gridSolicitudes
+            [dataSource]="solicitudes"
+            [columns]="solicitudColumns"
+            [keyExpr]="'CORR_EXPEDIENTE_SOLICITUD'"
+            [showBorders]="true"
+            [showColumnLines]="true"
+            [showRowLines]="true"
+            [rowAlternationEnabled]="true"
+            [hoverStateEnabled]="true"
+            [allowColumnResizing]="true"
+            [columnResizingMode]="'widget'"
+            [columnAutoWidth]="true"
+            [height]="'100%'"
+            [width]="'100%'"
+            [noDataText]="'No hay solicitudes relacionadas a este expediente.'"
+          >
+            <dxo-paging [pageSize]="5"></dxo-paging>
+
+            <dxo-pager
+              [showPageSizeSelector]="true"
+              [allowedPageSizes]="[5, 10, 20]"
+              [showInfo]="true"
+              [infoText]="'Mostrando {0} a {1} de {2} solicitudes'"
+            ></dxo-pager>
+
+            <dxo-editing
+              [allowUpdating]="false"
+              [allowDeleting]="false"
+              [allowAdding]="false"
+            ></dxo-editing>
+          </dx-data-grid>
+        </div>
+      </div>
+    </section>
+
+    <!-- Alta: formulario visible. Ítem existente: form oculto pero activo para dataForm/validación. -->
+    <section class="expediente-nuevo-section" *ngIf="!mostrarResumenExpediente">
+      <div class="expediente-section-title">
+        <i class="dx-icon dx-icon-group"></i>
+        <h5>Datos Expediente</h5>
+      </div>
+    </section>
 
     <dx-form
-      class="mt-20"
+      class="expediente-form"
+      [class.expediente-form--hidden]="mostrarResumenExpediente"
       #fData
       id="fData"
       [formData]="model"
@@ -38,58 +167,6 @@
     >
     </dx-form>
 
-    <!--
-      Grid hijo: Solicitudes Relacionadas (SC_EXPEDIENTE_SOLICITUD).
-      Misma estructura que Bitácora Solicitud en sc-solicitud-empleo:
-      contenedor .dx-grid-deta + [columns] + toolbar/search/paging/editing solo lectura.
-    -->
-    <div class="mt-24" *ngIf="(model?.CORR_EXPEDIENTE_CANDIDATO ?? 0) > 0">
-          <div class="solicitud-header">
-      <div class="solicitud-header__title">
-          <i class="dx-icon dx-icon-bookmark"></i>
-          <h5>Solicitudes Asociadas</h5>
-      </div>
-    </div>
-      <div class="dx-grid-deta">
-        <dx-data-grid
-          #gridSolicitudes
-          [dataSource]="solicitudes"
-          [columns]="solicitudColumns"
-          [keyExpr]="'CORR_EXPEDIENTE_SOLICITUD'"
-          [showBorders]="true"
-          [showColumnLines]="true"
-          [showRowLines]="true"
-          [rowAlternationEnabled]="true"
-          [hoverStateEnabled]="true"
-          [allowColumnResizing]="true"
-          [columnResizingMode]="'widget'"
-          [columnAutoWidth]="true"
-          [height]="'100%'"
-          [width]="'100%'"
-          [noDataText]="'No hay solicitudes relacionadas a este expediente.'"
-        >
-          <dxo-toolbar>
-            <dxi-item name="searchPanel" location="after"></dxi-item>
-          </dxo-toolbar>
-
-          <dxo-search-panel [visible]="true"></dxo-search-panel>
-
-          <dxo-paging [pageSize]="5"></dxo-paging>
-
-          <dxo-pager
-            [showPageSizeSelector]="true"
-            [allowedPageSizes]="[5, 10, 20]"
-          ></dxo-pager>
-
-          <!-- Solo lectura: el alta de vínculo se hace desde sc-solicitud-empleo (Asociar Expediente). -->
-          <dxo-editing
-            [allowUpdating]="false"
-            [allowDeleting]="false"
-            [allowAdding]="false"
-          ></dxo-editing>
-        </dx-data-grid>
-      </div>
-    </div>
   </div>
 
   <!-- Grid principal del catálogo (browse). -->
