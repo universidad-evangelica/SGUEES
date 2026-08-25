@@ -39,136 +39,132 @@
 </div>
 
 <ng-template #barraToolbar>
-  <dx-toolbar
-    class="theme-dependent sguees-barra-toolbar sguees-barra-toolbar--grouped"
-    [class.sguees-barra-toolbar--inline]="!isBrowse"
-  >
-    <dxi-item location="before" widget="dxButton" [options]="optNuevo"></dxi-item>
-    <dxi-item *ngIf="!isBrowse && isForm" location="before" widget="dxButton" [options]="optGuardar"></dxi-item>
-    <dxi-item *ngIf="!isBrowse" location="before" widget="dxButton" [options]="optCancelar"></dxi-item>
-    <dxi-item *ngIf="showPrimaryToolbarDivider" location="before" locateInMenu="auto" menuItemTemplate="menuSeparatorTemplate">
-      <div *dxTemplate>
-        <div class="toolbar-separator sguees-toolbar-divider"></div>
-      </div>
-    </dxi-item>
-    <dxi-item
-      *ngIf="effectiveShowEstadoToolbar"
-      location="before"
-      widget="dxButton"
-      [options]="optActivar"
-    ></dxi-item>
-    <dxi-item
-      *ngIf="effectiveShowEstadoToolbar"
-      location="before"
-      widget="dxButton"
-      [options]="optDesactivar"
-    ></dxi-item>
-    <dxi-item [location]="btn1Location" widget="dxButton" [options]="optBtn1" locateInMenu="auto"></dxi-item>
-    <dxi-item [location]="btn2Location" widget="dxButton" [options]="optBtn2" locateInMenu="auto"></dxi-item>
-    <dxi-item [location]="btn3Location" widget="dxButton" [options]="optBtn3" locateInMenu="auto"></dxi-item>
-    <dxi-item [location]="btn4Location" widget="dxButton" [options]="optBtn4" locateInMenu="auto"></dxi-item>
-    <dxi-item [location]="btn5Location" widget="dxButton" [options]="optBtn5" locateInMenu="auto"></dxi-item>
-    <dxi-item [location]="btn6Location" widget="dxButton" [options]="optBtn6" locateInMenu="auto"></dxi-item>
+  <!-- Motivo: toolbar (botones/overflow) y combox en filas separadas para que DX no meta los lookup en ⋮. -->
+  <div class="sguees-barra-actions">
+    <dx-toolbar
+      class="theme-dependent sguees-barra-toolbar sguees-barra-toolbar--grouped"
+      [class.sguees-barra-toolbar--inline]="!isBrowse"
+    >
+      <dxi-item location="before" widget="dxButton" [options]="optNuevo"></dxi-item>
+      <dxi-item *ngIf="!isBrowse && isForm" location="before" widget="dxButton" [options]="optGuardar"></dxi-item>
+      <dxi-item *ngIf="!isBrowse" location="before" widget="dxButton" [options]="optCancelar"></dxi-item>
+      <!-- Motivo: separador solo en toolbar (nunca en menú ⋮); evita texto "menuSeparatorTemplate". -->
+      <dxi-item *ngIf="showPrimaryToolbarDivider" location="before" locateInMenu="never">
+        <div *dxTemplate>
+          <div class="toolbar-separator sguees-toolbar-divider"></div>
+        </div>
+      </dxi-item>
+      <dxi-item
+        *ngIf="effectiveShowEstadoToolbar"
+        location="before"
+        widget="dxButton"
+        [options]="optActivar"
+      ></dxi-item>
+      <dxi-item
+        *ngIf="effectiveShowEstadoToolbar"
+        location="before"
+        widget="dxButton"
+        [options]="optDesactivar"
+      ></dxi-item>
+      <dxi-item [location]="btn1Location" widget="dxButton" [options]="optBtn1" locateInMenu="auto"></dxi-item>
+      <dxi-item [location]="btn2Location" widget="dxButton" [options]="optBtn2" locateInMenu="auto"></dxi-item>
+      <dxi-item [location]="btn3Location" widget="dxButton" [options]="optBtn3" locateInMenu="auto"></dxi-item>
+      <dxi-item [location]="btn4Location" widget="dxButton" [options]="optBtn4" locateInMenu="auto"></dxi-item>
+      <dxi-item [location]="btn5Location" widget="dxButton" [options]="optBtn5" locateInMenu="auto"></dxi-item>
+      <dxi-item [location]="btn6Location" widget="dxButton" [options]="optBtn6" locateInMenu="auto"></dxi-item>
 
-    <!-- Motivo: combos de filtro en header (máx. 4) con app-data-lookup (DropDownBox + grid).
-         No se destruyen al salir de browse: solo se ocultan con CSS. -->
-    <dxi-item *ngIf="combox1" location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <div
-          class="sguees-barra-combox"
-          [class.sguees-barra-combox--hidden]="!showCombox1"
-          [style.width.px]="combox1.width || 240"
-        >
-          <label class="sguees-barra-combox__label" *ngIf="combox1?.label">{{ combox1?.label }}</label>
-          <app-data-lookup
-            [model]="combox1.model"
-            [value]="combox1.value"
-            [valueExpr]="combox1.valueExpr || 'Key'"
-            [displayExpr]="combox1.displayExpr || 'Value'"
-            [lookupColumns]="combox1.lookupColumns || null"
-            [selectedRowKeys]="combox1.selectedRowKeys"
-            [showClearButton]="combox1.showClearButton !== false"
-            [dropDownWidth]="combox1.dropDownWidth ?? 420"
-            (valueChange)="onCombox1Changed($event)"
-          ></app-data-lookup>
+      <dxi-item location="before" locateInMenu="never">
+        <div *dxTemplate>
+          <ng-content select="[toolbarExtra]"></ng-content>
         </div>
-      </div>
-    </dxi-item>
-    <dxi-item *ngIf="combox2" location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <div
-          class="sguees-barra-combox"
-          [class.sguees-barra-combox--hidden]="!showCombox2"
-          [style.width.px]="combox2.width || 240"
-        >
-          <label class="sguees-barra-combox__label" *ngIf="combox2?.label">{{ combox2?.label }}</label>
-          <app-data-lookup
-            [model]="combox2.model"
-            [value]="combox2.value"
-            [valueExpr]="combox2.valueExpr || 'Key'"
-            [displayExpr]="combox2.displayExpr || 'Value'"
-            [lookupColumns]="combox2.lookupColumns || null"
-            [selectedRowKeys]="combox2.selectedRowKeys"
-            [showClearButton]="combox2.showClearButton !== false"
-            [dropDownWidth]="combox2.dropDownWidth ?? 420"
-            (valueChange)="onCombox2Changed($event)"
-          ></app-data-lookup>
-        </div>
-      </div>
-    </dxi-item>
-    <dxi-item *ngIf="combox3" location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <div
-          class="sguees-barra-combox"
-          [class.sguees-barra-combox--hidden]="!showCombox3"
-          [style.width.px]="combox3.width || 240"
-        >
-          <label class="sguees-barra-combox__label" *ngIf="combox3?.label">{{ combox3?.label }}</label>
-          <app-data-lookup
-            [model]="combox3.model"
-            [value]="combox3.value"
-            [valueExpr]="combox3.valueExpr || 'Key'"
-            [displayExpr]="combox3.displayExpr || 'Value'"
-            [lookupColumns]="combox3.lookupColumns || null"
-            [selectedRowKeys]="combox3.selectedRowKeys"
-            [showClearButton]="combox3.showClearButton !== false"
-            [dropDownWidth]="combox3.dropDownWidth ?? 420"
-            (valueChange)="onCombox3Changed($event)"
-          ></app-data-lookup>
-        </div>
-      </div>
-    </dxi-item>
-    <dxi-item *ngIf="combox4" location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <div
-          class="sguees-barra-combox"
-          [class.sguees-barra-combox--hidden]="!showCombox4"
-          [style.width.px]="combox4.width || 240"
-        >
-          <label class="sguees-barra-combox__label" *ngIf="combox4?.label">{{ combox4?.label }}</label>
-          <app-data-lookup
-            [model]="combox4.model"
-            [value]="combox4.value"
-            [valueExpr]="combox4.valueExpr || 'Key'"
-            [displayExpr]="combox4.displayExpr || 'Value'"
-            [lookupColumns]="combox4.lookupColumns || null"
-            [selectedRowKeys]="combox4.selectedRowKeys"
-            [showClearButton]="combox4.showClearButton !== false"
-            [dropDownWidth]="combox4.dropDownWidth ?? 420"
-            (valueChange)="onCombox4Changed($event)"
-          ></app-data-lookup>
-        </div>
-      </div>
-    </dxi-item>
+      </dxi-item>
+      <dxi-item location="after" locateInMenu="auto" widget="dxButton" [options]="optExport"></dxi-item>
+      <dxi-item location="after" locateInMenu="auto" widget="dxButton" showText="inMenu" [options]="optRefresh"></dxi-item>
+      <dxi-item location="after" widget="dxDateBox" [options]="optFechaInicial" locateInMenu="auto"></dxi-item>
+      <dxi-item location="after" widget="dxDateBox" [options]="optFechaFinal" locateInMenu="auto"></dxi-item>
+    </dx-toolbar>
 
-    <dxi-item location="before" locateInMenu="never">
-      <div *dxTemplate>
-        <ng-content select="[toolbarExtra]"></ng-content>
+    <!-- Motivo: combox fuera del dx-toolbar (fila propia); no compiten con overflow ⋮. -->
+    <div
+      class="sguees-barra-combox-row"
+      [class.sguees-barra-combox-row--hidden]="!showComboxRow"
+    >
+      <div
+        *ngIf="combox1"
+        class="sguees-barra-combox"
+        [class.sguees-barra-combox--hidden]="!showCombox1"
+        [style.width.px]="combox1.width || 240"
+      >
+        <label class="sguees-barra-combox__label" *ngIf="combox1?.label">{{ combox1?.label }}</label>
+        <app-data-lookup
+          [model]="combox1.model"
+          [value]="combox1.value"
+          [valueExpr]="combox1.valueExpr || 'Key'"
+          [displayExpr]="combox1.displayExpr || 'Value'"
+          [lookupColumns]="combox1.lookupColumns || null"
+          [selectedRowKeys]="combox1.selectedRowKeys"
+          [showClearButton]="combox1.showClearButton !== false"
+          [dropDownWidth]="combox1.dropDownWidth ?? 420"
+          (valueChange)="onCombox1Changed($event)"
+        ></app-data-lookup>
       </div>
-    </dxi-item>
-    <dxi-item location="after" locateInMenu="auto" widget="dxButton" [options]="optExport"></dxi-item>
-    <dxi-item location="after" locateInMenu="auto" widget="dxButton" showText="inMenu" [options]="optRefresh"></dxi-item>
-    <dxi-item location="after" widget="dxDateBox" [options]="optFechaInicial" locateInMenu="auto"></dxi-item>
-    <dxi-item location="after" widget="dxDateBox" [options]="optFechaFinal" locateInMenu="auto"></dxi-item>
-  </dx-toolbar>
+      <div
+        *ngIf="combox2"
+        class="sguees-barra-combox"
+        [class.sguees-barra-combox--hidden]="!showCombox2"
+        [style.width.px]="combox2.width || 240"
+      >
+        <label class="sguees-barra-combox__label" *ngIf="combox2?.label">{{ combox2?.label }}</label>
+        <app-data-lookup
+          [model]="combox2.model"
+          [value]="combox2.value"
+          [valueExpr]="combox2.valueExpr || 'Key'"
+          [displayExpr]="combox2.displayExpr || 'Value'"
+          [lookupColumns]="combox2.lookupColumns || null"
+          [selectedRowKeys]="combox2.selectedRowKeys"
+          [showClearButton]="combox2.showClearButton !== false"
+          [dropDownWidth]="combox2.dropDownWidth ?? 420"
+          (valueChange)="onCombox2Changed($event)"
+        ></app-data-lookup>
+      </div>
+      <div
+        *ngIf="combox3"
+        class="sguees-barra-combox"
+        [class.sguees-barra-combox--hidden]="!showCombox3"
+        [style.width.px]="combox3.width || 240"
+      >
+        <label class="sguees-barra-combox__label" *ngIf="combox3?.label">{{ combox3?.label }}</label>
+        <app-data-lookup
+          [model]="combox3.model"
+          [value]="combox3.value"
+          [valueExpr]="combox3.valueExpr || 'Key'"
+          [displayExpr]="combox3.displayExpr || 'Value'"
+          [lookupColumns]="combox3.lookupColumns || null"
+          [selectedRowKeys]="combox3.selectedRowKeys"
+          [showClearButton]="combox3.showClearButton !== false"
+          [dropDownWidth]="combox3.dropDownWidth ?? 420"
+          (valueChange)="onCombox3Changed($event)"
+        ></app-data-lookup>
+      </div>
+      <div
+        *ngIf="combox4"
+        class="sguees-barra-combox"
+        [class.sguees-barra-combox--hidden]="!showCombox4"
+        [style.width.px]="combox4.width || 240"
+      >
+        <label class="sguees-barra-combox__label" *ngIf="combox4?.label">{{ combox4?.label }}</label>
+        <app-data-lookup
+          [model]="combox4.model"
+          [value]="combox4.value"
+          [valueExpr]="combox4.valueExpr || 'Key'"
+          [displayExpr]="combox4.displayExpr || 'Value'"
+          [lookupColumns]="combox4.lookupColumns || null"
+          [selectedRowKeys]="combox4.selectedRowKeys"
+          [showClearButton]="combox4.showClearButton !== false"
+          [dropDownWidth]="combox4.dropDownWidth ?? 420"
+          (valueChange)="onCombox4Changed($event)"
+        ></app-data-lookup>
+      </div>
+    </div>
+  </div>
 </ng-template>

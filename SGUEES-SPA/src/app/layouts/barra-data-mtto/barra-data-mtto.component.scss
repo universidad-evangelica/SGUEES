@@ -125,6 +125,10 @@
   min-height: auto;
 }
 
+:host.sguees-barra-mtto--ribbon .sguees-barra-ribbon-panel .sguees-barra-actions {
+  width: 100%;
+}
+
 :host ::ng-deep .sguees-barra-mtto__header-row .sguees-page-header--enterprise {
   width: 100%;
 }
@@ -243,7 +247,6 @@
   }
 }
 
-
 @media (max-width: 991.98px) {
   .sguees-barra-toolbar:not(.sguees-barra-toolbar--inline) {
     padding: var(--sguees-space-2) var(--sguees-space-3);
@@ -255,18 +258,53 @@
     flex-wrap: wrap;
     row-gap: var(--sguees-space-2);
   }
+
+  .sguees-barra-toolbar {
+    ::ng-deep .dx-button.sguees-barra-btn-standard,
+    ::ng-deep .dx-button.sguees-barra-btn-action,
+    ::ng-deep .dx-button.sguees-barra-btn-export {
+      min-width: 0;
+    }
+
+    ::ng-deep .sguees-barra-btn-export {
+      min-width: 0;
+    }
+  }
 }
 
-/* Combos de filtro en header (combox1–combox4 via app-data-lookup), visibles solo en browse. */
+/* Contenedor: toolbar + fila de combox (fuera del overflow ⋮). */
+.sguees-barra-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sguees-space-3);
+  width: 100%;
+}
+
+.sguees-barra-combox-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sguees-space-3);
+  width: 100%;
+}
+
+.sguees-barra-combox-row--hidden {
+  display: none !important;
+}
+
+/* Combos de filtro en header (combox1–combox4 via app-data-lookup). */
 .sguees-barra-combox {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 160px;
   max-width: 320px;
-  padding: 0 4px;
+  padding: 0;
+  box-sizing: border-box;
+  flex: 0 1 auto;
 
-  ::ng-deep dx-drop-down-box {
+  ::ng-deep dx-drop-down-box,
+  ::ng-deep .dx-dropdownbox {
     width: 100%;
   }
 }
@@ -278,9 +316,22 @@
   white-space: nowrap;
 }
 
-/* Oculta sin destruir el combo (así sobrevive Nuevo→Cancelar). */
+/* Oculta sin destruir el combo (así sobrevive Nuevo→Cancelar cuando la fila permanece). */
 .sguees-barra-combox--hidden {
   display: none !important;
+}
+
+@media (max-width: 991.98px) {
+  .sguees-barra-combox-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sguees-barra-combox:not(.sguees-barra-combox--hidden) {
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0;
+  }
 }
 
 

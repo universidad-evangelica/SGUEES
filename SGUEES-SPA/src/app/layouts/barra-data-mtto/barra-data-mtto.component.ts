@@ -235,6 +235,14 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     return this.isBrowse && !!this.combox4;
   }
 
+  /** Fila de combox visible en browse cuando hay al menos un slot configurado. */
+  get showComboxRow(): boolean {
+    return (
+      this.isBrowse &&
+      (!!this.combox1 || !!this.combox2 || !!this.combox3 || !!this.combox4)
+    );
+  }
+
   get visibleRibbonTabs(): BarraRibbonTabDirective[] {
     return (
       this.ribbonTabDirectives?.filter(
@@ -263,7 +271,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     );
   }
 
-  /** Separador tras Nuevo / Guardar-Cancelar cuando hay más acciones a la izquierda. */
+  /** Separador tras Nuevo / Guardar-Cancelar cuando hay más acciones a la izquierda (sin combox: van en fila aparte). */
   get showPrimaryToolbarDivider(): boolean {
     if (!this.isBrowse) {
       return true;
@@ -276,11 +284,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       !!this.btn3 ||
       !!this.btn4 ||
       !!this.btn5 ||
-      !!this.btn6 ||
-      !!this.combox1 ||
-      !!this.combox2 ||
-      !!this.combox3 ||
-      !!this.combox4
+      !!this.btn6
     );
   }
 
