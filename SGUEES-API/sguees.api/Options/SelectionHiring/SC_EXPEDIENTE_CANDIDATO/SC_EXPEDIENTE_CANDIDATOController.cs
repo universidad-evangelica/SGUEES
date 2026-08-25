@@ -70,16 +70,22 @@ namespace SGUEES.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
-		/// <summary>Consulta el estado de asociación (permiso de sc-solicitud-empleo).</summary>
+		/// <summary>Consulta el estado de asociación (permiso de sc-solicitud-empleo). Mensajes desde el SP.</summary>
 		[HttpGet("GetEstadoAsociacion")]
 		[Authorize(Policy = "/sc-solicitud-empleo|R")]
-		public async Task<CResult> GetEstadoAsociacion([FromQuery] SC_EXPEDIENTE_ASOCIARParam Data)
+		public async Task<IActionResult> GetEstadoAsociacion([FromQuery] SC_EXPEDIENTE_ASOCIARParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
-			return await _service.GetEstadoAsociacionAsync(Data);
+
+			var resultado = await _service.GetEstadoAsociacionAsync(
+				Data,
+				GetUsuario(),
+				ClientInfoHelper.GetClientStation(HttpContext));
+
+			return MapAsociacionResult(resultado);
 		}
 
-		/// <summary>Asocia la solicitud al expediente (crea encabezado si CREAR_EXPEDIENTE=true).</summary>
+		/// <summary>Asocia la solicitud al expediente (crea encabezado si CREAR_EXPEDIENTE=true). Mensajes desde el SP.</summary>
 		[HttpPost("AsociarSolicitud")]
 		[Authorize(Policy = "/sc-solicitud-empleo|U")]
 		public async Task<IActionResult> AsociarSolicitud([FromBody] SC_EXPEDIENTE_ASOCIARParam Data)
@@ -91,19 +97,22 @@ namespace SGUEES.Controllers
 				GetUsuario(),
 				ClientInfoHelper.GetClientStation(HttpContext));
 
-			if (resultado.ErrorCode == 0)
+			return MapAsociacionResult(resultado);
+		}
+
+		/// <summary>Ok para códigos de negocio del SP (4101–4104); BadRequest solo en error inesperado.</summary>
+		private static IActionResult MapAsociacionResult(CResult resultado)
+		{
+			if (resultado.ErrorCode == 0 ||
+				resultado.ErrorCode == 4101 ||
+				resultado.ErrorCode == 4102 ||
+				resultado.ErrorCode == 4103 ||
+				resultado.ErrorCode == 4104)
 			{
-				return Ok(resultado);
+				return new OkObjectResult(resultado);
 			}
 
-			// 4103/4104 son estados de negocio esperados (confirmar / ya asociada).
-			if (resultado.ErrorCode == 4103 || resultado.ErrorCode == 4104 ||
-				resultado.ErrorCode == 4101 || resultado.ErrorCode == 4102)
-			{
-				return Ok(resultado);
-			}
-
-			return BadRequest(resultado);
+			return new BadRequestObjectResult(resultado);
 		}
 
 		private int GetCorrEmpresa()

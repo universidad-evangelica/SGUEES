@@ -68,6 +68,7 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	asociacionExpedienteBloqueada = false;
 	btnAsociarExpediente = 'Asociar Expediente';
 	asociandoExpediente = false;
+	ultimoMensajeAsociacion = '';
 	// #endregion
 
 	constructor(
@@ -104,27 +105,22 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.getCORR_TIPO_CONTRATACION();
 	}
 
-	/* Asociar solicitud al expediente de candidato (API: GetEstadoAsociacion / AsociarSolicitud). */
+	/* Asociar solicitud al expediente (mensajes solo desde ErrorMessage del SP). */
 	async asociarExpediente(): Promise<void> {
 		if (this.asociandoExpediente) {
 			return;
 		}
 
 		const corrSolicitud = this.model?.CORR_SOLICITUD_EMPLEO ?? 0;
-		const corrPersona = this.model?.CORR_PERSONA_DATOS ?? 0;
 
 		if (this.isBrowse() || corrSolicitud <= 0) {
-			this.notifyFx('Seleccione o abra una solicitud guardada para asociar el expediente.', NotifyType.Warning);
-			return;
-		}
-
-		if (corrPersona <= 0) {
-			this.notifyFx('La solicitud no tiene persona asociada (CORR_PERSONA_DATOS).', NotifyType.Warning);
 			return;
 		}
 
 		if (this.asociacionExpedienteBloqueada) {
-			this.notifyFx('La solicitud ya está asociada al expediente de candidato Prueb.', NotifyType.Warning);
+			if (this.ultimoMensajeAsociacion) {
+				this.notifyFx(this.ultimoMensajeAsociacion, NotifyType.Warning);
+			}
 			return;
 		}
 
@@ -133,29 +129,22 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 		try {
 			const estadoResp: any = await this.expedienteService.getEstadoAsociacion(corrSolicitud).pipe(take(1)).toPromise();
-			if (!estadoResp?.Result || !estadoResp.Data) {
-				this.notifyFx(estadoResp?.ErrorMessage || 'No se pudo consultar el estado de asociación.', NotifyType.Error);
+			const codigo = estadoResp?.ErrorCode ?? -1;
+			const mensaje = estadoResp?.ErrorMessage ?? '';
+			const estado = `${estadoResp?.Data?.ESTADO ?? ''}`.toUpperCase();
+
+			if (codigo === 4101 || codigo === 4102 || estado === 'SIN_PERSONA' || estado === 'DUI_NO_COINCIDE') {
+				this.notifyFx(mensaje, NotifyType.Warning);
 				return;
 			}
 
-			const estado = `${estadoResp.Data.ESTADO ?? ''}`.toUpperCase();
-			const mensaje = estadoResp.Data.MENSAJE || '';
-
-			if (estado === 'SIN_PERSONA' || estado === 'DUI_NO_COINCIDE') {
-				this.notifyFx(mensaje || 'No se puede asociar el expediente.', NotifyType.Warning);
-				return;
-			}
-
-			if (estado === 'YA_ASOCIADA') {
+			if (codigo === 4104 || estado === 'YA_ASOCIADA') {
 				this.bloquearAsociacionExpediente(mensaje);
 				return;
 			}
 
-			if (estado === 'SIN_EXPEDIENTE') {
-				const aceptar = await confirm(
-					'No existe un expediente para esta persona. ¿Desea crear el expediente y asociar la solicitud?',
-					'Crear expediente'
-				);
+			if (codigo === 4103 || estado === 'SIN_EXPEDIENTE') {
+				const aceptar = await confirm(mensaje, 'Crear expediente');
 				if (!aceptar) {
 					return;
 				}
@@ -163,14 +152,19 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 				return;
 			}
 
-			if (estado === 'PUEDE_ASOCIAR') {
+			if (codigo === 0 && (estado === 'PUEDE_ASOCIAR' || !estado)) {
 				await this.ejecutarAsociarExpediente(corrSolicitud, false);
 				return;
 			}
 
-			this.notifyFx(mensaje || 'Estado de asociación no reconocido.', NotifyType.Warning);
+			if (mensaje) {
+				this.notifyFx(mensaje, NotifyType.Warning);
+			}
 		} catch (error: any) {
-			this.notifyFx(error?.ErrorMessage || error?.message || error || 'Error al asociar expediente.', NotifyType.Error);
+			const msg = error?.error?.ErrorMessage || error?.ErrorMessage || error?.message || '';
+			if (msg) {
+				this.notifyFx(msg, NotifyType.Error);
+			}
 		} finally {
 			this.asociandoExpediente = false;
 			this.loadingVisible = false;
@@ -179,18 +173,17 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 	private async ejecutarAsociarExpediente(corrSolicitud: number, crearExpediente: boolean): Promise<void> {
 		const resp: any = await this.expedienteService.asociarSolicitud(corrSolicitud, crearExpediente).pipe(take(1)).toPromise();
-		const data = resp?.Data;
 		const codigo = resp?.ErrorCode ?? -1;
-		const estado = `${data?.ESTADO ?? ''}`.toUpperCase();
-		const mensaje = data?.MENSAJE || resp?.ErrorMessage || '';
+		const mensaje = resp?.ErrorMessage ?? '';
+		const estado = `${resp?.Data?.ESTADO ?? ''}`.toUpperCase();
 
 		if (codigo === 0 || estado === 'ASOCIADA') {
-			const corrExp = data?.CORR_EXPEDIENTE_CANDIDATO ?? resp?.CodeHelper ?? 0;
-			this.notifyFx(
-				mensaje || `Solicitud asociada al expediente ${corrExp} correctamente.`,
-				NotifyType.Success
-			);
-			this.bloquearAsociacionExpediente('La solicitud ya está asociada a este expediente de candidato Prueba.');
+			if (mensaje) {
+				this.notifyFx(mensaje, NotifyType.Success);
+			}
+			this.asociacionExpedienteBloqueada = true;
+			this.btnAsociarExpediente = '';
+			this.ultimoMensajeAsociacion = mensaje || '';
 			return;
 		}
 
@@ -199,23 +192,24 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 			return;
 		}
 
-		if (codigo === 4103 || estado === 'SIN_EXPEDIENTE') {
-			this.notifyFx(mensaje || 'Se requiere confirmar la creación del expediente.', NotifyType.Warning);
-			return;
+		if (mensaje) {
+			this.notifyFx(mensaje, NotifyType.Warning);
 		}
-
-		this.notifyFx(mensaje || 'No se pudo asociar la solicitud al expediente.', NotifyType.Warning);
 	}
 
 	private bloquearAsociacionExpediente(mensaje?: string): void {
 		this.asociacionExpedienteBloqueada = true;
 		this.btnAsociarExpediente = '';
-		this.notifyFx(mensaje || 'La solicitud ya está asociada a este expediente de candidato Prueba.', NotifyType.Warning);
+		this.ultimoMensajeAsociacion = mensaje || '';
+		if (mensaje) {
+			this.notifyFx(mensaje, NotifyType.Warning);
+		}
 	}
 
 	private resetAsociacionExpediente(): void {
 		this.asociacionExpedienteBloqueada = false;
 		this.btnAsociarExpediente = 'Asociar Expediente';
+		this.ultimoMensajeAsociacion = '';
 	}
 
 	/**

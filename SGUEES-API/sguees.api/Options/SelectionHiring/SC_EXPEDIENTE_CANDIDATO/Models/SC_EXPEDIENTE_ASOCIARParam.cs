@@ -9,19 +9,16 @@ namespace SGUEES.Models
 		public bool CREAR_EXPEDIENTE { get; set; }
 	}
 
-	/// <summary>Estado de asociación expuesto al frontend.</summary>
+	/// <summary>
+	/// Datos de control de asociación. El texto para el usuario va en CResult.ErrorMessage (desde el SP).
+	/// </summary>
 	public class SC_EXPEDIENTE_ASOCIAREstadoView
 	{
 		/// <summary>
-		/// SIN_PERSONA | DUI_NO_COINCIDE | SIN_EXPEDIENTE | PUEDE_ASOCIAR | YA_ASOCIADA
+		/// SIN_PERSONA | DUI_NO_COINCIDE | SIN_EXPEDIENTE | PUEDE_ASOCIAR | YA_ASOCIADA | ASOCIADA | ERROR
 		/// </summary>
 		public string ESTADO { get; set; }
-		public string MENSAJE { get; set; }
 		public int CORR_SOLICITUD_EMPLEO { get; set; }
-		public int CORR_PERSONA_DATOS { get; set; }
 		public int CORR_EXPEDIENTE_CANDIDATO { get; set; }
-		public string DUI_SOLICITUD { get; set; }
-		public string DUI_PERSONA { get; set; }
-		public string NOMBRE_PERSONA { get; set; }
 	}
 }

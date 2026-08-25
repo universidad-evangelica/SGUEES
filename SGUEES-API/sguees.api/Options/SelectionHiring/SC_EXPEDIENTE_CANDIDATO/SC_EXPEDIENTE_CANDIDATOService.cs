@@ -88,7 +88,7 @@ namespace SGUEES.Services
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
-		public async Task<CResult> GetEstadoAsociacionAsync(SC_EXPEDIENTE_ASOCIARParam Data)
+		public async Task<CResult> GetEstadoAsociacionAsync(SC_EXPEDIENTE_ASOCIARParam Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
 			if (empresaError != null)
@@ -96,12 +96,11 @@ namespace SGUEES.Services
 				return empresaError;
 			}
 
-			if (Data.CORR_SOLICITUD_EMPLEO <= 0)
-			{
-				return ValidationError("Debe indicar la solicitud de empleo.");
-			}
-
-			return await _repo.GetEstadoAsociacionAsync(Data.CORR_EMPRESA, Data.CORR_SOLICITUD_EMPLEO);
+			return await _repo.GetEstadoAsociacionAsync(
+				Data.CORR_EMPRESA,
+				Data.CORR_SOLICITUD_EMPLEO,
+				vLOGIN_SISTEMA,
+				vESTACION);
 		}
 
 		public async Task<CResult> AsociarSolicitudAsync(SC_EXPEDIENTE_ASOCIARParam Data, string vLOGIN_SISTEMA, string vESTACION)
@@ -110,11 +109,6 @@ namespace SGUEES.Services
 			if (empresaError != null)
 			{
 				return empresaError;
-			}
-
-			if (Data.CORR_SOLICITUD_EMPLEO <= 0)
-			{
-				return ValidationError("Debe indicar la solicitud de empleo.");
 			}
 
 			return await _repo.AsociarSolicitudAsync(
