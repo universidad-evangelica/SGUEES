@@ -105,7 +105,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Output() exportar = new EventEmitter<any>();
   @Output() activarInactivar = new EventEmitter<void>();
 
-  /** Qué hace: viewport < 992 → Export en la misma toolbar que btn1–6 (un solo ⋮). */
+  /** Qué hace: viewport < 1200 (móvil + mediana) → mismo layout compacto; Export en la misma toolbar (un solo ⋮). */
   @ViewChildren(DxToolbarComponent) private toolbars?: QueryList<DxToolbarComponent>;
   private resizeRepaintTimer: ReturnType<typeof setTimeout> | null = null;
   isCompact = false;
@@ -367,18 +367,31 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     this.syncCompactViewport(false);
   }
 
-  // Qué hace: al cruzar móvil ↔ escritorio, mueve Export entre toolbars y reubica overflow.
-  // Cómo lo hace: actualiza isCompact y hace repaint de las toolbars visibles.
+  // Qué hace: al cruzar compacto ↔ escritorio, o al aparecer Reactivar/etc., reubica overflow.
+  // Cómo lo hace: umbral 1400px si hay btn extra; 1200px si no. Repaint de toolbars.
   @HostListener('window:resize')
   onWindowResize(): void {
     this.syncCompactViewport(true);
+  }
+
+  /** Qué hace: con Reactivar/Activar/btn1–6 la fila se aprieta antes → umbral más alto. */
+  private get compactBreakpointPx(): number {
+    const hasExtraActions =
+      this.effectiveShowEstadoToolbar ||
+      !!this.btn1 ||
+      !!this.btn2 ||
+      !!this.btn3 ||
+      !!this.btn4 ||
+      !!this.btn5 ||
+      !!this.btn6;
+    return hasExtraActions ? 1400 : 1200;
   }
 
   private syncCompactViewport(repaint: boolean): void {
     if (typeof window === 'undefined') {
       return;
     }
-    const compact = window.innerWidth < 992;
+    const compact = window.innerWidth < this.compactBreakpointPx;
     if (this.isCompact === compact) {
       return;
     }
@@ -445,6 +458,20 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       changes['FECHA_FINAL']
     ) {
       this.rebuildToolbarOptions();
+      // Qué hace: si aparece/desaparece Reactivar u otro btn, reevalúa layout compacto.
+      if (
+        changes['btn1'] ||
+        changes['btn2'] ||
+        changes['btn3'] ||
+        changes['btn4'] ||
+        changes['btn5'] ||
+        changes['btn6'] ||
+        changes['showEstadoToolbar'] ||
+        changes['focusedRow'] ||
+        changes['isBrowse']
+      ) {
+        this.syncCompactViewport(true);
+      }
     }
   }
 

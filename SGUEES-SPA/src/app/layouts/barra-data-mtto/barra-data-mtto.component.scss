@@ -323,9 +323,38 @@
   display: none !important;
 }
 
-/* Escritorio: Nuevo | sep | Unidad | Estado …… Exportar. */
-@media (min-width: 992px) {
-  .sguees-barra-actions {
+/* Compacto (móvil/mediana o con Reactivar): mismo estándar — combox debajo. */
+.sguees-barra-actions--compact {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    'start'
+    'combox';
+  align-items: stretch;
+  row-gap: var(--sguees-space-3);
+}
+
+.sguees-barra-actions--compact > .sguees-barra-toolbar--start {
+  grid-area: start;
+  width: 100%;
+}
+
+.sguees-barra-actions--compact .sguees-barra-combox-row {
+  grid-area: combox;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+}
+
+.sguees-barra-actions--compact .sguees-barra-combox {
+  width: 100% !important;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Escritorio ancho: fila solo si NO está en modo compacto. */
+@media (min-width: 1200px) {
+  .sguees-barra-actions:not(.sguees-barra-actions--compact) {
     flex-direction: row;
     flex-wrap: nowrap;
     align-items: center;
@@ -333,7 +362,8 @@
   }
 
   /* Form/Nuevo (sin combox): toolbar a ancho completo — no cajita a la izquierda. */
-  .sguees-barra-actions:not(.sguees-barra-actions--with-combox) > .sguees-barra-toolbar--start {
+  .sguees-barra-actions:not(.sguees-barra-actions--with-combox):not(.sguees-barra-actions--compact)
+    > .sguees-barra-toolbar--start {
     flex: 1 1 auto;
     width: 100%;
     min-width: 0;
@@ -345,11 +375,12 @@
   }
 
   /*
-    Qué hace: solo con combox en browse. DX usa position:absolute → ancho 0 y solape.
-    Aquí before/after son estáticos para que start tome el ancho real.
+    Qué hace: solo con combox en browse y sin compact. DX absolute → ancho 0 y solape.
   */
-  .sguees-barra-actions--with-combox > .sguees-barra-toolbar--start,
-  .sguees-barra-actions--with-combox > .sguees-barra-toolbar--end {
+  .sguees-barra-actions--with-combox:not(.sguees-barra-actions--compact)
+    > .sguees-barra-toolbar--start,
+  .sguees-barra-actions--with-combox:not(.sguees-barra-actions--compact)
+    > .sguees-barra-toolbar--end {
     ::ng-deep .dx-toolbar {
       height: auto;
       min-height: var(--sguees-toolbar-height, 44px);
@@ -379,7 +410,8 @@
     }
   }
 
-  .sguees-barra-actions--with-combox > .sguees-barra-toolbar--start {
+  .sguees-barra-actions--with-combox:not(.sguees-barra-actions--compact)
+    > .sguees-barra-toolbar--start {
     flex: 0 0 auto;
     width: max-content;
     min-width: max-content;
@@ -391,26 +423,30 @@
     }
   }
 
-  .sguees-barra-actions--with-combox .sguees-barra-combox-row {
+  .sguees-barra-actions--with-combox:not(.sguees-barra-actions--compact)
+    .sguees-barra-combox-row {
     flex: 0 0 auto;
     width: auto;
     align-items: center;
     padding-top: 16px;
   }
 
-  .sguees-barra-actions--with-combox .sguees-barra-combox {
+  .sguees-barra-actions--with-combox:not(.sguees-barra-actions--compact)
+    .sguees-barra-combox {
     position: relative;
     gap: 0;
   }
 
-  .sguees-barra-actions--with-combox .sguees-barra-combox__label {
+  .sguees-barra-actions--with-combox:not(.sguees-barra-actions--compact)
+    .sguees-barra-combox__label {
     position: absolute;
     left: 0;
     bottom: calc(100% + 2px);
     line-height: 1;
   }
 
-  .sguees-barra-actions--with-combox > .sguees-barra-toolbar--end {
+  .sguees-barra-actions--with-combox:not(.sguees-barra-actions--compact)
+    > .sguees-barra-toolbar--end {
     flex: 1 1 auto;
     min-width: 0;
     width: auto;
@@ -424,37 +460,6 @@
     ::ng-deep .dx-toolbar-after {
       margin-left: auto !important;
     }
-  }
-}
-
-/* Móvil: combox debajo a 100%; card del ribbon ya crece (height:auto). */
-@media (max-width: 991.98px) {
-  .sguees-barra-actions {
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      'start'
-      'combox';
-    align-items: stretch;
-    row-gap: var(--sguees-space-3);
-  }
-
-  .sguees-barra-actions > .sguees-barra-toolbar--start {
-    grid-area: start;
-    width: 100%;
-  }
-
-  .sguees-barra-actions .sguees-barra-combox-row {
-    grid-area: combox;
-    flex-direction: column;
-    align-items: stretch;
-    width: 100%;
-  }
-
-  .sguees-barra-combox {
-    width: 100% !important;
-    max-width: 100%;
-    min-width: 0;
   }
 }
 
