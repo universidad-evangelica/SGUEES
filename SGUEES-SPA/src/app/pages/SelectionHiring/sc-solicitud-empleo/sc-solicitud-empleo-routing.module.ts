@@ -20,7 +20,7 @@ import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.compon
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 
 import { ScSolicitudEmpleoComponent } from './sc-solicitud-empleo.component';
-import { ScSolicitudEmpleoEditarPersonaComponent } from './sc-solicitud-empleo-editar-persona.component';
+import { ScPersonaDatosSharedModule } from '../shared/sc-persona-datos-shared.module';
 import { ToastModule } from "primeng/toast"; //importar el modulo de Toast para primeNG
 import { DxToolbarModule } from "devextreme-angular/ui/toolbar";
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
@@ -50,8 +50,9 @@ const routes: Routes = [{ path: '', component: ScSolicitudEmpleoComponent }];
 		ToastModule,
 		DxToolbarModule,
 		DxPopupModule,
+		ScPersonaDatosSharedModule,
 	],
 	exports: [RouterModule],
-	declarations: [ScSolicitudEmpleoComponent, ScSolicitudEmpleoEditarPersonaComponent],
+	declarations: [ScSolicitudEmpleoComponent],
 })
 export class ScSolicitudEmpleoRoutingModule {}

@@ -1,11 +1,24 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { DxDataGridComponent } from 'devextreme-angular';
-import { take } from 'rxjs/operators';
+import { MessageService } from 'primeng/api';
+import { forkJoin, of } from 'rxjs';
+import { catchError, take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
+import {
+	ScPersonaCompetencia,
+	ScPersonaDatos,
+	ScPersonaEstudio,
+	ScPersonaExperiencia,
+	ScPersonaFamiliar,
+	ScPersonaFamiliarUees,
+	ScPersonaHijo,
+	ScPersonaIdioma,
+} from '../sc-solicitud-empleo/models/sc-persona-datos';
+import { ScSolicitudEmpleoService } from '../sc-solicitud-empleo/sc-solicitud-empleo.service';
 import { ScExpedienteCandidato } from './models/sc-expediente-candidato';
 import { ScExpedienteSolicitud } from './sc-expediente-solicitud/models/sc-expediente-solicitud';
 import { ScExpedienteCandidatoService } from './sc-expediente-candidato.service';
@@ -15,7 +28,7 @@ import { ScExpedienteCandidatoService } from './sc-expediente-candidato.service'
 	templateUrl: './sc-expediente-candidato.component.html',
 	styleUrls: ['./sc-expediente-candidato.component.scss'],
 })
-export class ScExpedienteCandidatoComponent extends CBaseComponent implements OnInit {
+export class ScExpedienteCandidatoComponent extends CBaseComponent implements OnInit, OnDestroy {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 	@ViewChild('gridSolicitudes', { static: false }) gridSolicitudes?: DxDataGridComponent;
 
@@ -35,9 +48,24 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	solicitudColumns: any[] = [];
 	solicitudSearchText = '';
 
-	/** Avatar temporal; luego se enlazará por URL desde persona. */
+	/** Avatar temporal del resumen; luego se enlazará por URL desde persona. */
 	readonly avatarUrl =
 		'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face';
+
+	/** Workspace expediente completo (slide-over sobre el área mtto). */
+	workspaceCompletoAbierto = false;
+	personaDatos: ScPersonaDatos | null = null;
+	familiares: ScPersonaFamiliar[] = [];
+	hijos: ScPersonaHijo[] = [];
+	estudios: ScPersonaEstudio[] = [];
+	idiomas: ScPersonaIdioma[] = [];
+	competencias: ScPersonaCompetencia[] = [];
+	experiencias: ScPersonaExperiencia[] = [];
+	familiaresUees: ScPersonaFamiliarUees[] = [];
+	cargandoPersonaDatos = false;
+	fotoPersonaUrl: string | null = null;
+	fotoPreviewVisible = false;
+	editarPersonaVisible = false;
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Expediente de Candidato';
 
@@ -51,16 +79,26 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		return this.model?.FECHA_ACTU || this.model?.FECHA_CREA || null;
 	}
 
+	/**
+	 * CORR_SOLICITUD_EMPLEO para el modal de edición (misma API que sc-solicitud-empleo).
+	 * Usa la primera solicitud asociada al expediente si existe.
+	 */
+	get corrSolicitudEmpleoParaEdicion(): number {
+		const primera = this.solicitudes?.[0];
+		return Number(primera?.CORR_SOLICITUD_EMPLEO ?? 0);
+	}
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: ScExpedienteCandidatoService
+		private service: ScExpedienteCandidatoService,
+		private solicitudService: ScSolicitudEmpleoService,
+		private messageService: MessageService
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
-		// Columnas del grid hijo (mismo patrón que getTokenColumns en sc-solicitud-empleo).
 		this.solicitudColumns = this.service.getSolicitudColumns();
 	}
 
@@ -73,13 +111,18 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.consultar();
 	}
 
+	ngOnDestroy(): void {
+		this.revocarFotoPersona();
+	}
+
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
 			this.subTituloVentana = this.maintenanceSubtitulo;
-			// Al volver al browse se limpia el detalle (como tokens al salir del ítem).
 			this.solicitudes = [];
 			this.limpiarBusquedaSolicitudes();
+			this.cerrarWorkspaceCompleto(false);
+			this.limpiarPersonaDatos();
 		}
 	}
 
@@ -213,6 +256,8 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		}
 		super.nuevo();
 		this.solicitudes = [];
+		this.cerrarWorkspaceCompleto(false);
+		this.limpiarPersonaDatos();
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
 			this.habilitar();
@@ -232,6 +277,8 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		super.cancelar((item: any) => item.CORR_EXPEDIENTE_CANDIDATO === this.modelUpdate.CORR_EXPEDIENTE_CANDIDATO);
 		this.solicitudes = [];
 		this.limpiarBusquedaSolicitudes();
+		this.cerrarWorkspaceCompleto(false);
+		this.limpiarPersonaDatos();
 	}
 
 	rowRemoving(e: any): void {
@@ -293,9 +340,152 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
 	}
 
-	/** En pausa: navegación al expediente completo pendiente de implementar. */
+	/** Abre workspace de expediente completo (cubre barra mtto + contenido). */
 	verExpedienteCompleto(): void {
-		// Sin acción por ahora.
+		if ((this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0) <= 0) {
+			return;
+		}
+		this.workspaceCompletoAbierto = true;
+		this.consultarPersonaDatos();
+	}
+
+	/** Cierra workspace con animación hacia la derecha y vuelve al resumen. */
+	volverAlResumen(): void {
+		this.cerrarWorkspaceCompleto(true);
+	}
+
+	private cerrarWorkspaceCompleto(_animar: boolean): void {
+		this.workspaceCompletoAbierto = false;
+		this.editarPersonaVisible = false;
+		this.cerrarFotoPreview();
+	}
+
+	consultarPersonaDatos(): void {
+		const corrPersonaDatos = this.model?.CORR_PERSONA_DATOS ?? 0;
+		if (corrPersonaDatos <= 0) {
+			this.limpiarPersonaDatos();
+			return;
+		}
+
+		this.cargandoPersonaDatos = true;
+		const coleccion = (controller: string) =>
+			this.solicitudService.getPersonaColeccion(controller, corrPersonaDatos).pipe(catchError(() => this.emptyResult()));
+
+		forkJoin({
+			persona: this.solicitudService.getPersonaDatos(corrPersonaDatos),
+			familiares: coleccion('SC_PERSONA_FAMILIAR'),
+			hijos: coleccion('SC_PERSONA_HIJOS'),
+			estudios: coleccion('SC_PERSONA_ESTUDIO'),
+			idiomas: coleccion('SC_PERSONA_IDIOMAS'),
+			competencias: coleccion('SC_PERSONA_COMPETENCIAS_TECNICAS'),
+			experiencias: coleccion('SC_PERSONA_EXPERIENCIA_LABORAL'),
+			familiaresUees: coleccion('SC_PERSONA_FAMILIAR_UEES'),
+		})
+			.pipe(take(1))
+			.subscribe({
+				next: (response) => {
+					if (response.persona?.Result && response.persona?.Data) {
+						this.personaDatos = response.persona.Data;
+						this.cargarFotoPersona(corrPersonaDatos, this.personaDatos?.FOTO_URL);
+					} else {
+						this.personaDatos = null;
+						this.revocarFotoPersona();
+					}
+					this.familiares = this.asArray(response.familiares?.Data);
+					this.hijos = this.asArray(response.hijos?.Data);
+					this.estudios = this.asArray(response.estudios?.Data);
+					this.idiomas = this.asArray(response.idiomas?.Data);
+					this.competencias = this.asArray(response.competencias?.Data);
+					this.experiencias = this.asArray(response.experiencias?.Data);
+					this.familiaresUees = this.asArray(response.familiaresUees?.Data);
+					this.cargandoPersonaDatos = false;
+				},
+				error: (error: any) => {
+					this.limpiarPersonaDatos();
+					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
+				},
+			});
+	}
+
+	abrirEditarPersona(): void {
+		if (!this.permiteEdit || this.cargandoPersonaDatos || (this.personaDatos?.CORR_PERSONA_DATOS ?? 0) <= 0) {
+			return;
+		}
+		this.editarPersonaVisible = true;
+	}
+
+	onPersonaDatosGuardados(): void {
+		this.consultarPersonaDatos();
+	}
+
+	abrirFotoPreview(): void {
+		if (!this.fotoPersonaUrl) {
+			return;
+		}
+		this.fotoPreviewVisible = true;
+	}
+
+	cerrarFotoPreview(): void {
+		this.fotoPreviewVisible = false;
+	}
+
+	@HostListener('document:keydown.escape')
+	onEscape(): void {
+		if (this.fotoPreviewVisible) {
+			this.cerrarFotoPreview();
+			return;
+		}
+		// Escape no cierra el workspace (solo el botón Volver), según requerimiento.
+	}
+
+	private limpiarPersonaDatos(): void {
+		this.revocarFotoPersona();
+		this.personaDatos = null;
+		this.familiares = [];
+		this.hijos = [];
+		this.estudios = [];
+		this.idiomas = [];
+		this.competencias = [];
+		this.experiencias = [];
+		this.familiaresUees = [];
+		this.cargandoPersonaDatos = false;
+	}
+
+	private revocarFotoPersona(): void {
+		this.cerrarFotoPreview();
+		if (this.fotoPersonaUrl) {
+			URL.revokeObjectURL(this.fotoPersonaUrl);
+			this.fotoPersonaUrl = null;
+		}
+	}
+
+	private cargarFotoPersona(corrPersonaDatos: number, fotoUrl?: string): void {
+		this.revocarFotoPersona();
+		if (corrPersonaDatos <= 0 || !`${fotoUrl ?? ''}`.trim()) {
+			return;
+		}
+
+		this.solicitudService
+			.getPersonaFoto(corrPersonaDatos)
+			.pipe(take(1))
+			.subscribe({
+				next: (blob) => {
+					if (blob && blob.size > 0 && (blob.type || '').startsWith('image/')) {
+						this.fotoPersonaUrl = URL.createObjectURL(blob);
+					}
+				},
+				error: () => {
+					this.fotoPersonaUrl = null;
+				},
+			});
+	}
+
+	private asArray<T>(data: any): T[] {
+		return Array.isArray(data) ? data : [];
+	}
+
+	private emptyResult() {
+		return of({ Result: true, Data: [] } as any);
 	}
 
 	/** Filtra el grid hijo desde la búsqueda del encabezado. */
