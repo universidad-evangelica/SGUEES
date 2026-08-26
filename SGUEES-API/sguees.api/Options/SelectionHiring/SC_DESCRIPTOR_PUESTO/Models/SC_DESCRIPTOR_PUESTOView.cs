@@ -29,8 +29,10 @@ namespace SGUEES.Models
         public string FORMATO { get; set; }
         // Número de versión del descriptor.
         public int? VERSION { get; set; }
-        // Estado del flujo de aprobación: BORRADOR, ENVIADO, REVISADO o ACTIVO.
-        public string ESTADO_DESCRIPTOR { get; set; }
+        // FK al estado del flujo (SEG_FLUJO_ESTADO).
+        public int? CORR_ESTADO { get; set; }
+        // Nombre del estado de flujo (snapshot / bandera para UI).
+        public string NOMBRE_ESTADO { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }
         public DateTime? FECHA_CREA { get; set; }

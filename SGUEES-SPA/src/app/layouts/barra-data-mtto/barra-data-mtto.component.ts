@@ -7,6 +7,7 @@ import {
   ContentChildren,
   EventEmitter,
   HostBinding,
+  HostListener,
   Input,
   NgModule,
   OnChanges,
@@ -15,10 +16,11 @@ import {
   Output,
   QueryList,
   SimpleChanges,
+  ViewChildren,
 } from '@angular/core';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxTabPanelModule } from 'devextreme-angular/ui/tab-panel';
-import { DxToolbarModule } from 'devextreme-angular/ui/toolbar';
+import { DxToolbarComponent, DxToolbarModule } from 'devextreme-angular/ui/toolbar';
 import {
   BreadcrumbItem,
   PageHeaderModule,
@@ -26,10 +28,37 @@ import {
 import { MttoPageContextService } from 'src/app/layouts/mtto-page-context.service';
 import { BarraRibbonTabDirective } from './barra-ribbon-tab.directive';
 import { buildEstadoToolbarOptions, computeToolbarBtnWidth } from 'src/app/shared/mtto/mtto-grid.helpers';
+import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
 
 export type { BreadcrumbItem } from 'src/app/shared/components/library/page-header/page-header.component';
 
 export type BarraLayoutMode = 'legacy' | 'header-only';
+
+/** Config de un combo (app-data-lookup / DropDownBox) en la barra (máx. 4: combox1–combox4). */
+export interface BarraMttoCombox {
+  label?: string;
+  /** Catálogo del lookup (mismo `model` de app-data-lookup). */
+  model: any[];
+  value: any;
+  valueExpr?: string;
+  displayExpr?: string;
+  showClearButton?: boolean;
+  lookupColumns?: any[] | null;
+  selectedRowKeys?: (rows: any[]) => any;
+  dropDownWidth?: number | string | null;
+  /** Ancho del control en el toolbar. */
+  width?: number;
+  /**
+   * Qué hace: fila opcional “Todos” al inicio del catálogo (solo combox1–4 de esta barra).
+   * Cómo lo hace: se antepone al `model` si aún no existe la misma key.
+   */
+  todosOption?: Record<string, unknown> | null;
+  /**
+   * Qué hace: si el usuario limpia con la X, emite este valor en lugar de vacío.
+   * Cómo lo hace: en emitComboxChange, null/'' → clearResetsTo (ej. 0 o '').
+   */
+  clearResetsTo?: any;
+}
 
 /**
  * FASE 5.5: opciones DX estables (no crear objetos en template — evita loop CD + DevExtreme).
@@ -75,6 +104,11 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Output() consultar = new EventEmitter<any>();
   @Output() exportar = new EventEmitter<any>();
   @Output() activarInactivar = new EventEmitter<void>();
+
+  /** Qué hace: viewport < 1200 (móvil + mediana) → mismo layout compacto; Export en la misma toolbar (un solo ⋮). */
+  @ViewChildren(DxToolbarComponent) private toolbars?: QueryList<DxToolbarComponent>;
+  private resizeRepaintTimer: ReturnType<typeof setTimeout> | null = null;
+  isCompact = false;
 
   @Input() btn1: string = '';
   @Input() btn1Icon: string = '';
@@ -129,6 +163,16 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Input() btn6Width: number = 0;
   @Input() btn6Mode: string = 'contained';
   @Output() btn6Click = new EventEmitter<any>();
+
+  // Qué hace: hasta 4 combos de filtro en el header (mismo patrón de slots que btn1–btn6).
+  @Input() combox1: BarraMttoCombox | null = null;
+  @Input() combox2: BarraMttoCombox | null = null;
+  @Input() combox3: BarraMttoCombox | null = null;
+  @Input() combox4: BarraMttoCombox | null = null;
+  @Output() combox1Change = new EventEmitter<any>();
+  @Output() combox2Change = new EventEmitter<any>();
+  @Output() combox3Change = new EventEmitter<any>();
+  @Output() combox4Change = new EventEmitter<any>();
 
   optNuevo: Record<string, unknown> = {};
   optGuardar: Record<string, unknown> = {};
@@ -195,6 +239,32 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     return this.showRibbon && this.isBrowse;
   }
 
+  get showCombox1(): boolean {
+    return this.isBrowse && !!this.combox1;
+  }
+  get showCombox2(): boolean {
+    return this.isBrowse && !!this.combox2;
+  }
+  get showCombox3(): boolean {
+    return this.isBrowse && !!this.combox3;
+  }
+  get showCombox4(): boolean {
+    return this.isBrowse && !!this.combox4;
+  }
+
+  /** Fila de combox visible en browse cuando hay al menos un slot configurado. */
+  get showComboxRow(): boolean {
+    return (
+      this.isBrowse &&
+      (!!this.combox1 || !!this.combox2 || !!this.combox3 || !!this.combox4)
+    );
+  }
+
+  /** Escritorio browse: Export/Refresh en toolbar derecha (evita barra vacía en form/Nuevo). */
+  get showEndToolbar(): boolean {
+    return this.isBrowse && !this.isCompact;
+  }
+
   get visibleRibbonTabs(): BarraRibbonTabDirective[] {
     return (
       this.ribbonTabDirectives?.filter(
@@ -203,7 +273,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     );
   }
 
-  /** Browse con fechas, btn1–6 o ribbon: la barra sigue mostrando toolbar. */
+  /** Browse con fechas, btn1–6, combos o ribbon: la barra sigue mostrando toolbar. */
   get browseNeedsBarraToolbar(): boolean {
     return (
       this.showRibbon ||
@@ -215,24 +285,25 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       !!this.btn3 ||
       !!this.btn4 ||
       !!this.btn5 ||
-      !!this.btn6
+      !!this.btn6 ||
+      !!this.combox1 ||
+      !!this.combox2 ||
+      !!this.combox3 ||
+      !!this.combox4
     );
   }
 
-  /** Separador tras Nuevo / Guardar-Cancelar cuando hay más acciones a la izquierda. */
+  /** Separador tras Nuevo/Guardar si hay otra acción o combox de filtro a la derecha. */
   get showPrimaryToolbarDivider(): boolean {
-    if (!this.isBrowse) {
-      return true;
-    }
     return (
-      this.permiteAdd ||
       this.effectiveShowEstadoToolbar ||
       !!this.btn1 ||
       !!this.btn2 ||
       !!this.btn3 ||
       !!this.btn4 ||
       !!this.btn5 ||
-      !!this.btn6
+      !!this.btn6 ||
+      this.showComboxRow
     );
   }
 
@@ -293,6 +364,49 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   ngOnInit(): void {
     this.syncPageContext();
     this.rebuildToolbarOptions();
+    this.syncCompactViewport(false);
+  }
+
+  // Qué hace: al cruzar compacto ↔ escritorio, o al aparecer Reactivar/etc., reubica overflow.
+  // Cómo lo hace: umbral 1400px si hay btn extra; 1200px si no. Repaint de toolbars.
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.syncCompactViewport(true);
+  }
+
+  /** Qué hace: con Reactivar/Activar/btn1–6 la fila se aprieta antes → umbral más alto. */
+  private get compactBreakpointPx(): number {
+    const hasExtraActions =
+      this.effectiveShowEstadoToolbar ||
+      !!this.btn1 ||
+      !!this.btn2 ||
+      !!this.btn3 ||
+      !!this.btn4 ||
+      !!this.btn5 ||
+      !!this.btn6;
+    return hasExtraActions ? 1400 : 1200;
+  }
+
+  private syncCompactViewport(repaint: boolean): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const compact = window.innerWidth < this.compactBreakpointPx;
+    if (this.isCompact === compact) {
+      return;
+    }
+    this.isCompact = compact;
+    this.cdr.markForCheck();
+    if (!repaint) {
+      return;
+    }
+    if (this.resizeRepaintTimer) {
+      clearTimeout(this.resizeRepaintTimer);
+    }
+    this.resizeRepaintTimer = setTimeout(() => {
+      this.toolbars?.forEach((toolbar) => toolbar.instance?.repaint());
+      this.resizeRepaintTimer = null;
+    }, 80);
   }
 
   ngAfterContentInit(): void {
@@ -336,14 +450,36 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       changes['btn4'] ||
       changes['btn5'] ||
       changes['btn6'] ||
+      changes['combox1'] ||
+      changes['combox2'] ||
+      changes['combox3'] ||
+      changes['combox4'] ||
       changes['FECHA_INICIAL'] ||
       changes['FECHA_FINAL']
     ) {
       this.rebuildToolbarOptions();
+      // Qué hace: si aparece/desaparece Reactivar u otro btn, reevalúa layout compacto.
+      if (
+        changes['btn1'] ||
+        changes['btn2'] ||
+        changes['btn3'] ||
+        changes['btn4'] ||
+        changes['btn5'] ||
+        changes['btn6'] ||
+        changes['showEstadoToolbar'] ||
+        changes['focusedRow'] ||
+        changes['isBrowse']
+      ) {
+        this.syncCompactViewport(true);
+      }
     }
   }
 
   ngOnDestroy(): void {
+    if (this.resizeRepaintTimer) {
+      clearTimeout(this.resizeRepaintTimer);
+      this.resizeRepaintTimer = null;
+    }
     this.pageContext.reset();
   }
 
@@ -556,6 +692,65 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   Onbtn6Click(): void {
     this.btn6Click.emit();
   }
+
+  // Qué hace: emite el valor del combo (app-data-lookup); ignora si no cambió.
+  onCombox1Changed(value: any): void {
+    this.emitComboxChange(this.combox1, value, this.combox1Change);
+  }
+  onCombox2Changed(value: any): void {
+    this.emitComboxChange(this.combox2, value, this.combox2Change);
+  }
+  onCombox3Changed(value: any): void {
+    this.emitComboxChange(this.combox3, value, this.combox3Change);
+  }
+  onCombox4Changed(value: any): void {
+    this.emitComboxChange(this.combox4, value, this.combox4Change);
+  }
+
+  /** Qué hace: catálogo del combox con “Todos” al inicio si la vista lo configuró. */
+  resolveComboxModel(config: BarraMttoCombox | null | undefined): any[] {
+    if (!config) {
+      return [];
+    }
+    const model = Array.isArray(config.model) ? config.model : [];
+    const todos = config.todosOption;
+    if (!todos) {
+      return model;
+    }
+    const key = config.valueExpr || 'Key';
+    const todosVal = todos[key];
+    const already = model.some((row) => String(row?.[key] ?? '') === String(todosVal ?? ''));
+    return already ? model : [todos, ...model];
+  }
+
+  private emitComboxChange(
+    config: BarraMttoCombox | null,
+    next: any,
+    output: EventEmitter<any>,
+  ): void {
+    if (!config) {
+      return;
+    }
+    // Qué hace: la X no deja el filtro vacío si la vista definió clearResetsTo (vuelve a “Todos”).
+    let resolved = next ?? null;
+    const cleared =
+      resolved === null ||
+      resolved === undefined ||
+      (typeof resolved === 'string' && resolved.trim() === '');
+    if (cleared && config.clearResetsTo !== undefined) {
+      resolved = config.clearResetsTo;
+    }
+    const prev = config.value ?? null;
+    const same =
+      resolved === prev ||
+      (resolved == null && (prev == null || prev === '')) ||
+      String(resolved ?? '') === String(prev ?? '');
+    if (same) {
+      return;
+    }
+    output.emit(resolved ?? null);
+  }
+
   OnValueChangeFECHA_INICIAL(e: { value?: Date }): void {
     this.FECHA_INICIALChange.emit(e.value);
   }
@@ -591,7 +786,14 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
 }
 
 @NgModule({
-  imports: [DxButtonModule, DxTabPanelModule, DxToolbarModule, CommonModule, PageHeaderModule],
+  imports: [
+    DxButtonModule,
+    DxTabPanelModule,
+    DxToolbarModule,
+    CommonModule,
+    PageHeaderModule,
+    DataLookupModule,
+  ],
   declarations: [BarraDataMttoComponent, BarraRibbonTabDirective],
   exports: [BarraDataMttoComponent, BarraRibbonTabDirective],
 })

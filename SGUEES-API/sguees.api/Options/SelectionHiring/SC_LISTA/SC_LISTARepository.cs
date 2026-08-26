@@ -71,6 +71,22 @@ namespace SGUEES.Repositories
             });
         }
 
+        // Qué hace: estados de flujo del Descriptor de puesto para filtro del listado.
+        // Cómo: lista fija alineada a NOMBRE_ESTADO del flujo (SEG_FLUJO / SC_DESCRIPTOR_PUESTO).
+        public CResult GetESTADO_DESCRIPTOR()
+        {
+            return Ok(new List<SC_LISTAView>
+            {
+                new() { Key = "Borrador", Value = "Borrador" },
+                new() { Key = "Observado", Value = "Observado" },
+                new() { Key = "Enviado JI", Value = "Enviado JI" },
+                new() { Key = "Aprobado JI", Value = "Aprobado JI" },
+                new() { Key = "Enviado a JTH", Value = "Enviado a JTH" },
+                new() { Key = "Activo", Value = "Activo" },
+                new() { Key = "Inactivo", Value = "Inactivo" },
+            });
+        }
+
         // Qué hace: entrega las unidades de tiempo válidas para el catálogo de inducción.
         // Cómo: lista fija que coincide exacto con el CHECK de SC_INDUCCION.UNIDAD_TIEMPO ('Semanas'/'Meses').
         public CResult GetUNIDAD_TIEMPO_INDUCCION()

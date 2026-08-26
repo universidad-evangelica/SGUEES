@@ -23,5 +23,9 @@ namespace SGUEES.Services
         // Valida las claves y elimina el registro de descriptor de puesto.
         Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(SC_DESCRIPTOR_PUESTOParam xWhere);
+        // Mueve el flujo del descriptor (Enviar/Aprobar/Observar/Inactivar/Reactivar).
+        Task<CResult> AutorizaAsync(SC_DESCRIPTOR_PUESTO_AUTORIZAParam Data, string vLOGIN_SISTEMA);
+        // Qué botones de flujo mostrar según estado, destinatario del paso y permiso U de sesión.
+        Task<CResult> GetAccionesFlujoAsync(SC_DESCRIPTOR_PUESTOParam xWhere, string permisoOpcion);
     }
 }

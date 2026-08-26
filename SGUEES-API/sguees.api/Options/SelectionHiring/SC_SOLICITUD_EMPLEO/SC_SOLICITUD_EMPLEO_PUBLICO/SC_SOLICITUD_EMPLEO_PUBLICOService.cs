@@ -16,20 +16,20 @@ namespace sguees.Services
     public class SC_SOLICITUD_EMPLEO_PUBLICOService : ISC_SOLICITUD_EMPLEO_PUBLICOService
     {
         private readonly ISC_SOLICITUD_EMPLEO_PUBLICORepository _repo;
-        private readonly ICOM_PARAMETRORepository _repoParametro;
+        private readonly IGEN_PARAMETRO_SMTPRepository _repoParametroSmtp;
         private readonly IConfiguration _configuration;
         private readonly ILogger<SC_SOLICITUD_EMPLEO_PUBLICOService> _logger;
         private readonly PersonaFotoStorage _fotoStorage;
 
         public SC_SOLICITUD_EMPLEO_PUBLICOService(
             ISC_SOLICITUD_EMPLEO_PUBLICORepository repo,
-            ICOM_PARAMETRORepository repoParametro,
+            IGEN_PARAMETRO_SMTPRepository repoParametroSmtp,
             IConfiguration configuration,
             ILogger<SC_SOLICITUD_EMPLEO_PUBLICOService> logger,
             PersonaFotoStorage fotoStorage)
         {
             _repo = repo;
-            _repoParametro = repoParametro;
+            _repoParametroSmtp = repoParametroSmtp;
             _configuration = configuration;
             _logger = logger;
             _fotoStorage = fotoStorage;
@@ -134,7 +134,7 @@ namespace sguees.Services
                 UseSSL = parametroCorreo.USA_SSL_CORREO,
                 User = parametroCorreo.USUARIO_REMITENTE.Trim(),
                 Password = parametroCorreo.CONTRASENA_REMITENTE,
-                FromName = parametroCorreo.NOMBRE_EMPRESA?.Trim() ?? parametroCorreo.USUARIO_REMITENTE.Trim(),
+                FromName = parametroCorreo.USUARIO_REMITENTE.Trim(),
                 FromAddress = parametroCorreo.CORREO_REMITENTE.Trim(),
                 BodyType = "html",
             };
@@ -370,14 +370,14 @@ namespace sguees.Services
             });
         }
 
-        private async Task<COM_PARAMETROView> ObtenerParametroCorreoAsync(int corrEmpresa)
+        private async Task<GEN_PARAMETRO_SMTPView> ObtenerParametroCorreoAsync(int corrEmpresa)
         {
-            var resultado = await _repoParametro.GetAsync(new List<CParameter>
+            var resultado = await _repoParametroSmtp.GetAsync(new List<CParameter>
             {
                 new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
             });
 
-            if (!resultado.Result || resultado.Data is not COM_PARAMETROView parametro)
+            if (!resultado.Result || resultado.Data is not GEN_PARAMETRO_SMTPView parametro)
             {
                 return null;
             }

@@ -15,6 +15,7 @@ import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { DataLookupModule } from 'src/app/layouts/data-lookup/data-lookup.component';
+import { FirmasDocumentoModule } from 'src/app/shared/components/firmas-documento/firmas-documento.module';
 import { ScDescriptorPuestoComponent } from './sc-descriptor-puesto.component';
 
 // Ruta lazy del mantenimiento: path vacío carga el componente principal del descriptor.
@@ -39,6 +40,7 @@ const routes: Routes = [{ path: '', component: ScDescriptorPuestoComponent }];
 		BarraDataMttoModule, // Barra de acciones del mantenimiento (guardar, nuevo, etc.).
 		DataGridMttoModule, // Grid reutilizable con configuración de mantenimiento.
 		DataLookupModule, // Lookup reutilizable para catálogos.
+		FirmasDocumentoModule, // Bitácora/firmas del flujo (SEG_FLUJO_BITACORA_FIRMAS).
 	],
 	exports: [RouterModule], // Permite reexportar rutas si el módulo padre lo requiere.
 	declarations: [ScDescriptorPuestoComponent], // Componente principal del descriptor de puesto.

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
+using eFramework.Data;
 using SGUEES.Models;
 using SGUEES.Repositories;
 
@@ -10,26 +12,69 @@ namespace SGUEES.Services
     public class SC_DESCRIPTOR_PUESTOService : ISC_DESCRIPTOR_PUESTOService
     {
         private readonly ISC_DESCRIPTOR_PUESTORepository _repo;
+        private readonly ISC_UNIDADES_USUARIORepository _unidadesUsuarioRepo;
         private readonly ISC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService _requerimientoOrganizacionalService;
         private readonly ISC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService _riesgoPuestoService;
         private readonly ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService _responsabilidadCargoService;
 
         public SC_DESCRIPTOR_PUESTOService(
             ISC_DESCRIPTOR_PUESTORepository repo,
+            ISC_UNIDADES_USUARIORepository unidadesUsuarioRepo,
             ISC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService requerimientoOrganizacionalService,
             ISC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService riesgoPuestoService,
             ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService responsabilidadCargoService)
         {
             _repo = repo;
+            _unidadesUsuarioRepo = unidadesUsuarioRepo;
             _requerimientoOrganizacionalService = requerimientoOrganizacionalService;
             _riesgoPuestoService = riesgoPuestoService;
             _responsabilidadCargoService = responsabilidadCargoService;
         }
 
-        // Lista todos los descriptores de la empresa; convierte filtros a parámetros SQL y consulta el repositorio.
+        // Qué hace: lista descriptores de la empresa visibles para el usuario de sesión.
+        // Cómo: lee V_SC_DESCRIPTOR_PUESTO y deja solo los cuyo CORR_UNIDAD
+        //       está en PRAL_DATA_SC_UNIDADES_USUARIO (puesto + jefe + configuradas).
         public async Task<CResult> GetAllAsync(SC_DESCRIPTOR_PUESTOParam xWhere)
         {
-            return await _repo.GetAllAsync(BuildParameters(xWhere));
+            var result = await _repo.GetAllAsync(BuildParameters(xWhere));
+            if (!result.Result || result.Data == null)
+            {
+                return result;
+            }
+
+            var login = (xWhere?.LOGIN_SISTEMA ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(login))
+            {
+                result.Data = new List<SC_DESCRIPTOR_PUESTOView>();
+                result.RowsAffected = 0;
+                return result;
+            }
+
+            var unidadesResult = await _unidadesUsuarioRepo.GetUnidadesUsuarioAsync(
+                new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "LOGIN_SISTEMA", Value = login, DbType = System.Data.DbType.String },
+                });
+
+            if (!unidadesResult.Result)
+            {
+                return unidadesResult;
+            }
+
+            var unidadesPermitidas = (unidadesResult.Data as IEnumerable<SC_UNIDADES_USUARIOView> ?? Enumerable.Empty<SC_UNIDADES_USUARIOView>())
+                .Select(u => u.CORR_UNIDAD)
+                .Where(u => u > 0)
+                .ToHashSet();
+
+            var lista = (result.Data as IEnumerable<SC_DESCRIPTOR_PUESTOView> ?? Enumerable.Empty<SC_DESCRIPTOR_PUESTOView>())
+                .Where(d => d.CORR_UNIDAD.HasValue && unidadesPermitidas.Contains(d.CORR_UNIDAD.Value))
+                .OrderBy(d => d.CORR_DESCRIPTOR_PUESTO)
+                .ToList();
+
+            result.Data = lista;
+            result.RowsAffected = lista.Count;
+            return result;
         }
 
         // Obtiene un descriptor por empresa y CORR_DESCRIPTOR_PUESTO.
@@ -44,7 +89,8 @@ namespace SGUEES.Services
             return await _repo.GetAsync(p);
         }
 
-        // Valida reglas de negocio, crea el descriptor y precarga catálogos (requerimientos, riesgos, responsabilidades).
+        // Valida reglas de negocio, crea el descriptor, precarga catálogos e inicia el flujo en Borrador
+        // (PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA OPERACION=1 / GUARDAR), igual que el simulador.
         public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             // Rechaza si CORR_EMPRESA no viene en la sesión.
@@ -61,20 +107,25 @@ namespace SGUEES.Services
                 return validation;
             }
 
-            if (Data.CORR_PUESTO.HasValue)
+            if (Data.CORR_PUESTO.HasValue && Data.CORR_UNIDAD.HasValue && Data.CORR_UNIDAD.Value > 0)
             {
-                // Impide crear si el puesto ya tiene un descriptor en BORRADOR, ENVIADO, REVISADO o ACTIVO.
+                // Impide crear si la misma unidad+puesto ya tiene descriptor en borrador, flujo o activo.
                 var exists = await _repo.ExistsDescriptorAbiertoPorPuestoAsync(
                     Data.CORR_EMPRESA,
+                    Data.CORR_UNIDAD.Value,
                     Data.CORR_PUESTO.Value,
                     0);
 
                 if (exists)
                 {
                     return ValidationError(
-                        "Ya existe un descriptor para este puesto que se encuentra en proceso de aprobacion o activo. Solo sera posible crear una nueva version cuando la version actual haya sido activada y posteriormente desactivada.");
+                        "Ya existe un descriptor para este puesto en esta unidad que se encuentra en proceso de aprobacion o activo. Solo sera posible crear una nueva version cuando la version actual haya sido activada y posteriormente desactivada.");
                 }
             }
+
+            // Qué hace: asigna VERSION = MAX(empresa+unidad+puesto)+1 antes del Insert.
+            // Cómo lo hace: consulta SC_DESCRIPTOR_PUESTO (incluye Inactivo) y fija Data.VERSION.
+            await AsignarSiguienteVersionAsync(Data, excludeCorrDescriptor: 0);
 
             // Recorta textos, normaliza formato y estado antes de escribir en la tabla.
             NormalizeData(Data);
@@ -134,6 +185,47 @@ namespace SGUEES.Services
                     seedMessages.Add(seedResponsabilidades.ErrorMessage.Trim());
                 }
 
+                // Qué hace: inicia el flujo en Borrador (igual que BLOQUE 2 del simulador).
+                // Cómo: OPERACION=1 GUARDAR crea instancia + bitácora; Solicitar (2) es el siguiente paso.
+                var unidadDocumento = Data.CORR_UNIDAD;
+                if ((!unidadDocumento.HasValue || unidadDocumento.Value <= 0) &&
+                    result.Data is SC_DESCRIPTOR_PUESTOView createdRow &&
+                    createdRow.CORR_UNIDAD.HasValue)
+                {
+                    unidadDocumento = createdRow.CORR_UNIDAD;
+                }
+
+                var autorizaBorrador = await _repo.AutorizaAsync(
+                    new SC_DESCRIPTOR_PUESTO_AUTORIZAParam
+                    {
+                        CORR_EMPRESA = Data.CORR_EMPRESA,
+                        CORR_DESCRIPTOR_PUESTO = corrDescriptor,
+                        CORR_UNIDAD_DOCUMENTO = unidadDocumento,
+                        OPERACION = 1,
+                        OBSERVACION =
+                            "Se creo el descriptor de puesto y se inicio el flujo en Borrador.",
+                    },
+                    vLOGIN_SISTEMA);
+
+                if (!autorizaBorrador.Result || autorizaBorrador.ErrorCode != 0)
+                {
+                    result.Result = false;
+                    result.ErrorCode = autorizaBorrador.ErrorCode != 0 ? autorizaBorrador.ErrorCode : -1;
+                    result.ErrorMessage =
+                        "El descriptor se creo, pero no se pudo iniciar el flujo en Borrador: " +
+                        (autorizaBorrador.ErrorMessage ?? "error desconocido");
+                    result.ErrorSource = autorizaBorrador.ErrorSource;
+                    return result;
+                }
+
+                // Devuelve la fila ya sincronizada por el SP (estado Borrador en flujo).
+                if (autorizaBorrador.Data != null)
+                {
+                    result.Data = autorizaBorrador.Data;
+                    result.RowsAffected = autorizaBorrador.RowsAffected;
+                    result.CodeHelper = autorizaBorrador.CodeHelper;
+                }
+
                 if (seedMessages.Count > 0)
                 {
                     result.ErrorMessage = string.Join(" ", seedMessages);
@@ -163,6 +255,48 @@ namespace SGUEES.Services
             if (Data.CORR_DESCRIPTOR_PUESTO <= 0)
             {
                 return ValidationError("No se pudo identificar el descriptor de puesto a actualizar.");
+            }
+
+            // Qué hace: si cambia unidad o puesto, recalcula VERSION y valida que no haya otro abierto.
+            // Cómo lo hace: lee la fila actual, compara claves y aplica MAX+1 excluyendo este corr.
+            var actualResult = await _repo.GetAsync(new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+            });
+
+            if (actualResult.ErrorCode != 0)
+            {
+                return actualResult;
+            }
+
+            var actual = actualResult.Data as SC_DESCRIPTOR_PUESTOView;
+            var unidadNueva = Data.CORR_UNIDAD ?? 0;
+            var puestoNuevo = Data.CORR_PUESTO ?? 0;
+            var unidadActual = actual?.CORR_UNIDAD ?? 0;
+            var puestoActual = actual?.CORR_PUESTO ?? 0;
+            var cambioUnidadOPuesto = unidadNueva != unidadActual || puestoNuevo != puestoActual;
+
+            if (cambioUnidadOPuesto && Data.CORR_PUESTO.HasValue && Data.CORR_UNIDAD.HasValue && Data.CORR_UNIDAD.Value > 0)
+            {
+                var exists = await _repo.ExistsDescriptorAbiertoPorPuestoAsync(
+                    Data.CORR_EMPRESA,
+                    Data.CORR_UNIDAD.Value,
+                    Data.CORR_PUESTO.Value,
+                    Data.CORR_DESCRIPTOR_PUESTO);
+
+                if (exists)
+                {
+                    return ValidationError(
+                        "Ya existe un descriptor para este puesto en esta unidad que se encuentra en proceso de aprobacion o activo. Solo sera posible crear una nueva version cuando la version actual haya sido activada y posteriormente desactivada.");
+                }
+
+                await AsignarSiguienteVersionAsync(Data, Data.CORR_DESCRIPTOR_PUESTO);
+            }
+            else if (actual?.VERSION.HasValue == true && actual.VERSION.Value > 0)
+            {
+                // Conserva la VERSION de BD si no cambió la clave unidad+puesto.
+                Data.VERSION = actual.VERSION;
             }
 
             // Recorta textos, normaliza formato y estado antes de escribir en la tabla.
@@ -223,6 +357,131 @@ namespace SGUEES.Services
             }
 
             return await _repo.UpdateImpactoEconomicoAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        // Qué hace: ejecuta una operación del flujo (Enviar/Aprobar/Observar/Inactivar/Reactivar).
+        // Cómo lo hace: valida claves y OPERACION; en REACTIVAR bloquea si hay otro descriptor abierto del puesto;
+        //              luego delega al SP AUTORIZA; el repo relee la vista.
+        public async Task<CResult> AutorizaAsync(SC_DESCRIPTOR_PUESTO_AUTORIZAParam Data, string vLOGIN_SISTEMA)
+        {
+            var empresaError = ValidateEmpresaSesion(Data?.CORR_EMPRESA ?? 0);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            if (Data.CORR_DESCRIPTOR_PUESTO <= 0)
+            {
+                return ValidationError("Debe indicar el descriptor de puesto.");
+            }
+
+            if (Data.OPERACION < 1 || Data.OPERACION > 6)
+            {
+                return ValidationError("Operacion invalida. Use 1=GUARDAR, 2=ENVIAR, 3=APROBAR, 4=OBSERVAR, 5=INACTIVAR, 6=REACTIVAR.");
+            }
+
+            if (string.IsNullOrWhiteSpace(Data.OBSERVACION))
+            {
+                return ValidationError("El comentario / observacion es obligatorio.");
+            }
+
+            if (string.IsNullOrWhiteSpace(vLOGIN_SISTEMA))
+            {
+                return ValidationError("No se pudo identificar el usuario de sesion.");
+            }
+
+            // Qué hace: en Reactivar (6), evita dos descriptores vivos de la misma unidad+puesto (igual que Create).
+            // Cómo: lee CORR_UNIDAD y CORR_PUESTO del descriptor actual y busca otro no Inactivo excluyendo el correlativo.
+            if (Data.OPERACION == 6)
+            {
+                var getResult = await GetAsync(new SC_DESCRIPTOR_PUESTOParam
+                {
+                    CORR_EMPRESA = Data.CORR_EMPRESA,
+                    CORR_DESCRIPTOR_PUESTO = Data.CORR_DESCRIPTOR_PUESTO,
+                });
+
+                if (getResult?.Data is SC_DESCRIPTOR_PUESTOView descriptor
+                    && descriptor.CORR_PUESTO.HasValue
+                    && descriptor.CORR_PUESTO.Value > 0
+                    && descriptor.CORR_UNIDAD.HasValue
+                    && descriptor.CORR_UNIDAD.Value > 0)
+                {
+                    var exists = await _repo.ExistsDescriptorAbiertoPorPuestoAsync(
+                        Data.CORR_EMPRESA,
+                        descriptor.CORR_UNIDAD.Value,
+                        descriptor.CORR_PUESTO.Value,
+                        Data.CORR_DESCRIPTOR_PUESTO);
+
+                    if (exists)
+                    {
+                        return ValidationError(
+                            "Ya existe un descriptor para este puesto en esta unidad que se encuentra en proceso de aprobacion o activo. Solo sera posible reactivar esta version cuando la version actual haya sido activada y posteriormente desactivada.");
+                    }
+                }
+            }
+
+            Data.OBSERVACION = Data.OBSERVACION.Trim();
+            return await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());
+        }
+
+        // Qué hace: indica qué botones de flujo mostrar para el usuario de sesión.
+        // Cómo: ejecuta PRAL_DATA_SC_DESCRIPTOR_PUESTO_ACCIONES_FLUJO (destinatario + estado)
+        //       y luego aplica permiso U del JWT; sin U el usuario queda en solo consulta.
+        public async Task<CResult> GetAccionesFlujoAsync(SC_DESCRIPTOR_PUESTOParam xWhere, string permisoOpcion)
+        {
+            var empresaError = ValidateEmpresaSesion(xWhere?.CORR_EMPRESA ?? 0);
+            if (empresaError != null)
+            {
+                return empresaError;
+            }
+
+            if (xWhere.CORR_DESCRIPTOR_PUESTO <= 0)
+            {
+                return ValidationError("Debe indicar el descriptor de puesto.");
+            }
+
+            if (string.IsNullOrWhiteSpace(xWhere.LOGIN_SISTEMA))
+            {
+                return ValidationError("No se pudo identificar el usuario de sesion.");
+            }
+
+            xWhere.LOGIN_SISTEMA = xWhere.LOGIN_SISTEMA.Trim();
+            var result = await _repo.GetAccionesFlujoAsync(xWhere);
+            if (!result.Result || result.Data == null)
+            {
+                return result;
+            }
+
+            if (result.Data is SC_DESCRIPTOR_PUESTO_ACCIONES_FLUJOView acciones)
+            {
+                AplicarPermisoCrudpAccionesFlujo(acciones, permisoOpcion);
+            }
+
+            return result;
+        }
+
+        // Qué hace: apaga flags PUEDE_* de flujo si el login no tiene permiso U (Update).
+        // Cómo: todas las operaciones de Autoriza exigen policy |U; destinatario sin U = solo lectura.
+        private static void AplicarPermisoCrudpAccionesFlujo(
+            SC_DESCRIPTOR_PUESTO_ACCIONES_FLUJOView acciones,
+            string permisoOpcion)
+        {
+            if (acciones == null)
+            {
+                return;
+            }
+
+            var permiso = permisoOpcion ?? string.Empty;
+            if (permiso.Contains('U'))
+            {
+                return;
+            }
+
+            acciones.PUEDE_SOLICITAR = false;
+            acciones.PUEDE_APROBAR = false;
+            acciones.PUEDE_OBSERVAR = false;
+            acciones.PUEDE_INACTIVAR = false;
+            acciones.PUEDE_REACTIVAR = false;
         }
 
 	// Valida empresa y elimina el descriptor con sus registros relacionados.
@@ -286,10 +545,36 @@ namespace SGUEES.Services
             Data.RESPONSABLE = string.IsNullOrWhiteSpace(Data.RESPONSABLE) ? null : Data.RESPONSABLE.Trim();
             // Convierte variantes antiguas del formato al valor canónico.
             Data.FORMATO = NormalizeFormato(Data.FORMATO);
-            Data.ESTADO_DESCRIPTOR = string.IsNullOrWhiteSpace(Data.ESTADO_DESCRIPTOR)
-                ? "BORRADOR"
-                : Data.ESTADO_DESCRIPTOR.Trim().ToUpperInvariant();
-            Data.VERSION ??= 1;
+            if (!Data.CORR_ESTADO.HasValue || Data.CORR_ESTADO <= 0)
+            {
+                Data.CORR_ESTADO = 11; // Borrador (SEG_FLUJO_ESTADO)
+            }
+            Data.NOMBRE_ESTADO = string.IsNullOrWhiteSpace(Data.NOMBRE_ESTADO)
+                ? "Borrador"
+                : Data.NOMBRE_ESTADO.Trim();
+            // VERSION la asigna AsignarSiguienteVersionAsync (Create / Update con cambio de clave).
+            if (!Data.VERSION.HasValue || Data.VERSION.Value <= 0)
+            {
+                Data.VERSION = 1;
+            }
+        }
+
+        // Qué hace: fija Data.VERSION = MAX(empresa+unidad+puesto)+1 (o 1 si no hay historial).
+        // Cómo lo hace: llama al repositorio; si faltan unidad/puesto, deja VERSION=1.
+        private async Task AsignarSiguienteVersionAsync(SC_DESCRIPTOR_PUESTOTable Data, int excludeCorrDescriptor)
+        {
+            if (!Data.CORR_PUESTO.HasValue || !Data.CORR_UNIDAD.HasValue
+                || Data.CORR_UNIDAD.Value <= 0 || Data.CORR_PUESTO.Value <= 0)
+            {
+                Data.VERSION = 1;
+                return;
+            }
+
+            Data.VERSION = await _repo.GetNextVersionPorUnidadPuestoAsync(
+                Data.CORR_EMPRESA,
+                Data.CORR_UNIDAD.Value,
+                Data.CORR_PUESTO.Value,
+                excludeCorrDescriptor);
         }
 
         // Revisa campos obligatorios y longitudes antes de guardar el descriptor.

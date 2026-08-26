@@ -170,7 +170,8 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "NOMBRE_UNIDAD", Value = Data.NOMBRE_UNIDAD, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FORMATO", Value = Data.FORMATO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "VERSION", Value = Data.VERSION, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "ESTADO_DESCRIPTOR", Value = Data.ESTADO_DESCRIPTOR, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CORR_ESTADO", Value = Data.CORR_ESTADO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "NOMBRE_ESTADO", Value = Data.NOMBRE_ESTADO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -401,7 +402,8 @@ namespace SGUEES.Repositories
                 new CParameter() { ParameterName = "RESPONSABLE", Value = Data.RESPONSABLE, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "FORMATO", Value = Data.FORMATO, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "VERSION", Value = Data.VERSION, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "ESTADO_DESCRIPTOR", Value = Data.ESTADO_DESCRIPTOR, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "CORR_ESTADO", Value = Data.CORR_ESTADO, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "NOMBRE_ESTADO", Value = Data.NOMBRE_ESTADO, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
@@ -436,10 +438,175 @@ namespace SGUEES.Repositories
                 e.Message.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
         }
 
-        // Consulta SC_DESCRIPTOR_PUESTO: true si el puesto ya tiene descriptor en BORRADOR, ENVIADO, REVISADO o ACTIVO.
-        public async Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(int corrEmpresa, int corrPuesto, int excludeCorrDescriptor)
+        // Qué hace: mueve el flujo del descriptor vía PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA.
+        // Cómo lo hace: ExecCmd del SP; si MENSAJE_ERROR vacío, relee V_SC_DESCRIPTOR_PUESTO y lo
+        //              devuelve en Data (parche en memoria en el SPA; sin GetAll).
+        public async Task<CResult> AutorizaAsync(SC_DESCRIPTOR_PUESTO_AUTORIZAParam Data, string vLOGIN_SISTEMA)
         {
-            if (corrEmpresa <= 0 || corrPuesto <= 0)
+            CResult objResultado = new();
+            const string spName = "PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA";
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "@CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter()
+                    {
+                        ParameterName = "@CORR_UNIDAD_DOCUMENTO",
+                        Value = Data.CORR_UNIDAD_DOCUMENTO.HasValue && Data.CORR_UNIDAD_DOCUMENTO.Value > 0
+                            ? Data.CORR_UNIDAD_DOCUMENTO.Value
+                            : (object)DBNull.Value,
+                        DbType = System.Data.DbType.Int32,
+                    },
+                    new CParameter() { ParameterName = "@OPERACION", Value = Data.OPERACION, DbType = System.Data.DbType.Int32 },
+                    new CParameter()
+                    {
+                        ParameterName = "@CORR_ACCION",
+                        Value = Data.CORR_ACCION.HasValue && Data.CORR_ACCION.Value > 0
+                            ? Data.CORR_ACCION.Value
+                            : (object)DBNull.Value,
+                        DbType = System.Data.DbType.Int32,
+                    },
+                    new CParameter() { ParameterName = "@LOGIN_SISTEMA", Value = vLOGIN_SISTEMA ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@OBSERVACION", Value = Data.OBSERVACION ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@CORR_ESTADO", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+                    new CParameter() { ParameterName = "@MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 500 },
+                    new CParameter() { ParameterName = "@CORR_ACCION_USADA", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+                    new CParameter() { ParameterName = "@CORR_PASO_ACTUAL", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+                    new CParameter() { ParameterName = "@MODO", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 20 },
+                    new CParameter() { ParameterName = "@NOMBRE_ESTADO", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 100 },
+                };
+
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, spName, true, p);
+
+                var mensajeError = objData.objCommand.Parameters["@MENSAJE_ERROR"].Value?.ToString();
+                if (!string.IsNullOrWhiteSpace(mensajeError))
+                {
+                    objResultado.Data = null;
+                    objResultado.Result = false;
+                    objResultado.RowsAffected = 0;
+                    objResultado.CodeHelper = Data.CORR_DESCRIPTOR_PUESTO;
+                    objResultado.ErrorCode = -10;
+                    objResultado.ErrorMessage = mensajeError;
+                    objResultado.ErrorSource = "C" + _TableName + ".Autoriza";
+                    return objResultado;
+                }
+
+                var keyWhere = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                };
+
+                var readerGet = await objData.GetDataReader(_ViewName, keyWhere);
+                var response = new List<SC_DESCRIPTOR_PUESTOView>().FromDataReader(readerGet).FirstOrDefault();
+                readerGet.Close();
+
+                objResultado.Data = response;
+                objResultado.Result = response != null;
+                objResultado.RowsAffected = response == null ? 0 : 1;
+                objResultado.CodeHelper = Data.CORR_DESCRIPTOR_PUESTO;
+                objResultado.ErrorCode = response == null ? -1 : 0;
+                objResultado.ErrorMessage = response == null
+                    ? "La operacion de flujo se ejecuto pero no se pudo releer el descriptor."
+                    : string.Empty;
+                objResultado.ErrorSource = string.Empty;
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        // Qué hace: consulta flags PUEDE_* por destinatario y estado (SP).
+        // Cómo: PRAL_DATA_SC_DESCRIPTOR_PUESTO_ACCIONES_FLUJO; el Service aplica permiso U del JWT.
+        public async Task<CResult> GetAccionesFlujoAsync(SC_DESCRIPTOR_PUESTOParam xWhere)
+        {
+            CResult objResultado = new();
+            const string spName = "PRAL_DATA_SC_DESCRIPTOR_PUESTO_ACCIONES_FLUJO";
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "@CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@CORR_DESCRIPTOR_PUESTO", Value = xWhere.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@LOGIN_SISTEMA", Value = xWhere.LOGIN_SISTEMA ?? string.Empty, DbType = System.Data.DbType.String },
+                };
+
+                var reader = await objData.GetDataReader(System.Data.CommandType.StoredProcedure, spName, p);
+                var row = new SC_DESCRIPTOR_PUESTO_ACCIONES_FLUJOView();
+                if (reader.Read())
+                {
+                    row.CORR_DESCRIPTOR_PUESTO = reader["CORR_DESCRIPTOR_PUESTO"] != DBNull.Value
+                        ? Convert.ToInt32(reader["CORR_DESCRIPTOR_PUESTO"])
+                        : 0;
+                    row.NOMBRE_ESTADO = reader["NOMBRE_ESTADO"]?.ToString();
+                    row.CORR_PASO_ACTUAL = reader["CORR_PASO_ACTUAL"] != DBNull.Value
+                        ? Convert.ToInt32(reader["CORR_PASO_ACTUAL"])
+                        : (int?)null;
+                    row.NOMBRE_PASO = reader["NOMBRE_PASO"]?.ToString();
+                    row.ES_DESTINATARIO_PASO = reader["ES_DESTINATARIO_PASO"] != DBNull.Value
+                        && Convert.ToBoolean(reader["ES_DESTINATARIO_PASO"]);
+                    row.PUEDE_SOLICITAR = reader["PUEDE_SOLICITAR"] != DBNull.Value
+                        && Convert.ToBoolean(reader["PUEDE_SOLICITAR"]);
+                    row.PUEDE_APROBAR = reader["PUEDE_APROBAR"] != DBNull.Value
+                        && Convert.ToBoolean(reader["PUEDE_APROBAR"]);
+                    row.PUEDE_OBSERVAR = reader["PUEDE_OBSERVAR"] != DBNull.Value
+                        && Convert.ToBoolean(reader["PUEDE_OBSERVAR"]);
+                    row.PUEDE_INACTIVAR = reader["PUEDE_INACTIVAR"] != DBNull.Value
+                        && Convert.ToBoolean(reader["PUEDE_INACTIVAR"]);
+                    row.PUEDE_REACTIVAR = reader["PUEDE_REACTIVAR"] != DBNull.Value
+                        && Convert.ToBoolean(reader["PUEDE_REACTIVAR"]);
+                }
+                reader.Close();
+
+                objResultado.Data = row;
+                objResultado.Result = true;
+                objResultado.RowsAffected = 1;
+                objResultado.CodeHelper = row.CORR_DESCRIPTOR_PUESTO;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = string.Empty;
+                objResultado.ErrorSource = string.Empty;
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        // Consulta SC_DESCRIPTOR_PUESTO: true si la misma unidad+puesto ya tiene descriptor no Inactivo.
+        public async Task<bool> ExistsDescriptorAbiertoPorPuestoAsync(
+            int corrEmpresa,
+            int corrUnidad,
+            int corrPuesto,
+            int excludeCorrDescriptor)
+        {
+            if (corrEmpresa <= 0 || corrUnidad <= 0 || corrPuesto <= 0)
             {
                 return false;
             }
@@ -447,8 +614,9 @@ namespace SGUEES.Repositories
             const string sql = @"SELECT TOP 1 1 AS FOUND
                 FROM SC_DESCRIPTOR_PUESTO
                 WHERE CORR_EMPRESA = @CORR_EMPRESA
+                  AND CORR_UNIDAD = @CORR_UNIDAD
                   AND CORR_PUESTO = @CORR_PUESTO
-                  AND ESTADO_DESCRIPTOR IN ('BORRADOR', 'ENVIADO', 'REVISADO', 'ACTIVO')
+                  AND UPPER(LTRIM(RTRIM(ISNULL(NOMBRE_ESTADO, N'Borrador')))) <> N'INACTIVO'
                   AND (@EXCLUDE_CORR <= 0 OR CORR_DESCRIPTOR_PUESTO <> @EXCLUDE_CORR)";
 
             try
@@ -456,6 +624,7 @@ namespace SGUEES.Repositories
                 var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
                 {
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_UNIDAD", Value = corrUnidad, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "CORR_PUESTO", Value = corrPuesto, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "EXCLUDE_CORR", Value = excludeCorrDescriptor, DbType = System.Data.DbType.Int32 },
                 });
@@ -463,6 +632,55 @@ namespace SGUEES.Repositories
                 var exists = reader.Read();
                 reader.Close();
                 return exists;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
+        // Qué hace: siguiente VERSION para la clave empresa+unidad+puesto.
+        // Cómo lo hace: ISNULL(MAX(VERSION),0)+1 excluyendo el descriptor actual en Update.
+        public async Task<int> GetNextVersionPorUnidadPuestoAsync(
+            int corrEmpresa,
+            int corrUnidad,
+            int corrPuesto,
+            int excludeCorrDescriptor)
+        {
+            if (corrEmpresa <= 0 || corrUnidad <= 0 || corrPuesto <= 0)
+            {
+                return 1;
+            }
+
+            const string sql = @"SELECT ISNULL(MAX(VERSION), 0) + 1 AS NEXT_VERSION
+                FROM SC_DESCRIPTOR_PUESTO
+                WHERE CORR_EMPRESA = @CORR_EMPRESA
+                  AND CORR_UNIDAD = @CORR_UNIDAD
+                  AND CORR_PUESTO = @CORR_PUESTO
+                  AND (@EXCLUDE_CORR <= 0 OR CORR_DESCRIPTOR_PUESTO <> @EXCLUDE_CORR)";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_UNIDAD", Value = corrUnidad, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_PUESTO", Value = corrPuesto, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "EXCLUDE_CORR", Value = excludeCorrDescriptor, DbType = System.Data.DbType.Int32 },
+                });
+
+                var nextVersion = 1;
+                if (reader.Read() && !reader.IsDBNull(0))
+                {
+                    nextVersion = Convert.ToInt32(reader.GetValue(0));
+                    if (nextVersion < 1)
+                    {
+                        nextVersion = 1;
+                    }
+                }
+
+                reader.Close();
+                return nextVersion;
             }
             finally
             {

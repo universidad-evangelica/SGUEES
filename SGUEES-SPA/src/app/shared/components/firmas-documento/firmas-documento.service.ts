@@ -21,14 +21,19 @@ export class FirmasDocumentoService {
     getColumns(): any[] {
         return [
            // { dataField: 'ORDEN_FIRMA', caption: '#', width: 60 },
-            { dataField: 'LOGIN_SISTEMA', caption: 'Usuario', width: 200 },
-            { dataField: 'ESTADO_DESTINO', caption: 'Estado', width: 200 },
+            { dataField: 'LOGIN_SISTEMA', caption: 'Usuario', width: 160 },
+            { dataField: 'ESTADO_DESTINO', caption: 'Estado', width: 160 },
             //{ dataField: 'NOMBRE_PASO', caption: 'Paso', width: 200 },
-            { dataField: 'COMENTARIO', caption: 'Observaciones', width: 750 },
+            // Qué hace: Observaciones sin truncar (...); el grid usa wordWrapEnabled.
+            {
+                dataField: 'COMENTARIO',
+                caption: 'Observaciones',
+                minWidth: 280,
+            },
             {
                 dataField: 'FECHA_ACCION',
                 caption: 'Fecha',
-                width: 200,
+                width: 170,
                 dataType: 'datetime',
                 format: 'dd/MM/yyyy HH:mm',
             },

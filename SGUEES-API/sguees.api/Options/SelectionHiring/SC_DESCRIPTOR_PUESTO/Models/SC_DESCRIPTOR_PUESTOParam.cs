@@ -9,5 +9,7 @@ namespace SGUEES.Models
         public int CORR_DESCRIPTOR_PUESTO { get; set; }
         /// <summary>Filtro para lookup de sc-requisicion-personal (descriptores por unidad).</summary>
         public int CORR_UNIDAD { get; set; }
+        /// <summary>Login de sesión: GetAll filtra por unidades de PRAL_DATA_SC_UNIDADES_USUARIO.</summary>
+        public string LOGIN_SISTEMA { get; set; }
     }
 }

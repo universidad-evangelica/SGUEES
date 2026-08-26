@@ -60,6 +60,15 @@ namespace SGUEES.Controllers
             return _service.GetFORMATO();
         }
 
+        // Qué hace: lista de estados del flujo del descriptor para el filtro del listado.
+        // Cómo: GetLookup SC_LISTA / GetESTADO_DESCRIPTOR desde sc-descriptor-puesto.
+        [HttpGet("GetESTADO_DESCRIPTOR_SC_DESCRIPTOR_PUESTO")]
+        [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        public CResult GetESTADO_DESCRIPTOR_SC_DESCRIPTOR_PUESTO()
+        {
+            return _service.GetESTADO_DESCRIPTOR();
+        }
+
         [HttpGet("GetUNIDAD_TIEMPO_INDUCCION_SC_INDUCCION")]
         [Authorize(Policy = "/sc-induccion|R")]
         public CResult GetUNIDAD_TIEMPO_INDUCCION_SC_INDUCCION()
