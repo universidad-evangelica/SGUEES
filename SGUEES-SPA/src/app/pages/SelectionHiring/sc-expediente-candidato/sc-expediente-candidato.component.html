@@ -1,6 +1,6 @@
 <div
   class="sguees-mtto-view expediente-mtto"
-  [class.expediente-mtto--workspace-open]="workspaceCompletoAbierto"
+  [class.expediente-mtto--workspace-open]="workspaceCompletoVisible"
 >
   <div class="expediente-mtto__main">
     <!-- Barra estándar mtto (nuevo / guardar / cancelar / consultar). -->
@@ -195,8 +195,9 @@
     </app-data-grid-mtto>
   </div>
 
-  <!-- Workspace: expediente completo (cubre barra mtto + contenido del área de trabajo). -->
+  <!-- Workspace: solo en DOM al abrir (evita franja residual en el listado). -->
   <aside
+    *ngIf="workspaceCompletoVisible"
     class="expediente-workspace"
     [class.expediente-workspace--open]="workspaceCompletoAbierto"
     [attr.aria-hidden]="!workspaceCompletoAbierto"

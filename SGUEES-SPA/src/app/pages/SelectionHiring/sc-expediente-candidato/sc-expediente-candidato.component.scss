@@ -1,8 +1,10 @@
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
   position: relative;
-  height: 100%;
-  min-height: 100%;
 }
 
 /* ===========================
@@ -334,14 +336,28 @@
 
 .expediente-mtto {
   position: relative;
-  height: 100%;
-  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  overflow: hidden; /* evita franja del panel fuera de pantalla */
 }
 
 .expediente-mtto__main {
   position: relative;
   z-index: 1;
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+}
+
+/* Al abrir: ocupa todo el alto útil del área de trabajo (pantallas grandes). */
+.expediente-mtto--workspace-open {
+  flex: 1 1 auto;
+  min-height: calc(100dvh - var(--sguees-layout-chrome, 96px));
+  height: calc(100dvh - var(--sguees-layout-chrome, 96px));
+  overflow: hidden;
 }
 
 .expediente-workspace {
@@ -350,7 +366,10 @@
   z-index: 30;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  height: 100%;
   min-height: 100%;
+  box-sizing: border-box;
   background: var(--sguees-page-bg, var(--typography-bg, var(--base-bg)));
   border-left: 1px solid var(--sguees-border-subtle, var(--border-color));
   box-shadow: var(--sguees-shadow-lg, -8px 0 24px rgba(0, 0, 0, 0.25));
@@ -362,10 +381,6 @@
     transform: translateX(0);
     pointer-events: auto;
   }
-}
-
-.expediente-mtto--workspace-open {
-  overflow: hidden;
 }
 
 .expediente-workspace__toolbar {
@@ -405,10 +420,19 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  ::ng-deep .dx-scrollview {
+    height: 100%;
+    flex: 1 1 auto;
+  }
 }
 
 .expediente-workspace__content {
   padding: 12px 16px 24px;
+  min-height: 100%;
+  box-sizing: border-box;
 }
 
 /* Lightbox foto (mismo patrón que sc-solicitud-empleo). */

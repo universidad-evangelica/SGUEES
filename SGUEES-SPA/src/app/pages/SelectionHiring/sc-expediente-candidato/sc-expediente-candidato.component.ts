@@ -53,7 +53,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face';
 
 	/** Workspace expediente completo (slide-over sobre el área mtto). */
+	workspaceCompletoVisible = false;
 	workspaceCompletoAbierto = false;
+	private workspaceCloseTimer: ReturnType<typeof setTimeout> | null = null;
 	personaDatos: ScPersonaDatos | null = null;
 	familiares: ScPersonaFamiliar[] = [];
 	hijos: ScPersonaHijo[] = [];
@@ -112,6 +114,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	}
 
 	ngOnDestroy(): void {
+		this.clearWorkspaceCloseTimer();
 		this.revocarFotoPersona();
 	}
 
@@ -345,7 +348,12 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		if ((this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0) <= 0) {
 			return;
 		}
-		this.workspaceCompletoAbierto = true;
+		this.clearWorkspaceCloseTimer();
+		this.workspaceCompletoVisible = true;
+		// Siguiente frame: aplica --open para animar entrada desde la derecha.
+		requestAnimationFrame(() => {
+			this.workspaceCompletoAbierto = true;
+		});
 		this.consultarPersonaDatos();
 	}
 
@@ -354,10 +362,30 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.cerrarWorkspaceCompleto(true);
 	}
 
-	private cerrarWorkspaceCompleto(_animar: boolean): void {
-		this.workspaceCompletoAbierto = false;
+	private cerrarWorkspaceCompleto(animar: boolean): void {
 		this.editarPersonaVisible = false;
 		this.cerrarFotoPreview();
+		this.clearWorkspaceCloseTimer();
+
+		if (!animar || !this.workspaceCompletoVisible) {
+			this.workspaceCompletoAbierto = false;
+			this.workspaceCompletoVisible = false;
+			return;
+		}
+
+		this.workspaceCompletoAbierto = false;
+		// Tras la transición CSS se remueve del DOM (sin franja residual).
+		this.workspaceCloseTimer = setTimeout(() => {
+			this.workspaceCompletoVisible = false;
+			this.workspaceCloseTimer = null;
+		}, 300);
+	}
+
+	private clearWorkspaceCloseTimer(): void {
+		if (this.workspaceCloseTimer) {
+			clearTimeout(this.workspaceCloseTimer);
+			this.workspaceCloseTimer = null;
+		}
 	}
 
 	consultarPersonaDatos(): void {
