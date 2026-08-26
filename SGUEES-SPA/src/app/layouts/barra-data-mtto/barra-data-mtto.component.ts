@@ -271,13 +271,12 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     );
   }
 
-  /** Separador tras Nuevo / Guardar-Cancelar cuando hay más acciones a la izquierda (sin combox: van en fila aparte). */
+  /** Separador tras Nuevo solo si hay otra acción visible (no por permiteAdd solo: evitaba hueco). */
   get showPrimaryToolbarDivider(): boolean {
     if (!this.isBrowse) {
       return true;
     }
     return (
-      this.permiteAdd ||
       this.effectiveShowEstadoToolbar ||
       !!this.btn1 ||
       !!this.btn2 ||

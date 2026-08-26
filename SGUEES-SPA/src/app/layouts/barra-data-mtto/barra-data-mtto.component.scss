@@ -66,7 +66,8 @@
 
 :host.sguees-barra-mtto--ribbon.sguees-mtto-chrome {
   border-radius: var(--sguees-radius-lg);
-  overflow: hidden;
+  /* Qué hace: visible para que Unidad/Estado no se corten en móvil. */
+  overflow: visible;
 }
 
 :host.sguees-barra-mtto--ribbon.sguees-mtto-chrome:has(+ app-data-grid-mtto) {
@@ -77,7 +78,7 @@
   border: 1px solid var(--sguees-border-subtle, var(--border-color));
   border-radius: var(--sguees-radius-md);
   background: var(--sguees-surface-card, var(--card-background));
-  overflow: hidden;
+  overflow: visible;
 
   ::ng-deep .dx-tabpanel-tabs {
     padding: 0 var(--sguees-space-4);
@@ -104,6 +105,15 @@
     color: var(--sguees-text-primary, inherit);
   }
 
+  /* Qué hace: el panel crece con la fila de combox (móvil). */
+  ::ng-deep .dx-tabpanel-container,
+  ::ng-deep .dx-multiview-wrapper,
+  ::ng-deep .dx-multiview-item-container,
+  ::ng-deep .dx-multiview-item,
+  ::ng-deep .dx-multiview-item-content {
+    height: auto !important;
+  }
+
   ::ng-deep .dx-multiview-item-content {
     padding: var(--sguees-space-4);
   }
@@ -117,7 +127,6 @@
 }
 
 :host.sguees-barra-mtto--ribbon .sguees-barra-ribbon-panel .sguees-barra-toolbar {
-  width: 100%;
   padding: 0;
   border: none;
   box-shadow: none;
@@ -233,14 +242,14 @@
 .sguees-barra-toolbar--grouped {
   ::ng-deep .dx-toolbar-before {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: var(--sguees-space-2);
   }
 
   ::ng-deep .dx-toolbar-after {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     gap: var(--sguees-space-3);
     margin-left: auto;
@@ -254,11 +263,6 @@
 }
 
 @media (max-width: 575.98px) {
-  :host ::ng-deep .sguees-barra-toolbar .dx-toolbar-items-container {
-    flex-wrap: wrap;
-    row-gap: var(--sguees-space-2);
-  }
-
   .sguees-barra-toolbar {
     ::ng-deep .dx-button.sguees-barra-btn-standard,
     ::ng-deep .dx-button.sguees-barra-btn-action,
@@ -272,7 +276,7 @@
   }
 }
 
-/* Contenedor: toolbar + fila de combox (fuera del overflow ⋮). */
+/* Contenedor: [acciones][combox][export]. Móvil en columna. */
 .sguees-barra-actions {
   display: flex;
   flex-direction: column;
@@ -292,7 +296,6 @@
   display: none !important;
 }
 
-/* Combos de filtro en header (combox1–combox4 via app-data-lookup). */
 .sguees-barra-combox {
   display: flex;
   flex-direction: column;
@@ -316,15 +319,120 @@
   white-space: nowrap;
 }
 
-/* Oculta sin destruir el combo (así sobrevive Nuevo→Cancelar cuando la fila permanece). */
 .sguees-barra-combox--hidden {
   display: none !important;
 }
 
+/* Escritorio: Nueva | Unidad | Estado …… Exportar (sin solaparse). */
+@media (min-width: 992px) {
+  .sguees-barra-actions {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: var(--sguees-space-3);
+  }
+
+  /*
+    Qué hace: DX usa position:absolute en before/after → el toolbar queda con ancho 0
+    y “Nuevo” se pinta encima de Unidad. Aquí el layout es estático/flex.
+  */
+  .sguees-barra-actions > .sguees-barra-toolbar--start,
+  .sguees-barra-actions > .sguees-barra-toolbar--end {
+    ::ng-deep .dx-toolbar {
+      height: auto;
+      min-height: var(--sguees-toolbar-height, 44px);
+    }
+
+    ::ng-deep .dx-toolbar-items-container {
+      display: flex !important;
+      align-items: flex-end;
+      position: relative !important;
+      height: auto !important;
+      min-height: var(--sguees-toolbar-height, 44px);
+    }
+
+    ::ng-deep .dx-toolbar-before,
+    ::ng-deep .dx-toolbar-center,
+    ::ng-deep .dx-toolbar-after {
+      position: static !important;
+      display: flex !important;
+      flex-wrap: nowrap;
+      align-items: flex-end;
+      width: auto !important;
+      max-width: none !important;
+      left: auto !important;
+      right: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+  }
+
+  .sguees-barra-actions > .sguees-barra-toolbar--start {
+    flex: 0 0 auto;
+    width: max-content;
+    min-width: max-content;
+    max-width: none;
+    overflow: visible;
+
+    ::ng-deep .dx-toolbar,
+    ::ng-deep .dx-toolbar-items-container {
+      width: max-content !important;
+      max-width: none;
+    }
+  }
+
+  .sguees-barra-actions .sguees-barra-combox-row {
+    flex: 0 0 auto;
+    width: auto;
+  }
+
+  .sguees-barra-actions > .sguees-barra-toolbar--end {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+
+    ::ng-deep .dx-toolbar,
+    ::ng-deep .dx-toolbar-items-container {
+      width: 100% !important;
+      justify-content: flex-end;
+    }
+
+    ::ng-deep .dx-toolbar-after {
+      margin-left: auto !important;
+    }
+  }
+}
+
+/* Móvil: combox debajo, ancho completo; card no los corta. */
 @media (max-width: 991.98px) {
-  .sguees-barra-combox-row {
+  .sguees-barra-actions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'start end'
+      'combox combox';
+    align-items: end;
+    column-gap: var(--sguees-space-2);
+    row-gap: var(--sguees-space-3);
+  }
+
+  .sguees-barra-actions > .sguees-barra-toolbar--start {
+    grid-area: start;
+    width: auto;
+    min-width: 0;
+  }
+
+  .sguees-barra-actions > .sguees-barra-toolbar--end {
+    grid-area: end;
+    width: auto;
+    justify-self: end;
+  }
+
+  .sguees-barra-actions .sguees-barra-combox-row {
+    grid-area: combox;
     flex-direction: column;
     align-items: stretch;
+    width: 100%;
   }
 
   .sguees-barra-combox:not(.sguees-barra-combox--hidden) {
