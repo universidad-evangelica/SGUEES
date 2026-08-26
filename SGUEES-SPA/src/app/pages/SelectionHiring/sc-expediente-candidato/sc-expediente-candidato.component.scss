@@ -435,6 +435,103 @@
   box-sizing: border-box;
 }
 
+/* Filas clickeables del grid de solicitudes asociadas. */
+.expediente-solicitudes-grid {
+  ::ng-deep .dx-data-row {
+    cursor: pointer;
+  }
+}
+
+/* ===========================
+   Workspace detalle solicitud (desde abajo)
+=========================== */
+
+.solicitud-workspace {
+  position: absolute;
+  inset: 0;
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  background: var(--sguees-page-bg, var(--typography-bg, var(--base-bg)));
+  border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
+  box-shadow: var(--sguees-shadow-lg, 0 -8px 24px rgba(0, 0, 0, 0.25));
+  transform: translateY(100%);
+  transition: transform 0.28s ease;
+  pointer-events: none;
+
+  &--open {
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+}
+
+.solicitud-workspace__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+  background: var(--sguees-surface-card, var(--card-background));
+  flex-shrink: 0;
+}
+
+.solicitud-workspace__title {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 650;
+    color: var(--sguees-text-primary, var(--base-text-color));
+  }
+
+  span {
+    font-size: 13px;
+    color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.solicitud-workspace__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  ::ng-deep .dx-scrollview {
+    height: 100%;
+    flex: 1 1 auto;
+  }
+}
+
+.solicitud-workspace__content {
+  padding: 16px 18px 28px;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.solicitud-workspace__placeholder {
+  margin: 0;
+  padding: 18px 16px;
+  border-radius: var(--sguees-radius-md, 10px);
+  border: 1px dashed var(--sguees-border-subtle, var(--border-color));
+  background: var(--sguees-surface-subtle, var(--background-gray-color));
+  color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 /* Lightbox foto (mismo patrón que sc-solicitud-empleo). */
 .persona-foto-lightbox {
   position: fixed;

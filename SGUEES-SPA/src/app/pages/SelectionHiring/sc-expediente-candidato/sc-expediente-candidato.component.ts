@@ -52,10 +52,17 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	readonly avatarUrl =
 		'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face';
 
-	/** Workspace expediente completo (slide-over sobre el área mtto). */
+	/** Workspace expediente completo (slide-over desde la derecha). */
 	workspaceCompletoVisible = false;
 	workspaceCompletoAbierto = false;
 	private workspaceCloseTimer: ReturnType<typeof setTimeout> | null = null;
+
+	/** Workspace detalle solicitud asociada (slide-over desde abajo). */
+	workspaceSolicitudVisible = false;
+	workspaceSolicitudAbierto = false;
+	corrExpedienteSolicitudSeleccionada = 0;
+	solicitudSeleccionada: ScExpedienteSolicitud | null = null;
+	private workspaceSolicitudCloseTimer: ReturnType<typeof setTimeout> | null = null;
 	personaDatos: ScPersonaDatos | null = null;
 	familiares: ScPersonaFamiliar[] = [];
 	hijos: ScPersonaHijo[] = [];
@@ -115,6 +122,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 
 	ngOnDestroy(): void {
 		this.clearWorkspaceCloseTimer();
+		this.clearWorkspaceSolicitudCloseTimer();
 		this.revocarFotoPersona();
 	}
 
@@ -125,6 +133,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.solicitudes = [];
 			this.limpiarBusquedaSolicitudes();
 			this.cerrarWorkspaceCompleto(false);
+			this.cerrarWorkspaceSolicitud(false);
 			this.limpiarPersonaDatos();
 		}
 	}
@@ -260,6 +269,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		super.nuevo();
 		this.solicitudes = [];
 		this.cerrarWorkspaceCompleto(false);
+		this.cerrarWorkspaceSolicitud(false);
 		this.limpiarPersonaDatos();
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
@@ -281,6 +291,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.solicitudes = [];
 		this.limpiarBusquedaSolicitudes();
 		this.cerrarWorkspaceCompleto(false);
+		this.cerrarWorkspaceSolicitud(false);
 		this.limpiarPersonaDatos();
 	}
 
@@ -348,6 +359,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		if ((this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0) <= 0) {
 			return;
 		}
+		this.cerrarWorkspaceSolicitud(false);
 		this.clearWorkspaceCloseTimer();
 		this.workspaceCompletoVisible = true;
 		// Siguiente frame: aplica --open para animar entrada desde la derecha.
@@ -385,6 +397,60 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		if (this.workspaceCloseTimer) {
 			clearTimeout(this.workspaceCloseTimer);
 			this.workspaceCloseTimer = null;
+		}
+	}
+
+	/** Abre workspace de detalle de una solicitud asociada (entra desde abajo). */
+	onSolicitudRowClick(e: any): void {
+		const rowData = e?.data as ScExpedienteSolicitud | undefined;
+		const corr = Number(rowData?.CORR_EXPEDIENTE_SOLICITUD ?? 0);
+		if (corr <= 0) {
+			return;
+		}
+		// Ignora clics en elementos interactivos del pager/header si DevExtreme los propaga.
+		if (e?.rowType && e.rowType !== 'data') {
+			return;
+		}
+
+		this.cerrarWorkspaceCompleto(false);
+		this.clearWorkspaceSolicitudCloseTimer();
+		this.solicitudSeleccionada = rowData ?? null;
+		this.corrExpedienteSolicitudSeleccionada = corr;
+		this.workspaceSolicitudVisible = true;
+		requestAnimationFrame(() => {
+			this.workspaceSolicitudAbierto = true;
+		});
+	}
+
+	/** Cierra workspace de solicitud y vuelve al resumen. */
+	volverDesdeSolicitud(): void {
+		this.cerrarWorkspaceSolicitud(true);
+	}
+
+	private cerrarWorkspaceSolicitud(animar: boolean): void {
+		this.clearWorkspaceSolicitudCloseTimer();
+
+		if (!animar || !this.workspaceSolicitudVisible) {
+			this.workspaceSolicitudAbierto = false;
+			this.workspaceSolicitudVisible = false;
+			this.corrExpedienteSolicitudSeleccionada = 0;
+			this.solicitudSeleccionada = null;
+			return;
+		}
+
+		this.workspaceSolicitudAbierto = false;
+		this.workspaceSolicitudCloseTimer = setTimeout(() => {
+			this.workspaceSolicitudVisible = false;
+			this.corrExpedienteSolicitudSeleccionada = 0;
+			this.solicitudSeleccionada = null;
+			this.workspaceSolicitudCloseTimer = null;
+		}, 300);
+	}
+
+	private clearWorkspaceSolicitudCloseTimer(): void {
+		if (this.workspaceSolicitudCloseTimer) {
+			clearTimeout(this.workspaceSolicitudCloseTimer);
+			this.workspaceSolicitudCloseTimer = null;
 		}
 	}
 

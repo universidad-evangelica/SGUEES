@@ -1,6 +1,6 @@
 <div
   class="sguees-mtto-view expediente-mtto"
-  [class.expediente-mtto--workspace-open]="workspaceCompletoVisible"
+  [class.expediente-mtto--workspace-open]="workspaceCompletoVisible || workspaceSolicitudVisible"
 >
   <div class="expediente-mtto__main">
     <!-- Barra estándar mtto (nuevo / guardar / cancelar / consultar). -->
@@ -102,7 +102,7 @@
             </div>
           </div>
 
-          <div class="dx-grid-deta">
+          <div class="dx-grid-deta expediente-solicitudes-grid">
             <dx-data-grid
               #gridSolicitudes
               [dataSource]="solicitudes"
@@ -119,6 +119,7 @@
               [height]="'100%'"
               [width]="'100%'"
               [noDataText]="'No hay solicitudes relacionadas a este expediente.'"
+              (onRowClick)="onSolicitudRowClick($event)"
             >
               <dxo-paging [pageSize]="5"></dxo-paging>
 
@@ -234,6 +235,43 @@
             (editar)="abrirEditarPersona()"
             (abrirFoto)="abrirFotoPreview()"
           ></app-sc-persona-datos-vista>
+        </div>
+      </dx-scroll-view>
+    </div>
+  </aside>
+
+  <!-- Workspace detalle solicitud asociada: entra desde abajo; solo en DOM al abrir. -->
+  <aside
+    *ngIf="workspaceSolicitudVisible"
+    class="solicitud-workspace"
+    [class.solicitud-workspace--open]="workspaceSolicitudAbierto"
+    [attr.aria-hidden]="!workspaceSolicitudAbierto"
+  >
+    <header class="solicitud-workspace__toolbar">
+      <dx-button
+        text="Volver al expediente (resumen)"
+        icon="chevrondown"
+        type="default"
+        stylingMode="outlined"
+        (onClick)="volverDesdeSolicitud()"
+      ></dx-button>
+      <div class="solicitud-workspace__title">
+        <h3>Detalle de solicitud asociada</h3>
+        <span *ngIf="corrExpedienteSolicitudSeleccionada">
+          CORR_EXPEDIENTE_SOLICITUD: {{ corrExpedienteSolicitudSeleccionada }}
+        </span>
+      </div>
+    </header>
+
+    <div class="solicitud-workspace__body">
+      <dx-scroll-view [scrollByContent]="true" [scrollByThumb]="true">
+        <div class="solicitud-workspace__content">
+          <!-- Placeholder: el contenido del workspace se definirá después. -->
+          <p class="solicitud-workspace__placeholder">
+            Workspace de detalle de la solicitud asociada
+            (CORR_EXPEDIENTE_SOLICITUD = {{ corrExpedienteSolicitudSeleccionada }}).
+            Contenido pendiente.
+          </p>
         </div>
       </dx-scroll-view>
     </div>
