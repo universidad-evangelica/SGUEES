@@ -18,11 +18,18 @@
 --        a) Tiene notificación pendiente (no procesada).
 --        b) Está asignado al actor (TH / Jefe TH).
 --        c) JI: jefe activo de la unidad PADRE del documento (igual que JEFE_INMEDIATO del motor).
---   4) Une estado + si es destinatario → flags PUEDE_*.
+--   4) Une estado + destinatario → Solicitar / Aprobar / Observar.
+--   5) Inactivar / Reactivar (paso Vigencia): SOLO si el login cumple el actor
+--      del paso con la misma regla del motor (SEG_FN_UsuarioMatchActorUnidad).
+--      Así no aparece Reactivar a JI/creador cuando el ejecutor es Jefe de TH.
 --
 -- Nota permisos:
 --   Este SP NO valida CRUDP del menú. La API (GetAccionesFlujo) cruza estos flags
 --   con el permiso U del JWT; sin U el usuario queda en solo consulta aunque sea destinatario.
+--
+-- Nota notificaciones:
+--   Quien creó el descriptor puede recibir aviso informativo más adelante;
+--   eso NO enciende PUEDE_REACTIVAR / PUEDE_INACTIVAR.
 --
 -- Uso API: GET SC_DESCRIPTOR_PUESTO/GetAccionesFlujo
 -- =============================================================================
@@ -43,13 +50,18 @@ BEGIN
 	DECLARE @NombreEstado VARCHAR(100);
 	DECLARE @CorrEstado INT;
 	DECLARE @UsuarioCrea VARCHAR(30);
+	DECLARE @UnidadDescriptor INT;
 	DECLARE @IdInstancia INT;
 	DECLARE @IdPaso INT;
 	DECLARE @NombrePaso VARCHAR(200);
 	DECLARE @IdActorOrigen INT;
+	DECLARE @UnidadPaso INT;
 	DECLARE @UnidadDoc INT;
 	DECLARE @UnidadPadre INT;
+	DECLARE @UnidadValidacion INT;
+	DECLARE @TipoResActor VARCHAR(30);
 	DECLARE @EsDestinatario BIT = 0;
+	DECLARE @EsEjecutorPaso BIT = 0;
 	DECLARE @PuedeSolicitar BIT = 0;
 	DECLARE @PuedeAprobar BIT = 0;
 	DECLARE @PuedeObservar BIT = 0;
@@ -80,7 +92,8 @@ BEGIN
 	SELECT
 		@CorrEstado = D.CORR_ESTADO,
 		@NombreEstado = D.NOMBRE_ESTADO,
-		@UsuarioCrea = D.USUARIO_CREA
+		@UsuarioCrea = D.USUARIO_CREA,
+		@UnidadDescriptor = D.CORR_UNIDAD
 	FROM dbo.SC_DESCRIPTOR_PUESTO D
 	WHERE D.CORR_EMPRESA = @Empresa
 	  AND D.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO;
@@ -99,7 +112,8 @@ BEGIN
 	BEGIN
 		SELECT
 			@NombrePaso = P.NOMBRE_PASO,
-			@IdActorOrigen = P.CORR_ACTOR_ORIGEN
+			@IdActorOrigen = P.CORR_ACTOR_ORIGEN,
+			@UnidadPaso = P.CORR_UNIDAD_DESTINO
 		FROM dbo.SEG_FLUJO_PASO P
 		WHERE P.CORR_EMPRESA = @Empresa
 		  AND P.CORR_PASO = @IdPaso;
@@ -168,6 +182,29 @@ BEGIN
 			SET @EsDestinatario = 1;
 	END;
 
+	-- =============================================================================
+	-- Ejecutor del paso (misma regla que EjecutarFlujoProceso / UsuarioMatchActorUnidad)
+	-- Qué hace: define quién puede Inactivar/Reactivar (actor Vigencia = Jefe TH).
+	-- Cómo: JEFE_* → unidad del documento; MANUAL → unidad del paso (NULL = cualquier asignación).
+	-- =============================================================================
+	IF @IdActorOrigen IS NOT NULL
+	BEGIN
+		SET @TipoResActor = dbo.SEG_FN_ObtenerTipoResolucionActor(@Empresa, @IdActorOrigen);
+
+		IF @TipoResActor IN ('JEFE_UNIDAD', 'JEFE_INMEDIATO')
+			SET @UnidadValidacion = COALESCE(@UnidadDoc, @UnidadDescriptor);
+		ELSE
+			SET @UnidadValidacion = @UnidadPaso; -- NULL = cualquier asignación activa del actor (v9.5)
+
+		IF dbo.SEG_FN_UsuarioMatchActorUnidad(
+				@Login,
+				@IdActorOrigen,
+				@UnidadValidacion,
+				@Empresa
+			) = 1
+			SET @EsEjecutorPaso = 1;
+	END;
+
 	SET @EstadoNorm = UPPER(LTRIM(RTRIM(ISNULL(@NombreEstado, ''))));
 
 	-- Solicitar: Borrador/Observado; lo usa quien edita (creador o permiso UI).
@@ -188,11 +225,11 @@ BEGIN
 		SET @PuedeObservar = 1;
 	END
 
-	-- Vigencia: solo actor del paso (JTH)
-	IF @EstadoNorm = N'ACTIVO' AND @EsDestinatario = 1
+	-- Vigencia: Inactivar/Reactivar solo al ejecutor real del paso (Jefe TH), no al JI/creador.
+	IF @EstadoNorm = N'ACTIVO' AND @EsEjecutorPaso = 1
 		SET @PuedeInactivar = 1;
 
-	IF @EstadoNorm = N'INACTIVO' AND @EsDestinatario = 1
+	IF @EstadoNorm = N'INACTIVO' AND @EsEjecutorPaso = 1
 		SET @PuedeReactivar = 1;
 
 	SELECT
