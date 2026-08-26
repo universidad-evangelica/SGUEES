@@ -16,7 +16,7 @@ import {
   Output,
   QueryList,
   SimpleChanges,
-  ViewChild,
+  ViewChildren,
 } from '@angular/core';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxTabPanelModule } from 'devextreme-angular/ui/tab-panel';
@@ -95,10 +95,10 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Output() exportar = new EventEmitter<any>();
   @Output() activarInactivar = new EventEmitter<void>();
 
-  /** Qué hace: repaint al cruzar móvil/escritorio para que Reactivar no quede como ítem de ⋮ suelto. */
-  @ViewChild(DxToolbarComponent) private toolbar?: DxToolbarComponent;
+  /** Qué hace: viewport < 992 → Export en la misma toolbar que btn1–6 (un solo ⋮). */
+  @ViewChildren(DxToolbarComponent) private toolbars?: QueryList<DxToolbarComponent>;
   private resizeRepaintTimer: ReturnType<typeof setTimeout> | null = null;
-  private lastIsDesktop: boolean | null = null;
+  isCompact = false;
 
   @Input() btn1: string = '';
   @Input() btn1Icon: string = '';
@@ -250,6 +250,11 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     );
   }
 
+  /** Escritorio browse: Export/Refresh en toolbar derecha (evita barra vacía en form/Nuevo). */
+  get showEndToolbar(): boolean {
+    return this.isBrowse && !this.isCompact;
+  }
+
   get visibleRibbonTabs(): BarraRibbonTabDirective[] {
     return (
       this.ribbonTabDirectives?.filter(
@@ -349,28 +354,34 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   ngOnInit(): void {
     this.syncPageContext();
     this.rebuildToolbarOptions();
-    if (typeof window !== 'undefined') {
-      this.lastIsDesktop = window.innerWidth >= 992;
-    }
+    this.syncCompactViewport(false);
   }
 
-  // Qué hace: al pasar móvil ↔ escritorio, DX debe recolocar btn1–6 fuera/dentro del ⋮.
-  // Cómo lo hace: repaint solo cuando cruza el breakpoint (no en cada pixel de resize).
+  // Qué hace: al cruzar móvil ↔ escritorio, mueve Export entre toolbars y reubica overflow.
+  // Cómo lo hace: actualiza isCompact y hace repaint de las toolbars visibles.
   @HostListener('window:resize')
   onWindowResize(): void {
+    this.syncCompactViewport(true);
+  }
+
+  private syncCompactViewport(repaint: boolean): void {
     if (typeof window === 'undefined') {
       return;
     }
-    const isDesktop = window.innerWidth >= 992;
-    if (this.lastIsDesktop === isDesktop) {
+    const compact = window.innerWidth < 992;
+    if (this.isCompact === compact) {
       return;
     }
-    this.lastIsDesktop = isDesktop;
+    this.isCompact = compact;
+    this.cdr.markForCheck();
+    if (!repaint) {
+      return;
+    }
     if (this.resizeRepaintTimer) {
       clearTimeout(this.resizeRepaintTimer);
     }
     this.resizeRepaintTimer = setTimeout(() => {
-      this.toolbar?.instance?.repaint();
+      this.toolbars?.forEach((toolbar) => toolbar.instance?.repaint());
       this.resizeRepaintTimer = null;
     }, 80);
   }

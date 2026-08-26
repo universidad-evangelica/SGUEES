@@ -127,12 +127,15 @@
 }
 
 :host.sguees-barra-mtto--ribbon .sguees-barra-ribbon-panel .sguees-barra-toolbar {
-  width: 100%;
   padding: 0;
   border: none;
   box-shadow: none;
   background: transparent;
   min-height: auto;
+}
+
+:host.sguees-barra-mtto--ribbon .sguees-barra-ribbon-panel .sguees-barra-actions {
+  width: 100%;
 }
 
 :host ::ng-deep .sguees-barra-mtto__header-row .sguees-page-header--enterprise {
@@ -273,7 +276,26 @@
   }
 }
 
-/* Contenedor de combox (dentro del toolbar). */
+/* Contenedor: combox fuera del toolbar (evita overflow:hidden de DX). */
+.sguees-barra-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sguees-space-3);
+  width: 100%;
+}
+
+.sguees-barra-combox-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sguees-space-3);
+  width: 100%;
+}
+
+.sguees-barra-combox-row--hidden {
+  display: none !important;
+}
+
 .sguees-barra-combox {
   display: flex;
   flex-direction: column;
@@ -282,6 +304,7 @@
   max-width: 320px;
   padding: 0;
   box-sizing: border-box;
+  flex: 0 1 auto;
 
   ::ng-deep dx-drop-down-box,
   ::ng-deep .dx-dropdownbox {
@@ -300,51 +323,123 @@
   display: none !important;
 }
 
-/* Escritorio: misma altura botones/combox (label fuera del flujo). */
+/* Escritorio: Nuevo | sep | Unidad | Estado …… Exportar. */
 @media (min-width: 992px) {
-  .sguees-barra-toolbar--with-combox.sguees-barra-toolbar--grouped {
-    ::ng-deep .dx-toolbar-before {
+  .sguees-barra-actions {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--sguees-space-3);
+  }
+
+  /*
+    Qué hace: DX usa position:absolute en before/after → ancho 0 y solape.
+    Aquí before/after son estáticos para que start tome el ancho real.
+  */
+  .sguees-barra-actions > .sguees-barra-toolbar--start,
+  .sguees-barra-actions > .sguees-barra-toolbar--end {
+    ::ng-deep .dx-toolbar {
+      height: auto;
+      min-height: var(--sguees-toolbar-height, 44px);
+    }
+
+    ::ng-deep .dx-toolbar-items-container {
+      display: flex !important;
       align-items: center;
+      position: relative !important;
+      height: auto !important;
+      min-height: var(--sguees-toolbar-height, 44px);
+    }
+
+    ::ng-deep .dx-toolbar-before,
+    ::ng-deep .dx-toolbar-center,
+    ::ng-deep .dx-toolbar-after {
+      position: static !important;
+      display: flex !important;
+      flex-wrap: nowrap;
+      align-items: center;
+      width: auto !important;
+      max-width: none !important;
+      left: auto !important;
+      right: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
   }
 
-  .sguees-barra-toolbar--with-combox ::ng-deep .dx-toolbar-item.sguees-barra-combox-item {
-    align-self: center;
+  .sguees-barra-actions > .sguees-barra-toolbar--start {
+    flex: 0 0 auto;
+    width: max-content;
+    min-width: max-content;
+    overflow: visible;
+
+    ::ng-deep .dx-toolbar,
+    ::ng-deep .dx-toolbar-items-container {
+      width: max-content !important;
+    }
+  }
+
+  .sguees-barra-actions .sguees-barra-combox-row {
+    flex: 0 0 auto;
+    width: auto;
+    align-items: center;
     padding-top: 16px;
   }
 
-  .sguees-barra-toolbar--with-combox .sguees-barra-combox {
+  .sguees-barra-actions .sguees-barra-combox {
     position: relative;
     gap: 0;
   }
 
-  .sguees-barra-toolbar--with-combox .sguees-barra-combox__label {
+  .sguees-barra-actions .sguees-barra-combox__label {
     position: absolute;
     left: 0;
     bottom: calc(100% + 2px);
     line-height: 1;
   }
-}
 
-/* Móvil: Unidad/Estado debajo a ancho completo; btn1–6 van al ⋮ con Exportar. */
-@media (max-width: 991.98px) {
-  .sguees-barra-toolbar--with-combox.sguees-barra-toolbar--grouped {
-    ::ng-deep .dx-toolbar-before {
-      flex-wrap: wrap;
-      width: 100%;
-      row-gap: var(--sguees-space-2);
-      align-items: flex-end;
+  .sguees-barra-actions > .sguees-barra-toolbar--end {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: auto;
+
+    ::ng-deep .dx-toolbar,
+    ::ng-deep .dx-toolbar-items-container {
+      width: 100% !important;
+      justify-content: flex-end;
     }
 
-    ::ng-deep .dx-toolbar-before .dx-toolbar-item.sguees-barra-combox-item {
-      flex: 1 1 100%;
-      max-width: 100%;
-      width: 100%;
-      margin-inline-end: 0;
+    ::ng-deep .dx-toolbar-after {
+      margin-left: auto !important;
     }
   }
+}
 
-  .sguees-barra-combox:not(.sguees-barra-combox--hidden) {
+/* Móvil: combox debajo a 100%; card del ribbon ya crece (height:auto). */
+@media (max-width: 991.98px) {
+  .sguees-barra-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'start'
+      'combox';
+    align-items: stretch;
+    row-gap: var(--sguees-space-3);
+  }
+
+  .sguees-barra-actions > .sguees-barra-toolbar--start {
+    grid-area: start;
+    width: 100%;
+  }
+
+  .sguees-barra-actions .sguees-barra-combox-row {
+    grid-area: combox;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .sguees-barra-combox {
     width: 100% !important;
     max-width: 100%;
     min-width: 0;
