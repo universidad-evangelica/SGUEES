@@ -40,53 +40,52 @@
 
 <ng-template #barraToolbar>
   <!--
-    Motivo: combox fuera de dx-toolbar (móvil no se corta).
-    Escritorio: [acciones][Unidad|Estado][Exportar] en una fila.
-    Móvil: columna — botones, luego combox a ancho completo, Export en ⋮ si no cabe.
+    Motivo: una sola toolbar — btn1–6 + Exportar/Refresh en el mismo ⋮ (móvil).
+    Combox en before (nunca menú). Form/Nuevo: solo Guardar/Cancelar, sin segunda barra vacía.
   -->
-  <div class="sguees-barra-actions" [class.sguees-barra-actions--with-combox]="showComboxRow">
-    <dx-toolbar
-      class="theme-dependent sguees-barra-toolbar sguees-barra-toolbar--grouped sguees-barra-toolbar--start"
-      [class.sguees-barra-toolbar--inline]="!isBrowse"
-    >
-      <dxi-item location="before" widget="dxButton" [options]="optNuevo" locateInMenu="never"></dxi-item>
-      <dxi-item *ngIf="!isBrowse && isForm" location="before" widget="dxButton" [options]="optGuardar" locateInMenu="never"></dxi-item>
-      <dxi-item *ngIf="!isBrowse" location="before" widget="dxButton" [options]="optCancelar" locateInMenu="never"></dxi-item>
-      <dxi-item *ngIf="showPrimaryToolbarDivider" location="before" locateInMenu="never">
-        <div *dxTemplate>
-          <div class="toolbar-separator sguees-toolbar-divider"></div>
-        </div>
-      </dxi-item>
-      <dxi-item
-        *ngIf="effectiveShowEstadoToolbar"
-        location="before"
-        widget="dxButton"
-        [options]="optActivar"
-        locateInMenu="auto"
-      ></dxi-item>
-      <dxi-item
-        *ngIf="effectiveShowEstadoToolbar"
-        location="before"
-        widget="dxButton"
-        [options]="optDesactivar"
-        locateInMenu="auto"
-      ></dxi-item>
-      <dxi-item *ngIf="btn1" [location]="btn1Location" widget="dxButton" [options]="optBtn1" locateInMenu="auto"></dxi-item>
-      <dxi-item *ngIf="btn2" [location]="btn2Location" widget="dxButton" [options]="optBtn2" locateInMenu="auto"></dxi-item>
-      <dxi-item *ngIf="btn3" [location]="btn3Location" widget="dxButton" [options]="optBtn3" locateInMenu="auto"></dxi-item>
-      <dxi-item *ngIf="btn4" [location]="btn4Location" widget="dxButton" [options]="optBtn4" locateInMenu="auto"></dxi-item>
-      <dxi-item *ngIf="btn5" [location]="btn5Location" widget="dxButton" [options]="optBtn5" locateInMenu="auto"></dxi-item>
-      <dxi-item *ngIf="btn6" [location]="btn6Location" widget="dxButton" [options]="optBtn6" locateInMenu="auto"></dxi-item>
-    </dx-toolbar>
+  <dx-toolbar
+    class="theme-dependent sguees-barra-toolbar sguees-barra-toolbar--grouped"
+    [class.sguees-barra-toolbar--inline]="!isBrowse"
+    [class.sguees-barra-toolbar--with-combox]="showComboxRow"
+  >
+    <dxi-item location="before" widget="dxButton" [options]="optNuevo" locateInMenu="never"></dxi-item>
+    <dxi-item *ngIf="!isBrowse && isForm" location="before" widget="dxButton" [options]="optGuardar" locateInMenu="never"></dxi-item>
+    <dxi-item *ngIf="!isBrowse" location="before" widget="dxButton" [options]="optCancelar" locateInMenu="never"></dxi-item>
+    <dxi-item *ngIf="showPrimaryToolbarDivider" location="before" locateInMenu="never">
+      <div *dxTemplate>
+        <div class="toolbar-separator sguees-toolbar-divider"></div>
+      </div>
+    </dxi-item>
+    <dxi-item
+      *ngIf="effectiveShowEstadoToolbar"
+      location="before"
+      widget="dxButton"
+      [options]="optActivar"
+      locateInMenu="auto"
+    ></dxi-item>
+    <dxi-item
+      *ngIf="effectiveShowEstadoToolbar"
+      location="before"
+      widget="dxButton"
+      [options]="optDesactivar"
+      locateInMenu="auto"
+    ></dxi-item>
+    <dxi-item *ngIf="btn1" [location]="btn1Location" widget="dxButton" [options]="optBtn1" locateInMenu="auto"></dxi-item>
+    <dxi-item *ngIf="btn2" [location]="btn2Location" widget="dxButton" [options]="optBtn2" locateInMenu="auto"></dxi-item>
+    <dxi-item *ngIf="btn3" [location]="btn3Location" widget="dxButton" [options]="optBtn3" locateInMenu="auto"></dxi-item>
+    <dxi-item *ngIf="btn4" [location]="btn4Location" widget="dxButton" [options]="optBtn4" locateInMenu="auto"></dxi-item>
+    <dxi-item *ngIf="btn5" [location]="btn5Location" widget="dxButton" [options]="optBtn5" locateInMenu="auto"></dxi-item>
+    <dxi-item *ngIf="btn6" [location]="btn6Location" widget="dxButton" [options]="optBtn6" locateInMenu="auto"></dxi-item>
 
-    <div
-      class="sguees-barra-combox-row"
-      [class.sguees-barra-combox-row--hidden]="!showComboxRow"
+    <dxi-item
+      *ngIf="showCombox1"
+      location="before"
+      locateInMenu="never"
+      cssClass="sguees-barra-combox-item"
     >
       <div
-        *ngIf="combox1"
+        *dxTemplate
         class="sguees-barra-combox"
-        [class.sguees-barra-combox--hidden]="!showCombox1"
         [style.width.px]="combox1.width || 240"
       >
         <label class="sguees-barra-combox__label" *ngIf="combox1?.label">{{ combox1?.label }}</label>
@@ -102,10 +101,16 @@
           (valueChange)="onCombox1Changed($event)"
         ></app-data-lookup>
       </div>
+    </dxi-item>
+    <dxi-item
+      *ngIf="showCombox2"
+      location="before"
+      locateInMenu="never"
+      cssClass="sguees-barra-combox-item"
+    >
       <div
-        *ngIf="combox2"
+        *dxTemplate
         class="sguees-barra-combox"
-        [class.sguees-barra-combox--hidden]="!showCombox2"
         [style.width.px]="combox2.width || 240"
       >
         <label class="sguees-barra-combox__label" *ngIf="combox2?.label">{{ combox2?.label }}</label>
@@ -121,10 +126,16 @@
           (valueChange)="onCombox2Changed($event)"
         ></app-data-lookup>
       </div>
+    </dxi-item>
+    <dxi-item
+      *ngIf="showCombox3"
+      location="before"
+      locateInMenu="never"
+      cssClass="sguees-barra-combox-item"
+    >
       <div
-        *ngIf="combox3"
+        *dxTemplate
         class="sguees-barra-combox"
-        [class.sguees-barra-combox--hidden]="!showCombox3"
         [style.width.px]="combox3.width || 240"
       >
         <label class="sguees-barra-combox__label" *ngIf="combox3?.label">{{ combox3?.label }}</label>
@@ -140,10 +151,16 @@
           (valueChange)="onCombox3Changed($event)"
         ></app-data-lookup>
       </div>
+    </dxi-item>
+    <dxi-item
+      *ngIf="showCombox4"
+      location="before"
+      locateInMenu="never"
+      cssClass="sguees-barra-combox-item"
+    >
       <div
-        *ngIf="combox4"
+        *dxTemplate
         class="sguees-barra-combox"
-        [class.sguees-barra-combox--hidden]="!showCombox4"
         [style.width.px]="combox4.width || 240"
       >
         <label class="sguees-barra-combox__label" *ngIf="combox4?.label">{{ combox4?.label }}</label>
@@ -159,16 +176,11 @@
           (valueChange)="onCombox4Changed($event)"
         ></app-data-lookup>
       </div>
-    </div>
+    </dxi-item>
 
-    <dx-toolbar
-      class="theme-dependent sguees-barra-toolbar sguees-barra-toolbar--grouped sguees-barra-toolbar--end"
-      [class.sguees-barra-toolbar--inline]="!isBrowse"
-    >
-      <dxi-item location="after" locateInMenu="auto" widget="dxButton" [options]="optExport"></dxi-item>
-      <dxi-item location="after" locateInMenu="auto" widget="dxButton" showText="inMenu" [options]="optRefresh"></dxi-item>
-      <dxi-item location="after" widget="dxDateBox" [options]="optFechaInicial" locateInMenu="auto"></dxi-item>
-      <dxi-item location="after" widget="dxDateBox" [options]="optFechaFinal" locateInMenu="auto"></dxi-item>
-    </dx-toolbar>
-  </div>
+    <dxi-item location="after" locateInMenu="auto" widget="dxButton" [options]="optExport"></dxi-item>
+    <dxi-item location="after" locateInMenu="auto" widget="dxButton" showText="inMenu" [options]="optRefresh"></dxi-item>
+    <dxi-item location="after" widget="dxDateBox" [options]="optFechaInicial" locateInMenu="auto"></dxi-item>
+    <dxi-item location="after" widget="dxDateBox" [options]="optFechaFinal" locateInMenu="auto"></dxi-item>
+  </dx-toolbar>
 </ng-template>

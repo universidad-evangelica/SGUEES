@@ -7,6 +7,7 @@ import {
   ContentChildren,
   EventEmitter,
   HostBinding,
+  HostListener,
   Input,
   NgModule,
   OnChanges,
@@ -15,10 +16,11 @@ import {
   Output,
   QueryList,
   SimpleChanges,
+  ViewChild,
 } from '@angular/core';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxTabPanelModule } from 'devextreme-angular/ui/tab-panel';
-import { DxToolbarModule } from 'devextreme-angular/ui/toolbar';
+import { DxToolbarComponent, DxToolbarModule } from 'devextreme-angular/ui/toolbar';
 import {
   BreadcrumbItem,
   PageHeaderModule,
@@ -92,6 +94,11 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Output() consultar = new EventEmitter<any>();
   @Output() exportar = new EventEmitter<any>();
   @Output() activarInactivar = new EventEmitter<void>();
+
+  /** Qué hace: repaint al cruzar móvil/escritorio para que Reactivar no quede como ítem de ⋮ suelto. */
+  @ViewChild(DxToolbarComponent) private toolbar?: DxToolbarComponent;
+  private resizeRepaintTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastIsDesktop: boolean | null = null;
 
   @Input() btn1: string = '';
   @Input() btn1Icon: string = '';
@@ -271,11 +278,8 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     );
   }
 
-  /** Separador tras Nuevo solo si hay otra acción visible (no por permiteAdd solo: evitaba hueco). */
+  /** Separador tras Nuevo/Guardar solo si hay otra acción visible a la derecha. */
   get showPrimaryToolbarDivider(): boolean {
-    if (!this.isBrowse) {
-      return true;
-    }
     return (
       this.effectiveShowEstadoToolbar ||
       !!this.btn1 ||
@@ -344,6 +348,30 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   ngOnInit(): void {
     this.syncPageContext();
     this.rebuildToolbarOptions();
+    if (typeof window !== 'undefined') {
+      this.lastIsDesktop = window.innerWidth >= 992;
+    }
+  }
+
+  // Qué hace: al pasar móvil ↔ escritorio, DX debe recolocar btn1–6 fuera/dentro del ⋮.
+  // Cómo lo hace: repaint solo cuando cruza el breakpoint (no en cada pixel de resize).
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const isDesktop = window.innerWidth >= 992;
+    if (this.lastIsDesktop === isDesktop) {
+      return;
+    }
+    this.lastIsDesktop = isDesktop;
+    if (this.resizeRepaintTimer) {
+      clearTimeout(this.resizeRepaintTimer);
+    }
+    this.resizeRepaintTimer = setTimeout(() => {
+      this.toolbar?.instance?.repaint();
+      this.resizeRepaintTimer = null;
+    }, 80);
   }
 
   ngAfterContentInit(): void {
@@ -399,6 +427,10 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   }
 
   ngOnDestroy(): void {
+    if (this.resizeRepaintTimer) {
+      clearTimeout(this.resizeRepaintTimer);
+      this.resizeRepaintTimer = null;
+    }
     this.pageContext.reset();
   }
 
