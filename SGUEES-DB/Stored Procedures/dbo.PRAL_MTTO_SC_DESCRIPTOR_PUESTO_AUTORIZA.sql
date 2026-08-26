@@ -123,7 +123,8 @@ BEGIN
 	DECLARE @EST_INACTIVO INT        -- id del estado "Inactivo"
 	DECLARE @EST_ACTIVO INT          -- id del estado "Activo"
 	DECLARE @EST_BORRADOR INT        -- id del estado "Borrador" (a donde vuelve al reactivar)
-	DECLARE @PASO_BORRADOR INT       -- id del paso "Borrador" (a donde vuelve al reactivar)
+	DECLARE @PASO_BORRADOR INT       -- CORR_PASO Borrador (a donde vuelve al reactivar)
+	DECLARE @PASO_VIGENCIA INT       -- CORR_PASO Vigencia (Inactivar / Reactivar)
 
 	-- Limpia los valores de salida por si vienen con datos de otra llamada.
 	SET @CORR_ESTADO = NULL
@@ -193,7 +194,7 @@ BEGIN
 	-- =========================================================================
 	-- PASO 2 — Buscar la configuración del flujo
 	-- Qué hace: obtiene tipo de documento, flujo por defecto, estados Activo /
-	--           Inactivo / Borrador y el paso Borrador.
+	--           Inactivo / Borrador y los pasos Borrador (7) / Vigencia (11) por CORR_PASO.
 	-- Cómo lo hace: lee las tablas SEG_FLUJO_* con CODIGO_OPCION = SC_DESCRIPTOR_PUESTO.
 	-- Para qué: sin esa configuración no se puede mover el documento;
 	--           esos estados se usan al inactivar o reactivar.
@@ -234,18 +235,25 @@ BEGIN
 	WHERE CORR_EMPRESA = @EMPRESA AND CORR_TIPO_DOCUMENTO = @ID_TIPO_DOCUMENTO
 	  AND CORR_ESTADO = 11 AND ACTIVO = 1
 
-	-- Paso al que debe volver cuando se reactiva (Inactivo → Borrador).
+	-- Pasos fijos SEG_FLUJO_PASO (flujo descriptor): 7=Borrador, 11=Vigencia.
+	-- Qué hace: resuelve pasos por CORR_PASO (no por nombre) para Reactivar / modo Vigencia.
+	-- Cómo: lee el id en el flujo defecto; renombrar NOMBRE_PASO no rompe.
 	SELECT @PASO_BORRADOR = CORR_PASO
 	FROM dbo.SEG_FLUJO_PASO
 	WHERE CORR_EMPRESA = @EMPRESA AND CORR_FLUJO_PROCESO = @ID_FLUJO
-	  AND UPPER(NOMBRE_PASO) = 'BORRADOR'
+	  AND CORR_PASO = 7
+
+	SELECT @PASO_VIGENCIA = CORR_PASO
+	FROM dbo.SEG_FLUJO_PASO
+	WHERE CORR_EMPRESA = @EMPRESA AND CORR_FLUJO_PROCESO = @ID_FLUJO
+	  AND CORR_PASO = 11
 
 	-- =========================================================================
 	-- PASO 3 — Detectar en qué situación está el documento
 	-- Qué hace: define si es NUEVO, BORRADOR, EN_FLUJO o VIGENCIA.
 	-- Cómo lo hace:
-	--   - Si no hay registro activo en el flujo → NUEVO (usa el primer paso).
-	--   - Si el paso se llama Vigencia → VIGENCIA.
+	--   - Si no hay registro activo en el flujo → NUEVO (usa paso Borrador / CORR 7).
+	--   - Si CORR_PASO_ACTUAL = Vigencia (CORR 11) → VIGENCIA.
 	--   - Si el estado es inicial o está en el primer paso editable → BORRADOR.
 	--   - En cualquier otro caso → EN_FLUJO (aprobaciones en curso).
 	-- Para qué: saber qué operaciones se permiten (guardar/solicitar, aprobar,
@@ -264,11 +272,13 @@ BEGIN
 	BEGIN
 		SET @ES_NUEVO = 1
 		SET @V_MODO = 'NUEVO'
-		-- Todavía no hay flujo: el paso de referencia es el primero (Borrador).
-		SELECT TOP 1 @ID_PASO_ACTUAL = CORR_PASO
-		FROM dbo.SEG_FLUJO_PASO
-		WHERE CORR_EMPRESA = @EMPRESA AND CORR_FLUJO_PROCESO = @ID_FLUJO
-		ORDER BY ORDEN
+		-- Todavía no hay flujo: el paso de referencia es Borrador (CORR_PASO 7).
+		SET @ID_PASO_ACTUAL = @PASO_BORRADOR
+		IF @ID_PASO_ACTUAL IS NULL
+			SELECT TOP 1 @ID_PASO_ACTUAL = CORR_PASO
+			FROM dbo.SEG_FLUJO_PASO
+			WHERE CORR_EMPRESA = @EMPRESA AND CORR_FLUJO_PROCESO = @ID_FLUJO
+			ORDER BY ORDEN
 	END
 	ELSE
 	BEGIN
@@ -279,7 +289,7 @@ BEGIN
 			ON P.CORR_EMPRESA = @EMPRESA AND P.CORR_PASO = @ID_PASO_ACTUAL
 		WHERE E.CORR_EMPRESA = @EMPRESA AND E.CORR_ESTADO = @ID_ESTADO_ACTUAL
 
-		IF UPPER(ISNULL(@NOMBRE_PASO, '')) = 'VIGENCIA'
+		IF @PASO_VIGENCIA IS NOT NULL AND @ID_PASO_ACTUAL = @PASO_VIGENCIA
 		BEGIN
 			SET @ES_VIGENCIA = 1
 			SET @V_MODO = 'VIGENCIA'
