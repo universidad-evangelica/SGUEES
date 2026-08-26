@@ -79,10 +79,10 @@ namespace SGUEES.Repositories
             {
                 new() { Key = 11, Value = "Borrador" },
                 new() { Key = 15, Value = "Observado" },
-                new() { Key = 16, Value = "Enviado JI" },
-                new() { Key = 12, Value = "Aprobado JI" },
-                new() { Key = 13, Value = "Revisado TH" },
-                new() { Key = 17, Value = "Enviado a JTH" },
+                new() { Key = 16, Value = "Enviado a Jefe Inmediato" },
+                new() { Key = 12, Value = "Aprobado por Jefe Inmediato" },
+                new() { Key = 13, Value = "Revisado por Talento Humano" },
+                new() { Key = 17, Value = "Enviado a Jefe de Talento Humano" },
                 new() { Key = 14, Value = "Activo" },
                 new() { Key = 18, Value = "Inactivo" },
             });
