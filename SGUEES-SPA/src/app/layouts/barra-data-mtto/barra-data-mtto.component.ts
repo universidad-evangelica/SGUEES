@@ -278,7 +278,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     );
   }
 
-  /** Separador tras Nuevo/Guardar solo si hay otra acción visible a la derecha. */
+  /** Separador tras Nuevo/Guardar si hay otra acción o combox de filtro a la derecha. */
   get showPrimaryToolbarDivider(): boolean {
     return (
       this.effectiveShowEstadoToolbar ||
@@ -287,7 +287,8 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       !!this.btn3 ||
       !!this.btn4 ||
       !!this.btn5 ||
-      !!this.btn6
+      !!this.btn6 ||
+      this.showComboxRow
     );
   }
 
