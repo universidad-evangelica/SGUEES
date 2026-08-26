@@ -35,6 +35,7 @@ import { ScDescriptorPuestoInduccionRepository } from './sc-descriptor-puesto-in
 import { ScDescriptorPuestoResponsabilidadCargo } from './sc-descriptor-puesto-responsabilidad-cargo/models/sc-descriptor-puesto-responsabilidad-cargo';
 import { ScDescriptorPuestoResponsabilidadCargoRepository } from './sc-descriptor-puesto-responsabilidad-cargo/sc-descriptor-puesto-responsabilidad-cargo.repository';
 import {
+	CORR_ESTADO_ACTIVO,
 	esEstadoDescriptorBloqueante,
 	FORMATO_AMBOS,
 	FORMATO_CORTO,
@@ -44,6 +45,14 @@ import {
 	TIPO_FUNCION_SECUNDARIA,
 	TIPO_RELACION_EXTERNA,
 	TIPO_RELACION_INTERNA,
+	toCorrEstado,
+	CORR_ESTADO_BORRADOR,
+	CORR_ESTADO_INACTIVO,
+	CORR_ESTADO_OBSERVADO,
+	CORR_ESTADO_ENVIADO_JI,
+	CORR_ESTADO_ENVIADO_JTH,
+	CORR_ESTADO_APROBADO_JI,
+	CORR_ESTADO_REVISADO_TH,
 } from './models/sc-descriptor-puesto';
 import { ScDescriptorPuestoRepository } from './sc-descriptor-puesto.repository';
 
@@ -133,7 +142,7 @@ export class ScDescriptorPuestoService {
 					return false;
 				}
 
-				const estado = row.NOMBRE_ESTADO;
+				const estado = row.CORR_ESTADO;
 				if (!esEstadoDescriptorBloqueante(estado)) {
 					return false;
 				}
@@ -174,8 +183,8 @@ export class ScDescriptorPuestoService {
 	buildMensajeDescriptorExistente(conflicto: ScDescriptorPuesto): string {
 		const codigo = this.buildCodigoDescriptor(conflicto.CORR_DESCRIPTOR_PUESTO);
 		const version = Number(conflicto.VERSION) > 0 ? Number(conflicto.VERSION) : 1;
-		const estado = (conflicto.NOMBRE_ESTADO ?? '').trim().toUpperCase();
-		const contexto = estado === 'ACTIVO' ? 'activo' : 'en proceso de aprobacion';
+		const estado = toCorrEstado(conflicto.CORR_ESTADO);
+		const contexto = estado === CORR_ESTADO_ACTIVO ? 'activo' : 'en proceso de aprobacion';
 
 		return (
 			`Ya existe un descriptor para este puesto en esta unidad que se encuentra ${contexto}. ` +
@@ -204,8 +213,8 @@ export class ScDescriptorPuestoService {
 	buildMensajeDescriptorReactivar(conflicto: ScDescriptorPuesto): string {
 		const codigo = this.buildCodigoDescriptor(conflicto.CORR_DESCRIPTOR_PUESTO);
 		const version = Number(conflicto.VERSION) > 0 ? Number(conflicto.VERSION) : 1;
-		const estado = (conflicto.NOMBRE_ESTADO ?? '').trim().toUpperCase();
-		const contexto = estado === 'ACTIVO' ? 'activo' : 'en proceso de aprobacion';
+		const estado = toCorrEstado(conflicto.CORR_ESTADO);
+		const contexto = estado === CORR_ESTADO_ACTIVO ? 'activo' : 'en proceso de aprobacion';
 
 		return (
 			`Ya existe un descriptor para este puesto en esta unidad que se encuentra ${contexto}. ` +
@@ -334,7 +343,7 @@ export class ScDescriptorPuestoService {
 				cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
 					this.renderBadge(
 						cellElement,
-						[this.getEstadoDescriptorBadgeClass(cellInfo.data?.NOMBRE_ESTADO)],
+						[this.getEstadoDescriptorBadgeClass(cellInfo.data?.CORR_ESTADO)],
 						this.getEstadoDescriptorLabel(cellInfo.data?.NOMBRE_ESTADO)
 					);
 				},
@@ -624,25 +633,25 @@ export class ScDescriptorPuestoService {
 		return (estado ?? '').trim() || '';
 	}
 
-	// Qué hace: clase CSS del badge según el nombre del estado de flujo.
-	private getEstadoDescriptorBadgeClass(estado: string | null | undefined): string {
-		const value = (estado ?? '').trim().toUpperCase();
-		if (value === 'ACTIVO') {
+	// Qué hace: clase CSS del badge según CORR_ESTADO del flujo.
+	private getEstadoDescriptorBadgeClass(corrEstado: number | null | undefined): string {
+		const c = toCorrEstado(corrEstado);
+		if (c === CORR_ESTADO_ACTIVO) {
 			return 'descriptor-badge--estado-activo';
 		}
-		if (value === 'INACTIVO') {
+		if (c === CORR_ESTADO_INACTIVO) {
 			return 'descriptor-badge--estado-inactivo';
 		}
-		if (value === 'BORRADOR') {
+		if (c === CORR_ESTADO_BORRADOR) {
 			return 'descriptor-badge--estado-borrador';
 		}
-		if (value.includes('OBSERV')) {
+		if (c === CORR_ESTADO_OBSERVADO) {
 			return 'descriptor-badge--estado-revision';
 		}
-		if (value.includes('ENVIADO')) {
+		if (c === CORR_ESTADO_ENVIADO_JI || c === CORR_ESTADO_ENVIADO_JTH) {
 			return 'descriptor-badge--estado-enviado';
 		}
-		if (value.includes('APROB') || value.includes('REVIS')) {
+		if (c === CORR_ESTADO_APROBADO_JI || c === CORR_ESTADO_REVISADO_TH) {
 			return 'descriptor-badge--estado-revision';
 		}
 		return 'descriptor-badge--estado-default';

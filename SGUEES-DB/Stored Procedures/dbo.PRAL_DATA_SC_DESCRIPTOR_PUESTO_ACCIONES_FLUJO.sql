@@ -18,7 +18,7 @@
 --        a) Tiene notificación pendiente (no procesada).
 --        b) Está asignado al actor (TH / Jefe TH).
 --        c) JI: jefe activo de la unidad PADRE del documento (igual que JEFE_INMEDIATO del motor).
---   4) Une estado + destinatario → Solicitar / Aprobar / Observar.
+--   4) Une CORR_ESTADO + destinatario → Solicitar / Aprobar / Observar.
 --   5) Inactivar / Reactivar (paso Vigencia): SOLO si el login cumple el actor
 --      del paso con la misma regla del motor (SEG_FN_UsuarioMatchActorUnidad).
 --      Así no aparece Reactivar a JI/creador cuando el ejecutor es Jefe de TH.
@@ -67,7 +67,15 @@ BEGIN
 	DECLARE @PuedeObservar BIT = 0;
 	DECLARE @PuedeInactivar BIT = 0;
 	DECLARE @PuedeReactivar BIT = 0;
-	DECLARE @EstadoNorm VARCHAR(100);
+	-- Ids fijos SEG_FLUJO_ESTADO (SC_DESCRIPTOR_PUESTO). Lógica por CORR_ESTADO, no por nombre.
+	DECLARE @EST_BORRADOR INT = 11;
+	DECLARE @EST_APROBADO_JI INT = 12;
+	DECLARE @EST_REVISADO_TH INT = 13;
+	DECLARE @EST_ACTIVO INT = 14;
+	DECLARE @EST_OBSERVADO INT = 15;
+	DECLARE @EST_ENVIADO_JI INT = 16;
+	DECLARE @EST_ENVIADO_JTH INT = 17;
+	DECLARE @EST_INACTIVO INT = 18;
 
 	IF @CORR_DESCRIPTOR_PUESTO IS NULL OR @CORR_DESCRIPTOR_PUESTO <= 0 OR @Login = ''
 	BEGIN
@@ -205,11 +213,10 @@ BEGIN
 			SET @EsEjecutorPaso = 1;
 	END;
 
-	SET @EstadoNorm = UPPER(LTRIM(RTRIM(ISNULL(@NombreEstado, ''))));
-
+	-- Qué hace: enciende botones según CORR_ESTADO (renombrar NOMBRE_ESTADO no cambia el proceso).
+	-- Cómo: compara @CorrEstado con ids fijos del catálogo SEG_FLUJO_ESTADO.
 	-- Solicitar: Borrador/Observado; lo usa quien edita (creador o permiso UI).
-	-- No exige ser "destinatario JI"; el creador inicia el envío.
-	IF @EstadoNorm IN (N'BORRADOR', N'OBSERVADO')
+	IF @CorrEstado IN (@EST_BORRADOR, @EST_OBSERVADO)
 	   AND (
 			@UsuarioCrea IS NULL
 			OR LTRIM(RTRIM(@UsuarioCrea)) = ''
@@ -219,17 +226,17 @@ BEGIN
 		SET @PuedeSolicitar = 1;
 
 	-- Aprobar / Observar: solo destinatario del paso de autorización
-	IF @EstadoNorm IN (N'ENVIADO JI', N'APROBADO JI', N'ENVIADO A JTH') AND @EsDestinatario = 1
+	IF @CorrEstado IN (@EST_ENVIADO_JI, @EST_APROBADO_JI, @EST_REVISADO_TH, @EST_ENVIADO_JTH) AND @EsDestinatario = 1
 	BEGIN
 		SET @PuedeAprobar = 1;
 		SET @PuedeObservar = 1;
 	END
 
 	-- Vigencia: Inactivar/Reactivar solo al ejecutor real del paso (Jefe TH), no al JI/creador.
-	IF @EstadoNorm = N'ACTIVO' AND @EsEjecutorPaso = 1
+	IF @CorrEstado = @EST_ACTIVO AND @EsEjecutorPaso = 1
 		SET @PuedeInactivar = 1;
 
-	IF @EstadoNorm = N'INACTIVO' AND @EsEjecutorPaso = 1
+	IF @CorrEstado = @EST_INACTIVO AND @EsEjecutorPaso = 1
 		SET @PuedeReactivar = 1;
 
 	SELECT

@@ -63,7 +63,7 @@ GO
 --  -10 = falló EjecutarFlujoProceso (detalle en @MENSAJE_ERROR)
 --  -11 a -19 = la operación no aplica a la situación actual del documento
 -- =============================================================================
-CREATE PROCEDURE [dbo].[PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA]
+CREATE OR ALTER PROCEDURE [dbo].[PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA]
 (
 	-- Empresa del documento (por defecto 1).
 	@CORR_EMPRESA INT = 1,
@@ -219,18 +219,20 @@ BEGIN
 		RETURN -3
 	END
 
-	-- Ids de estado usados al validar Inactivar / Reactivar.
+	-- Ids fijos SEG_FLUJO_ESTADO (SC_DESCRIPTOR_PUESTO): 11=Borrador, 14=Activo, 18=Inactivo.
+	-- Qué hace: resuelve estados por CORR_ESTADO (no por nombre) para Inactivar/Reactivar.
+	-- Cómo: lee el id en el catálogo del tipo de documento; renombrar NOMBRE_ESTADO no rompe.
 	SELECT @EST_ACTIVO = CORR_ESTADO FROM dbo.SEG_FLUJO_ESTADO
 	WHERE CORR_EMPRESA = @EMPRESA AND CORR_TIPO_DOCUMENTO = @ID_TIPO_DOCUMENTO
-	  AND NOMBRE_ESTADO = N'Activo' AND ACTIVO = 1
+	  AND CORR_ESTADO = 14 AND ACTIVO = 1
 
 	SELECT @EST_INACTIVO = CORR_ESTADO FROM dbo.SEG_FLUJO_ESTADO
 	WHERE CORR_EMPRESA = @EMPRESA AND CORR_TIPO_DOCUMENTO = @ID_TIPO_DOCUMENTO
-	  AND NOMBRE_ESTADO = N'Inactivo' AND ACTIVO = 1
+	  AND CORR_ESTADO = 18 AND ACTIVO = 1
 
 	SELECT @EST_BORRADOR = CORR_ESTADO FROM dbo.SEG_FLUJO_ESTADO
 	WHERE CORR_EMPRESA = @EMPRESA AND CORR_TIPO_DOCUMENTO = @ID_TIPO_DOCUMENTO
-	  AND NOMBRE_ESTADO = N'Borrador' AND ACTIVO = 1
+	  AND CORR_ESTADO = 11 AND ACTIVO = 1
 
 	-- Paso al que debe volver cuando se reactiva (Inactivo → Borrador).
 	SELECT @PASO_BORRADOR = CORR_PASO

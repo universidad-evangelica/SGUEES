@@ -136,7 +136,17 @@ export const TIPO_RELACION_INTERNA = 'I';
 export const TIPO_RELACION_EXTERNA = 'E';
 
 // Estados que NO permiten crear otra versión abierta del mismo puesto.
-// Cualquier estado distinto de Inactivo bloquea (Borrador, Enviado JI, Activo, etc.).
+// Cualquier estado distinto de Inactivo (CORR 18) bloquea.
+// Ids alineados a SEG_FLUJO_ESTADO (SC_DESCRIPTOR_PUESTO). NOMBRE_* solo etiqueta/UI.
+export const CORR_ESTADO_BORRADOR = 11;
+export const CORR_ESTADO_APROBADO_JI = 12;
+export const CORR_ESTADO_REVISADO_TH = 13;
+export const CORR_ESTADO_ACTIVO = 14;
+export const CORR_ESTADO_OBSERVADO = 15;
+export const CORR_ESTADO_ENVIADO_JI = 16;
+export const CORR_ESTADO_ENVIADO_JTH = 17;
+export const CORR_ESTADO_INACTIVO = 18;
+
 export const NOMBRE_ESTADO_INACTIVO = 'Inactivo';
 export const NOMBRE_ESTADO_BORRADOR = 'Borrador';
 export const NOMBRE_ESTADO_OBSERVADO = 'Observado';
@@ -155,50 +165,49 @@ export const OPERACION_FLUJO = {
 	REACTIVAR: 6,
 } as const;
 
-export function normalizarNombreEstado(nombreEstado: string | null | undefined): string {
-	return (nombreEstado ?? '').trim().toUpperCase();
+// Qué hace: normaliza CORR_ESTADO a número (0 si vacío/inválido).
+export function toCorrEstado(corrEstado: number | null | undefined): number {
+	const n = Number(corrEstado);
+	return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-export function esEstadoDescriptorBloqueante(nombreEstado: string | null | undefined): boolean {
-	const n = normalizarNombreEstado(nombreEstado);
-	return n !== '' && n !== NOMBRE_ESTADO_INACTIVO.toUpperCase();
+export function esEstadoDescriptorBloqueante(corrEstado: number | null | undefined): boolean {
+	const c = toCorrEstado(corrEstado);
+	return c > 0 && c !== CORR_ESTADO_INACTIVO;
 }
 
 /** Qué hace: indica si el contenido del descriptor se puede editar/guardar. */
-export function esEstadoDescriptorEditable(nombreEstado: string | null | undefined): boolean {
-	const n = normalizarNombreEstado(nombreEstado);
-	return (
-		n === '' ||
-		n === NOMBRE_ESTADO_BORRADOR.toUpperCase() ||
-		n === NOMBRE_ESTADO_OBSERVADO.toUpperCase()
-	);
+export function esEstadoDescriptorEditable(corrEstado: number | null | undefined): boolean {
+	const c = toCorrEstado(corrEstado);
+	return c === 0 || c === CORR_ESTADO_BORRADOR || c === CORR_ESTADO_OBSERVADO;
 }
 
 /** Qué hace: indica si el descriptor se puede eliminar (solo Borrador / Observado). */
-export function esEstadoDescriptorEliminable(nombreEstado: string | null | undefined): boolean {
-	return esEstadoDescriptorEditable(nombreEstado);
+export function esEstadoDescriptorEliminable(corrEstado: number | null | undefined): boolean {
+	return esEstadoDescriptorEditable(corrEstado);
 }
 
-export function puedeEnviarDescriptor(nombreEstado: string | null | undefined): boolean {
-	const n = normalizarNombreEstado(nombreEstado);
-	return n === NOMBRE_ESTADO_BORRADOR.toUpperCase() || n === NOMBRE_ESTADO_OBSERVADO.toUpperCase();
+export function puedeEnviarDescriptor(corrEstado: number | null | undefined): boolean {
+	const c = toCorrEstado(corrEstado);
+	return c === CORR_ESTADO_BORRADOR || c === CORR_ESTADO_OBSERVADO;
 }
 
-export function puedeAprobarUObservarDescriptor(nombreEstado: string | null | undefined): boolean {
-	const n = normalizarNombreEstado(nombreEstado);
+export function puedeAprobarUObservarDescriptor(corrEstado: number | null | undefined): boolean {
+	const c = toCorrEstado(corrEstado);
 	return (
-		n === NOMBRE_ESTADO_ENVIADO_JI.toUpperCase() ||
-		n === NOMBRE_ESTADO_APROBADO_JI.toUpperCase() ||
-		n === NOMBRE_ESTADO_ENVIADO_JTH.toUpperCase()
+		c === CORR_ESTADO_ENVIADO_JI ||
+		c === CORR_ESTADO_APROBADO_JI ||
+		c === CORR_ESTADO_REVISADO_TH ||
+		c === CORR_ESTADO_ENVIADO_JTH
 	);
 }
 
-export function puedeInactivarDescriptor(nombreEstado: string | null | undefined): boolean {
-	return normalizarNombreEstado(nombreEstado) === NOMBRE_ESTADO_ACTIVO.toUpperCase();
+export function puedeInactivarDescriptor(corrEstado: number | null | undefined): boolean {
+	return toCorrEstado(corrEstado) === CORR_ESTADO_ACTIVO;
 }
 
-export function puedeReactivarDescriptor(nombreEstado: string | null | undefined): boolean {
-	return normalizarNombreEstado(nombreEstado) === NOMBRE_ESTADO_INACTIVO.toUpperCase();
+export function puedeReactivarDescriptor(corrEstado: number | null | undefined): boolean {
+	return toCorrEstado(corrEstado) === CORR_ESTADO_INACTIVO;
 }
 
 // Valores por defecto al crear el perfil local si aún no existe en BD.

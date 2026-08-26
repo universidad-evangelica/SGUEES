@@ -72,18 +72,19 @@ namespace SGUEES.Repositories
         }
 
         // Qué hace: estados de flujo del Descriptor de puesto para filtro del listado.
-        // Cómo: lista fija alineada a NOMBRE_ESTADO del flujo (SEG_FLUJO / SC_DESCRIPTOR_PUESTO).
+        // Cómo: Key = CORR_ESTADO (SEG_FLUJO_ESTADO), Value = nombre visible; orden de flujo.
         public CResult GetESTADO_DESCRIPTOR()
         {
             return Ok(new List<SC_LISTAView>
             {
-                new() { Key = "Borrador", Value = "Borrador" },
-                new() { Key = "Observado", Value = "Observado" },
-                new() { Key = "Enviado JI", Value = "Enviado JI" },
-                new() { Key = "Aprobado JI", Value = "Aprobado JI" },
-                new() { Key = "Enviado a JTH", Value = "Enviado a JTH" },
-                new() { Key = "Activo", Value = "Activo" },
-                new() { Key = "Inactivo", Value = "Inactivo" },
+                new() { Key = 11, Value = "Borrador" },
+                new() { Key = 15, Value = "Observado" },
+                new() { Key = 16, Value = "Enviado JI" },
+                new() { Key = 12, Value = "Aprobado JI" },
+                new() { Key = 13, Value = "Revisado TH" },
+                new() { Key = 17, Value = "Enviado a JTH" },
+                new() { Key = 14, Value = "Activo" },
+                new() { Key = 18, Value = "Inactivo" },
             });
         }
 

@@ -616,7 +616,7 @@ namespace SGUEES.Repositories
                 WHERE CORR_EMPRESA = @CORR_EMPRESA
                   AND CORR_UNIDAD = @CORR_UNIDAD
                   AND CORR_PUESTO = @CORR_PUESTO
-                  AND UPPER(LTRIM(RTRIM(ISNULL(NOMBRE_ESTADO, N'Borrador')))) <> N'INACTIVO'
+                  AND ISNULL(CORR_ESTADO, 0) <> 18
                   AND (@EXCLUDE_CORR <= 0 OR CORR_DESCRIPTOR_PUESTO <> @EXCLUDE_CORR)";
 
             try

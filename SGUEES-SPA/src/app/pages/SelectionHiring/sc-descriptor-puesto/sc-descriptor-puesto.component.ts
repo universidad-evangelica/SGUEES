@@ -65,10 +65,11 @@ import {
 	TIPO_RELACION_INTERNA,
 	esEstadoDescriptorEditable,
 	esEstadoDescriptorEliminable,
-	NOMBRE_ESTADO_APROBADO_JI,
-	NOMBRE_ESTADO_ENVIADO_JI,
-	NOMBRE_ESTADO_ENVIADO_JTH,
-	normalizarNombreEstado,
+	CORR_ESTADO_APROBADO_JI,
+	CORR_ESTADO_ENVIADO_JI,
+	CORR_ESTADO_ENVIADO_JTH,
+	CORR_ESTADO_REVISADO_TH,
+	toCorrEstado,
 	puedeAprobarUObservarDescriptor,
 	puedeEnviarDescriptor,
 	puedeInactivarDescriptor,
@@ -128,14 +129,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ dataField: 'NOMBRE_UNIDAD_CATALOGO', caption: 'Unidad', width: 280 },
 	];
 	// Qué hace: catálogo de estados del flujo para filtrar el listado (SC_LISTA GetESTADO_DESCRIPTOR).
-	mESTADO_DESCRIPTOR: Array<{ Key: string; Value: string }> = [];
+	mESTADO_DESCRIPTOR: Array<{ Key: number; Value: string }> = [];
 	estadoDescriptorLookupColumns = [
 		{ dataField: 'Value', caption: 'Estado', width: 220 },
 	];
 	// Qué hace: filtros opcionales del listado browse (null = todos).
 	filtroCorrUnidad: number | null = 0;
-	/** Sentinel de barra: 'TODOS' = sin filtro de estado (opción Todos). */
-	filtroNombreEstado: string | null = 'TODOS';
+	/** 0 = sin filtro de estado (opción Todos del combo). */
+	filtroCorrEstado: number = 0;
 	// Qué hace: configs para combox1/combox2 de la barra global (mismo patrón que btn1–btn6).
 	barraFiltroUnidad: BarraMttoCombox | null = null;
 	barraFiltroEstado: BarraMttoCombox | null = null;
@@ -541,7 +542,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: carga los estados del flujo del descriptor para el filtro del listado.
-	// Cómo: getLookUp SC_LISTA / GetESTADO_DESCRIPTOR (lista fija alineada a NOMBRE_ESTADO).
+	// Cómo: getLookUp SC_LISTA / GetESTADO_DESCRIPTOR (Key = CORR_ESTADO, Value = nombre).
 	getESTADO_DESCRIPTOR(): void {
 		this.appInfoService
 			.getLookUp(
@@ -561,10 +562,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					}
 					this.mESTADO_DESCRIPTOR = response.Data
 						.map((item: any) => ({
-							Key: String(item.Key ?? item.key ?? '').trim(),
+							Key: Number(item.Key ?? item.key ?? 0),
 							Value: String(item.Value ?? item.value ?? '').trim(),
 						}))
-						.filter((item: { Key: string; Value: string }) => !!item.Key);
+						.filter((item: { Key: number; Value: string }) => item.Key > 0 && !!item.Value);
 					this.syncBarraFiltros();
 				},
 				error: (error) => {
@@ -1158,10 +1159,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return Number(vRow?.[0]?.CORR_UNIDAD ?? 0);
 	}
 
-	// Qué hace: obtiene la clave del estado elegido en el combo filtro del listado.
-	// Cómo: lee Key de la primera fila seleccionada del lookup.
-	selectedLookUpESTADO_DESCRIPTOR(vRow: any): string {
-		return String(vRow?.[0]?.Key ?? '').trim();
+	// Qué hace: obtiene el CORR_ESTADO elegido en el combo filtro del listado.
+	// Cómo: lee Key numérico de la primera fila seleccionada del lookup.
+	selectedLookUpESTADO_DESCRIPTOR(vRow: any): number {
+		return Number(vRow?.[0]?.Key ?? 0);
 	}
 
 	// Qué hace: obtiene el correlativo del puesto elegido en el lookup del encabezado.
@@ -1356,12 +1357,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (corrUnidad > 0) {
 			rows = rows.filter((row) => Number(row.CORR_UNIDAD) === corrUnidad);
 		}
-		const estadoRaw = String(this.filtroNombreEstado ?? '').trim();
-		if (estadoRaw && estadoRaw.toUpperCase() !== 'TODOS') {
-			const estado = normalizarNombreEstado(estadoRaw);
-			if (estado) {
-				rows = rows.filter((row) => normalizarNombreEstado(row.NOMBRE_ESTADO) === estado);
-			}
+		const corrEstado = Number(this.filtroCorrEstado);
+		if (corrEstado > 0) {
+			rows = rows.filter((row) => toCorrEstado(row.CORR_ESTADO) === corrEstado);
 		}
 		this.models = rows;
 		this.refrescarGridTrasCarga(resetPage);
@@ -1377,11 +1375,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 	}
 
-	// Qué hace: aplica el filtro de estado del listado (TODOS / clear = Todos).
+	// Qué hace: aplica el filtro de estado del listado (0 / clear = Todos).
 	onFiltroEstadoChanged(value: any): void {
-		const nombre = String(value ?? '').trim();
-		this.filtroNombreEstado =
-			!nombre || nombre.toUpperCase() === 'TODOS' ? 'TODOS' : nombre;
+		const corr = Number(value);
+		this.filtroCorrEstado = corr > 0 ? corr : 0;
 		this.syncBarraFiltros();
 		if (this.isBrowse()) {
 			this.aplicarFiltrosListado(true);
@@ -1408,7 +1405,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.barraFiltroEstado = {
 			label: 'Estado',
 			model: this.mESTADO_DESCRIPTOR ?? [],
-			value: this.filtroNombreEstado ?? 'TODOS',
+			value: this.filtroCorrEstado ?? 0,
 			valueExpr: 'Key',
 			displayExpr: 'Value',
 			lookupColumns: this.estadoDescriptorLookupColumns,
@@ -1416,8 +1413,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			showClearButton: true,
 			dropDownWidth: 350,
 			width: 350,
-			todosOption: { Key: 'TODOS', Value: 'Todos' },
-			clearResetsTo: 'TODOS',
+			todosOption: { Key: 0, Value: 'Todos' },
+			clearResetsTo: 0,
 		};
 	}
 
@@ -6055,7 +6052,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		if (
 			this.banderaMtto !== UpdateType.Add &&
-			!esEstadoDescriptorEditable(this.model?.NOMBRE_ESTADO)
+			!esEstadoDescriptorEditable(this.model?.CORR_ESTADO)
 		) {
 			this.notifyFx(
 				'Este descriptor ya no se puede editar porque esta en flujo o vigente.',
@@ -6311,7 +6308,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Cómo: delega en rowRemovingMtto del framework base, indicando como deleteFn una llamada a
 	// service.delete convertida a respuesta homogénea con convertirErrorOperacionEnRespuesta (delete).
 	rowRemoving(e: any): void {
-		if (!esEstadoDescriptorEliminable(e?.data?.NOMBRE_ESTADO)) {
+		if (!esEstadoDescriptorEliminable(e?.data?.CORR_ESTADO)) {
 			e.cancel = true;
 			this.notifyFx(
 				'No se puede eliminar el descriptor en el estado actual del flujo.',
@@ -6339,7 +6336,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: habilita la edición del formulario del encabezado si el estado lo permite.
 	// Cómo: si el flujo ya avanzó, deja el form bloqueado; si no, habilita y fija campos de sistema.
 	override habilitar(): void {
-		if (!esEstadoDescriptorEditable(this.model?.NOMBRE_ESTADO) && this.banderaMtto !== UpdateType.Add) {
+		if (!esEstadoDescriptorEditable(this.model?.CORR_ESTADO) && this.banderaMtto !== UpdateType.Add) {
 			this.bloquear();
 			return;
 		}
@@ -6356,13 +6353,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: permite editar en el grid solo si el estado es Borrador/Observado.
 	override getPermiteEditar(e: any): boolean {
 		const data = e?.row?.data ?? e?.data;
-		return this.permiteEdit && esEstadoDescriptorEditable(data?.NOMBRE_ESTADO);
+		return this.permiteEdit && esEstadoDescriptorEditable(data?.CORR_ESTADO);
 	}
 
 	// Qué hace: permite eliminar en el grid solo si el estado es Borrador/Observado.
 	override getPermiteDele(e: any): boolean {
 		const data = e?.row?.data ?? e?.data;
-		return this.permiteDele && esEstadoDescriptorEliminable(data?.NOMBRE_ESTADO);
+		return this.permiteDele && esEstadoDescriptorEliminable(data?.CORR_ESTADO);
 	}
 
 	// Qué hace: aplica readOnly y botones según NOMBRE_ESTADO del flujo.
@@ -6371,7 +6368,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.refrescarBotonesFlujo();
 			return;
 		}
-		if (this.banderaMtto === UpdateType.Add || esEstadoDescriptorEditable(this.model?.NOMBRE_ESTADO)) {
+		if (this.banderaMtto === UpdateType.Add || esEstadoDescriptorEditable(this.model?.CORR_ESTADO)) {
 			this.habilitar();
 		} else {
 			this.bloquear();
@@ -6457,10 +6454,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: texto del boton de avance segun el paso (Revision TH vs Aprobar JI/JTH).
-	// Cómo: estado Aprobado JI = paso Revision TH; el resto de autorizacion usa Aprobar.
+	// Cómo: CORR Aprobado JI / Revisado TH = paso Revision TH; el resto usa Aprobar.
 	private textoBotonAprobarSegunPaso(): string {
-		return normalizarNombreEstado(this.model?.NOMBRE_ESTADO) ===
-			NOMBRE_ESTADO_APROBADO_JI.toUpperCase()
+		const corr = toCorrEstado(this.model?.CORR_ESTADO);
+		return corr === CORR_ESTADO_APROBADO_JI || corr === CORR_ESTADO_REVISADO_TH
 			? 'Revision'
 			: 'Aprobar';
 	}
@@ -6486,7 +6483,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		if (!meta.permitida(this.model?.NOMBRE_ESTADO)) {
+		if (!meta.permitida(this.model?.CORR_ESTADO)) {
 			this.notifyFx(`La accion ${meta.titulo} no aplica al estado actual.`, NotifyType.Warning);
 			return;
 		}
@@ -6516,9 +6513,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 		if (operacion === OPERACION_FLUJO.APROBAR) {
+			const corr = toCorrEstado(this.model?.CORR_ESTADO);
 			const esRevisionTh =
-				normalizarNombreEstado(this.model?.NOMBRE_ESTADO) ===
-				NOMBRE_ESTADO_APROBADO_JI.toUpperCase();
+				corr === CORR_ESTADO_APROBADO_JI || corr === CORR_ESTADO_REVISADO_TH;
 			if (esRevisionTh) {
 				if (!this.usarPopupFlujoRevision) {
 					this.confirmarPopupFlujo();
@@ -6585,10 +6582,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const unidad = Number(this.model?.CORR_UNIDAD) || null;
 
 		// Qué hace: reserva el mensaje de éxito con el estado previo al avance del flujo.
-		// Cómo: metaOperacionFlujo usa NOMBRE_ESTADO antes del parche en memoria.
-		const nombreEstadoAntesFlujo = this.model?.NOMBRE_ESTADO;
+		// Cómo: metaOperacionFlujo usa CORR_ESTADO antes del parche en memoria.
+		const corrEstadoAntesFlujo = this.model?.CORR_ESTADO;
 		const mensajeExitoFlujo =
-			this.metaOperacionFlujo(operacion, nombreEstadoAntesFlujo)?.exito ??
+			this.metaOperacionFlujo(operacion, corrEstadoAntesFlujo)?.exito ??
 			'Operacion de flujo aplicada.';
 
 		this.loadingVisible = true;
@@ -6667,14 +6664,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	private metaOperacionFlujo(
 		operacion: number,
-		nombreEstado: string | null | undefined = this.model?.NOMBRE_ESTADO
+		corrEstado: number | null | undefined = this.model?.CORR_ESTADO
 	): {
 		titulo: string;
 		hint: string;
 		boton: string;
 		comentarioDefault: string;
 		exito: string;
-		permitida: (estado?: string | null) => boolean;
+		permitida: (estado?: number | null) => boolean;
 	} | null {
 		switch (operacion) {
 			case OPERACION_FLUJO.ENVIAR:
@@ -6688,10 +6685,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 				};
 			case OPERACION_FLUJO.APROBAR: {
 				// Qué hace: textos distintos segun quien aprueba (JI, Analista TH, Jefe TH).
-				const estadoNorm = normalizarNombreEstado(nombreEstado);
-				const esRevisionTh = estadoNorm === NOMBRE_ESTADO_APROBADO_JI.toUpperCase();
-				const esAprobacionJth = estadoNorm === NOMBRE_ESTADO_ENVIADO_JTH.toUpperCase();
-				const esAprobacionJi = estadoNorm === NOMBRE_ESTADO_ENVIADO_JI.toUpperCase();
+				const corr = toCorrEstado(corrEstado);
+				const esRevisionTh =
+					corr === CORR_ESTADO_APROBADO_JI || corr === CORR_ESTADO_REVISADO_TH;
+				const esAprobacionJth = corr === CORR_ESTADO_ENVIADO_JTH;
+				const esAprobacionJi = corr === CORR_ESTADO_ENVIADO_JI;
 				if (esRevisionTh) {
 					return {
 						titulo: 'Revision del descriptor',
