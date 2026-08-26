@@ -133,8 +133,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		{ dataField: 'Value', caption: 'Estado', width: 220 },
 	];
 	// Qué hace: filtros opcionales del listado browse (null = todos).
-	filtroCorrUnidad: number | null = null;
-	filtroNombreEstado: string | null = null;
+	filtroCorrUnidad: number | null = 0;
+	/** Sentinel de barra: 'TODOS' = sin filtro de estado (opción Todos). */
+	filtroNombreEstado: string | null = 'TODOS';
 	// Qué hace: configs para combox1/combox2 de la barra global (mismo patrón que btn1–btn6).
 	barraFiltroUnidad: BarraMttoCombox | null = null;
 	barraFiltroEstado: BarraMttoCombox | null = null;
@@ -1154,13 +1155,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Qué hace: obtiene el correlativo de la unidad elegida en el lookup del encabezado.
 	// Cómo: lee CORR_UNIDAD de la primera fila seleccionada del lookup.
 	selectedLookUpCORR_UNIDAD(vRow: any): number {
-		return vRow[0].CORR_UNIDAD;
+		return Number(vRow?.[0]?.CORR_UNIDAD ?? 0);
 	}
 
 	// Qué hace: obtiene la clave del estado elegido en el combo filtro del listado.
 	// Cómo: lee Key de la primera fila seleccionada del lookup.
 	selectedLookUpESTADO_DESCRIPTOR(vRow: any): string {
-		return String(vRow[0]?.Key ?? '').trim();
+		return String(vRow?.[0]?.Key ?? '').trim();
 	}
 
 	// Qué hace: obtiene el correlativo del puesto elegido en el lookup del encabezado.
@@ -1355,28 +1356,32 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		if (corrUnidad > 0) {
 			rows = rows.filter((row) => Number(row.CORR_UNIDAD) === corrUnidad);
 		}
-		const estado = normalizarNombreEstado(this.filtroNombreEstado);
-		if (estado) {
-			rows = rows.filter((row) => normalizarNombreEstado(row.NOMBRE_ESTADO) === estado);
+		const estadoRaw = String(this.filtroNombreEstado ?? '').trim();
+		if (estadoRaw && estadoRaw.toUpperCase() !== 'TODOS') {
+			const estado = normalizarNombreEstado(estadoRaw);
+			if (estado) {
+				rows = rows.filter((row) => normalizarNombreEstado(row.NOMBRE_ESTADO) === estado);
+			}
 		}
 		this.models = rows;
 		this.refrescarGridTrasCarga(resetPage);
 	}
 
-	// Qué hace: aplica el filtro de unidad del listado (clear = todas las asociadas).
+	// Qué hace: aplica el filtro de unidad del listado (0 / clear = Todas).
 	onFiltroUnidadChanged(value: any): void {
 		const corr = Number(value);
-		this.filtroCorrUnidad = corr > 0 ? corr : null;
+		this.filtroCorrUnidad = corr > 0 ? corr : 0;
 		this.syncBarraFiltros();
 		if (this.isBrowse()) {
 			this.aplicarFiltrosListado(true);
 		}
 	}
 
-	// Qué hace: aplica el filtro de estado del listado (clear = todos los estados).
+	// Qué hace: aplica el filtro de estado del listado (TODOS / clear = Todos).
 	onFiltroEstadoChanged(value: any): void {
 		const nombre = String(value ?? '').trim();
-		this.filtroNombreEstado = nombre || null;
+		this.filtroNombreEstado =
+			!nombre || nombre.toUpperCase() === 'TODOS' ? 'TODOS' : nombre;
 		this.syncBarraFiltros();
 		if (this.isBrowse()) {
 			this.aplicarFiltrosListado(true);
@@ -1384,11 +1389,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: sincroniza combox1/combox2 de la barra con catálogos y filtros actuales (app-data-lookup).
+	// Cómo: opción Todos + clearResetsTo para que la X vuelva a Todos (barra global opt-in).
 	private syncBarraFiltros(): void {
 		this.barraFiltroUnidad = {
 			label: 'Unidad',
 			model: this.mCORR_UNIDAD ?? [],
-			value: this.filtroCorrUnidad,
+			value: this.filtroCorrUnidad ?? 0,
 			valueExpr: 'CORR_UNIDAD',
 			displayExpr: 'NOMBRE_UNIDAD',
 			lookupColumns: this.unidadLookupColumns,
@@ -1396,11 +1402,13 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			showClearButton: true,
 			dropDownWidth: 420,
 			width: 350,
+			todosOption: { CORR_UNIDAD: 0, NOMBRE_UNIDAD: 'Todos', NOMBRE_UNIDAD_CATALOGO: 'Todos' },
+			clearResetsTo: 0,
 		};
 		this.barraFiltroEstado = {
 			label: 'Estado',
 			model: this.mESTADO_DESCRIPTOR ?? [],
-			value: this.filtroNombreEstado,
+			value: this.filtroNombreEstado ?? 'TODOS',
 			valueExpr: 'Key',
 			displayExpr: 'Value',
 			lookupColumns: this.estadoDescriptorLookupColumns,
@@ -1408,6 +1416,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			showClearButton: true,
 			dropDownWidth: 350,
 			width: 350,
+			todosOption: { Key: 'TODOS', Value: 'Todos' },
+			clearResetsTo: 'TODOS',
 		};
 	}
 

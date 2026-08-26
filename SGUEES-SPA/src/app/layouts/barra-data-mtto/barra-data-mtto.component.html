@@ -125,7 +125,7 @@
       >
         <label class="sguees-barra-combox__label" *ngIf="combox1?.label">{{ combox1?.label }}</label>
         <app-data-lookup
-          [model]="combox1.model"
+          [model]="resolveComboxModel(combox1)"
           [value]="combox1.value"
           [valueExpr]="combox1.valueExpr || 'Key'"
           [displayExpr]="combox1.displayExpr || 'Value'"
@@ -143,7 +143,7 @@
       >
         <label class="sguees-barra-combox__label" *ngIf="combox2?.label">{{ combox2?.label }}</label>
         <app-data-lookup
-          [model]="combox2.model"
+          [model]="resolveComboxModel(combox2)"
           [value]="combox2.value"
           [valueExpr]="combox2.valueExpr || 'Key'"
           [displayExpr]="combox2.displayExpr || 'Value'"
@@ -161,7 +161,7 @@
       >
         <label class="sguees-barra-combox__label" *ngIf="combox3?.label">{{ combox3?.label }}</label>
         <app-data-lookup
-          [model]="combox3.model"
+          [model]="resolveComboxModel(combox3)"
           [value]="combox3.value"
           [valueExpr]="combox3.valueExpr || 'Key'"
           [displayExpr]="combox3.displayExpr || 'Value'"
@@ -179,7 +179,7 @@
       >
         <label class="sguees-barra-combox__label" *ngIf="combox4?.label">{{ combox4?.label }}</label>
         <app-data-lookup
-          [model]="combox4.model"
+          [model]="resolveComboxModel(combox4)"
           [value]="combox4.value"
           [valueExpr]="combox4.valueExpr || 'Key'"
           [displayExpr]="combox4.displayExpr || 'Value'"

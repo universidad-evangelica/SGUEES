@@ -48,6 +48,16 @@ export interface BarraMttoCombox {
   dropDownWidth?: number | string | null;
   /** Ancho del control en el toolbar. */
   width?: number;
+  /**
+   * Qué hace: fila opcional “Todos” al inicio del catálogo (solo combox1–4 de esta barra).
+   * Cómo lo hace: se antepone al `model` si aún no existe la misma key.
+   */
+  todosOption?: Record<string, unknown> | null;
+  /**
+   * Qué hace: si el usuario limpia con la X, emite este valor en lugar de vacío.
+   * Cómo lo hace: en emitComboxChange, null/'' → clearResetsTo (ej. 0 o '').
+   */
+  clearResetsTo?: any;
 }
 
 /**
@@ -670,6 +680,22 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     this.emitComboxChange(this.combox4, value, this.combox4Change);
   }
 
+  /** Qué hace: catálogo del combox con “Todos” al inicio si la vista lo configuró. */
+  resolveComboxModel(config: BarraMttoCombox | null | undefined): any[] {
+    if (!config) {
+      return [];
+    }
+    const model = Array.isArray(config.model) ? config.model : [];
+    const todos = config.todosOption;
+    if (!todos) {
+      return model;
+    }
+    const key = config.valueExpr || 'Key';
+    const todosVal = todos[key];
+    const already = model.some((row) => String(row?.[key] ?? '') === String(todosVal ?? ''));
+    return already ? model : [todos, ...model];
+  }
+
   private emitComboxChange(
     config: BarraMttoCombox | null,
     next: any,
@@ -678,15 +704,24 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     if (!config) {
       return;
     }
+    // Qué hace: la X no deja el filtro vacío si la vista definió clearResetsTo (vuelve a “Todos”).
+    let resolved = next ?? null;
+    const cleared =
+      resolved === null ||
+      resolved === undefined ||
+      (typeof resolved === 'string' && resolved.trim() === '');
+    if (cleared && config.clearResetsTo !== undefined) {
+      resolved = config.clearResetsTo;
+    }
     const prev = config.value ?? null;
     const same =
-      next === prev ||
-      (next == null && (prev == null || prev === '')) ||
-      String(next ?? '') === String(prev ?? '');
+      resolved === prev ||
+      (resolved == null && (prev == null || prev === '')) ||
+      String(resolved ?? '') === String(prev ?? '');
     if (same) {
       return;
     }
-    output.emit(next ?? null);
+    output.emit(resolved ?? null);
   }
 
   OnValueChangeFECHA_INICIAL(e: { value?: Date }): void {
