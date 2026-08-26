@@ -14,7 +14,10 @@ namespace SGUEES.Models
 		public string NOMBRE_SOLICITUD { get; set; }
 		public int CORR_TIPO_CONTRATACION { get; set; }
 		public string NOMBRE_TIPO_CONTRATACION { get; set; }
-		public int CORR_PERSONA_DATOS { get; set; }
+        public string NOMBRE_UNIDAD { get; set; }
+        public string MODALIDAD_NOMBRE { get; set; }
+        public decimal SALARIO { get; set; }
+        public int CORR_PERSONA_DATOS { get; set; }
 		public bool? ACTIVO_SOLICITUD { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }

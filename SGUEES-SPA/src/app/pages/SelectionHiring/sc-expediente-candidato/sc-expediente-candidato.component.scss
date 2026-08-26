@@ -102,18 +102,65 @@
 .expediente-avatar {
   width: 72px;
   height: 72px;
+  padding: 0;
   flex-shrink: 0;
   border-radius: 50%;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--accent-color, #1976d2);
   border: 2px solid color-mix(in srgb, var(--accent-color, #1976d2) 35%, var(--sguees-border-subtle, var(--border-color)));
   background: var(--sguees-surface-subtle, var(--background-gray-color));
   box-shadow: var(--sguees-shadow-sm);
+  position: relative;
 
   &__img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  &--foto {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+  }
+
+  &__hover {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    background: color-mix(in srgb, #000 55%, transparent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+    pointer-events: none;
+
+    .dx-icon {
+      font-size: 16px;
+    }
+  }
+
+  &--foto:hover &__hover,
+  &--foto:focus-visible &__hover {
+    opacity: 1;
+  }
+
+  &--foto:focus-visible {
+    outline: 2px solid var(--accent-color, #1976d2);
+    outline-offset: 2px;
   }
 }
 

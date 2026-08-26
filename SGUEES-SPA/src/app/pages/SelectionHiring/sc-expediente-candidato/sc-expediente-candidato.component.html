@@ -34,9 +34,26 @@
 
         <div class="expediente-panel__datos">
           <div class="expediente-panel__profile">
-            <!-- Avatar temporal; luego se enlazará por URL desde persona. -->
-            <div class="expediente-avatar" aria-hidden="true">
-              <img class="expediente-avatar__img" [src]="avatarUrl" alt="" />
+            <!-- Misma foto que expediente completo (blob vía getPersonaFoto); clic abre lightbox. -->
+            <button
+              *ngIf="fotoPersonaUrl"
+              type="button"
+              class="expediente-avatar expediente-avatar--foto"
+              (click)="abrirFotoPreview()"
+              aria-label="Ver fotografía del candidato"
+            >
+              <img
+                class="expediente-avatar__img"
+                [src]="fotoPersonaUrl"
+                alt="Fotografía del candidato"
+              />
+              <span class="expediente-avatar__hover" aria-hidden="true">
+                <i class="dx-icon dx-icon-eyeopen"></i>
+                <span>Ver</span>
+              </span>
+            </button>
+            <div *ngIf="!fotoPersonaUrl" class="expediente-avatar" aria-hidden="true">
+              {{ inicialesPersonaResumen }}
             </div>
 
             <div class="expediente-panel__identity">
@@ -329,4 +346,4 @@
   (saved)="onPersonaDatosGuardados()"
 ></app-sc-solicitud-empleo-editar-persona>
 
-<p-toast></p-toast>
+<!-- <p-toast></p-toast> -->

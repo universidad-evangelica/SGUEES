@@ -164,14 +164,17 @@ export class ScExpedienteCandidatoService {
 			{
 				dataField: 'FECHA_SOLICITUD',
 				caption: 'Fecha solicitud',
-				width: 180,
+				width: 170,
 				dataType: 'datetime',
 				format: 'dd/MM/yyyy HH:mm',
 			},
 			// { dataField: 'DUI_SOLICITUD', caption: 'Doc. Identidad', width: 120 },
 			// { dataField: 'NOMBRE_SOLICITUD', caption: 'Nombre', width: 220 },
 			{ dataField: 'CORREO_INVITACION', caption: 'Correo Invitación', width: 300 },
-			{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo Contratación', width: 180 },
+			{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo Contratación', width: 170 },
+			{ dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 170 },
+			{ dataField: 'MODALIDAD_NOMBRE', caption: 'Modalidad', width: 170 },
+			{ dataField: 'SALARIO', caption: 'Salario', dataType: 'number', format: 'currency', width: 120 },
 			{ dataField: 'ACTIVO_SOLICITUD', caption: 'Activa', width: 90, dataType: 'boolean' },
 		];
 	}

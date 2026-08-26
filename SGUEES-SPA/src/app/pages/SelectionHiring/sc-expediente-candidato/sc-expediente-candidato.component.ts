@@ -40,17 +40,10 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	protected override mttoParchearGridTrasGuardar = true;
 	protected override mttoRemoteOperations = false;
 
-	/**
-	 * Grid hijo Solicitudes Relacionadas (equivalente a tokens / tokenColumns de Bitácora).
-	 * Data: V_SC_EXPEDIENTE_SOLICITUD vía getAllSolicitud().
-	 */
+	/** Avatar del resumen: usa fotoPersonaUrl (misma carga que expediente completo). */
 	solicitudes: ScExpedienteSolicitud[] = [];
 	solicitudColumns: any[] = [];
 	solicitudSearchText = '';
-
-	/** Avatar temporal del resumen; luego se enlazará por URL desde persona. */
-	readonly avatarUrl =
-		'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face';
 
 	/** Workspace expediente completo (slide-over desde la derecha). */
 	workspaceCompletoVisible = false;
@@ -81,6 +74,28 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	/** Muestra tarjeta resumen cuando el expediente ya tiene PK. */
 	get mostrarResumenExpediente(): boolean {
 		return (this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0) > 0;
+	}
+
+	/** Iniciales para avatar del resumen cuando no hay foto. */
+	get inicialesPersonaResumen(): string {
+		if (this.personaDatos) {
+			const nombre = (this.personaDatos.NOMBRE1 || '').trim();
+			const apellido = (this.personaDatos.APELLIDO1 || '').trim();
+			const inicialNombre = nombre ? nombre.charAt(0).toUpperCase() : '';
+			const inicialApellido = apellido ? apellido.charAt(0).toUpperCase() : '';
+			const iniciales = `${inicialNombre}${inicialApellido}`;
+			if (iniciales) {
+				return iniciales;
+			}
+		}
+		const nombreVista = (this.model?.NOMBRE_PERSONA || '').trim();
+		if (!nombreVista) {
+			return '?';
+		}
+		const partes = nombreVista.split(/\s+/).filter(Boolean);
+		const a = partes[0]?.charAt(0).toUpperCase() ?? '';
+		const b = partes.length > 1 ? partes[partes.length - 1].charAt(0).toUpperCase() : '';
+		return `${a}${b}` || '?';
 	}
 
 	/** FECHA_ACTU con respaldo en FECHA_CREA para el encabezado. */
@@ -245,6 +260,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.dataForm?.instance?.option('formData', this.model);
 			this.bloquear();
 			this.consultarSolicitudes();
+			this.consultarPersonaDatos();
 		});
 	}
 
@@ -259,6 +275,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.dataForm?.instance?.option('formData', this.model);
 			this.habilitar();
 			this.consultarSolicitudes();
+			this.consultarPersonaDatos();
 		});
 	}
 
