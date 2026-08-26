@@ -1,0 +1,75 @@
+﻿=== HOJA: Plan de Trabajo ===
+ |  |  | Programado | 1 |  |  | Finalizado | 2 |  |  | En Proceso | 3 |  |  |  | Fuera de Tiempo | 4 |  | Pausa | 5 |  |  |  | 
+ |  | 2025 - Julio | 2025 - Agosto |  |  |  | 2025 - Septiembre |  |  |  |  | 2025 - Octubre |  |  |  |  | 2025 - Noviembre |  |  |  | 2025 - Diciembre |  |  | 
+ | Sistema de Autogestión Universitario  | 01 jul - 30 jul | 31 jul - 02 ago | 11 ago - 16 ago | 18 ago - 23 ago | 25 ago - 30 ago | 01 sep - 06 sep | 08 sep - 13 sep | 16 sep - 20 sep | 22 sep - 27 sep | 22 sep - 27 sep | 29 sep - 04 oct | 06 oct - 11 oct | 13 oct - 18 oct | 20 oct - 25 oct | 27 oct - 31 oct | 03 nov - 08 nov | 10 nov - 15 nov | 17 nov - 22 nov | 24 nov - 29 nov | 01 dic - 06 dic | 08 dic - 13 dic | 15 dic - 20 dic | 16 dic - 20 dic
+ | Fases del Proyectos |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+27% | Identificación de procesos Talento Humano | 3 | 3 | 3 | 3 | 3 | 3 |  |  |  |  |  |  |  |  |  |  |  |  | 3 | 3 | 3 | 3 | 3
+18% | Identificación de procesos Contable y Financiero | 3 | 3 | 3 | 3 | 3 | 3 |  |  |  |  |  |  |  |  |  |  |  |  | 3 | 3 | 3 | 3 | 3
+25% | Identificación de procesos Academico   | 3 | 3 | 3 | 3 | 3 | 3 |  |  |  |  |  |  |  |  |  |  |  |  | 3 | 3 | 3 | 3 | 3
+5% | Análisis de Requerimientos Talento Humano | 5 | 5 | 5 | 5 | 3 | 3 |  |  |  |  |  |  |  |  |  |  |  |  | 3 | 3 | 3 | 3 | 3
+0% | Análisis de Requerimientos Contable y Financiero | 5 | 5 | 5 | 5 | 3 | 3 |  |  |  |  |  |  |  |  |  |  |  |  | 3 | 3 | 3 | 3 | 3
+0% | Análisis de Requerimientos Academico | 5 | 5 | 5 | 5 | 3 | 3 |  |  |  |  |  |  |  |  |  |  |  |  | 3 | 3 | 3 | 3 | 3
+39% | Planificación y Diseño | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3
+0% | Desarrollo de Modulo Talento Humano | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5
+0% | Desarrollo de Modulo Contable y Financiero | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5
+0% | Pruebas de Prototipo Funcionales | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5
+0% | Implementaciones | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5 | 5
+
+=== HOJA: ProcedimientosTH ===
+ |  | Talento Humano |  |  |  |  |  | 
+ | No. | Procedimiento  | Definición de Procesos | Analisis Requerimientos | Desarrollo Prototipo | Pruebas de Prototipo | Implementación Prototipo | Total
+ | 1 | Procedimiento de Reclutamiento, Selección y Contratación de Personal | 100% | 58% | 5% | 0% | 0% | 33%
+ | 2 | Procedimiento de Separación de Personal | 100% | 0% | 0% | 0% | 0% | 0%
+ | 3 | Procedimiento de Capacitación de Personal | 0% | 0% | 0% | 0% | 0% | 0%
+ | 4 | Procedimiento de Expediente de Empleado | 100% | 0% | 0% | 0% | 0% | 20%
+ | 5 | Procedimiento de nomina | 0% | 0% | 0% | 0% | 0% | 0%
+ | 6 | Procedimiento de Descriptor y perfil de puesto integrado | 0% | 0% | 0% | 0% | 0% | 0%
+ | 7 | Procedimiento de inducción de personal  | 0% | 0% | 0% | 0% | 0% | 0%
+ | 8 | Procedimiento de Evaluación de desempeño | 0% | 0% | 0% | 0% | 0% | 0%
+ | 9 | Procedimiento de cultura y clima | 0% | 0% | 0% | 0% | 0% | 0%
+ | 10 | Procedimiento de creación de puestos | 0% | 0% | 0% | 0% | 0% | 0%
+ | 11 | Procedimiento de traspaso de puestos | 0% | 0% | 0% | 0% | 0% | 0%
+ |  | TOTAL | 27% | 5% | 0% | 0% | 0% | 5%
+
+=== HOJA: ProcedimientosCF ===
+ |  | Contabilidad y finanzas |  |  |  |  |  | 
+ | No. | Procedimiento  | Definición de Procesos | Analisis Requerimientos | Desarrollo Prototipo | Pruebas de Prototipo | Implementación Prototipo | Total
+ | 1 | Procedimiento para Emisión de Cheque, Pago en Línea o Transferencia | 100% | 0% | 0% | 0% | 0% | 20%
+ | 2 | Procedimiento de Cuentas por Pagar | 0% | 0% | 0% | 0% | 0% | 0%
+ | 3 | Procedimiento para el Manejo del Fondo de Caja Chica | 0% | 0% | 0% | 0% | 0% | 0%
+ | 4 | Procedimiento para Elaboración de Conciliaciones Bancarias | 100% | 0% | 0% | 0% | 0% | 20%
+ | 5 | Procedimiento para Manejo, Control y Custodia de Activo Fijo | 0% | 0% | 0% | 0% | 0% | 0%
+ | 6 | Procedimiento para Corte de Caja | 0% | 0% | 0% | 0% | 0% | 0%
+ | 7 | Procedimiento para Registro de Requisiciones de Inventario | 0% | 0% | 0% | 0% | 0% | 0%
+ | 8 | Procedimiento para Declaración y Pago de Impuestos | 0% | 0% | 0% | 0% | 0% | 0%
+ | 9 | Procedimiento para Realización y Revisión de Socioeconómico | 0% | 0% | 0% | 0% | 0% | 0%
+ | 10 | Procedimiento de Levantamiento de Inventario de Materiales y Suministros | 0% | 0% | 0% | 0% | 0% | 0%
+ | 11 | Procedimiento de contabilidad | 0% | 0% | 0% | 0% | 0% | 0%
+
+=== HOJA: ProcedimientosDA ===
+ |  | Academico |  |  |  |  |  | 
+ | No. | Procedimiento  | Definición de Procesos | Analisis Requerimientos | Desarrollo Prototipo | Pruebas de Prototipo | Implementación Prototipo | Total
+ | 1 | Procedimiento de Nuevo Ingreso pregrado | 0% | 0% | 0% | 0% | 0% | 0%
+ | 2 | Procedimiento de Matrícula | 0% | 0% | 0% | 0% | 0% | 0%
+ | 3 | Procedimiento de Seguimiento al Estudiante | 0% | 0% | 0% | 0% | 0% | 0%
+ | 4 | Procedimiento de Egresados y Graduación | 100% | 0% | 0% | 0% | 0% | 20%
+ | 5 | Procedimiento de Seguimiento a Graduados | 0% | 0% | 0% | 0% | 0% | 0%
+ | 6 | Procedimiento de Creación, Ejecución y Cierre de Programas de Educación Continua | 0% | 0% | 0% | 0% | 0% | 0%
+ | 7 | Procedimiento de Cambio de Plan y Absorción | 0% | 0% | 0% | 0% | 0% | 0%
+ | 8 | Procedimiento de Otorgamiento de Becas | 100% | 0% | 0% | 0% | 0% | 20%
+ | 9 | Procedimiento de Ingreso por Equivalencias | 100% | 0% | 0% | 0% | 0% | 20%
+ | 10 | Procedimiento de Matrícula Extemporanea | 0% | 0% | 0% | 0% | 0% | 0%
+ | 11 | Procedimiento de Curso propedeutico | 0% | 0% | 0% | 0% | 0% | 0%
+ | 12 | Procedimiento de Apelación de cuota | 0% | 0% | 0% | 0% | 0% | 0%
+
+=== HOJA: DiseñoPlanificación ===
+ |  | Diseño y Planificación |  |  |  |  |  | 
+ | No. | Actividades   | Arquitectura definida | Requerimientos documentados | Diseño conceptual | Prototipo base funcional | Validación del prototipo | Total
+ | 1 | Arquictetura base del proyecto | 80% | 80% | 80% | 80% | 80% | 76.00%
+ | 2 | Definición de módulos del sistema | 80% | 80% | 80% | 65% | 0% | 65.00%
+ | 3 | Definición de procesos por módulo | 40% | 60% | 40% | 60% | 0% | 43.00%
+ | 4 | Diseño de flujos de información | 20% | 40% | 60% | 10% | 0% | 28.00%
+ | 5 | Planificación de la implementación por fases | 20% | 40% | 30% | 0% | 0% | 20.00%
+ | 6 | Validación y aprobación del diseño | 80% | 80% | 80% | 80% | 80% | 76.00%
+
+

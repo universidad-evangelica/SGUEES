@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace sgueesRpt.Reports.Accounting.BALANCE_GENERAL_VERTICAL
+namespace sgueesRpt.Models
 {
 	public class BALANCE_GENERAL_VERTICAL_IMPRView
 	{

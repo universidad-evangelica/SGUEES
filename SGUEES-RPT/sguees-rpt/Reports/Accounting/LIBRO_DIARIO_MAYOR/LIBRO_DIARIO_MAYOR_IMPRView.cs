@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace sgueesRpt.Reports.Accounting.LIBRO_DIARIO_MAYOR
+namespace sgueesRpt.Models
 {
 	public class LIBRO_DIARIO_MAYOR_IMPRView
 	{

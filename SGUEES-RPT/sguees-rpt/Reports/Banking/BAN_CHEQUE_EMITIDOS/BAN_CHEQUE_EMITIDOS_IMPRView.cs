@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace sgueesRpt.Reports.Banking.BAN_CHEQUE_EMITIDOS
+namespace sgueesRpt.Models
 {
 	public class BAN_CHEQUE_EMITIDOS_IMPRView
 	{

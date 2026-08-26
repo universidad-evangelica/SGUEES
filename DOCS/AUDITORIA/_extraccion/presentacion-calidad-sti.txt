@@ -1,0 +1,125 @@
+﻿=== SLIDE 1 ===
+Plan de Trabajo de Actualización de Procesos UEES
+DIGGEIDirección de Calidad InstitucionalDirección de Transformación Digital
+
+=== SLIDE 2 ===
+FORTALEZAS DEL SISTEMA DE GESTIÓN DE CALIDAD
+1. Marco normativo y documental existenteLa Universidad cuenta con un Manual de Procesos aprobado en junio de 2023, que constituye una base formal para la gestión por procesos.Actualmente, se dispone de procedimientos documentados a nivel inicial en la mayoría de los casos, muchos de los cuales requieren actualización, pero representan un avance importante en la consolidación de una cultura de documentación institucional.2. Política y Sistema de Gestión de la CalidadLa institución dispone de una Política de Calidad vigente y de una Normativa del Sistema de Gestión de la Calidad (SGC) que define responsabilidades, estructura documental y criterios de mejora continua.Este marco proporciona una estructura de referencia para la estandarización y sirve de punto de partida para fortalecer la integración con el futuro Sistema de Gestión Universitario (SGU).
+3. Orientación estratégica hacia la mejora y la acreditaciónSe evidencia una intención institucional clara, de avanzar hacia modelos de gestión basados en calidad y resultados. Las acciones desarrolladas en torno a procesos de acreditación y autoevaluación reflejan el compromiso por la mejora continua, la transparencia y la excelencia académica. Esta orientación estratégica favorece la implementación de metodologías de  Gestión por Procesos y la vinculación con proyectos transversales como el SGU.4. Cultura de cooperación y apertura al cambioLas unidades muestran disposición para colaborar en procesos de mejora, así como interés en capacitarse y participar activamente en los levantamientos de procesos.Esta apertura institucional constituye un factor clave para seguir manteniendo y reforzando para  el éxito de la actualización del Manual de Procesos.
+
+=== SLIDE 3 ===
+OPORTUNIDADES DE MEJORA
+1. Actualizar procedimientos existentes con trazabilidad y conexión  entre funcionesQue describan el flujo de valor y promueva   la colaboración.
+2. Promover la gestión por procesos en la cultura y hábitos de la organización. Orientando el sistema documental y de información al trabajo en equipo inter-funciones, identificando oportunidades de mejora.
+3. Priorizar la capacitación del liderazgo en gestión por procesos y mejora continua
+4. Construir insumos de procedimientos para  el diseño y desarrollo de Tecnología y sistemas de informaciónConstruir procedimientos orientados a la articulación entre áreas que permitan seguir los pasos entre áreas, es decir la trazabilidad.
+
+=== SLIDE 4 ===
+Levantamiento y actualización de procesos en un sistema de gestión de calidad
+Dificultad intermedia con procesos estables
+Sin requerimientos para un sistema informático
+Cumple requerimientos para un sistema informático ya hecho (SAP, ORACLE, ODOO), otros
+Debe cumplir los requerimientos para estructurar un sistema informático desde cero.
+Actualización de pasos, políticas, formatos no necesariamente por procesos
+Los procesos deben llevar interconexiones por procesos Mayor nivel de detalle para la estructuración y confección de la posterior digitalización y automatización de procesos.Requiere que la institución transiciones de una gestión por funciones a la gestión por procesosTiempo de confección y estructuración.
+Dificultad intermedia-alta con procesos adaptados al sistema.
+Dificultad alta con procesos a la medida
+
+=== SLIDE 5 ===
+Propuesta de formatos nuevos para el levantamiento y actualización.
+Actual
+Formato de actualización/ Levantamiento
+
+=== SLIDE 6 ===
+Tomaremos el mapa de procesos 2023 y sus respectivos procedimientos como referencia.2. Aplicando una metodología ágil se levanta el procedimiento que dará los insumos antes mencionadosTaller en equipos de trabajo:Dirección de Calidad (Orienta la sesión y Llenando el formato guía de levantamiento).Dirección de Transformación Digital (Apoya el levantamiento de formato guía con orientación de mejoras de TD).Subgerencia de TI (Levanta durante la misma sesión las historias de usuario, es decir requisitos del sistema para análisis y viabilidad).Auditoría (Orientación para identificar  los riesgos y su mitigación).Finanzas (identifica conexiones entre la operación y las finanzas).Líder del proceso (narrativa, formularios, validación, pasos, autorizaciones, consulta a equipos, riesgos, requerimientos a TI.)Ejecutor de proceso (complementa la narrativa y el procedimiento, riesgos, requerimientos a TI).3. Desarrollar  prueba piloto (Semana del 3 al 7  de Noviembre).Procedimiento de Reclutamiento, Selección y Contratación para validar los nuevos formatos y metodología.Se toma nota del aprendizaje, lecciones aprendidas, factores críticos del éxito, requerimientos para el ERP. 4. Se estiman dos actualizaciones de procedimientos por semana con esta metodología (a validar con la prueba piloto).5. Etapa de interconsultas.Mecanismos de interconsultas de TI-Calidad-UsuarioMecanismos de autorización.
+Metodología para el levantamiento y actualización del manual de procesos.
+
+=== SLIDE 7 ===
+Resultados esperados de la metodología
+
+=== SLIDE 8 ===
+Línea de tiempo del plan trabajo de procesos.
+*Nota: Esta línea de tiempo está elaborada en función de: Un ritmo de actualización ágil de dos procedimientos por semana que será validado en el piloto . Existe la probabilidad que se requiera más tiempo por la curva de aprendizaje y el nivel de requerimiento para el ERP.Los procedimientos documentados actualmente: existe la probabilidad que se requieran levantar más procedimientos  al momento de la ejecución  debido a los requerimientos del sistema de información universitario ERP.
+
+=== SLIDE 9 ===
+La Dirección de Transformación Digital se alinea al PEI a través
+Meta 18, ya que impulsa una cultura institucional de gestión del cambio, colaborativa, ágil y orientada a la innovación, al promover la actualización y documentación de procedimientos, la participación activa de las unidades académicas y administrativas en proyectos de mejora continua; fortaleciendo así la eficiencia organizacional y consolidando una mentalidad abierta al cambio y a la transformación digital.
+AE3. Transformación Digital y ET3. Transformación Organizacional e Innovación
+OE8Implementar la hoja de ruta de transformación digital UEES que permitan fortalecer la gobernanza, gestión estratégica e innovación para cerrar las brechas en el índice de madurez digital
+OE7Promover una cultura de gestión del cambio, colaborativa, ágil y abierta a la innovación, alineada al principio de eficiencia organizacional.
+Meta 21, 23, ya que constituye para implementar la hoja de ruta de transformación digital institucional, permitiendo fortalecer la gobernanza, la gestión estratégica y la innovación mediante la digitalización y simplificación de procesos clave, la integración de datos en una sola plataforma, y la mejora de la experiencia del usuario; contribuyendo así a cerrar las brechas del índice de madurez digital y avanzar hacia una UEES más eficiente, conectada y centrada en el valor institucional.
+
+=== SLIDE 10 ===
+Etapas del ciclo de vidaPlanificación y selección: análisis de necesidades y diseño del sistema.Implementación: desarrollo, pruebas y puesta en marcha.Operación y mantenimiento: uso continuo, soporte y mejoras.Evolución o reemplazo: actualización o sustitución planificada.(O’Leary, 2000; Panorama Consulting, 2023; ERP Focus, 2024)Duración ERP comercial: 10 – 20 años de vida útil promedio.ERP desarrollado en casa: 8 – 12 años, dependiendo del mantenimiento, tecnología y gobernanza.La revisión debe ser periódica (cada 5 años) para decidir entre mantener, modernizar o reemplazar.(Management Study Guide, 2023; Diceus Tech, 2024)
+Ciclo de vida y duración de un ERP
+
+=== SLIDE 11 ===
+Se requiere tener presente a lo largo del PEI un plan de evaluación y sucesión  tecnológica.Según los autores, todo ERP debe diseñarse con su ciclo de vida y plan de reemplazo definidos desde el inicio para evitar obsolescencia, sobrecostos y pérdida de continuidad operativa. (O’Leary, 2000; Panorama Consulting, 2023)Parte de estas funciones es el trabajo colaborativo de la DTD y STI
+Lecciones aprendidas para 2026 2030
+
+=== SLIDE 12 ===
+Metodología del piloto: Procedimiento Reclutamiento, Selección y Contratación
+Inicio de piloto: Con participación de STI, Calidad, Transformación Digital, líderes y usuarios del proceso y áreas relacionadas según corresponda.
+Levantamiento / Actualización: Recolección de formularios, normativa, aprobaciones, excepciones y requerimientos, identificando iniciativas de transformación digital y mejoras de flujo que se logren contemplar en el desarrollo y oportunas para etapas posteriores.
+Validación y documentación: Revisar o planificar actualización de normativa, y detección de oportunidades de mejora oportunas, identificación de requerimientos de sistema de información.
+Propósito: Validar la metodología de levantamiento de procedimientos y requerimientos.Estimar tiempos reales de ejecución, interacción entre áreas y puntos críticos.Evaluar formatos, trazabilidad y flujos para estandarizar buenas prácticas.Servir como referente replicable para otros procesos institucionales.Periodo: 1 semana levantamiento y 1 semana validación y ajuste.
+
+=== SLIDE 13 ===
+Roles en el prototipo
+
+=== SLIDE 14 ===
+Conceptos clave
+
+=== SLIDE 15 ===
+1. Aplicar el nuevo formato diseñado para levantamiento de requerimientos de TI y como base para el procedimiento.2. Ejecutar la prueba piloto del 27 de octubre al 7 de noviembre de 2025.3. Aplicar esta metodología para todo el plan de trabajo de trabajo del levantamiento y actualización de procedimientos (aplicando los ajustes que sean pertinentes tanto en el cronograma como en la metodología, después de la prueba piloto).
+Solicitud
+
+=== SLIDE 16 ===
+Ajuste del Plan del Sistema de Gestión Universitaria (ERP)
+Subgerencia de Tecnología de la Información
+
+=== SLIDE 17 ===
+Relacionamiento con el plan estratégico 2026-2030
+Estrategia : AE4-SOSTENIBILIDAD FINANCIERA
+Objetivo OE11 : Asegurar una gestión financiera íntegra, eficiente y sostenible para el cumplimiento de la Misión y Visión institucional, bajo un enfoque de calidad, rendición de cuentas y mitigación de riesgos.Metas: 26
+Estrategia : AE3-TRANSFORMACIÓN DIGITAL
+Objetivo OE8 : Implementar la hoja de ruta de transformación digital UEES que permitan fortalecer la gobernanza, gestión estratégica e innovación para cerrar las brechas en el índice de madurez digital. Metas: 18, 21, 23
+Informe de avance del Sistema de gestión Universitaria. SGU
+
+=== SLIDE 18 ===
+Estado Actual del Sistema de Gestión Universitario
+Análisis de requerimiento.
+Actividades .Identificación y análisis de procesos generales y procedimientos de cada áreaAnálisis y documentación de los requerimientos.Resultados esperados.Matriz de requerimientos.Matriz de dependencia de procesos.
+Se iniciarán los trabajos para definir la arquitectura base y el diseño estructural del sistema ERP, estableciendo los lineamientos técnicos, estándares de desarrollo y modelo de integración entre módulos. Este trabajo permitirá que, una vez concluidos los levantamientos de procesos y requerimientos en 2026, el desarrollo pueda ejecutarse sobre una infraestructura tecnológica sólida, escalable y alineada con las necesidades institucionales.
+Fases del proyecto.
+Fases en Ejecución desde Junio a Octubre 2025
+Planificación y Diseño.
+Gestión Administrativas.
+Remodelación  del espacio físico de TI Fecha Inicio: 15/07/2025.          Estado: En ejecución.Gestión de compra de equipo tecnológico para el personal que estará a cargo de este nuevo proyectoFecha Inicio: 16/07/2025.          Estado: Finalizada.c)	Contratación del nuevo personalFecha Inicio: 04/07/2025.          Estado: En Pausa.
+
+=== SLIDE 19 ===
+A diciembre 2026 se estima alcanzar un 35 % de avance en el levantamiento de requerimientos vinculados a los módulos de las áreas académica, financiera y de talento humano. Este trabajo se desarrollará de forma paralela al proceso de levantamiento y actualización de procedimientos institucionales que será liderado por la Dirección de Calidad y Transformación Digital En este sentido, STI realizará el levantamiento y documentación de requerimientos técnicos y funcionales previos, con el propósito de anticipar el análisis del sistema ERP y preparar los insumos necesarios para el diseño y desarrollo posterior. Esta coordinación permitirá contar con información estandarizada y validada, asegurando una transición ordenada hacia el nuevo sistema institucional.
+Avance estimado de Análisis de requerimientos
+Académico
+35 %
+Contabilidad y Finanzas
+35 %
+Talento Humano
+35 %
+
+=== SLIDE 20 ===
+Propuesta de reprogramación de Cronograma  2026 – 2029
+📅 Cronograma Gantt
+2026 - 2027
+2027 – 2029
+📅 Cronograma General de las Fases
+
+=== SLIDE 21 ===
+Continuidad operativa del sistema actual(CLASS)
+A pesar de que el sistema CLASS ha dejado de recibir soporte del proveedor y no se cuenta con acceso a su código fuente, la universidad puede continuar operando con normalidad en las gestiones académicas, administrativas y financieras. El sistema mantiene la capacidad de procesar matrículas, gestionar expedientes y ejecutar procesos institucionales, garantizando la continuidad de las operaciones actuales.Sin embargo, el crecimiento institucional y la necesidad de modernización de procesos demandan una plataforma más escalable, adaptable a los nuevos requerimientos académicos y administrativos. Por tanto, la continuidad del sistema actual es temporalmente sostenible, pero no viable como solución a largo plazo, reforzando la importancia de avanzar con el proyecto ERP UEES.
+
+=== SLIDE 22 ===
+Solicitud de Apoyo.
+Con base en la actualización metodológica del proyecto ERP UEES y el enfoque estratégico orientado al levantamiento y mejora de procesos institucionales, se solicita la autorización del directorio ejecutivo para la reprogramación del cronograma de ejecución del proyecto.
+
+

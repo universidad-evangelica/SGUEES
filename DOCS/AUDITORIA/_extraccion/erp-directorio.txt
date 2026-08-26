@@ -1,0 +1,112 @@
+﻿=== SLIDE 1 ===
+ANÁLISIS – DESARROLLO E IMPLEMENTACIÓN DEL SISTEMA DE GESTION UNIVERSITARIO UEES.
+Junio 2025
+
+=== SLIDE 2 ===
+1. Introducción:
+La Universidad Evangélica de El Salvador (UEES) se encuentra en un proceso de transformación organizacional con enfoque en transformación digital buscando la eficiencia y enfoque al usuario. Actualmente, el sistema en uso, CLASS WEB, si bien ha sido funcional en su momento, ya no responde adecuadamente a las demandas dinámicas y crecientes de los procesos universitarios. Además, presenta limitaciones en cuanto a trazabilidad integral y su mantenimiento técnico por parte del proveedor INNOVASOFT ya no es factible. Ante este contexto, el proyecto propone el diseño, desarrollo e implementación de un nuevo Sistema Integrado de Gestión Universitaria que permite la interoperabilidad, escalabilidad y eficiencia y centralice los procesos académicos, financieros y de talento humano. Esta iniciativa busca fortalecer la toma de decisiones basada en datos, optimizar la experiencia del estudiante y garantizar una infraestructura tecnológica segura, escalable y sostenible para los próximos 10 años.
+
+=== SLIDE 3 ===
+2. Objetivos del proyecto:
+Diseñar e implementar un sistema integrado que centralice y optimice los procesos académicos, financieros, de talento humano y de planillas, garantizando interoperabilidad, escalabilidad y eficiencia.Incorporar innovación tecnológica y analítica avanzada (Big Data) para la toma de decisiones estratégicas.Contar con un sistema con enfoque al usuario que agregue valor y mejore la experiencia del estudiante, mediante procesos más ágiles, accesibles y personalizados.Fortalecer las decisiones basadas en datos de tal manera que la información permita tableros de control en tiempo real del BSC alienado al PEI.Construir una arquitectura tecnológica escalable, segura y sostenible para los próximos 10 años.
+
+=== SLIDE 4 ===
+Fuente: Plan Estratégico Institucional 2022 – 2025, Págs. 12, 27 y 42
+3. Relacionamiento con el plan estratégico 2022-2025
+Perspectiva: SOSTENIBILIDAD FINANCIERA Y TRANSFORMACIÓN DIGITAL Objetivo Estratégico: Modernizar, innovar y desarrollar proyectos de infraestructura física y tecnológica cumpliendo el 100% de la planificación anual.
+Estrategia DefensivaInversión en Infraestructura Tecnológica: Aumentar la inversión en infraestructura en tecnología mediante la búsqueda de fondos y colaboraciones con el sector privado. Priorizar la modernización de laboratorios, bibliotecas digitales, servicios en la nube y aulas tecnológicas para mejorar la percepción de modernidad y competitividad de la universidad
+Estrategia DefensivaAutomatización de Procesos Administrativos y Académicos : Implementar sistemas de gestión automatizados para inscripciones, atención al estudiante, compras y gestión de recursos humanos. Utilizar tecnologías como Planificación de Recursos Empresariales (ERP con sus siglas en inglés) para mejorar la eficiencia y reducir errores administrativos, proporcionando una mejor experiencia al usuario.
+Indicador BSC 34 : Porcentaje de avance de la ruta de trabajo De transformación digital Indicador BSC 36 : Porcentaje de avance de proyectos de infraestructura física.Indicador BSC 37 : Porcentaje de avance de proyectos de infraestructura tecnológica.
+
+=== SLIDE 5 ===
+4. Características del Sistema de Gestión Universitaria UEES:
+Alta Disponibilidad:Objetivo: Garantizar que el sistema esté disponible y operativo 24/7, minimizando el tiempo de inactividad.Acciones: Implementar redundancia en servidores y bases de datos a nivel local, y establecer procedimientos de recuperación ante desastres.Analítica de Datos:Objetivo: Proveer herramientas avanzadas de análisis de datos para mejorar la toma de decisiones académicas y administrativas.Acciones: Integrar sistemas de Inteligencia de Negocios (BI), desarrollar dashboards interactivos, y utilizar algoritmos de aprendizaje automático para identificar tendencias y patrones en los datos.Seguridad y Privacidad:Objetivo: Proteger la información sensible de estudiantes y personal, cumpliendo con las normativas de privacidad y seguridad de datos.Acciones: Implementar cifrado de datos, establecer controles de acceso estrictos, y realizar auditorías de seguridad periódicas.
+
+=== SLIDE 6 ===
+5. Implementar la Arquitectura de un Data Wherehouse en la UEES, permitirá tener las siguientes ventajas:
+Integrar datos de diversas fuentes en una única plataforma centralizada. Esto significa que los datos de diferentes departamentos y sistemas pueden combinarse en una sola ubicación, lo que facilita el acceso y la gestión de los datos.Al tener todos los datos en una sola plataforma, es más fácil analizarlos y acceder a ellos de una forma más eficiente.  Un data warehouse está diseñado específicamente para el análisis, lo que significa que las consultas y los informes se pueden realizar con mayor velocidad y precisión.Al tener acceso a una gran cantidad de datos de una forma más efectiva, permitirá a la Universidad tomar decisiones estratégicas basadas en datos. Esto permitirá identificar tendencias, oportunidades de mercado y riesgos antes que se conviertan en problemas (Sistema de Alerta Temprano).Al almacenar la información en un servidor separado, permitirá tener una capa adicional de seguridad de los datos y control de los accesos. Esto significa que los datos de la Universidad  están protegidos contra pérdidas o accesos no autorizados.La capacidad de almacenamiento y la velocidad de procesamiento son escalables, permitiendo aumentar según se requiera, lo que significa que la Universidad puede expandir su análisis de datos a medida que crece.
+
+=== SLIDE 7 ===
+Equipo para el Análisis del Sistema de Gestión Universitaria UEES
+Equipo Académico
+Equipo Contable & Financiero
+Equipo Técnico TI
+Equipo Control
+Director académico – LíderCoordinación de Proceso académicos.Técnico analista y Atención al estudianteNuevo Ingreso (1)Director de Proyección Social y Servicios Estudiantiles (Becas)
+Subgerente contabilidad y finanzas – LíderAtención financiara estudianteContador
+Jefe de TH – LíderEncargada de PlanillasEncargada de Selección y Contratación de personal
+Equipo Talento Humano
+Subgerente Tecnología Información – LíderCoordinador de DesarrolloCoordinador de Soporte TécnicoEquipo de Desarrollo contratado para proyecto
+Jefe de auditoria – LíderAuditor de Sistemas Auditor AdministrativoAuditor Académico
+Subgerente Tecnología Información – Líder
+Participación de otras áreas:  Consultas de procesos:Coordinadora Unidad de egresados. (Graduados)Pyxoom (VRIV)Maestrías y Educación Continua
+6. Equipos:
+Equipo TD
+Director desarrollo y transformación digital – LíderConsultor externo TDAnalista de experiencia del usuario
+
+=== SLIDE 8 ===
+7. Metodología  de Trabajo para el desarrollo del Sistema de Gestión Universitaria UEES
+Metodología Scrum Scrum es una forma de trabajar en equipo para organizarse mejor y avanzar paso a paso. En lugar de hacer todo de una vez, el equipo trabaja en bloques pequeños de tiempo llamados “Sprints" (como mini metas semanales o quincenales). Cada sprint tiene una meta clara, y al terminarlo, el equipo revisa lo que hizo, aprende de ello y sigue con el siguiente bloque.Un sprint es un período corto de tiempo (normalmente de 1 a 4 semanas) en el que un equipo se enfoca en cumplir una meta específica.¿Para qué sirve Scrum?Para organizar el trabajo de forma clara.Para adaptarse rápido si las cosas cambian.Para entregar resultados parciales útiles en poco tiempo.Para que todos en el equipo sepan qué hacer y en qué están trabajando los demás.
+
+=== SLIDE 9 ===
+8. Roles:
+Product Owner(Subgerente TI)
+Scrum Master  Académico (Coordinador de desarrollo )
+Scrum Master Financiero y TH (Analista Financiero)
+Scrum Master  Infraestructura (Coordinador Infraestructura)
+Equipo de desarrollo Académico
+Equipo de desarrollo Financiero
+Equipo de Infraestructura.
+Usuarios claves(Equipo Académico)
+Usuarios claves(Equipo Financiero y TH)
+Usuarios clavesDevelopment
+Equipo Auditoria Interna
+Equipo de desarrollo Talento Humano
+Nota :Los equipos de Desarrollo por Áreaestará conformado por 2 analistas.
+Equipo Transformación digital
+
+=== SLIDE 10 ===
+9. Procesos Principales
+Modulo Académico.Admisiones y Nuevo IngresoGestión de BecasGestión de la Academia y MatriculaGestión de Evaluaciones y NotasGestión CurricularPortal Estudiante(Pregrado, posgrado)Portal Docente (Pregrado, posgrado)Administración de gestiones en LíneaProceso de cambio de carrera.Proceso de cambio de planesProcesos FinancierosIntegración con Facturación Electronica.Integraciones con sistemas ExistentesIndicadores para BSCModulo Financiero.Contabilidad(Partidas Contables, catálogos de cuenta, Centro de costo)Reportes y Libros Legales.Cajas(Facturación Odontología, Librería, Portal estudiante)Caja y Bancos(Tesorería)Cuentas por pagarCuentas por CobrarActivo FijoIntegración con Facturación Electronica.Integraciones con sistemas ExistentesIndicadores para BSC
+
+=== SLIDE 11 ===
+- Procesos Principales
+Modulo RRHH y PLANILLASPlanillasGestión de desempeño(evaluación docente, evaluación administrativa, competencia de técnicas conductuales, evaluación de desempeño)Selección y contrataciónClima y cultura organizacional. Desarrollo (Capacitación y Formación + Evaluación del Desempeño)Indicadores para BSC
+
+=== SLIDE 12 ===
+10. FASES DEL PROYECTO 2025-2028
+Nota:  Cuando el proyecto completo se presente a las autoridades y este aprobado el presupuesto presentado, el orden de las fases será la siguiente:
+Equipo AcadémicoEquipo Financiero ContableEquipo de THEquipo TI
+Equipo TI
+Equipo TI
+Equipo TIUsuariosEquipo de control
+Equipo TI
+Equipo TI
+Equipo de control: Validación de entrega de requerimientos y de procesos de TI.
+2025
+2026 - 2027
+2028
+Equipo de Transformación Digital: Validación de Proceso y Experiencia de usuario.
+
+=== SLIDE 13 ===
+11. Transición en fase de implementación
+Los sistemas actuales estarán en operación y seguirá recibiendo soporte para asegurar la continuidad de las operaciones.Durante el desarrollo del nuevo sistema, se implementarán módulos de manera progresiva para sustituir funciones específicas del sistema actual.El nuevo sistema alimentará y sincronizará información con los sistemas existentes, garantizando la integridad y actualización de los datos.Esta transición gradual asegura una migración controlada, minimizando riesgos operativos y facilitando la adaptación de los usuarios.
+
+=== SLIDE 14 ===
+12. PRESUPUESTO ESTIMADO DEL PROYECTO
+
+=== SLIDE 15 ===
+13. 📅 Cronograma Gantt (propuesta general 2025–2028)
+
+=== SLIDE 16 ===
+14. 🎯 KPIs para seguimiento del proyecto y matriz de riesgos.
+
+=== SLIDE 17 ===
+15. 🌱 Plan de Sostenibilidad Tecnológica
+Mantenimiento correctivo y evolutivo con contrato de soporte post-implementación.Actualizaciones periódicas de módulos cada 12 meses.Evaluación tecnológica cada 3 años para analizar nuevas versiones o cambios de arquitectura.Formación continua del equipo TI interno para mantener la autosuficiencia.Infraestructura en la nube escalable, monitoreo continuo y backups automáticos.
+🔐 Esquema de Licenciamiento y Mantenimiento
+
+=== SLIDE 18 ===
+Consultas
+
+

@@ -1,0 +1,23 @@
+ID,Frente,Entregable,Oleada,Nota,H25b,H26a,H26b,H27a,H27b,H28a,H28b
+F-01,Fundacion,Arquitectura SPA + API + BD,Fundacion,Cimientos tecnicos; no es un modulo de negocio,1,1,1,0,0,0,0
+F-02,Fundacion,Seguridad; menu y permisos,Fundacion,JWT; opciones; perfiles,1,1,1,0,0,0,0
+F-03,Fundacion,Estandar de desarrollo STI,Fundacion,Patron de mantenimientos y ambientes,1,1,1,0,0,0,0
+F-04,Fundacion,Identificacion de procedimientos (DICA),Fundacion,Describe el proceso; no cuenta como modulo listo,1,1,1,0,0,0,0
+F-05,Fundacion,DRF de procedimientos priorizados,Fundacion,Requisitos acordados con el area,1,1,1,1,1,0,0
+TH-01,Talento Humano,Seleccion y contratacion,MVP,Nucleo 2027,0,1,1,1,1,0,0
+TH-02,Talento Humano,Descriptor y perfil de puesto,MVP,Nucleo 2027,0,1,1,1,1,0,0
+TH-03,Talento Humano,Expediente de empleado,MVP,Nucleo 2027,0,1,1,1,1,0,0
+TH-04,Talento Humano,Planilla (nucleo),MVP,Nucleo 2027; no es nomina completa,0,1,1,1,1,0,0
+CF-01,Contabilidad y Finanzas,Contabilidad,MVP,Partidas; catalogos; reportes legales,0,1,1,1,1,0,0
+CF-02,Contabilidad y Finanzas,Caja y bancos,MVP,Tesoreria base,0,1,1,1,1,0,0
+CF-03,Contabilidad y Finanzas,Cuentas por pagar / Pagos,MVP,Ciclo de pagos,0,1,1,1,1,0,0
+CF-04,Contabilidad y Finanzas,Conciliacion bancaria,MVP,Nucleo tesoreria,0,1,1,1,1,0,0
+AC-01,Academico,Admision,MVP,Hasta entonces opera en CLASS,0,1,1,1,1,0,0
+AC-02,Academico,Nuevo ingreso,MVP,Flujo de ingreso,0,0,1,1,1,0,0
+AC-03,Academico,Socioeconomico,MVP,Flujo de ingreso,0,0,1,1,1,0,0
+AC-04,Academico,Matricula,MVP,Cierre del flujo de ingreso,0,0,1,1,1,0,0
+PL-01,Plataforma,Compras (integracion),MVP,Ya construido; se pasa y se valida; no cierra el ERP,0,1,1,1,0,0,0
+EX-TH,Talento Humano,Nomina completa; separacion; capacitacion; clima; evaluacion,Expansion,Despues del nucleo MVP,0,0,0,0,1,1,1
+EX-CF,Contabilidad y Finanzas,Activo fijo; caja chica; impuestos; CxC; facturacion,Expansion,Despues del nucleo MVP,0,0,0,0,1,1,1
+EX-AC,Academico,Notas; curricular; portales; egresados; equivalencias,Expansion,CLASS sigue hasta que migre cada proceso,0,0,0,0,1,1,1
+S-01,Sostenibilidad,Mantenimiento; soporte; evolucion,Sostenibilidad,Cuando el nucleo ya opera,0,0,0,0,0,1,1

@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace sgueesRpt.Reports.Accounting.ESTADO_RESULTADOS
+namespace sgueesRpt.Models
 {
 	public class ESTADO_RESULTADOS_IMPRView
 	{

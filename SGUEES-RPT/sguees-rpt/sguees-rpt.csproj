@@ -166,8 +166,7 @@
     <Compile Include="Reports\Shop\ShopController.cs" />
     <Compile Include="Reports\Shop\COM_REPO_SUJETO_EXCLUIDOView.cs" />
     <Compile Include="Reports\Accounting\AccountingController.cs" />
-    <Compile Include="Reports\Accounting\ConReportData.cs" />
-    <Compile Include="Reports\Accounting\ConReportExportHelper.cs" />
+    <Compile Include="Reports\LegacyReportData.cs" />
     <Compile Include="Reports\Accounting\BALANCE_COMPROBACION\BALANCE_COMPROBACION_IMPRView.cs" />
     <Compile Include="Reports\Accounting\BALANCE_COMPROBACION\BALANCE_COMPROBACIONReport.cs">
       <SubType>Component</SubType>
@@ -188,7 +187,6 @@
     <Compile Include="Reports\Accounting\CON_GASTOS\CON_REPORTE_GASTOSReport.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Reports\Accounting\CON_GASTOS\ConGastosReportExporter.cs" />
     <Compile Include="Reports\Accounting\CON_LIBRO_DIARIO\CON_LIBRO_DIARIO_IMPRView.cs" />
     <Compile Include="Reports\Accounting\CON_LIBRO_DIARIO\CON_LIBRO_DIARIOReport.cs">
       <SubType>Component</SubType>
@@ -198,8 +196,6 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="Reports\Accounting\CON_PARTIDA\CON_PARTIDA_IMPRView.cs" />
-    <Compile Include="Reports\Accounting\CON_PARTIDA\ConPartidaReportData.cs" />
-    <Compile Include="Reports\Accounting\CON_PARTIDA\PARTIDA_CONTABLEReportExporter.cs" />
     <Compile Include="Reports\Accounting\CON_PARTIDA\PARTIDA_CONTABLEReport.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

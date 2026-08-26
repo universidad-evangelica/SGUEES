@@ -1,0 +1,369 @@
+﻿FILE=DRF - DESCRIPTOR Y PERFIL DE PUESTO - VF.docx
+TABLES=15
+
+DOCUMENTO DE REQUERIMIENTOS FUNCIONALES
+San Salvador, enero 2026
+Universidad Evangélica
+de El Salvador
+Documento de Requerimientos Funcionales (DRF)
+CÓDIGO: DRF-TH-SC
+Vigencia: Indefinida
+Emisión: Enero 2026
+2ª. Actualización:
+DOCUMENTO DE REQUERIMIENTOS FUNCIONALES
+Módulo: Descriptor y perfil de puesto
+San Salvador, enero 2026
+Información General
+Proyecto
+ERP Universitario
+Módulo
+Recursos Humanos
+Submódulo
+Reclutamiento, Selección y Contratación de Personal
+Base documental
+Procedimiento de Descriptor y Perfil de Puesto UEES
+Objetivo
+Definir los requerimientos funcionales para implementar en el ERP el proceso institucional de reclutamiento, selección y contratación de personal administrativo, docentes, docentes hora clase, docentes de posgrado e investigadores.
+Actores del Sistema
+Actor
+Descripción
+Jefe Inmediato
+Usuario responsable de crear, editar y gestionar descriptores de puesto de su área asignada. Puede enviar descriptores a revisión, atender observaciones, asignar colaboradores y consultar el estado del proceso.
+Jefe Superior
+Usuario encargado de revisar los descriptores enviados por el Jefe Inmediato. Puede aprobar el descriptor para enviarlo a Talento Humano o registrar observaciones para que sea corregido.
+Generalista de Talento Humano
+Usuario responsable de revisar, editar, observar y validar descriptores de puesto. También puede crear descriptores, administrar catálogos y gestionar información relacionada con áreas, puestos y colaboradores.
+Jefe de Talento Humano
+Usuario con autoridad para validar descriptores y aprobar puestos de trabajo. Puede crear descriptores, crear puestos aprobados automáticamente, revisar descriptores y otorgar visto bueno final.
+Colaborador/Titular del Puesto
+Usuario al que se le asigna uno o varios descriptores de puesto. Puede consultar los descriptores asignados y descargar el documento firmado físicamente cuando haya sido cargado al sistema.
+Sistema
+Administra automáticamente los estados, validaciones, reglas de negocio, control de versiones, trazabilidad, historial de acciones, firmas digitales y generación de reportes institucionales.
+Alcance del Módulo
+Incluye:
+Creación de descriptores de puesto en formato corto y formato extenso.
+Edición de descriptores según el rol y el estado del proceso.
+Flujo de revisión, observación, corrección y validación de descriptores.
+Validación de descriptores creados por Jefe Inmediato, Generalista TH o Jefe TH.
+Administración de áreas, puestos, jefes inmediatos y colaboradores.
+Control de estado de puestos: activo, inactivo, aprobado o pendiente de aprobación.
+Asignación de uno o varios colaboradores a un descriptor activo.
+Generación de reportes individualizados por colaborador asignado.
+Carga, consulta y descarga del documento firmado físicamente por colaborador.
+Registro de bitácora/auditoría de eventos del descriptor.
+Control de versiones de descriptores por puesto.
+Creación de nuevas versiones únicamente desde descriptores inactivos.
+Consulta del historial de cambios, observaciones y vistos buenos del descriptor.
+Visualización de estados del descriptor durante todo el proceso.
+No incluye:
+Firma electrónica o firma digital dentro del sistema.
+Aprobación automática sin intervención de los usuarios responsables.
+Gestión de nómina, contratación o procesos administrativos externos al descriptor.
+Sustitución del proceso de firma física del documento.
+Control documental avanzado fuera del archivo firmado cargado.
+Integración con sistemas externos institucionales.
+Envío real de notificaciones por correo electrónico u otros canales externos.
+Almacenamiento en servidor o base de datos externa, ya que el sistema demo utiliza almacenamiento local.
+Flujo de firmas electrónicas por colaborador, jefe inmediato o Talento Humano.
+Eliminación definitiva de registros con trazabilidad histórica.
+Creación de versiones nuevas mientras exista una versión activa o en proceso.
+Duplicación de descriptores activos para un mismo puesto.
+Modificación de la bitácora una vez registrada la acción.
+Ocultar el avance del descriptor a los usuarios responsables del flujo.
+Flujo general del proceso (Resumen)
+Procedimiento de Descriptor y Perfil de Puesto UEES
+Requerimientos Funcionales
+RF-01 – Creación y Gestión Inicial del Descriptor
+Proceso para crear un descriptor de puesto en formato corto o extenso, seleccionando una unidad organizativa y un puesto según el rol del usuario que realiza la creación. Cuando el descriptor lo crea la Generalista de Talento Humano, se muestran todas las unidades organizativas disponibles y los puestos asociados a cada una. Esto le permite crear descriptores para cualquier unidad organizativa. Cuando el descriptor lo crea el Jefe Inmediato, solo se muestra su unidad organizativa asignada y los puestos pertenecientes a dicha unidad. De esta forma, el Jefe Inmediato únicamente puede crear descriptores relacionados con su propia unidad organizativa. Si durante la creación se requiere un puesto que aún no existe en el catálogo oficial, puede registrarse como puesto pendiente de aprobación. Este puesto no entra directamente al catálogo oficial de puestos activos y aprobados; queda pendiente hasta que sea aprobado. Una vez aprobado, pasa al catálogo oficial y puede utilizarse para completar el proceso del descriptor.
+Actor: Jefe Inmediato, Coordinador, Generalista de Talento Humano y Jefe de Talento Humano.
+Datos requeridos:
+FORMATO DESCRIPTOR INTEGRADO
+FORMATO 2026
+Usuario creador.
+Rol del usuario creador.
+Estado del descriptor.
+Versión del descriptor.
+Código del descriptor.
+Estados:
+Código
+Estado
+Descripción
+BORRADOR
+Borrador
+Descriptor creado y guardado inicialmente antes de enviarse a revisión.
+ENVIADO_JF
+Enviado a JIS
+Descriptor creado por Jefe Inmediato y enviado al Jefe Inmediato Superior.
+REVISION_JI_TH
+Revisión inicial JI
+Descriptor creado por Talento Humano y enviado al Jefe Inmediato para revisión inicial.
+Reglas críticas:
+El descriptor inicia en estado Borrador.
+La Generalista de TH visualiza todas las unidades organizativas disponibles.
+La Generalista de TH puede seleccionar cualquier unidad organizativa y sus puestos asociados.
+El Jefe Inmediato visualiza únicamente su unidad organizativa asignada.
+El Jefe Inmediato solo puede seleccionar puestos pertenecientes a su unidad organizativa.
+La unidad organizativa seleccionada determina los puestos disponibles.
+Solo los puestos activos y aprobados pertenecen al catálogo oficial.
+Si el puesto requerido no existe en el catálogo oficial, puede registrarse como puesto pendiente de aprobación.
+Un puesto pendiente de aprobación no se considera parte del catálogo oficial.
+Un puesto pendiente no debe utilizarse para completar la activación o generación final del descriptor hasta ser aprobado.
+Cuando el puesto pendiente sea aprobado, pasa al catálogo oficial como puesto activo y aprobado.
+No puede existir más de un descriptor vigente o en proceso para el mismo puesto.
+Se considera vigente o en proceso todo descriptor que no esté en estado Inactivo.
+La versión del descriptor se asigna según el historial del puesto.
+El tipo de formato seleccionado define las secciones visibles, los datos guardados y el reporte disponible.
+En formato corto se gestionan funciones secundarias y KPIs.
+En formato extenso se gestionan actividades por función clave, relaciones laborales y riesgos físicos.
+En formato corto, las competencias conductuales se manejan como listado.
+En formato extenso, las competencias conductuales incluyen descripción o definición.
+El descriptor creado por Jefe Inmediato se envía posteriormente al Jefe Inmediato Superior.
+El descriptor creado por Talento Humano puede enviarse al Jefe Inmediato para revisión inicial.
+El descriptor no podrá generarse o activarse si el puesto asociado no está aprobado.
+Automatizaciones:
+Cargar todas las unidades organizativas cuando el usuario es Generalista de TH.
+Cargar únicamente la unidad organizativa asignada cuando el usuario es Jefe Inmediato.
+Cargar los puestos según la unidad organizativa disponible o seleccionada.
+Mostrar el estado del puesto seleccionado: aprobado o pendiente.
+Registrar automáticamente el usuario creador.
+Registrar automáticamente el rol del usuario creador.
+Registrar automáticamente la fecha de creación.
+Asignar automáticamente el código del descriptor.
+Asignar automáticamente la versión según historial del puesto.
+Guardar el descriptor inicialmente como Borrador.
+Registrar el evento de creación en la bitácora.
+Registrar el puesto nuevo como Pendiente de aprobación cuando se crea desde el proceso del descriptor.
+Mover el puesto al catálogo oficial cuando sea aprobado.
+Mostrar u ocultar secciones según el formato corto o extenso.
+Excepciones:
+Si no se selecciona unidad organizativa, no puede completarse la creación.
+Si no se selecciona puesto, no puede completarse la creación.
+Si el Jefe Inmediato intenta crear un descriptor fuera de su unidad organizativa, la opción no debe estar disponible.
+Si el puesto está pendiente de aprobación, se identifica como no oficial.
+Si el puesto no está aprobado, el descriptor no puede generarse o activarse.
+Si ya existe un descriptor vigente o en proceso para el mismo puesto, se bloquea la creación.
+Si se intenta registrar un puesto duplicado dentro de la misma unidad organizativa, se muestra validación.
+Si el descriptor se abre en modo solo lectura, no permite guardar cambios.
+Si se edita un descriptor y el nuevo puesto seleccionado ya tiene descriptor vigente o en proceso, se bloquea la actualización.
+RF-02 – Revisión y Validación del Descriptor
+Proceso para revisar, observar, corregir y validar un descriptor de puesto antes de que pueda quedar aprobado para uso. La revisión depende del origen del descriptor: si fue creado por Jefe Inmediato, pasa primero por Jefe Inmediato Superior; si fue creado por Talento Humano, pasa primero por revisión inicial del Jefe Inmediato. Después de esa primera revisión, el descriptor continúa hacia Talento Humano para revisión técnica y validación final.
+La revisión puede seguir dos rutas principales:
+Descriptor creado por Jefe Inmediato: se envía primero al Jefe Inmediato Superior y luego a Talento Humano.
+Descriptor creado por Talento Humano: se envía primero al Jefe Inmediato para revisión inicial y luego regresa a Talento Humano para validación.
+Actor: Jefe Inmediato, Coordinador, Jefe Inmediato Superior, Generalista de Talento Humano y Jefe de Talento Humano.
+Datos requeridos:
+Descriptor seleccionado.
+Tipo de formato: corto o extenso.
+Estado actual del descriptor.
+Usuario que revisa.
+Rol del usuario que revisa.
+Observaciones del Jefe Inmediato Superior, cuando aplique.
+Observaciones de Talento Humano, cuando aplique.
+Secciones modificadas durante corrección o revisión.
+Fecha de revisión.
+Fecha de observación.
+Fecha de visto bueno.
+Usuario que registra la acción.
+Bitácora del descriptor.
+Estados:
+Código
+Estado
+Descripción
+BORRADOR
+Borrador
+Descriptor creado, aún sin enviar a revisión.
+ENVIADO_JF
+Enviado a JIS
+Descriptor enviado al Jefe Inmediato Superior para revisión.
+OBSERVADO_JF
+Observado por JIS
+Descriptor devuelto por Jefe Inmediato Superior con observaciones.
+REVISION_JI_TH
+Revisión inicial JI
+Descriptor creado por Talento Humano y enviado al Jefe Inmediato para revisión inicial.
+ENVIADO_TH
+Enviado a TH
+Descriptor enviado a Talento Humano para revisión técnica.
+OBSERVADO_TH
+Observado por TH
+Descriptor devuelto por Talento Humano con observaciones técnicas.
+REVISION_CAMBIOS_TH
+Revisión de cambios TH
+Descriptor revisado o corregido por Jefe Inmediato y reenviado a TH.
+ACTIVO
+Activo
+Descriptor validado por Talento Humano y disponible para uso.
+Reglas críticas:
+El descriptor creado por Jefe Inmediato pasa primero al Jefe Inmediato Superior.
+El descriptor creado por Talento Humano puede pasar primero al Jefe Inmediato para revisión inicial.
+El Jefe Inmediato Superior revisa únicamente descriptores en estado Enviado a JIS.
+Jefe Inmediato Superior puede aprobar o devolver con observaciones.
+Si JIS observa el descriptor, la observación es obligatoria.
+Un descriptor observado por JIS vuelve al Jefe Inmediato para corrección.
+Después de corregir, el Jefe Inmediato puede reenviar el descriptor al JIS.
+Si JIS aprueba, el descriptor pasa a Talento Humano.
+Talento Humano revisa descriptores en estado Enviado a TH o Revisión de cambios TH.
+Talento Humano puede editar o completar información técnica cuando corresponda.
+Talento Humano puede devolver el descriptor con observaciones técnicas.
+Si TH observa el descriptor, la observación es obligatoria.
+Un descriptor observado por TH vuelve al Jefe Inmediato para corrección.
+Después de corregir observaciones de TH, el Jefe Inmediato puede reenviar el descriptor a TH.
+Cuando el descriptor fue creado por TH, el visto bueno del Jefe Inmediato no activa el descriptor; lo envía a revisión de cambios TH.
+La validación final corresponde a Generalista TH o Jefe TH.
+La validación final solo procede si el puesto está aprobado.
+Cada aprobación, observación, corrección o reenvío queda registrado en bitácora.
+Automatizaciones:
+Cambiar a Enviado a JIS cuando el Jefe Inmediato envía el descriptor a revisión.
+Cambiar a Observado por JIS cuando JIS registra observaciones.
+Cambiar a Enviado a TH cuando JIS aprueba el descriptor.
+Cambiar a Revisión inicial JI cuando Talento Humano envía un descriptor al Jefe Inmediato.
+Cambiar a Revisión de cambios TH cuando el Jefe Inmediato da visto bueno a un descriptor creado por TH.
+Cambiar a Observado por TH cuando Talento Humano registra observaciones.
+Cambiar a Activo cuando Talento Humano valida el descriptor.
+Registrar automáticamente usuario, rol, fecha, acción, estado anterior, estado nuevo y observación.
+Registrar las secciones modificadas durante las correcciones o revisiones.
+Mostrar el descriptor en modo lectura cuando el actor solo debe revisar.
+Habilitar edición cuando el actor debe corregir o completar información.
+Excepciones:
+Si el descriptor no está en el estado correspondiente, la acción no puede realizarse.
+Si el usuario no tiene el rol correspondiente, no puede aprobar, observar, corregir o validar.
+Si se intenta observar sin ingresar comentario, la observación no se registra.
+Si el puesto no está aprobado, la validación final queda bloqueada.
+Si el descriptor observado no ha sido corregido, no debe avanzar al siguiente paso.
+Si el descriptor ya está activo, no vuelve al flujo de revisión normal.
+Si el descriptor no existe, no puede abrirse ni gestionarse.
+RF-03 – Activación, Desactivación, Reactivación y Control de Versiones
+Proceso para administrar el ciclo de vida final del descriptor, permitiendo activarlo, desactivarlo, reactivarlo y generar una nueva versión o copia editable cuando corresponda. La activación ocurre después de la validación de Talento Humano, siempre que el puesto asociado ya esté aprobado. La desactivación conserva el descriptor como historial. La reactivación permite volver a dejar vigente un descriptor inactivo únicamente si no existe otro descriptor activo o en proceso para el mismo puesto. El control de versiones permite crear una nueva copia del descriptor solo cuando el descriptor anterior del puesto ya fue desactivado. Aunque un descriptor quede inactivo para el puesto, puede seguir siendo el descriptor vigente para un colaborador si ese colaborador no tiene asignada una versión activa más reciente del mismo puesto.
+Actor: Generalista de Talento Humano, Jefe de Talento Humano
+Datos requeridos:
+Descriptor seleccionado.
+Versión actual.
+Estado actual.
+Estado anterior.
+Usuario que ejecuta la acción.
+Rol del usuario que ejecuta la acción.
+Fecha de activación o visto bueno.
+Fecha de desactivación.
+Motivo de desactivación.
+Descriptor origen, cuando se crea una nueva versión.
+Código origen, cuando se crea una nueva versión.
+Versión origen.
+Nueva versión asignada.
+Bitácora del descriptor.
+Estados:
+...[truncated paragraphs]...
+
+=== TABLES ===
+--- Table 1 2x3 ---
+Universidad Evangélica de El Salvador | Documento de Requerimientos Funcionales (DRF) | CÓDIGO: DRF-TH-SC Vigencia: Indefinida
+ |  | Emisión: Enero 2026 2ª. Actualización:
+--- Table 2 5x2 ---
+Proyecto | ERP Universitario
+Módulo | Recursos Humanos
+Submódulo | Reclutamiento, Selección y Contratación de Personal
+Base documental | Procedimiento de Descriptor y Perfil de Puesto UEES
+Objetivo | Definir los requerimientos funcionales para implementar en el ERP el proceso institucional de reclutamiento, selección y...
+--- Table 3 7x2 ---
+Actor | Descripción
+Jefe Inmediato | Usuario responsable de crear, editar y gestionar descriptores de puesto de su área asignada. Puede enviar descriptores a...
+Jefe Superior | Usuario encargado de revisar los descriptores enviados por el Jefe Inmediato. Puede aprobar el descriptor para enviarlo ...
+Generalista de Talento Humano | Usuario responsable de revisar, editar, observar y validar descriptores de puesto. También puede crear descriptores, adm...
+Jefe de Talento Humano | Usuario con autoridad para validar descriptores y aprobar puestos de trabajo. Puede crear descriptores, crear puestos ap...
+Colaborador/Titular del Puesto | Usuario al que se le asigna uno o varios descriptores de puesto. Puede consultar los descriptores asignados y descargar ...
+Sistema | Administra automáticamente los estados, validaciones, reglas de negocio, control de versiones, trazabilidad, historial d...
+--- Table 4 4x3 ---
+Código | Estado | Descripción
+BORRADOR | Borrador | Descriptor creado y guardado inicialmente antes de enviarse a revisión.
+ENVIADO_JF | Enviado a JIS | Descriptor creado por Jefe Inmediato y enviado al Jefe Inmediato Superior.
+REVISION_JI_TH | Revisión inicial JI | Descriptor creado por Talento Humano y enviado al Jefe Inmediato para revisión inicial.
+--- Table 5 9x3 ---
+Código | Estado | Descripción
+BORRADOR | Borrador | Descriptor creado, aún sin enviar a revisión.
+ENVIADO_JF | Enviado a JIS | Descriptor enviado al Jefe Inmediato Superior para revisión.
+OBSERVADO_JF | Observado por JIS | Descriptor devuelto por Jefe Inmediato Superior con observaciones.
+REVISION_JI_TH | Revisión inicial JI | Descriptor creado por Talento Humano y enviado al Jefe Inmediato para revisión inicial.
+ENVIADO_TH | Enviado a TH | Descriptor enviado a Talento Humano para revisión técnica.
+OBSERVADO_TH | Observado por TH | Descriptor devuelto por Talento Humano con observaciones técnicas.
+REVISION_CAMBIOS_TH | Revisión de cambios TH | Descriptor revisado o corregido por Jefe Inmediato y reenviado a TH.
+ACTIVO | Activo | Descriptor validado por Talento Humano y disponible para uso.
+--- Table 6 7x3 ---
+Código | Estado | Descripción
+ENVIADO_TH | Enviado a TH | Descriptor pendiente de validación final por Talento Humano.
+REVISION_CAMBIOS_TH | Revisión de cambios TH | Descriptor con cambios revisados, pendiente de validación por TH.
+ACTIVO | Activo | Descriptor validado y disponible para consulta, reportes, asignación de colaboradores y gestión documental.
+INACTIVO | Inactivo | Descriptor desactivado, conservado como historial y habilitado para crear una nueva versión.
+BORRADOR | Borrador | Estado inicial de una nueva versión o copia editable.
+VIGENTE_COLABORADOR | Vigente para colaborador | Descriptor asignado a un colaborador, aunque esté inactivo a nivel general, cuando no existe una versión activa más reci...
+--- Table 7 7x3 ---
+Código | Estado | Descripción
+ACTIVO | Activo | Descriptor disponible para generar reporte.
+CORTA | Versión corta | Descriptor creado para generar reporte resumido.
+EXTENSA | Versión extensa | Descriptor creado para generar reporte completo.
+ASIGNADO | Colaborador asignado | Descriptor relacionado a uno o varios colaboradores.
+PENDIENTE | Documento pendiente | Colaborador asignado sin documento firmado cargado.
+CARGADO | Documento cargado | Colaborador asignado con documento firmado cargado.
+--- Table 8 6x3 ---
+Código | Estado | Descripción
+ACTIVO | Activo | Descriptor disponible para asignación de colaboradores.
+ASIGNADO | Asignado | Colaborador relacionado al descriptor activo.
+SIN_ASIGNAR | Sin asignar | Descriptor activo sin colaboradores seleccionados.
+DOCUMENTO_PENDIENTE | Documento pendiente | Colaborador asignado sin documento firmado cargado.
+DOCUMENTO_CARGADO | Documento cargado | Colaborador asignado con documento firmado cargado previamente.
+--- Table 9 4x3 ---
+Código | Estado | Descripción
+DOCUMENTO_PENDIENTE | Documento pendiente | Colaborador asignado sin documento firmado cargado.
+DOCUMENTO_CARGADO | Documento cargado | Colaborador asignado con documento firmado disponible para descarga.
+DESCARGADO | Descargado | Documento firmado descargado por un usuario autorizado o por el colaborador asignado.
+--- Table 10 4x3 ---
+Código | Estado | Descripción
+REGISTRADO | Registrado | Evento almacenado en la bitácora del descriptor.
+CONSULTADO | Consultado | Bitácora visualizada por un usuario autorizado.
+SIN_EVENTOS | Sin eventos | Descriptor sin eventos adicionales registrados o sin historial para el usuario consultado.
+--- Table 11 26x2 ---
+Código | Regla
+RN-01 | No puede existir más de un descriptor vigente o en proceso para un mismo puesto.
+RN-02 | Todo descriptor inicia en estado Borrador al momento de su creación.
+RN-03 | La Generalista de TH visualiza todas las unidades organizativas y sus puestos disponibles al crear un descriptor.
+RN-04 | El Jefe Inmediato visualiza únicamente su unidad organizativa y los puestos pertenecientes a ella.
+RN-05 | Los puestos nuevos creados durante el proceso del descriptor quedan como pendientes de aprobación y no ingresan directam...
+RN-06 | Un puesto pendiente de aprobación no puede utilizarse para activar el descriptor hasta ser aprobado.
+RN-07 | Cuando un puesto pendiente es aprobado, pasa al catálogo oficial como puesto activo y aprobado.
+RN-08 | El tipo de formato seleccionado define las secciones visibles, los datos guardados y el reporte disponible.
+RN-09 | En formato corto se gestionan funciones secundarias, KPIs y competencias conductuales como listado.
+RN-10 | En formato extenso se gestionan actividades por función clave, relaciones laborales, riesgos físicos y competencias cond...
+RN-11 | El descriptor creado por Jefe Inmediato pasa primero a revisión del Jefe Inmediato Superior.
+RN-12 | El descriptor creado por Talento Humano puede pasar primero a revisión inicial del Jefe Inmediato.
+RN-13 | Toda observación realizada por JIS o TH debe incluir comentario obligatorio.
+RN-14 | Todo descriptor observado debe corregirse antes de reenviarse al flujo correspondiente.
+RN-15 | La validación final del descriptor corresponde a Talento Humano y solo procede si el puesto está aprobado.
+RN-16 | Solo un descriptor validado puede quedar Activo para uso operativo.
+RN-17 | La desactivación de un descriptor requiere motivo obligatorio y conserva el registro como historial.
+RN-18 | Una nueva versión o copia editable solo puede crearse desde un descriptor Inactivo.
+RN-19 | La nueva versión inicia en estado Borrador y no copia colaboradores, documentos firmados, firmas, vistos buenos, observa...
+RN-20 | No puede reactivarse un descriptor si existe otra versión activa o en proceso para el mismo puesto.
+RN-21 | Un descriptor inactivo puede seguir vigente para un colaborador si continúa asociado a él y no tiene otra versión activa...
+RN-22 | Una nueva versión activa no reemplaza automáticamente el descriptor asociado a un colaborador; debe asociarse explícitam...
+RN-23 | El reporte generado debe corresponder al formato original del descriptor: corto o extenso.
+RN-24 | Los documentos firmados se cargan individualmente por colaborador asociado y no representan firma electrónica ni firma d...
+--- Table 12 3x3 ---
+Código | Área | Estado
+A-001 | Pendiente de definición | Activo
+A-002 | Pendiente de definición | Activo
+--- Table 13 3x4 ---
+Código | Puesto | Área Asociada | Estado
+P-01 | Pendiente de definición | Pendiente de definición | Activo
+P-02 | Pendiente de definición | Pendiente de definición | Activo
+--- Table 14 8x2 ---
+Código | Descripción
+F-001 | Diaria
+F-002 | Semanal
+F-003 | Mensual
+F-004 | Semanal
+F-005 | Trimestral
+F-006 | Semestral
+F-007 | Anual
+--- Table 15 4x3 ---
+Código | Descripción | Detalle
+MOD-01 | Presencial | Trabajo 100% en instalaciones institucionales
+MOD-02 | Remoto | Trabajo 100% remoto desde ubicación del empleado
+MOD-03 | Híbrido | Combinación de días presenciales y remotos

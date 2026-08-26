@@ -22,6 +22,7 @@
          @CIERRE = 0,              -- 0 = igual CLASS (excluye lotes cierre); 1 = incluye todo
          @CORR_EMPRESA = 1,
          @MODO = 'PREVIEW',         -- PREVIEW | MIGRAR | APLICAR
+         @MES_PARTIDA = 8,          -- opcional: periodo destino APE (NULL = mismo @MES)
          @CORR_PARTIDA = NULL,      -- requerido en APLICAR
          @SYS_LOGIN_USUARIO = 'MIGRACION',
          @SYS_ESTACION = 'SQL';
@@ -88,6 +89,7 @@ CREATE PROCEDURE dbo.PRAL_MIGR_CLASS_SALDO_INICIAL_BALANCE
     @CORR_EMPRESA INT = 1,
     @MODO VARCHAR(10) = 'PREVIEW',          -- PREVIEW | MIGRAR | APLICAR
     @INCLUIR_CERO BIT = 0,
+    @MES_PARTIDA INT = NULL,                -- Periodo destino APE; NULL = mismo @MES
     @CORR_PARTIDA INT = NULL OUTPUT,
     @SYS_LOGIN_USUARIO VARCHAR(30) = 'MIGRACION',
     @SYS_ESTACION VARCHAR(50) = 'SQL',
@@ -106,6 +108,7 @@ BEGIN
 
     DECLARE @MODO_U VARCHAR(10) = UPPER(LTRIM(RTRIM(ISNULL(@MODO, 'PREVIEW'))));
     DECLARE @FECHA_CORTE DATE;
+    DECLARE @MES_PARTIDA_EFF INT;
     DECLARE @CORR_CLASE_PARTIDA INT;
     DECLARE @CORR_MONEDA INT;
     DECLARE @CORR_CENTRO_COSTO INT;
@@ -114,6 +117,14 @@ BEGIN
     DECLARE @FECHA_CREA DATETIME = GETDATE();
 
     SET @FECHA_CORTE = EOMONTH(DATEFROMPARTS(@ANIO, @MES, 1));
+    SET @MES_PARTIDA_EFF = ISNULL(@MES_PARTIDA, @MES);
+
+    IF @MES_PARTIDA_EFF < 1 OR @MES_PARTIDA_EFF > 12
+    BEGIN
+        SELECT @SYS_NUMERO_ERROR = 30007,
+               @SYS_MENSAJE_ERROR = N'@MES_PARTIDA debe estar entre 1 y 12.';
+        GOTO FINA;
+    END;
 
     IF @MODO_U = 'APLICAR'
     BEGIN
@@ -132,7 +143,7 @@ BEGIN
         EXEC dbo.PRAL_MTTO_CON_PARTIDA_APLICAR
             @CORR_EMPRESA,
             @ANIO,
-            @MES,
+            @MES_PARTIDA_EFF,
             @CORR_CLASE_PARTIDA,
             @CORR_PARTIDA OUTPUT,
             @SYS_LOGIN_USUARIO,
@@ -451,6 +462,18 @@ BEGIN
                '310501'
         WHERE @GASTOINGRESO >= 0 AND @AJUSTE_ACUMULADO > 0.01
         UNION ALL
+        SELECT '310501000000',
+               N'EXCEDENTES ACUMULADOS DE ANIOS ANTERIORES',
+               -@AJUSTE_ACUMULADO,
+               '310501'
+        WHERE @GASTOINGRESO >= 0 AND @AJUSTE_ACUMULADO < -0.01
+        UNION ALL
+        SELECT '310701000000',
+               N'DEFICIT ACUMULADO DE ANIOS ANTERIORES',
+               @AJUSTE_ACUMULADO,
+               '310701'
+        WHERE @GASTOINGRESO < 0 AND @AJUSTE_ACUMULADO < -0.01
+        UNION ALL
         SELECT '310800000000',
                N'DEFICIT DEL PERIODO ACTUAL',
                @RESULTADO_PERIODO,
@@ -533,7 +556,7 @@ BEGIN
         SELECT 1 FROM CON_PARTIDA
         WHERE CORR_EMPRESA = @CORR_EMPRESA
           AND ANIO_PERIODO = @ANIO
-          AND MES_PERIODO = @MES
+          AND MES_PERIODO = @MES_PARTIDA_EFF
           AND CORR_CLASE_PARTIDA = @CORR_CLASE_PARTIDA
     )
     BEGIN
@@ -551,7 +574,7 @@ BEGIN
             1,
             @CORR_EMPRESA,
             @ANIO,
-            @MES,
+            @MES_PARTIDA_EFF,
             @CORR_CLASE_PARTIDA,
             @CORR_PARTIDA OUTPUT,
             @FECHA_CORTE,
@@ -591,7 +614,7 @@ BEGIN
         SELECT
             @CORR_EMPRESA,
             @ANIO,
-            @MES,
+            @MES_PARTIDA_EFF,
             @CORR_CLASE_PARTIDA,
             @CORR_PARTIDA,
             ROW_NUMBER() OVER (ORDER BY M.TRAGLN_CLASS_12),

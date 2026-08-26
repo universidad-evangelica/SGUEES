@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { take } from 'rxjs/operators';
+import { take, finalize } from 'rxjs/operators';
 import { Workbook } from 'exceljs';
 import { saveAs } from 'file-saver-es';
 import { exportDataGrid } from 'devextreme/excel_exporter';
@@ -130,7 +130,13 @@ export abstract class ConReporteComponent extends CBaseComponent implements OnIn
 		this.mostrarPdf = false;
 		this.repositorio
 			.consultar(this.servicio.armarFiltroEnvio(this.codigoReporte, this.filtro))
-			.pipe(take(1))
+			.pipe(
+				take(1),
+				finalize(() => {
+					this.loadingVisible = false;
+					this.shell?.sincronizarAltoDrawer();
+				})
+			)
 			.subscribe({
 				next: (response: any) => {
 					if (response.Result) {
@@ -146,11 +152,8 @@ export abstract class ConReporteComponent extends CBaseComponent implements OnIn
 						this.inicializarColumnas();
 						this.notifyFx(response.ErrorMessage, NotifyType.Error);
 					}
-					this.loadingVisible = false;
-					this.shell?.sincronizarAltoDrawer();
 				},
 				error: (error: any) => {
-					this.loadingVisible = false;
 					this.notifyFx(this.extraerMensajeError(error), NotifyType.Error);
 				},
 			});

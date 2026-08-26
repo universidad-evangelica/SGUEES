@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace sgueesRpt.Reports.Accounting.BALANCE_COMPROBACION_MES
+namespace sgueesRpt.Models
 {
 	public class BALANCE_COMPROBACION_MES_IMPRView
 	{

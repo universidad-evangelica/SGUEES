@@ -1,0 +1,8 @@
+ID,Nombre,Incluye,Periodo,Avance,Estado,H26a,H26b,H27a,H27b,H28a,H28b
+C1,1. Identificacion de procedimientos,DICA: actualizacion del manual. Priorizacion DTI. Este % no es avance de modulos.,2026,0.895,En curso,1,1,0,0,0,0
+C2,2. Analisis de requerimientos (DRF),Producto DRF sobre procedimientos priorizados. 3 areas abiertas.,2026-2028,0.08,En curso,1,1,1,1,1,1
+C3,3. Diseno y planificacion (fundacion tecnica),Arquitectura; seguridad; estandar de desarrollo; ambientes.,2026,0.85,En curso,1,1,0,0,0,0
+C4,4. Desarrollo,Base y catalogos visibles; flujos de negocio aun en construccion.,2026-2028,0.08,En curso,1,1,1,1,1,1
+C5,5. Pruebas,UAT y prototipo funcional MVP.,2027-2028,0,Planificado,0,0,1,1,1,1
+C6,6. Implementacion,Puesta en marcha del MVP y oleadas siguientes.,2027-2028,0,Planificado,0,0,1,1,1,1
+C7,7. Mantenimiento y soporte,Operacion continua post implementacion.,2028,0,Pendiente,0,0,0,0,1,1

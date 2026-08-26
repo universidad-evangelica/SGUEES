@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace sgueesRpt.Reports.Banking.BAN_ENTREGA_CHEQUES
+namespace sgueesRpt.Models
 {
 	public class BAN_ENTREGA_CHEQUES_IMPRView
 	{
