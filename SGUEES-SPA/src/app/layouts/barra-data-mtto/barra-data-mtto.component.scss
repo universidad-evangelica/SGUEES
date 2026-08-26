@@ -357,7 +357,7 @@
 
     ::ng-deep .dx-toolbar-items-container {
       display: flex !important;
-      align-items: center;
+      margin-bottom: -15px !important;
       position: relative !important;
       height: auto !important;
       min-height: var(--sguees-toolbar-height, 44px);
