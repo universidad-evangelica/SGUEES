@@ -332,12 +332,24 @@
     gap: var(--sguees-space-3);
   }
 
+  /* Form/Nuevo (sin combox): toolbar a ancho completo — no cajita a la izquierda. */
+  .sguees-barra-actions:not(.sguees-barra-actions--with-combox) > .sguees-barra-toolbar--start {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+
+    ::ng-deep .dx-toolbar,
+    ::ng-deep .dx-toolbar-items-container {
+      width: 100% !important;
+    }
+  }
+
   /*
-    Qué hace: DX usa position:absolute en before/after → ancho 0 y solape.
+    Qué hace: solo con combox en browse. DX usa position:absolute → ancho 0 y solape.
     Aquí before/after son estáticos para que start tome el ancho real.
   */
-  .sguees-barra-actions > .sguees-barra-toolbar--start,
-  .sguees-barra-actions > .sguees-barra-toolbar--end {
+  .sguees-barra-actions--with-combox > .sguees-barra-toolbar--start,
+  .sguees-barra-actions--with-combox > .sguees-barra-toolbar--end {
     ::ng-deep .dx-toolbar {
       height: auto;
       min-height: var(--sguees-toolbar-height, 44px);
@@ -367,7 +379,7 @@
     }
   }
 
-  .sguees-barra-actions > .sguees-barra-toolbar--start {
+  .sguees-barra-actions--with-combox > .sguees-barra-toolbar--start {
     flex: 0 0 auto;
     width: max-content;
     min-width: max-content;
@@ -379,26 +391,26 @@
     }
   }
 
-  .sguees-barra-actions .sguees-barra-combox-row {
+  .sguees-barra-actions--with-combox .sguees-barra-combox-row {
     flex: 0 0 auto;
     width: auto;
     align-items: center;
     padding-top: 16px;
   }
 
-  .sguees-barra-actions .sguees-barra-combox {
+  .sguees-barra-actions--with-combox .sguees-barra-combox {
     position: relative;
     gap: 0;
   }
 
-  .sguees-barra-actions .sguees-barra-combox__label {
+  .sguees-barra-actions--with-combox .sguees-barra-combox__label {
     position: absolute;
     left: 0;
     bottom: calc(100% + 2px);
     line-height: 1;
   }
 
-  .sguees-barra-actions > .sguees-barra-toolbar--end {
+  .sguees-barra-actions--with-combox > .sguees-barra-toolbar--end {
     flex: 1 1 auto;
     min-width: 0;
     width: auto;
