@@ -86,4 +86,15 @@ export class ScDescriptorPuestoRepository {
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
 	}
+
+	// Qu� hace: solicita el PDF Formato corto del descriptor.
+	// Cómo: POST getPDF (blob) a SC_DESCRIPTOR_PUESTO (mismo patrón con-partida).
+	getPDF(model: any): Observable<Blob> {
+		return this.objData.PostBlob(
+			model,
+			this.xController,
+			'getPDF',
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }

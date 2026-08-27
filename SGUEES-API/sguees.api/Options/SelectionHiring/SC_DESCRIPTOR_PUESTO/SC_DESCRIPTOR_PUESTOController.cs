@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -122,6 +123,39 @@ namespace SGUEES.Controllers
             Data.CORR_EMPRESA = GetCorrEmpresa();
             Data.LOGIN_SISTEMA = GetUsuario();
             return await _service.GetAccionesFlujoAsync(Data, GetPermisoOpcion());
+        }
+
+        // Qué hace: genera PDF Formato corto del descriptor (Crystal vía SGUEES-RPT).
+        // Cómo: POST getPDF → SP impresión + SelectionHiring/PostScDescriptorPuestoFormatoCortoImpr.
+        [HttpPost("getPDF")]
+        [Authorize(Policy = "/sc-descriptor-puesto|P")]
+        public async Task<IActionResult> GetPDF([FromBody] SC_DESCRIPTOR_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            var login = GetUsuario() ?? string.Empty;
+            try
+            {
+                var stream = await _service.GetPDFFormatoCortoAsync(Data, login);
+                if (stream == null)
+                {
+                    return BadRequest(new CResult
+                    {
+                        Result = false,
+                        ErrorCode = -1,
+                        ErrorMessage = "No se pudo generar el PDF del descriptor.",
+                    });
+                }
+
+                return File(stream, "application/pdf", "SC_DESCRIPTOR_PUESTO_FORMATO_CORTO.pdf");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
+            }
         }
 
         // Elimina un descriptor de la empresa en sesión; borra también sus registros hijos.

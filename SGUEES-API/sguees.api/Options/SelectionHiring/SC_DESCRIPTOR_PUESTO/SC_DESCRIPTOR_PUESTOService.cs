@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
 using eFramework.Data;
 using SGUEES.Models;
 using SGUEES.Repositories;
+using sguees.Services;
 
 namespace SGUEES.Services
 {
@@ -16,19 +18,25 @@ namespace SGUEES.Services
         private readonly ISC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService _requerimientoOrganizacionalService;
         private readonly ISC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService _riesgoPuestoService;
         private readonly ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService _responsabilidadCargoService;
+        private readonly ISC_REPORepository _repoRpt;
+        private readonly ISEG_USUARIOService _repoUser;
 
         public SC_DESCRIPTOR_PUESTOService(
             ISC_DESCRIPTOR_PUESTORepository repo,
             ISC_UNIDADES_USUARIORepository unidadesUsuarioRepo,
             ISC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONALService requerimientoOrganizacionalService,
             ISC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService riesgoPuestoService,
-            ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService responsabilidadCargoService)
+            ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService responsabilidadCargoService,
+            ISC_REPORepository repoRpt,
+            ISEG_USUARIOService repoUser)
         {
             _repo = repo;
             _unidadesUsuarioRepo = unidadesUsuarioRepo;
             _requerimientoOrganizacionalService = requerimientoOrganizacionalService;
             _riesgoPuestoService = riesgoPuestoService;
             _responsabilidadCargoService = responsabilidadCargoService;
+            _repoRpt = repoRpt;
+            _repoUser = repoUser;
         }
 
         // Qué hace: lista descriptores de la empresa visibles para el usuario de sesión.
@@ -458,6 +466,30 @@ namespace SGUEES.Services
             }
 
             return result;
+        }
+
+        // Qué hace: arma el PDF Formato corto del descriptor (solo datos SC_DESCRIPTOR_PUESTO por ahora).
+        // Cómo: SP de impresión → SC_REPO → SelectionHiring/PostScDescriptorPuestoFormatoCortoImpr.
+        public async Task<Stream> GetPDFFormatoCortoAsync(SC_DESCRIPTOR_PUESTOParam xWhere, string loginSistema)
+        {
+            var p = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "@CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "@CORR_DESCRIPTOR_PUESTO", Value = xWhere.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+            };
+
+            var dataResult = await _repo.GetDescriptorFormatoCortoImprAsync(p);
+            if (!dataResult.Result || dataResult.Data == null)
+            {
+                throw new InvalidOperationException(
+                    string.IsNullOrWhiteSpace(dataResult.ErrorMessage)
+                        ? "No se pudo obtener datos para imprimir el descriptor."
+                        : dataResult.ErrorMessage);
+            }
+
+            return await _repoRpt.GetScDescriptorPuestoFormatoCortoImprAsync(
+                (List<SC_DESCRIPTOR_PUESTO_IMPRView>)dataResult.Data,
+                _repoUser.GenerateRptToken(loginSistema));
         }
 
         // Qué hace: apaga flags PUEDE_* de flujo si el login no tiene permiso U (Update).

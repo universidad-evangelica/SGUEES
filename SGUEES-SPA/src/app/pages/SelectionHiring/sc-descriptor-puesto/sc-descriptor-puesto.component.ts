@@ -1,4 +1,5 @@
-import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+﻿import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 import { DxFormComponent } from 'devextreme-angular/ui/form';
@@ -66,6 +67,7 @@ import {
 	esEstadoDescriptorEditable,
 	esEstadoDescriptorEliminable,
 	CORR_ESTADO_APROBADO_JI,
+	CORR_ESTADO_ACTIVO,
 	CORR_ESTADO_ENVIADO_JI,
 	CORR_ESTADO_ENVIADO_JTH,
 	CORR_ESTADO_REVISADO_TH,
@@ -137,7 +139,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	filtroCorrUnidad: number | null = 0;
 	/** 0 = sin filtro de estado (opción Todos del combo). */
 	filtroCorrEstado: number = 0;
-	// Qué hace: configs para combox1/combox2 de la barra global (mismo patrón que btn1–btn6).
+	// Qué hace: configs para combox1/combox2 de la barra global (mismo patrón que btn1�?"btn6).
 	barraFiltroUnidad: BarraMttoCombox | null = null;
 	barraFiltroEstado: BarraMttoCombox | null = null;
 	// Qué hace: copia completa del GetAll antes de aplicar filtros de unidad/estado.
@@ -238,6 +240,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	btnObservar = '';
 	btnInactivar = '';
 	btnReactivar = '';
+	// Qué hace: botón Imprimir Formato corto (solo Activo + permiso P).
+	btnImprimirFormatoCorto = '';
+
+	popupVisiblePdf = false;
+	vPDF: Blob | null = null;
+	PDF!: SafeUrl;
 
 	// Qué hace: false = Solicitar envía sin modal (modal queda para futuro).
 	usarPopupFlujoEnviar = false;
@@ -359,7 +367,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private service: ScDescriptorPuestoService,
-		private cdr: ChangeDetectorRef
+		private cdr: ChangeDetectorRef,
+		private sanitization: DomSanitizer
 	) {
 		super(appInfoService, router);
 		this.getPermiteEditar = this.getPermiteEditar.bind(this);
@@ -490,7 +499,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: carga las unidades efectivas del usuario de sesión (puesto + jefe + configuradas).
-	// Cómo: lookup GetCORR_UNIDAD → GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO; el API ejecuta PRAL_DATA_SC_UNIDADES_USUARIO.
+	// Cómo: lookup GetCORR_UNIDAD �?' GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO; el API ejecuta PRAL_DATA_SC_UNIDADES_USUARIO.
 	getCORR_UNIDAD(): void {
 		this.appInfoService
 			.getLookUp(
@@ -1255,11 +1264,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.refrescarBotonesFlujo();
 	}
 
-	// Qué hace: al enfocar una fila en la grilla, carga el modelo y refresca botones de flujo.
-	// Cómo: delega al base (asigna this.model) y recalcula Solicitar/Aprobar/etc. en el header.
+	// Qué hace: al enfocar una fila en la grilla, carga el modelo y refresca botones de flujo/impresión.
+	// Cómo: delega al base (asigna this.model); Imprimir Formato corto si Activo; luego GetAccionesFlujo.
 	override focusedRowChanged(e: any): void {
 		super.focusedRowChanged(e);
 		if (this.isBrowse()) {
+			this.actualizarBotonImprimirFormatoCorto();
 			this.refrescarBotonesFlujo();
 		}
 	}
@@ -6428,12 +6438,68 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.btnObservar = this.accionesFlujo.puedeObservar ? 'Observar' : '';
 					this.btnInactivar = this.accionesFlujo.puedeInactivar ? 'Inactivar' : '';
 					this.btnReactivar = this.accionesFlujo.puedeReactivar ? 'Reactivar' : '';
+					this.actualizarBotonImprimirFormatoCorto();
 					this.cdr.detectChanges();
 				},
 				error: () => {
 					if (this.corrAccionesFlujoSolicitado === corr) {
 						this.limpiarBotonesFlujo();
 					}
+				},
+			});
+	}
+
+	// Qué hace: muestra Imprimir Formato corto en grilla o formulario si el descriptor está Activo y hay permiso P.
+	// Cómo: CORR_ESTADO = 14 + permitePrint (claim |P); también en Browse al enfocar la fila.
+	private actualizarBotonImprimirFormatoCorto(): void {
+		const corr = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		const esActivo = toCorrEstado(this.model?.CORR_ESTADO) === CORR_ESTADO_ACTIVO;
+		this.btnImprimirFormatoCorto =
+			this.permitePrint && corr > 0 && esActivo
+				? 'Imprimir Formato corto'
+				: '';
+	}
+
+	// Qué hace: solicita PDF Formato corto y lo muestra en popup (patrón con-partida).
+	imprimirFormatoCorto(): void {
+		const corr = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corr) {
+			this.notifyFx('Seleccione un descriptor para imprimir.', NotifyType.Warning);
+			return;
+		}
+		if (toCorrEstado(this.model?.CORR_ESTADO) !== CORR_ESTADO_ACTIVO) {
+			this.notifyFx('Solo se puede imprimir cuando el descriptor esta Activo.', NotifyType.Warning);
+			return;
+		}
+		if (!this.permitePrint) {
+			this.notifyFx('No tiene permiso de impresion (P) en esta opcion.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.getPDF({ CORR_DESCRIPTOR_PUESTO: corr })
+			.pipe(take(1))
+			.subscribe({
+				next: (pdf: Blob) => {
+					if (pdf?.size) {
+						this.vPDF = pdf;
+						this.PDF = this.sanitization.bypassSecurityTrustResourceUrl(
+							window.URL.createObjectURL(pdf)
+						);
+						this.popupVisiblePdf = true;
+					} else {
+						this.notifyFx('No se recibio el PDF del descriptor.', NotifyType.Error);
+					}
+					this.loadingVisible = false;
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					const msg =
+						typeof error === 'string'
+							? error
+							: error?.ErrorMessage || error?.message || 'Error al generar PDF';
+					this.notifyFx(msg, NotifyType.Error);
 				},
 			});
 	}
@@ -6451,6 +6517,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.btnObservar = '';
 		this.btnInactivar = '';
 		this.btnReactivar = '';
+		this.actualizarBotonImprimirFormatoCorto();
 	}
 
 	// Qué hace: texto del boton de avance segun el paso (Revision TH vs Aprobar JI/JTH).
@@ -6624,8 +6691,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					}
 				},
 				error: (error: any) => {
-					// Qué hace: el ErrorInterceptor convierte BadRequest en string "Error: …".
-					// Cómo: si el texto es de negocio del flujo → Warning; si no, Error técnico.
+					// Qué hace: el ErrorInterceptor convierte BadRequest en string "Error: �?�".
+					// Cómo: si el texto es de negocio del flujo �?' Warning; si no, Error técnico.
 					this.loadingVisible = false;
 					const mensaje = this.extraerMensajeErrorAutorizaFlujo(error);
 					const tipo = this.esAvisoNegocioFlujo(mensaje) ? NotifyType.Warning : NotifyType.Error;

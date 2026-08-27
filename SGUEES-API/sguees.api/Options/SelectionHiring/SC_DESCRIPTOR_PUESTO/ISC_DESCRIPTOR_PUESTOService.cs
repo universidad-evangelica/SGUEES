@@ -1,3 +1,4 @@
+using System.IO;
 using System.Threading.Tasks;
 using eFramework.Core;
 using SGUEES.Models;
@@ -27,5 +28,7 @@ namespace SGUEES.Services
         Task<CResult> AutorizaAsync(SC_DESCRIPTOR_PUESTO_AUTORIZAParam Data, string vLOGIN_SISTEMA);
         // Qué botones de flujo mostrar según estado, destinatario del paso y permiso U de sesión.
         Task<CResult> GetAccionesFlujoAsync(SC_DESCRIPTOR_PUESTOParam xWhere, string permisoOpcion);
+        // Qué hace: genera PDF Formato corto del descriptor (SP + SGUEES-RPT).
+        Task<Stream> GetPDFFormatoCortoAsync(SC_DESCRIPTOR_PUESTOParam xWhere, string loginSistema);
     }
 }

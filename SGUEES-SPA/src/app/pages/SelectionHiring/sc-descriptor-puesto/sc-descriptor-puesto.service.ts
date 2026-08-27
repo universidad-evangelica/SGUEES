@@ -302,6 +302,12 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
+	// Qué hace: genera PDF Formato corto del descriptor seleccionado.
+	// Cómo: PostBlob getPDF con CORR_DESCRIPTOR_PUESTO.
+	getPDF(model: { CORR_DESCRIPTOR_PUESTO: number }): Observable<Blob> {
+		return this.repo.getPDF(model);
+	}
+
 	// Qué hace: define las columnas del grid de consulta, incluidos badges de formato, estado y versión.
 	getColumns(): any[] {
 		return [

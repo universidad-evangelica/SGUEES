@@ -65,8 +65,8 @@ namespace SGUEES.Repositories
         {
             return Ok(new List<SC_LISTAView>
             {
-                new() { Key = "CORTO", Value = "Version corta" },
-                new() { Key = "EXTENSO", Value = "Version extensa" },
+                new() { Key = "CORTO", Value = "Formato corto" },
+                new() { Key = "EXTENSO", Value = "Formato extenso" },
                 new() { Key = "AMBOS", Value = "Ambos" },
             });
         }

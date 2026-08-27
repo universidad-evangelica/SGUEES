@@ -731,5 +731,60 @@ namespace SGUEES.Repositories
 
             return objResultado;
         }
+
+        // Qué hace: obtiene filas de impresión Formato corto del descriptor.
+        // Cómo: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO; result set 1 = detalle,
+        //       result set 2 = encabezado/logos; merge como CON_PARTIDA.
+        public async Task<CResult> GetDescriptorFormatoCortoImprAsync(List<CParameter> xWhere)
+        {
+            CResult objResultado = new();
+            const string spName = "PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO";
+
+            try
+            {
+                var reader = await objData.GetDataReader(System.Data.CommandType.StoredProcedure, spName, xWhere);
+                var response = new List<SC_DESCRIPTOR_PUESTO_IMPRView>().FromDataReader(reader).ToList();
+                if (reader.NextResult())
+                {
+                    var header = new List<SC_DESCRIPTOR_PUESTO_IMPRView>().FromDataReader(reader).FirstOrDefault();
+                    if (header != null)
+                    {
+                        foreach (var row in response)
+                        {
+                            row.NOMBRE_EMPRESA = header.NOMBRE_EMPRESA;
+                            row.PERIODO = header.PERIODO;
+                            row.LOGO1 = header.LOGO1;
+                            row.LOGO2 = header.LOGO2;
+                            row.TITULO_REPORTE = header.TITULO_REPORTE;
+                            row.NOMBRE_SISTEMA = header.NOMBRE_SISTEMA;
+                            row.FECHA_IMPRESION = header.FECHA_IMPRESION;
+                        }
+                    }
+                }
+
+                reader.Close();
+                objResultado.Data = response;
+                objResultado.Result = response.Count > 0;
+                objResultado.RowsAffected = response.Count;
+                objResultado.ErrorCode = response.Count > 0 ? 0 : -1;
+                objResultado.ErrorMessage = response.Count > 0
+                    ? string.Empty
+                    : "No hay datos para imprimir el descriptor.";
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
     }
 }

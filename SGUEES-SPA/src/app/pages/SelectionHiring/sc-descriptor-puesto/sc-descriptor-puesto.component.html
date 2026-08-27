@@ -38,6 +38,11 @@
 	[btn5Type]="'default'"
 	[btn5Width]="120"
 	(btn5Click)="abrirPopupFlujo(OPERACION_FLUJO.REACTIVAR)"
+	[btn6]="btnImprimirFormatoCorto"
+	[btn6Icon]="'print'"
+	[btn6Type]="'default'"
+	[btn6Width]="180"
+	(btn6Click)="imprimirFormatoCorto()"
 	[combox1]="barraFiltroUnidad"
 	[combox2]="barraFiltroEstado"
 	(combox1Change)="onFiltroUnidadChanged($event)"
@@ -307,7 +312,7 @@
 							En version extensa, cada funcion clave permite registrar sus actividades.
 						</p>
 						<p class="descriptor-funciones-note" *ngIf="!esFormatoExtenso">
-							En version corta solo se registran las funciones clave, sin actividades.
+							En formato corto solo se registran las funciones clave, sin actividades.
 						</p>
 					</div>
 				</dxi-item>
@@ -2598,5 +2603,19 @@
 				(onClick)="confirmarPopupFlujo()"
 			></dx-button>
 		</div>
+	</div>
+</dx-popup>
+
+<!-- PDF Formato corto del descriptor (mismo patrón con-partida). -->
+<dx-popup
+	[(visible)]="popupVisiblePdf"
+	[title]="'Descriptor de Puesto - Formato corto'"
+	[fullScreen]="true"
+	[showCloseButton]="true"
+>
+	<div *dxTemplate="let data of 'content'" style="height: 100%;">
+		<object [data]="PDF" type="application/pdf" width="100%" height="95%">
+			<embed [src]="PDF" type="application/pdf" />
+		</object>
 	</div>
 </dx-popup>
