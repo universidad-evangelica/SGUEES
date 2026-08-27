@@ -139,7 +139,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	filtroCorrUnidad: number | null = 0;
 	/** 0 = sin filtro de estado (opción Todos del combo). */
 	filtroCorrEstado: number = 0;
-	// Qué hace: configs para combox1/combox2 de la barra global (mismo patrón que btn1�?"btn6).
+	// Qué hace: configs para combox1/combox2 de la barra global (mismo patrón que btn1–btn6).
 	barraFiltroUnidad: BarraMttoCombox | null = null;
 	barraFiltroEstado: BarraMttoCombox | null = null;
 	// Qué hace: copia completa del GetAll antes de aplicar filtros de unidad/estado.
@@ -499,7 +499,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: carga las unidades efectivas del usuario de sesión (puesto + jefe + configuradas).
-	// Cómo: lookup GetCORR_UNIDAD �?' GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO; el API ejecuta PRAL_DATA_SC_UNIDADES_USUARIO.
+	// Cómo: lookup GetCORR_UNIDAD → GetCORR_UNIDAD_SC_DESCRIPTOR_PUESTO; el API ejecuta PRAL_DATA_SC_UNIDADES_USUARIO.
 	getCORR_UNIDAD(): void {
 		this.appInfoService
 			.getLookUp(
@@ -6691,8 +6691,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					}
 				},
 				error: (error: any) => {
-					// Qué hace: el ErrorInterceptor convierte BadRequest en string "Error: �?�".
-					// Cómo: si el texto es de negocio del flujo �?' Warning; si no, Error técnico.
+					// Qué hace: el ErrorInterceptor convierte BadRequest en string "Error: …".
+					// Cómo: si el texto es de negocio del flujo → Warning; si no, Error técnico.
 					this.loadingVisible = false;
 					const mensaje = this.extraerMensajeErrorAutorizaFlujo(error);
 					const tipo = this.esAvisoNegocioFlujo(mensaje) ? NotifyType.Warning : NotifyType.Error;
