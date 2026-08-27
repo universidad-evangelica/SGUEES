@@ -283,12 +283,36 @@
     <div class="solicitud-workspace__body">
       <dx-scroll-view [scrollByContent]="true" [scrollByThumb]="true">
         <div class="solicitud-workspace__content">
-          <!-- Placeholder: el contenido del workspace se definirá después. -->
-          <p class="solicitud-workspace__placeholder">
-            Workspace de detalle de la solicitud asociada
-            (CORR_EXPEDIENTE_SOLICITUD = {{ corrExpedienteSolicitudSeleccionada }}).
-            Contenido pendiente.
-          </p>
+          <dx-tab-panel
+            class="solicitud-workspace__tabs"
+            [animationEnabled]="true"
+            [swipeEnabled]="true"
+            [selectedIndex]="0"
+          >
+            <dxi-item title="Resumen" [icon]="'info'">
+              <div class="solicitud-workspace__tab-body">
+                <!-- Contenido pendiente -->
+              </div>
+            </dxi-item>
+
+            <dxi-item title="Entrevistas" [icon]="'group'">
+              <div class="solicitud-workspace__tab-body">
+                <!-- Contenido pendiente -->
+              </div>
+            </dxi-item>
+
+            <dxi-item title="Evaluaciones" [icon]="'checklist'">
+              <div class="solicitud-workspace__tab-body">
+                <!-- Contenido pendiente -->
+              </div>
+            </dxi-item>
+
+            <dxi-item title="Documentos" [icon]="'doc'">
+              <div class="solicitud-workspace__tab-body">
+                <!-- Contenido pendiente -->
+              </div>
+            </dxi-item>
+          </dx-tab-panel>
         </div>
       </dx-scroll-view>
     </div>

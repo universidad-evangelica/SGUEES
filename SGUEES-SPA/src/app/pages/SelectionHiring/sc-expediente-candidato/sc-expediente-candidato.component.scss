@@ -563,20 +563,18 @@
 }
 
 .solicitud-workspace__content {
-  padding: 16px 18px 28px;
+  padding: 12px 16px 24px;
   min-height: 100%;
   box-sizing: border-box;
 }
 
-.solicitud-workspace__placeholder {
-  margin: 0;
-  padding: 18px 16px;
-  border-radius: var(--sguees-radius-md, 10px);
-  border: 1px dashed var(--sguees-border-subtle, var(--border-color));
-  background: var(--sguees-surface-subtle, var(--background-gray-color));
-  color: var(--sguees-text-secondary, var(--base-text-color-alpha));
-  font-size: 14px;
-  line-height: 1.45;
+.solicitud-workspace__tabs {
+  margin-top: 4px;
+}
+
+.solicitud-workspace__tab-body {
+  min-height: 120px;
+  padding: 12px 4px 8px;
 }
 
 /* Lightbox foto (mismo patrón que sc-solicitud-empleo). */
