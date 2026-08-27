@@ -6,13 +6,15 @@ import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 import { ScExpedienteCandidato } from './models/sc-expediente-candidato';
 import { ScExpedienteCandidatoRepository } from './sc-expediente-candidato.repository';
+import { ScExpedienteEntrevistaRepository } from './sc-expediente-entrevista/sc-expediente-entrevista.repository';
 import { ScExpedienteSolicitudRepository } from './sc-expediente-solicitud/sc-expediente-solicitud.repository';
 
 @Injectable({ providedIn: 'root' })
 export class ScExpedienteCandidatoService {
 	constructor(
 		private repo: ScExpedienteCandidatoRepository,
-		private detalleRepo: ScExpedienteSolicitudRepository
+		private detalleRepo: ScExpedienteSolicitudRepository,
+		private entrevistaRepo: ScExpedienteEntrevistaRepository
 	) {}
 
 	esValido(model: ScExpedienteCandidato, msg: Function): boolean {
@@ -49,6 +51,105 @@ export class ScExpedienteCandidatoService {
 		return this.detalleRepo.getAll([
 			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
 		]);
+	}
+
+	getAllEntrevista(corrExpediente: number, corrSolicitudEmpleo: number): Observable<IResult> {
+		return this.entrevistaRepo.getAll([
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
+			{ Parameter: 'CORR_SOLICITUD_EMPLEO', Value: corrSolicitudEmpleo },
+		]);
+	}
+
+	insertEntrevista(model: any): Observable<IResult> {
+		return this.entrevistaRepo.create(model);
+	}
+
+	updateEntrevista(model: any): Observable<IResult> {
+		return this.entrevistaRepo.update(model, [
+			{ Parameter: 'CORR_EXPEDIENTE_ENTREVISTA', Value: model.CORR_EXPEDIENTE_ENTREVISTA },
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: model.CORR_EXPEDIENTE_CANDIDATO },
+		]);
+	}
+
+	deleteEntrevista(corrExpediente: number, corrEntrevista: number): Observable<IResult> {
+		return this.entrevistaRepo.delete([
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
+			{ Parameter: 'CORR_EXPEDIENTE_ENTREVISTA', Value: corrEntrevista },
+		]);
+	}
+
+	/** Combos fijos del tab Entrevistas. */
+	getTipoEntrevistaOptions(): Array<{ value: string; text: string }> {
+		return [
+			{ value: 'TALENTO HUMANO', text: 'Talento humano' },
+			{ value: 'JEFATURA', text: 'Jefatura' },
+			{ value: 'GERENCIA', text: 'Gerencia' },
+			{ value: 'DOCENTE', text: 'Docente' },
+			{ value: 'FINAL', text: 'Final' },
+		];
+	}
+
+	getEstadoEntrevistaOptions(): Array<{ value: string; text: string }> {
+		return [
+			{ value: 'PROGRAMADA', text: 'Programada' },
+			{ value: 'REALIZADA', text: 'Realizada' },
+			{ value: 'CANCELADA', text: 'Cancelada' },
+			{ value: 'NO SE PRESENTO', text: 'No se presentó' },
+			{ value: 'REPROGRAMADA', text: 'Reprogramada' },
+		];
+	}
+
+	getResultadoEntrevistaOptions(): Array<{ value: string; text: string }> {
+		return [
+			{ value: 'FAVORABLE', text: 'Favorable' },
+			{ value: 'FAVORABLE CON OBSERVACION', text: 'Favorable con observación' },
+			{ value: 'NO FAVORABLE', text: 'No favorable' },
+		];
+	}
+
+	getEntrevistaColumns(): any[] {
+		return [
+			{ dataField: 'CORR_EXPEDIENTE_ENTREVISTA', caption: 'Corr.', width: 70 },
+			{ dataField: 'TIPO_ENTREVISTA', caption: 'Tipo', width: 170 },
+			{
+				dataField: 'FECHA_ENTREVISTA',
+				caption: 'Fecha',
+				width: 160,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy HH:mm',
+			},
+			{ dataField: 'ENTREVISTADOR', caption: 'Entrevistador', width: 180 },
+			{ dataField: 'ESTADO_ENTREVISTA', caption: 'Estado', width: 140 },
+			{ dataField: 'RESULTADO_ENTREVISTA', caption: 'Resultado', width: 180 },
+			{ dataField: 'RESUMEN_ENTREVISTA', caption: 'Resumen', width: 500 },
+			{
+				caption: 'Options',
+				width: 90,
+				allowSorting: false,
+				allowFiltering: false,
+				cellTemplate: 'entrevistaActionsTemplate',
+			},
+		];
+	}
+
+	esValidoEntrevista(model: any, msg: Function): boolean {
+		if (!model?.TIPO_ENTREVISTA) {
+			msg('Debe indicar el tipo de entrevista.', NotifyType.Warning);
+			return false;
+		}
+		if (!model?.FECHA_ENTREVISTA) {
+			msg('Debe indicar la fecha de la entrevista.', NotifyType.Warning);
+			return false;
+		}
+		if (!`${model?.ENTREVISTADOR ?? ''}`.trim()) {
+			msg('Debe indicar el entrevistador.', NotifyType.Warning);
+			return false;
+		}
+		if (!model?.ESTADO_ENTREVISTA) {
+			msg('Debe indicar el estado de la entrevista.', NotifyType.Warning);
+			return false;
+		}
+		return true;
 	}
 
 	getEstadoAsociacion(corrSolicitudEmpleo: number): Observable<IResult> {

@@ -577,6 +577,97 @@
   padding: 12px 4px 8px;
 }
 
+/* ===========================
+   Tab Entrevistas
+=========================== */
+
+.entrevista-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.entrevista-form-card {
+  padding: 14px 16px 16px;
+  border-radius: var(--sguees-radius-md, 10px);
+  border: 1px solid var(--sguees-border-subtle, var(--border-color));
+  background: var(--sguees-surface-card, var(--card-background));
+}
+
+.entrevista-form-card__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+
+  h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--sguees-text-primary, var(--base-text-color));
+  }
+
+  span {
+    font-size: 12px;
+    color: var(--sguees-text-muted, var(--sguees-text-secondary));
+  }
+}
+
+.entrevista-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+.entrevista-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+
+  &--wide {
+    grid-column: 1 / -1;
+  }
+
+  &__label {
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--sguees-text-muted, var(--sguees-text-secondary, #94a3b8));
+  }
+}
+
+.entrevista-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.entrevista-grid {
+  margin-top: 0;
+}
+
+.entrevista-grid-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+@media (max-width: 900px) {
+  .entrevista-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .entrevista-field--wide {
+    grid-column: auto;
+  }
+}
+
 /* Lightbox foto (mismo patrón que sc-solicitud-empleo). */
 .persona-foto-lightbox {
   position: fixed;

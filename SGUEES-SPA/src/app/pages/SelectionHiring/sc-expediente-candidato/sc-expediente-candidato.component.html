@@ -296,8 +296,149 @@
             </dxi-item>
 
             <dxi-item title="Entrevistas" [icon]="'group'">
-              <div class="solicitud-workspace__tab-body">
-                <!-- Contenido pendiente -->
+              <div class="solicitud-workspace__tab-body entrevista-tab">
+                <section class="entrevista-form-card">
+                  <div class="entrevista-form-card__header">
+                    <h4>{{ editandoEntrevista ? 'Editar entrevista' : 'Nueva entrevista' }}</h4>
+                    <span *ngIf="editandoEntrevista">Corr. {{ entrevistaModel.CORR_EXPEDIENTE_ENTREVISTA }}</span>
+                  </div>
+
+                  <div class="entrevista-form-grid">
+                    <label class="entrevista-field">
+                      <span class="entrevista-field__label">Tipo de entrevista</span>
+                      <dx-select-box
+                        [(value)]="entrevistaModel.TIPO_ENTREVISTA"
+                        [items]="tipoEntrevistaOptions"
+                        [searchEnabled]="false"
+                        displayExpr="text"
+                        valueExpr="value"
+                        placeholder="Seleccione tipo"
+                        [showClearButton]="true"
+                      ></dx-select-box>
+                    </label>
+
+                    <label class="entrevista-field">
+                      <span class="entrevista-field__label">Fecha entrevista</span>
+                      <dx-date-box
+                        [(value)]="entrevistaModel.FECHA_ENTREVISTA"
+                        type="datetime"
+                        displayFormat="dd/MM/yyyy HH:mm"
+                        [showClearButton]="false"
+                      ></dx-date-box>
+                    </label>
+
+                    <label class="entrevista-field">
+                      <span class="entrevista-field__label">Entrevistador</span>
+                      <dx-text-box
+                        [(value)]="entrevistaModel.ENTREVISTADOR"
+                        placeholder="Nombre del entrevistador"
+                        [maxLength]="150"
+                      ></dx-text-box>
+                    </label>
+
+                    <label class="entrevista-field">
+                      <span class="entrevista-field__label">Estado</span>
+                      <dx-select-box
+                        [(value)]="entrevistaModel.ESTADO_ENTREVISTA"
+                        [items]="estadoEntrevistaOptions"
+                        [searchEnabled]="false"
+                        displayExpr="text"
+                        valueExpr="value"
+                        placeholder="Seleccione estado"
+                      ></dx-select-box>
+                    </label>
+
+                    <label class="entrevista-field">
+                      <span class="entrevista-field__label">Resultado</span>
+                      <dx-select-box
+                        [(value)]="entrevistaModel.RESULTADO_ENTREVISTA"
+                        [items]="resultadoEntrevistaOptions"
+                        [searchEnabled]="false"
+                        displayExpr="text"
+                        valueExpr="value"
+                        placeholder="Opcional"
+                        [showClearButton]="true"
+                      ></dx-select-box>
+                    </label>
+
+                    <label class="entrevista-field entrevista-field--wide">
+                      <span class="entrevista-field__label">Resumen</span>
+                      <dx-text-area
+                        [(value)]="entrevistaModel.RESUMEN_ENTREVISTA"
+                        [height]="84"
+                        [maxLength]="2000"
+                        placeholder="Notas u observaciones de la entrevista"
+                      ></dx-text-area>
+                    </label>
+                  </div>
+
+                  <div class="entrevista-form-actions">
+                    <dx-button
+                      text="Limpiar"
+                      stylingMode="outlined"
+                      type="normal"
+                      [disabled]="guardandoEntrevista"
+                      (onClick)="nuevaEntrevista()"
+                    ></dx-button>
+                    <dx-button
+                      [text]="editandoEntrevista ? 'Actualizar' : 'Agregar'"
+                      icon="save"
+                      type="default"
+                      stylingMode="contained"
+                      [disabled]="guardandoEntrevista"
+                      (onClick)="guardarEntrevista()"
+                    ></dx-button>
+                  </div>
+                </section>
+
+                <div class="dx-grid-deta entrevista-grid">
+                  <dx-data-grid
+                    [dataSource]="entrevistas"
+                    [columns]="entrevistaColumns"
+                    [keyExpr]="'CORR_EXPEDIENTE_ENTREVISTA'"
+                    [showBorders]="true"
+                    [showColumnLines]="true"
+                    [showRowLines]="true"
+                    [rowAlternationEnabled]="true"
+                    [hoverStateEnabled]="true"
+                    [allowColumnResizing]="true"
+                    [columnResizingMode]="'widget'"
+                    [columnAutoWidth]="true"
+                    [height]="'100%'"
+                    [width]="'100%'"
+                    [noDataText]="'No hay entrevistas registradas para esta solicitud.'"
+                    (onRowClick)="onEntrevistaRowClick($event)"
+                  >
+                    <dxo-paging [pageSize]="5"></dxo-paging>
+                    <dxo-pager
+                      [showPageSizeSelector]="true"
+                      [allowedPageSizes]="[5, 10, 20]"
+                    ></dxo-pager>
+                    <dxo-editing
+                      [allowUpdating]="false"
+                      [allowDeleting]="false"
+                      [allowAdding]="false"
+                    ></dxo-editing>
+
+                    <div *dxTemplate="let cell of 'entrevistaActionsTemplate'">
+                      <div class="entrevista-grid-actions" (click)="$event.stopPropagation()">
+                        <dx-button
+                          icon="edit"
+                          hint="Editar"
+                          stylingMode="text"
+                          (onClick)="editarEntrevista(cell.data)"
+                        ></dx-button>
+                        <dx-button
+                          icon="trash"
+                          hint="Eliminar"
+                          stylingMode="text"
+                          type="danger"
+                          (onClick)="eliminarEntrevista(cell.data)"
+                        ></dx-button>
+                      </div>
+                    </div>
+                  </dx-data-grid>
+                </div>
               </div>
             </dxi-item>
 
