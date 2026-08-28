@@ -16,8 +16,10 @@ AS
 SELECT
   A.[CORR_EMPRESA],
   A.[CORR_DESCRIPTOR_PUESTO],
-  A.[FECHA_EMISION],
-  A.[FECHA_REVISION],
+  -- Fechas como texto dd/MM/yyyy: al pasar por DateTime de .NET, un DATE arrastra
+  -- la hora 00:00:00 y Crystal la imprime. Formateadas aquí llegan limpias.
+  CONVERT(VARCHAR(10), A.[FECHA_EMISION], 103) AS [FECHA_EMISION],
+  CONVERT(VARCHAR(10), A.[FECHA_REVISION], 103) AS [FECHA_REVISION],
   A.[OBJETIVO_PUESTO],
   A.[NUM_PERSONAL_CARGO],
   A.[CORR_PUESTO],

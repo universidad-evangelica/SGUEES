@@ -8,8 +8,9 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 	{
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_DESCRIPTOR_PUESTO { get; set; }
-		public DateTime? FECHA_EMISION { get; set; }
-		public DateTime? FECHA_REVISION { get; set; }
+		// Texto dd/MM/yyyy desde la vista; evita el 00:00:00 que agrega DateTime.
+		public string FECHA_EMISION { get; set; }
+		public string FECHA_REVISION { get; set; }
 		public string OBJETIVO_PUESTO { get; set; }
 		public int? NUM_PERSONAL_CARGO { get; set; }
 		public int? CORR_PUESTO { get; set; }
