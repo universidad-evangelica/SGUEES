@@ -7,6 +7,7 @@ import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 import { ScExpedienteCandidato } from './models/sc-expediente-candidato';
 import { ScExpedienteCandidatoRepository } from './sc-expediente-candidato.repository';
 import { ScExpedienteEntrevistaRepository } from './sc-expediente-entrevista/sc-expediente-entrevista.repository';
+import { ScExpedienteDocumentoRepository } from './sc-expediente-documento/sc-expediente-documento.repository';
 import { ScExpedienteSolicitudRepository } from './sc-expediente-solicitud/sc-expediente-solicitud.repository';
 
 @Injectable({ providedIn: 'root' })
@@ -14,7 +15,8 @@ export class ScExpedienteCandidatoService {
 	constructor(
 		private repo: ScExpedienteCandidatoRepository,
 		private detalleRepo: ScExpedienteSolicitudRepository,
-		private entrevistaRepo: ScExpedienteEntrevistaRepository
+		private entrevistaRepo: ScExpedienteEntrevistaRepository,
+		private documentoRepo: ScExpedienteDocumentoRepository
 	) {}
 
 	esValido(model: ScExpedienteCandidato, msg: Function): boolean {
@@ -132,6 +134,85 @@ export class ScExpedienteCandidatoService {
 		];
 	}
 
+	/** Ítems del dx-form del tab Entrevistas (mismo patrón que getItems del encabezado). */
+	getEntrevistaItems(): any[] {
+		return [
+			{
+				dataField: 'TIPO_ENTREVISTA',
+				label: { text: 'Tipo de entrevista' },
+				colSpan: 2,
+				editorType: 'dxSelectBox',
+				editorOptions: {
+					items: this.getTipoEntrevistaOptions(),
+					displayExpr: 'text',
+					valueExpr: 'value',
+					searchEnabled: false,
+					showClearButton: true,
+					placeholder: 'Seleccione tipo',
+				},
+			},
+			{
+				dataField: 'FECHA_ENTREVISTA',
+				label: { text: 'Fecha entrevista' },
+				colSpan: 1,
+				editorType: 'dxDateBox',
+				editorOptions: {
+					type: 'datetime',
+					displayFormat: 'dd/MM/yyyy HH:mm',
+					showClearButton: false,
+				},
+			},
+			{
+				dataField: 'ENTREVISTADOR',
+				label: { text: 'Entrevistador' },
+				colSpan: 2,
+				editorOptions: {
+					placeholder: 'Nombre del entrevistador',
+					maxLength: 150,
+					showClearButton: true,
+				},
+			},
+			{
+				dataField: 'ESTADO_ENTREVISTA',
+				label: { text: 'Estado' },
+				colSpan: 1,
+				editorType: 'dxSelectBox',
+				editorOptions: {
+					items: this.getEstadoEntrevistaOptions(),
+					displayExpr: 'text',
+					valueExpr: 'value',
+					searchEnabled: false,
+					placeholder: 'Seleccione estado',
+				},
+			},
+			{
+				dataField: 'RESULTADO_ENTREVISTA',
+				label: { text: 'Resultado' },
+				colSpan: 2,
+				editorType: 'dxSelectBox',
+				editorOptions: {
+					items: this.getResultadoEntrevistaOptions(),
+					displayExpr: 'text',
+					valueExpr: 'value',
+					searchEnabled: false,
+					showClearButton: true,
+					placeholder: 'Opcional',
+				},
+			},
+			{
+				dataField: 'RESUMEN_ENTREVISTA',
+				label: { text: 'Resumen' },
+				colSpan: 8,
+				editorType: 'dxTextArea',
+				editorOptions: {
+					height: 84,
+					maxLength: 2000,
+					placeholder: 'Notas u observaciones de la entrevista',
+				},
+			},
+		];
+	}
+
 	esValidoEntrevista(model: any, msg: Function): boolean {
 		if (!model?.TIPO_ENTREVISTA) {
 			msg('Debe indicar el tipo de entrevista.', NotifyType.Warning);
@@ -147,6 +228,151 @@ export class ScExpedienteCandidatoService {
 		}
 		if (!model?.ESTADO_ENTREVISTA) {
 			msg('Debe indicar el estado de la entrevista.', NotifyType.Warning);
+			return false;
+		}
+		return true;
+	}
+
+	getAllDocumento(corrExpediente: number): Observable<IResult> {
+		return this.documentoRepo.getAll([
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
+		]);
+	}
+
+	updateDocumento(model: any): Observable<IResult> {
+		return this.documentoRepo.update(model, [
+			{ Parameter: 'CORR_EXPEDIENTE_DOCUMENTO', Value: model.CORR_EXPEDIENTE_DOCUMENTO },
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: model.CORR_EXPEDIENTE_CANDIDATO },
+		]);
+	}
+
+	deleteDocumento(corrExpediente: number, corrDocumento: number): Observable<IResult> {
+		return this.documentoRepo.delete([
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
+			{ Parameter: 'CORR_EXPEDIENTE_DOCUMENTO', Value: corrDocumento },
+		]);
+	}
+
+	postDocumento(formData: FormData): Observable<IResult> {
+		return this.documentoRepo.postDoc(formData);
+	}
+
+	putDocumento(formData: FormData, corrExpediente: number, corrDocumento: number): Observable<IResult> {
+		return this.documentoRepo.putDoc(formData, [
+			{ Parameter: 'CORR_EXPEDIENTE_DOCUMENTO', Value: corrDocumento },
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
+		]);
+	}
+
+	getDocumentoBlob(param: {
+		CORR_EXPEDIENTE_CANDIDATO: number;
+		CORR_EXPEDIENTE_DOCUMENTO: number;
+		NOMBRE_ARCHIVO: string;
+	}): Observable<Blob> {
+		return this.documentoRepo.getDoc([
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: param.CORR_EXPEDIENTE_CANDIDATO },
+			{ Parameter: 'CORR_EXPEDIENTE_DOCUMENTO', Value: param.CORR_EXPEDIENTE_DOCUMENTO },
+			{ Parameter: 'NOMBRE_ARCHIVO', Value: param.NOMBRE_ARCHIVO },
+		]);
+	}
+
+	getTipoDocumentoOptions(): Array<{ value: string; text: string }> {
+		return [
+			{ value: 'Documento Identidad', text: 'Documento Identidad' },
+			{ value: 'Pasaporte', text: 'Pasaporte' },
+			{ value: 'Curriculum', text: 'Curriculum' },
+			{ value: 'Titulo Academico', text: 'Título Académico' },
+			{ value: 'Diploma', text: 'Diploma' },
+			{ value: 'Referencia laboral', text: 'Referencia laboral' },
+			{ value: 'Constancia laboral', text: 'Constancia laboral' },
+			{ value: 'Solvencia', text: 'Solvencia' },
+			{ value: 'Antecedentes', text: 'Antecedentes' },
+			{ value: 'Otro documento', text: 'Otro documento' },
+		];
+	}
+
+	getDocumentoColumns(): any[] {
+		return [
+			{ dataField: 'CORR_EXPEDIENTE_DOCUMENTO', caption: 'Corr.', width: 70 },
+			{
+				dataField: 'FECHA_CARGA',
+				caption: 'Fecha carga',
+				width: 150,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy',
+			},
+			{ dataField: 'TIPO_DOCUMENTO', caption: 'Tipo', width: 180 },
+			{ dataField: 'NOMBRE_ARCHIVO', caption: 'Archivo', width: 475 },
+			// { dataField: 'CORR_SOLICITUD_EMPLEO', caption: 'No. Solicitud', width: 120 },
+			{ dataField: 'NOTAS', caption: 'Notas', width: 500 },
+			{
+				caption: 'Options',
+				width: 90,
+				allowSorting: false,
+				allowFiltering: false,
+				cellTemplate: 'documentoActionsTemplate',
+			},
+		];
+	}
+
+	/** Ítems del dx-form del tab Documentos (mismo patrón que getItems del encabezado). */
+	getDocumentoItems(): any[] {
+		return [
+			{
+				dataField: 'TIPO_DOCUMENTO',
+				label: { text: 'Tipo de documento' },
+				colSpan: 2,
+				editorType: 'dxSelectBox',
+				editorOptions: {
+					items: this.getTipoDocumentoOptions(),
+					displayExpr: 'text',
+					valueExpr: 'value',
+					searchEnabled: false,
+					showClearButton: true,
+					placeholder: 'Seleccione tipo',
+				},
+			},
+			{
+				dataField: 'FECHA_CARGA',
+				label: { text: 'Fecha de carga' },
+				colSpan: 2,
+				editorType: 'dxDateBox',
+				editorOptions: {
+					type: 'date',
+					displayFormat: 'dd/MM/yyyy',
+				},
+			},
+			{
+				dataField: 'NOMBRE_ARCHIVO',
+				label: { visible: false },
+				colSpan: 4,
+				template: 'documentoArchivoUploader',
+			},
+			{
+				dataField: 'NOTAS',
+				label: { text: 'Notas' },
+				colSpan: 8,
+				editorType: 'dxTextArea',
+				editorOptions: {
+					height: 84,
+					maxLength: 1000,
+					placeholder: 'Observaciones del documento',
+				},
+			},
+		];
+	}
+
+	esValidoDocumento(model: any, esNuevo: boolean, tieneArchivoNuevo: boolean, msg: Function): boolean {
+		if (!model?.TIPO_DOCUMENTO) {
+			msg('Debe indicar el tipo de documento.', NotifyType.Warning);
+			return false;
+		}
+		if (!model?.FECHA_CARGA) {
+			msg('Debe indicar la fecha de carga.', NotifyType.Warning);
+			return false;
+		}
+		if (esNuevo && !tieneArchivoNuevo) {
+			msg('Debe seleccionar un archivo.', NotifyType.Warning);
 			return false;
 		}
 		return true;

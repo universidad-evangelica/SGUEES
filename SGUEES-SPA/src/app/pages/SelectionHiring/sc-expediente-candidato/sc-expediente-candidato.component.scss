@@ -615,30 +615,8 @@
   }
 }
 
-.entrevista-form-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px 14px;
-}
-
-.entrevista-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  margin: 0;
-
-  &--wide {
-    grid-column: 1 / -1;
-  }
-
-  &__label {
-    font-size: 11px;
-    font-weight: 650;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--sguees-text-muted, var(--sguees-text-secondary, #94a3b8));
-  }
+.entrevista-form {
+  margin-top: 0;
 }
 
 .entrevista-form-actions {
@@ -658,14 +636,194 @@
   gap: 2px;
 }
 
-@media (max-width: 900px) {
-  .entrevista-form-grid {
-    grid-template-columns: 1fr;
+.documento-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.documento-form-card {
+  border: 1px solid var(--dx-color-border, rgba(0, 0, 0, 0.12));
+  border-radius: 10px;
+  padding: 16px;
+  background: var(--dx-color-main-bg, #fff);
+}
+
+.documento-form-card__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
   }
 
-  .entrevista-field--wide {
-    grid-column: auto;
+  span {
+    font-size: 0.82rem;
+    opacity: 0.75;
   }
+}
+
+.documento-form {
+  margin-top: 0;
+}
+
+.documento-file-input {
+  width: 100%;
+
+  &__row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  &__clip {
+    flex: 0 0 auto;
+    margin-top: 20px;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--sguees-text-secondary, var(--base-text-color-alpha, #64748b));
+  }
+
+  &__box {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    padding: 14px 14px 12px;
+    border: 1px solid var(--sguees-border-subtle, var(--border-color));
+    border-radius: 8px;
+    background: var(--sguees-surface-card, var(--card-background));
+    cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+
+    &:hover {
+      border-color: color-mix(in srgb, var(--sguees-text-muted, #94a3b8) 55%, var(--sguees-border-subtle, var(--border-color)));
+    }
+
+    &--drag {
+      border-color: var(--sguees-text-muted, var(--sguees-text-secondary, #94a3b8));
+      background: var(--sguees-surface-subtle, var(--background-gray-color));
+    }
+  }
+
+  &__legend {
+    padding: 0 6px;
+    margin-left: 2px;
+    font-size: 12px;
+    //font-weight: 600;
+    line-height: 1;
+    color: var(--sguees-text-primary, var(--base-text-color));
+  }
+
+  &__content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 34px;
+  }
+
+  &__placeholder {
+    font-size: 13px;
+    color: var(--sguees-text-muted, var(--sguees-text-secondary, #94a3b8));
+  }
+
+  &__clear {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    margin-left: auto;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: var(--accent-color, #1976d2);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+
+    .dx-icon {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    &:hover {
+      background: color-mix(in srgb, var(--accent-color, #1976d2) 86%, #000);
+    }
+
+    &:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--accent-color, #1976d2) 45%, transparent);
+      outline-offset: 2px;
+    }
+  }
+
+  &__native {
+    display: none;
+  }
+
+  &__footer {
+    margin: 6px 2px 0;
+    text-align: right;
+    font-size: 12px;
+    color: var(--sguees-text-muted, var(--sguees-text-secondary, #94a3b8));
+  }
+}
+
+.documento-file-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: calc(100% - 42px);
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sguees-text-muted, #94a3b8) 14%, var(--sguees-surface-card, var(--card-background)));
+  color: var(--sguees-text-primary, var(--base-text-color));
+  border: 1px solid var(--sguees-border-subtle, var(--border-color));
+
+  /* Solo al seleccionar un archivo nuevo: chip azul del proyecto. */
+  &:not(.documento-file-chip--actual) {
+    background: var(--accent-color, #1976d2);
+    color: #fff;
+    border-color: transparent;
+  }
+
+  &__text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 500;
+  }
+}
+
+.documento-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.documento-grid {
+  margin-top: 0;
+}
+
+.documento-grid-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.documento-preview-img {
+  display: block;
+  max-width: 100%;
+  max-height: 95%;
+  margin: 0 auto;
+  object-fit: contain;
 }
 
 /* Lightbox foto (mismo patrón que sc-solicitud-empleo). */

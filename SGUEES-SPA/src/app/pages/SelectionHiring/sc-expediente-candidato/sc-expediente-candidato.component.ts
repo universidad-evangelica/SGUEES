@@ -1,6 +1,7 @@
-import { Component, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
-import { DxDataGridComponent } from 'devextreme-angular';
+import { DxDataGridComponent, DxFormComponent } from 'devextreme-angular';
 import { MessageService } from 'primeng/api';
 import { forkJoin, of } from 'rxjs';
 import { catchError, take } from 'rxjs/operators';
@@ -22,6 +23,7 @@ import {
 import { ScSolicitudEmpleoService } from '../sc-solicitud-empleo/sc-solicitud-empleo.service';
 import { ScExpedienteCandidato } from './models/sc-expediente-candidato';
 import { ScExpedienteEntrevista } from './sc-expediente-entrevista/models/sc-expediente-entrevista';
+import { ScExpedienteDocumento } from './sc-expediente-documento/models/sc-expediente-documento';
 import { ScExpedienteSolicitud } from './sc-expediente-solicitud/models/sc-expediente-solicitud';
 import { ScExpedienteCandidatoService } from './sc-expediente-candidato.service';
 import { confirm } from 'devextreme/ui/dialog';
@@ -34,6 +36,9 @@ import { confirm } from 'devextreme/ui/dialog';
 export class ScExpedienteCandidatoComponent extends CBaseComponent implements OnInit, OnDestroy {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 	@ViewChild('gridSolicitudes', { static: false }) gridSolicitudes?: DxDataGridComponent;
+	@ViewChild('entrevistaForm', { static: false }) entrevistaForm?: DxFormComponent;
+	@ViewChild('documentoForm', { static: false }) documentoForm?: DxFormComponent;
+	@ViewChild('documentoFileInput', { static: false }) documentoFileInput?: ElementRef<HTMLInputElement>;
 
 	protected override etiquetaRegistro = 'el expediente de candidato';
 	protected override requiereEmpresaSesion = true;
@@ -63,15 +68,60 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	/** Tab Entrevistas (workspace solicitud). */
 	entrevistas: ScExpedienteEntrevista[] = [];
 	entrevistaColumns: any[] = [];
+	entrevistaItems: any[] = [];
 	entrevistaModel: ScExpedienteEntrevista = this.fillEntrevistaData();
 	guardandoEntrevista = false;
-	tipoEntrevistaOptions: Array<{ value: string; text: string }> = [];
-	estadoEntrevistaOptions: Array<{ value: string; text: string }> = [];
-	resultadoEntrevistaOptions: Array<{ value: string; text: string }> = [];
 
 	get editandoEntrevista(): boolean {
 		return (this.entrevistaModel?.CORR_EXPEDIENTE_ENTREVISTA ?? 0) > 0;
 	}
+
+	/** Tab Documentos (workspace solicitud / expediente). */
+	documentos: ScExpedienteDocumento[] = [];
+	documentoColumns: any[] = [];
+	documentoItems: any[] = [];
+	documentoModel: ScExpedienteDocumento = this.fillDocumentoData();
+	guardandoDocumento = false;
+	documentoArchivo: File | null = null;
+	documentoArchivoDragOver = false;
+	PDF!: SafeUrl;
+	popupVisiblePdf = false;
+	documentoPreviewEsImagen = false;
+	private documentoPreviewObjectUrl: string | null = null;
+
+	get editandoDocumento(): boolean {
+		return (this.documentoModel?.CORR_EXPEDIENTE_DOCUMENTO ?? 0) > 0;
+	}
+
+	/** Muestra chip cuando hay archivo nuevo o el actual en edición. */
+	get documentoArchivoVisible(): boolean {
+		return !!this.documentoArchivo || (this.editandoDocumento && !!this.documentoModel?.NOMBRE_ARCHIVO);
+	}
+
+	get documentoArchivoEsNuevo(): boolean {
+		return !!this.documentoArchivo;
+	}
+
+	get documentoArchivoEtiqueta(): string {
+		if (this.documentoArchivo) {
+			return `${this.truncarNombreArchivo(this.documentoArchivo.name)} (${this.formatFileSize(this.documentoArchivo.size)})`;
+		}
+		if (this.editandoDocumento && this.documentoModel?.NOMBRE_ARCHIVO) {
+			return this.truncarNombreArchivo(this.documentoModel.NOMBRE_ARCHIVO);
+		}
+		return '';
+	}
+
+	get documentoArchivoResumen(): string {
+		if (this.documentoArchivo) {
+			return `1 archivo (${this.formatFileSize(this.documentoArchivo.size)} en total)`;
+		}
+		if (this.editandoDocumento && this.documentoModel?.NOMBRE_ARCHIVO && !this.documentoArchivo) {
+			return 'Archivo actual (sin cambios si no selecciona otro)';
+		}
+		return '';
+	}
+
 	personaDatos: ScPersonaDatos | null = null;
 	familiares: ScPersonaFamiliar[] = [];
 	hijos: ScPersonaHijo[] = [];
@@ -133,7 +183,8 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		public override router: ActivatedRoute,
 		private service: ScExpedienteCandidatoService,
 		private solicitudService: ScSolicitudEmpleoService,
-		private messageService: MessageService
+		private messageService: MessageService,
+		private sanitizer: DomSanitizer
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -141,9 +192,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.items = this.service.getItems();
 		this.solicitudColumns = this.service.getSolicitudColumns();
 		this.entrevistaColumns = this.service.getEntrevistaColumns();
-		this.tipoEntrevistaOptions = this.service.getTipoEntrevistaOptions();
-		this.estadoEntrevistaOptions = this.service.getEstadoEntrevistaOptions();
-		this.resultadoEntrevistaOptions = this.service.getResultadoEntrevistaOptions();
+		this.entrevistaItems = this.service.getEntrevistaItems();
+		this.documentoColumns = this.service.getDocumentoColumns();
+		this.documentoItems = this.service.getDocumentoItems();
 	}
 
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
@@ -159,6 +210,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.clearWorkspaceCloseTimer();
 		this.clearWorkspaceSolicitudCloseTimer();
 		this.revocarFotoPersona();
+		this.revokeDocumentoPreview();
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -453,12 +505,16 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.clearWorkspaceSolicitudCloseTimer();
 		this.solicitudSeleccionada = rowData ?? null;
 		this.corrExpedienteSolicitudSeleccionada = corr;
+		this.entrevistaItems = this.service.getEntrevistaItems();
+		this.documentoItems = this.service.getDocumentoItems();
 		this.nuevaEntrevista();
+		this.nuevoDocumento();
 		this.workspaceSolicitudVisible = true;
 		requestAnimationFrame(() => {
 			this.workspaceSolicitudAbierto = true;
 		});
 		this.consultarEntrevistas();
+		this.consultarDocumentos();
 	}
 
 	/** Cierra workspace de solicitud y vuelve al resumen. */
@@ -475,7 +531,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.corrExpedienteSolicitudSeleccionada = 0;
 			this.solicitudSeleccionada = null;
 			this.entrevistas = [];
+			this.documentos = [];
 			this.nuevaEntrevista();
+			this.nuevoDocumento();
 			return;
 		}
 
@@ -485,7 +543,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.corrExpedienteSolicitudSeleccionada = 0;
 			this.solicitudSeleccionada = null;
 			this.entrevistas = [];
+			this.documentos = [];
 			this.nuevaEntrevista();
+			this.nuevoDocumento();
 			this.workspaceSolicitudCloseTimer = null;
 		}, 300);
 	}
@@ -551,6 +611,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 
 	nuevaEntrevista(): void {
 		this.entrevistaModel = this.fillEntrevistaData();
+		this.syncEntrevistaForm();
 	}
 
 	editarEntrevista(row: ScExpedienteEntrevista): void {
@@ -558,6 +619,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			return;
 		}
 		this.entrevistaModel = this.fillEntrevistaData(row);
+		this.syncEntrevistaForm();
 	}
 
 	onEntrevistaRowClick(e: any): void {
@@ -637,6 +699,319 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 					this.notifyFx(err?.error?.ErrorMessage || err?.message || 'Error al eliminar la entrevista.', NotifyType.Error);
 				},
 			});
+	}
+
+	/** Carga documentos del expediente abierto en el workspace. */
+	consultarDocumentos(): void {
+		const corrExpediente = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
+		if (corrExpediente <= 0) {
+			this.documentos = [];
+			return;
+		}
+
+		this.service
+			.getAllDocumento(corrExpediente)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.documentos = response?.Result ? response.Data ?? [] : [];
+				},
+				error: () => {
+					this.documentos = [];
+				},
+			});
+	}
+
+	fillDocumentoData(xModel?: ScExpedienteDocumento): ScExpedienteDocumento {
+		if (xModel) {
+			return {
+				CORR_EMPRESA: xModel.CORR_EMPRESA,
+				CORR_EXPEDIENTE_CANDIDATO: xModel.CORR_EXPEDIENTE_CANDIDATO,
+				CORR_EXPEDIENTE_DOCUMENTO: xModel.CORR_EXPEDIENTE_DOCUMENTO,
+				CORR_SOLICITUD_EMPLEO: xModel.CORR_SOLICITUD_EMPLEO,
+				FECHA_CARGA: xModel.FECHA_CARGA,
+				TIPO_DOCUMENTO: xModel.TIPO_DOCUMENTO,
+				NOMBRE_ARCHIVO: xModel.NOMBRE_ARCHIVO,
+				RUTA_ARCHIVO: xModel.RUTA_ARCHIVO ?? '',
+				NOTAS: xModel.NOTAS ?? '',
+			};
+		}
+
+		return {
+			CORR_EMPRESA: this.model?.CORR_EMPRESA ?? 1,
+			CORR_EXPEDIENTE_CANDIDATO: this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0,
+			CORR_EXPEDIENTE_DOCUMENTO: 0,
+			CORR_SOLICITUD_EMPLEO: this.solicitudSeleccionada?.CORR_SOLICITUD_EMPLEO ?? 0,
+			FECHA_CARGA: new Date(),
+			TIPO_DOCUMENTO: '',
+			NOMBRE_ARCHIVO: '',
+			RUTA_ARCHIVO: '',
+			NOTAS: '',
+		};
+	}
+
+	nuevoDocumento(): void {
+		this.documentoModel = this.fillDocumentoData();
+		this.limpiarDocumentoArchivo();
+		this.syncDocumentoForm();
+	}
+
+	editarDocumento(row: ScExpedienteDocumento): void {
+		if (!row) {
+			return;
+		}
+		this.documentoModel = this.fillDocumentoData(row);
+		this.limpiarDocumentoArchivo();
+		this.syncDocumentoForm();
+	}
+
+	onDocumentoRowClick(e: any): void {
+		if (e?.rowType && e.rowType !== 'data') {
+			return;
+		}
+		this.editarDocumento(e?.data);
+	}
+
+	onDocumentoArchivoInputChange(event: Event): void {
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0] ?? null;
+		this.documentoArchivo = file;
+		input.value = '';
+	}
+
+	onDocumentoFileBoxClick(event: Event): void {
+		if ((event.target as HTMLElement).closest('.documento-file-input__clear')) {
+			return;
+		}
+		this.documentoFileInput?.nativeElement?.click();
+	}
+
+	onDocumentoDragOver(event: DragEvent): void {
+		event.preventDefault();
+		event.stopPropagation();
+		this.documentoArchivoDragOver = true;
+	}
+
+	onDocumentoDragLeave(event: DragEvent): void {
+		event.preventDefault();
+		event.stopPropagation();
+		this.documentoArchivoDragOver = false;
+	}
+
+	onDocumentoDrop(event: DragEvent): void {
+		event.preventDefault();
+		event.stopPropagation();
+		this.documentoArchivoDragOver = false;
+
+		const file = event.dataTransfer?.files?.[0] ?? null;
+		if (!file || !this.esArchivoDocumentoPermitido(file.name)) {
+			this.notifyFx('Formato no permitido. Use PDF, imagen o Word.', NotifyType.Warning);
+			return;
+		}
+		this.documentoArchivo = file;
+	}
+
+	limpiarDocumentoArchivoSeleccionado(event: Event): void {
+		event.preventDefault();
+		event.stopPropagation();
+		this.limpiarDocumentoArchivo();
+	}
+
+	limpiarDocumentoArchivo(): void {
+		this.documentoArchivo = null;
+		this.documentoArchivoDragOver = false;
+		if (this.documentoFileInput?.nativeElement) {
+			this.documentoFileInput.nativeElement.value = '';
+		}
+	}
+
+	private esArchivoDocumentoPermitido(nombre: string): boolean {
+		const ext = (nombre.split('.').pop() ?? '').toLowerCase();
+		return ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'doc', 'docx'].includes(ext);
+	}
+
+	private formatFileSize(bytes: number): string {
+		if (!Number.isFinite(bytes) || bytes <= 0) {
+			return '0 B';
+		}
+		const units = ['B', 'KB', 'MB', 'GB'];
+		let size = bytes;
+		let unitIndex = 0;
+		while (size >= 1024 && unitIndex < units.length - 1) {
+			size /= 1024;
+			unitIndex += 1;
+		}
+		const precision = size >= 10 || unitIndex === 0 ? 0 : 1;
+		return `${size.toFixed(precision)} ${units[unitIndex]}`;
+	}
+
+	private truncarNombreArchivo(nombre: string, max = 34): string {
+		const texto = (nombre ?? '').trim();
+		if (texto.length <= max) {
+			return texto;
+		}
+		const ext = texto.includes('.') ? texto.slice(texto.lastIndexOf('.')) : '';
+		const baseMax = Math.max(8, max - ext.length - 1);
+		return `${texto.slice(0, baseMax)}…${ext}`;
+	}
+
+	private buildDocumentoFormData(includeFile: boolean): FormData {
+		const formData = new FormData();
+		formData.append('CORR_EXPEDIENTE_CANDIDATO', String(this.documentoModel.CORR_EXPEDIENTE_CANDIDATO ?? 0));
+		formData.append('CORR_EXPEDIENTE_DOCUMENTO', String(this.documentoModel.CORR_EXPEDIENTE_DOCUMENTO ?? 0));
+		formData.append('CORR_SOLICITUD_EMPLEO', String(this.documentoModel.CORR_SOLICITUD_EMPLEO ?? 0));
+		formData.append('TIPO_DOCUMENTO', this.documentoModel.TIPO_DOCUMENTO ?? '');
+		formData.append('FECHA_CARGA', new Date(this.documentoModel.FECHA_CARGA).toISOString());
+		formData.append('NOTAS', this.documentoModel.NOTAS ?? '');
+
+		if (includeFile && this.documentoArchivo) {
+			formData.append('ARCHIVO_DOCUMENTO', this.documentoArchivo, this.documentoArchivo.name);
+		}
+
+		return formData;
+	}
+
+	guardarDocumento(): void {
+		if (this.guardandoDocumento) {
+			return;
+		}
+
+		this.documentoModel.CORR_EXPEDIENTE_CANDIDATO = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
+		this.documentoModel.CORR_SOLICITUD_EMPLEO = this.solicitudSeleccionada?.CORR_SOLICITUD_EMPLEO ?? 0;
+
+		const esNuevo = (this.documentoModel.CORR_EXPEDIENTE_DOCUMENTO ?? 0) <= 0;
+		const tieneArchivoNuevo = !!this.documentoArchivo;
+
+		if (!this.service.esValidoDocumento(this.documentoModel, esNuevo, tieneArchivoNuevo, this.notifyFx.bind(this))) {
+			return;
+		}
+
+		this.guardandoDocumento = true;
+		const corrExpediente = this.documentoModel.CORR_EXPEDIENTE_CANDIDATO;
+		const corrDocumento = this.documentoModel.CORR_EXPEDIENTE_DOCUMENTO ?? 0;
+
+		const req = esNuevo
+			? this.service.postDocumento(this.buildDocumentoFormData(true))
+			: tieneArchivoNuevo
+				? this.service.putDocumento(this.buildDocumentoFormData(true), corrExpediente, corrDocumento)
+				: this.service.updateDocumento({ ...this.documentoModel });
+
+		req.pipe(take(1)).subscribe({
+			next: (response: any) => {
+				this.guardandoDocumento = false;
+				if (!response?.Result) {
+					this.notifyFx(response?.ErrorMessage || 'No se pudo guardar el documento.', NotifyType.Error);
+					return;
+				}
+				this.notifyFx(esNuevo ? 'Documento registrado.' : 'Documento actualizado.', NotifyType.Success);
+				this.nuevoDocumento();
+				this.consultarDocumentos();
+			},
+			error: (err: any) => {
+				this.guardandoDocumento = false;
+				this.notifyFx(err?.error?.ErrorMessage || err?.message || 'Error al guardar el documento.', NotifyType.Error);
+			},
+		});
+	}
+
+	async eliminarDocumento(row: ScExpedienteDocumento): Promise<void> {
+		const corr = Number(row?.CORR_EXPEDIENTE_DOCUMENTO ?? 0);
+		const corrExpediente = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
+		if (corr <= 0 || corrExpediente <= 0) {
+			return;
+		}
+
+		const ok = await confirm(`¿Eliminar el documento #${corr}?`, 'Confirmar eliminación');
+		if (!ok) {
+			return;
+		}
+
+		this.service
+			.deleteDocumento(corrExpediente, corr)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result) {
+						this.notifyFx(response?.ErrorMessage || 'No se pudo eliminar el documento.', NotifyType.Error);
+						return;
+					}
+					this.notifyFx('Documento eliminado.', NotifyType.Success);
+					if (this.documentoModel.CORR_EXPEDIENTE_DOCUMENTO === corr) {
+						this.nuevoDocumento();
+					}
+					this.consultarDocumentos();
+				},
+				error: (err: any) => {
+					this.notifyFx(err?.error?.ErrorMessage || err?.message || 'Error al eliminar el documento.', NotifyType.Error);
+				},
+			});
+	}
+
+	verDocumento(row: ScExpedienteDocumento): void {
+		const corrExpediente = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
+		const corrDocumento = Number(row?.CORR_EXPEDIENTE_DOCUMENTO ?? 0);
+		const nombreArchivo = row?.NOMBRE_ARCHIVO ?? '';
+		if (corrExpediente <= 0 || corrDocumento <= 0 || !nombreArchivo) {
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.getDocumentoBlob({
+				CORR_EXPEDIENTE_CANDIDATO: corrExpediente,
+				CORR_EXPEDIENTE_DOCUMENTO: corrDocumento,
+				NOMBRE_ARCHIVO: nombreArchivo,
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: (blob: Blob) => {
+					this.loadingVisible = false;
+					if (!blob) {
+						this.notifyFx('Error al generar el documento.', NotifyType.Error);
+						return;
+					}
+
+					const ext = (nombreArchivo.split('.').pop() ?? '').toLowerCase();
+					const objectUrl = window.URL.createObjectURL(blob);
+
+					if (ext === 'pdf' || ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
+						this.revokeDocumentoPreview();
+						this.documentoPreviewObjectUrl = objectUrl;
+						this.documentoPreviewEsImagen = ext !== 'pdf';
+						this.PDF = this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl);
+						this.popupVisiblePdf = true;
+						return;
+					}
+
+					window.open(objectUrl, '_blank');
+					setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60000);
+				},
+				error: (err: any) => {
+					this.loadingVisible = false;
+					this.notifyFx(err?.error?.ErrorMessage || err?.message || 'Error al visualizar el documento.', NotifyType.Error);
+				},
+			});
+	}
+
+	cerrarDocumentoPreview(): void {
+		this.popupVisiblePdf = false;
+		this.documentoPreviewEsImagen = false;
+		this.revokeDocumentoPreview();
+	}
+
+	private revokeDocumentoPreview(): void {
+		if (this.documentoPreviewObjectUrl) {
+			window.URL.revokeObjectURL(this.documentoPreviewObjectUrl);
+			this.documentoPreviewObjectUrl = null;
+		}
+	}
+
+	private syncEntrevistaForm(): void {
+		setTimeout(() => this.entrevistaForm?.instance?.option('formData', this.entrevistaModel));
+	}
+
+	private syncDocumentoForm(): void {
+		setTimeout(() => this.documentoForm?.instance?.option('formData', this.documentoModel));
 	}
 
 	consultarPersonaDatos(): void {

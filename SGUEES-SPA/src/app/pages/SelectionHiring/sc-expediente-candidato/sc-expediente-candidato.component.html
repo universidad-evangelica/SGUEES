@@ -303,74 +303,16 @@
                     <span *ngIf="editandoEntrevista">Corr. {{ entrevistaModel.CORR_EXPEDIENTE_ENTREVISTA }}</span>
                   </div>
 
-                  <div class="entrevista-form-grid">
-                    <label class="entrevista-field">
-                      <span class="entrevista-field__label">Tipo de entrevista</span>
-                      <dx-select-box
-                        [(value)]="entrevistaModel.TIPO_ENTREVISTA"
-                        [items]="tipoEntrevistaOptions"
-                        [searchEnabled]="false"
-                        displayExpr="text"
-                        valueExpr="value"
-                        placeholder="Seleccione tipo"
-                        [showClearButton]="true"
-                      ></dx-select-box>
-                    </label>
-
-                    <label class="entrevista-field">
-                      <span class="entrevista-field__label">Fecha entrevista</span>
-                      <dx-date-box
-                        [(value)]="entrevistaModel.FECHA_ENTREVISTA"
-                        type="datetime"
-                        displayFormat="dd/MM/yyyy HH:mm"
-                        [showClearButton]="false"
-                      ></dx-date-box>
-                    </label>
-
-                    <label class="entrevista-field">
-                      <span class="entrevista-field__label">Entrevistador</span>
-                      <dx-text-box
-                        [(value)]="entrevistaModel.ENTREVISTADOR"
-                        placeholder="Nombre del entrevistador"
-                        [maxLength]="150"
-                      ></dx-text-box>
-                    </label>
-
-                    <label class="entrevista-field">
-                      <span class="entrevista-field__label">Estado</span>
-                      <dx-select-box
-                        [(value)]="entrevistaModel.ESTADO_ENTREVISTA"
-                        [items]="estadoEntrevistaOptions"
-                        [searchEnabled]="false"
-                        displayExpr="text"
-                        valueExpr="value"
-                        placeholder="Seleccione estado"
-                      ></dx-select-box>
-                    </label>
-
-                    <label class="entrevista-field">
-                      <span class="entrevista-field__label">Resultado</span>
-                      <dx-select-box
-                        [(value)]="entrevistaModel.RESULTADO_ENTREVISTA"
-                        [items]="resultadoEntrevistaOptions"
-                        [searchEnabled]="false"
-                        displayExpr="text"
-                        valueExpr="value"
-                        placeholder="Opcional"
-                        [showClearButton]="true"
-                      ></dx-select-box>
-                    </label>
-
-                    <label class="entrevista-field entrevista-field--wide">
-                      <span class="entrevista-field__label">Resumen</span>
-                      <dx-text-area
-                        [(value)]="entrevistaModel.RESUMEN_ENTREVISTA"
-                        [height]="84"
-                        [maxLength]="2000"
-                        placeholder="Notas u observaciones de la entrevista"
-                      ></dx-text-area>
-                    </label>
-                  </div>
+                  <dx-form
+                    #entrevistaForm
+                    class="entrevista-form"
+                    [formData]="entrevistaModel"
+                    [labelLocation]="'top'"
+                    [colCount]="mttoFormColCount"
+                    [colCountByScreen]="mttoFormColCountByScreen"
+                    [showRequiredMark]="false"
+                    [items]="entrevistaItems"
+                  ></dx-form>
 
                   <div class="entrevista-form-actions">
                     <dx-button
@@ -449,8 +391,150 @@
             </dxi-item>
 
             <dxi-item title="Documentos" [icon]="'doc'">
-              <div class="solicitud-workspace__tab-body">
-                <!-- Contenido pendiente -->
+              <div class="solicitud-workspace__tab-body documento-tab">
+                <section class="documento-form-card">
+                  <div class="documento-form-card__header">
+                    <h4>{{ editandoDocumento ? 'Editar documento' : 'Nuevo documento' }}</h4>
+                    <span *ngIf="editandoDocumento">Corr. {{ documentoModel.CORR_EXPEDIENTE_DOCUMENTO }}</span>
+                  </div>
+
+                  <dx-form
+                    #documentoForm
+                    class="documento-form"
+                    [formData]="documentoModel"
+                    [labelLocation]="'top'"
+                    [colCount]="mttoFormColCount"
+                    [colCountByScreen]="mttoFormColCountByScreen"
+                    [showRequiredMark]="false"
+                    [items]="documentoItems"
+                  >
+                    <div *dxTemplate="let cellInfo of 'documentoArchivoUploader'" class="documento-file-input">
+                      <div class="documento-file-input__row">
+                        <i class="dx-icon dx-icon-attach documento-file-input__clip" aria-hidden="true"></i>
+
+                        <fieldset
+                          class="documento-file-input__box"
+                          [class.documento-file-input__box--drag]="documentoArchivoDragOver"
+                          (click)="onDocumentoFileBoxClick($event)"
+                          (dragover)="onDocumentoDragOver($event)"
+                          (dragleave)="onDocumentoDragLeave($event)"
+                          (drop)="onDocumentoDrop($event)"
+                        >
+                          <legend class="documento-file-input__legend">Archivo</legend>
+
+                          <div class="documento-file-input__content">
+                            <div
+                              *ngIf="documentoArchivoVisible"
+                              class="documento-file-chip"
+                              [class.documento-file-chip--actual]="!documentoArchivoEsNuevo"
+                            >
+                              <span class="documento-file-chip__text">{{ documentoArchivoEtiqueta }}</span>
+                            </div>
+
+                            <span *ngIf="!documentoArchivoVisible" class="documento-file-input__placeholder">
+                              Seleccione o arrastre un archivo
+                            </span>
+
+                            <button
+                              *ngIf="documentoArchivoEsNuevo"
+                              type="button"
+                              class="documento-file-input__clear"
+                              aria-label="Quitar archivo seleccionado"
+                              (click)="limpiarDocumentoArchivoSeleccionado($event)"
+                            >
+                              <i class="dx-icon dx-icon-close" aria-hidden="true"></i>
+                            </button>
+                          </div>
+                        </fieldset>
+
+                        <input
+                          #documentoFileInput
+                          type="file"
+                          class="documento-file-input__native"
+                          accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx"
+                          (change)="onDocumentoArchivoInputChange($event)"
+                        />
+                      </div>
+
+                      <p *ngIf="documentoArchivoResumen" class="documento-file-input__footer">
+                        {{ documentoArchivoResumen }}
+                      </p>
+                    </div>
+                  </dx-form>
+
+                  <div class="documento-form-actions">
+                    <dx-button
+                      text="Limpiar"
+                      stylingMode="outlined"
+                      type="normal"
+                      [disabled]="guardandoDocumento"
+                      (onClick)="nuevoDocumento()"
+                    ></dx-button>
+                    <dx-button
+                      [text]="editandoDocumento ? 'Actualizar' : 'Agregar'"
+                      icon="save"
+                      type="default"
+                      stylingMode="contained"
+                      [disabled]="guardandoDocumento"
+                      (onClick)="guardarDocumento()"
+                    ></dx-button>
+                  </div>
+                </section>
+
+                <div class="dx-grid-deta documento-grid">
+                  <dx-data-grid
+                    [dataSource]="documentos"
+                    [columns]="documentoColumns"
+                    [keyExpr]="'CORR_EXPEDIENTE_DOCUMENTO'"
+                    [showBorders]="true"
+                    [showColumnLines]="true"
+                    [showRowLines]="true"
+                    [rowAlternationEnabled]="true"
+                    [hoverStateEnabled]="true"
+                    [allowColumnResizing]="true"
+                    [columnResizingMode]="'widget'"
+                    [columnAutoWidth]="true"
+                    [height]="'100%'"
+                    [width]="'100%'"
+                    [noDataText]="'No hay documentos registrados para este expediente.'"
+                    (onRowClick)="onDocumentoRowClick($event)"
+                  >
+                    <dxo-paging [pageSize]="5"></dxo-paging>
+                    <dxo-pager
+                      [showPageSizeSelector]="true"
+                      [allowedPageSizes]="[5, 10, 20]"
+                    ></dxo-pager>
+                    <dxo-editing
+                      [allowUpdating]="false"
+                      [allowDeleting]="false"
+                      [allowAdding]="false"
+                    ></dxo-editing>
+
+                    <div *dxTemplate="let cell of 'documentoActionsTemplate'">
+                      <div class="documento-grid-actions" (click)="$event.stopPropagation()">
+                        <dx-button
+                          icon="eyeopen"
+                          hint="Ver documento"
+                          stylingMode="text"
+                          (onClick)="verDocumento(cell.data)"
+                        ></dx-button>
+                        <dx-button
+                          icon="edit"
+                          hint="Editar"
+                          stylingMode="text"
+                          (onClick)="editarDocumento(cell.data)"
+                        ></dx-button>
+                        <dx-button
+                          icon="trash"
+                          hint="Eliminar"
+                          stylingMode="text"
+                          type="danger"
+                          (onClick)="eliminarDocumento(cell.data)"
+                        ></dx-button>
+                      </div>
+                    </div>
+                  </dx-data-grid>
+                </div>
               </div>
             </dxi-item>
           </dx-tab-panel>
@@ -510,5 +594,30 @@
   [familiaresUees]="familiaresUees"
   (saved)="onPersonaDatosGuardados()"
 ></app-sc-solicitud-empleo-editar-persona>
+
+<dx-popup
+  [width]="'1200px'"
+  [position]="'top'"
+  [height]="'1050px'"
+  [showTitle]="true"
+  title="Vista Previa"
+  [dragEnabled]="false"
+  [closeOnOutsideClick]="false"
+  [showCloseButton]="true"
+  [shading]="false"
+  [(visible)]="popupVisiblePdf"
+  (onHiding)="cerrarDocumentoPreview()"
+  class="popout"
+>
+  <object *ngIf="!documentoPreviewEsImagen" [data]="PDF" type="application/pdf" width="100%" height="95%">
+    <embed [src]="PDF" type="application/pdf" />
+  </object>
+  <img
+    *ngIf="documentoPreviewEsImagen"
+    class="documento-preview-img"
+    [src]="PDF"
+    alt="Vista previa del documento"
+  />
+</dx-popup>
 
 <!-- <p-toast></p-toast> -->
