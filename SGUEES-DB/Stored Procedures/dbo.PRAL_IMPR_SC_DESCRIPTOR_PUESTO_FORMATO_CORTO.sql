@@ -6,8 +6,8 @@ GO
 -- Procedimiento: dbo.PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO
 -- Qué hace: entrega datos para PDF Formato corto del Descriptor de puesto.
 -- Cómo:
---   1) Result set 1: descriptor + funciones CLAVE/SECUNDARIA (1 fila por función;
---      NOMBRE_FUNCION_NUM viene de la vista ya numerado por TIPO_FUNCION).
+--   1) Result set 1: 1 fila por descriptor; las funciones llegan agregadas en
+--      LISTA_FUNCIONES_CLAVE y LISTA_FUNCIONES_SECUNDARIA (una por línea).
 --   2) Result set 2: encabezado/logos desde GEN_EMPRESA (mismo patrón partida).
 -- Uso API: SC_DESCRIPTOR_PUESTO/getPDF → SGUEES-RPT SelectionHiring.
 -- =============================================================================
@@ -50,20 +50,11 @@ BEGIN
 		A.USUARIO_ACTU,
 		A.ESTACION_ACTU,
 		A.FECHA_ACTU,
-		A.CORR_FUNCION,
-		A.NOMBRE_FUNCION,
-		A.TIPO_FUNCION,
-		A.NOMBRE_FUNCION_NUM
+		A.LISTA_FUNCIONES_CLAVE,
+		A.LISTA_FUNCIONES_SECUNDARIA
 	FROM dbo.V_SC_DESCRIPTOR_PUESTO_IMPR A
 	WHERE A.CORR_EMPRESA = @CORR_EMPRESA
-	  AND A.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
-	ORDER BY
-		CASE A.TIPO_FUNCION
-			WHEN N'CLAVE' THEN 1
-			WHEN N'SECUNDARIA' THEN 2
-			ELSE 3
-		END,
-		A.CORR_FUNCION;
+	  AND A.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO;
 
 	-- Encabezado / logos (GEN_PARAMETRO en Crystal).
 	SELECT

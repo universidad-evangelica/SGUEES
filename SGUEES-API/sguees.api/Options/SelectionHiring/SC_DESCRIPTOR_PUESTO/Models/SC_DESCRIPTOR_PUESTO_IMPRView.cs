@@ -34,12 +34,10 @@ namespace SGUEES.Models
         public string ESTACION_ACTU { get; set; }
         public DateTime? FECHA_ACTU { get; set; }
 
-        // Función asociada (SC_DESCRIPTOR_PUESTO_FUNCION); null si el descriptor no tiene funciones.
-        public int? CORR_FUNCION { get; set; }
-        public string NOMBRE_FUNCION { get; set; }
-        public string TIPO_FUNCION { get; set; }
-        // Nombre ya numerado por tipo ("1. Nombre"); NOMBRE_FUNCION queda sin numerar.
-        public string NOMBRE_FUNCION_NUM { get; set; }
+        // Funciones agregadas en un solo texto, numeradas y separadas por CRLF;
+        // null si el descriptor no tiene funciones de ese tipo.
+        public string LISTA_FUNCIONES_CLAVE { get; set; }
+        public string LISTA_FUNCIONES_SECUNDARIA { get; set; }
 
         // Encabezado / logos (result set 2).
         public string NOMBRE_EMPRESA { get; set; }

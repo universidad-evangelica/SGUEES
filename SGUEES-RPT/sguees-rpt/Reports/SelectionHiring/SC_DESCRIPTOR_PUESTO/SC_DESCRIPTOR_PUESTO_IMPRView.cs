@@ -32,10 +32,9 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 		public string ESTACION_ACTU { get; set; }
 		public DateTime? FECHA_ACTU { get; set; }
 
-		public int? CORR_FUNCION { get; set; }
-		public string NOMBRE_FUNCION { get; set; }
-		public string TIPO_FUNCION { get; set; }
-		public string NOMBRE_FUNCION_NUM { get; set; }
+		// Funciones agregadas en un solo texto, numeradas y separadas por CRLF.
+		public string LISTA_FUNCIONES_CLAVE { get; set; }
+		public string LISTA_FUNCIONES_SECUNDARIA { get; set; }
 
 		public string NOMBRE_EMPRESA { get; set; }
 		public string PERIODO { get; set; }

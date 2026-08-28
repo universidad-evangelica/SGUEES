@@ -3,9 +3,11 @@ GO
 -- =============================================================================
 -- Vista: dbo.V_SC_DESCRIPTOR_PUESTO_IMPR
 -- Qué hace: forma de datos para impresión Formato corto (descriptor + funciones).
--- Cómo: LEFT JOIN a SC_DESCRIPTOR_PUESTO_FUNCION (CLAVE y SECUNDARIA);
---       1 fila por función; si no hay funciones, 1 fila del descriptor.
---       NOMBRE_FUNCION_NUM antepone el correlativo, reiniciando por TIPO_FUNCION.
+-- Cómo: 1 sola fila por descriptor; las funciones vienen agregadas en dos campos
+--       de texto (LISTA_FUNCIONES_CLAVE / LISTA_FUNCIONES_SECUNDARIA) numerados
+--       desde 1 y separados por CRLF, para imprimirlos en un cuadro que crece.
+--       Se usa FOR XML PATH porque el nivel de compatibilidad de la BD (100) no
+--       admite STRING_AGG con WITHIN GROUP (ORDER BY).
 -- Uso: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO / Crystal SGUEES-RPT.
 -- =============================================================================
 CREATE OR ALTER VIEW [dbo].[V_SC_DESCRIPTOR_PUESTO_IMPR]
@@ -37,25 +39,39 @@ SELECT
   A.[USUARIO_ACTU],
   A.[ESTACION_ACTU],
   A.[FECHA_ACTU],
-  F.[CORR_FUNCION],
-  F.[NOMBRE_FUNCION],
-  RTRIM(F.[TIPO_FUNCION]) AS [TIPO_FUNCION],
-  -- Nombre con correlativo listo para imprimir ("1. Nombre"); reinicia por TIPO_FUNCION.
-  -- Se deja NOMBRE_FUNCION sin numerar para los reportes que no lo necesiten.
-  CASE
-    WHEN F.[CORR_FUNCION] IS NULL THEN NULL
-    ELSE CAST(
-      ROW_NUMBER() OVER (
-        PARTITION BY A.[CORR_EMPRESA], A.[CORR_DESCRIPTOR_PUESTO], RTRIM(F.[TIPO_FUNCION])
-        ORDER BY F.[CORR_FUNCION]
-      ) AS NVARCHAR(10)) + N'. ' + F.[NOMBRE_FUNCION]
-  END AS [NOMBRE_FUNCION_NUM]
+  -- Funciones CLAVE numeradas ("1. Nombre") en un solo texto, una por línea.
+  -- El STUFF quita el CRLF inicial; .value() evita que XML escape & < >.
+  STUFF((
+    SELECT CHAR(13) + CHAR(10) + CAST(N.[NUM_ORDEN] AS NVARCHAR(10)) + N'. ' + N.[NOMBRE_FUNCION]
+    FROM (
+      SELECT
+        ROW_NUMBER() OVER (ORDER BY F.[CORR_FUNCION]) AS [NUM_ORDEN],
+        F.[NOMBRE_FUNCION]
+      FROM [dbo].[SC_DESCRIPTOR_PUESTO_FUNCION] F
+      WHERE F.[CORR_EMPRESA] = A.[CORR_EMPRESA]
+        AND F.[CORR_DESCRIPTOR_PUESTO] = A.[CORR_DESCRIPTOR_PUESTO]
+        AND RTRIM(F.[TIPO_FUNCION]) = N'CLAVE'
+    ) N
+    ORDER BY N.[NUM_ORDEN]
+    FOR XML PATH(N''), TYPE
+  ).value(N'.', N'NVARCHAR(MAX)'), 1, 2, N'') AS [LISTA_FUNCIONES_CLAVE],
+  -- Mismo armado para las funciones SECUNDARIA (numeración propia desde 1).
+  STUFF((
+    SELECT CHAR(13) + CHAR(10) + CAST(N.[NUM_ORDEN] AS NVARCHAR(10)) + N'. ' + N.[NOMBRE_FUNCION]
+    FROM (
+      SELECT
+        ROW_NUMBER() OVER (ORDER BY F.[CORR_FUNCION]) AS [NUM_ORDEN],
+        F.[NOMBRE_FUNCION]
+      FROM [dbo].[SC_DESCRIPTOR_PUESTO_FUNCION] F
+      WHERE F.[CORR_EMPRESA] = A.[CORR_EMPRESA]
+        AND F.[CORR_DESCRIPTOR_PUESTO] = A.[CORR_DESCRIPTOR_PUESTO]
+        AND RTRIM(F.[TIPO_FUNCION]) = N'SECUNDARIA'
+    ) N
+    ORDER BY N.[NUM_ORDEN]
+    FOR XML PATH(N''), TYPE
+  ).value(N'.', N'NVARCHAR(MAX)'), 1, 2, N'') AS [LISTA_FUNCIONES_SECUNDARIA]
 FROM [dbo].[SC_DESCRIPTOR_PUESTO] A
 LEFT JOIN [dbo].[GEN_EMPLEADO] E
   ON E.[CORR_EMPRESA] = A.[CORR_EMPRESA]
  AND E.[CORR_EMPLEADO] = A.[CORR_PUESTO_REPORTA]
-LEFT JOIN [dbo].[SC_DESCRIPTOR_PUESTO_FUNCION] F
-  ON F.[CORR_EMPRESA] = A.[CORR_EMPRESA]
- AND F.[CORR_DESCRIPTOR_PUESTO] = A.[CORR_DESCRIPTOR_PUESTO]
- AND RTRIM(F.[TIPO_FUNCION]) IN (N'CLAVE', N'SECUNDARIA')
 GO
