@@ -3,9 +3,10 @@ GO
 -- =============================================================================
 -- Vista: dbo.V_SC_DESCRIPTOR_PUESTO_IMPR
 -- Qué hace: forma de datos para impresión Formato corto (descriptor + funciones).
--- Cómo: 1 sola fila por descriptor; las funciones vienen agregadas en dos campos
---       de texto (LISTA_FUNCIONES_CLAVE / LISTA_FUNCIONES_SECUNDARIA) numerados
---       desde 1 y separados por CRLF, para imprimirlos en un cuadro que crece.
+-- Cómo: 1 fila por indicador (SC_DESCRIPTOR_PUESTO_KPI_FUNCION); si no hay
+--       indicadores, 1 fila del descriptor. Las funciones NO generan filas: van
+--       agregadas en LISTA_FUNCIONES_CLAVE / LISTA_FUNCIONES_SECUNDARIA,
+--       numeradas desde 1 y separadas por CRLF, para un cuadro que crece.
 --       Se usa FOR XML PATH porque el nivel de compatibilidad de la BD (100) no
 --       admite STRING_AGG con WITHIN GROUP (ORDER BY).
 -- Uso: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO / Crystal SGUEES-RPT.
@@ -69,9 +70,18 @@ SELECT
     ) N
     ORDER BY N.[NUM_ORDEN]
     FOR XML PATH(N''), TYPE
-  ).value(N'.', N'NVARCHAR(MAX)'), 1, 2, N'') AS [LISTA_FUNCIONES_SECUNDARIA]
+  ).value(N'.', N'NVARCHAR(MAX)'), 1, 2, N'') AS [LISTA_FUNCIONES_SECUNDARIA],
+  -- Indicadores de desempeño: van fila por fila al detalle del reporte.
+  K.[CORR_KPI_FUNCION],
+  K.[NOMBRE_INDICADOR],
+  K.[META],
+  K.[CORR_FRECUENCIA],
+  K.[NOMBRE_FRECUENCIA]
 FROM [dbo].[SC_DESCRIPTOR_PUESTO] A
 LEFT JOIN [dbo].[GEN_EMPLEADO] E
   ON E.[CORR_EMPRESA] = A.[CORR_EMPRESA]
  AND E.[CORR_EMPLEADO] = A.[CORR_PUESTO_REPORTA]
+LEFT JOIN [dbo].[SC_DESCRIPTOR_PUESTO_KPI_FUNCION] K
+  ON K.[CORR_EMPRESA] = A.[CORR_EMPRESA]
+ AND K.[CORR_DESCRIPTOR_PUESTO] = A.[CORR_DESCRIPTOR_PUESTO]
 GO

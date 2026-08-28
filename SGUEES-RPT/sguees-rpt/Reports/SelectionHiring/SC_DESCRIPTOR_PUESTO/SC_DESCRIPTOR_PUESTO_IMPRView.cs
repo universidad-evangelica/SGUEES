@@ -36,6 +36,13 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 		public string LISTA_FUNCIONES_CLAVE { get; set; }
 		public string LISTA_FUNCIONES_SECUNDARIA { get; set; }
 
+		// Indicador de desempeño; una fila por indicador (detalle del reporte).
+		public int? CORR_KPI_FUNCION { get; set; }
+		public string NOMBRE_INDICADOR { get; set; }
+		public int? META { get; set; }
+		public int? CORR_FRECUENCIA { get; set; }
+		public string NOMBRE_FRECUENCIA { get; set; }
+
 		public string NOMBRE_EMPRESA { get; set; }
 		public string PERIODO { get; set; }
 		public byte[] LOGO1 { get; set; }

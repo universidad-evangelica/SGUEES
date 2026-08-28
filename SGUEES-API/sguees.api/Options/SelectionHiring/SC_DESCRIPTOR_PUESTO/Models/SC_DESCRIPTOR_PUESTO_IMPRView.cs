@@ -39,6 +39,13 @@ namespace SGUEES.Models
         public string LISTA_FUNCIONES_CLAVE { get; set; }
         public string LISTA_FUNCIONES_SECUNDARIA { get; set; }
 
+        // Indicador de desempeño (SC_DESCRIPTOR_PUESTO_KPI_FUNCION); una fila por indicador.
+        public int? CORR_KPI_FUNCION { get; set; }
+        public string NOMBRE_INDICADOR { get; set; }
+        public int? META { get; set; }
+        public int? CORR_FRECUENCIA { get; set; }
+        public string NOMBRE_FRECUENCIA { get; set; }
+
         // Encabezado / logos (result set 2).
         public string NOMBRE_EMPRESA { get; set; }
         public string PERIODO { get; set; }
