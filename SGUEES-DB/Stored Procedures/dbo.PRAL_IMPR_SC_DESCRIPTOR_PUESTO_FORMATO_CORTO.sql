@@ -7,7 +7,7 @@ GO
 -- Qué hace: entrega datos para PDF Formato corto del Descriptor de puesto.
 -- Cómo:
 --   1) Result set 1: descriptor + funciones CLAVE/SECUNDARIA (1 fila por función;
---      NUM_ORDEN_FUNCION reinicia por TIPO_FUNCION). Si no hay funciones, 1 fila.
+--      NOMBRE_FUNCION_NUM viene de la vista ya numerado por TIPO_FUNCION).
 --   2) Result set 2: encabezado/logos desde GEN_EMPRESA (mismo patrón partida).
 -- Uso API: SC_DESCRIPTOR_PUESTO/getPDF → SGUEES-RPT SelectionHiring.
 -- =============================================================================
@@ -53,14 +53,7 @@ BEGIN
 		A.CORR_FUNCION,
 		A.NOMBRE_FUNCION,
 		A.TIPO_FUNCION,
-		CASE
-			WHEN A.CORR_FUNCION IS NULL THEN CAST(NULL AS INT)
-			ELSE CAST(
-				ROW_NUMBER() OVER (
-					PARTITION BY A.CORR_EMPRESA, A.CORR_DESCRIPTOR_PUESTO, A.TIPO_FUNCION
-					ORDER BY A.CORR_FUNCION
-				) AS INT)
-		END AS NUM_ORDEN_FUNCION
+		A.NOMBRE_FUNCION_NUM
 	FROM dbo.V_SC_DESCRIPTOR_PUESTO_IMPR A
 	WHERE A.CORR_EMPRESA = @CORR_EMPRESA
 	  AND A.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO

@@ -38,7 +38,8 @@ namespace SGUEES.Models
         public int? CORR_FUNCION { get; set; }
         public string NOMBRE_FUNCION { get; set; }
         public string TIPO_FUNCION { get; set; }
-        public int? NUM_ORDEN_FUNCION { get; set; }
+        // Nombre ya numerado por tipo ("1. Nombre"); NOMBRE_FUNCION queda sin numerar.
+        public string NOMBRE_FUNCION_NUM { get; set; }
 
         // Encabezado / logos (result set 2).
         public string NOMBRE_EMPRESA { get; set; }

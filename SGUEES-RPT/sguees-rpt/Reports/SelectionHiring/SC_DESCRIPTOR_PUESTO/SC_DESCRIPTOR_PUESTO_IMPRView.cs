@@ -35,7 +35,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 		public int? CORR_FUNCION { get; set; }
 		public string NOMBRE_FUNCION { get; set; }
 		public string TIPO_FUNCION { get; set; }
-		public int? NUM_ORDEN_FUNCION { get; set; }
+		public string NOMBRE_FUNCION_NUM { get; set; }
 
 		public string NOMBRE_EMPRESA { get; set; }
 		public string PERIODO { get; set; }

@@ -5,6 +5,7 @@ GO
 -- Qué hace: forma de datos para impresión Formato corto (descriptor + funciones).
 -- Cómo: LEFT JOIN a SC_DESCRIPTOR_PUESTO_FUNCION (CLAVE y SECUNDARIA);
 --       1 fila por función; si no hay funciones, 1 fila del descriptor.
+--       NOMBRE_FUNCION_NUM antepone el correlativo, reiniciando por TIPO_FUNCION.
 -- Uso: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO / Crystal SGUEES-RPT.
 -- =============================================================================
 CREATE OR ALTER VIEW [dbo].[V_SC_DESCRIPTOR_PUESTO_IMPR]
@@ -38,7 +39,17 @@ SELECT
   A.[FECHA_ACTU],
   F.[CORR_FUNCION],
   F.[NOMBRE_FUNCION],
-  RTRIM(F.[TIPO_FUNCION]) AS [TIPO_FUNCION]
+  RTRIM(F.[TIPO_FUNCION]) AS [TIPO_FUNCION],
+  -- Nombre con correlativo listo para imprimir ("1. Nombre"); reinicia por TIPO_FUNCION.
+  -- Se deja NOMBRE_FUNCION sin numerar para los reportes que no lo necesiten.
+  CASE
+    WHEN F.[CORR_FUNCION] IS NULL THEN NULL
+    ELSE CAST(
+      ROW_NUMBER() OVER (
+        PARTITION BY A.[CORR_EMPRESA], A.[CORR_DESCRIPTOR_PUESTO], RTRIM(F.[TIPO_FUNCION])
+        ORDER BY F.[CORR_FUNCION]
+      ) AS NVARCHAR(10)) + N'. ' + F.[NOMBRE_FUNCION]
+  END AS [NOMBRE_FUNCION_NUM]
 FROM [dbo].[SC_DESCRIPTOR_PUESTO] A
 LEFT JOIN [dbo].[GEN_EMPLEADO] E
   ON E.[CORR_EMPRESA] = A.[CORR_EMPRESA]
