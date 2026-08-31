@@ -169,9 +169,16 @@ export class ScDescriptorPuestoService {
 		return false;
 	}
 
-	// Qué hace: arma el código legible del descriptor (por ejemplo DES-0001).
-	buildCodigoDescriptor(corrDescriptor: number | null | undefined): string {
-		const corr = Number(corrDescriptor);
+	// Qué hace: devuelve el código legible del descriptor (por ejemplo DES-0001).
+	// Cómo: usa CODIGO_DESCRIPTOR_PUESTO guardado al crear; solo lo calcula desde el
+	//       correlativo en los descriptores creados antes de que existiera el campo.
+	buildCodigoDescriptor(descriptor: ScDescriptorPuesto | null | undefined): string {
+		const guardado = (descriptor?.CODIGO_DESCRIPTOR_PUESTO ?? '').trim();
+		if (guardado) {
+			return guardado;
+		}
+
+		const corr = Number(descriptor?.CORR_DESCRIPTOR_PUESTO);
 		if (!corr || corr <= 0) {
 			return 'DES-0000';
 		}
@@ -181,7 +188,7 @@ export class ScDescriptorPuestoService {
 
 	// Qué hace: arma el mensaje de advertencia cuando ya existe un descriptor abierto de unidad+puesto.
 	buildMensajeDescriptorExistente(conflicto: ScDescriptorPuesto): string {
-		const codigo = this.buildCodigoDescriptor(conflicto.CORR_DESCRIPTOR_PUESTO);
+		const codigo = this.buildCodigoDescriptor(conflicto);
 		const version = Number(conflicto.VERSION) > 0 ? Number(conflicto.VERSION) : 1;
 		const estado = toCorrEstado(conflicto.CORR_ESTADO);
 		const contexto = estado === CORR_ESTADO_ACTIVO ? 'activo' : 'en proceso de aprobacion';
@@ -211,7 +218,7 @@ export class ScDescriptorPuestoService {
 
 	// Qué hace: mensaje al intentar reactivar cuando ya hay otro descriptor abierto de la misma unidad+puesto.
 	buildMensajeDescriptorReactivar(conflicto: ScDescriptorPuesto): string {
-		const codigo = this.buildCodigoDescriptor(conflicto.CORR_DESCRIPTOR_PUESTO);
+		const codigo = this.buildCodigoDescriptor(conflicto);
 		const version = Number(conflicto.VERSION) > 0 ? Number(conflicto.VERSION) : 1;
 		const estado = toCorrEstado(conflicto.CORR_ESTADO);
 		const contexto = estado === CORR_ESTADO_ACTIVO ? 'activo' : 'en proceso de aprobacion';
@@ -318,6 +325,14 @@ export class ScDescriptorPuestoService {
 	getColumns(): any[] {
 		return [
 			{ dataField: 'CORR_DESCRIPTOR_PUESTO', caption: 'Corr.', width: 85 },
+			{
+				dataField: 'CODIGO_DESCRIPTOR_PUESTO',
+				caption: 'Codigo',
+				width: 110,
+				// Los descriptores creados antes de este campo lo tienen vacío: se muestra el
+				// equivalente calculado para no dejar la celda en blanco.
+				calculateCellValue: (row: ScDescriptorPuesto) => this.buildCodigoDescriptor(row),
+			},
 			{ dataField: 'NOMBRE_UNIDAD', caption: 'Area', width: 180 },
 			{ dataField: 'NOMBRE_PUESTO', caption: 'Titulo del puesto', width: 220 },
 			{

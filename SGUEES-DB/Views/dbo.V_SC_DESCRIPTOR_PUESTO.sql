@@ -5,6 +5,8 @@ AS
 SELECT
   A.[CORR_EMPRESA],
   A.[CORR_DESCRIPTOR_PUESTO],
+  -- Código legible DES-#### sellado al crear el descriptor.
+  A.[CODIGO_DESCRIPTOR_PUESTO],
   A.[FECHA_EMISION],
   A.[FECHA_REVISION],
   A.[OBJETIVO_PUESTO],

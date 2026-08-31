@@ -9,6 +9,8 @@ namespace SGUEES.Models
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_DESCRIPTOR_PUESTO { get; set; }
+        // Código legible DES-#### sellado al crear el descriptor.
+        public string CODIGO_DESCRIPTOR_PUESTO { get; set; }
         // Texto dd/MM/yyyy desde la vista; evita el 00:00:00 que agrega DateTime.
         public string FECHA_EMISION { get; set; }
         public string FECHA_REVISION { get; set; }

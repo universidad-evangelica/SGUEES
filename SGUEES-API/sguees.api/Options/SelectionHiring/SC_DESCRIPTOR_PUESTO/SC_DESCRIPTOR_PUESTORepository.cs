@@ -122,6 +122,10 @@ namespace SGUEES.Repositories
                 reader.Close();
                 reader = null;
 
+                // El correlativo lo asigna el Insert, así que el código DES-#### se sella aquí,
+                // solo al crear. El Update devuelve la fila ya con el código y evita releer la vista.
+                response = await SellarCodigoDescriptorAsync(response);
+
                 objResultado.Data = response;
                 objResultado.Result = true;
                 objResultado.RowsAffected = 1;
@@ -148,6 +152,41 @@ namespace SGUEES.Repositories
             }
 
             return objResultado;
+        }
+
+        // Qué hace: graba el código legible DES-#### del descriptor recién creado.
+        // Cómo: formatea el correlativo a 4 dígitos y actualiza solo esa columna; devuelve la
+        //       fila actualizada para que el SPA la use sin volver a consultar.
+        private async Task<SC_DESCRIPTOR_PUESTOView> SellarCodigoDescriptorAsync(SC_DESCRIPTOR_PUESTOView creado)
+        {
+            if (creado == null || creado.CORR_DESCRIPTOR_PUESTO <= 0)
+            {
+                return creado;
+            }
+
+            var codigo = $"DES-{creado.CORR_DESCRIPTOR_PUESTO:0000}";
+            var campos = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CODIGO_DESCRIPTOR_PUESTO", Value = codigo, DbType = System.Data.DbType.String },
+            };
+            var pWhere = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = creado.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = _CampoPk, Value = creado.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+            };
+
+            var reader = await objData.Update(_TableName, campos, pWhere);
+            var actualizado = new List<SC_DESCRIPTOR_PUESTOView>().FromDataReader(reader).FirstOrDefault();
+            reader.Close();
+
+            if (actualizado != null)
+            {
+                return actualizado;
+            }
+
+            // Si el Update no devolvió fila, al menos el SPA recibe el código recién grabado.
+            creado.CODIGO_DESCRIPTOR_PUESTO = codigo;
+            return creado;
         }
 
         // Actualiza SC_DESCRIPTOR_PUESTO por CORR_EMPRESA + CORR_DESCRIPTOR_PUESTO y devuelve el registro.

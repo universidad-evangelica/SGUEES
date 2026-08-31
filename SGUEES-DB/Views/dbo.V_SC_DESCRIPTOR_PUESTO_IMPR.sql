@@ -19,6 +19,8 @@ AS
 SELECT
   A.[CORR_EMPRESA],
   A.[CORR_DESCRIPTOR_PUESTO],
+  -- Código legible DES-#### sellado al crear el descriptor.
+  A.[CODIGO_DESCRIPTOR_PUESTO],
   -- Fechas como texto dd/MM/yyyy: al pasar por DateTime de .NET, un DATE arrastra
   -- la hora 00:00:00 y Crystal la imprime. Formateadas aquí llegan limpias.
   CONVERT(VARCHAR(10), A.[FECHA_EMISION], 103) AS [FECHA_EMISION],

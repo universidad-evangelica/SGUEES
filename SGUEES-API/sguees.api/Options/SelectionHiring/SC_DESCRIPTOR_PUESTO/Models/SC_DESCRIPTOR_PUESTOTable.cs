@@ -9,6 +9,8 @@ namespace SGUEES.Models
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_DESCRIPTOR_PUESTO { get; set; }
+        // Código legible DES-####; lo sella el repositorio al crear, no se recalcula al editar.
+        public string CODIGO_DESCRIPTOR_PUESTO { get; set; }
         public int? CORR_PUESTO { get; set; }
         public int? CORR_UNIDAD { get; set; }
         public DateTime? FECHA_EMISION { get; set; }

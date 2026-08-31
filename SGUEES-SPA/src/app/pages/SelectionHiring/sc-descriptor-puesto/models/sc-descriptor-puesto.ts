@@ -2,6 +2,7 @@
 export interface ScDescriptorPuesto {
 	CORR_EMPRESA: number; // Empresa a la que pertenece el descriptor.
 	CORR_DESCRIPTOR_PUESTO: number; // Identificador único del descriptor.
+	CODIGO_DESCRIPTOR_PUESTO?: string; // Código legible DES-####, sellado al crear el descriptor.
 	CORR_PUESTO: number | null; // Puesto organizacional al que aplica el descriptor.
 	CORR_UNIDAD: number | null; // Unidad organizacional del puesto.
 	FECHA_EMISION: Date | string | null; // Fecha en que se emitió el descriptor.
