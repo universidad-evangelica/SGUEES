@@ -31,12 +31,25 @@ export class ScPersonaDatosVistaComponent {
 	@Input() fotoPersonaUrl: string | null = null;
 	@Input() cargandoPersonaDatos = false;
 	@Input() permiteEdit = false;
+	/** Si false, oculta avatar/nombre/corr/"Solo lectura" (útil embebido en resumen). */
+	@Input() mostrarEncabezado = true;
+	@Input() mostrarSolicitudes = false;
+	@Input() solicitudes: any[] = [];
+	@Input() solicitudColumns: any[] = [];
 
 	@Output() editar = new EventEmitter<void>();
 	@Output() abrirFoto = new EventEmitter<void>();
+	@Output() solicitudRowClick = new EventEmitter<any>();
+	@Output() solicitudesTabSelected = new EventEmitter<void>();
 
 	get tienePersonaDatos(): boolean {
 		return (this.personaDatos?.CORR_PERSONA_DATOS ?? 0) > 0;
+	}
+
+	get mostrarTabs(): boolean {
+		// Durante la carga no renderizar un panel que contenga únicamente Solicitudes:
+		// DevExtreme lo seleccionaría y conservaría ese tab al aparecer Personales.
+		return this.tienePersonaDatos || (this.mostrarSolicitudes && !this.cargandoPersonaDatos);
 	}
 
 	get nombreCompletoPersona(): string {
@@ -62,6 +75,23 @@ export class ScPersonaDatosVistaComponent {
 
 	onAbrirFoto(): void {
 		this.abrirFoto.emit();
+	}
+
+	tabSelectionChanged(e: any): void {
+		const index = Number(e?.component?.option('selectedIndex') ?? -1);
+		const solicitudesIndex = this.tienePersonaDatos ? 6 : 0;
+		if (this.mostrarSolicitudes && index === solicitudesIndex) {
+			this.solicitudesTabSelected.emit();
+		}
+	}
+
+	onSolicitudRowClick(e: any): void {
+		this.solicitudRowClick.emit(e);
+	}
+
+	/** Abre el workspace de detalle (mismo evento que clic en fila). */
+	abrirDetalleSolicitud(data: any): void {
+		this.solicitudRowClick.emit({ data, rowType: 'data' });
 	}
 
 	textoLectura(valor: unknown): string {

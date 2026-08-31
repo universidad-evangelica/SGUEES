@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxCheckBoxModule } from 'devextreme-angular/ui/check-box';
+import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
 import { DxDateBoxModule } from 'devextreme-angular/ui/date-box';
 import { DxNumberBoxModule } from 'devextreme-angular/ui/number-box';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
@@ -23,6 +24,7 @@ import { ScPersonaDatosVistaComponent } from './sc-persona-datos-vista/sc-person
 		CommonModule,
 		DxButtonModule,
 		DxCheckBoxModule,
+		DxDataGridModule,
 		DxDateBoxModule,
 		DxNumberBoxModule,
 		DxPopupModule,

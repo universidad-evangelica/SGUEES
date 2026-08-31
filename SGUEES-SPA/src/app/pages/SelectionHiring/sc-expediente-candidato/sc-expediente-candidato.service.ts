@@ -503,6 +503,13 @@ export class ScExpedienteCandidatoService {
 			{ dataField: 'MODALIDAD_NOMBRE', caption: 'Modalidad', width: 170 },
 			{ dataField: 'SALARIO', caption: 'Salario', dataType: 'number', format: 'currency', width: 120 },
 			{ dataField: 'ACTIVO_SOLICITUD', caption: 'Activa', width: 90, dataType: 'boolean' },
+			{
+				caption: 'Options',
+				width: 90,
+				allowSorting: false,
+				allowFiltering: false,
+				cellTemplate: 'solicitudActionsTemplate',
+			},
 		];
 	}
 

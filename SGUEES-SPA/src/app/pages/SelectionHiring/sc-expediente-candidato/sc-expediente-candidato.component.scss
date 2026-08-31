@@ -198,6 +198,21 @@
 
 .expediente-panel__solicitudes {
   padding-top: 16px;
+
+  &--tab {
+    padding-top: 8px;
+  }
+}
+
+.expediente-panel__tabs {
+  margin-top: 4px;
+  min-width: 0;
+
+  ::ng-deep .participante-tab-panel {
+    .dx-tabpanel-tabs {
+      margin-bottom: 8px;
+    }
+  }
 }
 
 .expediente-panel__solicitudes-header {

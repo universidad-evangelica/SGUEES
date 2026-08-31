@@ -1,7 +1,7 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
-import { DxDataGridComponent, DxFormComponent } from 'devextreme-angular';
+import { DxFormComponent } from 'devextreme-angular';
 import { MessageService } from 'primeng/api';
 import { forkJoin, of } from 'rxjs';
 import { catchError, take } from 'rxjs/operators';
@@ -35,7 +35,6 @@ import { confirm } from 'devextreme/ui/dialog';
 })
 export class ScExpedienteCandidatoComponent extends CBaseComponent implements OnInit, OnDestroy {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
-	@ViewChild('gridSolicitudes', { static: false }) gridSolicitudes?: DxDataGridComponent;
 	@ViewChild('entrevistaForm', { static: false }) entrevistaForm?: DxFormComponent;
 	@ViewChild('documentoForm', { static: false }) documentoForm?: DxFormComponent;
 	@ViewChild('documentoFileInput', { static: false }) documentoFileInput?: ElementRef<HTMLInputElement>;
@@ -51,7 +50,6 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	/** Avatar del resumen: usa fotoPersonaUrl (misma carga que expediente completo). */
 	solicitudes: ScExpedienteSolicitud[] = [];
 	solicitudColumns: any[] = [];
-	solicitudSearchText = '';
 
 	/** Workspace expediente completo (slide-over desde la derecha). */
 	workspaceCompletoVisible = false;
@@ -218,7 +216,6 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		if (xEstado === UpdateType.Browse) {
 			this.subTituloVentana = this.maintenanceSubtitulo;
 			this.solicitudes = [];
-			this.limpiarBusquedaSolicitudes();
 			this.cerrarWorkspaceCompleto(false);
 			this.cerrarWorkspaceSolicitud(false);
 			this.limpiarPersonaDatos();
@@ -311,9 +308,6 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 					} else {
 						this.solicitudes = [];
 					}
-					if (this.solicitudSearchText) {
-						setTimeout(() => this.onSolicitudSearchChanged({ value: this.solicitudSearchText }));
-					}
 				},
 				error: () => {
 					this.solicitudes = [];
@@ -326,6 +320,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		if (rowData) {
 			this.model = this.fillData(rowData);
 			this.modelUpdate = this.fillData(rowData);
+			this.cargandoPersonaDatos = (this.model.CORR_PERSONA_DATOS ?? 0) > 0;
 		}
 		super.rowDblClick(e);
 		setTimeout(() => {
@@ -342,6 +337,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		}
 
 		this.model = this.fillData(e.row.data);
+		this.cargandoPersonaDatos = (this.model.CORR_PERSONA_DATOS ?? 0) > 0;
 		this.editarClick(e);
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
@@ -378,7 +374,6 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_EXPEDIENTE_CANDIDATO === this.modelUpdate.CORR_EXPEDIENTE_CANDIDATO);
 		this.solicitudes = [];
-		this.limpiarBusquedaSolicitudes();
 		this.cerrarWorkspaceCompleto(false);
 		this.cerrarWorkspaceSolicitud(false);
 		this.limpiarPersonaDatos();
@@ -443,7 +438,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
 	}
 
-	/** Abre workspace de expediente completo (cubre barra mtto + contenido). */
+	/** Abre workspace de expediente completo (stand-by; UI comentada en HTML). */
 	verExpedienteCompleto(): void {
 		if ((this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0) <= 0) {
 			return;
@@ -451,7 +446,6 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.cerrarWorkspaceSolicitud(false);
 		this.clearWorkspaceCloseTimer();
 		this.workspaceCompletoVisible = true;
-		// Siguiente frame: aplica --open para animar entrada desde la derecha.
 		requestAnimationFrame(() => {
 			this.workspaceCompletoAbierto = true;
 		});
@@ -1140,16 +1134,6 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 
 	private emptyResult() {
 		return of({ Result: true, Data: [] } as any);
-	}
-
-	/** Filtra el grid hijo desde la búsqueda del encabezado. */
-	onSolicitudSearchChanged(e: { value?: string }): void {
-		this.gridSolicitudes?.instance?.searchByText(e?.value ?? '');
-	}
-
-	private limpiarBusquedaSolicitudes(): void {
-		this.solicitudSearchText = '';
-		this.gridSolicitudes?.instance?.searchByText('');
 	}
 
 	/** En pausa: alta manual desde esta pantalla pendiente; hoy se usa Asociar Expediente. */

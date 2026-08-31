@@ -1,6 +1,6 @@
 <div
   class="sguees-mtto-view expediente-mtto"
-  [class.expediente-mtto--workspace-open]="workspaceCompletoVisible || workspaceSolicitudVisible"
+  [class.expediente-mtto--workspace-open]="workspaceSolicitudVisible"
 >
   <div class="expediente-mtto__main">
     <!-- Barra estándar mtto (nuevo / guardar / cancelar / consultar). -->
@@ -89,71 +89,42 @@
 
           <div class="expediente-panel__actions">
             <dx-button
-              text="Ver expediente completo"
-              icon="expandform"
+              text="Editar Datos"
+              icon="edit"
               type="default"
               stylingMode="outlined"
-              (onClick)="verExpedienteCompleto()"
+              [disabled]="!permiteEdit || cargandoPersonaDatos || (personaDatos?.CORR_PERSONA_DATOS ?? 0) <= 0"
+              [hint]="!permiteEdit ? 'Sin permiso para editar' : ''"
+              (onClick)="abrirEditarPersona()"
             ></dx-button>
           </div>
         </div>
 
         <div class="expediente-divider expediente-divider--horizontal mb-12" aria-hidden="true"></div>
 
-        <div class="expediente-panel__solicitudes">
-          <div class="expediente-panel__solicitudes-header">
-            <div class="expediente-section-title">
-              <i class="dx-icon dx-icon-bookmark"></i>
-              <h5>Solicitudes asociadas</h5>
-            </div>
-
-            <div class="expediente-panel__solicitudes-tools">
-              <dx-text-box
-                class="expediente-solicitud-search"
-                [(value)]="solicitudSearchText"
-                [showClearButton]="true"
-                placeholder="Buscar solicitud..."
-                mode="search"
-                (onValueChanged)="onSolicitudSearchChanged($event)"
-              ></dx-text-box>
-            </div>
-          </div>
-
-          <div class="dx-grid-deta expediente-solicitudes-grid">
-            <dx-data-grid
-              #gridSolicitudes
-              [dataSource]="solicitudes"
-              [columns]="solicitudColumns"
-              [keyExpr]="'CORR_EXPEDIENTE_SOLICITUD'"
-              [showBorders]="true"
-              [showColumnLines]="true"
-              [showRowLines]="true"
-              [rowAlternationEnabled]="true"
-              [hoverStateEnabled]="true"
-              [allowColumnResizing]="true"
-              [columnResizingMode]="'widget'"
-              [columnAutoWidth]="true"
-              [height]="'100%'"
-              [width]="'100%'"
-              [noDataText]="'No hay solicitudes relacionadas a este expediente.'"
-              (onRowClick)="onSolicitudRowClick($event)"
-            >
-              <dxo-paging [pageSize]="5"></dxo-paging>
-
-              <dxo-pager
-                [showPageSizeSelector]="true"
-                [allowedPageSizes]="[5, 10, 20]"
-                [showInfo]="true"
-                [infoText]="'Mostrando {0} a {1} de {2} solicitudes'"
-              ></dxo-pager>
-
-              <dxo-editing
-                [allowUpdating]="false"
-                [allowDeleting]="false"
-                [allowAdding]="false"
-              ></dxo-editing>
-            </dx-data-grid>
-          </div>
+        <!-- Tabs de persona (sin encabezado) + tab Solicitudes al final. -->
+        <div class="expediente-panel__tabs">
+          <app-sc-persona-datos-vista
+            [personaDatos]="personaDatos"
+            [familiares]="familiares"
+            [hijos]="hijos"
+            [estudios]="estudios"
+            [idiomas]="idiomas"
+            [competencias]="competencias"
+            [experiencias]="experiencias"
+            [familiaresUees]="familiaresUees"
+            [fotoPersonaUrl]="fotoPersonaUrl"
+            [cargandoPersonaDatos]="cargandoPersonaDatos"
+            [permiteEdit]="permiteEdit"
+            [mostrarEncabezado]="false"
+            [mostrarSolicitudes]="true"
+            [solicitudes]="solicitudes"
+            [solicitudColumns]="solicitudColumns"
+            (editar)="abrirEditarPersona()"
+            (abrirFoto)="abrirFotoPreview()"
+            (solicitudRowClick)="onSolicitudRowClick($event)"
+            (solicitudesTabSelected)="consultarSolicitudes()"
+          ></app-sc-persona-datos-vista>
         </div>
       </section>
 
@@ -213,7 +184,9 @@
     </app-data-grid-mtto>
   </div>
 
-  <!-- Workspace: solo en DOM al abrir (evita franja residual en el listado). -->
+  <!--
+    Workspace Expediente completo — en stand-by a futuro.
+    Si se reactiva: restaurar *ngIf="workspaceCompletoVisible", clase workspace-open y botón Ver expediente completo.
   <aside
     *ngIf="workspaceCompletoVisible"
     class="expediente-workspace"
@@ -230,7 +203,6 @@
       ></dx-button>
       <div class="expediente-workspace__title">
         <h3>Expediente completo</h3>
-        <!-- <span *ngIf="model?.NOMBRE_PERSONA">{{ model?.NOMBRE_PERSONA }}</span> -->
       </div>
     </header>
 
@@ -256,6 +228,7 @@
       </dx-scroll-view>
     </div>
   </aside>
+  -->
 
   <!-- Workspace detalle solicitud asociada: entra desde abajo; solo en DOM al abrir. -->
   <aside

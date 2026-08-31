@@ -69,6 +69,34 @@
 	margin-top: 4px;
 }
 
+.solicitudes-tab-grid {
+	width: 100%;
+	margin-top: 8px;
+
+	::ng-deep .dx-data-row {
+		cursor: pointer;
+	}
+}
+
+.solicitudes-tab-title {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 16px;
+	font-weight: 650;
+	color: var(--sguees-text-primary, var(--base-text-color));
+
+	.dx-icon {
+		color: var(--accent-color, #1976d2);
+	}
+}
+
+.solicitud-grid-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+}
+
 .persona-datos-header {
 	display: flex;
 	align-items: center;
