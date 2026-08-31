@@ -12,5 +12,9 @@ namespace SGUEES.Repositories
         Task<Stream> GetScDescriptorPuestoFormatoCortoImprAsync(
             List<SC_DESCRIPTOR_PUESTO_IMPRView> data,
             string token);
+
+        Task<Stream> GetScDescriptorPuestoFormatoExtensoImprAsync(
+            List<SC_DESCRIPTOR_PUESTO_IMPRView> data,
+            string token);
     }
 }

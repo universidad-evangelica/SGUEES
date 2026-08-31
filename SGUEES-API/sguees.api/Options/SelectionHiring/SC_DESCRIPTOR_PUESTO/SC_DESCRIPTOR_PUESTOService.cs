@@ -492,6 +492,30 @@ namespace SGUEES.Services
                 _repoUser.GenerateRptToken(loginSistema));
         }
 
+        // Qué hace: arma el PDF Formato extenso del descriptor (solo generalidades por ahora).
+        // Cómo: SP de impresión → SC_REPO → SelectionHiring/PostScDescriptorPuestoFormatoExtensoImpr.
+        public async Task<Stream> GetPDFFormatoExtensoAsync(SC_DESCRIPTOR_PUESTOParam xWhere, string loginSistema)
+        {
+            var p = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "@CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "@CORR_DESCRIPTOR_PUESTO", Value = xWhere.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+            };
+
+            var dataResult = await _repo.GetDescriptorFormatoExtensoImprAsync(p);
+            if (!dataResult.Result || dataResult.Data == null)
+            {
+                throw new InvalidOperationException(
+                    string.IsNullOrWhiteSpace(dataResult.ErrorMessage)
+                        ? "No se pudo obtener datos para imprimir el descriptor."
+                        : dataResult.ErrorMessage);
+            }
+
+            return await _repoRpt.GetScDescriptorPuestoFormatoExtensoImprAsync(
+                (List<SC_DESCRIPTOR_PUESTO_IMPRView>)dataResult.Data,
+                _repoUser.GenerateRptToken(loginSistema));
+        }
+
         // Qué hace: apaga flags PUEDE_* de flujo si el login no tiene permiso U (Update).
         // Cómo: todas las operaciones de Autoriza exigen policy |U; destinatario sin U = solo lectura.
         private static void AplicarPermisoCrudpAccionesFlujo(

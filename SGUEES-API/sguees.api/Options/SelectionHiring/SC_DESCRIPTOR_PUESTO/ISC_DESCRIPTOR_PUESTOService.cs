@@ -30,5 +30,7 @@ namespace SGUEES.Services
         Task<CResult> GetAccionesFlujoAsync(SC_DESCRIPTOR_PUESTOParam xWhere, string permisoOpcion);
         // Qué hace: genera PDF Formato corto del descriptor (SP + SGUEES-RPT).
         Task<Stream> GetPDFFormatoCortoAsync(SC_DESCRIPTOR_PUESTOParam xWhere, string loginSistema);
+        // Qué hace: genera PDF Formato extenso del descriptor (SP + SGUEES-RPT).
+        Task<Stream> GetPDFFormatoExtensoAsync(SC_DESCRIPTOR_PUESTOParam xWhere, string loginSistema);
     }
 }

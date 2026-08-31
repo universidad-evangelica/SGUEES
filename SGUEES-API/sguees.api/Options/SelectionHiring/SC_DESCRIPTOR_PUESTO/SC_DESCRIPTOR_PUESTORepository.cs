@@ -733,12 +733,24 @@ namespace SGUEES.Repositories
         }
 
         // Qué hace: obtiene filas de impresión Formato corto del descriptor.
-        // Cómo: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO; result set 1 = detalle,
-        //       result set 2 = encabezado/logos; merge como CON_PARTIDA.
-        public async Task<CResult> GetDescriptorFormatoCortoImprAsync(List<CParameter> xWhere)
+        // Cómo: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO.
+        public Task<CResult> GetDescriptorFormatoCortoImprAsync(List<CParameter> xWhere)
+        {
+            return GetDescriptorImprAsync("PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO", xWhere);
+        }
+
+        // Qué hace: obtiene filas de impresión Formato extenso del descriptor.
+        // Cómo: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO (misma forma de result sets).
+        public Task<CResult> GetDescriptorFormatoExtensoImprAsync(List<CParameter> xWhere)
+        {
+            return GetDescriptorImprAsync("PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO", xWhere);
+        }
+
+        // Qué hace: lectura común de los SPs de impresión del descriptor.
+        // Cómo: result set 1 = detalle, result set 2 = encabezado/logos; merge como CON_PARTIDA.
+        private async Task<CResult> GetDescriptorImprAsync(string spName, List<CParameter> xWhere)
         {
             CResult objResultado = new();
-            const string spName = "PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO";
 
             try
             {

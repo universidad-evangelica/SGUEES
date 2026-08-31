@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Web.Http;
 using sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO;
 using sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_PUESTO_FORMATO_CORTO;
+using sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO;
 
 namespace sgueesRpt.Controllers
 {
@@ -20,6 +21,16 @@ namespace sgueesRpt.Controllers
 			[FromBody] List<SC_DESCRIPTOR_PUESTO_IMPRView> data)
 		{
 			return SC_DESCRIPTOR_PUESTO_FORMATO_CORTOReportExporter.ExportPdf(data, Request);
+		}
+
+		// Qué hace: genera PDF Formato extenso del Descriptor de puesto.
+		// Cómo: recibe List IMPRView desde SC_REPO y exporta con Crystal.
+		[HttpPost]
+		[Route("PostScDescriptorPuestoFormatoExtensoImpr")]
+		public IHttpActionResult PostScDescriptorPuestoFormatoExtensoImpr(
+			[FromBody] List<SC_DESCRIPTOR_PUESTO_IMPRView> data)
+		{
+			return SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSOReportExporter.ExportPdf(data, Request);
 		}
 	}
 }

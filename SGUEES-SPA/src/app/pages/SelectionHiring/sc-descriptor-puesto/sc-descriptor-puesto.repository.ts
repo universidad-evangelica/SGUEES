@@ -97,4 +97,15 @@ export class ScDescriptorPuestoRepository {
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
 	}
+
+	// Qué hace: solicita el PDF Formato extenso del descriptor.
+	// Cómo: POST getPDFFormatoExtenso (blob) a SC_DESCRIPTOR_PUESTO.
+	getPDFFormatoExtenso(model: any): Observable<Blob> {
+		return this.objData.PostBlob(
+			model,
+			this.xController,
+			'getPDFFormatoExtenso',
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }

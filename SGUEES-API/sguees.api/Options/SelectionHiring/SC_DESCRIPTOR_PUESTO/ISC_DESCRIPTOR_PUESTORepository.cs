@@ -26,5 +26,7 @@ namespace SGUEES.Repositories
         Task<CResult> GetAccionesFlujoAsync(SC_DESCRIPTOR_PUESTOParam xWhere);
         // Qué hace: lee datos de impresión Formato corto (SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO).
         Task<CResult> GetDescriptorFormatoCortoImprAsync(List<CParameter> xWhere);
+        // Qué hace: lee datos de impresión Formato extenso (SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO).
+        Task<CResult> GetDescriptorFormatoExtensoImprAsync(List<CParameter> xWhere);
     }
 }

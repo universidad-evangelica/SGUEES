@@ -158,6 +158,39 @@ namespace SGUEES.Controllers
             }
         }
 
+        // Qué hace: genera PDF Formato extenso del descriptor (Crystal vía SGUEES-RPT).
+        // Cómo: POST getPDFFormatoExtenso → SP impresión + SelectionHiring/PostScDescriptorPuestoFormatoExtensoImpr.
+        [HttpPost("getPDFFormatoExtenso")]
+        [Authorize(Policy = "/sc-descriptor-puesto|P")]
+        public async Task<IActionResult> GetPDFFormatoExtenso([FromBody] SC_DESCRIPTOR_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            var login = GetUsuario() ?? string.Empty;
+            try
+            {
+                var stream = await _service.GetPDFFormatoExtensoAsync(Data, login);
+                if (stream == null)
+                {
+                    return BadRequest(new CResult
+                    {
+                        Result = false,
+                        ErrorCode = -1,
+                        ErrorMessage = "No se pudo generar el PDF del descriptor.",
+                    });
+                }
+
+                return File(stream, "application/pdf", "SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO.pdf");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
+            }
+        }
+
         // Elimina un descriptor de la empresa en sesión; borra también sus registros hijos.
         [HttpDelete]
         [Authorize(Policy = "/sc-descriptor-puesto|D")]

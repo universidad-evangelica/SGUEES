@@ -308,6 +308,12 @@ export class ScDescriptorPuestoService {
 		return this.repo.getPDF(model);
 	}
 
+	// Qué hace: genera PDF Formato extenso del descriptor seleccionado.
+	// Cómo: PostBlob getPDFFormatoExtenso con CORR_DESCRIPTOR_PUESTO.
+	getPDFFormatoExtenso(model: { CORR_DESCRIPTOR_PUESTO: number }): Observable<Blob> {
+		return this.repo.getPDFFormatoExtenso(model);
+	}
+
 	// Qué hace: define las columnas del grid de consulta, incluidos badges de formato, estado y versión.
 	getColumns(): any[] {
 		return [

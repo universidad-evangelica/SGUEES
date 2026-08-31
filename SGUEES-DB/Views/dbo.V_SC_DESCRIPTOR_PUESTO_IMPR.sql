@@ -2,14 +2,17 @@ SET QUOTED_IDENTIFIER, ANSI_NULLS ON
 GO
 -- =============================================================================
 -- Vista: dbo.V_SC_DESCRIPTOR_PUESTO_IMPR
--- Qué hace: forma de datos para impresión Formato corto (descriptor + funciones).
+-- Qué hace: forma de datos base para impresión del descriptor (descriptor + funciones);
+--           la comparten los formatos Corto y Extenso.
 -- Cómo: 1 fila por indicador (SC_DESCRIPTOR_PUESTO_KPI_FUNCION); si no hay
 --       indicadores, 1 fila del descriptor. Las funciones NO generan filas: van
 --       agregadas en LISTA_FUNCIONES_CLAVE / LISTA_FUNCIONES_SECUNDARIA,
 --       numeradas desde 1 y separadas por CRLF, para un cuadro que crece.
 --       Se usa FOR XML PATH porque el nivel de compatibilidad de la BD (100) no
 --       admite STRING_AGG con WITHIN GROUP (ORDER BY).
--- Uso: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO / Crystal SGUEES-RPT.
+-- Uso: SPs PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO y
+--       PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO / Crystal SGUEES-RPT.
+--       Cada SP elige qué columnas y result sets entrega a su .rpt.
 -- =============================================================================
 CREATE OR ALTER VIEW [dbo].[V_SC_DESCRIPTOR_PUESTO_IMPR]
 AS

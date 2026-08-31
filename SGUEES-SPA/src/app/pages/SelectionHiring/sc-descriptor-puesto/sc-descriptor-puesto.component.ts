@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+﻿import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
@@ -6497,37 +6497,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		this.loadingVisible = true;
-		this.service
-			.getPDF({ CORR_DESCRIPTOR_PUESTO: corr })
-			.pipe(take(1))
-			.subscribe({
-				next: (pdf: Blob) => {
-					if (pdf?.size) {
-						this.vPDF = pdf;
-						this.PDF = this.sanitization.bypassSecurityTrustResourceUrl(
-							window.URL.createObjectURL(pdf)
-						);
-						this.popupVisiblePdf = true;
-					} else {
-						this.notifyFx('No se recibio el PDF del descriptor.', NotifyType.Error);
-					}
-					this.loadingVisible = false;
-				},
-				error: (error: any) => {
-					this.loadingVisible = false;
-					const msg =
-						typeof error === 'string'
-							? error
-							: error?.ErrorMessage || error?.message || 'Error al generar PDF';
-					this.notifyFx(msg, NotifyType.Error);
-				},
-			});
+		this.mostrarPdfEnPopup(this.service.getPDF({ CORR_DESCRIPTOR_PUESTO: corr }));
 	}
 
-	// Qué hace: punto de entrada del botón Imprimir Formato extenso.
-	// Cómo: valida igual que el corto; el reporte extenso todavía no existe en SGUEES-RPT,
-	//       así que por ahora avisa en lugar de llamar a un endpoint inexistente.
+	// Qué hace: solicita PDF Formato extenso y lo muestra en popup.
+	// Cómo: mismas validaciones del corto; endpoint getPDFFormatoExtenso.
 	imprimirFormatoExtenso(): void {
 		const corr = this.validarImpresionDescriptor();
 		if (!corr) {
@@ -6538,7 +6512,37 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		this.notifyFx('El reporte Formato extenso aun no esta disponible.', NotifyType.Warning);
+		this.mostrarPdfEnPopup(
+			this.service.getPDFFormatoExtenso({ CORR_DESCRIPTOR_PUESTO: corr })
+		);
+	}
+
+	// Qué hace: consume el blob de cualquiera de los formatos y lo abre en el popup de PDF.
+	// Cómo: activa el loading, crea la URL segura del blob y traduce el error del API a notify.
+	private mostrarPdfEnPopup(peticion: Observable<Blob>): void {
+		this.loadingVisible = true;
+		peticion.pipe(take(1)).subscribe({
+			next: (pdf: Blob) => {
+				if (pdf?.size) {
+					this.vPDF = pdf;
+					this.PDF = this.sanitization.bypassSecurityTrustResourceUrl(
+						window.URL.createObjectURL(pdf)
+					);
+					this.popupVisiblePdf = true;
+				} else {
+					this.notifyFx('No se recibio el PDF del descriptor.', NotifyType.Error);
+				}
+				this.loadingVisible = false;
+			},
+			error: (error: any) => {
+				this.loadingVisible = false;
+				const msg =
+					typeof error === 'string'
+						? error
+						: error?.ErrorMessage || error?.message || 'Error al generar PDF';
+				this.notifyFx(msg, NotifyType.Error);
+			},
+		});
 	}
 
 	limpiarBotonesFlujo(): void {
