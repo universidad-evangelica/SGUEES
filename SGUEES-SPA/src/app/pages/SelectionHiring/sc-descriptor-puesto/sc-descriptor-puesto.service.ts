@@ -310,9 +310,9 @@ export class ScDescriptorPuestoService {
 	}
 
 	// Qué hace: genera PDF Formato corto del descriptor seleccionado.
-	// Cómo: PostBlob getPDF con CORR_DESCRIPTOR_PUESTO.
-	getPDF(model: { CORR_DESCRIPTOR_PUESTO: number }): Observable<Blob> {
-		return this.repo.getPDF(model);
+	// Cómo: PostBlob getPDFFormatoCorto con CORR_DESCRIPTOR_PUESTO.
+	getPDFFormatoCorto(model: { CORR_DESCRIPTOR_PUESTO: number }): Observable<Blob> {
+		return this.repo.getPDFFormatoCorto(model);
 	}
 
 	// Qué hace: genera PDF Formato extenso del descriptor seleccionado.

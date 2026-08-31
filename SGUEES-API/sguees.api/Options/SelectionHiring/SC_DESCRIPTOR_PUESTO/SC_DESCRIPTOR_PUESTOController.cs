@@ -126,10 +126,10 @@ namespace SGUEES.Controllers
         }
 
         // Qué hace: genera PDF Formato corto del descriptor (Crystal vía SGUEES-RPT).
-        // Cómo: POST getPDF → SP impresión + SelectionHiring/PostScDescriptorPuestoFormatoCortoImpr.
-        [HttpPost("getPDF")]
+        // Cómo: POST getPDFFormatoCorto → SP impresión + SelectionHiring/PostScDescriptorPuestoFormatoCortoImpr.
+        [HttpPost("getPDFFormatoCorto")]
         [Authorize(Policy = "/sc-descriptor-puesto|P")]
-        public async Task<IActionResult> GetPDF([FromBody] SC_DESCRIPTOR_PUESTOParam Data)
+        public async Task<IActionResult> GetPDFFormatoCorto([FromBody] SC_DESCRIPTOR_PUESTOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
             var login = GetUsuario() ?? string.Empty;

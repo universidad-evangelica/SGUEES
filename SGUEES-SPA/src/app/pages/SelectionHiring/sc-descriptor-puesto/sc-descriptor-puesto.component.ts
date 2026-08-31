@@ -6497,7 +6497,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
-		this.mostrarPdfEnPopup(this.service.getPDF({ CORR_DESCRIPTOR_PUESTO: corr }));
+		this.mostrarPdfEnPopup(
+			this.service.getPDFFormatoCorto({ CORR_DESCRIPTOR_PUESTO: corr })
+		);
 	}
 
 	// Qué hace: solicita PDF Formato extenso y lo muestra en popup.
