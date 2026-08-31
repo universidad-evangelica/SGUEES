@@ -1,4 +1,4 @@
-﻿import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
@@ -240,8 +240,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	btnObservar = '';
 	btnInactivar = '';
 	btnReactivar = '';
-	// Qué hace: botón Imprimir Formato corto (solo Activo + permiso P).
+	// Qué hace: botón Imprimir Formato corto (solo Activo + permiso P + FORMATO CORTO/AMBOS).
 	btnImprimirFormatoCorto = '';
+	// Qué hace: botón Imprimir Formato extenso (solo Activo + permiso P + FORMATO EXTENSO/AMBOS).
+	btnImprimirFormatoExtenso = '';
 
 	popupVisiblePdf = false;
 	vPDF: Blob | null = null;
@@ -1265,11 +1267,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: al enfocar una fila en la grilla, carga el modelo y refresca botones de flujo/impresión.
-	// Cómo: delega al base (asigna this.model); Imprimir Formato corto si Activo; luego GetAccionesFlujo.
+	// Cómo: delega al base (asigna this.model); botones de impresión si Activo; luego GetAccionesFlujo.
 	override focusedRowChanged(e: any): void {
 		super.focusedRowChanged(e);
 		if (this.isBrowse()) {
-			this.actualizarBotonImprimirFormatoCorto();
+			this.actualizarBotonesImprimir();
 			this.refrescarBotonesFlujo();
 		}
 	}
@@ -5779,6 +5781,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		this.model.FORMATO = value || FORMATO_CORTO;
 		this.ultimoFormatoAplicado = formatoNuevo;
+		// El formato decide qué botones de impresión aplican (corto, extenso o ambos).
+		this.actualizarBotonesImprimir();
 		this.actualizarResponsabilidadesCargoLookupDisponibles();
 		if (cambioReal && Number(this.model?.CORR_DESCRIPTOR_PUESTO) > 0) {
 			this.cargarResponsabilidadesCargo(true);
@@ -6438,7 +6442,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.btnObservar = this.accionesFlujo.puedeObservar ? 'Observar' : '';
 					this.btnInactivar = this.accionesFlujo.puedeInactivar ? 'Inactivar' : '';
 					this.btnReactivar = this.accionesFlujo.puedeReactivar ? 'Reactivar' : '';
-					this.actualizarBotonImprimirFormatoCorto();
+					this.actualizarBotonesImprimir();
 					this.cdr.detectChanges();
 				},
 				error: () => {
@@ -6449,30 +6453,47 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Qué hace: muestra Imprimir Formato corto en grilla o formulario si el descriptor está Activo y hay permiso P.
-	// Cómo: CORR_ESTADO = 14 + permitePrint (claim |P); también en Browse al enfocar la fila.
-	private actualizarBotonImprimirFormatoCorto(): void {
+	// Qué hace: muestra los botones de impresión según el FORMATO del descriptor.
+	// Cómo: base común (CORR_ESTADO = 14 + permitePrint claim |P + correlativo) y luego
+	//       esFormatoCorto / esFormatoExtenso; con FORMATO = AMBOS salen los dos botones.
+	private actualizarBotonesImprimir(): void {
 		const corr = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		const esActivo = toCorrEstado(this.model?.CORR_ESTADO) === CORR_ESTADO_ACTIVO;
+		const puedeImprimir = this.permitePrint && corr > 0 && esActivo;
+
 		this.btnImprimirFormatoCorto =
-			this.permitePrint && corr > 0 && esActivo
-				? 'Imprimir Formato corto'
-				: '';
+			puedeImprimir && this.esFormatoCorto ? 'Imprimir Formato corto' : '';
+		this.btnImprimirFormatoExtenso =
+			puedeImprimir && this.esFormatoExtenso ? 'Imprimir Formato extenso' : '';
+	}
+
+	// Qué hace: valida correlativo, estado Activo y permiso P antes de pedir cualquier PDF.
+	// Cómo: devuelve el correlativo si todo pasa; 0 y notifica el motivo si algo falla.
+	private validarImpresionDescriptor(): number {
+		const corr = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corr) {
+			this.notifyFx('Seleccione un descriptor para imprimir.', NotifyType.Warning);
+			return 0;
+		}
+		if (toCorrEstado(this.model?.CORR_ESTADO) !== CORR_ESTADO_ACTIVO) {
+			this.notifyFx('Solo se puede imprimir cuando el descriptor esta Activo.', NotifyType.Warning);
+			return 0;
+		}
+		if (!this.permitePrint) {
+			this.notifyFx('No tiene permiso de impresion (P) en esta opcion.', NotifyType.Warning);
+			return 0;
+		}
+		return corr;
 	}
 
 	// Qué hace: solicita PDF Formato corto y lo muestra en popup (patrón con-partida).
 	imprimirFormatoCorto(): void {
-		const corr = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		const corr = this.validarImpresionDescriptor();
 		if (!corr) {
-			this.notifyFx('Seleccione un descriptor para imprimir.', NotifyType.Warning);
 			return;
 		}
-		if (toCorrEstado(this.model?.CORR_ESTADO) !== CORR_ESTADO_ACTIVO) {
-			this.notifyFx('Solo se puede imprimir cuando el descriptor esta Activo.', NotifyType.Warning);
-			return;
-		}
-		if (!this.permitePrint) {
-			this.notifyFx('No tiene permiso de impresion (P) en esta opcion.', NotifyType.Warning);
+		if (!this.esFormatoCorto) {
+			this.notifyFx('El descriptor no esta configurado como Formato corto.', NotifyType.Warning);
 			return;
 		}
 
@@ -6504,6 +6525,22 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: punto de entrada del botón Imprimir Formato extenso.
+	// Cómo: valida igual que el corto; el reporte extenso todavía no existe en SGUEES-RPT,
+	//       así que por ahora avisa en lugar de llamar a un endpoint inexistente.
+	imprimirFormatoExtenso(): void {
+		const corr = this.validarImpresionDescriptor();
+		if (!corr) {
+			return;
+		}
+		if (!this.esFormatoExtenso) {
+			this.notifyFx('El descriptor no esta configurado como Formato extenso.', NotifyType.Warning);
+			return;
+		}
+
+		this.notifyFx('El reporte Formato extenso aun no esta disponible.', NotifyType.Warning);
+	}
+
 	limpiarBotonesFlujo(): void {
 		this.accionesFlujo = {
 			puedeSolicitar: false,
@@ -6517,7 +6554,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.btnObservar = '';
 		this.btnInactivar = '';
 		this.btnReactivar = '';
-		this.actualizarBotonImprimirFormatoCorto();
+		this.actualizarBotonesImprimir();
 	}
 
 	// Qué hace: texto del boton de avance segun el paso (Revision TH vs Aprobar JI/JTH).

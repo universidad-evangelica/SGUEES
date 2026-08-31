@@ -6,10 +6,13 @@ using sgueesRpt.Models;
 
 namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 {
-	// Qué hace: arma DataSet e-Admin para Crystal (detalle con funciones + GEN_PARAMETRO).
-	// Cómo: tabla V_SC_DESCRIPTOR_PUESTO_IMPR (1 fila por indicador de desempeño) + logos.
+	// Qué hace: arma DataSet e-Admin para Crystal; lo comparten Formato corto y Formato extenso.
+	// Cómo: tabla V_SC_DESCRIPTOR_PUESTO_IMPR (1 fila por indicador de desempeño) + GEN_PARAMETRO
+	//       con logos; cada formato pasa su título por defecto y las tablas de sus subinformes.
 	internal static class ScDescriptorPuestoReportData
 	{
+		private const string TituloPorDefecto = "Descriptor de Puesto";
+
 		private static readonly string[] HeaderColumns =
 		{
 			"NOMBRE_EMPRESA",
@@ -21,7 +24,14 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 			"FECHA_IMPRESION",
 		};
 
-		public static DataSet CreateDataSet(List<SC_DESCRIPTOR_PUESTO_IMPRView> data)
+		// Qué hace: construye el DataSet que se envía a Crystal.
+		// Cómo: detalle + GEN_PARAMETRO comunes; tituloReporte es el rótulo por defecto del formato
+		//       cuando la vista no trae TITULO_REPORTE, y tablasSubinformes agrega los bloques
+		//       extra (educación, experiencia, etc.) que consumen los subinformes del extenso.
+		public static DataSet CreateDataSet(
+			List<SC_DESCRIPTOR_PUESTO_IMPRView> data,
+			string tituloReporte = TituloPorDefecto,
+			IEnumerable<DataTable> tablasSubinformes = null)
 		{
 			var rows = data ?? new List<SC_DESCRIPTOR_PUESTO_IMPRView>();
 			var detail = Utils.CreateDataTable(rows);
@@ -55,7 +65,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 					header.LOGO1 ?? (object)DBNull.Value,
 					header.LOGO2 ?? (object)DBNull.Value,
 					string.IsNullOrWhiteSpace(header.TITULO_REPORTE)
-						? "Descriptor de Puesto - Formato corto"
+						? (string.IsNullOrWhiteSpace(tituloReporte) ? TituloPorDefecto : tituloReporte)
 						: header.TITULO_REPORTE,
 					header.NOMBRE_SISTEMA ?? string.Empty,
 					header.FECHA_IMPRESION == default(DateTime) ? DateTime.Now : header.FECHA_IMPRESION);
@@ -64,8 +74,21 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 			var dataSet = new DataSet();
 			dataSet.Tables.Add(detail);
 			dataSet.Tables.Add(param);
+
+			// Los subinformes leen del mismo DataSet: cada bloque llega como una tabla más.
+			if (tablasSubinformes != null)
+			{
+				foreach (var tabla in tablasSubinformes)
+				{
+					if (tabla != null && !dataSet.Tables.Contains(tabla.TableName))
+					{
+						dataSet.Tables.Add(tabla);
+					}
+				}
+			}
+
 			return dataSet;
 		}
 	}
 }
-
+
