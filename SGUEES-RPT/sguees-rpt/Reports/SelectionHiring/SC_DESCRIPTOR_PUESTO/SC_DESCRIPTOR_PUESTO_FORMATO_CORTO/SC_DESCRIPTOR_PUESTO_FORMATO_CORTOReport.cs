@@ -51,7 +51,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
         
         [Browsable(false)]
         [DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public CrystalDecisions.CrystalReports.Engine.Section SectionGeneralidadesPuesto {
+        public CrystalDecisions.CrystalReports.Engine.Section ReportHeaderSectionGeneralidadesPuesto {
             get {
                 return this.ReportDefinition.Sections[0];
             }
@@ -59,7 +59,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
         
         [Browsable(false)]
         [DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public CrystalDecisions.CrystalReports.Engine.Section SectionObjetivoFunciones {
+        public CrystalDecisions.CrystalReports.Engine.Section ReportHeaderSectionObjetivoFunciones {
             get {
                 return this.ReportDefinition.Sections[1];
             }
@@ -67,7 +67,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
         
         [Browsable(false)]
         [DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public CrystalDecisions.CrystalReports.Engine.Section SectionIndicadores {
+        public CrystalDecisions.CrystalReports.Engine.Section ReportHeaderSectionIndicadores {
             get {
                 return this.ReportDefinition.Sections[2];
             }
