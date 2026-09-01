@@ -14,6 +14,7 @@ GO
 --      vista filtra APLICA_DESCRIPTOR CORTO/AMBOS; SP filtra por descriptor).
 --   6) Result set 6: inducciones (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_INDUCCION_IMPR).
 --   7) Result set 7: perfil del puesto (V_SC_PERFIL_PUESTO_FORMATO_CORTO_IMPR).
+--   8) Result set 8: educación del perfil (V_SC_PERFIL_PUESTO_EDUCACION_FORMATO_CORTO_IMPR).
 -- Alcance: solo Formato corto. El Formato extenso tiene su propio SP y vistas _IMPR.
 -- Uso API: SC_DESCRIPTOR_PUESTO/getPDFFormatoCorto → SGUEES-RPT SelectionHiring.
 -- =============================================================================
@@ -139,5 +140,19 @@ BEGIN
 	WHERE P.CORR_EMPRESA = @CORR_EMPRESA
 	  AND P.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
 	ORDER BY P.CORR_PERFIL_PUESTO;
+
+	-- Result set 8: educación del perfil de puesto (1 fila por requisito).
+	SELECT
+		E.CORR_EMPRESA,
+		E.CORR_DESCRIPTOR_PUESTO,
+		E.CORR_PERFIL_PUESTO,
+		E.CORR_EDUCACION,
+		E.REQUISITO,
+		E.ESPECIFICACIONES,
+		E.TIPO_REQUERIDO
+	FROM dbo.V_SC_PERFIL_PUESTO_EDUCACION_FORMATO_CORTO_IMPR E
+	WHERE E.CORR_EMPRESA = @CORR_EMPRESA
+	  AND E.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
+	ORDER BY E.CORR_EDUCACION;
 END
 GO
