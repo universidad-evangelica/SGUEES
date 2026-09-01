@@ -13,6 +13,7 @@ GO
 --   5) Result set 5: responsabilidades (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_RESPONSABILIDAD_CARGO_IMPR;
 --      vista filtra APLICA_DESCRIPTOR CORTO/AMBOS; SP filtra por descriptor).
 --   6) Result set 6: inducciones (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_INDUCCION_IMPR).
+--   7) Result set 7: perfil del puesto (V_SC_PERFIL_PUESTO_FORMATO_CORTO_IMPR).
 -- Alcance: solo Formato corto. El Formato extenso tiene su propio SP y vistas _IMPR.
 -- Uso API: SC_DESCRIPTOR_PUESTO/getPDFFormatoCorto → SGUEES-RPT SelectionHiring.
 -- =============================================================================
@@ -118,5 +119,24 @@ BEGIN
 	WHERE I.CORR_EMPRESA = @CORR_EMPRESA
 	  AND I.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
 	ORDER BY I.CORR_INDUCCION;
+
+	-- Result set 7: perfil del puesto (encabezado del apartado; 0 o 1 fila típica).
+	SELECT
+		P.CORR_EMPRESA,
+		P.CORR_DESCRIPTOR_PUESTO,
+		P.CORR_PERFIL_PUESTO,
+		P.EDAD_MINIMA,
+		P.EDAD_MAXIMA,
+		P.SEXO,
+		P.ESTADO_FAMILIAR,
+		P.LICENCIA,
+		P.CORR_DISPONIBILIDAD_HORARIO,
+		P.NOMBRE_DISPONIBILIDAD_HORARIO,
+		P.CORR_TIPO_MODALIDAD,
+		P.NOMBRE_MODALIDAD
+	FROM dbo.V_SC_PERFIL_PUESTO_FORMATO_CORTO_IMPR P
+	WHERE P.CORR_EMPRESA = @CORR_EMPRESA
+	  AND P.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
+	ORDER BY P.CORR_PERFIL_PUESTO;
 END
 GO

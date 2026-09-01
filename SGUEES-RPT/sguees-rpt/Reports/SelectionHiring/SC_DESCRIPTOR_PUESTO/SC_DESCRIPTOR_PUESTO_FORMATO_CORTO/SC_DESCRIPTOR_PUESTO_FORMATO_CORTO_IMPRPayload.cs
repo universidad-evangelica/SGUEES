@@ -10,5 +10,6 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 		public List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_KPI_IMPRView> Kpis { get; set; }
 		public List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_RESPONSABILIDAD_CARGO_IMPRView> Responsabilidades { get; set; }
 		public List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_INDUCCION_IMPRView> Inducciones { get; set; }
+		public List<SC_PERFIL_PUESTO_FORMATO_CORTO_IMPRView> PerfilPuesto { get; set; }
 	}
 }
