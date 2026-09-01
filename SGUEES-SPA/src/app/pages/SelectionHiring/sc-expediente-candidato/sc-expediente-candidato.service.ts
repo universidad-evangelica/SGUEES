@@ -509,6 +509,7 @@ export class ScExpedienteCandidatoService {
 				allowSorting: false,
 				allowFiltering: false,
 				cellTemplate: 'solicitudActionsTemplate',
+				alignment: 'center',
 			},
 		];
 	}
