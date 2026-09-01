@@ -153,7 +153,6 @@ namespace SGUEES.Services
 				CORR_EMPRESA = creado.CORR_EMPRESA,
 				CORR_EXPEDIENTE_CANDIDATO = creado.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_EXPEDIENTE_DOCUMENTO = creado.CORR_EXPEDIENTE_DOCUMENTO,
-				CORR_SOLICITUD_EMPLEO = creado.CORR_SOLICITUD_EMPLEO,
 				FECHA_CARGA = creado.FECHA_CARGA,
 				TIPO_DOCUMENTO = creado.TIPO_DOCUMENTO,
 				NOMBRE_ARCHIVO = guardado.FileName,
@@ -255,7 +254,6 @@ namespace SGUEES.Services
 				CORR_EMPRESA = Data.CORR_EMPRESA,
 				CORR_EXPEDIENTE_CANDIDATO = Data.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_EXPEDIENTE_DOCUMENTO = Data.CORR_EXPEDIENTE_DOCUMENTO,
-				CORR_SOLICITUD_EMPLEO = Data.CORR_SOLICITUD_EMPLEO,
 				FECHA_CARGA = Data.FECHA_CARGA,
 				TIPO_DOCUMENTO = Data.TIPO_DOCUMENTO,
 				NOTAS = Data.NOTAS,
@@ -273,11 +271,6 @@ namespace SGUEES.Services
 			if (Data == null || Data.CORR_EXPEDIENTE_CANDIDATO <= 0)
 			{
 				return ValidationError("Debe indicar el expediente de candidato.");
-			}
-
-			if (Data.CORR_SOLICITUD_EMPLEO <= 0)
-			{
-				return ValidationError("Debe indicar la solicitud de empleo relacionada.");
 			}
 
 			if (string.IsNullOrWhiteSpace(Data.TIPO_DOCUMENTO))

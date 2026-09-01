@@ -303,7 +303,6 @@ export class ScExpedienteCandidatoService {
 			},
 			{ dataField: 'TIPO_DOCUMENTO', caption: 'Tipo', width: 180 },
 			{ dataField: 'NOMBRE_ARCHIVO', caption: 'Archivo', width: 475 },
-			// { dataField: 'CORR_SOLICITUD_EMPLEO', caption: 'No. Solicitud', width: 120 },
 			{ dataField: 'NOTAS', caption: 'Notas', width: 500 },
 			{
 				caption: 'Options',

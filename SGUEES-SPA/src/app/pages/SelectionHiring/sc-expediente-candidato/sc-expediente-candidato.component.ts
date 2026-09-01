@@ -722,7 +722,6 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_EXPEDIENTE_CANDIDATO: xModel.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_EXPEDIENTE_DOCUMENTO: xModel.CORR_EXPEDIENTE_DOCUMENTO,
-				CORR_SOLICITUD_EMPLEO: xModel.CORR_SOLICITUD_EMPLEO,
 				FECHA_CARGA: xModel.FECHA_CARGA,
 				TIPO_DOCUMENTO: xModel.TIPO_DOCUMENTO,
 				NOMBRE_ARCHIVO: xModel.NOMBRE_ARCHIVO,
@@ -735,7 +734,6 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			CORR_EMPRESA: this.model?.CORR_EMPRESA ?? 1,
 			CORR_EXPEDIENTE_CANDIDATO: this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0,
 			CORR_EXPEDIENTE_DOCUMENTO: 0,
-			CORR_SOLICITUD_EMPLEO: this.solicitudSeleccionada?.CORR_SOLICITUD_EMPLEO ?? 0,
 			FECHA_CARGA: new Date(),
 			TIPO_DOCUMENTO: '',
 			NOMBRE_ARCHIVO: '',
@@ -853,7 +851,6 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		const formData = new FormData();
 		formData.append('CORR_EXPEDIENTE_CANDIDATO', String(this.documentoModel.CORR_EXPEDIENTE_CANDIDATO ?? 0));
 		formData.append('CORR_EXPEDIENTE_DOCUMENTO', String(this.documentoModel.CORR_EXPEDIENTE_DOCUMENTO ?? 0));
-		formData.append('CORR_SOLICITUD_EMPLEO', String(this.documentoModel.CORR_SOLICITUD_EMPLEO ?? 0));
 		formData.append('TIPO_DOCUMENTO', this.documentoModel.TIPO_DOCUMENTO ?? '');
 		formData.append('FECHA_CARGA', new Date(this.documentoModel.FECHA_CARGA).toISOString());
 		formData.append('NOTAS', this.documentoModel.NOTAS ?? '');
@@ -871,7 +868,6 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		}
 
 		this.documentoModel.CORR_EXPEDIENTE_CANDIDATO = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
-		this.documentoModel.CORR_SOLICITUD_EMPLEO = this.solicitudSeleccionada?.CORR_SOLICITUD_EMPLEO ?? 0;
 
 		const esNuevo = (this.documentoModel.CORR_EXPEDIENTE_DOCUMENTO ?? 0) <= 0;
 		const tieneArchivoNuevo = !!this.documentoArchivo;

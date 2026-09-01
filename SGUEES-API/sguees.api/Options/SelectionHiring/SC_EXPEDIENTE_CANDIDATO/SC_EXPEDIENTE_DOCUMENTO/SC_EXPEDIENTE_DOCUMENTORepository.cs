@@ -106,7 +106,6 @@ namespace SGUEES.Repositories
 					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_EXPEDIENTE_CANDIDATO", Value = Data.CORR_EXPEDIENTE_CANDIDATO, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_EXPEDIENTE_DOCUMENTO", Value = Data.CORR_EXPEDIENTE_DOCUMENTO, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
-					new CParameter() { ParameterName = "CORR_SOLICITUD_EMPLEO", Value = Data.CORR_SOLICITUD_EMPLEO, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "FECHA_CARGA", Value = Data.FECHA_CARGA, DbType = System.Data.DbType.DateTime },
 					new CParameter() { ParameterName = "TIPO_DOCUMENTO", Value = Data.TIPO_DOCUMENTO, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "NOMBRE_ARCHIVO", Value = Data.NOMBRE_ARCHIVO, DbType = System.Data.DbType.String },
@@ -164,7 +163,6 @@ namespace SGUEES.Repositories
 			{
 				var p = new List<CParameter>
 				{
-					new CParameter() { ParameterName = "CORR_SOLICITUD_EMPLEO", Value = Data.CORR_SOLICITUD_EMPLEO, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "FECHA_CARGA", Value = Data.FECHA_CARGA, DbType = System.Data.DbType.DateTime },
 					new CParameter() { ParameterName = "TIPO_DOCUMENTO", Value = Data.TIPO_DOCUMENTO, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "NOMBRE_ARCHIVO", Value = Data.NOMBRE_ARCHIVO, DbType = System.Data.DbType.String },

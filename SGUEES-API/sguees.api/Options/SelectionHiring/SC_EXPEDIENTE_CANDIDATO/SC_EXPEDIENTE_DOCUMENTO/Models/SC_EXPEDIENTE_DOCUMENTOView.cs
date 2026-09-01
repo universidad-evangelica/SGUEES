@@ -7,14 +7,11 @@ namespace SGUEES.Models
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_EXPEDIENTE_CANDIDATO { get; set; }
 		public int CORR_EXPEDIENTE_DOCUMENTO { get; set; }
-		public int CORR_SOLICITUD_EMPLEO { get; set; }
 		public DateTime FECHA_CARGA { get; set; }
 		public string TIPO_DOCUMENTO { get; set; }
 		public string NOMBRE_ARCHIVO { get; set; }
 		public string RUTA_ARCHIVO { get; set; }
 		public string NOTAS { get; set; }
-		public string CORREO_INVITACION { get; set; }
-		public string NOMBRE_SOLICITUD { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }
 		public DateTime? FECHA_CREA { get; set; }
