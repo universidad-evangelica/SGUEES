@@ -222,4 +222,5 @@ export const PERFIL_PUESTO_DEFAULT = {
 	CORR_TIPO_MODALIDAD: null as number | null,
 	NOMBRE_MODALIDAD: '',
 	LICENCIA: false,
+	OTROS: '',
 };

@@ -1526,6 +1526,7 @@ export class ScDescriptorPuestoService {
 			CORR_TIPO_MODALIDAD: perfil.CORR_TIPO_MODALIDAD ?? null,
 			NOMBRE_MODALIDAD: (perfil.NOMBRE_MODALIDAD ?? '').trim() || null,
 			LICENCIA: perfil.LICENCIA ?? false,
+			OTROS: (perfil.OTROS ?? '').trim() || null,
 		};
 
 		if (!existe || corrPerfil <= 0) {

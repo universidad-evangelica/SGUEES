@@ -755,6 +755,19 @@
 												></dx-select-box>
 											</div>
 										</div>
+
+										<!-- Otros: solo formato corto o ambos (esFormatoCorto). -->
+										<div class="descriptor-perfil-row" *ngIf="esFormatoCorto">
+											<div class="descriptor-perfil-field descriptor-perfil-field--full">
+												<label class="descriptor-perfil-label">Otros</label>
+												<dx-text-box
+													[(value)]="perfil.OTROS"
+													[readOnly]="readOnly || !perfilEditando"
+													[maxLength]="150"
+													[showClearButton]="true"
+												></dx-text-box>
+											</div>
+										</div>
 									</div>
 								</div>
 							</dxi-item>

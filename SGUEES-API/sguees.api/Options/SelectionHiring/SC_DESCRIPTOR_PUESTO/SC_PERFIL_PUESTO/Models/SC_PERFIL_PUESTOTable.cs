@@ -25,6 +25,8 @@ namespace SGUEES.Models
         public int? CORR_TIPO_MODALIDAD { get; set; }
         // Snapshot: nombre de la modalidad tomado del catálogo al momento de guardar.
         public string NOMBRE_MODALIDAD { get; set; }
+        // Texto libre adicional del perfil (solo aplica en formato corto en la UI).
+        public string OTROS { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }
         public DateTime? FECHA_CREA { get; set; }

@@ -4733,6 +4733,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		this.perfil.EDAD_MINIMA = this.normalizarEdadPerfil(this.perfil.EDAD_MINIMA);
 		this.perfil.EDAD_MAXIMA = this.normalizarEdadPerfil(this.perfil.EDAD_MAXIMA);
+		this.perfil.OTROS = (this.perfil.OTROS ?? '').trim();
+		if (this.perfil.OTROS.length > 150) {
+			this.notifyFx('El campo Otros no puede exceder 150 caracteres.', NotifyType.Warning);
+			return;
+		}
 		if (
 			this.perfil.EDAD_MINIMA != null &&
 			this.perfil.EDAD_MAXIMA != null &&
@@ -4853,6 +4858,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							CORR_TIPO_MODALIDAD: row.CORR_TIPO_MODALIDAD ?? null,
 							NOMBRE_MODALIDAD: row.NOMBRE_MODALIDAD ?? '',
 							LICENCIA: row.LICENCIA ?? PERFIL_PUESTO_DEFAULT.LICENCIA,
+							OTROS: row.OTROS ?? PERFIL_PUESTO_DEFAULT.OTROS,
 						};
 						this.perfilOriginal = { ...this.perfil };
 						this.perfilEditando = false;

@@ -23,6 +23,8 @@ namespace SGUEES.Models
         public string NOMBRE_MODALIDAD { get; set; }
         // Indica si el puesto requiere licencia de conducir.
         public bool? LICENCIA { get; set; }
+        // Texto libre adicional del perfil (impresión formato corto).
+        public string OTROS { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }
         public DateTime? FECHA_CREA { get; set; }
