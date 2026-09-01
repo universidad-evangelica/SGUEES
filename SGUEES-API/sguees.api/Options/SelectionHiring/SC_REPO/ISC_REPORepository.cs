@@ -10,7 +10,7 @@ namespace SGUEES.Repositories
     public interface ISC_REPORepository
     {
         Task<Stream> GetScDescriptorPuestoFormatoCortoImprAsync(
-            List<SC_DESCRIPTOR_PUESTO_IMPRView> data,
+            SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRPayload data,
             string token);
 
         Task<Stream> GetScDescriptorPuestoFormatoExtensoImprAsync(

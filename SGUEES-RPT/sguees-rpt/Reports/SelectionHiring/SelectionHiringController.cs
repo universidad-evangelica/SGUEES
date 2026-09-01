@@ -14,11 +14,11 @@ namespace sgueesRpt.Controllers
 	public class SelectionHiringController : ApiController
 	{
 		// Qué hace: genera PDF Formato corto del Descriptor de puesto.
-		// Cómo: recibe List IMPRView desde SC_REPO y exporta con Crystal.
+		// Cómo: recibe payload con 5 bloques desde SC_REPO y exporta con Crystal.
 		[HttpPost]
 		[Route("PostScDescriptorPuestoFormatoCortoImpr")]
 		public IHttpActionResult PostScDescriptorPuestoFormatoCortoImpr(
-			[FromBody] List<SC_DESCRIPTOR_PUESTO_IMPRView> data)
+			[FromBody] SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRPayload data)
 		{
 			return SC_DESCRIPTOR_PUESTO_FORMATO_CORTOReportExporter.ExportPdf(data, Request);
 		}

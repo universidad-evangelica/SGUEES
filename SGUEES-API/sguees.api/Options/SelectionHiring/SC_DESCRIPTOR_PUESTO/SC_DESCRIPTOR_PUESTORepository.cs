@@ -771,11 +771,11 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Qué hace: obtiene filas de impresión Formato corto del descriptor.
-        // Cómo: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO.
+        // Qué hace: obtiene los 5 bloques de impresión Formato corto del descriptor.
+        // Cómo: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO (encabezado, logos, funciones, KPIs, responsabilidades).
         public Task<CResult> GetDescriptorFormatoCortoImprAsync(List<CParameter> xWhere)
         {
-            return GetDescriptorImprAsync("PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO", xWhere);
+            return GetDescriptorFormatoCortoImprAsyncInternal(xWhere);
         }
 
         // Qué hace: obtiene filas de impresión Formato extenso del descriptor.
@@ -785,7 +785,102 @@ namespace SGUEES.Repositories
             return GetDescriptorImprAsync("PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO", xWhere);
         }
 
-        // Qué hace: lectura común de los SPs de impresión del descriptor.
+        // Qué hace: lee los 5 result sets del SP Formato corto y arma el payload para RPT.
+        // Cómo: merge logos (result set 2) en encabezado como Banking; funciones/KPIs/responsabilidades aparte.
+        private async Task<CResult> GetDescriptorFormatoCortoImprAsyncInternal(List<CParameter> xWhere)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                var reader = await objData.GetDataReader(
+                    System.Data.CommandType.StoredProcedure,
+                    "PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO",
+                    xWhere);
+
+                var encabezado = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRView>()
+                    .FromDataReader(reader)
+                    .ToList();
+
+                if (reader.NextResult())
+                {
+                    var logos = new List<SC_DESCRIPTOR_PUESTO_IMPRView>()
+                        .FromDataReader(reader)
+                        .FirstOrDefault();
+                    if (logos != null)
+                    {
+                        foreach (var row in encabezado)
+                        {
+                            row.NOMBRE_EMPRESA = logos.NOMBRE_EMPRESA;
+                            row.PERIODO = logos.PERIODO;
+                            row.LOGO1 = logos.LOGO1;
+                            row.LOGO2 = logos.LOGO2;
+                            row.TITULO_REPORTE = logos.TITULO_REPORTE;
+                            row.NOMBRE_SISTEMA = logos.NOMBRE_SISTEMA;
+                            row.FECHA_IMPRESION = logos.FECHA_IMPRESION;
+                        }
+                    }
+                }
+
+                var funciones = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_FUNCIONES_IMPRView>();
+                if (reader.NextResult())
+                {
+                    funciones = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_FUNCIONES_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var kpis = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_KPI_IMPRView>();
+                if (reader.NextResult())
+                {
+                    kpis = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_KPI_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var responsabilidades = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_RESPONSABILIDAD_CARGO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    responsabilidades = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_RESPONSABILIDAD_CARGO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                reader.Close();
+
+                var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRPayload
+                {
+                    Encabezado = encabezado,
+                    Funciones = funciones,
+                    Kpis = kpis,
+                    Responsabilidades = responsabilidades,
+                };
+
+                objResultado.Data = payload;
+                objResultado.Result = encabezado.Count > 0;
+                objResultado.RowsAffected = encabezado.Count;
+                objResultado.ErrorCode = encabezado.Count > 0 ? 0 : -1;
+                objResultado.ErrorMessage = encabezado.Count > 0
+                    ? string.Empty
+                    : "No hay datos para imprimir el descriptor.";
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        // Qué hace: lectura común de los SPs de impresión del descriptor (Formato extenso).
         // Cómo: result set 1 = detalle, result set 2 = encabezado/logos; merge como CON_PARTIDA.
         private async Task<CResult> GetDescriptorImprAsync(string spName, List<CParameter> xWhere)
         {

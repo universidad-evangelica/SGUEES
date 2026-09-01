@@ -6,14 +6,14 @@ GO
 -- Procedimiento: dbo.PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO
 -- Qué hace: entrega datos para PDF Formato corto del Descriptor de puesto.
 -- Cómo:
---   1) Result set 1: 1 fila por indicador de desempeño (detalle del reporte);
---      las funciones llegan agregadas en LISTA_FUNCIONES_CLAVE y
---      LISTA_FUNCIONES_SECUNDARIA (una por línea), repetidas en cada fila.
---   2) Result set 2: encabezado/logos desde GEN_EMPRESA (mismo patrón partida).
--- Alcance: solo Formato corto. El Formato extenso tiene su propio SP
---          (PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO) con los result sets
---          adicionales de sus subinformes; ambos leen la misma vista base.
--- Uso API: SC_DESCRIPTOR_PUESTO/getPDF → SGUEES-RPT SelectionHiring.
+--   1) Result set 1: encabezado (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPR).
+--   2) Result set 2: encabezado/logos desde GEN_EMPRESA (GEN_PARAMETRO en Crystal).
+--   3) Result set 3: funciones agregadas (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_FUNCIONES_IMPR).
+--   4) Result set 4: indicadores (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_KPI_IMPR).
+--   5) Result set 5: responsabilidades (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_RESPONSABILIDAD_CARGO_IMPR);
+--      APLICA_DESCRIPTOR = CORTO o AMBOS.
+-- Alcance: solo Formato corto. El Formato extenso tiene su propio SP y vistas _IMPR.
+-- Uso API: SC_DESCRIPTOR_PUESTO/getPDFFormatoCorto → SGUEES-RPT SelectionHiring.
 -- =============================================================================
 CREATE OR ALTER PROCEDURE [dbo].[PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO]
 (
@@ -24,7 +24,7 @@ AS
 BEGIN
 	SET NOCOUNT ON;
 
-	-- Detalle: encabezado del descriptor repetido + lista de funciones.
+	-- Result set 1: encabezado del descriptor (1 fila).
 	SELECT
 		A.CORR_EMPRESA,
 		A.CORR_DESCRIPTOR_PUESTO,
@@ -51,20 +51,12 @@ BEGIN
 		A.FECHA_CREA,
 		A.USUARIO_ACTU,
 		A.ESTACION_ACTU,
-		A.FECHA_ACTU,
-		A.LISTA_FUNCIONES_CLAVE,
-		A.LISTA_FUNCIONES_SECUNDARIA,
-		A.CORR_KPI_FUNCION,
-		A.NOMBRE_INDICADOR,
-		A.META,
-		A.CORR_FRECUENCIA,
-		A.NOMBRE_FRECUENCIA
-	FROM dbo.V_SC_DESCRIPTOR_PUESTO_IMPR A
+		A.FECHA_ACTU
+	FROM dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPR A
 	WHERE A.CORR_EMPRESA = @CORR_EMPRESA
-	  AND A.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
-	ORDER BY A.CORR_KPI_FUNCION;
+	  AND A.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO;
 
-	-- Encabezado / logos (GEN_PARAMETRO en Crystal).
+	-- Result set 2: logos (GEN_PARAMETRO en Crystal).
 	SELECT
 		A.CORR_EMPRESA,
 		A.NOMBRE_EMPRESA,
@@ -76,5 +68,43 @@ BEGIN
 		GETDATE() AS FECHA_IMPRESION
 	FROM dbo.GEN_EMPRESA A
 	WHERE A.CORR_EMPRESA = @CORR_EMPRESA;
+
+	-- Result set 3: funciones CLAVE y SECUNDARIA agregadas (1 fila).
+	SELECT
+		F.CORR_EMPRESA,
+		F.CORR_DESCRIPTOR_PUESTO,
+		F.LISTA_FUNCIONES_CLAVE,
+		F.LISTA_FUNCIONES_SECUNDARIA
+	FROM dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_FUNCIONES_IMPR F
+	WHERE F.CORR_EMPRESA = @CORR_EMPRESA
+	  AND F.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO;
+
+	-- Result set 4: indicadores de desempeño (1 fila por KPI).
+	SELECT
+		K.CORR_EMPRESA,
+		K.CORR_DESCRIPTOR_PUESTO,
+		K.CORR_KPI_FUNCION,
+		K.NOMBRE_INDICADOR,
+		K.META,
+		K.CORR_FRECUENCIA,
+		K.NOMBRE_FRECUENCIA
+	FROM dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_KPI_IMPR K
+	WHERE K.CORR_EMPRESA = @CORR_EMPRESA
+	  AND K.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
+	ORDER BY K.CORR_KPI_FUNCION;
+
+	-- Result set 5: responsabilidades del cargo (subinforme).
+	SELECT
+		R.CORR_EMPRESA,
+		R.CORR_DESCRIPTOR_PUESTO,
+		R.CORR_RESPONSABILIDAD,
+		R.NOMBRE_RESPONSABILIDAD,
+		R.INFORMACION,
+		R.APLICA_DESCRIPTOR
+	FROM dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_RESPONSABILIDAD_CARGO_IMPR R
+	WHERE R.CORR_EMPRESA = @CORR_EMPRESA
+	  AND R.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
+	  AND R.APLICA_DESCRIPTOR IN (N'CORTO', N'AMBOS')
+	ORDER BY R.CORR_RESPONSABILIDAD;
 END
 GO

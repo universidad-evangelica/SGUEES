@@ -6,9 +6,8 @@ using sgueesRpt.Models;
 
 namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 {
-	// Qué hace: arma DataSet e-Admin para Crystal; lo comparten Formato corto y Formato extenso.
-	// Cómo: tabla V_SC_DESCRIPTOR_PUESTO_IMPR (1 fila por indicador de desempeño) + GEN_PARAMETRO
-	//       con logos; cada formato pasa su título por defecto y las tablas de sus subinformes.
+	// Qué hace: arma DataSet e-Admin para Crystal Formato extenso (legacy).
+	// Cómo: detalle + GEN_PARAMETRO desde logos mergeados en IMPRView (patrón ConPartida).
 	internal static class ScDescriptorPuestoReportData
 	{
 		private const string TituloPorDefecto = "Descriptor de Puesto";
@@ -24,10 +23,6 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 			"FECHA_IMPRESION",
 		};
 
-		// Qué hace: construye el DataSet que se envía a Crystal.
-		// Cómo: detalle + GEN_PARAMETRO comunes; tituloReporte es el rótulo por defecto del formato
-		//       cuando la vista no trae TITULO_REPORTE, y tablasSubinformes agrega los bloques
-		//       extra (educación, experiencia, etc.) que consumen los subinformes del extenso.
 		public static DataSet CreateDataSet(
 			List<SC_DESCRIPTOR_PUESTO_IMPRView> data,
 			string tituloReporte = TituloPorDefecto,
@@ -75,7 +70,6 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 			dataSet.Tables.Add(detail);
 			dataSet.Tables.Add(param);
 
-			// Los subinformes leen del mismo DataSet: cada bloque llega como una tabla más.
 			if (tablasSubinformes != null)
 			{
 				foreach (var tabla in tablasSubinformes)
@@ -91,4 +85,3 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 		}
 	}
 }
-

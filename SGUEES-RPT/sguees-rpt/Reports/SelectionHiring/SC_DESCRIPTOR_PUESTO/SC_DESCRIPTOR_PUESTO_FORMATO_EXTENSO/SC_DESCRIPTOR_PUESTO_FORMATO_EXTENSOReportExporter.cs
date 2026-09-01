@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Web.Http;
 using sgueesRpt.Layouts;
+using sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO;
 
 namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO
 {

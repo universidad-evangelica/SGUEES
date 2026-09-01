@@ -18,7 +18,7 @@ namespace SGUEES.Repositories
         }
 
         public Task<Stream> GetScDescriptorPuestoFormatoCortoImprAsync(
-            List<SC_DESCRIPTOR_PUESTO_IMPRView> data,
+            SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRPayload data,
             string token)
         {
             objData.Token = token;

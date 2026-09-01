@@ -488,7 +488,7 @@ namespace SGUEES.Services
             }
 
             return await _repoRpt.GetScDescriptorPuestoFormatoCortoImprAsync(
-                (List<SC_DESCRIPTOR_PUESTO_IMPRView>)dataResult.Data,
+                (SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRPayload)dataResult.Data,
                 _repoUser.GenerateRptToken(loginSistema));
         }
 
