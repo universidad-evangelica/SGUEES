@@ -10,8 +10,8 @@ GO
 --   2) Result set 2: encabezado/logos desde GEN_EMPRESA (GEN_PARAMETRO en Crystal).
 --   3) Result set 3: funciones agregadas (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_FUNCIONES_IMPR).
 --   4) Result set 4: indicadores (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_KPI_IMPR).
---   5) Result set 5: responsabilidades (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_RESPONSABILIDAD_CARGO_IMPR);
---      APLICA_DESCRIPTOR = CORTO o AMBOS.
+--   5) Result set 5: responsabilidades (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_RESPONSABILIDAD_CARGO_IMPR;
+--      vista filtra APLICA_DESCRIPTOR CORTO/AMBOS; SP filtra por descriptor).
 -- Alcance: solo Formato corto. El Formato extenso tiene su propio SP y vistas _IMPR.
 -- Uso API: SC_DESCRIPTOR_PUESTO/getPDFFormatoCorto → SGUEES-RPT SelectionHiring.
 -- =============================================================================
@@ -93,7 +93,7 @@ BEGIN
 	  AND K.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
 	ORDER BY K.CORR_KPI_FUNCION;
 
-	-- Result set 5: responsabilidades del cargo (subinforme).
+	-- Result set 5: responsabilidades del cargo (subinforme; vista ya filtra CORTO/AMBOS).
 	SELECT
 		R.CORR_EMPRESA,
 		R.CORR_DESCRIPTOR_PUESTO,
@@ -104,7 +104,6 @@ BEGIN
 	FROM dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_RESPONSABILIDAD_CARGO_IMPR R
 	WHERE R.CORR_EMPRESA = @CORR_EMPRESA
 	  AND R.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
-	  AND R.APLICA_DESCRIPTOR IN (N'CORTO', N'AMBOS')
 	ORDER BY R.CORR_RESPONSABILIDAD;
 END
 GO
