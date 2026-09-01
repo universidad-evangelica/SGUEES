@@ -603,6 +603,8 @@
                 [noDataText]="'No hay solicitudes relacionadas a este expediente.'"
                 (onRowClick)="onSolicitudRowClick($event)"
               >
+                <dxo-column-fixing [enabled]="true"></dxo-column-fixing>
+
                 <dxo-toolbar>
                   <dxi-item location="before">
                     <div *dxTemplate class="solicitudes-tab-title">

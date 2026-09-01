@@ -310,6 +310,9 @@ export class ScExpedienteCandidatoService {
 				allowSorting: false,
 				allowFiltering: false,
 				cellTemplate: 'documentoActionsTemplate',
+				fixed: true,
+				fixedPosition: 'left',
+				alignment: 'center',
 			},
 		];
 	}
@@ -505,8 +508,12 @@ export class ScExpedienteCandidatoService {
 			{
 				caption: 'Options',
 				width: 90,
+				minWidth: 90,
 				allowSorting: false,
 				allowFiltering: false,
+				allowResizing: false,
+				fixed: true,
+				fixedPosition: 'left',
 				cellTemplate: 'solicitudActionsTemplate',
 				alignment: 'center',
 			},
