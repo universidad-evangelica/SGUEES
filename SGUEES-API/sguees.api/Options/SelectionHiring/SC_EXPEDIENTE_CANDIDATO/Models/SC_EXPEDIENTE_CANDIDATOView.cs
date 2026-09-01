@@ -7,6 +7,7 @@ namespace SGUEES.Models
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_EXPEDIENTE_CANDIDATO { get; set; }
 		public int CORR_PERSONA_DATOS { get; set; }
+		public int CORR_ESTADO_EXPEDIENTE { get; set; } = 1;
 		public DateTime FECHA_GENERACION { get; set; }
 		public bool ACTIVO { get; set; } = true;
 		public string DUI_PERSONA { get; set; }

@@ -27,6 +27,55 @@ export class ScExpedienteCandidatoService {
 		return true;
 	}
 
+	/**
+	 * Catálogo local de estados del expediente (sin tabla BD).
+	 * Para agregar un estado: nueva entrada aquí + caso en getEstadoExpedienteBadgeClass()
+	 * + clase en sc-expediente-candidato.component.scss (.estado-exp--*).
+	 */
+	readonly estadosExpediente: { CORR_ESTADO_EXPEDIENTE: number; ESTADO_EXPEDIENTE: string }[] = [
+		{ CORR_ESTADO_EXPEDIENTE: 1, ESTADO_EXPEDIENTE: 'Borrador' },
+		{ CORR_ESTADO_EXPEDIENTE: 2, ESTADO_EXPEDIENTE: 'Proceso de selección' },
+	];
+
+	/** Texto del chip según CORR_ESTADO_EXPEDIENTE (default Borrador si viene vacío). */
+	getEstadoExpedienteLabel(corrEstado: number | null | undefined): string {
+		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
+		const item = this.estadosExpediente.find((x) => x.CORR_ESTADO_EXPEDIENTE === corr);
+		return item?.ESTADO_EXPEDIENTE ?? 'Borrador';
+	}
+
+	/**
+	 * Clase CSS del chip según el estado (solo lectura / indicador de flujo).
+	 * Colores definidos en sc-expediente-candidato.component.scss (.estado-exp--*).
+	 */
+	getEstadoExpedienteBadgeClass(corrEstado: number | null | undefined): string {
+		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
+		switch (corr) {
+			case 1:
+				return 'estado-exp--borrador';
+			case 2:
+				return 'estado-exp--proceso';
+			default:
+				return 'estado-exp--borrador';
+		}
+	}
+
+	/** Pinta chip de estado en celdas del grid principal (mismas clases .estado-exp-* que form/resumen). */
+	private renderEstadoExpedienteChip(
+		cellElement: HTMLElement,
+		corrEstado: number | null | undefined
+	): void {
+		cellElement.classList.add('expediente-grid-estado-cell');
+
+		const chip = document.createElement('span');
+		chip.classList.add('estado-exp-chip', this.getEstadoExpedienteBadgeClass(corrEstado));
+		chip.textContent = this.getEstadoExpedienteLabel(corrEstado);
+		chip.title = chip.textContent;
+
+		cellElement.innerHTML = '';
+		cellElement.appendChild(chip);
+	}
+
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
 	}
@@ -404,21 +453,38 @@ export class ScExpedienteCandidatoService {
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
 			{
-				dataField: 'CORR_PERSONA_DATOS',
-				caption: 'Corr. Persona',
-				width: 110,
-				dataType: 'number',
-			},
-			{ dataField: 'NOMBRE_PERSONA', caption: 'Persona', width: 280 },
-			{ dataField: 'DUI_PERSONA', caption: 'DUI', width: 120 },
-			{
 				dataField: 'FECHA_GENERACION',
 				caption: 'Fecha generación',
-				width: 140,
+				width: 170,
 				dataType: 'datetime',
 				format: 'dd/MM/yyyy HH:mm',
 			},
-			{ dataField: 'ACTIVO', caption: 'Activo', width: 90, dataType: 'boolean' },
+			// {
+			// 	dataField: 'CORR_PERSONA_DATOS',
+			// 	caption: 'Corr. Persona',
+			// 	width: 110,
+			// 	dataType: 'number',
+			// },
+			{ dataField: 'NOMBRE_PERSONA', caption: 'Persona', width: 280 },
+			{ dataField: 'DUI_PERSONA', caption: 'DUI', width: 120 },
+			{
+				dataField: 'CORR_ESTADO_EXPEDIENTE',
+				caption: 'Estado expediente',
+				width: 190,
+				alignment: 'center',
+				cssClass: 'expediente-grid-estado-col',
+				allowFiltering: false,
+				allowHeaderFiltering: false,
+				calculateCellValue: (row: ScExpedienteCandidato) =>
+					this.getEstadoExpedienteLabel(row.CORR_ESTADO_EXPEDIENTE),
+				cellTemplate: (cellElement: HTMLElement, cellInfo: { data?: ScExpedienteCandidato }) => {
+					this.renderEstadoExpedienteChip(
+						cellElement,
+						cellInfo.data?.CORR_ESTADO_EXPEDIENTE
+					);
+				},
+			},
+			{ dataField: 'ACTIVO', caption: 'Activo', width: 120, dataType: 'boolean' },
 			...buildAuditGridColumns({ withDateTimeFilter: true }),
 		];
 	}
@@ -446,6 +512,19 @@ export class ScExpedienteCandidatoService {
 				editorOptions: { readOnly: true },
 			},
 			{
+				dataField: 'CORR_ESTADO_EXPEDIENTE',
+				label: { text: 'Estado expediente' },
+				colSpan: 1,
+				template: 'CORR_ESTADO_EXPEDIENTEChip',
+			},
+			{
+				dataField: 'FECHA_GENERACION',
+				label: { text: 'Fecha generación' },
+				colSpan: 1,
+				editorType: 'dxDateBox',
+				editorOptions: { type: 'datetime', displayFormat: 'dd/MM/yyyy HH:mm', readOnly: true },
+			},
+			{
 				dataField: 'CORR_PERSONA_DATOS',
 				label: { text: 'Corr. Persona' },
 				colSpan: 1,
@@ -464,13 +543,6 @@ export class ScExpedienteCandidatoService {
 				label: { text: 'Doc. Identidad' },
 				colSpan: 2,
 				editorOptions: { readOnly: true },
-			},
-			{
-				dataField: 'FECHA_GENERACION',
-				label: { text: 'Fecha generación' },
-				colSpan: 1,
-				editorType: 'dxDateBox',
-				editorOptions: { type: 'datetime', displayFormat: 'dd/MM/yyyy HH:mm', readOnly: true },
 			},
 			{
 				dataField: 'ACTIVO',

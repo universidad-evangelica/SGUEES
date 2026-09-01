@@ -2,6 +2,7 @@ export interface ScExpedienteCandidato {
 	CORR_EMPRESA: number;
 	CORR_EXPEDIENTE_CANDIDATO: number;
 	CORR_PERSONA_DATOS: number;
+	CORR_ESTADO_EXPEDIENTE: number;
 	FECHA_GENERACION: Date | string;
 	ACTIVO: boolean;
 	DUI_PERSONA?: string;

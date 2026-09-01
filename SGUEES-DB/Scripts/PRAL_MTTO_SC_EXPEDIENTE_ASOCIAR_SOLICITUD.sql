@@ -138,13 +138,13 @@ BEGIN
 
             INSERT INTO dbo.SC_EXPEDIENTE_CANDIDATO (
                 CORR_EMPRESA, CORR_EXPEDIENTE_CANDIDATO, CORR_PERSONA_DATOS,
-                FECHA_GENERACION, ACTIVO,
+                CORR_ESTADO_EXPEDIENTE, FECHA_GENERACION, ACTIVO,
                 USUARIO_CREA, ESTACION_CREA, FECHA_CREA,
                 USUARIO_ACTU, ESTACION_ACTU, FECHA_ACTU
             )
             VALUES (
                 @CORR_EMPRESA, @CORR_EXP, @CORR_PERSONA_DATOS,
-                @FECHA, 1,
+                1, @FECHA, 1,
                 @SYS_LOGIN_USUARIO, @SYS_ESTACION, @FECHA,
                 @SYS_LOGIN_USUARIO, @SYS_ESTACION, @FECHA
             );

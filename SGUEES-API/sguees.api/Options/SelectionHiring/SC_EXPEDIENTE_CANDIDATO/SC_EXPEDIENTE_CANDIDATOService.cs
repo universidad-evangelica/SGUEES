@@ -52,6 +52,11 @@ namespace SGUEES.Services
 			}
 
 			Data.ACTIVO = true;
+			if (Data.CORR_ESTADO_EXPEDIENTE <= 0)
+			{
+				Data.CORR_ESTADO_EXPEDIENTE = 1;
+			}
+
 			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 

@@ -63,6 +63,13 @@
                   Expediente #{{ model?.CORR_EXPEDIENTE_CANDIDATO }}
                 </span>
                 <span
+                  class="expediente-estado-chip estado-exp-chip"
+                  [ngClass]="getEstadoExpedienteBadgeClass(model?.CORR_ESTADO_EXPEDIENTE)"
+                  [title]="getEstadoExpedienteLabel(model?.CORR_ESTADO_EXPEDIENTE)"
+                >
+                  {{ getEstadoExpedienteLabel(model?.CORR_ESTADO_EXPEDIENTE) }}
+                </span>
+                <span
                   class="expediente-badge expediente-badge--estado"
                   [class.expediente-badge--inactivo]="!model?.ACTIVO"
                 >
@@ -240,6 +247,16 @@
         [showRequiredMark]="false"
         [items]="items"
       >
+        <!-- Chip estado expediente: solo lectura; el cambio de estado lo hace otro proceso -->
+        <div *dxTemplate="let cellInfo of 'CORR_ESTADO_EXPEDIENTEChip'">
+          <span
+            class="estado-exp-chip"
+            [ngClass]="getEstadoExpedienteBadgeClass(model.CORR_ESTADO_EXPEDIENTE)"
+            [title]="getEstadoExpedienteLabel(model.CORR_ESTADO_EXPEDIENTE)"
+          >
+            {{ getEstadoExpedienteLabel(model.CORR_ESTADO_EXPEDIENTE) }}
+          </span>
+        </div>
       </dx-form>
 
     </div>

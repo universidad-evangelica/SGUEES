@@ -109,6 +109,7 @@ namespace SGUEES.Repositories
 					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_EXPEDIENTE_CANDIDATO", Value = Data.CORR_EXPEDIENTE_CANDIDATO, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
 					new CParameter() { ParameterName = "CORR_PERSONA_DATOS", Value = Data.CORR_PERSONA_DATOS, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_ESTADO_EXPEDIENTE", Value = Data.CORR_ESTADO_EXPEDIENTE, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "FECHA_GENERACION", Value = Data.FECHA_GENERACION, DbType = System.Data.DbType.DateTime },
 					new CParameter() { ParameterName = "ACTIVO", Value = Data.ACTIVO, DbType = System.Data.DbType.Boolean },
 					new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },

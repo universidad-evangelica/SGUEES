@@ -234,6 +234,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_EXPEDIENTE_CANDIDATO: xModel.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_PERSONA_DATOS: xModel.CORR_PERSONA_DATOS,
+				CORR_ESTADO_EXPEDIENTE: xModel.CORR_ESTADO_EXPEDIENTE ?? 1,
 				FECHA_GENERACION: xModel.FECHA_GENERACION,
 				ACTIVO: xModel.ACTIVO,
 				DUI_PERSONA: xModel.DUI_PERSONA,
@@ -251,6 +252,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			CORR_EMPRESA: 1,
 			CORR_EXPEDIENTE_CANDIDATO: 0,
 			CORR_PERSONA_DATOS: 0,
+			CORR_ESTADO_EXPEDIENTE: 1,
 			FECHA_GENERACION: new Date(),
 			ACTIVO: true,
 			DUI_PERSONA: '',
@@ -419,6 +421,14 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_PERSONA_DATOS')?.focus();
 		});
+	}
+
+	getEstadoExpedienteLabel(corrEstado?: number): string {
+		return this.service.getEstadoExpedienteLabel(corrEstado ?? this.model?.CORR_ESTADO_EXPEDIENTE);
+	}
+
+	getEstadoExpedienteBadgeClass(corrEstado?: number): string {
+		return this.service.getEstadoExpedienteBadgeClass(corrEstado ?? this.model?.CORR_ESTADO_EXPEDIENTE);
 	}
 
 	/** Texto seguro para campos de solo lectura en el resumen. */
