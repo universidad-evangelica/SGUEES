@@ -74,7 +74,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		return (this.entrevistaModel?.CORR_EXPEDIENTE_ENTREVISTA ?? 0) > 0;
 	}
 
-	/** Tab Documentos (workspace solicitud / expediente). */
+	/** Tab Documentos (pantalla principal del expediente). */
 	documentos: ScExpedienteDocumento[] = [];
 	documentoColumns: any[] = [];
 	documentoItems: any[] = [];
@@ -85,6 +85,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	PDF!: SafeUrl;
 	popupVisiblePdf = false;
 	documentoPreviewEsImagen = false;
+	documentoPopupVisible = false;
 	private documentoPreviewObjectUrl: string | null = null;
 
 	get editandoDocumento(): boolean {
@@ -216,6 +217,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		if (xEstado === UpdateType.Browse) {
 			this.subTituloVentana = this.maintenanceSubtitulo;
 			this.solicitudes = [];
+			this.documentos = [];
 			this.cerrarWorkspaceCompleto(false);
 			this.cerrarWorkspaceSolicitud(false);
 			this.limpiarPersonaDatos();
@@ -315,6 +317,11 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			});
 	}
 
+	/** Carga documentos al seleccionar el tab Documentos (mismo patrón que consultarSolicitudes). */
+	onDocumentosTabSelected(): void {
+		this.consultarDocumentos();
+	}
+
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
@@ -327,6 +334,8 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.dataForm?.instance?.option('formData', this.model);
 			this.bloquear();
 			this.consultarSolicitudes();
+			this.documentos = [];
+			this.nuevoDocumento();
 			this.consultarPersonaDatos();
 		});
 	}
@@ -500,15 +509,12 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.solicitudSeleccionada = rowData ?? null;
 		this.corrExpedienteSolicitudSeleccionada = corr;
 		this.entrevistaItems = this.service.getEntrevistaItems();
-		this.documentoItems = this.service.getDocumentoItems();
 		this.nuevaEntrevista();
-		this.nuevoDocumento();
 		this.workspaceSolicitudVisible = true;
 		requestAnimationFrame(() => {
 			this.workspaceSolicitudAbierto = true;
 		});
 		this.consultarEntrevistas();
-		this.consultarDocumentos();
 	}
 
 	/** Cierra workspace de solicitud y vuelve al resumen. */
@@ -525,9 +531,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.corrExpedienteSolicitudSeleccionada = 0;
 			this.solicitudSeleccionada = null;
 			this.entrevistas = [];
-			this.documentos = [];
 			this.nuevaEntrevista();
-			this.nuevoDocumento();
 			return;
 		}
 
@@ -537,9 +541,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.corrExpedienteSolicitudSeleccionada = 0;
 			this.solicitudSeleccionada = null;
 			this.entrevistas = [];
-			this.documentos = [];
 			this.nuevaEntrevista();
-			this.nuevoDocumento();
 			this.workspaceSolicitudCloseTimer = null;
 		}, 300);
 	}
@@ -748,20 +750,57 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.syncDocumentoForm();
 	}
 
+	abrirPopupDocumentoNuevo(): void {
+		if (!this.permiteAdd) {
+			return;
+		}
+		this.nuevoDocumento();
+		this.documentoPopupVisible = true;
+	}
+
 	editarDocumento(row: ScExpedienteDocumento): void {
-		if (!row) {
+		if (!row || !this.permiteEdit) {
 			return;
 		}
 		this.documentoModel = this.fillDocumentoData(row);
 		this.limpiarDocumentoArchivo();
 		this.syncDocumentoForm();
+		this.documentoPopupVisible = true;
 	}
 
-	onDocumentoRowClick(e: any): void {
-		if (e?.rowType && e.rowType !== 'data') {
+	/** Ver documento: solo consulta, sin abrir popup de edición. */
+	onVerDocumentoClick(row: ScExpedienteDocumento, e?: { event?: Event }): void {
+		this.detenerPropagacionGrid(e);
+		this.verDocumento(row);
+	}
+
+	onEditarDocumentoClick(row: ScExpedienteDocumento, e?: { event?: Event }): void {
+		this.detenerPropagacionGrid(e);
+		this.editarDocumento(row);
+	}
+
+	onEliminarDocumentoClick(row: ScExpedienteDocumento, e?: { event?: Event }): void {
+		this.detenerPropagacionGrid(e);
+		this.eliminarDocumento(row);
+	}
+
+	private detenerPropagacionGrid(e?: { event?: Event }): void {
+		const event = e?.event;
+		if (event) {
+			event.stopPropagation();
+			event.preventDefault();
+		}
+	}
+
+	cerrarPopupDocumento(): void {
+		this.documentoPopupVisible = false;
+	}
+
+	onDocumentoPopupHiding(): void {
+		if (this.guardandoDocumento) {
 			return;
 		}
-		this.editarDocumento(e?.data);
+		this.nuevoDocumento();
 	}
 
 	onDocumentoArchivoInputChange(event: Event): void {
@@ -837,7 +876,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		return `${size.toFixed(precision)} ${units[unitIndex]}`;
 	}
 
-	private truncarNombreArchivo(nombre: string, max = 34): string {
+	private truncarNombreArchivo(nombre: string, max = 100): string {
 		const texto = (nombre ?? '').trim();
 		if (texto.length <= max) {
 			return texto;
@@ -894,6 +933,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 					return;
 				}
 				this.notifyFx(esNuevo ? 'Documento registrado.' : 'Documento actualizado.', NotifyType.Success);
+				this.documentoPopupVisible = false;
 				this.nuevoDocumento();
 				this.consultarDocumentos();
 			},
@@ -905,6 +945,10 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	}
 
 	async eliminarDocumento(row: ScExpedienteDocumento): Promise<void> {
+		if (!this.permiteDele) {
+			return;
+		}
+
 		const corr = Number(row?.CORR_EXPEDIENTE_DOCUMENTO ?? 0);
 		const corrExpediente = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
 		if (corr <= 0 || corrExpediente <= 0) {
@@ -1093,6 +1137,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.experiencias = [];
 		this.familiaresUees = [];
 		this.cargandoPersonaDatos = false;
+		this.documentoPopupVisible = false;
+		this.documentos = [];
+		this.nuevoDocumento();
 	}
 
 	private revocarFotoPersona(): void {

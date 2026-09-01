@@ -585,7 +585,7 @@
             </div>
           </dxi-item>
 
-          <dxi-item *ngIf="mostrarSolicitudes" title="Solicitudes" [icon]="'bookmark'">
+          <dxi-item *ngIf="mostrarExpediente" title="Solicitudes" [icon]="'bookmark'">
             <div class="dx-grid-deta solicitudes-tab-grid">
               <dx-data-grid
                 [dataSource]="solicitudes"
@@ -644,6 +644,14 @@
                 </div>
               </dx-data-grid>
             </div>
+          </dxi-item>
+
+          <dxi-item
+            *ngIf="mostrarExpediente && documentosTabTemplate"
+            title="Documentos"
+            [icon]="'doc'"
+          >
+            <ng-container *ngTemplateOutlet="documentosTabTemplate"></ng-container>
           </dxi-item>
         </dx-tab-panel>
       </ng-container>

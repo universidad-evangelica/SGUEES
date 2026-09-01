@@ -306,7 +306,7 @@ export class ScExpedienteCandidatoService {
 			{ dataField: 'NOTAS', caption: 'Notas', width: 500 },
 			{
 				caption: 'Options',
-				width: 90,
+				width: 120,
 				allowSorting: false,
 				allowFiltering: false,
 				cellTemplate: 'documentoActionsTemplate',
@@ -320,7 +320,7 @@ export class ScExpedienteCandidatoService {
 			{
 				dataField: 'TIPO_DOCUMENTO',
 				label: { text: 'Tipo de documento' },
-				colSpan: 2,
+				colSpan: 4,
 				editorType: 'dxSelectBox',
 				editorOptions: {
 					items: this.getTipoDocumentoOptions(),
@@ -334,7 +334,7 @@ export class ScExpedienteCandidatoService {
 			{
 				dataField: 'FECHA_CARGA',
 				label: { text: 'Fecha de carga' },
-				colSpan: 2,
+				colSpan: 4,
 				editorType: 'dxDateBox',
 				editorOptions: {
 					type: 'date',
@@ -344,7 +344,7 @@ export class ScExpedienteCandidatoService {
 			{
 				dataField: 'NOMBRE_ARCHIVO',
 				label: { visible: false },
-				colSpan: 4,
+				colSpan: 8,
 				template: 'documentoArchivoUploader',
 			},
 			{
