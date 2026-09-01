@@ -771,8 +771,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Qué hace: obtiene los 5 bloques de impresión Formato corto del descriptor.
-        // Cómo: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO (encabezado, logos, funciones, KPIs, responsabilidades).
+        // Qué hace: obtiene los 6 bloques de impresión Formato corto del descriptor.
+        // Cómo: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO (encabezado, logos, funciones, KPIs, responsabilidades, inducciones).
         public Task<CResult> GetDescriptorFormatoCortoImprAsync(List<CParameter> xWhere)
         {
             return GetDescriptorFormatoCortoImprAsyncInternal(xWhere);
@@ -785,8 +785,8 @@ namespace SGUEES.Repositories
             return GetDescriptorImprAsync("PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO", xWhere);
         }
 
-        // Qué hace: lee los 5 result sets del SP Formato corto y arma el payload para RPT.
-        // Cómo: merge logos (result set 2) en encabezado como Banking; funciones/KPIs/responsabilidades aparte.
+        // Qué hace: lee los 6 result sets del SP Formato corto y arma el payload para RPT.
+        // Cómo: merge logos (result set 2) en encabezado; funciones/KPIs/responsabilidades/inducciones aparte.
         private async Task<CResult> GetDescriptorFormatoCortoImprAsyncInternal(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -846,6 +846,14 @@ namespace SGUEES.Repositories
                         .ToList();
                 }
 
+                var inducciones = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_INDUCCION_IMPRView>();
+                if (reader.NextResult())
+                {
+                    inducciones = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_INDUCCION_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
                 reader.Close();
 
                 var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRPayload
@@ -854,6 +862,7 @@ namespace SGUEES.Repositories
                     Funciones = funciones,
                     Kpis = kpis,
                     Responsabilidades = responsabilidades,
+                    Inducciones = inducciones,
                 };
 
                 objResultado.Data = payload;

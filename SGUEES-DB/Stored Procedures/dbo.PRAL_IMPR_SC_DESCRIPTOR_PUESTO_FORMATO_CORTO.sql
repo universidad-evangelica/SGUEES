@@ -12,6 +12,7 @@ GO
 --   4) Result set 4: indicadores (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_KPI_IMPR).
 --   5) Result set 5: responsabilidades (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_RESPONSABILIDAD_CARGO_IMPR;
 --      vista filtra APLICA_DESCRIPTOR CORTO/AMBOS; SP filtra por descriptor).
+--   6) Result set 6: inducciones (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_INDUCCION_IMPR).
 -- Alcance: solo Formato corto. El Formato extenso tiene su propio SP y vistas _IMPR.
 -- Uso API: SC_DESCRIPTOR_PUESTO/getPDFFormatoCorto → SGUEES-RPT SelectionHiring.
 -- =============================================================================
@@ -105,5 +106,17 @@ BEGIN
 	WHERE R.CORR_EMPRESA = @CORR_EMPRESA
 	  AND R.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
 	ORDER BY R.CORR_RESPONSABILIDAD;
+
+	-- Result set 6: inducciones del descriptor (1 fila por inducción).
+	SELECT
+		I.CORR_EMPRESA,
+		I.CORR_DESCRIPTOR_PUESTO,
+		I.CORR_INDUCCION,
+		I.NOMBRE_INDUCCION,
+		I.TIEMPO_INDUCCION
+	FROM dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_INDUCCION_IMPR I
+	WHERE I.CORR_EMPRESA = @CORR_EMPRESA
+	  AND I.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
+	ORDER BY I.CORR_INDUCCION;
 END
 GO

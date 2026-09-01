@@ -10,5 +10,6 @@ namespace SGUEES.Models
         public List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_FUNCIONES_IMPRView> Funciones { get; set; }
         public List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_KPI_IMPRView> Kpis { get; set; }
         public List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_RESPONSABILIDAD_CARGO_IMPRView> Responsabilidades { get; set; }
+        public List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_INDUCCION_IMPRView> Inducciones { get; set; }
     }
 }
