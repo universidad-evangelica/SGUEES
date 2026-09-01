@@ -785,7 +785,7 @@ namespace SGUEES.Repositories
             return GetDescriptorImprAsync("PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO", xWhere);
         }
 
-        // Qué hace: lee los 8 result sets del SP Formato corto y arma el payload para RPT.
+        // Qué hace: lee los 9 result sets del SP Formato corto y arma el payload para RPT.
         // Cómo: merge logos (result set 2) en encabezado; demás apartados en listas separadas.
         private async Task<CResult> GetDescriptorFormatoCortoImprAsyncInternal(List<CParameter> xWhere)
         {
@@ -870,6 +870,14 @@ namespace SGUEES.Repositories
                         .ToList();
                 }
 
+                var perfilPuestoExperiencia = new List<SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_CORTO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    perfilPuestoExperiencia = new List<SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_CORTO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
                 reader.Close();
 
                 var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRPayload
@@ -881,6 +889,7 @@ namespace SGUEES.Repositories
                     Inducciones = inducciones,
                     PerfilPuesto = perfilPuesto,
                     PerfilPuestoEducacion = perfilPuestoEducacion,
+                    PerfilPuestoExperiencia = perfilPuestoExperiencia,
                 };
 
                 objResultado.Data = payload;

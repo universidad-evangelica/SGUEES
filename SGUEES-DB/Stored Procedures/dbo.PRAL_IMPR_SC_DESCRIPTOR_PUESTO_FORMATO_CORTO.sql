@@ -15,6 +15,7 @@ GO
 --   6) Result set 6: inducciones (V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_INDUCCION_IMPR).
 --   7) Result set 7: perfil del puesto (V_SC_PERFIL_PUESTO_FORMATO_CORTO_IMPR).
 --   8) Result set 8: educación del perfil (V_SC_PERFIL_PUESTO_EDUCACION_FORMATO_CORTO_IMPR).
+--   9) Result set 9: experiencia del perfil (V_SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_CORTO_IMPR).
 -- Alcance: solo Formato corto. El Formato extenso tiene su propio SP y vistas _IMPR.
 -- Uso API: SC_DESCRIPTOR_PUESTO/getPDFFormatoCorto → SGUEES-RPT SelectionHiring.
 -- =============================================================================
@@ -154,5 +155,18 @@ BEGIN
 	WHERE E.CORR_EMPRESA = @CORR_EMPRESA
 	  AND E.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
 	ORDER BY E.CORR_EDUCACION;
+
+	-- Result set 9: experiencia del perfil de puesto (1 fila por requisito).
+	SELECT
+		X.CORR_EMPRESA,
+		X.CORR_DESCRIPTOR_PUESTO,
+		X.CORR_PERFIL_PUESTO,
+		X.CORR_EXPERIENCIA,
+		X.REQUISITO,
+		X.TIPO_REQUERIDO
+	FROM dbo.V_SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_CORTO_IMPR X
+	WHERE X.CORR_EMPRESA = @CORR_EMPRESA
+	  AND X.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
+	ORDER BY X.CORR_EXPERIENCIA;
 END
 GO
