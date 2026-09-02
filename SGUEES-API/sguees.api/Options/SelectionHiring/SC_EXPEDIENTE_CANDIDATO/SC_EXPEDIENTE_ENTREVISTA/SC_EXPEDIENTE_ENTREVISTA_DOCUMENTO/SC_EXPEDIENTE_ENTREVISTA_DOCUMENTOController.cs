@@ -25,7 +25,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpGet("GetAll")]
-		[Authorize(Policy = "/sc-expediente-candidato|R")]
+		[Authorize(Policy = "/sc-expediente-candidato,/sc-requisicion-personal|R")]
 		public async Task<CResult> GetAll([FromQuery] SC_EXPEDIENTE_ENTREVISTA_DOCUMENTOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -33,7 +33,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpGet("Get")]
-		[Authorize(Policy = "/sc-expediente-candidato|R")]
+		[Authorize(Policy = "/sc-expediente-candidato,/sc-requisicion-personal|R")]
 		public async Task<CResult> Get([FromQuery] SC_EXPEDIENTE_ENTREVISTA_DOCUMENTOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -41,7 +41,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpPut]
-		[Authorize(Policy = "/sc-expediente-candidato|U")]
+		[Authorize(Policy = "/sc-expediente-candidato,/sc-requisicion-personal|U")]
 		public async Task<IActionResult> Put(SC_EXPEDIENTE_ENTREVISTA_DOCUMENTOTable Data)
 		{
 			this.ApplyQueryKeys(Data, nameof(SC_EXPEDIENTE_ENTREVISTA_DOCUMENTOTable.CORR_ENTREVISTA_DOCUMENTO));
@@ -52,7 +52,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpDelete]
-		[Authorize(Policy = "/sc-expediente-candidato|D")]
+		[Authorize(Policy = "/sc-expediente-candidato,/sc-requisicion-personal|D")]
 		public async Task<IActionResult> Delete([FromQuery] SC_EXPEDIENTE_ENTREVISTA_DOCUMENTOTable Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -62,7 +62,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpPost("PostDoc")]
-		[Authorize(Policy = "/sc-expediente-candidato|C")]
+		[Authorize(Policy = "/sc-expediente-candidato,/sc-requisicion-personal|C")]
 		[RequestSizeLimit(11 * 1024 * 1024)]
 		public async Task<IActionResult> PostDoc([FromForm] SC_EXPEDIENTE_ENTREVISTA_DOCUMENTOUploadTable Data)
 		{
@@ -73,7 +73,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpPut("PutDoc")]
-		[Authorize(Policy = "/sc-expediente-candidato|U")]
+		[Authorize(Policy = "/sc-expediente-candidato,/sc-requisicion-personal|U")]
 		[RequestSizeLimit(11 * 1024 * 1024)]
 		public async Task<IActionResult> PutDoc([FromForm] SC_EXPEDIENTE_ENTREVISTA_DOCUMENTOUploadTable Data)
 		{
@@ -85,7 +85,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpGet("GetDoc")]
-		[Authorize(Policy = "/sc-expediente-candidato|R")]
+		[Authorize(Policy = "/sc-expediente-candidato,/sc-requisicion-personal|R")]
 		public async Task<IActionResult> GetDoc([FromQuery] SC_EXPEDIENTE_ENTREVISTA_DOCUMENTOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();

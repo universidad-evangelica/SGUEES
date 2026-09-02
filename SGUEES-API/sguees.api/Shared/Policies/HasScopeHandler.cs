@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using System;
 using System.Threading.Tasks;
 using System.Linq;
 
@@ -8,18 +9,25 @@ namespace sguees.api.Policies
     {
         protected override Task HandleRequirementAsync(AuthorizationHandlerContext context, HasScopeRequirement requirement)
         {
-            // Verificando si existe el Claim
-            string ClaimName;
+            // Claim(s): "/ruta|R" o "/ruta-a,/ruta-b|R" (OR entre rutas, misma acción).
+            string claimPart;
             if (requirement.PolicyName.Contains("|"))
             {
-                ClaimName = requirement.PolicyName.Split("|")[0].ToString();
+                claimPart = requirement.PolicyName.Split("|")[0];
             }
             else
             {
-                ClaimName = requirement.PolicyName;
+                claimPart = requirement.PolicyName;
             }
-            
-            TrySucceedFromClaim(context, requirement, ClaimName);
+
+            foreach (var claimName in claimPart.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                if (TrySucceedFromClaim(context, requirement, claimName))
+                {
+                    break;
+                }
+            }
+
             return Task.CompletedTask;
         }
 
