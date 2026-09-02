@@ -680,6 +680,7 @@ export class ScExpedienteCandidatoService {
 	getSolicitudColumns(): any {
 		return [
 			{ dataField: 'CORR_EXPEDIENTE_SOLICITUD', caption: 'Corr.', width: 80 },
+			{ dataField: 'CORR_REQUISICION_PERSONAL', caption: 'No. Requisición Personal', width: 200 },
 			{ dataField: 'CORR_SOLICITUD_EMPLEO', caption: 'No. Solicitud Empleo', width: 180 },
 			{
 				dataField: 'FECHA_SOLICITUD',

@@ -8,7 +8,8 @@ namespace SGUEES.Models
 		public int CORR_EXPEDIENTE_CANDIDATO { get; set; }
 		public int CORR_EXPEDIENTE_SOLICITUD { get; set; }
 		public int CORR_SOLICITUD_EMPLEO { get; set; }
-		public DateTime? FECHA_SOLICITUD { get; set; }
+        public int CORR_REQUISICION_PERSONAL { get; set; }
+        public DateTime? FECHA_SOLICITUD { get; set; }
 		public string CORREO_INVITACION { get; set; }
 		public string DUI_SOLICITUD { get; set; }
 		public string NOMBRE_SOLICITUD { get; set; }
