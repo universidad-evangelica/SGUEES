@@ -30,4 +30,42 @@ export class ScExpedienteEntrevistaRepository {
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
+
+	/** Listado desde sc-requisicion-personal (permiso /sc-requisicion-personal|R). */
+	getAllForRequisicion(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'GetAll_SC_REQUISICION_PERSONAL',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	createForRequisicion(model: any): Observable<IResult> {
+		return this.objData.Post(
+			model,
+			this.xController,
+			'Create_SC_REQUISICION_PERSONAL',
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	updateForRequisicion(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'Update_SC_REQUISICION_PERSONAL',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	deleteForRequisicion(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Delete(
+			this.xController,
+			'Delete_SC_REQUISICION_PERSONAL',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }

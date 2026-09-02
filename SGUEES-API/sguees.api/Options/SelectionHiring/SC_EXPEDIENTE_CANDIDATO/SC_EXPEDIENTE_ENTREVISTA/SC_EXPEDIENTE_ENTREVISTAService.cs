@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -9,6 +10,7 @@ namespace SGUEES.Services
 {
 	public class SC_EXPEDIENTE_ENTREVISTAService : ISC_EXPEDIENTE_ENTREVISTAService
 	{
+		private const string EstadoProgramada = "PROGRAMADA";
 		private readonly ISC_EXPEDIENTE_ENTREVISTARepository _repo;
 
 		public SC_EXPEDIENTE_ENTREVISTAService(ISC_EXPEDIENTE_ENTREVISTARepository repo)
@@ -89,6 +91,83 @@ namespace SGUEES.Services
 			}
 
 			return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
+		/// <summary>
+		/// Desde requisición: solo el usuario que creó la entrevista y solo en estado PROGRAMADA.
+		/// </summary>
+		public async Task<CResult> UpdateByRequisicionAsync(
+			SC_EXPEDIENTE_ENTREVISTATable Data,
+			string vLOGIN_SISTEMA,
+			string vESTACION)
+		{
+			var permiso = await ValidarPermisoRequisicionAsync(Data, vLOGIN_SISTEMA);
+			if (permiso != null)
+			{
+				return permiso;
+			}
+
+			return await UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
+		/// <summary>
+		/// Desde requisición: solo el usuario que creó la entrevista y solo en estado PROGRAMADA.
+		/// </summary>
+		public async Task<CResult> DeleteByRequisicionAsync(
+			SC_EXPEDIENTE_ENTREVISTATable Data,
+			string vLOGIN_SISTEMA,
+			string vESTACION)
+		{
+			var permiso = await ValidarPermisoRequisicionAsync(Data, vLOGIN_SISTEMA);
+			if (permiso != null)
+			{
+				return permiso;
+			}
+
+			return await DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
+		private async Task<CResult> ValidarPermisoRequisicionAsync(
+			SC_EXPEDIENTE_ENTREVISTATable Data,
+			string vLOGIN_SISTEMA)
+		{
+			if (Data == null || Data.CORR_EXPEDIENTE_CANDIDATO <= 0 || Data.CORR_EXPEDIENTE_ENTREVISTA <= 0)
+			{
+				return ValidationError("No se pudo identificar la entrevista.");
+			}
+
+			var existenteResult = await GetAsync(new SC_EXPEDIENTE_ENTREVISTAParam
+			{
+				CORR_EMPRESA = Data.CORR_EMPRESA,
+				CORR_EXPEDIENTE_CANDIDATO = Data.CORR_EXPEDIENTE_CANDIDATO,
+				CORR_EXPEDIENTE_ENTREVISTA = Data.CORR_EXPEDIENTE_ENTREVISTA,
+			});
+
+			if (!existenteResult.Result || existenteResult.Data == null)
+			{
+				return ValidationError("La entrevista no existe o no está disponible.");
+			}
+
+			var existente = existenteResult.Data as SC_EXPEDIENTE_ENTREVISTAView;
+			if (existente == null)
+			{
+				return ValidationError("No se pudo leer la entrevista.");
+			}
+
+			var login = (vLOGIN_SISTEMA ?? string.Empty).Trim();
+			var creador = (existente.USUARIO_CREA ?? string.Empty).Trim();
+			if (!string.Equals(creador, login, StringComparison.OrdinalIgnoreCase))
+			{
+				return ValidationError("Solo puede modificar las entrevistas que usted registró.");
+			}
+
+			var estado = (existente.ESTADO_ENTREVISTA ?? string.Empty).Trim();
+			if (!string.Equals(estado, EstadoProgramada, StringComparison.OrdinalIgnoreCase))
+			{
+				return ValidationError("Solo se pueden editar o eliminar entrevistas en estado Programada.");
+			}
+
+			return null;
 		}
 
 		private static CResult ValidarNegocio(SC_EXPEDIENTE_ENTREVISTATable Data, bool esUpdate)

@@ -5,39 +5,44 @@
   [showTransformOptions]="'translateX(100%)'"
 >
 </p-toast>
-<app-barra-data-mtto
-  [tituloVentana]="tituloVentana"
-  [subTituloVentana]="subTituloVentana"
-  --Esto
-  debe
-  de
-  agregarse
-  por
-  componente
-  ya
-  que
-  de
-  etools
-  no
-  viene.
-  [isBrowse]="isBrowse()"
-  [isForm]="isForm()"
-  [permiteAdd]="permiteAdd"
-  (nuevo)="nuevo()"
-  (guardar)="guardar()"
-  (cancelar)="cancelar()"
+<div
+  class="requisicion-mtto"
+  [class.requisicion-mtto--workspace-open]="workspaceEntrevistasVisible"
 >
-</app-barra-data-mtto>
-<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
-  <!--
-		dx-tab-panel: pestañas debajo del formulario (patrón con-centro-costo / com-orden-compra).
-		Solo visible en agregar/editar (*ngIf del contenedor padre).
-	-->
-  <dx-tab-panel
-    #tabPanelRequisicion
-    class="requisicion-tab-panel"
-    [selectedIndex]="0"
-  >
+  <div class="requisicion-mtto__main">
+    <app-barra-data-mtto
+      [tituloVentana]="tituloVentana"
+      [subTituloVentana]="subTituloVentana"
+      --Esto
+      debe
+      de
+      agregarse
+      por
+      componente
+      ya
+      que
+      de
+      etools
+      no
+      viene.
+      [isBrowse]="isBrowse()"
+      [isForm]="isForm()"
+      [permiteAdd]="permiteAdd"
+      (nuevo)="nuevo()"
+      (guardar)="guardar()"
+      (cancelar)="cancelar()"
+    >
+    </app-barra-data-mtto>
+    <div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+      <!--
+    		dx-tab-panel: pestañas debajo del formulario (patrón con-centro-costo / com-orden-compra).
+    		Solo visible en agregar/editar (*ngIf del contenedor padre).
+    	-->
+      <dx-tab-panel
+        #tabPanelRequisicion
+        class="requisicion-tab-panel"
+        [selectedIndex]="0"
+      >
     <!-- TAB 1: Detalle / Bitácora (data quemada; luego API) -->
     <dxi-item title="Datos requisición" [icon]="'event'">
       <dx-form
@@ -245,8 +250,199 @@
         </dx-data-grid>
       </div>
     </dxi-item>
+
+    <!-- TAB 3: Candidatos activos con expediente en proceso de selección -->
+    <dxi-item title="Candidatos" [icon]="'group'">
+      <div class="dx-grid-deta">
+        <dx-data-grid
+          #gridCandidatos
+          [dataSource]="modelsCandidatos"
+          [columns]="columnsCandidatos"
+          keyExpr="CORR_PERSONA_DATOS"
+          [showBorders]="true"
+          [showColumnLines]="true"
+          [showRowLines]="true"
+          [rowAlternationEnabled]="true"
+          [hoverStateEnabled]="true"
+          [allowColumnResizing]="true"
+          [columnResizingMode]="'widget'"
+          [columnAutoWidth]="true"
+          [height]="'100%'"
+          [width]="'100%'"
+          [noDataText]="'La requisición aún no posee candidatos en proceso de selección.'"
+        >
+          <dxo-search-panel [visible]="true"></dxo-search-panel>
+          <dxo-paging [pageSize]="10"></dxo-paging>
+          <dxo-pager
+            [showPageSizeSelector]="true"
+            [allowedPageSizes]="[5, 10, 20]"
+          ></dxo-pager>
+          <dxo-editing
+            [allowUpdating]="false"
+            [allowDeleting]="false"
+            [allowAdding]="false"
+          ></dxo-editing>
+          <dxo-summary>
+            <dxi-total-item
+              column="NOMBRE_PERSONA"
+              summaryType="count"
+              valueFormat="#,##0"
+              displayFormat="Cant: {0}"
+            ></dxi-total-item>
+          </dxo-summary>
+          <div *dxTemplate="let cell of 'candidatosActionsTemplate'">
+            <div class="candidatos-grid-actions" (click)="$event.stopPropagation()">
+              <dx-button
+                icon="group"
+                hint="Entrevistas"
+                stylingMode="text"
+                (onClick)="abrirWorkspaceEntrevistas(cell.data)"
+              ></dx-button>
+            </div>
+          </div>
+        </dx-data-grid>
+      </div>
+    </dxi-item>
   </dx-tab-panel>
 </div>
+
+<!-- Workspace entrevistas (slide desde la derecha). -->
+<aside
+  *ngIf="workspaceEntrevistasVisible"
+  class="entrevistas-workspace"
+  [class.entrevistas-workspace--open]="workspaceEntrevistasAbierto"
+  [attr.aria-hidden]="!workspaceEntrevistasAbierto"
+>
+  <header class="entrevistas-workspace__toolbar">
+    <dx-button
+      text="Volver a la requisición"
+      icon="chevronprev"
+      type="default"
+      stylingMode="outlined"
+      (onClick)="cerrarWorkspaceEntrevistas()"
+    ></dx-button>
+    <div class="entrevistas-workspace__title">
+      <h3>Entrevistas del candidato</h3>
+      <span *ngIf="candidatoEntrevistaSeleccionado">
+        {{ candidatoEntrevistaSeleccionado.NOMBRE_PERSONA }}
+        · Solicitud {{ candidatoEntrevistaSeleccionado.CORR_SOLICITUD_EMPLEO }}
+      </span>
+    </div>
+  </header>
+
+  <div class="entrevistas-workspace__body">
+    <dx-scroll-view [scrollByContent]="true" [scrollByThumb]="true">
+      <div class="entrevistas-workspace__content">
+        <div class="entrevista-tab">
+          <section class="entrevista-form-card">
+            <div class="entrevista-form-card__header">
+              <h4>
+                {{
+                  entrevistaReadOnly
+                    ? 'Consulta de entrevista'
+                    : editandoEntrevista
+                      ? 'Editar entrevista'
+                      : 'Nueva entrevista'
+                }}
+              </h4>
+              <span *ngIf="editandoEntrevista">
+                Corr. {{ entrevistaModel.CORR_EXPEDIENTE_ENTREVISTA }}
+              </span>
+            </div>
+
+            <dx-form
+              #entrevistaForm
+              class="entrevista-form"
+              [formData]="entrevistaModel"
+              [labelLocation]="'top'"
+              [colCount]="2"
+              [showRequiredMark]="false"
+              [readOnly]="entrevistaReadOnly"
+              [items]="entrevistaItems"
+            ></dx-form>
+
+            <div class="entrevista-form-actions" *ngIf="!entrevistaReadOnly">
+              <dx-button
+                text="Limpiar"
+                stylingMode="outlined"
+                type="normal"
+                [disabled]="guardandoEntrevista"
+                (onClick)="nuevaEntrevista()"
+              ></dx-button>
+              <dx-button
+                [text]="editandoEntrevista ? 'Actualizar' : 'Agregar'"
+                icon="save"
+                type="default"
+                stylingMode="contained"
+                [disabled]="guardandoEntrevista"
+                (onClick)="guardarEntrevista()"
+              ></dx-button>
+            </div>
+            <div class="entrevista-form-actions" *ngIf="entrevistaReadOnly">
+              <dx-button
+                text="Nueva entrevista"
+                icon="plus"
+                type="default"
+                stylingMode="outlined"
+                (onClick)="nuevaEntrevista()"
+              ></dx-button>
+            </div>
+          </section>
+
+          <div class="dx-grid-deta entrevista-grid">
+            <dx-data-grid
+              [dataSource]="entrevistas"
+              [columns]="entrevistaColumns"
+              [keyExpr]="'CORR_EXPEDIENTE_ENTREVISTA'"
+              [showBorders]="true"
+              [showColumnLines]="true"
+              [showRowLines]="true"
+              [rowAlternationEnabled]="true"
+              [hoverStateEnabled]="true"
+              [allowColumnResizing]="true"
+              [columnResizingMode]="'widget'"
+              [columnAutoWidth]="true"
+              [height]="'100%'"
+              [width]="'100%'"
+              [noDataText]="'No hay entrevistas registradas para este candidato.'"
+              (onRowClick)="onEntrevistaRowClick($event)"
+            >
+              <dxo-paging [pageSize]="5"></dxo-paging>
+              <dxo-pager
+                [showPageSizeSelector]="true"
+                [allowedPageSizes]="[5, 10, 20]"
+              ></dxo-pager>
+              <dxo-editing
+                [allowUpdating]="false"
+                [allowDeleting]="false"
+                [allowAdding]="false"
+              ></dxo-editing>
+
+              <div *dxTemplate="let cell of 'entrevistaActionsTemplate'">
+                <div class="entrevista-grid-actions" (click)="$event.stopPropagation()">
+                  <dx-button
+                    icon="edit"
+                    hint="Editar / Consultar"
+                    stylingMode="text"
+                    (onClick)="editarEntrevista(cell.data)"
+                  ></dx-button>
+                  <dx-button
+                    icon="trash"
+                    hint="Eliminar"
+                    stylingMode="text"
+                    type="danger"
+                    [visible]="puedeGestionarEntrevista(cell.data)"
+                    (onClick)="eliminarEntrevista(cell.data)"
+                  ></dx-button>
+                </div>
+              </div>
+            </dx-data-grid>
+          </div>
+        </div>
+      </div>
+    </dx-scroll-view>
+  </div>
+</aside>
 
 <!-- Segundo Card: observadores — patrón dx-data-grid -->
 <!-- <div class="content-block dx-card responsive-paddings mt-20" *ngIf="!isBrowse()">
@@ -384,3 +580,5 @@
   (onShown)="(loadingVisible)"
 >
 </dx-load-panel>
+  </div>
+</div>

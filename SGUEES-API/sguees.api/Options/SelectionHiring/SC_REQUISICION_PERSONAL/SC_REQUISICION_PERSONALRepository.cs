@@ -359,5 +359,49 @@ namespace SGUEES.Repositories
 
             return objResultado;
         }
+
+        /// <summary>
+        /// Lee los candidatos activos en proceso de selección de una requisición.
+        /// Los filtros de estado y actividad pertenecen a la vista SQL.
+        /// </summary>
+        public async Task<CResult> GetAllAsyncCandidatosByCORR_REQUISICION(List<CParameter> xWhere)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                var reader = await objData.GetDataReader("V_SC_REQUISICION_PERSONAL_CANDIDATO", xWhere);
+                var response = new List<SC_REQUISICION_PERSONAL_CANDIDATOView>()
+                    .FromDataReader(reader)
+                    .OrderBy(x => x.NOMBRE_PERSONA)
+                    .ToList();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
+                objResultado.Result = true;
+                objResultado.RowsAffected = response.Count;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+                objResultado.ErrorSource = "";
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
     }
 }

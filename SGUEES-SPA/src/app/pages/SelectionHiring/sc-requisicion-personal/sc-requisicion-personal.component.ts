@@ -1,13 +1,18 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { MessageService } from 'primeng/api'; //Import para usar PrimeNG Toast
+import { confirm } from 'devextreme/ui/dialog';
+import { DxFormComponent } from 'devextreme-angular';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
+import { AuthService } from 'src/app/shared/services/auth.service';
 
 import { ScRequisicionPersonal } from './models/sc-requisicion-personal';
+import { ScRequisicionPersonalCandidato } from './models/sc-requisicion-personal-candidato';
+import { ScExpedienteEntrevista } from '../sc-expediente-candidato/sc-expediente-entrevista/models/sc-expediente-entrevista';
 
 import { ScRequisicionPersonalService } from './sc-requisicion-personal.service';
 import { ScRequisicionObservadoresService } from '../sc-requisicion-observadores/sc-requisicion-observadores.service';
@@ -20,13 +25,15 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['./sc-requisicion-personal.component.scss']
 })
 export class ScRequisicionPersonalComponent extends CBaseComponent implements OnInit {
+	@ViewChild('entrevistaForm', { static: false }) entrevistaForm?: DxFormComponent;
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private service: ScRequisicionPersonalService,
 		private observadoresService: ScRequisicionObservadoresService,
 		private messageService: MessageService, //Import para usar PrimeNG Toast
-
+		private authService: AuthService,
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -40,6 +47,11 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 
 		this.columnsBitacora = this.service.getBitacoraColumns();
 		this.summaryBitacora = this.service.getBitacoraSummary();
+
+		this.columnsCandidatos = this.service.getCandidatosColumns();
+		this.summaryCandidatos = this.service.getCandidatosSummary();
+		this.entrevistaColumns = this.service.getEntrevistaColumns();
+		this.entrevistaItems = this.service.getEntrevistaItems();
 	}
 
 	//Variables
@@ -65,6 +77,27 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	modelsBitacora: any[] = [];
 	columnsBitacora: any[] = [];
 	summaryBitacora: any;
+
+	/** Candidatos activos en proceso de selección asociados a la requisición. */
+	modelsCandidatos: ScRequisicionPersonalCandidato[] = [];
+	columnsCandidatos: any[] = [];
+	summaryCandidatos: any;
+
+	/** Workspace entrevistas (slide-over derecha) desde tab Candidatos. */
+	workspaceEntrevistasVisible = false;
+	workspaceEntrevistasAbierto = false;
+	private workspaceEntrevistasCloseTimer: ReturnType<typeof setTimeout> | null = null;
+	candidatoEntrevistaSeleccionado: ScRequisicionPersonalCandidato | null = null;
+	entrevistas: ScExpedienteEntrevista[] = [];
+	entrevistaColumns: any[] = [];
+	entrevistaItems: any[] = [];
+	entrevistaModel: ScExpedienteEntrevista = this.fillEntrevistaData();
+	entrevistaReadOnly = false;
+	guardandoEntrevista = false;
+
+	get editandoEntrevista(): boolean {
+		return (this.entrevistaModel?.CORR_EXPEDIENTE_ENTREVISTA ?? 0) > 0;
+	}
 
 	/** Modal agregar observador */
 	popupObservadorVisible = false;
@@ -117,12 +150,15 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	cargarDatosTabs(): void {
 		this.cargarObservadores();
 		this.cargarBitacora();
+		this.cargarCandidatos();
 	}
 
 	/** Vacía los arrays de los tabs (útil al presionar Nuevo). */
 	limpiarDatosTabs(): void {
 		this.modelsObservadores = [];
 		this.modelsBitacora = [];
+		this.modelsCandidatos = [];
+		this.cerrarWorkspaceEntrevistas(false);
 	}
 
 	/** Carga observadores desde SC_REQUISICION_OBSERVADORES. */
@@ -167,6 +203,32 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				},
 				error: (error: any) => {
 					this.modelsBitacora = [];
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
+	/** Carga los candidatos activos cuyo expediente ya está en proceso de selección. */
+	cargarCandidatos(): void {
+		if (!this.model?.CORR_REQUISICION_PERSONAL || this.model.CORR_REQUISICION_PERSONAL <= 0) {
+			this.modelsCandidatos = [];
+			return;
+		}
+
+		this.service
+			.getCandidatos(this.fillParam(this.model.CORR_REQUISICION_PERSONAL))
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.modelsCandidatos = response.Data ?? [];
+					} else {
+						this.modelsCandidatos = [];
+						this.notifyFx(response.ErrorMessage, NotifyType.Error);
+					}
+				},
+				error: (error: any) => {
+					this.modelsCandidatos = [];
 					this.notifyFx(error, NotifyType.Error);
 				},
 			});
@@ -816,5 +878,261 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.aplicarVisibilidadEmpleadoSustituto(requiereSustitucion);
 	}
 
+	//#region <Workspace Entrevistas — tab Candidatos>
+
+	/** Login de sesión (nameid del token). */
+	private getLoginSesion(): string {
+		return `${this.appInfoService.getUsuario() ?? ''}`.trim();
+	}
+
+	/** Nombre visible del usuario logueado (unique_name del token). */
+	private getNombreUsuarioSesion(): string {
+		const nombre = `${this.authService.decodedToken?.unique_name ?? ''}`.trim();
+		return nombre || this.getLoginSesion();
+	}
+
+	/**
+	 * Desde requisición solo se edita/elimina si:
+	 * - la entrevista la creó el usuario de sesión, y
+	 * - el estado actual es PROGRAMADA.
+	 */
+	puedeGestionarEntrevista(row?: ScExpedienteEntrevista | null): boolean {
+		if (!row || (row.CORR_EXPEDIENTE_ENTREVISTA ?? 0) <= 0) {
+			return true; // alta nueva
+		}
+		const esMia =
+			`${row.USUARIO_CREA ?? ''}`.trim().toLowerCase() === this.getLoginSesion().toLowerCase();
+		const esProgramada =
+			`${row.ESTADO_ENTREVISTA ?? ''}`.trim().toUpperCase() === 'PROGRAMADA';
+		return esMia && esProgramada;
+	}
+
+	abrirWorkspaceEntrevistas(candidato: ScRequisicionPersonalCandidato): void {
+		if (!candidato?.CORR_EXPEDIENTE_CANDIDATO || !candidato?.CORR_SOLICITUD_EMPLEO) {
+			this.notifyFx(
+				'El candidato no tiene expediente/solicitud válidos para registrar entrevistas.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
+		this.candidatoEntrevistaSeleccionado = candidato;
+		this.entrevistas = [];
+		this.nuevaEntrevista();
+		this.workspaceEntrevistasVisible = true;
+		setTimeout(() => {
+			this.workspaceEntrevistasAbierto = true;
+		}, 20);
+		this.consultarEntrevistas();
+	}
+
+	cerrarWorkspaceEntrevistas(animar = true): void {
+		if (this.workspaceEntrevistasCloseTimer) {
+			clearTimeout(this.workspaceEntrevistasCloseTimer);
+			this.workspaceEntrevistasCloseTimer = null;
+		}
+
+		if (!animar || !this.workspaceEntrevistasVisible) {
+			this.workspaceEntrevistasAbierto = false;
+			this.workspaceEntrevistasVisible = false;
+			this.candidatoEntrevistaSeleccionado = null;
+			this.entrevistas = [];
+			this.entrevistaReadOnly = false;
+			return;
+		}
+
+		this.workspaceEntrevistasAbierto = false;
+		this.workspaceEntrevistasCloseTimer = setTimeout(() => {
+			this.workspaceEntrevistasVisible = false;
+			this.candidatoEntrevistaSeleccionado = null;
+			this.entrevistas = [];
+			this.entrevistaReadOnly = false;
+			this.workspaceEntrevistasCloseTimer = null;
+		}, 280);
+	}
+
+	consultarEntrevistas(): void {
+		const corrExpediente = this.candidatoEntrevistaSeleccionado?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
+		const corrSolicitud = this.candidatoEntrevistaSeleccionado?.CORR_SOLICITUD_EMPLEO ?? 0;
+		if (corrExpediente <= 0 || corrSolicitud <= 0) {
+			this.entrevistas = [];
+			return;
+		}
+
+		this.service
+			.getEntrevistasCandidato(corrExpediente, corrSolicitud)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.entrevistas = response?.Result ? response.Data ?? [] : [];
+				},
+				error: (error: any) => {
+					this.entrevistas = [];
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
+	fillEntrevistaData(xModel?: ScExpedienteEntrevista): ScExpedienteEntrevista {
+		if (xModel) {
+			return {
+				CORR_EMPRESA: xModel.CORR_EMPRESA,
+				CORR_EXPEDIENTE_CANDIDATO: xModel.CORR_EXPEDIENTE_CANDIDATO,
+				CORR_EXPEDIENTE_ENTREVISTA: xModel.CORR_EXPEDIENTE_ENTREVISTA,
+				CORR_SOLICITUD_EMPLEO: xModel.CORR_SOLICITUD_EMPLEO,
+				TIPO_ENTREVISTA: xModel.TIPO_ENTREVISTA,
+				FECHA_ENTREVISTA: xModel.FECHA_ENTREVISTA,
+				ENTREVISTADOR: xModel.ENTREVISTADOR,
+				ESTADO_ENTREVISTA: xModel.ESTADO_ENTREVISTA,
+				RESULTADO_ENTREVISTA: xModel.RESULTADO_ENTREVISTA ?? '',
+				RESUMEN_ENTREVISTA: xModel.RESUMEN_ENTREVISTA ?? '',
+				USUARIO_CREA: xModel.USUARIO_CREA,
+			};
+		}
+
+		return {
+			CORR_EMPRESA: this.model?.CORR_EMPRESA ?? 1,
+			CORR_EXPEDIENTE_CANDIDATO: this.candidatoEntrevistaSeleccionado?.CORR_EXPEDIENTE_CANDIDATO ?? 0,
+			CORR_EXPEDIENTE_ENTREVISTA: 0,
+			CORR_SOLICITUD_EMPLEO: this.candidatoEntrevistaSeleccionado?.CORR_SOLICITUD_EMPLEO ?? 0,
+			TIPO_ENTREVISTA: '',
+			FECHA_ENTREVISTA: new Date(),
+			ENTREVISTADOR: this.getNombreUsuarioSesion(),
+			ESTADO_ENTREVISTA: 'PROGRAMADA',
+			RESULTADO_ENTREVISTA: '',
+			RESUMEN_ENTREVISTA: '',
+			USUARIO_CREA: this.getLoginSesion(),
+		};
+	}
+
+	nuevaEntrevista(): void {
+		this.entrevistaReadOnly = false;
+		this.entrevistaModel = this.fillEntrevistaData();
+		this.syncEntrevistaForm();
+	}
+
+	editarEntrevista(row: ScExpedienteEntrevista): void {
+		if (!row) {
+			return;
+		}
+		this.entrevistaReadOnly = !this.puedeGestionarEntrevista(row);
+		this.entrevistaModel = this.fillEntrevistaData(row);
+		this.syncEntrevistaForm();
+	}
+
+	onEntrevistaRowClick(e: any): void {
+		if (e?.rowType && e.rowType !== 'data') {
+			return;
+		}
+		this.editarEntrevista(e?.data);
+	}
+
+	guardarEntrevista(): void {
+		if (this.guardandoEntrevista || this.entrevistaReadOnly) {
+			return;
+		}
+
+		if (!this.puedeGestionarEntrevista(this.entrevistaModel)) {
+			this.notifyFx(
+				'Solo puede editar entrevistas propias en estado Programada.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
+		this.entrevistaModel.CORR_EXPEDIENTE_CANDIDATO =
+			this.candidatoEntrevistaSeleccionado?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
+		this.entrevistaModel.CORR_SOLICITUD_EMPLEO =
+			this.candidatoEntrevistaSeleccionado?.CORR_SOLICITUD_EMPLEO ?? 0;
+
+		if (!this.service.esValidoEntrevista(this.entrevistaModel, this.notifyFx.bind(this))) {
+			return;
+		}
+
+		const esNuevo = (this.entrevistaModel.CORR_EXPEDIENTE_ENTREVISTA ?? 0) <= 0;
+		this.guardandoEntrevista = true;
+		const req = esNuevo
+			? this.service.insertEntrevistaFromRequisicion(this.entrevistaModel)
+			: this.service.updateEntrevistaFromRequisicion(this.entrevistaModel);
+
+		req.pipe(take(1)).subscribe({
+			next: (response: any) => {
+				this.guardandoEntrevista = false;
+				if (!response?.Result) {
+					this.notifyFx(
+						response?.ErrorMessage || 'No se pudo guardar la entrevista.',
+						NotifyType.Error
+					);
+					return;
+				}
+				this.notifyFx(
+					esNuevo ? 'Entrevista registrada.' : 'Entrevista actualizada.',
+					NotifyType.Success
+				);
+				this.nuevaEntrevista();
+				this.consultarEntrevistas();
+			},
+			error: (err: any) => {
+				this.guardandoEntrevista = false;
+				this.notifyFx(
+					err?.error?.ErrorMessage || err?.message || 'Error al guardar la entrevista.',
+					NotifyType.Error
+				);
+			},
+		});
+	}
+
+	async eliminarEntrevista(row: ScExpedienteEntrevista): Promise<void> {
+		if (!this.puedeGestionarEntrevista(row)) {
+			this.notifyFx(
+				'Solo puede eliminar entrevistas propias en estado Programada.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
+		const corr = Number(row?.CORR_EXPEDIENTE_ENTREVISTA ?? 0);
+		const corrExpediente = this.candidatoEntrevistaSeleccionado?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
+		if (corr <= 0 || corrExpediente <= 0) {
+			return;
+		}
+
+		const ok = await confirm(`¿Eliminar la entrevista #${corr}?`, 'Confirmar eliminación');
+		if (!ok) {
+			return;
+		}
+
+		this.service
+			.deleteEntrevistaFromRequisicion(corrExpediente, corr)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result) {
+						this.notifyFx(
+							response?.ErrorMessage || 'No se pudo eliminar la entrevista.',
+							NotifyType.Error
+						);
+						return;
+					}
+					this.notifyFx('Entrevista eliminada.', NotifyType.Success);
+					if (this.entrevistaModel.CORR_EXPEDIENTE_ENTREVISTA === corr) {
+						this.nuevaEntrevista();
+					}
+					this.consultarEntrevistas();
+				},
+				error: (err: any) => {
+					this.notifyFx(
+						err?.error?.ErrorMessage || err?.message || 'Error al eliminar la entrevista.',
+						NotifyType.Error
+					);
+				},
+			});
+	}
+
+	private syncEntrevistaForm(): void {
+		setTimeout(() => this.entrevistaForm?.instance?.option('formData', this.entrevistaModel));
+	}
+
+	//#endregion
 
 }

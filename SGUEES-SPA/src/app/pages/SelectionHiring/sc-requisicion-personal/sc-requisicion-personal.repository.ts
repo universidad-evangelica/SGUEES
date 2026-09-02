@@ -27,6 +27,16 @@ export class ScRequisicionPersonalRepository {
 		);
 	}
 
+	/** Candidatos en proceso de selección asociados a la requisición. */
+	getCandidatos(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'GetCORR_CANDIDATOS_SC_REQUISICION_PERSONAL',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
 	create(model: any): Observable<IResult> {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}

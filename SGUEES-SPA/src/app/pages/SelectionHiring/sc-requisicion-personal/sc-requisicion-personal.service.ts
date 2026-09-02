@@ -6,12 +6,18 @@ import { IResult } from 'src/app/FxAPI/IResult';
 import { ScRequisicionPersonalRepository } from './sc-requisicion-personal.repository';
 import { ScRequisicionPersonal } from './models/sc-requisicion-personal';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { ScExpedienteEntrevistaRepository } from '../sc-expediente-candidato/sc-expediente-entrevista/sc-expediente-entrevista.repository';
+import { ScExpedienteCandidatoService } from '../sc-expediente-candidato/sc-expediente-candidato.service';
 
 @Injectable({
 	providedIn: 'root',
 })
 export class ScRequisicionPersonalService {
-    constructor(private repo: ScRequisicionPersonalRepository) {}
+    constructor(
+		private repo: ScRequisicionPersonalRepository,
+		private entrevistaRepo: ScExpedienteEntrevistaRepository,
+		private expedienteService: ScExpedienteCandidatoService,
+	) {}
 
     //#region <Validadores>
     esValido(model: ScRequisicionPersonal, msg: Function): boolean {
@@ -213,6 +219,54 @@ export class ScRequisicionPersonalService {
 			xWhere.push({ Parameter: 'CORR_REQUISICION_PERSONAL', Value: param.CORR_REQUISICION_PERSONAL });
 		}
 		return this.repo.getBitacora(xWhere);
+	}
+
+	/** Obtiene candidatos activos en proceso de selección de la requisición. */
+	getCandidatos(param?: any): Observable<IResult> {
+		const xWhere: IParam[] = [];
+		if (param?.CORR_REQUISICION_PERSONAL != null && param.CORR_REQUISICION_PERSONAL > 0) {
+			xWhere.push({ Parameter: 'CORR_REQUISICION_PERSONAL', Value: param.CORR_REQUISICION_PERSONAL });
+		}
+		return this.repo.getCandidatos(xWhere);
+	}
+
+	/** Entrevistas del candidato/solicitud (permiso requisición). */
+	getEntrevistasCandidato(corrExpediente: number, corrSolicitudEmpleo: number): Observable<IResult> {
+		return this.entrevistaRepo.getAllForRequisicion([
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
+			{ Parameter: 'CORR_SOLICITUD_EMPLEO', Value: corrSolicitudEmpleo },
+		]);
+	}
+
+	insertEntrevistaFromRequisicion(model: any): Observable<IResult> {
+		return this.entrevistaRepo.createForRequisicion(model);
+	}
+
+	updateEntrevistaFromRequisicion(model: any): Observable<IResult> {
+		return this.entrevistaRepo.updateForRequisicion(model, [
+			{ Parameter: 'CORR_EXPEDIENTE_ENTREVISTA', Value: model.CORR_EXPEDIENTE_ENTREVISTA },
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: model.CORR_EXPEDIENTE_CANDIDATO },
+		]);
+	}
+
+	deleteEntrevistaFromRequisicion(corrExpediente: number, corrEntrevista: number): Observable<IResult> {
+		return this.entrevistaRepo.deleteForRequisicion([
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
+			{ Parameter: 'CORR_EXPEDIENTE_ENTREVISTA', Value: corrEntrevista },
+		]);
+	}
+
+	/** Reutiliza el mismo formulario de entrevistas del expediente. */
+	getEntrevistaItems(): any[] {
+		return this.expedienteService.getEntrevistaItems();
+	}
+
+	esValidoEntrevista(model: any, msg: Function): boolean {
+		return this.expedienteService.esValidoEntrevista(model, msg);
+	}
+
+	getEntrevistaColumns(): any[] {
+		return this.expedienteService.getEntrevistaColumns();
 	}
 
 	/**
@@ -421,6 +475,48 @@ export class ScRequisicionPersonalService {
     getBitacoraSummary(): any {
         return {
             totalItems: [{ column: 'LOGIN_SISTEMA', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
+        };
+    }
+
+    /** Columnas visibles del tab Candidatos. */
+    getCandidatosColumns(): any[] {
+        return [
+            { dataField: 'NOMBRE_PERSONA', caption: 'Candidato', minWidth: 240 },
+            { dataField: 'DUI_PERSONA', caption: 'DUI', width: 130 },
+            {
+                dataField: 'FECHA_GENERACION',
+                caption: 'Fecha expediente',
+                width: 160,
+                dataType: 'date',
+                format: 'dd/MM/yyyy',
+            },
+            {
+                dataField: 'CORR_ESTADO_EXPEDIENTE',
+                caption: 'Estado',
+                width: 180,
+                calculateCellValue: () => 'Proceso de selección',
+            },
+            { dataField: 'CORR_SOLICITUD_EMPLEO', caption: 'Solicitud de empleo', width: 170 },
+            {
+                caption: 'Options',
+                width: 110,
+                allowSorting: false,
+                allowFiltering: false,
+                cellTemplate: 'candidatosActionsTemplate',
+            },
+        ];
+    }
+
+    getCandidatosSummary(): any {
+        return {
+            totalItems: [
+                {
+                    column: 'NOMBRE_PERSONA',
+                    summaryType: 'count',
+                    valueFormat: '#,##0',
+                    displayFormat: 'Cant: {0}',
+                },
+            ],
         };
     }
     

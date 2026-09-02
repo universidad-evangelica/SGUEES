@@ -114,6 +114,20 @@ namespace SGUEES.Controllers
         }
 
         /// <summary>
+        /// Candidatos activos en proceso de selección asociados a la requisición.
+        /// </summary>
+        [HttpGet("GetCORR_CANDIDATOS_SC_REQUISICION_PERSONAL")]
+        [Authorize(Policy = "/sc-requisicion-personal|R")]
+        public async Task<CResult> GetCORR_CANDIDATOS_SC_REQUISICION_PERSONAL(
+            [FromQuery] SC_REQUISICION_PERSONAL_CANDIDATOParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(
+                User.Claims.ToList().Single(e => e.Type == "CORR_EMPRESA").Value);
+
+            return await _service.GetAllAsyncCandidatosByCORR_REQUISICION(Data);
+        }
+
+        /// <summary>
         /// Listado para modal en sc-solicitud-empleo (permiso del consumidor, no de requisición).
         /// </summary>
         [HttpGet("GetAll_SC_SOLICITUD_EMPLEO")]

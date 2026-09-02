@@ -8,5 +8,6 @@ namespace SGUEES.Repositories
     public interface ISC_REQUISICION_PERSONALRepository: IRepository<SC_REQUISICION_PERSONALTable>
     {
         Task<CResult> GetAllAsyncBitacoraByCORR_REQUISICION(List<CParameter> xWhere);
+        Task<CResult> GetAllAsyncCandidatosByCORR_REQUISICION(List<CParameter> xWhere);
     }
 }

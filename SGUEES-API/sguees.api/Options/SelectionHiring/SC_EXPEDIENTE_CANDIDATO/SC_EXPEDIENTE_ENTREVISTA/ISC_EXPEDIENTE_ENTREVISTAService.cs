@@ -11,5 +11,15 @@ namespace SGUEES.Services
 		Task<CResult> CreateAsync(SC_EXPEDIENTE_ENTREVISTATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(SC_EXPEDIENTE_ENTREVISTATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(SC_EXPEDIENTE_ENTREVISTATable Data, string vLOGIN_SISTEMA, string vESTACION);
+
+		/// <summary>
+		/// Actualiza desde sc-requisicion-personal: solo el creador y solo si está PROGRAMADA.
+		/// </summary>
+		Task<CResult> UpdateByRequisicionAsync(SC_EXPEDIENTE_ENTREVISTATable Data, string vLOGIN_SISTEMA, string vESTACION);
+
+		/// <summary>
+		/// Elimina desde sc-requisicion-personal: solo el creador y solo si está PROGRAMADA.
+		/// </summary>
+		Task<CResult> DeleteByRequisicionAsync(SC_EXPEDIENTE_ENTREVISTATable Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
 }
