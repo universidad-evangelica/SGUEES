@@ -22,6 +22,10 @@ builder.Services.AddControllers()
 //Mapeo archivo ApplicacionDataContext que contiene los servicios de acceso a datos
 builder.Services.AddScoped<ApplicationDataContext>();
 builder.Services.AddSingleton<PersonaFotoStorage>();
+var expedienteDocumentoOptions = new ExpedienteDocumentoOptions();
+builder.Configuration.GetSection(ExpedienteDocumentoOptions.SectionName).Bind(expedienteDocumentoOptions);
+builder.Services.AddSingleton(expedienteDocumentoOptions);
+builder.Services.AddSingleton<ExpedienteDocumentoStorage>();
 
 // Bind AI options and register model router (from eFrameworkAPI options)
 var aiOptions = new eFrameworkAPI.Core.Options.AIOptions();

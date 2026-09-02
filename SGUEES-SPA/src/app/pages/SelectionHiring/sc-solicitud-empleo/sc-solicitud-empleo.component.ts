@@ -23,6 +23,7 @@ import {
 import { ScSolicitudEmpleoService } from './sc-solicitud-empleo.service';
 import { ScSolicitudRequisicion } from './models/sc-solicitud-requisicion';
 import { confirm } from 'devextreme/ui/dialog';
+import { ScExpedienteCandidatoService } from '../sc-expediente-candidato/sc-expediente-candidato.service';
 
 @Component({
 	selector: 'app-sc-solicitud-empleo',
@@ -63,12 +64,29 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	requisicionPickerColumns: any[] = [];
 	requisicionSeleccionada: any = null;
 	vinculandoRequisicion = false;
+	/** Si la solicitud ya está asociada al expediente de su persona. */
+	asociacionExpedienteBloqueada = false;
+	asociandoExpediente = false;
+	ultimoMensajeAsociacion = '';
+
+	/**
+	 * Texto del botón "Asociar Expediente" evaluado en cada ciclo de CD.
+	 * Se usa un getter para evitar el race entre confirmaCancelar (async) y el reset
+	 * del estado del botón, que hacía que quedara visible al volver a modo Browse.
+	 */
+	get btnAsociarExpediente(): string {
+		if (this.asociacionExpedienteBloqueada) {
+			return '';
+		}
+		return this.motivoNoPuedeAsociarExpediente() === null ? 'Asociar Expediente' : '';
+	}
 	// #endregion
 
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private service: ScSolicitudEmpleoService,
+		private expedienteService: ScExpedienteCandidatoService,
 		private messageService: MessageService
 	) {
 		super(appInfoService, router);
@@ -96,6 +114,140 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	//#region <Manejo de Combos>
 	llenaComboBox() {
 		this.getCORR_TIPO_CONTRATACION();
+	}
+
+	/* Asociar solicitud al expediente (mensajes de negocio desde ErrorMessage del SP). */
+	async asociarExpediente(): Promise<void> {
+		if (this.asociandoExpediente) {
+			return;
+		}
+
+		const motivo = this.motivoNoPuedeAsociarExpediente();
+		if (motivo) {
+			this.notifyFx(motivo, NotifyType.Warning);
+			return;
+		}
+
+		if (this.asociacionExpedienteBloqueada) {
+			if (this.ultimoMensajeAsociacion) {
+				this.notifyFx(this.ultimoMensajeAsociacion, NotifyType.Warning);
+			}
+			return;
+		}
+
+		const corrSolicitud = this.model?.CORR_SOLICITUD_EMPLEO ?? 0;
+		this.asociandoExpediente = true;
+		this.loadingVisible = true;
+
+		try {
+			const estadoResp: any = await this.expedienteService.getEstadoAsociacion(corrSolicitud).pipe(take(1)).toPromise();
+			const codigo = estadoResp?.ErrorCode ?? -1;
+			const mensaje = estadoResp?.ErrorMessage ?? '';
+			const estado = `${estadoResp?.Data?.ESTADO ?? ''}`.toUpperCase();
+
+			if (codigo === 4101 || codigo === 4102 || estado === 'SIN_PERSONA' || estado === 'DUI_NO_COINCIDE') {
+				this.notifyFx(mensaje, NotifyType.Warning);
+				return;
+			}
+
+			if (codigo === 4104 || estado === 'YA_ASOCIADA') {
+				this.bloquearAsociacionExpediente(mensaje);
+				return;
+			}
+
+			if (codigo === 4103 || estado === 'SIN_EXPEDIENTE') {
+				const aceptar = await confirm(mensaje, 'Crear expediente');
+				if (!aceptar) {
+					return;
+				}
+				await this.ejecutarAsociarExpediente(corrSolicitud, true);
+				return;
+			}
+
+			if (codigo === 0 && (estado === 'PUEDE_ASOCIAR' || !estado)) {
+				await this.ejecutarAsociarExpediente(corrSolicitud, false);
+				return;
+			}
+
+			if (mensaje) {
+				this.notifyFx(mensaje, NotifyType.Warning);
+			}
+		} catch (error: any) {
+			const msg = error?.error?.ErrorMessage || error?.ErrorMessage || error?.message || '';
+			if (msg) {
+				this.notifyFx(msg, NotifyType.Error);
+			}
+		} finally {
+			this.asociandoExpediente = false;
+			this.loadingVisible = false;
+		}
+	}
+
+	/** Motivo por el que no se puede asociar; null si todas las precondiciones se cumplen. */
+	private motivoNoPuedeAsociarExpediente(): string | null {
+		if (this.isBrowse()) {
+			return 'Abra una solicitud para asociar el expediente.';
+		}
+
+		if ((this.model?.CORR_SOLICITUD_EMPLEO ?? 0) <= 0) {
+			return 'Guarde la solicitud antes de asociar el expediente.';
+		}
+
+		if (!(this.requisicionesSolicitud?.length > 0)) {
+			return 'Debe vincular al menos una requisición a la solicitud.';
+		}
+
+		if ((this.model?.CORR_PERSONA_DATOS ?? 0) <= 0) {
+			return 'La solicitud no tiene persona asociada (CORR_PERSONA_DATOS).';
+		}
+
+		if (!`${this.model?.DUI ?? ''}`.trim()) {
+			return 'La solicitud no tiene DUI.';
+		}
+
+		if (this.isConsulta()) {
+			return 'No se puede asociar expediente en modo consulta.';
+		}
+
+		return null;
+	}
+
+	private async ejecutarAsociarExpediente(corrSolicitud: number, crearExpediente: boolean): Promise<void> {
+		const resp: any = await this.expedienteService.asociarSolicitud(corrSolicitud, crearExpediente).pipe(take(1)).toPromise();
+		const codigo = resp?.ErrorCode ?? -1;
+		const mensaje = resp?.ErrorMessage ?? '';
+		const estado = `${resp?.Data?.ESTADO ?? ''}`.toUpperCase();
+
+		if (codigo === 0 || estado === 'ASOCIADA') {
+			if (mensaje) {
+				this.notifyFx(mensaje, NotifyType.Success);
+			}
+			this.asociacionExpedienteBloqueada = true;
+			this.ultimoMensajeAsociacion = mensaje || '';
+			return;
+		}
+
+		if (codigo === 4104 || estado === 'YA_ASOCIADA') {
+			this.bloquearAsociacionExpediente(mensaje);
+			return;
+		}
+
+		if (mensaje) {
+			this.notifyFx(mensaje, NotifyType.Warning);
+		}
+	}
+
+	private bloquearAsociacionExpediente(mensaje?: string): void {
+		this.asociacionExpedienteBloqueada = true;
+		this.ultimoMensajeAsociacion = mensaje || '';
+		if (mensaje) {
+			this.notifyFx(mensaje, NotifyType.Warning);
+		}
+	}
+
+	private resetAsociacionExpediente(): void {
+		this.asociacionExpedienteBloqueada = false;
+		this.ultimoMensajeAsociacion = '';
 	}
 
 	/**
@@ -459,10 +611,12 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		this.tokens = [];
 		this.requisicionesSolicitud = [];
 		this.limpiarPersonaDatos();
+		this.resetAsociacionExpediente();
 	}
 
 	override editarClick(e: any): void {
 		super.editarClick(e);
+		this.resetAsociacionExpediente();
 		this.consultarPersonaDatos();
 		this.consultarRequisicionesSolicitud();
 		this.consultarToken();
@@ -470,6 +624,7 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 	override rowDblClick(e: any): void {
 		super.rowDblClick(e);
+		this.resetAsociacionExpediente();
 		this.consultarPersonaDatos();
 		this.consultarRequisicionesSolicitud();
 		this.consultarToken();
@@ -546,9 +701,12 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 				next: (response: any) => {
 					if (response.Result) {
 						this.requisicionesSolicitud = response.Data ?? [];
+					} else {
+						this.requisicionesSolicitud = [];
 					}
 				},
 				error: (error: any) => {
+					this.requisicionesSolicitud = [];
 					this.messageService.add({ severity: 'error', summary: 'Error', detail: error });
 				},
 			});
@@ -843,6 +1001,7 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_SOLICITUD_EMPLEO === this.modelUpdate.CORR_SOLICITUD_EMPLEO);
+		this.resetAsociacionExpediente();
 	}
 
 	rowRemoving(e: any) {

@@ -82,5 +82,31 @@ namespace SGUEES.Services
             return await _repo.GetAllAsyncBitacoraByCORR_REQUISICION(p);
         }
 
+        /// <summary>
+        /// Consulta candidatos por empresa y requisición.
+        /// Las reglas de estado y actividad se aplican en la vista SQL.
+        /// </summary>
+        public async Task<CResult> GetAllAsyncCandidatosByCORR_REQUISICION(
+            SC_REQUISICION_PERSONAL_CANDIDATOParam xWhere)
+        {
+            var p = new List<CParameter>
+            {
+                new CParameter()
+                {
+                    ParameterName = "CORR_EMPRESA",
+                    Value = xWhere.CORR_EMPRESA,
+                    DbType = System.Data.DbType.Int32
+                },
+                new CParameter()
+                {
+                    ParameterName = "CORR_REQUISICION_PERSONAL",
+                    Value = xWhere.CORR_REQUISICION_PERSONAL,
+                    DbType = System.Data.DbType.Int32
+                },
+            };
+
+            return await _repo.GetAllAsyncCandidatosByCORR_REQUISICION(p);
+        }
+
     }
 }
