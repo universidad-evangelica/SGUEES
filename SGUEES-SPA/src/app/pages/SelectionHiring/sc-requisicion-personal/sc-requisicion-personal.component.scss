@@ -443,11 +443,19 @@
 	}
 }
 
+.entrevista-form {
+	margin-top: 0;
+}
+
 .entrevista-form-actions {
 	display: flex;
 	justify-content: flex-end;
 	gap: 10px;
 	margin-top: 14px;
+}
+
+.entrevista-grid {
+	margin-top: 0;
 }
 
 .entrevista-grid-actions,

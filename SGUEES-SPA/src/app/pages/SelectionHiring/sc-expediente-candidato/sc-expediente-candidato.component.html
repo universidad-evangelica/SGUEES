@@ -398,7 +398,7 @@
 
                   <div class="entrevista-form-actions">
                     <dx-button
-                      text="Limpiar"
+                      text="Nuevo"
                       stylingMode="outlined"
                       type="normal"
                       [disabled]="guardandoEntrevista"
@@ -433,6 +433,8 @@
                     [noDataText]="'No hay entrevistas registradas para esta solicitud.'"
                     (onRowClick)="onEntrevistaRowClick($event)"
                   >
+                    <dxo-column-fixing [enabled]="true"></dxo-column-fixing>
+
                     <dxo-paging [pageSize]="5"></dxo-paging>
                     <dxo-pager
                       [showPageSizeSelector]="true"
@@ -446,6 +448,12 @@
 
                     <div *dxTemplate="let cell of 'entrevistaActionsTemplate'">
                       <div class="entrevista-grid-actions" (click)="$event.stopPropagation()">
+                        <dx-button
+                          icon="attach"
+                          hint="Adjuntos"
+                          stylingMode="text"
+                          (onClick)="abrirAdjuntosEntrevista(cell.data, $event)"
+                        ></dx-button>
                         <dx-button
                           icon="edit"
                           hint="Editar"
@@ -626,6 +634,203 @@
           stylingMode="contained"
           [disabled]="guardandoDocumento"
           (onClick)="guardarDocumento()"
+        ></dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Modal: listado de adjuntos de una entrevista -->
+<dx-popup
+  [(visible)]="entrevistaAdjuntosPopupVisible"
+  [title]="entrevistaAdjuntosTitulo"
+  [width]="920"
+  [maxWidth]="'calc(100vw - 24px)'"
+  [height]="'auto'"
+  [maxHeight]="'85vh'"
+  [showCloseButton]="true"
+  [dragEnabled]="true"
+  [hideOnOutsideClick]="false"
+  (onHiding)="onAdjuntosEntrevistaHiding()"
+>
+  <div *dxTemplate="let data of 'content'">
+    <div class="expediente-documentos-tab">
+      <div class="dx-grid-deta documento-grid">
+        <dx-data-grid
+          [dataSource]="entrevistaDocumentos"
+          [columns]="entrevistaDocumentoColumns"
+          [showBorders]="true"
+          [rowAlternationEnabled]="true"
+          [hoverStateEnabled]="true"
+          [columnAutoWidth]="false"
+          [height]="360"
+          [width]="'100%'"
+          [noDataText]="'No hay adjuntos registrados para esta entrevista.'"
+        >
+          <dxo-toolbar>
+            <dxi-item location="before">
+              <div *dxTemplate class="documentos-tab-title">
+                <i class="dx-icon dx-icon-attach"></i>
+                <span>Documentos de la entrevista</span>
+              </div>
+            </dxi-item>
+            <dxi-item location="after">
+              <div *dxTemplate>
+                <dx-button
+                  text="Agregar"
+                  icon="plus"
+                  type="default"
+                  stylingMode="contained"
+                  [visible]="permiteAdd"
+                  (onClick)="abrirPopupEntrevistaDocumentoNuevo()"
+                ></dx-button>
+              </div>
+            </dxi-item>
+          </dxo-toolbar>
+          <dxo-search-panel
+            [visible]="true"
+            placeholder="Buscar adjunto..."
+          ></dxo-search-panel>
+          <dxo-paging [pageSize]="8"></dxo-paging>
+          <dxo-pager
+            [showPageSizeSelector]="true"
+            [allowedPageSizes]="[8, 15, 30]"
+            [infoText]="'Mostrando {0} a {1} de {2} adjuntos'"
+          ></dxo-pager>
+          <dxo-editing
+            [allowUpdating]="false"
+            [allowDeleting]="false"
+            [allowAdding]="false"
+          ></dxo-editing>
+
+          <div *dxTemplate="let cell of 'entrevistaDocumentoActionsTemplate'">
+            <div class="documento-grid-actions">
+              <dx-button
+                icon="eyeopen"
+                hint="Ver documento"
+                stylingMode="text"
+                (onClick)="onVerEntrevistaDocumentoClick(cell.data, $event)"
+              ></dx-button>
+              <dx-button
+                icon="edit"
+                hint="Editar"
+                stylingMode="text"
+                [visible]="permiteEdit"
+                (onClick)="onEditarEntrevistaDocumentoClick(cell.data, $event)"
+              ></dx-button>
+              <dx-button
+                icon="trash"
+                hint="Eliminar"
+                stylingMode="text"
+                type="danger"
+                [visible]="permiteDele"
+                (onClick)="onEliminarEntrevistaDocumentoClick(cell.data, $event)"
+              ></dx-button>
+            </div>
+          </div>
+        </dx-data-grid>
+      </div>
+    </div>
+  </div>
+</dx-popup>
+
+<!-- Modal: nuevo / editar adjunto de entrevista -->
+<dx-popup
+  [(visible)]="entrevistaDocumentoPopupVisible"
+  [title]="editandoEntrevistaDocumento ? 'Editar adjunto' : 'Nuevo adjunto'"
+  [width]="760"
+  [maxWidth]="'calc(100vw - 24px)'"
+  [height]="'auto'"
+  [showCloseButton]="true"
+  [dragEnabled]="true"
+  [hideOnOutsideClick]="false"
+  (onHiding)="onEntrevistaDocumentoPopupHiding()"
+>
+  <div *dxTemplate="let data of 'content'">
+    <div class="documento-popup">
+      <p *ngIf="editandoEntrevistaDocumento" class="documento-popup__corr">
+        Corr. {{ entrevistaDocumentoModel.CORR_ENTREVISTA_DOCUMENTO }}
+      </p>
+
+      <dx-form
+        #entrevistaDocumentoForm
+        class="documento-form"
+        [formData]="entrevistaDocumentoModel"
+        [labelLocation]="'top'"
+        [colCount]="mttoFormColCount"
+        [colCountByScreen]="mttoFormColCountByScreen"
+        [showRequiredMark]="false"
+        [items]="entrevistaDocumentoItems"
+      >
+        <div *dxTemplate="let cellInfo of 'entrevistaDocumentoArchivoUploader'" class="documento-file-input">
+          <div class="documento-file-input__row">
+            <i class="dx-icon dx-icon-attach documento-file-input__clip" aria-hidden="true"></i>
+
+            <fieldset
+              class="documento-file-input__box"
+              [class.documento-file-input__box--drag]="entrevistaDocumentoArchivoDragOver"
+              (click)="onEntrevistaDocumentoFileBoxClick($event)"
+              (dragover)="onEntrevistaDocumentoDragOver($event)"
+              (dragleave)="onEntrevistaDocumentoDragLeave($event)"
+              (drop)="onEntrevistaDocumentoDrop($event)"
+            >
+              <legend class="documento-file-input__legend">Archivo</legend>
+
+              <div class="documento-file-input__content">
+                <div
+                  *ngIf="entrevistaDocumentoArchivoVisible"
+                  class="documento-file-chip"
+                  [class.documento-file-chip--actual]="!entrevistaDocumentoArchivoEsNuevo"
+                >
+                  <span class="documento-file-chip__text">{{ entrevistaDocumentoArchivoEtiqueta }}</span>
+                </div>
+
+                <span *ngIf="!entrevistaDocumentoArchivoVisible" class="documento-file-input__placeholder">
+                  Seleccione o arrastre un archivo
+                </span>
+
+                <button
+                  *ngIf="entrevistaDocumentoArchivoEsNuevo"
+                  type="button"
+                  class="documento-file-input__clear"
+                  aria-label="Quitar archivo seleccionado"
+                  (click)="limpiarEntrevistaDocumentoArchivoSeleccionado($event)"
+                >
+                  <i class="dx-icon dx-icon-close" aria-hidden="true"></i>
+                </button>
+              </div>
+            </fieldset>
+
+            <input
+              #entrevistaDocumentoFileInput
+              type="file"
+              class="documento-file-input__native"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.doc,.docx"
+              (change)="onEntrevistaDocumentoArchivoInputChange($event)"
+            />
+          </div>
+
+          <p *ngIf="entrevistaDocumentoArchivoResumen" class="documento-file-input__footer">
+            {{ entrevistaDocumentoArchivoResumen }}
+          </p>
+        </div>
+      </dx-form>
+
+      <div class="documento-form-actions">
+        <dx-button
+          text="Cancelar"
+          stylingMode="outlined"
+          type="normal"
+          [disabled]="guardandoEntrevistaDocumento"
+          (onClick)="cerrarPopupEntrevistaDocumento()"
+        ></dx-button>
+        <dx-button
+          [text]="editandoEntrevistaDocumento ? 'Actualizar' : 'Agregar'"
+          icon="save"
+          type="default"
+          stylingMode="contained"
+          [disabled]="guardandoEntrevistaDocumento"
+          (onClick)="guardarEntrevistaDocumento()"
         ></dx-button>
       </div>
     </div>

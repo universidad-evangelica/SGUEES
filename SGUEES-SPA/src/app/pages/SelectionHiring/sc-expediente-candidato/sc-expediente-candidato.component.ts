@@ -23,6 +23,7 @@ import {
 import { ScSolicitudEmpleoService } from '../sc-solicitud-empleo/sc-solicitud-empleo.service';
 import { ScExpedienteCandidato } from './models/sc-expediente-candidato';
 import { ScExpedienteEntrevista } from './sc-expediente-entrevista/models/sc-expediente-entrevista';
+import { ScExpedienteEntrevistaDocumento } from './sc-expediente-entrevista/sc-expediente-entrevista-documento/models/sc-expediente-entrevista-documento';
 import { ScExpedienteDocumento } from './sc-expediente-documento/models/sc-expediente-documento';
 import { ScExpedienteSolicitud } from './sc-expediente-solicitud/models/sc-expediente-solicitud';
 import { ScExpedienteCandidatoService } from './sc-expediente-candidato.service';
@@ -38,6 +39,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	@ViewChild('entrevistaForm', { static: false }) entrevistaForm?: DxFormComponent;
 	@ViewChild('documentoForm', { static: false }) documentoForm?: DxFormComponent;
 	@ViewChild('documentoFileInput', { static: false }) documentoFileInput?: ElementRef<HTMLInputElement>;
+	@ViewChild('entrevistaDocumentoForm', { static: false }) entrevistaDocumentoForm?: DxFormComponent;
+	@ViewChild('entrevistaDocumentoFileInput', { static: false })
+	entrevistaDocumentoFileInput?: ElementRef<HTMLInputElement>;
 
 	protected override etiquetaRegistro = 'el expediente de candidato';
 	protected override requiereEmpresaSesion = true;
@@ -88,8 +92,24 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	documentoPopupVisible = false;
 	private documentoPreviewObjectUrl: string | null = null;
 
+	/** Popup Adjuntos de una entrevista (1..N). */
+	entrevistaAdjuntosPopupVisible = false;
+	entrevistaAdjuntosContext: ScExpedienteEntrevista | null = null;
+	entrevistaDocumentos: ScExpedienteEntrevistaDocumento[] = [];
+	entrevistaDocumentoColumns: any[] = [];
+	entrevistaDocumentoItems: any[] = [];
+	entrevistaDocumentoModel: ScExpedienteEntrevistaDocumento = this.fillEntrevistaDocumentoData();
+	entrevistaDocumentoPopupVisible = false;
+	guardandoEntrevistaDocumento = false;
+	entrevistaDocumentoArchivo: File | null = null;
+	entrevistaDocumentoArchivoDragOver = false;
+
 	get editandoDocumento(): boolean {
 		return (this.documentoModel?.CORR_EXPEDIENTE_DOCUMENTO ?? 0) > 0;
+	}
+
+	get editandoEntrevistaDocumento(): boolean {
+		return (this.entrevistaDocumentoModel?.CORR_ENTREVISTA_DOCUMENTO ?? 0) > 0;
 	}
 
 	/** Muestra chip cuando hay archivo nuevo o el actual en edición. */
@@ -119,6 +139,46 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			return 'Archivo actual (sin cambios si no selecciona otro)';
 		}
 		return '';
+	}
+
+	get entrevistaDocumentoArchivoVisible(): boolean {
+		return (
+			!!this.entrevistaDocumentoArchivo ||
+			(this.editandoEntrevistaDocumento && !!this.entrevistaDocumentoModel?.NOMBRE_ARCHIVO)
+		);
+	}
+
+	get entrevistaDocumentoArchivoEsNuevo(): boolean {
+		return !!this.entrevistaDocumentoArchivo;
+	}
+
+	get entrevistaDocumentoArchivoEtiqueta(): string {
+		if (this.entrevistaDocumentoArchivo) {
+			return `${this.truncarNombreArchivo(this.entrevistaDocumentoArchivo.name)} (${this.formatFileSize(this.entrevistaDocumentoArchivo.size)})`;
+		}
+		if (this.editandoEntrevistaDocumento && this.entrevistaDocumentoModel?.NOMBRE_ARCHIVO) {
+			return this.truncarNombreArchivo(this.entrevistaDocumentoModel.NOMBRE_ARCHIVO);
+		}
+		return '';
+	}
+
+	get entrevistaDocumentoArchivoResumen(): string {
+		if (this.entrevistaDocumentoArchivo) {
+			return `1 archivo (${this.formatFileSize(this.entrevistaDocumentoArchivo.size)} en total)`;
+		}
+		if (
+			this.editandoEntrevistaDocumento &&
+			this.entrevistaDocumentoModel?.NOMBRE_ARCHIVO &&
+			!this.entrevistaDocumentoArchivo
+		) {
+			return 'Archivo actual (sin cambios si no selecciona otro)';
+		}
+		return '';
+	}
+
+	get entrevistaAdjuntosTitulo(): string {
+		const corr = this.entrevistaAdjuntosContext?.CORR_EXPEDIENTE_ENTREVISTA ?? 0;
+		return corr > 0 ? `Adjuntos — Entrevista #${corr}` : 'Adjuntos de entrevista';
 	}
 
 	personaDatos: ScPersonaDatos | null = null;
@@ -194,6 +254,8 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.entrevistaItems = this.service.getEntrevistaItems();
 		this.documentoColumns = this.service.getDocumentoColumns();
 		this.documentoItems = this.service.getDocumentoItems();
+		this.entrevistaDocumentoColumns = this.service.getEntrevistaDocumentoColumns();
+		this.entrevistaDocumentoItems = this.service.getEntrevistaDocumentoItems();
 	}
 
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
@@ -542,6 +604,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.solicitudSeleccionada = null;
 			this.entrevistas = [];
 			this.nuevaEntrevista();
+			this.cerrarAdjuntosEntrevista();
 			return;
 		}
 
@@ -552,6 +615,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.solicitudSeleccionada = null;
 			this.entrevistas = [];
 			this.nuevaEntrevista();
+			this.cerrarAdjuntosEntrevista();
 			this.workspaceSolicitudCloseTimer = null;
 		}, 300);
 	}
@@ -705,6 +769,344 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 					this.notifyFx(err?.error?.ErrorMessage || err?.message || 'Error al eliminar la entrevista.', NotifyType.Error);
 				},
 			});
+	}
+
+	abrirAdjuntosEntrevista(row: ScExpedienteEntrevista, e?: { event?: Event }): void {
+		e?.event?.stopPropagation?.();
+		const corr = Number(row?.CORR_EXPEDIENTE_ENTREVISTA ?? 0);
+		if (corr <= 0) {
+			return;
+		}
+		this.entrevistaAdjuntosContext = row;
+		this.entrevistaAdjuntosPopupVisible = true;
+		this.nuevoEntrevistaDocumento();
+		this.consultarEntrevistaDocumentos();
+	}
+
+	cerrarAdjuntosEntrevista(): void {
+		this.entrevistaAdjuntosPopupVisible = false;
+		this.entrevistaAdjuntosContext = null;
+		this.entrevistaDocumentos = [];
+		this.entrevistaDocumentoPopupVisible = false;
+		this.nuevoEntrevistaDocumento();
+	}
+
+	onAdjuntosEntrevistaHiding(): void {
+		if (this.guardandoEntrevistaDocumento) {
+			return;
+		}
+		this.cerrarAdjuntosEntrevista();
+	}
+
+	consultarEntrevistaDocumentos(): void {
+		const corrExpediente =
+			this.entrevistaAdjuntosContext?.CORR_EXPEDIENTE_CANDIDATO ??
+			this.model?.CORR_EXPEDIENTE_CANDIDATO ??
+			0;
+		const corrEntrevista = this.entrevistaAdjuntosContext?.CORR_EXPEDIENTE_ENTREVISTA ?? 0;
+		if (corrExpediente <= 0 || corrEntrevista <= 0) {
+			this.entrevistaDocumentos = [];
+			return;
+		}
+
+		this.service
+			.getAllEntrevistaDocumento(corrExpediente, corrEntrevista)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.entrevistaDocumentos = response?.Result ? response.Data ?? [] : [];
+				},
+				error: () => {
+					this.entrevistaDocumentos = [];
+				},
+			});
+	}
+
+	fillEntrevistaDocumentoData(xModel?: ScExpedienteEntrevistaDocumento): ScExpedienteEntrevistaDocumento {
+		if (xModel) {
+			return {
+				CORR_EMPRESA: xModel.CORR_EMPRESA,
+				CORR_EXPEDIENTE_CANDIDATO: xModel.CORR_EXPEDIENTE_CANDIDATO,
+				CORR_EXPEDIENTE_ENTREVISTA: xModel.CORR_EXPEDIENTE_ENTREVISTA,
+				CORR_ENTREVISTA_DOCUMENTO: xModel.CORR_ENTREVISTA_DOCUMENTO,
+				FECHA_CARGA: xModel.FECHA_CARGA,
+				NOMBRE_ARCHIVO: xModel.NOMBRE_ARCHIVO,
+				RUTA_ARCHIVO: xModel.RUTA_ARCHIVO ?? '',
+				NOTAS: xModel.NOTAS ?? '',
+			};
+		}
+
+		return {
+			CORR_EMPRESA: this.model?.CORR_EMPRESA ?? 1,
+			CORR_EXPEDIENTE_CANDIDATO:
+				this.entrevistaAdjuntosContext?.CORR_EXPEDIENTE_CANDIDATO ??
+				this.model?.CORR_EXPEDIENTE_CANDIDATO ??
+				0,
+			CORR_EXPEDIENTE_ENTREVISTA: this.entrevistaAdjuntosContext?.CORR_EXPEDIENTE_ENTREVISTA ?? 0,
+			CORR_ENTREVISTA_DOCUMENTO: 0,
+			FECHA_CARGA: new Date(),
+			NOMBRE_ARCHIVO: '',
+			RUTA_ARCHIVO: '',
+			NOTAS: '',
+		};
+	}
+
+	nuevoEntrevistaDocumento(): void {
+		this.entrevistaDocumentoModel = this.fillEntrevistaDocumentoData();
+		this.limpiarEntrevistaDocumentoArchivo();
+		this.syncEntrevistaDocumentoForm();
+	}
+
+	abrirPopupEntrevistaDocumentoNuevo(): void {
+		if (!this.permiteAdd) {
+			return;
+		}
+		this.nuevoEntrevistaDocumento();
+		this.entrevistaDocumentoPopupVisible = true;
+	}
+
+	editarEntrevistaDocumento(row: ScExpedienteEntrevistaDocumento): void {
+		if (!row) {
+			return;
+		}
+		this.entrevistaDocumentoModel = this.fillEntrevistaDocumentoData(row);
+		this.limpiarEntrevistaDocumentoArchivo();
+		this.syncEntrevistaDocumentoForm();
+		this.entrevistaDocumentoPopupVisible = true;
+	}
+
+	onVerEntrevistaDocumentoClick(row: ScExpedienteEntrevistaDocumento, e?: { event?: Event }): void {
+		e?.event?.stopPropagation?.();
+		this.verEntrevistaDocumento(row);
+	}
+
+	onEditarEntrevistaDocumentoClick(row: ScExpedienteEntrevistaDocumento, e?: { event?: Event }): void {
+		e?.event?.stopPropagation?.();
+		this.editarEntrevistaDocumento(row);
+	}
+
+	onEliminarEntrevistaDocumentoClick(row: ScExpedienteEntrevistaDocumento, e?: { event?: Event }): void {
+		e?.event?.stopPropagation?.();
+		this.eliminarEntrevistaDocumento(row);
+	}
+
+	cerrarPopupEntrevistaDocumento(): void {
+		this.entrevistaDocumentoPopupVisible = false;
+	}
+
+	onEntrevistaDocumentoPopupHiding(): void {
+		if (this.guardandoEntrevistaDocumento) {
+			return;
+		}
+		this.nuevoEntrevistaDocumento();
+	}
+
+	onEntrevistaDocumentoArchivoInputChange(event: Event): void {
+		const input = event.target as HTMLInputElement;
+		const file = input?.files?.[0] ?? null;
+		this.entrevistaDocumentoArchivo = file;
+	}
+
+	onEntrevistaDocumentoFileBoxClick(event: Event): void {
+		if ((event.target as HTMLElement).closest('.documento-file-input__clear')) {
+			return;
+		}
+		this.entrevistaDocumentoFileInput?.nativeElement?.click();
+	}
+
+	onEntrevistaDocumentoDragOver(event: DragEvent): void {
+		event.preventDefault();
+		this.entrevistaDocumentoArchivoDragOver = true;
+	}
+
+	onEntrevistaDocumentoDragLeave(event: DragEvent): void {
+		event.preventDefault();
+		this.entrevistaDocumentoArchivoDragOver = false;
+	}
+
+	onEntrevistaDocumentoDrop(event: DragEvent): void {
+		event.preventDefault();
+		this.entrevistaDocumentoArchivoDragOver = false;
+		const file = event.dataTransfer?.files?.[0] ?? null;
+		if (!file || !this.esArchivoDocumentoPermitido(file.name)) {
+			this.notifyFx('Formato no permitido.', NotifyType.Warning);
+			return;
+		}
+		this.entrevistaDocumentoArchivo = file;
+	}
+
+	limpiarEntrevistaDocumentoArchivoSeleccionado(event: Event): void {
+		event.stopPropagation();
+		this.limpiarEntrevistaDocumentoArchivo();
+	}
+
+	limpiarEntrevistaDocumentoArchivo(): void {
+		this.entrevistaDocumentoArchivo = null;
+		this.entrevistaDocumentoArchivoDragOver = false;
+		if (this.entrevistaDocumentoFileInput?.nativeElement) {
+			this.entrevistaDocumentoFileInput.nativeElement.value = '';
+		}
+	}
+
+	private buildEntrevistaDocumentoFormData(includeFile: boolean): FormData {
+		const formData = new FormData();
+		formData.append('CORR_EXPEDIENTE_CANDIDATO', String(this.entrevistaDocumentoModel.CORR_EXPEDIENTE_CANDIDATO ?? 0));
+		formData.append('CORR_EXPEDIENTE_ENTREVISTA', String(this.entrevistaDocumentoModel.CORR_EXPEDIENTE_ENTREVISTA ?? 0));
+		formData.append('CORR_ENTREVISTA_DOCUMENTO', String(this.entrevistaDocumentoModel.CORR_ENTREVISTA_DOCUMENTO ?? 0));
+		formData.append('NOTAS', this.entrevistaDocumentoModel.NOTAS ?? '');
+
+		if (includeFile && this.entrevistaDocumentoArchivo) {
+			formData.append(
+				'ARCHIVO_DOCUMENTO',
+				this.entrevistaDocumentoArchivo,
+				this.entrevistaDocumentoArchivo.name
+			);
+		}
+
+		return formData;
+	}
+
+	guardarEntrevistaDocumento(): void {
+		if (this.guardandoEntrevistaDocumento) {
+			return;
+		}
+
+		this.entrevistaDocumentoModel.CORR_EXPEDIENTE_CANDIDATO =
+			this.entrevistaAdjuntosContext?.CORR_EXPEDIENTE_CANDIDATO ??
+			this.model?.CORR_EXPEDIENTE_CANDIDATO ??
+			0;
+		this.entrevistaDocumentoModel.CORR_EXPEDIENTE_ENTREVISTA =
+			this.entrevistaAdjuntosContext?.CORR_EXPEDIENTE_ENTREVISTA ?? 0;
+
+		const esNuevo = (this.entrevistaDocumentoModel.CORR_ENTREVISTA_DOCUMENTO ?? 0) <= 0;
+		const tieneArchivoNuevo = !!this.entrevistaDocumentoArchivo;
+
+		if (
+			!this.service.esValidoEntrevistaDocumento(
+				this.entrevistaDocumentoModel,
+				esNuevo,
+				tieneArchivoNuevo,
+				this.notifyFx.bind(this)
+			)
+		) {
+			return;
+		}
+
+		this.guardandoEntrevistaDocumento = true;
+		const corrExpediente = this.entrevistaDocumentoModel.CORR_EXPEDIENTE_CANDIDATO;
+		const corrEntrevista = this.entrevistaDocumentoModel.CORR_EXPEDIENTE_ENTREVISTA;
+		const corrDocumento = this.entrevistaDocumentoModel.CORR_ENTREVISTA_DOCUMENTO ?? 0;
+
+		const req = esNuevo
+			? this.service.postEntrevistaDocumento(this.buildEntrevistaDocumentoFormData(true))
+			: tieneArchivoNuevo
+				? this.service.putEntrevistaDocumento(
+						this.buildEntrevistaDocumentoFormData(true),
+						corrExpediente,
+						corrEntrevista,
+						corrDocumento
+					)
+				: this.service.updateEntrevistaDocumento({ ...this.entrevistaDocumentoModel });
+
+		req.pipe(take(1)).subscribe({
+			next: (response: any) => {
+				this.guardandoEntrevistaDocumento = false;
+				if (!response?.Result) {
+					this.notifyFx(response?.ErrorMessage || 'No se pudo guardar el adjunto.', NotifyType.Error);
+					return;
+				}
+				this.notifyFx(esNuevo ? 'Adjunto registrado.' : 'Adjunto actualizado.', NotifyType.Success);
+				this.entrevistaDocumentoPopupVisible = false;
+				this.nuevoEntrevistaDocumento();
+				this.consultarEntrevistaDocumentos();
+			},
+			error: (err: any) => {
+				this.guardandoEntrevistaDocumento = false;
+				this.notifyFx(err?.error?.ErrorMessage || err?.message || 'Error al guardar el adjunto.', NotifyType.Error);
+			},
+		});
+	}
+
+	async eliminarEntrevistaDocumento(row: ScExpedienteEntrevistaDocumento): Promise<void> {
+		const corr = Number(row?.CORR_ENTREVISTA_DOCUMENTO ?? 0);
+		const corrExpediente = Number(row?.CORR_EXPEDIENTE_CANDIDATO ?? 0);
+		const corrEntrevista = Number(row?.CORR_EXPEDIENTE_ENTREVISTA ?? 0);
+		if (corr <= 0 || corrExpediente <= 0 || corrEntrevista <= 0) {
+			return;
+		}
+
+		const ok = await confirm(`¿Eliminar el adjunto #${corr}?`, 'Confirmar eliminación');
+		if (!ok) {
+			return;
+		}
+
+		this.service
+			.deleteEntrevistaDocumento(corrExpediente, corrEntrevista, corr)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (!response?.Result) {
+						this.notifyFx(response?.ErrorMessage || 'No se pudo eliminar el adjunto.', NotifyType.Error);
+						return;
+					}
+					this.notifyFx('Adjunto eliminado.', NotifyType.Success);
+					if (this.entrevistaDocumentoModel.CORR_ENTREVISTA_DOCUMENTO === corr) {
+						this.nuevoEntrevistaDocumento();
+					}
+					this.consultarEntrevistaDocumentos();
+				},
+				error: (err: any) => {
+					this.notifyFx(err?.error?.ErrorMessage || err?.message || 'Error al eliminar el adjunto.', NotifyType.Error);
+				},
+			});
+	}
+
+	verEntrevistaDocumento(row: ScExpedienteEntrevistaDocumento): void {
+		const corrExpediente = Number(row?.CORR_EXPEDIENTE_CANDIDATO ?? 0);
+		const corrEntrevista = Number(row?.CORR_EXPEDIENTE_ENTREVISTA ?? 0);
+		const corrDocumento = Number(row?.CORR_ENTREVISTA_DOCUMENTO ?? 0);
+		const nombreArchivo = row?.NOMBRE_ARCHIVO ?? '';
+
+		if (corrExpediente <= 0 || corrEntrevista <= 0 || corrDocumento <= 0 || !nombreArchivo) {
+			return;
+		}
+
+		this.service
+			.getEntrevistaDocumentoBlob({
+				CORR_EXPEDIENTE_CANDIDATO: corrExpediente,
+				CORR_EXPEDIENTE_ENTREVISTA: corrEntrevista,
+				CORR_ENTREVISTA_DOCUMENTO: corrDocumento,
+				NOMBRE_ARCHIVO: nombreArchivo,
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: (blob) => {
+					if (!blob || blob.size <= 0) {
+						this.notifyFx('Error al generar el documento.', NotifyType.Error);
+						return;
+					}
+
+					const ext = (nombreArchivo.split('.').pop() || '').toLowerCase();
+					const objectUrl = window.URL.createObjectURL(blob);
+					this.revokeDocumentoPreview();
+					this.documentoPreviewObjectUrl = objectUrl;
+					this.documentoPreviewEsImagen = ext !== 'pdf';
+					this.PDF = this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl);
+					this.popupVisiblePdf = true;
+				},
+				error: (err: any) => {
+					this.notifyFx(
+						err?.error?.ErrorMessage || err?.message || 'Error al visualizar el adjunto.',
+						NotifyType.Error
+					);
+				},
+			});
+	}
+
+	private syncEntrevistaDocumentoForm(): void {
+		setTimeout(() =>
+			this.entrevistaDocumentoForm?.instance?.option('formData', this.entrevistaDocumentoModel)
+		);
 	}
 
 	/** Carga documentos del expediente abierto en el workspace. */

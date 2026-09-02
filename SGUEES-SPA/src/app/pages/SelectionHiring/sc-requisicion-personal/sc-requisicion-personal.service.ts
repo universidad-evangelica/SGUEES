@@ -7,7 +7,6 @@ import { ScRequisicionPersonalRepository } from './sc-requisicion-personal.repos
 import { ScRequisicionPersonal } from './models/sc-requisicion-personal';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { ScExpedienteEntrevistaRepository } from '../sc-expediente-candidato/sc-expediente-entrevista/sc-expediente-entrevista.repository';
-import { ScExpedienteCandidatoService } from '../sc-expediente-candidato/sc-expediente-candidato.service';
 
 @Injectable({
 	providedIn: 'root',
@@ -16,7 +15,6 @@ export class ScRequisicionPersonalService {
     constructor(
 		private repo: ScRequisicionPersonalRepository,
 		private entrevistaRepo: ScExpedienteEntrevistaRepository,
-		private expedienteService: ScExpedienteCandidatoService,
 	) {}
 
     //#region <Validadores>
@@ -256,17 +254,79 @@ export class ScRequisicionPersonalService {
 		]);
 	}
 
-	/** Reutiliza el mismo formulario de entrevistas del expediente. */
-	getEntrevistaItems(): any[] {
-		return this.expedienteService.getEntrevistaItems();
+	/** Combos fijos del formulario de entrevistas (workspace Candidatos). */
+	getTipoEntrevistaOptions(): Array<{ value: string; text: string }> {
+		return [
+			{ value: 'TALENTO HUMANO', text: 'Talento humano' },
+			{ value: 'JEFATURA', text: 'Jefatura' },
+			{ value: 'DIRECCION CAPELLANIA', text: 'Dirección Capellanía' },
+			// { value: 'DOCENTE', text: 'Docente' },
+			// { value: 'FINAL', text: 'Final' },
+		];
+	}
+
+	getEstadoEntrevistaOptions(): Array<{ value: string; text: string }> {
+		return [
+			{ value: 'PROGRAMADA', text: 'Programada' },
+			{ value: 'REALIZADA', text: 'Realizada' },
+			{ value: 'CANCELADA', text: 'Cancelada' },
+			{ value: 'NO SE PRESENTO', text: 'No se presentó' },
+			{ value: 'REPROGRAMADA', text: 'Reprogramada' },
+		];
+	}
+
+	getResultadoEntrevistaOptions(): Array<{ value: string; text: string }> {
+		return [
+			{ value: 'FAVORABLE', text: 'Favorable' },
+			{ value: 'FAVORABLE CON OBSERVACION', text: 'Favorable con observación' },
+			{ value: 'NO FAVORABLE', text: 'No favorable' },
+		];
+	}
+
+	/** Columnas del grid de entrevistas en el workspace. */
+	getEntrevistaColumns(): any[] {
+		return [
+			{ dataField: 'CORR_EXPEDIENTE_ENTREVISTA', caption: 'Corr.', width: 70 },
+			{ dataField: 'TIPO_ENTREVISTA', caption: 'Tipo', width: 170 },
+			{
+				dataField: 'FECHA_ENTREVISTA',
+				caption: 'Fecha',
+				width: 160,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy HH:mm',
+			},
+			{ dataField: 'ENTREVISTADOR', caption: 'Entrevistador', width: 180 },
+			{ dataField: 'ESTADO_ENTREVISTA', caption: 'Estado', width: 140 },
+			{ dataField: 'RESULTADO_ENTREVISTA', caption: 'Resultado', width: 180 },
+			{ dataField: 'RESUMEN_ENTREVISTA', caption: 'Resumen', width: 500 },
+			{
+				caption: 'Options',
+				width: 90,
+				allowSorting: false,
+				allowFiltering: false,
+				cellTemplate: 'entrevistaActionsTemplate',
+			},
+		];
 	}
 
 	esValidoEntrevista(model: any, msg: Function): boolean {
-		return this.expedienteService.esValidoEntrevista(model, msg);
-	}
-
-	getEntrevistaColumns(): any[] {
-		return this.expedienteService.getEntrevistaColumns();
+		if (!model?.TIPO_ENTREVISTA) {
+			msg('Debe indicar el tipo de entrevista.', NotifyType.Warning);
+			return false;
+		}
+		if (!model?.FECHA_ENTREVISTA) {
+			msg('Debe indicar la fecha de la entrevista.', NotifyType.Warning);
+			return false;
+		}
+		if (!`${model?.ENTREVISTADOR ?? ''}`.trim()) {
+			msg('Debe indicar el entrevistador.', NotifyType.Warning);
+			return false;
+		}
+		if (!model?.ESTADO_ENTREVISTA) {
+			msg('Debe indicar el estado de la entrevista.', NotifyType.Warning);
+			return false;
+		}
+		return true;
 	}
 
 	/**
@@ -477,6 +537,85 @@ export class ScRequisicionPersonalService {
             totalItems: [{ column: 'LOGIN_SISTEMA', summaryType: 'count', valueFormat: '#,##0', displayFormat: 'Cant: {0}' }],
         };
     }
+
+    	/** Ítems del dx-form de entrevistas (mismo patrón que sc-expediente-candidato: colCount 8). */
+	getEntrevistaItems(): any[] {
+		return [
+			{
+				dataField: 'TIPO_ENTREVISTA',
+				label: { text: 'Tipo de entrevista' },
+				colSpan: 2,
+				editorType: 'dxSelectBox',
+				editorOptions: {
+					items: this.getTipoEntrevistaOptions(),
+					displayExpr: 'text',
+					valueExpr: 'value',
+					searchEnabled: false,
+					showClearButton: true,
+					placeholder: 'Seleccione tipo',
+				},
+			},
+			{
+				dataField: 'FECHA_ENTREVISTA',
+				label: { text: 'Fecha entrevista' },
+				colSpan: 2,
+				editorType: 'dxDateBox',
+				editorOptions: {
+					type: 'datetime',
+					displayFormat: 'dd/MM/yyyy HH:mm',
+					showClearButton: false,
+				},
+			},
+			{
+				dataField: 'ESTADO_ENTREVISTA',
+				label: { text: 'Estado' },
+				colSpan: 2,
+				editorType: 'dxSelectBox',
+				editorOptions: {
+					items: this.getEstadoEntrevistaOptions(),
+					displayExpr: 'text',
+					valueExpr: 'value',
+					searchEnabled: false,
+					placeholder: 'Seleccione estado',
+				},
+			},
+			{
+				dataField: 'RESULTADO_ENTREVISTA',
+				label: { text: 'Resultado' },
+				colSpan: 2,
+				editorType: 'dxSelectBox',
+				editorOptions: {
+					items: this.getResultadoEntrevistaOptions(),
+					displayExpr: 'text',
+					valueExpr: 'value',
+					searchEnabled: false,
+					showClearButton: true,
+					placeholder: 'Opcional',
+				},
+			},
+            			{
+				dataField: 'ENTREVISTADOR',
+				label: { text: 'Entrevistado por' },
+				colSpan: 8,
+				editorOptions: {
+					placeholder: 'Nombre del entrevistador',
+					maxLength: 150,
+					showClearButton: true,
+				},
+			},
+			{
+				dataField: 'RESUMEN_ENTREVISTA',
+				label: { text: 'Resumen' },
+				colSpan: 8,
+				editorType: 'dxTextArea',
+				editorOptions: {
+					height: 84,
+					maxLength: 2000,
+					placeholder: 'Notas u observaciones de la entrevista',
+				},
+			},
+		];
+	}
 
     /** Columnas visibles del tab Candidatos. */
     getCandidatosColumns(): any[] {

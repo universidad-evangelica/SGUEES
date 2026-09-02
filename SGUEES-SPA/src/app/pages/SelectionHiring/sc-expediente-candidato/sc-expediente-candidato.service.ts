@@ -7,6 +7,7 @@ import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 import { ScExpedienteCandidato } from './models/sc-expediente-candidato';
 import { ScExpedienteCandidatoRepository } from './sc-expediente-candidato.repository';
 import { ScExpedienteEntrevistaRepository } from './sc-expediente-entrevista/sc-expediente-entrevista.repository';
+import { ScExpedienteEntrevistaDocumentoRepository } from './sc-expediente-entrevista/sc-expediente-entrevista-documento/sc-expediente-entrevista-documento.repository';
 import { ScExpedienteDocumentoRepository } from './sc-expediente-documento/sc-expediente-documento.repository';
 import { ScExpedienteSolicitudRepository } from './sc-expediente-solicitud/sc-expediente-solicitud.repository';
 
@@ -16,6 +17,7 @@ export class ScExpedienteCandidatoService {
 		private repo: ScExpedienteCandidatoRepository,
 		private detalleRepo: ScExpedienteSolicitudRepository,
 		private entrevistaRepo: ScExpedienteEntrevistaRepository,
+		private entrevistaDocumentoRepo: ScExpedienteEntrevistaDocumentoRepository,
 		private documentoRepo: ScExpedienteDocumentoRepository
 	) {}
 
@@ -129,14 +131,128 @@ export class ScExpedienteCandidatoService {
 		]);
 	}
 
+	getAllEntrevistaDocumento(corrExpediente: number, corrEntrevista: number): Observable<IResult> {
+		return this.entrevistaDocumentoRepo.getAll([
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
+			{ Parameter: 'CORR_EXPEDIENTE_ENTREVISTA', Value: corrEntrevista },
+		]);
+	}
+
+	updateEntrevistaDocumento(model: any): Observable<IResult> {
+		return this.entrevistaDocumentoRepo.update(model, [
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: model.CORR_EXPEDIENTE_CANDIDATO },
+			{ Parameter: 'CORR_EXPEDIENTE_ENTREVISTA', Value: model.CORR_EXPEDIENTE_ENTREVISTA },
+			{ Parameter: 'CORR_ENTREVISTA_DOCUMENTO', Value: model.CORR_ENTREVISTA_DOCUMENTO },
+		]);
+	}
+
+	deleteEntrevistaDocumento(
+		corrExpediente: number,
+		corrEntrevista: number,
+		corrDocumento: number
+	): Observable<IResult> {
+		return this.entrevistaDocumentoRepo.delete([
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
+			{ Parameter: 'CORR_EXPEDIENTE_ENTREVISTA', Value: corrEntrevista },
+			{ Parameter: 'CORR_ENTREVISTA_DOCUMENTO', Value: corrDocumento },
+		]);
+	}
+
+	postEntrevistaDocumento(formData: FormData): Observable<IResult> {
+		return this.entrevistaDocumentoRepo.postDoc(formData);
+	}
+
+	putEntrevistaDocumento(
+		formData: FormData,
+		corrExpediente: number,
+		corrEntrevista: number,
+		corrDocumento: number
+	): Observable<IResult> {
+		return this.entrevistaDocumentoRepo.putDoc(formData, [
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
+			{ Parameter: 'CORR_EXPEDIENTE_ENTREVISTA', Value: corrEntrevista },
+			{ Parameter: 'CORR_ENTREVISTA_DOCUMENTO', Value: corrDocumento },
+		]);
+	}
+
+	getEntrevistaDocumentoBlob(param: {
+		CORR_EXPEDIENTE_CANDIDATO: number;
+		CORR_EXPEDIENTE_ENTREVISTA: number;
+		CORR_ENTREVISTA_DOCUMENTO: number;
+		NOMBRE_ARCHIVO: string;
+	}): Observable<Blob> {
+		return this.entrevistaDocumentoRepo.getDoc([
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: param.CORR_EXPEDIENTE_CANDIDATO },
+			{ Parameter: 'CORR_EXPEDIENTE_ENTREVISTA', Value: param.CORR_EXPEDIENTE_ENTREVISTA },
+			{ Parameter: 'CORR_ENTREVISTA_DOCUMENTO', Value: param.CORR_ENTREVISTA_DOCUMENTO },
+			{ Parameter: 'NOMBRE_ARCHIVO', Value: param.NOMBRE_ARCHIVO },
+		]);
+	}
+
+	getEntrevistaDocumentoColumns(): any[] {
+		return [
+			{ dataField: 'CORR_ENTREVISTA_DOCUMENTO', caption: 'Corr.', width: 70 },
+			{
+				dataField: 'FECHA_CARGA',
+				caption: 'Fecha carga',
+				width: 150,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy',
+			},
+			{ dataField: 'NOMBRE_ARCHIVO', caption: 'Archivo', width: 360 },
+			{ dataField: 'NOTAS', caption: 'Notas', width: 280 },
+			{
+				caption: 'Options',
+				width: 120,
+				allowSorting: false,
+				allowFiltering: false,
+				cellTemplate: 'entrevistaDocumentoActionsTemplate',
+				alignment: 'center',
+				fixed: true,
+				fixedPosition: 'left',
+			},
+		];
+	}
+
+	/** Formulario de adjunto de entrevista (Archivo + Notas; FECHA_CARGA la asigna la API). */
+	getEntrevistaDocumentoItems(): any[] {
+		return [
+			{
+				dataField: 'NOMBRE_ARCHIVO',
+				label: { visible: false },
+				colSpan: 8,
+				template: 'entrevistaDocumentoArchivoUploader',
+			},
+			{
+				dataField: 'NOTAS',
+				label: { text: 'Notas' },
+				colSpan: 8,
+				editorType: 'dxTextArea',
+				editorOptions: {
+					height: 100,
+					maxLength: 1000,
+					placeholder: 'Observaciones del adjunto',
+				},
+			},
+		];
+	}
+
+	esValidoEntrevistaDocumento(model: any, esNuevo: boolean, tieneArchivoNuevo: boolean, msg: Function): boolean {
+		if (esNuevo && !tieneArchivoNuevo) {
+			msg('Debe seleccionar un archivo.', NotifyType.Warning);
+			return false;
+		}
+		return true;
+	}
+
 	/** Combos fijos del tab Entrevistas. */
 	getTipoEntrevistaOptions(): Array<{ value: string; text: string }> {
 		return [
 			{ value: 'TALENTO HUMANO', text: 'Talento humano' },
 			{ value: 'JEFATURA', text: 'Jefatura' },
-			{ value: 'GERENCIA', text: 'Gerencia' },
-			{ value: 'DOCENTE', text: 'Docente' },
-			{ value: 'FINAL', text: 'Final' },
+			{ value: 'DIRECCION CAPELLANIA', text: 'Dirección Capellanía' },
+			// { value: 'DOCENTE', text: 'Docente' },
+			// { value: 'FINAL', text: 'Final' },
 		];
 	}
 
@@ -175,10 +291,13 @@ export class ScExpedienteCandidatoService {
 			{ dataField: 'RESUMEN_ENTREVISTA', caption: 'Resumen', width: 500 },
 			{
 				caption: 'Options',
-				width: 90,
+				width: 130,
 				allowSorting: false,
 				allowFiltering: false,
 				cellTemplate: 'entrevistaActionsTemplate',
+				fixed: true,
+				fixedPosition: 'left',
+				alignment: 'center',
 			},
 		];
 	}
@@ -203,7 +322,7 @@ export class ScExpedienteCandidatoService {
 			{
 				dataField: 'FECHA_ENTREVISTA',
 				label: { text: 'Fecha entrevista' },
-				colSpan: 1,
+				colSpan: 2,
 				editorType: 'dxDateBox',
 				editorOptions: {
 					type: 'datetime',
@@ -212,19 +331,9 @@ export class ScExpedienteCandidatoService {
 				},
 			},
 			{
-				dataField: 'ENTREVISTADOR',
-				label: { text: 'Entrevistador' },
-				colSpan: 2,
-				editorOptions: {
-					placeholder: 'Nombre del entrevistador',
-					maxLength: 150,
-					showClearButton: true,
-				},
-			},
-			{
 				dataField: 'ESTADO_ENTREVISTA',
 				label: { text: 'Estado' },
-				colSpan: 1,
+				colSpan: 2,
 				editorType: 'dxSelectBox',
 				editorOptions: {
 					items: this.getEstadoEntrevistaOptions(),
@@ -246,6 +355,16 @@ export class ScExpedienteCandidatoService {
 					searchEnabled: false,
 					showClearButton: true,
 					placeholder: 'Opcional',
+				},
+			},
+						{
+				dataField: 'ENTREVISTADOR',
+				label: { text: 'Entrevistado por' },
+				colSpan: 8,
+				editorOptions: {
+					placeholder: 'Nombre del entrevistador',
+					maxLength: 150,
+					showClearButton: true,
 				},
 			},
 			{
