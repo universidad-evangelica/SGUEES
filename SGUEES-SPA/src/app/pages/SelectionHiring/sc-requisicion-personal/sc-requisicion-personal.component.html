@@ -428,6 +428,14 @@
                     (onClick)="abrirAdjuntosEntrevista(cell.data, $event)"
                   ></dx-button>
                   <dx-button
+                    icon="check"
+                    hint="Confirmar realizada"
+                    stylingMode="text"
+                    type="success"
+                    [visible]="puedeGestionarEntrevista(cell.data)"
+                    (onClick)="abrirMarcarRealizadaEntrevista(cell.data, $event)"
+                  ></dx-button>
+                  <dx-button
                     icon="edit"
                     hint="Editar / Consultar"
                     stylingMode="text"
@@ -450,6 +458,57 @@
     </dx-scroll-view>
   </div>
 </aside>
+
+<!-- Popup: confirmar reunión realizada -->
+<dx-popup
+  [(visible)]="marcarRealizadaPopupVisible"
+  title="Confirmar reunión"
+  [width]="520"
+  [maxWidth]="'calc(100vw - 24px)'"
+  [height]="'auto'"
+  [showCloseButton]="true"
+  [dragEnabled]="true"
+  [hideOnOutsideClick]="false"
+  (onHiding)="onMarcarRealizadaPopupHiding()"
+>
+  <div *dxTemplate="let data of 'content'">
+    <div class="marcar-realizada-popup">
+      <p class="marcar-realizada-popup__msg">
+        Confirma que la reunión ha sido realizada.
+      </p>
+      <p class="marcar-realizada-popup__hint" *ngIf="marcarRealizadaContext">
+        Entrevista #{{ marcarRealizadaContext.CORR_EXPEDIENTE_ENTREVISTA }}
+        — el estado pasará a <strong>Realizada</strong>.
+      </p>
+
+      <dx-form
+        [formData]="marcarRealizadaModel"
+        [labelLocation]="'top'"
+        [colCount]="1"
+        [showRequiredMark]="false"
+        [items]="marcarRealizadaItems"
+      ></dx-form>
+
+      <div class="marcar-realizada-popup__actions">
+        <dx-button
+          text="Cancelar"
+          stylingMode="outlined"
+          type="normal"
+          [disabled]="guardandoMarcarRealizada"
+          (onClick)="cerrarMarcarRealizadaEntrevista()"
+        ></dx-button>
+        <dx-button
+          text="Confirmar"
+          icon="check"
+          type="success"
+          stylingMode="contained"
+          [disabled]="guardandoMarcarRealizada"
+          (onClick)="confirmarMarcarRealizadaEntrevista()"
+        ></dx-button>
+      </div>
+    </div>
+  </div>
+</dx-popup>
 
 <!-- Modal: listado de adjuntos de una entrevista -->
 <dx-popup

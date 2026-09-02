@@ -465,6 +465,30 @@
 	gap: 2px;
 }
 
+.marcar-realizada-popup {
+	padding: 4px 2px 0;
+
+	&__msg {
+		margin: 0 0 8px;
+		font-size: 15px;
+		font-weight: 600;
+		color: var(--sguees-text-primary, var(--base-text-color));
+	}
+
+	&__hint {
+		margin: 0 0 16px;
+		font-size: 13px;
+		color: var(--sguees-text-secondary, var(--base-text-color-alpha, #64748b));
+	}
+
+	&__actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: 8px;
+		margin-top: 16px;
+	}
+}
+
 .documentos-tab-title {
 	display: inline-flex;
 	align-items: center;

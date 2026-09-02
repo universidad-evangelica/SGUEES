@@ -68,4 +68,15 @@ export class ScExpedienteEntrevistaRepository {
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
 	}
+
+	/** Confirma reunión realizada (ESTADO=REALIZADA + resultado/resumen). */
+	markAsRealizadaForRequisicion(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'MarkAsRealizada_SC_REQUISICION_PERSONAL',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }

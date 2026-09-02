@@ -60,6 +60,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.entrevistaItems = this.service.getEntrevistaItems();
 		this.entrevistaDocumentoColumns = this.service.getEntrevistaDocumentoColumns();
 		this.entrevistaDocumentoItems = this.service.getEntrevistaDocumentoItems();
+		this.marcarRealizadaItems = this.service.getMarcarRealizadaEntrevistaItems();
 	}
 
 	//Variables
@@ -102,6 +103,16 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	entrevistaModel: ScExpedienteEntrevista = this.fillEntrevistaData();
 	entrevistaReadOnly = false;
 	guardandoEntrevista = false;
+
+	/** Popup confirmar reunión realizada. */
+	marcarRealizadaPopupVisible = false;
+	marcarRealizadaContext: ScExpedienteEntrevista | null = null;
+	marcarRealizadaModel: {
+		RESULTADO_ENTREVISTA: string;
+		RESUMEN_ENTREVISTA: string;
+	} = { RESULTADO_ENTREVISTA: '', RESUMEN_ENTREVISTA: '' };
+	marcarRealizadaItems: any[] = [];
+	guardandoMarcarRealizada = false;
 
 	/** Adjuntos de entrevista (mismos endpoints que expediente-candidato). */
 	entrevistaAdjuntosPopupVisible = false;
@@ -1012,6 +1023,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			this.candidatoEntrevistaSeleccionado = null;
 			this.entrevistas = [];
 			this.entrevistaReadOnly = false;
+			this.cerrarMarcarRealizadaEntrevista();
 			this.cerrarAdjuntosEntrevista();
 			return;
 		}
@@ -1022,6 +1034,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			this.candidatoEntrevistaSeleccionado = null;
 			this.entrevistas = [];
 			this.entrevistaReadOnly = false;
+			this.cerrarMarcarRealizadaEntrevista();
 			this.cerrarAdjuntosEntrevista();
 			this.workspaceEntrevistasCloseTimer = null;
 		}, 280);
@@ -1199,6 +1212,102 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				error: (err: any) => {
 					this.notifyFx(
 						err?.error?.ErrorMessage || err?.message || 'Error al eliminar la entrevista.',
+						NotifyType.Error
+					);
+				},
+			});
+	}
+
+	abrirMarcarRealizadaEntrevista(row: ScExpedienteEntrevista, e?: { event?: Event }): void {
+		e?.event?.stopPropagation?.();
+		if (!this.puedeGestionarEntrevista(row)) {
+			this.notifyFx(
+				'Solo puede confirmar reuniones de entrevistas propias en estado Programada.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
+		this.marcarRealizadaContext = row;
+		this.marcarRealizadaModel = {
+			RESULTADO_ENTREVISTA: row.RESULTADO_ENTREVISTA ?? '',
+			RESUMEN_ENTREVISTA: row.RESUMEN_ENTREVISTA ?? '',
+		};
+		this.marcarRealizadaPopupVisible = true;
+	}
+
+	cerrarMarcarRealizadaEntrevista(): void {
+		this.marcarRealizadaPopupVisible = false;
+		this.marcarRealizadaContext = null;
+		this.marcarRealizadaModel = { RESULTADO_ENTREVISTA: '', RESUMEN_ENTREVISTA: '' };
+		this.guardandoMarcarRealizada = false;
+	}
+
+	onMarcarRealizadaPopupHiding(): void {
+		if (this.guardandoMarcarRealizada) {
+			return;
+		}
+		this.cerrarMarcarRealizadaEntrevista();
+	}
+
+	confirmarMarcarRealizadaEntrevista(): void {
+		if (this.guardandoMarcarRealizada) {
+			return;
+		}
+
+		const row = this.marcarRealizadaContext;
+		const corrExpediente = Number(row?.CORR_EXPEDIENTE_CANDIDATO ?? 0);
+		const corrEntrevista = Number(row?.CORR_EXPEDIENTE_ENTREVISTA ?? 0);
+		if (!row || corrExpediente <= 0 || corrEntrevista <= 0) {
+			return;
+		}
+		if (!this.puedeGestionarEntrevista(row)) {
+			this.notifyFx(
+				'Solo puede confirmar reuniones de entrevistas propias en estado Programada.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
+		this.guardandoMarcarRealizada = true;
+		this.service
+			.marcarEntrevistaRealizadaFromRequisicion({
+				CORR_EXPEDIENTE_CANDIDATO: corrExpediente,
+				CORR_EXPEDIENTE_ENTREVISTA: corrEntrevista,
+				RESULTADO_ENTREVISTA: this.marcarRealizadaModel.RESULTADO_ENTREVISTA ?? '',
+				RESUMEN_ENTREVISTA: this.marcarRealizadaModel.RESUMEN_ENTREVISTA ?? '',
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.guardandoMarcarRealizada = false;
+					if (!response?.Result) {
+						this.notifyFx(
+							response?.ErrorMessage || 'No se pudo confirmar la reunión.',
+							NotifyType.Error
+						);
+						return;
+					}
+
+					this.notifyFx('Reunión confirmada como realizada.', NotifyType.Success);
+					this.cerrarMarcarRealizadaEntrevista();
+					this.consultarEntrevistas();
+
+					if (this.entrevistaModel.CORR_EXPEDIENTE_ENTREVISTA === corrEntrevista) {
+						const actualizada = response?.Data as ScExpedienteEntrevista | undefined;
+						if (actualizada) {
+							this.entrevistaModel = this.fillEntrevistaData(actualizada);
+							this.entrevistaReadOnly = !this.puedeGestionarEntrevista(this.entrevistaModel);
+							this.syncEntrevistaForm();
+						} else {
+							this.nuevaEntrevista();
+						}
+					}
+				},
+				error: (err: any) => {
+					this.guardandoMarcarRealizada = false;
+					this.notifyFx(
+						err?.error?.ErrorMessage || err?.message || 'Error al confirmar la reunión.',
 						NotifyType.Error
 					);
 				},

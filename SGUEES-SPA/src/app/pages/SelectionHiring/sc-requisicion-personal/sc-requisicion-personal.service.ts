@@ -256,6 +256,50 @@ export class ScRequisicionPersonalService {
 		]);
 	}
 
+	/** Confirma reunión realizada (ESTADO forzado a REALIZADA). */
+	marcarEntrevistaRealizadaFromRequisicion(model: {
+		CORR_EXPEDIENTE_CANDIDATO: number;
+		CORR_EXPEDIENTE_ENTREVISTA: number;
+		RESULTADO_ENTREVISTA?: string;
+		RESUMEN_ENTREVISTA?: string;
+	}): Observable<IResult> {
+		return this.entrevistaRepo.markAsRealizadaForRequisicion(model, [
+			{ Parameter: 'CORR_EXPEDIENTE_ENTREVISTA', Value: model.CORR_EXPEDIENTE_ENTREVISTA },
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: model.CORR_EXPEDIENTE_CANDIDATO },
+		]);
+	}
+
+	/** Ítems del popup confirmar reunión realizada (resultado y resumen opcionales). */
+	getMarcarRealizadaEntrevistaItems(): any[] {
+		return [
+			{
+				dataField: 'RESULTADO_ENTREVISTA',
+				label: { text: 'Resultado (opcional)' },
+				colSpan: 1,
+				editorType: 'dxSelectBox',
+				editorOptions: {
+					dataSource: this.getResultadoEntrevistaOptions(),
+					valueExpr: 'value',
+					displayExpr: 'text',
+					searchEnabled: false,
+					showClearButton: true,
+					placeholder: 'Seleccione un resultado',
+				},
+			},
+			{
+				dataField: 'RESUMEN_ENTREVISTA',
+				label: { text: 'Resumen — notas u observaciones (opcional)' },
+				colSpan: 1,
+				editorType: 'dxTextArea',
+				editorOptions: {
+					height: 110,
+					maxLength: 2000,
+					placeholder: 'Notas u observaciones de la reunión',
+				},
+			},
+		];
+	}
+
 	/** Combos fijos del formulario de entrevistas (workspace Candidatos). */
 	getTipoEntrevistaOptions(): Array<{ value: string; text: string }> {
 		return [
@@ -303,7 +347,7 @@ export class ScRequisicionPersonalService {
 			{ dataField: 'RESUMEN_ENTREVISTA', caption: 'Resumen', width: 500 },
 			{
 				caption: 'Options',
-				width: 120,
+				width: 150,
 				allowSorting: false,
 				allowFiltering: false,
 				cellTemplate: 'entrevistaActionsTemplate',

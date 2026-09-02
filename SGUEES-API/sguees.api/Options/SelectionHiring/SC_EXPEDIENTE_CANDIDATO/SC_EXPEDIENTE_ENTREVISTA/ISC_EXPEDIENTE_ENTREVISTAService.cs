@@ -21,5 +21,14 @@ namespace SGUEES.Services
 		/// Elimina desde sc-requisicion-personal: solo el creador y solo si está PROGRAMADA.
 		/// </summary>
 		Task<CResult> DeleteByRequisicionAsync(SC_EXPEDIENTE_ENTREVISTATable Data, string vLOGIN_SISTEMA, string vESTACION);
+
+		/// <summary>
+		/// Marca entrevista como REALIZADA desde sc-requisicion-personal (creador + PROGRAMADA).
+		/// Actualiza ESTADO, RESULTADO y RESUMEN.
+		/// </summary>
+		Task<CResult> MarkAsRealizadaByRequisicionAsync(
+			SC_EXPEDIENTE_ENTREVISTATable Data,
+			string vLOGIN_SISTEMA,
+			string vESTACION);
 	}
 }

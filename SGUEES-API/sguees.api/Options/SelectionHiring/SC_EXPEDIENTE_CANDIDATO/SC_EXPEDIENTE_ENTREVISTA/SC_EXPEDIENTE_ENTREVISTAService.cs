@@ -11,6 +11,7 @@ namespace SGUEES.Services
 	public class SC_EXPEDIENTE_ENTREVISTAService : ISC_EXPEDIENTE_ENTREVISTAService
 	{
 		private const string EstadoProgramada = "PROGRAMADA";
+		private const string EstadoRealizada = "REALIZADA";
 		private readonly ISC_EXPEDIENTE_ENTREVISTARepository _repo;
 
 		public SC_EXPEDIENTE_ENTREVISTAService(ISC_EXPEDIENTE_ENTREVISTARepository repo)
@@ -125,6 +126,53 @@ namespace SGUEES.Services
 			}
 
 			return await DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
+		/// <summary>
+		/// Confirma reunión realizada: fuerza ESTADO=REALIZADA y actualiza RESULTADO/RESUMEN (opcionales).
+		/// Conserva el resto de campos de la entrevista existente.
+		/// </summary>
+		public async Task<CResult> MarkAsRealizadaByRequisicionAsync(
+			SC_EXPEDIENTE_ENTREVISTATable Data,
+			string vLOGIN_SISTEMA,
+			string vESTACION)
+		{
+			var permiso = await ValidarPermisoRequisicionAsync(Data, vLOGIN_SISTEMA);
+			if (permiso != null)
+			{
+				return permiso;
+			}
+
+			var existenteResult = await GetAsync(new SC_EXPEDIENTE_ENTREVISTAParam
+			{
+				CORR_EMPRESA = Data.CORR_EMPRESA,
+				CORR_EXPEDIENTE_CANDIDATO = Data.CORR_EXPEDIENTE_CANDIDATO,
+				CORR_EXPEDIENTE_ENTREVISTA = Data.CORR_EXPEDIENTE_ENTREVISTA,
+			});
+
+			if (!existenteResult.Result || existenteResult.Data is not SC_EXPEDIENTE_ENTREVISTAView existente)
+			{
+				return ValidationError("La entrevista no existe o no está disponible.");
+			}
+
+			var update = new SC_EXPEDIENTE_ENTREVISTATable
+			{
+				CORR_EMPRESA = existente.CORR_EMPRESA,
+				CORR_EXPEDIENTE_CANDIDATO = existente.CORR_EXPEDIENTE_CANDIDATO,
+				CORR_EXPEDIENTE_ENTREVISTA = existente.CORR_EXPEDIENTE_ENTREVISTA,
+				CORR_SOLICITUD_EMPLEO = existente.CORR_SOLICITUD_EMPLEO,
+				TIPO_ENTREVISTA = existente.TIPO_ENTREVISTA,
+				FECHA_ENTREVISTA = existente.FECHA_ENTREVISTA,
+				ENTREVISTADOR = existente.ENTREVISTADOR,
+				ESTADO_ENTREVISTA = EstadoRealizada,
+				RESULTADO_ENTREVISTA = Data.RESULTADO_ENTREVISTA ?? string.Empty,
+				RESUMEN_ENTREVISTA = Data.RESUMEN_ENTREVISTA ?? string.Empty,
+				USUARIO_ACTU = Data.USUARIO_ACTU,
+				ESTACION_ACTU = Data.ESTACION_ACTU,
+				FECHA_ACTU = Data.FECHA_ACTU,
+			};
+
+			return await UpdateAsync(update, vLOGIN_SISTEMA, vESTACION);
 		}
 
 		private async Task<CResult> ValidarPermisoRequisicionAsync(

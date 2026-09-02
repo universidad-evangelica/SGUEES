@@ -133,6 +133,28 @@ namespace SGUEES.Controllers
 			return Ok(resultado);
 		}
 
+		/// <summary>
+		/// Confirma reunión realizada: ESTADO=REALIZADA + RESULTADO/RESUMEN opcionales.
+		/// Solo creador y entrevista PROGRAMADA (sc-requisicion-personal).
+		/// </summary>
+		[HttpPut("MarkAsRealizada_SC_REQUISICION_PERSONAL")]
+		[Authorize(Policy = "/sc-requisicion-personal|U")]
+		public async Task<IActionResult> MarkAsRealizada_SC_REQUISICION_PERSONAL(SC_EXPEDIENTE_ENTREVISTATable Data)
+		{
+			this.ApplyQueryKeys(
+				Data,
+				nameof(SC_EXPEDIENTE_ENTREVISTATable.CORR_EXPEDIENTE_ENTREVISTA),
+				nameof(SC_EXPEDIENTE_ENTREVISTATable.CORR_EXPEDIENTE_CANDIDATO));
+			SetUpdateAudit(Data);
+
+			var resultado = await _service.MarkAsRealizadaByRequisicionAsync(
+				Data,
+				GetUsuario(),
+				ClientInfoHelper.GetClientStation(HttpContext));
+
+			return resultado.Result ? StatusCode(StatusCodes.Status201Created, resultado) : Ok(resultado);
+		}
+
 		private int GetCorrEmpresa()
 		{
 			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
