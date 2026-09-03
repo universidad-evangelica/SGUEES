@@ -778,11 +778,11 @@ namespace SGUEES.Repositories
             return GetDescriptorFormatoCortoImprAsyncInternal(xWhere);
         }
 
-        // Qué hace: obtiene filas de impresión Formato extenso del descriptor.
-        // Cómo: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO (misma forma de result sets).
+        // Qué hace: obtiene el encabezado de impresión Formato extenso del descriptor.
+        // Cómo: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO (encabezado + logos).
         public Task<CResult> GetDescriptorFormatoExtensoImprAsync(List<CParameter> xWhere)
         {
-            return GetDescriptorImprAsync("PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO", xWhere);
+            return GetDescriptorFormatoExtensoImprAsyncInternal(xWhere);
         }
 
         // Qué hace: lee los 11 result sets del SP Formato corto y arma el payload para RPT.
@@ -804,7 +804,7 @@ namespace SGUEES.Repositories
 
                 if (reader.NextResult())
                 {
-                    var logos = new List<SC_DESCRIPTOR_PUESTO_IMPRView>()
+                    var logos = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRView>()
                         .FromDataReader(reader)
                         .FirstOrDefault();
                     if (logos != null)
@@ -934,40 +934,55 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Qué hace: lectura común de los SPs de impresión del descriptor (Formato extenso).
-        // Cómo: result set 1 = detalle, result set 2 = encabezado/logos; merge como CON_PARTIDA.
-        private async Task<CResult> GetDescriptorImprAsync(string spName, List<CParameter> xWhere)
+        // Qué hace: lee los 2 result sets del SP Formato extenso y arma el payload para RPT.
+        // Cómo: merge logos (result set 2) en encabezado; listo para agregar más apartados.
+        private async Task<CResult> GetDescriptorFormatoExtensoImprAsyncInternal(List<CParameter> xWhere)
         {
             CResult objResultado = new();
 
             try
             {
-                var reader = await objData.GetDataReader(System.Data.CommandType.StoredProcedure, spName, xWhere);
-                var response = new List<SC_DESCRIPTOR_PUESTO_IMPRView>().FromDataReader(reader).ToList();
+                var reader = await objData.GetDataReader(
+                    System.Data.CommandType.StoredProcedure,
+                    "PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO",
+                    xWhere);
+
+                var encabezado = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRView>()
+                    .FromDataReader(reader)
+                    .ToList();
+
                 if (reader.NextResult())
                 {
-                    var header = new List<SC_DESCRIPTOR_PUESTO_IMPRView>().FromDataReader(reader).FirstOrDefault();
-                    if (header != null)
+                    var logos = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRView>()
+                        .FromDataReader(reader)
+                        .FirstOrDefault();
+                    if (logos != null)
                     {
-                        foreach (var row in response)
+                        foreach (var row in encabezado)
                         {
-                            row.NOMBRE_EMPRESA = header.NOMBRE_EMPRESA;
-                            row.PERIODO = header.PERIODO;
-                            row.LOGO1 = header.LOGO1;
-                            row.LOGO2 = header.LOGO2;
-                            row.TITULO_REPORTE = header.TITULO_REPORTE;
-                            row.NOMBRE_SISTEMA = header.NOMBRE_SISTEMA;
-                            row.FECHA_IMPRESION = header.FECHA_IMPRESION;
+                            row.NOMBRE_EMPRESA = logos.NOMBRE_EMPRESA;
+                            row.PERIODO = logos.PERIODO;
+                            row.LOGO1 = logos.LOGO1;
+                            row.LOGO2 = logos.LOGO2;
+                            row.TITULO_REPORTE = logos.TITULO_REPORTE;
+                            row.NOMBRE_SISTEMA = logos.NOMBRE_SISTEMA;
+                            row.FECHA_IMPRESION = logos.FECHA_IMPRESION;
                         }
                     }
                 }
 
                 reader.Close();
-                objResultado.Data = response;
-                objResultado.Result = response.Count > 0;
-                objResultado.RowsAffected = response.Count;
-                objResultado.ErrorCode = response.Count > 0 ? 0 : -1;
-                objResultado.ErrorMessage = response.Count > 0
+
+                var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload
+                {
+                    Encabezado = encabezado,
+                };
+
+                objResultado.Data = payload;
+                objResultado.Result = encabezado.Count > 0;
+                objResultado.RowsAffected = encabezado.Count;
+                objResultado.ErrorCode = encabezado.Count > 0 ? 0 : -1;
+                objResultado.ErrorMessage = encabezado.Count > 0
                     ? string.Empty
                     : "No hay datos para imprimir el descriptor.";
             }

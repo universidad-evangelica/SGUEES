@@ -512,7 +512,7 @@ namespace SGUEES.Services
             }
 
             return await _repoRpt.GetScDescriptorPuestoFormatoExtensoImprAsync(
-                (List<SC_DESCRIPTOR_PUESTO_IMPRView>)dataResult.Data,
+                (SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload)dataResult.Data,
                 _repoUser.GenerateRptToken(loginSistema));
         }
 

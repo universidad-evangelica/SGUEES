@@ -6,13 +6,10 @@ GO
 -- Procedimiento: dbo.PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO
 -- Qué hace: entrega datos para PDF Formato extenso del Descriptor de puesto.
 -- Cómo:
---   1) Result set 1: generalidades del descriptor (1 sola fila). Se usa TOP 1
---      porque la vista base devuelve 1 fila por indicador y aquí no se imprimen
---      indicadores ni funciones todavía.
---   2) Result set 2: encabezado/logos desde GEN_EMPRESA (mismo patrón partida).
--- Alcance: por ahora solo las generalidades de SC_DESCRIPTOR_PUESTO. Los bloques
---          uno-a-muchos del extenso (educación, experiencia, etc.) se agregarán
---          como result sets adicionales para los subinformes del .rpt.
+--   1) Result set 1: encabezado (V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPR).
+--   2) Result set 2: encabezado/logos desde GEN_EMPRESA (GEN_PARAMETRO en Crystal).
+-- Alcance: por ahora solo encabezado SC_DESCRIPTOR_PUESTO. Los bloques adicionales
+--          del extenso se agregarán como result sets / vistas _IMPR propias.
 -- Uso API: SC_DESCRIPTOR_PUESTO/getPDFFormatoExtenso → SGUEES-RPT SelectionHiring.
 -- =============================================================================
 CREATE OR ALTER PROCEDURE [dbo].[PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO]
@@ -24,8 +21,8 @@ AS
 BEGIN
 	SET NOCOUNT ON;
 
-	-- Generalidades: mismos campos de encabezado que el Formato corto, sin funciones ni KPI.
-	SELECT TOP 1
+	-- Result set 1: encabezado del descriptor (1 fila).
+	SELECT
 		A.CORR_EMPRESA,
 		A.CORR_DESCRIPTOR_PUESTO,
 		A.CODIGO_DESCRIPTOR_PUESTO,
@@ -52,11 +49,11 @@ BEGIN
 		A.USUARIO_ACTU,
 		A.ESTACION_ACTU,
 		A.FECHA_ACTU
-	FROM dbo.V_SC_DESCRIPTOR_PUESTO_IMPR A
+	FROM dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPR A
 	WHERE A.CORR_EMPRESA = @CORR_EMPRESA
 	  AND A.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO;
 
-	-- Encabezado / logos (GEN_PARAMETRO en Crystal).
+	-- Result set 2: logos (GEN_PARAMETRO en Crystal).
 	SELECT
 		A.CORR_EMPRESA,
 		A.NOMBRE_EMPRESA,

@@ -1,0 +1,43 @@
+SET QUOTED_IDENTIFIER, ANSI_NULLS ON
+GO
+-- =============================================================================
+-- Vista: dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPR
+-- Qué hace: encabezado del descriptor para impresión Formato extenso.
+-- Cómo: 1 fila por descriptor; fechas como texto dd/MM/yyyy; nombre del jefe
+--       desde GEN_EMPLEADO. Los demás apartados del extenso irán en vistas _IMPR propias.
+-- Uso: PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO (result set 1).
+-- =============================================================================
+CREATE OR ALTER VIEW [dbo].[V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPR]
+AS
+SELECT
+  A.[CORR_EMPRESA],
+  A.[CORR_DESCRIPTOR_PUESTO],
+  A.[CODIGO_DESCRIPTOR_PUESTO],
+  CONVERT(VARCHAR(10), A.[FECHA_EMISION], 103) AS [FECHA_EMISION],
+  CONVERT(VARCHAR(10), A.[FECHA_REVISION], 103) AS [FECHA_REVISION],
+  A.[OBJETIVO_PUESTO],
+  A.[NUM_PERSONAL_CARGO],
+  A.[CORR_PUESTO],
+  A.[NOMBRE_PUESTO],
+  A.[CORR_UNIDAD],
+  A.[NOMBRE_UNIDAD],
+  A.[CORR_PUESTO_REPORTA],
+  E.[NOMBRE_EMPLEADO] AS [NOMBRE_EMPLEADO_REPORTA],
+  A.[CORR_IMPACTO_ECONOMICO],
+  A.[DESCRIPCION_IMPACTO_ECONOMICO],
+  A.[RESPONSABLE],
+  A.[FORMATO],
+  A.[VERSION],
+  A.[CORR_ESTADO],
+  A.[NOMBRE_ESTADO],
+  A.[USUARIO_CREA],
+  A.[ESTACION_CREA],
+  A.[FECHA_CREA],
+  A.[USUARIO_ACTU],
+  A.[ESTACION_ACTU],
+  A.[FECHA_ACTU]
+FROM [dbo].[SC_DESCRIPTOR_PUESTO] A
+LEFT JOIN [dbo].[GEN_EMPLEADO] E
+  ON E.[CORR_EMPRESA] = A.[CORR_EMPRESA]
+ AND E.[CORR_EMPLEADO] = A.[CORR_PUESTO_REPORTA]
+GO

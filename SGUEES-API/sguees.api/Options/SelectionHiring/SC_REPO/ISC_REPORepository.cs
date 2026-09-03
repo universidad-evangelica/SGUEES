@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using SGUEES.Models;
@@ -14,7 +13,7 @@ namespace SGUEES.Repositories
             string token);
 
         Task<Stream> GetScDescriptorPuestoFormatoExtensoImprAsync(
-            List<SC_DESCRIPTOR_PUESTO_IMPRView> data,
+            SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload data,
             string token);
     }
 }

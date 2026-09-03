@@ -2,16 +2,13 @@ using System;
 
 namespace SGUEES.Models
 {
-    // Qué hace: fila de impresión del Descriptor de puesto (Formato extenso legacy).
-    // Cómo: mapea result set 1 del SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO
-    //       + logos del result set 2.
-    public class SC_DESCRIPTOR_PUESTO_IMPRView
+    // Qué hace: encabezado del descriptor para impresión Formato extenso.
+    // Cómo: result set 1 del SP + logos del result set 2 mergeados (patrón Banking).
+    public class SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRView
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_DESCRIPTOR_PUESTO { get; set; }
-        // Código legible DES-#### sellado al crear el descriptor.
         public string CODIGO_DESCRIPTOR_PUESTO { get; set; }
-        // Texto dd/MM/yyyy desde la vista; evita el 00:00:00 que agrega DateTime.
         public string FECHA_EMISION { get; set; }
         public string FECHA_REVISION { get; set; }
         public string OBJETIVO_PUESTO { get; set; }
@@ -21,7 +18,6 @@ namespace SGUEES.Models
         public int? CORR_UNIDAD { get; set; }
         public string NOMBRE_UNIDAD { get; set; }
         public int? CORR_PUESTO_REPORTA { get; set; }
-        // Nombre completo del jefe (GEN_EMPLEADO; CORR_PUESTO_REPORTA = CORR_EMPLEADO).
         public string NOMBRE_EMPLEADO_REPORTA { get; set; }
         public int? CORR_IMPACTO_ECONOMICO { get; set; }
         public string DESCRIPCION_IMPACTO_ECONOMICO { get; set; }
@@ -37,19 +33,7 @@ namespace SGUEES.Models
         public string ESTACION_ACTU { get; set; }
         public DateTime? FECHA_ACTU { get; set; }
 
-        // Funciones agregadas en un solo texto, numeradas y separadas por CRLF;
-        // null si el descriptor no tiene funciones de ese tipo.
-        public string LISTA_FUNCIONES_CLAVE { get; set; }
-        public string LISTA_FUNCIONES_SECUNDARIA { get; set; }
-
-        // Indicador de desempeño (SC_DESCRIPTOR_PUESTO_KPI_FUNCION); una fila por indicador.
-        public int? CORR_KPI_FUNCION { get; set; }
-        public string NOMBRE_INDICADOR { get; set; }
-        public int? META { get; set; }
-        public int? CORR_FRECUENCIA { get; set; }
-        public string NOMBRE_FRECUENCIA { get; set; }
-
-        // Encabezado / logos (result set 2).
+        // Logos / título (result set 2 mergeado; RPT los separa a GEN_PARAMETRO).
         public string NOMBRE_EMPRESA { get; set; }
         public string PERIODO { get; set; }
         public byte[] LOGO1 { get; set; }

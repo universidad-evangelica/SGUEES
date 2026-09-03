@@ -4,13 +4,13 @@ using System.Data;
 using System.Linq;
 using sgueesRpt.Models;
 
-namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
+namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO
 {
-	// Qué hace: arma DataSet e-Admin para Crystal Formato extenso (legacy).
-	// Cómo: detalle + GEN_PARAMETRO desde logos mergeados en IMPRView (patrón ConPartida).
-	internal static class ScDescriptorPuestoReportData
+	// Qué hace: arma DataSet e-Admin para Crystal Formato extenso.
+	// Cómo: quita logos del encabezado → GEN_PARAMETRO (patrón Banking/ConPartida).
+	internal static class ScDescriptorPuestoFormatoExtensoReportData
 	{
-		private const string TituloPorDefecto = "Descriptor de Puesto";
+		private const string TituloPorDefecto = "Descriptor de Puesto - Formato extenso";
 
 		private static readonly string[] HeaderColumns =
 		{
@@ -23,24 +23,23 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 			"FECHA_IMPRESION",
 		};
 
-		public static DataSet CreateDataSet(
-			List<SC_DESCRIPTOR_PUESTO_IMPRView> data,
-			string tituloReporte = TituloPorDefecto,
-			IEnumerable<DataTable> tablasSubinformes = null)
+		public static DataSet CreateDataSet(SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload payload)
 		{
-			var rows = data ?? new List<SC_DESCRIPTOR_PUESTO_IMPRView>();
-			var detail = Utils.CreateDataTable(rows);
-			detail.TableName = "V_SC_DESCRIPTOR_PUESTO_IMPR";
+			if (payload == null) payload = new SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload();
+
+			var encabezadoRows = payload.Encabezado ?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRView>();
+			var encabezado = Utils.CreateDataTable(encabezadoRows);
+			encabezado.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPR";
 
 			foreach (var columnName in HeaderColumns)
 			{
-				if (detail.Columns.Contains(columnName))
+				if (encabezado.Columns.Contains(columnName))
 				{
-					detail.Columns.Remove(columnName);
+					encabezado.Columns.Remove(columnName);
 				}
 			}
 
-			var header = rows.FirstOrDefault();
+			var header = encabezadoRows.FirstOrDefault();
 			var param = new DataTable("GEN_PARAMETRO");
 			param.Columns.Add("CORR_EMPRESA", typeof(int));
 			param.Columns.Add("NOMBRE_EMPRESA", typeof(string));
@@ -59,27 +58,14 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 					header.PERIODO ?? string.Empty,
 					header.LOGO1 ?? (object)DBNull.Value,
 					header.LOGO2 ?? (object)DBNull.Value,
-					string.IsNullOrWhiteSpace(header.TITULO_REPORTE)
-						? (string.IsNullOrWhiteSpace(tituloReporte) ? TituloPorDefecto : tituloReporte)
-						: header.TITULO_REPORTE,
+					string.IsNullOrWhiteSpace(header.TITULO_REPORTE) ? TituloPorDefecto : header.TITULO_REPORTE,
 					header.NOMBRE_SISTEMA ?? string.Empty,
 					header.FECHA_IMPRESION == default(DateTime) ? DateTime.Now : header.FECHA_IMPRESION);
 			}
 
 			var dataSet = new DataSet();
-			dataSet.Tables.Add(detail);
+			dataSet.Tables.Add(encabezado);
 			dataSet.Tables.Add(param);
-
-			if (tablasSubinformes != null)
-			{
-				foreach (var tabla in tablasSubinformes)
-				{
-					if (tabla != null && !dataSet.Tables.Contains(tabla.TableName))
-					{
-						dataSet.Tables.Add(tabla);
-					}
-				}
-			}
 
 			return dataSet;
 		}
