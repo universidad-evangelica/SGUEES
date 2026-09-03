@@ -6468,9 +6468,9 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const puedeImprimir = this.permitePrint && corr > 0 && esActivo;
 
 		this.btnImprimirFormatoCorto =
-			puedeImprimir && this.esFormatoCorto ? 'Imprimir Formato corto' : '';
+			puedeImprimir && this.esFormatoCorto ? 'Formato corto' : '';
 		this.btnImprimirFormatoExtenso =
-			puedeImprimir && this.esFormatoExtenso ? 'Imprimir Formato extenso' : '';
+			puedeImprimir && this.esFormatoExtenso ? 'Formato extenso' : '';
 	}
 
 	// Qué hace: valida correlativo, estado Activo y permiso P antes de pedir cualquier PDF.
