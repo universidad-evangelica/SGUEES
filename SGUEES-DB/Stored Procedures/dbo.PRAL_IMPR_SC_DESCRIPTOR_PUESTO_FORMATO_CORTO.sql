@@ -17,7 +17,8 @@ GO
 --   8) Result set 8: educación del perfil (V_SC_PERFIL_PUESTO_EDUCACION_FORMATO_CORTO_IMPR).
 --   9) Result set 9: experiencia del perfil (V_SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_CORTO_IMPR).
 --  10) Result set 10: competencias técnicas (V_SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_CORTO_IMPR).
---  11) Result set 11: competencias conductuales (V_SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_CORTO_IMPR).
+--  11) Result set 11: competencias conductuales en 2 columnas
+--      (V_SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_CORTO_IMPR).
 -- Alcance: solo Formato corto. El Formato extenso tiene su propio SP y vistas _IMPR.
 -- Uso API: SC_DESCRIPTOR_PUESTO/getPDFFormatoCorto → SGUEES-RPT SelectionHiring.
 -- =============================================================================
@@ -186,18 +187,17 @@ BEGIN
 	  AND CT.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
 	ORDER BY CT.CORR_COMPETENCIAS_TECNICAS;
 
-	-- Result set 11: competencias conductuales del perfil (1 fila por competencia).
+	-- Result set 11: competencias conductuales (1 fila = 2 nombres; todas las del descriptor).
 	SELECT
 		CC.CORR_EMPRESA,
 		CC.CORR_DESCRIPTOR_PUESTO,
 		CC.CORR_PERFIL_PUESTO,
-		CC.CORR_COMPETENCIAS_CONDUCTUALES,
-		CC.CODIGO_TIPO_PUESTO,
-		CC.NOMBRE_COMPETENCIAS_CONDUCTUALES,
-		CC.DESCRIPCION
+		CC.CORR_FILA,
+		CC.NOMBRE_COMPETENCIA_COLUMNA_1,
+		CC.NOMBRE_COMPETENCIA_COLUMNA_2
 	FROM dbo.V_SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_CORTO_IMPR CC
 	WHERE CC.CORR_EMPRESA = @CORR_EMPRESA
 	  AND CC.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
-	ORDER BY CC.CORR_COMPETENCIAS_CONDUCTUALES;
+	ORDER BY CC.CORR_PERFIL_PUESTO, CC.CORR_FILA;
 END
 GO
