@@ -1,0 +1,69 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+-- =============================================================================
+-- Procedimiento: dbo.PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO
+-- Qué hace: entrega datos para PDF Formato extenso del Descriptor de puesto.
+-- Cómo:
+--   1) Result set 1: encabezado (V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPR).
+--   2) Result set 2: encabezado/logos desde GEN_EMPRESA (GEN_PARAMETRO en Crystal).
+-- Alcance: por ahora solo encabezado SC_DESCRIPTOR_PUESTO. Los bloques adicionales
+--          del extenso se agregarán como result sets / vistas _IMPR propias.
+-- Uso API: SC_DESCRIPTOR_PUESTO/getPDFFormatoExtenso → SGUEES-RPT SelectionHiring.
+-- =============================================================================
+CREATE OR ALTER PROCEDURE [dbo].[PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO]
+(
+	@CORR_EMPRESA INT,
+	@CORR_DESCRIPTOR_PUESTO INT
+)
+AS
+BEGIN
+	SET NOCOUNT ON;
+
+	-- Result set 1: encabezado del descriptor (1 fila).
+	SELECT
+		A.CORR_EMPRESA,
+		A.CORR_DESCRIPTOR_PUESTO,
+		A.CODIGO_DESCRIPTOR_PUESTO,
+		A.FECHA_EMISION,
+		A.FECHA_REVISION,
+		A.OBJETIVO_PUESTO,
+		A.NUM_PERSONAL_CARGO,
+		A.CORR_PUESTO,
+		A.NOMBRE_PUESTO,
+		A.CORR_UNIDAD,
+		A.NOMBRE_UNIDAD,
+		A.CORR_PUESTO_REPORTA,
+		A.NOMBRE_EMPLEADO_REPORTA,
+		A.CORR_IMPACTO_ECONOMICO,
+		A.DESCRIPCION_IMPACTO_ECONOMICO,
+		A.RESPONSABLE,
+		A.FORMATO,
+		A.VERSION,
+		A.CORR_ESTADO,
+		A.NOMBRE_ESTADO,
+		A.USUARIO_CREA,
+		A.ESTACION_CREA,
+		A.FECHA_CREA,
+		A.USUARIO_ACTU,
+		A.ESTACION_ACTU,
+		A.FECHA_ACTU
+	FROM dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPR A
+	WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+	  AND A.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO;
+
+	-- Result set 2: logos (GEN_PARAMETRO en Crystal).
+	SELECT
+		A.CORR_EMPRESA,
+		A.NOMBRE_EMPRESA,
+		CAST('' AS VARCHAR(100)) AS PERIODO,
+		A.LOGO_1 AS LOGO1,
+		A.LOGO_2 AS LOGO2,
+		CAST(N'Descriptor de Puesto - Formato extenso' AS VARCHAR(150)) AS TITULO_REPORTE,
+		CAST('' AS VARCHAR(100)) AS NOMBRE_SISTEMA,
+		GETDATE() AS FECHA_IMPRESION
+	FROM dbo.GEN_EMPRESA A
+	WHERE A.CORR_EMPRESA = @CORR_EMPRESA;
+END
+GO

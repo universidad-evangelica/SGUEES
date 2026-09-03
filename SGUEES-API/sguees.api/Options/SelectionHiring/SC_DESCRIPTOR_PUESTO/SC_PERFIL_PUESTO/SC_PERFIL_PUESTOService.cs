@@ -126,6 +126,11 @@ namespace SGUEES.Services
                 return ValidationError("El estado familiar indicado no es valido.");
             }
 
+            if (!string.IsNullOrWhiteSpace(Data.OTROS) && Data.OTROS.Trim().Length > 150)
+            {
+                return ValidationError("El campo Otros no puede exceder 150 caracteres.");
+            }
+
             return null;
         }
 
@@ -168,6 +173,12 @@ namespace SGUEES.Services
             {
                 Data.CORR_TIPO_MODALIDAD = null;
                 Data.NOMBRE_MODALIDAD = null;
+            }
+
+            Data.OTROS = string.IsNullOrWhiteSpace(Data.OTROS) ? null : Data.OTROS.Trim();
+            if (Data.OTROS?.Length > 150)
+            {
+                Data.OTROS = Data.OTROS.Substring(0, 150);
             }
         }
 

@@ -13,7 +13,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>sgueesRpt</RootNamespace>
     <AssemblyName>sgueesRpt</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <UseIISExpress>true</UseIISExpress>
     <Use64BitIISExpress />
     <IISExpressSSLPort />
@@ -77,7 +77,6 @@
     <Reference Include="Swashbuckle.Core">
       <HintPath>..\packages\Swashbuckle.Core.5.3.1\lib\net40\Swashbuckle.Core.dll</HintPath>
     </Reference>
-    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.IdentityModel.Tokens.Jwt, Version=5.6.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\System.IdentityModel.Tokens.Jwt.5.6.0\lib\net461\System.IdentityModel.Tokens.Jwt.dll</HintPath>
     </Reference>
@@ -90,7 +89,6 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Web" />
-    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Web.Services" />
@@ -101,7 +99,6 @@
     <Folder Include="Properties\PublishProfiles\" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Xml.Linq" />
     <Reference Include="WebActivatorEx">
       <HintPath>..\packages\WebActivatorEx.2.0.6\lib\net40\WebActivatorEx.dll</HintPath>
     </Reference>
@@ -135,6 +132,18 @@
     <Compile Include="Layouts\Utils.cs" />
     <Compile Include="Layouts\ReportExportHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTOReport.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>SC_DESCRIPTOR_PUESTO_FORMATO_CORTOReport.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO\SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSOReport.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSOReport.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="Reports\Shop\COM_CUADRO_COMPARATIVO\COM_CUADRO_COMPARATIVOReport.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -165,6 +174,24 @@
     <Compile Include="Reports\Shop\COM_SOLI_COTIZACION\COM_SOLI_COTIZACION_IMPRView.cs" />
     <Compile Include="Reports\Shop\ShopController.cs" />
     <Compile Include="Reports\Shop\COM_REPO_SUJETO_EXCLUIDOView.cs" />
+    <Compile Include="Reports\SelectionHiring\SelectionHiringController.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRView.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_FUNCIONES_IMPRView.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_KPI_IMPRView.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_RESPONSABILIDAD_CARGO_IMPRView.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_INDUCCION_IMPRView.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRPayload.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\ScDescriptorPuestoFormatoCortoReportData.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_PERFIL_PUESTO_FORMATO_CORTO_IMPRView.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_PERFIL_PUESTO_EDUCACION_FORMATO_CORTO_IMPRView.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_CORTO_IMPRView.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_CORTO_IMPRView.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_CORTO_IMPRView.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTOReportExporter.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO\SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRView.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO\SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO\ScDescriptorPuestoFormatoExtensoReportData.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO\SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSOReportExporter.cs" />
     <Compile Include="Reports\Accounting\AccountingController.cs" />
     <Compile Include="Reports\LegacyReportData.cs" />
     <Compile Include="Reports\Accounting\BALANCE_COMPROBACION\BALANCE_COMPROBACION_IMPRView.cs" />
@@ -305,6 +332,14 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Properties\licenses.licx" />
+    <EmbeddedResource Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTOReport.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>SC_DESCRIPTOR_PUESTO_FORMATO_CORTOReport.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO\SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSOReport.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSOReport.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Include="Reports\Shop\COM_CUADRO_COMPARATIVO\COM_CUADRO_COMPARATIVOReport.rpt">
       <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
       <LastGenOutput>COM_CUADRO_COMPARATIVOReport.cs</LastGenOutput>

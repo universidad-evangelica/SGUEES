@@ -1,4 +1,5 @@
-import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+﻿import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 import { DxFormComponent } from 'devextreme-angular/ui/form';
@@ -66,6 +67,7 @@ import {
 	esEstadoDescriptorEditable,
 	esEstadoDescriptorEliminable,
 	CORR_ESTADO_APROBADO_JI,
+	CORR_ESTADO_ACTIVO,
 	CORR_ESTADO_ENVIADO_JI,
 	CORR_ESTADO_ENVIADO_JTH,
 	CORR_ESTADO_REVISADO_TH,
@@ -238,6 +240,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	btnObservar = '';
 	btnInactivar = '';
 	btnReactivar = '';
+	// Qué hace: botón Imprimir Formato corto (solo Activo + permiso P + FORMATO CORTO/AMBOS).
+	btnImprimirFormatoCorto = '';
+	// Qué hace: botón Imprimir Formato extenso (solo Activo + permiso P + FORMATO EXTENSO/AMBOS).
+	btnImprimirFormatoExtenso = '';
+
+	popupVisiblePdf = false;
+	vPDF: Blob | null = null;
+	PDF!: SafeUrl;
 
 	// Qué hace: false = Solicitar envía sin modal (modal queda para futuro).
 	usarPopupFlujoEnviar = false;
@@ -359,7 +369,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private service: ScDescriptorPuestoService,
-		private cdr: ChangeDetectorRef
+		private cdr: ChangeDetectorRef,
+		private sanitization: DomSanitizer
 	) {
 		super(appInfoService, router);
 		this.getPermiteEditar = this.getPermiteEditar.bind(this);
@@ -1255,11 +1266,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.refrescarBotonesFlujo();
 	}
 
-	// Qué hace: al enfocar una fila en la grilla, carga el modelo y refresca botones de flujo.
-	// Cómo: delega al base (asigna this.model) y recalcula Solicitar/Aprobar/etc. en el header.
+	// Qué hace: al enfocar una fila en la grilla, carga el modelo y refresca botones de flujo/impresión.
+	// Cómo: delega al base (asigna this.model); botones de impresión si Activo; luego GetAccionesFlujo.
 	override focusedRowChanged(e: any): void {
 		super.focusedRowChanged(e);
 		if (this.isBrowse()) {
+			this.actualizarBotonesImprimir();
 			this.refrescarBotonesFlujo();
 		}
 	}
@@ -4721,6 +4733,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		this.perfil.EDAD_MINIMA = this.normalizarEdadPerfil(this.perfil.EDAD_MINIMA);
 		this.perfil.EDAD_MAXIMA = this.normalizarEdadPerfil(this.perfil.EDAD_MAXIMA);
+		this.perfil.OTROS = (this.perfil.OTROS ?? '').trim();
+		if (this.perfil.OTROS.length > 150) {
+			this.notifyFx('El campo Otros no puede exceder 150 caracteres.', NotifyType.Warning);
+			return;
+		}
 		if (
 			this.perfil.EDAD_MINIMA != null &&
 			this.perfil.EDAD_MAXIMA != null &&
@@ -4841,6 +4858,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							CORR_TIPO_MODALIDAD: row.CORR_TIPO_MODALIDAD ?? null,
 							NOMBRE_MODALIDAD: row.NOMBRE_MODALIDAD ?? '',
 							LICENCIA: row.LICENCIA ?? PERFIL_PUESTO_DEFAULT.LICENCIA,
+							OTROS: row.OTROS ?? PERFIL_PUESTO_DEFAULT.OTROS,
 						};
 						this.perfilOriginal = { ...this.perfil };
 						this.perfilEditando = false;
@@ -5769,6 +5787,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		this.model.FORMATO = value || FORMATO_CORTO;
 		this.ultimoFormatoAplicado = formatoNuevo;
+		// El formato decide qué botones de impresión aplican (corto, extenso o ambos).
+		this.actualizarBotonesImprimir();
 		this.actualizarResponsabilidadesCargoLookupDisponibles();
 		if (cambioReal && Number(this.model?.CORR_DESCRIPTOR_PUESTO) > 0) {
 			this.cargarResponsabilidadesCargo(true);
@@ -6428,6 +6448,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.btnObservar = this.accionesFlujo.puedeObservar ? 'Observar' : '';
 					this.btnInactivar = this.accionesFlujo.puedeInactivar ? 'Inactivar' : '';
 					this.btnReactivar = this.accionesFlujo.puedeReactivar ? 'Reactivar' : '';
+					this.actualizarBotonesImprimir();
 					this.cdr.detectChanges();
 				},
 				error: () => {
@@ -6436,6 +6457,100 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					}
 				},
 			});
+	}
+
+	// Qué hace: muestra los botones de impresión según el FORMATO del descriptor.
+	// Cómo: base común (CORR_ESTADO = 14 + permitePrint claim |P + correlativo) y luego
+	//       esFormatoCorto / esFormatoExtenso; con FORMATO = AMBOS salen los dos botones.
+	private actualizarBotonesImprimir(): void {
+		const corr = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		const esActivo = toCorrEstado(this.model?.CORR_ESTADO) === CORR_ESTADO_ACTIVO;
+		const puedeImprimir = this.permitePrint && corr > 0 && esActivo;
+
+		this.btnImprimirFormatoCorto =
+			puedeImprimir && this.esFormatoCorto ? 'Formato corto' : '';
+		this.btnImprimirFormatoExtenso =
+			puedeImprimir && this.esFormatoExtenso ? 'Formato extenso' : '';
+	}
+
+	// Qué hace: valida correlativo, estado Activo y permiso P antes de pedir cualquier PDF.
+	// Cómo: devuelve el correlativo si todo pasa; 0 y notifica el motivo si algo falla.
+	private validarImpresionDescriptor(): number {
+		const corr = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corr) {
+			this.notifyFx('Seleccione un descriptor para imprimir.', NotifyType.Warning);
+			return 0;
+		}
+		if (toCorrEstado(this.model?.CORR_ESTADO) !== CORR_ESTADO_ACTIVO) {
+			this.notifyFx('Solo se puede imprimir cuando el descriptor esta Activo.', NotifyType.Warning);
+			return 0;
+		}
+		if (!this.permitePrint) {
+			this.notifyFx('No tiene permiso de impresion (P) en esta opcion.', NotifyType.Warning);
+			return 0;
+		}
+		return corr;
+	}
+
+	// Qué hace: solicita PDF Formato corto y lo muestra en popup (patrón con-partida).
+	imprimirFormatoCorto(): void {
+		const corr = this.validarImpresionDescriptor();
+		if (!corr) {
+			return;
+		}
+		if (!this.esFormatoCorto) {
+			this.notifyFx('El descriptor no esta configurado como Formato corto.', NotifyType.Warning);
+			return;
+		}
+
+		this.mostrarPdfEnPopup(
+			this.service.getPDFFormatoCorto({ CORR_DESCRIPTOR_PUESTO: corr })
+		);
+	}
+
+	// Qué hace: solicita PDF Formato extenso y lo muestra en popup.
+	// Cómo: mismas validaciones del corto; endpoint getPDFFormatoExtenso.
+	imprimirFormatoExtenso(): void {
+		const corr = this.validarImpresionDescriptor();
+		if (!corr) {
+			return;
+		}
+		if (!this.esFormatoExtenso) {
+			this.notifyFx('El descriptor no esta configurado como Formato extenso.', NotifyType.Warning);
+			return;
+		}
+
+		this.mostrarPdfEnPopup(
+			this.service.getPDFFormatoExtenso({ CORR_DESCRIPTOR_PUESTO: corr })
+		);
+	}
+
+	// Qué hace: consume el blob de cualquiera de los formatos y lo abre en el popup de PDF.
+	// Cómo: activa el loading, crea la URL segura del blob y traduce el error del API a notify.
+	private mostrarPdfEnPopup(peticion: Observable<Blob>): void {
+		this.loadingVisible = true;
+		peticion.pipe(take(1)).subscribe({
+			next: (pdf: Blob) => {
+				if (pdf?.size) {
+					this.vPDF = pdf;
+					this.PDF = this.sanitization.bypassSecurityTrustResourceUrl(
+						window.URL.createObjectURL(pdf)
+					);
+					this.popupVisiblePdf = true;
+				} else {
+					this.notifyFx('No se recibio el PDF del descriptor.', NotifyType.Error);
+				}
+				this.loadingVisible = false;
+			},
+			error: (error: any) => {
+				this.loadingVisible = false;
+				const msg =
+					typeof error === 'string'
+						? error
+						: error?.ErrorMessage || error?.message || 'Error al generar PDF';
+				this.notifyFx(msg, NotifyType.Error);
+			},
+		});
 	}
 
 	limpiarBotonesFlujo(): void {
@@ -6451,6 +6566,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.btnObservar = '';
 		this.btnInactivar = '';
 		this.btnReactivar = '';
+		this.actualizarBotonesImprimir();
 	}
 
 	// Qué hace: texto del boton de avance segun el paso (Revision TH vs Aprobar JI/JTH).

@@ -164,7 +164,16 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Input() btn6Mode: string = 'contained';
   @Output() btn6Click = new EventEmitter<any>();
 
-  // Qué hace: hasta 4 combos de filtro en el header (mismo patrón de slots que btn1–btn6).
+  @Input() btn7: string = '';
+  @Input() btn7Icon: string = '';
+  @Input() btn7Location: string = 'before';
+  @Input() btn7Type: string = 'default';
+  @Input() btn7Height: number = 44;
+  @Input() btn7Width: number = 0;
+  @Input() btn7Mode: string = 'contained';
+  @Output() btn7Click = new EventEmitter<any>();
+
+  // Qué hace: hasta 4 combos de filtro en el header (mismo patrón de slots que btn1–btn7).
   @Input() combox1: BarraMttoCombox | null = null;
   @Input() combox2: BarraMttoCombox | null = null;
   @Input() combox3: BarraMttoCombox | null = null;
@@ -185,6 +194,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   optBtn4: Record<string, unknown> = {};
   optBtn5: Record<string, unknown> = {};
   optBtn6: Record<string, unknown> = {};
+  optBtn7: Record<string, unknown> = {};
   optFechaInicial: Record<string, unknown> = {};
   optFechaFinal: Record<string, unknown> = {};
   optActivar: Record<string, unknown> = {};
@@ -273,7 +283,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     );
   }
 
-  /** Browse con fechas, btn1–6, combos o ribbon: la barra sigue mostrando toolbar. */
+  /** Browse con fechas, btn1–7, combos o ribbon: la barra sigue mostrando toolbar. */
   get browseNeedsBarraToolbar(): boolean {
     return (
       this.showRibbon ||
@@ -286,6 +296,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       !!this.btn4 ||
       !!this.btn5 ||
       !!this.btn6 ||
+      !!this.btn7 ||
       !!this.combox1 ||
       !!this.combox2 ||
       !!this.combox3 ||
@@ -303,6 +314,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       !!this.btn4 ||
       !!this.btn5 ||
       !!this.btn6 ||
+      !!this.btn7 ||
       this.showComboxRow
     );
   }
@@ -356,6 +368,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     this.Onbtn4Click = this.Onbtn4Click.bind(this);
     this.Onbtn5Click = this.Onbtn5Click.bind(this);
     this.Onbtn6Click = this.Onbtn6Click.bind(this);
+    this.Onbtn7Click = this.Onbtn7Click.bind(this);
     this.OnValueChangeFECHA_INICIAL = this.OnValueChangeFECHA_INICIAL.bind(this);
     this.OnValueChangeFECHA_FINAL = this.OnValueChangeFECHA_FINAL.bind(this);
     this.OnActivarInactivar = this.OnActivarInactivar.bind(this);
@@ -374,7 +387,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     this.syncCompactViewport(true);
   }
 
-  /** Qué hace: con Reactivar/Activar/btn1–6 la fila se aprieta antes → umbral más alto. */
+  /** Qué hace: con Reactivar/Activar/btn1–7 la fila se aprieta antes → umbral más alto. */
   private get compactBreakpointPx(): number {
     const hasExtraActions =
       this.effectiveShowEstadoToolbar ||
@@ -383,7 +396,8 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       !!this.btn3 ||
       !!this.btn4 ||
       !!this.btn5 ||
-      !!this.btn6;
+      !!this.btn6 ||
+      !!this.btn7;
     return hasExtraActions ? 1400 : 1200;
   }
 
@@ -450,6 +464,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       changes['btn4'] ||
       changes['btn5'] ||
       changes['btn6'] ||
+      changes['btn7'] ||
       changes['combox1'] ||
       changes['combox2'] ||
       changes['combox3'] ||
@@ -466,6 +481,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
         changes['btn4'] ||
         changes['btn5'] ||
         changes['btn6'] ||
+        changes['btn7'] ||
         changes['showEstadoToolbar'] ||
         changes['focusedRow'] ||
         changes['isBrowse']
@@ -584,6 +600,10 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       this.btn6, this.btn6Icon, this.btn6Type, this.btn6Mode, this.Onbtn6Click, this.btn6Height, this.btn6Width,
       browseToolbarInBarra,
     );
+    this.optBtn7 = this.buildExtraBtn(
+      this.btn7, this.btn7Icon, this.btn7Type, this.btn7Mode, this.Onbtn7Click, this.btn7Height, this.btn7Width,
+      browseToolbarInBarra,
+    );
 
     this.optFechaInicial = {
       useMaskBehavior: true,
@@ -691,6 +711,9 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   }
   Onbtn6Click(): void {
     this.btn6Click.emit();
+  }
+  Onbtn7Click(): void {
+    this.btn7Click.emit();
   }
 
   // Qué hace: emite el valor del combo (app-data-lookup); ignora si no cambió.

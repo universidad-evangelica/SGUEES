@@ -122,6 +122,10 @@ namespace SGUEES.Repositories
                 reader.Close();
                 reader = null;
 
+                // El correlativo lo asigna el Insert, así que el código DES-#### se sella aquí,
+                // solo al crear. El Update devuelve la fila ya con el código y evita releer la vista.
+                response = await SellarCodigoDescriptorAsync(response);
+
                 objResultado.Data = response;
                 objResultado.Result = true;
                 objResultado.RowsAffected = 1;
@@ -148,6 +152,41 @@ namespace SGUEES.Repositories
             }
 
             return objResultado;
+        }
+
+        // Qué hace: graba el código legible DES-#### del descriptor recién creado.
+        // Cómo: formatea el correlativo a 4 dígitos y actualiza solo esa columna; devuelve la
+        //       fila actualizada para que el SPA la use sin volver a consultar.
+        private async Task<SC_DESCRIPTOR_PUESTOView> SellarCodigoDescriptorAsync(SC_DESCRIPTOR_PUESTOView creado)
+        {
+            if (creado == null || creado.CORR_DESCRIPTOR_PUESTO <= 0)
+            {
+                return creado;
+            }
+
+            var codigo = $"DES-{creado.CORR_DESCRIPTOR_PUESTO:0000}";
+            var campos = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CODIGO_DESCRIPTOR_PUESTO", Value = codigo, DbType = System.Data.DbType.String },
+            };
+            var pWhere = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = creado.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = _CampoPk, Value = creado.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+            };
+
+            var reader = await objData.Update(_TableName, campos, pWhere);
+            var actualizado = new List<SC_DESCRIPTOR_PUESTOView>().FromDataReader(reader).FirstOrDefault();
+            reader.Close();
+
+            if (actualizado != null)
+            {
+                return actualizado;
+            }
+
+            // Si el Update no devolvió fila, al menos el SPA recibe el código recién grabado.
+            creado.CODIGO_DESCRIPTOR_PUESTO = codigo;
+            return creado;
         }
 
         // Actualiza SC_DESCRIPTOR_PUESTO por CORR_EMPRESA + CORR_DESCRIPTOR_PUESTO y devuelve el registro.
@@ -720,6 +759,237 @@ namespace SGUEES.Repositories
                 objResultado.Data = null;
                 objResultado.Result = false;
                 objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        // Qué hace: obtiene los 6 bloques de impresión Formato corto del descriptor.
+        // Cómo: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO (encabezado, logos, funciones, KPIs, responsabilidades, inducciones).
+        public Task<CResult> GetDescriptorFormatoCortoImprAsync(List<CParameter> xWhere)
+        {
+            return GetDescriptorFormatoCortoImprAsyncInternal(xWhere);
+        }
+
+        // Qué hace: obtiene el encabezado de impresión Formato extenso del descriptor.
+        // Cómo: SP PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO (encabezado + logos).
+        public Task<CResult> GetDescriptorFormatoExtensoImprAsync(List<CParameter> xWhere)
+        {
+            return GetDescriptorFormatoExtensoImprAsyncInternal(xWhere);
+        }
+
+        // Qué hace: lee los 11 result sets del SP Formato corto y arma el payload para RPT.
+        // Cómo: merge logos (result set 2) en encabezado; demás apartados en listas separadas.
+        private async Task<CResult> GetDescriptorFormatoCortoImprAsyncInternal(List<CParameter> xWhere)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                var reader = await objData.GetDataReader(
+                    System.Data.CommandType.StoredProcedure,
+                    "PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO",
+                    xWhere);
+
+                var encabezado = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRView>()
+                    .FromDataReader(reader)
+                    .ToList();
+
+                if (reader.NextResult())
+                {
+                    var logos = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRView>()
+                        .FromDataReader(reader)
+                        .FirstOrDefault();
+                    if (logos != null)
+                    {
+                        foreach (var row in encabezado)
+                        {
+                            row.NOMBRE_EMPRESA = logos.NOMBRE_EMPRESA;
+                            row.PERIODO = logos.PERIODO;
+                            row.LOGO1 = logos.LOGO1;
+                            row.LOGO2 = logos.LOGO2;
+                            row.TITULO_REPORTE = logos.TITULO_REPORTE;
+                            row.NOMBRE_SISTEMA = logos.NOMBRE_SISTEMA;
+                            row.FECHA_IMPRESION = logos.FECHA_IMPRESION;
+                        }
+                    }
+                }
+
+                var funciones = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_FUNCIONES_IMPRView>();
+                if (reader.NextResult())
+                {
+                    funciones = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_FUNCIONES_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var kpis = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_KPI_IMPRView>();
+                if (reader.NextResult())
+                {
+                    kpis = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_KPI_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var responsabilidades = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_RESPONSABILIDAD_CARGO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    responsabilidades = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_RESPONSABILIDAD_CARGO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var inducciones = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_INDUCCION_IMPRView>();
+                if (reader.NextResult())
+                {
+                    inducciones = new List<SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_INDUCCION_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var perfilPuesto = new List<SC_PERFIL_PUESTO_FORMATO_CORTO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    perfilPuesto = new List<SC_PERFIL_PUESTO_FORMATO_CORTO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var perfilPuestoEducacion = new List<SC_PERFIL_PUESTO_EDUCACION_FORMATO_CORTO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    perfilPuestoEducacion = new List<SC_PERFIL_PUESTO_EDUCACION_FORMATO_CORTO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var perfilPuestoExperiencia = new List<SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_CORTO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    perfilPuestoExperiencia = new List<SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_CORTO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var perfilPuestoCompTecnicas = new List<SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_CORTO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    perfilPuestoCompTecnicas = new List<SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_CORTO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var perfilPuestoCompConductuales = new List<SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_CORTO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    perfilPuestoCompConductuales = new List<SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_CORTO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                reader.Close();
+
+                var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRPayload
+                {
+                    Encabezado = encabezado,
+                    Funciones = funciones,
+                    Kpis = kpis,
+                    Responsabilidades = responsabilidades,
+                    Inducciones = inducciones,
+                    PerfilPuesto = perfilPuesto,
+                    PerfilPuestoEducacion = perfilPuestoEducacion,
+                    PerfilPuestoExperiencia = perfilPuestoExperiencia,
+                    PerfilPuestoCompetenciasTecnicas = perfilPuestoCompTecnicas,
+                    PerfilPuestoCompetenciasConductuales = perfilPuestoCompConductuales,
+                };
+
+                objResultado.Data = payload;
+                objResultado.Result = encabezado.Count > 0;
+                objResultado.RowsAffected = encabezado.Count;
+                objResultado.ErrorCode = encabezado.Count > 0 ? 0 : -1;
+                objResultado.ErrorMessage = encabezado.Count > 0
+                    ? string.Empty
+                    : "No hay datos para imprimir el descriptor.";
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        // Qué hace: lee los 2 result sets del SP Formato extenso y arma el payload para RPT.
+        // Cómo: merge logos (result set 2) en encabezado; listo para agregar más apartados.
+        private async Task<CResult> GetDescriptorFormatoExtensoImprAsyncInternal(List<CParameter> xWhere)
+        {
+            CResult objResultado = new();
+
+            try
+            {
+                var reader = await objData.GetDataReader(
+                    System.Data.CommandType.StoredProcedure,
+                    "PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO",
+                    xWhere);
+
+                var encabezado = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRView>()
+                    .FromDataReader(reader)
+                    .ToList();
+
+                if (reader.NextResult())
+                {
+                    var logos = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRView>()
+                        .FromDataReader(reader)
+                        .FirstOrDefault();
+                    if (logos != null)
+                    {
+                        foreach (var row in encabezado)
+                        {
+                            row.NOMBRE_EMPRESA = logos.NOMBRE_EMPRESA;
+                            row.PERIODO = logos.PERIODO;
+                            row.LOGO1 = logos.LOGO1;
+                            row.LOGO2 = logos.LOGO2;
+                            row.TITULO_REPORTE = logos.TITULO_REPORTE;
+                            row.NOMBRE_SISTEMA = logos.NOMBRE_SISTEMA;
+                            row.FECHA_IMPRESION = logos.FECHA_IMPRESION;
+                        }
+                    }
+                }
+
+                reader.Close();
+
+                var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload
+                {
+                    Encabezado = encabezado,
+                };
+
+                objResultado.Data = payload;
+                objResultado.Result = encabezado.Count > 0;
+                objResultado.RowsAffected = encabezado.Count;
+                objResultado.ErrorCode = encabezado.Count > 0 ? 0 : -1;
+                objResultado.ErrorMessage = encabezado.Count > 0
+                    ? string.Empty
+                    : "No hay datos para imprimir el descriptor.";
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
                 objResultado.ErrorCode = -1;
                 objResultado.ErrorMessage = e.Message;
                 objResultado.ErrorSource += $"[{e.Source}]";

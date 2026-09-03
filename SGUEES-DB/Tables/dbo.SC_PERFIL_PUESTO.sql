@@ -11,6 +11,7 @@ CREATE TABLE [dbo].[SC_PERFIL_PUESTO] (
   [NOMBRE_DISPONIBILIDAD_HORARIO] [varchar](150) NULL,
   [CORR_TIPO_MODALIDAD] [int] NULL,
   [NOMBRE_MODALIDAD] [varchar](100) NULL,
+  [OTROS] [varchar](150) NULL,
   [USUARIO_CREA] [varchar](50) NULL,
   [ESTACION_CREA] [varchar](50) NULL,
   [FECHA_CREA] [datetime] NULL,

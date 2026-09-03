@@ -765,6 +765,10 @@
 	min-width: 0;
 }
 
+.descriptor-perfil-field--full {
+	grid-column: 1 / -1;
+}
+
 .descriptor-perfil-label {
 	font-size: 12px;
 	font-weight: 600;

@@ -12,6 +12,7 @@ export interface ScPerfilPuesto {
 	CORR_TIPO_MODALIDAD?: number | null; // Catálogo de modalidad de trabajo.
 	NOMBRE_MODALIDAD?: string | null; // Nombre de la modalidad (snapshot o catálogo).
 	LICENCIA?: boolean | null; // Indica si se requiere licencia de conducir.
+	OTROS?: string | null; // Texto libre adicional (visible solo en formato corto/ambos).
 }
 
 // Lookup de disponibilidad horaria para el select del perfil.
