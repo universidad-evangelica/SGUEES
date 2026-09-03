@@ -250,6 +250,56 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		public async Task<CResult> ActivarProcesoSeleccionAsync(SC_EXPEDIENTE_CANDIDATOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			CResult objResultado = new();
+
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_ESTADO_EXPEDIENTE", Value = 2, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
+				};
+
+				var pWhere = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_EXPEDIENTE_CANDIDATO", Value = Data.CORR_EXPEDIENTE_CANDIDATO, DbType = System.Data.DbType.Int32 },
+				};
+
+				var reader = await objData.Update(_TableName, p, pWhere);
+				var response = new List<SC_EXPEDIENTE_CANDIDATOView>().FromDataReader(reader).FirstOrDefault();
+
+				reader.Close();
+
+				objResultado.Data = response;
+				objResultado.Result = response != null;
+				objResultado.RowsAffected = response == null ? 0 : 1;
+				objResultado.CodeHelper = response?.CORR_EXPEDIENTE_CANDIDATO ?? Data.CORR_EXPEDIENTE_CANDIDATO;
+				objResultado.ErrorCode = response == null ? -1 : 0;
+				objResultado.ErrorMessage = response == null ? "No se encontró el expediente a actualizar." : "";
+				objResultado.ErrorSource = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.CodeHelper = 0;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
+
 		public Task<CResult> GetEstadoAsociacionAsync(int corrEmpresa, int corrSolicitudEmpleo, string login, string estacion)
 		{
 			return EjecutarAsociarSpAsync(corrEmpresa, corrSolicitudEmpleo, crearExpediente: false, soloConsulta: true, login, estacion);

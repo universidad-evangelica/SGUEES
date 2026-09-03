@@ -60,6 +60,22 @@ namespace SGUEES.Controllers
 			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
 		}
 
+		/// <summary>Cambia CORR_ESTADO_EXPEDIENTE a 2 (Proceso de selección) sin modificar otros campos.</summary>
+		[HttpPut("ActivarProcesoSeleccion")]
+		[Authorize(Policy = "/sc-expediente-candidato|U")]
+		public async Task<IActionResult> ActivarProcesoSeleccion(SC_EXPEDIENTE_CANDIDATOTable Data)
+		{
+			this.ApplyQueryKeys(Data, nameof(SC_EXPEDIENTE_CANDIDATOTable.CORR_EXPEDIENTE_CANDIDATO));
+			SetUpdateAudit(Data);
+
+			var resultado = await _service.ActivarProcesoSeleccionAsync(
+				Data,
+				GetUsuario(),
+				ClientInfoHelper.GetClientStation(HttpContext));
+
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
 		[HttpDelete]
 		[Authorize(Policy = "/sc-expediente-candidato|D")]
 		public async Task<IActionResult> Delete([FromQuery] SC_EXPEDIENTE_CANDIDATOTable Data)

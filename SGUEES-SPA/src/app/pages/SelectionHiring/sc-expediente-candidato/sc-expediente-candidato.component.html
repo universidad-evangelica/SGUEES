@@ -12,10 +12,15 @@
       [isForm]="isForm()"
       [permiteAdd]="permiteAdd"
       [showRefresh]="true"
+      [btn1]="btnActivarProcesoSeleccion"
+      [btn1Icon]="'activefolder'"
+      [btn1Type]="'default'"
+      [btn1Width]="44"
       (consultar)="consultar()"
       (nuevo)="nuevo()"
       (guardar)="guardar()"
       (cancelar)="cancelar()"
+      (btn1Click)="activarProcesoSeleccion()"
     >
     </app-barra-data-mtto>
 
