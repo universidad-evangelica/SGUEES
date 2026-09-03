@@ -16,12 +16,10 @@ namespace sgueesRpt.Layouts
 				return;
 			}
 
+			// Qué hace: empuja el DataSet al informe principal.
+			// Cómo: Crystal distribuye automáticamente los datos a los subinformes
+			// por coincidencia de nombre de tabla; no es necesario iterar Subreports.
 			report.SetDataSource(dataSet);
-
-			foreach (ReportDocument subReport in report.Subreports)
-			{
-				ApplyPushDataSet(subReport, dataSet);
-			}
 		}
 
 		public static void ApplyPushDataTable(ReportDocument report, DataTable data)
