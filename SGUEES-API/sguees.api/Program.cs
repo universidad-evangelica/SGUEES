@@ -27,6 +27,14 @@ builder.Configuration.GetSection(ExpedienteDocumentoOptions.SectionName).Bind(ex
 builder.Services.AddSingleton(expedienteDocumentoOptions);
 builder.Services.AddSingleton<ExpedienteDocumentoStorage>();
 
+// Qué hace: registra storage de documentos de entrevista del expediente (DI).
+// Cómo: mismo patrón que ExpedienteDocumentoStorage (options + singleton).
+var expedienteEntrevistaDocumentoOptions = new ExpedienteEntrevistaDocumentoOptions();
+builder.Configuration.GetSection(ExpedienteEntrevistaDocumentoOptions.SectionName)
+	.Bind(expedienteEntrevistaDocumentoOptions);
+builder.Services.AddSingleton(expedienteEntrevistaDocumentoOptions);
+builder.Services.AddSingleton<ExpedienteEntrevistaDocumentoStorage>();
+
 // Bind AI options and register model router (from eFrameworkAPI options)
 var aiOptions = new eFrameworkAPI.Core.Options.AIOptions();
 builder.Configuration.GetSection(eFrameworkAPI.Core.Options.AIOptions.SectionName).Bind(aiOptions);
