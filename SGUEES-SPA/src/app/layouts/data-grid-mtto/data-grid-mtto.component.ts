@@ -58,6 +58,8 @@ export class DataGridMttoComponent implements OnInit, OnChanges, OnDestroy {
   @Input() keyExpr: string | string[] = '';
   @Input() gridHeight: string | number = 670;
   @Input() columnAutoWidth = false;
+  /** Si true, las celdas hacen wrap y muestran el texto completo (filas más altas). */
+  @Input() wordWrapEnabled = false;
   @Input() columnHidingEnabled = false;
   @Input() responsiveColumnHiding = false;
   columnHidingActive = false;

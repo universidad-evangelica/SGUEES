@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace sgueesRpt.Reports.Accounting.LIBRO_DIARIO_AUXILIAR_MES
+namespace sgueesRpt.Models
 {
 	public class LIBRO_DIARIO_AUXILIAR_MES_IMPRView
 	{

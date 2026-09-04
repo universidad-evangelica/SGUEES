@@ -1,0 +1,402 @@
+Tiempo de análisis y compilación de SQL Server: 
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+Tiempo de análisis y compilación de SQL Server: 
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 16 ms, tiempo transcurrido = 5 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 1 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 1 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 1 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 16 ms, tiempo transcurrido = 19 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 169031 ms, tiempo transcurrido = 237347 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 1 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 2 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+CORR_EMPRESA CUENTA_CONTABLE1               NOMBRE_CUENTA1                                                                                          SALDO_FINAL1                             NIVEL1 CUENTA_CONTABLE2               NOMBRE_CUENTA2                                                                                          SALDO_FINAL2                             NIVEL2 NOMBRE_PUESTO1                                                                                       DESCRIPCION_PUESTO1                                                                                  NOMBRE_PUESTO2                                                                                       DESCRIPCION_PUESTO2                                                                                  NOMBRE_PUESTO3                                                                                       DESCRIPCION_PUESTO3                                                                                  DESCRIPCION_MONEDA                                                                                                                                                                                                                                              FOLIADO NUMERO_FOLIO NIVEL_MAXIMO FECHA_FINAL     
+------------ ------------------------------ ------------------------------------------------------------------------------------------------------- ---------------------------------------- ------ ------------------------------ ------------------------------------------------------------------------------------------------------- ---------------------------------------- ------ ---------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ------- ------------ ------------ ----------------
+           1 1                              ACTIVO                                                                                                                            47082190.57      1 2                              PASIVO                                                                                                                             8317617.70      1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            3       2026-08-31
+           1 11                             CORRIENTE                                                                                                                          17855650.21      2 21                             CORRIENTE                                                                                                                           5604350.43      2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            3       2026-08-31
+           1 1101                           EFECTIVO Y EQUIVALENTES AL EFECTIVO                                                                                                  12491107.92      3 2101                           PRESTAMOS BANCARIOS A CORTO PLAZO                                                                                                      111843.03      3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            3       2026-08-31
+           1 1102                           CUENTAS Y DOCUMENTOS  POR COBRAR                                                                                                      4697710.11      3 2102                           CUENTAS Y DOCUMENTOS POR PAGAR                                                                                                         465462.34      3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            3       2026-08-31
+           1 1103                           ACTIVOS POR IMPUESTOS CORRIENTES                                                                                                        24472.61      3 2103                           PASIVOS POR IMPUESTOS CORRIENTES                                                                                                        14389.13      3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            3       2026-08-31
+           1 1104                           INVENTARIOS                                                                                                                            253339.40      3 2104                           BENEFICIOS A EMPLEADOS                                                                                                                 412822.08      3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            3       2026-08-31
+           1 1105                           PAGOS ANTICIPADOS                                                                                                                      389020.17      3 2105                           PROVISIONES POR GARANTIAS Y OTRAS PROVISIONES                                                                                         4599833.85      3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            3       2026-08-31
+           1 12                             NO CORRIENTE                                                                                                                       29226540.36      2 22                             NO CORRIENTE                                                                                                                        2713267.27      2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            3       2026-08-31
+           1 1201                           PROPIEDADES, PLANTA Y EQUIPO                                                                                                         29181027.07      3 2201                           CUENTAS Y DOCUMENTOS POR PAGAR A LARGO PLAZO                                                                                          2713267.27      3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            3       2026-08-31
+           1 1203                           ACTIVOS INTANGIBLES                                                                                                                     32385.29      3 3                              PATRIMONIO                                                                                                                        36465715.16      1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            3       2026-08-31
+           1 1204                           INVERSIONES PERMANENTES                                                                                                                 13128.00      3 31                             FONDO PATRIMONIAL                                                                                                                  36465715.16      2                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            3       2026-08-31
+           1 NULL                           NULL                                                                                                                                        NULL   NULL 3101                           FONDO PATRIMONIAL                                                                                                                    37614875.64      3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            3       2026-08-31
+           1 NULL                           NULL                                                                                                                                        NULL   NULL 3106                           EXCEDENTE DEL PERIODO ACTUAL                                                                                                         -1149160.48      3                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            3       2026-08-31
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 2 ms.
+CORR_EMPRESA NOMBRE_EMPRESA                                                                                       PERIODO LOGO1                                                                                                                                                                                                                                                            LOGO2                                                                                                                                                                                                                                                            TITULO_REPORTE NOMBRE_SISTEMA FECHA_IMPRESION        
+------------ ---------------------------------------------------------------------------------------------------- ------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- -------------- -------------- -----------------------
+           1 UNIVERSIDAD EVANGÉLICA DE EL SALVADOR                                                                        NULL                                                                                                                                                                                                                                                             NULL                                                                                                                                                                                                                                                                                           2026-08-21 03:43:58.577
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 169047 ms, tiempo transcurrido = 237400 ms.
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- -------------- -------------- -----------------------
+           1 UNIVERSIDAD EVANGÉLICA DE EL SALVADOR                                                                        NULL                                                                                                                                                                                                                                                             NULL                                                                                                                                                                                                                                                                                           2026-08-21 03:42:16.950
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 281 ms, tiempo transcurrido = 314 ms.

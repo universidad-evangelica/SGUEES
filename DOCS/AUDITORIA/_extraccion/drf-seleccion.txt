@@ -1,0 +1,365 @@
+﻿FILE=DRF - SELECCIÓN Y CONTRATACIÓN DE PERSONAL - VF.docx
+TABLES=16
+
+DOCUMENTO DE REQUERIMIENTOS FUNCIONALES
+San Salvador, enero 2026
+Universidad Evangélica
+de El Salvador
+Documento de Requerimientos Funcionales (DRF)
+CÓDIGO: DRF-TH-SC
+Vigencia: Indefinida
+Emisión: Enero 2026
+2ª. Actualización:
+DOCUMENTO DE REQUERIMIENTOS FUNCIONALES
+Módulo: Reclutamiento, Selección y Contratación de Personal
+San Salvador, enero 2026
+Información General
+Proyecto
+ERP Universitario
+Módulo
+Recursos Humanos
+Submódulo
+Reclutamiento, Selección y Contratación de Personal
+Base documental
+Procedimiento de Reclutamiento, Selección y Contratación de Personal UEES
+Objetivo
+Definir los requerimientos funcionales para implementar en el ERP el proceso institucional de reclutamiento, selección y contratación de personal administrativo, docentes, docentes hora clase, docentes de posgrado e investigadores.
+Actores del Sistema
+Actor
+Descripción
+Jefe Solicitante
+Solicita y aprueba plazas de personal
+Recursos Humanos
+Administra y gestiona todo el proceso
+Capellán
+Evalúa perfil evangélico de candidatos
+Rectoría / Vicerrectorías
+Otorgan aprobaciones finales
+Facultad / Escuela
+Gestiona procesos académicos especiales
+Investigador / Docente
+Firma contratos y recibe notificaciones
+Alcance del Módulo
+Incluye:
+Generación y gestión de requisiciones de personal
+Flujo de aprobaciones y notificaciones institucionales
+Gestión de descriptor de puesto
+Solicitud de empleo del candidato (permanente y eventual)
+Expediente digital del candidato reutilizable
+Asignación de candidatos a requisición y gestión de entrevistas
+Resumen de evaluaciones (psicológicas, técnicas, académicas)
+Comité de selección y terna
+Movimientos de personal previos a contratación
+Generación y firma de contratos (múltiples tipos)
+Registro de nuevos empleados y comunicación a planilla
+Procesos especiales: docentes hora clase, docentes posgrado, investigadores
+No incluye:
+Procesamiento de planilla (integración futura)
+Gestión académica de docentes (integración futura)
+Contabilidad y presupuesto (integración futura)
+Firma electrónica institucional (pendiente de habilitación)
+Flujo general del proceso (Resumen)
+Procedimiento de Reclutamiento, Selección y Contratación de Personal UEES
+Requerimientos Funcionales
+RF-01 – Registro de requisición de personal
+El sistema deberá permitir al Solicitante registrar una requisición de personal indicando los campos definidos por el área de Talento Humano. Cada requisición activa el ciclo formal de reclutamiento y queda ligada a un descriptor de puesto obligatorio.
+Actor: Solicitante (jefe inmediato, asistente, coordinador)
+Datos requeridos:
+Cantidad de personas a contratar
+Departamento y Puesto (vinculado a descriptor)
+Salario y Modalidad (Presencial / Teletrabajo total / Teletrabajo parcial)
+Horario y Tipo de contratación (permanente / eventual)
+Motivo: vacante por promoción, transferencia, renuncia o puesto de nueva creación
+Justificación de la requisición
+Correlativo, fecha, usuario y fechas de creación/actualización
+Detalle de observadores, bitácora y autorizaciones
+Estados:
+Código
+Estado
+Descripción
+DI
+Digitado / Borrador
+En edición por el solicitante
+SO
+Solicitada
+Enviada al flujo de aprobación
+RJ
+Revisión Jefatura
+En revisión por jefe inmediato
+OB
+Observar / Corregir
+Devuelta para corrección
+AP
+Aprobada
+Aprobada por Gerencia General
+DE
+Denegada
+Rechazada definitivamente
+AN
+Anulada
+Anulada con justificación
+Reglas críticas:
+No puede existir requisición sin descriptor de puesto asociado.
+En estado DI todos los campos son editables; al pasar a SO ciertos campos se congelan.
+Si el tipo de contrato es eventual, se debe especificar la duración en meses.
+Las requisiciones anuladas requieren justificación obligatoria y pueden reactivarse solo con autorización de jefatura inmediata.
+Modificaciones post-aprobación (justificación, horario) requieren motivo registrado.
+Automatizaciones:
+Al pasar a estado SO, notificar automáticamente al jefe inmediato para revisión.
+Al reactivar una requisición anulada, notificar automáticamente a Talento Humano.
+Generar correlativo único al guardar la requisición por primera vez.
+Excepciones:
+Si el motivo es eventual, ocultar el campo de empleado a sustituir.
+Motivos de promoción / transferencia / renuncia permiten asociar al último empleado activo en esa plaza.
+Una requisición denegada no puede reactivarse; debe crearse una nueva.
+RF-02 – Flujo de aprobación de requisición
+El sistema deberá gestionar el flujo de aprobación de la requisición según la jerarquía institucional. Cada documento contará con su propio flujo y estados configurables, permitiendo un control independiente y flexible del ciclo de vida.
+Actor: Autorizadores: RRHH, Gerencia General, Vicerrectoría, directores, Rectoría
+Datos requeridos:
+Actor origen y actor destino por paso
+Estado origen y estado resultante por paso
+Indicador de notificación interna y correo electrónico
+Comentario de aprobación o rechazo
+Estados:
+Código
+Estado
+Descripción
+Inicial
+Documento recibido por primer revisor
+En proceso
+En cadena de aprobación
+Aprobado
+Aprobación final otorgada
+Rechazado
+Rechazado con comentario
+Devuelto
+Retroceso controlado para corrección
+Reglas críticas:
+Cada documento maneja sus propios estados en una tabla catálogo centralizada.
+Una devolución NO es rechazo definitivo; representa un retroceso operacional controlado.
+Los flujos definen actor origen, actor destino, estado y tipo de notificación por paso.
+Al aprobar en estado Final, se activa automáticamente el proceso de reclutamiento.
+No puede avanzar al siguiente paso sin completar la acción del paso actual.
+Automatizaciones:
+Enviar notificación interna al actor destino al transicionar de estado.
+Enviar correo electrónico al solicitante cuando el documento alcance estado Final.
+Registrar en bitácora automáticamente cada cambio de estado con actor y timestamp.
+Excepciones:
+Si el autorizador no está disponible, el flujo permite reasignación por un superior.
+Una requisición rechazada definitivamente no puede reingresarse al flujo.
+Los estados pueden reutilizarse entre procesos distintos cuando la naturaleza lo permita.
+RF-03 – Solicitud de empleo (Eventual y Permanente)
+Permitir el registro, gestión y almacenamiento de la información de candidatos mediante formularios diferenciados según el tipo de contratación (permanente o servicios profesionales), creando un expediente digital reutilizable accesible por enlace único.
+Actor: Talento Humano, Candidato
+Datos requeridos:
+Nombre, DUI y correo electrónico del candidato
+Tipo de formulario: plaza fija o servicios profesionales
+Token único de acceso y fecha de expiración
+Todos los campos del formato institucional de solicitud de empleo
+Progreso parcial guardado automáticamente
+Estados:
+Código
+Estado
+Descripción
+DI
+Invitado
+Creado por RRHH
+SO
+Solicitud Enviada
+Link enviado al candidato
+EX
+Expirado
+Link vencido sin completar
+CO
+Completado
+Formulario completado por candidato
+AP
+Aprobado
+Formulario aprobado por TH
+RE
+Rechazada
+Solicitud rechazada
+AN
+Anulada
+Solicitud anulada
+Reglas críticas:
+El acceso al formulario es exclusivo mediante link con token único, sin requerir login.
+El link tiene expiración configurable (default 48 horas); uno expirado no permite acceso.
+Si el candidato ya existe en el sistema, se reutiliza su expediente; no se crea uno nuevo.
+Al completar el formulario, el estado cambia a COMPLETADO y se bloquea edición vía link.
+Solo RRHH puede editar el formulario una vez en estado COMPLETADO.
+Automatizaciones:
+Al reenviar el link, generar nuevo token y reiniciar el tiempo de expiración automáticamente.
+Guardar progreso parcial del formulario sin necesidad de acción manual del candidato.
+Notificar a RRHH automáticamente cuando un candidato complete el formulario.
+Excepciones:
+Un link expirado requiere reenvío explícito por parte de RRHH para generar uno nuevo.
+Si el candidato tiene expediente previo, mostrar advertencia antes de reutilizarlo.
+Campos opcionales no bloquean el envío del formulario.
+RF-04 – Expediente del candidato
+Centralizar en un único expediente digital toda la información del candidato a lo largo del proceso de reclutamiento, permitiendo su seguimiento, evaluación y reutilización en futuras requisiciones.
+Actor: Talento Humano, Jefe Solicitante
+Datos requeridos:
+Solicitud de empleo (plaza fija o servicios profesionales)
+Resumen de evaluación psicológica
+Resumen de evaluación técnica
+Resumen de entrevista con jefe solicitante
+Resumen de entrevista con capellán (si aplica)
+Documentos adjuntos (CV, títulos, referencias)
+Estados:
+Código
+Estado
+Descripción
+RE
+Registrado
+Ingreso inicial del candidato
+EP
+En proceso
+En evaluación activa
+AP
+Aprobado
+Elegible para contratación
+RC
+Rechazado
+No seleccionado
+CO
+Contratado
+Proceso finalizado con contrato
+Reglas críticas:
+El expediente se crea automáticamente cuando RRHH valida la solicitud de empleo.
+El expediente es único por candidato y no puede eliminarse, solo inactivarse.
+Un candidato solo puede estar en proceso de selección en una requisición a la vez.
+Las evaluaciones quedan registradas históricamente y no se sobrescriben.
+Cada entrevista debe estar asociada a una requisición específica.
+Automatizaciones:
+Crear el expediente automáticamente al validar la solicitud de empleo.
+Agregar evaluaciones al historial del expediente sin sobrescribir registros anteriores.
+Notificar al jefe solicitante cuando un candidato de su requisición sea aprobado.
+Excepciones:
+Si el candidato ya tiene expediente, asociar la nueva solicitud al expediente existente.
+Un candidato rechazado puede ser considerado en futuras requisiciones.
+La entrevista con capellán aplica solo para candidatos de perfil evangélico.
+RF-05 – Movimiento de personal
+Permitir la creación, gestión y aprobación de movimientos de personal como paso previo a la contratación formal, validando información organizativa, salarial y de plaza, conforme al formato institucional de movimiento de personal.
+Actor: Talento Humano, Jefe Solicitante
+Datos requeridos:
+Datos del empleado a mover (nombre, puesto actual, departamento)
+Tipo de movimiento (promoción, traslado, transferencia, etc.)
+Plaza destino y salario propuesto
+Justificación del movimiento
+Firma del jefe solicitante y de RRHH
+Estados:
+Código
+Estado
+...[truncated paragraphs]...
+
+=== TABLES ===
+--- Table 1 2x3 ---
+Universidad Evangélica de El Salvador | Documento de Requerimientos Funcionales (DRF) | CÓDIGO: DRF-TH-SC Vigencia: Indefinida
+ |  | Emisión: Enero 2026 2ª. Actualización:
+--- Table 2 5x2 ---
+Proyecto | ERP Universitario
+Módulo | Recursos Humanos
+Submódulo | Reclutamiento, Selección y Contratación de Personal
+Base documental | Procedimiento de Reclutamiento, Selección y Contratación de Personal UEES
+Objetivo | Definir los requerimientos funcionales para implementar en el ERP el proceso institucional de reclutamiento, selección y...
+--- Table 3 7x2 ---
+Actor | Descripción
+Jefe Solicitante | Solicita y aprueba plazas de personal
+Recursos Humanos | Administra y gestiona todo el proceso
+Capellán | Evalúa perfil evangélico de candidatos
+Rectoría / Vicerrectorías | Otorgan aprobaciones finales
+Facultad / Escuela | Gestiona procesos académicos especiales
+Investigador / Docente | Firma contratos y recibe notificaciones
+--- Table 4 8x3 ---
+Código | Estado | Descripción
+DI | Digitado / Borrador | En edición por el solicitante
+SO | Solicitada | Enviada al flujo de aprobación
+RJ | Revisión Jefatura | En revisión por jefe inmediato
+OB | Observar / Corregir | Devuelta para corrección
+AP | Aprobada | Aprobada por Gerencia General
+DE | Denegada | Rechazada definitivamente
+AN | Anulada | Anulada con justificación
+--- Table 5 6x3 ---
+Código | Estado | Descripción
+1 | Inicial | Documento recibido por primer revisor
+2 | En proceso | En cadena de aprobación
+3 | Aprobado | Aprobación final otorgada
+4 | Rechazado | Rechazado con comentario
+5 | Devuelto | Retroceso controlado para corrección
+--- Table 6 8x3 ---
+Código | Estado | Descripción
+DI | Invitado | Creado por RRHH
+SO | Solicitud Enviada | Link enviado al candidato
+EX | Expirado | Link vencido sin completar
+CO | Completado | Formulario completado por candidato
+AP | Aprobado | Formulario aprobado por TH
+RE | Rechazada | Solicitud rechazada
+AN | Anulada | Solicitud anulada
+--- Table 7 6x3 ---
+Código | Estado | Descripción
+RE | Registrado | Ingreso inicial del candidato
+EP | En proceso | En evaluación activa
+AP | Aprobado | Elegible para contratación
+RC | Rechazado | No seleccionado
+CO | Contratado | Proceso finalizado con contrato
+--- Table 8 5x3 ---
+Código | Estado | Descripción
+DI | Ingresado | Creado por jefe inmediato
+AP | Aprobado | Aprobado por Talento Humano
+RE | Rechazado | Solicitud rechazada
+AN | Anulado | Solicitud anulada
+--- Table 9 4x3 ---
+Código | Estado | Descripción
+PE | Pendiente | Evaluación agendada, no realizada
+RE | Realizada | Evaluación completada y registrada
+CA | Cancelada | Evaluación cancelada
+--- Table 10 5x3 ---
+Código | Estado | Descripción
+GE | Generado | Contrato generado por RRHH
+PE | Pendiente firma | En espera de firmas
+FI | Firmado | Todas las firmas completadas
+AN | Anulado | Contrato anulado
+--- Table 11 4x3 ---
+Código | Estado | Descripción
+PE | Pendiente | Contrato firmado, registro en curso
+AC | Activo | Empleado registrado y activo
+IN | Inactivo | Empleado inactivo en el sistema
+--- Table 12 6x3 ---
+Código | Estado | Descripción
+SO | Solicitado | Solicitud generada por Facultad
+RH | Revisado RRHH | Revisado por Talento Humano
+AP | Aprobado | Aprobado por Vicerrectoría/Rectoría
+CO | Contratado | Contrato firmado y activo
+AN | Anulado | Proceso anulado
+--- Table 13 8x2 ---
+Código | Regla
+RN-01 | No se puede contratar sin plaza aprobada y requisición en estado Aprobado.
+RN-02 | El contrato debe estar firmado antes del inicio formal de labores.
+RN-03 | No puede existir requisición sin descriptor de puesto asociado.
+RN-04 | Investigadores extranjeros requieren validación legal previa al contrato.
+RN-05 | Docentes hora clase se contratan exclusivamente por ciclo académico.
+RN-06 | Un candidato solo puede estar activo en una requisición a la vez.
+RN-07 | El expediente del candidato es único e indestructible; solo puede inactivarse.
+--- Table 14 4x3 ---
+Código | Descripción | Detalle
+MOD-01 | Presencial | Trabajo 100% en instalaciones institucionales
+MOD-02 | Teletrabajo Total | Trabajo 100% remoto desde ubicación del empleado
+MOD-03 | Teletrabajo Parcial | Combinación de días presenciales y remotos
+--- Table 15 7x5 ---
+Código | Descripción | Meses | Aplica a | Detalle
+TC-01 | Permanente | No | Todos | Contrato indefinido sin fecha de vencimiento
+TC-02 | Eventual | Sí | Administrativo | Contrato por tiempo definido en meses
+TC-03 | Docente Hora Clase | Sí | Docente | Contrato por ciclo académico
+TC-04 | Docente Posgrado | Sí | Docente | Contrato para programas de posgrado
+TC-05 | Investigador Nacional | Sí | Investigador | Contrato para investigadores locales
+TC-06 | Investigador Extranjero | Sí | Investigador | Requiere validación legal adicional
+--- Table 16 8x4 ---
+Código | Descripción | Req. Sustitución | Detalle
+TV-01 | Nueva Plaza | No | Creación de una nueva posición dentro de la estructura organizacional
+TV-02 | Renuncia | Sí | Sustitución de un colaborador que presentó renuncia
+TV-03 | Despido | Sí | Sustitución de un colaborador desvinculado
+TV-04 | Promoción Interna | Sí | La vacante se genera por asenso de un colaborador
+TV-05 | Traslado Interno | Sí | La vacante se genera por movimiento entre áreas
+TV-06 | Sustitución Temporal | Sí | Cobertura temporal por incapacidad, licencia o ausencia
+TV-07 | Incremento Operativo | No | Necesidad de personal por crecimiento o aumento de demanda

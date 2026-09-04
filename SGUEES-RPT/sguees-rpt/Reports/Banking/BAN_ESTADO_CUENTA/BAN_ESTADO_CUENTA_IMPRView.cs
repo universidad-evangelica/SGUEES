@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace sgueesRpt.Reports.Banking.BAN_ESTADO_CUENTA
+namespace sgueesRpt.Models
 {
 	public class BAN_ESTADO_CUENTA_IMPRView
 	{

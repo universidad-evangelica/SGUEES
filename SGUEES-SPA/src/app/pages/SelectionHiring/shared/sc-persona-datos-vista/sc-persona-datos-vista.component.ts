@@ -34,6 +34,7 @@ export class ScPersonaDatosVistaComponent {
 	/** Si false, oculta avatar/nombre/corr/"Solo lectura" (útil embebido en resumen). */
 	@Input() mostrarEncabezado = true;
 	/** Tab Solicitudes asociadas (sc-expediente-candidato). */
+	/** Tabs Solicitudes / Documentos (solo en sc-expediente-candidato). */
 	@Input() mostrarExpediente = false;
 	@Input() solicitudes: any[] = [];
 	@Input() solicitudColumns: any[] = [];
@@ -63,6 +64,10 @@ export class ScPersonaDatosVistaComponent {
 		// DevExtreme lo seleccionaría y conservaría ese tab al aparecer Personales.
 		const tieneTabsExtra = this.mostrarExpediente || this.mostrarDocumentos;
 		return this.tienePersonaDatos || (tieneTabsExtra && !this.cargandoPersonaDatos);
+	get mostrarTabs(): boolean {
+		// Durante la carga no renderizar un panel que contenga únicamente tabs de expediente:
+		// DevExtreme lo seleccionaría y conservaría ese tab al aparecer Personales.
+		return this.tienePersonaDatos || (this.mostrarExpediente && !this.cargandoPersonaDatos);
 	}
 
 	get nombreCompletoPersona(): string {
@@ -96,6 +101,15 @@ export class ScPersonaDatosVistaComponent {
 			this.solicitudesTabSelected.emit();
 		}
 		if (title === 'Documentos' && this.mostrarDocumentos) {
+		if (!this.mostrarExpediente) {
+			return;
+		}
+
+		const title = String(e?.addedItems?.[0]?.title ?? '').trim();
+		if (title === 'Solicitudes') {
+			this.solicitudesTabSelected.emit();
+		}
+		if (title === 'Documentos') {
 			this.documentosTabSelected.emit();
 		}
 	}

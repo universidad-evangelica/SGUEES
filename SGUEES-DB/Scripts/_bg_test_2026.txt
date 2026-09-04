@@ -1,0 +1,188 @@
+Tiempo de análisis y compilación de SQL Server: 
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+Tiempo de análisis y compilación de SQL Server: 
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 2 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 16 ms, tiempo transcurrido = 6 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 169328 ms, tiempo transcurrido = 190423 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 1 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+CORR_EMPRESA CUENTA_CONTABLE1               NOMBRE_CUENTA1                                                                                          SALDO_FINAL1                             NIVEL1 CUENTA_CONTABLE2               NOMBRE_CUENTA2                                                                                          SALDO_FINAL2                             NIVEL2 NOMBRE_PUESTO1                                                                                       DESCRIPCION_PUESTO1                                                                                  NOMBRE_PUESTO2                                                                                       DESCRIPCION_PUESTO2                                                                                  NOMBRE_PUESTO3                                                                                       DESCRIPCION_PUESTO3                                                                                  DESCRIPCION_MONEDA                                                                                                                                                                                                                                              FOLIADO NUMERO_FOLIO NIVEL_MAXIMO FECHA_FINAL     
+------------ ------------------------------ ------------------------------------------------------------------------------------------------------- ---------------------------------------- ------ ------------------------------ ------------------------------------------------------------------------------------------------------- ---------------------------------------- ------ ---------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------- --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ------- ------------ ------------ ----------------
+           1 1                              ACTIVO                                                                                                                            47082190.57      1 2                              PASIVO                                                                                                                             8317617.70      1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            1       2026-08-31
+           1 NULL                           NULL                                                                                                                                        NULL   NULL 3                              PATRIMONIO                                                                                                                        -1149160.48      1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     0            0            1       2026-08-31
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 2 ms.
+CORR_EMPRESA NOMBRE_EMPRESA                                                                                       PERIODO LOGO1                                                                                                                                                                                                                                                            LOGO2                                                                                                                                                                                                                                                            TITULO_REPORTE NOMBRE_SISTEMA FECHA_IMPRESION        
+------------ ---------------------------------------------------------------------------------------------------- ------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- -------------- -------------- -----------------------
+           1 UNIVERSIDAD EVANGÉLICA DE EL SALVADOR                                                                        NULL                                                                                                                                                                                                                                                             NULL                                                                                                                                                                                                                                                                                           2026-08-21 03:38:37.590
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 0 ms, tiempo transcurrido = 0 ms.
+
+ Tiempos de ejecución de SQL Server:
+   Tiempo de CPU = 169344 ms, tiempo transcurrido = 190436 ms.

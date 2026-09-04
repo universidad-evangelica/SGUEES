@@ -1,0 +1,37 @@
+BacklogID,Procedimiento,CodigoRF,TipoReq,Requerimiento,Fuente,Estado,OpcionSGUEES,Evidencia,Notas
+TH-01,Seleccion y contratacion,RF-01,RF,Registro de requisicion de personal (campos TH; descriptor obligatorio; estados DI/SO/RJ/OB/AP/DE/AN),DRF-TH-SC Seleccion VF,Parcial,/sc-requisicion-personal,Pantalla con observadores y bitacora,Falta congelar campos al pasar a SO y reglas de reactivacion
+TH-01,Seleccion y contratacion,RF-02,RF,Flujo de aprobacion configurable (actores; notificaciones; bitacora de transiciones),DRF-TH-SC Seleccion VF,Parcial,/seg-flujo-proceso,Flujos SEG y estados en requisicion,Cadena institucional completa y correos no cerrados
+TH-01,Seleccion y contratacion,RF-03,RF,Solicitud de empleo permanente/eventual con token y expediente reutilizable,DRF-TH-SC Seleccion VF,Parcial,/sc-solicitud-empleo,Token; formulario; datos de persona,Falta expediente unico candidato y reutilizacion total
+TH-01,Seleccion y contratacion,RF-04,RF,Expediente digital del candidato (evaluaciones; adjuntos; historial),DRF-TH-SC Seleccion VF,No iniciado,,No hay pantalla de expediente de candidato,Pendiente de desarrollo
+TH-01,Seleccion y contratacion,RF-05,RF,Movimiento de personal previo a contratacion,DRF-TH-SC Seleccion VF,No iniciado,,Sin opcion,Pendiente
+TH-01,Seleccion y contratacion,RF-06,RF,Evaluaciones psicologica; tecnica; entrevista jefe; capellan,DRF-TH-SC Seleccion VF,No iniciado,,Sin opcion,Pendiente
+TH-01,Seleccion y contratacion,RF-07,RF,Comite de seleccion y terna,DRF-TH-SC Seleccion VF,No iniciado,,Sin opcion,Pendiente
+TH-01,Seleccion y contratacion,RF-08,RF,Generacion y firma de contratos (tipos permanente; eventual; docente; investigador),DRF-TH-SC Seleccion VF,No iniciado,,Sin opcion,Pendiente
+TH-01,Seleccion y contratacion,RF-09,RF,Registro de nuevo empleado y aviso a planilla,DRF-TH-SC Seleccion VF,No iniciado,,Sin opcion,Pendiente
+TH-01,Seleccion y contratacion,RF-10,RF,Procesos especiales docentes hora clase; posgrado; investigadores,DRF-TH-SC Seleccion VF,No iniciado,,Sin opcion,Pendiente
+TH-01,Seleccion y contratacion,CAT-01,CAT,Catalogo tipo de vacante,DRF-TH-SC Seleccion VF,Construido,/sc-tipo-vacante,Pantalla mtto,Apoyo RF-01
+TH-01,Seleccion y contratacion,CAT-02,CAT,Catalogo tipo de contratacion,DRF-TH-SC Seleccion VF,Construido,/sc-tipo-contratacion,Pantalla mtto,Apoyo RF-01
+TH-01,Seleccion y contratacion,CAT-03,CAT,Catalogo tipo de modalidad,DRF-TH-SC Seleccion VF,Construido,/sc-tipo-modalidad,Pantalla mtto,Apoyo RF-01
+TH-01,Seleccion y contratacion,CAT-04,CAT,Observadores de requisicion,DRF-TH-SC Seleccion VF,Construido,/sc-requisicion-observadores,Pantalla mtto,Apoyo RF-01
+TH-02,Descriptor y perfil de puesto,RF-01,RF,Creacion de descriptor formato corto/extenso segun rol y unidad,DRF Descriptor VF,Construido,/sc-descriptor-puesto,Alta de descriptor con secciones por formato,Pantalla de creacion en sistema
+TH-02,Descriptor y perfil de puesto,RF-02,RF,Flujo revision JIS / TH con observaciones obligatorias,DRF Descriptor VF,Parcial,/sc-descriptor-puesto,Estados BORRADOR; ENVIADO; REVISADO; ACTIVO; INACTIVO,Falta autorizacion por jefe inmediato; validacion y aprobacion TH; observar
+TH-02,Descriptor y perfil de puesto,RF-03,RF,Activacion; desactivacion; reactivacion y control de versiones,DRF Descriptor VF,Parcial,/sc-descriptor-puesto,Campo VERSION y estados ACTIVO/INACTIVO,Falta reactivar; inactivar; observar
+TH-02,Descriptor y perfil de puesto,RF-04,FUTURO,Asignacion de colaboradores al descriptor activo,DRF Descriptor VF,No iniciado,,Sin asignacion de titulares,Fuera del % de desarrollo del proceso nucleo; se retoma despues
+TH-02,Descriptor y perfil de puesto,RF-05,RF,Reportes individualizados corto/extenso,DRF Descriptor VF,Parcial,/sc-descriptor-puesto,Lookups de reporte por formato,Generacion institucional del documento no cerrada
+TH-02,Descriptor y perfil de puesto,RF-06,FUTURO,Carga y descarga de documento firmado fisicamente,DRF Descriptor VF,No iniciado,,Sin gestion documental por colaborador,Fuera del % de desarrollo del proceso nucleo; DRF excluye firma electronica
+TH-02,Descriptor y perfil de puesto,RF-07,RF,Bitacora de eventos del descriptor,DRF Descriptor VF,Construido,/sc-descriptor-puesto,Auditoria USUARIO/FECHA de mtto,Auditoria de mtto en pantalla
+TH-02,Descriptor y perfil de puesto,CAT-01,CAT,Organigrama institucional y niveles,DRF Descriptor VF,Construido,/sc-organigrama-estructural-unidades,Unidades y niveles,Apoyo RF-01
+TH-02,Descriptor y perfil de puesto,CAT-02,CAT,Competencias tecnicas y conductuales,DRF Descriptor VF,Construido,/sc-competencias-tecnicas,Pantallas mtto,Tambien /sc-competencias-conductuales
+TH-02,Descriptor y perfil de puesto,CAT-03,CAT,Riesgo; induccion; frecuencia; responsabilidad; requerimientos; impacto,DRF Descriptor VF,Construido,/sc-riesgo-puesto,Catalogos de apoyo al perfil,Varias rutas SC_ de catalogo
+TH-03,Expediente de empleado,RF-00,PENDIENTE,Sin DRF cargado,Pendiente,Sin DRF,,,Reemplazar esta fila por RF-01..n cuando exista el DRF
+TH-04,Planilla (nucleo),RF-00,PENDIENTE,Sin DRF cargado,Pendiente,Sin DRF,,,Reemplazar esta fila por RF-01..n cuando exista el DRF
+CF-01,Contabilidad,RF-00,PENDIENTE,Sin DRF cargado,Pendiente,Sin DRF,,,Reemplazar esta fila por RF-01..n cuando exista el DRF
+CF-02,Caja y bancos,RF-00,PENDIENTE,Sin DRF cargado,Pendiente,Sin DRF,,,Reemplazar esta fila por RF-01..n cuando exista el DRF
+CF-03,Cuentas por pagar / Pagos,RF-00,PENDIENTE,Sin DRF cargado,Pendiente,Sin DRF,,,Reemplazar esta fila por RF-01..n cuando exista el DRF
+CF-04,Conciliacion bancaria,RF-00,PENDIENTE,Sin DRF cargado,Pendiente,Sin DRF,,,Reemplazar esta fila por RF-01..n cuando exista el DRF
+AC-01,Admision,RF-00,PENDIENTE,Sin DRF cargado,Pendiente,Sin DRF,,,Reemplazar esta fila por RF-01..n cuando exista el DRF
+AC-02,Nuevo ingreso,RF-00,PENDIENTE,Sin DRF cargado,Pendiente,Sin DRF,,,Reemplazar esta fila por RF-01..n cuando exista el DRF
+AC-03,Socioeconomico,RF-00,PENDIENTE,Sin DRF cargado,Pendiente,Sin DRF,,,Reemplazar esta fila por RF-01..n cuando exista el DRF
+AC-04,Matricula,RF-00,PENDIENTE,Sin DRF cargado,Pendiente,Sin DRF,,,Reemplazar esta fila por RF-01..n cuando exista el DRF
+AC-05,Solicitud de becas,RF-00,PENDIENTE,Sin DRF cargado,Pendiente,Sin DRF,,,Reemplazar esta fila por RF-01..n cuando exista el DRF
+PL-01,Compras,RF-00,PENDIENTE,Sin DRF cargado,Pendiente,Sin DRF,,,En integracion (19 opciones hoja 08); cargar DRF cuando exista

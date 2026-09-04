@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -24,12 +25,15 @@ namespace SGUEES.Controllers
             _service = service ?? throw new ArgumentNullException(nameof(_service));
         }
 
-        // Lista todos los descriptores de puesto de la empresa en sesión; pasa los filtros del query al servicio.
+        // Qué hace: lista descriptores de la empresa visibles para el usuario.
+        // Cómo: pasa CORR_EMPRESA y LOGIN_SISTEMA; el servicio filtra por
+        //       unidades de PRAL_DATA_SC_UNIDADES_USUARIO (puesto/jefe/config).
         [HttpGet("GetAll")]
         [Authorize(Policy = "/sc-descriptor-puesto|R")]
         public async Task<CResult> GetAll([FromQuery] SC_DESCRIPTOR_PUESTOParam Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
+            Data.LOGIN_SISTEMA = GetUsuario();
             return await _service.GetAllAsync(Data);
         }
 
@@ -92,6 +96,101 @@ namespace SGUEES.Controllers
             return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
         }
 
+        // Qué hace: ejecuta una operación del flujo del descriptor (Enviar/Aprobar/Observar/etc.).
+        // Cómo lo hace: Put Autoriza → PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA; Data = fila de la vista.
+        // Nota HTTP: en falla de negocio (ErrorCode != 0) se responde 200 Ok con Result=false.
+        //           BadRequest(400) lo transforma el ErrorInterceptor del SPA en string y salía como Error rojo.
+        [HttpPut("Autoriza")]
+        [Authorize(Policy = "/sc-descriptor-puesto|U")]
+        public async Task<IActionResult> Autoriza(SC_DESCRIPTOR_PUESTO_AUTORIZAParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            var resultado = await _service.AutorizaAsync(Data, GetUsuario());
+            if (resultado.ErrorCode == 0)
+            {
+                return StatusCode(201, resultado);
+            }
+
+            return Ok(resultado);
+        }
+
+        // Qué hace: indica qué botones de flujo mostrar para el usuario de sesión.
+        // Cómo: SP (destinatario + estado) + permiso U del JWT; sin U solo consulta.
+        [HttpGet("GetAccionesFlujo")]
+        [Authorize(Policy = "/sc-descriptor-puesto|R")]
+        public async Task<CResult> GetAccionesFlujo([FromQuery] SC_DESCRIPTOR_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            Data.LOGIN_SISTEMA = GetUsuario();
+            return await _service.GetAccionesFlujoAsync(Data, GetPermisoOpcion());
+        }
+
+        // Qué hace: genera PDF Formato corto del descriptor (Crystal vía SGUEES-RPT).
+        // Cómo: POST getPDFFormatoCorto → SP impresión + SelectionHiring/PostScDescriptorPuestoFormatoCortoImpr.
+        [HttpPost("getPDFFormatoCorto")]
+        [Authorize(Policy = "/sc-descriptor-puesto|P")]
+        public async Task<IActionResult> GetPDFFormatoCorto([FromBody] SC_DESCRIPTOR_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            var login = GetUsuario() ?? string.Empty;
+            try
+            {
+                var stream = await _service.GetPDFFormatoCortoAsync(Data, login);
+                if (stream == null)
+                {
+                    return BadRequest(new CResult
+                    {
+                        Result = false,
+                        ErrorCode = -1,
+                        ErrorMessage = "No se pudo generar el PDF del descriptor.",
+                    });
+                }
+
+                return File(stream, "application/pdf", "SC_DESCRIPTOR_PUESTO_FORMATO_CORTO.pdf");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
+            }
+        }
+
+        // Qué hace: genera PDF Formato extenso del descriptor (Crystal vía SGUEES-RPT).
+        // Cómo: POST getPDFFormatoExtenso → SP impresión + SelectionHiring/PostScDescriptorPuestoFormatoExtensoImpr.
+        [HttpPost("getPDFFormatoExtenso")]
+        [Authorize(Policy = "/sc-descriptor-puesto|P")]
+        public async Task<IActionResult> GetPDFFormatoExtenso([FromBody] SC_DESCRIPTOR_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            var login = GetUsuario() ?? string.Empty;
+            try
+            {
+                var stream = await _service.GetPDFFormatoExtensoAsync(Data, login);
+                if (stream == null)
+                {
+                    return BadRequest(new CResult
+                    {
+                        Result = false,
+                        ErrorCode = -1,
+                        ErrorMessage = "No se pudo generar el PDF del descriptor.",
+                    });
+                }
+
+                return File(stream, "application/pdf", "SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO.pdf");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
+            }
+        }
+
         // Elimina un descriptor de la empresa en sesión; borra también sus registros hijos.
         [HttpDelete]
         [Authorize(Policy = "/sc-descriptor-puesto|D")]
@@ -118,6 +217,14 @@ namespace SGUEES.Controllers
             return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier).Value;
         }
 
+        // Qué hace: obtiene la cadena CRUDP de esta pantalla desde el token (ej. "CRUDP", "R").
+        // Cómo: el login graba un claim por URL_OPCION; GetAccionesFlujo lo usa para filtrar acciones.
+        private string GetPermisoOpcion()
+        {
+            const string urlOpcion = "/sc-descriptor-puesto";
+            return User.Claims.FirstOrDefault(c => c.Type == urlOpcion)?.Value ?? string.Empty;
+        }
+
         // Rellena auditoría al crear: empresa, usuario, estación, fechas y valores por defecto (BORRADOR, versión 1).
         private void SetCreateAudit(SC_DESCRIPTOR_PUESTOTable Data)
         {
@@ -128,20 +235,30 @@ namespace SGUEES.Controllers
             Data.USUARIO_ACTU = Data.USUARIO_CREA;
             Data.ESTACION_ACTU = Data.ESTACION_CREA;
             Data.FECHA_ACTU = Data.FECHA_CREA;
-            Data.ESTADO_DESCRIPTOR ??= "BORRADOR";
-            Data.VERSION ??= 1;
+            // Estado inicial de flujo (Borrador) hasta que el SP de flujos sincronice.
+            Data.CORR_ESTADO ??= 11;
+            if (string.IsNullOrWhiteSpace(Data.NOMBRE_ESTADO))
+            {
+                Data.NOMBRE_ESTADO = "Borrador";
+            }
+            // VERSION la calcula el Service (MAX+1 por empresa+unidad+puesto); no forzar 1 aquí.
         }
 
-        // Rellena auditoría al modificar: empresa, usuario, estación, fecha y estado BORRADOR si viene vacío.
+        // Rellena auditoría al modificar: empresa, usuario, estación, fecha.
+        // No pisa CORR_ESTADO/NOMBRE_ESTADO si ya vienen del flujo.
         private void SetUpdateAudit(SC_DESCRIPTOR_PUESTOTable Data)
         {
             Data.CORR_EMPRESA = GetCorrEmpresa();
             Data.USUARIO_ACTU = GetUsuario();
             Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
             Data.FECHA_ACTU = DateTime.Now;
-            if (string.IsNullOrWhiteSpace(Data.ESTADO_DESCRIPTOR))
+            if (!Data.CORR_ESTADO.HasValue || Data.CORR_ESTADO <= 0)
             {
-                Data.ESTADO_DESCRIPTOR = "BORRADOR";
+                Data.CORR_ESTADO = 11;
+            }
+            if (string.IsNullOrWhiteSpace(Data.NOMBRE_ESTADO))
+            {
+                Data.NOMBRE_ESTADO = "Borrador";
             }
         }
 

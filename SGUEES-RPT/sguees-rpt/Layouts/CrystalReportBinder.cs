@@ -16,12 +16,10 @@ namespace sgueesRpt.Layouts
 				return;
 			}
 
+			// Qué hace: empuja el DataSet al informe principal.
+			// Cómo: Crystal distribuye automáticamente los datos a los subinformes
+			// por coincidencia de nombre de tabla; no es necesario iterar Subreports.
 			report.SetDataSource(dataSet);
-
-			foreach (ReportDocument subReport in report.Subreports)
-			{
-				ApplyPushDataSet(subReport, dataSet);
-			}
 		}
 
 		public static void ApplyPushDataTable(ReportDocument report, DataTable data)
@@ -31,10 +29,10 @@ namespace sgueesRpt.Layouts
 				return;
 			}
 
-			if (report.Database.Tables.Count > 0
+			var reportTable = GetMainReportTable(report);
+			if (reportTable != null
 				&& (string.IsNullOrWhiteSpace(data.TableName) || data.TableName == "Table"))
 			{
-				var reportTable = report.Database.Tables[0];
 				var targetName = GetShortTableName(
 					reportTable.LogOnInfo?.TableName ?? reportTable.Name ?? reportTable.Location);
 				if (!string.IsNullOrWhiteSpace(targetName))
@@ -46,6 +44,38 @@ namespace sgueesRpt.Layouts
 			var dataSet = new DataSet();
 			dataSet.Tables.Add(data);
 			ApplyPushDataSet(report, dataSet);
+		}
+
+		private static Table GetMainReportTable(ReportDocument report)
+		{
+			if (report?.Database?.Tables == null || report.Database.Tables.Count == 0)
+			{
+				return null;
+			}
+
+			if (report.Database.Tables.Count == 1)
+			{
+				return report.Database.Tables[0];
+			}
+
+			Table fallback = null;
+			foreach (Table table in report.Database.Tables)
+			{
+				var shortName = GetShortTableName(table.Name ?? table.Location);
+				if (string.Equals(shortName, "GEN_PARAMETRO", StringComparison.OrdinalIgnoreCase))
+				{
+					continue;
+				}
+
+				if (shortName != null && shortName.EndsWith("_IMPRView", StringComparison.OrdinalIgnoreCase))
+				{
+					return table;
+				}
+
+				fallback = table;
+			}
+
+			return fallback ?? report.Database.Tables[0];
 		}
 
 		private static string GetShortTableName(string value)

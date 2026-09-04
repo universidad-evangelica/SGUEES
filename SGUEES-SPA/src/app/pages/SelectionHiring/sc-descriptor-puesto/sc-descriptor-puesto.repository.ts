@@ -63,4 +63,49 @@ export class ScDescriptorPuestoRepository {
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
+
+	// Qué hace: ejecuta una operación del flujo (Autoriza SP).
+	// Cómo: PUT Autoriza con OPERACION + OBSERVACION (y unidad si aplica).
+	autoriza(model: any): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'Autoriza',
+			[{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO }],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	// Qué hace: consulta qué botones de flujo puede ver el usuario sobre el descriptor.
+	// Cómo: GET GetAccionesFlujo; la API filtra destinatario (SP) + permiso U (token).
+	getAccionesFlujo(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'GetAccionesFlujo',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	// Qué hace: solicita el PDF Formato corto del descriptor.
+	// Cómo: POST getPDFFormatoCorto (blob) a SC_DESCRIPTOR_PUESTO (mismo patrón con-partida).
+	getPDFFormatoCorto(model: any): Observable<Blob> {
+		return this.objData.PostBlob(
+			model,
+			this.xController,
+			'getPDFFormatoCorto',
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	// Qué hace: solicita el PDF Formato extenso del descriptor.
+	// Cómo: POST getPDFFormatoExtenso (blob) a SC_DESCRIPTOR_PUESTO.
+	getPDFFormatoExtenso(model: any): Observable<Blob> {
+		return this.objData.PostBlob(
+			model,
+			this.xController,
+			'getPDFFormatoExtenso',
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }

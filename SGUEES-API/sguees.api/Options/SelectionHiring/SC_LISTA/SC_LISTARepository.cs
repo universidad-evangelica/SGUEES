@@ -65,9 +65,26 @@ namespace SGUEES.Repositories
         {
             return Ok(new List<SC_LISTAView>
             {
-                new() { Key = "CORTO", Value = "Version corta" },
-                new() { Key = "EXTENSO", Value = "Version extensa" },
+                new() { Key = "CORTO", Value = "Formato corto" },
+                new() { Key = "EXTENSO", Value = "Formato extenso" },
                 new() { Key = "AMBOS", Value = "Ambos" },
+            });
+        }
+
+        // Qué hace: estados de flujo del Descriptor de puesto para filtro del listado.
+        // Cómo: Key = CORR_ESTADO (SEG_FLUJO_ESTADO), Value = nombre visible; orden de flujo.
+        public CResult GetESTADO_DESCRIPTOR()
+        {
+            return Ok(new List<SC_LISTAView>
+            {
+                new() { Key = 11, Value = "Borrador" },
+                new() { Key = 15, Value = "Observado" },
+                new() { Key = 16, Value = "Enviado a Jefe Inmediato" },
+                new() { Key = 12, Value = "Aprobado por Jefe Inmediato" },
+                new() { Key = 13, Value = "Revisado por Talento Humano" },
+                new() { Key = 17, Value = "Enviado a Jefe de Talento Humano" },
+                new() { Key = 14, Value = "Activo" },
+                new() { Key = 18, Value = "Inactivo" },
             });
         }
 

@@ -1,0 +1,111 @@
+﻿=== HOJA: 2025-2028 ===
+ | UNIVERSIDAD EVANGÉLICA DE EL SALVADOR |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | PROYECTO: ANALISIS Y DISEÑO DEL SISTEMA DE GESTIÓN UNIVERSITARIO UEES |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  | AÑO: 2025 |  | AÑO: 2026 |  | AÑO: 2027 |  | AÑO: 2028 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | TIPO DE RECURSO | PERÍODO | PRESUPUESTO  | PERÍODO | PRESUPUESTO | PERÍODO | PRESUPUESTO  | PERÍODO | PRESUPUESTO  | Inversión total  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | INFRAESTRUCTURA TECNOLÓGICA: |  | $35,736 |  | $2,000 |  | $8,000 |  | $8,000 | $53,736 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Servidor de Base de datos | dic-25 | $30,000 |  |  |  |  |  |  | $30,000 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Windows Server 2025 Datacenter - 16 Core  | dic-25 | $2,493 |  |  |  |  |  |  | $2,493 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Windows Server 2025 Datacenter - 2 Core  | dic-25 | $1,243 |  |  |  |  |  |  | $1,243 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Certificado Digital  | dic-25 | $2,000 | ENERO A DICIEMBRE 2026 | $2,000 | ENERO A DICIEMBRE 2027 | $2,000 | ENERO A DICIEMBRE 2028 | $2,000 | $8,000 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | DATA WAREHOUSE
+Herramientas de Data Warehouse: Amazon RedShift (RedShift: para analizar todo tipo de datos mediante el SQL estándar y herramientas de Business Intelligence). |  |  |  |  | dic-27 | $6,000 | dic-28 | $6,000 | $12,000 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | DESARROLLO DE APLICACIÓN: |  | $67,259 |  | $5,289 |  | $5,289 |  | $5,289 | $83,126 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Herramienta para Gestion de equipo Scrum. Jira service Management | dic-25 | $2,399 | ENERO A DICIEMBRE 2026 | $3,389 | ENERO A DICIEMBRE 2027 | $3,389 | ENERO A DICIEMBRE 2028 | $3,389 | $12,566 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Dbforce Herramientas de gestión de control de base de datos | dic-25 | $1,200 | ENERO A DICIEMBRE 2026 | $1,200 | ENERO A DICIEMBRE 2027 | $1,200 | ENERO A DICIEMBRE 2028 | $1,200 | $4,800 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 6 -Licencias de componentes Devexpress para frontend del aplicativo | dic-25 | $6,000 |  |  |  |  |  |  | $6,000 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Visual studio Professional 22  6 Licencias | dic-25 | $660 |  |  |  |  |  |  | $660 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | SQL Server 2022 Enterprise  | dic-25 | $57,000 |  |  |  |  |  |  | $57,000 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | powerBI 20 Licencias. |  |  | dic-26 | $700 | dic-27 | $700 | dic-28 | $700 | $2,100 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | EQUIPO INFORMÁTICO: |  | $9,000 |  | $0 |  | $0 |  | $0 | $9,000 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 6 equipos para desarrolladores (Genericos con alto rendimiento $1000 c/u) | dic-25 | $6,000 |  |  |  |  |  |  | $6,000 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Mobiliario para equipo de desarrollo contratado para el proyecto | dic-25 | $3,000 |  |  |  |  |  |  | $3,000 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | RECURSO HUMANO PARA LA PROGRAMACIÓN: |  | $50,400 |  | $100,800 |  | $100,800 |  | $100,800 | $352,800 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 6 Analistas Programadores ($1,400 c/u) | JUNIO A DICIEMBRE | $50,400 | ENERO A DICIEMBRE | $100,800 | ENERO A DICIEMBRE | $100,800 | ENERO A DICIEMBRE | $100,800 | $352,800 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Inversiones Totales por año proyectado: |  | $162,395 |  | $108,089 |  | $114,089 |  | $114,089 | $498,662 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Pago de Programador por año |  | $33,600 |  | $100,800 |  | $100,800 |  | $100,800 |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Pago de Programador mensual |  | $5,600 |  | $16,800 |  | $16,800 |  | $16,800 |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | Prestación al  año | 4 | $2,300 | 12 | $18,660 | 12 | $18,660 | 12 | $18,660 | $58,280 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ | 6 Analistas Programadores ($1,400 c/u) | 4 | $33,600 | 12 | $100,800 | 12 | $100,800 | 12 | $100,800 | $336,000 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+ |  |  |  |  |  |  |  |  | * |  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+
+=== HOJA: 2026 ===
+ | UNIVERSIDAD EVANGÉLICA DE EL SALVADOR | 
+ | PROYECTO: ANALISIS Y DISEÑO DEL SISTEMA DE GESTIÓN UNIVERSITARIO UEES | 
+ | AÑO: 2026 | 
+ | TIPO DE RECURSO | PERÍODO
+ | INFRAESTRUCTURA TECNOLÓGICA | 
+ | Certificado Digital  | ENERO A DICIEMBRE 2026
+ | SUB-TOTAL: | 
+ | DESARROLLO DE APLICACIÓN | 
+ | Herramienta para Gestion de equipo Scrum. Jira service Management | ENERO A DICIEMBRE 2026
+ | Dbforce Herramientas de gestión de control de base de datos | ENERO A DICIEMBRE 2026
+ | powerBI 20 Licencias. | dic-26
+ | SUB-TOTAL: | 
+ | UNIVERSIDAD EVANGÉLICA DE EL SALVADOR | 
+ | PROYECTO: ANALISIS Y DISEÑO DEL SISTEMA DE GESTIÓN UNIVERSITARIO UEES | 
+ | AÑO: 2026 | 
+ | TIPO DE RECURSO | PERÍODO
+ | RECURSO HUMANO | 
+ | 6 Analistas Programadores | ENERO A DICIEMBRE
+ | SUB-TOTAL: | 
+
+=== HOJA: 2027 ===
+ | UNIVERSIDAD EVANGÉLICA DE EL SALVADOR | 
+ | PROYECTO: ANALISIS Y DISEÑO DEL SISTEMA DE GESTIÓN UNIVERSITARIO UEES | 
+ | AÑO: 2027 | 
+ | TIPO DE RECURSO | PERÍODO
+ | INFRAESTRUCTURA TECNOLÓGICA | 
+ | Certificado Digital  | ENERO A DICIEMBRE 2027
+ | DATA WAREHOUSE | 
+ | Herramientas de Data Warehouse: Amazon RedShift (RedShift: para analizar todo tipo de datos mediante el SQL estándar y herramientas de Business Intelligence). | dic-27
+ | SUB-TOTAL: | 
+ | DESARROLLO DE APLICACIÓN | 
+ | Inteligencia Artificial integrada al sistema | dic-27
+ | Herramienta para Gestion de equipo Scrum. Jira service Management | ENERO A DICIEMBRE 2027
+ | Dbforce Herramientas de gestión de control de base de datos | ENERO A DICIEMBRE 2027
+ | powerBI 20 Licencias. | dic-27
+ | SUB-TOTAL: | 
+ | UNIVERSIDAD EVANGÉLICA DE EL SALVADOR | 
+ | PROYECTO: ANALISIS Y DISEÑO DEL SISTEMA DE GESTIÓN UNIVERSITARIO UEES | 
+ | AÑO: 2027 | 
+ | TIPO DE RECURSO | PERÍODO
+ | RECURSO HUMANO | 
+ | 6 Analistas Programadores | ENERO A DICIEMBRE
+ | SUB-TOTAL: | 
+
+=== HOJA: 2028 ===
+ | UNIVERSIDAD EVANGÉLICA DE EL SALVADOR | 
+ | PROYECTO: ANALISIS Y DISEÑO DEL SISTEMA DE GESTIÓN UNIVERSITARIO UEES | 
+ | AÑO: 2028 | 
+ | TIPO DE RECURSO | PERÍODO
+ | INFRAESTRUCTURA TECNOLÓGICA | 
+ | Certificado Digital  | ENERO A DICIEMBRE 2028
+ | DATA WAREHOUSE | 
+ | Herramientas de Data Warehouse: Amazon RedShift (RedShift: para analizar todo tipo de datos mediante el SQL estándar y herramientas de Business Intelligence). | dic-28
+ | SUB-TOTAL: | 
+ | DESARROLLO DE APLICACIÓN | 
+ | Inteligencia Artificial integrada al sistema | dic-28
+ | Herramienta para Gestion de equipo Scrum. Jira service Management | ENERO A DICIEMBRE 2028
+ | Dbforce Herramientas de gestión de control de base de datos | ENERO A DICIEMBRE 2028
+ | powerBI 20 Licencias. | dic-28
+ | SUB-TOTAL: | 
+ | UNIVERSIDAD EVANGÉLICA DE EL SALVADOR | 
+ | PROYECTO: ANALISIS Y DISEÑO DEL SISTEMA DE GESTIÓN UNIVERSITARIO UEES | 
+ | AÑO: 2028 | 
+ | TIPO DE RECURSO | PERÍODO
+ | RECURSO HUMANO | 
+ | 6 Analistas Programadores | ENERO A DICIEMBRE
+ | SUB-TOTAL: | 
+ | TOTAL: | 
+
+=== HOJA: fase ===
+ |  | Fase | Actividad |  | 2025 | 2026 | 2027 | 2028
+ |  | F1 | Levantamiento de requerimientos por área |  |  |  |  | 
+ |  | F2 | Diseño y arquitectura técnica |  |  |  |  | 
+ |  | F3 | Desarrollo módulos académico, financiero, talento humano |  |  |  |  | 
+ |  | F4 | Integración de sistema y pruebas |  |  |  |  | 
+ |  | F5 | Capacitación y migración de datos |  |  |  |  | 
+ |  | F6 | Implementación y mantenimiento |  |  |  |  | 
+
+

@@ -1,0 +1,451 @@
+﻿=== SLIDE1 ===
+UNIVERSIDAD EVANGÉLICA DE EL SALVADOR
+Comité de Transformación Digital
+Ruta de Transformación Digital 2026–2030
+Informe de Avance
+Abril a Junio 2026
+OE7 · OE8 | PEI 2026–2030
+Dra. Nadia Menjívar
+Directora General de Gestión Estratégica Institucional
+Ing. Jonathan Avalos
+Jefe Departamento
+de Tecnología de la Información
+Julio 2026
+Ing. Omar Villanueva
+Director de Transformación Digital
+
+=== SLIDE2 ===
+La Ruta de Transformación Digital —
+Meta 2026-2030
+IMD
+Línea Base 2025
+2.49
+Nivel Emergente
+Meta 2026
+2.59
+Fase: Consolidación de Gobernanza
+Meta 2030
+3.00
+Nivel Evolucionado
+2025
+Fundamentos
+de Gobernanza
+2026
+Consolidación
+de Gobernanza
+2027
+Integración
+Digital
+2028
+Gestión
+Est
+.
+de Datos
+2029
+Innovación
+Digital
+2030
+Consolidación
+del Modelo
+PEI 2026–2030 ·
+OE7
+Cultura de gestión del cambio, colaborativa y ágil |
+OE8
+Implementar la hoja de ruta de TD para cerrar brechas del índice de madurez digital
+
+=== SLIDE3 ===
+Marco de referencia — Los cinco pilares
+El Índice de Madurez Digital (IMD) se mide sobre cinco pilares. Cada pilar cuenta con un objetivo, resultados clave y un liderazgo institucional asignado.
+PILAR
+QUÉ MIDE
+LIDERAZGO
+1
+Gobernanza y Liderazgo
+Dirección estratégica, políticas y estructuras que orientan la transformación digital.
+Líder:
+Director de
+Transformación Digital
+Colíder:
+Director de Calidad Institucional
+2
+Personal y Cultura Digital
+Cultura de innovación, adopción tecnológica y desarrollo de competencias digitales.
+Líder:
+Director del Centro de Enseñanza y Aprendizaje
+Colíder: Jefa de
+Talento Humano
+3
+Capacidad Instalada
+Infraestructura, procesos y gestión de datos que sustentan la operación institucional.
+Líder:
+Director de Calidad Institucional
+Colíder:
+Subgerente de TI
+4
+Innovación
+Generación, pilotaje y escalamiento de soluciones digitales innovadoras.
+Líder:
+Vicerrectoría de Innovación y Tecnología Educativa
+Colíder:
+Coordinador de la
+Oficina de Transferencia
+Tecnológica
+5
+Tecnología
+Uso estratégico, satisfacción, interoperabilidad y evolución de las herramientas.
+Líder:
+Subgerencia de TI
+Colíder:
+Directora de Tecnología Educativa
+IMD — Línea base 2025: 2.49 · Meta 2026: 2.59 · Meta 2030: 3.00 | Fase 2026: Consolidación de Gobernanza | PEI 2026–2030 · OE7 y OE8
+
+=== SLIDE4 ===
+Pilar 1 — Gobernanza y Liderazgo
+Líder: Director de Transformación Digital, Colíder: Director de Calidad Institucional
+OBJETIVO
+DEL PILAR
+O1
+Consolidar una gobernanza digital institucional efectiva, ágil y sostenible, que oriente la transformación digital mediante políticas, estructuras y decisiones basadas en datos, en coherencia con el PEI 2026–2030.
+MARCO NORMATIVO DIGITAL
+T2 · Abr–Jun 2026
+Política de Gobernanza Digital
+Norma sombrilla: de ella se derivan las normativas específicas.
+Aprobada por DE en julio
+T3 · Jul–Sep 2026
+Normativa de uso de la Inteligencia Artificial Generativa
+En elaboración
+T4 · Oct–Dic 2026
+Normativa de Ciberseguridad
+Por definir
+Política
+de Tecnología de la Información
+Por derogar hasta finalizar normativos por actualizar, los aspectos institucionales ya fueron agregados a la Política de Gobernanza Digital.
+
+=== SLIDE5 ===
+Pilar 2 — Personal y Cultura Digital
+Líder: Director del Centro de Enseñanza y Aprendizaje, Colíder: Jefa de Talento Humano
+OBJETIVO DEL PILAR
+O2
+Fortalecer la cultura digital institucional, desarrollando en docentes, personal administrativo y estudiantes las competencias, actitudes y prácticas que sostienen la innovación, la adopción tecnológica y el aprendizaje continuo frente al cambio digital.
+Acción 2026
+Diseño del instrumento y medición de competencias digitales del personal administrativo y académico.
+1
+Diseño del instrumento
+Marco de competencias y construcción del cuestionario.
+Estado: programado para agosto
+2
+Validación
+Revisión técnica y prueba piloto previa al despliegue.
+Estado: programado para agosto
+3
+Aplicación
+Levantamiento en personal administrativo y académico.
+Estado: programado para septiembre
+4
+Línea base y análisis
+Resultados, brechas y plan de desarrollo de competencias.
+Estado: programado para septiembre
+ALCANCE DE LA MEDICIÓN
+Personal administrativo:
+unidades de gestión y apoyo.
+Personal académico:
+seis facultades y Escuela de Posgrados.
+Vínculo estratégico:
+la línea base de competencias habilita el plan de formación y sustenta los resultados clave del pilar.
+
+=== SLIDE6 ===
+Pilar 4 — Innovación
+Líder: Vicerrectoría de Innovación y Tecnología Educativa, Colíder: Coordinador de la Oficina de Transferencia Tecnológica
+OBJETIVO
+DEL PILAR
+O4
+Institucionalizar la innovación digital, fortaleciendo la capacidad de generar, pilotear y escalar soluciones digitales innovadoras, e incorporarlas de forma sostenida en el modelo educativo y en la experiencia universitaria.
+1
+Proyectos de tecnología inmersiva
+9 proyectos de metaversos, 16 de
+Realidad Virtual y Realidad Aumentada
+y 4 de hologramas.
+Carreras beneficiadas:
+Doctorado en Medicina, Doctorado en Cirugía Dental, Licenciatura en Nutrición, Licenciatura en Ciencias Jurídicas, Licenciatura en Psicología, Técnico en Enfermería.
+Estado: En implementación
+Responsable: Facultades + DTE
+2
+Citación de contenidos generados por IA
+Publicación y difusión de la Guía de Citación de Contenidos Generados por IA, en formato digital e impreso, con su respectivo ISBN.
+Beneficiados: Estudiantes, Docentes, Investigadores.
+Estado: Implementado
+Responsable: Dirección de Biblioteca
+3
+Postulación el IFE
+Conference
+2027 — TEC de Monterrey
+Se propuso una mesa de
+networking
+para un taller con el Tema:
+«Ecosistemas que aprenden»: gestión institucional de la innovación educativa, tecnologías emergentes e IA responsable en educación superior.
+Participantes propuestos:
+Vicerrector de Innovación y Tecnología Educativa, Directora de Tecnología Educativa, Directora de Biblioteca.
+Estado: Postulado
+Responsable: VRITE
+4
+Agente de IA en el campus virtual
+Incorporar audio lectura y voz en el Campus Virtual mediante un Agente de IA sobre Moodle.
+Estado: Diseñado
+Responsable: DTE
+
+=== SLIDE7 ===
+Pilar 3 — Capacidad Instalada
+Líder: Director de Calidad Institucional, Colíder: Subgerencia de TI
+OBJETIVO DEL PILAR
+Consolidar una capacidad instalada suficiente, confiable y segura para sustentar la transformación digital, integrando la infraestructura tecnológica —equipos, conectividad y centros de datos—, los procesos institucionales y la gestión de datos que garantizan eficiencia, disponibilidad y seguridad.
+QUÉ EVALÚA
+Procesos y procedimientos institucionales documentados y estandarizados
+Infraestructura física, conectividad y centros de datos
+Gestión de datos: disponibilidad, eficiencia y seguridad
+PRIORIDAD 2026
+Actualización del manual de procesos con enfoque en el desarrollo del Sistema de Gestión Universitaria (ERP)
+Alinear los planes de trabajo entre la Dirección de Calidad y la Subgerencia de TI para contribuir al levantamiento de requerimientos del sistema (DRF)
+Priorizar
+la actualización o creación de
+procedimientos en función del Producto Mínimo Viable en el trimestre 01-2027
+
+=== SLIDE8 ===
+Pilar 3 — Capacidad Instalada
+Vínculo estratégico:
+Procedimientos actualizados → requerimientos ERP precisos → menor retrabajo y mayor eficiencia en la implementación.
+
+=== SLIDE9 ===
+Pilar 3 — Capacidad Instalada
+: Actualización de procedimientos
+Estado de avance del levantamiento de procedimientos conforme a los requerimientos del ERP y solicitudes de Rectoría y otras autoridades.
+#
+PROCESOS PLANIFICADOS PARA 2026
+# procedimientos vigentes según Manual
+Planificados para
+actualizar/ crear
+Total, de procedimientos
+Publicados al 30 de
+Junio
+#Procedimientos revisados por CCI
+% de Avance de actualización del Manual/Proceso
+1.0
+Articulación de funciones vitales
+23
+24
+5
+7
+8%
+5.0
+Competencias y Cultura
+6
+12
+11
+11
+91.6%
+6.0
+Adquisición y provisión
+5
+8
+1
+1
+12.5%
+9.0
+Gestión de servicios estudiantiles y graduados
+12
+14
+8
+8
+53.84%
+10.0
+Gestión de ingreso estudiantil
+12
+17
+8
+9
+47.05%
+11.0
+Sostenibilidad Financiera
+12
+19
+12
+12
+63.15%
+12.0
+Monitoreo, evaluación y mejora del control interno
+-
+1
+1
+1
+100%
+TOTAL
+70
+95
+46
+49
+48.93%
+48.93
+% de avance,
+46
+procedimientos publicados.
+Al cierre de junio, el plan de trabajo son 95 procedimientos.
+El Comité de Calidad revisa y aprueba cada procedimiento y el Líder del proceso presenta la justificación y modificación.
+CCI:
+DIGGEI, DTD, STI, DA, JCF, JTH, DCI
+
+=== SLIDE10 ===
+Pilar 3 — Capacidad Instalada: Lecciones aprendidas
+Aspectos identificados durante el levantamiento de procedimientos
+
+=== SLIDE11 ===
+Pilar 5 — Tecnología
+Líder: Jefe de TI, Colíder: Director de Tecnología Educativa
+OBJETIVO DEL PILAR
+Asegurar el uso estratégico y la evolución continua de las soluciones tecnológicas que soportan la gestión institucional y los servicios universitarios, promoviendo su interoperabilidad, la satisfacción de los usuarios y el aprovechamiento de tecnologías emergentes.
+QUÉ EVALÚA
+Uso estratégico y experiencia digital del usuario
+Interoperabilidad y evolución de las herramientas
+Aprovechamiento de tecnologías emergentes
+
+=== SLIDE12 ===
+Pilar 5 — Tecnología
+Ciberseguridad
+Propuesta de
+pentest
+lista
+Propuesta de prueba de penetración institucional preparada y lista para su ejecución. Primer paso formal hacia la madurez en seguridad. Negociando cotización para ejecución en trimestre 3.
+D
+TI
+Firma Digital
+En implementación
+Implementación activa en mandos medios. El proceso continúa su despliegue institucional para formalizar la identidad digital a nivel organizacional. Se finalizó segunda fase y se iniciará la tercera fase.
+D
+TI
+Analítica Institucional
+Evaluando propuestas
+Se asistió a presentación de propuesta de proveedor con participación de DTI y DTD. Evaluación en curso para toma de decisión institucional.
+D
+TI · DTE
+ERP Institucional
+Análisis y desarrollo inicial
+STI avanza en coordinación con DCI, que tiene planificado el levantamiento y actualización de procedimientos como base para los requerimientos del ERP.
+De
+las fases
+en
+ejecución al
+trimestre 2.
+se lleva un 48%.
+DTI - DICA
+
+=== SLIDE13 ===
+Pilar 5 - Análisis de requerimientos y DRF
+PRODUCTO
+El DRF es el producto del análisis y se construye sobre procedimientos priorizados (Pilar 3 / DICA).
+Procedimientos (DICA) → Priorización DTI → DRF (análisis) → Desarrollo SGUEES
+La documentación de Calidad alimenta el requerimiento funcional del ERP.
+Criterios de prioridad
+• Alineación estratégica
+• Impacto operativo
+• Número de usuarios
+• Frecuencia de uso
+• Dependencias
+• Madurez documental
+Prioridad A — procedimientos base del MVP
+TH: Selección/contratación · Descriptor · Expediente · Planillas
+Finanzas: Contabilidad · Caja/Bancos · Pagos · CxP · Conciliación
+Académico: Admisión · Matrícula · Socioeconómico
+Avance estimado de módulos macro por área
+Talento Humano
+8%
+Contabilidad y Finanzas
+6%
+Académico
+4%
+Ejemplo de concordancia
+Descriptor y perfil de puesto → DRF funcional → pantallas/catálogos SGUEES. Esto evita desarrollar sin base de proceso.
+Abrir DRF Descriptor
+
+=== SLIDE14 ===
+Pilar 5 - ERP Institucional (SGUEES)
+T2 · Abr-Jun 2026
+Avance por fase (T1 vs T2) ·
+FASES ABIERTAS EN T2
+48%
+Promedio de la fase Identificación + Análisis + Diseño + Desarrollo.
+IDENTIFICACIÓN (DICA)
+89.5%
+Procedimientos. Priorizados por DTI
+PROYECTO TOTAL → 2028
+17%
+7 fases ciclo de vida
+Identificación de procedimientos 89.5%
+Dato DICA. No es avance de módulos.
+Análisis de requerimientos 8%
+3 Áreas en Proceso abiertos.
+Diseño y planificación 85%
+Arquitectura, seguridad y estándar base.
+Desarrollo 8%
+Base y catálogos visibles; flujos de negocio aún en construcción.
+
+=== SLIDE15 ===
+Pilar 5 - Ruta del ERP hacia 2028
+Total 17%
+Análisis de
+requerimientos
+8%
+2026-2028
+Diseño y
+planificación
+85%
+Ya avanzado
+Desarrollo
+8%
+2026-2028
+Pruebas
+0%
+2027-2028
+Implementación
+0%
+2027-2028
+Mantenimiento
+y soporte
+0%
+2028
+El MVP 2027 prioriza procedimientos/DRF de mayor impacto (prioridad A). Identificación DICA 89.5% se reporta en el
+dashboard
+.
+Primer prototipo funcional (MVP) — T1 a T2 2027
+Talento Humano
+Selección y contratación · Descriptores · Expediente de empleado · Planillas (núcleo)
+Contabilidad y Finanzas
+Contabilidad · Caja y Bancos ·
+CxC
+(prototipo operable)
+Académico
+Admisión · Socioeconómico · Nuevo ingreso · Flujo hasta matrícula
+Fases abiertas T2
+48%
+Áreas macro
+8 - 6 - 4%
+Gestión administrativa: 3 programadores incorporados
+Equipo: 3 programadores incorporados.
+
+=== SLIDE16 ===
+Pilar 5 - Demostración SGUEES
+EN VIVO
+1. Acta de reunión
+Seguimiento y validación
+Acuerdos entre STI y el área.
+Evidencia del seguimiento al requerimiento analizado.
+Abrir acta
+2. Sistema SGUEES
+Demostración del resultado en construcción
+Recorrido en vivo:
+• Seguridad
+• Talento Humano
+• Selección y contratación
+• Contabilidad
+• Bancos
+• Admisión
+Producto visible del avance.
+Iniciar recorrido en SGUEES
+

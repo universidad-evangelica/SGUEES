@@ -1,0 +1,109 @@
+Modulo,Ruta,Titulo,Tipo,EstadoSistema,BacklogID
+Compras,/com-proveedor,Registro de Proveedores,Catalogo,En sistema,PL-01
+Compras,/com-proveedor-actu,Actualizar Datos Proveedor,Proceso,En sistema,PL-01
+Compras,/com-unidad-medida,Unidades de Medida,Catalogo,En sistema,PL-01
+Compras,/com-soli-cotizacion,Solicitudes de Cotizaciones,Proceso,En sistema,PL-01
+Compras,/com-cotizacion,Oportunidades para Cotizar,Proceso,En sistema,PL-01
+Compras,/com-cuadro-comparativo,Cuadros Comparativos,Proceso,En sistema,PL-01
+Compras,/com-cuadro-comparativo-autoriza,Autorizar Cuadros Comparativos,Proceso,En sistema,PL-01
+Compras,/com-cuadro-comparativo-config-autorizaciones,Configuracion de Autorizaciones,Configuracion,En sistema,PL-01
+Compras,/com-orden-compra,Orden de Compra,Proceso,En sistema,PL-01
+Compras,/com-documento,Documentos por Compras,Proceso,En sistema,PL-01
+Compras,/com-documento-desaplicar,Des-aplicar Doc. Compras,Proceso,En sistema,PL-01
+Compras,/com-documento-anular,Anular Comprobantes Ret.,Proceso,En sistema,PL-01
+Compras,/com-condicion-pago,Condiciones de Pago,Catalogo,En sistema,PL-01
+Compras,/com-tipo-doc-fisico,Tipos de Doc. Fisicos,Catalogo,En sistema,PL-01
+Compras,/com-tipo-soli-cotiza,Tipo de Sol. Cotizacion,Catalogo,En sistema,PL-01
+Compras,/com-banco,Bancos (Compras),Catalogo,En sistema,PL-01
+Compras,/com-parametro,Parametros de Compras,Configuracion,En sistema,PL-01
+Compras,/com-cotizacion-consulta,Consulta de Cotizaciones,Consulta,En sistema,PL-01
+Compras,/com-bitacora,Bitacora,Consulta,En sistema,PL-01
+Seleccion,/sc-tipo-vacante,Tipo de Vacante,Catalogo,En sistema,TH-01
+Seleccion,/sc-requisicion-personal,Requisicion de personal,Proceso,En sistema,TH-01
+Seleccion,/sc-requisicion-observadores,Requisicion Observadores,Proceso,En sistema,TH-01
+Seleccion,/sc-tipo-modalidad,Tipo de modalidad,Catalogo,En sistema,TH-01
+Seleccion,/sc-tipo-contratacion,Tipo de Contratacion,Catalogo,En sistema,TH-01
+Seleccion,/sc-solicitud-empleo,Solicitud de Empleo,Proceso,En sistema,TH-01
+Seleccion,/sc-descriptor-puesto,Descriptor de Puesto,Proceso,En sistema,TH-02
+Seleccion,/sc-organigrama-estructural-unidades,Organigrama institucional,Catalogo,En sistema,TH-02
+Seleccion,/sc-organigrama-estructural-nivel,Niveles del Organigrama,Catalogo,En sistema,TH-02
+Seleccion,/sc-competencias-tecnicas,Competencias Tecnicas,Catalogo,En sistema,TH-02
+Seleccion,/sc-competencias-conductuales,Competencias Conductuales,Catalogo,En sistema,TH-02
+Seleccion,/sc-responsabilidad-cargo,Responsabilidad de Cargo,Catalogo,En sistema,TH-02
+Seleccion,/sc-riesgo-puesto,Riesgo de Puesto,Catalogo,En sistema,TH-02
+Seleccion,/sc-induccion,Induccion,Catalogo,En sistema,TH-02
+Seleccion,/sc-frecuencia,Frecuencia,Catalogo,En sistema,TH-02
+Seleccion,/sc-requerimiento-organizacional,Requerimiento Organizacional,Catalogo,En sistema,TH-02
+Seleccion,/sc-disponibilidad-horario,Disponibilidad de Horario,Catalogo,En sistema,TH-02
+Seleccion,/sc-impacto-economico,Impacto Economico,Catalogo,En sistema,TH-02
+Planilla,/pla-nivel-academico,Nivel Academico,Catalogo,En sistema,TH-04
+Planilla,/pla-tipo-puesto,Tipo de Puesto,Catalogo,En sistema,TH-04
+Planilla,/pla-puesto,Puesto,Catalogo,En sistema,TH-04
+Contabilidad,/con-partida,Partidas Contables,Proceso,En sistema,CF-01
+Contabilidad,/con-partida-aplicar,Partidas a Aplicar,Proceso,En sistema,CF-01
+Contabilidad,/con-partida-desaplicar,Partidas a Des-Aplicar,Proceso,En sistema,CF-01
+Contabilidad,/con-partida-anular,Partidas a Anular,Proceso,En sistema,CF-01
+Contabilidad,/con-partida-modelo,Partidas Modelo,Catalogo,En sistema,CF-01
+Contabilidad,/con-partida-modelo-seleccion,Generar Partida desde Modelo,Proceso,En sistema,CF-01
+Contabilidad,/con-cierre-apertura,Cierre y Apertura de Periodos,Proceso,En sistema,CF-01
+Contabilidad,/con-catalogo-cuenta,Catalogo de Cuentas,Catalogo,En sistema,CF-01
+Contabilidad,/con-catalogo-cuenta-centro-costo,Cuentas por Centro Costo,Catalogo,En sistema,CF-01
+Contabilidad,/con-centro-costo,Centros de Costo,Catalogo,En sistema,CF-01
+Contabilidad,/con-tipo-centro-costo,Tipos Centro Costo,Catalogo,En sistema,CF-01
+Contabilidad,/con-catalogo-presupuesto,Presupuestos,Catalogo,En sistema,CF-01
+Contabilidad,/con-rubro,Rubros Contables,Catalogo,En sistema,CF-01
+Contabilidad,/con-periodo-contable,Periodos Contables,Catalogo,En sistema,CF-01
+Contabilidad,/con-clase-partida,Clases de Partida,Catalogo,En sistema,CF-01
+Contabilidad,/con-area-funcional,Configuracion Area Funcional,Catalogo,En sistema,CF-01
+Contabilidad,/con-division,Divisiones,Catalogo,En sistema,CF-01
+Contabilidad,/con-gerencia,Gerencias,Catalogo,En sistema,CF-01
+Contabilidad,/con-departamento,Departamentos Contables,Catalogo,En sistema,CF-01
+Contabilidad,/con-seccion,Secciones,Catalogo,En sistema,CF-01
+Contabilidad,/con-parametro,Parametros Contabilidad,Configuracion,En sistema,CF-01
+Contabilidad,/con-contabilidad-importar-excel,Importar catalogos contables,Proceso,En sistema,CF-01
+Contabilidad,/con-reporte-libro-diario-auxiliar,Libro Diario Auxiliar,Reporte,En sistema,CF-01
+Contabilidad,/con-reporte-libro-diario-mayor,Libro Diario Mayor,Reporte,En sistema,CF-01
+Contabilidad,/con-reporte-balance-comprobacion,Balance de Comprobacion,Reporte,En sistema,CF-01
+Contabilidad,/con-reporte-balance-general,Balance General,Reporte,En sistema,CF-01
+Contabilidad,/con-reporte-estado-resultados,Estado de Resultados,Reporte,En sistema,CF-01
+Contabilidad,/con-reporte-libro-diario-auxiliar-mes,Libro Diario Auxiliar por mes,Reporte,En sistema,CF-01
+Contabilidad,/con-reporte-balance-comprobacion-mes,Balance de Comprobacion por mes,Reporte,En sistema,CF-01
+Contabilidad,/con-reporte-balance-general-vertical,Balance General vertical,Reporte,En sistema,CF-01
+Bancos,/ban-cuenta-bancaria,Cuentas Bancarias,Catalogo,En sistema,CF-02
+Bancos,/ban-tipo-cheque,Tipos de Cheques,Catalogo,En sistema,CF-02
+Bancos,/ban-tipo-movi-bancario,Tipos de Movimientos Bancarios,Catalogo,En sistema,CF-02
+Bancos,/ban-linea-trabajo-conciliacion,Lineas Trabajo Conciliacion,Catalogo,En sistema,CF-04
+Bancos,/ban-parametro,Parametros Bancarios,Configuracion,En sistema,CF-02
+Bancos,/ban-cheque,Cheques,Proceso,En sistema,CF-02
+Bancos,/ban-cheque-aplicar,Cheques a Aplicar,Proceso,En sistema,CF-02
+Bancos,/ban-cheque-imprimir,Cheques a Imprimir,Proceso,En sistema,CF-02
+Bancos,/ban-cheque-anular,Cheques a Anular,Proceso,En sistema,CF-02
+Bancos,/ban-documento,Documentos Bancarios,Proceso,En sistema,CF-02
+Bancos,/ban-documento-aplicar,Documentos Bancarios a Aplicar,Proceso,En sistema,CF-02
+Bancos,/ban-documento-anular,Documentos Bancarios a Anular,Proceso,En sistema,CF-02
+Bancos,/ban-documento-contabilizar,Contabilizar Documentos Bancarios,Proceso,En sistema,CF-02
+Bancos,/ban-soli-cheque,Solicitud de Cheques,Proceso,En sistema,CF-02
+Bancos,/ban-soli-cheque-autoriza,Autorizar Solicitud de Cheques,Proceso,En sistema,CF-02
+Bancos,/ban-concilia-bancaria,Conciliacion Bancaria,Proceso,En sistema,CF-04
+Bancos,/ban-reporte-cheque-emitidos,Reporte de Cheques Emitidos,Reporte,En sistema,CF-02
+Bancos,/ban-reporte-estado-cuenta,Disponibilidad Bancaria Auxiliar,Reporte,En sistema,CF-02
+Bancos,/ban-reporte-estado-cuenta-acumulado,Disponibilidad Bancaria,Reporte,En sistema,CF-02
+Bancos,/ban-reporte-entrega-cheques,Reporte de Cheques Entregados,Reporte,En sistema,CF-02
+Seguridad,/seg-opcion-sistema,Opciones del Sistema,Administracion,En sistema,
+Seguridad,/seg-config-opcion,Configuracion de Opciones,Administracion,En sistema,
+Seguridad,/seg-usuario,Usuarios,Administracion,En sistema,
+Seguridad,/seg-tipo-usuario,Tipo Usuario,Administracion,En sistema,
+Seguridad,/seg-flujo-tipo-documento,Documentos (flujos),Flujos,En sistema,TH-01
+Seguridad,/seg-flujo-actor,Actores de flujos,Flujos,En sistema,TH-01
+Seguridad,/seg-flujo-proceso,Flujos del sistema,Flujos,En sistema,TH-01
+Seguridad,/profile,Perfil,Portal,En sistema,
+General,/gen-rubro,Rubro,Catalogo,En sistema,
+General,/gen-tipo-gasto,Tipo Gasto,Catalogo,En sistema,
+General,/gen-tipo-documento,Tipo Documento,Catalogo,En sistema,
+General,/gen-sector-economico,Sector Economicos,Catalogo,En sistema,
+General,/gen-empresa,Empresas,Catalogo,En sistema,
+General,/gen-estructura-territorial,Estructura Territorial,Catalogo,En sistema,
+General,/gen-division,Divisiones,Catalogo,En sistema,
+General,/gen-gerencia,Gerencias,Catalogo,En sistema,
+General,/gen-banco,Bancos,Catalogo,En sistema,
+General,/gen-unidades-puesto,Asignacion de Puestos a Unidades,Catalogo,En sistema,TH-04

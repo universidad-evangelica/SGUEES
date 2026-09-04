@@ -1,0 +1,15 @@
+ID,Area,Procedimiento,Modulo,Fase,Prioridad,Estado,Ident,Anal,Diseno,Dev,QA,Impl,Evidencia,Notas
+TH-01,Talento Humano,Seleccion y contratacion,SC_,Fase 1 MVP 2027,A,En desarrollo,100,90,40,15,0,0,DRF-TH-SC VF; 18 pantallas SC_; RF 01-03 parcial; RF 04-10 no iniciados,Desarrollo se calcula desde hoja 09 (promedio RF; catalogos no inflan)
+TH-02,Talento Humano,Descriptor de puesto,SC_,Fase 1 MVP 2027,A,En desarrollo,100,90,40,70,0,0,DRF Descriptor VF; /sc-descriptor-puesto; falta flujo JI/TH observar y reactivar/inactivar,Edite Desarrollo (K) al % real (75%, 80%...). Hoja 09 es detalle DRF
+TH-03,Talento Humano,Expediente de empleado,PLA_ / nuevo,Fase 1 MVP 2027,A,En analisis,90,8,10,2,0,0,Sin pantalla ERP de expediente,Proceso definido; falta DRF y desarrollo
+TH-04,Talento Humano,Planilla (nucleo),PLA_,Fase 1 MVP 2027,A,En desarrollo,80,8,20,3,0,0,3 catalogos: puesto; tipo puesto; nivel academico,Nucleo MVP; falta nomina y pago
+CF-01,Contabilidad y Finanzas,Contabilidad,CON_,Fase 1 MVP 2027,A,En desarrollo,95,10,35,9,0,0,Partidas; catalogos; cierre; reportes legales,Base visible; flujos aun en construccion
+CF-02,Contabilidad y Finanzas,Caja y bancos,BAN_,Fase 1 MVP 2027,A,En desarrollo,90,8,30,7,0,0,Cheques; documentos; conciliacion; reportes,Tesoreria en construccion
+CF-03,Contabilidad y Finanzas,Cuentas por pagar / Pagos,COM_ / CON_,Fase 1 MVP 2027,A,En desarrollo,85,8,25,6,0,0,Documentos y OC de Compras como insumo,CxP/Pagos prioridad A; ciclo AP incompleto
+CF-04,Contabilidad y Finanzas,Conciliacion bancaria,BAN_,Fase 1 MVP 2027,A,En analisis,90,8,20,2,0,0,Pantalla /ban-concilia-bancaria,Incluida en prioridad A Finanzas (CTD jul 2026)
+AC-01,Academico,Admision,Pendiente / CLASS,Fase 1 MVP 2027,A,En analisis,80,8,10,5,0,0,Demo CTD incluye Admision,Inicio visible; operacion actual en CLASS
+AC-02,Academico,Nuevo ingreso,Pendiente / CLASS,Fase 1 MVP 2027,A,Por hacer,70,0,0,0,0,0,Sin modulo academico en SPA,Por hacer: avance 0 hasta que inicie analisis o desarrollo
+AC-03,Academico,Socioeconomico,Pendiente / CLASS,Fase 1 MVP 2027,A,Por hacer,70,0,0,0,0,0,Sin modulo en SGUEES,Por hacer: avance 0 hasta que inicie analisis o desarrollo
+AC-04,Academico,Matricula,Pendiente / CLASS,Fase 1 MVP 2027,A,Por hacer,70,0,0,0,0,0,Sin modulo academico en SPA,Por hacer: avance 0 hasta que inicie analisis o desarrollo
+AC-05,Academico,Solicitud de becas,Pendiente / CLASS,Fase 1 MVP 2027,A,Definicion,100,0,0,2,0,0,Procedimiento documentado,Incluido por alcance institucional; no es nucleo MVP T1-T2 2027
+PL-01,Plataforma,Compras (catalogos y documentos visibles),COM_,Fase 1 MVP 2027,B,En integracion,100,40,50,20,10,30,19 pantallas Shop ya construidas; misma tecnologia SPA+API,Se pasa a SGUEES y se valida. No cierra la Fase 1 del ERP

@@ -162,6 +162,27 @@
 	color: var(--sguees-text-secondary, color-mix(in srgb, var(--base-text-color) 72%, transparent));
 }
 
+.descriptor-flujo-popup {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 4px 2px 8px;
+}
+
+.descriptor-flujo-popup__hint {
+	margin: 0;
+	font-size: 0.92rem;
+	line-height: 1.4;
+	opacity: 0.85;
+}
+
+.descriptor-flujo-popup__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 4px;
+}
+
 :host ::ng-deep .descriptor-lookup-field--invalid .dx-selectbox.dx-texteditor,
 :host ::ng-deep .descriptor-lookup-field--invalid .dx-dropdownbox.dx-texteditor,
 :host ::ng-deep .descriptor-lookup-field--invalid.dx-selectbox.dx-texteditor,
@@ -742,6 +763,10 @@
 	flex-direction: column;
 	gap: 6px;
 	min-width: 0;
+}
+
+.descriptor-perfil-field--full {
+	grid-column: 1 / -1;
 }
 
 .descriptor-perfil-label {

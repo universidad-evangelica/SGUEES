@@ -20,6 +20,7 @@ import { SC_OrganigramaEstructuralNivelComponent } from './sc-organigrama-estruc
 import { ScRequisicionObservadoresComponent } from './sc-requisicion-observadores/sc-requisicion-observadores.component';
 import { ScCompetenciasConductualesComponent } from './sc-competencias-conductuales/sc-competencias-conductuales.component';
 import { ScDescriptorPuestoComponent } from './sc-descriptor-puesto/sc-descriptor-puesto.component';
+import { ScUnidadesUsuarioComponent } from './sc-unidades-usuario/sc-unidades-usuario.component';
 import { ScSolicitudEmpleoComponent } from './sc-solicitud-empleo/sc-solicitud-empleo.component';
 import { ScExpedienteCandidatoComponent } from './sc-expediente-candidato/sc-expediente-candidato.component';
 
@@ -160,6 +161,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./sc-descriptor-puesto/sc-descriptor-puesto.module').then(m => m.ScDescriptorPuestoModule)
+  },
+  {
+    path: 'sc-unidades-usuario',
+    component: ScUnidadesUsuarioComponent,
+    data: { titulo: 'Unidades de Usuario' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-unidades-usuario/sc-unidades-usuario.module').then(m => m.ScUnidadesUsuarioModule)
   },
   {
     path: 'sc-solicitud-empleo',

@@ -2,6 +2,7 @@
 export interface ScDescriptorPuesto {
 	CORR_EMPRESA: number; // Empresa a la que pertenece el descriptor.
 	CORR_DESCRIPTOR_PUESTO: number; // Identificador único del descriptor.
+	CODIGO_DESCRIPTOR_PUESTO?: string; // Código legible DES-####, sellado al crear el descriptor.
 	CORR_PUESTO: number | null; // Puesto organizacional al que aplica el descriptor.
 	CORR_UNIDAD: number | null; // Unidad organizacional del puesto.
 	FECHA_EMISION: Date | string | null; // Fecha en que se emitió el descriptor.
@@ -14,7 +15,8 @@ export interface ScDescriptorPuesto {
 	RESPONSABLE: string; // Nombre del responsable del puesto (NOMBRE_EMPLEADO del jefe).
 	FORMATO: string; // Formato del descriptor: CORTO, EXTENSO o AMBOS.
 	VERSION: number | null; // Número de versión del descriptor.
-	ESTADO_DESCRIPTOR: string; // Estado del flujo (BORRADOR, ACTIVO, etc.).
+	CORR_ESTADO: number | null; // FK al estado del flujo (SEG_FLUJO_ESTADO).
+	NOMBRE_ESTADO: string; // Nombre del estado de flujo (bandera UI).
 	USUARIO_CREA: string; // Usuario que creó el registro.
 	ESTACION_CREA: string; // Estación de trabajo de creación.
 	FECHA_CREA: Date | string | null; // Fecha y hora de creación.
@@ -134,8 +136,80 @@ export const TIPO_FUNCION_SECUNDARIA = 'SECUNDARIA';
 export const TIPO_RELACION_INTERNA = 'I';
 export const TIPO_RELACION_EXTERNA = 'E';
 
-// Estados que impiden crear otra versión abierta del mismo puesto.
-export const ESTADOS_DESCRIPTOR_BLOQUEO_CREACION = ['BORRADOR', 'ENVIADO', 'REVISADO', 'ACTIVO'];
+// Estados que NO permiten crear otra versión abierta del mismo puesto.
+// Cualquier estado distinto de Inactivo (CORR 18) bloquea.
+// Ids alineados a SEG_FLUJO_ESTADO (SC_DESCRIPTOR_PUESTO). NOMBRE_* solo etiqueta/UI.
+export const CORR_ESTADO_BORRADOR = 11;
+export const CORR_ESTADO_APROBADO_JI = 12;
+export const CORR_ESTADO_REVISADO_TH = 13;
+export const CORR_ESTADO_ACTIVO = 14;
+export const CORR_ESTADO_OBSERVADO = 15;
+export const CORR_ESTADO_ENVIADO_JI = 16;
+export const CORR_ESTADO_ENVIADO_JTH = 17;
+export const CORR_ESTADO_INACTIVO = 18;
+
+export const NOMBRE_ESTADO_INACTIVO = 'Inactivo';
+export const NOMBRE_ESTADO_BORRADOR = 'Borrador';
+export const NOMBRE_ESTADO_OBSERVADO = 'Observado';
+export const NOMBRE_ESTADO_ENVIADO_JI = 'Enviado JI';
+export const NOMBRE_ESTADO_APROBADO_JI = 'Aprobado JI';
+export const NOMBRE_ESTADO_ENVIADO_JTH = 'Enviado a JTH';
+export const NOMBRE_ESTADO_ACTIVO = 'Activo';
+
+/** Catálogo OPERACION del SP PRAL_MTTO_SC_DESCRIPTOR_PUESTO_AUTORIZA. */
+export const OPERACION_FLUJO = {
+	GUARDAR: 1,
+	ENVIAR: 2,
+	APROBAR: 3,
+	OBSERVAR: 4,
+	INACTIVAR: 5,
+	REACTIVAR: 6,
+} as const;
+
+// Qué hace: normaliza CORR_ESTADO a número (0 si vacío/inválido).
+export function toCorrEstado(corrEstado: number | null | undefined): number {
+	const n = Number(corrEstado);
+	return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+export function esEstadoDescriptorBloqueante(corrEstado: number | null | undefined): boolean {
+	const c = toCorrEstado(corrEstado);
+	return c > 0 && c !== CORR_ESTADO_INACTIVO;
+}
+
+/** Qué hace: indica si el contenido del descriptor se puede editar/guardar. */
+export function esEstadoDescriptorEditable(corrEstado: number | null | undefined): boolean {
+	const c = toCorrEstado(corrEstado);
+	return c === 0 || c === CORR_ESTADO_BORRADOR || c === CORR_ESTADO_OBSERVADO;
+}
+
+/** Qué hace: indica si el descriptor se puede eliminar (solo Borrador / Observado). */
+export function esEstadoDescriptorEliminable(corrEstado: number | null | undefined): boolean {
+	return esEstadoDescriptorEditable(corrEstado);
+}
+
+export function puedeEnviarDescriptor(corrEstado: number | null | undefined): boolean {
+	const c = toCorrEstado(corrEstado);
+	return c === CORR_ESTADO_BORRADOR || c === CORR_ESTADO_OBSERVADO;
+}
+
+export function puedeAprobarUObservarDescriptor(corrEstado: number | null | undefined): boolean {
+	const c = toCorrEstado(corrEstado);
+	return (
+		c === CORR_ESTADO_ENVIADO_JI ||
+		c === CORR_ESTADO_APROBADO_JI ||
+		c === CORR_ESTADO_REVISADO_TH ||
+		c === CORR_ESTADO_ENVIADO_JTH
+	);
+}
+
+export function puedeInactivarDescriptor(corrEstado: number | null | undefined): boolean {
+	return toCorrEstado(corrEstado) === CORR_ESTADO_ACTIVO;
+}
+
+export function puedeReactivarDescriptor(corrEstado: number | null | undefined): boolean {
+	return toCorrEstado(corrEstado) === CORR_ESTADO_INACTIVO;
+}
 
 // Valores por defecto al crear el perfil local si aún no existe en BD.
 export const PERFIL_PUESTO_DEFAULT = {
@@ -148,4 +222,5 @@ export const PERFIL_PUESTO_DEFAULT = {
 	CORR_TIPO_MODALIDAD: null as number | null,
 	NOMBRE_MODALIDAD: '',
 	LICENCIA: false,
+	OTROS: '',
 };

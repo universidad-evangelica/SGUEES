@@ -21,6 +21,8 @@ using sgueesRpt.Controllers;
 
 using sgueesRpt.Models;
 
+using sgueesRpt.Reports;
+
 
 
 namespace sgueesRpt.Layouts
@@ -290,6 +292,24 @@ namespace sgueesRpt.Layouts
 			CrystalReportBinder.ApplyPushDataSet(report, data);
 			Stream stream = report.ExportToStream(ExportFormatType.PortableDocFormat);
 			return new eDocResult(stream, request, pdfFileName);
+		}
+
+		/// <summary>
+		/// Push legacy e-Admin: tabla detalle embebida en .rpt + GEN_PARAMETRO.
+		/// Usar mientras el .rpt no se migre a una sola tabla *_IMPRView en Crystal Designer.
+		/// </summary>
+		public static IHttpActionResult ExportPdfLegacy<TReport, TData>(
+			List<TData> data,
+			HttpRequestMessage request,
+			string pdfFileName,
+			string detailTableName,
+			string defaultTitle = null)
+			where TReport : ReportClass, new()
+		{
+			return ExportPdfDataSet<TReport>(
+				LegacyReportData.CreateDataSet(data, detailTableName, defaultTitle),
+				request,
+				pdfFileName);
 		}
 
 		public static IHttpActionResult ExportPdfDataSet(

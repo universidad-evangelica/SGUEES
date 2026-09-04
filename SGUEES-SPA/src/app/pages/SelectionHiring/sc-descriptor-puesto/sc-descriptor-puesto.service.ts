@@ -35,7 +35,8 @@ import { ScDescriptorPuestoInduccionRepository } from './sc-descriptor-puesto-in
 import { ScDescriptorPuestoResponsabilidadCargo } from './sc-descriptor-puesto-responsabilidad-cargo/models/sc-descriptor-puesto-responsabilidad-cargo';
 import { ScDescriptorPuestoResponsabilidadCargoRepository } from './sc-descriptor-puesto-responsabilidad-cargo/sc-descriptor-puesto-responsabilidad-cargo.repository';
 import {
-	ESTADOS_DESCRIPTOR_BLOQUEO_CREACION,
+	CORR_ESTADO_ACTIVO,
+	esEstadoDescriptorBloqueante,
 	FORMATO_AMBOS,
 	FORMATO_CORTO,
 	FORMATO_EXTENSO,
@@ -44,17 +45,16 @@ import {
 	TIPO_FUNCION_SECUNDARIA,
 	TIPO_RELACION_EXTERNA,
 	TIPO_RELACION_INTERNA,
+	toCorrEstado,
+	CORR_ESTADO_BORRADOR,
+	CORR_ESTADO_INACTIVO,
+	CORR_ESTADO_OBSERVADO,
+	CORR_ESTADO_ENVIADO_JI,
+	CORR_ESTADO_ENVIADO_JTH,
+	CORR_ESTADO_APROBADO_JI,
+	CORR_ESTADO_REVISADO_TH,
 } from './models/sc-descriptor-puesto';
 import { ScDescriptorPuestoRepository } from './sc-descriptor-puesto.repository';
-
-// Qué hace: textos legibles de cada estado del descriptor para los badges del grid.
-const ESTADO_DESCRIPTOR_LABELS: Record<string, string> = {
-	BORRADOR: 'Borrador',
-	ENVIADO: 'Enviado',
-	REVISADO: 'En revision',
-	ACTIVO: 'Activo',
-	INACTIVO: 'Inactivo',
-};
 
 // Qué hace: expone la lógica de negocio del descriptor y de todas sus secciones de detalle.
 @Injectable({ providedIn: 'root' })
@@ -112,15 +112,22 @@ export class ScDescriptorPuestoService {
 		return true;
 	}
 
-	// Qué hace: busca otro descriptor del mismo puesto en estado que impida crear una versión paralela.
-	// Cómo: filtra la lista por puesto y estado bloqueante; en edición excluye el registro actual.
+	// Qué hace: busca otro descriptor de la misma unidad+puesto que impida crear/reactivar en paralelo.
+	// Cómo: filtra por CORR_UNIDAD + CORR_PUESTO y estado bloqueante; en edición excluye el registro actual.
 	buscarDescriptorBloqueoPorPuesto(
 		model: ScDescriptorPuesto,
 		models: ScDescriptorPuesto[],
 		isAdd: boolean
 	): ScDescriptorPuesto | null {
 		const corrPuesto = Number(model.CORR_PUESTO);
-		if (!corrPuesto || corrPuesto <= 0 || !Array.isArray(models)) {
+		const corrUnidad = Number(model.CORR_UNIDAD);
+		if (
+			!corrPuesto ||
+			corrPuesto <= 0 ||
+			!corrUnidad ||
+			corrUnidad <= 0 ||
+			!Array.isArray(models)
+		) {
 			return null;
 		}
 
@@ -128,12 +135,15 @@ export class ScDescriptorPuestoService {
 
 		return (
 			models.find((row) => {
+				if (Number(row.CORR_UNIDAD) !== corrUnidad) {
+					return false;
+				}
 				if (Number(row.CORR_PUESTO) !== corrPuesto) {
 					return false;
 				}
 
-				const estado = (row.ESTADO_DESCRIPTOR ?? '').toUpperCase();
-				if (!ESTADOS_DESCRIPTOR_BLOQUEO_CREACION.includes(estado)) {
+				const estado = row.CORR_ESTADO;
+				if (!esEstadoDescriptorBloqueante(estado)) {
 					return false;
 				}
 
@@ -142,7 +152,7 @@ export class ScDescriptorPuestoService {
 		);
 	}
 
-	// Qué hace: impide guardar si ya existe otro descriptor bloqueante para el mismo puesto.
+	// Qué hace: impide guardar si ya existe otro descriptor bloqueante para la misma unidad y puesto.
 	// Cómo: usa buscarDescriptorBloqueoPorPuesto y muestra el mensaje de conflicto si encuentra uno.
 	validarDescriptorUnicoPorPuesto(
 		model: ScDescriptorPuesto,
@@ -159,9 +169,16 @@ export class ScDescriptorPuestoService {
 		return false;
 	}
 
-	// Qué hace: arma el código legible del descriptor (por ejemplo DES-0001).
-	buildCodigoDescriptor(corrDescriptor: number | null | undefined): string {
-		const corr = Number(corrDescriptor);
+	// Qué hace: devuelve el código legible del descriptor (por ejemplo DES-0001).
+	// Cómo: usa CODIGO_DESCRIPTOR_PUESTO guardado al crear; solo lo calcula desde el
+	//       correlativo en los descriptores creados antes de que existiera el campo.
+	buildCodigoDescriptor(descriptor: ScDescriptorPuesto | null | undefined): string {
+		const guardado = (descriptor?.CODIGO_DESCRIPTOR_PUESTO ?? '').trim();
+		if (guardado) {
+			return guardado;
+		}
+
+		const corr = Number(descriptor?.CORR_DESCRIPTOR_PUESTO);
 		if (!corr || corr <= 0) {
 			return 'DES-0000';
 		}
@@ -169,16 +186,46 @@ export class ScDescriptorPuestoService {
 		return `DES-${String(corr).padStart(4, '0')}`;
 	}
 
-	// Qué hace: arma el mensaje de advertencia cuando ya existe un descriptor abierto del puesto.
+	// Qué hace: arma el mensaje de advertencia cuando ya existe un descriptor abierto de unidad+puesto.
 	buildMensajeDescriptorExistente(conflicto: ScDescriptorPuesto): string {
-		const codigo = this.buildCodigoDescriptor(conflicto.CORR_DESCRIPTOR_PUESTO);
+		const codigo = this.buildCodigoDescriptor(conflicto);
 		const version = Number(conflicto.VERSION) > 0 ? Number(conflicto.VERSION) : 1;
-		const estado = (conflicto.ESTADO_DESCRIPTOR ?? '').toUpperCase();
-		const contexto = estado === 'ACTIVO' ? 'activo' : 'en proceso de aprobacion';
+		const estado = toCorrEstado(conflicto.CORR_ESTADO);
+		const contexto = estado === CORR_ESTADO_ACTIVO ? 'activo' : 'en proceso de aprobacion';
 
 		return (
-			`Ya existe un descriptor para este puesto que se encuentra ${contexto}. ` +
+			`Ya existe un descriptor para este puesto en esta unidad que se encuentra ${contexto}. ` +
 			`Solo sera posible crear una nueva version cuando la version actual ${codigo} version ${version} ` +
+			`haya sido activada y posteriormente desactivada.`
+		);
+	}
+
+	// Qué hace: impide reactivar si la misma unidad+puesto ya tiene otro descriptor en borrador, flujo o activo.
+	// Cómo: busca conflicto excluyendo el correlativo actual (Inactivo) y muestra el aviso.
+	validarPuedeReactivarDescriptor(
+		model: ScDescriptorPuesto,
+		models: ScDescriptorPuesto[],
+		msg: Function
+	): boolean {
+		const conflicto = this.buscarDescriptorBloqueoPorPuesto(model, models, false);
+		if (!conflicto) {
+			return true;
+		}
+
+		msg(this.buildMensajeDescriptorReactivar(conflicto), NotifyType.Warning);
+		return false;
+	}
+
+	// Qué hace: mensaje al intentar reactivar cuando ya hay otro descriptor abierto de la misma unidad+puesto.
+	buildMensajeDescriptorReactivar(conflicto: ScDescriptorPuesto): string {
+		const codigo = this.buildCodigoDescriptor(conflicto);
+		const version = Number(conflicto.VERSION) > 0 ? Number(conflicto.VERSION) : 1;
+		const estado = toCorrEstado(conflicto.CORR_ESTADO);
+		const contexto = estado === CORR_ESTADO_ACTIVO ? 'activo' : 'en proceso de aprobacion';
+
+		return (
+			`Ya existe un descriptor para este puesto en esta unidad que se encuentra ${contexto}. ` +
+			`Solo sera posible reactivar esta version cuando la version actual ${codigo} version ${version} ` +
 			`haya sido activada y posteriormente desactivada.`
 		);
 	}
@@ -236,10 +283,56 @@ export class ScDescriptorPuestoService {
 		return this.repo.delete([{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: model.CORR_DESCRIPTOR_PUESTO }]);
 	}
 
+	// Qué hace: ejecuta una operación del flujo del descriptor.
+	// Cómo: PUT Autoriza con OPERACION, OBSERVACION y unidad (para NUEVO/ENVIAR).
+	autoriza(payload: {
+		CORR_DESCRIPTOR_PUESTO: number;
+		OPERACION: number;
+		OBSERVACION: string;
+		CORR_UNIDAD_DOCUMENTO?: number | null;
+		CORR_ACCION?: number | null;
+	}): Observable<IResult> {
+		return this.repo.autoriza({
+			CORR_DESCRIPTOR_PUESTO: payload.CORR_DESCRIPTOR_PUESTO,
+			OPERACION: payload.OPERACION,
+			OBSERVACION: payload.OBSERVACION,
+			CORR_UNIDAD_DOCUMENTO: payload.CORR_UNIDAD_DOCUMENTO ?? null,
+			CORR_ACCION: payload.CORR_ACCION ?? null,
+		});
+	}
+
+	// Qué hace: obtiene flags finales de acciones de flujo para el descriptor seleccionado.
+	// Cómo: GET GetAccionesFlujo; respuesta ya incluye destinatario + permiso U de sesión.
+	getAccionesFlujo(corrDescriptorPuesto: number): Observable<IResult> {
+		return this.repo.getAccionesFlujo([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+		]);
+	}
+
+	// Qué hace: genera PDF Formato corto del descriptor seleccionado.
+	// Cómo: PostBlob getPDFFormatoCorto con CORR_DESCRIPTOR_PUESTO.
+	getPDFFormatoCorto(model: { CORR_DESCRIPTOR_PUESTO: number }): Observable<Blob> {
+		return this.repo.getPDFFormatoCorto(model);
+	}
+
+	// Qué hace: genera PDF Formato extenso del descriptor seleccionado.
+	// Cómo: PostBlob getPDFFormatoExtenso con CORR_DESCRIPTOR_PUESTO.
+	getPDFFormatoExtenso(model: { CORR_DESCRIPTOR_PUESTO: number }): Observable<Blob> {
+		return this.repo.getPDFFormatoExtenso(model);
+	}
+
 	// Qué hace: define las columnas del grid de consulta, incluidos badges de formato, estado y versión.
 	getColumns(): any[] {
 		return [
 			{ dataField: 'CORR_DESCRIPTOR_PUESTO', caption: 'Corr.', width: 85 },
+			{
+				dataField: 'CODIGO_DESCRIPTOR_PUESTO',
+				caption: 'Codigo',
+				width: 110,
+				// Los descriptores creados antes de este campo lo tienen vacío: se muestra el
+				// equivalente calculado para no dejar la celda en blanco.
+				calculateCellValue: (row: ScDescriptorPuesto) => this.buildCodigoDescriptor(row),
+			},
 			{ dataField: 'NOMBRE_UNIDAD', caption: 'Area', width: 180 },
 			{ dataField: 'NOMBRE_PUESTO', caption: 'Titulo del puesto', width: 220 },
 			{
@@ -267,18 +360,18 @@ export class ScDescriptorPuestoService {
 				},
 			},
 			{
-				dataField: 'ESTADO_DESCRIPTOR',
+				dataField: 'NOMBRE_ESTADO',
 				caption: 'Estado',
-				width: 152,
+				width: 168,
 				cssClass: 'descriptor-grid-badge-col',
 				allowHeaderFiltering: false,
 				calculateCellValue: (row: ScDescriptorPuesto) =>
-					this.getEstadoDescriptorLabel(row.ESTADO_DESCRIPTOR),
+					this.getEstadoDescriptorLabel(row.NOMBRE_ESTADO),
 				cellTemplate: (cellElement: HTMLElement, cellInfo: any) => {
 					this.renderBadge(
 						cellElement,
-						[this.getEstadoDescriptorBadgeClass(cellInfo.data?.ESTADO_DESCRIPTOR)],
-						this.getEstadoDescriptorLabel(cellInfo.data?.ESTADO_DESCRIPTOR)
+						[this.getEstadoDescriptorBadgeClass(cellInfo.data?.CORR_ESTADO)],
+						this.getEstadoDescriptorLabel(cellInfo.data?.NOMBRE_ESTADO)
 					);
 				},
 			},
@@ -444,10 +537,18 @@ export class ScDescriptorPuestoService {
 				editorOptions: { min: 1, showSpinButtons: true, readOnly: true },
 			},
 			{
-				dataField: 'ESTADO_DESCRIPTOR',
+				dataField: 'NOMBRE_ESTADO',
 				label: { text: 'Estado' },
 				colSpan: 2,
 				editorType: 'dxTextBox',
+				editorOptions: { readOnly: true },
+			},
+			{
+				dataField: 'CORR_ESTADO',
+				label: { text: 'Corr. estado' },
+				visible: false,
+				colSpan: 1,
+				editorType: 'dxNumberBox',
 				editorOptions: { readOnly: true },
 			},
 		];
@@ -554,29 +655,33 @@ export class ScDescriptorPuestoService {
 		return 'descriptor-badge--formato-default';
 	}
 
-	// Qué hace: devuelve la etiqueta legible del estado del descriptor.
+	// Qué hace: devuelve la etiqueta del estado (nombre del flujo tal cual).
 	private getEstadoDescriptorLabel(estado: string | null | undefined): string {
-		const value = (estado ?? '').toUpperCase();
-		return ESTADO_DESCRIPTOR_LABELS[value] ?? (estado ?? '');
+		return (estado ?? '').trim() || '';
 	}
 
-	// Qué hace: devuelve la clase CSS del badge según el estado del descriptor.
-	private getEstadoDescriptorBadgeClass(estado: string | null | undefined): string {
-		const value = (estado ?? '').toUpperCase();
-		switch (value) {
-			case 'ACTIVO':
-				return 'descriptor-badge--estado-activo';
-			case 'INACTIVO':
-				return 'descriptor-badge--estado-inactivo';
-			case 'BORRADOR':
-				return 'descriptor-badge--estado-borrador';
-			case 'ENVIADO':
-				return 'descriptor-badge--estado-enviado';
-			case 'REVISADO':
-				return 'descriptor-badge--estado-revision';
-			default:
-				return 'descriptor-badge--estado-default';
+	// Qué hace: clase CSS del badge según CORR_ESTADO del flujo.
+	private getEstadoDescriptorBadgeClass(corrEstado: number | null | undefined): string {
+		const c = toCorrEstado(corrEstado);
+		if (c === CORR_ESTADO_ACTIVO) {
+			return 'descriptor-badge--estado-activo';
 		}
+		if (c === CORR_ESTADO_INACTIVO) {
+			return 'descriptor-badge--estado-inactivo';
+		}
+		if (c === CORR_ESTADO_BORRADOR) {
+			return 'descriptor-badge--estado-borrador';
+		}
+		if (c === CORR_ESTADO_OBSERVADO) {
+			return 'descriptor-badge--estado-revision';
+		}
+		if (c === CORR_ESTADO_ENVIADO_JI || c === CORR_ESTADO_ENVIADO_JTH) {
+			return 'descriptor-badge--estado-enviado';
+		}
+		if (c === CORR_ESTADO_APROBADO_JI || c === CORR_ESTADO_REVISADO_TH) {
+			return 'descriptor-badge--estado-revision';
+		}
+		return 'descriptor-badge--estado-default';
 	}
 
 	// Qué hace: lista funciones secundarias del descriptor.
@@ -1421,6 +1526,7 @@ export class ScDescriptorPuestoService {
 			CORR_TIPO_MODALIDAD: perfil.CORR_TIPO_MODALIDAD ?? null,
 			NOMBRE_MODALIDAD: (perfil.NOMBRE_MODALIDAD ?? '').trim() || null,
 			LICENCIA: perfil.LICENCIA ?? false,
+			OTROS: (perfil.OTROS ?? '').trim() || null,
 		};
 
 		if (!existe || corrPerfil <= 0) {

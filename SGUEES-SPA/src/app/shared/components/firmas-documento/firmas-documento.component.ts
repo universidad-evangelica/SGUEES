@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { take } from 'rxjs/operators';
 import { FirmasDocumentoService } from './firmas-documento.service';
 import { FirmaDocumento } from './models/firma-documento';
@@ -8,7 +8,9 @@ import { FirmaDocumento } from './models/firma-documento';
     templateUrl: './firmas-documento.component.html',
     styleUrls: ['./firmas-documento.component.scss'],
 })
-export class FirmasDocumentoComponent implements OnInit, OnChanges {
+// Que hace: muestra firmas/bitacora del documento.
+// Como: una sola carga por cambio de tipoDocumento/idDocumento (ngOnChanges); refresh() fuerza recarga.
+export class FirmasDocumentoComponent implements OnChanges {
     @Input() tipoDocumento: number;
     @Input() idDocumento: number;
     @Input() mostrarTitulo: boolean = true;
@@ -21,10 +23,8 @@ export class FirmasDocumentoComponent implements OnInit, OnChanges {
         this.columns = this.service.getColumns();
     }
 
-    ngOnInit(): void {
-        this.cargarFirmas();
-    }
-
+    // Que hace: carga firmas cuando llegan o cambian tipo/id (incluye la primera vez).
+    // Como: evita doble GET; antes ngOnInit + ngOnChanges disparaban GetFirmas dos veces.
     ngOnChanges(changes: SimpleChanges): void {
         if ((changes['tipoDocumento'] || changes['idDocumento']) && this.tipoDocumento && this.idDocumento) {
             this.cargarFirmas();
@@ -62,5 +62,4 @@ export class FirmasDocumentoComponent implements OnInit, OnChanges {
     refresh(): void {
         this.cargarFirmas();
     }
-    
 }
