@@ -8,7 +8,6 @@
 <div
   class="requisicion-mtto"
   [class.requisicion-mtto--workspace-open]="workspaceExpedienteVisible || workspaceDetalleEntrevistasVisible"
-  [class.requisicion-mtto--workspace-open]="workspaceEntrevistasVisible"
 >
   <div class="requisicion-mtto__main">
     <app-barra-data-mtto
@@ -296,7 +295,6 @@
             </dxi-item>
             <dxi-item name="searchPanel" location="after"></dxi-item>
           </dxo-toolbar>
-        >
           <dxo-search-panel [visible]="true"></dxo-search-panel>
           <dxo-paging [pageSize]="10"></dxo-paging>
           <dxo-pager
@@ -317,16 +315,6 @@
             ></dxi-total-item>
           </dxo-summary>
           <!-- Columna Options comentada: Entrevistas se abre desde el botón del toolbar. -->
-          <div *dxTemplate="let cell of 'candidatosActionsTemplate'">
-            <div class="candidatos-grid-actions" (click)="$event.stopPropagation()">
-              <dx-button
-                icon="group"
-                hint="Entrevistas"
-                stylingMode="text"
-                (onClick)="abrirWorkspaceEntrevistas(cell.data)"
-              ></dx-button>
-            </div>
-          </div>
         </dx-data-grid>
       </div>
     </dxi-item>
@@ -341,14 +329,6 @@
   [attr.aria-hidden]="!workspaceExpedienteAbierto"
 >
   <header class="expediente-workspace__toolbar">
-<!-- Workspace entrevistas (slide desde la derecha). -->
-<aside
-  *ngIf="workspaceEntrevistasVisible"
-  class="entrevistas-workspace"
-  [class.entrevistas-workspace--open]="workspaceEntrevistasAbierto"
-  [attr.aria-hidden]="!workspaceEntrevistasAbierto"
->
-  <header class="entrevistas-workspace__toolbar">
     <dx-button
       text="Volver a la requisición"
       icon="chevronprev"
@@ -466,9 +446,6 @@
       (onClick)="cerrarWorkspaceEntrevistas()"
     ></dx-button>
     <div class="entrevistas-detalle-workspace__title">
-      (onClick)="cerrarWorkspaceEntrevistas()"
-    ></dx-button>
-    <div class="entrevistas-workspace__title">
       <h3>Entrevistas del candidato</h3>
       <span *ngIf="candidatoEntrevistaSeleccionado">
         {{ candidatoEntrevistaSeleccionado.NOMBRE_PERSONA }}
@@ -480,9 +457,6 @@
   <div class="entrevistas-detalle-workspace__body">
     <dx-scroll-view [scrollByContent]="true" [scrollByThumb]="true">
       <div class="entrevistas-detalle-workspace__content">
-  <div class="entrevistas-workspace__body">
-    <dx-scroll-view [scrollByContent]="true" [scrollByThumb]="true">
-      <div class="entrevistas-workspace__content">
         <div class="entrevista-tab">
           <section class="entrevista-form-card">
             <div class="entrevista-form-card__header">

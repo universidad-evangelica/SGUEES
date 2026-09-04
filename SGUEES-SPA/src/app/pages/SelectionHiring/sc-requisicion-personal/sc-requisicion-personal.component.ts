@@ -1,5 +1,4 @@
 import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
@@ -139,11 +138,6 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	workspaceDetalleEntrevistasVisible = false;
 	workspaceDetalleEntrevistasAbierto = false;
 	private workspaceDetalleEntrevistasCloseTimer: ReturnType<typeof setTimeout> | null = null;
-
-	/** Workspace entrevistas (slide-over derecha) desde tab Candidatos. */
-	workspaceEntrevistasVisible = false;
-	workspaceEntrevistasAbierto = false;
-	private workspaceEntrevistasCloseTimer: ReturnType<typeof setTimeout> | null = null;
 	candidatoEntrevistaSeleccionado: ScRequisicionPersonalCandidato | null = null;
 	entrevistas: ScExpedienteEntrevista[] = [];
 	entrevistaColumns: any[] = [];
@@ -371,9 +365,6 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 					this.modelsCandidatos = [];
 					this.candidatoFocusedKey = null;
 					this.candidatoSeleccionado = null;
-				},
-				error: (error: any) => {
-					this.modelsCandidatos = [];
 					this.notifyFx(error, NotifyType.Error);
 				},
 			});
@@ -1334,9 +1325,6 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.workspaceDetalleEntrevistasVisible = true;
 		setTimeout(() => {
 			this.workspaceDetalleEntrevistasAbierto = true;
-		this.workspaceEntrevistasVisible = true;
-		setTimeout(() => {
-			this.workspaceEntrevistasAbierto = true;
 		}, 20);
 		this.consultarEntrevistas();
 	}
@@ -1351,15 +1339,6 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		if (!animar || !this.workspaceDetalleEntrevistasVisible) {
 			this.workspaceDetalleEntrevistasAbierto = false;
 			this.workspaceDetalleEntrevistasVisible = false;
-	cerrarWorkspaceEntrevistas(animar = true): void {
-		if (this.workspaceEntrevistasCloseTimer) {
-			clearTimeout(this.workspaceEntrevistasCloseTimer);
-			this.workspaceEntrevistasCloseTimer = null;
-		}
-
-		if (!animar || !this.workspaceEntrevistasVisible) {
-			this.workspaceEntrevistasAbierto = false;
-			this.workspaceEntrevistasVisible = false;
 			this.candidatoEntrevistaSeleccionado = null;
 			this.entrevistas = [];
 			this.entrevistaReadOnly = false;
@@ -1370,17 +1349,13 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 
 		this.workspaceDetalleEntrevistasAbierto = false;
 		this.workspaceDetalleEntrevistasCloseTimer = setTimeout(() => {
-		this.workspaceDetalleEntrevistasVisible = false;
-		this.workspaceEntrevistasAbierto = false;
-		this.workspaceEntrevistasCloseTimer = setTimeout(() => {
-			this.workspaceEntrevistasVisible = false;
+			this.workspaceDetalleEntrevistasVisible = false;
 			this.candidatoEntrevistaSeleccionado = null;
 			this.entrevistas = [];
 			this.entrevistaReadOnly = false;
 			this.cerrarMarcarRealizadaEntrevista();
 			this.cerrarAdjuntosEntrevista();
 			this.workspaceDetalleEntrevistasCloseTimer = null;
-			this.workspaceEntrevistasCloseTimer = null;
 		}, 280);
 	}
 

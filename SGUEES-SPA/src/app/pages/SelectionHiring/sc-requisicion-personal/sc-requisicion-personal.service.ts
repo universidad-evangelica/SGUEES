@@ -859,13 +859,6 @@ export class ScRequisicionPersonalService {
             //     allowFiltering: false,
             //     cellTemplate: 'candidatosActionsTemplate',
             // },
-            {
-                caption: 'Options',
-                width: 110,
-                allowSorting: false,
-                allowFiltering: false,
-                cellTemplate: 'candidatosActionsTemplate',
-            },
         ];
     }
 
