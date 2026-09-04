@@ -8,5 +8,6 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 		public int CORR_FUNCION { get; set; }
 		public string NOMBRE_FUNCION { get; set; }
 		public string TIPO_FUNCION { get; set; }
+		public int NUM_ORDEN { get; set; }
 	}
 }
