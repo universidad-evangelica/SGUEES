@@ -63,9 +63,15 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 					header.FECHA_IMPRESION == default(DateTime) ? DateTime.Now : header.FECHA_IMPRESION);
 			}
 
+			var funcionesRows = payload.Funciones
+				?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_IMPRView>();
+			var funciones = Utils.CreateDataTable(funcionesRows);
+			funciones.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_IMPR";
+
 			var dataSet = new DataSet();
 			dataSet.Tables.Add(encabezado);
 			dataSet.Tables.Add(param);
+			dataSet.Tables.Add(funciones);
 
 			return dataSet;
 		}

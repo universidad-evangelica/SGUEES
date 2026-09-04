@@ -7,5 +7,6 @@ namespace SGUEES.Models
     public class SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload
     {
         public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRView> Encabezado { get; set; }
+        public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_IMPRView> Funciones { get; set; }
     }
 }

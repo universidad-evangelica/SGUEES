@@ -934,8 +934,8 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Qué hace: lee los 2 result sets del SP Formato extenso y arma el payload para RPT.
-        // Cómo: merge logos (result set 2) en encabezado; listo para agregar más apartados.
+        // Qué hace: lee los 3 result sets del SP Formato extenso y arma el payload para RPT.
+        // Cómo: merge logos (result set 2) en encabezado; funciones CLAVE en lista detalle.
         private async Task<CResult> GetDescriptorFormatoExtensoImprAsyncInternal(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -971,11 +971,20 @@ namespace SGUEES.Repositories
                     }
                 }
 
+                var funciones = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_IMPRView>();
+                if (reader.NextResult())
+                {
+                    funciones = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
                 reader.Close();
 
                 var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload
                 {
                     Encabezado = encabezado,
+                    Funciones = funciones,
                 };
 
                 objResultado.Data = payload;

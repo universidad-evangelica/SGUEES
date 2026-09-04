@@ -8,8 +8,8 @@ GO
 -- Cómo:
 --   1) Result set 1: encabezado (V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPR).
 --   2) Result set 2: encabezado/logos desde GEN_EMPRESA (GEN_PARAMETRO en Crystal).
--- Alcance: por ahora solo encabezado SC_DESCRIPTOR_PUESTO. Los bloques adicionales
---          del extenso se agregarán como result sets / vistas _IMPR propias.
+--   3) Result set 3: funciones CLAVE detalle (V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_IMPR).
+-- Alcance: encabezado + funciones clave (1 fila por función). Secundarias no van.
 -- Uso API: SC_DESCRIPTOR_PUESTO/getPDFFormatoExtenso → SGUEES-RPT SelectionHiring.
 -- =============================================================================
 CREATE OR ALTER PROCEDURE [dbo].[PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO]
@@ -65,5 +65,17 @@ BEGIN
 		GETDATE() AS FECHA_IMPRESION
 	FROM dbo.GEN_EMPRESA A
 	WHERE A.CORR_EMPRESA = @CORR_EMPRESA;
+
+	-- Result set 3: funciones CLAVE (1 fila por función; sin secundarias ni lista agregada).
+	SELECT
+		F.CORR_EMPRESA,
+		F.CORR_DESCRIPTOR_PUESTO,
+		F.CORR_FUNCION,
+		F.NOMBRE_FUNCION,
+		F.TIPO_FUNCION
+	FROM dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_IMPR F
+	WHERE F.CORR_EMPRESA = @CORR_EMPRESA
+	  AND F.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
+	ORDER BY F.CORR_FUNCION;
 END
 GO
