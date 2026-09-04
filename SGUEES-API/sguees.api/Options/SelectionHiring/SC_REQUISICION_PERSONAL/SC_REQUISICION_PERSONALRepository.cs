@@ -118,7 +118,7 @@ namespace SGUEES.Repositories
                     new CParameter() {ParameterName="CORR_REQUISICION_PERSONAL",Value=Data.CORR_REQUISICION_PERSONAL,DbType=System.Data.DbType.Int32,Direction=System.Data.ParameterDirection.InputOutput},
                     new CParameter() {ParameterName="CORR_DESCRIPTOR_PUESTO",Value=Data.CORR_DESCRIPTOR_PUESTO,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_UNIDAD",Value=Data.CORR_UNIDAD,DbType=System.Data.DbType.Int32},
-                    new CParameter() {ParameterName="NOMBRE_PUESTO_SOLICITADO",Value=Data.NOMBRE_PUESTO_SOLICITADO,DbType=System.Data.DbType.String},
+                    new CParameter() {ParameterName="CORR_PUESTO",Value=Data.CORR_PUESTO,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_TIPO_MODALIDAD",Value=Data.CORR_TIPO_MODALIDAD,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_TIPO_CONTRATACION",Value=Data.CORR_TIPO_CONTRATACION,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_TIPO_VACANTE",Value=Data.CORR_TIPO_VACANTE,DbType=System.Data.DbType.Int32},
@@ -184,7 +184,7 @@ namespace SGUEES.Repositories
                 {
                     new CParameter() {ParameterName="CORR_DESCRIPTOR_PUESTO",Value=Data.CORR_DESCRIPTOR_PUESTO,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_UNIDAD",Value=Data.CORR_UNIDAD,DbType=System.Data.DbType.Int32},
-                    new CParameter() {ParameterName="NOMBRE_PUESTO_SOLICITADO",Value=Data.NOMBRE_PUESTO_SOLICITADO,DbType=System.Data.DbType.String},
+                    new CParameter() {ParameterName="CORR_PUESTO",Value=Data.CORR_PUESTO,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_TIPO_MODALIDAD",Value=Data.CORR_TIPO_MODALIDAD,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_TIPO_CONTRATACION",Value=Data.CORR_TIPO_CONTRATACION,DbType=System.Data.DbType.Int32},
                     new CParameter() {ParameterName="CORR_TIPO_VACANTE",Value=Data.CORR_TIPO_VACANTE,DbType=System.Data.DbType.Int32},

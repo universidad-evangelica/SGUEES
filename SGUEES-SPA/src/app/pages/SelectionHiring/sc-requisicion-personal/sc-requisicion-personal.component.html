@@ -13,18 +13,6 @@
     <app-barra-data-mtto
       [tituloVentana]="tituloVentana"
       [subTituloVentana]="subTituloVentana"
-      --Esto
-      debe
-      de
-      agregarse
-      por
-      componente
-      ya
-      que
-      de
-      etools
-      no
-      viene.
       [isBrowse]="isBrowse()"
       [isForm]="isForm()"
       [permiteAdd]="permiteAdd"
@@ -66,12 +54,24 @@
           >
           </app-data-lookup>
         </div>
+        <div *dxTemplate="let cellInfo of 'CORR_PUESTOLookup'">
+          <app-data-lookup
+            [model]="mCORR_PUESTO"
+            [(value)]="model.CORR_PUESTO"
+            [selectedRowKeys]="selectedLookUpCORR_PUESTO"
+            [readOnly]="readOnly || !model.CORR_UNIDAD"
+            [valueExpr]="'CORR_PUESTO'"
+            [displayExpr]="'NOMBRE_PUESTO'"
+            [lookupColumns]="puestoLookupColumns"
+          >
+          </app-data-lookup>
+        </div>
         <div *dxTemplate="let cellInfo of 'CORR_DESCRIPTOR_PUESTOLookup'">
           <app-data-lookup
             [model]="mCORR_DESCRIPTOR_PUESTO"
             [(value)]="model.CORR_DESCRIPTOR_PUESTO"
             [selectedRowKeys]="selectedLookUpCORR_DESCRIPTOR_PUESTO"
-            [readOnly]="readOnly"
+            [readOnly]="readOnly || !model.CORR_PUESTO"
             [valueExpr]="'CORR_DESCRIPTOR_PUESTO'"
             [displayExpr]="'NOMBRE_PUESTO'"
             [lookupColumns]="descriptorPuestoLookupColumns"

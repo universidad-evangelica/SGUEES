@@ -555,7 +555,7 @@ namespace SGUEES.Services
 
         /// <summary>
         /// Lookup sc-requisicion-personal: descriptores por CORR_EMPRESA + CORR_UNIDAD.
-        /// Método nuevo; no modifica GetAllAsync / GetAsync existentes.
+        /// Método legacy; no modifica GetAllAsync / GetAsync existentes.
         /// </summary>
         public async Task<CResult> GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(SC_DESCRIPTOR_PUESTOParam xWhere)
         {
@@ -568,6 +568,32 @@ namespace SGUEES.Services
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "CORR_UNIDAD", Value = xWhere.CORR_UNIDAD, DbType = System.Data.DbType.Int32 },
+            };
+
+            return await _repo.GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(p);
+        }
+
+        /// <summary>
+        /// Lookup sc-requisicion-personal: descriptores por CORR_EMPRESA + CORR_UNIDAD + CORR_PUESTO.
+        /// Endpoint nuevo de cascada; reutiliza lectura de V_SC_DESCRIPTOR_PUESTO.
+        /// </summary>
+        public async Task<CResult> GetCORR_DESCRIPTOR_PUESTO_BY_PUESTO_SC_REQUISICION_PERSONAL(SC_DESCRIPTOR_PUESTOParam xWhere)
+        {
+            if (xWhere == null || xWhere.CORR_UNIDAD <= 0)
+            {
+                return ValidationError("Debe seleccionar una unidad para listar los descriptores de puesto.");
+            }
+
+            if (xWhere.CORR_PUESTO <= 0)
+            {
+                return ValidationError("Debe seleccionar un puesto para listar los descriptores.");
+            }
+
+            var p = new List<CParameter>
+            {
+                new CParameter() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_UNIDAD", Value = xWhere.CORR_UNIDAD, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_PUESTO", Value = xWhere.CORR_PUESTO, DbType = System.Data.DbType.Int32 },
             };
 
             return await _repo.GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(p);

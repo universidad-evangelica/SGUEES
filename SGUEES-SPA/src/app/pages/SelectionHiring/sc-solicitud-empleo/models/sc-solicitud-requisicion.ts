@@ -4,7 +4,8 @@ export interface ScSolicitudRequisicion {
 	CORR_REQUISICION_PERSONAL: number;
 	FECHA_REQUISICION?: string | Date;
 	NOMBRE_UNIDAD?: string;
-	NOMBRE_PUESTO_SOLICITADO?: string;
+	CORR_PUESTO?: number;
+	NOMBRE_PUESTO?: string;
 	MODALIDAD_NOMBRE?: string;
 	NOMBRE_TIPO_CONTRATACION?: string;
 	NOMBRE_TIPO_VACANTE?: string;

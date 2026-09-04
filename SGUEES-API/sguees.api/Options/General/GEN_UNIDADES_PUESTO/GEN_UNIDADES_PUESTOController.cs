@@ -105,6 +105,16 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Qué hace: puestos de la unidad para sc-requisicion-personal (cascada unidad→puesto→descriptor).
+        // Cómo: endpoint nuevo; reutiliza GetAllAsync filtrado por CORR_UNIDAD.
+        [HttpGet("GetCORR_PUESTO_SC_REQUISICION_PERSONAL")]
+        [Authorize(Policy = "/sc-requisicion-personal|R")]
+        public async Task<CResult> GetCORR_PUESTO_SC_REQUISICION_PERSONAL([FromQuery] GEN_UNIDADES_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetAllAsync(Data);
+        }
+
         // Qué hace: obtiene CORR_EMPRESA del claim del usuario autenticado.
         // Cómo: busca el claim CORR_EMPRESA y lo parsea a int; si falta, retorna 0.
         private int GetCorrEmpresa()

@@ -85,6 +85,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	mCORR_TIPO_VACANTE: any[] = [];
 	mLOGIN_SISTEMA: any[] = [];
 	mCORR_UNIDAD: any[] = [];
+	mCORR_PUESTO: any[] = [];
 	mCORR_DESCRIPTOR_PUESTO: any[] = [];
 
 	/** Columnas del grid del tab (definidas en service.getTabDetalleColumns). */
@@ -256,8 +257,14 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		{ dataField: 'NOMBRE_UNIDAD', caption: 'Nombre Unidad', width: 250 },
 	];
 
+	puestoLookupColumns: any[] = [
+		{ dataField: 'CORR_PUESTO', caption: 'Puesto', width: 100 },
+		{ dataField: 'CODIGO_PUESTO', caption: 'Código', width: 120 },
+		{ dataField: 'NOMBRE_PUESTO', caption: 'Nombre Puesto', width: 250 },
+	];
+
 	descriptorPuestoLookupColumns: any[] = [
-		{ dataField: 'CORR_DESCRIPTOR_PUESTO', caption: 'Descriptor Puesto', width: 120 },
+		{ dataField: 'CODIGO_DESCRIPTOR_PUESTO', caption: 'Código Descriptor', width: 140 },
 		{ dataField: 'NOMBRE_PUESTO', caption: 'Nombre Puesto', width: 250 },
 	];
 
@@ -716,6 +723,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		super.nuevo();
 		this.limpiarDatosTabs();
 		this.cerrarModalObservador();
+		this.mCORR_PUESTO = [];
 		this.mCORR_DESCRIPTOR_PUESTO = []; // Sin unidad aún → sin listado de descriptores
 		// Ocultar campos condicionales al iniciar un registro nuevo
 		this.model.ES_PERMANENTE = true;
@@ -730,9 +738,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	override editarClick(e: any): void {
 		super.editarClick(e);
 		this.cargarDatosTabs();
-		// Precargar descriptores de la unidad del registro + visibilidad de campos condicionales
+		// Precargar cascada unidad → puesto → descriptor + visibilidad condicional
 		setTimeout(() => {
-			this.getCORR_DESCRIPTOR_PUESTO();
+			this.precargarCascadaUnidadPuestoDescriptor();
 			this.sincronizarVisibilidadTiempoContrato();
 			this.sincronizarVisibilidadEmpleadoSustituto();
 		}, 0);
@@ -742,9 +750,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	override rowDblClick(e: any): void {
 		super.rowDblClick(e);
 		this.cargarDatosTabs();
-		// Precargar descriptores de la unidad del registro + visibilidad de campos condicionales
+		// Precargar cascada unidad → puesto → descriptor + visibilidad condicional
 		setTimeout(() => {
-			this.getCORR_DESCRIPTOR_PUESTO();
+			this.precargarCascadaUnidadPuestoDescriptor();
 			this.sincronizarVisibilidadTiempoContrato();
 			this.sincronizarVisibilidadEmpleadoSustituto();
 		}, 0);
@@ -833,7 +841,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 
 	getCORR_UNIDAD(){
 		this.appInfoService
-		.getLookUp('SC_REQUISICION_PERSONAL', 'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES', 'GetCORR_UNIDAD', undefined, environment.UrlSELECCIONCONTRATACIONAPI)
+		.getLookUp('SC_REQUISICION_PERSONAL', 'SC_UNIDADES_USUARIO', 'GetCORR_UNIDAD', undefined, environment.UrlSELECCIONCONTRATACIONAPI)
 		.pipe(take(1))
 		.subscribe({
 			next: (response: any) => {
@@ -848,15 +856,48 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		});
 	}
 
-	getCORR_DESCRIPTOR_PUESTO(corrUnidad?: number): void {
+	getCORR_PUESTO(corrUnidad?: number): void {
 		const unidad = corrUnidad ?? this.model?.CORR_UNIDAD;
 		if (!unidad || unidad <= 0) {
+			this.mCORR_PUESTO = [];
+			return;
+		}
+
+		this.appInfoService
+			.getLookUp(
+				'SC_REQUISICION_PERSONAL',
+				'GEN_UNIDADES_PUESTO',
+				'GetCORR_PUESTO',
+				[{ Parameter: 'CORR_UNIDAD', Value: unidad }],
+				environment.UrlGENERALAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response.Result) {
+						this.mCORR_PUESTO = response.Data ?? [];
+					} else {
+						this.mCORR_PUESTO = [];
+						this.notifyFx(response.ErrorMessage, NotifyType.Error);
+					}
+				},
+				error: (error: any) => {
+					this.mCORR_PUESTO = [];
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
+	getCORR_DESCRIPTOR_PUESTO(corrUnidad?: number, corrPuesto?: number): void {
+		const unidad = corrUnidad ?? this.model?.CORR_UNIDAD;
+		const puesto = corrPuesto ?? this.model?.CORR_PUESTO;
+		if (!unidad || unidad <= 0 || !puesto || puesto <= 0) {
 			this.mCORR_DESCRIPTOR_PUESTO = [];
 			return;
 		}
 
 		this.service
-			.getDescriptorPuesto({ CORR_UNIDAD: unidad })
+			.getDescriptorPuesto({ CORR_UNIDAD: unidad, CORR_PUESTO: puesto })
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -872,6 +913,23 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 					this.notifyFx(error, NotifyType.Error);
 				},
 			});
+	}
+
+	/** En edición/consulta: carga puestos y descriptores según valores del registro. */
+	precargarCascadaUnidadPuestoDescriptor(): void {
+		const unidad = this.model?.CORR_UNIDAD;
+		const puesto = this.model?.CORR_PUESTO;
+		if (!unidad || unidad <= 0) {
+			this.mCORR_PUESTO = [];
+			this.mCORR_DESCRIPTOR_PUESTO = [];
+			return;
+		}
+		this.getCORR_PUESTO(unidad);
+		if (puesto && puesto > 0) {
+			this.getCORR_DESCRIPTOR_PUESTO(unidad, puesto);
+		} else {
+			this.mCORR_DESCRIPTOR_PUESTO = [];
+		}
 	}
 
 
@@ -891,7 +949,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				CORR_REQUISICION_PERSONAL: xModel.CORR_REQUISICION_PERSONAL,
 				CORR_DESCRIPTOR_PUESTO: xModel.CORR_DESCRIPTOR_PUESTO,
 				CORR_UNIDAD: xModel.CORR_UNIDAD,
-				NOMBRE_PUESTO_SOLICITADO: xModel.NOMBRE_PUESTO_SOLICITADO,
+				CORR_PUESTO: xModel.CORR_PUESTO,
 				CORR_TIPO_MODALIDAD: xModel.CORR_TIPO_MODALIDAD,
 				CORR_TIPO_CONTRATACION: xModel.CORR_TIPO_CONTRATACION,
 				CORR_TIPO_VACANTE: xModel.CORR_TIPO_VACANTE,
@@ -922,7 +980,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			CORR_REQUISICION_PERSONAL: 0,
 			CORR_DESCRIPTOR_PUESTO: 0,
 			CORR_UNIDAD: 0,
-			NOMBRE_PUESTO_SOLICITADO: '',
+			CORR_PUESTO: 0,
 			CORR_TIPO_MODALIDAD: 0,
 			CORR_TIPO_CONTRATACION: 0,
 			CORR_TIPO_VACANTE: 0,
@@ -1155,26 +1213,37 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	}
 
 	/**
-	 * Al elegir unidad: limpia el descriptor dependiente y recarga el listado
-	 * vía GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL (filtrado por CORR_UNIDAD).
+	 * Cascada: unidad → limpia puesto y descriptor; carga puestos de la unidad.
 	 * Arrow function para conservar this (se pasa a app-data-lookup).
 	 */
 	selectedLookUpCORR_UNIDAD = (vRow: any): any => {
 		const corrUnidad = vRow[0].CORR_UNIDAD;
-		// Cambió la unidad → el descriptor anterior ya no aplica
+		this.model.CORR_PUESTO = 0;
 		this.model.CORR_DESCRIPTOR_PUESTO = 0;
-		this.model.NOMBRE_PUESTO = '';
+		this.mCORR_PUESTO = [];
 		this.mCORR_DESCRIPTOR_PUESTO = [];
-		// Diferir la carga para no remontar el lookup de unidad a mitad de la selección
-		setTimeout(() => this.getCORR_DESCRIPTOR_PUESTO(corrUnidad), 0);
+		setTimeout(() => this.getCORR_PUESTO(corrUnidad), 0);
 		return corrUnidad;
 	};
 
 	/**
-	 * Al elegir descriptor: guarda también NOMBRE_PUESTO (snapshot del lookup).
+	 * Cascada: puesto → limpia descriptor; carga descriptores de unidad + puesto.
+	 */
+	selectedLookUpCORR_PUESTO = (vRow: any): any => {
+		const corrPuesto = vRow[0].CORR_PUESTO;
+		this.model.CORR_DESCRIPTOR_PUESTO = 0;
+		this.mCORR_DESCRIPTOR_PUESTO = [];
+		setTimeout(
+			() => this.getCORR_DESCRIPTOR_PUESTO(this.model.CORR_UNIDAD, corrPuesto),
+			0
+		);
+		return corrPuesto;
+	};
+
+	/**
+	 * Al elegir descriptor: retorna CORR_DESCRIPTOR_PUESTO.
 	 */
 	selectedLookUpCORR_DESCRIPTOR_PUESTO = (vRow: any): any => {
-		this.model.NOMBRE_PUESTO = vRow?.[0]?.NOMBRE_PUESTO ?? '';
 		return vRow[0].CORR_DESCRIPTOR_PUESTO;
 	};
 

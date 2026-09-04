@@ -89,7 +89,7 @@
             <header class="rd-card__header rd-card__header--actions">
               <span>
                 Requisición {{ item.CORR_REQUISICION_PERSONAL }} —
-                {{ textoLectura(item.NOMBRE_PUESTO_SOLICITADO) }}
+                {{ textoLectura(item.NOMBRE_PUESTO) }}
               </span>
               <dx-button
                 *ngIf="puedeSeleccionarRequisicion()"
@@ -115,7 +115,7 @@
               </div>
               <div class="rd-field rd-field--wide">
                 <span class="rd-label">Puesto solicitado</span>
-                <span class="rd-value">{{ textoLectura(item.NOMBRE_PUESTO_SOLICITADO) }}</span>
+                <span class="rd-value">{{ textoLectura(item.NOMBRE_PUESTO) }}</span>
               </div>
               <div class="rd-field">
                 <span class="rd-label">Modalidad</span>

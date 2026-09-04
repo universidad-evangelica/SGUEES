@@ -29,13 +29,13 @@ export class ScRequisicionPersonalService {
         return false;
         }
 
-        if (model.NOMBRE_PUESTO_SOLICITADO == '' || model.NOMBRE_PUESTO_SOLICITADO == null) {
-        msg('Debe digitar el nombre del puesto solicitado', NotifyType.Warning);
-        return false;
-        }
-
         if (model.CORR_UNIDAD == 0 || model.CORR_UNIDAD == null) {
             msg('Debe seleccionar la unidad organizativa', NotifyType.Warning);
+            return false;
+        }
+
+        if (model.CORR_PUESTO == 0 || model.CORR_PUESTO == null) {
+            msg('Debe seleccionar el puesto', NotifyType.Warning);
             return false;
         }
 
@@ -546,13 +546,16 @@ export class ScRequisicionPersonalService {
 	}
 
 	/**
-	 * Descriptores de puesto filtrados por CORR_UNIDAD
-	 * (API: SC_DESCRIPTOR_PUESTO/GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL).
+	 * Descriptores de puesto filtrados por CORR_UNIDAD + CORR_PUESTO
+	 * (API: SC_DESCRIPTOR_PUESTO/GetCORR_DESCRIPTOR_PUESTO_BY_PUESTO_SC_REQUISICION_PERSONAL).
 	 */
     getDescriptorPuesto(param?: any): Observable<IResult> {
         const xWhere: IParam[] = [];
         if (param?.CORR_UNIDAD != null && param.CORR_UNIDAD > 0) {
             xWhere.push({ Parameter: 'CORR_UNIDAD', Value: param.CORR_UNIDAD });
+        }
+        if (param?.CORR_PUESTO != null && param.CORR_PUESTO > 0) {
+            xWhere.push({ Parameter: 'CORR_PUESTO', Value: param.CORR_PUESTO });
         }
         return this.repo.getDescriptorPuesto(xWhere);
     }
@@ -562,7 +565,7 @@ export class ScRequisicionPersonalService {
             { dataField: 'CORR_REQUISICION_PERSONAL', caption: 'Corr.', width: 85 },
             { dataField: 'FECHA_REQUISICION', caption: 'Fecha', width: 130, dataType: 'date', format: 'dd/MM/yyyy' },
             { dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 250 },
-            //{ dataField: 'NOMBRE_PUESTO', caption: 'Descriptor Puesto', width: 250 },
+            { dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 220 },
             { dataField: 'MODALIDAD_NOMBRE', caption: 'Modalidad', width: 120 },
             { dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo Contrato', width: 140 },
             { dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Tipo Vacante', width: 200 },
@@ -608,15 +611,16 @@ export class ScRequisicionPersonalService {
                                     }
                                 },
                                 {
-                                    dataField: 'NOMBRE_PUESTO_SOLICITADO',
-                                    label: { text: 'Nombre puesto solicitado' },
-                                    colSpan: 4,
-                                },
-                                {
                                     dataField: 'CORR_UNIDAD',
                                     label: { text: 'Unidad Organizativa' },
                                     colSpan: 4,
                                     template: 'CORR_UNIDADLookup',
+                                },
+                                {
+                                    dataField: 'CORR_PUESTO',
+                                    label: { text: 'Puesto' },
+                                    colSpan: 4,
+                                    template: 'CORR_PUESTOLookup',
                                 },
                                 {
                                     dataField: 'CORR_DESCRIPTOR_PUESTO',

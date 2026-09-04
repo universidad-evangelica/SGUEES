@@ -50,13 +50,13 @@ export class ScRequisicionPersonalRepository {
 	}
 
 	/**
-	 * Lookup de descriptores por unidad (endpoint en SC_DESCRIPTOR_PUESTO:
-	 * GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL).
+	 * Lookup de descriptores por unidad + puesto (endpoint en SC_DESCRIPTOR_PUESTO:
+	 * GetCORR_DESCRIPTOR_PUESTO_BY_PUESTO_SC_REQUISICION_PERSONAL).
 	 */
 	getDescriptorPuesto(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(
 			'SC_DESCRIPTOR_PUESTO',
-			'GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL',
+			'GetCORR_DESCRIPTOR_PUESTO_BY_PUESTO_SC_REQUISICION_PERSONAL',
 			xWhere,
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);

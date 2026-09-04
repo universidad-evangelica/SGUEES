@@ -9,7 +9,8 @@ namespace SGUEES.Models
         public int CORR_DESCRIPTOR_PUESTO { get; set; }
         public int CORR_UNIDAD { get; set; }
         public string NOMBRE_UNIDAD { get; set; }
-        public string NOMBRE_PUESTO_SOLICITADO { get; set; }
+        public int CORR_PUESTO { get; set; }
+        public string NOMBRE_PUESTO { get; set; }
         public int CORR_TIPO_MODALIDAD { get; set; }
         public string MODALIDAD_NOMBRE { get; set; }
         public int CORR_TIPO_CONTRATACION { get; set; }
