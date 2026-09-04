@@ -1,0 +1,45 @@
+SET QUOTED_IDENTIFIER, ANSI_NULLS ON
+GO
+-- =============================================================================
+-- Vista: dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_ACTIVIDADES_IMPR
+-- Qué hace: funciones CLAVE + actividades para impresión Formato extenso (maestro-detalle).
+-- Cómo: 1 fila por actividad; join plano función←actividad; solo TIPO_FUNCION = CLAVE;
+--       NUM_ORDEN_FUNCION / NUM_ORDEN_ACTIVIDAD (actividad reinicia por función).
+-- Uso: PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO (result set 4).
+--       Crystal: Group Header = función; Detail = actividad.
+-- =============================================================================
+CREATE OR ALTER VIEW [dbo].[V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_ACTIVIDADES_IMPR]
+AS
+WITH funciones_clave AS (
+  SELECT
+    F.[CORR_EMPRESA],
+    F.[CORR_DESCRIPTOR_PUESTO],
+    F.[CORR_FUNCION],
+    F.[NOMBRE_FUNCION],
+    RTRIM(F.[TIPO_FUNCION]) AS [TIPO_FUNCION],
+    CAST(ROW_NUMBER() OVER (
+      PARTITION BY F.[CORR_EMPRESA], F.[CORR_DESCRIPTOR_PUESTO]
+      ORDER BY F.[CORR_FUNCION]
+    ) AS INT) AS [NUM_ORDEN_FUNCION]
+  FROM [dbo].[SC_DESCRIPTOR_PUESTO_FUNCION] F
+  WHERE RTRIM(F.[TIPO_FUNCION]) = N'CLAVE'
+)
+SELECT
+  FC.[CORR_EMPRESA],
+  FC.[CORR_DESCRIPTOR_PUESTO],
+  FC.[CORR_FUNCION],
+  FC.[NOMBRE_FUNCION],
+  FC.[TIPO_FUNCION],
+  FC.[NUM_ORDEN_FUNCION],
+  A.[CORR_ACTIVIDAD],
+  A.[NOMBRE_ACTIVIDAD],
+  CAST(ROW_NUMBER() OVER (
+    PARTITION BY FC.[CORR_EMPRESA], FC.[CORR_DESCRIPTOR_PUESTO], FC.[CORR_FUNCION]
+    ORDER BY A.[CORR_ACTIVIDAD]
+  ) AS INT) AS [NUM_ORDEN_ACTIVIDAD]
+FROM funciones_clave FC
+INNER JOIN [dbo].[SC_DESCRIPTOR_PUESTO_FUNCION_ACTIVIDAD] A
+  ON A.[CORR_EMPRESA] = FC.[CORR_EMPRESA]
+ AND A.[CORR_DESCRIPTOR_PUESTO] = FC.[CORR_DESCRIPTOR_PUESTO]
+ AND A.[CORR_FUNCION] = FC.[CORR_FUNCION]
+GO

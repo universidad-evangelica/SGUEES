@@ -68,10 +68,16 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 			var funciones = Utils.CreateDataTable(funcionesRows);
 			funciones.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_IMPR";
 
+			var funcionesActRows = payload.FuncionesActividades
+				?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_ACTIVIDADES_IMPRView>();
+			var funcionesActividades = Utils.CreateDataTable(funcionesActRows);
+			funcionesActividades.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_ACTIVIDADES_IMPR";
+
 			var dataSet = new DataSet();
 			dataSet.Tables.Add(encabezado);
 			dataSet.Tables.Add(param);
 			dataSet.Tables.Add(funciones);
+			dataSet.Tables.Add(funcionesActividades);
 
 			return dataSet;
 		}

@@ -9,7 +9,9 @@ GO
 --   1) Result set 1: encabezado (V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPR).
 --   2) Result set 2: encabezado/logos desde GEN_EMPRESA (GEN_PARAMETRO en Crystal).
 --   3) Result set 3: funciones CLAVE detalle (V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_IMPR).
--- Alcance: encabezado + funciones clave (1 fila por función). Secundarias no van.
+--   4) Result set 4: funciones CLAVE + actividades
+--      (V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_ACTIVIDADES_IMPR).
+-- Alcance: encabezado + funciones clave + funciones/actividades. Secundarias no van.
 -- Uso API: SC_DESCRIPTOR_PUESTO/getPDFFormatoExtenso → SGUEES-RPT SelectionHiring.
 -- =============================================================================
 CREATE OR ALTER PROCEDURE [dbo].[PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO]
@@ -78,5 +80,21 @@ BEGIN
 	WHERE F.CORR_EMPRESA = @CORR_EMPRESA
 	  AND F.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
 	ORDER BY F.NUM_ORDEN;
+
+	-- Result set 4: funciones CLAVE + actividades (1 fila por actividad; Group Header en Crystal).
+	SELECT
+		FA.CORR_EMPRESA,
+		FA.CORR_DESCRIPTOR_PUESTO,
+		FA.CORR_FUNCION,
+		FA.NOMBRE_FUNCION,
+		FA.TIPO_FUNCION,
+		FA.NUM_ORDEN_FUNCION,
+		FA.CORR_ACTIVIDAD,
+		FA.NOMBRE_ACTIVIDAD,
+		FA.NUM_ORDEN_ACTIVIDAD
+	FROM dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_ACTIVIDADES_IMPR FA
+	WHERE FA.CORR_EMPRESA = @CORR_EMPRESA
+	  AND FA.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
+	ORDER BY FA.NUM_ORDEN_FUNCION, FA.NUM_ORDEN_ACTIVIDAD;
 END
 GO
