@@ -309,7 +309,7 @@
 }
 
 /* ===========================
-   Workspace entrevistas (derecha)
+   Workspace lateral derecho (expediente consulta)
 =========================== */
 
 .requisicion-mtto {
@@ -334,7 +334,13 @@
 	overflow: hidden;
 }
 
-.entrevistas-workspace {
+.candidatos-toolbar-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.expediente-workspace {
 	position: absolute;
 	inset: 0;
 	z-index: 30;
@@ -357,7 +363,7 @@
 	}
 }
 
-.entrevistas-workspace__toolbar {
+.expediente-workspace__toolbar {
 	display: flex;
 	align-items: center;
 	gap: 16px;
@@ -368,7 +374,7 @@
 	flex-shrink: 0;
 }
 
-.entrevistas-workspace__title {
+.expediente-workspace__title {
 	min-width: 0;
 	display: flex;
 	flex-direction: column;
@@ -390,7 +396,7 @@
 	}
 }
 
-.entrevistas-workspace__body {
+.expediente-workspace__body {
 	flex: 1 1 auto;
 	min-height: 0;
 	overflow: hidden;
@@ -403,7 +409,86 @@
 	}
 }
 
-.entrevistas-workspace__content {
+.expediente-workspace__content {
+	padding: 12px 16px 24px;
+	min-height: 100%;
+	box-sizing: border-box;
+}
+
+/* ===========================
+   Workspace detalle entrevistas (desde abajo)
+=========================== */
+
+.entrevistas-detalle-workspace {
+	position: absolute;
+	inset: 0;
+	z-index: 31;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	min-height: 100%;
+	box-sizing: border-box;
+	background: var(--sguees-page-bg, var(--typography-bg, var(--base-bg)));
+	border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
+	box-shadow: var(--sguees-shadow-lg, 0 -8px 24px rgba(0, 0, 0, 0.25));
+	transform: translateY(100%);
+	transition: transform 0.28s ease;
+	pointer-events: none;
+
+	&--open {
+		transform: translateY(0);
+		pointer-events: auto;
+	}
+}
+
+.entrevistas-detalle-workspace__toolbar {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	flex-wrap: wrap;
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--sguees-border-subtle, var(--border-color));
+	background: var(--sguees-surface-card, var(--card-background));
+	flex-shrink: 0;
+}
+
+.entrevistas-detalle-workspace__title {
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+
+	h3 {
+		margin: 0;
+		font-size: 16px;
+		font-weight: 650;
+		color: var(--sguees-text-primary, var(--base-text-color));
+	}
+
+	span {
+		font-size: 13px;
+		color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+}
+
+.entrevistas-detalle-workspace__body {
+	flex: 1 1 auto;
+	min-height: 0;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+
+	::ng-deep .dx-scrollview {
+		height: 100%;
+		flex: 1 1 auto;
+	}
+}
+
+.entrevistas-detalle-workspace__content {
 	padding: 12px 16px 24px;
 	min-height: 100%;
 	box-sizing: border-box;
@@ -666,4 +751,47 @@
 	max-height: 95%;
 	margin: 0 auto;
 	object-fit: contain;
+}
+
+.persona-foto-lightbox {
+	position: fixed;
+	inset: 0;
+	z-index: 2000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 24px;
+	background: color-mix(in srgb, #000 72%, transparent);
+	cursor: zoom-out;
+
+	&__img {
+		max-width: min(92vw, 720px);
+		max-height: 86vh;
+		border-radius: var(--sguees-radius-md, 10px);
+		box-shadow: var(--sguees-shadow-lg);
+		object-fit: contain;
+		background: var(--sguees-surface-card, var(--card-background));
+		cursor: default;
+	}
+
+	&__close {
+		position: absolute;
+		top: 16px;
+		right: 16px;
+		width: 40px;
+		height: 40px;
+		border: 0;
+		border-radius: 50%;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		color: #fff;
+		background: color-mix(in srgb, #000 45%, transparent);
+		box-shadow: var(--sguees-shadow-sm);
+
+		.dx-icon {
+			font-size: 18px;
+		}
+	}
 }

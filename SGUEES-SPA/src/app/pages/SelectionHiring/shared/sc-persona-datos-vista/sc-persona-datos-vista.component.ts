@@ -33,11 +33,15 @@ export class ScPersonaDatosVistaComponent {
 	@Input() permiteEdit = false;
 	/** Si false, oculta avatar/nombre/corr/"Solo lectura" (útil embebido en resumen). */
 	@Input() mostrarEncabezado = true;
-	/** Tabs Solicitudes / Documentos (solo en sc-expediente-candidato). */
+	/** Tab Solicitudes asociadas (sc-expediente-candidato). */
 	@Input() mostrarExpediente = false;
 	@Input() solicitudes: any[] = [];
 	@Input() solicitudColumns: any[] = [];
 
+	/**
+	 * Tab Documentos: se muestra si el padre proyecta `#documentosTab`.
+	 * Independiente de `mostrarExpediente` (permite Documentos sin Solicitudes).
+	 */
 	@ContentChild('documentosTab') documentosTabTemplate?: TemplateRef<unknown>;
 
 	@Output() editar = new EventEmitter<void>();
@@ -50,10 +54,15 @@ export class ScPersonaDatosVistaComponent {
 		return (this.personaDatos?.CORR_PERSONA_DATOS ?? 0) > 0;
 	}
 
+	get mostrarDocumentos(): boolean {
+		return !!this.documentosTabTemplate;
+	}
+
 	get mostrarTabs(): boolean {
 		// Durante la carga no renderizar un panel que contenga únicamente tabs de expediente:
 		// DevExtreme lo seleccionaría y conservaría ese tab al aparecer Personales.
-		return this.tienePersonaDatos || (this.mostrarExpediente && !this.cargandoPersonaDatos);
+		const tieneTabsExtra = this.mostrarExpediente || this.mostrarDocumentos;
+		return this.tienePersonaDatos || (tieneTabsExtra && !this.cargandoPersonaDatos);
 	}
 
 	get nombreCompletoPersona(): string {
@@ -82,15 +91,11 @@ export class ScPersonaDatosVistaComponent {
 	}
 
 	tabSelectionChanged(e: any): void {
-		if (!this.mostrarExpediente) {
-			return;
-		}
-
 		const title = String(e?.addedItems?.[0]?.title ?? '').trim();
-		if (title === 'Solicitudes') {
+		if (title === 'Solicitudes' && this.mostrarExpediente) {
 			this.solicitudesTabSelected.emit();
 		}
-		if (title === 'Documentos') {
+		if (title === 'Documentos' && this.mostrarDocumentos) {
 			this.documentosTabSelected.emit();
 		}
 	}

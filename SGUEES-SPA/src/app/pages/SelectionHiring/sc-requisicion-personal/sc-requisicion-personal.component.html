@@ -7,7 +7,7 @@
 </p-toast>
 <div
   class="requisicion-mtto"
-  [class.requisicion-mtto--workspace-open]="workspaceEntrevistasVisible"
+  [class.requisicion-mtto--workspace-open]="workspaceExpedienteVisible || workspaceDetalleEntrevistasVisible"
 >
   <div class="requisicion-mtto__main">
     <app-barra-data-mtto
@@ -264,13 +264,37 @@
           [showRowLines]="true"
           [rowAlternationEnabled]="true"
           [hoverStateEnabled]="true"
+          [focusedRowEnabled]="true"
+          [focusedRowKey]="candidatoFocusedKey"
           [allowColumnResizing]="true"
           [columnResizingMode]="'widget'"
           [columnAutoWidth]="true"
           [height]="'100%'"
           [width]="'100%'"
           [noDataText]="'La requisición aún no posee candidatos en proceso de selección.'"
+          (onFocusedRowChanged)="onCandidatoFocusedRowChanged($event)"
         >
+          <dxo-toolbar>
+            <dxi-item location="before">
+              <div *dxTemplate class="candidatos-toolbar-actions">
+                <dx-button
+                  text="Expediente"
+                  icon="card"
+                  type="default"
+                  stylingMode="contained"
+                  (onClick)="abrirExpedienteCandidatoSeleccionado()"
+                ></dx-button>
+                <dx-button
+                  text="Entrevistas"
+                  icon="group"
+                  type="default"
+                  stylingMode="contained"
+                  (onClick)="abrirEntrevistasCandidatoSeleccionado()"
+                ></dx-button>
+              </div>
+            </dxi-item>
+            <dxi-item name="searchPanel" location="after"></dxi-item>
+          </dxo-toolbar>
           <dxo-search-panel [visible]="true"></dxo-search-panel>
           <dxo-paging [pageSize]="10"></dxo-paging>
           <dxo-pager
@@ -290,38 +314,138 @@
               displayFormat="Cant: {0}"
             ></dxi-total-item>
           </dxo-summary>
-          <div *dxTemplate="let cell of 'candidatosActionsTemplate'">
-            <div class="candidatos-grid-actions" (click)="$event.stopPropagation()">
-              <dx-button
-                icon="group"
-                hint="Entrevistas"
-                stylingMode="text"
-                (onClick)="abrirWorkspaceEntrevistas(cell.data)"
-              ></dx-button>
-            </div>
-          </div>
+          <!-- Columna Options comentada: Entrevistas se abre desde el botón del toolbar. -->
         </dx-data-grid>
       </div>
     </dxi-item>
   </dx-tab-panel>
 </div>
 
-<!-- Workspace entrevistas (slide desde la derecha). -->
+<!-- Workspace lateral derecho: expediente del candidato (solo consulta). -->
 <aside
-  *ngIf="workspaceEntrevistasVisible"
-  class="entrevistas-workspace"
-  [class.entrevistas-workspace--open]="workspaceEntrevistasAbierto"
-  [attr.aria-hidden]="!workspaceEntrevistasAbierto"
+  *ngIf="workspaceExpedienteVisible"
+  class="expediente-workspace"
+  [class.expediente-workspace--open]="workspaceExpedienteAbierto"
+  [attr.aria-hidden]="!workspaceExpedienteAbierto"
 >
-  <header class="entrevistas-workspace__toolbar">
+  <header class="expediente-workspace__toolbar">
     <dx-button
       text="Volver a la requisición"
       icon="chevronprev"
       type="default"
       stylingMode="outlined"
+      (onClick)="cerrarWorkspaceExpediente()"
+    ></dx-button>
+    <div class="expediente-workspace__title">
+      <h3>Expediente del candidato</h3>
+      <span *ngIf="candidatoExpedienteSeleccionado">
+        {{ candidatoExpedienteSeleccionado.NOMBRE_PERSONA }}
+        · Corr. persona {{ candidatoExpedienteSeleccionado.CORR_PERSONA_DATOS }}
+      </span>
+    </div>
+  </header>
+  <div class="expediente-workspace__body">
+    <dx-scroll-view [scrollByContent]="true" [scrollByThumb]="true">
+      <div class="expediente-workspace__content">
+        <app-sc-persona-datos-vista
+          [personaDatos]="personaDatos"
+          [familiares]="familiares"
+          [hijos]="hijos"
+          [estudios]="estudios"
+          [idiomas]="idiomas"
+          [competencias]="competencias"
+          [experiencias]="experiencias"
+          [familiaresUees]="familiaresUees"
+          [fotoPersonaUrl]="fotoPersonaUrl"
+          [cargandoPersonaDatos]="cargandoPersonaDatos"
+          [mostrarEncabezado]="true"
+          [mostrarExpediente]="false"
+          [permiteEdit]="false"
+          (abrirFoto)="abrirFotoPreview()"
+          (documentosTabSelected)="onDocumentosTabSelected()"
+        >
+          <ng-template #documentosTab>
+            <div class="expediente-documentos-tab">
+              <div class="dx-grid-deta documento-grid">
+                <dx-data-grid
+                  [dataSource]="documentos"
+                  [columns]="documentoColumns"
+                  [keyExpr]="'CORR_EXPEDIENTE_DOCUMENTO'"
+                  [showBorders]="true"
+                  [showColumnLines]="true"
+                  [showRowLines]="true"
+                  [rowAlternationEnabled]="true"
+                  [hoverStateEnabled]="true"
+                  [allowColumnResizing]="true"
+                  [columnResizingMode]="'widget'"
+                  [columnAutoWidth]="true"
+                  [width]="'100%'"
+                  [noDataText]="'No hay documentos registrados para este expediente.'"
+                >
+                  <dxo-column-fixing [enabled]="true"></dxo-column-fixing>
+                  <dxo-toolbar>
+                    <dxi-item location="before">
+                      <div *dxTemplate class="documentos-tab-title">
+                        <i class="dx-icon dx-icon-doc"></i>
+                        <span>Documentos del expediente</span>
+                      </div>
+                    </dxi-item>
+                    <dxi-item name="searchPanel" location="after"></dxi-item>
+                  </dxo-toolbar>
+                  <dxo-search-panel
+                    [visible]="true"
+                    [width]="240"
+                    placeholder="Buscar documento..."
+                  ></dxo-search-panel>
+                  <dxo-paging [pageSize]="5"></dxo-paging>
+                  <dxo-pager
+                    [showPageSizeSelector]="true"
+                    [allowedPageSizes]="[5, 10, 20]"
+                    [showInfo]="true"
+                    [infoText]="'Mostrando {0} a {1} de {2} documentos'"
+                  ></dxo-pager>
+                  <dxo-editing
+                    [allowUpdating]="false"
+                    [allowDeleting]="false"
+                    [allowAdding]="false"
+                  ></dxo-editing>
+
+                  <div *dxTemplate="let cell of 'documentoActionsTemplate'">
+                    <div class="documento-grid-actions">
+                      <dx-button
+                        icon="eyeopen"
+                        hint="Ver documento"
+                        stylingMode="text"
+                        (onClick)="onVerDocumentoExpedienteClick(cell.data, $event)"
+                      ></dx-button>
+                    </div>
+                  </div>
+                </dx-data-grid>
+              </div>
+            </div>
+          </ng-template>
+        </app-sc-persona-datos-vista>
+      </div>
+    </dx-scroll-view>
+  </div>
+</aside>
+
+<!-- Workspace detalle entrevistas: entra desde abajo. -->
+<aside
+  *ngIf="workspaceDetalleEntrevistasVisible"
+  class="entrevistas-detalle-workspace"
+  [class.entrevistas-detalle-workspace--open]="workspaceDetalleEntrevistasAbierto"
+  [attr.aria-hidden]="!workspaceDetalleEntrevistasAbierto"
+>
+  <header class="entrevistas-detalle-workspace__toolbar">
+    <dx-button
+      text="Volver a la requisición"
+      icon="chevrondown"
+      type="default"
+      stylingMode="outlined"
       (onClick)="cerrarWorkspaceEntrevistas()"
     ></dx-button>
-    <div class="entrevistas-workspace__title">
+    <div class="entrevistas-detalle-workspace__title">
       <h3>Entrevistas del candidato</h3>
       <span *ngIf="candidatoEntrevistaSeleccionado">
         {{ candidatoEntrevistaSeleccionado.NOMBRE_PERSONA }}
@@ -330,9 +454,9 @@
     </div>
   </header>
 
-  <div class="entrevistas-workspace__body">
+  <div class="entrevistas-detalle-workspace__body">
     <dx-scroll-view [scrollByContent]="true" [scrollByThumb]="true">
-      <div class="entrevistas-workspace__content">
+      <div class="entrevistas-detalle-workspace__content">
         <div class="entrevista-tab">
           <section class="entrevista-form-card">
             <div class="entrevista-form-card__header">
@@ -868,5 +992,29 @@
   (onShown)="(loadingVisible)"
 >
 </dx-load-panel>
+
+<div
+  class="persona-foto-lightbox"
+  *ngIf="fotoPreviewVisible && fotoPersonaUrl"
+  (click)="cerrarFotoPreview()"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Fotografía del candidato"
+>
+  <button
+    type="button"
+    class="persona-foto-lightbox__close"
+    (click)="cerrarFotoPreview(); $event.stopPropagation()"
+    aria-label="Cerrar fotografía"
+  >
+    <i class="dx-icon dx-icon-close"></i>
+  </button>
+  <img
+    class="persona-foto-lightbox__img"
+    [src]="fotoPersonaUrl"
+    alt="Fotografía del candidato"
+    (click)="$event.stopPropagation()"
+  />
+</div>
   </div>
 </div>

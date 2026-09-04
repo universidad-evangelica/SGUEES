@@ -8,6 +8,7 @@ import { ScRequisicionPersonal } from './models/sc-requisicion-personal';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { ScExpedienteEntrevistaRepository } from '../sc-expediente-candidato/sc-expediente-entrevista/sc-expediente-entrevista.repository';
 import { ScExpedienteEntrevistaDocumentoRepository } from '../sc-expediente-candidato/sc-expediente-entrevista/sc-expediente-entrevista-documento/sc-expediente-entrevista-documento.repository';
+import { ScExpedienteDocumentoRepository } from '../sc-expediente-candidato/sc-expediente-documento/sc-expediente-documento.repository';
 
 @Injectable({
 	providedIn: 'root',
@@ -17,6 +18,7 @@ export class ScRequisicionPersonalService {
 		private repo: ScRequisicionPersonalRepository,
 		private entrevistaRepo: ScExpedienteEntrevistaRepository,
 		private entrevistaDocumentoRepo: ScExpedienteEntrevistaDocumentoRepository,
+		private expedienteDocumentoRepo: ScExpedienteDocumentoRepository,
 	) {}
 
     //#region <Validadores>
@@ -296,6 +298,52 @@ export class ScRequisicionPersonalService {
 					maxLength: 2000,
 					placeholder: 'Notas u observaciones de la reunión',
 				},
+			},
+		];
+	}
+
+	/** Documentos del expediente (consulta desde requisición; mismos endpoints). */
+	getAllExpedienteDocumento(corrExpediente: number): Observable<IResult> {
+		return this.expedienteDocumentoRepo.getAll([
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
+		]);
+	}
+
+	getExpedienteDocumentoBlob(param: {
+		CORR_EXPEDIENTE_CANDIDATO: number;
+		CORR_EXPEDIENTE_DOCUMENTO: number;
+		NOMBRE_ARCHIVO: string;
+	}): Observable<Blob> {
+		return this.expedienteDocumentoRepo.getDoc([
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: param.CORR_EXPEDIENTE_CANDIDATO },
+			{ Parameter: 'CORR_EXPEDIENTE_DOCUMENTO', Value: param.CORR_EXPEDIENTE_DOCUMENTO },
+			{ Parameter: 'NOMBRE_ARCHIVO', Value: param.NOMBRE_ARCHIVO },
+		]);
+	}
+
+	/** Columnas del tab Documentos en consulta (solo ver). */
+	getExpedienteDocumentoColumns(): any[] {
+		return [
+			{ dataField: 'CORR_EXPEDIENTE_DOCUMENTO', caption: 'Corr.', width: 70 },
+			{
+				dataField: 'FECHA_CARGA',
+				caption: 'Fecha carga',
+				width: 150,
+				dataType: 'datetime',
+				format: 'dd/MM/yyyy',
+			},
+			{ dataField: 'TIPO_DOCUMENTO', caption: 'Tipo', width: 180 },
+			{ dataField: 'NOMBRE_ARCHIVO', caption: 'Archivo', width: 360 },
+			{ dataField: 'NOTAS', caption: 'Notas', width: 280 },
+			{
+				caption: 'Options',
+				width: 70,
+				allowSorting: false,
+				allowFiltering: false,
+				cellTemplate: 'documentoActionsTemplate',
+				fixed: true,
+				fixedPosition: 'left',
+				alignment: 'center',
 			},
 		];
 	}
@@ -804,13 +852,13 @@ export class ScRequisicionPersonalService {
                 calculateCellValue: () => 'Proceso de selección',
             },
             { dataField: 'CORR_SOLICITUD_EMPLEO', caption: 'Solicitud de empleo', width: 170 },
-            {
-                caption: 'Options',
-                width: 110,
-                allowSorting: false,
-                allowFiltering: false,
-                cellTemplate: 'candidatosActionsTemplate',
-            },
+            // {
+            //     caption: 'Options',
+            //     width: 110,
+            //     allowSorting: false,
+            //     allowFiltering: false,
+            //     cellTemplate: 'candidatosActionsTemplate',
+            // },
         ];
     }
 

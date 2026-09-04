@@ -1,7 +1,8 @@
-import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
-import { take } from 'rxjs/operators';
+import { forkJoin, of } from 'rxjs';
+import { catchError, take } from 'rxjs/operators';
 import { MessageService } from 'primeng/api'; //Import para usar PrimeNG Toast
 import { confirm } from 'devextreme/ui/dialog';
 import { DxFormComponent } from 'devextreme-angular';
@@ -15,6 +16,18 @@ import { ScRequisicionPersonal } from './models/sc-requisicion-personal';
 import { ScRequisicionPersonalCandidato } from './models/sc-requisicion-personal-candidato';
 import { ScExpedienteEntrevista } from '../sc-expediente-candidato/sc-expediente-entrevista/models/sc-expediente-entrevista';
 import { ScExpedienteEntrevistaDocumento } from '../sc-expediente-candidato/sc-expediente-entrevista/sc-expediente-entrevista-documento/models/sc-expediente-entrevista-documento';
+import { ScExpedienteDocumento } from '../sc-expediente-candidato/sc-expediente-documento/models/sc-expediente-documento';
+import {
+	ScPersonaCompetencia,
+	ScPersonaDatos,
+	ScPersonaEstudio,
+	ScPersonaExperiencia,
+	ScPersonaFamiliar,
+	ScPersonaFamiliarUees,
+	ScPersonaHijo,
+	ScPersonaIdioma,
+} from '../sc-solicitud-empleo/models/sc-persona-datos';
+import { ScSolicitudEmpleoService } from '../sc-solicitud-empleo/sc-solicitud-empleo.service';
 
 import { ScRequisicionPersonalService } from './sc-requisicion-personal.service';
 import { ScRequisicionObservadoresService } from '../sc-requisicion-observadores/sc-requisicion-observadores.service';
@@ -37,6 +50,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		public override router: ActivatedRoute,
 		private service: ScRequisicionPersonalService,
 		private observadoresService: ScRequisicionObservadoresService,
+		private solicitudService: ScSolicitudEmpleoService,
 		private messageService: MessageService, //Import para usar PrimeNG Toast
 		private authService: AuthService,
 		private sanitizer: DomSanitizer,
@@ -61,6 +75,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.entrevistaDocumentoColumns = this.service.getEntrevistaDocumentoColumns();
 		this.entrevistaDocumentoItems = this.service.getEntrevistaDocumentoItems();
 		this.marcarRealizadaItems = this.service.getMarcarRealizadaEntrevistaItems();
+		this.documentoColumns = this.service.getExpedienteDocumentoColumns();
 	}
 
 	//Variables
@@ -91,11 +106,38 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	modelsCandidatos: ScRequisicionPersonalCandidato[] = [];
 	columnsCandidatos: any[] = [];
 	summaryCandidatos: any;
+	/** Fila enfocada en el grid Candidatos (para botón Entrevistas del toolbar). */
+	candidatoFocusedKey: number | string | null = null;
+	candidatoSeleccionado: ScRequisicionPersonalCandidato | null = null;
 
-	/** Workspace entrevistas (slide-over derecha) desde tab Candidatos. */
-	workspaceEntrevistasVisible = false;
-	workspaceEntrevistasAbierto = false;
-	private workspaceEntrevistasCloseTimer: ReturnType<typeof setTimeout> | null = null;
+	/** Workspace lateral derecho: expediente del candidato (solo consulta). */
+	workspaceExpedienteVisible = false;
+	workspaceExpedienteAbierto = false;
+	private workspaceExpedienteCloseTimer: ReturnType<typeof setTimeout> | null = null;
+	candidatoExpedienteSeleccionado: ScRequisicionPersonalCandidato | null = null;
+
+	/** Datos persona (reutiliza app-sc-persona-datos-vista). */
+	personaDatos: ScPersonaDatos | null = null;
+	familiares: ScPersonaFamiliar[] = [];
+	hijos: ScPersonaHijo[] = [];
+	estudios: ScPersonaEstudio[] = [];
+	idiomas: ScPersonaIdioma[] = [];
+	competencias: ScPersonaCompetencia[] = [];
+	experiencias: ScPersonaExperiencia[] = [];
+	familiaresUees: ScPersonaFamiliarUees[] = [];
+	fotoPersonaUrl: string | null = null;
+	cargandoPersonaDatos = false;
+	fotoPreviewVisible = false;
+
+	/** Tab Documentos del expediente (solo consulta). */
+	documentos: ScExpedienteDocumento[] = [];
+	documentoColumns: any[] = [];
+	documentosCargados = false;
+
+	/** Workspace detalle entrevistas (slide-over desde abajo). */
+	workspaceDetalleEntrevistasVisible = false;
+	workspaceDetalleEntrevistasAbierto = false;
+	private workspaceDetalleEntrevistasCloseTimer: ReturnType<typeof setTimeout> | null = null;
 	candidatoEntrevistaSeleccionado: ScRequisicionPersonalCandidato | null = null;
 	entrevistas: ScExpedienteEntrevista[] = [];
 	entrevistaColumns: any[] = [];
@@ -243,6 +285,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.modelsObservadores = [];
 		this.modelsBitacora = [];
 		this.modelsCandidatos = [];
+		this.candidatoFocusedKey = null;
+		this.candidatoSeleccionado = null;
+		this.cerrarWorkspaceExpediente(false);
 		this.cerrarWorkspaceEntrevistas(false);
 	}
 
@@ -297,6 +342,8 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	cargarCandidatos(): void {
 		if (!this.model?.CORR_REQUISICION_PERSONAL || this.model.CORR_REQUISICION_PERSONAL <= 0) {
 			this.modelsCandidatos = [];
+			this.candidatoFocusedKey = null;
+			this.candidatoSeleccionado = null;
 			return;
 		}
 
@@ -311,12 +358,283 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 						this.modelsCandidatos = [];
 						this.notifyFx(response.ErrorMessage, NotifyType.Error);
 					}
+					this.candidatoFocusedKey = null;
+					this.candidatoSeleccionado = null;
 				},
 				error: (error: any) => {
 					this.modelsCandidatos = [];
+					this.candidatoFocusedKey = null;
+					this.candidatoSeleccionado = null;
 					this.notifyFx(error, NotifyType.Error);
 				},
 			});
+	}
+
+	/** Guarda el candidato de la fila enfocada en el grid. */
+	onCandidatoFocusedRowChanged(e: any): void {
+		const row = e?.row?.data as ScRequisicionPersonalCandidato | undefined;
+		this.candidatoFocusedKey = e?.row?.key ?? null;
+		this.candidatoSeleccionado = row ?? null;
+	}
+
+	/** Toolbar Entrevistas: requiere fila seleccionada antes de abrir el workspace. */
+	abrirEntrevistasCandidatoSeleccionado(): void {
+		if (!this.candidatoSeleccionado) {
+			this.notifyFx('Seleccione un candidato en el listado.', NotifyType.Warning);
+			return;
+		}
+		this.abrirWorkspaceEntrevistas(this.candidatoSeleccionado);
+	}
+
+	/** Toolbar Expediente: consulta del candidato seleccionado (workspace derecho). */
+	abrirExpedienteCandidatoSeleccionado(): void {
+		if (!this.candidatoSeleccionado) {
+			this.notifyFx('Seleccione un candidato en el listado.', NotifyType.Warning);
+			return;
+		}
+		this.abrirWorkspaceExpediente(this.candidatoSeleccionado);
+	}
+
+	abrirWorkspaceExpediente(candidato: ScRequisicionPersonalCandidato): void {
+		if (!candidato?.CORR_PERSONA_DATOS) {
+			this.notifyFx(
+				'El candidato no tiene datos de persona válidos para consultar el expediente.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
+		this.candidatoExpedienteSeleccionado = candidato;
+		this.documentosCargados = false;
+		this.documentos = [];
+		this.consultarPersonaDatos(candidato.CORR_PERSONA_DATOS);
+		this.consultarDocumentosExpediente(candidato.CORR_EXPEDIENTE_CANDIDATO);
+		this.workspaceExpedienteVisible = true;
+		setTimeout(() => {
+			this.workspaceExpedienteAbierto = true;
+		}, 20);
+	}
+
+	cerrarWorkspaceExpediente(animar = true): void {
+		if (this.workspaceExpedienteCloseTimer) {
+			clearTimeout(this.workspaceExpedienteCloseTimer);
+			this.workspaceExpedienteCloseTimer = null;
+		}
+
+		if (!animar || !this.workspaceExpedienteVisible) {
+			this.workspaceExpedienteAbierto = false;
+			this.workspaceExpedienteVisible = false;
+			this.candidatoExpedienteSeleccionado = null;
+			this.limpiarPersonaDatos();
+			return;
+		}
+
+		this.workspaceExpedienteAbierto = false;
+		this.workspaceExpedienteCloseTimer = setTimeout(() => {
+			this.workspaceExpedienteVisible = false;
+			this.candidatoExpedienteSeleccionado = null;
+			this.limpiarPersonaDatos();
+			this.workspaceExpedienteCloseTimer = null;
+		}, 280);
+	}
+
+	consultarPersonaDatos(corrPersonaDatos: number): void {
+		if (corrPersonaDatos <= 0) {
+			this.limpiarPersonaDatos();
+			return;
+		}
+
+		this.cargandoPersonaDatos = true;
+		const coleccion = (controller: string) =>
+			this.solicitudService.getPersonaColeccion(controller, corrPersonaDatos).pipe(catchError(() => this.emptyResult()));
+
+		forkJoin({
+			persona: this.solicitudService.getPersonaDatos(corrPersonaDatos),
+			familiares: coleccion('SC_PERSONA_FAMILIAR'),
+			hijos: coleccion('SC_PERSONA_HIJOS'),
+			estudios: coleccion('SC_PERSONA_ESTUDIO'),
+			idiomas: coleccion('SC_PERSONA_IDIOMAS'),
+			competencias: coleccion('SC_PERSONA_COMPETENCIAS_TECNICAS'),
+			experiencias: coleccion('SC_PERSONA_EXPERIENCIA_LABORAL'),
+			familiaresUees: coleccion('SC_PERSONA_FAMILIAR_UEES'),
+		})
+			.pipe(take(1))
+			.subscribe({
+				next: (response) => {
+					if (response.persona?.Result && response.persona?.Data) {
+						this.personaDatos = response.persona.Data;
+						this.cargarFotoPersona(corrPersonaDatos, this.personaDatos?.FOTO_URL);
+					} else {
+						this.personaDatos = null;
+						this.revocarFotoPersona();
+					}
+					this.familiares = this.asArray(response.familiares?.Data);
+					this.hijos = this.asArray(response.hijos?.Data);
+					this.estudios = this.asArray(response.estudios?.Data);
+					this.idiomas = this.asArray(response.idiomas?.Data);
+					this.competencias = this.asArray(response.competencias?.Data);
+					this.experiencias = this.asArray(response.experiencias?.Data);
+					this.familiaresUees = this.asArray(response.familiaresUees?.Data);
+					this.cargandoPersonaDatos = false;
+				},
+				error: (error: any) => {
+					this.limpiarPersonaDatos();
+					this.notifyFx(error?.message || error || 'Error al cargar el expediente.', NotifyType.Error);
+				},
+			});
+	}
+
+	abrirFotoPreview(): void {
+		if (!this.fotoPersonaUrl) {
+			return;
+		}
+		this.fotoPreviewVisible = true;
+	}
+
+	cerrarFotoPreview(): void {
+		this.fotoPreviewVisible = false;
+	}
+
+	@HostListener('document:keydown.escape')
+	onEscape(): void {
+		if (this.fotoPreviewVisible) {
+			this.cerrarFotoPreview();
+		}
+	}
+
+	private limpiarPersonaDatos(): void {
+		this.revocarFotoPersona();
+		this.personaDatos = null;
+		this.familiares = [];
+		this.hijos = [];
+		this.estudios = [];
+		this.idiomas = [];
+		this.competencias = [];
+		this.experiencias = [];
+		this.familiaresUees = [];
+		this.cargandoPersonaDatos = false;
+		this.documentos = [];
+		this.documentosCargados = false;
+	}
+
+	onDocumentosTabSelected(): void {
+		const corr = this.candidatoExpedienteSeleccionado?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
+		if (!this.documentosCargados && corr > 0) {
+			this.consultarDocumentosExpediente(corr);
+		}
+	}
+
+	consultarDocumentosExpediente(corrExpediente: number): void {
+		if (corrExpediente <= 0) {
+			this.documentos = [];
+			this.documentosCargados = false;
+			return;
+		}
+
+		this.service
+			.getAllExpedienteDocumento(corrExpediente)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.documentos = response?.Result ? response.Data ?? [] : [];
+					this.documentosCargados = true;
+				},
+				error: () => {
+					this.documentos = [];
+					this.documentosCargados = false;
+				},
+			});
+	}
+
+	onVerDocumentoExpedienteClick(row: ScExpedienteDocumento, e?: { event?: Event }): void {
+		e?.event?.stopPropagation?.();
+		this.verDocumentoExpediente(row);
+	}
+
+	verDocumentoExpediente(row: ScExpedienteDocumento): void {
+		const corrExpediente =
+			Number(row?.CORR_EXPEDIENTE_CANDIDATO ?? 0) ||
+			Number(this.candidatoExpedienteSeleccionado?.CORR_EXPEDIENTE_CANDIDATO ?? 0);
+		const corrDocumento = Number(row?.CORR_EXPEDIENTE_DOCUMENTO ?? 0);
+		const nombreArchivo = row?.NOMBRE_ARCHIVO ?? '';
+
+		if (corrExpediente <= 0 || corrDocumento <= 0 || !nombreArchivo) {
+			return;
+		}
+
+		this.service
+			.getExpedienteDocumentoBlob({
+				CORR_EXPEDIENTE_CANDIDATO: corrExpediente,
+				CORR_EXPEDIENTE_DOCUMENTO: corrDocumento,
+				NOMBRE_ARCHIVO: nombreArchivo,
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: (blob) => {
+					if (!blob || blob.size <= 0) {
+						this.notifyFx('Error al generar el documento.', NotifyType.Error);
+						return;
+					}
+
+					const ext = (nombreArchivo.split('.').pop() || '').toLowerCase();
+					const objectUrl = window.URL.createObjectURL(blob);
+
+					if (ext === 'pdf' || ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
+						this.revokeDocumentoPreview();
+						this.documentoPreviewObjectUrl = objectUrl;
+						this.documentoPreviewEsImagen = ext !== 'pdf';
+						this.PDF = this.sanitizer.bypassSecurityTrustResourceUrl(objectUrl);
+						this.popupVisiblePdf = true;
+						return;
+					}
+
+					window.open(objectUrl, '_blank');
+					setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60000);
+				},
+				error: (err: any) => {
+					this.notifyFx(
+						err?.error?.ErrorMessage || err?.message || 'Error al visualizar el documento.',
+						NotifyType.Error
+					);
+				},
+			});
+	}
+
+	private revocarFotoPersona(): void {
+		this.cerrarFotoPreview();
+		if (this.fotoPersonaUrl) {
+			URL.revokeObjectURL(this.fotoPersonaUrl);
+			this.fotoPersonaUrl = null;
+		}
+	}
+
+	private cargarFotoPersona(corrPersonaDatos: number, fotoUrl?: string): void {
+		this.revocarFotoPersona();
+		if (corrPersonaDatos <= 0 || !`${fotoUrl ?? ''}`.trim()) {
+			return;
+		}
+
+		this.solicitudService
+			.getPersonaFoto(corrPersonaDatos)
+			.pipe(take(1))
+			.subscribe({
+				next: (blob) => {
+					if (blob && blob.size > 0 && (blob.type || '').startsWith('image/')) {
+						this.fotoPersonaUrl = URL.createObjectURL(blob);
+					}
+				},
+				error: () => {
+					this.fotoPersonaUrl = null;
+				},
+			});
+	}
+
+	private asArray<T>(data: any): T[] {
+		return Array.isArray(data) ? data : [];
+	}
+
+	private emptyResult() {
+		return of({ Result: true, Data: [] } as any);
 	}
 
 	abrirModalObservador(): void {
@@ -1004,22 +1322,23 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.candidatoEntrevistaSeleccionado = candidato;
 		this.entrevistas = [];
 		this.nuevaEntrevista();
-		this.workspaceEntrevistasVisible = true;
+		this.workspaceDetalleEntrevistasVisible = true;
 		setTimeout(() => {
-			this.workspaceEntrevistasAbierto = true;
+			this.workspaceDetalleEntrevistasAbierto = true;
 		}, 20);
 		this.consultarEntrevistas();
 	}
 
+	/** Cierra el workspace de detalle de entrevistas (desde abajo). */
 	cerrarWorkspaceEntrevistas(animar = true): void {
-		if (this.workspaceEntrevistasCloseTimer) {
-			clearTimeout(this.workspaceEntrevistasCloseTimer);
-			this.workspaceEntrevistasCloseTimer = null;
+		if (this.workspaceDetalleEntrevistasCloseTimer) {
+			clearTimeout(this.workspaceDetalleEntrevistasCloseTimer);
+			this.workspaceDetalleEntrevistasCloseTimer = null;
 		}
 
-		if (!animar || !this.workspaceEntrevistasVisible) {
-			this.workspaceEntrevistasAbierto = false;
-			this.workspaceEntrevistasVisible = false;
+		if (!animar || !this.workspaceDetalleEntrevistasVisible) {
+			this.workspaceDetalleEntrevistasAbierto = false;
+			this.workspaceDetalleEntrevistasVisible = false;
 			this.candidatoEntrevistaSeleccionado = null;
 			this.entrevistas = [];
 			this.entrevistaReadOnly = false;
@@ -1028,15 +1347,15 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			return;
 		}
 
-		this.workspaceEntrevistasAbierto = false;
-		this.workspaceEntrevistasCloseTimer = setTimeout(() => {
-			this.workspaceEntrevistasVisible = false;
+		this.workspaceDetalleEntrevistasAbierto = false;
+		this.workspaceDetalleEntrevistasCloseTimer = setTimeout(() => {
+			this.workspaceDetalleEntrevistasVisible = false;
 			this.candidatoEntrevistaSeleccionado = null;
 			this.entrevistas = [];
 			this.entrevistaReadOnly = false;
 			this.cerrarMarcarRealizadaEntrevista();
 			this.cerrarAdjuntosEntrevista();
-			this.workspaceEntrevistasCloseTimer = null;
+			this.workspaceDetalleEntrevistasCloseTimer = null;
 		}, 280);
 	}
 
