@@ -26,6 +26,8 @@ var expedienteDocumentoOptions = new ExpedienteDocumentoOptions();
 builder.Configuration.GetSection(ExpedienteDocumentoOptions.SectionName).Bind(expedienteDocumentoOptions);
 builder.Services.AddSingleton(expedienteDocumentoOptions);
 builder.Services.AddSingleton<ExpedienteDocumentoStorage>();
+var expedienteEntrevistaDocumentoOptions = new ExpedienteEntrevistaDocumentoOptions();
+builder.Configuration.GetSection(ExpedienteEntrevistaDocumentoOptions.SectionName).Bind(expedienteEntrevistaDocumentoOptions);
 
 // Qué hace: registra storage de documentos de entrevista del expediente (DI).
 // Cómo: mismo patrón que ExpedienteDocumentoStorage (options + singleton).

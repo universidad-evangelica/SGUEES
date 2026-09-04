@@ -124,6 +124,38 @@ namespace SGUEES.Services
 				vESTACION);
 		}
 
+		public async Task<CResult> ActivarProcesoSeleccionAsync(SC_EXPEDIENTE_CANDIDATOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			var empresaError = ValidateEmpresaSesion(Data.CORR_EMPRESA);
+			if (empresaError != null)
+			{
+				return empresaError;
+			}
+
+			if (Data.CORR_EXPEDIENTE_CANDIDATO <= 0)
+			{
+				return ValidationError("No se pudo identificar el expediente a actualizar.");
+			}
+
+			var actual = await GetAsync(new SC_EXPEDIENTE_CANDIDATOParam
+			{
+				CORR_EMPRESA = Data.CORR_EMPRESA,
+				CORR_EXPEDIENTE_CANDIDATO = Data.CORR_EXPEDIENTE_CANDIDATO,
+			});
+
+			if (!actual.Result || actual.Data == null)
+			{
+				return ValidationError("No se encontró el expediente.");
+			}
+
+			if (actual.Data is SC_EXPEDIENTE_CANDIDATOView vista && vista.CORR_ESTADO_EXPEDIENTE == 2)
+			{
+				return ValidationError("El expediente ya está en proceso de selección.");
+			}
+
+			return await _repo.ActivarProcesoSeleccionAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
 		private static List<CParameter> BuildParameters(SC_EXPEDIENTE_CANDIDATOParam xWhere)
 		{
 			return new List<CParameter>

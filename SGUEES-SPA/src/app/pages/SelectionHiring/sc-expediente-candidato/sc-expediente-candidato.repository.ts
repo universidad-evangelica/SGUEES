@@ -38,4 +38,8 @@ export class ScExpedienteCandidatoRepository {
 	asociarSolicitud(model: { CORR_SOLICITUD_EMPLEO: number; CREAR_EXPEDIENTE: boolean }): Observable<IResult> {
 		return this.objData.Post(model, this.xController, 'AsociarSolicitud', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
+
+	activarProcesoSeleccion(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put({}, this.xController, 'ActivarProcesoSeleccion', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
 }

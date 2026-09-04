@@ -25,7 +25,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpGet("GetAll")]
-		[Authorize(Policy = "/sc-expediente-candidato|R")]
+		[Authorize(Policy = "/sc-expediente-candidato,/sc-requisicion-personal|R")]
 		public async Task<CResult> GetAll([FromQuery] SC_EXPEDIENTE_DOCUMENTOParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -85,6 +85,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpGet("GetDoc")]
+		[Authorize(Policy = "/sc-expediente-candidato,/sc-requisicion-personal|R")]
 		[Authorize(Policy = "/sc-expediente-candidato|R")]
 		public async Task<IActionResult> GetDoc([FromQuery] SC_EXPEDIENTE_DOCUMENTOParam Data)
 		{

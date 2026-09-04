@@ -94,7 +94,7 @@ namespace sguees.Controllers
 		}
 
 		[HttpGet("GetCORR_PERSONA_DATOS_SC_SOLICITUD_EMPLEO")]
-		[Authorize(Policy = "/sc-solicitud-empleo|R")]
+		[Authorize(Policy = "/sc-solicitud-empleo,/sc-requisicion-personal|R")]
 		public async Task<CResult> GetCORR_PERSONA_DATOS_SC_SOLICITUD_EMPLEO([FromQuery] SC_PERSONA_DATOSParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
@@ -102,7 +102,7 @@ namespace sguees.Controllers
 		}
 
 		[HttpGet("GetFoto_SC_SOLICITUD_EMPLEO")]
-		[Authorize(Policy = "/sc-solicitud-empleo|R")]
+		[Authorize(Policy = "/sc-solicitud-empleo,/sc-requisicion-personal|R")]
 		public async Task<IActionResult> GetFoto_SC_SOLICITUD_EMPLEO([FromQuery] SC_PERSONA_DATOSParam Data)
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();

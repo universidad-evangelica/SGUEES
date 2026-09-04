@@ -96,6 +96,12 @@ export class ScExpedienteCandidatoService {
 		]);
 	}
 
+	activarProcesoSeleccion(corrExpedienteCandidato: number): Observable<IResult> {
+		return this.repo.activarProcesoSeleccion([
+			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpedienteCandidato },
+		]);
+	}
+
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: model.CORR_EXPEDIENTE_CANDIDATO }]);
 	}

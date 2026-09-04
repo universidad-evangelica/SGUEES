@@ -201,6 +201,19 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		return (this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0) > 0;
 	}
 
+	activandoProcesoSeleccion = false;
+
+	/** Botón barra: activar estado Proceso de selección (solo expediente existente en borrador). */
+	get btnActivarProcesoSeleccion(): string {
+		if (!this.mostrarResumenExpediente || !this.permiteEdit || this.activandoProcesoSeleccion) {
+			return '';
+		}
+		if ((this.model?.CORR_ESTADO_EXPEDIENTE ?? 1) === 2) {
+			return '';
+		}
+		return 'Activar proceso selección';
+	}
+
 	/** Iniciales para avatar del resumen cuando no hay foto. */
 	get inicialesPersonaResumen(): string {
 		if (this.personaDatos) {
@@ -491,6 +504,73 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 
 	getEstadoExpedienteBadgeClass(corrEstado?: number): string {
 		return this.service.getEstadoExpedienteBadgeClass(corrEstado ?? this.model?.CORR_ESTADO_EXPEDIENTE);
+	}
+
+	async activarProcesoSeleccion(): Promise<void> {
+		if (this.activandoProcesoSeleccion) {
+			return;
+		}
+
+		if (!this.permiteEdit) {
+			this.notifyFx('No tiene permiso para actualizar el expediente.', NotifyType.Warning);
+			return;
+		}
+
+		const corrExpediente = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
+		if (corrExpediente <= 0) {
+			return;
+		}
+
+		if ((this.model?.CORR_ESTADO_EXPEDIENTE ?? 1) === 2) {
+			this.notifyFx('El expediente ya está en proceso de selección.', NotifyType.Warning);
+			return;
+		}
+
+		const aceptar = await confirm(
+			'¿Confirma activar el proceso de selección para este expediente?',
+			'Activar proceso selección',
+		);
+		if (!aceptar) {
+			return;
+		}
+
+		this.activandoProcesoSeleccion = true;
+		this.loadingVisible = true;
+
+		try {
+			const resp: any = await this.service.activarProcesoSeleccion(corrExpediente).pipe(take(1)).toPromise();
+
+			if (!resp?.Result) {
+				const msg = resp?.ErrorMessage || 'No se pudo activar el proceso de selección.';
+				this.notifyFx(msg, NotifyType.Error);
+				return;
+			}
+
+			const data = resp.Data;
+			if (data) {
+				const updated = this.fillData(data);
+				this.model = updated;
+				this.modelUpdate = { ...updated };
+				this.aplicarRegistroEnGrid(data, false);
+			} else {
+				this.model.CORR_ESTADO_EXPEDIENTE = 2;
+				this.modelUpdate.CORR_ESTADO_EXPEDIENTE = 2;
+				this.aplicarRegistroEnGrid(
+					{ ...this.model, CORR_ESTADO_EXPEDIENTE: 2 },
+					false,
+				);
+			}
+
+			this.notifyFx('Proceso de selección activado correctamente.', NotifyType.Success);
+		} catch (error: any) {
+			const msg = error?.error?.ErrorMessage || error?.ErrorMessage || error?.message || '';
+			if (msg) {
+				this.notifyFx(msg, NotifyType.Error);
+			}
+		} finally {
+			this.activandoProcesoSeleccion = false;
+			this.loadingVisible = false;
+		}
 	}
 
 	/** Texto seguro para campos de solo lectura en el resumen. */

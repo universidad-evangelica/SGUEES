@@ -21,6 +21,8 @@ import { ScRequisicionPersonalComponent } from './sc-requisicion-personal.compon
 import { ToastModule } from "primeng/toast";
 import { DxToolbarModule } from "devextreme-angular/ui/toolbar"; //importar el modulo de Toast para primeNG
 
+import { ScPersonaDatosSharedModule } from '../shared/sc-persona-datos-shared.module';
+
 const routes: Routes = [{ path: '', component: ScRequisicionPersonalComponent }];
 
 
@@ -41,7 +43,8 @@ const routes: Routes = [{ path: '', component: ScRequisicionPersonalComponent }]
     BarraDataMttoModule,
     DataLookupModule,
     ToastModule,
-    DxToolbarModule
+    DxToolbarModule,
+    ScPersonaDatosSharedModule,
 ],
     exports: [RouterModule],
     declarations: [ScRequisicionPersonalComponent],
