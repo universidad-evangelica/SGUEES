@@ -3,7 +3,8 @@ GO
 -- =============================================================================
 -- Vista: dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPR
 -- Qué hace: requerimientos organizacionales del descriptor para impresión Formato extenso.
--- Cómo: 1 fila por SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL; sin auditoría.
+-- Cómo: 1 fila por SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL;
+--       NUM_ITEM = '1.', '2.', ... (ROW_NUMBER por descriptor); sin auditoría.
 -- Uso: PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO (result set 8).
 -- =============================================================================
 CREATE OR ALTER VIEW [dbo].[V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPR]
@@ -12,6 +13,10 @@ SELECT
   D.[CORR_EMPRESA],
   D.[CORR_DESCRIPTOR_PUESTO],
   D.[CORR_REQUERIMIENTO_ORGANIZACIONAL],
+  CAST(ROW_NUMBER() OVER (
+    PARTITION BY D.[CORR_EMPRESA], D.[CORR_DESCRIPTOR_PUESTO]
+    ORDER BY D.[CORR_REQUERIMIENTO_ORGANIZACIONAL]
+  ) AS VARCHAR(10)) + N'.' AS [NUM_ITEM],
   D.[DESCRIPCION]
 FROM [dbo].[SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL] D
 GO

@@ -18,7 +18,8 @@ GO
 --   7) Result set 7: relaciones laborales externas
 --      (V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_EXTERNAS_IMPR).
 --   8) Result set 8: requerimientos organizacionales
---      (V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPR).
+--      (V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPR;
+--      NUM_ITEM = '1.', '2.', ...).
 -- Uso API: SC_DESCRIPTOR_PUESTO/getPDFFormatoExtenso → SGUEES-RPT SelectionHiring.
 -- =============================================================================
 CREATE OR ALTER PROCEDURE [dbo].[PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO]
@@ -143,11 +144,12 @@ BEGIN
 	  AND RE.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
 	ORDER BY RE.CORR_RELACION_LABORAL;
 
-	-- Result set 8: requerimientos organizacionales (1 fila por requerimiento).
+	-- Result set 8: requerimientos organizacionales (1 fila; NUM_ITEM = '1.', '2.', ...).
 	SELECT
 		RO.CORR_EMPRESA,
 		RO.CORR_DESCRIPTOR_PUESTO,
 		RO.CORR_REQUERIMIENTO_ORGANIZACIONAL,
+		RO.NUM_ITEM,
 		RO.DESCRIPCION
 	FROM dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPR RO
 	WHERE RO.CORR_EMPRESA = @CORR_EMPRESA

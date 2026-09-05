@@ -6,6 +6,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_DESCRIPTOR_PUESTO { get; set; }
 		public int CORR_REQUERIMIENTO_ORGANIZACIONAL { get; set; }
+		public string NUM_ITEM { get; set; }
 		public string DESCRIPCION { get; set; }
 	}
 }
