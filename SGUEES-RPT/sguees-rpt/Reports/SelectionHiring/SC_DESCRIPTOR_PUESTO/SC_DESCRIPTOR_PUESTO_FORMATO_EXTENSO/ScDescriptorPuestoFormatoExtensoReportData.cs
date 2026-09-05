@@ -88,6 +88,11 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 			var relacionesExternas = Utils.CreateDataTable(relExtRows);
 			relacionesExternas.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_EXTERNAS_IMPR";
 
+			var reqOrgRows = payload.RequerimientosOrganizacionales
+				?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPRView>();
+			var requerimientosOrganizacionales = Utils.CreateDataTable(reqOrgRows);
+			requerimientosOrganizacionales.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPR";
+
 			var dataSet = new DataSet();
 			dataSet.Tables.Add(encabezado);
 			dataSet.Tables.Add(param);
@@ -96,6 +101,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 			dataSet.Tables.Add(responsabilidades);
 			dataSet.Tables.Add(relacionesInternas);
 			dataSet.Tables.Add(relacionesExternas);
+			dataSet.Tables.Add(requerimientosOrganizacionales);
 
 			return dataSet;
 		}

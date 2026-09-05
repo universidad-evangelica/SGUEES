@@ -12,5 +12,6 @@ namespace SGUEES.Models
         public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RESPONSABILIDAD_CARGO_IMPRView> Responsabilidades { get; set; }
         public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_INTERNAS_IMPRView> RelacionesInternas { get; set; }
         public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_EXTERNAS_IMPRView> RelacionesExternas { get; set; }
+        public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPRView> RequerimientosOrganizacionales { get; set; }
     }
 }

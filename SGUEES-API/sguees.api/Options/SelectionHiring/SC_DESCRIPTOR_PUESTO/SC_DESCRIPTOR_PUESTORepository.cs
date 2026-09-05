@@ -934,7 +934,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Qué hace: lee los 7 result sets del SP Formato extenso y arma el payload para RPT.
+        // Qué hace: lee los 8 result sets del SP Formato extenso y arma el payload para RPT.
         // Cómo: merge logos; funciones; funciones+actividades; responsabilidades;
         //       relaciones internas y externas.
         // Cómo: merge logos (result set 2); funciones; funciones+actividades; responsabilidades.
@@ -1013,6 +1013,14 @@ namespace SGUEES.Repositories
                         .ToList();
                 }
 
+                var requerimientosOrganizacionales = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPRView>();
+                if (reader.NextResult())
+                {
+                    requerimientosOrganizacionales = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
                 reader.Close();
 
                 var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload
@@ -1023,6 +1031,7 @@ namespace SGUEES.Repositories
                     Responsabilidades = responsabilidades,
                     RelacionesInternas = relacionesInternas,
                     RelacionesExternas = relacionesExternas,
+                    RequerimientosOrganizacionales = requerimientosOrganizacionales,
                 };
 
                 objResultado.Data = payload;
