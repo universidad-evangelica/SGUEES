@@ -91,7 +91,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
         
         [Browsable(false)]
         [DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public CrystalDecisions.CrystalReports.Engine.Section ReportFooterSection1 {
+        public CrystalDecisions.CrystalReports.Engine.Section DetailSectionRelacionesLaboralesInternas {
             get {
                 return this.ReportDefinition.Sections[5];
             }
@@ -99,9 +99,17 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
         
         [Browsable(false)]
         [DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
-        public CrystalDecisions.CrystalReports.Engine.Section PageFooterSection1 {
+        public CrystalDecisions.CrystalReports.Engine.Section ReportFooterSection1 {
             get {
                 return this.ReportDefinition.Sections[6];
+            }
+        }
+        
+        [Browsable(false)]
+        [DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
+        public CrystalDecisions.CrystalReports.Engine.Section PageFooterSection1 {
+            get {
+                return this.ReportDefinition.Sections[7];
             }
         }
     }

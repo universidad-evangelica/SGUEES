@@ -78,12 +78,24 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 			var responsabilidades = Utils.CreateDataTable(respRows);
 			responsabilidades.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RESPONSABILIDAD_CARGO_IMPR";
 
+			var relIntRows = payload.RelacionesInternas
+				?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_INTERNAS_IMPRView>();
+			var relacionesInternas = Utils.CreateDataTable(relIntRows);
+			relacionesInternas.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_INTERNAS_IMPR";
+
+			var relExtRows = payload.RelacionesExternas
+				?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_EXTERNAS_IMPRView>();
+			var relacionesExternas = Utils.CreateDataTable(relExtRows);
+			relacionesExternas.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_EXTERNAS_IMPR";
+
 			var dataSet = new DataSet();
 			dataSet.Tables.Add(encabezado);
 			dataSet.Tables.Add(param);
 			dataSet.Tables.Add(funciones);
 			dataSet.Tables.Add(funcionesActividades);
 			dataSet.Tables.Add(responsabilidades);
+			dataSet.Tables.Add(relacionesInternas);
+			dataSet.Tables.Add(relacionesExternas);
 
 			return dataSet;
 		}

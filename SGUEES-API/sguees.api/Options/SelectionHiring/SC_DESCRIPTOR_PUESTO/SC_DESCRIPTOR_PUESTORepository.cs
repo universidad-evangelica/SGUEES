@@ -934,7 +934,9 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Qué hace: lee los 5 result sets del SP Formato extenso y arma el payload para RPT.
+        // Qué hace: lee los 7 result sets del SP Formato extenso y arma el payload para RPT.
+        // Cómo: merge logos; funciones; funciones+actividades; responsabilidades;
+        //       relaciones internas y externas.
         // Cómo: merge logos (result set 2); funciones; funciones+actividades; responsabilidades.
         private async Task<CResult> GetDescriptorFormatoExtensoImprAsyncInternal(List<CParameter> xWhere)
         {
@@ -995,6 +997,22 @@ namespace SGUEES.Repositories
                         .ToList();
                 }
 
+                var relacionesInternas = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_INTERNAS_IMPRView>();
+                if (reader.NextResult())
+                {
+                    relacionesInternas = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_INTERNAS_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var relacionesExternas = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_EXTERNAS_IMPRView>();
+                if (reader.NextResult())
+                {
+                    relacionesExternas = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_EXTERNAS_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
                 reader.Close();
 
                 var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload
@@ -1003,6 +1021,8 @@ namespace SGUEES.Repositories
                     Funciones = funciones,
                     FuncionesActividades = funcionesActividades,
                     Responsabilidades = responsabilidades,
+                    RelacionesInternas = relacionesInternas,
+                    RelacionesExternas = relacionesExternas,
                 };
 
                 objResultado.Data = payload;
