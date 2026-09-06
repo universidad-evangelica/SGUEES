@@ -98,6 +98,11 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 			var riesgosPuesto = Utils.CreateDataTable(riesgoRows);
 			riesgosPuesto.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RIESGO_PUESTO_IMPR";
 
+			var indRows = payload.Inducciones
+				?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_INDUCCION_IMPRView>();
+			var inducciones = Utils.CreateDataTable(indRows);
+			inducciones.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_INDUCCION_IMPR";
+
 			var dataSet = new DataSet();
 			dataSet.Tables.Add(encabezado);
 			dataSet.Tables.Add(param);
@@ -108,6 +113,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 			dataSet.Tables.Add(relacionesExternas);
 			dataSet.Tables.Add(requerimientosOrganizacionales);
 			dataSet.Tables.Add(riesgosPuesto);
+			dataSet.Tables.Add(inducciones);
 
 			return dataSet;
 		}
