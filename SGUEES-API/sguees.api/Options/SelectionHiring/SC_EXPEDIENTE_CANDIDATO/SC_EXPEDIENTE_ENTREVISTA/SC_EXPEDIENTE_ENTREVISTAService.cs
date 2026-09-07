@@ -42,6 +42,16 @@ namespace SGUEES.Services
 				});
 			}
 
+			if (xWhere.CORR_REQUISICION_PERSONAL > 0)
+			{
+				p.Add(new CParameter()
+				{
+					ParameterName = "CORR_REQUISICION_PERSONAL",
+					Value = xWhere.CORR_REQUISICION_PERSONAL,
+					DbType = System.Data.DbType.Int32,
+				});
+			}
+
 			return await _repo.GetAllAsync(p);
 		}
 
@@ -161,6 +171,7 @@ namespace SGUEES.Services
 				CORR_EXPEDIENTE_CANDIDATO = existente.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_EXPEDIENTE_ENTREVISTA = existente.CORR_EXPEDIENTE_ENTREVISTA,
 				CORR_SOLICITUD_EMPLEO = existente.CORR_SOLICITUD_EMPLEO,
+				CORR_REQUISICION_PERSONAL = existente.CORR_REQUISICION_PERSONAL,
 				CORR_TIPO_ENTREVISTA = existente.CORR_TIPO_ENTREVISTA,
 				FECHA_ENTREVISTA = existente.FECHA_ENTREVISTA,
 				ENTREVISTADOR = existente.ENTREVISTADOR,
@@ -223,6 +234,11 @@ namespace SGUEES.Services
 			if (Data == null || Data.CORR_EXPEDIENTE_CANDIDATO <= 0 || Data.CORR_SOLICITUD_EMPLEO <= 0)
 			{
 				return ValidationError("Debe indicar expediente y solicitud de empleo.");
+			}
+
+			if (Data.CORR_REQUISICION_PERSONAL <= 0)
+			{
+				return ValidationError("Debe indicar la requisición personal de la entrevista.");
 			}
 
 			if (Data.CORR_TIPO_ENTREVISTA <= 0)

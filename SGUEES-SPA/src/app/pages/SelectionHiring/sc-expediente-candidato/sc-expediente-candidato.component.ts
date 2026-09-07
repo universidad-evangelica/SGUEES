@@ -76,6 +76,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	workspaceSolicitudVisible = false;
 	workspaceSolicitudAbierto = false;
 	corrExpedienteSolicitudSeleccionada = 0;
+	corrRequisicionSeleccionada = 0;
 	solicitudSeleccionada: ScExpedienteSolicitud | null = null;
 	private workspaceSolicitudCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -780,6 +781,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	onSolicitudRowClick(e: any): void {
 		const rowData = e?.data as ScExpedienteSolicitud | undefined;
 		const corr = Number(rowData?.CORR_EXPEDIENTE_SOLICITUD ?? 0);
+		const corrRequisicion = Number(rowData?.CORR_REQUISICION_PERSONAL ?? 0);
 		if (corr <= 0) {
 			return;
 		}
@@ -787,11 +789,19 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		if (e?.rowType && e.rowType !== 'data') {
 			return;
 		}
+		if (corrRequisicion <= 0) {
+			this.notifyFx(
+				'Esta solicitud no tiene requisición vinculada. Asocie una requisición antes de gestionar entrevistas.',
+				NotifyType.Warning
+			);
+			return;
+		}
 
 		this.cerrarWorkspaceCompleto(false);
 		this.clearWorkspaceSolicitudCloseTimer();
 		this.solicitudSeleccionada = rowData ?? null;
 		this.corrExpedienteSolicitudSeleccionada = corr;
+		this.corrRequisicionSeleccionada = corrRequisicion;
 		this.entrevistaItems = this.service.getEntrevistaItems(this.mCORR_TIPO_ENTREVISTA);
 		this.nuevaEntrevista();
 		this.workspaceSolicitudVisible = true;
@@ -813,6 +823,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.workspaceSolicitudAbierto = false;
 			this.workspaceSolicitudVisible = false;
 			this.corrExpedienteSolicitudSeleccionada = 0;
+			this.corrRequisicionSeleccionada = 0;
 			this.solicitudSeleccionada = null;
 			this.entrevistas = [];
 			this.nuevaEntrevista();
@@ -824,6 +835,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.workspaceSolicitudCloseTimer = setTimeout(() => {
 			this.workspaceSolicitudVisible = false;
 			this.corrExpedienteSolicitudSeleccionada = 0;
+			this.corrRequisicionSeleccionada = 0;
 			this.solicitudSeleccionada = null;
 			this.entrevistas = [];
 			this.nuevaEntrevista();
@@ -839,17 +851,20 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		}
 	}
 
-	/** Carga entrevistas de la solicitud abierta en el workspace. */
+	/** Carga entrevistas de la solicitud/requisición abierta en el workspace. */
 	consultarEntrevistas(): void {
 		const corrExpediente = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
 		const corrSolicitud = this.solicitudSeleccionada?.CORR_SOLICITUD_EMPLEO ?? 0;
-		if (corrExpediente <= 0 || corrSolicitud <= 0) {
+		const corrRequisicion =
+			this.corrRequisicionSeleccionada ||
+			Number(this.solicitudSeleccionada?.CORR_REQUISICION_PERSONAL ?? 0);
+		if (corrExpediente <= 0 || corrSolicitud <= 0 || corrRequisicion <= 0) {
 			this.entrevistas = [];
 			return;
 		}
 
 		this.service
-			.getAllEntrevista(corrExpediente, corrSolicitud)
+			.getAllEntrevista(corrExpediente, corrSolicitud, corrRequisicion)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -889,6 +904,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 				CORR_EXPEDIENTE_CANDIDATO: xModel.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_EXPEDIENTE_ENTREVISTA: xModel.CORR_EXPEDIENTE_ENTREVISTA,
 				CORR_SOLICITUD_EMPLEO: xModel.CORR_SOLICITUD_EMPLEO,
+				CORR_REQUISICION_PERSONAL: xModel.CORR_REQUISICION_PERSONAL,
 				CORR_TIPO_ENTREVISTA: xModel.CORR_TIPO_ENTREVISTA ?? 0,
 				TIPO_ENTREVISTA: xModel.TIPO_ENTREVISTA,
 				DESCRIPCION_ENTREVISTA: xModel.DESCRIPCION_ENTREVISTA,
@@ -905,6 +921,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			CORR_EXPEDIENTE_CANDIDATO: this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0,
 			CORR_EXPEDIENTE_ENTREVISTA: 0,
 			CORR_SOLICITUD_EMPLEO: this.solicitudSeleccionada?.CORR_SOLICITUD_EMPLEO ?? 0,
+			CORR_REQUISICION_PERSONAL:
+				this.corrRequisicionSeleccionada ||
+				Number(this.solicitudSeleccionada?.CORR_REQUISICION_PERSONAL ?? 0),
 			CORR_TIPO_ENTREVISTA: 0,
 			FECHA_ENTREVISTA: new Date(),
 			ENTREVISTADOR: '',
@@ -964,6 +983,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 
 		this.entrevistaModel.CORR_EXPEDIENTE_CANDIDATO = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
 		this.entrevistaModel.CORR_SOLICITUD_EMPLEO = this.solicitudSeleccionada?.CORR_SOLICITUD_EMPLEO ?? 0;
+		this.entrevistaModel.CORR_REQUISICION_PERSONAL =
+			this.corrRequisicionSeleccionada ||
+			Number(this.solicitudSeleccionada?.CORR_REQUISICION_PERSONAL ?? 0);
 
 		if (!this.service.esValidoEntrevista(this.entrevistaModel, this.notifyFx.bind(this))) {
 			return;

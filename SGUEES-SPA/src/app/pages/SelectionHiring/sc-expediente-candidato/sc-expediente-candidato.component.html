@@ -517,9 +517,13 @@
         (onClick)="volverDesdeSolicitud()"
       ></dx-button>
       <div class="solicitud-workspace__title">
-        <h3>Detalle de solicitud asociada</h3>
-        <span *ngIf="corrExpedienteSolicitudSeleccionada">
-          CORR_EXPEDIENTE_SOLICITUD: {{ corrExpedienteSolicitudSeleccionada }}
+        <h3>Detalle por requisición</h3>
+        <span *ngIf="solicitudSeleccionada">
+          Solicitud {{ solicitudSeleccionada.CORR_SOLICITUD_EMPLEO }}
+          · Requisición {{ corrRequisicionSeleccionada || solicitudSeleccionada.CORR_REQUISICION_PERSONAL }}
+          <ng-container *ngIf="solicitudSeleccionada.NOMBRE_UNIDAD">
+            · {{ solicitudSeleccionada.NOMBRE_UNIDAD }}
+          </ng-container>
         </span>
       </div>
     </header>

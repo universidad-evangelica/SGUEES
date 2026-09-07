@@ -8,6 +8,7 @@ namespace SGUEES.Models
 		public int CORR_EXPEDIENTE_CANDIDATO { get; set; }
 		public int CORR_EXPEDIENTE_ENTREVISTA { get; set; }
 		public int CORR_SOLICITUD_EMPLEO { get; set; }
+		public int CORR_REQUISICION_PERSONAL { get; set; }
 		public int CORR_TIPO_ENTREVISTA { get; set; }
 		public string TIPO_ENTREVISTA { get; set; }
 		public string DESCRIPCION_ENTREVISTA { get; set; }
@@ -18,6 +19,8 @@ namespace SGUEES.Models
 		public string RESUMEN_ENTREVISTA { get; set; }
 		public string CORREO_INVITACION { get; set; }
 		public string NOMBRE_SOLICITUD { get; set; }
+		public string NOMBRE_UNIDAD { get; set; }
+		public string NOMBRE_PUESTO { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }
 		public DateTime? FECHA_CREA { get; set; }

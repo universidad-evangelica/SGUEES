@@ -1535,13 +1535,14 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	consultarEntrevistas(): void {
 		const corrExpediente = this.candidatoEntrevistaSeleccionado?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
 		const corrSolicitud = this.candidatoEntrevistaSeleccionado?.CORR_SOLICITUD_EMPLEO ?? 0;
-		if (corrExpediente <= 0 || corrSolicitud <= 0) {
+		const corrRequisicion = this.model?.CORR_REQUISICION_PERSONAL ?? 0;
+		if (corrExpediente <= 0 || corrSolicitud <= 0 || corrRequisicion <= 0) {
 			this.entrevistas = [];
 			return;
 		}
 
 		this.service
-			.getEntrevistasCandidato(corrExpediente, corrSolicitud)
+			.getEntrevistasCandidato(corrExpediente, corrSolicitud, corrRequisicion)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -1561,6 +1562,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				CORR_EXPEDIENTE_CANDIDATO: xModel.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_EXPEDIENTE_ENTREVISTA: xModel.CORR_EXPEDIENTE_ENTREVISTA,
 				CORR_SOLICITUD_EMPLEO: xModel.CORR_SOLICITUD_EMPLEO,
+				CORR_REQUISICION_PERSONAL: xModel.CORR_REQUISICION_PERSONAL,
 				CORR_TIPO_ENTREVISTA: xModel.CORR_TIPO_ENTREVISTA ?? 0,
 				TIPO_ENTREVISTA: xModel.TIPO_ENTREVISTA,
 				DESCRIPCION_ENTREVISTA: xModel.DESCRIPCION_ENTREVISTA,
@@ -1578,6 +1580,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			CORR_EXPEDIENTE_CANDIDATO: this.candidatoEntrevistaSeleccionado?.CORR_EXPEDIENTE_CANDIDATO ?? 0,
 			CORR_EXPEDIENTE_ENTREVISTA: 0,
 			CORR_SOLICITUD_EMPLEO: this.candidatoEntrevistaSeleccionado?.CORR_SOLICITUD_EMPLEO ?? 0,
+			CORR_REQUISICION_PERSONAL: this.model?.CORR_REQUISICION_PERSONAL ?? 0,
 			CORR_TIPO_ENTREVISTA: 0,
 			FECHA_ENTREVISTA: new Date(),
 			ENTREVISTADOR: this.getNombreUsuarioSesion(),
@@ -1650,6 +1653,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			this.candidatoEntrevistaSeleccionado?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
 		this.entrevistaModel.CORR_SOLICITUD_EMPLEO =
 			this.candidatoEntrevistaSeleccionado?.CORR_SOLICITUD_EMPLEO ?? 0;
+		this.entrevistaModel.CORR_REQUISICION_PERSONAL = this.model?.CORR_REQUISICION_PERSONAL ?? 0;
 
 		if (!this.service.esValidoEntrevista(this.entrevistaModel, this.notifyFx.bind(this))) {
 			return;

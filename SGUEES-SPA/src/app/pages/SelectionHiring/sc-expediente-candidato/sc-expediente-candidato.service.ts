@@ -114,11 +114,19 @@ export class ScExpedienteCandidatoService {
 		]);
 	}
 
-	getAllEntrevista(corrExpediente: number, corrSolicitudEmpleo: number): Observable<IResult> {
-		return this.entrevistaRepo.getAll([
+	getAllEntrevista(
+		corrExpediente: number,
+		corrSolicitudEmpleo: number,
+		corrRequisicionPersonal: number
+	): Observable<IResult> {
+		const xWhere: IParam[] = [
 			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
 			{ Parameter: 'CORR_SOLICITUD_EMPLEO', Value: corrSolicitudEmpleo },
-		]);
+		];
+		if (corrRequisicionPersonal > 0) {
+			xWhere.push({ Parameter: 'CORR_REQUISICION_PERSONAL', Value: corrRequisicionPersonal });
+		}
+		return this.entrevistaRepo.getAll(xWhere);
 	}
 
 	getPostulaciones(corrExpediente: number, corrSolicitudEmpleo?: number): Observable<IResult> {
@@ -396,6 +404,14 @@ export class ScExpedienteCandidatoService {
 	}
 
 	esValidoEntrevista(model: any, msg: Function): boolean {
+		if (!model?.CORR_SOLICITUD_EMPLEO || Number(model.CORR_SOLICITUD_EMPLEO) <= 0) {
+			msg('Debe indicar la solicitud de empleo.', NotifyType.Warning);
+			return false;
+		}
+		if (!model?.CORR_REQUISICION_PERSONAL || Number(model.CORR_REQUISICION_PERSONAL) <= 0) {
+			msg('Debe indicar la requisición personal de la entrevista.', NotifyType.Warning);
+			return false;
+		}
 		if (!model?.CORR_TIPO_ENTREVISTA || Number(model.CORR_TIPO_ENTREVISTA) <= 0) {
 			msg('Debe indicar el tipo de entrevista.', NotifyType.Warning);
 			return false;
