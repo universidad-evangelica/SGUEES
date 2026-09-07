@@ -28,6 +28,7 @@ import { ScExpedienteDocumento } from './sc-expediente-documento/models/sc-exped
 import { ScExpedienteSolicitud } from './sc-expediente-solicitud/models/sc-expediente-solicitud';
 import { ScExpedienteCandidatoService } from './sc-expediente-candidato.service';
 import { confirm } from 'devextreme/ui/dialog';
+import { ScExpedienteCandidatoPostulacion } from '../sc-requisicion-personal/sc-requisicion-candidato/models/sc-requisicion-candidato';
 
 @Component({
 	selector: 'app-sc-expediente-candidato',
@@ -73,6 +74,10 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	entrevistaItems: any[] = [];
 	entrevistaModel: ScExpedienteEntrevista = this.fillEntrevistaData();
 	guardandoEntrevista = false;
+
+	/** Tab Postulación/Decisión (expediente general, solo lectura). */
+	postulaciones: ScExpedienteCandidatoPostulacion[] = [];
+	postulacionColumns: any[] = [];
 
 	get editandoEntrevista(): boolean {
 		return (this.entrevistaModel?.CORR_EXPEDIENTE_ENTREVISTA ?? 0) > 0;
@@ -265,6 +270,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.solicitudColumns = this.service.getSolicitudColumns();
 		this.entrevistaColumns = this.service.getEntrevistaColumns();
 		this.entrevistaItems = this.service.getEntrevistaItems();
+		this.postulacionColumns = this.service.getPostulacionColumns();
 		this.documentoColumns = this.service.getDocumentoColumns();
 		this.documentoItems = this.service.getDocumentoItems();
 		this.entrevistaDocumentoColumns = this.service.getEntrevistaDocumentoColumns();
@@ -397,6 +403,11 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	/** Carga documentos al seleccionar el tab Documentos (mismo patrón que consultarSolicitudes). */
 	onDocumentosTabSelected(): void {
 		this.consultarDocumentos();
+	}
+
+	/** Carga postulaciones / decisiones del expediente (tab principal). */
+	onPostulacionesTabSelected(): void {
+		this.consultarPostulaciones();
 	}
 
 	override rowDblClick(e: any): void {
@@ -561,7 +572,10 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 				);
 			}
 
-			this.notifyFx('Proceso de selección activado correctamente.', NotifyType.Success);
+			this.notifyFx(
+				'Proceso de selección activado. El candidato está siendo evaluado por jefatura en las requisiciones vinculadas.',
+				NotifyType.Success
+			);
 		} catch (error: any) {
 			const msg = error?.error?.ErrorMessage || error?.ErrorMessage || error?.message || '';
 			if (msg) {
@@ -725,6 +739,27 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 				},
 				error: () => {
 					this.entrevistas = [];
+				},
+			});
+	}
+
+	/** Postulaciones / decisión de jefatura del expediente (todas las solicitudes/requisiciones). */
+	consultarPostulaciones(): void {
+		const corrExpediente = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
+		if (corrExpediente <= 0) {
+			this.postulaciones = [];
+			return;
+		}
+
+		this.service
+			.getPostulaciones(corrExpediente)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.postulaciones = response?.Result ? response.Data ?? [] : [];
+				},
+				error: () => {
+					this.postulaciones = [];
 				},
 			});
 	}

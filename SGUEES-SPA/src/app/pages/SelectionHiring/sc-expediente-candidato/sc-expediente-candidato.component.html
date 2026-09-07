@@ -114,7 +114,7 @@
 
         <div class="expediente-divider expediente-divider--horizontal mb-12" aria-hidden="true"></div>
 
-        <!-- Tabs de persona (sin encabezado) + Solicitudes y Documentos al final. -->
+        <!-- Tabs de persona (sin encabezado) + Solicitudes, Documentos y Postulación/Decisión. -->
         <div class="expediente-panel__tabs">
           <app-sc-persona-datos-vista
             [personaDatos]="personaDatos"
@@ -137,6 +137,7 @@
             (solicitudRowClick)="onSolicitudRowClick($event)"
             (solicitudesTabSelected)="consultarSolicitudes()"
             (documentosTabSelected)="onDocumentosTabSelected()"
+            (postulacionesTabSelected)="onPostulacionesTabSelected()"
           >
             <ng-template #documentosTab>
               <div class="expediente-documentos-tab">
@@ -224,6 +225,49 @@
                         ></dx-button>
                       </div>
                     </div>
+                  </dx-data-grid>
+                </div>
+              </div>
+            </ng-template>
+
+            <ng-template #postulacionTab>
+              <div class="expediente-documentos-tab">
+                <div class="dx-grid-deta">
+                  <dx-data-grid
+                    [dataSource]="postulaciones"
+                    [columns]="postulacionColumns"
+                    keyExpr="CORR_SOLICITUD_REQUISICION"
+                    [showBorders]="true"
+                    [showColumnLines]="true"
+                    [showRowLines]="true"
+                    [rowAlternationEnabled]="true"
+                    [hoverStateEnabled]="true"
+                    [allowColumnResizing]="true"
+                    [columnResizingMode]="'widget'"
+                    [columnAutoWidth]="true"
+                    [width]="'100%'"
+                    [noDataText]="'No hay postulaciones (requisiciones vinculadas) para este expediente.'"
+                  >
+                    <dxo-toolbar>
+                      <dxi-item name="searchPanel" location="after"></dxi-item>
+                    </dxo-toolbar>
+                    <dxo-search-panel
+                      [visible]="true"
+                      [width]="240"
+                      placeholder="Buscar postulación..."
+                    ></dxo-search-panel>
+                    <dxo-paging [pageSize]="10"></dxo-paging>
+                    <dxo-pager
+                      [showPageSizeSelector]="true"
+                      [allowedPageSizes]="[5, 10, 20]"
+                      [showInfo]="true"
+                      [infoText]="'Mostrando {0} a {1} de {2} postulaciones'"
+                    ></dxo-pager>
+                    <dxo-editing
+                      [allowUpdating]="false"
+                      [allowDeleting]="false"
+                      [allowAdding]="false"
+                    ></dxo-editing>
                   </dx-data-grid>
                 </div>
               </div>
@@ -478,12 +522,6 @@
                 </div>
               </div>
             </dxi-item>
-
-            <!-- <dxi-item title="Evaluaciones" [icon]="'checklist'">
-              <div class="solicitud-workspace__tab-body">
-
-              </div>
-            </dxi-item> -->
           </dx-tab-panel>
         </div>
       </dx-scroll-view>

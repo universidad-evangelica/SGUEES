@@ -655,6 +655,14 @@
           >
             <ng-container *ngTemplateOutlet="documentosTabTemplate"></ng-container>
           </dxi-item>
+
+          <dxi-item
+            *ngIf="mostrarPostulacion"
+            title="Postulación/Decisión"
+            [icon]="'checklist'"
+          >
+            <ng-container *ngTemplateOutlet="postulacionTabTemplate"></ng-container>
+          </dxi-item>
         </dx-tab-panel>
       </ng-container>
 

@@ -11,4 +11,9 @@ export interface ScRequisicionPersonalCandidato {
 	DUI_PERSONA: string;
 	FECHA_GENERACION: Date | string;
 	CORR_ESTADO_EXPEDIENTE: number;
+	CORR_REQUISICION_CANDIDATO?: number | null;
+	ESTADO_DECISION?: string;
+	OBSERVACION_DECISION?: string;
+	FECHA_DECISION?: Date | string | null;
+	USUARIO_DECISION?: string;
 }

@@ -9,6 +9,7 @@ import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { ScExpedienteEntrevistaRepository } from '../sc-expediente-candidato/sc-expediente-entrevista/sc-expediente-entrevista.repository';
 import { ScExpedienteEntrevistaDocumentoRepository } from '../sc-expediente-candidato/sc-expediente-entrevista/sc-expediente-entrevista-documento/sc-expediente-entrevista-documento.repository';
 import { ScExpedienteDocumentoRepository } from '../sc-expediente-candidato/sc-expediente-documento/sc-expediente-documento.repository';
+import { ScRequisicionCandidatoService } from './sc-requisicion-candidato/sc-requisicion-candidato.service';
 
 @Injectable({
 	providedIn: 'root',
@@ -19,6 +20,7 @@ export class ScRequisicionPersonalService {
 		private entrevistaRepo: ScExpedienteEntrevistaRepository,
 		private entrevistaDocumentoRepo: ScExpedienteEntrevistaDocumentoRepository,
 		private expedienteDocumentoRepo: ScExpedienteDocumentoRepository,
+		private requisicionCandidatoService: ScRequisicionCandidatoService,
 	) {}
 
     //#region <Validadores>
@@ -230,6 +232,20 @@ export class ScRequisicionPersonalService {
 			xWhere.push({ Parameter: 'CORR_REQUISICION_PERSONAL', Value: param.CORR_REQUISICION_PERSONAL });
 		}
 		return this.repo.getCandidatos(xWhere);
+	}
+
+	decidirCandidato(model: {
+		CORR_REQUISICION_PERSONAL: number;
+		CORR_SOLICITUD_EMPLEO: number;
+		CORR_EXPEDIENTE_CANDIDATO: number;
+		ESTADO_DECISION: string;
+		OBSERVACION_DECISION?: string;
+	}): Observable<IResult> {
+		return this.requisicionCandidatoService.decide(model);
+	}
+
+	getEstadoDecisionLabel(estado: string | null | undefined): string {
+		return this.requisicionCandidatoService.getEstadoDecisionLabel(estado);
 	}
 
 	/** Entrevistas del candidato/solicitud (permiso requisición). */
@@ -851,18 +867,25 @@ export class ScRequisicionPersonalService {
             },
             {
                 dataField: 'CORR_ESTADO_EXPEDIENTE',
-                caption: 'Estado',
+                caption: 'Estado expediente',
                 width: 180,
                 calculateCellValue: () => 'Proceso de selección',
             },
+            {
+                dataField: 'ESTADO_DECISION',
+                caption: 'Decisión jefatura',
+                width: 150,
+                calculateCellValue: (row: any) => this.getEstadoDecisionLabel(row?.ESTADO_DECISION),
+            },
+            { dataField: 'USUARIO_DECISION', caption: 'Decidió', width: 140 },
+            {
+                dataField: 'FECHA_DECISION',
+                caption: 'Fecha decisión',
+                width: 150,
+                dataType: 'datetime',
+                format: 'dd/MM/yyyy HH:mm',
+            },
             { dataField: 'CORR_SOLICITUD_EMPLEO', caption: 'Solicitud de empleo', width: 170 },
-            // {
-            //     caption: 'Options',
-            //     width: 110,
-            //     allowSorting: false,
-            //     allowFiltering: false,
-            //     cellTemplate: 'candidatosActionsTemplate',
-            // },
         ];
     }
 

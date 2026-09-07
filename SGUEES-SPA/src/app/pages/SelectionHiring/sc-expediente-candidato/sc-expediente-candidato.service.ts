@@ -10,6 +10,7 @@ import { ScExpedienteEntrevistaRepository } from './sc-expediente-entrevista/sc-
 import { ScExpedienteEntrevistaDocumentoRepository } from './sc-expediente-entrevista/sc-expediente-entrevista-documento/sc-expediente-entrevista-documento.repository';
 import { ScExpedienteDocumentoRepository } from './sc-expediente-documento/sc-expediente-documento.repository';
 import { ScExpedienteSolicitudRepository } from './sc-expediente-solicitud/sc-expediente-solicitud.repository';
+import { ScRequisicionCandidatoService } from '../sc-requisicion-personal/sc-requisicion-candidato/sc-requisicion-candidato.service';
 
 @Injectable({ providedIn: 'root' })
 export class ScExpedienteCandidatoService {
@@ -18,7 +19,8 @@ export class ScExpedienteCandidatoService {
 		private detalleRepo: ScExpedienteSolicitudRepository,
 		private entrevistaRepo: ScExpedienteEntrevistaRepository,
 		private entrevistaDocumentoRepo: ScExpedienteEntrevistaDocumentoRepository,
-		private documentoRepo: ScExpedienteDocumentoRepository
+		private documentoRepo: ScExpedienteDocumentoRepository,
+		private requisicionCandidatoService: ScRequisicionCandidatoService
 	) {}
 
 	esValido(model: ScExpedienteCandidato, msg: Function): boolean {
@@ -117,6 +119,21 @@ export class ScExpedienteCandidatoService {
 			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
 			{ Parameter: 'CORR_SOLICITUD_EMPLEO', Value: corrSolicitudEmpleo },
 		]);
+	}
+
+	getPostulaciones(corrExpediente: number, corrSolicitudEmpleo?: number): Observable<IResult> {
+		return this.requisicionCandidatoService.getPostulacionesExpediente({
+			CORR_EXPEDIENTE_CANDIDATO: corrExpediente,
+			CORR_SOLICITUD_EMPLEO: corrSolicitudEmpleo,
+		});
+	}
+
+	getPostulacionColumns(): any[] {
+		return this.requisicionCandidatoService.getPostulacionColumns();
+	}
+
+	getEstadoDecisionLabel(estado: string | null | undefined): string {
+		return this.requisicionCandidatoService.getEstadoDecisionLabel(estado);
 	}
 
 	insertEntrevista(model: any): Observable<IResult> {

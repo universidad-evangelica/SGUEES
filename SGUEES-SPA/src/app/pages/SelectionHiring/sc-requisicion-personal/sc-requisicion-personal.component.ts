@@ -111,6 +111,15 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	candidatoFocusedKey: number | string | null = null;
 	candidatoSeleccionado: ScRequisicionPersonalCandidato | null = null;
 
+	/** Popup decisión jefatura (Aplica / No aplica). */
+	popupDecisionVisible = false;
+	guardandoDecision = false;
+	decisionModel: {
+		ESTADO_DECISION: string;
+		OBSERVACION_DECISION: string;
+		NOMBRE_PERSONA: string;
+	} = { ESTADO_DECISION: '', OBSERVACION_DECISION: '', NOMBRE_PERSONA: '' };
+
 	/** Workspace lateral derecho: expediente del candidato (solo consulta). */
 	workspaceExpedienteVisible = false;
 	workspaceExpedienteAbierto = false;
@@ -400,6 +409,99 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			return;
 		}
 		this.abrirWorkspaceExpediente(this.candidatoSeleccionado);
+	}
+
+	get esSolicitanteRequisicion(): boolean {
+		const creador = `${this.model?.USUARIO_CREA ?? ''}`.trim().toLowerCase();
+		return !!creador && creador === this.getLoginSesion().toLowerCase();
+	}
+
+	get puedeDecidirCandidato(): boolean {
+		if (!this.esSolicitanteRequisicion || !this.permiteEdit) {
+			return false;
+		}
+		const estado = `${this.candidatoSeleccionado?.ESTADO_DECISION ?? 'PENDIENTE'}`.trim().toUpperCase();
+		return !!this.candidatoSeleccionado && (estado === '' || estado === 'PENDIENTE');
+	}
+
+	abrirDecisionCandidato(estado: 'APLICA' | 'NO_APLICA'): void {
+		if (!this.candidatoSeleccionado) {
+			this.notifyFx('Seleccione un candidato en el listado.', NotifyType.Warning);
+			return;
+		}
+		if (!this.esSolicitanteRequisicion) {
+			this.notifyFx('Solo el solicitante de la requisición puede decidir Aplica / No aplica.', NotifyType.Warning);
+			return;
+		}
+		const actual = `${this.candidatoSeleccionado.ESTADO_DECISION ?? 'PENDIENTE'}`.trim().toUpperCase();
+		if (actual === 'APLICA' || actual === 'NO_APLICA') {
+			this.notifyFx('Este candidato ya tiene una decisión registrada.', NotifyType.Warning);
+			return;
+		}
+
+		this.decisionModel = {
+			ESTADO_DECISION: estado,
+			OBSERVACION_DECISION: '',
+			NOMBRE_PERSONA: this.candidatoSeleccionado.NOMBRE_PERSONA || '',
+		};
+		this.popupDecisionVisible = true;
+	}
+
+	cerrarPopupDecision(): void {
+		if (this.guardandoDecision) {
+			return;
+		}
+		this.popupDecisionVisible = false;
+	}
+
+	confirmarDecisionCandidato(): void {
+		const cand = this.candidatoSeleccionado;
+		const corrReq = this.model?.CORR_REQUISICION_PERSONAL ?? 0;
+		if (!cand || corrReq <= 0) {
+			return;
+		}
+
+		this.guardandoDecision = true;
+		this.service
+			.decidirCandidato({
+				CORR_REQUISICION_PERSONAL: corrReq,
+				CORR_SOLICITUD_EMPLEO: cand.CORR_SOLICITUD_EMPLEO,
+				CORR_EXPEDIENTE_CANDIDATO: cand.CORR_EXPEDIENTE_CANDIDATO,
+				ESTADO_DECISION: this.decisionModel.ESTADO_DECISION,
+				OBSERVACION_DECISION: this.decisionModel.OBSERVACION_DECISION?.trim() || undefined,
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.guardandoDecision = false;
+					if (!response?.Result) {
+						this.notifyFx(
+							response?.ErrorMessage || 'No se pudo registrar la decisión.',
+							NotifyType.Error
+						);
+						return;
+					}
+					this.popupDecisionVisible = false;
+					this.notifyFx(
+						this.decisionModel.ESTADO_DECISION === 'APLICA'
+							? 'Candidato marcado como Aplica.'
+							: 'Candidato marcado como No aplica.',
+						NotifyType.Success
+					);
+					this.cargarCandidatos();
+				},
+				error: (err: any) => {
+					this.guardandoDecision = false;
+					this.notifyFx(
+						err?.error?.ErrorMessage || err?.message || 'Error al registrar la decisión.',
+						NotifyType.Error
+					);
+				},
+			});
+	}
+
+	getEstadoDecisionLabel(estado?: string): string {
+		return this.service.getEstadoDecisionLabel(estado);
 	}
 
 	abrirWorkspaceExpediente(candidato: ScRequisicionPersonalCandidato): void {
