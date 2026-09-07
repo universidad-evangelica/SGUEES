@@ -934,7 +934,7 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Qué hace: lee los 13 result sets del SP Formato extenso y arma el payload para RPT.
+        // Qué hace: lee los 14 result sets del SP Formato extenso y arma el payload para RPT.
         // Cómo: merge logos; funciones; funciones+actividades; responsabilidades;
         //       relaciones internas y externas.
         // Cómo: merge logos (result set 2); funciones; funciones+actividades; responsabilidades.
@@ -1061,6 +1061,14 @@ namespace SGUEES.Repositories
                         .ToList();
                 }
 
+                var perfilPuestoCompTecnicas = new List<SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_EXTENSO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    perfilPuestoCompTecnicas = new List<SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_EXTENSO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
                 reader.Close();
 
                 var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload
@@ -1077,6 +1085,7 @@ namespace SGUEES.Repositories
                     PerfilPuesto = perfilPuesto,
                     PerfilPuestoEducacion = perfilPuestoEducacion,
                     PerfilPuestoExperiencia = perfilPuestoExperiencia,
+                    PerfilPuestoCompetenciasTecnicas = perfilPuestoCompTecnicas,
                 };
 
                 objResultado.Data = payload;

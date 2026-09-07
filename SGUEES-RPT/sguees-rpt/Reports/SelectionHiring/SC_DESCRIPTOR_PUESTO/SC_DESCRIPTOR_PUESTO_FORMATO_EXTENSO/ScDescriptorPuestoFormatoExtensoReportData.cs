@@ -118,6 +118,11 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 			var perfilPuestoExperiencia = Utils.CreateDataTable(experienciaRows);
 			perfilPuestoExperiencia.TableName = "V_SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_EXTENSO_IMPR";
 
+			var compTecRows = payload.PerfilPuestoCompetenciasTecnicas
+				?? new List<SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_EXTENSO_IMPRView>();
+			var perfilPuestoCompTecnicas = Utils.CreateDataTable(compTecRows);
+			perfilPuestoCompTecnicas.TableName = "V_SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_EXTENSO_IMPR";
+
 			var dataSet = new DataSet();
 			dataSet.Tables.Add(encabezado);
 			dataSet.Tables.Add(param);
@@ -132,6 +137,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 			dataSet.Tables.Add(perfilPuesto);
 			dataSet.Tables.Add(perfilPuestoEducacion);
 			dataSet.Tables.Add(perfilPuestoExperiencia);
+			dataSet.Tables.Add(perfilPuestoCompTecnicas);
 
 			return dataSet;
 		}
