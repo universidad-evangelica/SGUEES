@@ -50,5 +50,105 @@ header {
         align-items: center;
       }
     }
+
+    ::ng-deep .dx-toolbar-item.header-recorrido-btn {
+      min-width: 0;
+      padding-inline: 8px 4px;
+
+      .dx-item-content {
+        display: flex;
+        align-items: center;
+      }
+    }
+  }
+}
+
+.sguees-guia-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 12px 0 8px;
+  border: 1px solid color-mix(in srgb, #818cf8 45%, var(--border-color, #616161));
+  border-radius: 999px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #6366f1 22%, var(--base-bg, #1f1f1f)) 0%,
+    color-mix(in srgb, #8b5cf6 18%, var(--base-bg, #1f1f1f)) 100%
+  );
+  color: color-mix(in srgb, #e0e7ff 92%, var(--base-text-color, #fff));
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  line-height: 1;
+  overflow: hidden;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    border-color: color-mix(in srgb, #a78bfa 70%, var(--accent-color, #479ef5));
+    box-shadow:
+      0 4px 16px rgba(99, 102, 241, 0.35),
+      0 0 0 1px rgba(167, 139, 250, 0.25) inset;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, #818cf8 35%, transparent),
+      0 4px 16px rgba(99, 102, 241, 0.3);
+  }
+}
+
+.sguees-guia-trigger__glow {
+  position: absolute;
+  inset: -20px -10px auto auto;
+  width: 48px;
+  height: 48px;
+  background: radial-gradient(circle, rgba(129, 140, 248, 0.35) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.sguees-guia-trigger__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.45);
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.sguees-guia-trigger__label {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .sguees-guia-trigger {
+    padding: 0 8px;
+    width: 34px;
+    justify-content: center;
+  }
+
+  .sguees-guia-trigger__label {
+    display: none;
   }
 }

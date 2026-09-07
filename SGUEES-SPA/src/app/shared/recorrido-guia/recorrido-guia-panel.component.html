@@ -1,0 +1,130 @@
+<div
+	class="recorrido-backdrop"
+	*ngIf="(state$ | async) as state"
+	[class.recorrido-backdrop--open]="state.visible"
+>
+	<div
+		*ngIf="state.visible && state.spotlight !== 'center' && state.spotlight !== 'none'"
+		class="recorrido-spotlight"
+		[class.recorrido-spotlight--sidebar]="state.spotlight === 'sidebar'"
+		[class.recorrido-spotlight--header]="state.spotlight === 'header'"
+		[class.recorrido-spotlight--content]="state.spotlight === 'content'"
+		aria-hidden="true"
+	></div>
+
+	<div
+		class="recorrido-panel"
+		*ngIf="state.visible"
+		[class.recorrido-panel--center]="state.spotlight === 'center'"
+		role="dialog"
+		aria-labelledby="recorrido-titulo"
+		aria-modal="true"
+	>
+		<div class="recorrido-panel__glow" aria-hidden="true"></div>
+
+		<header class="recorrido-panel__hero">
+			<div class="recorrido-panel__hero-bg" aria-hidden="true"></div>
+			<button type="button" class="recorrido-panel__close" (click)="cerrar()" aria-label="Cerrar">
+				<span aria-hidden="true">×</span>
+			</button>
+
+			<div class="recorrido-panel__hero-content" *ngIf="recorrido.pasoActual as paso">
+				<span class="recorrido-panel__icon" aria-hidden="true">{{ paso.icon }}</span>
+				<p class="recorrido-panel__kicker">Guía interactiva SGUEES</p>
+				<h2 id="recorrido-titulo">{{ paso.titulo }}</h2>
+				<p class="recorrido-panel__subtitle">{{ paso.subtitulo }}</p>
+			</div>
+
+			<div class="recorrido-panel__progress-wrap" *ngIf="state.pasos.length > 1">
+				<div class="recorrido-panel__progress-meta">
+					<span>Paso {{ state.pasoIndex + 1 }} de {{ state.pasos.length }}</span>
+					<span>{{ progresoPct(state) }}%</span>
+				</div>
+				<div class="recorrido-panel__progress-bar">
+					<div class="recorrido-panel__progress-fill" [style.width]="progresoPct(state) + '%'"></div>
+				</div>
+				<div class="recorrido-panel__dots" role="tablist" aria-label="Pasos del recorrido">
+					<button
+						type="button"
+						*ngFor="let p of state.pasos; trackBy: trackPaso"
+						class="recorrido-panel__dot"
+						[class.recorrido-panel__dot--active]="p.index === state.pasoIndex"
+						[class.recorrido-panel__dot--done]="p.index < state.pasoIndex"
+						(click)="irAPaso(p.index)"
+						[attr.aria-label]="'Ir al paso ' + (p.index + 1)"
+					></button>
+				</div>
+			</div>
+		</header>
+
+		<div class="recorrido-panel__body">
+			<div *ngIf="state.loading" class="recorrido-panel__loading">
+				<div class="recorrido-panel__spinner"></div>
+				<p>Preparando su recorrido personalizado…</p>
+			</div>
+
+			<p *ngIf="state.error" class="recorrido-panel__error">{{ state.error }}</p>
+
+			<ng-container *ngIf="!state.loading && recorrido.pasoActual as paso">
+				<p *ngIf="paso.tipo === 'menu'" class="recorrido-panel__callout">
+					<span class="recorrido-panel__callout-icon">👈</span>
+					Mire el menú lateral: la sección resaltada es la que estamos explicando.
+				</p>
+
+				<article class="recorrido-panel__lead" [innerHTML]="formatText(paso.textoGuia)"></article>
+
+				<ul class="recorrido-panel__tips" *ngIf="paso.tips?.length">
+					<li *ngFor="let tip of paso.tips" class="recorrido-panel__tip">
+						<span class="recorrido-panel__tip-bullet">✦</span>
+						<span [innerHTML]="formatTip(tip)"></span>
+					</li>
+				</ul>
+
+				<button
+					*ngIf="paso.accion as accion"
+					type="button"
+					class="recorrido-panel__action"
+					(click)="ejecutarAccion()"
+				>
+					{{ accion.label }} →
+				</button>
+
+				<section *ngIf="paso.opciones?.length" class="recorrido-panel__screens">
+					<h3>Pantallas de este menú</h3>
+					<div class="recorrido-panel__screen-grid">
+						<button
+							type="button"
+							class="recorrido-panel__screen-chip"
+							*ngFor="let op of paso.opciones"
+							(click)="irOpcion(op.ruta)"
+						>
+							{{ op.titulo }}
+						</button>
+					</div>
+				</section>
+
+				<section class="recorrido-panel__ia" *ngIf="paso.tipo !== 'cierre'">
+					<button
+						type="button"
+						class="recorrido-panel__ia-link"
+						[disabled]="state.loadingAi"
+						(click)="explicarConIa()"
+					>
+						✨ {{ state.loadingAi ? 'Consultando IA…' : 'Profundizar con IA (opcional)' }}
+					</button>
+					<p *ngIf="state.errorAi" class="recorrido-panel__hint-ia">{{ state.errorAi }}</p>
+					<article *ngIf="state.aiTexto" class="recorrido-panel__ai-text">{{ state.aiTexto }}</article>
+				</section>
+			</ng-container>
+		</div>
+
+		<footer class="recorrido-panel__footer">
+			<button type="button" class="recorrido-panel__btn" (click)="anterior()" [disabled]="state.pasoIndex <= 0 || state.loading">
+				← Anterior
+			</button>
+			<button type="button" class="recorrido-panel__btn recorrido-panel__btn--primary" (click)="siguiente()" [disabled]="state.loading">
+				{{ esUltimoPaso(state) ? '🎉 Finalizar' : 'Siguiente →' }}
+			</button>
+		</footer>
+	</div>
+</div>

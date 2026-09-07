@@ -51,12 +51,45 @@ $pdfPath = Join-Path $env:TEMP ("con-reporte-$CodigoReporte.pdf")
 try {
     Invoke-WebRequest -Uri ($ApiUrl + 'CON_REPORTE/getPDF') -Method Post -Body $consultaBody -Headers $headers -ContentType 'application/json' -OutFile $pdfPath
     $size = (Get-Item $pdfPath).Length
-    if ($size -lt 100) { throw "PDF sospechosamente pequeno ($size bytes)" }
+    if ($size -lt 100) {
+        $preview = Get-Content $pdfPath -Raw -ErrorAction SilentlyContinue
+        if ($preview -match 'ErrorMessage') { throw "getPDF devolvio JSON en lugar de PDF: $preview" }
+        throw "PDF sospechosamente pequeno ($size bytes)"
+    }
     Write-Host "   OK -> $pdfPath ($size bytes)"
     Write-Host 'Prueba E2E completada.'
 } catch {
     if ($_.Exception.Response.StatusCode.value__ -eq 403) {
         throw "getPDF 403: el JWT no tiene permiso P en $($def.URL_OPCION). Re-login tras ejecutar MENU_CONTABILIDAD_REPORTES.sql"
     }
+    if ($_.Exception.Response) {
+        try {
+            $sr = New-Object IO.StreamReader($_.Exception.Response.GetResponseStream())
+            $body = $sr.ReadToEnd()
+            if ($body) { throw "getPDF fallo: $body" }
+        } catch [System.Management.Automation.RuntimeException] {
+            throw
+        } catch {
+            throw $_.Exception.Message
+        }
+    }
     throw
+}
+
+Write-Host ''
+Write-Host '5) Probar servicio RPT (401 = JWT requerido, servicio OK)...'
+$rptBase = $ApiUrl -replace 'sgueesAPI/?', 'sguees-rpt/api/'
+try {
+    Invoke-WebRequest -Uri $rptBase -UseBasicParsing -TimeoutSec 15 | Out-Null
+    Write-Host "   RPT respondio OK en $rptBase"
+} catch {
+    $code = $_.Exception.Response.StatusCode.value__
+    if ($code -eq 401) {
+        Write-Host "   OK (401): $rptBase — servicio RPT activo, falta token Bearer"
+    } elseif ($code -eq 500) {
+        Write-Host "   ERROR 500 en $rptBase" -ForegroundColor Red
+        Write-Host '   Revise: Crystal runtime 13.0 SP32, pool .NET 4.0, Web.config JWT audience/issuer = apiRptURL del API'
+    } else {
+        Write-Host "   RPT $rptBase -> HTTP $code"
+    }
 }

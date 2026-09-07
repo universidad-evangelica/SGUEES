@@ -84,22 +84,24 @@ namespace sguees.Controllers
 
 			Data.CORR_EMPRESA = int.Parse(User.Claims.Single(e => e.Type == "CORR_EMPRESA").Value);
 			var login = User.Claims.SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? "Admin";
-			var pdf = await _service.GetPDFAsync(Data, login);
 
-			if (pdf == null)
+			try
+			{
+				var pdf = await _service.GetPDFAsync(Data, login);
+				Response.Headers.ContentType = "application/pdf";
+				Response.Headers.ContentDisposition = "inline";
+				Response.RegisterForDispose(pdf);
+				return File(pdf, "application/pdf");
+			}
+			catch (Exception ex)
 			{
 				return BadRequest(new CResult
 				{
 					Result = false,
 					ErrorCode = -1,
-					ErrorMessage = "No fue posible generar el PDF del reporte.",
+					ErrorMessage = ex.Message,
 				});
 			}
-
-			Response.Headers.ContentType = "application/pdf";
-			Response.Headers.ContentDisposition = "inline";
-			Response.RegisterForDispose(pdf);
-			return File(pdf, "application/pdf");
 		}
 	}
 }

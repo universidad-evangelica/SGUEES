@@ -20,5 +20,6 @@ namespace sguees.Repositories
 		Task<Stream> GetConEstadoResultadosImprAsync(List<ESTADO_RESULTADOS_IMPRView> data, string token);
 		Task<Stream> GetConBalanceGeneralVerticalImprAsync(List<BALANCE_GENERAL_VERTICAL_IMPRView> data, string token);
 		Task<Stream> GetConPartidaImprAsync(List<CON_PARTIDA_IMPRView> data, string token);
+		Task<Stream> GetConPartidaImprDxAsync(List<CON_PARTIDA_IMPRView> data, string token);
 	}
 }

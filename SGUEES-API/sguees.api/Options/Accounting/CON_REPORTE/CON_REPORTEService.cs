@@ -42,39 +42,58 @@ namespace sguees.Services
 			var consulta = await _repo.ConsultarParaImprAsync(param);
 			if (!consulta.Result || consulta.Data == null)
 			{
-				return null;
+				throw new System.InvalidOperationException(
+					string.IsNullOrWhiteSpace(consulta.ErrorMessage)
+						? "No hay datos para imprimir el reporte."
+						: consulta.ErrorMessage);
 			}
 
 			var token = _repoUser.GenerateRptToken(loginSistema);
+			Stream stream;
 			switch (param.CODIGO_REPORTE?.Trim().ToUpperInvariant())
 			{
 				case "LIBRO_DIARIO_AUXILIAR":
-					return await _repoRpt.GetConLibroDiarioAuxiliarImprAsync(
+					stream = await _repoRpt.GetConLibroDiarioAuxiliarImprAsync(
 						(List<LIBRO_DIARIO_AUXILIAR_IMPRView>)consulta.Data, token);
+					break;
 				case "LIBRO_DIARIO_AUXILIAR_MES":
-					return await _repoRpt.GetConLibroDiarioAuxiliarMesImprAsync(
+					stream = await _repoRpt.GetConLibroDiarioAuxiliarMesImprAsync(
 						(List<LIBRO_DIARIO_AUXILIAR_MES_IMPRView>)consulta.Data, token);
+					break;
 				case "LIBRO_DIARIO_MAYOR":
-					return await _repoRpt.GetConLibroDiarioMayorImprAsync(
+					stream = await _repoRpt.GetConLibroDiarioMayorImprAsync(
 						(List<LIBRO_DIARIO_MAYOR_IMPRView>)consulta.Data, token);
+					break;
 				case "BALANCE_COMPROBACION":
-					return await _repoRpt.GetConBalanceComprobacionImprAsync(
+					stream = await _repoRpt.GetConBalanceComprobacionImprAsync(
 						(List<BALANCE_COMPROBACION_IMPRView>)consulta.Data, token);
+					break;
 				case "BALANCE_COMPROBACION_MES":
-					return await _repoRpt.GetConBalanceComprobacionMesImprAsync(
+					stream = await _repoRpt.GetConBalanceComprobacionMesImprAsync(
 						(List<BALANCE_COMPROBACION_MES_IMPRView>)consulta.Data, token);
+					break;
 				case "BALANCE_GENERAL":
-					return await _repoRpt.GetConBalanceGeneralImprAsync(
+					stream = await _repoRpt.GetConBalanceGeneralImprAsync(
 						(List<BALANCE_GENERAL_IMPRView>)consulta.Data, token);
+					break;
 				case "ESTADO_RESULTADOS":
-					return await _repoRpt.GetConEstadoResultadosImprAsync(
+					stream = await _repoRpt.GetConEstadoResultadosImprAsync(
 						(List<ESTADO_RESULTADOS_IMPRView>)consulta.Data, token);
+					break;
 				case "BALANCE_GENERAL_VERTICAL":
-					return await _repoRpt.GetConBalanceGeneralVerticalImprAsync(
+					stream = await _repoRpt.GetConBalanceGeneralVerticalImprAsync(
 						(List<BALANCE_GENERAL_VERTICAL_IMPRView>)consulta.Data, token);
+					break;
 				default:
-					return null;
+					throw new System.InvalidOperationException($"Reporte contable no soportado: {param.CODIGO_REPORTE}.");
 			}
+
+			if (stream == null)
+			{
+				throw new System.InvalidOperationException("SGUEES-RPT no devolvió el PDF del reporte contable.");
+			}
+
+			return stream;
 		}
 	}
 }

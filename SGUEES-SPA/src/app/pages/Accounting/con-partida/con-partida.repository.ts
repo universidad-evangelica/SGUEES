@@ -41,6 +41,10 @@ export class ConPartidaRepository {
 		return this.objData.PostBlob(model, this.xController, 'getPDF', environment.UrlCONTAAPI);
 	}
 
+	getPDFDx(model: any): Observable<Blob> {
+		return this.objData.PostBlob(model, this.xController, 'getPDFDx', environment.UrlCONTAAPI);
+	}
+
 	generarPartidaLiquidacion(model: any): Observable<IResult> {
 		return this.objData.Put(model, this.xController, 'GenerarPartidaLiquidacion', [], environment.UrlCONTAAPI);
 	}

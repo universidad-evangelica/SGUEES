@@ -33,6 +33,39 @@
       }"
     >
     </dxi-item> -->
+    <dxi-item location="after" locateInMenu="never" cssClass="header-recorrido-btn">
+      <ng-container *dxTemplate>
+        <button
+          type="button"
+          class="sguees-guia-trigger"
+          (click)="abrirRecorrido()"
+          aria-label="Abrir recorrido guiado del sistema"
+          title="Recorrido guiado"
+        >
+          <span class="sguees-guia-trigger__glow" aria-hidden="true"></span>
+          <span class="sguees-guia-trigger__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path
+                d="M12 2.5a9.5 9.5 0 1 0 9.2 11.8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+              />
+              <path
+                d="M12 8v4l2.5 1.5M12 2.5V5M12 19v2.5M4.2 12H2.5M19 12h2.5M5.8 5.8 4.4 4.4M19.6 19.6l-1.4-1.4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.75"
+                stroke-linecap="round"
+              />
+              <circle cx="12" cy="12" r="2.25" fill="currentColor" />
+            </svg>
+          </span>
+          <span class="sguees-guia-trigger__label">Guía</span>
+        </button>
+      </ng-container>
+    </dxi-item>
     <dxi-item location="after" locateInMenu="never" cssClass="header-theme-switcher">
       <ng-container *dxTemplate>
         <theme-switcher></theme-switcher>
@@ -72,4 +105,5 @@
       ></user-panel>
     </div>
   </dx-toolbar>
+  <app-recorrido-guia-panel></app-recorrido-guia-panel>
 </header>

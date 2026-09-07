@@ -42,6 +42,9 @@ namespace sguees.Repositories
 		public Task<Stream> GetConPartidaImprAsync(List<CON_PARTIDA_IMPRView> data, string token) =>
 			PostAccountingAsync(data, "PostConPartidaImpr", token);
 
+		public Task<Stream> GetConPartidaImprDxAsync(List<CON_PARTIDA_IMPRView> data, string token) =>
+			PostAccountingAsync(data, "PostConPartidaImprDx", token);
+
 		private Task<Stream> PostAccountingAsync<TData>(List<TData> data, string endpoint, string token)
 		{
 			objData.Token = token;

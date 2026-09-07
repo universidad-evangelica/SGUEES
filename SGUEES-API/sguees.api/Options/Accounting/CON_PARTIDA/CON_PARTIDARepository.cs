@@ -608,6 +608,8 @@ namespace sguees.Repositories
 					}
 				}
 
+				EnrichPartidaPrintRows(response);
+
 				reader.Close();
 				objResultado.Data = response;
 				objResultado.Result = response.Count > 0;
@@ -709,6 +711,45 @@ namespace sguees.Repositories
 			}
 			finally { objData.objConnection.Close(); }
 			return objResultado;
+		}
+
+		private static void EnrichPartidaPrintRows(List<CON_PARTIDA_IMPRView> rows)
+		{
+			if (rows == null || rows.Count == 0)
+			{
+				return;
+			}
+
+			var first = rows[0];
+			var periodo = first.ANIO_PERIODO > 0 && first.MES_PERIODO > 0
+				? $"{first.MES_PERIODO:D2}/{first.ANIO_PERIODO}"
+				: string.Empty;
+			var fechaImpresion = first.FECHA_IMPRESION == default
+				? System.DateTime.Now
+				: first.FECHA_IMPRESION;
+
+			foreach (var row in rows)
+			{
+				if (string.IsNullOrWhiteSpace(row.PERIODO))
+				{
+					row.PERIODO = periodo;
+				}
+
+				if (string.IsNullOrWhiteSpace(row.TITULO_REPORTE))
+				{
+					row.TITULO_REPORTE = "Partida Contable";
+				}
+
+				if (string.IsNullOrWhiteSpace(row.NOMBRE_SISTEMA))
+				{
+					row.NOMBRE_SISTEMA = "SGUEES";
+				}
+
+				if (row.FECHA_IMPRESION == default)
+				{
+					row.FECHA_IMPRESION = fechaImpresion;
+				}
+			}
 		}
 
 		private static List<Dictionary<string, object>> ReadRowsWithHeader(DbDataReader reader)

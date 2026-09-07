@@ -92,8 +92,6 @@ namespace sguees.Controllers
 		[Authorize(Policy = "/seg-usuario|D")]
 		public async Task<IActionResult> Delete([FromQuery] SEG_USUARIOTable Data)
 		{
-			Data.CORR_SUSCRIPCION = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_SUSCRIPCION").Value);
-			Data.CORR_CONFI_PAIS = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_CONFI_PAIS").Value);
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			var resultado = await _service.DeleteAsync(Data, "Admin", "e-coffee");
 			if (resultado.ErrorCode == 0)

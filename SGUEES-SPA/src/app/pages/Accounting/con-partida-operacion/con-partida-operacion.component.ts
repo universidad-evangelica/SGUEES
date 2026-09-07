@@ -351,7 +351,6 @@ export class ConPartidaOperacionComponent extends CBaseComponent implements OnIn
 			this.notifyFx('Seleccione una partida para imprimir', NotifyType.Warning);
 			return;
 		}
-		const fechaPartida = this.model.FECHA_PARTIDA || this.vFECHA_INICIAL;
 		this.loadingVisible = true;
 		this.partidaService
 			.getPDF({
@@ -359,8 +358,6 @@ export class ConPartidaOperacionComponent extends CBaseComponent implements OnIn
 				MES_PERIODO: this.model.MES_PERIODO,
 				CORR_CLASE_PARTIDA: this.model.CORR_CLASE_PARTIDA,
 				CORR_PARTIDA: this.model.CORR_PARTIDA,
-				FECHA_INICIAL: this.appInfoService.toDate(fechaPartida),
-				FECHA_FINAL: this.appInfoService.toDate(fechaPartida),
 			})
 			.pipe(take(1))
 			.subscribe({

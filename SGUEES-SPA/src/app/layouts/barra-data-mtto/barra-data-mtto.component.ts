@@ -117,6 +117,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Input() btn1Height: number = 44;
   @Input() btn1Width: number = 0;
   @Input() btn1Mode: string = 'contained';
+  @Input() btn1LocateInMenu: 'auto' | 'never' = 'auto';
   @Output() btn1Click = new EventEmitter<any>();
 
   @Input() btn2: string = '';
@@ -126,6 +127,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Input() btn2Height: number = 44;
   @Input() btn2Width: number = 0;
   @Input() btn2Mode: string = 'contained';
+  @Input() btn2LocateInMenu: 'auto' | 'never' = 'auto';
   @Output() btn2Click = new EventEmitter<any>();
 
   @Input() btn3: string = '';

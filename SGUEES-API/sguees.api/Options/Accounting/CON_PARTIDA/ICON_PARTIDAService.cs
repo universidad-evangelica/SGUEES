@@ -46,6 +46,8 @@ namespace sguees.Services
 
 		Task<Stream> GetPDFAsync(CON_PARTIDAParam param, string loginSistema);
 
+		Task<Stream> GetPDFDxAsync(CON_PARTIDAParam param, string loginSistema);
+
 		Task<CResult> GenerarPartidaLiquidacionAsync(CON_PARTIDAParam param, string vLOGIN_SISTEMA, string vESTACION);
 
 		Task<CResult> GenerarPartidaCierreAsync(CON_PARTIDAParam param, string vLOGIN_SISTEMA, string vESTACION);

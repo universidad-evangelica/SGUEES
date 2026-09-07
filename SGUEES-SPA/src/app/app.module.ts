@@ -22,6 +22,7 @@ import { ErrorInterceptorProvider } from './shared/services/error.interceptor';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AiDemoComponent } from './components/ai-demo/ai-demo.component';
+import { SgueesAsistenteComponent } from './components/sguees-asistente/sguees-asistente.component';
 import { OptionsQaComponent } from './components/options-qa/options-qa.component';
 import { SecurityModule } from './pages/Security/security.module';
 import { ShopModule } from './pages/Shop/shop.module';
@@ -55,6 +56,7 @@ export function tokenGetterLocal(): string {
   declarations: [
     AppComponent,
     AiDemoComponent,
+    SgueesAsistenteComponent,
     OptionsQaComponent,
   ],
   imports: [

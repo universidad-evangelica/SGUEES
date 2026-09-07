@@ -167,6 +167,27 @@ namespace sguees.Controllers
 			return await _service.GetAllDetaDocAsync(Data);
 		}
 
+		[HttpPost("getPDFDx")]
+		[Authorize(Policy = "/con-partida|P")]
+		public async Task<IActionResult> GetPDFDx([FromBody] CON_PARTIDAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			var login = User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? "";
+			try
+			{
+				var stream = await _service.GetPDFDxAsync(Data, login);
+				return File(stream, "application/pdf", "PARTIDA_CONTABLE_DX.pdf");
+			}
+			catch (System.InvalidOperationException ex)
+			{
+				return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
+			}
+			catch (System.Exception ex)
+			{
+				return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
+			}
+		}
+
 		[HttpPost("getPDF")]
 		[Authorize(Policy = "/con-partida|P")]
 		public async Task<IActionResult> GetPDF([FromBody] CON_PARTIDAParam Data)

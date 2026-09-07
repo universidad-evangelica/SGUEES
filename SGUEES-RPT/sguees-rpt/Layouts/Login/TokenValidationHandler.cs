@@ -38,8 +38,10 @@ namespace sgueesRpt.Controllers
             // determine whether a jwt exists or not
             if (!TryRetrieveToken(request, out token))
             {
-                statusCode = HttpStatusCode.Unauthorized;
-                return base.SendAsync(request, cancellationToken);
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized)
+                {
+                    Content = new StringContent("Token de autorización requerido.")
+                });
             }
 
             try

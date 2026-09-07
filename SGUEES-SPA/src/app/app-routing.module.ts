@@ -26,6 +26,7 @@ import { AppSignUpComponent } from './pages/Samples/sign-up-form/sign-up-form.co
 import { AppResetPasswordComponent } from './pages/Samples/reset-password-form/reset-password-form.component';
 import { UserProfileComponent } from './pages/Samples/user-profile/user-profile.component';
 import { AiDemoComponent } from './components/ai-demo/ai-demo.component';
+import { SgueesAsistenteComponent } from './components/sguees-asistente/sguees-asistente.component';
 import { OptionsQaComponent } from './components/options-qa/options-qa.component';
 
 //primerng
@@ -91,7 +92,13 @@ const routes: Routes = [
   },
   {
     path: 'ai-demo',
-    component: AiDemoComponent
+    component: AiDemoComponent,
+    canActivate: [AuthGuardService],
+  },
+  {
+    path: 'asistente',
+    component: SgueesAsistenteComponent,
+    canActivate: [AuthGuardService],
   },
   {
     path: 'options-qa',

@@ -53,6 +53,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	btnImportarExcel = '';
 	btnGenerarDesdeModelo = '';
 	btnImprimir = '';
+	btnImprimirDx = '';
 	btnPartidaLiquidacion = '';
 	btnPartidaCierre = '';
 	btnPartidaApertura = '';
@@ -435,6 +436,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 			this.btnGenerarDesdeModelo = this.permiteEdit ? 'Generar Partida' : '';
 			this.btnCrearModelo = this.permiteEdit ? 'Crear Modelo' : '';
 			this.btnImprimir = this.permitePrint ? 'Imprimir' : '';
+			this.btnImprimirDx = this.permitePrint ? 'Imprimir DX' : '';
 			this.btnPartidaLiquidacion = this.permiteEdit ? 'Part. Liquidación' : '';
 			this.btnPartidaCierre = this.permiteEdit ? 'Part. Cierre' : '';
 			this.btnPartidaApertura = this.permiteEdit ? 'Part. Apertura' : '';
@@ -443,10 +445,10 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 
 		this.btnImportarExcel = '';
 		this.btnGenerarDesdeModelo = '';
-		this.btnImprimir =
-			this.permitePrint && this.banderaMtto === UpdateType.Update && this.hasPartidaSeleccionada()
-				? 'Imprimir'
-				: '';
+		const puedeImprimirPartida =
+			this.permitePrint && this.banderaMtto === UpdateType.Update && this.hasPartidaSeleccionada();
+		this.btnImprimir = puedeImprimirPartida ? 'Imprimir' : '';
+		this.btnImprimirDx = puedeImprimirPartida ? 'Imprimir DX' : '';
 		this.btnPartidaLiquidacion = '';
 		this.btnPartidaCierre = '';
 		this.btnPartidaApertura = '';
@@ -466,22 +468,22 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
-	imprimirPartida(): void {
+	private getPartidaImprParams(): Record<string, unknown> {
+		return {
+			ANIO_PERIODO: this.model.ANIO_PERIODO,
+			MES_PERIODO: this.model.MES_PERIODO,
+			CORR_CLASE_PARTIDA: this.model.CORR_CLASE_PARTIDA,
+			CORR_PARTIDA: this.model.CORR_PARTIDA,
+		};
+	}
+
+	private abrirPdfPartida(getPdfFn: (params: Record<string, unknown>) => import('rxjs').Observable<Blob>): void {
 		if (!this.hasPartidaSeleccionada()) {
 			this.notifyFx('Seleccione una partida para imprimir', NotifyType.Warning);
 			return;
 		}
-		const fechaPartida = this.model.FECHA_PARTIDA || this.vFECHA_INICIAL;
 		this.loadingVisible = true;
-		this.service
-			.getPDF({
-				ANIO_PERIODO: this.model.ANIO_PERIODO,
-				MES_PERIODO: this.model.MES_PERIODO,
-				CORR_CLASE_PARTIDA: this.model.CORR_CLASE_PARTIDA,
-				CORR_PARTIDA: this.model.CORR_PARTIDA,
-				FECHA_INICIAL: this.appInfoService.toDate(fechaPartida),
-				FECHA_FINAL: this.appInfoService.toDate(fechaPartida),
-			})
+		getPdfFn(this.getPartidaImprParams())
 			.pipe(take(1))
 			.subscribe({
 				next: (pdf: Blob) => {
@@ -503,6 +505,14 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 					this.notifyFx(msg, NotifyType.Error);
 				},
 			});
+	}
+
+	imprimirPartida(): void {
+		this.abrirPdfPartida((params) => this.service.getPDF(params));
+	}
+
+	imprimirPartidaDx(): void {
+		this.abrirPdfPartida((params) => this.service.getPDFDx(params));
 	}
 
 	ejecutarPartidaEspecial(tipo: 'LIQ' | 'CIE' | 'APE'): void {

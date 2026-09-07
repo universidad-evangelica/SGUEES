@@ -13,6 +13,8 @@ import { take } from 'rxjs/internal/operators/take';
 import { DxTreeViewModule, DxTreeViewComponent, DxTreeViewTypes } from 'devextreme-angular/ui/tree-view';
 import * as events from 'devextreme/events';
 import { AuthService } from '../../../services';
+import { RecorridoGuiaService } from 'src/app/shared/recorrido-guia/recorrido-guia.service';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'side-navigation-menu',
@@ -73,7 +75,13 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
 
   private _menuLoaded = false;
 
-  constructor(private elementRef: ElementRef, private authService: AuthService) {
+  private recorridoSub?: Subscription;
+
+  constructor(
+    private elementRef: ElementRef,
+    private authService: AuthService,
+    private recorridoGuia: RecorridoGuiaService
+  ) {
     this.loadMenu();
   }
 
@@ -156,13 +164,76 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit() {
     this.setSelectedItem();
+    this.recorridoSub = this.recorridoGuia.state$.subscribe((state) => {
+      if (state.visible && state.spotlight === 'sidebar' && state.highlightMenuKey) {
+        setTimeout(() => this.focusMenuGroup(state.highlightMenuKey));
+      }
+    });
     events.on(this.elementRef.nativeElement, 'dxclick', (e: Event) => {
       this.openMenu.next(e);
     });
   }
 
   ngOnDestroy() {
+    this.recorridoSub?.unsubscribe();
     events.off(this.elementRef.nativeElement, 'dxclick');
+  }
+
+  private focusMenuGroup(menuKey: string): void {
+    if (!this.menu?.instance || !menuKey) {
+      return;
+    }
+
+    try {
+      const resolvedKey = this.resolveMenuKey(this._items, menuKey) ?? menuKey;
+      const parts = resolvedKey.split('/').filter(Boolean);
+      let acc = '';
+      for (const part of parts) {
+        acc = acc ? `${acc}/${part}` : part;
+        this.menu.instance.expandItem(acc);
+      }
+      this.menu.instance.selectItem(resolvedKey);
+      const selected = this.elementRef.nativeElement.querySelector('.dx-state-selected');
+      selected?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    } catch {
+      // El árbol puede no estar listo o la clave no existe; no bloquear el tour.
+    }
+  }
+
+  private resolveMenuKey(items: any[], targetKey: string): string | null {
+    const normalized = (targetKey || '').trim();
+    if (!normalized) {
+      return null;
+    }
+
+    for (const item of items || []) {
+      if (item.menuKey === normalized) {
+        return item.menuKey;
+      }
+      if (item.items?.length) {
+        const nested = this.resolveMenuKey(item.items, normalized);
+        if (nested) {
+          return nested;
+        }
+      }
+    }
+
+    const suffix = normalized.split('/').pop();
+    if (suffix) {
+      for (const item of items || []) {
+        if (String(item.code || item.text) === suffix && item.menuKey) {
+          return item.menuKey;
+        }
+        if (item.items?.length) {
+          const nested = this.resolveMenuKey(item.items, normalized);
+          if (nested) {
+            return nested;
+          }
+        }
+      }
+    }
+
+    return null;
   }
 }
 

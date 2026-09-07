@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-// import { environment } from 'src/environments/environment';
+import { environment } from 'src/environments/environment';
 
 export interface AICompleteRequest {
   prompt: string;
@@ -15,8 +15,8 @@ export interface AICompleteResponse {
 
 @Injectable({ providedIn: 'root' })
 export class AIService {
-  // Usar proxy Angular: todas las llamadas a '/api' se redirigen al backend
-  private readonly baseUrl = '/api/ai';
+  private readonly baseUrl =
+    environment.UrlSEGURIDADAPI.replace(/\/$/, '') + '/api/AI';
 
   constructor(private http: HttpClient) {}
 

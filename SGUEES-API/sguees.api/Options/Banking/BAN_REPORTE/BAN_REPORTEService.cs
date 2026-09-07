@@ -40,34 +40,42 @@ namespace sguees.Services
 			var consulta = await _repo.ConsultarParaImprAsync(param);
 			if (!consulta.Result || consulta.Data == null)
 			{
-				return null;
+				throw new InvalidOperationException(
+					string.IsNullOrWhiteSpace(consulta.ErrorMessage)
+						? "No hay datos para imprimir el reporte."
+						: consulta.ErrorMessage);
 			}
 
-			try
+			var token = _repoUser.GenerateRptToken(loginSistema);
+			Stream stream;
+			switch (param.CODIGO_REPORTE?.Trim().ToUpperInvariant())
 			{
-				var token = _repoUser.GenerateRptToken(loginSistema);
-				switch (param.CODIGO_REPORTE?.Trim().ToUpperInvariant())
-				{
-					case "BAN_CHEQUE_EMITIDOS":
-						return await _repoRpt.GetBanChequeEmitidosImprAsync(
-							(List<BAN_CHEQUE_EMITIDOS_IMPRView>)consulta.Data, token);
-					case "BAN_ESTADO_CUENTA":
-						return await _repoRpt.GetBanEstadoCuentaImprAsync(
-							(List<BAN_ESTADO_CUENTA_IMPRView>)consulta.Data, token);
-					case "BAN_ESTADO_CUENTA_ACUMULADO":
-						return await _repoRpt.GetBanEstadoCuentaAcumuladoImprAsync(
-							(List<BAN_ESTADO_CUENTA_ACUMULADO_IMPRView>)consulta.Data, token);
-					case "BAN_ENTREGA_CHEQUES":
-						return await _repoRpt.GetBanEntregaChequesImprAsync(
-							(List<BAN_ENTREGA_CHEQUES_IMPRView>)consulta.Data, token);
-					default:
-						return null;
-				}
+				case "BAN_CHEQUE_EMITIDOS":
+					stream = await _repoRpt.GetBanChequeEmitidosImprAsync(
+						(List<BAN_CHEQUE_EMITIDOS_IMPRView>)consulta.Data, token);
+					break;
+				case "BAN_ESTADO_CUENTA":
+					stream = await _repoRpt.GetBanEstadoCuentaImprAsync(
+						(List<BAN_ESTADO_CUENTA_IMPRView>)consulta.Data, token);
+					break;
+				case "BAN_ESTADO_CUENTA_ACUMULADO":
+					stream = await _repoRpt.GetBanEstadoCuentaAcumuladoImprAsync(
+						(List<BAN_ESTADO_CUENTA_ACUMULADO_IMPRView>)consulta.Data, token);
+					break;
+				case "BAN_ENTREGA_CHEQUES":
+					stream = await _repoRpt.GetBanEntregaChequesImprAsync(
+						(List<BAN_ENTREGA_CHEQUES_IMPRView>)consulta.Data, token);
+					break;
+				default:
+					throw new InvalidOperationException($"Reporte bancario no soportado: {param.CODIGO_REPORTE}.");
 			}
-			catch
+
+			if (stream == null)
 			{
-				return null;
+				throw new InvalidOperationException("SGUEES-RPT no devolvió el PDF del reporte bancario.");
 			}
+
+			return stream;
 		}
 	}
 }

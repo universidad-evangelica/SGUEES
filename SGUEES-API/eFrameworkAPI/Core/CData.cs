@@ -187,21 +187,48 @@ namespace eFrameworkAPI.Core
 
         public async Task<Stream> PostStreamAsync<TContent>(TContent xContent, string xController, string xMetodo, IDictionary<string, object> xQueryList = null)
         {
-            if (Token != "") { objClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token); }
-            string objSerilized = JsonSerializer.Serialize(xContent);
-            UriBuilder builder = new UriBuilder(UrlAPI + xController + "/" + xMetodo);
-            if (xQueryList != null)
+            var targetUrl = UrlAPI + xController + "/" + xMetodo;
+            try
             {
-                builder.Query = getQuery(xQueryList);
-            }
-            HttpResponseMessage vResponse = objClient.PostAsync(builder.Uri, new StringContent(objSerilized, Encoding.UTF8, "application/json")).Result;
-            
-            if (vResponse.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                return await vResponse.Content.ReadAsStreamAsync();
-            }
+                if (!string.IsNullOrEmpty(Token))
+                {
+                    objClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+                }
+                else
+                {
+                    objClient.DefaultRequestHeaders.Authorization = null;
+                }
 
-            return null;
+                string objSerilized = JsonSerializer.Serialize(xContent);
+                UriBuilder builder = new UriBuilder(targetUrl);
+                if (xQueryList != null)
+                {
+                    builder.Query = getQuery(xQueryList);
+                }
+
+                HttpResponseMessage vResponse = await objClient.PostAsync(
+                    builder.Uri,
+                    new StringContent(objSerilized, Encoding.UTF8, "application/json"));
+
+                if (vResponse.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    return await vResponse.Content.ReadAsStreamAsync();
+                }
+
+                var errorBody = await vResponse.Content.ReadAsStringAsync();
+                throw new InvalidOperationException(
+                    $"SGUEES-RPT respondió {(int)vResponse.StatusCode} ({vResponse.StatusCode}) en {builder.Uri}. {errorBody}");
+            }
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException(
+                    $"No se pudo conectar con SGUEES-RPT en {targetUrl}. Verifique que el sitio IIS esté activo y que AppSetting:apiRptURL coincida con JWT_AUDIENCE_TOKEN/JWT_ISSUER_TOKEN del Web.config de SGUEES-RPT. Detalle: {ex.Message}",
+                    ex);
+            }
         }
 
         public async Task<CResult<TData>> PutAsync<TContent, TData>(TContent xContent, string xController, string xMetodo, IDictionary<string, object> xQueryList = null)

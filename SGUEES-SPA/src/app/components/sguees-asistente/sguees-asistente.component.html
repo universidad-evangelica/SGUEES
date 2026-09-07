@@ -1,0 +1,96 @@
+<div class="sguees-asistente sguees-mtto-view">
+	<header class="sguees-asistente__header">
+		<h1>Asistente SGUEES</h1>
+		<p class="sguees-asistente__sub">
+			Recorrido guiado según <strong>su menú y permisos</strong>. Use el botón
+			<strong>?</strong> en la barra superior (junto al modo claro/oscuro) o continúe aquí.
+		</p>
+		<p class="sguees-asistente__meta">
+			<span>{{ nombreUsuario }}</span>
+			<span>{{ nombreEmpresa }}</span>
+		</p>
+	</header>
+
+	<nav class="sguees-asistente__tabs" aria-label="Secciones del asistente">
+		<button type="button" [class.is-active]="activeTab === 'recorrido'" (click)="setTab('recorrido')">
+			Recorrido
+		</button>
+		<button type="button" [class.is-active]="activeTab === 'pantalla'" (click)="setTab('pantalla')">
+			Pantalla actual
+		</button>
+		<button type="button" [class.is-active]="activeTab === 'pregunta'" (click)="setTab('pregunta')">
+			Preguntar
+		</button>
+	</nav>
+
+	<div class="sguees-asistente__layout">
+		<aside class="sguees-asistente__menu">
+			<h2>Sus opciones</h2>
+			<p *ngIf="loadingMenu">Cargando menú…</p>
+			<ul *ngIf="!loadingMenu">
+				<li *ngFor="let op of opciones">
+					<button type="button" class="sguees-asistente__link" (click)="irOpcion(op.ruta)">
+						<span class="sguees-asistente__link-mod">{{ op.modulo }} · {{ op.menu }}</span>
+						<span class="sguees-asistente__link-title">{{ op.titulo }}</span>
+					</button>
+				</li>
+			</ul>
+			<p *ngIf="!loadingMenu && opciones.length === 0" class="sguees-asistente__empty">
+				No hay opciones de menú con permiso de lectura.
+			</p>
+		</aside>
+
+		<main class="sguees-asistente__panel">
+			<section *ngIf="activeTab === 'recorrido'">
+				<h2>Recorrido general</h2>
+				<p>Genera una explicación de los módulos y pantallas asignadas a su usuario.</p>
+				<button type="button" class="sguees-asistente__primary" [disabled]="loadingAi || loadingMenu" (click)="generarRecorrido()">
+					Generar recorrido con IA
+				</button>
+			</section>
+
+			<section *ngIf="activeTab === 'pantalla'">
+				<h2>Pantalla actual</h2>
+				<label class="sguees-asistente__label">Ruta a explicar</label>
+				<input
+					type="text"
+					class="sguees-asistente__route-input"
+					[(ngModel)]="rutaConsulta"
+					placeholder="/con-partida"
+				/>
+				<p class="sguees-asistente__hint-muted">
+					Tip: abra <code>/asistente?ruta=/con-partida</code> desde un favorito o enlace.
+				</p>
+				<p>
+					Ruta analizada: <code>{{ rutaActual }}</code>
+					<span *ngIf="hintActual"> — {{ hintActual.titulo }}</span>
+				</p>
+				<p *ngIf="hintActual" class="sguees-asistente__hint">{{ hintActual.descripcion }}</p>
+				<p *ngIf="!hintActual" class="sguees-asistente__hint-muted">
+					Sin descripción curada para esta ruta; la IA dará una respuesta genérica.
+				</p>
+				<label class="sguees-asistente__label">Pregunta opcional</label>
+				<textarea [(ngModel)]="preguntaPantalla" rows="3" placeholder="Ej.: ¿Cómo aplico una partida?"></textarea>
+				<button type="button" class="sguees-asistente__primary" [disabled]="loadingAi" (click)="explicarPantallaActual()">
+					Explicar esta pantalla
+				</button>
+			</section>
+
+			<section *ngIf="activeTab === 'pregunta'">
+				<h2>Pregunta libre</h2>
+				<p>Solo sobre opciones de su menú (no datos contables ni personales).</p>
+				<textarea [(ngModel)]="preguntaLibre" rows="4" placeholder="¿Dónde registro una partida contable?"></textarea>
+				<button type="button" class="sguees-asistente__primary" [disabled]="loadingAi" (click)="enviarPregunta()">
+					Enviar
+				</button>
+			</section>
+
+			<div *ngIf="loadingAi" class="sguees-asistente__loading">Consultando Ollama…</div>
+			<div *ngIf="error" class="sguees-asistente__error">{{ error }}</div>
+			<article *ngIf="respuesta" class="sguees-asistente__answer">
+				<h3>Respuesta</h3>
+				<pre>{{ respuesta }}</pre>
+			</article>
+		</main>
+	</div>
+</div>

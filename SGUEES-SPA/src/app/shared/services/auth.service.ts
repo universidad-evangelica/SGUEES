@@ -468,7 +468,9 @@ export class AuthGuardService implements CanActivate {
 		}
 
 		if (isLoggedIn) {
-			if (routerUrl === '/' || routerUrl === '/home' || routerUrl === '/profile') {
+			// Utilidades globales: no requieren entrada en menú/JWT (el asistente filtra opciones por permiso R).
+			const rutasUtilidad = ['/home', '/profile', '/asistente', '/ai-demo'];
+			if (routerUrl === '/' || rutasUtilidad.includes(routerUrl)) {
 				isAuthorized = true;
 			} else if (
 				this.authService.decodedToken[routerUrl] &&
