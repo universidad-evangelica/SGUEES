@@ -108,6 +108,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	documentoPreviewEsImagen = false;
 	documentoPopupVisible = false;
 	private documentoPreviewObjectUrl: string | null = null;
+	mCORR_TIPO_DOCUMENTO_ADJUNTO: any[] = [];
 
 	/** Popup Adjuntos de una entrevista (1..N). */
 	entrevistaAdjuntosPopupVisible = false;
@@ -284,7 +285,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.entrevistaItems = this.service.getEntrevistaItems([]);
 		this.postulacionColumns = this.service.getPostulacionColumns();
 		this.documentoColumns = this.service.getDocumentoColumns();
-		this.documentoItems = this.service.getDocumentoItems();
+		this.documentoItems = this.service.getDocumentoItems([]);
 		this.entrevistaDocumentoColumns = this.service.getEntrevistaDocumentoColumns();
 		this.entrevistaDocumentoItems = this.service.getEntrevistaDocumentoItems();
 	}
@@ -296,6 +297,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
 		this.getCORR_TIPO_ENTREVISTA();
+		this.getCORR_TIPO_DOCUMENTO_ADJUNTO();
 		this.consultar();
 	}
 
@@ -1393,7 +1395,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 				CORR_EXPEDIENTE_CANDIDATO: xModel.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_EXPEDIENTE_DOCUMENTO: xModel.CORR_EXPEDIENTE_DOCUMENTO,
 				FECHA_CARGA: xModel.FECHA_CARGA,
+				CORR_TIPO_DOCUMENTO_ADJUNTO: xModel.CORR_TIPO_DOCUMENTO_ADJUNTO ?? 0,
 				TIPO_DOCUMENTO: xModel.TIPO_DOCUMENTO,
+				DESCRIPCION_DOCUMENTO: xModel.DESCRIPCION_DOCUMENTO,
 				NOMBRE_ARCHIVO: xModel.NOMBRE_ARCHIVO,
 				RUTA_ARCHIVO: xModel.RUTA_ARCHIVO ?? '',
 				NOTAS: xModel.NOTAS ?? '',
@@ -1405,11 +1409,34 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			CORR_EXPEDIENTE_CANDIDATO: this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0,
 			CORR_EXPEDIENTE_DOCUMENTO: 0,
 			FECHA_CARGA: new Date(),
-			TIPO_DOCUMENTO: '',
+			CORR_TIPO_DOCUMENTO_ADJUNTO: 0,
 			NOMBRE_ARCHIVO: '',
 			RUTA_ARCHIVO: '',
 			NOTAS: '',
 		};
+	}
+
+	/** Lookup PLA_TIPO_DOCUMENTO_ADJUNTO para el combo de documentos. */
+	getCORR_TIPO_DOCUMENTO_ADJUNTO(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_EXPEDIENTE_CANDIDATO',
+				'PLA_TIPO_DOCUMENTO_ADJUNTO',
+				'GetCORR_TIPO_DOCUMENTO_ADJUNTO',
+				[],
+				environment.UrlTALENTOHUMANONAPI,
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_TIPO_DOCUMENTO_ADJUNTO = response?.Result ? response.Data ?? [] : [];
+					this.documentoItems = this.service.getDocumentoItems(this.mCORR_TIPO_DOCUMENTO_ADJUNTO);
+				},
+				error: () => {
+					this.mCORR_TIPO_DOCUMENTO_ADJUNTO = [];
+					this.documentoItems = this.service.getDocumentoItems([]);
+				},
+			});
 	}
 
 	nuevoDocumento(): void {
@@ -1558,7 +1585,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		const formData = new FormData();
 		formData.append('CORR_EXPEDIENTE_CANDIDATO', String(this.documentoModel.CORR_EXPEDIENTE_CANDIDATO ?? 0));
 		formData.append('CORR_EXPEDIENTE_DOCUMENTO', String(this.documentoModel.CORR_EXPEDIENTE_DOCUMENTO ?? 0));
-		formData.append('TIPO_DOCUMENTO', this.documentoModel.TIPO_DOCUMENTO ?? '');
+		formData.append('CORR_TIPO_DOCUMENTO_ADJUNTO', String(this.documentoModel.CORR_TIPO_DOCUMENTO_ADJUNTO ?? 0));
 		formData.append('FECHA_CARGA', new Date(this.documentoModel.FECHA_CARGA).toISOString());
 		formData.append('NOTAS', this.documentoModel.NOTAS ?? '');
 

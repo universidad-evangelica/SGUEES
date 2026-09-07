@@ -154,7 +154,7 @@ namespace SGUEES.Services
 				CORR_EXPEDIENTE_CANDIDATO = creado.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_EXPEDIENTE_DOCUMENTO = creado.CORR_EXPEDIENTE_DOCUMENTO,
 				FECHA_CARGA = creado.FECHA_CARGA,
-				TIPO_DOCUMENTO = creado.TIPO_DOCUMENTO,
+				CORR_TIPO_DOCUMENTO_ADJUNTO = creado.CORR_TIPO_DOCUMENTO_ADJUNTO,
 				NOMBRE_ARCHIVO = guardado.FileName,
 				RUTA_ARCHIVO = guardado.RelativeUrl,
 				NOTAS = creado.NOTAS,
@@ -255,7 +255,7 @@ namespace SGUEES.Services
 				CORR_EXPEDIENTE_CANDIDATO = Data.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_EXPEDIENTE_DOCUMENTO = Data.CORR_EXPEDIENTE_DOCUMENTO,
 				FECHA_CARGA = Data.FECHA_CARGA,
-				TIPO_DOCUMENTO = Data.TIPO_DOCUMENTO,
+				CORR_TIPO_DOCUMENTO_ADJUNTO = Data.CORR_TIPO_DOCUMENTO_ADJUNTO,
 				NOTAS = Data.NOTAS,
 				USUARIO_CREA = Data.USUARIO_CREA,
 				ESTACION_CREA = Data.ESTACION_CREA,
@@ -273,7 +273,7 @@ namespace SGUEES.Services
 				return ValidationError("Debe indicar el expediente de candidato.");
 			}
 
-			if (string.IsNullOrWhiteSpace(Data.TIPO_DOCUMENTO))
+			if (Data.CORR_TIPO_DOCUMENTO_ADJUNTO <= 0)
 			{
 				return ValidationError("Debe indicar el tipo de documento.");
 			}

@@ -8,7 +8,9 @@ namespace SGUEES.Models
 		public int CORR_EXPEDIENTE_CANDIDATO { get; set; }
 		public int CORR_EXPEDIENTE_DOCUMENTO { get; set; }
 		public DateTime FECHA_CARGA { get; set; }
+		public int CORR_TIPO_DOCUMENTO_ADJUNTO { get; set; }
 		public string TIPO_DOCUMENTO { get; set; }
+		public string DESCRIPCION_DOCUMENTO { get; set; }
 		public string NOMBRE_ARCHIVO { get; set; }
 		public string RUTA_ARCHIVO { get; set; }
 		public string NOTAS { get; set; }

@@ -70,6 +70,30 @@ namespace SGUEES.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
+		/// <summary>
+		/// Lookup para sc-expediente-candidato (Documentos). Permiso de la pantalla consumidora.
+		/// SPA: getLookUp('SC_EXPEDIENTE_CANDIDATO', 'PLA_TIPO_DOCUMENTO_ADJUNTO', 'GetCORR_TIPO_DOCUMENTO_ADJUNTO', ...).
+		/// </summary>
+		[HttpGet("GetCORR_TIPO_DOCUMENTO_ADJUNTO_SC_EXPEDIENTE_CANDIDATO")]
+		[Authorize(Policy = "/sc-expediente-candidato|R")]
+		public async Task<CResult> GetCORR_TIPO_DOCUMENTO_ADJUNTO_SC_EXPEDIENTE_CANDIDATO([FromQuery] PLA_TIPO_DOCUMENTO_ADJUNTOParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetAllAsync(Data);
+		}
+
+		/// <summary>
+		/// Lookup para sc-requisicion-personal (Documentos). Permiso de la pantalla consumidora.
+		/// SPA: getLookUp('SC_REQUISICION_PERSONAL', 'PLA_TIPO_DOCUMENTO_ADJUNTO', 'GetCORR_TIPO_DOCUMENTO_ADJUNTO', ...).
+		/// </summary>
+		[HttpGet("GetCORR_TIPO_DOCUMENTO_ADJUNTO_SC_REQUISICION_PERSONAL")]
+		[Authorize(Policy = "/sc-requisicion-personal|R")]
+		public async Task<CResult> GetCORR_TIPO_DOCUMENTO_ADJUNTO_SC_REQUISICION_PERSONAL([FromQuery] PLA_TIPO_DOCUMENTO_ADJUNTOParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetAllAsync(Data);
+		}
+
 		private int GetCorrEmpresa()
 		{
 			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");

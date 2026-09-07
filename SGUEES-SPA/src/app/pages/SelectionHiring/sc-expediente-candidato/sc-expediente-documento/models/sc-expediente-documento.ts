@@ -3,7 +3,9 @@ export interface ScExpedienteDocumento {
 	CORR_EXPEDIENTE_CANDIDATO: number;
 	CORR_EXPEDIENTE_DOCUMENTO: number;
 	FECHA_CARGA: Date | string;
-	TIPO_DOCUMENTO: string;
+	CORR_TIPO_DOCUMENTO_ADJUNTO: number;
+	TIPO_DOCUMENTO?: string;
+	DESCRIPCION_DOCUMENTO?: string;
 	NOMBRE_ARCHIVO: string;
 	RUTA_ARCHIVO?: string;
 	NOTAS?: string;

@@ -458,21 +458,6 @@ export class ScExpedienteCandidatoService {
 		]);
 	}
 
-	getTipoDocumentoOptions(): Array<{ value: string; text: string }> {
-		return [
-			{ value: 'Documento Identidad', text: 'Documento Identidad' },
-			{ value: 'Pasaporte', text: 'Pasaporte' },
-			{ value: 'Curriculum', text: 'Curriculum' },
-			{ value: 'Titulo Academico', text: 'Título Académico' },
-			{ value: 'Diploma', text: 'Diploma' },
-			{ value: 'Referencia laboral', text: 'Referencia laboral' },
-			{ value: 'Constancia laboral', text: 'Constancia laboral' },
-			{ value: 'Solvencia', text: 'Solvencia' },
-			{ value: 'Antecedentes', text: 'Antecedentes' },
-			{ value: 'Otro documento', text: 'Otro documento' },
-		];
-	}
-
 	getDocumentoColumns(): any[] {
 		return [
 			{ dataField: 'CORR_EXPEDIENTE_DOCUMENTO', caption: 'Corr.', width: 70 },
@@ -499,19 +484,20 @@ export class ScExpedienteCandidatoService {
 		];
 	}
 
-	/** Ítems del dx-form del tab Documentos (mismo patrón que getItems del encabezado). */
-	getDocumentoItems(): any[] {
+	/** Ítems del dx-form del tab Documentos. tipoOptions = catálogo PLA_TIPO_DOCUMENTO_ADJUNTO. */
+	getDocumentoItems(tipoOptions: any[] = []): any[] {
 		return [
 			{
-				dataField: 'TIPO_DOCUMENTO',
+				dataField: 'CORR_TIPO_DOCUMENTO_ADJUNTO',
 				label: { text: 'Tipo de documento' },
 				colSpan: 4,
 				editorType: 'dxSelectBox',
 				editorOptions: {
-					items: this.getTipoDocumentoOptions(),
-					displayExpr: 'text',
-					valueExpr: 'value',
-					searchEnabled: false,
+					dataSource: tipoOptions,
+					displayExpr: 'TIPO_DOCUMENTO',
+					valueExpr: 'CORR_TIPO_DOCUMENTO_ADJUNTO',
+					searchEnabled: true,
+					searchExpr: ['TIPO_DOCUMENTO', 'DESCRIPCION_DOCUMENTO'],
 					showClearButton: true,
 					placeholder: 'Seleccione tipo',
 				},
@@ -547,7 +533,7 @@ export class ScExpedienteCandidatoService {
 	}
 
 	esValidoDocumento(model: any, esNuevo: boolean, tieneArchivoNuevo: boolean, msg: Function): boolean {
-		if (!model?.TIPO_DOCUMENTO) {
+		if (!model?.CORR_TIPO_DOCUMENTO_ADJUNTO || Number(model.CORR_TIPO_DOCUMENTO_ADJUNTO) <= 0) {
 			msg('Debe indicar el tipo de documento.', NotifyType.Warning);
 			return false;
 		}
