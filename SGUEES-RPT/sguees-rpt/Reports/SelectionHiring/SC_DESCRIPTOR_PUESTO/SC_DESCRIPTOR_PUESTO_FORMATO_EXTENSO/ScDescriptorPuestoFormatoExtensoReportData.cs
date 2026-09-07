@@ -103,6 +103,11 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 			var inducciones = Utils.CreateDataTable(indRows);
 			inducciones.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_INDUCCION_IMPR";
 
+			var perfilRows = payload.PerfilPuesto
+				?? new List<SC_PERFIL_PUESTO_FORMATO_EXTENSO_IMPRView>();
+			var perfilPuesto = Utils.CreateDataTable(perfilRows);
+			perfilPuesto.TableName = "V_SC_PERFIL_PUESTO_FORMATO_EXTENSO_IMPR";
+
 			var dataSet = new DataSet();
 			dataSet.Tables.Add(encabezado);
 			dataSet.Tables.Add(param);
@@ -114,6 +119,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 			dataSet.Tables.Add(requerimientosOrganizacionales);
 			dataSet.Tables.Add(riesgosPuesto);
 			dataSet.Tables.Add(inducciones);
+			dataSet.Tables.Add(perfilPuesto);
 
 			return dataSet;
 		}
