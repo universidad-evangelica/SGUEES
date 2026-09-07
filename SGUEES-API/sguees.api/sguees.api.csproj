@@ -16,4 +16,7 @@
     <ProjectReference Include="..\eFramework\eFramework.csproj" />
     <ProjectReference Include="..\eFrameworkAPI\eFrameworkAPI.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Options\Payroll\PLA_TIPO_DOCUMENTO_ADJUNTO\" />
+  </ItemGroup>
 </Project>

@@ -6,6 +6,7 @@ import { AppCanDeactivateGuard } from 'src/app/app-candeactivate.guard';
 import { ScTipoVacanteComponent } from './sc-tipo-vacante/sc-tipo-vacante.component';
 import { ScRequisicionPersonalComponent } from './sc-requisicion-personal/sc-requisicion-personal.component';
 import { ScTipoModalidadComponent } from './sc-tipo-modalidad/sc-tipo-modalidad.component';
+import { ScTipoEntrevistaComponent } from './sc-tipo-entrevista/sc-tipo-entrevista.component';
 import { ScTipoContratacionComponent } from './sc-tipo-contratacion/sc-tipo-contratacion.component';
 import { ScResponsabilidadCargoComponent } from './sc-responsabilidad-cargo/sc-responsabilidad-cargo.component';
 import { ScRiesgoPuestoComponent } from './sc-riesgo-puesto/sc-riesgo-puesto.component';
@@ -57,8 +58,16 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./sc-tipo-modalidad/sc-tipo-modalidad.module').then(m => m.ScTipoModalidadModule)
-  }
-  ,{
+  },
+  {
+    path: 'sc-tipo-entrevista',
+    component: ScTipoEntrevistaComponent,
+    data: { titulo: 'Tipo de Entrevista' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-tipo-entrevista/sc-tipo-entrevista.module').then(m => m.ScTipoEntrevistaModule)
+  },
+  {
     path: 'sc-tipo-contratacion',
     component: ScTipoContratacionComponent,
     data: { titulo: 'Tipo de Contratación' },

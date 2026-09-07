@@ -5,6 +5,7 @@ import { AuthGuardService } from 'src/app/shared/services/auth.service';
 import { AppCanDeactivateGuard } from 'src/app/app-candeactivate.guard';
 import { PlaNivelAcademicoComponent } from './pla-nivel-academico/pla-nivel-academico.component';
 import { PlaTipoPuestoComponent } from './pla-tipo-puesto/pla-tipo-puesto.component';
+import { PlaTipoDocumentoAdjuntoComponent } from './pla-tipo-documento-adjunto/pla-tipo-documento-adjunto.component';
 import { PlaPuestoComponent } from './pla-puesto/pla-puesto.component';
 
 const routes: Routes = [
@@ -23,6 +24,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./pla-tipo-puesto/pla-tipo-puesto.module').then(m => m.PlaTipoPuestoModule)
+  },
+  {
+    path: 'pla-tipo-documento-adjunto',
+    component: PlaTipoDocumentoAdjuntoComponent,
+    data: { titulo: 'Tipo Documento Adjunto' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./pla-tipo-documento-adjunto/pla-tipo-documento-adjunto.module').then(m => m.PlaTipoDocumentoAdjuntoModule)
   },
   {
     path: 'pla-puesto',
