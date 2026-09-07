@@ -268,17 +268,7 @@ export class ScExpedienteCandidatoService {
 		return true;
 	}
 
-	/** Combos fijos del tab Entrevistas. */
-	getTipoEntrevistaOptions(): Array<{ value: string; text: string }> {
-		return [
-			{ value: 'TALENTO HUMANO', text: 'Talento humano' },
-			{ value: 'JEFATURA', text: 'Jefatura' },
-			{ value: 'DIRECCION CAPELLANIA', text: 'Dirección Capellanía' },
-			// { value: 'DOCENTE', text: 'Docente' },
-			// { value: 'FINAL', text: 'Final' },
-		];
-	}
-
+	/** Combos fijos del tab Entrevistas (estado / resultado). Tipo viene de SC_TIPO_ENTREVISTA. */
 	getEstadoEntrevistaOptions(): Array<{ value: string; text: string }> {
 		return [
 			{ value: 'PROGRAMADA', text: 'Programada' },
@@ -325,19 +315,20 @@ export class ScExpedienteCandidatoService {
 		];
 	}
 
-	/** Ítems del dx-form del tab Entrevistas (mismo patrón que getItems del encabezado). */
-	getEntrevistaItems(): any[] {
+	/** Ítems del dx-form del tab Entrevistas. tipoOptions = catálogo SC_TIPO_ENTREVISTA. */
+	getEntrevistaItems(tipoOptions: any[] = []): any[] {
 		return [
 			{
-				dataField: 'TIPO_ENTREVISTA',
+				dataField: 'CORR_TIPO_ENTREVISTA',
 				label: { text: 'Tipo de entrevista' },
 				colSpan: 2,
 				editorType: 'dxSelectBox',
 				editorOptions: {
-					items: this.getTipoEntrevistaOptions(),
-					displayExpr: 'text',
-					valueExpr: 'value',
-					searchEnabled: false,
+					dataSource: tipoOptions,
+					displayExpr: 'TIPO_ENTREVISTA',
+					valueExpr: 'CORR_TIPO_ENTREVISTA',
+					searchEnabled: true,
+					searchExpr: ['TIPO_ENTREVISTA', 'DESCRIPCION_ENTREVISTA'],
 					showClearButton: true,
 					placeholder: 'Seleccione tipo',
 				},
@@ -380,7 +371,7 @@ export class ScExpedienteCandidatoService {
 					placeholder: 'Opcional',
 				},
 			},
-						{
+			{
 				dataField: 'ENTREVISTADOR',
 				label: { text: 'Entrevistado por' },
 				colSpan: 8,
@@ -405,7 +396,7 @@ export class ScExpedienteCandidatoService {
 	}
 
 	esValidoEntrevista(model: any, msg: Function): boolean {
-		if (!model?.TIPO_ENTREVISTA) {
+		if (!model?.CORR_TIPO_ENTREVISTA || Number(model.CORR_TIPO_ENTREVISTA) <= 0) {
 			msg('Debe indicar el tipo de entrevista.', NotifyType.Warning);
 			return false;
 		}

@@ -3,7 +3,9 @@ export interface ScExpedienteEntrevista {
 	CORR_EXPEDIENTE_CANDIDATO: number;
 	CORR_EXPEDIENTE_ENTREVISTA: number;
 	CORR_SOLICITUD_EMPLEO: number;
-	TIPO_ENTREVISTA: string;
+	CORR_TIPO_ENTREVISTA: number;
+	TIPO_ENTREVISTA?: string;
+	DESCRIPCION_ENTREVISTA?: string;
 	FECHA_ENTREVISTA: Date | string;
 	ENTREVISTADOR: string;
 	ESTADO_ENTREVISTA: string;

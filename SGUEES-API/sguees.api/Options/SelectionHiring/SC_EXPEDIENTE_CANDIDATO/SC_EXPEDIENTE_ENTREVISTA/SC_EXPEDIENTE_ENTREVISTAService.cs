@@ -161,7 +161,7 @@ namespace SGUEES.Services
 				CORR_EXPEDIENTE_CANDIDATO = existente.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_EXPEDIENTE_ENTREVISTA = existente.CORR_EXPEDIENTE_ENTREVISTA,
 				CORR_SOLICITUD_EMPLEO = existente.CORR_SOLICITUD_EMPLEO,
-				TIPO_ENTREVISTA = existente.TIPO_ENTREVISTA,
+				CORR_TIPO_ENTREVISTA = existente.CORR_TIPO_ENTREVISTA,
 				FECHA_ENTREVISTA = existente.FECHA_ENTREVISTA,
 				ENTREVISTADOR = existente.ENTREVISTADOR,
 				ESTADO_ENTREVISTA = EstadoRealizada,
@@ -225,7 +225,7 @@ namespace SGUEES.Services
 				return ValidationError("Debe indicar expediente y solicitud de empleo.");
 			}
 
-			if (string.IsNullOrWhiteSpace(Data.TIPO_ENTREVISTA))
+			if (Data.CORR_TIPO_ENTREVISTA <= 0)
 			{
 				return ValidationError("Debe indicar el tipo de entrevista.");
 			}

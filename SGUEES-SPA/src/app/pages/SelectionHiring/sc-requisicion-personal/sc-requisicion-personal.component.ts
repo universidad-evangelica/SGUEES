@@ -71,7 +71,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.columnsCandidatos = this.service.getCandidatosColumns();
 		this.summaryCandidatos = this.service.getCandidatosSummary();
 		this.entrevistaColumns = this.service.getEntrevistaColumns();
-		this.entrevistaItems = this.service.getEntrevistaItems();
+		this.entrevistaItems = this.service.getEntrevistaItems([]);
 		this.entrevistaDocumentoColumns = this.service.getEntrevistaDocumentoColumns();
 		this.entrevistaDocumentoItems = this.service.getEntrevistaDocumentoItems();
 		this.marcarRealizadaItems = this.service.getMarcarRealizadaEntrevistaItems();
@@ -87,6 +87,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	mCORR_UNIDAD: any[] = [];
 	mCORR_PUESTO: any[] = [];
 	mCORR_DESCRIPTOR_PUESTO: any[] = [];
+	mCORR_TIPO_ENTREVISTA: any[] = [];
 
 	/** Columnas del grid del tab (definidas en service.getTabDetalleColumns). */
 	columnsTabDetalle: any[] = [];
@@ -280,6 +281,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	ngOnInit(): void {
 		this.inicializaOpciones();
 		this.llenaComboBox();
+		this.getCORR_TIPO_ENTREVISTA();
 		this.consultar();
 		this.subTituloVentana = 'Proceso y control de requisiciones de personal';
 	}
@@ -1559,7 +1561,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				CORR_EXPEDIENTE_CANDIDATO: xModel.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_EXPEDIENTE_ENTREVISTA: xModel.CORR_EXPEDIENTE_ENTREVISTA,
 				CORR_SOLICITUD_EMPLEO: xModel.CORR_SOLICITUD_EMPLEO,
+				CORR_TIPO_ENTREVISTA: xModel.CORR_TIPO_ENTREVISTA ?? 0,
 				TIPO_ENTREVISTA: xModel.TIPO_ENTREVISTA,
+				DESCRIPCION_ENTREVISTA: xModel.DESCRIPCION_ENTREVISTA,
 				FECHA_ENTREVISTA: xModel.FECHA_ENTREVISTA,
 				ENTREVISTADOR: xModel.ENTREVISTADOR,
 				ESTADO_ENTREVISTA: xModel.ESTADO_ENTREVISTA,
@@ -1574,7 +1578,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			CORR_EXPEDIENTE_CANDIDATO: this.candidatoEntrevistaSeleccionado?.CORR_EXPEDIENTE_CANDIDATO ?? 0,
 			CORR_EXPEDIENTE_ENTREVISTA: 0,
 			CORR_SOLICITUD_EMPLEO: this.candidatoEntrevistaSeleccionado?.CORR_SOLICITUD_EMPLEO ?? 0,
-			TIPO_ENTREVISTA: '',
+			CORR_TIPO_ENTREVISTA: 0,
 			FECHA_ENTREVISTA: new Date(),
 			ENTREVISTADOR: this.getNombreUsuarioSesion(),
 			ESTADO_ENTREVISTA: 'PROGRAMADA',
@@ -1582,6 +1586,29 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			RESUMEN_ENTREVISTA: '',
 			USUARIO_CREA: this.getLoginSesion(),
 		};
+	}
+
+	/** Lookup SC_TIPO_ENTREVISTA para el combo de entrevistas (permiso de esta pantalla). */
+	getCORR_TIPO_ENTREVISTA(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_REQUISICION_PERSONAL',
+				'SC_TIPO_ENTREVISTA',
+				'GetCORR_TIPO_ENTREVISTA',
+				[],
+				environment.UrlSELECCIONCONTRATACIONAPI,
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_TIPO_ENTREVISTA = response?.Result ? response.Data ?? [] : [];
+					this.entrevistaItems = this.service.getEntrevistaItems(this.mCORR_TIPO_ENTREVISTA);
+				},
+				error: () => {
+					this.mCORR_TIPO_ENTREVISTA = [];
+					this.entrevistaItems = this.service.getEntrevistaItems([]);
+				},
+			});
 	}
 
 	nuevaEntrevista(): void {

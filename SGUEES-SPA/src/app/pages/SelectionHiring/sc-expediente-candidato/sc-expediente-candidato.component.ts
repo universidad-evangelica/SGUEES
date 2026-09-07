@@ -28,6 +28,7 @@ import { ScExpedienteDocumento } from './sc-expediente-documento/models/sc-exped
 import { ScExpedienteSolicitud } from './sc-expediente-solicitud/models/sc-expediente-solicitud';
 import { ScExpedienteCandidatoService } from './sc-expediente-candidato.service';
 import { confirm } from 'devextreme/ui/dialog';
+import { environment } from 'src/environments/environment';
 import { ScExpedienteCandidatoPostulacion } from '../sc-requisicion-personal/sc-requisicion-candidato/models/sc-requisicion-candidato';
 
 @Component({
@@ -84,6 +85,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	entrevistaItems: any[] = [];
 	entrevistaModel: ScExpedienteEntrevista = this.fillEntrevistaData();
 	guardandoEntrevista = false;
+	mCORR_TIPO_ENTREVISTA: any[] = [];
 
 	/** Tab Postulación/Decisión (expediente general, solo lectura). */
 	postulaciones: ScExpedienteCandidatoPostulacion[] = [];
@@ -279,7 +281,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.items = this.service.getItems();
 		this.solicitudColumns = this.service.getSolicitudColumns();
 		this.entrevistaColumns = this.service.getEntrevistaColumns();
-		this.entrevistaItems = this.service.getEntrevistaItems();
+		this.entrevistaItems = this.service.getEntrevistaItems([]);
 		this.postulacionColumns = this.service.getPostulacionColumns();
 		this.documentoColumns = this.service.getDocumentoColumns();
 		this.documentoItems = this.service.getDocumentoItems();
@@ -293,6 +295,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
+		this.getCORR_TIPO_ENTREVISTA();
 		this.consultar();
 	}
 
@@ -787,7 +790,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.clearWorkspaceSolicitudCloseTimer();
 		this.solicitudSeleccionada = rowData ?? null;
 		this.corrExpedienteSolicitudSeleccionada = corr;
-		this.entrevistaItems = this.service.getEntrevistaItems();
+		this.entrevistaItems = this.service.getEntrevistaItems(this.mCORR_TIPO_ENTREVISTA);
 		this.nuevaEntrevista();
 		this.workspaceSolicitudVisible = true;
 		requestAnimationFrame(() => {
@@ -884,7 +887,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 				CORR_EXPEDIENTE_CANDIDATO: xModel.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_EXPEDIENTE_ENTREVISTA: xModel.CORR_EXPEDIENTE_ENTREVISTA,
 				CORR_SOLICITUD_EMPLEO: xModel.CORR_SOLICITUD_EMPLEO,
+				CORR_TIPO_ENTREVISTA: xModel.CORR_TIPO_ENTREVISTA ?? 0,
 				TIPO_ENTREVISTA: xModel.TIPO_ENTREVISTA,
+				DESCRIPCION_ENTREVISTA: xModel.DESCRIPCION_ENTREVISTA,
 				FECHA_ENTREVISTA: xModel.FECHA_ENTREVISTA,
 				ENTREVISTADOR: xModel.ENTREVISTADOR,
 				ESTADO_ENTREVISTA: xModel.ESTADO_ENTREVISTA,
@@ -898,7 +903,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			CORR_EXPEDIENTE_CANDIDATO: this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0,
 			CORR_EXPEDIENTE_ENTREVISTA: 0,
 			CORR_SOLICITUD_EMPLEO: this.solicitudSeleccionada?.CORR_SOLICITUD_EMPLEO ?? 0,
-			TIPO_ENTREVISTA: '',
+			CORR_TIPO_ENTREVISTA: 0,
 			FECHA_ENTREVISTA: new Date(),
 			ENTREVISTADOR: '',
 			ESTADO_ENTREVISTA: 'PROGRAMADA',
@@ -910,6 +915,29 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	nuevaEntrevista(): void {
 		this.entrevistaModel = this.fillEntrevistaData();
 		this.syncEntrevistaForm();
+	}
+
+	/** Lookup SC_TIPO_ENTREVISTA para el combo de entrevistas (permiso de esta pantalla). */
+	getCORR_TIPO_ENTREVISTA(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_EXPEDIENTE_CANDIDATO',
+				'SC_TIPO_ENTREVISTA',
+				'GetCORR_TIPO_ENTREVISTA',
+				[],
+				environment.UrlSELECCIONCONTRATACIONAPI,
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_TIPO_ENTREVISTA = response?.Result ? response.Data ?? [] : [];
+					this.entrevistaItems = this.service.getEntrevistaItems(this.mCORR_TIPO_ENTREVISTA);
+				},
+				error: () => {
+					this.mCORR_TIPO_ENTREVISTA = [];
+					this.entrevistaItems = this.service.getEntrevistaItems([]);
+				},
+			});
 	}
 
 	editarEntrevista(row: ScExpedienteEntrevista): void {

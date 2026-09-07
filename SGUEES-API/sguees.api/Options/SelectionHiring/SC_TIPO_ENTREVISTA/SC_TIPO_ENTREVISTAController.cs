@@ -94,5 +94,29 @@ namespace sguees.Controllers
 				return BadRequest(resultado);
 			}
 		}
+
+		/// <summary>
+		/// Lookup para sc-expediente-candidato (entrevistas). Permiso de la pantalla consumidora.
+		/// SPA: getLookUp('SC_EXPEDIENTE_CANDIDATO', 'SC_TIPO_ENTREVISTA', 'GetCORR_TIPO_ENTREVISTA', ...).
+		/// </summary>
+		[HttpGet("GetCORR_TIPO_ENTREVISTA_SC_EXPEDIENTE_CANDIDATO")]
+		[Authorize(Policy = "/sc-expediente-candidato|R")]
+		public async Task<CResult> GetCORR_TIPO_ENTREVISTA_SC_EXPEDIENTE_CANDIDATO([FromQuery] SC_TIPO_ENTREVISTAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		/// <summary>
+		/// Lookup para sc-requisicion-personal (entrevistas). Permiso de la pantalla consumidora.
+		/// SPA: getLookUp('SC_REQUISICION_PERSONAL', 'SC_TIPO_ENTREVISTA', 'GetCORR_TIPO_ENTREVISTA', ...).
+		/// </summary>
+		[HttpGet("GetCORR_TIPO_ENTREVISTA_SC_REQUISICION_PERSONAL")]
+		[Authorize(Policy = "/sc-requisicion-personal|R")]
+		public async Task<CResult> GetCORR_TIPO_ENTREVISTA_SC_REQUISICION_PERSONAL([FromQuery] SC_TIPO_ENTREVISTAParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
 	}
 }
