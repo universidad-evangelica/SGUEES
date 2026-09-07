@@ -12,6 +12,7 @@ namespace SGUEES.Models
         public string SEXO { get; set; }
         public string ESTADO_FAMILIAR { get; set; }
         public bool? LICENCIA { get; set; }
+        public string LICENCIA_TEXTO { get; set; }
         public int? CORR_DISPONIBILIDAD_HORARIO { get; set; }
         public string NOMBRE_DISPONIBILIDAD_HORARIO { get; set; }
         public int? CORR_TIPO_MODALIDAD { get; set; }

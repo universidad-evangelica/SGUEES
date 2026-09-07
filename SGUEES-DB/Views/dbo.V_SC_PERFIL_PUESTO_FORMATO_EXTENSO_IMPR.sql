@@ -3,7 +3,8 @@ GO
 -- =============================================================================
 -- Vista: dbo.V_SC_PERFIL_PUESTO_FORMATO_EXTENSO_IMPR
 -- Qué hace: perfil del puesto del descriptor para impresión Formato extenso.
--- Cómo: 1 fila por SC_PERFIL_PUESTO; sin auditoría (OTROS se omite: solo corto/ambos en UI).
+-- Cómo: 1 fila por SC_PERFIL_PUESTO; LICENCIA_TEXTO = 'Sí'/'No' según bit;
+--       sin auditoría (OTROS se omite: solo corto/ambos en UI).
 -- Uso: PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO (result set 11).
 -- =============================================================================
 CREATE OR ALTER VIEW [dbo].[V_SC_PERFIL_PUESTO_FORMATO_EXTENSO_IMPR]
@@ -17,6 +18,11 @@ SELECT
   P.[SEXO],
   P.[ESTADO_FAMILIAR],
   P.[LICENCIA],
+  CASE
+    WHEN P.[LICENCIA] = 1 THEN CAST(N'Sí' AS NVARCHAR(3))
+    WHEN P.[LICENCIA] = 0 THEN CAST(N'No' AS NVARCHAR(3))
+    ELSE CAST(N'' AS NVARCHAR(3))
+  END AS [LICENCIA_TEXTO],
   P.[CORR_DISPONIBILIDAD_HORARIO],
   P.[NOMBRE_DISPONIBILIDAD_HORARIO],
   P.[CORR_TIPO_MODALIDAD],
