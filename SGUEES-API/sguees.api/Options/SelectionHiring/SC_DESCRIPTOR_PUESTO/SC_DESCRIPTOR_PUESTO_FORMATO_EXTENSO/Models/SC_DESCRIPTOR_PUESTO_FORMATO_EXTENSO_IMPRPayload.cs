@@ -19,5 +19,6 @@ namespace SGUEES.Models
         public List<SC_PERFIL_PUESTO_EDUCACION_FORMATO_EXTENSO_IMPRView> PerfilPuestoEducacion { get; set; }
         public List<SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_EXTENSO_IMPRView> PerfilPuestoExperiencia { get; set; }
         public List<SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_EXTENSO_IMPRView> PerfilPuestoCompetenciasTecnicas { get; set; }
+        public List<SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_EXTENSO_IMPRView> PerfilPuestoCompetenciasConductuales { get; set; }
     }
 }
