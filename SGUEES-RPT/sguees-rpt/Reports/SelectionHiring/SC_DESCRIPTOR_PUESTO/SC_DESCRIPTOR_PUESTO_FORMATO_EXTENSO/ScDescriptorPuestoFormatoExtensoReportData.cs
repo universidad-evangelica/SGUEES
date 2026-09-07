@@ -108,6 +108,11 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 			var perfilPuesto = Utils.CreateDataTable(perfilRows);
 			perfilPuesto.TableName = "V_SC_PERFIL_PUESTO_FORMATO_EXTENSO_IMPR";
 
+			var educacionRows = payload.PerfilPuestoEducacion
+				?? new List<SC_PERFIL_PUESTO_EDUCACION_FORMATO_EXTENSO_IMPRView>();
+			var perfilPuestoEducacion = Utils.CreateDataTable(educacionRows);
+			perfilPuestoEducacion.TableName = "V_SC_PERFIL_PUESTO_EDUCACION_FORMATO_EXTENSO_IMPR";
+
 			var dataSet = new DataSet();
 			dataSet.Tables.Add(encabezado);
 			dataSet.Tables.Add(param);
@@ -120,6 +125,7 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 			dataSet.Tables.Add(riesgosPuesto);
 			dataSet.Tables.Add(inducciones);
 			dataSet.Tables.Add(perfilPuesto);
+			dataSet.Tables.Add(perfilPuestoEducacion);
 
 			return dataSet;
 		}

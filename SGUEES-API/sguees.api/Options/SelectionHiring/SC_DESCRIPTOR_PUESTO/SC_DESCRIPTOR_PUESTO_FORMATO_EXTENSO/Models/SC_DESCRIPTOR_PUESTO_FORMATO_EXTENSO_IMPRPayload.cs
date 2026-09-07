@@ -16,5 +16,6 @@ namespace SGUEES.Models
         public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RIESGO_PUESTO_IMPRView> RiesgosPuesto { get; set; }
         public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_INDUCCION_IMPRView> Inducciones { get; set; }
         public List<SC_PERFIL_PUESTO_FORMATO_EXTENSO_IMPRView> PerfilPuesto { get; set; }
+        public List<SC_PERFIL_PUESTO_EDUCACION_FORMATO_EXTENSO_IMPRView> PerfilPuestoEducacion { get; set; }
     }
 }
