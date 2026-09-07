@@ -334,6 +334,7 @@
       [responsiveColumnHiding]="false"
       [columnHidingEnabled]="false"
       [exportFileName]="'ExpedienteCandidato'"
+      (rowClick)="onGridRowClick($event)"
       (rowDblClick)="rowDblClick($event)"
       (rowRemoving)="rowRemoving($event)"
       (focusedRowChanged)="focusedRowChanged($event)"
@@ -341,6 +342,118 @@
     >
     </app-data-grid-mtto>
   </div>
+
+  <!-- Panel lateral rápido: datos puntuales del expediente (browse). -->
+  <aside
+    *ngIf="previewPanelVisible"
+    class="expediente-preview-panel"
+    [class.expediente-preview-panel--open]="previewPanelAbierto"
+    [attr.aria-hidden]="!previewPanelAbierto"
+    role="complementary"
+    aria-label="Vista rápida del expediente"
+  >
+    <header class="expediente-preview-panel__header">
+      <div class="expediente-preview-panel__heading">
+        <h2 class="expediente-preview-panel__name" [title]="textoLectura(previewExpediente?.NOMBRE_PERSONA)">
+          {{ textoLectura(previewExpediente?.NOMBRE_PERSONA) }}
+        </h2>
+        <span
+          class="expediente-preview-panel__status estado-exp-chip"
+          [ngClass]="getEstadoExpedienteBadgeClass(previewExpediente?.CORR_ESTADO_EXPEDIENTE)"
+          [title]="getEstadoExpedienteLabel(previewExpediente?.CORR_ESTADO_EXPEDIENTE)"
+        >
+          <span class="expediente-preview-panel__status-dot" aria-hidden="true"></span>
+          {{ getEstadoExpedienteLabel(previewExpediente?.CORR_ESTADO_EXPEDIENTE) }}
+        </span>
+      </div>
+
+      <div class="expediente-preview-panel__tools">
+        <button
+          type="button"
+          class="expediente-preview-panel__icon-btn"
+          (click)="abrirDetalleDesdePreview()"
+          title="Abrir detalle"
+          aria-label="Abrir detalle del expediente"
+        >
+          <i class="dx-icon dx-icon-expandform"></i>
+        </button>
+        <button
+          type="button"
+          class="expediente-preview-panel__icon-btn"
+          (click)="cerrarPreviewPanel(true)"
+          title="Cerrar"
+          aria-label="Cerrar vista rápida"
+        >
+          <i class="dx-icon dx-icon-close"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="expediente-preview-panel__body">
+      <section class="expediente-preview-panel__profile">
+        <button
+          *ngIf="previewFotoUrl"
+          type="button"
+          class="expediente-preview-panel__avatar expediente-preview-panel__avatar--foto"
+          (click)="abrirFotoPreview()"
+          aria-label="Ver fotografía del candidato"
+        >
+          <img [src]="previewFotoUrl" alt="Fotografía del candidato" />
+        </button>
+        <div
+          *ngIf="!previewFotoUrl"
+          class="expediente-preview-panel__avatar"
+          [class.expediente-preview-panel__avatar--loading]="cargandoPreviewPersona"
+          aria-hidden="true"
+        >
+          {{ cargandoPreviewPersona ? '' : inicialesPreviewPersona }}
+        </div>
+
+        <dl class="expediente-preview-panel__fields">
+          <div class="expediente-preview-panel__field">
+            <dt>Expediente</dt>
+            <dd>#{{ previewExpediente?.CORR_EXPEDIENTE_CANDIDATO }}</dd>
+          </div>
+          <div class="expediente-preview-panel__field">
+            <dt>DUI</dt>
+            <dd>{{ textoLectura(previewExpediente?.DUI_PERSONA) }}</dd>
+          </div>
+          <div class="expediente-preview-panel__field">
+            <dt>Generado</dt>
+            <dd>{{ fechaHoraLectura(previewExpediente?.FECHA_GENERACION) }}</dd>
+          </div>
+          <div class="expediente-preview-panel__field">
+            <dt>Estado registro</dt>
+            <dd>
+              <span
+                class="expediente-preview-panel__activo"
+                [class.expediente-preview-panel__activo--off]="!previewExpediente?.ACTIVO"
+              >
+                <span class="expediente-preview-panel__activo-dot" aria-hidden="true"></span>
+                {{ previewExpediente?.ACTIVO ? 'Activo' : 'Inactivo' }}
+              </span>
+            </dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="expediente-preview-panel__contact" aria-label="Contacto">
+        <div class="expediente-preview-panel__contact-row">
+          <i class="dx-icon dx-icon-tel" aria-hidden="true"></i>
+          <span>{{ cargandoPreviewPersona && !previewTelefono ? 'Cargando…' : (previewTelefono || '—') }}</span>
+        </div>
+        <div class="expediente-preview-panel__contact-row">
+          <i class="dx-icon dx-icon-email" aria-hidden="true"></i>
+          <a
+            *ngIf="previewCorreo"
+            class="expediente-preview-panel__mail"
+            [href]="'mailto:' + previewCorreo"
+          >{{ previewCorreo }}</a>
+          <span *ngIf="!previewCorreo">{{ cargandoPreviewPersona ? 'Cargando…' : '—' }}</span>
+        </div>
+      </section>
+    </div>
+  </aside>
 
   <!--
     Workspace Expediente completo — en stand-by a futuro.
@@ -543,7 +656,7 @@
 
 <div
   class="persona-foto-lightbox"
-  *ngIf="fotoPreviewVisible && fotoPersonaUrl"
+  *ngIf="fotoPreviewVisible && fotoLightboxUrl"
   (click)="cerrarFotoPreview()"
   role="dialog"
   aria-modal="true"
@@ -559,7 +672,7 @@
   </button>
   <img
     class="persona-foto-lightbox__img"
-    [src]="fotoPersonaUrl"
+    [src]="fotoLightboxUrl"
     alt="Fotografía del participante"
     (click)="$event.stopPropagation()"
   />

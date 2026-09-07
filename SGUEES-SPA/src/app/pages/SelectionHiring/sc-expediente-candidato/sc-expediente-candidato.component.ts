@@ -56,6 +56,16 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	solicitudes: ScExpedienteSolicitud[] = [];
 	solicitudColumns: any[] = [];
 
+	/** Panel lateral rápido (browse): vista puntual al clic de fila. */
+	previewPanelVisible = false;
+	previewPanelAbierto = false;
+	previewExpediente: ScExpedienteCandidato | null = null;
+	previewPersona: ScPersonaDatos | null = null;
+	previewFotoUrl: string | null = null;
+	cargandoPreviewPersona = false;
+	private previewPanelCloseTimer: ReturnType<typeof setTimeout> | null = null;
+	private previewFotoRequestId = 0;
+
 	/** Workspace expediente completo (slide-over desde la derecha). */
 	workspaceCompletoVisible = false;
 	workspaceCompletoAbierto = false;
@@ -289,7 +299,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	ngOnDestroy(): void {
 		this.clearWorkspaceCloseTimer();
 		this.clearWorkspaceSolicitudCloseTimer();
+		this.clearPreviewPanelCloseTimer();
 		this.revocarFotoPersona();
+		this.revocarPreviewFoto();
 		this.revokeDocumentoPreview();
 	}
 
@@ -302,6 +314,8 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.cerrarWorkspaceCompleto(false);
 			this.cerrarWorkspaceSolicitud(false);
 			this.limpiarPersonaDatos();
+		} else {
+			this.cerrarPreviewPanel(false);
 		}
 	}
 
@@ -411,6 +425,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	}
 
 	override rowDblClick(e: any): void {
+		this.cerrarPreviewPanel(false);
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
 			this.model = this.fillData(rowData);
@@ -433,6 +448,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			return;
 		}
 
+		this.cerrarPreviewPanel(false);
 		this.model = this.fillData(e.row.data);
 		this.cargandoPersonaDatos = (this.model.CORR_PERSONA_DATOS ?? 0) > 0;
 		this.editarClick(e);
@@ -444,12 +460,107 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		});
 	}
 
+	/** Clic en fila del grid browse → panel lateral con datos puntuales. */
+	onGridRowClick(e: any): void {
+		if (!this.isBrowse() || e?.rowType !== 'data' || !e?.data) {
+			return;
+		}
+
+		const target = e?.event?.target as HTMLElement | null;
+		if (
+			target?.closest(
+				'.dx-command-edit, .dx-link, .dx-button, button, a, .dx-checkbox, .dx-dropdowneditor-button',
+			)
+		) {
+			return;
+		}
+
+		this.abrirPreviewPanel(e.data as ScExpedienteCandidato);
+	}
+
+	abrirPreviewPanel(row: ScExpedienteCandidato): void {
+		const corr = Number(row?.CORR_EXPEDIENTE_CANDIDATO ?? 0);
+		if (corr <= 0) {
+			return;
+		}
+
+		this.clearPreviewPanelCloseTimer();
+		this.previewExpediente = this.fillData(row);
+		this.model = this.fillData(row);
+		this.previewPanelVisible = true;
+		requestAnimationFrame(() => {
+			this.previewPanelAbierto = true;
+		});
+		this.cargarPreviewPersona(Number(row.CORR_PERSONA_DATOS ?? 0));
+	}
+
+	cerrarPreviewPanel(animar = true): void {
+		this.clearPreviewPanelCloseTimer();
+
+		if (!animar || !this.previewPanelVisible) {
+			this.previewPanelAbierto = false;
+			this.previewPanelVisible = false;
+			this.limpiarPreviewPersona();
+			return;
+		}
+
+		this.previewPanelAbierto = false;
+		this.previewPanelCloseTimer = setTimeout(() => {
+			this.previewPanelVisible = false;
+			this.limpiarPreviewPersona();
+			this.previewPanelCloseTimer = null;
+		}, 280);
+	}
+
+	/** Abre el detalle completo del expediente seleccionado en el preview. */
+	abrirDetalleDesdePreview(): void {
+		if (!this.previewExpediente) {
+			return;
+		}
+		const data = this.fillData(this.previewExpediente);
+		this.cerrarPreviewPanel(false);
+		this.rowDblClick({ data, row: { data } });
+	}
+
+	get inicialesPreviewPersona(): string {
+		if (this.previewPersona) {
+			const nombre = (this.previewPersona.NOMBRE1 || '').trim();
+			const apellido = (this.previewPersona.APELLIDO1 || '').trim();
+			const a = nombre ? nombre.charAt(0).toUpperCase() : '';
+			const b = apellido ? apellido.charAt(0).toUpperCase() : '';
+			if (a || b) {
+				return `${a}${b}`;
+			}
+		}
+		const nombreVista = (this.previewExpediente?.NOMBRE_PERSONA || '').trim();
+		if (!nombreVista) {
+			return '?';
+		}
+		const partes = nombreVista.split(/\s+/).filter(Boolean);
+		const a = partes[0]?.charAt(0).toUpperCase() ?? '';
+		const b = partes.length > 1 ? partes[partes.length - 1].charAt(0).toUpperCase() : '';
+		return `${a}${b}` || '?';
+	}
+
+	get previewTelefono(): string {
+		const celular = `${this.previewPersona?.CELULAR ?? ''}`.trim();
+		if (celular) {
+			return celular;
+		}
+		return `${this.previewPersona?.TELEFONO ?? ''}`.trim();
+	}
+
+	get previewCorreo(): string {
+		return `${this.previewPersona?.CORREO ?? ''}`.trim();
+	}
+
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
 		}
 		super.nuevo();
 		this.solicitudes = [];
+		this.cerrarPreviewPanel(false);
 		this.cerrarWorkspaceCompleto(false);
 		this.cerrarWorkspaceSolicitud(false);
 		this.limpiarPersonaDatos();
@@ -471,12 +582,14 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_EXPEDIENTE_CANDIDATO === this.modelUpdate.CORR_EXPEDIENTE_CANDIDATO);
 		this.solicitudes = [];
+		this.cerrarPreviewPanel(false);
 		this.cerrarWorkspaceCompleto(false);
 		this.cerrarWorkspaceSolicitud(false);
 		this.limpiarPersonaDatos();
 	}
 
 	rowRemoving(e: any): void {
+		this.cerrarPreviewPanel(false);
 		this.rowRemovingMtto(e, {
 			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_EXPEDIENTE_CANDIDATO)),
 		});
@@ -1634,10 +1747,14 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	}
 
 	abrirFotoPreview(): void {
-		if (!this.fotoPersonaUrl) {
+		if (!this.fotoPersonaUrl && !this.previewFotoUrl) {
 			return;
 		}
 		this.fotoPreviewVisible = true;
+	}
+
+	get fotoLightboxUrl(): string | null {
+		return this.fotoPersonaUrl || this.previewFotoUrl;
 	}
 
 	cerrarFotoPreview(): void {
@@ -1650,7 +1767,97 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.cerrarFotoPreview();
 			return;
 		}
+		if (this.previewPanelVisible) {
+			this.cerrarPreviewPanel(true);
+			return;
+		}
 		// Escape no cierra el workspace (solo el botón Volver), según requerimiento.
+	}
+
+	private clearPreviewPanelCloseTimer(): void {
+		if (this.previewPanelCloseTimer) {
+			clearTimeout(this.previewPanelCloseTimer);
+			this.previewPanelCloseTimer = null;
+		}
+	}
+
+	private limpiarPreviewPersona(): void {
+		this.previewExpediente = null;
+		this.previewPersona = null;
+		this.cargandoPreviewPersona = false;
+		this.revocarPreviewFoto();
+	}
+
+	private revocarPreviewFoto(): void {
+		this.previewFotoRequestId += 1;
+		if (this.previewFotoUrl) {
+			URL.revokeObjectURL(this.previewFotoUrl);
+			this.previewFotoUrl = null;
+		}
+	}
+
+	/** Carga ligera (persona + foto) para el panel lateral; no trae colecciones. */
+	private cargarPreviewPersona(corrPersonaDatos: number): void {
+		this.revocarPreviewFoto();
+		this.previewPersona = null;
+
+		if (corrPersonaDatos <= 0) {
+			this.cargandoPreviewPersona = false;
+			return;
+		}
+
+		const requestId = ++this.previewFotoRequestId;
+		this.cargandoPreviewPersona = true;
+
+		this.solicitudService
+			.getPersonaDatos(corrPersonaDatos)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (requestId !== this.previewFotoRequestId) {
+						return;
+					}
+					if (response?.Result && response?.Data) {
+						this.previewPersona = response.Data;
+						this.cargarPreviewFoto(corrPersonaDatos, this.previewPersona?.FOTO_URL, requestId);
+					} else {
+						this.previewPersona = null;
+					}
+					this.cargandoPreviewPersona = false;
+				},
+				error: () => {
+					if (requestId !== this.previewFotoRequestId) {
+						return;
+					}
+					this.previewPersona = null;
+					this.cargandoPreviewPersona = false;
+				},
+			});
+	}
+
+	private cargarPreviewFoto(corrPersonaDatos: number, fotoUrl: string | undefined, requestId: number): void {
+		if (corrPersonaDatos <= 0 || !`${fotoUrl ?? ''}`.trim()) {
+			return;
+		}
+
+		this.solicitudService
+			.getPersonaFoto(corrPersonaDatos)
+			.pipe(take(1))
+			.subscribe({
+				next: (blob) => {
+					if (requestId !== this.previewFotoRequestId) {
+						return;
+					}
+					if (blob && blob.size > 0 && (blob.type || '').startsWith('image/')) {
+						this.previewFotoUrl = URL.createObjectURL(blob);
+					}
+				},
+				error: () => {
+					if (requestId === this.previewFotoRequestId) {
+						this.previewFotoUrl = null;
+					}
+				},
+			});
 	}
 
 	private limpiarPersonaDatos(): void {
