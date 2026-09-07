@@ -16,5 +16,10 @@ namespace SGUEES.Models
         public string DUI_PERSONA { get; set; }
         public DateTime FECHA_GENERACION { get; set; }
         public int CORR_ESTADO_EXPEDIENTE { get; set; }
+        public int? CORR_REQUISICION_CANDIDATO { get; set; }
+        public string ESTADO_DECISION { get; set; }
+        public string OBSERVACION_DECISION { get; set; }
+        public DateTime? FECHA_DECISION { get; set; }
+        public string USUARIO_DECISION { get; set; }
     }
 }

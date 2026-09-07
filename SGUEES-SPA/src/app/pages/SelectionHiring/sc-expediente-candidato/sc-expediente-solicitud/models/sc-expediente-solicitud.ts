@@ -3,6 +3,11 @@ export interface ScExpedienteSolicitud {
 	CORR_EXPEDIENTE_CANDIDATO: number;
 	CORR_EXPEDIENTE_SOLICITUD: number;
 	CORR_SOLICITUD_EMPLEO: number;
+	CORR_SOLICITUD_REQUISICION?: number;
+	CORR_REQUISICION_PERSONAL?: number;
+	NOMBRE_UNIDAD?: string;
+	MODALIDAD_NOMBRE?: string;
+	SALARIO?: number;
 	FECHA_SOLICITUD?: Date | string;
 	CORREO_INVITACION?: string;
 	DUI_SOLICITUD?: string;

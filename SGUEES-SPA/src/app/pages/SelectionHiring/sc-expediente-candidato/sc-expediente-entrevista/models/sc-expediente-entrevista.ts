@@ -3,7 +3,10 @@ export interface ScExpedienteEntrevista {
 	CORR_EXPEDIENTE_CANDIDATO: number;
 	CORR_EXPEDIENTE_ENTREVISTA: number;
 	CORR_SOLICITUD_EMPLEO: number;
-	TIPO_ENTREVISTA: string;
+	CORR_REQUISICION_PERSONAL: number;
+	CORR_TIPO_ENTREVISTA: number;
+	TIPO_ENTREVISTA?: string;
+	DESCRIPCION_ENTREVISTA?: string;
 	FECHA_ENTREVISTA: Date | string;
 	ENTREVISTADOR: string;
 	ESTADO_ENTREVISTA: string;
@@ -11,6 +14,8 @@ export interface ScExpedienteEntrevista {
 	RESUMEN_ENTREVISTA?: string;
 	CORREO_INVITACION?: string;
 	NOMBRE_SOLICITUD?: string;
+	NOMBRE_UNIDAD?: string;
+	NOMBRE_PUESTO?: string;
 	USUARIO_CREA?: string;
 	ESTACION_CREA?: string;
 	FECHA_CREA?: Date | string;

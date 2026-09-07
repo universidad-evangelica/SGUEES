@@ -10,6 +10,7 @@ import { ScExpedienteEntrevistaRepository } from './sc-expediente-entrevista/sc-
 import { ScExpedienteEntrevistaDocumentoRepository } from './sc-expediente-entrevista/sc-expediente-entrevista-documento/sc-expediente-entrevista-documento.repository';
 import { ScExpedienteDocumentoRepository } from './sc-expediente-documento/sc-expediente-documento.repository';
 import { ScExpedienteSolicitudRepository } from './sc-expediente-solicitud/sc-expediente-solicitud.repository';
+import { ScRequisicionCandidatoService } from '../sc-requisicion-personal/sc-requisicion-candidato/sc-requisicion-candidato.service';
 
 @Injectable({ providedIn: 'root' })
 export class ScExpedienteCandidatoService {
@@ -18,7 +19,8 @@ export class ScExpedienteCandidatoService {
 		private detalleRepo: ScExpedienteSolicitudRepository,
 		private entrevistaRepo: ScExpedienteEntrevistaRepository,
 		private entrevistaDocumentoRepo: ScExpedienteEntrevistaDocumentoRepository,
-		private documentoRepo: ScExpedienteDocumentoRepository
+		private documentoRepo: ScExpedienteDocumentoRepository,
+		private requisicionCandidatoService: ScRequisicionCandidatoService
 	) {}
 
 	esValido(model: ScExpedienteCandidato, msg: Function): boolean {
@@ -112,11 +114,34 @@ export class ScExpedienteCandidatoService {
 		]);
 	}
 
-	getAllEntrevista(corrExpediente: number, corrSolicitudEmpleo: number): Observable<IResult> {
-		return this.entrevistaRepo.getAll([
+	getAllEntrevista(
+		corrExpediente: number,
+		corrSolicitudEmpleo: number,
+		corrRequisicionPersonal: number
+	): Observable<IResult> {
+		const xWhere: IParam[] = [
 			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
 			{ Parameter: 'CORR_SOLICITUD_EMPLEO', Value: corrSolicitudEmpleo },
-		]);
+		];
+		if (corrRequisicionPersonal > 0) {
+			xWhere.push({ Parameter: 'CORR_REQUISICION_PERSONAL', Value: corrRequisicionPersonal });
+		}
+		return this.entrevistaRepo.getAll(xWhere);
+	}
+
+	getPostulaciones(corrExpediente: number, corrSolicitudEmpleo?: number): Observable<IResult> {
+		return this.requisicionCandidatoService.getPostulacionesExpediente({
+			CORR_EXPEDIENTE_CANDIDATO: corrExpediente,
+			CORR_SOLICITUD_EMPLEO: corrSolicitudEmpleo,
+		});
+	}
+
+	getPostulacionColumns(): any[] {
+		return this.requisicionCandidatoService.getPostulacionColumns();
+	}
+
+	getEstadoDecisionLabel(estado: string | null | undefined): string {
+		return this.requisicionCandidatoService.getEstadoDecisionLabel(estado);
 	}
 
 	insertEntrevista(model: any): Observable<IResult> {
@@ -251,17 +276,7 @@ export class ScExpedienteCandidatoService {
 		return true;
 	}
 
-	/** Combos fijos del tab Entrevistas. */
-	getTipoEntrevistaOptions(): Array<{ value: string; text: string }> {
-		return [
-			{ value: 'TALENTO HUMANO', text: 'Talento humano' },
-			{ value: 'JEFATURA', text: 'Jefatura' },
-			{ value: 'DIRECCION CAPELLANIA', text: 'Dirección Capellanía' },
-			// { value: 'DOCENTE', text: 'Docente' },
-			// { value: 'FINAL', text: 'Final' },
-		];
-	}
-
+	/** Combos fijos del tab Entrevistas (estado / resultado). Tipo viene de SC_TIPO_ENTREVISTA. */
 	getEstadoEntrevistaOptions(): Array<{ value: string; text: string }> {
 		return [
 			{ value: 'PROGRAMADA', text: 'Programada' },
@@ -308,19 +323,20 @@ export class ScExpedienteCandidatoService {
 		];
 	}
 
-	/** Ítems del dx-form del tab Entrevistas (mismo patrón que getItems del encabezado). */
-	getEntrevistaItems(): any[] {
+	/** Ítems del dx-form del tab Entrevistas. tipoOptions = catálogo SC_TIPO_ENTREVISTA. */
+	getEntrevistaItems(tipoOptions: any[] = []): any[] {
 		return [
 			{
-				dataField: 'TIPO_ENTREVISTA',
+				dataField: 'CORR_TIPO_ENTREVISTA',
 				label: { text: 'Tipo de entrevista' },
 				colSpan: 2,
 				editorType: 'dxSelectBox',
 				editorOptions: {
-					items: this.getTipoEntrevistaOptions(),
-					displayExpr: 'text',
-					valueExpr: 'value',
-					searchEnabled: false,
+					dataSource: tipoOptions,
+					displayExpr: 'TIPO_ENTREVISTA',
+					valueExpr: 'CORR_TIPO_ENTREVISTA',
+					searchEnabled: true,
+					searchExpr: ['TIPO_ENTREVISTA', 'DESCRIPCION_ENTREVISTA'],
 					showClearButton: true,
 					placeholder: 'Seleccione tipo',
 				},
@@ -363,7 +379,7 @@ export class ScExpedienteCandidatoService {
 					placeholder: 'Opcional',
 				},
 			},
-						{
+			{
 				dataField: 'ENTREVISTADOR',
 				label: { text: 'Entrevistado por' },
 				colSpan: 8,
@@ -388,7 +404,15 @@ export class ScExpedienteCandidatoService {
 	}
 
 	esValidoEntrevista(model: any, msg: Function): boolean {
-		if (!model?.TIPO_ENTREVISTA) {
+		if (!model?.CORR_SOLICITUD_EMPLEO || Number(model.CORR_SOLICITUD_EMPLEO) <= 0) {
+			msg('Debe indicar la solicitud de empleo.', NotifyType.Warning);
+			return false;
+		}
+		if (!model?.CORR_REQUISICION_PERSONAL || Number(model.CORR_REQUISICION_PERSONAL) <= 0) {
+			msg('Debe indicar la requisición personal de la entrevista.', NotifyType.Warning);
+			return false;
+		}
+		if (!model?.CORR_TIPO_ENTREVISTA || Number(model.CORR_TIPO_ENTREVISTA) <= 0) {
 			msg('Debe indicar el tipo de entrevista.', NotifyType.Warning);
 			return false;
 		}
@@ -450,21 +474,6 @@ export class ScExpedienteCandidatoService {
 		]);
 	}
 
-	getTipoDocumentoOptions(): Array<{ value: string; text: string }> {
-		return [
-			{ value: 'Documento Identidad', text: 'Documento Identidad' },
-			{ value: 'Pasaporte', text: 'Pasaporte' },
-			{ value: 'Curriculum', text: 'Curriculum' },
-			{ value: 'Titulo Academico', text: 'Título Académico' },
-			{ value: 'Diploma', text: 'Diploma' },
-			{ value: 'Referencia laboral', text: 'Referencia laboral' },
-			{ value: 'Constancia laboral', text: 'Constancia laboral' },
-			{ value: 'Solvencia', text: 'Solvencia' },
-			{ value: 'Antecedentes', text: 'Antecedentes' },
-			{ value: 'Otro documento', text: 'Otro documento' },
-		];
-	}
-
 	getDocumentoColumns(): any[] {
 		return [
 			{ dataField: 'CORR_EXPEDIENTE_DOCUMENTO', caption: 'Corr.', width: 70 },
@@ -491,19 +500,20 @@ export class ScExpedienteCandidatoService {
 		];
 	}
 
-	/** Ítems del dx-form del tab Documentos (mismo patrón que getItems del encabezado). */
-	getDocumentoItems(): any[] {
+	/** Ítems del dx-form del tab Documentos. tipoOptions = catálogo PLA_TIPO_DOCUMENTO_ADJUNTO. */
+	getDocumentoItems(tipoOptions: any[] = []): any[] {
 		return [
 			{
-				dataField: 'TIPO_DOCUMENTO',
+				dataField: 'CORR_TIPO_DOCUMENTO_ADJUNTO',
 				label: { text: 'Tipo de documento' },
 				colSpan: 4,
 				editorType: 'dxSelectBox',
 				editorOptions: {
-					items: this.getTipoDocumentoOptions(),
-					displayExpr: 'text',
-					valueExpr: 'value',
-					searchEnabled: false,
+					dataSource: tipoOptions,
+					displayExpr: 'TIPO_DOCUMENTO',
+					valueExpr: 'CORR_TIPO_DOCUMENTO_ADJUNTO',
+					searchEnabled: true,
+					searchExpr: ['TIPO_DOCUMENTO', 'DESCRIPCION_DOCUMENTO'],
 					showClearButton: true,
 					placeholder: 'Seleccione tipo',
 				},
@@ -539,7 +549,7 @@ export class ScExpedienteCandidatoService {
 	}
 
 	esValidoDocumento(model: any, esNuevo: boolean, tieneArchivoNuevo: boolean, msg: Function): boolean {
-		if (!model?.TIPO_DOCUMENTO) {
+		if (!model?.CORR_TIPO_DOCUMENTO_ADJUNTO || Number(model.CORR_TIPO_DOCUMENTO_ADJUNTO) <= 0) {
 			msg('Debe indicar el tipo de documento.', NotifyType.Warning);
 			return false;
 		}

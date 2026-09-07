@@ -107,7 +107,8 @@ namespace SGUEES.Repositories
 					new CParameter() { ParameterName = "CORR_EXPEDIENTE_CANDIDATO", Value = Data.CORR_EXPEDIENTE_CANDIDATO, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_EXPEDIENTE_ENTREVISTA", Value = Data.CORR_EXPEDIENTE_ENTREVISTA, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
 					new CParameter() { ParameterName = "CORR_SOLICITUD_EMPLEO", Value = Data.CORR_SOLICITUD_EMPLEO, DbType = System.Data.DbType.Int32 },
-					new CParameter() { ParameterName = "TIPO_ENTREVISTA", Value = Data.TIPO_ENTREVISTA, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "CORR_REQUISICION_PERSONAL", Value = Data.CORR_REQUISICION_PERSONAL, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_TIPO_ENTREVISTA", Value = Data.CORR_TIPO_ENTREVISTA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "FECHA_ENTREVISTA", Value = Data.FECHA_ENTREVISTA, DbType = System.Data.DbType.DateTime },
 					new CParameter() { ParameterName = "ENTREVISTADOR", Value = Data.ENTREVISTADOR, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ESTADO_ENTREVISTA", Value = Data.ESTADO_ENTREVISTA, DbType = System.Data.DbType.String },
@@ -166,7 +167,8 @@ namespace SGUEES.Repositories
 				var p = new List<CParameter>
 				{
 					new CParameter() { ParameterName = "CORR_SOLICITUD_EMPLEO", Value = Data.CORR_SOLICITUD_EMPLEO, DbType = System.Data.DbType.Int32 },
-					new CParameter() { ParameterName = "TIPO_ENTREVISTA", Value = Data.TIPO_ENTREVISTA, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "CORR_REQUISICION_PERSONAL", Value = Data.CORR_REQUISICION_PERSONAL, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_TIPO_ENTREVISTA", Value = Data.CORR_TIPO_ENTREVISTA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "FECHA_ENTREVISTA", Value = Data.FECHA_ENTREVISTA, DbType = System.Data.DbType.DateTime },
 					new CParameter() { ParameterName = "ENTREVISTADOR", Value = Data.ENTREVISTADOR, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ESTADO_ENTREVISTA", Value = Data.ESTADO_ENTREVISTA, DbType = System.Data.DbType.String },

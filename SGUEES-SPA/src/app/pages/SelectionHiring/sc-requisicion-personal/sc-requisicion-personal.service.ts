@@ -9,6 +9,7 @@ import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { ScExpedienteEntrevistaRepository } from '../sc-expediente-candidato/sc-expediente-entrevista/sc-expediente-entrevista.repository';
 import { ScExpedienteEntrevistaDocumentoRepository } from '../sc-expediente-candidato/sc-expediente-entrevista/sc-expediente-entrevista-documento/sc-expediente-entrevista-documento.repository';
 import { ScExpedienteDocumentoRepository } from '../sc-expediente-candidato/sc-expediente-documento/sc-expediente-documento.repository';
+import { ScRequisicionCandidatoService } from './sc-requisicion-candidato/sc-requisicion-candidato.service';
 
 @Injectable({
 	providedIn: 'root',
@@ -19,6 +20,7 @@ export class ScRequisicionPersonalService {
 		private entrevistaRepo: ScExpedienteEntrevistaRepository,
 		private entrevistaDocumentoRepo: ScExpedienteEntrevistaDocumentoRepository,
 		private expedienteDocumentoRepo: ScExpedienteDocumentoRepository,
+		private requisicionCandidatoService: ScRequisicionCandidatoService,
 	) {}
 
     //#region <Validadores>
@@ -29,13 +31,13 @@ export class ScRequisicionPersonalService {
         return false;
         }
 
-        if (model.NOMBRE_PUESTO_SOLICITADO == '' || model.NOMBRE_PUESTO_SOLICITADO == null) {
-        msg('Debe digitar el nombre del puesto solicitado', NotifyType.Warning);
-        return false;
-        }
-
         if (model.CORR_UNIDAD == 0 || model.CORR_UNIDAD == null) {
             msg('Debe seleccionar la unidad organizativa', NotifyType.Warning);
+            return false;
+        }
+
+        if (model.CORR_PUESTO == 0 || model.CORR_PUESTO == null) {
+            msg('Debe seleccionar el puesto', NotifyType.Warning);
             return false;
         }
 
@@ -232,12 +234,34 @@ export class ScRequisicionPersonalService {
 		return this.repo.getCandidatos(xWhere);
 	}
 
-	/** Entrevistas del candidato/solicitud (permiso requisición). */
-	getEntrevistasCandidato(corrExpediente: number, corrSolicitudEmpleo: number): Observable<IResult> {
-		return this.entrevistaRepo.getAllForRequisicion([
+	decidirCandidato(model: {
+		CORR_REQUISICION_PERSONAL: number;
+		CORR_SOLICITUD_EMPLEO: number;
+		CORR_EXPEDIENTE_CANDIDATO: number;
+		ESTADO_DECISION: string;
+		OBSERVACION_DECISION?: string;
+	}): Observable<IResult> {
+		return this.requisicionCandidatoService.decide(model);
+	}
+
+	getEstadoDecisionLabel(estado: string | null | undefined): string {
+		return this.requisicionCandidatoService.getEstadoDecisionLabel(estado);
+	}
+
+	/** Entrevistas del candidato/solicitud/requisición (permiso requisición). */
+	getEntrevistasCandidato(
+		corrExpediente: number,
+		corrSolicitudEmpleo: number,
+		corrRequisicionPersonal: number
+	): Observable<IResult> {
+		const xWhere: IParam[] = [
 			{ Parameter: 'CORR_EXPEDIENTE_CANDIDATO', Value: corrExpediente },
 			{ Parameter: 'CORR_SOLICITUD_EMPLEO', Value: corrSolicitudEmpleo },
-		]);
+		];
+		if (corrRequisicionPersonal > 0) {
+			xWhere.push({ Parameter: 'CORR_REQUISICION_PERSONAL', Value: corrRequisicionPersonal });
+		}
+		return this.entrevistaRepo.getAllForRequisicion(xWhere);
 	}
 
 	insertEntrevistaFromRequisicion(model: any): Observable<IResult> {
@@ -348,17 +372,7 @@ export class ScRequisicionPersonalService {
 		];
 	}
 
-	/** Combos fijos del formulario de entrevistas (workspace Candidatos). */
-	getTipoEntrevistaOptions(): Array<{ value: string; text: string }> {
-		return [
-			{ value: 'TALENTO HUMANO', text: 'Talento humano' },
-			{ value: 'JEFATURA', text: 'Jefatura' },
-			{ value: 'DIRECCION CAPELLANIA', text: 'Dirección Capellanía' },
-			// { value: 'DOCENTE', text: 'Docente' },
-			// { value: 'FINAL', text: 'Final' },
-		];
-	}
-
+	/** Combos fijos del formulario de entrevistas (estado / resultado). Tipo viene de SC_TIPO_ENTREVISTA. */
 	getEstadoEntrevistaOptions(): Array<{ value: string; text: string }> {
 		return [
 			{ value: 'PROGRAMADA', text: 'Programada' },
@@ -526,7 +540,15 @@ export class ScRequisicionPersonalService {
 	}
 
 	esValidoEntrevista(model: any, msg: Function): boolean {
-		if (!model?.TIPO_ENTREVISTA) {
+		if (!model?.CORR_SOLICITUD_EMPLEO || Number(model.CORR_SOLICITUD_EMPLEO) <= 0) {
+			msg('Debe indicar la solicitud de empleo.', NotifyType.Warning);
+			return false;
+		}
+		if (!model?.CORR_REQUISICION_PERSONAL || Number(model.CORR_REQUISICION_PERSONAL) <= 0) {
+			msg('Debe indicar la requisición personal de la entrevista.', NotifyType.Warning);
+			return false;
+		}
+		if (!model?.CORR_TIPO_ENTREVISTA || Number(model.CORR_TIPO_ENTREVISTA) <= 0) {
 			msg('Debe indicar el tipo de entrevista.', NotifyType.Warning);
 			return false;
 		}
@@ -546,13 +568,16 @@ export class ScRequisicionPersonalService {
 	}
 
 	/**
-	 * Descriptores de puesto filtrados por CORR_UNIDAD
-	 * (API: SC_DESCRIPTOR_PUESTO/GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL).
+	 * Descriptores de puesto filtrados por CORR_UNIDAD + CORR_PUESTO
+	 * (API: SC_DESCRIPTOR_PUESTO/GetCORR_DESCRIPTOR_PUESTO_BY_PUESTO_SC_REQUISICION_PERSONAL).
 	 */
     getDescriptorPuesto(param?: any): Observable<IResult> {
         const xWhere: IParam[] = [];
         if (param?.CORR_UNIDAD != null && param.CORR_UNIDAD > 0) {
             xWhere.push({ Parameter: 'CORR_UNIDAD', Value: param.CORR_UNIDAD });
+        }
+        if (param?.CORR_PUESTO != null && param.CORR_PUESTO > 0) {
+            xWhere.push({ Parameter: 'CORR_PUESTO', Value: param.CORR_PUESTO });
         }
         return this.repo.getDescriptorPuesto(xWhere);
     }
@@ -562,7 +587,7 @@ export class ScRequisicionPersonalService {
             { dataField: 'CORR_REQUISICION_PERSONAL', caption: 'Corr.', width: 85 },
             { dataField: 'FECHA_REQUISICION', caption: 'Fecha', width: 130, dataType: 'date', format: 'dd/MM/yyyy' },
             { dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 250 },
-            //{ dataField: 'NOMBRE_PUESTO', caption: 'Descriptor Puesto', width: 250 },
+            { dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 220 },
             { dataField: 'MODALIDAD_NOMBRE', caption: 'Modalidad', width: 120 },
             { dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Tipo Contrato', width: 140 },
             { dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Tipo Vacante', width: 200 },
@@ -608,15 +633,16 @@ export class ScRequisicionPersonalService {
                                     }
                                 },
                                 {
-                                    dataField: 'NOMBRE_PUESTO_SOLICITADO',
-                                    label: { text: 'Nombre puesto solicitado' },
-                                    colSpan: 4,
-                                },
-                                {
                                     dataField: 'CORR_UNIDAD',
                                     label: { text: 'Unidad Organizativa' },
                                     colSpan: 4,
                                     template: 'CORR_UNIDADLookup',
+                                },
+                                {
+                                    dataField: 'CORR_PUESTO',
+                                    label: { text: 'Puesto' },
+                                    colSpan: 4,
+                                    template: 'CORR_PUESTOLookup',
                                 },
                                 {
                                     dataField: 'CORR_DESCRIPTOR_PUESTO',
@@ -754,19 +780,20 @@ export class ScRequisicionPersonalService {
         };
     }
 
-    	/** Ítems del dx-form de entrevistas (mismo patrón que sc-expediente-candidato: colCount 8). */
-	getEntrevistaItems(): any[] {
+    	/** Ítems del dx-form de entrevistas. tipoOptions = catálogo SC_TIPO_ENTREVISTA. */
+	getEntrevistaItems(tipoOptions: any[] = []): any[] {
 		return [
 			{
-				dataField: 'TIPO_ENTREVISTA',
+				dataField: 'CORR_TIPO_ENTREVISTA',
 				label: { text: 'Tipo de entrevista' },
 				colSpan: 2,
 				editorType: 'dxSelectBox',
 				editorOptions: {
-					items: this.getTipoEntrevistaOptions(),
-					displayExpr: 'text',
-					valueExpr: 'value',
-					searchEnabled: false,
+					dataSource: tipoOptions,
+					displayExpr: 'TIPO_ENTREVISTA',
+					valueExpr: 'CORR_TIPO_ENTREVISTA',
+					searchEnabled: true,
+					searchExpr: ['TIPO_ENTREVISTA', 'DESCRIPCION_ENTREVISTA'],
 					showClearButton: true,
 					placeholder: 'Seleccione tipo',
 				},
@@ -809,7 +836,7 @@ export class ScRequisicionPersonalService {
 					placeholder: 'Opcional',
 				},
 			},
-            			{
+			{
 				dataField: 'ENTREVISTADOR',
 				label: { text: 'Entrevistado por' },
 				colSpan: 8,
@@ -847,18 +874,25 @@ export class ScRequisicionPersonalService {
             },
             {
                 dataField: 'CORR_ESTADO_EXPEDIENTE',
-                caption: 'Estado',
+                caption: 'Estado expediente',
                 width: 180,
                 calculateCellValue: () => 'Proceso de selección',
             },
+            {
+                dataField: 'ESTADO_DECISION',
+                caption: 'Decisión jefatura',
+                width: 150,
+                calculateCellValue: (row: any) => this.getEstadoDecisionLabel(row?.ESTADO_DECISION),
+            },
+            { dataField: 'USUARIO_DECISION', caption: 'Decidió', width: 140 },
+            {
+                dataField: 'FECHA_DECISION',
+                caption: 'Fecha decisión',
+                width: 150,
+                dataType: 'datetime',
+                format: 'dd/MM/yyyy HH:mm',
+            },
             { dataField: 'CORR_SOLICITUD_EMPLEO', caption: 'Solicitud de empleo', width: 170 },
-            // {
-            //     caption: 'Options',
-            //     width: 110,
-            //     allowSorting: false,
-            //     allowFiltering: false,
-            //     cellTemplate: 'candidatosActionsTemplate',
-            // },
         ];
     }
 

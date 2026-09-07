@@ -13,7 +13,8 @@ namespace sguees.Models
 		public int CORR_REQUISICION_PERSONAL { get; set; }
 		public DateOnly FECHA_REQUISICION { get; set; }
 		public string NOMBRE_UNIDAD { get; set; }
-		public string NOMBRE_PUESTO_SOLICITADO { get; set; }
+		public int? CORR_PUESTO { get; set; }
+		public string NOMBRE_PUESTO { get; set; }
 		public string MODALIDAD_NOMBRE { get; set; }
 		public string NOMBRE_TIPO_CONTRATACION { get; set; }
 		public string NOMBRE_TIPO_VACANTE { get; set; }

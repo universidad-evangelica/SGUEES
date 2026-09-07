@@ -101,6 +101,17 @@ namespace SGUEES.Controllers
             return await _service.GetUnidadesUsuarioAsync(Data);
         }
 
+        // Qué hace: unidades del usuario de sesión para sc-requisicion-personal (cascada unidad→puesto→descriptor).
+        // Cómo: reutiliza PRAL_DATA_SC_UNIDADES_USUARIO; endpoint nuevo con permiso de la pantalla consumidora.
+        [HttpGet("GetCORR_UNIDAD_SC_REQUISICION_PERSONAL")]
+        [Authorize(Policy = "/sc-requisicion-personal|R")]
+        public async Task<CResult> GetCORR_UNIDAD_SC_REQUISICION_PERSONAL([FromQuery] SC_UNIDADES_USUARIOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            Data.LOGIN_SISTEMA = GetUsuario();
+            return await _service.GetUnidadesUsuarioAsync(Data);
+        }
+
         // Qué hace: obtiene CORR_EMPRESA del usuario autenticado.
         // Cómo: busca el claim y retorna cero si no puede convertirlo.
         private int GetCorrEmpresa()

@@ -8,5 +8,6 @@ namespace SGUEES.Models
 		public int CORR_EXPEDIENTE_CANDIDATO { get; set; }
 		public int CORR_EXPEDIENTE_ENTREVISTA { get; set; }
 		public int CORR_SOLICITUD_EMPLEO { get; set; }
+		public int CORR_REQUISICION_PERSONAL { get; set; }
 	}
 }

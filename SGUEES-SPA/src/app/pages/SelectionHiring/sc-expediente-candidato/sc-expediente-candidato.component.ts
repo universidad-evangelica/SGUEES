@@ -28,6 +28,8 @@ import { ScExpedienteDocumento } from './sc-expediente-documento/models/sc-exped
 import { ScExpedienteSolicitud } from './sc-expediente-solicitud/models/sc-expediente-solicitud';
 import { ScExpedienteCandidatoService } from './sc-expediente-candidato.service';
 import { confirm } from 'devextreme/ui/dialog';
+import { environment } from 'src/environments/environment';
+import { ScExpedienteCandidatoPostulacion } from '../sc-requisicion-personal/sc-requisicion-candidato/models/sc-requisicion-candidato';
 
 @Component({
 	selector: 'app-sc-expediente-candidato',
@@ -55,6 +57,16 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	solicitudes: ScExpedienteSolicitud[] = [];
 	solicitudColumns: any[] = [];
 
+	/** Panel lateral rápido (browse): vista puntual al clic de fila. */
+	previewPanelVisible = false;
+	previewPanelAbierto = false;
+	previewExpediente: ScExpedienteCandidato | null = null;
+	previewPersona: ScPersonaDatos | null = null;
+	previewFotoUrl: string | null = null;
+	cargandoPreviewPersona = false;
+	private previewPanelCloseTimer: ReturnType<typeof setTimeout> | null = null;
+	private previewFotoRequestId = 0;
+
 	/** Workspace expediente completo (slide-over desde la derecha). */
 	workspaceCompletoVisible = false;
 	workspaceCompletoAbierto = false;
@@ -64,6 +76,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	workspaceSolicitudVisible = false;
 	workspaceSolicitudAbierto = false;
 	corrExpedienteSolicitudSeleccionada = 0;
+	corrRequisicionSeleccionada = 0;
 	solicitudSeleccionada: ScExpedienteSolicitud | null = null;
 	private workspaceSolicitudCloseTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -73,6 +86,11 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	entrevistaItems: any[] = [];
 	entrevistaModel: ScExpedienteEntrevista = this.fillEntrevistaData();
 	guardandoEntrevista = false;
+	mCORR_TIPO_ENTREVISTA: any[] = [];
+
+	/** Tab Postulación/Decisión (expediente general, solo lectura). */
+	postulaciones: ScExpedienteCandidatoPostulacion[] = [];
+	postulacionColumns: any[] = [];
 
 	get editandoEntrevista(): boolean {
 		return (this.entrevistaModel?.CORR_EXPEDIENTE_ENTREVISTA ?? 0) > 0;
@@ -91,6 +109,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	documentoPreviewEsImagen = false;
 	documentoPopupVisible = false;
 	private documentoPreviewObjectUrl: string | null = null;
+	mCORR_TIPO_DOCUMENTO_ADJUNTO: any[] = [];
 
 	/** Popup Adjuntos de una entrevista (1..N). */
 	entrevistaAdjuntosPopupVisible = false;
@@ -264,9 +283,10 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.items = this.service.getItems();
 		this.solicitudColumns = this.service.getSolicitudColumns();
 		this.entrevistaColumns = this.service.getEntrevistaColumns();
-		this.entrevistaItems = this.service.getEntrevistaItems();
+		this.entrevistaItems = this.service.getEntrevistaItems([]);
+		this.postulacionColumns = this.service.getPostulacionColumns();
 		this.documentoColumns = this.service.getDocumentoColumns();
-		this.documentoItems = this.service.getDocumentoItems();
+		this.documentoItems = this.service.getDocumentoItems([]);
 		this.entrevistaDocumentoColumns = this.service.getEntrevistaDocumentoColumns();
 		this.entrevistaDocumentoItems = this.service.getEntrevistaDocumentoItems();
 	}
@@ -277,13 +297,17 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
+		this.getCORR_TIPO_ENTREVISTA();
+		this.getCORR_TIPO_DOCUMENTO_ADJUNTO();
 		this.consultar();
 	}
 
 	ngOnDestroy(): void {
 		this.clearWorkspaceCloseTimer();
 		this.clearWorkspaceSolicitudCloseTimer();
+		this.clearPreviewPanelCloseTimer();
 		this.revocarFotoPersona();
+		this.revocarPreviewFoto();
 		this.revokeDocumentoPreview();
 	}
 
@@ -296,6 +320,8 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.cerrarWorkspaceCompleto(false);
 			this.cerrarWorkspaceSolicitud(false);
 			this.limpiarPersonaDatos();
+		} else {
+			this.cerrarPreviewPanel(false);
 		}
 	}
 
@@ -399,7 +425,13 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.consultarDocumentos();
 	}
 
+	/** Carga postulaciones / decisiones del expediente (tab principal). */
+	onPostulacionesTabSelected(): void {
+		this.consultarPostulaciones();
+	}
+
 	override rowDblClick(e: any): void {
+		this.cerrarPreviewPanel(false);
 		const rowData = e?.data ?? e?.row?.data;
 		if (rowData) {
 			this.model = this.fillData(rowData);
@@ -422,6 +454,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			return;
 		}
 
+		this.cerrarPreviewPanel(false);
 		this.model = this.fillData(e.row.data);
 		this.cargandoPersonaDatos = (this.model.CORR_PERSONA_DATOS ?? 0) > 0;
 		this.editarClick(e);
@@ -433,12 +466,107 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		});
 	}
 
+	/** Clic en fila del grid browse → panel lateral con datos puntuales. */
+	onGridRowClick(e: any): void {
+		if (!this.isBrowse() || e?.rowType !== 'data' || !e?.data) {
+			return;
+		}
+
+		const target = e?.event?.target as HTMLElement | null;
+		if (
+			target?.closest(
+				'.dx-command-edit, .dx-link, .dx-button, button, a, .dx-checkbox, .dx-dropdowneditor-button',
+			)
+		) {
+			return;
+		}
+
+		this.abrirPreviewPanel(e.data as ScExpedienteCandidato);
+	}
+
+	abrirPreviewPanel(row: ScExpedienteCandidato): void {
+		const corr = Number(row?.CORR_EXPEDIENTE_CANDIDATO ?? 0);
+		if (corr <= 0) {
+			return;
+		}
+
+		this.clearPreviewPanelCloseTimer();
+		this.previewExpediente = this.fillData(row);
+		this.model = this.fillData(row);
+		this.previewPanelVisible = true;
+		requestAnimationFrame(() => {
+			this.previewPanelAbierto = true;
+		});
+		this.cargarPreviewPersona(Number(row.CORR_PERSONA_DATOS ?? 0));
+	}
+
+	cerrarPreviewPanel(animar = true): void {
+		this.clearPreviewPanelCloseTimer();
+
+		if (!animar || !this.previewPanelVisible) {
+			this.previewPanelAbierto = false;
+			this.previewPanelVisible = false;
+			this.limpiarPreviewPersona();
+			return;
+		}
+
+		this.previewPanelAbierto = false;
+		this.previewPanelCloseTimer = setTimeout(() => {
+			this.previewPanelVisible = false;
+			this.limpiarPreviewPersona();
+			this.previewPanelCloseTimer = null;
+		}, 280);
+	}
+
+	/** Abre el detalle completo del expediente seleccionado en el preview. */
+	abrirDetalleDesdePreview(): void {
+		if (!this.previewExpediente) {
+			return;
+		}
+		const data = this.fillData(this.previewExpediente);
+		this.cerrarPreviewPanel(false);
+		this.rowDblClick({ data, row: { data } });
+	}
+
+	get inicialesPreviewPersona(): string {
+		if (this.previewPersona) {
+			const nombre = (this.previewPersona.NOMBRE1 || '').trim();
+			const apellido = (this.previewPersona.APELLIDO1 || '').trim();
+			const a = nombre ? nombre.charAt(0).toUpperCase() : '';
+			const b = apellido ? apellido.charAt(0).toUpperCase() : '';
+			if (a || b) {
+				return `${a}${b}`;
+			}
+		}
+		const nombreVista = (this.previewExpediente?.NOMBRE_PERSONA || '').trim();
+		if (!nombreVista) {
+			return '?';
+		}
+		const partes = nombreVista.split(/\s+/).filter(Boolean);
+		const a = partes[0]?.charAt(0).toUpperCase() ?? '';
+		const b = partes.length > 1 ? partes[partes.length - 1].charAt(0).toUpperCase() : '';
+		return `${a}${b}` || '?';
+	}
+
+	get previewTelefono(): string {
+		const celular = `${this.previewPersona?.CELULAR ?? ''}`.trim();
+		if (celular) {
+			return celular;
+		}
+		return `${this.previewPersona?.TELEFONO ?? ''}`.trim();
+	}
+
+	get previewCorreo(): string {
+		return `${this.previewPersona?.CORREO ?? ''}`.trim();
+	}
+
 	override nuevo(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
 		}
 		super.nuevo();
 		this.solicitudes = [];
+		this.cerrarPreviewPanel(false);
 		this.cerrarWorkspaceCompleto(false);
 		this.cerrarWorkspaceSolicitud(false);
 		this.limpiarPersonaDatos();
@@ -460,12 +588,14 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	override cancelar(): void {
 		super.cancelar((item: any) => item.CORR_EXPEDIENTE_CANDIDATO === this.modelUpdate.CORR_EXPEDIENTE_CANDIDATO);
 		this.solicitudes = [];
+		this.cerrarPreviewPanel(false);
 		this.cerrarWorkspaceCompleto(false);
 		this.cerrarWorkspaceSolicitud(false);
 		this.limpiarPersonaDatos();
 	}
 
 	rowRemoving(e: any): void {
+		this.cerrarPreviewPanel(false);
 		this.rowRemovingMtto(e, {
 			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_EXPEDIENTE_CANDIDATO)),
 		});
@@ -561,7 +691,10 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 				);
 			}
 
-			this.notifyFx('Proceso de selección activado correctamente.', NotifyType.Success);
+			this.notifyFx(
+				'Proceso de selección activado. El candidato está siendo evaluado por jefatura en las requisiciones vinculadas.',
+				NotifyType.Success
+			);
 		} catch (error: any) {
 			const msg = error?.error?.ErrorMessage || error?.ErrorMessage || error?.message || '';
 			if (msg) {
@@ -648,6 +781,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	onSolicitudRowClick(e: any): void {
 		const rowData = e?.data as ScExpedienteSolicitud | undefined;
 		const corr = Number(rowData?.CORR_EXPEDIENTE_SOLICITUD ?? 0);
+		const corrRequisicion = Number(rowData?.CORR_REQUISICION_PERSONAL ?? 0);
 		if (corr <= 0) {
 			return;
 		}
@@ -655,12 +789,20 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		if (e?.rowType && e.rowType !== 'data') {
 			return;
 		}
+		if (corrRequisicion <= 0) {
+			this.notifyFx(
+				'Esta solicitud no tiene requisición vinculada. Asocie una requisición antes de gestionar entrevistas.',
+				NotifyType.Warning
+			);
+			return;
+		}
 
 		this.cerrarWorkspaceCompleto(false);
 		this.clearWorkspaceSolicitudCloseTimer();
 		this.solicitudSeleccionada = rowData ?? null;
 		this.corrExpedienteSolicitudSeleccionada = corr;
-		this.entrevistaItems = this.service.getEntrevistaItems();
+		this.corrRequisicionSeleccionada = corrRequisicion;
+		this.entrevistaItems = this.service.getEntrevistaItems(this.mCORR_TIPO_ENTREVISTA);
 		this.nuevaEntrevista();
 		this.workspaceSolicitudVisible = true;
 		requestAnimationFrame(() => {
@@ -681,6 +823,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.workspaceSolicitudAbierto = false;
 			this.workspaceSolicitudVisible = false;
 			this.corrExpedienteSolicitudSeleccionada = 0;
+			this.corrRequisicionSeleccionada = 0;
 			this.solicitudSeleccionada = null;
 			this.entrevistas = [];
 			this.nuevaEntrevista();
@@ -692,6 +835,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		this.workspaceSolicitudCloseTimer = setTimeout(() => {
 			this.workspaceSolicitudVisible = false;
 			this.corrExpedienteSolicitudSeleccionada = 0;
+			this.corrRequisicionSeleccionada = 0;
 			this.solicitudSeleccionada = null;
 			this.entrevistas = [];
 			this.nuevaEntrevista();
@@ -707,17 +851,20 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		}
 	}
 
-	/** Carga entrevistas de la solicitud abierta en el workspace. */
+	/** Carga entrevistas de la solicitud/requisición abierta en el workspace. */
 	consultarEntrevistas(): void {
 		const corrExpediente = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
 		const corrSolicitud = this.solicitudSeleccionada?.CORR_SOLICITUD_EMPLEO ?? 0;
-		if (corrExpediente <= 0 || corrSolicitud <= 0) {
+		const corrRequisicion =
+			this.corrRequisicionSeleccionada ||
+			Number(this.solicitudSeleccionada?.CORR_REQUISICION_PERSONAL ?? 0);
+		if (corrExpediente <= 0 || corrSolicitud <= 0 || corrRequisicion <= 0) {
 			this.entrevistas = [];
 			return;
 		}
 
 		this.service
-			.getAllEntrevista(corrExpediente, corrSolicitud)
+			.getAllEntrevista(corrExpediente, corrSolicitud, corrRequisicion)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -729,6 +876,27 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			});
 	}
 
+	/** Postulaciones / decisión de jefatura del expediente (todas las solicitudes/requisiciones). */
+	consultarPostulaciones(): void {
+		const corrExpediente = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
+		if (corrExpediente <= 0) {
+			this.postulaciones = [];
+			return;
+		}
+
+		this.service
+			.getPostulaciones(corrExpediente)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.postulaciones = response?.Result ? response.Data ?? [] : [];
+				},
+				error: () => {
+					this.postulaciones = [];
+				},
+			});
+	}
+
 	fillEntrevistaData(xModel?: ScExpedienteEntrevista): ScExpedienteEntrevista {
 		if (xModel) {
 			return {
@@ -736,7 +904,10 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 				CORR_EXPEDIENTE_CANDIDATO: xModel.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_EXPEDIENTE_ENTREVISTA: xModel.CORR_EXPEDIENTE_ENTREVISTA,
 				CORR_SOLICITUD_EMPLEO: xModel.CORR_SOLICITUD_EMPLEO,
+				CORR_REQUISICION_PERSONAL: xModel.CORR_REQUISICION_PERSONAL,
+				CORR_TIPO_ENTREVISTA: xModel.CORR_TIPO_ENTREVISTA ?? 0,
 				TIPO_ENTREVISTA: xModel.TIPO_ENTREVISTA,
+				DESCRIPCION_ENTREVISTA: xModel.DESCRIPCION_ENTREVISTA,
 				FECHA_ENTREVISTA: xModel.FECHA_ENTREVISTA,
 				ENTREVISTADOR: xModel.ENTREVISTADOR,
 				ESTADO_ENTREVISTA: xModel.ESTADO_ENTREVISTA,
@@ -750,7 +921,10 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			CORR_EXPEDIENTE_CANDIDATO: this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0,
 			CORR_EXPEDIENTE_ENTREVISTA: 0,
 			CORR_SOLICITUD_EMPLEO: this.solicitudSeleccionada?.CORR_SOLICITUD_EMPLEO ?? 0,
-			TIPO_ENTREVISTA: '',
+			CORR_REQUISICION_PERSONAL:
+				this.corrRequisicionSeleccionada ||
+				Number(this.solicitudSeleccionada?.CORR_REQUISICION_PERSONAL ?? 0),
+			CORR_TIPO_ENTREVISTA: 0,
 			FECHA_ENTREVISTA: new Date(),
 			ENTREVISTADOR: '',
 			ESTADO_ENTREVISTA: 'PROGRAMADA',
@@ -762,6 +936,29 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	nuevaEntrevista(): void {
 		this.entrevistaModel = this.fillEntrevistaData();
 		this.syncEntrevistaForm();
+	}
+
+	/** Lookup SC_TIPO_ENTREVISTA para el combo de entrevistas (permiso de esta pantalla). */
+	getCORR_TIPO_ENTREVISTA(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_EXPEDIENTE_CANDIDATO',
+				'SC_TIPO_ENTREVISTA',
+				'GetCORR_TIPO_ENTREVISTA',
+				[],
+				environment.UrlSELECCIONCONTRATACIONAPI,
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_TIPO_ENTREVISTA = response?.Result ? response.Data ?? [] : [];
+					this.entrevistaItems = this.service.getEntrevistaItems(this.mCORR_TIPO_ENTREVISTA);
+				},
+				error: () => {
+					this.mCORR_TIPO_ENTREVISTA = [];
+					this.entrevistaItems = this.service.getEntrevistaItems([]);
+				},
+			});
 	}
 
 	editarEntrevista(row: ScExpedienteEntrevista): void {
@@ -786,6 +983,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 
 		this.entrevistaModel.CORR_EXPEDIENTE_CANDIDATO = this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0;
 		this.entrevistaModel.CORR_SOLICITUD_EMPLEO = this.solicitudSeleccionada?.CORR_SOLICITUD_EMPLEO ?? 0;
+		this.entrevistaModel.CORR_REQUISICION_PERSONAL =
+			this.corrRequisicionSeleccionada ||
+			Number(this.solicitudSeleccionada?.CORR_REQUISICION_PERSONAL ?? 0);
 
 		if (!this.service.esValidoEntrevista(this.entrevistaModel, this.notifyFx.bind(this))) {
 			return;
@@ -1217,7 +1417,9 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 				CORR_EXPEDIENTE_CANDIDATO: xModel.CORR_EXPEDIENTE_CANDIDATO,
 				CORR_EXPEDIENTE_DOCUMENTO: xModel.CORR_EXPEDIENTE_DOCUMENTO,
 				FECHA_CARGA: xModel.FECHA_CARGA,
+				CORR_TIPO_DOCUMENTO_ADJUNTO: xModel.CORR_TIPO_DOCUMENTO_ADJUNTO ?? 0,
 				TIPO_DOCUMENTO: xModel.TIPO_DOCUMENTO,
+				DESCRIPCION_DOCUMENTO: xModel.DESCRIPCION_DOCUMENTO,
 				NOMBRE_ARCHIVO: xModel.NOMBRE_ARCHIVO,
 				RUTA_ARCHIVO: xModel.RUTA_ARCHIVO ?? '',
 				NOTAS: xModel.NOTAS ?? '',
@@ -1229,11 +1431,34 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			CORR_EXPEDIENTE_CANDIDATO: this.model?.CORR_EXPEDIENTE_CANDIDATO ?? 0,
 			CORR_EXPEDIENTE_DOCUMENTO: 0,
 			FECHA_CARGA: new Date(),
-			TIPO_DOCUMENTO: '',
+			CORR_TIPO_DOCUMENTO_ADJUNTO: 0,
 			NOMBRE_ARCHIVO: '',
 			RUTA_ARCHIVO: '',
 			NOTAS: '',
 		};
+	}
+
+	/** Lookup PLA_TIPO_DOCUMENTO_ADJUNTO para el combo de documentos. */
+	getCORR_TIPO_DOCUMENTO_ADJUNTO(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_EXPEDIENTE_CANDIDATO',
+				'PLA_TIPO_DOCUMENTO_ADJUNTO',
+				'GetCORR_TIPO_DOCUMENTO_ADJUNTO',
+				[],
+				environment.UrlTALENTOHUMANONAPI,
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_TIPO_DOCUMENTO_ADJUNTO = response?.Result ? response.Data ?? [] : [];
+					this.documentoItems = this.service.getDocumentoItems(this.mCORR_TIPO_DOCUMENTO_ADJUNTO);
+				},
+				error: () => {
+					this.mCORR_TIPO_DOCUMENTO_ADJUNTO = [];
+					this.documentoItems = this.service.getDocumentoItems([]);
+				},
+			});
 	}
 
 	nuevoDocumento(): void {
@@ -1382,7 +1607,7 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 		const formData = new FormData();
 		formData.append('CORR_EXPEDIENTE_CANDIDATO', String(this.documentoModel.CORR_EXPEDIENTE_CANDIDATO ?? 0));
 		formData.append('CORR_EXPEDIENTE_DOCUMENTO', String(this.documentoModel.CORR_EXPEDIENTE_DOCUMENTO ?? 0));
-		formData.append('TIPO_DOCUMENTO', this.documentoModel.TIPO_DOCUMENTO ?? '');
+		formData.append('CORR_TIPO_DOCUMENTO_ADJUNTO', String(this.documentoModel.CORR_TIPO_DOCUMENTO_ADJUNTO ?? 0));
 		formData.append('FECHA_CARGA', new Date(this.documentoModel.FECHA_CARGA).toISOString());
 		formData.append('NOTAS', this.documentoModel.NOTAS ?? '');
 
@@ -1599,10 +1824,14 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 	}
 
 	abrirFotoPreview(): void {
-		if (!this.fotoPersonaUrl) {
+		if (!this.fotoPersonaUrl && !this.previewFotoUrl) {
 			return;
 		}
 		this.fotoPreviewVisible = true;
+	}
+
+	get fotoLightboxUrl(): string | null {
+		return this.fotoPersonaUrl || this.previewFotoUrl;
 	}
 
 	cerrarFotoPreview(): void {
@@ -1615,7 +1844,97 @@ export class ScExpedienteCandidatoComponent extends CBaseComponent implements On
 			this.cerrarFotoPreview();
 			return;
 		}
+		if (this.previewPanelVisible) {
+			this.cerrarPreviewPanel(true);
+			return;
+		}
 		// Escape no cierra el workspace (solo el botón Volver), según requerimiento.
+	}
+
+	private clearPreviewPanelCloseTimer(): void {
+		if (this.previewPanelCloseTimer) {
+			clearTimeout(this.previewPanelCloseTimer);
+			this.previewPanelCloseTimer = null;
+		}
+	}
+
+	private limpiarPreviewPersona(): void {
+		this.previewExpediente = null;
+		this.previewPersona = null;
+		this.cargandoPreviewPersona = false;
+		this.revocarPreviewFoto();
+	}
+
+	private revocarPreviewFoto(): void {
+		this.previewFotoRequestId += 1;
+		if (this.previewFotoUrl) {
+			URL.revokeObjectURL(this.previewFotoUrl);
+			this.previewFotoUrl = null;
+		}
+	}
+
+	/** Carga ligera (persona + foto) para el panel lateral; no trae colecciones. */
+	private cargarPreviewPersona(corrPersonaDatos: number): void {
+		this.revocarPreviewFoto();
+		this.previewPersona = null;
+
+		if (corrPersonaDatos <= 0) {
+			this.cargandoPreviewPersona = false;
+			return;
+		}
+
+		const requestId = ++this.previewFotoRequestId;
+		this.cargandoPreviewPersona = true;
+
+		this.solicitudService
+			.getPersonaDatos(corrPersonaDatos)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (requestId !== this.previewFotoRequestId) {
+						return;
+					}
+					if (response?.Result && response?.Data) {
+						this.previewPersona = response.Data;
+						this.cargarPreviewFoto(corrPersonaDatos, this.previewPersona?.FOTO_URL, requestId);
+					} else {
+						this.previewPersona = null;
+					}
+					this.cargandoPreviewPersona = false;
+				},
+				error: () => {
+					if (requestId !== this.previewFotoRequestId) {
+						return;
+					}
+					this.previewPersona = null;
+					this.cargandoPreviewPersona = false;
+				},
+			});
+	}
+
+	private cargarPreviewFoto(corrPersonaDatos: number, fotoUrl: string | undefined, requestId: number): void {
+		if (corrPersonaDatos <= 0 || !`${fotoUrl ?? ''}`.trim()) {
+			return;
+		}
+
+		this.solicitudService
+			.getPersonaFoto(corrPersonaDatos)
+			.pipe(take(1))
+			.subscribe({
+				next: (blob) => {
+					if (requestId !== this.previewFotoRequestId) {
+						return;
+					}
+					if (blob && blob.size > 0 && (blob.type || '').startsWith('image/')) {
+						this.previewFotoUrl = URL.createObjectURL(blob);
+					}
+				},
+				error: () => {
+					if (requestId === this.previewFotoRequestId) {
+						this.previewFotoUrl = null;
+					}
+				},
+			});
 	}
 
 	private limpiarPersonaDatos(): void {

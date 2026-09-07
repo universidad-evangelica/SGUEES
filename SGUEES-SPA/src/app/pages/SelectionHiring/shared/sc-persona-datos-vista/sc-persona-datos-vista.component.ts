@@ -44,11 +44,15 @@ export class ScPersonaDatosVistaComponent {
 	 */
 	@ContentChild('documentosTab') documentosTabTemplate?: TemplateRef<unknown>;
 
+	/** Tab Postulación/Decisión (expediente general, tras Documentos). */
+	@ContentChild('postulacionTab') postulacionTabTemplate?: TemplateRef<unknown>;
+
 	@Output() editar = new EventEmitter<void>();
 	@Output() abrirFoto = new EventEmitter<void>();
 	@Output() solicitudRowClick = new EventEmitter<any>();
 	@Output() solicitudesTabSelected = new EventEmitter<void>();
 	@Output() documentosTabSelected = new EventEmitter<void>();
+	@Output() postulacionesTabSelected = new EventEmitter<void>();
 
 	get tienePersonaDatos(): boolean {
 		return (this.personaDatos?.CORR_PERSONA_DATOS ?? 0) > 0;
@@ -58,10 +62,14 @@ export class ScPersonaDatosVistaComponent {
 		return !!this.documentosTabTemplate;
 	}
 
+	get mostrarPostulacion(): boolean {
+		return !!this.postulacionTabTemplate;
+	}
+
 	get mostrarTabs(): boolean {
 		// Durante la carga no renderizar un panel que contenga únicamente tabs de expediente:
 		// DevExtreme lo seleccionaría y conservaría ese tab al aparecer Personales.
-		const tieneTabsExtra = this.mostrarExpediente || this.mostrarDocumentos;
+		const tieneTabsExtra = this.mostrarExpediente || this.mostrarDocumentos || this.mostrarPostulacion;
 		return this.tienePersonaDatos || (tieneTabsExtra && !this.cargandoPersonaDatos);
 	}
 
@@ -97,6 +105,9 @@ export class ScPersonaDatosVistaComponent {
 		}
 		if (title === 'Documentos' && this.mostrarDocumentos) {
 			this.documentosTabSelected.emit();
+		}
+		if (title === 'Postulación/Decisión' && this.mostrarPostulacion) {
+			this.postulacionesTabSelected.emit();
 		}
 	}
 

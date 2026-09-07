@@ -262,13 +262,22 @@ namespace SGUEES.Controllers
             }
         }
 
-        //SC_REQUISICION_PERSONAL — lookup dependiente por CORR_UNIDAD
+        //SC_REQUISICION_PERSONAL — lookup dependiente por CORR_UNIDAD (legacy)
         [HttpGet("GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL")]
         [Authorize(Policy = "/sc-requisicion-personal|R")]
         public async Task<CResult> GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL([FromQuery] SC_DESCRIPTOR_PUESTOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(Data);
+        }
+
+        // SC_REQUISICION_PERSONAL — lookup cascada por CORR_UNIDAD + CORR_PUESTO
+        [HttpGet("GetCORR_DESCRIPTOR_PUESTO_BY_PUESTO_SC_REQUISICION_PERSONAL")]
+        [Authorize(Policy = "/sc-requisicion-personal|R")]
+        public async Task<CResult> GetCORR_DESCRIPTOR_PUESTO_BY_PUESTO_SC_REQUISICION_PERSONAL([FromQuery] SC_DESCRIPTOR_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetCORR_DESCRIPTOR_PUESTO_BY_PUESTO_SC_REQUISICION_PERSONAL(Data);
         }
     }
 }

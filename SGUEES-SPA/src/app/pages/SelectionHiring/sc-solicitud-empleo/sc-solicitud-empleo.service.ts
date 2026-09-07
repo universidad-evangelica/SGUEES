@@ -158,7 +158,7 @@ export class ScSolicitudEmpleoService {
 			{ dataField: 'CORR_REQUISICION_PERSONAL', caption: 'No.', width: 70 },
 			{ dataField: 'FECHA_REQUISICION', caption: 'Fecha', width: 110, dataType: 'date', format: 'dd/MM/yyyy' },
 			{ dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 200 },
-			{ dataField: 'NOMBRE_PUESTO_SOLICITADO', caption: 'Puesto', width: 200 },
+			{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 200 },
 			{ dataField: 'MODALIDAD_NOMBRE', caption: 'Modalidad', width: 120 },
 			{ dataField: 'NOMBRE_TIPO_CONTRATACION', caption: 'Contrato', width: 130 },
 			{ dataField: 'NOMBRE_TIPO_VACANTE', caption: 'Vacante', width: 150 },

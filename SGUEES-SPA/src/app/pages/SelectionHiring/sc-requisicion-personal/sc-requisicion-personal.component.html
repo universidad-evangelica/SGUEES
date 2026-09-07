@@ -13,18 +13,6 @@
     <app-barra-data-mtto
       [tituloVentana]="tituloVentana"
       [subTituloVentana]="subTituloVentana"
-      --Esto
-      debe
-      de
-      agregarse
-      por
-      componente
-      ya
-      que
-      de
-      etools
-      no
-      viene.
       [isBrowse]="isBrowse()"
       [isForm]="isForm()"
       [permiteAdd]="permiteAdd"
@@ -66,12 +54,24 @@
           >
           </app-data-lookup>
         </div>
+        <div *dxTemplate="let cellInfo of 'CORR_PUESTOLookup'">
+          <app-data-lookup
+            [model]="mCORR_PUESTO"
+            [(value)]="model.CORR_PUESTO"
+            [selectedRowKeys]="selectedLookUpCORR_PUESTO"
+            [readOnly]="readOnly || !model.CORR_UNIDAD"
+            [valueExpr]="'CORR_PUESTO'"
+            [displayExpr]="'NOMBRE_PUESTO'"
+            [lookupColumns]="puestoLookupColumns"
+          >
+          </app-data-lookup>
+        </div>
         <div *dxTemplate="let cellInfo of 'CORR_DESCRIPTOR_PUESTOLookup'">
           <app-data-lookup
             [model]="mCORR_DESCRIPTOR_PUESTO"
             [(value)]="model.CORR_DESCRIPTOR_PUESTO"
             [selectedRowKeys]="selectedLookUpCORR_DESCRIPTOR_PUESTO"
-            [readOnly]="readOnly"
+            [readOnly]="readOnly || !model.CORR_PUESTO"
             [valueExpr]="'CORR_DESCRIPTOR_PUESTO'"
             [displayExpr]="'NOMBRE_PUESTO'"
             [lookupColumns]="descriptorPuestoLookupColumns"
@@ -291,6 +291,22 @@
                   stylingMode="contained"
                   (onClick)="abrirEntrevistasCandidatoSeleccionado()"
                 ></dx-button>
+                <dx-button
+                  text="Aplica"
+                  icon="check"
+                  type="success"
+                  stylingMode="contained"
+                  [visible]="puedeDecidirCandidato"
+                  (onClick)="abrirDecisionCandidato('APLICA')"
+                ></dx-button>
+                <dx-button
+                  text="No aplica"
+                  icon="close"
+                  type="danger"
+                  stylingMode="contained"
+                  [visible]="puedeDecidirCandidato"
+                  (onClick)="abrirDecisionCandidato('NO_APLICA')"
+                ></dx-button>
               </div>
             </dxi-item>
             <dxi-item name="searchPanel" location="after"></dxi-item>
@@ -450,6 +466,7 @@
       <span *ngIf="candidatoEntrevistaSeleccionado">
         {{ candidatoEntrevistaSeleccionado.NOMBRE_PERSONA }}
         · Solicitud {{ candidatoEntrevistaSeleccionado.CORR_SOLICITUD_EMPLEO }}
+        · Requisición {{ model?.CORR_REQUISICION_PERSONAL }}
       </span>
     </div>
   </header>
@@ -910,6 +927,51 @@
 		</dxi-item>
 	</dx-tab-panel>
 </div> -->
+
+<!-- Modal: decisión jefatura Aplica / No aplica -->
+<dx-popup
+  [(visible)]="popupDecisionVisible"
+  [title]="decisionModel.ESTADO_DECISION === 'APLICA' ? 'Confirmar: Aplica' : 'Confirmar: No aplica'"
+  [width]="520"
+  [maxWidth]="'calc(100vw - 24px)'"
+  [height]="'auto'"
+  [showCloseButton]="true"
+  [dragEnabled]="true"
+  [hideOnOutsideClick]="false"
+  (onHiding)="cerrarPopupDecision()"
+>
+  <div *dxTemplate="let data of 'content'">
+    <p style="margin: 0 0 12px 0;">
+      Candidato: <strong>{{ decisionModel.NOMBRE_PERSONA }}</strong>
+    </p>
+    <p style="margin: 0 0 16px 0; color: #666;">
+      La decisión es irreversible. Observación opcional.
+    </p>
+    <dx-text-area
+      [(value)]="decisionModel.OBSERVACION_DECISION"
+      [height]="100"
+      [maxLength]="2000"
+      placeholder="Observación (opcional)"
+    ></dx-text-area>
+    <div
+      style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;"
+    >
+      <dx-button
+        text="Cancelar"
+        stylingMode="outlined"
+        [disabled]="guardandoDecision"
+        (onClick)="cerrarPopupDecision()"
+      ></dx-button>
+      <dx-button
+        text="Confirmar"
+        type="default"
+        stylingMode="contained"
+        [disabled]="guardandoDecision"
+        (onClick)="confirmarDecisionCandidato()"
+      ></dx-button>
+    </div>
+  </div>
+</dx-popup>
 
 <!-- Modal: agregar observador a la requisición (lookup LOGIN_SISTEMA) -->
 <dx-popup
