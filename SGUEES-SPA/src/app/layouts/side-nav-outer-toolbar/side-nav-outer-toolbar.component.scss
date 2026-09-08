@@ -27,6 +27,19 @@
       overflow-x: hidden;
     }
 
+    // Overlay móvil: panel pegado al borde izquierdo (sin hueco / “flotante”).
+    .dx-drawer-overlap.dx-drawer-opened > .dx-drawer-wrapper > .dx-drawer-panel.dx-drawer-panel-content,
+    .dx-drawer-overlap.dx-drawer-opened .dx-drawer-panel-content {
+      left: 0 !important;
+      transform: none !important;
+      margin-left: 0 !important;
+    }
+
+    .dx-drawer-overlap .dx-drawer-panel-content {
+      // Evita pelear con la animación de DevExtreme (causa desplazamiento residual).
+      transition: none;
+    }
+
     .dx-scrollview {
       height: 100%;
     }

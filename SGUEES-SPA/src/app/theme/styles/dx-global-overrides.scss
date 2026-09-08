@@ -21,12 +21,11 @@ body {
   font-size: $sguees-base-font-size;
 }
 
-// Menú lateral — legibilidad sin !important
+// Menú lateral — tipografía base; densidad/jerarquía viven en side-navigation-menu.scss
 .layout-body .dx-treeview .dx-treeview-item,
 .layout-body .dx-treeview .dx-treeview-item-content,
 .layout-body .dx-treeview .dx-treeview-node {
-  font-size: $sguees-base-font-size;
-  line-height: var(--sguees-line-height-normal);
+  line-height: 1.25;
 }
 
 // DataGrid premium: ver sguees-premium-grid.scss

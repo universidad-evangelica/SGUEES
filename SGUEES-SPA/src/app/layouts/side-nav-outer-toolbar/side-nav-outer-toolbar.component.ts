@@ -78,26 +78,49 @@ export class SideNavOuterToolbarComponent implements OnInit, OnDestroy {
   updateDrawer() {
     const isXSmall = this.screen.sizes['screen-x-small'];
     const isLarge = this.screen.sizes['screen-large'];
+    const wasOverlap = this.menuMode === 'overlap';
 
     const menuMode: DxDrawerTypes.OpenedStateMode = isLarge ? 'shrink' : 'overlap';
-    const menuRevealMode: DxDrawerTypes.RevealMode = isLarge ? 'expand' : 'slide';
+    // expand: el panel crece desde el borde izquierdo.
+    // slide + transition CSS del tema dejaba el panel “flotando” con hueco a la izquierda.
+    const menuRevealMode: DxDrawerTypes.RevealMode = 'expand';
     const maxMenuSize = isLarge ? 340 : isXSmall ? 280 : 320;
     const shaderEnabled = !isLarge;
 
-    if (
-      this.menuMode === menuMode &&
-      this.menuRevealMode === menuRevealMode &&
-      this.maxMenuSize === maxMenuSize &&
-      this.shaderEnabled === shaderEnabled
-    ) {
-      return;
+    const modeChanged =
+      this.menuMode !== menuMode ||
+      this.menuRevealMode !== menuRevealMode ||
+      this.maxMenuSize !== maxMenuSize ||
+      this.shaderEnabled !== shaderEnabled;
+
+    if (modeChanged) {
+      this.menuMode = menuMode;
+      this.menuRevealMode = menuRevealMode;
+      this.minMenuSize = 0;
+      this.maxMenuSize = maxMenuSize;
+      this.shaderEnabled = shaderEnabled;
     }
 
-    this.menuMode = menuMode;
-    this.menuRevealMode = menuRevealMode;
-    this.minMenuSize = 0;
-    this.maxMenuSize = maxMenuSize;
-    this.shaderEnabled = shaderEnabled;
+    // Solo al cruzar el umbral desktop ↔ móvil/tablet (evita franja residual shrink→overlap).
+    if (!isLarge && !wasOverlap) {
+      this.menuOpened = false;
+      this.temporaryMenuOpened = false;
+    } else if (isLarge && wasOverlap) {
+      this.menuOpened = true;
+      this.temporaryMenuOpened = false;
+    }
+  }
+
+  /** Toggle del ☰: en overlap el menú es temporal y debe cerrarse al navegar. */
+  toggleMenu(): void {
+    const willOpen = !this.menuOpened;
+    this.menuOpened = willOpen;
+
+    if (willOpen && this.menuMode === 'overlap') {
+      this.temporaryMenuOpened = true;
+    } else if (!willOpen) {
+      this.temporaryMenuOpened = false;
+    }
   }
 
   get hideMenuAfterNavigation() {

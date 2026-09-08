@@ -1,81 +1,18 @@
 /* stylelint-disable no-duplicate-selectors */
 @use "../../../../../variables.scss" as *;
 
-// :host {
-//   display: flex;
-//   flex-direction: column;
-//   min-height: 100%;
-//   height: 100%;
-
-//   .menu-container {
-//     background-color: var(--side-panel-background);
-//     min-height: 100%;
-//     width: 250px;
-//     display: flex;
-//     flex: 1;
-//     padding-top: var(--toolbar-vertical-padding);
-//     padding-bottom: var(--footer-height);
-
-//     ::ng-deep .dx-treeview {
-
-//       // ## Long text positioning
-//       white-space: nowrap;
-
-//       // ## Icon width customization
-//       .dx-treeview-item {
-//         padding-left: 0;
-//         flex-direction: row-reverse;
-//         border-radius: 0;
-
-//         .dx-icon.dx-icon {
-//           width: var(--side-panel-min-width);
-//           margin: 0;
-//         }
-//       }
-
-//       // ##
-
-//       // ## Arrow customization
-//       .dx-treeview-node.dx-treeview-node {
-//         padding: 0 0;
-//       }
-
-//       .dx-treeview-toggle-item-visibility {
-//         right: 10px;
-//         left: auto;
-//       }
-
-//       .dx-rtl .dx-treeview-toggle-item-visibility {
-//         left: 10px;
-//         right: auto;
-//       }
-
-//       // ##
-
-//       // ## Item levels customization
-//       .dx-treeview-node {
-//         &[aria-level="1"] {
-//           font-weight: bold;
-//           border-bottom: 1px solid var(--border-color);
-//         }
-
-//         &[aria-level="2"] .dx-treeview-item-content {
-//           font-weight: normal;
-//           padding: 0 0 0 var(--side-panel-min-width);
-//         }
-//       }
-
-//       // ##
-//     }
-
-//     // ##
-//   }
-// }
-
-// @import "../../../../dx-styles.scss";
-// @import "../../../../themes/generated/variables.additional.scss";
-
 :host {
+  --sguees-nav-item-h1: 40px;
+  --sguees-nav-item-h2: 36px;
+  --sguees-nav-item-h3: 32px;
+  --sguees-nav-indent: 12px;
+  --sguees-nav-accent: var(--accent-color, #479ef5);
+  --sguees-nav-text: var(--base-text-color, #f3f3f3);
+  --sguees-nav-text-muted: var(--base-text-color-alpha, rgba(243, 243, 243, 0.68));
+  --sguees-nav-hover: color-mix(in srgb, var(--sguees-nav-text) 6%, transparent);
+  --sguees-nav-active-bg: color-mix(in srgb, var(--sguees-nav-accent) 16%, transparent);
+  --sguees-nav-surface: color-mix(in srgb, var(--sguees-nav-text) 3%, transparent);
+
   display: flex;
   flex-direction: column;
   min-height: 100%;
@@ -88,123 +25,344 @@
     width: 100%;
     display: flex;
     flex: 1;
-    padding-top: var(--toolbar-vertical-padding);
-    padding-bottom: var(--footer-height);
-    padding-left: var(--sguees-space-3, 12px);
-    padding-right: var(--sguees-space-3, 12px);
+    flex-direction: column;
+    padding: 8px 8px var(--footer-height);
+    box-sizing: border-box;
 
     ::ng-deep .dx-treeview {
-      // ## Long text positioning
-      white-space: normal;
-      overflow: visible;
-      // ##
+      width: 100%;
+      color: var(--sguees-nav-text);
+      font-size: 13px;
+      line-height: 1.25;
 
-      // ## Icon width customization
+      // Sin guías/líneas verticales del tema TreeView
+      .dx-treeview-node::before,
+      .dx-treeview-node::after,
+      .dx-treeview-node-container::before,
+      .dx-treeview-node-container::after {
+        display: none !important;
+        border: none !important;
+        background: none !important;
+        content: none !important;
+        box-shadow: none !important;
+      }
+
+      // —— Buscador compacto ——
+      .dx-treeview-search {
+        margin: 0 0 10px;
+        padding: 0;
+
+        .dx-texteditor {
+          border-radius: 6px;
+          background: var(--sguees-nav-surface);
+          border: 1px solid color-mix(in srgb, var(--sguees-nav-text) 10%, transparent);
+          box-shadow: none;
+          min-height: 34px;
+        }
+
+        .dx-texteditor.dx-state-hover,
+        .dx-texteditor.dx-state-focused {
+          border-color: color-mix(in srgb, var(--sguees-nav-accent) 55%, transparent);
+          background: color-mix(in srgb, var(--sguees-nav-text) 4%, transparent);
+        }
+
+        .dx-texteditor-input {
+          min-height: 32px;
+          padding: 4px 8px 4px 32px;
+          font-size: 12.5px;
+          color: var(--sguees-nav-text);
+        }
+
+        .dx-placeholder::before {
+          font-size: 12.5px;
+          color: var(--sguees-nav-text-muted);
+        }
+
+        .dx-icon-search {
+          color: var(--sguees-nav-text-muted);
+          font-size: 15px;
+        }
+      }
+
+      // —— Nodos base ——
+      .dx-treeview-node.dx-treeview-node {
+        padding: 0;
+        border: none;
+        border-left: none;
+        border-right: none;
+        box-shadow: none;
+        background: transparent;
+      }
+
+      // DevExtreme anima max-height; el recorte evita que los hijos se solapen.
+      .dx-treeview-node-container {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        border: none;
+        border-left: none;
+        box-shadow: none;
+      }
+
+      .dx-treeview-node-container .dx-treeview-node {
+        border-left: none;
+      }
+
       .dx-treeview-item {
-        padding: var(--sguees-space-2, 8px) var(--sguees-space-2, 8px);
-        margin: 2px 0;
-        border-radius: var(--sguees-radius-sm, 4px);
-        /* Sin transition en ítems: reduce repaints al expandir TreeView */
+        position: relative;
+        display: flex;
+        align-items: center;
+        min-height: var(--sguees-nav-item-h3);
+        padding: 4px 28px 4px 8px;
+        margin: 1px 0;
+        border-radius: 6px;
+        border: none;
+        background: transparent;
+        color: var(--sguees-nav-text);
+        box-shadow: none;
       }
 
       .dx-treeview-item.dx-state-hover {
-        background-color: var(--background-gray-color);
+        background-color: var(--sguees-nav-hover);
       }
 
+      // Activo: barra izquierda + fondo sutil
       .dx-treeview-node.dx-state-selected > .dx-treeview-item,
       .dx-treeview-item.dx-state-focused {
-        background-color: color-mix(in srgb, var(--accent-color) 14%, transparent);
-        color: var(--accent-color);
-        font-weight: var(--sguees-font-weight-medium, 500);
+        background-color: var(--sguees-nav-active-bg);
+        color: var(--sguees-nav-accent);
+        font-weight: 600;
+        box-shadow: none;
+      }
+
+      // Activo: barra izquierda + fondo sutil (única excepción a ::before)
+      .dx-treeview-node.dx-state-selected > .dx-treeview-item::before {
+        content: '';
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 6px;
+        bottom: 6px;
+        width: 2px;
+        border-radius: 0 2px 2px 0;
+        background: var(--sguees-nav-accent);
       }
 
       .dx-item-content {
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
+        gap: 8px;
+        min-width: 0;
+        width: 100%;
 
         .dx-icon {
-          width: 24px;
-          min-width: 24px;
-          height: 24px;
-          margin-right: 8px !important;
-          margin-left: 0 !important;
+          width: 18px;
+          min-width: 18px;
+          height: 18px;
+          margin: 0 !important;
           display: inline-flex !important;
           align-items: center;
           justify-content: center;
+          font-size: 16px;
+          color: inherit;
+          opacity: 0.92;
           order: 0;
+          flex-shrink: 0;
         }
 
         .dx-treeview-item-content {
-          overflow: visible;
-          text-overflow: initial;
-          white-space: normal;
-          word-break: break-word;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          word-break: normal;
           line-height: 1.25;
-          padding-right: 8px;
+          padding: 0;
           flex: 1;
+          min-width: 0;
           order: 1;
         }
       }
-      // ##
 
-      // ## Arrow customization
-      .dx-treeview-node.dx-treeview-node {
-        padding: 0 0;
-      }
-
+      // Chevron solo a la derecha
       .dx-treeview-toggle-item-visibility {
-        right: 10px;
+        right: 6px;
         left: auto;
+        width: 20px;
+        height: 20px;
+        margin: 0;
+        opacity: 0.55;
+        color: var(--sguees-nav-text-muted);
+
+        &::before {
+          font-size: 12px;
+        }
+
+        &:hover {
+          opacity: 0.9;
+        }
       }
 
       .dx-rtl .dx-treeview-toggle-item-visibility {
-        left: 10px;
+        left: 6px;
         right: auto;
       }
-      // ##
 
-      // ## Item levels customization
-      .dx-treeview-node {
-        &[aria-level='1'] {
-          font-weight: bold;
-          border-bottom: 1px solid var(--border-color);
+      // —— Nivel 1: módulos ——
+      .dx-treeview-node[aria-level='1'] {
+        margin-top: 6px;
+
+        &:first-child {
+          margin-top: 0;
         }
 
-        &[aria-level='2'] .dx-treeview-item-content {
-          font-weight: normal;
-          padding: 0 6px;
-          //padding: 0 $side-panel-min-width;
+        > .dx-treeview-item {
+          min-height: var(--sguees-nav-item-h1);
+          padding-top: 6px;
+          padding-bottom: 6px;
+          margin-top: 2px;
+          margin-bottom: 2px;
+          font-size: 13px;
+          font-weight: 600;
+          letter-spacing: 0.01em;
+          color: var(--sguees-nav-text);
+        }
+
+        > .dx-treeview-item .dx-icon {
+          width: 18px;
+          min-width: 18px;
+          height: 18px;
+          font-size: 16px;
+          opacity: 1;
+        }
+
+        > .dx-treeview-item .dx-treeview-item-content {
+          font-size: 13px;
+          font-weight: 600;
+        }
+
+        // Separación entre módulos solo mediante espacio, sin líneas.
+        & + .dx-treeview-node[aria-level='1'] {
+          margin-top: 8px;
+          padding-top: 0;
+          border-top: none;
         }
       }
-      // ##
+
+      // —— Nivel 2: submódulos (indentación por padding, sin guía vertical) ——
+      .dx-treeview-node[aria-level='2'] {
+        > .dx-treeview-item {
+          min-height: var(--sguees-nav-item-h2);
+          padding-left: calc(8px + var(--sguees-nav-indent));
+          color: color-mix(in srgb, var(--sguees-nav-text) 92%, transparent);
+          font-weight: 500;
+        }
+
+        > .dx-treeview-item .dx-treeview-item-content {
+          font-size: 12.5px;
+          font-weight: 500;
+        }
+
+        > .dx-treeview-item .dx-icon {
+          width: 15px;
+          min-width: 15px;
+          height: 15px;
+          font-size: 14px;
+          opacity: 0.72;
+        }
+
+        > .dx-treeview-node-container {
+          margin-left: 0;
+          padding-left: 0;
+          border-left: none;
+        }
+      }
+
+      // —— Nivel 3+: opciones y grupos ——
+      .dx-treeview-node[aria-level='3'],
+      .dx-treeview-node[aria-level='4'],
+      .dx-treeview-node[aria-level='5'] {
+        border-left: none;
+
+        > .dx-treeview-item {
+          min-height: var(--sguees-nav-item-h3);
+          padding-top: 3px;
+          padding-bottom: 3px;
+          color: var(--sguees-nav-text-muted);
+          font-weight: 400;
+        }
+
+        > .dx-treeview-item .dx-treeview-item-content {
+          font-size: 12px;
+          font-weight: 400;
+        }
+
+        > .dx-treeview-item .dx-icon {
+          display: none !important;
+        }
+
+        > .dx-treeview-node-container {
+          margin-left: 0;
+          padding-left: 0;
+          border-left: none;
+        }
+      }
+
+      .dx-treeview-node[aria-level='3'] > .dx-treeview-item {
+        padding-left: calc(8px + (var(--sguees-nav-indent) * 2));
+      }
+
+      .dx-treeview-node[aria-level='4'] > .dx-treeview-item {
+        padding-left: calc(8px + (var(--sguees-nav-indent) * 3));
+      }
+
+      .dx-treeview-node[aria-level='5'] > .dx-treeview-item {
+        padding-left: calc(8px + (var(--sguees-nav-indent) * 4));
+      }
+
+      // Grupos (padres): p.ej. LIBROS CONTABLES / ESTADOS FINANCIEROS
+      .dx-treeview-node[aria-level='3']:has(> .dx-treeview-toggle-item-visibility) > .dx-treeview-item,
+      .dx-treeview-node[aria-level='4']:has(> .dx-treeview-toggle-item-visibility) > .dx-treeview-item {
+        min-height: 28px;
+        margin-top: 6px;
+        margin-bottom: 1px;
+        padding-top: 4px;
+        padding-bottom: 2px;
+        background: transparent;
+        color: var(--sguees-nav-text-muted);
+      }
+
+      .dx-treeview-node[aria-level='3']:has(> .dx-treeview-toggle-item-visibility) > .dx-treeview-item .dx-treeview-item-content,
+      .dx-treeview-node[aria-level='4']:has(> .dx-treeview-toggle-item-visibility) > .dx-treeview-item .dx-treeview-item-content {
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: color-mix(in srgb, var(--sguees-nav-text) 55%, transparent);
+      }
+
+      .dx-treeview-node[aria-level='3']:has(> .dx-treeview-toggle-item-visibility) > .dx-treeview-item.dx-state-hover,
+      .dx-treeview-node[aria-level='4']:has(> .dx-treeview-toggle-item-visibility) > .dx-treeview-item.dx-state-hover {
+        background: transparent;
+      }
+
+      .dx-treeview-node[aria-level='4']:not(:has(> .dx-treeview-toggle-item-visibility)) > .dx-treeview-item,
+      .dx-treeview-node[aria-level='5']:not(:has(> .dx-treeview-toggle-item-visibility)) > .dx-treeview-item {
+        color: color-mix(in srgb, var(--sguees-nav-text) 82%, transparent);
+      }
+
+      .dx-treeview-node[aria-level='3']:not(:has(> .dx-treeview-toggle-item-visibility)).dx-state-selected > .dx-treeview-item,
+      .dx-treeview-node[aria-level='4']:not(:has(> .dx-treeview-toggle-item-visibility)).dx-state-selected > .dx-treeview-item,
+      .dx-treeview-node[aria-level='5']:not(:has(> .dx-treeview-toggle-item-visibility)).dx-state-selected > .dx-treeview-item {
+        color: var(--sguees-nav-accent);
+      }
     }
+  }
 
-    // ## Selected & Focuced items customization
-    // ::ng-deep .dx-treeview {
-    //   .dx-treeview-node-container {
-    //     .dx-treeview-node {
-    //       // &.dx-state-selected:not(.dx-state-focused)> .dx-treeview-item {
-    //       //   background: transparent;
-    //       // }
-
-    //       // &.dx-state-selected > .dx-treeview-item * {
-    //       //   color: $base-accent;
-    //       // }
-
-    //       // &:not(.dx-state-focused)>.dx-treeview-item.dx-state-hover {
-    //       //   background-color: lighten($base-bg, 4.00);
-    //       // }
-    //     }
-    //   }
-    // }
-
-    // :host-context(.dx-theme-generic) ::ng-deep.dx-treeview {
-    //   .dx-treeview-node-container .dx-treeview-node.dx-state-selected.dx-state-focused > .dx-treeview-item * {
-    //     color: inherit;
-    //   }
-    // }
-    // ##
+  ::ng-deep app-footer {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    font-size: 10.5px;
+    line-height: 1.35;
   }
 }
-

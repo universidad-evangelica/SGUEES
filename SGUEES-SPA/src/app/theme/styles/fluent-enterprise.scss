@@ -13,14 +13,18 @@
 
   .dx-drawer-panel-content {
     box-shadow: var(--sguees-shadow-drawer);
-    /* Solo transform: animar width dispara reflow continuo con shrink + DataGrid calc */
+    /* Solo transform en shrink: en overlap/slide pelea con DX y deja el panel desplazado. */
     transition: transform var(--sguees-transition-base);
+  }
+
+  .dx-drawer-overlap > .dx-drawer-wrapper > .dx-drawer-panel.dx-drawer-panel-content,
+  .dx-drawer-overlap .dx-drawer-panel-content {
+    transition: none;
   }
 
   .layout-body .menu-container.theme-dependent {
     background-color: var(--side-panel-background);
-    padding-top: var(--sguees-space-3);
-    border-right: 1px solid var(--border-color);
+    border-right: 1px solid color-mix(in srgb, var(--base-text-color, #fff) 8%, transparent);
   }
 
   side-navigation-menu .dx-treeview-toggle-item-visibility {
