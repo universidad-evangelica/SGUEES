@@ -13,8 +13,13 @@
 
   .dx-drawer-panel-content {
     box-shadow: var(--sguees-shadow-drawer);
-    /* Solo transform: animar width dispara reflow continuo con shrink + DataGrid calc */
+    /* Solo transform en shrink: en overlap/slide pelea con DX y deja el panel desplazado. */
     transition: transform var(--sguees-transition-base);
+  }
+
+  .dx-drawer-overlap > .dx-drawer-wrapper > .dx-drawer-panel.dx-drawer-panel-content,
+  .dx-drawer-overlap .dx-drawer-panel-content {
+    transition: none;
   }
 
   .layout-body .menu-container.theme-dependent {
