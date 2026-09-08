@@ -6,10 +6,12 @@
     keyExpr="menuKey"
     selectionMode="single"
     [focusStateEnabled]="false"
+    [animationEnabled]="true"
     expandEvent="click"
     (onItemClick)="onItemClick($event)"
     [searchEnabled]="true"
     searchMode="contains"
+    [searchEditorOptions]="searchEditorOptions"
     width="100%"
   >
   </dx-tree-view>

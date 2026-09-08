@@ -25,6 +25,12 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
   @ViewChild(DxTreeViewComponent, { static: true })
   menu!: DxTreeViewComponent;
 
+  /** Solo UI del buscador del TreeView; no altera navegación ni permisos. */
+  readonly searchEditorOptions = {
+    placeholder: 'Buscar...',
+    stylingMode: 'filled' as const,
+  };
+
   @Output()
   selectedItemChanged = new EventEmitter<DxTreeViewTypes.ItemClickEvent>();
 
@@ -116,7 +122,7 @@ export class SideNavigationMenuComponent implements AfterViewInit, OnDestroy {
           ...item,
           path,
           menuKey,
-          expanded: !this._compactMode,
+          expanded: false,
         };
 
         if (Array.isArray(item.items) && item.items.length > 0) {
