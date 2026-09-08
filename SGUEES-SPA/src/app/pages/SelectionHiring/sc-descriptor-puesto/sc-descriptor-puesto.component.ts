@@ -6725,10 +6725,24 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.model = descriptor;
 						this.modelUpdate = this.fillData(descriptor);
 						this.aplicarRegistroEnGrid(descriptor, false);
-						this.aplicarModoSegunEstadoFlujo();
-						this.firmasDocumento?.refresh();
-						this.notifyFx(mensajeExitoFlujo, NotifyType.Success);
 						this.cancelarPopupFlujo();
+						this.notifyFx(mensajeExitoFlujo, NotifyType.Success);
+						// Qué hace: tras Solicitar / Aprobar / Observar / Reactivar vuelve al listado; tras Inactivar se queda en detalle.
+						// Cómo: Browse evita reintentar la acción; Inactivar deja el form para mostrar Reactivar sin salir.
+						if (
+							operacion === OPERACION_FLUJO.ENVIAR ||
+							operacion === OPERACION_FLUJO.APROBAR ||
+							operacion === OPERACION_FLUJO.OBSERVAR ||
+							operacion === OPERACION_FLUJO.REACTIVAR
+						) {
+							this.AsignaStatus(UpdateType.Browse);
+						} else {
+							// Qué hace: Inactivar deja el detalle y cambia Inactivar → Reactivar.
+							// Cómo: bloquea edición y vuelve a consultar GetAccionesFlujo con el estado Inactivo.
+							this.aplicarModoSegunEstadoFlujo();
+							this.firmasDocumento?.refresh();
+							this.refrescarBotonesFlujo();
+						}
 					} else {
 						// Qué hace: avisos de negocio del flujo con API 200 + Result=false.
 						this.notifyFx(
