@@ -162,7 +162,7 @@ export class AcaBecOrigenBecaService {
 				label: { text: 'Descripcion' },
 				editorType: 'dxTextArea',
 				colSpan: 8,
-				editorOptions: { placeholder: 'Descripcion...', maxLength: 300, minHeight: 90 },
+				editorOptions: { placeholder: 'Descripcion...', maxLength: 300, minHeight: 300 },
 			},
 			{ dataField: 'ACTIVO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
