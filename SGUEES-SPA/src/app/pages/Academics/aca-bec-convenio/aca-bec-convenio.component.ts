@@ -1,47 +1,46 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { forkJoin, Observable, of, throwError } from 'rxjs';
-import { catchError, finalize } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
-import { AcaBecConvenioLookup, AcaBecOrigenBecaLookup, AcaBecTipo } from './models/aca-bec-tipo';
-import { AcaBecTipoService } from './aca-bec-tipo.service';
+import { AcaBecEntidadFinanciadoraLookup, AcaBecConvenio } from './models/aca-bec-convenio';
+import { AcaBecConvenioService } from './aca-bec-convenio.service';
 
 const ESTADO_FIELD = 'ACTIVO';
 
 @Component({
-	selector: 'app-aca-bec-tipo',
-	templateUrl: './aca-bec-tipo.component.html',
-	styleUrls: ['./aca-bec-tipo.component.scss'],
+	selector: 'app-aca-bec-convenio',
+	templateUrl: './aca-bec-convenio.component.html',
+	styleUrls: ['./aca-bec-convenio.component.scss'],
 })
-export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
+export class AcaBecConvenioComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 
-	protected override etiquetaRegistro = 'el tipo de beca';
+	protected override etiquetaRegistro = 'el convenio';
 	protected override requiereEmpresaSesion = true;
 	protected override mttoPageSize = 10;
 	protected override mttoPageSizes = [10, 25, 50, 100];
-	protected override mttoGridKeyExpr = 'CORR_BECA';
+	protected override mttoGridKeyExpr = 'CORR_CONVENIO';
 	protected override mttoCampoEstado = ESTADO_FIELD;
-	protected override mttoEstadoDescribeField = 'NOMBRE_BECA';
+	protected override mttoEstadoDescribeField = 'NOMBRE_CONVENIO';
 	protected override mttoParchearGridTrasGuardar = true;
 	protected override mttoRemoteOperations = false;
 
-	private readonly maintenanceSubtitulo = 'Mantenimiento de Tipos de Beca';
-	private origenes: AcaBecOrigenBecaLookup[] = [];
-	private convenios: AcaBecConvenioLookup[] = [];
+	private readonly maintenanceSubtitulo = 'Mantenimiento de Convenios';
+	private entidades: AcaBecEntidadFinanciadoraLookup[] = [];
 
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: AcaBecTipoService
+		private service: AcaBecConvenioService
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
-		this.items = this.service.getItems();
 		this.summary = this.service.getSummary();
+		this.items = this.service.getItems(this.entidades);
 	}
 
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
@@ -50,8 +49,7 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.cargarCatalogos();
-		this.consultar();
+		this.cargarInicial();
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -61,42 +59,26 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
-	fillParam(xCORR_BECA?: number): any {
-		return { CORR_BECA: xCORR_BECA ?? 0 };
+	fillParam(xCorrConvenio?: number): any {
+		return { CORR_CONVENIO: xCorrConvenio ?? 0 };
 	}
 
-	override fillData(xModel?: AcaBecTipo): AcaBecTipo {
+	override fillData(xModel?: AcaBecConvenio): AcaBecConvenio {
 		if (xModel !== undefined) {
 			return {
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
-				CORR_BECA: xModel.CORR_BECA,
-				CODIGO_BECA: xModel.CODIGO_BECA,
-				NOMBRE_BECA: xModel.NOMBRE_BECA,
-				CORR_ORIGEN_BECA: xModel.CORR_ORIGEN_BECA,
-				CODIGO_ORIGEN: xModel.CODIGO_ORIGEN,
-				NOMBRE_ORIGEN: xModel.NOMBRE_ORIGEN,
-				CORR_CONVENIO: xModel.CORR_CONVENIO ?? null,
+				CORR_CONVENIO: xModel.CORR_CONVENIO,
 				CODIGO_CONVENIO: xModel.CODIGO_CONVENIO,
 				NOMBRE_CONVENIO: xModel.NOMBRE_CONVENIO,
-				ARTICULO_REGLAMENTO: xModel.ARTICULO_REGLAMENTO ?? null,
-				PORCENTAJE_COBERTURA_REFERENCIAL: xModel.PORCENTAJE_COBERTURA_REFERENCIAL ?? null,
-				CUM_MINIMO_RENOVACION: xModel.CUM_MINIMO_RENOVACION ?? null,
-				APLICA_NUEVO_INGRESO: !!xModel.APLICA_NUEVO_INGRESO,
-				APLICA_ANTIGUO_INGRESO: !!xModel.APLICA_ANTIGUO_INGRESO,
-				APLICA_EMPLEADO: !!xModel.APLICA_EMPLEADO,
-				APLICA_HIJO_EMPLEADO: !!xModel.APLICA_HIJO_EMPLEADO,
-				NIVEL_ACADEMICO_APLICA: xModel.NIVEL_ACADEMICO_APLICA ?? 'TODOS',
-				REQUIERE_CONVENIO: !!xModel.REQUIERE_CONVENIO,
-				REQUIERE_ESTUDIO_SOCIOECONOMICO: !!xModel.REQUIERE_ESTUDIO_SOCIOECONOMICO,
-				REQUIERE_APROBACION_COMITE: !!xModel.REQUIERE_APROBACION_COMITE,
-				REQUIERE_APROBACION_DIRECTORIO: !!xModel.REQUIERE_APROBACION_DIRECTORIO,
-				UNIDAD_RESPONSABLE: xModel.UNIDAD_RESPONSABLE ?? null,
+				CORR_ENTIDAD_FINANCIADORA: xModel.CORR_ENTIDAD_FINANCIADORA,
+				CODIGO_ENTIDAD: xModel.CODIGO_ENTIDAD,
+				NOMBRE_ENTIDAD: xModel.NOMBRE_ENTIDAD,
+				TIPO_ENTIDAD: xModel.TIPO_ENTIDAD,
+				FECHA_INICIO: xModel.FECHA_INICIO,
+				FECHA_FIN: xModel.FECHA_FIN ?? null,
 				DESCRIPCION: xModel.DESCRIPCION ?? null,
-				ESTADO_BECA: xModel.ESTADO_BECA ?? 'ACTIVA',
-				ACTIVO: xModel.ACTIVO ?? xModel.ESTADO_BECA === 'ACTIVA',
-				CANT_REQUISITOS: xModel.CANT_REQUISITOS ?? 0,
-				CANT_DOCUMENTOS: xModel.CANT_DOCUMENTOS ?? 0,
-				CANT_FINANCIADORES: xModel.CANT_FINANCIADORES ?? 0,
+				ESTADO_CONVENIO: xModel.ESTADO_CONVENIO ?? 'VIGENTE',
+				ACTIVO: this.service.esConvenioVigente(xModel),
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
 				FECHA_CREA: xModel.FECHA_CREA,
@@ -108,30 +90,18 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 
 		return {
 			CORR_EMPRESA: 1,
-			CORR_BECA: 0,
-			CODIGO_BECA: '',
-			NOMBRE_BECA: '',
-			CORR_ORIGEN_BECA: 0,
-			CORR_CONVENIO: null,
-			ARTICULO_REGLAMENTO: null,
-			PORCENTAJE_COBERTURA_REFERENCIAL: null,
-			CUM_MINIMO_RENOVACION: null,
-			APLICA_NUEVO_INGRESO: true,
-			APLICA_ANTIGUO_INGRESO: true,
-			APLICA_EMPLEADO: false,
-			APLICA_HIJO_EMPLEADO: false,
-			NIVEL_ACADEMICO_APLICA: 'TODOS',
-			REQUIERE_CONVENIO: false,
-			REQUIERE_ESTUDIO_SOCIOECONOMICO: false,
-			REQUIERE_APROBACION_COMITE: true,
-			REQUIERE_APROBACION_DIRECTORIO: true,
-			UNIDAD_RESPONSABLE: null,
+			CORR_CONVENIO: 0,
+			CODIGO_CONVENIO: '',
+			NOMBRE_CONVENIO: '',
+			CORR_ENTIDAD_FINANCIADORA: 0,
+			CODIGO_ENTIDAD: '',
+			NOMBRE_ENTIDAD: '',
+			TIPO_ENTIDAD: '',
+			FECHA_INICIO: new Date(),
+			FECHA_FIN: null,
 			DESCRIPCION: null,
-			ESTADO_BECA: 'ACTIVA',
+			ESTADO_CONVENIO: 'VIGENTE',
 			ACTIVO: true,
-			CANT_REQUISITOS: 0,
-			CANT_DOCUMENTOS: 0,
-			CANT_FINANCIADORES: 0,
 			USUARIO_CREA: '',
 			ESTACION_CREA: '',
 			FECHA_CREA: new Date(),
@@ -139,6 +109,19 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 			ESTACION_ACTU: '',
 			FECHA_ACTU: new Date(),
 		};
+	}
+
+	private cargarInicial(): void {
+		forkJoin({
+			entidades: this.service.getEntidadesFinanciadoras().pipe(catchError(() => of({ Data: [] } as any))),
+			convenios: this.service.getAll(this.fillParam()).pipe(catchError(() => of({ Data: [] } as any))),
+		}).subscribe(({ entidades, convenios }: any) => {
+			this.entidades = Array.isArray(entidades?.Data) ? entidades.Data : [];
+			this.items = this.service.getItems(this.entidades);
+			this.models = Array.isArray(convenios?.Data) ? convenios.Data : [];
+			this.ordenarModelsPorCorr();
+			this.refrescarGridTrasCarga(true);
+		});
 	}
 
 	consultar(resetPage = false): void {
@@ -151,30 +134,12 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	private cargarCatalogos(): void {
-		this.loadingVisible = true;
-		forkJoin({
-			origenes: this.service.getOrigenes().pipe(catchError(() => of({ Data: [] } as any))),
-			convenios: this.service.getConvenios().pipe(catchError(() => of({ Data: [] } as any))),
-		})
-			.pipe(finalize(() => (this.loadingVisible = false)))
-			.subscribe((result: any) => {
-				this.origenes = result?.origenes?.Data ?? [];
-				this.convenios = result?.convenios?.Data ?? [];
-				this.items = this.service.getItems({
-					origenes: this.origenes,
-					convenios: this.convenios,
-					onRequiereConvenioChanged: this.onRequiereConvenioChanged.bind(this),
-				});
-			});
-	}
-
 	private ordenarModelsPorCorr(): void {
 		if (!Array.isArray(this.models)) {
 			return;
 		}
 
-		this.models = [...this.models].sort((a, b) => Number(a.CORR_BECA) - Number(b.CORR_BECA));
+		this.models = [...this.models].sort((a, b) => Number(a.CORR_CONVENIO) - Number(b.CORR_CONVENIO));
 	}
 
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
@@ -183,8 +148,8 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 
-		const record = this.fillData(data as AcaBecTipo);
-		const key = this.mttoGridKeyExpr as keyof AcaBecTipo;
+		const record = this.fillData(data as AcaBecConvenio);
+		const key = this.mttoGridKeyExpr as keyof AcaBecConvenio;
 
 		if (isAdd) {
 			this.models = [...this.models, record];
@@ -205,7 +170,7 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 
-		const key = this.mttoGridKeyExpr as keyof AcaBecTipo;
+		const key = this.mttoGridKeyExpr as keyof AcaBecConvenio;
 		this.models = this.models.filter((item) => item?.[key] !== keyValue);
 		this.refrescarGridTrasCarga(true);
 	}
@@ -249,7 +214,6 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 		super.nuevo();
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
-			this.actualizarEstadoConvenio();
 		});
 	}
 
@@ -307,12 +271,12 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 	}
 
 	override cancelar(): void {
-		super.cancelar((item: any) => item.CORR_BECA === this.modelUpdate.CORR_BECA);
+		super.cancelar((item: any) => item.CORR_CONVENIO === this.modelUpdate.CORR_CONVENIO);
 	}
 
 	rowRemoving(e: any): void {
 		this.rowRemovingMtto(e, {
-			deleteFn: () => this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_BECA))),
+			deleteFn: () => this.convertirErrorMttoEnWarning(this.service.delete(this.fillParam(e.data.CORR_CONVENIO))),
 		});
 	}
 
@@ -322,78 +286,35 @@ export class AcaBecTipoComponent extends CBaseComponent implements OnInit {
 
 	override bloquear(): void {
 		[
-			'CORR_BECA',
-			'CODIGO_BECA',
-			'NOMBRE_BECA',
-			'CORR_ORIGEN_BECA',
-			'ESTADO_BECA',
-			'PORCENTAJE_COBERTURA_REFERENCIAL',
-			'CUM_MINIMO_RENOVACION',
-			'APLICA_NUEVO_INGRESO',
-			'APLICA_ANTIGUO_INGRESO',
-			'APLICA_EMPLEADO',
-			'APLICA_HIJO_EMPLEADO',
-			'NIVEL_ACADEMICO_APLICA',
-			'REQUIERE_CONVENIO',
 			'CORR_CONVENIO',
-			'REQUIERE_ESTUDIO_SOCIOECONOMICO',
-			'REQUIERE_APROBACION_COMITE',
-			'REQUIERE_APROBACION_DIRECTORIO',
-			'ARTICULO_REGLAMENTO',
-			'UNIDAD_RESPONSABLE',
+			'CODIGO_CONVENIO',
+			'NOMBRE_CONVENIO',
+			'CORR_ENTIDAD_FINANCIADORA',
+			'FECHA_INICIO',
+			'FECHA_FIN',
 			'DESCRIPCION',
+			'ESTADO_CONVENIO',
 		].forEach((field) => this.dataForm.instance.getEditor(field)?.option('readOnly', true));
 	}
 
 	override habilitar(): void {
 		setTimeout(() => {
-			this.dataForm.instance.getEditor('CORR_BECA')?.option('readOnly', true);
+			this.dataForm.instance.getEditor('CORR_CONVENIO')?.option('readOnly', true);
 			[
-				'CODIGO_BECA',
-				'NOMBRE_BECA',
-				'CORR_ORIGEN_BECA',
-				'ESTADO_BECA',
-				'PORCENTAJE_COBERTURA_REFERENCIAL',
-				'CUM_MINIMO_RENOVACION',
-				'APLICA_NUEVO_INGRESO',
-				'APLICA_ANTIGUO_INGRESO',
-				'APLICA_EMPLEADO',
-				'APLICA_HIJO_EMPLEADO',
-				'NIVEL_ACADEMICO_APLICA',
-				'REQUIERE_CONVENIO',
-				'REQUIERE_ESTUDIO_SOCIOECONOMICO',
-				'REQUIERE_APROBACION_COMITE',
-				'REQUIERE_APROBACION_DIRECTORIO',
-				'ARTICULO_REGLAMENTO',
-				'UNIDAD_RESPONSABLE',
+				'CODIGO_CONVENIO',
+				'NOMBRE_CONVENIO',
+				'CORR_ENTIDAD_FINANCIADORA',
+				'FECHA_INICIO',
+				'FECHA_FIN',
 				'DESCRIPCION',
+				'ESTADO_CONVENIO',
 			].forEach((field) => this.dataForm.instance.getEditor(field)?.option('readOnly', false));
-			this.actualizarEstadoConvenio();
 		});
 	}
 
 	override setFocus(): void {
 		setTimeout(() => {
-			this.dataForm.instance.getEditor('CODIGO_BECA')?.focus();
+			this.dataForm.instance.getEditor('CODIGO_CONVENIO')?.focus();
 		});
-	}
-
-	private onRequiereConvenioChanged(requiereConvenio: boolean): void {
-		const formData = {
-			...(this.dataForm?.instance?.option('formData') ?? {}),
-			REQUIERE_CONVENIO: requiereConvenio,
-			CORR_CONVENIO: requiereConvenio ? this.dataForm?.instance?.option('formData')?.CORR_CONVENIO ?? null : null,
-		};
-
-		this.model = { ...this.model, ...formData };
-		this.dataForm?.instance?.option('formData', formData);
-		this.actualizarEstadoConvenio();
-	}
-
-	private actualizarEstadoConvenio(): void {
-		const requiereConvenio = !!(this.dataForm?.instance?.option('formData')?.REQUIERE_CONVENIO ?? this.model?.REQUIERE_CONVENIO);
-		const convenioEditor = this.dataForm?.instance?.getEditor('CORR_CONVENIO');
-		convenioEditor?.option('readOnly', !requiereConvenio || this.banderaMtto === UpdateType.Browse);
-		convenioEditor?.option('disabled', !requiereConvenio);
 	}
 }

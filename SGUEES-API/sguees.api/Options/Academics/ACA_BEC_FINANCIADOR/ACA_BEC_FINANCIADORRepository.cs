@@ -9,13 +9,15 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-    public class ACA_BEC_TIPORepository : BaseRepository<ACA_BEC_TIPOTable>, IACA_BEC_TIPORepository
+    public class ACA_BEC_FINANCIADORRepository : BaseRepository<ACA_BEC_FINANCIADORTable>, IACA_BEC_FINANCIADORRepository
     {
-        private const string _TableName = "ACA_BEC_TIPO";
-        private const string _ViewName = "V_ACA_BEC_TIPO";
-        private const string _CampoPk = "CORR_BECA";
+        private const string _TableName = "ACA_BEC_FINANCIADOR";
+        private const string _ViewName = "V_ACA_BEC_FINANCIADOR";
+        private const string _CampoPk = "CORR_BECA_FINANCIADOR";
+        private const string _CampoEstado = "ACTIVO";
+        private const bool _UsaEmpresa = true;
 
-        public ACA_BEC_TIPORepository(IConfiguration config) :
+        public ACA_BEC_FINANCIADORRepository(IConfiguration config) :
             base(config.GetConnectionString("defaultConnection"),
                 config.GetSection("DbProvider:defaultProvider").Value)
         {
@@ -29,17 +31,17 @@ namespace SGUEES.Repositories
             {
                 var dbWhere = xWhere
                     .Where(x => x.ParameterName == "CORR_EMPRESA" ||
+                        x.ParameterName == "CORR_BECA_FINANCIADOR" ||
                         x.ParameterName == "CORR_BECA" ||
-                        x.ParameterName == "CODIGO_BECA" ||
-                        x.ParameterName == "NOMBRE_BECA" ||
-                        x.ParameterName == "CORR_ORIGEN_BECA" ||
-                        x.ParameterName == "CORR_CONVENIO" ||
-                        x.ParameterName == "ESTADO_BECA")
+                        x.ParameterName == "CORR_ENTIDAD_FINANCIADORA" ||
+                        x.ParameterName == "CONCEPTO_COBERTURA" ||
+                        x.ParameterName == "ACTIVO")
                     .ToList();
 
                 var reader = await objData.GetDataReader(_ViewName, dbWhere);
-                var response = new List<ACA_BEC_TIPOView>().FromDataReader(reader)
+                var response = new List<ACA_BEC_FINANCIADORView>().FromDataReader(reader)
                     .OrderBy(x => x.CORR_BECA)
+                    .ThenBy(x => x.CORR_BECA_FINANCIADOR)
                     .ToList();
 
                 reader.Close();
@@ -70,13 +72,13 @@ namespace SGUEES.Repositories
             try
             {
                 var reader = await objData.GetDataReader(_ViewName, xWhere);
-                var response = new List<ACA_BEC_TIPOView>().FromDataReader(reader).FirstOrDefault();
+                var response = new List<ACA_BEC_FINANCIADORView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
                 result.Data = response;
                 result.Result = true;
                 result.RowsAffected = response == null ? 0 : 1;
-                result.CodeHelper = response?.CORR_BECA ?? 0;
+                result.CodeHelper = response?.CORR_BECA_FINANCIADOR ?? 0;
                 result.ErrorCode = 0;
                 result.ErrorMessage = string.Empty;
                 result.ErrorSource = string.Empty;
@@ -93,20 +95,20 @@ namespace SGUEES.Repositories
             return result;
         }
 
-        public async Task<CResult> CreateAsync(ACA_BEC_TIPOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        public async Task<CResult> CreateAsync(ACA_BEC_FINANCIADORTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult result = new();
 
             try
             {
                 var reader = await objData.Insert(_TableName, BuildInsertParameters(Data), _CampoPk, BuildCompanyWhere(Data));
-                var response = new List<ACA_BEC_TIPOView>().FromDataReader(reader).FirstOrDefault();
+                var response = new List<ACA_BEC_FINANCIADORView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
                 result.Data = response;
                 result.Result = true;
                 result.RowsAffected = 1;
-                result.CodeHelper = response?.CORR_BECA ?? 0;
+                result.CodeHelper = response?.CORR_BECA_FINANCIADOR ?? 0;
                 result.ErrorCode = 0;
                 result.ErrorMessage = string.Empty;
                 result.ErrorSource = string.Empty;
@@ -123,20 +125,20 @@ namespace SGUEES.Repositories
             return result;
         }
 
-        public async Task<CResult> UpdateAsync(ACA_BEC_TIPOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        public async Task<CResult> UpdateAsync(ACA_BEC_FINANCIADORTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult result = new();
 
             try
             {
                 var reader = await objData.Update(_TableName, BuildUpdateParameters(Data), BuildPrimaryWhere(Data));
-                var response = new List<ACA_BEC_TIPOView>().FromDataReader(reader).FirstOrDefault();
+                var response = new List<ACA_BEC_FINANCIADORView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
                 result.Data = response;
                 result.Result = true;
                 result.RowsAffected = response == null ? 0 : 1;
-                result.CodeHelper = response?.CORR_BECA ?? Data.CORR_BECA;
+                result.CodeHelper = response?.CORR_BECA_FINANCIADOR ?? Data.CORR_BECA_FINANCIADOR;
                 result.ErrorCode = 0;
                 result.ErrorMessage = string.Empty;
                 result.ErrorSource = string.Empty;
@@ -153,7 +155,7 @@ namespace SGUEES.Repositories
             return result;
         }
 
-        public async Task<CResult> DeleteAsync(ACA_BEC_TIPOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        public async Task<CResult> DeleteAsync(ACA_BEC_FINANCIADORTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult result = new();
 
@@ -162,7 +164,7 @@ namespace SGUEES.Repositories
                 result.RowsAffected = (int)await objData.Delete(_TableName, BuildPrimaryWhere(Data));
                 result.Data = null;
                 result.Result = true;
-                result.CodeHelper = Data.CORR_BECA;
+                result.CodeHelper = Data.CORR_BECA_FINANCIADOR;
                 result.ErrorCode = 0;
                 result.ErrorMessage = string.Empty;
                 result.ErrorSource = string.Empty;
@@ -171,9 +173,9 @@ namespace SGUEES.Repositories
             {
                 result.Data = null;
                 result.Result = false;
-                result.CodeHelper = Data.CORR_BECA;
+                result.CodeHelper = Data.CORR_BECA_FINANCIADOR;
                 result.ErrorCode = -1;
-                result.ErrorMessage = "No se puede eliminar el tipo de beca porque tiene registros asociados.";
+                result.ErrorMessage = "No se puede eliminar el financiador porque tiene registros asociados.";
                 result.ErrorSource += $"[{e.Source}]";
             }
             finally
@@ -184,7 +186,7 @@ namespace SGUEES.Repositories
             return result;
         }
 
-        public async Task<CResult> ActivarInactivarAsync(ACA_BEC_TIPOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        public async Task<CResult> ActivarInactivarAsync(ACA_BEC_FINANCIADORTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult result = new();
 
@@ -192,45 +194,48 @@ namespace SGUEES.Repositories
             {
                 var p = new List<CParameter>
                 {
+                    new CParameter() { ParameterName = "NOMBRE_TABLA", Value = _TableName, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CAMPO_PK", Value = _CampoPk, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CAMPO_ESTADO", Value = _CampoEstado, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "USA_EMPRESA", Value = _UsaEmpresa, DbType = System.Data.DbType.Boolean },
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_BECA", Value = Data.CORR_BECA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "USUARIO_ACTU", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "ESTACION_ACTU", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "CORR_RELATIVO", Value = Data.CORR_BECA_FINANCIADOR, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+                    new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+                    new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
                 };
 
-                var sql = @"
-                    BEGIN
-                        SET NOCOUNT ON;
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_CATALOGO_ESTADO_BIT", true, p);
 
-                        UPDATE ACA_BEC_TIPO
-                        SET ESTADO_BECA = CASE WHEN ESTADO_BECA = 'ACTIVA' THEN 'INACTIVA' ELSE 'ACTIVA' END,
-                            USUARIO_ACTU = @USUARIO_ACTU,
-                            ESTACION_ACTU = @ESTACION_ACTU,
-                            FECHA_ACTU = GETDATE()
-                        WHERE CORR_EMPRESA = @CORR_EMPRESA
-                            AND CORR_BECA = @CORR_BECA;
+                if ((int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value != 0)
+                {
+                    result.Data = null;
+                    result.Result = false;
+                    result.RowsAffected = 0;
+                    result.CodeHelper = Data.CORR_BECA_FINANCIADOR;
+                    result.ErrorCode = (int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
+                    result.ErrorMessage = (string)objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value;
+                    result.ErrorSource = "C" + _TableName + ".Mtto(" + UpdateType.Update.ToString() + ")";
+                    return result;
+                }
 
-                        SELECT *
-                        FROM V_ACA_BEC_TIPO
-                        WHERE CORR_EMPRESA = @CORR_EMPRESA
-                            AND CORR_BECA = @CORR_BECA;
-                    END";
-
-                var reader = await objData.GetDataReader(System.Data.CommandType.Text, sql, p);
-                var response = new List<ACA_BEC_TIPOView>().FromDataReader(reader).FirstOrDefault();
+                var reader = await objData.GetDataReader(_ViewName, BuildPrimaryWhere(Data));
+                var response = new List<ACA_BEC_FINANCIADORView>().FromDataReader(reader).FirstOrDefault();
 
                 reader.Close();
                 result.Data = response;
-                result.Result = response != null;
-                result.RowsAffected = response == null ? 0 : 1;
-                result.CodeHelper = response?.CORR_BECA ?? Data.CORR_BECA;
-                result.ErrorCode = response == null ? -1 : 0;
-                result.ErrorMessage = response == null ? "No se pudo cambiar el estado del tipo de beca." : string.Empty;
+                result.Result = true;
+                result.RowsAffected = 1;
+                result.CodeHelper = response?.CORR_BECA_FINANCIADOR ?? Data.CORR_BECA_FINANCIADOR;
+                result.ErrorCode = 0;
+                result.ErrorMessage = string.Empty;
                 result.ErrorSource = string.Empty;
             }
             catch (Exception e)
             {
-                SetError(result, e, Data.CORR_BECA);
+                SetError(result, e, Data.CORR_BECA_FINANCIADOR);
             }
             finally
             {
@@ -240,7 +245,45 @@ namespace SGUEES.Repositories
             return result;
         }
 
-        public async Task<CResult> GetOrigenesAsync(int corrEmpresa)
+        public async Task<CResult> GetTiposBecaAsync(int corrEmpresa)
+        {
+            CResult result = new();
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "ESTADO_BECA", Value = "ACTIVA", DbType = System.Data.DbType.String },
+                };
+
+                var reader = await objData.GetDataReader("V_ACA_BEC_TIPO", p);
+                var response = new List<ACA_BEC_FINANCIADOR_TIPOLookup>().FromDataReader(reader)
+                    .OrderBy(x => x.NOMBRE_BECA)
+                    .ToList();
+
+                reader.Close();
+                result.Data = response;
+                result.Result = true;
+                result.RowsAffected = response.Count;
+                result.CodeHelper = 0;
+                result.ErrorCode = 0;
+                result.ErrorMessage = string.Empty;
+                result.ErrorSource = string.Empty;
+            }
+            catch (Exception e)
+            {
+                SetError(result, e);
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return result;
+        }
+
+        public async Task<CResult> GetEntidadesFinanciadorasAsync(int corrEmpresa)
         {
             CResult result = new();
 
@@ -251,9 +294,10 @@ namespace SGUEES.Repositories
                     new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "ACTIVO", Value = true, DbType = System.Data.DbType.Boolean },
                 };
-                var reader = await objData.GetDataReader("V_ACA_BEC_ORIGEN_BECA", p);
-                var response = new List<ACA_BEC_ORIGEN_BECALookup>().FromDataReader(reader)
-                    .OrderBy(x => x.CORR_ORIGEN_BECA)
+
+                var reader = await objData.GetDataReader("V_ACA_BEC_ENTIDAD_FINANCIADORA", p);
+                var response = new List<ACA_BEC_FINANCIADOR_ENTIDADLookup>().FromDataReader(reader)
+                    .OrderBy(x => x.NOMBRE_ENTIDAD)
                     .ToList();
 
                 reader.Close();
@@ -277,106 +321,34 @@ namespace SGUEES.Repositories
             return result;
         }
 
-        public async Task<CResult> GetConveniosAsync(int corrEmpresa)
-        {
-            CResult result = new();
-
-            try
-            {
-                var p = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "ESTADO_CONVENIO", Value = "VIGENTE", DbType = System.Data.DbType.String },
-                };
-                var reader = await objData.GetDataReader("V_ACA_BEC_CONVENIO", p);
-                var response = new List<ACA_BEC_CONVENIOLookup>().FromDataReader(reader)
-                    .OrderBy(x => x.CORR_CONVENIO)
-                    .ToList();
-
-                reader.Close();
-                result.Data = response;
-                result.Result = true;
-                result.RowsAffected = response.Count;
-                result.CodeHelper = 0;
-                result.ErrorCode = 0;
-                result.ErrorMessage = string.Empty;
-                result.ErrorSource = string.Empty;
-            }
-            catch (Exception e)
-            {
-                SetError(result, e);
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-
-            return result;
-        }
-
-        public async Task<bool> ConvenioEstaVigenteAsync(int corrEmpresa, int corrConvenio)
-        {
-            try
-            {
-                var p = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_CONVENIO", Value = corrConvenio, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "ESTADO_CONVENIO", Value = "VIGENTE", DbType = System.Data.DbType.String },
-                };
-
-                var reader = await objData.GetDataReader("V_ACA_BEC_CONVENIO", p);
-                var response = new List<ACA_BEC_CONVENIOLookup>().FromDataReader(reader).FirstOrDefault();
-                reader.Close();
-                return response != null;
-            }
-            finally
-            {
-                objData.objConnection.Close();
-            }
-        }
-
-        private static List<CParameter> BuildInsertParameters(ACA_BEC_TIPOTable Data)
+        private static List<CParameter> BuildInsertParameters(ACA_BEC_FINANCIADORTable Data)
         {
             var p = BuildUpdateParameters(Data);
             p.Insert(0, new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 });
-            p.Insert(1, new CParameter() { ParameterName = "CORR_BECA", Value = Data.CORR_BECA, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput });
+            p.Insert(1, new CParameter() { ParameterName = "CORR_BECA_FINANCIADOR", Value = Data.CORR_BECA_FINANCIADOR, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput });
             p.Add(new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String });
             p.Add(new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String });
             p.Add(new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime });
             return p;
         }
 
-        private static List<CParameter> BuildUpdateParameters(ACA_BEC_TIPOTable Data)
+        private static List<CParameter> BuildUpdateParameters(ACA_BEC_FINANCIADORTable Data)
         {
             return new List<CParameter>
             {
-                new CParameter() { ParameterName = "CODIGO_BECA", Value = Data.CODIGO_BECA, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "NOMBRE_BECA", Value = Data.NOMBRE_BECA, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "CORR_ORIGEN_BECA", Value = Data.CORR_ORIGEN_BECA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_CONVENIO", Value = Data.CORR_CONVENIO, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "ARTICULO_REGLAMENTO", Value = Data.ARTICULO_REGLAMENTO, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "PORCENTAJE_COBERTURA_REFERENCIAL", Value = Data.PORCENTAJE_COBERTURA_REFERENCIAL, DbType = System.Data.DbType.Decimal },
-                new CParameter() { ParameterName = "CUM_MINIMO_RENOVACION", Value = Data.CUM_MINIMO_RENOVACION, DbType = System.Data.DbType.Decimal },
-                new CParameter() { ParameterName = "APLICA_NUEVO_INGRESO", Value = Data.APLICA_NUEVO_INGRESO, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "APLICA_ANTIGUO_INGRESO", Value = Data.APLICA_ANTIGUO_INGRESO, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "APLICA_EMPLEADO", Value = Data.APLICA_EMPLEADO, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "APLICA_HIJO_EMPLEADO", Value = Data.APLICA_HIJO_EMPLEADO, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "NIVEL_ACADEMICO_APLICA", Value = Data.NIVEL_ACADEMICO_APLICA, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "REQUIERE_CONVENIO", Value = Data.REQUIERE_CONVENIO, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "REQUIERE_ESTUDIO_SOCIOECONOMICO", Value = Data.REQUIERE_ESTUDIO_SOCIOECONOMICO, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "REQUIERE_APROBACION_COMITE", Value = Data.REQUIERE_APROBACION_COMITE, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "REQUIERE_APROBACION_DIRECTORIO", Value = Data.REQUIERE_APROBACION_DIRECTORIO, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "UNIDAD_RESPONSABLE", Value = Data.UNIDAD_RESPONSABLE, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "DESCRIPCION", Value = Data.DESCRIPCION, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "ESTADO_BECA", Value = Data.ESTADO_BECA, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "CORR_BECA", Value = Data.CORR_BECA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_ENTIDAD_FINANCIADORA", Value = Data.CORR_ENTIDAD_FINANCIADORA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CONCEPTO_COBERTURA", Value = Data.CONCEPTO_COBERTURA, DbType = System.Data.DbType.String },
+                new CParameter() { ParameterName = "PORCENTAJE_COBERTURA", Value = Data.PORCENTAJE_COBERTURA, DbType = System.Data.DbType.Decimal },
+                new CParameter() { ParameterName = "MONTO_MAXIMO", Value = Data.MONTO_MAXIMO, DbType = System.Data.DbType.Decimal },
+                new CParameter() { ParameterName = "ACTIVO", Value = Data.ACTIVO, DbType = System.Data.DbType.Boolean },
                 new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
             };
         }
 
-        private static List<CParameter> BuildCompanyWhere(ACA_BEC_TIPOTable Data)
+        private static List<CParameter> BuildCompanyWhere(ACA_BEC_FINANCIADORTable Data)
         {
             return new List<CParameter>
             {
@@ -384,19 +356,19 @@ namespace SGUEES.Repositories
             };
         }
 
-        private static List<CParameter> BuildPrimaryWhere(ACA_BEC_TIPOTable Data)
+        private static List<CParameter> BuildPrimaryWhere(ACA_BEC_FINANCIADORTable Data)
         {
             return new List<CParameter>
             {
                 new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_BECA", Value = Data.CORR_BECA, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "CORR_BECA_FINANCIADOR", Value = Data.CORR_BECA_FINANCIADOR, DbType = System.Data.DbType.Int32 },
             };
         }
 
         private static void SetDuplicateAwareError(CResult result, Exception e)
         {
             SetError(result, e, 0, IsDuplicateKeyError(e)
-                ? "Ya existe un tipo de beca con ese codigo. Seleccione otro codigo para continuar."
+                ? "Ya existe un financiador con ese identificador."
                 : e.Message,
                 IsDuplicateKeyError(e) ? 2627 : -1);
         }

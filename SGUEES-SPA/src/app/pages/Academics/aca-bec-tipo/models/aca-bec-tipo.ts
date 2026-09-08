@@ -25,6 +25,9 @@ export interface AcaBecTipo {
 	DESCRIPCION?: string | null;
 	ESTADO_BECA: string;
 	ACTIVO?: boolean;
+	CANT_REQUISITOS?: number;
+	CANT_DOCUMENTOS?: number;
+	CANT_FINANCIADORES?: number;
 	USUARIO_CREA?: string;
 	ESTACION_CREA?: string;
 	FECHA_CREA?: Date | string;

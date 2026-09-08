@@ -62,6 +62,13 @@ namespace SGUEES.Services
             }
 
             NormalizeData(Data);
+
+            var convenioError = await ValidateConvenioVigenteAsync(Data);
+            if (convenioError != null)
+            {
+                return convenioError;
+            }
+
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
@@ -85,6 +92,13 @@ namespace SGUEES.Services
             }
 
             NormalizeData(Data);
+
+            var convenioError = await ValidateConvenioVigenteAsync(Data);
+            if (convenioError != null)
+            {
+                return convenioError;
+            }
+
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
@@ -274,6 +288,17 @@ namespace SGUEES.Services
             }
 
             return null;
+        }
+
+        private async Task<CResult> ValidateConvenioVigenteAsync(ACA_BEC_TIPOTable Data)
+        {
+            if (!Data.REQUIERE_CONVENIO || !Data.CORR_CONVENIO.HasValue || Data.CORR_CONVENIO.Value <= 0)
+            {
+                return null;
+            }
+
+            var vigente = await _repo.ConvenioEstaVigenteAsync(Data.CORR_EMPRESA, Data.CORR_CONVENIO.Value);
+            return vigente ? null : ValidationError("El convenio seleccionado no esta vigente o no pertenece a la empresa de la sesion.");
         }
 
         private static string NormalizeOptional(string value)

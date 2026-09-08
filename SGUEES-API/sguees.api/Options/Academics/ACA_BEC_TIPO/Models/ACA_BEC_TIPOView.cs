@@ -30,6 +30,9 @@ namespace SGUEES.Models
         public string DESCRIPCION { get; set; }
         public string ESTADO_BECA { get; set; }
         public bool? ACTIVO { get; set; }
+        public int CANT_REQUISITOS { get; set; }
+        public int CANT_DOCUMENTOS { get; set; }
+        public int CANT_FINANCIADORES { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }
         public DateTime? FECHA_CREA { get; set; }

@@ -155,6 +155,9 @@ export class AcaBecTipoService {
 				dataType: 'number',
 				format: '#,##0.##',
 			},
+			{ dataField: 'CANT_REQUISITOS', caption: 'Req.', width: 85, dataType: 'number' },
+			{ dataField: 'CANT_DOCUMENTOS', caption: 'Docs.', width: 85, dataType: 'number' },
+			{ dataField: 'CANT_FINANCIADORES', caption: 'Fin.', width: 85, dataType: 'number' },
 			{ dataField: 'ESTADO_BECA', caption: 'Estado', width: 130 },
 		];
 	}
