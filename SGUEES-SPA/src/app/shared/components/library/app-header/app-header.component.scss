@@ -69,6 +69,7 @@ header {
   align-items: center;
   gap: 7px;
   height: 34px;
+  max-width: 220px;
   padding: 0 12px 0 8px;
   border: 1px solid color-mix(in srgb, #818cf8 45%, var(--border-color, #616161));
   border-radius: 999px;
@@ -139,6 +140,10 @@ header {
 .sguees-guia-trigger__label {
   position: relative;
   z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.75rem;
 }
 
 @media (max-width: 768px) {

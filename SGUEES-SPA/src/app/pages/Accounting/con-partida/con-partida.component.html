@@ -1,6 +1,18 @@
 <div class="sguees-mtto-view">
+<header class="con-partida-screen-header">
+	<app-page-header [title]="tituloVentana" variant="enterprise">
+		<div barraHeaderActions>
+			<app-partida-ia-asistente
+				[tituloOpcion]="tituloVentana"
+				[contexto]="partidaIaContexto"
+			></app-partida-ia-asistente>
+		</div>
+	</app-page-header>
+</header>
+
 <app-barra-data-mtto
 	[tituloVentana]="tituloVentana"
+	[ocultarEncabezado]="true"
 	[isBrowse]="isBrowse()"
 	[isForm]="isForm()"
 	[showRibbon]="true"

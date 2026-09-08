@@ -79,6 +79,8 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Input() breadcrumbs?: BreadcrumbItem[];
   /** Fase 8B: header-only = toolbar browse en grid; legacy = comportamiento 7A. */
   @Input() layoutMode: BarraLayoutMode = 'header-only';
+  /** Oculta título/page-header interno (p. ej. encabezado propio en el hijo). */
+  @Input() ocultarEncabezado = false;
   /** Browse con pestañas: Principal (toolbar estándar) + extras proyectadas desde el hijo. */
   @Input() showRibbon = false;
   @Input() ribbonPrincipalTitle = 'Principal';
@@ -224,6 +226,9 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
 
   /** Muestra page-header enterprise (título arriba, toolbar abajo). */
   get showPageHeader(): boolean {
+    if (this.ocultarEncabezado) {
+      return false;
+    }
     return !!(this.tituloVentana?.trim() || this.hasHeaderMeta);
   }
 

@@ -13,19 +13,28 @@ export const ASISTENTE_SCREEN_HINTS: Record<string, AsistenteScreenHint> = {
 	'/con-partida': {
 		titulo: 'Partidas contables',
 		descripcion:
-			'Mantenimiento de partidas: crear, editar, aplicar, imprimir PDF. Incluye encabezado, detalle contable, documentos de soporte y operaciones según estado (digitada, aplicada, anulada).',
+			'Mantenimiento de partidas contables. En el listado consulta por fechas, crea nuevas partidas y edita las digitadas (DI). ' +
+			'En edición: encabezado (periodo, clase, concepto), detalle contable (cuenta, centro de costo, débito/crédito) y documentos de soporte. ' +
+			'Partidas aplicadas o anuladas quedan en solo lectura. Desde la barra puede imprimir PDF, importar Excel, crear modelo o generar desde modelo. ' +
+			'Para contabilizar en libro mayor use el proceso Aplicar partidas cuando la partida esté cuadrada.',
 	},
 	'/con-partida-aplicar': {
 		titulo: 'Aplicar partidas',
-		descripcion: 'Proceso masivo para aplicar partidas contables digitadas y cuadradas en un rango de fechas.',
+		descripcion:
+			'Proceso masivo para aplicar partidas digitadas (DI) y cuadradas. Filtre por rango de fechas, consulte el listado, ' +
+			'revise el detalle en doble clic y ejecute Aplicar. Solo partidas válidas pasan a estado aplicado (AP).',
 	},
 	'/con-partida-desaplicar': {
 		titulo: 'Des-aplicar partidas',
-		descripcion: 'Revierte partidas aplicadas dentro del periodo y filtros seleccionados.',
+		descripcion:
+			'Revierte partidas aplicadas (AP) a digitadas dentro del rango de fechas. Consulte, seleccione y ejecute Des-aplicar. ' +
+			'Use cuando deba corregir una partida ya contabilizada antes de volver a aplicar.',
 	},
 	'/con-partida-anular': {
 		titulo: 'Anular partidas',
-		descripcion: 'Anula partidas según criterios de búsqueda; operación de proceso contable.',
+		descripcion:
+			'Anula partidas según filtros de fecha. Consulte el listado y ejecute Anular sobre los registros elegibles. ' +
+			'Operación de proceso contable; las partidas anuladas no se editan ni aplican.',
 	},
 	'/con-catalogo-cuenta': {
 		titulo: 'Catálogo de cuentas',

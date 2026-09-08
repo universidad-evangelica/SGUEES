@@ -28,11 +28,11 @@
       >{{ subtitle }}</p>
     </div>
     <div class="sguees-page-header__actions" *ngIf="isEnterprise">
-      <ng-content></ng-content>
+      <ng-content select="[barraHeaderActions]"></ng-content>
     </div>
   </div>
 
   <div class="sguees-page-header__actions" *ngIf="!isEnterprise">
-    <ng-content></ng-content>
+    <ng-content select="[barraHeaderActions]"></ng-content>
   </div>
 </header>

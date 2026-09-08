@@ -1,3 +1,17 @@
+.partida-op-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 12px;
+	width: 100%;
+}
+
+.partida-op-header__title {
+	margin: 0;
+	flex: 1 1 auto;
+}
+
 .filtros-card {
 	padding: 20px 24px !important;
 }

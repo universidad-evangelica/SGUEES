@@ -1,0 +1,118 @@
+<button
+	type="button"
+	class="partida-ia-trigger"
+	(click)="abrir()"
+	[attr.aria-label]="etiquetaBoton"
+	[attr.title]="etiquetaBoton"
+>
+	<span class="partida-ia-trigger__icon" aria-hidden="true">
+		<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+			<path
+				d="M12 3C7.03 3 3 7.03 3 12s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9Zm0 2a7 7 0 0 1 6.32 4H14a3 3 0 0 0-5.66 0H5.68A7 7 0 0 1 12 5Zm-7 7a7 7 0 0 1 .26-1.88H9.1a5 5 0 0 0 9.8 0h3.84A7 7 0 0 1 12 19a7 7 0 0 1-7-7Z"
+				fill="currentColor"
+			/>
+		</svg>
+	</span>
+	<span class="partida-ia-trigger__label">{{ etiquetaBoton }}</span>
+</button>
+
+<div class="partida-ia-backdrop" *ngIf="panelVisible" (click)="cerrar()" aria-hidden="true"></div>
+
+<aside
+	class="partida-ia-panel"
+	*ngIf="panelVisible"
+	role="dialog"
+	aria-labelledby="partida-ia-titulo"
+	aria-modal="true"
+>
+	<header class="partida-ia-panel__head">
+		<div>
+			<p class="partida-ia-panel__kicker">Guía · Partidas contables</p>
+			<h2 id="partida-ia-titulo">{{ hintTitulo }}</h2>
+		</div>
+		<button type="button" class="partida-ia-panel__close" (click)="cerrar()" aria-label="Cerrar">×</button>
+	</header>
+
+	<div class="partida-ia-panel__body">
+		<section class="partida-ia-panel__block partida-ia-panel__block--primary">
+			<h3 class="partida-ia-panel__block-title">En esta pantalla</h3>
+			<p class="partida-ia-panel__resumen">{{ guia.resumen }}</p>
+
+			<p *ngIf="guia.notaEstado" class="partida-ia-panel__estado">{{ guia.notaEstado }}</p>
+
+			<ul class="partida-ia-panel__lista">
+				<li *ngFor="let paso of guia.pasosEnPantalla">{{ paso }}</li>
+			</ul>
+		</section>
+
+		<section *ngIf="siguienteVisible()" class="partida-ia-panel__block partida-ia-panel__block--next">
+			<h3 class="partida-ia-panel__block-title">Siguiente paso</h3>
+			<p class="partida-ia-panel__next-motivo">{{ guia.siguiente?.motivo }}</p>
+			<button type="button" class="partida-ia-panel__next-btn" (click)="irOpcion(guia.siguiente!.ruta)">
+				Ir a {{ guia.siguiente?.titulo }} →
+			</button>
+		</section>
+
+		<section class="partida-ia-panel__block">
+			<h3 class="partida-ia-panel__block-title">Flujo contable</h3>
+			<p class="partida-ia-panel__flujo-lead">Referencia del ciclo de vida. Usted está en el paso resaltado.</p>
+			<ol class="partida-ia-panel__flujo">
+				<li
+					*ngFor="let paso of guia.flujo; let i = index"
+					class="partida-ia-panel__flujo-item"
+					[class.partida-ia-panel__flujo-item--actual]="esPasoFlujoActual(i)"
+					[class.partida-ia-panel__flujo-item--hecho]="esPasoFlujoHecho(i)"
+				>
+					<div class="partida-ia-panel__flujo-head">
+						<span class="partida-ia-panel__flujo-orden">{{ paso.orden }}</span>
+						<button
+							type="button"
+							class="partida-ia-panel__flujo-link"
+							[disabled]="!puedeIr(paso.ruta) || esPasoFlujoActual(i)"
+							(click)="irOpcion(paso.ruta)"
+						>
+							{{ paso.titulo }}
+						</button>
+						<span *ngIf="esPasoFlujoActual(i)" class="partida-ia-panel__flujo-badge">Usted está aquí</span>
+					</div>
+					<p class="partida-ia-panel__flujo-desc">{{ paso.descripcion }}</p>
+				</li>
+			</ol>
+		</section>
+
+		<section class="partida-ia-panel__block partida-ia-panel__block--ia">
+			<button type="button" class="partida-ia-panel__ia-toggle" (click)="toggleSeccionIa()">
+				{{ mostrarSeccionIa ? '▾ Ocultar pregunta a IA' : '▸ ¿Otra duda? Preguntar a Ollama (opcional)' }}
+			</button>
+
+			<div *ngIf="mostrarSeccionIa" class="partida-ia-panel__ia-body">
+				<p class="partida-ia-panel__ia-nota">
+					<strong>¿Para qué sirve Ollama aquí?</strong> La guía de arriba es inmediata y fiable (curada por pantalla).
+					Ollama solo <em>redacta en sus palabras</em> una respuesta a su pregunta concreta, usando el contexto de
+					esta pantalla y el estado del registro. No decide por usted ni abre pantallas sola.
+				</p>
+				<label class="partida-ia-panel__label" for="partida-ia-pregunta">Su pregunta</label>
+				<textarea
+					id="partida-ia-pregunta"
+					class="partida-ia-panel__input"
+					rows="3"
+					[(ngModel)]="preguntaLibre"
+					placeholder="Ej.: ¿Por qué no me deja editar el detalle?"
+				></textarea>
+				<button
+					type="button"
+					class="partida-ia-panel__action partida-ia-panel__action--secondary"
+					[disabled]="loadingAi"
+					(click)="preguntarIA()"
+				>
+					{{ loadingAi ? 'Ollama está respondiendo…' : 'Preguntar a Ollama' }}
+				</button>
+				<p *ngIf="errorAi" class="partida-ia-panel__error">{{ errorAi }}</p>
+				<article *ngIf="respuestaAi" class="partida-ia-panel__answer">
+					<p class="partida-ia-panel__answer-label">Respuesta de Ollama</p>
+					{{ respuestaAi }}
+				</article>
+			</div>
+		</section>
+	</div>
+</aside>

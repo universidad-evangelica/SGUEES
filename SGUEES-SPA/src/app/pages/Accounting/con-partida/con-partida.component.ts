@@ -17,6 +17,7 @@ import { ConCatalogoCuentaCentroCostoService } from '../con-catalogo-cuenta-cent
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { custom } from 'devextreme/ui/dialog';
 import { environment } from 'src/environments/environment';
+import { PartidaIaContexto } from 'src/app/shared/partida-ia-asistente/partida-ia.models';
 
 @Component({
 	selector: 'app-con-partida',
@@ -78,6 +79,15 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		private sanitization: DomSanitizer
 	) {
 		super(appInfoService, router);
+		if (!this.tituloVentana?.trim()) {
+			this.tituloVentana =
+				router.snapshot.data['titulo'] ||
+				router.parent?.snapshot.data['titulo'] ||
+				'Partidas Contables';
+		}
+		if (!this.urlOpcion || this.urlOpcion === '/') {
+			this.urlOpcion = '/con-partida';
+		}
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
@@ -1265,5 +1275,24 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	onClasePartidaChanged(value: number) {
 		const clase = this.mCORR_CLASE_PARTIDA.find((item: any) => item.CORR_CLASE_PARTIDA === value);
 		this.model.NOMBRE_CLASE_PARTIDA = clase?.NOMBRE_CLASE_PARTIDA || '';
+	}
+
+	get partidaIaContexto(): PartidaIaContexto {
+		const estado = this.model?.ESTADO_PARTIDA || '';
+		const nombreEstado =
+			(this.mESTADO_PARTIDA || []).find(
+				(item: any) => item?.CODIGO === estado || item?.VALUE === estado || item?.ID === estado
+			)?.DESCRIPCION ||
+			(this.mESTADO_PARTIDA || []).find(
+				(item: any) => item?.CODIGO === estado || item?.VALUE === estado || item?.ID === estado
+			)?.text ||
+			'';
+
+		return {
+			modoPantalla: this.isBrowse() ? 'grid' : 'formulario',
+			estadoPartida: estado,
+			nombreEstadoPartida: nombreEstado,
+			corrPartida: this.model?.CORR_PARTIDA,
+		};
 	}
 }

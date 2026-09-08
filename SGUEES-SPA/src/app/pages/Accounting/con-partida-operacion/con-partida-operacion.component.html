@@ -1,4 +1,10 @@
-<h2 class="content-block">{{ tituloVentana }}</h2>
+<div class="partida-op-header content-block">
+	<h2 class="partida-op-header__title">{{ tituloVentana }}</h2>
+	<app-partida-ia-asistente
+		[tituloOpcion]="tituloVentana"
+		[contexto]="partidaIaContexto"
+	></app-partida-ia-asistente>
+</div>
 
 <div class="view-wrapper list-page content-block dx-card responsive-paddings filtros-card" *ngIf="isBrowse()">
 	<div class="filtros">

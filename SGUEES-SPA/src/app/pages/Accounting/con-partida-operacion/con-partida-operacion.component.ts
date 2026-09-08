@@ -14,6 +14,7 @@ import { ConPartidaService } from '../con-partida/con-partida.service';
 import { ConPartidaDetaService } from '../con-partida/con-partida-deta/con-partida-deta.service';
 import { ConPartidaDocService } from '../con-partida/con-partida-doc/con-partida-doc.service';
 import { ConPartidaOperacionModo, ConPartidaOperacionService } from './con-partida-operacion.service';
+import { PartidaIaContexto } from 'src/app/shared/partida-ia-asistente/partida-ia.models';
 
 @Component({
 	selector: 'app-con-partida-operacion',
@@ -84,6 +85,13 @@ export class ConPartidaOperacionComponent extends CBaseComponent implements OnIn
 
 	getAccionLabel(): string {
 		return this.service.getAccionLabel(this.modo);
+	}
+
+	get partidaIaContexto(): PartidaIaContexto {
+		return {
+			modoPantalla: 'proceso',
+			operacionModo: this.modo,
+		};
 	}
 
 	ngOnInit(): void {
