@@ -63,9 +63,87 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 					header.FECHA_IMPRESION == default(DateTime) ? DateTime.Now : header.FECHA_IMPRESION);
 			}
 
+			var funcionesRows = payload.Funciones
+				?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_IMPRView>();
+			var funciones = Utils.CreateDataTable(funcionesRows);
+			funciones.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_IMPR";
+
+			var funcionesActRows = payload.FuncionesActividades
+				?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_ACTIVIDADES_IMPRView>();
+			var funcionesActividades = Utils.CreateDataTable(funcionesActRows);
+			funcionesActividades.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_ACTIVIDADES_IMPR";
+
+			var respRows = payload.Responsabilidades
+				?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RESPONSABILIDAD_CARGO_IMPRView>();
+			var responsabilidades = Utils.CreateDataTable(respRows);
+			responsabilidades.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RESPONSABILIDAD_CARGO_IMPR";
+
+			var relIntRows = payload.RelacionesInternas
+				?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_INTERNAS_IMPRView>();
+			var relacionesInternas = Utils.CreateDataTable(relIntRows);
+			relacionesInternas.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_INTERNAS_IMPR";
+
+			var relExtRows = payload.RelacionesExternas
+				?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_EXTERNAS_IMPRView>();
+			var relacionesExternas = Utils.CreateDataTable(relExtRows);
+			relacionesExternas.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_EXTERNAS_IMPR";
+
+			var reqOrgRows = payload.RequerimientosOrganizacionales
+				?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPRView>();
+			var requerimientosOrganizacionales = Utils.CreateDataTable(reqOrgRows);
+			requerimientosOrganizacionales.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPR";
+
+			var riesgoRows = payload.RiesgosPuesto
+				?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RIESGO_PUESTO_IMPRView>();
+			var riesgosPuesto = Utils.CreateDataTable(riesgoRows);
+			riesgosPuesto.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RIESGO_PUESTO_IMPR";
+
+			var indRows = payload.Inducciones
+				?? new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_INDUCCION_IMPRView>();
+			var inducciones = Utils.CreateDataTable(indRows);
+			inducciones.TableName = "V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_INDUCCION_IMPR";
+
+			var perfilRows = payload.PerfilPuesto
+				?? new List<SC_PERFIL_PUESTO_FORMATO_EXTENSO_IMPRView>();
+			var perfilPuesto = Utils.CreateDataTable(perfilRows);
+			perfilPuesto.TableName = "V_SC_PERFIL_PUESTO_FORMATO_EXTENSO_IMPR";
+
+			var educacionRows = payload.PerfilPuestoEducacion
+				?? new List<SC_PERFIL_PUESTO_EDUCACION_FORMATO_EXTENSO_IMPRView>();
+			var perfilPuestoEducacion = Utils.CreateDataTable(educacionRows);
+			perfilPuestoEducacion.TableName = "V_SC_PERFIL_PUESTO_EDUCACION_FORMATO_EXTENSO_IMPR";
+
+			var experienciaRows = payload.PerfilPuestoExperiencia
+				?? new List<SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_EXTENSO_IMPRView>();
+			var perfilPuestoExperiencia = Utils.CreateDataTable(experienciaRows);
+			perfilPuestoExperiencia.TableName = "V_SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_EXTENSO_IMPR";
+
+			var compTecRows = payload.PerfilPuestoCompetenciasTecnicas
+				?? new List<SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_EXTENSO_IMPRView>();
+			var perfilPuestoCompTecnicas = Utils.CreateDataTable(compTecRows);
+			perfilPuestoCompTecnicas.TableName = "V_SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_EXTENSO_IMPR";
+
+			var compCondRows = payload.PerfilPuestoCompetenciasConductuales
+				?? new List<SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_EXTENSO_IMPRView>();
+			var perfilPuestoCompConductuales = Utils.CreateDataTable(compCondRows);
+			perfilPuestoCompConductuales.TableName = "V_SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_EXTENSO_IMPR";
+
 			var dataSet = new DataSet();
 			dataSet.Tables.Add(encabezado);
 			dataSet.Tables.Add(param);
+			dataSet.Tables.Add(funciones);
+			dataSet.Tables.Add(funcionesActividades);
+			dataSet.Tables.Add(responsabilidades);
+			dataSet.Tables.Add(relacionesInternas);
+			dataSet.Tables.Add(relacionesExternas);
+			dataSet.Tables.Add(requerimientosOrganizacionales);
+			dataSet.Tables.Add(riesgosPuesto);
+			dataSet.Tables.Add(inducciones);
+			dataSet.Tables.Add(perfilPuesto);
+			dataSet.Tables.Add(perfilPuestoEducacion);
+			dataSet.Tables.Add(perfilPuestoExperiencia);
+			dataSet.Tables.Add(perfilPuestoCompTecnicas);
+			dataSet.Tables.Add(perfilPuestoCompConductuales);
 
 			return dataSet;
 		}

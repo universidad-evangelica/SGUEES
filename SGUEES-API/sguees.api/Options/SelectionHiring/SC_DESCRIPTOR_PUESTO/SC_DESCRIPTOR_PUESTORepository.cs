@@ -934,8 +934,10 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Qué hace: lee los 2 result sets del SP Formato extenso y arma el payload para RPT.
-        // Cómo: merge logos (result set 2) en encabezado; listo para agregar más apartados.
+        // Qué hace: lee los 15 result sets del SP Formato extenso y arma el payload para RPT.
+        // Cómo: merge logos; funciones; funciones+actividades; responsabilidades;
+        //       relaciones internas y externas.
+        // Cómo: merge logos (result set 2); funciones; funciones+actividades; responsabilidades.
         private async Task<CResult> GetDescriptorFormatoExtensoImprAsyncInternal(List<CParameter> xWhere)
         {
             CResult objResultado = new();
@@ -971,11 +973,128 @@ namespace SGUEES.Repositories
                     }
                 }
 
+                var funciones = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_IMPRView>();
+                if (reader.NextResult())
+                {
+                    funciones = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var funcionesActividades = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_ACTIVIDADES_IMPRView>();
+                if (reader.NextResult())
+                {
+                    funcionesActividades = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_ACTIVIDADES_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var responsabilidades = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RESPONSABILIDAD_CARGO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    responsabilidades = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RESPONSABILIDAD_CARGO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var relacionesInternas = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_INTERNAS_IMPRView>();
+                if (reader.NextResult())
+                {
+                    relacionesInternas = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_INTERNAS_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var relacionesExternas = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_EXTERNAS_IMPRView>();
+                if (reader.NextResult())
+                {
+                    relacionesExternas = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_EXTERNAS_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var requerimientosOrganizacionales = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPRView>();
+                if (reader.NextResult())
+                {
+                    requerimientosOrganizacionales = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var riesgosPuesto = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RIESGO_PUESTO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    riesgosPuesto = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RIESGO_PUESTO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var inducciones = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_INDUCCION_IMPRView>();
+                if (reader.NextResult())
+                {
+                    inducciones = new List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_INDUCCION_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var perfilPuesto = new List<SC_PERFIL_PUESTO_FORMATO_EXTENSO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    perfilPuesto = new List<SC_PERFIL_PUESTO_FORMATO_EXTENSO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var perfilPuestoEducacion = new List<SC_PERFIL_PUESTO_EDUCACION_FORMATO_EXTENSO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    perfilPuestoEducacion = new List<SC_PERFIL_PUESTO_EDUCACION_FORMATO_EXTENSO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var perfilPuestoExperiencia = new List<SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_EXTENSO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    perfilPuestoExperiencia = new List<SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_EXTENSO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var perfilPuestoCompTecnicas = new List<SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_EXTENSO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    perfilPuestoCompTecnicas = new List<SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_EXTENSO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var perfilPuestoCompConductuales = new List<SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_EXTENSO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    perfilPuestoCompConductuales = new List<SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_EXTENSO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
                 reader.Close();
 
                 var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload
                 {
                     Encabezado = encabezado,
+                    Funciones = funciones,
+                    FuncionesActividades = funcionesActividades,
+                    Responsabilidades = responsabilidades,
+                    RelacionesInternas = relacionesInternas,
+                    RelacionesExternas = relacionesExternas,
+                    RequerimientosOrganizacionales = requerimientosOrganizacionales,
+                    RiesgosPuesto = riesgosPuesto,
+                    Inducciones = inducciones,
+                    PerfilPuesto = perfilPuesto,
+                    PerfilPuestoEducacion = perfilPuestoEducacion,
+                    PerfilPuestoExperiencia = perfilPuestoExperiencia,
+                    PerfilPuestoCompetenciasTecnicas = perfilPuestoCompTecnicas,
+                    PerfilPuestoCompetenciasConductuales = perfilPuestoCompConductuales,
                 };
 
                 objResultado.Data = payload;

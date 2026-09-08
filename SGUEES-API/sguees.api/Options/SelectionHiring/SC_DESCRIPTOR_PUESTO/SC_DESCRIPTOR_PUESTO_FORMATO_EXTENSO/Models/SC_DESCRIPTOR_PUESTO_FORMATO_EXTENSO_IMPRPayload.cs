@@ -7,5 +7,18 @@ namespace SGUEES.Models
     public class SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload
     {
         public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRView> Encabezado { get; set; }
+        public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_IMPRView> Funciones { get; set; }
+        public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_FUNCIONES_ACTIVIDADES_IMPRView> FuncionesActividades { get; set; }
+        public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RESPONSABILIDAD_CARGO_IMPRView> Responsabilidades { get; set; }
+        public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_INTERNAS_IMPRView> RelacionesInternas { get; set; }
+        public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RELACION_LABORAL_EXTERNAS_IMPRView> RelacionesExternas { get; set; }
+        public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_REQUERIMIENTO_ORGANIZACIONAL_IMPRView> RequerimientosOrganizacionales { get; set; }
+        public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_RIESGO_PUESTO_IMPRView> RiesgosPuesto { get; set; }
+        public List<SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_INDUCCION_IMPRView> Inducciones { get; set; }
+        public List<SC_PERFIL_PUESTO_FORMATO_EXTENSO_IMPRView> PerfilPuesto { get; set; }
+        public List<SC_PERFIL_PUESTO_EDUCACION_FORMATO_EXTENSO_IMPRView> PerfilPuestoEducacion { get; set; }
+        public List<SC_PERFIL_PUESTO_EXPERIENCIA_FORMATO_EXTENSO_IMPRView> PerfilPuestoExperiencia { get; set; }
+        public List<SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_EXTENSO_IMPRView> PerfilPuestoCompetenciasTecnicas { get; set; }
+        public List<SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_EXTENSO_IMPRView> PerfilPuestoCompetenciasConductuales { get; set; }
     }
 }
