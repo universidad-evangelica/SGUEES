@@ -1,17 +1,10 @@
 <div class="sguees-mtto-view sc-bandeja-th">
-	<div class="bandeja-header content-block">
-		<div class="bandeja-header__text">
-			<h2 class="bandeja-title">{{ tituloVentana || 'Bandeja de solicitudes' }}</h2>
-			<p class="bandeja-subtitle">
-				Requisiciones conectadas a base (paginado servidor). Candidatos y contrataciones siguen en mock
-				hasta su stage. Unidad crea/envía · jefe inmediato aprueba · TH gestiona · dictamen Aplica/No aplica
-				en ciclo candidatos.
-			</p>
-		</div>
+	<div class="bandeja-header">
+		<h2 class="bandeja-title">{{ tituloVentana || 'Bandeja de solicitudes' }}</h2>
 		<div class="bandeja-header__badge">Requisiciones · API</div>
 	</div>
 
-	<div class="bandeja-kpis content-block">
+	<div class="bandeja-kpis">
 		<div
 			class="bandeja-kpi"
 			*ngFor="let kpi of kpis"
@@ -19,16 +12,15 @@
 			[class.bandeja-kpi--success]="kpi.TONE === 'success'"
 			[class.bandeja-kpi--info]="kpi.TONE === 'info'"
 		>
-			<div class="bandeja-kpi__top">
+			<div class="bandeja-kpi__main">
 				<span class="bandeja-kpi__label">{{ kpi.LABEL }}</span>
-				<i class="dx-icon dx-icon-{{ kpi.ICON || 'info' }}"></i>
+				<span class="bandeja-kpi__value">{{ kpi.VALUE }}</span>
 			</div>
-			<div class="bandeja-kpi__value">{{ kpi.VALUE }}</div>
-			<div class="bandeja-kpi__sub">{{ kpi.SUBLABEL }}</div>
+			<i class="dx-icon dx-icon-{{ kpi.ICON || 'info' }}"></i>
 		</div>
 	</div>
 
-	<div class="view-wrapper content-block dx-card responsive-paddings bandeja-filtros-card">
+	<div class="bandeja-filtros-card">
 		<div class="bandeja-filtros">
 			<div class="bandeja-filtro">
 				<div class="bandeja-filtro__label">Tipo de solicitud</div>
@@ -38,7 +30,7 @@
 					valueExpr="VALUE"
 					[(value)]="filtroTipo"
 					[width]="'100%'"
-					[height]="40"
+					[height]="32"
 					(onValueChanged)="buscar()"
 				></dx-select-box>
 			</div>
@@ -50,7 +42,7 @@
 					valueExpr="VALUE"
 					[(value)]="filtroEstado"
 					[width]="'100%'"
-					[height]="40"
+					[height]="32"
 					(onValueChanged)="buscar()"
 				></dx-select-box>
 			</div>
@@ -63,7 +55,7 @@
 					[(value)]="filtroUnidad"
 					[searchEnabled]="true"
 					[width]="'100%'"
-					[height]="40"
+					[height]="32"
 					(onValueChanged)="buscar()"
 				></dx-select-box>
 			</div>
@@ -76,7 +68,7 @@
 					[useMaskBehavior]="true"
 					[showClearButton]="true"
 					[width]="'100%'"
-					[height]="40"
+					[height]="32"
 					(onValueChanged)="buscar()"
 				></dx-date-box>
 			</div>
@@ -89,7 +81,7 @@
 					[useMaskBehavior]="true"
 					[showClearButton]="true"
 					[width]="'100%'"
-					[height]="40"
+					[height]="32"
 					(onValueChanged)="buscar()"
 				></dx-date-box>
 			</div>
@@ -100,24 +92,24 @@
 						[(value)]="filtroBusqueda"
 						placeholder="Código, puesto, candidato…"
 						[width]="'100%'"
-						[height]="40"
+						[height]="32"
 						(onEnterKey)="buscar()"
 					></dx-text-box>
 					<dx-button
 						text="Buscar"
 						type="default"
 						icon="search"
-						[height]="40"
+						[height]="32"
 						(onClick)="buscar()"
 					></dx-button>
-					<a class="bandeja-limpiar" (click)="limpiarFiltros()">Limpiar filtros</a>
+					<a class="bandeja-limpiar" (click)="limpiarFiltros()">Limpiar</a>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<div class="bandeja-body content-block" [class.bandeja-body--panel-open]="panelOpen">
-		<div class="bandeja-main dx-card responsive-paddings">
+	<div class="bandeja-body" [class.bandeja-body--panel-open]="panelOpen">
+		<div class="bandeja-main">
 			<div class="bandeja-tabs">
 				<button
 					type="button"
@@ -142,111 +134,113 @@
 				casos con dictamen <em>Aplica</em> listos para contratación.
 			</div>
 
-			<dx-data-grid
-				class="sguees-data-grid-mtto sguees-data-grid-mtto--enterprise bandeja-grid"
-				[dataSource]="models"
-				keyExpr="ID"
-				[showBorders]="true"
-				[columnAutoWidth]="false"
-				[allowColumnReordering]="true"
-				[allowColumnResizing]="true"
-				[rowAlternationEnabled]="true"
-				[hoverStateEnabled]="true"
-				[focusedRowEnabled]="true"
-				[focusedRowKey]="selectedItem?.ID"
-				[remoteOperations]="usaApiRequisiciones ? remoteOperations : false"
-				[height]="gridHeight"
-				(onFocusedRowChanged)="onFocusedRowChanged($event)"
-				(onRowClick)="onRowClick($event)"
-			>
-				<dxo-load-panel [enabled]="true"></dxo-load-panel>
-				<dxo-paging [pageSize]="pageSize"></dxo-paging>
-				<dxo-pager
-					[visible]="true"
-					[showPageSizeSelector]="true"
-					[allowedPageSizes]="allowedPageSizes"
-					[showInfo]="true"
-				></dxo-pager>
-				<dxo-filter-row [visible]="!usaApiRequisiciones"></dxo-filter-row>
-				<dxo-sorting mode="single"></dxo-sorting>
+			<div class="bandeja-grid-wrap">
+				<dx-data-grid
+					class="sguees-data-grid-mtto sguees-data-grid-mtto--enterprise bandeja-grid"
+					[dataSource]="models"
+					keyExpr="ID"
+					[showBorders]="true"
+					[columnAutoWidth]="false"
+					[allowColumnReordering]="true"
+					[allowColumnResizing]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[focusedRowEnabled]="true"
+					[focusedRowKey]="selectedItem?.ID"
+					[remoteOperations]="usaApiRequisiciones ? remoteOperations : false"
+					[height]="'100%'"
+					(onFocusedRowChanged)="onFocusedRowChanged($event)"
+					(onRowClick)="onRowClick($event)"
+				>
+					<dxo-load-panel [enabled]="true"></dxo-load-panel>
+					<dxo-paging [pageSize]="pageSize"></dxo-paging>
+					<dxo-pager
+						[visible]="true"
+						[showPageSizeSelector]="true"
+						[allowedPageSizes]="allowedPageSizes"
+						[showInfo]="true"
+					></dxo-pager>
+					<dxo-filter-row [visible]="!usaApiRequisiciones"></dxo-filter-row>
+					<dxo-sorting mode="single"></dxo-sorting>
 
-				<dxi-column
-					dataField="TIPO"
-					caption="Tipo"
-					[width]="130"
-					cellTemplate="tipoCell"
-					[allowFiltering]="true"
-				></dxi-column>
-				<dxi-column dataField="CODIGO" caption="Código" [width]="120"></dxi-column>
-				<dxi-column
-					dataField="DESCRIPCION"
-					caption="Descripción / Puesto"
-					[minWidth]="220"
-					cellTemplate="descCell"
-				></dxi-column>
-				<dxi-column
-					dataField="SOLICITANTE"
-					caption="Solicitante"
-					[width]="180"
-					cellTemplate="solCell"
-				></dxi-column>
-				<dxi-column
-					dataField="FECHA"
-					caption="Fecha"
-					[width]="140"
-					cellTemplate="fechaCell"
-					sortOrder="desc"
-				></dxi-column>
-				<dxi-column
-					dataField="ESTADO"
-					caption="Estado"
-					[width]="170"
-					cellTemplate="estadoCell"
-					[alignment]="'center'"
-				></dxi-column>
-				<dxi-column
-					caption="Acciones"
-					[width]="90"
-					[allowFiltering]="false"
-					[allowSorting]="false"
-					cellTemplate="accionesCell"
-					[alignment]="'center'"
-				></dxi-column>
+					<dxi-column
+						dataField="TIPO"
+						caption="Tipo"
+						[width]="130"
+						cellTemplate="tipoCell"
+						[allowFiltering]="true"
+					></dxi-column>
+					<dxi-column dataField="CODIGO" caption="Código" [width]="120"></dxi-column>
+					<dxi-column
+						dataField="SOLICITANTE"
+						caption="Solicitante"
+						[width]="250"
+						cellTemplate="solCell"
+					></dxi-column>
+					<dxi-column
+						dataField="DESCRIPCION"
+						caption="Descripción / Puesto"
+						[minWidth]="200"
+						cellTemplate="descCell"
+					></dxi-column>
+					<dxi-column
+						dataField="FECHA"
+						caption="Fecha"
+						[width]="140"
+						cellTemplate="fechaCell"
+						sortOrder="desc"
+					></dxi-column>
+					<dxi-column
+						dataField="ESTADO"
+						caption="Estado"
+						[width]="170"
+						cellTemplate="estadoCell"
+						[alignment]="'center'"
+					></dxi-column>
+					<dxi-column
+						caption="Acciones"
+						[width]="90"
+						[allowFiltering]="false"
+						[allowSorting]="false"
+						cellTemplate="accionesCell"
+						[alignment]="'center'"
+					></dxi-column>
 
-				<div *dxTemplate="let cell of 'tipoCell'">
-					<span class="bandeja-tipo">
-						<i class="dx-icon dx-icon-{{ tipoIcon(cell.data.TIPO, cell.data) }}"></i>
-						{{ tipoLabel(cell.data.TIPO, cell.data) }}
-					</span>
-				</div>
-				<div *dxTemplate="let cell of 'descCell'">
-					<div class="bandeja-desc-main">{{ cell.data.DESCRIPCION }}</div>
-					<div class="bandeja-desc-sub">{{ cell.data.SUBTITULO }}</div>
-				</div>
-				<div *dxTemplate="let cell of 'solCell'">
-					<div class="bandeja-desc-main">{{ cell.data.SOLICITANTE }}</div>
-					<div class="bandeja-desc-sub" *ngIf="cell.data.CARGO_SOLICITANTE">
-						{{ cell.data.CARGO_SOLICITANTE }}
+					<div *dxTemplate="let cell of 'tipoCell'">
+						<span class="bandeja-tipo">
+							<i class="dx-icon dx-icon-{{ tipoIcon(cell.data.TIPO, cell.data) }}"></i>
+							{{ tipoLabel(cell.data.TIPO, cell.data) }}
+						</span>
 					</div>
-				</div>
-				<div *dxTemplate="let cell of 'fechaCell'">
-					{{ formatFecha(cell.data.FECHA) }}
-				</div>
-				<div *dxTemplate="let cell of 'estadoCell'">
-					<span [class]="estadoChipClass(cell.data)">{{ cell.data.ESTADO }}</span>
-				</div>
-				<div *dxTemplate="let cell of 'accionesCell'">
-					<dx-button
-						icon="overflow"
-						stylingMode="text"
-						hint="Ver resumen"
-						(onClick)="abrirPanel(cell.data)"
-					></dx-button>
-				</div>
-			</dx-data-grid>
+					<div *dxTemplate="let cell of 'descCell'">
+						<div class="bandeja-desc-main">{{ cell.data.DESCRIPCION }}</div>
+						<div class="bandeja-desc-sub">{{ cell.data.SUBTITULO }}</div>
+					</div>
+					<div *dxTemplate="let cell of 'solCell'">
+						<div class="bandeja-desc-main">{{ cell.data.SOLICITANTE }}</div>
+						<div class="bandeja-desc-sub" *ngIf="cell.data.CARGO_SOLICITANTE">
+							{{ cell.data.CARGO_SOLICITANTE }}
+						</div>
+					</div>
+					<div *dxTemplate="let cell of 'fechaCell'">
+						{{ formatFecha(cell.data.FECHA) }}
+					</div>
+					<div *dxTemplate="let cell of 'estadoCell'">
+						<span [class]="estadoChipClass(cell.data)">{{ cell.data.ESTADO }}</span>
+					</div>
+					<div *dxTemplate="let cell of 'accionesCell'">
+						<dx-button
+							icon="overflow"
+							stylingMode="text"
+							hint="Ver resumen"
+							(onClick)="abrirPanel(cell.data)"
+						></dx-button>
+					</div>
+				</dx-data-grid>
+			</div>
 		</div>
 
-		<aside class="bandeja-panel dx-card" *ngIf="panelOpen && selectedItem">
+		<aside class="bandeja-panel" *ngIf="panelOpen && selectedItem">
 			<div class="bandeja-panel__header">
 				<div class="bandeja-panel__tabs">
 					<button
@@ -274,12 +268,13 @@
 			<dx-scroll-view class="bandeja-panel__scroll" [showScrollbar]="'onHover'">
 				<div class="bandeja-panel__body" *ngIf="panelTab === 'RESUMEN'">
 					<div class="bandeja-panel__identity">
-						<span class="bandeja-tipo bandeja-tipo--lg">
+						<div class="bandeja-panel__identity-icon" [attr.title]="tipoLabel(selectedItem.TIPO, selectedItem)">
 							<i class="dx-icon dx-icon-{{ tipoIcon(selectedItem.TIPO, selectedItem) }}"></i>
-							{{ tipoLabel(selectedItem.TIPO, selectedItem) }}
-						</span>
-						<div class="bandeja-panel__code">{{ selectedItem.CODIGO }}</div>
-						<div class="bandeja-panel__title">{{ selectedItem.DESCRIPCION }}</div>
+						</div>
+						<div class="bandeja-panel__identity-text">
+							<div class="bandeja-panel__code">{{ selectedItem.CODIGO }}</div>
+							<div class="bandeja-panel__title">{{ selectedItem.DESCRIPCION }}</div>
+						</div>
 						<span [class]="estadoChipClass(selectedItem)">{{ selectedItem.ESTADO }}</span>
 					</div>
 
@@ -423,7 +418,7 @@
 					type="default"
 					icon="eyeopen"
 					[width]="'100%'"
-					[height]="40"
+					[height]="36"
 					(onClick)="accionVerDetalle()"
 				></dx-button>
 				<dx-button
@@ -431,7 +426,7 @@
 					stylingMode="outlined"
 					icon="clock"
 					[width]="'100%'"
-					[height]="40"
+					[height]="36"
 					(onClick)="accionVerFlujo()"
 				></dx-button>
 
@@ -441,7 +436,7 @@
 					type="default"
 					icon="plus"
 					[width]="'100%'"
-					[height]="40"
+					[height]="36"
 					(onClick)="accionAsociarExpediente()"
 				></dx-button>
 
@@ -451,7 +446,7 @@
 					type="default"
 					icon="runner"
 					[width]="'100%'"
-					[height]="40"
+					[height]="36"
 					(onClick)="accionActivarSeleccion()"
 				></dx-button>
 
@@ -462,7 +457,7 @@
 							type="success"
 							icon="check"
 							[width]="'48%'"
-							[height]="40"
+							[height]="36"
 							(onClick)="accionDictamen(true)"
 						></dx-button>
 						<dx-button
@@ -470,7 +465,7 @@
 							type="danger"
 							icon="close"
 							[width]="'48%'"
-							[height]="40"
+							[height]="36"
 							(onClick)="accionDictamen(false)"
 						></dx-button>
 					</div>
@@ -482,7 +477,7 @@
 					type="default"
 					icon="card"
 					[width]="'100%'"
-					[height]="40"
+					[height]="36"
 					(onClick)="accionMovimientoStandby()"
 				></dx-button>
 			</div>

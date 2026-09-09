@@ -71,7 +71,6 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 	unidadesFiltro: Array<{ VALUE: string; TEXT: string }> = [{ VALUE: 'TODOS', TEXT: 'Todas' }];
 
-	readonly gridHeight = 'calc(100vh - 430px)';
 	readonly remoteOperations = { paging: true, sorting: true, filtering: false };
 	readonly pageSize = 10;
 	readonly allowedPageSizes: (number | 'all')[] = [10, 15, 30, 'all'];
