@@ -24,9 +24,18 @@ import { ScDescriptorPuestoComponent } from './sc-descriptor-puesto/sc-descripto
 import { ScUnidadesUsuarioComponent } from './sc-unidades-usuario/sc-unidades-usuario.component';
 import { ScSolicitudEmpleoComponent } from './sc-solicitud-empleo/sc-solicitud-empleo.component';
 import { ScExpedienteCandidatoComponent } from './sc-expediente-candidato/sc-expediente-candidato.component';
+import { ScBandejaThComponent } from './sc-bandeja-th/sc-bandeja-th.component';
 
 
 const routes: Routes = [
+  {
+    path: 'sc-bandeja-th',
+    component: ScBandejaThComponent,
+    data: { titulo: 'Bandeja de solicitudes' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-bandeja-th/sc-bandeja-th.module').then(m => m.ScBandejaThModule)
+  },
   {
     path: 'sc-tipo-vacante',
     component: ScTipoVacanteComponent,
