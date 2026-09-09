@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import CustomStore from 'devextreme/data/custom_store';
+import { lastValueFrom } from 'rxjs';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
@@ -12,6 +14,7 @@ import {
 	ScBandejaTipo,
 } from './models/sc-bandeja-th-item';
 import { SC_BANDEJA_TH_MOCK } from './sc-bandeja-th.mock';
+import { BANDEJA_ESTADOS_REQUISICION, ScBandejaThService } from './sc-bandeja-th.service';
 
 @Component({
 	selector: 'app-sc-bandeja-th',
@@ -19,19 +22,22 @@ import { SC_BANDEJA_TH_MOCK } from './sc-bandeja-th.mock';
 	styleUrls: ['./sc-bandeja-th.component.scss'],
 })
 export class ScBandejaThComponent extends CBaseComponent implements OnInit {
-	/** Fuente mock completa (fase UIX). */
-	private readonly source: ScBandejaItem[] = SC_BANDEJA_TH_MOCK.map((x) => ({ ...x }));
+	/** Mock solo para etapas aún no conectadas (candidatos / contrataciones). */
+	private readonly mockSource: ScBandejaItem[] = SC_BANDEJA_TH_MOCK.filter(
+		(x) => x.TIPO !== 'REQUISICION'
+	).map((x) => ({ ...x }));
 
-	/** Filas visibles según tab + filtros. */
-	models: ScBandejaItem[] = [];
+	/** DataSource del grid: CustomStore (requisiciones) o array (mock). */
+	models: any = [];
 
 	selectedItem: ScBandejaItem | null = null;
 	panelOpen = false;
 	panelTab: 'RESUMEN' | 'HISTORIAL' = 'RESUMEN';
+	bitacoraLoading = false;
 
-	activeTab: ScBandejaTab = 'TODAS';
+	activeTab: ScBandejaTab = 'REQUISICIONES';
 
-	filtroTipo: ScBandejaTipo | 'TODOS' = 'TODOS';
+	filtroTipo: ScBandejaTipo | 'TODOS' = 'REQUISICION';
 	filtroEstado = 'TODOS';
 	filtroUnidad = 'TODOS';
 	filtroBusqueda = '';
@@ -39,6 +45,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	fechaHasta: Date | null = null;
 
 	kpis: ScBandejaKpi[] = [];
+	totalRequisicionesApi = 0;
 
 	readonly tabs: Array<{ id: ScBandejaTab; label: string }> = [
 		{ id: 'TODAS', label: 'Todas' },
@@ -54,33 +61,49 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		{ VALUE: 'CONTRATACION', TEXT: 'Contratación' },
 	];
 
-	estadosFiltro: Array<{ VALUE: string; TEXT: string }> = [{ VALUE: 'TODOS', TEXT: 'Todos' }];
+	estadosFiltro: Array<{ VALUE: string; TEXT: string }> = [
+		{ VALUE: 'TODOS', TEXT: 'Todos' },
+		...BANDEJA_ESTADOS_REQUISICION.map((e) => ({
+			VALUE: String(e.CORR_ESTADO_REQUISICION),
+			TEXT: e.ESTADO_REQUISICION,
+		})),
+	];
+
 	unidadesFiltro: Array<{ VALUE: string; TEXT: string }> = [{ VALUE: 'TODOS', TEXT: 'Todas' }];
 
 	readonly gridHeight = 'calc(100vh - 430px)';
+	readonly remoteOperations = { paging: true, sorting: true, filtering: false };
+	readonly pageSize = 10;
+	readonly allowedPageSizes: (number | 'all')[] = [10, 15, 30, 'all'];
+
+	private requisicionesStore: CustomStore | null = null;
 
 	constructor(
 		public override appInfoService: AppInfoService,
-		public override router: ActivatedRoute
+		public override router: ActivatedRoute,
+		private service: ScBandejaThService
 	) {
 		super(appInfoService, router);
 	}
 
 	ngOnInit(): void {
-		this.refrescarCatalogosFiltro();
-		this.aplicarFiltros();
+		this.configurarDataSource();
+		this.recalcularKpis();
 	}
 
 	get tabCounts(): Record<ScBandejaTab, number> {
 		return {
-			TODAS: this.source.length,
-			REQUISICIONES: this.source.filter((x) => x.TIPO === 'REQUISICION').length,
-			CANDIDATOS: this.source.filter((x) => x.TIPO === 'CANDIDATO').length,
-			CONTRATACIONES: this.source.filter((x) => x.TIPO === 'CONTRATACION').length,
+			TODAS: this.totalRequisicionesApi + this.mockSource.length,
+			REQUISICIONES: this.totalRequisicionesApi,
+			CANDIDATOS: this.mockSource.filter((x) => x.TIPO === 'CANDIDATO').length,
+			CONTRATACIONES: this.mockSource.filter((x) => x.TIPO === 'CONTRATACION').length,
 		};
 	}
 
-	/** Dictamen jefatura vive en ciclo Candidatos (no pestaña aparte). */
+	get usaApiRequisiciones(): boolean {
+		return this.activeTab === 'REQUISICIONES' || this.activeTab === 'TODAS';
+	}
+
 	get puedeDictaminar(): boolean {
 		const item = this.selectedItem;
 		return (
@@ -102,11 +125,11 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		} else {
 			this.filtroTipo = 'CONTRATACION';
 		}
-		this.aplicarFiltros();
+		this.configurarDataSource();
 	}
 
 	buscar(): void {
-		this.aplicarFiltros();
+		this.configurarDataSource();
 	}
 
 	limpiarFiltros(): void {
@@ -124,16 +147,19 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		} else {
 			this.filtroTipo = 'CONTRATACION';
 		}
-		this.aplicarFiltros();
+		this.configurarDataSource();
 	}
 
 	onFocusedRowChanged(e: any): void {
 		const key = e?.row?.key ?? e?.component?.option?.('focusedRowKey');
-		const item = this.models.find((x) => x.ID === key) ?? null;
-		if (!item) {
+		const rowData = e?.row?.data as ScBandejaItem | undefined;
+		if (rowData) {
+			this.abrirPanel(rowData);
 			return;
 		}
-		this.abrirPanel(item);
+		if (!key) {
+			return;
+		}
 	}
 
 	onRowClick(e: any): void {
@@ -145,14 +171,19 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	}
 
 	abrirPanel(item: ScBandejaItem): void {
-		this.selectedItem = item;
+		this.selectedItem = { ...item, HISTORIAL: item.HISTORIAL ? [...item.HISTORIAL] : [] };
 		this.panelOpen = true;
 		this.panelTab = 'RESUMEN';
+
+		if (item.TIPO === 'REQUISICION' && item.CORR_REQUISICION_PERSONAL) {
+			this.cargarBitacoraRequisicion(item.CORR_REQUISICION_PERSONAL);
+		}
 	}
 
 	cerrarPanel(): void {
 		this.panelOpen = false;
 		this.selectedItem = null;
+		this.bitacoraLoading = false;
 	}
 
 	setPanelTab(tab: 'RESUMEN' | 'HISTORIAL'): void {
@@ -164,7 +195,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 		this.notifyFx(
-			`Abrirá detalle de ${this.selectedItem.CODIGO} (UI mock · sin API).`,
+			`Abrirá detalle de ${this.selectedItem.CODIGO} (próxima fase · deep link).`,
 			NotifyType.Warning,
 			{ raw: true }
 		);
@@ -249,8 +280,11 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
-	estadoChipClass(tone: string): string {
-		return `bandeja-estado-chip bandeja-estado--${tone || 'borrador'}`;
+	estadoChipClass(item: ScBandejaItem): string {
+		if (item.TIPO === 'REQUISICION') {
+			return `estado-req-chip ${this.service.getEstadoRequisicionBadgeClass(item.CORR_ESTADO_REQUISICION)}`;
+		}
+		return `bandeja-estado-chip bandeja-estado--${item.ESTADO_TONE || 'borrador'}`;
 	}
 
 	formatSalario(valor?: number): string {
@@ -264,68 +298,41 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		}).format(Number(valor));
 	}
 
-	formatFecha(valor?: string): string {
+	formatFecha(valor?: string | Date): string {
 		if (!valor) {
 			return '—';
 		}
-		const d = new Date(valor);
+		const d = valor instanceof Date ? valor : new Date(valor);
 		if (isNaN(d.getTime())) {
-			return valor;
+			return String(valor);
 		}
 		const dd = String(d.getDate()).padStart(2, '0');
 		const mm = String(d.getMonth() + 1).padStart(2, '0');
 		const yyyy = d.getFullYear();
 		const hh = String(d.getHours()).padStart(2, '0');
 		const mi = String(d.getMinutes()).padStart(2, '0');
+		if (hh === '00' && mi === '00') {
+			return `${dd}/${mm}/${yyyy}`;
+		}
 		return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
 	}
 
-	private refrescarCatalogosFiltro(): void {
-		const estados = Array.from(new Set(this.source.map((x) => x.ESTADO))).sort();
-		this.estadosFiltro = [
-			{ VALUE: 'TODOS', TEXT: 'Todos' },
-			...estados.map((e) => ({ VALUE: e, TEXT: e })),
-		];
+	private configurarDataSource(): void {
+		this.cerrarPanel();
 
-		const unidades = Array.from(
-			new Set(this.source.map((x) => x.NOMBRE_UNIDAD).filter((x): x is string => !!x))
-		).sort();
-		this.unidadesFiltro = [
-			{ VALUE: 'TODOS', TEXT: 'Todas' },
-			...unidades.map((u) => ({ VALUE: u, TEXT: u })),
-		];
-	}
+		if (this.usaApiRequisiciones) {
+			this.requisicionesStore = this.crearRequisicionesStore();
+			this.models = this.requisicionesStore;
+			this.recalcularKpis();
+			return;
+		}
 
-	private aplicarFiltros(): void {
-		let rows = [...this.source];
-
-		if (this.activeTab === 'REQUISICIONES') {
-			rows = rows.filter((x) => x.TIPO === 'REQUISICION');
-		} else if (this.activeTab === 'CANDIDATOS') {
+		this.requisicionesStore = null;
+		let rows = [...this.mockSource];
+		if (this.activeTab === 'CANDIDATOS') {
 			rows = rows.filter((x) => x.TIPO === 'CANDIDATO');
 		} else if (this.activeTab === 'CONTRATACIONES') {
 			rows = rows.filter((x) => x.TIPO === 'CONTRATACION');
-		}
-
-		if (this.filtroTipo !== 'TODOS') {
-			rows = rows.filter((x) => x.TIPO === this.filtroTipo);
-		}
-		if (this.filtroEstado !== 'TODOS') {
-			rows = rows.filter((x) => x.ESTADO === this.filtroEstado);
-		}
-		if (this.filtroUnidad !== 'TODOS') {
-			rows = rows.filter((x) => x.NOMBRE_UNIDAD === this.filtroUnidad);
-		}
-
-		if (this.fechaDesde) {
-			const desde = new Date(this.fechaDesde);
-			desde.setHours(0, 0, 0, 0);
-			rows = rows.filter((x) => new Date(x.FECHA) >= desde);
-		}
-		if (this.fechaHasta) {
-			const hasta = new Date(this.fechaHasta);
-			hasta.setHours(23, 59, 59, 999);
-			rows = rows.filter((x) => new Date(x.FECHA) <= hasta);
 		}
 
 		const q = (this.filtroBusqueda || '').trim().toLowerCase();
@@ -351,40 +358,155 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 		this.models = rows;
 		this.recalcularKpis();
+	}
 
-		if (this.selectedItem && !this.models.some((x) => x.ID === this.selectedItem?.ID)) {
-			this.cerrarPanel();
+	private crearRequisicionesStore(): CustomStore {
+		return new CustomStore({
+			key: 'ID',
+			loadMode: 'processed',
+			cacheRawData: false,
+			load: async (loadOptions: any) => {
+				try {
+					const take = loadOptions?.take;
+					const skip = loadOptions?.skip ?? 0;
+					const pageSize = take == null ? 0 : take;
+					const page = pageSize > 0 ? Math.floor(skip / pageSize) + 1 : 1;
+
+					let sortField = 'FECHA_REQUISICION';
+					let sortDesc = true;
+					const sort = loadOptions?.sort;
+					if (Array.isArray(sort) && sort.length > 0) {
+						const s0 = sort[0];
+						const selector = typeof s0 === 'string' ? s0 : s0?.selector;
+						sortField = this.mapSortField(selector);
+						sortDesc = typeof s0 === 'object' ? !!s0.desc : false;
+					}
+
+					const corrEstado =
+						this.filtroEstado !== 'TODOS' && !isNaN(Number(this.filtroEstado))
+							? Number(this.filtroEstado)
+							: 0;
+
+					const response = await lastValueFrom(
+						this.service.getRequisiciones({
+							PAGE: page,
+							PAGE_SIZE: pageSize,
+							SORT_FIELD: sortField,
+							SORT_DESC: sortDesc,
+							CORR_ESTADO_REQUISICION: corrEstado > 0 ? corrEstado : undefined,
+							FECHA_DESDE: this.fechaDesde,
+							FECHA_HASTA: this.fechaHasta,
+							BUSQUEDA: this.filtroBusqueda?.trim() || undefined,
+						})
+					);
+
+					if (!response.Result) {
+						throw new Error(response.ErrorMessage || 'No se pudieron cargar las requisiciones.');
+					}
+
+					const rows = (response.Data || []).map((r: any) =>
+						this.service.mapRequisicionToBandejaItem(r)
+					);
+					this.totalRequisicionesApi = response.RowsAffected || rows.length;
+					this.syncUnidadesFromRows(rows);
+					this.recalcularKpis();
+
+					return {
+						data: rows,
+						totalCount: response.RowsAffected || rows.length,
+					};
+				} catch (error: any) {
+					this.notifyFx(
+						error?.message || 'Error al consultar requisiciones de la bandeja.',
+						NotifyType.Error,
+						{ raw: true }
+					);
+					throw error;
+				}
+			},
+		});
+	}
+
+	private mapSortField(selector: string | undefined): string {
+		switch (selector) {
+			case 'CODIGO':
+			case 'ID':
+				return 'CORR_REQUISICION_PERSONAL';
+			case 'DESCRIPCION':
+				return 'NOMBRE_PUESTO';
+			case 'SUBTITULO':
+				return 'NOMBRE_UNIDAD';
+			case 'SOLICITANTE':
+				return 'NOMBRE_SOLICITANTE';
+			case 'ESTADO':
+				return 'CORR_ESTADO_REQUISICION';
+			case 'FECHA':
+				return 'FECHA_REQUISICION';
+			default:
+				return 'FECHA_REQUISICION';
 		}
 	}
 
-	private recalcularKpis(): void {
-		const all = this.source;
-		const reqs = all.filter((x) => x.TIPO === 'REQUISICION');
-		const cands = all.filter((x) => x.TIPO === 'CANDIDATO');
-		const cons = all.filter((x) => x.TIPO === 'CONTRATACION');
+	private syncUnidadesFromRows(rows: ScBandejaItem[]): void {
+		const known = new Set(this.unidadesFiltro.map((x) => x.VALUE));
+		rows.forEach((r) => {
+			if (r.NOMBRE_UNIDAD && !known.has(r.NOMBRE_UNIDAD)) {
+				known.add(r.NOMBRE_UNIDAD);
+				this.unidadesFiltro = [
+					...this.unidadesFiltro,
+					{ VALUE: r.NOMBRE_UNIDAD, TEXT: r.NOMBRE_UNIDAD },
+				];
+			}
+		});
+	}
 
-		const reqEnAprob = reqs.filter((x) => x.ESTADO === 'En Aprobación').length;
+	private cargarBitacoraRequisicion(corr: number): void {
+		this.bitacoraLoading = true;
+		this.service.getBitacoraRequisicion(corr).subscribe({
+			next: (response) => {
+				this.bitacoraLoading = false;
+				if (!this.selectedItem || this.selectedItem.CORR_REQUISICION_PERSONAL !== corr) {
+					return;
+				}
+				if (!response.Result) {
+					this.notifyFx(
+						response.ErrorMessage || 'No se pudo cargar la bitácora.',
+						NotifyType.Warning,
+						{ raw: true }
+					);
+					return;
+				}
+				this.selectedItem = {
+					...this.selectedItem,
+					HISTORIAL: this.service.mapBitacoraToHistorial(response.Data || []),
+				};
+			},
+			error: () => {
+				this.bitacoraLoading = false;
+				this.notifyFx('Error al cargar bitácora de la requisición.', NotifyType.Error, {
+					raw: true,
+				});
+			},
+		});
+	}
+
+	private recalcularKpis(): void {
+		const cands = this.mockSource.filter((x) => x.TIPO === 'CANDIDATO');
+		const cons = this.mockSource.filter((x) => x.TIPO === 'CONTRATACION');
 		const postulantes = cands.filter((x) => x.ESTADO_CICLO_CANDIDATO === 'POSTULANTE').length;
 		const dictamenPend = cands.filter(
 			(x) => x.ESTADO_CICLO_CANDIDATO === 'EN_SELECCION' && x.ESTADO_DECISION === 'PENDIENTE'
 		).length;
-		const pendientes = all.filter((x) => x.REQUIERE_ATENCION).length;
-		const activos =
-			reqs.filter((x) =>
-				['Publicada', 'En Reclutamiento', 'En Selección', 'En Contratación', 'Parcial Cubierta'].includes(
-					x.ESTADO
-				)
-			).length +
-			cands.filter((x) =>
-				['CON_EXPEDIENTE', 'EN_SELECCION', 'APLICA'].includes(x.ESTADO_CICLO_CANDIDATO || '')
-			).length;
+		const pendientes =
+			this.mockSource.filter((x) => x.REQUIERE_ATENCION).length +
+			(this.filtroEstado === '2' ? this.totalRequisicionesApi : 0);
 
 		this.kpis = [
 			{
 				KEY: 'REQ',
 				LABEL: 'Requisiciones',
-				VALUE: reqs.length,
-				SUBLABEL: `${reqEnAprob} en aprobación`,
+				VALUE: this.totalRequisicionesApi,
+				SUBLABEL: 'Desde base de datos',
 				TONE: 'info',
 				ICON: 'doc',
 			},
@@ -392,7 +514,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 				KEY: 'CAN',
 				LABEL: 'Candidatos',
 				VALUE: cands.length,
-				SUBLABEL: `${postulantes} postulantes · ${dictamenPend} por dictamen`,
+				SUBLABEL: `${postulantes} postulantes · ${dictamenPend} por dictamen (mock)`,
 				TONE: 'default',
 				ICON: 'user',
 			},
@@ -415,7 +537,9 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 			{
 				KEY: 'ACT',
 				LABEL: 'Procesos activos',
-				VALUE: activos,
+				VALUE: this.totalRequisicionesApi + cands.filter((x) =>
+					['CON_EXPEDIENTE', 'EN_SELECCION', 'APLICA'].includes(x.ESTADO_CICLO_CANDIDATO || '')
+				).length,
 				SUBLABEL: 'En etapas operativas',
 				TONE: 'info',
 				ICON: 'preferences',

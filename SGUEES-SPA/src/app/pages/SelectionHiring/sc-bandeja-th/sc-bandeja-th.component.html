@@ -3,12 +3,12 @@
 		<div class="bandeja-header__text">
 			<h2 class="bandeja-title">{{ tituloVentana || 'Bandeja de solicitudes' }}</h2>
 			<p class="bandeja-subtitle">
-				Tres ciclos: Requisiciones (unidad crea/envía · jefe inmediato aprueba), Candidatos
-				(Postulante → expediente → selección → dictamen Aplica/No aplica) y Contrataciones
-				(desde Aplica · movimiento personal por TH). TH visualiza todo el proceso.
+				Requisiciones conectadas a base (paginado servidor). Candidatos y contrataciones siguen en mock
+				hasta su stage. Unidad crea/envía · jefe inmediato aprueba · TH gestiona · dictamen Aplica/No aplica
+				en ciclo candidatos.
 			</p>
 		</div>
-		<div class="bandeja-header__badge">UI mock · sin API</div>
+		<div class="bandeja-header__badge">Requisiciones · API</div>
 	</div>
 
 	<div class="bandeja-kpis content-block">
@@ -154,20 +154,21 @@
 				[hoverStateEnabled]="true"
 				[focusedRowEnabled]="true"
 				[focusedRowKey]="selectedItem?.ID"
+				[remoteOperations]="usaApiRequisiciones ? remoteOperations : false"
 				[height]="gridHeight"
 				(onFocusedRowChanged)="onFocusedRowChanged($event)"
 				(onRowClick)="onRowClick($event)"
 			>
-				<dxo-load-panel [enabled]="false"></dxo-load-panel>
-				<dxo-paging [pageSize]="10"></dxo-paging>
+				<dxo-load-panel [enabled]="true"></dxo-load-panel>
+				<dxo-paging [pageSize]="pageSize"></dxo-paging>
 				<dxo-pager
 					[visible]="true"
 					[showPageSizeSelector]="true"
-					[allowedPageSizes]="[10, 15, 30]"
+					[allowedPageSizes]="allowedPageSizes"
 					[showInfo]="true"
 				></dxo-pager>
-				<dxo-filter-row [visible]="true"></dxo-filter-row>
-				<dxo-selection mode="multiple" [showCheckBoxesMode]="'always'"></dxo-selection>
+				<dxo-filter-row [visible]="!usaApiRequisiciones"></dxo-filter-row>
+				<dxo-sorting mode="single"></dxo-sorting>
 
 				<dxi-column
 					dataField="TIPO"
@@ -232,7 +233,7 @@
 					{{ formatFecha(cell.data.FECHA) }}
 				</div>
 				<div *dxTemplate="let cell of 'estadoCell'">
-					<span [class]="estadoChipClass(cell.data.ESTADO_TONE)">{{ cell.data.ESTADO }}</span>
+					<span [class]="estadoChipClass(cell.data)">{{ cell.data.ESTADO }}</span>
 				</div>
 				<div *dxTemplate="let cell of 'accionesCell'">
 					<dx-button
@@ -279,7 +280,7 @@
 						</span>
 						<div class="bandeja-panel__code">{{ selectedItem.CODIGO }}</div>
 						<div class="bandeja-panel__title">{{ selectedItem.DESCRIPCION }}</div>
-						<span [class]="estadoChipClass(selectedItem.ESTADO_TONE)">{{ selectedItem.ESTADO }}</span>
+						<span [class]="estadoChipClass(selectedItem)">{{ selectedItem.ESTADO }}</span>
 					</div>
 
 					<div class="bandeja-meta-grid">
@@ -390,7 +391,11 @@
 				</div>
 
 				<div class="bandeja-panel__body" *ngIf="panelTab === 'HISTORIAL'">
-					<div class="bandeja-historial" *ngIf="selectedItem.HISTORIAL?.length; else sinHistorial">
+					<div class="bandeja-section__text" *ngIf="bitacoraLoading">Cargando bitácora…</div>
+					<div
+						class="bandeja-historial"
+						*ngIf="!bitacoraLoading && selectedItem.HISTORIAL?.length; else sinHistorial"
+					>
 						<div class="bandeja-historial__item" *ngFor="let h of selectedItem.HISTORIAL">
 							<div class="bandeja-historial__dot"></div>
 							<div class="bandeja-historial__content">
@@ -405,7 +410,9 @@
 						</div>
 					</div>
 					<ng-template #sinHistorial>
-						<p class="bandeja-section__text">Sin movimientos registrados.</p>
+						<p class="bandeja-section__text" *ngIf="!bitacoraLoading">
+							Sin movimientos registrados.
+						</p>
 					</ng-template>
 				</div>
 			</dx-scroll-view>

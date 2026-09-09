@@ -42,6 +42,7 @@ export interface ScBandejaItem {
 	ESTADO_TONE: string;
 
 	CORR_REQUISICION_PERSONAL?: number;
+	CORR_ESTADO_REQUISICION?: number;
 	CORR_EXPEDIENTE_CANDIDATO?: number;
 	CORR_SOLICITUD_EMPLEO?: number;
 	CORR_PERSONA_DATOS?: number | null;
