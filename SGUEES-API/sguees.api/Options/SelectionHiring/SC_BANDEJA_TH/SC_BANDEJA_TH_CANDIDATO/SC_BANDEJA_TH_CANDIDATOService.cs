@@ -7,16 +7,16 @@ using SGUEES.Repositories;
 
 namespace SGUEES.Services
 {
-	public class SC_BANDEJA_THService : ISC_BANDEJA_THService
+	public class SC_BANDEJA_TH_CANDIDATOService : ISC_BANDEJA_TH_CANDIDATOService
 	{
-		private readonly ISC_BANDEJA_THRepository _repo;
+		private readonly ISC_BANDEJA_TH_CANDIDATORepository _repo;
 
-		public SC_BANDEJA_THService(ISC_BANDEJA_THRepository repo)
+		public SC_BANDEJA_TH_CANDIDATOService(ISC_BANDEJA_TH_CANDIDATORepository repo)
 		{
 			_repo = repo;
 		}
 
-		public async Task<CResult> GetRequisicionesAsync(SC_BANDEJA_TH_REQUISICIONParam xWhere)
+		public async Task<CResult> GetCandidatosAsync(SC_BANDEJA_TH_CANDIDATOParam xWhere)
 		{
 			var p = new List<CParameter>
 			{
@@ -27,23 +27,25 @@ namespace SGUEES.Services
 				new() { ParameterName = "SORT_DESC", Value = xWhere.SORT_DESC, DbType = DbType.Boolean },
 			};
 
-			if (xWhere.CORR_ESTADO_REQUISICION > 0)
+			if (!string.IsNullOrWhiteSpace(xWhere.ESTADO_CICLO)
+				&& !string.Equals(xWhere.ESTADO_CICLO.Trim(), "TODOS", System.StringComparison.OrdinalIgnoreCase))
 			{
 				p.Add(new CParameter
 				{
-					ParameterName = "CORR_ESTADO_REQUISICION",
-					Value = xWhere.CORR_ESTADO_REQUISICION,
-					DbType = DbType.Int32,
+					ParameterName = "ESTADO_CICLO",
+					Value = xWhere.ESTADO_CICLO.Trim().ToUpperInvariant(),
+					DbType = DbType.String,
 				});
 			}
 
-			if (xWhere.CORR_UNIDAD > 0)
+			if (!string.IsNullOrWhiteSpace(xWhere.NOMBRE_UNIDAD)
+				&& !string.Equals(xWhere.NOMBRE_UNIDAD.Trim(), "TODOS", System.StringComparison.OrdinalIgnoreCase))
 			{
 				p.Add(new CParameter
 				{
-					ParameterName = "CORR_UNIDAD",
-					Value = xWhere.CORR_UNIDAD,
-					DbType = DbType.Int32,
+					ParameterName = "NOMBRE_UNIDAD",
+					Value = xWhere.NOMBRE_UNIDAD.Trim(),
+					DbType = DbType.String,
 				});
 			}
 
@@ -77,28 +79,7 @@ namespace SGUEES.Services
 				});
 			}
 
-			return await _repo.GetRequisicionesPagedAsync(p);
-		}
-
-		public async Task<CResult> GetBitacoraRequisicionAsync(SC_BANDEJA_TH_BITACORAParam xWhere)
-		{
-			var p = new List<CParameter>
-			{
-				new()
-				{
-					ParameterName = "CORR_TIPO_DOCUMENTO",
-					Value = xWhere.CORR_TIPO_DOCUMENTO > 0 ? xWhere.CORR_TIPO_DOCUMENTO : 101,
-					DbType = DbType.Int32,
-				},
-				new()
-				{
-					ParameterName = "CORR_DOCUMENTO",
-					Value = xWhere.CORR_REQUISICION_PERSONAL,
-					DbType = DbType.Int32,
-				},
-			};
-
-			return await _repo.GetBitacoraRequisicionAsync(p);
+			return await _repo.GetCandidatosPagedAsync(p);
 		}
 	}
 }

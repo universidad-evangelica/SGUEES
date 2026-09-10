@@ -30,4 +30,13 @@ export class ScBandejaThRepository {
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
 	}
+
+	getCandidatos(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'GetCandidatos',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }

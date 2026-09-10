@@ -22,12 +22,10 @@ import { BANDEJA_ESTADOS_REQUISICION, ScBandejaThService } from './sc-bandeja-th
 	styleUrls: ['./sc-bandeja-th.component.scss'],
 })
 export class ScBandejaThComponent extends CBaseComponent implements OnInit {
-	/** Mock solo para etapas aún no conectadas (candidatos / contrataciones). */
-	private readonly mockSource: ScBandejaItem[] = SC_BANDEJA_TH_MOCK.filter(
-		(x) => x.TIPO !== 'REQUISICION'
-	).map((x) => ({ ...x }));
+	/** Stage Contrataciones aún sin API. */
+	private readonly mockSource: ScBandejaItem[] = [...SC_BANDEJA_TH_MOCK];
 
-	/** DataSource del grid: CustomStore (requisiciones) o array (mock). */
+	/** DataSource del grid: CustomStore (API) o array (stages pendientes). */
 	models: any = [];
 
 	selectedItem: ScBandejaItem | null = null;
@@ -46,6 +44,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 	kpis: ScBandejaKpi[] = [];
 	totalRequisicionesApi = 0;
+	totalCandidatosApi = 0;
 
 	readonly tabs: Array<{ id: ScBandejaTab; label: string }> = [
 		{ id: 'TODAS', label: 'Todas' },
@@ -61,13 +60,24 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		{ VALUE: 'CONTRATACION', TEXT: 'Contratación' },
 	];
 
-	estadosFiltro: Array<{ VALUE: string; TEXT: string }> = [
+	readonly estadosFiltroRequisicion: Array<{ VALUE: string; TEXT: string }> = [
 		{ VALUE: 'TODOS', TEXT: 'Todos' },
 		...BANDEJA_ESTADOS_REQUISICION.map((e) => ({
 			VALUE: String(e.CORR_ESTADO_REQUISICION),
 			TEXT: e.ESTADO_REQUISICION,
 		})),
 	];
+
+	readonly estadosFiltroCandidato: Array<{ VALUE: string; TEXT: string }> = [
+		{ VALUE: 'TODOS', TEXT: 'Todos' },
+		{ VALUE: 'POSTULANTE', TEXT: 'Postulante' },
+		{ VALUE: 'CON_EXPEDIENTE', TEXT: 'Con expediente' },
+		{ VALUE: 'EN_SELECCION', TEXT: 'En proceso de selección' },
+		{ VALUE: 'APLICA', TEXT: 'Aplica' },
+		{ VALUE: 'NO_APLICA', TEXT: 'No aplica' },
+	];
+
+	estadosFiltro: Array<{ VALUE: string; TEXT: string }> = this.estadosFiltroRequisicion;
 
 	unidadesFiltro: Array<{ VALUE: string; TEXT: string }> = [{ VALUE: 'TODOS', TEXT: 'Todas' }];
 
@@ -76,6 +86,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	readonly allowedPageSizes: (number | 'all')[] = [10, 15, 30, 'all'];
 
 	private requisicionesStore: CustomStore | null = null;
+	private candidatosStore: CustomStore | null = null;
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -86,21 +97,52 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	}
 
 	ngOnInit(): void {
+		this.prefetchTotales();
 		this.configurarDataSource();
-		this.recalcularKpis();
+	}
+
+	/** Totales para tabs/KPIs aunque el stage activo no sea Candidatos. */
+	private prefetchTotales(): void {
+		lastValueFrom(
+			this.service.getRequisiciones({ PAGE: 1, PAGE_SIZE: 1, SORT_DESC: true })
+		)
+			.then((res) => {
+				if (res?.Result) {
+					this.totalRequisicionesApi = res.RowsAffected || 0;
+					this.recalcularKpis();
+				}
+			})
+			.catch(() => undefined);
+
+		lastValueFrom(this.service.getCandidatos({ PAGE: 1, PAGE_SIZE: 1, SORT_DESC: true }))
+			.then((res) => {
+				if (res?.Result) {
+					this.totalCandidatosApi = res.RowsAffected || 0;
+					this.recalcularKpis();
+				}
+			})
+			.catch(() => undefined);
 	}
 
 	get tabCounts(): Record<ScBandejaTab, number> {
 		return {
-			TODAS: this.totalRequisicionesApi + this.mockSource.length,
+			TODAS: this.totalRequisicionesApi + this.totalCandidatosApi + this.mockSource.length,
 			REQUISICIONES: this.totalRequisicionesApi,
-			CANDIDATOS: this.mockSource.filter((x) => x.TIPO === 'CANDIDATO').length,
+			CANDIDATOS: this.totalCandidatosApi,
 			CONTRATACIONES: this.mockSource.filter((x) => x.TIPO === 'CONTRATACION').length,
 		};
 	}
 
 	get usaApiRequisiciones(): boolean {
 		return this.activeTab === 'REQUISICIONES' || this.activeTab === 'TODAS';
+	}
+
+	get usaApiCandidatos(): boolean {
+		return this.activeTab === 'CANDIDATOS';
+	}
+
+	get usaApiGrid(): boolean {
+		return this.usaApiRequisiciones || this.usaApiCandidatos;
 	}
 
 	get puedeDictaminar(): boolean {
@@ -115,14 +157,19 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 	seleccionarTab(tab: ScBandejaTab): void {
 		this.activeTab = tab;
+		this.filtroEstado = 'TODOS';
 		if (tab === 'TODAS') {
 			this.filtroTipo = 'TODOS';
+			this.estadosFiltro = this.estadosFiltroRequisicion;
 		} else if (tab === 'REQUISICIONES') {
 			this.filtroTipo = 'REQUISICION';
+			this.estadosFiltro = this.estadosFiltroRequisicion;
 		} else if (tab === 'CANDIDATOS') {
 			this.filtroTipo = 'CANDIDATO';
+			this.estadosFiltro = this.estadosFiltroCandidato;
 		} else {
 			this.filtroTipo = 'CONTRATACION';
+			this.estadosFiltro = this.estadosFiltroCandidato;
 		}
 		this.configurarDataSource();
 	}
@@ -189,6 +236,9 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		this.panelTab = tab;
 	}
 
+	/**
+	 * TODO (PENDIENTE-ACCIONES.md): deep link a solicitud / expediente / requisición.
+	 */
 	accionVerDetalle(): void {
 		if (!this.selectedItem) {
 			return;
@@ -204,37 +254,47 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		this.panelTab = 'HISTORIAL';
 	}
 
+	/**
+	 * TODO (PENDIENTE-ACCIONES.md): ScExpedienteCandidatoService.asociarSolicitud
+	 */
 	accionAsociarExpediente(): void {
 		if (!this.selectedItem || this.selectedItem.ESTADO_CICLO_CANDIDATO !== 'POSTULANTE') {
 			return;
 		}
 		this.notifyFx(
-			`Asociar expediente simulado para ${this.selectedItem.CODIGO} (mock).`,
-			NotifyType.Success,
+			`Asociar expediente: pendiente de conectar (próxima fase).`,
+			NotifyType.Warning,
 			{ raw: true }
 		);
 	}
 
+	/**
+	 * TODO (PENDIENTE-ACCIONES.md): ScExpedienteCandidatoService.activarProcesoSeleccion
+	 * (estado expediente 2 → EN_SELECCION en todas las requisiciones del expediente)
+	 */
 	accionActivarSeleccion(): void {
 		if (!this.selectedItem || this.selectedItem.ESTADO_CICLO_CANDIDATO !== 'CON_EXPEDIENTE') {
 			return;
 		}
 		this.notifyFx(
-			`Activar proceso de selección simulado para ${this.selectedItem.CODIGO} (mock).`,
-			NotifyType.Success,
+			`Activar proceso de selección: pendiente de conectar (próxima fase).`,
+			NotifyType.Warning,
 			{ raw: true }
 		);
 	}
 
+	/**
+	 * TODO (PENDIENTE-ACCIONES.md): ScRequisicionCandidatoService.decide
+	 */
 	accionDictamen(aplica: boolean): void {
 		if (!this.puedeDictaminar || !this.selectedItem) {
 			return;
 		}
 		this.notifyFx(
 			aplica
-				? `Dictamen APLICA simulado para ${this.selectedItem.CODIGO} (mock).`
-				: `Dictamen NO APLICA simulado para ${this.selectedItem.CODIGO} (mock).`,
-			NotifyType.Success,
+				? `Dictamen APLICA: pendiente de conectar (próxima fase).`
+				: `Dictamen NO APLICA: pendiente de conectar (próxima fase).`,
+			NotifyType.Warning,
 			{ raw: true }
 		);
 	}
@@ -320,17 +380,25 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		this.cerrarPanel();
 
 		if (this.usaApiRequisiciones) {
+			this.candidatosStore = null;
 			this.requisicionesStore = this.crearRequisicionesStore();
 			this.models = this.requisicionesStore;
 			this.recalcularKpis();
 			return;
 		}
 
+		if (this.usaApiCandidatos) {
+			this.requisicionesStore = null;
+			this.candidatosStore = this.crearCandidatosStore();
+			this.models = this.candidatosStore;
+			this.recalcularKpis();
+			return;
+		}
+
 		this.requisicionesStore = null;
+		this.candidatosStore = null;
 		let rows = [...this.mockSource];
-		if (this.activeTab === 'CANDIDATOS') {
-			rows = rows.filter((x) => x.TIPO === 'CANDIDATO');
-		} else if (this.activeTab === 'CONTRATACIONES') {
+		if (this.activeTab === 'CONTRATACIONES') {
 			rows = rows.filter((x) => x.TIPO === 'CONTRATACION');
 		}
 
@@ -366,20 +434,11 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 			cacheRawData: false,
 			load: async (loadOptions: any) => {
 				try {
-					const take = loadOptions?.take;
-					const skip = loadOptions?.skip ?? 0;
-					const pageSize = take == null ? 0 : take;
-					const page = pageSize > 0 ? Math.floor(skip / pageSize) + 1 : 1;
-
-					let sortField = 'FECHA_REQUISICION';
-					let sortDesc = true;
-					const sort = loadOptions?.sort;
-					if (Array.isArray(sort) && sort.length > 0) {
-						const s0 = sort[0];
-						const selector = typeof s0 === 'string' ? s0 : s0?.selector;
-						sortField = this.mapSortField(selector);
-						sortDesc = typeof s0 === 'object' ? !!s0.desc : false;
-					}
+					const { page, pageSize, sortField, sortDesc } = this.parseLoadOptions(
+						loadOptions,
+						'FECHA_REQUISICION',
+						(sel) => this.mapSortFieldRequisicion(sel)
+					);
 
 					const corrEstado =
 						this.filtroEstado !== 'TODOS' && !isNaN(Number(this.filtroEstado))
@@ -426,7 +485,86 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
-	private mapSortField(selector: string | undefined): string {
+	private crearCandidatosStore(): CustomStore {
+		return new CustomStore({
+			key: 'ID',
+			loadMode: 'processed',
+			cacheRawData: false,
+			load: async (loadOptions: any) => {
+				try {
+					const { page, pageSize, sortField, sortDesc } = this.parseLoadOptions(
+						loadOptions,
+						'FECHA_GENERACION',
+						(sel) => this.mapSortFieldCandidato(sel)
+					);
+
+					const response = await lastValueFrom(
+						this.service.getCandidatos({
+							PAGE: page,
+							PAGE_SIZE: pageSize,
+							SORT_FIELD: sortField,
+							SORT_DESC: sortDesc,
+							ESTADO_CICLO:
+								this.filtroEstado !== 'TODOS' ? this.filtroEstado : undefined,
+							NOMBRE_UNIDAD:
+								this.filtroUnidad !== 'TODOS' ? this.filtroUnidad : undefined,
+							FECHA_DESDE: this.fechaDesde,
+							FECHA_HASTA: this.fechaHasta,
+							BUSQUEDA: this.filtroBusqueda?.trim() || undefined,
+						})
+					);
+
+					if (!response.Result) {
+						throw new Error(response.ErrorMessage || 'No se pudieron cargar los candidatos.');
+					}
+
+					const rows = (response.Data || []).map((r: any) =>
+						this.service.mapCandidatoToBandejaItem(r)
+					);
+					this.totalCandidatosApi = response.RowsAffected || rows.length;
+					this.syncUnidadesFromRows(rows);
+					this.recalcularKpis();
+
+					return {
+						data: rows,
+						totalCount: response.RowsAffected || rows.length,
+					};
+				} catch (error: any) {
+					this.notifyFx(
+						error?.message || 'Error al consultar candidatos de la bandeja.',
+						NotifyType.Error,
+						{ raw: true }
+					);
+					throw error;
+				}
+			},
+		});
+	}
+
+	private parseLoadOptions(
+		loadOptions: any,
+		defaultSort: string,
+		mapSort: (selector: string | undefined) => string
+	): { page: number; pageSize: number; sortField: string; sortDesc: boolean } {
+		const take = loadOptions?.take;
+		const skip = loadOptions?.skip ?? 0;
+		const pageSize = take == null ? 0 : take;
+		const page = pageSize > 0 ? Math.floor(skip / pageSize) + 1 : 1;
+
+		let sortField = defaultSort;
+		let sortDesc = true;
+		const sort = loadOptions?.sort;
+		if (Array.isArray(sort) && sort.length > 0) {
+			const s0 = sort[0];
+			const selector = typeof s0 === 'string' ? s0 : s0?.selector;
+			sortField = mapSort(selector);
+			sortDesc = typeof s0 === 'object' ? !!s0.desc : false;
+		}
+
+		return { page, pageSize, sortField, sortDesc };
+	}
+
+	private mapSortFieldRequisicion(selector: string | undefined): string {
 		switch (selector) {
 			case 'CODIGO':
 			case 'ID':
@@ -443,6 +581,27 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 				return 'FECHA_REQUISICION';
 			default:
 				return 'FECHA_REQUISICION';
+		}
+	}
+
+	private mapSortFieldCandidato(selector: string | undefined): string {
+		switch (selector) {
+			case 'CODIGO':
+			case 'ID':
+				return 'CORR_SOLICITUD_EMPLEO';
+			case 'DESCRIPCION':
+			case 'NOMBRE_CANDIDATO':
+				return 'NOMBRE_PERSONA';
+			case 'SUBTITULO':
+				return 'NOMBRE_UNIDAD';
+			case 'SOLICITANTE':
+				return 'NOMBRE_SOLICITANTE';
+			case 'ESTADO':
+				return 'ESTADO_CICLO_CANDIDATO';
+			case 'FECHA':
+				return 'FECHA_GENERACION';
+			default:
+				return 'FECHA_GENERACION';
 		}
 	}
 
@@ -490,15 +649,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	}
 
 	private recalcularKpis(): void {
-		const cands = this.mockSource.filter((x) => x.TIPO === 'CANDIDATO');
 		const cons = this.mockSource.filter((x) => x.TIPO === 'CONTRATACION');
-		const postulantes = cands.filter((x) => x.ESTADO_CICLO_CANDIDATO === 'POSTULANTE').length;
-		const dictamenPend = cands.filter(
-			(x) => x.ESTADO_CICLO_CANDIDATO === 'EN_SELECCION' && x.ESTADO_DECISION === 'PENDIENTE'
-		).length;
-		const pendientes =
-			this.mockSource.filter((x) => x.REQUIERE_ATENCION).length +
-			(this.filtroEstado === '2' ? this.totalRequisicionesApi : 0);
 
 		this.kpis = [
 			{
@@ -512,8 +663,8 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 			{
 				KEY: 'CAN',
 				LABEL: 'Candidatos',
-				VALUE: cands.length,
-				SUBLABEL: `${postulantes} postulantes · ${dictamenPend} por dictamen (mock)`,
+				VALUE: this.totalCandidatosApi,
+				SUBLABEL: 'Postulaciones con persona',
 				TONE: 'default',
 				ICON: 'user',
 			},
@@ -521,25 +672,23 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 				KEY: 'CON',
 				LABEL: 'Contrataciones',
 				VALUE: cons.length,
-				SUBLABEL: `${cons.filter((x) => x.LISTO_CONTRATACION).length} listos (standby)`,
+				SUBLABEL: 'Pendiente conectar API',
 				TONE: 'success',
 				ICON: 'card',
 			},
 			{
 				KEY: 'PEN',
 				LABEL: 'Pendientes de mi acción',
-				VALUE: pendientes,
-				SUBLABEL: 'Requieren atención',
+				VALUE: 0,
+				SUBLABEL: 'Se afinará al conectar acciones',
 				TONE: 'warning',
 				ICON: 'warning',
 			},
 			{
 				KEY: 'ACT',
 				LABEL: 'Procesos activos',
-				VALUE: this.totalRequisicionesApi + cands.filter((x) =>
-					['CON_EXPEDIENTE', 'EN_SELECCION', 'APLICA'].includes(x.ESTADO_CICLO_CANDIDATO || '')
-				).length,
-				SUBLABEL: 'En etapas operativas',
+				VALUE: this.totalRequisicionesApi + this.totalCandidatosApi,
+				SUBLABEL: 'Requisiciones + postulaciones',
 				TONE: 'info',
 				ICON: 'preferences',
 			},

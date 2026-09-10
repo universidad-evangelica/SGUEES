@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -10,7 +10,7 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-	public class SC_BANDEJA_THRepository : BaseRepository<SC_BANDEJA_THTable>, ISC_BANDEJA_THRepository
+	public class SC_BANDEJA_TH_REQUISICIONRepository : BaseRepository<SC_BANDEJA_THTable>, ISC_BANDEJA_TH_REQUISICIONRepository
 	{
 		/// <summary>
 		/// Fuente operativa: vista existente + join a SEG_USUARIO.
@@ -71,7 +71,7 @@ SELECT
 			"FECHA_CREA",
 		};
 
-		public SC_BANDEJA_THRepository(IConfiguration config)
+		public SC_BANDEJA_TH_REQUISICIONRepository(IConfiguration config)
 			: base(
 				config.GetConnectionString("defaultConnection"),
 				config.GetSection("DbProvider:defaultProvider").Value)
@@ -350,3 +350,4 @@ ORDER BY FB.FECHA_ACCION DESC, FB.CORR_BITACORA DESC", xWhere);
 		}
 	}
 }
+

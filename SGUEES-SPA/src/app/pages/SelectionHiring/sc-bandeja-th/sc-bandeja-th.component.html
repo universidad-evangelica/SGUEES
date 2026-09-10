@@ -1,7 +1,7 @@
 <div class="sguees-mtto-view sc-bandeja-th">
 	<div class="bandeja-header">
 		<h2 class="bandeja-title">{{ tituloVentana || 'Bandeja de solicitudes' }}</h2>
-		<div class="bandeja-header__badge">Requisiciones · API</div>
+		<div class="bandeja-header__badge">Requisiciones · Candidatos · API</div>
 	</div>
 
 	<div class="bandeja-kpis">
@@ -147,7 +147,7 @@
 					[hoverStateEnabled]="true"
 					[focusedRowEnabled]="true"
 					[focusedRowKey]="selectedItem?.ID"
-					[remoteOperations]="usaApiRequisiciones ? remoteOperations : false"
+					[remoteOperations]="usaApiGrid ? remoteOperations : false"
 					[height]="'100%'"
 					(onFocusedRowChanged)="onFocusedRowChanged($event)"
 					(onRowClick)="onRowClick($event)"
@@ -160,7 +160,7 @@
 						[allowedPageSizes]="allowedPageSizes"
 						[showInfo]="true"
 					></dxo-pager>
-					<dxo-filter-row [visible]="!usaApiRequisiciones"></dxo-filter-row>
+					<dxo-filter-row [visible]="!usaApiGrid"></dxo-filter-row>
 					<dxo-sorting mode="single"></dxo-sorting>
 
 					<dxi-column
@@ -413,6 +413,7 @@
 			</dx-scroll-view>
 
 			<div class="bandeja-panel__actions">
+				<!-- Recordatorio: botones visibles por estado; conexión API = PENDIENTE-ACCIONES.md -->
 				<dx-button
 					text="Ver detalle"
 					type="default"
