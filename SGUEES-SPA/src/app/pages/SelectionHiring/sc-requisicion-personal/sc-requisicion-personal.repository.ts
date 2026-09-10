@@ -50,6 +50,20 @@ export class ScRequisicionPersonalRepository {
 	}
 
 	/**
+	 * Ejecuta operación del flujo de la requisición (Autoriza SP).
+	 * Reutilizable desde otros componentes vía ScRequisicionPersonalService.autoriza().
+	 */
+	autoriza(model: any): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'Autoriza',
+			[{ Parameter: 'CORR_REQUISICION_PERSONAL', Value: model.CORR_REQUISICION_PERSONAL }],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	/**
 	 * Lookup de descriptores por unidad + puesto (endpoint en SC_DESCRIPTOR_PUESTO:
 	 * GetCORR_DESCRIPTOR_PUESTO_BY_PUESTO_SC_REQUISICION_PERSONAL).
 	 */

@@ -216,6 +216,26 @@ export class ScRequisicionPersonalService {
 		return this.repo.delete(xWhere);
 	}
 
+	/**
+	 * Ejecuta una operación del flujo de la requisición (Enviar/Aprobar/Devolver/Rechazar).
+	 * Inyectable desde otros componentes: ScRequisicionPersonalService.autoriza(...).
+	 */
+	autoriza(payload: {
+		CORR_REQUISICION_PERSONAL: number;
+		OPERACION: number;
+		OBSERVACION: string;
+		CORR_UNIDAD_DOCUMENTO?: number | null;
+		CORR_ACCION?: number | null;
+	}): Observable<IResult> {
+		return this.repo.autoriza({
+			CORR_REQUISICION_PERSONAL: payload.CORR_REQUISICION_PERSONAL,
+			OPERACION: payload.OPERACION,
+			OBSERVACION: payload.OBSERVACION,
+			CORR_UNIDAD_DOCUMENTO: payload.CORR_UNIDAD_DOCUMENTO ?? null,
+			CORR_ACCION: payload.CORR_ACCION ?? null,
+		});
+	}
+
 	/** Bitácora de la requisición (endpoint GetCORR_BITACORA_SC_REQUISICION_PERSONAL). */
 	getBitacora(param?: any): Observable<IResult> {
 		const xWhere: IParam[] = [];
