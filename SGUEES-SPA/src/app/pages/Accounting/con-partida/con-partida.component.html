@@ -116,6 +116,15 @@
 </app-barra-data-mtto>
 
 <div *ngIf="!isBrowse()" class="partida-edit-shell">
+	<!-- Tabs principales: partida (encabezado + detalle) y bitácora. -->
+	<dx-tab-panel
+		#tabPanelPrincipal
+		class="partida-main-tab-panel"
+		[(selectedIndex)]="mainTabIndex"
+	>
+		<!-- Tab Partida: encabezado y detalle/documentos. -->
+		<dxi-item title="Partida" icon="file">
+			<div class="partida-main-tab-body">
 	<section class="sguees-section-card partida-form-card">
 		<header class="partida-section-head">
 			<span class="partida-section-title">Datos de la partida</span>
@@ -414,6 +423,56 @@
 		</dxi-item>
 	</dx-tab-panel>
 	</section>
+			</div>
+		</dxi-item>
+
+		<!-- Tab Bitácora: título + mensaje/tabla dentro de card (igual otras secciones). -->
+		<dxi-item title="Bitácora" icon="event">
+			<div class="partida-bitacora">
+				<section class="sguees-section-card partida-bitacora-card">
+					<h3 class="partida-bitacora-title">
+						<span class="dx-icon-clock partida-bitacora-title-icon" aria-hidden="true"></span>
+						Bitácora de la Partida
+					</h3>
+
+					<!-- motivo: loading / vacío / grilla dentro de la misma card. -->
+					<div class="firmas-container">
+						<div *ngIf="bitacoraLoading" class="firmas-loading">
+							<dx-load-indicator [visible]="true"></dx-load-indicator>
+						</div>
+
+						<div
+							*ngIf="!bitacoraLoading && bitacoras && bitacoras.length === 0"
+							class="firmas-empty"
+						>
+							<span>No hay registros de bitácora para esta partida</span>
+						</div>
+
+						<app-data-grid-mtto
+							*ngIf="!bitacoraLoading && bitacoras && bitacoras.length > 0"
+							class="firmas-grid-container"
+							[isBrowse]="true"
+							[models]="bitacoras"
+							[columns]="bitacoraColumns"
+							[keyExpr]="'CORR_PARTIDA_BITACORA'"
+							[permiteEditar]="false"
+							[permiteDele]="false"
+							[showSearch]="false"
+							[showAdd]="false"
+							[showExport]="false"
+							[showRefresh]="false"
+							[titulo]="''"
+							[unifiedToolbar]="false"
+							[gridHeight]="'auto'"
+							[pageSize]="100"
+							[wordWrapEnabled]="true"
+						>
+						</app-data-grid-mtto>
+					</div>
+				</section>
+			</div>
+		</dxi-item>
+	</dx-tab-panel>
 </div>
 <app-data-grid-mtto
 	[isBrowse]="isBrowse()"

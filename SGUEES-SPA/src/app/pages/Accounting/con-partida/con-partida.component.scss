@@ -235,10 +235,80 @@
 	gap: var(--sguees-content-gap, 16px);
 }
 
+.partida-main-tab-body {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sguees-content-gap, 16px);
+	padding-top: var(--sguees-space-3, 12px);
+}
+
+/* Título Bitácora: mismo look que descriptor-section-title + descriptor-bitacora-title. */
+.partida-bitacora {
+	margin-top: 15px;
+	padding-top: var(--sguees-space-3, 12px);
+}
+
+.partida-bitacora-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 12px;
+	font-size: 1.05rem;
+	font-weight: 600;
+}
+
+.partida-bitacora-title-icon {
+	font-size: 1.1rem;
+	opacity: 0.9;
+}
+
+/* Ocultar columna Options en bitácora (solo lectura, igual firmas-documento). */
+:host ::ng-deep .partida-bitacora .firmas-grid-container {
+	.dx-command-edit,
+	.dx-command-edit-with-icons {
+		display: none !important;
+		width: 0 !important;
+		padding: 0 !important;
+		margin: 0 !important;
+		border: none !important;
+	}
+
+	.dx-datagrid-headers .dx-command-edit,
+	.dx-datagrid-content .dx-command-edit,
+	.dx-datagrid-filter-row .dx-command-edit {
+		display: none !important;
+	}
+
+	colgroup col.dx-col-fixed {
+		display: none !important;
+		width: 0 !important;
+	}
+
+	.dx-datagrid-table {
+		colgroup col:first-child {
+			display: none !important;
+			width: 0 !important;
+		}
+	}
+
+	.dx-datagrid-content-fixed .dx-header-row,
+	.dx-datagrid-content-fixed .dx-datagrid-filter-row {
+		display: none !important;
+	}
+
+	/* Observaciones largas: wrap completo, sin "...". */
+	.dx-datagrid-rowsview .dx-data-row > td {
+		white-space: normal;
+		word-break: break-word;
+		vertical-align: top;
+	}
+}
+
 /* Tarjetas de sección: usa la clase global .sguees-section-card.
    Aquí solo ajustamos detalles propios de esta pantalla. */
 .partida-form-card,
-.partida-detalle-card {
+.partida-detalle-card,
+.partida-bitacora-card {
 	margin-bottom: 0; /* el espacio vertical lo maneja el gap del shell */
 }
 
