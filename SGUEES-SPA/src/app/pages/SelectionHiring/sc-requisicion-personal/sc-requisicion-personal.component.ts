@@ -12,7 +12,7 @@ import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { AuthService } from 'src/app/shared/services/auth.service';
 
-import { ScRequisicionPersonal } from './models/sc-requisicion-personal';
+import { ScRequisicionPersonal, OPERACION_FLUJO_REQUISICION } from './models/sc-requisicion-personal';
 import { ScRequisicionPersonalCandidato } from './models/sc-requisicion-personal-candidato';
 import { ScExpedienteEntrevista } from '../sc-expediente-candidato/sc-expediente-entrevista/models/sc-expediente-entrevista';
 import { ScExpedienteEntrevistaDocumento } from '../sc-expediente-candidato/sc-expediente-entrevista/sc-expediente-entrevista-documento/models/sc-expediente-entrevista-documento';
@@ -80,6 +80,15 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 
 	//Variables
 	readOnly = false;
+	enviandoRequisicion = false;
+
+	/**
+	 * Texto del botón "Enviar requisición" (patrón Asociar Expediente en sc-solicitud-empleo).
+	 * Visible solo con requisición guardada en Borrador o Devuelta.
+	 */
+	get btnEnviarRequisicion(): string {
+		return this.motivoNoPuedeEnviarRequisicion() === null ? 'Enviar requisición' : '';
+	}
 	mCORR_TIPO_MODALIDAD: any[] = [];
 	mCORR_TIPO_CONTRATACION: any[] = [];
 	mCORR_TIPO_VACANTE: any[] = [];
@@ -1282,6 +1291,121 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		this.dataForm.instance.getEditor('SALARIO_MINIMO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('SALARIO_MAXIMO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('JUSTIFICACION')?.option('readOnly', true);
+	}
+
+	/** Envía la requisición al flujo de aprobación (Borrador/Devuelta → En Aprobación). */
+	async enviarRequisicion(): Promise<void> {
+		if (this.enviandoRequisicion) {
+			return;
+		}
+
+		const motivo = this.motivoNoPuedeEnviarRequisicion();
+		if (motivo) {
+			this.notifyFx(motivo, NotifyType.Warning);
+			return;
+		}
+
+		const aceptar = await confirm(
+			'¿Desea enviar esta requisición a aprobación?',
+			'Enviar requisición',
+		);
+		if (!aceptar) {
+			return;
+		}
+
+		const corr = Number(this.model?.CORR_REQUISICION_PERSONAL) || 0;
+		const unidad = Number(this.model?.CORR_UNIDAD) || null;
+		const observacion =
+			'Se envió la requisición de personal a aprobación.';
+
+		this.enviandoRequisicion = true;
+		this.loadingVisible = true;
+
+		this.service
+			.autoriza({
+				CORR_REQUISICION_PERSONAL: corr,
+				OPERACION: OPERACION_FLUJO_REQUISICION.ENVIAR,
+				OBSERVACION: observacion,
+				CORR_UNIDAD_DOCUMENTO: unidad,
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.enviandoRequisicion = false;
+					this.loadingVisible = false;
+
+					if (response?.Result && response.ErrorCode === 0) {
+						const row = response.Data as ScRequisicionPersonal;
+						if (row) {
+							this.model = this.fillData(row);
+							this.modelUpdate = this.fillData(row);
+							const idx = this.models?.findIndex(
+								(m: any) => m.CORR_REQUISICION_PERSONAL === corr
+							);
+							if (idx >= 0) {
+								this.models[idx] = { ...this.models[idx], ...row };
+							}
+						}
+						this.cargarBitacora();
+						this.notifyFx(
+							'La requisición se envió a aprobación correctamente.',
+							NotifyType.Success,
+						);
+						this.AsignaStatus(UpdateType.Browse);
+					} else {
+						this.notifyFx(
+							response?.ErrorMessage || 'No se pudo enviar la requisición a aprobación.',
+							NotifyType.Warning,
+							{ raw: true },
+						);
+					}
+				},
+				error: (error: any) => {
+					this.enviandoRequisicion = false;
+					this.loadingVisible = false;
+					const mensaje = this.extraerMensajeErrorAutoriza(error);
+					this.notifyFx(mensaje, NotifyType.Warning, { raw: true });
+				},
+			});
+	}
+
+	/** Motivo por el que no se puede enviar; null si puede mostrarse/ejecutarse. */
+	private motivoNoPuedeEnviarRequisicion(): string | null {
+		if (this.isBrowse()) {
+			return 'Abra una requisición para enviarla a aprobación.';
+		}
+
+		if ((this.model?.CORR_REQUISICION_PERSONAL ?? 0) <= 0) {
+			return 'Guarde la requisición antes de enviarla a aprobación.';
+		}
+
+		if (this.isConsulta()) {
+			return 'No se puede enviar la requisición en modo consulta.';
+		}
+
+		const estado = this.model?.CORR_ESTADO_REQUISICION ?? 1;
+		// 1 = Borrador, 3 = Devuelta (puede reenviarse).
+		if (estado !== 1 && estado !== 3) {
+			return 'Solo se puede enviar una requisición en Borrador o Devuelta.';
+		}
+
+		return null;
+	}
+
+	/** Extrae mensaje usable del error HTTP / interceptor de Autoriza. */
+	private extraerMensajeErrorAutoriza(error: any): string {
+		if (typeof error === 'string') {
+			return error.replace(/^\s*Error:\s*/i, '').trim();
+		}
+		const msg =
+			error?.error?.ErrorMessage ||
+			error?.ErrorMessage ||
+			error?.message ||
+			'';
+		return (
+			String(msg).replace(/^\s*Error:\s*/i, '').trim() ||
+			'No se pudo enviar la requisición a aprobación.'
+		);
 	}
 
 	/** Label del chip de estado (solo lectura). */

@@ -26,6 +26,15 @@ export interface ScRequisicionPersonal {
     FECHA_CREA: Date;
     ESTACION_CREA: string;
     USUARIO_ACTU: string;
-    FECHA_ACTU: Date;
+	FECHA_ACTU: Date;
     ESTACION_ACTU: string;
 }
+
+/** Catálogo OPERACION del SP PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA. */
+export const OPERACION_FLUJO_REQUISICION = {
+	GUARDAR: 1,
+	ENVIAR: 2,
+	APROBAR: 3,
+	DEVOLVER: 4,
+	RECHAZAR: 5,
+} as const;

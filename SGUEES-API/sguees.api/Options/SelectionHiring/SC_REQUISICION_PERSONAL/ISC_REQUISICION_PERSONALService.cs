@@ -16,5 +16,7 @@ namespace SGUEES.Services
         Task<CResult> DeleteAsync(SC_REQUISICION_PERSONALTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> GetAllAsyncBitacoraByCORR_REQUISICION(SC_REQUISICION_PERSONAL_BITACORAParam xWhere);
         Task<CResult> GetAllAsyncCandidatosByCORR_REQUISICION(SC_REQUISICION_PERSONAL_CANDIDATOParam xWhere);
+        /// <summary>Flujo de aprobación (Enviar/Aprobar/Devolver/Rechazar). Consumible desde otras pantallas.</summary>
+        Task<CResult> AutorizaAsync(SC_REQUISICION_PERSONAL_AUTORIZAParam Data, string vLOGIN_SISTEMA);
     }
 }

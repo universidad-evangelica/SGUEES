@@ -137,5 +137,36 @@ namespace SGUEES.Controllers
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetAllForSolicitudEmpleoAsync(Data);
         }
+
+        /// <summary>
+        /// Ejecuta operación del flujo de la requisición (Enviar/Aprobar/Devolver/Rechazar).
+        /// Reutilizable desde otras pantallas vía PUT SC_REQUISICION_PERSONAL/Autoriza
+        /// (requiere permiso U de sc-requisicion-personal).
+        /// En falla de negocio responde 200 Ok con Result=false (mismo patrón descriptor).
+        /// </summary>
+        [HttpPut("Autoriza")]
+        [Authorize(Policy = "/sc-requisicion-personal|U")]
+        public async Task<IActionResult> Autoriza(SC_REQUISICION_PERSONAL_AUTORIZAParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            var resultado = await _service.AutorizaAsync(Data, GetUsuario());
+            if (resultado.ErrorCode == 0)
+            {
+                return StatusCode(201, resultado);
+            }
+
+            return Ok(resultado);
+        }
+
+        private int GetCorrEmpresa()
+        {
+            var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");
+            return claim != null && int.TryParse(claim.Value, out var corrEmpresa) ? corrEmpresa : 0;
+        }
+
+        private string GetUsuario()
+        {
+            return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value;
+        }
     }
 }

@@ -216,6 +216,26 @@ export class ScRequisicionPersonalService {
 		return this.repo.delete(xWhere);
 	}
 
+	/**
+	 * Ejecuta una operación del flujo de la requisición (Enviar/Aprobar/Devolver/Rechazar).
+	 * Inyectable desde otros componentes: ScRequisicionPersonalService.autoriza(...).
+	 */
+	autoriza(payload: {
+		CORR_REQUISICION_PERSONAL: number;
+		OPERACION: number;
+		OBSERVACION: string;
+		CORR_UNIDAD_DOCUMENTO?: number | null;
+		CORR_ACCION?: number | null;
+	}): Observable<IResult> {
+		return this.repo.autoriza({
+			CORR_REQUISICION_PERSONAL: payload.CORR_REQUISICION_PERSONAL,
+			OPERACION: payload.OPERACION,
+			OBSERVACION: payload.OBSERVACION,
+			CORR_UNIDAD_DOCUMENTO: payload.CORR_UNIDAD_DOCUMENTO ?? null,
+			CORR_ACCION: payload.CORR_ACCION ?? null,
+		});
+	}
+
 	/** Bitácora de la requisición (endpoint GetCORR_BITACORA_SC_REQUISICION_PERSONAL). */
 	getBitacora(param?: any): Observable<IResult> {
 		const xWhere: IParam[] = [];
@@ -762,15 +782,17 @@ export class ScRequisicionPersonalService {
      */
     getBitacoraColumns(): any {
         return [
-            { dataField: 'CORR_EMPRESA', caption: 'Empresa', width: 100 },
             { dataField: 'CORR_REQUISICION_PERSONAL', caption: 'Corr. Requisición', width: 130 },
-            { dataField: 'LOGIN_SISTEMA', caption: 'Usuario', width: 180 },
-            { dataField: 'ESTADO_DESTINO', caption: 'Estado destino', width: 180 },
-            { dataField: 'COMENTARIO', caption: 'Comentario', width: 320 },
-            // Columnas futuras (descomentar cuando el API las envíe):
-            // { dataField: 'FECHA', caption: 'Fecha', width: 160, dataType: 'datetime', format: 'dd/MM/yyyy HH:mm' },
-            // { dataField: 'ESTADO_ORIGEN', caption: 'Estado origen', width: 180 },
-            // { dataField: 'NOMBRE_USUARIO', caption: 'Nombre usuario', width: 220 },
+            { dataField: 'LOGIN_SISTEMA', caption: 'Usuario', width: 140 },
+            { dataField: 'ESTADO_DESTINO', caption: 'Estado destino', width: 160 },
+            {
+                dataField: 'FECHA_ACCION',
+                caption: 'Fecha / Hora',
+                width: 170,
+                dataType: 'datetime',
+                format: 'dd/MM/yyyy HH:mm',
+            },
+            { dataField: 'COMENTARIO', caption: 'Comentario', minWidth: 280 },
         ];
     }
 

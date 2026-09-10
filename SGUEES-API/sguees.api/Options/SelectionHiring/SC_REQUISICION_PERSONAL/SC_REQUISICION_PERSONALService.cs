@@ -108,5 +108,59 @@ namespace SGUEES.Services
             return await _repo.GetAllAsyncCandidatosByCORR_REQUISICION(p);
         }
 
+        /// <summary>
+        /// Ejecuta operación de flujo de la requisición (Enviar/Aprobar/Devolver/Rechazar).
+        /// Endpoint reutilizable: cualquier pantalla puede llamar PUT SC_REQUISICION_PERSONAL/Autoriza.
+        /// </summary>
+        public async Task<CResult> AutorizaAsync(SC_REQUISICION_PERSONAL_AUTORIZAParam Data, string vLOGIN_SISTEMA)
+        {
+            if (Data == null)
+            {
+                return ValidationError("No se recibieron datos para autorizar la requisicion.");
+            }
+
+            if (Data.CORR_EMPRESA <= 0)
+            {
+                return ValidationError("No se pudo identificar la empresa de la sesion.");
+            }
+
+            if (Data.CORR_REQUISICION_PERSONAL <= 0)
+            {
+                return ValidationError("Debe indicar la requisicion de personal.");
+            }
+
+            if (Data.OPERACION < 1 || Data.OPERACION > 5)
+            {
+                return ValidationError("Operacion invalida. Use 1=GUARDAR, 2=ENVIAR, 3=APROBAR, 4=DEVOLVER, 5=RECHAZAR.");
+            }
+
+            if (string.IsNullOrWhiteSpace(Data.OBSERVACION))
+            {
+                return ValidationError("El comentario / observacion es obligatorio.");
+            }
+
+            if (string.IsNullOrWhiteSpace(vLOGIN_SISTEMA))
+            {
+                return ValidationError("No se pudo identificar el usuario de sesion.");
+            }
+
+            Data.OBSERVACION = Data.OBSERVACION.Trim();
+            return await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());
+        }
+
+        private static CResult ValidationError(string message)
+        {
+            return new CResult
+            {
+                Data = null,
+                Result = false,
+                RowsAffected = 0,
+                CodeHelper = 0,
+                ErrorCode = 4101,
+                ErrorMessage = message,
+                ErrorSource = "SC_REQUISICION_PERSONALService",
+            };
+        }
+
     }
 }

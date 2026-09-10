@@ -18,5 +18,10 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Options\Payroll\PLA_TIPO_DOCUMENTO_ADJUNTO\" />
+    <Folder Include="Options\SelectionHiring\SC_BANDEJA_ACTORES\SC_BANDEJA_ACTORES_CANDIDATO\" />
+    <Folder Include="Options\SelectionHiring\SC_BANDEJA_ACTORES\SC_BANDEJA_ACTORES_REQUISICION\" />
+    <Folder Include="Options\SelectionHiring\SC_BANDEJA_TH\SC_BANDEJA_TH_CONTRATO\" />
+    <Folder Include="Options\SelectionHiring\SC_BANDEJA_TH\SC_BANDEJA_TH_CANDIDATO\" />
+    <Folder Include="Options\SelectionHiring\SC_BANDEJA_TH\SC_BANDEJA_TH_REQUISICION\" />
   </ItemGroup>
 </Project>

@@ -326,9 +326,17 @@ namespace SGUEES.Repositories
             try
             {
                 var reader = await objData.GetDataReader(System.Data.CommandType.Text, @"
-				SELECT FB.* 
+				SELECT
+					FB.CORR_EMPRESA,
+					FB.CORR_DOCUMENTO AS CORR_REQUISICION_PERSONAL,
+					FB.LOGIN_SISTEMA,
+					FB.ESTADO_DESTINO,
+					FB.COMENTARIO,
+					FB.FECHA_ACCION
 				FROM V_SEG_FLUJO_BITACORA_FIRMAS FB
-				WHERE CORR_TIPO_DOCUMENTO = @CORR_TIPO_DOCUMENTO AND CORR_DOCUMENTO = @CORR_DOCUMENTO", xWhere);
+				WHERE FB.CORR_TIPO_DOCUMENTO = @CORR_TIPO_DOCUMENTO
+				  AND FB.CORR_DOCUMENTO = @CORR_DOCUMENTO
+				ORDER BY FB.CORR_BITACORA", xWhere);
 
                 var response = new List<SC_REQUISICION_PERSONAL_BITACORAView>().FromDataReader(reader).ToList();
 
@@ -386,6 +394,100 @@ namespace SGUEES.Repositories
                 objResultado.ErrorCode = 0;
                 objResultado.ErrorMessage = "";
                 objResultado.ErrorSource = "";
+            }
+            catch (Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
+        }
+
+        /// <summary>
+        /// Ejecuta PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA y relee V_SC_REQUISICION_PERSONAL.
+        /// </summary>
+        public async Task<CResult> AutorizaAsync(SC_REQUISICION_PERSONAL_AUTORIZAParam Data, string vLOGIN_SISTEMA)
+        {
+            CResult objResultado = new();
+            const string spName = "PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA";
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "@CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "@CORR_REQUISICION_PERSONAL", Value = Data.CORR_REQUISICION_PERSONAL, DbType = System.Data.DbType.Int32 },
+                    new CParameter()
+                    {
+                        ParameterName = "@CORR_UNIDAD_DOCUMENTO",
+                        Value = Data.CORR_UNIDAD_DOCUMENTO.HasValue && Data.CORR_UNIDAD_DOCUMENTO.Value > 0
+                            ? Data.CORR_UNIDAD_DOCUMENTO.Value
+                            : (object)DBNull.Value,
+                        DbType = System.Data.DbType.Int32,
+                    },
+                    new CParameter() { ParameterName = "@OPERACION", Value = Data.OPERACION, DbType = System.Data.DbType.Int32 },
+                    new CParameter()
+                    {
+                        ParameterName = "@CORR_ACCION",
+                        Value = Data.CORR_ACCION.HasValue && Data.CORR_ACCION.Value > 0
+                            ? Data.CORR_ACCION.Value
+                            : (object)DBNull.Value,
+                        DbType = System.Data.DbType.Int32,
+                    },
+                    new CParameter() { ParameterName = "@LOGIN_SISTEMA", Value = vLOGIN_SISTEMA ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@OBSERVACION", Value = Data.OBSERVACION ?? string.Empty, DbType = System.Data.DbType.String },
+                    new CParameter() { ParameterName = "@CORR_ESTADO", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+                    new CParameter() { ParameterName = "@MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 500 },
+                    new CParameter() { ParameterName = "@CORR_ACCION_USADA", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+                    new CParameter() { ParameterName = "@CORR_PASO_ACTUAL", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+                    new CParameter() { ParameterName = "@MODO", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 20 },
+                    new CParameter() { ParameterName = "@NOMBRE_ESTADO", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 100 },
+                    new CParameter() { ParameterName = "@CORR_ESTADO_REQUISICION", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+                };
+
+                await objData.ExecCmd(System.Data.CommandType.StoredProcedure, spName, true, p);
+
+                var mensajeError = objData.objCommand.Parameters["@MENSAJE_ERROR"].Value?.ToString();
+                if (!string.IsNullOrWhiteSpace(mensajeError))
+                {
+                    objResultado.Data = null;
+                    objResultado.Result = false;
+                    objResultado.RowsAffected = 0;
+                    objResultado.CodeHelper = Data.CORR_REQUISICION_PERSONAL;
+                    objResultado.ErrorCode = -10;
+                    objResultado.ErrorMessage = mensajeError;
+                    objResultado.ErrorSource = "C" + _TableName + ".Autoriza";
+                    return objResultado;
+                }
+
+                var keyWhere = new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_REQUISICION_PERSONAL", Value = Data.CORR_REQUISICION_PERSONAL, DbType = System.Data.DbType.Int32 },
+                };
+
+                var readerGet = await objData.GetDataReader("V_" + _TableName, keyWhere);
+                var response = new List<SC_REQUISICION_PERSONALView>().FromDataReader(readerGet).FirstOrDefault();
+                readerGet.Close();
+
+                objResultado.Data = response;
+                objResultado.Result = response != null;
+                objResultado.RowsAffected = response == null ? 0 : 1;
+                objResultado.CodeHelper = Data.CORR_REQUISICION_PERSONAL;
+                objResultado.ErrorCode = response == null ? -1 : 0;
+                objResultado.ErrorMessage = response == null
+                    ? "La operacion de flujo se ejecuto pero no se pudo releer la requisicion."
+                    : string.Empty;
+                objResultado.ErrorSource = string.Empty;
             }
             catch (Exception e)
             {
