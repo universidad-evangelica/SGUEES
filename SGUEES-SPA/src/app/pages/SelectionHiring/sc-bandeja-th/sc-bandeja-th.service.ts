@@ -343,7 +343,7 @@ export class ScBandejaThService {
 		return rows.map((h) => ({
 			FECHA: h?.FECHA_ACCION,
 			USUARIO: h?.LOGIN_SISTEMA || '—',
-			ACCION: h?.NOMBRE_PASO || h?.ESTADO_DESTINO || 'Movimiento',
+			ACCION: h?.ESTADO_DESTINO || h?.NOMBRE_PASO || 'Movimiento',
 			COMENTARIO: h?.COMENTARIO || undefined,
 		}));
 	}
