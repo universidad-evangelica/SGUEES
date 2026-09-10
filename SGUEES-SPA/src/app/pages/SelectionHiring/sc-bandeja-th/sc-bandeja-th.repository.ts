@@ -39,4 +39,13 @@ export class ScBandejaThRepository {
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
 	}
+
+	getContrataciones(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'GetContrataciones',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }

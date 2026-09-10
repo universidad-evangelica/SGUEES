@@ -13,7 +13,6 @@ import {
 	ScBandejaTab,
 	ScBandejaTipo,
 } from './models/sc-bandeja-th-item';
-import { SC_BANDEJA_TH_MOCK } from './sc-bandeja-th.mock';
 import { BANDEJA_ESTADOS_REQUISICION, ScBandejaThService } from './sc-bandeja-th.service';
 
 @Component({
@@ -22,10 +21,7 @@ import { BANDEJA_ESTADOS_REQUISICION, ScBandejaThService } from './sc-bandeja-th
 	styleUrls: ['./sc-bandeja-th.component.scss'],
 })
 export class ScBandejaThComponent extends CBaseComponent implements OnInit {
-	/** Stage Contrataciones aún sin API. */
-	private readonly mockSource: ScBandejaItem[] = [...SC_BANDEJA_TH_MOCK];
-
-	/** DataSource del grid: CustomStore (API) o array (stages pendientes). */
+	/** DataSource del grid: CustomStore (API). */
 	models: any = [];
 
 	selectedItem: ScBandejaItem | null = null;
@@ -45,6 +41,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	kpis: ScBandejaKpi[] = [];
 	totalRequisicionesApi = 0;
 	totalCandidatosApi = 0;
+	totalContratacionesApi = 0;
 
 	readonly tabs: Array<{ id: ScBandejaTab; label: string }> = [
 		{ id: 'TODAS', label: 'Todas' },
@@ -68,13 +65,18 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		})),
 	];
 
+	/** Opción A: sin APLICA (va a Contrataciones). NO_APLICA queda en Candidatos. */
 	readonly estadosFiltroCandidato: Array<{ VALUE: string; TEXT: string }> = [
 		{ VALUE: 'TODOS', TEXT: 'Todos' },
 		{ VALUE: 'POSTULANTE', TEXT: 'Postulante' },
 		{ VALUE: 'CON_EXPEDIENTE', TEXT: 'Con expediente' },
 		{ VALUE: 'EN_SELECCION', TEXT: 'En proceso de selección' },
-		{ VALUE: 'APLICA', TEXT: 'Aplica' },
 		{ VALUE: 'NO_APLICA', TEXT: 'No aplica' },
+	];
+
+	readonly estadosFiltroContratacion: Array<{ VALUE: string; TEXT: string }> = [
+		{ VALUE: 'TODOS', TEXT: 'Todos' },
+		{ VALUE: 'APLICA', TEXT: 'Listo para contratar' },
 	];
 
 	estadosFiltro: Array<{ VALUE: string; TEXT: string }> = this.estadosFiltroRequisicion;
@@ -87,6 +89,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 	private requisicionesStore: CustomStore | null = null;
 	private candidatosStore: CustomStore | null = null;
+	private contratacionesStore: CustomStore | null = null;
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -122,14 +125,24 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 				}
 			})
 			.catch(() => undefined);
+
+		lastValueFrom(this.service.getContrataciones({ PAGE: 1, PAGE_SIZE: 1, SORT_DESC: true }))
+			.then((res) => {
+				if (res?.Result) {
+					this.totalContratacionesApi = res.RowsAffected || 0;
+					this.recalcularKpis();
+				}
+			})
+			.catch(() => undefined);
 	}
 
 	get tabCounts(): Record<ScBandejaTab, number> {
 		return {
-			TODAS: this.totalRequisicionesApi + this.totalCandidatosApi + this.mockSource.length,
+			TODAS:
+				this.totalRequisicionesApi + this.totalCandidatosApi + this.totalContratacionesApi,
 			REQUISICIONES: this.totalRequisicionesApi,
 			CANDIDATOS: this.totalCandidatosApi,
-			CONTRATACIONES: this.mockSource.filter((x) => x.TIPO === 'CONTRATACION').length,
+			CONTRATACIONES: this.totalContratacionesApi,
 		};
 	}
 
@@ -141,8 +154,12 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		return this.activeTab === 'CANDIDATOS';
 	}
 
+	get usaApiContrataciones(): boolean {
+		return this.activeTab === 'CONTRATACIONES';
+	}
+
 	get usaApiGrid(): boolean {
-		return this.usaApiRequisiciones || this.usaApiCandidatos;
+		return this.usaApiRequisiciones || this.usaApiCandidatos || this.usaApiContrataciones;
 	}
 
 	get puedeDictaminar(): boolean {
@@ -169,7 +186,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 			this.estadosFiltro = this.estadosFiltroCandidato;
 		} else {
 			this.filtroTipo = 'CONTRATACION';
-			this.estadosFiltro = this.estadosFiltroCandidato;
+			this.estadosFiltro = this.estadosFiltroContratacion;
 		}
 		this.configurarDataSource();
 	}
@@ -299,6 +316,9 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
+	/**
+	 * TODO (PENDIENTE-ACCIONES.md): conectar proceso de movimiento personal / contrato.
+	 */
 	accionMovimientoStandby(): void {
 		this.notifyFx(
 			'Movimiento personal en standby. Se conectará en una fase posterior.',
@@ -381,6 +401,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 		if (this.usaApiRequisiciones) {
 			this.candidatosStore = null;
+			this.contratacionesStore = null;
 			this.requisicionesStore = this.crearRequisicionesStore();
 			this.models = this.requisicionesStore;
 			this.recalcularKpis();
@@ -389,41 +410,26 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 
 		if (this.usaApiCandidatos) {
 			this.requisicionesStore = null;
+			this.contratacionesStore = null;
 			this.candidatosStore = this.crearCandidatosStore();
 			this.models = this.candidatosStore;
 			this.recalcularKpis();
 			return;
 		}
 
+		if (this.usaApiContrataciones) {
+			this.requisicionesStore = null;
+			this.candidatosStore = null;
+			this.contratacionesStore = this.crearContratacionesStore();
+			this.models = this.contratacionesStore;
+			this.recalcularKpis();
+			return;
+		}
+
 		this.requisicionesStore = null;
 		this.candidatosStore = null;
-		let rows = [...this.mockSource];
-		if (this.activeTab === 'CONTRATACIONES') {
-			rows = rows.filter((x) => x.TIPO === 'CONTRATACION');
-		}
-
-		const q = (this.filtroBusqueda || '').trim().toLowerCase();
-		if (q) {
-			rows = rows.filter((x) => {
-				const blob = [
-					x.CODIGO,
-					x.DESCRIPCION,
-					x.SUBTITULO,
-					x.SOLICITANTE,
-					x.NOMBRE_CANDIDATO,
-					x.DUI_CANDIDATO,
-					x.NOMBRE_PUESTO,
-					x.NOMBRE_UNIDAD,
-					x.ESTADO,
-				]
-					.filter(Boolean)
-					.join(' ')
-					.toLowerCase();
-				return blob.includes(q);
-			});
-		}
-
-		this.models = rows;
+		this.contratacionesStore = null;
+		this.models = [];
 		this.recalcularKpis();
 	}
 
@@ -541,6 +547,62 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	private crearContratacionesStore(): CustomStore {
+		return new CustomStore({
+			key: 'ID',
+			loadMode: 'processed',
+			cacheRawData: false,
+			load: async (loadOptions: any) => {
+				try {
+					const { page, pageSize, sortField, sortDesc } = this.parseLoadOptions(
+						loadOptions,
+						'FECHA_DECISION',
+						(sel) => this.mapSortFieldContratacion(sel)
+					);
+
+					const response = await lastValueFrom(
+						this.service.getContrataciones({
+							PAGE: page,
+							PAGE_SIZE: pageSize,
+							SORT_FIELD: sortField,
+							SORT_DESC: sortDesc,
+							NOMBRE_UNIDAD:
+								this.filtroUnidad !== 'TODOS' ? this.filtroUnidad : undefined,
+							FECHA_DESDE: this.fechaDesde,
+							FECHA_HASTA: this.fechaHasta,
+							BUSQUEDA: this.filtroBusqueda?.trim() || undefined,
+						})
+					);
+
+					if (!response.Result) {
+						throw new Error(
+							response.ErrorMessage || 'No se pudieron cargar las contrataciones.'
+						);
+					}
+
+					const rows = (response.Data || []).map((r: any) =>
+						this.service.mapContratacionToBandejaItem(r)
+					);
+					this.totalContratacionesApi = response.RowsAffected || rows.length;
+					this.syncUnidadesFromRows(rows);
+					this.recalcularKpis();
+
+					return {
+						data: rows,
+						totalCount: response.RowsAffected || rows.length,
+					};
+				} catch (error: any) {
+					this.notifyFx(
+						error?.message || 'Error al consultar contrataciones de la bandeja.',
+						NotifyType.Error,
+						{ raw: true }
+					);
+					throw error;
+				}
+			},
+		});
+	}
+
 	private parseLoadOptions(
 		loadOptions: any,
 		defaultSort: string,
@@ -605,6 +667,25 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
+	private mapSortFieldContratacion(selector: string | undefined): string {
+		switch (selector) {
+			case 'CODIGO':
+			case 'ID':
+				return 'CORR_EXPEDIENTE_CANDIDATO';
+			case 'DESCRIPCION':
+			case 'NOMBRE_CANDIDATO':
+				return 'NOMBRE_PERSONA';
+			case 'SUBTITULO':
+				return 'NOMBRE_UNIDAD';
+			case 'SOLICITANTE':
+				return 'NOMBRE_SOLICITANTE';
+			case 'FECHA':
+				return 'FECHA_DECISION';
+			default:
+				return 'FECHA_DECISION';
+		}
+	}
+
 	private syncUnidadesFromRows(rows: ScBandejaItem[]): void {
 		const known = new Set(this.unidadesFiltro.map((x) => x.VALUE));
 		rows.forEach((r) => {
@@ -649,8 +730,6 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	}
 
 	private recalcularKpis(): void {
-		const cons = this.mockSource.filter((x) => x.TIPO === 'CONTRATACION');
-
 		this.kpis = [
 			{
 				KEY: 'REQ',
@@ -664,15 +743,15 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 				KEY: 'CAN',
 				LABEL: 'Candidatos',
 				VALUE: this.totalCandidatosApi,
-				SUBLABEL: 'Postulaciones con persona',
+				SUBLABEL: 'Ciclo de selección',
 				TONE: 'default',
 				ICON: 'user',
 			},
 			{
 				KEY: 'CON',
 				LABEL: 'Contrataciones',
-				VALUE: cons.length,
-				SUBLABEL: 'Pendiente conectar API',
+				VALUE: this.totalContratacionesApi,
+				SUBLABEL: 'Dictamen APLICA',
 				TONE: 'success',
 				ICON: 'card',
 			},
@@ -687,8 +766,11 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 			{
 				KEY: 'ACT',
 				LABEL: 'Procesos activos',
-				VALUE: this.totalRequisicionesApi + this.totalCandidatosApi,
-				SUBLABEL: 'Requisiciones + postulaciones',
+				VALUE:
+					this.totalRequisicionesApi +
+					this.totalCandidatosApi +
+					this.totalContratacionesApi,
+				SUBLABEL: 'Todos los stages',
 				TONE: 'info',
 				ICON: 'preferences',
 			},

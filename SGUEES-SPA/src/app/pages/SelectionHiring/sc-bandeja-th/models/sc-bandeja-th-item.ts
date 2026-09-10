@@ -7,8 +7,9 @@ export type ScBandejaTab = 'TODAS' | 'REQUISICIONES' | 'CANDIDATOS' | 'CONTRATAC
 /**
  * Estados del ciclo Candidatos (derivados / visuales).
  *
- * Postulante = CORR_PERSONA_DATOS <> null en solicitud, aún sin expediente.
- * Todavía no es “candidato” formal hasta asociar expediente.
+ * Opción A:
+ * - Candidatos: POSTULANTE → CON_EXPEDIENTE → EN_SELECCION (+ NO_APLICA cierre).
+ * - Contrataciones: APLICA (listo para movimiento personal).
  */
 export type ScBandejaEstadoCandidato =
 	| 'POSTULANTE'

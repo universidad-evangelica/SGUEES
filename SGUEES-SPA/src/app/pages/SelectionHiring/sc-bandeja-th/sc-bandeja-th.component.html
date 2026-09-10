@@ -1,7 +1,7 @@
 <div class="sguees-mtto-view sc-bandeja-th">
 	<div class="bandeja-header">
 		<h2 class="bandeja-title">{{ tituloVentana || 'Bandeja de solicitudes' }}</h2>
-		<div class="bandeja-header__badge">Requisiciones · Candidatos · API</div>
+		<div class="bandeja-header__badge">Requisiciones · Candidatos · Contrataciones · API</div>
 	</div>
 
 	<div class="bandeja-kpis">
@@ -125,13 +125,15 @@
 
 			<div class="bandeja-standby" *ngIf="activeTab === 'CANDIDATOS'">
 				<strong>Ciclo candidatos:</strong>
-				Postulante (persona sin expediente) → Con expediente → En selección → Aplica / No aplica.
-				El dictamen de jefatura se gestiona aquí (ya no hay pestaña Aprobaciones).
+				Postulante → Con expediente → En selección. Si jefatura dictamina
+				<em>No aplica</em>, permanece aquí (cierre del ciclo).
+				<em>Aplica</em> se traslada a Contrataciones.
 			</div>
 
 			<div class="bandeja-standby" *ngIf="activeTab === 'CONTRATACIONES'">
-				<strong>Standby:</strong> movimiento personal / contrato aún no conectados. Se muestran
-				casos con dictamen <em>Aplica</em> listos para contratación.
+				<strong>Contrataciones:</strong> candidatos con dictamen <em>Aplica</em>, listos para
+				movimiento personal.
+				<span class="bandeja-standby__hint"> Acción de contrato aún no conectada (ver PENDIENTE-ACCIONES).</span>
 			</div>
 
 			<div class="bandeja-grid-wrap">

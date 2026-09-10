@@ -18,15 +18,19 @@ namespace SGUEES.Controllers
 	{
 		private readonly ISC_BANDEJA_TH_REQUISICIONService _requisicionService;
 		private readonly ISC_BANDEJA_TH_CANDIDATOService _candidatoService;
+		private readonly ISC_BANDEJA_TH_CONTRATOService _contratoService;
 
 		public SC_BANDEJA_THController(
 			ISC_BANDEJA_TH_REQUISICIONService requisicionService,
-			ISC_BANDEJA_TH_CANDIDATOService candidatoService)
+			ISC_BANDEJA_TH_CANDIDATOService candidatoService,
+			ISC_BANDEJA_TH_CONTRATOService contratoService)
 		{
 			_requisicionService = requisicionService
 				?? throw new System.ArgumentNullException(nameof(requisicionService));
 			_candidatoService = candidatoService
 				?? throw new System.ArgumentNullException(nameof(candidatoService));
+			_contratoService = contratoService
+				?? throw new System.ArgumentNullException(nameof(contratoService));
 		}
 
 		[HttpGet("GetRequisiciones")]
@@ -52,7 +56,7 @@ namespace SGUEES.Controllers
 		}
 
 		/// <summary>
-		/// Listado paginado de postulaciones (solicitud + requisición) con estado de ciclo.
+		/// Ciclo de selección: Postulante → En selección (+ No aplica). Sin APLICA.
 		/// </summary>
 		[HttpGet("GetCandidatos")]
 		[Authorize(Policy = "/sc-bandeja-th|R")]
@@ -65,6 +69,22 @@ namespace SGUEES.Controllers
 			}
 
 			return await _candidatoService.GetCandidatosAsync(Data);
+		}
+
+		/// <summary>
+		/// Cola de contratación: solo dictamen APLICA (listos para movimiento personal).
+		/// </summary>
+		[HttpGet("GetContrataciones")]
+		[Authorize(Policy = "/sc-bandeja-th|R")]
+		public async Task<CResult> GetContrataciones([FromQuery] SC_BANDEJA_TH_CONTRATOParam Data)
+		{
+			Data.CORR_EMPRESA = Empresa();
+			if (Data.PAGE <= 0)
+			{
+				Data.PAGE = 1;
+			}
+
+			return await _contratoService.GetContratacionesAsync(Data);
 		}
 
 		private int Empresa() =>

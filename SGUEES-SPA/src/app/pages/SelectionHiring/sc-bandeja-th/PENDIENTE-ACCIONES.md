@@ -1,20 +1,24 @@
 # Pendiente — Acciones panel Bandeja TH (SPA)
 
-**No conectar todavía.** Grids Requisiciones y Candidatos ya consumen API.
-Siguiente fase: detalle de acciones del panel derecho.
+**No conectar todavía.** Grids Requisiciones, Candidatos y Contrataciones ya consumen API.
 
-## Botones ya visibles (solo stubs con notify)
+## Frontera stages (opción A)
 
-| Estado ciclo | Botón | Conectar a |
+| Stage | Estados |
+|---|---|
+| Candidatos | `POSTULANTE`, `CON_EXPEDIENTE`, `EN_SELECCION`, `NO_APLICA` |
+| Contrataciones | Solo `APLICA` → listo para movimiento personal |
+
+`NO_APLICA` se queda en **Candidatos** (cierre del ciclo). No va a Contrataciones.
+
+## Botones visibles (stubs)
+
+| Stage / estado | Botón | Conectar a |
 |---|---|---|
-| `POSTULANTE` | Asociar expediente | `ScExpedienteCandidatoService.asociarSolicitud` |
-| `CON_EXPEDIENTE` | Activar proceso de selección | `ScExpedienteCandidatoService.activarProcesoSeleccion` (estado 2 → todas las req. del expediente) |
-| `EN_SELECCION` + decisión `PENDIENTE` | Aplica / No aplica | `ScRequisicionCandidatoService.decide` |
-| Cualquiera | Ver detalle | Deep link según ciclo (`/sc-solicitud-empleo`, `/sc-expediente-candidato`, `/sc-requisicion-personal`) |
-| Candidato | Historial | Lazy load ciclo candidato (hoy solo bitácora de requisición) |
+| Candidatos · `POSTULANTE` | Asociar expediente | `ScExpedienteCandidatoService.asociarSolicitud` |
+| Candidatos · `CON_EXPEDIENTE` | Activar proceso de selección | `ScExpedienteCandidatoService.activarProcesoSeleccion` |
+| Candidatos · `EN_SELECCION` | Aplica / No aplica | `ScRequisicionCandidatoService.decide` |
+| Contrataciones · `APLICA` | Ejecutar movimiento personal | Standby (proceso contrato) |
+| Cualquiera | Ver detalle | Deep link según ciclo |
 
-## Stage Contrato
-
-Aún mock / sin API. Carpeta API: `SC_BANDEJA_TH_CONTRATO/`.
-
-Ver también: `SGUEES-API/sguees.api/Options/SelectionHiring/SC_BANDEJA_TH/PENDIENTE-ACCIONES.md`
+Ver también: `SGUEES-API/.../SC_BANDEJA_TH/PENDIENTE-ACCIONES.md`

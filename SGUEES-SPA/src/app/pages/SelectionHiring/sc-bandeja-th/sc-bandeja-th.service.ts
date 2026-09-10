@@ -156,6 +156,39 @@ export class ScBandejaThService {
 		return this.repo.getCandidatos(xWhere);
 	}
 
+	getContrataciones(param: {
+		PAGE?: number;
+		PAGE_SIZE?: number;
+		SORT_FIELD?: string;
+		SORT_DESC?: boolean;
+		NOMBRE_UNIDAD?: string;
+		FECHA_DESDE?: string | Date | null;
+		FECHA_HASTA?: string | Date | null;
+		BUSQUEDA?: string;
+	}): Observable<IResult> {
+		const xWhere: IParam[] = [
+			{ Parameter: 'PAGE', Value: param.PAGE ?? 1 },
+			{ Parameter: 'PAGE_SIZE', Value: param.PAGE_SIZE ?? 50 },
+			{ Parameter: 'SORT_FIELD', Value: param.SORT_FIELD ?? 'FECHA_DECISION' },
+			{ Parameter: 'SORT_DESC', Value: param.SORT_DESC ?? true },
+		];
+
+		if (param.NOMBRE_UNIDAD?.trim() && param.NOMBRE_UNIDAD !== 'TODOS') {
+			xWhere.push({ Parameter: 'NOMBRE_UNIDAD', Value: param.NOMBRE_UNIDAD.trim() });
+		}
+		if (param.FECHA_DESDE) {
+			xWhere.push({ Parameter: 'FECHA_DESDE', Value: this.toIsoDate(param.FECHA_DESDE) });
+		}
+		if (param.FECHA_HASTA) {
+			xWhere.push({ Parameter: 'FECHA_HASTA', Value: this.toIsoDate(param.FECHA_HASTA) });
+		}
+		if (param.BUSQUEDA?.trim()) {
+			xWhere.push({ Parameter: 'BUSQUEDA', Value: param.BUSQUEDA.trim() });
+		}
+
+		return this.repo.getContrataciones(xWhere);
+	}
+
 	mapRequisicionToBandejaItem(row: any): ScBandejaItem {
 		const corr = Number(row?.CORR_REQUISICION_PERSONAL) || 0;
 		const corrEstado = Number(row?.CORR_ESTADO_REQUISICION) || 1;
@@ -236,8 +269,35 @@ export class ScBandejaThService {
 				ciclo === 'POSTULANTE' ||
 				ciclo === 'CON_EXPEDIENTE' ||
 				(ciclo === 'EN_SELECCION' && decision === 'PENDIENTE'),
-			LISTO_CONTRATACION: ciclo === 'APLICA',
+			LISTO_CONTRATACION: false,
 			HISTORIAL: [],
+		};
+	}
+
+	/** Stage Contrataciones: dictamen APLICA → listo para movimiento personal. */
+	mapContratacionToBandejaItem(row: any): ScBandejaItem {
+		const base = this.mapCandidatoToBandejaItem({
+			...row,
+			ESTADO_CICLO_CANDIDATO: 'APLICA',
+			ESTADO_DECISION: 'APLICA',
+		});
+		const corrExp = Number(row?.CORR_EXPEDIENTE_CANDIDATO) || 0;
+		const corrSol = Number(row?.CORR_SOLICITUD_EMPLEO) || 0;
+		const corrReq = Number(row?.CORR_REQUISICION_PERSONAL) || 0;
+		const codigo = corrExp > 0 ? `CAN-${corrExp}` : `SOL-${corrSol}`;
+
+		return {
+			...base,
+			ID: `CON-${codigo}-REQ-${corrReq}`,
+			TIPO: 'CONTRATACION',
+			CODIGO: `CON-${codigo}`,
+			FECHA: row?.FECHA_DECISION || row?.FECHA_GENERACION,
+			ESTADO: 'Listo para contratar',
+			ESTADO_TONE: 'aprobada',
+			ESTADO_CICLO_CANDIDATO: 'APLICA',
+			ESTADO_DECISION: 'APLICA',
+			REQUIERE_ATENCION: true,
+			LISTO_CONTRATACION: true,
 		};
 	}
 

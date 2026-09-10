@@ -10,12 +10,11 @@ using SGUEES.Models;
 
 namespace SGUEES.Repositories
 {
-	public class SC_BANDEJA_TH_CANDIDATORepository : BaseRepository<SC_BANDEJA_THTable>, ISC_BANDEJA_TH_CANDIDATORepository
+	/// <summary>
+	/// Stage Contrataciones: solo postulaciones con dictamen APLICA (listas para movimiento personal).
+	/// </summary>
+	public class SC_BANDEJA_TH_CONTRATORepository : BaseRepository<SC_BANDEJA_THTable>, ISC_BANDEJA_TH_CONTRATORepository
 	{
-		/// <summary>
-		/// Postulación = solicitud con persona + requisición vinculada.
-		/// Estado derivado: POSTULANTE → CON_EXPEDIENTE → EN_SELECCION → APLICA/NO_APLICA.
-		/// </summary>
 		private const string _EstadoCicloExpr = @"
 CAST(CASE
 	WHEN ES.CORR_EXPEDIENTE_CANDIDATO IS NULL THEN N'POSTULANTE'
@@ -25,7 +24,7 @@ CAST(CASE
 	ELSE N'CON_EXPEDIENTE'
 END AS VARCHAR(20))";
 
-		private const string _FromCandidato = @"
+		private const string _FromSql = @"
 FROM dbo.SC_SOLICITUD_EMPLEO AS S
 INNER JOIN dbo.SC_SOLICITUD_REQUISICION AS SR
 	ON SR.CORR_EMPRESA = S.CORR_EMPRESA
@@ -42,11 +41,12 @@ LEFT JOIN dbo.SC_EXPEDIENTE_CANDIDATO AS E
 LEFT JOIN dbo.V_SC_EXPEDIENTE_CANDIDATO AS EC
 	ON EC.CORR_EMPRESA = E.CORR_EMPRESA
    AND EC.CORR_EXPEDIENTE_CANDIDATO = E.CORR_EXPEDIENTE_CANDIDATO
-LEFT JOIN dbo.SC_REQUISICION_CANDIDATO AS RC
+INNER JOIN dbo.SC_REQUISICION_CANDIDATO AS RC
 	ON RC.CORR_EMPRESA = SR.CORR_EMPRESA
    AND RC.CORR_REQUISICION_PERSONAL = SR.CORR_REQUISICION_PERSONAL
    AND RC.CORR_EXPEDIENTE_CANDIDATO = ES.CORR_EXPEDIENTE_CANDIDATO
    AND RC.CORR_SOLICITUD_EMPLEO = S.CORR_SOLICITUD_EMPLEO
+   AND RC.ESTADO_DECISION = N'APLICA'
 LEFT JOIN dbo.SEG_USUARIO AS U
 	ON U.LOGIN_SISTEMA = R.USUARIO_CREA
 OUTER APPLY (
@@ -63,7 +63,7 @@ OUTER APPLY (
 	ORDER BY X.FECHA_ENTREVISTA DESC, X.CORR_EXPEDIENTE_ENTREVISTA DESC
 ) AS UE";
 
-		private const string _SelectCandidato = @"
+		private const string _SelectSql = @"
 SELECT
 	S.CORR_EMPRESA,
 	S.CORR_SOLICITUD_EMPLEO,
@@ -71,8 +71,8 @@ SELECT
 	S.CORR_PERSONA_DATOS,
 	ES.CORR_EXPEDIENTE_CANDIDATO,
 	E.CORR_ESTADO_EXPEDIENTE,
-	" + _EstadoCicloExpr + @" AS ESTADO_CICLO_CANDIDATO,
-	CAST(ISNULL(RC.ESTADO_DECISION, N'PENDIENTE') AS VARCHAR(20)) AS ESTADO_DECISION,
+	CAST(N'APLICA' AS VARCHAR(20)) AS ESTADO_CICLO_CANDIDATO,
+	CAST(N'APLICA' AS VARCHAR(20)) AS ESTADO_DECISION,
 	RC.OBSERVACION_DECISION,
 	RC.FECHA_DECISION,
 	S.FECHA_GENERACION,
@@ -98,40 +98,31 @@ SELECT
 	) AS CANTIDAD_ENTREVISTAS,
 	UE.ULTIMA_ENTREVISTA";
 
-		private const string _DefaultSortField = "FECHA_GENERACION";
+		private const string _DefaultSortField = "FECHA_DECISION";
 		private const int _MaxPageSize = 200;
 
 		private static readonly HashSet<string> _AllowedSortFields = new(StringComparer.OrdinalIgnoreCase)
 		{
 			"FECHA_GENERACION",
+			"FECHA_DECISION",
 			"NOMBRE_PERSONA",
 			"DUI_PERSONA",
 			"NOMBRE_PUESTO",
 			"NOMBRE_UNIDAD",
 			"NOMBRE_SOLICITANTE",
-			"ESTADO_CICLO_CANDIDATO",
 			"CORR_SOLICITUD_EMPLEO",
 			"CORR_REQUISICION_PERSONAL",
 			"CORR_EXPEDIENTE_CANDIDATO",
 		};
 
-		private static readonly HashSet<string> _AllowedCiclo = new(StringComparer.OrdinalIgnoreCase)
-		{
-			"POSTULANTE",
-			"CON_EXPEDIENTE",
-			"EN_SELECCION",
-			"NO_APLICA",
-			// APLICA no pertenece a este stage (va a Contrataciones).
-		};
-
-		public SC_BANDEJA_TH_CANDIDATORepository(IConfiguration config)
+		public SC_BANDEJA_TH_CONTRATORepository(IConfiguration config)
 			: base(
 				config.GetConnectionString("defaultConnection"),
 				config.GetSection("DbProvider:defaultProvider").Value)
 		{
 		}
 
-		public async Task<CResult> GetCandidatosPagedAsync(List<CParameter> xWhere)
+		public async Task<CResult> GetContratacionesPagedAsync(List<CParameter> xWhere)
 		{
 			var objResultado = new CResult();
 
@@ -143,7 +134,6 @@ SELECT
 				var orderBySql = BuildOrderBy(sortField, sortDir);
 
 				var corrEmpresa = GetInt(xWhere, "CORR_EMPRESA");
-				var estadoCiclo = GetString(xWhere, "ESTADO_CICLO");
 				var nombreUnidad = GetString(xWhere, "NOMBRE_UNIDAD");
 				var fechaDesde = GetDate(xWhere, "FECHA_DESDE");
 				var fechaHasta = GetDate(xWhere, "FECHA_HASTA");
@@ -153,28 +143,13 @@ SELECT
 WHERE S.CORR_EMPRESA = @CORR_EMPRESA
   AND S.ACTIVO = 1
   AND S.CORR_PERSONA_DATOS IS NOT NULL
-  AND S.CORR_PERSONA_DATOS > 0";
+  AND S.CORR_PERSONA_DATOS > 0
+  AND " + _EstadoCicloExpr + @" = N'APLICA'";
 
 				var parameters = new List<CParameter>
 				{
 					new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
 				};
-
-				if (!string.IsNullOrWhiteSpace(estadoCiclo) && _AllowedCiclo.Contains(estadoCiclo.Trim()))
-				{
-					whereSql += $" AND {_EstadoCicloExpr} = @ESTADO_CICLO";
-					parameters.Add(new CParameter
-					{
-						ParameterName = "ESTADO_CICLO",
-						Value = estadoCiclo.Trim().ToUpperInvariant(),
-						DbType = DbType.String,
-					});
-				}
-				else
-				{
-					// Opción A: Candidatos = ciclo hasta EN_SELECCION (+ NO_APLICA). APLICA → Contrataciones.
-					whereSql += $" AND {_EstadoCicloExpr} <> N'APLICA'";
-				}
 
 				if (!string.IsNullOrWhiteSpace(nombreUnidad))
 				{
@@ -189,7 +164,7 @@ WHERE S.CORR_EMPRESA = @CORR_EMPRESA
 
 				if (fechaDesde.HasValue)
 				{
-					whereSql += " AND S.FECHA_GENERACION >= @FECHA_DESDE";
+					whereSql += " AND ISNULL(RC.FECHA_DECISION, S.FECHA_GENERACION) >= @FECHA_DESDE";
 					parameters.Add(new CParameter
 					{
 						ParameterName = "FECHA_DESDE",
@@ -200,7 +175,7 @@ WHERE S.CORR_EMPRESA = @CORR_EMPRESA
 
 				if (fechaHasta.HasValue)
 				{
-					whereSql += " AND S.FECHA_GENERACION <= @FECHA_HASTA";
+					whereSql += " AND ISNULL(RC.FECHA_DECISION, S.FECHA_GENERACION) <= @FECHA_HASTA";
 					parameters.Add(new CParameter
 					{
 						ParameterName = "FECHA_HASTA",
@@ -231,7 +206,7 @@ WHERE S.CORR_EMPRESA = @CORR_EMPRESA
 
 				var countSql = $@"
 SELECT COUNT(1) AS TOTAL_ROWS
-{_FromCandidato}
+{_FromSql}
 {whereSql}";
 
 				var countReader = await objData.GetDataReader(CommandType.Text, countSql, parameters);
@@ -246,16 +221,16 @@ SELECT COUNT(1) AS TOTAL_ROWS
 				if (paging.ReturnAll)
 				{
 					dataSql = $@"
-{_SelectCandidato}
-{_FromCandidato}
+{_SelectSql}
+{_FromSql}
 {whereSql}
 ORDER BY {orderBySql}";
 				}
 				else
 				{
 					dataSql = $@"
-{_SelectCandidato}
-{_FromCandidato}
+{_SelectSql}
+{_FromSql}
 {whereSql}
 ORDER BY {orderBySql}
 OFFSET @OFFSET ROWS FETCH NEXT @PAGE_SIZE ROWS ONLY";
@@ -274,7 +249,7 @@ OFFSET @OFFSET ROWS FETCH NEXT @PAGE_SIZE ROWS ONLY";
 				}
 
 				var dataReader = await objData.GetDataReader(CommandType.Text, dataSql, parameters);
-				var pageData = new List<SC_BANDEJA_TH_CANDIDATOView>().FromDataReader(dataReader).ToList();
+				var pageData = new List<SC_BANDEJA_TH_CONTRATOView>().FromDataReader(dataReader).ToList();
 				dataReader.Close();
 
 				objResultado.Data = pageData;
@@ -314,9 +289,9 @@ OFFSET @OFFSET ROWS FETCH NEXT @PAGE_SIZE ROWS ONLY";
 
 		private static string BuildOrderBy(string sortField, string sortDir)
 		{
-			if (string.Equals(sortField, "ESTADO_CICLO_CANDIDATO", StringComparison.OrdinalIgnoreCase))
+			if (string.Equals(sortField, "FECHA_DECISION", StringComparison.OrdinalIgnoreCase))
 			{
-				return $"{_EstadoCicloExpr} {sortDir}";
+				return $"ISNULL(RC.FECHA_DECISION, S.FECHA_GENERACION) {sortDir}";
 			}
 
 			if (string.Equals(sortField, "NOMBRE_PERSONA", StringComparison.OrdinalIgnoreCase))
@@ -386,12 +361,7 @@ OFFSET @OFFSET ROWS FETCH NEXT @PAGE_SIZE ROWS ONLY";
 				return dt;
 			}
 
-			if (DateTime.TryParse(p.Value.ToString(), out var parsed))
-			{
-				return parsed;
-			}
-
-			return null;
+			return DateTime.TryParse(p.Value.ToString(), out var parsed) ? parsed : null;
 		}
 	}
 }

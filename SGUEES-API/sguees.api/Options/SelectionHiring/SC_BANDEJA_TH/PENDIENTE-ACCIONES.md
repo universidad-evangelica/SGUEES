@@ -1,22 +1,28 @@
 # Pendiente — Acciones del panel (Bandeja TH)
 
-> No implementar aún. Primero alimentar grids; luego conectar acciones.
+> No implementar aún. Grids Requisiciones / Candidatos / Contrataciones ya alimentan.
 
-## Stage Candidatos (siguiente detalle)
+## Frontera de stages (opción A)
 
-Cuando el panel derecho se abre según `ESTADO_CICLO_CANDIDATO`, conectar:
+| Stage | Incluye |
+|---|---|
+| Candidatos | `POSTULANTE`, `CON_EXPEDIENTE`, `EN_SELECCION`, `NO_APLICA` |
+| Contrataciones | Solo `APLICA` (lista para movimiento personal) |
 
-| Estado | Botón | Endpoint existente | Permiso consumidor sugerido |
-|---|---|---|---|
-| `POSTULANTE` | Asociar expediente | `SC_EXPEDIENTE_CANDIDATO/AsociarSolicitud` | `/sc-bandeja-th\|U` (o reutilizar `/sc-solicitud-empleo\|U`) |
-| `CON_EXPEDIENTE` | Activar proceso de selección | `SC_EXPEDIENTE_CANDIDATO/ActivarProcesoSeleccion` | `/sc-bandeja-th\|U` |
-| `EN_SELECCION` + `PENDIENTE` | Aplica / No aplica | `SC_REQUISICION_CANDIDATO/Decide` | `/sc-bandeja-th\|U` (solo solicitante de la requisición) |
+`NO_APLICA` **permanece en Candidatos** (cierre del ciclo de selección). No va a Contrataciones.
 
-También:
+## Stage Candidatos — acciones
 
-- Deep link «Ver detalle» → `/sc-solicitud-empleo` o `/sc-expediente-candidato` o `/sc-requisicion-personal` según ciclo.
-- Historial lazy del ciclo candidato (hoy solo bitácora de requisición).
+| Estado | Botón | Endpoint |
+|---|---|---|
+| `POSTULANTE` | Asociar expediente | `SC_EXPEDIENTE_CANDIDATO/AsociarSolicitud` |
+| `CON_EXPEDIENTE` | Activar proceso de selección | `SC_EXPEDIENTE_CANDIDATO/ActivarProcesoSeleccion` |
+| `EN_SELECCION` + `PENDIENTE` | Aplica / No aplica | `SC_REQUISICION_CANDIDATO/Decide` |
 
-## Stage Contrato
+## Stage Contrato — acciones
 
-Carpeta `SC_BANDEJA_TH_CONTRATO/` reservada. Grid + movimiento personal / contrato pendiente.
+| Estado | Botón | Nota |
+|---|---|---|
+| `APLICA` | Ejecutar movimiento personal | Standby hasta existir proceso de contrato |
+
+También: deep link «Ver detalle»; historial lazy.
