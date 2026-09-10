@@ -159,10 +159,11 @@ namespace SGUEES.Repositories
 			}
 
 			var login = (vLOGIN_SISTEMA ?? string.Empty).Trim();
-			var creador = (requisicion.USUARIO_CREA ?? string.Empty).Trim();
-			if (!string.Equals(login, creador, StringComparison.OrdinalIgnoreCase))
+			if (!await EsJefeActivoDeUnidadAsync(Data.CORR_EMPRESA, requisicion.CORR_UNIDAD, login))
 			{
-				return ValidationResult(1010, "Solo el solicitante (quien registró la requisición) puede decidir Aplica / No aplica.");
+				return ValidationResult(
+					1010,
+					"Solo el jefe activo de la unidad solicitante puede decidir Aplica / No aplica.");
 			}
 
 			if (EstadosRequisicionPermitidosDecision.Length > 0
@@ -278,6 +279,45 @@ namespace SGUEES.Repositories
 			reader?.Close();
 			objData.objConnection.Close();
 			return row;
+		}
+
+		/// <summary>
+		/// Jefe activo y vigente de la unidad solicitante (LOGIN_SISTEMA o LOGIN_SISTEMA_WEB).
+		/// </summary>
+		private async Task<bool> EsJefeActivoDeUnidadAsync(int corrEmpresa, int corrUnidad, string login)
+		{
+			if (corrUnidad <= 0 || string.IsNullOrWhiteSpace(login))
+			{
+				return false;
+			}
+
+			var p = new List<CParameter>
+			{
+				new() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "CORR_UNIDAD", Value = corrUnidad, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "LOGIN_SISTEMA", Value = login.Trim(), DbType = System.Data.DbType.String },
+			};
+
+			var reader = await objData.GetDataReader(System.Data.CommandType.Text, @"
+SELECT TOP (1) 1 AS OK
+FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES AS J
+INNER JOIN dbo.GEN_EMPLEADO AS GE
+	ON GE.CORR_EMPRESA = J.CORR_EMPRESA
+   AND GE.CORR_EMPLEADO = J.CORR_EMPLEADO
+WHERE J.CORR_EMPRESA = @CORR_EMPRESA
+  AND J.CORR_UNIDAD = @CORR_UNIDAD
+  AND J.ACTIVO = 1
+  AND (J.FECHA_FIN IS NULL OR J.FECHA_FIN >= CAST(GETDATE() AS DATE))
+  AND GE.ESTADO_EMPLEADO = N'1'
+  AND (
+		LTRIM(RTRIM(ISNULL(GE.LOGIN_SISTEMA, N''))) = @LOGIN_SISTEMA
+		OR LTRIM(RTRIM(ISNULL(GE.LOGIN_SISTEMA_WEB, N''))) = @LOGIN_SISTEMA
+  )", p);
+
+			var ok = reader.Read();
+			reader?.Close();
+			objData.objConnection.Close();
+			return ok;
 		}
 
 		private async Task<bool> ExisteCandidatoEnProcesoAsync(

@@ -25,6 +25,7 @@ import { ScUnidadesUsuarioComponent } from './sc-unidades-usuario/sc-unidades-us
 import { ScSolicitudEmpleoComponent } from './sc-solicitud-empleo/sc-solicitud-empleo.component';
 import { ScExpedienteCandidatoComponent } from './sc-expediente-candidato/sc-expediente-candidato.component';
 import { ScBandejaThComponent } from './sc-bandeja-th/sc-bandeja-th.component';
+import { ScBandejaActoresComponent } from './sc-bandeja-actores/sc-bandeja-actores.component';
 
 
 const routes: Routes = [
@@ -35,6 +36,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./sc-bandeja-th/sc-bandeja-th.module').then(m => m.ScBandejaThModule)
+  },
+  {
+    path: 'sc-bandeja-actores',
+    component: ScBandejaActoresComponent,
+    data: { titulo: 'Bandeja de pendientes' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./sc-bandeja-actores/sc-bandeja-actores.module').then(m => m.ScBandejaActoresModule)
   },
   {
     path: 'sc-tipo-vacante',
