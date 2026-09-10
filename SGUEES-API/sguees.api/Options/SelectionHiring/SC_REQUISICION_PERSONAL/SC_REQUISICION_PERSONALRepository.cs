@@ -326,9 +326,17 @@ namespace SGUEES.Repositories
             try
             {
                 var reader = await objData.GetDataReader(System.Data.CommandType.Text, @"
-				SELECT FB.* 
+				SELECT
+					FB.CORR_EMPRESA,
+					FB.CORR_DOCUMENTO AS CORR_REQUISICION_PERSONAL,
+					FB.LOGIN_SISTEMA,
+					FB.ESTADO_DESTINO,
+					FB.COMENTARIO,
+					FB.FECHA_ACCION
 				FROM V_SEG_FLUJO_BITACORA_FIRMAS FB
-				WHERE CORR_TIPO_DOCUMENTO = @CORR_TIPO_DOCUMENTO AND CORR_DOCUMENTO = @CORR_DOCUMENTO", xWhere);
+				WHERE FB.CORR_TIPO_DOCUMENTO = @CORR_TIPO_DOCUMENTO
+				  AND FB.CORR_DOCUMENTO = @CORR_DOCUMENTO
+				ORDER BY FB.CORR_BITACORA", xWhere);
 
                 var response = new List<SC_REQUISICION_PERSONAL_BITACORAView>().FromDataReader(reader).ToList();
 

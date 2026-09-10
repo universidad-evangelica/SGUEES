@@ -421,7 +421,7 @@ BEGIN
 			@i_idUnidadDocumento = @UNIDAD_DOC,
 			@i_idAccion = @ACCION_GUARDAR,
 			@i_login = @LOGIN_SISTEMA,
-			@i_Observacion = @OBSERVACION,
+			@i_Observacion = N'La requisición está en borrador.',
 			@o_idEstadoDocumento = @ESTADO_TMP OUTPUT,
 			@o_Error = @ERROR_TMP OUTPUT
 
