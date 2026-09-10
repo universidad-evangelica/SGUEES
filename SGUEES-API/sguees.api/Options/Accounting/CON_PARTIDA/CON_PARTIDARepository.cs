@@ -96,6 +96,26 @@ namespace sguees.Repositories
 				};
 				var reader = await objData.Insert(_TableName, p, "CORR_PARTIDA", pWhere);
 				var response = new List<CON_PARTIDAView>().FromDataReader(reader).FirstOrDefault();
+				reader.Close(); reader = null;
+
+				// Qué hace: registra INGRESAR en bitácora después del insert.
+				// Cómo lo hace: ejecuta PRAL_MTTO_CON_PARTIDA_BITACORA con observación por defecto.
+				if (response != null)
+				{
+					await RegistrarBitacoraPartidaAsync(
+						response.CORR_EMPRESA,
+						response.ANIO_PERIODO,
+						response.MES_PERIODO,
+						response.CORR_CLASE_PARTIDA,
+						response.CORR_PARTIDA,
+						"INGRESAR",
+						null,
+						response.ESTADO_PARTIDA ?? Data.ESTADO_PARTIDA ?? "DI",
+						"Partida ingresada.",
+						vLOGIN_SISTEMA,
+						vESTACION);
+				}
+
 				objResultado.Data = response; objResultado.Result = true; objResultado.RowsAffected = 1;
 				objResultado.CodeHelper = 0; objResultado.ErrorCode = 0; objResultado.ErrorMessage = ""; objResultado.ErrorSource = "";
 			}
@@ -134,6 +154,23 @@ namespace sguees.Repositories
 				var reader = await objData.Update(_TableName, p, pWhere);
 				var response = new List<CON_PARTIDAView>().FromDataReader(reader).FirstOrDefault();
 				reader.Close(); reader = null;
+
+				// Qué hace: registra ACTUALIZAR en bitácora después del update.
+				// Cómo lo hace: ejecuta PRAL_MTTO_CON_PARTIDA_BITACORA con observación por defecto.
+				var estado = response?.ESTADO_PARTIDA ?? Data.ESTADO_PARTIDA;
+				await RegistrarBitacoraPartidaAsync(
+					Data.CORR_EMPRESA,
+					Data.ANIO_PERIODO,
+					Data.MES_PERIODO,
+					Data.CORR_CLASE_PARTIDA,
+					Data.CORR_PARTIDA,
+					"ACTUALIZAR",
+					estado,
+					estado,
+					"Partida actualizada.",
+					vLOGIN_SISTEMA,
+					vESTACION);
+
 				objResultado.Data = response; objResultado.Result = true; objResultado.RowsAffected = 1;
 				objResultado.CodeHelper = 0; objResultado.ErrorCode = 0; objResultado.ErrorMessage = ""; objResultado.ErrorSource = "";
 			}
@@ -364,6 +401,58 @@ namespace sguees.Repositories
 			catch (System.Exception e) { objResultado.Data = null; objResultado.Result = false; objResultado.CodeHelper = 0; objResultado.ErrorCode = -1; objResultado.ErrorMessage = e.Message; objResultado.ErrorSource += $"[{e.Source}]"; }
 			finally { objData.objConnection.Close(); }
 			return objResultado;
+		}
+
+		// Qué hace: inserta un evento en CON_PARTIDA_BITACORA vía SP.
+		// Cómo lo hace: ejecuta PRAL_MTTO_CON_PARTIDA_BITACORA y falla si SYS_NUMERO_ERROR <> 0.
+		private async Task RegistrarBitacoraPartidaAsync(
+			int corrEmpresa,
+			int anioPeriodo,
+			int mesPeriodo,
+			int corrClasePartida,
+			int corrPartida,
+			string tipoEvento,
+			string estadoAnterior,
+			string estadoNuevo,
+			string observacion,
+			string usuario,
+			string estacion)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+				new CParameter() { ParameterName = "@ANIO_PERIODO", Value = anioPeriodo, DbType = DbType.Int32 },
+				new CParameter() { ParameterName = "@MES_PERIODO", Value = mesPeriodo, DbType = DbType.Int32 },
+				new CParameter() { ParameterName = "@CORR_CLASE_PARTIDA", Value = corrClasePartida, DbType = DbType.Int32 },
+				new CParameter() { ParameterName = "@CORR_PARTIDA", Value = corrPartida, DbType = DbType.Int32 },
+				new CParameter() { ParameterName = "@CORR_PARTIDA_BITACORA", Value = 0, DbType = DbType.Int32, Direction = ParameterDirection.InputOutput },
+				new CParameter() { ParameterName = "@TIPO_EVENTO", Value = tipoEvento, DbType = DbType.String },
+				new CParameter() { ParameterName = "@FECHA_EVENTO", Value = System.DateTime.Now, DbType = DbType.DateTime },
+				new CParameter() { ParameterName = "@ESTADO_ANTERIOR", Value = (object)estadoAnterior ?? System.DBNull.Value, DbType = DbType.String },
+				new CParameter() { ParameterName = "@ESTADO_NUEVO", Value = (object)estadoNuevo ?? System.DBNull.Value, DbType = DbType.String },
+				new CParameter() { ParameterName = "@OBSERVACION", Value = observacion ?? "", DbType = DbType.String },
+				new CParameter() { ParameterName = "@USUARIO_CREA", Value = usuario ?? "", DbType = DbType.String },
+				new CParameter() { ParameterName = "@ESTACION_CREA", Value = estacion ?? "", DbType = DbType.String },
+				new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = usuario ?? "", DbType = DbType.String },
+				new CParameter() { ParameterName = "@SYS_ESTACION", Value = estacion ?? "", DbType = DbType.String },
+				new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = DbType.Int32, Direction = ParameterDirection.InputOutput },
+				new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = DbType.Decimal, Direction = ParameterDirection.InputOutput },
+				new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = "", DbType = DbType.String, Direction = ParameterDirection.InputOutput, Size = 4000 },
+			};
+
+			await objData.ExecCmd(CommandType.StoredProcedure, "PRAL_MTTO_CON_PARTIDA_BITACORA", true, p);
+
+			var numeroError = objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
+			var errorCode = numeroError == null || numeroError == System.DBNull.Value
+				? 0
+				: System.Convert.ToInt32(numeroError);
+
+			if (errorCode != 0)
+			{
+				var mensaje = objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value?.ToString()
+					?? "Error al registrar bitácora de partida.";
+				throw new System.Exception(mensaje);
+			}
 		}
 
 		private async Task<CResult> ExecPartidaOperacionAsync(CON_PARTIDATable Data, string vLOGIN_SISTEMA, string vESTACION, string spName)

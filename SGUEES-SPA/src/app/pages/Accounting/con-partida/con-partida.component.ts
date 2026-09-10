@@ -13,6 +13,8 @@ import { ConPartidaDetaService } from './con-partida-deta/con-partida-deta.servi
 import { ConPartidaDeta } from './con-partida-deta/models/con-partida-deta';
 import { ConPartidaDocService } from './con-partida-doc/con-partida-doc.service';
 import { ConPartidaDoc } from './con-partida-doc/models/con-partida-doc';
+import { ConPartidaBitacoraService } from './con-partida-bitacora/con-partida-bitacora.service';
+import { ConPartidaBitacora } from './con-partida-bitacora/models/con-partida-bitacora';
 import { ConCatalogoCuentaCentroCostoService } from '../con-catalogo-cuenta-centro-costo/con-catalogo-cuenta-centro-costo.service';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { custom } from 'devextreme/ui/dialog';
@@ -30,6 +32,10 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 
 	detalles: ConPartidaDeta[] = [];
 	documentos: ConPartidaDoc[] = [];
+	bitacoras: ConPartidaBitacora[] = [];
+	/** Columnas vía service (mismo patrón que FirmasDocumentoService.getColumns). */
+	bitacoraColumns: any[] = [];
+	bitacoraLoading = false;
 	docColumns: any[] = [];
 	readOnly = false;
 	mESTADO_PARTIDA: any;
@@ -50,6 +56,8 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	detalleEditando = false;
 	/** Solo true cuando edición viene de Agregar o botón Editar del detalle (no doble clic). */
 	private detalleEdicionExplicita = false;
+	/** Tab principal: 0 = Partida, 1 = Bitácora. */
+	mainTabIndex = 0;
 	btnCrearModelo = '';
 	btnImportarExcel = '';
 	btnGenerarDesdeModelo = '';
@@ -74,6 +82,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		private service: ConPartidaService,
 		private detaService: ConPartidaDetaService,
 		private docService: ConPartidaDocService,
+		private bitacoraService: ConPartidaBitacoraService,
 		private cuentaCentroService: ConCatalogoCuentaCentroCostoService,
 		private cdr: ChangeDetectorRef,
 		private sanitization: DomSanitizer
@@ -91,6 +100,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
+		this.bitacoraColumns = this.bitacoraService.getColumns();
 		this.docColumns = this.docService.getColumns();
 		this.cuentaSetCellValue = this.cuentaSetCellValue.bind(this);
 		this.centroCostoSetCellValue = this.centroCostoSetCellValue.bind(this);
@@ -303,8 +313,10 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 	private volverAlListado(): void {
 		this.detalles = [];
 		this.documentos = [];
+		this.bitacoras = [];
 		this.detalleEditando = false;
 		this.detalleEdicionExplicita = false;
+		this.mainTabIndex = 0;
 		this.AsignaStatus(UpdateType.Browse);
 		this.getPermisos(this.appInfoService.getPermiso(this.urlOpcion));
 		this.refrescarBotones();
@@ -314,9 +326,11 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		const finalizarCancelacion = () => {
 			this.detalles = [];
 			this.documentos = [];
+			this.bitacoras = [];
 			this.readOnly = false;
 			this.detalleEditando = false;
 			this.detalleEdicionExplicita = false;
+			this.mainTabIndex = 0;
 			this.refrescarBotones();
 		};
 
@@ -403,6 +417,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		super.rowDblClick(e);
 		this.consultarDetalles();
 		this.consultarDocumentos();
+		this.consultarBitacora();
 		this.refrescarBotones();
 	}
 
@@ -418,6 +433,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		super.editarClick(e);
 		this.consultarDetalles();
 		this.consultarDocumentos();
+		this.consultarBitacora();
 		this.habilitar();
 		this.refrescarBotones();
 	}
@@ -426,8 +442,10 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		super.nuevo();
 		this.detalles = [];
 		this.documentos = [];
+		this.bitacoras = [];
 		this.detalleEditando = false;
 		this.detalleEdicionExplicita = false;
+		this.mainTabIndex = 0;
 		this.habilitar();
 		this.refrescarBotones();
 	}
@@ -539,7 +557,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 				{ text: 'No', onClick: () => false },
 			],
 		});
-		confirma.show().then((result) => {
+		confirma.show().then((result: boolean) => {
 			if (!result) return;
 			this.loadingVisible = true;
 			const call =
@@ -583,6 +601,7 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 		super.focusedRowChanged(e);
 		if (this.isBrowse()) {
 			this.consultarDetalles(true);
+			this.consultarBitacora();
 		} else {
 			this.refrescarBotones();
 		}
@@ -727,6 +746,41 @@ export class ConPartidaComponent extends CBaseComponent implements OnInit {
 					}
 				},
 				error: (error: any) => {
+					this.notifyFx(error, NotifyType.Error);
+				},
+			});
+	}
+
+	// Qué hace: carga la bitácora de la partida seleccionada.
+	// Cómo lo hace: GetAll de CON_PARTIDA_BITACORA por llave (mismo flujo que firmas-documento.cargarFirmas).
+	consultarBitacora(): void {
+		if (!this.hasPartidaKeys()) {
+			this.bitacoras = [];
+			this.bitacoraLoading = false;
+			return;
+		}
+
+		this.bitacoraLoading = true;
+		this.bitacoraService
+			.getAll({
+				ANIO_PERIODO: this.model.ANIO_PERIODO,
+				MES_PERIODO: this.model.MES_PERIODO,
+				CORR_CLASE_PARTIDA: this.model.CORR_CLASE_PARTIDA,
+				CORR_PARTIDA: this.model.CORR_PARTIDA,
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.bitacoraLoading = false;
+					if (response.Result) {
+						this.bitacoras = response.Data || [];
+					} else {
+						this.bitacoras = [];
+					}
+				},
+				error: (error: any) => {
+					this.bitacoraLoading = false;
+					this.bitacoras = [];
 					this.notifyFx(error, NotifyType.Error);
 				},
 			});
