@@ -350,8 +350,8 @@ namespace sguees.Repositories
 			return value > 0 ? value : (object)System.DBNull.Value;
 		}
 
-		// Qué hace: ordena la lista en jerarquía (padre y debajo sus hijas).
-		// Cómo lo hace: DFS por CORR_CENTRO_COSTO_MAYOR; si no hay padres, ordena por código.
+		// Qué hace: ordena centros como en con-catalogo-cuenta-centro-costo (asignados/no asignados).
+		// Cómo lo hace: ordena por CODIGO_CENTRO_COSTO (01 → 0101 → 010101…); si hay MAYOR, DFS padre→hijas.
 		private static List<CON_CENTRO_COSTOView> OrdenarJerarquia(List<CON_CENTRO_COSTOView> items)
 		{
 			if (items == null || items.Count == 0)
@@ -359,28 +359,28 @@ namespace sguees.Repositories
 				return items ?? new List<CON_CENTRO_COSTOView>();
 			}
 
+			static string Codigo(CON_CENTRO_COSTOView x) => x.CODIGO_CENTRO_COSTO ?? string.Empty;
+
 			var byCorr = items.ToDictionary(x => x.CORR_CENTRO_COSTO);
 			var children = items
 				.Where(x => x.CORR_CENTRO_COSTO_MAYOR > 0 && byCorr.ContainsKey(x.CORR_CENTRO_COSTO_MAYOR))
 				.GroupBy(x => x.CORR_CENTRO_COSTO_MAYOR)
 				.ToDictionary(
 					g => g.Key,
-					g => g.OrderBy(x => x.NIVEL).ThenBy(x => x.CODIGO_CENTRO_COSTO ?? string.Empty).ThenBy(x => x.CORR_CENTRO_COSTO).ToList());
+					g => g.OrderBy(Codigo, System.StringComparer.OrdinalIgnoreCase).ThenBy(x => x.CORR_CENTRO_COSTO).ToList());
 
 			var hasParents = children.Count > 0;
 			if (!hasParents)
 			{
 				return items
-					.OrderBy(x => x.NIVEL)
-					.ThenBy(x => x.CODIGO_CENTRO_COSTO ?? string.Empty)
+					.OrderBy(Codigo, System.StringComparer.OrdinalIgnoreCase)
 					.ThenBy(x => x.CORR_CENTRO_COSTO)
 					.ToList();
 			}
 
 			var roots = items
 				.Where(x => x.CORR_CENTRO_COSTO_MAYOR <= 0 || !byCorr.ContainsKey(x.CORR_CENTRO_COSTO_MAYOR))
-				.OrderBy(x => x.NIVEL)
-				.ThenBy(x => x.CODIGO_CENTRO_COSTO ?? string.Empty)
+				.OrderBy(Codigo, System.StringComparer.OrdinalIgnoreCase)
 				.ThenBy(x => x.CORR_CENTRO_COSTO)
 				.ToList();
 
@@ -411,7 +411,7 @@ namespace sguees.Repositories
 				Walk(root);
 			}
 
-			foreach (var item in items.OrderBy(x => x.NIVEL).ThenBy(x => x.CODIGO_CENTRO_COSTO ?? string.Empty))
+			foreach (var item in items.OrderBy(Codigo, System.StringComparer.OrdinalIgnoreCase).ThenBy(x => x.CORR_CENTRO_COSTO))
 			{
 				if (!visited.Contains(item.CORR_CENTRO_COSTO))
 				{
