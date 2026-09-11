@@ -168,6 +168,14 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		}
 
 		if (this.selectedItem.TIPO === 'REQUISICION' && this.selectedItem.CORR_REQUISICION_PERSONAL) {
+			if (!this.tienePermisoLectura('/sc-requisicion-personal')) {
+				this.notifyFx(
+					'No tiene permiso de lectura en Requisición de personal.',
+					NotifyType.Warning,
+					{ raw: true }
+				);
+				return;
+			}
 			void this.navRouter.navigate(['/sc-requisicion-personal'], {
 				queryParams: { corr: this.selectedItem.CORR_REQUISICION_PERSONAL },
 			});
@@ -175,6 +183,14 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		}
 
 		if (this.selectedItem.CORR_EXPEDIENTE_CANDIDATO) {
+			if (!this.tienePermisoLectura('/sc-expediente-candidato')) {
+				this.notifyFx(
+					'No tiene permiso de lectura en Expediente de candidato.',
+					NotifyType.Warning,
+					{ raw: true }
+				);
+				return;
+			}
 			void this.navRouter.navigate(['/sc-expediente-candidato'], {
 				queryParams: { corr: this.selectedItem.CORR_EXPEDIENTE_CANDIDATO },
 			});
@@ -184,6 +200,11 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		this.notifyFx('No hay ruta de detalle disponible para este ítem.', NotifyType.Warning, {
 			raw: true,
 		});
+	}
+
+	private tienePermisoLectura(urlOpcion: string): boolean {
+		const permisos = this.appInfoService.getPermiso(urlOpcion);
+		return typeof permisos === 'string' && permisos.includes('R');
 	}
 
 	accionVerFlujo(): void {

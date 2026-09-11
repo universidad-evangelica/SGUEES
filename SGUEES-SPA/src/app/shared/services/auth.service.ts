@@ -454,8 +454,10 @@ export class AuthGuardService implements CanActivate {
 
 		// eslint-disable-next-line prefer-const
 		routerList = state.url.slice(1).split('/');
+		// Sin query/matrix params: JWT usa claves tipo `/sc-requisicion-personal`
+		const primerSegmento = (routerList[0] || '').split('?')[0].split(';')[0];
 		// eslint-disable-next-line prefer-const
-		routerUrl = '/' + routerList[0];
+		routerUrl = '/' + primerSegmento;
 
 		if (isLoggedIn && isAuthForm && !isPublicForm) {
 			this.authService.lastAuthenticatedPath = defaultPath;

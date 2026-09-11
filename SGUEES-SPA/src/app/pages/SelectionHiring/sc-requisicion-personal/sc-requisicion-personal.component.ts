@@ -1,6 +1,6 @@
 import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, take } from 'rxjs/operators';
 import { MessageService } from 'primeng/api'; //Import para usar PrimeNG Toast
@@ -48,6 +48,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
+		private navRouter: Router,
 		private service: ScRequisicionPersonalService,
 		private observadoresService: ScRequisicionObservadoresService,
 		private solicitudService: ScSolicitudEmpleoService,
@@ -1157,7 +1158,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				next: (response: any) => {
 					if (response.Result) {
 						this.models = response.Data ?? [];
-						console.log('Datos consultados:', this.models);
+						this.abrirDesdeQueryCorr();
 					} else {
 						//this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
 					}
@@ -1166,6 +1167,43 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 					//this.messageService.add({ severity: 'error', summary: 'Error', detail: error?.message ?? error });
 				},
 			});
+	}
+
+	/**
+	 * Deep link desde bandeja: /sc-requisicion-personal?corr=N
+	 * Abre el registro (edición si Borrador/Devuelta + permiso U; si no, consulta).
+	 */
+	private abrirDesdeQueryCorr(): void {
+		const corr = Number(this.router.snapshot.queryParamMap.get('corr') ?? 0);
+		if (!(corr > 0)) {
+			return;
+		}
+
+		const row = (this.models as ScRequisicionPersonal[]).find(
+			(item) => Number(item.CORR_REQUISICION_PERSONAL) === corr
+		);
+
+		if (!row) {
+			this.notifyFx(
+				`No se encontró la requisición ${corr} o no tiene acceso a ella.`,
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			this.limpiarQueryCorr();
+			return;
+		}
+
+		this.editarClick({ data: row });
+		this.limpiarQueryCorr();
+	}
+
+	private limpiarQueryCorr(): void {
+		void this.navRouter.navigate([], {
+			relativeTo: this.router,
+			queryParams: { corr: null },
+			queryParamsHandling: 'merge',
+			replaceUrl: true,
+		});
 	}
 
 	guardar(): void {
