@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import CustomStore from 'devextreme/data/custom_store';
-import { confirm, custom } from 'devextreme/ui/dialog';
+import { confirm } from 'devextreme/ui/dialog';
 import { lastValueFrom } from 'rxjs';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
@@ -33,6 +33,12 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 	panelTab: 'RESUMEN' | 'HISTORIAL' = 'RESUMEN';
 	bitacoraLoading = false;
 	accionEnCurso = false;
+
+	popupObservacionVisible = false;
+	popupObservacionTitulo = 'Observación';
+	popupObservacionHint = 'Indique el motivo. La observación es obligatoria.';
+	popupObservacionTexto = '';
+	private observacionResolver: ((value: string | null) => void) | null = null;
 
 	activeTab: ScBandejaActoresTab = 'REQUISICIONES';
 
@@ -232,7 +238,10 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		let observacion: string | undefined;
 
 		if (!aplica) {
-			observacion = await this.pedirObservacion('Indique el motivo de No aplica');
+			observacion = await this.pedirObservacion(
+				'No aplica',
+				'Indique el motivo. La observación es obligatoria para No aplica.'
+			);
 			if (observacion == null) {
 				return;
 			}
@@ -348,7 +357,10 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		let observacion: string | undefined;
 
 		if (requiereObservacion) {
-			observacion = await this.pedirObservacion(`Observación para: ${titulo}`);
+			observacion = await this.pedirObservacion(
+				titulo,
+				'Indique el motivo. La observación es obligatoria.'
+			);
 			if (observacion == null) {
 				return;
 			}
@@ -405,36 +417,41 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		}
 	}
 
-	private pedirObservacion(titulo: string): Promise<string | null> {
+	private pedirObservacion(titulo: string, hint?: string): Promise<string | null> {
+		this.popupObservacionTitulo = titulo;
+		this.popupObservacionHint =
+			hint || 'Indique el motivo. La observación es obligatoria.';
+		this.popupObservacionTexto = '';
+		this.popupObservacionVisible = true;
+
 		return new Promise((resolve) => {
-			const dlg = custom({
-				title: titulo,
-				messageHtml:
-					'<div style="margin-bottom:8px">Ingrese la observación:</div>' +
-					'<textarea id="bandeja-actores-obs" rows="4" style="width:100%;box-sizing:border-box"></textarea>',
-				buttons: [
-					{
-						text: 'Cancelar',
-						onClick: () => {
-							resolve(null);
-							return true;
-						},
-					},
-					{
-						text: 'Confirmar',
-						type: 'default',
-						onClick: () => {
-							const el = document.getElementById(
-								'bandeja-actores-obs'
-							) as HTMLTextAreaElement | null;
-							resolve(el?.value ?? '');
-							return true;
-						},
-					},
-				],
-			});
-			dlg.show();
+			this.observacionResolver = resolve;
 		});
+	}
+
+	confirmarPopupObservacion(): void {
+		const texto = (this.popupObservacionTexto || '').trim();
+		if (!texto) {
+			this.notifyFx('La observación es obligatoria.', NotifyType.Warning, { raw: true });
+			return;
+		}
+		const resolve = this.observacionResolver;
+		this.observacionResolver = null;
+		this.popupObservacionVisible = false;
+		this.popupObservacionTexto = '';
+		resolve?.(texto);
+	}
+
+	cancelarPopupObservacion(): void {
+		if (!this.observacionResolver) {
+			this.popupObservacionVisible = false;
+			return;
+		}
+		const resolve = this.observacionResolver;
+		this.observacionResolver = null;
+		this.popupObservacionVisible = false;
+		this.popupObservacionTexto = '';
+		resolve(null);
 	}
 
 	private configurarDataSource(): void {

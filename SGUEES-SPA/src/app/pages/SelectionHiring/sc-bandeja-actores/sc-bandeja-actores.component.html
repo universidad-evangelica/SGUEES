@@ -475,3 +475,43 @@
 		</aside>
 	</div>
 </div>
+
+<dx-popup
+	[(visible)]="popupObservacionVisible"
+	[title]="popupObservacionTitulo"
+	[width]="520"
+	[maxWidth]="'calc(100vw - 32px)'"
+	[height]="'auto'"
+	[showCloseButton]="true"
+	[dragEnabled]="true"
+	[hideOnOutsideClick]="false"
+	[wrapperAttr]="{ class: 'bandeja-obs-popup' }"
+	(onHiding)="cancelarPopupObservacion()"
+>
+	<div *dxTemplate="let data of 'content'" class="bandeja-obs-popup__body">
+		<p class="bandeja-obs-popup__hint">{{ popupObservacionHint }}</p>
+		<label class="bandeja-obs-popup__label">Observación</label>
+		<dx-text-area
+			[(value)]="popupObservacionTexto"
+			[height]="120"
+			[maxLength]="2000"
+			placeholder="Escriba aquí el motivo…"
+			[width]="'100%'"
+		></dx-text-area>
+		<div class="bandeja-obs-popup__actions">
+			<dx-button
+				text="Cancelar"
+				stylingMode="outlined"
+				[height]="36"
+				(onClick)="cancelarPopupObservacion()"
+			></dx-button>
+			<dx-button
+				text="Confirmar"
+				type="default"
+				stylingMode="contained"
+				[height]="36"
+				(onClick)="confirmarPopupObservacion()"
+			></dx-button>
+		</div>
+	</div>
+</dx-popup>
