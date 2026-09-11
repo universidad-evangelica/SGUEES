@@ -388,37 +388,49 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   }
 
   // Qué hace: al cruzar compacto ↔ escritorio, o al aparecer Reactivar/etc., reubica overflow.
-  // Cómo lo hace: umbral 1400px si hay btn extra; 1200px si no. Repaint de toolbars.
+  // Cómo lo hace: umbral 1680px con Formato (btn6/7); 1400px con otros btn; 1200px si no. Repaint.
   @HostListener('window:resize')
   onWindowResize(): void {
+    const wasCompact = this.isCompact;
     this.syncCompactViewport(true);
+    if (this.isCompact !== wasCompact) {
+      this.rebuildToolbarOptions();
+      this.syncCompactViewport(true, true);
+    }
   }
 
   /** Qué hace: con Reactivar/Activar/btn1–7 la fila se aprieta antes → umbral más alto. */
   private get compactBreakpointPx(): number {
+    // Formato corto/extenso (btn6/7) ocupan mucho: compactar antes en pantallas medianas.
+    if (this.btn6 || this.btn7) {
+      return 1680;
+    }
     const hasExtraActions =
       this.effectiveShowEstadoToolbar ||
       !!this.btn1 ||
       !!this.btn2 ||
       !!this.btn3 ||
       !!this.btn4 ||
-      !!this.btn5 ||
-      !!this.btn6 ||
-      !!this.btn7;
+      !!this.btn5;
     return hasExtraActions ? 1400 : 1200;
   }
 
-  private syncCompactViewport(repaint: boolean): void {
+  // Qué hace: decide layout compacto y, si hace falta, repinta toolbars (overflow ⋮).
+  // Cómo lo hace: forceRepaint=true al aparecer/desaparecer btn6/7 aunque no cambie isCompact.
+  private syncCompactViewport(repaint: boolean, forceRepaint = false): void {
     if (typeof window === 'undefined') {
       return;
     }
     const compact = window.innerWidth < this.compactBreakpointPx;
-    if (this.isCompact === compact) {
+    const changed = this.isCompact !== compact;
+    if (changed) {
+      this.isCompact = compact;
+      this.cdr.markForCheck();
+    }
+    if (!repaint) {
       return;
     }
-    this.isCompact = compact;
-    this.cdr.markForCheck();
-    if (!repaint) {
+    if (!changed && !forceRepaint) {
       return;
     }
     if (this.resizeRepaintTimer) {
@@ -493,7 +505,14 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
         changes['focusedRow'] ||
         changes['isBrowse']
       ) {
-        this.syncCompactViewport(true);
+        const wasCompact = this.isCompact;
+        const forceRepaint = !!(changes['btn6'] || changes['btn7']);
+        this.syncCompactViewport(true, forceRepaint);
+        // Si cambió compacto, regenera opts (showText inMenu / anchos) y repinta.
+        if (this.isCompact !== wasCompact) {
+          this.rebuildToolbarOptions();
+          this.syncCompactViewport(true, true);
+        }
       }
     }
   }
@@ -671,8 +690,13 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       onClick,
       visible: text !== '' && (browseToolbarInBarra || !this.isBrowse),
       elementAttr: { class: 'sguees-barra-btn-standard sguees-barra-btn-action' },
+      hint: text || undefined,
     };
-    const resolvedWidth = computeToolbarBtnWidth(text, width);
+    // Compacto: solo icono en barra; el texto completo queda en el menú ⋮ / hint.
+    if (this.isCompact && text) {
+      opt.showText = 'inMenu';
+    }
+    const resolvedWidth = this.isCompact ? undefined : computeToolbarBtnWidth(text, width);
     if (resolvedWidth) {
       opt.width = resolvedWidth;
     }
