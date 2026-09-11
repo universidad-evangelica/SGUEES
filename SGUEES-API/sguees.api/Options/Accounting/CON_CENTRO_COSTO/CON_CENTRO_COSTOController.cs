@@ -156,5 +156,15 @@ namespace sguees.Controllers
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			return await _service.GetAllAsync(Data);
 		}
+
+		// Qué hace: lookup de centros de costo mayor para el propio mtto.
+		// Cómo lo hace: reutiliza GetAllAsync con política de lectura de con-centro-costo.
+		[HttpGet("GetCORR_CENTRO_COSTO_MAYOR_CON_CENTRO_COSTO")]
+		[Authorize(Policy = "/con-centro-costo|R")]
+		public async Task<CResult> GetCORR_CENTRO_COSTO_MAYOR_CON_CENTRO_COSTO([FromQuery] CON_CENTRO_COSTOParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
 	}
 }

@@ -18,6 +18,8 @@ namespace sguees.Repositories
 		{
 		}
 		
+		// Qué hace: lista centros de costo de la empresa en orden jerárquico.
+		// Cómo lo hace: lee V_CON_CENTRO_COSTO y ordena padre→hijas (nivel 1 + hijas, etc.).
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -25,7 +27,7 @@ namespace sguees.Repositories
 			try
 			{
 				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
-				var response = new List<CON_CENTRO_COSTOView>().FromDataReader(reader).ToList();
+				var response = OrdenarJerarquia(new List<CON_CENTRO_COSTOView>().FromDataReader(reader).ToList());
 				
 				reader.Close();
 				reader = null;
@@ -105,6 +107,8 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="NOMBRE_CENTRO",Value=Data.NOMBRE_CENTRO,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="CUENTA_CONTABLE",Value=Data.CUENTA_CONTABLE,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="CODIGO_CENTRO_COSTO",Value=Data.CODIGO_CENTRO_COSTO,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="CORR_CENTRO_COSTO_MAYOR",Value=ToNullableFk(Data.CORR_CENTRO_COSTO_MAYOR),DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="CORR_CENTRO_COSTO_NIVEL",Value=ToNullableFk(Data.CORR_CENTRO_COSTO_NIVEL),DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="CORR_TIPO_CENTRO_COSTO",Value=Data.CORR_TIPO_CENTRO_COSTO,DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="ESTADO_CENTRO_COSTO",Value=Data.ESTADO_CENTRO_COSTO,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="CORR_UNIDAD_NEGOCIO",Value=Data.CORR_UNIDAD_NEGOCIO,DbType=System.Data.DbType.Int32},
@@ -160,6 +164,8 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="NOMBRE_CENTRO",Value=Data.NOMBRE_CENTRO,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="CUENTA_CONTABLE",Value=Data.CUENTA_CONTABLE,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="CODIGO_CENTRO_COSTO",Value=Data.CODIGO_CENTRO_COSTO,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="CORR_CENTRO_COSTO_MAYOR",Value=ToNullableFk(Data.CORR_CENTRO_COSTO_MAYOR),DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="CORR_CENTRO_COSTO_NIVEL",Value=ToNullableFk(Data.CORR_CENTRO_COSTO_NIVEL),DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="CORR_TIPO_CENTRO_COSTO",Value=Data.CORR_TIPO_CENTRO_COSTO,DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="ESTADO_CENTRO_COSTO",Value=Data.ESTADO_CENTRO_COSTO,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="CORR_UNIDAD_NEGOCIO",Value=Data.CORR_UNIDAD_NEGOCIO,DbType=System.Data.DbType.Int32},
@@ -335,6 +341,85 @@ namespace sguees.Repositories
 			}
 
 			return objResultado;
+		}
+
+		// Qué hace: convierte 0 a NULL para FKs opcionales (nivel / centro mayor).
+		// Cómo lo hace: si el correlativo es <= 0 retorna DBNull; si no, el valor.
+		private static object ToNullableFk(int value)
+		{
+			return value > 0 ? value : (object)System.DBNull.Value;
+		}
+
+		// Qué hace: ordena la lista en jerarquía (padre y debajo sus hijas).
+		// Cómo lo hace: DFS por CORR_CENTRO_COSTO_MAYOR; si no hay padres, ordena por código.
+		private static List<CON_CENTRO_COSTOView> OrdenarJerarquia(List<CON_CENTRO_COSTOView> items)
+		{
+			if (items == null || items.Count == 0)
+			{
+				return items ?? new List<CON_CENTRO_COSTOView>();
+			}
+
+			var byCorr = items.ToDictionary(x => x.CORR_CENTRO_COSTO);
+			var children = items
+				.Where(x => x.CORR_CENTRO_COSTO_MAYOR > 0 && byCorr.ContainsKey(x.CORR_CENTRO_COSTO_MAYOR))
+				.GroupBy(x => x.CORR_CENTRO_COSTO_MAYOR)
+				.ToDictionary(
+					g => g.Key,
+					g => g.OrderBy(x => x.NIVEL).ThenBy(x => x.CODIGO_CENTRO_COSTO ?? string.Empty).ThenBy(x => x.CORR_CENTRO_COSTO).ToList());
+
+			var hasParents = children.Count > 0;
+			if (!hasParents)
+			{
+				return items
+					.OrderBy(x => x.NIVEL)
+					.ThenBy(x => x.CODIGO_CENTRO_COSTO ?? string.Empty)
+					.ThenBy(x => x.CORR_CENTRO_COSTO)
+					.ToList();
+			}
+
+			var roots = items
+				.Where(x => x.CORR_CENTRO_COSTO_MAYOR <= 0 || !byCorr.ContainsKey(x.CORR_CENTRO_COSTO_MAYOR))
+				.OrderBy(x => x.NIVEL)
+				.ThenBy(x => x.CODIGO_CENTRO_COSTO ?? string.Empty)
+				.ThenBy(x => x.CORR_CENTRO_COSTO)
+				.ToList();
+
+			var ordered = new List<CON_CENTRO_COSTOView>(items.Count);
+			var visited = new HashSet<int>();
+
+			void Walk(CON_CENTRO_COSTOView node)
+			{
+				if (!visited.Add(node.CORR_CENTRO_COSTO))
+				{
+					return;
+				}
+
+				ordered.Add(node);
+				if (!children.TryGetValue(node.CORR_CENTRO_COSTO, out var kids))
+				{
+					return;
+				}
+
+				foreach (var child in kids)
+				{
+					Walk(child);
+				}
+			}
+
+			foreach (var root in roots)
+			{
+				Walk(root);
+			}
+
+			foreach (var item in items.OrderBy(x => x.NIVEL).ThenBy(x => x.CODIGO_CENTRO_COSTO ?? string.Empty))
+			{
+				if (!visited.Contains(item.CORR_CENTRO_COSTO))
+				{
+					Walk(item);
+				}
+			}
+
+			return ordered;
 		}
 	}
 }
