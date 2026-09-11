@@ -1,10 +1,12 @@
 import { CommonModule } from '@angular/common';
 import {
   AfterContentInit,
+  AfterViewInit,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   ContentChildren,
+  ElementRef,
   EventEmitter,
   HostBinding,
   HostListener,
@@ -71,7 +73,7 @@ export interface BarraMttoCombox {
   host: { class: 'sguees-barra-mtto-premium sguees-mtto-chrome' },
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, AfterContentInit {
+export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, AfterContentInit, AfterViewInit {
   @Input() tituloVentana: string = '';
   @Input() subTituloVentana: string = '';
   @Input() subtitle?: string;
@@ -107,9 +109,13 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   @Output() exportar = new EventEmitter<any>();
   @Output() activarInactivar = new EventEmitter<void>();
 
-  /** Qué hace: viewport < 1200 (móvil + mediana) → mismo layout compacto; Export en la misma toolbar (un solo ⋮). */
+  /** Qué hace: viewport/contenido angosto → layout compacto; Export en la misma toolbar (un solo ⋮). */
   @ViewChildren(DxToolbarComponent) private toolbars?: QueryList<DxToolbarComponent>;
   private resizeRepaintTimer: ReturnType<typeof setTimeout> | null = null;
+  private hostResizeObserver: ResizeObserver | null = null;
+  private hostResizeDebounce: ReturnType<typeof setTimeout> | null = null;
+  /** Ancho real del host (área de contenido; baja al abrir el menú lateral). */
+  private observedHostWidth = 0;
   isCompact = false;
 
   @Input() btn1: string = '';
@@ -363,6 +369,7 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   constructor(
     private cdr: ChangeDetectorRef,
     private pageContext: MttoPageContextService,
+    private hostRef: ElementRef<HTMLElement>,
   ) {
     this.OnNuevo = this.OnNuevo.bind(this);
     this.OnGuardar = this.OnGuardar.bind(this);
@@ -388,15 +395,14 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
   }
 
   // Qué hace: al cruzar compacto ↔ escritorio, o al aparecer Reactivar/etc., reubica overflow.
-  // Cómo lo hace: umbral 1680px con Formato (btn6/7); 1400px con otros btn; 1200px si no. Repaint.
+  // Cómo lo hace: usa ancho del host (contenido); al abrir/cerrar menú lateral ResizeObserver reacciona.
   @HostListener('window:resize')
   onWindowResize(): void {
-    const wasCompact = this.isCompact;
-    this.syncCompactViewport(true);
-    if (this.isCompact !== wasCompact) {
-      this.rebuildToolbarOptions();
-      this.syncCompactViewport(true, true);
-    }
+    this.applyCompactFromAvailableWidth(true);
+  }
+
+  ngAfterViewInit(): void {
+    this.bindHostResizeObserver();
   }
 
   /** Qué hace: con Reactivar/Activar/btn1–7 la fila se aprieta antes → umbral más alto. */
@@ -415,13 +421,64 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
     return hasExtraActions ? 1400 : 1200;
   }
 
+  /** Ancho disponible: host (contenido) si ya se midió; si no, ventana. */
+  private getAvailableWidthPx(): number {
+    if (this.observedHostWidth > 0) {
+      return this.observedHostWidth;
+    }
+    const hostW = this.hostRef?.nativeElement?.clientWidth ?? 0;
+    if (hostW > 0) {
+      return hostW;
+    }
+    return typeof window !== 'undefined' ? window.innerWidth : this.compactBreakpointPx;
+  }
+
+  // Qué hace: observa el ancho del host para detectar abrir/cerrar menú (window.resize no basta).
+  private bindHostResizeObserver(): void {
+    if (typeof ResizeObserver === 'undefined' || !this.hostRef?.nativeElement) {
+      return;
+    }
+    this.hostResizeObserver?.disconnect();
+    this.hostResizeObserver = new ResizeObserver((entries) => {
+      const width = Math.round(entries[0]?.contentRect?.width ?? 0);
+      if (width <= 0) {
+        return;
+      }
+      if (Math.abs(width - this.observedHostWidth) < 4) {
+        return;
+      }
+      this.observedHostWidth = width;
+      if (this.hostResizeDebounce) {
+        clearTimeout(this.hostResizeDebounce);
+      }
+      // Debounce: el drawer anima el ancho en varios frames.
+      this.hostResizeDebounce = setTimeout(() => {
+        this.hostResizeDebounce = null;
+        this.applyCompactFromAvailableWidth(true);
+      }, 120);
+    });
+    this.hostResizeObserver.observe(this.hostRef.nativeElement);
+    this.observedHostWidth = this.hostRef.nativeElement.clientWidth || 0;
+    this.applyCompactFromAvailableWidth(false);
+  }
+
+  // Qué hace: aplica compacto según ancho disponible y repinta toolbars si cambió el layout.
+  private applyCompactFromAvailableWidth(repaint: boolean): void {
+    const wasCompact = this.isCompact;
+    this.syncCompactViewport(repaint, repaint);
+    if (this.isCompact !== wasCompact) {
+      this.rebuildToolbarOptions();
+      this.syncCompactViewport(true, true);
+    }
+  }
+
   // Qué hace: decide layout compacto y, si hace falta, repinta toolbars (overflow ⋮).
-  // Cómo lo hace: forceRepaint=true al aparecer/desaparecer btn6/7 aunque no cambie isCompact.
+  // Cómo lo hace: compara ancho del área de contenido (no solo window) vs umbral.
   private syncCompactViewport(repaint: boolean, forceRepaint = false): void {
     if (typeof window === 'undefined') {
       return;
     }
-    const compact = window.innerWidth < this.compactBreakpointPx;
+    const compact = this.getAvailableWidthPx() < this.compactBreakpointPx;
     const changed = this.isCompact !== compact;
     if (changed) {
       this.isCompact = compact;
@@ -522,6 +579,12 @@ export class BarraDataMttoComponent implements OnInit, OnChanges, OnDestroy, Aft
       clearTimeout(this.resizeRepaintTimer);
       this.resizeRepaintTimer = null;
     }
+    if (this.hostResizeDebounce) {
+      clearTimeout(this.hostResizeDebounce);
+      this.hostResizeDebounce = null;
+    }
+    this.hostResizeObserver?.disconnect();
+    this.hostResizeObserver = null;
     this.pageContext.reset();
   }
 
