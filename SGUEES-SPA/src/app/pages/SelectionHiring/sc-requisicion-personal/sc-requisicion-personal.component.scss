@@ -240,8 +240,23 @@
     font-size: 16px;
 }
 
-/* Chip estado requisición (solo lectura / indicador de flujo) */
-.estado-req-chip {
+/* =============================================================================
+   Chip estado requisición (CORR_ESTADO_REQUISICION) — form y grid principal.
+   ::ng-deep permite reutilizar las mismas clases en celdas del grid (DOM dinámico).
+   ============================================================================= */
+
+:host ::ng-deep .requisicion-grid-estado-col {
+	text-align: center;
+	vertical-align: middle;
+}
+
+:host ::ng-deep .requisicion-grid-estado-cell {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+:host ::ng-deep .estado-req-chip {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -258,51 +273,51 @@
 	pointer-events: none;
 }
 
-.estado-req--borrador {
+:host ::ng-deep .estado-req--borrador {
 	color: #94a3b8;
 	background: rgba(148, 163, 184, 0.16);
 	border: 1px solid rgba(148, 163, 184, 0.35);
 }
 
-.estado-req--aprobacion {
+:host ::ng-deep .estado-req--aprobacion {
 	color: #60a5fa;
 	background: rgba(59, 130, 246, 0.16);
 	border: 1px solid rgba(59, 130, 246, 0.35);
 }
 
-.estado-req--devuelta {
+:host ::ng-deep .estado-req--devuelta {
 	color: #fbbf24;
 	background: rgba(245, 158, 11, 0.16);
 	border: 1px solid rgba(245, 158, 11, 0.4);
 }
 
-.estado-req--rechazada,
-.estado-req--cancelada {
+:host ::ng-deep .estado-req--rechazada,
+:host ::ng-deep .estado-req--cancelada {
 	color: #f87171;
 	background: rgba(239, 68, 68, 0.16);
 	border: 1px solid rgba(239, 68, 68, 0.35);
 }
 
-.estado-req--aprobada,
-.estado-req--publicada {
+:host ::ng-deep .estado-req--aprobada,
+:host ::ng-deep .estado-req--publicada {
 	color: #4ade80;
 	background: rgba(34, 197, 94, 0.16);
 	border: 1px solid rgba(34, 197, 94, 0.35);
 }
 
-.estado-req--proceso {
+:host ::ng-deep .estado-req--proceso {
 	color: #38bdf8;
 	background: rgba(14, 165, 233, 0.16);
 	border: 1px solid rgba(14, 165, 233, 0.35);
 }
 
-.estado-req--parcial {
+:host ::ng-deep .estado-req--parcial {
 	color: #fb923c;
 	background: rgba(249, 115, 22, 0.16);
 	border: 1px solid rgba(249, 115, 22, 0.4);
 }
 
-.estado-req--cerrada {
+:host ::ng-deep .estado-req--cerrada {
 	color: #34d399;
 	background: rgba(16, 185, 129, 0.18);
 	border: 1px solid rgba(16, 185, 129, 0.4);

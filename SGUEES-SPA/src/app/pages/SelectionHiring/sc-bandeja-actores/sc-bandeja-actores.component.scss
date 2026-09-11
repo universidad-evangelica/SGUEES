@@ -134,9 +134,19 @@
 
 .bandeja-filtros {
 	display: grid;
-	grid-template-columns: repeat(3, minmax(140px, 1fr)) repeat(2, minmax(120px, 150px)) minmax(240px, 1.3fr);
+	/* Actores: Estado + Unidad + 2 fechas + Buscar (no 6 cols de TH) */
+	grid-template-columns: minmax(140px, 1fr) minmax(160px, 1.2fr) repeat(2, minmax(150px, 170px)) minmax(300px, 1.6fr);
 	gap: 8px 10px;
 	align-items: end;
+}
+
+.bandeja-filtros--sin-estado {
+	grid-template-columns: minmax(160px, 1.2fr) repeat(2, minmax(150px, 170px)) minmax(300px, 1.6fr);
+}
+
+.bandeja-filtro--search {
+	grid-column: -2 / -1;
+	min-width: 0;
 }
 
 .bandeja-filtro__label {
@@ -155,8 +165,12 @@
 }
 
 .bandeja-search-row > dx-text-box {
-	flex: 1;
-	min-width: 0;
+	flex: 1 1 auto;
+	min-width: 120px;
+}
+
+.bandeja-search-row > dx-button {
+	flex: 0 0 auto;
 }
 
 .bandeja-limpiar {

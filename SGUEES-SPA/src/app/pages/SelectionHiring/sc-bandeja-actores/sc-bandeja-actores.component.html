@@ -21,7 +21,10 @@
 	</div>
 
 	<div class="bandeja-filtros-card">
-		<div class="bandeja-filtros">
+		<div
+			class="bandeja-filtros"
+			[class.bandeja-filtros--sin-estado]="activeTab !== 'REQUISICIONES'"
+		>
 			<div class="bandeja-filtro" *ngIf="activeTab === 'REQUISICIONES'">
 				<div class="bandeja-filtro__label">Estado</div>
 				<dx-select-box

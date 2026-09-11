@@ -83,8 +83,8 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	enviandoRequisicion = false;
 
 	/**
-	 * Texto del botón "Enviar requisición" (patrón Asociar Expediente en sc-solicitud-empleo).
-	 * Visible solo con requisición guardada en Borrador o Devuelta.
+	 * Texto del botón "Enviar requisición".
+	 * Visible con requisición guardada en Borrador o Devuelta (edición o consulta).
 	 */
 	get btnEnviarRequisicion(): string {
 		return this.motivoNoPuedeEnviarRequisicion() === null ? 'Enviar requisición' : '';
@@ -834,6 +834,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	/** Al crear registro nuevo, limpiar tabs (cuando se conecte API). */
 	override nuevo(): void {
 		super.nuevo();
+		this.readOnly = false;
 		this.limpiarDatosTabs();
 		this.cerrarModalObservador();
 		this.mCORR_PUESTO = [];
@@ -847,11 +848,20 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		}, 0);
 	}
 
-	/** Al editar, cargar data de cada tab según CORR_REQUISICION_PERSONAL. */
+	/**
+	 * Editar solo si estado es Borrador/Devuelta.
+	 * Si no es editable → abre en consulta (sin Guardar), igual que doble clic.
+	 */
 	override editarClick(e: any): void {
+		const rowData = e?.row?.data ?? e?.data;
+		if (rowData && !this.service.esEstadoRequisicionEditable(rowData.CORR_ESTADO_REQUISICION)) {
+			this.abrirEnConsulta(rowData);
+			return;
+		}
+
 		super.editarClick(e);
+		this.readOnly = false;
 		this.cargarDatosTabs();
-		// Precargar cascada unidad → puesto → descriptor + visibilidad condicional
 		setTimeout(() => {
 			this.precargarCascadaUnidadPuestoDescriptor();
 			this.sincronizarVisibilidadTiempoContrato();
@@ -859,16 +869,36 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		}, 0);
 	}
 
-	/** Al consultar (doble clic), también cargar observadores (patrón con-partida). */
+	/** Al consultar (doble clic): formulario sin Guardar (isForm=false). */
 	override rowDblClick(e: any): void {
-		super.rowDblClick(e);
+		const rowData = e?.data ?? e?.row?.data;
+		this.abrirEnConsulta(rowData);
+	}
+
+	/** Abre el registro en modo consulta (Not_Defined): sin botón Guardar, campos bloqueados. */
+	private abrirEnConsulta(rowData?: any): void {
+		if (rowData) {
+			this.modelUpdate = { ...rowData };
+			this.model = this.fillData(rowData);
+		}
+		this.AsignaStatus(UpdateType.Not_Defined);
+		this.readOnly = true;
 		this.cargarDatosTabs();
-		// Precargar cascada unidad → puesto → descriptor + visibilidad condicional
 		setTimeout(() => {
+			if (this.dataForm?.instance) {
+				this.dataForm.instance.option('formData', this.model);
+			}
+			this.bloquear();
 			this.precargarCascadaUnidadPuestoDescriptor();
 			this.sincronizarVisibilidadTiempoContrato();
 			this.sincronizarVisibilidadEmpleadoSustituto();
 		}, 0);
+	}
+
+	/** Ícono Editar del grid: solo Borrador (1) y Devuelta (3). */
+	override getPermiteEditar(e: any): boolean {
+		const data = e?.row?.data ?? e?.data;
+		return this.permiteEdit && this.service.esEstadoRequisicionEditable(data?.CORR_ESTADO_REQUISICION);
 	}
 
 	//#endregion
@@ -1139,6 +1169,20 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	}
 
 	guardar(): void {
+		// Solo Borrador/Devuelta (o alta nueva). En consulta / estados cerrados no hay Guardar.
+		if (this.banderaMtto !== UpdateType.Add
+			&& !this.service.esEstadoRequisicionEditable(this.model?.CORR_ESTADO_REQUISICION)) {
+			this.notifyFx(
+				'Solo se puede modificar una requisición en Borrador o Devuelta.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
+		if (!this.isForm()) {
+			return;
+		}
+
 		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
 			return;
 		}
@@ -1273,24 +1317,30 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				
 
 	override bloquear(): void {
-		this.dataForm.instance.getEditor('CORR_REQUISICION_PERSONAL')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('FECHA_REQUISICION')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_DESCRIPTOR')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_DEPARTAMENTO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_PUESTO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_TIPO_MODALIDAD')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_TIPO_CONTRATACION')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_TIPO_VACANTE')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('TIEMPO_CONTRATO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('HORARIO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_EMPLEADO_SUSTITUTO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('FECHA_CIERRE')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('FECHA_APROBACION')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CANTIDAD_PLAZAS')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('PLAZAS_CUBIERTAS')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('SALARIO_MINIMO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('SALARIO_MAXIMO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('JUSTIFICACION')?.option('readOnly', true);
+		this.readOnly = true;
+		this.dataForm?.instance?.getEditor('CORR_REQUISICION_PERSONAL')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('FECHA_REQUISICION')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_DESCRIPTOR')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_DEPARTAMENTO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_PUESTO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_TIPO_MODALIDAD')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_TIPO_CONTRATACION')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_TIPO_VACANTE')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('TIEMPO_CONTRATO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('HORARIO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_EMPLEADO_SUSTITUTO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('FECHA_CIERRE')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('FECHA_APROBACION')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CANTIDAD_PLAZAS')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('PLAZAS_CUBIERTAS')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('SALARIO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('SALARIO_MINIMO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('SALARIO_MAXIMO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('JUSTIFICACION')?.option('readOnly', true);
+	}
+
+	override habilitar(): void {
+		this.readOnly = false;
 	}
 
 	/** Envía la requisición al flujo de aprobación (Borrador/Devuelta → En Aprobación). */
@@ -1379,13 +1429,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			return 'Guarde la requisición antes de enviarla a aprobación.';
 		}
 
-		if (this.isConsulta()) {
-			return 'No se puede enviar la requisición en modo consulta.';
-		}
-
 		const estado = this.model?.CORR_ESTADO_REQUISICION ?? 1;
-		// 1 = Borrador, 3 = Devuelta (puede reenviarse).
-		if (estado !== 1 && estado !== 3) {
+		// 1 = Borrador, 3 = Devuelta (puede reenviarse). Visible también en consulta (sin Guardar).
+		if (!this.service.esEstadoRequisicionEnviable(estado)) {
 			return 'Solo se puede enviar una requisición en Borrador o Devuelta.';
 		}
 

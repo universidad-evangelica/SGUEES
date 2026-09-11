@@ -142,6 +142,20 @@ export class ScRequisicionPersonalService {
 		return item?.ESTADO_REQUISICION ?? 'Borrador';
 	}
 
+	/**
+	 * Borrador (1) y Devuelta (3): se puede editar y enviar a aprobación.
+	 * En Aprobación / Aprobada / Rechazada (y demás): solo consulta.
+	 */
+	esEstadoRequisicionEditable(corrEstado: number | null | undefined): boolean {
+		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
+		return corr === 1 || corr === 3;
+	}
+
+	/** Alias de negocio: mismos estados que permiten “Enviar requisición”. */
+	esEstadoRequisicionEnviable(corrEstado: number | null | undefined): boolean {
+		return this.esEstadoRequisicionEditable(corrEstado);
+	}
+
 	/** Clase CSS del chip según el estado (solo lectura / indicador de flujo). */
 	getEstadoRequisicionBadgeClass(corrEstado: number | null | undefined): string {
 		const corr = Number(corrEstado) > 0 ? Number(corrEstado) : 1;
@@ -171,6 +185,22 @@ export class ScRequisicionPersonalService {
 			default:
 				return 'estado-req--borrador';
 		}
+	}
+
+	/** Pinta chip de estado en celdas del grid principal (mismas clases .estado-req-* que el form). */
+	private renderEstadoRequisicionChip(
+		cellElement: HTMLElement,
+		corrEstado: number | null | undefined
+	): void {
+		cellElement.classList.add('requisicion-grid-estado-cell');
+
+		const chip = document.createElement('span');
+		chip.classList.add('estado-req-chip', this.getEstadoRequisicionBadgeClass(corrEstado));
+		chip.textContent = this.getEstadoRequisicionLabel(corrEstado);
+		chip.title = chip.textContent;
+
+		cellElement.innerHTML = '';
+		cellElement.appendChild(chip);
 	}
 
     getAll(param: any): Observable<IResult> {
@@ -605,6 +635,28 @@ export class ScRequisicionPersonalService {
     getColumns(): any {
         return [
             { dataField: 'CORR_REQUISICION_PERSONAL', caption: 'Corr.', width: 85 },
+            {
+                dataField: 'CORR_ESTADO_REQUISICION',
+                caption: 'Estado',
+                width: 170,
+                alignment: 'center',
+                cssClass: 'requisicion-grid-estado-col',
+                allowFiltering: true,
+                allowHeaderFiltering: true,
+                calculateCellValue: (row: any) =>
+                    this.getEstadoRequisicionLabel(row?.CORR_ESTADO_REQUISICION),
+                cellTemplate: (cellElement: HTMLElement, cellInfo: { data?: any }) => {
+                    this.renderEstadoRequisicionChip(
+                        cellElement,
+                        cellInfo.data?.CORR_ESTADO_REQUISICION
+                    );
+                },
+                lookup: {
+                    dataSource: this.estadosRequisicion,
+                    valueExpr: 'CORR_ESTADO_REQUISICION',
+                    displayExpr: 'ESTADO_REQUISICION',
+                },
+            },
             { dataField: 'FECHA_REQUISICION', caption: 'Fecha', width: 130, dataType: 'date', format: 'dd/MM/yyyy' },
             { dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 250 },
             { dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 220 },
