@@ -527,6 +527,8 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 				CODIGO_CENTRO_COSTO: xModel.CODIGO_CENTRO_COSTO,
 
+				ES_DETALLE: !!xModel.ES_DETALLE,
+
 				CORR_CENTRO_COSTO_MAYOR: xModel.CORR_CENTRO_COSTO_MAYOR ?? 0,
 
 				NOMBRE_CENTRO_COSTO_MAYOR: xModel.NOMBRE_CENTRO_COSTO_MAYOR ?? '',
@@ -593,6 +595,8 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 			CODIGO_CENTRO_COSTO: '',
 
+			ES_DETALLE: false,
+
 			CORR_CENTRO_COSTO_MAYOR: 0,
 
 			NOMBRE_CENTRO_COSTO_MAYOR: '',
@@ -652,6 +656,14 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 		this.consultarMtto({
 
 			load: () => this.service.getAll(this.fillParam()),
+
+			onData: (data: any) => {
+				const rows = (Array.isArray(data) ? data : []).map((row: any) => ({
+					...row,
+					ES_DETALLE: row?.ES_DETALLE === true || row?.ES_DETALLE === 1 || row?.ES_DETALLE === '1',
+				}));
+				this.models = this.service.ordenarJerarquia(rows);
+			},
 
 		});
 

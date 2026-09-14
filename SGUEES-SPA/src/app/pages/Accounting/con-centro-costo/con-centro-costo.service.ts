@@ -131,6 +131,15 @@ export class ConCentroCostoService {
 			{ dataField: 'CORR_CENTRO_COSTO', caption: 'Corr.' },
 			{ dataField: 'CODIGO_CENTRO_COSTO', caption: 'Código' },
 			{ dataField: 'NOMBRE_CENTRO', caption: 'Nombre del Centro' },
+			{
+				dataField: 'ES_DETALLE',
+				caption: 'Es Detalle',
+				dataType: 'boolean',
+				// Qué hace: fuerza boolean real para el checkbox y el filtro (Todos).
+				// Cómo lo hace: normaliza 1/0/true como en con-catalogo-cuenta.
+				calculateCellValue: (row: any) =>
+					row?.ES_DETALLE === true || row?.ES_DETALLE === 1 || row?.ES_DETALLE === '1',
+			},
 			{ dataField: 'NOMBRE_NIVEL', caption: 'Nivel' },
 			{ dataField: 'NOMBRE_CENTRO_COSTO_MAYOR', caption: 'Centro Mayor' },
 			{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta Contable' },
@@ -177,6 +186,12 @@ export class ConCentroCostoService {
 				editorOptions: { showClearButton: true },
 			},
 			{
+				dataField: 'ES_DETALLE',
+				label: { text: 'Centro de Costo de Detalle' },
+				editorType: 'dxCheckBox',
+				colSpan: 2,
+			},
+			{
 				dataField: 'CODIGO_TERMINACION',
 				label: { text: 'Terminación' },
 				colSpan: 2,
@@ -205,14 +220,14 @@ export class ConCentroCostoService {
 			{
 				dataField: 'CORR_UNIDAD_NEGOCIO',
 				label: { text: 'Unidad de Negocio' },
-				colSpan: 4,
+				colSpan: 3,
 				editorOptions: { showClearButton: false },
 				template: 'CORR_UNIDAD_NEGOCIOLookup',
 			},
 			{
 				dataField: 'CORR_AREA_FUNCIONAL',
 				label: { text: 'Área Funcional' },
-				colSpan: 4,
+				colSpan: 3,
 				editorOptions: { showClearButton: false },
 				template: 'CORR_AREA_FUNCIONALLookup',
 			},

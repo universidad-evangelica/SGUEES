@@ -4,6 +4,7 @@ export interface ConCentroCosto {
 	NOMBRE_CENTRO: string;
 	CUENTA_CONTABLE: string;
 	CODIGO_CENTRO_COSTO: string;
+	ES_DETALLE: boolean;
 	CORR_CENTRO_COSTO_MAYOR: number;
 	NOMBRE_CENTRO_COSTO_MAYOR: string;
 	CODIGO_CENTRO_COSTO_MAYOR: string;

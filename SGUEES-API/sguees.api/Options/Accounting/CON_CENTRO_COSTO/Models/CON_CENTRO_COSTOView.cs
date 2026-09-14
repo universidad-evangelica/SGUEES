@@ -11,6 +11,7 @@ namespace sguees.Models
 		public string NOMBRE_CENTRO { get; set; }
 		public string CUENTA_CONTABLE { get; set; }
 		public string CODIGO_CENTRO_COSTO { get; set; }
+		public bool ES_DETALLE { get; set; }
 		public int CORR_CENTRO_COSTO_MAYOR { get; set; }
 		public string NOMBRE_CENTRO_COSTO_MAYOR { get; set; }
 		public string CODIGO_CENTRO_COSTO_MAYOR { get; set; }
