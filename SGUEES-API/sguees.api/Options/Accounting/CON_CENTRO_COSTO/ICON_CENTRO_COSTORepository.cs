@@ -9,5 +9,6 @@ namespace sguees.Repositories
 	public interface ICON_CENTRO_COSTORepository: IRepository<CON_CENTRO_COSTOTable>
 	{
 		Task<CResult> ImportarExcelAsync(CON_CENTRO_COSTO_IMPORTParam Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> ActivarInactivarAsync(CON_CENTRO_COSTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
 }

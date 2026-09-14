@@ -68,6 +68,20 @@ namespace sguees.Controllers
 				return BadRequest(resultado);
 			}
 		}
+
+		// Qué hace: activa o desactiva el centro de costo seleccionado.
+		// Cómo lo hace: llama ActivarInactivarAsync con la empresa de sesión.
+		[HttpPut("ActivarInactivar")]
+		[Authorize(Policy = "/con-centro-costo|U")]
+		public async Task<IActionResult> ActivarInactivar(CON_CENTRO_COSTOTable Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			var resultado = await _service.ActivarInactivarAsync(
+				Data,
+				User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? "Admin",
+				ClientInfoHelper.GetClientStation(HttpContext));
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
 		
 		[HttpDelete]
 		[Authorize(Policy = "/con-centro-costo|D")]
@@ -152,6 +166,16 @@ namespace sguees.Controllers
 		[HttpGet("GetCORR_CENTRO_COSTO_CON_CTA_CENTRO_COSTO")]
 		[Authorize(Policy = "/con-catalogo-cuenta-centro-costo|R")]
 		public async Task<CResult> GetCORR_CENTRO_COSTO_CON_CTA_CENTRO_COSTO([FromQuery] CON_CENTRO_COSTOParam Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			return await _service.GetAllAsync(Data);
+		}
+
+		// Qué hace: lookup de centros de costo mayor para el propio mtto.
+		// Cómo lo hace: reutiliza GetAllAsync con política de lectura de con-centro-costo.
+		[HttpGet("GetCORR_CENTRO_COSTO_MAYOR_CON_CENTRO_COSTO")]
+		[Authorize(Policy = "/con-centro-costo|R")]
+		public async Task<CResult> GetCORR_CENTRO_COSTO_MAYOR_CON_CENTRO_COSTO([FromQuery] CON_CENTRO_COSTOParam Data)
 		{
 			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
 			return await _service.GetAllAsync(Data);

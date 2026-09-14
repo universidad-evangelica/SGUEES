@@ -2,7 +2,7 @@
 
 import { ActivatedRoute } from '@angular/router';
 
-import { take } from 'rxjs/operators';
+import { take, tap } from 'rxjs/operators';
 
 import { environment } from 'src/environments/environment';
 
@@ -38,6 +38,10 @@ import { ConCentroCostoPresupuesto } from '../con-centro-costo-presupuesto/model
 
 })
 
+// Qué hace: mantenimiento de centros de costo con nivel y centro mayor.
+
+// Cómo lo hace: filtra mayor por nivel N-1; presupuesto oculto temporalmente.
+
 export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 	protected override etiquetaRegistro = 'el centro de costo';
@@ -45,6 +49,10 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 	protected override requiereEmpresaSesion = true;
 
 	protected override mttoGridKeyExpr = 'CORR_CENTRO_COSTO';
+
+	protected override mttoCampoEstado = 'ESTADO_CENTRO_COSTO_ACTIVO';
+
+	protected override mttoEstadoDescribeField = 'NOMBRE_CENTRO';
 
 
 
@@ -86,9 +94,21 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 	mCORR_AREA_FUNCIONAL: any;
 
+	mCORR_CENTRO_COSTO_NIVEL: any;
+
+	mCORR_CENTRO_COSTO_MAYOR: any[] = [];
+
+	mCORR_CENTRO_COSTO_MAYOR_ALL: any[] = [];
+
 	readOnly = false;
 
+	/** motivo: ocultar tab Presupuesto sin borrar el código */
+
+	mostrarTabPresupuesto = false;
+
 	presupuestos: ConCentroCostoPresupuesto[] = [];
+
+
 
 	tipoCentroCostoLookupColumns: any[] = [
 
@@ -98,6 +118,8 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 	];
 
+
+
 	unidadNegocioLookupColumns: any[] = [
 
 		{ dataField: 'CORR_UNIDAD_NEGOCIO', caption: 'Código', width: 80 },
@@ -106,11 +128,35 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 	];
 
+
+
 	areaFuncionalLookupColumns: any[] = [
 
 		{ dataField: 'CORR_AREA_FUNCIONAL', caption: 'Código', width: 80 },
 
 		{ dataField: 'NOMBRE_AREA_FUNCIONAL', caption: 'Área funcional', width: 280 },
+
+	];
+
+
+
+	nivelLookupColumns: any[] = [
+
+		{ dataField: 'NIVEL', caption: 'Nivel', width: 80 },
+
+		{ dataField: 'NOMBRE_NIVEL', caption: 'Nombre', width: 280 },
+
+	];
+
+
+
+	centroMayorLookupColumns: any[] = [
+
+		{ dataField: 'CODIGO_CENTRO_COSTO', caption: 'Código', width: 100 },
+
+		{ dataField: 'NOMBRE_CENTRO', caption: 'Centro', width: 280 },
+
+		{ dataField: 'NOMBRE_NIVEL', caption: 'Nivel', width: 140 },
 
 	];
 
@@ -142,10 +188,6 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 		super.AsignaStatus(xEstado);
 
-		if (xEstado === UpdateType.Browse) {
-
-		}
-
 	}
 
 
@@ -161,6 +203,10 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 		this.getCORR_UNIDAD_NEGOCIO();
 
 		this.getCORR_AREA_FUNCIONAL();
+
+		this.getCORR_CENTRO_COSTO_NIVEL();
+
+		this.getCORR_CENTRO_COSTO_MAYOR();
 
 	}
 
@@ -186,15 +232,13 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 				},
 
-				error: (error: any) => {
-
-					this.notifyApiError(error);
-
-				},
+				error: (error: any) => this.notifyApiError(error),
 
 			});
 
 	}
+
+
 
 	getESTADO_CENTRO_COSTO() {
 
@@ -216,15 +260,13 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 				},
 
-				error: (error: any) => {
-
-					this.notifyApiError(error);
-
-				},
+				error: (error: any) => this.notifyApiError(error),
 
 			});
 
 	}
+
+
 
 	getCORR_UNIDAD_NEGOCIO() {
 
@@ -246,15 +288,13 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 				},
 
-				error: (error: any) => {
-
-					this.notifyApiError(error);
-
-				},
+				error: (error: any) => this.notifyApiError(error),
 
 			});
 
 	}
+
+
 
 	getCORR_AREA_FUNCIONAL() {
 
@@ -276,13 +316,180 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 				},
 
-				error: (error: any) => {
+				error: (error: any) => this.notifyApiError(error),
 
-					this.notifyApiError(error);
+			});
+
+	}
+
+
+
+	// Qué hace: carga el catálogo de niveles para el lookup del formulario.
+
+	// Cómo lo hace: getLookUp arma GetCORR_CENTRO_COSTO_NIVEL_CON_CENTRO_COSTO.
+
+	getCORR_CENTRO_COSTO_NIVEL() {
+
+		this.appInfoService
+
+			.getLookUp(
+
+				'CON_CENTRO_COSTO',
+
+				'CON_CENTRO_COSTO_NIVEL',
+
+				'GetCORR_CENTRO_COSTO_NIVEL',
+
+				undefined,
+
+				environment.UrlCONTAAPI
+
+			)
+
+			.pipe(take(1))
+
+			.subscribe({
+
+				next: (response: any) => {
+
+					if (response.Result) {
+
+						this.mCORR_CENTRO_COSTO_NIVEL = response.Data;
+
+						this.filtrarCentrosMayorPorNivel();
+
+					}
 
 				},
 
+				error: (error: any) => this.notifyApiError(error),
+
 			});
+
+	}
+
+
+
+	// Qué hace: carga todos los centros y deja filtrados los del nivel padre.
+
+	// Cómo lo hace: getLookUp arma GetCORR_CENTRO_COSTO_MAYOR_CON_CENTRO_COSTO.
+
+	getCORR_CENTRO_COSTO_MAYOR() {
+
+		this.appInfoService
+
+			.getLookUp(
+
+				'CON_CENTRO_COSTO',
+
+				'CON_CENTRO_COSTO',
+
+				'GetCORR_CENTRO_COSTO_MAYOR',
+
+				undefined,
+
+				environment.UrlCONTAAPI
+
+			)
+
+			.pipe(take(1))
+
+			.subscribe({
+
+				next: (response: any) => {
+
+					if (response.Result) {
+
+						this.mCORR_CENTRO_COSTO_MAYOR_ALL = response.Data ?? [];
+
+						this.filtrarCentrosMayorPorNivel();
+
+					}
+
+				},
+
+				error: (error: any) => this.notifyApiError(error),
+
+			});
+
+	}
+
+
+
+	// Qué hace: reacciona al cambio de nivel en el formulario.
+
+	// Cómo lo hace: filtra centros mayor del nivel N-1 y limpia si ya no aplica.
+
+	onNivelCentroChanged(_corrNivel: any): void {
+
+		this.filtrarCentrosMayorPorNivel(true);
+
+	}
+
+
+
+	// Qué hace: indica si el centro está activo para mostrarlo en agregar/editar.
+	// Cómo lo hace: usa el bit del API o el código AC.
+	esCentroActivo(row: any): boolean {
+		if (row?.ESTADO_CENTRO_COSTO_ACTIVO === true || row?.ESTADO_CENTRO_COSTO_ACTIVO === 1) {
+			return true;
+		}
+		return String(row?.ESTADO_CENTRO_COSTO ?? '').toUpperCase() === 'AC';
+	}
+
+	// Qué hace: deja en el lookup centros activos del nivel N-1, más el mayor ya asignado.
+	// Cómo lo hace: oculta inactivos, salvo el que este registro ya tiene asociado.
+
+	filtrarCentrosMayorPorNivel(limpiarSiNoAplica = false): void {
+
+		const nivelRow = (this.mCORR_CENTRO_COSTO_NIVEL ?? []).find(
+
+			(x: any) => Number(x.CORR_CENTRO_COSTO_NIVEL) === Number(this.model?.CORR_CENTRO_COSTO_NIVEL)
+
+		);
+
+		const nivelNum = Number(nivelRow?.NIVEL) || 0;
+
+		const nivelPadre = nivelNum - 1;
+
+		const selfCorr = Number(this.model?.CORR_CENTRO_COSTO) || 0;
+
+
+
+		if (nivelPadre < 1) {
+
+			this.mCORR_CENTRO_COSTO_MAYOR = [];
+
+			if (limpiarSiNoAplica || nivelNum <= 1) {
+
+				this.model.CORR_CENTRO_COSTO_MAYOR = 0;
+
+			}
+
+			return;
+
+		}
+
+
+
+		const mayorActual = Number(this.model?.CORR_CENTRO_COSTO_MAYOR) || 0;
+
+		this.mCORR_CENTRO_COSTO_MAYOR = (this.mCORR_CENTRO_COSTO_MAYOR_ALL ?? []).filter((x: any) => {
+			const corr = Number(x.CORR_CENTRO_COSTO);
+			if (corr === selfCorr || Number(x.NIVEL) !== nivelPadre) {
+				return false;
+			}
+			return this.esCentroActivo(x) || corr === mayorActual;
+		});
+
+		if (limpiarSiNoAplica && mayorActual > 0) {
+			const mayorSigueEnLista = this.mCORR_CENTRO_COSTO_MAYOR.some(
+				(x: any) => Number(x.CORR_CENTRO_COSTO) === mayorActual
+			);
+			if (!mayorSigueEnLista) {
+				this.model.CORR_CENTRO_COSTO_MAYOR = 0;
+			}
+		}
 
 	}
 
@@ -320,6 +527,20 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 				CODIGO_CENTRO_COSTO: xModel.CODIGO_CENTRO_COSTO,
 
+				ES_DETALLE: !!xModel.ES_DETALLE,
+
+				CORR_CENTRO_COSTO_MAYOR: xModel.CORR_CENTRO_COSTO_MAYOR ?? 0,
+
+				NOMBRE_CENTRO_COSTO_MAYOR: xModel.NOMBRE_CENTRO_COSTO_MAYOR ?? '',
+
+				CODIGO_CENTRO_COSTO_MAYOR: xModel.CODIGO_CENTRO_COSTO_MAYOR ?? '',
+
+				CORR_CENTRO_COSTO_NIVEL: xModel.CORR_CENTRO_COSTO_NIVEL ?? 0,
+
+				NOMBRE_NIVEL: xModel.NOMBRE_NIVEL ?? '',
+
+				NIVEL: xModel.NIVEL ?? 0,
+
 				CORR_TIPO_CENTRO_COSTO: xModel.CORR_TIPO_CENTRO_COSTO,
 
 				NOMBRE_TIPO_CENTRO_COSTO: xModel.NOMBRE_TIPO_CENTRO_COSTO,
@@ -327,6 +548,8 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 				CLASE_CENTRO_COSTO: xModel.CLASE_CENTRO_COSTO,
 
 				ESTADO_CENTRO_COSTO: xModel.ESTADO_CENTRO_COSTO,
+
+				ESTADO_CENTRO_COSTO_ACTIVO: this.esCentroActivo(xModel),
 
 				NOMBRE_ESTADO_CENTRO_COSTO: xModel.NOMBRE_ESTADO_CENTRO_COSTO,
 
@@ -372,15 +595,31 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 			CODIGO_CENTRO_COSTO: '',
 
+			ES_DETALLE: false,
+
+			CORR_CENTRO_COSTO_MAYOR: 0,
+
+			NOMBRE_CENTRO_COSTO_MAYOR: '',
+
+			CODIGO_CENTRO_COSTO_MAYOR: '',
+
+			CORR_CENTRO_COSTO_NIVEL: 0,
+
+			NOMBRE_NIVEL: '',
+
+			NIVEL: 0,
+
 			CORR_TIPO_CENTRO_COSTO: 0,
 
 			NOMBRE_TIPO_CENTRO_COSTO: '',
 
 			CLASE_CENTRO_COSTO: '',
 
-			ESTADO_CENTRO_COSTO: '',
+			ESTADO_CENTRO_COSTO: 'AC',
 
-			NOMBRE_ESTADO_CENTRO_COSTO: '',
+			ESTADO_CENTRO_COSTO_ACTIVO: true,
+
+			NOMBRE_ESTADO_CENTRO_COSTO: 'Activo',
 
 			CORR_CENTRO_COSTO_REPLICADO: '',
 
@@ -418,6 +657,20 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 			load: () => this.service.getAll(this.fillParam()),
 
+			onData: (data: any) => {
+				const rows = (Array.isArray(data) ? data : []).map((row: any) => ({
+					...row,
+					ES_DETALLE: row?.ES_DETALLE === true || row?.ES_DETALLE === 1 || row?.ES_DETALLE === '1',
+					ESTADO_CENTRO_COSTO_ACTIVO: this.esCentroActivo(row),
+				}));
+				this.models = this.service.ordenarJerarquia(rows);
+				// Qué hace: deja seleccionada la primera fila para el botón Desactivar/Activar.
+				// Cómo lo hace: igual que frecuencia, el toolbar lee model.ESTADO_*_ACTIVO.
+				if (this.models?.length) {
+					this.model = this.models[0];
+				}
+			},
+
 		});
 
 	}
@@ -436,6 +689,8 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 		this.presupuestos = [];
 
+		this.filtrarCentrosMayorPorNivel(true);
+
 	}
 
 
@@ -449,6 +704,11 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 			insert: () => this.service.insert(this.model),
 
 			update: () => this.service.update(this.model),
+
+			onSuccess: () => {
+				this.models = this.service.ordenarJerarquia(this.models);
+				this.getCORR_CENTRO_COSTO_MAYOR();
+			},
 
 		});
 
@@ -470,7 +730,13 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 		super.rowDblClick(e);
 
-		this.consultarPresupuestos();
+		this.filtrarCentrosMayorPorNivel();
+
+		if (this.mostrarTabPresupuesto) {
+
+			this.consultarPresupuestos();
+
+		}
 
 	}
 
@@ -480,7 +746,13 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 		super.editarClick(e);
 
-		this.consultarPresupuestos();
+		this.filtrarCentrosMayorPorNivel();
+
+		if (this.mostrarTabPresupuesto) {
+
+			this.consultarPresupuestos();
+
+		}
 
 	}
 
@@ -506,11 +778,7 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 				},
 
-				error: (error: any) => {
-
-					this.notifyFx(error, NotifyType.Error);
-
-				},
+				error: (error: any) => this.notifyFx(error, NotifyType.Error),
 
 			});
 
@@ -539,6 +807,8 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 			...e.data,
 
 		};
+
+
 
 		this.presupuestoService
 
@@ -592,6 +862,8 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 		};
 
+
+
 		this.presupuestoService
 
 			.update(pres)
@@ -610,11 +882,7 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 				},
 
-				error: (error: any) => {
-
-					this.notifyFx(error, NotifyType.Error);
-
-				},
+				error: (error: any) => this.notifyFx(error, NotifyType.Error),
 
 			});
 
@@ -626,7 +894,15 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 		this.presupuestoService
 
-			.delete({ CORR_CENTRO_COSTO: this.model.CORR_CENTRO_COSTO, ANIO_PERIODO: e.data.ANIO_PERIODO, MES_PERIODO: e.data.MES_PERIODO })
+			.delete({
+
+				CORR_CENTRO_COSTO: this.model.CORR_CENTRO_COSTO,
+
+				ANIO_PERIODO: e.data.ANIO_PERIODO,
+
+				MES_PERIODO: e.data.MES_PERIODO,
+
+			})
 
 			.pipe(take(1))
 
@@ -658,6 +934,20 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 
 
+	override focusedRowChanged(e: any) {
+		if (!this.isBrowse()) {
+			return;
+		}
+		const row = e?.row?.data;
+		if (!row) {
+			return;
+		}
+		this.model = {
+			...row,
+			ESTADO_CENTRO_COSTO_ACTIVO: this.esCentroActivo(row),
+		};
+	}
+
 	rowRemoving(e: any): void {
 
 		this.rowRemovingMtto(e, {
@@ -666,6 +956,33 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 		});
 
+	}
+
+	// Qué hace: activa o desactiva el centro de costo seleccionado.
+	// Cómo lo hace: confirma, invierte AC/IN y parchea el catálogo del centro mayor.
+	activar_inactivar(): void {
+		this.invocarActivarInactivar((row) =>
+			this.service.activarInactivar(row).pipe(
+				tap((response: any) => {
+					if (response?.Result && response.Data) {
+						this.aplicarEstadoEnCatalogoMayor(response.Data);
+					}
+				})
+			)
+		);
+	}
+
+	// Qué hace: refleja el estado nuevo en el lookup de centro mayor.
+	// Cómo lo hace: reemplaza la fila del catálogo en memoria, sin GetAll.
+	aplicarEstadoEnCatalogoMayor(row: any): void {
+		const corr = Number(row?.CORR_CENTRO_COSTO);
+		if (!corr) {
+			return;
+		}
+		this.mCORR_CENTRO_COSTO_MAYOR_ALL = (this.mCORR_CENTRO_COSTO_MAYOR_ALL ?? []).map((item: any) =>
+			Number(item.CORR_CENTRO_COSTO) === corr ? { ...item, ...row } : item
+		);
+		this.filtrarCentrosMayorPorNivel();
 	}
 
 
@@ -683,6 +1000,10 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 		this.dataForm.instance.getEditor('CORR_TIPO_CENTRO_COSTO')?.option('readOnly', true);
 
 		this.dataForm.instance.getEditor('ESTADO_CENTRO_COSTO')?.option('readOnly', true);
+
+		this.dataForm.instance.getEditor('CORR_CENTRO_COSTO_NIVEL')?.option('readOnly', true);
+
+		this.dataForm.instance.getEditor('CORR_CENTRO_COSTO_MAYOR')?.option('readOnly', true);
 
 		this.dataForm.instance.getEditor('CORR_UNIDAD_NEGOCIO')?.option('readOnly', true);
 
@@ -751,6 +1072,22 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 	selectedLookUpCORR_AREA_FUNCIONAL(vRow: any): any {
 
 		return vRow[0].CORR_AREA_FUNCIONAL;
+
+	}
+
+
+
+	selectedLookUpCORR_CENTRO_COSTO_NIVEL(vRow: any): any {
+
+		return vRow[0].CORR_CENTRO_COSTO_NIVEL;
+
+	}
+
+
+
+	selectedLookUpCORR_CENTRO_COSTO_MAYOR(vRow: any): any {
+
+		return vRow[0].CORR_CENTRO_COSTO;
 
 	}
 

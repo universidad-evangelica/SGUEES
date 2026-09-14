@@ -18,6 +18,8 @@ namespace sguees.Repositories
 		{
 		}
 		
+		// Qué hace: lista centros de costo de la empresa en orden jerárquico.
+		// Cómo lo hace: lee V_CON_CENTRO_COSTO y ordena padre→hijas (nivel 1 + hijas, etc.).
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -25,7 +27,8 @@ namespace sguees.Repositories
 			try
 			{
 				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
-				var response = new List<CON_CENTRO_COSTOView>().FromDataReader(reader).ToList();
+				var response = OrdenarJerarquia(new List<CON_CENTRO_COSTOView>().FromDataReader(reader).ToList());
+				AplicarEstadoActivo(response);
 				
 				reader.Close();
 				reader = null;
@@ -63,6 +66,7 @@ namespace sguees.Repositories
 			{
 				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
 				var response = new List<CON_CENTRO_COSTOView>().FromDataReader(reader).FirstOrDefault();
+				AplicarEstadoActivo(response);
 				
 				reader.Close();
 				reader = null;
@@ -105,6 +109,9 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="NOMBRE_CENTRO",Value=Data.NOMBRE_CENTRO,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="CUENTA_CONTABLE",Value=Data.CUENTA_CONTABLE,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="CODIGO_CENTRO_COSTO",Value=Data.CODIGO_CENTRO_COSTO,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="ES_DETALLE",Value=Data.ES_DETALLE,DbType=System.Data.DbType.Boolean},
+					new CParameter() {ParameterName="CORR_CENTRO_COSTO_MAYOR",Value=ToNullableFk(Data.CORR_CENTRO_COSTO_MAYOR),DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="CORR_CENTRO_COSTO_NIVEL",Value=ToNullableFk(Data.CORR_CENTRO_COSTO_NIVEL),DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="CORR_TIPO_CENTRO_COSTO",Value=Data.CORR_TIPO_CENTRO_COSTO,DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="ESTADO_CENTRO_COSTO",Value=Data.ESTADO_CENTRO_COSTO,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="CORR_UNIDAD_NEGOCIO",Value=Data.CORR_UNIDAD_NEGOCIO,DbType=System.Data.DbType.Int32},
@@ -123,6 +130,7 @@ namespace sguees.Repositories
 				
 				var reader = await objData.Insert(_TableName,p,"CORR_CENTRO_COSTO",pWhere);
 				var response = new List<CON_CENTRO_COSTOView>().FromDataReader(reader).FirstOrDefault();
+				AplicarEstadoActivo(response);
 				
 				objResultado.Data = response;
 				objResultado.Result = true;
@@ -160,6 +168,9 @@ namespace sguees.Repositories
 					new CParameter() {ParameterName="NOMBRE_CENTRO",Value=Data.NOMBRE_CENTRO,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="CUENTA_CONTABLE",Value=Data.CUENTA_CONTABLE,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="CODIGO_CENTRO_COSTO",Value=Data.CODIGO_CENTRO_COSTO,DbType=System.Data.DbType.String},
+					new CParameter() {ParameterName="ES_DETALLE",Value=Data.ES_DETALLE,DbType=System.Data.DbType.Boolean},
+					new CParameter() {ParameterName="CORR_CENTRO_COSTO_MAYOR",Value=ToNullableFk(Data.CORR_CENTRO_COSTO_MAYOR),DbType=System.Data.DbType.Int32},
+					new CParameter() {ParameterName="CORR_CENTRO_COSTO_NIVEL",Value=ToNullableFk(Data.CORR_CENTRO_COSTO_NIVEL),DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="CORR_TIPO_CENTRO_COSTO",Value=Data.CORR_TIPO_CENTRO_COSTO,DbType=System.Data.DbType.Int32},
 					new CParameter() {ParameterName="ESTADO_CENTRO_COSTO",Value=Data.ESTADO_CENTRO_COSTO,DbType=System.Data.DbType.String},
 					new CParameter() {ParameterName="CORR_UNIDAD_NEGOCIO",Value=Data.CORR_UNIDAD_NEGOCIO,DbType=System.Data.DbType.Int32},
@@ -179,6 +190,7 @@ namespace sguees.Repositories
 				
 				var reader = await objData.Update(_TableName,p,pWhere);
 				var response = new List<CON_CENTRO_COSTOView>().FromDataReader(reader).FirstOrDefault();
+				AplicarEstadoActivo(response);
 				
 				reader.Close();
 				reader = null;
@@ -272,6 +284,7 @@ namespace sguees.Repositories
 						NOMBRE_CENTRO = (row.NOMBRE_CENTRO ?? "").Trim(),
 						CUENTA_CONTABLE = (row.CUENTA_CONTABLE ?? "").Trim(),
 						CODIGO_CENTRO_COSTO = (row.CODIGO_CENTRO_COSTO ?? "").Trim(),
+						ES_DETALLE = false,
 						CORR_TIPO_CENTRO_COSTO = row.CORR_TIPO_CENTRO_COSTO > 0 ? row.CORR_TIPO_CENTRO_COSTO : 1,
 						ESTADO_CENTRO_COSTO = string.IsNullOrWhiteSpace(row.ESTADO_CENTRO_COSTO) ? "AC" : row.ESTADO_CENTRO_COSTO.Trim(),
 						CORR_UNIDAD_NEGOCIO = row.CORR_UNIDAD_NEGOCIO,
@@ -335,6 +348,181 @@ namespace sguees.Repositories
 			}
 
 			return objResultado;
+		}
+
+		// Qué hace: convierte 0 a NULL para FKs opcionales (nivel / centro mayor).
+		// Cómo lo hace: si el correlativo es <= 0 retorna DBNull; si no, el valor.
+		// Qué hace: marca el bit de activo a partir del código AC/IN.
+		// Cómo lo hace: AC = true; cualquier otro valor = false. Ajusta el nombre si la vista viene vacía.
+		private static void AplicarEstadoActivo(CON_CENTRO_COSTOView row)
+		{
+			if (row == null)
+			{
+				return;
+			}
+
+			row.ESTADO_CENTRO_COSTO_ACTIVO = string.Equals(row.ESTADO_CENTRO_COSTO, "AC", System.StringComparison.OrdinalIgnoreCase);
+			if (string.IsNullOrWhiteSpace(row.NOMBRE_ESTADO_CENTRO_COSTO))
+			{
+				row.NOMBRE_ESTADO_CENTRO_COSTO = row.ESTADO_CENTRO_COSTO_ACTIVO ? "Activo" : "Inactivo";
+			}
+		}
+
+		private static void AplicarEstadoActivo(List<CON_CENTRO_COSTOView> rows)
+		{
+			if (rows == null)
+			{
+				return;
+			}
+
+			foreach (var row in rows)
+			{
+				AplicarEstadoActivo(row);
+			}
+		}
+
+		// Qué hace: activa o desactiva el centro de costo seleccionado.
+		// Cómo lo hace: lee el estado actual y lo alterna entre AC e IN; relee la vista.
+		public async Task<CResult> ActivarInactivarAsync(CON_CENTRO_COSTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			CResult objResultado = new();
+			try
+			{
+				if (Data.CORR_CENTRO_COSTO <= 0)
+				{
+					objResultado.Result = false;
+					objResultado.ErrorCode = -1;
+					objResultado.ErrorMessage = "No se pudo identificar el centro de costo a actualizar.";
+					return objResultado;
+				}
+
+				var pWhere = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_CENTRO_COSTO", Value = Data.CORR_CENTRO_COSTO, DbType = System.Data.DbType.Int32 },
+				};
+
+				var readerActual = await objData.GetDataReader("V_" + _TableName, pWhere);
+				var actual = new List<CON_CENTRO_COSTOView>().FromDataReader(readerActual).FirstOrDefault();
+				readerActual.Close();
+
+				if (actual == null)
+				{
+					objResultado.Result = false;
+					objResultado.ErrorCode = -1;
+					objResultado.ErrorMessage = "No se encontró el centro de costo.";
+					return objResultado;
+				}
+
+				var nuevoEstado = string.Equals(actual.ESTADO_CENTRO_COSTO, "AC", System.StringComparison.OrdinalIgnoreCase) ? "IN" : "AC";
+				var p = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "ESTADO_CENTRO_COSTO", Value = nuevoEstado, DbType = System.Data.DbType.String },
+				};
+
+				var readerUpdate = await objData.Update(_TableName, p, pWhere);
+				var response = new List<CON_CENTRO_COSTOView>().FromDataReader(readerUpdate).FirstOrDefault();
+				readerUpdate.Close();
+				AplicarEstadoActivo(response);
+
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = 1;
+				objResultado.CodeHelper = Data.CORR_CENTRO_COSTO;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
+
+		private static object ToNullableFk(int value)
+		{
+			return value > 0 ? value : (object)System.DBNull.Value;
+		}
+
+		// Qué hace: ordena centros como en con-catalogo-cuenta-centro-costo (asignados/no asignados).
+		// Cómo lo hace: ordena por CODIGO_CENTRO_COSTO (01 → 0101 → 010101…); si hay MAYOR, DFS padre→hijas.
+		private static List<CON_CENTRO_COSTOView> OrdenarJerarquia(List<CON_CENTRO_COSTOView> items)
+		{
+			if (items == null || items.Count == 0)
+			{
+				return items ?? new List<CON_CENTRO_COSTOView>();
+			}
+
+			static string Codigo(CON_CENTRO_COSTOView x) => x.CODIGO_CENTRO_COSTO ?? string.Empty;
+
+			var byCorr = items.ToDictionary(x => x.CORR_CENTRO_COSTO);
+			var children = items
+				.Where(x => x.CORR_CENTRO_COSTO_MAYOR > 0 && byCorr.ContainsKey(x.CORR_CENTRO_COSTO_MAYOR))
+				.GroupBy(x => x.CORR_CENTRO_COSTO_MAYOR)
+				.ToDictionary(
+					g => g.Key,
+					g => g.OrderBy(Codigo, System.StringComparer.OrdinalIgnoreCase).ThenBy(x => x.CORR_CENTRO_COSTO).ToList());
+
+			var hasParents = children.Count > 0;
+			if (!hasParents)
+			{
+				return items
+					.OrderBy(Codigo, System.StringComparer.OrdinalIgnoreCase)
+					.ThenBy(x => x.CORR_CENTRO_COSTO)
+					.ToList();
+			}
+
+			var roots = items
+				.Where(x => x.CORR_CENTRO_COSTO_MAYOR <= 0 || !byCorr.ContainsKey(x.CORR_CENTRO_COSTO_MAYOR))
+				.OrderBy(Codigo, System.StringComparer.OrdinalIgnoreCase)
+				.ThenBy(x => x.CORR_CENTRO_COSTO)
+				.ToList();
+
+			var ordered = new List<CON_CENTRO_COSTOView>(items.Count);
+			var visited = new HashSet<int>();
+
+			void Walk(CON_CENTRO_COSTOView node)
+			{
+				if (!visited.Add(node.CORR_CENTRO_COSTO))
+				{
+					return;
+				}
+
+				ordered.Add(node);
+				if (!children.TryGetValue(node.CORR_CENTRO_COSTO, out var kids))
+				{
+					return;
+				}
+
+				foreach (var child in kids)
+				{
+					Walk(child);
+				}
+			}
+
+			foreach (var root in roots)
+			{
+				Walk(root);
+			}
+
+			foreach (var item in items.OrderBy(Codigo, System.StringComparer.OrdinalIgnoreCase).ThenBy(x => x.CORR_CENTRO_COSTO))
+			{
+				if (!visited.Contains(item.CORR_CENTRO_COSTO))
+				{
+					Walk(item);
+				}
+			}
+
+			return ordered;
 		}
 	}
 }

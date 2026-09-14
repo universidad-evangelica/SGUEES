@@ -3,13 +3,18 @@ using eFramework.Data;
 
 namespace sguees.Models
 {
-	public class CON_CENTRO_COSTOTable: BaseEntity
+	// Qué hace: modelo de escritura de CON_CENTRO_COSTO.
+	// Cómo lo hace: mapea PK y campos editables, incluidos nivel y centro mayor.
+	public class CON_CENTRO_COSTOTable : BaseEntity
 	{
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_CENTRO_COSTO { get; set; }
 		public string NOMBRE_CENTRO { get; set; }
 		public string CUENTA_CONTABLE { get; set; }
 		public string CODIGO_CENTRO_COSTO { get; set; }
+		public bool ES_DETALLE { get; set; }
+		public int CORR_CENTRO_COSTO_MAYOR { get; set; }
+		public int CORR_CENTRO_COSTO_NIVEL { get; set; }
 		public int CORR_TIPO_CENTRO_COSTO { get; set; }
 		public string ESTADO_CENTRO_COSTO { get; set; }
 		public int CORR_UNIDAD_NEGOCIO { get; set; }

@@ -1,0 +1,21 @@
+SET QUOTED_IDENTIFIER ON
+GO
+SET ANSI_NULLS ON
+GO
+-- Qué hace: vista de lectura del catálogo de niveles de centro de costo.
+-- Cómo lo hace: proyecta CON_CENTRO_COSTO_NIVEL con auditoría para el mtto GetAll/Get.
+CREATE OR ALTER VIEW [dbo].[V_CON_CENTRO_COSTO_NIVEL]
+AS
+SELECT
+	A.CORR_EMPRESA,
+	A.CORR_CENTRO_COSTO_NIVEL,
+	A.NOMBRE_NIVEL,
+	A.NIVEL,
+	A.USUARIO_CREA,
+	A.ESTACION_CREA,
+	A.FECHA_CREA,
+	A.USUARIO_ACTU,
+	A.ESTACION_ACTU,
+	A.FECHA_ACTU
+FROM dbo.CON_CENTRO_COSTO_NIVEL A
+GO

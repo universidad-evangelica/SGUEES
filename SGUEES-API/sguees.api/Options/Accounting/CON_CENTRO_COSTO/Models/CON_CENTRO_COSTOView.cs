@@ -2,6 +2,8 @@ using System;
 
 namespace sguees.Models
 {
+	// Qué hace: modelo de lectura de V_CON_CENTRO_COSTO.
+	// Cómo lo hace: expone datos del centro, nivel, padre y catálogos relacionados.
 	public class CON_CENTRO_COSTOView
 	{
 		public int CORR_EMPRESA { get; set; }
@@ -9,10 +11,18 @@ namespace sguees.Models
 		public string NOMBRE_CENTRO { get; set; }
 		public string CUENTA_CONTABLE { get; set; }
 		public string CODIGO_CENTRO_COSTO { get; set; }
+		public bool ES_DETALLE { get; set; }
+		public int CORR_CENTRO_COSTO_MAYOR { get; set; }
+		public string NOMBRE_CENTRO_COSTO_MAYOR { get; set; }
+		public string CODIGO_CENTRO_COSTO_MAYOR { get; set; }
+		public int CORR_CENTRO_COSTO_NIVEL { get; set; }
+		public string NOMBRE_NIVEL { get; set; }
+		public short NIVEL { get; set; }
 		public int CORR_TIPO_CENTRO_COSTO { get; set; }
 		public string NOMBRE_TIPO_CENTRO_COSTO { get; set; }
 		public string CLASE_CENTRO_COSTO { get; set; }
 		public string ESTADO_CENTRO_COSTO { get; set; }
+		public bool ESTADO_CENTRO_COSTO_ACTIVO { get; set; }
 		public string NOMBRE_ESTADO_CENTRO_COSTO { get; set; }
 		public string CORR_CENTRO_COSTO_REPLICADO { get; set; }
 		public int CORR_UNIDAD_NEGOCIO { get; set; }

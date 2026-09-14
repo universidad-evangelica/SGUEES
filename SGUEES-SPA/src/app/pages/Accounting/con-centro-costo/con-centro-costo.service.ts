@@ -2,7 +2,7 @@ import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
-import { NotifyType } from 'src/app/shared/models/NotifyType';
+import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 
 import { ConCentroCostoRepository } from './con-centro-costo.repository';
 import { ConCentroCosto } from './models/con-centro-costo';
@@ -10,29 +10,99 @@ import { ConCentroCosto } from './models/con-centro-costo';
 @Injectable({
 	providedIn: 'root',
 })
+// Qué hace: reglas, columnas y campos del formulario de centros de costo.
+// Cómo lo hace: valida el modelo, ordena jerarquía en memoria y arma CRUD.
 export class ConCentroCostoService {
 	constructor(private repo: ConCentroCostoRepository) {}
 
-	//#region <Validadores>
 	esValido(model: ConCentroCosto, msg: Function): boolean {
-		// if (model.NOMBRE_ROL == '') {
-		// msg('Debe digitar el nombre del Rol', NotifyType.Error)
-		// return false;
-		// }
-
 		return true;
 	}
-	// #endregion
+
+	// Qué hace: ordena centros como en con-catalogo-cuenta-centro-costo.
+	// Cómo lo hace: por CODIGO (01 → 0101 → 010101…); si hay MAYOR, DFS padre→hijas.
+	ordenarJerarquia(items: ConCentroCosto[] = []): ConCentroCosto[] {
+		if (!items?.length) {
+			return items ?? [];
+		}
+
+		const byCorr = new Map<number, ConCentroCosto>();
+		for (const item of items) {
+			byCorr.set(Number(item.CORR_CENTRO_COSTO), item);
+		}
+
+		const children = new Map<number, ConCentroCosto[]>();
+		for (const item of items) {
+			const mayor = Number(item.CORR_CENTRO_COSTO_MAYOR) || 0;
+			if (mayor > 0 && byCorr.has(mayor)) {
+				if (!children.has(mayor)) {
+					children.set(mayor, []);
+				}
+				children.get(mayor)!.push(item);
+			}
+		}
+
+		const sortByCodigo = (a: ConCentroCosto, b: ConCentroCosto) => {
+			const codigoDiff = (a.CODIGO_CENTRO_COSTO ?? '').localeCompare(b.CODIGO_CENTRO_COSTO ?? '', undefined, {
+				sensitivity: 'base',
+			});
+			if (codigoDiff !== 0) {
+				return codigoDiff;
+			}
+			return Number(a.CORR_CENTRO_COSTO) - Number(b.CORR_CENTRO_COSTO);
+		};
+
+		for (const kids of children.values()) {
+			kids.sort(sortByCodigo);
+		}
+
+		if (children.size === 0) {
+			return [...items].sort(sortByCodigo);
+		}
+
+		const roots = items
+			.filter((x) => {
+				const mayor = Number(x.CORR_CENTRO_COSTO_MAYOR) || 0;
+				return mayor <= 0 || !byCorr.has(mayor);
+			})
+			.sort(sortByCodigo);
+
+		const ordered: ConCentroCosto[] = [];
+		const visited = new Set<number>();
+
+		const walk = (node: ConCentroCosto) => {
+			const corr = Number(node.CORR_CENTRO_COSTO);
+			if (visited.has(corr)) {
+				return;
+			}
+			visited.add(corr);
+			ordered.push(node);
+			const kids = children.get(corr) ?? [];
+			for (const child of kids) {
+				walk(child);
+			}
+		};
+
+		for (const root of roots) {
+			walk(root);
+		}
+
+		for (const item of [...items].sort(sortByCodigo)) {
+			if (!visited.has(Number(item.CORR_CENTRO_COSTO))) {
+				walk(item);
+			}
+		}
+
+		return ordered;
+	}
 
 	getAll(param: any): Observable<IResult> {
 		let xWhere: IParam[] = [{ Parameter: 'CORR_CENTRO_COSTO', Value: param.CORR_CENTRO_COSTO }];
-
 		return this.repo.get(xWhere);
 	}
 
 	get(param: any): Observable<IResult> {
 		let xWhere: IParam[] = [{ Parameter: 'CORR_CENTRO_COSTO', Value: param.CORR_CENTRO_COSTO }];
-
 		return this.repo.get(xWhere);
 	}
 
@@ -42,14 +112,18 @@ export class ConCentroCostoService {
 
 	update(model: any): Observable<IResult> {
 		let xWhere: IParam[] = [{ Parameter: 'CORR_CENTRO_COSTO', Value: model.CORR_CENTRO_COSTO }];
-
 		return this.repo.update(model, xWhere);
 	}
 
 	delete(model: any): Observable<IResult> {
 		let xWhere: IParam[] = [{ Parameter: 'CORR_CENTRO_COSTO', Value: model.CORR_CENTRO_COSTO }];
-
 		return this.repo.delete(xWhere);
+	}
+
+	// Qué hace: activa o desactiva el centro seleccionado.
+	// Cómo lo hace: llama ActivarInactivar del repositorio con el correlativo.
+	activarInactivar(model: any): Observable<IResult> {
+		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_CENTRO_COSTO', Value: model.CORR_CENTRO_COSTO }]);
 	}
 
 	getColumns(): any {
@@ -57,9 +131,20 @@ export class ConCentroCostoService {
 			{ dataField: 'CORR_CENTRO_COSTO', caption: 'Corr.' },
 			{ dataField: 'CODIGO_CENTRO_COSTO', caption: 'Código' },
 			{ dataField: 'NOMBRE_CENTRO', caption: 'Nombre del Centro' },
+			{
+				dataField: 'ES_DETALLE',
+				caption: 'Es Detalle',
+				dataType: 'boolean',
+				// Qué hace: fuerza boolean real para el checkbox y el filtro (Todos).
+				// Cómo lo hace: normaliza 1/0/true como en con-catalogo-cuenta.
+				calculateCellValue: (row: any) =>
+					row?.ES_DETALLE === true || row?.ES_DETALLE === 1 || row?.ES_DETALLE === '1',
+			},
+			{ dataField: 'NOMBRE_NIVEL', caption: 'Nivel' },
+			{ dataField: 'NOMBRE_CENTRO_COSTO_MAYOR', caption: 'Centro Mayor' },
 			{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta Contable' },
 			{ dataField: 'NOMBRE_TIPO_CENTRO_COSTO', caption: 'Tipo' },
-			{ dataField: 'NOMBRE_ESTADO_CENTRO_COSTO', caption: 'Estado' },
+			createEstadoColumnConfig('ESTADO_CENTRO_COSTO_ACTIVO', ESTADO_ACTIVO_INACTIVO_LABELS),
 			{ dataField: 'NOMBRE_UNIDAD_NEGOCIO', caption: 'Unidad de Negocio' },
 			{ dataField: 'CODIGO_TERMINACION', caption: 'Código de Terminación' },
 		];
@@ -89,43 +174,64 @@ export class ConCentroCostoService {
 				template: 'CORR_TIPO_CENTRO_COSTOLookup',
 			},
 			{
-				dataField: 'CORR_UNIDAD_NEGOCIO',
-				label: { text: 'Unidad de Negocio' },
-				colSpan: 3,
-				editorOptions: { showClearButton: false },
-				template: 'CORR_UNIDAD_NEGOCIOLookup',
-			},
-			{
 				dataField: 'CODIGO_CENTRO_COSTO',
 				label: { text: 'Código' },
-				colSpan: 2,
+				colSpan: 3,
 				editorOptions: { showClearButton: true, maxLength: 30 },
+			},
+			{
+				dataField: 'NOMBRE_CENTRO',
+				label: { text: 'Centro' },
+				colSpan: 4,
+				editorOptions: { showClearButton: true },
+			},
+			{
+				dataField: 'CORR_CENTRO_COSTO_NIVEL',
+				label: { text: 'Nivel' },
+				colSpan: 2,
+				editorOptions: { showClearButton: true },
+				template: 'CORR_CENTRO_COSTO_NIVELLookup',
+			},
+			{
+				dataField: 'CORR_CENTRO_COSTO_MAYOR',
+				label: { text: 'Centro de Costo Mayor' },
+				colSpan: 2,
+				editorOptions: { showClearButton: true },
+				template: 'CORR_CENTRO_COSTO_MAYORLookup',
+			},
+			{
+				dataField: 'ES_DETALLE',
+				label: { text: 'Centro de Costo de Detalle' },
+				editorType: 'dxCheckBox',
+				colSpan: 2,
 			},
 			{
 				dataField: 'CODIGO_TERMINACION',
 				label: { text: 'Terminación' },
-				colSpan: 2,
+				colSpan: 3,
 				editorOptions: { showClearButton: true, maxLength: 30 },
 			},
 			{
 				dataField: 'CUENTA_CONTABLE',
 				label: { text: 'Cuenta Contable' },
-				colSpan: 2,
+				colSpan: 3,
 				editorOptions: { showClearButton: true, maxLength: 30 },
+			},
+			{
+				dataField: 'CORR_UNIDAD_NEGOCIO',
+				label: { text: 'Unidad de Negocio' },
+				colSpan: 4,
+				editorOptions: { showClearButton: false },
+				template: 'CORR_UNIDAD_NEGOCIOLookup',
 			},
 			{
 				dataField: 'CORR_AREA_FUNCIONAL',
 				label: { text: 'Área Funcional' },
-				colSpan: 2,
+				colSpan: 4,
 				editorOptions: { showClearButton: false },
 				template: 'CORR_AREA_FUNCIONALLookup',
-			},
-			{
-				dataField: 'NOMBRE_CENTRO',
-				label: { text: 'Centro' },
-				colSpan: 8,
-				editorOptions: { showClearButton: true },
 			},
 		];
 	}
 }
+

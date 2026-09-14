@@ -30,6 +30,8 @@ import { ConPartidaComponent } from './con-partida/con-partida.component';
 
 import { ConTipoCentroCostoComponent } from './con-tipo-centro-costo/con-tipo-centro-costo.component';
 
+import { ConCentroCostoNivelComponent } from './con-centro-costo-nivel/con-centro-costo-nivel.component';
+
 import { ConCentroCostoComponent } from './con-centro-costo/con-centro-costo.component';
 
 import { ConDivisionComponent } from './con-division/con-division.component';
@@ -265,6 +267,22 @@ const routes: Routes = [
     canDeactivate: [ AppCanDeactivateGuard ],
 
     loadChildren: () => import('./con-tipo-centro-costo/con-tipo-centro-costo.module').then(m => m.ConTipoCentroCostoModule)
+
+  },
+
+  {
+
+    path: 'con-centro-costo-nivel',
+
+    component: ConCentroCostoNivelComponent,
+
+    data: { titulo: 'Niveles Centro de Costo' },
+
+    canActivate: [ AuthGuardService ],
+
+    canDeactivate: [ AppCanDeactivateGuard ],
+
+    loadChildren: () => import('./con-centro-costo-nivel/con-centro-costo-nivel.module').then(m => m.ConCentroCostoNivelModule)
 
   },
 

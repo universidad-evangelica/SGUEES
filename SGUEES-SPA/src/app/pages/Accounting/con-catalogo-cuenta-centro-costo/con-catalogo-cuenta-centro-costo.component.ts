@@ -189,7 +189,9 @@ export class ConCatalogoCuentaCentroCostoComponent extends CBaseComponent implem
 						this.actualizarGrillasCentros(response.Data || []);
 					} else {
 						this.centrosAsignados = [];
-						this.centrosNoAsignados = this.centrosCatalogo.map((item) => this.mapCentroCatalogo(item));
+						this.centrosNoAsignados = this.centrosCatalogo
+							.filter((item) => this.esCentroActivo(item))
+							.map((item) => this.mapCentroCatalogo(item));
 						if (response.ErrorMessage) {
 							this.notifyFx(response.ErrorMessage, NotifyType.Error);
 						}
@@ -207,10 +209,21 @@ export class ConCatalogoCuentaCentroCostoComponent extends CBaseComponent implem
 	actualizarGrillasCentros(asignaciones: ConCatalogoCuentaCentroCosto[]) {
 		const asignadosIds = new Set(asignaciones.map((item) => item.CORR_CENTRO_COSTO));
 
+		// Qué hace: asignados se muestran todos (aunque el centro esté inactivo).
 		this.centrosAsignados = asignaciones.map((item) => this.mapCentroAsignado(item));
+		// Qué hace: no asignados solo con centros activos (no se pueden asignar inactivos).
 		this.centrosNoAsignados = this.centrosCatalogo
-			.filter((item) => !asignadosIds.has(item.CORR_CENTRO_COSTO))
+			.filter((item) => !asignadosIds.has(item.CORR_CENTRO_COSTO) && this.esCentroActivo(item))
 			.map((item) => this.mapCentroCatalogo(item));
+	}
+
+	// Qué hace: indica si el centro de costo está activo.
+	// Cómo lo hace: usa el bit del API o el código AC.
+	esCentroActivo(row: any): boolean {
+		if (row?.ESTADO_CENTRO_COSTO_ACTIVO === true || row?.ESTADO_CENTRO_COSTO_ACTIVO === 1) {
+			return true;
+		}
+		return String(row?.ESTADO_CENTRO_COSTO ?? '').toUpperCase() === 'AC';
 	}
 
 	mapCentroCatalogo(centro: any) {
