@@ -549,7 +549,7 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 				ESTADO_CENTRO_COSTO: xModel.ESTADO_CENTRO_COSTO,
 
-				ESTADO_CENTRO_COSTO_ACTIVO: !!xModel.ESTADO_CENTRO_COSTO_ACTIVO,
+				ESTADO_CENTRO_COSTO_ACTIVO: this.esCentroActivo(xModel),
 
 				NOMBRE_ESTADO_CENTRO_COSTO: xModel.NOMBRE_ESTADO_CENTRO_COSTO,
 
@@ -615,11 +615,11 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 			CLASE_CENTRO_COSTO: '',
 
-			ESTADO_CENTRO_COSTO: '',
+			ESTADO_CENTRO_COSTO: 'AC',
 
-			ESTADO_CENTRO_COSTO_ACTIVO: false,
+			ESTADO_CENTRO_COSTO_ACTIVO: true,
 
-			NOMBRE_ESTADO_CENTRO_COSTO: '',
+			NOMBRE_ESTADO_CENTRO_COSTO: 'Activo',
 
 			CORR_CENTRO_COSTO_REPLICADO: '',
 
@@ -661,8 +661,14 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 				const rows = (Array.isArray(data) ? data : []).map((row: any) => ({
 					...row,
 					ES_DETALLE: row?.ES_DETALLE === true || row?.ES_DETALLE === 1 || row?.ES_DETALLE === '1',
+					ESTADO_CENTRO_COSTO_ACTIVO: this.esCentroActivo(row),
 				}));
 				this.models = this.service.ordenarJerarquia(rows);
+				// Qué hace: deja seleccionada la primera fila para el botón Desactivar/Activar.
+				// Cómo lo hace: igual que frecuencia, el toolbar lee model.ESTADO_*_ACTIVO.
+				if (this.models?.length) {
+					this.model = this.models[0];
+				}
 			},
 
 		});
@@ -927,6 +933,20 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 	}
 
 
+
+	override focusedRowChanged(e: any) {
+		if (!this.isBrowse()) {
+			return;
+		}
+		const row = e?.row?.data;
+		if (!row) {
+			return;
+		}
+		this.model = {
+			...row,
+			ESTADO_CENTRO_COSTO_ACTIVO: this.esCentroActivo(row),
+		};
+	}
 
 	rowRemoving(e: any): void {
 
