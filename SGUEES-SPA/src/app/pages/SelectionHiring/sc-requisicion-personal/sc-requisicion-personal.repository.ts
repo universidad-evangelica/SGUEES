@@ -63,6 +63,16 @@ export class ScRequisicionPersonalRepository {
 		);
 	}
 
+	/** JWT RPT para abrir ImprimirRequisicion.aspx en iframe. */
+	getRptToken(): Observable<any> {
+		return this.objData.Get(
+			this.xController,
+			'GetRptToken',
+			[],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
 	/**
 	 * Lookup de descriptores por unidad + puesto (endpoint en SC_DESCRIPTOR_PUESTO:
 	 * GetCORR_DESCRIPTOR_PUESTO_BY_PUESTO_SC_REQUISICION_PERSONAL).

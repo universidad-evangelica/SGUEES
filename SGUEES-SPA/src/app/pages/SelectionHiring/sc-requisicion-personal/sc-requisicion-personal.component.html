@@ -13,9 +13,13 @@
     <app-barra-data-mtto
       [tituloVentana]="tituloVentana"
       [subTituloVentana]="subTituloVentana"
+      [showRibbon]="true"
+      [showExport]="permitePrint"
       [isBrowse]="isBrowse()"
       [isForm]="isForm()"
       [permiteAdd]="permiteAdd"
+      [showRefresh]="true"
+      (consultar)="consultar()"
       (nuevo)="nuevo()"
       (guardar)="guardar()"
       (cancelar)="cancelar()"
@@ -24,6 +28,11 @@
       [btn1Type]="'default'"
       [btn1Width]="180"
       (btn1Click)="enviarRequisicion()"
+      [btn2]="btnImprimirRequisicion"
+      [btn2Icon]="'print'"
+      [btn2Type]="'default'"
+      [btn2Width]="120"
+      (btn2Click)="imprimirRequisicion()"
     >
     </app-barra-data-mtto>
     <div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
@@ -1041,6 +1050,9 @@
   [columns]="columns"
   [summary]="summary"
   [keyExpr]="'CORR_REQUISICION_PERSONAL'"
+  [showAdd]="false"
+  [showRefresh]="false"
+  [showExport]="false"
   [permiteEditar]="getPermiteEditar"
   [permiteDele]="getPermiteDele"
   (rowDblClick)="rowDblClick($event)"
@@ -1086,3 +1098,34 @@
 </div>
   </div>
 </div>
+
+<dx-popup
+  [(visible)]="imprimirPopupVisible"
+  [showTitle]="true"
+  title="Requisición de Personal"
+  [width]="'90%'"
+  [height]="'90%'"
+  [showCloseButton]="true"
+  [dragEnabled]="true"
+  [resizeEnabled]="true"
+  (onHidden)="cerrarImprimirPopup()"
+>
+  <div *dxTemplate="let data of 'content'" class="imprimir-viewer">
+    <div class="imprimir-viewer__loading" *ngIf="imprimirLoading">
+      <dx-load-indicator
+        [visible]="true"
+        [height]="64"
+        [width]="64"
+      ></dx-load-indicator>
+      <span class="imprimir-viewer__loading-text">loading...</span>
+    </div>
+    <iframe
+      *ngIf="imprimirUrl"
+      class="imprimir-viewer__iframe"
+      [class.imprimir-viewer__iframe--hidden]="imprimirLoading"
+      [src]="imprimirUrl"
+      (load)="onImprimirIframeLoad()"
+      title="Visor Requisición de Personal"
+    ></iframe>
+  </div>
+</dx-popup>

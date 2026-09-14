@@ -266,6 +266,11 @@ export class ScRequisicionPersonalService {
 		});
 	}
 
+	/** JWT RPT para iframe ImprimirRequisicion.aspx. */
+	getRptToken(): Observable<any> {
+		return this.repo.getRptToken();
+	}
+
 	/** Bitácora de la requisición (endpoint GetCORR_BITACORA_SC_REQUISICION_PERSONAL). */
 	getBitacora(param?: any): Observable<IResult> {
 		const xWhere: IParam[] = [];

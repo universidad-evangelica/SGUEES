@@ -1,5 +1,5 @@
 import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
-import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
+import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, take } from 'rxjs/operators';
@@ -90,6 +90,76 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	get btnEnviarRequisicion(): string {
 		return this.motivoNoPuedeEnviarRequisicion() === null ? 'Enviar requisición' : '';
 	}
+
+	/**
+	 * Botón Imprimir — mismo criterio que Activar proceso en expediente:
+	 * visible al tener requisición seleccionada/abierta (CORR > 0).
+	 */
+	get btnImprimirRequisicion(): string {
+		const corr = Number(this.model?.CORR_REQUISICION_PERSONAL) || 0;
+		return corr > 0 ? 'Imprimir' : '';
+	}
+
+	imprimirPopupVisible = false;
+	imprimirUrl: SafeResourceUrl | null = null;
+	/** Spinner del popup hasta que el iframe DevExpress termine de cargar. */
+	imprimirLoading = false;
+
+	/**
+	 * Abre el visor DevExpress (ASPX) en iframe: UrlRpt + token JWT RPT.
+	 * Muestra spinner "loading..." desde el token hasta el load del iframe.
+	 */
+	imprimirRequisicion(): void {
+		const corr = Number(this.model?.CORR_REQUISICION_PERSONAL) || 0;
+		const corrEmpresa =
+			Number(this.model?.CORR_EMPRESA) ||
+			Number(this.authService?.decodedToken?.CORR_EMPRESA) ||
+			0;
+		if (corr <= 0 || corrEmpresa <= 0) {
+			this.notifyFx('Guarde o seleccione una requisición para imprimir.', NotifyType.Warning);
+			return;
+		}
+
+		this.imprimirUrl = null;
+		this.imprimirLoading = true;
+		this.imprimirPopupVisible = true;
+
+		this.service
+			.getRptToken()
+			.pipe(take(1))
+			.subscribe({
+				next: (res: any) => {
+					const token = res?.Token || res?.Data?.Token || res?.token;
+					if (!token) {
+						this.imprimirLoading = false;
+						this.imprimirPopupVisible = false;
+						this.notifyFx('No se pudo obtener el token de reportería.', NotifyType.Error);
+						return;
+					}
+					const base = (environment as any).UrlRpt || '';
+					const url =
+						`${base}Layouts/SelectionHiring/ImprimirRequisicion.aspx` +
+						`?CORR_EMPRESA=${corrEmpresa}&CORR_REQUISICION_PERSONAL=${corr}&token=${encodeURIComponent(token)}`;
+					this.imprimirUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+				},
+				error: (err: any) => {
+					this.imprimirLoading = false;
+					this.imprimirPopupVisible = false;
+					this.notifyFx(err?.ErrorMessage || err?.message || err || 'Error al preparar impresión', NotifyType.Error);
+				},
+			});
+	}
+
+	onImprimirIframeLoad(): void {
+		this.imprimirLoading = false;
+	}
+
+	cerrarImprimirPopup(): void {
+		this.imprimirPopupVisible = false;
+		this.imprimirUrl = null;
+		this.imprimirLoading = false;
+	}
+
 	mCORR_TIPO_MODALIDAD: any[] = [];
 	mCORR_TIPO_CONTRATACION: any[] = [];
 	mCORR_TIPO_VACANTE: any[] = [];
