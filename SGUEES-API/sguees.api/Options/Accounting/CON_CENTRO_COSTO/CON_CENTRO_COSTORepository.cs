@@ -28,6 +28,7 @@ namespace sguees.Repositories
 			{
 				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
 				var response = OrdenarJerarquia(new List<CON_CENTRO_COSTOView>().FromDataReader(reader).ToList());
+				AplicarEstadoActivo(response);
 				
 				reader.Close();
 				reader = null;
@@ -65,6 +66,7 @@ namespace sguees.Repositories
 			{
 				var reader = await objData.GetDataReader("V_"+_TableName, xWhere);
 				var response = new List<CON_CENTRO_COSTOView>().FromDataReader(reader).FirstOrDefault();
+				AplicarEstadoActivo(response);
 				
 				reader.Close();
 				reader = null;
@@ -127,6 +129,7 @@ namespace sguees.Repositories
 				
 				var reader = await objData.Insert(_TableName,p,"CORR_CENTRO_COSTO",pWhere);
 				var response = new List<CON_CENTRO_COSTOView>().FromDataReader(reader).FirstOrDefault();
+				AplicarEstadoActivo(response);
 				
 				objResultado.Data = response;
 				objResultado.Result = true;
@@ -185,6 +188,7 @@ namespace sguees.Repositories
 				
 				var reader = await objData.Update(_TableName,p,pWhere);
 				var response = new List<CON_CENTRO_COSTOView>().FromDataReader(reader).FirstOrDefault();
+				AplicarEstadoActivo(response);
 				
 				reader.Close();
 				reader = null;
@@ -345,6 +349,102 @@ namespace sguees.Repositories
 
 		// Qué hace: convierte 0 a NULL para FKs opcionales (nivel / centro mayor).
 		// Cómo lo hace: si el correlativo es <= 0 retorna DBNull; si no, el valor.
+		// Qué hace: marca el bit de activo a partir del código AC/IN.
+		// Cómo lo hace: AC = true; cualquier otro valor = false. Ajusta el nombre si la vista viene vacía.
+		private static void AplicarEstadoActivo(CON_CENTRO_COSTOView row)
+		{
+			if (row == null)
+			{
+				return;
+			}
+
+			row.ESTADO_CENTRO_COSTO_ACTIVO = string.Equals(row.ESTADO_CENTRO_COSTO, "AC", System.StringComparison.OrdinalIgnoreCase);
+			if (string.IsNullOrWhiteSpace(row.NOMBRE_ESTADO_CENTRO_COSTO))
+			{
+				row.NOMBRE_ESTADO_CENTRO_COSTO = row.ESTADO_CENTRO_COSTO_ACTIVO ? "Activo" : "Inactivo";
+			}
+		}
+
+		private static void AplicarEstadoActivo(List<CON_CENTRO_COSTOView> rows)
+		{
+			if (rows == null)
+			{
+				return;
+			}
+
+			foreach (var row in rows)
+			{
+				AplicarEstadoActivo(row);
+			}
+		}
+
+		// Qué hace: activa o desactiva el centro de costo seleccionado.
+		// Cómo lo hace: lee el estado actual y lo alterna entre AC e IN; relee la vista.
+		public async Task<CResult> ActivarInactivarAsync(CON_CENTRO_COSTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			CResult objResultado = new();
+			try
+			{
+				if (Data.CORR_CENTRO_COSTO <= 0)
+				{
+					objResultado.Result = false;
+					objResultado.ErrorCode = -1;
+					objResultado.ErrorMessage = "No se pudo identificar el centro de costo a actualizar.";
+					return objResultado;
+				}
+
+				var pWhere = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_CENTRO_COSTO", Value = Data.CORR_CENTRO_COSTO, DbType = System.Data.DbType.Int32 },
+				};
+
+				var readerActual = await objData.GetDataReader("V_" + _TableName, pWhere);
+				var actual = new List<CON_CENTRO_COSTOView>().FromDataReader(readerActual).FirstOrDefault();
+				readerActual.Close();
+
+				if (actual == null)
+				{
+					objResultado.Result = false;
+					objResultado.ErrorCode = -1;
+					objResultado.ErrorMessage = "No se encontró el centro de costo.";
+					return objResultado;
+				}
+
+				var nuevoEstado = string.Equals(actual.ESTADO_CENTRO_COSTO, "AC", System.StringComparison.OrdinalIgnoreCase) ? "IN" : "AC";
+				var p = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "ESTADO_CENTRO_COSTO", Value = nuevoEstado, DbType = System.Data.DbType.String },
+				};
+
+				var readerUpdate = await objData.Update(_TableName, p, pWhere);
+				var response = new List<CON_CENTRO_COSTOView>().FromDataReader(readerUpdate).FirstOrDefault();
+				readerUpdate.Close();
+				AplicarEstadoActivo(response);
+
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = 1;
+				objResultado.CodeHelper = Data.CORR_CENTRO_COSTO;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+				objResultado.ErrorSource = "";
+			}
+			catch (System.Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
+
 		private static object ToNullableFk(int value)
 		{
 			return value > 0 ? value : (object)System.DBNull.Value;

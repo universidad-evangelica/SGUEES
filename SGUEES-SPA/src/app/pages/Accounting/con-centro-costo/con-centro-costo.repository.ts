@@ -8,6 +8,8 @@ import { CData } from 'src/app/FxAPI/CData';
 @Injectable({
 	providedIn: 'root',
 })
+// Qué hace: acceso HTTP al API de centros de costo.
+// Cómo lo hace: llama al controller CON_CENTRO_COSTO para CRUD y activar/inactivar.
 export class ConCentroCostoRepository {
 	readonly xController = 'CON_CENTRO_COSTO';
 
@@ -27,5 +29,11 @@ export class ConCentroCostoRepository {
 
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlCONTAAPI);
+	}
+
+	// Qué hace: activa o desactiva un centro de costo.
+	// Cómo lo hace: Put a ActivarInactivar del controller CON_CENTRO_COSTO.
+	public activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlCONTAAPI);
 	}
 }

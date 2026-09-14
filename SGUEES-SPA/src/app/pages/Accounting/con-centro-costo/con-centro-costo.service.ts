@@ -2,6 +2,7 @@ import { Observable } from 'rxjs';
 import { Injectable } from '@angular/core';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { IResult } from 'src/app/FxAPI/IResult';
+import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 
 import { ConCentroCostoRepository } from './con-centro-costo.repository';
 import { ConCentroCosto } from './models/con-centro-costo';
@@ -119,6 +120,12 @@ export class ConCentroCostoService {
 		return this.repo.delete(xWhere);
 	}
 
+	// Qué hace: activa o desactiva el centro seleccionado.
+	// Cómo lo hace: llama ActivarInactivar del repositorio con el correlativo.
+	activarInactivar(model: any): Observable<IResult> {
+		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_CENTRO_COSTO', Value: model.CORR_CENTRO_COSTO }]);
+	}
+
 	getColumns(): any {
 		return [
 			{ dataField: 'CORR_CENTRO_COSTO', caption: 'Corr.' },
@@ -128,7 +135,7 @@ export class ConCentroCostoService {
 			{ dataField: 'NOMBRE_CENTRO_COSTO_MAYOR', caption: 'Centro Mayor' },
 			{ dataField: 'CUENTA_CONTABLE', caption: 'Cuenta Contable' },
 			{ dataField: 'NOMBRE_TIPO_CENTRO_COSTO', caption: 'Tipo' },
-			{ dataField: 'NOMBRE_ESTADO_CENTRO_COSTO', caption: 'Estado' },
+			createEstadoColumnConfig('ESTADO_CENTRO_COSTO_ACTIVO', ESTADO_ACTIVO_INACTIVO_LABELS),
 			{ dataField: 'NOMBRE_UNIDAD_NEGOCIO', caption: 'Unidad de Negocio' },
 			{ dataField: 'CODIGO_TERMINACION', caption: 'Código de Terminación' },
 		];
@@ -212,4 +219,4 @@ export class ConCentroCostoService {
 		];
 	}
 }
-
+

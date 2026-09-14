@@ -68,6 +68,20 @@ namespace sguees.Controllers
 				return BadRequest(resultado);
 			}
 		}
+
+		// Qué hace: activa o desactiva el centro de costo seleccionado.
+		// Cómo lo hace: llama ActivarInactivarAsync con la empresa de sesión.
+		[HttpPut("ActivarInactivar")]
+		[Authorize(Policy = "/con-centro-costo|U")]
+		public async Task<IActionResult> ActivarInactivar(CON_CENTRO_COSTOTable Data)
+		{
+			Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+			var resultado = await _service.ActivarInactivarAsync(
+				Data,
+				User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? "Admin",
+				ClientInfoHelper.GetClientStation(HttpContext));
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
 		
 		[HttpDelete]
 		[Authorize(Policy = "/con-centro-costo|D")]

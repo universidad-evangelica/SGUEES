@@ -9,10 +9,15 @@
 	[permiteAdd]="permiteAdd"
 	[showRefresh]="true"
 	[showExport]="permitePrint"
+	[showEstadoToolbar]="true"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="permiteEdit"
+	[focusedRow]="isBrowse() ? model : null"
 	(nuevo)="nuevo()"
 	(guardar)="guardar()"
 	(cancelar)="cancelar()"
 	(consultar)="consultar()"
+	(activarInactivar)="activar_inactivar()"
 >
 </app-barra-data-mtto>
 
@@ -200,6 +205,9 @@
 	[showAdd]="false"
 	[showRefresh]="false"
 	[showExport]="false"
+	[showEstadoToolbar]="true"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="permiteEdit"
 	[focusedRowKey]="gridFocusedRowKey"
 	[permitePrint]="permitePrint"
 	[permiteEditar]="getPermiteEditar"

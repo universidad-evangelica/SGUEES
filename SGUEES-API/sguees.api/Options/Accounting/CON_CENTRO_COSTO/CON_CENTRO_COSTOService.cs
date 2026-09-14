@@ -55,5 +55,12 @@ namespace sguees.Services
 		{
 			return await _repo.ImportarExcelAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
+
+		// Qué hace: invierte el estado activo/inactivo del centro de costo.
+		// Cómo lo hace: delega al repositorio, que alterna AC/IN.
+		public async Task<CResult> ActivarInactivarAsync(CON_CENTRO_COSTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
 	}
 }

@@ -50,6 +50,10 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 	protected override mttoGridKeyExpr = 'CORR_CENTRO_COSTO';
 
+	protected override mttoCampoEstado = 'ESTADO_CENTRO_COSTO_ACTIVO';
+
+	protected override mttoEstadoDescribeField = 'NOMBRE_CENTRO';
+
 
 
 	@ViewChild('gridPresupuesto', { static: false }) gridPresupuesto!: DxDataGridComponent;
@@ -540,6 +544,8 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 				ESTADO_CENTRO_COSTO: xModel.ESTADO_CENTRO_COSTO,
 
+				ESTADO_CENTRO_COSTO_ACTIVO: !!xModel.ESTADO_CENTRO_COSTO_ACTIVO,
+
 				NOMBRE_ESTADO_CENTRO_COSTO: xModel.NOMBRE_ESTADO_CENTRO_COSTO,
 
 				CORR_CENTRO_COSTO_REPLICADO: xModel.CORR_CENTRO_COSTO_REPLICADO,
@@ -603,6 +609,8 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 			CLASE_CENTRO_COSTO: '',
 
 			ESTADO_CENTRO_COSTO: '',
+
+			ESTADO_CENTRO_COSTO_ACTIVO: false,
 
 			NOMBRE_ESTADO_CENTRO_COSTO: '',
 
@@ -913,6 +921,12 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 		});
 
+	}
+
+	// Qué hace: activa o desactiva el centro de costo seleccionado.
+	// Cómo lo hace: confirma y llama ActivarInactivar; el API alterna AC/IN.
+	activar_inactivar(): void {
+		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
 	}
 
 
