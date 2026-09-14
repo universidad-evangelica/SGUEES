@@ -2,7 +2,7 @@
 
 import { ActivatedRoute } from '@angular/router';
 
-import { take } from 'rxjs/operators';
+import { take, tap } from 'rxjs/operators';
 
 import { environment } from 'src/environments/environment';
 
@@ -428,9 +428,17 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 
 
-	// Qué hace: deja en el lookup solo centros del nivel inmediato superior (N-1).
+	// Qué hace: indica si el centro está activo para mostrarlo en agregar/editar.
+	// Cómo lo hace: usa el bit del API o el código AC.
+	esCentroActivo(row: any): boolean {
+		if (row?.ESTADO_CENTRO_COSTO_ACTIVO === true || row?.ESTADO_CENTRO_COSTO_ACTIVO === 1) {
+			return true;
+		}
+		return String(row?.ESTADO_CENTRO_COSTO ?? '').toUpperCase() === 'AC';
+	}
 
-	// Cómo lo hace: usa NIVEL del catálogo seleccionado; nivel 1 no admite mayor.
+	// Qué hace: deja en el lookup centros activos del nivel N-1, más el mayor ya asignado.
+	// Cómo lo hace: oculta inactivos, salvo el que este registro ya tiene asociado.
 
 	filtrarCentrosMayorPorNivel(limpiarSiNoAplica = false): void {
 
@@ -464,28 +472,23 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 
 
 
-		this.mCORR_CENTRO_COSTO_MAYOR = (this.mCORR_CENTRO_COSTO_MAYOR_ALL ?? []).filter(
+		const mayorActual = Number(this.model?.CORR_CENTRO_COSTO_MAYOR) || 0;
 
-			(x: any) => Number(x.NIVEL) === nivelPadre && Number(x.CORR_CENTRO_COSTO) !== selfCorr
-
-		);
-
-
-
-		if (limpiarSiNoAplica) {
-
-			const ok = this.mCORR_CENTRO_COSTO_MAYOR.some(
-
-				(x: any) => Number(x.CORR_CENTRO_COSTO) === Number(this.model.CORR_CENTRO_COSTO_MAYOR)
-
-			);
-
-			if (!ok) {
-
-				this.model.CORR_CENTRO_COSTO_MAYOR = 0;
-
+		this.mCORR_CENTRO_COSTO_MAYOR = (this.mCORR_CENTRO_COSTO_MAYOR_ALL ?? []).filter((x: any) => {
+			const corr = Number(x.CORR_CENTRO_COSTO);
+			if (corr === selfCorr || Number(x.NIVEL) !== nivelPadre) {
+				return false;
 			}
+			return this.esCentroActivo(x) || corr === mayorActual;
+		});
 
+		if (limpiarSiNoAplica && mayorActual > 0) {
+			const mayorSigueEnLista = this.mCORR_CENTRO_COSTO_MAYOR.some(
+				(x: any) => Number(x.CORR_CENTRO_COSTO) === mayorActual
+			);
+			if (!mayorSigueEnLista) {
+				this.model.CORR_CENTRO_COSTO_MAYOR = 0;
+			}
 		}
 
 	}
@@ -924,9 +927,30 @@ export class ConCentroCostoComponent extends CBaseComponent implements OnInit {
 	}
 
 	// Qué hace: activa o desactiva el centro de costo seleccionado.
-	// Cómo lo hace: confirma y llama ActivarInactivar; el API alterna AC/IN.
+	// Cómo lo hace: confirma, invierte AC/IN y parchea el catálogo del centro mayor.
 	activar_inactivar(): void {
-		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
+		this.invocarActivarInactivar((row) =>
+			this.service.activarInactivar(row).pipe(
+				tap((response: any) => {
+					if (response?.Result && response.Data) {
+						this.aplicarEstadoEnCatalogoMayor(response.Data);
+					}
+				})
+			)
+		);
+	}
+
+	// Qué hace: refleja el estado nuevo en el lookup de centro mayor.
+	// Cómo lo hace: reemplaza la fila del catálogo en memoria, sin GetAll.
+	aplicarEstadoEnCatalogoMayor(row: any): void {
+		const corr = Number(row?.CORR_CENTRO_COSTO);
+		if (!corr) {
+			return;
+		}
+		this.mCORR_CENTRO_COSTO_MAYOR_ALL = (this.mCORR_CENTRO_COSTO_MAYOR_ALL ?? []).map((item: any) =>
+			Number(item.CORR_CENTRO_COSTO) === corr ? { ...item, ...row } : item
+		);
+		this.filtrarCentrosMayorPorNivel();
 	}
 
 
