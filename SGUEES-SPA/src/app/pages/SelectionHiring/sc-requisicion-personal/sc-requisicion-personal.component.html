@@ -13,9 +13,13 @@
     <app-barra-data-mtto
       [tituloVentana]="tituloVentana"
       [subTituloVentana]="subTituloVentana"
+      [showRibbon]="true"
+      [showExport]="permitePrint"
       [isBrowse]="isBrowse()"
       [isForm]="isForm()"
       [permiteAdd]="permiteAdd"
+      [showRefresh]="true"
+      (consultar)="consultar()"
       (nuevo)="nuevo()"
       (guardar)="guardar()"
       (cancelar)="cancelar()"
@@ -24,6 +28,11 @@
       [btn1Type]="'default'"
       [btn1Width]="180"
       (btn1Click)="enviarRequisicion()"
+      [btn2]="btnImprimirRequisicion"
+      [btn2Icon]="'print'"
+      [btn2Type]="'default'"
+      [btn2Width]="120"
+      (btn2Click)="imprimirRequisicion()"
     >
     </app-barra-data-mtto>
     <div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
@@ -1040,9 +1049,24 @@
   [models]="models"
   [columns]="columns"
   [summary]="summary"
-  [keyExpr]="'CORR_REQUISICION_PERSONAL'"
+  [keyExpr]="mttoGridKeyExpr"
+  [pageSize]="mttoPageSize"
+  [allowedPageSizes]="mttoPageSizes"
+  [remoteOperations]="mttoRemoteOperations"
+  [repaintChangesOnly]="false"
+  [nativeToolbar]="true"
+  [unifiedToolbar]="false"
+  [showSearch]="false"
+  [showAdd]="false"
+  [showRefresh]="false"
+  [showExport]="false"
+  [focusedRowKey]="gridFocusedRowKey"
+  [permitePrint]="permitePrint"
   [permiteEditar]="getPermiteEditar"
   [permiteDele]="getPermiteDele"
+  [responsiveColumnHiding]="false"
+  [columnHidingEnabled]="false"
+  [exportFileName]="'RequisicionPersonal'"
   (rowDblClick)="rowDblClick($event)"
   (rowRemoving)="rowRemoving($event)"
   (focusedRowChanged)="focusedRowChanged($event)"
@@ -1086,3 +1110,36 @@
 </div>
   </div>
 </div>
+
+<dx-popup
+  [(visible)]="imprimirPopupVisible"
+  [showTitle]="true"
+  title="Requisición de Personal"
+  [width]="'90%'"
+  [height]="'90%'"
+  [showCloseButton]="true"
+  [dragEnabled]="true"
+  [resizeEnabled]="true"
+  (onHidden)="cerrarImprimirPopup()"
+>
+  <div *dxTemplate="let data of 'content'" class="imprimir-viewer" id="imprimirViewerHost">
+    <!-- Mismo patrón que sc-descriptor-puesto (dx-load-panel → "Cargando..."), anclado al iframe. -->
+    <dx-load-panel
+      shadingColor="rgba(0,0,0,0.4)"
+      [position]="{ my: 'center', at: 'center', of: '#imprimirViewerHost' }"
+      [(visible)]="imprimirLoading"
+      [showIndicator]="true"
+      [showPane]="true"
+      [shading]="true"
+      [container]="'#imprimirViewerHost'"
+      message="Cargando..."
+    ></dx-load-panel>
+    <iframe
+      *ngIf="imprimirUrl"
+      class="imprimir-viewer__iframe"
+      [src]="imprimirUrl"
+      (load)="onImprimirIframeLoad()"
+      title="Visor Requisición de Personal"
+    ></iframe>
+  </div>
+</dx-popup>

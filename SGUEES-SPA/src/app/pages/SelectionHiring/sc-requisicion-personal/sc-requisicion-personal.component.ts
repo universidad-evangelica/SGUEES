@@ -1,6 +1,6 @@
 import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
-import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
-import { ActivatedRoute } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl, SafeUrl } from '@angular/platform-browser';
+import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError, take } from 'rxjs/operators';
 import { MessageService } from 'primeng/api'; //Import para usar PrimeNG Toast
@@ -45,9 +45,18 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	@ViewChild('entrevistaDocumentoFileInput', { static: false })
 	entrevistaDocumentoFileInput?: ElementRef<HTMLInputElement>;
 
+	protected override etiquetaRegistro = 'el expediente de candidato';
+	protected override requiereEmpresaSesion = true;
+	protected override mttoPageSize = 15;
+	protected override mttoPageSizes = [15, 25, 50, 100];
+	protected override mttoGridKeyExpr = 'CORR_REQUISICION_PERSONAL';
+	protected override mttoParchearGridTrasGuardar = true;
+	protected override mttoRemoteOperations = false;
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
+		private navRouter: Router,
 		private service: ScRequisicionPersonalService,
 		private observadoresService: ScRequisicionObservadoresService,
 		private solicitudService: ScSolicitudEmpleoService,
@@ -83,12 +92,119 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	enviandoRequisicion = false;
 
 	/**
-	 * Texto del botón "Enviar requisición" (patrón Asociar Expediente en sc-solicitud-empleo).
-	 * Visible solo con requisición guardada en Borrador o Devuelta.
+	 * Texto del botón "Enviar requisición".
+	 * Visible con requisición guardada en Borrador o Devuelta (edición o consulta).
 	 */
 	get btnEnviarRequisicion(): string {
 		return this.motivoNoPuedeEnviarRequisicion() === null ? 'Enviar requisición' : '';
 	}
+
+	/**
+	 * Botón Imprimir — mismo criterio que Activar proceso en expediente:
+	 * visible al tener requisición seleccionada/abierta (CORR > 0).
+	 */
+	get btnImprimirRequisicion(): string {
+		const corr = Number(this.model?.CORR_REQUISICION_PERSONAL) || 0;
+		return corr > 0 ? 'Imprimir' : '';
+	}
+
+	imprimirPopupVisible = false;
+	imprimirUrl: SafeResourceUrl | null = null;
+	/** dx-load-panel dentro del popup hasta DocumentReady de DevExpress (postMessage). */
+	imprimirLoading = false;
+	private imprimirLoadFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+	/**
+	 * Abre el visor DevExpress (ASPX) en iframe: UrlRpt + token JWT RPT.
+	 * Muestra "Cargando..." (dx-load-panel, mismo patrón que sc-descriptor-puesto)
+	 * hasta que el documento DevExpress avise listo vía postMessage.
+	 */
+	imprimirRequisicion(): void {
+		const corr = Number(this.model?.CORR_REQUISICION_PERSONAL) || 0;
+		const corrEmpresa =
+			Number(this.model?.CORR_EMPRESA) ||
+			Number(this.authService?.decodedToken?.CORR_EMPRESA) ||
+			0;
+		if (corr <= 0 || corrEmpresa <= 0) {
+			this.notifyFx('Guarde o seleccione una requisición para imprimir.', NotifyType.Warning);
+			return;
+		}
+
+		this.clearImprimirLoadFallback();
+		this.imprimirUrl = null;
+		this.imprimirLoading = true;
+		this.imprimirPopupVisible = true;
+
+		this.service
+			.getRptToken()
+			.pipe(take(1))
+			.subscribe({
+				next: (res: any) => {
+					const token = res?.Token || res?.Data?.Token || res?.token;
+					if (!token) {
+						this.imprimirLoading = false;
+						this.imprimirPopupVisible = false;
+						this.notifyFx('No se pudo obtener el token de reportería.', NotifyType.Error);
+						return;
+					}
+					const base = (environment as any).UrlRpt || '';
+					const url =
+						`${base}Layouts/SelectionHiring/ImprimirRequisicion.aspx` +
+						`?CORR_EMPRESA=${corrEmpresa}&CORR_REQUISICION_PERSONAL=${corr}&token=${encodeURIComponent(token)}`;
+					this.imprimirUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+					// Respaldo si DocumentReady no llega (p. ej. error de red).
+					this.imprimirLoadFallbackTimer = setTimeout(() => {
+						this.imprimirLoading = false;
+						this.imprimirLoadFallbackTimer = null;
+					}, 45000);
+				},
+				error: (err: any) => {
+					this.imprimirLoading = false;
+					this.imprimirPopupVisible = false;
+					this.notifyFx(err?.ErrorMessage || err?.message || err || 'Error al preparar impresión', NotifyType.Error);
+				},
+			});
+	}
+
+	/** DevExpress DocumentReady (o error ASPX) → quitar "Cargando...". */
+	@HostListener('window:message', ['$event'])
+	onImprimirRptMessage(event: MessageEvent): void {
+		const data = event?.data;
+		if (!data || data.type !== 'sguees-rpt-ready' || data.source !== 'ImprimirRequisicion') {
+			return;
+		}
+		this.clearImprimirLoadFallback();
+		this.imprimirLoading = false;
+	}
+
+	/** Fallback: si el shell del iframe cargó pero no hay viewer, no dejar el panel colgado. */
+	onImprimirIframeLoad(): void {
+		// El aviso real llega por postMessage (DocumentReady). Aquí solo un respaldo corto
+		// por si la página de error no pudo ejecutar script.
+		if (!this.imprimirLoading) {
+			return;
+		}
+		this.clearImprimirLoadFallback();
+		this.imprimirLoadFallbackTimer = setTimeout(() => {
+			this.imprimirLoading = false;
+			this.imprimirLoadFallbackTimer = null;
+		}, 8000);
+	}
+
+	cerrarImprimirPopup(): void {
+		this.clearImprimirLoadFallback();
+		this.imprimirPopupVisible = false;
+		this.imprimirUrl = null;
+		this.imprimirLoading = false;
+	}
+
+	private clearImprimirLoadFallback(): void {
+		if (this.imprimirLoadFallbackTimer != null) {
+			clearTimeout(this.imprimirLoadFallbackTimer);
+			this.imprimirLoadFallbackTimer = null;
+		}
+	}
+
 	mCORR_TIPO_MODALIDAD: any[] = [];
 	mCORR_TIPO_CONTRATACION: any[] = [];
 	mCORR_TIPO_VACANTE: any[] = [];
@@ -834,6 +950,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	/** Al crear registro nuevo, limpiar tabs (cuando se conecte API). */
 	override nuevo(): void {
 		super.nuevo();
+		this.readOnly = false;
 		this.limpiarDatosTabs();
 		this.cerrarModalObservador();
 		this.mCORR_PUESTO = [];
@@ -847,11 +964,20 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		}, 0);
 	}
 
-	/** Al editar, cargar data de cada tab según CORR_REQUISICION_PERSONAL. */
+	/**
+	 * Editar solo si estado es Borrador/Devuelta.
+	 * Si no es editable → abre en consulta (sin Guardar), igual que doble clic.
+	 */
 	override editarClick(e: any): void {
+		const rowData = e?.row?.data ?? e?.data;
+		if (rowData && !this.service.esEstadoRequisicionEditable(rowData.CORR_ESTADO_REQUISICION)) {
+			this.abrirEnConsulta(rowData);
+			return;
+		}
+
 		super.editarClick(e);
+		this.readOnly = false;
 		this.cargarDatosTabs();
-		// Precargar cascada unidad → puesto → descriptor + visibilidad condicional
 		setTimeout(() => {
 			this.precargarCascadaUnidadPuestoDescriptor();
 			this.sincronizarVisibilidadTiempoContrato();
@@ -859,16 +985,36 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		}, 0);
 	}
 
-	/** Al consultar (doble clic), también cargar observadores (patrón con-partida). */
+	/** Al consultar (doble clic): formulario sin Guardar (isForm=false). */
 	override rowDblClick(e: any): void {
-		super.rowDblClick(e);
+		const rowData = e?.data ?? e?.row?.data;
+		this.abrirEnConsulta(rowData);
+	}
+
+	/** Abre el registro en modo consulta (Not_Defined): sin botón Guardar, campos bloqueados. */
+	private abrirEnConsulta(rowData?: any): void {
+		if (rowData) {
+			this.modelUpdate = { ...rowData };
+			this.model = this.fillData(rowData);
+		}
+		this.AsignaStatus(UpdateType.Not_Defined);
+		this.readOnly = true;
 		this.cargarDatosTabs();
-		// Precargar cascada unidad → puesto → descriptor + visibilidad condicional
 		setTimeout(() => {
+			if (this.dataForm?.instance) {
+				this.dataForm.instance.option('formData', this.model);
+			}
+			this.bloquear();
 			this.precargarCascadaUnidadPuestoDescriptor();
 			this.sincronizarVisibilidadTiempoContrato();
 			this.sincronizarVisibilidadEmpleadoSustituto();
 		}, 0);
+	}
+
+	/** Ícono Editar del grid: solo Borrador (1) y Devuelta (3). */
+	override getPermiteEditar(e: any): boolean {
+		const data = e?.row?.data ?? e?.data;
+		return this.permiteEdit && this.service.esEstadoRequisicionEditable(data?.CORR_ESTADO_REQUISICION);
 	}
 
 	//#endregion
@@ -1127,7 +1273,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				next: (response: any) => {
 					if (response.Result) {
 						this.models = response.Data ?? [];
-						console.log('Datos consultados:', this.models);
+						this.abrirDesdeQueryCorr();
 					} else {
 						//this.messageService.add({ severity: 'error', summary: 'Error', detail: response.ErrorMessage });
 					}
@@ -1138,7 +1284,58 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			});
 	}
 
+	/**
+	 * Deep link desde bandeja: /sc-requisicion-personal?corr=N
+	 * Abre el registro (edición si Borrador/Devuelta + permiso U; si no, consulta).
+	 */
+	private abrirDesdeQueryCorr(): void {
+		const corr = Number(this.router.snapshot.queryParamMap.get('corr') ?? 0);
+		if (!(corr > 0)) {
+			return;
+		}
+
+		const row = (this.models as ScRequisicionPersonal[]).find(
+			(item) => Number(item.CORR_REQUISICION_PERSONAL) === corr
+		);
+
+		if (!row) {
+			this.notifyFx(
+				`No se encontró la requisición ${corr} o no tiene acceso a ella.`,
+				NotifyType.Warning,
+				{ raw: true }
+			);
+			this.limpiarQueryCorr();
+			return;
+		}
+
+		this.editarClick({ data: row });
+		this.limpiarQueryCorr();
+	}
+
+	private limpiarQueryCorr(): void {
+		void this.navRouter.navigate([], {
+			relativeTo: this.router,
+			queryParams: { corr: null },
+			queryParamsHandling: 'merge',
+			replaceUrl: true,
+		});
+	}
+
 	guardar(): void {
+		// Solo Borrador/Devuelta (o alta nueva). En consulta / estados cerrados no hay Guardar.
+		if (this.banderaMtto !== UpdateType.Add
+			&& !this.service.esEstadoRequisicionEditable(this.model?.CORR_ESTADO_REQUISICION)) {
+			this.notifyFx(
+				'Solo se puede modificar una requisición en Borrador o Devuelta.',
+				NotifyType.Warning
+			);
+			return;
+		}
+
+		if (!this.isForm()) {
+			return;
+		}
+
 		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
 			return;
 		}
@@ -1273,24 +1470,30 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				
 
 	override bloquear(): void {
-		this.dataForm.instance.getEditor('CORR_REQUISICION_PERSONAL')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('FECHA_REQUISICION')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_DESCRIPTOR')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_DEPARTAMENTO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_PUESTO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_TIPO_MODALIDAD')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_TIPO_CONTRATACION')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_TIPO_VACANTE')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('TIEMPO_CONTRATO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('HORARIO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_EMPLEADO_SUSTITUTO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('FECHA_CIERRE')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('FECHA_APROBACION')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CANTIDAD_PLAZAS')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('PLAZAS_CUBIERTAS')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('SALARIO_MINIMO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('SALARIO_MAXIMO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('JUSTIFICACION')?.option('readOnly', true);
+		this.readOnly = true;
+		this.dataForm?.instance?.getEditor('CORR_REQUISICION_PERSONAL')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('FECHA_REQUISICION')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_DESCRIPTOR')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_DEPARTAMENTO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_PUESTO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_TIPO_MODALIDAD')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_TIPO_CONTRATACION')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_TIPO_VACANTE')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('TIEMPO_CONTRATO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('HORARIO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_EMPLEADO_SUSTITUTO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('FECHA_CIERRE')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('FECHA_APROBACION')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CANTIDAD_PLAZAS')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('PLAZAS_CUBIERTAS')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('SALARIO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('SALARIO_MINIMO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('SALARIO_MAXIMO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('JUSTIFICACION')?.option('readOnly', true);
+	}
+
+	override habilitar(): void {
+		this.readOnly = false;
 	}
 
 	/** Envía la requisición al flujo de aprobación (Borrador/Devuelta → En Aprobación). */
@@ -1379,13 +1582,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			return 'Guarde la requisición antes de enviarla a aprobación.';
 		}
 
-		if (this.isConsulta()) {
-			return 'No se puede enviar la requisición en modo consulta.';
-		}
-
 		const estado = this.model?.CORR_ESTADO_REQUISICION ?? 1;
-		// 1 = Borrador, 3 = Devuelta (puede reenviarse).
-		if (estado !== 1 && estado !== 3) {
+		// 1 = Borrador, 3 = Devuelta (puede reenviarse). Visible también en consulta (sin Guardar).
+		if (!this.service.esEstadoRequisicionEnviable(estado)) {
 			return 'Solo se puede enviar una requisición en Borrador o Devuelta.';
 		}
 

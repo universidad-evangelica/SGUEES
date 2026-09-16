@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import CustomStore from 'devextreme/data/custom_store';
 import { lastValueFrom } from 'rxjs';
 
@@ -94,6 +94,7 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
+		private navRouter: Router,
 		private service: ScBandejaThService
 	) {
 		super(appInfoService, router);
@@ -254,17 +255,55 @@ export class ScBandejaThComponent extends CBaseComponent implements OnInit {
 	}
 
 	/**
-	 * TODO (PENDIENTE-ACCIONES.md): deep link a solicitud / expediente / requisición.
+	 * Deep link a la pantalla oficial según tipo.
+	 * Requisición → /sc-requisicion-personal?corr=CORR_REQUISICION_PERSONAL (requiere permiso R).
 	 */
 	accionVerDetalle(): void {
 		if (!this.selectedItem) {
 			return;
 		}
-		this.notifyFx(
-			`Abrirá detalle de ${this.selectedItem.CODIGO} (próxima fase · deep link).`,
-			NotifyType.Warning,
-			{ raw: true }
-		);
+
+		const corrReq = Number(this.selectedItem.CORR_REQUISICION_PERSONAL) || 0;
+		if (this.selectedItem.TIPO === 'REQUISICION' && corrReq > 0) {
+			if (!this.tienePermisoLectura('/sc-requisicion-personal')) {
+				this.notifyFx(
+					'No tiene permiso de lectura en Requisición de personal.',
+					NotifyType.Warning,
+					{ raw: true }
+				);
+				return;
+			}
+			void this.navRouter.navigate(['/sc-requisicion-personal'], {
+				queryParams: { corr: corrReq },
+			});
+			return;
+		}
+
+		const corrExp = Number(this.selectedItem.CORR_EXPEDIENTE_CANDIDATO) || 0;
+		if (corrExp > 0) {
+			if (!this.tienePermisoLectura('/sc-expediente-candidato')) {
+				this.notifyFx(
+					'No tiene permiso de lectura en Expediente de candidato.',
+					NotifyType.Warning,
+					{ raw: true }
+				);
+				return;
+			}
+			void this.navRouter.navigate(['/sc-expediente-candidato'], {
+				queryParams: { corr: corrExp },
+			});
+			return;
+		}
+
+		this.notifyFx('No hay ruta de detalle disponible para este ítem.', NotifyType.Warning, {
+			raw: true,
+		});
+	}
+
+	/** JWT / menú: la opción destino debe incluir permiso R (AuthGuard también valida). */
+	private tienePermisoLectura(urlOpcion: string): boolean {
+		const permisos = this.appInfoService.getPermiso(urlOpcion);
+		return typeof permisos === 'string' && permisos.includes('R');
 	}
 
 	accionVerFlujo(): void {

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sguees.api.Shared;
 using sguees.Models;
+using sguees.Services;
 using SGUEES.Models;
 using SGUEES.Services;
 
@@ -19,10 +20,14 @@ namespace SGUEES.Controllers
     public class SC_REQUISICION_PERSONALController: ControllerBase
     {
         private readonly ISC_REQUISICION_PERSONALService _service;
+        private readonly ISEG_USUARIOService _userService;
         
-        public SC_REQUISICION_PERSONALController(ISC_REQUISICION_PERSONALService service)
+        public SC_REQUISICION_PERSONALController(
+            ISC_REQUISICION_PERSONALService service,
+            ISEG_USUARIOService userService)
         {
-            _service = service ?? throw new ArgumentNullException(nameof(_service));
+            _service = service ?? throw new ArgumentNullException(nameof(service));
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
         }
 
         [HttpGet("GetAll")]
@@ -156,6 +161,19 @@ namespace SGUEES.Controllers
             }
 
             return Ok(resultado);
+        }
+
+        /// <summary>
+        /// JWT para abrir ImprimirRequisicion.aspx en SGUEES-RPT (iframe).
+        /// No genera el PDF: el ASPX llama al SP y muestra el visor DevExpress.
+        /// </summary>
+        [HttpGet("GetRptToken")]
+        [Authorize(Policy = "/sc-requisicion-personal|R")]
+        public IActionResult GetRptToken()
+        {
+            var login = GetUsuario() ?? "user";
+            var token = _userService.GenerateRptToken(login);
+            return Ok(new { Token = token });
         }
 
         private int GetCorrEmpresa()

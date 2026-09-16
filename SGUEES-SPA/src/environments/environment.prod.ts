@@ -8,4 +8,5 @@ export const environment = {
   UrlTALENTOHUMANONAPI: 'http://192.168.0.250/sgueesAPI/',
   UrlFEAPI: 'http://192.168.1.129:9000/',
   UrlApiToken: '192.168.0.250',
+  UrlRpt: 'http://192.168.0.250/sguees-rpt/',
 };

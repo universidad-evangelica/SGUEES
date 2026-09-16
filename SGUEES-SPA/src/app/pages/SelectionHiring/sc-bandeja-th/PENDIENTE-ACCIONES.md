@@ -19,6 +19,6 @@
 | Candidatos · `CON_EXPEDIENTE` | Activar proceso de selección | `ScExpedienteCandidatoService.activarProcesoSeleccion` |
 | Candidatos · `EN_SELECCION` | Aplica / No aplica | `ScRequisicionCandidatoService.decide` |
 | Contrataciones · `APLICA` | Ejecutar movimiento personal | Standby (proceso contrato) |
-| Cualquiera | Ver detalle | Deep link según ciclo |
+| Cualquiera | Ver detalle | Deep link: REQ → `/sc-requisicion-personal?corr=`; Candidato → expediente (permiso R) |
 
 Ver también: `SGUEES-API/.../SC_BANDEJA_TH/PENDIENTE-ACCIONES.md`
