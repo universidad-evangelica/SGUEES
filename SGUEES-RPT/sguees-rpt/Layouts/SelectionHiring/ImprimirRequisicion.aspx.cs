@@ -46,7 +46,13 @@ namespace sgueesRpt.Layouts.SelectionHiring
 		{
 			webDocumentViewer.Visible = false;
 			litError.Visible = true;
-			litError.Text = "<div id=\"errorBox\">" + Server.HtmlEncode(message) + "</div>";
+			litError.Text =
+				"<div id=\"errorBox\">" + Server.HtmlEncode(message) + "</div>" +
+				"<script type=\"text/javascript\">" +
+				"if (window.parent && window.parent !== window) {" +
+				"  window.parent.postMessage({ type: 'sguees-rpt-ready', source: 'ImprimirRequisicion', error: true }, '*');" +
+				"}" +
+				"</script>";
 		}
 	}
 }

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.0\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.2.0.0\build\net46\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -21,12 +21,13 @@
     <IISExpressWindowsAuthentication />
     <IISExpressUseClassicPipelineMode />
     <UseGlobalApplicationHostFile />
-    <NuGetPackageImportStamp></NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
     <TargetFrameworkProfile />
     <DockerComposeProjectPath>..\docker-compose.dcproj</DockerComposeProjectPath>
     <DevExpressDir Condition="'$(DevExpressDir)' == ''">C:\Program Files\DevExpress 24.2\Components\Bin\Framework</DevExpressDir>
     <!-- TEMPORAL: false = no compila Crystal (sin runtime instalado). true = reactiva Crystal. -->
-    <EnableCrystalReports>false</EnableCrystalReports>
+    <EnableCrystalReports>True</EnableCrystalReports>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -196,6 +197,11 @@
     <Compile Include="Layouts\DevExpressReportExportHelper.cs" />
     <Compile Include="Layouts\ReportExportHelper.cs" Condition="'$(EnableCrystalReports)' == 'true'" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Include="Reports\SelectionHiring\SC_REQUISICION_PERSONAL\rptRequisicionPersonal.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -422,6 +428,10 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Properties\licenses.licx" />
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Include="Reports\Accounting\CON_PARTIDA\DevExpress\PARTIDA_CONTABLE_DXReport.resx">
       <DependentUpon>PARTIDA_CONTABLE_DXReport.cs</DependentUpon>
     </EmbeddedResource>
@@ -509,7 +519,8 @@
           <IISUrl>http://localhost:58592/</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>
           <UseCustomServer>False</UseCustomServer>
-          <CustomServerUrl></CustomServerUrl>
+          <CustomServerUrl>
+          </CustomServerUrl>
           <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
         </WebProjectProperties>
       </FlavorProperties>

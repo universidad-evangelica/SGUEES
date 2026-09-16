@@ -45,6 +45,14 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	@ViewChild('entrevistaDocumentoFileInput', { static: false })
 	entrevistaDocumentoFileInput?: ElementRef<HTMLInputElement>;
 
+	protected override etiquetaRegistro = 'el expediente de candidato';
+	protected override requiereEmpresaSesion = true;
+	protected override mttoPageSize = 15;
+	protected override mttoPageSizes = [15, 25, 50, 100];
+	protected override mttoGridKeyExpr = 'CORR_REQUISICION_PERSONAL';
+	protected override mttoParchearGridTrasGuardar = true;
+	protected override mttoRemoteOperations = false;
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -102,12 +110,14 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 
 	imprimirPopupVisible = false;
 	imprimirUrl: SafeResourceUrl | null = null;
-	/** Spinner del popup hasta que el iframe DevExpress termine de cargar. */
+	/** dx-load-panel dentro del popup hasta DocumentReady de DevExpress (postMessage). */
 	imprimirLoading = false;
+	private imprimirLoadFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
 	/**
 	 * Abre el visor DevExpress (ASPX) en iframe: UrlRpt + token JWT RPT.
-	 * Muestra spinner "loading..." desde el token hasta el load del iframe.
+	 * Muestra "Cargando..." (dx-load-panel, mismo patrón que sc-descriptor-puesto)
+	 * hasta que el documento DevExpress avise listo vía postMessage.
 	 */
 	imprimirRequisicion(): void {
 		const corr = Number(this.model?.CORR_REQUISICION_PERSONAL) || 0;
@@ -120,6 +130,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			return;
 		}
 
+		this.clearImprimirLoadFallback();
 		this.imprimirUrl = null;
 		this.imprimirLoading = true;
 		this.imprimirPopupVisible = true;
@@ -141,6 +152,11 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 						`${base}Layouts/SelectionHiring/ImprimirRequisicion.aspx` +
 						`?CORR_EMPRESA=${corrEmpresa}&CORR_REQUISICION_PERSONAL=${corr}&token=${encodeURIComponent(token)}`;
 					this.imprimirUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+					// Respaldo si DocumentReady no llega (p. ej. error de red).
+					this.imprimirLoadFallbackTimer = setTimeout(() => {
+						this.imprimirLoading = false;
+						this.imprimirLoadFallbackTimer = null;
+					}, 45000);
 				},
 				error: (err: any) => {
 					this.imprimirLoading = false;
@@ -150,14 +166,43 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			});
 	}
 
-	onImprimirIframeLoad(): void {
+	/** DevExpress DocumentReady (o error ASPX) → quitar "Cargando...". */
+	@HostListener('window:message', ['$event'])
+	onImprimirRptMessage(event: MessageEvent): void {
+		const data = event?.data;
+		if (!data || data.type !== 'sguees-rpt-ready' || data.source !== 'ImprimirRequisicion') {
+			return;
+		}
+		this.clearImprimirLoadFallback();
 		this.imprimirLoading = false;
 	}
 
+	/** Fallback: si el shell del iframe cargó pero no hay viewer, no dejar el panel colgado. */
+	onImprimirIframeLoad(): void {
+		// El aviso real llega por postMessage (DocumentReady). Aquí solo un respaldo corto
+		// por si la página de error no pudo ejecutar script.
+		if (!this.imprimirLoading) {
+			return;
+		}
+		this.clearImprimirLoadFallback();
+		this.imprimirLoadFallbackTimer = setTimeout(() => {
+			this.imprimirLoading = false;
+			this.imprimirLoadFallbackTimer = null;
+		}, 8000);
+	}
+
 	cerrarImprimirPopup(): void {
+		this.clearImprimirLoadFallback();
 		this.imprimirPopupVisible = false;
 		this.imprimirUrl = null;
 		this.imprimirLoading = false;
+	}
+
+	private clearImprimirLoadFallback(): void {
+		if (this.imprimirLoadFallbackTimer != null) {
+			clearTimeout(this.imprimirLoadFallbackTimer);
+			this.imprimirLoadFallbackTimer = null;
+		}
 	}
 
 	mCORR_TIPO_MODALIDAD: any[] = [];

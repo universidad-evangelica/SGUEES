@@ -6,7 +6,6 @@ import { CommonModule } from '@angular/common';
 import { DxFormModule } from 'devextreme-angular/ui/form';
 import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
 import { DxLoadPanelModule } from 'devextreme-angular/ui/load-panel';
-import { DxLoadIndicatorModule } from 'devextreme-angular/ui/load-indicator';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxTabPanelModule } from 'devextreme-angular/ui/tab-panel';
 import { DxDropDownBoxModule } from 'devextreme-angular/ui/drop-down-box';
@@ -36,7 +35,6 @@ const routes: Routes = [{ path: '', component: ScRequisicionPersonalComponent }]
     DxDataGridModule,
     DxButtonModule,
     DxLoadPanelModule,
-    DxLoadIndicatorModule,
     DxDropDownBoxModule,
     DxCheckBoxModule,
     DxTabPanelModule,

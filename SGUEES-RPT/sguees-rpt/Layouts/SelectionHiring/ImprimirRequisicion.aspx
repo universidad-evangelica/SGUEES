@@ -16,7 +16,13 @@
 <body>
 	<form id="form1" runat="server">
 		<asp:Literal ID="litError" runat="server" Visible="false" />
-		<dx:ASPxWebDocumentViewer ID="webDocumentViewer" runat="server" Height="100%" Width="100%" ClientInstanceName="webDocumentViewer" />
+		<dx:ASPxWebDocumentViewer ID="webDocumentViewer" runat="server" Height="100%" Width="100%" ClientInstanceName="webDocumentViewer">
+			<ClientSideEvents DocumentReady="function(s, e) {
+				if (window.parent &amp;&amp; window.parent !== window) {
+					window.parent.postMessage({ type: 'sguees-rpt-ready', source: 'ImprimirRequisicion' }, '*');
+				}
+			}" />
+		</dx:ASPxWebDocumentViewer>
 	</form>
 </body>
 </html>
