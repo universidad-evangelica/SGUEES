@@ -90,6 +90,11 @@ namespace sguees.Repositories
 				return ValidationResult(1002, "Debe seleccionar una requisición de personal.");
 			}
 
+			if (await SolicitudYaAsociadaExpedienteAsync(Data.CORR_EMPRESA, Data.CORR_SOLICITUD_EMPLEO))
+			{
+				return ValidationResult(1004, "La solicitud ya está asociada al expediente; no se pueden agregar requisiciones (solo consulta).");
+			}
+
 			if (await ExistsVinculoAsync(Data.CORR_EMPRESA, Data.CORR_SOLICITUD_EMPLEO, Data.CORR_REQUISICION_PERSONAL))
 			{
 				return ValidationResult(1003, "La requisición seleccionada ya está vinculada a esta solicitud.");
@@ -118,18 +123,9 @@ namespace sguees.Repositories
 
 				var reader = await objData.Insert(_TableName, p, "CORR_SOLICITUD_REQUISICION", pWhere);
 				var response = new List<SC_SOLICITUD_REQUISICIONView>().FromDataReader(reader).FirstOrDefault();
-				reader?.Close();
 
-				if (response == null)
-				{
-					var corr = p.First(x => x.ParameterName == "CORR_SOLICITUD_REQUISICION").Value is int id ? id : Data.CORR_SOLICITUD_REQUISICION;
-					var reload = await GetAsync(new List<CParameter>
-					{
-						new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-						new CParameter() { ParameterName = "CORR_SOLICITUD_REQUISICION", Value = corr, DbType = System.Data.DbType.Int32 },
-					});
-					response = reload.Data as SC_SOLICITUD_REQUISICIONView;
-				}
+				reader.Close();
+				reader = null;
 
 				objResultado.Data = response;
 				objResultado.Result = true;
@@ -160,6 +156,25 @@ namespace sguees.Repositories
 
 			try
 			{
+				var vinculo = await GetVinculoByPkAsync(Data.CORR_EMPRESA, Data.CORR_SOLICITUD_REQUISICION);
+				if (vinculo == null)
+				{
+					return ValidationResult(1005, "El vínculo de requisición no existe.");
+				}
+
+				if (await SolicitudYaAsociadaExpedienteAsync(vinculo.CORR_EMPRESA, vinculo.CORR_SOLICITUD_EMPLEO))
+				{
+					return ValidationResult(1004, "La solicitud ya está asociada al expediente; no se pueden quitar requisiciones (solo consulta).");
+				}
+
+				var cantidad = await ContarRequisicionesAsync(vinculo.CORR_EMPRESA, vinculo.CORR_SOLICITUD_EMPLEO);
+				if (cantidad <= 1 && await SolicitudTieneLinkOPersonaAsync(vinculo.CORR_EMPRESA, vinculo.CORR_SOLICITUD_EMPLEO))
+				{
+					return ValidationResult(
+						1006,
+						"Después de generar el enlace debe mantener al menos una requisición. Vincule otra (reemplazo) antes de quitar esta.");
+				}
+
 				var pWhere = new List<CParameter>
 				{
 					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
@@ -181,6 +196,78 @@ namespace sguees.Repositories
 			}
 
 			return objResultado;
+		}
+
+		private async Task<SC_SOLICITUD_REQUISICIONView> GetVinculoByPkAsync(int corrEmpresa, int corrSolicitudRequisicion)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_SOLICITUD_REQUISICION", Value = corrSolicitudRequisicion, DbType = System.Data.DbType.Int32 },
+			};
+
+			var reader = await objData.GetDataReader("V_" + _TableName, p);
+			var row = new List<SC_SOLICITUD_REQUISICIONView>().FromDataReader(reader).FirstOrDefault();
+			reader.Close();
+			objData.objConnection.Close();
+			return row;
+		}
+
+		private async Task<int> ContarRequisicionesAsync(int corrEmpresa, int corrSolicitudEmpleo)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_SOLICITUD_EMPLEO", Value = corrSolicitudEmpleo, DbType = System.Data.DbType.Int32 },
+			};
+
+			var reader = await objData.GetDataReader("V_" + _TableName, p);
+			var rows = new List<SC_SOLICITUD_REQUISICIONView>().FromDataReader(reader).ToList();
+			reader.Close();
+			objData.objConnection.Close();
+			return rows.Count;
+		}
+
+		private async Task<bool> SolicitudYaAsociadaExpedienteAsync(int corrEmpresa, int corrSolicitudEmpleo)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_SOLICITUD_EMPLEO", Value = corrSolicitudEmpleo, DbType = System.Data.DbType.Int32 },
+			};
+
+			var reader = await objData.GetDataReader("SC_EXPEDIENTE_SOLICITUD", p);
+			var tiene = reader.HasRows;
+			while (reader.Read()) { /* drain */ }
+			reader.Close();
+			objData.objConnection.Close();
+			return tiene;
+		}
+
+		private async Task<bool> SolicitudTieneLinkOPersonaAsync(int corrEmpresa, int corrSolicitudEmpleo)
+		{
+			var pSolicitud = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_SOLICITUD_EMPLEO", Value = corrSolicitudEmpleo, DbType = System.Data.DbType.Int32 },
+			};
+
+			var readerSolicitud = await objData.GetDataReader("V_SC_SOLICITUD_EMPLEO", pSolicitud);
+			var solicitud = new List<SC_SOLICITUD_EMPLEOView>().FromDataReader(readerSolicitud).FirstOrDefault();
+			readerSolicitud.Close();
+			objData.objConnection.Close();
+
+			if (solicitud != null && (solicitud.CORR_PERSONA_DATOS ?? 0) > 0)
+			{
+				return true;
+			}
+
+			var readerToken = await objData.GetDataReader("SC_SOLICITUD_EMPLEO_TOKEN", pSolicitud);
+			var tieneToken = readerToken.HasRows;
+			while (readerToken.Read()) { /* drain */ }
+			readerToken.Close();
+			objData.objConnection.Close();
+			return tieneToken;
 		}
 
 		private async Task<bool> ExistsVinculoAsync(int corrEmpresa, int corrSolicitudEmpleo, int corrRequisicionPersonal)
@@ -217,7 +304,6 @@ namespace sguees.Repositories
 				ErrorCode = errorCode,
 				ErrorMessage = message,
 				ErrorSource = "[SC_SOLICITUD_REQUISICIONRepository]",
-				RowsAffected = 0,
 			};
 		}
 	}
