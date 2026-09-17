@@ -18,6 +18,7 @@ import { GenTipoContribuyenteComponent } from './gen-tipo-contribuyente/gen-tipo
 import { GenOrigenIngresoComponent } from './gen-origen-ingreso/gen-origen-ingreso.component';
 import { GenReligionComponent } from './gen-religion/gen-religion.component';
 import { GenTipoDocumentoIdentidadComponent } from './gen-tipo-documento-identidad/gen-tipo-documento-identidad.component';
+import { GenParentescoComponent } from './gen-parentesco/gen-parentesco.component';
 
 const routes: Routes = [
   {
@@ -139,6 +140,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-tipo-documento-identidad/gen-tipo-documento-identidad.module').then(m => m.GenTipoDocumentoIdentidadModule)
+  },
+  {
+    path: 'gen-parentesco',
+    component: GenParentescoComponent,
+    data: { titulo: 'Parentesco' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-parentesco/gen-parentesco.module').then(m => m.GenParentescoModule)
   }
 ];
 
