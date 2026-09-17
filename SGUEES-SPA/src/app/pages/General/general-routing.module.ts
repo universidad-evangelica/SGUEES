@@ -15,6 +15,7 @@ import { GenBancoComponent } from './gen-banco/gen-banco.component';
 import { GenUnidadesPuestoComponent } from './gen-unidades-puesto/gen-unidades-puesto.component';
 import { GenActividadEconomicaComponent } from './gen-actividad-economica/gen-actividad-economica.component';
 import { GenTipoContribuyenteComponent } from './gen-tipo-contribuyente/gen-tipo-contribuyente.component';
+import { GenOrigenIngresoComponent } from './gen-origen-ingreso/gen-origen-ingreso.component';
 
 const routes: Routes = [
   {
@@ -112,6 +113,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-tipo-contribuyente/gen-tipo-contribuyente.module').then(m => m.GenTipoContribuyenteModule)
+  },
+  {
+    path: 'gen-origen-ingreso',
+    component: GenOrigenIngresoComponent,
+    data: { titulo: 'Origen Ingreso' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-origen-ingreso/gen-origen-ingreso.module').then(m => m.GenOrigenIngresoModule)
   }
 ];
 
