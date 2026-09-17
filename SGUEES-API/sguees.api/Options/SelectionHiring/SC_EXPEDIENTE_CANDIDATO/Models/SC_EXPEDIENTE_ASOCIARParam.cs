@@ -15,7 +15,7 @@ namespace SGUEES.Models
 	public class SC_EXPEDIENTE_ASOCIAREstadoView
 	{
 		/// <summary>
-		/// SIN_PERSONA | DUI_NO_COINCIDE | SIN_EXPEDIENTE | PUEDE_ASOCIAR | YA_ASOCIADA | ASOCIADA | ERROR
+		/// SIN_PERSONA | DUI_NO_COINCIDE | SIN_EXPEDIENTE | EXPEDIENTE_POR_DUI | PUEDE_ASOCIAR | YA_ASOCIADA | ASOCIADA | ERROR
 		/// </summary>
 		public string ESTADO { get; set; }
 		public int CORR_SOLICITUD_EMPLEO { get; set; }

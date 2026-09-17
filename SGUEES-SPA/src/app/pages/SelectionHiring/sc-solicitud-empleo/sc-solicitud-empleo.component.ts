@@ -70,15 +70,18 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	ultimoMensajeAsociacion = '';
 
 	/**
-	 * Texto del botón "Asociar Expediente" evaluado en cada ciclo de CD.
-	 * Se usa un getter para evitar el race entre confirmaCancelar (async) y el reset
-	 * del estado del botón, que hacía que quedara visible al volver a modo Browse.
+	 * Visible en formulario editable. Oculto en browse, consulta o ya asociada (congelada).
 	 */
 	get btnAsociarExpediente(): string {
-		if (this.asociacionExpedienteBloqueada) {
+		if (this.asociacionExpedienteBloqueada || this.isBrowse() || this.isConsulta()) {
 			return '';
 		}
-		return this.motivoNoPuedeAsociarExpediente() === null ? 'Asociar Expediente' : '';
+		return 'Asociar Expediente';
+	}
+
+	/** Solicitud ya asociada a expediente: solo consulta (sin mutaciones). */
+	get solicitudCongelada(): boolean {
+		return this.asociacionExpedienteBloqueada || this.isConsulta();
 	}
 	// #endregion
 
@@ -124,7 +127,11 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 		const motivo = this.motivoNoPuedeAsociarExpediente();
 		if (motivo) {
-			this.notifyFx(motivo, NotifyType.Warning);
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Flujo de solicitud',
+				detail: motivo,
+			});
 			return;
 		}
 
@@ -151,7 +158,22 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 			}
 
 			if (codigo === 4104 || estado === 'YA_ASOCIADA') {
-				this.bloquearAsociacionExpediente(mensaje);
+				this.aplicarCongeladoSoloConsulta(
+					mensaje || 'La solicitud ya está asociada al expediente; solo consulta.'
+				);
+				return;
+			}
+
+			if (codigo === 4105 || estado === 'EXPEDIENTE_POR_DUI') {
+				const aceptar = await confirm(
+					mensaje ||
+						'La persona ya posee un expediente. ¿Desea asociar esta solicitud a ese expediente?',
+					'Asociar a expediente existente'
+				);
+				if (!aceptar) {
+					return;
+				}
+				await this.ejecutarAsociarExpediente(corrSolicitud, false);
 				return;
 			}
 
@@ -189,27 +211,92 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 			return 'Abra una solicitud para asociar el expediente.';
 		}
 
-		if ((this.model?.CORR_SOLICITUD_EMPLEO ?? 0) <= 0) {
-			return 'Guarde la solicitud antes de asociar el expediente.';
-		}
-
-		if (!(this.requisicionesSolicitud?.length > 0)) {
-			return 'Debe vincular al menos una requisición a la solicitud.';
-		}
-
-		if ((this.model?.CORR_PERSONA_DATOS ?? 0) <= 0) {
-			return 'La solicitud no tiene persona asociada (CORR_PERSONA_DATOS).';
-		}
-
-		if (!`${this.model?.DUI ?? ''}`.trim()) {
-			return 'La solicitud no tiene DUI.';
-		}
-
 		if (this.isConsulta()) {
 			return 'No se puede asociar expediente en modo consulta.';
 		}
 
+		if ((this.model?.CORR_SOLICITUD_EMPLEO ?? 0) <= 0) {
+			return 'Paso 1: guarde el encabezado de la solicitud antes de asociar el expediente.';
+		}
+
+		if (!this.tieneRequisicionVinculada()) {
+			return 'Paso 2: vincule al menos una requisición antes de asociar el expediente.';
+		}
+
+		if ((this.model?.CORR_PERSONA_DATOS ?? 0) <= 0) {
+			return 'Paso 3: genere el enlace y espere a que el candidato complete el formulario (aún no hay datos de persona).';
+		}
+
+		if (!`${this.model?.DUI ?? ''}`.trim()) {
+			return 'La solicitud no tiene DUI; complete o actualice los datos de la persona antes de asociar.';
+		}
+
 		return null;
+	}
+
+	private tieneRequisicionVinculada(): boolean {
+		return (this.requisicionesSolicitud?.length ?? 0) > 0;
+	}
+
+	/**
+	 * Motivo para no enviar el enlace del formulario; null si se puede generar.
+	 * Orden: encabezado guardado → requisición → correo (sin cambios pendientes).
+	 */
+	private motivoNoPuedeGenerarToken(): string | null {
+		if (!this.permiteEdit) {
+			return 'No tiene permiso para enviar la solicitud.';
+		}
+
+		if (this.isConsulta() || this.asociacionExpedienteBloqueada) {
+			return 'La solicitud está en solo consulta; no se puede generar el enlace.';
+		}
+
+		if ((this.model?.CORR_SOLICITUD_EMPLEO ?? 0) <= 0) {
+			return 'Paso 1: guarde el encabezado de la solicitud antes de generar el enlace.';
+		}
+
+		if (!this.tieneRequisicionVinculada()) {
+			return 'Paso 2: vincule al menos una requisición antes de generar el enlace del formulario.';
+		}
+
+		if (!`${this.model?.CORREO_INVITACION ?? ''}`.trim()) {
+			return 'Paso 1: indique el correo de invitación en el encabezado y guarde la solicitud.';
+		}
+
+		if (
+			this.modelUpdate?.CORREO_INVITACION !== undefined &&
+			this.model.CORREO_INVITACION !== this.modelUpdate.CORREO_INVITACION
+		) {
+			return 'Guarde el correo de invitación antes de generar el enlace del formulario.';
+		}
+
+		if (!this.model?.CORR_TIPO_CONTRATACION || Number(this.model.CORR_TIPO_CONTRATACION) <= 0) {
+			return 'Paso 1: seleccione el tipo de contratación en el encabezado y guarde la solicitud.';
+		}
+
+		if (
+			this.modelUpdate?.CORR_TIPO_CONTRATACION !== undefined &&
+			Number(this.model.CORR_TIPO_CONTRATACION) !== Number(this.modelUpdate.CORR_TIPO_CONTRATACION)
+		) {
+			return 'Guarde el tipo de contratación antes de generar el enlace del formulario.';
+		}
+
+		if ((this.model?.CORR_PERSONA_DATOS ?? 0) > 0) {
+			return 'La solicitud ya tiene datos de persona; no es necesario generar otro enlace.';
+		}
+
+		return null;
+	}
+
+	/** Soft-disable del botón Enviar: bloqueos duros (permiso / proceso / consulta / congelada / ya con persona). */
+	puedeIntentarEnviarSolicitud(): boolean {
+		return (
+			this.permiteEdit &&
+			!this.generandoToken &&
+			!this.isConsulta() &&
+			!this.asociacionExpedienteBloqueada &&
+			(this.model?.CORR_PERSONA_DATOS ?? 0) <= 0
+		);
 	}
 
 	private async ejecutarAsociarExpediente(corrSolicitud: number, crearExpediente: boolean): Promise<void> {
@@ -222,13 +309,17 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 			if (mensaje) {
 				this.notifyFx(mensaje, NotifyType.Success);
 			}
-			this.asociacionExpedienteBloqueada = true;
-			this.ultimoMensajeAsociacion = mensaje || '';
+			this.aplicarCongeladoSoloConsulta(
+				mensaje || 'Solicitud asociada al expediente. La solicitud queda en solo consulta.',
+				{ silent: true }
+			);
 			return;
 		}
 
 		if (codigo === 4104 || estado === 'YA_ASOCIADA') {
-			this.bloquearAsociacionExpediente(mensaje);
+			this.aplicarCongeladoSoloConsulta(
+				mensaje || 'La solicitud ya está asociada al expediente; solo consulta.'
+			);
 			return;
 		}
 
@@ -237,17 +328,90 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		}
 	}
 
-	private bloquearAsociacionExpediente(mensaje?: string): void {
+	private aplicarCongeladoSoloConsulta(mensaje?: string, opciones?: { silent?: boolean }): void {
 		this.asociacionExpedienteBloqueada = true;
 		this.ultimoMensajeAsociacion = mensaje || '';
-		if (mensaje) {
-			this.notifyFx(mensaje, NotifyType.Warning);
+		if (!this.isConsulta()) {
+			this.AsignaStatus(UpdateType.Not_Defined);
 		}
+		setTimeout(() => this.bloquear());
+		if (mensaje && !opciones?.silent) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Flujo de solicitud',
+				detail: mensaje,
+			});
+		}
+	}
+
+	/** True si ya se generó al menos un enlace/token (o ya hay persona). */
+	private tieneLinkGenerado(): boolean {
+		if ((this.model?.CORR_PERSONA_DATOS ?? 0) > 0) {
+			return true;
+		}
+		return (this.tokens?.length ?? 0) > 0;
 	}
 
 	private resetAsociacionExpediente(): void {
 		this.asociacionExpedienteBloqueada = false;
 		this.ultimoMensajeAsociacion = '';
+	}
+
+	/**
+	 * Consulta estado de asociación al abrir la solicitud.
+	 * Si YA_ASOCIADA → modo consulta congelado.
+	 */
+	private sincronizarEstadoAsociacionAlAbrir(modoPreferido: UpdateType.Update | UpdateType.Not_Defined): void {
+		const corrSolicitud = this.model?.CORR_SOLICITUD_EMPLEO ?? 0;
+		if (corrSolicitud <= 0) {
+			this.AsignaStatus(modoPreferido);
+			if (modoPreferido === UpdateType.Update) {
+				this.habilitar();
+				this.setFocus();
+			} else {
+				setTimeout(() => this.bloquear());
+			}
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.expedienteService
+			.getEstadoAsociacion(corrSolicitud)
+			.pipe(take(1))
+			.subscribe({
+				next: (estadoResp: any) => {
+					this.loadingVisible = false;
+					const codigo = estadoResp?.ErrorCode ?? -1;
+					const mensaje = estadoResp?.ErrorMessage ?? '';
+					const estado = `${estadoResp?.Data?.ESTADO ?? ''}`.toUpperCase();
+
+					if (codigo === 4104 || estado === 'YA_ASOCIADA') {
+						this.aplicarCongeladoSoloConsulta(
+							mensaje || 'Esta solicitud ya está asociada al expediente; solo consulta.',
+							{ silent: false }
+						);
+						return;
+					}
+
+					this.AsignaStatus(modoPreferido);
+					if (modoPreferido === UpdateType.Update) {
+						this.habilitar();
+						this.setFocus();
+					} else {
+						setTimeout(() => this.bloquear());
+					}
+				},
+				error: () => {
+					this.loadingVisible = false;
+					this.AsignaStatus(modoPreferido);
+					if (modoPreferido === UpdateType.Update) {
+						this.habilitar();
+						this.setFocus();
+					} else {
+						setTimeout(() => this.bloquear());
+					}
+				},
+			});
 	}
 
 	/**
@@ -595,6 +759,14 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 
 	/** Abre el modal de edición de datos del candidato. */
 	abrirEditarPersona(): void {
+		if (this.asociacionExpedienteBloqueada || this.isConsulta()) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Flujo de solicitud',
+				detail: 'La solicitud ya está asociada al expediente; los datos de persona son solo consulta.',
+			});
+			return;
+		}
 		if (!this.permiteEdit || this.cargandoPersonaDatos || !this.tienePersonaDatos) {
 			return;
 		}
@@ -615,19 +787,30 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	}
 
 	override editarClick(e: any): void {
-		super.editarClick(e);
+		e?.event?.preventDefault?.();
+		const rowData = e?.row?.data ?? e?.data;
+		if (rowData) {
+			this.modelUpdate = { ...rowData };
+			this.model = this.fillData(rowData);
+		}
 		this.resetAsociacionExpediente();
 		this.consultarPersonaDatos();
 		this.consultarRequisicionesSolicitud();
 		this.consultarToken();
+		this.sincronizarEstadoAsociacionAlAbrir(UpdateType.Update);
 	}
 
 	override rowDblClick(e: any): void {
-		super.rowDblClick(e);
+		const rowData = e?.data ?? e?.row?.data;
+		if (rowData) {
+			this.modelUpdate = { ...rowData };
+			this.model = this.fillData(rowData);
+		}
 		this.resetAsociacionExpediente();
 		this.consultarPersonaDatos();
 		this.consultarRequisicionesSolicitud();
 		this.consultarToken();
+		this.sincronizarEstadoAsociacionAlAbrir(UpdateType.Not_Defined);
 	}
 
 	consultar() {
@@ -678,13 +861,14 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		}
 	}
 
-	/** Habilita el botón verde cuando la solicitud ya tiene correlativo y no es solo consulta. */
+	/** Puede intentar abrir el modal (aviso si aún falta guardar o está congelada). */
+	puedeIntentarSeleccionarRequisicion(): boolean {
+		return this.permiteEdit && !this.isConsulta() && !this.asociacionExpedienteBloqueada;
+	}
+
+	/** Habilita vincular de verdad: solicitud ya guardada y no congelada. */
 	puedeSeleccionarRequisicion(): boolean {
-		return (
-			this.permiteEdit &&
-			!this.isConsulta() &&
-			(this.model?.CORR_SOLICITUD_EMPLEO ?? 0) > 0
-		);
+		return this.puedeIntentarSeleccionarRequisicion() && (this.model?.CORR_SOLICITUD_EMPLEO ?? 0) > 0;
 	}
 
 	consultarRequisicionesSolicitud(): void {
@@ -713,11 +897,29 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	}
 
 	abrirModalRequisicion(): void {
+		if (this.asociacionExpedienteBloqueada || this.isConsulta()) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Flujo de solicitud',
+				detail: 'La solicitud ya está asociada al expediente; no se pueden modificar requisiciones (solo consulta).',
+			});
+			return;
+		}
+
+		if (!this.puedeIntentarSeleccionarRequisicion()) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Flujo de solicitud',
+				detail: 'No puede vincular requisiciones en este modo.',
+			});
+			return;
+		}
+
 		if (!this.puedeSeleccionarRequisicion()) {
 			this.messageService.add({
 				severity: 'warn',
-				summary: 'Requisición',
-				detail: 'Guarde la solicitud antes de vincular requisiciones.',
+				summary: 'Flujo de solicitud',
+				detail: 'Paso 1: guarde el encabezado de la solicitud antes de vincular una requisición.',
 			});
 			return;
 		}
@@ -809,8 +1011,43 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	}
 
 	async quitarRequisicion(item: ScSolicitudRequisicion): Promise<void> {
+		if (this.asociacionExpedienteBloqueada || this.isConsulta()) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Flujo de solicitud',
+				detail: 'La solicitud ya está asociada al expediente; no se pueden quitar requisiciones (solo consulta).',
+			});
+			return;
+		}
+
 		if (!this.puedeSeleccionarRequisicion()) {
 			return;
+		}
+
+		if ((this.requisicionesSolicitud?.length ?? 0) <= 1) {
+			if (!this.tieneLinkGenerado() && (this.model?.CORR_SOLICITUD_EMPLEO ?? 0) > 0) {
+				try {
+					const response: any = await this.service
+						.getAllToken(this.model.CORR_SOLICITUD_EMPLEO)
+						.pipe(take(1))
+						.toPromise();
+					if (response?.Result) {
+						this.tokens = response.Data ?? [];
+					}
+				} catch {
+					/* si falla la consulta, el API igual valida el delete */
+				}
+			}
+
+			if (this.tieneLinkGenerado()) {
+				this.messageService.add({
+					severity: 'warn',
+					summary: 'Flujo de solicitud',
+					detail:
+						'Después de generar el enlace debe mantener al menos una requisición. Vincule otra (reemplazo) antes de quitar esta.',
+				});
+				return;
+			}
 		}
 
 		const aceptar = await confirm(
@@ -851,30 +1088,21 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 		return this.service.getEstadoRequisicionLabel(corrEstado);
 	}
 
+	/** True solo cuando el flujo permite generar el enlace (pasos 1 y 2 cumplidos). */
 	puedeGenerarToken(): boolean {
-		if (!this.permiteEdit || this.generandoToken || (this.model?.CORR_SOLICITUD_EMPLEO ?? 0) <= 0) {
-			return false;
-		}
-
-		if ((this.model?.CORR_PERSONA_DATOS ?? 0) > 0 || !this.model?.CORREO_INVITACION) {
-			return false;
-		}
-
-		if (this.isConsulta()) {
-			return false;
-		}
-
-		return this.modelUpdate?.CORREO_INVITACION === undefined ||
-			this.model.CORREO_INVITACION === this.modelUpdate.CORREO_INVITACION;
+		return this.puedeIntentarEnviarSolicitud() && this.motivoNoPuedeGenerarToken() === null;
 	}
 
 	async generarToken(): Promise<void> {
-		if (!this.puedeGenerarToken()) {
-			this.messageService.add({
-				severity: 'warn',
-				summary: 'Solicitud de empleo',
-				detail: 'Guarde la solicitud y el correo de invitación antes de generar el token.',
-			});
+		const motivo = this.motivoNoPuedeGenerarToken();
+		if (motivo || this.generandoToken) {
+			if (motivo) {
+				this.messageService.add({
+					severity: 'warn',
+					summary: 'Flujo de solicitud',
+					detail: motivo,
+				});
+			}
 			return;
 		}
 
@@ -934,6 +1162,15 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	}
 
 	guardar(): void {
+		if (this.asociacionExpedienteBloqueada || this.isConsulta()) {
+			this.messageService.add({
+				severity: 'warn',
+				summary: 'Flujo de solicitud',
+				detail: 'La solicitud ya está asociada al expediente; no se puede modificar (solo consulta).',
+			});
+			return;
+		}
+
 		if (!this.service.esValido(this.model, this.notifyFx.bind(this))) {
 			return;
 		}
@@ -1029,17 +1266,27 @@ export class ScSolicitudEmpleoComponent extends CBaseComponent implements OnInit
 	}
 
 	override bloquear(): void {
-		this.dataForm.instance.getEditor('CORR_SOLICITUD_EMPLEO')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('FECHA_GENERACION')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORREO_INVITACION')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('DUI')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('NOMBRE')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('CORR_PERSONA_DATOS')?.option('readOnly', true);
-		this.dataForm.instance.getEditor('ACTIVO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_SOLICITUD_EMPLEO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('FECHA_GENERACION')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORREO_INVITACION')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('DUI')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('NOMBRE')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_PERSONA_DATOS')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('ACTIVO')?.option('readOnly', true);
+		this.dataForm?.instance?.getEditor('CORR_TIPO_CONTRATACION')?.option('readOnly', true);
 	}
 
 	override habilitar(): void {
-		setTimeout(() => this.aplicarEstadoCamposIdentidad());
+		if (this.asociacionExpedienteBloqueada || this.isConsulta()) {
+			setTimeout(() => this.bloquear());
+			return;
+		}
+		setTimeout(() => {
+			this.aplicarEstadoCamposIdentidad();
+			this.dataForm?.instance?.getEditor('CORREO_INVITACION')?.option('readOnly', false);
+			this.dataForm?.instance?.getEditor('CORR_TIPO_CONTRATACION')?.option('readOnly', false);
+			this.dataForm?.instance?.getEditor('ACTIVO')?.option('readOnly', false);
+		});
 	}
 
 	private aplicarEstadoCamposIdentidad(): void {

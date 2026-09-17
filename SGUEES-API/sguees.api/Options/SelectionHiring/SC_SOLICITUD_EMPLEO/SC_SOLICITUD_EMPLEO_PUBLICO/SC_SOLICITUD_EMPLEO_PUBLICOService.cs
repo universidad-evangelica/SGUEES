@@ -16,6 +16,7 @@ namespace sguees.Services
     public class SC_SOLICITUD_EMPLEO_PUBLICOService : ISC_SOLICITUD_EMPLEO_PUBLICOService
     {
         private readonly ISC_SOLICITUD_EMPLEO_PUBLICORepository _repo;
+        private readonly ISC_SOLICITUD_REQUISICIONRepository _repoRequisicion;
         private readonly IGEN_PARAMETRO_SMTPRepository _repoParametroSmtp;
         private readonly IConfiguration _configuration;
         private readonly ILogger<SC_SOLICITUD_EMPLEO_PUBLICOService> _logger;
@@ -23,12 +24,14 @@ namespace sguees.Services
 
         public SC_SOLICITUD_EMPLEO_PUBLICOService(
             ISC_SOLICITUD_EMPLEO_PUBLICORepository repo,
+            ISC_SOLICITUD_REQUISICIONRepository repoRequisicion,
             IGEN_PARAMETRO_SMTPRepository repoParametroSmtp,
             IConfiguration configuration,
             ILogger<SC_SOLICITUD_EMPLEO_PUBLICOService> logger,
             PersonaFotoStorage fotoStorage)
         {
             _repo = repo;
+            _repoRequisicion = repoRequisicion;
             _repoParametroSmtp = repoParametroSmtp;
             _configuration = configuration;
             _logger = logger;
@@ -83,6 +86,28 @@ namespace sguees.Services
             if (!CorreoValido(solicitud.CORREO_INVITACION))
             {
                 return Error("El correo de invitación no es válido.");
+            }
+
+            if (solicitud.CORR_TIPO_CONTRATACION <= 0)
+            {
+                return Error("Debe indicar el tipo de contratación en la solicitud antes de generar el enlace del formulario.");
+            }
+
+            var requisicionesResultado = await _repoRequisicion.GetAllAsync(new List<CParameter>
+            {
+                new() { ParameterName = "CORR_EMPRESA", Value = data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+                new() { ParameterName = "CORR_SOLICITUD_EMPLEO", Value = data.CORR_SOLICITUD_EMPLEO, DbType = System.Data.DbType.Int32 },
+            });
+
+            if (!requisicionesResultado.Result)
+            {
+                return Error(requisicionesResultado.ErrorMessage ?? "No se pudo validar las requisiciones de la solicitud.");
+            }
+
+            var requisiciones = requisicionesResultado.Data as System.Collections.ICollection;
+            if (requisiciones == null || requisiciones.Count <= 0)
+            {
+                return Error("Debe vincular al menos una requisición antes de generar el enlace del formulario.");
             }
 
             var horasVigencia = _configuration.GetValue<int?>("SolicitudEmpleo:HorasVigenciaToken") ?? 24;
