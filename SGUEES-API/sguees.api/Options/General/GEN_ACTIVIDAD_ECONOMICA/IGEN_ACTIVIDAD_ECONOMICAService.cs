@@ -1,3 +1,5 @@
+// Qué hace: contrato del servicio GEN_ACTIVIDAD_ECONOMICA.
+// Cómo lo hace: declara GetAll/Get/CRUD y ActivarInactivar del catálogo.
 using System.Threading.Tasks;
 using eFramework.Core;
 using sguees.Models;
@@ -11,5 +13,6 @@ namespace sguees.Services
 		Task<CResult> CreateAsync(GEN_ACTIVIDAD_ECONOMICATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> UpdateAsync(GEN_ACTIVIDAD_ECONOMICATable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(GEN_ACTIVIDAD_ECONOMICATable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> ActivarInactivarAsync(GEN_ACTIVIDAD_ECONOMICATable Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
 }

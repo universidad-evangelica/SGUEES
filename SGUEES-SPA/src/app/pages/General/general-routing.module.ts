@@ -13,6 +13,7 @@ import { GenDivisionComponent } from './gen-division/gen-division.component';
 import { GenGerenciaComponent } from './gen-gerencia/gen-gerencia.component';
 import { GenBancoComponent } from './gen-banco/gen-banco.component';
 import { GenUnidadesPuestoComponent } from './gen-unidades-puesto/gen-unidades-puesto.component';
+import { GenActividadEconomicaComponent } from './gen-actividad-economica/gen-actividad-economica.component';
 
 const routes: Routes = [
   {
@@ -94,6 +95,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-unidades-puesto/gen-unidades-puesto.module').then(m => m.GenUnidadesPuestoModule)
+  },
+  {
+    path: 'gen-actividad-economica',
+    component: GenActividadEconomicaComponent,
+    data: { titulo: 'Actividad Económica' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-actividad-economica/gen-actividad-economica.module').then(m => m.GenActividadEconomicaModule)
   }
 ];
 
