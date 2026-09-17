@@ -116,14 +116,15 @@ namespace SGUEES.Controllers
 			return MapAsociacionResult(resultado);
 		}
 
-		/// <summary>Ok para códigos de negocio del SP (4101–4104); BadRequest solo en error inesperado.</summary>
+		/// <summary>Ok para códigos de negocio del SP (4101–4105); BadRequest solo en error inesperado.</summary>
 		private static IActionResult MapAsociacionResult(CResult resultado)
 		{
 			if (resultado.ErrorCode == 0 ||
 				resultado.ErrorCode == 4101 ||
 				resultado.ErrorCode == 4102 ||
 				resultado.ErrorCode == 4103 ||
-				resultado.ErrorCode == 4104)
+				resultado.ErrorCode == 4104 ||
+				resultado.ErrorCode == 4105)
 			{
 				return new OkObjectResult(resultado);
 			}

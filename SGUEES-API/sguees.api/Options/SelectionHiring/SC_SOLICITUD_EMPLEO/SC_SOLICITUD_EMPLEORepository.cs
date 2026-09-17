@@ -159,9 +159,18 @@ namespace sguees.Repositories
 		public async Task<CResult> UpdateAsync(SC_SOLICITUD_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
-			
+
 			try
 			{
+				if (await SolicitudYaAsociadaExpedienteAsync(Data.CORR_EMPRESA, Data.CORR_SOLICITUD_EMPLEO))
+				{
+					objResultado.Result = false;
+					objResultado.ErrorCode = 1004;
+					objResultado.ErrorMessage = "La solicitud ya está asociada al expediente; no se puede modificar (solo consulta).";
+					objResultado.ErrorSource = "[SC_SOLICITUD_EMPLEORepository]";
+					return objResultado;
+				}
+
 				var p = new List<CParameter>
 				{
                     new CParameter() {ParameterName="FECHA_GENERACION",Value=Data.FECHA_GENERACION,DbType=System.Data.DbType.DateTime},
@@ -368,6 +377,14 @@ namespace sguees.Repositories
 			CResult resultado = new();
 			try
 			{
+				if (data != null && await SolicitudYaAsociadaPorPersonaAsync(corrEmpresa, data.CORR_PERSONA_DATOS))
+				{
+					resultado.Result = false;
+					resultado.ErrorCode = 1004;
+					resultado.ErrorMessage = "La solicitud ya está asociada al expediente; los datos de persona son solo consulta.";
+					resultado.ErrorSource = "[SC_SOLICITUD_EMPLEORepository]";
+					return resultado;
+				}
 				var parametros = new List<CParameter>
 				{
 					new() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
@@ -554,6 +571,52 @@ namespace sguees.Repositories
 			}
 
 			return root.ToString(SaveOptions.DisableFormatting);
+		}
+
+		private async Task<bool> SolicitudYaAsociadaExpedienteAsync(int corrEmpresa, int corrSolicitudEmpleo)
+		{
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_SOLICITUD_EMPLEO", Value = corrSolicitudEmpleo, DbType = System.Data.DbType.Int32 },
+			};
+
+			var reader = await objData.GetDataReader("SC_EXPEDIENTE_SOLICITUD", p);
+			var tiene = reader.HasRows;
+			while (reader.Read()) { /* drain */ }
+			reader.Close();
+			objData.objConnection.Close();
+			return tiene;
+		}
+
+		/// <summary>True si alguna solicitud con esa persona ya está en SC_EXPEDIENTE_SOLICITUD.</summary>
+		private async Task<bool> SolicitudYaAsociadaPorPersonaAsync(int corrEmpresa, int corrPersonaDatos)
+		{
+			if (corrPersonaDatos <= 0)
+			{
+				return false;
+			}
+
+			var p = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_PERSONA_DATOS", Value = corrPersonaDatos, DbType = System.Data.DbType.Int32 },
+			};
+
+			var reader = await objData.GetDataReader("V_SC_SOLICITUD_EMPLEO", p);
+			var solicitudes = new List<SC_SOLICITUD_EMPLEOView>().FromDataReader(reader).ToList();
+			reader.Close();
+			objData.objConnection.Close();
+
+			foreach (var s in solicitudes)
+			{
+				if (await SolicitudYaAsociadaExpedienteAsync(corrEmpresa, s.CORR_SOLICITUD_EMPLEO))
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		private static void SetAttr(XElement row, string name, string value)
