@@ -17,6 +17,7 @@ import { GenActividadEconomicaComponent } from './gen-actividad-economica/gen-ac
 import { GenTipoContribuyenteComponent } from './gen-tipo-contribuyente/gen-tipo-contribuyente.component';
 import { GenOrigenIngresoComponent } from './gen-origen-ingreso/gen-origen-ingreso.component';
 import { GenReligionComponent } from './gen-religion/gen-religion.component';
+import { GenTipoDocumentoIdentidadComponent } from './gen-tipo-documento-identidad/gen-tipo-documento-identidad.component';
 
 const routes: Routes = [
   {
@@ -130,6 +131,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-religion/gen-religion.module').then(m => m.GenReligionModule)
+  },
+  {
+    path: 'gen-tipo-documento-identidad',
+    component: GenTipoDocumentoIdentidadComponent,
+    data: { titulo: 'Tipo Documento Identidad' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-tipo-documento-identidad/gen-tipo-documento-identidad.module').then(m => m.GenTipoDocumentoIdentidadModule)
   }
 ];
 
