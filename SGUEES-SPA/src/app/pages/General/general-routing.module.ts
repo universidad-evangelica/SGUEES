@@ -16,6 +16,7 @@ import { GenUnidadesPuestoComponent } from './gen-unidades-puesto/gen-unidades-p
 import { GenActividadEconomicaComponent } from './gen-actividad-economica/gen-actividad-economica.component';
 import { GenTipoContribuyenteComponent } from './gen-tipo-contribuyente/gen-tipo-contribuyente.component';
 import { GenOrigenIngresoComponent } from './gen-origen-ingreso/gen-origen-ingreso.component';
+import { GenReligionComponent } from './gen-religion/gen-religion.component';
 
 const routes: Routes = [
   {
@@ -121,6 +122,14 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./gen-origen-ingreso/gen-origen-ingreso.module').then(m => m.GenOrigenIngresoModule)
+  },
+  {
+    path: 'gen-religion',
+    component: GenReligionComponent,
+    data: { titulo: 'Religión' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./gen-religion/gen-religion.module').then(m => m.GenReligionModule)
   }
 ];
 
