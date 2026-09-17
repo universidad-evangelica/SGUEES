@@ -8,7 +8,12 @@ GO
   Consulta / asocia SC_SOLICITUD_EMPLEO ↔ SC_EXPEDIENTE_CANDIDATO.
 
   @SOLO_CONSULTA = 1 → solo valida y retorna estado (sin insertar).
-  @SOLO_CONSULTA = 0 → asocia (crea encabezado si @CREAR_EXPEDIENTE = 1).
+  @SOLO_CONSULTA = 0 → asocia (crea encabezado si @CREAR_EXPEDIENTE = 1 y no hay expediente por persona/DUI).
+
+  Búsqueda de expediente:
+    1) Por CORR_PERSONA_DATOS de la solicitud.
+    2) Si no hay: por DUI normalizado (cualquier persona/expediente con el mismo DUI).
+       → No se crea otro expediente; se propone asociar la solicitud al existente.
 
   Códigos @SYS_NUMERO_ERROR (mensajes SOLO aquí):
     0    = PUEDE_ASOCIAR (consulta) / asociada con éxito (acción)
@@ -16,6 +21,7 @@ GO
     4102 = DUI de solicitud no coincide con DUI de persona
     4103 = no existe expediente; se requiere confirmar creación
     4104 = la solicitud ya está asociada a ese expediente
+    4105 = la persona (DUI) ya posee expediente; confirmar asociar solicitud
    -1    = error no controlado
 
   Nota: no usar @@ROWCOUNT después de IF/ELSE (queda en 0 y dispara 4101 en falso).
@@ -49,7 +55,8 @@ BEGIN
         @CORR_DET int = 0,
         @FECHA datetime = GETDATE(),
         @EXISTE_SOLICITUD bit = 0,
-        @EXISTE_PERSONA bit = 0;
+        @EXISTE_PERSONA bit = 0,
+        @ENCONTRADO_POR_DUI bit = 0;
 
     SET @SYS_FILAS_AFECTADAS = 0;
     SET @SYS_NUMERO_ERROR = 0;
@@ -116,10 +123,28 @@ BEGIN
             RETURN;
         END;
 
+        /* 1) Expediente de esta misma persona. */
         SELECT @CORR_EXP = E.CORR_EXPEDIENTE_CANDIDATO
         FROM dbo.SC_EXPEDIENTE_CANDIDATO AS E
         WHERE E.CORR_EMPRESA = @CORR_EMPRESA
           AND E.CORR_PERSONA_DATOS = @CORR_PERSONA_DATOS;
+
+        /* 2) Si no hay: expediente de otra persona con el mismo DUI (no crear duplicado). */
+        IF ISNULL(@CORR_EXP, 0) = 0
+        BEGIN
+            SELECT TOP (1)
+                @CORR_EXP = E.CORR_EXPEDIENTE_CANDIDATO
+            FROM dbo.SC_EXPEDIENTE_CANDIDATO AS E
+            INNER JOIN dbo.SC_PERSONA_DATOS AS P
+                ON P.CORR_EMPRESA = E.CORR_EMPRESA
+               AND P.CORR_PERSONA_DATOS = E.CORR_PERSONA_DATOS
+            WHERE E.CORR_EMPRESA = @CORR_EMPRESA
+              AND UPPER(REPLACE(REPLACE(LTRIM(RTRIM(ISNULL(P.DUI, ''))), '-', ''), ' ', '')) = @DUI_PER_NORM
+            ORDER BY E.CORR_EXPEDIENTE_CANDIDATO ASC;
+
+            IF ISNULL(@CORR_EXP, 0) > 0
+                SET @ENCONTRADO_POR_DUI = 1;
+        END;
 
         IF ISNULL(@CORR_EXP, 0) = 0
         BEGIN
@@ -171,13 +196,27 @@ BEGIN
         IF ISNULL(@SOLO_CONSULTA, 0) = 1
         BEGIN
             SET @CORR_EXPEDIENTE_CANDIDATO = @CORR_EXP;
-            SET @ESTADO = N'PUEDE_ASOCIAR';
-            SET @SYS_NUMERO_ERROR = 0;
-            SET @SYS_MENSAJE_ERROR = N'';
+
+            IF ISNULL(@ENCONTRADO_POR_DUI, 0) = 1
+            BEGIN
+                SET @ESTADO = N'EXPEDIENTE_POR_DUI';
+                SET @SYS_NUMERO_ERROR = 4105;
+                SET @SYS_MENSAJE_ERROR =
+                    N'La persona ya posee un expediente (DUI ' + ISNULL(@DUI_PER_NORM, N'') +
+                    N'). ¿Desea asociar esta solicitud a ese expediente?';
+            END
+            ELSE
+            BEGIN
+                SET @ESTADO = N'PUEDE_ASOCIAR';
+                SET @SYS_NUMERO_ERROR = 0;
+                SET @SYS_MENSAJE_ERROR = N'';
+            END;
+
             IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
             RETURN;
         END;
 
+        /* Acción: asociar solicitud al expediente encontrado (por persona o por DUI); no crea otro. */
         SELECT @CORR_DET = ISNULL(MAX(CORR_EXPEDIENTE_SOLICITUD), 0) + 1
         FROM dbo.SC_EXPEDIENTE_SOLICITUD WITH (UPDLOCK, HOLDLOCK)
         WHERE CORR_EMPRESA = @CORR_EMPRESA
