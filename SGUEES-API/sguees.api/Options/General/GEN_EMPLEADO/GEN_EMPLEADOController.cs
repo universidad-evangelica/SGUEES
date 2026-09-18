@@ -9,6 +9,8 @@ using sguees.Services;
 
 namespace sguees.Controllers
 {
+	// Qué hace: endpoints de lectura de empleados (browse gen-empleado + lookups).
+	// Cómo lo hace: inyecta empresa de sesión y delega a GEN_EMPLEADOService.
 	[Authorize]
 	[Route("[controller]")]
 	[ApiController]
@@ -21,6 +23,7 @@ namespace sguees.Controllers
 			_service = service ?? throw new ArgumentNullException(nameof(service));
 		}
 
+		// Qué hace: lista empleados de la empresa (grilla gen-empleado).
 		[HttpGet("GetAll")]
 		[Authorize(Policy = "/gen-empleado|R")]
 		public async Task<CResult> GetAll([FromQuery] GEN_EMPLEADOParam Data)
@@ -29,6 +32,7 @@ namespace sguees.Controllers
 			return await _service.GetAllAsync(Data);
 		}
 
+		// Qué hace: detalle de un empleado.
 		[HttpGet("Get")]
 		[Authorize(Policy = "/gen-empleado|R")]
 		public async Task<CResult> Get([FromQuery] GEN_EMPLEADOParam Data)
@@ -61,7 +65,7 @@ namespace sguees.Controllers
 			return await _service.GetAllAsync(Data);
 		}
 
-		// Qué hace: resuelve NOMBRE_EMPLEADO por CORR_EMPLEADO para el combo Reporta a del descriptor.
+		// Qué hace: resuelve NOMBRE_EMPLEADO por CORR_EMPLEADO para Reporta a del descriptor.
 		[HttpGet("GetCORR_EMPLEADO_SC_DESCRIPTOR_PUESTO")]
 		[Authorize(Policy = "/sc-descriptor-puesto|R")]
 		public async Task<CResult> GetCORR_EMPLEADO_SC_DESCRIPTOR_PUESTO([FromQuery] GEN_EMPLEADOParam Data)

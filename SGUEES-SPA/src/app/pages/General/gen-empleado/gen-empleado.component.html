@@ -1,0 +1,71 @@
+<!-- Contenedor principal del browse de Empleado (fase 1: solo grilla). -->
+<div class="sguees-mtto-view">
+<!-- Toolbar: exportar y refrescar (sin alta/edición en esta fase). -->
+<app-barra-data-mtto
+	[tituloVentana]="tituloVentana"
+	[showRibbon]="true"
+	[showExport]="permitePrint"
+	[isBrowse]="isBrowse()"
+	[isForm]="isForm()"
+	[permiteAdd]="false"
+	[showRefresh]="true"
+	[showEstadoToolbar]="false"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="false"
+	[focusedRow]="isBrowse() ? model : null"
+	(consultar)="consultar()"
+	(nuevo)="nuevo()"
+	(guardar)="guardar()"
+	(cancelar)="cancelar()"
+	(activarInactivar)="activar_inactivar()"
+>
+</app-barra-data-mtto>
+
+<!-- Grilla de empleados: persona, DUI, ingreso, estado. -->
+<app-data-grid-mtto
+	[isBrowse]="isBrowse()"
+	[models]="models"
+	[columns]="columns"
+	[summary]="summary"
+	[keyExpr]="mttoGridKeyExpr"
+	[pageSize]="mttoPageSize"
+	[allowedPageSizes]="mttoPageSizes"
+	[remoteOperations]="mttoRemoteOperations"
+	[repaintChangesOnly]="false"
+	[nativeToolbar]="true"
+	[unifiedToolbar]="false"
+	[showSearch]="false"
+	[showAdd]="false"
+	[showRefresh]="false"
+	[showExport]="false"
+	[showEstadoToolbar]="false"
+	[campoEstado]="mttoCampoEstado"
+	[puedeCambiarEstado]="false"
+	[focusedRowKey]="gridFocusedRowKey"
+	[permitePrint]="permitePrint"
+	[permiteEditar]="getPermiteEditar"
+	[permiteDele]="getPermiteDele"
+	[responsiveColumnHiding]="false"
+	[columnHidingEnabled]="false"
+	[exportFileName]="'Empleados'"
+	(rowDblClick)="rowDblClick($event)"
+	(rowRemoving)="rowRemoving($event)"
+	(focusedRowChanged)="focusedRowChanged($event)"
+	(editClick)="onEditClick($event)"
+>
+</app-data-grid-mtto>
+
+</div>
+
+<!-- Panel de carga durante la consulta. -->
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>

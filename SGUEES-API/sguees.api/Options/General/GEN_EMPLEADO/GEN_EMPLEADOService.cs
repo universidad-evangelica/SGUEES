@@ -6,6 +6,8 @@ using sguees.Repositories;
 
 namespace sguees.Services
 {
+	// Qué hace: servicio de lectura de empleados (browse/lookups).
+	// Cómo lo hace: arma parámetros de empresa/empleado y delega al repositorio V_GEN_EMPLEADO.
 	public class GEN_EMPLEADOService : IGEN_EMPLEADOService
 	{
 		private readonly IGEN_EMPLEADORepository _repo;
@@ -15,6 +17,8 @@ namespace sguees.Services
 			_repo = repo;
 		}
 
+		// Qué hace: lista empleados de la empresa de sesión.
+		// Cómo lo hace: filtra por CORR_EMPRESA y opcionalmente CORR_EMPLEADO.
 		public async Task<CResult> GetAllAsync(GEN_EMPLEADOParam xWhere)
 		{
 			var p = new List<CParameter>
@@ -28,6 +32,8 @@ namespace sguees.Services
 			return await _repo.GetAllAsync(p);
 		}
 
+		// Qué hace: obtiene un empleado por llave.
+		// Cómo lo hace: filtra CORR_EMPRESA + CORR_EMPLEADO en la vista.
 		public async Task<CResult> GetAsync(GEN_EMPLEADOParam xWhere)
 		{
 			var p = new List<CParameter>

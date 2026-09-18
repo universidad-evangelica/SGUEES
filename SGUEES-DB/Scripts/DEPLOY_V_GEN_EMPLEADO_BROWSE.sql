@@ -1,11 +1,11 @@
+/* =============================================================================
+   DEPLOY — V_GEN_EMPLEADO con DUI/NIT desde documentos de persona
+   Ejecutar en SGUEES (SSMS) antes de usar la grilla gen-empleado.
+   ============================================================================= */
 SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
--- Qué hace: catálogo/browse de empleados para API y SPA (lookups + grilla gen-empleado).
--- Cómo lo hace: GEN_EMPLEADO + GEN_PERSONA_NATURAL (nombre) + GEN_PERSONA_USUARIO (login)
---               + DUI/NIT desde GEN_PERSONA_TIPO_DOCUMENTO_IDENTIDAD + catálogo
---               GEN_TIPO_DOCUMENTO_IDENTIDAD (NOMBRE_CORTO) + puesto vigente.
 CREATE OR ALTER VIEW [dbo].[V_GEN_EMPLEADO]
 AS
 SELECT
@@ -83,4 +83,7 @@ OUTER APPLY
 	  AND UPPER(LTRIM(RTRIM(TD.NOMBRE_CORTO))) = N'NIT'
 	ORDER BY PD.FECHA_CREA DESC
 ) DOC_NIT
+GO
+
+PRINT N'V_GEN_EMPLEADO actualizada (DUI/NIT/ACTIVO_EMPLEADO/FECHA_INGRESO).';
 GO

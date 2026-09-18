@@ -9,6 +9,8 @@ using sguees.Models;
 
 namespace sguees.Repositories
 {
+	// Qué hace: acceso a datos de empleados vía V_GEN_EMPLEADO.
+	// Cómo lo hace: GetAll/Get contra la vista; Create/Update/Delete quedan bloqueados (fase browse).
 	public class GEN_EMPLEADORepository : BaseRepository<GEN_EMPLEADOTable>, IGEN_EMPLEADORepository
 	{
 		private const string _ViewName = "V_GEN_EMPLEADO";
@@ -17,6 +19,8 @@ namespace sguees.Repositories
 			base(config.GetConnectionString("defaultConnection"),
 				config.GetSection("DbProvider:defaultProvider").Value) { }
 
+		// Qué hace: lista filas de la vista según filtros.
+		// Cómo lo hace: GetDataReader sobre V_GEN_EMPLEADO y mapea a GEN_EMPLEADOView.
 		public async Task<CResult> GetAllAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -43,6 +47,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		// Qué hace: obtiene un empleado.
+		// Cómo lo hace: misma vista, FirstOrDefault del reader.
 		public async Task<CResult> GetAsync(List<CParameter> xWhere)
 		{
 			CResult objResultado = new();
@@ -53,7 +59,7 @@ namespace sguees.Repositories
 				reader.Close();
 				objResultado.Data = response;
 				objResultado.Result = true;
-				objResultado.RowsAffected = 1;
+				objResultado.RowsAffected = response != null ? 1 : 0;
 			}
 			catch (Exception e)
 			{
@@ -82,7 +88,7 @@ namespace sguees.Repositories
 		{
 			Result = false,
 			ErrorCode = 4050,
-			ErrorMessage = $"GEN_EMPLEADO es un catálogo de solo lectura; {operation} no está soportado.",
+			ErrorMessage = $"GEN_EMPLEADO es solo lectura en esta fase; {operation} no está soportado.",
 			ErrorSource = "[GEN_EMPLEADORepository]",
 		};
 	}
