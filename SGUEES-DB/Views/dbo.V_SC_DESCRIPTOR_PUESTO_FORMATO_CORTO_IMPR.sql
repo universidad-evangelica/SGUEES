@@ -4,7 +4,7 @@ GO
 -- Vista: dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPR
 -- Qué hace: encabezado del descriptor para impresión Formato corto.
 -- Cómo: 1 fila por descriptor; fechas como texto dd/MM/yyyy; nombre del jefe
---       desde GEN_EMPLEADO. Funciones y KPIs van en sus vistas _IMPR del corto.
+--       desde GEN_EMPLEADO + GEN_PERSONA_NATURAL. Funciones/KPIs en vistas _IMPR.
 -- Uso: PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO (result set 1).
 -- =============================================================================
 CREATE OR ALTER VIEW [dbo].[V_SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPR]
@@ -26,7 +26,7 @@ SELECT
   A.[NOMBRE_UNIDAD],
   A.[CORR_PUESTO_REPORTA],
   -- CORR_PUESTO_REPORTA guarda CORR_EMPLEADO del jefe (GEN_EMPLEADO).
-  E.[NOMBRE_EMPLEADO] AS [NOMBRE_EMPLEADO_REPORTA],
+  PN.[NOMBRE_COMPLETO] AS [NOMBRE_EMPLEADO_REPORTA],
   A.[CORR_IMPACTO_ECONOMICO],
   A.[DESCRIPCION_IMPACTO_ECONOMICO],
   A.[RESPONSABLE],
@@ -44,4 +44,6 @@ FROM [dbo].[SC_DESCRIPTOR_PUESTO] A
 LEFT JOIN [dbo].[GEN_EMPLEADO] E
   ON E.[CORR_EMPRESA] = A.[CORR_EMPRESA]
  AND E.[CORR_EMPLEADO] = A.[CORR_PUESTO_REPORTA]
+LEFT JOIN [dbo].[GEN_PERSONA_NATURAL] PN
+  ON PN.[CORR_PERSONA] = E.[CORR_PERSONA]
 GO

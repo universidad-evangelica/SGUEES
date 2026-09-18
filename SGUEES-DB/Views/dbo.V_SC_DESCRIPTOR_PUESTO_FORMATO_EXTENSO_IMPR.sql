@@ -4,7 +4,7 @@ GO
 -- Vista: dbo.V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPR
 -- Qué hace: encabezado del descriptor para impresión Formato extenso.
 -- Cómo: 1 fila por descriptor; fechas como texto dd/MM/yyyy; nombre del jefe
---       desde GEN_EMPLEADO. Los demás apartados del extenso irán en vistas _IMPR propias.
+--       desde GEN_EMPLEADO + GEN_PERSONA_NATURAL. Los demás apartados en vistas _IMPR propias.
 -- Uso: PRAL_IMPR_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO (result set 1).
 -- =============================================================================
 CREATE OR ALTER VIEW [dbo].[V_SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPR]
@@ -22,7 +22,7 @@ SELECT
   A.[CORR_UNIDAD],
   A.[NOMBRE_UNIDAD],
   A.[CORR_PUESTO_REPORTA],
-  E.[NOMBRE_EMPLEADO] AS [NOMBRE_EMPLEADO_REPORTA],
+  PN.[NOMBRE_COMPLETO] AS [NOMBRE_EMPLEADO_REPORTA],
   A.[CORR_IMPACTO_ECONOMICO],
   A.[DESCRIPCION_IMPACTO_ECONOMICO],
   A.[RESPONSABLE],
@@ -40,4 +40,6 @@ FROM [dbo].[SC_DESCRIPTOR_PUESTO] A
 LEFT JOIN [dbo].[GEN_EMPLEADO] E
   ON E.[CORR_EMPRESA] = A.[CORR_EMPRESA]
  AND E.[CORR_EMPLEADO] = A.[CORR_PUESTO_REPORTA]
+LEFT JOIN [dbo].[GEN_PERSONA_NATURAL] PN
+  ON PN.[CORR_PERSONA] = E.[CORR_PERSONA]
 GO

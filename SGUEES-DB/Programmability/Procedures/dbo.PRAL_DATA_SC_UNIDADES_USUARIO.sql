@@ -7,14 +7,14 @@ GO
 --   2) Unidades donde es jefe activo (SC_ORGANIGRAMA_ESTRUCTURAL_JEFES_UNIDADES).
 --   3) Unidades configuradas en SC_UNIDADES_USUARIO.
 -- Cómo lo hace: Filtra por @CORR_EMPRESA y @LOGIN_SISTEMA, resuelve el empleado
---   por LOGIN_SISTEMA / LOGIN_SISTEMA_WEB, une las tres fuentes con UNION y
---   enriquece con organigrama y PLA_PUESTO.
+--   vía GEN_PERSONA_USUARIO (login ya no vive en GEN_EMPLEADO), une las tres
+--   fuentes con UNION y enriquece con organigrama y PLA_PUESTO.
 --   Si tiene puesto en esa unidad: muestra CORR_PUESTO y NOMBRE_PUESTO.
 --   Si solo es jefe o configurada: CORR_PUESTO NULL y NOMBRE_PUESTO =
 --   'No lo tiene por puesto de trabajo'.
 -- Nota: No ejecutar CREATE en el servidor desde el agente; el DBA lo aplica.
 -- =============================================================================
-CREATE PROCEDURE [dbo].[PRAL_DATA_SC_UNIDADES_USUARIO]
+CREATE OR ALTER PROCEDURE [dbo].[PRAL_DATA_SC_UNIDADES_USUARIO]
 (
 	@CORR_EMPRESA INT,
 	@LOGIN_SISTEMA VARCHAR(30)
@@ -29,16 +29,15 @@ BEGIN
 	;WITH EmpleadoLogin AS
 	(
 		-- Qué hace: localiza al empleado asociado al login en la empresa.
-		-- Cómo: compara LOGIN_SISTEMA y LOGIN_SISTEMA_WEB filtrando por @CORR_EMPRESA.
+		-- Cómo: GEN_EMPLEADO + GEN_PERSONA_USUARIO por LOGIN_SISTEMA.
 		SELECT
 			E.CORR_EMPRESA,
 			E.CORR_EMPLEADO
 		FROM dbo.GEN_EMPLEADO E
+		INNER JOIN dbo.GEN_PERSONA_USUARIO PU
+			ON PU.CORR_PERSONA = E.CORR_PERSONA
 		WHERE E.CORR_EMPRESA = @CORR_EMPRESA
-		  AND (
-				LTRIM(RTRIM(ISNULL(E.LOGIN_SISTEMA, ''))) = @LOGIN
-			 OR LTRIM(RTRIM(ISNULL(E.LOGIN_SISTEMA_WEB, ''))) = @LOGIN
-			  )
+		  AND LTRIM(RTRIM(PU.LOGIN_SISTEMA)) = @LOGIN
 	),
 	UnidadesPorPuesto AS
 	(
