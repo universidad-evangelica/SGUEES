@@ -1,63 +1,209 @@
-<!-- Contenedor principal del browse de Empleado (fase 1: solo grilla). -->
-<div class="sguees-mtto-view">
-<!-- Toolbar: exportar y refrescar (sin alta/edición en esta fase). -->
-<app-barra-data-mtto
-	[tituloVentana]="tituloVentana"
-	[showRibbon]="true"
-	[showExport]="permitePrint"
-	[isBrowse]="isBrowse()"
-	[isForm]="isForm()"
-	[permiteAdd]="false"
-	[showRefresh]="true"
-	[showEstadoToolbar]="false"
-	[campoEstado]="mttoCampoEstado"
-	[puedeCambiarEstado]="false"
-	[focusedRow]="isBrowse() ? model : null"
-	(consultar)="consultar()"
-	(nuevo)="nuevo()"
-	(guardar)="guardar()"
-	(cancelar)="cancelar()"
-	(activarInactivar)="activar_inactivar()"
->
-</app-barra-data-mtto>
+<!-- Contenedor principal: browse + formulario empleado (diseño mejorado tipo expediente). -->
+<div class="sguees-mtto-view empleado-mtto">
+	<!-- Toolbar: Guardar / Cancelar / Nuevo / Refrescar (sin botón de proceso selección). -->
+	<app-barra-data-mtto
+		[tituloVentana]="tituloVentana"
+		[showRibbon]="true"
+		[showExport]="permitePrint"
+		[isBrowse]="isBrowse()"
+		[isForm]="isForm()"
+		[permiteAdd]="permiteAdd"
+		[showRefresh]="true"
+		[showEstadoToolbar]="false"
+		[campoEstado]="mttoCampoEstado"
+		[puedeCambiarEstado]="false"
+		[focusedRow]="isBrowse() ? model : null"
+		(consultar)="consultar()"
+		(nuevo)="nuevo()"
+		(guardar)="guardar()"
+		(cancelar)="cancelar()"
+		(activarInactivar)="activar_inactivar()"
+	>
+	</app-barra-data-mtto>
 
-<!-- Grilla de empleados: persona, DUI, ingreso, estado. -->
-<app-data-grid-mtto
-	[isBrowse]="isBrowse()"
-	[models]="models"
-	[columns]="columns"
-	[summary]="summary"
-	[keyExpr]="mttoGridKeyExpr"
-	[pageSize]="mttoPageSize"
-	[allowedPageSizes]="mttoPageSizes"
-	[remoteOperations]="mttoRemoteOperations"
-	[repaintChangesOnly]="false"
-	[nativeToolbar]="true"
-	[unifiedToolbar]="false"
-	[showSearch]="false"
-	[showAdd]="false"
-	[showRefresh]="false"
-	[showExport]="false"
-	[showEstadoToolbar]="false"
-	[campoEstado]="mttoCampoEstado"
-	[puedeCambiarEstado]="false"
-	[focusedRowKey]="gridFocusedRowKey"
-	[permitePrint]="permitePrint"
-	[permiteEditar]="getPermiteEditar"
-	[permiteDele]="getPermiteDele"
-	[responsiveColumnHiding]="false"
-	[columnHidingEnabled]="false"
-	[exportFileName]="'Empleados'"
-	(rowDblClick)="rowDblClick($event)"
-	(rowRemoving)="rowRemoving($event)"
-	(focusedRowChanged)="focusedRowChanged($event)"
-	(editClick)="onEditClick($event)"
->
-</app-data-grid-mtto>
+	<!-- Workspace formulario Nuevo / Editar. -->
+	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card empleado-form" *ngIf="!isBrowse()">
+		<!-- Panel identidad del empleado. -->
+		<section class="empleado-panel">
+			<div class="empleado-panel__heading">
+				<div class="empleado-section-title">
+					<i class="dx-icon dx-icon-card"></i>
+					<h5>Datos del Empleado</h5>
+				</div>
+			</div>
 
+			<div class="empleado-divider empleado-divider--horizontal" aria-hidden="true"></div>
+
+			<div class="empleado-panel__datos">
+				<div class="empleado-panel__profile">
+					<div class="empleado-avatar" aria-hidden="true">{{ inicialesPersona }}</div>
+					<div class="empleado-panel__identity">
+						<h2 class="empleado-nombre">{{ tituloPersonaPanel }}</h2>
+						<div class="empleado-badges">
+							<span class="empleado-badge empleado-badge--id">{{ badgeEmpleadoId }}</span>
+							<span
+								class="empleado-badge empleado-badge--estado"
+								[class.empleado-badge--inactivo]="!model?.ACTIVO_EMPLEADO"
+							>
+								<span class="empleado-badge__dot" aria-hidden="true"></span>
+								{{ model?.ACTIVO_EMPLEADO ? 'Activo' : 'Inactivo' }}
+							</span>
+							<span *ngIf="esNuevo" class="empleado-badge empleado-badge--draft">Borrador</span>
+						</div>
+						<div class="empleado-dui">DUI: {{ textoLectura(model?.DUI) }}</div>
+					</div>
+				</div>
+
+				<div class="empleado-divider empleado-divider--vertical" aria-hidden="true"></div>
+
+				<div class="empleado-panel__meta">
+					<div class="empleado-meta-item">
+						<span class="empleado-meta-label">Fecha ingreso</span>
+						<span class="empleado-meta-value">{{ fechaLectura(model?.FECHA_INGRESO) }}</span>
+					</div>
+					<div class="empleado-meta-item">
+						<span class="empleado-meta-label">Creado</span>
+						<span class="empleado-meta-value">{{ fechaHoraLectura(model?.FECHA_CREA) }}</span>
+					</div>
+					<div class="empleado-meta-item">
+						<span class="empleado-meta-label">Última actualización</span>
+						<span class="empleado-meta-value">{{ fechaHoraLectura(model?.FECHA_ACTU) }}</span>
+					</div>
+				</div>
+
+				<div class="empleado-panel__actions" *ngIf="!esNuevo">
+					<dx-button
+						text="Editar datos"
+						icon="edit"
+						type="default"
+						stylingMode="outlined"
+						[disabled]="!permiteEdit || isForm()"
+						(onClick)="abrirEditarSeccion()"
+					></dx-button>
+				</div>
+			</div>
+
+			<div class="empleado-divider empleado-divider--horizontal" aria-hidden="true"></div>
+
+			<!-- Tabs de secciones (persona / laboral / documentos…). -->
+			<nav class="empleado-tabs" aria-label="Secciones del empleado">
+				<button
+					type="button"
+					class="empleado-tabs__item"
+					*ngFor="let tab of tabs"
+					[class.empleado-tabs__item--active]="tabActiva === tab.id"
+					(click)="seleccionarTab(tab.id)"
+				>
+					<i class="dx-icon" [ngClass]="'dx-icon-' + tab.icon"></i>
+					<span>{{ tab.caption }}</span>
+				</button>
+			</nav>
+
+			<!-- Contenido de tabs vacío por ahora (solo mensaje placeholder). -->
+			<div class="empleado-tab-body">
+				<div class="empleado-tab-pane" *ngIf="tabActiva === 'personales'">
+					<div class="empleado-empty-state">
+						<i class="dx-icon dx-icon-user"></i>
+						<p>Datos personales de la persona natural.</p>
+						<span>Esta sección se conectará en la siguiente fase.</span>
+					</div>
+				</div>
+
+				<div class="empleado-tab-pane" *ngIf="tabActiva === 'laboral'">
+					<div class="empleado-empty-state">
+						<i class="dx-icon dx-icon-card"></i>
+						<p>Datos laborales del empleado.</p>
+						<span>Esta sección se conectará en la siguiente fase.</span>
+					</div>
+				</div>
+
+				<div class="empleado-tab-pane" *ngIf="tabActiva === 'documentos'">
+					<div class="empleado-empty-state">
+						<i class="dx-icon dx-icon-doc"></i>
+						<p>Documentos de identidad (DUI, NIT, etc.).</p>
+						<span>Esta sección se conectará en la siguiente fase.</span>
+					</div>
+				</div>
+
+				<div class="empleado-tab-pane" *ngIf="tabActiva === 'contacto'">
+					<div class="empleado-empty-state">
+						<i class="dx-icon dx-icon-tel"></i>
+						<p>Contactos y domicilios de la persona.</p>
+						<span>Esta sección se conectará en la siguiente fase.</span>
+					</div>
+				</div>
+
+				<div class="empleado-tab-pane" *ngIf="tabActiva === 'familiares'">
+					<div class="empleado-empty-state">
+						<i class="dx-icon dx-icon-group"></i>
+						<p>Familiares e hijos vinculados a la persona.</p>
+						<span>Esta sección se conectará en la siguiente fase.</span>
+					</div>
+				</div>
+
+				<div class="empleado-tab-pane" *ngIf="tabActiva === 'formacion'">
+					<div class="empleado-empty-state">
+						<i class="dx-icon dx-icon-bookmark"></i>
+						<p>Formación académica e idiomas.</p>
+						<span>Esta sección se conectará en la siguiente fase.</span>
+					</div>
+				</div>
+
+				<div class="empleado-tab-pane" *ngIf="tabActiva === 'experiencia'">
+					<div class="empleado-empty-state">
+						<i class="dx-icon dx-icon-product"></i>
+						<p>Experiencia y referencias laborales.</p>
+						<span>Esta sección se conectará en la siguiente fase.</span>
+					</div>
+				</div>
+
+				<div class="empleado-tab-pane" *ngIf="tabActiva === 'usuario'">
+					<div class="empleado-empty-state">
+						<i class="dx-icon dx-icon-key"></i>
+						<p>Usuario de sistema vinculado a la persona.</p>
+						<span>Esta sección se conectará en la siguiente fase.</span>
+					</div>
+				</div>
+			</div>
+		</section>
+	</div>
+
+	<!-- Grilla browse. -->
+	<app-data-grid-mtto
+		[isBrowse]="isBrowse()"
+		[models]="models"
+		[columns]="columns"
+		[summary]="summary"
+		[keyExpr]="mttoGridKeyExpr"
+		[pageSize]="mttoPageSize"
+		[allowedPageSizes]="mttoPageSizes"
+		[remoteOperations]="mttoRemoteOperations"
+		[repaintChangesOnly]="false"
+		[nativeToolbar]="true"
+		[unifiedToolbar]="false"
+		[showSearch]="false"
+		[showAdd]="false"
+		[showRefresh]="false"
+		[showExport]="false"
+		[showEstadoToolbar]="false"
+		[campoEstado]="mttoCampoEstado"
+		[puedeCambiarEstado]="false"
+		[focusedRowKey]="gridFocusedRowKey"
+		[permitePrint]="permitePrint"
+		[permiteEditar]="getPermiteEditar"
+		[permiteDele]="getPermiteDele"
+		[responsiveColumnHiding]="false"
+		[columnHidingEnabled]="false"
+		[exportFileName]="'Empleados'"
+		(rowDblClick)="rowDblClick($event)"
+		(rowRemoving)="rowRemoving($event)"
+		(focusedRowChanged)="focusedRowChanged($event)"
+		(editClick)="onEditClick($event)"
+	>
+	</app-data-grid-mtto>
 </div>
 
-<!-- Panel de carga durante la consulta. -->
+<!-- Panel de carga. -->
 <dx-load-panel
 	#loadPanel
 	shadingColor="rgba(0,0,0,0.4)"

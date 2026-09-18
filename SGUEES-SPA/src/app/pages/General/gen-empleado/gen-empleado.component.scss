@@ -1,4 +1,397 @@
-/* Estilos de la vista browse Empleado (usa layout mtto global). */
+/* Qué hace: estilos del workspace Nuevo/Editar Empleado (diseño mejorado tipo expediente). */
+/* Cómo: panel de identidad, badges, tabs y estados vacíos usando tokens SGUEES. */
+
 :host {
-	display: block;
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	width: 100%;
+	min-height: 0;
+}
+
+.empleado-mtto {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.empleado-form {
+	padding-top: 12px !important;
+	padding-bottom: 20px !important;
+}
+
+/* Panel principal */
+.empleado-panel {
+	padding: 20px 22px 8px;
+	border-radius: var(--sguees-radius-md, 12px);
+	border: 1px solid var(--sguees-border-subtle, var(--border-color));
+	background:
+		linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--accent-color, #1976d2) 6%, transparent) 0%,
+			var(--sguees-surface-card, var(--card-background)) 88px
+		);
+	box-shadow: var(--sguees-shadow-sm);
+}
+
+.empleado-panel__heading {
+	padding-bottom: 10px;
+}
+
+.empleado-section-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+
+	h5 {
+		margin: 0;
+		font-size: 15px;
+		font-weight: 650;
+		letter-spacing: 0.01em;
+		color: var(--sguees-text-primary, var(--base-text-color));
+	}
+
+	.dx-icon {
+		font-size: 18px;
+		color: var(--accent-color, #1976d2);
+	}
+}
+
+.empleado-divider {
+	flex-shrink: 0;
+	background: var(--sguees-border-subtle, var(--border-color));
+
+	&--horizontal {
+		width: 100%;
+		height: 1px;
+		margin: 0;
+	}
+
+	&--vertical {
+		width: 1px;
+		align-self: stretch;
+		min-height: 64px;
+		margin: 0 18px;
+	}
+}
+
+.empleado-panel__datos {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 14px 0;
+	padding: 18px 0;
+}
+
+.empleado-panel__profile {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	flex: 1 1 280px;
+	min-width: 0;
+}
+
+.empleado-panel__identity {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.empleado-avatar {
+	width: 76px;
+	height: 76px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 24px;
+	font-weight: 700;
+	letter-spacing: 0.6px;
+	color: #fff;
+	background: linear-gradient(
+		145deg,
+		var(--accent-color, #1976d2) 0%,
+		color-mix(in srgb, var(--accent-color, #1976d2) 55%, #0d47a1) 100%
+	);
+	border: 3px solid color-mix(in srgb, var(--accent-color, #1976d2) 25%, #fff);
+	box-shadow: 0 6px 16px color-mix(in srgb, var(--accent-color, #1976d2) 28%, transparent);
+}
+
+.empleado-nombre {
+	margin: 0 0 8px;
+	font-size: 22px;
+	font-weight: 700;
+	line-height: 1.2;
+	color: var(--sguees-text-primary, var(--base-text-color));
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.empleado-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-bottom: 6px;
+}
+
+.empleado-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 3px 10px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 650;
+	letter-spacing: 0.02em;
+	line-height: 1.4;
+	border: 1px solid transparent;
+
+	&--id {
+		color: var(--accent-color, #1976d2);
+		background: color-mix(in srgb, var(--accent-color, #1976d2) 12%, transparent);
+		border-color: color-mix(in srgb, var(--accent-color, #1976d2) 28%, transparent);
+	}
+
+	&--estado {
+		color: #1b5e20;
+		background: color-mix(in srgb, #43a047 14%, transparent);
+		border-color: color-mix(in srgb, #43a047 30%, transparent);
+	}
+
+	&--inactivo {
+		color: #b71c1c;
+		background: color-mix(in srgb, #e53935 12%, transparent);
+		border-color: color-mix(in srgb, #e53935 28%, transparent);
+
+		.empleado-badge__dot {
+			background: #e53935;
+		}
+	}
+
+	&--draft {
+		color: #5d4037;
+		background: color-mix(in srgb, #8d6e63 12%, transparent);
+		border-color: color-mix(in srgb, #8d6e63 28%, transparent);
+	}
+}
+
+.empleado-badge__dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: #43a047;
+	box-shadow: 0 0 0 2px color-mix(in srgb, #43a047 25%, transparent);
+}
+
+.empleado-dui {
+	font-size: 13px;
+	color: var(--sguees-text-secondary, var(--text-color));
+	opacity: 0.9;
+}
+
+.empleado-panel__meta {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	flex: 0 1 220px;
+	min-width: 180px;
+}
+
+.empleado-meta-item {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.empleado-meta-label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--sguees-text-secondary, var(--text-color));
+	opacity: 0.75;
+}
+
+.empleado-meta-value {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--sguees-text-primary, var(--base-text-color));
+}
+
+.empleado-panel__actions {
+	margin-left: auto;
+	padding-left: 12px;
+}
+
+/* Tabs */
+.empleado-tabs {
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 2px;
+	overflow-x: auto;
+	padding: 4px 0 0;
+	scrollbar-width: thin;
+}
+
+.empleado-tabs__item {
+	appearance: none;
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 12px 14px 11px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--sguees-text-secondary, var(--text-color));
+	border-bottom: 2px solid transparent;
+	white-space: nowrap;
+	transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+	border-radius: 8px 8px 0 0;
+
+	.dx-icon {
+		font-size: 16px;
+		opacity: 0.85;
+	}
+
+	&:hover {
+		color: var(--accent-color, #1976d2);
+		background: color-mix(in srgb, var(--accent-color, #1976d2) 6%, transparent);
+	}
+
+	&--active {
+		color: var(--accent-color, #1976d2);
+		border-bottom-color: var(--accent-color, #1976d2);
+		background: color-mix(in srgb, var(--accent-color, #1976d2) 8%, transparent);
+
+		.dx-icon {
+			opacity: 1;
+		}
+	}
+}
+
+.empleado-tab-body {
+	padding: 18px 2px 14px;
+	min-height: 180px;
+}
+
+.empleado-tab-pane {
+	animation: empleadoFadeIn 0.18s ease;
+}
+
+@keyframes empleadoFadeIn {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.empleado-field-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 14px 18px;
+}
+
+.empleado-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+
+	label {
+		font-size: 11px;
+		font-weight: 650;
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--sguees-text-secondary, var(--text-color));
+		opacity: 0.8;
+	}
+
+	&__value {
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--sguees-text-primary, var(--base-text-color));
+		padding: 10px 12px;
+		border-radius: 8px;
+		border: 1px solid var(--sguees-border-subtle, var(--border-color));
+		background: var(--sguees-surface-subtle, var(--background-gray-color));
+		min-height: 40px;
+		display: flex;
+		align-items: center;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	&--wide {
+		grid-column: 1 / -1;
+	}
+}
+
+.empleado-empty-hint {
+	margin-bottom: 14px;
+	padding: 10px 12px;
+	border-radius: 8px;
+	font-size: 13px;
+	line-height: 1.45;
+	color: var(--sguees-text-secondary, var(--text-color));
+	background: color-mix(in srgb, var(--accent-color, #1976d2) 8%, transparent);
+	border: 1px solid color-mix(in srgb, var(--accent-color, #1976d2) 18%, transparent);
+}
+
+.empleado-empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	gap: 6px;
+	padding: 36px 16px;
+	border-radius: 10px;
+	border: 1px dashed var(--sguees-border-subtle, var(--border-color));
+	background: color-mix(in srgb, var(--sguees-surface-subtle, var(--background-gray-color)) 70%, transparent);
+
+	.dx-icon {
+		font-size: 28px;
+		color: var(--accent-color, #1976d2);
+		opacity: 0.75;
+		margin-bottom: 4px;
+	}
+
+	p {
+		margin: 0;
+		font-size: 14px;
+		font-weight: 600;
+		color: var(--sguees-text-primary, var(--base-text-color));
+		max-width: 420px;
+	}
+
+	span {
+		font-size: 12px;
+		color: var(--sguees-text-secondary, var(--text-color));
+		opacity: 0.85;
+	}
+}
+
+@media (max-width: 900px) {
+	.empleado-divider--vertical {
+		display: none;
+	}
+
+	.empleado-panel__actions {
+		margin-left: 0;
+		width: 100%;
+		padding-left: 0;
+	}
+
+	.empleado-nombre {
+		white-space: normal;
+		font-size: 18px;
+	}
 }

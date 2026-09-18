@@ -1,5 +1,5 @@
-// Qué hace: vista browse de Empleado (fase 1: solo grilla, sin CRUD multi-tabla).
-// Cómo: consulta V_GEN_EMPLEADO vía API y muestra persona/DUI/estado con estándar mtto.
+// Qué hace: browse + formulario Nuevo/Editar de Empleado (UI tipo expediente mejorada).
+// Cómo: grilla en browse; en Add/Update muestra panel de identidad + tabs (sin botón de proceso selección).
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
@@ -11,6 +11,16 @@ import { GenEmpleado } from './models/gen-empleado';
 import { GenEmpleadoService } from './gen-empleado.service';
 
 const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
+
+export type EmpleadoTabId =
+	| 'personales'
+	| 'laboral'
+	| 'documentos'
+	| 'contacto'
+	| 'familiares'
+	| 'formacion'
+	| 'experiencia'
+	| 'usuario';
 
 @Component({
 	selector: 'app-gen-empleado',
@@ -30,7 +40,23 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	protected override mttoParchearGridTrasGuardar = false;
 	protected override mttoRemoteOperations = false;
 
-	private readonly maintenanceSubtitulo = 'Consulta de Empleados';
+	private readonly browseSubtitulo = 'Consulta de Empleados';
+	private readonly formSubtituloNuevo = 'Nuevo empleado';
+	private readonly formSubtituloEditar = 'Datos del empleado';
+
+	/** Tab activo del workspace de empleado. */
+	tabActiva: EmpleadoTabId = 'personales';
+
+	readonly tabs: { id: EmpleadoTabId; caption: string; icon: string }[] = [
+		{ id: 'personales', caption: 'Personales', icon: 'user' },
+		{ id: 'laboral', caption: 'Laboral', icon: 'card' },
+		{ id: 'documentos', caption: 'Documentos', icon: 'doc' },
+		{ id: 'contacto', caption: 'Contacto', icon: 'tel' },
+		{ id: 'familiares', caption: 'Familiares', icon: 'group' },
+		{ id: 'formacion', caption: 'Formación', icon: 'bookmark' },
+		{ id: 'experiencia', caption: 'Experiencia', icon: 'product' },
+		{ id: 'usuario', caption: 'Usuario', icon: 'key' },
+	];
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -41,10 +67,6 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = [];
-		// Fase 1: solo lectura (alta multi-tabla en siguiente etapa).
-		this.permiteAdd = false;
-		this.permiteEdit = false;
-		this.permiteDele = false;
 	}
 
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
@@ -52,18 +74,29 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	}
 
 	ngOnInit(): void {
-		this.subTituloVentana = this.maintenanceSubtitulo;
-		this.permiteAdd = false;
-		this.permiteEdit = false;
-		this.permiteDele = false;
+		this.subTituloVentana = this.browseSubtitulo;
 		this.consultar();
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
-			this.subTituloVentana = this.maintenanceSubtitulo;
+			this.subTituloVentana = this.browseSubtitulo;
+			this.tabActiva = 'personales';
+			return;
 		}
+		if (xEstado === UpdateType.Add) {
+			this.subTituloVentana = this.formSubtituloNuevo;
+			this.tabActiva = 'personales';
+			return;
+		}
+		if (xEstado === UpdateType.Update || xEstado === UpdateType.Not_Defined) {
+			this.subTituloVentana = this.formSubtituloEditar;
+		}
+	}
+
+	get esNuevo(): boolean {
+		return this.banderaMtto === UpdateType.Add;
 	}
 
 	fillParam(xCORR_EMPLEADO?: number): any {
@@ -131,24 +164,43 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		});
 	}
 
+	/** Qué hace: abre el formulario de alta con panel + tabs. */
 	override nuevo(): void {
-		this.notifyFx('El alta de empleado se implementará en la siguiente fase.', NotifyType.Warning);
+		super.nuevo();
+		this.model = this.fillData();
+		this.modelUpdate = this.fillData();
+		this.tabActiva = 'personales';
+		this.subTituloVentana = this.formSubtituloNuevo;
 	}
 
 	guardar(): void {
-		this.notifyFx('La edición de empleado se implementará en la siguiente fase.', NotifyType.Warning);
+		this.notifyFx(
+			'El guardado multi-tabla (persona + empleado + documentos) se implementará en la siguiente fase.',
+			NotifyType.Warning
+		);
 	}
 
 	activar_inactivar(): void {
 		this.notifyFx('Activar/Inactivar se implementará en la siguiente fase.', NotifyType.Warning);
 	}
 
-	override rowDblClick(_e: any): void {
-		// Solo browse en esta fase.
+	override rowDblClick(e: any): void {
+		const rowData = e?.data ?? e?.row?.data;
+		if (!rowData) {
+			return;
+		}
+		this.model = this.fillData(rowData);
+		this.modelUpdate = this.fillData(rowData);
+		this.AsignaStatus(UpdateType.Not_Defined);
+		this.tabActiva = 'personales';
+		this.subTituloVentana = this.formSubtituloEditar;
 	}
 
-	onEditClick(_e: any): void {
-		this.notifyFx('La edición de empleado se implementará en la siguiente fase.', NotifyType.Warning);
+	onEditClick(e: any): void {
+		if (!e?.row?.data) {
+			return;
+		}
+		this.abrirFormulario(e.row.data, UpdateType.Update);
 	}
 
 	rowRemoving(e: any): void {
@@ -157,10 +209,93 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	}
 
 	override getPermiteEditar(_e?: any): boolean {
-		return false;
+		return !!this.permiteEdit;
 	}
 
 	override getPermiteDele(_e?: any): boolean {
 		return false;
+	}
+
+	seleccionarTab(id: EmpleadoTabId): void {
+		this.tabActiva = id;
+	}
+
+	get inicialesPersona(): string {
+		const nombre = (this.model?.NOMBRE_EMPLEADO ?? '').trim();
+		if (!nombre) {
+			return 'NE';
+		}
+		const partes = nombre.split(/\s+/).filter(Boolean);
+		if (partes.length === 1) {
+			return partes[0].substring(0, 2).toUpperCase();
+		}
+		return `${partes[0].charAt(0)}${partes[1].charAt(0)}`.toUpperCase();
+	}
+
+	get tituloPersonaPanel(): string {
+		const nombre = (this.model?.NOMBRE_EMPLEADO ?? '').trim();
+		if (nombre) {
+			return nombre;
+		}
+		return this.esNuevo ? 'Nuevo empleado' : 'Empleado sin nombre';
+	}
+
+	get badgeEmpleadoId(): string {
+		const corr = Number(this.model?.CORR_EMPLEADO ?? 0);
+		if (corr > 0) {
+			return `Empleado #${corr}`;
+		}
+		return 'Nuevo';
+	}
+
+	textoLectura(valor: any): string {
+		const t = `${valor ?? ''}`.trim();
+		return t || '—';
+	}
+
+	fechaLectura(valor: any): string {
+		if (!valor) {
+			return '—';
+		}
+		const d = valor instanceof Date ? valor : new Date(valor);
+		if (Number.isNaN(d.getTime())) {
+			return '—';
+		}
+		const dd = `${d.getDate()}`.padStart(2, '0');
+		const mm = `${d.getMonth() + 1}`.padStart(2, '0');
+		const yyyy = d.getFullYear();
+		return `${dd}/${mm}/${yyyy}`;
+	}
+
+	fechaHoraLectura(valor: any): string {
+		if (!valor) {
+			return '—';
+		}
+		const d = valor instanceof Date ? valor : new Date(valor);
+		if (Number.isNaN(d.getTime())) {
+			return '—';
+		}
+		const dd = `${d.getDate()}`.padStart(2, '0');
+		const mm = `${d.getMonth() + 1}`.padStart(2, '0');
+		const yyyy = d.getFullYear();
+		const hh = `${d.getHours()}`.padStart(2, '0');
+		const mi = `${d.getMinutes()}`.padStart(2, '0');
+		return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+	}
+
+	abrirEditarSeccion(): void {
+		if (this.banderaMtto === UpdateType.Not_Defined || this.banderaMtto === UpdateType.Browse) {
+			this.AsignaStatus(UpdateType.Update);
+			this.subTituloVentana = this.formSubtituloEditar;
+		}
+		this.tabActiva = 'personales';
+	}
+
+	private abrirFormulario(rowData: GenEmpleado, modo: UpdateType): void {
+		this.model = this.fillData(rowData);
+		this.modelUpdate = this.fillData(rowData);
+		this.AsignaStatus(modo);
+		this.tabActiva = 'personales';
+		this.subTituloVentana = this.formSubtituloEditar;
 	}
 }

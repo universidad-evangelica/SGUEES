@@ -33,7 +33,7 @@ export class GenEmpleadoService {
 				dataType: 'number',
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
-			{ dataField: 'CODIGO_EMPLEADO', caption: 'Código', width: 110, minWidth: 90 },
+			//{ dataField: 'CODIGO_EMPLEADO', caption: 'Código', width: 110, minWidth: 90 },
 			{ dataField: 'NOMBRE_EMPLEADO', caption: 'Persona', width: 280, minWidth: 200 },
 			{ dataField: 'DUI', caption: 'DUI', width: 120, minWidth: 100 },
 			{
