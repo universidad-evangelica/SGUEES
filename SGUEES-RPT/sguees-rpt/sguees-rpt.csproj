@@ -169,7 +169,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Global.asax" />
-    <Content Include="Layouts\SelectionHiring\ImprimirRequisicion.aspx" />
+    <Content Include="Layouts\SelectionHiring\SelectionHiring.aspx" />
     <Content Include="Web.config">
       <SubType>Designer</SubType>
     </Content>
@@ -180,12 +180,12 @@
     <Compile Include="Layouts\Login\TokenGenerator.cs" />
     <Compile Include="Layouts\Login\TokenValidationHandler.cs" />
     <Compile Include="Layouts\RptJwtValidator.cs" />
-    <Compile Include="Layouts\SelectionHiring\ImprimirRequisicion.aspx.cs">
-      <DependentUpon>ImprimirRequisicion.aspx</DependentUpon>
+    <Compile Include="Layouts\SelectionHiring\SelectionHiring.aspx.cs">
+      <DependentUpon>SelectionHiring.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
     </Compile>
-    <Compile Include="Layouts\SelectionHiring\ImprimirRequisicion.aspx.designer.cs">
-      <DependentUpon>ImprimirRequisicion.aspx</DependentUpon>
+    <Compile Include="Layouts\SelectionHiring\SelectionHiring.aspx.designer.cs">
+      <DependentUpon>SelectionHiring.aspx</DependentUpon>
     </Compile>
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>

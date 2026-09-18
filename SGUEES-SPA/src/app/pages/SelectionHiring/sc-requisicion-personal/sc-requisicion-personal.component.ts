@@ -33,6 +33,12 @@ import { ScRequisicionPersonalService } from './sc-requisicion-personal.service'
 import { ScRequisicionObservadoresService } from '../sc-requisicion-observadores/sc-requisicion-observadores.service';
 
 import { environment } from 'src/environments/environment';
+import {
+	SELECTION_HIRING_RPT,
+	SELECTION_HIRING_RPT_MESSAGE_SOURCE,
+	buildSelectionHiringRptUrl,
+	resolveSelectionHiringFuente,
+} from '../shared/selection-hiring-rpt';
 
 @Component({
   selector: 'app-sc-requisicion-personal',
@@ -115,9 +121,9 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	private imprimirLoadFallbackTimer: ReturnType<typeof setTimeout> | null = null;
 
 	/**
-	 * Abre el visor DevExpress (ASPX) en iframe: UrlRpt + token JWT RPT.
-	 * Muestra "Cargando..." (dx-load-panel, mismo patrón que sc-descriptor-puesto)
-	 * hasta que el documento DevExpress avise listo vía postMessage.
+	 * Abre el visor universal SelectionHiring.aspx (XtraReports).
+	 * fuente = ruta del componente (sc-requisicion-personal); report = catálogo SPA/RPT.
+	 * Para agregar otro reporte: case en SelectionHiring.aspx.cs + buildSelectionHiringRptUrl.
 	 */
 	imprimirRequisicion(): void {
 		const corr = Number(this.model?.CORR_REQUISICION_PERSONAL) || 0;
@@ -127,6 +133,12 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 			0;
 		if (corr <= 0 || corrEmpresa <= 0) {
 			this.notifyFx('Guarde o seleccione una requisición para imprimir.', NotifyType.Warning);
+			return;
+		}
+
+		const fuente = resolveSelectionHiringFuente(this.router, this.urlOpcion);
+		if (!fuente) {
+			this.notifyFx('No se pudo resolver la fuente del reporte (ruta SPA).', NotifyType.Error);
 			return;
 		}
 
@@ -147,10 +159,17 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 						this.notifyFx('No se pudo obtener el token de reportería.', NotifyType.Error);
 						return;
 					}
-					const base = (environment as any).UrlRpt || '';
-					const url =
-						`${base}Layouts/SelectionHiring/ImprimirRequisicion.aspx` +
-						`?CORR_EMPRESA=${corrEmpresa}&CORR_REQUISICION_PERSONAL=${corr}&token=${encodeURIComponent(token)}`;
+					// Visor universal: ?fuente=&report=&CORR_...=&token=
+					// Si en el futuro esta fuente tuviera varios reportes, agregar formato: 'corto'|'extenso'
+					const url = buildSelectionHiringRptUrl({
+						fuente,
+						report: SELECTION_HIRING_RPT.REQUISICION_PERSONAL,
+						params: {
+							CORR_EMPRESA: corrEmpresa,
+							CORR_REQUISICION_PERSONAL: corr,
+						},
+						token,
+					});
 					this.imprimirUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
 					// Respaldo si DocumentReady no llega (p. ej. error de red).
 					this.imprimirLoadFallbackTimer = setTimeout(() => {
@@ -170,7 +189,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 	@HostListener('window:message', ['$event'])
 	onImprimirRptMessage(event: MessageEvent): void {
 		const data = event?.data;
-		if (!data || data.type !== 'sguees-rpt-ready' || data.source !== 'ImprimirRequisicion') {
+		if (!data || data.type !== 'sguees-rpt-ready' || data.source !== SELECTION_HIRING_RPT_MESSAGE_SOURCE) {
 			return;
 		}
 		this.clearImprimirLoadFallback();

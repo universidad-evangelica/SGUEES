@@ -6,7 +6,7 @@
 
 namespace sgueesRpt.Layouts.SelectionHiring
 {
-	public partial class ImprimirRequisicion
+	public partial class SelectionHiring
 	{
 		protected global::System.Web.UI.WebControls.Literal litError;
 		protected global::DevExpress.XtraReports.Web.ASPxWebDocumentViewer webDocumentViewer;

@@ -164,7 +164,7 @@ namespace SGUEES.Controllers
         }
 
         /// <summary>
-        /// JWT para abrir ImprimirRequisicion.aspx en SGUEES-RPT (iframe).
+        /// JWT para abrir SelectionHiring.aspx (visor universal) en SGUEES-RPT (iframe).
         /// No genera el PDF: el ASPX llama al SP y muestra el visor DevExpress.
         /// </summary>
         [HttpGet("GetRptToken")]
