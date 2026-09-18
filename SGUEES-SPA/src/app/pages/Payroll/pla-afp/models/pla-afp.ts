@@ -1,6 +1,6 @@
 // Qué hace: modelo de fila del catálogo AFP (V_PLA_AFP).
 // Cómo lo hace: refleja PK, datos, Activo y auditoría.
-export class PlaAfp {
+export interface PlaAfp {
 	CORR_AFP: number;
 	NOMBRE_AFP: string;
 	NOMBRE_CORTO_AFP: string;

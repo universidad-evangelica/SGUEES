@@ -1,6 +1,6 @@
 // Qué hace: modelo de fila del browse de Empleado (V_GEN_EMPLEADO).
 // Cómo lo hace: refleja persona + documentos DUI/NIT + datos laborales básicos.
-export class GenEmpleado {
+export interface GenEmpleado {
 	CORR_EMPRESA: number;
 	CORR_EMPLEADO: number;
 	CORR_PERSONA: number;
