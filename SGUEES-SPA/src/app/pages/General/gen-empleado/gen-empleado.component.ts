@@ -12,16 +12,6 @@ import { GenEmpleadoService } from './gen-empleado.service';
 
 const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
 
-export type EmpleadoTabId =
-	| 'personales'
-	| 'laboral'
-	| 'documentos'
-	| 'contacto'
-	| 'familiares'
-	| 'formacion'
-	| 'experiencia'
-	| 'usuario';
-
 @Component({
 	selector: 'app-gen-empleado',
 	templateUrl: './gen-empleado.component.html',
@@ -43,20 +33,6 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	private readonly browseSubtitulo = 'Consulta de Empleados';
 	private readonly formSubtituloNuevo = 'Nuevo empleado';
 	private readonly formSubtituloEditar = 'Datos del empleado';
-
-	/** Tab activo del workspace de empleado. */
-	tabActiva: EmpleadoTabId = 'personales';
-
-	readonly tabs: { id: EmpleadoTabId; caption: string; icon: string }[] = [
-		{ id: 'personales', caption: 'Personales', icon: 'user' },
-		{ id: 'laboral', caption: 'Laboral', icon: 'card' },
-		{ id: 'documentos', caption: 'Documentos', icon: 'doc' },
-		{ id: 'contacto', caption: 'Contacto', icon: 'tel' },
-		{ id: 'familiares', caption: 'Familiares', icon: 'group' },
-		{ id: 'formacion', caption: 'Formación', icon: 'bookmark' },
-		{ id: 'experiencia', caption: 'Experiencia', icon: 'product' },
-		{ id: 'usuario', caption: 'Usuario', icon: 'key' },
-	];
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -82,12 +58,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		super.AsignaStatus(xEstado);
 		if (xEstado === UpdateType.Browse) {
 			this.subTituloVentana = this.browseSubtitulo;
-			this.tabActiva = 'personales';
 			return;
 		}
 		if (xEstado === UpdateType.Add) {
 			this.subTituloVentana = this.formSubtituloNuevo;
-			this.tabActiva = 'personales';
 			return;
 		}
 		if (xEstado === UpdateType.Update || xEstado === UpdateType.Not_Defined) {
@@ -169,7 +143,6 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		super.nuevo();
 		this.model = this.fillData();
 		this.modelUpdate = this.fillData();
-		this.tabActiva = 'personales';
 		this.subTituloVentana = this.formSubtituloNuevo;
 	}
 
@@ -192,7 +165,6 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		this.model = this.fillData(rowData);
 		this.modelUpdate = this.fillData(rowData);
 		this.AsignaStatus(UpdateType.Not_Defined);
-		this.tabActiva = 'personales';
 		this.subTituloVentana = this.formSubtituloEditar;
 	}
 
@@ -214,10 +186,6 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 
 	override getPermiteDele(_e?: any): boolean {
 		return false;
-	}
-
-	seleccionarTab(id: EmpleadoTabId): void {
-		this.tabActiva = id;
 	}
 
 	get inicialesPersona(): string {
@@ -288,14 +256,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 			this.AsignaStatus(UpdateType.Update);
 			this.subTituloVentana = this.formSubtituloEditar;
 		}
-		this.tabActiva = 'personales';
 	}
 
 	private abrirFormulario(rowData: GenEmpleado, modo: UpdateType): void {
 		this.model = this.fillData(rowData);
 		this.modelUpdate = this.fillData(rowData);
 		this.AsignaStatus(modo);
-		this.tabActiva = 'personales';
 		this.subTituloVentana = this.formSubtituloEditar;
 	}
 }
