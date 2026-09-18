@@ -266,7 +266,7 @@ export class ScRequisicionPersonalService {
 		});
 	}
 
-	/** JWT RPT para iframe ImprimirRequisicion.aspx. */
+	/** JWT RPT para iframe SelectionHiring.aspx (visor universal del módulo). */
 	getRptToken(): Observable<any> {
 		return this.repo.getRptToken();
 	}

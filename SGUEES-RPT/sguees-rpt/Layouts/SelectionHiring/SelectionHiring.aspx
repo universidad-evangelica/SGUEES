@@ -1,4 +1,4 @@
-<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="ImprimirRequisicion.aspx.cs" Inherits="sgueesRpt.Layouts.SelectionHiring.ImprimirRequisicion" %>
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="SelectionHiring.aspx.cs" Inherits="sgueesRpt.Layouts.SelectionHiring.SelectionHiring" %>
 
 <%@ Register Assembly="DevExpress.XtraReports.v24.2.Web.WebForms, Version=24.2.3.0, Culture=neutral, PublicKeyToken=b88d1754d700e49a"
 	Namespace="DevExpress.XtraReports.Web" TagPrefix="dx" %>
@@ -6,7 +6,7 @@
 <!DOCTYPE html>
 <html>
 <head runat="server">
-	<title>Requisición de Personal</title>
+	<title>Selection Hiring — Visor</title>
 	<meta charset="utf-8" />
 	<style type="text/css">
 		html, body, form { height: 100%; margin: 0; padding: 0; overflow: hidden; }
@@ -16,10 +16,11 @@
 <body>
 	<form id="form1" runat="server">
 		<asp:Literal ID="litError" runat="server" Visible="false" />
+		<%-- Visor universal del módulo SelectionHiring. El reporte concreto lo resuelve SelectionHiringReportRegistry. --%>
 		<dx:ASPxWebDocumentViewer ID="webDocumentViewer" runat="server" Height="100%" Width="100%" ClientInstanceName="webDocumentViewer">
 			<ClientSideEvents DocumentReady="function(s, e) {
 				if (window.parent &amp;&amp; window.parent !== window) {
-					window.parent.postMessage({ type: 'sguees-rpt-ready', source: 'ImprimirRequisicion' }, '*');
+					window.parent.postMessage({ type: 'sguees-rpt-ready', source: 'SelectionHiring' }, '*');
 				}
 			}" />
 		</dx:ASPxWebDocumentViewer>

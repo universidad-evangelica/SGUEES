@@ -63,7 +63,7 @@ export class ScRequisicionPersonalRepository {
 		);
 	}
 
-	/** JWT RPT para abrir ImprimirRequisicion.aspx en iframe. */
+	/** JWT RPT para abrir SelectionHiring.aspx en iframe. */
 	getRptToken(): Observable<any> {
 		return this.objData.Get(
 			this.xController,

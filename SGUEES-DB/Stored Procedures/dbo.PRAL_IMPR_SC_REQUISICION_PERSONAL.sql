@@ -6,7 +6,8 @@ GO
 -- Procedimiento: dbo.PRAL_IMPR_SC_REQUISICION_PERSONAL
 -- Qué hace: datos para XtraReport rptRequisicionPersonal (1 fila).
 -- Parámetros: @CORR_EMPRESA, @CORR_REQUISICION_PERSONAL
--- Consumo: SGUEES-RPT Layouts/SelectionHiring/ImprimirRequisicion.aspx
+-- Consumo: SGUEES-RPT Layouts/SelectionHiring/SelectionHiring.aspx
+--   ?fuente=sc-requisicion-personal&report=rptRequisicionPersonal&...
 -- =============================================================================
 CREATE OR ALTER PROCEDURE [dbo].[PRAL_IMPR_SC_REQUISICION_PERSONAL]
 (
