@@ -4,8 +4,14 @@ import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
+import { DxCheckBoxModule } from 'devextreme-angular/ui/check-box';
+import { DxDateBoxModule } from 'devextreme-angular/ui/date-box';
 import { DxFormModule } from 'devextreme-angular/ui/form';
 import { DxLoadPanelModule } from 'devextreme-angular/ui/load-panel';
+import { DxNumberBoxModule } from 'devextreme-angular/ui/number-box';
+import { DxPopupModule } from 'devextreme-angular/ui/popup';
+import { DxScrollViewModule } from 'devextreme-angular/ui/scroll-view';
+import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
 import { DxTabPanelModule } from 'devextreme-angular/ui/tab-panel';
 import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { DxTooltipModule } from 'devextreme-angular/ui/tooltip';
@@ -22,8 +28,14 @@ const routes: Routes = [{ path: '', component: GenEmpleadoComponent }];
 		RouterModule.forChild(routes),
 		CommonModule,
 		DxButtonModule,
+		DxCheckBoxModule,
+		DxDateBoxModule,
 		DxFormModule,
 		DxLoadPanelModule,
+		DxNumberBoxModule,
+		DxPopupModule,
+		DxScrollViewModule,
+		DxSelectBoxModule,
 		DxTabPanelModule,
 		DxTextBoxModule,
 		DxTooltipModule,

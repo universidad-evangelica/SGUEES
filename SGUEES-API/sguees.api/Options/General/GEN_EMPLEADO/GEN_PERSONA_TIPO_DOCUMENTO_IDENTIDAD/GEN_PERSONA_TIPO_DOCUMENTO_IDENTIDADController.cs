@@ -35,15 +35,23 @@ namespace sguees.Controllers
 		}
 
 		// Qué hace: guarda documentos de identidad (insert/update/delete vacío).
-		// Cómo: body = List<Table>; CORR_PERSONA en query (sin DTO Save especial).
+		// Cómo: body = List<Table>; CORR_PERSONA desde query o primera fila (evita merge Put de array).
 		[HttpPut("SaveAll")]
 		[Authorize(Policy = "/gen-empleado|U")]
 		public async Task<IActionResult> SaveAll(
 			[FromQuery] GEN_PERSONA_TIPO_DOCUMENTO_IDENTIDADParam filter,
 			[FromBody] List<GEN_PERSONA_TIPO_DOCUMENTO_IDENTIDADTable> Data)
 		{
+			var corrPersona = filter?.CORR_PERSONA ?? 0;
+			if (corrPersona <= 0 && Data != null)
+			{
+				corrPersona = Data.Where(x => x != null && x.CORR_PERSONA > 0)
+					.Select(x => x.CORR_PERSONA)
+					.FirstOrDefault();
+			}
+
 			var resultado = await _service.SaveAllAsync(
-				filter?.CORR_PERSONA ?? 0,
+				corrPersona,
 				Data,
 				GetCorrEmpresa(),
 				GetUsuario(),

@@ -48,8 +48,16 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	private readonly formSubtituloEditar = 'Datos del empleado';
 
 	modelPersonaNatural: GenPersonaNatural = this.fillPersonaNatural();
+	/** Copia para Cancelar del modal Personales. */
+	private modelPersonaNaturalOriginal: GenPersonaNatural = this.fillPersonaNatural();
 	itemsPersonales: any[] = [];
 	documentosIdentidad: GenPersonaTipoDocumentoIdentidad[] = [];
+	/** Copia para Cancelar del modal (personales + documentos). */
+	private documentosIdentidadOriginal: GenPersonaTipoDocumentoIdentidad[] = [];
+	/** Qué hace: modal de edición de datos personales (patrón expediente). */
+	popupPersonalesVisible = false;
+	/** Evita restaurar modelo al cerrar el popup tras Guardar exitoso. */
+	private omitirRestaurarPopupPersonales = false;
 	tabEmpleadoIndex = TAB_PERSONALES;
 
 	mCORR_RELIGION: any[] = [];
@@ -125,11 +133,16 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		return this.banderaMtto === UpdateType.Not_Defined || this.banderaMtto === UpdateType.Browse;
 	}
 
+	/** Qué hace: el form de personales es editable en alta o dentro del modal. */
+	get editandoPersonalesForm(): boolean {
+		return !this.tienePersonaBase || this.popupPersonalesVisible;
+	}
+
 	/** Qué hace: apellido de casada solo aplica a mujer casada o viuda. */
 	get apellidoCasadaHabilitado(): boolean {
 		const estado = this.modelPersonaNatural?.ESTADO_CIVIL;
 		return (
-			!this.readOnlyPersonales &&
+			this.editandoPersonalesForm &&
 			this.modelPersonaNatural?.SEXO === 'FEMENINO' &&
 			(estado === 'CASADO(A)' || estado === 'VIUDO(A)')
 		);
@@ -148,12 +161,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 
 	/** Qué hace: país editable solo si ya eligió Domiciliado. */
 	get paisNacimientoHabilitado(): boolean {
-		return !this.readOnlyPersonales && this.tieneDomiciliadoSeleccionado;
+		return this.editandoPersonalesForm && this.tieneDomiciliadoSeleccionado;
 	}
 
-	/** Qué hace: depto/municipio/distrito editables solo si está domiciliado y el form no es solo lectura. */
+	/** Qué hace: depto/municipio/distrito editables solo si está domiciliado y el form es editable. */
 	get territorioCompletoHabilitado(): boolean {
-		return !this.readOnlyPersonales && this.esDomiciliado;
+		return this.editandoPersonalesForm && this.esDomiciliado;
 	}
 
 	fillParam(xCORR_EMPLEADO?: number): any {
@@ -316,15 +329,15 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		this.modelUpdate = this.fillData();
 		this.modelPersonaNatural = this.fillPersonaNatural();
 		this.documentosIdentidad = [];
+		this.documentosIdentidadOriginal = [];
 		this.tabEmpleadoIndex = TAB_PERSONALES;
 		this.limpiarLookupsTerritorio();
 		this.subTituloVentana = this.formSubtituloNuevo;
 		this.cargarLookupsBase();
-		this.cargarDocumentosIdentidad();
 		setTimeout(() => this.aplicarReglasPersonales(), 0);
 	}
 
-	// Qué hace: Guardar — Iniciar / Personales / Documentos según tab activo.
+	// Qué hace: Guardar del ribbon — solo alta (Iniciar). Personales/Documentos tienen su propio Guardar.
 	guardar(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -335,12 +348,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 
-		if (this.tabEmpleadoIndex === TAB_DOCUMENTOS) {
-			this.guardarDocumentosIdentidad();
+		if (this.popupPersonalesVisible) {
+			this.guardarPersonalesDesdeModal();
 			return;
 		}
 
-		this.guardarPersonaNatural();
+		this.notifyFx('Use Editar datos para modificar la información del empleado.', NotifyType.Warning);
 	}
 
 	activar_inactivar(): void {
@@ -411,6 +424,17 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		return t || '—';
 	}
 
+	/** Qué hace: muestra Sí/No para flags booleanos en la tarjeta. */
+	textoSiNo(valor: any): string {
+		if (valor === true || valor === 1 || valor === '1' || valor === 'SI') {
+			return 'Sí';
+		}
+		if (valor === false || valor === 0 || valor === '0' || valor === 'NO') {
+			return 'No';
+		}
+		return '—';
+	}
+
 	fechaLectura(valor: any): string {
 		if (!valor) {
 			return '—';
@@ -442,11 +466,83 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	}
 
 	abrirEditarSeccion(): void {
-		if (this.banderaMtto === UpdateType.Not_Defined || this.banderaMtto === UpdateType.Browse) {
-			this.AsignaStatus(UpdateType.Update);
-			this.subTituloVentana = this.formSubtituloEditar;
-			setTimeout(() => this.aplicarReglasPersonales(), 0);
+		this.abrirEditarPersonales();
+	}
+
+	// Qué hace: abre el modal de edición de datos personales (como expediente).
+	abrirEditarPersonales(): void {
+		if (!this.tienePersonaBase || !this.permiteEdit) {
+			return;
 		}
+		this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
+		this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+		this.popupPersonalesVisible = true;
+		setTimeout(() => this.aplicarReglasPersonales(), 0);
+	}
+
+	// Qué hace: cierra el modal y restaura personales/documentos si canceló.
+	cerrarPopupPersonales(restaurar = true): void {
+		if (restaurar && !this.omitirRestaurarPopupPersonales) {
+			this.modelPersonaNatural = this.fillPersonaNatural(this.modelPersonaNaturalOriginal);
+			this.documentosIdentidad = this.clonarDocumentos(this.documentosIdentidadOriginal);
+			this.refrescarTerritorioDesdeModelo();
+		}
+		this.omitirRestaurarPopupPersonales = false;
+		this.popupPersonalesVisible = false;
+	}
+
+	onPopupPersonalesShown(): void {
+		setTimeout(() => this.aplicarReglasPersonales(), 0);
+	}
+
+	// Qué hace: guarda personales + documentos desde el modal y cierra.
+	guardarPersonalesDesdeModal(): void {
+		this.guardarPersonaNatural(
+			() => {
+				this.guardarDocumentosDesdeModal(() => {
+					this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
+					this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+					this.omitirRestaurarPopupPersonales = true;
+					this.popupPersonalesVisible = false;
+					this.notifyFx('Datos del empleado actualizados.', NotifyType.Success, { raw: true });
+				});
+			},
+			{ silencioso: true }
+		);
+	}
+
+	/**
+	 * Qué hace: persiste documentos desde el modal de edición.
+	 * Cómo: SaveAll; en éxito actualiza lista en memoria y llama onSuccess.
+	 */
+	private guardarDocumentosDesdeModal(onSuccess?: () => void): void {
+		const corrPersona = Number(this.model.CORR_PERSONA);
+		if (corrPersona <= 0) {
+			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.saveDocumentosIdentidad(corrPersona, this.documentosIdentidad)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const rows = response.Data ?? this.documentosIdentidad;
+					this.documentosIdentidad = rows;
+					this.documentosIdentidadOriginal = this.clonarDocumentos(rows);
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
 	}
 
 	// Qué hace: al cambiar sexo/estado civil/discapacidad/domiciliado, aplica reglas de UI del tab Personales.
@@ -463,6 +559,35 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 			this.modelPersonaNatural.DOMICILIADO = e.value ?? '';
 			this.aplicarReglaDomiciliado();
 		}
+	}
+
+	// Qué hace: aplica las mismas reglas desde selects/checks del modal ep-*.
+	onPersonalesSelectChanged(campo: string, e: any): void {
+		this.onPersonalesFieldChanged({ dataField: campo, value: e?.value });
+	}
+
+	// Qué hace: recalcula edad al cambiar fecha de nacimiento en el modal.
+	onFechaNacimientoChanged(e: any): void {
+		const fecha = e?.value ?? this.modelPersonaNatural?.FECHA_NACIMIENTO;
+		this.modelPersonaNatural.FECHA_NACIMIENTO = fecha ?? null;
+		this.modelPersonaNatural.EDAD = this.calcularEdad(fecha);
+	}
+
+	private calcularEdad(fecha: Date | string | null | undefined): number | null {
+		if (!fecha) {
+			return null;
+		}
+		const d = fecha instanceof Date ? fecha : new Date(fecha);
+		if (Number.isNaN(d.getTime())) {
+			return null;
+		}
+		const hoy = new Date();
+		let edad = hoy.getFullYear() - d.getFullYear();
+		const m = hoy.getMonth() - d.getMonth();
+		if (m < 0 || (m === 0 && hoy.getDate() < d.getDate())) {
+			edad -= 1;
+		}
+		return edad >= 0 ? edad : null;
 	}
 
 	onPaisNacimientoChange(value: number): void {
@@ -580,7 +705,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 
 	// Qué hace: actualiza GEN_PERSONA_NATURAL del empleado (vía SP en GEN_EMPLEADO).
 	// Cómo: Put PersonaNatural; si aún no hay corr (caso raro), Post; parchea nombre en panel.
-	private guardarPersonaNatural(): void {
+	private guardarPersonaNatural(onSuccess?: () => void, opciones?: { silencioso?: boolean }): void {
 		if (!this.tienePersonaBase) {
 			this.notifyFx('Primero debe iniciar el empleado (Guardar).', NotifyType.Warning);
 			return;
@@ -609,11 +734,14 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 					this.model.NOMBRE_EMPLEADO = this.modelPersonaNatural.NOMBRE_COMPLETO;
 					this.aplicarRegistroEnGrid(this.fillData(this.model), false);
 				}
-				this.notifyFx(
-					esAltaNatural ? 'Datos personales creados.' : 'Datos personales actualizados.',
-					NotifyType.Success,
-					{ raw: true }
-				);
+				if (!opciones?.silencioso) {
+					this.notifyFx(
+						esAltaNatural ? 'Datos personales creados.' : 'Datos personales actualizados.',
+						NotifyType.Success,
+						{ raw: true }
+					);
+				}
+				onSuccess?.();
 			},
 			error: (error: any) => {
 				this.loadingVisible = false;
@@ -658,55 +786,39 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	}
 
 	// Qué hace: carga catálogo activo + valores de documentos de la persona.
-	// Cómo: API anidada GEN_PERSONA_TIPO_DOCUMENTO_IDENTIDAD.GetAll.
+	// Cómo: API anidada vía GenEmpleadoService; guarda copia para Cancelar.
 	private cargarDocumentosIdentidad(): void {
 		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		if (corrPersona <= 0) {
+			this.documentosIdentidad = [];
+			this.documentosIdentidadOriginal = [];
+			return;
+		}
+
 		this.service
 			.getDocumentosIdentidad(corrPersona)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
-					this.documentosIdentidad = response?.Result ? response.Data ?? [] : [];
+					const rows = response?.Result ? response.Data ?? [] : [];
+					this.documentosIdentidad = rows;
+					this.documentosIdentidadOriginal = this.clonarDocumentos(rows);
 				},
 				error: () => {
 					this.documentosIdentidad = [];
+					this.documentosIdentidadOriginal = [];
 				},
 			});
 	}
 
-	// Qué hace: guarda documentos del tab (sin GetAll browse; parchea lista con Data).
-	private guardarDocumentosIdentidad(): void {
-		if (!this.tienePersonaBase) {
-			this.notifyFx('Primero debe iniciar el empleado (Guardar en Personales).', NotifyType.Warning);
-			return;
-		}
-
-		const corrPersona = Number(this.model.CORR_PERSONA);
-		this.loadingVisible = true;
-		this.service
-			.saveDocumentosIdentidad(corrPersona, this.documentosIdentidad)
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					this.loadingVisible = false;
-					if (!response?.Result) {
-						this.notifyApiResponse(response);
-						return;
-					}
-					this.documentosIdentidad = response.Data ?? this.documentosIdentidad;
-					this.notifyFx('Documentos de identidad guardados.', NotifyType.Success, { raw: true });
-				},
-				error: (error: any) => {
-					this.loadingVisible = false;
-					this.notifyApiError(error);
-				},
-			});
+	private clonarDocumentos(rows: GenPersonaTipoDocumentoIdentidad[]): GenPersonaTipoDocumentoIdentidad[] {
+		return (rows ?? []).map((d) => ({ ...d }));
 	}
 
 	// Qué hace: formatea DUI/NIT/NRC en vivo al teclear (máscara + tope).
-	// Cómo: lee el input, aplica guion/máscara siempre; tope catálogo si ACTIVO_CARACTERES.
+	// Cómo: solo aplica dentro del modal de edición.
 	onDocumentoValorInput(doc: GenPersonaTipoDocumentoIdentidad, e: any): void {
-		if (!doc || this.readOnlyPersonales) {
+		if (!doc || !this.popupPersonalesVisible) {
 			return;
 		}
 		const raw = `${e?.event?.target?.value ?? e?.component?.option('text') ?? ''}`;
@@ -724,7 +836,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 
 	// Qué hace: sincroniza valor al pegar/limpiar/blur cuando no pasó por onInput.
 	onDocumentoValorChanged(doc: GenPersonaTipoDocumentoIdentidad, e: any): void {
-		if (!doc || this.readOnlyPersonales) {
+		if (!doc || !this.popupPersonalesVisible) {
 			return;
 		}
 		const raw = `${e?.value ?? ''}`;
@@ -791,21 +903,23 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	}
 
 	// Qué hace: habilita apellido de casada solo si es FEMENINO y CASADO(A) o VIUDO(A).
-	// Cómo: limpia el valor si no aplica y marca el editor readOnly.
+	// Cómo: limpia el valor si no aplica; en alta (DxForm) marca el editor readOnly.
 	private aplicarReglaApellidoCasada(): void {
 		const habilitado = this.apellidoCasadaHabilitado;
-		if (!habilitado) {
+		if (!habilitado && this.editandoPersonalesForm) {
 			this.modelPersonaNatural.APELLIDO_CASADA = '';
 		}
-		const editor = this.formPersonales?.instance?.getEditor('APELLIDO_CASADA');
-		editor?.option('readOnly', !habilitado);
+		if (!this.popupPersonalesVisible) {
+			const editor = this.formPersonales?.instance?.getEditor('APELLIDO_CASADA');
+			editor?.option('readOnly', !habilitado);
+		}
 	}
 
 	// Qué hace: controla territorio según Domiciliado (null / NO / SI).
 	// Cómo: sin selección limpia todo; NO deja solo país; SI habilita cadena completa.
 	private aplicarReglaDomiciliado(): void {
 		if (!this.tieneDomiciliadoSeleccionado) {
-			if (!this.readOnlyPersonales) {
+			if (this.editandoPersonalesForm) {
 				this.modelPersonaNatural.CORR_PAIS_NACIMIENTO = null;
 				this.modelPersonaNatural.CORR_DEPTO_NACIMIENTO = null;
 				this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO = null;
@@ -816,7 +930,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		}
 
 		if (this.esDomiciliado) {
-			if (this.readOnlyPersonales) {
+			if (!this.editandoPersonalesForm) {
 				return;
 			}
 			const pais = this.modelPersonaNatural?.CORR_PAIS_NACIMIENTO;
@@ -842,15 +956,17 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	}
 
 	// Qué hace: muestra tipo discapacidad solo si posee discapacidad está activo.
-	// Cómo: limpia el texto si no aplica y usa itemOption con ruta del grupo (name: situacion).
+	// Cómo: limpia el texto; en alta usa itemOption del DxForm; en modal *ngIf del template.
 	private aplicarReglaTipoDiscapacidad(): void {
 		const posee = !!this.modelPersonaNatural?.POSEE_DISCAPACIDAD;
 		if (!posee) {
 			this.modelPersonaNatural.TIPO_DISCAPACIDAD = '';
 		}
-		setTimeout(() => {
-			this.formPersonales?.instance?.itemOption('situacion.TIPO_DISCAPACIDAD', 'visible', posee);
-		}, 0);
+		if (!this.popupPersonalesVisible) {
+			setTimeout(() => {
+				this.formPersonales?.instance?.itemOption('situacion.TIPO_DISCAPACIDAD', 'visible', posee);
+			}, 0);
+		}
 	}
 
 	private cargarLookupsBase(): void {
