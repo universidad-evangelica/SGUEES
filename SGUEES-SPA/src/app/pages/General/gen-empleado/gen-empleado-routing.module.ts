@@ -6,7 +6,6 @@ import { RouterModule, Routes } from '@angular/router';
 import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxCheckBoxModule } from 'devextreme-angular/ui/check-box';
 import { DxDateBoxModule } from 'devextreme-angular/ui/date-box';
-import { DxFormModule } from 'devextreme-angular/ui/form';
 import { DxLoadPanelModule } from 'devextreme-angular/ui/load-panel';
 import { DxNumberBoxModule } from 'devextreme-angular/ui/number-box';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
@@ -30,7 +29,6 @@ const routes: Routes = [{ path: '', component: GenEmpleadoComponent }];
 		DxButtonModule,
 		DxCheckBoxModule,
 		DxDateBoxModule,
-		DxFormModule,
 		DxLoadPanelModule,
 		DxNumberBoxModule,
 		DxPopupModule,

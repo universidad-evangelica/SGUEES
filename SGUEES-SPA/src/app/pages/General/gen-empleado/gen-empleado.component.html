@@ -21,9 +21,9 @@
 	>
 	</app-barra-data-mtto>
 
-	<!-- Workspace formulario Nuevo / Editar. -->
-	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card empleado-form" *ngIf="!isBrowse()">
-		<!-- Panel identidad del empleado. -->
+	<!-- Workspace formulario Nuevo / Editar: card de perfil + contenido debajo (sin anidar). -->
+	<div class="empleado-form" *ngIf="!isBrowse()">
+		<!-- motivo: solo cabecera/perfil del empleado (card independiente) -->
 		<section class="empleado-panel">
 			<div class="empleado-panel__heading">
 				<div class="empleado-section-title">
@@ -85,129 +85,21 @@
 					></dx-button>
 				</div>
 			</div>
+		</section>
 
-			<div class="empleado-divider empleado-divider--horizontal" aria-hidden="true"></div>
+		<!-- motivo: alta — cards personales debajo, fuera del card Datos del Empleado -->
+		<div class="empleado-below" *ngIf="!tienePersonaBase">
+			<ng-container *ngTemplateOutlet="tplPersonalesEp"></ng-container>
+		</div>
 
-			<!-- motivo: alta sin persona: solo formulario personales editable -->
-			<div class="empleado-panel__tabs" *ngIf="!tienePersonaBase">
-				<div class="empleado-personales">
-					<dx-form
-						#formPersonales
-						[formData]="modelPersonaNatural"
-						[items]="itemsPersonales"
-						[labelLocation]="'top'"
-						[colCount]="1"
-						[readOnly]="!editandoPersonalesForm"
-						[showRequiredMark]="false"
-						(onFieldDataChanged)="onPersonalesFieldChanged($event)"
-					>
-						<div *dxTemplate="let cellInfo of 'CORR_RELIGIONLookup'">
-							<app-data-lookup
-								[model]="mCORR_RELIGION"
-								[(value)]="modelPersonaNatural.CORR_RELIGION"
-								[valueExpr]="'CORR_RELIGION'"
-								[displayExpr]="'NOMBRE_RELIGION'"
-								[selectedRowKeys]="selectedLookUpReligion"
-								[readOnly]="!editandoPersonalesForm"
-								[showClearButton]="true"
-							></app-data-lookup>
-						</div>
-						<div *dxTemplate="let cellInfo of 'CORR_PAIS_NACIMIENTOLookup'">
-							<!-- motivo: país solo si ya eligió Domiciliado (SI/NO) -->
-							<app-data-lookup
-								[model]="mCORR_PAIS_NACIMIENTO"
-								[(value)]="modelPersonaNatural.CORR_PAIS_NACIMIENTO"
-								(valueChange)="onPaisNacimientoChange($event)"
-								[valueExpr]="'CORR_PAIS'"
-								[displayExpr]="'NOMBRE_PAIS'"
-								[selectedRowKeys]="selectedLookUpPaisNacimiento"
-								[readOnly]="!paisNacimientoHabilitado"
-								[showClearButton]="true"
-							></app-data-lookup>
-						</div>
-						<div *dxTemplate="let cellInfo of 'CORR_DEPTO_NACIMIENTOLookup'">
-							<!-- motivo: depto solo si Domiciliado = SI -->
-							<app-data-lookup
-								[model]="mCORR_DEPTO_NACIMIENTO"
-								[(value)]="modelPersonaNatural.CORR_DEPTO_NACIMIENTO"
-								(valueChange)="onDeptoNacimientoChange($event)"
-								[valueExpr]="'CORR_DEPTO'"
-								[displayExpr]="'NOMBRE_DEPTO'"
-								[selectedRowKeys]="selectedLookUpDeptoNacimiento"
-								[readOnly]="!territorioCompletoHabilitado"
-								[showClearButton]="true"
-							></app-data-lookup>
-						</div>
-						<div *dxTemplate="let cellInfo of 'CORR_MUNICIPIO_NACIMIENTOLookup'">
-							<!-- motivo: municipio solo si Domiciliado = SI -->
-							<app-data-lookup
-								[model]="mCORR_MUNICIPIO_NACIMIENTO"
-								[(value)]="modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO"
-								(valueChange)="onMunicipioNacimientoChange($event)"
-								[valueExpr]="'CORR_MUNICIPIO'"
-								[displayExpr]="'NOMBRE_MUNICIPIO'"
-								[selectedRowKeys]="selectedLookUpMunicipioNacimiento"
-								[readOnly]="!territorioCompletoHabilitado"
-								[showClearButton]="true"
-							></app-data-lookup>
-						</div>
-						<div *dxTemplate="let cellInfo of 'CORR_DISTRITO_NACIMIENTOLookup'">
-							<!-- motivo: distrito solo si Domiciliado = SI -->
-							<app-data-lookup
-								[model]="mCORR_DISTRITO_NACIMIENTO"
-								[(value)]="modelPersonaNatural.CORR_DISTRITO_NACIMIENTO"
-								[valueExpr]="'CORR_DISTRITO'"
-								[displayExpr]="'NOMBRE_DISTRITO'"
-								[selectedRowKeys]="selectedLookUpDistritoNacimiento"
-								[readOnly]="!territorioCompletoHabilitado"
-								[showClearButton]="true"
-							></app-data-lookup>
-						</div>
-						<div *dxTemplate="let cellInfo of 'CORR_ORIGEN_INGRESOLookup'">
-							<app-data-lookup
-								[model]="mCORR_ORIGEN_INGRESO"
-								[(value)]="modelPersonaNatural.CORR_ORIGEN_INGRESO"
-								[valueExpr]="'CORR_ORIGEN_INGRESO'"
-								[displayExpr]="'NOMBRE_ORIGEN_INGRESO'"
-								[selectedRowKeys]="selectedLookUpOrigenIngreso"
-								[readOnly]="!editandoPersonalesForm"
-								[showClearButton]="true"
-							></app-data-lookup>
-						</div>
-						<div *dxTemplate="let cellInfo of 'CORR_TIPO_CONTRIBUYENTELookup'">
-							<app-data-lookup
-								[model]="mCORR_TIPO_CONTRIBUYENTE"
-								[(value)]="modelPersonaNatural.CORR_TIPO_CONTRIBUYENTE"
-								[valueExpr]="'CORR_TIPO_CONTRIBUYENTE'"
-								[displayExpr]="'NOMBRE_TIPO_CONTRIBUYENTE'"
-								[selectedRowKeys]="selectedLookUpTipoContribuyente"
-								[readOnly]="!editandoPersonalesForm"
-								[showClearButton]="true"
-							></app-data-lookup>
-						</div>
-						<div *dxTemplate="let cellInfo of 'CORR_ACTIVIDAD_ECONOMICALookup'">
-							<app-data-lookup
-								[model]="mCORR_ACTIVIDAD_ECONOMICA"
-								[(value)]="modelPersonaNatural.CORR_ACTIVIDAD_ECONOMICA"
-								[valueExpr]="'CORR_ACTIVIDAD_ECONOMICA'"
-								[displayExpr]="'NOMBRE_ACTIVIDAD_ECONOMICA'"
-								[selectedRowKeys]="selectedLookUpActividadEconomica"
-								[readOnly]="!editandoPersonalesForm"
-								[showClearButton]="true"
-							></app-data-lookup>
-						</div>
-					</dx-form>
-				</div>
-			</div>
-
-			<!-- motivo: con persona base: tabs; Personales en solo lectura + resto de secciones -->
-			<div class="empleado-panel__tabs" *ngIf="tienePersonaBase">
-				<dx-tab-panel
-					class="participante-tab-panel"
-					[animationEnabled]="false"
-					[swipeEnabled]="false"
-					[(selectedIndex)]="tabEmpleadoIndex"
-				>
+		<!-- motivo: con persona — tabs debajo, fuera del card Datos del Empleado -->
+		<div class="empleado-below empleado-below--tabs" *ngIf="tienePersonaBase">
+			<dx-tab-panel
+				class="participante-tab-panel"
+				[animationEnabled]="false"
+				[swipeEnabled]="false"
+				[(selectedIndex)]="tabEmpleadoIndex"
+			>
 					<dxi-item title="Personales" [icon]="'user'">
 						<!-- motivo: tarjeta de lectura de datos personales (edición vía modal) -->
 						<div class="rd-panel">
@@ -404,8 +296,7 @@
 						</div>
 					</dxi-item>
 				</dx-tab-panel>
-			</div>
-		</section>
+		</div>
 	</div>
 
 	<!-- Grilla browse. -->
@@ -503,248 +394,7 @@
 				<!-- motivo: tabs Personales / Documentos estilo sc-solicitud-empleo-editar-persona -->
 				<dx-tab-panel class="editar-persona__tabs" [animationEnabled]="false" [swipeEnabled]="false" [selectedIndex]="0">
 					<dxi-item title="Personales" [icon]="'user'">
-						<div class="ep-panel">
-							<!-- motivo: identidad del empleado (mismas secciones visuales que expediente) -->
-							<section class="ep-section">
-								<h4 class="ep-section__title">Identidad</h4>
-								<div class="ep-grid">
-									<div class="ep-field">
-										<label class="ep-label">Primer nombre <span class="req">*</span></label>
-										<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.PRIMER_NOMBRE" [maxLength]="50"></dx-text-box>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Segundo nombre</label>
-										<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.SEGUNDO_NOMBRE" [maxLength]="50"></dx-text-box>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Primer apellido <span class="req">*</span></label>
-										<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.PRIMER_APELLIDO" [maxLength]="50"></dx-text-box>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Segundo apellido</label>
-										<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.SEGUNDO_APELLIDO" [maxLength]="50"></dx-text-box>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Sexo</label>
-										<dx-select-box
-											stylingMode="outlined"
-											[(value)]="modelPersonaNatural.SEXO"
-											[items]="opcionesSexo"
-											displayExpr="text"
-											valueExpr="value"
-											[searchEnabled]="true"
-											[showClearButton]="true"
-											(onValueChanged)="onPersonalesSelectChanged('SEXO', $event)"
-										></dx-select-box>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Estado civil</label>
-										<dx-select-box
-											stylingMode="outlined"
-											[(value)]="modelPersonaNatural.ESTADO_CIVIL"
-											[items]="opcionesEstadoCivil"
-											displayExpr="text"
-											valueExpr="value"
-											[searchEnabled]="true"
-											[showClearButton]="true"
-											(onValueChanged)="onPersonalesSelectChanged('ESTADO_CIVIL', $event)"
-										></dx-select-box>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Apellido de casada</label>
-										<dx-text-box
-											stylingMode="outlined"
-											[(value)]="modelPersonaNatural.APELLIDO_CASADA"
-											[maxLength]="50"
-											[readOnly]="!apellidoCasadaHabilitado"
-										></dx-text-box>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Nacionalidad</label>
-										<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.NACIONALIDAD" [maxLength]="25"></dx-text-box>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Fecha nacimiento</label>
-										<dx-date-box
-											stylingMode="outlined"
-											type="date"
-											displayFormat="dd/MM/yyyy"
-											[(value)]="modelPersonaNatural.FECHA_NACIMIENTO"
-											(onValueChanged)="onFechaNacimientoChanged($event)"
-										></dx-date-box>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Edad</label>
-										<dx-number-box stylingMode="outlined" [(value)]="modelPersonaNatural.EDAD" [min]="0" [readOnly]="true"></dx-number-box>
-									</div>
-								</div>
-							</section>
-
-							<section class="ep-section">
-								<h4 class="ep-section__title">Situación</h4>
-								<div class="ep-grid">
-									<div class="ep-field ep-field--check">
-										<dx-check-box [(value)]="modelPersonaNatural.ES_JUBILADO" text="Es jubilado"></dx-check-box>
-									</div>
-									<div class="ep-field ep-field--check">
-										<dx-check-box
-											[(value)]="modelPersonaNatural.POSEE_DISCAPACIDAD"
-											text="Posee discapacidad"
-											(onValueChanged)="onPersonalesSelectChanged('POSEE_DISCAPACIDAD', $event)"
-										></dx-check-box>
-									</div>
-									<div class="ep-field ep-field--check">
-										<dx-check-box [(value)]="modelPersonaNatural.ES_EXTRANJERO" text="Es extranjero"></dx-check-box>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Domiciliado</label>
-										<dx-select-box
-											stylingMode="outlined"
-											[(value)]="modelPersonaNatural.DOMICILIADO"
-											[items]="opcionesSiNo"
-											displayExpr="text"
-											valueExpr="value"
-											(onValueChanged)="onPersonalesSelectChanged('DOMICILIADO', $event)"
-										></dx-select-box>
-									</div>
-									<div class="ep-field ep-field--wide" *ngIf="modelPersonaNatural.POSEE_DISCAPACIDAD">
-										<label class="ep-label">Tipo discapacidad</label>
-										<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.TIPO_DISCAPACIDAD" [maxLength]="250"></dx-text-box>
-									</div>
-								</div>
-							</section>
-
-							<section class="ep-section">
-								<h4 class="ep-section__title">Lugar de nacimiento</h4>
-								<div class="ep-grid">
-									<div class="ep-field">
-										<label class="ep-label">País</label>
-										<app-data-lookup
-											[model]="mCORR_PAIS_NACIMIENTO"
-											[(value)]="modelPersonaNatural.CORR_PAIS_NACIMIENTO"
-											(valueChange)="onPaisNacimientoChange($event)"
-											[valueExpr]="'CORR_PAIS'"
-											[displayExpr]="'NOMBRE_PAIS'"
-											[selectedRowKeys]="selectedLookUpPaisNacimiento"
-											[readOnly]="!paisNacimientoHabilitado"
-											[showClearButton]="true"
-										></app-data-lookup>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Departamento</label>
-										<app-data-lookup
-											[model]="mCORR_DEPTO_NACIMIENTO"
-											[(value)]="modelPersonaNatural.CORR_DEPTO_NACIMIENTO"
-											(valueChange)="onDeptoNacimientoChange($event)"
-											[valueExpr]="'CORR_DEPTO'"
-											[displayExpr]="'NOMBRE_DEPTO'"
-											[selectedRowKeys]="selectedLookUpDeptoNacimiento"
-											[readOnly]="!territorioCompletoHabilitado"
-											[showClearButton]="true"
-										></app-data-lookup>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Municipio</label>
-										<app-data-lookup
-											[model]="mCORR_MUNICIPIO_NACIMIENTO"
-											[(value)]="modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO"
-											(valueChange)="onMunicipioNacimientoChange($event)"
-											[valueExpr]="'CORR_MUNICIPIO'"
-											[displayExpr]="'NOMBRE_MUNICIPIO'"
-											[selectedRowKeys]="selectedLookUpMunicipioNacimiento"
-											[readOnly]="!territorioCompletoHabilitado"
-											[showClearButton]="true"
-										></app-data-lookup>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Distrito</label>
-										<app-data-lookup
-											[model]="mCORR_DISTRITO_NACIMIENTO"
-											[(value)]="modelPersonaNatural.CORR_DISTRITO_NACIMIENTO"
-											[valueExpr]="'CORR_DISTRITO'"
-											[displayExpr]="'NOMBRE_DISTRITO'"
-											[selectedRowKeys]="selectedLookUpDistritoNacimiento"
-											[readOnly]="!territorioCompletoHabilitado"
-											[showClearButton]="true"
-										></app-data-lookup>
-									</div>
-								</div>
-							</section>
-
-							<section class="ep-section">
-								<h4 class="ep-section__title">Religión</h4>
-								<div class="ep-grid">
-									<div class="ep-field">
-										<label class="ep-label">Religión</label>
-										<app-data-lookup
-											[model]="mCORR_RELIGION"
-											[(value)]="modelPersonaNatural.CORR_RELIGION"
-											[valueExpr]="'CORR_RELIGION'"
-											[displayExpr]="'NOMBRE_RELIGION'"
-											[selectedRowKeys]="selectedLookUpReligion"
-											[readOnly]="false"
-											[showClearButton]="true"
-										></app-data-lookup>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Iglesia</label>
-										<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.IGLESIA_CONGREGA" [maxLength]="50"></dx-text-box>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Carta pastoral</label>
-										<dx-select-box
-											stylingMode="outlined"
-											[(value)]="modelPersonaNatural.CARTA_PASTORAL"
-											[items]="opcionesSiNo"
-											displayExpr="text"
-											valueExpr="value"
-										></dx-select-box>
-									</div>
-								</div>
-							</section>
-
-							<section class="ep-section">
-								<h4 class="ep-section__title">Tributario</h4>
-								<div class="ep-grid">
-									<div class="ep-field">
-										<label class="ep-label">Origen ingreso</label>
-										<app-data-lookup
-											[model]="mCORR_ORIGEN_INGRESO"
-											[(value)]="modelPersonaNatural.CORR_ORIGEN_INGRESO"
-											[valueExpr]="'CORR_ORIGEN_INGRESO'"
-											[displayExpr]="'NOMBRE_ORIGEN_INGRESO'"
-											[selectedRowKeys]="selectedLookUpOrigenIngreso"
-											[readOnly]="false"
-											[showClearButton]="true"
-										></app-data-lookup>
-									</div>
-									<div class="ep-field">
-										<label class="ep-label">Tipo contribuyente</label>
-										<app-data-lookup
-											[model]="mCORR_TIPO_CONTRIBUYENTE"
-											[(value)]="modelPersonaNatural.CORR_TIPO_CONTRIBUYENTE"
-											[valueExpr]="'CORR_TIPO_CONTRIBUYENTE'"
-											[displayExpr]="'NOMBRE_TIPO_CONTRIBUYENTE'"
-											[selectedRowKeys]="selectedLookUpTipoContribuyente"
-											[readOnly]="false"
-											[showClearButton]="true"
-										></app-data-lookup>
-									</div>
-									<div class="ep-field ep-field--wide">
-										<label class="ep-label">Actividad económica</label>
-										<app-data-lookup
-											[model]="mCORR_ACTIVIDAD_ECONOMICA"
-											[(value)]="modelPersonaNatural.CORR_ACTIVIDAD_ECONOMICA"
-											[valueExpr]="'CORR_ACTIVIDAD_ECONOMICA'"
-											[displayExpr]="'NOMBRE_ACTIVIDAD_ECONOMICA'"
-											[selectedRowKeys]="selectedLookUpActividadEconomica"
-											[readOnly]="false"
-											[showClearButton]="true"
-										></app-data-lookup>
-									</div>
-								</div>
-							</section>
-						</div>
+						<ng-container *ngTemplateOutlet="tplPersonalesEp"></ng-container>
 					</dxi-item>
 
 					<!-- motivo: valores de documentos (DUI, etc.) sin subir archivos -->
@@ -776,6 +426,251 @@
 		</div>
 	</dx-popup>
 </div>
+
+<!-- motivo: formulario personales ep-section compartido (alta sin tabs + modal Personales) -->
+<ng-template #tplPersonalesEp>
+	<div class="ep-panel">
+		<section class="ep-section">
+			<h4 class="ep-section__title">Identidad</h4>
+			<div class="ep-grid">
+				<div class="ep-field">
+					<label class="ep-label">Primer nombre <span class="req">*</span></label>
+					<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.PRIMER_NOMBRE" [maxLength]="50"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Segundo nombre</label>
+					<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.SEGUNDO_NOMBRE" [maxLength]="50"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Primer apellido <span class="req">*</span></label>
+					<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.PRIMER_APELLIDO" [maxLength]="50"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Segundo apellido</label>
+					<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.SEGUNDO_APELLIDO" [maxLength]="50"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Sexo</label>
+					<dx-select-box
+						stylingMode="outlined"
+						[(value)]="modelPersonaNatural.SEXO"
+						[items]="opcionesSexo"
+						displayExpr="text"
+						valueExpr="value"
+						[searchEnabled]="true"
+						[showClearButton]="true"
+						(onValueChanged)="onPersonalesSelectChanged('SEXO', $event)"
+					></dx-select-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Estado civil</label>
+					<dx-select-box
+						stylingMode="outlined"
+						[(value)]="modelPersonaNatural.ESTADO_CIVIL"
+						[items]="opcionesEstadoCivil"
+						displayExpr="text"
+						valueExpr="value"
+						[searchEnabled]="true"
+						[showClearButton]="true"
+						(onValueChanged)="onPersonalesSelectChanged('ESTADO_CIVIL', $event)"
+					></dx-select-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Apellido de casada</label>
+					<dx-text-box
+						stylingMode="outlined"
+						[(value)]="modelPersonaNatural.APELLIDO_CASADA"
+						[maxLength]="50"
+						[readOnly]="!apellidoCasadaHabilitado"
+					></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Nacionalidad</label>
+					<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.NACIONALIDAD" [maxLength]="25"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Fecha nacimiento</label>
+					<dx-date-box
+						stylingMode="outlined"
+						type="date"
+						displayFormat="dd/MM/yyyy"
+						[(value)]="modelPersonaNatural.FECHA_NACIMIENTO"
+						(onValueChanged)="onFechaNacimientoChanged($event)"
+					></dx-date-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Edad</label>
+					<dx-number-box stylingMode="outlined" [(value)]="modelPersonaNatural.EDAD" [min]="0" [readOnly]="true"></dx-number-box>
+				</div>
+			</div>
+		</section>
+
+		<section class="ep-section">
+			<h4 class="ep-section__title">Situación</h4>
+			<div class="ep-grid">
+				<div class="ep-field ep-field--check">
+					<dx-check-box [(value)]="modelPersonaNatural.ES_JUBILADO" text="Es jubilado"></dx-check-box>
+				</div>
+				<div class="ep-field ep-field--check">
+					<dx-check-box
+						[(value)]="modelPersonaNatural.POSEE_DISCAPACIDAD"
+						text="Posee discapacidad"
+						(onValueChanged)="onPersonalesSelectChanged('POSEE_DISCAPACIDAD', $event)"
+					></dx-check-box>
+				</div>
+				<div class="ep-field ep-field--check">
+					<dx-check-box [(value)]="modelPersonaNatural.ES_EXTRANJERO" text="Es extranjero"></dx-check-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Domiciliado</label>
+					<dx-select-box
+						stylingMode="outlined"
+						[(value)]="modelPersonaNatural.DOMICILIADO"
+						[items]="opcionesSiNo"
+						displayExpr="text"
+						valueExpr="value"
+						(onValueChanged)="onPersonalesSelectChanged('DOMICILIADO', $event)"
+					></dx-select-box>
+				</div>
+				<div class="ep-field ep-field--wide" *ngIf="modelPersonaNatural.POSEE_DISCAPACIDAD">
+					<label class="ep-label">Tipo discapacidad</label>
+					<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.TIPO_DISCAPACIDAD" [maxLength]="250"></dx-text-box>
+				</div>
+			</div>
+		</section>
+
+		<section class="ep-section">
+			<h4 class="ep-section__title">Lugar de nacimiento</h4>
+			<div class="ep-grid">
+				<div class="ep-field">
+					<label class="ep-label">País</label>
+					<app-data-lookup
+						[model]="mCORR_PAIS_NACIMIENTO"
+						[(value)]="modelPersonaNatural.CORR_PAIS_NACIMIENTO"
+						(valueChange)="onPaisNacimientoChange($event)"
+						[valueExpr]="'CORR_PAIS'"
+						[displayExpr]="'NOMBRE_PAIS'"
+						[selectedRowKeys]="selectedLookUpPaisNacimiento"
+						[readOnly]="!paisNacimientoHabilitado"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Departamento</label>
+					<app-data-lookup
+						[model]="mCORR_DEPTO_NACIMIENTO"
+						[(value)]="modelPersonaNatural.CORR_DEPTO_NACIMIENTO"
+						(valueChange)="onDeptoNacimientoChange($event)"
+						[valueExpr]="'CORR_DEPTO'"
+						[displayExpr]="'NOMBRE_DEPTO'"
+						[selectedRowKeys]="selectedLookUpDeptoNacimiento"
+						[readOnly]="!territorioCompletoHabilitado"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Municipio</label>
+					<app-data-lookup
+						[model]="mCORR_MUNICIPIO_NACIMIENTO"
+						[(value)]="modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO"
+						(valueChange)="onMunicipioNacimientoChange($event)"
+						[valueExpr]="'CORR_MUNICIPIO'"
+						[displayExpr]="'NOMBRE_MUNICIPIO'"
+						[selectedRowKeys]="selectedLookUpMunicipioNacimiento"
+						[readOnly]="!territorioCompletoHabilitado"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Distrito</label>
+					<app-data-lookup
+						[model]="mCORR_DISTRITO_NACIMIENTO"
+						[(value)]="modelPersonaNatural.CORR_DISTRITO_NACIMIENTO"
+						[valueExpr]="'CORR_DISTRITO'"
+						[displayExpr]="'NOMBRE_DISTRITO'"
+						[selectedRowKeys]="selectedLookUpDistritoNacimiento"
+						[readOnly]="!territorioCompletoHabilitado"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+			</div>
+		</section>
+
+		<section class="ep-section">
+			<h4 class="ep-section__title">Religión</h4>
+			<div class="ep-grid">
+				<div class="ep-field">
+					<label class="ep-label">Religión</label>
+					<app-data-lookup
+						[model]="mCORR_RELIGION"
+						[(value)]="modelPersonaNatural.CORR_RELIGION"
+						[valueExpr]="'CORR_RELIGION'"
+						[displayExpr]="'NOMBRE_RELIGION'"
+						[selectedRowKeys]="selectedLookUpReligion"
+						[readOnly]="false"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Iglesia</label>
+					<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.IGLESIA_CONGREGA" [maxLength]="50"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Carta pastoral</label>
+					<dx-select-box
+						stylingMode="outlined"
+						[(value)]="modelPersonaNatural.CARTA_PASTORAL"
+						[items]="opcionesSiNo"
+						displayExpr="text"
+						valueExpr="value"
+					></dx-select-box>
+				</div>
+			</div>
+		</section>
+
+		<section class="ep-section">
+			<h4 class="ep-section__title">Tributario</h4>
+			<div class="ep-grid">
+				<div class="ep-field">
+					<label class="ep-label">Origen ingreso</label>
+					<app-data-lookup
+						[model]="mCORR_ORIGEN_INGRESO"
+						[(value)]="modelPersonaNatural.CORR_ORIGEN_INGRESO"
+						[valueExpr]="'CORR_ORIGEN_INGRESO'"
+						[displayExpr]="'NOMBRE_ORIGEN_INGRESO'"
+						[selectedRowKeys]="selectedLookUpOrigenIngreso"
+						[readOnly]="false"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Tipo contribuyente</label>
+					<app-data-lookup
+						[model]="mCORR_TIPO_CONTRIBUYENTE"
+						[(value)]="modelPersonaNatural.CORR_TIPO_CONTRIBUYENTE"
+						[valueExpr]="'CORR_TIPO_CONTRIBUYENTE'"
+						[displayExpr]="'NOMBRE_TIPO_CONTRIBUYENTE'"
+						[selectedRowKeys]="selectedLookUpTipoContribuyente"
+						[readOnly]="false"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field ep-field--wide">
+					<label class="ep-label">Actividad económica</label>
+					<app-data-lookup
+						[model]="mCORR_ACTIVIDAD_ECONOMICA"
+						[(value)]="modelPersonaNatural.CORR_ACTIVIDAD_ECONOMICA"
+						[valueExpr]="'CORR_ACTIVIDAD_ECONOMICA'"
+						[displayExpr]="'NOMBRE_ACTIVIDAD_ECONOMICA'"
+						[selectedRowKeys]="selectedLookUpActividadEconomica"
+						[readOnly]="false"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+			</div>
+		</section>
+	</div>
+</ng-template>
 
 <!-- Panel de carga. -->
 <dx-load-panel

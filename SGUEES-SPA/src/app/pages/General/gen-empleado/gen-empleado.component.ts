@@ -2,7 +2,6 @@
 // Cómo: grilla browse; Guardar según tab; personales vía SP; documentos en GEN_PERSONA_TIPO_DOCUMENTO_IDENTIDAD.
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { DxFormComponent } from 'devextreme-angular/ui/form';
 import { firstValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
@@ -32,7 +31,6 @@ const TAB_DOCUMENTOS = 1;
 })
 export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDestroy {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
-	@ViewChild('formPersonales', { static: false }) formPersonales!: DxFormComponent;
 
 	protected override etiquetaRegistro = 'el empleado';
 	protected override requiereEmpresaSesion = true;
@@ -51,7 +49,6 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	modelPersonaNatural: GenPersonaNatural = this.fillPersonaNatural();
 	/** Copia para Cancelar del modal Personales. */
 	private modelPersonaNaturalOriginal: GenPersonaNatural = this.fillPersonaNatural();
-	itemsPersonales: any[] = [];
 	documentosIdentidad: GenPersonaTipoDocumentoIdentidad[] = [];
 	/** Copia para Cancelar del modal (personales + documentos). */
 	private documentosIdentidadOriginal: GenPersonaTipoDocumentoIdentidad[] = [];
@@ -108,7 +105,6 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = [];
-		this.itemsPersonales = this.buildItemsPersonales();
 	}
 
 	protected override getMttoDataGrid(): DataGridMttoComponent | null {
@@ -1083,20 +1079,16 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	// Qué hace: habilita apellido de casada solo si es FEMENINO y CASADO(A) o VIUDO(A).
-	// Cómo: limpia el valor si no aplica; en alta (DxForm) marca el editor readOnly.
+	// Cómo: limpia el valor si no aplica; el template usa [readOnly]="!apellidoCasadaHabilitado".
 	private aplicarReglaApellidoCasada(): void {
 		const habilitado = this.apellidoCasadaHabilitado;
 		if (!habilitado && this.editandoPersonalesForm) {
 			this.modelPersonaNatural.APELLIDO_CASADA = '';
 		}
-		if (!this.popupPersonalesVisible) {
-			const editor = this.formPersonales?.instance?.getEditor('APELLIDO_CASADA');
-			editor?.option('readOnly', !habilitado);
-		}
 	}
 
 	// Qué hace: controla territorio según Domiciliado (null / NO / SI).
-	// Cómo: sin selección limpia todo; NO deja solo país (todos); SI solo El Salvador (SV) + cadena completa.
+	// Cómo: sin selección limpia todo; NO solo países distintos de SV; SI solo El Salvador + cadena completa.
 	private aplicarReglaDomiciliado(): void {
 		if (!this.tieneDomiciliadoSeleccionado) {
 			if (this.editandoPersonalesForm) {
@@ -1131,7 +1123,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			return;
 		}
 
-		// DOMICILIADO = NO: todos los países; limpia depto/municipio/distrito.
+		// DOMICILIADO = NO: países sin El Salvador; limpia depto/municipio/distrito.
 		this.modelPersonaNatural.CORR_DEPTO_NACIMIENTO = null;
 		this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO = null;
 		this.modelPersonaNatural.CORR_DISTRITO_NACIMIENTO = null;
@@ -1141,8 +1133,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 
 	/**
 	 * Qué hace: arma el lookup de país según Domiciliado.
-	 * Cómo: SI → solo fila con NOMBRE_CORTO/CODIGO_PAIS = SV (El Salvador) y la selecciona;
-	 *       NO / vacío → catálogo completo.
+	 * Cómo: SI → solo SV (El Salvador) y lo selecciona;
+	 *       NO → todos excepto SV; si tenía SV seleccionado lo limpia;
+	 *       vacío → catálogo completo.
 	 */
 	private aplicarCatalogoPaisNacimiento(forzarElSalvador = false): void {
 		const catalogo = this.paisesNacimientoCatalogo ?? [];
@@ -1165,6 +1158,19 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			}
 			return;
 		}
+
+		if (this.modelPersonaNatural?.DOMICILIADO === 'NO') {
+			this.mCORR_PAIS_NACIMIENTO = catalogo.filter((p) => !this.esPaisElSalvador(p));
+			const corrActual = Number(this.modelPersonaNatural.CORR_PAIS_NACIMIENTO ?? 0);
+			if (corrActual > 0) {
+				const seleccionado = catalogo.find((p) => Number(p?.CORR_PAIS) === corrActual);
+				if (seleccionado && this.esPaisElSalvador(seleccionado) && this.editandoPersonalesForm) {
+					this.modelPersonaNatural.CORR_PAIS_NACIMIENTO = null;
+				}
+			}
+			return;
+		}
+
 		this.mCORR_PAIS_NACIMIENTO = [...catalogo];
 	}
 
@@ -1178,17 +1184,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		);
 	}
 
-	// Qué hace: muestra tipo discapacidad solo si posee discapacidad está activo.
-	// Cómo: limpia el texto; en alta usa itemOption del DxForm; en modal *ngIf del template.
+	// Qué hace: limpia tipo discapacidad si no posee discapacidad.
+	// Cómo: el template muestra el campo con *ngIf="POSEE_DISCAPACIDAD".
 	private aplicarReglaTipoDiscapacidad(): void {
 		const posee = !!this.modelPersonaNatural?.POSEE_DISCAPACIDAD;
 		if (!posee) {
 			this.modelPersonaNatural.TIPO_DISCAPACIDAD = '';
-		}
-		if (!this.popupPersonalesVisible) {
-			setTimeout(() => {
-				this.formPersonales?.instance?.itemOption('situacion.TIPO_DISCAPACIDAD', 'visible', posee);
-			}, 0);
 		}
 	}
 
@@ -1366,141 +1367,5 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 				},
 			});
 	}
-
-	// Qué hace: define el formulario DevExtreme del tab Personales.
-	// Cómo: campos de GEN_PERSONA_NATURAL + templates de lookup.
-	private buildItemsPersonales(): any[] {
-		return [
-			{
-				itemType: 'group',
-				caption: 'Identidad',
-				colCount: 2,
-				items: [
-					{ dataField: 'PRIMER_NOMBRE', label: { text: 'Primer nombre' }, editorOptions: { maxLength: 50 } },
-					{ dataField: 'SEGUNDO_NOMBRE', label: { text: 'Segundo nombre' }, editorOptions: { maxLength: 50 } },
-					{ dataField: 'PRIMER_APELLIDO', label: { text: 'Primer apellido' }, editorOptions: { maxLength: 50 } },
-					{ dataField: 'SEGUNDO_APELLIDO', label: { text: 'Segundo apellido' }, editorOptions: { maxLength: 50 } },
-					{
-						dataField: 'SEXO',
-						label: { text: 'Sexo' },
-						editorType: 'dxSelectBox',
-						editorOptions: {
-							items: this.opcionesSexo,
-							valueExpr: 'value',
-							displayExpr: 'text',
-							searchEnabled: true,
-							showClearButton: true,
-						},
-					},
-					{
-						dataField: 'ESTADO_CIVIL',
-						label: { text: 'Estado civil' },
-						editorType: 'dxSelectBox',
-						editorOptions: {
-							items: this.opcionesEstadoCivil,
-							valueExpr: 'value',
-							displayExpr: 'text',
-							searchEnabled: true,
-							showClearButton: true,
-						},
-					},
-					{
-						dataField: 'APELLIDO_CASADA',
-						label: { text: 'Apellido de casada' },
-						editorOptions: { maxLength: 50, readOnly: true },
-					},
-					{ dataField: 'NACIONALIDAD', label: { text: 'Nacionalidad' }, editorOptions: { maxLength: 25 } },
-					{
-						dataField: 'FECHA_NACIMIENTO',
-						label: { text: 'Fecha nacimiento' },
-						editorType: 'dxDateBox',
-						editorOptions: { displayFormat: 'dd/MM/yyyy', type: 'date' },
-					},
-					{ dataField: 'EDAD', label: { text: 'Edad' }, editorType: 'dxNumberBox', editorOptions: { min: 0 } },
-				],
-			},
-			{
-				itemType: 'group',
-				name: 'situacion',
-				caption: 'Situación',
-				colCount: 2,
-				items: [
-					{ dataField: 'ES_JUBILADO', label: { text: 'Es jubilado' }, editorType: 'dxCheckBox' },
-					{ dataField: 'POSEE_DISCAPACIDAD', label: { text: 'Posee discapacidad' }, editorType: 'dxCheckBox' },
-					{ dataField: 'ES_EXTRANJERO', label: { text: 'Es extranjero' }, editorType: 'dxCheckBox' },
-					{
-						dataField: 'DOMICILIADO',
-						label: { text: 'Domiciliado' },
-						editorType: 'dxSelectBox',
-						editorOptions: { items: this.opcionesSiNo, valueExpr: 'value', displayExpr: 'text' },
-					},
-					{
-						dataField: 'TIPO_DISCAPACIDAD',
-						name: 'TIPO_DISCAPACIDAD',
-						label: { text: 'Tipo discapacidad' },
-						colSpan: 2,
-						visible: false,
-						editorOptions: { maxLength: 250 },
-					},
-				],
-			},
-			{
-				itemType: 'group',
-				caption: 'Religión',
-				colCount: 2,
-				items: [
-					{ dataField: 'CORR_RELIGION', label: { text: 'Religión' }, template: 'CORR_RELIGIONLookup' },
-					{ dataField: 'IGLESIA_CONGREGA', label: { text: 'Iglesia' }, editorOptions: { maxLength: 50 } },
-					{
-						dataField: 'CARTA_PASTORAL',
-						label: { text: 'Carta pastoral' },
-						editorType: 'dxSelectBox',
-						editorOptions: { items: this.opcionesSiNo, valueExpr: 'value', displayExpr: 'text' },
-					},
-				],
-			},
-			{
-				itemType: 'group',
-				caption: 'Lugar de nacimiento',
-				colCount: 2,
-				items: [
-					{ dataField: 'CORR_PAIS_NACIMIENTO', label: { text: 'País' }, template: 'CORR_PAIS_NACIMIENTOLookup' },
-					{ dataField: 'CORR_DEPTO_NACIMIENTO', label: { text: 'Departamento' }, template: 'CORR_DEPTO_NACIMIENTOLookup' },
-					{
-						dataField: 'CORR_MUNICIPIO_NACIMIENTO',
-						label: { text: 'Municipio' },
-						template: 'CORR_MUNICIPIO_NACIMIENTOLookup',
-					},
-					{
-						dataField: 'CORR_DISTRITO_NACIMIENTO',
-						label: { text: 'Distrito' },
-						template: 'CORR_DISTRITO_NACIMIENTOLookup',
-					},
-				],
-			},
-			{
-				itemType: 'group',
-				caption: 'Tributario',
-				colCount: 2,
-				items: [
-					{
-						dataField: 'CORR_ORIGEN_INGRESO',
-						label: { text: 'Origen ingreso' },
-						template: 'CORR_ORIGEN_INGRESOLookup',
-					},
-					{
-						dataField: 'CORR_TIPO_CONTRIBUYENTE',
-						label: { text: 'Tipo contribuyente' },
-						template: 'CORR_TIPO_CONTRIBUYENTELookup',
-					},
-					{
-						dataField: 'CORR_ACTIVIDAD_ECONOMICA',
-						label: { text: 'Actividad económica' },
-						template: 'CORR_ACTIVIDAD_ECONOMICALookup',
-						colSpan: 2,
-					},
-				],
-			},
-		];
-	}
 }
+
