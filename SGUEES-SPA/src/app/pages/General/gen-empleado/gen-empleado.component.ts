@@ -15,7 +15,6 @@ import { GenEmpleado } from './models/gen-empleado';
 import { GenPersonaNatural } from './models/gen-persona-natural';
 import { GenPersonaTipoDocumentoIdentidad } from './gen-persona-tipo-documento-identidad/models/gen-persona-tipo-documento-identidad';
 import { GenEmpleadoService } from './gen-empleado.service';
-import { GenPersonaTipoDocumentoIdentidadService } from './gen-persona-tipo-documento-identidad/gen-persona-tipo-documento-identidad.service';
 import {
 	aplicarLimiteDocumentoIdentidad,
 	maxLengthDocumentoIdentidad,
@@ -81,8 +80,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: GenEmpleadoService,
-		private documentosService: GenPersonaTipoDocumentoIdentidadService
+		private service: GenEmpleadoService
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -663,8 +661,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	// Cómo: API anidada GEN_PERSONA_TIPO_DOCUMENTO_IDENTIDAD.GetAll.
 	private cargarDocumentosIdentidad(): void {
 		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
-		this.documentosService
-			.getAll(corrPersona)
+		this.service
+			.getDocumentosIdentidad(corrPersona)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -685,8 +683,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 
 		const corrPersona = Number(this.model.CORR_PERSONA);
 		this.loadingVisible = true;
-		this.documentosService
-			.saveAll(corrPersona, this.documentosIdentidad)
+		this.service
+			.saveDocumentosIdentidad(corrPersona, this.documentosIdentidad)
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {

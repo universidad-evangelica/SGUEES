@@ -1,5 +1,5 @@
 // Qué hace: servicio de negocio del browse/formulario de Empleado.
-// Cómo lo hace: GetAll/Get/Iniciar + personales vía GEN_EMPLEADO (SP PRAL_MTTO_GEN_PERSONA_NATURAL).
+// Cómo: GetAll/Get/Iniciar + personales + documentos (repos anidados, patrón sc-descriptor-puesto).
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -7,12 +7,16 @@ import { IResult } from 'src/app/FxAPI/IResult';
 import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 import { GenEmpleadoRepository } from './gen-empleado.repository';
+import { GenPersonaTipoDocumentoIdentidadRepository } from './gen-persona-tipo-documento-identidad/gen-persona-tipo-documento-identidad.repository';
 
 const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
 
 @Injectable({ providedIn: 'root' })
 export class GenEmpleadoService {
-	constructor(private repo: GenEmpleadoRepository) {}
+	constructor(
+		private repo: GenEmpleadoRepository,
+		private documentosRepo: GenPersonaTipoDocumentoIdentidadRepository
+	) {}
 
 	getAll(param: any): Observable<IResult> {
 		return this.repo.getAll(this.buildWhere(param));
@@ -50,6 +54,17 @@ export class GenEmpleadoService {
 	// Cómo: DELETE por CORR_EMPLEADO (empresa va por claim en API).
 	delete(model: any): Observable<IResult> {
 		return this.repo.delete([{ Parameter: 'CORR_EMPLEADO', Value: model.CORR_EMPLEADO }]);
+	}
+
+	// Qué hace: lista catálogo activo + valores de documentos de la persona.
+	// Cómo: repo anidado GEN_PERSONA_TIPO_DOCUMENTO_IDENTIDAD.GetAll.
+	getDocumentosIdentidad(corrPersona: number): Observable<IResult> {
+		return this.documentosRepo.getAll([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	// Qué hace: guarda documentos del tab (body List Table; CORR_PERSONA en query).
+	saveDocumentosIdentidad(corrPersona: number, documentos: any[]): Observable<IResult> {
+		return this.documentosRepo.saveAll(corrPersona, documentos);
 	}
 
 	getColumns(): any {
