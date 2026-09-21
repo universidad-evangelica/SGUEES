@@ -116,12 +116,13 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		return this.banderaMtto === UpdateType.Not_Defined || this.banderaMtto === UpdateType.Browse;
 	}
 
-	/** Qué hace: apellido de casada solo aplica a mujer casada. */
+	/** Qué hace: apellido de casada solo aplica a mujer casada o viuda. */
 	get apellidoCasadaHabilitado(): boolean {
+		const estado = this.modelPersonaNatural?.ESTADO_CIVIL;
 		return (
 			!this.readOnlyPersonales &&
 			this.modelPersonaNatural?.SEXO === 'FEMENINO' &&
-			this.modelPersonaNatural?.ESTADO_CIVIL === 'CASADO(A)'
+			(estado === 'CASADO(A)' || estado === 'VIUDO(A)')
 		);
 	}
 
@@ -489,7 +490,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	private iniciarEmpleado(): void {
 		this.loadingVisible = true;
 		this.service
-			.iniciar({ ...this.modelPersonaNatural })
+			.iniciar(this.sanitizarPersonaNaturalPayload(this.modelPersonaNatural))
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -524,10 +525,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 
-		const payload = {
+		const payload = this.sanitizarPersonaNaturalPayload({
 			...this.modelPersonaNatural,
 			CORR_PERSONA: Number(this.model.CORR_PERSONA),
-		};
+		});
 
 		const esAltaNatural = !(Number(payload.CORR_PERSONA_NATURAL) > 0);
 		const action = esAltaNatural
@@ -600,7 +601,22 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		this.aplicarReglaTipoDiscapacidad();
 	}
 
-	// Qué hace: habilita apellido de casada solo si es FEMENINO y CASADO(A).
+	// Qué hace: convierte '' de selects/checks de dominio a null (el CHECK de BD no acepta '').
+	// Cómo: clona el payload y nullifica SEXO, ESTADO_CIVIL, CARTA_PASTORAL, DOMICILIADO vacíos.
+	private sanitizarPersonaNaturalPayload(model: GenPersonaNatural | any): any {
+		const vacioANull = (v: any) => (v === '' || v === undefined ? null : v);
+		return {
+			...model,
+			SEXO: vacioANull(model?.SEXO),
+			ESTADO_CIVIL: vacioANull(model?.ESTADO_CIVIL),
+			CARTA_PASTORAL: vacioANull(model?.CARTA_PASTORAL),
+			DOMICILIADO: vacioANull(model?.DOMICILIADO),
+			TIPO_DISCAPACIDAD: vacioANull(model?.TIPO_DISCAPACIDAD),
+			APELLIDO_CASADA: vacioANull(model?.APELLIDO_CASADA),
+		};
+	}
+
+	// Qué hace: habilita apellido de casada solo si es FEMENINO y CASADO(A) o VIUDO(A).
 	// Cómo: limpia el valor si no aplica y marca el editor readOnly.
 	private aplicarReglaApellidoCasada(): void {
 		const habilitado = this.apellidoCasadaHabilitado;
