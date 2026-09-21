@@ -1,0 +1,67 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using eFramework.Core;
+using sguees.Models;
+using sguees.Repositories;
+
+namespace sguees.Services
+{
+    public class ACA_PROSPECTO_SOCIOECONOMICOService : IACA_PROSPECTO_SOCIOECONOMICOService
+    {
+        private readonly IACA_PROSPECTO_SOCIOECONOMICORepository _repo;
+
+        public ACA_PROSPECTO_SOCIOECONOMICOService(IACA_PROSPECTO_SOCIOECONOMICORepository repo)
+        {
+            _repo = repo;
+        }
+
+        // Qué hace: cabecera del estudio socioeconómico del prospecto (pestaña Información económica).
+        // Cómo lo hace: exige CORR_PROSPECTO porque eFramework omite del WHERE los enteros en 0
+        //               y, sin él, devolvería los datos de todos los prospectos.
+        public async Task<CResult> GetAllAsync(ACA_PROSPECTO_SOCIOECONOMICOParam xWhere)
+        {
+            if (xWhere.CORR_PROSPECTO <= 0)
+                return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "Debe indicar el prospecto" };
+
+            var p = new List<CParameter>
+            {
+                new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+                new CParameter() {ParameterName="CORR_PROSPECTO",Value=xWhere.CORR_PROSPECTO,DbType=System.Data.DbType.Int32},
+            };
+
+            return await _repo.GetAllAsync(p);
+        }
+
+        // Qué hace: el registro del prospecto (relación 1:1).
+        // Cómo lo hace: exige CORR_PROSPECTO por la misma razón que GetAllAsync.
+        public async Task<CResult> GetAsync(ACA_PROSPECTO_SOCIOECONOMICOParam xWhere)
+        {
+            if (xWhere.CORR_PROSPECTO <= 0)
+                return new CResult() { Data = null, Result = false, ErrorCode = -1, ErrorMessage = "Debe indicar el prospecto" };
+
+            var p = new List<CParameter>
+            {
+                new CParameter() {ParameterName="CORR_EMPRESA",Value=xWhere.CORR_EMPRESA,DbType=System.Data.DbType.Int32},
+                new CParameter() {ParameterName="CORR_PROSPECTO",Value=xWhere.CORR_PROSPECTO,DbType=System.Data.DbType.Int32},
+                new CParameter() {ParameterName="CORR_PROSPECTO_SOCIOECONOMICO",Value=xWhere.CORR_PROSPECTO_SOCIOECONOMICO,DbType=System.Data.DbType.Int32},
+            };
+
+            return await _repo.GetAsync(p);
+        }
+
+        public async Task<CResult> CreateAsync(ACA_PROSPECTO_SOCIOECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        public async Task<CResult> UpdateAsync(ACA_PROSPECTO_SOCIOECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        public async Task<CResult> DeleteAsync(ACA_PROSPECTO_SOCIOECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+    }
+}

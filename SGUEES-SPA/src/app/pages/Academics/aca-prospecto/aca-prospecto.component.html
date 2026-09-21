@@ -1,0 +1,351 @@
+<div class="sguees-mtto-view" id="LoadPanel">
+    <!-- Barra estándar: título y combo de ciclos (combox1, solo visible en el listado). -->
+    <app-barra-data-mtto
+        [tituloVentana]="tituloVentana"
+        [isBrowse]="isBrowse()"
+        [isForm]="isForm()"
+        [showRibbon]="isBrowse()"
+        [permiteAdd]="permiteAdd"
+        [showRefresh]="true"
+        [showExport]="permitePrint"
+        [combox1]="barraFiltroCiclo"
+        (combox1Change)="onFiltroCicloChanged($event)"
+        (consultar)="consultar()"
+        (cancelar)="cancelar()"
+    >
+    </app-barra-data-mtto>
+
+    <!-- Consulta del prospecto: solo lectura; Cancelar regresa al listado. -->
+    <div *ngIf="!isBrowse()" class="aca-prospecto-shell">
+        <section class="sguees-section-card aca-prospecto-card">
+            <header class="aca-prospecto-section-head">
+                <span class="aca-prospecto-section-title">Datos del prospecto</span>
+                <span class="aca-prospecto-section-subtitle">Consulta de solo lectura</span>
+            </header>
+            <dx-form
+                #fData
+                id="fData"
+                class="sguees-form-premium"
+                [formData]="model"
+                [labelLocation]="'top'"
+                [colCount]="8"
+                [readOnly]="readOnly"
+                [items]="items"
+            >
+            </dx-form>
+        </section>
+
+        <section class="sguees-section-card aca-prospecto-card">
+            <dx-tab-panel #tabPanel class="aca-prospecto-tab-panel" [selectedIndex]="0" [animationEnabled]="false" [swipeEnabled]="false">
+
+                <!-- ================= Información personal ================= -->
+                <dxi-item title="Información personal" [icon]="'user'">
+                    <div class="aca-prospecto-tab">
+                        <header class="aca-prospecto-section-head">
+                            <span class="aca-prospecto-section-title">Datos personales</span>
+                            <span class="aca-prospecto-section-subtitle">Fuente: formulario de datos personales</span>
+                        </header>
+                        <dx-form
+                            *ngIf="personaModel; else sinPersona"
+                            class="sguees-form-premium"
+                            [formData]="personaModel"
+                            [labelLocation]="'top'"
+                            [colCount]="8"
+                            [readOnly]="readOnly"
+                            [items]="itemsPersona"
+                        >
+                        </dx-form>
+                        <ng-template #sinPersona>
+                            <p class="aca-prospecto-vacio">El prospecto no tiene datos personales registrados.</p>
+                        </ng-template>
+
+                        <header class="aca-prospecto-section-head">
+                            <span class="aca-prospecto-section-title">Contacto</span>
+                        </header>
+                        <app-data-grid-mtto
+                            [isBrowse]="true"
+                            [models]="contactos"
+                            [columns]="columnsContacto"
+                            [summary]="summaryContacto"
+                            [keyExpr]="'CORR_PROSPECTO_CONTACTO'"
+                            [unifiedToolbar]="false"
+                            [showAdd]="false"
+                            [showSearch]="false"
+                            [showExport]="false"
+                            [showRefresh]="false"
+                            [permiteEditar]="false"
+                            [permiteDele]="false"
+                            [gridHeight]="240"
+                            [showEmptyState]="true"
+                            [emptyTitle]="'Sin contactos'"
+                            [emptyMessage]="'El prospecto no registró correos ni teléfonos.'"
+                        >
+                        </app-data-grid-mtto>
+
+                        <header class="aca-prospecto-section-head">
+                            <span class="aca-prospecto-section-title">Familia</span>
+                            <span class="aca-prospecto-section-subtitle">Padre, madre y cónyuge</span>
+                        </header>
+                        <app-data-grid-mtto
+                            [isBrowse]="true"
+                            [models]="familiares"
+                            [columns]="columnsFamiliar"
+                            [summary]="summaryFamiliar"
+                            [keyExpr]="'CORR_PROSPECTO_FAMILIAR'"
+                            [unifiedToolbar]="false"
+                            [showAdd]="false"
+                            [showSearch]="false"
+                            [showExport]="false"
+                            [showRefresh]="false"
+                            [permiteEditar]="false"
+                            [permiteDele]="false"
+                            [gridHeight]="240"
+                            [showEmptyState]="true"
+                            [emptyTitle]="'Sin familiares'"
+                            [emptyMessage]="'El prospecto no registró familiares directos.'"
+                        >
+                        </app-data-grid-mtto>
+
+                        <header class="aca-prospecto-section-head">
+                            <span class="aca-prospecto-section-title">Contacto de emergencia</span>
+                            <span class="aca-prospecto-section-subtitle">Si es un familiar directo, sus datos completos están en Familia</span>
+                        </header>
+                        <app-data-grid-mtto
+                            [isBrowse]="true"
+                            [models]="emergencias"
+                            [columns]="columnsEmergencia"
+                            [summary]="summaryFamiliar"
+                            [keyExpr]="'CORR_PROSPECTO_FAMILIAR'"
+                            [unifiedToolbar]="false"
+                            [showAdd]="false"
+                            [showSearch]="false"
+                            [showExport]="false"
+                            [showRefresh]="false"
+                            [permiteEditar]="false"
+                            [permiteDele]="false"
+                            [gridHeight]="200"
+                            [showEmptyState]="true"
+                            [emptyTitle]="'Sin contacto de emergencia'"
+                            [emptyMessage]="'El prospecto no registró contacto de emergencia.'"
+                        >
+                        </app-data-grid-mtto>
+
+                        <header class="aca-prospecto-section-head">
+                            <span class="aca-prospecto-section-title">Salud</span>
+                            <span class="aca-prospecto-section-subtitle">Limitaciones físicas declaradas</span>
+                        </header>
+                        <app-data-grid-mtto
+                            [isBrowse]="true"
+                            [models]="limitaciones"
+                            [columns]="columnsLimitacion"
+                            [summary]="summaryLimitacion"
+                            [keyExpr]="'CORR_PROSPECTO_LIMITACION_FISICA'"
+                            [unifiedToolbar]="false"
+                            [showAdd]="false"
+                            [showSearch]="false"
+                            [showExport]="false"
+                            [showRefresh]="false"
+                            [permiteEditar]="false"
+                            [permiteDele]="false"
+                            [gridHeight]="200"
+                            [showEmptyState]="true"
+                            [emptyTitle]="'Sin limitaciones'"
+                            [emptyMessage]="'El prospecto no declaró limitaciones físicas.'"
+                        >
+                        </app-data-grid-mtto>
+
+                        <header class="aca-prospecto-section-head">
+                            <span class="aca-prospecto-section-title">Migratorio</span>
+                            <span class="aca-prospecto-section-subtitle">Deportaciones declaradas</span>
+                        </header>
+                        <app-data-grid-mtto
+                            [isBrowse]="true"
+                            [models]="deportaciones"
+                            [columns]="columnsDeportacion"
+                            [summary]="summaryDeportacion"
+                            [keyExpr]="'CORR_PROSPECTO_DEPORTACION'"
+                            [unifiedToolbar]="false"
+                            [showAdd]="false"
+                            [showSearch]="false"
+                            [showExport]="false"
+                            [showRefresh]="false"
+                            [permiteEditar]="false"
+                            [permiteDele]="false"
+                            [gridHeight]="200"
+                            [showEmptyState]="true"
+                            [emptyTitle]="'Sin deportaciones'"
+                            [emptyMessage]="'El prospecto no declaró deportaciones.'"
+                        >
+                        </app-data-grid-mtto>
+
+                        <header class="aca-prospecto-section-head">
+                            <span class="aca-prospecto-section-title">Información adicional</span>
+                            <span class="aca-prospecto-section-subtitle">¿Cómo se enteró de la universidad?</span>
+                        </header>
+                        <app-data-grid-mtto
+                            [isBrowse]="true"
+                            [models]="medios"
+                            [columns]="columnsMedio"
+                            [summary]="summaryMedio"
+                            [keyExpr]="'CORR_PROSPECTO_MEDIO'"
+                            [unifiedToolbar]="false"
+                            [showAdd]="false"
+                            [showSearch]="false"
+                            [showExport]="false"
+                            [showRefresh]="false"
+                            [permiteEditar]="false"
+                            [permiteDele]="false"
+                            [gridHeight]="200"
+                            [showEmptyState]="true"
+                            [emptyTitle]="'Sin medios registrados'"
+                            [emptyMessage]="'El prospecto no indicó cómo conoció la universidad.'"
+                        >
+                        </app-data-grid-mtto>
+                    </div>
+                </dxi-item>
+
+                <!-- ================= Información académica ================= -->
+                <dxi-item title="Información académica" [icon]="'bookmark'">
+                    <div class="aca-prospecto-tab">
+                        <header class="aca-prospecto-section-head">
+                            <span class="aca-prospecto-section-title">Carrera a la que aplica</span>
+                        </header>
+                        <dx-form
+                            class="sguees-form-premium"
+                            [formData]="model"
+                            [labelLocation]="'top'"
+                            [colCount]="8"
+                            [readOnly]="readOnly"
+                            [items]="itemsCarrera"
+                        >
+                        </dx-form>
+
+                        <header class="aca-prospecto-section-head">
+                            <span class="aca-prospecto-section-title">Estudios</span>
+                            <span class="aca-prospecto-section-subtitle">Educación media, estudios universitarios y graduado UEES · Fuente: formulario de datos personales</span>
+                        </header>
+                        <app-data-grid-mtto
+                            [isBrowse]="true"
+                            [models]="estudios"
+                            [columns]="columnsEstudio"
+                            [summary]="summaryEstudio"
+                            [keyExpr]="'CORR_PROSPECTO_ESTUDIO'"
+                            [unifiedToolbar]="false"
+                            [showAdd]="false"
+                            [showSearch]="false"
+                            [showExport]="false"
+                            [showRefresh]="false"
+                            [permiteEditar]="false"
+                            [permiteDele]="false"
+                            [gridHeight]="240"
+                            [showEmptyState]="true"
+                            [emptyTitle]="'Sin estudios'"
+                            [emptyMessage]="'El prospecto no registró estudios previos.'"
+                        >
+                        </app-data-grid-mtto>
+                    </div>
+                </dxi-item>
+
+                <!-- ================= Información económica ================= -->
+                <dxi-item title="Información económica" [icon]="'money'">
+                    <div class="aca-prospecto-tab">
+                        <header class="aca-prospecto-section-head">
+                            <span class="aca-prospecto-section-title">Información laboral</span>
+                            <span class="aca-prospecto-section-subtitle">Fuente: formulario de datos personales</span>
+                        </header>
+                        <dx-form
+                            *ngIf="empleoModel; else sinEmpleo"
+                            class="sguees-form-premium"
+                            [formData]="empleoModel"
+                            [labelLocation]="'top'"
+                            [colCount]="8"
+                            [readOnly]="readOnly"
+                            [items]="itemsEmpleo"
+                        >
+                        </dx-form>
+                        <ng-template #sinEmpleo>
+                            <p class="aca-prospecto-vacio">El prospecto no registró información laboral.</p>
+                        </ng-template>
+
+                        <header class="aca-prospecto-section-head">
+                            <span class="aca-prospecto-section-title">Estudio socioeconómico</span>
+                            <span class="aca-prospecto-section-subtitle">Fuente: formulario de estudio socioeconómico</span>
+                        </header>
+                        <ng-container *ngIf="socioeconomicoModel; else sinSocioeconomico">
+                            <dx-form
+                                class="sguees-form-premium"
+                                [formData]="socioeconomicoModel"
+                                [labelLocation]="'top'"
+                                [colCount]="8"
+                                [readOnly]="readOnly"
+                                [items]="itemsSocioeconomico"
+                            >
+                            </dx-form>
+
+                            <p class="aca-prospecto-aviso" *ngIf="socioeconomicoModel.APLICA_CUOTA_MAXIMA">
+                                El prospecto aceptó la cuota máxima: el formulario no le solicitó ingresos ni egresos.
+                            </p>
+
+                            <header class="aca-prospecto-section-head">
+                                <span class="aca-prospecto-section-title">Preguntas del cuestionario</span>
+                                <span class="aca-prospecto-section-subtitle">Las preguntas sin contestar aparecen como "Sin respuesta"</span>
+                            </header>
+                            <dx-form
+                                *ngIf="itemsRespuestasSE.length; else sinPreguntas"
+                                class="sguees-form-premium"
+                                [formData]="respuestasSEModel"
+                                [labelLocation]="'top'"
+                                [colCount]="8"
+                                [readOnly]="readOnly"
+                                [items]="itemsRespuestasSE"
+                            >
+                            </dx-form>
+                            <ng-template #sinPreguntas>
+                                <p class="aca-prospecto-vacio">El cuestionario no tiene preguntas configuradas.</p>
+                            </ng-template>
+                        </ng-container>
+                        <ng-template #sinSocioeconomico>
+                            <p class="aca-prospecto-vacio">El prospecto aún no ha llenado el estudio socioeconómico.</p>
+                        </ng-template>
+                    </div>
+                </dxi-item>
+            </dx-tab-panel>
+        </section>
+    </div>
+
+    <!-- Listado del ciclo seleccionado: sin alta, edición ni eliminación. -->
+    <app-data-grid-mtto
+        [isBrowse]="isBrowse()"
+        [models]="models"
+        [columns]="columns"
+        [summary]="summary"
+        [keyExpr]="mttoGridKeyExpr"
+        [focusedRowKey]="gridFocusedRowKey"
+        [loading]="loadingVisible"
+        [showSearch]="true"
+        [showExport]="permitePrint"
+        [showAdd]="false"
+        [showRefresh]="true"
+        [permiteEditar]="getPermiteEditar"
+        [permiteDele]="getPermiteDele"
+        [showEmptyState]="true"
+        [emptyTitle]="'Sin prospectos'"
+        [emptyMessage]="'No hay prospectos registrados para el ciclo seleccionado.'"
+        (refresh)="consultar()"
+        (rowClick)="onGridRowClick($event)"
+        (focusedRowChanged)="focusedRowChanged($event)"
+    >
+    </app-data-grid-mtto>
+
+    <!-- Carga del detalle (11 consultas en paralelo al abrir la consulta). -->
+    <dx-load-panel
+        #loadPanel
+        shadingColor="rgba(0,0,0,0.4)"
+        [position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+        [visible]="loadingVisible && !isBrowse()"
+        [showIndicator]="true"
+        [showPane]="true"
+        [shading]="true"
+    >
+    </dx-load-panel>
+</div>

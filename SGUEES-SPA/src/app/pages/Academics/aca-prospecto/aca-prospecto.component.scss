@@ -1,0 +1,80 @@
+.aca-prospecto-shell {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sguees-content-gap, 16px);
+}
+
+.aca-prospecto-card {
+	margin-bottom: 0;
+}
+
+.aca-prospecto-tab-panel {
+	margin-top: 0;
+}
+
+.aca-prospecto-tab {
+	display: flex;
+	flex-direction: column;
+	gap: var(--sguees-space-4, 16px);
+	padding-top: var(--sguees-space-3, 12px);
+}
+
+.aca-prospecto-section-head {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	margin-bottom: var(--sguees-space-4, 16px);
+	padding-bottom: var(--sguees-space-3, 12px);
+	border-bottom: 1px solid var(--border-color);
+}
+
+.aca-prospecto-tab .aca-prospecto-section-head {
+	margin-bottom: 0;
+}
+
+.aca-prospecto-section-title {
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--sguees-text-primary);
+}
+
+.aca-prospecto-section-subtitle {
+	font-size: 12px;
+	color: var(--sguees-text-secondary, var(--texteditor-label-color));
+}
+
+.aca-prospecto-vacio {
+	margin: 0;
+	padding: 14px 16px;
+	font-size: 13px;
+	color: var(--sguees-text-secondary, #6c757d);
+	background: var(--sguees-surface-subtle, #f8f9fa);
+	border: 1px dashed var(--border-color);
+	border-radius: var(--sguees-radius-md, 10px);
+}
+
+// Qué hace: jerarquía visual del formulario de preguntas del SE (sección > subsección).
+// Cómo lo hace: DevExtreme dibuja los grupos fuera del encapsulado del componente, por eso ::ng-deep.
+:host ::ng-deep .aca-prospecto-seccion .dx-form-group-caption {
+	font-size: 15px;
+	font-weight: 700;
+	color: var(--sguees-text-primary);
+}
+
+:host ::ng-deep .aca-prospecto-seccion .aca-prospecto-subseccion .dx-form-group-caption {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--sguees-text-secondary, var(--texteditor-label-color));
+	padding-bottom: 4px;
+}
+
+.aca-prospecto-aviso {
+	margin: 0;
+	padding: 12px 16px;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--sguees-text-primary);
+	background: var(--sguees-surface-subtle, #eef1f6);
+	border-left: 4px solid var(--base-accent, #164194);
+	border-radius: var(--sguees-radius-md, 10px);
+}
