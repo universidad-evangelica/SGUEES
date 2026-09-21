@@ -1,5 +1,5 @@
-// Qué hace: browse + formulario Nuevo/Editar de Empleado (Iniciar + tab Personales).
-// Cómo: grilla browse; Guardar en Nuevo llama Iniciar; Personales CRUD GEN_PERSONA_NATURAL + lookups.
+// Qué hace: browse + formulario Nuevo/Editar de Empleado (Iniciar + Personales + Documentos).
+// Cómo: grilla browse; Guardar según tab; personales vía SP; documentos en GEN_PERSONA_TIPO_DOCUMENTO_IDENTIDAD.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { DxFormComponent } from 'devextreme-angular/ui/form';
@@ -13,9 +13,17 @@ import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { environment } from 'src/environments/environment';
 import { GenEmpleado } from './models/gen-empleado';
 import { GenPersonaNatural } from './models/gen-persona-natural';
+import { GenPersonaTipoDocumentoIdentidad } from './gen-persona-tipo-documento-identidad/models/gen-persona-tipo-documento-identidad';
 import { GenEmpleadoService } from './gen-empleado.service';
+import { GenPersonaTipoDocumentoIdentidadService } from './gen-persona-tipo-documento-identidad/gen-persona-tipo-documento-identidad.service';
+import {
+	aplicarLimiteDocumentoIdentidad,
+	maxLengthDocumentoIdentidad,
+} from './gen-persona-tipo-documento-identidad/documentos-identidad.format';
 
 const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
+const TAB_PERSONALES = 0;
+const TAB_DOCUMENTOS = 1;
 
 @Component({
 	selector: 'app-gen-empleado',
@@ -42,6 +50,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 
 	modelPersonaNatural: GenPersonaNatural = this.fillPersonaNatural();
 	itemsPersonales: any[] = [];
+	documentosIdentidad: GenPersonaTipoDocumentoIdentidad[] = [];
+	tabEmpleadoIndex = TAB_PERSONALES;
 
 	mCORR_RELIGION: any[] = [];
 	mCORR_ORIGEN_INGRESO: any[] = [];
@@ -71,7 +81,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: GenEmpleadoService
+		private service: GenEmpleadoService,
+		private documentosService: GenPersonaTipoDocumentoIdentidadService
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -306,13 +317,16 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		this.model = this.fillData();
 		this.modelUpdate = this.fillData();
 		this.modelPersonaNatural = this.fillPersonaNatural();
+		this.documentosIdentidad = [];
+		this.tabEmpleadoIndex = TAB_PERSONALES;
 		this.limpiarLookupsTerritorio();
 		this.subTituloVentana = this.formSubtituloNuevo;
 		this.cargarLookupsBase();
+		this.cargarDocumentosIdentidad();
 		setTimeout(() => this.aplicarReglasPersonales(), 0);
 	}
 
-	// Qué hace: Guardar — Iniciar si es nuevo; si ya hay persona, guarda GEN_PERSONA_NATURAL.
+	// Qué hace: Guardar — Iniciar / Personales / Documentos según tab activo.
 	guardar(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -320,6 +334,11 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 
 		if (!this.tienePersonaBase) {
 			this.iniciarEmpleado();
+			return;
+		}
+
+		if (this.tabEmpleadoIndex === TAB_DOCUMENTOS) {
+			this.guardarDocumentosIdentidad();
 			return;
 		}
 
@@ -521,9 +540,11 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		this.model = this.fillData(rowData);
 		this.modelUpdate = this.fillData(rowData);
 		this.AsignaStatus(modo);
+		this.tabEmpleadoIndex = TAB_PERSONALES;
 		this.subTituloVentana = this.formSubtituloEditar;
 		this.cargarLookupsBase();
 		this.cargarPersonaNatural();
+		this.cargarDocumentosIdentidad();
 	}
 
 	// Qué hace: crea GEN_PERSONA + GEN_EMPRESA_PERSONA + GEN_PERSONA_NATURAL (SP) + GEN_EMPLEADO.
@@ -547,6 +568,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 					this.AsignaStatus(UpdateType.Update);
 					this.subTituloVentana = this.formSubtituloEditar;
 					this.cargarPersonaNatural();
+					this.cargarDocumentosIdentidad();
 					this.notifyFx('Empleado creado. Puede seguir editando los datos personales.', NotifyType.Success, {
 						raw: true,
 					});
@@ -635,6 +657,104 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 					setTimeout(() => this.aplicarReglasPersonales(), 0);
 				},
 			});
+	}
+
+	// Qué hace: carga catálogo activo + valores de documentos de la persona.
+	// Cómo: API anidada GEN_PERSONA_TIPO_DOCUMENTO_IDENTIDAD.GetAll.
+	private cargarDocumentosIdentidad(): void {
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		this.documentosService
+			.getAll(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.documentosIdentidad = response?.Result ? response.Data ?? [] : [];
+				},
+				error: () => {
+					this.documentosIdentidad = [];
+				},
+			});
+	}
+
+	// Qué hace: guarda documentos del tab (sin GetAll browse; parchea lista con Data).
+	private guardarDocumentosIdentidad(): void {
+		if (!this.tienePersonaBase) {
+			this.notifyFx('Primero debe iniciar el empleado (Guardar en Personales).', NotifyType.Warning);
+			return;
+		}
+
+		const corrPersona = Number(this.model.CORR_PERSONA);
+		this.loadingVisible = true;
+		this.documentosService
+			.saveAll(corrPersona, this.documentosIdentidad)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					this.documentosIdentidad = response.Data ?? this.documentosIdentidad;
+					this.notifyFx('Documentos de identidad guardados.', NotifyType.Success, { raw: true });
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: formatea DUI/NIT/NRC en vivo al teclear (máscara + tope).
+	// Cómo: lee el input, aplica guion/máscara siempre; tope catálogo si ACTIVO_CARACTERES.
+	onDocumentoValorInput(doc: GenPersonaTipoDocumentoIdentidad, e: any): void {
+		if (!doc || this.readOnlyPersonales) {
+			return;
+		}
+		const raw = `${e?.event?.target?.value ?? e?.component?.option('text') ?? ''}`;
+		const formateado = aplicarLimiteDocumentoIdentidad(
+			doc.NOMBRE_CORTO,
+			raw,
+			doc.ACTIVO_CARACTERES,
+			Number(doc.NUMERO_CARACTERES ?? 0)
+		);
+		doc.VALOR_DOCUMENTO = formateado;
+		if (e?.component && e.component.option('value') !== formateado) {
+			e.component.option('value', formateado);
+		}
+	}
+
+	// Qué hace: sincroniza valor al pegar/limpiar/blur cuando no pasó por onInput.
+	onDocumentoValorChanged(doc: GenPersonaTipoDocumentoIdentidad, e: any): void {
+		if (!doc || this.readOnlyPersonales) {
+			return;
+		}
+		const raw = `${e?.value ?? ''}`;
+		const formateado = aplicarLimiteDocumentoIdentidad(
+			doc.NOMBRE_CORTO,
+			raw,
+			doc.ACTIVO_CARACTERES,
+			Number(doc.NUMERO_CARACTERES ?? 0)
+		);
+		if (doc.VALOR_DOCUMENTO !== formateado) {
+			doc.VALOR_DOCUMENTO = formateado;
+		}
+		if (e?.component && e.component.option('value') !== formateado) {
+			e.component.option('value', formateado);
+		}
+	}
+
+	// Qué hace: maxLength del TextBox = dígitos + guiones de la máscara.
+	maxLengthDocumento(doc: GenPersonaTipoDocumentoIdentidad): number | null {
+		return maxLengthDocumentoIdentidad(
+			doc?.NOMBRE_CORTO,
+			doc?.ACTIVO_CARACTERES,
+			Number(doc?.NUMERO_CARACTERES ?? 0)
+		);
+	}
+
+	etiquetaDocumento(doc: GenPersonaTipoDocumentoIdentidad): string {
+		return doc?.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD || doc?.NOMBRE_CORTO || 'Documento';
 	}
 
 	private aplicarReglasPersonales(): void {

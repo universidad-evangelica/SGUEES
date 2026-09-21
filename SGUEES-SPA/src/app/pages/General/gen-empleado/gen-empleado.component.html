@@ -90,7 +90,7 @@
 					class="participante-tab-panel"
 					[animationEnabled]="false"
 					[swipeEnabled]="false"
-					[selectedIndex]="0"
+					[(selectedIndex)]="tabEmpleadoIndex"
 				>
 					<dxi-item title="Personales" [icon]="'user'">
 						<!-- Tab Personales: formulario GEN_PERSONA_NATURAL (visible también en Nuevo). -->
@@ -204,12 +204,36 @@
 						</div>
 					</dxi-item>
 
-					<!-- Documentos antes que Laboral: identidad primero, luego datos laborales. -->
+					<!-- Documentos: inputs dinámicos desde GEN_TIPO_DOCUMENTO_IDENTIDAD. -->
 					<dxi-item title="Documentos" [icon]="'doc'">
-						<div class="empleado-empty-state">
-							<i class="dx-icon dx-icon-doc"></i>
-							<p>Documentos de identidad (DUI, NIT, etc.).</p>
-							<span>Esta sección se conectará en la siguiente fase.</span>
+						<div class="empleado-documentos">
+							<div class="empleado-section-title">
+								<i class="dx-icon dx-icon-doc"></i>
+								<h5>Documentos de identidad</h5>
+							</div>
+							<p class="empleado-documentos__hint" *ngIf="!tienePersonaBase">
+								Guarde primero los datos personales (Nuevo) para poder persistir los documentos.
+							</p>
+							<div class="empleado-documentos__grid" *ngIf="documentosIdentidad?.length; else sinDocumentosCat">
+								<!-- motivo: máscara DUI/NIT/NRC al escribir (onInput) + tope si ACTIVO_CARACTERES -->
+								<div class="empleado-documentos__field" *ngFor="let doc of documentosIdentidad">
+									<label class="empleado-documentos__label">{{ etiquetaDocumento(doc) }}</label>
+									<dx-text-box
+										[value]="doc.VALOR_DOCUMENTO"
+										[readOnly]="readOnlyPersonales"
+										[maxLength]="maxLengthDocumento(doc) ?? undefined"
+										[showClearButton]="true"
+										(onInput)="onDocumentoValorInput(doc, $event)"
+										(onValueChanged)="onDocumentoValorChanged(doc, $event)"
+									></dx-text-box>
+								</div>
+							</div>
+							<ng-template #sinDocumentosCat>
+								<div class="empleado-empty-state">
+									<i class="dx-icon dx-icon-doc"></i>
+									<p>No hay tipos de documento activos en el catálogo.</p>
+								</div>
+							</ng-template>
 						</div>
 					</dxi-item>
 

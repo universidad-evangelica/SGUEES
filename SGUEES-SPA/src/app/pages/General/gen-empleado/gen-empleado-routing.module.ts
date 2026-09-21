@@ -7,6 +7,7 @@ import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { DxFormModule } from 'devextreme-angular/ui/form';
 import { DxLoadPanelModule } from 'devextreme-angular/ui/load-panel';
 import { DxTabPanelModule } from 'devextreme-angular/ui/tab-panel';
+import { DxTextBoxModule } from 'devextreme-angular/ui/text-box';
 import { DxTooltipModule } from 'devextreme-angular/ui/tooltip';
 import { BarraDataMttoModule } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoModule } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
@@ -24,6 +25,7 @@ const routes: Routes = [{ path: '', component: GenEmpleadoComponent }];
 		DxFormModule,
 		DxLoadPanelModule,
 		DxTabPanelModule,
+		DxTextBoxModule,
 		DxTooltipModule,
 		BarraDataMttoModule,
 		DataGridMttoModule,
