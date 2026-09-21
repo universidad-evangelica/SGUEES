@@ -21,10 +21,10 @@
 	>
 	</app-barra-data-mtto>
 
-	<!-- Workspace formulario Nuevo / Editar: card de perfil + contenido debajo (sin anidar). -->
-	<div class="empleado-form" *ngIf="!isBrowse()">
-		<!-- motivo: solo cabecera/perfil del empleado (card independiente) -->
+	<!-- Workspace formulario: un card gris (como expediente) con encabezado + contenido anidado. -->
+	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card empleado-form" *ngIf="!isBrowse()">
 		<section class="empleado-panel">
+			<!-- motivo: encabezado Datos del Empleado + línea inferior -->
 			<div class="empleado-panel__heading">
 				<div class="empleado-section-title">
 					<i class="dx-icon dx-icon-card"></i>
@@ -73,7 +73,6 @@
 					</div>
 				</div>
 
-				<!-- motivo: abre modal de edición de datos personales -->
 				<div class="empleado-panel__actions" *ngIf="tienePersonaBase">
 					<dx-button
 						text="Editar datos"
@@ -85,21 +84,23 @@
 					></dx-button>
 				</div>
 			</div>
-		</section>
 
-		<!-- motivo: alta — cards personales debajo, fuera del card Datos del Empleado -->
-		<div class="empleado-below" *ngIf="!tienePersonaBase">
-			<ng-container *ngTemplateOutlet="tplPersonalesEp"></ng-container>
-		</div>
+			<!-- motivo: línea bajo el perfil (mismo patrón expediente) -->
+			<div class="empleado-divider empleado-divider--horizontal empleado-divider--body" aria-hidden="true"></div>
 
-		<!-- motivo: con persona — tabs debajo, fuera del card Datos del Empleado -->
-		<div class="empleado-below empleado-below--tabs" *ngIf="tienePersonaBase">
-			<dx-tab-panel
-				class="participante-tab-panel"
-				[animationEnabled]="false"
-				[swipeEnabled]="false"
-				[(selectedIndex)]="tabEmpleadoIndex"
-			>
+			<!-- motivo: alta — cards personales dentro del card gris -->
+			<div class="empleado-panel__body" *ngIf="!tienePersonaBase">
+				<ng-container *ngTemplateOutlet="tplPersonalesEp"></ng-container>
+			</div>
+
+			<!-- motivo: edición — tabs + secciones dentro del card gris (como expediente) -->
+			<div class="empleado-panel__tabs" *ngIf="tienePersonaBase">
+				<dx-tab-panel
+					class="participante-tab-panel"
+					[animationEnabled]="false"
+					[swipeEnabled]="false"
+					[(selectedIndex)]="tabEmpleadoIndex"
+				>
 					<dxi-item title="Personales" [icon]="'user'">
 						<!-- motivo: tarjeta de lectura de datos personales (edición vía modal) -->
 						<div class="rd-panel">
@@ -296,7 +297,8 @@
 						</div>
 					</dxi-item>
 				</dx-tab-panel>
-		</div>
+			</div>
+		</section>
 	</div>
 
 	<!-- Grilla browse. -->
