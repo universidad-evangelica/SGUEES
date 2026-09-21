@@ -1,8 +1,9 @@
 // Qué hace: browse + formulario Nuevo/Editar de Empleado (Iniciar + Personales + Documentos).
 // Cómo: grilla browse; Guardar según tab; personales vía SP; documentos en GEN_PERSONA_TIPO_DOCUMENTO_IDENTIDAD.
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { DxFormComponent } from 'devextreme-angular/ui/form';
+import { firstValueFrom } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -29,7 +30,7 @@ const TAB_DOCUMENTOS = 1;
 	templateUrl: './gen-empleado.component.html',
 	styleUrls: ['./gen-empleado.component.scss'],
 })
-export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
+export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDestroy {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 	@ViewChild('formPersonales', { static: false }) formPersonales!: DxFormComponent;
 
@@ -60,14 +61,27 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	private omitirRestaurarPopupPersonales = false;
 	tabEmpleadoIndex = TAB_PERSONALES;
 
+	/** Preview blob de la foto (panel + modal). */
+	fotoPersonaUrl: string | null = null;
+	/** Preview local mientras sube / tras elegir archivo. */
+	fotoLocalUrl: string | null = null;
+	/** FOTO_URL relativa nueva (tras SubirFoto); vacío = conservar la del modelo. */
+	fotoUrlNueva = '';
+	fotoSubiendo = false;
+
 	mCORR_RELIGION: any[] = [];
 	mCORR_ORIGEN_INGRESO: any[] = [];
 	mCORR_TIPO_CONTRIBUYENTE: any[] = [];
 	mCORR_ACTIVIDAD_ECONOMICA: any[] = [];
 	mCORR_PAIS_NACIMIENTO: any[] = [];
+	/** Catálogo completo de países; el lookup se filtra si es domiciliado (solo SV). */
+	private paisesNacimientoCatalogo: any[] = [];
 	mCORR_DEPTO_NACIMIENTO: any[] = [];
 	mCORR_MUNICIPIO_NACIMIENTO: any[] = [];
 	mCORR_DISTRITO_NACIMIENTO: any[] = [];
+
+	/** Código ISO / NOMBRE_CORTO de El Salvador en GEN_PAIS. */
+	private static readonly CODIGO_PAIS_EL_SALVADOR = 'SV';
 
 	readonly opcionesSexo = [
 		{ value: 'MASCULINO', text: 'Masculino' },
@@ -104,6 +118,11 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	ngOnInit(): void {
 		this.subTituloVentana = this.browseSubtitulo;
 		this.consultar();
+	}
+
+	ngOnDestroy(): void {
+		this.revocarFotoPersona();
+		this.revocarFotoLocal();
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -330,6 +349,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		this.modelPersonaNatural = this.fillPersonaNatural();
 		this.documentosIdentidad = [];
 		this.documentosIdentidadOriginal = [];
+		this.fotoUrlNueva = '';
+		this.revocarFotoLocal();
+		this.revocarFotoPersona();
 		this.tabEmpleadoIndex = TAB_PERSONALES;
 		this.limpiarLookupsTerritorio();
 		this.subTituloVentana = this.formSubtituloNuevo;
@@ -337,7 +359,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		setTimeout(() => this.aplicarReglasPersonales(), 0);
 	}
 
-	// Qué hace: Guardar del ribbon — solo alta (Iniciar). Personales/Documentos tienen su propio Guardar.
+	// Qué hace: Guardar del ribbon — alta (Iniciar); si ya existe, vuelve al browse con mensaje (sin abrir modal).
 	guardar(): void {
 		if (!this.asegurarEmpresaSesion()) {
 			return;
@@ -349,11 +371,72 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		}
 
 		if (this.popupPersonalesVisible) {
-			this.guardarPersonalesDesdeModal();
+			if (this.fotoSubiendo) {
+				this.notifyFx('Espere a que termine de subir la fotografía.', NotifyType.Warning);
+				return;
+			}
+			this.guardarPersonaNatural(
+				() => {
+					this.guardarDocumentosDesdeModal(() => {
+						this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
+						this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+						this.fotoUrlNueva = '';
+						this.volverBrowseTrasGuardar();
+					});
+				},
+				{ silencioso: true }
+			);
 			return;
 		}
 
-		this.notifyFx('Use Editar datos para modificar la información del empleado.', NotifyType.Warning);
+		this.volverBrowseTrasGuardar();
+	}
+
+	/**
+	 * Qué hace: cierra el formulario y regresa a la grilla con mensaje de éxito.
+	 * Cómo: parchea la fila en memoria, AsignaStatus(Browse) y notifyFx (mismo patrón mtto).
+	 */
+	private volverBrowseTrasGuardar(): void {
+		if (this.popupPersonalesVisible) {
+			this.omitirRestaurarPopupPersonales = true;
+			this.popupPersonalesVisible = false;
+		}
+		if (this.modelPersonaNatural?.NOMBRE_COMPLETO) {
+			this.model.NOMBRE_EMPLEADO = this.modelPersonaNatural.NOMBRE_COMPLETO;
+		}
+		this.aplicarRegistroEnGrid(this.fillData(this.model), false);
+		this.AsignaStatus(UpdateType.Browse);
+		this.subTituloVentana = this.browseSubtitulo;
+		this.notifyFx('Registro modificado con exito!', NotifyType.Success, { raw: true });
+	}
+
+	// Qué hace: guarda personales + documentos desde el modal y cierra el popup (se queda en el formulario).
+	guardarPersonalesDesdeModal(): void {
+		if (this.fotoSubiendo) {
+			this.notifyFx('Espere a que termine de subir la fotografía.', NotifyType.Warning);
+			return;
+		}
+		this.guardarPersonaNatural(
+			() => {
+				this.guardarDocumentosDesdeModal(() => {
+					this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
+					this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+					this.fotoUrlNueva = '';
+					this.omitirRestaurarPopupPersonales = true;
+					this.popupPersonalesVisible = false;
+					this.cargarFotoPersona(
+						Number(this.model.CORR_PERSONA),
+						this.modelPersonaNatural.FOTO_URL
+					);
+					if (this.modelPersonaNatural.NOMBRE_COMPLETO) {
+						this.model.NOMBRE_EMPLEADO = this.modelPersonaNatural.NOMBRE_COMPLETO;
+						this.aplicarRegistroEnGrid(this.fillData(this.model), false);
+					}
+					this.notifyFx('Datos del empleado actualizados.', NotifyType.Success, { raw: true });
+				});
+			},
+			{ silencioso: true }
+		);
 	}
 
 	activar_inactivar(): void {
@@ -414,9 +497,14 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	get badgeEmpleadoId(): string {
 		const corr = Number(this.model?.CORR_EMPLEADO ?? 0);
 		if (corr > 0) {
-			return `Empleado #${corr}`;
+			return `Corr. ${corr}`;
 		}
 		return 'Nuevo';
+	}
+
+	/** Qué hace: URL a mostrar en avatar (local > blob cargado). */
+	get fotoMostrada(): string | null {
+		return this.fotoLocalUrl || this.fotoPersonaUrl || null;
 	}
 
 	textoLectura(valor: any): string {
@@ -476,15 +564,19 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		}
 		this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
 		this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+		this.fotoUrlNueva = '';
+		this.revocarFotoLocal();
 		this.popupPersonalesVisible = true;
 		setTimeout(() => this.aplicarReglasPersonales(), 0);
 	}
 
-	// Qué hace: cierra el modal y restaura personales/documentos si canceló.
+	// Qué hace: cierra el modal y restaura personales/documentos/foto si canceló.
 	cerrarPopupPersonales(restaurar = true): void {
 		if (restaurar && !this.omitirRestaurarPopupPersonales) {
 			this.modelPersonaNatural = this.fillPersonaNatural(this.modelPersonaNaturalOriginal);
 			this.documentosIdentidad = this.clonarDocumentos(this.documentosIdentidadOriginal);
+			this.fotoUrlNueva = '';
+			this.revocarFotoLocal();
 			this.refrescarTerritorioDesdeModelo();
 		}
 		this.omitirRestaurarPopupPersonales = false;
@@ -493,22 +585,6 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 
 	onPopupPersonalesShown(): void {
 		setTimeout(() => this.aplicarReglasPersonales(), 0);
-	}
-
-	// Qué hace: guarda personales + documentos desde el modal y cierra.
-	guardarPersonalesDesdeModal(): void {
-		this.guardarPersonaNatural(
-			() => {
-				this.guardarDocumentosDesdeModal(() => {
-					this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
-					this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
-					this.omitirRestaurarPopupPersonales = true;
-					this.popupPersonalesVisible = false;
-					this.notifyFx('Datos del empleado actualizados.', NotifyType.Success, { raw: true });
-				});
-			},
-			{ silencioso: true }
-		);
 	}
 
 	/**
@@ -714,6 +790,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		const payload = this.sanitizarPersonaNaturalPayload({
 			...this.modelPersonaNatural,
 			CORR_PERSONA: Number(this.model.CORR_PERSONA),
+			FOTO_URL: `${this.fotoUrlNueva || this.modelPersonaNatural.FOTO_URL || ''}`.trim(),
 		});
 
 		const esAltaNatural = !(Number(payload.CORR_PERSONA_NATURAL) > 0);
@@ -754,6 +831,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
 		if (corrPersona <= 0) {
 			this.modelPersonaNatural = this.fillPersonaNatural();
+			this.revocarFotoPersona();
 			setTimeout(() => this.aplicarReglasPersonales(), 0);
 			return;
 		}
@@ -766,6 +844,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 					if (response?.Result && response.Data) {
 						this.modelPersonaNatural = this.fillPersonaNatural(response.Data);
 						this.refrescarTerritorioDesdeModelo();
+						this.cargarFotoPersona(corrPersona, this.modelPersonaNatural.FOTO_URL);
 						setTimeout(() => this.aplicarReglasPersonales(), 0);
 						return;
 					}
@@ -773,6 +852,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 						...this.fillPersonaNatural(),
 						CORR_PERSONA: corrPersona,
 					});
+					this.revocarFotoPersona();
 					setTimeout(() => this.aplicarReglasPersonales(), 0);
 				},
 				error: () => {
@@ -780,9 +860,109 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 						...this.fillPersonaNatural(),
 						CORR_PERSONA: corrPersona,
 					});
+					this.revocarFotoPersona();
 					setTimeout(() => this.aplicarReglasPersonales(), 0);
 				},
 			});
+	}
+
+	/**
+	 * Qué hace: selección de archivo → sube de inmediato a uploads/gen-empleado y actualiza preview.
+	 * Cómo: SubirFoto; guarda FOTO_URL relativa en fotoUrlNueva (se persiste al Guardar cambios).
+	 */
+	async onFotoFileChange(event: Event): Promise<void> {
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) {
+			return;
+		}
+
+		const errorArchivo = this.validarArchivoFoto(file);
+		if (errorArchivo) {
+			input.value = '';
+			this.notifyFx(errorArchivo, NotifyType.Warning);
+			return;
+		}
+
+		const corr = Number(this.model?.CORR_PERSONA ?? 0);
+		if (corr <= 0) {
+			input.value = '';
+			this.notifyFx('No hay persona asociada para subir la fotografía.', NotifyType.Warning);
+			return;
+		}
+
+		this.revocarFotoLocal();
+		this.fotoLocalUrl = URL.createObjectURL(file);
+		this.fotoSubiendo = true;
+
+		try {
+			const response: any = await firstValueFrom(this.service.subirFoto(corr, file));
+			if (!response?.Result) {
+				this.revocarFotoLocal();
+				this.fotoUrlNueva = '';
+				input.value = '';
+				this.notifyApiResponse(response);
+				return;
+			}
+			this.fotoUrlNueva = `${response?.Data?.FOTO_URL ?? ''}`.trim();
+			this.modelPersonaNatural.FOTO_URL = this.fotoUrlNueva;
+			this.notifyFx('Fotografía actualizada.', NotifyType.Success, { raw: true });
+		} catch (error: any) {
+			this.revocarFotoLocal();
+			this.fotoUrlNueva = '';
+			input.value = '';
+			this.notifyApiError(error);
+		} finally {
+			this.fotoSubiendo = false;
+		}
+	}
+
+	private cargarFotoPersona(corrPersona: number, fotoUrl?: string): void {
+		this.revocarFotoPersona();
+		this.revocarFotoLocal();
+		if (corrPersona <= 0 || !`${fotoUrl ?? ''}`.trim()) {
+			return;
+		}
+
+		this.service
+			.getFoto(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (blob) => {
+					if (blob && blob.size > 0 && (blob.type || '').startsWith('image/')) {
+						this.fotoPersonaUrl = URL.createObjectURL(blob);
+					}
+				},
+				error: () => {
+					this.fotoPersonaUrl = null;
+				},
+			});
+	}
+
+	private validarArchivoFoto(file: File): string | null {
+		const maxBytes = 5 * 1024 * 1024;
+		const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+		if (!allowed.includes((file.type || '').toLowerCase())) {
+			return 'Formato no permitido. Use JPG, PNG o WEBP.';
+		}
+		if (file.size > maxBytes) {
+			return 'La fotografía no debe superar 5 MB.';
+		}
+		return null;
+	}
+
+	private revocarFotoPersona(): void {
+		if (this.fotoPersonaUrl) {
+			URL.revokeObjectURL(this.fotoPersonaUrl);
+			this.fotoPersonaUrl = null;
+		}
+	}
+
+	private revocarFotoLocal(): void {
+		if (this.fotoLocalUrl) {
+			URL.revokeObjectURL(this.fotoLocalUrl);
+			this.fotoLocalUrl = null;
+		}
 	}
 
 	// Qué hace: carga catálogo activo + valores de documentos de la persona.
@@ -916,7 +1096,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	}
 
 	// Qué hace: controla territorio según Domiciliado (null / NO / SI).
-	// Cómo: sin selección limpia todo; NO deja solo país; SI habilita cadena completa.
+	// Cómo: sin selección limpia todo; NO deja solo país (todos); SI solo El Salvador (SV) + cadena completa.
 	private aplicarReglaDomiciliado(): void {
 		if (!this.tieneDomiciliadoSeleccionado) {
 			if (this.editandoPersonalesForm) {
@@ -925,14 +1105,17 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 				this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO = null;
 				this.modelPersonaNatural.CORR_DISTRITO_NACIMIENTO = null;
 			}
+			this.aplicarCatalogoPaisNacimiento();
 			this.limpiarLookupsTerritorio();
 			return;
 		}
 
 		if (this.esDomiciliado) {
 			if (!this.editandoPersonalesForm) {
+				this.aplicarCatalogoPaisNacimiento();
 				return;
 			}
+			this.aplicarCatalogoPaisNacimiento(true);
 			const pais = this.modelPersonaNatural?.CORR_PAIS_NACIMIENTO;
 			if (pais) {
 				this.getCORR_DEPTO_NACIMIENTO(pais);
@@ -948,11 +1131,51 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 
-		// DOMICILIADO = NO: solo país.
+		// DOMICILIADO = NO: todos los países; limpia depto/municipio/distrito.
 		this.modelPersonaNatural.CORR_DEPTO_NACIMIENTO = null;
 		this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO = null;
 		this.modelPersonaNatural.CORR_DISTRITO_NACIMIENTO = null;
+		this.aplicarCatalogoPaisNacimiento();
 		this.limpiarLookupsTerritorio();
+	}
+
+	/**
+	 * Qué hace: arma el lookup de país según Domiciliado.
+	 * Cómo: SI → solo fila con NOMBRE_CORTO/CODIGO_PAIS = SV (El Salvador) y la selecciona;
+	 *       NO / vacío → catálogo completo.
+	 */
+	private aplicarCatalogoPaisNacimiento(forzarElSalvador = false): void {
+		const catalogo = this.paisesNacimientoCatalogo ?? [];
+		if (this.esDomiciliado) {
+			const elSalvador = catalogo.filter((p) => this.esPaisElSalvador(p));
+			this.mCORR_PAIS_NACIMIENTO = elSalvador;
+			if (forzarElSalvador || this.editandoPersonalesForm) {
+				const corrSv = Number(elSalvador[0]?.CORR_PAIS ?? 0);
+				if (corrSv > 0 && Number(this.modelPersonaNatural.CORR_PAIS_NACIMIENTO) !== corrSv) {
+					const paisAnterior = Number(this.modelPersonaNatural.CORR_PAIS_NACIMIENTO ?? 0);
+					this.modelPersonaNatural.CORR_PAIS_NACIMIENTO = corrSv;
+					if (paisAnterior !== corrSv) {
+						this.modelPersonaNatural.CORR_DEPTO_NACIMIENTO = null;
+						this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO = null;
+						this.modelPersonaNatural.CORR_DISTRITO_NACIMIENTO = null;
+						this.mCORR_MUNICIPIO_NACIMIENTO = [];
+						this.mCORR_DISTRITO_NACIMIENTO = [];
+					}
+				}
+			}
+			return;
+		}
+		this.mCORR_PAIS_NACIMIENTO = [...catalogo];
+	}
+
+	/** Qué hace: identifica El Salvador por NOMBRE_CORTO o CODIGO_PAIS (= SV). */
+	private esPaisElSalvador(pais: any): boolean {
+		const codigo = `${pais?.NOMBRE_CORTO ?? ''}`.trim().toUpperCase();
+		const codigoAlt = `${pais?.CODIGO_PAIS ?? ''}`.trim().toUpperCase();
+		return (
+			codigo === GenEmpleadoComponent.CODIGO_PAIS_EL_SALVADOR ||
+			codigoAlt === GenEmpleadoComponent.CODIGO_PAIS_EL_SALVADOR
+		);
 	}
 
 	// Qué hace: muestra tipo discapacidad solo si posee discapacidad está activo.
@@ -1079,7 +1302,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
-					this.mCORR_PAIS_NACIMIENTO = response?.Result ? response.Data ?? [] : [];
+					this.paisesNacimientoCatalogo = response?.Result ? response.Data ?? [] : [];
+					this.aplicarCatalogoPaisNacimiento(this.esDomiciliado);
 				},
 			});
 	}

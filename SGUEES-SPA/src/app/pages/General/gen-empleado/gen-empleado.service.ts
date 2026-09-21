@@ -56,6 +56,16 @@ export class GenEmpleadoService {
 		return this.repo.delete([{ Parameter: 'CORR_EMPLEADO', Value: model.CORR_EMPLEADO }]);
 	}
 
+	/** Qué hace: sube fotografía del empleado (guarda archivo y retorna FOTO_URL). */
+	subirFoto(corrPersona: number, file: File): Observable<IResult> {
+		return this.repo.subirFoto(corrPersona, file);
+	}
+
+	/** Qué hace: obtiene blob de la foto del empleado para mostrar en UI. */
+	getFoto(corrPersona: number): Observable<Blob> {
+		return this.repo.getFoto(corrPersona);
+	}
+
 	// Qué hace: lista catálogo activo + valores de documentos de la persona.
 	// Cómo: repo anidado GEN_PERSONA_TIPO_DOCUMENTO_IDENTIDAD.GetAll.
 	getDocumentosIdentidad(corrPersona: number): Observable<IResult> {

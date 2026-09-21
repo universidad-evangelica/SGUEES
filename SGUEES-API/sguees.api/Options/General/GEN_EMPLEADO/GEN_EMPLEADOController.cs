@@ -1,12 +1,17 @@
-// Qué hace: endpoints de empleados (browse + Iniciar + personales vía SP).
-// Cómo lo hace: Iniciar/Create/Update/Delete PersonaNatural delegan a GEN_EMPLEADOService (SP).
+// Qué hace: endpoints de empleados (browse + Iniciar + personales vía SP + foto).
+// Cómo lo hace: Iniciar/Create/Update/Delete PersonaNatural delegan a GEN_EMPLEADOService (SP);
+//               SubirFoto/GetFoto usan EmpleadoFotoStorage en uploads/gen-empleado.
 using System;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using eFramework.Core;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using sguees.api.Options.General.GEN_EMPLEADO;
 using sguees.api.Shared;
 using sguees.Models;
 using sguees.Services;
@@ -104,6 +109,78 @@ namespace sguees.Controllers
 				GetUsuario(),
 				ClientInfoHelper.GetClientStation(HttpContext));
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
+		/// <summary>
+		/// Qué hace: sube/reemplaza la fotografía del empleado en uploads/gen-empleado.
+		/// Cómo: multipart CORR_PERSONA + file; retorna FOTO_URL relativa para persistir en GEN_PERSONA_NATURAL.
+		/// </summary>
+		[HttpPost("SubirFoto")]
+		[Authorize(Policy = "/gen-empleado|U")]
+		[RequestSizeLimit(6 * 1024 * 1024)]
+		public async Task<IActionResult> SubirFoto(
+			[FromForm] int CORR_PERSONA,
+			IFormFile file,
+			[FromServices] IWebHostEnvironment environment)
+		{
+			var corrEmpresa = GetCorrEmpresa();
+			if (CORR_PERSONA <= 0 || corrEmpresa <= 0)
+			{
+				return BadRequest(new CResult
+				{
+					Result = false,
+					ErrorCode = -1,
+					ErrorMessage = "Identificador de persona inválido.",
+				});
+			}
+
+			var fotoStorage = new EmpleadoFotoStorage(environment);
+			var guardado = await fotoStorage.SaveFinalAsync(corrEmpresa, CORR_PERSONA, file);
+			if (!guardado.Ok)
+			{
+				return BadRequest(new CResult
+				{
+					Result = false,
+					ErrorCode = -1,
+					ErrorMessage = guardado.Error,
+				});
+			}
+
+			return Ok(new CResult
+			{
+				Result = true,
+				ErrorCode = 0,
+				RowsAffected = 1,
+				Data = new { FOTO_URL = guardado.RelativeUrl },
+				ErrorMessage = "",
+			});
+		}
+
+		/// <summary>
+		/// Qué hace: descarga la fotografía del empleado (blob) para el preview del modal/panel.
+		/// Cómo: lee FOTO_URL de V_GEN_PERSONA_NATURAL y resuelve el archivo en uploads/gen-empleado.
+		/// </summary>
+		[HttpGet("GetFoto")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public async Task<IActionResult> GetFoto(
+			[FromQuery] GEN_PERSONA_NATURALParam Data,
+			[FromServices] IWebHostEnvironment environment)
+		{
+			var resultado = await _service.GetPersonaNaturalAsync(Data);
+			if (!resultado.Result || resultado.Data is not GEN_PERSONA_NATURALView persona || string.IsNullOrWhiteSpace(persona.FOTO_URL))
+			{
+				return NotFound();
+			}
+
+			var fotoStorage = new EmpleadoFotoStorage(environment);
+			if (!fotoStorage.TryResolveFinalFile(persona.FOTO_URL, out var physicalPath))
+			{
+				return NotFound();
+			}
+
+			var stream = new FileStream(physicalPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+			Response.RegisterForDispose(stream);
+			return File(stream, EmpleadoFotoStorage.GetContentType(physicalPath));
 		}
 
 		// Qué hace: elimina el registro de empleado (fila GEN_EMPLEADO).

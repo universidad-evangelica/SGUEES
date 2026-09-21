@@ -42,6 +42,24 @@ export class GenEmpleadoRepository {
 		return this.objData.Delete(this.xController, 'PersonaNatural', xWhere, environment.UrlGENERALAPI);
 	}
 
+	/** Qué hace: sube/reemplaza fotografía del empleado (multipart → uploads/gen-empleado). */
+	subirFoto(corrPersona: number, file: File): Observable<IResult> {
+		const formData = new FormData();
+		formData.append('CORR_PERSONA', String(corrPersona));
+		formData.append('file', file, file.name);
+		return this.objData.Post(formData, this.xController, 'SubirFoto', environment.UrlGENERALAPI);
+	}
+
+	/** Qué hace: descarga el blob de la foto del empleado para preview. */
+	getFoto(corrPersona: number): Observable<Blob> {
+		return this.objData.GetBlob(
+			this.xController,
+			'GetFoto',
+			[{ Parameter: 'CORR_PERSONA', Value: corrPersona }],
+			environment.UrlGENERALAPI
+		);
+	}
+
 	// Qué hace: elimina empleado por correlativo.
 	// Cómo: DELETE GEN_EMPLEADO/?CORR_EMPLEADO=...
 	delete(xWhere: IParam[]): Observable<IResult> {

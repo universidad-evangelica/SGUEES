@@ -36,7 +36,10 @@
 
 			<div class="empleado-panel__datos">
 				<div class="empleado-panel__profile">
-					<div class="empleado-avatar" aria-hidden="true">{{ inicialesPersona }}</div>
+					<div class="empleado-avatar" aria-hidden="true">
+						<img *ngIf="fotoMostrada; else avatarInicialesPanel" [src]="fotoMostrada" alt="Fotografía del empleado" />
+						<ng-template #avatarInicialesPanel>{{ inicialesPersona }}</ng-template>
+					</div>
 					<div class="empleado-panel__identity">
 						<h2 class="empleado-nombre">{{ tituloPersonaPanel }}</h2>
 						<div class="empleado-badges">
@@ -456,17 +459,40 @@
 		<!-- motivo: acciones Cancelar / Guardar en toolbar inferior del popup -->
 		<dxi-toolbar-item toolbar="bottom" location="after">
 			<div class="editar-persona__footer-actions">
-				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarPopupPersonales(true)"></dx-button>
-				<dx-button text="Guardar cambios" type="success" icon="save" (onClick)="guardarPersonalesDesdeModal()"></dx-button>
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" [disabled]="fotoSubiendo" (onClick)="cerrarPopupPersonales(true)"></dx-button>
+				<dx-button text="Guardar cambios" type="success" icon="save" [disabled]="fotoSubiendo" (onClick)="guardarPersonalesDesdeModal()"></dx-button>
 			</div>
 		</dxi-toolbar-item>
 
 		<div *dxTemplate="let data of 'content'" class="editar-persona">
 			<dx-scroll-view class="editar-persona__scroll" width="100%" height="100%" [scrollByContent]="true" [scrollByThumb]="true" [showScrollbar]="'onScroll'">
-				<!-- motivo: cabecera identidad del empleado en el modal -->
+				<!-- motivo: cabecera identidad del empleado (avatar + Cambiar foto + Corr.) -->
 				<div class="editar-persona__header">
 					<div class="editar-persona__foto">
-						<div class="editar-persona__avatar editar-persona__avatar--iniciales">{{ inicialesPersona }}</div>
+						<div class="editar-persona__avatar" *ngIf="fotoMostrada; else avatarInicialesModal">
+							<img [src]="fotoMostrada" alt="Fotografía del empleado" />
+						</div>
+						<ng-template #avatarInicialesModal>
+							<div class="editar-persona__avatar editar-persona__avatar--iniciales">{{ inicialesPersona }}</div>
+						</ng-template>
+						<div class="editar-persona__foto-actions">
+							<input
+								#fotoInput
+								type="file"
+								accept="image/jpeg,image/png,image/webp"
+								hidden
+								(change)="onFotoFileChange($event)"
+							/>
+							<dx-button
+								text="Cambiar foto"
+								icon="photo"
+								type="default"
+								stylingMode="outlined"
+								[disabled]="fotoSubiendo || !permiteEdit"
+								(onClick)="fotoInput.click()"
+							></dx-button>
+							<span class="editar-persona__foto-hint" *ngIf="fotoSubiendo">Subiendo…</span>
+						</div>
 					</div>
 					<div class="editar-persona__identidad">
 						<div class="editar-persona__nombre">{{ tituloPersonaPanel }}</div>
