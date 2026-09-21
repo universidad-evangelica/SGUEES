@@ -598,21 +598,76 @@
 		grid-column: auto;
 	}
 
+	/* motivo: espaciado móvil del card Datos del Empleado (alta y edición) */
+	.empleado-panel {
+		padding: 16px 14px;
+	}
+
+	.empleado-panel__heading {
+		padding-bottom: 14px;
+	}
+
 	.empleado-panel__datos {
 		flex-direction: column;
 		align-items: stretch;
+		gap: 0;
+		padding: 16px 0 14px;
+	}
+
+	.empleado-panel__profile {
+		flex: 0 0 auto;
+		width: 100%;
+	}
+
+	.empleado-badges {
+		margin-top: 10px;
+	}
+
+	.empleado-dui {
+		margin-top: 10px;
 	}
 
 	.empleado-divider--vertical {
 		width: 100%;
 		height: 1px;
 		min-height: 0;
-		margin: 12px 0;
+		align-self: stretch;
+		margin: 16px 0;
+	}
+
+	.empleado-panel__meta {
+		width: 100%;
+		min-width: 0;
+		flex: 0 0 auto;
+		gap: 16px;
+		padding: 0;
+	}
+
+	.empleado-meta-item {
+		gap: 4px;
 	}
 
 	.empleado-panel__actions {
 		margin-left: 0;
+		margin-top: 18px;
 		width: 100%;
+		flex: 0 0 auto;
+
+		::ng-deep .dx-button {
+			width: 100%;
+		}
+	}
+
+	.empleado-divider--footer {
+		margin-top: 14px;
+	}
+
+	.empleado-alta-body {
+		margin-top: 18px;
+	}
+
+	.empleado-panel__tabs {
+		margin-top: 14px;
 	}
 
 	.editar-persona__header {
