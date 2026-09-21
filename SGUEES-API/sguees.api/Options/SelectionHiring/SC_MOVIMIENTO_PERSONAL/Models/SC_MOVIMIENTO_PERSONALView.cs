@@ -40,6 +40,10 @@ namespace SGUEES.Models
 		public string HORARIO_PROPUESTO { get; set; }
 		public string JUSTIFICACION { get; set; }
 		public DateTime? FECHA_EFECTIVA { get; set; }
+		public bool CONFIRMADO { get; set; }
+		public string NOMBRE_CONFIRMACION { get; set; }
+		public string USUARIO_CONFIRMA { get; set; }
+		public DateTime? FECHA_CONFIRMA { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }
 		public DateTime? FECHA_CREA { get; set; }

@@ -55,6 +55,12 @@ BEGIN
         JUSTIFICACION                NVARCHAR(1000)  NULL,
         FECHA_EFECTIVA               DATE            NULL,
 
+        /* Confirmación TH (independiente del flujo de aprobación) */
+        CONFIRMADO                   BIT             NOT NULL
+            CONSTRAINT DF_SC_MOVIMIENTO_PERSONAL_CONFIRMADO DEFAULT (0),
+        USUARIO_CONFIRMA             VARCHAR(50)     NULL,  /* LOGIN_SISTEMA */
+        FECHA_CONFIRMA               DATETIME        NULL,
+
         /* Auditoría */
         USUARIO_CREA                 VARCHAR(50)     NULL,
         ESTACION_CREA                VARCHAR(50)     NULL,
@@ -132,6 +138,11 @@ SELECT
     M.HORARIO_PROPUESTO,
     M.JUSTIFICACION,
     M.FECHA_EFECTIVA,
+    M.CONFIRMADO,
+    CAST(CASE WHEN ISNULL(M.CONFIRMADO, 0) = 1 THEN N'Confirmado' ELSE N'En Evaluación' END AS NVARCHAR(40))
+        AS NOMBRE_CONFIRMACION,
+    M.USUARIO_CONFIRMA,
+    M.FECHA_CONFIRMA,
     M.USUARIO_CREA,
     M.ESTACION_CREA,
     M.FECHA_CREA,

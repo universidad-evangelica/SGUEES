@@ -30,7 +30,9 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	//#region Declarando Variables
 	readOnly = false;
 	enviandoMovimiento = false;
+	confirmandoMovimiento = false;
 	btnEnviarMovimiento = '';
+	btnConfirmarMovimiento = '';
 
 	/** Lookups compartidos (unidad / modalidad); puestos van por lado. */
 	mCORR_UNIDAD: any[] = [];
@@ -224,6 +226,10 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 				HORARIO_PROPUESTO: xModel.HORARIO_PROPUESTO,
 				JUSTIFICACION: xModel.JUSTIFICACION,
 				FECHA_EFECTIVA: xModel.FECHA_EFECTIVA,
+				CONFIRMADO: xModel.CONFIRMADO ?? false,
+				NOMBRE_CONFIRMACION: xModel.NOMBRE_CONFIRMACION,
+				USUARIO_CONFIRMA: xModel.USUARIO_CONFIRMA ?? null,
+				FECHA_CONFIRMA: xModel.FECHA_CONFIRMA ?? null,
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
 				FECHA_CREA: xModel.FECHA_CREA,
@@ -258,6 +264,10 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			HORARIO_PROPUESTO: '',
 			JUSTIFICACION: '',
 			FECHA_EFECTIVA: null,
+			CONFIRMADO: false,
+			NOMBRE_CONFIRMACION: 'En Evaluación',
+			USUARIO_CONFIRMA: null,
+			FECHA_CONFIRMA: null,
 			USUARIO_CREA: '',
 			ESTACION_CREA: '',
 			FECHA_CREA: new Date(),
@@ -398,6 +408,19 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			&& !this.readOnly;
 
 		this.btnEnviarMovimiento = puedeEnviar ? 'Enviar a aprobación' : '';
+
+		/* Confirmar: disponible en formulario o con fila enfocada en el grid. */
+		const puedeConfirmar =
+			(this.model?.CORR_MOVIMIENTO_PERSONAL ?? 0) > 0
+			&& this.service.esConfirmable(this.model);
+
+		this.btnConfirmarMovimiento = puedeConfirmar ? 'Confirmar' : '';
+	}
+
+	/** En browse, al seleccionar fila se habilita Confirmar en la barra. */
+	override focusedRowChanged(e: any): void {
+		super.focusedRowChanged(e);
+		this.refrescarBotones();
 	}
 
 	cargarBitacora(): void {
@@ -507,6 +530,90 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		return null;
 	}
 
+	/** Confirma el movimiento (CONFIRMADO=1 + auditoría USUARIO_CONFIRMA / FECHA_CONFIRMA). */
+	async confirmarMovimiento(): Promise<void> {
+		if (this.confirmandoMovimiento) {
+			return;
+		}
+
+		const motivo = this.motivoNoPuedeConfirmar();
+		if (motivo) {
+			this.notifyFx(motivo, NotifyType.Warning);
+			return;
+		}
+
+		const aceptar = await confirm(
+			'¿Desea confirmar este movimiento de personal?',
+			'Confirmar movimiento'
+		);
+		if (!aceptar) {
+			return;
+		}
+
+		const corr = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
+		this.confirmandoMovimiento = true;
+		this.loadingVisible = true;
+
+		this.service
+			.confirmar({ CORR_MOVIMIENTO_PERSONAL: corr })
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.confirmandoMovimiento = false;
+					this.loadingVisible = false;
+
+					if (response?.Result && response.ErrorCode === 0) {
+						const row = response.Data as ScMovimientoPersonal;
+						if (row) {
+							this.model = this.fillData(row);
+							this.modelUpdate = this.fillData(row);
+							const idx = this.models?.findIndex(
+								(m: any) => m.CORR_MOVIMIENTO_PERSONAL === corr
+							);
+							if (idx >= 0) {
+								this.models[idx] = { ...this.models[idx], ...row };
+							}
+						}
+						this.refrescarBotones();
+						this.notifyFx('El movimiento se confirmó correctamente.', NotifyType.Success);
+					} else {
+						this.notifyFx(
+							response?.ErrorMessage || 'No se pudo confirmar el movimiento.',
+							NotifyType.Warning,
+							{ raw: true }
+						);
+					}
+				},
+				error: (error: any) => {
+					this.confirmandoMovimiento = false;
+					this.loadingVisible = false;
+					this.notifyFx(this.extraerMensajeErrorConfirmacion(error), NotifyType.Warning, {
+						raw: true,
+					});
+				},
+			});
+	}
+
+	private motivoNoPuedeConfirmar(): string | null {
+		if ((this.model?.CORR_MOVIMIENTO_PERSONAL ?? 0) <= 0) {
+			return 'Seleccione o abra un movimiento para confirmarlo.';
+		}
+		if (this.service.esConfirmado(this.model?.CONFIRMADO)) {
+			return 'El movimiento ya está confirmado.';
+		}
+
+		const origen = `${this.model?.ORIGEN_MOVIMIENTO || ''}`.trim().toUpperCase();
+		const estado = `${this.model?.ESTADO_MOVIMIENTO || ''}`.trim().toUpperCase();
+
+		if (origen === 'DIRECTO' && estado !== 'AP') {
+			return 'Los movimientos creados desde cero solo se pueden confirmar cuando están Aprobados.';
+		}
+		if (origen !== 'DIRECTO' && origen !== 'REQUISICION') {
+			return 'Origen de movimiento no válido para confirmar.';
+		}
+		return null;
+	}
+
 	private extraerMensajeError(error: any): string {
 		if (typeof error === 'string') {
 			return error.replace(/^\s*Error:\s*/i, '').trim();
@@ -515,6 +622,17 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		return (
 			String(msg).replace(/^\s*Error:\s*/i, '').trim()
 			|| 'No se pudo enviar el movimiento a aprobación.'
+		);
+	}
+
+	private extraerMensajeErrorConfirmacion(error: any): string {
+		if (typeof error === 'string') {
+			return error.replace(/^\s*Error:\s*/i, '').trim();
+		}
+		const msg = error?.error?.ErrorMessage || error?.ErrorMessage || error?.message || '';
+		return (
+			String(msg).replace(/^\s*Error:\s*/i, '').trim()
+			|| 'No se pudo confirmar el movimiento.'
 		);
 	}
 

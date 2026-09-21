@@ -43,6 +43,16 @@ export class ScMovimientoPersonalRepository {
 		);
 	}
 
+	confirmar(model: { CORR_MOVIMIENTO_PERSONAL: number }): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'Confirmar',
+			[{ Parameter: 'CORR_MOVIMIENTO_PERSONAL', Value: model.CORR_MOVIMIENTO_PERSONAL }],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
 	getBitacora(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(
 			this.xController,

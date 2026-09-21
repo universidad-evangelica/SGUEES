@@ -95,6 +95,27 @@ namespace SGUEES.Controllers
 			return Ok(resultado);
 		}
 
+		/// <summary>
+		/// Confirmación TH: CONFIRMADO=1 + USUARIO_CONFIRMA (LOGIN_SISTEMA) + FECHA_CONFIRMA.
+		/// </summary>
+		[HttpPut("Confirmar")]
+		[Authorize(Policy = "/sc-movimiento-personal|U")]
+		public async Task<IActionResult> Confirmar(SC_MOVIMIENTO_PERSONAL_CONFIRMAParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			var resultado = await _service.ConfirmarAsync(
+				Data,
+				GetUsuario(),
+				ClientInfoHelper.GetClientStation(HttpContext));
+
+			if (resultado.ErrorCode == 0)
+			{
+				return StatusCode(201, resultado);
+			}
+
+			return Ok(resultado);
+		}
+
 		[HttpGet("GetCORR_BITACORA_SC_MOVIMIENTO_PERSONAL")]
 		[Authorize(Policy = "/sc-movimiento-personal|R")]
 		public async Task<CResult> GetCORR_BITACORA_SC_MOVIMIENTO_PERSONAL(

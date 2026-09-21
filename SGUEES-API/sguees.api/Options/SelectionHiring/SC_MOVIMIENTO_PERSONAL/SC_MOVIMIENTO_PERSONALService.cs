@@ -131,6 +131,82 @@ namespace SGUEES.Services
 			return await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());
 		}
 
+		/// <summary>
+		/// Confirmación TH: marca CONFIRMADO=1 y guarda USUARIO_CONFIRMA (LOGIN_SISTEMA) + FECHA_CONFIRMA.
+		/// REQUISICION: disponible desde que existe el movimiento.
+		/// DIRECTO: solo si ESTADO_MOVIMIENTO = AP.
+		/// </summary>
+		public async Task<CResult> ConfirmarAsync(
+			SC_MOVIMIENTO_PERSONAL_CONFIRMAParam Data,
+			string vLOGIN_SISTEMA,
+			string vESTACION)
+		{
+			if (Data == null)
+			{
+				return ValidationError("No se recibieron datos para confirmar el movimiento.");
+			}
+
+			if (Data.CORR_EMPRESA <= 0)
+			{
+				return ValidationError("No se pudo identificar la empresa de la sesión.");
+			}
+
+			if (Data.CORR_MOVIMIENTO_PERSONAL <= 0)
+			{
+				return ValidationError("Debe indicar el movimiento de personal.");
+			}
+
+			if (string.IsNullOrWhiteSpace(vLOGIN_SISTEMA))
+			{
+				return ValidationError("No se pudo identificar el usuario de sesión.");
+			}
+
+			var actual = await GetAsync(new SC_MOVIMIENTO_PERSONALParam
+			{
+				CORR_EMPRESA = Data.CORR_EMPRESA,
+				CORR_MOVIMIENTO_PERSONAL = Data.CORR_MOVIMIENTO_PERSONAL,
+			});
+
+			if (actual.Data is not SC_MOVIMIENTO_PERSONALView row)
+			{
+				return ValidationError("No se encontró el movimiento a confirmar.");
+			}
+
+			if (row.CONFIRMADO)
+			{
+				return ValidationError("El movimiento ya está confirmado.");
+			}
+
+			var origen = (row.ORIGEN_MOVIMIENTO ?? string.Empty).Trim().ToUpperInvariant();
+			var estado = (row.ESTADO_MOVIMIENTO ?? string.Empty).Trim().ToUpperInvariant();
+
+			if (origen == "DIRECTO" && estado != "AP")
+			{
+				return ValidationError(
+					"Los movimientos creados desde cero solo se pueden confirmar cuando están en estado Aprobado.");
+			}
+
+			if (origen != "DIRECTO" && origen != "REQUISICION")
+			{
+				return ValidationError("Origen de movimiento no válido para confirmar.");
+			}
+
+			var ahora = System.DateTime.Now;
+			var data = new SC_MOVIMIENTO_PERSONALTable
+			{
+				CORR_EMPRESA = Data.CORR_EMPRESA,
+				CORR_MOVIMIENTO_PERSONAL = Data.CORR_MOVIMIENTO_PERSONAL,
+				CONFIRMADO = true,
+				USUARIO_CONFIRMA = vLOGIN_SISTEMA.Trim(),
+				FECHA_CONFIRMA = ahora,
+				USUARIO_ACTU = vLOGIN_SISTEMA.Trim(),
+				ESTACION_ACTU = vESTACION ?? string.Empty,
+				FECHA_ACTU = ahora,
+			};
+
+			return await _repo.ConfirmarAsync(data, vLOGIN_SISTEMA.Trim(), vESTACION ?? string.Empty);
+		}
+
 		public async Task<CResult> GetBitacoraAsync(SC_MOVIMIENTO_PERSONAL_BITACORAParam xWhere)
 		{
 			var p = new List<CParameter>
@@ -209,6 +285,10 @@ namespace SGUEES.Services
 			{
 				Data.ESTADO_MOVIMIENTO = "DI";
 			}
+
+			Data.CONFIRMADO = false;
+			Data.USUARIO_CONFIRMA = null;
+			Data.FECHA_CONFIRMA = null;
 
 			if (Data.FECHA_ELABORACION.Year < 1753)
 			{

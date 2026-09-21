@@ -60,6 +60,15 @@ namespace SGUEES.Models
 
 		public DateTime? FECHA_EFECTIVA { get; set; }
 
+		/// <summary>Confirmación TH (independiente del flujo).</summary>
+		public bool CONFIRMADO { get; set; }
+
+		/// <summary>LOGIN_SISTEMA de quien confirmó.</summary>
+		[MaxLength(50)]
+		public string USUARIO_CONFIRMA { get; set; }
+
+		public DateTime? FECHA_CONFIRMA { get; set; }
+
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }
 		public DateTime FECHA_CREA { get; set; }

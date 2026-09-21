@@ -305,6 +305,89 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		/// <summary>
+		/// Marca CONFIRMADO=1 y guarda auditoría de confirmación; relee la vista.
+		/// </summary>
+		public async Task<CResult> ConfirmarAsync(
+			SC_MOVIMIENTO_PERSONALTable Data,
+			string vLOGIN_SISTEMA,
+			string vESTACION)
+		{
+			var objResultado = new CResult();
+
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "CONFIRMADO", Value = true, DbType = DbType.Boolean },
+					new()
+					{
+						ParameterName = "USUARIO_CONFIRMA",
+						Value = Data.USUARIO_CONFIRMA ?? vLOGIN_SISTEMA ?? string.Empty,
+						DbType = DbType.String,
+					},
+					new()
+					{
+						ParameterName = "FECHA_CONFIRMA",
+						Value = ToSqlDateTime(Data.FECHA_CONFIRMA ?? DateTime.Now),
+						DbType = DbType.DateTime,
+					},
+					new()
+					{
+						ParameterName = "USUARIO_ACTU",
+						Value = Data.USUARIO_ACTU ?? vLOGIN_SISTEMA ?? string.Empty,
+						DbType = DbType.String,
+					},
+					new()
+					{
+						ParameterName = "ESTACION_ACTU",
+						Value = Data.ESTACION_ACTU ?? vESTACION ?? string.Empty,
+						DbType = DbType.String,
+					},
+					new()
+					{
+						ParameterName = "FECHA_ACTU",
+						Value = ToSqlDateTime(Data.FECHA_ACTU == default ? DateTime.Now : Data.FECHA_ACTU),
+						DbType = DbType.DateTime,
+					},
+				};
+
+				var pWhere = new List<CParameter>
+				{
+					new() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = DbType.Int32 },
+					new()
+					{
+						ParameterName = "CORR_MOVIMIENTO_PERSONAL",
+						Value = Data.CORR_MOVIMIENTO_PERSONAL,
+						DbType = DbType.Int32,
+					},
+				};
+
+				var reader = await objData.Update(_TableName, p, pWhere);
+				var response = new List<SC_MOVIMIENTO_PERSONALView>().FromDataReader(reader).FirstOrDefault();
+				reader.Close();
+
+				objResultado.Data = response;
+				objResultado.Result = response != null;
+				objResultado.RowsAffected = response == null ? 0 : 1;
+				objResultado.CodeHelper = Data.CORR_MOVIMIENTO_PERSONAL;
+				objResultado.ErrorCode = response == null ? -1 : 0;
+				objResultado.ErrorMessage = response == null
+					? "La confirmación se ejecutó pero no se pudo releer el movimiento."
+					: string.Empty;
+			}
+			catch (Exception e)
+			{
+				SetError(objResultado, e);
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
+
 		public async Task<CResult> GetAllAsyncBitacora(List<CParameter> xWhere)
 		{
 			var objResultado = new CResult();
@@ -491,8 +574,12 @@ ORDER BY MODALIDAD_NOMBRE", xWhere);
 			p.Add(new CParameter { ParameterName = "JUSTIFICACION", Value = ToDbString(Data.JUSTIFICACION), DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "FECHA_EFECTIVA", Value = ToSqlDate(Data.FECHA_EFECTIVA), DbType = DbType.Date });
 
+			/* Confirmación solo se escribe en alta (default 0); Put Confirmar la actualiza aparte. */
 			if (includeCreateAudit)
 			{
+				p.Add(new CParameter { ParameterName = "CONFIRMADO", Value = false, DbType = DbType.Boolean });
+				p.Add(new CParameter { ParameterName = "USUARIO_CONFIRMA", Value = DBNull.Value, DbType = DbType.String });
+				p.Add(new CParameter { ParameterName = "FECHA_CONFIRMA", Value = DBNull.Value, DbType = DbType.DateTime });
 				p.Add(new CParameter { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = DbType.String });
 				p.Add(new CParameter { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = DbType.String });
 				p.Add(new CParameter { ParameterName = "FECHA_CREA", Value = ToSqlDateTime(Data.FECHA_CREA), DbType = DbType.DateTime });

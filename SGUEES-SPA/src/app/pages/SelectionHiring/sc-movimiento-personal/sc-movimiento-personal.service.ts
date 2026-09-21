@@ -93,6 +93,41 @@ export class ScMovimientoPersonalService {
 		return this.esEstadoEditable(estado);
 	}
 
+	/**
+	 * Confirmable: CONFIRMADO=0 y
+	 * (REQUISICION desde que existe) o (DIRECTO solo si ESTADO=AP).
+	 */
+	esConfirmable(model?: Partial<ScMovimientoPersonal> | null): boolean {
+		if (!model || (Number(model.CORR_MOVIMIENTO_PERSONAL) || 0) <= 0) {
+			return false;
+		}
+		if (this.esConfirmado(model.CONFIRMADO)) {
+			return false;
+		}
+
+		const origen = `${model.ORIGEN_MOVIMIENTO || ''}`.trim().toUpperCase();
+		const estado = `${model.ESTADO_MOVIMIENTO || ''}`.trim().toUpperCase();
+
+		if (origen === 'REQUISICION') {
+			return true;
+		}
+		if (origen === 'DIRECTO') {
+			return estado === 'AP';
+		}
+		return false;
+	}
+
+	esConfirmado(valor?: boolean | number | null): boolean {
+		return valor === true || valor === 1;
+	}
+
+	getConfirmacionLabel(model?: Partial<ScMovimientoPersonal> | null): string {
+		if (model?.NOMBRE_CONFIRMACION) {
+			return model.NOMBRE_CONFIRMACION;
+		}
+		return this.esConfirmado(model?.CONFIRMADO) ? 'Confirmado' : 'En Evaluación';
+	}
+
 	getEstadoLabel(estado?: string): string {
 		const e = `${estado || 'DI'}`.trim().toUpperCase();
 		return this.estadosMovimiento.find((x) => x.CODIGO === e)?.NOMBRE ?? e;
@@ -148,6 +183,10 @@ export class ScMovimientoPersonalService {
 		return this.repo.autoriza(model);
 	}
 
+	confirmar(model: { CORR_MOVIMIENTO_PERSONAL: number }): Observable<IResult> {
+		return this.repo.confirmar(model);
+	}
+
 	getBitacora(param: any): Observable<IResult> {
 		return this.repo.getBitacora([
 			{ Parameter: 'CORR_MOVIMIENTO_PERSONAL', Value: param.CORR_MOVIMIENTO_PERSONAL },
@@ -164,6 +203,12 @@ export class ScMovimientoPersonalService {
 				caption: 'Estado',
 				width: 120,
 				calculateCellValue: (row: any) => this.getEstadoLabel(row?.ESTADO_MOVIMIENTO),
+			},
+			{
+				dataField: 'NOMBRE_CONFIRMACION',
+				caption: 'Confirmación',
+				width: 130,
+				calculateCellValue: (row: any) => this.getConfirmacionLabel(row),
 			},
 			{ dataField: 'FECHA_ELABORACION', caption: 'Fecha', width: 120, dataType: 'date', format: 'dd/MM/yyyy' },
 			{ dataField: 'NOMBRE_TIPO_MOVIMIENTO', caption: 'Tipo', width: 180 },
