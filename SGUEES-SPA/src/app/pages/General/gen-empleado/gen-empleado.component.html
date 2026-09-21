@@ -117,6 +117,7 @@
 									></app-data-lookup>
 								</div>
 								<div *dxTemplate="let cellInfo of 'CORR_PAIS_NACIMIENTOLookup'">
+									<!-- País solo si ya eligió Domiciliado (SI/NO). -->
 									<app-data-lookup
 										[model]="mCORR_PAIS_NACIMIENTO"
 										[(value)]="modelPersonaNatural.CORR_PAIS_NACIMIENTO"
@@ -124,11 +125,12 @@
 										[valueExpr]="'CORR_PAIS'"
 										[displayExpr]="'NOMBRE_PAIS'"
 										[selectedRowKeys]="selectedLookUpPaisNacimiento"
-										[readOnly]="readOnlyPersonales"
+										[readOnly]="!paisNacimientoHabilitado"
 										[showClearButton]="true"
 									></app-data-lookup>
 								</div>
 								<div *dxTemplate="let cellInfo of 'CORR_DEPTO_NACIMIENTOLookup'">
+									<!-- Depto solo si Domiciliado = SI. -->
 									<app-data-lookup
 										[model]="mCORR_DEPTO_NACIMIENTO"
 										[(value)]="modelPersonaNatural.CORR_DEPTO_NACIMIENTO"
@@ -136,11 +138,12 @@
 										[valueExpr]="'CORR_DEPTO'"
 										[displayExpr]="'NOMBRE_DEPTO'"
 										[selectedRowKeys]="selectedLookUpDeptoNacimiento"
-										[readOnly]="readOnlyPersonales"
+										[readOnly]="!territorioCompletoHabilitado"
 										[showClearButton]="true"
 									></app-data-lookup>
 								</div>
 								<div *dxTemplate="let cellInfo of 'CORR_MUNICIPIO_NACIMIENTOLookup'">
+									<!-- Municipio solo si Domiciliado = SI. -->
 									<app-data-lookup
 										[model]="mCORR_MUNICIPIO_NACIMIENTO"
 										[(value)]="modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO"
@@ -148,18 +151,19 @@
 										[valueExpr]="'CORR_MUNICIPIO'"
 										[displayExpr]="'NOMBRE_MUNICIPIO'"
 										[selectedRowKeys]="selectedLookUpMunicipioNacimiento"
-										[readOnly]="readOnlyPersonales"
+										[readOnly]="!territorioCompletoHabilitado"
 										[showClearButton]="true"
 									></app-data-lookup>
 								</div>
 								<div *dxTemplate="let cellInfo of 'CORR_DISTRITO_NACIMIENTOLookup'">
+									<!-- Distrito solo si Domiciliado = SI. -->
 									<app-data-lookup
 										[model]="mCORR_DISTRITO_NACIMIENTO"
 										[(value)]="modelPersonaNatural.CORR_DISTRITO_NACIMIENTO"
 										[valueExpr]="'CORR_DISTRITO'"
 										[displayExpr]="'NOMBRE_DISTRITO'"
 										[selectedRowKeys]="selectedLookUpDistritoNacimiento"
-										[readOnly]="readOnlyPersonales"
+										[readOnly]="!territorioCompletoHabilitado"
 										[showClearButton]="true"
 									></app-data-lookup>
 								</div>

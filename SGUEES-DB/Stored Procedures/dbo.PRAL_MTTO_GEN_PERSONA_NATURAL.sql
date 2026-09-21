@@ -127,6 +127,24 @@ BEGIN
 					@SYS_FILAS_AFECTADAS = 0;
 				GOTO FINA;
 			END;
+
+			/* Territorio según Domiciliado:
+			   - sin SI/NO: no guarda país ni depto/municipio/distrito
+			   - NO: solo país
+			   - SI: país + depto + municipio + distrito */
+			IF ISNULL(@DOMICILIADO, N'') NOT IN (N'SI', N'NO')
+			BEGIN
+				SET @CORR_PAIS_NACIMIENTO = NULL;
+				SET @CORR_DEPTO_NACIMIENTO = NULL;
+				SET @CORR_MUNICIPIO_NACIMIENTO = NULL;
+				SET @CORR_DISTRITO_NACIMIENTO = NULL;
+			END
+			ELSE IF @DOMICILIADO <> N'SI'
+			BEGIN
+				SET @CORR_DEPTO_NACIMIENTO = NULL;
+				SET @CORR_MUNICIPIO_NACIMIENTO = NULL;
+				SET @CORR_DISTRITO_NACIMIENTO = NULL;
+			END;
 		END;
 
 		IF @TIPO_ACTUALIZA = 1

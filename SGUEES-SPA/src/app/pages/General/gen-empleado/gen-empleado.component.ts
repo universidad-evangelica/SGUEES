@@ -126,6 +126,27 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
+	/** Qué hace: indica si el registro está marcado como domiciliado. */
+	get esDomiciliado(): boolean {
+		return this.modelPersonaNatural?.DOMICILIADO === 'SI';
+	}
+
+	/** Qué hace: SI o NO ya elegido en Domiciliado (no "Seleccionar..."). */
+	get tieneDomiciliadoSeleccionado(): boolean {
+		const v = this.modelPersonaNatural?.DOMICILIADO;
+		return v === 'SI' || v === 'NO';
+	}
+
+	/** Qué hace: país editable solo si ya eligió Domiciliado. */
+	get paisNacimientoHabilitado(): boolean {
+		return !this.readOnlyPersonales && this.tieneDomiciliadoSeleccionado;
+	}
+
+	/** Qué hace: depto/municipio/distrito editables solo si está domiciliado y el form no es solo lectura. */
+	get territorioCompletoHabilitado(): boolean {
+		return !this.readOnlyPersonales && this.esDomiciliado;
+	}
+
 	fillParam(xCORR_EMPLEADO?: number): any {
 		return { CORR_EMPLEADO: xCORR_EMPLEADO ?? 0 };
 	}
@@ -411,7 +432,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		}
 	}
 
-	// Qué hace: al cambiar sexo/estado civil/discapacidad, aplica reglas de UI del tab Personales.
+	// Qué hace: al cambiar sexo/estado civil/discapacidad/domiciliado, aplica reglas de UI del tab Personales.
 	onPersonalesFieldChanged(e: any): void {
 		if (e?.dataField === 'SEXO' || e?.dataField === 'ESTADO_CIVIL') {
 			this.aplicarReglaApellidoCasada();
@@ -421,19 +442,35 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 			this.modelPersonaNatural.POSEE_DISCAPACIDAD = !!e.value;
 			this.aplicarReglaTipoDiscapacidad();
 		}
+		if (e?.dataField === 'DOMICILIADO') {
+			this.modelPersonaNatural.DOMICILIADO = e.value ?? '';
+			this.aplicarReglaDomiciliado();
+		}
 	}
 
 	onPaisNacimientoChange(value: number): void {
+		if (!this.paisNacimientoHabilitado) {
+			this.modelPersonaNatural.CORR_PAIS_NACIMIENTO = null;
+			return;
+		}
 		this.modelPersonaNatural.CORR_PAIS_NACIMIENTO = value || null;
 		this.modelPersonaNatural.CORR_DEPTO_NACIMIENTO = null;
 		this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO = null;
 		this.modelPersonaNatural.CORR_DISTRITO_NACIMIENTO = null;
 		this.mCORR_MUNICIPIO_NACIMIENTO = [];
 		this.mCORR_DISTRITO_NACIMIENTO = [];
-		this.getCORR_DEPTO_NACIMIENTO(value);
+		if (this.territorioCompletoHabilitado) {
+			this.getCORR_DEPTO_NACIMIENTO(value);
+		} else {
+			this.mCORR_DEPTO_NACIMIENTO = [];
+		}
 	}
 
 	onDeptoNacimientoChange(value: number): void {
+		if (!this.territorioCompletoHabilitado) {
+			this.modelPersonaNatural.CORR_DEPTO_NACIMIENTO = null;
+			return;
+		}
 		this.modelPersonaNatural.CORR_DEPTO_NACIMIENTO = value || null;
 		this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO = null;
 		this.modelPersonaNatural.CORR_DISTRITO_NACIMIENTO = null;
@@ -442,6 +479,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	}
 
 	onMunicipioNacimientoChange(value: number): void {
+		if (!this.territorioCompletoHabilitado) {
+			this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO = null;
+			return;
+		}
 		this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO = value || null;
 		this.modelPersonaNatural.CORR_DISTRITO_NACIMIENTO = null;
 		this.getCORR_DISTRITO_NACIMIENTO(
@@ -599,21 +640,36 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	private aplicarReglasPersonales(): void {
 		this.aplicarReglaApellidoCasada();
 		this.aplicarReglaTipoDiscapacidad();
+		this.aplicarReglaDomiciliado();
 	}
 
 	// Qué hace: convierte '' de selects/checks de dominio a null (el CHECK de BD no acepta '').
-	// Cómo: clona el payload y nullifica SEXO, ESTADO_CIVIL, CARTA_PASTORAL, DOMICILIADO vacíos.
+	// Cómo: clona el payload; sin Domiciliado no guarda territorio; si NO, solo país; si SI, completo.
 	private sanitizarPersonaNaturalPayload(model: GenPersonaNatural | any): any {
 		const vacioANull = (v: any) => (v === '' || v === undefined ? null : v);
-		return {
+		const domiciliado = vacioANull(model?.DOMICILIADO);
+		const payload: any = {
 			...model,
 			SEXO: vacioANull(model?.SEXO),
 			ESTADO_CIVIL: vacioANull(model?.ESTADO_CIVIL),
 			CARTA_PASTORAL: vacioANull(model?.CARTA_PASTORAL),
-			DOMICILIADO: vacioANull(model?.DOMICILIADO),
+			DOMICILIADO: domiciliado,
 			TIPO_DISCAPACIDAD: vacioANull(model?.TIPO_DISCAPACIDAD),
 			APELLIDO_CASADA: vacioANull(model?.APELLIDO_CASADA),
 		};
+
+		if (domiciliado !== 'SI' && domiciliado !== 'NO') {
+			payload.CORR_PAIS_NACIMIENTO = null;
+			payload.CORR_DEPTO_NACIMIENTO = null;
+			payload.CORR_MUNICIPIO_NACIMIENTO = null;
+			payload.CORR_DISTRITO_NACIMIENTO = null;
+		} else if (domiciliado !== 'SI') {
+			payload.CORR_DEPTO_NACIMIENTO = null;
+			payload.CORR_MUNICIPIO_NACIMIENTO = null;
+			payload.CORR_DISTRITO_NACIMIENTO = null;
+		}
+
+		return payload;
 	}
 
 	// Qué hace: habilita apellido de casada solo si es FEMENINO y CASADO(A) o VIUDO(A).
@@ -625,6 +681,46 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 		}
 		const editor = this.formPersonales?.instance?.getEditor('APELLIDO_CASADA');
 		editor?.option('readOnly', !habilitado);
+	}
+
+	// Qué hace: controla territorio según Domiciliado (null / NO / SI).
+	// Cómo: sin selección limpia todo; NO deja solo país; SI habilita cadena completa.
+	private aplicarReglaDomiciliado(): void {
+		if (!this.tieneDomiciliadoSeleccionado) {
+			if (!this.readOnlyPersonales) {
+				this.modelPersonaNatural.CORR_PAIS_NACIMIENTO = null;
+				this.modelPersonaNatural.CORR_DEPTO_NACIMIENTO = null;
+				this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO = null;
+				this.modelPersonaNatural.CORR_DISTRITO_NACIMIENTO = null;
+			}
+			this.limpiarLookupsTerritorio();
+			return;
+		}
+
+		if (this.esDomiciliado) {
+			if (this.readOnlyPersonales) {
+				return;
+			}
+			const pais = this.modelPersonaNatural?.CORR_PAIS_NACIMIENTO;
+			if (pais) {
+				this.getCORR_DEPTO_NACIMIENTO(pais);
+				const depto = this.modelPersonaNatural?.CORR_DEPTO_NACIMIENTO;
+				if (depto) {
+					this.getCORR_MUNICIPIO_NACIMIENTO(pais, depto);
+					const municipio = this.modelPersonaNatural?.CORR_MUNICIPIO_NACIMIENTO;
+					if (municipio) {
+						this.getCORR_DISTRITO_NACIMIENTO(pais, depto, municipio);
+					}
+				}
+			}
+			return;
+		}
+
+		// DOMICILIADO = NO: solo país.
+		this.modelPersonaNatural.CORR_DEPTO_NACIMIENTO = null;
+		this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO = null;
+		this.modelPersonaNatural.CORR_DISTRITO_NACIMIENTO = null;
+		this.limpiarLookupsTerritorio();
 	}
 
 	// Qué hace: muestra tipo discapacidad solo si posee discapacidad está activo.
@@ -648,16 +744,29 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit {
 	}
 
 	private refrescarTerritorioDesdeModelo(): void {
+		if (!this.tieneDomiciliadoSeleccionado) {
+			this.limpiarLookupsTerritorio();
+			return;
+		}
+
 		const pais = this.modelPersonaNatural.CORR_PAIS_NACIMIENTO;
+		if (!pais) {
+			this.limpiarLookupsTerritorio();
+			return;
+		}
+
+		if (!this.esDomiciliado) {
+			this.limpiarLookupsTerritorio();
+			return;
+		}
+
 		const depto = this.modelPersonaNatural.CORR_DEPTO_NACIMIENTO;
 		const municipio = this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO;
-		if (pais) {
-			this.getCORR_DEPTO_NACIMIENTO(pais);
-		}
-		if (pais && depto) {
+		this.getCORR_DEPTO_NACIMIENTO(pais);
+		if (depto) {
 			this.getCORR_MUNICIPIO_NACIMIENTO(pais, depto);
 		}
-		if (pais && depto && municipio) {
+		if (depto && municipio) {
 			this.getCORR_DISTRITO_NACIMIENTO(pais, depto, municipio);
 		}
 	}
