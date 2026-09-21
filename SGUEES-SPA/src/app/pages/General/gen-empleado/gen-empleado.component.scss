@@ -68,6 +68,10 @@
 		margin: 4px 0 12px;
 	}
 
+	&--footer {
+		margin-top: 4px;
+	}
+
 	&--vertical {
 		width: 1px;
 		align-self: stretch;
@@ -80,12 +84,17 @@
 	min-width: 0;
 }
 
+.empleado-alta-body {
+	min-width: 0;
+	margin-top: 16px;
+}
+
 .empleado-panel__datos {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 16px 0;
-	padding: 16px 0;
+	padding: 16px 0 12px;
 }
 
 .empleado-panel__profile {

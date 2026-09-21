@@ -85,22 +85,18 @@
 				</div>
 			</div>
 
-			<!-- motivo: línea bajo el perfil (mismo patrón expediente) -->
-			<div class="empleado-divider empleado-divider--horizontal empleado-divider--body" aria-hidden="true"></div>
+			<!-- motivo: línea inferior del card Datos del Empleado (misma que el encabezado) -->
+			<div class="empleado-divider empleado-divider--horizontal empleado-divider--footer" aria-hidden="true"></div>
 
-			<!-- motivo: alta — cards personales dentro del card gris -->
-			<div class="empleado-panel__body" *ngIf="!tienePersonaBase">
-				<ng-container *ngTemplateOutlet="tplPersonalesEp"></ng-container>
-			</div>
-
-			<!-- motivo: edición — tabs + secciones dentro del card gris (como expediente) -->
-			<div class="empleado-panel__tabs" *ngIf="tienePersonaBase">
-				<dx-tab-panel
-					class="participante-tab-panel"
-					[animationEnabled]="false"
-					[swipeEnabled]="false"
-					[(selectedIndex)]="tabEmpleadoIndex"
-				>
+			<!-- motivo: edición — línea + tabs dentro de Datos del Empleado (diseño expediente; no tocar) -->
+			<ng-container *ngIf="tienePersonaBase">
+				<div class="empleado-panel__tabs">
+					<dx-tab-panel
+						class="participante-tab-panel"
+						[animationEnabled]="false"
+						[swipeEnabled]="false"
+						[(selectedIndex)]="tabEmpleadoIndex"
+					>
 					<dxi-item title="Personales" [icon]="'user'">
 						<!-- motivo: tarjeta de lectura de datos personales (edición vía modal) -->
 						<div class="rd-panel">
@@ -296,9 +292,15 @@
 							<span>Esta sección se conectará en la siguiente fase.</span>
 						</div>
 					</dxi-item>
-				</dx-tab-panel>
-			</div>
+					</dx-tab-panel>
+				</div>
+			</ng-container>
 		</section>
+
+		<!-- motivo: alta — Identidad/etc. fuera de Datos del Empleado, dentro del card gris -->
+		<div class="empleado-alta-body" *ngIf="!tienePersonaBase">
+			<ng-container *ngTemplateOutlet="tplPersonalesEp"></ng-container>
+		</div>
 	</div>
 
 	<!-- Grilla browse. -->
