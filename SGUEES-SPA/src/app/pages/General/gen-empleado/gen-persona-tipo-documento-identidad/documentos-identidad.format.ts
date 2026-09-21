@@ -27,7 +27,8 @@ export function formatDui(valor: string, maxDigitos: number): string {
 }
 
 /**
- * Qué hace: NIT El Salvador 0000-000000-000-0, limitado a maxDigitos del catálogo.
+ * Qué hace: NIT con máscara 0000-000000-000-… limitado a maxDigitos del catálogo.
+ * Cómo: grupos 4-6-3 y el resto en el último bloque (si el catálogo pide >14, no corta en 14).
  */
 export function formatNit(valor: string, maxDigitos: number): string {
 	const digits = soloDigitos(valor).substring(0, Math.max(0, maxDigitos));
@@ -38,7 +39,7 @@ export function formatNit(valor: string, maxDigitos: number): string {
 		digits.substring(0, 4) +
 		(digits.length > 4 ? '-' + digits.substring(4, 10) : '') +
 		(digits.length > 10 ? '-' + digits.substring(10, 13) : '') +
-		(digits.length > 13 ? '-' + digits.substring(13, 14) : '')
+		(digits.length > 13 ? '-' + digits.substring(13) : '')
 	);
 }
 
