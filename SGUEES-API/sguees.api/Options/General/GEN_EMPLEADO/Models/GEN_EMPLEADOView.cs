@@ -11,11 +11,11 @@ namespace sguees.Models
 		public long CORR_PERSONA { get; set; }
 		public string CODIGO_EMPLEADO { get; set; }
 		public string NOMBRE_EMPLEADO { get; set; }
-		public string NOMBRE_1 { get; set; }
-		public string NOMBRE_2 { get; set; }
-		public string APELLIDO_1 { get; set; }
-		public string APELLIDO_2 { get; set; }
-		public string APELLIDO_3 { get; set; }
+		public string PRIMER_NOMBRE { get; set; }
+		public string SEGUNDO_NOMBRE { get; set; }
+		public string PRIMER_APELLIDO { get; set; }
+		public string SEGUNDO_APELLIDO { get; set; }
+		public string APELLIDO_CASADA { get; set; }
 		public string DUI { get; set; }
 		public string NIT { get; set; }
 		public string CORREO_ELECTRONICO { get; set; }
