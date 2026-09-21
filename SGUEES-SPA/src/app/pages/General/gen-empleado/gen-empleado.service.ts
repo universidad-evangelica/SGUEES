@@ -1,5 +1,5 @@
-// Qué hace: servicio de negocio del browse de Empleado.
-// Cómo lo hace: consulta GetAll/Get y define columnas/summary de la grilla (estándar mtto).
+// Qué hace: servicio de negocio del browse/formulario de Empleado.
+// Cómo lo hace: GetAll/Get/Iniciar + personales vía GEN_EMPLEADO (SP PRAL_MTTO_GEN_PERSONA_NATURAL).
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -22,8 +22,36 @@ export class GenEmpleadoService {
 		return this.repo.get([{ Parameter: 'CORR_EMPLEADO', Value: param.CORR_EMPLEADO }]);
 	}
 
-	// Qué hace: columnas de la grilla browse de empleados.
-	// Cómo lo hace: anchos fijos + estado ACTIVO/INACTIVO + auditoría.
+	iniciar(model: any): Observable<IResult> {
+		return this.repo.iniciar(model);
+	}
+
+	getPersonaNatural(corrPersona: number): Observable<IResult> {
+		return this.repo.getPersonaNatural([{ Parameter: 'CORR_PERSONA', Value: corrPersona }]);
+	}
+
+	createPersonaNatural(model: any): Observable<IResult> {
+		return this.repo.createPersonaNatural(model);
+	}
+
+	updatePersonaNatural(model: any): Observable<IResult> {
+		return this.repo.updatePersonaNatural(model, [
+			{ Parameter: 'CORR_PERSONA_NATURAL', Value: model.CORR_PERSONA_NATURAL },
+		]);
+	}
+
+	deletePersonaNatural(model: any): Observable<IResult> {
+		return this.repo.deletePersonaNatural([
+			{ Parameter: 'CORR_PERSONA_NATURAL', Value: model.CORR_PERSONA_NATURAL },
+		]);
+	}
+
+	// Qué hace: elimina un empleado del browse.
+	// Cómo: DELETE por CORR_EMPLEADO (empresa va por claim en API).
+	delete(model: any): Observable<IResult> {
+		return this.repo.delete([{ Parameter: 'CORR_EMPLEADO', Value: model.CORR_EMPLEADO }]);
+	}
+
 	getColumns(): any {
 		return [
 			{
@@ -33,7 +61,6 @@ export class GenEmpleadoService {
 				dataType: 'number',
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
-			//{ dataField: 'CODIGO_EMPLEADO', caption: 'Código', width: 110, minWidth: 90 },
 			{ dataField: 'NOMBRE_EMPLEADO', caption: 'Persona', width: 280, minWidth: 200 },
 			{ dataField: 'DUI', caption: 'DUI', width: 120, minWidth: 100 },
 			{

@@ -70,7 +70,7 @@
 					</div>
 				</div>
 
-				<div class="empleado-panel__actions" *ngIf="!esNuevo">
+				<div class="empleado-panel__actions" *ngIf="tienePersonaBase">
 					<dx-button
 						text="Editar datos"
 						icon="edit"
@@ -93,9 +93,118 @@
 					[selectedIndex]="0"
 				>
 					<dxi-item title="Personales" [icon]="'user'">
+						<!-- Tab Personales: formulario GEN_PERSONA_NATURAL (visible también en Nuevo). -->
+						<div class="empleado-personales">
+							<dx-form
+								#formPersonales
+								[formData]="modelPersonaNatural"
+								[items]="itemsPersonales"
+								[labelLocation]="'top'"
+								[colCount]="1"
+								[readOnly]="readOnlyPersonales"
+								[showRequiredMark]="false"
+								(onFieldDataChanged)="onPersonalesFieldChanged($event)"
+							>
+								<div *dxTemplate="let cellInfo of 'CORR_RELIGIONLookup'">
+									<app-data-lookup
+										[model]="mCORR_RELIGION"
+										[(value)]="modelPersonaNatural.CORR_RELIGION"
+										[valueExpr]="'CORR_RELIGION'"
+										[displayExpr]="'NOMBRE_RELIGION'"
+										[selectedRowKeys]="selectedLookUpReligion"
+										[readOnly]="readOnlyPersonales"
+										[showClearButton]="true"
+									></app-data-lookup>
+								</div>
+								<div *dxTemplate="let cellInfo of 'CORR_PAIS_NACIMIENTOLookup'">
+									<app-data-lookup
+										[model]="mCORR_PAIS_NACIMIENTO"
+										[(value)]="modelPersonaNatural.CORR_PAIS_NACIMIENTO"
+										(valueChange)="onPaisNacimientoChange($event)"
+										[valueExpr]="'CORR_PAIS'"
+										[displayExpr]="'NOMBRE_PAIS'"
+										[selectedRowKeys]="selectedLookUpPaisNacimiento"
+										[readOnly]="readOnlyPersonales"
+										[showClearButton]="true"
+									></app-data-lookup>
+								</div>
+								<div *dxTemplate="let cellInfo of 'CORR_DEPTO_NACIMIENTOLookup'">
+									<app-data-lookup
+										[model]="mCORR_DEPTO_NACIMIENTO"
+										[(value)]="modelPersonaNatural.CORR_DEPTO_NACIMIENTO"
+										(valueChange)="onDeptoNacimientoChange($event)"
+										[valueExpr]="'CORR_DEPTO'"
+										[displayExpr]="'NOMBRE_DEPTO'"
+										[selectedRowKeys]="selectedLookUpDeptoNacimiento"
+										[readOnly]="readOnlyPersonales"
+										[showClearButton]="true"
+									></app-data-lookup>
+								</div>
+								<div *dxTemplate="let cellInfo of 'CORR_MUNICIPIO_NACIMIENTOLookup'">
+									<app-data-lookup
+										[model]="mCORR_MUNICIPIO_NACIMIENTO"
+										[(value)]="modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO"
+										(valueChange)="onMunicipioNacimientoChange($event)"
+										[valueExpr]="'CORR_MUNICIPIO'"
+										[displayExpr]="'NOMBRE_MUNICIPIO'"
+										[selectedRowKeys]="selectedLookUpMunicipioNacimiento"
+										[readOnly]="readOnlyPersonales"
+										[showClearButton]="true"
+									></app-data-lookup>
+								</div>
+								<div *dxTemplate="let cellInfo of 'CORR_DISTRITO_NACIMIENTOLookup'">
+									<app-data-lookup
+										[model]="mCORR_DISTRITO_NACIMIENTO"
+										[(value)]="modelPersonaNatural.CORR_DISTRITO_NACIMIENTO"
+										[valueExpr]="'CORR_DISTRITO'"
+										[displayExpr]="'NOMBRE_DISTRITO'"
+										[selectedRowKeys]="selectedLookUpDistritoNacimiento"
+										[readOnly]="readOnlyPersonales"
+										[showClearButton]="true"
+									></app-data-lookup>
+								</div>
+								<div *dxTemplate="let cellInfo of 'CORR_ORIGEN_INGRESOLookup'">
+									<app-data-lookup
+										[model]="mCORR_ORIGEN_INGRESO"
+										[(value)]="modelPersonaNatural.CORR_ORIGEN_INGRESO"
+										[valueExpr]="'CORR_ORIGEN_INGRESO'"
+										[displayExpr]="'NOMBRE_ORIGEN_INGRESO'"
+										[selectedRowKeys]="selectedLookUpOrigenIngreso"
+										[readOnly]="readOnlyPersonales"
+										[showClearButton]="true"
+									></app-data-lookup>
+								</div>
+								<div *dxTemplate="let cellInfo of 'CORR_TIPO_CONTRIBUYENTELookup'">
+									<app-data-lookup
+										[model]="mCORR_TIPO_CONTRIBUYENTE"
+										[(value)]="modelPersonaNatural.CORR_TIPO_CONTRIBUYENTE"
+										[valueExpr]="'CORR_TIPO_CONTRIBUYENTE'"
+										[displayExpr]="'NOMBRE_TIPO_CONTRIBUYENTE'"
+										[selectedRowKeys]="selectedLookUpTipoContribuyente"
+										[readOnly]="readOnlyPersonales"
+										[showClearButton]="true"
+									></app-data-lookup>
+								</div>
+								<div *dxTemplate="let cellInfo of 'CORR_ACTIVIDAD_ECONOMICALookup'">
+									<app-data-lookup
+										[model]="mCORR_ACTIVIDAD_ECONOMICA"
+										[(value)]="modelPersonaNatural.CORR_ACTIVIDAD_ECONOMICA"
+										[valueExpr]="'CORR_ACTIVIDAD_ECONOMICA'"
+										[displayExpr]="'NOMBRE_ACTIVIDAD_ECONOMICA'"
+										[selectedRowKeys]="selectedLookUpActividadEconomica"
+										[readOnly]="readOnlyPersonales"
+										[showClearButton]="true"
+									></app-data-lookup>
+								</div>
+							</dx-form>
+						</div>
+					</dxi-item>
+
+					<!-- Documentos antes que Laboral: identidad primero, luego datos laborales. -->
+					<dxi-item title="Documentos" [icon]="'doc'">
 						<div class="empleado-empty-state">
-							<i class="dx-icon dx-icon-user"></i>
-							<p>Datos personales de la persona natural.</p>
+							<i class="dx-icon dx-icon-doc"></i>
+							<p>Documentos de identidad (DUI, NIT, etc.).</p>
 							<span>Esta sección se conectará en la siguiente fase.</span>
 						</div>
 					</dxi-item>
@@ -104,14 +213,6 @@
 						<div class="empleado-empty-state">
 							<i class="dx-icon dx-icon-card"></i>
 							<p>Datos laborales del empleado.</p>
-							<span>Esta sección se conectará en la siguiente fase.</span>
-						</div>
-					</dxi-item>
-
-					<dxi-item title="Documentos" [icon]="'doc'">
-						<div class="empleado-empty-state">
-							<i class="dx-icon dx-icon-doc"></i>
-							<p>Documentos de identidad (DUI, NIT, etc.).</p>
 							<span>Esta sección se conectará en la siguiente fase.</span>
 						</div>
 					</dxi-item>

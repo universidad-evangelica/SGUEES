@@ -60,6 +60,21 @@ namespace SGUEES.Controllers
 			return await _service.GetAllAsync(Data);
 		}
 
+		[HttpGet("GetCORR_DEPTO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		// Qué hace: entrega el catálogo de departamentos para nacimiento en el tab Personales de empleado.
+		// Cómo: asigna CORR_EMPRESA de sesión y llama a GetAllAsync.
+		public async Task<CResult> GetCORR_DEPTO_GEN_EMPLEADO([FromQuery] GEN_DEPTOParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			if (Data.CORR_EMPRESA <= 0)
+			{
+				Data.CORR_EMPRESA = 1;
+			}
+
+			return await _service.GetAllAsync(Data);
+		}
+
 		[HttpGet("GetCORR_DEPTO_GEN_ESTRUCTURA_TERRITORIAL")]
 		[Authorize(Policy = "/gen-estructura-territorial|R")]
 		// Qué hace: entrega el catálogo de departamentos requerido por el mantenimiento relacionado y aplica el contexto de empresa.
