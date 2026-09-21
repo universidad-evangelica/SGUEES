@@ -414,6 +414,7 @@
 											[value]="doc.VALOR_DOCUMENTO"
 											[maxLength]="maxLengthDocumento(doc) ?? undefined"
 											[showClearButton]="true"
+											(onKeyDown)="onDocumentoValorKeyDown(doc, $event)"
 											(onInput)="onDocumentoValorInput(doc, $event)"
 											(onValueChanged)="onDocumentoValorChanged(doc, $event)"
 										></dx-text-box>

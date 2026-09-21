@@ -1,5 +1,5 @@
 // Qué hace: formatos y límites de documentos de identidad (SV) según catálogo.
-// Cómo: DUI/NIT con tope+máscara solo si ACTIVO_CARACTERES; NRC siempre guion antes del último dígito.
+// Cómo: DUI/NIT/NRC solo dígitos + guiones; tope de dígitos si ACTIVO_CARACTERES.
 
 /** Qué hace: deja solo dígitos. */
 export function soloDigitos(valor: string): string {
@@ -12,11 +12,45 @@ export function esActivoCaracteres(activo: unknown): boolean {
 }
 
 /**
- * Qué hace: DUI — guion antes del último dígito (ej. 8 chars → 1234567-8).
- * Cómo: limita dígitos a maxDigitos y formatea.
+ * Qué hace: normaliza la clave del tipo (DUI/NIT/NRC) desde corto o nombre largo.
+ * Cómo: prioriza NOMBRE_CORTO; si no, busca DUI|NIT|NRC en el nombre del catálogo.
  */
-export function formatDui(valor: string, maxDigitos: number): string {
-	const digits = soloDigitos(valor).substring(0, Math.max(0, maxDigitos));
+export function claveTipoDocumento(nombreCorto?: string, nombreLargo?: string): string {
+	const corto = `${nombreCorto || ''}`.trim().toUpperCase();
+	if (corto === 'DUI' || corto === 'NIT' || corto === 'NRC') {
+		return corto;
+	}
+	const largo = `${nombreLargo || ''}`.trim().toUpperCase();
+	if (largo === 'DUI' || largo === 'NIT' || largo === 'NRC') {
+		return largo;
+	}
+	if (/\bDUI\b/.test(largo)) {
+		return 'DUI';
+	}
+	if (/\bNIT\b/.test(largo)) {
+		return 'NIT';
+	}
+	if (/\bNRC\b/.test(largo)) {
+		return 'NRC';
+	}
+	return corto || largo;
+}
+
+/** Qué hace: indica si el documento solo admite dígitos (DUI/NIT/NRC). */
+export function esDocumentoSoloDigitos(nombreCorto?: string, nombreLargo?: string): boolean {
+	const key = claveTipoDocumento(nombreCorto, nombreLargo);
+	return key === 'DUI' || key === 'NIT' || key === 'NRC';
+}
+
+/**
+ * Qué hace: DUI — solo dígitos; guion antes del último (ej. 1234567-8).
+ * Cómo: maxDigitos opcional; si viene del catálogo, recorta a ese tope.
+ */
+export function formatDui(valor: string, maxDigitos?: number | null): string {
+	let digits = soloDigitos(valor);
+	if (maxDigitos != null && Number(maxDigitos) > 0) {
+		digits = digits.substring(0, Number(maxDigitos));
+	}
 	if (digits.length === 0) {
 		return '';
 	}
@@ -27,11 +61,14 @@ export function formatDui(valor: string, maxDigitos: number): string {
 }
 
 /**
- * Qué hace: NIT con máscara 0000-000000-000-… limitado a maxDigitos del catálogo.
- * Cómo: grupos 4-6-3 y el resto en el último bloque (si el catálogo pide >14, no corta en 14).
+ * Qué hace: NIT solo dígitos; máscara 0000-000000-000-… según maxDigitos del catálogo.
+ * Cómo: grupos 4-6-3 y el resto en el último bloque (si catálogo >14, no corta en 14).
  */
-export function formatNit(valor: string, maxDigitos: number): string {
-	const digits = soloDigitos(valor).substring(0, Math.max(0, maxDigitos));
+export function formatNit(valor: string, maxDigitos?: number | null): string {
+	let digits = soloDigitos(valor);
+	if (maxDigitos != null && Number(maxDigitos) > 0) {
+		digits = digits.substring(0, Number(maxDigitos));
+	}
 	if (digits.length === 0) {
 		return '';
 	}
@@ -44,8 +81,8 @@ export function formatNit(valor: string, maxDigitos: number): string {
 }
 
 /**
- * Qué hace: NRC — guion antes del último dígito sin importar la longitud.
- * Cómo: igual al format_nrc de referencia; maxDigitos opcional solo si valida caracteres.
+ * Qué hace: NRC — solo dígitos; guion antes del último dígito.
+ * Cómo: maxDigitos opcional solo si el catálogo valida caracteres.
  */
 export function formatNrc(valor: string, maxDigitos?: number | null): string {
 	let digits = soloDigitos(valor);
@@ -61,8 +98,13 @@ export function formatNrc(valor: string, maxDigitos?: number | null): string {
 /**
  * Qué hace: aplica formato según NOMBRE_CORTO respetando tope de dígitos.
  */
-export function formatDocumentoIdentidad(nombreCorto: string, valor: string, maxDigitos: number): string {
-	const key = (nombreCorto || '').trim().toUpperCase();
+export function formatDocumentoIdentidad(
+	nombreCorto: string,
+	valor: string,
+	maxDigitos: number,
+	nombreLargo?: string
+): string {
+	const key = claveTipoDocumento(nombreCorto, nombreLargo);
 	if (key === 'DUI') {
 		return formatDui(valor, maxDigitos);
 	}
@@ -77,20 +119,21 @@ export function formatDocumentoIdentidad(nombreCorto: string, valor: string, max
 
 /**
  * Qué hace: longitud máxima del TextBox (dígitos catálogo + guiones).
- * Cómo: null si ACTIVO_CARACTERES inactivo o NUMERO_CARACTERES <= 0 (NRC libre).
+ * Cómo: null si ACTIVO_CARACTERES inactivo o NUMERO_CARACTERES <= 0.
  */
 export function maxLengthDocumentoIdentidad(
 	nombreCorto: string,
 	activoCaracteres: unknown,
-	numeroCaracteres: number
+	numeroCaracteres: number,
+	nombreLargo?: string
 ): number | null {
 	if (!esActivoCaracteres(activoCaracteres) || Number(numeroCaracteres) <= 0) {
 		return null;
 	}
 	const n = Number(numeroCaracteres);
-	const key = (nombreCorto || '').trim().toUpperCase();
+	const key = claveTipoDocumento(nombreCorto, nombreLargo);
 	if (key === 'DUI' || key === 'NIT' || key === 'NRC') {
-		const muestra = formatDocumentoIdentidad(nombreCorto, '0'.repeat(n), n);
+		const muestra = formatDocumentoIdentidad(nombreCorto, '0'.repeat(n), n, nombreLargo);
 		return muestra.length || n;
 	}
 	return n;
@@ -99,30 +142,33 @@ export function maxLengthDocumentoIdentidad(
 /**
  * Qué hace: formatea al escribir según tipo y catálogo.
  * Cómo:
- * - NRC: siempre guion antes del último dígito (sin tope si Valida caracteres inactivo).
- * - DUI/NIT/otros: tope + máscara solo si ACTIVO_CARACTERES.
+ * - DUI/NIT/NRC: nunca letras (solo dígitos + guiones automáticos).
+ * - Tope de dígitos solo si ACTIVO_CARACTERES + NUMERO_CARACTERES > 0.
  */
 export function aplicarLimiteDocumentoIdentidad(
 	nombreCorto: string,
 	valor: string,
 	activoCaracteres: unknown,
-	numeroCaracteres: number
+	numeroCaracteres: number,
+	nombreLargo?: string
 ): string {
-	const key = (nombreCorto || '').trim().toUpperCase();
+	const key = claveTipoDocumento(nombreCorto, nombreLargo);
 	const valida = esActivoCaracteres(activoCaracteres) && Number(numeroCaracteres) > 0;
 	const n = Number(numeroCaracteres);
+	const tope = valida ? n : null;
 
-	// NRC: máscara siempre; límite solo si el catálogo valida caracteres.
+	if (key === 'DUI') {
+		return formatDui(valor, tope);
+	}
+	if (key === 'NIT') {
+		return formatNit(valor, tope);
+	}
 	if (key === 'NRC') {
-		return formatNrc(valor, valida ? n : null);
+		return formatNrc(valor, tope);
 	}
 
 	if (!valida) {
 		return valor ?? '';
-	}
-
-	if (key === 'DUI' || key === 'NIT') {
-		return formatDocumentoIdentidad(nombreCorto, valor, n);
 	}
 
 	return (valor || '').substring(0, n);

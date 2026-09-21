@@ -17,6 +17,7 @@ import { GenPersonaTipoDocumentoIdentidad } from './gen-persona-tipo-documento-i
 import { GenEmpleadoService } from './gen-empleado.service';
 import {
 	aplicarLimiteDocumentoIdentidad,
+	esDocumentoSoloDigitos,
 	maxLengthDocumentoIdentidad,
 } from './gen-persona-tipo-documento-identidad/documentos-identidad.format';
 
@@ -991,28 +992,58 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		return (rows ?? []).map((d) => ({ ...d }));
 	}
 
-	// Qué hace: formatea DUI/NIT/NRC en vivo al teclear (máscara + tope).
-	// Cómo: solo aplica dentro del modal de edición.
-	onDocumentoValorInput(doc: GenPersonaTipoDocumentoIdentidad, e: any): void {
-		if (!doc || !this.popupPersonalesVisible) {
+	/**
+	 * Qué hace: bloquea letras en DUI/NIT/NRC al teclear (permite dígitos, borrar y atajos).
+	 * Cómo: onKeyDown; el guion lo pone la máscara, no el usuario.
+	 */
+	onDocumentoValorKeyDown(doc: GenPersonaTipoDocumentoIdentidad, e: any): void {
+		if (!doc || !esDocumentoSoloDigitos(doc.NOMBRE_CORTO, doc.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD)) {
 			return;
 		}
-		const raw = `${e?.event?.target?.value ?? e?.component?.option('text') ?? ''}`;
+		const ev = e?.event as KeyboardEvent | undefined;
+		if (!ev) {
+			return;
+		}
+		if (ev.ctrlKey || ev.metaKey || ev.altKey) {
+			return;
+		}
+		const key = ev.key || '';
+		if (
+			key.length === 1 &&
+			!/[0-9]/.test(key) &&
+			key !== 'Dead'
+		) {
+			ev.preventDefault();
+		}
+	}
+
+	// Qué hace: formatea DUI/NIT/NRC en vivo al teclear (máscara + tope; sin letras).
+	// Cómo: limpia el valor del input nativo y sincroniza el TextBox.
+	onDocumentoValorInput(doc: GenPersonaTipoDocumentoIdentidad, e: any): void {
+		if (!doc) {
+			return;
+		}
+		const input = e?.event?.target as HTMLInputElement | undefined;
+		const raw = `${input?.value ?? e?.component?.option('text') ?? e?.component?.option('value') ?? ''}`;
 		const formateado = aplicarLimiteDocumentoIdentidad(
 			doc.NOMBRE_CORTO,
 			raw,
 			doc.ACTIVO_CARACTERES,
-			Number(doc.NUMERO_CARACTERES ?? 0)
+			Number(doc.NUMERO_CARACTERES ?? 0),
+			doc.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD
 		);
 		doc.VALOR_DOCUMENTO = formateado;
-		if (e?.component && e.component.option('value') !== formateado) {
+		if (input && input.value !== formateado) {
+			input.value = formateado;
+		}
+		if (e?.component) {
 			e.component.option('value', formateado);
 		}
 	}
 
 	// Qué hace: sincroniza valor al pegar/limpiar/blur cuando no pasó por onInput.
 	onDocumentoValorChanged(doc: GenPersonaTipoDocumentoIdentidad, e: any): void {
-		if (!doc || !this.popupPersonalesVisible) {
+		if (!doc) {
 			return;
 		}
 		const raw = `${e?.value ?? ''}`;
@@ -1020,7 +1051,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			doc.NOMBRE_CORTO,
 			raw,
 			doc.ACTIVO_CARACTERES,
-			Number(doc.NUMERO_CARACTERES ?? 0)
+			Number(doc.NUMERO_CARACTERES ?? 0),
+			doc.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD
 		);
 		if (doc.VALOR_DOCUMENTO !== formateado) {
 			doc.VALOR_DOCUMENTO = formateado;
@@ -1035,7 +1067,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		return maxLengthDocumentoIdentidad(
 			doc?.NOMBRE_CORTO,
 			doc?.ACTIVO_CARACTERES,
-			Number(doc?.NUMERO_CARACTERES ?? 0)
+			Number(doc?.NUMERO_CARACTERES ?? 0),
+			doc?.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD
 		);
 	}
 
