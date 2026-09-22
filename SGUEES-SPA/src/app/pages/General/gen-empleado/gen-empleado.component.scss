@@ -682,14 +682,15 @@
 .ep-submodal {
 	display: flex;
 	flex-direction: column;
-	gap: 14px;
+	gap: 18px;
 }
 
 .ep-submodal__footer {
 	display: flex;
 	justify-content: flex-end;
 	gap: 10px;
-	padding-top: 4px;
+	padding-top: 16px;
+	margin-top: 8px;
 	border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
 }
 
