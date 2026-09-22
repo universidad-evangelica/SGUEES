@@ -1,5 +1,5 @@
-// Qué hace: browse + formulario Nuevo/Editar de Empleado (Iniciar + Personales + Documentos).
-// Cómo: grilla browse; Guardar según tab; personales vía SP; documentos en GEN_PERSONA_TIPO_DOCUMENTO_IDENTIDAD.
+// Qué hace: browse + formulario Nuevo/Editar de Empleado (Iniciar + Personales + Documentos + Familiares).
+// Cómo: grilla browse; Guardar según tab; personales vía SP; documentos/familiares/hijos anidados.
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -14,6 +14,8 @@ import { environment } from 'src/environments/environment';
 import { GenEmpleado } from './models/gen-empleado';
 import { GenPersonaNatural } from './models/gen-persona-natural';
 import { GenPersonaTipoDocumentoIdentidad } from './gen-persona-tipo-documento-identidad/models/gen-persona-tipo-documento-identidad';
+import { GenPersonaFamiliar } from './gen-persona-familiar/models/gen-persona-familiar';
+import { GenPersonaHijo } from './gen-persona-hijos/models/gen-persona-hijo';
 import { GenEmpleadoService } from './gen-empleado.service';
 import {
 	aplicarLimiteDocumentoIdentidad,
@@ -26,6 +28,8 @@ import {
 const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
 const TAB_PERSONALES = 0;
 const TAB_DOCUMENTOS = 1;
+
+type SubmodalFamiliarTipo = 'familiar' | 'hijo';
 
 @Component({
 	selector: 'app-gen-empleado',
@@ -55,6 +59,20 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	documentosIdentidad: GenPersonaTipoDocumentoIdentidad[] = [];
 	/** Copia para Cancelar del modal (personales + documentos). */
 	private documentosIdentidadOriginal: GenPersonaTipoDocumentoIdentidad[] = [];
+
+	familiares: GenPersonaFamiliar[] = [];
+	private familiaresOriginal: GenPersonaFamiliar[] = [];
+	hijos: GenPersonaHijo[] = [];
+	private hijosOriginal: GenPersonaHijo[] = [];
+	/** Correlativos temporales negativos para altas en memoria antes de SaveAll. */
+	private tempCorrFamiliar = -1;
+	private tempCorrHijo = -1;
+
+	/** Submodal agregar/editar familiar u hijo (estilo expediente). */
+	submodalFamiliarVisible = false;
+	submodalFamiliarTipo: SubmodalFamiliarTipo | null = null;
+	submodalFamiliarEditIndex: number | null = null;
+	submodalFamiliarDraft: any = {};
 
 	/**
 	 * Qué hace: documentos visibles según ES_EXTRANJERO y APLICA_PARA del catálogo.
@@ -90,6 +108,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	mCORR_DEPTO_NACIMIENTO: any[] = [];
 	mCORR_MUNICIPIO_NACIMIENTO: any[] = [];
 	mCORR_DISTRITO_NACIMIENTO: any[] = [];
+	mCORR_PARENTESCO: any[] = [];
 
 	/** Código ISO / NOMBRE_CORTO de El Salvador en GEN_PAIS. */
 	private static readonly CODIGO_PAIS_EL_SALVADOR = 'SV';
@@ -351,6 +370,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.modelPersonaNatural = this.fillPersonaNatural();
 		this.documentosIdentidad = [];
 		this.documentosIdentidadOriginal = [];
+		this.familiares = [];
+		this.familiaresOriginal = [];
+		this.hijos = [];
+		this.hijosOriginal = [];
+		this.tempCorrFamiliar = -1;
+		this.tempCorrHijo = -1;
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.revocarFotoPersona();
@@ -380,10 +405,16 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			this.guardarPersonaNatural(
 				() => {
 					this.guardarDocumentosDesdeModal(() => {
-						this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
-						this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
-						this.fotoUrlNueva = '';
-						this.volverBrowseTrasGuardar();
+						this.guardarFamiliaresDesdeModal(() => {
+							this.guardarHijosDesdeModal(() => {
+								this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
+								this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+								this.familiaresOriginal = this.clonarFamiliares(this.familiares);
+								this.hijosOriginal = this.clonarHijos(this.hijos);
+								this.fotoUrlNueva = '';
+								this.volverBrowseTrasGuardar();
+							});
+						});
 					});
 				},
 				{ silencioso: true }
@@ -412,7 +443,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.notifyFx('Registro modificado con exito!', NotifyType.Success, { raw: true });
 	}
 
-	// Qué hace: guarda personales + documentos desde el modal y cierra el popup (se queda en el formulario).
+	// Qué hace: guarda personales + documentos + familiares/hijos desde el modal y cierra el popup.
 	guardarPersonalesDesdeModal(): void {
 		if (this.fotoSubiendo) {
 			this.notifyFx('Espere a que termine de subir la fotografía.', NotifyType.Warning);
@@ -421,20 +452,26 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.guardarPersonaNatural(
 			() => {
 				this.guardarDocumentosDesdeModal(() => {
-					this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
-					this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
-					this.fotoUrlNueva = '';
-					this.omitirRestaurarPopupPersonales = true;
-					this.popupPersonalesVisible = false;
-					this.cargarFotoPersona(
-						Number(this.model.CORR_PERSONA),
-						this.modelPersonaNatural.FOTO_URL
-					);
-					if (this.modelPersonaNatural.NOMBRE_COMPLETO) {
-						this.model.NOMBRE_EMPLEADO = this.modelPersonaNatural.NOMBRE_COMPLETO;
-						this.aplicarRegistroEnGrid(this.fillData(this.model), false);
-					}
-					this.notifyFx('Datos del empleado actualizados.', NotifyType.Success, { raw: true });
+					this.guardarFamiliaresDesdeModal(() => {
+						this.guardarHijosDesdeModal(() => {
+							this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
+							this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+							this.familiaresOriginal = this.clonarFamiliares(this.familiares);
+							this.hijosOriginal = this.clonarHijos(this.hijos);
+							this.fotoUrlNueva = '';
+							this.omitirRestaurarPopupPersonales = true;
+							this.popupPersonalesVisible = false;
+							this.cargarFotoPersona(
+								Number(this.model.CORR_PERSONA),
+								this.modelPersonaNatural.FOTO_URL
+							);
+							if (this.modelPersonaNatural.NOMBRE_COMPLETO) {
+								this.model.NOMBRE_EMPLEADO = this.modelPersonaNatural.NOMBRE_COMPLETO;
+								this.aplicarRegistroEnGrid(this.fillData(this.model), false);
+							}
+							this.notifyFx('Datos del empleado actualizados.', NotifyType.Success, { raw: true });
+						});
+					});
 				});
 			},
 			{ silencioso: true }
@@ -566,23 +603,28 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		}
 		this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
 		this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+		this.familiaresOriginal = this.clonarFamiliares(this.familiares);
+		this.hijosOriginal = this.clonarHijos(this.hijos);
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.popupPersonalesVisible = true;
 		setTimeout(() => this.aplicarReglasPersonales(), 0);
 	}
 
-	// Qué hace: cierra el modal y restaura personales/documentos/foto si canceló.
+	// Qué hace: cierra el modal y restaura personales/documentos/familiares/foto si canceló.
 	cerrarPopupPersonales(restaurar = true): void {
 		if (restaurar && !this.omitirRestaurarPopupPersonales) {
 			this.modelPersonaNatural = this.fillPersonaNatural(this.modelPersonaNaturalOriginal);
 			this.documentosIdentidad = this.clonarDocumentos(this.documentosIdentidadOriginal);
+			this.familiares = this.clonarFamiliares(this.familiaresOriginal);
+			this.hijos = this.clonarHijos(this.hijosOriginal);
 			this.fotoUrlNueva = '';
 			this.revocarFotoLocal();
 			this.refrescarTerritorioDesdeModelo();
 		}
 		this.omitirRestaurarPopupPersonales = false;
 		this.popupPersonalesVisible = false;
+		this.cerrarSubmodalFamiliar();
 	}
 
 	onPopupPersonalesShown(): void {
@@ -746,6 +788,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cargarLookupsBase();
 		this.cargarPersonaNatural();
 		this.cargarDocumentosIdentidad();
+		this.cargarFamiliares();
+		this.cargarHijos();
 	}
 
 	// Qué hace: crea GEN_PERSONA + GEN_EMPRESA_PERSONA + GEN_PERSONA_NATURAL (SP) + GEN_EMPLEADO.
@@ -770,6 +814,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.subTituloVentana = this.formSubtituloEditar;
 					this.cargarPersonaNatural();
 					this.cargarDocumentosIdentidad();
+					this.cargarFamiliares();
+					this.cargarHijos();
 					this.notifyFx('Empleado creado. Puede seguir editando los datos personales.', NotifyType.Success, {
 						raw: true,
 					});
@@ -998,6 +1044,321 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	/**
+	 * Qué hace: persiste familiares desde el modal de edición.
+	 * Cómo: SaveAll; en éxito actualiza lista en memoria y llama onSuccess.
+	 */
+	private guardarFamiliaresDesdeModal(onSuccess?: () => void): void {
+		const corrPersona = Number(this.model.CORR_PERSONA);
+		if (corrPersona <= 0) {
+			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.saveFamiliares(corrPersona, this.familiares)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const rows = this.normalizarFamiliares(response.Data ?? this.familiares);
+					this.familiares = rows;
+					this.familiaresOriginal = this.clonarFamiliares(rows);
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	/**
+	 * Qué hace: persiste hijos desde el modal de edición.
+	 * Cómo: SaveAll; en éxito actualiza lista en memoria y llama onSuccess.
+	 */
+	private guardarHijosDesdeModal(onSuccess?: () => void): void {
+		const corrPersona = Number(this.model.CORR_PERSONA);
+		if (corrPersona <= 0) {
+			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.saveHijos(corrPersona, this.hijos)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const rows = this.normalizarHijos(response.Data ?? this.hijos);
+					this.hijos = rows;
+					this.hijosOriginal = this.clonarHijos(rows);
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: carga familiares de la persona.
+	private cargarFamiliares(): void {
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		if (corrPersona <= 0) {
+			this.familiares = [];
+			this.familiaresOriginal = [];
+			return;
+		}
+
+		this.service
+			.getFamiliares(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result ? this.normalizarFamiliares(response.Data ?? []) : [];
+					this.familiares = rows;
+					this.familiaresOriginal = this.clonarFamiliares(rows);
+				},
+				error: () => {
+					this.familiares = [];
+					this.familiaresOriginal = [];
+				},
+			});
+	}
+
+	// Qué hace: carga hijos de la persona.
+	private cargarHijos(): void {
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		if (corrPersona <= 0) {
+			this.hijos = [];
+			this.hijosOriginal = [];
+			return;
+		}
+
+		this.service
+			.getHijos(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result ? this.normalizarHijos(response.Data ?? []) : [];
+					this.hijos = rows;
+					this.hijosOriginal = this.clonarHijos(rows);
+				},
+				error: () => {
+					this.hijos = [];
+					this.hijosOriginal = [];
+				},
+			});
+	}
+
+	private normalizarFamiliares(rows: any[]): GenPersonaFamiliar[] {
+		return (rows ?? []).map((f) => ({
+			...f,
+			FECHA_NACIMIENTO: this.parseFecha(f?.FECHA_NACIMIENTO),
+		}));
+	}
+
+	private normalizarHijos(rows: any[]): GenPersonaHijo[] {
+		return (rows ?? []).map((h) => ({
+			...h,
+			FECHA_NACIMIENTO: this.parseFecha(h?.FECHA_NACIMIENTO),
+		}));
+	}
+
+	private parseFecha(valor: any): Date | null {
+		if (!valor) {
+			return null;
+		}
+		const d = valor instanceof Date ? valor : new Date(valor);
+		return Number.isNaN(d.getTime()) ? null : d;
+	}
+
+	private clonarFamiliares(rows: GenPersonaFamiliar[]): GenPersonaFamiliar[] {
+		return (rows ?? []).map((f) => ({ ...f }));
+	}
+
+	private clonarHijos(rows: GenPersonaHijo[]): GenPersonaHijo[] {
+		return (rows ?? []).map((h) => ({ ...h }));
+	}
+
+	/** Qué hace: resumen de card de familiar en el modal. */
+	resumenFamiliar(item: GenPersonaFamiliar): string {
+		const partes = [
+			item?.NOMBRE_PARENTESCO || null,
+			item?.OCUPACION || null,
+			item?.TELEFONO || null,
+			this.fechaLectura(item?.FECHA_NACIMIENTO) !== '—' ? this.fechaLectura(item?.FECHA_NACIMIENTO) : null,
+		].filter((x) => !!x && `${x}`.trim() && `${x}` !== '—');
+		return partes.length ? partes.join(' · ') : 'Sin detalle adicional';
+	}
+
+	/** Qué hace: resumen de card de hijo en el modal. */
+	resumenHijo(item: GenPersonaHijo): string {
+		const partes = [
+			item?.NOMBRE_COMPLETO || null,
+			item?.SEXO || null,
+			item?.EDAD != null ? `Edad ${item.EDAD}` : null,
+			this.fechaLectura(item?.FECHA_NACIMIENTO) !== '—' ? this.fechaLectura(item?.FECHA_NACIMIENTO) : null,
+		].filter((x) => !!x && `${x}`.trim() && `${x}` !== '—');
+		return partes.length ? partes.join(' · ') : 'Sin detalle';
+	}
+
+	get tituloSubmodalFamiliar(): string {
+		const esEdicion = this.submodalFamiliarEditIndex != null;
+		if (this.submodalFamiliarTipo === 'hijo') {
+			return esEdicion ? 'Editar hijo' : 'Agregar hijo';
+		}
+		return esEdicion ? 'Editar familiar' : 'Agregar familiar';
+	}
+
+	// Qué hace: abre submodal para alta de familiar u hijo.
+	abrirSubmodalFamiliarNuevo(tipo: SubmodalFamiliarTipo): void {
+		this.submodalFamiliarTipo = tipo;
+		this.submodalFamiliarEditIndex = null;
+		if (tipo === 'hijo') {
+			this.submodalFamiliarDraft = {
+				NOMBRE_COMPLETO: '',
+				SEXO: null,
+				FECHA_NACIMIENTO: null,
+				EDAD: null,
+			};
+		} else {
+			this.submodalFamiliarDraft = {
+				NOMBRE_COMPLETO: '',
+				CORR_PARENTESCO: null,
+				NOMBRE_PARENTESCO: '',
+				TELEFONO: '',
+				DOMICILIO: '',
+				OCUPACION: '',
+				FECHA_NACIMIENTO: null,
+			};
+		}
+		this.submodalFamiliarVisible = true;
+	}
+
+	// Qué hace: abre submodal para editar familiar u hijo existente.
+	abrirSubmodalFamiliarEditar(tipo: SubmodalFamiliarTipo, index: number): void {
+		this.submodalFamiliarTipo = tipo;
+		this.submodalFamiliarEditIndex = index;
+		if (tipo === 'hijo') {
+			const row = this.hijos[index];
+			this.submodalFamiliarDraft = {
+				NOMBRE_COMPLETO: row?.NOMBRE_COMPLETO ?? '',
+				SEXO: row?.SEXO ?? null,
+				FECHA_NACIMIENTO: this.parseFecha(row?.FECHA_NACIMIENTO),
+				EDAD: row?.EDAD ?? null,
+			};
+		} else {
+			const row = this.familiares[index];
+			this.submodalFamiliarDraft = {
+				NOMBRE_COMPLETO: row?.NOMBRE_COMPLETO ?? '',
+				CORR_PARENTESCO: row?.CORR_PARENTESCO ?? null,
+				NOMBRE_PARENTESCO: row?.NOMBRE_PARENTESCO ?? '',
+				TELEFONO: row?.TELEFONO ?? '',
+				DOMICILIO: row?.DOMICILIO ?? '',
+				OCUPACION: row?.OCUPACION ?? '',
+				FECHA_NACIMIENTO: this.parseFecha(row?.FECHA_NACIMIENTO),
+			};
+		}
+		this.submodalFamiliarVisible = true;
+	}
+
+	cerrarSubmodalFamiliar(): void {
+		this.submodalFamiliarVisible = false;
+		this.submodalFamiliarTipo = null;
+		this.submodalFamiliarEditIndex = null;
+		this.submodalFamiliarDraft = {};
+	}
+
+	// Qué hace: al cambiar parentesco en submodal, completa el nombre para la card.
+	onSubmodalParentescoChanged(e: any): void {
+		const corr = e?.value ?? null;
+		const found = (this.mCORR_PARENTESCO ?? []).find((p) => Number(p?.CORR_PARENTESCO) === Number(corr));
+		this.submodalFamiliarDraft.NOMBRE_PARENTESCO = found?.NOMBRE_PARENTESCO ?? '';
+	}
+
+	// Qué hace: recalcula edad del hijo al cambiar fecha de nacimiento en submodal.
+	onSubmodalHijoFechaChanged(valor: any): void {
+		this.submodalFamiliarDraft.FECHA_NACIMIENTO = valor ?? null;
+		this.submodalFamiliarDraft.EDAD = this.calcularEdad(valor);
+	}
+
+	// Qué hace: aplica alta/edición del submodal sobre la lista en memoria (sin API aún).
+	guardarSubmodalFamiliar(): void {
+		if (this.submodalFamiliarTipo === 'hijo') {
+			const nombre = `${this.submodalFamiliarDraft?.NOMBRE_COMPLETO ?? ''}`.trim();
+			if (!nombre) {
+				this.notifyFx('Ingrese el nombre del hijo.', NotifyType.Warning);
+				return;
+			}
+			const row: GenPersonaHijo = {
+				CORR_EMPRESA: Number(this.model?.CORR_EMPRESA ?? 0),
+				CORR_PERSONA: Number(this.model?.CORR_PERSONA ?? 0),
+				CORR_HIJO:
+					this.submodalFamiliarEditIndex != null
+						? this.hijos[this.submodalFamiliarEditIndex].CORR_HIJO
+						: this.tempCorrHijo--,
+				NOMBRE_COMPLETO: nombre,
+				SEXO: this.submodalFamiliarDraft?.SEXO ?? '',
+				FECHA_NACIMIENTO: this.submodalFamiliarDraft?.FECHA_NACIMIENTO ?? null,
+				EDAD: this.submodalFamiliarDraft?.EDAD ?? this.calcularEdad(this.submodalFamiliarDraft?.FECHA_NACIMIENTO),
+			};
+			if (this.submodalFamiliarEditIndex != null) {
+				this.hijos = this.hijos.map((h, i) => (i === this.submodalFamiliarEditIndex ? row : h));
+			} else {
+				this.hijos = [...this.hijos, row];
+			}
+			this.cerrarSubmodalFamiliar();
+			return;
+		}
+
+		const nombre = `${this.submodalFamiliarDraft?.NOMBRE_COMPLETO ?? ''}`.trim();
+		if (!nombre) {
+			this.notifyFx('Ingrese el nombre del familiar.', NotifyType.Warning);
+			return;
+		}
+		const row: GenPersonaFamiliar = {
+			CORR_EMPRESA: Number(this.model?.CORR_EMPRESA ?? 0),
+			CORR_PERSONA: Number(this.model?.CORR_PERSONA ?? 0),
+			CORR_FAMILIAR:
+				this.submodalFamiliarEditIndex != null
+					? this.familiares[this.submodalFamiliarEditIndex].CORR_FAMILIAR
+					: this.tempCorrFamiliar--,
+			NOMBRE_COMPLETO: nombre,
+			CORR_PARENTESCO: this.submodalFamiliarDraft?.CORR_PARENTESCO ?? null,
+			NOMBRE_PARENTESCO: this.submodalFamiliarDraft?.NOMBRE_PARENTESCO ?? '',
+			TELEFONO: this.submodalFamiliarDraft?.TELEFONO ?? '',
+			DOMICILIO: this.submodalFamiliarDraft?.DOMICILIO ?? '',
+			OCUPACION: this.submodalFamiliarDraft?.OCUPACION ?? '',
+			FECHA_NACIMIENTO: this.submodalFamiliarDraft?.FECHA_NACIMIENTO ?? null,
+		};
+		if (this.submodalFamiliarEditIndex != null) {
+			this.familiares = this.familiares.map((f, i) => (i === this.submodalFamiliarEditIndex ? row : f));
+		} else {
+			this.familiares = [...this.familiares, row];
+		}
+		this.cerrarSubmodalFamiliar();
+	}
+
+	eliminarFamiliar(index: number): void {
+		this.familiares = this.familiares.filter((_, i) => i !== index);
+	}
+
+	eliminarHijo(index: number): void {
+		this.hijos = this.hijos.filter((_, i) => i !== index);
+	}
+
+	/**
 	 * Qué hace: bloquea teclas no permitidas según FORMATO_CARACTERES del catálogo.
 	 * Cómo: onKeyDown; guion de máscara DUI/NIT/NRC no lo teclea el usuario.
 	 */
@@ -1223,6 +1584,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.getCORR_TIPO_CONTRIBUYENTE();
 		this.getCORR_ACTIVIDAD_ECONOMICA();
 		this.getCORR_PAIS_NACIMIENTO();
+		this.getCORR_PARENTESCO();
 	}
 
 	private refrescarTerritorioDesdeModelo(): void {
@@ -1256,6 +1618,20 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			.subscribe({
 				next: (response: any) => {
 					this.mCORR_RELIGION = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	private getCORR_PARENTESCO(): void {
+		this.appInfoService
+			.getLookUp('GEN_EMPLEADO', 'GEN_PARENTESCO', 'GetCORR_PARENTESCO', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result ? response.Data ?? [] : [];
+					this.mCORR_PARENTESCO = (rows ?? []).filter(
+						(p: any) => p?.ACTIVO_PARENTESCO === true || p?.ACTIVO_PARENTESCO === 1 || p?.ACTIVO_PARENTESCO == null
+					);
 				},
 			});
 	}

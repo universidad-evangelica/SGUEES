@@ -75,6 +75,15 @@ namespace sguees.Controllers
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
+		[HttpGet("GetCORR_PARENTESCO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		// Qué hace: entrega el catálogo de parentescos para el tab Familiares de empleado.
+		// Cómo: llama a GetAllAsync del servicio.
+		public async Task<CResult> GetCORR_PARENTESCO_GEN_EMPLEADO([FromQuery] GEN_PARENTESCOParam Data)
+		{
+			return await _service.GetAllAsync(Data);
+		}
+
 		private string GetUsuario()
 		{
 			return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty;

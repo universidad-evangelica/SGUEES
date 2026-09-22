@@ -387,6 +387,26 @@
 	word-break: break-word;
 }
 
+.rd-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	gap: 10px;
+}
+
+.rd-card {
+	padding: 16px;
+	border-radius: var(--sguees-radius-md, 10px);
+	border: 1px solid var(--sguees-border-subtle, var(--border-color));
+	background: var(--sguees-surface-subtle, var(--background-gray-color));
+}
+
+.rd-card__header {
+	margin-bottom: 8px;
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--sguees-text-primary, var(--base-text-color));
+}
+
 .empleado-personales-popup {
 	display: flex;
 	flex-direction: column;
@@ -536,6 +556,18 @@
 	background: var(--sguees-surface-card, var(--card-background));
 }
 
+.ep-section__head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 10px;
+
+	.ep-section__title {
+		margin-bottom: 0;
+	}
+}
+
 .ep-section__title {
 	margin: 0 0 10px;
 	font-size: 13px;
@@ -582,6 +614,59 @@
 	margin: 0;
 	font-size: 13px;
 	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+}
+
+.ep-cards {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.ep-card {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 12px;
+	border-radius: var(--sguees-radius-md, 10px);
+	border: 1px solid var(--sguees-border-subtle, var(--border-color));
+	background: color-mix(in srgb, var(--accent-color, #0d9488) 4%, var(--sguees-surface-subtle, var(--background-gray-color)));
+}
+
+.ep-card__body {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.ep-card__title {
+	font-size: 13px;
+	font-weight: 650;
+	margin-bottom: 2px;
+}
+
+.ep-card__summary {
+	font-size: 13px;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+	word-break: break-word;
+}
+
+.ep-card__actions {
+	display: flex;
+	align-items: center;
+	flex-shrink: 0;
+}
+
+.ep-submodal {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.ep-submodal__footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	padding-top: 4px;
+	border-top: 1px solid var(--sguees-border-subtle, var(--border-color));
 }
 
 @media (max-width: 900px) {

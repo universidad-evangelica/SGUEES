@@ -1,5 +1,5 @@
 // Qué hace: servicio de negocio del browse/formulario de Empleado.
-// Cómo: GetAll/Get/Iniciar + personales + documentos (repos anidados, patrón sc-descriptor-puesto).
+// Cómo: GetAll/Get/Iniciar + personales + documentos + familiares/hijos (repos anidados).
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -8,6 +8,8 @@ import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 import { GenEmpleadoRepository } from './gen-empleado.repository';
 import { GenPersonaTipoDocumentoIdentidadRepository } from './gen-persona-tipo-documento-identidad/gen-persona-tipo-documento-identidad.repository';
+import { GenPersonaFamiliarRepository } from './gen-persona-familiar/gen-persona-familiar.repository';
+import { GenPersonaHijosRepository } from './gen-persona-hijos/gen-persona-hijos.repository';
 
 const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
 
@@ -15,7 +17,9 @@ const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
 export class GenEmpleadoService {
 	constructor(
 		private repo: GenEmpleadoRepository,
-		private documentosRepo: GenPersonaTipoDocumentoIdentidadRepository
+		private documentosRepo: GenPersonaTipoDocumentoIdentidadRepository,
+		private familiaresRepo: GenPersonaFamiliarRepository,
+		private hijosRepo: GenPersonaHijosRepository
 	) {}
 
 	getAll(param: any): Observable<IResult> {
@@ -75,6 +79,26 @@ export class GenEmpleadoService {
 	// Qué hace: guarda documentos del tab (body List Table; CORR_PERSONA en query).
 	saveDocumentosIdentidad(corrPersona: number, documentos: any[]): Observable<IResult> {
 		return this.documentosRepo.saveAll(corrPersona, documentos);
+	}
+
+	// Qué hace: lista familiares de la persona.
+	getFamiliares(corrPersona: number): Observable<IResult> {
+		return this.familiaresRepo.getAll([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	// Qué hace: guarda familiares del tab (body List Table).
+	saveFamiliares(corrPersona: number, familiares: any[]): Observable<IResult> {
+		return this.familiaresRepo.saveAll(corrPersona, familiares);
+	}
+
+	// Qué hace: lista hijos de la persona.
+	getHijos(corrPersona: number): Observable<IResult> {
+		return this.hijosRepo.getAll([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	// Qué hace: guarda hijos del tab (body List Table).
+	saveHijos(corrPersona: number, hijos: any[]): Observable<IResult> {
+		return this.hijosRepo.saveAll(corrPersona, hijos);
 	}
 
 	getColumns(): any {
