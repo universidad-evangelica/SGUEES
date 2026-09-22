@@ -17,7 +17,7 @@ export class GenTipoDocumentoIdentidadService {
 	constructor(private repo: GenTipoDocumentoIdentidadRepository) {}
 
 	// Qué hace: valida el formulario antes de guardar.
-	// Cómo lo hace: exige nombre (25) y nombre corto (15); si ACTIVO_CARACTERES, exige NUMERO_CARACTERES > 0.
+	// Cómo: nombre/corto; formato y aplica_para; si ACTIVO_CARACTERES, NUMERO_CARACTERES > 0.
 	esValido(model: GenTipoDocumentoIdentidad, msg: Function): boolean {
 		if (!model.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD || model.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD.trim() === '') {
 			msg('Debe ingresar el nombre del tipo de documento.', NotifyType.Warning);
@@ -33,6 +33,14 @@ export class GenTipoDocumentoIdentidadService {
 		}
 		if (model.NOMBRE_CORTO.trim().length > 15) {
 			msg('El nombre corto no puede superar 15 caracteres.', NotifyType.Warning);
+			return false;
+		}
+		if (!model.FORMATO_CARACTERES || `${model.FORMATO_CARACTERES}`.trim() === '') {
+			msg('Debe indicar el formato de caracteres (números, letras o ambos).', NotifyType.Warning);
+			return false;
+		}
+		if (!model.APLICA_PARA || `${model.APLICA_PARA}`.trim() === '') {
+			msg('Debe indicar si aplica para nacional, extranjero o ambos.', NotifyType.Warning);
 			return false;
 		}
 		if (model.ACTIVO_CARACTERES) {
@@ -94,6 +102,8 @@ export class GenTipoDocumentoIdentidadService {
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
 			createEstadoColumnConfig('ACTIVO_CARACTERES', ESTADO_ACTIVO_INACTIVO_LABELS, { caption: 'Valida caracteres' }),
+			{ dataField: 'NOMBRE_FORMATO_CARACTERES', caption: 'Formato caracteres', width: 160, minWidth: 120 },
+			{ dataField: 'NOMBRE_APLICA_PARA', caption: 'Aplica para', width: 130, minWidth: 100 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS, { caption: 'Estado' }),
 			...buildAuditGridColumns({ withDateTimeFilter: true }),
 		];
@@ -132,6 +142,20 @@ export class GenTipoDocumentoIdentidadService {
 				label: { text: 'Nombre corto' },
 				colSpan: 2,
 				editorOptions: { placeholder: 'Corto...', showClearButton: true, maxLength: 15 },
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
+			},
+			{
+				dataField: 'FORMATO_CARACTERES',
+				label: { text: 'Formato caracteres' },
+				colSpan: 2,
+				template: 'FORMATO_CARACTERESLookup',
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
+			},
+			{
+				dataField: 'APLICA_PARA',
+				label: { text: 'Aplica para' },
+				colSpan: 2,
+				template: 'APLICA_PARALookup',
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{

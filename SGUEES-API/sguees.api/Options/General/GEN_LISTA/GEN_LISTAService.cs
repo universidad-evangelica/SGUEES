@@ -79,6 +79,18 @@ namespace sguees.Services
         {
             return _repo.GetCLASE_BANCO();
         }
+
+		// Qué hace: lista de formato de caracteres (números / letras / ambos).
+		public CResult GetFORMATO_CARACTERES()
+		{
+			return _repo.GetFORMATO_CARACTERES();
+		}
+
+		// Qué hace: lista de ámbito nacional / extranjero / ambos.
+		public CResult GetAPLICA_PARA()
+		{
+			return _repo.GetAPLICA_PARA();
+		}
        
 	}
 }

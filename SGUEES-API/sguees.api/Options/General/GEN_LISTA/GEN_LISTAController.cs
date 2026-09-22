@@ -213,6 +213,22 @@ namespace sguees.Controllers
             return _service.GetCLASE_BANCO();
         }
 
+		// Qué hace: lookup formato caracteres para catálogo tipo documento identidad.
+		[HttpGet("GetFORMATO_CARACTERES_GEN_TIPO_DOCUMENTO_IDENTIDAD")]
+		[Authorize(Policy = "/gen-tipo-documento-identidad|R")]
+		public CResult GetFORMATO_CARACTERES_GEN_TIPO_DOCUMENTO_IDENTIDAD()
+		{
+			return _service.GetFORMATO_CARACTERES();
+		}
+
+		// Qué hace: lookup aplica para (nacional/extranjero/ambos) del mismo catálogo.
+		[HttpGet("GetAPLICA_PARA_GEN_TIPO_DOCUMENTO_IDENTIDAD")]
+		[Authorize(Policy = "/gen-tipo-documento-identidad|R")]
+		public CResult GetAPLICA_PARA_GEN_TIPO_DOCUMENTO_IDENTIDAD()
+		{
+			return _service.GetAPLICA_PARA();
+		}
+
        
 	}
 }

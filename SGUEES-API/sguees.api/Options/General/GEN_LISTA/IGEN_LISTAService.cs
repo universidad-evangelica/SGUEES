@@ -20,6 +20,8 @@ namespace sguees.Services
 		CResult GetLIBRO_IVA();
 		CResult GetMES();
 		CResult GetCLASE_BANCO();
+		CResult GetFORMATO_CARACTERES();
+		CResult GetAPLICA_PARA();
 		
 	}
 }

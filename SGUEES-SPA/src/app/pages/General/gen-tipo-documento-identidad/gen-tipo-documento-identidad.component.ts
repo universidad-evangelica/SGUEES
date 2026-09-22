@@ -3,11 +3,13 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
+import { environment } from 'src/environments/environment';
 import { GenTipoDocumentoIdentidad } from './models/gen-tipo-documento-identidad';
 import { GenTipoDocumentoIdentidadService } from './gen-tipo-documento-identidad.service';
 
@@ -33,6 +35,11 @@ export class GenTipoDocumentoIdentidadComponent extends CBaseComponent implement
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Tipo Documento Identidad';
 
+	/** Listas GEN_LISTA para lookups del formulario. */
+	mFORMATO_CARACTERES: any[] = [];
+	mAPLICA_PARA: any[] = [];
+	readOnly = false;
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -50,7 +57,39 @@ export class GenTipoDocumentoIdentidadComponent extends CBaseComponent implement
 
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
+		this.cargarLookups();
 		this.consultar();
+	}
+
+	// Qué hace: carga listas FORMATO_CARACTERES y APLICA_PARA desde GEN_LISTA.
+	private cargarLookups(): void {
+		this.appInfoService
+			.getLookUp('GEN_TIPO_DOCUMENTO_IDENTIDAD', 'GEN_LISTA', 'GetFORMATO_CARACTERES', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result) {
+						this.mFORMATO_CARACTERES = response.Data ?? [];
+					}
+				},
+				error: (error: any) => this.notifyFx(error, NotifyType.Error),
+			});
+
+		this.appInfoService
+			.getLookUp('GEN_TIPO_DOCUMENTO_IDENTIDAD', 'GEN_LISTA', 'GetAPLICA_PARA', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result) {
+						this.mAPLICA_PARA = response.Data ?? [];
+					}
+				},
+				error: (error: any) => this.notifyFx(error, NotifyType.Error),
+			});
+	}
+
+	selectedLookUpLista(vRow: any): any {
+		return vRow?.[0]?.Key;
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -73,6 +112,10 @@ export class GenTipoDocumentoIdentidadComponent extends CBaseComponent implement
 				ACTIVO_TIPO_DOCUMENTO_IDENTIDAD: xModel.ACTIVO_TIPO_DOCUMENTO_IDENTIDAD,
 				NUMERO_CARACTERES: xModel.NUMERO_CARACTERES,
 				ACTIVO_CARACTERES: xModel.ACTIVO_CARACTERES,
+				FORMATO_CARACTERES: xModel.FORMATO_CARACTERES ?? '',
+				NOMBRE_FORMATO_CARACTERES: xModel.NOMBRE_FORMATO_CARACTERES ?? '',
+				APLICA_PARA: xModel.APLICA_PARA ?? '',
+				NOMBRE_APLICA_PARA: xModel.NOMBRE_APLICA_PARA ?? '',
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
 				FECHA_CREA: xModel.FECHA_CREA,
@@ -89,6 +132,10 @@ export class GenTipoDocumentoIdentidadComponent extends CBaseComponent implement
 			ACTIVO_TIPO_DOCUMENTO_IDENTIDAD: true,
 			NUMERO_CARACTERES: 0,
 			ACTIVO_CARACTERES: false,
+			FORMATO_CARACTERES: '',
+			NOMBRE_FORMATO_CARACTERES: '',
+			APLICA_PARA: '',
+			NOMBRE_APLICA_PARA: '',
 			USUARIO_CREA: '',
 			ESTACION_CREA: '',
 			FECHA_CREA: new Date(),
@@ -261,6 +308,7 @@ export class GenTipoDocumentoIdentidadComponent extends CBaseComponent implement
 	}
 
 	override bloquear(): void {
+		this.readOnly = true;
 		this.dataForm.instance.getEditor('CORR_TIPO_DOCUMENTO_IDENTIDAD')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_TIPO_DOCUMENTO_IDENTIDAD')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_CORTO')?.option('readOnly', true);
@@ -271,6 +319,7 @@ export class GenTipoDocumentoIdentidadComponent extends CBaseComponent implement
 
 	override habilitar(): void {
 		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
+		this.readOnly = false;
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_TIPO_DOCUMENTO_IDENTIDAD')?.option('readOnly', true);
 			this.dataForm.instance.getEditor('NOMBRE_TIPO_DOCUMENTO_IDENTIDAD')?.option('readOnly', false);

@@ -541,6 +541,52 @@ namespace sguees.Repositories
             return objResultado;
         }
 
+		// Qué hace: opciones de formato de caracteres para tipo documento identidad.
+		// Cómo: valores del CHECK de tabla — LETRAS / NUMEROS / AMBOS.
+		public CResult GetFORMATO_CARACTERES()
+		{
+			CResult objResultado = new();
+
+			objResultado.Data = new List<GEN_LISTAView>()
+			{
+				new() { Key = "NUMEROS", Value = "Solo números" },
+				new() { Key = "LETRAS", Value = "Solo letras" },
+				new() { Key = "AMBOS", Value = "Letras y números" },
+			};
+
+			objResultado.Result = true;
+			objResultado.RowsAffected = 1;
+			objResultado.CodeHelper = 0;
+			objResultado.ErrorCode = 0;
+			objResultado.ErrorMessage = "";
+			objResultado.ErrorSource = "";
+
+			return objResultado;
+		}
+
+		// Qué hace: ámbito de aplicación del documento (nacionales / extranjeros / ambos).
+		// Cómo: valores del CHECK de tabla — NACIONALES / EXTRANJEROS / AMBOS.
+		public CResult GetAPLICA_PARA()
+		{
+			CResult objResultado = new();
+
+			objResultado.Data = new List<GEN_LISTAView>()
+			{
+				new() { Key = "NACIONALES", Value = "Nacionales" },
+				new() { Key = "EXTRANJEROS", Value = "Extranjeros" },
+				new() { Key = "AMBOS", Value = "Ambos" },
+			};
+
+			objResultado.Result = true;
+			objResultado.RowsAffected = 1;
+			objResultado.CodeHelper = 0;
+			objResultado.ErrorCode = 0;
+			objResultado.ErrorMessage = "";
+			objResultado.ErrorSource = "";
+
+			return objResultado;
+		}
+
       
     }
 

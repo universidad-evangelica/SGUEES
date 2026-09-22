@@ -1,5 +1,5 @@
 // Qué hace: modelo de tabla GEN_TIPO_DOCUMENTO_IDENTIDAD.
-// Cómo lo hace: define PK, nombres, activo, validación de caracteres y auditoría.
+// Cómo lo hace: define PK, nombres, validación de caracteres, aplica_para y auditoría.
 using System;
 using eFramework.Data;
 
@@ -13,6 +13,8 @@ namespace sguees.Models
 		public bool? ACTIVO_TIPO_DOCUMENTO_IDENTIDAD { get; set; }
 		public short? NUMERO_CARACTERES { get; set; }
 		public bool? ACTIVO_CARACTERES { get; set; }
+		public string FORMATO_CARACTERES { get; set; }
+		public string APLICA_PARA { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }
 		public DateTime? FECHA_CREA { get; set; }
