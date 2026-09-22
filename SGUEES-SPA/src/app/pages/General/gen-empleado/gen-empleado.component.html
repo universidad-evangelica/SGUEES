@@ -231,8 +231,8 @@
 						<div class="rd-panel">
 							<section class="rd-section">
 								<h4 class="rd-section__title">Documentos de identidad</h4>
-								<div class="rd-grid" *ngIf="documentosIdentidad?.length; else sinDocumentosCat">
-									<div class="rd-field" *ngFor="let doc of documentosIdentidad">
+								<div class="rd-grid" *ngIf="documentosIdentidadVisibles?.length; else sinDocumentosCat">
+									<div class="rd-field" *ngFor="let doc of documentosIdentidadVisibles">
 										<span class="rd-label">{{ etiquetaDocumento(doc) }}</span>
 										<span class="rd-value">{{ textoLectura(doc.VALOR_DOCUMENTO) }}</span>
 									</div>
@@ -406,8 +406,8 @@
 						<div class="ep-panel">
 							<section class="ep-section">
 								<h4 class="ep-section__title">Documentos de identidad</h4>
-								<div class="ep-grid" *ngIf="documentosIdentidad?.length; else sinDocsModal">
-									<div class="ep-field" *ngFor="let doc of documentosIdentidad">
+								<div class="ep-grid" *ngIf="documentosIdentidadVisibles?.length; else sinDocsModal">
+									<div class="ep-field" *ngFor="let doc of documentosIdentidadVisibles">
 										<label class="ep-label">{{ etiquetaDocumento(doc) }}</label>
 										<dx-text-box
 											stylingMode="outlined"

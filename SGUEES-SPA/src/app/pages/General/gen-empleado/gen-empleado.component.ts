@@ -17,8 +17,10 @@ import { GenPersonaTipoDocumentoIdentidad } from './gen-persona-tipo-documento-i
 import { GenEmpleadoService } from './gen-empleado.service';
 import {
 	aplicarLimiteDocumentoIdentidad,
-	esDocumentoSoloDigitos,
+	documentoVisiblePorAplicaPara,
 	maxLengthDocumentoIdentidad,
+	normalizarFormatoCaracteres,
+	teclaPermitidaPorFormato,
 } from './gen-persona-tipo-documento-identidad/documentos-identidad.format';
 
 const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
@@ -53,6 +55,17 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	documentosIdentidad: GenPersonaTipoDocumentoIdentidad[] = [];
 	/** Copia para Cancelar del modal (personales + documentos). */
 	private documentosIdentidadOriginal: GenPersonaTipoDocumentoIdentidad[] = [];
+
+	/**
+	 * Qué hace: documentos visibles según ES_EXTRANJERO y APLICA_PARA del catálogo.
+	 * Cómo: extranjero → EXTRANJEROS|AMBOS; si no → NACIONALES|AMBOS (lista completa se guarda).
+	 */
+	get documentosIdentidadVisibles(): GenPersonaTipoDocumentoIdentidad[] {
+		const esExtranjero = !!this.modelPersonaNatural?.ES_EXTRANJERO;
+		return (this.documentosIdentidad ?? []).filter((d) =>
+			documentoVisiblePorAplicaPara(d?.APLICA_PARA, esExtranjero)
+		);
+	}
 	/** Qué hace: modal de edición de datos personales (patrón expediente). */
 	popupPersonalesVisible = false;
 	/** Evita restaurar modelo al cerrar el popup tras Guardar exitoso. */
@@ -993,11 +1006,11 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	/**
-	 * Qué hace: bloquea letras en DUI/NIT/NRC al teclear (permite dígitos, borrar y atajos).
-	 * Cómo: onKeyDown; el guion lo pone la máscara, no el usuario.
+	 * Qué hace: bloquea teclas no permitidas según FORMATO_CARACTERES del catálogo.
+	 * Cómo: onKeyDown; guion de máscara DUI/NIT/NRC no lo teclea el usuario.
 	 */
 	onDocumentoValorKeyDown(doc: GenPersonaTipoDocumentoIdentidad, e: any): void {
-		if (!doc || !esDocumentoSoloDigitos(doc.NOMBRE_CORTO, doc.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD)) {
+		if (!doc) {
 			return;
 		}
 		const ev = e?.event as KeyboardEvent | undefined;
@@ -1008,16 +1021,16 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			return;
 		}
 		const key = ev.key || '';
-		if (
-			key.length === 1 &&
-			!/[0-9]/.test(key) &&
-			key !== 'Dead'
-		) {
+		if (key.length !== 1 || key === 'Dead') {
+			return;
+		}
+		const formato = normalizarFormatoCaracteres(doc.FORMATO_CARACTERES);
+		if (!teclaPermitidaPorFormato(key, formato)) {
 			ev.preventDefault();
 		}
 	}
 
-	// Qué hace: formatea DUI/NIT/NRC en vivo al teclear (máscara + tope; sin letras).
+	// Qué hace: formatea en vivo según FORMATO_CARACTERES + máscara DUI/NIT/NRC si aplica.
 	// Cómo: limpia el valor del input nativo y sincroniza el TextBox.
 	onDocumentoValorInput(doc: GenPersonaTipoDocumentoIdentidad, e: any): void {
 		if (!doc) {
@@ -1030,7 +1043,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			raw,
 			doc.ACTIVO_CARACTERES,
 			Number(doc.NUMERO_CARACTERES ?? 0),
-			doc.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD
+			doc.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD,
+			doc.FORMATO_CARACTERES
 		);
 		doc.VALOR_DOCUMENTO = formateado;
 		if (input && input.value !== formateado) {
@@ -1052,7 +1066,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			raw,
 			doc.ACTIVO_CARACTERES,
 			Number(doc.NUMERO_CARACTERES ?? 0),
-			doc.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD
+			doc.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD,
+			doc.FORMATO_CARACTERES
 		);
 		if (doc.VALOR_DOCUMENTO !== formateado) {
 			doc.VALOR_DOCUMENTO = formateado;
@@ -1062,13 +1077,14 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		}
 	}
 
-	// Qué hace: maxLength del TextBox = dígitos + guiones de la máscara.
+	// Qué hace: maxLength del TextBox = cuerpo catálogo + guiones de máscara.
 	maxLengthDocumento(doc: GenPersonaTipoDocumentoIdentidad): number | null {
 		return maxLengthDocumentoIdentidad(
 			doc?.NOMBRE_CORTO,
 			doc?.ACTIVO_CARACTERES,
 			Number(doc?.NUMERO_CARACTERES ?? 0),
-			doc?.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD
+			doc?.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD,
+			doc?.FORMATO_CARACTERES
 		);
 	}
 

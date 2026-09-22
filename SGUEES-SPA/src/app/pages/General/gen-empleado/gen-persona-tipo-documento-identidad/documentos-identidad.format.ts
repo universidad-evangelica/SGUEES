@@ -1,5 +1,8 @@
-// Qué hace: formatos y límites de documentos de identidad (SV) según catálogo.
-// Cómo: DUI/NIT/NRC solo dígitos + guiones; tope de dígitos si ACTIVO_CARACTERES.
+// Qué hace: formatos y límites de documentos de identidad según catálogo.
+// Cómo: FORMATO_CARACTERES (NUMEROS/LETRAS/AMBOS); máscara DUI/NIT/NRC por NOMBRE_CORTO;
+//       resto solo filtro de caracteres + tope si ACTIVO_CARACTERES.
+
+export type FormatoCaracteresDoc = 'NUMEROS' | 'LETRAS' | 'AMBOS';
 
 /** Qué hace: deja solo dígitos. */
 export function soloDigitos(valor: string): string {
@@ -12,8 +15,47 @@ export function esActivoCaracteres(activo: unknown): boolean {
 }
 
 /**
+ * Qué hace: normaliza FORMATO_CARACTERES del catálogo (CHECK LETRAS/NUMEROS/AMBOS).
+ * Cómo: default NUMEROS si vacío (compatibilidad docs numéricos).
+ */
+export function normalizarFormatoCaracteres(valor?: string | null): FormatoCaracteresDoc {
+	const v = `${valor ?? ''}`.trim().toUpperCase();
+	if (v === 'LETRAS' || v === 'NUMEROS' || v === 'AMBOS') {
+		return v;
+	}
+	return 'NUMEROS';
+}
+
+/**
+ * Qué hace: deja solo caracteres permitidos según FORMATO_CARACTERES (sin guiones).
+ */
+export function filtrarPorFormatoCaracteres(valor: string, formato: FormatoCaracteresDoc): string {
+	const raw = valor || '';
+	if (formato === 'NUMEROS') {
+		return raw.replace(/\D/g, '');
+	}
+	if (formato === 'LETRAS') {
+		return raw.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '');
+	}
+	return raw.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]/g, '');
+}
+
+/** Qué hace: indica si la tecla es válida para el formato (sin guion; la máscara lo pone). */
+export function teclaPermitidaPorFormato(key: string, formato: FormatoCaracteresDoc): boolean {
+	if (!key || key.length !== 1) {
+		return true;
+	}
+	if (formato === 'NUMEROS') {
+		return /[0-9]/.test(key);
+	}
+	if (formato === 'LETRAS') {
+		return /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(key);
+	}
+	return /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]/.test(key);
+}
+
+/**
  * Qué hace: normaliza la clave del tipo (DUI/NIT/NRC) desde corto o nombre largo.
- * Cómo: prioriza NOMBRE_CORTO; si no, busca DUI|NIT|NRC en el nombre del catálogo.
  */
 export function claveTipoDocumento(nombreCorto?: string, nombreLargo?: string): string {
 	const corto = `${nombreCorto || ''}`.trim().toUpperCase();
@@ -36,140 +78,170 @@ export function claveTipoDocumento(nombreCorto?: string, nombreLargo?: string): 
 	return corto || largo;
 }
 
-/** Qué hace: indica si el documento solo admite dígitos (DUI/NIT/NRC). */
-export function esDocumentoSoloDigitos(nombreCorto?: string, nombreLargo?: string): boolean {
+/** Qué hace: indica si el tipo usa máscara por NOMBRE_CORTO (DUI/NIT/NRC). */
+export function esDocumentoConMascara(nombreCorto?: string, nombreLargo?: string): boolean {
 	const key = claveTipoDocumento(nombreCorto, nombreLargo);
 	return key === 'DUI' || key === 'NIT' || key === 'NRC';
 }
 
 /**
- * Qué hace: DUI — solo dígitos; guion antes del último (ej. 1234567-8).
- * Cómo: maxDigitos opcional; si viene del catálogo, recorta a ese tope.
+ * Qué hace: filtra documentos según APLICA_PARA y si la persona es extranjera.
+ * Cómo: extranjero → EXTRANJEROS|AMBOS; nacional → NACIONALES|AMBOS; vacío → AMBOS.
  */
-export function formatDui(valor: string, maxDigitos?: number | null): string {
-	let digits = soloDigitos(valor);
-	if (maxDigitos != null && Number(maxDigitos) > 0) {
-		digits = digits.substring(0, Number(maxDigitos));
+export function documentoVisiblePorAplicaPara(aplicaPara: string | undefined | null, esExtranjero: boolean): boolean {
+	const a = `${aplicaPara ?? ''}`.trim().toUpperCase();
+	if (!a || a === 'AMBOS') {
+		return true;
 	}
-	if (digits.length === 0) {
-		return '';
+	if (esExtranjero) {
+		return a === 'EXTRANJEROS';
 	}
-	if (digits.length === 1) {
-		return digits;
-	}
-	return digits.slice(0, -1) + '-' + digits.slice(-1);
+	return a === 'NACIONALES';
 }
 
 /**
- * Qué hace: NIT solo dígitos; máscara 0000-000000-000-… según maxDigitos del catálogo.
- * Cómo: grupos 4-6-3 y el resto en el último bloque (si catálogo >14, no corta en 14).
+ * Qué hace: DUI — cuerpo según formato; guion antes del último carácter.
  */
-export function formatNit(valor: string, maxDigitos?: number | null): string {
-	let digits = soloDigitos(valor);
-	if (maxDigitos != null && Number(maxDigitos) > 0) {
-		digits = digits.substring(0, Number(maxDigitos));
+export function formatDui(
+	valor: string,
+	maxCaracteres?: number | null,
+	formato: FormatoCaracteresDoc = 'NUMEROS'
+): string {
+	let body = filtrarPorFormatoCaracteres(valor, formato);
+	if (maxCaracteres != null && Number(maxCaracteres) > 0) {
+		body = body.substring(0, Number(maxCaracteres));
 	}
-	if (digits.length === 0) {
+	if (body.length === 0) {
+		return '';
+	}
+	if (body.length === 1) {
+		return body;
+	}
+	return body.slice(0, -1) + '-' + body.slice(-1);
+}
+
+/**
+ * Qué hace: NIT — cuerpo según formato; máscara 0000-000000-000-… según tope catálogo.
+ */
+export function formatNit(
+	valor: string,
+	maxCaracteres?: number | null,
+	formato: FormatoCaracteresDoc = 'NUMEROS'
+): string {
+	let body = filtrarPorFormatoCaracteres(valor, formato);
+	if (maxCaracteres != null && Number(maxCaracteres) > 0) {
+		body = body.substring(0, Number(maxCaracteres));
+	}
+	if (body.length === 0) {
 		return '';
 	}
 	return (
-		digits.substring(0, 4) +
-		(digits.length > 4 ? '-' + digits.substring(4, 10) : '') +
-		(digits.length > 10 ? '-' + digits.substring(10, 13) : '') +
-		(digits.length > 13 ? '-' + digits.substring(13) : '')
+		body.substring(0, 4) +
+		(body.length > 4 ? '-' + body.substring(4, 10) : '') +
+		(body.length > 10 ? '-' + body.substring(10, 13) : '') +
+		(body.length > 13 ? '-' + body.substring(13) : '')
 	);
 }
 
 /**
- * Qué hace: NRC — solo dígitos; guion antes del último dígito.
- * Cómo: maxDigitos opcional solo si el catálogo valida caracteres.
+ * Qué hace: NRC — cuerpo según formato; guion antes del último carácter.
  */
-export function formatNrc(valor: string, maxDigitos?: number | null): string {
-	let digits = soloDigitos(valor);
-	if (maxDigitos != null && Number(maxDigitos) > 0) {
-		digits = digits.substring(0, Number(maxDigitos));
+export function formatNrc(
+	valor: string,
+	maxCaracteres?: number | null,
+	formato: FormatoCaracteresDoc = 'NUMEROS'
+): string {
+	let body = filtrarPorFormatoCaracteres(valor, formato);
+	if (maxCaracteres != null && Number(maxCaracteres) > 0) {
+		body = body.substring(0, Number(maxCaracteres));
 	}
-	if (digits.length <= 1) {
-		return digits;
+	if (body.length <= 1) {
+		return body;
 	}
-	return digits.slice(0, -1) + '-' + digits.slice(-1);
+	return body.slice(0, -1) + '-' + body.slice(-1);
 }
 
 /**
- * Qué hace: aplica formato según NOMBRE_CORTO respetando tope de dígitos.
+ * Qué hace: aplica máscara DUI/NIT/NRC o solo filtro de caracteres para otros tipos.
  */
 export function formatDocumentoIdentidad(
 	nombreCorto: string,
 	valor: string,
-	maxDigitos: number,
-	nombreLargo?: string
+	maxCaracteres: number,
+	nombreLargo?: string,
+	formatoCaracteres?: string | null
 ): string {
+	const formato = normalizarFormatoCaracteres(formatoCaracteres);
 	const key = claveTipoDocumento(nombreCorto, nombreLargo);
 	if (key === 'DUI') {
-		return formatDui(valor, maxDigitos);
+		return formatDui(valor, maxCaracteres, formato);
 	}
 	if (key === 'NIT') {
-		return formatNit(valor, maxDigitos);
+		return formatNit(valor, maxCaracteres, formato);
 	}
 	if (key === 'NRC') {
-		return formatNrc(valor, maxDigitos);
+		return formatNrc(valor, maxCaracteres, formato);
 	}
-	return (valor || '').substring(0, Math.max(0, maxDigitos));
+	return filtrarPorFormatoCaracteres(valor, formato).substring(0, Math.max(0, maxCaracteres));
 }
 
 /**
- * Qué hace: longitud máxima del TextBox (dígitos catálogo + guiones).
- * Cómo: null si ACTIVO_CARACTERES inactivo o NUMERO_CARACTERES <= 0.
+ * Qué hace: longitud máxima del TextBox (cuerpo catálogo + guiones de máscara).
  */
 export function maxLengthDocumentoIdentidad(
 	nombreCorto: string,
 	activoCaracteres: unknown,
 	numeroCaracteres: number,
-	nombreLargo?: string
+	nombreLargo?: string,
+	formatoCaracteres?: string | null
 ): number | null {
 	if (!esActivoCaracteres(activoCaracteres) || Number(numeroCaracteres) <= 0) {
 		return null;
 	}
 	const n = Number(numeroCaracteres);
+	const formato = normalizarFormatoCaracteres(formatoCaracteres);
+	const muestraChar = formato === 'NUMEROS' ? '0' : 'A';
 	const key = claveTipoDocumento(nombreCorto, nombreLargo);
 	if (key === 'DUI' || key === 'NIT' || key === 'NRC') {
-		const muestra = formatDocumentoIdentidad(nombreCorto, '0'.repeat(n), n, nombreLargo);
+		const muestra = formatDocumentoIdentidad(nombreCorto, muestraChar.repeat(n), n, nombreLargo, formato);
 		return muestra.length || n;
 	}
 	return n;
 }
 
 /**
- * Qué hace: formatea al escribir según tipo y catálogo.
+ * Qué hace: formatea al escribir según tipo, FORMATO_CARACTERES y tope del catálogo.
  * Cómo:
- * - DUI/NIT/NRC: nunca letras (solo dígitos + guiones automáticos).
- * - Tope de dígitos solo si ACTIVO_CARACTERES + NUMERO_CARACTERES > 0.
+ * - DUI/NIT/NRC: máscara por nombre corto + letras/números según FORMATO_CARACTERES.
+ * - Otros: solo filtro FORMATO_CARACTERES (+ tope si ACTIVO_CARACTERES).
  */
 export function aplicarLimiteDocumentoIdentidad(
 	nombreCorto: string,
 	valor: string,
 	activoCaracteres: unknown,
 	numeroCaracteres: number,
-	nombreLargo?: string
+	nombreLargo?: string,
+	formatoCaracteres?: string | null
 ): string {
+	const formato = normalizarFormatoCaracteres(formatoCaracteres);
 	const key = claveTipoDocumento(nombreCorto, nombreLargo);
 	const valida = esActivoCaracteres(activoCaracteres) && Number(numeroCaracteres) > 0;
 	const n = Number(numeroCaracteres);
 	const tope = valida ? n : null;
 
 	if (key === 'DUI') {
-		return formatDui(valor, tope);
+		return formatDui(valor, tope, formato);
 	}
 	if (key === 'NIT') {
-		return formatNit(valor, tope);
+		return formatNit(valor, tope, formato);
 	}
 	if (key === 'NRC') {
-		return formatNrc(valor, tope);
+		return formatNrc(valor, tope, formato);
 	}
 
-	if (!valida) {
-		return valor ?? '';
+	let body = filtrarPorFormatoCaracteres(valor ?? '', formato);
+	if (valida) {
+		body = body.substring(0, n);
 	}
-
-	return (valor || '').substring(0, n);
+	return body;
 }

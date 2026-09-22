@@ -13,6 +13,8 @@ namespace sguees.Models
 		public string NOMBRE_CORTO { get; set; }
 		public short? NUMERO_CARACTERES { get; set; }
 		public bool? ACTIVO_CARACTERES { get; set; }
+		public string FORMATO_CARACTERES { get; set; }
+		public string APLICA_PARA { get; set; }
 		public bool? ACTIVO_TIPO_DOCUMENTO_IDENTIDAD { get; set; }
 		public string VALOR_DOCUMENTO { get; set; }
 		public bool EXISTE { get; set; }
