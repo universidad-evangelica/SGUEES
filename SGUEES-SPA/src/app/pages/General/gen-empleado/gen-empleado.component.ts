@@ -1,5 +1,5 @@
-// Qué hace: browse + formulario Nuevo/Editar de Empleado (Iniciar + Personales + Documentos + Familiares + Formación + Experiencia).
-// Cómo: grilla browse; Guardar según tab; personales vía SP; documentos/familiares/hijos/formación/experiencia anidados.
+// Qué hace: browse + formulario Nuevo/Editar de Empleado (Iniciar + Personales + Documentos + Familiares + Formación + Experiencia + Adicional).
+// Cómo: grilla browse; Guardar según tab; personales vía SP; documentos/familiares/hijos/formación/experiencia/UEES anidados.
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -20,6 +20,7 @@ import { GenPersonaFormacionAcademica } from './gen-persona-formacion-academica/
 import { GenPersonaIdioma } from './gen-persona-idiomas/models/gen-persona-idioma';
 import { GenPersonaCompetencia } from './gen-persona-competencia/models/gen-persona-competencia';
 import { GenPersonaExperienciaLaboral } from './gen-persona-experiencia-laboral/models/gen-persona-experiencia-laboral';
+import { GenPersonaFamiliarUees } from './gen-persona-familiar-uees/models/gen-persona-familiar-uees';
 import { GenEmpleadoService } from './gen-empleado.service';
 import {
 	aplicarLimiteDocumentoIdentidad,
@@ -105,6 +106,16 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	submodalExperienciaVisible = false;
 	submodalExperienciaEditIndex: number | null = null;
 	submodalExperienciaDraft: any = {};
+
+	// Qué hace: colecciones del tab Adicional (familiares que trabajan en UEES).
+	familiaresUees: GenPersonaFamiliarUees[] = [];
+	private familiaresUeesOriginal: GenPersonaFamiliarUees[] = [];
+	private tempCorrFamiliarUees = -1;
+
+	/** Submodal agregar/editar familiar UEES. */
+	submodalFamiliarUeesVisible = false;
+	submodalFamiliarUeesEditIndex: number | null = null;
+	submodalFamiliarUeesDraft: any = {};
 
 	/**
 	 * Qué hace: documentos visibles según ES_EXTRANJERO y APLICA_PARA del catálogo.
@@ -433,6 +444,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.experienciasLaborales = [];
 		this.experienciasLaboralesOriginal = [];
 		this.tempCorrExperiencia = -1;
+		this.familiaresUees = [];
+		this.familiaresUeesOriginal = [];
+		this.tempCorrFamiliarUees = -1;
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.revocarFotoPersona();
@@ -468,6 +482,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 									this.guardarIdiomasDesdeModal(() => {
 										this.guardarCompetenciasDesdeModal(() => {
 											this.guardarExperienciasDesdeModal(() => {
+												this.guardarFamiliaresUeesDesdeModal(() => {
 												this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
 												this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
 												this.familiaresOriginal = this.clonarFamiliares(this.familiares);
@@ -476,8 +491,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 												this.idiomasOriginal = this.clonarIdiomas(this.idiomas);
 												this.competenciasOriginal = this.clonarCompetencias(this.competencias);
 												this.experienciasLaboralesOriginal = this.clonarExperiencias(this.experienciasLaborales);
+												this.familiaresUeesOriginal = this.clonarFamiliaresUees(this.familiaresUees);
 												this.fotoUrlNueva = '';
 												this.volverBrowseTrasGuardar();
+												});
 											});
 										});
 									});
@@ -512,7 +529,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.notifyFx('Registro modificado con exito!', NotifyType.Success, { raw: true });
 	}
 
-	// Qué hace: guarda personales + documentos + familiares/hijos + formación + experiencia desde el modal y cierra el popup.
+	// Qué hace: guarda personales + documentos + familiares/hijos + formación + experiencia + UEES desde el modal y cierra el popup.
 	guardarPersonalesDesdeModal(): void {
 		if (this.fotoSubiendo) {
 			this.notifyFx('Espere a que termine de subir la fotografía.', NotifyType.Warning);
@@ -527,6 +544,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 								this.guardarIdiomasDesdeModal(() => {
 									this.guardarCompetenciasDesdeModal(() => {
 										this.guardarExperienciasDesdeModal(() => {
+											this.guardarFamiliaresUeesDesdeModal(() => {
 											this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
 											this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
 											this.familiaresOriginal = this.clonarFamiliares(this.familiares);
@@ -535,6 +553,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 											this.idiomasOriginal = this.clonarIdiomas(this.idiomas);
 											this.competenciasOriginal = this.clonarCompetencias(this.competencias);
 											this.experienciasLaboralesOriginal = this.clonarExperiencias(this.experienciasLaborales);
+											this.familiaresUeesOriginal = this.clonarFamiliaresUees(this.familiaresUees);
 											this.fotoUrlNueva = '';
 											this.omitirRestaurarPopupPersonales = true;
 											this.popupPersonalesVisible = false;
@@ -547,6 +566,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 												this.aplicarRegistroEnGrid(this.fillData(this.model), false);
 											}
 											this.notifyFx('Datos del empleado actualizados.', NotifyType.Success, { raw: true });
+											});
 										});
 									});
 								});
@@ -690,13 +710,14 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.idiomasOriginal = this.clonarIdiomas(this.idiomas);
 		this.competenciasOriginal = this.clonarCompetencias(this.competencias);
 		this.experienciasLaboralesOriginal = this.clonarExperiencias(this.experienciasLaborales);
+		this.familiaresUeesOriginal = this.clonarFamiliaresUees(this.familiaresUees);
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.popupPersonalesVisible = true;
 		setTimeout(() => this.aplicarReglasPersonales(), 0);
 	}
 
-	// Qué hace: cierra el modal y restaura personales/documentos/familiares/formación/experiencia/foto si canceló.
+	// Qué hace: cierra el modal y restaura personales/documentos/familiares/formación/experiencia/UEES/foto si canceló.
 	cerrarPopupPersonales(restaurar = true): void {
 		if (restaurar && !this.omitirRestaurarPopupPersonales) {
 			this.modelPersonaNatural = this.fillPersonaNatural(this.modelPersonaNaturalOriginal);
@@ -707,6 +728,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			this.idiomas = this.clonarIdiomas(this.idiomasOriginal);
 			this.competencias = this.clonarCompetencias(this.competenciasOriginal);
 			this.experienciasLaborales = this.clonarExperiencias(this.experienciasLaboralesOriginal);
+			this.familiaresUees = this.clonarFamiliaresUees(this.familiaresUeesOriginal);
 			this.fotoUrlNueva = '';
 			this.revocarFotoLocal();
 			this.refrescarTerritorioDesdeModelo();
@@ -716,6 +738,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cerrarSubmodalFamiliar();
 		this.cerrarSubmodalFormacion();
 		this.cerrarSubmodalExperiencia();
+		this.cerrarSubmodalFamiliarUees();
 	}
 
 	onPopupPersonalesShown(): void {
@@ -885,6 +908,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cargarIdiomas();
 		this.cargarCompetencias();
 		this.cargarExperienciasLaborales();
+		this.cargarFamiliaresUees();
 	}
 
 	// Qué hace: crea GEN_PERSONA + GEN_EMPRESA_PERSONA + GEN_PERSONA_NATURAL (SP) + GEN_EMPLEADO.
@@ -915,6 +939,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.cargarIdiomas();
 					this.cargarCompetencias();
 					this.cargarExperienciasLaborales();
+					this.cargarFamiliaresUees();
 					this.notifyFx('Empleado creado. Puede seguir editando los datos personales.', NotifyType.Success, {
 						raw: true,
 					});
@@ -2069,6 +2094,179 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 
 	eliminarExperiencia(index: number): void {
 		this.experienciasLaborales = this.experienciasLaborales.filter((_, i) => i !== index);
+	}
+
+	// ─── Adicional: familiares que trabajan en UEES ───────────────────────────
+
+	/**
+	 * Qué hace: persiste familiares UEES desde el modal.
+	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
+	 */
+	private guardarFamiliaresUeesDesdeModal(onSuccess?: () => void): void {
+		const corrPersona = Number(this.model.CORR_PERSONA);
+		if (corrPersona <= 0) {
+			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.saveFamiliaresUees(corrPersona, this.familiaresUees)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const rows = this.normalizarFamiliaresUees(response.Data ?? this.familiaresUees);
+					this.familiaresUees = rows;
+					this.familiaresUeesOriginal = this.clonarFamiliaresUees(rows);
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	private cargarFamiliaresUees(): void {
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		if (corrPersona <= 0) {
+			this.familiaresUees = [];
+			this.familiaresUeesOriginal = [];
+			return;
+		}
+
+		this.service
+			.getFamiliaresUees(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result ? this.normalizarFamiliaresUees(response.Data ?? []) : [];
+					this.familiaresUees = rows;
+					this.familiaresUeesOriginal = this.clonarFamiliaresUees(rows);
+				},
+				error: () => {
+					this.familiaresUees = [];
+					this.familiaresUeesOriginal = [];
+				},
+			});
+	}
+
+	private normalizarFamiliaresUees(rows: any[]): GenPersonaFamiliarUees[] {
+		return (rows ?? []).map((f) => ({
+			...f,
+			CORR_PARENTESCO:
+				f?.CORR_PARENTESCO == null || f?.CORR_PARENTESCO === '' || Number(f.CORR_PARENTESCO) <= 0
+					? null
+					: Number(f.CORR_PARENTESCO),
+		}));
+	}
+
+	private clonarFamiliaresUees(rows: GenPersonaFamiliarUees[]): GenPersonaFamiliarUees[] {
+		return (rows ?? []).map((f) => ({ ...f }));
+	}
+
+	/** Qué hace: resumen de card de familiar UEES. */
+	resumenFamiliarUees(item: GenPersonaFamiliarUees): string {
+		const partes = [
+			item?.NOMBRE_PARENTESCO || null,
+			item?.CARGO || null,
+			item?.LUGAR_TRABAJO || null,
+			item?.TELEFONO || null,
+		].filter((x) => !!x && `${x}`.trim());
+		return partes.length ? partes.join(' · ') : 'Sin detalle';
+	}
+
+	get tituloSubmodalFamiliarUees(): string {
+		return this.submodalFamiliarUeesEditIndex != null
+			? 'Editar familiar UEES'
+			: 'Agregar familiar UEES';
+	}
+
+	abrirSubmodalFamiliarUeesNuevo(): void {
+		this.submodalFamiliarUeesEditIndex = null;
+		this.submodalFamiliarUeesDraft = {
+			NOMBRE_COMPLETO: '',
+			CORR_PARENTESCO: null,
+			NOMBRE_PARENTESCO: '',
+			TELEFONO: '',
+			CARGO: '',
+			LUGAR_TRABAJO: '',
+		};
+		this.submodalFamiliarUeesVisible = true;
+	}
+
+	abrirSubmodalFamiliarUeesEditar(index: number): void {
+		const row = this.familiaresUees[index];
+		this.submodalFamiliarUeesEditIndex = index;
+		this.submodalFamiliarUeesDraft = {
+			NOMBRE_COMPLETO: row?.NOMBRE_COMPLETO ?? '',
+			CORR_PARENTESCO: row?.CORR_PARENTESCO ?? null,
+			NOMBRE_PARENTESCO: row?.NOMBRE_PARENTESCO ?? '',
+			TELEFONO: row?.TELEFONO ?? '',
+			CARGO: row?.CARGO ?? '',
+			LUGAR_TRABAJO: row?.LUGAR_TRABAJO ?? '',
+		};
+		this.submodalFamiliarUeesVisible = true;
+	}
+
+	cerrarSubmodalFamiliarUees(): void {
+		this.submodalFamiliarUeesVisible = false;
+		this.submodalFamiliarUeesEditIndex = null;
+		this.submodalFamiliarUeesDraft = {};
+	}
+
+	onSubmodalFamiliarUeesParentescoChanged(e: any): void {
+		const item = (this.mCORR_PARENTESCO ?? []).find(
+			(p: any) => Number(p?.CORR_PARENTESCO) === Number(e?.value)
+		);
+		this.submodalFamiliarUeesDraft = {
+			...this.submodalFamiliarUeesDraft,
+			NOMBRE_PARENTESCO: item?.NOMBRE_PARENTESCO ?? '',
+		};
+	}
+
+	guardarSubmodalFamiliarUees(): void {
+		const nombre = `${this.submodalFamiliarUeesDraft?.NOMBRE_COMPLETO ?? ''}`.trim();
+		if (!nombre) {
+			this.notifyFx('Ingrese el nombre del familiar.', NotifyType.Warning);
+			return;
+		}
+		const corrParentesco =
+			this.submodalFamiliarUeesDraft?.CORR_PARENTESCO == null ||
+			Number(this.submodalFamiliarUeesDraft.CORR_PARENTESCO) <= 0
+				? null
+				: Number(this.submodalFamiliarUeesDraft.CORR_PARENTESCO);
+		const row: GenPersonaFamiliarUees = {
+			CORR_EMPRESA: Number(this.model?.CORR_EMPRESA ?? 0),
+			CORR_PERSONA: Number(this.model?.CORR_PERSONA ?? 0),
+			CORR_FAMILIAR_UEES:
+				this.submodalFamiliarUeesEditIndex != null
+					? this.familiaresUees[this.submodalFamiliarUeesEditIndex].CORR_FAMILIAR_UEES
+					: this.tempCorrFamiliarUees--,
+			NOMBRE_COMPLETO: nombre,
+			CORR_PARENTESCO: corrParentesco,
+			NOMBRE_PARENTESCO: `${this.submodalFamiliarUeesDraft?.NOMBRE_PARENTESCO ?? ''}`.trim(),
+			TELEFONO: `${this.submodalFamiliarUeesDraft?.TELEFONO ?? ''}`.trim(),
+			CARGO: `${this.submodalFamiliarUeesDraft?.CARGO ?? ''}`.trim(),
+			LUGAR_TRABAJO: `${this.submodalFamiliarUeesDraft?.LUGAR_TRABAJO ?? ''}`.trim(),
+		};
+		if (this.submodalFamiliarUeesEditIndex != null) {
+			this.familiaresUees = this.familiaresUees.map((f, idx) =>
+				idx === this.submodalFamiliarUeesEditIndex ? row : f
+			);
+		} else {
+			this.familiaresUees = [...this.familiaresUees, row];
+		}
+		this.cerrarSubmodalFamiliarUees();
+	}
+
+	eliminarFamiliarUees(index: number): void {
+		this.familiaresUees = this.familiaresUees.filter((_, i) => i !== index);
 	}
 
 	/**

@@ -1,5 +1,5 @@
 // Qué hace: servicio de negocio del browse/formulario de Empleado.
-// Cómo: GetAll/Get/Iniciar + personales + documentos + familiares + formación (repos anidados).
+// Cómo: GetAll/Get/Iniciar + personales + documentos + familiares + formación + experiencia + UEES (repos anidados).
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -14,6 +14,7 @@ import { GenPersonaFormacionAcademicaRepository } from './gen-persona-formacion-
 import { GenPersonaIdiomasRepository } from './gen-persona-idiomas/gen-persona-idiomas.repository';
 import { GenPersonaCompetenciaRepository } from './gen-persona-competencia/gen-persona-competencia.repository';
 import { GenPersonaExperienciaLaboralRepository } from './gen-persona-experiencia-laboral/gen-persona-experiencia-laboral.repository';
+import { GenPersonaFamiliarUeesRepository } from './gen-persona-familiar-uees/gen-persona-familiar-uees.repository';
 
 const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
 
@@ -27,7 +28,8 @@ export class GenEmpleadoService {
 		private formacionRepo: GenPersonaFormacionAcademicaRepository,
 		private idiomasRepo: GenPersonaIdiomasRepository,
 		private competenciaRepo: GenPersonaCompetenciaRepository,
-		private experienciaRepo: GenPersonaExperienciaLaboralRepository
+		private experienciaRepo: GenPersonaExperienciaLaboralRepository,
+		private familiarUeesRepo: GenPersonaFamiliarUeesRepository
 	) {}
 
 	getAll(param: any): Observable<IResult> {
@@ -139,6 +141,14 @@ export class GenEmpleadoService {
 
 	saveExperienciasLaborales(corrPersona: number, rows: any[]): Observable<IResult> {
 		return this.experienciaRepo.saveAll(corrPersona, rows);
+	}
+
+	getFamiliaresUees(corrPersona: number): Observable<IResult> {
+		return this.familiarUeesRepo.getAll([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	saveFamiliaresUees(corrPersona: number, rows: any[]): Observable<IResult> {
+		return this.familiarUeesRepo.saveAll(corrPersona, rows);
 	}
 
 	getColumns(): any {
