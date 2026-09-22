@@ -15,6 +15,8 @@ import { GenPersonaIdiomasRepository } from './gen-persona-idiomas/gen-persona-i
 import { GenPersonaCompetenciaRepository } from './gen-persona-competencia/gen-persona-competencia.repository';
 import { GenPersonaExperienciaLaboralRepository } from './gen-persona-experiencia-laboral/gen-persona-experiencia-laboral.repository';
 import { GenPersonaFamiliarUeesRepository } from './gen-persona-familiar-uees/gen-persona-familiar-uees.repository';
+import { GenPersonaReferenciaPersonalRepository } from './gen-persona-referencia-personal/gen-persona-referencia-personal.repository';
+import { GenPersonaReferenciaLaboralRepository } from './gen-persona-referencia-laboral/gen-persona-referencia-laboral.repository';
 
 const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
 
@@ -29,7 +31,9 @@ export class GenEmpleadoService {
 		private idiomasRepo: GenPersonaIdiomasRepository,
 		private competenciaRepo: GenPersonaCompetenciaRepository,
 		private experienciaRepo: GenPersonaExperienciaLaboralRepository,
-		private familiarUeesRepo: GenPersonaFamiliarUeesRepository
+		private familiarUeesRepo: GenPersonaFamiliarUeesRepository,
+		private referenciaPersonalRepo: GenPersonaReferenciaPersonalRepository,
+		private referenciaLaboralRepo: GenPersonaReferenciaLaboralRepository
 	) {}
 
 	getAll(param: any): Observable<IResult> {
@@ -149,6 +153,22 @@ export class GenEmpleadoService {
 
 	saveFamiliaresUees(corrPersona: number, rows: any[]): Observable<IResult> {
 		return this.familiarUeesRepo.saveAll(corrPersona, rows);
+	}
+
+	getReferenciasPersonales(corrPersona: number): Observable<IResult> {
+		return this.referenciaPersonalRepo.getAll([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	saveReferenciasPersonales(corrPersona: number, rows: any[]): Observable<IResult> {
+		return this.referenciaPersonalRepo.saveAll(corrPersona, rows);
+	}
+
+	getReferenciasLaborales(corrPersona: number): Observable<IResult> {
+		return this.referenciaLaboralRepo.getAll([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	saveReferenciasLaborales(corrPersona: number, rows: any[]): Observable<IResult> {
+		return this.referenciaLaboralRepo.saveAll(corrPersona, rows);
 	}
 
 	getColumns(): any {

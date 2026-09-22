@@ -1,5 +1,5 @@
-// Qué hace: browse + formulario Nuevo/Editar de Empleado (Iniciar + Personales + Documentos + Familiares + Formación + Experiencia + Adicional).
-// Cómo: grilla browse; Guardar según tab; personales vía SP; documentos/familiares/hijos/formación/experiencia/UEES anidados.
+// Qué hace: browse + formulario Nuevo/Editar de Empleado (Iniciar + Personales + Documentos + Familiares + Formación + Experiencia + Adicional + Referencias).
+// Cómo: grilla browse; Guardar según tab; personales vía SP; documentos/familiares/hijos/formación/experiencia/UEES/referencias anidados.
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -21,6 +21,8 @@ import { GenPersonaIdioma } from './gen-persona-idiomas/models/gen-persona-idiom
 import { GenPersonaCompetencia } from './gen-persona-competencia/models/gen-persona-competencia';
 import { GenPersonaExperienciaLaboral } from './gen-persona-experiencia-laboral/models/gen-persona-experiencia-laboral';
 import { GenPersonaFamiliarUees } from './gen-persona-familiar-uees/models/gen-persona-familiar-uees';
+import { GenPersonaReferenciaPersonal } from './gen-persona-referencia-personal/models/gen-persona-referencia-personal';
+import { GenPersonaReferenciaLaboral } from './gen-persona-referencia-laboral/models/gen-persona-referencia-laboral';
 import { GenEmpleadoService } from './gen-empleado.service';
 import {
 	aplicarLimiteDocumentoIdentidad,
@@ -117,6 +119,25 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	submodalFamiliarUeesEditIndex: number | null = null;
 	submodalFamiliarUeesDraft: any = {};
 
+	// Qué hace: colecciones del tab Referencias (personales + laborales).
+	referenciasPersonales: GenPersonaReferenciaPersonal[] = [];
+	private referenciasPersonalesOriginal: GenPersonaReferenciaPersonal[] = [];
+	private tempCorrReferenciaPersonal = -1;
+
+	/** Submodal agregar/editar referencia personal. */
+	submodalReferenciaPersonalVisible = false;
+	submodalReferenciaPersonalEditIndex: number | null = null;
+	submodalReferenciaPersonalDraft: any = {};
+
+	referenciasLaborales: GenPersonaReferenciaLaboral[] = [];
+	private referenciasLaboralesOriginal: GenPersonaReferenciaLaboral[] = [];
+	private tempCorrReferenciaLaboral = -1;
+
+	/** Submodal agregar/editar referencia laboral. */
+	submodalReferenciaLaboralVisible = false;
+	submodalReferenciaLaboralEditIndex: number | null = null;
+	submodalReferenciaLaboralDraft: any = {};
+
 	/**
 	 * Qué hace: documentos visibles según ES_EXTRANJERO y APLICA_PARA del catálogo.
 	 * Cómo: extranjero → EXTRANJEROS|AMBOS; si no → NACIONALES|AMBOS (lista completa se guarda).
@@ -154,36 +175,14 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	mCORR_PARENTESCO: any[] = [];
 	/** Lookup Key/Value de nivel de dominio (idiomas y competencias). */
 	mNIVEL_DOMINIO: any[] = [];
+	/** Lookups GEN_LISTA Key/Value para personales / formación. */
+	mSEXO: any[] = [];
+	mESTADO_CIVIL: any[] = [];
+	mSI_NO: any[] = [];
+	mNIVEL_ACADEMICO: any[] = [];
 
 	/** Código ISO / NOMBRE_CORTO de El Salvador en GEN_PAIS. */
 	private static readonly CODIGO_PAIS_EL_SALVADOR = 'SV';
-
-	/** Niveles académicos locales para el select de estudios. */
-	readonly opcionesNivelAcademico = [
-		'Educación básica',
-		'Bachillerato',
-		'Técnico',
-		'Universidad',
-		'Postgrado',
-		'Maestría',
-		'Doctorado',
-	];
-
-	readonly opcionesSexo = [
-		{ value: 'MASCULINO', text: 'Masculino' },
-		{ value: 'FEMENINO', text: 'Femenino' },
-	];
-	readonly opcionesEstadoCivil = [
-		{ value: 'SOLTERO(A)', text: 'Soltero(a)' },
-		{ value: 'CASADO(A)', text: 'Casado(a)' },
-		{ value: 'ACOMPAÑADO(A)', text: 'Acompañado(a)' },
-		{ value: 'DIVORCIADO(A)', text: 'Divorciado(a)' },
-		{ value: 'VIUDO(A)', text: 'Viudo(a)' },
-	];
-	readonly opcionesSiNo = [
-		{ value: 'SI', text: 'Sí' },
-		{ value: 'NO', text: 'No' },
-	];
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -447,6 +446,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.familiaresUees = [];
 		this.familiaresUeesOriginal = [];
 		this.tempCorrFamiliarUees = -1;
+		this.referenciasPersonales = [];
+		this.referenciasPersonalesOriginal = [];
+		this.tempCorrReferenciaPersonal = -1;
+		this.referenciasLaborales = [];
+		this.referenciasLaboralesOriginal = [];
+		this.tempCorrReferenciaLaboral = -1;
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.revocarFotoPersona();
@@ -483,6 +488,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 										this.guardarCompetenciasDesdeModal(() => {
 											this.guardarExperienciasDesdeModal(() => {
 												this.guardarFamiliaresUeesDesdeModal(() => {
+													this.guardarReferenciasPersonalesDesdeModal(() => {
+														this.guardarReferenciasLaboralesDesdeModal(() => {
 												this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
 												this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
 												this.familiaresOriginal = this.clonarFamiliares(this.familiares);
@@ -492,8 +499,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 												this.competenciasOriginal = this.clonarCompetencias(this.competencias);
 												this.experienciasLaboralesOriginal = this.clonarExperiencias(this.experienciasLaborales);
 												this.familiaresUeesOriginal = this.clonarFamiliaresUees(this.familiaresUees);
+												this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(this.referenciasPersonales);
+												this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
 												this.fotoUrlNueva = '';
 												this.volverBrowseTrasGuardar();
+														});
+													});
 												});
 											});
 										});
@@ -545,6 +556,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 									this.guardarCompetenciasDesdeModal(() => {
 										this.guardarExperienciasDesdeModal(() => {
 											this.guardarFamiliaresUeesDesdeModal(() => {
+												this.guardarReferenciasPersonalesDesdeModal(() => {
+													this.guardarReferenciasLaboralesDesdeModal(() => {
 											this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
 											this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
 											this.familiaresOriginal = this.clonarFamiliares(this.familiares);
@@ -554,6 +567,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 											this.competenciasOriginal = this.clonarCompetencias(this.competencias);
 											this.experienciasLaboralesOriginal = this.clonarExperiencias(this.experienciasLaborales);
 											this.familiaresUeesOriginal = this.clonarFamiliaresUees(this.familiaresUees);
+											this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(this.referenciasPersonales);
+											this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
 											this.fotoUrlNueva = '';
 											this.omitirRestaurarPopupPersonales = true;
 											this.popupPersonalesVisible = false;
@@ -566,6 +581,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 												this.aplicarRegistroEnGrid(this.fillData(this.model), false);
 											}
 											this.notifyFx('Datos del empleado actualizados.', NotifyType.Success, { raw: true });
+													});
+												});
 											});
 										});
 									});
@@ -711,13 +728,15 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.competenciasOriginal = this.clonarCompetencias(this.competencias);
 		this.experienciasLaboralesOriginal = this.clonarExperiencias(this.experienciasLaborales);
 		this.familiaresUeesOriginal = this.clonarFamiliaresUees(this.familiaresUees);
+		this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(this.referenciasPersonales);
+		this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.popupPersonalesVisible = true;
 		setTimeout(() => this.aplicarReglasPersonales(), 0);
 	}
 
-	// Qué hace: cierra el modal y restaura personales/documentos/familiares/formación/experiencia/UEES/foto si canceló.
+	// Qué hace: cierra el modal y restaura personales/documentos/.../referencias/foto si canceló.
 	cerrarPopupPersonales(restaurar = true): void {
 		if (restaurar && !this.omitirRestaurarPopupPersonales) {
 			this.modelPersonaNatural = this.fillPersonaNatural(this.modelPersonaNaturalOriginal);
@@ -729,6 +748,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			this.competencias = this.clonarCompetencias(this.competenciasOriginal);
 			this.experienciasLaborales = this.clonarExperiencias(this.experienciasLaboralesOriginal);
 			this.familiaresUees = this.clonarFamiliaresUees(this.familiaresUeesOriginal);
+			this.referenciasPersonales = this.clonarReferenciasPersonales(this.referenciasPersonalesOriginal);
+			this.referenciasLaborales = this.clonarReferenciasLaborales(this.referenciasLaboralesOriginal);
 			this.fotoUrlNueva = '';
 			this.revocarFotoLocal();
 			this.refrescarTerritorioDesdeModelo();
@@ -739,6 +760,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cerrarSubmodalFormacion();
 		this.cerrarSubmodalExperiencia();
 		this.cerrarSubmodalFamiliarUees();
+		this.cerrarSubmodalReferenciaPersonal();
+		this.cerrarSubmodalReferenciaLaboral();
 	}
 
 	onPopupPersonalesShown(): void {
@@ -909,6 +932,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cargarCompetencias();
 		this.cargarExperienciasLaborales();
 		this.cargarFamiliaresUees();
+		this.cargarReferenciasPersonales();
+		this.cargarReferenciasLaborales();
 	}
 
 	// Qué hace: crea GEN_PERSONA + GEN_EMPRESA_PERSONA + GEN_PERSONA_NATURAL (SP) + GEN_EMPLEADO.
@@ -940,6 +965,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.cargarCompetencias();
 					this.cargarExperienciasLaborales();
 					this.cargarFamiliaresUees();
+					this.cargarReferenciasPersonales();
+					this.cargarReferenciasLaborales();
 					this.notifyFx('Empleado creado. Puede seguir editando los datos personales.', NotifyType.Success, {
 						raw: true,
 					});
@@ -2269,6 +2296,298 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.familiaresUees = this.familiaresUees.filter((_, i) => i !== index);
 	}
 
+	// ─── Referencias personales ───────────────────────────────────────────────
+
+	/**
+	 * Qué hace: persiste referencias personales desde el modal.
+	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
+	 */
+	private guardarReferenciasPersonalesDesdeModal(onSuccess?: () => void): void {
+		const corrPersona = Number(this.model.CORR_PERSONA);
+		if (corrPersona <= 0) {
+			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.saveReferenciasPersonales(corrPersona, this.referenciasPersonales)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const rows = this.normalizarReferenciasPersonales(
+						response.Data ?? this.referenciasPersonales
+					);
+					this.referenciasPersonales = rows;
+					this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(rows);
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	private cargarReferenciasPersonales(): void {
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		if (corrPersona <= 0) {
+			this.referenciasPersonales = [];
+			this.referenciasPersonalesOriginal = [];
+			return;
+		}
+
+		this.service
+			.getReferenciasPersonales(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result
+						? this.normalizarReferenciasPersonales(response.Data ?? [])
+						: [];
+					this.referenciasPersonales = rows;
+					this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(rows);
+				},
+				error: () => {
+					this.referenciasPersonales = [];
+					this.referenciasPersonalesOriginal = [];
+				},
+			});
+	}
+
+	private normalizarReferenciasPersonales(rows: any[]): GenPersonaReferenciaPersonal[] {
+		return (rows ?? []).map((r) => ({ ...r }));
+	}
+
+	private clonarReferenciasPersonales(
+		rows: GenPersonaReferenciaPersonal[]
+	): GenPersonaReferenciaPersonal[] {
+		return (rows ?? []).map((r) => ({ ...r }));
+	}
+
+	resumenReferenciaPersonal(item: GenPersonaReferenciaPersonal): string {
+		const partes = [item?.DIRECCION || null, item?.TELEFONO || null].filter(
+			(x) => !!x && `${x}`.trim()
+		);
+		return partes.length ? partes.join(' · ') : 'Sin detalle';
+	}
+
+	get tituloSubmodalReferenciaPersonal(): string {
+		return this.submodalReferenciaPersonalEditIndex != null
+			? 'Editar referencia personal'
+			: 'Agregar referencia personal';
+	}
+
+	abrirSubmodalReferenciaPersonalNuevo(): void {
+		this.submodalReferenciaPersonalEditIndex = null;
+		this.submodalReferenciaPersonalDraft = {
+			NOMBRE_COMPLETO: '',
+			DIRECCION: '',
+			TELEFONO: '',
+		};
+		this.submodalReferenciaPersonalVisible = true;
+	}
+
+	abrirSubmodalReferenciaPersonalEditar(index: number): void {
+		const row = this.referenciasPersonales[index];
+		this.submodalReferenciaPersonalEditIndex = index;
+		this.submodalReferenciaPersonalDraft = {
+			NOMBRE_COMPLETO: row?.NOMBRE_COMPLETO ?? '',
+			DIRECCION: row?.DIRECCION ?? '',
+			TELEFONO: row?.TELEFONO ?? '',
+		};
+		this.submodalReferenciaPersonalVisible = true;
+	}
+
+	cerrarSubmodalReferenciaPersonal(): void {
+		this.submodalReferenciaPersonalVisible = false;
+		this.submodalReferenciaPersonalEditIndex = null;
+		this.submodalReferenciaPersonalDraft = {};
+	}
+
+	guardarSubmodalReferenciaPersonal(): void {
+		const nombre = `${this.submodalReferenciaPersonalDraft?.NOMBRE_COMPLETO ?? ''}`.trim();
+		if (!nombre) {
+			this.notifyFx('Ingrese el nombre de la referencia.', NotifyType.Warning);
+			return;
+		}
+		const row: GenPersonaReferenciaPersonal = {
+			CORR_EMPRESA: Number(this.model?.CORR_EMPRESA ?? 0),
+			CORR_PERSONA: Number(this.model?.CORR_PERSONA ?? 0),
+			CORR_REFERENCIA_PERSONAL:
+				this.submodalReferenciaPersonalEditIndex != null
+					? this.referenciasPersonales[this.submodalReferenciaPersonalEditIndex]
+							.CORR_REFERENCIA_PERSONAL
+					: this.tempCorrReferenciaPersonal--,
+			NOMBRE_COMPLETO: nombre,
+			DIRECCION: `${this.submodalReferenciaPersonalDraft?.DIRECCION ?? ''}`.trim(),
+			TELEFONO: `${this.submodalReferenciaPersonalDraft?.TELEFONO ?? ''}`.trim(),
+		};
+		if (this.submodalReferenciaPersonalEditIndex != null) {
+			this.referenciasPersonales = this.referenciasPersonales.map((r, idx) =>
+				idx === this.submodalReferenciaPersonalEditIndex ? row : r
+			);
+		} else {
+			this.referenciasPersonales = [...this.referenciasPersonales, row];
+		}
+		this.cerrarSubmodalReferenciaPersonal();
+	}
+
+	eliminarReferenciaPersonal(index: number): void {
+		this.referenciasPersonales = this.referenciasPersonales.filter((_, i) => i !== index);
+	}
+
+	// ─── Referencias laborales ────────────────────────────────────────────────
+
+	/**
+	 * Qué hace: persiste referencias laborales desde el modal.
+	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
+	 */
+	private guardarReferenciasLaboralesDesdeModal(onSuccess?: () => void): void {
+		const corrPersona = Number(this.model.CORR_PERSONA);
+		if (corrPersona <= 0) {
+			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.saveReferenciasLaborales(corrPersona, this.referenciasLaborales)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const rows = this.normalizarReferenciasLaborales(
+						response.Data ?? this.referenciasLaborales
+					);
+					this.referenciasLaborales = rows;
+					this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(rows);
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	private cargarReferenciasLaborales(): void {
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		if (corrPersona <= 0) {
+			this.referenciasLaborales = [];
+			this.referenciasLaboralesOriginal = [];
+			return;
+		}
+
+		this.service
+			.getReferenciasLaborales(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result
+						? this.normalizarReferenciasLaborales(response.Data ?? [])
+						: [];
+					this.referenciasLaborales = rows;
+					this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(rows);
+				},
+				error: () => {
+					this.referenciasLaborales = [];
+					this.referenciasLaboralesOriginal = [];
+				},
+			});
+	}
+
+	private normalizarReferenciasLaborales(rows: any[]): GenPersonaReferenciaLaboral[] {
+		return (rows ?? []).map((r) => ({ ...r }));
+	}
+
+	private clonarReferenciasLaborales(
+		rows: GenPersonaReferenciaLaboral[]
+	): GenPersonaReferenciaLaboral[] {
+		return (rows ?? []).map((r) => ({ ...r }));
+	}
+
+	resumenReferenciaLaboral(item: GenPersonaReferenciaLaboral): string {
+		const partes = [item?.LUGAR_TRABAJO || null, item?.TELEFONO || null].filter(
+			(x) => !!x && `${x}`.trim()
+		);
+		return partes.length ? partes.join(' · ') : 'Sin detalle';
+	}
+
+	get tituloSubmodalReferenciaLaboral(): string {
+		return this.submodalReferenciaLaboralEditIndex != null
+			? 'Editar referencia laboral'
+			: 'Agregar referencia laboral';
+	}
+
+	abrirSubmodalReferenciaLaboralNuevo(): void {
+		this.submodalReferenciaLaboralEditIndex = null;
+		this.submodalReferenciaLaboralDraft = {
+			NOMBRE_COMPLETO: '',
+			LUGAR_TRABAJO: '',
+			TELEFONO: '',
+		};
+		this.submodalReferenciaLaboralVisible = true;
+	}
+
+	abrirSubmodalReferenciaLaboralEditar(index: number): void {
+		const row = this.referenciasLaborales[index];
+		this.submodalReferenciaLaboralEditIndex = index;
+		this.submodalReferenciaLaboralDraft = {
+			NOMBRE_COMPLETO: row?.NOMBRE_COMPLETO ?? '',
+			LUGAR_TRABAJO: row?.LUGAR_TRABAJO ?? '',
+			TELEFONO: row?.TELEFONO ?? '',
+		};
+		this.submodalReferenciaLaboralVisible = true;
+	}
+
+	cerrarSubmodalReferenciaLaboral(): void {
+		this.submodalReferenciaLaboralVisible = false;
+		this.submodalReferenciaLaboralEditIndex = null;
+		this.submodalReferenciaLaboralDraft = {};
+	}
+
+	guardarSubmodalReferenciaLaboral(): void {
+		const nombre = `${this.submodalReferenciaLaboralDraft?.NOMBRE_COMPLETO ?? ''}`.trim();
+		if (!nombre) {
+			this.notifyFx('Ingrese el nombre de la referencia.', NotifyType.Warning);
+			return;
+		}
+		const row: GenPersonaReferenciaLaboral = {
+			CORR_EMPRESA: Number(this.model?.CORR_EMPRESA ?? 0),
+			CORR_PERSONA: Number(this.model?.CORR_PERSONA ?? 0),
+			CORR_REFERENCIA_LABORAL:
+				this.submodalReferenciaLaboralEditIndex != null
+					? this.referenciasLaborales[this.submodalReferenciaLaboralEditIndex]
+							.CORR_REFERENCIA_LABORAL
+					: this.tempCorrReferenciaLaboral--,
+			NOMBRE_COMPLETO: nombre,
+			LUGAR_TRABAJO: `${this.submodalReferenciaLaboralDraft?.LUGAR_TRABAJO ?? ''}`.trim(),
+			TELEFONO: `${this.submodalReferenciaLaboralDraft?.TELEFONO ?? ''}`.trim(),
+		};
+		if (this.submodalReferenciaLaboralEditIndex != null) {
+			this.referenciasLaborales = this.referenciasLaborales.map((r, idx) =>
+				idx === this.submodalReferenciaLaboralEditIndex ? row : r
+			);
+		} else {
+			this.referenciasLaborales = [...this.referenciasLaborales, row];
+		}
+		this.cerrarSubmodalReferenciaLaboral();
+	}
+
+	eliminarReferenciaLaboral(index: number): void {
+		this.referenciasLaborales = this.referenciasLaborales.filter((_, i) => i !== index);
+	}
+
 	/**
 	 * Qué hace: bloquea teclas no permitidas según FORMATO_CARACTERES del catálogo.
 	 * Cómo: onKeyDown; guion de máscara DUI/NIT/NRC no lo teclea el usuario.
@@ -2497,6 +2816,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.getCORR_PAIS_NACIMIENTO();
 		this.getCORR_PARENTESCO();
 		this.getNIVEL_DOMINIO();
+		this.getSEXO();
+		this.getESTADO_CIVIL();
+		this.getSI_NO();
+		this.getNIVEL_ACADEMICO();
 	}
 
 	private refrescarTerritorioDesdeModelo(): void {
@@ -2557,6 +2880,54 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			.subscribe({
 				next: (response: any) => {
 					this.mNIVEL_DOMINIO = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	// Qué hace: carga sexo (MASCULINO/FEMENINO) desde GEN_LISTA.
+	private getSEXO(): void {
+		this.appInfoService
+			.getLookUp('GEN_EMPLEADO', 'GEN_LISTA', 'GetSEXO', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mSEXO = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	// Qué hace: carga estado civil desde GEN_LISTA (valores del CHECK).
+	private getESTADO_CIVIL(): void {
+		this.appInfoService
+			.getLookUp('GEN_EMPLEADO', 'GEN_LISTA', 'GetESTADO_CIVIL', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mESTADO_CIVIL = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	// Qué hace: carga SI/NO desde GEN_LISTA (domiciliado, carta pastoral).
+	private getSI_NO(): void {
+		this.appInfoService
+			.getLookUp('GEN_EMPLEADO', 'GEN_LISTA', 'GetSI_NO', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mSI_NO = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	// Qué hace: carga niveles académicos para formación desde GEN_LISTA.
+	private getNIVEL_ACADEMICO(): void {
+		this.appInfoService
+			.getLookUp('GEN_EMPLEADO', 'GEN_LISTA', 'GetNIVEL_ACADEMICO', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mNIVEL_ACADEMICO = response?.Result ? response.Data ?? [] : [];
 				},
 			});
 	}

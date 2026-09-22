@@ -238,6 +238,36 @@ namespace sguees.Controllers
 			return _service.GetNIVEL_DOMINIO();
 		}
 
-       
+		// Qué hace: lookup sexo para personales/hijos de gen-empleado.
+		[HttpGet("GetSEXO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public CResult GetSEXO_GEN_EMPLEADO()
+		{
+			return _service.GetSEXO();
+		}
+
+		// Qué hace: lookup estado civil para personales de gen-empleado.
+		[HttpGet("GetESTADO_CIVIL_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public CResult GetESTADO_CIVIL_GEN_EMPLEADO()
+		{
+			return _service.GetESTADO_CIVIL();
+		}
+
+		// Qué hace: lookup SI/NO (domiciliado, carta pastoral, etc.).
+		[HttpGet("GetSI_NO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public CResult GetSI_NO_GEN_EMPLEADO()
+		{
+			return _service.GetSI_NO();
+		}
+
+		// Qué hace: lookup nivel académico para formación de gen-empleado.
+		[HttpGet("GetNIVEL_ACADEMICO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public CResult GetNIVEL_ACADEMICO_GEN_EMPLEADO()
+		{
+			return _service.GetNIVEL_ACADEMICO();
+		}
 	}
 }

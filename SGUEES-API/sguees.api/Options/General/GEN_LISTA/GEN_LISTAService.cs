@@ -98,6 +98,10 @@ namespace sguees.Services
 		{
 			return _repo.GetNIVEL_DOMINIO();
 		}
-       
+
+		public CResult GetSEXO() => _repo.GetSEXO();
+		public CResult GetESTADO_CIVIL() => _repo.GetESTADO_CIVIL();
+		public CResult GetSI_NO() => _repo.GetSI_NO();
+		public CResult GetNIVEL_ACADEMICO() => _repo.GetNIVEL_ACADEMICO();
 	}
 }

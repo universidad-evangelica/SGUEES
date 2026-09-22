@@ -610,8 +610,84 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-      
-    }
+		// Qué hace: opciones de sexo (CHECK MASCULINO|FEMENINO).
+		public CResult GetSEXO()
+		{
+			CResult objResultado = new();
+			objResultado.Data = new List<GEN_LISTAView>()
+			{
+				new() { Key = "MASCULINO", Value = "Masculino" },
+				new() { Key = "FEMENINO", Value = "Femenino" },
+			};
+			objResultado.Result = true;
+			objResultado.RowsAffected = 2;
+			objResultado.CodeHelper = 0;
+			objResultado.ErrorCode = 0;
+			objResultado.ErrorMessage = "";
+			objResultado.ErrorSource = "";
+			return objResultado;
+		}
 
-    
+		// Qué hace: opciones de estado civil (CHECK de GEN_PERSONA_NATURAL).
+		public CResult GetESTADO_CIVIL()
+		{
+			CResult objResultado = new();
+			objResultado.Data = new List<GEN_LISTAView>()
+			{
+				new() { Key = "SOLTERO(A)", Value = "Soltero(a)" },
+				new() { Key = "CASADO(A)", Value = "Casado(a)" },
+				new() { Key = "ACOMPAÑADO(A)", Value = "Acompañado(a)" },
+				new() { Key = "DIVORCIADO(A)", Value = "Divorciado(a)" },
+				new() { Key = "VIUDO(A)", Value = "Viudo(a)" },
+			};
+			objResultado.Result = true;
+			objResultado.RowsAffected = 5;
+			objResultado.CodeHelper = 0;
+			objResultado.ErrorCode = 0;
+			objResultado.ErrorMessage = "";
+			objResultado.ErrorSource = "";
+			return objResultado;
+		}
+
+		// Qué hace: opciones SI/NO (CHECK CARTA_PASTORAL / DOMICILIADO).
+		public CResult GetSI_NO()
+		{
+			CResult objResultado = new();
+			objResultado.Data = new List<GEN_LISTAView>()
+			{
+				new() { Key = "SI", Value = "Sí" },
+				new() { Key = "NO", Value = "No" },
+			};
+			objResultado.Result = true;
+			objResultado.RowsAffected = 2;
+			objResultado.CodeHelper = 0;
+			objResultado.ErrorCode = 0;
+			objResultado.ErrorMessage = "";
+			objResultado.ErrorSource = "";
+			return objResultado;
+		}
+
+		// Qué hace: niveles académicos para formación (campo NIVEL, sin CHECK en BD).
+		public CResult GetNIVEL_ACADEMICO()
+		{
+			CResult objResultado = new();
+			objResultado.Data = new List<GEN_LISTAView>()
+			{
+				new() { Key = "Educación básica", Value = "Educación básica" },
+				new() { Key = "Bachillerato", Value = "Bachillerato" },
+				new() { Key = "Técnico", Value = "Técnico" },
+				new() { Key = "Universidad", Value = "Universidad" },
+				new() { Key = "Postgrado", Value = "Postgrado" },
+				new() { Key = "Maestría", Value = "Maestría" },
+				new() { Key = "Doctorado", Value = "Doctorado" },
+			};
+			objResultado.Result = true;
+			objResultado.RowsAffected = 7;
+			objResultado.CodeHelper = 0;
+			objResultado.ErrorCode = 0;
+			objResultado.ErrorMessage = "";
+			objResultado.ErrorSource = "";
+			return objResultado;
+		}
+	}
 }
