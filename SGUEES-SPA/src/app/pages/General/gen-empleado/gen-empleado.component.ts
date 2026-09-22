@@ -23,6 +23,7 @@ import { GenPersonaExperienciaLaboral } from './gen-persona-experiencia-laboral/
 import { GenPersonaFamiliarUees } from './gen-persona-familiar-uees/models/gen-persona-familiar-uees';
 import { GenPersonaReferenciaPersonal } from './gen-persona-referencia-personal/models/gen-persona-referencia-personal';
 import { GenPersonaReferenciaLaboral } from './gen-persona-referencia-laboral/models/gen-persona-referencia-laboral';
+import { GenPersonaDomicilio } from './gen-persona-domicilio/models/gen-persona-domicilio';
 import { GenEmpleadoService } from './gen-empleado.service';
 import {
 	aplicarLimiteDocumentoIdentidad,
@@ -137,6 +138,20 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	submodalReferenciaLaboralVisible = false;
 	submodalReferenciaLaboralEditIndex: number | null = null;
 	submodalReferenciaLaboralDraft: any = {};
+
+	// Qué hace: colecciones del tab Direcciones (domicilios).
+	domicilios: GenPersonaDomicilio[] = [];
+	private domiciliosOriginal: GenPersonaDomicilio[] = [];
+	private tempCorrDomicilio = -1;
+
+	/** Submodal agregar/editar domicilio. */
+	submodalDomicilioVisible = false;
+	submodalDomicilioEditIndex: number | null = null;
+	submodalDomicilioDraft: any = {};
+	mCORR_PAIS_DOMICILIO: any[] = [];
+	mCORR_DEPTO_DOMICILIO: any[] = [];
+	mCORR_MUNICIPIO_DOMICILIO: any[] = [];
+	mCORR_DISTRITO_DOMICILIO: any[] = [];
 
 	/**
 	 * Qué hace: documentos visibles según ES_EXTRANJERO y APLICA_PARA del catálogo.
@@ -262,6 +277,17 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 */
 	get territorioCompletoHabilitado(): boolean {
 		return this.editandoPersonalesForm && !this.modelPersonaNatural?.ES_EXTRANJERO;
+	}
+
+	/** Qué hace: empleado marcado como domiciliado (DOMICILIADO=SI) → territorio SV completo en direcciones. */
+	get esEmpleadoDomiciliado(): boolean {
+		return `${this.modelPersonaNatural?.DOMICILIADO ?? ''}`.trim().toUpperCase() === 'SI';
+	}
+
+	/** Qué hace: indica si ya eligió SI/NO en Domiciliado (Personales) para poder registrar direcciones. */
+	get tieneDomiciliadoDefinido(): boolean {
+		const v = `${this.modelPersonaNatural?.DOMICILIADO ?? ''}`.trim().toUpperCase();
+		return v === 'SI' || v === 'NO';
 	}
 
 	fillParam(xCORR_EMPLEADO?: number): any {
@@ -452,6 +478,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.referenciasLaborales = [];
 		this.referenciasLaboralesOriginal = [];
 		this.tempCorrReferenciaLaboral = -1;
+		this.domicilios = [];
+		this.domiciliosOriginal = [];
+		this.tempCorrDomicilio = -1;
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.revocarFotoPersona();
@@ -490,6 +519,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 												this.guardarFamiliaresUeesDesdeModal(() => {
 													this.guardarReferenciasPersonalesDesdeModal(() => {
 														this.guardarReferenciasLaboralesDesdeModal(() => {
+															this.guardarDomiciliosDesdeModal(() => {
 												this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
 												this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
 												this.familiaresOriginal = this.clonarFamiliares(this.familiares);
@@ -501,8 +531,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 												this.familiaresUeesOriginal = this.clonarFamiliaresUees(this.familiaresUees);
 												this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(this.referenciasPersonales);
 												this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
+												this.domiciliosOriginal = this.clonarDomicilios(this.domicilios);
 												this.fotoUrlNueva = '';
 												this.volverBrowseTrasGuardar();
+															});
 														});
 													});
 												});
@@ -558,6 +590,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 											this.guardarFamiliaresUeesDesdeModal(() => {
 												this.guardarReferenciasPersonalesDesdeModal(() => {
 													this.guardarReferenciasLaboralesDesdeModal(() => {
+														this.guardarDomiciliosDesdeModal(() => {
 											this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
 											this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
 											this.familiaresOriginal = this.clonarFamiliares(this.familiares);
@@ -569,6 +602,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 											this.familiaresUeesOriginal = this.clonarFamiliaresUees(this.familiaresUees);
 											this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(this.referenciasPersonales);
 											this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
+											this.domiciliosOriginal = this.clonarDomicilios(this.domicilios);
 											this.fotoUrlNueva = '';
 											this.omitirRestaurarPopupPersonales = true;
 											this.popupPersonalesVisible = false;
@@ -581,6 +615,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 												this.aplicarRegistroEnGrid(this.fillData(this.model), false);
 											}
 											this.notifyFx('Datos del empleado actualizados.', NotifyType.Success, { raw: true });
+														});
 													});
 												});
 											});
@@ -730,6 +765,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.familiaresUeesOriginal = this.clonarFamiliaresUees(this.familiaresUees);
 		this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(this.referenciasPersonales);
 		this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
+		this.domiciliosOriginal = this.clonarDomicilios(this.domicilios);
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.popupPersonalesVisible = true;
@@ -750,6 +786,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			this.familiaresUees = this.clonarFamiliaresUees(this.familiaresUeesOriginal);
 			this.referenciasPersonales = this.clonarReferenciasPersonales(this.referenciasPersonalesOriginal);
 			this.referenciasLaborales = this.clonarReferenciasLaborales(this.referenciasLaboralesOriginal);
+			this.domicilios = this.clonarDomicilios(this.domiciliosOriginal);
 			this.fotoUrlNueva = '';
 			this.revocarFotoLocal();
 			this.refrescarTerritorioDesdeModelo();
@@ -762,6 +799,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cerrarSubmodalFamiliarUees();
 		this.cerrarSubmodalReferenciaPersonal();
 		this.cerrarSubmodalReferenciaLaboral();
+		this.cerrarSubmodalDomicilio();
 	}
 
 	onPopupPersonalesShown(): void {
@@ -934,6 +972,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cargarFamiliaresUees();
 		this.cargarReferenciasPersonales();
 		this.cargarReferenciasLaborales();
+		this.cargarDomicilios();
 	}
 
 	// Qué hace: crea GEN_PERSONA + GEN_EMPRESA_PERSONA + GEN_PERSONA_NATURAL (SP) + GEN_EMPLEADO.
@@ -967,6 +1006,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.cargarFamiliaresUees();
 					this.cargarReferenciasPersonales();
 					this.cargarReferenciasLaborales();
+					this.cargarDomicilios();
 					this.notifyFx('Empleado creado. Puede seguir editando los datos personales.', NotifyType.Success, {
 						raw: true,
 					});
@@ -2586,6 +2626,438 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 
 	eliminarReferenciaLaboral(index: number): void {
 		this.referenciasLaborales = this.referenciasLaborales.filter((_, i) => i !== index);
+	}
+
+	// ─── Direcciones / domicilios ─────────────────────────────────────────────
+
+	/**
+	 * Qué hace: persiste domicilios desde el modal.
+	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
+	 */
+	private guardarDomiciliosDesdeModal(onSuccess?: () => void): void {
+		const corrPersona = Number(this.model.CORR_PERSONA);
+		if (corrPersona <= 0) {
+			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.saveDomicilios(corrPersona, this.domicilios)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const rows = this.normalizarDomicilios(response.Data ?? this.domicilios);
+					this.domicilios = rows;
+					this.domiciliosOriginal = this.clonarDomicilios(rows);
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	private cargarDomicilios(): void {
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		if (corrPersona <= 0) {
+			this.domicilios = [];
+			this.domiciliosOriginal = [];
+			return;
+		}
+
+		this.service
+			.getDomicilios(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result ? this.normalizarDomicilios(response.Data ?? []) : [];
+					this.domicilios = rows;
+					this.domiciliosOriginal = this.clonarDomicilios(rows);
+				},
+				error: () => {
+					this.domicilios = [];
+					this.domiciliosOriginal = [];
+				},
+			});
+	}
+
+	private normalizarDomicilios(rows: any[]): GenPersonaDomicilio[] {
+		return (rows ?? []).map((d) => ({
+			...d,
+			CORR_PAIS: d?.CORR_PAIS == null || Number(d.CORR_PAIS) <= 0 ? null : Number(d.CORR_PAIS),
+			CORR_DEPTO: d?.CORR_DEPTO == null || Number(d.CORR_DEPTO) <= 0 ? null : Number(d.CORR_DEPTO),
+			CORR_MUNICIPIO:
+				d?.CORR_MUNICIPIO == null || Number(d.CORR_MUNICIPIO) <= 0 ? null : Number(d.CORR_MUNICIPIO),
+			CORR_DISTRITO:
+				d?.CORR_DISTRITO == null || Number(d.CORR_DISTRITO) <= 0 ? null : Number(d.CORR_DISTRITO),
+			ACTIVO_DOMICILIO: d?.ACTIVO_DOMICILIO !== false && d?.ACTIVO_DOMICILIO !== 0,
+		}));
+	}
+
+	private clonarDomicilios(rows: GenPersonaDomicilio[]): GenPersonaDomicilio[] {
+		return (rows ?? []).map((d) => ({ ...d }));
+	}
+
+	resumenDomicilio(item: GenPersonaDomicilio): string {
+		const partes = this.esEmpleadoDomiciliado
+			? [
+					item?.NOMBRE_PAIS || null,
+					item?.NOMBRE_DEPTO || null,
+					item?.NOMBRE_MUNICIPIO || null,
+					item?.NOMBRE_DISTRITO || null,
+					item?.DIRECCION || null,
+			  ]
+			: [item?.NOMBRE_PAIS || null, item?.DIRECCION || null];
+		return partes.filter((x) => !!x && `${x}`.trim()).join(' · ') || 'Sin detalle';
+	}
+
+	/** Qué hace: alterna ACTIVO_DOMICILIO en memoria (guardado al Guardar cambios). */
+	toggleActivoDomicilio(index: number, event?: Event): void {
+		event?.stopPropagation();
+		const row = this.domicilios[index];
+		if (!row) {
+			return;
+		}
+		this.domicilios = this.domicilios.map((d, i) =>
+			i === index ? { ...d, ACTIVO_DOMICILIO: !d.ACTIVO_DOMICILIO } : d
+		);
+	}
+
+	get tituloSubmodalDomicilio(): string {
+		return this.submodalDomicilioEditIndex != null ? 'Editar dirección' : 'Agregar dirección';
+	}
+
+	abrirSubmodalDomicilioNuevo(): void {
+		if (!this.tieneDomiciliadoDefinido) {
+			this.notifyFx(
+				'Seleccione primero si el empleado es domiciliado o no (tab Personales).',
+				NotifyType.Warning
+			);
+			return;
+		}
+		this.submodalDomicilioEditIndex = null;
+		this.submodalDomicilioDraft = {
+			DIRECCION: '',
+			CORR_PAIS: null,
+			CORR_DEPTO: null,
+			CORR_MUNICIPIO: null,
+			CORR_DISTRITO: null,
+			ACTIVO_DOMICILIO: true,
+		};
+		this.mCORR_DEPTO_DOMICILIO = [];
+		this.mCORR_MUNICIPIO_DOMICILIO = [];
+		this.mCORR_DISTRITO_DOMICILIO = [];
+		this.asegurarCatalogoPaisDomicilio(true);
+		this.submodalDomicilioVisible = true;
+	}
+
+	/**
+	 * Qué hace: garantiza catálogo de países antes de filtrar por DOMICILIADO.
+	 * Cómo: si ya hay datos aplica filtro; si no, carga GetCORR_PAIS y luego aplica.
+	 */
+	private asegurarCatalogoPaisDomicilio(forzarSv: boolean): void {
+		if ((this.paisesNacimientoCatalogo ?? []).length > 0) {
+			this.aplicarCatalogoPaisDomicilio(forzarSv);
+			return;
+		}
+		this.appInfoService
+			.getLookUp('GEN_EMPLEADO', 'GEN_PAIS', 'GetCORR_PAIS', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.paisesNacimientoCatalogo = response?.Result ? response.Data ?? [] : [];
+					this.aplicarCatalogoPaisDomicilio(forzarSv);
+				},
+			});
+	}
+
+	abrirSubmodalDomicilioEditar(index: number): void {
+		if (!this.tieneDomiciliadoDefinido) {
+			this.notifyFx(
+				'Seleccione primero si el empleado es domiciliado o no (tab Personales).',
+				NotifyType.Warning
+			);
+			return;
+		}
+		const row = this.domicilios[index];
+		this.submodalDomicilioEditIndex = index;
+		this.submodalDomicilioDraft = {
+			DIRECCION: row?.DIRECCION ?? '',
+			CORR_PAIS: row?.CORR_PAIS ?? null,
+			CORR_DEPTO: row?.CORR_DEPTO ?? null,
+			CORR_MUNICIPIO: row?.CORR_MUNICIPIO ?? null,
+			CORR_DISTRITO: row?.CORR_DISTRITO ?? null,
+			ACTIVO_DOMICILIO: row?.ACTIVO_DOMICILIO !== false,
+			NOMBRE_PAIS: row?.NOMBRE_PAIS ?? '',
+			NOMBRE_DEPTO: row?.NOMBRE_DEPTO ?? '',
+			NOMBRE_MUNICIPIO: row?.NOMBRE_MUNICIPIO ?? '',
+			NOMBRE_DISTRITO: row?.NOMBRE_DISTRITO ?? '',
+		};
+		this.asegurarCatalogoPaisDomicilio(false);
+		const pais = Number(this.submodalDomicilioDraft.CORR_PAIS ?? 0);
+		if (this.esEmpleadoDomiciliado && pais > 0) {
+			this.cargarDeptoDomicilio(pais);
+			const depto = Number(this.submodalDomicilioDraft.CORR_DEPTO ?? 0);
+			if (depto > 0) {
+				this.cargarMunicipioDomicilio(pais, depto);
+				const mun = Number(this.submodalDomicilioDraft.CORR_MUNICIPIO ?? 0);
+				if (mun > 0) {
+					this.cargarDistritoDomicilio(pais, depto, mun);
+				}
+			}
+		} else {
+			this.mCORR_DEPTO_DOMICILIO = [];
+			this.mCORR_MUNICIPIO_DOMICILIO = [];
+			this.mCORR_DISTRITO_DOMICILIO = [];
+		}
+		this.submodalDomicilioVisible = true;
+	}
+
+	cerrarSubmodalDomicilio(): void {
+		this.submodalDomicilioVisible = false;
+		this.submodalDomicilioEditIndex = null;
+		this.submodalDomicilioDraft = {};
+		this.mCORR_PAIS_DOMICILIO = [];
+		this.mCORR_DEPTO_DOMICILIO = [];
+		this.mCORR_MUNICIPIO_DOMICILIO = [];
+		this.mCORR_DISTRITO_DOMICILIO = [];
+	}
+
+	/**
+	 * Qué hace: filtra países del submodal según DOMICILIADO del empleado.
+	 * Cómo: SI → solo El Salvador (y lo selecciona); NO → todos excepto SV.
+	 */
+	private aplicarCatalogoPaisDomicilio(forzarSv: boolean): void {
+		const catalogo = this.paisesNacimientoCatalogo ?? [];
+		if (this.esEmpleadoDomiciliado) {
+			const elSalvador = catalogo.filter((p) => this.esPaisElSalvador(p));
+			this.mCORR_PAIS_DOMICILIO = elSalvador;
+			const corrSv = Number(elSalvador[0]?.CORR_PAIS ?? 0);
+			if (forzarSv && corrSv > 0) {
+				this.submodalDomicilioDraft = {
+					...this.submodalDomicilioDraft,
+					CORR_PAIS: corrSv,
+					NOMBRE_PAIS: elSalvador[0]?.NOMBRE_PAIS ?? 'El Salvador',
+				};
+				this.cargarDeptoDomicilio(corrSv);
+			}
+			return;
+		}
+
+		this.mCORR_PAIS_DOMICILIO = catalogo.filter((p) => !this.esPaisElSalvador(p));
+		const corrActual = Number(this.submodalDomicilioDraft?.CORR_PAIS ?? 0);
+		if (corrActual > 0) {
+			const sel = catalogo.find((p) => Number(p?.CORR_PAIS) === corrActual);
+			if (sel && this.esPaisElSalvador(sel)) {
+				this.submodalDomicilioDraft = {
+					...this.submodalDomicilioDraft,
+					CORR_PAIS: null,
+					CORR_DEPTO: null,
+					CORR_MUNICIPIO: null,
+					CORR_DISTRITO: null,
+					NOMBRE_PAIS: '',
+					NOMBRE_DEPTO: '',
+					NOMBRE_MUNICIPIO: '',
+					NOMBRE_DISTRITO: '',
+				};
+			}
+		}
+		this.mCORR_DEPTO_DOMICILIO = [];
+		this.mCORR_MUNICIPIO_DOMICILIO = [];
+		this.mCORR_DISTRITO_DOMICILIO = [];
+	}
+
+	onSubmodalDomicilioPaisChanged(e: any): void {
+		const corrPais = Number(e?.value ?? 0) || null;
+		const pais = (this.mCORR_PAIS_DOMICILIO ?? []).find((p) => Number(p?.CORR_PAIS) === Number(corrPais));
+		this.submodalDomicilioDraft = {
+			...this.submodalDomicilioDraft,
+			CORR_PAIS: corrPais,
+			NOMBRE_PAIS: pais?.NOMBRE_PAIS ?? '',
+			CORR_DEPTO: null,
+			CORR_MUNICIPIO: null,
+			CORR_DISTRITO: null,
+			NOMBRE_DEPTO: '',
+			NOMBRE_MUNICIPIO: '',
+			NOMBRE_DISTRITO: '',
+		};
+		this.mCORR_MUNICIPIO_DOMICILIO = [];
+		this.mCORR_DISTRITO_DOMICILIO = [];
+		if (this.esEmpleadoDomiciliado && corrPais) {
+			this.cargarDeptoDomicilio(corrPais);
+		} else {
+			this.mCORR_DEPTO_DOMICILIO = [];
+		}
+	}
+
+	onSubmodalDomicilioDeptoChanged(e: any): void {
+		const corrDepto = Number(e?.value ?? 0) || null;
+		const depto = (this.mCORR_DEPTO_DOMICILIO ?? []).find((d) => Number(d?.CORR_DEPTO) === Number(corrDepto));
+		const pais = Number(this.submodalDomicilioDraft?.CORR_PAIS ?? 0);
+		this.submodalDomicilioDraft = {
+			...this.submodalDomicilioDraft,
+			CORR_DEPTO: corrDepto,
+			NOMBRE_DEPTO: depto?.NOMBRE_DEPTO ?? '',
+			CORR_MUNICIPIO: null,
+			CORR_DISTRITO: null,
+			NOMBRE_MUNICIPIO: '',
+			NOMBRE_DISTRITO: '',
+		};
+		this.mCORR_DISTRITO_DOMICILIO = [];
+		if (pais && corrDepto) {
+			this.cargarMunicipioDomicilio(pais, corrDepto);
+		} else {
+			this.mCORR_MUNICIPIO_DOMICILIO = [];
+		}
+	}
+
+	onSubmodalDomicilioMunicipioChanged(e: any): void {
+		const corrMun = Number(e?.value ?? 0) || null;
+		const mun = (this.mCORR_MUNICIPIO_DOMICILIO ?? []).find(
+			(m) => Number(m?.CORR_MUNICIPIO) === Number(corrMun)
+		);
+		const pais = Number(this.submodalDomicilioDraft?.CORR_PAIS ?? 0);
+		const depto = Number(this.submodalDomicilioDraft?.CORR_DEPTO ?? 0);
+		this.submodalDomicilioDraft = {
+			...this.submodalDomicilioDraft,
+			CORR_MUNICIPIO: corrMun,
+			NOMBRE_MUNICIPIO: mun?.NOMBRE_MUNICIPIO ?? '',
+			CORR_DISTRITO: null,
+			NOMBRE_DISTRITO: '',
+		};
+		if (pais && depto && corrMun) {
+			this.cargarDistritoDomicilio(pais, depto, corrMun);
+		} else {
+			this.mCORR_DISTRITO_DOMICILIO = [];
+		}
+	}
+
+	onSubmodalDomicilioDistritoChanged(e: any): void {
+		const corrDist = Number(e?.value ?? 0) || null;
+		const dist = (this.mCORR_DISTRITO_DOMICILIO ?? []).find(
+			(d) => Number(d?.CORR_DISTRITO) === Number(corrDist)
+		);
+		this.submodalDomicilioDraft = {
+			...this.submodalDomicilioDraft,
+			CORR_DISTRITO: corrDist,
+			NOMBRE_DISTRITO: dist?.NOMBRE_DISTRITO ?? '',
+		};
+	}
+
+	private cargarDeptoDomicilio(corrPais: number): void {
+		const xWhere: IParam[] = [{ Parameter: 'CORR_PAIS', Value: corrPais }];
+		this.appInfoService
+			.getLookUp('GEN_EMPLEADO', 'GEN_DEPTO', 'GetCORR_DEPTO', xWhere, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_DEPTO_DOMICILIO = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	private cargarMunicipioDomicilio(corrPais: number, corrDepto: number): void {
+		const xWhere: IParam[] = [
+			{ Parameter: 'CORR_PAIS', Value: corrPais },
+			{ Parameter: 'CORR_DEPTO', Value: corrDepto },
+		];
+		this.appInfoService
+			.getLookUp('GEN_EMPLEADO', 'GEN_MUNICIPIO', 'GetCORR_MUNICIPIO', xWhere, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_MUNICIPIO_DOMICILIO = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	private cargarDistritoDomicilio(corrPais: number, corrDepto: number, corrMun: number): void {
+		const xWhere: IParam[] = [
+			{ Parameter: 'CORR_PAIS', Value: corrPais },
+			{ Parameter: 'CORR_DEPTO', Value: corrDepto },
+			{ Parameter: 'CORR_MUNICIPIO', Value: corrMun },
+		];
+		this.appInfoService
+			.getLookUp('GEN_EMPLEADO', 'GEN_DISTRITO', 'GetCORR_DISTRITO', xWhere, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_DISTRITO_DOMICILIO = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	guardarSubmodalDomicilio(): void {
+		const direccion = `${this.submodalDomicilioDraft?.DIRECCION ?? ''}`.trim();
+		if (!direccion) {
+			this.notifyFx('Ingrese la dirección.', NotifyType.Warning);
+			return;
+		}
+		const corrPais = Number(this.submodalDomicilioDraft?.CORR_PAIS ?? 0) || null;
+		if (!corrPais) {
+			this.notifyFx('Seleccione el país.', NotifyType.Warning);
+			return;
+		}
+
+		const domiciliado = this.esEmpleadoDomiciliado;
+		let corrDepto: number | null = null;
+		let corrMun: number | null = null;
+		let corrDist: number | null = null;
+		let nombreDepto = '';
+		let nombreMun = '';
+		let nombreDist = '';
+
+		if (domiciliado) {
+			corrDepto = Number(this.submodalDomicilioDraft?.CORR_DEPTO ?? 0) || null;
+			corrMun = Number(this.submodalDomicilioDraft?.CORR_MUNICIPIO ?? 0) || null;
+			corrDist = Number(this.submodalDomicilioDraft?.CORR_DISTRITO ?? 0) || null;
+			if (!corrDepto || !corrMun) {
+				this.notifyFx('Complete departamento y municipio.', NotifyType.Warning);
+				return;
+			}
+			nombreDepto = `${this.submodalDomicilioDraft?.NOMBRE_DEPTO ?? ''}`.trim();
+			nombreMun = `${this.submodalDomicilioDraft?.NOMBRE_MUNICIPIO ?? ''}`.trim();
+			nombreDist = `${this.submodalDomicilioDraft?.NOMBRE_DISTRITO ?? ''}`.trim();
+		}
+
+		const row: GenPersonaDomicilio = {
+			CORR_EMPRESA: Number(this.model?.CORR_EMPRESA ?? 0),
+			CORR_PERSONA: Number(this.model?.CORR_PERSONA ?? 0),
+			CORR_DOMICILIO:
+				this.submodalDomicilioEditIndex != null
+					? this.domicilios[this.submodalDomicilioEditIndex].CORR_DOMICILIO
+					: this.tempCorrDomicilio--,
+			DIRECCION: direccion,
+			CORR_PAIS: corrPais,
+			NOMBRE_PAIS: `${this.submodalDomicilioDraft?.NOMBRE_PAIS ?? ''}`.trim(),
+			CORR_DEPTO: corrDepto,
+			NOMBRE_DEPTO: nombreDepto,
+			CORR_MUNICIPIO: corrMun,
+			NOMBRE_MUNICIPIO: nombreMun,
+			CORR_DISTRITO: corrDist,
+			NOMBRE_DISTRITO: nombreDist,
+			ACTIVO_DOMICILIO: this.submodalDomicilioDraft?.ACTIVO_DOMICILIO !== false,
+		};
+
+		if (this.submodalDomicilioEditIndex != null) {
+			this.domicilios = this.domicilios.map((d, idx) =>
+				idx === this.submodalDomicilioEditIndex ? row : d
+			);
+		} else {
+			this.domicilios = [...this.domicilios, row];
+		}
+		this.cerrarSubmodalDomicilio();
+	}
+
+	eliminarDomicilio(index: number): void {
+		this.domicilios = this.domicilios.filter((_, i) => i !== index);
 	}
 
 	/**

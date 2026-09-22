@@ -17,6 +17,7 @@ import { GenPersonaExperienciaLaboralRepository } from './gen-persona-experienci
 import { GenPersonaFamiliarUeesRepository } from './gen-persona-familiar-uees/gen-persona-familiar-uees.repository';
 import { GenPersonaReferenciaPersonalRepository } from './gen-persona-referencia-personal/gen-persona-referencia-personal.repository';
 import { GenPersonaReferenciaLaboralRepository } from './gen-persona-referencia-laboral/gen-persona-referencia-laboral.repository';
+import { GenPersonaDomicilioRepository } from './gen-persona-domicilio/gen-persona-domicilio.repository';
 
 const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
 
@@ -33,7 +34,8 @@ export class GenEmpleadoService {
 		private experienciaRepo: GenPersonaExperienciaLaboralRepository,
 		private familiarUeesRepo: GenPersonaFamiliarUeesRepository,
 		private referenciaPersonalRepo: GenPersonaReferenciaPersonalRepository,
-		private referenciaLaboralRepo: GenPersonaReferenciaLaboralRepository
+		private referenciaLaboralRepo: GenPersonaReferenciaLaboralRepository,
+		private domicilioRepo: GenPersonaDomicilioRepository
 	) {}
 
 	getAll(param: any): Observable<IResult> {
@@ -169,6 +171,14 @@ export class GenEmpleadoService {
 
 	saveReferenciasLaborales(corrPersona: number, rows: any[]): Observable<IResult> {
 		return this.referenciaLaboralRepo.saveAll(corrPersona, rows);
+	}
+
+	getDomicilios(corrPersona: number): Observable<IResult> {
+		return this.domicilioRepo.getAll([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	saveDomicilios(corrPersona: number, rows: any[]): Observable<IResult> {
+		return this.domicilioRepo.saveAll(corrPersona, rows);
 	}
 
 	getColumns(): any {

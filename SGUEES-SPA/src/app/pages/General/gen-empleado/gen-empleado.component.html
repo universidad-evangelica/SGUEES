@@ -519,6 +519,61 @@
 						</div>
 					</dxi-item>
 
+					<!-- motivo: Direcciones / domicilios (después de Referencias) -->
+					<dxi-item title="Direcciones" [icon]="'home'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Direcciones</h4>
+								<p class="rd-hint rd-hint--warn" *ngIf="!tieneDomiciliadoDefinido">
+									Debe indicar en Personales si el empleado es domiciliado (Sí / No) para registrar direcciones.
+								</p>
+								<p class="rd-hint" *ngIf="tieneDomiciliadoDefinido && esEmpleadoDomiciliado">
+									Empleado domiciliado: se registra territorio de El Salvador.
+								</p>
+								<p class="rd-hint" *ngIf="tieneDomiciliadoDefinido && !esEmpleadoDomiciliado">
+									Empleado no domiciliado: solo país (excepto El Salvador) y dirección.
+								</p>
+								<div class="rd-cards" *ngIf="domicilios?.length; else sinDomiciliosRd">
+									<article
+										class="rd-card"
+										[class.rd-card--inactive]="!item.ACTIVO_DOMICILIO"
+										*ngFor="let item of domicilios"
+									>
+										<header class="rd-card__header">
+											<span>{{ textoLectura(item.NOMBRE_PAIS) }}</span>
+											<span class="rd-badge" [class.rd-badge--off]="!item.ACTIVO_DOMICILIO">
+												{{ item.ACTIVO_DOMICILIO ? 'Activa' : 'Inactiva' }}
+											</span>
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Dirección</span>
+												<span class="rd-value">{{ textoLectura(item.DIRECCION) }}</span>
+											</div>
+											<ng-container *ngIf="esEmpleadoDomiciliado">
+												<div class="rd-field">
+													<span class="rd-label">Departamento</span>
+													<span class="rd-value">{{ textoLectura(item.NOMBRE_DEPTO) }}</span>
+												</div>
+												<div class="rd-field">
+													<span class="rd-label">Municipio</span>
+													<span class="rd-value">{{ textoLectura(item.NOMBRE_MUNICIPIO) }}</span>
+												</div>
+												<div class="rd-field">
+													<span class="rd-label">Distrito</span>
+													<span class="rd-value">{{ textoLectura(item.NOMBRE_DISTRITO) }}</span>
+												</div>
+											</ng-container>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinDomiciliosRd>
+									<p class="rd-empty">Sin direcciones registradas.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
 					<!-- motivo: placeholders de fase siguiente -->
 					<dxi-item title="Laboral" [icon]="'card'">
 						<div class="empleado-empty-state">
@@ -1043,6 +1098,83 @@
 							</section>
 						</div>
 					</dxi-item>
+
+					<!-- motivo: Direcciones editable (después de Referencias) -->
+					<dxi-item title="Direcciones" [icon]="'home'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Direcciones</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										[disabled]="!tieneDomiciliadoDefinido"
+										(onClick)="abrirSubmodalDomicilioNuevo()"
+									></dx-button>
+								</div>
+								<p class="ep-hint ep-hint--warn" *ngIf="!tieneDomiciliadoDefinido">
+									Seleccione primero en Personales si el empleado es domiciliado (Sí / No) para poder registrar direcciones.
+								</p>
+								<p class="ep-hint" *ngIf="tieneDomiciliadoDefinido && esEmpleadoDomiciliado">
+									Domiciliado: solo El Salvador + departamento / municipio (distrito opcional).
+								</p>
+								<p class="ep-hint" *ngIf="tieneDomiciliadoDefinido && !esEmpleadoDomiciliado">
+									No domiciliado: solo país (sin El Salvador) y dirección.
+								</p>
+								<div class="ep-cards" *ngIf="domicilios?.length; else sinDomiciliosModal">
+									<article
+										class="ep-card"
+										[class.ep-card--inactive]="!d.ACTIVO_DOMICILIO"
+										*ngFor="let d of domicilios; let i = index"
+									>
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(d.NOMBRE_PAIS) }}</div>
+											<div class="ep-card__summary">{{ resumenDomicilio(d) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<!-- motivo: toggle activo/inactivo estilo switcher -->
+											<button
+												type="button"
+												class="ep-activo-toggle"
+												[class.ep-activo-toggle--on]="d.ACTIVO_DOMICILIO"
+												[class.ep-activo-toggle--off]="!d.ACTIVO_DOMICILIO"
+												[attr.aria-pressed]="d.ACTIVO_DOMICILIO"
+												[attr.aria-label]="d.ACTIVO_DOMICILIO ? 'Desactivar dirección' : 'Activar dirección'"
+												(click)="toggleActivoDomicilio(i, $event)"
+											>
+												<span class="ep-activo-toggle__track">
+													<span class="ep-activo-toggle__icon ep-activo-toggle__icon--on" aria-hidden="true">
+														<i class="dx-icon dx-icon-check"></i>
+													</span>
+													<span class="ep-activo-toggle__thumb" aria-hidden="true"></span>
+													<span class="ep-activo-toggle__icon ep-activo-toggle__icon--off" aria-hidden="true">
+														<i class="dx-icon dx-icon-close"></i>
+													</span>
+												</span>
+											</button>
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalDomicilioEditar(i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarDomicilio(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinDomiciliosModal>
+									<p class="ep-empty">Sin direcciones registradas.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
 				</dx-tab-panel>
 			</dx-scroll-view>
 		</div>
@@ -1540,6 +1672,95 @@
 			<div class="ep-submodal__footer">
 				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalReferenciaLaboral()"></dx-button>
 				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalReferenciaLaboral()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
+
+	<!-- motivo: submodal alta/edición de domicilio / dirección -->
+	<dx-popup
+		[(visible)]="submodalDomicilioVisible"
+		[title]="tituloSubmodalDomicilio"
+		[width]="760"
+		[maxWidth]="'94vw'"
+		[height]="'auto'"
+		[maxHeight]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalDomicilio()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ep-submodal">
+			<div class="ep-submodal__body">
+				<div class="ep-grid">
+					<div class="ep-field">
+						<label class="ep-label">País <span class="req">*</span></label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalDomicilioDraft.CORR_PAIS"
+							[items]="mCORR_PAIS_DOMICILIO"
+							displayExpr="NOMBRE_PAIS"
+							valueExpr="CORR_PAIS"
+							[searchEnabled]="true"
+							[showClearButton]="!esEmpleadoDomiciliado"
+							[readOnly]="esEmpleadoDomiciliado"
+							(onValueChanged)="onSubmodalDomicilioPaisChanged($event)"
+						></dx-select-box>
+					</div>
+					<ng-container *ngIf="esEmpleadoDomiciliado">
+						<div class="ep-field">
+							<label class="ep-label">Departamento <span class="req">*</span></label>
+							<dx-select-box
+								stylingMode="outlined"
+								[(value)]="submodalDomicilioDraft.CORR_DEPTO"
+								[items]="mCORR_DEPTO_DOMICILIO"
+								displayExpr="NOMBRE_DEPTO"
+								valueExpr="CORR_DEPTO"
+								[searchEnabled]="true"
+								[showClearButton]="true"
+								(onValueChanged)="onSubmodalDomicilioDeptoChanged($event)"
+							></dx-select-box>
+						</div>
+						<div class="ep-field">
+							<label class="ep-label">Municipio <span class="req">*</span></label>
+							<dx-select-box
+								stylingMode="outlined"
+								[(value)]="submodalDomicilioDraft.CORR_MUNICIPIO"
+								[items]="mCORR_MUNICIPIO_DOMICILIO"
+								displayExpr="NOMBRE_MUNICIPIO"
+								valueExpr="CORR_MUNICIPIO"
+								[searchEnabled]="true"
+								[showClearButton]="true"
+								(onValueChanged)="onSubmodalDomicilioMunicipioChanged($event)"
+							></dx-select-box>
+						</div>
+						<div class="ep-field">
+							<label class="ep-label">Distrito</label>
+							<dx-select-box
+								stylingMode="outlined"
+								[(value)]="submodalDomicilioDraft.CORR_DISTRITO"
+								[items]="mCORR_DISTRITO_DOMICILIO"
+								displayExpr="NOMBRE_DISTRITO"
+								valueExpr="CORR_DISTRITO"
+								[searchEnabled]="true"
+								[showClearButton]="true"
+								(onValueChanged)="onSubmodalDomicilioDistritoChanged($event)"
+							></dx-select-box>
+						</div>
+					</ng-container>
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Dirección <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalDomicilioDraft.DIRECCION"
+							[maxLength]="255"
+						></dx-text-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalDomicilio()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalDomicilio()"></dx-button>
 			</div>
 		</div>
 	</dx-popup>
