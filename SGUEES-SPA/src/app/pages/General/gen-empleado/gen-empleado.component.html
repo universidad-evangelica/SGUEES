@@ -376,24 +376,7 @@
 						</div>
 					</dxi-item>
 
-					<!-- motivo: placeholders de fase siguiente -->
-					<dxi-item title="Laboral" [icon]="'card'">
-						<div class="empleado-empty-state">
-							<i class="dx-icon dx-icon-card"></i>
-							<p>Datos laborales del empleado.</p>
-							<span>Esta sección se conectará en la siguiente fase.</span>
-						</div>
-					</dxi-item>
-
-					<dxi-item title="Contacto" [icon]="'tel'">
-						<div class="empleado-empty-state">
-							<i class="dx-icon dx-icon-tel"></i>
-							<p>Contactos y domicilios de la persona.</p>
-							<span>Esta sección se conectará en la siguiente fase.</span>
-						</div>
-					</dxi-item>
-
-					<!-- motivo: Experiencia laboral en solo lectura (edición vía modal) -->
+					<!-- motivo: Experiencia laboral en solo lectura (después de Formación) -->
 					<dxi-item title="Experiencia" [icon]="'card'">
 						<div class="rd-panel">
 							<section class="rd-section">
@@ -443,6 +426,23 @@
 									<p class="rd-empty">Sin experiencias laborales registradas.</p>
 								</ng-template>
 							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: placeholders de fase siguiente -->
+					<dxi-item title="Laboral" [icon]="'card'">
+						<div class="empleado-empty-state">
+							<i class="dx-icon dx-icon-card"></i>
+							<p>Datos laborales del empleado.</p>
+							<span>Esta sección se conectará en la siguiente fase.</span>
+						</div>
+					</dxi-item>
+
+					<dxi-item title="Contacto" [icon]="'tel'">
+						<div class="empleado-empty-state">
+							<i class="dx-icon dx-icon-tel"></i>
+							<p>Contactos y domicilios de la persona.</p>
+							<span>Esta sección se conectará en la siguiente fase.</span>
 						</div>
 					</dxi-item>
 
@@ -1072,7 +1072,7 @@
 			<div class="ep-submodal__body">
 				<div class="ep-grid">
 					<div class="ep-field">
-						<label class="ep-label">Empresa <span class="req">*</span></label>
+						<label class="ep-label">Lugar de trabajo <span class="req">*</span></label>
 						<dx-text-box
 							stylingMode="outlined"
 							[(value)]="submodalExperienciaDraft.LUGAR_TRABAJO"

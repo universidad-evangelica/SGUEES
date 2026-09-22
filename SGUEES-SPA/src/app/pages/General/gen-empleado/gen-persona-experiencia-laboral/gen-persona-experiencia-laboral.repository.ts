@@ -30,11 +30,15 @@ export class GenPersonaExperienciaLaboralRepository {
 			SALARIO_FINAL: r.SALARIO_FINAL ?? null,
 			FECHA_INICIO: r.FECHA_INICIO ?? null,
 			FECHA_FIN: r.FECHA_FIN ?? null,
-			PERIODO_INICIAL: r.PERIODO_INICIAL ?? null,
-			PERIODO_FINAL: r.PERIODO_FINAL ?? null,
-			PERIODO: r.PERIODO ?? '',
+			// PERIODO_INICIAL/FINAL/PERIODO son calculadas en BD: no se envían.
 			MOTIVO_SALIDA: r.MOTIVO_SALIDA ?? '',
 		}));
-		return this.objData.Put(body, this.xController, 'SaveAll', [], environment.UrlGENERALAPI);
+		return this.objData.Put(
+			body,
+			this.xController,
+			'SaveAll',
+			[{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }],
+			environment.UrlGENERALAPI
+		);
 	}
 }

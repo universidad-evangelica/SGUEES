@@ -22,8 +22,15 @@ export class GenPersonaIdiomasRepository {
 			CORR_PERSONA: corrPersona,
 			CORR_IDIOMA: Number(r.CORR_IDIOMA) > 0 ? Number(r.CORR_IDIOMA) : 0,
 			NOMBRE_IDIOMA: r.NOMBRE_IDIOMA ?? '',
-			NIVEL_DOMINIO: r.NIVEL_DOMINIO ?? '',
+			// CHECK BD: BASICO|INTERMEDIO|AVANZADO; vacío → null.
+			NIVEL_DOMINIO: (r.NIVEL_DOMINIO ?? '').toString().trim() || null,
 		}));
-		return this.objData.Put(body, this.xController, 'SaveAll', [], environment.UrlGENERALAPI);
+		return this.objData.Put(
+			body,
+			this.xController,
+			'SaveAll',
+			[{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }],
+			environment.UrlGENERALAPI
+		);
 	}
 }

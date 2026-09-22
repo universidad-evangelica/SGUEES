@@ -18,14 +18,20 @@ export class GenPersonaTipoDocumentoIdentidadRepository {
 		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlGENERALAPI);
 	}
 
-	// Qué hace: guarda documentos (body = lista Table; CORR_PERSONA va en cada fila).
-	// Cómo: Put con xWhere vacío — CData.mergePutQueryIntoBody no debe convertir el array en objeto.
+	// Qué hace: guarda documentos (body = lista Table; CORR_PERSONA va en cada fila y en query).
+	// Cómo: Put con CORR_PERSONA en xWhere; CData conserva el array body (SaveAll).
 	saveAll(corrPersona: number, documentos: any[]): Observable<IResult> {
 		const rows = (documentos ?? []).map((d) => ({
 			CORR_PERSONA: corrPersona,
 			CORR_TIPO_DOCUMENTO_IDENTIDAD: d.CORR_TIPO_DOCUMENTO_IDENTIDAD,
 			VALOR_DOCUMENTO: d.VALOR_DOCUMENTO ?? '',
 		}));
-		return this.objData.Put(rows, this.xController, 'SaveAll', [], environment.UrlGENERALAPI);
+		return this.objData.Put(
+			rows,
+			this.xController,
+			'SaveAll',
+			[{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }],
+			environment.UrlGENERALAPI
+		);
 	}
 }

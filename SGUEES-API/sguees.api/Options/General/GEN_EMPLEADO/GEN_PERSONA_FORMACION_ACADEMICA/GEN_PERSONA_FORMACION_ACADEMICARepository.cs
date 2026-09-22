@@ -65,8 +65,8 @@ namespace sguees.Repositories
 		}
 
 		// Qué hace: sincroniza formación (alta/baja/cambio) y devuelve la lista releída.
-		// Cómo: borra los que no vienen; actualiza CORR>0; inserta CORR<=0 con correlativo auto;
-		//       calcula PERIODO_INICIAL/FINAL y PERIODO a partir de DESDE/HASTA.
+		// Cómo: borra los que no vienen; actualiza CORR>0; inserta CORR<=0.
+		//       PERIODO_INICIAL/FINAL/PERIODO son calculadas en BD: no se escriben.
 		public async Task<CResult> SaveAllAsync(
 			long corrPersona,
 			List<GEN_PERSONA_FORMACION_ACADEMICATable> Data,
@@ -133,12 +133,6 @@ namespace sguees.Repositories
 						continue;
 					}
 
-					// Qué hace: deriva periodos y texto PERIODO desde DESDE/HASTA.
-					// Cómo: año de cada fecha si existe; PERIODO = "YYYY" o "YYYY-YYYY".
-					var periodoInicial = item.DESDE.HasValue ? (int?)item.DESDE.Value.Year : item.PERIODO_INICIAL;
-					var periodoFinal = item.HASTA.HasValue ? (int?)item.HASTA.Value.Year : item.PERIODO_FINAL;
-					var periodo = ConstruirPeriodo(periodoInicial, periodoFinal);
-
 					if (item.CORR_FORMACION_ACADEMICA > 0)
 					{
 						var pUpdate = new List<CParameter>
@@ -146,11 +140,8 @@ namespace sguees.Repositories
 							new CParameter() { ParameterName = "TITULO", Value = (item.TITULO ?? string.Empty).Trim(), DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "CENTRO_EDUCATIVO", Value = (item.CENTRO_EDUCATIVO ?? string.Empty).Trim(), DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "NIVEL", Value = (item.NIVEL ?? string.Empty).Trim(), DbType = System.Data.DbType.String },
-							new CParameter() { ParameterName = "DESDE", Value = (object)item.DESDE ?? DBNull.Value, DbType = System.Data.DbType.DateTime },
-							new CParameter() { ParameterName = "HASTA", Value = (object)item.HASTA ?? DBNull.Value, DbType = System.Data.DbType.DateTime },
-							new CParameter() { ParameterName = "PERIODO_INICIAL", Value = (object)periodoInicial ?? DBNull.Value, DbType = System.Data.DbType.Int32 },
-							new CParameter() { ParameterName = "PERIODO_FINAL", Value = (object)periodoFinal ?? DBNull.Value, DbType = System.Data.DbType.Int32 },
-							new CParameter() { ParameterName = "PERIODO", Value = periodo, DbType = System.Data.DbType.String },
+							new CParameter() { ParameterName = "DESDE", Value = (object)item.DESDE ?? DBNull.Value, DbType = System.Data.DbType.Date },
+							new CParameter() { ParameterName = "HASTA", Value = (object)item.HASTA ?? DBNull.Value, DbType = System.Data.DbType.Date },
 							new CParameter() { ParameterName = "USUARIO_ACTU", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "ESTACION_ACTU", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "FECHA_ACTU", Value = fecha, DbType = System.Data.DbType.DateTime },
@@ -175,11 +166,8 @@ namespace sguees.Repositories
 							new CParameter() { ParameterName = "TITULO", Value = (item.TITULO ?? string.Empty).Trim(), DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "CENTRO_EDUCATIVO", Value = (item.CENTRO_EDUCATIVO ?? string.Empty).Trim(), DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "NIVEL", Value = (item.NIVEL ?? string.Empty).Trim(), DbType = System.Data.DbType.String },
-							new CParameter() { ParameterName = "DESDE", Value = (object)item.DESDE ?? DBNull.Value, DbType = System.Data.DbType.DateTime },
-							new CParameter() { ParameterName = "HASTA", Value = (object)item.HASTA ?? DBNull.Value, DbType = System.Data.DbType.DateTime },
-							new CParameter() { ParameterName = "PERIODO_INICIAL", Value = (object)periodoInicial ?? DBNull.Value, DbType = System.Data.DbType.Int32 },
-							new CParameter() { ParameterName = "PERIODO_FINAL", Value = (object)periodoFinal ?? DBNull.Value, DbType = System.Data.DbType.Int32 },
-							new CParameter() { ParameterName = "PERIODO", Value = periodo, DbType = System.Data.DbType.String },
+							new CParameter() { ParameterName = "DESDE", Value = (object)item.DESDE ?? DBNull.Value, DbType = System.Data.DbType.Date },
+							new CParameter() { ParameterName = "HASTA", Value = (object)item.HASTA ?? DBNull.Value, DbType = System.Data.DbType.Date },
 							new CParameter() { ParameterName = "USUARIO_CREA", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "ESTACION_CREA", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "FECHA_CREA", Value = fecha, DbType = System.Data.DbType.DateTime },
@@ -225,30 +213,6 @@ namespace sguees.Repositories
 			}
 
 			return objResultado;
-		}
-
-		// Qué hace: arma el texto PERIODO a partir de años inicial/final.
-		// Cómo: un solo año si falta uno o son iguales; "YYYY-YYYY" si difieren.
-		private static string ConstruirPeriodo(int? periodoInicial, int? periodoFinal)
-		{
-			if (periodoInicial.HasValue && periodoFinal.HasValue)
-			{
-				return periodoInicial.Value == periodoFinal.Value
-					? periodoInicial.Value.ToString()
-					: $"{periodoInicial.Value}-{periodoFinal.Value}";
-			}
-
-			if (periodoInicial.HasValue)
-			{
-				return periodoInicial.Value.ToString();
-			}
-
-			if (periodoFinal.HasValue)
-			{
-				return periodoFinal.Value.ToString();
-			}
-
-			return string.Empty;
 		}
 	}
 }

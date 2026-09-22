@@ -26,10 +26,14 @@ export class GenPersonaFormacionAcademicaRepository {
 			NIVEL: r.NIVEL ?? '',
 			DESDE: r.DESDE ?? null,
 			HASTA: r.HASTA ?? null,
-			PERIODO_INICIAL: r.PERIODO_INICIAL ?? null,
-			PERIODO_FINAL: r.PERIODO_FINAL ?? null,
-			PERIODO: r.PERIODO ?? '',
+			// PERIODO_INICIAL/FINAL/PERIODO son calculadas en BD: no se envían.
 		}));
-		return this.objData.Put(body, this.xController, 'SaveAll', [], environment.UrlGENERALAPI);
+		return this.objData.Put(
+			body,
+			this.xController,
+			'SaveAll',
+			[{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }],
+			environment.UrlGENERALAPI
+		);
 	}
 }

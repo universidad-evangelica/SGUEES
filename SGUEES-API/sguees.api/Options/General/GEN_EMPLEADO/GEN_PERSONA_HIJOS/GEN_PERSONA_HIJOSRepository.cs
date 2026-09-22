@@ -138,13 +138,17 @@ namespace sguees.Repositories
 						continue;
 					}
 
+					// CHECK: MASCULINO|FEMENINO; vacío → NULL (columna nullable).
+					var sexo = (item.SEXO ?? string.Empty).Trim();
+					object sexoValor = string.IsNullOrWhiteSpace(sexo) ? DBNull.Value : sexo;
+
 					if (item.CORR_HIJO > 0)
 					{
 						var pUpdate = new List<CParameter>
 						{
 							new CParameter() { ParameterName = "NOMBRE_COMPLETO", Value = nombre, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "EDAD", Value = (object)item.EDAD ?? DBNull.Value, DbType = System.Data.DbType.Int32 },
-							new CParameter() { ParameterName = "SEXO", Value = (item.SEXO ?? string.Empty).Trim(), DbType = System.Data.DbType.String },
+							new CParameter() { ParameterName = "SEXO", Value = sexoValor, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "FECHA_NACIMIENTO", Value = (object)item.FECHA_NACIMIENTO ?? DBNull.Value, DbType = System.Data.DbType.Date },
 							new CParameter() { ParameterName = "USUARIO_ACTU", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "ESTACION_ACTU", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
@@ -169,7 +173,7 @@ namespace sguees.Repositories
 							new CParameter() { ParameterName = "CORR_HIJO", Value = 0, DbType = System.Data.DbType.Int32 },
 							new CParameter() { ParameterName = "NOMBRE_COMPLETO", Value = nombre, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "EDAD", Value = (object)item.EDAD ?? DBNull.Value, DbType = System.Data.DbType.Int32 },
-							new CParameter() { ParameterName = "SEXO", Value = (item.SEXO ?? string.Empty).Trim(), DbType = System.Data.DbType.String },
+							new CParameter() { ParameterName = "SEXO", Value = sexoValor, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "FECHA_NACIMIENTO", Value = (object)item.FECHA_NACIMIENTO ?? DBNull.Value, DbType = System.Data.DbType.Date },
 							new CParameter() { ParameterName = "USUARIO_CREA", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "ESTACION_CREA", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },

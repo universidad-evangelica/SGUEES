@@ -65,8 +65,8 @@ namespace sguees.Repositories
 		}
 
 		// Qué hace: sincroniza experiencia laboral (alta/baja/cambio) y devuelve la lista releída.
-		// Cómo: borra los que no vienen; actualiza CORR>0; inserta CORR<=0 con correlativo auto;
-		//       omite LUGAR_TRABAJO vacío; calcula PERIODO_INICIAL/FINAL y PERIODO desde fechas.
+		// Cómo: borra los que no vienen; actualiza CORR>0; inserta CORR<=0.
+		//       omite LUGAR_TRABAJO vacío. PERIODO_* son calculadas en BD: no se escriben.
 		public async Task<CResult> SaveAllAsync(
 			long corrPersona,
 			List<GEN_PERSONA_EXPERIENCIA_LABORALTable> Data,
@@ -139,12 +139,6 @@ namespace sguees.Repositories
 						continue;
 					}
 
-					// Qué hace: deriva periodos y texto PERIODO desde FECHA_INICIO/FECHA_FIN.
-					// Cómo: año de cada fecha si existe; PERIODO = "YYYY" o "YYYY-YYYY".
-					var periodoInicial = item.FECHA_INICIO.HasValue ? (int?)item.FECHA_INICIO.Value.Year : item.PERIODO_INICIAL;
-					var periodoFinal = item.FECHA_FIN.HasValue ? (int?)item.FECHA_FIN.Value.Year : item.PERIODO_FINAL;
-					var periodo = ConstruirPeriodo(periodoInicial, periodoFinal);
-
 					if (item.CORR_EXPERIENCIA_LABORAL > 0)
 					{
 						var pUpdate = new List<CParameter>
@@ -157,9 +151,6 @@ namespace sguees.Repositories
 							new CParameter() { ParameterName = "SALARIO_FINAL", Value = (object)item.SALARIO_FINAL ?? DBNull.Value, DbType = System.Data.DbType.Decimal },
 							new CParameter() { ParameterName = "FECHA_INICIO", Value = (object)item.FECHA_INICIO ?? DBNull.Value, DbType = System.Data.DbType.Date },
 							new CParameter() { ParameterName = "FECHA_FIN", Value = (object)item.FECHA_FIN ?? DBNull.Value, DbType = System.Data.DbType.Date },
-							new CParameter() { ParameterName = "PERIODO_INICIAL", Value = (object)periodoInicial ?? DBNull.Value, DbType = System.Data.DbType.Int32 },
-							new CParameter() { ParameterName = "PERIODO_FINAL", Value = (object)periodoFinal ?? DBNull.Value, DbType = System.Data.DbType.Int32 },
-							new CParameter() { ParameterName = "PERIODO", Value = periodo, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "MOTIVO_SALIDA", Value = (item.MOTIVO_SALIDA ?? string.Empty).Trim(), DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "USUARIO_ACTU", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "ESTACION_ACTU", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
@@ -190,9 +181,6 @@ namespace sguees.Repositories
 							new CParameter() { ParameterName = "SALARIO_FINAL", Value = (object)item.SALARIO_FINAL ?? DBNull.Value, DbType = System.Data.DbType.Decimal },
 							new CParameter() { ParameterName = "FECHA_INICIO", Value = (object)item.FECHA_INICIO ?? DBNull.Value, DbType = System.Data.DbType.Date },
 							new CParameter() { ParameterName = "FECHA_FIN", Value = (object)item.FECHA_FIN ?? DBNull.Value, DbType = System.Data.DbType.Date },
-							new CParameter() { ParameterName = "PERIODO_INICIAL", Value = (object)periodoInicial ?? DBNull.Value, DbType = System.Data.DbType.Int32 },
-							new CParameter() { ParameterName = "PERIODO_FINAL", Value = (object)periodoFinal ?? DBNull.Value, DbType = System.Data.DbType.Int32 },
-							new CParameter() { ParameterName = "PERIODO", Value = periodo, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "MOTIVO_SALIDA", Value = (item.MOTIVO_SALIDA ?? string.Empty).Trim(), DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "USUARIO_CREA", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "ESTACION_CREA", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
@@ -239,30 +227,6 @@ namespace sguees.Repositories
 			}
 
 			return objResultado;
-		}
-
-		// Qué hace: arma el texto PERIODO a partir de años inicial/final.
-		// Cómo: un solo año si falta uno o son iguales; "YYYY-YYYY" si difieren.
-		private static string ConstruirPeriodo(int? periodoInicial, int? periodoFinal)
-		{
-			if (periodoInicial.HasValue && periodoFinal.HasValue)
-			{
-				return periodoInicial.Value == periodoFinal.Value
-					? periodoInicial.Value.ToString()
-					: $"{periodoInicial.Value}-{periodoFinal.Value}";
-			}
-
-			if (periodoInicial.HasValue)
-			{
-				return periodoInicial.Value.ToString();
-			}
-
-			if (periodoFinal.HasValue)
-			{
-				return periodoFinal.Value.ToString();
-			}
-
-			return string.Empty;
 		}
 	}
 }

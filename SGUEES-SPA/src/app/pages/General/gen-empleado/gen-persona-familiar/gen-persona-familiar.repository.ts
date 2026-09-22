@@ -19,6 +19,7 @@ export class GenPersonaFamiliarRepository {
 	}
 
 	// Qué hace: guarda familiares (body = lista Table; CORR<=0 = alta).
+	// Cómo: CORR_PERSONA en query (también con lista vacía) + en cada fila.
 	saveAll(corrPersona: number, familiares: any[]): Observable<IResult> {
 		const rows = (familiares ?? []).map((f) => ({
 			CORR_PERSONA: corrPersona,
@@ -30,6 +31,12 @@ export class GenPersonaFamiliarRepository {
 			OCUPACION: f.OCUPACION ?? '',
 			FECHA_NACIMIENTO: f.FECHA_NACIMIENTO ?? null,
 		}));
-		return this.objData.Put(rows, this.xController, 'SaveAll', [], environment.UrlGENERALAPI);
+		return this.objData.Put(
+			rows,
+			this.xController,
+			'SaveAll',
+			[{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }],
+			environment.UrlGENERALAPI
+		);
 	}
 }

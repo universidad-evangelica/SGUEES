@@ -22,8 +22,15 @@ export class GenPersonaCompetenciaRepository {
 			CORR_PERSONA: corrPersona,
 			CORR_COMPETENCIA: Number(r.CORR_COMPETENCIA) > 0 ? Number(r.CORR_COMPETENCIA) : 0,
 			NOMBRE_COMPETENCIA: r.NOMBRE_COMPETENCIA ?? '',
-			NIVEL_DOMINIO: r.NIVEL_DOMINIO ?? '',
+			// CHECK BD: BASICO|INTERMEDIO|AVANZADO; vacío → null.
+			NIVEL_DOMINIO: (r.NIVEL_DOMINIO ?? '').toString().trim() || null,
 		}));
-		return this.objData.Put(body, this.xController, 'SaveAll', [], environment.UrlGENERALAPI);
+		return this.objData.Put(
+			body,
+			this.xController,
+			'SaveAll',
+			[{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }],
+			environment.UrlGENERALAPI
+		);
 	}
 }

@@ -95,6 +95,12 @@ export class CData {
 			return body;
 		}
 
+		// Qué hace: no fusionar query en body si es array (SaveAll con List<>).
+		// Cómo: conserva el JSON array; CORR_PERSONA u otras claves van solo en query params.
+		if (Array.isArray(body)) {
+			return body;
+		}
+
 		if (typeof FormData !== 'undefined' && body instanceof FormData) {
 			for (const param of xWhere) {
 				const key = param.Parameter;

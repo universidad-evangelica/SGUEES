@@ -139,13 +139,15 @@ namespace sguees.Repositories
 					}
 
 					var nivel = (item.NIVEL_DOMINIO ?? string.Empty).Trim();
+					// CHECK: BASICO|INTERMEDIO|AVANZADO; vacío → NULL (columna nullable).
+					object nivelValor = string.IsNullOrWhiteSpace(nivel) ? DBNull.Value : nivel;
 
 					if (item.CORR_COMPETENCIA > 0)
 					{
 						var pUpdate = new List<CParameter>
 						{
 							new CParameter() { ParameterName = "NOMBRE_COMPETENCIA", Value = nombre, DbType = System.Data.DbType.String },
-							new CParameter() { ParameterName = "NIVEL_DOMINIO", Value = nivel, DbType = System.Data.DbType.String },
+							new CParameter() { ParameterName = "NIVEL_DOMINIO", Value = nivelValor, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "USUARIO_ACTU", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "ESTACION_ACTU", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "FECHA_ACTU", Value = fecha, DbType = System.Data.DbType.DateTime },
@@ -168,7 +170,7 @@ namespace sguees.Repositories
 							new CParameter() { ParameterName = "CORR_PERSONA", Value = corrPersona, DbType = System.Data.DbType.Int64 },
 							new CParameter() { ParameterName = "CORR_COMPETENCIA", Value = 0, DbType = System.Data.DbType.Int32 },
 							new CParameter() { ParameterName = "NOMBRE_COMPETENCIA", Value = nombre, DbType = System.Data.DbType.String },
-							new CParameter() { ParameterName = "NIVEL_DOMINIO", Value = nivel, DbType = System.Data.DbType.String },
+							new CParameter() { ParameterName = "NIVEL_DOMINIO", Value = nivelValor, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "USUARIO_CREA", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "ESTACION_CREA", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
 							new CParameter() { ParameterName = "FECHA_CREA", Value = fecha, DbType = System.Data.DbType.DateTime },

@@ -19,15 +19,23 @@ export class GenPersonaHijosRepository {
 	}
 
 	// Qué hace: guarda hijos (body = lista Table; CORR<=0 = alta).
+	// Cómo: CORR_PERSONA en query (también con lista vacía) + en cada fila.
 	saveAll(corrPersona: number, hijos: any[]): Observable<IResult> {
 		const rows = (hijos ?? []).map((h) => ({
 			CORR_PERSONA: corrPersona,
 			CORR_HIJO: Number(h.CORR_HIJO) > 0 ? Number(h.CORR_HIJO) : 0,
 			NOMBRE_COMPLETO: h.NOMBRE_COMPLETO ?? '',
 			EDAD: h.EDAD ?? null,
-			SEXO: h.SEXO ?? '',
+			// CHECK BD: MASCULINO|FEMENINO; vacío → null.
+			SEXO: (h.SEXO ?? '').toString().trim() || null,
 			FECHA_NACIMIENTO: h.FECHA_NACIMIENTO ?? null,
 		}));
-		return this.objData.Put(rows, this.xController, 'SaveAll', [], environment.UrlGENERALAPI);
+		return this.objData.Put(
+			rows,
+			this.xController,
+			'SaveAll',
+			[{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }],
+			environment.UrlGENERALAPI
+		);
 	}
 }
