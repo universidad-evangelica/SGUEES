@@ -17,8 +17,8 @@ export class GenTipoDocumentoIdentidadService {
 	constructor(private repo: GenTipoDocumentoIdentidadRepository) {}
 
 	// Qué hace: valida el formulario antes de guardar.
-	// Cómo: nombre/corto; formato y aplica_para; si ACTIVO_CARACTERES, NUMERO_CARACTERES > 0.
-	esValido(model: GenTipoDocumentoIdentidad, msg: Function): boolean {
+	// Cómo: nombre/corto únicos (contra lista en memoria); formato y aplica_para; tope si ACTIVO_CARACTERES.
+	esValido(model: GenTipoDocumentoIdentidad, msg: Function, existentes?: GenTipoDocumentoIdentidad[]): boolean {
 		if (!model.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD || model.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD.trim() === '') {
 			msg('Debe ingresar el nombre del tipo de documento.', NotifyType.Warning);
 			return false;
@@ -40,7 +40,7 @@ export class GenTipoDocumentoIdentidadService {
 			return false;
 		}
 		if (!model.APLICA_PARA || `${model.APLICA_PARA}`.trim() === '') {
-			msg('Debe indicar si aplica para nacional, extranjero o ambos.', NotifyType.Warning);
+			msg('Debe indicar si aplica para nacionales, extranjeros o ambos.', NotifyType.Warning);
 			return false;
 		}
 		if (model.ACTIVO_CARACTERES) {
@@ -50,6 +50,32 @@ export class GenTipoDocumentoIdentidadService {
 				return false;
 			}
 		}
+
+		const corr = Number(model.CORR_TIPO_DOCUMENTO_IDENTIDAD ?? 0);
+		const nombre = model.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD.trim().toUpperCase();
+		const corto = model.NOMBRE_CORTO.trim().toUpperCase();
+		const lista = Array.isArray(existentes) ? existentes : [];
+
+		const nombreDuplicado = lista.some(
+			(x) =>
+				Number(x?.CORR_TIPO_DOCUMENTO_IDENTIDAD ?? 0) !== corr &&
+				`${x?.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD ?? ''}`.trim().toUpperCase() === nombre
+		);
+		if (nombreDuplicado) {
+			msg('El nombre del tipo de documento ingresado ya está registrado. Escriba otro nombre para continuar.', NotifyType.Warning);
+			return false;
+		}
+
+		const cortoDuplicado = lista.some(
+			(x) =>
+				Number(x?.CORR_TIPO_DOCUMENTO_IDENTIDAD ?? 0) !== corr &&
+				`${x?.NOMBRE_CORTO ?? ''}`.trim().toUpperCase() === corto
+		);
+		if (cortoDuplicado) {
+			msg('El nombre corto ingresado ya está registrado. Escriba otro nombre corto para continuar.', NotifyType.Warning);
+			return false;
+		}
+
 		return true;
 	}
 

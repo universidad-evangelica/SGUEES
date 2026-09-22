@@ -69,7 +69,7 @@ export class GenTipoDocumentoIdentidadComponent extends CBaseComponent implement
 			.subscribe({
 				next: (response: any) => {
 					if (response?.Result) {
-						this.mFORMATO_CARACTERES = response.Data ?? [];
+						this.mFORMATO_CARACTERES = this.normalizarListaLookup(response.Data);
 					}
 				},
 				error: (error: any) => this.notifyFx(error, NotifyType.Error),
@@ -81,15 +81,24 @@ export class GenTipoDocumentoIdentidadComponent extends CBaseComponent implement
 			.subscribe({
 				next: (response: any) => {
 					if (response?.Result) {
-						this.mAPLICA_PARA = response.Data ?? [];
+						this.mAPLICA_PARA = this.normalizarListaLookup(response.Data);
 					}
 				},
 				error: (error: any) => this.notifyFx(error, NotifyType.Error),
 			});
 	}
 
+	/** Qué hace: unifica Key/Value aunque el API serialice en camelCase. */
+	private normalizarListaLookup(rows: any[]): any[] {
+		return (rows ?? []).map((r) => ({
+			Key: r?.Key ?? r?.key,
+			Value: r?.Value ?? r?.value,
+		}));
+	}
+
 	selectedLookUpLista(vRow: any): any {
-		return vRow?.[0]?.Key;
+		const row = vRow?.[0];
+		return row?.Key ?? row?.key;
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -245,12 +254,12 @@ export class GenTipoDocumentoIdentidadComponent extends CBaseComponent implement
 
 		const formValidation = this.dataForm?.instance?.validate();
 		if (formValidation && !formValidation.isValid) {
-			this.service.esValido(this.model, this.notifyFx.bind(this));
+			this.service.esValido(this.model, this.notifyFx.bind(this), this.models as GenTipoDocumentoIdentidad[]);
 			return;
 		}
 
 		this.guardarMtto({
-			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this), this.models as GenTipoDocumentoIdentidad[]),
 			insert: () => this.service.insert(this.model),
 			update: () => this.service.update(this.model),
 		});
