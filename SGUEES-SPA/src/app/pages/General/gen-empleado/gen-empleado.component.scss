@@ -616,6 +616,30 @@
 	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
 }
 
+/* motivo: chips de idiomas/competencias en tab Formación (lectura) */
+.rd-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.rd-chip {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 8px;
+	padding: 8px 12px;
+	border-radius: var(--sguees-radius-pill, 999px);
+	background: color-mix(in srgb, var(--accent-color, #1976d2) 14%, transparent);
+	border: 1px solid color-mix(in srgb, var(--accent-color, #1976d2) 28%, transparent);
+	font-size: 13px;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+}
+
+.rd-chip strong {
+	color: var(--accent-color, #1976d2);
+	font-weight: 700;
+}
+
 .ep-cards {
 	display: flex;
 	flex-direction: column;

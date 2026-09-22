@@ -313,6 +313,69 @@
 						</div>
 					</dxi-item>
 
+					<!-- motivo: Formación — lectura estudios / idiomas / competencias (después de Familiares) -->
+					<dxi-item title="Formación" [icon]="'bookmark'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Estudios</h4>
+								<div class="rd-cards" *ngIf="formacionesAcademicas?.length; else sinEstudiosRd">
+									<article class="rd-card" *ngFor="let item of formacionesAcademicas">
+										<header class="rd-card__header">
+											{{ textoLectura(item.NIVEL) }}
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Centro educativo</span>
+												<span class="rd-value">{{ textoLectura(item.CENTRO_EDUCATIVO) }}</span>
+											</div>
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Título</span>
+												<span class="rd-value">{{ textoLectura(item.TITULO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Desde</span>
+												<span class="rd-value">{{ fechaLectura(item.DESDE) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Hasta</span>
+												<span class="rd-value">{{ fechaLectura(item.HASTA) }}</span>
+											</div>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinEstudiosRd>
+									<p class="rd-empty">Sin estudios registrados.</p>
+								</ng-template>
+							</section>
+
+							<section class="rd-section">
+								<h4 class="rd-section__title">Idiomas</h4>
+								<div class="rd-chips" *ngIf="idiomas?.length; else sinIdiomasRd">
+									<div class="rd-chip" *ngFor="let item of idiomas">
+										<strong>{{ textoLectura(item.NOMBRE_IDIOMA) }}</strong>
+										<span>{{ textoLectura(etiquetaNivelDominio(item.NIVEL_DOMINIO)) }}</span>
+									</div>
+								</div>
+								<ng-template #sinIdiomasRd>
+									<p class="rd-empty">Sin idiomas registrados.</p>
+								</ng-template>
+							</section>
+
+							<section class="rd-section">
+								<h4 class="rd-section__title">Competencias</h4>
+								<div class="rd-chips" *ngIf="competencias?.length; else sinCompetenciasRd">
+									<div class="rd-chip" *ngFor="let item of competencias">
+										<strong>{{ textoLectura(item.NOMBRE_COMPETENCIA) }}</strong>
+										<span>{{ textoLectura(etiquetaNivelDominio(item.NIVEL_DOMINIO)) }}</span>
+									</div>
+								</div>
+								<ng-template #sinCompetenciasRd>
+									<p class="rd-empty">Sin competencias registradas.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
 					<!-- motivo: placeholders de fase siguiente -->
 					<dxi-item title="Laboral" [icon]="'card'">
 						<div class="empleado-empty-state">
@@ -330,19 +393,56 @@
 						</div>
 					</dxi-item>
 
-					<dxi-item title="Formación" [icon]="'bookmark'">
-						<div class="empleado-empty-state">
-							<i class="dx-icon dx-icon-bookmark"></i>
-							<p>Formación académica e idiomas.</p>
-							<span>Esta sección se conectará en la siguiente fase.</span>
-						</div>
-					</dxi-item>
-
+					<!-- motivo: Experiencia laboral en solo lectura (edición vía modal) -->
 					<dxi-item title="Experiencia" [icon]="'card'">
-						<div class="empleado-empty-state">
-							<i class="dx-icon dx-icon-card"></i>
-							<p>Experiencia y referencias laborales.</p>
-							<span>Esta sección se conectará en la siguiente fase.</span>
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Experiencia laboral</h4>
+								<div class="rd-cards" *ngIf="experienciasLaborales?.length; else sinExperienciasRd">
+									<article class="rd-card" *ngFor="let item of experienciasLaborales">
+										<header class="rd-card__header">
+											{{ textoLectura(item.LUGAR_TRABAJO) }}
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field">
+												<span class="rd-label">Cargo</span>
+												<span class="rd-value">{{ textoLectura(item.CARGO_DESEMPENADO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Teléfono</span>
+												<span class="rd-value">{{ textoLectura(item.TELEFONO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Jefe inmediato</span>
+												<span class="rd-value">{{ textoLectura(item.JEFE_INMEDIATO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Fecha inicio</span>
+												<span class="rd-value">{{ fechaLectura(item.FECHA_INICIO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Fecha fin</span>
+												<span class="rd-value">{{ fechaLectura(item.FECHA_FIN) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Salario inicial</span>
+												<span class="rd-value">{{ montoLectura(item.SALARIO_INICIAL) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Salario final</span>
+												<span class="rd-value">{{ montoLectura(item.SALARIO_FINAL) }}</span>
+											</div>
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Motivo de salida</span>
+												<span class="rd-value">{{ textoLectura(item.MOTIVO_SALIDA) }}</span>
+											</div>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinExperienciasRd>
+									<p class="rd-empty">Sin experiencias laborales registradas.</p>
+								</ng-template>
+							</section>
 						</div>
 					</dxi-item>
 
@@ -567,6 +667,168 @@
 							</section>
 						</div>
 					</dxi-item>
+
+					<!-- motivo: Formación editable — estudios / idiomas / competencias -->
+					<dxi-item title="Formación" [icon]="'bookmark'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Estudios</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalFormacionNuevo('estudio')"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="formacionesAcademicas?.length; else sinEstudiosModal">
+									<article class="ep-card" *ngFor="let f of formacionesAcademicas; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(f.NIVEL || f.TITULO || f.CENTRO_EDUCATIVO) }}</div>
+											<div class="ep-card__summary">{{ resumenEstudio(f) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalFormacionEditar('estudio', i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarEstudio(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinEstudiosModal>
+									<p class="ep-empty">Sin estudios registrados.</p>
+								</ng-template>
+							</section>
+
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Idiomas</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalFormacionNuevo('idioma')"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="idiomas?.length; else sinIdiomasModal">
+									<article class="ep-card" *ngFor="let idioma of idiomas; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(idioma.NOMBRE_IDIOMA) }}</div>
+											<div class="ep-card__summary">{{ resumenIdioma(idioma) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalFormacionEditar('idioma', i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarIdioma(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinIdiomasModal>
+									<p class="ep-empty">Sin idiomas registrados.</p>
+								</ng-template>
+							</section>
+
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Competencias</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalFormacionNuevo('competencia')"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="competencias?.length; else sinCompetenciasModal">
+									<article class="ep-card" *ngFor="let c of competencias; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(c.NOMBRE_COMPETENCIA) }}</div>
+											<div class="ep-card__summary">{{ resumenCompetencia(c) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalFormacionEditar('competencia', i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarCompetencia(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinCompetenciasModal>
+									<p class="ep-empty">Sin competencias registradas.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Experiencia laboral editable (después de Formación) -->
+					<dxi-item title="Experiencia" [icon]="'card'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Experiencia laboral</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalExperienciaNuevo()"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="experienciasLaborales?.length; else sinExperienciasModal">
+									<article class="ep-card" *ngFor="let exp of experienciasLaborales; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(exp.LUGAR_TRABAJO) }}</div>
+											<div class="ep-card__summary">{{ resumenExperiencia(exp) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalExperienciaEditar(i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarExperiencia(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinExperienciasModal>
+									<p class="ep-empty">Sin experiencias laborales registradas.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
 				</dx-tab-panel>
 			</dx-scroll-view>
 		</div>
@@ -667,6 +929,230 @@
 			<div class="ep-submodal__footer">
 				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalFamiliar()"></dx-button>
 				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalFamiliar()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
+
+	<!-- motivo: submodal alta/edición de estudio, idioma o competencia -->
+	<dx-popup
+		[(visible)]="submodalFormacionVisible"
+		[title]="tituloSubmodalFormacion"
+		[width]="520"
+		[maxWidth]="'92vw'"
+		[height]="'auto'"
+		[maxHeight]="'85vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalFormacion()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ep-submodal">
+			<div class="ep-submodal__body" *ngIf="submodalFormacionTipo === 'estudio'">
+				<div class="ep-grid">
+					<div class="ep-field">
+						<label class="ep-label">Nivel</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalFormacionDraft.NIVEL"
+							[items]="opcionesNivelAcademico"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+						></dx-select-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Centro educativo</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalFormacionDraft.CENTRO_EDUCATIVO"
+							[maxLength]="150"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Desde</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="MM/yyyy"
+							[calendarOptions]="{ zoomLevel: 'year', maxZoomLevel: 'year' }"
+							[(value)]="submodalFormacionDraft.DESDE"
+						></dx-date-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Hasta</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="MM/yyyy"
+							[calendarOptions]="{ zoomLevel: 'year', maxZoomLevel: 'year' }"
+							[(value)]="submodalFormacionDraft.HASTA"
+						></dx-date-box>
+					</div>
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Título</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalFormacionDraft.TITULO"
+							[maxLength]="150"
+						></dx-text-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__body" *ngIf="submodalFormacionTipo === 'idioma'">
+				<div class="ep-grid">
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Idioma <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalFormacionDraft.NOMBRE_IDIOMA"
+							[maxLength]="100"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Nivel de dominio</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalFormacionDraft.NIVEL_DOMINIO"
+							[items]="mNIVEL_DOMINIO"
+							displayExpr="Value"
+							valueExpr="Key"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+						></dx-select-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__body" *ngIf="submodalFormacionTipo === 'competencia'">
+				<div class="ep-grid">
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Competencia <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalFormacionDraft.NOMBRE_COMPETENCIA"
+							[maxLength]="100"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Nivel de dominio</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalFormacionDraft.NIVEL_DOMINIO"
+							[items]="mNIVEL_DOMINIO"
+							displayExpr="Value"
+							valueExpr="Key"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+						></dx-select-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalFormacion()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalFormacion()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
+
+	<!-- motivo: submodal alta/edición de experiencia laboral -->
+	<dx-popup
+		[(visible)]="submodalExperienciaVisible"
+		[title]="tituloSubmodalExperiencia"
+		[width]="560"
+		[maxWidth]="'92vw'"
+		[height]="'auto'"
+		[maxHeight]="'85vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalExperiencia()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ep-submodal">
+			<div class="ep-submodal__body">
+				<div class="ep-grid">
+					<div class="ep-field">
+						<label class="ep-label">Empresa <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalExperienciaDraft.LUGAR_TRABAJO"
+							[maxLength]="150"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Teléfono</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalExperienciaDraft.TELEFONO"
+							[maxLength]="30"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Cargo</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalExperienciaDraft.CARGO_DESEMPENADO"
+							[maxLength]="100"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Jefe inmediato</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalExperienciaDraft.JEFE_INMEDIATO"
+							[maxLength]="100"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Fecha inicio</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="dd/MM/yyyy"
+							[(value)]="submodalExperienciaDraft.FECHA_INICIO"
+						></dx-date-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Fecha fin</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="dd/MM/yyyy"
+							[(value)]="submodalExperienciaDraft.FECHA_FIN"
+						></dx-date-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Salario inicial</label>
+						<dx-number-box
+							stylingMode="outlined"
+							[(value)]="submodalExperienciaDraft.SALARIO_INICIAL"
+							format="$#,##0.00"
+							[min]="0"
+						></dx-number-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Salario final</label>
+						<dx-number-box
+							stylingMode="outlined"
+							[(value)]="submodalExperienciaDraft.SALARIO_FINAL"
+							format="$#,##0.00"
+							[min]="0"
+						></dx-number-box>
+					</div>
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Motivo de salida</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalExperienciaDraft.MOTIVO_SALIDA"
+							[maxLength]="500"
+						></dx-text-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalExperiencia()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalExperiencia()"></dx-button>
 			</div>
 		</div>
 	</dx-popup>

@@ -587,6 +587,29 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
+		// Qué hace: opciones de nivel de dominio para idiomas y competencias de empleado.
+		// Cómo: valores del CHECK de tabla — BASICO / INTERMEDIO / AVANZADO.
+		public CResult GetNIVEL_DOMINIO()
+		{
+			CResult objResultado = new();
+
+			objResultado.Data = new List<GEN_LISTAView>()
+			{
+				new() { Key = "BASICO", Value = "Básico" },
+				new() { Key = "INTERMEDIO", Value = "Intermedio" },
+				new() { Key = "AVANZADO", Value = "Avanzado" },
+			};
+
+			objResultado.Result = true;
+			objResultado.RowsAffected = 1;
+			objResultado.CodeHelper = 0;
+			objResultado.ErrorCode = 0;
+			objResultado.ErrorMessage = "";
+			objResultado.ErrorSource = "";
+
+			return objResultado;
+		}
+
       
     }
 

@@ -1,5 +1,5 @@
 // Qué hace: servicio de negocio del browse/formulario de Empleado.
-// Cómo: GetAll/Get/Iniciar + personales + documentos + familiares/hijos (repos anidados).
+// Cómo: GetAll/Get/Iniciar + personales + documentos + familiares + formación (repos anidados).
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -10,6 +10,10 @@ import { GenEmpleadoRepository } from './gen-empleado.repository';
 import { GenPersonaTipoDocumentoIdentidadRepository } from './gen-persona-tipo-documento-identidad/gen-persona-tipo-documento-identidad.repository';
 import { GenPersonaFamiliarRepository } from './gen-persona-familiar/gen-persona-familiar.repository';
 import { GenPersonaHijosRepository } from './gen-persona-hijos/gen-persona-hijos.repository';
+import { GenPersonaFormacionAcademicaRepository } from './gen-persona-formacion-academica/gen-persona-formacion-academica.repository';
+import { GenPersonaIdiomasRepository } from './gen-persona-idiomas/gen-persona-idiomas.repository';
+import { GenPersonaCompetenciaRepository } from './gen-persona-competencia/gen-persona-competencia.repository';
+import { GenPersonaExperienciaLaboralRepository } from './gen-persona-experiencia-laboral/gen-persona-experiencia-laboral.repository';
 
 const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
 
@@ -19,7 +23,11 @@ export class GenEmpleadoService {
 		private repo: GenEmpleadoRepository,
 		private documentosRepo: GenPersonaTipoDocumentoIdentidadRepository,
 		private familiaresRepo: GenPersonaFamiliarRepository,
-		private hijosRepo: GenPersonaHijosRepository
+		private hijosRepo: GenPersonaHijosRepository,
+		private formacionRepo: GenPersonaFormacionAcademicaRepository,
+		private idiomasRepo: GenPersonaIdiomasRepository,
+		private competenciaRepo: GenPersonaCompetenciaRepository,
+		private experienciaRepo: GenPersonaExperienciaLaboralRepository
 	) {}
 
 	getAll(param: any): Observable<IResult> {
@@ -99,6 +107,38 @@ export class GenEmpleadoService {
 	// Qué hace: guarda hijos del tab (body List Table).
 	saveHijos(corrPersona: number, hijos: any[]): Observable<IResult> {
 		return this.hijosRepo.saveAll(corrPersona, hijos);
+	}
+
+	getFormacionAcademica(corrPersona: number): Observable<IResult> {
+		return this.formacionRepo.getAll([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	saveFormacionAcademica(corrPersona: number, rows: any[]): Observable<IResult> {
+		return this.formacionRepo.saveAll(corrPersona, rows);
+	}
+
+	getIdiomas(corrPersona: number): Observable<IResult> {
+		return this.idiomasRepo.getAll([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	saveIdiomas(corrPersona: number, rows: any[]): Observable<IResult> {
+		return this.idiomasRepo.saveAll(corrPersona, rows);
+	}
+
+	getCompetencias(corrPersona: number): Observable<IResult> {
+		return this.competenciaRepo.getAll([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	saveCompetencias(corrPersona: number, rows: any[]): Observable<IResult> {
+		return this.competenciaRepo.saveAll(corrPersona, rows);
+	}
+
+	getExperienciasLaborales(corrPersona: number): Observable<IResult> {
+		return this.experienciaRepo.getAll([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	saveExperienciasLaborales(corrPersona: number, rows: any[]): Observable<IResult> {
+		return this.experienciaRepo.saveAll(corrPersona, rows);
 	}
 
 	getColumns(): any {

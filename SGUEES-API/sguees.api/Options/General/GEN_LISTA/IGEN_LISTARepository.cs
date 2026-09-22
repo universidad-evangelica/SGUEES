@@ -22,6 +22,8 @@ namespace sguees.Repositories
 		CResult GetCLASE_BANCO();
 		CResult GetFORMATO_CARACTERES();
 		CResult GetAPLICA_PARA();
+		// Qué hace: expone lookup de nivel de dominio (CHECK BASICO/INTERMEDIO/AVANZADO).
+		CResult GetNIVEL_DOMINIO();
 		
 		
 	}

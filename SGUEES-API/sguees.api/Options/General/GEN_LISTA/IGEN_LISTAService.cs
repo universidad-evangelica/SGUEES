@@ -22,6 +22,8 @@ namespace sguees.Services
 		CResult GetCLASE_BANCO();
 		CResult GetFORMATO_CARACTERES();
 		CResult GetAPLICA_PARA();
+		// Qué hace: expone lookup de nivel de dominio (idiomas/competencias en empleado).
+		CResult GetNIVEL_DOMINIO();
 		
 	}
 }

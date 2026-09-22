@@ -1,5 +1,5 @@
-// Qué hace: browse + formulario Nuevo/Editar de Empleado (Iniciar + Personales + Documentos + Familiares).
-// Cómo: grilla browse; Guardar según tab; personales vía SP; documentos/familiares/hijos anidados.
+// Qué hace: browse + formulario Nuevo/Editar de Empleado (Iniciar + Personales + Documentos + Familiares + Formación + Experiencia).
+// Cómo: grilla browse; Guardar según tab; personales vía SP; documentos/familiares/hijos/formación/experiencia anidados.
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -16,6 +16,10 @@ import { GenPersonaNatural } from './models/gen-persona-natural';
 import { GenPersonaTipoDocumentoIdentidad } from './gen-persona-tipo-documento-identidad/models/gen-persona-tipo-documento-identidad';
 import { GenPersonaFamiliar } from './gen-persona-familiar/models/gen-persona-familiar';
 import { GenPersonaHijo } from './gen-persona-hijos/models/gen-persona-hijo';
+import { GenPersonaFormacionAcademica } from './gen-persona-formacion-academica/models/gen-persona-formacion-academica';
+import { GenPersonaIdioma } from './gen-persona-idiomas/models/gen-persona-idioma';
+import { GenPersonaCompetencia } from './gen-persona-competencia/models/gen-persona-competencia';
+import { GenPersonaExperienciaLaboral } from './gen-persona-experiencia-laboral/models/gen-persona-experiencia-laboral';
 import { GenEmpleadoService } from './gen-empleado.service';
 import {
 	aplicarLimiteDocumentoIdentidad,
@@ -30,6 +34,7 @@ const TAB_PERSONALES = 0;
 const TAB_DOCUMENTOS = 1;
 
 type SubmodalFamiliarTipo = 'familiar' | 'hijo';
+type SubmodalFormacionTipo = 'estudio' | 'idioma' | 'competencia';
 
 @Component({
 	selector: 'app-gen-empleado',
@@ -74,6 +79,33 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	submodalFamiliarEditIndex: number | null = null;
 	submodalFamiliarDraft: any = {};
 
+	// Qué hace: colecciones del tab Formación (estudios / idiomas / competencias) en memoria.
+	formacionesAcademicas: GenPersonaFormacionAcademica[] = [];
+	private formacionesAcademicasOriginal: GenPersonaFormacionAcademica[] = [];
+	idiomas: GenPersonaIdioma[] = [];
+	private idiomasOriginal: GenPersonaIdioma[] = [];
+	competencias: GenPersonaCompetencia[] = [];
+	private competenciasOriginal: GenPersonaCompetencia[] = [];
+	private tempCorrFormacion = -1;
+	private tempCorrIdioma = -1;
+	private tempCorrCompetencia = -1;
+
+	/** Submodal agregar/editar estudio, idioma o competencia. */
+	submodalFormacionVisible = false;
+	submodalFormacionTipo: SubmodalFormacionTipo | null = null;
+	submodalFormacionEditIndex: number | null = null;
+	submodalFormacionDraft: any = {};
+
+	// Qué hace: colecciones del tab Experiencia laboral en memoria.
+	experienciasLaborales: GenPersonaExperienciaLaboral[] = [];
+	private experienciasLaboralesOriginal: GenPersonaExperienciaLaboral[] = [];
+	private tempCorrExperiencia = -1;
+
+	/** Submodal agregar/editar experiencia laboral. */
+	submodalExperienciaVisible = false;
+	submodalExperienciaEditIndex: number | null = null;
+	submodalExperienciaDraft: any = {};
+
 	/**
 	 * Qué hace: documentos visibles según ES_EXTRANJERO y APLICA_PARA del catálogo.
 	 * Cómo: extranjero → EXTRANJEROS|AMBOS; si no → NACIONALES|AMBOS (lista completa se guarda).
@@ -109,9 +141,22 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	mCORR_MUNICIPIO_NACIMIENTO: any[] = [];
 	mCORR_DISTRITO_NACIMIENTO: any[] = [];
 	mCORR_PARENTESCO: any[] = [];
+	/** Lookup Key/Value de nivel de dominio (idiomas y competencias). */
+	mNIVEL_DOMINIO: any[] = [];
 
 	/** Código ISO / NOMBRE_CORTO de El Salvador en GEN_PAIS. */
 	private static readonly CODIGO_PAIS_EL_SALVADOR = 'SV';
+
+	/** Niveles académicos locales para el select de estudios. */
+	readonly opcionesNivelAcademico = [
+		'Educación básica',
+		'Bachillerato',
+		'Técnico',
+		'Universidad',
+		'Postgrado',
+		'Maestría',
+		'Doctorado',
+	];
 
 	readonly opcionesSexo = [
 		{ value: 'MASCULINO', text: 'Masculino' },
@@ -376,6 +421,18 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.hijosOriginal = [];
 		this.tempCorrFamiliar = -1;
 		this.tempCorrHijo = -1;
+		this.formacionesAcademicas = [];
+		this.formacionesAcademicasOriginal = [];
+		this.idiomas = [];
+		this.idiomasOriginal = [];
+		this.competencias = [];
+		this.competenciasOriginal = [];
+		this.tempCorrFormacion = -1;
+		this.tempCorrIdioma = -1;
+		this.tempCorrCompetencia = -1;
+		this.experienciasLaborales = [];
+		this.experienciasLaboralesOriginal = [];
+		this.tempCorrExperiencia = -1;
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.revocarFotoPersona();
@@ -407,12 +464,24 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.guardarDocumentosDesdeModal(() => {
 						this.guardarFamiliaresDesdeModal(() => {
 							this.guardarHijosDesdeModal(() => {
-								this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
-								this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
-								this.familiaresOriginal = this.clonarFamiliares(this.familiares);
-								this.hijosOriginal = this.clonarHijos(this.hijos);
-								this.fotoUrlNueva = '';
-								this.volverBrowseTrasGuardar();
+								this.guardarFormacionDesdeModal(() => {
+									this.guardarIdiomasDesdeModal(() => {
+										this.guardarCompetenciasDesdeModal(() => {
+											this.guardarExperienciasDesdeModal(() => {
+												this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
+												this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+												this.familiaresOriginal = this.clonarFamiliares(this.familiares);
+												this.hijosOriginal = this.clonarHijos(this.hijos);
+												this.formacionesAcademicasOriginal = this.clonarFormaciones(this.formacionesAcademicas);
+												this.idiomasOriginal = this.clonarIdiomas(this.idiomas);
+												this.competenciasOriginal = this.clonarCompetencias(this.competencias);
+												this.experienciasLaboralesOriginal = this.clonarExperiencias(this.experienciasLaborales);
+												this.fotoUrlNueva = '';
+												this.volverBrowseTrasGuardar();
+											});
+										});
+									});
+								});
 							});
 						});
 					});
@@ -443,7 +512,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.notifyFx('Registro modificado con exito!', NotifyType.Success, { raw: true });
 	}
 
-	// Qué hace: guarda personales + documentos + familiares/hijos desde el modal y cierra el popup.
+	// Qué hace: guarda personales + documentos + familiares/hijos + formación + experiencia desde el modal y cierra el popup.
 	guardarPersonalesDesdeModal(): void {
 		if (this.fotoSubiendo) {
 			this.notifyFx('Espere a que termine de subir la fotografía.', NotifyType.Warning);
@@ -454,22 +523,34 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 				this.guardarDocumentosDesdeModal(() => {
 					this.guardarFamiliaresDesdeModal(() => {
 						this.guardarHijosDesdeModal(() => {
-							this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
-							this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
-							this.familiaresOriginal = this.clonarFamiliares(this.familiares);
-							this.hijosOriginal = this.clonarHijos(this.hijos);
-							this.fotoUrlNueva = '';
-							this.omitirRestaurarPopupPersonales = true;
-							this.popupPersonalesVisible = false;
-							this.cargarFotoPersona(
-								Number(this.model.CORR_PERSONA),
-								this.modelPersonaNatural.FOTO_URL
-							);
-							if (this.modelPersonaNatural.NOMBRE_COMPLETO) {
-								this.model.NOMBRE_EMPLEADO = this.modelPersonaNatural.NOMBRE_COMPLETO;
-								this.aplicarRegistroEnGrid(this.fillData(this.model), false);
-							}
-							this.notifyFx('Datos del empleado actualizados.', NotifyType.Success, { raw: true });
+							this.guardarFormacionDesdeModal(() => {
+								this.guardarIdiomasDesdeModal(() => {
+									this.guardarCompetenciasDesdeModal(() => {
+										this.guardarExperienciasDesdeModal(() => {
+											this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
+											this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+											this.familiaresOriginal = this.clonarFamiliares(this.familiares);
+											this.hijosOriginal = this.clonarHijos(this.hijos);
+											this.formacionesAcademicasOriginal = this.clonarFormaciones(this.formacionesAcademicas);
+											this.idiomasOriginal = this.clonarIdiomas(this.idiomas);
+											this.competenciasOriginal = this.clonarCompetencias(this.competencias);
+											this.experienciasLaboralesOriginal = this.clonarExperiencias(this.experienciasLaborales);
+											this.fotoUrlNueva = '';
+											this.omitirRestaurarPopupPersonales = true;
+											this.popupPersonalesVisible = false;
+											this.cargarFotoPersona(
+												Number(this.model.CORR_PERSONA),
+												this.modelPersonaNatural.FOTO_URL
+											);
+											if (this.modelPersonaNatural.NOMBRE_COMPLETO) {
+												this.model.NOMBRE_EMPLEADO = this.modelPersonaNatural.NOMBRE_COMPLETO;
+												this.aplicarRegistroEnGrid(this.fillData(this.model), false);
+											}
+											this.notifyFx('Datos del empleado actualizados.', NotifyType.Success, { raw: true });
+										});
+									});
+								});
+							});
 						});
 					});
 				});
@@ -605,19 +686,27 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
 		this.familiaresOriginal = this.clonarFamiliares(this.familiares);
 		this.hijosOriginal = this.clonarHijos(this.hijos);
+		this.formacionesAcademicasOriginal = this.clonarFormaciones(this.formacionesAcademicas);
+		this.idiomasOriginal = this.clonarIdiomas(this.idiomas);
+		this.competenciasOriginal = this.clonarCompetencias(this.competencias);
+		this.experienciasLaboralesOriginal = this.clonarExperiencias(this.experienciasLaborales);
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.popupPersonalesVisible = true;
 		setTimeout(() => this.aplicarReglasPersonales(), 0);
 	}
 
-	// Qué hace: cierra el modal y restaura personales/documentos/familiares/foto si canceló.
+	// Qué hace: cierra el modal y restaura personales/documentos/familiares/formación/experiencia/foto si canceló.
 	cerrarPopupPersonales(restaurar = true): void {
 		if (restaurar && !this.omitirRestaurarPopupPersonales) {
 			this.modelPersonaNatural = this.fillPersonaNatural(this.modelPersonaNaturalOriginal);
 			this.documentosIdentidad = this.clonarDocumentos(this.documentosIdentidadOriginal);
 			this.familiares = this.clonarFamiliares(this.familiaresOriginal);
 			this.hijos = this.clonarHijos(this.hijosOriginal);
+			this.formacionesAcademicas = this.clonarFormaciones(this.formacionesAcademicasOriginal);
+			this.idiomas = this.clonarIdiomas(this.idiomasOriginal);
+			this.competencias = this.clonarCompetencias(this.competenciasOriginal);
+			this.experienciasLaborales = this.clonarExperiencias(this.experienciasLaboralesOriginal);
 			this.fotoUrlNueva = '';
 			this.revocarFotoLocal();
 			this.refrescarTerritorioDesdeModelo();
@@ -625,6 +714,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.omitirRestaurarPopupPersonales = false;
 		this.popupPersonalesVisible = false;
 		this.cerrarSubmodalFamiliar();
+		this.cerrarSubmodalFormacion();
+		this.cerrarSubmodalExperiencia();
 	}
 
 	onPopupPersonalesShown(): void {
@@ -790,6 +881,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cargarDocumentosIdentidad();
 		this.cargarFamiliares();
 		this.cargarHijos();
+		this.cargarFormacionAcademica();
+		this.cargarIdiomas();
+		this.cargarCompetencias();
+		this.cargarExperienciasLaborales();
 	}
 
 	// Qué hace: crea GEN_PERSONA + GEN_EMPRESA_PERSONA + GEN_PERSONA_NATURAL (SP) + GEN_EMPLEADO.
@@ -816,6 +911,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.cargarDocumentosIdentidad();
 					this.cargarFamiliares();
 					this.cargarHijos();
+					this.cargarFormacionAcademica();
+					this.cargarIdiomas();
+					this.cargarCompetencias();
+					this.cargarExperienciasLaborales();
 					this.notifyFx('Empleado creado. Puede seguir editando los datos personales.', NotifyType.Success, {
 						raw: true,
 					});
@@ -1358,6 +1457,620 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.hijos = this.hijos.filter((_, i) => i !== index);
 	}
 
+	// ─── Formación (estudios / idiomas / competencias) ───────────────────────
+
+	/**
+	 * Qué hace: persiste formación académica desde el modal.
+	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
+	 */
+	private guardarFormacionDesdeModal(onSuccess?: () => void): void {
+		const corrPersona = Number(this.model.CORR_PERSONA);
+		if (corrPersona <= 0) {
+			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.saveFormacionAcademica(corrPersona, this.formacionesAcademicas)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const rows = this.normalizarFormaciones(response.Data ?? this.formacionesAcademicas);
+					this.formacionesAcademicas = rows;
+					this.formacionesAcademicasOriginal = this.clonarFormaciones(rows);
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	/**
+	 * Qué hace: persiste idiomas desde el modal.
+	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
+	 */
+	private guardarIdiomasDesdeModal(onSuccess?: () => void): void {
+		const corrPersona = Number(this.model.CORR_PERSONA);
+		if (corrPersona <= 0) {
+			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.saveIdiomas(corrPersona, this.idiomas)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const rows = this.normalizarIdiomas(response.Data ?? this.idiomas);
+					this.idiomas = rows;
+					this.idiomasOriginal = this.clonarIdiomas(rows);
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	/**
+	 * Qué hace: persiste competencias desde el modal.
+	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
+	 */
+	private guardarCompetenciasDesdeModal(onSuccess?: () => void): void {
+		const corrPersona = Number(this.model.CORR_PERSONA);
+		if (corrPersona <= 0) {
+			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.saveCompetencias(corrPersona, this.competencias)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const rows = this.normalizarCompetencias(response.Data ?? this.competencias);
+					this.competencias = rows;
+					this.competenciasOriginal = this.clonarCompetencias(rows);
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: carga formación académica de la persona.
+	private cargarFormacionAcademica(): void {
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		if (corrPersona <= 0) {
+			this.formacionesAcademicas = [];
+			this.formacionesAcademicasOriginal = [];
+			return;
+		}
+
+		this.service
+			.getFormacionAcademica(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result ? this.normalizarFormaciones(response.Data ?? []) : [];
+					this.formacionesAcademicas = rows;
+					this.formacionesAcademicasOriginal = this.clonarFormaciones(rows);
+				},
+				error: () => {
+					this.formacionesAcademicas = [];
+					this.formacionesAcademicasOriginal = [];
+				},
+			});
+	}
+
+	// Qué hace: carga idiomas de la persona.
+	private cargarIdiomas(): void {
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		if (corrPersona <= 0) {
+			this.idiomas = [];
+			this.idiomasOriginal = [];
+			return;
+		}
+
+		this.service
+			.getIdiomas(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result ? this.normalizarIdiomas(response.Data ?? []) : [];
+					this.idiomas = rows;
+					this.idiomasOriginal = this.clonarIdiomas(rows);
+				},
+				error: () => {
+					this.idiomas = [];
+					this.idiomasOriginal = [];
+				},
+			});
+	}
+
+	// Qué hace: carga competencias de la persona.
+	private cargarCompetencias(): void {
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		if (corrPersona <= 0) {
+			this.competencias = [];
+			this.competenciasOriginal = [];
+			return;
+		}
+
+		this.service
+			.getCompetencias(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result ? this.normalizarCompetencias(response.Data ?? []) : [];
+					this.competencias = rows;
+					this.competenciasOriginal = this.clonarCompetencias(rows);
+				},
+				error: () => {
+					this.competencias = [];
+					this.competenciasOriginal = [];
+				},
+			});
+	}
+
+	private normalizarFormaciones(rows: any[]): GenPersonaFormacionAcademica[] {
+		return (rows ?? []).map((f) => ({
+			...f,
+			DESDE: this.parseFecha(f?.DESDE),
+			HASTA: this.parseFecha(f?.HASTA),
+		}));
+	}
+
+	private normalizarIdiomas(rows: any[]): GenPersonaIdioma[] {
+		return (rows ?? []).map((i) => ({ ...i }));
+	}
+
+	private normalizarCompetencias(rows: any[]): GenPersonaCompetencia[] {
+		return (rows ?? []).map((c) => ({ ...c }));
+	}
+
+	private clonarFormaciones(rows: GenPersonaFormacionAcademica[]): GenPersonaFormacionAcademica[] {
+		return (rows ?? []).map((f) => ({ ...f }));
+	}
+
+	private clonarIdiomas(rows: GenPersonaIdioma[]): GenPersonaIdioma[] {
+		return (rows ?? []).map((i) => ({ ...i }));
+	}
+
+	private clonarCompetencias(rows: GenPersonaCompetencia[]): GenPersonaCompetencia[] {
+		return (rows ?? []).map((c) => ({ ...c }));
+	}
+
+	/** Qué hace: mapea Key de NIVEL_DOMINIO al texto Value del lookup. */
+	etiquetaNivelDominio(key: string | null | undefined): string {
+		const k = `${key ?? ''}`.trim();
+		if (!k) {
+			return '';
+		}
+		const found = (this.mNIVEL_DOMINIO ?? []).find(
+			(x) => `${x?.Key ?? ''}`.trim().toUpperCase() === k.toUpperCase()
+		);
+		return found?.Value ?? k;
+	}
+
+	/** Qué hace: resumen de card de estudio en el modal. */
+	resumenEstudio(item: GenPersonaFormacionAcademica): string {
+		const partes = [
+			item?.NIVEL || null,
+			item?.CENTRO_EDUCATIVO || null,
+			item?.TITULO || null,
+			this.fechaLectura(item?.DESDE) !== '—' ? `Desde ${this.fechaLectura(item?.DESDE)}` : null,
+			this.fechaLectura(item?.HASTA) !== '—' ? `Hasta ${this.fechaLectura(item?.HASTA)}` : null,
+		].filter((x) => !!x && `${x}`.trim() && `${x}` !== '—');
+		return partes.length ? partes.join(' · ') : 'Sin detalle';
+	}
+
+	/** Qué hace: resumen de card de idioma en el modal. */
+	resumenIdioma(item: GenPersonaIdioma): string {
+		const nivel = this.etiquetaNivelDominio(item?.NIVEL_DOMINIO);
+		const partes = [item?.NOMBRE_IDIOMA || null, nivel || null].filter(
+			(x) => !!x && `${x}`.trim()
+		);
+		return partes.length ? partes.join(' · ') : 'Sin detalle';
+	}
+
+	/** Qué hace: resumen de card de competencia en el modal. */
+	resumenCompetencia(item: GenPersonaCompetencia): string {
+		const nivel = this.etiquetaNivelDominio(item?.NIVEL_DOMINIO);
+		const partes = [item?.NOMBRE_COMPETENCIA || null, nivel || null].filter(
+			(x) => !!x && `${x}`.trim()
+		);
+		return partes.length ? partes.join(' · ') : 'Sin detalle';
+	}
+
+	get tituloSubmodalFormacion(): string {
+		const esEdicion = this.submodalFormacionEditIndex != null;
+		if (this.submodalFormacionTipo === 'idioma') {
+			return esEdicion ? 'Editar idioma' : 'Agregar idioma';
+		}
+		if (this.submodalFormacionTipo === 'competencia') {
+			return esEdicion ? 'Editar competencia' : 'Agregar competencia';
+		}
+		return esEdicion ? 'Editar estudio' : 'Agregar estudio';
+	}
+
+	// Qué hace: abre submodal para alta de estudio, idioma o competencia.
+	abrirSubmodalFormacionNuevo(tipo: SubmodalFormacionTipo): void {
+		this.submodalFormacionTipo = tipo;
+		this.submodalFormacionEditIndex = null;
+		if (tipo === 'idioma') {
+			this.submodalFormacionDraft = {
+				NOMBRE_IDIOMA: '',
+				NIVEL_DOMINIO: null,
+			};
+		} else if (tipo === 'competencia') {
+			this.submodalFormacionDraft = {
+				NOMBRE_COMPETENCIA: '',
+				NIVEL_DOMINIO: null,
+			};
+		} else {
+			this.submodalFormacionDraft = {
+				NIVEL: null,
+				CENTRO_EDUCATIVO: '',
+				DESDE: null,
+				HASTA: null,
+				TITULO: '',
+			};
+		}
+		this.submodalFormacionVisible = true;
+	}
+
+	// Qué hace: abre submodal para editar estudio, idioma o competencia existente.
+	abrirSubmodalFormacionEditar(tipo: SubmodalFormacionTipo, index: number): void {
+		this.submodalFormacionTipo = tipo;
+		this.submodalFormacionEditIndex = index;
+		if (tipo === 'idioma') {
+			const row = this.idiomas[index];
+			this.submodalFormacionDraft = {
+				NOMBRE_IDIOMA: row?.NOMBRE_IDIOMA ?? '',
+				NIVEL_DOMINIO: row?.NIVEL_DOMINIO ?? null,
+			};
+		} else if (tipo === 'competencia') {
+			const row = this.competencias[index];
+			this.submodalFormacionDraft = {
+				NOMBRE_COMPETENCIA: row?.NOMBRE_COMPETENCIA ?? '',
+				NIVEL_DOMINIO: row?.NIVEL_DOMINIO ?? null,
+			};
+		} else {
+			const row = this.formacionesAcademicas[index];
+			this.submodalFormacionDraft = {
+				NIVEL: row?.NIVEL ?? null,
+				CENTRO_EDUCATIVO: row?.CENTRO_EDUCATIVO ?? '',
+				DESDE: this.parseFecha(row?.DESDE),
+				HASTA: this.parseFecha(row?.HASTA),
+				TITULO: row?.TITULO ?? '',
+			};
+		}
+		this.submodalFormacionVisible = true;
+	}
+
+	cerrarSubmodalFormacion(): void {
+		this.submodalFormacionVisible = false;
+		this.submodalFormacionTipo = null;
+		this.submodalFormacionEditIndex = null;
+		this.submodalFormacionDraft = {};
+	}
+
+	// Qué hace: aplica alta/edición del submodal de formación sobre la lista en memoria (sin API aún).
+	guardarSubmodalFormacion(): void {
+		if (this.submodalFormacionTipo === 'idioma') {
+			const nombre = `${this.submodalFormacionDraft?.NOMBRE_IDIOMA ?? ''}`.trim();
+			if (!nombre) {
+				this.notifyFx('Ingrese el nombre del idioma.', NotifyType.Warning);
+				return;
+			}
+			const row: GenPersonaIdioma = {
+				CORR_EMPRESA: Number(this.model?.CORR_EMPRESA ?? 0),
+				CORR_PERSONA: Number(this.model?.CORR_PERSONA ?? 0),
+				CORR_IDIOMA:
+					this.submodalFormacionEditIndex != null
+						? this.idiomas[this.submodalFormacionEditIndex].CORR_IDIOMA
+						: this.tempCorrIdioma--,
+				NOMBRE_IDIOMA: nombre,
+				NIVEL_DOMINIO: this.submodalFormacionDraft?.NIVEL_DOMINIO ?? '',
+			};
+			if (this.submodalFormacionEditIndex != null) {
+				this.idiomas = this.idiomas.map((i, idx) =>
+					idx === this.submodalFormacionEditIndex ? row : i
+				);
+			} else {
+				this.idiomas = [...this.idiomas, row];
+			}
+			this.cerrarSubmodalFormacion();
+			return;
+		}
+
+		if (this.submodalFormacionTipo === 'competencia') {
+			const nombre = `${this.submodalFormacionDraft?.NOMBRE_COMPETENCIA ?? ''}`.trim();
+			if (!nombre) {
+				this.notifyFx('Ingrese el nombre de la competencia.', NotifyType.Warning);
+				return;
+			}
+			const row: GenPersonaCompetencia = {
+				CORR_EMPRESA: Number(this.model?.CORR_EMPRESA ?? 0),
+				CORR_PERSONA: Number(this.model?.CORR_PERSONA ?? 0),
+				CORR_COMPETENCIA:
+					this.submodalFormacionEditIndex != null
+						? this.competencias[this.submodalFormacionEditIndex].CORR_COMPETENCIA
+						: this.tempCorrCompetencia--,
+				NOMBRE_COMPETENCIA: nombre,
+				NIVEL_DOMINIO: this.submodalFormacionDraft?.NIVEL_DOMINIO ?? '',
+			};
+			if (this.submodalFormacionEditIndex != null) {
+				this.competencias = this.competencias.map((c, idx) =>
+					idx === this.submodalFormacionEditIndex ? row : c
+				);
+			} else {
+				this.competencias = [...this.competencias, row];
+			}
+			this.cerrarSubmodalFormacion();
+			return;
+		}
+
+		const centro = `${this.submodalFormacionDraft?.CENTRO_EDUCATIVO ?? ''}`.trim();
+		const titulo = `${this.submodalFormacionDraft?.TITULO ?? ''}`.trim();
+		if (!centro && !titulo) {
+			this.notifyFx('Ingrese el centro educativo o el título.', NotifyType.Warning);
+			return;
+		}
+		const row: GenPersonaFormacionAcademica = {
+			CORR_EMPRESA: Number(this.model?.CORR_EMPRESA ?? 0),
+			CORR_PERSONA: Number(this.model?.CORR_PERSONA ?? 0),
+			CORR_FORMACION_ACADEMICA:
+				this.submodalFormacionEditIndex != null
+					? this.formacionesAcademicas[this.submodalFormacionEditIndex].CORR_FORMACION_ACADEMICA
+					: this.tempCorrFormacion--,
+			NIVEL: this.submodalFormacionDraft?.NIVEL ?? '',
+			CENTRO_EDUCATIVO: centro,
+			TITULO: titulo,
+			DESDE: this.submodalFormacionDraft?.DESDE ?? null,
+			HASTA: this.submodalFormacionDraft?.HASTA ?? null,
+		};
+		if (this.submodalFormacionEditIndex != null) {
+			this.formacionesAcademicas = this.formacionesAcademicas.map((f, idx) =>
+				idx === this.submodalFormacionEditIndex ? row : f
+			);
+		} else {
+			this.formacionesAcademicas = [...this.formacionesAcademicas, row];
+		}
+		this.cerrarSubmodalFormacion();
+	}
+
+	eliminarEstudio(index: number): void {
+		this.formacionesAcademicas = this.formacionesAcademicas.filter((_, i) => i !== index);
+	}
+
+	eliminarIdioma(index: number): void {
+		this.idiomas = this.idiomas.filter((_, i) => i !== index);
+	}
+
+	eliminarCompetencia(index: number): void {
+		this.competencias = this.competencias.filter((_, i) => i !== index);
+	}
+
+	// ─── Experiencia laboral ─────────────────────────────────────────────────
+
+	/**
+	 * Qué hace: persiste experiencias laborales desde el modal.
+	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
+	 */
+	private guardarExperienciasDesdeModal(onSuccess?: () => void): void {
+		const corrPersona = Number(this.model.CORR_PERSONA);
+		if (corrPersona <= 0) {
+			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.saveExperienciasLaborales(corrPersona, this.experienciasLaborales)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const rows = this.normalizarExperiencias(response.Data ?? this.experienciasLaborales);
+					this.experienciasLaborales = rows;
+					this.experienciasLaboralesOriginal = this.clonarExperiencias(rows);
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: carga experiencias laborales de la persona.
+	private cargarExperienciasLaborales(): void {
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		if (corrPersona <= 0) {
+			this.experienciasLaborales = [];
+			this.experienciasLaboralesOriginal = [];
+			return;
+		}
+
+		this.service
+			.getExperienciasLaborales(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result ? this.normalizarExperiencias(response.Data ?? []) : [];
+					this.experienciasLaborales = rows;
+					this.experienciasLaboralesOriginal = this.clonarExperiencias(rows);
+				},
+				error: () => {
+					this.experienciasLaborales = [];
+					this.experienciasLaboralesOriginal = [];
+				},
+			});
+	}
+
+	private normalizarExperiencias(rows: any[]): GenPersonaExperienciaLaboral[] {
+		return (rows ?? []).map((e) => ({
+			...e,
+			FECHA_INICIO: this.parseFecha(e?.FECHA_INICIO),
+			FECHA_FIN: this.parseFecha(e?.FECHA_FIN),
+			SALARIO_INICIAL:
+				e?.SALARIO_INICIAL == null || e?.SALARIO_INICIAL === ''
+					? null
+					: Number(e.SALARIO_INICIAL),
+			SALARIO_FINAL:
+				e?.SALARIO_FINAL == null || e?.SALARIO_FINAL === ''
+					? null
+					: Number(e.SALARIO_FINAL),
+		}));
+	}
+
+	private clonarExperiencias(rows: GenPersonaExperienciaLaboral[]): GenPersonaExperienciaLaboral[] {
+		return (rows ?? []).map((e) => ({ ...e }));
+	}
+
+	/** Qué hace: formatea monto o '—' si vacío. */
+	montoLectura(valor: any): string {
+		if (valor == null || valor === '') {
+			return '—';
+		}
+		const n = Number(valor);
+		if (Number.isNaN(n)) {
+			return '—';
+		}
+		return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
+	}
+
+	/** Qué hace: resumen de card de experiencia en el modal. */
+	resumenExperiencia(item: GenPersonaExperienciaLaboral): string {
+		const partes = [
+			item?.CARGO_DESEMPENADO || null,
+			this.fechaLectura(item?.FECHA_INICIO) !== '—' ? `Desde ${this.fechaLectura(item?.FECHA_INICIO)}` : null,
+			this.fechaLectura(item?.FECHA_FIN) !== '—' ? `Hasta ${this.fechaLectura(item?.FECHA_FIN)}` : null,
+			item?.JEFE_INMEDIATO ? `Jefe: ${item.JEFE_INMEDIATO}` : null,
+		].filter((x) => !!x && `${x}`.trim() && `${x}` !== '—');
+		return partes.length ? partes.join(' · ') : 'Sin detalle';
+	}
+
+	get tituloSubmodalExperiencia(): string {
+		return this.submodalExperienciaEditIndex != null ? 'Editar experiencia' : 'Agregar experiencia';
+	}
+
+	// Qué hace: abre submodal para alta de experiencia laboral.
+	abrirSubmodalExperienciaNuevo(): void {
+		this.submodalExperienciaEditIndex = null;
+		this.submodalExperienciaDraft = {
+			LUGAR_TRABAJO: '',
+			CARGO_DESEMPENADO: '',
+			TELEFONO: '',
+			JEFE_INMEDIATO: '',
+			SALARIO_INICIAL: null,
+			SALARIO_FINAL: null,
+			FECHA_INICIO: null,
+			FECHA_FIN: null,
+			MOTIVO_SALIDA: '',
+		};
+		this.submodalExperienciaVisible = true;
+	}
+
+	// Qué hace: abre submodal para editar experiencia laboral existente.
+	abrirSubmodalExperienciaEditar(index: number): void {
+		const row = this.experienciasLaborales[index];
+		this.submodalExperienciaEditIndex = index;
+		this.submodalExperienciaDraft = {
+			LUGAR_TRABAJO: row?.LUGAR_TRABAJO ?? '',
+			CARGO_DESEMPENADO: row?.CARGO_DESEMPENADO ?? '',
+			TELEFONO: row?.TELEFONO ?? '',
+			JEFE_INMEDIATO: row?.JEFE_INMEDIATO ?? '',
+			SALARIO_INICIAL: row?.SALARIO_INICIAL ?? null,
+			SALARIO_FINAL: row?.SALARIO_FINAL ?? null,
+			FECHA_INICIO: this.parseFecha(row?.FECHA_INICIO),
+			FECHA_FIN: this.parseFecha(row?.FECHA_FIN),
+			MOTIVO_SALIDA: row?.MOTIVO_SALIDA ?? '',
+		};
+		this.submodalExperienciaVisible = true;
+	}
+
+	cerrarSubmodalExperiencia(): void {
+		this.submodalExperienciaVisible = false;
+		this.submodalExperienciaEditIndex = null;
+		this.submodalExperienciaDraft = {};
+	}
+
+	// Qué hace: aplica alta/edición del submodal de experiencia sobre la lista en memoria (sin API aún).
+	guardarSubmodalExperiencia(): void {
+		const lugar = `${this.submodalExperienciaDraft?.LUGAR_TRABAJO ?? ''}`.trim();
+		if (!lugar) {
+			this.notifyFx('Ingrese el lugar de trabajo (empresa).', NotifyType.Warning);
+			return;
+		}
+		const row: GenPersonaExperienciaLaboral = {
+			CORR_EMPRESA: Number(this.model?.CORR_EMPRESA ?? 0),
+			CORR_PERSONA: Number(this.model?.CORR_PERSONA ?? 0),
+			CORR_EXPERIENCIA_LABORAL:
+				this.submodalExperienciaEditIndex != null
+					? this.experienciasLaborales[this.submodalExperienciaEditIndex].CORR_EXPERIENCIA_LABORAL
+					: this.tempCorrExperiencia--,
+			LUGAR_TRABAJO: lugar,
+			CARGO_DESEMPENADO: `${this.submodalExperienciaDraft?.CARGO_DESEMPENADO ?? ''}`.trim(),
+			TELEFONO: `${this.submodalExperienciaDraft?.TELEFONO ?? ''}`.trim(),
+			JEFE_INMEDIATO: `${this.submodalExperienciaDraft?.JEFE_INMEDIATO ?? ''}`.trim(),
+			SALARIO_INICIAL:
+				this.submodalExperienciaDraft?.SALARIO_INICIAL == null ||
+				this.submodalExperienciaDraft?.SALARIO_INICIAL === ''
+					? null
+					: Number(this.submodalExperienciaDraft.SALARIO_INICIAL),
+			SALARIO_FINAL:
+				this.submodalExperienciaDraft?.SALARIO_FINAL == null ||
+				this.submodalExperienciaDraft?.SALARIO_FINAL === ''
+					? null
+					: Number(this.submodalExperienciaDraft.SALARIO_FINAL),
+			FECHA_INICIO: this.submodalExperienciaDraft?.FECHA_INICIO ?? null,
+			FECHA_FIN: this.submodalExperienciaDraft?.FECHA_FIN ?? null,
+			MOTIVO_SALIDA: `${this.submodalExperienciaDraft?.MOTIVO_SALIDA ?? ''}`.trim(),
+		};
+		if (this.submodalExperienciaEditIndex != null) {
+			this.experienciasLaborales = this.experienciasLaborales.map((e, idx) =>
+				idx === this.submodalExperienciaEditIndex ? row : e
+			);
+		} else {
+			this.experienciasLaborales = [...this.experienciasLaborales, row];
+		}
+		this.cerrarSubmodalExperiencia();
+	}
+
+	eliminarExperiencia(index: number): void {
+		this.experienciasLaborales = this.experienciasLaborales.filter((_, i) => i !== index);
+	}
+
 	/**
 	 * Qué hace: bloquea teclas no permitidas según FORMATO_CARACTERES del catálogo.
 	 * Cómo: onKeyDown; guion de máscara DUI/NIT/NRC no lo teclea el usuario.
@@ -1585,6 +2298,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.getCORR_ACTIVIDAD_ECONOMICA();
 		this.getCORR_PAIS_NACIMIENTO();
 		this.getCORR_PARENTESCO();
+		this.getNIVEL_DOMINIO();
 	}
 
 	private refrescarTerritorioDesdeModelo(): void {
@@ -1632,6 +2346,19 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.mCORR_PARENTESCO = (rows ?? []).filter(
 						(p: any) => p?.ACTIVO_PARENTESCO === true || p?.ACTIVO_PARENTESCO === 1 || p?.ACTIVO_PARENTESCO == null
 					);
+				},
+			});
+	}
+
+	// Qué hace: carga niveles de dominio (Básico/Intermedio/Avanzado) para idiomas y competencias.
+	// Cómo: lookup GEN_LISTA GetNIVEL_DOMINIO → items Key/Value en mNIVEL_DOMINIO.
+	private getNIVEL_DOMINIO(): void {
+		this.appInfoService
+			.getLookUp('GEN_EMPLEADO', 'GEN_LISTA', 'GetNIVEL_DOMINIO', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mNIVEL_DOMINIO = response?.Result ? response.Data ?? [] : [];
 				},
 			});
 	}

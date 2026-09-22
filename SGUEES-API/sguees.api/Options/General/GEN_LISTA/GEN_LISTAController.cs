@@ -229,6 +229,15 @@ namespace sguees.Controllers
 			return _service.GetAPLICA_PARA();
 		}
 
+		// Qué hace: lookup nivel de dominio para idiomas/competencias de gen-empleado.
+		// Cómo lo hace: llama al servicio GetNIVEL_DOMINIO (CHECK BASICO/INTERMEDIO/AVANZADO).
+		[HttpGet("GetNIVEL_DOMINIO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public CResult GetNIVEL_DOMINIO_GEN_EMPLEADO()
+		{
+			return _service.GetNIVEL_DOMINIO();
+		}
+
        
 	}
 }

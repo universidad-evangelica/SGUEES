@@ -91,6 +91,13 @@ namespace sguees.Services
 		{
 			return _repo.GetAPLICA_PARA();
 		}
+
+		// Qué hace: lista de nivel de dominio (básico / intermedio / avanzado).
+		// Cómo lo hace: delega al repositorio (valores del CHECK de tabla).
+		public CResult GetNIVEL_DOMINIO()
+		{
+			return _repo.GetNIVEL_DOMINIO();
+		}
        
 	}
 }
