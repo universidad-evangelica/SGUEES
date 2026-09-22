@@ -85,7 +85,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	mCORR_TIPO_CONTRIBUYENTE: any[] = [];
 	mCORR_ACTIVIDAD_ECONOMICA: any[] = [];
 	mCORR_PAIS_NACIMIENTO: any[] = [];
-	/** Catálogo completo de países; el lookup se filtra si es domiciliado (solo SV). */
+	/** Catálogo completo de países; el lookup se filtra según ES_EXTRANJERO (SV / resto). */
 	private paisesNacimientoCatalogo: any[] = [];
 	mCORR_DEPTO_NACIMIENTO: any[] = [];
 	mCORR_MUNICIPIO_NACIMIENTO: any[] = [];
@@ -177,25 +177,17 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		);
 	}
 
-	/** Qué hace: indica si el registro está marcado como domiciliado. */
-	get esDomiciliado(): boolean {
-		return this.modelPersonaNatural?.DOMICILIADO === 'SI';
-	}
-
-	/** Qué hace: SI o NO ya elegido en Domiciliado (no "Seleccionar..."). */
-	get tieneDomiciliadoSeleccionado(): boolean {
-		const v = this.modelPersonaNatural?.DOMICILIADO;
-		return v === 'SI' || v === 'NO';
-	}
-
-	/** Qué hace: país editable solo si ya eligió Domiciliado. */
+	/** Qué hace: país de nacimiento editable en el formulario personales. */
 	get paisNacimientoHabilitado(): boolean {
-		return this.editandoPersonalesForm && this.tieneDomiciliadoSeleccionado;
+		return this.editandoPersonalesForm;
 	}
 
-	/** Qué hace: depto/municipio/distrito editables solo si está domiciliado y el form es editable. */
+	/**
+	 * Qué hace: depto/municipio/distrito solo si NO es extranjero (territorio SV).
+	 * Cómo: extranjero → solo país; nacional → El Salvador + cadena completa.
+	 */
 	get territorioCompletoHabilitado(): boolean {
-		return this.editandoPersonalesForm && this.esDomiciliado;
+		return this.editandoPersonalesForm && !this.modelPersonaNatural?.ES_EXTRANJERO;
 	}
 
 	fillParam(xCORR_EMPLEADO?: number): any {
@@ -631,7 +623,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			});
 	}
 
-	// Qué hace: al cambiar sexo/estado civil/discapacidad/domiciliado, aplica reglas de UI del tab Personales.
+	// Qué hace: al cambiar sexo/estado civil/discapacidad/extranjero, aplica reglas de UI del tab Personales.
 	onPersonalesFieldChanged(e: any): void {
 		if (e?.dataField === 'SEXO' || e?.dataField === 'ESTADO_CIVIL') {
 			this.aplicarReglaApellidoCasada();
@@ -641,9 +633,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			this.modelPersonaNatural.POSEE_DISCAPACIDAD = !!e.value;
 			this.aplicarReglaTipoDiscapacidad();
 		}
-		if (e?.dataField === 'DOMICILIADO') {
-			this.modelPersonaNatural.DOMICILIADO = e.value ?? '';
-			this.aplicarReglaDomiciliado();
+		if (e?.dataField === 'ES_EXTRANJERO') {
+			this.modelPersonaNatural.ES_EXTRANJERO = !!e.value;
+			this.aplicarReglaExtranjero();
 		}
 	}
 
@@ -1095,30 +1087,24 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	private aplicarReglasPersonales(): void {
 		this.aplicarReglaApellidoCasada();
 		this.aplicarReglaTipoDiscapacidad();
-		this.aplicarReglaDomiciliado();
+		this.aplicarReglaExtranjero();
 	}
 
 	// Qué hace: convierte '' de selects/checks de dominio a null (el CHECK de BD no acepta '').
-	// Cómo: clona el payload; sin Domiciliado no guarda territorio; si NO, solo país; si SI, completo.
+	// Cómo: clona el payload; si extranjero limpia depto/municipio/distrito (solo país).
 	private sanitizarPersonaNaturalPayload(model: GenPersonaNatural | any): any {
 		const vacioANull = (v: any) => (v === '' || v === undefined ? null : v);
-		const domiciliado = vacioANull(model?.DOMICILIADO);
 		const payload: any = {
 			...model,
 			SEXO: vacioANull(model?.SEXO),
 			ESTADO_CIVIL: vacioANull(model?.ESTADO_CIVIL),
 			CARTA_PASTORAL: vacioANull(model?.CARTA_PASTORAL),
-			DOMICILIADO: domiciliado,
+			DOMICILIADO: vacioANull(model?.DOMICILIADO),
 			TIPO_DISCAPACIDAD: vacioANull(model?.TIPO_DISCAPACIDAD),
 			APELLIDO_CASADA: vacioANull(model?.APELLIDO_CASADA),
 		};
 
-		if (domiciliado !== 'SI' && domiciliado !== 'NO') {
-			payload.CORR_PAIS_NACIMIENTO = null;
-			payload.CORR_DEPTO_NACIMIENTO = null;
-			payload.CORR_MUNICIPIO_NACIMIENTO = null;
-			payload.CORR_DISTRITO_NACIMIENTO = null;
-		} else if (domiciliado !== 'SI') {
+		if (!!model?.ES_EXTRANJERO) {
 			payload.CORR_DEPTO_NACIMIENTO = null;
 			payload.CORR_MUNICIPIO_NACIMIENTO = null;
 			payload.CORR_DISTRITO_NACIMIENTO = null;
@@ -1136,12 +1122,15 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		}
 	}
 
-	// Qué hace: controla territorio según Domiciliado (null / NO / SI).
-	// Cómo: sin selección limpia todo; NO solo países distintos de SV; SI solo El Salvador + cadena completa.
-	private aplicarReglaDomiciliado(): void {
-		if (!this.tieneDomiciliadoSeleccionado) {
+	/**
+	 * Qué hace: controla lugar de nacimiento según ES_EXTRANJERO.
+	 * Cómo: extranjero → países ≠ SV y solo país; nacional → solo SV + depto/municipio/distrito.
+	 */
+	private aplicarReglaExtranjero(): void {
+		const esExtranjero = !!this.modelPersonaNatural?.ES_EXTRANJERO;
+
+		if (esExtranjero) {
 			if (this.editandoPersonalesForm) {
-				this.modelPersonaNatural.CORR_PAIS_NACIMIENTO = null;
 				this.modelPersonaNatural.CORR_DEPTO_NACIMIENTO = null;
 				this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO = null;
 				this.modelPersonaNatural.CORR_DISTRITO_NACIMIENTO = null;
@@ -1151,44 +1140,35 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			return;
 		}
 
-		if (this.esDomiciliado) {
-			if (!this.editandoPersonalesForm) {
-				this.aplicarCatalogoPaisNacimiento();
-				return;
-			}
-			this.aplicarCatalogoPaisNacimiento(true);
-			const pais = this.modelPersonaNatural?.CORR_PAIS_NACIMIENTO;
-			if (pais) {
-				this.getCORR_DEPTO_NACIMIENTO(pais);
-				const depto = this.modelPersonaNatural?.CORR_DEPTO_NACIMIENTO;
-				if (depto) {
-					this.getCORR_MUNICIPIO_NACIMIENTO(pais, depto);
-					const municipio = this.modelPersonaNatural?.CORR_MUNICIPIO_NACIMIENTO;
-					if (municipio) {
-						this.getCORR_DISTRITO_NACIMIENTO(pais, depto, municipio);
-					}
-				}
-			}
+		// Nacional: solo El Salvador y cadena territorial completa.
+		if (!this.editandoPersonalesForm) {
+			this.aplicarCatalogoPaisNacimiento();
 			return;
 		}
-
-		// DOMICILIADO = NO: países sin El Salvador; limpia depto/municipio/distrito.
-		this.modelPersonaNatural.CORR_DEPTO_NACIMIENTO = null;
-		this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO = null;
-		this.modelPersonaNatural.CORR_DISTRITO_NACIMIENTO = null;
-		this.aplicarCatalogoPaisNacimiento();
-		this.limpiarLookupsTerritorio();
+		this.aplicarCatalogoPaisNacimiento(true);
+		const pais = this.modelPersonaNatural?.CORR_PAIS_NACIMIENTO;
+		if (pais) {
+			this.getCORR_DEPTO_NACIMIENTO(pais);
+			const depto = this.modelPersonaNatural?.CORR_DEPTO_NACIMIENTO;
+			if (depto) {
+				this.getCORR_MUNICIPIO_NACIMIENTO(pais, depto);
+				const municipio = this.modelPersonaNatural?.CORR_MUNICIPIO_NACIMIENTO;
+				if (municipio) {
+					this.getCORR_DISTRITO_NACIMIENTO(pais, depto, municipio);
+				}
+			}
+		}
 	}
 
 	/**
-	 * Qué hace: arma el lookup de país según Domiciliado.
-	 * Cómo: SI → solo SV (El Salvador) y lo selecciona;
-	 *       NO → todos excepto SV; si tenía SV seleccionado lo limpia;
-	 *       vacío → catálogo completo.
+	 * Qué hace: arma el lookup de país según ES_EXTRANJERO.
+	 * Cómo: nacional → solo SV y lo selecciona; extranjero → todos excepto SV.
 	 */
 	private aplicarCatalogoPaisNacimiento(forzarElSalvador = false): void {
 		const catalogo = this.paisesNacimientoCatalogo ?? [];
-		if (this.esDomiciliado) {
+		const esExtranjero = !!this.modelPersonaNatural?.ES_EXTRANJERO;
+
+		if (!esExtranjero) {
 			const elSalvador = catalogo.filter((p) => this.esPaisElSalvador(p));
 			this.mCORR_PAIS_NACIMIENTO = elSalvador;
 			if (forzarElSalvador || this.editandoPersonalesForm) {
@@ -1208,19 +1188,14 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			return;
 		}
 
-		if (this.modelPersonaNatural?.DOMICILIADO === 'NO') {
-			this.mCORR_PAIS_NACIMIENTO = catalogo.filter((p) => !this.esPaisElSalvador(p));
-			const corrActual = Number(this.modelPersonaNatural.CORR_PAIS_NACIMIENTO ?? 0);
-			if (corrActual > 0) {
-				const seleccionado = catalogo.find((p) => Number(p?.CORR_PAIS) === corrActual);
-				if (seleccionado && this.esPaisElSalvador(seleccionado) && this.editandoPersonalesForm) {
-					this.modelPersonaNatural.CORR_PAIS_NACIMIENTO = null;
-				}
+		this.mCORR_PAIS_NACIMIENTO = catalogo.filter((p) => !this.esPaisElSalvador(p));
+		const corrActual = Number(this.modelPersonaNatural.CORR_PAIS_NACIMIENTO ?? 0);
+		if (corrActual > 0) {
+			const seleccionado = catalogo.find((p) => Number(p?.CORR_PAIS) === corrActual);
+			if (seleccionado && this.esPaisElSalvador(seleccionado) && this.editandoPersonalesForm) {
+				this.modelPersonaNatural.CORR_PAIS_NACIMIENTO = null;
 			}
-			return;
 		}
-
-		this.mCORR_PAIS_NACIMIENTO = [...catalogo];
 	}
 
 	/** Qué hace: identifica El Salvador por NOMBRE_CORTO o CODIGO_PAIS (= SV). */
@@ -1251,18 +1226,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	private refrescarTerritorioDesdeModelo(): void {
-		if (!this.tieneDomiciliadoSeleccionado) {
-			this.limpiarLookupsTerritorio();
-			return;
-		}
-
 		const pais = this.modelPersonaNatural.CORR_PAIS_NACIMIENTO;
-		if (!pais) {
-			this.limpiarLookupsTerritorio();
-			return;
-		}
-
-		if (!this.esDomiciliado) {
+		if (!pais || !!this.modelPersonaNatural?.ES_EXTRANJERO) {
 			this.limpiarLookupsTerritorio();
 			return;
 		}
@@ -1353,7 +1318,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			.subscribe({
 				next: (response: any) => {
 					this.paisesNacimientoCatalogo = response?.Result ? response.Data ?? [] : [];
-					this.aplicarCatalogoPaisNacimiento(this.esDomiciliado);
+					this.aplicarCatalogoPaisNacimiento(!this.modelPersonaNatural?.ES_EXTRANJERO);
 				},
 			});
 	}

@@ -1,5 +1,5 @@
 // Qué hace: formatos y límites de documentos de identidad según catálogo.
-// Cómo: FORMATO_CARACTERES (NUMEROS/LETRAS/AMBOS); máscara DUI/NIT/NRC por NOMBRE_CORTO;
+// Cómo: FORMATO_CARACTERES (NUMEROS/LETRAS/AMBOS); máscara por NOMBRE_CORTO (DUI/ISSS/AFP/NIT/NRC);
 //       resto solo filtro de caracteres + tope si ACTIVO_CARACTERES.
 
 export type FormatoCaracteresDoc = 'NUMEROS' | 'LETRAS' | 'AMBOS';
@@ -55,19 +55,25 @@ export function teclaPermitidaPorFormato(key: string, formato: FormatoCaracteres
 }
 
 /**
- * Qué hace: normaliza la clave del tipo (DUI/NIT/NRC) desde corto o nombre largo.
+ * Qué hace: normaliza la clave del tipo (DUI/ISSS/AFP/NIT/NRC) desde corto o nombre largo.
  */
 export function claveTipoDocumento(nombreCorto?: string, nombreLargo?: string): string {
 	const corto = `${nombreCorto || ''}`.trim().toUpperCase();
-	if (corto === 'DUI' || corto === 'NIT' || corto === 'NRC') {
+	if (corto === 'DUI' || corto === 'ISSS' || corto === 'AFP' || corto === 'NIT' || corto === 'NRC') {
 		return corto;
 	}
 	const largo = `${nombreLargo || ''}`.trim().toUpperCase();
-	if (largo === 'DUI' || largo === 'NIT' || largo === 'NRC') {
+	if (largo === 'DUI' || largo === 'ISSS' || largo === 'AFP' || largo === 'NIT' || largo === 'NRC') {
 		return largo;
 	}
 	if (/\bDUI\b/.test(largo)) {
 		return 'DUI';
+	}
+	if (/\bISSS\b/.test(largo)) {
+		return 'ISSS';
+	}
+	if (/\bAFP\b/.test(largo)) {
+		return 'AFP';
 	}
 	if (/\bNIT\b/.test(largo)) {
 		return 'NIT';
@@ -78,10 +84,10 @@ export function claveTipoDocumento(nombreCorto?: string, nombreLargo?: string): 
 	return corto || largo;
 }
 
-/** Qué hace: indica si el tipo usa máscara por NOMBRE_CORTO (DUI/NIT/NRC). */
+/** Qué hace: indica si el tipo usa máscara por NOMBRE_CORTO (DUI/ISSS/AFP/NIT/NRC). */
 export function esDocumentoConMascara(nombreCorto?: string, nombreLargo?: string): boolean {
 	const key = claveTipoDocumento(nombreCorto, nombreLargo);
-	return key === 'DUI' || key === 'NIT' || key === 'NRC';
+	return key === 'DUI' || key === 'ISSS' || key === 'AFP' || key === 'NIT' || key === 'NRC';
 }
 
 /**
@@ -100,7 +106,7 @@ export function documentoVisiblePorAplicaPara(aplicaPara: string | undefined | n
 }
 
 /**
- * Qué hace: DUI — cuerpo según formato; guion antes del último carácter.
+ * Qué hace: DUI/ISSS/AFP — cuerpo según formato; guion antes del último carácter.
  */
 export function formatDui(
 	valor: string,
@@ -162,7 +168,7 @@ export function formatNrc(
 }
 
 /**
- * Qué hace: aplica máscara DUI/NIT/NRC o solo filtro de caracteres para otros tipos.
+ * Qué hace: aplica máscara DUI/ISSS/AFP/NIT/NRC o solo filtro de caracteres para otros tipos.
  */
 export function formatDocumentoIdentidad(
 	nombreCorto: string,
@@ -173,7 +179,7 @@ export function formatDocumentoIdentidad(
 ): string {
 	const formato = normalizarFormatoCaracteres(formatoCaracteres);
 	const key = claveTipoDocumento(nombreCorto, nombreLargo);
-	if (key === 'DUI') {
+	if (key === 'DUI' || key === 'ISSS' || key === 'AFP') {
 		return formatDui(valor, maxCaracteres, formato);
 	}
 	if (key === 'NIT') {
@@ -202,7 +208,7 @@ export function maxLengthDocumentoIdentidad(
 	const formato = normalizarFormatoCaracteres(formatoCaracteres);
 	const muestraChar = formato === 'NUMEROS' ? '0' : 'A';
 	const key = claveTipoDocumento(nombreCorto, nombreLargo);
-	if (key === 'DUI' || key === 'NIT' || key === 'NRC') {
+	if (key === 'DUI' || key === 'ISSS' || key === 'AFP' || key === 'NIT' || key === 'NRC') {
 		const muestra = formatDocumentoIdentidad(nombreCorto, muestraChar.repeat(n), n, nombreLargo, formato);
 		return muestra.length || n;
 	}
@@ -212,7 +218,7 @@ export function maxLengthDocumentoIdentidad(
 /**
  * Qué hace: formatea al escribir según tipo, FORMATO_CARACTERES y tope del catálogo.
  * Cómo:
- * - DUI/NIT/NRC: máscara por nombre corto + letras/números según FORMATO_CARACTERES.
+ * - DUI/ISSS/AFP/NIT/NRC: máscara por nombre corto + letras/números según FORMATO_CARACTERES.
  * - Otros: solo filtro FORMATO_CARACTERES (+ tope si ACTIVO_CARACTERES).
  */
 export function aplicarLimiteDocumentoIdentidad(
@@ -229,7 +235,7 @@ export function aplicarLimiteDocumentoIdentidad(
 	const n = Number(numeroCaracteres);
 	const tope = valida ? n : null;
 
-	if (key === 'DUI') {
+	if (key === 'DUI' || key === 'ISSS' || key === 'AFP') {
 		return formatDui(valor, tope, formato);
 	}
 	if (key === 'NIT') {

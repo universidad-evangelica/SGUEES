@@ -524,7 +524,11 @@
 					></dx-check-box>
 				</div>
 				<div class="ep-field ep-field--check">
-					<dx-check-box [(value)]="modelPersonaNatural.ES_EXTRANJERO" text="Es extranjero"></dx-check-box>
+					<dx-check-box
+						[(value)]="modelPersonaNatural.ES_EXTRANJERO"
+						text="Es extranjero"
+						(onValueChanged)="onPersonalesSelectChanged('ES_EXTRANJERO', $event)"
+					></dx-check-box>
 				</div>
 				<div class="ep-field">
 					<label class="ep-label">Domiciliado</label>
@@ -534,7 +538,6 @@
 						[items]="opcionesSiNo"
 						displayExpr="text"
 						valueExpr="value"
-						(onValueChanged)="onPersonalesSelectChanged('DOMICILIADO', $event)"
 					></dx-select-box>
 				</div>
 				<div class="ep-field ep-field--wide" *ngIf="modelPersonaNatural.POSEE_DISCAPACIDAD">
