@@ -38,6 +38,12 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 
 	/** Lookups compartidos (unidad / modalidad / empleado); puestos van por lado. */
 	mCORR_UNIDAD: any[] = [];
+	/** Padres distintos (gerencia) para la posición propuesta. */
+	mGerenciaPropuesta: any[] = [];
+	/** Departamentos hijos de la gerencia elegida. */
+	mUnidadPropuesta: any[] = [];
+	/** CORR del padre elegido; no se persiste (el texto queda en GERENCIA_PROPUESTA). */
+	corrGerenciaPropuesta = 0;
 	mCORR_TIPO_MODALIDAD: any[] = [];
 	mCORR_PUESTO_ACTUAL: any[] = [];
 	mCORR_PUESTO_PROPUESTO: any[] = [];
@@ -120,6 +126,10 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			.subscribe({
 				next: (response: any) => {
 					this.mCORR_UNIDAD = response?.Result ? response.Data ?? [] : [];
+					this.armarGerenciasPropuesta();
+					if (!this.isBrowse()) {
+						this.aplicarPadreDesdeUnidadPropuesta();
+					}
 				},
 				error: (error: any) => this.notifyFx(error, NotifyType.Error),
 			});
@@ -356,6 +366,8 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			return;
 		}
 		super.nuevo();
+		this.corrGerenciaPropuesta = 0;
+		this.mUnidadPropuesta = [];
 		this.mCORR_PUESTO_ACTUAL = [];
 		this.mCORR_PUESTO_PROPUESTO = [];
 		this.modelsBitacora = [];
@@ -401,6 +413,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	}
 
 	private despuesDeCargarFormulario(): void {
+		this.aplicarPadreDesdeUnidadPropuesta();
 		if (this.model?.CORR_UNIDAD_ACTUAL > 0) {
 			this.getCORR_PUESTO_ACTUAL(this.model.CORR_UNIDAD_ACTUAL);
 		}
@@ -798,12 +811,31 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		return corr;
 	};
 
+	selectedLookUpCORR_GERENCIA_PROPUESTA = (vRow: any): any => {
+		const row = vRow?.[0];
+		const corr = Number(row?.CORR_UNIDAD) || 0;
+		const cambio = corr !== this.corrGerenciaPropuesta;
+		this.corrGerenciaPropuesta = corr;
+		this.model.GERENCIA_PROPUESTA = row?.DISPLAY_UNIDAD || this.formatUnidadDisplay(row);
+		this.filtrarUnidadesPropuesta(corr);
+		if (cambio) {
+			this.model.CORR_UNIDAD_PROPUESTA = 0;
+			this.model.NOMBRE_UNIDAD_PROPUESTA = '';
+			this.model.CORR_PUESTO_PROPUESTO = 0;
+			this.model.NOMBRE_PUESTO_PROPUESTO = '';
+			this.mCORR_PUESTO_PROPUESTO = [];
+		}
+		return corr;
+	};
+
 	selectedLookUpCORR_UNIDAD_PROPUESTA = (vRow: any): any => {
 		const row = vRow?.[0];
 		const corr = Number(row?.CORR_UNIDAD) || 0;
 		this.model.CORR_UNIDAD_PROPUESTA = corr;
 		this.model.NOMBRE_UNIDAD_PROPUESTA = row?.DISPLAY_UNIDAD || this.formatUnidadDisplay(row);
-		this.model.GERENCIA_PROPUESTA = row?.GERENCIA_DISPLAY ?? '';
+		if (row?.GERENCIA_DISPLAY) {
+			this.model.GERENCIA_PROPUESTA = row.GERENCIA_DISPLAY;
+		}
 		this.model.CORR_PUESTO_PROPUESTO = 0;
 		this.model.NOMBRE_PUESTO_PROPUESTO = '';
 		this.mCORR_PUESTO_PROPUESTO = [];
@@ -834,6 +866,74 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		this.model.NOMBRE_MODALIDAD_PROPUESTA = row?.MODALIDAD_NOMBRE ?? '';
 		return Number(row?.CORR_TIPO_MODALIDAD) || 0;
 	};
+
+	/** Padres distintos de las unidades del usuario (combo Gerencia propuesta). */
+	private armarGerenciasPropuesta(): void {
+		const porCorr = new Map<number, any>();
+		for (const unidad of this.mCORR_UNIDAD || []) {
+			const padre = Number(unidad?.CORR_UNIDAD_PADRE) || 0;
+			if (padre <= 0 || porCorr.has(padre)) {
+				continue;
+			}
+			const filaPadre = (this.mCORR_UNIDAD || []).find((u) => Number(u.CORR_UNIDAD) === padre);
+			if (filaPadre) {
+				porCorr.set(padre, {
+					CORR_UNIDAD: padre,
+					CODIGO_UNIDAD: filaPadre.CODIGO_UNIDAD,
+					NOMBRE_UNIDAD: filaPadre.NOMBRE_UNIDAD,
+					DISPLAY_UNIDAD: filaPadre.DISPLAY_UNIDAD || this.formatUnidadDisplay(filaPadre),
+				});
+				continue;
+			}
+			const display = `${unidad.GERENCIA_DISPLAY || ''}`.trim();
+			const partes = display.includes(' - ') ? display.split(' - ') : [display];
+			porCorr.set(padre, {
+				CORR_UNIDAD: padre,
+				CODIGO_UNIDAD: partes.length > 1 ? partes[0] : '',
+				NOMBRE_UNIDAD: partes.length > 1 ? partes.slice(1).join(' - ') : display,
+				DISPLAY_UNIDAD: display,
+			});
+		}
+		this.mGerenciaPropuesta = [...porCorr.values()].sort((a, b) =>
+			`${a.DISPLAY_UNIDAD}`.localeCompare(`${b.DISPLAY_UNIDAD}`)
+		);
+	}
+
+	/** Departamentos cuyo padre es la gerencia elegida. */
+	private filtrarUnidadesPropuesta(corrPadre: number, corrUnidadKeep?: number): void {
+		const padre = Number(corrPadre) || 0;
+		if (padre <= 0) {
+			this.mUnidadPropuesta = [];
+			return;
+		}
+		const hijos = (this.mCORR_UNIDAD || []).filter((u) => Number(u.CORR_UNIDAD_PADRE) === padre);
+		const keep = Number(corrUnidadKeep) || 0;
+		if (keep > 0 && !hijos.some((u) => Number(u.CORR_UNIDAD) === keep)) {
+			const row = (this.mCORR_UNIDAD || []).find((u) => Number(u.CORR_UNIDAD) === keep);
+			if (row) {
+				hijos.push(row);
+			}
+		}
+		this.mUnidadPropuesta = hijos;
+	}
+
+	/** Al abrir un movimiento, la gerencia sale del padre de la unidad guardada. */
+	private aplicarPadreDesdeUnidadPropuesta(): void {
+		this.armarGerenciasPropuesta();
+		const unidad = Number(this.model?.CORR_UNIDAD_PROPUESTA) || 0;
+		if (unidad <= 0) {
+			this.corrGerenciaPropuesta = 0;
+			this.mUnidadPropuesta = [];
+			return;
+		}
+		const row = (this.mCORR_UNIDAD || []).find((u) => Number(u.CORR_UNIDAD) === unidad);
+		const padre = Number(row?.CORR_UNIDAD_PADRE) || 0;
+		this.corrGerenciaPropuesta = padre;
+		if (row?.GERENCIA_DISPLAY) {
+			this.model.GERENCIA_PROPUESTA = row.GERENCIA_DISPLAY;
+		}
+		this.filtrarUnidadesPropuesta(padre, unidad);
+	}
 
 	private formatUnidadDisplay(row: any): string {
 		if (!row) {

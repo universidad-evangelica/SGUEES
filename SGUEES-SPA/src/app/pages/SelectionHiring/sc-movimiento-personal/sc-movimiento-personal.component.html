@@ -120,12 +120,25 @@
 						</app-data-lookup>
 					</div>
 
+					<div *dxTemplate="let cellInfo of 'CORR_GERENCIA_PROPUESTALookup'">
+						<app-data-lookup
+							[model]="mGerenciaPropuesta"
+							[(value)]="corrGerenciaPropuesta"
+							[selectedRowKeys]="selectedLookUpCORR_GERENCIA_PROPUESTA"
+							[readOnly]="readOnly"
+							[valueExpr]="'CORR_UNIDAD'"
+							[displayExpr]="'DISPLAY_UNIDAD'"
+							[lookupColumns]="unidadLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+
 					<div *dxTemplate="let cellInfo of 'CORR_UNIDAD_PROPUESTALookup'">
 						<app-data-lookup
-							[model]="mCORR_UNIDAD"
+							[model]="mUnidadPropuesta"
 							[(value)]="model.CORR_UNIDAD_PROPUESTA"
 							[selectedRowKeys]="selectedLookUpCORR_UNIDAD_PROPUESTA"
-							[readOnly]="readOnly"
+							[readOnly]="readOnly || !corrGerenciaPropuesta"
 							[valueExpr]="'CORR_UNIDAD'"
 							[displayExpr]="'DISPLAY_UNIDAD'"
 							[lookupColumns]="unidadLookupColumns"

@@ -48,6 +48,11 @@ export class ScMovimientoPersonalService {
 			return false;
 		}
 
+		if (!`${model.GERENCIA_PROPUESTA || ''}`.trim()) {
+			msg('Debe indicar la gerencia / vicerrectoría / facultad propuesta.', NotifyType.Warning);
+			return false;
+		}
+
 		if (!model.CORR_UNIDAD_PROPUESTA || model.CORR_UNIDAD_PROPUESTA <= 0) {
 			msg('Debe indicar la unidad / departamento propuesto.', NotifyType.Warning);
 			return false;
@@ -407,7 +412,7 @@ export class ScMovimientoPersonalService {
 						dataField: 'GERENCIA_PROPUESTA',
 						label: { text: 'Gerencia / Vicerrectoría / Facultad' },
 						colSpan: 4,
-						editorOptions: { maxLength: 200, showClearButton: true },
+						template: 'CORR_GERENCIA_PROPUESTALookup',
 					},
 					{
 						dataField: 'CORR_UNIDAD_PROPUESTA',
