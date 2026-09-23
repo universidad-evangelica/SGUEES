@@ -18,5 +18,7 @@ namespace SGUEES.Services
 		Task<CResult> GetPuestosByUnidadAsync(SC_MOVIMIENTO_PERSONALParam xWhere);
 		Task<CResult> GetModalidadesAsync(SC_MOVIMIENTO_PERSONALParam xWhere);
 		Task<CResult> GetEmpleadosAsync(SC_MOVIMIENTO_PERSONALParam xWhere);
+		Task<CResult> GetRequisicionAsociadaAsync(SC_MOVIMIENTO_PERSONALParam xWhere);
+		Task<CResult> RegistrarFechaIngresoAsync(SC_MOVIMIENTO_FECHA_INGRESOParam Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
 }

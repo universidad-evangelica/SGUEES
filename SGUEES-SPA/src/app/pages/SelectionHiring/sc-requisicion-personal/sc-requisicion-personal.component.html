@@ -307,7 +307,7 @@
                   (onClick)="abrirEntrevistasCandidatoSeleccionado()"
                 ></dx-button>
                 <dx-button
-                  text="Aplica"
+                  text="Generar movimiento personal"
                   icon="check"
                   type="success"
                   stylingMode="contained"
@@ -315,7 +315,7 @@
                   (onClick)="abrirDecisionCandidato('APLICA')"
                 ></dx-button>
                 <dx-button
-                  text="No aplica"
+                  text="Rechazar"
                   icon="close"
                   type="danger"
                   stylingMode="contained"
@@ -946,7 +946,7 @@
 <!-- Modal: decisión jefatura Aplica / No aplica -->
 <dx-popup
   [(visible)]="popupDecisionVisible"
-  [title]="decisionModel.ESTADO_DECISION === 'APLICA' ? 'Confirmar: Aplica' : 'Confirmar: No aplica'"
+  [title]="decisionModel.ESTADO_DECISION === 'APLICA' ? 'Generar movimiento personal' : 'Rechazar candidato'"
   [width]="520"
   [maxWidth]="'calc(100vw - 24px)'"
   [height]="'auto'"

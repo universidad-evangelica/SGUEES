@@ -15,5 +15,7 @@ namespace SGUEES.Repositories
 		Task<CResult> GetPuestosByUnidadAsync(List<CParameter> xWhere);
 		Task<CResult> GetModalidadesAsync(List<CParameter> xWhere);
 		Task<CResult> GetEmpleadosAsync(List<CParameter> xWhere);
+		Task<CResult> GetRequisicionAsociadaAsync(List<CParameter> xWhere);
+		Task<CResult> RegistrarFechaIngresoAsync(SC_MOVIMIENTO_PERSONALTable Data);
 	}
 }

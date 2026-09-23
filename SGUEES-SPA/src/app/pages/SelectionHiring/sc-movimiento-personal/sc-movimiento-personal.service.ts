@@ -217,6 +217,19 @@ export class ScMovimientoPersonalService {
 			{ Parameter: 'CORR_MOVIMIENTO_PERSONAL', Value: param.CORR_MOVIMIENTO_PERSONAL },
 		]);
 	}
+
+	getRequisicionAsociada(corrMovimiento: number): Observable<IResult> {
+		return this.repo.getRequisicionAsociada([
+			{ Parameter: 'CORR_MOVIMIENTO_PERSONAL', Value: corrMovimiento },
+		]);
+	}
+
+	registrarFechaIngreso(model: {
+		CORR_MOVIMIENTO_PERSONAL: number;
+		FECHA_INGRESO_PROPUESTA?: Date | string | null;
+	}): Observable<IResult> {
+		return this.repo.registrarFechaIngreso(model);
+	}
 	//#endregion
 
 	//#region Grid / Form
@@ -243,7 +256,7 @@ export class ScMovimientoPersonalService {
 			{
 				dataField: 'NOMBRE_CONFIRMACION',
 				caption: 'Confirmación',
-				width: 150,
+				width: 160,
 				alignment: 'center',
 				calculateCellValue: (row: any) => this.getConfirmacionLabel(row),
 				cellTemplate: (container: HTMLElement, options: any) => {
@@ -256,7 +269,7 @@ export class ScMovimientoPersonalService {
 					container.appendChild(chip);
 				},
 			},
-			{ dataField: 'NOMBRE_TIPO_MOVIMIENTO', caption: 'Tipo', width: 100 },
+			{ dataField: 'NOMBRE_TIPO_MOVIMIENTO', caption: 'Tipo', width: 160 },
 			{ dataField: 'NOMBRE_COMPLETO', caption: 'Nombre', width: 250 },
 			{ dataField: 'NUMERO_ID', caption: 'Documento', width: 130 },
 			{ dataField: 'NOMBRE_UNIDAD_PROPUESTA', caption: 'Unidad propuesta', width: 200 },

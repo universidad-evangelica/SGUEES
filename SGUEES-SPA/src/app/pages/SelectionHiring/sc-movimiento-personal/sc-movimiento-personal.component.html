@@ -197,6 +197,70 @@
 					</dx-data-grid>
 				</div>
 			</dxi-item>
+
+			<dxi-item *ngIf="esOrigenRequisicion" title="Requisición asociada" [icon]="'doc'">
+				<div class="req-asociada-card dx-card">
+					<div class="req-asociada-titulo">
+						Requisición {{ requisicionAsociada?.CORR_REQUISICION_PERSONAL }} — {{ requisicionAsociada?.NOMBRE_PUESTO }}
+					</div>
+					<div class="req-asociada-campo">
+						<span>Fecha requisición</span>
+						<strong>{{ requisicionAsociada?.FECHA_REQUISICION | date:'dd/MM/yyyy' }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Estado</span>
+						<strong>{{ requisicionAsociada?.NOMBRE_ESTADO }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Unidad</span>
+						<strong>{{ requisicionAsociada?.DISPLAY_UNIDAD }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Puesto solicitado</span>
+						<strong>{{ requisicionAsociada?.NOMBRE_PUESTO }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Modalidad</span>
+						<strong>{{ requisicionAsociada?.MODALIDAD_NOMBRE }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Tipo contratación</span>
+						<strong>{{ requisicionAsociada?.NOMBRE_TIPO_CONTRATACION }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Tipo vacante</span>
+						<strong>{{ requisicionAsociada?.NOMBRE_TIPO_VACANTE }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Plazas</span>
+						<strong>{{ requisicionAsociada?.CANTIDAD_PLAZAS }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Plazas cubiertas</span>
+						<strong>{{ requisicionAsociada?.PLAZAS_CUBIERTAS }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Salario</span>
+						<strong>{{ requisicionAsociada?.SALARIO | number:'1.2-2' }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Tiempo contrato (meses)</span>
+						<strong>{{ requisicionAsociada?.TIEMPO_CONTRATO }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Horario</span>
+						<strong>{{ requisicionAsociada?.HORARIO }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Empleado sustituto</span>
+						<strong>{{ requisicionAsociada?.CORR_EMPLEADO_SUSTITUTO }}</strong>
+					</div>
+					<div class="req-asociada-campo req-asociada-ancho">
+						<span>Justificación</span>
+						<strong>{{ requisicionAsociada?.JUSTIFICACION }}</strong>
+					</div>
+				</div>
+			</dxi-item>
 		</dx-tab-panel>
 	</div>
 
@@ -228,6 +292,29 @@
 	>
 	</app-data-grid-mtto>
 </div>
+
+<dx-popup
+	[(visible)]="avisoIngresoVisible"
+	[width]="480"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[showTitle]="true"
+	title="Fecha de ingreso propuesta"
+	[showCloseButton]="true"
+	[dragEnabled]="false"
+	[hideOnOutsideClick]="false"
+	(onHiding)="cerrarAvisoIngreso()"
+>
+	<div *dxTemplate="let data of 'content'">
+		<p class="req-aviso-ingreso">
+			Este movimiento viene de una contratación eventual. Indique la fecha de ingreso propuesta
+			para calcular la fecha de finalización. Sin esa fecha no se puede confirmar.
+		</p>
+		<div style="display: flex; justify-content: flex-end;">
+			<dx-button text="Ok" type="default" stylingMode="contained" (onClick)="cerrarAvisoIngreso()"></dx-button>
+		</div>
+	</div>
+</dx-popup>
 
 <dx-load-panel
 	#loadPanel

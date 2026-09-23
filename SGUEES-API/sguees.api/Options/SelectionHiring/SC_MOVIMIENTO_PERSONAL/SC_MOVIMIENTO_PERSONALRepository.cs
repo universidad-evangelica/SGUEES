@@ -731,6 +731,129 @@ ORDER BY MODALIDAD_NOMBRE", xWhere);
 			return objResultado;
 		}
 
+		/// <summary>Requisición ligada al movimiento (tab de consulta). Sin puente, Data = null.</summary>
+		public async Task<CResult> GetRequisicionAsociadaAsync(List<CParameter> xWhere)
+		{
+			var objResultado = new CResult();
+
+			try
+			{
+				var reader = await objData.GetDataReader(CommandType.Text, @"
+SELECT
+	MR.CORR_REQUISICION_PERSONAL,
+	MR.CORR_REQUISICION_CANDIDATO,
+	R.FECHA_REQUISICION,
+	R.CORR_ESTADO_REQUISICION,
+	CAST(CASE R.CORR_ESTADO_REQUISICION
+		WHEN 1 THEN N'Borrador'
+		WHEN 2 THEN N'En Aprobación'
+		WHEN 3 THEN N'Devuelta'
+		WHEN 4 THEN N'Rechazada'
+		WHEN 5 THEN N'Aprobada'
+		WHEN 6 THEN N'Publicada'
+		WHEN 7 THEN N'En Reclutamiento'
+		WHEN 8 THEN N'En Selección'
+		WHEN 9 THEN N'En Contratación'
+		WHEN 10 THEN N'Parcial Cubierta'
+		WHEN 11 THEN N'Cerrada'
+		WHEN 12 THEN N'Cancelada'
+		ELSE N''
+	END AS NVARCHAR(40)) AS NOMBRE_ESTADO,
+	CAST(CASE
+		WHEN LTRIM(RTRIM(ISNULL(U.CODIGO_UNIDAD, N''))) = N'' THEN ISNULL(V.NOMBRE_UNIDAD, N'')
+		ELSE LTRIM(RTRIM(U.CODIGO_UNIDAD)) + N' - ' + ISNULL(V.NOMBRE_UNIDAD, N'')
+	END AS NVARCHAR(200)) AS DISPLAY_UNIDAD,
+	V.NOMBRE_PUESTO,
+	V.MODALIDAD_NOMBRE,
+	V.CORR_TIPO_CONTRATACION,
+	V.NOMBRE_TIPO_CONTRATACION,
+	V.NOMBRE_TIPO_VACANTE,
+	V.CANTIDAD_PLAZAS,
+	V.PLAZAS_CUBIERTAS,
+	V.SALARIO,
+	V.TIEMPO_CONTRATO,
+	V.HORARIO,
+	CAST(V.CORR_EMPLEADO_SUSTITUTO AS NVARCHAR(50)) AS CORR_EMPLEADO_SUSTITUTO,
+	V.JUSTIFICACION
+FROM dbo.SC_MOVIMIENTO_REQUISICION AS MR
+INNER JOIN dbo.V_SC_REQUISICION_PERSONAL AS V
+	ON V.CORR_EMPRESA = MR.CORR_EMPRESA
+   AND V.CORR_REQUISICION_PERSONAL = MR.CORR_REQUISICION_PERSONAL
+INNER JOIN dbo.SC_REQUISICION_PERSONAL AS R
+	ON R.CORR_EMPRESA = MR.CORR_EMPRESA
+   AND R.CORR_REQUISICION_PERSONAL = MR.CORR_REQUISICION_PERSONAL
+LEFT JOIN dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS U
+	ON U.CORR_EMPRESA = R.CORR_EMPRESA
+   AND U.CORR_UNIDAD = R.CORR_UNIDAD
+WHERE MR.CORR_EMPRESA = @CORR_EMPRESA
+  AND MR.CORR_MOVIMIENTO_PERSONAL = @CORR_MOVIMIENTO_PERSONAL", xWhere);
+
+				var response = new List<SC_MOVIMIENTO_REQUISICION_CARDView>().FromDataReader(reader).FirstOrDefault();
+				reader.Close();
+
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response == null ? 0 : 1;
+				objResultado.ErrorCode = 0;
+			}
+			catch (Exception e)
+			{
+				SetError(objResultado, e);
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
+
+		/// <summary>Guarda fecha de ingreso y la fecha de fin ya calculada.</summary>
+		public async Task<CResult> RegistrarFechaIngresoAsync(SC_MOVIMIENTO_PERSONALTable Data)
+		{
+			var objResultado = new CResult();
+
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new() { ParameterName = "FECHA_INGRESO_PROPUESTA", Value = ToSqlDate(Data.FECHA_INGRESO_PROPUESTA), DbType = DbType.Date },
+					new() { ParameterName = "FECHA_FINALIZACION", Value = ToSqlDate(Data.FECHA_FINALIZACION), DbType = DbType.Date },
+					new() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU ?? string.Empty, DbType = DbType.String },
+					new() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU ?? string.Empty, DbType = DbType.String },
+					new() { ParameterName = "FECHA_ACTU", Value = ToSqlDateTime(Data.FECHA_ACTU == default ? DateTime.Now : Data.FECHA_ACTU), DbType = DbType.DateTime },
+				};
+
+				var pWhere = new List<CParameter>
+				{
+					new() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = DbType.Int32 },
+					new() { ParameterName = "CORR_MOVIMIENTO_PERSONAL", Value = Data.CORR_MOVIMIENTO_PERSONAL, DbType = DbType.Int32 },
+				};
+
+				var reader = await objData.Update(_TableName, p, pWhere);
+				var response = new List<SC_MOVIMIENTO_PERSONALView>().FromDataReader(reader).FirstOrDefault();
+				reader.Close();
+
+				objResultado.Data = response;
+				objResultado.Result = response != null;
+				objResultado.RowsAffected = response == null ? 0 : 1;
+				objResultado.ErrorCode = response == null ? -1 : 0;
+				objResultado.ErrorMessage = response == null
+					? "No se pudo guardar la fecha de ingreso propuesta."
+					: string.Empty;
+			}
+			catch (Exception e)
+			{
+				SetError(objResultado, e);
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
+
 		private List<CParameter> BuildWriteParameters(
 			SC_MOVIMIENTO_PERSONALTable Data,
 			bool includeKeys,

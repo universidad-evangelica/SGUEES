@@ -125,6 +125,26 @@ namespace SGUEES.Controllers
 			return await _service.GetBitacoraAsync(Data);
 		}
 
+		[HttpGet("GetRequisicionAsociada")]
+		[Authorize(Policy = "/sc-movimiento-personal|R")]
+		public async Task<CResult> GetRequisicionAsociada([FromQuery] SC_MOVIMIENTO_PERSONALParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetRequisicionAsociadaAsync(Data);
+		}
+
+		[HttpPut("RegistrarFechaIngreso")]
+		[Authorize(Policy = "/sc-movimiento-personal|U")]
+		public async Task<IActionResult> RegistrarFechaIngreso(SC_MOVIMIENTO_FECHA_INGRESOParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			var resultado = await _service.RegistrarFechaIngresoAsync(
+				Data,
+				GetUsuario(),
+				ClientInfoHelper.GetClientStation(HttpContext));
+			return Ok(resultado);
+		}
+
 		/// <summary>Lookup unidades del usuario (getLookUp → GetCORR_UNIDAD_SC_MOVIMIENTO_PERSONAL).</summary>
 		[HttpGet("GetCORR_UNIDAD_SC_MOVIMIENTO_PERSONAL")]
 		[Authorize(Policy = "/sc-movimiento-personal|R")]

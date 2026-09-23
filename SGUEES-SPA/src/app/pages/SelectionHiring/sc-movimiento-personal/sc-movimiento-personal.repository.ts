@@ -64,4 +64,26 @@ export class ScMovimientoPersonalRepository {
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
 	}
+
+	getRequisicionAsociada(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'GetRequisicionAsociada',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	registrarFechaIngreso(model: {
+		CORR_MOVIMIENTO_PERSONAL: number;
+		FECHA_INGRESO_PROPUESTA?: Date | string | null;
+	}): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'RegistrarFechaIngreso',
+			[{ Parameter: 'CORR_MOVIMIENTO_PERSONAL', Value: model.CORR_MOVIMIENTO_PERSONAL }],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }

@@ -197,6 +197,23 @@ namespace SGUEES.Services
 				return ValidationError("Origen de movimiento no válido para confirmar.");
 			}
 
+			if (origen == "REQUISICION")
+			{
+				var ligada = await GetRequisicionAsociadaAsync(new SC_MOVIMIENTO_PERSONALParam
+				{
+					CORR_EMPRESA = Data.CORR_EMPRESA,
+					CORR_MOVIMIENTO_PERSONAL = Data.CORR_MOVIMIENTO_PERSONAL,
+				});
+
+				if (ligada.Data is SC_MOVIMIENTO_REQUISICION_CARDView card
+					&& card.CORR_TIPO_CONTRATACION == 2
+					&& !row.FECHA_INGRESO_PROPUESTA.HasValue)
+				{
+					return ValidationError(
+						"Registre la fecha de ingreso propuesta para calcular la fecha de finalización antes de confirmar.");
+				}
+			}
+
 			var ahora = System.DateTime.Now;
 			var data = new SC_MOVIMIENTO_PERSONALTable
 			{
@@ -276,6 +293,85 @@ namespace SGUEES.Services
 			};
 
 			return await _repo.GetEmpleadosAsync(p);
+		}
+
+		public async Task<CResult> GetRequisicionAsociadaAsync(SC_MOVIMIENTO_PERSONALParam xWhere)
+		{
+			var p = new List<CParameter>
+			{
+				new() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "CORR_MOVIMIENTO_PERSONAL", Value = xWhere.CORR_MOVIMIENTO_PERSONAL, DbType = System.Data.DbType.Int32 },
+			};
+
+			return await _repo.GetRequisicionAsociadaAsync(p);
+		}
+
+		public async Task<CResult> RegistrarFechaIngresoAsync(
+			SC_MOVIMIENTO_FECHA_INGRESOParam Data,
+			string vLOGIN_SISTEMA,
+			string vESTACION)
+		{
+			if (Data == null || Data.CORR_MOVIMIENTO_PERSONAL <= 0)
+			{
+				return ValidationError("Debe indicar el movimiento de personal.");
+			}
+
+			var actual = await GetAsync(new SC_MOVIMIENTO_PERSONALParam
+			{
+				CORR_EMPRESA = Data.CORR_EMPRESA,
+				CORR_MOVIMIENTO_PERSONAL = Data.CORR_MOVIMIENTO_PERSONAL,
+			});
+
+			if (actual.Data is not SC_MOVIMIENTO_PERSONALView row)
+			{
+				return ValidationError("No se encontró el movimiento.");
+			}
+
+			if (row.CONFIRMADO)
+			{
+				return ValidationError("El movimiento ya está confirmado.");
+			}
+
+			if (!string.Equals(row.ORIGEN_MOVIMIENTO, "REQUISICION", StringComparison.OrdinalIgnoreCase))
+			{
+				return ValidationError("La fecha de ingreso propuesta solo se calcula en movimientos de requisición.");
+			}
+
+			var ligada = await GetRequisicionAsociadaAsync(new SC_MOVIMIENTO_PERSONALParam
+			{
+				CORR_EMPRESA = Data.CORR_EMPRESA,
+				CORR_MOVIMIENTO_PERSONAL = Data.CORR_MOVIMIENTO_PERSONAL,
+			});
+
+			if (ligada.Data is not SC_MOVIMIENTO_REQUISICION_CARDView card || card.CORR_TIPO_CONTRATACION != 2)
+			{
+				return ValidationError("La fecha de finalización solo aplica a contratación eventual.");
+			}
+
+			DateTime? ingreso = null;
+			DateTime? fin = null;
+			if (Data.FECHA_INGRESO_PROPUESTA.HasValue && Data.FECHA_INGRESO_PROPUESTA.Value.Year >= 1753)
+			{
+				if (card.TIEMPO_CONTRATO <= 0)
+				{
+					return ValidationError("La requisición eventual no tiene meses de contrato para calcular la fecha de finalización.");
+				}
+
+				ingreso = Data.FECHA_INGRESO_PROPUESTA.Value.Date;
+				fin = ingreso.Value.AddMonths(card.TIEMPO_CONTRATO);
+			}
+
+			var ahora = DateTime.Now;
+			return await _repo.RegistrarFechaIngresoAsync(new SC_MOVIMIENTO_PERSONALTable
+			{
+				CORR_EMPRESA = Data.CORR_EMPRESA,
+				CORR_MOVIMIENTO_PERSONAL = Data.CORR_MOVIMIENTO_PERSONAL,
+				FECHA_INGRESO_PROPUESTA = ingreso,
+				FECHA_FINALIZACION = fin,
+				USUARIO_ACTU = vLOGIN_SISTEMA,
+				ESTACION_ACTU = vESTACION,
+				FECHA_ACTU = ahora,
+			});
 		}
 
 		/// <summary>Defaults al crear: origen DIRECTO, estado DI.</summary>

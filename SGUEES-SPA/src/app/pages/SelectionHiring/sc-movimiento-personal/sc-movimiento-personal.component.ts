@@ -35,6 +35,10 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	btnConfirmarMovimiento = '';
 	/** Fecha efectiva editable solo cuando Confirmar está habilitado. */
 	puedeEditarFechaEfectiva = false;
+	requisicionAsociada: any = null;
+	avisoIngresoVisible = false;
+	private avisoIngresoTimer: ReturnType<typeof setTimeout> | null = null;
+	private ultimaFechaIngresoMs: number | null = null;
 
 	/** Lookups compartidos (unidad / modalidad / empleado); puestos van por lado. */
 	mCORR_UNIDAD: any[] = [];
@@ -372,6 +376,8 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		this.mUnidadPropuesta = [];
 		this.mCORR_PUESTO_ACTUAL = [];
 		this.mCORR_PUESTO_PROPUESTO = [];
+		this.requisicionAsociada = null;
+		this.avisoIngresoVisible = false;
 		this.modelsBitacora = [];
 		this.refrescarBotones();
 		this.refrescarItemsFormulario();
@@ -423,6 +429,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			this.getCORR_PUESTO_PROPUESTO(this.model.CORR_UNIDAD_PROPUESTA);
 		}
 		this.cargarBitacora();
+		this.cargarRequisicionAsociada();
 		this.refrescarBotones();
 		this.refrescarItemsFormulario();
 	}
@@ -438,6 +445,8 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 				this.dataForm.instance.option('items', this.items);
 				this.dataForm.instance.option('formData', this.model);
 			}
+			this.aplicarBloqueoFormulario();
+			this.engancharFechaIngreso();
 		}, 0);
 	}
 
@@ -486,6 +495,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 
 	override bloquear(): void {
 		this.readOnly = true;
+		setTimeout(() => this.aplicarBloqueoFormulario(), 0);
 	}
 
 	override habilitar(): void {
@@ -730,6 +740,9 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		if (origen !== 'DIRECTO' && origen !== 'REQUISICION') {
 			return 'Origen de movimiento no válido para confirmar.';
 		}
+		if (this.esEventualRequisicion() && !this.model?.FECHA_INGRESO_PROPUESTA) {
+			return 'Indique la fecha de ingreso propuesta para calcular la fecha de finalización antes de confirmar.';
+		}
 		return null;
 	}
 
@@ -761,6 +774,138 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 
 	getEstadoBadgeClass(estado?: string): string {
 		return this.service.getEstadoBadgeClass(estado ?? this.model?.ESTADO_MOVIMIENTO);
+	}
+
+	get esOrigenRequisicion(): boolean {
+		return `${this.model?.ORIGEN_MOVIMIENTO || ''}`.trim().toUpperCase() === 'REQUISICION';
+	}
+
+	esEventualRequisicion(): boolean {
+		return this.esOrigenRequisicion && Number(this.requisicionAsociada?.CORR_TIPO_CONTRATACION) === 2;
+	}
+
+	cerrarAvisoIngreso(): void {
+		this.avisoIngresoVisible = false;
+		if (this.avisoIngresoTimer) {
+			clearTimeout(this.avisoIngresoTimer);
+			this.avisoIngresoTimer = null;
+		}
+	}
+
+	private cargarRequisicionAsociada(): void {
+		this.requisicionAsociada = null;
+		this.cerrarAvisoIngreso();
+		const corr = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
+		if (!this.esOrigenRequisicion || corr <= 0) {
+			return;
+		}
+
+		this.service.getRequisicionAsociada(corr).pipe(take(1)).subscribe({
+			next: (response: any) => {
+				const data = response?.Result ? response.Data ?? null : null;
+				this.requisicionAsociada = Array.isArray(data) ? data[0] ?? null : data;
+				if (this.requisicionAsociada) {
+					this.model.CORR_TIPO_CONTRATACION = this.requisicionAsociada.CORR_TIPO_CONTRATACION;
+				}
+				this.ultimaFechaIngresoMs = this.fechaAMs(this.model?.FECHA_INGRESO_PROPUESTA);
+				this.refrescarItemsFormulario();
+				this.mostrarAvisoIngresoSiFalta();
+			},
+			error: () => {
+				this.requisicionAsociada = null;
+			},
+		});
+	}
+
+	private mostrarAvisoIngresoSiFalta(): void {
+		if (!this.esEventualRequisicion() || this.model?.FECHA_INGRESO_PROPUESTA || this.service.esConfirmado(this.model?.CONFIRMADO)) {
+			return;
+		}
+		this.avisoIngresoVisible = true;
+		this.avisoIngresoTimer = setTimeout(() => this.cerrarAvisoIngreso(), 8000);
+	}
+
+	private aplicarBloqueoFormulario(): void {
+		const form = this.dataForm?.instance;
+		if (!form || !this.readOnly) {
+			return;
+		}
+		form.option('readOnly', true);
+		if (this.esEventualRequisicion() && !this.service.esConfirmado(this.model?.CONFIRMADO)) {
+			form.getEditor('FECHA_INGRESO_PROPUESTA')?.option('readOnly', false);
+		}
+	}
+
+	private engancharFechaIngreso(): void {
+		const editor = this.dataForm?.instance?.getEditor('FECHA_INGRESO_PROPUESTA');
+		if (!editor) {
+			return;
+		}
+		editor.off('valueChanged', this.onFechaIngresoEditor);
+		editor.on('valueChanged', this.onFechaIngresoEditor);
+	}
+
+	private readonly onFechaIngresoEditor = (e: any): void => {
+		this.onFechaIngresoChanged(e?.value);
+	};
+
+	private onFechaIngresoChanged(value: Date | string | null): void {
+		if (!this.esEventualRequisicion() || this.service.esConfirmado(this.model?.CONFIRMADO)) {
+			return;
+		}
+		const ms = this.fechaAMs(value);
+		if (ms === this.ultimaFechaIngresoMs) {
+			return;
+		}
+		this.ultimaFechaIngresoMs = ms;
+		this.model.FECHA_INGRESO_PROPUESTA = value ? new Date(value) : null;
+		const meses = Number(this.requisicionAsociada?.TIEMPO_CONTRATO) || 0;
+		this.model.FECHA_FINALIZACION = value && meses > 0 ? this.sumarMeses(new Date(value), meses) : null;
+		this.dataForm?.instance?.updateData('FECHA_FINALIZACION', this.model.FECHA_FINALIZACION);
+
+		const corr = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
+		if (corr <= 0) {
+			return;
+		}
+		this.service.registrarFechaIngreso({
+			CORR_MOVIMIENTO_PERSONAL: corr,
+			FECHA_INGRESO_PROPUESTA: this.model.FECHA_INGRESO_PROPUESTA,
+		}).pipe(take(1)).subscribe({
+			next: (response: any) => {
+				if (!response?.Result) {
+					this.notifyFx(response?.ErrorMessage || 'No se pudo calcular la fecha de finalización.', NotifyType.Warning);
+					return;
+				}
+				const row = response.Data;
+				if (row) {
+					this.model.FECHA_INGRESO_PROPUESTA = row.FECHA_INGRESO_PROPUESTA;
+					this.model.FECHA_FINALIZACION = row.FECHA_FINALIZACION;
+					this.ultimaFechaIngresoMs = this.fechaAMs(row.FECHA_INGRESO_PROPUESTA);
+					this.dataForm?.instance?.updateData('FECHA_FINALIZACION', this.model.FECHA_FINALIZACION);
+				}
+			},
+			error: (error: any) => this.notifyFx(this.extraerMensajeError(error), NotifyType.Warning, { raw: true }),
+		});
+	}
+
+	private fechaAMs(value: Date | string | null | undefined): number | null {
+		if (!value) {
+			return null;
+		}
+		const fecha = new Date(value);
+		if (Number.isNaN(fecha.getTime())) {
+			return null;
+		}
+		fecha.setHours(0, 0, 0, 0);
+		return fecha.getTime();
+	}
+
+	private sumarMeses(fecha: Date, meses: number): Date {
+		const dia = fecha.getDate();
+		const resultado = new Date(fecha.getFullYear(), fecha.getMonth() + meses, 1);
+		const ultimo = new Date(resultado.getFullYear(), resultado.getMonth() + 1, 0).getDate();
+		resultado.setDate(Math.min(dia, ultimo));
+		return resultado;
 	}
 	//#endregion
 

@@ -630,8 +630,8 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 					this.popupDecisionVisible = false;
 					this.notifyFx(
 						this.decisionModel.ESTADO_DECISION === 'APLICA'
-							? 'Candidato marcado como Aplica.'
-							: 'Candidato marcado como No aplica.',
+							? 'Se generó el movimiento de personal.'
+							: 'Candidato rechazado.',
 						NotifyType.Success
 					);
 					this.cargarCandidatos();
