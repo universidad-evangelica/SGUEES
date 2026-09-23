@@ -43,7 +43,10 @@ export class ScMovimientoPersonalRepository {
 		);
 	}
 
-	confirmar(model: { CORR_MOVIMIENTO_PERSONAL: number }): Observable<IResult> {
+	confirmar(model: {
+		CORR_MOVIMIENTO_PERSONAL: number;
+		FECHA_EFECTIVA?: Date | string | null;
+	}): Observable<IResult> {
 		return this.objData.Put(
 			model,
 			this.xController,

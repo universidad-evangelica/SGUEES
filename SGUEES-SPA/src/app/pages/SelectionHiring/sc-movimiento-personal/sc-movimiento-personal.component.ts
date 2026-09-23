@@ -33,12 +33,15 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	confirmandoMovimiento = false;
 	btnEnviarMovimiento = '';
 	btnConfirmarMovimiento = '';
+	/** Fecha efectiva editable solo cuando Confirmar está habilitado. */
+	puedeEditarFechaEfectiva = false;
 
-	/** Lookups compartidos (unidad / modalidad); puestos van por lado. */
+	/** Lookups compartidos (unidad / modalidad / empleado); puestos van por lado. */
 	mCORR_UNIDAD: any[] = [];
 	mCORR_TIPO_MODALIDAD: any[] = [];
 	mCORR_PUESTO_ACTUAL: any[] = [];
 	mCORR_PUESTO_PROPUESTO: any[] = [];
+	mCORR_EMPLEADO: any[] = [];
 
 	unidadLookupColumns = [
 		{ dataField: 'CODIGO_UNIDAD', caption: 'Código', width: 100 },
@@ -51,6 +54,13 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	modalidadLookupColumns = [
 		{ dataField: 'CORR_TIPO_MODALIDAD', caption: 'Corr.', width: 80 },
 		{ dataField: 'MODALIDAD_NOMBRE', caption: 'Modalidad', width: 220 },
+	];
+	empleadoLookupColumns = [
+		{ dataField: 'CODIGO_EMPLEADO', caption: 'Código', width: 90 },
+		{ dataField: 'NOMBRE_COMPLETO', caption: 'Nombre', width: 280 },
+		{ dataField: 'NUMERO_ID', caption: 'Documento', width: 120 },
+		{ dataField: 'NOMBRE_UNIDAD_ACTUAL', caption: 'Unidad', width: 220 },
+		{ dataField: 'NOMBRE_PUESTO_ACTUAL', caption: 'Puesto', width: 200 },
 	];
 
 	modelsBitacora: any[] = [];
@@ -65,7 +75,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
-		this.items = this.service.getItems();
+		this.items = this.service.getItems('DIRECTO');
 		this.columnsBitacora = this.service.getBitacoraColumns();
 	}
 
@@ -83,6 +93,8 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		this.refrescarBotones();
 		if (xEstado === UpdateType.Browse) {
 			this.modelsBitacora = [];
+		} else {
+			this.refrescarItemsFormulario();
 		}
 	}
 	//#endregion
@@ -91,6 +103,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	llenaComboBox(): void {
 		this.getCORR_UNIDAD();
 		this.getCORR_TIPO_MODALIDAD();
+		this.getCORR_EMPLEADO();
 	}
 
 	/** Unidades efectivas del usuario (SP PRAL_DATA_SC_UNIDADES_USUARIO vía API propia). */
@@ -130,12 +143,39 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			});
 	}
 
-	getCORR_PUESTO_ACTUAL(corrUnidad?: number): void {
+	/** Empleados activos + posición vigente (lookup nuevo de esta pantalla). */
+	getCORR_EMPLEADO(): void {
+		this.appInfoService
+			.getLookUp(
+				'SC_MOVIMIENTO_PERSONAL',
+				'SC_MOVIMIENTO_PERSONAL',
+				'GetCORR_EMPLEADO',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_EMPLEADO = response?.Result ? response.Data ?? [] : [];
+				},
+				error: (error: any) => this.notifyFx(error, NotifyType.Error),
+			});
+	}
+
+	getCORR_PUESTO_ACTUAL(
+		corrUnidad?: number,
+		corrPuestoPreferido?: number,
+		nombrePuestoPreferido?: string
+	): void {
 		const unidad = corrUnidad ?? this.model?.CORR_UNIDAD_ACTUAL;
 		if (!unidad || unidad <= 0) {
 			this.mCORR_PUESTO_ACTUAL = [];
 			return;
 		}
+
+		const puestoKeep = Number(corrPuestoPreferido ?? this.model?.CORR_PUESTO_ACTUAL) || 0;
+		const nombreKeep =
+			nombrePuestoPreferido ?? this.model?.NOMBRE_PUESTO_ACTUAL ?? '';
 
 		this.appInfoService
 			.getLookUp(
@@ -148,10 +188,30 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
-					this.mCORR_PUESTO_ACTUAL = response?.Result ? response.Data ?? [] : [];
+					const data = response?.Result ? response.Data ?? [] : [];
+					this.mCORR_PUESTO_ACTUAL = data;
+					if (
+						puestoKeep > 0
+						&& !data.some((p: any) => Number(p.CORR_PUESTO) === puestoKeep)
+					) {
+						this.mCORR_PUESTO_ACTUAL = [
+							...data,
+							{
+								CORR_UNIDAD: unidad,
+								CORR_PUESTO: puestoKeep,
+								NOMBRE_PUESTO: nombreKeep,
+							},
+						];
+					}
+					if (puestoKeep > 0) {
+						this.model.CORR_PUESTO_ACTUAL = puestoKeep;
+						if (nombreKeep) {
+							this.model.NOMBRE_PUESTO_ACTUAL = nombreKeep;
+						}
+					}
 				},
 				error: (error: any) => {
-					this.mCORR_PUESTO_ACTUAL = [];
+					this.asegurarPuestoActualEnLookup(unidad, puestoKeep, nombreKeep);
 					this.notifyFx(error, NotifyType.Error);
 				},
 			});
@@ -202,6 +262,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 				NOMBRE_ESTADO_MOVIMIENTO: xModel.NOMBRE_ESTADO_MOVIMIENTO,
 				NOMBRE_TIPO_MOVIMIENTO: xModel.NOMBRE_TIPO_MOVIMIENTO,
 				NOMBRE_ORIGEN_MOVIMIENTO: xModel.NOMBRE_ORIGEN_MOVIMIENTO,
+				CORR_EMPLEADO: xModel.CORR_EMPLEADO ?? null,
 				NOMBRE_COMPLETO: xModel.NOMBRE_COMPLETO,
 				NUMERO_ID: xModel.NUMERO_ID,
 				FECHA_INGRESO_PROPUESTA: xModel.FECHA_INGRESO_PROPUESTA,
@@ -244,23 +305,30 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			CORR_MOVIMIENTO_PERSONAL: 0,
 			FECHA_ELABORACION: new Date(),
 			ORIGEN_MOVIMIENTO: 'DIRECTO',
-			TIPO_MOVIMIENTO: 'PERMANENTE',
+			TIPO_MOVIMIENTO: 'ASCENSO',
 			ESTADO_MOVIMIENTO: 'DI',
+			CORR_EMPLEADO: null,
 			NOMBRE_COMPLETO: '',
 			NUMERO_ID: '',
 			FECHA_INGRESO_PROPUESTA: null,
 			FECHA_FINALIZACION: null,
 			GERENCIA_ACTUAL: '',
 			CORR_UNIDAD_ACTUAL: 0,
+			NOMBRE_UNIDAD_ACTUAL: '',
 			CORR_PUESTO_ACTUAL: 0,
+			NOMBRE_PUESTO_ACTUAL: '',
 			SALARIO_ACTUAL: 0,
 			CORR_TIPO_MODALIDAD_ACTUAL: 0,
+			NOMBRE_MODALIDAD_ACTUAL: '',
 			HORARIO_ACTUAL: '',
 			GERENCIA_PROPUESTA: '',
 			CORR_UNIDAD_PROPUESTA: 0,
+			NOMBRE_UNIDAD_PROPUESTA: '',
 			CORR_PUESTO_PROPUESTO: 0,
+			NOMBRE_PUESTO_PROPUESTO: '',
 			SALARIO_PROPUESTO: 0,
 			CORR_TIPO_MODALIDAD_PROPUESTA: 0,
+			NOMBRE_MODALIDAD_PROPUESTA: '',
 			HORARIO_PROPUESTO: '',
 			JUSTIFICACION: '',
 			FECHA_EFECTIVA: null,
@@ -292,6 +360,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		this.mCORR_PUESTO_PROPUESTO = [];
 		this.modelsBitacora = [];
 		this.refrescarBotones();
+		this.refrescarItemsFormulario();
 	}
 
 	/**
@@ -340,6 +409,18 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		}
 		this.cargarBitacora();
 		this.refrescarBotones();
+		this.refrescarItemsFormulario();
+	}
+
+	/** DIRECTO → solo Empleado; REQUISICION → solo Nombre completo. */
+	private refrescarItemsFormulario(): void {
+		this.items = this.service.getItems(this.model?.ORIGEN_MOVIMIENTO || 'DIRECTO');
+		setTimeout(() => {
+			if (this.dataForm?.instance) {
+				this.dataForm.instance.option('items', this.items);
+				this.dataForm.instance.option('formData', this.model);
+			}
+		}, 0);
 	}
 
 	override getPermiteEditar(e: any): boolean {
@@ -395,7 +476,11 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 
 	override setFocus(): void {
 		setTimeout(() => {
-			this.dataForm?.instance?.getEditor('NOMBRE_COMPLETO')?.focus();
+			if (`${this.model?.ORIGEN_MOVIMIENTO || ''}`.toUpperCase() === 'DIRECTO') {
+				this.dataForm?.instance?.getEditor('CORR_EMPLEADO')?.focus();
+			} else {
+				this.dataForm?.instance?.getEditor('NOMBRE_COMPLETO')?.focus();
+			}
 		});
 	}
 
@@ -415,6 +500,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			&& this.service.esConfirmable(this.model);
 
 		this.btnConfirmarMovimiento = puedeConfirmar ? 'Confirmar' : '';
+		this.puedeEditarFechaEfectiva = puedeConfirmar;
 	}
 
 	/** En browse, al seleccionar fila se habilita Confirmar en la barra. */
@@ -530,7 +616,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		return null;
 	}
 
-	/** Confirma el movimiento (CONFIRMADO=1 + auditoría USUARIO_CONFIRMA / FECHA_CONFIRMA). */
+	/** Confirma el movimiento (CONFIRMADO=1 + FECHA_EFECTIVA + auditoría). */
 	async confirmarMovimiento(): Promise<void> {
 		if (this.confirmandoMovimiento) {
 			return;
@@ -539,6 +625,14 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		const motivo = this.motivoNoPuedeConfirmar();
 		if (motivo) {
 			this.notifyFx(motivo, NotifyType.Warning);
+			return;
+		}
+
+		if (!this.model?.FECHA_EFECTIVA) {
+			this.notifyFx(
+				'Debe indicar la fecha efectiva antes de confirmar el movimiento.',
+				NotifyType.Warning
+			);
 			return;
 		}
 
@@ -555,7 +649,10 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		this.loadingVisible = true;
 
 		this.service
-			.confirmar({ CORR_MOVIMIENTO_PERSONAL: corr })
+			.confirmar({
+				CORR_MOVIMIENTO_PERSONAL: corr,
+				FECHA_EFECTIVA: this.model.FECHA_EFECTIVA,
+			})
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -646,24 +743,150 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	//#endregion
 
 	//#region Lookups selected
+	selectedLookUpCORR_EMPLEADO = (vRow: any): any => {
+		const row = vRow?.[0];
+		if (!row) {
+			return 0;
+		}
+
+		const corrUnidad = Number(row.CORR_UNIDAD_ACTUAL) || 0;
+		const corrPuesto = Number(row.CORR_PUESTO_ACTUAL) || 0;
+		const corrModalidad = Number(row.CORR_TIPO_MODALIDAD_ACTUAL) || 0;
+
+		this.model.CORR_EMPLEADO = Number(row.CORR_EMPLEADO) || 0;
+		this.model.NOMBRE_COMPLETO = row.NOMBRE_COMPLETO ?? '';
+		this.model.NUMERO_ID = row.NUMERO_ID ?? '';
+		this.model.GERENCIA_ACTUAL = row.GERENCIA_ACTUAL ?? '';
+		this.model.CORR_UNIDAD_ACTUAL = corrUnidad;
+		this.model.NOMBRE_UNIDAD_ACTUAL = row.NOMBRE_UNIDAD_ACTUAL ?? '';
+		this.model.CORR_PUESTO_ACTUAL = corrPuesto;
+		this.model.NOMBRE_PUESTO_ACTUAL = row.NOMBRE_PUESTO_ACTUAL ?? '';
+		this.model.SALARIO_ACTUAL = row.SALARIO_ACTUAL ?? 0;
+		this.model.CORR_TIPO_MODALIDAD_ACTUAL = corrModalidad;
+		this.model.NOMBRE_MODALIDAD_ACTUAL = row.NOMBRE_MODALIDAD_ACTUAL ?? '';
+		this.model.HORARIO_ACTUAL = row.HORARIO_ACTUAL ?? '';
+
+		/* Sembrar lookups para que el displayExpr pinte de inmediato (sin esperar el GET). */
+		this.asegurarUnidadEnLookup(corrUnidad, row.NOMBRE_UNIDAD_ACTUAL);
+		this.asegurarPuestoActualEnLookup(corrUnidad, corrPuesto, row.NOMBRE_PUESTO_ACTUAL);
+
+		if (corrUnidad > 0) {
+			this.getCORR_PUESTO_ACTUAL(corrUnidad, corrPuesto, row.NOMBRE_PUESTO_ACTUAL);
+		} else {
+			this.mCORR_PUESTO_ACTUAL = [];
+		}
+
+		setTimeout(() => {
+			if (this.dataForm?.instance) {
+				this.dataForm.instance.option('formData', { ...this.model });
+			}
+		}, 0);
+
+		return this.model.CORR_EMPLEADO;
+	};
+
 	selectedLookUpCORR_UNIDAD_ACTUAL = (vRow: any): any => {
-		const corr = vRow[0].CORR_UNIDAD;
+		const row = vRow?.[0];
+		const corr = Number(row?.CORR_UNIDAD) || 0;
+		this.model.CORR_UNIDAD_ACTUAL = corr;
+		this.model.NOMBRE_UNIDAD_ACTUAL = row?.DISPLAY_UNIDAD || this.formatUnidadDisplay(row);
+		this.model.GERENCIA_ACTUAL = row?.GERENCIA_DISPLAY ?? '';
 		this.model.CORR_PUESTO_ACTUAL = 0;
+		this.model.NOMBRE_PUESTO_ACTUAL = '';
 		this.mCORR_PUESTO_ACTUAL = [];
 		setTimeout(() => this.getCORR_PUESTO_ACTUAL(corr), 0);
 		return corr;
 	};
 
 	selectedLookUpCORR_UNIDAD_PROPUESTA = (vRow: any): any => {
-		const corr = vRow[0].CORR_UNIDAD;
+		const row = vRow?.[0];
+		const corr = Number(row?.CORR_UNIDAD) || 0;
+		this.model.CORR_UNIDAD_PROPUESTA = corr;
+		this.model.NOMBRE_UNIDAD_PROPUESTA = row?.DISPLAY_UNIDAD || this.formatUnidadDisplay(row);
+		this.model.GERENCIA_PROPUESTA = row?.GERENCIA_DISPLAY ?? '';
 		this.model.CORR_PUESTO_PROPUESTO = 0;
+		this.model.NOMBRE_PUESTO_PROPUESTO = '';
 		this.mCORR_PUESTO_PROPUESTO = [];
 		setTimeout(() => this.getCORR_PUESTO_PROPUESTO(corr), 0);
 		return corr;
 	};
 
-	selectedLookUpCORR_PUESTO_ACTUAL = (vRow: any): any => vRow[0].CORR_PUESTO;
-	selectedLookUpCORR_PUESTO_PROPUESTO = (vRow: any): any => vRow[0].CORR_PUESTO;
-	selectedLookUpCORR_TIPO_MODALIDAD = (vRow: any): any => vRow[0].CORR_TIPO_MODALIDAD;
+	selectedLookUpCORR_PUESTO_ACTUAL = (vRow: any): any => {
+		const row = vRow?.[0];
+		this.model.NOMBRE_PUESTO_ACTUAL = row?.NOMBRE_PUESTO ?? '';
+		return Number(row?.CORR_PUESTO) || 0;
+	};
+
+	selectedLookUpCORR_PUESTO_PROPUESTO = (vRow: any): any => {
+		const row = vRow?.[0];
+		this.model.NOMBRE_PUESTO_PROPUESTO = row?.NOMBRE_PUESTO ?? '';
+		return Number(row?.CORR_PUESTO) || 0;
+	};
+
+	selectedLookUpCORR_TIPO_MODALIDAD_ACTUAL = (vRow: any): any => {
+		const row = vRow?.[0];
+		this.model.NOMBRE_MODALIDAD_ACTUAL = row?.MODALIDAD_NOMBRE ?? '';
+		return Number(row?.CORR_TIPO_MODALIDAD) || 0;
+	};
+
+	selectedLookUpCORR_TIPO_MODALIDAD_PROPUESTA = (vRow: any): any => {
+		const row = vRow?.[0];
+		this.model.NOMBRE_MODALIDAD_PROPUESTA = row?.MODALIDAD_NOMBRE ?? '';
+		return Number(row?.CORR_TIPO_MODALIDAD) || 0;
+	};
+
+	private formatUnidadDisplay(row: any): string {
+		if (!row) {
+			return '';
+		}
+		const codigo = `${row.CODIGO_UNIDAD || ''}`.trim();
+		const nombre = `${row.NOMBRE_UNIDAD || ''}`.trim();
+		if (codigo && nombre) {
+			return `${codigo} - ${nombre}`;
+		}
+		return nombre || codigo;
+	}
+
+	/** Si la unidad del empleado no está en el combo del usuario, la inserta para poder mostrarla. */
+	private asegurarUnidadEnLookup(corrUnidad: number, display?: string): void {
+		if (corrUnidad <= 0) {
+			return;
+		}
+		const exists = this.mCORR_UNIDAD?.some((u) => Number(u.CORR_UNIDAD) === corrUnidad);
+		if (exists) {
+			return;
+		}
+		const texto = `${display || ''}`.trim();
+		const partes = texto.includes(' - ') ? texto.split(' - ') : [texto];
+		this.mCORR_UNIDAD = [
+			...(this.mCORR_UNIDAD || []),
+			{
+				CORR_UNIDAD: corrUnidad,
+				CODIGO_UNIDAD: partes.length > 1 ? partes[0] : '',
+				NOMBRE_UNIDAD: partes.length > 1 ? partes.slice(1).join(' - ') : texto,
+				DISPLAY_UNIDAD: texto,
+				GERENCIA_DISPLAY: this.model.GERENCIA_ACTUAL || '',
+			},
+		];
+	}
+
+	/** Siembra el cargo actual para que el lookup muestre el texto de inmediato. */
+	private asegurarPuestoActualEnLookup(
+		corrUnidad: number,
+		corrPuesto: number,
+		nombrePuesto?: string
+	): void {
+		if (corrPuesto <= 0) {
+			this.mCORR_PUESTO_ACTUAL = [];
+			return;
+		}
+		this.mCORR_PUESTO_ACTUAL = [
+			{
+				CORR_UNIDAD: corrUnidad,
+				CORR_PUESTO: corrPuesto,
+				NOMBRE_PUESTO: nombrePuesto || '',
+			},
+		];
+	}
 	//#endregion
 }

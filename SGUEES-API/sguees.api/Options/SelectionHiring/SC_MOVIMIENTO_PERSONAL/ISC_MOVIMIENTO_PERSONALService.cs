@@ -17,5 +17,6 @@ namespace SGUEES.Services
 		Task<CResult> GetUnidadesUsuarioAsync(SC_MOVIMIENTO_PERSONALParam xWhere);
 		Task<CResult> GetPuestosByUnidadAsync(SC_MOVIMIENTO_PERSONALParam xWhere);
 		Task<CResult> GetModalidadesAsync(SC_MOVIMIENTO_PERSONALParam xWhere);
+		Task<CResult> GetEmpleadosAsync(SC_MOVIMIENTO_PERSONALParam xWhere);
 	}
 }

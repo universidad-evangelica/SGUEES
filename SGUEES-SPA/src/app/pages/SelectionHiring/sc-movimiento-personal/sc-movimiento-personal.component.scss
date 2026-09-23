@@ -35,6 +35,45 @@
 	color: #a4262c;
 }
 
+/* Título Encabezado + Fecha efectiva en la misma línea (dentro del form). */
+.movimiento-encabezado-titulo {
+	display: flex;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 16px;
+	width: 100%;
+	padding: 0 0 8px;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+	margin-bottom: 4px;
+}
+
+.movimiento-encabezado-caption {
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 1.2;
+}
+
+.movimiento-fecha-efectiva-field {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 4px;
+}
+
+.movimiento-fecha-efectiva-label {
+	font-size: 12px;
+	font-weight: 600;
+	opacity: 0.9;
+}
+
+:host ::ng-deep .movimiento-encabezado-titulo-item {
+	padding-bottom: 0 !important;
+}
+
+:host ::ng-deep .movimiento-encabezado-titulo-item .dx-field-item-label {
+	display: none;
+}
+
 .movimiento-tab-panel {
 	margin-top: 8px;
 }

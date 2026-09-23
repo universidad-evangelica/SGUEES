@@ -12,6 +12,8 @@ export interface ScMovimientoPersonal {
 	NOMBRE_ESTADO_MOVIMIENTO?: string;
 	NOMBRE_TIPO_MOVIMIENTO?: string;
 	NOMBRE_ORIGEN_MOVIMIENTO?: string;
+	/** Referencia empleado (DIRECTO); sin FK. */
+	CORR_EMPLEADO?: number | null;
 	NOMBRE_COMPLETO: string;
 	NUMERO_ID: string;
 	FECHA_INGRESO_PROPUESTA?: Date | null;

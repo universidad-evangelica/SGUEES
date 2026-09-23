@@ -7,5 +7,10 @@ namespace SGUEES.Models
 		public int CORR_UNIDAD { get; set; }
 		public string CODIGO_UNIDAD { get; set; }
 		public string NOMBRE_UNIDAD { get; set; }
+		/// <summary>CODIGO - NOMBRE (texto snapshot / display).</summary>
+		public string DISPLAY_UNIDAD { get; set; }
+		public int? CORR_UNIDAD_PADRE { get; set; }
+		/// <summary>CODIGO - NOMBRE del padre (Gerencia / Vicerrectoría / Facultad).</summary>
+		public string GERENCIA_DISPLAY { get; set; }
 	}
 }

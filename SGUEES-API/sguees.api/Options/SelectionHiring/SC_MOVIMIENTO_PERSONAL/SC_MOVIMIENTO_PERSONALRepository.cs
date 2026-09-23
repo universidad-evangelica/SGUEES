@@ -319,6 +319,12 @@ namespace SGUEES.Repositories
 			{
 				var p = new List<CParameter>
 				{
+					new()
+					{
+						ParameterName = "FECHA_EFECTIVA",
+						Value = ToSqlDate(Data.FECHA_EFECTIVA),
+						DbType = DbType.Date,
+					},
 					new() { ParameterName = "CONFIRMADO", Value = true, DbType = DbType.Boolean },
 					new()
 					{
@@ -441,6 +447,199 @@ ORDER BY FB.CORR_BITACORA", xWhere);
 					.ToList();
 				reader.Close();
 
+				/* Enriquece DISPLAY_UNIDAD + GERENCIA_DISPLAY desde organigrama. */
+				await EnrichUnidadesDisplayAsync(response, xWhere);
+
+				objResultado.Data = response;
+				objResultado.Result = true;
+				objResultado.RowsAffected = response.Count;
+				objResultado.ErrorCode = 0;
+			}
+			catch (Exception e)
+			{
+				SetError(objResultado, e);
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
+		}
+
+		private async Task EnrichUnidadesDisplayAsync(
+			List<SC_MOVIMIENTO_LOOKUP_UNIDADView> unidades,
+			List<CParameter> xWhere)
+		{
+			if (unidades == null || unidades.Count == 0)
+			{
+				return;
+			}
+
+			var corrEmpresa = xWhere?
+				.FirstOrDefault(p => string.Equals(p.ParameterName, "CORR_EMPRESA", StringComparison.OrdinalIgnoreCase))
+				?.Value;
+
+			var pOrg = new List<CParameter>
+			{
+				new()
+				{
+					ParameterName = "CORR_EMPRESA",
+					Value = corrEmpresa ?? 0,
+					DbType = DbType.Int32,
+				},
+			};
+
+			var readerOrg = await objData.GetDataReader(CommandType.Text, @"
+SELECT
+	CORR_UNIDAD,
+	CODIGO_UNIDAD,
+	NOMBRE_UNIDAD,
+	CORR_UNIDAD_PADRE
+FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES
+WHERE CORR_EMPRESA = @CORR_EMPRESA", pOrg);
+
+			var orgRows = new List<(int Corr, string Codigo, string Nombre, int? Padre)>();
+			while (readerOrg.Read())
+			{
+				orgRows.Add((
+					readerOrg.GetInt32(0),
+					readerOrg.IsDBNull(1) ? string.Empty : readerOrg.GetString(1),
+					readerOrg.IsDBNull(2) ? string.Empty : readerOrg.GetString(2),
+					readerOrg.IsDBNull(3) ? (int?)null : readerOrg.GetInt32(3)));
+			}
+			readerOrg.Close();
+
+			var byCorr = orgRows.ToDictionary(x => x.Corr);
+
+			foreach (var u in unidades)
+			{
+				if (byCorr.TryGetValue(u.CORR_UNIDAD, out var row))
+				{
+					u.CODIGO_UNIDAD = string.IsNullOrWhiteSpace(u.CODIGO_UNIDAD) ? row.Codigo : u.CODIGO_UNIDAD;
+					u.NOMBRE_UNIDAD = string.IsNullOrWhiteSpace(u.NOMBRE_UNIDAD) ? row.Nombre : u.NOMBRE_UNIDAD;
+					u.CORR_UNIDAD_PADRE = row.Padre;
+				}
+
+				var codigo = (u.CODIGO_UNIDAD ?? string.Empty).Trim();
+				var nombre = (u.NOMBRE_UNIDAD ?? string.Empty).Trim();
+				u.DISPLAY_UNIDAD = string.IsNullOrWhiteSpace(codigo)
+					? nombre
+					: $"{codigo} - {nombre}";
+
+				if (u.CORR_UNIDAD_PADRE.HasValue
+					&& u.CORR_UNIDAD_PADRE.Value > 0
+					&& byCorr.TryGetValue(u.CORR_UNIDAD_PADRE.Value, out var padre))
+				{
+					var pc = (padre.Codigo ?? string.Empty).Trim();
+					var pn = (padre.Nombre ?? string.Empty).Trim();
+					u.GERENCIA_DISPLAY = string.IsNullOrWhiteSpace(pc) ? pn : $"{pc} - {pn}";
+				}
+				else
+				{
+					u.GERENCIA_DISPLAY = string.Empty;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Empleados activos con puesto vigente, gerencia (padre) y documento
+		/// (DUI nacional / CDR extranjero / pasaporte / vacío).
+		/// </summary>
+		public async Task<CResult> GetEmpleadosAsync(List<CParameter> xWhere)
+		{
+			var objResultado = new CResult();
+
+			try
+			{
+				var reader = await objData.GetDataReader(CommandType.Text, @"
+SELECT
+	E.CORR_EMPRESA,
+	E.CORR_EMPLEADO,
+	CAST(ISNULL(E.CODIGO_EMPLEADO, N'') AS VARCHAR(10)) AS CODIGO_EMPLEADO,
+	CAST(ISNULL(PN.NOMBRE_COMPLETO, N'') AS NVARCHAR(250)) AS NOMBRE_COMPLETO,
+	CAST(ISNULL(PN.ES_EXTRANJERO, 0) AS BIT) AS ES_EXTRANJERO,
+	CAST(ISNULL(DOC.VALOR_DOCUMENTO, N'') AS NVARCHAR(50)) AS NUMERO_ID,
+	CAST(ISNULL(PADRE.DISPLAY_UNIDAD, N'') AS NVARCHAR(200)) AS GERENCIA_ACTUAL,
+	EP.CORR_UNIDAD AS CORR_UNIDAD_ACTUAL,
+	CAST(ISNULL(UNI.DISPLAY_UNIDAD, N'') AS NVARCHAR(150)) AS NOMBRE_UNIDAD_ACTUAL,
+	EP.CORR_PUESTO AS CORR_PUESTO_ACTUAL,
+	CAST(ISNULL(PP.NOMBRE_PUESTO, N'') AS NVARCHAR(200)) AS NOMBRE_PUESTO_ACTUAL,
+	EP.SUELDO AS SALARIO_ACTUAL,
+	EP.CORR_TIPO_MODALIDAD AS CORR_TIPO_MODALIDAD_ACTUAL,
+	CAST(ISNULL(TM.MODALIDAD_NOMBRE, N'') AS NVARCHAR(100)) AS NOMBRE_MODALIDAD_ACTUAL,
+	CAST(ISNULL(EP.HORARIO_LABORAL, N'') AS NVARCHAR(250)) AS HORARIO_ACTUAL
+FROM dbo.GEN_EMPLEADO AS E
+INNER JOIN dbo.GEN_PERSONA_NATURAL AS PN
+	ON PN.CORR_PERSONA = E.CORR_PERSONA
+OUTER APPLY
+(
+	SELECT TOP (1)
+		EP0.CORR_UNIDAD,
+		EP0.CORR_PUESTO,
+		EP0.SUELDO,
+		EP0.HORARIO_LABORAL,
+		EP0.CORR_TIPO_MODALIDAD
+	FROM dbo.GEN_EMPLEADO_PUESTO AS EP0
+	WHERE EP0.CORR_EMPRESA = E.CORR_EMPRESA
+	  AND EP0.CORR_EMPLEADO = E.CORR_EMPLEADO
+	ORDER BY
+		EP0.FECHA_INGRESO DESC,
+		EP0.FECHA_CREA DESC,
+		EP0.CORR_PUESTO DESC
+) AS EP
+OUTER APPLY
+(
+	SELECT TOP (1) X.VALOR_DOCUMENTO
+	FROM
+	(
+		SELECT
+			D.VALOR_DOCUMENTO,
+			CASE
+				WHEN ISNULL(PN.ES_EXTRANJERO, 0) = 0 AND D.CORR_TIPO_DOCUMENTO_IDENTIDAD = 1 THEN 1
+				WHEN ISNULL(PN.ES_EXTRANJERO, 0) = 1 AND D.CORR_TIPO_DOCUMENTO_IDENTIDAD = 8 THEN 1
+				WHEN D.CORR_TIPO_DOCUMENTO_IDENTIDAD = 9 THEN 2
+				ELSE 9
+			END AS ORD_DOC
+		FROM dbo.GEN_PERSONA_TIPO_DOCUMENTO_IDENTIDAD AS D
+		WHERE D.CORR_EMPRESA = E.CORR_EMPRESA
+		  AND D.CORR_PERSONA = E.CORR_PERSONA
+		  AND NULLIF(LTRIM(RTRIM(D.VALOR_DOCUMENTO)), N'') IS NOT NULL
+	) AS X
+	ORDER BY X.ORD_DOC, X.VALOR_DOCUMENTO
+) AS DOC
+OUTER APPLY
+(
+	SELECT
+		U.CORR_UNIDAD_PADRE,
+		CAST(U.CODIGO_UNIDAD + N' - ' + U.NOMBRE_UNIDAD AS NVARCHAR(150)) AS DISPLAY_UNIDAD
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS U
+	WHERE U.CORR_EMPRESA = E.CORR_EMPRESA
+	  AND U.CORR_UNIDAD = EP.CORR_UNIDAD
+) AS UNI
+OUTER APPLY
+(
+	SELECT
+		CAST(P.CODIGO_UNIDAD + N' - ' + P.NOMBRE_UNIDAD AS NVARCHAR(200)) AS DISPLAY_UNIDAD
+	FROM dbo.SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES AS P
+	WHERE P.CORR_EMPRESA = E.CORR_EMPRESA
+	  AND P.CORR_UNIDAD = UNI.CORR_UNIDAD_PADRE
+) AS PADRE
+LEFT JOIN dbo.PLA_PUESTO AS PP
+	ON PP.CORR_EMPRESA = E.CORR_EMPRESA
+   AND PP.CORR_PUESTO = EP.CORR_PUESTO
+LEFT JOIN dbo.SC_TIPO_MODALIDAD AS TM
+	ON TM.CORR_EMPRESA = E.CORR_EMPRESA
+   AND TM.CORR_TIPO_MODALIDAD = EP.CORR_TIPO_MODALIDAD
+WHERE E.CORR_EMPRESA = @CORR_EMPRESA
+  AND ISNULL(E.ACTIVO_EMPLEADO, 0) = 1
+ORDER BY PN.NOMBRE_COMPLETO", xWhere);
+
+				var response = new List<SC_MOVIMIENTO_LOOKUP_EMPLEADOView>()
+					.FromDataReader(reader)
+					.ToList();
+				reader.Close();
+
 				objResultado.Data = response;
 				objResultado.Result = true;
 				objResultado.RowsAffected = response.Count;
@@ -555,21 +754,28 @@ ORDER BY MODALIDAD_NOMBRE", xWhere);
 			p.Add(new CParameter { ParameterName = "ORIGEN_MOVIMIENTO", Value = Data.ORIGEN_MOVIMIENTO ?? "DIRECTO", DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "TIPO_MOVIMIENTO", Value = Data.TIPO_MOVIMIENTO ?? "PERMANENTE", DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "ESTADO_MOVIMIENTO", Value = Data.ESTADO_MOVIMIENTO ?? "DI", DbType = DbType.String });
+			p.Add(new CParameter { ParameterName = "CORR_EMPLEADO", Value = ToDbInt(Data.CORR_EMPLEADO), DbType = DbType.Int32 });
 			p.Add(new CParameter { ParameterName = "NOMBRE_COMPLETO", Value = Data.NOMBRE_COMPLETO ?? string.Empty, DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "NUMERO_ID", Value = ToDbString(Data.NUMERO_ID), DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "FECHA_INGRESO_PROPUESTA", Value = ToSqlDate(Data.FECHA_INGRESO_PROPUESTA), DbType = DbType.Date });
 			p.Add(new CParameter { ParameterName = "FECHA_FINALIZACION", Value = ToSqlDate(Data.FECHA_FINALIZACION), DbType = DbType.Date });
 			p.Add(new CParameter { ParameterName = "GERENCIA_ACTUAL", Value = ToDbString(Data.GERENCIA_ACTUAL), DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "CORR_UNIDAD_ACTUAL", Value = ToDbInt(Data.CORR_UNIDAD_ACTUAL), DbType = DbType.Int32 });
+			p.Add(new CParameter { ParameterName = "NOMBRE_UNIDAD_ACTUAL", Value = ToDbString(Data.NOMBRE_UNIDAD_ACTUAL), DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "CORR_PUESTO_ACTUAL", Value = ToDbInt(Data.CORR_PUESTO_ACTUAL), DbType = DbType.Int32 });
+			p.Add(new CParameter { ParameterName = "NOMBRE_PUESTO_ACTUAL", Value = ToDbString(Data.NOMBRE_PUESTO_ACTUAL), DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "SALARIO_ACTUAL", Value = ToDbDecimal(Data.SALARIO_ACTUAL), DbType = DbType.Decimal });
 			p.Add(new CParameter { ParameterName = "CORR_TIPO_MODALIDAD_ACTUAL", Value = ToDbInt(Data.CORR_TIPO_MODALIDAD_ACTUAL), DbType = DbType.Int32 });
+			p.Add(new CParameter { ParameterName = "NOMBRE_MODALIDAD_ACTUAL", Value = ToDbString(Data.NOMBRE_MODALIDAD_ACTUAL), DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "HORARIO_ACTUAL", Value = ToDbString(Data.HORARIO_ACTUAL), DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "GERENCIA_PROPUESTA", Value = ToDbString(Data.GERENCIA_PROPUESTA), DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "CORR_UNIDAD_PROPUESTA", Value = ToDbInt(Data.CORR_UNIDAD_PROPUESTA), DbType = DbType.Int32 });
+			p.Add(new CParameter { ParameterName = "NOMBRE_UNIDAD_PROPUESTA", Value = ToDbString(Data.NOMBRE_UNIDAD_PROPUESTA), DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "CORR_PUESTO_PROPUESTO", Value = ToDbInt(Data.CORR_PUESTO_PROPUESTO), DbType = DbType.Int32 });
+			p.Add(new CParameter { ParameterName = "NOMBRE_PUESTO_PROPUESTO", Value = ToDbString(Data.NOMBRE_PUESTO_PROPUESTO), DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "SALARIO_PROPUESTO", Value = ToDbDecimal(Data.SALARIO_PROPUESTO), DbType = DbType.Decimal });
 			p.Add(new CParameter { ParameterName = "CORR_TIPO_MODALIDAD_PROPUESTA", Value = ToDbInt(Data.CORR_TIPO_MODALIDAD_PROPUESTA), DbType = DbType.Int32 });
+			p.Add(new CParameter { ParameterName = "NOMBRE_MODALIDAD_PROPUESTA", Value = ToDbString(Data.NOMBRE_MODALIDAD_PROPUESTA), DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "HORARIO_PROPUESTO", Value = ToDbString(Data.HORARIO_PROPUESTO), DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "JUSTIFICACION", Value = ToDbString(Data.JUSTIFICACION), DbType = DbType.String });
 			p.Add(new CParameter { ParameterName = "FECHA_EFECTIVA", Value = ToSqlDate(Data.FECHA_EFECTIVA), DbType = DbType.Date });

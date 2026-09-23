@@ -16,6 +16,7 @@ namespace SGUEES.Models
 		public string NOMBRE_ESTADO_MOVIMIENTO { get; set; }
 		public string NOMBRE_TIPO_MOVIMIENTO { get; set; }
 		public string NOMBRE_ORIGEN_MOVIMIENTO { get; set; }
+		public int? CORR_EMPLEADO { get; set; }
 		public string NOMBRE_COMPLETO { get; set; }
 		public string NUMERO_ID { get; set; }
 		public DateTime? FECHA_INGRESO_PROPUESTA { get; set; }

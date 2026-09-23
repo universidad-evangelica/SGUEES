@@ -132,7 +132,8 @@ namespace SGUEES.Services
 		}
 
 		/// <summary>
-		/// Confirmación TH: marca CONFIRMADO=1 y guarda USUARIO_CONFIRMA (LOGIN_SISTEMA) + FECHA_CONFIRMA.
+		/// Confirmación TH: marca CONFIRMADO=1, guarda FECHA_EFECTIVA,
+		/// USUARIO_CONFIRMA (LOGIN_SISTEMA) + FECHA_CONFIRMA.
 		/// REQUISICION: disponible desde que existe el movimiento.
 		/// DIRECTO: solo si ESTADO_MOVIMIENTO = AP.
 		/// </summary>
@@ -154,6 +155,11 @@ namespace SGUEES.Services
 			if (Data.CORR_MOVIMIENTO_PERSONAL <= 0)
 			{
 				return ValidationError("Debe indicar el movimiento de personal.");
+			}
+
+			if (!Data.FECHA_EFECTIVA.HasValue || Data.FECHA_EFECTIVA.Value.Year < 1753)
+			{
+				return ValidationError("Debe indicar la fecha efectiva para confirmar el movimiento.");
 			}
 
 			if (string.IsNullOrWhiteSpace(vLOGIN_SISTEMA))
@@ -196,6 +202,7 @@ namespace SGUEES.Services
 			{
 				CORR_EMPRESA = Data.CORR_EMPRESA,
 				CORR_MOVIMIENTO_PERSONAL = Data.CORR_MOVIMIENTO_PERSONAL,
+				FECHA_EFECTIVA = Data.FECHA_EFECTIVA.Value.Date,
 				CONFIRMADO = true,
 				USUARIO_CONFIRMA = vLOGIN_SISTEMA.Trim(),
 				FECHA_CONFIRMA = ahora,
@@ -261,6 +268,16 @@ namespace SGUEES.Services
 			return await _repo.GetModalidadesAsync(p);
 		}
 
+		public async Task<CResult> GetEmpleadosAsync(SC_MOVIMIENTO_PERSONALParam xWhere)
+		{
+			var p = new List<CParameter>
+			{
+				new() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+			};
+
+			return await _repo.GetEmpleadosAsync(p);
+		}
+
 		/// <summary>Defaults al crear: origen DIRECTO, estado DI.</summary>
 		private static void NormalizarAlta(SC_MOVIMIENTO_PERSONALTable Data)
 		{
@@ -276,10 +293,6 @@ namespace SGUEES.Services
 			if (Data.ORIGEN_MOVIMIENTO == "REQUISICION")
 			{
 				Data.ESTADO_MOVIMIENTO = "AP";
-				if (!Data.FECHA_EFECTIVA.HasValue)
-				{
-					Data.FECHA_EFECTIVA = System.DateTime.Today;
-				}
 			}
 			else
 			{
@@ -289,6 +302,7 @@ namespace SGUEES.Services
 			Data.CONFIRMADO = false;
 			Data.USUARIO_CONFIRMA = null;
 			Data.FECHA_CONFIRMA = null;
+			/* FECHA_EFECTIVA se asigna al Confirmar (TH), no en el alta. */
 
 			if (Data.FECHA_ELABORACION.Year < 1753)
 			{
@@ -306,6 +320,12 @@ namespace SGUEES.Services
 			if (string.IsNullOrWhiteSpace(Data.NOMBRE_COMPLETO))
 			{
 				return ValidationError("Debe indicar el nombre completo.");
+			}
+
+			var origen = (Data.ORIGEN_MOVIMIENTO ?? "DIRECTO").Trim().ToUpperInvariant();
+			if (origen == "DIRECTO" && (!Data.CORR_EMPLEADO.HasValue || Data.CORR_EMPLEADO.Value <= 0))
+			{
+				return ValidationError("Debe seleccionar el empleado del movimiento.");
 			}
 
 			var tipo = (Data.TIPO_MOVIMIENTO ?? string.Empty).Trim().ToUpperInvariant();

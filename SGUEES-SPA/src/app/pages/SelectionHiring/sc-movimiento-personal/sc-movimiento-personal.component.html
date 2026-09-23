@@ -36,6 +36,27 @@
 					[colCount]="8"
 					[items]="items"
 				>
+					<!-- Título Encabezado + Fecha efectiva (misma línea). -->
+					<div *dxTemplate="let cellInfo of 'EncabezadoConFechaTemplate'">
+						<div class="movimiento-encabezado-titulo">
+							<span class="movimiento-encabezado-caption">Encabezado</span>
+							<div class="movimiento-fecha-efectiva-field">
+								<label class="movimiento-fecha-efectiva-label">Fecha efectiva</label>
+								<dx-date-box
+									[(value)]="model.FECHA_EFECTIVA"
+									[disabled]="!puedeEditarFechaEfectiva"
+									[readOnly]="!puedeEditarFechaEfectiva"
+									displayFormat="dd/MM/yyyy"
+									[openOnFieldClick]="puedeEditarFechaEfectiva"
+									[showClearButton]="puedeEditarFechaEfectiva"
+									[width]="180"
+									hint="Fecha en que el movimiento se hace oficial (al confirmar)"
+								>
+								</dx-date-box>
+							</div>
+						</div>
+					</div>
+
 					<!-- Chip de estado (solo lectura; lo mueve el flujo Autoriza). -->
 					<div *dxTemplate="let cellInfo of 'ESTADO_MOVIMIENTOChip'">
 						<span
@@ -47,6 +68,19 @@
 						</span>
 					</div>
 
+					<div *dxTemplate="let cellInfo of 'CORR_EMPLEADOLookup'">
+						<app-data-lookup
+							[model]="mCORR_EMPLEADO"
+							[(value)]="model.CORR_EMPLEADO"
+							[selectedRowKeys]="selectedLookUpCORR_EMPLEADO"
+							[readOnly]="readOnly"
+							[valueExpr]="'CORR_EMPLEADO'"
+							[displayExpr]="'NOMBRE_COMPLETO'"
+							[lookupColumns]="empleadoLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+
 					<div *dxTemplate="let cellInfo of 'CORR_UNIDAD_ACTUALLookup'">
 						<app-data-lookup
 							[model]="mCORR_UNIDAD"
@@ -54,7 +88,7 @@
 							[selectedRowKeys]="selectedLookUpCORR_UNIDAD_ACTUAL"
 							[readOnly]="readOnly"
 							[valueExpr]="'CORR_UNIDAD'"
-							[displayExpr]="'NOMBRE_UNIDAD'"
+							[displayExpr]="'DISPLAY_UNIDAD'"
 							[lookupColumns]="unidadLookupColumns"
 						>
 						</app-data-lookup>
@@ -77,7 +111,7 @@
 						<app-data-lookup
 							[model]="mCORR_TIPO_MODALIDAD"
 							[(value)]="model.CORR_TIPO_MODALIDAD_ACTUAL"
-							[selectedRowKeys]="selectedLookUpCORR_TIPO_MODALIDAD"
+							[selectedRowKeys]="selectedLookUpCORR_TIPO_MODALIDAD_ACTUAL"
 							[readOnly]="readOnly"
 							[valueExpr]="'CORR_TIPO_MODALIDAD'"
 							[displayExpr]="'MODALIDAD_NOMBRE'"
@@ -93,7 +127,7 @@
 							[selectedRowKeys]="selectedLookUpCORR_UNIDAD_PROPUESTA"
 							[readOnly]="readOnly"
 							[valueExpr]="'CORR_UNIDAD'"
-							[displayExpr]="'NOMBRE_UNIDAD'"
+							[displayExpr]="'DISPLAY_UNIDAD'"
 							[lookupColumns]="unidadLookupColumns"
 						>
 						</app-data-lookup>
@@ -116,7 +150,7 @@
 						<app-data-lookup
 							[model]="mCORR_TIPO_MODALIDAD"
 							[(value)]="model.CORR_TIPO_MODALIDAD_PROPUESTA"
-							[selectedRowKeys]="selectedLookUpCORR_TIPO_MODALIDAD"
+							[selectedRowKeys]="selectedLookUpCORR_TIPO_MODALIDAD_PROPUESTA"
 							[readOnly]="readOnly"
 							[valueExpr]="'CORR_TIPO_MODALIDAD'"
 							[displayExpr]="'MODALIDAD_NOMBRE'"

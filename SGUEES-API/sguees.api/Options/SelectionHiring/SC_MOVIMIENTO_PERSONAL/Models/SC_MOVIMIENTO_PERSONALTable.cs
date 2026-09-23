@@ -29,6 +29,9 @@ namespace SGUEES.Models
 		[MaxLength(250)]
 		public string NOMBRE_COMPLETO { get; set; }
 
+		/// <summary>Referencia a GEN_EMPLEADO (sin FK).</summary>
+		public int? CORR_EMPLEADO { get; set; }
+
 		[MaxLength(50)]
 		public string NUMERO_ID { get; set; }
 
@@ -38,9 +41,20 @@ namespace SGUEES.Models
 		[MaxLength(200)]
 		public string GERENCIA_ACTUAL { get; set; }
 		public int? CORR_UNIDAD_ACTUAL { get; set; }
+
+		[MaxLength(150)]
+		public string NOMBRE_UNIDAD_ACTUAL { get; set; }
+
 		public int? CORR_PUESTO_ACTUAL { get; set; }
+
+		[MaxLength(200)]
+		public string NOMBRE_PUESTO_ACTUAL { get; set; }
+
 		public decimal? SALARIO_ACTUAL { get; set; }
 		public int? CORR_TIPO_MODALIDAD_ACTUAL { get; set; }
+
+		[MaxLength(100)]
+		public string NOMBRE_MODALIDAD_ACTUAL { get; set; }
 
 		[MaxLength(250)]
 		public string HORARIO_ACTUAL { get; set; }
@@ -48,9 +62,20 @@ namespace SGUEES.Models
 		[MaxLength(200)]
 		public string GERENCIA_PROPUESTA { get; set; }
 		public int? CORR_UNIDAD_PROPUESTA { get; set; }
+
+		[MaxLength(150)]
+		public string NOMBRE_UNIDAD_PROPUESTA { get; set; }
+
 		public int? CORR_PUESTO_PROPUESTO { get; set; }
+
+		[MaxLength(200)]
+		public string NOMBRE_PUESTO_PROPUESTO { get; set; }
+
 		public decimal? SALARIO_PROPUESTO { get; set; }
 		public int? CORR_TIPO_MODALIDAD_PROPUESTA { get; set; }
+
+		[MaxLength(100)]
+		public string NOMBRE_MODALIDAD_PROPUESTA { get; set; }
 
 		[MaxLength(250)]
 		public string HORARIO_PROPUESTO { get; set; }

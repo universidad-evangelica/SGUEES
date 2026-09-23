@@ -7,5 +7,8 @@ namespace SGUEES.Models
 	{
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_MOVIMIENTO_PERSONAL { get; set; }
+
+		/// <summary>Fecha en que el movimiento se hace oficial.</summary>
+		public System.DateTime? FECHA_EFECTIVA { get; set; }
 	}
 }

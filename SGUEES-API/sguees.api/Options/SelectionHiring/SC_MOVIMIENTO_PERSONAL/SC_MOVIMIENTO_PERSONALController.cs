@@ -154,6 +154,16 @@ namespace SGUEES.Controllers
 			return await _service.GetModalidadesAsync(Data);
 		}
 
+		/// <summary>Lookup empleados activos (getLookUp → GetCORR_EMPLEADO_SC_MOVIMIENTO_PERSONAL).</summary>
+		[HttpGet("GetCORR_EMPLEADO_SC_MOVIMIENTO_PERSONAL")]
+		[Authorize(Policy = "/sc-movimiento-personal|R")]
+		public async Task<CResult> GetCORR_EMPLEADO_SC_MOVIMIENTO_PERSONAL(
+			[FromQuery] SC_MOVIMIENTO_PERSONALParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetEmpleadosAsync(Data);
+		}
+
 		private int GetCorrEmpresa()
 		{
 			var claim = User.Claims.FirstOrDefault(e => e.Type == "CORR_EMPRESA");

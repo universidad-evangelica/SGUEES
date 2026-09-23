@@ -31,6 +31,12 @@ export class ScMovimientoPersonalService {
 
 	//#region Validadores
 	esValido(model: ScMovimientoPersonal, msg: Function): boolean {
+		const origen = `${model?.ORIGEN_MOVIMIENTO || 'DIRECTO'}`.trim().toUpperCase();
+		if (origen === 'DIRECTO' && !(Number(model?.CORR_EMPLEADO) > 0)) {
+			msg('Debe seleccionar el empleado.', NotifyType.Warning);
+			return false;
+		}
+
 		if (!model?.NOMBRE_COMPLETO?.trim()) {
 			msg('Debe indicar el nombre completo.', NotifyType.Warning);
 			return false;
@@ -183,7 +189,10 @@ export class ScMovimientoPersonalService {
 		return this.repo.autoriza(model);
 	}
 
-	confirmar(model: { CORR_MOVIMIENTO_PERSONAL: number }): Observable<IResult> {
+	confirmar(model: {
+		CORR_MOVIMIENTO_PERSONAL: number;
+		FECHA_EFECTIVA?: Date | string | null;
+	}): Observable<IResult> {
 		return this.repo.confirmar(model);
 	}
 
@@ -245,14 +254,35 @@ export class ScMovimientoPersonalService {
 		];
 	}
 
-	getItems(): any[] {
+	getItems(origenMovimiento: string = 'DIRECTO'): any[] {
+		const esDirecto = `${origenMovimiento || 'DIRECTO'}`.trim().toUpperCase() === 'DIRECTO';
+		const campoPersona = esDirecto
+			? {
+					dataField: 'CORR_EMPLEADO',
+					label: { text: 'Empleado' },
+					colSpan: 8,
+					template: 'CORR_EMPLEADOLookup',
+			  }
+			: {
+					dataField: 'NOMBRE_COMPLETO',
+					label: { text: 'Nombre completo' },
+					colSpan: 4,
+					editorOptions: { maxLength: 250, showClearButton: true },
+			  };
+
 		return [
 			{
 				itemType: 'group',
-				caption: 'Encabezado',
 				colCount: 8,
 				colSpan: 8,
+				cssClass: 'movimiento-grupo-encabezado',
 				items: [
+					{
+						itemType: 'simple',
+						colSpan: 8,
+						template: 'EncabezadoConFechaTemplate',
+						cssClass: 'movimiento-encabezado-titulo-item',
+					},
 					{
 						dataField: 'CORR_MOVIMIENTO_PERSONAL',
 						label: { text: 'Corr.' },
@@ -299,12 +329,7 @@ export class ScMovimientoPersonalService {
 							searchEnabled: false,
 						},
 					},
-					{
-						dataField: 'NOMBRE_COMPLETO',
-						label: { text: 'Nombre completo' },
-						colSpan: 4,
-						editorOptions: { maxLength: 250, showClearButton: true },
-					},
+					campoPersona,
 					{
 						dataField: 'NUMERO_ID',
 						label: { text: 'Número de ID / documento' },
@@ -321,13 +346,6 @@ export class ScMovimientoPersonalService {
 					{
 						dataField: 'FECHA_FINALIZACION',
 						label: { text: 'Fecha de finalización (eventual)' },
-						colSpan: 2,
-						editorType: 'dxDateBox',
-						editorOptions: { displayFormat: 'dd/MM/yyyy', openOnFieldClick: true, showClearButton: true },
-					},
-					{
-						dataField: 'FECHA_EFECTIVA',
-						label: { text: 'Fecha efectiva' },
 						colSpan: 2,
 						editorType: 'dxDateBox',
 						editorOptions: { displayFormat: 'dd/MM/yyyy', openOnFieldClick: true, showClearButton: true },
