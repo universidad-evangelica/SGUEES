@@ -223,6 +223,45 @@
 									</div>
 								</div>
 							</section>
+
+							<!-- motivo: datos de GEN_EMPLEADO en lectura -->
+							<section class="rd-section">
+								<h4 class="rd-section__title">Datos de empleado</h4>
+								<div class="rd-grid">
+									<div class="rd-field">
+										<span class="rd-label">Código empleado</span>
+										<span class="rd-value">{{ textoLectura(model?.CODIGO_EMPLEADO) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Fecha ingreso</span>
+										<span class="rd-value">{{ fechaLectura(model?.FECHA_INGRESO) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Correo institucional</span>
+										<span class="rd-value">{{ textoLectura(model?.CORREO_INSTITUCIONAL) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Teléfono institucional</span>
+										<span class="rd-value">{{ textoLectura(model?.TELEFONO_INSTITUCIONAL) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Seguro social</span>
+										<span class="rd-value">{{ textoLectura(model?.NOMBRE_SEGURO_SOCIAL) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">AFP</span>
+										<span class="rd-value">{{ textoLectura(model?.NOMBRE_AFP) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Fecha afiliación AFP</span>
+										<span class="rd-value">{{ fechaLectura(model?.FECHA_AFILIACION_AFP) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Estado NIP</span>
+										<span class="rd-value">{{ textoEstadoNip(model?.ESTADO_NIP) }}</span>
+									</div>
+								</div>
+							</section>
 						</div>
 					</dxi-item>
 
@@ -2008,6 +2047,79 @@
 						[readOnly]="false"
 						[showClearButton]="true"
 					></app-data-lookup>
+				</div>
+			</div>
+		</section>
+
+		<!-- motivo: campos de GEN_EMPLEADO en el form Personales -->
+		<section class="ep-section">
+			<h4 class="ep-section__title">Datos de empleado</h4>
+			<div class="ep-grid">
+				<div class="ep-field">
+					<label class="ep-label">Código empleado</label>
+					<dx-text-box stylingMode="outlined" [(value)]="model.CODIGO_EMPLEADO" [maxLength]="50"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Fecha ingreso</label>
+					<dx-date-box
+						stylingMode="outlined"
+						type="date"
+						displayFormat="dd/MM/yyyy"
+						[(value)]="model.FECHA_INGRESO"
+					></dx-date-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Correo institucional</label>
+					<dx-text-box stylingMode="outlined" [(value)]="model.CORREO_INSTITUCIONAL" [maxLength]="100"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Teléfono institucional</label>
+					<dx-text-box stylingMode="outlined" [(value)]="model.TELEFONO_INSTITUCIONAL" [maxLength]="50"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Seguro social</label>
+					<app-data-lookup
+						[model]="mCORR_SEGURO_SOCIAL"
+						[(value)]="model.CORR_SEGURO_SOCIAL"
+						[valueExpr]="'CORR_SEGURO_SOCIAL'"
+						[displayExpr]="'NOMBRE_SEGURO_SOCIAL'"
+						[selectedRowKeys]="selectedLookUpSeguroSocial"
+						[readOnly]="false"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">AFP</label>
+					<app-data-lookup
+						[model]="mCORR_AFP"
+						[(value)]="model.CORR_AFP"
+						[valueExpr]="'CORR_AFP'"
+						[displayExpr]="'NOMBRE_AFP'"
+						[selectedRowKeys]="selectedLookUpAfp"
+						[readOnly]="false"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Fecha afiliación AFP</label>
+					<dx-date-box
+						stylingMode="outlined"
+						type="date"
+						displayFormat="dd/MM/yyyy"
+						[(value)]="model.FECHA_AFILIACION_AFP"
+					></dx-date-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Estado NIP</label>
+					<dx-select-box
+						stylingMode="outlined"
+						[(value)]="model.ESTADO_NIP"
+						[items]="mESTADO_NIP"
+						displayExpr="Value"
+						valueExpr="Key"
+						[searchEnabled]="true"
+						[showClearButton]="true"
+					></dx-select-box>
 				</div>
 			</div>
 		</section>

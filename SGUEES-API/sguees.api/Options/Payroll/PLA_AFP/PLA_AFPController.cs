@@ -39,6 +39,21 @@ namespace SGUEES.Controllers
 			return await _service.GetAsync(Data);
 		}
 
+		// Qué hace: lookup AFP activo para gen-empleado (Personales).
+		[HttpGet("GetCORR_AFP_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public async Task<CResult> GetCORR_AFP_GEN_EMPLEADO([FromQuery] PLA_AFPParam Data)
+		{
+			var resultado = await _service.GetAllAsync(Data ?? new PLA_AFPParam());
+			if (resultado.Result && resultado.Data is System.Collections.IEnumerable rows)
+			{
+				var activos = rows.Cast<PLA_AFPView>().Where(x => x.ACTIVO_AFP == true).ToList();
+				resultado.Data = activos;
+				resultado.RowsAffected = activos.Count;
+			}
+			return resultado;
+		}
+
 		[HttpPost]
 		[Authorize(Policy = "/pla-afp|C")]
 		public async Task<IActionResult> Post(PLA_AFPTable Data)

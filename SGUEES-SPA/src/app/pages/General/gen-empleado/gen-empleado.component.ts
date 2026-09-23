@@ -195,6 +195,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	mESTADO_CIVIL: any[] = [];
 	mSI_NO: any[] = [];
 	mNIVEL_ACADEMICO: any[] = [];
+	mESTADO_NIP: any[] = [];
+	mCORR_AFP: any[] = [];
+	mCORR_SEGURO_SOCIAL: any[] = [];
 
 	/** Código ISO / NOMBRE_CORTO de El Salvador en GEN_PAIS. */
 	private static readonly CODIGO_PAIS_EL_SALVADOR = 'SV';
@@ -300,21 +303,31 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 				CORR_EMPRESA: xModel.CORR_EMPRESA,
 				CORR_EMPLEADO: xModel.CORR_EMPLEADO,
 				CORR_PERSONA: xModel.CORR_PERSONA,
-				CODIGO_EMPLEADO: xModel.CODIGO_EMPLEADO,
-				NOMBRE_EMPLEADO: xModel.NOMBRE_EMPLEADO,
-				DUI: xModel.DUI,
-				NIT: xModel.NIT,
-				FECHA_INGRESO: xModel.FECHA_INGRESO,
+				CODIGO_EMPLEADO: xModel.CODIGO_EMPLEADO ?? '',
+				NOMBRE_EMPLEADO: xModel.NOMBRE_EMPLEADO ?? '',
+				DUI: xModel.DUI ?? '',
+				NIT: xModel.NIT ?? '',
+				CORR_SEGURO_SOCIAL:
+					xModel.CORR_SEGURO_SOCIAL == null || Number(xModel.CORR_SEGURO_SOCIAL) <= 0
+						? null
+						: Number(xModel.CORR_SEGURO_SOCIAL),
+				NOMBRE_SEGURO_SOCIAL: xModel.NOMBRE_SEGURO_SOCIAL ?? '',
+				ESTADO_NIP: xModel.ESTADO_NIP ?? '',
+				CORR_AFP:
+					xModel.CORR_AFP == null || Number(xModel.CORR_AFP) <= 0 ? null : Number(xModel.CORR_AFP),
+				NOMBRE_AFP: xModel.NOMBRE_AFP ?? '',
+				FECHA_AFILIACION_AFP: xModel.FECHA_AFILIACION_AFP ?? null,
+				FECHA_INGRESO: xModel.FECHA_INGRESO ?? null,
 				CORREO_INSTITUCIONAL: xModel.CORREO_INSTITUCIONAL ?? (xModel as any).CORREO_ELECTRONICO ?? '',
 				TELEFONO_INSTITUCIONAL: xModel.TELEFONO_INSTITUCIONAL ?? (xModel as any).TELEFONO_1 ?? '',
-				LOGIN_SISTEMA_WEB: xModel.LOGIN_SISTEMA_WEB,
-				ACTIVO_EMPLEADO: xModel.ACTIVO_EMPLEADO,
-				USUARIO_CREA: xModel.USUARIO_CREA,
-				ESTACION_CREA: xModel.ESTACION_CREA,
-				FECHA_CREA: xModel.FECHA_CREA,
-				USUARIO_ACTU: xModel.USUARIO_ACTU,
-				ESTACION_ACTU: xModel.ESTACION_ACTU,
-				FECHA_ACTU: xModel.FECHA_ACTU,
+				LOGIN_SISTEMA_WEB: xModel.LOGIN_SISTEMA_WEB ?? '',
+				ACTIVO_EMPLEADO: xModel.ACTIVO_EMPLEADO !== false,
+				USUARIO_CREA: xModel.USUARIO_CREA ?? '',
+				ESTACION_CREA: xModel.ESTACION_CREA ?? '',
+				FECHA_CREA: xModel.FECHA_CREA ?? null,
+				USUARIO_ACTU: xModel.USUARIO_ACTU ?? '',
+				ESTACION_ACTU: xModel.ESTACION_ACTU ?? '',
+				FECHA_ACTU: xModel.FECHA_ACTU ?? null,
 			};
 		}
 
@@ -326,6 +339,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			NOMBRE_EMPLEADO: '',
 			DUI: '',
 			NIT: '',
+			CORR_SEGURO_SOCIAL: null,
+			NOMBRE_SEGURO_SOCIAL: '',
+			ESTADO_NIP: '',
+			CORR_AFP: null,
+			NOMBRE_AFP: '',
+			FECHA_AFILIACION_AFP: null,
 			FECHA_INGRESO: null,
 			CORREO_INSTITUCIONAL: '',
 			TELEFONO_INSTITUCIONAL: '',
@@ -953,6 +972,18 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	selectedLookUpDistritoNacimiento(vRow: any): any {
 		return vRow?.[0]?.CORR_DISTRITO;
 	}
+	selectedLookUpAfp(vRow: any): any {
+		return vRow?.[0]?.CORR_AFP;
+	}
+	selectedLookUpSeguroSocial(vRow: any): any {
+		return vRow?.[0]?.CORR_SEGURO_SOCIAL;
+	}
+
+	textoEstadoNip(valor: string | null | undefined): string {
+		const key = `${valor ?? ''}`.trim();
+		const item = (this.mESTADO_NIP ?? []).find((x) => `${x?.Key ?? ''}`.trim() === key);
+		return item?.Value || this.textoLectura(valor);
+	}
 
 	private abrirFormulario(rowData: GenEmpleado, modo: UpdateType): void {
 		this.model = this.fillData(rowData);
@@ -975,12 +1006,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cargarDomicilios();
 	}
 
-	// Qué hace: crea GEN_PERSONA + GEN_EMPRESA_PERSONA + GEN_PERSONA_NATURAL (SP) + GEN_EMPLEADO.
-	// Cómo: POST Iniciar con datos del tab Personales; parchea model/grid y recarga naturales.
+	// Qué hace: crea GEN_PERSONA + GEN_EMPRESA_PERSONA + GEN_PERSONA_NATURAL + GEN_EMPLEADO (SP).
+	// Cómo: POST Iniciar con payload personales+empleado; parchea model/grid y recarga naturales.
 	private iniciarEmpleado(): void {
 		this.loadingVisible = true;
 		this.service
-			.iniciar(this.sanitizarPersonaNaturalPayload(this.modelPersonaNatural))
+			.iniciar(this.construirPayloadPersonalesMtto())
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
@@ -1018,52 +1049,89 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			});
 	}
 
-	// Qué hace: actualiza GEN_PERSONA_NATURAL del empleado (vía SP en GEN_EMPLEADO).
-	// Cómo: Put PersonaNatural; si aún no hay corr (caso raro), Post; parchea nombre en panel.
+	// Qué hace: actualiza personales + GEN_EMPLEADO (vía PRAL_MTTO_GEN_EMPLEADO).
+	// Cómo: Put PersonaNatural con payload MTTO; parchea natural y campos empleado en model.
 	private guardarPersonaNatural(onSuccess?: () => void, opciones?: { silencioso?: boolean }): void {
 		if (!this.tienePersonaBase) {
 			this.notifyFx('Primero debe iniciar el empleado (Guardar).', NotifyType.Warning);
 			return;
 		}
 
-		const payload = this.sanitizarPersonaNaturalPayload({
-			...this.modelPersonaNatural,
-			CORR_PERSONA: Number(this.model.CORR_PERSONA),
-			FOTO_URL: `${this.fotoUrlNueva || this.modelPersonaNatural.FOTO_URL || ''}`.trim(),
-		});
-
-		const esAltaNatural = !(Number(payload.CORR_PERSONA_NATURAL) > 0);
-		const action = esAltaNatural
-			? this.service.createPersonaNatural(payload)
-			: this.service.updatePersonaNatural(payload);
+		const payload = this.construirPayloadPersonalesMtto();
+		if (!(Number(payload.CORR_PERSONA_NATURAL) > 0)) {
+			this.notifyFx('No hay persona natural vinculada. Reinicie el alta del empleado.', NotifyType.Warning);
+			return;
+		}
 
 		this.loadingVisible = true;
-		action.pipe(take(1)).subscribe({
-			next: (response: any) => {
-				this.loadingVisible = false;
-				if (!response?.Result) {
-					this.notifyApiResponse(response);
-					return;
-				}
-				this.modelPersonaNatural = this.fillPersonaNatural(response.Data);
-				if (this.modelPersonaNatural.NOMBRE_COMPLETO) {
-					this.model.NOMBRE_EMPLEADO = this.modelPersonaNatural.NOMBRE_COMPLETO;
+		this.service
+			.updatePersonaNatural(payload)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					this.modelPersonaNatural = this.fillPersonaNatural(response.Data);
+					this.aplicarNombresLookupEmpleadoEnModel();
+					if (this.modelPersonaNatural.NOMBRE_COMPLETO) {
+						this.model.NOMBRE_EMPLEADO = this.modelPersonaNatural.NOMBRE_COMPLETO;
+					}
 					this.aplicarRegistroEnGrid(this.fillData(this.model), false);
-				}
-				if (!opciones?.silencioso) {
-					this.notifyFx(
-						esAltaNatural ? 'Datos personales creados.' : 'Datos personales actualizados.',
-						NotifyType.Success,
-						{ raw: true }
-					);
-				}
-				onSuccess?.();
-			},
-			error: (error: any) => {
-				this.loadingVisible = false;
-				this.notifyApiError(error);
-			},
+					if (!opciones?.silencioso) {
+						this.notifyFx('Datos personales actualizados.', NotifyType.Success, { raw: true });
+					}
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	/**
+	 * Qué hace: arma el body del SP (natural + campos GEN_EMPLEADO del form).
+	 * Cómo: sanitiza CHECK/nulls y une model + modelPersonaNatural.
+	 */
+	private construirPayloadPersonalesMtto(): any {
+		const natural = this.sanitizarPersonaNaturalPayload({
+			...this.modelPersonaNatural,
+			CORR_PERSONA: Number(this.model?.CORR_PERSONA ?? 0),
+			FOTO_URL: `${this.fotoUrlNueva || this.modelPersonaNatural.FOTO_URL || ''}`.trim(),
 		});
+		const vacioANull = (v: any) => (v === '' || v === undefined ? null : v);
+		const corrONull = (v: any) => {
+			const n = Number(v ?? 0);
+			return n > 0 ? n : null;
+		};
+
+		return {
+			...natural,
+			CORR_EMPLEADO: Number(this.model?.CORR_EMPLEADO ?? 0),
+			CODIGO_EMPLEADO: vacioANull(`${this.model?.CODIGO_EMPLEADO ?? ''}`.trim()),
+			CORR_SEGURO_SOCIAL: corrONull(this.model?.CORR_SEGURO_SOCIAL),
+			ESTADO_NIP: vacioANull(`${this.model?.ESTADO_NIP ?? ''}`.trim()),
+			CORR_AFP: corrONull(this.model?.CORR_AFP),
+			FECHA_AFILIACION_AFP: this.model?.FECHA_AFILIACION_AFP ?? null,
+			FECHA_INGRESO: this.model?.FECHA_INGRESO ?? null,
+			CORREO_INSTITUCIONAL: vacioANull(`${this.model?.CORREO_INSTITUCIONAL ?? ''}`.trim()),
+			TELEFONO_INSTITUCIONAL: vacioANull(`${this.model?.TELEFONO_INSTITUCIONAL ?? ''}`.trim()),
+			ACTIVO_EMPLEADO: this.model?.ACTIVO_EMPLEADO !== false,
+		};
+	}
+
+	/** Qué hace: sincroniza nombres de AFP/Seguro desde lookups tras guardar. */
+	private aplicarNombresLookupEmpleadoEnModel(): void {
+		const afp = (this.mCORR_AFP ?? []).find((x) => Number(x?.CORR_AFP) === Number(this.model?.CORR_AFP));
+		const ss = (this.mCORR_SEGURO_SOCIAL ?? []).find(
+			(x) => Number(x?.CORR_SEGURO_SOCIAL) === Number(this.model?.CORR_SEGURO_SOCIAL)
+		);
+		this.model.NOMBRE_AFP = afp?.NOMBRE_AFP ?? this.model.NOMBRE_AFP ?? '';
+		this.model.NOMBRE_SEGURO_SOCIAL =
+			ss?.NOMBRE_SEGURO_SOCIAL ?? ss?.NOMBRE_CORTO_SEGURO ?? this.model.NOMBRE_SEGURO_SOCIAL ?? '';
 	}
 
 	private cargarPersonaNatural(): void {
@@ -3292,6 +3360,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.getESTADO_CIVIL();
 		this.getSI_NO();
 		this.getNIVEL_ACADEMICO();
+		this.getESTADO_NIP();
+		this.getCORR_AFP();
+		this.getCORR_SEGURO_SOCIAL();
 	}
 
 	private refrescarTerritorioDesdeModelo(): void {
@@ -3400,6 +3471,48 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			.subscribe({
 				next: (response: any) => {
 					this.mNIVEL_ACADEMICO = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	// Qué hace: carga ESTADO_NIP (CHECK GEN_EMPLEADO) desde GEN_LISTA.
+	private getESTADO_NIP(): void {
+		this.appInfoService
+			.getLookUp('GEN_EMPLEADO', 'GEN_LISTA', 'GetESTADO_NIP', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mESTADO_NIP = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	// Qué hace: carga catálogo AFP activo para personales.
+	private getCORR_AFP(): void {
+		this.appInfoService
+			.getLookUp('GEN_EMPLEADO', 'PLA_AFP', 'GetCORR_AFP', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_AFP = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	// Qué hace: carga catálogo Seguro Social activo para personales.
+	private getCORR_SEGURO_SOCIAL(): void {
+		this.appInfoService
+			.getLookUp(
+				'GEN_EMPLEADO',
+				'PLA_SEGURO_SOCIAL',
+				'GetCORR_SEGURO_SOCIAL',
+				undefined,
+				environment.UrlGENERALAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_SEGURO_SOCIAL = response?.Result ? response.Data ?? [] : [];
 				},
 			});
 	}

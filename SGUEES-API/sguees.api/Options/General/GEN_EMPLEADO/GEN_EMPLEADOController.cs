@@ -1,6 +1,5 @@
 // Qué hace: endpoints de empleados (browse + Iniciar + personales vía SP + foto).
-// Cómo lo hace: Iniciar/Create/Update/Delete PersonaNatural delegan a GEN_EMPLEADOService (SP);
-//               SubirFoto/GetFoto usan EmpleadoFotoStorage en uploads/gen-empleado.
+// Cómo lo hace: Iniciar/UpdatePersonales usan PRAL_MTTO_GEN_EMPLEADO; SubirFoto/GetFoto en uploads/gen-empleado.
 using System;
 using System.IO;
 using System.Linq;
@@ -46,13 +45,13 @@ namespace sguees.Controllers
 			return await _service.GetAsync(Data);
 		}
 
-		// Qué hace: inicia empleado (SP Insert con datos personales + GEN_EMPLEADO).
-		// Cómo: recibe GEN_PERSONA_NATURAL; auditoría; retorna 201 con V_GEN_EMPLEADO.
+		// Qué hace: inicia empleado (SP Insert: persona + empresa_persona + natural + empleado).
+		// Cómo: recibe GEN_EMPLEADO_MTTOTable; auditoría; retorna 201 con V_GEN_EMPLEADO.
 		[HttpPost("Iniciar")]
 		[Authorize(Policy = "/gen-empleado|C")]
-		public async Task<IActionResult> Iniciar(GEN_PERSONA_NATURALTable Data)
+		public async Task<IActionResult> Iniciar(GEN_EMPLEADO_MTTOTable Data)
 		{
-			SetCreateAuditNatural(Data);
+			SetCreateAuditMtto(Data);
 			var resultado = await _service.IniciarAsync(
 				Data,
 				GetCorrEmpresa(),
@@ -69,46 +68,19 @@ namespace sguees.Controllers
 			return await _service.GetPersonaNaturalAsync(Data);
 		}
 
-		// Qué hace: crea persona natural vía SP (Insert completo de 3 tablas).
-		[HttpPost("PersonaNatural")]
-		[Authorize(Policy = "/gen-empleado|C")]
-		public async Task<IActionResult> CreatePersonaNatural(GEN_PERSONA_NATURALTable Data)
-		{
-			SetCreateAuditNatural(Data);
-			var resultado = await _service.CreatePersonaNaturalAsync(
-				Data,
-				GetCorrEmpresa(),
-				GetUsuario(),
-				ClientInfoHelper.GetClientStation(HttpContext));
-			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
-		}
-
-		// Qué hace: actualiza persona natural vía SP.
+		// Qué hace: actualiza personales + datos GEN_EMPLEADO vía SP.
 		[HttpPut("PersonaNatural")]
 		[Authorize(Policy = "/gen-empleado|U")]
-		public async Task<IActionResult> UpdatePersonaNatural(GEN_PERSONA_NATURALTable Data)
+		public async Task<IActionResult> UpdatePersonaNatural(GEN_EMPLEADO_MTTOTable Data)
 		{
-			this.ApplyQueryKeys(Data, nameof(GEN_PERSONA_NATURALTable.CORR_PERSONA_NATURAL));
-			SetUpdateAuditNatural(Data);
-			var resultado = await _service.UpdatePersonaNaturalAsync(
+			this.ApplyQueryKeys(Data, nameof(GEN_EMPLEADO_MTTOTable.CORR_PERSONA_NATURAL));
+			SetUpdateAuditMtto(Data);
+			var resultado = await _service.UpdatePersonalesAsync(
 				Data,
 				GetCorrEmpresa(),
 				GetUsuario(),
 				ClientInfoHelper.GetClientStation(HttpContext));
 			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
-		}
-
-		// Qué hace: elimina persona natural vía SP (bloquea si hay empleado).
-		[HttpDelete("PersonaNatural")]
-		[Authorize(Policy = "/gen-empleado|D")]
-		public async Task<IActionResult> DeletePersonaNatural([FromQuery] GEN_PERSONA_NATURALTable Data)
-		{
-			var resultado = await _service.DeletePersonaNaturalAsync(
-				Data,
-				GetCorrEmpresa(),
-				GetUsuario(),
-				ClientInfoHelper.GetClientStation(HttpContext));
-			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
 		}
 
 		/// <summary>
@@ -240,9 +212,8 @@ namespace sguees.Controllers
 			return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
 		}
 
-		private void SetCreateAuditEmpleado(GEN_EMPLEADOTable Data)
+		private void SetCreateAuditMtto(GEN_EMPLEADO_MTTOTable Data)
 		{
-			Data.CORR_EMPRESA = GetCorrEmpresa();
 			Data.USUARIO_CREA = GetUsuario();
 			Data.ESTACION_CREA = ClientInfoHelper.GetClientStation(HttpContext);
 			Data.FECHA_CREA = DateTime.Now;
@@ -252,17 +223,7 @@ namespace sguees.Controllers
 			Data.ACTIVO_EMPLEADO ??= true;
 		}
 
-		private void SetCreateAuditNatural(GEN_PERSONA_NATURALTable Data)
-		{
-			Data.USUARIO_CREA = GetUsuario();
-			Data.ESTACION_CREA = ClientInfoHelper.GetClientStation(HttpContext);
-			Data.FECHA_CREA = DateTime.Now;
-			Data.USUARIO_ACTU = Data.USUARIO_CREA;
-			Data.ESTACION_ACTU = Data.ESTACION_CREA;
-			Data.FECHA_ACTU = Data.FECHA_CREA;
-		}
-
-		private void SetUpdateAuditNatural(GEN_PERSONA_NATURALTable Data)
+		private void SetUpdateAuditMtto(GEN_EMPLEADO_MTTOTable Data)
 		{
 			Data.USUARIO_ACTU = GetUsuario();
 			Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);

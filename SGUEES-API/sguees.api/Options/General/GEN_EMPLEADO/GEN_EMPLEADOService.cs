@@ -1,6 +1,5 @@
 // Qué hace: servicio de empleados (browse + Iniciar + personales vía SP).
-// Cómo lo hace: Iniciar ejecuta PRAL_MTTO_GEN_PERSONA_NATURAL (Insert) y luego crea GEN_EMPLEADO;
-//               personales Create/Update/Delete delegan al mismo SP.
+// Cómo lo hace: Iniciar/UpdatePersonales delegan a PRAL_MTTO_GEN_EMPLEADO (persona + natural + empleado).
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
@@ -41,9 +40,9 @@ namespace sguees.Services
 			return await _repo.GetAsync(p);
 		}
 
-		// Qué hace: inicia empleado nuevo con datos personales del tab.
-		// Cómo: SP Insert (persona + empresa_persona + persona_natural con payload) y Create GEN_EMPLEADO; Data = V_GEN_EMPLEADO.
-		public async Task<CResult> IniciarAsync(GEN_PERSONA_NATURALTable natural, int corrEmpresa, string vLOGIN_SISTEMA, string vESTACION)
+		// Qué hace: inicia empleado nuevo (4 tablas en una transacción SP).
+		// Cómo: PRAL_MTTO_GEN_EMPLEADO TIPO 1; Data = V_GEN_EMPLEADO.
+		public async Task<CResult> IniciarAsync(GEN_EMPLEADO_MTTOTable data, int corrEmpresa, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			if (corrEmpresa <= 0)
 			{
@@ -56,34 +55,16 @@ namespace sguees.Services
 				};
 			}
 
-			natural ??= new GEN_PERSONA_NATURALTable();
-			natural.CORR_PERSONA = 0;
-			natural.CORR_PERSONA_NATURAL = 0;
-			natural.ES_JUBILADO ??= false;
-			natural.POSEE_DISCAPACIDAD ??= false;
-			natural.ES_EXTRANJERO ??= false;
+			data ??= new GEN_EMPLEADO_MTTOTable();
+			data.CORR_PERSONA = 0;
+			data.CORR_PERSONA_NATURAL = 0;
+			data.CORR_EMPLEADO = 0;
+			data.ES_JUBILADO ??= false;
+			data.POSEE_DISCAPACIDAD ??= false;
+			data.ES_EXTRANJERO ??= false;
+			data.ACTIVO_EMPLEADO ??= true;
 
-			var spResult = await _repo.MttoPersonaNaturalAsync(natural, (int)UpdateType.Add, corrEmpresa, vLOGIN_SISTEMA, vESTACION);
-			if (!spResult.Result || spResult.ErrorCode != 0 || spResult.Data is not GEN_PERSONA_NATURALView naturalView)
-			{
-				return spResult;
-			}
-
-			var empleado = new GEN_EMPLEADOTable
-			{
-				CORR_EMPRESA = corrEmpresa,
-				CORR_EMPLEADO = 0,
-				CORR_PERSONA = naturalView.CORR_PERSONA,
-				ACTIVO_EMPLEADO = true,
-				USUARIO_CREA = natural.USUARIO_CREA,
-				ESTACION_CREA = natural.ESTACION_CREA,
-				FECHA_CREA = natural.FECHA_CREA,
-				USUARIO_ACTU = natural.USUARIO_ACTU,
-				ESTACION_ACTU = natural.ESTACION_ACTU,
-				FECHA_ACTU = natural.FECHA_ACTU,
-			};
-
-			return await _repo.CreateAsync(empleado, vLOGIN_SISTEMA, vESTACION);
+			return await _repo.MttoEmpleadoAsync(data, (int)UpdateType.Add, corrEmpresa, vLOGIN_SISTEMA, vESTACION);
 		}
 
 		public async Task<CResult> GetPersonaNaturalAsync(GEN_PERSONA_NATURALParam xWhere)
@@ -101,14 +82,10 @@ namespace sguees.Services
 			return await _repo.GetPersonaNaturalAsync(p);
 		}
 
-		public Task<CResult> CreatePersonaNaturalAsync(GEN_PERSONA_NATURALTable Data, int corrEmpresa, string vLOGIN_SISTEMA, string vESTACION)
-			=> _repo.MttoPersonaNaturalAsync(Data, (int)UpdateType.Add, corrEmpresa, vLOGIN_SISTEMA, vESTACION);
-
-		public Task<CResult> UpdatePersonaNaturalAsync(GEN_PERSONA_NATURALTable Data, int corrEmpresa, string vLOGIN_SISTEMA, string vESTACION)
-			=> _repo.MttoPersonaNaturalAsync(Data, (int)UpdateType.Update, corrEmpresa, vLOGIN_SISTEMA, vESTACION);
-
-		public Task<CResult> DeletePersonaNaturalAsync(GEN_PERSONA_NATURALTable Data, int corrEmpresa, string vLOGIN_SISTEMA, string vESTACION)
-			=> _repo.MttoPersonaNaturalAsync(Data, (int)UpdateType.Delete, corrEmpresa, vLOGIN_SISTEMA, vESTACION);
+		// Qué hace: actualiza personales + datos GEN_EMPLEADO del form.
+		// Cómo: PRAL_MTTO_GEN_EMPLEADO TIPO 2; relee natural en Data (empleado ya en memoria SPA).
+		public Task<CResult> UpdatePersonalesAsync(GEN_EMPLEADO_MTTOTable Data, int corrEmpresa, string vLOGIN_SISTEMA, string vESTACION)
+			=> _repo.MttoEmpleadoAsync(Data, (int)UpdateType.Update, corrEmpresa, vLOGIN_SISTEMA, vESTACION);
 
 		public Task<CResult> CreateAsync(GEN_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 			=> _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);

@@ -269,5 +269,13 @@ namespace sguees.Controllers
 		{
 			return _service.GetNIVEL_ACADEMICO();
 		}
+
+		// Qué hace: lookup ESTADO_NIP (CHECK GEN_EMPLEADO) para personales.
+		[HttpGet("GetESTADO_NIP_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public CResult GetESTADO_NIP_GEN_EMPLEADO()
+		{
+			return _service.GetESTADO_NIP();
+		}
 	}
 }

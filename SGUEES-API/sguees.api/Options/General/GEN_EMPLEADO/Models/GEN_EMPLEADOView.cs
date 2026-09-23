@@ -10,6 +10,12 @@ namespace sguees.Models
 		public int CORR_EMPLEADO { get; set; }
 		public long CORR_PERSONA { get; set; }
 		public string CODIGO_EMPLEADO { get; set; }
+		public int? CORR_SEGURO_SOCIAL { get; set; }
+		public string NOMBRE_SEGURO_SOCIAL { get; set; }
+		public string ESTADO_NIP { get; set; }
+		public int? CORR_AFP { get; set; }
+		public string NOMBRE_AFP { get; set; }
+		public DateTime? FECHA_AFILIACION_AFP { get; set; }
 		public string NOMBRE_EMPLEADO { get; set; }
 		public string PRIMER_NOMBRE { get; set; }
 		public string SEGUNDO_NOMBRE { get; set; }

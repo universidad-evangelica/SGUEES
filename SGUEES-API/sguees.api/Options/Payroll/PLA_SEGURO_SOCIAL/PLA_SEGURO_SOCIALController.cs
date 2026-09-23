@@ -39,6 +39,21 @@ namespace SGUEES.Controllers
 			return await _service.GetAsync(Data);
 		}
 
+		// Qué hace: lookup Seguro Social activo para gen-empleado (Personales).
+		[HttpGet("GetCORR_SEGURO_SOCIAL_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		public async Task<CResult> GetCORR_SEGURO_SOCIAL_GEN_EMPLEADO([FromQuery] PLA_SEGURO_SOCIALParam Data)
+		{
+			var resultado = await _service.GetAllAsync(Data ?? new PLA_SEGURO_SOCIALParam());
+			if (resultado.Result && resultado.Data is System.Collections.IEnumerable rows)
+			{
+				var activos = rows.Cast<PLA_SEGURO_SOCIALView>().Where(x => x.ACTIVO_SEGURO_SOCIAL == true).ToList();
+				resultado.Data = activos;
+				resultado.RowsAffected = activos.Count;
+			}
+			return resultado;
+		}
+
 		[HttpPost]
 		[Authorize(Policy = "/pla-seguro-social|C")]
 		public async Task<IActionResult> Post(PLA_SEGURO_SOCIALTable Data)

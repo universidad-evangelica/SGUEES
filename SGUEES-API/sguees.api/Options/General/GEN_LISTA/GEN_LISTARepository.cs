@@ -689,5 +689,24 @@ namespace sguees.Repositories
 			objResultado.ErrorSource = "";
 			return objResultado;
 		}
+
+		// Qué hace: opciones de ESTADO_NIP (CHECK de GEN_EMPLEADO).
+		public CResult GetESTADO_NIP()
+		{
+			CResult objResultado = new();
+			objResultado.Data = new List<GEN_LISTAView>()
+			{
+				new() { Key = "IDONEO", Value = "Idóneo" },
+				new() { Key = "EN PROCESO", Value = "En proceso" },
+				new() { Key = "TIENE NIP", Value = "Tiene NIP" },
+			};
+			objResultado.Result = true;
+			objResultado.RowsAffected = 3;
+			objResultado.CodeHelper = 0;
+			objResultado.ErrorCode = 0;
+			objResultado.ErrorMessage = "";
+			objResultado.ErrorSource = "";
+			return objResultado;
+		}
 	}
 }

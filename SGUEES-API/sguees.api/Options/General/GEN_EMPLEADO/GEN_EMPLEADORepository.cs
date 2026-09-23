@@ -1,5 +1,5 @@
-// Qué hace: acceso a datos de empleados y persona natural vía SP.
-// Cómo lo hace: GetAll/Get/Create/Update de GEN_EMPLEADO; personales con PRAL_MTTO_GEN_PERSONA_NATURAL.
+// Qué hace: acceso a datos de empleados y núcleo vía SP.
+// Cómo lo hace: GetAll/Get/Create/Update de GEN_EMPLEADO; Iniciar/Personales con PRAL_MTTO_GEN_EMPLEADO.
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,7 +16,7 @@ namespace sguees.Repositories
 		private const string _TableName = "GEN_EMPLEADO";
 		private const string _ViewName = "V_GEN_EMPLEADO";
 		private const string _ViewPersonaNatural = "V_GEN_PERSONA_NATURAL";
-		private const string _SpPersonaNatural = "PRAL_MTTO_GEN_PERSONA_NATURAL";
+		private const string _SpEmpleado = "PRAL_MTTO_GEN_EMPLEADO";
 
 		public GEN_EMPLEADORepository(IConfiguration config) :
 			base(config.GetConnectionString("defaultConnection"),
@@ -105,10 +105,10 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		// Qué hace: Insert/Update/Delete de persona natural (y alta persona/empresa en Insert).
-		// Cómo: ExecCmd PRAL_MTTO_GEN_PERSONA_NATURAL y relee V_GEN_PERSONA_NATURAL.
-		public async Task<CResult> MttoPersonaNaturalAsync(
-			GEN_PERSONA_NATURALTable Data,
+		// Qué hace: Insert/Update/Delete núcleo empleado (persona + natural + empleado).
+		// Cómo: ExecCmd PRAL_MTTO_GEN_EMPLEADO; Insert/Update relee V_GEN_EMPLEADO o V_GEN_PERSONA_NATURAL.
+		public async Task<CResult> MttoEmpleadoAsync(
+			GEN_EMPLEADO_MTTOTable Data,
 			int tipoActualiza,
 			int corrEmpresa,
 			string vLOGIN_SISTEMA,
@@ -118,13 +118,15 @@ namespace sguees.Repositories
 
 			try
 			{
-				var p = BuildPersonaNaturalSpParams(Data, tipoActualiza, corrEmpresa, vLOGIN_SISTEMA, vESTACION);
-				await objData.ExecCmd(System.Data.CommandType.StoredProcedure, _SpPersonaNatural, true, p);
+				Data ??= new GEN_EMPLEADO_MTTOTable();
+				var p = BuildEmpleadoSpParams(Data, tipoActualiza, corrEmpresa, vLOGIN_SISTEMA, vESTACION);
+				await objData.ExecCmd(System.Data.CommandType.StoredProcedure, _SpEmpleado, true, p);
 
 				var errorCode = Convert.ToInt32(objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value ?? 0);
 				var errorMsg = Convert.ToString(objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value ?? string.Empty);
 				var rowsAffected = Convert.ToInt32(objData.objCommand.Parameters["@SYS_FILAS_AFECTADAS"].Value ?? 0);
 
+				Data.CORR_EMPLEADO = Convert.ToInt32(objData.objCommand.Parameters["@CORR_EMPLEADO"].Value ?? 0);
 				Data.CORR_PERSONA = Convert.ToInt64(objData.objCommand.Parameters["@CORR_PERSONA"].Value ?? 0L);
 				Data.CORR_PERSONA_NATURAL = Convert.ToInt64(objData.objCommand.Parameters["@CORR_PERSONA_NATURAL"].Value ?? 0L);
 
@@ -135,7 +137,7 @@ namespace sguees.Repositories
 					objResultado.RowsAffected = 0;
 					objResultado.ErrorCode = errorCode;
 					objResultado.ErrorMessage = errorMsg;
-					objResultado.ErrorSource = "[GEN_EMPLEADORepository.MttoPersonaNaturalAsync]";
+					objResultado.ErrorSource = "[GEN_EMPLEADORepository.MttoEmpleadoAsync]";
 					return objResultado;
 				}
 
@@ -149,7 +151,27 @@ namespace sguees.Repositories
 					return objResultado;
 				}
 
-				var xWhere = new List<CParameter>
+				if (tipoActualiza == (int)UpdateType.Add)
+				{
+					var xWhereEmp = new List<CParameter>
+					{
+						new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+						new CParameter() { ParameterName = "CORR_EMPLEADO", Value = Data.CORR_EMPLEADO, DbType = System.Data.DbType.Int32 },
+					};
+					var readerEmp = await objData.GetDataReader(_ViewName, xWhereEmp);
+					var empleado = new List<GEN_EMPLEADOView>().FromDataReader(readerEmp).FirstOrDefault();
+					readerEmp.Close();
+
+					objResultado.Data = empleado;
+					objResultado.Result = true;
+					objResultado.RowsAffected = rowsAffected;
+					objResultado.CodeHelper = empleado?.CORR_EMPLEADO ?? Data.CORR_EMPLEADO;
+					objResultado.ErrorCode = 0;
+					objResultado.ErrorMessage = "";
+					return objResultado;
+				}
+
+				var xWhereNat = new List<CParameter>
 				{
 					new CParameter()
 					{
@@ -158,15 +180,14 @@ namespace sguees.Repositories
 						DbType = System.Data.DbType.Int64,
 					},
 				};
+				var readerNat = await objData.GetDataReader(_ViewPersonaNatural, xWhereNat);
+				var natural = new List<GEN_PERSONA_NATURALView>().FromDataReader(readerNat).FirstOrDefault();
+				readerNat.Close();
 
-				var reader = await objData.GetDataReader(_ViewPersonaNatural, xWhere);
-				var response = new List<GEN_PERSONA_NATURALView>().FromDataReader(reader).FirstOrDefault();
-				reader.Close();
-
-				objResultado.Data = response;
+				objResultado.Data = natural;
 				objResultado.Result = true;
 				objResultado.RowsAffected = rowsAffected;
-				objResultado.CodeHelper = (int)(response?.CORR_PERSONA_NATURAL ?? Data.CORR_PERSONA_NATURAL);
+				objResultado.CodeHelper = (int)(natural?.CORR_PERSONA_NATURAL ?? Data.CORR_PERSONA_NATURAL);
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
 			}
@@ -356,8 +377,8 @@ namespace sguees.Repositories
 			return objResultado;
 		}
 
-		private static List<CParameter> BuildPersonaNaturalSpParams(
-			GEN_PERSONA_NATURALTable Data,
+		private static List<CParameter> BuildEmpleadoSpParams(
+			GEN_EMPLEADO_MTTOTable Data,
 			int tipoActualiza,
 			int corrEmpresa,
 			string vLOGIN_SISTEMA,
@@ -367,6 +388,7 @@ namespace sguees.Repositories
 			{
 				new CParameter() { ParameterName = "@TIPO_ACTUALIZA", Value = tipoActualiza, DbType = System.Data.DbType.Int32 },
 				new CParameter() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "@CORR_EMPLEADO", Value = Data.CORR_EMPLEADO, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
 				new CParameter() { ParameterName = "@CORR_PERSONA", Value = Data.CORR_PERSONA ?? 0L, DbType = System.Data.DbType.Int64, Direction = System.Data.ParameterDirection.InputOutput },
 				new CParameter() { ParameterName = "@CORR_PERSONA_NATURAL", Value = Data.CORR_PERSONA_NATURAL, DbType = System.Data.DbType.Int64, Direction = System.Data.ParameterDirection.InputOutput },
 				new CParameter() { ParameterName = "@CODIGO_PERSONA", Value = (object)DBNull.Value, DbType = System.Data.DbType.String },
@@ -397,10 +419,18 @@ namespace sguees.Repositories
 				new CParameter() { ParameterName = "@CORR_ORIGEN_INGRESO", Value = Data.CORR_ORIGEN_INGRESO, DbType = System.Data.DbType.Int32 },
 				new CParameter() { ParameterName = "@CORR_TIPO_CONTRIBUYENTE", Value = Data.CORR_TIPO_CONTRIBUYENTE, DbType = System.Data.DbType.Int32 },
 				new CParameter() { ParameterName = "@CORR_ACTIVIDAD_ECONOMICA", Value = Data.CORR_ACTIVIDAD_ECONOMICA, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "@CODIGO_EMPLEADO", Value = Data.CODIGO_EMPLEADO, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "@CORR_SEGURO_SOCIAL", Value = Data.CORR_SEGURO_SOCIAL, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "@ESTADO_NIP", Value = Data.ESTADO_NIP, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "@CORR_AFP", Value = Data.CORR_AFP, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "@FECHA_AFILIACION_AFP", Value = Data.FECHA_AFILIACION_AFP, DbType = System.Data.DbType.Date },
+				new CParameter() { ParameterName = "@FECHA_INGRESO", Value = Data.FECHA_INGRESO, DbType = System.Data.DbType.Date },
+				new CParameter() { ParameterName = "@CORREO_INSTITUCIONAL", Value = Data.CORREO_INSTITUCIONAL, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "@TELEFONO_INSTITUCIONAL", Value = Data.TELEFONO_INSTITUCIONAL, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "@ACTIVO_EMPLEADO", Value = Data.ACTIVO_EMPLEADO ?? true, DbType = System.Data.DbType.Boolean },
 				new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
 				new CParameter() { ParameterName = "@SYS_ESTACION", Value = vESTACION, DbType = System.Data.DbType.String },
 				new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
-				// Int32 (como BAN_CHEQUERA): Decimal sin precision 38 provoca "Error al convertir numeric a numeric".
 				new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
 				new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
 			};

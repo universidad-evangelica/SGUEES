@@ -1,5 +1,5 @@
 // Qué hace: modelo de fila del browse de Empleado (V_GEN_EMPLEADO).
-// Cómo lo hace: refleja persona + documentos DUI/NIT + datos laborales básicos.
+// Cómo lo hace: refleja persona + documentos DUI/NIT + datos laborales de GEN_EMPLEADO.
 export interface GenEmpleado {
 	CORR_EMPRESA: number;
 	CORR_EMPLEADO: number;
@@ -8,6 +8,12 @@ export interface GenEmpleado {
 	NOMBRE_EMPLEADO: string;
 	DUI: string;
 	NIT: string;
+	CORR_SEGURO_SOCIAL: number | null;
+	NOMBRE_SEGURO_SOCIAL?: string;
+	ESTADO_NIP: string;
+	CORR_AFP: number | null;
+	NOMBRE_AFP?: string;
+	FECHA_AFILIACION_AFP: Date | string | null;
 	FECHA_INGRESO: Date | string | null;
 	CORREO_INSTITUCIONAL: string;
 	TELEFONO_INSTITUCIONAL: string;

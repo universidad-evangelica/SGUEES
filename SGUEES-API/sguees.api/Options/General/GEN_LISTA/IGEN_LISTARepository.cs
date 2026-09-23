@@ -29,5 +29,6 @@ namespace sguees.Repositories
 		CResult GetESTADO_CIVIL();
 		CResult GetSI_NO();
 		CResult GetNIVEL_ACADEMICO();
+		CResult GetESTADO_NIP();
 	}
 }

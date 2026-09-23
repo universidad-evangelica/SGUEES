@@ -103,5 +103,6 @@ namespace sguees.Services
 		public CResult GetESTADO_CIVIL() => _repo.GetESTADO_CIVIL();
 		public CResult GetSI_NO() => _repo.GetSI_NO();
 		public CResult GetNIVEL_ACADEMICO() => _repo.GetNIVEL_ACADEMICO();
+		public CResult GetESTADO_NIP() => _repo.GetESTADO_NIP();
 	}
 }
