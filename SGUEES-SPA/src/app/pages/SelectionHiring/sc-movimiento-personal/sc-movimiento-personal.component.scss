@@ -1,5 +1,5 @@
-/* Chips de estado del movimiento (transaccional). */
-.estado-mov-chip {
+/* Chips de estado del movimiento (formulario y grid). */
+:host ::ng-deep .estado-mov-chip {
 	display: inline-block;
 	padding: 4px 10px;
 	border-radius: 4px;
@@ -9,28 +9,30 @@
 	white-space: nowrap;
 }
 
-.estado-mov--borrador {
+:host ::ng-deep .estado-mov--borrador {
 	background: #e8eef5;
 	color: #3a4a5c;
 }
 
-.estado-mov--solicitado {
+:host ::ng-deep .estado-mov--solicitado,
+:host ::ng-deep .estado-mov--evaluacion {
 	background: #fff4ce;
 	color: #6b5300;
 }
 
-.estado-mov--devuelto {
+:host ::ng-deep .estado-mov--devuelto {
 	background: #fde7d6;
 	color: #8a4500;
 }
 
-.estado-mov--aprobado {
+:host ::ng-deep .estado-mov--aprobado,
+:host ::ng-deep .estado-mov--confirmado {
 	background: #dff6dd;
 	color: #0b6a0b;
 }
 
-.estado-mov--denegado,
-.estado-mov--anulado {
+:host ::ng-deep .estado-mov--denegado,
+:host ::ng-deep .estado-mov--anulado {
 	background: #fde7e9;
 	color: #a4262c;
 }

@@ -223,25 +223,45 @@ export class ScMovimientoPersonalService {
 	getColumns(): any[] {
 		return [
 			{ dataField: 'CORR_MOVIMIENTO_PERSONAL', caption: 'Corr.', width: 90 },
+			{ dataField: 'FECHA_ELABORACION', caption: 'Fecha', width: 120, dataType: 'date', format: 'dd/MM/yyyy' },
 			{
 				dataField: 'ESTADO_MOVIMIENTO',
 				caption: 'Estado',
-				width: 120,
+				width: 130,
+				alignment: 'center',
+				allowFiltering: true,
 				calculateCellValue: (row: any) => this.getEstadoLabel(row?.ESTADO_MOVIMIENTO),
+				cellTemplate: (container: HTMLElement, options: any) => {
+					const estado = options?.data?.ESTADO_MOVIMIENTO;
+					const chip = document.createElement('span');
+					chip.className = `estado-mov-chip ${this.getEstadoBadgeClass(estado)}`;
+					chip.textContent = this.getEstadoLabel(estado);
+					chip.title = chip.textContent;
+					container.appendChild(chip);
+				},
 			},
 			{
 				dataField: 'NOMBRE_CONFIRMACION',
 				caption: 'Confirmación',
-				width: 130,
+				width: 150,
+				alignment: 'center',
 				calculateCellValue: (row: any) => this.getConfirmacionLabel(row),
+				cellTemplate: (container: HTMLElement, options: any) => {
+					const row = options?.data;
+					const confirmado = this.esConfirmado(row?.CONFIRMADO);
+					const chip = document.createElement('span');
+					chip.className = `estado-mov-chip ${confirmado ? 'estado-mov--confirmado' : 'estado-mov--evaluacion'}`;
+					chip.textContent = this.getConfirmacionLabel(row);
+					chip.title = chip.textContent;
+					container.appendChild(chip);
+				},
 			},
-			{ dataField: 'FECHA_ELABORACION', caption: 'Fecha', width: 120, dataType: 'date', format: 'dd/MM/yyyy' },
-			{ dataField: 'NOMBRE_TIPO_MOVIMIENTO', caption: 'Tipo', width: 180 },
+			{ dataField: 'NOMBRE_TIPO_MOVIMIENTO', caption: 'Tipo', width: 100 },
 			{ dataField: 'NOMBRE_COMPLETO', caption: 'Nombre', width: 250 },
 			{ dataField: 'NUMERO_ID', caption: 'Documento', width: 130 },
 			{ dataField: 'NOMBRE_UNIDAD_PROPUESTA', caption: 'Unidad propuesta', width: 200 },
 			{ dataField: 'NOMBRE_PUESTO_PROPUESTO', caption: 'Puesto propuesto', width: 200 },
-			{ dataField: 'SALARIO_PROPUESTO', caption: 'Salario prop.', width: 120, format: '#,##0.00' },
+			{ dataField: 'SALARIO_PROPUESTO', caption: 'Salario prop.', width: 140, format: '#,##0.00' },
 			{ dataField: 'NOMBRE_ORIGEN_MOVIMIENTO', caption: 'Origen', width: 140 },
 			{ dataField: 'USUARIO_CREA', caption: 'Usuario crea', width: 140 },
 			{ dataField: 'FECHA_CREA', caption: 'Fecha crea', width: 140, dataType: 'date', format: 'dd/MM/yyyy' },
