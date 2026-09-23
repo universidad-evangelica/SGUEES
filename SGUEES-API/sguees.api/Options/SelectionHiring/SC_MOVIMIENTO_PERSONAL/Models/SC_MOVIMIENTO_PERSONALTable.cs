@@ -18,6 +18,12 @@ namespace SGUEES.Models
 		[MaxLength(20)]
 		public string ORIGEN_MOVIMIENTO { get; set; }
 
+		/// <summary>
+		/// Tipo de contratación de la requisición origen (2 = Eventual).
+		/// No se persiste; solo decide si FECHA_FINALIZACION aplica.
+		/// </summary>
+		public int? CORR_TIPO_CONTRATACION { get; set; }
+
 		/// <summary>PERMANENTE | EVENTUAL | ASCENSO | TRASLADO</summary>
 		[MaxLength(20)]
 		public string TIPO_MOVIMIENTO { get; set; }

@@ -267,6 +267,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 				CORR_MOVIMIENTO_PERSONAL: xModel.CORR_MOVIMIENTO_PERSONAL,
 				FECHA_ELABORACION: xModel.FECHA_ELABORACION,
 				ORIGEN_MOVIMIENTO: xModel.ORIGEN_MOVIMIENTO,
+				CORR_TIPO_CONTRATACION: xModel.CORR_TIPO_CONTRATACION ?? null,
 				TIPO_MOVIMIENTO: xModel.TIPO_MOVIMIENTO,
 				ESTADO_MOVIMIENTO: xModel.ESTADO_MOVIMIENTO,
 				NOMBRE_ESTADO_MOVIMIENTO: xModel.NOMBRE_ESTADO_MOVIMIENTO,
@@ -315,6 +316,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			CORR_MOVIMIENTO_PERSONAL: 0,
 			FECHA_ELABORACION: new Date(),
 			ORIGEN_MOVIMIENTO: 'DIRECTO',
+			CORR_TIPO_CONTRATACION: null,
 			TIPO_MOVIMIENTO: 'ASCENSO',
 			ESTADO_MOVIMIENTO: 'DI',
 			CORR_EMPLEADO: null,
@@ -427,7 +429,10 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 
 	/** DIRECTO → solo Empleado; REQUISICION → solo Nombre completo. */
 	private refrescarItemsFormulario(): void {
-		this.items = this.service.getItems(this.model?.ORIGEN_MOVIMIENTO || 'DIRECTO');
+		this.items = this.service.getItems(
+			this.model?.ORIGEN_MOVIMIENTO || 'DIRECTO',
+			this.model?.CORR_TIPO_CONTRATACION
+		);
 		setTimeout(() => {
 			if (this.dataForm?.instance) {
 				this.dataForm.instance.option('items', this.items);
@@ -454,6 +459,10 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			this.notifyFx('Solo se puede modificar un movimiento en Borrador o Devuelto.', NotifyType.Warning);
 			return;
 		}
+
+		/* Los combos escriben en el modelo. El formulario, al guardar, vuelve a
+		   poner sus valores encima. Hay que pasarle antes lo que eligieron. */
+		this.volcarCombosAlFormulario();
 
 		this.guardarMtto({
 			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
@@ -789,11 +798,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			this.mCORR_PUESTO_ACTUAL = [];
 		}
 
-		setTimeout(() => {
-			if (this.dataForm?.instance) {
-				this.dataForm.instance.option('formData', { ...this.model });
-			}
-		}, 0);
+		setTimeout(() => this.refrescarFormularioEnSitio(), 0);
 
 		return this.model.CORR_EMPLEADO;
 	};
@@ -817,6 +822,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		const cambio = corr !== this.corrGerenciaPropuesta;
 		this.corrGerenciaPropuesta = corr;
 		this.model.GERENCIA_PROPUESTA = row?.DISPLAY_UNIDAD || this.formatUnidadDisplay(row);
+		this.dataForm?.instance?.updateData('GERENCIA_PROPUESTA', this.model.GERENCIA_PROPUESTA);
 		this.filtrarUnidadesPropuesta(corr);
 		if (cambio) {
 			this.model.CORR_UNIDAD_PROPUESTA = 0;
@@ -866,6 +872,43 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		this.model.NOMBRE_MODALIDAD_PROPUESTA = row?.MODALIDAD_NOMBRE ?? '';
 		return Number(row?.CORR_TIPO_MODALIDAD) || 0;
 	};
+
+	/**
+	 * Pasa al formulario los valores que viven en los combos.
+	 * Sin esto, Guardar conserva salario y horario, y borra gerencia, departamento y cargo.
+	 */
+	private volcarCombosAlFormulario(): void {
+		if (this.corrGerenciaPropuesta > 0 && !`${this.model?.GERENCIA_PROPUESTA || ''}`.trim()) {
+			const gerencia = (this.mGerenciaPropuesta || []).find(
+				(g) => Number(g.CORR_UNIDAD) === Number(this.corrGerenciaPropuesta)
+			);
+			this.model.GERENCIA_PROPUESTA = gerencia?.DISPLAY_UNIDAD || this.formatUnidadDisplay(gerencia);
+		}
+
+		this.dataForm?.instance?.updateData({
+			CORR_EMPLEADO: this.model.CORR_EMPLEADO,
+			NOMBRE_COMPLETO: this.model.NOMBRE_COMPLETO,
+			NUMERO_ID: this.model.NUMERO_ID,
+			CORR_UNIDAD_ACTUAL: this.model.CORR_UNIDAD_ACTUAL,
+			NOMBRE_UNIDAD_ACTUAL: this.model.NOMBRE_UNIDAD_ACTUAL,
+			CORR_PUESTO_ACTUAL: this.model.CORR_PUESTO_ACTUAL,
+			NOMBRE_PUESTO_ACTUAL: this.model.NOMBRE_PUESTO_ACTUAL,
+			CORR_TIPO_MODALIDAD_ACTUAL: this.model.CORR_TIPO_MODALIDAD_ACTUAL,
+			NOMBRE_MODALIDAD_ACTUAL: this.model.NOMBRE_MODALIDAD_ACTUAL,
+			GERENCIA_PROPUESTA: this.model.GERENCIA_PROPUESTA,
+			CORR_UNIDAD_PROPUESTA: this.model.CORR_UNIDAD_PROPUESTA,
+			NOMBRE_UNIDAD_PROPUESTA: this.model.NOMBRE_UNIDAD_PROPUESTA,
+			CORR_PUESTO_PROPUESTO: this.model.CORR_PUESTO_PROPUESTO,
+			NOMBRE_PUESTO_PROPUESTO: this.model.NOMBRE_PUESTO_PROPUESTO,
+			CORR_TIPO_MODALIDAD_PROPUESTA: this.model.CORR_TIPO_MODALIDAD_PROPUESTA,
+			NOMBRE_MODALIDAD_PROPUESTA: this.model.NOMBRE_MODALIDAD_PROPUESTA,
+		});
+	}
+
+	/** Actualiza las cajas del formulario sin reemplazar el objeto de datos. */
+	private refrescarFormularioEnSitio(): void {
+		this.dataForm?.instance?.updateData(this.model);
+	}
 
 	/** Padres distintos de las unidades del usuario (combo Gerencia propuesta). */
 	private armarGerenciasPropuesta(): void {

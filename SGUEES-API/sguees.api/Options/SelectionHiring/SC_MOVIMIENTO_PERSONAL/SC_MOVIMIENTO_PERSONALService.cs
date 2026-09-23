@@ -349,7 +349,9 @@ namespace SGUEES.Services
 				return ValidationError("El salario propuesto no puede ser negativo.");
 			}
 
-			if (tipo == "EVENTUAL")
+			/* Fecha de finalización solo en requisición con contratación eventual (tipo 2). */
+			var muestraFechaFinalizacion = origen == "REQUISICION" && Data.CORR_TIPO_CONTRATACION == 2;
+			if (muestraFechaFinalizacion)
 			{
 				if (!Data.FECHA_FINALIZACION.HasValue)
 				{
@@ -361,6 +363,10 @@ namespace SGUEES.Services
 				{
 					return ValidationError("La fecha de finalización no puede ser anterior a la de ingreso propuesta.");
 				}
+			}
+			else
+			{
+				Data.FECHA_FINALIZACION = null;
 			}
 
 			if (tipo is "ASCENSO" or "TRASLADO")

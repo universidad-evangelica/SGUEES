@@ -68,7 +68,7 @@ export class ScMovimientoPersonalService {
 			return false;
 		}
 
-		if (tipo === 'EVENTUAL') {
+		if (this.muestraFechaFinalizacion(model)) {
 			if (!model.FECHA_FINALIZACION) {
 				msg('En contratación eventual debe indicar la fecha de finalización.', NotifyType.Warning);
 				return false;
@@ -80,6 +80,8 @@ export class ScMovimientoPersonalService {
 				msg('La fecha de finalización no puede ser anterior a la de ingreso.', NotifyType.Warning);
 				return false;
 			}
+		} else {
+			model.FECHA_FINALIZACION = null;
 		}
 
 		if (tipo === 'ASCENSO' || tipo === 'TRASLADO') {
@@ -91,6 +93,15 @@ export class ScMovimientoPersonalService {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Fecha de finalización solo si el movimiento viene de requisición
+	 * y esa requisición es contratación eventual (CORR_TIPO_CONTRATACION = 2).
+	 */
+	muestraFechaFinalizacion(model?: Partial<ScMovimientoPersonal> | null): boolean {
+		const origen = `${model?.ORIGEN_MOVIMIENTO || ''}`.trim().toUpperCase();
+		return origen === 'REQUISICION' && Number(model?.CORR_TIPO_CONTRATACION) === 2;
 	}
 
 	/** Editable solo Borrador (DI) o Devuelto (OB). */
@@ -259,8 +270,21 @@ export class ScMovimientoPersonalService {
 		];
 	}
 
-	getItems(origenMovimiento: string = 'DIRECTO'): any[] {
+	getItems(origenMovimiento: string = 'DIRECTO', corrTipoContratacion?: number | null): any[] {
 		const esDirecto = `${origenMovimiento || 'DIRECTO'}`.trim().toUpperCase() === 'DIRECTO';
+		const muestraFechaFinalizacion = this.muestraFechaFinalizacion({
+			ORIGEN_MOVIMIENTO: origenMovimiento,
+			CORR_TIPO_CONTRATACION: corrTipoContratacion,
+		});
+		const campoFechaFinalizacion = muestraFechaFinalizacion
+			? {
+					dataField: 'FECHA_FINALIZACION',
+					label: { text: 'Fecha de finalización (eventual)' },
+					colSpan: 2,
+					editorType: 'dxDateBox',
+					editorOptions: { displayFormat: 'dd/MM/yyyy', openOnFieldClick: true, showClearButton: true },
+			  }
+			: null;
 		const campoPersona = esDirecto
 			? {
 					dataField: 'CORR_EMPLEADO',
@@ -348,13 +372,7 @@ export class ScMovimientoPersonalService {
 						editorType: 'dxDateBox',
 						editorOptions: { displayFormat: 'dd/MM/yyyy', openOnFieldClick: true, showClearButton: true },
 					},
-					{
-						dataField: 'FECHA_FINALIZACION',
-						label: { text: 'Fecha de finalización (eventual)' },
-						colSpan: 2,
-						editorType: 'dxDateBox',
-						editorOptions: { displayFormat: 'dd/MM/yyyy', openOnFieldClick: true, showClearButton: true },
-					},
+					...(campoFechaFinalizacion ? [campoFechaFinalizacion] : []),
 				],
 			},
 			{

@@ -5,6 +5,8 @@ export interface ScMovimientoPersonal {
 	FECHA_ELABORACION: Date;
 	/** DIRECTO | REQUISICION */
 	ORIGEN_MOVIMIENTO: string;
+	/** Tipo de contratación de la requisición origen (2 = Eventual). No se persiste en el movimiento. */
+	CORR_TIPO_CONTRATACION?: number | null;
 	/** PERMANENTE | EVENTUAL | ASCENSO | TRASLADO */
 	TIPO_MOVIMIENTO: string;
 	/** DI SO OB AP DE AN */
