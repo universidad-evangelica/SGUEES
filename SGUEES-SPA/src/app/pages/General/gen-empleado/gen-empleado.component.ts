@@ -180,6 +180,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	submodalDomicilioVisible = false;
 	submodalDomicilioEditIndex: number | null = null;
 	submodalDomicilioDraft: any = {};
+	// Qué hace: evita que al cerrar el combo de país vuelva a pedir departamentos.
+	// Cómo: se enciende antes de limpiar el draft y se apaga al terminar el ciclo de la vista.
+	private omitirLookupDomicilioAlCerrar = false;
 	mCORR_PAIS_DOMICILIO: any[] = [];
 	mCORR_DEPTO_DOMICILIO: any[] = [];
 	mCORR_MUNICIPIO_DOMICILIO: any[] = [];
@@ -208,6 +211,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	popupPersonalesVisible = false;
 	/** Evita restaurar modelo al cerrar el popup tras Guardar exitoso. */
 	private omitirRestaurarPopupPersonales = false;
+	// Qué hace: evita GetCORR_DEPTO al cerrar Editar datos.
+	// Cómo: se enciende antes de restaurar el modelo; el combo de país dispara valueChange y ese cambio se ignora.
+	private cerrandoPopupPersonales = false;
 	tabEmpleadoIndex = TAB_PERSONALES;
 
 	/** Preview blob de la foto (panel + modal). */
@@ -851,7 +857,13 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	// Qué hace: cierra el modal y restaura personales/documentos/.../referencias/foto si canceló.
+	// Cómo: no vuelve a pedir departamento; esas listas ya se cargaron al abrir.
 	cerrarPopupPersonales(restaurar = true): void {
+		if (this.cerrandoPopupPersonales) {
+			this.popupPersonalesVisible = false;
+			return;
+		}
+		this.cerrandoPopupPersonales = true;
 		if (restaurar && !this.omitirRestaurarPopupPersonales) {
 			this.modelPersonaNatural = this.fillPersonaNatural(this.modelPersonaNaturalOriginal);
 			this.documentosIdentidad = this.clonarDocumentos(this.documentosIdentidadOriginal);
@@ -869,7 +881,6 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			this.parentescoContactos = this.clonarParentescoContactos(this.parentescoContactosOriginal);
 			this.fotoUrlNueva = '';
 			this.revocarFotoLocal();
-			this.refrescarTerritorioDesdeModelo();
 		}
 		this.omitirRestaurarPopupPersonales = false;
 		this.popupPersonalesVisible = false;
@@ -881,6 +892,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cerrarSubmodalReferenciaLaboral();
 		this.cerrarSubmodalDomicilio();
 		this.cerrarSubmodalParentescoContacto();
+	}
+
+	// Qué hace: suelta el bloqueo de consultas cuando la modal de editar datos ya se ocultó.
+	// Cómo: onHidden corre después de que los combos dejan de disparar valueChange.
+	alOcultarPopupPersonales(): void {
+		this.cerrandoPopupPersonales = false;
 	}
 
 	onPopupPersonalesShown(): void {
@@ -1022,6 +1039,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 
 	// Qué hace: al cambiar sexo/estado civil/discapacidad/extranjero, aplica reglas de UI del tab Personales.
 	onPersonalesFieldChanged(e: any): void {
+		if (this.cerrandoPopupPersonales) {
+			return;
+		}
 		if (e?.dataField === 'SEXO' || e?.dataField === 'ESTADO_CIVIL') {
 			this.aplicarReglaApellidoCasada();
 		}
@@ -1066,6 +1086,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	onPaisNacimientoChange(value: number): void {
+		if (this.cerrandoPopupPersonales) {
+			return;
+		}
 		if (!this.paisNacimientoHabilitado) {
 			this.modelPersonaNatural.CORR_PAIS_NACIMIENTO = null;
 			return;
@@ -1084,6 +1107,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	onDeptoNacimientoChange(value: number): void {
+		if (this.cerrandoPopupPersonales) {
+			return;
+		}
 		if (!this.territorioCompletoHabilitado) {
 			this.modelPersonaNatural.CORR_DEPTO_NACIMIENTO = null;
 			return;
@@ -1096,6 +1122,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	onMunicipioNacimientoChange(value: number): void {
+		if (this.cerrandoPopupPersonales) {
+			return;
+		}
 		if (!this.territorioCompletoHabilitado) {
 			this.modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO = null;
 			return;
@@ -3777,7 +3806,14 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			});
 	}
 
+	// Qué hace: cierra el submodal de dirección sin recargar departamento, municipio ni distrito.
+	// Cómo: marca el cierre antes de vaciar el draft; el combo de país dispara onValueChanged y ese cambio se ignora.
 	cerrarSubmodalDomicilio(): void {
+		if (this.omitirLookupDomicilioAlCerrar) {
+			this.submodalDomicilioVisible = false;
+			return;
+		}
+		this.omitirLookupDomicilioAlCerrar = true;
 		this.submodalDomicilioVisible = false;
 		this.submodalDomicilioEditIndex = null;
 		this.submodalDomicilioDraft = {};
@@ -3785,6 +3821,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.mCORR_DEPTO_DOMICILIO = [];
 		this.mCORR_MUNICIPIO_DOMICILIO = [];
 		this.mCORR_DISTRITO_DOMICILIO = [];
+		setTimeout(() => {
+			this.omitirLookupDomicilioAlCerrar = false;
+		}, 0);
 	}
 
 	/**
@@ -3832,7 +3871,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	onSubmodalDomicilioPaisChanged(e: any): void {
-		if (!e?.event) {
+		if (this.omitirLookupDomicilioAlCerrar || !e?.event) {
 			return;
 		}
 		const corrPais = Number(e?.value ?? 0) || null;
@@ -3858,7 +3897,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	onSubmodalDomicilioDeptoChanged(e: any): void {
-		if (!e?.event) {
+		if (this.omitirLookupDomicilioAlCerrar || !e?.event) {
 			return;
 		}
 		const corrDepto = Number(e?.value ?? 0) || null;
@@ -3882,7 +3921,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	onSubmodalDomicilioMunicipioChanged(e: any): void {
-		if (!e?.event) {
+		if (this.omitirLookupDomicilioAlCerrar || !e?.event) {
 			return;
 		}
 		const corrMun = Number(e?.value ?? 0) || null;
@@ -3906,7 +3945,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	onSubmodalDomicilioDistritoChanged(e: any): void {
-		if (!e?.event) {
+		if (this.omitirLookupDomicilioAlCerrar || !e?.event) {
 			return;
 		}
 		const corrDist = Number(e?.value ?? 0) || null;
