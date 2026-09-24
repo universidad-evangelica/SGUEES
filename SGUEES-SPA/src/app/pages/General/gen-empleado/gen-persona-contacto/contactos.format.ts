@@ -71,15 +71,30 @@ export function teclaPermitidaContacto(key: string, formato: FormatoCaracteresCo
 
 /**
  * Qué hace: máscara +503 XXXX-XXXX. Vacío si no hay dígitos del número.
- * Cómo: toma hasta 8 dígitos; si vienen con 503 adelante, los quita del cuerpo.
+ * Cómo: el prefijo queda fijo; solo entran los dígitos que van después de "+503 ".
+ *       Lo que se escriba antes del prefijo se descarta.
  */
 export function formatTelefonoNacional(valor: string): string {
 	const raw = `${valor ?? ''}`;
-	let digits = raw.replace(/\D/g, '');
-	if (raw.trim().startsWith('+503') || (digits.startsWith('503') && digits.length > 8)) {
-		digits = digits.startsWith('503') ? digits.slice(3) : digits;
+	if (!raw.trim()) {
+		return '';
 	}
-	digits = digits.substring(0, 8);
+
+	let source = raw;
+	if (!source.startsWith('+503')) {
+		const at = source.indexOf('+503');
+		if (at >= 0) {
+			source = source.slice(at);
+		} else {
+			let solo = source.replace(/\D/g, '');
+			if (solo.startsWith('503') && solo.length > 8) {
+				solo = solo.slice(3);
+			}
+			source = '+503 ' + solo;
+		}
+	}
+
+	let digits = source.slice(5).replace(/\D/g, '').substring(0, 8);
 	if (!digits) {
 		return '';
 	}

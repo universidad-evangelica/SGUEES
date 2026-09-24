@@ -283,11 +283,11 @@
 						</div>
 					</dxi-item>
 
-					<!-- motivo: contactos de la persona en solo lectura (edición vía modal) -->
-					<dxi-item title="Contactos" [icon]="'tel'">
+					<!-- motivo: contacto de la persona en solo lectura (edición vía modal) -->
+					<dxi-item title="Contacto" [icon]="'tel'">
 						<div class="rd-panel">
 							<section class="rd-section">
-								<h4 class="rd-section__title">Contactos</h4>
+								<h4 class="rd-section__title">Contacto</h4>
 								<div class="rd-grid" *ngIf="contactosVisibles?.length; else sinContactosCat">
 									<div class="rd-field" *ngFor="let item of contactosVisibles">
 										<span class="rd-label">{{ etiquetaContacto(item) }}</span>
@@ -631,30 +631,6 @@
 						</div>
 					</dxi-item>
 
-					<!-- motivo: placeholders de fase siguiente -->
-					<dxi-item title="Laboral" [icon]="'card'">
-						<div class="empleado-empty-state">
-							<i class="dx-icon dx-icon-card"></i>
-							<p>Datos laborales del empleado.</p>
-							<span>Esta sección se conectará en la siguiente fase.</span>
-						</div>
-					</dxi-item>
-
-					<dxi-item title="Contacto" [icon]="'tel'">
-						<div class="empleado-empty-state">
-							<i class="dx-icon dx-icon-tel"></i>
-							<p>Contactos y domicilios de la persona.</p>
-							<span>Esta sección se conectará en la siguiente fase.</span>
-						</div>
-					</dxi-item>
-
-					<dxi-item title="Usuario" [icon]="'key'">
-						<div class="empleado-empty-state">
-							<i class="dx-icon dx-icon-key"></i>
-							<p>Usuario de sistema vinculado a la persona.</p>
-							<span>Esta sección se conectará en la siguiente fase.</span>
-						</div>
-					</dxi-item>
 					</dx-tab-panel>
 				</div>
 			</ng-container>
@@ -791,10 +767,10 @@
 					</dxi-item>
 
 					<!-- motivo: valores de contacto (teléfono, correo) según catálogo -->
-					<dxi-item title="Contactos" [icon]="'tel'">
+					<dxi-item title="Contacto" [icon]="'tel'">
 						<div class="ep-panel">
 							<section class="ep-section">
-								<h4 class="ep-section__title">Contactos</h4>
+								<h4 class="ep-section__title">Contacto</h4>
 								<div class="ep-grid" *ngIf="contactosVisibles?.length; else sinContactosModal">
 									<div class="ep-field" *ngFor="let item of contactosVisibles">
 										<label class="ep-label">{{ etiquetaContacto(item) }}</label>

@@ -3495,6 +3495,13 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			return;
 		}
 		if (esTelefonoNacional(item.NOMBRE_CORTO)) {
+			const input = ev.target as HTMLInputElement | undefined;
+			const inicio = input?.selectionStart ?? 0;
+			if (input && input.value.startsWith('+503') && inicio < 5) {
+				ev.preventDefault();
+				input.setSelectionRange(input.value.length, input.value.length);
+				return;
+			}
 			if (!/[0-9]/.test(key)) {
 				ev.preventDefault();
 			}
@@ -3544,8 +3551,14 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		if (e?.component && e.component.option('value') !== formateado) {
 			e.component.option('value', formateado);
 		}
-		if (desdeInput && input && esTelefonoNacional(item.NOMBRE_CORTO) && input.selectionStart != null && input.selectionStart < 5) {
-			input.setSelectionRange(input.value.length, input.value.length);
+		if (desdeInput && input && esTelefonoNacional(item.NOMBRE_CORTO)) {
+			const colocarAlFinal = () => {
+				if ((input.selectionStart ?? 0) < 5) {
+					input.setSelectionRange(input.value.length, input.value.length);
+				}
+			};
+			colocarAlFinal();
+			setTimeout(colocarAlFinal, 0);
 		}
 	}
 

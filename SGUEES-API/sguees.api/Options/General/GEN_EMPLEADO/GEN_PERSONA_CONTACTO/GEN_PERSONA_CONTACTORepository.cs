@@ -339,10 +339,20 @@ namespace sguees.Repositories
 		private static string ValidarTelefonoNacional(string valor, GEN_PERSONA_CONTACTOView tipo, out string normalizado)
 		{
 			normalizado = valor;
-			var digits = new string(valor.Where(char.IsDigit).ToArray());
-			if (digits.StartsWith("503") && digits.Length > 8)
+			var raw = valor.Trim();
+			string digits;
+			var marca = raw.IndexOf("+503", StringComparison.Ordinal);
+			if (marca >= 0)
 			{
-				digits = digits.Substring(3);
+				digits = new string(raw.Substring(marca + 4).Where(char.IsDigit).ToArray());
+			}
+			else
+			{
+				digits = new string(raw.Where(char.IsDigit).ToArray());
+				if (digits.StartsWith("503") && digits.Length > 8)
+				{
+					digits = digits.Substring(3);
+				}
 			}
 
 			var tope = Tope(tipo) ?? 8;
