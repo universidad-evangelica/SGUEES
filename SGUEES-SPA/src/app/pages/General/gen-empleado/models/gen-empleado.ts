@@ -14,6 +14,7 @@ export interface GenEmpleado {
 	CORR_AFP: number | null;
 	NOMBRE_AFP?: string;
 	FECHA_AFILIACION_AFP: Date | string | null;
+	FECHA_INCORPORACION_SP: Date | string | null;
 	FECHA_INGRESO: Date | string | null;
 	CORREO_INSTITUCIONAL: string;
 	TELEFONO_INSTITUCIONAL: string;

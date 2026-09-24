@@ -359,6 +359,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					xModel.CORR_AFP == null || Number(xModel.CORR_AFP) <= 0 ? null : Number(xModel.CORR_AFP),
 				NOMBRE_AFP: xModel.NOMBRE_AFP ?? '',
 				FECHA_AFILIACION_AFP: xModel.FECHA_AFILIACION_AFP ?? null,
+				FECHA_INCORPORACION_SP: xModel.FECHA_INCORPORACION_SP ?? null,
 				FECHA_INGRESO: xModel.FECHA_INGRESO ?? null,
 				CORREO_INSTITUCIONAL: xModel.CORREO_INSTITUCIONAL ?? (xModel as any).CORREO_ELECTRONICO ?? '',
 				TELEFONO_INSTITUCIONAL: xModel.TELEFONO_INSTITUCIONAL ?? (xModel as any).TELEFONO_1 ?? '',
@@ -387,6 +388,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			CORR_AFP: null,
 			NOMBRE_AFP: '',
 			FECHA_AFILIACION_AFP: null,
+			FECHA_INCORPORACION_SP: null,
 			FECHA_INGRESO: null,
 			CORREO_INSTITUCIONAL: '',
 			TELEFONO_INSTITUCIONAL: '',
@@ -958,6 +960,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		return {
 			CODIGO_EMPLEADO: model?.CODIGO_EMPLEADO ?? '',
 			FECHA_INGRESO: model?.FECHA_INGRESO ?? null,
+			FECHA_INCORPORACION_SP: model?.FECHA_INCORPORACION_SP ?? null,
 			CORREO_INSTITUCIONAL: model?.CORREO_INSTITUCIONAL ?? '',
 			TELEFONO_INSTITUCIONAL: model?.TELEFONO_INSTITUCIONAL ?? '',
 			CORR_SEGURO_SOCIAL: model?.CORR_SEGURO_SOCIAL ?? null,
@@ -1294,6 +1297,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			ESTADO_NIP: vacioANull(`${this.model?.ESTADO_NIP ?? ''}`.trim()),
 			CORR_AFP: corrONull(this.model?.CORR_AFP),
 			FECHA_AFILIACION_AFP: this.model?.FECHA_AFILIACION_AFP ?? null,
+			FECHA_INCORPORACION_SP: this.model?.FECHA_INCORPORACION_SP ?? null,
 			FECHA_INGRESO: this.model?.FECHA_INGRESO ?? null,
 			CORREO_INSTITUCIONAL: vacioANull(`${this.model?.CORREO_INSTITUCIONAL ?? ''}`.trim()),
 			TELEFONO_INSTITUCIONAL: vacioANull(`${this.model?.TELEFONO_INSTITUCIONAL ?? ''}`.trim()),
@@ -1389,6 +1393,11 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	onTelefonoInstitucionalChanged(e: any): void {
+		// Qué hace: formatea solo si el usuario escribió en el cuadro.
+		// Cómo: al abrir el formulario DevExtreme dispara valueChanged sin tecla; eso no debe cambiar el valor guardado.
+		if (!e?.event) {
+			return;
+		}
 		this.aplicarTelefonoInstitucional(e, false);
 	}
 

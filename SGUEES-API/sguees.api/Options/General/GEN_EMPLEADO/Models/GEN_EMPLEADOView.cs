@@ -16,6 +16,7 @@ namespace sguees.Models
 		public int? CORR_AFP { get; set; }
 		public string NOMBRE_AFP { get; set; }
 		public DateTime? FECHA_AFILIACION_AFP { get; set; }
+		public DateTime? FECHA_INCORPORACION_SP { get; set; }
 		public string NOMBRE_EMPLEADO { get; set; }
 		public string PRIMER_NOMBRE { get; set; }
 		public string SEGUNDO_NOMBRE { get; set; }

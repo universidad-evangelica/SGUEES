@@ -256,6 +256,11 @@
 										<span class="rd-label">Fecha afiliación AFP</span>
 										<span class="rd-value">{{ fechaLectura(model?.FECHA_AFILIACION_AFP) }}</span>
 									</div>
+									<!-- motivo: fecha de incorporación al seguro social / SP -->
+									<div class="rd-field">
+										<span class="rd-label">Fecha incorporación SP</span>
+										<span class="rd-value">{{ fechaLectura(model?.FECHA_INCORPORACION_SP) }}</span>
+									</div>
 									<div class="rd-field">
 										<span class="rd-label">Estado NIP</span>
 										<span class="rd-value">{{ textoEstadoNip(model?.ESTADO_NIP) }}</span>
@@ -2339,6 +2344,16 @@
 						type="date"
 						displayFormat="dd/MM/yyyy"
 						[(value)]="model.FECHA_AFILIACION_AFP"
+					></dx-date-box>
+				</div>
+				<!-- motivo: FECHA_INCORPORACION_SP, date nullable, se guarda con el empleado -->
+				<div class="ep-field">
+					<label class="ep-label">Fecha incorporación SP</label>
+					<dx-date-box
+						stylingMode="outlined"
+						type="date"
+						displayFormat="dd/MM/yyyy"
+						[(value)]="model.FECHA_INCORPORACION_SP"
 					></dx-date-box>
 				</div>
 				<div class="ep-field">

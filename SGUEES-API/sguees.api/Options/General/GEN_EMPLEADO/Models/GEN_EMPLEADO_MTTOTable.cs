@@ -12,6 +12,7 @@ namespace sguees.Models
 		public string ESTADO_NIP { get; set; }
 		public int? CORR_AFP { get; set; }
 		public DateTime? FECHA_AFILIACION_AFP { get; set; }
+		public DateTime? FECHA_INCORPORACION_SP { get; set; }
 		public DateTime? FECHA_INGRESO { get; set; }
 		public string CORREO_INSTITUCIONAL { get; set; }
 		public string TELEFONO_INSTITUCIONAL { get; set; }
