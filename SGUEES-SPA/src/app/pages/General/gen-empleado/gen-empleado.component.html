@@ -2288,11 +2288,25 @@
 				</div>
 				<div class="ep-field">
 					<label class="ep-label">Correo institucional</label>
-					<dx-text-box stylingMode="outlined" [(value)]="model.CORREO_INSTITUCIONAL" [maxLength]="100"></dx-text-box>
+					<dx-text-box
+						stylingMode="outlined"
+						[(value)]="model.CORREO_INSTITUCIONAL"
+						[maxLength]="255"
+						(onKeyDown)="onCorreoInstitucionalKeyDown($event)"
+						(onInput)="onCorreoInstitucionalInput($event)"
+						(onValueChanged)="onCorreoInstitucionalChanged($event)"
+					></dx-text-box>
 				</div>
 				<div class="ep-field">
 					<label class="ep-label">Teléfono institucional</label>
-					<dx-text-box stylingMode="outlined" [(value)]="model.TELEFONO_INSTITUCIONAL" [maxLength]="50"></dx-text-box>
+					<dx-text-box
+						stylingMode="outlined"
+						[(value)]="model.TELEFONO_INSTITUCIONAL"
+						[maxLength]="14"
+						(onKeyDown)="onTelefonoInstitucionalKeyDown($event)"
+						(onInput)="onTelefonoInstitucionalInput($event)"
+						(onValueChanged)="onTelefonoInstitucionalChanged($event)"
+					></dx-text-box>
 				</div>
 				<div class="ep-field">
 					<label class="ep-label">Seguro social</label>

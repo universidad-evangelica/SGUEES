@@ -39,6 +39,8 @@ import {
 	contactoVisiblePorAplicaPara,
 	esEmailContacto,
 	esTelefonoNacional,
+	formatEmailContacto,
+	formatTelefonoNacional,
 	maxLengthContactoCampo,
 	mensajeContactoInvalido,
 	normalizarFormatoContacto,
@@ -1166,6 +1168,11 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	// Qué hace: crea GEN_PERSONA + GEN_EMPRESA_PERSONA + GEN_PERSONA_NATURAL + GEN_EMPLEADO (SP).
 	// Cómo: POST Iniciar con payload personales+empleado; parchea model/grid y recarga naturales.
 	private iniciarEmpleado(): void {
+		const invalido = this.mensajeDatosEmpleadoInvalido();
+		if (invalido) {
+			this.notifyFx(invalido, NotifyType.Warning);
+			return;
+		}
 		this.loadingVisible = true;
 		this.service
 			.iniciar(this.construirPayloadPersonalesMtto())
@@ -1221,6 +1228,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			return;
 		}
 
+		const invalido = this.mensajeDatosEmpleadoInvalido();
+		if (invalido) {
+			this.notifyFx(invalido, NotifyType.Warning);
+			return;
+		}
+
 		const payload = this.construirPayloadPersonalesMtto();
 		if (!(Number(payload.CORR_PERSONA_NATURAL) > 0)) {
 			this.notifyFx('No hay persona natural vinculada. Reinicie el alta del empleado.', NotifyType.Warning);
@@ -1261,6 +1274,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: sanitiza CHECK/nulls y une model + modelPersonaNatural.
 	 */
 	private construirPayloadPersonalesMtto(): any {
+		this.aplicarFormatoDatosEmpleado();
 		const natural = this.sanitizarPersonaNaturalPayload({
 			...this.modelPersonaNatural,
 			CORR_PERSONA: Number(this.model?.CORR_PERSONA ?? 0),
@@ -1285,6 +1299,124 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			TELEFONO_INSTITUCIONAL: vacioANull(`${this.model?.TELEFONO_INSTITUCIONAL ?? ''}`.trim()),
 			ACTIVO_EMPLEADO: this.model?.ACTIVO_EMPLEADO !== false,
 		};
+	}
+
+	// Qué hace: normaliza correo y teléfono institucional antes de validar o guardar.
+	// Cómo: correo sin espacios; teléfono con máscara +503 XXXX-XXXX. Vacío se deja vacío.
+	private aplicarFormatoDatosEmpleado(): void {
+		if (!this.model) {
+			return;
+		}
+		this.model.CORREO_INSTITUCIONAL = formatEmailContacto(`${this.model.CORREO_INSTITUCIONAL ?? ''}`, 255);
+		this.model.TELEFONO_INSTITUCIONAL = formatTelefonoNacional(`${this.model.TELEFONO_INSTITUCIONAL ?? ''}`);
+	}
+
+	// Qué hace: exige formato de correo y de teléfono nacional en Datos de empleado.
+	// Cómo: vacío es válido; si hay texto, correo con @ y dominio, teléfono con 8 dígitos.
+	private mensajeDatosEmpleadoInvalido(): string | null {
+		this.aplicarFormatoDatosEmpleado();
+		const correo = `${this.model?.CORREO_INSTITUCIONAL ?? ''}`.trim();
+		const telefono = `${this.model?.TELEFONO_INSTITUCIONAL ?? ''}`.trim();
+		return (
+			mensajeContactoInvalido('EMAIL', 'Correo institucional', correo, true, 255) ||
+			mensajeContactoInvalido('TELEFONO_NACION', 'Teléfono institucional', telefono, true, 8)
+		);
+	}
+
+	onCorreoInstitucionalKeyDown(e: any): void {
+		const ev = e?.event as KeyboardEvent | undefined;
+		if (!ev || ev.ctrlKey || ev.metaKey || ev.altKey) {
+			return;
+		}
+		const key = ev.key || '';
+		if (key.length !== 1 || key === 'Dead') {
+			return;
+		}
+		if (!/[A-Za-z0-9@._%+\-]/.test(key)) {
+			ev.preventDefault();
+		}
+	}
+
+	onCorreoInstitucionalInput(e: any): void {
+		this.aplicarCorreoInstitucional(e, true);
+	}
+
+	onCorreoInstitucionalChanged(e: any): void {
+		this.aplicarCorreoInstitucional(e, false);
+	}
+
+	private aplicarCorreoInstitucional(e: any, desdeInput: boolean): void {
+		if (!this.model) {
+			return;
+		}
+		const input = e?.event?.target as HTMLInputElement | undefined;
+		const raw = desdeInput
+			? `${input?.value ?? e?.component?.option('value') ?? ''}`
+			: `${e?.value ?? ''}`;
+		const formateado = formatEmailContacto(raw, 255);
+		this.model.CORREO_INSTITUCIONAL = formateado;
+		if (input && input.value !== formateado) {
+			input.value = formateado;
+		}
+		if (e?.component && e.component.option('value') !== formateado) {
+			e.component.option('value', formateado);
+		}
+	}
+
+	onTelefonoInstitucionalKeyDown(e: any): void {
+		const ev = e?.event as KeyboardEvent | undefined;
+		if (!ev || ev.ctrlKey || ev.metaKey || ev.altKey) {
+			return;
+		}
+		const key = ev.key || '';
+		if (key.length !== 1 || key === 'Dead') {
+			return;
+		}
+		const input = ev.target as HTMLInputElement | undefined;
+		const inicio = input?.selectionStart ?? 0;
+		if (input && input.value.startsWith('+503') && inicio < 5) {
+			ev.preventDefault();
+			input.setSelectionRange(input.value.length, input.value.length);
+			return;
+		}
+		if (!/[0-9]/.test(key)) {
+			ev.preventDefault();
+		}
+	}
+
+	onTelefonoInstitucionalInput(e: any): void {
+		this.aplicarTelefonoInstitucional(e, true);
+	}
+
+	onTelefonoInstitucionalChanged(e: any): void {
+		this.aplicarTelefonoInstitucional(e, false);
+	}
+
+	private aplicarTelefonoInstitucional(e: any, desdeInput: boolean): void {
+		if (!this.model) {
+			return;
+		}
+		const input = e?.event?.target as HTMLInputElement | undefined;
+		const raw = desdeInput
+			? `${input?.value ?? e?.component?.option('value') ?? ''}`
+			: `${e?.value ?? ''}`;
+		const formateado = formatTelefonoNacional(raw);
+		this.model.TELEFONO_INSTITUCIONAL = formateado;
+		if (input && input.value !== formateado) {
+			input.value = formateado;
+		}
+		if (e?.component && e.component.option('value') !== formateado) {
+			e.component.option('value', formateado);
+		}
+		if (desdeInput && input) {
+			const colocarAlFinal = () => {
+				if ((input.selectionStart ?? 0) < 5 && input.value.startsWith('+503')) {
+					input.setSelectionRange(input.value.length, input.value.length);
+				}
+			};
+			colocarAlFinal();
+			setTimeout(colocarAlFinal, 0);
+		}
 	}
 
 	/** Qué hace: sincroniza nombres de AFP/Seguro desde lookups tras guardar. */
