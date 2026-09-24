@@ -28,6 +28,7 @@ export function normalizarFormatoCaracteres(valor?: string | null): FormatoCarac
 
 /**
  * Qué hace: deja solo caracteres permitidos según FORMATO_CARACTERES (sin guiones).
+ * Cómo: letras y números es texto libre (corchetes y demás signos).
  */
 export function filtrarPorFormatoCaracteres(valor: string, formato: FormatoCaracteresDoc): string {
 	const raw = valor || '';
@@ -37,7 +38,19 @@ export function filtrarPorFormatoCaracteres(valor: string, formato: FormatoCarac
 	if (formato === 'LETRAS') {
 		return raw.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '');
 	}
-	return raw.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]/g, '');
+	return raw;
+}
+
+/** Qué hace: cuerpo de DUI/NIT/NRC/ISSS/AFP. La máscara pone el guion; no entra texto libre. */
+function cuerpoParaMascara(valor: string, formato: FormatoCaracteresDoc): string {
+	const raw = valor || '';
+	if (formato === 'LETRAS') {
+		return raw.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '');
+	}
+	if (formato === 'AMBOS') {
+		return raw.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]/g, '');
+	}
+	return raw.replace(/\D/g, '');
 }
 
 /** Qué hace: indica si la tecla es válida para el formato (sin guion; la máscara lo pone). */
@@ -51,7 +64,7 @@ export function teclaPermitidaPorFormato(key: string, formato: FormatoCaracteres
 	if (formato === 'LETRAS') {
 		return /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(key);
 	}
-	return /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]/.test(key);
+	return true;
 }
 
 /**
@@ -113,7 +126,7 @@ export function formatDui(
 	maxCaracteres?: number | null,
 	formato: FormatoCaracteresDoc = 'NUMEROS'
 ): string {
-	let body = filtrarPorFormatoCaracteres(valor, formato);
+	let body = cuerpoParaMascara(valor, formato);
 	if (maxCaracteres != null && Number(maxCaracteres) > 0) {
 		body = body.substring(0, Number(maxCaracteres));
 	}
@@ -134,7 +147,7 @@ export function formatNit(
 	maxCaracteres?: number | null,
 	formato: FormatoCaracteresDoc = 'NUMEROS'
 ): string {
-	let body = filtrarPorFormatoCaracteres(valor, formato);
+	let body = cuerpoParaMascara(valor, formato);
 	if (maxCaracteres != null && Number(maxCaracteres) > 0) {
 		body = body.substring(0, Number(maxCaracteres));
 	}
@@ -157,7 +170,7 @@ export function formatNrc(
 	maxCaracteres?: number | null,
 	formato: FormatoCaracteresDoc = 'NUMEROS'
 ): string {
-	let body = filtrarPorFormatoCaracteres(valor, formato);
+	let body = cuerpoParaMascara(valor, formato);
 	if (maxCaracteres != null && Number(maxCaracteres) > 0) {
 		body = body.substring(0, Number(maxCaracteres));
 	}

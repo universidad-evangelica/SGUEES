@@ -441,7 +441,7 @@ namespace sguees.Repositories
 		{
 			if (string.IsNullOrEmpty(formato) || formato == "AMBOS")
 			{
-				return valor.All(c => char.IsLetterOrDigit(c) || c == ' ');
+				return true;
 			}
 
 			if (formato == "NUMEROS")
@@ -469,7 +469,7 @@ namespace sguees.Repositories
 				return $"{nombre} solo admite letras.";
 			}
 
-			return $"{nombre} solo admite letras, números y espacios.";
+			return $"{nombre} admite texto libre.";
 		}
 
 		private static CResult Aviso(string message, int errorCode = 2627)
