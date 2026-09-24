@@ -142,6 +142,11 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	// Qué hace: colecciones del tab Direcciones (domicilios).
 	domicilios: GenPersonaDomicilio[] = [];
 	private domiciliosOriginal: GenPersonaDomicilio[] = [];
+	/** Qué hace: baseline de personales/empleado tras abrir el modal (después de reglas de UI). */
+	private modelPersonaNaturalBase: GenPersonaNatural = this.fillPersonaNatural();
+	private modelEmpleadoBase: Partial<GenEmpleado> | null = null;
+	/** Qué hace: permite fijar el baseline una sola vez al mostrar el popup. */
+	private snapshotEdicionPendiente = false;
 	private tempCorrDomicilio = -1;
 
 	/** Submodal agregar/editar domicilio. */
@@ -591,7 +596,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.notifyFx('Registro modificado con exito!', NotifyType.Success, { raw: true });
 	}
 
-	// Qué hace: guarda personales + documentos + familiares/hijos + formación + experiencia + UEES desde el modal y cierra el popup.
+	// Qué hace: guarda solo los bloques del modal que cambiaron respecto al abrir.
+	// Cómo: cada guardar* compara con su copia; si es igual, no llama al API.
 	guardarPersonalesDesdeModal(): void {
 		if (this.fotoSubiendo) {
 			this.notifyFx('Espere a que termine de subir la fotografía.', NotifyType.Warning);
@@ -785,10 +791,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(this.referenciasPersonales);
 		this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
 		this.domiciliosOriginal = this.clonarDomicilios(this.domicilios);
+		this.modelPersonaNaturalBase = this.fillPersonaNatural(this.modelPersonaNatural);
+		this.modelEmpleadoBase = this.extraerDatosEmpleado(this.model);
+		this.snapshotEdicionPendiente = true;
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.popupPersonalesVisible = true;
-		setTimeout(() => this.aplicarReglasPersonales(), 0);
 	}
 
 	// Qué hace: cierra el modal y restaura personales/documentos/.../referencias/foto si canceló.
@@ -822,7 +830,101 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	onPopupPersonalesShown(): void {
-		setTimeout(() => this.aplicarReglasPersonales(), 0);
+		setTimeout(() => {
+			this.aplicarReglasPersonales();
+			this.fijarBaselineEdicion();
+		}, 0);
+	}
+
+	/**
+	 * Qué hace: toma la foto de personales y datos de empleado ya con reglas de UI aplicadas.
+	 * Cómo: solo la primera vez que se muestra el popup; eso es lo que se compara al guardar.
+	 */
+	private fijarBaselineEdicion(): void {
+		if (!this.snapshotEdicionPendiente) {
+			return;
+		}
+		this.modelPersonaNaturalBase = this.fillPersonaNatural(this.modelPersonaNatural);
+		this.modelEmpleadoBase = this.extraerDatosEmpleado(this.model);
+		this.snapshotEdicionPendiente = false;
+	}
+
+	/**
+	 * Qué hace: indica si un bloque del modal cambió respecto a su copia al abrir.
+	 * Cómo: normaliza null/fechas/texto y compara JSON; ignora auditoría.
+	 */
+	private cambioRespectoA(actual: any, base: any): boolean {
+		return this.firmaContenido(actual) !== this.firmaContenido(base);
+	}
+
+	private firmaContenido(value: any): string {
+		return JSON.stringify(this.normalizarFirma(value));
+	}
+
+	private normalizarFirma(value: any): any {
+		if (value instanceof Date) {
+			return Number.isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+		}
+		if (Array.isArray(value)) {
+			return value.map((item) => this.normalizarFirma(item));
+		}
+		if (value && typeof value === 'object') {
+			const out: any = {};
+			for (const key of Object.keys(value).sort()) {
+				if (
+					key === 'USUARIO_CREA' ||
+					key === 'USUARIO_ACTU' ||
+					key === 'ESTACION_CREA' ||
+					key === 'ESTACION_ACTU' ||
+					key === 'FECHA_CREA' ||
+					key === 'FECHA_ACTU' ||
+					key === 'NOMBRE_COMPLETO'
+				) {
+					continue;
+				}
+				out[key] = this.normalizarFirma(value[key]);
+			}
+			return out;
+		}
+		if (typeof value === 'string') {
+			const texto = value.trim();
+			if (!texto) {
+				return null;
+			}
+			if (/^\d{4}-\d{2}-\d{2}/.test(texto)) {
+				return texto.slice(0, 10);
+			}
+			return texto;
+		}
+		if (value === undefined || value === '') {
+			return null;
+		}
+		return value;
+	}
+
+	/** Qué hace: campos de GEN_EMPLEADO editables en Personales. */
+	private extraerDatosEmpleado(model: GenEmpleado | null | undefined): Partial<GenEmpleado> {
+		return {
+			CODIGO_EMPLEADO: model?.CODIGO_EMPLEADO ?? '',
+			FECHA_INGRESO: model?.FECHA_INGRESO ?? null,
+			CORREO_INSTITUCIONAL: model?.CORREO_INSTITUCIONAL ?? '',
+			TELEFONO_INSTITUCIONAL: model?.TELEFONO_INSTITUCIONAL ?? '',
+			CORR_SEGURO_SOCIAL: model?.CORR_SEGURO_SOCIAL ?? null,
+			CORR_AFP: model?.CORR_AFP ?? null,
+			FECHA_AFILIACION_AFP: model?.FECHA_AFILIACION_AFP ?? null,
+			ESTADO_NIP: model?.ESTADO_NIP ?? '',
+			ACTIVO_EMPLEADO: model?.ACTIVO_EMPLEADO !== false,
+		};
+	}
+
+	private personalesCambiaron(): boolean {
+		if (`${this.fotoUrlNueva ?? ''}`.trim()) {
+			return true;
+		}
+		return (
+			this.cambioRespectoA(this.modelPersonaNatural, this.modelPersonaNaturalBase) ||
+			this.cambioRespectoA(this.extraerDatosEmpleado(this.model), this.modelEmpleadoBase)
+		);
 	}
 
 	/**
@@ -830,6 +932,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: SaveAll; en éxito actualiza lista en memoria y llama onSuccess.
 	 */
 	private guardarDocumentosDesdeModal(onSuccess?: () => void): void {
+		if (!this.cambioRespectoA(this.documentosIdentidad, this.documentosIdentidadOriginal)) {
+			onSuccess?.();
+			return;
+		}
 		const corrPersona = Number(this.model.CORR_PERSONA);
 		if (corrPersona <= 0) {
 			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
@@ -1054,6 +1160,11 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	private guardarPersonaNatural(onSuccess?: () => void, opciones?: { silencioso?: boolean }): void {
 		if (!this.tienePersonaBase) {
 			this.notifyFx('Primero debe iniciar el empleado (Guardar).', NotifyType.Warning);
+			return;
+		}
+
+		if (!this.personalesCambiaron()) {
+			onSuccess?.();
 			return;
 		}
 
@@ -1307,6 +1418,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: SaveAll; en éxito actualiza lista en memoria y llama onSuccess.
 	 */
 	private guardarFamiliaresDesdeModal(onSuccess?: () => void): void {
+		if (!this.cambioRespectoA(this.familiares, this.familiaresOriginal)) {
+			onSuccess?.();
+			return;
+		}
 		const corrPersona = Number(this.model.CORR_PERSONA);
 		if (corrPersona <= 0) {
 			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
@@ -1341,6 +1456,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: SaveAll; en éxito actualiza lista en memoria y llama onSuccess.
 	 */
 	private guardarHijosDesdeModal(onSuccess?: () => void): void {
+		if (!this.cambioRespectoA(this.hijos, this.hijosOriginal)) {
+			onSuccess?.();
+			return;
+		}
 		const corrPersona = Number(this.model.CORR_PERSONA);
 		if (corrPersona <= 0) {
 			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
@@ -1624,6 +1743,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
 	 */
 	private guardarFormacionDesdeModal(onSuccess?: () => void): void {
+		if (!this.cambioRespectoA(this.formacionesAcademicas, this.formacionesAcademicasOriginal)) {
+			onSuccess?.();
+			return;
+		}
 		const corrPersona = Number(this.model.CORR_PERSONA);
 		if (corrPersona <= 0) {
 			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
@@ -1658,6 +1781,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
 	 */
 	private guardarIdiomasDesdeModal(onSuccess?: () => void): void {
+		if (!this.cambioRespectoA(this.idiomas, this.idiomasOriginal)) {
+			onSuccess?.();
+			return;
+		}
 		const corrPersona = Number(this.model.CORR_PERSONA);
 		if (corrPersona <= 0) {
 			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
@@ -1692,6 +1819,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
 	 */
 	private guardarCompetenciasDesdeModal(onSuccess?: () => void): void {
+		if (!this.cambioRespectoA(this.competencias, this.competenciasOriginal)) {
+			onSuccess?.();
+			return;
+		}
 		const corrPersona = Number(this.model.CORR_PERSONA);
 		if (corrPersona <= 0) {
 			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
@@ -2043,6 +2174,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
 	 */
 	private guardarExperienciasDesdeModal(onSuccess?: () => void): void {
+		if (!this.cambioRespectoA(this.experienciasLaborales, this.experienciasLaboralesOriginal)) {
+			onSuccess?.();
+			return;
+		}
 		const corrPersona = Number(this.model.CORR_PERSONA);
 		if (corrPersona <= 0) {
 			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
@@ -2238,6 +2373,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
 	 */
 	private guardarFamiliaresUeesDesdeModal(onSuccess?: () => void): void {
+		if (!this.cambioRespectoA(this.familiaresUees, this.familiaresUeesOriginal)) {
+			onSuccess?.();
+			return;
+		}
 		const corrPersona = Number(this.model.CORR_PERSONA);
 		if (corrPersona <= 0) {
 			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
@@ -2411,6 +2550,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
 	 */
 	private guardarReferenciasPersonalesDesdeModal(onSuccess?: () => void): void {
+		if (!this.cambioRespectoA(this.referenciasPersonales, this.referenciasPersonalesOriginal)) {
+			onSuccess?.();
+			return;
+		}
 		const corrPersona = Number(this.model.CORR_PERSONA);
 		if (corrPersona <= 0) {
 			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
@@ -2557,6 +2700,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
 	 */
 	private guardarReferenciasLaboralesDesdeModal(onSuccess?: () => void): void {
+		if (!this.cambioRespectoA(this.referenciasLaborales, this.referenciasLaboralesOriginal)) {
+			onSuccess?.();
+			return;
+		}
 		const corrPersona = Number(this.model.CORR_PERSONA);
 		if (corrPersona <= 0) {
 			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
@@ -2703,6 +2850,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
 	 */
 	private guardarDomiciliosDesdeModal(onSuccess?: () => void): void {
+		if (!this.cambioRespectoA(this.domicilios, this.domiciliosOriginal)) {
+			onSuccess?.();
+			return;
+		}
 		const corrPersona = Number(this.model.CORR_PERSONA);
 		if (corrPersona <= 0) {
 			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
