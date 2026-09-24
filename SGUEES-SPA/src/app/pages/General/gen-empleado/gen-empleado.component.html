@@ -1806,21 +1806,13 @@
 							[showClearButton]="true"
 						></dx-select-box>
 					</div>
-					<!-- motivo: el check filtra teléfono nacional o extranjero según APLICA_PARA -->
-					<div class="ep-field ep-field--wide">
-						<dx-check-box
-							[(value)]="submodalParentescoContactoDraft.ES_EXTRANJERO"
-							text="Es extranjero"
-							(onValueChanged)="onEsExtranjeroParentescoContactoChanged()"
-						></dx-check-box>
-					</div>
 					<div class="ep-field">
 						<label class="ep-label">Tipo de contacto <span class="req">*</span></label>
 						<dx-select-box
 							stylingMode="outlined"
 							[(value)]="submodalParentescoContactoDraft.CORR_TIPO_CONTACTO"
 							[items]="tiposParentescoContactoVisibles"
-							displayExpr="ETIQUETA_TIPO"
+							displayExpr="NOMBRE_TIPO_CONTACTO"
 							valueExpr="CORR_TIPO_CONTACTO"
 							[searchEnabled]="true"
 							[showClearButton]="true"
@@ -1847,7 +1839,15 @@
 							[maxLength]="255"
 						></dx-text-box>
 					</div>
-					<div class="ep-field ep-field--wide">
+					<!-- motivo: extranjero filtra el tipo; va junto al check de emergencia -->
+					<div class="ep-field">
+						<dx-check-box
+							[(value)]="submodalParentescoContactoDraft.ES_EXTRANJERO"
+							text="Es extranjero"
+							(onValueChanged)="onEsExtranjeroParentescoContactoChanged()"
+						></dx-check-box>
+					</div>
+					<div class="ep-field">
 						<dx-check-box
 							[(value)]="submodalParentescoContactoDraft.PARENTESCO_CONTACTO_EMERGENCIA"
 							text="Contacto de emergencia"

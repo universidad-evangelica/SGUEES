@@ -4188,7 +4188,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	// Qué hace: carga tipos de contacto activos para el tab Contactos.
-	// Cómo: lookup GetCORR_TIPO_CONTACTO_GEN_EMPLEADO; la etiqueta distingue el nombre corto.
+	// Cómo: lookup GetCORR_TIPO_CONTACTO_GEN_EMPLEADO; el usuario ve solo el nombre del tipo.
 	private getCORR_TIPO_CONTACTO(): void {
 		this.appInfoService
 			.getLookUp(
@@ -4201,13 +4201,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
-					const rows = response?.Result ? response.Data ?? [] : [];
-					this.mCORR_TIPO_CONTACTO = (rows ?? []).map((t: any) => {
-						const largo = `${t?.NOMBRE_TIPO_CONTACTO ?? ''}`.trim();
-						const corto = `${t?.NOMBRE_CORTO ?? ''}`.trim();
-						const etiqueta = corto && corto.toUpperCase() !== largo.toUpperCase() ? `${largo} (${corto})` : largo;
-						return { ...t, ETIQUETA_TIPO: etiqueta || corto };
-					});
+					this.mCORR_TIPO_CONTACTO = response?.Result ? response.Data ?? [] : [];
 				},
 			});
 	}
