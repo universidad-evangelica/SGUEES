@@ -21,6 +21,7 @@ namespace sguees.Models
 		public string APLICA_PARA { get; set; }
 		public string VALOR_CONTACTO { get; set; }
 		public string DIRECCION { get; set; }
+		public bool? ES_EXTRANJERO { get; set; }
 		public bool? PARENTESCO_CONTACTO_EMERGENCIA { get; set; }
 		public bool? ACTIVO_PARENTESCO_CONTACTO { get; set; }
 		public string USUARIO_CREA { get; set; }

@@ -16,6 +16,7 @@ export interface GenPersonaParentescoContacto {
 	APLICA_PARA?: string;
 	VALOR_CONTACTO?: string;
 	DIRECCION?: string;
+	ES_EXTRANJERO?: boolean;
 	PARENTESCO_CONTACTO_EMERGENCIA?: boolean;
 	ACTIVO_PARENTESCO_CONTACTO?: boolean;
 }

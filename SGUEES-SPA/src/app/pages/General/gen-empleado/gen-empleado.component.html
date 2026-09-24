@@ -648,6 +648,10 @@
 												<span class="rd-value">{{ textoLectura(item.NOMBRE_PARENTESCO) }}</span>
 											</div>
 											<div class="rd-field">
+												<span class="rd-label">Extranjero</span>
+												<span class="rd-value">{{ textoSiNo(item.ES_EXTRANJERO) }}</span>
+											</div>
+											<div class="rd-field">
 												<span class="rd-label">Tipo</span>
 												<span class="rd-value">{{ textoLectura(item.NOMBRE_TIPO_CONTACTO) }}</span>
 											</div>
@@ -1802,12 +1806,20 @@
 							[showClearButton]="true"
 						></dx-select-box>
 					</div>
+					<!-- motivo: el check filtra teléfono nacional o extranjero según APLICA_PARA -->
+					<div class="ep-field ep-field--wide">
+						<dx-check-box
+							[(value)]="submodalParentescoContactoDraft.ES_EXTRANJERO"
+							text="Es extranjero"
+							(onValueChanged)="onEsExtranjeroParentescoContactoChanged()"
+						></dx-check-box>
+					</div>
 					<div class="ep-field">
 						<label class="ep-label">Tipo de contacto <span class="req">*</span></label>
 						<dx-select-box
 							stylingMode="outlined"
 							[(value)]="submodalParentescoContactoDraft.CORR_TIPO_CONTACTO"
-							[items]="mCORR_TIPO_CONTACTO"
+							[items]="tiposParentescoContactoVisibles"
 							displayExpr="ETIQUETA_TIPO"
 							valueExpr="CORR_TIPO_CONTACTO"
 							[searchEnabled]="true"

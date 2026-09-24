@@ -132,6 +132,14 @@ namespace sguees.Repositories
 						return Aviso("El tipo de contacto seleccionado está inactivo.");
 					}
 
+					var esExtranjero = item.ES_EXTRANJERO == true;
+					if (!AplicaTipoContacto(tipo.APLICA_PARA, esExtranjero))
+					{
+						return Aviso(esExtranjero
+							? "El tipo de contacto no aplica para un contacto extranjero."
+							: "El tipo de contacto no aplica para un contacto nacional.");
+					}
+
 					var valor = (item.VALOR_CONTACTO ?? string.Empty).Trim();
 					if (string.IsNullOrWhiteSpace(valor))
 					{
@@ -158,6 +166,7 @@ namespace sguees.Repositories
 						CORR_TIPO_CONTACTO = corrTipo,
 						VALOR_CONTACTO = normalizado,
 						DIRECCION = direccion,
+						ES_EXTRANJERO = item.ES_EXTRANJERO == true,
 						PARENTESCO_CONTACTO_EMERGENCIA = item.PARENTESCO_CONTACTO_EMERGENCIA == true,
 						ACTIVO_PARENTESCO_CONTACTO = true,
 					});
@@ -269,6 +278,7 @@ namespace sguees.Repositories
 				new CParameter() { ParameterName = "CORR_TIPO_CONTACTO", Value = item.CORR_TIPO_CONTACTO, DbType = System.Data.DbType.Int32 },
 				new CParameter() { ParameterName = "VALOR_CONTACTO", Value = item.VALOR_CONTACTO, DbType = System.Data.DbType.String },
 				new CParameter() { ParameterName = "DIRECCION", Value = item.DIRECCION ?? string.Empty, DbType = System.Data.DbType.String },
+				new CParameter() { ParameterName = "ES_EXTRANJERO", Value = item.ES_EXTRANJERO == true, DbType = System.Data.DbType.Boolean },
 				new CParameter() { ParameterName = "PARENTESCO_CONTACTO_EMERGENCIA", Value = item.PARENTESCO_CONTACTO_EMERGENCIA == true, DbType = System.Data.DbType.Boolean },
 				new CParameter() { ParameterName = "ACTIVO_PARENTESCO_CONTACTO", Value = true, DbType = System.Data.DbType.Boolean },
 			};
@@ -290,6 +300,19 @@ namespace sguees.Repositories
 			}
 
 			return lista;
+		}
+
+		// Qué hace: el tipo debe coincidir con ES_EXTRANJERO según APLICA_PARA del catálogo.
+		// Cómo: extranjero → EXTRANJEROS|AMBOS; nacional → NACIONALES|AMBOS. Vacío se trata como ambos.
+		private static bool AplicaTipoContacto(string aplicaPara, bool esExtranjero)
+		{
+			var aplica = (aplicaPara ?? string.Empty).Trim().ToUpperInvariant();
+			if (string.IsNullOrEmpty(aplica) || aplica == "AMBOS")
+			{
+				return true;
+			}
+
+			return esExtranjero ? aplica == "EXTRANJEROS" : aplica == "NACIONALES";
 		}
 
 		// Qué hace: valida el valor según el tipo de contacto del catálogo.

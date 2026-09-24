@@ -3133,6 +3133,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 				r?.CORR_TIPO_CONTACTO == null || Number(r.CORR_TIPO_CONTACTO) <= 0
 					? null
 					: Number(r.CORR_TIPO_CONTACTO),
+			ES_EXTRANJERO: r?.ES_EXTRANJERO === true || r?.ES_EXTRANJERO === 1 || r?.ES_EXTRANJERO === '1',
 			PARENTESCO_CONTACTO_EMERGENCIA:
 				r?.PARENTESCO_CONTACTO_EMERGENCIA === true ||
 				r?.PARENTESCO_CONTACTO_EMERGENCIA === 1 ||
@@ -3152,7 +3153,20 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			item?.VALOR_CONTACTO || null,
 		].filter((x) => !!x && `${x}`.trim());
 		const base = partes.length ? partes.join(' · ') : 'Sin detalle';
-		return item?.PARENTESCO_CONTACTO_EMERGENCIA ? `${base} · Emergencia` : base;
+		const marcas = [
+			item?.ES_EXTRANJERO ? 'Extranjero' : null,
+			item?.PARENTESCO_CONTACTO_EMERGENCIA ? 'Emergencia' : null,
+		].filter((x) => !!x);
+		return marcas.length ? `${base} · ${marcas.join(' · ')}` : base;
+	}
+
+	// Qué hace: tipos del lookup según si el contacto es extranjero.
+	// Cómo: APLICA_PARA EXTRANJEROS|AMBOS o NACIONALES|AMBOS.
+	get tiposParentescoContactoVisibles(): any[] {
+		const esExtranjero = !!this.submodalParentescoContactoDraft?.ES_EXTRANJERO;
+		return (this.mCORR_TIPO_CONTACTO ?? []).filter((t) =>
+			contactoVisiblePorAplicaPara(t?.APLICA_PARA, esExtranjero)
+		);
 	}
 
 	get tituloSubmodalParentescoContacto(): string {
@@ -3169,6 +3183,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			CORR_TIPO_CONTACTO: null,
 			VALOR_CONTACTO: '',
 			DIRECCION: '',
+			ES_EXTRANJERO: false,
 			PARENTESCO_CONTACTO_EMERGENCIA: false,
 		};
 		this.submodalParentescoContactoVisible = true;
@@ -3183,6 +3198,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			CORR_TIPO_CONTACTO: row?.CORR_TIPO_CONTACTO ?? null,
 			VALOR_CONTACTO: row?.VALOR_CONTACTO ?? '',
 			DIRECCION: row?.DIRECCION ?? '',
+			ES_EXTRANJERO: !!row?.ES_EXTRANJERO,
 			PARENTESCO_CONTACTO_EMERGENCIA: !!row?.PARENTESCO_CONTACTO_EMERGENCIA,
 			NOMBRE_CORTO: row?.NOMBRE_CORTO,
 			NOMBRE_TIPO_CONTACTO: row?.NOMBRE_TIPO_CONTACTO,
@@ -3198,6 +3214,26 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.submodalParentescoContactoVisible = false;
 		this.submodalParentescoContactoEditIndex = null;
 		this.submodalParentescoContactoDraft = {};
+	}
+
+	// Qué hace: al marcar extranjero, quita el tipo si ya no aplica (teléfono nacional vs extranjero).
+	// Cómo: compara APLICA_PARA del tipo elegido con el check y limpia valor si no coincide.
+	onEsExtranjeroParentescoContactoChanged(): void {
+		const draft = this.submodalParentescoContactoDraft;
+		const tipo = this.tipoParentescoContactoSeleccionado();
+		if (!draft || !tipo) {
+			return;
+		}
+		if (contactoVisiblePorAplicaPara(tipo.APLICA_PARA, !!draft.ES_EXTRANJERO)) {
+			return;
+		}
+		draft.CORR_TIPO_CONTACTO = null;
+		draft.VALOR_CONTACTO = '';
+		draft.NOMBRE_CORTO = '';
+		draft.NOMBRE_TIPO_CONTACTO = '';
+		draft.FORMATO_CARACTERES = '';
+		draft.NUMERO_CARACTERES = 0;
+		draft.ACTIVO_CARACTERES = null;
 	}
 
 	// Qué hace: copia al draft las reglas del tipo elegido y reformatea el valor.
@@ -3340,6 +3376,15 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			this.notifyFx('Seleccione el tipo de contacto.', NotifyType.Warning);
 			return;
 		}
+		if (!contactoVisiblePorAplicaPara(tipo.APLICA_PARA, !!draft.ES_EXTRANJERO)) {
+			this.notifyFx(
+				draft.ES_EXTRANJERO
+					? 'El tipo de contacto no aplica para un contacto extranjero.'
+					: 'El tipo de contacto no aplica para un contacto nacional.',
+				NotifyType.Warning
+			);
+			return;
+		}
 		const valor = aplicarFormatoContacto(
 			tipo.NOMBRE_CORTO,
 			`${draft.VALOR_CONTACTO ?? ''}`,
@@ -3392,6 +3437,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			APLICA_PARA: tipo.APLICA_PARA ?? '',
 			VALOR_CONTACTO: valor,
 			DIRECCION: direccion,
+			ES_EXTRANJERO: !!draft.ES_EXTRANJERO,
 			PARENTESCO_CONTACTO_EMERGENCIA: !!draft.PARENTESCO_CONTACTO_EMERGENCIA,
 			ACTIVO_PARENTESCO_CONTACTO: true,
 		};
