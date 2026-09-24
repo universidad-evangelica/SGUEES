@@ -3724,24 +3724,57 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			NOMBRE_MUNICIPIO: row?.NOMBRE_MUNICIPIO ?? '',
 			NOMBRE_DISTRITO: row?.NOMBRE_DISTRITO ?? '',
 		};
-		this.asegurarCatalogoPaisDomicilio(false);
-		const pais = Number(this.submodalDomicilioDraft.CORR_PAIS ?? 0);
-		if (this.esEmpleadoDomiciliado && pais > 0) {
-			this.cargarDeptoDomicilio(pais);
-			const depto = Number(this.submodalDomicilioDraft.CORR_DEPTO ?? 0);
-			if (depto > 0) {
-				this.cargarMunicipioDomicilio(pais, depto);
-				const mun = Number(this.submodalDomicilioDraft.CORR_MUNICIPIO ?? 0);
-				if (mun > 0) {
-					this.cargarDistritoDomicilio(pais, depto, mun);
-				}
+		this.prepararLookupsDomicilio(() => {
+			this.submodalDomicilioVisible = true;
+		});
+	}
+
+	// Qué hace: carga país, departamento, municipio y distrito antes de abrir el modal.
+	// Cómo: el combo solo se muestra cuando ya trae la opción guardada; si no, el valor se pierde.
+	private prepararLookupsDomicilio(alTerminar: () => void): void {
+		const seguir = () => {
+			this.aplicarCatalogoPaisDomicilio(this.submodalDomicilioEditIndex == null);
+			const pais = Number(this.submodalDomicilioDraft?.CORR_PAIS ?? 0);
+			if (!this.esEmpleadoDomiciliado || pais <= 0) {
+				this.mCORR_DEPTO_DOMICILIO = [];
+				this.mCORR_MUNICIPIO_DOMICILIO = [];
+				this.mCORR_DISTRITO_DOMICILIO = [];
+				alTerminar();
+				return;
 			}
-		} else {
-			this.mCORR_DEPTO_DOMICILIO = [];
-			this.mCORR_MUNICIPIO_DOMICILIO = [];
-			this.mCORR_DISTRITO_DOMICILIO = [];
+			this.cargarDeptoDomicilio(pais, () => {
+				const depto = Number(this.submodalDomicilioDraft?.CORR_DEPTO ?? 0);
+				if (depto <= 0) {
+					this.mCORR_MUNICIPIO_DOMICILIO = [];
+					this.mCORR_DISTRITO_DOMICILIO = [];
+					alTerminar();
+					return;
+				}
+				this.cargarMunicipioDomicilio(pais, depto, () => {
+					const mun = Number(this.submodalDomicilioDraft?.CORR_MUNICIPIO ?? 0);
+					if (mun <= 0) {
+						this.mCORR_DISTRITO_DOMICILIO = [];
+						alTerminar();
+						return;
+					}
+					this.cargarDistritoDomicilio(pais, depto, mun, alTerminar);
+				});
+			});
+		};
+
+		if ((this.paisesNacimientoCatalogo ?? []).length > 0) {
+			seguir();
+			return;
 		}
-		this.submodalDomicilioVisible = true;
+		this.appInfoService
+			.getLookUp('GEN_EMPLEADO', 'GEN_PAIS', 'GetCORR_PAIS', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.paisesNacimientoCatalogo = response?.Result ? response.Data ?? [] : [];
+					seguir();
+				},
+			});
 	}
 
 	cerrarSubmodalDomicilio(): void {
@@ -3799,6 +3832,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	onSubmodalDomicilioPaisChanged(e: any): void {
+		if (!e?.event) {
+			return;
+		}
 		const corrPais = Number(e?.value ?? 0) || null;
 		const pais = (this.mCORR_PAIS_DOMICILIO ?? []).find((p) => Number(p?.CORR_PAIS) === Number(corrPais));
 		this.submodalDomicilioDraft = {
@@ -3822,6 +3858,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	onSubmodalDomicilioDeptoChanged(e: any): void {
+		if (!e?.event) {
+			return;
+		}
 		const corrDepto = Number(e?.value ?? 0) || null;
 		const depto = (this.mCORR_DEPTO_DOMICILIO ?? []).find((d) => Number(d?.CORR_DEPTO) === Number(corrDepto));
 		const pais = Number(this.submodalDomicilioDraft?.CORR_PAIS ?? 0);
@@ -3843,6 +3882,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	onSubmodalDomicilioMunicipioChanged(e: any): void {
+		if (!e?.event) {
+			return;
+		}
 		const corrMun = Number(e?.value ?? 0) || null;
 		const mun = (this.mCORR_MUNICIPIO_DOMICILIO ?? []).find(
 			(m) => Number(m?.CORR_MUNICIPIO) === Number(corrMun)
@@ -3864,6 +3906,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	onSubmodalDomicilioDistritoChanged(e: any): void {
+		if (!e?.event) {
+			return;
+		}
 		const corrDist = Number(e?.value ?? 0) || null;
 		const dist = (this.mCORR_DISTRITO_DOMICILIO ?? []).find(
 			(d) => Number(d?.CORR_DISTRITO) === Number(corrDist)
@@ -3875,7 +3920,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		};
 	}
 
-	private cargarDeptoDomicilio(corrPais: number): void {
+	private cargarDeptoDomicilio(corrPais: number, alTerminar?: () => void): void {
 		const xWhere: IParam[] = [{ Parameter: 'CORR_PAIS', Value: corrPais }];
 		this.appInfoService
 			.getLookUp('GEN_EMPLEADO', 'GEN_DEPTO', 'GetCORR_DEPTO', xWhere, environment.UrlGENERALAPI)
@@ -3883,11 +3928,13 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			.subscribe({
 				next: (response: any) => {
 					this.mCORR_DEPTO_DOMICILIO = response?.Result ? response.Data ?? [] : [];
+					alTerminar?.();
 				},
+				error: () => alTerminar?.(),
 			});
 	}
 
-	private cargarMunicipioDomicilio(corrPais: number, corrDepto: number): void {
+	private cargarMunicipioDomicilio(corrPais: number, corrDepto: number, alTerminar?: () => void): void {
 		const xWhere: IParam[] = [
 			{ Parameter: 'CORR_PAIS', Value: corrPais },
 			{ Parameter: 'CORR_DEPTO', Value: corrDepto },
@@ -3898,11 +3945,18 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			.subscribe({
 				next: (response: any) => {
 					this.mCORR_MUNICIPIO_DOMICILIO = response?.Result ? response.Data ?? [] : [];
+					alTerminar?.();
 				},
+				error: () => alTerminar?.(),
 			});
 	}
 
-	private cargarDistritoDomicilio(corrPais: number, corrDepto: number, corrMun: number): void {
+	private cargarDistritoDomicilio(
+		corrPais: number,
+		corrDepto: number,
+		corrMun: number,
+		alTerminar?: () => void
+	): void {
 		const xWhere: IParam[] = [
 			{ Parameter: 'CORR_PAIS', Value: corrPais },
 			{ Parameter: 'CORR_DEPTO', Value: corrDepto },
@@ -3914,7 +3968,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			.subscribe({
 				next: (response: any) => {
 					this.mCORR_DISTRITO_DOMICILIO = response?.Result ? response.Data ?? [] : [];
+					alTerminar?.();
 				},
+				error: () => alTerminar?.(),
 			});
 	}
 
@@ -3922,6 +3978,17 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		const direccion = `${this.submodalDomicilioDraft?.DIRECCION ?? ''}`.trim();
 		if (!direccion) {
 			this.notifyFx('Ingrese la dirección.', NotifyType.Warning);
+			return;
+		}
+		const textoDireccion = direccion.toUpperCase();
+		const direccionRepetida = (this.domicilios ?? []).some((d, idx) => {
+			if (this.submodalDomicilioEditIndex != null && idx === this.submodalDomicilioEditIndex) {
+				return false;
+			}
+			return `${d?.DIRECCION ?? ''}`.trim().toUpperCase() === textoDireccion;
+		});
+		if (direccionRepetida) {
+			this.notifyFx('Esa dirección ya está registrada. Escriba otro texto.', NotifyType.Warning);
 			return;
 		}
 		const corrPais = Number(this.submodalDomicilioDraft?.CORR_PAIS ?? 0) || null;
