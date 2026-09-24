@@ -3472,6 +3472,21 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.parentescoContactos = this.parentescoContactos.filter((_, idx) => idx !== index);
 	}
 
+	// Qué hace: marca o quita el contacto de emergencia desde la tarjeta.
+	// Cómo: invierte PARENTESCO_CONTACTO_EMERGENCIA en memoria; se guarda con el empleado.
+	toggleParentescoContactoEmergencia(index: number, event?: Event): void {
+		event?.preventDefault();
+		event?.stopPropagation();
+		const row = this.parentescoContactos[index];
+		if (!row) {
+			return;
+		}
+		this.parentescoContactos = this.parentescoContactos.map((r, i) =>
+			i === index ? { ...r, PARENTESCO_CONTACTO_EMERGENCIA: !r.PARENTESCO_CONTACTO_EMERGENCIA } : r
+		);
+	}
+
+
 	resumenDomicilio(item: GenPersonaDomicilio): string {
 		const partes = this.esEmpleadoDomiciliado
 			? [

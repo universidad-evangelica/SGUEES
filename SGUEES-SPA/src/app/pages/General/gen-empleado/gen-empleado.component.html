@@ -1298,6 +1298,27 @@
 											<div class="ep-card__summary">{{ resumenParentescoContacto(c) }}</div>
 										</div>
 										<div class="ep-card__actions">
+											<!-- motivo: contacto de emergencia con el mismo switch de direcciones -->
+											<button
+												type="button"
+												class="ep-activo-toggle"
+												[class.ep-activo-toggle--on]="c.PARENTESCO_CONTACTO_EMERGENCIA"
+												[class.ep-activo-toggle--off]="!c.PARENTESCO_CONTACTO_EMERGENCIA"
+												[attr.aria-pressed]="!!c.PARENTESCO_CONTACTO_EMERGENCIA"
+												[attr.aria-label]="c.PARENTESCO_CONTACTO_EMERGENCIA ? 'Quitar contacto de emergencia' : 'Marcar contacto de emergencia'"
+												(click)="toggleParentescoContactoEmergencia(i, $event)"
+											>
+												<span class="ep-activo-toggle__track">
+													<span class="ep-activo-toggle__icon ep-activo-toggle__icon--on" aria-hidden="true">
+														<i class="dx-icon dx-icon-check"></i>
+													</span>
+													<span class="ep-activo-toggle__thumb" aria-hidden="true"></span>
+													<span class="ep-activo-toggle__icon ep-activo-toggle__icon--off" aria-hidden="true">
+														<i class="dx-icon dx-icon-close"></i>
+													</span>
+												</span>
+											</button>
+											<span class="ep-activo-toggle__label">Emergencia</span>
 											<dx-button
 												icon="edit"
 												stylingMode="text"
