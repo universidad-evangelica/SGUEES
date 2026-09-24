@@ -44,7 +44,7 @@ export function contactoVisiblePorAplicaPara(aplicaPara: string | undefined | nu
 	return a === 'NACIONALES';
 }
 
-/** Qué hace: deja solo caracteres del FORMATO_CARACTERES. */
+/** Qué hace: deja solo caracteres del FORMATO_CARACTERES. Letras y números también admiten espacio. */
 export function filtrarPorFormatoContacto(valor: string, formato: FormatoCaracteresContacto): string {
 	const raw = valor || '';
 	if (formato === 'NUMEROS') {
@@ -53,7 +53,7 @@ export function filtrarPorFormatoContacto(valor: string, formato: FormatoCaracte
 	if (formato === 'LETRAS') {
 		return raw.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '');
 	}
-	return raw.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]/g, '');
+	return raw.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, '');
 }
 
 export function teclaPermitidaContacto(key: string, formato: FormatoCaracteresContacto): boolean {
@@ -66,7 +66,7 @@ export function teclaPermitidaContacto(key: string, formato: FormatoCaracteresCo
 	if (formato === 'LETRAS') {
 		return /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(key);
 	}
-	return /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]/.test(key);
+	return /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/.test(key);
 }
 
 /**

@@ -3160,14 +3160,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		return marcas.length ? `${base} · ${marcas.join(' · ')}` : base;
 	}
 
-	// Qué hace: tipos del lookup según si el contacto es extranjero.
-	// Cómo: APLICA_PARA EXTRANJEROS|AMBOS o NACIONALES|AMBOS.
-	get tiposParentescoContactoVisibles(): any[] {
-		const esExtranjero = !!this.submodalParentescoContactoDraft?.ES_EXTRANJERO;
-		return (this.mCORR_TIPO_CONTACTO ?? []).filter((t) =>
-			contactoVisiblePorAplicaPara(t?.APLICA_PARA, esExtranjero)
-		);
-	}
+	// Qué hace: tipos visibles en el selector (lista estable, no un getter).
+	// Cómo: se rearma solo al abrir el submodal, al cargar el lookup o al cambiar Es extranjero.
+	tiposParentescoContactoVisibles: any[] = [];
 
 	get tituloSubmodalParentescoContacto(): string {
 		return this.submodalParentescoContactoEditIndex != null
@@ -3186,6 +3181,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			ES_EXTRANJERO: false,
 			PARENTESCO_CONTACTO_EMERGENCIA: false,
 		};
+		this.sincronizarTiposParentescoContactoVisibles();
 		this.submodalParentescoContactoVisible = true;
 	}
 
@@ -3207,6 +3203,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			NUMERO_CARACTERES: row?.NUMERO_CARACTERES,
 			ACTIVO_CARACTERES: row?.ACTIVO_CARACTERES,
 		};
+		this.sincronizarTiposParentescoContactoVisibles();
 		this.submodalParentescoContactoVisible = true;
 	}
 
@@ -3219,6 +3216,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	// Qué hace: al marcar extranjero, quita el tipo si ya no aplica (teléfono nacional vs extranjero).
 	// Cómo: compara APLICA_PARA del tipo elegido con el check y limpia valor si no coincide.
 	onEsExtranjeroParentescoContactoChanged(): void {
+		this.sincronizarTiposParentescoContactoVisibles();
 		const draft = this.submodalParentescoContactoDraft;
 		const tipo = this.tipoParentescoContactoSeleccionado();
 		if (!draft || !tipo) {
@@ -3236,11 +3234,29 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		draft.ACTIVO_CARACTERES = null;
 	}
 
+	// Qué hace: arma la lista del selector según Es extranjero, sin recrearla en cada clic.
+	private sincronizarTiposParentescoContactoVisibles(): void {
+		const esExtranjero = !!this.submodalParentescoContactoDraft?.ES_EXTRANJERO;
+		this.tiposParentescoContactoVisibles = (this.mCORR_TIPO_CONTACTO ?? []).filter((t) =>
+			contactoVisiblePorAplicaPara(t?.APLICA_PARA, esExtranjero)
+		);
+	}
+
 	// Qué hace: copia al draft las reglas del tipo elegido y reformatea el valor.
-	onTipoParentescoContactoChanged(): void {
-		const tipo = this.tipoParentescoContactoSeleccionado();
+	// Cómo: si el selector se limpia solo (sin clic del usuario), conserva el valor anterior.
+	onTipoParentescoContactoChanged(e?: any): void {
 		const draft = this.submodalParentescoContactoDraft;
-		if (!draft || !tipo) {
+		if (!draft) {
+			return;
+		}
+		if (e && (e.value == null || e.value === '') && e.previousValue != null && !e.event) {
+			draft.CORR_TIPO_CONTACTO = e.previousValue;
+			return;
+		}
+		const corr = Number(e?.value ?? draft.CORR_TIPO_CONTACTO ?? 0);
+		const tipo =
+			(this.mCORR_TIPO_CONTACTO ?? []).find((t) => Number(t?.CORR_TIPO_CONTACTO) === corr) ?? null;
+		if (!tipo) {
 			return;
 		}
 		draft.NOMBRE_CORTO = tipo?.NOMBRE_CORTO ?? '';
@@ -4202,6 +4218,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			.subscribe({
 				next: (response: any) => {
 					this.mCORR_TIPO_CONTACTO = response?.Result ? response.Data ?? [] : [];
+					this.sincronizarTiposParentescoContactoVisibles();
 				},
 			});
 	}
