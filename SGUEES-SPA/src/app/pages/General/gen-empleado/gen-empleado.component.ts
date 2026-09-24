@@ -823,8 +823,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	// Qué hace: abre el modal de edición de datos personales (como expediente).
+	// Cómo: no abre si el registro se consultó en lectura.
 	abrirEditarPersonales(): void {
-		if (!this.tienePersonaBase || !this.permiteEdit) {
+		if (!this.tienePersonaBase || !this.permiteEdit || this.readOnlyPersonales) {
 			return;
 		}
 		this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);

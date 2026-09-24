@@ -73,7 +73,8 @@
 					</div>
 				</div>
 
-				<div class="empleado-panel__actions" *ngIf="tienePersonaBase">
+				<!-- motivo: Editar datos solo al modificar; en lectura (doble clic) no se muestra -->
+				<div class="empleado-panel__actions" *ngIf="tienePersonaBase && !readOnlyPersonales">
 					<dx-button
 						text="Editar datos"
 						icon="edit"

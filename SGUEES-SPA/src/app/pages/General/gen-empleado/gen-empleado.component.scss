@@ -387,9 +387,10 @@
 	word-break: break-word;
 }
 
+/* motivo: más ancho para que cargo, teléfono y nombres no se partan en los tabs de lectura */
 .rd-cards {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr));
 	gap: 10px;
 }
 
