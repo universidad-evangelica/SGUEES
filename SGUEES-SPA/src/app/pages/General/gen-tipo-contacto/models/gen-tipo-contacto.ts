@@ -7,6 +7,10 @@ export interface GenTipoContacto {
 	ACTIVO_TIPO_CONTACTO: boolean;
 	NUMERO_CARACTERES: number;
 	ACTIVO_CARACTERES: boolean;
+	FORMATO_CARACTERES: string;
+	NOMBRE_FORMATO_CARACTERES: string;
+	APLICA_PARA: string;
+	NOMBRE_APLICA_PARA: string;
 	USUARIO_CREA: string;
 	ESTACION_CREA: string;
 	FECHA_CREA: Date;

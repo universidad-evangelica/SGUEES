@@ -1,5 +1,5 @@
 -- Qué hace: script de documentación de la tabla GEN_TIPO_CONTACTO (ya existente en BD).
--- Cómo lo hace: refleja la estructura consultada en SQL Server (sin crear/alterar la tabla).
+-- Cómo lo hace: refleja columnas, PK, CHECK, defaults e índices consultados en SQL Server (sin crear/alterar la tabla).
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -8,6 +8,7 @@ GO
 /*
 Tabla: dbo.GEN_TIPO_CONTACTO
 Fuente: estructura leída desde SGUEES (solo documentación; no ejecutar CREATE TABLE en producción).
+Sin FK. Sin índices adicionales. Sin columnas calculadas. Sin triggers.
 */
 CREATE TABLE [dbo].[GEN_TIPO_CONTACTO]
 (
@@ -17,12 +18,22 @@ CREATE TABLE [dbo].[GEN_TIPO_CONTACTO]
 	[ACTIVO_TIPO_CONTACTO] [bit] NULL,
 	[NUMERO_CARACTERES] [smallint] NULL,
 	[ACTIVO_CARACTERES] [bit] NULL,
+	[FORMATO_CARACTERES] [varchar](25) NULL,
+	[APLICA_PARA] [varchar](25) NULL,
 	[USUARIO_CREA] [varchar](50) NULL,
 	[ESTACION_CREA] [varchar](50) NULL,
 	[FECHA_CREA] [datetime] NULL,
 	[USUARIO_ACTU] [varchar](50) NULL,
 	[ESTACION_ACTU] [varchar](50) NULL,
 	[FECHA_ACTU] [datetime] NULL,
-	CONSTRAINT [PK_GEN_TIPO_CONTACTO] PRIMARY KEY CLUSTERED ([CORR_TIPO_CONTACTO] ASC)
+	CONSTRAINT [PK_GEN_TIPO_CONTACTO] PRIMARY KEY CLUSTERED ([CORR_TIPO_CONTACTO] ASC),
+	CONSTRAINT [CK__GEN_TIPO___FORMA__5E968D19] CHECK ([FORMATO_CARACTERES]='AMBOS' OR [FORMATO_CARACTERES]='NUMEROS' OR [FORMATO_CARACTERES]='LETRAS'),
+	CONSTRAINT [CK__GEN_TIPO___APLIC__5F8AB152] CHECK ([APLICA_PARA]='AMBOS' OR [APLICA_PARA]='EXTRANJEROS' OR [APLICA_PARA]='NACIONALES')
 );
+GO
+
+ALTER TABLE [dbo].[GEN_TIPO_CONTACTO] ADD CONSTRAINT [DF__GEN_TIPO___ACTIV__5CAE44A7] DEFAULT ((1)) FOR [ACTIVO_TIPO_CONTACTO]
+GO
+
+ALTER TABLE [dbo].[GEN_TIPO_CONTACTO] ADD CONSTRAINT [DF__GEN_TIPO___ACTIV__5DA268E0] DEFAULT ((1)) FOR [ACTIVO_CARACTERES]
 GO

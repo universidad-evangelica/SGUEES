@@ -229,6 +229,22 @@ namespace sguees.Controllers
 			return _service.GetAPLICA_PARA();
 		}
 
+		// Qué hace: lookup formato caracteres para catálogo tipo contacto.
+		[HttpGet("GetFORMATO_CARACTERES_GEN_TIPO_CONTACTO")]
+		[Authorize(Policy = "/gen-tipo-contacto|R")]
+		public CResult GetFORMATO_CARACTERES_GEN_TIPO_CONTACTO()
+		{
+			return _service.GetFORMATO_CARACTERES();
+		}
+
+		// Qué hace: lookup aplica para del catálogo tipo contacto.
+		[HttpGet("GetAPLICA_PARA_GEN_TIPO_CONTACTO")]
+		[Authorize(Policy = "/gen-tipo-contacto|R")]
+		public CResult GetAPLICA_PARA_GEN_TIPO_CONTACTO()
+		{
+			return _service.GetAPLICA_PARA();
+		}
+
 		// Qué hace: lookup nivel de dominio para idiomas/competencias de gen-empleado.
 		// Cómo lo hace: llama al servicio GetNIVEL_DOMINIO (CHECK BASICO/INTERMEDIO/AVANZADO).
 		[HttpGet("GetNIVEL_DOMINIO_GEN_EMPLEADO")]

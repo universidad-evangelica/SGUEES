@@ -17,8 +17,8 @@ export class GenTipoContactoService {
 	constructor(private repo: GenTipoContactoRepository) {}
 
 	// Qué hace: valida el formulario antes de guardar.
-	// Cómo lo hace: exige nombre (50) y nombre corto (15); si ACTIVO_CARACTERES, exige NUMERO_CARACTERES > 0.
-	esValido(model: GenTipoContacto, msg: Function): boolean {
+	// Cómo lo hace: exige nombre (50), corto (15) único, formato y aplica para; si ACTIVO_CARACTERES, exige NUMERO_CARACTERES > 0.
+	esValido(model: GenTipoContacto, msg: Function, existentes?: GenTipoContacto[]): boolean {
 		if (!model.NOMBRE_TIPO_CONTACTO || model.NOMBRE_TIPO_CONTACTO.trim() === '') {
 			msg('Debe ingresar el nombre del tipo de contacto.', NotifyType.Warning);
 			return false;
@@ -35,6 +35,14 @@ export class GenTipoContactoService {
 			msg('El nombre corto no puede superar 15 caracteres.', NotifyType.Warning);
 			return false;
 		}
+		if (!model.FORMATO_CARACTERES || `${model.FORMATO_CARACTERES}`.trim() === '') {
+			msg('Debe indicar el formato de caracteres (números, letras o ambos).', NotifyType.Warning);
+			return false;
+		}
+		if (!model.APLICA_PARA || `${model.APLICA_PARA}`.trim() === '') {
+			msg('Debe indicar si aplica para nacionales, extranjeros o ambos.', NotifyType.Warning);
+			return false;
+		}
 		if (model.ACTIVO_CARACTERES) {
 			const n = Number(model.NUMERO_CARACTERES ?? 0);
 			if (!n || n <= 0) {
@@ -42,6 +50,19 @@ export class GenTipoContactoService {
 				return false;
 			}
 		}
+
+		const corr = Number(model.CORR_TIPO_CONTACTO ?? 0);
+		const corto = model.NOMBRE_CORTO.trim().toUpperCase();
+		const cortoDuplicado = (Array.isArray(existentes) ? existentes : []).some(
+			(x) =>
+				Number(x?.CORR_TIPO_CONTACTO ?? 0) !== corr &&
+				`${x?.NOMBRE_CORTO ?? ''}`.trim().toUpperCase() === corto
+		);
+		if (cortoDuplicado) {
+			msg('El nombre corto ingresado ya está registrado. Escriba otro nombre corto para continuar.', NotifyType.Warning);
+			return false;
+		}
+
 		return true;
 	}
 
@@ -94,6 +115,8 @@ export class GenTipoContactoService {
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
 			createEstadoColumnConfig('ACTIVO_CARACTERES', ESTADO_ACTIVO_INACTIVO_LABELS, { caption: 'Valida caracteres' }),
+			{ dataField: 'NOMBRE_FORMATO_CARACTERES', caption: 'Formato caracteres', width: 160, minWidth: 120 },
+			{ dataField: 'NOMBRE_APLICA_PARA', caption: 'Aplica para', width: 130, minWidth: 100 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS, { caption: 'Estado' }),
 			...buildAuditGridColumns({ withDateTimeFilter: true }),
 		];
@@ -132,6 +155,20 @@ export class GenTipoContactoService {
 				label: { text: 'Nombre corto' },
 				colSpan: 2,
 				editorOptions: { placeholder: 'Corto...', showClearButton: true, maxLength: 15 },
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
+			},
+			{
+				dataField: 'FORMATO_CARACTERES',
+				label: { text: 'Formato caracteres' },
+				colSpan: 2,
+				template: 'FORMATO_CARACTERESLookup',
+				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
+			},
+			{
+				dataField: 'APLICA_PARA',
+				label: { text: 'Aplica para' },
+				colSpan: 2,
+				template: 'APLICA_PARALookup',
 				validationRules: [{ type: 'required', message: 'Este campo es obligatorio' }],
 			},
 			{

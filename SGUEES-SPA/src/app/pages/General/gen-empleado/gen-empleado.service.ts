@@ -18,6 +18,7 @@ import { GenPersonaFamiliarUeesRepository } from './gen-persona-familiar-uees/ge
 import { GenPersonaReferenciaPersonalRepository } from './gen-persona-referencia-personal/gen-persona-referencia-personal.repository';
 import { GenPersonaReferenciaLaboralRepository } from './gen-persona-referencia-laboral/gen-persona-referencia-laboral.repository';
 import { GenPersonaDomicilioRepository } from './gen-persona-domicilio/gen-persona-domicilio.repository';
+import { GenPersonaContactoRepository } from './gen-persona-contacto/gen-persona-contacto.repository';
 
 const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
 
@@ -35,7 +36,8 @@ export class GenEmpleadoService {
 		private familiarUeesRepo: GenPersonaFamiliarUeesRepository,
 		private referenciaPersonalRepo: GenPersonaReferenciaPersonalRepository,
 		private referenciaLaboralRepo: GenPersonaReferenciaLaboralRepository,
-		private domicilioRepo: GenPersonaDomicilioRepository
+		private domicilioRepo: GenPersonaDomicilioRepository,
+		private contactoRepo: GenPersonaContactoRepository
 	) {}
 
 	getAll(param: any): Observable<IResult> {
@@ -95,6 +97,16 @@ export class GenEmpleadoService {
 	// Qué hace: guarda documentos del tab (body List Table; CORR_PERSONA en query).
 	saveDocumentosIdentidad(corrPersona: number, documentos: any[]): Observable<IResult> {
 		return this.documentosRepo.saveAll(corrPersona, documentos);
+	}
+
+	// Qué hace: lista catálogo activo + valores de contactos de la persona.
+	getContactos(corrPersona: number): Observable<IResult> {
+		return this.contactoRepo.getAll([{ Parameter: 'CORR_PERSONA', Value: corrPersona ?? 0 }]);
+	}
+
+	// Qué hace: guarda contactos del tab (body List Table; CORR_PERSONA en query).
+	saveContactos(corrPersona: number, contactos: any[]): Observable<IResult> {
+		return this.contactoRepo.saveAll(corrPersona, contactos);
 	}
 
 	// Qué hace: lista familiares de la persona.

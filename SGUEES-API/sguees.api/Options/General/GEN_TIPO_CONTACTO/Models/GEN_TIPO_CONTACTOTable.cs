@@ -13,6 +13,8 @@ namespace sguees.Models
 		public bool? ACTIVO_TIPO_CONTACTO { get; set; }
 		public short? NUMERO_CARACTERES { get; set; }
 		public bool? ACTIVO_CARACTERES { get; set; }
+		public string FORMATO_CARACTERES { get; set; }
+		public string APLICA_PARA { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }
 		public DateTime? FECHA_CREA { get; set; }

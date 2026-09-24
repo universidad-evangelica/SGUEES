@@ -283,6 +283,24 @@
 						</div>
 					</dxi-item>
 
+					<!-- motivo: contactos de la persona en solo lectura (edición vía modal) -->
+					<dxi-item title="Contactos" [icon]="'tel'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Contactos</h4>
+								<div class="rd-grid" *ngIf="contactosVisibles?.length; else sinContactosCat">
+									<div class="rd-field" *ngFor="let item of contactosVisibles">
+										<span class="rd-label">{{ etiquetaContacto(item) }}</span>
+										<span class="rd-value">{{ textoLectura(item.VALOR_CONTACTO) }}</span>
+									</div>
+								</div>
+								<ng-template #sinContactosCat>
+									<p class="rd-empty">No hay tipos de contacto activos en el catálogo.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
 					<!-- motivo: familiares e hijos en solo lectura (edición vía modal) -->
 					<dxi-item title="Familiares" [icon]="'group'">
 						<div class="rd-panel">
@@ -767,6 +785,32 @@
 								</div>
 								<ng-template #sinDocsModal>
 									<p class="ep-empty">No hay tipos de documento activos en el catálogo.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: valores de contacto (teléfono, correo) según catálogo -->
+					<dxi-item title="Contactos" [icon]="'tel'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<h4 class="ep-section__title">Contactos</h4>
+								<div class="ep-grid" *ngIf="contactosVisibles?.length; else sinContactosModal">
+									<div class="ep-field" *ngFor="let item of contactosVisibles">
+										<label class="ep-label">{{ etiquetaContacto(item) }}</label>
+										<dx-text-box
+											stylingMode="outlined"
+											[value]="item.VALOR_CONTACTO"
+											[maxLength]="maxLengthContacto(item) ?? undefined"
+											[showClearButton]="true"
+											(onKeyDown)="onContactoValorKeyDown(item, $event)"
+											(onInput)="onContactoValorInput(item, $event)"
+											(onValueChanged)="onContactoValorChanged(item, $event)"
+										></dx-text-box>
+									</div>
+								</div>
+								<ng-template #sinContactosModal>
+									<p class="ep-empty">No hay tipos de contacto activos en el catálogo.</p>
 								</ng-template>
 							</section>
 						</div>

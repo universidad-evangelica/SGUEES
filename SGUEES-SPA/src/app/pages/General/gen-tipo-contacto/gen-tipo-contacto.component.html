@@ -33,6 +33,30 @@
 		[showRequiredMark]="false"
 		[items]="items"
 	>
+		<!-- motivo: lookup GEN_LISTA formato caracteres (LETRAS/NUMEROS/AMBOS) -->
+		<div *dxTemplate="let cellInfo of 'FORMATO_CARACTERESLookup'">
+			<app-data-lookup
+				[model]="mFORMATO_CARACTERES"
+				[(value)]="model.FORMATO_CARACTERES"
+				valueExpr="Key"
+				displayExpr="Value"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
+		<!-- motivo: lookup GEN_LISTA aplica para (NACIONALES/EXTRANJEROS/AMBOS) -->
+		<div *dxTemplate="let cellInfo of 'APLICA_PARALookup'">
+			<app-data-lookup
+				[model]="mAPLICA_PARA"
+				[(value)]="model.APLICA_PARA"
+				valueExpr="Key"
+				displayExpr="Value"
+				[selectedRowKeys]="selectedLookUpLista"
+				[readOnly]="readOnly"
+			>
+			</app-data-lookup>
+		</div>
 	</dx-form>
 </div>
 

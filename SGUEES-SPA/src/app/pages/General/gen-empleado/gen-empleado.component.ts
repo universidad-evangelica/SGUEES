@@ -14,6 +14,7 @@ import { environment } from 'src/environments/environment';
 import { GenEmpleado } from './models/gen-empleado';
 import { GenPersonaNatural } from './models/gen-persona-natural';
 import { GenPersonaTipoDocumentoIdentidad } from './gen-persona-tipo-documento-identidad/models/gen-persona-tipo-documento-identidad';
+import { GenPersonaContacto } from './gen-persona-contacto/models/gen-persona-contacto';
 import { GenPersonaFamiliar } from './gen-persona-familiar/models/gen-persona-familiar';
 import { GenPersonaHijo } from './gen-persona-hijos/models/gen-persona-hijo';
 import { GenPersonaFormacionAcademica } from './gen-persona-formacion-academica/models/gen-persona-formacion-academica';
@@ -32,6 +33,16 @@ import {
 	normalizarFormatoCaracteres,
 	teclaPermitidaPorFormato,
 } from './gen-persona-tipo-documento-identidad/documentos-identidad.format';
+import {
+	aplicarFormatoContacto,
+	contactoVisiblePorAplicaPara,
+	esEmailContacto,
+	esTelefonoNacional,
+	maxLengthContactoCampo,
+	mensajeContactoInvalido,
+	normalizarFormatoContacto,
+	teclaPermitidaContacto,
+} from './gen-persona-contacto/contactos.format';
 
 const ESTADO_FIELD = 'ACTIVO_EMPLEADO';
 const TAB_PERSONALES = 0;
@@ -68,6 +79,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	documentosIdentidad: GenPersonaTipoDocumentoIdentidad[] = [];
 	/** Copia para Cancelar del modal (personales + documentos). */
 	private documentosIdentidadOriginal: GenPersonaTipoDocumentoIdentidad[] = [];
+	contactos: GenPersonaContacto[] = [];
+	/** Copia para Cancelar del tab Contactos. */
+	private contactosOriginal: GenPersonaContacto[] = [];
 
 	familiares: GenPersonaFamiliar[] = [];
 	private familiaresOriginal: GenPersonaFamiliar[] = [];
@@ -167,6 +181,15 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		return (this.documentosIdentidad ?? []).filter((d) =>
 			documentoVisiblePorAplicaPara(d?.APLICA_PARA, esExtranjero)
 		);
+	}
+
+	/**
+	 * Qué hace: contactos visibles según ES_EXTRANJERO y APLICA_PARA del catálogo.
+	 * Cómo: extranjero → EXTRANJEROS|AMBOS; si no → NACIONALES|AMBOS.
+	 */
+	get contactosVisibles(): GenPersonaContacto[] {
+		const esExtranjero = !!this.modelPersonaNatural?.ES_EXTRANJERO;
+		return (this.contactos ?? []).filter((c) => contactoVisiblePorAplicaPara(c?.APLICA_PARA, esExtranjero));
 	}
 	/** Qué hace: modal de edición de datos personales (patrón expediente). */
 	popupPersonalesVisible = false;
@@ -475,6 +498,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.modelPersonaNatural = this.fillPersonaNatural();
 		this.documentosIdentidad = [];
 		this.documentosIdentidadOriginal = [];
+		this.contactos = [];
+		this.contactosOriginal = [];
 		this.familiares = [];
 		this.familiaresOriginal = [];
 		this.hijos = [];
@@ -546,6 +571,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 															this.guardarDomiciliosDesdeModal(() => {
 												this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
 												this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+												this.contactosOriginal = this.clonarContactos(this.contactos);
 												this.familiaresOriginal = this.clonarFamiliares(this.familiares);
 												this.hijosOriginal = this.clonarHijos(this.hijos);
 												this.formacionesAcademicasOriginal = this.clonarFormaciones(this.formacionesAcademicas);
@@ -618,6 +644,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 														this.guardarDomiciliosDesdeModal(() => {
 											this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
 											this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+											this.contactosOriginal = this.clonarContactos(this.contactos);
 											this.familiaresOriginal = this.clonarFamiliares(this.familiares);
 											this.hijosOriginal = this.clonarHijos(this.hijos);
 											this.formacionesAcademicasOriginal = this.clonarFormaciones(this.formacionesAcademicas);
@@ -781,6 +808,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		}
 		this.modelPersonaNaturalOriginal = this.fillPersonaNatural(this.modelPersonaNatural);
 		this.documentosIdentidadOriginal = this.clonarDocumentos(this.documentosIdentidad);
+		this.contactosOriginal = this.clonarContactos(this.contactos);
 		this.familiaresOriginal = this.clonarFamiliares(this.familiares);
 		this.hijosOriginal = this.clonarHijos(this.hijos);
 		this.formacionesAcademicasOriginal = this.clonarFormaciones(this.formacionesAcademicas);
@@ -804,6 +832,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		if (restaurar && !this.omitirRestaurarPopupPersonales) {
 			this.modelPersonaNatural = this.fillPersonaNatural(this.modelPersonaNaturalOriginal);
 			this.documentosIdentidad = this.clonarDocumentos(this.documentosIdentidadOriginal);
+			this.contactos = this.clonarContactos(this.contactosOriginal);
 			this.familiares = this.clonarFamiliares(this.familiaresOriginal);
 			this.hijos = this.clonarHijos(this.hijosOriginal);
 			this.formacionesAcademicas = this.clonarFormaciones(this.formacionesAcademicasOriginal);
@@ -933,7 +962,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 */
 	private guardarDocumentosDesdeModal(onSuccess?: () => void): void {
 		if (!this.cambioRespectoA(this.documentosIdentidad, this.documentosIdentidadOriginal)) {
-			onSuccess?.();
+			this.guardarContactosDesdeModal(onSuccess);
 			return;
 		}
 		const corrPersona = Number(this.model.CORR_PERSONA);
@@ -956,7 +985,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					const rows = response.Data ?? this.documentosIdentidad;
 					this.documentosIdentidad = rows;
 					this.documentosIdentidadOriginal = this.clonarDocumentos(rows);
-					onSuccess?.();
+					this.guardarContactosDesdeModal(onSuccess);
 				},
 				error: (error: any) => {
 					this.loadingVisible = false;
@@ -1100,6 +1129,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cargarLookupsBase();
 		this.cargarPersonaNatural();
 		this.cargarDocumentosIdentidad();
+		this.cargarContactos();
 		this.cargarFamiliares();
 		this.cargarHijos();
 		this.cargarFormacionAcademica();
@@ -1134,6 +1164,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.subTituloVentana = this.formSubtituloEditar;
 					this.cargarPersonaNatural();
 					this.cargarDocumentosIdentidad();
+					this.cargarContactos();
 					this.cargarFamiliares();
 					this.cargarHijos();
 					this.cargarFormacionAcademica();
@@ -1411,6 +1442,90 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 
 	private clonarDocumentos(rows: GenPersonaTipoDocumentoIdentidad[]): GenPersonaTipoDocumentoIdentidad[] {
 		return (rows ?? []).map((d) => ({ ...d }));
+	}
+
+	// Qué hace: carga catálogo activo + valores de contactos de la persona.
+	// Cómo: API anidada; guarda copia para Cancelar y para no reenviar si no cambió.
+	private cargarContactos(): void {
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		if (corrPersona <= 0) {
+			this.contactos = [];
+			this.contactosOriginal = [];
+			return;
+		}
+
+		this.service
+			.getContactos(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result ? response.Data ?? [] : [];
+					this.contactos = rows;
+					this.contactosOriginal = this.clonarContactos(rows);
+				},
+				error: () => {
+					this.contactos = [];
+					this.contactosOriginal = [];
+				},
+			});
+	}
+
+	private clonarContactos(rows: GenPersonaContacto[]): GenPersonaContacto[] {
+		return (rows ?? []).map((d) => ({ ...d }));
+	}
+
+	/**
+	 * Qué hace: persiste contactos desde el modal de edición.
+	 * Cómo: valida formato en pantalla; SaveAll; en éxito parchea la lista con response.Data.
+	 */
+	private guardarContactosDesdeModal(onSuccess?: () => void): void {
+		if (!this.cambioRespectoA(this.contactos, this.contactosOriginal)) {
+			onSuccess?.();
+			return;
+		}
+		const invalido = (this.contactos ?? [])
+			.map((c) =>
+				mensajeContactoInvalido(
+					c?.NOMBRE_CORTO,
+					c?.NOMBRE_TIPO_CONTACTO,
+					c?.VALOR_CONTACTO,
+					c?.ACTIVO_CARACTERES,
+					Number(c?.NUMERO_CARACTERES ?? 0)
+				)
+			)
+			.find((m) => !!m);
+		if (invalido) {
+			this.notifyFx(invalido, NotifyType.Warning);
+			return;
+		}
+
+		const corrPersona = Number(this.model.CORR_PERSONA);
+		if (corrPersona <= 0) {
+			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.saveContactos(corrPersona, this.contactos)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const rows = response.Data ?? this.contactos;
+					this.contactos = rows;
+					this.contactosOriginal = this.clonarContactos(rows);
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
 	}
 
 	/**
@@ -3364,6 +3479,82 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 
 	etiquetaDocumento(doc: GenPersonaTipoDocumentoIdentidad): string {
 		return doc?.NOMBRE_TIPO_DOCUMENTO_IDENTIDAD || doc?.NOMBRE_CORTO || 'Documento';
+	}
+
+	// Qué hace: bloquea teclas fuera del formato. Teléfono nacional solo dígitos; email permite @ y punto.
+	onContactoValorKeyDown(item: GenPersonaContacto, e: any): void {
+		if (!item) {
+			return;
+		}
+		const ev = e?.event as KeyboardEvent | undefined;
+		if (!ev || ev.ctrlKey || ev.metaKey || ev.altKey) {
+			return;
+		}
+		const key = ev.key || '';
+		if (key.length !== 1 || key === 'Dead') {
+			return;
+		}
+		if (esTelefonoNacional(item.NOMBRE_CORTO)) {
+			if (!/[0-9]/.test(key)) {
+				ev.preventDefault();
+			}
+			return;
+		}
+		if (esEmailContacto(item.NOMBRE_CORTO)) {
+			if (!/[A-Za-z0-9@._%+\-]/.test(key)) {
+				ev.preventDefault();
+			}
+			return;
+		}
+		const formato = normalizarFormatoContacto(item.FORMATO_CARACTERES);
+		if (!teclaPermitidaContacto(key, formato)) {
+			ev.preventDefault();
+		}
+	}
+
+	// Qué hace: aplica máscara o filtro al escribir el contacto.
+	onContactoValorInput(item: GenPersonaContacto, e: any): void {
+		this.aplicarValorContacto(item, e, true);
+	}
+
+	// Qué hace: sincroniza el valor al pegar, limpiar o salir del campo.
+	onContactoValorChanged(item: GenPersonaContacto, e: any): void {
+		this.aplicarValorContacto(item, e, false);
+	}
+
+	private aplicarValorContacto(item: GenPersonaContacto, e: any, desdeInput: boolean): void {
+		if (!item) {
+			return;
+		}
+		const input = e?.event?.target as HTMLInputElement | undefined;
+		const raw = desdeInput
+			? `${input?.value ?? e?.component?.option('text') ?? e?.component?.option('value') ?? ''}`
+			: `${e?.value ?? ''}`;
+		const formateado = aplicarFormatoContacto(
+			item.NOMBRE_CORTO,
+			raw,
+			item.ACTIVO_CARACTERES,
+			Number(item.NUMERO_CARACTERES ?? 0),
+			item.FORMATO_CARACTERES
+		);
+		item.VALOR_CONTACTO = formateado;
+		if (input && input.value !== formateado) {
+			input.value = formateado;
+		}
+		if (e?.component && e.component.option('value') !== formateado) {
+			e.component.option('value', formateado);
+		}
+		if (desdeInput && input && esTelefonoNacional(item.NOMBRE_CORTO) && input.selectionStart != null && input.selectionStart < 5) {
+			input.setSelectionRange(input.value.length, input.value.length);
+		}
+	}
+
+	maxLengthContacto(item: GenPersonaContacto): number | null {
+		return maxLengthContactoCampo(item?.NOMBRE_CORTO, item?.ACTIVO_CARACTERES, Number(item?.NUMERO_CARACTERES ?? 0));
+	}
+
+	etiquetaContacto(item: GenPersonaContacto): string {
+		return item?.NOMBRE_TIPO_CONTACTO || item?.NOMBRE_CORTO || 'Contacto';
 	}
 
 	private aplicarReglasPersonales(): void {
