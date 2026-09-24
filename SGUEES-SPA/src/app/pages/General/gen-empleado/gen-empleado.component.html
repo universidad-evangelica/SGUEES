@@ -631,6 +631,44 @@
 						</div>
 					</dxi-item>
 
+					<!-- motivo: Contactos de otras personas (después de Direcciones) -->
+					<dxi-item title="Contactos" [icon]="'group'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Contactos</h4>
+								<div class="rd-cards" *ngIf="parentescoContactos?.length; else sinParentescoContactosRd">
+									<article class="rd-card" *ngFor="let item of parentescoContactos">
+										<header class="rd-card__header">
+											<span>{{ textoLectura(item.NOMBRE_COMPLETO) }}</span>
+											<span class="rd-badge" *ngIf="item.PARENTESCO_CONTACTO_EMERGENCIA">Emergencia</span>
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field">
+												<span class="rd-label">Parentesco</span>
+												<span class="rd-value">{{ textoLectura(item.NOMBRE_PARENTESCO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Tipo</span>
+												<span class="rd-value">{{ textoLectura(item.NOMBRE_TIPO_CONTACTO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Contacto</span>
+												<span class="rd-value">{{ textoLectura(item.VALOR_CONTACTO) }}</span>
+											</div>
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Dirección</span>
+												<span class="rd-value">{{ textoLectura(item.DIRECCION) }}</span>
+											</div>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinParentescoContactosRd>
+									<p class="rd-empty">Sin contactos registrados.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
 					</dx-tab-panel>
 				</div>
 			</ng-container>
@@ -1234,6 +1272,49 @@
 							</section>
 						</div>
 					</dxi-item>
+
+					<!-- motivo: Contactos editable (después de Direcciones) -->
+					<dxi-item title="Contactos" [icon]="'group'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Contactos</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalParentescoContactoNuevo()"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="parentescoContactos?.length; else sinParentescoContactosModal">
+									<article class="ep-card" *ngFor="let c of parentescoContactos; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(c.NOMBRE_COMPLETO) }}</div>
+											<div class="ep-card__summary">{{ resumenParentescoContacto(c) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalParentescoContactoEditar(i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarParentescoContacto(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinParentescoContactosModal>
+									<p class="ep-empty">Sin contactos registrados.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
 				</dx-tab-panel>
 			</dx-scroll-view>
 		</div>
@@ -1681,6 +1762,90 @@
 			<div class="ep-submodal__footer">
 				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalReferenciaPersonal()"></dx-button>
 				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalReferenciaPersonal()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
+
+	<!-- motivo: submodal alta/edición de persona de contacto -->
+	<dx-popup
+		[(visible)]="submodalParentescoContactoVisible"
+		[title]="tituloSubmodalParentescoContacto"
+		[width]="720"
+		[maxWidth]="'94vw'"
+		[height]="'auto'"
+		[maxHeight]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalParentescoContacto()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ep-submodal">
+			<div class="ep-submodal__body">
+				<div class="ep-grid">
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Nombre <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalParentescoContactoDraft.NOMBRE_COMPLETO"
+							[maxLength]="100"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Parentesco <span class="req">*</span></label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalParentescoContactoDraft.CORR_PARENTESCO"
+							[items]="mCORR_PARENTESCO"
+							displayExpr="NOMBRE_PARENTESCO"
+							valueExpr="CORR_PARENTESCO"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+						></dx-select-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Tipo de contacto <span class="req">*</span></label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalParentescoContactoDraft.CORR_TIPO_CONTACTO"
+							[items]="mCORR_TIPO_CONTACTO"
+							displayExpr="ETIQUETA_TIPO"
+							valueExpr="CORR_TIPO_CONTACTO"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+							(onValueChanged)="onTipoParentescoContactoChanged()"
+						></dx-select-box>
+					</div>
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Valor <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalParentescoContactoDraft.VALOR_CONTACTO"
+							[disabled]="!tipoParentescoContactoSeleccionado()"
+							[maxLength]="maxLengthParentescoContacto() ?? undefined"
+							(onKeyDown)="onParentescoContactoValorKeyDown($event)"
+							(onInput)="onParentescoContactoValorInput($event)"
+							(onValueChanged)="onParentescoContactoValorChanged($event)"
+						></dx-text-box>
+					</div>
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Dirección</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalParentescoContactoDraft.DIRECCION"
+							[maxLength]="255"
+						></dx-text-box>
+					</div>
+					<div class="ep-field ep-field--wide">
+						<dx-check-box
+							[(value)]="submodalParentescoContactoDraft.PARENTESCO_CONTACTO_EMERGENCIA"
+							text="Contacto de emergencia"
+						></dx-check-box>
+					</div>
+				</div>
+			</div>
+			<div class="ep-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalParentescoContacto()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalParentescoContacto()"></dx-button>
 			</div>
 		</div>
 	</dx-popup>

@@ -25,6 +25,7 @@ import { GenPersonaFamiliarUees } from './gen-persona-familiar-uees/models/gen-p
 import { GenPersonaReferenciaPersonal } from './gen-persona-referencia-personal/models/gen-persona-referencia-personal';
 import { GenPersonaReferenciaLaboral } from './gen-persona-referencia-laboral/models/gen-persona-referencia-laboral';
 import { GenPersonaDomicilio } from './gen-persona-domicilio/models/gen-persona-domicilio';
+import { GenPersonaParentescoContacto } from './gen-persona-parentesco-contacto/models/gen-persona-parentesco-contacto';
 import { GenEmpleadoService } from './gen-empleado.service';
 import {
 	aplicarLimiteDocumentoIdentidad,
@@ -163,6 +164,16 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	private snapshotEdicionPendiente = false;
 	private tempCorrDomicilio = -1;
 
+	// Qué hace: colecciones del tab Contactos (personas a contactar, después de Direcciones).
+	parentescoContactos: GenPersonaParentescoContacto[] = [];
+	private parentescoContactosOriginal: GenPersonaParentescoContacto[] = [];
+	private tempCorrParentescoContacto = -1;
+
+	/** Submodal agregar/editar persona de contacto. */
+	submodalParentescoContactoVisible = false;
+	submodalParentescoContactoEditIndex: number | null = null;
+	submodalParentescoContactoDraft: any = {};
+
 	/** Submodal agregar/editar domicilio. */
 	submodalDomicilioVisible = false;
 	submodalDomicilioEditIndex: number | null = null;
@@ -216,6 +227,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	mCORR_MUNICIPIO_NACIMIENTO: any[] = [];
 	mCORR_DISTRITO_NACIMIENTO: any[] = [];
 	mCORR_PARENTESCO: any[] = [];
+	mCORR_TIPO_CONTACTO: any[] = [];
 	/** Lookup Key/Value de nivel de dominio (idiomas y competencias). */
 	mNIVEL_DOMINIO: any[] = [];
 	/** Lookups GEN_LISTA Key/Value para personales / formación. */
@@ -530,6 +542,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.domicilios = [];
 		this.domiciliosOriginal = [];
 		this.tempCorrDomicilio = -1;
+		this.parentescoContactos = [];
+		this.parentescoContactosOriginal = [];
+		this.tempCorrParentescoContacto = -1;
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.revocarFotoPersona();
@@ -582,6 +597,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 												this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(this.referenciasPersonales);
 												this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
 												this.domiciliosOriginal = this.clonarDomicilios(this.domicilios);
+												this.parentescoContactosOriginal = this.clonarParentescoContactos(this.parentescoContactos);
 												this.fotoUrlNueva = '';
 												this.volverBrowseTrasGuardar();
 															});
@@ -655,6 +671,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 											this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(this.referenciasPersonales);
 											this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
 											this.domiciliosOriginal = this.clonarDomicilios(this.domicilios);
+											this.parentescoContactosOriginal = this.clonarParentescoContactos(this.parentescoContactos);
 											this.fotoUrlNueva = '';
 											this.omitirRestaurarPopupPersonales = true;
 											this.popupPersonalesVisible = false;
@@ -819,6 +836,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.referenciasPersonalesOriginal = this.clonarReferenciasPersonales(this.referenciasPersonales);
 		this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
 		this.domiciliosOriginal = this.clonarDomicilios(this.domicilios);
+		this.parentescoContactosOriginal = this.clonarParentescoContactos(this.parentescoContactos);
 		this.modelPersonaNaturalBase = this.fillPersonaNatural(this.modelPersonaNatural);
 		this.modelEmpleadoBase = this.extraerDatosEmpleado(this.model);
 		this.snapshotEdicionPendiente = true;
@@ -843,6 +861,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			this.referenciasPersonales = this.clonarReferenciasPersonales(this.referenciasPersonalesOriginal);
 			this.referenciasLaborales = this.clonarReferenciasLaborales(this.referenciasLaboralesOriginal);
 			this.domicilios = this.clonarDomicilios(this.domiciliosOriginal);
+			this.parentescoContactos = this.clonarParentescoContactos(this.parentescoContactosOriginal);
 			this.fotoUrlNueva = '';
 			this.revocarFotoLocal();
 			this.refrescarTerritorioDesdeModelo();
@@ -856,6 +875,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cerrarSubmodalReferenciaPersonal();
 		this.cerrarSubmodalReferenciaLaboral();
 		this.cerrarSubmodalDomicilio();
+		this.cerrarSubmodalParentescoContacto();
 	}
 
 	onPopupPersonalesShown(): void {
@@ -1140,6 +1160,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cargarReferenciasPersonales();
 		this.cargarReferenciasLaborales();
 		this.cargarDomicilios();
+		this.cargarParentescoContactos();
 	}
 
 	// Qué hace: crea GEN_PERSONA + GEN_EMPRESA_PERSONA + GEN_PERSONA_NATURAL + GEN_EMPLEADO (SP).
@@ -1175,6 +1196,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.cargarReferenciasPersonales();
 					this.cargarReferenciasLaborales();
 					this.cargarDomicilios();
+					this.cargarParentescoContactos();
 					this.notifyFx('Empleado creado. Puede seguir editando los datos personales.', NotifyType.Success, {
 						raw: true,
 					});
@@ -2965,8 +2987,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
 	 */
 	private guardarDomiciliosDesdeModal(onSuccess?: () => void): void {
+		const continuar = () => this.guardarParentescoContactosDesdeModal(onSuccess);
 		if (!this.cambioRespectoA(this.domicilios, this.domiciliosOriginal)) {
-			onSuccess?.();
+			continuar();
 			return;
 		}
 		const corrPersona = Number(this.model.CORR_PERSONA);
@@ -2989,7 +3012,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					const rows = this.normalizarDomicilios(response.Data ?? this.domicilios);
 					this.domicilios = rows;
 					this.domiciliosOriginal = this.clonarDomicilios(rows);
-					onSuccess?.();
+					this.guardarParentescoContactosDesdeModal(onSuccess);
 				},
 				error: (error: any) => {
 					this.loadingVisible = false;
@@ -3037,6 +3060,354 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 
 	private clonarDomicilios(rows: GenPersonaDomicilio[]): GenPersonaDomicilio[] {
 		return (rows ?? []).map((d) => ({ ...d }));
+	}
+
+	// Qué hace: persiste personas de contacto (tab Contactos) si cambiaron.
+	// Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
+	private guardarParentescoContactosDesdeModal(onSuccess?: () => void): void {
+		if (!this.cambioRespectoA(this.parentescoContactos, this.parentescoContactosOriginal)) {
+			onSuccess?.();
+			return;
+		}
+		const corrPersona = Number(this.model.CORR_PERSONA);
+		if (corrPersona <= 0) {
+			this.notifyFx('No se encontró CORR_PERSONA del empleado.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.saveParentescoContactos(corrPersona, this.parentescoContactos)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const rows = this.normalizarParentescoContactos(response.Data ?? this.parentescoContactos);
+					this.parentescoContactos = rows;
+					this.parentescoContactosOriginal = this.clonarParentescoContactos(rows);
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	private cargarParentescoContactos(): void {
+		const corrPersona = Number(this.model?.CORR_PERSONA ?? 0);
+		if (corrPersona <= 0) {
+			this.parentescoContactos = [];
+			this.parentescoContactosOriginal = [];
+			return;
+		}
+
+		this.service
+			.getParentescoContactos(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result
+						? this.normalizarParentescoContactos(response.Data ?? [])
+						: [];
+					this.parentescoContactos = rows;
+					this.parentescoContactosOriginal = this.clonarParentescoContactos(rows);
+				},
+				error: () => {
+					this.parentescoContactos = [];
+					this.parentescoContactosOriginal = [];
+				},
+			});
+	}
+
+	private normalizarParentescoContactos(rows: any[]): GenPersonaParentescoContacto[] {
+		return (rows ?? []).map((r) => ({
+			...r,
+			CORR_PARENTESCO:
+				r?.CORR_PARENTESCO == null || Number(r.CORR_PARENTESCO) <= 0 ? null : Number(r.CORR_PARENTESCO),
+			CORR_TIPO_CONTACTO:
+				r?.CORR_TIPO_CONTACTO == null || Number(r.CORR_TIPO_CONTACTO) <= 0
+					? null
+					: Number(r.CORR_TIPO_CONTACTO),
+			PARENTESCO_CONTACTO_EMERGENCIA:
+				r?.PARENTESCO_CONTACTO_EMERGENCIA === true ||
+				r?.PARENTESCO_CONTACTO_EMERGENCIA === 1 ||
+				r?.PARENTESCO_CONTACTO_EMERGENCIA === '1',
+			ACTIVO_PARENTESCO_CONTACTO: r?.ACTIVO_PARENTESCO_CONTACTO !== false && r?.ACTIVO_PARENTESCO_CONTACTO !== 0,
+		}));
+	}
+
+	private clonarParentescoContactos(rows: GenPersonaParentescoContacto[]): GenPersonaParentescoContacto[] {
+		return (rows ?? []).map((r) => ({ ...r }));
+	}
+
+	resumenParentescoContacto(item: GenPersonaParentescoContacto): string {
+		const partes = [
+			item?.NOMBRE_PARENTESCO || null,
+			item?.NOMBRE_TIPO_CONTACTO || null,
+			item?.VALOR_CONTACTO || null,
+		].filter((x) => !!x && `${x}`.trim());
+		const base = partes.length ? partes.join(' · ') : 'Sin detalle';
+		return item?.PARENTESCO_CONTACTO_EMERGENCIA ? `${base} · Emergencia` : base;
+	}
+
+	get tituloSubmodalParentescoContacto(): string {
+		return this.submodalParentescoContactoEditIndex != null
+			? 'Editar contacto'
+			: 'Agregar contacto';
+	}
+
+	abrirSubmodalParentescoContactoNuevo(): void {
+		this.submodalParentescoContactoEditIndex = null;
+		this.submodalParentescoContactoDraft = {
+			NOMBRE_COMPLETO: '',
+			CORR_PARENTESCO: null,
+			CORR_TIPO_CONTACTO: null,
+			VALOR_CONTACTO: '',
+			DIRECCION: '',
+			PARENTESCO_CONTACTO_EMERGENCIA: false,
+		};
+		this.submodalParentescoContactoVisible = true;
+	}
+
+	abrirSubmodalParentescoContactoEditar(index: number): void {
+		const row = this.parentescoContactos[index];
+		this.submodalParentescoContactoEditIndex = index;
+		this.submodalParentescoContactoDraft = {
+			NOMBRE_COMPLETO: row?.NOMBRE_COMPLETO ?? '',
+			CORR_PARENTESCO: row?.CORR_PARENTESCO ?? null,
+			CORR_TIPO_CONTACTO: row?.CORR_TIPO_CONTACTO ?? null,
+			VALOR_CONTACTO: row?.VALOR_CONTACTO ?? '',
+			DIRECCION: row?.DIRECCION ?? '',
+			PARENTESCO_CONTACTO_EMERGENCIA: !!row?.PARENTESCO_CONTACTO_EMERGENCIA,
+			NOMBRE_CORTO: row?.NOMBRE_CORTO,
+			NOMBRE_TIPO_CONTACTO: row?.NOMBRE_TIPO_CONTACTO,
+			NOMBRE_PARENTESCO: row?.NOMBRE_PARENTESCO,
+			FORMATO_CARACTERES: row?.FORMATO_CARACTERES,
+			NUMERO_CARACTERES: row?.NUMERO_CARACTERES,
+			ACTIVO_CARACTERES: row?.ACTIVO_CARACTERES,
+		};
+		this.submodalParentescoContactoVisible = true;
+	}
+
+	cerrarSubmodalParentescoContacto(): void {
+		this.submodalParentescoContactoVisible = false;
+		this.submodalParentescoContactoEditIndex = null;
+		this.submodalParentescoContactoDraft = {};
+	}
+
+	// Qué hace: copia al draft las reglas del tipo elegido y reformatea el valor.
+	onTipoParentescoContactoChanged(): void {
+		const tipo = this.tipoParentescoContactoSeleccionado();
+		const draft = this.submodalParentescoContactoDraft;
+		if (!draft || !tipo) {
+			return;
+		}
+		draft.NOMBRE_CORTO = tipo?.NOMBRE_CORTO ?? '';
+		draft.NOMBRE_TIPO_CONTACTO = tipo?.NOMBRE_TIPO_CONTACTO ?? '';
+		draft.FORMATO_CARACTERES = tipo?.FORMATO_CARACTERES ?? '';
+		draft.NUMERO_CARACTERES = tipo?.NUMERO_CARACTERES ?? 0;
+		draft.ACTIVO_CARACTERES = tipo?.ACTIVO_CARACTERES;
+		draft.VALOR_CONTACTO = aplicarFormatoContacto(
+			draft.NOMBRE_CORTO,
+			`${draft.VALOR_CONTACTO ?? ''}`,
+			draft.ACTIVO_CARACTERES,
+			Number(draft.NUMERO_CARACTERES ?? 0),
+			draft.FORMATO_CARACTERES
+		);
+	}
+
+	tipoParentescoContactoSeleccionado(): any {
+		const corr = Number(this.submodalParentescoContactoDraft?.CORR_TIPO_CONTACTO ?? 0);
+		return (this.mCORR_TIPO_CONTACTO ?? []).find((t) => Number(t?.CORR_TIPO_CONTACTO) === corr) ?? null;
+	}
+
+	maxLengthParentescoContacto(): number | null {
+		const draft = this.submodalParentescoContactoDraft;
+		if (!draft?.NOMBRE_CORTO && !draft?.CORR_TIPO_CONTACTO) {
+			return null;
+		}
+		return maxLengthContactoCampo(
+			draft?.NOMBRE_CORTO,
+			draft?.ACTIVO_CARACTERES,
+			Number(draft?.NUMERO_CARACTERES ?? 0)
+		);
+	}
+
+	onParentescoContactoValorKeyDown(e: any): void {
+		const draft = this.submodalParentescoContactoDraft;
+		if (!draft?.NOMBRE_CORTO) {
+			return;
+		}
+		const ev = e?.event as KeyboardEvent | undefined;
+		if (!ev || ev.ctrlKey || ev.metaKey || ev.altKey) {
+			return;
+		}
+		const key = ev.key || '';
+		if (key.length !== 1 || key === 'Dead') {
+			return;
+		}
+		if (esTelefonoNacional(draft.NOMBRE_CORTO)) {
+			const input = ev.target as HTMLInputElement | undefined;
+			const inicio = input?.selectionStart ?? 0;
+			if (input && input.value.startsWith('+503') && inicio < 5) {
+				ev.preventDefault();
+				input.setSelectionRange(input.value.length, input.value.length);
+				return;
+			}
+			if (!/[0-9]/.test(key)) {
+				ev.preventDefault();
+			}
+			return;
+		}
+		if (esEmailContacto(draft.NOMBRE_CORTO)) {
+			if (!/[A-Za-z0-9@._%+\-]/.test(key)) {
+				ev.preventDefault();
+			}
+			return;
+		}
+		const formato = normalizarFormatoContacto(draft.FORMATO_CARACTERES);
+		if (!teclaPermitidaContacto(key, formato)) {
+			ev.preventDefault();
+		}
+	}
+
+	onParentescoContactoValorInput(e: any): void {
+		this.aplicarValorParentescoContacto(e, true);
+	}
+
+	onParentescoContactoValorChanged(e: any): void {
+		this.aplicarValorParentescoContacto(e, false);
+	}
+
+	private aplicarValorParentescoContacto(e: any, desdeInput: boolean): void {
+		const draft = this.submodalParentescoContactoDraft;
+		if (!draft) {
+			return;
+		}
+		const input = e?.event?.target as HTMLInputElement | undefined;
+		const raw = desdeInput
+			? `${input?.value ?? e?.component?.option('text') ?? e?.component?.option('value') ?? ''}`
+			: `${e?.value ?? ''}`;
+		const formateado = aplicarFormatoContacto(
+			draft.NOMBRE_CORTO,
+			raw,
+			draft.ACTIVO_CARACTERES,
+			Number(draft.NUMERO_CARACTERES ?? 0),
+			draft.FORMATO_CARACTERES
+		);
+		draft.VALOR_CONTACTO = formateado;
+		if (input && input.value !== formateado) {
+			input.value = formateado;
+		}
+		if (e?.component && e.component.option('value') !== formateado) {
+			e.component.option('value', formateado);
+		}
+		if (desdeInput && input && esTelefonoNacional(draft.NOMBRE_CORTO)) {
+			const colocarAlFinal = () => {
+				if ((input.selectionStart ?? 0) < 5) {
+					input.setSelectionRange(input.value.length, input.value.length);
+				}
+			};
+			colocarAlFinal();
+			setTimeout(colocarAlFinal, 0);
+		}
+	}
+
+	guardarSubmodalParentescoContacto(): void {
+		const draft = this.submodalParentescoContactoDraft ?? {};
+		const nombre = `${draft.NOMBRE_COMPLETO ?? ''}`.trim();
+		if (!nombre) {
+			this.notifyFx('Indique el nombre de la persona de contacto.', NotifyType.Warning);
+			return;
+		}
+		if (nombre.length > 100) {
+			this.notifyFx('El nombre no puede superar 100 caracteres.', NotifyType.Warning);
+			return;
+		}
+		const corrParentesco = Number(draft.CORR_PARENTESCO ?? 0);
+		if (corrParentesco <= 0) {
+			this.notifyFx('Seleccione el parentesco.', NotifyType.Warning);
+			return;
+		}
+		const tipo = this.tipoParentescoContactoSeleccionado();
+		const corrTipo = Number(draft.CORR_TIPO_CONTACTO ?? 0);
+		if (corrTipo <= 0 || !tipo) {
+			this.notifyFx('Seleccione el tipo de contacto.', NotifyType.Warning);
+			return;
+		}
+		const valor = aplicarFormatoContacto(
+			tipo.NOMBRE_CORTO,
+			`${draft.VALOR_CONTACTO ?? ''}`,
+			tipo.ACTIVO_CARACTERES,
+			Number(tipo.NUMERO_CARACTERES ?? 0),
+			tipo.FORMATO_CARACTERES
+		);
+		if (!`${valor}`.trim()) {
+			this.notifyFx('Indique el valor de contacto.', NotifyType.Warning);
+			return;
+		}
+		const invalido = mensajeContactoInvalido(
+			tipo.NOMBRE_CORTO,
+			tipo.NOMBRE_TIPO_CONTACTO,
+			valor,
+			tipo.ACTIVO_CARACTERES,
+			Number(tipo.NUMERO_CARACTERES ?? 0)
+		);
+		if (invalido) {
+			this.notifyFx(invalido, NotifyType.Warning);
+			return;
+		}
+		const direccion = `${draft.DIRECCION ?? ''}`.trim();
+		if (direccion.length > 255) {
+			this.notifyFx('La dirección no puede superar 255 caracteres.', NotifyType.Warning);
+			return;
+		}
+
+		const parentesco = (this.mCORR_PARENTESCO ?? []).find(
+			(p) => Number(p?.CORR_PARENTESCO) === corrParentesco
+		);
+		const anterior =
+			this.submodalParentescoContactoEditIndex != null
+				? this.parentescoContactos[this.submodalParentescoContactoEditIndex]
+				: null;
+		const corrAnterior = Number(anterior?.CORR_PARENTESCO_CONTACTO ?? 0);
+		const row: GenPersonaParentescoContacto = {
+			CORR_EMPRESA: Number(anterior?.CORR_EMPRESA ?? this.model?.CORR_EMPRESA ?? 0),
+			CORR_PERSONA: Number(anterior?.CORR_PERSONA ?? this.model?.CORR_PERSONA ?? 0),
+			CORR_PARENTESCO_CONTACTO: corrAnterior > 0 ? corrAnterior : this.tempCorrParentescoContacto--,
+			NOMBRE_COMPLETO: nombre,
+			CORR_PARENTESCO: corrParentesco,
+			NOMBRE_PARENTESCO: parentesco?.NOMBRE_PARENTESCO ?? '',
+			CORR_TIPO_CONTACTO: corrTipo,
+			NOMBRE_TIPO_CONTACTO: tipo.NOMBRE_TIPO_CONTACTO ?? '',
+			NOMBRE_CORTO: tipo.NOMBRE_CORTO ?? '',
+			NUMERO_CARACTERES: Number(tipo.NUMERO_CARACTERES ?? 0),
+			ACTIVO_CARACTERES: tipo.ACTIVO_CARACTERES,
+			FORMATO_CARACTERES: tipo.FORMATO_CARACTERES ?? '',
+			APLICA_PARA: tipo.APLICA_PARA ?? '',
+			VALOR_CONTACTO: valor,
+			DIRECCION: direccion,
+			PARENTESCO_CONTACTO_EMERGENCIA: !!draft.PARENTESCO_CONTACTO_EMERGENCIA,
+			ACTIVO_PARENTESCO_CONTACTO: true,
+		};
+
+		if (this.submodalParentescoContactoEditIndex != null) {
+			this.parentescoContactos = this.parentescoContactos.map((r, idx) =>
+				idx === this.submodalParentescoContactoEditIndex ? row : r
+			);
+		} else {
+			this.parentescoContactos = [...this.parentescoContactos, row];
+		}
+		this.cerrarSubmodalParentescoContacto();
+	}
+
+	eliminarParentescoContacto(index: number): void {
+		this.parentescoContactos = this.parentescoContactos.filter((_, idx) => idx !== index);
 	}
 
 	resumenDomicilio(item: GenPersonaDomicilio): string {
@@ -3710,6 +4081,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.getCORR_ACTIVIDAD_ECONOMICA();
 		this.getCORR_PAIS_NACIMIENTO();
 		this.getCORR_PARENTESCO();
+		this.getCORR_TIPO_CONTACTO();
 		this.getNIVEL_DOMINIO();
 		this.getSEXO();
 		this.getESTADO_CIVIL();
@@ -3765,6 +4137,31 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.mCORR_PARENTESCO = (rows ?? []).filter(
 						(p: any) => p?.ACTIVO_PARENTESCO === true || p?.ACTIVO_PARENTESCO === 1 || p?.ACTIVO_PARENTESCO == null
 					);
+				},
+			});
+	}
+
+	// Qué hace: carga tipos de contacto activos para el tab Contactos.
+	// Cómo: lookup GetCORR_TIPO_CONTACTO_GEN_EMPLEADO; la etiqueta distingue el nombre corto.
+	private getCORR_TIPO_CONTACTO(): void {
+		this.appInfoService
+			.getLookUp(
+				'GEN_EMPLEADO',
+				'GEN_TIPO_CONTACTO',
+				'GetCORR_TIPO_CONTACTO',
+				undefined,
+				environment.UrlGENERALAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result ? response.Data ?? [] : [];
+					this.mCORR_TIPO_CONTACTO = (rows ?? []).map((t: any) => {
+						const largo = `${t?.NOMBRE_TIPO_CONTACTO ?? ''}`.trim();
+						const corto = `${t?.NOMBRE_CORTO ?? ''}`.trim();
+						const etiqueta = corto && corto.toUpperCase() !== largo.toUpperCase() ? `${largo} (${corto})` : largo;
+						return { ...t, ETIQUETA_TIPO: etiqueta || corto };
+					});
 				},
 			});
 	}
