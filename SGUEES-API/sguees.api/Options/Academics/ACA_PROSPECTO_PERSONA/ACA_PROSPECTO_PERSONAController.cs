@@ -6,6 +6,8 @@ using System.Linq;
 using eFramework.Core;
 using sguees.Models;
 using sguees.Services;
+using System.Security.Claims;
+using sguees.api.Shared;
 
 namespace sguees.Controllers
 {
@@ -39,6 +41,31 @@ namespace sguees.Controllers
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetAsync(Data);
+        }
+
+        // Qué hace: actualiza los datos personales del prospecto.
+        // Cómo lo hace: toma CORR_PROSPECTO_PERSONA del body o del query, completa auditoría y llama a UpdateAsync.
+        [HttpPut]
+        [Authorize(Policy = "/aca-prospecto|U")]
+        public async Task<IActionResult> Put(ACA_PROSPECTO_PERSONATable Data)
+        {
+            this.ApplyQueryKeys(Data, nameof(ACA_PROSPECTO_PERSONATable.CORR_PROSPECTO_PERSONA));
+            SetUpdateAudit(Data);
+
+            var resultado = await _service.UpdateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+        }
+
+        private string GetUsuario()
+        {
+            return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value;
+        }
+
+        private void SetUpdateAudit(ACA_PROSPECTO_PERSONATable Data)
+        {
+            Data.USUARIO_ACTU = GetUsuario();
+            Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
+            Data.FECHA_ACTU = DateTime.Now;
         }
     }
 }

@@ -54,8 +54,13 @@ namespace sguees.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Qué hace: valida la cabecera del estudio socioeconómico antes de actualizar.
+        // Cómo lo hace: solo exige la llave; el único dato editable es APLICA_CUOTA_MAXIMA.
         public async Task<CResult> UpdateAsync(ACA_PROSPECTO_SOCIOECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            if (Data == null || Data.CORR_PROSPECTO_SOCIOECONOMICO <= 0)
+                return new CResult() { Data = null, Result = false, CodeHelper = 0, ErrorCode = -1, ErrorMessage = "Debe indicar el estudio socioeconómico a modificar.", ErrorSource = "[ACA_PROSPECTO_SOCIOECONOMICOService]", RowsAffected = 0 };
+
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 

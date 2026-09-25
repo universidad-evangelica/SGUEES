@@ -50,19 +50,54 @@ namespace sguees.Services
             return await _repo.GetAsync(p);
         }
 
+        // Qué hace: valida y agrega una limitación física del prospecto.
         public async Task<CResult> CreateAsync(ACA_PROSPECTO_LIMITACION_FISICATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            if (Data == null || Data.CORR_PROSPECTO_PERSONA <= 0)
+                return ErrorValidacion("Debe indicar la persona del prospecto.");
+
+            var validacion = Validar(Data);
+            if (validacion != null) return validacion;
+
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
         public async Task<CResult> UpdateAsync(ACA_PROSPECTO_LIMITACION_FISICATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            if (Data == null || Data.CORR_PROSPECTO_LIMITACION_FISICA <= 0)
+                return ErrorValidacion("Debe indicar la limitación a modificar.");
+
+            var validacion = Validar(Data);
+            if (validacion != null) return validacion;
+
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
         public async Task<CResult> DeleteAsync(ACA_PROSPECTO_LIMITACION_FISICATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            if (Data == null || Data.CORR_PROSPECTO_LIMITACION_FISICA <= 0)
+                return ErrorValidacion("Debe indicar la limitación a eliminar.");
+
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        // Qué hace: reglas comunes: limitación del catálogo obligatoria y "especifique" hasta 500.
+        //           Que no se repita la limitación para la misma persona lo revisa el repositorio.
+        private static CResult Validar(ACA_PROSPECTO_LIMITACION_FISICATable Data)
+        {
+            Data.ESPECIFIQUE = string.IsNullOrWhiteSpace(Data.ESPECIFIQUE) ? null : Data.ESPECIFIQUE.Trim();
+
+            if (!(Data.CORR_LIMITACION_FISICA > 0))
+                return ErrorValidacion("Seleccione la limitación física.");
+            if (Data.ESPECIFIQUE != null && Data.ESPECIFIQUE.Length > 500)
+                return ErrorValidacion("El detalle no puede superar 500 caracteres.");
+
+            return null;
+        }
+
+        private static CResult ErrorValidacion(string mensaje)
+        {
+            return new CResult() { Data = null, Result = false, CodeHelper = 0, ErrorCode = -1, ErrorMessage = mensaje, ErrorSource = "[ACA_PROSPECTO_LIMITACION_FISICAService]", RowsAffected = 0 };
         }
     }
 }

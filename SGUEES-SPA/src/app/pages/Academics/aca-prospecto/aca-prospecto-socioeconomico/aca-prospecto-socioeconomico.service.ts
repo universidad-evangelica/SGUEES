@@ -17,6 +17,20 @@ export class AcaProspectoSocioeconomicoService {
         return this.repo.getAll(xWhere);
     }
 
+    // Qué hace: actualiza la cabecera del estudio (solo Aplica cuota máxima es editable).
+    // Cómo lo hace: envía las columnas de ACA_PROSPECTO_SOCIOECONOMICO; la PK va en el query.
+    update(model: any): Observable<IResult> {
+        let xWhere: IParam[] = [{ Parameter: 'CORR_PROSPECTO_SOCIOECONOMICO', Value: model.CORR_PROSPECTO_SOCIOECONOMICO }];
+        const payload = {
+            CORR_PROSPECTO_SOCIOECONOMICO: model.CORR_PROSPECTO_SOCIOECONOMICO,
+            CORR_PROSPECTO_PERSONA: model.CORR_PROSPECTO_PERSONA,
+            CORR_VERSION: model.CORR_VERSION,
+            TERMINOS_ACEPTADOS: model.TERMINOS_ACEPTADOS ?? false,
+            APLICA_CUOTA_MAXIMA: model.APLICA_CUOTA_MAXIMA ?? false,
+        };
+        return this.repo.update(payload, xWhere);
+    }
+
     getColumns(): any {
         return [
             {
@@ -68,7 +82,14 @@ export class AcaProspectoSocioeconomicoService {
                 editorType: 'dxDateBox',
                 editorOptions: { readOnly: true, type: 'datetime', displayFormat: 'dd/MM/yyyy HH:mm' },
             },
-            { dataField: 'TERMINOS_ACEPTADOS', label: { text: 'Aceptó términos y condiciones' }, colSpan: 2, editorType: 'dxCheckBox' },
+            {
+                dataField: 'TERMINOS_ACEPTADOS',
+                label: { text: 'Aceptó términos y condiciones' },
+                colSpan: 2,
+                editorType: 'dxCheckBox',
+                editorOptions: { readOnly: true },
+            },
+            // Editable: el dx-form [readOnly] lo bloquea en consulta.
             { dataField: 'APLICA_CUOTA_MAXIMA', label: { text: 'Aplica cuota máxima' }, colSpan: 2, editorType: 'dxCheckBox' },
         ];
     }

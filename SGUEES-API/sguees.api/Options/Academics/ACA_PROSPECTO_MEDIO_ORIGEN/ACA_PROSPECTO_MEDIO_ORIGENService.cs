@@ -50,19 +50,63 @@ namespace sguees.Services
             return await _repo.GetAsync(p);
         }
 
+        // Qué hace: valida y agrega un medio de origen del prospecto.
         public async Task<CResult> CreateAsync(ACA_PROSPECTO_MEDIO_ORIGENTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            if (Data == null || Data.CORR_PROSPECTO_PERSONA <= 0)
+                return ErrorValidacion("Debe indicar la persona del prospecto.");
+
+            var validacion = Validar(Data);
+            if (validacion != null) return validacion;
+
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
         public async Task<CResult> UpdateAsync(ACA_PROSPECTO_MEDIO_ORIGENTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            if (Data == null || Data.CORR_PROSPECTO_MEDIO <= 0)
+                return ErrorValidacion("Debe indicar el medio a modificar.");
+
+            var validacion = Validar(Data);
+            if (validacion != null) return validacion;
+
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
         public async Task<CResult> DeleteAsync(ACA_PROSPECTO_MEDIO_ORIGENTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            if (Data == null || Data.CORR_PROSPECTO_MEDIO <= 0)
+                return ErrorValidacion("Debe indicar el medio a eliminar.");
+
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        // Qué hace: reglas del medio de origen, las mismas del portal.
+        // Cómo lo hace: el medio del catálogo es obligatorio; "Otro" exige la descripción y "Referido
+        //               amigo/familiar" el nombre y la carrera de quien refiere. Los campos que no
+        //               corresponden al medio se descartan, para que no queden datos cruzados. Qué medio
+        //               es cada uno lo decide el repositorio por CODIGO ('OTRO' y 'REF'), no por nombre.
+        //               Que no se repita el medio lo revisa el repositorio (la tabla tiene índice único).
+        private static CResult Validar(ACA_PROSPECTO_MEDIO_ORIGENTable Data)
+        {
+            Data.DESCRIPCION = Limpiar(Data.DESCRIPCION);
+            Data.ESTUDIANTE_REFIERE = Limpiar(Data.ESTUDIANTE_REFIERE);
+
+            if (!(Data.CORR_MEDIO_ORIGEN > 0))
+                return ErrorValidacion("Seleccione el medio por el que conoció la universidad.");
+            if (Data.DESCRIPCION != null && Data.DESCRIPCION.Length > 1000)
+                return ErrorValidacion("La descripción no puede superar 1000 caracteres.");
+            if (Data.ESTUDIANTE_REFIERE != null && Data.ESTUDIANTE_REFIERE.Length > 200)
+                return ErrorValidacion("El nombre de quien refiere no puede superar 200 caracteres.");
+
+            return null;
+        }
+
+        private static string Limpiar(string valor) => string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+
+        private static CResult ErrorValidacion(string mensaje)
+        {
+            return new CResult() { Data = null, Result = false, CodeHelper = 0, ErrorCode = -1, ErrorMessage = mensaje, ErrorSource = "[ACA_PROSPECTO_MEDIO_ORIGENService]", RowsAffected = 0 };
         }
     }
 }

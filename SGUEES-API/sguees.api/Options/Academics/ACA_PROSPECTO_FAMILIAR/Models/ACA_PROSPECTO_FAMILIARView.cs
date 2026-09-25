@@ -13,6 +13,9 @@ namespace sguees.Models
         public int CORR_PROSPECTO_FAMILIAR { get; set; }
         public int CORR_PARENTESCO { get; set; }
         public string NOMBRE_PARENTESCO { get; set; }
+        public string NOMBRES { get; set; }
+        public string APELLIDO1 { get; set; }
+        public string APELLIDO2 { get; set; }
         public string NOMBRE_COMPLETO { get; set; }
         public bool? TRABAJA { get; set; }
         public string PROFESION { get; set; }

@@ -61,6 +61,15 @@ namespace SGUEES.Controllers
 			return await _service.GetAllAsync(data);
 		}
 
+		[HttpGet("GetCORR_PAIS_ACA_PROSPECTO")]
+		[Authorize(Policy = "/aca-prospecto|R")]
+		// Qué hace: países para nacionalidad, procedencia, residencia y empleo en la edición de prospectos.
+		// Cómo: llama a GetAllAsync del servicio.
+		public async Task<CResult> GetCORR_PAIS_ACA_PROSPECTO([FromQuery] GEN_PAISParam data)
+		{
+			return await _service.GetAllAsync(data);
+		}
+
 		[HttpGet("GetCODIGO_PAIS_COM_PROVEEDOR")]
 		[Authorize(Policy = "/com-proveedor|R")]
 		// Qué hace: entrega el catálogo de países requerido por el mantenimiento relacionado y aplica el contexto de empresa.

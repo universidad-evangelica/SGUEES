@@ -104,9 +104,57 @@ namespace sguees.Repositories
             return Task.FromResult(OperacionNoHabilitada());
         }
 
-        public Task<CResult> UpdateAsync(ACA_PROSPECTO_SOCIOECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+        // Qué hace: actualiza APLICA_CUOTA_MAXIMA de la cabecera del estudio socioeconómico.
+        // Cómo lo hace: objData.Update por CORR_PROSPECTO_SOCIOECONOMICO y relee V_ACA_PROSPECTO_SOCIOECONOMICO.
+        //               No toca CORR_VERSION ni TERMINOS_ACEPTADOS.
+        public async Task<CResult> UpdateAsync(ACA_PROSPECTO_SOCIOECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
-            return Task.FromResult(OperacionNoHabilitada());
+            CResult objResultado = new();
+
+            try
+            {
+                var p = new List<CParameter>
+                {
+                    new CParameter() {ParameterName="APLICA_CUOTA_MAXIMA",Value=Data.APLICA_CUOTA_MAXIMA,DbType=System.Data.DbType.Boolean},
+                    new CParameter() {ParameterName="USUARIO_ACTU",Value=Data.USUARIO_ACTU,DbType=System.Data.DbType.String},
+                    new CParameter() {ParameterName="ESTACION_ACTU",Value=Data.ESTACION_ACTU,DbType=System.Data.DbType.String},
+                    new CParameter() {ParameterName="FECHA_ACTU",Value=Data.FECHA_ACTU,DbType=System.Data.DbType.DateTime},
+                };
+
+                var pWhere = new List<CParameter>
+                {
+                    new CParameter() {ParameterName="CORR_PROSPECTO_SOCIOECONOMICO",Value=Data.CORR_PROSPECTO_SOCIOECONOMICO,DbType=System.Data.DbType.Int32},
+                };
+
+                var reader = await objData.Update(_TableName, p, pWhere);
+                var response = new List<ACA_PROSPECTO_SOCIOECONOMICOView>().FromDataReader(reader).FirstOrDefault();
+
+                reader.Close();
+                reader = null;
+
+                objResultado.Data = response;
+                objResultado.Result = true;
+                objResultado.RowsAffected = 1;
+                objResultado.CodeHelper = Data.CORR_PROSPECTO_SOCIOECONOMICO;
+                objResultado.ErrorCode = 0;
+                objResultado.ErrorMessage = "";
+                objResultado.ErrorSource = "";
+            }
+            catch (System.Exception e)
+            {
+                objResultado.Data = null;
+                objResultado.Result = false;
+                objResultado.CodeHelper = 0;
+                objResultado.ErrorCode = -1;
+                objResultado.ErrorMessage = e.Message;
+                objResultado.ErrorSource += $"[{e.Source}]";
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+
+            return objResultado;
         }
 
         public Task<CResult> DeleteAsync(ACA_PROSPECTO_SOCIOECONOMICOTable Data, string vLOGIN_SISTEMA, string vESTACION)

@@ -6,6 +6,8 @@ using System.Linq;
 using eFramework.Core;
 using sguees.Models;
 using sguees.Services;
+using System.Security.Claims;
+using sguees.api.Shared;
 
 namespace sguees.Controllers
 {
@@ -39,6 +41,22 @@ namespace sguees.Controllers
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetAsync(Data);
+        }
+
+        // Qué hace: guarda de una vez todas las respuestas del estudio socioeconómico del prospecto.
+        // Cómo lo hace: recibe el lote (una fila por pregunta) y delega en GuardarAsync; la auditoría
+        //               (usuario del token y estación) la aplica el repositorio en cada fila.
+        [HttpPut("Guardar")]
+        [Authorize(Policy = "/aca-prospecto|U")]
+        public async Task<IActionResult> Guardar(ACA_PROSPECTO_SE_RESPUESTA_GUARDARParam Data)
+        {
+            var resultado = await _service.GuardarAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+        }
+
+        private string GetUsuario()
+        {
+            return User.Claims.ToList().SingleOrDefault(e => e.Type == ClaimTypes.NameIdentifier)?.Value;
         }
     }
 }

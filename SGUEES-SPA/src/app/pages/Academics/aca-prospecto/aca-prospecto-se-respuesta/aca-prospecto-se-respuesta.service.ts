@@ -19,6 +19,28 @@ export class AcaProspectoSeRespuestaService {
         return this.repo.getAll(xWhere);
     }
 
+    // Qué hace: guarda de una vez todas las respuestas del prospecto.
+    // Cómo lo hace: arma una fila por pregunta con el valor del formulario en la columna que
+    //               corresponde a su tipo; el API decide actualizar, insertar o borrar (vacío y
+    //               monto 0 = sin respuesta, como en el portal).
+    guardar(CORR_PROSPECTO: number, CORR_PROSPECTO_SOCIOECONOMICO: number, respuestas: AcaProspectoSeRespuesta[], formData: any): Observable<IResult> {
+        const payload = {
+            CORR_PROSPECTO,
+            CORR_PROSPECTO_SOCIOECONOMICO,
+            RESPUESTAS: (respuestas ?? []).map((r) => {
+                const valor = formData?.[r.CODIGO_PREGUNTA];
+                return {
+                    CORR_PREGUNTA: r.CORR_PREGUNTA,
+                    VALOR_TEXTO: this.esTexto(r) ? this.textoONull(valor) : null,
+                    VALOR_NUMERO: this.esNumero(r) ? this.numeroONull(valor) : null,
+                    VALOR_BIT: r.TIPO_PREGUNTA === 'SI_NO' ? (valor === true || valor === false ? valor : null) : null,
+                    CORR_OPCION: r.TIPO_PREGUNTA === 'OPCION_UNICA' ? this.numeroONull(valor) : null,
+                };
+            }),
+        };
+        return this.repo.guardar(payload);
+    }
+
     getColumns(): any {
         return [
             { dataField: 'ORDEN', caption: 'Orden', width: 80 },
@@ -104,7 +126,26 @@ export class AcaProspectoSeRespuestaService {
     // Cómo lo hace: solo pinta las preguntas que trae la versión del prospecto; omite
     //               subsecciones y secciones sin preguntas; las que no están en la
     //               configuración van al final en "Otras preguntas", en su ORDEN.
-    getItems(respuestas: AcaProspectoSeRespuesta[]): any {
+    //               opciones = banco ACA_SE_OPCION para las preguntas de opción única.
+    // Qué hace: preguntas que solo aplican si otra pregunta Sí/No está en Sí.
+    // Cómo lo hace: configuración de presentación, como getSecciones (la BD no guarda dependencias).
+    //               Es la regla del portal: al responder "No" oculta y limpia las dependientes.
+    getDependencias(): Record<string, string> {
+        return {
+            UNI_NOMBRE: 'UNI_TIENE',
+            UNI_CARRERA_CICLO: 'UNI_TIENE',
+            UNI_CUOTA: 'UNI_TIENE',
+            UNI_QUIEN_PAGO: 'UNI_TIENE',
+        };
+    }
+
+    // Qué hace: preguntas que dependen de la pregunta indicada (vacío si no gobierna a ninguna).
+    getDependientes(codigo: string): string[] {
+        const dependencias = this.getDependencias();
+        return Object.keys(dependencias).filter((c) => dependencias[c] === codigo);
+    }
+
+    getItems(respuestas: AcaProspectoSeRespuesta[], opciones: any[] = [], formData: any = null): any {
         const porCodigo = new Map<string, AcaProspectoSeRespuesta>();
         for (const r of respuestas ?? []) {
             porCodigo.set(r.CODIGO_PREGUNTA, r);
@@ -121,7 +162,7 @@ export class AcaProspectoSeRespuestaService {
                     const respuesta = porCodigo.get(pregunta.codigo);
                     if (respuesta) {
                         usadas.add(pregunta.codigo);
-                        items.push(this.getItemPregunta(respuesta, pregunta.ancho));
+                        items.push(this.getItemPregunta(respuesta, opciones, pregunta.ancho, formData));
                     }
                 }
                 if (items.length) {
@@ -149,7 +190,7 @@ export class AcaProspectoSeRespuestaService {
 
         const otras = (respuestas ?? [])
             .filter((r) => !usadas.has(r.CODIGO_PREGUNTA))
-            .map((r) => this.getItemPregunta(r));
+            .map((r) => this.getItemPregunta(r, opciones, undefined, formData));
         if (otras.length) {
             grupos.push({
                 itemType: 'group',
@@ -164,8 +205,24 @@ export class AcaProspectoSeRespuestaService {
         return grupos;
     }
 
+    // Qué hace: regla del portal para los ingresos: líquido = salario − descuentos, nunca negativo.
+    // Cómo lo hace: si cambió un ING_*_BRUTO o ING_*_DESC devuelve el campo líquido y su valor
+    //               (null cuando queda en 0, que es "sin respuesta"); null si el campo no es de ingresos.
+    calcularLiquido(dataField: string, formData: any): { campo: string; valor: number | null } | null {
+        const coincidencia = /^(ING_[A-Z]+)_(BRUTO|DESC)$/.exec(dataField ?? '');
+        if (!coincidencia) {
+            return null;
+        }
+        const prefijo = coincidencia[1];
+        const bruto = Number(formData?.[`${prefijo}_BRUTO`]) || 0;
+        const descuentos = Number(formData?.[`${prefijo}_DESC`]) || 0;
+        const liquido = Math.max(0, bruto - descuentos);
+        return { campo: `${prefijo}_LIQ`, valor: liquido > 0 ? liquido : null };
+    }
+
     // Qué hace: objeto formData del formulario "Preguntas" ({ CODIGO_PREGUNTA: valor }).
     // Cómo lo hace: toma el valor según el tipo; null cuando no hay respuesta.
+    //               Opción única guarda CORR_OPCION (el combo muestra el texto).
     getFormData(respuestas: AcaProspectoSeRespuesta[]): any {
         const data: any = {};
         for (const r of respuestas ?? []) {
@@ -195,13 +252,23 @@ export class AcaProspectoSeRespuestaService {
 
     // Qué hace: campo de una pregunta según su tipo (texto, monto, número, sí/no, opción).
     // Cómo lo hace: usa el ancho de getSecciones() o, si la pregunta no está ahí, uno por tipo.
-    //               Las opciones se muestran con su texto histórico (sin catálogo de opciones).
-    private getItemPregunta(r: AcaProspectoSeRespuesta, ancho?: number): any {
+    //               Sin readOnly por campo: el dx-form [readOnly] decide consulta o edición.
+    //               ES_REQUERIDO agrega la regla required (asterisco en consulta, validación al guardar).
+    //               Opción única = combo con las opciones activas de esa pregunta; opción múltiple
+    //               se muestra como texto y no se edita (V1 no la usa).
+    private getItemPregunta(r: AcaProspectoSeRespuesta, opciones: any[], ancho?: number, formData: any = null): any {
+        // Dependencia del portal: si la pregunta que la gobierna está en "No", esta no se muestra.
+        const controlador = this.getDependencias()[r.CODIGO_PREGUNTA];
         const base: any = {
             dataField: r.CODIGO_PREGUNTA,
             label: { text: r.ENUNCIADO },
             helpText: r.AYUDA || undefined,
+            validationRules: r.ES_REQUERIDO ? [{ type: 'required', message: 'Este campo es obligatorio' }] : undefined,
+            visible: !controlador || formData?.[controlador] === true,
         };
+
+        // Líquido de ingresos: calculado (salario − descuentos), no se captura a mano, como en el portal.
+        const esLiquido = /^ING_[A-Z]+_LIQ$/.test(r.CODIGO_PREGUNTA);
 
         switch (r.TIPO_PREGUNTA) {
             case 'MONTO':
@@ -209,18 +276,31 @@ export class AcaProspectoSeRespuestaService {
                     ...base,
                     colSpan: ancho ?? 2,
                     editorType: 'dxNumberBox',
-                    editorOptions: { readOnly: true, format: '#,##0.00', placeholder: 'Sin respuesta' },
+                    helpText: esLiquido ? 'Se calcula: salario − descuentos' : base.helpText,
+                    editorOptions: { format: '#,##0.00', min: 0, placeholder: 'Sin respuesta', showClearButton: !esLiquido, readOnly: esLiquido },
                 };
             case 'NUMERO':
                 return {
                     ...base,
                     colSpan: ancho ?? 2,
                     editorType: 'dxNumberBox',
-                    editorOptions: { readOnly: true, placeholder: 'Sin respuesta' },
+                    editorOptions: { min: 0, placeholder: 'Sin respuesta', showClearButton: true },
                 };
             case 'SI_NO':
-                // Sin respuesta → valor null → casilla en estado indeterminado.
-                return { ...base, colSpan: ancho ?? 2, editorType: 'dxCheckBox', editorOptions: { readOnly: true } };
+                return { ...base, colSpan: ancho ?? 2, editorType: 'dxCheckBox' };
+            case 'OPCION_UNICA':
+                return {
+                    ...base,
+                    colSpan: ancho ?? 4,
+                    editorType: 'dxSelectBox',
+                    editorOptions: {
+                        items: (opciones ?? []).filter((o) => o.CORR_PREGUNTA === r.CORR_PREGUNTA),
+                        valueExpr: 'CORR_OPCION',
+                        displayExpr: 'TEXTO',
+                        placeholder: 'Sin respuesta',
+                        showClearButton: true,
+                    },
+                };
             case 'OPCION_MULTIPLE':
                 return {
                     ...base,
@@ -228,9 +308,30 @@ export class AcaProspectoSeRespuestaService {
                     editorType: 'dxTextArea',
                     editorOptions: { readOnly: true, placeholder: 'Sin respuesta', autoResizeEnabled: true },
                 };
-            default: // TEXTO, OPCION_UNICA
-                return { ...base, colSpan: ancho ?? 4, editorOptions: { readOnly: true, placeholder: 'Sin respuesta' } };
+            default: // TEXTO
+                return { ...base, colSpan: ancho ?? 4, editorOptions: { placeholder: 'Sin respuesta', maxLength: 1000 } };
         }
+    }
+
+    private esTexto(r: AcaProspectoSeRespuesta): boolean {
+        return r.TIPO_PREGUNTA === 'TEXTO';
+    }
+
+    private esNumero(r: AcaProspectoSeRespuesta): boolean {
+        return r.TIPO_PREGUNTA === 'MONTO' || r.TIPO_PREGUNTA === 'NUMERO';
+    }
+
+    private textoONull(valor: any): string | null {
+        const texto = valor === null || valor === undefined ? '' : String(valor).trim();
+        return texto === '' ? null : texto;
+    }
+
+    private numeroONull(valor: any): number | null {
+        if (valor === null || valor === undefined || valor === '') {
+            return null;
+        }
+        const numero = Number(valor);
+        return Number.isFinite(numero) ? numero : null;
     }
 
     private valorRespuesta(r: AcaProspectoSeRespuesta): any {
@@ -244,7 +345,7 @@ export class AcaProspectoSeRespuestaService {
             case 'SI_NO':
                 return r.VALOR_BIT;
             case 'OPCION_UNICA':
-                return r.TEXTO_OPCION;
+                return r.CORR_OPCION;
             case 'OPCION_MULTIPLE':
                 return r.TEXTO_OPCIONES_MULTIPLES;
             default:
@@ -253,6 +354,12 @@ export class AcaProspectoSeRespuestaService {
     }
 
     private textoRespuesta(r: AcaProspectoSeRespuesta): string {
+        if (!r.TIENE_RESPUESTA) {
+            return 'Sin respuesta';
+        }
+        if (r.TIPO_PREGUNTA === 'OPCION_UNICA') {
+            return r.TEXTO_OPCION || 'Sin respuesta';
+        }
         const valor = this.valorRespuesta(r);
         if (valor === null || valor === undefined || valor === '') {
             return 'Sin respuesta';

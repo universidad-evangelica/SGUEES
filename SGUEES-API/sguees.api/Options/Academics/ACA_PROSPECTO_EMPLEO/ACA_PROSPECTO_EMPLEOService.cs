@@ -50,18 +50,94 @@ namespace sguees.Services
             return await _repo.GetAsync(p);
         }
 
+        // Qué hace: valida y crea la información laboral (una por prospecto).
+        // Cómo lo hace: mismas reglas que la modificación más persona y empresa obligatorias;
+        //               TRABAJA_AUN siempre en 1, como lo guarda el portal.
         public async Task<CResult> CreateAsync(ACA_PROSPECTO_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            if (Data == null || Data.CORR_PROSPECTO_PERSONA <= 0)
+                return ErrorValidacion("Debe indicar la persona del prospecto.");
+
+            var validacion = Validar(Data);
+            if (validacion != null) return validacion;
+
+            if (Data.EMPRESA == null)
+                return ErrorValidacion("Debe ingresar la empresa donde trabaja.");
+
+            Data.TRABAJA_AUN = true;
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Qué hace: valida la información laboral antes de actualizar.
+        // Cómo lo hace: reglas comunes de Validar; TRABAJA_AUN siempre en 1 (el interruptor real es
+        //               PERSONA.TRABAJA: si es 0 el empleo se elimina, no se marca).
         public async Task<CResult> UpdateAsync(ACA_PROSPECTO_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            if (Data == null || Data.CORR_PROSPECTO_EMPLEO <= 0)
+                return ErrorValidacion("Debe indicar el empleo del prospecto a modificar.");
+
+            var validacion = Validar(Data);
+            if (validacion != null) return validacion;
+
+            Data.TRABAJA_AUN = true;
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Qué hace: reglas comunes de alta y modificación.
+        // Cómo lo hace: largos según la tabla, montos no negativos y jerarquía país → departamento → municipio.
+        //               Si el empleo es en el extranjero se descarta la ubicación completa (regla del
+        //               portal: solo se guarda cuando el trabajo es en el país).
+        private static CResult Validar(ACA_PROSPECTO_EMPLEOTable Data)
+        {
+            if (Data.TIENE_EMPLEO_FUERA == true)
+            {
+                Data.CORR_PAIS = null;
+                Data.CORR_DEPTO = null;
+                Data.CORR_MUNICIPIO = null;
+            }
+
+            Data.EMPRESA = Limpiar(Data.EMPRESA);
+            Data.CARGO = Limpiar(Data.CARGO);
+            Data.DIRECCION = Limpiar(Data.DIRECCION);
+            Data.TELEFONO = Limpiar(Data.TELEFONO);
+            Data.EMAIL = Limpiar(Data.EMAIL);
+
+            var largo = ExcedeLargo(Data.EMPRESA, 1000, "Empresa")
+                ?? ExcedeLargo(Data.CARGO, 1000, "Cargo")
+                ?? ExcedeLargo(Data.DIRECCION, 1000, "Dirección")
+                ?? ExcedeLargo(Data.TELEFONO, 100, "Teléfono")
+                ?? ExcedeLargo(Data.EMAIL, 100, "Correo");
+            if (largo != null) return largo;
+
+            if (Data.SALARIO_MENSUAL < 0 || Data.APORTE_LIQUIDO < 0)
+                return ErrorValidacion("El salario y el aporte líquido no pueden ser negativos.");
+
+            if (Data.CORR_DEPTO > 0 && !(Data.CORR_PAIS > 0))
+                return ErrorValidacion("Debe seleccionar el país del empleo antes del departamento.");
+            if (Data.CORR_MUNICIPIO > 0 && !(Data.CORR_DEPTO > 0))
+                return ErrorValidacion("Debe seleccionar el departamento del empleo antes del municipio.");
+
+            return null;
+        }
+
+        private static string Limpiar(string valor) => string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+
+        private static CResult ExcedeLargo(string valor, int maximo, string campo)
+        {
+            return valor != null && valor.Length > maximo ? ErrorValidacion($"{campo} no puede superar {maximo} caracteres.") : null;
+        }
+
+        private static CResult ErrorValidacion(string mensaje)
+        {
+            return new CResult() { Data = null, Result = false, CodeHelper = 0, ErrorCode = -1, ErrorMessage = mensaje, ErrorSource = "[ACA_PROSPECTO_EMPLEOService]", RowsAffected = 0 };
+        }
+
+        // Qué hace: elimina la información laboral (al desmarcar "Trabaja" en el ERP).
         public async Task<CResult> DeleteAsync(ACA_PROSPECTO_EMPLEOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            if (Data == null || Data.CORR_PROSPECTO_EMPLEO <= 0)
+                return ErrorValidacion("Debe indicar el empleo del prospecto a eliminar.");
+
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
     }

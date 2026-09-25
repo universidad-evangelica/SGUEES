@@ -70,6 +70,16 @@ namespace SGUEES.Controllers
 			return await _service.GetAllAsync(data);
 		}
 
+		[HttpGet("GetCORR_MUNICIPIO_ACA_PROSPECTO")]
+		[Authorize(Policy = "/aca-prospecto|R")]
+		// Qué hace: municipios del país y departamento indicados para residencia y empleo en la edición de prospectos.
+		// Cómo: llama a GetAllAsync del servicio, que filtra por CORR_PAIS y CORR_DEPTO cuando vienen.
+		public async Task<CResult> GetCORR_MUNICIPIO_ACA_PROSPECTO([FromQuery] GEN_MUNICIPIOParam data)
+		{
+			data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetAllAsync(data);
+		}
+
 		[HttpGet("GetCODIGO_MUNICIPIO_COM_PROVEEDOR")]
 		[Authorize(Policy = "/com-proveedor|R")]
 		// Qué hace: entrega el catálogo de municipios requerido por el mantenimiento relacionado y aplica el contexto de empresa.

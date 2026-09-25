@@ -32,6 +32,31 @@
 	margin-bottom: 0;
 }
 
+// Qué hace: encabezado de sección con su propio control a la derecha (interruptor del empleo).
+// Cómo lo hace: el título y el subtítulo se agrupan en una columna y el control queda al extremo;
+//               en pantallas angostas el control baja debajo del texto.
+.aca-prospecto-section-head--accion {
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: var(--sguees-space-3, 12px);
+}
+
+// Qué hace: botones Aceptar/Cancelar del formulario que reemplaza a una grilla hija.
+.aca-prospecto-form-acciones {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--sguees-space-2, 8px);
+	margin-top: var(--sguees-space-3, 12px);
+}
+
+.aca-prospecto-section-head-texto {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
 .aca-prospecto-section-title {
 	font-size: 15px;
 	font-weight: 700;

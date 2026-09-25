@@ -20,4 +20,18 @@ export class AcaProspectoRepository {
     get(xWhere: IParam[]): Observable<IResult> {
         return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlGENERALAPI);
     }
+
+    // Qué hace: oferta académica para el cambio de carrera (carreras del ciclo y sus modalidades).
+    getCarreras(xWhere: IParam[]): Observable<IResult> {
+        return this.objData.Get(this.xController, 'GetCORR_CARRERA_ACA_PROSPECTO', xWhere, environment.UrlGENERALAPI);
+    }
+
+    getModalidades(xWhere: IParam[]): Observable<IResult> {
+        return this.objData.Get(this.xController, 'GetCORR_MODALIDAD_ACA_PROSPECTO', xWhere, environment.UrlGENERALAPI);
+    }
+
+    // Qué hace: PUT estándar (body + PK en query).
+    update(model: any, xWhere: IParam[]): Observable<IResult> {
+        return this.objData.Put(model, this.xController, '', xWhere, environment.UrlGENERALAPI);
+    }
 }

@@ -20,4 +20,9 @@ export class AcaProspectoSocioeconomicoRepository {
     get(xWhere: IParam[]): Observable<IResult> {
         return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlGENERALAPI);
     }
+
+    // Qué hace: PUT estándar (body + PK en query).
+    update(model: any, xWhere: IParam[]): Observable<IResult> {
+        return this.objData.Put(model, this.xController, '', xWhere, environment.UrlGENERALAPI);
+    }
 }

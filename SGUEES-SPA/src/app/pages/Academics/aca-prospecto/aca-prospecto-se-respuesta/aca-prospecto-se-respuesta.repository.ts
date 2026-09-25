@@ -20,4 +20,9 @@ export class AcaProspectoSeRespuestaRepository {
     get(xWhere: IParam[]): Observable<IResult> {
         return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlGENERALAPI);
     }
+
+    // Qué hace: guarda en lote las respuestas del prospecto (PUT ACA_PROSPECTO_SE_RESPUESTA/Guardar).
+    guardar(payload: any): Observable<IResult> {
+        return this.objData.Put(payload, this.xController, 'Guardar', [], environment.UrlGENERALAPI);
+    }
 }

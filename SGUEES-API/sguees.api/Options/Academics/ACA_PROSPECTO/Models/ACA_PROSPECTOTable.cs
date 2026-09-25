@@ -15,6 +15,11 @@ namespace sguees.Models
         public string ESTADO { get; set; }
         public string FORMA_INGRESO { get; set; }
         public string FINANCIA_ESTUDIOS { get; set; }
+        // Qué hacen: carrera y modalidad elegidas al cambiar de carrera desde el ERP. No son columnas
+        // de la tabla: con ellas el repositorio resuelve el plan académico y el período, igual que el
+        // portal, y lo que se guarda son CORR_PLAN_ACADEMICO y CORR_PERIODO_ACADEMICO.
+        public int CORR_CARRERA { get; set; }
+        public int CORR_MODALIDAD { get; set; }
         public string FECHA_HORA_INICIO { get; set; }
         public DateTime? FECHA_PROCESAMIENTO { get; set; }
         public string USUARIO_PROCESA { get; set; }

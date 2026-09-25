@@ -8,6 +8,7 @@ namespace sguees.Services
     {
         Task<CResult> GetAllAsync(ACA_PROSPECTO_CONTACTOParam xWhere);
         Task<CResult> GetAsync(ACA_PROSPECTO_CONTACTOParam xWhere);
+        Task<CResult> GetCODIGO_PAIS_ACA_PROSPECTOAsync();
         Task<CResult> CreateAsync(ACA_PROSPECTO_CONTACTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> UpdateAsync(ACA_PROSPECTO_CONTACTOTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> DeleteAsync(ACA_PROSPECTO_CONTACTOTable Data, string vLOGIN_SISTEMA, string vESTACION);

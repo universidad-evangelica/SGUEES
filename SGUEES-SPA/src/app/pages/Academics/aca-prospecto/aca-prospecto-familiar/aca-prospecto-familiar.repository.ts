@@ -20,4 +20,19 @@ export class AcaProspectoFamiliarRepository {
     get(xWhere: IParam[]): Observable<IResult> {
         return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlGENERALAPI);
     }
+
+    // Qué hace: PUT estándar (body + PK en query).
+    update(model: any, xWhere: IParam[]): Observable<IResult> {
+        return this.objData.Put(model, this.xController, '', xWhere, environment.UrlGENERALAPI);
+    }
+
+    // Qué hace: POST estándar (body completo).
+    create(model: any): Observable<IResult> {
+        return this.objData.Post(model, this.xController, '', environment.UrlGENERALAPI);
+    }
+
+    // Qué hace: DELETE estándar (solo PK en query).
+    delete(xWhere: IParam[]): Observable<IResult> {
+        return this.objData.Delete(this.xController, '', xWhere, environment.UrlGENERALAPI);
+    }
 }

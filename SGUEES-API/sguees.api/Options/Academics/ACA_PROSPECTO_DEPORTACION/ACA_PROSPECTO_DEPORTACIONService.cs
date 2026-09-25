@@ -50,19 +50,53 @@ namespace sguees.Services
             return await _repo.GetAsync(p);
         }
 
+        // Qué hace: valida y agrega una deportación del prospecto.
         public async Task<CResult> CreateAsync(ACA_PROSPECTO_DEPORTACIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            if (Data == null || Data.CORR_PROSPECTO_PERSONA <= 0)
+                return ErrorValidacion("Debe indicar la persona del prospecto.");
+
+            var validacion = Validar(Data);
+            if (validacion != null) return validacion;
+
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
         public async Task<CResult> UpdateAsync(ACA_PROSPECTO_DEPORTACIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            if (Data == null || Data.CORR_PROSPECTO_DEPORTACION <= 0)
+                return ErrorValidacion("Debe indicar la deportación a modificar.");
+
+            var validacion = Validar(Data);
+            if (validacion != null) return validacion;
+
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
         public async Task<CResult> DeleteAsync(ACA_PROSPECTO_DEPORTACIONTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            if (Data == null || Data.CORR_PROSPECTO_DEPORTACION <= 0)
+                return ErrorValidacion("Debe indicar la deportación a eliminar.");
+
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        // Qué hace: reglas comunes: país obligatorio y observación hasta 500.
+        private static CResult Validar(ACA_PROSPECTO_DEPORTACIONTable Data)
+        {
+            Data.OBSERVACION = string.IsNullOrWhiteSpace(Data.OBSERVACION) ? null : Data.OBSERVACION.Trim();
+
+            if (!(Data.CORR_PAIS > 0))
+                return ErrorValidacion("Seleccione el país de la deportación.");
+            if (Data.OBSERVACION != null && Data.OBSERVACION.Length > 500)
+                return ErrorValidacion("La observación no puede superar 500 caracteres.");
+
+            return null;
+        }
+
+        private static CResult ErrorValidacion(string mensaje)
+        {
+            return new CResult() { Data = null, Result = false, CodeHelper = 0, ErrorCode = -1, ErrorMessage = mensaje, ErrorSource = "[ACA_PROSPECTO_DEPORTACIONService]", RowsAffected = 0 };
         }
     }
 }

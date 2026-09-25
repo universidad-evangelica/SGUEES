@@ -64,5 +64,33 @@ namespace sguees.Services
         {
             return await _repo.DeleteAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
+
+        // Qué hace: valida el lote de respuestas antes de guardarlo.
+        // Cómo lo hace: exige la cabecera del estudio; textos ≤ 1000 y montos no negativos (CHECK de la tabla).
+        public async Task<CResult> GuardarAsync(ACA_PROSPECTO_SE_RESPUESTA_GUARDARParam Data, string vLOGIN_SISTEMA, string vESTACION)
+        {
+            if (Data == null || Data.CORR_PROSPECTO_SOCIOECONOMICO <= 0)
+                return ErrorValidacion("Debe indicar el estudio socioeconómico del prospecto.");
+
+            if (Data.RESPUESTAS == null || Data.RESPUESTAS.Count == 0)
+                return ErrorValidacion("No se recibieron respuestas para guardar.");
+
+            foreach (var r in Data.RESPUESTAS)
+            {
+                if (r.CORR_PREGUNTA <= 0)
+                    return ErrorValidacion("Hay una respuesta sin pregunta asociada.");
+                if (r.VALOR_TEXTO != null && r.VALOR_TEXTO.Trim().Length > 1000)
+                    return ErrorValidacion("Una respuesta de texto supera los 1000 caracteres.");
+                if (r.VALOR_NUMERO < 0)
+                    return ErrorValidacion("Los montos no pueden ser negativos.");
+            }
+
+            return await _repo.GuardarAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        private static CResult ErrorValidacion(string mensaje)
+        {
+            return new CResult() { Data = null, Result = false, CodeHelper = 0, ErrorCode = -1, ErrorMessage = mensaje, ErrorSource = "[ACA_PROSPECTO_SE_RESPUESTAService]", RowsAffected = 0 };
+        }
     }
 }

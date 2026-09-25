@@ -54,9 +54,58 @@ namespace sguees.Services
             return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
         }
 
+        // Qué hace: valida los datos personales antes de actualizar.
+        // Cómo lo hace: obligatorios nombres y primer apellido; largos según la tabla; municipio exige
+        //               departamento y departamento exige país (llaves compuestas de GEN_DEPTO/GEN_MUNICIPIO).
         public async Task<CResult> UpdateAsync(ACA_PROSPECTO_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
+            if (Data == null || Data.CORR_PROSPECTO_PERSONA <= 0)
+                return ErrorValidacion("Debe indicar la persona del prospecto a modificar.");
+
+            Data.NOMBRES = Limpiar(Data.NOMBRES);
+            Data.APELLIDO1 = Limpiar(Data.APELLIDO1);
+            Data.APELLIDO2 = Limpiar(Data.APELLIDO2);
+            Data.DUI = Limpiar(Data.DUI);
+            Data.NIE = Limpiar(Data.NIE);
+            Data.CARNET_RESIDENCIA = Limpiar(Data.CARNET_RESIDENCIA);
+            Data.NIT = Limpiar(Data.NIT);
+            Data.LUGAR_NACIMIENTO = Limpiar(Data.LUGAR_NACIMIENTO);
+            Data.IGLESIA_ACTUAL = Limpiar(Data.IGLESIA_ACTUAL);
+            Data.DIRECCION_ACTUAL = Limpiar(Data.DIRECCION_ACTUAL);
+
+            if (Data.NOMBRES == null) return ErrorValidacion("Debe ingresar los nombres.");
+            if (Data.APELLIDO1 == null) return ErrorValidacion("Debe ingresar el primer apellido.");
+
+            var largo = ExcedeLargo(Data.NOMBRES, 200, "Nombres")
+                ?? ExcedeLargo(Data.APELLIDO1, 200, "Primer apellido")
+                ?? ExcedeLargo(Data.APELLIDO2, 200, "Segundo apellido")
+                ?? ExcedeLargo(Data.DUI, 20, "DUI")
+                ?? ExcedeLargo(Data.NIE, 20, "NIE")
+                ?? ExcedeLargo(Data.CARNET_RESIDENCIA, 50, "Carné de residencia")
+                ?? ExcedeLargo(Data.NIT, 20, "NIT")
+                ?? ExcedeLargo(Data.LUGAR_NACIMIENTO, 200, "Lugar de nacimiento")
+                ?? ExcedeLargo(Data.IGLESIA_ACTUAL, 100, "Iglesia actual")
+                ?? ExcedeLargo(Data.DIRECCION_ACTUAL, 300, "Dirección actual");
+            if (largo != null) return largo;
+
+            if (Data.CORR_DEPTO_RESIDENCIA > 0 && !(Data.CORR_PAIS_RESIDENCIA > 0))
+                return ErrorValidacion("Debe seleccionar el país de residencia antes del departamento.");
+            if (Data.CORR_MUNICIPIO_RESIDENCIA > 0 && !(Data.CORR_DEPTO_RESIDENCIA > 0))
+                return ErrorValidacion("Debe seleccionar el departamento de residencia antes del municipio.");
+
             return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+        }
+
+        private static string Limpiar(string valor) => string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+
+        private static CResult ExcedeLargo(string valor, int maximo, string campo)
+        {
+            return valor != null && valor.Length > maximo ? ErrorValidacion($"{campo} no puede superar {maximo} caracteres.") : null;
+        }
+
+        private static CResult ErrorValidacion(string mensaje)
+        {
+            return new CResult() { Data = null, Result = false, CodeHelper = 0, ErrorCode = -1, ErrorMessage = mensaje, ErrorSource = "[ACA_PROSPECTO_PERSONAService]", RowsAffected = 0 };
         }
 
         public async Task<CResult> DeleteAsync(ACA_PROSPECTO_PERSONATable Data, string vLOGIN_SISTEMA, string vESTACION)

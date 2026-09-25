@@ -32,6 +32,16 @@ namespace sguees.Controllers
 			return await _service.GetAllAsync(Data);
 		}
 
+		[HttpGet("GetCORR_PARENTESCO_ACA_PROSPECTO")]
+		[Authorize(Policy = "/aca-prospecto|R")]
+		// Qué hace: parentescos para los familiares del prospecto (pestaña Información personal).
+		// Cómo: estándar de datos cross-tabla, el catálogo expone el método con el permiso de la
+		//       pantalla que lo consume; devuelve solo los activos.
+		public async Task<CResult> GetCORR_PARENTESCO_ACA_PROSPECTO([FromQuery] GEN_PARENTESCOParam Data)
+		{
+			return await _service.GetCORR_PARENTESCO_ACA_PROSPECTOAsync(Data);
+		}
+
 		[HttpGet("Get")]
 		[Authorize(Policy = "/gen-parentesco|R")]
 		public async Task<CResult> Get([FromQuery] GEN_PARENTESCOParam Data)

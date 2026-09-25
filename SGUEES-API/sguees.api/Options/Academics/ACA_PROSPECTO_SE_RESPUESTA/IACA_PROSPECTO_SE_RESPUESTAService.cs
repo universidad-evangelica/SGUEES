@@ -11,5 +11,6 @@ namespace sguees.Services
         Task<CResult> CreateAsync(ACA_PROSPECTO_SE_RESPUESTATable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> UpdateAsync(ACA_PROSPECTO_SE_RESPUESTATable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> DeleteAsync(ACA_PROSPECTO_SE_RESPUESTATable Data, string vLOGIN_SISTEMA, string vESTACION);
+        Task<CResult> GuardarAsync(ACA_PROSPECTO_SE_RESPUESTA_GUARDARParam Data, string vLOGIN_SISTEMA, string vESTACION);
     }
 }
