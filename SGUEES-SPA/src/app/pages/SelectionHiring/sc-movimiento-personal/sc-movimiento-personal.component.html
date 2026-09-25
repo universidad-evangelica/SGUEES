@@ -21,6 +21,21 @@
 		[btn2Type]="'success'"
 		[btn2Width]="130"
 		(btn2Click)="confirmarMovimiento()"
+		[btn3]="btnAprobarMovimiento"
+		[btn3Icon]="'check'"
+		[btn3Type]="'success'"
+		[btn3Width]="120"
+		(btn3Click)="aprobarMovimiento()"
+		[btn4]="btnDevolverMovimiento"
+		[btn4Icon]="'revert'"
+		[btn4Type]="'default'"
+		[btn4Width]="120"
+		(btn4Click)="devolverMovimiento()"
+		[btn5]="btnRechazarMovimiento"
+		[btn5Icon]="'close'"
+		[btn5Type]="'danger'"
+		[btn5Width]="120"
+		(btn5Click)="rechazarMovimiento()"
 	>
 	</app-barra-data-mtto>
 
@@ -312,6 +327,34 @@
 		</p>
 		<div style="display: flex; justify-content: flex-end;">
 			<dx-button text="Ok" type="default" stylingMode="contained" (onClick)="cerrarAvisoIngreso()"></dx-button>
+		</div>
+	</div>
+</dx-popup>
+
+<dx-popup
+	[(visible)]="popupFlujoVisible"
+	[width]="480"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[showTitle]="true"
+	[title]="popupFlujoTitulo"
+	[showCloseButton]="true"
+	[dragEnabled]="false"
+	[hideOnOutsideClick]="false"
+	(onHiding)="cerrarPopupFlujo()"
+>
+	<div *dxTemplate="let data of 'content'">
+		<p class="req-aviso-ingreso">La observación es obligatoria para el flujo.</p>
+		<textarea
+			class="flujo-observacion"
+			[value]="popupFlujoTexto"
+			(input)="popupFlujoTexto = $any($event.target).value"
+			rows="4"
+			maxlength="1000"
+		></textarea>
+		<div class="flujo-observacion-acciones">
+			<dx-button text="Cancelar" stylingMode="outlined" (onClick)="cerrarPopupFlujo()"></dx-button>
+			<dx-button text="Continuar" type="default" stylingMode="contained" (onClick)="confirmarPopupFlujo()"></dx-button>
 		</div>
 	</div>
 </dx-popup>

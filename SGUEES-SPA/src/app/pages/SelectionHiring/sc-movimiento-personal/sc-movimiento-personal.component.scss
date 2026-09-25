@@ -135,6 +135,24 @@
 	line-height: 1.45;
 }
 
+.flujo-observacion {
+	width: 100%;
+	min-height: 96px;
+	resize: vertical;
+	padding: 8px 10px;
+	border-radius: 6px;
+	border: 1px solid var(--sguees-border-subtle, var(--border-color));
+	background: transparent;
+	color: inherit;
+}
+
+.flujo-observacion-acciones {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 12px;
+}
+
 @media (max-width: 900px) {
 	.req-asociada-card {
 		grid-template-columns: repeat(2, minmax(140px, 1fr));

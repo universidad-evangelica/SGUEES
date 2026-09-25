@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using eFramework.Core;
+using eFramework.Data;
 using SGUEES.Models;
 
 namespace SGUEES.Services
@@ -20,5 +22,8 @@ namespace SGUEES.Services
 		Task<CResult> GetEmpleadosAsync(SC_MOVIMIENTO_PERSONALParam xWhere);
 		Task<CResult> GetRequisicionAsociadaAsync(SC_MOVIMIENTO_PERSONALParam xWhere);
 		Task<CResult> RegistrarFechaIngresoAsync(SC_MOVIMIENTO_FECHA_INGRESOParam Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> GetAccionesFlujoAsync(int corrEmpresa, int corrMovimiento, string login);
+		Task<CResult> GetPendientesActorAsync(List<CParameter> xWhere);
+		Task<int> CountPendientesActorAsync(int corrEmpresa, string login);
 	}
 }

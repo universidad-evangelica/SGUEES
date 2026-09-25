@@ -224,6 +224,12 @@ export class ScMovimientoPersonalService {
 		]);
 	}
 
+	getAccionesFlujo(corrMovimiento: number): Observable<IResult> {
+		return this.repo.getAccionesFlujo([
+			{ Parameter: 'CORR_MOVIMIENTO_PERSONAL', Value: corrMovimiento },
+		]);
+	}
+
 	registrarFechaIngreso(model: {
 		CORR_MOVIMIENTO_PERSONAL: number;
 		FECHA_INGRESO_PROPUESTA?: Date | string | null;

@@ -48,7 +48,32 @@ namespace SGUEES.Services
 			}
 
 			NormalizarAlta(Data);
-			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+			var creado = await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+			if (creado.Result && EsBorrador(Data.ESTADO_MOVIMIENTO))
+			{
+				var corr = 0;
+				if (creado.CodeHelper != null)
+				{
+					corr = Convert.ToInt32(creado.CodeHelper);
+				}
+				if (corr <= 0 && creado.Data is SC_MOVIMIENTO_PERSONALView alta)
+				{
+					corr = alta.CORR_MOVIMIENTO_PERSONAL;
+				}
+
+				if (corr > 0)
+				{
+					await _repo.RegistrarBitacoraDocumentoAsync(
+						Data.CORR_EMPRESA,
+						corr,
+						vLOGIN_SISTEMA,
+						vESTACION,
+						"Borrador",
+						"Se registró el movimiento de personal.");
+				}
+			}
+
+			return creado;
 		}
 
 		public async Task<CResult> UpdateAsync(SC_MOVIMIENTO_PERSONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
@@ -74,7 +99,19 @@ namespace SGUEES.Services
 				return validacion;
 			}
 
-			return await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+			var actualizado = await _repo.UpdateAsync(Data, vLOGIN_SISTEMA, vESTACION);
+			if (actualizado.Result && EsBorrador(row.ESTADO_MOVIMIENTO))
+			{
+				await _repo.RegistrarBitacoraDocumentoAsync(
+					Data.CORR_EMPRESA,
+					Data.CORR_MOVIMIENTO_PERSONAL,
+					vLOGIN_SISTEMA,
+					vESTACION,
+					"Borrador",
+					"Se actualizó el movimiento en Borrador.");
+			}
+
+			return actualizado;
 		}
 
 		public async Task<CResult> DeleteAsync(SC_MOVIMIENTO_PERSONALTable Data, string vLOGIN_SISTEMA, string vESTACION)
@@ -127,7 +164,35 @@ namespace SGUEES.Services
 				return ValidationError("No se pudo identificar el usuario de sesión.");
 			}
 
+			var actual = await GetAsync(new SC_MOVIMIENTO_PERSONALParam
+			{
+				CORR_EMPRESA = Data.CORR_EMPRESA,
+				CORR_MOVIMIENTO_PERSONAL = Data.CORR_MOVIMIENTO_PERSONAL,
+			});
+			if (!actual.Result || actual.Data is not SC_MOVIMIENTO_PERSONALView row)
+			{
+				return ValidationError("No se encontró el movimiento de personal.");
+			}
+
+			var origen = (row.ORIGEN_MOVIMIENTO ?? string.Empty).Trim().ToUpperInvariant();
+			var tipo = (row.TIPO_MOVIMIENTO ?? string.Empty).Trim().ToUpperInvariant();
+			if (origen != "DIRECTO" || (tipo != "ASCENSO" && tipo != "TRASLADO"))
+			{
+				return ValidationError("Solo ascenso y traslado creados desde cero entran al flujo de aprobación.");
+			}
+
 			Data.OBSERVACION = Data.OBSERVACION.Trim();
+			if (Data.OPERACION == 1 || Data.OPERACION == 2)
+			{
+				var unidad = await _repo.ResolverUnidadJefeAsync(Data.CORR_EMPRESA, vLOGIN_SISTEMA.Trim());
+				if (unidad <= 0)
+				{
+					return ValidationError("No se encontró la unidad donde usted es jefe. El flujo usa esa unidad, no la unidad propuesta.");
+				}
+
+				Data.CORR_UNIDAD_DOCUMENTO = unidad;
+			}
+
 			return await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());
 		}
 
@@ -235,6 +300,7 @@ namespace SGUEES.Services
 		{
 			var p = new List<CParameter>
 			{
+				new() { ParameterName = "CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
 				new() { ParameterName = "CORR_TIPO_DOCUMENTO", Value = xWhere.CORR_TIPO_DOCUMENTO, DbType = System.Data.DbType.Int32 },
 				new() { ParameterName = "CORR_DOCUMENTO", Value = xWhere.CORR_MOVIMIENTO_PERSONAL, DbType = System.Data.DbType.Int32 },
 			};
@@ -374,6 +440,11 @@ namespace SGUEES.Services
 			});
 		}
 
+		private static bool EsBorrador(string estado)
+		{
+			return string.Equals((estado ?? string.Empty).Trim(), "DI", System.StringComparison.OrdinalIgnoreCase);
+		}
+
 		/// <summary>Defaults al crear: origen DIRECTO, estado DI.</summary>
 		private static void NormalizarAlta(SC_MOVIMIENTO_PERSONALTable Data)
 		{
@@ -484,6 +555,21 @@ namespace SGUEES.Services
 			}
 
 			return null;
+		}
+
+		public Task<CResult> GetAccionesFlujoAsync(int corrEmpresa, int corrMovimiento, string login)
+		{
+			return _repo.GetAccionesFlujoAsync(corrEmpresa, corrMovimiento, login);
+		}
+
+		public Task<CResult> GetPendientesActorAsync(List<CParameter> xWhere)
+		{
+			return _repo.GetPendientesActorAsync(xWhere);
+		}
+
+		public Task<int> CountPendientesActorAsync(int corrEmpresa, string login)
+		{
+			return _repo.CountPendientesActorAsync(corrEmpresa, login);
 		}
 
 		private static CResult ValidationError(string message)

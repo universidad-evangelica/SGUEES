@@ -74,6 +74,15 @@ export class ScMovimientoPersonalRepository {
 		);
 	}
 
+	getAccionesFlujo(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'GetAccionesFlujo',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
 	registrarFechaIngreso(model: {
 		CORR_MOVIMIENTO_PERSONAL: number;
 		FECHA_INGRESO_PROPUESTA?: Date | string | null;

@@ -121,6 +121,7 @@ namespace SGUEES.Controllers
 		public async Task<CResult> GetCORR_BITACORA_SC_MOVIMIENTO_PERSONAL(
 			[FromQuery] SC_MOVIMIENTO_PERSONAL_BITACORAParam Data)
 		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
 			Data.CORR_TIPO_DOCUMENTO = TipoDocumentoMovimiento;
 			return await _service.GetBitacoraAsync(Data);
 		}
@@ -131,6 +132,14 @@ namespace SGUEES.Controllers
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
 			return await _service.GetRequisicionAsociadaAsync(Data);
+		}
+
+		[HttpGet("GetAccionesFlujo")]
+		[Authorize(Policy = "/sc-movimiento-personal|R")]
+		public async Task<CResult> GetAccionesFlujo([FromQuery] SC_MOVIMIENTO_PERSONALParam Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			return await _service.GetAccionesFlujoAsync(Data.CORR_EMPRESA, Data.CORR_MOVIMIENTO_PERSONAL, GetUsuario());
 		}
 
 		[HttpPut("RegistrarFechaIngreso")]

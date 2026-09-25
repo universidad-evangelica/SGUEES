@@ -1,7 +1,7 @@
 /** Tipos de la bandeja de actores (jefatura). */
-export type ScBandejaActoresTipo = 'REQUISICION' | 'CANDIDATO';
+export type ScBandejaActoresTipo = 'REQUISICION' | 'CANDIDATO' | 'MOVIMIENTO';
 
-export type ScBandejaActoresTab = 'REQUISICIONES' | 'CANDIDATOS';
+export type ScBandejaActoresTab = 'REQUISICIONES' | 'CANDIDATOS' | 'MOVIMIENTOS';
 
 export type ScBandejaActoresEstadoCandidato = 'EN_SELECCION' | 'APLICA' | 'NO_APLICA';
 
@@ -25,6 +25,8 @@ export interface ScBandejaActoresItem {
 	ESTADO_TONE: string;
 
 	CORR_REQUISICION_PERSONAL?: number;
+	CORR_MOVIMIENTO_PERSONAL?: number;
+	CORR_INSTANCIA?: number;
 	CORR_ESTADO_REQUISICION?: number;
 	CORR_UNIDAD?: number;
 	CORR_EXPEDIENTE_CANDIDATO?: number;

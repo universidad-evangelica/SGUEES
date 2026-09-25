@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { confirm } from 'devextreme/ui/dialog';
 import { environment } from 'src/environments/environment';
@@ -37,6 +37,19 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	puedeEditarFechaEfectiva = false;
 	requisicionAsociada: any = null;
 	avisoIngresoVisible = false;
+	popupFlujoVisible = false;
+	popupFlujoTitulo = 'Observación';
+	popupFlujoTexto = '';
+	private flujoOperacion: number | null = null;
+	accionesFlujo = {
+		PUEDE_ENVIAR: false,
+		PUEDE_APROBAR: false,
+		PUEDE_DEVOLVER: false,
+		PUEDE_RECHAZAR: false,
+	};
+	btnAprobarMovimiento = '';
+	btnDevolverMovimiento = '';
+	btnRechazarMovimiento = '';
 	private avisoIngresoTimer: ReturnType<typeof setTimeout> | null = null;
 	private ultimaFechaIngresoMs: number | null = null;
 
@@ -80,6 +93,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
+		private navRouter: Router,
 		private service: ScMovimientoPersonalService
 	) {
 		super(appInfoService, router);
@@ -364,6 +378,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	consultar(): void {
 		this.consultarMtto({
 			load: () => this.service.getAll(this.fillParam()),
+			onData: () => this.abrirDesdeQueryCorr(),
 		});
 	}
 
@@ -378,6 +393,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		this.mCORR_PUESTO_PROPUESTO = [];
 		this.requisicionAsociada = null;
 		this.avisoIngresoVisible = false;
+		this.limpiarAccionesFlujo();
 		this.modelsBitacora = [];
 		this.refrescarBotones();
 		this.refrescarItemsFormulario();
@@ -430,6 +446,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		}
 		this.cargarBitacora();
 		this.cargarRequisicionAsociada();
+		this.cargarAccionesFlujo();
 		this.refrescarBotones();
 		this.refrescarItemsFormulario();
 	}
@@ -518,15 +535,12 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 
 	/** Textos de botones de proceso (barra). */
 	refrescarBotones(): void {
-		const puedeEnviar =
-			!this.isBrowse()
-			&& (this.model?.CORR_MOVIMIENTO_PERSONAL ?? 0) > 0
-			&& this.service.esEstadoEnviable(this.model?.ESTADO_MOVIMIENTO)
-			&& !this.readOnly;
+		const abierto = !this.isBrowse() && (this.model?.CORR_MOVIMIENTO_PERSONAL ?? 0) > 0;
+		this.btnEnviarMovimiento = abierto && this.accionesFlujo.PUEDE_ENVIAR ? 'Enviar a aprobación' : '';
+		this.btnAprobarMovimiento = abierto && this.accionesFlujo.PUEDE_APROBAR ? 'Aprobar' : '';
+		this.btnDevolverMovimiento = abierto && this.accionesFlujo.PUEDE_DEVOLVER ? 'Devolver' : '';
+		this.btnRechazarMovimiento = abierto && this.accionesFlujo.PUEDE_RECHAZAR ? 'Rechazar' : '';
 
-		this.btnEnviarMovimiento = puedeEnviar ? 'Enviar a aprobación' : '';
-
-		/* Confirmar: disponible en formulario o con fila enfocada en el grid. */
 		const puedeConfirmar =
 			(this.model?.CORR_MOVIMIENTO_PERSONAL ?? 0) > 0
 			&& this.service.esConfirmable(this.model);
@@ -565,38 +579,90 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			});
 	}
 
-	/** Envía el movimiento al flujo (DI/OB → SO). Requiere SEG_FLUJO configurado. */
 	async enviarMovimiento(): Promise<void> {
+		this.abrirPopupFlujo(OPERACION_FLUJO_MOVIMIENTO.ENVIAR, 'Enviar a aprobación');
+	}
+
+	aprobarMovimiento(): void {
+		this.abrirPopupFlujo(OPERACION_FLUJO_MOVIMIENTO.APROBAR, 'Aprobar movimiento');
+	}
+
+	devolverMovimiento(): void {
+		this.abrirPopupFlujo(OPERACION_FLUJO_MOVIMIENTO.DEVOLVER, 'Devolver movimiento');
+	}
+
+	rechazarMovimiento(): void {
+		this.abrirPopupFlujo(OPERACION_FLUJO_MOVIMIENTO.RECHAZAR, 'Rechazar movimiento');
+	}
+
+	cerrarPopupFlujo(): void {
+		this.popupFlujoVisible = false;
+		this.popupFlujoTexto = '';
+		this.flujoOperacion = null;
+	}
+
+	confirmarPopupFlujo(): void {
+		const texto = (this.popupFlujoTexto || '').trim();
+		if (!texto) {
+			this.notifyFx('La observación es obligatoria.', NotifyType.Warning);
+			return;
+		}
+		const operacion = this.flujoOperacion;
+		this.popupFlujoVisible = false;
+		this.popupFlujoTexto = '';
+		this.flujoOperacion = null;
+		if (operacion) {
+			this.ejecutarAutoriza(operacion, texto);
+		}
+	}
+
+	private abrirPopupFlujo(operacion: number, titulo: string): void {
 		if (this.enviandoMovimiento) {
 			return;
 		}
-
-		const motivo = this.motivoNoPuedeEnviar();
+		const motivo = this.motivoNoPuedeOperarFlujo(operacion);
 		if (motivo) {
 			this.notifyFx(motivo, NotifyType.Warning);
 			return;
 		}
+		this.flujoOperacion = operacion;
+		this.popupFlujoTitulo = titulo;
+		this.popupFlujoTexto = '';
+		this.popupFlujoVisible = true;
+	}
 
-		const aceptar = await confirm(
-			'¿Desea enviar este movimiento de personal a aprobación?',
-			'Enviar movimiento'
-		);
-		if (!aceptar) {
-			return;
+	private motivoNoPuedeOperarFlujo(operacion: number): string | null {
+		if (this.isBrowse()) {
+			return 'Abra el movimiento para continuar el flujo.';
 		}
+		if ((this.model?.CORR_MOVIMIENTO_PERSONAL ?? 0) <= 0) {
+			return 'Guarde el movimiento antes de enviarlo al flujo.';
+		}
+		if (operacion === OPERACION_FLUJO_MOVIMIENTO.ENVIAR && !this.accionesFlujo.PUEDE_ENVIAR) {
+			return 'Solo el jefe de la unidad solicitante puede enviar un ascenso o traslado en Borrador o Devuelto.';
+		}
+		if (operacion === OPERACION_FLUJO_MOVIMIENTO.APROBAR && !this.accionesFlujo.PUEDE_APROBAR) {
+			return 'Este movimiento no está pendiente de su aprobación.';
+		}
+		if (operacion === OPERACION_FLUJO_MOVIMIENTO.DEVOLVER && !this.accionesFlujo.PUEDE_DEVOLVER) {
+			return 'Este movimiento no está pendiente de su devolución.';
+		}
+		if (operacion === OPERACION_FLUJO_MOVIMIENTO.RECHAZAR && !this.accionesFlujo.PUEDE_RECHAZAR) {
+			return 'Este movimiento no está pendiente de su rechazo.';
+		}
+		return null;
+	}
 
+	private ejecutarAutoriza(operacion: number, observacion: string): void {
 		const corr = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
-		const unidad = Number(this.model?.CORR_UNIDAD_PROPUESTA) || null;
-
 		this.enviandoMovimiento = true;
 		this.loadingVisible = true;
 
 		this.service
 			.autoriza({
 				CORR_MOVIMIENTO_PERSONAL: corr,
-				OPERACION: OPERACION_FLUJO_MOVIMIENTO.ENVIAR,
-				OBSERVACION: 'Se envió el movimiento de personal a aprobación.',
-				CORR_UNIDAD_DOCUMENTO: unidad,
+				OPERACION: operacion,
+				OBSERVACION: observacion,
 			})
 			.pipe(take(1))
 			.subscribe({
@@ -617,11 +683,11 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 							}
 						}
 						this.cargarBitacora();
-						this.notifyFx('El movimiento se envió a aprobación correctamente.', NotifyType.Success);
+						this.notifyFx('La operación de flujo se registró correctamente.', NotifyType.Success);
 						this.AsignaStatus(UpdateType.Browse);
 					} else {
 						this.notifyFx(
-							response?.ErrorMessage || 'No se pudo enviar el movimiento a aprobación.',
+							response?.ErrorMessage || 'No se pudo ejecutar la operación de flujo.',
 							NotifyType.Warning,
 							{ raw: true }
 						);
@@ -635,17 +701,68 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			});
 	}
 
-	private motivoNoPuedeEnviar(): string | null {
-		if (this.isBrowse()) {
-			return 'Abra un movimiento para enviarlo a aprobación.';
+	private limpiarAccionesFlujo(): void {
+		this.accionesFlujo = {
+			PUEDE_ENVIAR: false,
+			PUEDE_APROBAR: false,
+			PUEDE_DEVOLVER: false,
+			PUEDE_RECHAZAR: false,
+		};
+	}
+
+	private cargarAccionesFlujo(): void {
+		this.limpiarAccionesFlujo();
+		const corr = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
+		if (corr <= 0 || `${this.model?.ORIGEN_MOVIMIENTO || ''}`.toUpperCase() !== 'DIRECTO') {
+			this.refrescarBotones();
+			return;
 		}
-		if ((this.model?.CORR_MOVIMIENTO_PERSONAL ?? 0) <= 0) {
-			return 'Guarde el movimiento antes de enviarlo a aprobación.';
+		const tipo = `${this.model?.TIPO_MOVIMIENTO || ''}`.toUpperCase();
+		if (tipo !== 'ASCENSO' && tipo !== 'TRASLADO') {
+			this.refrescarBotones();
+			return;
 		}
-		if (!this.service.esEstadoEnviable(this.model?.ESTADO_MOVIMIENTO)) {
-			return 'Solo se puede enviar un movimiento en Borrador o Devuelto.';
+
+		this.service.getAccionesFlujo(corr).pipe(take(1)).subscribe({
+			next: (response: any) => {
+				const data = response?.Result ? response.Data : null;
+				if (data) {
+					this.accionesFlujo = {
+						PUEDE_ENVIAR: !!data.PUEDE_ENVIAR,
+						PUEDE_APROBAR: !!data.PUEDE_APROBAR,
+						PUEDE_DEVOLVER: !!data.PUEDE_DEVOLVER,
+						PUEDE_RECHAZAR: !!data.PUEDE_RECHAZAR,
+					};
+				}
+				this.refrescarBotones();
+			},
+			error: () => this.refrescarBotones(),
+		});
+	}
+
+	private abrirDesdeQueryCorr(): void {
+		const corr = Number(this.router.snapshot.queryParamMap.get('corr') ?? 0);
+		if (!(corr > 0)) {
+			return;
 		}
-		return null;
+		const row = (this.models as ScMovimientoPersonal[])?.find(
+			(item) => Number(item.CORR_MOVIMIENTO_PERSONAL) === corr
+		);
+		if (!row) {
+			this.notifyFx(
+				`No se encontró el movimiento ${corr} o no tiene acceso a él.`,
+				NotifyType.Warning,
+				{ raw: true }
+			);
+		} else {
+			this.editarClick({ data: row });
+		}
+		void this.navRouter.navigate([], {
+			relativeTo: this.router,
+			queryParams: { corr: null },
+			queryParamsHandling: 'merge',
+			replaceUrl: true,
+		});
 	}
 
 	/** Confirma el movimiento (CONFIRMADO=1 + FECHA_EFECTIVA + auditoría). */
