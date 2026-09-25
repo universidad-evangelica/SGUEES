@@ -32,5 +32,15 @@ namespace sguees.Controllers
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetCICLO_ACA_PROSPECTOAsync(Data);
         }
+
+        // Qué hace: mismos ciclos de pregrado, para el filtro de Solicitudes de beca.
+        // Cómo lo hace: reutiliza V_ACA_PROSPECTO_CICLO; el permiso es el de esa pantalla.
+        [HttpGet("GetCICLO_ACA_PROSPECTO_BECA")]
+        [Authorize(Policy = "/aca-prospecto-beca|R")]
+        public async Task<CResult> GetCICLO_ACA_PROSPECTO_BECA([FromQuery] ACA_PERIODOS_ACADEMICOSParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetCICLO_ACA_PROSPECTOAsync(Data);
+        }
     }
 }

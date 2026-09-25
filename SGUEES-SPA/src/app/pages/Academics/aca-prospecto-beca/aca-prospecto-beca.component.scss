@@ -1,0 +1,35 @@
+.aca-beca-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sguees-content-gap, 16px);
+}
+
+.aca-beca-head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: var(--sguees-space-4, 16px);
+    padding-bottom: var(--sguees-space-3, 12px);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.aca-beca-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--sguees-text-primary);
+}
+
+.aca-beca-subtitle {
+    font-size: 12px;
+    color: var(--sguees-text-secondary, var(--texteditor-label-color));
+}
+
+.aca-beca-vacio {
+    margin: 0;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--sguees-text-secondary, #6c757d);
+    background: var(--sguees-surface-subtle, #f8f9fa);
+    border: 1px dashed var(--border-color);
+    border-radius: var(--sguees-radius-md, 10px);
+}

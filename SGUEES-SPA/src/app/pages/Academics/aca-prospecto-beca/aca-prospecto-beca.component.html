@@ -1,0 +1,131 @@
+<div class="sguees-mtto-view" id="LoadPanel">
+    <app-barra-data-mtto
+        [tituloVentana]="tituloVentana"
+        [isBrowse]="isBrowse()"
+        [isForm]="isForm()"
+        [showRibbon]="isBrowse()"
+        [permiteAdd]="false"
+        [showRefresh]="true"
+        [showExport]="permitePrint"
+        [combox1]="barraFiltroCiclo"
+        (combox1Change)="onFiltroCicloChanged($event)"
+        (consultar)="consultar()"
+        (cancelar)="cancelar()"
+    >
+    </app-barra-data-mtto>
+
+    <div *ngIf="!isBrowse()" class="aca-beca-shell">
+        <section class="sguees-section-card">
+            <header class="aca-beca-head">
+                <span class="aca-beca-title">Solicitud de beca</span>
+                <span class="aca-beca-subtitle">{{ model.ESTADO_BECA_TEXTO }} · consulta de solo lectura</span>
+            </header>
+            <dx-form
+                class="sguees-form-premium"
+                [formData]="model"
+                [labelLocation]="'top'"
+                [colCount]="8"
+                [readOnly]="true"
+                [items]="items"
+            >
+            </dx-form>
+        </section>
+
+        <section class="sguees-section-card">
+            <header class="aca-beca-head">
+                <span class="aca-beca-title">Archivos cargados</span>
+                <span class="aca-beca-subtitle" *ngIf="archivos.length; else sinCarpeta">
+                    Carpeta {{ archivos[0].CARPETA }} · agrupados por sección del cuestionario
+                </span>
+                <ng-template #sinCarpeta>
+                    <span class="aca-beca-subtitle">Los documentos se leen de la carpeta del ciclo y la solicitud</span>
+                </ng-template>
+            </header>
+            <dx-data-grid
+                *ngIf="archivos.length; else sinArchivos"
+                [dataSource]="archivos"
+                [showBorders]="true"
+                [columnAutoWidth]="false"
+                [wordWrapEnabled]="true"
+                keyExpr="CORR_RESPUESTA_BECA"
+            >
+                <dxo-grouping [autoExpandAll]="true"></dxo-grouping>
+                <dxo-group-panel [visible]="false"></dxo-group-panel>
+                <dxo-paging [pageSize]="20"></dxo-paging>
+                <dxi-column dataField="NOMBRE_SECCION" caption="Sección" [groupIndex]="0"></dxi-column>
+                <dxi-column dataField="TEXTO_PREGUNTA" caption="Pregunta" [width]="420"></dxi-column>
+                <dxi-column dataField="ARCHIVO_NOMBRE" caption="Archivo" [width]="320"></dxi-column>
+                <dxi-column caption="" [width]="110" cellTemplate="abrirArchivo" [allowFiltering]="false" [allowSorting]="false"></dxi-column>
+                <div *dxTemplate="let cell of 'abrirArchivo'">
+                    <dx-button text="Abrir" icon="export" stylingMode="text" type="default" (onClick)="abrirArchivo(cell.data)"></dx-button>
+                </div>
+            </dx-data-grid>
+            <ng-template #sinArchivos>
+                <p class="aca-beca-vacio">Esta solicitud no tiene archivos cargados.</p>
+            </ng-template>
+        </section>
+
+        <section class="sguees-section-card">
+            <header class="aca-beca-head">
+                <span class="aca-beca-title">Cuestionario</span>
+                <span class="aca-beca-subtitle">Respuestas guardadas y puntaje de cada una. En opción múltiple hay una fila por opción marcada.</span>
+            </header>
+            <dx-data-grid
+                *ngIf="respuestas.length; else sinRespuestas"
+                [dataSource]="respuestas"
+                [showBorders]="true"
+                [columnAutoWidth]="false"
+                [wordWrapEnabled]="true"
+                keyExpr="CORR_RESPUESTA_BECA"
+            >
+                <dxo-grouping [autoExpandAll]="true"></dxo-grouping>
+                <dxo-group-panel [visible]="false"></dxo-group-panel>
+                <dxo-paging [pageSize]="50"></dxo-paging>
+                <dxo-summary>
+                    <dxi-group-item column="PUNTAJE_OBTENIDO" summaryType="sum" valueFormat="#,##0.00" displayFormat="Puntaje de la sección: {0}"></dxi-group-item>
+                </dxo-summary>
+                <dxi-column dataField="NOMBRE_SECCION" caption="Sección" [groupIndex]="0"></dxi-column>
+                <dxi-column dataField="TEXTO_PREGUNTA" caption="Pregunta" [width]="420"></dxi-column>
+                <dxi-column dataField="RESPUESTA" caption="Respuesta" [width]="280"></dxi-column>
+                <dxi-column dataField="PUNTAJE_OBTENIDO" caption="Puntaje" dataType="number" format="#,##0.00" [width]="110"></dxi-column>
+                <dxi-column dataField="PORCENTAJE_APLICADO" caption="Porcentaje" dataType="number" format="#,##0.00" [width]="120"></dxi-column>
+            </dx-data-grid>
+            <ng-template #sinRespuestas>
+                <p class="aca-beca-vacio">Esta solicitud aún no tiene respuestas guardadas.</p>
+            </ng-template>
+        </section>
+    </div>
+
+    <app-data-grid-mtto
+        [isBrowse]="isBrowse()"
+        [models]="models"
+        [columns]="columns"
+        [summary]="summary"
+        [keyExpr]="mttoGridKeyExpr"
+        [focusedRowKey]="gridFocusedRowKey"
+        [loading]="loadingVisible"
+        [showSearch]="true"
+        [showExport]="permitePrint"
+        [showAdd]="false"
+        [showRefresh]="true"
+        [permiteEditar]="sinEdicion"
+        [permiteDele]="sinEdicion"
+        [showEmptyState]="true"
+        [emptyTitle]="'Sin solicitudes'"
+        [emptyMessage]="'No hay solicitudes de beca en borrador o enviadas para el ciclo seleccionado.'"
+        (refresh)="consultar()"
+        (rowClick)="onGridRowClick($event)"
+        (focusedRowChanged)="focusedRowChanged($event)"
+    >
+    </app-data-grid-mtto>
+
+    <dx-load-panel
+        shadingColor="rgba(0,0,0,0.4)"
+        [position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+        [visible]="loadingVisible && !isBrowse()"
+        [showIndicator]="true"
+        [showPane]="true"
+        [shading]="true"
+    >
+    </dx-load-panel>
+</div>
