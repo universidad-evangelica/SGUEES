@@ -251,7 +251,7 @@ namespace SGUEES.Repositories
                     @USUARIO, @ESTACION, GETDATE()
                 FROM PLA_PUESTO P
                 WHERE P.CORR_EMPRESA = @CORR_EMPRESA
-                AND ISNULL(P.ESTADO_PUESTO, 1) = 1
+                AND ISNULL(P.ACTIVO_PUESTO, 1) = 1
                 AND NOT EXISTS (
                     SELECT 1
                     FROM GEN_UNIDADES_PUESTO X

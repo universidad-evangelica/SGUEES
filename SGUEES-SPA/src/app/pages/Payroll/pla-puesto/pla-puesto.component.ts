@@ -1,5 +1,5 @@
 // Qué hace: vista de mantenimiento de Puesto (CRUD del catálogo Payroll PLA_PUESTO).
-// Cómo: grilla + formulario con lookups de tipo/gerencia/nivel; coordina PlaPuestoService.
+// Cómo: grilla + formulario con lookup de tipo de puesto; coordina PlaPuestoService.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
@@ -12,7 +12,7 @@ import { environment } from 'src/environments/environment';
 import { PlaPuesto } from './models/pla-puesto';
 import { PlaPuestoService } from './pla-puesto.service';
 
-const ESTADO_FIELD = 'ESTADO_PUESTO';
+const ESTADO_FIELD = 'ACTIVO_PUESTO';
 
 @Component({
 	selector: 'app-pla-puesto',
@@ -33,8 +33,6 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 	protected override mttoRemoteOperations = false;
 
 	mCORR_TIPO_PUESTO: any[] = [];
-	mCORR_GERENCIA: any[] = [];
-	mCORR_NIVEL_ACADEMICO: any[] = [];
 	readOnly = false;
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Puesto';
@@ -46,8 +44,6 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 	) {
 		super(appInfoService, router);
 		this.selectedLookUpCORR_TIPO_PUESTO = this.selectedLookUpCORR_TIPO_PUESTO.bind(this);
-		this.selectedLookUpCORR_GERENCIA = this.selectedLookUpCORR_GERENCIA.bind(this);
-		this.selectedLookUpCORR_NIVEL_ACADEMICO = this.selectedLookUpCORR_NIVEL_ACADEMICO.bind(this);
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
@@ -73,8 +69,6 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 
 	llenaComboBox(): void {
 		this.getCORR_TIPO_PUESTO();
-		this.getCORR_GERENCIA();
-		this.getCORR_NIVEL_ACADEMICO();
 	}
 
 	getCORR_TIPO_PUESTO(): void {
@@ -89,58 +83,12 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			});
 	}
 
-	getCORR_GERENCIA(): void {
-		this.appInfoService
-			.getLookUp('PLA_PUESTO', 'GEN_GERENCIA', 'GetCORR_GERENCIA', undefined, environment.UrlGENERALAPI)
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					this.mCORR_GERENCIA = response?.Result && Array.isArray(response.Data) ? response.Data : [];
-				},
-				error: (error) => this.notifyApiError(error),
-			});
-	}
-
-	getCORR_NIVEL_ACADEMICO(): void {
-		this.appInfoService
-			.getLookUp(
-				'PLA_PUESTO',
-				'PLA_NIVEL_ACADEMICO',
-				'GetCORR_NIVEL_ACADEMICO',
-				undefined,
-				environment.UrlTALENTOHUMANONAPI
-			)
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					this.mCORR_NIVEL_ACADEMICO = response?.Result && Array.isArray(response.Data) ? response.Data : [];
-				},
-				error: (error) => this.notifyApiError(error),
-			});
-	}
-
 	selectedLookUpCORR_TIPO_PUESTO(vRow: any): number {
 		return vRow[0].CORR_TIPO_PUESTO;
 	}
 
-	selectedLookUpCORR_GERENCIA(vRow: any): number {
-		return vRow[0].CORR_GERENCIA;
-	}
-
-	selectedLookUpCORR_NIVEL_ACADEMICO(vRow: any): number {
-		return vRow[0].CORR_NIVEL_ACADEMICO;
-	}
-
 	onTipoPuestoChanged(value: number | null): void {
 		this.model.CORR_TIPO_PUESTO = value != null && Number(value) > 0 ? Number(value) : null;
-	}
-
-	onGerenciaChanged(value: number | null): void {
-		this.model.CORR_GERENCIA = value != null && Number(value) > 0 ? Number(value) : null;
-	}
-
-	onNivelAcademicoChanged(value: number | null): void {
-		this.model.CORR_NIVEL_ACADEMICO = value != null && Number(value) > 0 ? Number(value) : null;
 	}
 
 	fillParam(xCORR_PUESTO?: number): any {
@@ -153,31 +101,16 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 				CORR_EMPRESA: Number(xModel.CORR_EMPRESA ?? 0),
 				CORR_PUESTO: Number(xModel.CORR_PUESTO ?? 0),
 				NOMBRE_PUESTO: (xModel.NOMBRE_PUESTO ?? '').trim(),
-				CORR_GERENCIA: xModel.CORR_GERENCIA != null && Number(xModel.CORR_GERENCIA) > 0 ? Number(xModel.CORR_GERENCIA) : null,
-				NOMBRE_GERENCIA: xModel.NOMBRE_GERENCIA ?? '',
-				CORR_UNIDAD: xModel.CORR_UNIDAD != null ? Number(xModel.CORR_UNIDAD) : null,
-				NOMBRE_UNIDAD: xModel.NOMBRE_UNIDAD ?? '',
-				CORR_NIVEL_ACADEMICO:
-					xModel.CORR_NIVEL_ACADEMICO != null && Number(xModel.CORR_NIVEL_ACADEMICO) > 0
-						? Number(xModel.CORR_NIVEL_ACADEMICO)
-						: null,
-				NOMBRE_NIVEL_ACADEMICO: xModel.NOMBRE_NIVEL_ACADEMICO ?? '',
+				CODIGO_PUESTO: xModel.CODIGO_PUESTO ?? '',
 				CORR_TIPO_PUESTO:
 					xModel.CORR_TIPO_PUESTO != null && Number(xModel.CORR_TIPO_PUESTO) > 0
 						? Number(xModel.CORR_TIPO_PUESTO)
 						: null,
 				NOMBRE_TIPO_PUESTO: xModel.NOMBRE_TIPO_PUESTO ?? '',
-				ESTADO_PUESTO: xModel.ESTADO_PUESTO !== false,
+				ACTIVO_PUESTO: xModel.ACTIVO_PUESTO !== false,
 				APROBACION_PUESTO: xModel.APROBACION_PUESTO === true,
-				SALARIO_INICIAL: xModel.SALARIO_INICIAL != null ? Number(xModel.SALARIO_INICIAL) : null,
-				SALARIO_FINAL: xModel.SALARIO_FINAL != null ? Number(xModel.SALARIO_FINAL) : null,
-				USUARIO_VALIDA: xModel.USUARIO_VALIDA ?? '',
-				USUARIO_AUTORIZA: xModel.USUARIO_AUTORIZA ?? '',
 				MISION_PUESTO: xModel.MISION_PUESTO ?? '',
 				OTROS_ASPECTOS: xModel.OTROS_ASPECTOS ?? '',
-				CODIGO_PUESTO: xModel.CODIGO_PUESTO ?? '',
-				CODIGO_FORMATO: xModel.CODIGO_FORMATO ?? '',
-				VERSION_FORMATO: xModel.VERSION_FORMATO ?? '',
 				USUARIO_CREA: xModel.USUARIO_CREA ?? '',
 				ESTACION_CREA: xModel.ESTACION_CREA ?? '',
 				FECHA_CREA: xModel.FECHA_CREA ?? new Date(),
@@ -191,25 +124,13 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			CORR_EMPRESA: 1,
 			CORR_PUESTO: 0,
 			NOMBRE_PUESTO: '',
-			CORR_GERENCIA: null,
-			NOMBRE_GERENCIA: '',
-			CORR_UNIDAD: null,
-			NOMBRE_UNIDAD: '',
-			CORR_NIVEL_ACADEMICO: null,
-			NOMBRE_NIVEL_ACADEMICO: '',
+			CODIGO_PUESTO: '',
 			CORR_TIPO_PUESTO: null,
 			NOMBRE_TIPO_PUESTO: '',
-			ESTADO_PUESTO: true,
+			ACTIVO_PUESTO: true,
 			APROBACION_PUESTO: false,
-			SALARIO_INICIAL: null,
-			SALARIO_FINAL: null,
-			USUARIO_VALIDA: '',
-			USUARIO_AUTORIZA: '',
 			MISION_PUESTO: '',
 			OTROS_ASPECTOS: '',
-			CODIGO_PUESTO: '',
-			CODIGO_FORMATO: '',
-			VERSION_FORMATO: '',
 			USUARIO_CREA: '',
 			ESTACION_CREA: '',
 			FECHA_CREA: new Date(),
@@ -384,16 +305,10 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			'CORR_PUESTO',
 			'CODIGO_PUESTO',
 			'NOMBRE_PUESTO',
-			'SALARIO_INICIAL',
-			'SALARIO_FINAL',
-			'CODIGO_FORMATO',
-			'VERSION_FORMATO',
-			'USUARIO_VALIDA',
-			'USUARIO_AUTORIZA',
 			'MISION_PUESTO',
 			'OTROS_ASPECTOS',
 			'APROBACION_PUESTO',
-			'ESTADO_PUESTO',
+			'ACTIVO_PUESTO',
 		];
 		fields.forEach((field) => this.dataForm.instance.getEditor(field)?.option('readOnly', true));
 	}
@@ -406,17 +321,11 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			[
 				'CODIGO_PUESTO',
 				'NOMBRE_PUESTO',
-				'SALARIO_INICIAL',
-				'SALARIO_FINAL',
-				'CODIGO_FORMATO',
-				'VERSION_FORMATO',
-				'USUARIO_VALIDA',
-				'USUARIO_AUTORIZA',
 				'MISION_PUESTO',
 				'OTROS_ASPECTOS',
 				'APROBACION_PUESTO',
 			].forEach((field) => this.dataForm.instance.getEditor(field)?.option('readOnly', false));
-			this.dataForm.instance.getEditor('ESTADO_PUESTO')?.option('readOnly', estadoSoloLectura);
+			this.dataForm.instance.getEditor('ACTIVO_PUESTO')?.option('readOnly', estadoSoloLectura);
 		});
 	}
 

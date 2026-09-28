@@ -16,7 +16,7 @@ namespace SGUEES.Repositories
         private const string _TableName = "PLA_PUESTO";
         private const string _ViewName = "V_PLA_PUESTO";
         private const string _CampoPk = "CORR_PUESTO";
-        private const string _CampoEstado = "ESTADO_PUESTO";
+        private const string _CampoEstado = "ACTIVO_PUESTO";
         private const bool _UsaEmpresa = true;
 
         public PLA_PUESTORepository(IConfiguration config) :
@@ -168,19 +168,11 @@ namespace SGUEES.Repositories
                 var p = new List<CParameter>
                 {
                     new CParameter() { ParameterName = "NOMBRE_PUESTO", Value = Data.NOMBRE_PUESTO, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "CORR_GERENCIA", Value = Data.CORR_GERENCIA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_NIVEL_ACADEMICO", Value = Data.CORR_NIVEL_ACADEMICO, DbType = System.Data.DbType.Int32 },
+                    new CParameter() { ParameterName = "CODIGO_PUESTO", Value = Data.CODIGO_PUESTO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "CORR_TIPO_PUESTO", Value = Data.CORR_TIPO_PUESTO, DbType = System.Data.DbType.Int32 },
                     new CParameter() { ParameterName = "APROBACION_PUESTO", Value = Data.APROBACION_PUESTO ?? false, DbType = System.Data.DbType.Boolean },
-                    new CParameter() { ParameterName = "SALARIO_INICIAL", Value = Data.SALARIO_INICIAL, DbType = System.Data.DbType.Decimal },
-                    new CParameter() { ParameterName = "SALARIO_FINAL", Value = Data.SALARIO_FINAL, DbType = System.Data.DbType.Decimal },
-                    new CParameter() { ParameterName = "USUARIO_VALIDA", Value = Data.USUARIO_VALIDA, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "USUARIO_AUTORIZA", Value = Data.USUARIO_AUTORIZA, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "MISION_PUESTO", Value = Data.MISION_PUESTO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "OTROS_ASPECTOS", Value = Data.OTROS_ASPECTOS, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "CODIGO_PUESTO", Value = Data.CODIGO_PUESTO, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "CODIGO_FORMATO", Value = Data.CODIGO_FORMATO, DbType = System.Data.DbType.String },
-                    new CParameter() { ParameterName = "VERSION_FORMATO", Value = Data.VERSION_FORMATO, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "USUARIO_ACTU", Value = Data.USUARIO_ACTU, DbType = System.Data.DbType.String },
                     new CParameter() { ParameterName = "FECHA_ACTU", Value = Data.FECHA_ACTU, DbType = System.Data.DbType.DateTime },
                     new CParameter() { ParameterName = "ESTACION_ACTU", Value = Data.ESTACION_ACTU, DbType = System.Data.DbType.String },
@@ -395,21 +387,13 @@ namespace SGUEES.Repositories
 
             p.AddRange(new[]
             {
+                new CParameter() { ParameterName = "CODIGO_PUESTO", Value = Data.CODIGO_PUESTO, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "NOMBRE_PUESTO", Value = Data.NOMBRE_PUESTO, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "CORR_GERENCIA", Value = Data.CORR_GERENCIA, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "CORR_NIVEL_ACADEMICO", Value = Data.CORR_NIVEL_ACADEMICO, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "CORR_TIPO_PUESTO", Value = Data.CORR_TIPO_PUESTO, DbType = System.Data.DbType.Int32 },
-                new CParameter() { ParameterName = "ESTADO_PUESTO", Value = Data.ESTADO_PUESTO ?? true, DbType = System.Data.DbType.Boolean },
+                new CParameter() { ParameterName = "ACTIVO_PUESTO", Value = Data.ACTIVO_PUESTO ?? true, DbType = System.Data.DbType.Boolean },
                 new CParameter() { ParameterName = "APROBACION_PUESTO", Value = Data.APROBACION_PUESTO ?? false, DbType = System.Data.DbType.Boolean },
-                new CParameter() { ParameterName = "SALARIO_INICIAL", Value = Data.SALARIO_INICIAL, DbType = System.Data.DbType.Decimal },
-                new CParameter() { ParameterName = "SALARIO_FINAL", Value = Data.SALARIO_FINAL, DbType = System.Data.DbType.Decimal },
-                new CParameter() { ParameterName = "USUARIO_VALIDA", Value = Data.USUARIO_VALIDA, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "USUARIO_AUTORIZA", Value = Data.USUARIO_AUTORIZA, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "MISION_PUESTO", Value = Data.MISION_PUESTO, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "OTROS_ASPECTOS", Value = Data.OTROS_ASPECTOS, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "CODIGO_PUESTO", Value = Data.CODIGO_PUESTO, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "CODIGO_FORMATO", Value = Data.CODIGO_FORMATO, DbType = System.Data.DbType.String },
-                new CParameter() { ParameterName = "VERSION_FORMATO", Value = Data.VERSION_FORMATO, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA, DbType = System.Data.DbType.String },
                 new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA, DbType = System.Data.DbType.DateTime },
                 new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA, DbType = System.Data.DbType.String },

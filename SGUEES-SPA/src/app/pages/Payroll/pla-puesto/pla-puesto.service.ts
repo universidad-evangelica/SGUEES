@@ -10,7 +10,7 @@ import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app
 import { PlaPuesto } from './models/pla-puesto';
 import { PlaPuestoRepository } from './pla-puesto.repository';
 
-const ESTADO_FIELD = 'ESTADO_PUESTO';
+const ESTADO_FIELD = 'ACTIVO_PUESTO';
 
 @Injectable({ providedIn: 'root' })
 export class PlaPuestoService {
@@ -27,8 +27,8 @@ export class PlaPuestoService {
 			return false;
 		}
 
-		if (model.CODIGO_PUESTO && model.CODIGO_PUESTO.trim().length > 30) {
-			msg('El codigo del puesto no puede superar 30 caracteres.', NotifyType.Warning);
+		if (model.CODIGO_PUESTO && model.CODIGO_PUESTO.trim().length > 15) {
+			msg('El codigo del puesto no puede superar 15 caracteres.', NotifyType.Warning);
 			return false;
 		}
 
@@ -39,13 +39,6 @@ export class PlaPuestoService {
 
 		if (model.OTROS_ASPECTOS && model.OTROS_ASPECTOS.trim().length > 255) {
 			msg('Otros aspectos no puede superar 255 caracteres.', NotifyType.Warning);
-			return false;
-		}
-
-		const inicial = model.SALARIO_INICIAL != null ? Number(model.SALARIO_INICIAL) : null;
-		const final = model.SALARIO_FINAL != null ? Number(model.SALARIO_FINAL) : null;
-		if (inicial != null && final != null && inicial > final) {
-			msg('El salario inicial no puede ser mayor que el salario final.', NotifyType.Warning);
 			return false;
 		}
 
@@ -86,11 +79,8 @@ export class PlaPuestoService {
 				filterOperations: ['=', '<', '>', '<=', '>='],
 			},
 			{ dataField: 'CODIGO_PUESTO', caption: 'Codigo', width: 120 },
-			{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', minWidth: 220 },
+			{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 280, minWidth: 200 },
 			{ dataField: 'NOMBRE_TIPO_PUESTO', caption: 'Tipo', width: 180 },
-			{ dataField: 'NOMBRE_GERENCIA', caption: 'Gerencia', width: 160 },
-			{ dataField: 'NOMBRE_NIVEL_ACADEMICO', caption: 'Nivel academico', width: 160 },
-			{ dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 160 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
 			...buildAuditGridColumns({ withDateTimeFilter: true }),
 		];
@@ -116,7 +106,7 @@ export class PlaPuestoService {
 				dataField: 'CODIGO_PUESTO',
 				label: { text: 'Codigo' },
 				colSpan: 2,
-				editorOptions: { placeholder: 'Codigo puesto...', showClearButton: true, maxLength: 30 },
+				editorOptions: { placeholder: 'Codigo puesto...', showClearButton: true, maxLength: 15 },
 			},
 			{
 				dataField: 'NOMBRE_PUESTO',
@@ -133,58 +123,6 @@ export class PlaPuestoService {
 				template: 'CORR_TIPO_PUESTOLookup',
 			},
 			{
-				dataField: 'CORR_GERENCIA',
-				label: { text: 'Gerencia' },
-				colSpan: 2,
-				editorOptions: { placeholder: 'Seleccione gerencia...', showClearButton: true },
-				template: 'CORR_GERENCIALookup',
-			},
-			{
-				dataField: 'CORR_NIVEL_ACADEMICO',
-				label: { text: 'Nivel academico' },
-				colSpan: 2,
-				editorOptions: { placeholder: 'Seleccione nivel...', showClearButton: true },
-				template: 'CORR_NIVEL_ACADEMICOLookup',
-			},
-			{
-				dataField: 'SALARIO_INICIAL',
-				label: { text: 'Salario inicial' },
-				colSpan: 2,
-				editorType: 'dxNumberBox',
-				editorOptions: { showClearButton: true, format: '#,##0.00', min: 0 },
-			},
-			{
-				dataField: 'SALARIO_FINAL',
-				label: { text: 'Salario final' },
-				colSpan: 2,
-				editorType: 'dxNumberBox',
-				editorOptions: { showClearButton: true, format: '#,##0.00', min: 0 },
-			},
-			{
-				dataField: 'CODIGO_FORMATO',
-				label: { text: 'Codigo formato' },
-				colSpan: 2,
-				editorOptions: { showClearButton: true, maxLength: 30 },
-			},
-			{
-				dataField: 'VERSION_FORMATO',
-				label: { text: 'Version formato' },
-				colSpan: 2,
-				editorOptions: { showClearButton: true, maxLength: 30 },
-			},
-			{
-				dataField: 'USUARIO_VALIDA',
-				label: { text: 'Usuario valida' },
-				colSpan: 2,
-				editorOptions: { showClearButton: true, maxLength: 30 },
-			},
-			{
-				dataField: 'USUARIO_AUTORIZA',
-				label: { text: 'Usuario autoriza' },
-				colSpan: 2,
-				editorOptions: { showClearButton: true, maxLength: 30 },
-			},
-			{
 				dataField: 'MISION_PUESTO',
 				label: { text: 'Mision' },
 				colSpan: 4,
@@ -199,7 +137,7 @@ export class PlaPuestoService {
 				editorOptions: { height: 70, maxLength: 255, showClearButton: true },
 			},
 			{ dataField: 'APROBACION_PUESTO', label: { text: 'Aprobado' }, editorType: 'dxCheckBox', colSpan: 2 },
-			{ dataField: 'ESTADO_PUESTO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
+			{ dataField: 'ACTIVO_PUESTO', label: { text: 'Activo' }, editorType: 'dxCheckBox', colSpan: 2 },
 		];
 	}
 

@@ -3325,6 +3325,13 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 */
 	private guardarDomiciliosDesdeModal(onSuccess?: () => void): void {
 		const continuar = () => this.guardarParentescoContactosDesdeModal(onSuccess);
+		if (this.cantidadDireccionesActivas() > 1) {
+			this.notifyFx(
+				'Solo puede haber una dirección activa. Desactive las demás antes de guardar.',
+				NotifyType.Warning
+			);
+			return;
+		}
 		if (!this.cambioRespectoA(this.domicilios, this.domiciliosOriginal)) {
 			continuar();
 			return;
@@ -3837,16 +3844,36 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		return partes.filter((x) => !!x && `${x}`.trim()).join(' · ') || 'Sin detalle';
 	}
 
-	/** Qué hace: alterna ACTIVO_DOMICILIO en memoria (guardado al Guardar cambios). */
+	// Qué hace: alterna ACTIVO_DOMICILIO en memoria (se guarda con Guardar cambios).
+	// Cómo: permite apagar siempre; si ya hay otra activa, no enciende esta y avisa.
 	toggleActivoDomicilio(index: number, event?: Event): void {
 		event?.stopPropagation();
 		const row = this.domicilios[index];
 		if (!row) {
 			return;
 		}
+		const activar = !row.ACTIVO_DOMICILIO;
+		if (activar && this.hayOtraDireccionActiva(index)) {
+			this.notifyFx(
+				'Ya hay una dirección activa. Desactívela antes de activar otra.',
+				NotifyType.Warning
+			);
+			return;
+		}
 		this.domicilios = this.domicilios.map((d, i) =>
-			i === index ? { ...d, ACTIVO_DOMICILIO: !d.ACTIVO_DOMICILIO } : d
+			i === index ? { ...d, ACTIVO_DOMICILIO: activar } : d
 		);
+	}
+
+	// Qué hace: indica si otra dirección distinta de la editada ya está activa.
+	private hayOtraDireccionActiva(exceptoIndex: number | null): boolean {
+		return (this.domicilios ?? []).some(
+			(d, i) => (exceptoIndex == null || i !== exceptoIndex) && !!d.ACTIVO_DOMICILIO
+		);
+	}
+
+	private cantidadDireccionesActivas(): number {
+		return (this.domicilios ?? []).filter((d) => !!d.ACTIVO_DOMICILIO).length;
 	}
 
 	get tituloSubmodalDomicilio(): string {
@@ -3868,7 +3895,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			CORR_DEPTO: null,
 			CORR_MUNICIPIO: null,
 			CORR_DISTRITO: null,
-			ACTIVO_DOMICILIO: true,
+			ACTIVO_DOMICILIO: !this.hayOtraDireccionActiva(null),
 		};
 		this.mCORR_DEPTO_DOMICILIO = [];
 		this.mCORR_MUNICIPIO_DOMICILIO = [];
@@ -4194,6 +4221,14 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		});
 		if (direccionRepetida) {
 			this.notifyFx('Esa dirección ya está registrada. Escriba otro texto.', NotifyType.Warning);
+			return;
+		}
+		const quedariaActiva = this.submodalDomicilioDraft?.ACTIVO_DOMICILIO !== false;
+		if (quedariaActiva && this.hayOtraDireccionActiva(this.submodalDomicilioEditIndex)) {
+			this.notifyFx(
+				'Ya hay una dirección activa. Desactívela antes de activar otra.',
+				NotifyType.Warning
+			);
 			return;
 		}
 		const corrPais = Number(this.submodalDomicilioDraft?.CORR_PAIS ?? 0) || null;

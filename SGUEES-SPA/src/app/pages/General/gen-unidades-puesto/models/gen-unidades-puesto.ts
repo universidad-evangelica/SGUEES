@@ -29,7 +29,7 @@ export interface GenPuestoLookupItem {
 	CORR_PUESTO: number;
 	CODIGO_PUESTO?: string;
 	NOMBRE_PUESTO: string;
-	ESTADO_PUESTO?: boolean;
+	ACTIVO_PUESTO?: boolean;
 }
 
 // Qué hace: ítem del modal de asignación (catálogo + checkbox).

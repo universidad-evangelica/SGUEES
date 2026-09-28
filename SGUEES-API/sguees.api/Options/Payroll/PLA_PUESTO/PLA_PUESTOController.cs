@@ -125,7 +125,7 @@ namespace SGUEES.Controllers
             Data.USUARIO_ACTU = Data.USUARIO_CREA;
             Data.ESTACION_ACTU = Data.ESTACION_CREA;
             Data.FECHA_ACTU = Data.FECHA_CREA;
-            Data.ESTADO_PUESTO ??= true;
+            Data.ACTIVO_PUESTO ??= true;
             Data.APROBACION_PUESTO ??= false;
         }
 
@@ -135,9 +135,9 @@ namespace SGUEES.Controllers
             Data.USUARIO_ACTU = GetUsuario();
             Data.ESTACION_ACTU = ClientInfoHelper.GetClientStation(HttpContext);
             Data.FECHA_ACTU = DateTime.Now;
-            if (!Data.ESTADO_PUESTO.HasValue)
+            if (!Data.ACTIVO_PUESTO.HasValue)
             {
-                Data.ESTADO_PUESTO = true;
+                Data.ACTIVO_PUESTO = true;
             }
             if (!Data.APROBACION_PUESTO.HasValue)
             {

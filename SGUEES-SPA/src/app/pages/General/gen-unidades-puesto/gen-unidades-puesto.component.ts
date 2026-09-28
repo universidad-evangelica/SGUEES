@@ -174,12 +174,12 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 					}
 
 					this.mCORR_PUESTO = response.Data
-						.filter((item: any) => item?.ESTADO_PUESTO !== false)
+						.filter((item: any) => item?.ACTIVO_PUESTO !== false)
 						.map((item: any) => ({
 							CORR_PUESTO: Number(item.CORR_PUESTO),
 							CODIGO_PUESTO: (item.CODIGO_PUESTO ?? '').trim(),
 							NOMBRE_PUESTO: (item.NOMBRE_PUESTO ?? '').trim(),
-							ESTADO_PUESTO: item.ESTADO_PUESTO !== false,
+							ACTIVO_PUESTO: item.ACTIVO_PUESTO !== false,
 						}));
 				},
 				error: (error) => {
@@ -730,7 +730,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 				.filter((corr) => corr > 0)
 		);
 		const nuevos = (this.mCORR_PUESTO ?? [])
-			.filter((item) => item.ESTADO_PUESTO !== false && !ya.has(Number(item.CORR_PUESTO)))
+			.filter((item) => item.ACTIVO_PUESTO !== false && !ya.has(Number(item.CORR_PUESTO)))
 			.map((item) => this.mapPuestoAsignado({
 				CORR_UNIDAD: unidad.CORR_UNIDAD,
 				CODIGO_UNIDAD: unidad.CODIGO_UNIDAD,

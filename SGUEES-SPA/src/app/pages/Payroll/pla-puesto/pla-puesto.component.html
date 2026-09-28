@@ -45,30 +45,6 @@
 					[readOnly]="readOnly"
 				></app-data-lookup>
 			</div>
-			<div *dxTemplate="let cellInfo of 'CORR_GERENCIALookup'">
-				<app-data-lookup
-					[model]="mCORR_GERENCIA"
-					[value]="model.CORR_GERENCIA"
-					(valueChange)="onGerenciaChanged($event)"
-					[valueExpr]="'CORR_GERENCIA'"
-					[displayExpr]="'NOMBRE_GERENCIA'"
-					[selectedRowKeys]="selectedLookUpCORR_GERENCIA"
-					[showClearButton]="true"
-					[readOnly]="readOnly"
-				></app-data-lookup>
-			</div>
-			<div *dxTemplate="let cellInfo of 'CORR_NIVEL_ACADEMICOLookup'">
-				<app-data-lookup
-					[model]="mCORR_NIVEL_ACADEMICO"
-					[value]="model.CORR_NIVEL_ACADEMICO"
-					(valueChange)="onNivelAcademicoChanged($event)"
-					[valueExpr]="'CORR_NIVEL_ACADEMICO'"
-					[displayExpr]="'NOMBRE_NIVEL_ACADEMICO'"
-					[selectedRowKeys]="selectedLookUpCORR_NIVEL_ACADEMICO"
-					[showClearButton]="true"
-					[readOnly]="readOnly"
-				></app-data-lookup>
-			</div>
 		</dx-form>
 	</div>
 
