@@ -679,6 +679,47 @@
 						</div>
 					</dxi-item>
 
+					<!-- motivo: Puestos asignados al empleado (solo lectura) -->
+					<dxi-item title="Puestos" [icon]="'card'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Puestos</h4>
+								<div class="rd-cards" *ngIf="puestos?.length; else sinPuestosRd">
+									<article class="rd-card" *ngFor="let item of puestos">
+										<header class="rd-card__header">
+											<span>{{ textoLectura(item.NOMBRE_PUESTO) }}</span>
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field">
+												<span class="rd-label">Unidad</span>
+												<span class="rd-value">{{ textoLectura(item.NOMBRE_UNIDAD) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Fecha de ingreso</span>
+												<span class="rd-value">{{ textoFechaIngreso(item.FECHA_INGRESO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Sueldo</span>
+												<span class="rd-value">{{ textoSueldo(item.SUELDO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Tipo de contratación</span>
+												<span class="rd-value">{{ textoLectura(item.NOMBRE_TIPO_CONTRATACION) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Tipo de modalidad</span>
+												<span class="rd-value">{{ textoLectura(item.MODALIDAD_NOMBRE) }}</span>
+											</div>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinPuestosRd>
+									<p class="rd-empty">Sin puestos asignados.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
 					</dx-tab-panel>
 				</div>
 			</ng-container>
@@ -1456,6 +1497,53 @@
 							</section>
 						</div>
 					</dxi-item>
+
+					<!-- motivo: Puestos editable (unidad, puesto, sueldo y fecha de ingreso) -->
+					<dxi-item title="Puestos" [icon]="'card'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Puestos</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										[disabled]="!tienePersonaBase"
+										(onClick)="abrirSubmodalPuestoNuevo()"
+									></dx-button>
+								</div>
+								<p class="ep-hint" *ngIf="!tienePersonaBase">
+									Guarde el empleado antes de asignar puestos.
+								</p>
+								<div class="ep-cards" *ngIf="puestos?.length; else sinPuestosModal">
+									<article class="ep-card" *ngFor="let p of puestos; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(p.NOMBRE_PUESTO) }}</div>
+											<div class="ep-card__summary">{{ textoLectura(p.NOMBRE_UNIDAD) }} · {{ resumenPuesto(p) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalPuestoEditar(i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Quitar"
+												(onClick)="eliminarPuesto(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinPuestosModal>
+									<p class="ep-empty">Sin puestos asignados.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
 				</dx-tab-panel>
 			</dx-scroll-view>
 		</div>
@@ -2134,6 +2222,102 @@
 			<div class="ep-submodal__footer">
 				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalDomicilio()"></dx-button>
 				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalDomicilio()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
+
+	<!-- motivo: submodal alta/edición de puesto del empleado -->
+	<dx-popup
+		[(visible)]="submodalPuestoVisible"
+		[title]="tituloSubmodalPuesto"
+		[width]="760"
+		[maxWidth]="'94vw'"
+		[height]="'auto'"
+		[maxHeight]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalPuesto()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ep-submodal">
+			<div class="ep-submodal__body">
+				<div class="ep-grid">
+					<div class="ep-field">
+						<label class="ep-label">Unidad <span class="req">*</span></label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalPuestoDraft.CORR_UNIDAD"
+							[items]="mCORR_UNIDAD"
+							displayExpr="NOMBRE_UNIDAD"
+							valueExpr="CORR_UNIDAD"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+							(onValueChanged)="onUnidadPuestoChanged($event)"
+						></dx-select-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Puesto <span class="req">*</span></label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalPuestoDraft.CORR_PUESTO"
+							[items]="mCORR_PUESTO"
+							displayExpr="NOMBRE_PUESTO"
+							valueExpr="CORR_PUESTO"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+							[disabled]="!submodalPuestoDraft.CORR_UNIDAD"
+						></dx-select-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Fecha de ingreso</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="dd/MM/yyyy"
+							[(value)]="submodalPuestoDraft.FECHA_INGRESO"
+							[showClearButton]="false"
+						></dx-date-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Sueldo</label>
+						<dx-number-box
+							stylingMode="outlined"
+							[(value)]="submodalPuestoDraft.SUELDO"
+							format="#,##0.00"
+							[min]="0"
+							[showClearButton]="true"
+						></dx-number-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Tipo de contratación</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalPuestoDraft.CORR_TIPO_CONTRATACION"
+							[items]="mCORR_TIPO_CONTRATACION"
+							displayExpr="NOMBRE_TIPO_CONTRATACION"
+							valueExpr="CORR_TIPO_CONTRATACION"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+						></dx-select-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Tipo de modalidad</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalPuestoDraft.CORR_TIPO_MODALIDAD"
+							[items]="mCORR_TIPO_MODALIDAD"
+							displayExpr="MODALIDAD_NOMBRE"
+							valueExpr="CORR_TIPO_MODALIDAD"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+						></dx-select-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalPuesto()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalPuesto()"></dx-button>
 			</div>
 		</div>
 	</dx-popup>

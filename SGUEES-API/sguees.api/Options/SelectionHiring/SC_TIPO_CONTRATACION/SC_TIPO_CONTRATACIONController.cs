@@ -158,5 +158,15 @@ namespace SGUEES.Controllers
             return await _service.GetAllActivosAsync(Data);
         }
 
+        // Qué hace: entrega tipos de contratación activos para el tab Puestos de gen-empleado.
+        // Cómo: fija CORR_EMPRESA de sesión y llama GetAllActivosAsync (autorizado para gen-empleado).
+        [HttpGet("GetCORR_TIPO_CONTRATACION_GEN_EMPLEADO")]
+        [Authorize(Policy = "/gen-empleado|R")]
+        public async Task<CResult> GetCORR_TIPO_CONTRATACION_GEN_EMPLEADO([FromQuery] SC_TIPO_CONTRATACIONParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllActivosAsync(Data);
+        }
+
     }
 }

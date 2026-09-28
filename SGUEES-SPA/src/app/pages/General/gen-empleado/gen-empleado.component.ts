@@ -25,6 +25,7 @@ import { GenPersonaFamiliarUees } from './gen-persona-familiar-uees/models/gen-p
 import { GenPersonaReferenciaPersonal } from './gen-persona-referencia-personal/models/gen-persona-referencia-personal';
 import { GenPersonaReferenciaLaboral } from './gen-persona-referencia-laboral/models/gen-persona-referencia-laboral';
 import { GenPersonaDomicilio } from './gen-persona-domicilio/models/gen-persona-domicilio';
+import { GenEmpleadoPuesto } from './gen-empleado-puesto/models/gen-empleado-puesto';
 import { GenPersonaParentescoContacto } from './gen-persona-parentesco-contacto/models/gen-persona-parentesco-contacto';
 import { GenEmpleadoService } from './gen-empleado.service';
 import {
@@ -175,6 +176,17 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	submodalParentescoContactoVisible = false;
 	submodalParentescoContactoEditIndex: number | null = null;
 	submodalParentescoContactoDraft: any = {};
+
+	// Qué hace: colecciones del tab Puestos (unidad + puesto del empleado).
+	puestos: GenEmpleadoPuesto[] = [];
+	private puestosOriginal: GenEmpleadoPuesto[] = [];
+	submodalPuestoVisible = false;
+	submodalPuestoEditIndex: number | null = null;
+	submodalPuestoDraft: Partial<GenEmpleadoPuesto> = {};
+	mCORR_UNIDAD: any[] = [];
+	mCORR_PUESTO: any[] = [];
+	mCORR_TIPO_CONTRATACION: any[] = [];
+	mCORR_TIPO_MODALIDAD: any[] = [];
 
 	/** Submodal agregar/editar domicilio. */
 	submodalDomicilioVisible = false;
@@ -566,6 +578,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.parentescoContactos = [];
 		this.parentescoContactosOriginal = [];
 		this.tempCorrParentescoContacto = -1;
+		this.puestos = [];
+		this.puestosOriginal = [];
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.revocarFotoPersona();
@@ -620,6 +634,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 												this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
 												this.domiciliosOriginal = this.clonarDomicilios(this.domicilios);
 												this.parentescoContactosOriginal = this.clonarParentescoContactos(this.parentescoContactos);
+												this.puestosOriginal = this.clonarPuestos(this.puestos);
 												this.fotoUrlNueva = '';
 												this.volverBrowseTrasGuardar();
 															});
@@ -694,6 +709,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 											this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
 											this.domiciliosOriginal = this.clonarDomicilios(this.domicilios);
 											this.parentescoContactosOriginal = this.clonarParentescoContactos(this.parentescoContactos);
+											this.puestosOriginal = this.clonarPuestos(this.puestos);
 											this.fotoUrlNueva = '';
 											this.omitirRestaurarPopupPersonales = true;
 											this.popupPersonalesVisible = false;
@@ -957,6 +973,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.referenciasLaboralesOriginal = this.clonarReferenciasLaborales(this.referenciasLaborales);
 		this.domiciliosOriginal = this.clonarDomicilios(this.domicilios);
 		this.parentescoContactosOriginal = this.clonarParentescoContactos(this.parentescoContactos);
+		this.puestosOriginal = this.clonarPuestos(this.puestos);
 		this.modelPersonaNaturalBase = this.fillPersonaNatural(this.modelPersonaNatural);
 		this.modelEmpleadoBase = this.extraerDatosEmpleado(this.model);
 		this.snapshotEdicionPendiente = true;
@@ -988,6 +1005,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			this.referenciasLaborales = this.clonarReferenciasLaborales(this.referenciasLaboralesOriginal);
 			this.domicilios = this.clonarDomicilios(this.domiciliosOriginal);
 			this.parentescoContactos = this.clonarParentescoContactos(this.parentescoContactosOriginal);
+			this.puestos = this.clonarPuestos(this.puestosOriginal);
 			this.fotoUrlNueva = '';
 			this.revocarFotoLocal();
 		}
@@ -1001,6 +1019,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cerrarSubmodalReferenciaLaboral();
 		this.cerrarSubmodalDomicilio();
 		this.cerrarSubmodalParentescoContacto();
+		this.cerrarSubmodalPuesto();
 	}
 
 	// Qué hace: suelta el bloqueo de consultas cuando la modal de editar datos ya se ocultó.
@@ -1306,6 +1325,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cargarReferenciasLaborales();
 		this.cargarDomicilios();
 		this.cargarParentescoContactos();
+		this.cargarPuestos();
 	}
 
 	// Qué hace: crea GEN_PERSONA + GEN_EMPRESA_PERSONA + GEN_PERSONA_NATURAL + GEN_EMPLEADO (SP).
@@ -1347,6 +1367,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.cargarReferenciasLaborales();
 					this.cargarDomicilios();
 					this.cargarParentescoContactos();
+					this.cargarPuestos();
 					this.notifyFx('Empleado creado. Puede seguir editando los datos personales.', NotifyType.Success, {
 						raw: true,
 					});
@@ -3410,7 +3431,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	// Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
 	private guardarParentescoContactosDesdeModal(onSuccess?: () => void): void {
 		if (!this.cambioRespectoA(this.parentescoContactos, this.parentescoContactosOriginal)) {
-			onSuccess?.();
+			this.guardarPuestosDesdeModal(onSuccess);
 			return;
 		}
 		const corrPersona = Number(this.model.CORR_PERSONA);
@@ -3433,7 +3454,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					const rows = this.normalizarParentescoContactos(response.Data ?? this.parentescoContactos);
 					this.parentescoContactos = rows;
 					this.parentescoContactosOriginal = this.clonarParentescoContactos(rows);
-					onSuccess?.();
+					this.guardarPuestosDesdeModal(onSuccess);
 				},
 				error: (error: any) => {
 					this.loadingVisible = false;
@@ -4616,6 +4637,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.getESTADO_NIP();
 		this.getCORR_AFP();
 		this.getCORR_SEGURO_SOCIAL();
+		this.getCORR_UNIDAD_PUESTO();
+		this.getCORR_TIPO_CONTRATACION_PUESTO();
+		this.getCORR_TIPO_MODALIDAD_PUESTO();
 	}
 
 	private refrescarTerritorioDesdeModelo(): void {
@@ -4788,6 +4812,385 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.mCORR_SEGURO_SOCIAL = response?.Result ? response.Data ?? [] : [];
 				},
 			});
+	}
+
+	// Qué hace: carga unidades del organigrama para asignar el puesto.
+	// Cómo: GetLookUp GetCORR_UNIDAD_GEN_EMPLEADO.
+	private getCORR_UNIDAD_PUESTO(): void {
+		this.appInfoService
+			.getLookUp(
+				'GEN_EMPLEADO',
+				'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES',
+				'GetCORR_UNIDAD',
+				undefined,
+				environment.UrlGENERALAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_UNIDAD = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	// Qué hace: carga los puestos asociados a la unidad elegida.
+	// Cómo: GetLookUp GEN_UNIDADES_PUESTO GetCORR_PUESTO con CORR_UNIDAD.
+	private cargarPuestosDeUnidad(corrUnidad: number | null | undefined): void {
+		const corr = Number(corrUnidad ?? 0);
+		if (corr <= 0) {
+			this.mCORR_PUESTO = [];
+			return;
+		}
+
+		this.appInfoService
+			.getLookUp(
+				'GEN_EMPLEADO',
+				'GEN_UNIDADES_PUESTO',
+				'GetCORR_PUESTO',
+				[{ Parameter: 'CORR_UNIDAD', Value: corr }],
+				environment.UrlGENERALAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (Number(this.submodalPuestoDraft?.CORR_UNIDAD ?? 0) !== corr) {
+						return;
+					}
+					const rows = response?.Result ? response.Data ?? [] : [];
+					this.mCORR_PUESTO = rows.map((item: any) => ({
+						CORR_PUESTO: Number(item.CORR_PUESTO),
+						NOMBRE_PUESTO: `${item.NOMBRE_PUESTO ?? ''}`.trim(),
+						CORR_UNIDAD: Number(item.CORR_UNIDAD ?? corr),
+					}));
+				},
+				error: () => {
+					if (Number(this.submodalPuestoDraft?.CORR_UNIDAD ?? 0) === corr) {
+						this.mCORR_PUESTO = [];
+					}
+				},
+			});
+	}
+
+	// Qué hace: al cambiar la unidad, vacía el puesto y pide los de esa unidad.
+	// Cómo: ignora el mismo valor; solo limpia el puesto si había otra unidad antes.
+	onUnidadPuestoChanged(e: any): void {
+		const nuevo = Number(e?.value ?? 0);
+		const anterior = Number(e?.previousValue ?? 0);
+		if (nuevo === anterior) {
+			return;
+		}
+		if (anterior > 0) {
+			this.submodalPuestoDraft.CORR_PUESTO = null as any;
+		}
+		this.cargarPuestosDeUnidad(nuevo);
+	}
+
+	// Qué hace: carga tipos de contratación para el puesto del empleado.
+	// Cómo: GetLookUp GetCORR_TIPO_CONTRATACION_GEN_EMPLEADO.
+	private getCORR_TIPO_CONTRATACION_PUESTO(): void {
+		this.appInfoService
+			.getLookUp(
+				'GEN_EMPLEADO',
+				'SC_TIPO_CONTRATACION',
+				'GetCORR_TIPO_CONTRATACION',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_TIPO_CONTRATACION = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	// Qué hace: carga tipos de modalidad para el puesto del empleado.
+	// Cómo: GetLookUp GetCORR_TIPO_MODALIDAD_GEN_EMPLEADO.
+	private getCORR_TIPO_MODALIDAD_PUESTO(): void {
+		this.appInfoService
+			.getLookUp(
+				'GEN_EMPLEADO',
+				'SC_TIPO_MODALIDAD',
+				'GetCORR_TIPO_MODALIDAD',
+				undefined,
+				environment.UrlSELECCIONCONTRATACIONAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.mCORR_TIPO_MODALIDAD = response?.Result ? response.Data ?? [] : [];
+				},
+			});
+	}
+
+	get tituloSubmodalPuesto(): string {
+		return this.submodalPuestoEditIndex != null ? 'Editar puesto' : 'Asignar puesto';
+	}
+
+	// Qué hace: fecha de hoy en El Salvador para el ingreso.
+	// Cómo: calendario America/El_Salvador, a mediodía local para que el date-box no reste un día.
+	private fechaHoyElSalvador(): Date {
+		const iso = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/El_Salvador' }).format(new Date());
+		const [anio, mes, dia] = iso.split('-').map((n) => Number(n));
+		return new Date(anio, mes - 1, dia, 12, 0, 0);
+	}
+
+	abrirSubmodalPuestoNuevo(): void {
+		if (!this.tienePersonaBase) {
+			this.notifyFx('Primero debe guardar el empleado.', NotifyType.Warning);
+			return;
+		}
+		this.submodalPuestoEditIndex = null;
+		this.mCORR_PUESTO = [];
+		this.submodalPuestoDraft = {
+			CORR_UNIDAD: null as any,
+			CORR_PUESTO: null as any,
+			FECHA_INGRESO: this.fechaHoyElSalvador() as any,
+			SUELDO: null,
+			CORR_TIPO_CONTRATACION: null,
+			CORR_TIPO_MODALIDAD: null,
+		};
+		this.submodalPuestoVisible = true;
+	}
+
+	abrirSubmodalPuestoEditar(index: number): void {
+		const actual = this.puestos[index];
+		if (!actual) {
+			return;
+		}
+		this.submodalPuestoEditIndex = index;
+		const iso = this.normalizarFechaIngreso(actual.FECHA_INGRESO);
+		this.submodalPuestoDraft = {
+			...actual,
+			FECHA_INGRESO: (iso ? this.fechaDesdeIso(iso) : this.fechaHoyElSalvador()) as any,
+		};
+		this.cargarPuestosDeUnidad(actual.CORR_UNIDAD);
+		this.submodalPuestoVisible = true;
+	}
+
+	cerrarSubmodalPuesto(): void {
+		this.submodalPuestoVisible = false;
+		this.submodalPuestoEditIndex = null;
+		this.submodalPuestoDraft = {};
+		this.mCORR_PUESTO = [];
+	}
+
+	guardarSubmodalPuesto(): void {
+		const corrUnidad = Number(this.submodalPuestoDraft?.CORR_UNIDAD ?? 0);
+		const corrPuesto = Number(this.submodalPuestoDraft?.CORR_PUESTO ?? 0);
+		if (corrUnidad <= 0 || corrPuesto <= 0) {
+			this.notifyFx('Seleccione la unidad y el puesto.', NotifyType.Warning);
+			return;
+		}
+		const duplicado = this.puestos.some(
+			(p, idx) =>
+				idx !== this.submodalPuestoEditIndex &&
+				Number(p.CORR_UNIDAD) === corrUnidad &&
+				Number(p.CORR_PUESTO) === corrPuesto
+		);
+		if (duplicado) {
+			this.notifyFx('Ese empleado ya tiene asignado ese puesto en esa unidad.', NotifyType.Warning);
+			return;
+		}
+		const sueldoRaw = this.submodalPuestoDraft?.SUELDO;
+		const sueldo =
+			sueldoRaw == null || `${sueldoRaw}` === '' || Number.isNaN(Number(sueldoRaw))
+				? null
+				: Number(sueldoRaw);
+		if (sueldo != null && sueldo < 0) {
+			this.notifyFx('El sueldo no puede ser negativo.', NotifyType.Warning);
+			return;
+		}
+		const tipoContratacion = Number(this.submodalPuestoDraft?.CORR_TIPO_CONTRATACION ?? 0);
+		const tipoModalidad = Number(this.submodalPuestoDraft?.CORR_TIPO_MODALIDAD ?? 0);
+		const row: GenEmpleadoPuesto = {
+			CORR_EMPRESA: Number(this.model?.CORR_EMPRESA ?? 0),
+			CORR_EMPLEADO: Number(this.model?.CORR_EMPLEADO ?? 0),
+			CORR_UNIDAD: corrUnidad,
+			NOMBRE_UNIDAD: this.nombreCatalogo(
+				this.mCORR_UNIDAD,
+				'CORR_UNIDAD',
+				corrUnidad,
+				'NOMBRE_UNIDAD'
+			),
+			CORR_PUESTO: corrPuesto,
+			NOMBRE_PUESTO: this.nombreCatalogo(this.mCORR_PUESTO, 'CORR_PUESTO', corrPuesto, 'NOMBRE_PUESTO'),
+			FECHA_INGRESO:
+				this.normalizarFechaIngreso(this.submodalPuestoDraft?.FECHA_INGRESO) ||
+				this.normalizarFechaIngreso(this.fechaHoyElSalvador()),
+			SUELDO: sueldo,
+			CORR_TIPO_CONTRATACION: tipoContratacion > 0 ? tipoContratacion : null,
+			NOMBRE_TIPO_CONTRATACION:
+				tipoContratacion > 0
+					? this.nombreCatalogo(
+							this.mCORR_TIPO_CONTRATACION,
+							'CORR_TIPO_CONTRATACION',
+							tipoContratacion,
+							'NOMBRE_TIPO_CONTRATACION'
+						)
+					: '',
+			CORR_TIPO_MODALIDAD: tipoModalidad > 0 ? tipoModalidad : null,
+			MODALIDAD_NOMBRE:
+				tipoModalidad > 0
+					? this.nombreCatalogo(
+							this.mCORR_TIPO_MODALIDAD,
+							'CORR_TIPO_MODALIDAD',
+							tipoModalidad,
+							'MODALIDAD_NOMBRE'
+						)
+					: '',
+		};
+		if (this.submodalPuestoEditIndex != null) {
+			this.puestos = this.puestos.map((p, idx) => (idx === this.submodalPuestoEditIndex ? row : p));
+		} else {
+			this.puestos = [...this.puestos, row];
+		}
+		this.cerrarSubmodalPuesto();
+	}
+
+	eliminarPuesto(index: number): void {
+		this.puestos = this.puestos.filter((_, i) => i !== index);
+	}
+
+	resumenPuesto(item: GenEmpleadoPuesto): string {
+		const partes = [
+			this.textoLectura(item?.NOMBRE_TIPO_CONTRATACION),
+			this.textoLectura(item?.MODALIDAD_NOMBRE),
+			this.textoSueldo(item?.SUELDO),
+			this.textoFechaIngreso(item?.FECHA_INGRESO),
+		].filter((t) => t && t !== '—');
+		return partes.join(' · ') || '—';
+	}
+
+	textoFechaIngreso(valor: any): string {
+		const iso = this.normalizarFechaIngreso(valor);
+		if (!iso) {
+			return '—';
+		}
+		const [anio, mes, dia] = iso.split('-');
+		return `${dia}/${mes}/${anio}`;
+	}
+
+	textoSueldo(valor: any): string {
+		if (valor == null || valor === '') {
+			return '—';
+		}
+		const n = Number(valor);
+		if (Number.isNaN(n)) {
+			return '—';
+		}
+		return n.toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+	}
+
+	/**
+	 * Qué hace: persiste puestos del empleado si cambiaron.
+	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
+	 */
+	private guardarPuestosDesdeModal(onSuccess?: () => void): void {
+		if (!this.cambioRespectoA(this.puestos, this.puestosOriginal)) {
+			onSuccess?.();
+			return;
+		}
+		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
+		if (corrEmpleado <= 0) {
+			this.notifyFx('No se encontró CORR_EMPLEADO del empleado.', NotifyType.Warning);
+			return;
+		}
+
+		this.loadingVisible = true;
+		this.service
+			.savePuestos(corrEmpleado, this.puestos)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const rows = this.normalizarPuestos(response.Data ?? this.puestos);
+					this.puestos = rows;
+					this.puestosOriginal = this.clonarPuestos(rows);
+					onSuccess?.();
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	private cargarPuestos(): void {
+		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
+		if (corrEmpleado <= 0) {
+			this.puestos = [];
+			this.puestosOriginal = [];
+			return;
+		}
+
+		this.service
+			.getPuestos(corrEmpleado)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result ? this.normalizarPuestos(response.Data ?? []) : [];
+					this.puestos = rows;
+					this.puestosOriginal = this.clonarPuestos(rows);
+				},
+				error: () => {
+					this.puestos = [];
+					this.puestosOriginal = [];
+				},
+			});
+	}
+
+	private normalizarPuestos(rows: any[]): GenEmpleadoPuesto[] {
+		return (rows ?? []).map((r) => ({
+			CORR_EMPRESA: Number(r?.CORR_EMPRESA ?? 0),
+			CORR_EMPLEADO: Number(r?.CORR_EMPLEADO ?? 0),
+			CORR_UNIDAD: Number(r?.CORR_UNIDAD ?? 0),
+			CODIGO_UNIDAD: r?.CODIGO_UNIDAD ?? '',
+			NOMBRE_UNIDAD: r?.NOMBRE_UNIDAD ?? '',
+			CORR_PUESTO: Number(r?.CORR_PUESTO ?? 0),
+			CODIGO_PUESTO: r?.CODIGO_PUESTO ?? '',
+			NOMBRE_PUESTO: r?.NOMBRE_PUESTO ?? '',
+			FECHA_INGRESO: this.normalizarFechaIngreso(r?.FECHA_INGRESO),
+			SUELDO: r?.SUELDO == null || r?.SUELDO === '' ? null : Number(r.SUELDO),
+			CORR_TIPO_CONTRATACION:
+				Number(r?.CORR_TIPO_CONTRATACION) > 0 ? Number(r.CORR_TIPO_CONTRATACION) : null,
+			NOMBRE_TIPO_CONTRATACION: r?.NOMBRE_TIPO_CONTRATACION ?? '',
+			CORR_TIPO_MODALIDAD: Number(r?.CORR_TIPO_MODALIDAD) > 0 ? Number(r.CORR_TIPO_MODALIDAD) : null,
+			MODALIDAD_NOMBRE: r?.MODALIDAD_NOMBRE ?? '',
+		}));
+	}
+
+	private clonarPuestos(rows: GenEmpleadoPuesto[]): GenEmpleadoPuesto[] {
+		return (rows ?? []).map((r) => ({ ...r }));
+	}
+
+	private fechaDesdeIso(iso: string): Date {
+		const [anio, mes, dia] = iso.split('-').map((n) => Number(n));
+		return new Date(anio, mes - 1, dia, 12, 0, 0);
+	}
+
+	private normalizarFechaIngreso(valor: any): string | null {
+		if (valor == null || valor === '') {
+			return null;
+		}
+		if (valor instanceof Date && !Number.isNaN(valor.getTime())) {
+			const y = valor.getFullYear();
+			const m = `${valor.getMonth() + 1}`.padStart(2, '0');
+			const d = `${valor.getDate()}`.padStart(2, '0');
+			return `${y}-${m}-${d}`;
+		}
+		const texto = `${valor}`.trim();
+		const iso = texto.match(/^(\d{4}-\d{2}-\d{2})/);
+		return iso ? iso[1] : null;
+	}
+
+	private nombreCatalogo(lista: any[], campoId: string, id: number, campoNombre: string): string {
+		const item = (lista ?? []).find((x) => Number(x?.[campoId]) === id);
+		return `${item?.[campoNombre] ?? ''}`.trim();
 	}
 
 	private getCORR_ORIGEN_INGRESO(): void {

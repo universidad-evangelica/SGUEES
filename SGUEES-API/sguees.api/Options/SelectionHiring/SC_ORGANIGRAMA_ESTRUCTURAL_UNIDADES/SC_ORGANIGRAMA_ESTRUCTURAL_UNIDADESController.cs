@@ -138,5 +138,15 @@ namespace sguees.Controllers
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetAllAsync(Data);
         }
+
+        // Qué hace: entrega unidades del organigrama para el tab Puestos de gen-empleado.
+        // Cómo: fija CORR_EMPRESA de sesión y llama GetAllAsync (autorizado para gen-empleado).
+        [HttpGet("GetCORR_UNIDAD_GEN_EMPLEADO")]
+        [Authorize(Policy = "/gen-empleado|R")]
+        public async Task<CResult> GetCORR_UNIDAD_GEN_EMPLEADO([FromQuery] SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADESParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
+        }
     }
 }
