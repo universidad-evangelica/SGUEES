@@ -110,6 +110,18 @@ namespace sguees.Repositories
 					return objResultado;
 				}
 
+				var tiposPermanentes = await LeerTiposPermanentesAsync(corrEmpresa);
+				var cantidadPermanentes = items.Count(x =>
+					x.CORR_TIPO_CONTRATACION.HasValue &&
+					tiposPermanentes.Contains(x.CORR_TIPO_CONTRATACION.Value));
+				if (cantidadPermanentes > 1)
+				{
+					objResultado.Result = false;
+					objResultado.ErrorCode = 4000;
+					objResultado.ErrorMessage = "El empleado solo puede tener un puesto de tipo permanente.";
+					return objResultado;
+				}
+
 				var rowsAffected = 0;
 				var existentesWhere = new List<CParameter>
 				{
@@ -203,6 +215,27 @@ namespace sguees.Repositories
 			}
 
 			return objResultado;
+		}
+
+		// Qué hace: identifica los tipos de contratación marcados como permanentes.
+		// Cómo: lee SC_TIPO_CONTRATACION.ES_PERMANENTE de la empresa, sin fijar el nombre.
+		private async Task<HashSet<int>> LeerTiposPermanentesAsync(int corrEmpresa)
+		{
+			var where = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+			};
+			var reader = await objData.GetDataReader("SC_TIPO_CONTRATACION", where);
+			var rows = new List<TipoContratacionPermanente>().FromDataReader(reader).ToList();
+			reader.Close();
+			return new HashSet<int>(
+				rows.Where(x => x.ES_PERMANENTE == true).Select(x => x.CORR_TIPO_CONTRATACION));
+		}
+
+		private class TipoContratacionPermanente
+		{
+			public int CORR_TIPO_CONTRATACION { get; set; }
+			public bool? ES_PERMANENTE { get; set; }
 		}
 
 		private static string Clave(int corrUnidad, int corrPuesto) => $"{corrUnidad}|{corrPuesto}";

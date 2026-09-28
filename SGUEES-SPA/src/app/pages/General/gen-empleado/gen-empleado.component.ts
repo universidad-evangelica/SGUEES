@@ -4857,11 +4857,14 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 						return;
 					}
 					const rows = response?.Result ? response.Data ?? [] : [];
-					this.mCORR_PUESTO = rows.map((item: any) => ({
-						CORR_PUESTO: Number(item.CORR_PUESTO),
-						NOMBRE_PUESTO: `${item.NOMBRE_PUESTO ?? ''}`.trim(),
-						CORR_UNIDAD: Number(item.CORR_UNIDAD ?? corr),
-					}));
+					const ocupados = this.puestosYaAsignadosEnUnidad(corr);
+					this.mCORR_PUESTO = rows
+						.map((item: any) => ({
+							CORR_PUESTO: Number(item.CORR_PUESTO),
+							NOMBRE_PUESTO: `${item.NOMBRE_PUESTO ?? ''}`.trim(),
+							CORR_UNIDAD: Number(item.CORR_UNIDAD ?? corr),
+						}))
+						.filter((item: any) => !ocupados.has(Number(item.CORR_PUESTO)));
 				},
 				error: () => {
 					if (Number(this.submodalPuestoDraft?.CORR_UNIDAD ?? 0) === corr) {
@@ -4869,6 +4872,21 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					}
 				},
 			});
+	}
+
+	// Qué hace: puestos que este empleado ya tiene en la unidad.
+	// Cómo: omite la fila que se está editando para que su puesto siga en el combo.
+	private puestosYaAsignadosEnUnidad(corrUnidad: number): Set<number> {
+		const ocupados = new Set<number>();
+		(this.puestos ?? []).forEach((p, idx) => {
+			if (idx === this.submodalPuestoEditIndex) {
+				return;
+			}
+			if (Number(p.CORR_UNIDAD) === corrUnidad) {
+				ocupados.add(Number(p.CORR_PUESTO));
+			}
+		});
+		return ocupados;
 	}
 
 	// Qué hace: al cambiar la unidad, vacía el puesto y pide los de esa unidad.
@@ -4975,6 +4993,30 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.mCORR_PUESTO = [];
 	}
 
+	// Qué hace: indica si ese tipo de contratación es permanente.
+	// Cómo: usa ES_PERMANENTE del lookup SC_TIPO_CONTRATACION.
+	private esTipoContratacionPermanente(corrTipo: number | null | undefined): boolean {
+		const corr = Number(corrTipo ?? 0);
+		if (corr <= 0) {
+			return false;
+		}
+		const item = (this.mCORR_TIPO_CONTRATACION ?? []).find(
+			(x) => Number(x?.CORR_TIPO_CONTRATACION) === corr
+		);
+		return item?.ES_PERMANENTE === true || item?.ES_PERMANENTE === 1;
+	}
+
+	// Qué hace: impide un segundo puesto permanente en el mismo empleado.
+	// Cómo: compara el tipo elegido con los demás puestos ya cargados en memoria.
+	private hayOtroPuestoPermanente(exceptoIndex: number | null, corrTipo: number | null): boolean {
+		if (!this.esTipoContratacionPermanente(corrTipo)) {
+			return false;
+		}
+		return this.puestos.some(
+			(p, idx) => idx !== exceptoIndex && this.esTipoContratacionPermanente(p.CORR_TIPO_CONTRATACION)
+		);
+	}
+
 	guardarSubmodalPuesto(): void {
 		const corrUnidad = Number(this.submodalPuestoDraft?.CORR_UNIDAD ?? 0);
 		const corrPuesto = Number(this.submodalPuestoDraft?.CORR_PUESTO ?? 0);
@@ -4990,6 +5032,11 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		);
 		if (duplicado) {
 			this.notifyFx('Ese empleado ya tiene asignado ese puesto en esa unidad.', NotifyType.Warning);
+			return;
+		}
+		const tipoContratacionPrevio = Number(this.submodalPuestoDraft?.CORR_TIPO_CONTRATACION ?? 0);
+		if (this.hayOtroPuestoPermanente(this.submodalPuestoEditIndex, tipoContratacionPrevio)) {
+			this.notifyFx('El empleado solo puede tener un puesto de tipo permanente.', NotifyType.Warning);
 			return;
 		}
 		const sueldoRaw = this.submodalPuestoDraft?.SUELDO;
@@ -5087,6 +5134,13 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
 	 */
 	private guardarPuestosDesdeModal(onSuccess?: () => void): void {
+		const permanentes = (this.puestos ?? []).filter((p) =>
+			this.esTipoContratacionPermanente(p.CORR_TIPO_CONTRATACION)
+		).length;
+		if (permanentes > 1) {
+			this.notifyFx('El empleado solo puede tener un puesto de tipo permanente.', NotifyType.Warning);
+			return;
+		}
 		if (!this.cambioRespectoA(this.puestos, this.puestosOriginal)) {
 			onSuccess?.();
 			return;
