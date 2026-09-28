@@ -80,6 +80,12 @@ export class GenEmpleadoService {
 		return this.repo.delete([{ Parameter: 'CORR_EMPLEADO', Value: model.CORR_EMPLEADO }]);
 	}
 
+	// Qué hace: cambia el estado activo/inactivo de un empleado.
+	// Cómo: PUT ActivarInactivar filtrando por CORR_EMPLEADO.
+	activarInactivar(model: any): Observable<IResult> {
+		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_EMPLEADO', Value: model.CORR_EMPLEADO }]);
+	}
+
 	/** Qué hace: sube fotografía del empleado (guarda archivo y retorna FOTO_URL). */
 	subirFoto(corrPersona: number, file: File): Observable<IResult> {
 		return this.repo.subirFoto(corrPersona, file);

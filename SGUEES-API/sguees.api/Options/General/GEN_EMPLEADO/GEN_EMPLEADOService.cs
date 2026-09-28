@@ -250,6 +250,35 @@ namespace sguees.Services
 			}
 		}
 
+		// Qué hace: cambia el estado activo/inactivo del empleado.
+		// Cómo: valida empresa y correlativo, y delega en PRAL_MTTO_CATALOGO_ESTADO_BIT.
+		public async Task<CResult> ActivarInactivarAsync(GEN_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			if (Data == null || Data.CORR_EMPRESA <= 0)
+			{
+				return new CResult
+				{
+					Result = false,
+					ErrorCode = 4000,
+					ErrorMessage = "CORR_EMPRESA es requerido para cambiar el estado del empleado.",
+					ErrorSource = "[GEN_EMPLEADOService]",
+				};
+			}
+
+			if (Data.CORR_EMPLEADO <= 0)
+			{
+				return new CResult
+				{
+					Result = false,
+					ErrorCode = 4000,
+					ErrorMessage = "No se pudo identificar el empleado a actualizar.",
+					ErrorSource = "[GEN_EMPLEADOService]",
+				};
+			}
+
+			return await _repo.ActivarInactivarAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
 		private static CResult AvisoInstitucional(string message)
 		{
 			return new CResult

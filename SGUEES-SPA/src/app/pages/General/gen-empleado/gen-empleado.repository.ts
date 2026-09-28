@@ -65,4 +65,10 @@ export class GenEmpleadoRepository {
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlGENERALAPI);
 	}
+
+	// Qué hace: invierte el estado activo/inactivo del empleado.
+	// Cómo: PUT GEN_EMPLEADO/ActivarInactivar con la llave CORR_EMPLEADO.
+	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlGENERALAPI);
+	}
 }

@@ -12,5 +12,6 @@ namespace sguees.Repositories
 	{
 		Task<CResult> GetPersonaNaturalAsync(List<CParameter> xWhere);
 		Task<CResult> MttoEmpleadoAsync(GEN_EMPLEADO_MTTOTable Data, int tipoActualiza, int corrEmpresa, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> ActivarInactivarAsync(GEN_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
 }

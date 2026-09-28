@@ -224,6 +224,15 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	fotoUrlNueva = '';
 	fotoSubiendo = false;
 
+	/** Vista rápida del browse (panel lateral). */
+	previewPanelVisible = false;
+	previewPanelAbierto = false;
+	previewEmpleado: GenEmpleado | null = null;
+	previewFotoUrl: string | null = null;
+	cargandoPreviewFoto = false;
+	private previewPanelCloseTimer: ReturnType<typeof setTimeout> | null = null;
+	private previewFotoRequestId = 0;
+
 	mCORR_RELIGION: any[] = [];
 	mCORR_ORIGEN_INGRESO: any[] = [];
 	mCORR_TIPO_CONTRIBUYENTE: any[] = [];
@@ -273,6 +282,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	ngOnDestroy(): void {
 		this.revocarFotoPersona();
 		this.revocarFotoLocal();
+		this.clearPreviewPanelCloseTimer();
+		this.revocarPreviewFoto();
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -558,6 +569,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.revocarFotoPersona();
+		this.cerrarPreviewPanel(false);
 		this.tabEmpleadoIndex = TAB_PERSONALES;
 		this.limpiarLookupsTerritorio();
 		this.subTituloVentana = this.formSubtituloNuevo;
@@ -710,8 +722,23 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		);
 	}
 
+	// Qué hace: activa o desactiva el empleado seleccionado desde la barra.
+	// Cómo: confirmación estándar y PUT ActivarInactivar; la grilla se parchea con la fila devuelta.
 	activar_inactivar(): void {
-		this.notifyFx('Activar/Inactivar se implementará en la siguiente fase.', NotifyType.Warning);
+		this.invocarActivarInactivar((row) => this.service.activarInactivar(row));
+	}
+
+	// Qué hace: al cambiar el estado, refresca también el panel lateral si está abierto.
+	// Cómo: reutiliza el parche del browse y copia la misma fila al preview.
+	protected override sincronizarSeleccionTrasCambioEstado(data: unknown): void {
+		super.sincronizarSeleccionTrasCambioEstado(data);
+		if (!data || typeof data !== 'object' || !this.previewEmpleado) {
+			return;
+		}
+		const record = data as GenEmpleado;
+		if (Number(record.CORR_EMPLEADO) === Number(this.previewEmpleado.CORR_EMPLEADO)) {
+			this.previewEmpleado = this.fillData(record);
+		}
 	}
 
 	override rowDblClick(e: any): void {
@@ -720,6 +747,87 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			return;
 		}
 		this.abrirFormulario(rowData, UpdateType.Not_Defined);
+	}
+
+	// Qué hace: clic en la fila del browse abre la vista rápida lateral.
+	// Cómo: ignora lápiz, basurero y controles; el resto abre el panel con la fila.
+	onGridRowClick(e: any): void {
+		if (!this.isBrowse() || e?.rowType !== 'data' || !e?.data) {
+			return;
+		}
+
+		const target = e?.event?.target as HTMLElement | null;
+		if (
+			target?.closest(
+				'.dx-command-edit, .dx-link, .dx-button, button, a, .dx-checkbox, .dx-dropdowneditor-button',
+			)
+		) {
+			return;
+		}
+
+		this.abrirPreviewPanel(e.data as GenEmpleado);
+	}
+
+	// Qué hace: muestra el panel lateral con los datos de la fila y su fotografía.
+	// Cómo: pinta la fila al instante y pide GetFoto por CORR_PERSONA; si no hay imagen, iniciales.
+	abrirPreviewPanel(row: GenEmpleado): void {
+		const corr = Number(row?.CORR_EMPLEADO ?? 0);
+		if (corr <= 0) {
+			return;
+		}
+
+		this.clearPreviewPanelCloseTimer();
+		this.previewEmpleado = this.fillData(row);
+		this.previewPanelVisible = true;
+		requestAnimationFrame(() => {
+			this.previewPanelAbierto = true;
+		});
+		this.cargarPreviewFoto(Number(row.CORR_PERSONA ?? 0));
+	}
+
+	// Qué hace: oculta el panel lateral.
+	// Cómo: con animación espera el slide; sin animación lo quita de inmediato.
+	cerrarPreviewPanel(animar = true): void {
+		this.clearPreviewPanelCloseTimer();
+
+		if (!animar || !this.previewPanelVisible) {
+			this.previewPanelAbierto = false;
+			this.previewPanelVisible = false;
+			this.limpiarPreviewEmpleado();
+			return;
+		}
+
+		this.previewPanelAbierto = false;
+		this.previewPanelCloseTimer = setTimeout(() => {
+			this.previewPanelVisible = false;
+			this.limpiarPreviewEmpleado();
+			this.previewPanelCloseTimer = null;
+		}, 280);
+	}
+
+	// Qué hace: el botón expandir abre el mismo detalle que el doble clic.
+	abrirDetalleDesdePreview(): void {
+		if (!this.previewEmpleado) {
+			return;
+		}
+		const data = this.fillData(this.previewEmpleado);
+		this.cerrarPreviewPanel(false);
+		this.rowDblClick({ data, row: { data } });
+	}
+
+	get inicialesPreviewEmpleado(): string {
+		const nombre = (this.previewEmpleado?.NOMBRE_EMPLEADO || '').trim();
+		if (!nombre) {
+			return '?';
+		}
+		const partes = nombre.split(/\s+/).filter(Boolean);
+		const a = partes[0]?.charAt(0).toUpperCase() ?? '';
+		const b = partes.length > 1 ? partes[partes.length - 1].charAt(0).toUpperCase() : '';
+		return `${a}${b}` || '?';
+	}
+
+	get previewCorreoEmpleado(): string {
+		return `${this.previewEmpleado?.CORREO_INSTITUCIONAL ?? ''}`.trim();
 	}
 
 	onEditClick(e: any): void {
@@ -732,6 +840,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	// Qué hace: elimina empleado desde la grilla (confirmación nativa DevExtreme).
 	// Cómo: rowRemovingMtto + DELETE API; quita la fila en memoria sin GetAll.
 	rowRemoving(e: any): void {
+		this.cerrarPreviewPanel(false);
 		this.rowRemovingMtto(e, {
 			deleteFn: () => this.service.delete(this.fillParam(e.data.CORR_EMPLEADO)),
 		});
@@ -1176,6 +1285,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	private abrirFormulario(rowData: GenEmpleado, modo: UpdateType): void {
+		this.cerrarPreviewPanel(false);
 		this.model = this.fillData(rowData);
 		this.modelUpdate = this.fillData(rowData);
 		this.AsignaStatus(modo);
@@ -1605,6 +1715,62 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			URL.revokeObjectURL(this.fotoLocalUrl);
 			this.fotoLocalUrl = null;
 		}
+	}
+
+	private clearPreviewPanelCloseTimer(): void {
+		if (this.previewPanelCloseTimer) {
+			clearTimeout(this.previewPanelCloseTimer);
+			this.previewPanelCloseTimer = null;
+		}
+	}
+
+	private limpiarPreviewEmpleado(): void {
+		this.previewEmpleado = null;
+		this.cargandoPreviewFoto = false;
+		this.revocarPreviewFoto();
+	}
+
+	private revocarPreviewFoto(): void {
+		if (this.previewFotoUrl) {
+			URL.revokeObjectURL(this.previewFotoUrl);
+			this.previewFotoUrl = null;
+		}
+	}
+
+	// Qué hace: pide la fotografía del empleado para el panel lateral.
+	// Cómo: GetFoto por CORR_PERSONA; un id de petición descarta respuestas viejas al cambiar de fila.
+	private cargarPreviewFoto(corrPersona: number): void {
+		this.revocarPreviewFoto();
+		this.previewFotoRequestId += 1;
+		const requestId = this.previewFotoRequestId;
+
+		if (corrPersona <= 0) {
+			this.cargandoPreviewFoto = false;
+			return;
+		}
+
+		this.cargandoPreviewFoto = true;
+		this.service
+			.getFoto(corrPersona)
+			.pipe(take(1))
+			.subscribe({
+				next: (blob) => {
+					if (requestId !== this.previewFotoRequestId) {
+						return;
+					}
+					this.cargandoPreviewFoto = false;
+					if (blob && blob.size > 0 && (blob.type || '').startsWith('image/')) {
+						this.previewFotoUrl = URL.createObjectURL(blob);
+					}
+				},
+				error: () => {
+					if (requestId !== this.previewFotoRequestId) {
+						return;
+					}
+					this.cargandoPreviewFoto = false;
+					this.previewFotoUrl = null;
+				},
+			});
 	}
 
 	// Qué hace: carga catálogo activo + valores de documentos de la persona.

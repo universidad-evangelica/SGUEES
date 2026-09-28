@@ -177,6 +177,19 @@ namespace sguees.Controllers
 			return await _service.GetAllAsync(Data);
 		}
 
+		// Qué hace: activa o desactiva el empleado seleccionado en el browse.
+		// Cómo: PUT ActivarInactivar; el SP invierte ACTIVO_EMPLEADO y devuelve la fila de la vista.
+		[HttpPut("ActivarInactivar")]
+		[Authorize(Policy = "/gen-empleado|U")]
+		public async Task<IActionResult> ActivarInactivar(GEN_EMPLEADOTable Data)
+		{
+			this.ApplyQueryKeys(Data, nameof(GEN_EMPLEADOTable.CORR_EMPLEADO));
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+
+			var resultado = await _service.ActivarInactivarAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
 		[HttpGet("GetCORR_EMPLEADO_BAN_CHEQUE")]
 		[Authorize(Policy = "/ban-cheque|R")]
 		public async Task<CResult> GetCORR_EMPLEADO_BAN_CHEQUE([FromQuery] GEN_EMPLEADOParam Data)

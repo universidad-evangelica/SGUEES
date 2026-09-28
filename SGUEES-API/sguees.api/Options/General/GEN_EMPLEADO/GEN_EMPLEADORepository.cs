@@ -15,6 +15,9 @@ namespace sguees.Repositories
 	{
 		private const string _TableName = "GEN_EMPLEADO";
 		private const string _ViewName = "V_GEN_EMPLEADO";
+		private const string _CampoPk = "CORR_EMPLEADO";
+		private const string _CampoEstado = "ACTIVO_EMPLEADO";
+		private const bool _UsaEmpresa = true;
 		private const string _ViewPersonaNatural = "V_GEN_PERSONA_NATURAL";
 		private const string _SpEmpleado = "PRAL_MTTO_GEN_EMPLEADO";
 
@@ -437,6 +440,78 @@ namespace sguees.Repositories
 				new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
 				new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
 			};
+		}
+
+		// Qué hace: invierte ACTIVO_EMPLEADO del empleado seleccionado.
+		// Cómo: PRAL_MTTO_CATALOGO_ESTADO_BIT y relee la fila desde V_GEN_EMPLEADO.
+		public async Task<CResult> ActivarInactivarAsync(GEN_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			CResult objResultado = new();
+
+			try
+			{
+				var p = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "NOMBRE_TABLA", Value = _TableName, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "CAMPO_PK", Value = _CampoPk, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "CAMPO_ESTADO", Value = _CampoEstado, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "USA_EMPRESA", Value = _UsaEmpresa, DbType = System.Data.DbType.Boolean },
+					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_RELATIVO", Value = Data.CORR_EMPLEADO, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "@SYS_LOGIN_USUARIO", Value = vLOGIN_SISTEMA, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "@SYS_ESTACION", Value = vESTACION ?? string.Empty, DbType = System.Data.DbType.String },
+					new CParameter() { ParameterName = "@SYS_FILAS_AFECTADAS", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+					new CParameter() { ParameterName = "@SYS_NUMERO_ERROR", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.InputOutput },
+					new CParameter() { ParameterName = "@SYS_MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.InputOutput, Size = 4000 },
+				};
+
+				await objData.ExecCmd(System.Data.CommandType.StoredProcedure, "PRAL_MTTO_CATALOGO_ESTADO_BIT", true, p);
+
+				if ((int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value == 0)
+				{
+					var xWhere = new List<CParameter>
+					{
+						new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
+						new CParameter() { ParameterName = "CORR_EMPLEADO", Value = Data.CORR_EMPLEADO, DbType = System.Data.DbType.Int32 },
+					};
+
+					var readerGet = await objData.GetDataReader(_ViewName, xWhere);
+					var response = new List<GEN_EMPLEADOView>().FromDataReader(readerGet).FirstOrDefault();
+					readerGet.Close();
+
+					objResultado.Data = response;
+					objResultado.Result = true;
+					objResultado.RowsAffected = 1;
+					objResultado.CodeHelper = response?.CORR_EMPLEADO ?? Data.CORR_EMPLEADO;
+					objResultado.ErrorCode = 0;
+					objResultado.ErrorMessage = string.Empty;
+					objResultado.ErrorSource = string.Empty;
+				}
+				else
+				{
+					objResultado.Data = null;
+					objResultado.Result = false;
+					objResultado.RowsAffected = 0;
+					objResultado.CodeHelper = Data.CORR_EMPLEADO;
+					objResultado.ErrorCode = (int)objData.objCommand.Parameters["@SYS_NUMERO_ERROR"].Value;
+					objResultado.ErrorMessage = (string)objData.objCommand.Parameters["@SYS_MENSAJE_ERROR"].Value;
+					objResultado.ErrorSource = "C" + _TableName + ".Mtto(" + UpdateType.Update.ToString() + ")";
+				}
+			}
+			catch (Exception e)
+			{
+				objResultado.Data = null;
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource = e.Source;
+			}
+			finally
+			{
+				objData.objConnection.Close();
+			}
+
+			return objResultado;
 		}
 
 		private async Task<int> GetNextCorrEmpleadoAsync(int corrEmpresa)

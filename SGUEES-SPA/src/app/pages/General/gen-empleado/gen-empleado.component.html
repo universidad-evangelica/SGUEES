@@ -1,6 +1,6 @@
 <!-- Contenedor principal: browse + formulario empleado (diseño mejorado tipo expediente). -->
-<div class="sguees-mtto-view empleado-mtto">
-	<!-- Toolbar: Guardar / Cancelar / Nuevo / Refrescar (sin botón de proceso selección). -->
+<div class="sguees-mtto-view empleado-mtto" [class.empleado-mtto--browse]="isBrowse()">
+	<!-- Toolbar: Nuevo / Guardar / Cancelar / Activar-Desactivar / Refrescar. -->
 	<app-barra-data-mtto
 		[tituloVentana]="tituloVentana"
 		[showRibbon]="true"
@@ -9,9 +9,9 @@
 		[isForm]="isForm()"
 		[permiteAdd]="permiteAdd"
 		[showRefresh]="true"
-		[showEstadoToolbar]="false"
+		[showEstadoToolbar]="true"
 		[campoEstado]="mttoCampoEstado"
-		[puedeCambiarEstado]="false"
+		[puedeCambiarEstado]="permiteEdit"
 		[focusedRow]="isBrowse() ? model : null"
 		(consultar)="consultar()"
 		(nuevo)="nuevo()"
@@ -707,9 +707,9 @@
 		[showAdd]="false"
 		[showRefresh]="false"
 		[showExport]="false"
-		[showEstadoToolbar]="false"
+		[showEstadoToolbar]="true"
 		[campoEstado]="mttoCampoEstado"
-		[puedeCambiarEstado]="false"
+		[puedeCambiarEstado]="permiteEdit"
 		[focusedRowKey]="gridFocusedRowKey"
 		[permitePrint]="permitePrint"
 		[permiteEditar]="getPermiteEditar"
@@ -717,12 +717,121 @@
 		[responsiveColumnHiding]="false"
 		[columnHidingEnabled]="false"
 		[exportFileName]="'Empleados'"
+		(rowClick)="onGridRowClick($event)"
 		(rowDblClick)="rowDblClick($event)"
 		(rowRemoving)="rowRemoving($event)"
 		(focusedRowChanged)="focusedRowChanged($event)"
 		(editClick)="onEditClick($event)"
 	>
 	</app-data-grid-mtto>
+
+	<!-- motivo: panel lateral rápido al hacer clic en una fila del browse -->
+	<aside
+		*ngIf="previewPanelVisible"
+		class="empleado-preview-panel"
+		[class.empleado-preview-panel--open]="previewPanelAbierto"
+		[attr.aria-hidden]="!previewPanelAbierto"
+		role="complementary"
+		aria-label="Vista rápida del empleado"
+	>
+		<header class="empleado-preview-panel__header">
+			<div class="empleado-preview-panel__heading">
+				<h2 class="empleado-preview-panel__name" [title]="textoLectura(previewEmpleado?.NOMBRE_EMPLEADO)">
+					{{ textoLectura(previewEmpleado?.NOMBRE_EMPLEADO) }}
+				</h2>
+				<span
+					class="empleado-preview-panel__status"
+					[class.empleado-preview-panel__status--off]="!previewEmpleado?.ACTIVO_EMPLEADO"
+				>
+					<span class="empleado-preview-panel__status-dot" aria-hidden="true"></span>
+					{{ previewEmpleado?.ACTIVO_EMPLEADO ? 'Activo' : 'Inactivo' }}
+				</span>
+			</div>
+
+			<div class="empleado-preview-panel__tools">
+				<button
+					type="button"
+					class="empleado-preview-panel__icon-btn"
+					(click)="abrirDetalleDesdePreview()"
+					title="Abrir detalle"
+					aria-label="Abrir detalle del empleado"
+				>
+					<i class="dx-icon dx-icon-expandform"></i>
+				</button>
+				<button
+					type="button"
+					class="empleado-preview-panel__icon-btn"
+					(click)="cerrarPreviewPanel(true)"
+					title="Cerrar"
+					aria-label="Cerrar vista rápida"
+				>
+					<i class="dx-icon dx-icon-close"></i>
+				</button>
+			</div>
+		</header>
+
+		<div class="empleado-preview-panel__body">
+			<section class="empleado-preview-panel__profile">
+				<div
+					*ngIf="previewFotoUrl"
+					class="empleado-preview-panel__avatar empleado-preview-panel__avatar--foto"
+				>
+					<img [src]="previewFotoUrl" alt="Fotografía del empleado" />
+				</div>
+				<div
+					*ngIf="!previewFotoUrl"
+					class="empleado-preview-panel__avatar"
+					[class.empleado-preview-panel__avatar--loading]="cargandoPreviewFoto"
+					aria-hidden="true"
+				>
+					{{ cargandoPreviewFoto ? '' : inicialesPreviewEmpleado }}
+				</div>
+
+				<dl class="empleado-preview-panel__fields">
+					<div class="empleado-preview-panel__field">
+						<dt>Empleado</dt>
+						<dd>#{{ previewEmpleado?.CORR_EMPLEADO }}</dd>
+					</div>
+					<div class="empleado-preview-panel__field">
+						<dt>DUI</dt>
+						<dd>{{ textoLectura(previewEmpleado?.DUI) }}</dd>
+					</div>
+					<div class="empleado-preview-panel__field">
+						<dt>Ingreso</dt>
+						<dd>{{ fechaLectura(previewEmpleado?.FECHA_INGRESO) }}</dd>
+					</div>
+					<div class="empleado-preview-panel__field">
+						<dt>Estado registro</dt>
+						<dd>
+							<span
+								class="empleado-preview-panel__activo"
+								[class.empleado-preview-panel__activo--off]="!previewEmpleado?.ACTIVO_EMPLEADO"
+							>
+								<span class="empleado-preview-panel__activo-dot" aria-hidden="true"></span>
+								{{ previewEmpleado?.ACTIVO_EMPLEADO ? 'Activo' : 'Inactivo' }}
+							</span>
+						</dd>
+					</div>
+				</dl>
+			</section>
+
+			<section class="empleado-preview-panel__contact" aria-label="Contacto">
+				<div class="empleado-preview-panel__contact-row">
+					<i class="dx-icon dx-icon-tel" aria-hidden="true"></i>
+					<span>{{ textoLectura(previewEmpleado?.TELEFONO_INSTITUCIONAL) }}</span>
+				</div>
+				<div class="empleado-preview-panel__contact-row">
+					<i class="dx-icon dx-icon-email" aria-hidden="true"></i>
+					<a
+						*ngIf="previewCorreoEmpleado"
+						class="empleado-preview-panel__mail"
+						[href]="'mailto:' + previewCorreoEmpleado"
+					>{{ previewCorreoEmpleado }}</a>
+					<span *ngIf="!previewCorreoEmpleado">—</span>
+				</div>
+			</section>
+		</div>
+	</aside>
 
 	<!-- motivo: modal edición datos empleado (personales + documentos + familiares) estilo sc-solicitud-empleo-editar-persona -->
 	<dx-popup
