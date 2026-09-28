@@ -4,21 +4,25 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using sguees.Models;
 using sguees.Repositories;
 
 namespace sguees.Services
 {
-    public class ACA_PROSPECTO_BECAService : IACA_PROSPECTO_BECAService
+    public partial class ACA_PROSPECTO_BECAService : IACA_PROSPECTO_BECAService
     {
         // Carpeta del servidor de admisiones. Z:\Documentacion Becas apunta a esta ruta.
         private const string RaizDocumentos = @"\\192.168.1.8\admision\Documentacion Becas";
 
         private readonly IACA_PROSPECTO_BECARepository _repo;
+        private readonly string _connectionString;
 
-        public ACA_PROSPECTO_BECAService(IACA_PROSPECTO_BECARepository repo)
+        public ACA_PROSPECTO_BECAService(IACA_PROSPECTO_BECARepository repo, IConfiguration config)
         {
             _repo = repo;
+            _connectionString = config.GetConnectionString("defaultConnection");
         }
 
         // Qué hace: solicitudes de beca de un ciclo, en borrador o enviadas.

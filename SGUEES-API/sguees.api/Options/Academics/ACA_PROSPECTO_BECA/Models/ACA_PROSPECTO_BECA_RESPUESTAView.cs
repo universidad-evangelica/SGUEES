@@ -9,8 +9,11 @@ namespace sguees.Models
         public int ORDEN_SECCION { get; set; }
         public string NOMBRE_SECCION { get; set; }
         public int ORDEN_PREGUNTA { get; set; }
+        public int CORR_PREGUNTA_BECA { get; set; }
+        public string CODIGO_PREGUNTA { get; set; }
         public string TEXTO_PREGUNTA { get; set; }
         public string TIPO_RESPUESTA { get; set; }
+        public int CORR_OPCION_BECA { get; set; }
         public string RESPUESTA { get; set; }
         public decimal PUNTAJE_OBTENIDO { get; set; }
         public decimal PORCENTAJE_APLICADO { get; set; }

@@ -1,6 +1,7 @@
 using System.IO;
 using System.Threading.Tasks;
 using eFramework.Core;
+using Microsoft.AspNetCore.Http;
 using sguees.Models;
 
 namespace sguees.Services
@@ -11,6 +12,9 @@ namespace sguees.Services
         Task<CResult> GetRespuestasAsync(ACA_PROSPECTO_BECAParam xWhere);
         Task<CResult> GetArchivosAsync(ACA_PROSPECTO_BECAParam xWhere);
         Task<AcaProspectoBecaArchivoAbierto> AbrirArchivoAsync(ACA_PROSPECTO_BECAParam xWhere);
+        Task<CResult> GetOpcionesAsync(int corrEmpresa, int corrPreguntaBeca);
+        Task<CResult> GuardarRespuestaAsync(int corrEmpresa, string usuario, AcaProspectoBecaRespuestaEdicion edicion);
+        Task<CResult> ReemplazarArchivoAsync(int corrEmpresa, string usuario, int corrProspectoBeca, int corrRespuestaBeca, IFormFile archivo);
     }
 
     // Qué hace: archivo listo para mostrarse en el navegador.

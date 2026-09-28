@@ -6,11 +6,25 @@
 
 .aca-beca-head {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     margin-bottom: var(--sguees-space-4, 16px);
     padding-bottom: var(--sguees-space-3, 12px);
     border-bottom: 1px solid var(--border-color);
+}
+
+.aca-beca-head-texto {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.aca-beca-head-acciones {
+    display: flex;
+    flex-shrink: 0;
+    gap: 8px;
 }
 
 .aca-beca-title {
@@ -20,8 +34,123 @@
 }
 
 .aca-beca-subtitle {
+    margin: 0;
     font-size: 12px;
     color: var(--sguees-text-secondary, var(--texteditor-label-color));
+}
+
+.aca-beca-tabs {
+    background: var(--base-bg, transparent);
+}
+
+.aca-beca-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+}
+
+.aca-beca-secciones {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.aca-beca-seccion {
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--card-background, transparent);
+}
+
+.aca-beca-seccion-head,
+.aca-beca-pregunta {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(180px, 1fr) auto;
+    gap: 16px;
+    align-items: center;
+    padding: 12px 16px;
+}
+
+.aca-beca-seccion-head {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--sguees-text-primary, var(--base-text-color));
+    background: color-mix(in srgb, var(--accent-color, #337ab7) 10%, transparent);
+}
+
+.aca-beca-pregunta + .aca-beca-pregunta {
+    border-top: 1px solid var(--border-color);
+}
+
+.aca-beca-pregunta-texto,
+.aca-beca-respuesta {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.aca-beca-pregunta-texto {
+    color: var(--sguees-text-primary, var(--base-text-color));
+}
+
+.aca-beca-respuesta {
+    color: var(--sguees-text-secondary, var(--texteditor-label-color));
+}
+
+.aca-beca-chip {
+    min-width: 64px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    color: var(--accent-color, #337ab7);
+    background: color-mix(in srgb, var(--accent-color, #337ab7) 16%, transparent);
+}
+
+.aca-beca-acciones {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+.aca-beca-acepto {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--sguees-text-primary, var(--base-text-color));
+}
+
+.aca-beca-controles {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.aca-beca-archivo {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--accent-color, #337ab7);
+    background: color-mix(in srgb, var(--accent-color, #337ab7) 12%, transparent);
+}
+
+.aca-beca-archivo input {
+    display: none;
+}
+
+.aca-beca-chip-cero {
+    font-weight: 600;
+    color: var(--sguees-text-secondary, var(--texteditor-label-color));
+    background: transparent;
 }
 
 .aca-beca-vacio {

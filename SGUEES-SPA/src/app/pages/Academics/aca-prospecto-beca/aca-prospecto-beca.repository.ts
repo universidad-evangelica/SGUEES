@@ -28,4 +28,16 @@ export class AcaProspectoBecaRepository {
     getArchivo(xWhere: IParam[]): Observable<Blob> {
         return this.objData.GetBlob(this.xController, 'GetArchivo', xWhere, environment.UrlGENERALAPI);
     }
+
+    getOpciones(xWhere: IParam[]): Observable<IResult> {
+        return this.objData.Get(this.xController, 'GetOpciones', xWhere, environment.UrlGENERALAPI);
+    }
+
+    guardarRespuesta(model: unknown): Observable<IResult> {
+        return this.objData.Put(model, this.xController, 'GuardarRespuesta', [], environment.UrlGENERALAPI);
+    }
+
+    reemplazarArchivo(model: FormData): Observable<IResult> {
+        return this.objData.Post(model, this.xController, 'ReemplazarArchivo', environment.UrlGENERALAPI);
+    }
 }

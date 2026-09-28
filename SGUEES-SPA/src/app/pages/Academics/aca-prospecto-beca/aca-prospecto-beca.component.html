@@ -17,8 +17,17 @@
     <div *ngIf="!isBrowse()" class="aca-beca-shell">
         <section class="sguees-section-card">
             <header class="aca-beca-head">
-                <span class="aca-beca-title">Solicitud de beca</span>
-                <span class="aca-beca-subtitle">{{ model.ESTADO_BECA_TEXTO }} · consulta de solo lectura</span>
+                <div class="aca-beca-head-texto">
+                    <span class="aca-beca-title">Solicitud de beca</span>
+                    <span class="aca-beca-subtitle">{{ model.ESTADO_BECA_TEXTO }}<span *ngIf="modoEdicion"> · editando</span></span>
+                </div>
+                <div class="aca-beca-head-acciones" *ngIf="permiteEdit">
+                    <dx-button *ngIf="!modoEdicion" text="Editar" icon="edit" type="default" (onClick)="iniciarEdicion()"></dx-button>
+                    <ng-container *ngIf="modoEdicion">
+                        <dx-button text="Cancelar" stylingMode="outlined" [disabled]="guardandoEdicion" (onClick)="cancelarEdicion()"></dx-button>
+                        <dx-button text="Guardar" type="default" [disabled]="guardandoEdicion" (onClick)="guardarFormulario()"></dx-button>
+                    </ng-container>
+                </div>
             </header>
             <dx-form
                 class="sguees-form-premium"
@@ -31,69 +40,98 @@
             </dx-form>
         </section>
 
-        <section class="sguees-section-card">
-            <header class="aca-beca-head">
-                <span class="aca-beca-title">Archivos cargados</span>
-                <span class="aca-beca-subtitle" *ngIf="archivos.length; else sinCarpeta">
-                    Carpeta {{ archivos[0].CARPETA }} · agrupados por sección del cuestionario
-                </span>
-                <ng-template #sinCarpeta>
-                    <span class="aca-beca-subtitle">Los documentos se leen de la carpeta del ciclo y la solicitud</span>
-                </ng-template>
-            </header>
-            <dx-data-grid
-                *ngIf="archivos.length; else sinArchivos"
-                [dataSource]="archivos"
-                [showBorders]="true"
-                [columnAutoWidth]="false"
-                [wordWrapEnabled]="true"
-                keyExpr="CORR_RESPUESTA_BECA"
-            >
-                <dxo-grouping [autoExpandAll]="true"></dxo-grouping>
-                <dxo-group-panel [visible]="false"></dxo-group-panel>
-                <dxo-paging [pageSize]="20"></dxo-paging>
-                <dxi-column dataField="NOMBRE_SECCION" caption="Sección" [groupIndex]="0"></dxi-column>
-                <dxi-column dataField="TEXTO_PREGUNTA" caption="Pregunta" [width]="420"></dxi-column>
-                <dxi-column dataField="ARCHIVO_NOMBRE" caption="Archivo" [width]="320"></dxi-column>
-                <dxi-column caption="" [width]="110" cellTemplate="abrirArchivo" [allowFiltering]="false" [allowSorting]="false"></dxi-column>
-                <div *dxTemplate="let cell of 'abrirArchivo'">
-                    <dx-button text="Abrir" icon="export" stylingMode="text" type="default" (onClick)="abrirArchivo(cell.data)"></dx-button>
+        <dx-tab-panel
+            class="aca-beca-tabs"
+            [selectedIndex]="pestanaDetalle"
+            (onSelectionChanged)="onPestanaDetalleChanged($event)"
+            [deferRendering]="false"
+            [animationEnabled]="false"
+            [swipeEnabled]="false"
+        >
+            <dxi-item title="Cuestionario" icon="bulletlist">
+                <div class="aca-beca-tab">
+                    <div class="aca-beca-secciones" *ngIf="seccionesCuestionario.length; else sinRespuestas">
+                        <article class="aca-beca-seccion" *ngFor="let seccion of seccionesCuestionario">
+                            <header class="aca-beca-seccion-head">
+                                <span>{{ seccion.nombre }}</span>
+                                <span class="aca-beca-chip" [class.aca-beca-chip-cero]="seccion.puntaje === 0">{{ seccion.puntaje | number:'1.2-2' }}</span>
+                            </header>
+                            <div class="aca-beca-pregunta" *ngFor="let pregunta of seccion.preguntas; trackBy: trackPregunta">
+                                <p class="aca-beca-pregunta-texto">{{ pregunta.texto }}</p>
+                                <ng-container *ngIf="modoEdicion && borrador[pregunta.corrPregunta] as control; else lectura">
+                                    <div class="aca-beca-controles" *ngIf="esOpcion(control.tipo)">
+                                        <dx-select-box
+                                            *ngFor="let fila of control.filas"
+                                            [items]="opcionesPorPregunta[pregunta.corrPregunta]"
+                                            displayExpr="TEXTO_OPCION"
+                                            valueExpr="CORR_OPCION_BECA"
+                                            [(value)]="fila.CORR_OPCION_BECA"
+                                            [searchEnabled]="true"
+                                            [disabled]="guardandoEdicion"
+                                            width="100%"
+                                        ></dx-select-box>
+                                    </div>
+                                    <div class="aca-beca-controles" *ngIf="esNumero(control.tipo)">
+                                        <dx-number-box *ngFor="let fila of control.filas" [(value)]="fila.numero" [min]="0" [max]="control.tipo === 'DECIMAL' ? 10 : 9999" [disabled]="guardandoEdicion" width="100%"></dx-number-box>
+                                    </div>
+                                    <div class="aca-beca-controles" *ngIf="control.tipo === 'TEXTO_LARGO'">
+                                        <dx-text-area *ngFor="let fila of control.filas" [(value)]="fila.texto" [height]="90" [disabled]="guardandoEdicion" width="100%"></dx-text-area>
+                                    </div>
+                                    <div class="aca-beca-controles" *ngIf="control.tipo === 'ACEPTACION'">
+                                        <label class="aca-beca-acepto" *ngFor="let fila of control.filas">
+                                            <input type="checkbox" [checked]="fila.texto === 'Acepto'" [disabled]="guardandoEdicion" (change)="marcarAceptacion(fila, $event)" />
+                                            Acepto
+                                        </label>
+                                    </div>
+                                    <div class="aca-beca-controles" *ngIf="control.tipo === 'TEXTO'">
+                                        <dx-text-box *ngFor="let fila of control.filas" [(value)]="fila.texto" [disabled]="guardandoEdicion" width="100%"></dx-text-box>
+                                    </div>
+                                </ng-container>
+                                <ng-template #lectura>
+                                    <p class="aca-beca-respuesta">{{ pregunta.respuestas.join(', ') || '—' }}</p>
+                                </ng-template>
+                                <span class="aca-beca-acciones">
+                                    <span class="aca-beca-chip" [class.aca-beca-chip-cero]="pregunta.puntaje === 0">{{ pregunta.puntaje | number:'1.2-2' }}</span>
+                                </span>
+                            </div>
+                        </article>
+                    </div>
+                    <ng-template #sinRespuestas>
+                        <p class="aca-beca-vacio">Esta solicitud aún no tiene respuestas guardadas.</p>
+                    </ng-template>
                 </div>
-            </dx-data-grid>
-            <ng-template #sinArchivos>
-                <p class="aca-beca-vacio">Esta solicitud no tiene archivos cargados.</p>
-            </ng-template>
-        </section>
-
-        <section class="sguees-section-card">
-            <header class="aca-beca-head">
-                <span class="aca-beca-title">Cuestionario</span>
-                <span class="aca-beca-subtitle">Respuestas guardadas y puntaje de cada una. En opción múltiple hay una fila por opción marcada.</span>
-            </header>
-            <dx-data-grid
-                *ngIf="respuestas.length; else sinRespuestas"
-                [dataSource]="respuestas"
-                [showBorders]="true"
-                [columnAutoWidth]="false"
-                [wordWrapEnabled]="true"
-                keyExpr="CORR_RESPUESTA_BECA"
-            >
-                <dxo-grouping [autoExpandAll]="true"></dxo-grouping>
-                <dxo-group-panel [visible]="false"></dxo-group-panel>
-                <dxo-paging [pageSize]="50"></dxo-paging>
-                <dxo-summary>
-                    <dxi-group-item column="PUNTAJE_OBTENIDO" summaryType="sum" valueFormat="#,##0.00" displayFormat="Puntaje de la sección: {0}"></dxi-group-item>
-                </dxo-summary>
-                <dxi-column dataField="NOMBRE_SECCION" caption="Sección" [groupIndex]="0"></dxi-column>
-                <dxi-column dataField="TEXTO_PREGUNTA" caption="Pregunta" [width]="420"></dxi-column>
-                <dxi-column dataField="RESPUESTA" caption="Respuesta" [width]="280"></dxi-column>
-                <dxi-column dataField="PUNTAJE_OBTENIDO" caption="Puntaje" dataType="number" format="#,##0.00" [width]="110"></dxi-column>
-                <dxi-column dataField="PORCENTAJE_APLICADO" caption="Porcentaje" dataType="number" format="#,##0.00" [width]="120"></dxi-column>
-            </dx-data-grid>
-            <ng-template #sinRespuestas>
-                <p class="aca-beca-vacio">Esta solicitud aún no tiene respuestas guardadas.</p>
-            </ng-template>
-        </section>
+            </dxi-item>
+            <dxi-item title="Archivos" icon="attach">
+                <div class="aca-beca-tab">
+                    <p class="aca-beca-subtitle" *ngIf="archivos.length; else sinCarpeta">Carpeta {{ archivos[0].CARPETA }}</p>
+                    <ng-template #sinCarpeta>
+                        <p class="aca-beca-subtitle">Los documentos se leen de la carpeta del ciclo y la solicitud</p>
+                    </ng-template>
+                    <div class="aca-beca-secciones" *ngIf="seccionesArchivo.length; else sinArchivos">
+                        <article class="aca-beca-seccion" *ngFor="let seccion of seccionesArchivo">
+                            <header class="aca-beca-seccion-head">
+                                <span>{{ seccion.nombre }}</span>
+                                <span class="aca-beca-chip aca-beca-chip-cero">{{ seccion.archivos.length }} {{ seccion.archivos.length === 1 ? 'archivo' : 'archivos' }}</span>
+                            </header>
+                            <div class="aca-beca-pregunta" *ngFor="let archivo of seccion.archivos">
+                                <p class="aca-beca-pregunta-texto">{{ archivo.TEXTO_PREGUNTA }}</p>
+                                <p class="aca-beca-respuesta">{{ archivo.ARCHIVO_NOMBRE }}</p>
+                                <span class="aca-beca-acciones">
+                                    <dx-button text="Abrir" icon="export" stylingMode="text" type="default" (onClick)="abrirArchivo(archivo)"></dx-button>
+                                    <label class="aca-beca-archivo" *ngIf="modoEdicion">
+                                        Cambiar
+                                        <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" (change)="onArchivoFila($event, archivo)" [disabled]="guardandoEdicion" />
+                                    </label>
+                                </span>
+                            </div>
+                        </article>
+                    </div>
+                    <ng-template #sinArchivos>
+                        <p class="aca-beca-vacio">Esta solicitud no tiene archivos cargados.</p>
+                    </ng-template>
+                </div>
+            </dxi-item>
+        </dx-tab-panel>
     </div>
 
     <app-data-grid-mtto

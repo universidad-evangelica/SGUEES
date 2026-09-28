@@ -28,6 +28,22 @@ export class AcaProspectoBecaService {
         return this.repo.getArchivos(xWhere);
     }
 
+    getOpciones(CORR_PREGUNTA_BECA: number): Observable<IResult> {
+        return this.repo.getOpciones([{ Parameter: 'CORR_PREGUNTA_BECA', Value: CORR_PREGUNTA_BECA }]);
+    }
+
+    guardarRespuesta(model: unknown): Observable<IResult> {
+        return this.repo.guardarRespuesta(model);
+    }
+
+    reemplazarArchivo(CORR_PROSPECTO_BECA: number, CORR_RESPUESTA_BECA: number, archivo: File): Observable<IResult> {
+        const data = new FormData();
+        data.append('CORR_PROSPECTO_BECA', String(CORR_PROSPECTO_BECA));
+        data.append('CORR_RESPUESTA_BECA', String(CORR_RESPUESTA_BECA));
+        data.append('Archivo', archivo, archivo.name);
+        return this.repo.reemplazarArchivo(data);
+    }
+
     getArchivo(CORR_PROSPECTO_BECA: number, CORR_RESPUESTA_BECA: number): Observable<Blob> {
         const xWhere: IParam[] = [
             { Parameter: 'CORR_PROSPECTO_BECA', Value: CORR_PROSPECTO_BECA },
