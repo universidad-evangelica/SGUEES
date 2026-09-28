@@ -7,9 +7,11 @@ import { catchError, take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
 import { environment } from 'src/environments/environment';
 import { PlaPuesto } from './models/pla-puesto';
+import { PlaPuestoSalario } from './pla-puesto-salario/models/pla-puesto-salario';
 import { PlaPuestoService } from './pla-puesto.service';
 
 const ESTADO_FIELD = 'ACTIVO_PUESTO';
@@ -34,6 +36,13 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 
 	mCORR_TIPO_PUESTO: any[] = [];
 	readOnly = false;
+
+	// Qué hace: salarios del puesto abierto y unidades que ya lo tienen.
+	salarios: PlaPuestoSalario[] = [];
+	mUnidadesSalario: any[] = [];
+	submodalSalarioVisible = false;
+	submodalSalarioEditIndex: number | null = null;
+	submodalSalarioDraft: Partial<PlaPuestoSalario> = {};
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Puesto';
 
@@ -203,6 +212,7 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			this.modelUpdate = this.fillData(rowData);
 		}
 		super.rowDblClick(e);
+		this.cargarSalariosDelPuesto();
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
 			this.bloquear();
@@ -215,6 +225,7 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 		}
 		this.model = this.fillData(e.row.data);
 		this.editarClick(e);
+		this.cargarSalariosDelPuesto();
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
 			this.habilitar();
@@ -226,6 +237,9 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 		super.nuevo();
+		this.salarios = [];
+		this.mUnidadesSalario = [];
+		this.cerrarSubmodalSalario();
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
 		});
@@ -327,6 +341,282 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			].forEach((field) => this.dataForm.instance.getEditor(field)?.option('readOnly', false));
 			this.dataForm.instance.getEditor('ACTIVO_PUESTO')?.option('readOnly', estadoSoloLectura);
 		});
+	}
+
+	get tienePuestoGuardado(): boolean {
+		return Number(this.model?.CORR_PUESTO ?? 0) > 0;
+	}
+
+	get tituloSubmodalSalario(): string {
+		return this.submodalSalarioEditIndex != null ? 'Editar salario' : 'Agregar salario';
+	}
+
+	get unidadesDisponiblesSalario(): any[] {
+		const ocupadas = new Set<number>();
+		(this.salarios ?? []).forEach((s, idx) => {
+			if (idx === this.submodalSalarioEditIndex) {
+				return;
+			}
+			const corr = Number(s.CORR_UNIDAD ?? 0);
+			if (corr > 0) {
+				ocupadas.add(corr);
+			}
+		});
+		return (this.mUnidadesSalario ?? []).filter((u) => !ocupadas.has(Number(u.CORR_UNIDAD)));
+	}
+
+	// Qué hace: carga salarios y las unidades que tienen este puesto.
+	// Cómo: GetAll de PLA_PUESTO_SALARIO y lookup GEN_UNIDADES_PUESTO por CORR_PUESTO.
+	private cargarSalariosDelPuesto(): void {
+		const corrPuesto = Number(this.model?.CORR_PUESTO ?? 0);
+		if (corrPuesto <= 0) {
+			this.salarios = [];
+			this.mUnidadesSalario = [];
+			return;
+		}
+
+		this.service
+			.getSalarios(corrPuesto)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.salarios = response?.Result ? this.normalizarSalarios(response.Data ?? []) : [];
+				},
+				error: () => {
+					this.salarios = [];
+				},
+			});
+
+		this.appInfoService
+			.getLookUp(
+				'PLA_PUESTO',
+				'GEN_UNIDADES_PUESTO',
+				'GetCORR_UNIDAD',
+				[{ Parameter: 'CORR_PUESTO', Value: corrPuesto }],
+				environment.UrlGENERALAPI
+			)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					const rows = response?.Result ? response.Data ?? [] : [];
+					const vistos = new Set<number>();
+					this.mUnidadesSalario = rows.filter((item: any) => {
+						const corr = Number(item?.CORR_UNIDAD ?? 0);
+						if (corr <= 0 || vistos.has(corr)) {
+							return false;
+						}
+						vistos.add(corr);
+						return true;
+					});
+				},
+				error: () => {
+					this.mUnidadesSalario = [];
+				},
+			});
+	}
+
+	abrirSubmodalSalarioNuevo(): void {
+		if (!this.tienePuestoGuardado || this.readOnly) {
+			this.notifyFx('Guarde el puesto antes de agregar salarios.', NotifyType.Warning);
+			return;
+		}
+		this.submodalSalarioEditIndex = null;
+		this.submodalSalarioDraft = {
+			CORR_UNIDAD: null,
+			SALARIO_INICIAL: null,
+			SALARIO_ACTUAL: null,
+			SALARIO_FINAL: null,
+			FECHA_INGRESO: this.fechaHoyElSalvador() as any,
+			ACTIVO_PUESTO_SALARIO: true,
+		};
+		this.submodalSalarioVisible = true;
+	}
+
+	abrirSubmodalSalarioEditar(index: number): void {
+		const actual = this.salarios[index];
+		if (!actual || this.readOnly) {
+			return;
+		}
+		this.submodalSalarioEditIndex = index;
+		const iso = this.normalizarFecha(actual.FECHA_INGRESO);
+		this.submodalSalarioDraft = {
+			...actual,
+			FECHA_INGRESO: (iso ? this.fechaDesdeIso(iso) : this.fechaHoyElSalvador()) as any,
+		};
+		this.submodalSalarioVisible = true;
+	}
+
+	cerrarSubmodalSalario(): void {
+		this.submodalSalarioVisible = false;
+		this.submodalSalarioEditIndex = null;
+		this.submodalSalarioDraft = {};
+	}
+
+	guardarSubmodalSalario(): void {
+		const corrUnidad = Number(this.submodalSalarioDraft?.CORR_UNIDAD ?? 0);
+		if (corrUnidad <= 0) {
+			this.notifyFx('Seleccione la unidad.', NotifyType.Warning);
+			return;
+		}
+		const inicial = this.numeroSalario(this.submodalSalarioDraft?.SALARIO_INICIAL);
+		const actual = this.numeroSalario(this.submodalSalarioDraft?.SALARIO_ACTUAL);
+		const final = this.numeroSalario(this.submodalSalarioDraft?.SALARIO_FINAL);
+		if (inicial == null && actual == null && final == null) {
+			this.notifyFx('Ingrese al menos un salario.', NotifyType.Warning);
+			return;
+		}
+		if ([inicial, actual, final].some((n) => n != null && n < 0)) {
+			this.notifyFx('Los salarios no pueden ser negativos.', NotifyType.Warning);
+			return;
+		}
+
+		const row = {
+			CORR_PUESTO_SALARIO:
+				this.submodalSalarioEditIndex != null
+					? this.salarios[this.submodalSalarioEditIndex].CORR_PUESTO_SALARIO
+					: 0,
+			CORR_PUESTO: Number(this.model.CORR_PUESTO),
+			CORR_UNIDAD: corrUnidad,
+			SALARIO_INICIAL: inicial,
+			SALARIO_ACTUAL: actual,
+			SALARIO_FINAL: final,
+			FECHA_INGRESO:
+				this.normalizarFecha(this.submodalSalarioDraft?.FECHA_INGRESO) ||
+				this.normalizarFecha(this.fechaHoyElSalvador()),
+			ACTIVO_PUESTO_SALARIO: this.submodalSalarioDraft?.ACTIVO_PUESTO_SALARIO !== false,
+		};
+
+		this.loadingVisible = true;
+		const request =
+			row.CORR_PUESTO_SALARIO > 0 ? this.service.updateSalario(row) : this.service.insertSalario(row);
+		request.pipe(take(1)).subscribe({
+			next: (response: any) => {
+				this.loadingVisible = false;
+				if (!response?.Result) {
+					this.notifyApiResponse(response);
+					return;
+				}
+				const guardado = this.normalizarSalarios([response.Data])[0];
+				if (row.CORR_PUESTO_SALARIO > 0) {
+					this.salarios = this.salarios.map((s) =>
+						s.CORR_PUESTO_SALARIO === guardado.CORR_PUESTO_SALARIO ? guardado : s
+					);
+				} else {
+					this.salarios = [...this.salarios, guardado];
+				}
+				this.cerrarSubmodalSalario();
+			},
+			error: (error: any) => {
+				this.loadingVisible = false;
+				this.notifyApiError(error);
+			},
+		});
+	}
+
+	eliminarSalario(index: number): void {
+		const row = this.salarios[index];
+		if (!row || this.readOnly) {
+			return;
+		}
+		this.loadingVisible = true;
+		this.service
+			.deleteSalario(row.CORR_PUESTO_SALARIO)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					this.salarios = this.salarios.filter(
+						(s) => s.CORR_PUESTO_SALARIO !== row.CORR_PUESTO_SALARIO
+					);
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	resumenSalario(item: PlaPuestoSalario): string {
+		const partes = [
+			item?.SALARIO_INICIAL != null ? `Inicial ${this.textoMonto(item.SALARIO_INICIAL)}` : '',
+			item?.SALARIO_ACTUAL != null ? `Actual ${this.textoMonto(item.SALARIO_ACTUAL)}` : '',
+			item?.SALARIO_FINAL != null ? `Final ${this.textoMonto(item.SALARIO_FINAL)}` : '',
+			this.textoFecha(item?.FECHA_INGRESO),
+		].filter((t) => t && t !== '—');
+		return partes.join(' · ') || '—';
+	}
+
+	textoMonto(valor: any): string {
+		if (valor == null || valor === '') {
+			return '—';
+		}
+		const n = Number(valor);
+		if (Number.isNaN(n)) {
+			return '—';
+		}
+		return n.toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+	}
+
+	textoFecha(valor: any): string {
+		const iso = this.normalizarFecha(valor);
+		if (!iso) {
+			return '—';
+		}
+		const [anio, mes, dia] = iso.split('-');
+		return `${dia}/${mes}/${anio}`;
+	}
+
+	private normalizarSalarios(rows: any[]): PlaPuestoSalario[] {
+		return (rows ?? [])
+			.filter((r) => r)
+			.map((r) => ({
+				CORR_EMPRESA: Number(r.CORR_EMPRESA ?? 0),
+				CORR_PUESTO_SALARIO: Number(r.CORR_PUESTO_SALARIO ?? 0),
+				CORR_PUESTO: Number(r.CORR_PUESTO ?? 0),
+				CORR_UNIDAD: Number(r.CORR_UNIDAD) > 0 ? Number(r.CORR_UNIDAD) : null,
+				NOMBRE_UNIDAD: r.NOMBRE_UNIDAD ?? '',
+				SALARIO_INICIAL: this.numeroSalario(r.SALARIO_INICIAL),
+				SALARIO_ACTUAL: this.numeroSalario(r.SALARIO_ACTUAL),
+				SALARIO_FINAL: this.numeroSalario(r.SALARIO_FINAL),
+				FECHA_INGRESO: this.normalizarFecha(r.FECHA_INGRESO),
+				ACTIVO_PUESTO_SALARIO: r.ACTIVO_PUESTO_SALARIO !== false && r.ACTIVO_PUESTO_SALARIO !== 0,
+			}));
+	}
+
+	private numeroSalario(valor: any): number | null {
+		if (valor == null || valor === '' || Number.isNaN(Number(valor))) {
+			return null;
+		}
+		return Number(valor);
+	}
+
+	private fechaHoyElSalvador(): Date {
+		const iso = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/El_Salvador' }).format(new Date());
+		const [anio, mes, dia] = iso.split('-').map((n) => Number(n));
+		return new Date(anio, mes - 1, dia, 12, 0, 0);
+	}
+
+	private fechaDesdeIso(iso: string): Date {
+		const [anio, mes, dia] = iso.split('-').map((n) => Number(n));
+		return new Date(anio, mes - 1, dia, 12, 0, 0);
+	}
+
+	private normalizarFecha(valor: any): string | null {
+		if (valor == null || valor === '') {
+			return null;
+		}
+		if (valor instanceof Date && !Number.isNaN(valor.getTime())) {
+			const y = valor.getFullYear();
+			const m = `${valor.getMonth() + 1}`.padStart(2, '0');
+			const d = `${valor.getDate()}`.padStart(2, '0');
+			return `${y}-${m}-${d}`;
+		}
+		const iso = `${valor}`.trim().match(/^(\d{4}-\d{2}-\d{2})/);
+		return iso ? iso[1] : null;
 	}
 
 	override setFocus(): void {

@@ -125,6 +125,16 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Qué hace: entrega las unidades que ya tienen el puesto, para el tab Salarios de pla-puesto.
+        // Cómo: fija CORR_EMPRESA y reutiliza GetAllAsync filtrado por CORR_PUESTO.
+        [HttpGet("GetCORR_UNIDAD_PLA_PUESTO")]
+        [Authorize(Policy = "/pla-puesto|R")]
+        public async Task<CResult> GetCORR_UNIDAD_PLA_PUESTO([FromQuery] GEN_UNIDADES_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetAllAsync(Data);
+        }
+
         // Qué hace: obtiene CORR_EMPRESA del claim del usuario autenticado.
         // Cómo: busca el claim CORR_EMPRESA y lo parsea a int; si falta, retorna 0.
         private int GetCorrEmpresa()

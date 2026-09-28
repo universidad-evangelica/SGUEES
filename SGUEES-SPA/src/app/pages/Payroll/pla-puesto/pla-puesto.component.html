@@ -23,6 +23,9 @@
 
 	<!-- Formulario de creación/edición (oculto en browse). -->
 	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
+		<dx-tab-panel [swipeEnabled]="false">
+			<!-- motivo: datos del puesto -->
+			<dxi-item title="Puesto" [icon]="'card'">
 		<dx-form
 			#fData
 			id="fData"
@@ -46,6 +49,43 @@
 				></app-data-lookup>
 			</div>
 		</dx-form>
+			</dxi-item>
+
+			<!-- motivo: salarios del puesto según las unidades que lo tienen -->
+			<dxi-item title="Salarios" [icon]="'money'">
+				<div class="ps-panel">
+					<div class="ps-head">
+						<h4 class="ps-title">Salarios</h4>
+						<dx-button
+							text="Agregar"
+							icon="plus"
+							type="default"
+							stylingMode="outlined"
+							[disabled]="!tienePuestoGuardado || readOnly"
+							(onClick)="abrirSubmodalSalarioNuevo()"
+						></dx-button>
+					</div>
+					<p class="ps-hint" *ngIf="!tienePuestoGuardado">
+						Guarde el puesto para poder registrar salarios por unidad.
+					</p>
+					<div class="ps-cards" *ngIf="salarios?.length; else sinSalarios">
+						<article class="ps-card" *ngFor="let s of salarios; let i = index">
+							<div class="ps-card__body">
+								<div class="ps-card__title">{{ s.NOMBRE_UNIDAD || 'Sin unidad' }}</div>
+								<div class="ps-card__summary">{{ resumenSalario(s) }}</div>
+							</div>
+							<div class="ps-card__actions" *ngIf="!readOnly">
+								<dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirSubmodalSalarioEditar(i)"></dx-button>
+								<dx-button icon="trash" stylingMode="text" hint="Quitar" (onClick)="eliminarSalario(i)"></dx-button>
+							</div>
+						</article>
+					</div>
+					<ng-template #sinSalarios>
+						<p class="ps-empty" *ngIf="tienePuestoGuardado">Sin salarios registrados.</p>
+					</ng-template>
+				</div>
+			</dxi-item>
+		</dx-tab-panel>
 	</div>
 
 	<!-- Grilla del catálogo con acciones de mantenimiento. -->
@@ -81,6 +121,63 @@
 		(editClick)="onEditClick($event)"
 	></app-data-grid-mtto>
 </div>
+
+	<!-- motivo: alta/edición del salario del puesto en una unidad -->
+	<dx-popup
+		[(visible)]="submodalSalarioVisible"
+		[title]="tituloSubmodalSalario"
+		[width]="720"
+		[maxWidth]="'94vw'"
+		[height]="'auto'"
+		[maxHeight]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalSalario()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ps-submodal">
+			<div class="ps-grid">
+				<div class="ps-field ps-field--wide">
+					<label class="ps-label">Unidad <span class="req">*</span></label>
+					<dx-select-box
+						stylingMode="outlined"
+						[(value)]="submodalSalarioDraft.CORR_UNIDAD"
+						[items]="unidadesDisponiblesSalario"
+						displayExpr="NOMBRE_UNIDAD"
+						valueExpr="CORR_UNIDAD"
+						[searchEnabled]="true"
+						[showClearButton]="true"
+					></dx-select-box>
+				</div>
+				<div class="ps-field">
+					<label class="ps-label">Salario inicial</label>
+					<dx-number-box stylingMode="outlined" [(value)]="submodalSalarioDraft.SALARIO_INICIAL" format="#,##0.00" [min]="0" [showClearButton]="true"></dx-number-box>
+				</div>
+				<div class="ps-field">
+					<label class="ps-label">Salario actual</label>
+					<dx-number-box stylingMode="outlined" [(value)]="submodalSalarioDraft.SALARIO_ACTUAL" format="#,##0.00" [min]="0" [showClearButton]="true"></dx-number-box>
+				</div>
+				<div class="ps-field">
+					<label class="ps-label">Salario final</label>
+					<dx-number-box stylingMode="outlined" [(value)]="submodalSalarioDraft.SALARIO_FINAL" format="#,##0.00" [min]="0" [showClearButton]="true"></dx-number-box>
+				</div>
+				<div class="ps-field">
+					<label class="ps-label">Fecha de ingreso</label>
+					<dx-date-box
+						stylingMode="outlined"
+						type="date"
+						displayFormat="dd/MM/yyyy"
+						[(value)]="submodalSalarioDraft.FECHA_INGRESO"
+						[showClearButton]="false"
+					></dx-date-box>
+				</div>
+			</div>
+			<div class="ps-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalSalario()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalSalario()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
 
 <!-- Overlay de carga durante operaciones asíncronas. -->
 <dx-load-panel

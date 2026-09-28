@@ -28,3 +28,90 @@
 	border: 1px solid rgba(239, 68, 68, 0.35);
 	box-shadow: none;
 }
+
+.ps-panel {
+	padding: 12px 4px 4px;
+}
+
+.ps-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.ps-title {
+	margin: 0;
+	font-size: 15px;
+}
+
+.ps-hint,
+.ps-empty {
+	margin: 0;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+}
+
+.ps-cards {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.ps-card {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 12px;
+	border-radius: var(--sguees-radius-md, 10px);
+	border: 1px solid var(--sguees-border-subtle, var(--border-color));
+	background: color-mix(in srgb, var(--accent-color, #1976d2) 4%, var(--sguees-surface-subtle, var(--background-gray-color)));
+}
+
+.ps-card__body {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.ps-card__title {
+	font-size: 13px;
+	font-weight: 650;
+	margin-bottom: 2px;
+}
+
+.ps-card__summary {
+	font-size: 13px;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+}
+
+.ps-card__actions {
+	display: flex;
+	align-items: center;
+}
+
+.ps-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
+
+.ps-field--wide {
+	grid-column: 1 / -1;
+}
+
+.ps-label {
+	display: block;
+	margin-bottom: 4px;
+	font-size: 12px;
+}
+
+.ps-label .req {
+	color: #f87171;
+}
+
+.ps-submodal__footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 16px;
+}

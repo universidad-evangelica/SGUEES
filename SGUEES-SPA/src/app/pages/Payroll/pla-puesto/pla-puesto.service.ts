@@ -9,12 +9,16 @@ import { buildAuditGridColumns } from 'src/app/shared/mtto/mtto-grid.helpers';
 import { createEstadoColumnConfig, ESTADO_ACTIVO_INACTIVO_LABELS } from 'src/app/shared/utils/remote-grid-filter.util';
 import { PlaPuesto } from './models/pla-puesto';
 import { PlaPuestoRepository } from './pla-puesto.repository';
+import { PlaPuestoSalarioRepository } from './pla-puesto-salario/pla-puesto-salario.repository';
 
 const ESTADO_FIELD = 'ACTIVO_PUESTO';
 
 @Injectable({ providedIn: 'root' })
 export class PlaPuestoService {
-	constructor(private repo: PlaPuestoRepository) {}
+	constructor(
+		private repo: PlaPuestoRepository,
+		private salarioRepo: PlaPuestoSalarioRepository
+	) {}
 
 	esValido(model: PlaPuesto, msg: Function): boolean {
 		if (!model.NOMBRE_PUESTO || model.NOMBRE_PUESTO.trim() === '') {
@@ -67,6 +71,22 @@ export class PlaPuestoService {
 
 	activarInactivar(model: any): Observable<IResult> {
 		return this.repo.activarInactivar(model, [{ Parameter: 'CORR_PUESTO', Value: model.CORR_PUESTO }]);
+	}
+
+	getSalarios(corrPuesto: number): Observable<IResult> {
+		return this.salarioRepo.getAll(corrPuesto);
+	}
+
+	insertSalario(row: any): Observable<IResult> {
+		return this.salarioRepo.create(row);
+	}
+
+	updateSalario(row: any): Observable<IResult> {
+		return this.salarioRepo.update(row);
+	}
+
+	deleteSalario(corrPuestoSalario: number): Observable<IResult> {
+		return this.salarioRepo.delete(corrPuestoSalario);
 	}
 
 	getColumns(): any {
