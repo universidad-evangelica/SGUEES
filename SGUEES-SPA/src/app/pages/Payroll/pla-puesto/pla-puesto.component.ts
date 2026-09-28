@@ -40,6 +40,7 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 	// Qué hace: salarios del puesto abierto y unidades que ya lo tienen.
 	salarios: PlaPuestoSalario[] = [];
 	mUnidadesSalario: any[] = [];
+	unidadesDisponiblesSalario: any[] = [];
 	submodalSalarioVisible = false;
 	submodalSalarioEditIndex: number | null = null;
 	submodalSalarioDraft: Partial<PlaPuestoSalario> = {};
@@ -239,6 +240,7 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 		super.nuevo();
 		this.salarios = [];
 		this.mUnidadesSalario = [];
+		this.unidadesDisponiblesSalario = [];
 		this.cerrarSubmodalSalario();
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
@@ -351,10 +353,12 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 		return this.submodalSalarioEditIndex != null ? 'Editar salario' : 'Agregar salario';
 	}
 
-	get unidadesDisponiblesSalario(): any[] {
+	// Qué hace: arma la lista de unidades que aún se pueden elegir.
+	// Cómo: solo oculta unidades con un salario activo; al editar conserva la unidad de esa fila.
+	private refrescarUnidadesDisponibles(): void {
 		const ocupadas = new Set<number>();
 		(this.salarios ?? []).forEach((s, idx) => {
-			if (idx === this.submodalSalarioEditIndex) {
+			if (idx === this.submodalSalarioEditIndex || !s.ACTIVO_PUESTO_SALARIO) {
 				return;
 			}
 			const corr = Number(s.CORR_UNIDAD ?? 0);
@@ -362,7 +366,84 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 				ocupadas.add(corr);
 			}
 		});
-		return (this.mUnidadesSalario ?? []).filter((u) => !ocupadas.has(Number(u.CORR_UNIDAD)));
+		const disponibles = (this.mUnidadesSalario ?? []).filter(
+			(u) => !ocupadas.has(Number(u.CORR_UNIDAD))
+		);
+		if (this.submodalSalarioEditIndex != null) {
+			const actual = this.salarios[this.submodalSalarioEditIndex];
+			const corrActual = Number(actual?.CORR_UNIDAD ?? 0);
+			const yaEsta = disponibles.some((u) => Number(u.CORR_UNIDAD) === corrActual);
+			if (corrActual > 0 && !yaEsta) {
+				const catalogo = (this.mUnidadesSalario ?? []).find(
+					(u) => Number(u.CORR_UNIDAD) === corrActual
+				);
+				disponibles.unshift(
+					catalogo ?? {
+						CORR_UNIDAD: corrActual,
+						NOMBRE_UNIDAD: actual?.NOMBRE_UNIDAD || 'Unidad',
+					}
+				);
+			}
+		}
+		this.unidadesDisponiblesSalario = disponibles;
+	}
+
+	// Qué hace: indica si otra fila de la misma unidad ya tiene el salario activo.
+	// Cómo: ignora la fila que se está activando o editando.
+	private hayOtroSalarioActivoEnUnidad(corrUnidad: number | null, exceptoIndex: number | null): boolean {
+		const unidad = Number(corrUnidad ?? 0);
+		if (unidad <= 0) {
+			return false;
+		}
+		return (this.salarios ?? []).some(
+			(s, i) =>
+				(exceptoIndex == null || i !== exceptoIndex) &&
+				Number(s.CORR_UNIDAD ?? 0) === unidad &&
+				!!s.ACTIVO_PUESTO_SALARIO
+		);
+	}
+
+	// Qué hace: activa o desactiva el salario y lo guarda de inmediato.
+	// Cómo: no enciende si esa unidad ya tiene otro activo; en éxito parchea la fila con Data.
+	toggleActivoSalario(index: number, event?: Event): void {
+		event?.stopPropagation();
+		const row = this.salarios[index];
+		if (!row || this.readOnly) {
+			return;
+		}
+		const activar = !row.ACTIVO_PUESTO_SALARIO;
+		if (activar && this.hayOtroSalarioActivoEnUnidad(row.CORR_UNIDAD, index)) {
+			this.notifyFx(
+				'Ya hay un salario activo en esa unidad. Desactívelo antes de activar este.',
+				NotifyType.Warning
+			);
+			return;
+		}
+		this.loadingVisible = true;
+		this.service
+			.updateSalario({
+				...row,
+				CORR_PUESTO: Number(this.model?.CORR_PUESTO ?? row.CORR_PUESTO),
+				ACTIVO_PUESTO_SALARIO: activar,
+			})
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						return;
+					}
+					const guardado = this.normalizarSalarios([response.Data])[0];
+					this.salarios = this.salarios.map((s) =>
+						s.CORR_PUESTO_SALARIO === guardado.CORR_PUESTO_SALARIO ? guardado : s
+					);
+				},
+				error: (error: any) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
 	}
 
 	// Qué hace: carga salarios y las unidades que tienen este puesto.
@@ -372,6 +453,7 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 		if (corrPuesto <= 0) {
 			this.salarios = [];
 			this.mUnidadesSalario = [];
+			this.unidadesDisponiblesSalario = [];
 			return;
 		}
 
@@ -408,9 +490,11 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 						vistos.add(corr);
 						return true;
 					});
+					this.refrescarUnidadesDisponibles();
 				},
 				error: () => {
 					this.mUnidadesSalario = [];
+					this.unidadesDisponiblesSalario = [];
 				},
 			});
 	}
@@ -429,6 +513,7 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			FECHA_INGRESO: this.fechaHoyElSalvador() as any,
 			ACTIVO_PUESTO_SALARIO: true,
 		};
+		this.refrescarUnidadesDisponibles();
 		this.submodalSalarioVisible = true;
 	}
 
@@ -443,7 +528,15 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			...actual,
 			FECHA_INGRESO: (iso ? this.fechaDesdeIso(iso) : this.fechaHoyElSalvador()) as any,
 		};
+		this.refrescarUnidadesDisponibles();
 		this.submodalSalarioVisible = true;
+	}
+
+	// Qué hace: guarda la unidad elegida en el formulario del salario.
+	// Cómo: toma el valor del combo y lo deja en el draft.
+	onUnidadSalarioChanged(e: any): void {
+		const corr = Number(e?.value ?? 0);
+		this.submodalSalarioDraft.CORR_UNIDAD = corr > 0 ? corr : null;
 	}
 
 	cerrarSubmodalSalario(): void {
@@ -461,12 +554,45 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 		const inicial = this.numeroSalario(this.submodalSalarioDraft?.SALARIO_INICIAL);
 		const actual = this.numeroSalario(this.submodalSalarioDraft?.SALARIO_ACTUAL);
 		const final = this.numeroSalario(this.submodalSalarioDraft?.SALARIO_FINAL);
-		if (inicial == null && actual == null && final == null) {
-			this.notifyFx('Ingrese al menos un salario.', NotifyType.Warning);
+		const fechaIngreso = this.normalizarFecha(this.submodalSalarioDraft?.FECHA_INGRESO);
+		if (inicial == null) {
+			this.notifyFx('Ingrese el salario inicial.', NotifyType.Warning);
+			return;
+		}
+		if (actual == null) {
+			this.notifyFx('Ingrese el salario actual.', NotifyType.Warning);
+			return;
+		}
+		if (final == null) {
+			this.notifyFx('Ingrese el salario final.', NotifyType.Warning);
+			return;
+		}
+		if (!fechaIngreso) {
+			this.notifyFx('Seleccione la fecha de ingreso.', NotifyType.Warning);
 			return;
 		}
 		if ([inicial, actual, final].some((n) => n != null && n < 0)) {
 			this.notifyFx('Los salarios no pueden ser negativos.', NotifyType.Warning);
+			return;
+		}
+		if (inicial != null && final != null && inicial > final) {
+			this.notifyFx('El salario inicial no puede ser mayor que el salario final.', NotifyType.Warning);
+			return;
+		}
+		if (inicial != null && actual != null && actual < inicial) {
+			this.notifyFx('El salario actual no puede ser menor que el salario inicial.', NotifyType.Warning);
+			return;
+		}
+		if (actual != null && final != null && actual > final) {
+			this.notifyFx('El salario actual no puede ser mayor que el salario final.', NotifyType.Warning);
+			return;
+		}
+		const quedariaActivo = this.submodalSalarioDraft?.ACTIVO_PUESTO_SALARIO !== false;
+		if (quedariaActivo && this.hayOtroSalarioActivoEnUnidad(corrUnidad, this.submodalSalarioEditIndex)) {
+			this.notifyFx(
+				'Esa unidad ya tiene un salario activo para este puesto.',
+				NotifyType.Warning
+			);
 			return;
 		}
 
@@ -480,9 +606,7 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			SALARIO_INICIAL: inicial,
 			SALARIO_ACTUAL: actual,
 			SALARIO_FINAL: final,
-			FECHA_INGRESO:
-				this.normalizarFecha(this.submodalSalarioDraft?.FECHA_INGRESO) ||
-				this.normalizarFecha(this.fechaHoyElSalvador()),
+			FECHA_INGRESO: fechaIngreso,
 			ACTIVO_PUESTO_SALARIO: this.submodalSalarioDraft?.ACTIVO_PUESTO_SALARIO !== false,
 		};
 
@@ -558,7 +682,7 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 		if (Number.isNaN(n)) {
 			return '—';
 		}
-		return n.toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+		return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
 	}
 
 	textoFecha(valor: any): string {

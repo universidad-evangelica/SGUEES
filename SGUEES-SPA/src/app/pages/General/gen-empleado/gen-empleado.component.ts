@@ -4993,6 +4993,20 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.mCORR_PUESTO = [];
 	}
 
+	// Qué hace: exige los datos del puesto al agregar y al editar.
+	// Cómo: unidad, puesto, fecha, sueldo y ambos tipos deben venir informados.
+	private puestoCompleto(p: Partial<GenEmpleadoPuesto> | null | undefined): boolean {
+		return (
+			Number(p?.CORR_UNIDAD ?? 0) > 0 &&
+			Number(p?.CORR_PUESTO ?? 0) > 0 &&
+			!!this.normalizarFechaIngreso(p?.FECHA_INGRESO) &&
+			p?.SUELDO != null &&
+			!Number.isNaN(Number(p.SUELDO)) &&
+			Number(p?.CORR_TIPO_CONTRATACION ?? 0) > 0 &&
+			Number(p?.CORR_TIPO_MODALIDAD ?? 0) > 0
+		);
+	}
+
 	// Qué hace: indica si ese tipo de contratación es permanente.
 	// Cómo: usa ES_PERMANENTE del lookup SC_TIPO_CONTRATACION.
 	private esTipoContratacionPermanente(corrTipo: number | null | undefined): boolean {
@@ -5044,12 +5058,29 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			sueldoRaw == null || `${sueldoRaw}` === '' || Number.isNaN(Number(sueldoRaw))
 				? null
 				: Number(sueldoRaw);
-		if (sueldo != null && sueldo < 0) {
+		const fechaIngreso = this.normalizarFechaIngreso(this.submodalPuestoDraft?.FECHA_INGRESO);
+		const tipoContratacion = Number(this.submodalPuestoDraft?.CORR_TIPO_CONTRATACION ?? 0);
+		const tipoModalidad = Number(this.submodalPuestoDraft?.CORR_TIPO_MODALIDAD ?? 0);
+		if (!fechaIngreso) {
+			this.notifyFx('Seleccione la fecha de ingreso.', NotifyType.Warning);
+			return;
+		}
+		if (sueldo == null) {
+			this.notifyFx('Ingrese el sueldo.', NotifyType.Warning);
+			return;
+		}
+		if (sueldo < 0) {
 			this.notifyFx('El sueldo no puede ser negativo.', NotifyType.Warning);
 			return;
 		}
-		const tipoContratacion = Number(this.submodalPuestoDraft?.CORR_TIPO_CONTRATACION ?? 0);
-		const tipoModalidad = Number(this.submodalPuestoDraft?.CORR_TIPO_MODALIDAD ?? 0);
+		if (tipoContratacion <= 0) {
+			this.notifyFx('Seleccione el tipo de contratación.', NotifyType.Warning);
+			return;
+		}
+		if (tipoModalidad <= 0) {
+			this.notifyFx('Seleccione el tipo de modalidad.', NotifyType.Warning);
+			return;
+		}
 		const row: GenEmpleadoPuesto = {
 			CORR_EMPRESA: Number(this.model?.CORR_EMPRESA ?? 0),
 			CORR_EMPLEADO: Number(this.model?.CORR_EMPLEADO ?? 0),
@@ -5062,11 +5093,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			),
 			CORR_PUESTO: corrPuesto,
 			NOMBRE_PUESTO: this.nombreCatalogo(this.mCORR_PUESTO, 'CORR_PUESTO', corrPuesto, 'NOMBRE_PUESTO'),
-			FECHA_INGRESO:
-				this.normalizarFechaIngreso(this.submodalPuestoDraft?.FECHA_INGRESO) ||
-				this.normalizarFechaIngreso(this.fechaHoyElSalvador()),
+			FECHA_INGRESO: fechaIngreso,
 			SUELDO: sueldo,
-			CORR_TIPO_CONTRATACION: tipoContratacion > 0 ? tipoContratacion : null,
+			CORR_TIPO_CONTRATACION: tipoContratacion,
 			NOMBRE_TIPO_CONTRATACION:
 				tipoContratacion > 0
 					? this.nombreCatalogo(
@@ -5076,7 +5105,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 							'NOMBRE_TIPO_CONTRATACION'
 						)
 					: '',
-			CORR_TIPO_MODALIDAD: tipoModalidad > 0 ? tipoModalidad : null,
+			CORR_TIPO_MODALIDAD: tipoModalidad,
 			MODALIDAD_NOMBRE:
 				tipoModalidad > 0
 					? this.nombreCatalogo(
@@ -5126,7 +5155,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		if (Number.isNaN(n)) {
 			return '—';
 		}
-		return n.toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+		return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
 	}
 
 	/**
@@ -5134,6 +5163,14 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	 * Cómo: SaveAll; parchea response.Data en memoria (sin GetAll).
 	 */
 	private guardarPuestosDesdeModal(onSuccess?: () => void): void {
+		const incompleto = (this.puestos ?? []).some((p) => !this.puestoCompleto(p));
+		if (incompleto) {
+			this.notifyFx(
+				'Complete unidad, puesto, fecha de ingreso, sueldo, tipo de contratación y tipo de modalidad.',
+				NotifyType.Warning
+			);
+			return;
+		}
 		const permanentes = (this.puestos ?? []).filter((p) =>
 			this.esTipoContratacionPermanente(p.CORR_TIPO_CONTRATACION)
 		).length;

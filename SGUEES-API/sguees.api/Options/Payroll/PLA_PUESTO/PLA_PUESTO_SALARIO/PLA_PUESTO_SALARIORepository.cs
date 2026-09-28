@@ -83,11 +83,12 @@ namespace SGUEES.Repositories
 					return validacion;
 				}
 
-				if (await UnidadYaTieneSalarioAsync(Data.CORR_EMPRESA, Data.CORR_PUESTO.Value, Data.CORR_UNIDAD.Value, 0))
+				if (EsActivo(Data.ACTIVO_PUESTO_SALARIO)
+					&& await UnidadYaTieneSalarioActivoAsync(Data.CORR_EMPRESA, Data.CORR_PUESTO.Value, Data.CORR_UNIDAD.Value, 0))
 				{
 					objResultado.Result = false;
 					objResultado.ErrorCode = 4000;
-					objResultado.ErrorMessage = "Esa unidad ya tiene un salario para este puesto.";
+					objResultado.ErrorMessage = "Esa unidad ya tiene un salario activo para este puesto.";
 					return objResultado;
 				}
 
@@ -156,11 +157,12 @@ namespace SGUEES.Repositories
 					return objResultado;
 				}
 
-				if (await UnidadYaTieneSalarioAsync(Data.CORR_EMPRESA, Data.CORR_PUESTO.Value, Data.CORR_UNIDAD.Value, Data.CORR_PUESTO_SALARIO))
+				if (EsActivo(Data.ACTIVO_PUESTO_SALARIO)
+					&& await UnidadYaTieneSalarioActivoAsync(Data.CORR_EMPRESA, Data.CORR_PUESTO.Value, Data.CORR_UNIDAD.Value, Data.CORR_PUESTO_SALARIO))
 				{
 					objResultado.Result = false;
 					objResultado.ErrorCode = 4000;
-					objResultado.ErrorMessage = "Esa unidad ya tiene un salario para este puesto.";
+					objResultado.ErrorMessage = "Esa unidad ya tiene un salario activo para este puesto.";
 					return objResultado;
 				}
 
@@ -252,6 +254,26 @@ namespace SGUEES.Repositories
 				return Error("Seleccione la unidad.");
 			}
 
+			if (!Data.SALARIO_INICIAL.HasValue)
+			{
+				return Error("Ingrese el salario inicial.");
+			}
+
+			if (!Data.SALARIO_ACTUAL.HasValue)
+			{
+				return Error("Ingrese el salario actual.");
+			}
+
+			if (!Data.SALARIO_FINAL.HasValue)
+			{
+				return Error("Ingrese el salario final.");
+			}
+
+			if (!Data.FECHA_INGRESO.HasValue)
+			{
+				return Error("Seleccione la fecha de ingreso.");
+			}
+
 			if (Data.SALARIO_INICIAL.HasValue && Data.SALARIO_INICIAL.Value < 0)
 			{
 				return Error("El salario inicial no puede ser negativo.");
@@ -267,6 +289,21 @@ namespace SGUEES.Repositories
 				return Error("El salario final no puede ser negativo.");
 			}
 
+			if (Data.SALARIO_INICIAL.HasValue && Data.SALARIO_FINAL.HasValue && Data.SALARIO_INICIAL.Value > Data.SALARIO_FINAL.Value)
+			{
+				return Error("El salario inicial no puede ser mayor que el salario final.");
+			}
+
+			if (Data.SALARIO_INICIAL.HasValue && Data.SALARIO_ACTUAL.HasValue && Data.SALARIO_ACTUAL.Value < Data.SALARIO_INICIAL.Value)
+			{
+				return Error("El salario actual no puede ser menor que el salario inicial.");
+			}
+
+			if (Data.SALARIO_ACTUAL.HasValue && Data.SALARIO_FINAL.HasValue && Data.SALARIO_ACTUAL.Value > Data.SALARIO_FINAL.Value)
+			{
+				return Error("El salario actual no puede ser mayor que el salario final.");
+			}
+
 			return null;
 		}
 
@@ -280,7 +317,9 @@ namespace SGUEES.Repositories
 			};
 		}
 
-		private async Task<bool> UnidadYaTieneSalarioAsync(int corrEmpresa, int corrPuesto, int corrUnidad, int excluir)
+		// Qué hace: revisa si la unidad ya tiene otro salario activo para el puesto.
+		// Cómo: lee la vista y cuenta solo ACTIVO_PUESTO_SALARIO distinto de la fila actual.
+		private async Task<bool> UnidadYaTieneSalarioActivoAsync(int corrEmpresa, int corrPuesto, int corrUnidad, int excluir)
 		{
 			var where = new List<CParameter>
 			{
@@ -291,8 +330,10 @@ namespace SGUEES.Repositories
 			var reader = await objData.GetDataReader(_ViewName, where);
 			var rows = new List<PLA_PUESTO_SALARIOView>().FromDataReader(reader).ToList();
 			reader.Close();
-			return rows.Any(x => x.CORR_PUESTO_SALARIO != excluir);
+			return rows.Any(x => x.CORR_PUESTO_SALARIO != excluir && EsActivo(x.ACTIVO_PUESTO_SALARIO));
 		}
+
+		private static bool EsActivo(bool? activo) => activo != false;
 
 		private async Task<PLA_PUESTO_SALARIOView> LeerFilaAsync(int corrEmpresa, int corrPuestoSalario)
 		{

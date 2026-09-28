@@ -99,6 +99,23 @@ namespace sguees.Repositories
 					.Where(x => x != null && x.CORR_UNIDAD > 0 && x.CORR_PUESTO > 0)
 					.ToList();
 
+				var incompleto = items.Any(x =>
+					x.CORR_UNIDAD <= 0 ||
+					x.CORR_PUESTO <= 0 ||
+					!x.FECHA_INGRESO.HasValue ||
+					!x.SUELDO.HasValue ||
+					!x.CORR_TIPO_CONTRATACION.HasValue ||
+					x.CORR_TIPO_CONTRATACION.Value <= 0 ||
+					!x.CORR_TIPO_MODALIDAD.HasValue ||
+					x.CORR_TIPO_MODALIDAD.Value <= 0);
+				if (incompleto)
+				{
+					objResultado.Result = false;
+					objResultado.ErrorCode = 4000;
+					objResultado.ErrorMessage = "Complete unidad, puesto, fecha de ingreso, sueldo, tipo de contratación y tipo de modalidad.";
+					return objResultado;
+				}
+
 				var duplicado = items
 					.GroupBy(x => $"{x.CORR_UNIDAD}|{x.CORR_PUESTO}")
 					.Any(g => g.Count() > 1);

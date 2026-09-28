@@ -23,9 +23,10 @@
 
 	<!-- Formulario de creación/edición (oculto en browse). -->
 	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card" *ngIf="!isBrowse()">
-		<dx-tab-panel [swipeEnabled]="false">
+		<dx-tab-panel class="ps-tabs" [swipeEnabled]="false">
 			<!-- motivo: datos del puesto -->
 			<dxi-item title="Puesto" [icon]="'card'">
+		<div class="ps-form">
 		<dx-form
 			#fData
 			id="fData"
@@ -49,6 +50,7 @@
 				></app-data-lookup>
 			</div>
 		</dx-form>
+		</div>
 			</dxi-item>
 
 			<!-- motivo: salarios del puesto según las unidades que lo tienen -->
@@ -69,12 +71,36 @@
 						Guarde el puesto para poder registrar salarios por unidad.
 					</p>
 					<div class="ps-cards" *ngIf="salarios?.length; else sinSalarios">
-						<article class="ps-card" *ngFor="let s of salarios; let i = index">
+						<article
+							class="ps-card"
+							[class.ps-card--inactive]="!s.ACTIVO_PUESTO_SALARIO"
+							*ngFor="let s of salarios; let i = index"
+						>
 							<div class="ps-card__body">
 								<div class="ps-card__title">{{ s.NOMBRE_UNIDAD || 'Sin unidad' }}</div>
 								<div class="ps-card__summary">{{ resumenSalario(s) }}</div>
 							</div>
 							<div class="ps-card__actions" *ngIf="!readOnly">
+								<!-- motivo: activo/inactivo del salario; solo el activo ocupa la unidad -->
+								<button
+									type="button"
+									class="ps-activo-toggle ps-activo-toggle--sep"
+									[class.ps-activo-toggle--on]="s.ACTIVO_PUESTO_SALARIO"
+									[class.ps-activo-toggle--off]="!s.ACTIVO_PUESTO_SALARIO"
+									[attr.aria-pressed]="s.ACTIVO_PUESTO_SALARIO"
+									[attr.aria-label]="s.ACTIVO_PUESTO_SALARIO ? 'Desactivar salario' : 'Activar salario'"
+									(click)="toggleActivoSalario(i, $event)"
+								>
+									<span class="ps-activo-toggle__track">
+										<span class="ps-activo-toggle__icon ps-activo-toggle__icon--on" aria-hidden="true">
+											<i class="dx-icon dx-icon-check"></i>
+										</span>
+										<span class="ps-activo-toggle__thumb" aria-hidden="true"></span>
+										<span class="ps-activo-toggle__icon ps-activo-toggle__icon--off" aria-hidden="true">
+											<i class="dx-icon dx-icon-close"></i>
+										</span>
+									</span>
+								</button>
 								<dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirSubmodalSalarioEditar(i)"></dx-button>
 								<dx-button icon="trash" stylingMode="text" hint="Quitar" (onClick)="eliminarSalario(i)"></dx-button>
 							</div>
@@ -141,28 +167,30 @@
 					<label class="ps-label">Unidad <span class="req">*</span></label>
 					<dx-select-box
 						stylingMode="outlined"
-						[(value)]="submodalSalarioDraft.CORR_UNIDAD"
+						[value]="submodalSalarioDraft.CORR_UNIDAD"
 						[items]="unidadesDisponiblesSalario"
 						displayExpr="NOMBRE_UNIDAD"
 						valueExpr="CORR_UNIDAD"
 						[searchEnabled]="true"
-						[showClearButton]="true"
+						[showClearButton]="false"
+						[dropDownOptions]="{ container: 'body' }"
+						(onValueChanged)="onUnidadSalarioChanged($event)"
 					></dx-select-box>
 				</div>
 				<div class="ps-field">
-					<label class="ps-label">Salario inicial</label>
-					<dx-number-box stylingMode="outlined" [(value)]="submodalSalarioDraft.SALARIO_INICIAL" format="#,##0.00" [min]="0" [showClearButton]="true"></dx-number-box>
+					<label class="ps-label">Salario inicial <span class="req">*</span></label>
+					<dx-number-box stylingMode="outlined" [(value)]="submodalSalarioDraft.SALARIO_INICIAL" format="$#,##0.00" [min]="0" [showClearButton]="false"></dx-number-box>
 				</div>
 				<div class="ps-field">
-					<label class="ps-label">Salario actual</label>
-					<dx-number-box stylingMode="outlined" [(value)]="submodalSalarioDraft.SALARIO_ACTUAL" format="#,##0.00" [min]="0" [showClearButton]="true"></dx-number-box>
+					<label class="ps-label">Salario actual <span class="req">*</span></label>
+					<dx-number-box stylingMode="outlined" [(value)]="submodalSalarioDraft.SALARIO_ACTUAL" format="$#,##0.00" [min]="0" [showClearButton]="false"></dx-number-box>
 				</div>
 				<div class="ps-field">
-					<label class="ps-label">Salario final</label>
-					<dx-number-box stylingMode="outlined" [(value)]="submodalSalarioDraft.SALARIO_FINAL" format="#,##0.00" [min]="0" [showClearButton]="true"></dx-number-box>
+					<label class="ps-label">Salario final <span class="req">*</span></label>
+					<dx-number-box stylingMode="outlined" [(value)]="submodalSalarioDraft.SALARIO_FINAL" format="$#,##0.00" [min]="0" [showClearButton]="false"></dx-number-box>
 				</div>
 				<div class="ps-field">
-					<label class="ps-label">Fecha de ingreso</label>
+					<label class="ps-label">Fecha de ingreso <span class="req">*</span></label>
 					<dx-date-box
 						stylingMode="outlined"
 						type="date"

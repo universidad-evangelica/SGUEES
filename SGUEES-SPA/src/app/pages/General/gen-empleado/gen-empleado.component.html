@@ -2251,7 +2251,7 @@
 							displayExpr="NOMBRE_UNIDAD"
 							valueExpr="CORR_UNIDAD"
 							[searchEnabled]="true"
-							[showClearButton]="true"
+							[showClearButton]="false"
 							(onValueChanged)="onUnidadPuestoChanged($event)"
 						></dx-select-box>
 					</div>
@@ -2264,12 +2264,12 @@
 							displayExpr="NOMBRE_PUESTO"
 							valueExpr="CORR_PUESTO"
 							[searchEnabled]="true"
-							[showClearButton]="true"
+							[showClearButton]="false"
 							[disabled]="!submodalPuestoDraft.CORR_UNIDAD"
 						></dx-select-box>
 					</div>
 					<div class="ep-field">
-						<label class="ep-label">Fecha de ingreso</label>
+						<label class="ep-label">Fecha de ingreso <span class="req">*</span></label>
 						<dx-date-box
 							stylingMode="outlined"
 							type="date"
@@ -2279,17 +2279,17 @@
 						></dx-date-box>
 					</div>
 					<div class="ep-field">
-						<label class="ep-label">Sueldo</label>
+						<label class="ep-label">Sueldo <span class="req">*</span></label>
 						<dx-number-box
 							stylingMode="outlined"
 							[(value)]="submodalPuestoDraft.SUELDO"
-							format="#,##0.00"
+							format="$#,##0.00"
 							[min]="0"
-							[showClearButton]="true"
+							[showClearButton]="false"
 						></dx-number-box>
 					</div>
 					<div class="ep-field">
-						<label class="ep-label">Tipo de contratación</label>
+						<label class="ep-label">Tipo de contratación <span class="req">*</span></label>
 						<dx-select-box
 							stylingMode="outlined"
 							[(value)]="submodalPuestoDraft.CORR_TIPO_CONTRATACION"
@@ -2297,11 +2297,11 @@
 							displayExpr="NOMBRE_TIPO_CONTRATACION"
 							valueExpr="CORR_TIPO_CONTRATACION"
 							[searchEnabled]="true"
-							[showClearButton]="true"
+							[showClearButton]="false"
 						></dx-select-box>
 					</div>
 					<div class="ep-field">
-						<label class="ep-label">Tipo de modalidad</label>
+						<label class="ep-label">Tipo de modalidad <span class="req">*</span></label>
 						<dx-select-box
 							stylingMode="outlined"
 							[(value)]="submodalPuestoDraft.CORR_TIPO_MODALIDAD"
@@ -2309,7 +2309,7 @@
 							displayExpr="MODALIDAD_NOMBRE"
 							valueExpr="CORR_TIPO_MODALIDAD"
 							[searchEnabled]="true"
-							[showClearButton]="true"
+							[showClearButton]="false"
 						></dx-select-box>
 					</div>
 				</div>
