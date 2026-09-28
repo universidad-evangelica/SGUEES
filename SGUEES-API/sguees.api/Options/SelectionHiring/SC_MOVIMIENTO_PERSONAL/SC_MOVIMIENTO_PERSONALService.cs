@@ -184,13 +184,21 @@ namespace SGUEES.Services
 			Data.OBSERVACION = Data.OBSERVACION.Trim();
 			if (Data.OPERACION == 1 || Data.OPERACION == 2)
 			{
-				var unidad = await _repo.ResolverUnidadJefeAsync(Data.CORR_EMPRESA, vLOGIN_SISTEMA.Trim());
+				var unidad = await _repo.ResolverUnidadDocumentoAsync(
+					Data.CORR_EMPRESA,
+					Data.CORR_MOVIMIENTO_PERSONAL,
+					vLOGIN_SISTEMA.Trim());
 				if (unidad <= 0)
 				{
-					return ValidationError("No se encontró la unidad donde usted es jefe. El flujo usa esa unidad, no la unidad propuesta.");
+					return ValidationError("No se encontró la unidad del puesto del solicitante. El flujo la usa para ubicar los niveles de aprobación.");
 				}
 
 				Data.CORR_UNIDAD_DOCUMENTO = unidad;
+			}
+			else
+			{
+				/* Aprobar, devolver y rechazar usan el puesto del solicitante guardado en la instancia. */
+				Data.CORR_UNIDAD_DOCUMENTO = null;
 			}
 
 			return await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());

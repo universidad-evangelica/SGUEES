@@ -639,7 +639,7 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 			return 'Guarde el movimiento antes de enviarlo al flujo.';
 		}
 		if (operacion === OPERACION_FLUJO_MOVIMIENTO.ENVIAR && !this.accionesFlujo.PUEDE_ENVIAR) {
-			return 'Solo el jefe de la unidad solicitante puede enviar un ascenso o traslado en Borrador o Devuelto.';
+			return 'Solo se puede enviar un ascenso o traslado en Borrador o Devuelto, con una unidad asignada a su usuario.';
 		}
 		if (operacion === OPERACION_FLUJO_MOVIMIENTO.APROBAR && !this.accionesFlujo.PUEDE_APROBAR) {
 			return 'Este movimiento no está pendiente de su aprobación.';

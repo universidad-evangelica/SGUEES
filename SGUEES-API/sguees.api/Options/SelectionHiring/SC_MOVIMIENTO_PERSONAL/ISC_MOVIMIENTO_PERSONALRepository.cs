@@ -25,7 +25,7 @@ namespace SGUEES.Repositories
 		Task<CResult> GetRequisicionAsociadaAsync(List<CParameter> xWhere);
 		Task<CResult> RegistrarFechaIngresoAsync(SC_MOVIMIENTO_PERSONALTable Data);
 		Task<CResult> GetAccionesFlujoAsync(int corrEmpresa, int corrMovimiento, string login);
-		Task<int> ResolverUnidadJefeAsync(int corrEmpresa, string login);
+		Task<int> ResolverUnidadDocumentoAsync(int corrEmpresa, int corrMovimiento, string login);
 		Task<CResult> GetPendientesActorAsync(List<CParameter> xWhere);
 		Task<int> CountPendientesActorAsync(int corrEmpresa, string login);
 	}
