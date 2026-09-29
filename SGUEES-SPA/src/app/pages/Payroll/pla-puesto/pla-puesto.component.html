@@ -95,17 +95,9 @@
 			</dxi-item>
 			<dxi-item title="Salarios" [icon]="'money'">
 				<div class="ps-panel">
-					<!-- motivo: en lectura no se agregan, editan ni activan salarios -->
-					<div class="ps-head" *ngIf="!readOnly">
+					<!-- motivo: Salarios no muestra Agregar. En lectura tampoco se activa ni se desactiva. -->
+					<div class="ps-head" *ngIf="!readOnly && salarioSeleccionado?.CORR_PUESTO_SALARIO > 0">
 						<dx-button
-							text="Agregar"
-							icon="plus"
-							type="default"
-							stylingMode="outlined"
-							(onClick)="abrirSubmodalSalarioNuevo()"
-						></dx-button>
-						<dx-button
-							*ngIf="salarioSeleccionado?.CORR_PUESTO_SALARIO > 0"
 							[text]="salarioSeleccionado.ACTIVO_PUESTO_SALARIO ? 'Desactivar' : 'Activar'"
 							[icon]="salarioSeleccionado.ACTIVO_PUESTO_SALARIO ? 'close' : 'check'"
 							stylingMode="outlined"
