@@ -29,28 +29,38 @@
 	box-shadow: none;
 }
 
+.ps-form {
+	padding: 4px 2px 0;
+}
+
 :host ::ng-deep .ps-tabs {
+	margin-top: 16px;
+
 	.dx-tabpanel-tabs {
 		margin-bottom: 4px;
 	}
 
 	.dx-multiview-item-content {
-		padding: 16px 18px 12px;
+		padding: 12px 2px 4px;
 	}
-}
-
-.ps-form {
-	padding: 4px 2px 0;
 }
 
 .ps-panel {
 	padding: 4px 2px 0;
 }
 
+.ps-salarios-grid {
+	min-height: 220px;
+}
+
+:host ::ng-deep .ps-salario-row--inactive {
+	opacity: 0.62;
+}
+
 .ps-head {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
+	justify-content: flex-end;
 	gap: 12px;
 	margin-bottom: 12px;
 }
@@ -60,51 +70,9 @@
 	font-size: 15px;
 }
 
-.ps-hint,
-.ps-empty {
-	margin: 0;
+.ps-hint {
+	margin: 0 0 10px;
 	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
-}
-
-.ps-cards {
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.ps-card {
-	display: flex;
-	align-items: center;
-	gap: 10px;
-	padding: 10px 12px;
-	border-radius: var(--sguees-radius-md, 10px);
-	border: 1px solid var(--sguees-border-subtle, var(--border-color));
-	background: color-mix(in srgb, var(--accent-color, #1976d2) 4%, var(--sguees-surface-subtle, var(--background-gray-color)));
-}
-
-.ps-card__body {
-	flex: 1 1 auto;
-	min-width: 0;
-}
-
-.ps-card__title {
-	font-size: 13px;
-	font-weight: 650;
-	margin-bottom: 2px;
-}
-
-.ps-card__summary {
-	font-size: 13px;
-	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
-}
-
-.ps-card--inactive {
-	opacity: 0.62;
-}
-
-.ps-card__actions {
-	display: flex;
-	align-items: center;
 }
 
 /* motivo: switch activo/inactivo del salario, mismo criterio que direcciones */

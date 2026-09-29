@@ -44,7 +44,6 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 	submodalSalarioEditIndex: number | null = null;
 	submodalSalarioDraft: Partial<PlaPuestoSalario> = {};
 	unidadSalarioContexto = 0;
-	nombreUnidadSalario = '';
 	filtroCorrUnidad = 0;
 	barraFiltroUnidad: BarraMttoCombox | null = null;
 	private filasPuestoUnidad: PlaPuesto[] = [];
@@ -538,6 +537,39 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 		);
 	}
 
+	// Qué hace: muestra la fecha de ingreso en la grilla como dd/MM/yyyy.
+	// Cómo: toma el día calendario guardado, sin correrlo por zona horaria.
+	textoFechaSalario = (row: PlaPuestoSalario): string => {
+		const iso = this.normalizarFecha(row?.FECHA_INGRESO);
+		if (!iso) {
+			return '';
+		}
+		const [anio, mes, dia] = iso.split('-');
+		return `${dia}/${mes}/${anio}`;
+	};
+
+	// Qué hace: ubica en la lista el salario de la fila de la grilla.
+	// Cómo: compara el correlativo; si aún no existe, usa la misma referencia.
+	indiceSalario(row: PlaPuestoSalario): number {
+		const corr = Number(row?.CORR_PUESTO_SALARIO ?? 0);
+		if (corr > 0) {
+			const porCorr = this.salarios.findIndex((s) => Number(s.CORR_PUESTO_SALARIO) === corr);
+			if (porCorr >= 0) {
+				return porCorr;
+			}
+		}
+		return this.salarios.indexOf(row);
+	}
+
+	// Qué hace: atenúa la fila de un salario inactivo.
+	// Cómo: marca la fila de datos cuando ACTIVO_PUESTO_SALARIO está apagado.
+	onSalarioRowPrepared(e: any): void {
+		if (e?.rowType !== 'data') {
+			return;
+		}
+		e.rowElement?.classList?.toggle('ps-salario-row--inactive', !e.data?.ACTIVO_PUESTO_SALARIO);
+	}
+
 	// Qué hace: activa o desactiva el salario y lo guarda de inmediato.
 	// Cómo: no enciende si esa unidad ya tiene otro activo; en éxito parchea la fila con Data.
 	toggleActivoSalario(index: number, event?: Event): void {
@@ -586,7 +618,6 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 	private fijarUnidadSalario(row: any): void {
 		const corr = Number(row?.CORR_UNIDAD ?? 0);
 		this.unidadSalarioContexto = corr > 0 ? corr : 0;
-		this.nombreUnidadSalario = corr > 0 ? `${row?.NOMBRE_UNIDAD ?? ''}`.trim() : '';
 	}
 
 	// Qué hace: carga el salario de este puesto en la unidad de la fila.
@@ -753,35 +784,6 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 					this.notifyApiError(error);
 				},
 			});
-	}
-
-	resumenSalario(item: PlaPuestoSalario): string {
-		const partes = [
-			item?.SALARIO_INICIAL != null ? `Inicial ${this.textoMonto(item.SALARIO_INICIAL)}` : '',
-			item?.SALARIO_FINAL != null ? `Final ${this.textoMonto(item.SALARIO_FINAL)}` : '',
-			this.textoFecha(item?.FECHA_INGRESO),
-		].filter((t) => t && t !== '—');
-		return partes.join(' · ') || '—';
-	}
-
-	textoMonto(valor: any): string {
-		if (valor == null || valor === '') {
-			return '—';
-		}
-		const n = Number(valor);
-		if (Number.isNaN(n)) {
-			return '—';
-		}
-		return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 });
-	}
-
-	textoFecha(valor: any): string {
-		const iso = this.normalizarFecha(valor);
-		if (!iso) {
-			return '—';
-		}
-		const [anio, mes, dia] = iso.split('-');
-		return `${dia}/${mes}/${anio}`;
 	}
 
 	private normalizarSalarios(rows: any[]): PlaPuestoSalario[] {
