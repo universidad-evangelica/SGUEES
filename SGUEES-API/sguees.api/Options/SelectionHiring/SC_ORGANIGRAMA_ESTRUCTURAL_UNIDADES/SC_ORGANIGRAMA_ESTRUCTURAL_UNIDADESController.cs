@@ -139,6 +139,16 @@ namespace sguees.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Qué hace: entrega las unidades del organigrama para filtrar el listado de pla-puesto.
+        // Cómo: fija CORR_EMPRESA de sesión y llama GetAllAsync (autorizado para pla-puesto).
+        [HttpGet("GetCORR_UNIDAD_PLA_PUESTO")]
+        [Authorize(Policy = "/pla-puesto|R")]
+        public async Task<CResult> GetCORR_UNIDAD_PLA_PUESTO([FromQuery] SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADESParam Data)
+        {
+            Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
+            return await _service.GetAllAsync(Data);
+        }
+
         // Qué hace: entrega unidades del organigrama para el tab Puestos de gen-empleado.
         // Cómo: fija CORR_EMPRESA de sesión y llama GetAllAsync (autorizado para gen-empleado).
         [HttpGet("GetCORR_UNIDAD_GEN_EMPLEADO")]

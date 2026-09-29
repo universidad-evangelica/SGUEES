@@ -13,6 +13,8 @@
 		[campoEstado]="mttoCampoEstado"
 		[puedeCambiarEstado]="permiteEdit"
 		[focusedRow]="isBrowse() ? model : null"
+		[combox1]="barraFiltroUnidad"
+		(combox1Change)="onFiltroUnidadChanged($event)"
 		(consultar)="consultar()"
 		(nuevo)="nuevo()"
 		(guardar)="guardar()"
@@ -63,12 +65,12 @@
 							icon="plus"
 							type="default"
 							stylingMode="outlined"
-							[disabled]="!tienePuestoGuardado || readOnly"
+							[disabled]="!tienePuestoGuardado || unidadSalarioContexto <= 0 || readOnly"
 							(onClick)="abrirSubmodalSalarioNuevo()"
 						></dx-button>
 					</div>
-					<p class="ps-hint" *ngIf="!tienePuestoGuardado">
-						Guarde el puesto para poder registrar salarios por unidad.
+					<p class="ps-hint" *ngIf="unidadSalarioContexto <= 0">
+						Abra el puesto desde una unidad del listado para registrar su salario.
 					</p>
 					<div class="ps-cards" *ngIf="salarios?.length; else sinSalarios">
 						<article
@@ -164,18 +166,8 @@
 		<div *dxTemplate="let data of 'content'" class="ps-submodal">
 			<div class="ps-grid">
 				<div class="ps-field ps-field--wide">
-					<label class="ps-label">Unidad <span class="req">*</span></label>
-					<dx-select-box
-						stylingMode="outlined"
-						[value]="submodalSalarioDraft.CORR_UNIDAD"
-						[items]="unidadesDisponiblesSalario"
-						displayExpr="NOMBRE_UNIDAD"
-						valueExpr="CORR_UNIDAD"
-						[searchEnabled]="true"
-						[showClearButton]="false"
-						[dropDownOptions]="{ container: 'body' }"
-						(onValueChanged)="onUnidadSalarioChanged($event)"
-					></dx-select-box>
+					<label class="ps-label">Unidad</label>
+					<dx-text-box stylingMode="outlined" [value]="nombreUnidadSalario" [readOnly]="true"></dx-text-box>
 				</div>
 				<div class="ps-field">
 					<label class="ps-label">Salario inicial <span class="req">*</span></label>

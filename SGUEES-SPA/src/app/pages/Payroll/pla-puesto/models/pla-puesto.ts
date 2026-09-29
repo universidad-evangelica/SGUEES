@@ -3,6 +3,10 @@
 export interface PlaPuesto {
 	CORR_EMPRESA: number;
 	CORR_PUESTO: number;
+	CORR_UNIDAD?: number;
+	CODIGO_UNIDAD?: string;
+	NOMBRE_UNIDAD?: string;
+	GRID_KEY?: string;
 	CODIGO_PUESTO: string;
 	NOMBRE_PUESTO: string;
 	CORR_TIPO_PUESTO: number | null;

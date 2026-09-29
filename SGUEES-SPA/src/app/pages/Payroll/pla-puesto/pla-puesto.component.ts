@@ -2,9 +2,10 @@
 // Cómo: grilla + formulario con lookup de tipo de puesto; coordina PlaPuestoService.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
+import { forkJoin, Observable, of, throwError } from 'rxjs';
 import { catchError, take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
+import { BarraMttoCombox } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
@@ -28,7 +29,7 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 	protected override requiereEmpresaSesion = true;
 	protected override mttoPageSize = 5;
 	protected override mttoPageSizes = [5, 10, 25, 50, 100];
-	protected override mttoGridKeyExpr = 'CORR_PUESTO';
+	protected override mttoGridKeyExpr = 'GRID_KEY';
 	protected override mttoCampoEstado = ESTADO_FIELD;
 	protected override mttoEstadoDescribeField = 'NOMBRE_PUESTO';
 	protected override mttoParchearGridTrasGuardar = true;
@@ -39,11 +40,18 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 
 	// Qué hace: salarios del puesto abierto y unidades que ya lo tienen.
 	salarios: PlaPuestoSalario[] = [];
-	mUnidadesSalario: any[] = [];
-	unidadesDisponiblesSalario: any[] = [];
 	submodalSalarioVisible = false;
 	submodalSalarioEditIndex: number | null = null;
 	submodalSalarioDraft: Partial<PlaPuestoSalario> = {};
+	unidadSalarioContexto = 0;
+	nombreUnidadSalario = '';
+	filtroCorrUnidad = 0;
+	barraFiltroUnidad: BarraMttoCombox | null = null;
+	private filasPuestoUnidad: PlaPuesto[] = [];
+	private readonly unidadLookupColumns = [
+		{ dataField: 'CODIGO_UNIDAD', caption: 'Codigo', width: 120 },
+		{ dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 280 },
+	];
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Puesto';
 
@@ -54,6 +62,8 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 	) {
 		super(appInfoService, router);
 		this.selectedLookUpCORR_TIPO_PUESTO = this.selectedLookUpCORR_TIPO_PUESTO.bind(this);
+		this.selectedLookUpCORR_UNIDAD = this.selectedLookUpCORR_UNIDAD.bind(this);
+		this.syncBarraFiltroUnidad();
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
@@ -101,15 +111,25 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 		this.model.CORR_TIPO_PUESTO = value != null && Number(value) > 0 ? Number(value) : null;
 	}
 
+	selectedLookUpCORR_UNIDAD(vRow: any): number {
+		return vRow[0].CORR_UNIDAD;
+	}
+
 	fillParam(xCORR_PUESTO?: number): any {
 		return { CORR_PUESTO: xCORR_PUESTO ?? 0 };
 	}
 
 	override fillData(xModel?: PlaPuesto): PlaPuesto {
 		if (xModel !== undefined) {
+			const corrUnidad = Number(xModel.CORR_UNIDAD ?? 0);
+			const corrPuesto = Number(xModel.CORR_PUESTO ?? 0);
 			return {
 				CORR_EMPRESA: Number(xModel.CORR_EMPRESA ?? 0),
-				CORR_PUESTO: Number(xModel.CORR_PUESTO ?? 0),
+				CORR_PUESTO: corrPuesto,
+				CORR_UNIDAD: corrUnidad > 0 ? corrUnidad : 0,
+				CODIGO_UNIDAD: (xModel.CODIGO_UNIDAD ?? '').trim(),
+				NOMBRE_UNIDAD: (xModel.NOMBRE_UNIDAD ?? '').trim(),
+				GRID_KEY: xModel.GRID_KEY || (corrUnidad > 0 && corrPuesto > 0 ? `${corrUnidad}|${corrPuesto}` : ''),
 				NOMBRE_PUESTO: (xModel.NOMBRE_PUESTO ?? '').trim(),
 				CODIGO_PUESTO: xModel.CODIGO_PUESTO ?? '',
 				CORR_TIPO_PUESTO:
@@ -151,20 +171,146 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 	}
 
 	consultar(resetPage = false): void {
-		this.consultarMtto({
-			load: () => this.service.getAll(this.fillParam()),
-			onData: () => {
-				this.ordenarModelsPorCorr();
-				this.refrescarGridTrasCarga(resetPage);
-			},
-		});
-	}
-
-	private ordenarModelsPorCorr(): void {
-		if (!Array.isArray(this.models)) {
+		if (!this.asegurarEmpresaSesion()) {
 			return;
 		}
-		this.models = [...this.models].sort((a, b) => Number(a.CORR_PUESTO) - Number(b.CORR_PUESTO));
+		this.loadingVisible = true;
+		forkJoin({
+			puestos: this.service.getAll(this.fillParam()),
+			asignaciones: this.appInfoService.getLookUp(
+				'PLA_PUESTO',
+				'GEN_UNIDADES_PUESTO',
+				'GetAll',
+				undefined,
+				environment.UrlGENERALAPI
+			),
+			unidades: this.appInfoService.getLookUp(
+				'PLA_PUESTO',
+				'SC_ORGANIGRAMA_ESTRUCTURAL_UNIDADES',
+				'GetCORR_UNIDAD',
+				undefined,
+				environment.UrlGENERALAPI
+			),
+		})
+			.pipe(take(1))
+			.subscribe({
+				next: ({ puestos, asignaciones, unidades }: any) => {
+					this.loadingVisible = false;
+					if (!puestos?.Result) {
+						this.notifyApiResponse(puestos);
+						return;
+					}
+					if (!asignaciones?.Result) {
+						this.notifyApiResponse(asignaciones);
+						return;
+					}
+					this.filasPuestoUnidad = this.armarFilasOrganigrama(
+						puestos.Data ?? [],
+						asignaciones.Data ?? [],
+						unidades?.Result ? unidades.Data ?? [] : []
+					);
+					this.syncBarraFiltroUnidad();
+					this.aplicarFiltroUnidad(resetPage);
+				},
+				error: (error) => {
+					this.loadingVisible = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: arma una fila por unidad y puesto, en el orden del organigrama.
+	// Cómo: ordena por CODIGO_UNIDAD (el código sigue el nivel) y luego por el nombre del puesto.
+	private armarFilasOrganigrama(puestos: any[], asignaciones: any[], unidades: any[]): PlaPuesto[] {
+		const puestoPorCorr = new Map<number, any>();
+		(puestos ?? []).forEach((item) => puestoPorCorr.set(Number(item?.CORR_PUESTO), item));
+		const unidadPorCorr = new Map<number, any>();
+		(unidades ?? []).forEach((item) => unidadPorCorr.set(Number(item?.CORR_UNIDAD), item));
+
+		return (asignaciones ?? [])
+			.map((item) => {
+				const corrUnidad = Number(item?.CORR_UNIDAD ?? 0);
+				const corrPuesto = Number(item?.CORR_PUESTO ?? 0);
+				const puesto = puestoPorCorr.get(corrPuesto) ?? {};
+				const unidad = unidadPorCorr.get(corrUnidad) ?? {};
+				return this.fillData({
+					...puesto,
+					...item,
+					CORR_UNIDAD: corrUnidad,
+					CORR_PUESTO: corrPuesto,
+					CODIGO_UNIDAD: unidad.CODIGO_UNIDAD || item.CODIGO_UNIDAD || '',
+					NOMBRE_UNIDAD: unidad.NOMBRE_UNIDAD || item.NOMBRE_UNIDAD || '',
+					CODIGO_PUESTO: puesto.CODIGO_PUESTO || item.CODIGO_PUESTO || '',
+					NOMBRE_PUESTO: puesto.NOMBRE_PUESTO || item.NOMBRE_PUESTO || '',
+					NOMBRE_TIPO_PUESTO: puesto.NOMBRE_TIPO_PUESTO || item.NOMBRE_TIPO_PUESTO || '',
+					ACTIVO_PUESTO: puesto.ACTIVO_PUESTO ?? item.ACTIVO_PUESTO,
+					GRID_KEY: `${corrUnidad}|${corrPuesto}`,
+				});
+			})
+			.filter((row) => Number(row.CORR_UNIDAD) > 0 && Number(row.CORR_PUESTO) > 0)
+			.sort((a, b) => {
+				const codigo = `${a.CODIGO_UNIDAD ?? ''}`.localeCompare(`${b.CODIGO_UNIDAD ?? ''}`);
+				if (codigo !== 0) {
+					return codigo;
+				}
+				return `${a.NOMBRE_PUESTO ?? ''}`.localeCompare(`${b.NOMBRE_PUESTO ?? ''}`, 'es');
+			});
+	}
+
+	// Qué hace: filtra el listado con la unidad elegida en la barra.
+	// Cómo: 0 muestra todas; si hay unidad, deja solo sus puestos.
+	onFiltroUnidadChanged(value: any): void {
+		const corr = Number(value);
+		this.filtroCorrUnidad = corr > 0 ? corr : 0;
+		this.syncBarraFiltroUnidad();
+		if (this.isBrowse()) {
+			this.aplicarFiltroUnidad(true);
+		}
+	}
+
+	private aplicarFiltroUnidad(resetPage = false): void {
+		const corr = Number(this.filtroCorrUnidad ?? 0);
+		const filas = corr > 0
+			? this.filasPuestoUnidad.filter((row) => Number(row.CORR_UNIDAD) === corr)
+			: this.filasPuestoUnidad;
+		this.models = filas.map((row) => ({ ...row }));
+		this.refrescarGridTrasCarga(resetPage);
+	}
+
+	// Qué hace: arma el combo de unidad de la barra.
+	// Cómo: opción Todos más las unidades que tienen puesto, en orden de código.
+	private syncBarraFiltroUnidad(): void {
+		const vistas = new Set<number>();
+		const unidades = this.filasPuestoUnidad
+			.filter((row) => {
+				const corr = Number(row.CORR_UNIDAD ?? 0);
+				if (corr <= 0 || vistas.has(corr)) {
+					return false;
+				}
+				vistas.add(corr);
+				return true;
+			})
+			.map((row) => ({
+				CORR_UNIDAD: Number(row.CORR_UNIDAD),
+				CODIGO_UNIDAD: row.CODIGO_UNIDAD ?? '',
+				NOMBRE_UNIDAD: row.NOMBRE_UNIDAD ?? '',
+			}))
+			.sort((a, b) => `${a.CODIGO_UNIDAD}`.localeCompare(`${b.CODIGO_UNIDAD}`));
+
+		this.barraFiltroUnidad = {
+			label: 'Unidad',
+			model: unidades,
+			value: this.filtroCorrUnidad ?? 0,
+			valueExpr: 'CORR_UNIDAD',
+			displayExpr: 'NOMBRE_UNIDAD',
+			lookupColumns: this.unidadLookupColumns,
+			selectedRowKeys: this.selectedLookUpCORR_UNIDAD,
+			showClearButton: true,
+			dropDownWidth: 460,
+			width: 320,
+			todosOption: { CORR_UNIDAD: 0, CODIGO_UNIDAD: '', NOMBRE_UNIDAD: 'Todas' },
+			clearResetsTo: 0,
+		};
 	}
 
 	protected override aplicarRegistroEnGrid(data: unknown, isAdd: boolean): void {
@@ -174,30 +320,53 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 		}
 
 		const record = this.fillData(data as PlaPuesto);
-		const key = this.mttoGridKeyExpr as keyof PlaPuesto;
-
-		if (isAdd) {
-			this.models = [...this.models, record];
-		} else {
-			const index = this.models.findIndex((item) => item?.[key] === record[key]);
-			if (index >= 0) {
-				this.models = this.models.map((item, i) => (i === index ? this.fillData({ ...item, ...record }) : item));
-			}
-		}
-
-		this.ordenarModelsPorCorr();
-		this.refrescarGridTrasCarga(isAdd);
-	}
-
-	protected override quitarRegistroDeGrid(keyValue: unknown): void {
-		if (!this.mttoGridKeyExpr || !Array.isArray(this.models)) {
-			super.quitarRegistroDeGrid(keyValue);
+		if (isAdd || Number(record.CORR_PUESTO) <= 0) {
+			this.aplicarFiltroUnidad(isAdd);
 			return;
 		}
 
-		const key = this.mttoGridKeyExpr as keyof PlaPuesto;
-		this.models = this.models.filter((item) => item?.[key] !== keyValue);
-		this.refrescarGridTrasCarga(true);
+		this.filasPuestoUnidad = this.filasPuestoUnidad.map((row) => {
+			if (Number(row.CORR_PUESTO) !== Number(record.CORR_PUESTO)) {
+				return row;
+			}
+			return this.fillData({
+				...row,
+				...record,
+				CORR_UNIDAD: row.CORR_UNIDAD,
+				CODIGO_UNIDAD: row.CODIGO_UNIDAD,
+				NOMBRE_UNIDAD: row.NOMBRE_UNIDAD,
+				GRID_KEY: row.GRID_KEY,
+			});
+		});
+		this.aplicarFiltroUnidad(false);
+	}
+
+	protected override quitarRegistroDeGrid(keyValue: unknown): void {
+		const fila = this.filasPuestoUnidad.find((row) => row.GRID_KEY === keyValue);
+		const corrPuesto = Number(fila?.CORR_PUESTO ?? 0);
+		if (corrPuesto <= 0) {
+			super.quitarRegistroDeGrid(keyValue);
+			return;
+		}
+		this.filasPuestoUnidad = this.filasPuestoUnidad.filter((row) => Number(row.CORR_PUESTO) !== corrPuesto);
+		this.syncBarraFiltroUnidad();
+		this.aplicarFiltroUnidad(true);
+	}
+
+	protected override sincronizarSeleccionTrasCambioEstado(data: unknown): void {
+		const puesto = data as PlaPuesto;
+		if (this.model && Number(this.model.CORR_PUESTO) === Number(puesto?.CORR_PUESTO)) {
+			this.model = this.fillData({
+				...this.model,
+				...puesto,
+				CORR_UNIDAD: this.model.CORR_UNIDAD,
+				CODIGO_UNIDAD: this.model.CODIGO_UNIDAD,
+				NOMBRE_UNIDAD: this.model.NOMBRE_UNIDAD,
+				GRID_KEY: this.model.GRID_KEY,
+			});
+		}
+		const visible = (this.models as PlaPuesto[]).find((row) => row.GRID_KEY === this.model?.GRID_KEY);
+		this.getMttoDataGrid()?.actualizarFocusedRowData(visible ?? this.model);
 	}
 
 	private refrescarGridTrasCarga(resetPage = false): void {
@@ -208,6 +377,7 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 
 	override rowDblClick(e: any): void {
 		const rowData = e?.data ?? e?.row?.data;
+		this.fijarUnidadSalario(rowData);
 		if (rowData) {
 			this.model = this.fillData(rowData);
 			this.modelUpdate = this.fillData(rowData);
@@ -224,6 +394,7 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 		if (!e?.row?.data) {
 			return;
 		}
+		this.fijarUnidadSalario(e.row.data);
 		this.model = this.fillData(e.row.data);
 		this.editarClick(e);
 		this.cargarSalariosDelPuesto();
@@ -238,9 +409,8 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 		super.nuevo();
+		this.fijarUnidadSalario(null);
 		this.salarios = [];
-		this.mUnidadesSalario = [];
-		this.unidadesDisponiblesSalario = [];
 		this.cerrarSubmodalSalario();
 		setTimeout(() => {
 			this.dataForm?.instance?.option('formData', this.model);
@@ -353,41 +523,6 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 		return this.submodalSalarioEditIndex != null ? 'Editar salario' : 'Agregar salario';
 	}
 
-	// Qué hace: arma la lista de unidades que aún se pueden elegir.
-	// Cómo: solo oculta unidades con un salario activo; al editar conserva la unidad de esa fila.
-	private refrescarUnidadesDisponibles(): void {
-		const ocupadas = new Set<number>();
-		(this.salarios ?? []).forEach((s, idx) => {
-			if (idx === this.submodalSalarioEditIndex || !s.ACTIVO_PUESTO_SALARIO) {
-				return;
-			}
-			const corr = Number(s.CORR_UNIDAD ?? 0);
-			if (corr > 0) {
-				ocupadas.add(corr);
-			}
-		});
-		const disponibles = (this.mUnidadesSalario ?? []).filter(
-			(u) => !ocupadas.has(Number(u.CORR_UNIDAD))
-		);
-		if (this.submodalSalarioEditIndex != null) {
-			const actual = this.salarios[this.submodalSalarioEditIndex];
-			const corrActual = Number(actual?.CORR_UNIDAD ?? 0);
-			const yaEsta = disponibles.some((u) => Number(u.CORR_UNIDAD) === corrActual);
-			if (corrActual > 0 && !yaEsta) {
-				const catalogo = (this.mUnidadesSalario ?? []).find(
-					(u) => Number(u.CORR_UNIDAD) === corrActual
-				);
-				disponibles.unshift(
-					catalogo ?? {
-						CORR_UNIDAD: corrActual,
-						NOMBRE_UNIDAD: actual?.NOMBRE_UNIDAD || 'Unidad',
-					}
-				);
-			}
-		}
-		this.unidadesDisponiblesSalario = disponibles;
-	}
-
 	// Qué hace: indica si otra fila de la misma unidad ya tiene el salario activo.
 	// Cómo: ignora la fila que se está activando o editando.
 	private hayOtroSalarioActivoEnUnidad(corrUnidad: number | null, exceptoIndex: number | null): boolean {
@@ -446,14 +581,21 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			});
 	}
 
-	// Qué hace: carga salarios y las unidades que tienen este puesto.
-	// Cómo: GetAll de PLA_PUESTO_SALARIO y lookup GEN_UNIDADES_PUESTO por CORR_PUESTO.
+	// Qué hace: recuerda la unidad de la fila que se está editando.
+	// Cómo: el salario se guarda en esa unidad, sin volver a pedirla.
+	private fijarUnidadSalario(row: any): void {
+		const corr = Number(row?.CORR_UNIDAD ?? 0);
+		this.unidadSalarioContexto = corr > 0 ? corr : 0;
+		this.nombreUnidadSalario = corr > 0 ? `${row?.NOMBRE_UNIDAD ?? ''}`.trim() : '';
+	}
+
+	// Qué hace: carga el salario de este puesto en la unidad de la fila.
+	// Cómo: GetAll de PLA_PUESTO_SALARIO y deja solo CORR_UNIDAD del contexto.
 	private cargarSalariosDelPuesto(): void {
 		const corrPuesto = Number(this.model?.CORR_PUESTO ?? 0);
-		if (corrPuesto <= 0) {
+		const corrUnidad = Number(this.unidadSalarioContexto ?? 0);
+		if (corrPuesto <= 0 || corrUnidad <= 0) {
 			this.salarios = [];
-			this.mUnidadesSalario = [];
-			this.unidadesDisponiblesSalario = [];
 			return;
 		}
 
@@ -462,57 +604,28 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			.pipe(take(1))
 			.subscribe({
 				next: (response: any) => {
-					this.salarios = response?.Result ? this.normalizarSalarios(response.Data ?? []) : [];
+					const rows = response?.Result ? this.normalizarSalarios(response.Data ?? []) : [];
+					this.salarios = rows.filter((row) => Number(row.CORR_UNIDAD) === corrUnidad);
 				},
 				error: () => {
 					this.salarios = [];
 				},
 			});
-
-		this.appInfoService
-			.getLookUp(
-				'PLA_PUESTO',
-				'GEN_UNIDADES_PUESTO',
-				'GetCORR_UNIDAD',
-				[{ Parameter: 'CORR_PUESTO', Value: corrPuesto }],
-				environment.UrlGENERALAPI
-			)
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					const rows = response?.Result ? response.Data ?? [] : [];
-					const vistos = new Set<number>();
-					this.mUnidadesSalario = rows.filter((item: any) => {
-						const corr = Number(item?.CORR_UNIDAD ?? 0);
-						if (corr <= 0 || vistos.has(corr)) {
-							return false;
-						}
-						vistos.add(corr);
-						return true;
-					});
-					this.refrescarUnidadesDisponibles();
-				},
-				error: () => {
-					this.mUnidadesSalario = [];
-					this.unidadesDisponiblesSalario = [];
-				},
-			});
 	}
 
 	abrirSubmodalSalarioNuevo(): void {
-		if (!this.tienePuestoGuardado || this.readOnly) {
-			this.notifyFx('Guarde el puesto antes de agregar salarios.', NotifyType.Warning);
+		if (!this.tienePuestoGuardado || this.unidadSalarioContexto <= 0 || this.readOnly) {
+			this.notifyFx('Abra el puesto desde una unidad para registrar el salario.', NotifyType.Warning);
 			return;
 		}
 		this.submodalSalarioEditIndex = null;
 		this.submodalSalarioDraft = {
-			CORR_UNIDAD: null,
+			CORR_UNIDAD: this.unidadSalarioContexto,
 			SALARIO_INICIAL: null,
 			SALARIO_FINAL: null,
 			FECHA_INGRESO: this.fechaHoyElSalvador() as any,
 			ACTIVO_PUESTO_SALARIO: true,
 		};
-		this.refrescarUnidadesDisponibles();
 		this.submodalSalarioVisible = true;
 	}
 
@@ -526,16 +639,9 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 		this.submodalSalarioDraft = {
 			...actual,
 			FECHA_INGRESO: (iso ? this.fechaDesdeIso(iso) : this.fechaHoyElSalvador()) as any,
+			CORR_UNIDAD: this.unidadSalarioContexto || actual.CORR_UNIDAD,
 		};
-		this.refrescarUnidadesDisponibles();
 		this.submodalSalarioVisible = true;
-	}
-
-	// Qué hace: guarda la unidad elegida en el formulario del salario.
-	// Cómo: toma el valor del combo y lo deja en el draft.
-	onUnidadSalarioChanged(e: any): void {
-		const corr = Number(e?.value ?? 0);
-		this.submodalSalarioDraft.CORR_UNIDAD = corr > 0 ? corr : null;
 	}
 
 	cerrarSubmodalSalario(): void {

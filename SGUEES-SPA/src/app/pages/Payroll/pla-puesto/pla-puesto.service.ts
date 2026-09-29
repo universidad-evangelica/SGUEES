@@ -91,15 +91,10 @@ export class PlaPuestoService {
 
 	getColumns(): any {
 		return [
-			{
-				dataField: 'CORR_PUESTO',
-				caption: 'Corr.',
-				width: 90,
-				dataType: 'number',
-				filterOperations: ['=', '<', '>', '<=', '>='],
-			},
+			{ dataField: 'CODIGO_UNIDAD', caption: 'Codigo unidad', width: 130 },
+			{ dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 280, minWidth: 180 },
 			{ dataField: 'CODIGO_PUESTO', caption: 'Codigo', width: 120 },
-			{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 280, minWidth: 200 },
+			{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260, minWidth: 180 },
 			{ dataField: 'NOMBRE_TIPO_PUESTO', caption: 'Tipo', width: 180 },
 			createEstadoColumnConfig(ESTADO_FIELD, ESTADO_ACTIVO_INACTIVO_LABELS),
 			...buildAuditGridColumns({ withDateTimeFilter: true }),
@@ -110,7 +105,7 @@ export class PlaPuestoService {
 		return {
 			totalItems: [
 				{
-					column: 'CORR_PUESTO',
+					column: 'NOMBRE_PUESTO',
 					summaryType: 'count',
 					valueFormat: '#,##0',
 					displayFormat: 'Cant: {0}',
