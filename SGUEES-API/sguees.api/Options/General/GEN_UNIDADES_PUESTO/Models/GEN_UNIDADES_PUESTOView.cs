@@ -13,6 +13,10 @@ namespace SGUEES.Models
         public int CORR_PUESTO { get; set; }
         public string CODIGO_PUESTO { get; set; }
         public string NOMBRE_PUESTO { get; set; }
+        public int? CORR_TIPO_PUESTO { get; set; }
+        public string NOMBRE_TIPO_PUESTO { get; set; }
+        public bool? ACTIVO_PUESTO { get; set; }
+        public string MISION_PUESTO { get; set; }
         public string USUARIO_CREA { get; set; }
         public string ESTACION_CREA { get; set; }
         public DateTime? FECHA_CREA { get; set; }

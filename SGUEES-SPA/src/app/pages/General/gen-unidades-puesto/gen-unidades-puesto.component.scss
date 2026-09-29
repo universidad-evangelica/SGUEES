@@ -44,3 +44,13 @@
 		margin: 0 auto;
 	}
 }
+
+.unidades-puesto-detalle-empty {
+	margin: 8px 0 4px;
+	color: var(--sguees-text-secondary, var(--base-text-color-alpha));
+}
+
+::ng-deep .unidades-puesto-detalle-popup .dx-popup-content {
+	box-sizing: border-box;
+	padding-bottom: 8px;
+}

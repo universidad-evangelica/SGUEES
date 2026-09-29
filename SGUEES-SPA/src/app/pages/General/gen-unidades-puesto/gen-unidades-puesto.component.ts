@@ -46,6 +46,10 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 	puestosModal: GenPuestoAsignarItem[] = [];
 	asignandoPuestosModal = false;
 
+	popupDetalleVisible = false;
+	detallePuestos: GenUnidadesPuesto[] = [];
+	unidadDetalle: GenUnidadesPuestoUnidad | null = null;
+
 	private readonly maintenanceSubtitulo = 'Puestos por Unidad';
 
 	constructor(
@@ -74,6 +78,12 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 	// Qué hace: texto del botón Asignar todos en el ribbon (escribe; exige U).
 	get textoBtnAsignarTodos(): string {
 		return this.isBrowse() && this.permiteEdit ? 'Asignar todos los puestos' : '';
+	}
+
+	// Qué hace: título del detalle de puestos de la unidad.
+	get popupDetalleTitulo(): string {
+		const nombre = (this.unidadDetalle?.NOMBRE_UNIDAD ?? '').trim();
+		return nombre ? `Puestos de ${nombre}` : 'Puestos de la unidad';
 	}
 
 	// Qué hace: entrega el grid de unidades al flujo base de CBaseComponent.
@@ -224,6 +234,72 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 					this.notifyApiError(error);
 				},
 			});
+	}
+
+	// Qué hace: al entrar a la unidad (doble clic) muestra sus puestos en solo lectura.
+	onUnidadDblClick(e: any): void {
+		const row = e?.data as GenUnidadesPuestoUnidad;
+		if (!row?.CORR_UNIDAD) {
+			return;
+		}
+		this.abrirDetalleUnidad(row);
+	}
+
+	// Qué hace: carga del API los puestos asignados a la unidad y los muestra sin edición.
+	// Cómo: GetAll filtrado por CORR_UNIDAD; no usa el catálogo completo ni los checks de asignar.
+	abrirDetalleUnidad(unidad: GenUnidadesPuestoUnidad): void {
+		const corrUnidad = Number(unidad?.CORR_UNIDAD ?? 0);
+		if (corrUnidad <= 0) {
+			return;
+		}
+		this.unidadDetalle = this.fillData(unidad);
+		this.detallePuestos = [];
+		this.popupDetalleVisible = true;
+		this.loadingVisible = true;
+		this.service
+			.getAll(corrUnidad)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.loadingVisible = false;
+					if (!response?.Result) {
+						this.notifyApiResponse(response);
+						this.detallePuestos = [];
+						return;
+					}
+					this.detallePuestos = (response.Data ?? []).map((item: GenUnidadesPuesto) =>
+						this.mapDetallePuesto(item)
+					);
+				},
+				error: (error) => {
+					this.loadingVisible = false;
+					this.detallePuestos = [];
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: cierra el detalle de la unidad.
+	cerrarDetalle(): void {
+		this.popupDetalleVisible = false;
+		this.detallePuestos = [];
+		this.unidadDetalle = null;
+	}
+
+	// Qué hace: deja el puesto listo para la grilla de solo lectura.
+	private mapDetallePuesto(item: GenUnidadesPuesto): GenUnidadesPuesto {
+		const activo = item?.ACTIVO_PUESTO !== false;
+		return {
+			...item,
+			CORR_UNIDAD: Number(item.CORR_UNIDAD),
+			CORR_PUESTO: Number(item.CORR_PUESTO),
+			CODIGO_PUESTO: (item.CODIGO_PUESTO ?? '').trim(),
+			NOMBRE_PUESTO: (item.NOMBRE_PUESTO ?? '').trim(),
+			NOMBRE_TIPO_PUESTO: (item.NOMBRE_TIPO_PUESTO ?? '').trim(),
+			MISION_PUESTO: (item.MISION_PUESTO ?? '').trim(),
+			ACTIVO_PUESTO: activo,
+			ESTADO_PUESTO: activo ? 'Activo' : 'Inactivo',
+		};
 	}
 
 	// Qué hace: abre el modal de puestos de la unidad seleccionada en la grilla.
