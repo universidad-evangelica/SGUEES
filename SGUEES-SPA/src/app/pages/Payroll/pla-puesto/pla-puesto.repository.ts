@@ -36,4 +36,24 @@ export class PlaPuestoRepository {
 	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlTALENTOHUMANONAPI);
 	}
+
+	// Qué hace: asocia una unidad al puesto.
+	// Cómo: Post Post_PLA_PUESTO de GEN_UNIDADES_PUESTO.
+	asignarUnidad(model: { CORR_UNIDAD: number; CORR_PUESTO: number }): Observable<IResult> {
+		return this.objData.Post(model, 'GEN_UNIDADES_PUESTO', 'Post_PLA_PUESTO', environment.UrlGENERALAPI);
+	}
+
+	// Qué hace: quita la unidad asociada al puesto.
+	// Cómo: Delete Delete_PLA_PUESTO con la unidad y el puesto.
+	quitarUnidad(corrUnidad: number, corrPuesto: number): Observable<IResult> {
+		return this.objData.Delete(
+			'GEN_UNIDADES_PUESTO',
+			'Delete_PLA_PUESTO',
+			[
+				{ Parameter: 'CORR_UNIDAD', Value: corrUnidad },
+				{ Parameter: 'CORR_PUESTO', Value: corrPuesto },
+			],
+			environment.UrlGENERALAPI
+		);
+	}
 }

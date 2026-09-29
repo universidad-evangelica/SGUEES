@@ -89,10 +89,20 @@ export class PlaPuestoService {
 		return this.salarioRepo.delete(corrPuestoSalario);
 	}
 
+	// Qué hace: asocia una unidad al puesto abierto.
+	// Cómo: inserta en GEN_UNIDADES_PUESTO y el API devuelve la fila.
+	asignarUnidad(corrUnidad: number, corrPuesto: number): Observable<IResult> {
+		return this.repo.asignarUnidad({ CORR_UNIDAD: corrUnidad, CORR_PUESTO: corrPuesto });
+	}
+
+	// Qué hace: quita la asociación de una unidad con el puesto.
+	// Cómo: elimina la fila de GEN_UNIDADES_PUESTO por las dos llaves.
+	quitarUnidad(corrUnidad: number, corrPuesto: number): Observable<IResult> {
+		return this.repo.quitarUnidad(corrUnidad, corrPuesto);
+	}
+
 	getColumns(): any {
 		return [
-			{ dataField: 'CODIGO_UNIDAD', caption: 'Codigo unidad', width: 130 },
-			{ dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 280, minWidth: 180 },
 			{ dataField: 'CODIGO_PUESTO', caption: 'Codigo', width: 120 },
 			{ dataField: 'NOMBRE_PUESTO', caption: 'Puesto', width: 260, minWidth: 180 },
 			{ dataField: 'NOMBRE_TIPO_PUESTO', caption: 'Tipo', width: 180 },

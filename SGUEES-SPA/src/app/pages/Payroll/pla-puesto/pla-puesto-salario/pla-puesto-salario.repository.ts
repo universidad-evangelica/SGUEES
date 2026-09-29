@@ -53,6 +53,7 @@ export class PlaPuestoSalarioRepository {
 			SALARIO_INICIAL: this.numero(row?.SALARIO_INICIAL),
 			SALARIO_FINAL: this.numero(row?.SALARIO_FINAL),
 			FECHA_INGRESO: row?.FECHA_INGRESO || null,
+			FECHA_FINALIZACION: row?.FECHA_FINALIZACION || null,
 			ACTIVO_PUESTO_SALARIO: row?.ACTIVO_PUESTO_SALARIO !== false && row?.ACTIVO_PUESTO_SALARIO !== 0,
 		};
 	}

@@ -135,6 +135,30 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Qué hace: asocia una unidad al puesto desde pla-puesto.
+        // Cómo: completa auditoría y reutiliza CreateAsync, con permiso de alta de pla-puesto.
+        [HttpPost("Post_PLA_PUESTO")]
+        [Authorize(Policy = "/pla-puesto|C")]
+        public async Task<IActionResult> Post_PLA_PUESTO(GEN_UNIDADES_PUESTOTable Data)
+        {
+            SetCreateAudit(Data);
+
+            var resultado = await _service.CreateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+        }
+
+        // Qué hace: quita la unidad asociada al puesto desde pla-puesto.
+        // Cómo: fija CORR_EMPRESA y reutiliza DeleteAsync, con permiso de baja de pla-puesto.
+        [HttpDelete("Delete_PLA_PUESTO")]
+        [Authorize(Policy = "/pla-puesto|D")]
+        public async Task<IActionResult> Delete_PLA_PUESTO([FromQuery] GEN_UNIDADES_PUESTOTable Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+
+            var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+        }
+
         // Qué hace: entrega las unidades que ya tienen el puesto, para el tab Salarios de pla-puesto.
         // Cómo: fija CORR_EMPRESA y reutiliza GetAllAsync filtrado por CORR_PUESTO.
         [HttpGet("GetCORR_UNIDAD_PLA_PUESTO")]

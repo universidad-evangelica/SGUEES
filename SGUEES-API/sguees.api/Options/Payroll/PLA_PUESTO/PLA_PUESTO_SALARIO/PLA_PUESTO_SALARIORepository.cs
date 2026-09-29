@@ -43,15 +43,51 @@ namespace SGUEES.Repositories
 					new CParameter() { ParameterName = "CORR_PUESTO", Value = corrPuesto, DbType = System.Data.DbType.Int32 },
 				};
 				var reader = await objData.GetDataReader(_ViewName, where);
-				var rows = new List<PLA_PUESTO_SALARIOView>().FromDataReader(reader)
-					.OrderBy(x => x.NOMBRE_UNIDAD)
-					.ThenBy(x => x.CORR_PUESTO_SALARIO)
-					.ToList();
+				var rows = new List<PLA_PUESTO_SALARIOView>().FromDataReader(reader).ToList();
 				reader.Close();
 
-				objResultado.Data = rows;
+				// Qué hace: deja una fila por unidad del puesto, aunque no tenga salario.
+				// Cómo: GEN_UNIDADES_PUESTO LEFT JOIN los salarios ya leídos de la vista.
+				var whereUnidades = new List<CParameter>
+				{
+					new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "CORR_PUESTO", Value = corrPuesto, DbType = System.Data.DbType.Int32 },
+				};
+				var readerUnidades = await objData.GetDataReader("V_GEN_UNIDADES_PUESTO", whereUnidades);
+				var unidades = new List<GEN_UNIDADES_PUESTOView>().FromDataReader(readerUnidades)
+					.OrderBy(x => x.CODIGO_UNIDAD)
+					.ThenBy(x => x.NOMBRE_UNIDAD)
+					.ToList();
+				readerUnidades.Close();
+
+				var salariosPorUnidad = rows
+					.GroupBy(x => x.CORR_UNIDAD ?? 0)
+					.ToDictionary(g => g.Key, g => g.OrderBy(s => s.CORR_PUESTO_SALARIO).ToList());
+				var combinadas = new List<PLA_PUESTO_SALARIOView>();
+				foreach (var unidad in unidades)
+				{
+					if (salariosPorUnidad.TryGetValue(unidad.CORR_UNIDAD, out var salarios) && salarios.Count > 0)
+					{
+						combinadas.AddRange(salarios);
+					}
+					else
+					{
+						combinadas.Add(new PLA_PUESTO_SALARIOView
+						{
+							CORR_EMPRESA = corrEmpresa,
+							CORR_PUESTO = corrPuesto,
+							CORR_UNIDAD = unidad.CORR_UNIDAD,
+							CODIGO_UNIDAD = unidad.CODIGO_UNIDAD,
+							NOMBRE_UNIDAD = unidad.NOMBRE_UNIDAD,
+							CORR_PUESTO_SALARIO = 0,
+							ACTIVO_PUESTO_SALARIO = null,
+						});
+					}
+				}
+
+				objResultado.Data = combinadas;
 				objResultado.Result = true;
-				objResultado.RowsAffected = rows.Count;
+				objResultado.RowsAffected = combinadas.Count;
 				objResultado.ErrorCode = 0;
 				objResultado.ErrorMessage = "";
 			}
@@ -82,6 +118,8 @@ namespace SGUEES.Repositories
 				{
 					return validacion;
 				}
+
+				AplicarFechaFinalizacion(Data);
 
 				if (EsActivo(Data.ACTIVO_PUESTO_SALARIO)
 					&& await UnidadYaTieneSalarioActivoAsync(Data.CORR_EMPRESA, Data.CORR_PUESTO.Value, Data.CORR_UNIDAD.Value, 0))
@@ -156,6 +194,8 @@ namespace SGUEES.Repositories
 					objResultado.ErrorMessage = "CORR_PUESTO_SALARIO es requerido.";
 					return objResultado;
 				}
+
+				AplicarFechaFinalizacion(Data);
 
 				if (EsActivo(Data.ACTIVO_PUESTO_SALARIO)
 					&& await UnidadYaTieneSalarioActivoAsync(Data.CORR_EMPRESA, Data.CORR_PUESTO.Value, Data.CORR_UNIDAD.Value, Data.CORR_PUESTO_SALARIO))
@@ -315,6 +355,37 @@ namespace SGUEES.Repositories
 
 		private static bool EsActivo(bool? activo) => activo != false;
 
+		// Qué hace: al desactivar guarda la fecha de finalización; al activar la limpia.
+		// Cómo: si no viene fecha, usa el día de El Salvador.
+		private static void AplicarFechaFinalizacion(PLA_PUESTO_SALARIOTable item)
+		{
+			if (EsActivo(item.ACTIVO_PUESTO_SALARIO))
+			{
+				item.FECHA_FINALIZACION = null;
+				return;
+			}
+
+			if (!item.FECHA_FINALIZACION.HasValue)
+			{
+				item.FECHA_FINALIZACION = FechaHoyElSalvador();
+			}
+		}
+
+		private static DateTime FechaHoyElSalvador()
+		{
+			TimeZoneInfo zona;
+			try
+			{
+				zona = TimeZoneInfo.FindSystemTimeZoneById("Central America Standard Time");
+			}
+			catch (TimeZoneNotFoundException)
+			{
+				zona = TimeZoneInfo.FindSystemTimeZoneById("America/El_Salvador");
+			}
+
+			return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, zona).Date;
+		}
+
 		private async Task<PLA_PUESTO_SALARIOView> LeerFilaAsync(int corrEmpresa, int corrPuestoSalario)
 		{
 			var where = new List<CParameter>
@@ -338,6 +409,7 @@ namespace SGUEES.Repositories
 			object salarioInicial = item.SALARIO_INICIAL.HasValue ? item.SALARIO_INICIAL.Value : DBNull.Value;
 			object salarioFinal = item.SALARIO_FINAL.HasValue ? item.SALARIO_FINAL.Value : DBNull.Value;
 			object fechaIngreso = item.FECHA_INGRESO.HasValue ? item.FECHA_INGRESO.Value.Date : DBNull.Value;
+			object fechaFinalizacion = item.FECHA_FINALIZACION.HasValue ? item.FECHA_FINALIZACION.Value.Date : DBNull.Value;
 
 			var parametros = new List<CParameter>
 			{
@@ -347,6 +419,7 @@ namespace SGUEES.Repositories
 				new CParameter() { ParameterName = "CORR_PUESTO", Value = item.CORR_PUESTO.Value, DbType = System.Data.DbType.Int32 },
 				new CParameter() { ParameterName = "ACTIVO_PUESTO_SALARIO", Value = item.ACTIVO_PUESTO_SALARIO ?? true, DbType = System.Data.DbType.Boolean },
 				new CParameter() { ParameterName = "FECHA_INGRESO", Value = fechaIngreso, DbType = System.Data.DbType.Date },
+				new CParameter() { ParameterName = "FECHA_FINALIZACION", Value = fechaFinalizacion, DbType = System.Data.DbType.Date },
 			};
 
 			if (esAlta)

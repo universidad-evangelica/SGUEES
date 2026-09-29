@@ -15,6 +15,7 @@ namespace SGUEES.Models
 		public int? CORR_PUESTO { get; set; }
 		public bool? ACTIVO_PUESTO_SALARIO { get; set; }
 		public DateTime? FECHA_INGRESO { get; set; }
+		public DateTime? FECHA_FINALIZACION { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }
 		public DateTime? FECHA_CREA { get; set; }

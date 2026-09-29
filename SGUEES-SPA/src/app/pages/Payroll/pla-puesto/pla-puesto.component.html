@@ -13,8 +13,6 @@
 		[campoEstado]="mttoCampoEstado"
 		[puedeCambiarEstado]="permiteEdit"
 		[focusedRow]="isBrowse() ? model : null"
-		[combox1]="barraFiltroUnidad"
-		(combox1Change)="onFiltroUnidadChanged($event)"
 		(consultar)="consultar()"
 		(nuevo)="nuevo()"
 		(guardar)="guardar()"
@@ -52,82 +50,120 @@
 			</dx-form>
 		</div>
 
-		<!-- motivo: pestañas bajo el puesto; Salarios es la primera y aquí caben las siguientes -->
-		<dx-tab-panel class="ps-tabs" [swipeEnabled]="false">
-			<dxi-item title="Salarios" [icon]="'money'">
-		<div class="ps-panel">
-			<div class="ps-head">
-				<dx-button
-					text="Agregar"
-					icon="plus"
-					type="default"
-					stylingMode="outlined"
-					[disabled]="!tienePuestoGuardado || unidadSalarioContexto <= 0 || readOnly"
-					(onClick)="abrirSubmodalSalarioNuevo()"
-				></dx-button>
-			</div>
-			<p class="ps-hint" *ngIf="unidadSalarioContexto <= 0">
-				Abra el puesto desde una unidad del listado para registrar su salario.
-			</p>
-			<dx-data-grid
-				class="theme-dependent sguees-data-grid-mtto ps-salarios-grid"
-				[dataSource]="salarios"
-				keyExpr="CORR_PUESTO_SALARIO"
-				[columnAutoWidth]="false"
-				[showBorders]="true"
-				[showColumnLines]="true"
-				[showRowLines]="true"
-				[rowAlternationEnabled]="true"
-				[hoverStateEnabled]="true"
-				[allowColumnResizing]="true"
-				[columnResizingMode]="'widget'"
-				[width]="'100%'"
-				noDataText="Sin salarios registrados."
-				(onRowPrepared)="onSalarioRowPrepared($event)"
-			>
-				<dxo-paging [enabled]="true" [pageSize]="5"></dxo-paging>
-				<dxo-pager
-					[visible]="true"
-					[showPageSizeSelector]="true"
-					[allowedPageSizes]="[5, 10, 25]"
-					[showInfo]="true"
-				></dxo-pager>
-				<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
-				<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
-				<dxo-load-panel [enabled]="false"></dxo-load-panel>
-				<dxi-column dataField="SALARIO_INICIAL" caption="Salario inicial" [width]="160" format="$#,##0.00" alignment="right"></dxi-column>
-				<dxi-column dataField="SALARIO_FINAL" caption="Salario final" [width]="150" format="$#,##0.00" alignment="right"></dxi-column>
-				<dxi-column dataField="FECHA_INGRESO" caption="Fecha de ingreso" [width]="150" [calculateCellValue]="textoFechaSalario" [allowFiltering]="true"></dxi-column>
-				<dxi-column caption="Activo" [width]="90" [allowFiltering]="false" [allowSorting]="false" cellTemplate="activoSalarioTpl" alignment="center"></dxi-column>
-				<dxi-column caption="" [width]="110" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesSalarioTpl" [visible]="!readOnly" alignment="center"></dxi-column>
-				<div *dxTemplate="let cell of 'activoSalarioTpl'">
-					<button
-						type="button"
-						class="ps-activo-toggle"
-						[class.ps-activo-toggle--on]="cell.data.ACTIVO_PUESTO_SALARIO"
-						[class.ps-activo-toggle--off]="!cell.data.ACTIVO_PUESTO_SALARIO"
-						[disabled]="readOnly"
-						[attr.aria-pressed]="cell.data.ACTIVO_PUESTO_SALARIO"
-						[attr.aria-label]="cell.data.ACTIVO_PUESTO_SALARIO ? 'Desactivar salario' : 'Activar salario'"
-						(click)="toggleActivoSalario(indiceSalario(cell.data), $event)"
+		<!-- motivo: Unidades asocia el puesto; Salarios lista esas unidades aunque no tengan salario -->
+		<dx-tab-panel class="ps-tabs" *ngIf="tienePuestoGuardado" [swipeEnabled]="false">
+			<dxi-item title="Unidades" [icon]="'group'">
+				<div class="ps-panel">
+					<!-- motivo: en lectura no se agregan ni se quitan unidades -->
+					<div class="ps-head" *ngIf="!readOnly">
+						<dx-button
+							text="Agregar"
+							icon="plus"
+							type="default"
+							stylingMode="outlined"
+							(onClick)="abrirSubmodalUnidad()"
+						></dx-button>
+					</div>
+					<dx-data-grid
+						class="theme-dependent sguees-data-grid-mtto ps-salarios-grid"
+						[dataSource]="unidadesAsignadas"
+						keyExpr="CORR_UNIDAD"
+						[columnAutoWidth]="false"
+						[showBorders]="true"
+						[showColumnLines]="true"
+						[showRowLines]="true"
+						[rowAlternationEnabled]="true"
+						[hoverStateEnabled]="true"
+						[allowColumnResizing]="true"
+						[columnResizingMode]="'widget'"
+						[width]="'100%'"
+						noDataText="Sin unidades asociadas."
 					>
-						<span class="ps-activo-toggle__track">
-							<span class="ps-activo-toggle__icon ps-activo-toggle__icon--on" aria-hidden="true">
-								<i class="dx-icon dx-icon-check"></i>
-							</span>
-							<span class="ps-activo-toggle__thumb" aria-hidden="true"></span>
-							<span class="ps-activo-toggle__icon ps-activo-toggle__icon--off" aria-hidden="true">
-								<i class="dx-icon dx-icon-close"></i>
-							</span>
-						</span>
-					</button>
+						<dxo-paging [enabled]="true" [pageSize]="5"></dxo-paging>
+						<dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25]" [showInfo]="true"></dxo-pager>
+						<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+						<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+						<dxo-load-panel [enabled]="false"></dxo-load-panel>
+						<dxi-column caption="" [width]="70" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesUnidadTpl" [visible]="!readOnly" alignment="center"></dxi-column>
+						<dxi-column dataField="CODIGO_UNIDAD" caption="Codigo" [width]="140"></dxi-column>
+						<dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [width]="320" [minWidth]="180"></dxi-column>
+						<div *dxTemplate="let cell of 'accionesUnidadTpl'">
+							<dx-button icon="trash" stylingMode="text" hint="Quitar" (onClick)="quitarUnidad(cell.data)"></dx-button>
+						</div>
+					</dx-data-grid>
 				</div>
-				<div *dxTemplate="let cell of 'accionesSalarioTpl'">
-					<dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirSubmodalSalarioEditar(indiceSalario(cell.data))"></dx-button>
-					<dx-button icon="trash" stylingMode="text" hint="Quitar" (onClick)="eliminarSalario(indiceSalario(cell.data))"></dx-button>
+			</dxi-item>
+			<dxi-item title="Salarios" [icon]="'money'">
+				<div class="ps-panel">
+					<!-- motivo: en lectura no se agregan, editan ni activan salarios -->
+					<div class="ps-head" *ngIf="!readOnly">
+						<dx-button
+							text="Agregar"
+							icon="plus"
+							type="default"
+							stylingMode="outlined"
+							(onClick)="abrirSubmodalSalarioNuevo()"
+						></dx-button>
+						<dx-button
+							*ngIf="salarioSeleccionado?.CORR_PUESTO_SALARIO > 0"
+							[text]="salarioSeleccionado.ACTIVO_PUESTO_SALARIO ? 'Desactivar' : 'Activar'"
+							[icon]="salarioSeleccionado.ACTIVO_PUESTO_SALARIO ? 'close' : 'check'"
+							stylingMode="outlined"
+							[type]="salarioSeleccionado.ACTIVO_PUESTO_SALARIO ? 'danger' : 'success'"
+							(onClick)="activarDesactivarSalarioSeleccionado()"
+						></dx-button>
+					</div>
+					<dx-data-grid
+						class="theme-dependent sguees-data-grid-mtto ps-salarios-grid"
+						[dataSource]="salarios"
+						keyExpr="FILA_KEY"
+						[focusedRowEnabled]="true"
+						[focusedRowKey]="salarioSeleccionado?.FILA_KEY"
+						[columnAutoWidth]="false"
+						[showBorders]="true"
+						[showColumnLines]="true"
+						[showRowLines]="true"
+						[rowAlternationEnabled]="true"
+						[hoverStateEnabled]="true"
+						[allowColumnResizing]="true"
+						[columnResizingMode]="'widget'"
+						[width]="'100%'"
+						noDataText="Sin unidades asociadas."
+						(onFocusedRowChanged)="onSalarioFocused($event)"
+						(onRowPrepared)="onSalarioRowPrepared($event)"
+					>
+						<dxo-paging [enabled]="true" [pageSize]="5"></dxo-paging>
+						<dxo-pager
+							[visible]="true"
+							[showPageSizeSelector]="true"
+							[allowedPageSizes]="[5, 10, 25]"
+							[showInfo]="true"
+						></dxo-pager>
+						<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+						<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+						<dxo-load-panel [enabled]="false"></dxo-load-panel>
+						<dxi-column caption="" [width]="110" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesSalarioTpl" [visible]="!readOnly" alignment="center"></dxi-column>
+						<dxi-column dataField="CODIGO_UNIDAD" caption="Codigo" [width]="130"></dxi-column>
+						<dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [width]="240" [minWidth]="160"></dxi-column>
+						<dxi-column dataField="SALARIO_INICIAL" caption="Salario inicial" [width]="160" format="$#,##0.00" alignment="right"></dxi-column>
+						<dxi-column dataField="SALARIO_FINAL" caption="Salario final" [width]="150" format="$#,##0.00" alignment="right"></dxi-column>
+						<dxi-column dataField="FECHA_INGRESO" caption="Fecha de ingreso" [width]="150" [calculateCellValue]="textoFechaSalario" [allowFiltering]="true"></dxi-column>
+						<dxi-column dataField="FECHA_FINALIZACION" caption="Fecha de finalizacion" [width]="170" [calculateCellValue]="textoFechaFinalizacion" [allowFiltering]="true"></dxi-column>
+						<dxi-column caption="Estado" [width]="120" [allowFiltering]="false" [allowSorting]="false" cellTemplate="activoSalarioTpl" alignment="center"></dxi-column>
+						<div *dxTemplate="let cell of 'activoSalarioTpl'">
+							<span
+								*ngIf="cell.data.CORR_PUESTO_SALARIO > 0"
+								class="estado-badge"
+								[class.estado-badge--activo]="cell.data.ACTIVO_PUESTO_SALARIO"
+								[class.estado-badge--inactivo]="!cell.data.ACTIVO_PUESTO_SALARIO"
+							>{{ cell.data.ACTIVO_PUESTO_SALARIO ? 'Activo' : 'Inactivo' }}</span>
+						</div>
+						<div *dxTemplate="let cell of 'accionesSalarioTpl'">
+							<dx-button icon="edit" stylingMode="text" hint="Editar" (onClick)="abrirSubmodalSalarioEditar(indiceSalario(cell.data))"></dx-button>
+							<dx-button *ngIf="cell.data.CORR_PUESTO_SALARIO > 0" icon="trash" stylingMode="text" hint="Quitar" (onClick)="eliminarSalario(indiceSalario(cell.data))"></dx-button>
+						</div>
+					</dx-data-grid>
 				</div>
-			</dx-data-grid>
-		</div>
 			</dxi-item>
 		</dx-tab-panel>
 	</div>
@@ -165,6 +201,40 @@
 		(editClick)="onEditClick($event)"
 	></app-data-grid-mtto>
 </div>
+
+	<!-- motivo: elegir la unidad que se asocia a este puesto -->
+	<dx-popup
+		[(visible)]="submodalUnidadVisible"
+		title="Agregar unidad"
+		[width]="560"
+		[maxWidth]="'94vw'"
+		[height]="'auto'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalUnidad()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ps-submodal">
+			<div class="ps-field">
+				<label class="ps-label">Unidad <span class="req">*</span></label>
+				<app-data-lookup
+					[model]="unidadesDisponibles"
+					[value]="unidadPorAsignar"
+					(valueChange)="unidadPorAsignar = $event"
+					valueExpr="CORR_UNIDAD"
+					displayExpr="NOMBRE_COMBO"
+					[selectedRowKeys]="selectedLookUpUnidad"
+					[lookupColumns]="unidadLookupColumns"
+					[showClearButton]="true"
+					[dropDownWidth]="480"
+				></app-data-lookup>
+			</div>
+			<div class="ps-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalUnidad()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarUnidad()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
 
 	<!-- motivo: alta/edición del salario del puesto en una unidad -->
 	<dx-popup
