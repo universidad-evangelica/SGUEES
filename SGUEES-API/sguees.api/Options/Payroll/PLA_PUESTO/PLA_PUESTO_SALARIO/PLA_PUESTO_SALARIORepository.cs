@@ -259,11 +259,6 @@ namespace SGUEES.Repositories
 				return Error("Ingrese el salario inicial.");
 			}
 
-			if (!Data.SALARIO_ACTUAL.HasValue)
-			{
-				return Error("Ingrese el salario actual.");
-			}
-
 			if (!Data.SALARIO_FINAL.HasValue)
 			{
 				return Error("Ingrese el salario final.");
@@ -279,11 +274,6 @@ namespace SGUEES.Repositories
 				return Error("El salario inicial no puede ser negativo.");
 			}
 
-			if (Data.SALARIO_ACTUAL.HasValue && Data.SALARIO_ACTUAL.Value < 0)
-			{
-				return Error("El salario actual no puede ser negativo.");
-			}
-
 			if (Data.SALARIO_FINAL.HasValue && Data.SALARIO_FINAL.Value < 0)
 			{
 				return Error("El salario final no puede ser negativo.");
@@ -292,16 +282,6 @@ namespace SGUEES.Repositories
 			if (Data.SALARIO_INICIAL.HasValue && Data.SALARIO_FINAL.HasValue && Data.SALARIO_INICIAL.Value > Data.SALARIO_FINAL.Value)
 			{
 				return Error("El salario inicial no puede ser mayor que el salario final.");
-			}
-
-			if (Data.SALARIO_INICIAL.HasValue && Data.SALARIO_ACTUAL.HasValue && Data.SALARIO_ACTUAL.Value < Data.SALARIO_INICIAL.Value)
-			{
-				return Error("El salario actual no puede ser menor que el salario inicial.");
-			}
-
-			if (Data.SALARIO_ACTUAL.HasValue && Data.SALARIO_FINAL.HasValue && Data.SALARIO_ACTUAL.Value > Data.SALARIO_FINAL.Value)
-			{
-				return Error("El salario actual no puede ser mayor que el salario final.");
 			}
 
 			return null;
@@ -356,14 +336,12 @@ namespace SGUEES.Repositories
 			bool esAlta)
 		{
 			object salarioInicial = item.SALARIO_INICIAL.HasValue ? item.SALARIO_INICIAL.Value : DBNull.Value;
-			object salarioActual = item.SALARIO_ACTUAL.HasValue ? item.SALARIO_ACTUAL.Value : DBNull.Value;
 			object salarioFinal = item.SALARIO_FINAL.HasValue ? item.SALARIO_FINAL.Value : DBNull.Value;
 			object fechaIngreso = item.FECHA_INGRESO.HasValue ? item.FECHA_INGRESO.Value.Date : DBNull.Value;
 
 			var parametros = new List<CParameter>
 			{
 				new CParameter() { ParameterName = "SALARIO_INICIAL", Value = salarioInicial, DbType = System.Data.DbType.Decimal },
-				new CParameter() { ParameterName = "SALARIO_ACTUAL", Value = salarioActual, DbType = System.Data.DbType.Decimal },
 				new CParameter() { ParameterName = "SALARIO_FINAL", Value = salarioFinal, DbType = System.Data.DbType.Decimal },
 				new CParameter() { ParameterName = "CORR_UNIDAD", Value = item.CORR_UNIDAD.Value, DbType = System.Data.DbType.Int32 },
 				new CParameter() { ParameterName = "CORR_PUESTO", Value = item.CORR_PUESTO.Value, DbType = System.Data.DbType.Int32 },

@@ -9,7 +9,6 @@ namespace SGUEES.Models
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_PUESTO_SALARIO { get; set; }
 		public decimal? SALARIO_INICIAL { get; set; }
-		public decimal? SALARIO_ACTUAL { get; set; }
 		public decimal? SALARIO_FINAL { get; set; }
 		public int? CORR_UNIDAD { get; set; }
 		public string CODIGO_UNIDAD { get; set; }

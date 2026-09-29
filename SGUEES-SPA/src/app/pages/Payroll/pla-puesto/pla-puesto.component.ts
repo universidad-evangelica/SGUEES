@@ -508,7 +508,6 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 		this.submodalSalarioDraft = {
 			CORR_UNIDAD: null,
 			SALARIO_INICIAL: null,
-			SALARIO_ACTUAL: null,
 			SALARIO_FINAL: null,
 			FECHA_INGRESO: this.fechaHoyElSalvador() as any,
 			ACTIVO_PUESTO_SALARIO: true,
@@ -552,15 +551,10 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			return;
 		}
 		const inicial = this.numeroSalario(this.submodalSalarioDraft?.SALARIO_INICIAL);
-		const actual = this.numeroSalario(this.submodalSalarioDraft?.SALARIO_ACTUAL);
 		const final = this.numeroSalario(this.submodalSalarioDraft?.SALARIO_FINAL);
 		const fechaIngreso = this.normalizarFecha(this.submodalSalarioDraft?.FECHA_INGRESO);
 		if (inicial == null) {
 			this.notifyFx('Ingrese el salario inicial.', NotifyType.Warning);
-			return;
-		}
-		if (actual == null) {
-			this.notifyFx('Ingrese el salario actual.', NotifyType.Warning);
 			return;
 		}
 		if (final == null) {
@@ -571,20 +565,12 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			this.notifyFx('Seleccione la fecha de ingreso.', NotifyType.Warning);
 			return;
 		}
-		if ([inicial, actual, final].some((n) => n != null && n < 0)) {
+		if ([inicial, final].some((n) => n != null && n < 0)) {
 			this.notifyFx('Los salarios no pueden ser negativos.', NotifyType.Warning);
 			return;
 		}
 		if (inicial != null && final != null && inicial > final) {
 			this.notifyFx('El salario inicial no puede ser mayor que el salario final.', NotifyType.Warning);
-			return;
-		}
-		if (inicial != null && actual != null && actual < inicial) {
-			this.notifyFx('El salario actual no puede ser menor que el salario inicial.', NotifyType.Warning);
-			return;
-		}
-		if (actual != null && final != null && actual > final) {
-			this.notifyFx('El salario actual no puede ser mayor que el salario final.', NotifyType.Warning);
 			return;
 		}
 		const quedariaActivo = this.submodalSalarioDraft?.ACTIVO_PUESTO_SALARIO !== false;
@@ -604,7 +590,6 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			CORR_PUESTO: Number(this.model.CORR_PUESTO),
 			CORR_UNIDAD: corrUnidad,
 			SALARIO_INICIAL: inicial,
-			SALARIO_ACTUAL: actual,
 			SALARIO_FINAL: final,
 			FECHA_INGRESO: fechaIngreso,
 			ACTIVO_PUESTO_SALARIO: this.submodalSalarioDraft?.ACTIVO_PUESTO_SALARIO !== false,
@@ -667,7 +652,6 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 	resumenSalario(item: PlaPuestoSalario): string {
 		const partes = [
 			item?.SALARIO_INICIAL != null ? `Inicial ${this.textoMonto(item.SALARIO_INICIAL)}` : '',
-			item?.SALARIO_ACTUAL != null ? `Actual ${this.textoMonto(item.SALARIO_ACTUAL)}` : '',
 			item?.SALARIO_FINAL != null ? `Final ${this.textoMonto(item.SALARIO_FINAL)}` : '',
 			this.textoFecha(item?.FECHA_INGRESO),
 		].filter((t) => t && t !== '—');
@@ -704,7 +688,6 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 				CORR_UNIDAD: Number(r.CORR_UNIDAD) > 0 ? Number(r.CORR_UNIDAD) : null,
 				NOMBRE_UNIDAD: r.NOMBRE_UNIDAD ?? '',
 				SALARIO_INICIAL: this.numeroSalario(r.SALARIO_INICIAL),
-				SALARIO_ACTUAL: this.numeroSalario(r.SALARIO_ACTUAL),
 				SALARIO_FINAL: this.numeroSalario(r.SALARIO_FINAL),
 				FECHA_INGRESO: this.normalizarFecha(r.FECHA_INGRESO),
 				ACTIVO_PUESTO_SALARIO: r.ACTIVO_PUESTO_SALARIO !== false && r.ACTIVO_PUESTO_SALARIO !== 0,

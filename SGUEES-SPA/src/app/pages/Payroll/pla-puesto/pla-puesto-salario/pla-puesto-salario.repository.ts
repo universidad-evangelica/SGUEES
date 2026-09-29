@@ -51,7 +51,6 @@ export class PlaPuestoSalarioRepository {
 			CORR_PUESTO: Number(row?.CORR_PUESTO) > 0 ? Number(row.CORR_PUESTO) : 0,
 			CORR_UNIDAD: Number(row?.CORR_UNIDAD) > 0 ? Number(row.CORR_UNIDAD) : null,
 			SALARIO_INICIAL: this.numero(row?.SALARIO_INICIAL),
-			SALARIO_ACTUAL: this.numero(row?.SALARIO_ACTUAL),
 			SALARIO_FINAL: this.numero(row?.SALARIO_FINAL),
 			FECHA_INGRESO: row?.FECHA_INGRESO || null,
 			ACTIVO_PUESTO_SALARIO: row?.ACTIVO_PUESTO_SALARIO !== false && row?.ACTIVO_PUESTO_SALARIO !== 0,

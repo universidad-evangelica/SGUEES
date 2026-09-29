@@ -7,7 +7,6 @@ export interface PlaPuestoSalario {
 	CORR_UNIDAD: number | null;
 	NOMBRE_UNIDAD?: string;
 	SALARIO_INICIAL: number | null;
-	SALARIO_ACTUAL: number | null;
 	SALARIO_FINAL: number | null;
 	FECHA_INGRESO: string | null;
 	ACTIVO_PUESTO_SALARIO: boolean;
