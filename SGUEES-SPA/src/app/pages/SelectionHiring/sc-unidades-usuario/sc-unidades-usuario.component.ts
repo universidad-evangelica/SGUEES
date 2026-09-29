@@ -42,6 +42,7 @@ export class ScUnidadesUsuarioComponent extends CBaseComponent implements OnInit
 	popupAsignarVisible = false;
 	asignandoUnidadesModal = false;
 	asignandoTodasUnidades = false;
+	unidadModalPageSize = 50;
 
 	private readonly maintenanceSubtitulo = 'Unidades por Usuario';
 
@@ -225,9 +226,22 @@ export class ScUnidadesUsuarioComponent extends CBaseComponent implements OnInit
 			return;
 		}
 		this.usuarioSeleccionado = this.fillData(usuario);
+		this.unidadModalPageSize = 50;
 		this.unidadesModal = this.armarUnidadesParaModal(usuario.LOGIN_SISTEMA);
 		this.popupAsignarVisible = true;
 		this.cdr.detectChanges();
+	}
+
+	// Qué hace: con 5 o 10 filas la tabla se encoge; con más, mantiene altura y scroll.
+	get alturaUnidadesModal(): string {
+		return this.unidadModalPageSize <= 10 ? 'auto' : 'calc(100vh - 220px)';
+	}
+
+	// Qué hace: actualiza la altura cuando cambia el tamaño de página del popup.
+	onUnidadesModalOptionChanged(e: any): void {
+		if (e?.fullName === 'paging.pageSize' && Number(e.value) > 0) {
+			this.unidadModalPageSize = Number(e.value);
+		}
 	}
 
 	// Qué hace: inicia la asignación masiva desde el ribbon.

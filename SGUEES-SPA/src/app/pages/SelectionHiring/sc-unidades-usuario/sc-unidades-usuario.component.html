@@ -115,9 +115,11 @@
 		[allowColumnResizing]="true"
 		[columnResizingMode]="'widget'"
 		[width]="'100%'"
+		[height]="alturaUnidadesModal"
 		[repaintChangesOnly]="false"
+		(onOptionChanged)="onUnidadesModalOptionChanged($event)"
 	>
-		<dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+		<dxo-paging [enabled]="true" [pageSize]="unidadModalPageSize"></dxo-paging>
 		<dxo-pager
 			[visible]="true"
 			[showPageSizeSelector]="true"
@@ -126,7 +128,7 @@
 		></dxo-pager>
 		<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
 		<dxo-header-filter [visible]="true"></dxo-header-filter>
-		<dxo-scrolling [mode]="'standard'"></dxo-scrolling>
+		<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
 		<dxo-load-panel [enabled]="false"></dxo-load-panel>
 		<dxo-editing
 			[mode]="'cell'"

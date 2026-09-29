@@ -54,11 +54,11 @@
 		<dx-tab-panel class="ps-tabs" *ngIf="tienePuestoGuardado" [swipeEnabled]="false">
 			<dxi-item title="Unidades" [icon]="'group'">
 				<div class="ps-panel">
-					<!-- motivo: en lectura no se agregan ni se quitan unidades -->
+					<!-- motivo: en lectura no se asignan ni se quitan unidades -->
 					<div class="ps-head" *ngIf="!readOnly">
 						<dx-button
-							text="Agregar"
-							icon="plus"
+							text="Asignar"
+							icon="check"
 							type="default"
 							stylingMode="outlined"
 							(onClick)="abrirSubmodalUnidad()"
@@ -194,38 +194,93 @@
 	></app-data-grid-mtto>
 </div>
 
-	<!-- motivo: elegir la unidad que se asocia a este puesto -->
+	<!-- motivo: tabla de unidades; el check asigna y quitarlo desasocia la unidad del puesto -->
 	<dx-popup
 		[(visible)]="submodalUnidadVisible"
-		title="Agregar unidad"
-		[width]="560"
-		[maxWidth]="'94vw'"
+		title="Asignar unidad"
+		[width]="780"
+		[maxWidth]="'calc(100vw - 24px)'"
 		[height]="'auto'"
+		[maxHeight]="'calc(100vh - 48px)'"
 		[dragEnabled]="false"
 		[showCloseButton]="true"
 		[hideOnOutsideClick]="false"
+		[wrapperAttr]="{ class: 'ps-unidad-asignar-popup' }"
 		(onHiding)="cerrarSubmodalUnidad()"
 	>
-		<div *dxTemplate="let data of 'content'" class="ps-submodal">
-			<div class="ps-field">
-				<label class="ps-label">Unidad <span class="req">*</span></label>
-				<app-data-lookup
-					[model]="unidadesDisponibles"
-					[value]="unidadPorAsignar"
-					(valueChange)="unidadPorAsignar = $event"
-					valueExpr="CORR_UNIDAD"
-					displayExpr="NOMBRE_COMBO"
-					[selectedRowKeys]="selectedLookUpUnidad"
-					[lookupColumns]="unidadLookupColumns"
-					[showClearButton]="true"
-					[dropDownWidth]="480"
-				></app-data-lookup>
-			</div>
-			<div class="ps-submodal__footer">
-				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalUnidad()"></dx-button>
-				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarUnidad()"></dx-button>
-			</div>
+		<div class="ps-unidad-popup-toolbar">
+			<dx-button
+				icon="check"
+				text="Todos"
+				type="success"
+				stylingMode="contained"
+				(onClick)="selectTodasUnidades()"
+				[disabled]="asignandoUnidades || !unidadesModal.length"
+			></dx-button>
+			<dx-button
+				icon="close"
+				text="Ninguno"
+				type="danger"
+				stylingMode="contained"
+				(onClick)="selectNingunaUnidad()"
+				[disabled]="asignandoUnidades || !unidadesModal.length"
+			></dx-button>
+			<dx-button
+				icon="save"
+				text="Guardar"
+				type="default"
+				stylingMode="contained"
+				(onClick)="guardarUnidadesMarcadas()"
+				[disabled]="asignandoUnidades || !unidadesModal.length"
+			></dx-button>
 		</div>
+		<dx-data-grid
+			class="theme-dependent sguees-data-grid-mtto ps-unidad-popup-grid"
+			[dataSource]="unidadesModal"
+			keyExpr="CORR_UNIDAD"
+			[columnAutoWidth]="false"
+			[showBorders]="true"
+			[showColumnLines]="true"
+			[showRowLines]="true"
+			[rowAlternationEnabled]="true"
+			[hoverStateEnabled]="true"
+			[allowColumnResizing]="true"
+			[columnResizingMode]="'widget'"
+			[width]="'100%'"
+			[height]="alturaUnidadesModal"
+			(onOptionChanged)="onUnidadesModalOptionChanged($event)"
+			noDataText="No hay unidades."
+		>
+			<dxo-paging [enabled]="true" [pageSize]="unidadModalPageSize"></dxo-paging>
+			<dxo-pager
+				[visible]="true"
+				[showPageSizeSelector]="true"
+				[allowedPageSizes]="[5, 10, 25, 50]"
+				[showInfo]="true"
+			></dxo-pager>
+			<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+			<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+			<dxo-load-panel [enabled]="false"></dxo-load-panel>
+			<dxo-editing
+				[mode]="'cell'"
+				[allowUpdating]="!readOnly && !asignandoUnidades"
+				[allowAdding]="false"
+				[allowDeleting]="false"
+				[useIcons]="false"
+			></dxo-editing>
+			<dxi-column
+				dataField="SELECCION"
+				caption=""
+				[width]="70"
+				dataType="boolean"
+				[allowSorting]="false"
+				[allowFiltering]="false"
+				[allowEditing]="!readOnly && !asignandoUnidades"
+				alignment="center"
+			></dxi-column>
+			<dxi-column dataField="CODIGO_UNIDAD" caption="Codigo" [width]="140" [allowEditing]="false"></dxi-column>
+			<dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [minWidth]="280" [allowEditing]="false"></dxi-column>
+		</dx-data-grid>
 	</dx-popup>
 
 	<!-- motivo: alta/edición del salario del puesto en una unidad -->

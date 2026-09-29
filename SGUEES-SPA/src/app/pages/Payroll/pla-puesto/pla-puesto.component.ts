@@ -2,8 +2,8 @@
 // Cómo: grilla + formulario con lookup de tipo de puesto; coordina PlaPuestoService.
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { Observable, of, throwError } from 'rxjs';
-import { catchError, take } from 'rxjs/operators';
+import { Observable, from, of, throwError } from 'rxjs';
+import { catchError, concatMap, map, take, toArray } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
@@ -22,6 +22,10 @@ interface UnidadDelPuesto {
 	CODIGO_UNIDAD: string;
 	NOMBRE_UNIDAD: string;
 	NOMBRE_COMBO: string;
+}
+
+interface UnidadModalFila extends UnidadDelPuesto {
+	SELECCION: boolean;
 }
 
 @Component({
@@ -54,13 +58,10 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 	salarioSeleccionado: PlaPuestoSalario | null = null;
 	unidadesAsignadas: UnidadDelPuesto[] = [];
 	catalogoUnidades: UnidadDelPuesto[] = [];
-	unidadesDisponibles: UnidadDelPuesto[] = [];
+	unidadesModal: UnidadModalFila[] = [];
 	submodalUnidadVisible = false;
-	unidadPorAsignar: number | null = null;
-	readonly unidadLookupColumns = [
-		{ dataField: 'CODIGO_UNIDAD', caption: 'Codigo', width: 140 },
-		{ dataField: 'NOMBRE_UNIDAD', caption: 'Unidad', width: 280 },
-	];
+	asignandoUnidades = false;
+	unidadModalPageSize = 50;
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Puesto';
 
@@ -71,7 +72,6 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 	) {
 		super(appInfoService, router);
 		this.selectedLookUpCORR_TIPO_PUESTO = this.selectedLookUpCORR_TIPO_PUESTO.bind(this);
-		this.selectedLookUpUnidad = this.selectedLookUpUnidad.bind(this);
 		this.columns = this.service.getColumns();
 		this.summary = this.service.getSummary();
 		this.items = this.service.getItems();
@@ -114,12 +114,6 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 
 	selectedLookUpCORR_TIPO_PUESTO(vRow: any): number {
 		return vRow[0].CORR_TIPO_PUESTO;
-	}
-
-	// Qué hace: toma la unidad elegida en el combo.
-	// Cómo: devuelve el CORR_UNIDAD de la fila seleccionada.
-	selectedLookUpUnidad(vRow: any): number {
-		return Number(vRow?.[0]?.CORR_UNIDAD ?? 0);
 	}
 
 	onTipoPuestoChanged(value: number | null): void {
@@ -558,59 +552,199 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 			});
 	}
 
-	// Qué hace: abre el alta de una unidad para este puesto.
-	// Cómo: ofrece solo las unidades del organigrama que aún no están asociadas.
+	// Qué hace: abre la tabla de unidades del puesto.
+	// Cómo: muestra el organigrama y deja marcado el check de las que ya están asignadas.
 	abrirSubmodalUnidad(): void {
-		if (!this.tienePuestoGuardado || this.readOnly) {
+		if (this.readOnly || this.asignandoUnidades) {
+			return;
+		}
+		if (!this.tienePuestoGuardado) {
 			this.notifyFx('Guarde el puesto para asociar unidades.', NotifyType.Warning);
 			return;
 		}
-		const usadas = new Set(this.unidadesAsignadas.map((u) => u.CORR_UNIDAD));
-		this.unidadesDisponibles = this.catalogoUnidades.filter((u) => !usadas.has(u.CORR_UNIDAD));
-		this.unidadPorAsignar = null;
+		this.unidadModalPageSize = 50;
+		this.unidadesModal = this.armarUnidadesModal();
 		this.submodalUnidadVisible = true;
 	}
 
-	cerrarSubmodalUnidad(): void {
-		this.submodalUnidadVisible = false;
-		this.unidadPorAsignar = null;
+	// Qué hace: arma la tabla del modal con el check según la asignación actual.
+	private armarUnidadesModal(): UnidadModalFila[] {
+		const usadas = new Set(this.unidadesAsignadas.map((u) => u.CORR_UNIDAD));
+		return this.catalogoUnidades.map((u) => ({ ...u, SELECCION: usadas.has(u.CORR_UNIDAD) }));
 	}
 
-	// Qué hace: asocia la unidad elegida al puesto.
-	// Cómo: inserta y parchea la lista y una fila vacía de salario, sin volver a consultar.
-	guardarUnidad(): void {
-		const corrUnidad = Number(this.unidadPorAsignar ?? 0);
-		const corrPuesto = Number(this.model?.CORR_PUESTO ?? 0);
-		if (corrUnidad <= 0 || corrPuesto <= 0) {
-			this.notifyFx('Seleccione la unidad.', NotifyType.Warning);
+	// Qué hace: con 5 o 10 filas la tabla se encoge; con más, mantiene altura y scroll.
+	get alturaUnidadesModal(): string {
+		return this.unidadModalPageSize <= 10 ? 'auto' : 'calc(100vh - 220px)';
+	}
+
+	// Qué hace: actualiza la altura cuando cambia el tamaño de página del modal.
+	onUnidadesModalOptionChanged(e: any): void {
+		if (e?.fullName === 'paging.pageSize' && Number(e.value) > 0) {
+			this.unidadModalPageSize = Number(e.value);
+		}
+	}
+
+	// Qué hace: marca todas las unidades de la tabla.
+	selectTodasUnidades(): void {
+		this.unidadesModal = (this.unidadesModal ?? []).map((item) => ({ ...item, SELECCION: true }));
+	}
+
+	// Qué hace: quita la marca de todas las unidades de la tabla.
+	selectNingunaUnidad(): void {
+		this.unidadesModal = (this.unidadesModal ?? []).map((item) => ({ ...item, SELECCION: false }));
+	}
+
+	cerrarSubmodalUnidad(): void {
+		if (this.asignandoUnidades) {
+			this.submodalUnidadVisible = true;
 			return;
 		}
+		this.submodalUnidadVisible = false;
+		this.unidadesModal = [];
+	}
+
+	// Qué hace: asigna las unidades marcadas y quita las desmarcadas.
+	// Cómo: inserta o elimina una por una y parchea las pestañas en memoria, sin volver a consultar.
+	guardarUnidadesMarcadas(): void {
+		if (this.readOnly || this.asignandoUnidades) {
+			return;
+		}
+		const corrPuesto = Number(this.model?.CORR_PUESTO ?? 0);
+		const lista = this.unidadesModal ?? [];
+		if (corrPuesto <= 0) {
+			this.notifyFx('Guarde el puesto para asociar unidades.', NotifyType.Warning);
+			return;
+		}
+		if (!lista.length) {
+			this.notifyFx('No hay unidades para asignar.', NotifyType.Warning);
+			return;
+		}
+
+		const asignadas = new Set(this.unidadesAsignadas.map((u) => u.CORR_UNIDAD));
+		const operaciones = [
+			...lista
+				.filter((u) => !!u.SELECCION && !asignadas.has(u.CORR_UNIDAD))
+				.map((unidad) => ({ tipo: 'insert' as const, unidad })),
+			...lista
+				.filter((u) => !u.SELECCION && asignadas.has(u.CORR_UNIDAD))
+				.map((unidad) => ({ tipo: 'delete' as const, unidad })),
+		];
+		if (!operaciones.length) {
+			this.notifyFx('Cambios guardados con exito!', NotifyType.Success, { raw: true });
+			this.submodalUnidadVisible = false;
+			this.unidadesModal = [];
+			return;
+		}
+
+		this.asignandoUnidades = true;
 		this.loadingVisible = true;
-		this.service
-			.asignarUnidad(corrUnidad, corrPuesto)
-			.pipe(take(1))
+		from(operaciones)
+			.pipe(
+				concatMap((op) => {
+					const request$ =
+						op.tipo === 'insert'
+							? this.service.asignarUnidad(op.unidad.CORR_UNIDAD, corrPuesto)
+							: this.service.quitarUnidad(op.unidad.CORR_UNIDAD, corrPuesto);
+					return request$.pipe(
+						take(1),
+						catchError((error) =>
+							of({
+								Result: false,
+								ErrorMessage:
+									error?.error?.ErrorMessage ||
+									error?.message ||
+									(op.tipo === 'insert'
+										? 'No se pudo asignar la unidad.'
+										: 'No se pudo quitar la unidad.'),
+							})
+						),
+						map((response: any) => ({ ...response, _tipo: op.tipo, _unidad: op.unidad }))
+					);
+				}),
+				toArray()
+			)
 			.subscribe({
-				next: (response: any) => {
+				next: (responses: any[]) => {
+					this.asignandoUnidades = false;
 					this.loadingVisible = false;
-					if (!response?.Result) {
-						this.notifyApiResponse(response);
+					const ok = responses.filter((r) => r?.Result);
+					const fail = responses.filter((r) => !r?.Result);
+					let insertOk = 0;
+					let deleteOk = 0;
+					for (const response of ok) {
+						if (response._tipo === 'insert') {
+							this.aplicarUnidadAsignadaEnMemoria(response._unidad, response.Data, corrPuesto);
+							insertOk += 1;
+						} else {
+							this.aplicarUnidadQuitadaEnMemoria(Number(response._unidad?.CORR_UNIDAD));
+							deleteOk += 1;
+						}
+					}
+					if (insertOk > 0 || deleteOk > 0) {
+						const partes: string[] = [];
+						if (insertOk > 0) {
+							partes.push(insertOk === 1 ? '1 unidad asignada' : `${insertOk} unidades asignadas`);
+						}
+						if (deleteOk > 0) {
+							partes.push(deleteOk === 1 ? '1 unidad quitada' : `${deleteOk} unidades quitadas`);
+						}
+						this.notifyFx(partes.join('. ') + '.', NotifyType.Success, { raw: true });
+					}
+					if (fail.length > 0) {
+						this.notifyFx(
+							fail[0]?.ErrorMessage || 'Algunas unidades no se pudieron actualizar.',
+							NotifyType.Warning
+						);
+						const fallidas = new Set(fail.map((r) => Number(r._unidad?.CORR_UNIDAD)));
+						const queria = new Map(lista.map((u) => [u.CORR_UNIDAD, !!u.SELECCION]));
+						this.unidadesModal = this.armarUnidadesModal().map((u) =>
+							fallidas.has(u.CORR_UNIDAD) ? { ...u, SELECCION: !!queria.get(u.CORR_UNIDAD) } : u
+						);
 						return;
 					}
-					const catalogo = this.catalogoUnidades.find((u) => u.CORR_UNIDAD === corrUnidad);
-					const fila = this.mapUnidad({ ...(catalogo ?? {}), ...(response.Data ?? {}), CORR_UNIDAD: corrUnidad, CORR_PUESTO: corrPuesto }, corrPuesto);
-					this.unidadesAsignadas = [...this.unidadesAsignadas, fila].sort((a, b) =>
-						a.CODIGO_UNIDAD.localeCompare(b.CODIGO_UNIDAD)
-					);
-					if (!this.salarios.some((s) => Number(s.CORR_UNIDAD) === corrUnidad)) {
-						this.salarios = [...this.salarios, this.filaSalarioVacia(fila)];
-					}
-					this.cerrarSubmodalUnidad();
+					this.submodalUnidadVisible = false;
+					this.unidadesModal = [];
 				},
 				error: (error: any) => {
+					this.asignandoUnidades = false;
 					this.loadingVisible = false;
 					this.notifyApiError(error);
 				},
 			});
+	}
+
+	// Qué hace: deja la unidad nueva en Unidades y una fila vacía en Salarios.
+	// Cómo: usa la respuesta del insert y el catálogo local, sin GetAll.
+	private aplicarUnidadAsignadaEnMemoria(unidad: UnidadDelPuesto, data: any, corrPuesto: number): void {
+		const corrUnidad = Number(unidad?.CORR_UNIDAD ?? 0);
+		if (corrUnidad <= 0 || this.unidadesAsignadas.some((u) => u.CORR_UNIDAD === corrUnidad)) {
+			return;
+		}
+		const catalogo = this.catalogoUnidades.find((u) => u.CORR_UNIDAD === corrUnidad);
+		const fila = this.mapUnidad(
+			{ ...(catalogo ?? unidad), ...(data ?? {}), CORR_UNIDAD: corrUnidad, CORR_PUESTO: corrPuesto },
+			corrPuesto
+		);
+		this.unidadesAsignadas = [...this.unidadesAsignadas, fila].sort((a, b) =>
+			a.CODIGO_UNIDAD.localeCompare(b.CODIGO_UNIDAD)
+		);
+		if (!this.salarios.some((s) => Number(s.CORR_UNIDAD) === corrUnidad)) {
+			this.salarios = [...this.salarios, this.filaSalarioVacia(fila)];
+		}
+	}
+
+	// Qué hace: saca la unidad de las pestañas Unidades y Salarios.
+	// Cómo: filtra por CORR_UNIDAD en los dos arreglos locales.
+	private aplicarUnidadQuitadaEnMemoria(corrUnidad: number): void {
+		if (corrUnidad <= 0) {
+			return;
+		}
+		this.unidadesAsignadas = this.unidadesAsignadas.filter((u) => u.CORR_UNIDAD !== corrUnidad);
+		this.salarios = this.salarios.filter((s) => Number(s.CORR_UNIDAD) !== corrUnidad);
+		if (Number(this.salarioSeleccionado?.CORR_UNIDAD) === corrUnidad) {
+			this.salarioSeleccionado = null;
+		}
 	}
 
 	// Qué hace: quita la unidad del puesto.
@@ -631,8 +765,7 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 						this.notifyApiResponse(response);
 						return;
 					}
-					this.unidadesAsignadas = this.unidadesAsignadas.filter((u) => u.CORR_UNIDAD !== row.CORR_UNIDAD);
-					this.salarios = this.salarios.filter((s) => Number(s.CORR_UNIDAD) !== row.CORR_UNIDAD);
+					this.aplicarUnidadQuitadaEnMemoria(row.CORR_UNIDAD);
 				},
 				error: (error: any) => {
 					this.loadingVisible = false;

@@ -202,3 +202,34 @@
 	gap: 10px;
 	margin-top: 16px;
 }
+
+.ps-unidad-popup-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 12px;
+}
+
+:host ::ng-deep .ps-unidad-popup-toolbar .dx-button {
+	min-width: 120px;
+	min-height: 36px;
+	font-weight: 600;
+}
+
+::ng-deep .ps-unidad-asignar-popup .dx-popup-content {
+	box-sizing: border-box;
+	overflow: hidden;
+	padding-bottom: 8px;
+	max-height: calc(100vh - 110px);
+}
+
+::ng-deep .ps-unidad-asignar-popup .ps-unidad-popup-grid {
+	width: 100%;
+	max-height: calc(100vh - 220px);
+
+	.dx-datagrid-headers .dx-header-row > td,
+	.dx-datagrid-rowsview .dx-data-row > td {
+		vertical-align: middle;
+	}
+}

@@ -45,6 +45,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 	popupAsignarVisible = false;
 	puestosModal: GenPuestoAsignarItem[] = [];
 	asignandoPuestosModal = false;
+	puestoModalPageSize = 50;
 
 	popupDetalleVisible = false;
 	detallePuestos: GenUnidadesPuesto[] = [];
@@ -333,9 +334,22 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 		}
 
 		this.unidadSeleccionada = this.fillData(unidad);
+		this.puestoModalPageSize = 50;
 		this.puestosModal = this.armarPuestosParaModal(Number(unidad.CORR_UNIDAD));
 		this.popupAsignarVisible = true;
 		this.cdr.detectChanges();
+	}
+
+	// Qué hace: con 5 o 10 filas la tabla se encoge; con más, mantiene altura y scroll.
+	get alturaPuestosModal(): string {
+		return this.puestoModalPageSize <= 10 ? 'auto' : 'calc(100vh - 220px)';
+	}
+
+	// Qué hace: actualiza la altura cuando cambia el tamaño de página del popup.
+	onPuestosModalOptionChanged(e: any): void {
+		if (e?.fullName === 'paging.pageSize' && Number(e.value) > 0) {
+			this.puestoModalPageSize = Number(e.value);
+		}
 	}
 
 	// Qué hace: marca todos los puestos del modal.
