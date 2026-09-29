@@ -144,11 +144,11 @@
 						<dxo-load-panel [enabled]="false"></dxo-load-panel>
 						<dxi-column caption="" [width]="110" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesSalarioTpl" [visible]="!readOnly" alignment="center"></dxi-column>
 						<dxi-column dataField="CODIGO_UNIDAD" caption="Codigo" [width]="130"></dxi-column>
-						<dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [width]="240" [minWidth]="160"></dxi-column>
+						<dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [width]="600" [minWidth]="160"></dxi-column>
 						<dxi-column dataField="SALARIO_INICIAL" caption="Salario inicial" [width]="160" format="$#,##0.00" alignment="right"></dxi-column>
 						<dxi-column dataField="SALARIO_FINAL" caption="Salario final" [width]="150" format="$#,##0.00" alignment="right"></dxi-column>
-						<dxi-column dataField="FECHA_INGRESO" caption="Fecha de ingreso" [width]="150" [calculateCellValue]="textoFechaSalario" [allowFiltering]="true"></dxi-column>
-						<dxi-column dataField="FECHA_FINALIZACION" caption="Fecha de finalizacion" [width]="170" [calculateCellValue]="textoFechaFinalizacion" [allowFiltering]="true"></dxi-column>
+						<dxi-column dataField="FECHA_INGRESO" caption="Fecha de ingreso" [width]="190" [calculateCellValue]="textoFechaSalario" [allowFiltering]="true"></dxi-column>
+						<dxi-column dataField="FECHA_FINALIZACION" caption="Fecha de finalizacion" [width]="190" [calculateCellValue]="textoFechaFinalizacion" [allowFiltering]="true"></dxi-column>
 						<dxi-column caption="Estado" [width]="120" [allowFiltering]="false" [allowSorting]="false" cellTemplate="activoSalarioTpl" alignment="center"></dxi-column>
 						<div *dxTemplate="let cell of 'activoSalarioTpl'">
 							<span
