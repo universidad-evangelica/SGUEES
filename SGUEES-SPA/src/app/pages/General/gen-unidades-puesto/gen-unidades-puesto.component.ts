@@ -29,6 +29,7 @@ import { GenUnidadesPuestoService } from './gen-unidades-puesto.service';
 export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit {
 	@ViewChild('dataGrid', { static: false }) dataGrid!: DataGridMttoComponent;
 	@ViewChild('gridAsignarPuestos', { static: false }) gridAsignarPuestos?: DxDataGridComponent;
+	@ViewChild('popupAsignarPuestos') popupAsignarPuestos?: any;
 
 	protected override etiquetaRegistro = 'la asignacion de puestos';
 	protected override requiereEmpresaSesion = true;
@@ -341,15 +342,24 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 	}
 
 	// Qué hace: con 5 o 10 filas la tabla se encoge; con más, mantiene altura y scroll.
+	// Cómo: deja espacio para el título, los botones y el paginador dentro de la pantalla.
 	get alturaPuestosModal(): string {
-		return this.puestoModalPageSize <= 10 ? 'auto' : 'calc(100vh - 220px)';
+		return this.puestoModalPageSize <= 10 ? 'auto' : 'calc(100vh - 300px)';
 	}
 
 	// Qué hace: actualiza la altura cuando cambia el tamaño de página del popup.
+	// Cómo: reaplica la altura en la grilla para que el paginador no quede fuera.
 	onPuestosModalOptionChanged(e: any): void {
-		if (e?.fullName === 'paging.pageSize' && Number(e.value) > 0) {
-			this.puestoModalPageSize = Number(e.value);
+		if (e?.fullName !== 'paging.pageSize' || !(Number(e.value) > 0)) {
+			return;
 		}
+		this.puestoModalPageSize = Number(e.value);
+		const altura = this.alturaPuestosModal;
+		setTimeout(() => {
+			e.component?.option('height', altura);
+			e.component?.updateDimensions?.();
+			this.popupAsignarPuestos?.instance?.repaint();
+		});
 	}
 
 	// Qué hace: marca todos los puestos del modal.

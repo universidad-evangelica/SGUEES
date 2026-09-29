@@ -219,14 +219,13 @@
 
 ::ng-deep .ps-unidad-asignar-popup .dx-popup-content {
 	box-sizing: border-box;
-	overflow: hidden;
+	overflow: visible;
 	padding-bottom: 8px;
-	max-height: calc(100vh - 110px);
 }
 
 ::ng-deep .ps-unidad-asignar-popup .ps-unidad-popup-grid {
 	width: 100%;
-	max-height: calc(100vh - 220px);
+	max-height: calc(100vh - 300px);
 
 	.dx-datagrid-headers .dx-header-row > td,
 	.dx-datagrid-rowsview .dx-data-row > td {

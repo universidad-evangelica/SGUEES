@@ -27,6 +27,7 @@ import { ScUnidadesUsuarioService } from './sc-unidades-usuario.service';
 export class ScUnidadesUsuarioComponent extends CBaseComponent implements OnInit {
 	@ViewChild('dataGrid', { static: false }) dataGrid!: DataGridMttoComponent;
 	@ViewChild('gridAsignarUnidades', { static: false }) gridAsignarUnidades?: DxDataGridComponent;
+	@ViewChild('popupAsignarUnidades') popupAsignarUnidades?: any;
 
 	protected override etiquetaRegistro = 'la asignacion de unidades';
 	protected override requiereEmpresaSesion = true;
@@ -233,15 +234,24 @@ export class ScUnidadesUsuarioComponent extends CBaseComponent implements OnInit
 	}
 
 	// Qué hace: con 5 o 10 filas la tabla se encoge; con más, mantiene altura y scroll.
+	// Cómo: deja espacio para el título, los botones y el paginador dentro de la pantalla.
 	get alturaUnidadesModal(): string {
-		return this.unidadModalPageSize <= 10 ? 'auto' : 'calc(100vh - 220px)';
+		return this.unidadModalPageSize <= 10 ? 'auto' : 'calc(100vh - 300px)';
 	}
 
 	// Qué hace: actualiza la altura cuando cambia el tamaño de página del popup.
+	// Cómo: reaplica la altura en la grilla para que el paginador no quede fuera.
 	onUnidadesModalOptionChanged(e: any): void {
-		if (e?.fullName === 'paging.pageSize' && Number(e.value) > 0) {
-			this.unidadModalPageSize = Number(e.value);
+		if (e?.fullName !== 'paging.pageSize' || !(Number(e.value) > 0)) {
+			return;
 		}
+		this.unidadModalPageSize = Number(e.value);
+		const altura = this.alturaUnidadesModal;
+		setTimeout(() => {
+			e.component?.option('height', altura);
+			e.component?.updateDimensions?.();
+			this.popupAsignarUnidades?.instance?.repaint();
+		});
 	}
 
 	// Qué hace: inicia la asignación masiva desde el ribbon.

@@ -18,16 +18,15 @@
    Cómo: el scroll queda en la tabla y el paginador sigue visible. */
 ::ng-deep .unidades-usuario-asignar-popup .dx-popup-content {
 	box-sizing: border-box;
-	overflow: hidden;
+	overflow: visible;
 	padding-bottom: 8px;
-	max-height: calc(100vh - 110px);
 }
 
 /* Qué hace: alinea checkbox y columnas del grid.
    Cómo: centra verticalmente; con 5 o 10 filas la altura la define el contenido. */
 ::ng-deep .unidades-usuario-asignar-popup .unidades-usuario-popup-grid {
 	width: 100%;
-	max-height: calc(100vh - 220px);
+	max-height: calc(100vh - 300px);
 
 	.dx-datagrid-headers .dx-header-row > td,
 	.dx-datagrid-filter-row > td,
