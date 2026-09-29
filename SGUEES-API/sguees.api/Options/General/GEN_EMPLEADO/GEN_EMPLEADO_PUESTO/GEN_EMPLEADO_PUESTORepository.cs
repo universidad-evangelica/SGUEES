@@ -148,10 +148,8 @@ namespace sguees.Repositories
 
 				var rowsAffected = 0;
 				var activosDb = await LeerActivosAsync(corrEmpleado, corrEmpresa);
-				var historialDb = await LeerHistorialAsync(corrEmpleado, corrEmpresa);
 				var clavesActivasDb = new HashSet<string>(activosDb.Select(x => Clave(x.CORR_UNIDAD, x.CORR_PUESTO)));
 				var clavesVisibles = new HashSet<string>(items.Select(x => Clave(x.CORR_UNIDAD, x.CORR_PUESTO)));
-				var corrsHistorialConservados = new HashSet<int>();
 				var siguienteHistorial = await GetNextCorrHistorialAsync(corrEmpresa);
 
 				foreach (var item in items)
@@ -187,7 +185,6 @@ namespace sguees.Repositories
 					}
 					else if (item.CORR_EMPLEADO_PUESTO_HISTORIAL > 0)
 					{
-						corrsHistorialConservados.Add(item.CORR_EMPLEADO_PUESTO_HISTORIAL);
 						var fin = item.FECHA_FIN?.Date ?? FechaHoyElSalvador();
 						rowsAffected += await ActualizarHistorialAsync(
 							item,
@@ -223,24 +220,6 @@ namespace sguees.Repositories
 					}
 
 					rowsAffected += await EliminarActivoAsync(corrEmpleado, corrEmpresa, actual.CORR_UNIDAD, actual.CORR_PUESTO);
-				}
-
-				foreach (var periodo in historialDb)
-				{
-					var unidad = periodo.CORR_UNIDAD ?? 0;
-					var puesto = periodo.CORR_PUESTO ?? 0;
-					if (unidad <= 0 || puesto <= 0 || corrsHistorialConservados.Contains(periodo.CORR_EMPLEADO_PUESTO_HISTORIAL))
-					{
-						continue;
-					}
-
-					var clave = Clave(unidad, puesto);
-					if (clavesVisibles.Contains(clave) || clavesActivasDb.Contains(clave))
-					{
-						continue;
-					}
-
-					rowsAffected += await EliminarHistorialAsync(corrEmpresa, periodo.CORR_EMPLEADO_PUESTO_HISTORIAL);
 				}
 
 				var reload = await GetAllAsync(corrEmpleado, corrEmpresa);
@@ -509,16 +488,6 @@ namespace sguees.Repositories
 			var reader = await objData.Update(_TableHistorial, parametros, pWhere);
 			reader?.Close();
 			return 1;
-		}
-
-		private async Task<int> EliminarHistorialAsync(int corrEmpresa, int corrHistorial)
-		{
-			var pDel = new List<CParameter>
-			{
-				new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
-				new CParameter() { ParameterName = "CORR_EMPLEADO_PUESTO_HISTORIAL", Value = corrHistorial, DbType = System.Data.DbType.Int32 },
-			};
-			return (int)await objData.Delete(_TableHistorial, pDel);
 		}
 
 		private static List<CParameter> ParametrosHistorial(

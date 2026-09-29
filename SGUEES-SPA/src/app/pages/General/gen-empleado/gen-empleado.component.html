@@ -1556,7 +1556,9 @@
 												hint="Editar"
 												(onClick)="abrirSubmodalPuestoEditar(i)"
 											></dx-button>
+											<!-- motivo: borrar solo el activo, por si se agregó por error; el inactivo queda en historial -->
 											<dx-button
+												*ngIf="p.ACTIVO_PUESTO !== false"
 												icon="trash"
 												stylingMode="text"
 												hint="Quitar"

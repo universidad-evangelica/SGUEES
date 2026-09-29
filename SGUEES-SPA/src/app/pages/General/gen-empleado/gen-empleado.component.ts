@@ -5135,7 +5135,13 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cerrarSubmodalPuesto();
 	}
 
+	// Qué hace: quita un puesto activo agregado por error.
+	// Cómo: lo saca de la lista en memoria; el inactivo no se borra y el historial se conserva al guardar.
 	eliminarPuesto(index: number): void {
+		const row = this.puestos[index];
+		if (!row || row.ACTIVO_PUESTO === false) {
+			return;
+		}
 		this.puestos = this.puestos.filter((_, i) => i !== index);
 	}
 
