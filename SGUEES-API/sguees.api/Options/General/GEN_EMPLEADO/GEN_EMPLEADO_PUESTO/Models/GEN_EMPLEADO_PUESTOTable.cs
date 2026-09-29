@@ -15,6 +15,9 @@ namespace sguees.Models
 		public decimal? SUELDO { get; set; }
 		public int? CORR_TIPO_CONTRATACION { get; set; }
 		public int? CORR_TIPO_MODALIDAD { get; set; }
+		public bool? ACTIVO_PUESTO { get; set; }
+		public DateTime? FECHA_FIN { get; set; }
+		public int CORR_EMPLEADO_PUESTO_HISTORIAL { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }
 		public DateTime? FECHA_CREA { get; set; }

@@ -27,6 +27,10 @@ export class GenEmpleadoPuestoRepository {
 			CORR_TIPO_CONTRATACION:
 				Number(r.CORR_TIPO_CONTRATACION) > 0 ? Number(r.CORR_TIPO_CONTRATACION) : null,
 			CORR_TIPO_MODALIDAD: Number(r.CORR_TIPO_MODALIDAD) > 0 ? Number(r.CORR_TIPO_MODALIDAD) : null,
+			ACTIVO_PUESTO: r.ACTIVO_PUESTO !== false && r.ACTIVO_PUESTO !== 0,
+			FECHA_FIN: r.FECHA_FIN || null,
+			CORR_EMPLEADO_PUESTO_HISTORIAL:
+				Number(r.CORR_EMPLEADO_PUESTO_HISTORIAL) > 0 ? Number(r.CORR_EMPLEADO_PUESTO_HISTORIAL) : 0,
 		}));
 		return this.objData.Put(
 			body,

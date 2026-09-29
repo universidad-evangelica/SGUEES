@@ -10,6 +10,9 @@ export interface GenEmpleadoPuesto {
 	CODIGO_PUESTO?: string;
 	NOMBRE_PUESTO?: string;
 	FECHA_INGRESO: string | null;
+	FECHA_FIN?: string | null;
+	ACTIVO_PUESTO?: boolean;
+	CORR_EMPLEADO_PUESTO_HISTORIAL?: number;
 	SUELDO: number | null;
 	CORR_TIPO_CONTRATACION: number | null;
 	NOMBRE_TIPO_CONTRATACION?: string;

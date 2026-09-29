@@ -685,9 +685,12 @@
 							<section class="rd-section">
 								<h4 class="rd-section__title">Puestos</h4>
 								<div class="rd-cards" *ngIf="puestos?.length; else sinPuestosRd">
-									<article class="rd-card" *ngFor="let item of puestos">
+									<article class="rd-card" [class.rd-card--inactive]="item.ACTIVO_PUESTO === false" *ngFor="let item of puestos">
 										<header class="rd-card__header">
 											<span>{{ textoLectura(item.NOMBRE_PUESTO) }}</span>
+											<span class="rd-badge" [class.rd-badge--off]="item.ACTIVO_PUESTO === false">
+												{{ item.ACTIVO_PUESTO === false ? 'Inactivo' : 'Activo' }}
+											</span>
 										</header>
 										<div class="rd-grid">
 											<div class="rd-field">
@@ -697,6 +700,10 @@
 											<div class="rd-field">
 												<span class="rd-label">Fecha de ingreso</span>
 												<span class="rd-value">{{ textoFechaIngreso(item.FECHA_INGRESO) }}</span>
+											</div>
+											<div class="rd-field" *ngIf="item.ACTIVO_PUESTO === false">
+												<span class="rd-label">Fecha fin</span>
+												<span class="rd-value">{{ textoFechaIngreso(item.FECHA_FIN) }}</span>
 											</div>
 											<div class="rd-field">
 												<span class="rd-label">Sueldo</span>
@@ -1517,12 +1524,32 @@
 									Guarde el empleado antes de asignar puestos.
 								</p>
 								<div class="ep-cards" *ngIf="puestos?.length; else sinPuestosModal">
-									<article class="ep-card" *ngFor="let p of puestos; let i = index">
+									<article class="ep-card" [class.ep-card--inactive]="p.ACTIVO_PUESTO === false" *ngFor="let p of puestos; let i = index">
 										<div class="ep-card__body">
 											<div class="ep-card__title">{{ textoLectura(p.NOMBRE_PUESTO) }}</div>
 											<div class="ep-card__summary">{{ textoLectura(p.NOMBRE_UNIDAD) }} · {{ resumenPuesto(p) }}</div>
 										</div>
 										<div class="ep-card__actions">
+											<!-- motivo: apagar cierra el periodo en historial; encender abre uno nuevo en activos -->
+											<button
+												type="button"
+												class="ep-activo-toggle ep-activo-toggle--sep"
+												[class.ep-activo-toggle--on]="p.ACTIVO_PUESTO !== false"
+												[class.ep-activo-toggle--off]="p.ACTIVO_PUESTO === false"
+												[attr.aria-pressed]="p.ACTIVO_PUESTO !== false"
+												[attr.aria-label]="p.ACTIVO_PUESTO === false ? 'Activar puesto' : 'Desactivar puesto'"
+												(click)="toggleActivoPuesto(i, $event)"
+											>
+												<span class="ep-activo-toggle__track">
+													<span class="ep-activo-toggle__icon ep-activo-toggle__icon--on" aria-hidden="true">
+														<i class="dx-icon dx-icon-check"></i>
+													</span>
+													<span class="ep-activo-toggle__thumb" aria-hidden="true"></span>
+													<span class="ep-activo-toggle__icon ep-activo-toggle__icon--off" aria-hidden="true">
+														<i class="dx-icon dx-icon-close"></i>
+													</span>
+												</span>
+											</button>
 											<dx-button
 												icon="edit"
 												stylingMode="text"

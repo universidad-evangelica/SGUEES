@@ -5027,7 +5027,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			return false;
 		}
 		return this.puestos.some(
-			(p, idx) => idx !== exceptoIndex && this.esTipoContratacionPermanente(p.CORR_TIPO_CONTRATACION)
+			(p, idx) =>
+				idx !== exceptoIndex &&
+				p.ACTIVO_PUESTO !== false &&
+				this.esTipoContratacionPermanente(p.CORR_TIPO_CONTRATACION)
 		);
 	}
 
@@ -5049,7 +5052,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			return;
 		}
 		const tipoContratacionPrevio = Number(this.submodalPuestoDraft?.CORR_TIPO_CONTRATACION ?? 0);
-		if (this.hayOtroPuestoPermanente(this.submodalPuestoEditIndex, tipoContratacionPrevio)) {
+		const quedaraActivo =
+			this.submodalPuestoEditIndex == null ||
+			this.puestos[this.submodalPuestoEditIndex]?.ACTIVO_PUESTO !== false;
+		if (quedaraActivo && this.hayOtroPuestoPermanente(this.submodalPuestoEditIndex, tipoContratacionPrevio)) {
 			this.notifyFx('El empleado solo puede tener un puesto de tipo permanente.', NotifyType.Warning);
 			return;
 		}
@@ -5081,9 +5087,14 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			this.notifyFx('Seleccione el tipo de modalidad.', NotifyType.Warning);
 			return;
 		}
+		const previo =
+			this.submodalPuestoEditIndex != null ? this.puestos[this.submodalPuestoEditIndex] : null;
 		const row: GenEmpleadoPuesto = {
 			CORR_EMPRESA: Number(this.model?.CORR_EMPRESA ?? 0),
 			CORR_EMPLEADO: Number(this.model?.CORR_EMPLEADO ?? 0),
+			ACTIVO_PUESTO: previo ? previo.ACTIVO_PUESTO !== false : true,
+			FECHA_FIN: previo?.ACTIVO_PUESTO === false ? previo.FECHA_FIN ?? null : null,
+			CORR_EMPLEADO_PUESTO_HISTORIAL: previo?.CORR_EMPLEADO_PUESTO_HISTORIAL ?? 0,
 			CORR_UNIDAD: corrUnidad,
 			NOMBRE_UNIDAD: this.nombreCatalogo(
 				this.mCORR_UNIDAD,
@@ -5128,12 +5139,41 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.puestos = this.puestos.filter((_, i) => i !== index);
 	}
 
+	// Qué hace: apaga o enciende el puesto en memoria. Se guarda con Guardar cambios.
+	// Cómo: al apagar conserva el ingreso y marca el fin de hoy; al encender abre ingreso de hoy.
+	toggleActivoPuesto(index: number, event?: Event): void {
+		event?.stopPropagation();
+		const row = this.puestos[index];
+		if (!row) {
+			return;
+		}
+		const activar = row.ACTIVO_PUESTO === false;
+		if (activar && this.hayOtroPuestoPermanente(index, row.CORR_TIPO_CONTRATACION)) {
+			this.notifyFx('El empleado solo puede tener un puesto de tipo permanente.', NotifyType.Warning);
+			return;
+		}
+		const hoy = this.normalizarFechaIngreso(this.fechaHoyElSalvador());
+		this.puestos = this.puestos.map((p, i) => {
+			if (i !== index) {
+				return p;
+			}
+			if (activar) {
+				return { ...p, ACTIVO_PUESTO: true, FECHA_INGRESO: hoy, FECHA_FIN: null };
+			}
+			return { ...p, ACTIVO_PUESTO: false, FECHA_FIN: hoy };
+		});
+	}
+
 	resumenPuesto(item: GenEmpleadoPuesto): string {
+		const periodo =
+			item?.ACTIVO_PUESTO === false && item?.FECHA_FIN
+				? `${this.textoFechaIngreso(item.FECHA_INGRESO)} – ${this.textoFechaIngreso(item.FECHA_FIN)}`
+				: this.textoFechaIngreso(item?.FECHA_INGRESO);
 		const partes = [
 			this.textoLectura(item?.NOMBRE_TIPO_CONTRATACION),
 			this.textoLectura(item?.MODALIDAD_NOMBRE),
 			this.textoSueldo(item?.SUELDO),
-			this.textoFechaIngreso(item?.FECHA_INGRESO),
+			periodo,
 		].filter((t) => t && t !== '—');
 		return partes.join(' · ') || '—';
 	}
@@ -5171,8 +5211,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			);
 			return;
 		}
-		const permanentes = (this.puestos ?? []).filter((p) =>
-			this.esTipoContratacionPermanente(p.CORR_TIPO_CONTRATACION)
+		const permanentes = (this.puestos ?? []).filter(
+			(p) => p.ACTIVO_PUESTO !== false && this.esTipoContratacionPermanente(p.CORR_TIPO_CONTRATACION)
 		).length;
 		if (permanentes > 1) {
 			this.notifyFx('El empleado solo puede tener un puesto de tipo permanente.', NotifyType.Warning);
@@ -5246,6 +5286,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			CODIGO_PUESTO: r?.CODIGO_PUESTO ?? '',
 			NOMBRE_PUESTO: r?.NOMBRE_PUESTO ?? '',
 			FECHA_INGRESO: this.normalizarFechaIngreso(r?.FECHA_INGRESO),
+			FECHA_FIN: this.normalizarFechaIngreso(r?.FECHA_FIN),
+			ACTIVO_PUESTO: r?.ACTIVO_PUESTO !== false && r?.ACTIVO_PUESTO !== 0,
+			CORR_EMPLEADO_PUESTO_HISTORIAL:
+				Number(r?.CORR_EMPLEADO_PUESTO_HISTORIAL) > 0 ? Number(r.CORR_EMPLEADO_PUESTO_HISTORIAL) : 0,
 			SUELDO: r?.SUELDO == null || r?.SUELDO === '' ? null : Number(r.SUELDO),
 			CORR_TIPO_CONTRATACION:
 				Number(r?.CORR_TIPO_CONTRATACION) > 0 ? Number(r.CORR_TIPO_CONTRATACION) : null,

@@ -15,6 +15,9 @@ namespace sguees.Models
 		public string CODIGO_PUESTO { get; set; }
 		public string NOMBRE_PUESTO { get; set; }
 		public DateTime? FECHA_INGRESO { get; set; }
+		public DateTime? FECHA_FIN { get; set; }
+		public bool ACTIVO_PUESTO { get; set; }
+		public int CORR_EMPLEADO_PUESTO_HISTORIAL { get; set; }
 		public decimal? SUELDO { get; set; }
 		public string HORARIO_LABORAL { get; set; }
 		public int? CORR_TIPO_CONTRATACION { get; set; }
