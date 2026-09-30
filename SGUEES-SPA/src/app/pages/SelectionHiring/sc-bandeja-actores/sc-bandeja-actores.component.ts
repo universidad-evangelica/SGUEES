@@ -240,6 +240,15 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 	}
 
 	async accionAprobar(): Promise<void> {
+		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.APROBAR, 'Aprobar requisición');
+	}
+
+	async accionDevolver(): Promise<void> {
+		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.DEVOLVER, 'Devolver requisición');
+	}
+
+	async accionRechazar(): Promise<void> {
+		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.RECHAZAR, 'Rechazar requisición');
 		if (this.selectedItem?.TIPO === 'MOVIMIENTO') {
 			await this.ejecutarAutorizaMovimiento(OPERACION_BANDEJA_ACTORES.APROBAR, 'Aprobar movimiento');
 			return;
@@ -390,40 +399,29 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
 	}
 
-	private async ejecutarAutoriza(
-		operacion: number,
-		titulo: string,
-		requiereObservacion: boolean
-	): Promise<void> {
+	private async ejecutarAutoriza(operacion: number, titulo: string): Promise<void> {
 		if (!this.selectedItem || this.selectedItem.TIPO !== 'REQUISICION' || this.accionEnCurso) {
 			return;
 		}
 
 		const item = this.selectedItem;
-		let observacion: string | undefined;
+		const codigo = item.CODIGO || String(item.CORR_REQUISICION_PERSONAL || '');
+		const textoDefault =
+			operacion === OPERACION_BANDEJA_ACTORES.APROBAR
+				? `Se aprobó la requisición ${codigo}.`
+				: operacion === OPERACION_BANDEJA_ACTORES.DEVOLVER
+					? `Se devolvió la requisición ${codigo}.`
+					: `Se rechazó la requisición ${codigo}.`;
 
-		if (requiereObservacion) {
-			observacion = await this.pedirObservacion(
-				titulo,
-				'Indique el motivo. La observación es obligatoria.'
-			);
-			if (observacion == null) {
-				return;
-			}
-			if (!observacion.trim()) {
-				this.notifyFx('La observación es obligatoria.', NotifyType.Warning, { raw: true });
-				return;
-			}
-		} else {
-			const ok = await confirm(
-				`¿Confirma aprobar la requisición ${item.CODIGO}?`,
-				titulo
-			);
-			if (!ok) {
-				return;
-			}
-			observacion = `Se aprobó la requisición ${item.CODIGO}.`;
+		const observacionCapturada = await this.pedirObservacion(
+			titulo,
+			'Puede indicar un comentario. Si lo deja vacío se usará el texto automático.'
+		);
+		if (observacionCapturada == null) {
+			return;
 		}
+
+		const observacion = observacionCapturada.trim() || textoDefault;
 
 		this.accionEnCurso = true;
 		try {
@@ -432,7 +430,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 					CORR_REQUISICION_PERSONAL: item.CORR_REQUISICION_PERSONAL || 0,
 					OPERACION: operacion,
 					OBSERVACION: observacion,
-					CORR_UNIDAD_DOCUMENTO: item.CORR_UNIDAD || null,
+					CORR_UNIDAD_DOCUMENTO: null,
 				})
 			);
 
@@ -520,7 +518,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 	private pedirObservacion(titulo: string, hint?: string): Promise<string | null> {
 		this.popupObservacionTitulo = titulo;
 		this.popupObservacionHint =
-			hint || 'Indique el motivo. La observación es obligatoria.';
+			hint || 'Puede indicar un comentario. Si lo deja vacío se usará el texto automático.';
 		this.popupObservacionTexto = '';
 		this.popupObservacionVisible = true;
 
@@ -530,11 +528,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 	}
 
 	confirmarPopupObservacion(): void {
-		const texto = (this.popupObservacionTexto || '').trim();
-		if (!texto) {
-			this.notifyFx('La observación es obligatoria.', NotifyType.Warning, { raw: true });
-			return;
-		}
+		const texto = this.popupObservacionTexto ?? '';
 		const resolve = this.observacionResolver;
 		this.observacionResolver = null;
 		this.popupObservacionVisible = false;

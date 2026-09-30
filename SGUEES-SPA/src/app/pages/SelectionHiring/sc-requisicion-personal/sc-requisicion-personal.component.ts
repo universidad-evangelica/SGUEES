@@ -1536,7 +1536,6 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 		}
 
 		const corr = Number(this.model?.CORR_REQUISICION_PERSONAL) || 0;
-		const unidad = Number(this.model?.CORR_UNIDAD) || null;
 		const observacion =
 			'Se envió la requisición de personal a aprobación.';
 
@@ -1548,7 +1547,7 @@ export class ScRequisicionPersonalComponent extends CBaseComponent implements On
 				CORR_REQUISICION_PERSONAL: corr,
 				OPERACION: OPERACION_FLUJO_REQUISICION.ENVIAR,
 				OBSERVACION: observacion,
-				CORR_UNIDAD_DOCUMENTO: unidad,
+				CORR_UNIDAD_DOCUMENTO: null,
 			})
 			.pipe(take(1))
 			.subscribe({
