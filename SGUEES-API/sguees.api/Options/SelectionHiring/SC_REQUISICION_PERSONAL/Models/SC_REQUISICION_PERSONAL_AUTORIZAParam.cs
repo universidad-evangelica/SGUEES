@@ -8,7 +8,7 @@ namespace SGUEES.Models
     {
         public int CORR_EMPRESA { get; set; }
         public int CORR_REQUISICION_PERSONAL { get; set; }
-        /// <summary>Obligatoria al crear instancia (NUEVO). Si null, el SP toma CORR_UNIDAD de la tabla.</summary>
+        /// <summary>Obligatoria al crear instancia si el SP no puede resolver el puesto del creador. La API la rellena desde el puesto.</summary>
         public int? CORR_UNIDAD_DOCUMENTO { get; set; }
         /// <summary>1=GUARDAR 2=ENVIAR 3=APROBAR 4=DEVOLVER 5=RECHAZAR</summary>
         public int OPERACION { get; set; }

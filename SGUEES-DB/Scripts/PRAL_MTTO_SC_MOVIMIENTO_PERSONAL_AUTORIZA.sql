@@ -2,37 +2,37 @@ SET QUOTED_IDENTIFIER ON
 GO
 SET ANSI_NULLS ON
 GO
-
 /* =============================================================================
-   Procedimiento: dbo.PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA
-   Pantalla:      SC_REQUISICION_PERSONAL / sc-requisicion-personal
+   Procedimiento: dbo.PRAL_MTTO_SC_MOVIMIENTO_PERSONAL_AUTORIZA
+   Pantalla:      SC_MOVIMIENTO_PERSONAL / sc-movimiento-personal
 
    Qué hace:
-     Ejecuta una operación del flujo dla requisición de personal y sincroniza CORR_ESTADO_REQUISICION (1..5) con el motor SEG_FLUJO.
+     Ejecuta una operación del flujo del movimiento de personal y sincroniza
+     ESTADO_MOVIMIENTO (DI/SO/OB/AP/DE) con el motor SEG_FLUJO.
 
    Importante:
-     - No edita el contenido dla requisición (persona, puestos, etc.).
-     - Requiere tipo de documento activo con CODIGO_OPCION = SC_REQUISICION
-       y un flujo defecto (misma estructura de niveles que SC_MOVIMIENTO_PERSONAL).
-     - Unidad del circuito = puesto del creador (USUARIO_CREA), no CORR_UNIDAD del documento.
+     - No edita el contenido del movimiento (persona, puestos, etc.).
+     - Requiere tipo de documento activo con CODIGO_OPCION = SC_MOVIMIENTO_PERSONAL
+       y un flujo defecto (misma configuración que SC_REQUISICION).
+     - Origen REQUISICION nace AP desde la API (sin pasar por este SP).
 
    @OPERACION:
-     1 = GUARDAR   Queda en Borrador (1). Si es la primera vez, crea instancia.
-     2 = ENVIAR    Borrador/Devuelto → En Aprobación (2).
-     3 = APROBAR   N1 pasa a N2, N2 pasa a N3, N3 cierra en Aprobada (5 = Aprobado GG).
-     4 = DEVOLVER  Retorna a Devuelta (3) en el nivel que actúa.
-     5 = RECHAZAR  Finaliza en Rechazada JI/JU/GG (4).
-     FECHA_APROBACION se setea al cerrar con Aprobado GG.
+     1 = GUARDAR   Queda en Borrador (DI). Si es la primera vez, crea instancia.
+     2 = ENVIAR    Borrador/Devuelto → Solicitado (SO).
+     3 = APROBAR   N1 pasa a N2, N2 pasa a N3, N3 cierra en AP (Aprobado GG).
+     4 = DEVOLVER  Retorna a Devuelto (OB) en el nivel que actúa.
+     5 = RECHAZAR  Finaliza en Rechazada JI, JU o GG (DE).
+     La fecha efectiva la graba Confirmar, no este procedimiento.
 
-   Códigos RETURN: -1..-16 (-1..-16).
+   Códigos RETURN: mismos que PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA (-1..-16).
 
    Ejecutar:
-     sqlcmd -S <servidor> -d SGUEES -U <user> -P <pass> -f 65001 -i PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA.sql
+     sqlcmd -S <servidor> -d SGUEES -U <user> -P <pass> -f 65001 -i PRAL_MTTO_SC_MOVIMIENTO_PERSONAL_AUTORIZA.sql
    ============================================================================= */
-CREATE OR ALTER PROCEDURE [dbo].[PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA]
+CREATE OR ALTER PROCEDURE [dbo].[PRAL_MTTO_SC_MOVIMIENTO_PERSONAL_AUTORIZA]
 (
 	@CORR_EMPRESA INT = 1,
-	@CORR_REQUISICION_PERSONAL INT,
+	@CORR_MOVIMIENTO_PERSONAL INT,
 	@CORR_UNIDAD_DOCUMENTO INT = NULL,
 	@OPERACION INT = NULL,
 	@CORR_ACCION INT = NULL,
@@ -44,13 +44,13 @@ CREATE OR ALTER PROCEDURE [dbo].[PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA]
 	@CORR_PASO_ACTUAL INT = NULL OUTPUT,
 	@MODO VARCHAR(20) = NULL OUTPUT,
 	@NOMBRE_ESTADO VARCHAR(100) = NULL OUTPUT,
-	@CORR_ESTADO_REQUISICION INT = NULL OUTPUT
+	@ESTADO_MOVIMIENTO VARCHAR(2) = NULL OUTPUT
 )
 AS
 BEGIN
 	SET NOCOUNT ON
 
-	DECLARE @CODIGO_OPCION VARCHAR(50) = 'SC_REQUISICION'
+	DECLARE @CODIGO_OPCION VARCHAR(50) = 'SC_MOVIMIENTO_PERSONAL'
 	DECLARE @EMPRESA INT = ISNULL(@CORR_EMPRESA, 1)
 	DECLARE @ID_TIPO_DOCUMENTO INT
 	DECLARE @ID_FLUJO INT
@@ -76,7 +76,7 @@ BEGIN
 	DECLARE @EST_RECHAZADA INT
 	DECLARE @EST_DEVUELTA INT
 	DECLARE @PASO_INICIAL INT
-	DECLARE @ESTADO_NEGOCIO INT
+	DECLARE @ESTADO_NEGOCIO VARCHAR(2)
 	DECLARE @LOGIN_DUENO VARCHAR(30)
 	DECLARE @U INT
 	DECLARE @D INT
@@ -103,21 +103,21 @@ BEGIN
 	SET @CORR_PASO_ACTUAL = NULL
 	SET @MODO = NULL
 	SET @NOMBRE_ESTADO = NULL
-	SET @CORR_ESTADO_REQUISICION = NULL
+	SET @ESTADO_MOVIMIENTO = NULL
 
-	IF @CORR_REQUISICION_PERSONAL IS NULL OR @CORR_REQUISICION_PERSONAL <= 0
+	IF @CORR_MOVIMIENTO_PERSONAL IS NULL OR @CORR_MOVIMIENTO_PERSONAL <= 0
 	BEGIN
-		SET @MENSAJE_ERROR = 'Debe indicar @CORR_REQUISICION_PERSONAL.'
+		SET @MENSAJE_ERROR = 'Debe indicar @CORR_MOVIMIENTO_PERSONAL.'
 		RETURN -1
 	END
 
 	IF NOT EXISTS (
-		SELECT 1 FROM dbo.SC_REQUISICION_PERSONAL
-		WHERE CORR_EMPRESA = @EMPRESA AND CORR_REQUISICION_PERSONAL = @CORR_REQUISICION_PERSONAL
+		SELECT 1 FROM dbo.SC_MOVIMIENTO_PERSONAL
+		WHERE CORR_EMPRESA = @EMPRESA AND CORR_MOVIMIENTO_PERSONAL = @CORR_MOVIMIENTO_PERSONAL
 	)
 	BEGIN
-		SET @MENSAJE_ERROR = 'No existe la requisición CORR_REQUISICION_PERSONAL='
-			+ CAST(@CORR_REQUISICION_PERSONAL AS VARCHAR) + '.'
+		SET @MENSAJE_ERROR = 'No existe el movimiento CORR_MOVIMIENTO_PERSONAL='
+			+ CAST(@CORR_MOVIMIENTO_PERSONAL AS VARCHAR) + '.'
 		RETURN -1
 	END
 
@@ -129,14 +129,8 @@ BEGIN
 
 	IF @OBSERVACION IS NULL OR LTRIM(RTRIM(@OBSERVACION)) = ''
 	BEGIN
-		SET @OBSERVACION = CASE @V_OPERACION
-			WHEN 1 THEN N'Se guardó la requisición en borrador.'
-			WHEN 2 THEN N'Se envió la requisición de personal a aprobación.'
-			WHEN 3 THEN N'Se aprobó la requisición.'
-			WHEN 4 THEN N'Se devolvió la requisición.'
-			WHEN 5 THEN N'Se rechazó la requisición.'
-			ELSE N'Se registró una acción en el flujo de la requisición.'
-		END
+		SET @MENSAJE_ERROR = 'El comentario (@OBSERVACION) es obligatorio.'
+		RETURN -1
 	END
 
 	IF @ID_ACCION IS NULL AND @V_OPERACION IS NULL
@@ -169,7 +163,7 @@ BEGIN
 
 	IF @ID_TIPO_DOCUMENTO IS NULL
 	BEGIN
-		SET @MENSAJE_ERROR = 'No existe tipo de documento activo para SC_REQUISICION. Configure SEG_FLUJO_TIPO_DOCUMENTO.'
+		SET @MENSAJE_ERROR = 'No existe tipo de documento activo para SC_MOVIMIENTO_PERSONAL. Configure SEG_FLUJO_TIPO_DOCUMENTO.'
 		RETURN -2
 	END
 
@@ -180,7 +174,7 @@ BEGIN
 
 	IF @ID_FLUJO IS NULL
 	BEGIN
-		SET @MENSAJE_ERROR = 'No hay flujo defecto activo para requisición de personal.'
+		SET @MENSAJE_ERROR = 'No hay flujo defecto activo para movimiento de personal.'
 		RETURN -3
 	END
 
@@ -215,7 +209,7 @@ BEGIN
 	FROM dbo.SEG_FLUJO_INSTANCIA
 	WHERE CORR_EMPRESA = @EMPRESA
 	  AND CORR_TIPO_DOCUMENTO = @ID_TIPO_DOCUMENTO
-	  AND CORR_DOCUMENTO = @CORR_REQUISICION_PERSONAL
+	  AND CORR_DOCUMENTO = @CORR_MOVIMIENTO_PERSONAL
 	  AND ACTIVO = 1
 
 	IF @ID_INSTANCIA IS NULL
@@ -253,7 +247,7 @@ BEGIN
 
 	IF @ID_PASO_ACTUAL IS NULL
 	BEGIN
-		SET @MENSAJE_ERROR = 'El flujo de requisición no tiene paso inicial configurado.'
+		SET @MENSAJE_ERROR = 'El flujo de movimiento no tiene paso inicial configurado.'
 		RETURN -4
 	END
 
@@ -299,7 +293,7 @@ BEGIN
 			END
 			IF @V_MODO = 'FINAL'
 			BEGIN
-				SET @MENSAJE_ERROR = 'La requisición ya finalizo el flujo (modo FINAL).'
+				SET @MENSAJE_ERROR = 'El movimiento ya finalizo el flujo (modo FINAL).'
 				RETURN -16
 			END
 		END
@@ -370,20 +364,12 @@ BEGIN
 	SET @CORR_ACCION_USADA = @ID_ACCION
 	SET @PASO_EJECUTADO = @ID_PASO_ACTUAL
 
-	/* La ruta sale del puesto del creador del registro, no de CORR_UNIDAD del documento. */
-	SET @LOGIN_DUENO = NULL
-	SELECT @LOGIN_DUENO = USUARIO_CREA
-	FROM dbo.SC_REQUISICION_PERSONAL
-	WHERE CORR_EMPRESA = @EMPRESA AND CORR_REQUISICION_PERSONAL = @CORR_REQUISICION_PERSONAL
-	IF @LOGIN_DUENO IS NULL OR LTRIM(RTRIM(@LOGIN_DUENO)) = ''
-	BEGIN
-		IF @ID_INSTANCIA IS NOT NULL
-			SELECT @LOGIN_DUENO = USUARIO_CREA
-			FROM dbo.SEG_FLUJO_INSTANCIA
-			WHERE CORR_EMPRESA = @EMPRESA AND CORR_INSTANCIA = @ID_INSTANCIA
-	END
-	IF @LOGIN_DUENO IS NULL OR LTRIM(RTRIM(@LOGIN_DUENO)) = ''
-		SET @LOGIN_DUENO = @LOGIN_SISTEMA
+	/* La ruta sale del puesto del solicitante, no de quien está aprobando. */
+	SET @LOGIN_DUENO = @LOGIN_SISTEMA
+	IF @ID_INSTANCIA IS NOT NULL
+		SELECT @LOGIN_DUENO = USUARIO_CREA
+		FROM dbo.SEG_FLUJO_INSTANCIA
+		WHERE CORR_EMPRESA = @EMPRESA AND CORR_INSTANCIA = @ID_INSTANCIA
 
 	SELECT TOP 1
 		@U = EP.CORR_UNIDAD,
@@ -459,7 +445,7 @@ BEGIN
 
 		IF @PASO_N1 IS NULL OR @PASO_N2 IS NULL OR @PASO_N3 IS NULL OR @EST_JI IS NULL OR @EST_JU IS NULL
 		BEGIN
-			SET @MENSAJE_ERROR = 'El flujo de requisición no tiene los tres niveles configurados.'
+			SET @MENSAJE_ERROR = 'El flujo de movimiento no tiene los tres niveles configurados.'
 			RETURN -4
 		END
 	END
@@ -478,14 +464,14 @@ BEGIN
 		IF @V_OPERACION IN (2, 3, 4, 5)
 		BEGIN
 			EXEC @LOCK_RESULT = sp_getapplock
-				@Resource = 'SGUEES_FLUJO_101_REQUISICION',
+				@Resource = 'SGUEES_FLUJO_103_MOVIMIENTO',
 				@LockMode = 'Exclusive',
 				@LockOwner = 'Transaction',
 				@LockTimeout = 15000
 			IF @LOCK_RESULT < 0
 			BEGIN
 				ROLLBACK TRAN
-				SET @MENSAJE_ERROR = 'El flujo de requisición está ocupado. Intente de nuevo.'
+				SET @MENSAJE_ERROR = 'El flujo de movimiento está ocupado. Intente de nuevo.'
 				RETURN -10
 			END
 
@@ -536,11 +522,11 @@ BEGIN
 			EXEC dbo.EjecutarFlujoProceso
 				@i_CORR_EMPRESA = @EMPRESA,
 				@i_CODIGO_OPCION = @CODIGO_OPCION,
-				@i_idDocumento = @CORR_REQUISICION_PERSONAL,
+				@i_idDocumento = @CORR_MOVIMIENTO_PERSONAL,
 				@i_idUnidadDocumento = @UNIDAD_MOTOR,
 				@i_idAccion = @ACCION_GUARDAR,
 				@i_login = @LOGIN_SISTEMA,
-				@i_Observacion = N'La requisición de personal está en borrador.',
+				@i_Observacion = N'El movimiento de personal está en borrador.',
 				@o_idEstadoDocumento = @ESTADO_TMP OUTPUT,
 				@o_Error = @ERROR_TMP OUTPUT
 
@@ -555,7 +541,7 @@ BEGIN
 		EXEC dbo.EjecutarFlujoProceso
 			@i_CORR_EMPRESA = @EMPRESA,
 			@i_CODIGO_OPCION = @CODIGO_OPCION,
-			@i_idDocumento = @CORR_REQUISICION_PERSONAL,
+			@i_idDocumento = @CORR_MOVIMIENTO_PERSONAL,
 			@i_idUnidadDocumento = @UNIDAD_MOTOR,
 			@i_idAccion = @ID_ACCION,
 			@i_login = @LOGIN_SISTEMA,
@@ -575,7 +561,7 @@ BEGIN
 		FROM dbo.SEG_FLUJO_INSTANCIA
 		WHERE CORR_EMPRESA = @EMPRESA
 		  AND CORR_TIPO_DOCUMENTO = @ID_TIPO_DOCUMENTO
-		  AND CORR_DOCUMENTO = @CORR_REQUISICION_PERSONAL
+		  AND CORR_DOCUMENTO = @CORR_MOVIMIENTO_PERSONAL
 		  AND ACTIVO = 1
 
 		IF @V_OPERACION = 2 AND @RUTA = 'DIRECTO' AND @ID_INSTANCIA IS NOT NULL
@@ -597,7 +583,7 @@ BEGIN
 					@LOGIN_SISTEMA,
 					N'[AUTO] Nivel 1 aprobado: el puesto está en la unidad del departamento. ' + @OBSERVACION,
 					@ID_ESTADO_ACTUAL, @EST_JI,
-					ISNULL(@D, @U), DATEADD(SECOND, -2, GETDATE()), @LOGIN_SISTEMA, 'SP_REQUISICION', GETDATE()
+					ISNULL(@D, @U), DATEADD(SECOND, -2, GETDATE()), @LOGIN_SISTEMA, 'SP_MOVIMIENTO', GETDATE()
 				)
 			END
 
@@ -618,7 +604,7 @@ BEGIN
 					@LOGIN_SISTEMA,
 					N'[AUTO] Nivel 2 aprobado: el puesto está en la unidad del departamento. ' + @OBSERVACION,
 					@EST_JI, @EST_JU,
-					ISNULL(@D, @U), DATEADD(SECOND, -1, GETDATE()), @LOGIN_SISTEMA, 'SP_REQUISICION', GETDATE()
+					ISNULL(@D, @U), DATEADD(SECOND, -1, GETDATE()), @LOGIN_SISTEMA, 'SP_MOVIMIENTO', GETDATE()
 				)
 			END
 
@@ -658,8 +644,8 @@ BEGIN
 				@NEXT_BIT + ROW_NUMBER() OVER (ORDER BY J.LoginDestino),
 				@ID_INSTANCIA, @PASO_N3,
 				J.LoginDestino, @LOGIN_SISTEMA, N'Tarea pendiente en el flujo.',
-				N'/sc-requisicion-personal?corr=' + CAST(@CORR_REQUISICION_PERSONAL AS VARCHAR(20)),
-				0, 0, GETDATE(), @LOGIN_SISTEMA, 'SP_REQUISICION', GETDATE()
+				N'/sc-movimiento-personal?corr=' + CAST(@CORR_MOVIMIENTO_PERSONAL AS VARCHAR(20)),
+				0, 0, GETDATE(), @LOGIN_SISTEMA, 'SP_MOVIMIENTO', GETDATE()
 			FROM dbo.SEG_FN_ObtenerJefesDeUnidad(@G) AS J
 			WHERE J.LoginDestino IS NOT NULL
 		END
@@ -706,7 +692,7 @@ BEGIN
 				@LOGIN_SISTEMA, @OBSERVACION,
 				NULL, @EST_JI,
 				ISNULL(@D, @U), DATEADD(SECOND, -1, ISNULL(@FECHA_FIRMA, GETDATE())),
-				@LOGIN_SISTEMA, 'SP_REQUISICION', GETDATE()
+				@LOGIN_SISTEMA, 'SP_MOVIMIENTO', GETDATE()
 			)
 		END
 
@@ -758,49 +744,45 @@ BEGIN
 		FROM dbo.SEG_FLUJO_ESTADO
 		WHERE CORR_EMPRESA = @EMPRESA AND CORR_ESTADO = @CORR_ESTADO
 
-		/* 1 Borrador | 2 En Aprobación (Aprobado JI/JU) | 3 Devuelta* | 4 Rechazada* | 5 Aprobado GG */
+		/* Aprobado JI y Aprobado JU siguen en circuito (SO). Solo Aprobado GG, al ser final, cierra en AP. */
 		SET @ESTADO_NEGOCIO = CASE
-			WHEN @V_NOMBRE_ESTADO LIKE N'Rechaz%' OR @V_NOMBRE_ESTADO LIKE N'Deneg%' THEN 4
-			WHEN @V_NOMBRE_ESTADO LIKE N'Devuel%' THEN 3
-			WHEN @V_NOMBRE_ESTADO LIKE N'Borrador%' OR @V_NOMBRE_ESTADO LIKE N'Digit%' THEN 1
-			WHEN @V_NOMBRE_ESTADO LIKE N'Aprobad%' AND @ES_FINAL_DESTINO = 1 THEN 5
+			WHEN @V_NOMBRE_ESTADO LIKE N'Rechaz%' OR @V_NOMBRE_ESTADO LIKE N'Deneg%' THEN 'DE'
+			WHEN @V_NOMBRE_ESTADO LIKE N'Devuel%' THEN 'OB'
+			WHEN @V_NOMBRE_ESTADO LIKE N'Borrador%' OR @V_NOMBRE_ESTADO LIKE N'Digit%' THEN 'DI'
+			WHEN @V_NOMBRE_ESTADO LIKE N'Aprobad%' AND @ES_FINAL_DESTINO = 1 THEN 'AP'
 			WHEN @V_NOMBRE_ESTADO LIKE N'%Aprobaci%'
 			  OR @V_NOMBRE_ESTADO LIKE N'Solicit%'
-			  OR @V_NOMBRE_ESTADO LIKE N'Aprobad%' THEN 2
+			  OR @V_NOMBRE_ESTADO LIKE N'Aprobad%' THEN 'SO'
 			ELSE NULL
 		END
 
 		IF @ESTADO_NEGOCIO IS NULL
 		BEGIN
 			SELECT @ESTADO_NEGOCIO = CASE
-				WHEN ES_FINAL = 1 AND @CORR_ESTADO = @EST_APROBADA THEN 5
-				WHEN ES_FINAL = 1 THEN 4
-				WHEN ES_INICIAL = 1 THEN 1
-				ELSE 2
+				WHEN ES_FINAL = 1 AND @CORR_ESTADO = @EST_APROBADA THEN 'AP'
+				WHEN ES_FINAL = 1 THEN 'DE'
+				WHEN ES_INICIAL = 1 THEN 'DI'
+				ELSE 'SO'
 			END
 			FROM dbo.SEG_FLUJO_ESTADO
 			WHERE CORR_EMPRESA = @EMPRESA AND CORR_ESTADO = @CORR_ESTADO
 		END
 
-		UPDATE dbo.SC_REQUISICION_PERSONAL
-		SET CORR_ESTADO_REQUISICION = @ESTADO_NEGOCIO,
-			FECHA_APROBACION = CASE
-				WHEN @ESTADO_NEGOCIO = 5 THEN CAST(GETDATE() AS DATE)
-				ELSE FECHA_APROBACION
-			END,
+		UPDATE dbo.SC_MOVIMIENTO_PERSONAL
+		SET ESTADO_MOVIMIENTO = @ESTADO_NEGOCIO,
 			USUARIO_ACTU = @LOGIN_SISTEMA,
 			ESTACION_ACTU = HOST_NAME(),
 			FECHA_ACTU = GETDATE()
 		WHERE CORR_EMPRESA = @EMPRESA
-		  AND CORR_REQUISICION_PERSONAL = @CORR_REQUISICION_PERSONAL
+		  AND CORR_MOVIMIENTO_PERSONAL = @CORR_MOVIMIENTO_PERSONAL
 
 		SET @NOMBRE_ESTADO = @V_NOMBRE_ESTADO
-		SET @CORR_ESTADO_REQUISICION = @ESTADO_NEGOCIO
+		SET @ESTADO_MOVIMIENTO = @ESTADO_NEGOCIO
 	END
 
 	RETURN 0
 END
-
 GO
-PRINT N'OK: PRAL_MTTO_SC_REQUISICION_PERSONAL_AUTORIZA.';
+
+PRINT N'OK: PRAL_MTTO_SC_MOVIMIENTO_PERSONAL_AUTORIZA.';
 GO

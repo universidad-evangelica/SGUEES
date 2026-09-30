@@ -248,6 +248,23 @@ namespace SGUEES.Repositories
 					response = reload.Data as SC_REQUISICION_CANDIDATOView;
 				}
 
+				if (string.Equals(Data.ESTADO_DECISION, "APLICA", StringComparison.OrdinalIgnoreCase))
+				{
+					var corrCandidato = response?.CORR_REQUISICION_CANDIDATO ?? 0;
+					var mensajeMovimiento = await CrearMovimientoDesdeRequisicionAsync(
+						Data.CORR_EMPRESA,
+						Data.CORR_REQUISICION_PERSONAL,
+						corrCandidato,
+						login,
+						vESTACION);
+
+					if (!string.IsNullOrWhiteSpace(mensajeMovimiento))
+					{
+						await EliminarDecisionAsync(Data.CORR_EMPRESA, corrCandidato);
+						return ValidationResult(1014, mensajeMovimiento);
+					}
+				}
+
 				objResultado.Data = response;
 				objResultado.Result = true;
 				objResultado.RowsAffected = 1;
@@ -354,6 +371,55 @@ WHERE J.CORR_EMPRESA = @CORR_EMPRESA
 			reader?.Close();
 			objData.objConnection.Close();
 			return rows.Count > 0;
+		}
+
+		/// <summary>
+		/// Alta del movimiento (origen requisición) y de la puente. Vacío = correcto.
+		/// </summary>
+		private async Task<string> CrearMovimientoDesdeRequisicionAsync(
+			int corrEmpresa,
+			int corrRequisicion,
+			int corrCandidato,
+			string login,
+			string estacion)
+		{
+			var p = new List<CParameter>
+			{
+				new() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "@CORR_REQUISICION_PERSONAL", Value = corrRequisicion, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "@CORR_REQUISICION_CANDIDATO", Value = corrCandidato, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "@LOGIN_SISTEMA", Value = login ?? string.Empty, DbType = System.Data.DbType.String },
+				new() { ParameterName = "@ESTACION", Value = estacion ?? string.Empty, DbType = System.Data.DbType.String },
+				new() { ParameterName = "@CORR_MOVIMIENTO_PERSONAL", Value = 0, DbType = System.Data.DbType.Int32, Direction = System.Data.ParameterDirection.Output },
+				new() { ParameterName = "@MENSAJE_ERROR", Value = string.Empty, DbType = System.Data.DbType.String, Direction = System.Data.ParameterDirection.Output, Size = 500 },
+			};
+
+			await objData.ExecCmd(
+				System.Data.CommandType.StoredProcedure,
+				"PRAL_MTTO_SC_MOVIMIENTO_DESDE_REQUISICION",
+				true,
+				p);
+
+			return objData.objCommand.Parameters["@MENSAJE_ERROR"].Value?.ToString();
+		}
+
+		private async Task EliminarDecisionAsync(int corrEmpresa, int corrCandidato)
+		{
+			if (corrCandidato <= 0)
+			{
+				return;
+			}
+
+			var p = new List<CParameter>
+			{
+				new() { ParameterName = "@CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new() { ParameterName = "@CORR_REQUISICION_CANDIDATO", Value = corrCandidato, DbType = System.Data.DbType.Int32 },
+			};
+
+			await objData.ExecCmd(System.Data.CommandType.Text, @"
+DELETE FROM dbo.SC_REQUISICION_CANDIDATO
+WHERE CORR_EMPRESA = @CORR_EMPRESA
+  AND CORR_REQUISICION_CANDIDATO = @CORR_REQUISICION_CANDIDATO", true, p);
 		}
 
 		private static void SetError(CResult result, Exception ex)
