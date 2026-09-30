@@ -2370,6 +2370,60 @@
 						</dx-data-grid>
 					</div>
 				</dxi-item>
+
+				<!-- motivo: solo con el descriptor Activo; empleados del puesto y la unidad -->
+				<dxi-item title="Carga empleado" [visible]="esDescriptorActivo">
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-funciones-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-group descriptor-funciones-icon" aria-hidden="true"></span>
+								Carga empleado
+							</h4>
+						</div>
+						<!-- motivo: el descriptor Activo se abre en consulta; aqui igual se puede cargar -->
+						<div class="descriptor-deta-toolbar">
+							<dx-button
+								class="descriptor-deta-toolbar-btn"
+								icon="upload"
+								text="Cargar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="abrirCargarEmpleados()"
+								[disabled]="cargandoEmpleados"
+							></dx-button>
+						</div>
+						<dx-data-grid
+							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid"
+							[dataSource]="empleadosCargados"
+							keyExpr="CORR_EMPLEADO"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[width]="'100%'"
+							noDataText="Sin empleados cargados."
+						>
+							<dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+							<dxo-pager [visible]="true" [showInfo]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25]"></dxo-pager>
+							<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+							<dxo-scrolling [mode]="'standard'" [showScrollbar]="'always'"></dxo-scrolling>
+							<dxi-column type="buttons" caption="" [width]="70" [visible]="esDescriptorActivo">
+								<dxi-button hint="Quitar" icon="trash" [onClick]="quitarEmpleadoCargadoClick"></dxi-button>
+							</dxi-column>
+							<dxi-column dataField="CORR_EMPLEADO" caption="Corr." [width]="90" dataType="number"></dxi-column>
+							<dxi-column dataField="NOMBRE_EMPLEADO" caption="Persona" [width]="280" [minWidth]="200"></dxi-column>
+							<dxi-column dataField="DUI" caption="DUI" [width]="120" [minWidth]="100"></dxi-column>
+							<dxi-column dataField="CORREO_INSTITUCIONAL" caption="Correo" [width]="220" [minWidth]="160"></dxi-column>
+							<dxi-column dataField="TELEFONO_INSTITUCIONAL" caption="Teléfono" [width]="130" [minWidth]="110"></dxi-column>
+							<dxi-column dataField="LOGIN_SISTEMA_WEB" caption="Login" [width]="140" [minWidth]="110"></dxi-column>
+							<dxi-column dataField="ACTIVO_EMPLEADO" caption="Estado" [width]="110" [customizeText]="textoEstadoEmpleado"></dxi-column>
+						</dx-data-grid>
+					</div>
+				</dxi-item>
 			</dx-tab-panel>
 
 			<!-- Aviso: el tab anterior no aplica al formato actual; elija otro. -->
@@ -2636,4 +2690,49 @@
 			<embed [src]="PDF" type="application/pdf" />
 		</object>
 	</div>
+</dx-popup>
+
+<!-- motivo: elegir empleados que ya tienen el puesto y la unidad del descriptor -->
+<dx-popup
+	[(visible)]="popupCargarEmpleadoVisible"
+	title="Cargar empleado"
+	[width]="920"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[maxHeight]="'calc(100vh - 48px)'"
+	[dragEnabled]="false"
+	[showCloseButton]="true"
+	[hideOnOutsideClick]="false"
+	(onHiding)="cerrarCargarEmpleados()"
+>
+	<div class="descriptor-deta-toolbar">
+		<dx-button text="Todos" icon="check" type="success" stylingMode="contained" (onClick)="selectTodosEmpleadosCarga(true)" [disabled]="cargandoEmpleados"></dx-button>
+		<dx-button text="Ninguno" icon="close" type="danger" stylingMode="contained" (onClick)="selectTodosEmpleadosCarga(false)" [disabled]="cargandoEmpleados"></dx-button>
+		<dx-button text="Guardar" icon="save" type="default" stylingMode="contained" (onClick)="guardarEmpleadosMarcados()" [disabled]="cargandoEmpleados"></dx-button>
+	</div>
+	<dx-data-grid
+		class="theme-dependent sguees-data-grid-mtto descriptor-deta-datagrid"
+		[dataSource]="empleadosDisponibles"
+		keyExpr="CORR_EMPLEADO"
+		[columnAutoWidth]="false"
+		[showBorders]="true"
+		[showColumnLines]="true"
+		[showRowLines]="true"
+		[rowAlternationEnabled]="true"
+		[hoverStateEnabled]="true"
+		[width]="'100%'"
+		[height]="420"
+		noDataText="No hay empleados con este puesto y esta unidad."
+	>
+		<dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
+		<dxo-pager [visible]="true" [showInfo]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25]"></dxo-pager>
+		<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+		<dxo-scrolling [mode]="'standard'" [showScrollbar]="'always'"></dxo-scrolling>
+		<dxo-editing [mode]="'cell'" [allowUpdating]="true" [allowAdding]="false" [allowDeleting]="false"></dxo-editing>
+		<dxi-column dataField="SELECCION" caption="" [width]="70" dataType="boolean" [allowSorting]="false" [allowFiltering]="false" alignment="center"></dxi-column>
+		<dxi-column dataField="CORR_EMPLEADO" caption="Corr." [width]="90" dataType="number" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="NOMBRE_EMPLEADO" caption="Persona" [width]="260" [minWidth]="180" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="DUI" caption="DUI" [width]="120" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="ACTIVO_EMPLEADO" caption="Estado" [width]="110" [allowEditing]="false" [customizeText]="textoEstadoEmpleado"></dxi-column>
+	</dx-data-grid>
 </dx-popup>
