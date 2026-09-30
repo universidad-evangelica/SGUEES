@@ -36,6 +36,7 @@ interface UnidadModalFila extends UnidadDelPuesto {
 export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 	@ViewChild(DataGridMttoComponent, { static: false }) dataGrid!: DataGridMttoComponent;
 	@ViewChild('popupUnidades') popupUnidades?: any;
+	@ViewChild('gridUnidades') gridUnidades?: any;
 
 	protected override etiquetaRegistro = 'el puesto';
 	protected override requiereEmpresaSesion = true;
@@ -661,12 +662,12 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 						catchError((error) =>
 							of({
 								Result: false,
-								ErrorMessage:
-									error?.error?.ErrorMessage ||
-									error?.message ||
-									(op.tipo === 'insert'
+								ErrorMessage: this.textoErrorUnidad(
+									error,
+									op.tipo === 'insert'
 										? 'No se pudo asignar la unidad.'
-										: 'No se pudo quitar la unidad.'),
+										: 'No se pudo quitar la unidad.'
+								),
 							})
 						),
 						map((response: any) => ({ ...response, _tipo: op.tipo, _unidad: op.unidad }))
@@ -702,15 +703,17 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 						this.notifyFx(partes.join('. ') + '.', NotifyType.Success, { raw: true });
 					}
 					if (fail.length > 0) {
-						this.notifyFx(
-							fail[0]?.ErrorMessage || 'Algunas unidades no se pudieron actualizar.',
-							NotifyType.Warning
-						);
-						const fallidas = new Set(fail.map((r) => Number(r._unidad?.CORR_UNIDAD)));
-						const queria = new Map(lista.map((u) => [u.CORR_UNIDAD, !!u.SELECCION]));
-						this.unidadesModal = this.armarUnidadesModal().map((u) =>
-							fallidas.has(u.CORR_UNIDAD) ? { ...u, SELECCION: !!queria.get(u.CORR_UNIDAD) } : u
-						);
+						const msg = fail
+							.map((item) => this.mensajeUnidadNoQuitada(item._unidad, item?.ErrorMessage) || item?.ErrorMessage)
+							.filter((texto) => !!texto)
+							.filter((texto, index, lista) => lista.indexOf(texto) === index)
+							.join(' ');
+						this.notifyFx(msg || 'Algunas unidades no se pudieron actualizar.', NotifyType.Warning);
+						// Qué hace: devuelve el check a las unidades que no se pudieron quitar.
+						// Cómo: descarta la edición y rearma la tabla con las que siguen asignadas.
+						this.gridUnidades?.instance?.cancelEditData?.();
+						this.unidadesModal = this.armarUnidadesModal();
+						setTimeout(() => this.gridUnidades?.instance?.refresh?.());
 						return;
 					}
 					this.submodalUnidadVisible = false;
@@ -772,16 +775,62 @@ export class PlaPuestoComponent extends CBaseComponent implements OnInit {
 				next: (response: any) => {
 					this.loadingVisible = false;
 					if (!response?.Result) {
-						this.notifyApiResponse(response);
+						this.avisarUnidadNoQuitada(row, response?.ErrorMessage, response);
 						return;
 					}
 					this.aplicarUnidadQuitadaEnMemoria(row.CORR_UNIDAD);
 				},
 				error: (error: any) => {
 					this.loadingVisible = false;
-					this.notifyApiError(error);
+					this.avisarUnidadNoQuitada(row, this.textoErrorUnidad(error, ''), error);
 				},
 			});
+	}
+
+	// Qué hace: avisa qué unidad no se pudo quitar y por qué.
+	// Cómo: si el API habla de registros relacionados, nombra la unidad; si no, muestra el error original.
+	private avisarUnidadNoQuitada(unidad: UnidadDelPuesto, api: string, origen: any): void {
+		const msg = this.mensajeUnidadNoQuitada(unidad, api);
+		if (msg) {
+			this.notifyFx(msg, NotifyType.Warning);
+			return;
+		}
+		if (origen?.ErrorMessage !== undefined || origen?.Result === false) {
+			this.notifyApiResponse(origen);
+			return;
+		}
+		this.notifyApiError(origen);
+	}
+
+	// Qué hace: arma el aviso con el nombre de la unidad y el motivo del API.
+	// Cómo: conserva la frase de registros relacionados y quita el cierre genérico.
+	private mensajeUnidadNoQuitada(unidad: UnidadDelPuesto | null | undefined, api: string): string {
+		const texto = String(api || '')
+			.replace(/^Error:\s*/i, '')
+			.trim();
+		const nombre = String(unidad?.NOMBRE_UNIDAD || unidad?.CODIGO_UNIDAD || '').trim();
+		if (!nombre || !texto.toLowerCase().includes('registros relacionados')) {
+			return '';
+		}
+
+		const desde = texto.toLowerCase().indexOf('porque');
+		const motivo = (desde >= 0 ? texto.slice(desde) : 'porque tiene registros relacionados.')
+			.replace(/ en este puesto\.?$/i, '.');
+		return `No se puede quitar la unidad ${nombre} ${motivo}`.replace(/\s+\./g, '.');
+	}
+
+	// Qué hace: lee el texto de error que devuelve el API al quitar una unidad.
+	// Cómo: acepta el string del interceptor o el ErrorMessage del cuerpo.
+	private textoErrorUnidad(error: any, fallback: string): string {
+		if (typeof error === 'string' && error.trim()) {
+			return error.replace(/^Error:\s*/i, '').trim();
+		}
+		const mensaje =
+			error?.error?.ErrorMessage ||
+			error?.ErrorMessage ||
+			error?.message ||
+			'';
+		return String(mensaje).replace(/^Error:\s*/i, '').trim() || fallback;
 	}
 
 	// Qué hace: carga salarios del puesto, incluyendo unidades sin salario.

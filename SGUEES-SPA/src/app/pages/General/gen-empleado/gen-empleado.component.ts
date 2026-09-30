@@ -5136,7 +5136,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	// Qué hace: quita un puesto activo agregado por error.
-	// Cómo: lo saca de la lista en memoria; el inactivo no se borra y el historial se conserva al guardar.
+	// Cómo: lo saca de la lista; al guardar se borra el activo y su historial, sin dejar el card inactivo.
 	eliminarPuesto(index: number): void {
 		const row = this.puestos[index];
 		if (!row || row.ACTIVO_PUESTO === false) {

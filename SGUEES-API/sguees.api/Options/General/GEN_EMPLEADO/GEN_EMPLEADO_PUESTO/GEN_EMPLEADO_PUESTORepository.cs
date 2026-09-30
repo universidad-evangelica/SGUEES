@@ -219,7 +219,10 @@ namespace sguees.Repositories
 						continue;
 					}
 
+					// Qué hace: el basurero quita el puesto y su historial para que no vuelva el card inactivo.
+					// Cómo: borra GEN_EMPLEADO_PUESTO y los periodos de esa unidad y puesto.
 					rowsAffected += await EliminarActivoAsync(corrEmpleado, corrEmpresa, actual.CORR_UNIDAD, actual.CORR_PUESTO);
+					rowsAffected += await EliminarHistorialAsync(corrEmpleado, corrEmpresa, actual.CORR_UNIDAD, actual.CORR_PUESTO);
 				}
 
 				var reload = await GetAllAsync(corrEmpleado, corrEmpresa);
@@ -437,6 +440,20 @@ namespace sguees.Repositories
 				new CParameter() { ParameterName = "CORR_PUESTO", Value = corrPuesto, DbType = System.Data.DbType.Int32 },
 			};
 			return (int)await objData.Delete(_TableName, pDel);
+		}
+
+		// Qué hace: borra el historial de esa unidad y puesto al quitar el card con el basurero.
+		// Cómo: DELETE en GEN_EMPLEADO_PUESTO_HISTORIAL por empleado, unidad y puesto.
+		private async Task<int> EliminarHistorialAsync(int corrEmpleado, int corrEmpresa, int corrUnidad, int corrPuesto)
+		{
+			var pDel = new List<CParameter>
+			{
+				new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_EMPLEADO", Value = corrEmpleado, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_UNIDAD", Value = corrUnidad, DbType = System.Data.DbType.Int32 },
+				new CParameter() { ParameterName = "CORR_PUESTO", Value = corrPuesto, DbType = System.Data.DbType.Int32 },
+			};
+			return (int)await objData.Delete(_TableHistorial, pDel);
 		}
 
 		// Qué hace: abre un periodo cerrado al desactivar el puesto.

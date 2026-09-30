@@ -392,7 +392,7 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 	}
 
 	// Qué hace: guarda altas y bajas según el checkbox del modal.
-	// Cómo: todos marcados → API masiva asignar; ninguno marcado → API masiva quitar; parcial → foreach.
+	// Cómo: todos marcados → API masiva asignar; las bajas van una por una para validar salario y empleados.
 	guardarAsignacionModal(): void {
 		if (!this.permiteEdit || this.asignandoPuestosModal) {
 			return;
@@ -425,7 +425,6 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 			(item) => !item.SELECCION && asignadosActuales.has(Number(item.CORR_PUESTO))
 		);
 		const todosMarcados = lista.every((item) => !!item.SELECCION);
-		const ningunoMarcado = lista.every((item) => !item.SELECCION);
 
 		if (!aInsertar.length && !aEliminar.length) {
 			this.notifyFx('Cambios guardados con exito!', NotifyType.Success, { raw: true });
@@ -438,12 +437,6 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 		// Qué hace: si el usuario marcó todos, usa la API masiva (sin foreach de insert).
 		if (todosMarcados) {
 			this.guardarAsignacionModalMasiva(unidad, aInsertar.length);
-			return;
-		}
-
-		// Qué hace: si no marcó ninguno, usa la API masiva de quitar (sin foreach de delete).
-		if (ningunoMarcado) {
-			this.guardarQuitarTodosModalMasiva(unidad, aEliminar.length);
 			return;
 		}
 
@@ -479,50 +472,6 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 							{ raw: true }
 						);
 						this.aplicarAsignacionMasivaEnMemoria(unidad, cant);
-					}
-
-					this.popupAsignarVisible = false;
-					this.puestosModal = [];
-					this.unidadSeleccionada = null;
-					this.cdr.detectChanges();
-				},
-				error: (error) => {
-					this.asignandoPuestosModal = false;
-					this.loadingVisible = false;
-					this.notifyApiError(error);
-				},
-			});
-	}
-
-	// Qué hace: quita todos los puestos de la unidad con la API masiva desde el modal.
-	// Cómo: llama quitarTodosPuestos, limpia asignaciones en memoria y cierra el popup.
-	private guardarQuitarTodosModalMasiva(unidad: GenUnidadesPuestoUnidad, pendientes: number): void {
-		this.asignandoPuestosModal = true;
-		this.loadingVisible = true;
-		this.service
-			.quitarTodosPuestos({ CORR_UNIDAD: Number(unidad.CORR_UNIDAD) })
-			.pipe(take(1))
-			.subscribe({
-				next: (response: any) => {
-					this.asignandoPuestosModal = false;
-					this.loadingVisible = false;
-					if (!response?.Result) {
-						this.notifyApiResponse(response);
-						return;
-					}
-
-					const cant = Number(response.RowsAffected ?? pendientes ?? 0);
-					if (cant <= 0) {
-						this.notifyFx('La unidad no tenia puestos asignados.', NotifyType.Warning);
-					} else {
-						this.notifyFx(
-							cant === 1
-								? '1 puesto quitado.'
-								: `Se quitaron ${cant} puestos de la unidad.`,
-							NotifyType.Success,
-							{ raw: true }
-						);
-						this.aplicarQuitarTodosEnMemoria(unidad);
 					}
 
 					this.popupAsignarVisible = false;
@@ -637,18 +586,24 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 					}
 
 					if (fail.length > 0) {
-						const msg =
-							fail[0]?.ErrorMessage ||
-							'Algunos puestos no se pudieron actualizar.';
-						this.notifyFx(msg, NotifyType.Warning);
+						const msg = fail
+							.map((item) => this.mensajePuestoNoQuitado(item))
+							.filter((texto) => !!texto)
+							.filter((texto, index, lista) => lista.indexOf(texto) === index)
+							.join(' ');
+						this.notifyFx(msg || 'Algunos puestos no se pudieron actualizar.', NotifyType.Warning);
 					}
 
 					if ((insertOk > 0 || deleteOk > 0) && fail.length === 0) {
 						this.popupAsignarVisible = false;
 						this.puestosModal = [];
 						this.unidadSeleccionada = null;
-					} else if (insertOk > 0 || deleteOk > 0) {
+					} else if (fail.length > 0) {
+						// Qué hace: devuelve el check a los puestos que no se pudieron quitar.
+						// Cómo: descarta la edición y rearma la tabla con los que siguen asignados.
+						this.gridAsignarPuestos?.instance?.cancelEditData?.();
 						this.puestosModal = this.armarPuestosParaModal(corrUnidad);
+						setTimeout(() => this.gridAsignarPuestos?.instance?.refresh?.());
 					}
 
 					this.cdr.detectChanges();
@@ -853,24 +808,19 @@ export class GenUnidadesPuestoComponent extends CBaseComponent implements OnInit
 		this.cdr.detectChanges();
 	}
 
-	// Qué hace: limpia en memoria todos los puestos de la unidad tras quitar masivo.
-	private aplicarQuitarTodosEnMemoria(unidad: GenUnidadesPuestoUnidad): void {
-		const corrUnidad = Number(unidad.CORR_UNIDAD);
-		if (!corrUnidad) {
-			return;
+	// Qué hace: dice qué puesto no se pudo quitar de la unidad y por qué.
+	// Cómo: usa el nombre del puesto y conserva el motivo de registros relacionados del API.
+	private mensajePuestoNoQuitado(response: any): string {
+		const api = String(response?.ErrorMessage || '').trim();
+		const nombre = String(response?._puesto?.NOMBRE_PUESTO || response?._puesto?.CODIGO_PUESTO || '').trim();
+		if (!nombre || !api.toLowerCase().includes('registros relacionados')) {
+			return api;
 		}
 
-		this.asignaciones = (this.asignaciones ?? []).filter(
-			(item) => Number(item.CORR_UNIDAD) !== corrUnidad
-		);
-		this.models = ((this.models as GenUnidadesPuestoUnidad[]) ?? []).map((item) =>
-			Number(item.CORR_UNIDAD) === corrUnidad ? { ...item, CANT_PUESTOS: 0 } : item
-		);
-
-		if (this.popupAsignarVisible && Number(this.unidadSeleccionada?.CORR_UNIDAD) === corrUnidad) {
-			this.puestosModal = this.armarPuestosParaModal(corrUnidad);
-		}
-		this.cdr.detectChanges();
+		const desde = api.toLowerCase().indexOf('porque');
+		const motivo = (desde >= 0 ? api.slice(desde) : 'porque tiene registros relacionados.')
+			.replace(/ en este puesto\.?$/i, '.');
+		return `No se puede quitar el puesto ${nombre} ${motivo}`.replace(/\s+\./g, '.');
 	}
 
 	// Qué hace: obtiene un mensaje usable desde errores HTTP/API.
