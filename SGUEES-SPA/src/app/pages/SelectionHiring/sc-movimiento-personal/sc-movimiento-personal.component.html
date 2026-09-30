@@ -1,0 +1,372 @@
+<div class="sguees-mtto-view movimiento-mtto">
+	<app-barra-data-mtto
+		[tituloVentana]="tituloVentana"
+		[subTituloVentana]="subTituloVentana"
+		[showRibbon]="true"
+		[isBrowse]="isBrowse()"
+		[isForm]="isForm()"
+		[permiteAdd]="permiteAdd"
+		[showRefresh]="true"
+		(consultar)="consultar()"
+		(nuevo)="nuevo()"
+		(guardar)="guardar()"
+		(cancelar)="cancelar()"
+		[btn1]="btnEnviarMovimiento"
+		[btn1Icon]="'send'"
+		[btn1Type]="'default'"
+		[btn1Width]="180"
+		(btn1Click)="enviarMovimiento()"
+		[btn2]="btnConfirmarMovimiento"
+		[btn2Icon]="'check'"
+		[btn2Type]="'success'"
+		[btn2Width]="130"
+		(btn2Click)="confirmarMovimiento()"
+		[btn3]="btnAprobarMovimiento"
+		[btn3Icon]="'check'"
+		[btn3Type]="'success'"
+		[btn3Width]="120"
+		(btn3Click)="aprobarMovimiento()"
+		[btn4]="btnDevolverMovimiento"
+		[btn4Icon]="'revert'"
+		[btn4Type]="'default'"
+		[btn4Width]="120"
+		(btn4Click)="devolverMovimiento()"
+		[btn5]="btnRechazarMovimiento"
+		[btn5Icon]="'close'"
+		[btn5Type]="'danger'"
+		[btn5Width]="120"
+		(btn5Click)="rechazarMovimiento()"
+	>
+	</app-barra-data-mtto>
+
+	<div class="content-block dx-card responsive-paddings" *ngIf="!isBrowse()">
+		<dx-tab-panel [selectedIndex]="0" class="movimiento-tab-panel">
+			<dxi-item title="Datos del movimiento" [icon]="'card'">
+				<dx-form
+					#fData
+					id="fData"
+					class="mt-20"
+					[formData]="model"
+					[labelLocation]="'top'"
+					[colCount]="8"
+					[items]="items"
+				>
+					<!-- Título Encabezado + Fecha efectiva (misma línea). -->
+					<div *dxTemplate="let cellInfo of 'EncabezadoConFechaTemplate'">
+						<div class="movimiento-encabezado-titulo">
+							<span class="movimiento-encabezado-caption">Encabezado</span>
+							<div class="movimiento-fecha-efectiva-field">
+								<label class="movimiento-fecha-efectiva-label">Fecha efectiva</label>
+								<dx-date-box
+									[(value)]="model.FECHA_EFECTIVA"
+									[disabled]="!puedeEditarFechaEfectiva"
+									[readOnly]="!puedeEditarFechaEfectiva"
+									displayFormat="dd/MM/yyyy"
+									[openOnFieldClick]="puedeEditarFechaEfectiva"
+									[showClearButton]="puedeEditarFechaEfectiva"
+									[width]="180"
+									hint="Fecha en que el movimiento se hace oficial (al confirmar)"
+								>
+								</dx-date-box>
+							</div>
+						</div>
+					</div>
+
+					<!-- Chip de estado (solo lectura; lo mueve el flujo Autoriza). -->
+					<div *dxTemplate="let cellInfo of 'ESTADO_MOVIMIENTOChip'">
+						<span
+							class="estado-mov-chip"
+							[ngClass]="getEstadoBadgeClass(model.ESTADO_MOVIMIENTO)"
+							[title]="getEstadoLabel(model.ESTADO_MOVIMIENTO)"
+						>
+							{{ getEstadoLabel(model.ESTADO_MOVIMIENTO) }}
+						</span>
+					</div>
+
+					<div *dxTemplate="let cellInfo of 'CORR_EMPLEADOLookup'">
+						<app-data-lookup
+							[model]="mCORR_EMPLEADO"
+							[(value)]="model.CORR_EMPLEADO"
+							[selectedRowKeys]="selectedLookUpCORR_EMPLEADO"
+							[readOnly]="readOnly"
+							[valueExpr]="'CORR_EMPLEADO'"
+							[displayExpr]="'NOMBRE_COMPLETO'"
+							[lookupColumns]="empleadoLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+
+					<div *dxTemplate="let cellInfo of 'CORR_UNIDAD_ACTUALLookup'">
+						<app-data-lookup
+							[model]="mCORR_UNIDAD"
+							[(value)]="model.CORR_UNIDAD_ACTUAL"
+							[selectedRowKeys]="selectedLookUpCORR_UNIDAD_ACTUAL"
+							[readOnly]="readOnly"
+							[valueExpr]="'CORR_UNIDAD'"
+							[displayExpr]="'DISPLAY_UNIDAD'"
+							[lookupColumns]="unidadLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+
+					<div *dxTemplate="let cellInfo of 'CORR_PUESTO_ACTUALLookup'">
+						<app-data-lookup
+							[model]="mCORR_PUESTO_ACTUAL"
+							[(value)]="model.CORR_PUESTO_ACTUAL"
+							[selectedRowKeys]="selectedLookUpCORR_PUESTO_ACTUAL"
+							[readOnly]="readOnly || !model.CORR_UNIDAD_ACTUAL"
+							[valueExpr]="'CORR_PUESTO'"
+							[displayExpr]="'NOMBRE_PUESTO'"
+							[lookupColumns]="puestoLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+
+					<div *dxTemplate="let cellInfo of 'CORR_TIPO_MODALIDAD_ACTUALLookup'">
+						<app-data-lookup
+							[model]="mCORR_TIPO_MODALIDAD"
+							[(value)]="model.CORR_TIPO_MODALIDAD_ACTUAL"
+							[selectedRowKeys]="selectedLookUpCORR_TIPO_MODALIDAD_ACTUAL"
+							[readOnly]="readOnly"
+							[valueExpr]="'CORR_TIPO_MODALIDAD'"
+							[displayExpr]="'MODALIDAD_NOMBRE'"
+							[lookupColumns]="modalidadLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+
+					<div *dxTemplate="let cellInfo of 'CORR_GERENCIA_PROPUESTALookup'">
+						<app-data-lookup
+							[model]="mGerenciaPropuesta"
+							[(value)]="corrGerenciaPropuesta"
+							[selectedRowKeys]="selectedLookUpCORR_GERENCIA_PROPUESTA"
+							[readOnly]="readOnly"
+							[valueExpr]="'CORR_UNIDAD'"
+							[displayExpr]="'DISPLAY_UNIDAD'"
+							[lookupColumns]="unidadLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+
+					<div *dxTemplate="let cellInfo of 'CORR_UNIDAD_PROPUESTALookup'">
+						<app-data-lookup
+							[model]="mUnidadPropuesta"
+							[(value)]="model.CORR_UNIDAD_PROPUESTA"
+							[selectedRowKeys]="selectedLookUpCORR_UNIDAD_PROPUESTA"
+							[readOnly]="readOnly || !corrGerenciaPropuesta"
+							[valueExpr]="'CORR_UNIDAD'"
+							[displayExpr]="'DISPLAY_UNIDAD'"
+							[lookupColumns]="unidadLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+
+					<div *dxTemplate="let cellInfo of 'CORR_PUESTO_PROPUESTOLookup'">
+						<app-data-lookup
+							[model]="mCORR_PUESTO_PROPUESTO"
+							[(value)]="model.CORR_PUESTO_PROPUESTO"
+							[selectedRowKeys]="selectedLookUpCORR_PUESTO_PROPUESTO"
+							[readOnly]="readOnly || !model.CORR_UNIDAD_PROPUESTA"
+							[valueExpr]="'CORR_PUESTO'"
+							[displayExpr]="'NOMBRE_PUESTO'"
+							[lookupColumns]="puestoLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+
+					<div *dxTemplate="let cellInfo of 'CORR_TIPO_MODALIDAD_PROPUESTALookup'">
+						<app-data-lookup
+							[model]="mCORR_TIPO_MODALIDAD"
+							[(value)]="model.CORR_TIPO_MODALIDAD_PROPUESTA"
+							[selectedRowKeys]="selectedLookUpCORR_TIPO_MODALIDAD_PROPUESTA"
+							[readOnly]="readOnly"
+							[valueExpr]="'CORR_TIPO_MODALIDAD'"
+							[displayExpr]="'MODALIDAD_NOMBRE'"
+							[lookupColumns]="modalidadLookupColumns"
+						>
+						</app-data-lookup>
+					</div>
+				</dx-form>
+			</dxi-item>
+
+			<!-- Bitácora del motor SEG_FLUJO (vacía hasta configurar tipo documento). -->
+			<dxi-item title="Bitácora" [icon]="'checklist'">
+				<div class="dx-grid-deta">
+					<dx-data-grid
+						[dataSource]="modelsBitacora"
+						[columns]="columnsBitacora"
+						[showBorders]="true"
+						[showColumnLines]="true"
+						[showRowLines]="true"
+						[rowAlternationEnabled]="true"
+						[hoverStateEnabled]="true"
+						[columnAutoWidth]="true"
+						[wordWrapEnabled]="true"
+						[height]="'100%'"
+						[width]="'100%'"
+					>
+						<dxo-search-panel [visible]="true"></dxo-search-panel>
+						<dxo-paging [pageSize]="10"></dxo-paging>
+						<dxo-pager [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 20]"></dxo-pager>
+						<dxo-editing [allowUpdating]="false" [allowDeleting]="false" [allowAdding]="false"></dxo-editing>
+					</dx-data-grid>
+				</div>
+			</dxi-item>
+
+			<dxi-item *ngIf="esOrigenRequisicion" title="Requisición asociada" [icon]="'doc'">
+				<div class="req-asociada-card dx-card">
+					<div class="req-asociada-titulo">
+						Requisición {{ requisicionAsociada?.CORR_REQUISICION_PERSONAL }} — {{ requisicionAsociada?.NOMBRE_PUESTO }}
+					</div>
+					<div class="req-asociada-campo">
+						<span>Fecha requisición</span>
+						<strong>{{ requisicionAsociada?.FECHA_REQUISICION | date:'dd/MM/yyyy' }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Estado</span>
+						<strong>{{ requisicionAsociada?.NOMBRE_ESTADO }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Unidad</span>
+						<strong>{{ requisicionAsociada?.DISPLAY_UNIDAD }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Puesto solicitado</span>
+						<strong>{{ requisicionAsociada?.NOMBRE_PUESTO }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Modalidad</span>
+						<strong>{{ requisicionAsociada?.MODALIDAD_NOMBRE }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Tipo contratación</span>
+						<strong>{{ requisicionAsociada?.NOMBRE_TIPO_CONTRATACION }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Tipo vacante</span>
+						<strong>{{ requisicionAsociada?.NOMBRE_TIPO_VACANTE }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Plazas</span>
+						<strong>{{ requisicionAsociada?.CANTIDAD_PLAZAS }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Plazas cubiertas</span>
+						<strong>{{ requisicionAsociada?.PLAZAS_CUBIERTAS }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Salario</span>
+						<strong>{{ requisicionAsociada?.SALARIO | number:'1.2-2' }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Tiempo contrato (meses)</span>
+						<strong>{{ requisicionAsociada?.TIEMPO_CONTRATO }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Horario</span>
+						<strong>{{ requisicionAsociada?.HORARIO }}</strong>
+					</div>
+					<div class="req-asociada-campo">
+						<span>Empleado sustituto</span>
+						<strong>{{ requisicionAsociada?.CORR_EMPLEADO_SUSTITUTO }}</strong>
+					</div>
+					<div class="req-asociada-campo req-asociada-ancho">
+						<span>Justificación</span>
+						<strong>{{ requisicionAsociada?.JUSTIFICACION }}</strong>
+					</div>
+				</div>
+			</dxi-item>
+		</dx-tab-panel>
+	</div>
+
+	<app-data-grid-mtto
+		[isBrowse]="isBrowse()"
+		[models]="models"
+		[columns]="columns"
+		[summary]="summary"
+		[keyExpr]="mttoGridKeyExpr"
+		[pageSize]="mttoPageSize"
+		[allowedPageSizes]="mttoPageSizes"
+		[remoteOperations]="mttoRemoteOperations"
+		[nativeToolbar]="true"
+		[unifiedToolbar]="false"
+		[showSearch]="false"
+		[showAdd]="false"
+		[showRefresh]="false"
+		[showExport]="false"
+		[focusedRowKey]="gridFocusedRowKey"
+		[permiteEditar]="getPermiteEditar"
+		[permiteDele]="getPermiteDele"
+		[responsiveColumnHiding]="false"
+		[columnHidingEnabled]="false"
+		[exportFileName]="'MovimientoPersonal'"
+		(rowDblClick)="rowDblClick($event)"
+		(rowRemoving)="rowRemoving($event)"
+		(focusedRowChanged)="focusedRowChanged($event)"
+		(editClick)="editarClick($event)"
+	>
+	</app-data-grid-mtto>
+</div>
+
+<dx-popup
+	[(visible)]="avisoIngresoVisible"
+	[width]="480"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[showTitle]="true"
+	title="Fecha de ingreso propuesta"
+	[showCloseButton]="true"
+	[dragEnabled]="false"
+	[hideOnOutsideClick]="false"
+	(onHiding)="cerrarAvisoIngreso()"
+>
+	<div *dxTemplate="let data of 'content'">
+		<p class="req-aviso-ingreso">
+			Este movimiento viene de una contratación eventual. Indique la fecha de ingreso propuesta
+			para calcular la fecha de finalización. Sin esa fecha no se puede confirmar.
+		</p>
+		<div style="display: flex; justify-content: flex-end;">
+			<dx-button text="Ok" type="default" stylingMode="contained" (onClick)="cerrarAvisoIngreso()"></dx-button>
+		</div>
+	</div>
+</dx-popup>
+
+<dx-popup
+	[(visible)]="popupFlujoVisible"
+	[width]="480"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[showTitle]="true"
+	[title]="popupFlujoTitulo"
+	[showCloseButton]="true"
+	[dragEnabled]="false"
+	[hideOnOutsideClick]="false"
+	(onHiding)="cerrarPopupFlujo()"
+>
+	<div *dxTemplate="let data of 'content'">
+		<p class="req-aviso-ingreso">La observación es obligatoria para el flujo.</p>
+		<textarea
+			class="flujo-observacion"
+			[value]="popupFlujoTexto"
+			(input)="popupFlujoTexto = $any($event.target).value"
+			rows="4"
+			maxlength="1000"
+		></textarea>
+		<div class="flujo-observacion-acciones">
+			<dx-button text="Cancelar" stylingMode="outlined" (onClick)="cerrarPopupFlujo()"></dx-button>
+			<dx-button text="Continuar" type="default" stylingMode="contained" (onClick)="confirmarPopupFlujo()"></dx-button>
+		</div>
+	</div>
+</dx-popup>
+
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>

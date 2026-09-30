@@ -76,4 +76,23 @@ export class ScBandejaActoresRepository {
 			environment.UrlSELECCIONCONTRATACIONAPI
 		);
 	}
+
+	getMovimientos(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(
+			this.xController,
+			'GetMovimientos',
+			xWhere,
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
+	autorizaMovimiento(model: any): Observable<IResult> {
+		return this.objData.Put(
+			model,
+			this.xController,
+			'AutorizaMovimiento',
+			[],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
 }
