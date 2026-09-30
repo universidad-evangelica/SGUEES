@@ -10,5 +10,7 @@ namespace SGUEES.Repositories
 	public interface ISC_DESCRIPTOR_PUESTO_EMPLEADORepository : IRepository<SC_DESCRIPTOR_PUESTO_EMPLEADOTable>
 	{
 		Task<CResult> GetDisponiblesAsync(int corrEmpresa, int corrDescriptor);
+		Task<CResult> GetPorEmpleadoAsync(int corrEmpresa, int corrEmpleado);
+		Task<CResult> GetDisponiblesPorEmpleadoAsync(int corrEmpresa, int corrEmpleado);
 	}
 }

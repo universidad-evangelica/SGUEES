@@ -42,6 +42,30 @@ namespace SGUEES.Services
 			return await _repo.GetDisponiblesAsync(xWhere.CORR_EMPRESA, xWhere.CORR_DESCRIPTOR_PUESTO);
 		}
 
+		// Qué hace: lista los descriptores ya asignados al empleado.
+		// Cómo lo hace: filtra por empresa y empleado.
+		public async Task<CResult> GetPorEmpleadoAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOParam xWhere)
+		{
+			if (xWhere.CORR_EMPRESA <= 0 || xWhere.CORR_EMPLEADO <= 0)
+			{
+				return OkVacio();
+			}
+
+			return await _repo.GetPorEmpleadoAsync(xWhere.CORR_EMPRESA, xWhere.CORR_EMPLEADO);
+		}
+
+		// Qué hace: lista descriptores activos que aplican al puesto y la unidad del empleado.
+		// Cómo lo hace: incluye los ya asignados para que el modal los muestre con check.
+		public async Task<CResult> GetDisponiblesPorEmpleadoAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOParam xWhere)
+		{
+			if (xWhere.CORR_EMPRESA <= 0 || xWhere.CORR_EMPLEADO <= 0)
+			{
+				return ValidationError("Debe guardar el empleado antes de asignar descriptores.");
+			}
+
+			return await _repo.GetDisponiblesPorEmpleadoAsync(xWhere.CORR_EMPRESA, xWhere.CORR_EMPLEADO);
+		}
+
 		// Qué hace: carga un empleado en el descriptor.
 		// Cómo lo hace: exige la llave y deja que el repositorio valide puesto y unidad.
 		public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)

@@ -400,5 +400,111 @@ namespace SGUEES.Repositories
 				ACTIVO_EMPLEADO = reader.IsDBNull(9) ? null : reader.GetBoolean(9),
 			};
 		}
+
+		// Qué hace: lista los descriptores ya asignados al empleado.
+		// Cómo lo hace: une el vínculo con V_SC_DESCRIPTOR_PUESTO.
+		public Task<CResult> GetPorEmpleadoAsync(int corrEmpresa, int corrEmpleado)
+		{
+			const string sql = @"
+			SELECT
+				X.CORR_EMPRESA,
+				X.CORR_DESCRIPTOR_PUESTO,
+				X.CORR_EMPLEADO,
+				ISNULL(D.CODIGO_DESCRIPTOR_PUESTO, ''),
+				ISNULL(D.NOMBRE_PUESTO, ''),
+				ISNULL(D.NOMBRE_UNIDAD, ''),
+				D.FECHA_EMISION,
+				D.CORR_ESTADO,
+				ISNULL(D.NOMBRE_ESTADO, '')
+			FROM dbo.SC_DESCRIPTOR_PUESTO_EMPLEADO X
+			INNER JOIN dbo.V_SC_DESCRIPTOR_PUESTO D
+				ON D.CORR_EMPRESA = X.CORR_EMPRESA
+				AND D.CORR_DESCRIPTOR_PUESTO = X.CORR_DESCRIPTOR_PUESTO
+			WHERE X.CORR_EMPRESA = @CORR_EMPRESA
+			AND X.CORR_EMPLEADO = @CORR_EMPLEADO
+			ORDER BY D.NOMBRE_PUESTO, D.CODIGO_DESCRIPTOR_PUESTO;";
+
+			return LeerDescriptoresAsync(sql, corrEmpresa, corrEmpleado);
+		}
+
+		// Qué hace: lista descriptores activos que coinciden con el puesto y la unidad del empleado.
+		// Cómo lo hace: incluye los ya asignados para marcar el check en el modal.
+		public Task<CResult> GetDisponiblesPorEmpleadoAsync(int corrEmpresa, int corrEmpleado)
+		{
+			const string sql = @"
+			SELECT
+				D.CORR_EMPRESA,
+				D.CORR_DESCRIPTOR_PUESTO,
+				@CORR_EMPLEADO,
+				ISNULL(D.CODIGO_DESCRIPTOR_PUESTO, ''),
+				ISNULL(D.NOMBRE_PUESTO, ''),
+				ISNULL(D.NOMBRE_UNIDAD, ''),
+				D.FECHA_EMISION,
+				D.CORR_ESTADO,
+				ISNULL(D.NOMBRE_ESTADO, '')
+			FROM dbo.V_SC_DESCRIPTOR_PUESTO D
+			INNER JOIN dbo.GEN_EMPLEADO_PUESTO P
+				ON P.CORR_EMPRESA = D.CORR_EMPRESA
+				AND P.CORR_EMPLEADO = @CORR_EMPLEADO
+				AND P.CORR_PUESTO = D.CORR_PUESTO
+				AND P.CORR_UNIDAD = D.CORR_UNIDAD
+			WHERE D.CORR_EMPRESA = @CORR_EMPRESA
+			AND D.CORR_ESTADO = 14
+			ORDER BY D.NOMBRE_PUESTO, D.CODIGO_DESCRIPTOR_PUESTO;";
+
+			return LeerDescriptoresAsync(sql, corrEmpresa, corrEmpleado);
+		}
+
+		// Qué hace: ejecuta el listado de descriptores del empleado.
+		// Cómo lo hace: lee las columnas de puesto, unidad y estado.
+		private async Task<CResult> LeerDescriptoresAsync(string sql, int corrEmpresa, int corrEmpleado)
+		{
+			CResult objResultado = new();
+			try
+			{
+				var rows = new List<SC_DESCRIPTOR_PUESTO_EMPLEADO_ASIGNADOView>();
+				await using var conn = new SqlConnection(_connectionString);
+				await conn.OpenAsync();
+				await using var cmd = new SqlCommand(sql, conn);
+				cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = corrEmpresa });
+				cmd.Parameters.Add(new SqlParameter("@CORR_EMPLEADO", SqlDbType.Int) { Value = corrEmpleado });
+				await using var reader = await cmd.ExecuteReaderAsync();
+				while (await reader.ReadAsync())
+				{
+					rows.Add(LeerDescriptor(reader));
+				}
+
+				objResultado.Data = rows;
+				objResultado.Result = true;
+				objResultado.RowsAffected = rows.Count;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+
+			return objResultado;
+		}
+
+		private static SC_DESCRIPTOR_PUESTO_EMPLEADO_ASIGNADOView LeerDescriptor(SqlDataReader reader)
+		{
+			return new SC_DESCRIPTOR_PUESTO_EMPLEADO_ASIGNADOView
+			{
+				CORR_EMPRESA = reader.GetInt32(0),
+				CORR_DESCRIPTOR_PUESTO = reader.GetInt32(1),
+				CORR_EMPLEADO = reader.GetInt32(2),
+				CODIGO_DESCRIPTOR_PUESTO = reader.IsDBNull(3) ? "" : reader.GetString(3),
+				NOMBRE_PUESTO = reader.IsDBNull(4) ? "" : reader.GetString(4),
+				NOMBRE_UNIDAD = reader.IsDBNull(5) ? "" : reader.GetString(5),
+				FECHA_EMISION = reader.IsDBNull(6) ? null : reader.GetDateTime(6),
+				CORR_ESTADO = reader.IsDBNull(7) ? null : reader.GetInt32(7),
+				NOMBRE_ESTADO = reader.IsDBNull(8) ? "" : reader.GetString(8),
+			};
+		}
 	}
 }

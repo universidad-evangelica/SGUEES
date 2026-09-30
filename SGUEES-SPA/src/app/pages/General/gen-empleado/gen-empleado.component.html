@@ -727,6 +727,53 @@
 						</div>
 					</dxi-item>
 
+					<!-- motivo: descriptores activos cuyo puesto y unidad coinciden con el empleado -->
+					<dxi-item title="Descriptores" [icon]="'doc'">
+						<div class="rd-panel">
+							<div class="empleado-descriptor-toolbar" *ngIf="puedeAsignarDescriptores">
+								<dx-button
+									class="empleado-descriptor-toolbar-btn"
+									icon="upload"
+									text="Asignar"
+									type="success"
+									stylingMode="contained"
+									(onClick)="abrirAsignarDescriptores()"
+									[disabled]="cargandoDescriptores"
+								></dx-button>
+							</div>
+							<dx-data-grid
+								class="theme-dependent sguees-data-grid-mtto empleado-descriptor-grid"
+								[dataSource]="descriptoresAsignados"
+								keyExpr="CORR_DESCRIPTOR_PUESTO"
+								[columnAutoWidth]="false"
+								[showBorders]="true"
+								[showColumnLines]="true"
+								[showRowLines]="true"
+								[rowAlternationEnabled]="true"
+								[hoverStateEnabled]="true"
+								[allowColumnResizing]="true"
+								[columnResizingMode]="'widget'"
+								[width]="'100%'"
+								noDataText="Sin descriptores asignados."
+							>
+								<dxo-paging [enabled]="true" [pageSize]="5"></dxo-paging>
+								<dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25]" [showInfo]="true"></dxo-pager>
+								<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+								<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+								<dxo-load-panel [enabled]="false"></dxo-load-panel>
+								<dxi-column caption="" [width]="70" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesDescriptorTpl" [visible]="puedeAsignarDescriptores" alignment="center"></dxi-column>
+								<div *dxTemplate="let cell of 'accionesDescriptorTpl'">
+									<dx-button icon="trash" stylingMode="text" hint="Quitar" (onClick)="quitarDescriptorAsignado(cell.data)"></dx-button>
+								</div>
+								<dxi-column dataField="CODIGO_DESCRIPTOR_PUESTO" caption="Codigo" [width]="120" [minWidth]="100"></dxi-column>
+								<dxi-column dataField="NOMBRE_PUESTO" caption="Puesto" [width]="240" [minWidth]="180"></dxi-column>
+								<dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [width]="220" [minWidth]="160"></dxi-column>
+								<dxi-column dataField="FECHA_EMISION" caption="Fecha emision" [width]="130" dataType="date" format="dd/MM/yyyy"></dxi-column>
+								<dxi-column dataField="NOMBRE_ESTADO" caption="Estado" [width]="140" [minWidth]="110"></dxi-column>
+							</dx-data-grid>
+						</div>
+					</dxi-item>
+
 					</dx-tab-panel>
 				</div>
 			</ng-container>
@@ -2696,6 +2743,94 @@
 		</section>
 	</div>
 </ng-template>
+
+<!-- motivo: descriptores activos del puesto y la unidad de este empleado -->
+<dx-popup
+	#popupDescriptoresEmpleado
+	[(visible)]="popupDescriptorEmpleadoVisible"
+	title="Asignar descriptor"
+	[width]="920"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[maxHeight]="'calc(100vh - 48px)'"
+	[dragEnabled]="false"
+	[showCloseButton]="true"
+	[hideOnOutsideClick]="false"
+	[wrapperAttr]="{ class: 'empleado-descriptor-asignar-popup' }"
+	(onHiding)="cerrarAsignarDescriptores()"
+>
+	<div class="empleado-descriptor-popup-toolbar">
+		<dx-button
+			icon="check"
+			text="Todos"
+			type="success"
+			stylingMode="contained"
+			(onClick)="selectTodosDescriptores(true)"
+			[disabled]="cargandoDescriptores || !descriptoresDisponibles.length"
+		></dx-button>
+		<dx-button
+			icon="close"
+			text="Ninguno"
+			type="danger"
+			stylingMode="contained"
+			(onClick)="selectTodosDescriptores(false)"
+			[disabled]="cargandoDescriptores || !descriptoresDisponibles.length"
+		></dx-button>
+		<dx-button
+			icon="save"
+			text="Guardar"
+			type="default"
+			stylingMode="contained"
+			(onClick)="guardarDescriptoresMarcados()"
+			[disabled]="cargandoDescriptores || !descriptoresDisponibles.length"
+		></dx-button>
+	</div>
+	<dx-data-grid
+		#gridDescriptoresEmpleado
+		class="theme-dependent sguees-data-grid-mtto empleado-descriptor-popup-grid"
+		[dataSource]="descriptoresDisponibles"
+		keyExpr="CORR_DESCRIPTOR_PUESTO"
+		[columnAutoWidth]="false"
+		[showBorders]="true"
+		[showColumnLines]="true"
+		[showRowLines]="true"
+		[rowAlternationEnabled]="true"
+		[hoverStateEnabled]="true"
+		[allowColumnResizing]="true"
+		[columnResizingMode]="'widget'"
+		[width]="'100%'"
+		[height]="alturaDescriptorEmpleadoModal"
+		(onOptionChanged)="onDescriptorEmpleadoModalOptionChanged($event)"
+		noDataText="No hay descriptores activos con el puesto y la unidad de este empleado."
+	>
+		<dxo-paging [enabled]="true" [pageSize]="descriptorModalPageSize"></dxo-paging>
+		<dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25, 50]" [showInfo]="true"></dxo-pager>
+		<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+		<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+		<dxo-load-panel [enabled]="false"></dxo-load-panel>
+		<dxo-editing
+			[mode]="'cell'"
+			[allowUpdating]="!cargandoDescriptores"
+			[allowAdding]="false"
+			[allowDeleting]="false"
+			[useIcons]="false"
+		></dxo-editing>
+		<dxi-column
+			dataField="SELECCION"
+			caption=""
+			[width]="70"
+			dataType="boolean"
+			[allowSorting]="false"
+			[allowFiltering]="false"
+			[allowEditing]="!cargandoDescriptores"
+			alignment="center"
+		></dxi-column>
+		<dxi-column dataField="CODIGO_DESCRIPTOR_PUESTO" caption="Codigo" [width]="120" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="NOMBRE_PUESTO" caption="Puesto" [width]="240" [minWidth]="160" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [width]="220" [minWidth]="140" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="NOMBRE_ESTADO" caption="Estado" [width]="140" [allowEditing]="false"></dxi-column>
+	</dx-data-grid>
+</dx-popup>
 
 <!-- Panel de carga. -->
 <dx-load-panel

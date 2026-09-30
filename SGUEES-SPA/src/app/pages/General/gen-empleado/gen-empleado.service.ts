@@ -19,6 +19,7 @@ import { GenPersonaReferenciaPersonalRepository } from './gen-persona-referencia
 import { GenPersonaReferenciaLaboralRepository } from './gen-persona-referencia-laboral/gen-persona-referencia-laboral.repository';
 import { GenPersonaDomicilioRepository } from './gen-persona-domicilio/gen-persona-domicilio.repository';
 import { GenEmpleadoPuestoRepository } from './gen-empleado-puesto/gen-empleado-puesto.repository';
+import { ScDescriptorPuestoEmpleadoRepository } from '../../SelectionHiring/sc-descriptor-puesto/sc-descriptor-puesto-empleado/sc-descriptor-puesto-empleado.repository';
 import { GenPersonaContactoRepository } from './gen-persona-contacto/gen-persona-contacto.repository';
 import { GenPersonaParentescoContactoRepository } from './gen-persona-parentesco-contacto/gen-persona-parentesco-contacto.repository';
 
@@ -41,7 +42,8 @@ export class GenEmpleadoService {
 		private domicilioRepo: GenPersonaDomicilioRepository,
 		private contactoRepo: GenPersonaContactoRepository,
 		private parentescoContactoRepo: GenPersonaParentescoContactoRepository,
-		private puestoRepo: GenEmpleadoPuestoRepository
+		private puestoRepo: GenEmpleadoPuestoRepository,
+		private descriptorEmpleadoRepo: ScDescriptorPuestoEmpleadoRepository
 	) {}
 
 	getAll(param: any): Observable<IResult> {
@@ -209,6 +211,38 @@ export class GenEmpleadoService {
 
 	savePuestos(corrEmpleado: number, rows: any[]): Observable<IResult> {
 		return this.puestoRepo.saveAll(corrEmpleado, rows);
+	}
+
+	// Qué hace: lista los descriptores ya asignados al empleado.
+	// Cómo lo hace: consulta GetPorEmpleado de la misma API del descriptor.
+	getDescriptoresEmpleado(corrEmpleado: number): Observable<IResult> {
+		return this.descriptorEmpleadoRepo.getPorEmpleado([{ Parameter: 'CORR_EMPLEADO', Value: corrEmpleado ?? 0 }]);
+	}
+
+	// Qué hace: lista descriptores activos que aplican al puesto y la unidad del empleado.
+	// Cómo lo hace: consulta GetDisponiblesPorEmpleado.
+	getDescriptoresDisponiblesEmpleado(corrEmpleado: number): Observable<IResult> {
+		return this.descriptorEmpleadoRepo.getDisponiblesPorEmpleado([
+			{ Parameter: 'CORR_EMPLEADO', Value: corrEmpleado ?? 0 },
+		]);
+	}
+
+	// Qué hace: asigna un descriptor al empleado.
+	// Cómo lo hace: llama al alta existente con el permiso de gen-empleado.
+	asignarDescriptorEmpleado(corrDescriptor: number, corrEmpleado: number): Observable<IResult> {
+		return this.descriptorEmpleadoRepo.asignarPorEmpleado({
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_EMPLEADO: corrEmpleado,
+		});
+	}
+
+	// Qué hace: quita un descriptor del empleado.
+	// Cómo lo hace: llama a la baja existente con el permiso de gen-empleado.
+	quitarDescriptorEmpleado(corrDescriptor: number, corrEmpleado: number): Observable<IResult> {
+		return this.descriptorEmpleadoRepo.quitarPorEmpleado([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptor },
+			{ Parameter: 'CORR_EMPLEADO', Value: corrEmpleado },
+		]);
 	}
 
 	getParentescoContactos(corrPersona: number): Observable<IResult> {

@@ -36,4 +36,28 @@ export class ScDescriptorPuestoEmpleadoRepository {
 	delete(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, '', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
+
+	// Qué hace: lista los descriptores ya asignados al empleado.
+	// Cómo lo hace: GET GetPorEmpleado con el correlativo del empleado.
+	getPorEmpleado(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetPorEmpleado', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
+	// Qué hace: lista descriptores activos del puesto y la unidad del empleado.
+	// Cómo lo hace: GET GetDisponiblesPorEmpleado con el correlativo del empleado.
+	getDisponiblesPorEmpleado(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetDisponiblesPorEmpleado', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
+	// Qué hace: asigna un descriptor al empleado.
+	// Cómo lo hace: POST PostPorEmpleado con el permiso de gen-empleado.
+	asignarPorEmpleado(model: any): Observable<IResult> {
+		return this.objData.Post(model, this.xController, 'PostPorEmpleado', environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
+	// Qué hace: quita un descriptor del empleado.
+	// Cómo lo hace: DELETE DeletePorEmpleado con descriptor y empleado.
+	quitarPorEmpleado(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Delete(this.xController, 'DeletePorEmpleado', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
+	}
 }

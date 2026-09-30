@@ -2,8 +2,8 @@
 // Cómo: grilla browse; Guardar según tab; personales vía SP; documentos/familiares/hijos/formación/experiencia/UEES/referencias anidados.
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { firstValueFrom, from, of } from 'rxjs';
+import { catchError, concatMap, map, take, toArray } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { IParam } from 'src/app/FxAPI/IParam';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
@@ -26,6 +26,7 @@ import { GenPersonaReferenciaPersonal } from './gen-persona-referencia-personal/
 import { GenPersonaReferenciaLaboral } from './gen-persona-referencia-laboral/models/gen-persona-referencia-laboral';
 import { GenPersonaDomicilio } from './gen-persona-domicilio/models/gen-persona-domicilio';
 import { GenEmpleadoPuesto } from './gen-empleado-puesto/models/gen-empleado-puesto';
+import { ScDescriptorAsignadoEmpleado } from '../../SelectionHiring/sc-descriptor-puesto/sc-descriptor-puesto-empleado/models/sc-descriptor-puesto-empleado';
 import { GenPersonaParentescoContacto } from './gen-persona-parentesco-contacto/models/gen-persona-parentesco-contacto';
 import { GenEmpleadoService } from './gen-empleado.service';
 import {
@@ -227,6 +228,13 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	// Cómo: se enciende antes de restaurar el modelo; el combo de país dispara valueChange y ese cambio se ignora.
 	private cerrandoPopupPersonales = false;
 	tabEmpleadoIndex = TAB_PERSONALES;
+	descriptoresAsignados: ScDescriptorAsignadoEmpleado[] = [];
+	descriptoresDisponibles: ScDescriptorAsignadoEmpleado[] = [];
+	popupDescriptorEmpleadoVisible = false;
+	cargandoDescriptores = false;
+	descriptorModalPageSize = 50;
+	@ViewChild('popupDescriptoresEmpleado') popupDescriptoresEmpleado?: any;
+	@ViewChild('gridDescriptoresEmpleado') gridDescriptoresEmpleado?: any;
 
 	/** Preview blob de la foto (panel + modal). */
 	fotoPersonaUrl: string | null = null;
@@ -323,6 +331,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 
 	get readOnlyPersonales(): boolean {
 		return this.banderaMtto === UpdateType.Not_Defined || this.banderaMtto === UpdateType.Browse;
+	}
+
+	// Qué hace: indica si se pueden asignar o quitar descriptores.
+	// Cómo lo hace: solo en edición del empleado y con permiso de modificar.
+	get puedeAsignarDescriptores(): boolean {
+		return !!this.permiteEdit && !this.readOnlyPersonales && this.tienePersonaBase;
 	}
 
 	/** Qué hace: el form de personales es editable en alta o dentro del modal. */
@@ -580,6 +594,9 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.tempCorrParentescoContacto = -1;
 		this.puestos = [];
 		this.puestosOriginal = [];
+		this.descriptoresAsignados = [];
+		this.descriptoresDisponibles = [];
+		this.popupDescriptorEmpleadoVisible = false;
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
 		this.revocarFotoPersona();
@@ -1326,6 +1343,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.cargarDomicilios();
 		this.cargarParentescoContactos();
 		this.cargarPuestos();
+		this.cargarDescriptoresEmpleado();
 	}
 
 	// Qué hace: crea GEN_PERSONA + GEN_EMPRESA_PERSONA + GEN_PERSONA_NATURAL + GEN_EMPLEADO (SP).
@@ -1368,6 +1386,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.cargarDomicilios();
 					this.cargarParentescoContactos();
 					this.cargarPuestos();
+					this.cargarDescriptoresEmpleado();
 					this.notifyFx('Empleado creado. Puede seguir editando los datos personales.', NotifyType.Success, {
 						raw: true,
 					});
@@ -5279,6 +5298,272 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.puestosOriginal = [];
 				},
 			});
+	}
+
+	// Qué hace: carga los descriptores ya asignados al empleado.
+	// Cómo lo hace: GetPorEmpleado al abrir el detalle; no vuelve a consultar después de guardar.
+	private cargarDescriptoresEmpleado(): void {
+		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
+		if (corrEmpleado <= 0) {
+			this.descriptoresAsignados = [];
+			this.popupDescriptorEmpleadoVisible = false;
+			return;
+		}
+
+		this.service
+			.getDescriptoresEmpleado(corrEmpleado)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.descriptoresAsignados = response?.Result
+						? (response.Data ?? []).map((item: ScDescriptorAsignadoEmpleado) => this.mapDescriptorAsignado(item))
+						: [];
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	// Qué hace: abre el modal de descriptores que aplican al empleado.
+	// Cómo lo hace: marca el check de los que ya están asignados.
+	abrirAsignarDescriptores(): void {
+		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
+		if (!this.puedeAsignarDescriptores || this.cargandoDescriptores) {
+			return;
+		}
+		if (corrEmpleado <= 0) {
+			this.notifyFx('Guarde el empleado para asignar descriptores.', NotifyType.Warning);
+			return;
+		}
+
+		this.descriptorModalPageSize = 50;
+		this.cargandoDescriptores = true;
+		this.service
+			.getDescriptoresDisponiblesEmpleado(corrEmpleado)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.cargandoDescriptores = false;
+					if (!response?.Result) {
+						this.notifyFx(response?.ErrorMessage || 'No se pudieron consultar los descriptores.', NotifyType.Warning);
+						return;
+					}
+					const asignados = new Set(this.descriptoresAsignados.map((item) => item.CORR_DESCRIPTOR_PUESTO));
+					this.descriptoresDisponibles = (response.Data ?? []).map((item: ScDescriptorAsignadoEmpleado) => ({
+						...this.mapDescriptorAsignado(item),
+						SELECCION: asignados.has(Number(item?.CORR_DESCRIPTOR_PUESTO)),
+					}));
+					this.popupDescriptorEmpleadoVisible = true;
+				},
+				error: (error) => {
+					this.cargandoDescriptores = false;
+					this.notifyFx(this.textoErrorDescriptorEmpleado(error), NotifyType.Warning);
+				},
+			});
+	}
+
+	// Qué hace: con 5 o 10 filas la tabla se encoge; con más, mantiene altura y scroll.
+	// Cómo lo hace: deja espacio para el título, los botones y el paginador dentro de la pantalla.
+	get alturaDescriptorEmpleadoModal(): string {
+		return this.descriptorModalPageSize <= 10 ? 'auto' : 'calc(100vh - 300px)';
+	}
+
+	// Qué hace: actualiza la altura cuando cambia el tamaño de página del modal.
+	// Cómo lo hace: reaplica la altura en la grilla para que el paginador no quede fuera.
+	onDescriptorEmpleadoModalOptionChanged(e: any): void {
+		if (e?.fullName !== 'paging.pageSize' || !(Number(e.value) > 0)) {
+			return;
+		}
+		this.descriptorModalPageSize = Number(e.value);
+		const altura = this.alturaDescriptorEmpleadoModal;
+		setTimeout(() => {
+			e.component?.option('height', altura);
+			e.component?.updateDimensions?.();
+			this.popupDescriptoresEmpleado?.instance?.repaint();
+		});
+	}
+
+	cerrarAsignarDescriptores(): void {
+		if (this.cargandoDescriptores) {
+			this.popupDescriptorEmpleadoVisible = true;
+			return;
+		}
+		this.popupDescriptorEmpleadoVisible = false;
+		this.descriptoresDisponibles = [];
+	}
+
+	// Qué hace: marca o quita la marca de todos los descriptores del modal.
+	selectTodosDescriptores(marcar: boolean): void {
+		this.descriptoresDisponibles = (this.descriptoresDisponibles ?? []).map((item) => ({
+			...item,
+			SELECCION: marcar,
+		}));
+	}
+
+	// Qué hace: asigna los marcados y quita los que se desmarcaron.
+	// Cómo lo hace: inserta o elimina uno por uno y parchea la grilla en memoria.
+	guardarDescriptoresMarcados(): void {
+		if (!this.puedeAsignarDescriptores || this.cargandoDescriptores) {
+			return;
+		}
+		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
+		const lista = this.descriptoresDisponibles ?? [];
+		if (!lista.length) {
+			this.notifyFx('No hay descriptores para asignar.', NotifyType.Warning);
+			return;
+		}
+
+		const asignados = new Set(this.descriptoresAsignados.map((item) => item.CORR_DESCRIPTOR_PUESTO));
+		const operaciones = [
+			...lista
+				.filter((item) => !!item.SELECCION && !asignados.has(item.CORR_DESCRIPTOR_PUESTO))
+				.map((descriptor) => ({ tipo: 'insert' as const, descriptor })),
+			...lista
+				.filter((item) => !item.SELECCION && asignados.has(item.CORR_DESCRIPTOR_PUESTO))
+				.map((descriptor) => ({ tipo: 'delete' as const, descriptor })),
+		];
+		if (!operaciones.length) {
+			this.notifyFx('Cambios guardados con exito!', NotifyType.Success, { raw: true });
+			this.popupDescriptorEmpleadoVisible = false;
+			this.descriptoresDisponibles = [];
+			return;
+		}
+
+		this.cargandoDescriptores = true;
+		from(operaciones)
+			.pipe(
+				concatMap((op) => {
+					const request$ =
+						op.tipo === 'insert'
+							? this.service.asignarDescriptorEmpleado(op.descriptor.CORR_DESCRIPTOR_PUESTO, corrEmpleado)
+							: this.service.quitarDescriptorEmpleado(op.descriptor.CORR_DESCRIPTOR_PUESTO, corrEmpleado);
+					return request$.pipe(
+						take(1),
+						catchError((error) =>
+							of({
+								Result: false,
+								ErrorMessage: this.textoErrorDescriptorEmpleado(
+									error,
+									op.tipo === 'insert'
+										? 'No se pudo asignar el descriptor.'
+										: 'No se pudo quitar el descriptor.'
+								),
+							})
+						),
+						map((response: any) => ({ ...response, _tipo: op.tipo, _descriptor: op.descriptor }))
+					);
+				}),
+				toArray()
+			)
+			.subscribe({
+				next: (responses: any[]) => {
+					this.cargandoDescriptores = false;
+					const ok = responses.filter((item) => item?.Result);
+					const fail = responses.filter((item) => !item?.Result);
+					let insertOk = 0;
+					let deleteOk = 0;
+					for (const response of ok) {
+						if (response._tipo === 'insert') {
+							const fila = this.mapDescriptorAsignado(response._descriptor);
+							if (!this.descriptoresAsignados.some((item) => item.CORR_DESCRIPTOR_PUESTO === fila.CORR_DESCRIPTOR_PUESTO)) {
+								this.descriptoresAsignados = [...this.descriptoresAsignados, fila].sort((a, b) =>
+									(a.NOMBRE_PUESTO ?? '').localeCompare(b.NOMBRE_PUESTO ?? '')
+								);
+							}
+							insertOk += 1;
+						} else {
+							const corr = Number(response._descriptor?.CORR_DESCRIPTOR_PUESTO);
+							this.descriptoresAsignados = this.descriptoresAsignados.filter(
+								(item) => item.CORR_DESCRIPTOR_PUESTO !== corr
+							);
+							deleteOk += 1;
+						}
+					}
+					if (insertOk > 0 || deleteOk > 0) {
+						const partes: string[] = [];
+						if (insertOk > 0) {
+							partes.push(insertOk === 1 ? '1 descriptor asignado' : `${insertOk} descriptores asignados`);
+						}
+						if (deleteOk > 0) {
+							partes.push(deleteOk === 1 ? '1 descriptor quitado' : `${deleteOk} descriptores quitados`);
+						}
+						this.notifyFx(partes.join('. ') + '.', NotifyType.Success, { raw: true });
+					}
+					if (fail.length > 0) {
+						const msg = fail
+							.map((item) => item?.ErrorMessage)
+							.filter((texto) => !!texto)
+							.filter((texto, index, lista) => lista.indexOf(texto) === index)
+							.join(' ');
+						this.notifyFx(msg || 'Algunos descriptores no se pudieron actualizar.', NotifyType.Warning);
+						const siguen = new Set(this.descriptoresAsignados.map((item) => item.CORR_DESCRIPTOR_PUESTO));
+						this.gridDescriptoresEmpleado?.instance?.cancelEditData?.();
+						this.descriptoresDisponibles = this.descriptoresDisponibles.map((item) => ({
+							...item,
+							SELECCION: siguen.has(item.CORR_DESCRIPTOR_PUESTO),
+						}));
+						setTimeout(() => this.gridDescriptoresEmpleado?.instance?.refresh?.());
+						return;
+					}
+					this.popupDescriptorEmpleadoVisible = false;
+					this.descriptoresDisponibles = [];
+				},
+				error: (error) => {
+					this.cargandoDescriptores = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: quita un descriptor asignado desde la grilla.
+	// Cómo lo hace: elimina el vínculo y lo saca de la grilla en memoria.
+	quitarDescriptorAsignado(row: ScDescriptorAsignadoEmpleado): void {
+		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
+		const corrDescriptor = Number(row?.CORR_DESCRIPTOR_PUESTO);
+		if (!this.puedeAsignarDescriptores || !corrEmpleado || !corrDescriptor) {
+			return;
+		}
+
+		this.cargandoDescriptores = true;
+		this.service
+			.quitarDescriptorEmpleado(corrDescriptor, corrEmpleado)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.cargandoDescriptores = false;
+					if (!response?.Result) {
+						this.notifyFx(response?.ErrorMessage || 'No se pudo quitar el descriptor.', NotifyType.Warning);
+						return;
+					}
+					this.descriptoresAsignados = this.descriptoresAsignados.filter(
+						(item) => item.CORR_DESCRIPTOR_PUESTO !== corrDescriptor
+					);
+				},
+				error: (error) => {
+					this.cargandoDescriptores = false;
+					this.notifyFx(this.textoErrorDescriptorEmpleado(error, 'No se pudo quitar el descriptor.'), NotifyType.Warning);
+				},
+			});
+	}
+
+	private mapDescriptorAsignado(item: ScDescriptorAsignadoEmpleado): ScDescriptorAsignadoEmpleado {
+		return {
+			CORR_DESCRIPTOR_PUESTO: Number(item?.CORR_DESCRIPTOR_PUESTO ?? 0),
+			CORR_EMPLEADO: Number(item?.CORR_EMPLEADO ?? this.model?.CORR_EMPLEADO ?? 0),
+			CODIGO_DESCRIPTOR_PUESTO: item?.CODIGO_DESCRIPTOR_PUESTO ?? '',
+			NOMBRE_PUESTO: item?.NOMBRE_PUESTO ?? '',
+			NOMBRE_UNIDAD: item?.NOMBRE_UNIDAD ?? '',
+			FECHA_EMISION: item?.FECHA_EMISION ?? null,
+			CORR_ESTADO: item?.CORR_ESTADO ?? null,
+			NOMBRE_ESTADO: item?.NOMBRE_ESTADO ?? '',
+		};
+	}
+
+	private textoErrorDescriptorEmpleado(error: any, respaldo = 'No se pudo asignar el descriptor.'): string {
+		if (typeof error === 'string' && error.trim()) {
+			return error.replace(/^Error:\s*/i, '').trim();
+		}
+		const mensaje = error?.error?.ErrorMessage || error?.ErrorMessage || error?.message || '';
+		return String(mensaje).replace(/^Error:\s*/i, '').trim() || respaldo;
 	}
 
 	private normalizarPuestos(rows: any[]): GenEmpleadoPuesto[] {

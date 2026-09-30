@@ -10,6 +10,8 @@ namespace SGUEES.Services
 	{
 		Task<CResult> GetAllAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOParam xWhere);
 		Task<CResult> GetDisponiblesAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOParam xWhere);
+		Task<CResult> GetPorEmpleadoAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOParam xWhere);
+		Task<CResult> GetDisponiblesPorEmpleadoAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOParam xWhere);
 		Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION);
 	}
