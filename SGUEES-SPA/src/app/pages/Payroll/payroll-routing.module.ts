@@ -7,6 +7,8 @@ import { PlaNivelAcademicoComponent } from './pla-nivel-academico/pla-nivel-acad
 import { PlaTipoPuestoComponent } from './pla-tipo-puesto/pla-tipo-puesto.component';
 import { PlaTipoDocumentoAdjuntoComponent } from './pla-tipo-documento-adjunto/pla-tipo-documento-adjunto.component';
 import { PlaPuestoComponent } from './pla-puesto/pla-puesto.component';
+import { PlaAfpComponent } from './pla-afp/pla-afp.component';
+import { PlaSeguroSocialComponent } from './pla-seguro-social/pla-seguro-social.component';
 
 const routes: Routes = [
   {
@@ -40,6 +42,22 @@ const routes: Routes = [
     canActivate: [ AuthGuardService ],
     canDeactivate: [ AppCanDeactivateGuard ],
     loadChildren: () => import('./pla-puesto/pla-puesto.module').then(m => m.PlaPuestoModule)
+  },
+  {
+    path: 'pla-afp',
+    component: PlaAfpComponent,
+    data: { titulo: 'AFP' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./pla-afp/pla-afp.module').then(m => m.PlaAfpModule)
+  },
+  {
+    path: 'pla-seguro-social',
+    component: PlaSeguroSocialComponent,
+    data: { titulo: 'Seguro Social' },
+    canActivate: [ AuthGuardService ],
+    canDeactivate: [ AppCanDeactivateGuard ],
+    loadChildren: () => import('./pla-seguro-social/pla-seguro-social.module').then(m => m.PlaSeguroSocialModule)
   }
 ];
 

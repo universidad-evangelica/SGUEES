@@ -186,7 +186,7 @@ namespace SGUEES.Services
                 return ValidationError("No se encontro el puesto.");
             }
 
-            if (catalog.ESTADO_PUESTO == false)
+            if (catalog.ACTIVO_PUESTO == false)
             {
                 return ValidationError("El puesto seleccionado esta inactivo.");
             }

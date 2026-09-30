@@ -1,0 +1,2711 @@
+<!-- Contenedor principal: browse + formulario empleado (diseño mejorado tipo expediente). -->
+<div class="sguees-mtto-view empleado-mtto" [class.empleado-mtto--browse]="isBrowse()">
+	<!-- Toolbar: Nuevo / Guardar / Cancelar / Activar-Desactivar / Refrescar. -->
+	<app-barra-data-mtto
+		[tituloVentana]="tituloVentana"
+		[showRibbon]="true"
+		[showExport]="permitePrint"
+		[isBrowse]="isBrowse()"
+		[isForm]="isForm()"
+		[permiteAdd]="permiteAdd"
+		[showRefresh]="true"
+		[showEstadoToolbar]="true"
+		[campoEstado]="mttoCampoEstado"
+		[puedeCambiarEstado]="permiteEdit"
+		[focusedRow]="isBrowse() ? model : null"
+		(consultar)="consultar()"
+		(nuevo)="nuevo()"
+		(guardar)="guardar()"
+		(cancelar)="cancelar()"
+		(activarInactivar)="activar_inactivar()"
+	>
+	</app-barra-data-mtto>
+
+	<!-- Workspace formulario: un card gris (como expediente) con encabezado + contenido anidado. -->
+	<div class="content-block dx-card responsive-paddings sguees-mtto-form-card empleado-form" *ngIf="!isBrowse()">
+		<section class="empleado-panel">
+			<!-- motivo: encabezado Datos del Empleado + línea inferior -->
+			<div class="empleado-panel__heading">
+				<div class="empleado-section-title">
+					<i class="dx-icon dx-icon-card"></i>
+					<h5>Datos del Empleado</h5>
+				</div>
+			</div>
+
+			<div class="empleado-divider empleado-divider--horizontal" aria-hidden="true"></div>
+
+			<div class="empleado-panel__datos">
+				<div class="empleado-panel__profile">
+					<div class="empleado-avatar" aria-hidden="true">
+						<img *ngIf="fotoMostrada; else avatarInicialesPanel" [src]="fotoMostrada" alt="Fotografía del empleado" />
+						<ng-template #avatarInicialesPanel>{{ inicialesPersona }}</ng-template>
+					</div>
+					<div class="empleado-panel__identity">
+						<h2 class="empleado-nombre">{{ tituloPersonaPanel }}</h2>
+						<div class="empleado-badges">
+							<span class="empleado-badge empleado-badge--id">{{ badgeEmpleadoId }}</span>
+							<span
+								class="empleado-badge empleado-badge--estado"
+								[class.empleado-badge--inactivo]="!model?.ACTIVO_EMPLEADO"
+							>
+								<span class="empleado-badge__dot" aria-hidden="true"></span>
+								{{ model?.ACTIVO_EMPLEADO ? 'Activo' : 'Inactivo' }}
+							</span>
+						</div>
+						<div class="empleado-dui">DUI: {{ textoLectura(model?.DUI) }}</div>
+					</div>
+				</div>
+
+				<div class="empleado-divider empleado-divider--vertical" aria-hidden="true"></div>
+
+				<div class="empleado-panel__meta">
+					<div class="empleado-meta-item">
+						<span class="empleado-meta-label">Fecha ingreso</span>
+						<span class="empleado-meta-value">{{ fechaLectura(model?.FECHA_INGRESO) }}</span>
+					</div>
+					<div class="empleado-meta-item">
+						<span class="empleado-meta-label">Creado</span>
+						<span class="empleado-meta-value">{{ fechaHoraLectura(model?.FECHA_CREA) }}</span>
+					</div>
+					<div class="empleado-meta-item">
+						<span class="empleado-meta-label">Última actualización</span>
+						<span class="empleado-meta-value">{{ fechaHoraLectura(model?.FECHA_ACTU) }}</span>
+					</div>
+				</div>
+
+				<!-- motivo: Editar datos solo al modificar; en lectura (doble clic) no se muestra -->
+				<div class="empleado-panel__actions" *ngIf="tienePersonaBase && !readOnlyPersonales">
+					<dx-button
+						text="Editar datos"
+						icon="edit"
+						type="default"
+						stylingMode="outlined"
+						[disabled]="!permiteEdit"
+						(onClick)="abrirEditarPersonales()"
+					></dx-button>
+				</div>
+			</div>
+
+			<!-- motivo: línea inferior del card Datos del Empleado (misma que el encabezado) -->
+			<div class="empleado-divider empleado-divider--horizontal empleado-divider--footer" aria-hidden="true"></div>
+
+			<!-- motivo: edición — línea + tabs dentro de Datos del Empleado (diseño expediente; no tocar) -->
+			<ng-container *ngIf="tienePersonaBase">
+				<div class="empleado-panel__tabs">
+					<dx-tab-panel
+						class="participante-tab-panel"
+						[animationEnabled]="false"
+						[swipeEnabled]="false"
+						[(selectedIndex)]="tabEmpleadoIndex"
+					>
+					<dxi-item title="Personales" [icon]="'user'">
+						<!-- motivo: tarjeta de lectura de datos personales (edición vía modal) -->
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Identidad</h4>
+								<div class="rd-grid">
+									<div class="rd-field">
+										<span class="rd-label">Primer nombre</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.PRIMER_NOMBRE) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Segundo nombre</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.SEGUNDO_NOMBRE) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Primer apellido</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.PRIMER_APELLIDO) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Segundo apellido</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.SEGUNDO_APELLIDO) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Apellido de casada</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.APELLIDO_CASADA) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Sexo</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.SEXO) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Estado civil</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.ESTADO_CIVIL) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Nacionalidad</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.NACIONALIDAD) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Fecha nacimiento</span>
+										<span class="rd-value">{{ fechaLectura(modelPersonaNatural?.FECHA_NACIMIENTO) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Edad</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.EDAD) }}</span>
+									</div>
+								</div>
+							</section>
+
+							<section class="rd-section">
+								<h4 class="rd-section__title">Situación</h4>
+								<div class="rd-grid">
+									<div class="rd-field">
+										<span class="rd-label">Es jubilado</span>
+										<span class="rd-value">{{ textoSiNo(modelPersonaNatural?.ES_JUBILADO) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Posee discapacidad</span>
+										<span class="rd-value">{{ textoSiNo(modelPersonaNatural?.POSEE_DISCAPACIDAD) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Tipo discapacidad</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.TIPO_DISCAPACIDAD) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Es extranjero</span>
+										<span class="rd-value">{{ textoSiNo(modelPersonaNatural?.ES_EXTRANJERO) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Domiciliado</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.DOMICILIADO) }}</span>
+									</div>
+								</div>
+							</section>
+
+							<section class="rd-section">
+								<h4 class="rd-section__title">Nacimiento</h4>
+								<div class="rd-grid">
+									<div class="rd-field">
+										<span class="rd-label">País</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.NOMBRE_PAIS_NACIMIENTO) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Departamento</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.NOMBRE_DEPTO_NACIMIENTO) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Municipio</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.NOMBRE_MUNICIPIO_NACIMIENTO) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Distrito</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.NOMBRE_DISTRITO_NACIMIENTO) }}</span>
+									</div>
+								</div>
+							</section>
+
+							<section class="rd-section">
+								<h4 class="rd-section__title">Otros</h4>
+								<div class="rd-grid">
+									<div class="rd-field">
+										<span class="rd-label">Religión</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.NOMBRE_RELIGION) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Iglesia</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.IGLESIA_CONGREGA) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Carta pastoral</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.CARTA_PASTORAL) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Origen ingreso</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.NOMBRE_ORIGEN_INGRESO) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Tipo contribuyente</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.NOMBRE_TIPO_CONTRIBUYENTE) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Actividad económica</span>
+										<span class="rd-value">{{ textoLectura(modelPersonaNatural?.NOMBRE_ACTIVIDAD_ECONOMICA) }}</span>
+									</div>
+								</div>
+							</section>
+
+							<!-- motivo: datos de GEN_EMPLEADO en lectura -->
+							<section class="rd-section">
+								<h4 class="rd-section__title">Datos de empleado</h4>
+								<div class="rd-grid">
+									<div class="rd-field">
+										<span class="rd-label">Código empleado</span>
+										<span class="rd-value">{{ textoLectura(model?.CODIGO_EMPLEADO) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Fecha ingreso</span>
+										<span class="rd-value">{{ fechaLectura(model?.FECHA_INGRESO) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Correo institucional</span>
+										<span class="rd-value">{{ textoLectura(model?.CORREO_INSTITUCIONAL) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Teléfono institucional</span>
+										<span class="rd-value">{{ textoLectura(model?.TELEFONO_INSTITUCIONAL) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Seguro social</span>
+										<span class="rd-value">{{ textoLectura(model?.NOMBRE_SEGURO_SOCIAL) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">AFP</span>
+										<span class="rd-value">{{ textoLectura(model?.NOMBRE_AFP) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Fecha afiliación AFP</span>
+										<span class="rd-value">{{ fechaLectura(model?.FECHA_AFILIACION_AFP) }}</span>
+									</div>
+									<!-- motivo: fecha de incorporación al seguro social / SP -->
+									<div class="rd-field">
+										<span class="rd-label">Fecha incorporación SP</span>
+										<span class="rd-value">{{ fechaLectura(model?.FECHA_INCORPORACION_SP) }}</span>
+									</div>
+									<div class="rd-field">
+										<span class="rd-label">Estado NIP</span>
+										<span class="rd-value">{{ textoEstadoNip(model?.ESTADO_NIP) }}</span>
+									</div>
+								</div>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: documentos de identidad en solo lectura (edición vía modal) -->
+					<dxi-item title="Documentos" [icon]="'doc'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Documentos de identidad</h4>
+								<div class="rd-grid" *ngIf="documentosIdentidadVisibles?.length; else sinDocumentosCat">
+									<div class="rd-field" *ngFor="let doc of documentosIdentidadVisibles">
+										<span class="rd-label">{{ etiquetaDocumento(doc) }}</span>
+										<span class="rd-value">{{ textoLectura(doc.VALOR_DOCUMENTO) }}</span>
+									</div>
+								</div>
+								<ng-template #sinDocumentosCat>
+									<p class="rd-empty">No hay tipos de documento activos en el catálogo.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: contacto de la persona en solo lectura (edición vía modal) -->
+					<dxi-item title="Contacto" [icon]="'tel'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Contacto</h4>
+								<div class="rd-grid" *ngIf="contactosVisibles?.length; else sinContactosCat">
+									<div class="rd-field" *ngFor="let item of contactosVisibles">
+										<span class="rd-label">{{ etiquetaContacto(item) }}</span>
+										<span class="rd-value">{{ textoLectura(item.VALOR_CONTACTO) }}</span>
+									</div>
+								</div>
+								<ng-template #sinContactosCat>
+									<p class="rd-empty">No hay tipos de contacto activos en el catálogo.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: familiares e hijos en solo lectura (edición vía modal) -->
+					<dxi-item title="Familiares" [icon]="'group'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Familiares</h4>
+								<div class="rd-cards" *ngIf="familiares?.length; else sinFamiliaresRd">
+									<article class="rd-card" *ngFor="let item of familiares">
+										<header class="rd-card__header">
+											{{ textoLectura(item.NOMBRE_PARENTESCO || 'Familiar') }}
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Nombre</span>
+												<span class="rd-value">{{ textoLectura(item.NOMBRE_COMPLETO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Ocupación</span>
+												<span class="rd-value">{{ textoLectura(item.OCUPACION) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Teléfono</span>
+												<span class="rd-value">{{ textoLectura(item.TELEFONO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Fecha nacimiento</span>
+												<span class="rd-value">{{ fechaLectura(item.FECHA_NACIMIENTO) }}</span>
+											</div>
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Domicilio</span>
+												<span class="rd-value">{{ textoLectura(item.DOMICILIO) }}</span>
+											</div>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinFamiliaresRd>
+									<p class="rd-empty">Sin familiares registrados.</p>
+								</ng-template>
+							</section>
+
+							<section class="rd-section">
+								<h4 class="rd-section__title">Hijos</h4>
+								<div class="rd-cards" *ngIf="hijos?.length; else sinHijosRd">
+									<article class="rd-card" *ngFor="let item of hijos">
+										<header class="rd-card__header">
+											{{ textoLectura(item.NOMBRE_COMPLETO) }}
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field">
+												<span class="rd-label">Edad</span>
+												<span class="rd-value">{{ textoLectura(item.EDAD) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Sexo</span>
+												<span class="rd-value">{{ textoLectura(item.SEXO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Fecha nacimiento</span>
+												<span class="rd-value">{{ fechaLectura(item.FECHA_NACIMIENTO) }}</span>
+											</div>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinHijosRd>
+									<p class="rd-empty">Sin hijos registrados.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Formación — lectura estudios / idiomas / competencias (después de Familiares) -->
+					<dxi-item title="Formación" [icon]="'bookmark'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Estudios</h4>
+								<div class="rd-cards" *ngIf="formacionesAcademicas?.length; else sinEstudiosRd">
+									<article class="rd-card" *ngFor="let item of formacionesAcademicas">
+										<header class="rd-card__header">
+											{{ textoLectura(item.NIVEL) }}
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Centro educativo</span>
+												<span class="rd-value">{{ textoLectura(item.CENTRO_EDUCATIVO) }}</span>
+											</div>
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Título</span>
+												<span class="rd-value">{{ textoLectura(item.TITULO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Desde</span>
+												<span class="rd-value">{{ fechaLectura(item.DESDE) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Hasta</span>
+												<span class="rd-value">{{ fechaLectura(item.HASTA) }}</span>
+											</div>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinEstudiosRd>
+									<p class="rd-empty">Sin estudios registrados.</p>
+								</ng-template>
+							</section>
+
+							<section class="rd-section">
+								<h4 class="rd-section__title">Idiomas</h4>
+								<div class="rd-chips" *ngIf="idiomas?.length; else sinIdiomasRd">
+									<div class="rd-chip" *ngFor="let item of idiomas">
+										<strong>{{ textoLectura(item.NOMBRE_IDIOMA) }}</strong>
+										<span>{{ textoLectura(etiquetaNivelDominio(item.NIVEL_DOMINIO)) }}</span>
+									</div>
+								</div>
+								<ng-template #sinIdiomasRd>
+									<p class="rd-empty">Sin idiomas registrados.</p>
+								</ng-template>
+							</section>
+
+							<section class="rd-section">
+								<h4 class="rd-section__title">Competencias</h4>
+								<div class="rd-chips" *ngIf="competencias?.length; else sinCompetenciasRd">
+									<div class="rd-chip" *ngFor="let item of competencias">
+										<strong>{{ textoLectura(item.NOMBRE_COMPETENCIA) }}</strong>
+										<span>{{ textoLectura(etiquetaNivelDominio(item.NIVEL_DOMINIO)) }}</span>
+									</div>
+								</div>
+								<ng-template #sinCompetenciasRd>
+									<p class="rd-empty">Sin competencias registradas.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Experiencia laboral en solo lectura (después de Formación) -->
+					<dxi-item title="Experiencia" [icon]="'card'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Experiencia laboral</h4>
+								<div class="rd-cards" *ngIf="experienciasLaborales?.length; else sinExperienciasRd">
+									<article class="rd-card" *ngFor="let item of experienciasLaborales">
+										<header class="rd-card__header">
+											{{ textoLectura(item.LUGAR_TRABAJO) }}
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field">
+												<span class="rd-label">Cargo</span>
+												<span class="rd-value">{{ textoLectura(item.CARGO_DESEMPENADO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Teléfono</span>
+												<span class="rd-value">{{ textoLectura(item.TELEFONO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Jefe inmediato</span>
+												<span class="rd-value">{{ textoLectura(item.JEFE_INMEDIATO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Fecha inicio</span>
+												<span class="rd-value">{{ fechaLectura(item.FECHA_INICIO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Fecha fin</span>
+												<span class="rd-value">{{ fechaLectura(item.FECHA_FIN) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Salario inicial</span>
+												<span class="rd-value">{{ montoLectura(item.SALARIO_INICIAL) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Salario final</span>
+												<span class="rd-value">{{ montoLectura(item.SALARIO_FINAL) }}</span>
+											</div>
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Motivo de salida</span>
+												<span class="rd-value">{{ textoLectura(item.MOTIVO_SALIDA) }}</span>
+											</div>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinExperienciasRd>
+									<p class="rd-empty">Sin experiencias laborales registradas.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Adicional — familiares que trabajan en UEES (después de Experiencia) -->
+					<dxi-item title="Adicional" [icon]="'info'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Familiares que trabajan en UEES</h4>
+								<div class="rd-cards" *ngIf="familiaresUees?.length; else sinFamiliaresUeesRd">
+									<article class="rd-card" *ngFor="let item of familiaresUees">
+										<header class="rd-card__header">
+											{{ textoLectura(item.NOMBRE_COMPLETO) }}
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field">
+												<span class="rd-label">Parentesco</span>
+												<span class="rd-value">{{ textoLectura(item.NOMBRE_PARENTESCO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Teléfono</span>
+												<span class="rd-value">{{ textoLectura(item.TELEFONO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Cargo</span>
+												<span class="rd-value">{{ textoLectura(item.CARGO) }}</span>
+											</div>
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Lugar de trabajo</span>
+												<span class="rd-value">{{ textoLectura(item.LUGAR_TRABAJO) }}</span>
+											</div>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinFamiliaresUeesRd>
+									<p class="rd-empty">Sin familiares UEES registrados.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Referencias personales en solo lectura (después de Adicional) -->
+					<dxi-item title="Referencias" [icon]="'user'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Referencias personales</h4>
+								<div class="rd-cards" *ngIf="referenciasPersonales?.length; else sinReferenciasRd">
+									<article class="rd-card" *ngFor="let item of referenciasPersonales">
+										<header class="rd-card__header">
+											{{ textoLectura(item.NOMBRE_COMPLETO) }}
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Dirección</span>
+												<span class="rd-value">{{ textoLectura(item.DIRECCION) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Teléfono</span>
+												<span class="rd-value">{{ textoLectura(item.TELEFONO) }}</span>
+											</div>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinReferenciasRd>
+									<p class="rd-empty">Sin referencias personales registradas.</p>
+								</ng-template>
+							</section>
+
+							<section class="rd-section">
+								<h4 class="rd-section__title">Referencias laborales</h4>
+								<div class="rd-cards" *ngIf="referenciasLaborales?.length; else sinReferenciasLabRd">
+									<article class="rd-card" *ngFor="let item of referenciasLaborales">
+										<header class="rd-card__header">
+											{{ textoLectura(item.NOMBRE_COMPLETO) }}
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Lugar de trabajo</span>
+												<span class="rd-value">{{ textoLectura(item.LUGAR_TRABAJO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Teléfono</span>
+												<span class="rd-value">{{ textoLectura(item.TELEFONO) }}</span>
+											</div>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinReferenciasLabRd>
+									<p class="rd-empty">Sin referencias laborales registradas.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Direcciones / domicilios (después de Referencias) -->
+					<dxi-item title="Direcciones" [icon]="'home'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Direcciones</h4>
+								<p class="rd-hint rd-hint--warn" *ngIf="!tieneDomiciliadoDefinido">
+									Debe indicar en Personales si el empleado es domiciliado (Sí / No) para registrar direcciones.
+								</p>
+								<p class="rd-hint" *ngIf="tieneDomiciliadoDefinido && esEmpleadoDomiciliado">
+									Empleado domiciliado: se registra territorio de El Salvador.
+								</p>
+								<p class="rd-hint" *ngIf="tieneDomiciliadoDefinido && !esEmpleadoDomiciliado">
+									Empleado no domiciliado: solo país (excepto El Salvador) y dirección.
+								</p>
+								<div class="rd-cards" *ngIf="domicilios?.length; else sinDomiciliosRd">
+									<article
+										class="rd-card"
+										[class.rd-card--inactive]="!item.ACTIVO_DOMICILIO"
+										*ngFor="let item of domicilios"
+									>
+										<header class="rd-card__header">
+											<span>{{ textoLectura(item.NOMBRE_PAIS) }}</span>
+											<span class="rd-badge" [class.rd-badge--off]="!item.ACTIVO_DOMICILIO">
+												{{ item.ACTIVO_DOMICILIO ? 'Activa' : 'Inactiva' }}
+											</span>
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Dirección</span>
+												<span class="rd-value">{{ textoLectura(item.DIRECCION) }}</span>
+											</div>
+											<ng-container *ngIf="esEmpleadoDomiciliado">
+												<div class="rd-field">
+													<span class="rd-label">Departamento</span>
+													<span class="rd-value">{{ textoLectura(item.NOMBRE_DEPTO) }}</span>
+												</div>
+												<div class="rd-field">
+													<span class="rd-label">Municipio</span>
+													<span class="rd-value">{{ textoLectura(item.NOMBRE_MUNICIPIO) }}</span>
+												</div>
+												<div class="rd-field">
+													<span class="rd-label">Distrito</span>
+													<span class="rd-value">{{ textoLectura(item.NOMBRE_DISTRITO) }}</span>
+												</div>
+											</ng-container>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinDomiciliosRd>
+									<p class="rd-empty">Sin direcciones registradas.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Contactos de otras personas (después de Direcciones) -->
+					<dxi-item title="Contactos" [icon]="'group'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Contactos</h4>
+								<div class="rd-cards" *ngIf="parentescoContactos?.length; else sinParentescoContactosRd">
+									<article class="rd-card" *ngFor="let item of parentescoContactos">
+										<header class="rd-card__header">
+											<span>{{ textoLectura(item.NOMBRE_COMPLETO) }}</span>
+											<span class="rd-badge" *ngIf="item.PARENTESCO_CONTACTO_EMERGENCIA">Emergencia</span>
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field">
+												<span class="rd-label">Parentesco</span>
+												<span class="rd-value">{{ textoLectura(item.NOMBRE_PARENTESCO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Extranjero</span>
+												<span class="rd-value">{{ textoSiNo(item.ES_EXTRANJERO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Tipo</span>
+												<span class="rd-value">{{ textoLectura(item.NOMBRE_TIPO_CONTACTO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Contacto</span>
+												<span class="rd-value">{{ textoLectura(item.VALOR_CONTACTO) }}</span>
+											</div>
+											<div class="rd-field rd-field--wide">
+												<span class="rd-label">Dirección</span>
+												<span class="rd-value">{{ textoLectura(item.DIRECCION) }}</span>
+											</div>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinParentescoContactosRd>
+									<p class="rd-empty">Sin contactos registrados.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Puestos asignados al empleado (solo lectura) -->
+					<dxi-item title="Puestos" [icon]="'card'">
+						<div class="rd-panel">
+							<section class="rd-section">
+								<h4 class="rd-section__title">Puestos</h4>
+								<div class="rd-cards" *ngIf="puestos?.length; else sinPuestosRd">
+									<article class="rd-card" [class.rd-card--inactive]="item.ACTIVO_PUESTO === false" *ngFor="let item of puestos">
+										<header class="rd-card__header">
+											<span>{{ textoLectura(item.NOMBRE_PUESTO) }}</span>
+											<span class="rd-badge" [class.rd-badge--off]="item.ACTIVO_PUESTO === false">
+												{{ item.ACTIVO_PUESTO === false ? 'Inactivo' : 'Activo' }}
+											</span>
+										</header>
+										<div class="rd-grid">
+											<div class="rd-field">
+												<span class="rd-label">Unidad</span>
+												<span class="rd-value">{{ textoLectura(item.NOMBRE_UNIDAD) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Fecha de ingreso</span>
+												<span class="rd-value">{{ textoFechaIngreso(item.FECHA_INGRESO) }}</span>
+											</div>
+											<div class="rd-field" *ngIf="item.ACTIVO_PUESTO === false">
+												<span class="rd-label">Fecha fin</span>
+												<span class="rd-value">{{ textoFechaIngreso(item.FECHA_FIN) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Sueldo</span>
+												<span class="rd-value">{{ textoSueldo(item.SUELDO) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Tipo de contratación</span>
+												<span class="rd-value">{{ textoLectura(item.NOMBRE_TIPO_CONTRATACION) }}</span>
+											</div>
+											<div class="rd-field">
+												<span class="rd-label">Tipo de modalidad</span>
+												<span class="rd-value">{{ textoLectura(item.MODALIDAD_NOMBRE) }}</span>
+											</div>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinPuestosRd>
+									<p class="rd-empty">Sin puestos asignados.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					</dx-tab-panel>
+				</div>
+			</ng-container>
+		</section>
+
+		<!-- motivo: alta — Identidad/etc. fuera de Datos del Empleado, dentro del card gris -->
+		<div class="empleado-alta-body" *ngIf="!tienePersonaBase">
+			<ng-container *ngTemplateOutlet="tplPersonalesEp"></ng-container>
+		</div>
+	</div>
+
+	<!-- Grilla browse. -->
+	<app-data-grid-mtto
+		[isBrowse]="isBrowse()"
+		[models]="models"
+		[columns]="columns"
+		[summary]="summary"
+		[keyExpr]="mttoGridKeyExpr"
+		[pageSize]="mttoPageSize"
+		[allowedPageSizes]="mttoPageSizes"
+		[remoteOperations]="mttoRemoteOperations"
+		[repaintChangesOnly]="false"
+		[nativeToolbar]="true"
+		[unifiedToolbar]="false"
+		[showSearch]="false"
+		[showAdd]="false"
+		[showRefresh]="false"
+		[showExport]="false"
+		[showEstadoToolbar]="true"
+		[campoEstado]="mttoCampoEstado"
+		[puedeCambiarEstado]="permiteEdit"
+		[focusedRowKey]="gridFocusedRowKey"
+		[permitePrint]="permitePrint"
+		[permiteEditar]="getPermiteEditar"
+		[permiteDele]="getPermiteDele"
+		[responsiveColumnHiding]="false"
+		[columnHidingEnabled]="false"
+		[exportFileName]="'Empleados'"
+		(rowClick)="onGridRowClick($event)"
+		(rowDblClick)="rowDblClick($event)"
+		(rowRemoving)="rowRemoving($event)"
+		(focusedRowChanged)="focusedRowChanged($event)"
+		(editClick)="onEditClick($event)"
+	>
+	</app-data-grid-mtto>
+
+	<!-- motivo: panel lateral rápido al hacer clic en una fila del browse -->
+	<aside
+		*ngIf="previewPanelVisible"
+		class="empleado-preview-panel"
+		[class.empleado-preview-panel--open]="previewPanelAbierto"
+		[attr.aria-hidden]="!previewPanelAbierto"
+		role="complementary"
+		aria-label="Vista rápida del empleado"
+	>
+		<header class="empleado-preview-panel__header">
+			<div class="empleado-preview-panel__heading">
+				<h2 class="empleado-preview-panel__name" [title]="textoLectura(previewEmpleado?.NOMBRE_EMPLEADO)">
+					{{ textoLectura(previewEmpleado?.NOMBRE_EMPLEADO) }}
+				</h2>
+				<span
+					class="empleado-preview-panel__status"
+					[class.empleado-preview-panel__status--off]="!previewEmpleado?.ACTIVO_EMPLEADO"
+				>
+					<span class="empleado-preview-panel__status-dot" aria-hidden="true"></span>
+					{{ previewEmpleado?.ACTIVO_EMPLEADO ? 'Activo' : 'Inactivo' }}
+				</span>
+			</div>
+
+			<div class="empleado-preview-panel__tools">
+				<button
+					type="button"
+					class="empleado-preview-panel__icon-btn"
+					(click)="abrirDetalleDesdePreview()"
+					title="Abrir detalle"
+					aria-label="Abrir detalle del empleado"
+				>
+					<i class="dx-icon dx-icon-expandform"></i>
+				</button>
+				<button
+					type="button"
+					class="empleado-preview-panel__icon-btn"
+					(click)="cerrarPreviewPanel(true)"
+					title="Cerrar"
+					aria-label="Cerrar vista rápida"
+				>
+					<i class="dx-icon dx-icon-close"></i>
+				</button>
+			</div>
+		</header>
+
+		<div class="empleado-preview-panel__body">
+			<section class="empleado-preview-panel__profile">
+				<div
+					*ngIf="previewFotoUrl"
+					class="empleado-preview-panel__avatar empleado-preview-panel__avatar--foto"
+				>
+					<img [src]="previewFotoUrl" alt="Fotografía del empleado" />
+				</div>
+				<div
+					*ngIf="!previewFotoUrl"
+					class="empleado-preview-panel__avatar"
+					[class.empleado-preview-panel__avatar--loading]="cargandoPreviewFoto"
+					aria-hidden="true"
+				>
+					{{ cargandoPreviewFoto ? '' : inicialesPreviewEmpleado }}
+				</div>
+
+				<dl class="empleado-preview-panel__fields">
+					<div class="empleado-preview-panel__field">
+						<dt>Empleado</dt>
+						<dd>#{{ previewEmpleado?.CORR_EMPLEADO }}</dd>
+					</div>
+					<div class="empleado-preview-panel__field">
+						<dt>DUI</dt>
+						<dd>{{ textoLectura(previewEmpleado?.DUI) }}</dd>
+					</div>
+					<div class="empleado-preview-panel__field">
+						<dt>Ingreso</dt>
+						<dd>{{ fechaLectura(previewEmpleado?.FECHA_INGRESO) }}</dd>
+					</div>
+					<div class="empleado-preview-panel__field">
+						<dt>Estado registro</dt>
+						<dd>
+							<span
+								class="empleado-preview-panel__activo"
+								[class.empleado-preview-panel__activo--off]="!previewEmpleado?.ACTIVO_EMPLEADO"
+							>
+								<span class="empleado-preview-panel__activo-dot" aria-hidden="true"></span>
+								{{ previewEmpleado?.ACTIVO_EMPLEADO ? 'Activo' : 'Inactivo' }}
+							</span>
+						</dd>
+					</div>
+				</dl>
+			</section>
+
+			<section class="empleado-preview-panel__contact" aria-label="Contacto">
+				<div class="empleado-preview-panel__contact-row">
+					<i class="dx-icon dx-icon-tel" aria-hidden="true"></i>
+					<span>{{ textoLectura(previewEmpleado?.TELEFONO_INSTITUCIONAL) }}</span>
+				</div>
+				<div class="empleado-preview-panel__contact-row">
+					<i class="dx-icon dx-icon-email" aria-hidden="true"></i>
+					<a
+						*ngIf="previewCorreoEmpleado"
+						class="empleado-preview-panel__mail"
+						[href]="'mailto:' + previewCorreoEmpleado"
+					>{{ previewCorreoEmpleado }}</a>
+					<span *ngIf="!previewCorreoEmpleado">—</span>
+				</div>
+			</section>
+		</div>
+	</aside>
+
+	<!-- motivo: modal edición datos empleado (personales + documentos + familiares) estilo sc-solicitud-empleo-editar-persona -->
+	<dx-popup
+		[(visible)]="popupPersonalesVisible"
+		title="Editar datos del empleado"
+		[width]="'92vw'"
+		[maxWidth]="1280"
+		[height]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		[shading]="true"
+		(onShown)="onPopupPersonalesShown()"
+		(onHiding)="cerrarPopupPersonales(true)"
+		(onHidden)="alOcultarPopupPersonales()"
+	>
+		<!-- motivo: acciones Cancelar / Guardar en toolbar inferior del popup -->
+		<dxi-toolbar-item toolbar="bottom" location="after">
+			<div class="editar-persona__footer-actions">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" [disabled]="fotoSubiendo" (onClick)="cerrarPopupPersonales(true)"></dx-button>
+				<dx-button text="Guardar cambios" type="success" icon="save" [disabled]="fotoSubiendo" (onClick)="guardarPersonalesDesdeModal()"></dx-button>
+			</div>
+		</dxi-toolbar-item>
+
+		<div *dxTemplate="let data of 'content'" class="editar-persona">
+			<dx-scroll-view class="editar-persona__scroll" width="100%" height="100%" [scrollByContent]="true" [scrollByThumb]="true" [showScrollbar]="'onScroll'">
+				<!-- motivo: cabecera identidad del empleado (avatar + Cambiar foto + Corr.) -->
+				<div class="editar-persona__header">
+					<div class="editar-persona__foto">
+						<div class="editar-persona__avatar" *ngIf="fotoMostrada; else avatarInicialesModal">
+							<img [src]="fotoMostrada" alt="Fotografía del empleado" />
+						</div>
+						<ng-template #avatarInicialesModal>
+							<div class="editar-persona__avatar editar-persona__avatar--iniciales">{{ inicialesPersona }}</div>
+						</ng-template>
+						<div class="editar-persona__foto-actions">
+							<input
+								#fotoInput
+								type="file"
+								accept="image/jpeg,image/png,image/webp"
+								hidden
+								(change)="onFotoFileChange($event)"
+							/>
+							<dx-button
+								text="Cambiar foto"
+								icon="photo"
+								type="default"
+								stylingMode="outlined"
+								[disabled]="fotoSubiendo || !permiteEdit"
+								(onClick)="fotoInput.click()"
+							></dx-button>
+							<span class="editar-persona__foto-hint" *ngIf="fotoSubiendo">Subiendo…</span>
+						</div>
+					</div>
+					<div class="editar-persona__identidad">
+						<div class="editar-persona__nombre">{{ tituloPersonaPanel }}</div>
+						<div class="editar-persona__meta">{{ badgeEmpleadoId }}</div>
+					</div>
+				</div>
+
+				<!-- motivo: tabs Personales / Documentos estilo sc-solicitud-empleo-editar-persona -->
+				<dx-tab-panel class="editar-persona__tabs" [animationEnabled]="false" [swipeEnabled]="false" [selectedIndex]="0">
+					<dxi-item title="Personales" [icon]="'user'">
+						<ng-container *ngTemplateOutlet="tplPersonalesEp"></ng-container>
+					</dxi-item>
+
+					<!-- motivo: valores de documentos (DUI, etc.) sin subir archivos -->
+					<dxi-item title="Documentos" [icon]="'doc'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<h4 class="ep-section__title">Documentos de identidad</h4>
+								<div class="ep-grid" *ngIf="documentosIdentidadVisibles?.length; else sinDocsModal">
+									<div class="ep-field" *ngFor="let doc of documentosIdentidadVisibles">
+										<label class="ep-label">{{ etiquetaDocumento(doc) }}</label>
+										<dx-text-box
+											stylingMode="outlined"
+											[value]="doc.VALOR_DOCUMENTO"
+											[maxLength]="maxLengthDocumento(doc) ?? undefined"
+											[showClearButton]="true"
+											(onKeyDown)="onDocumentoValorKeyDown(doc, $event)"
+											(onInput)="onDocumentoValorInput(doc, $event)"
+											(onValueChanged)="onDocumentoValorChanged(doc, $event)"
+										></dx-text-box>
+									</div>
+								</div>
+								<ng-template #sinDocsModal>
+									<p class="ep-empty">No hay tipos de documento activos en el catálogo.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: valores de contacto (teléfono, correo) según catálogo -->
+					<dxi-item title="Contacto" [icon]="'tel'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<h4 class="ep-section__title">Contacto</h4>
+								<div class="ep-grid" *ngIf="contactosVisibles?.length; else sinContactosModal">
+									<div class="ep-field" *ngFor="let item of contactosVisibles">
+										<label class="ep-label">{{ etiquetaContacto(item) }}</label>
+										<dx-text-box
+											stylingMode="outlined"
+											[value]="item.VALOR_CONTACTO"
+											[maxLength]="maxLengthContacto(item) ?? undefined"
+											[showClearButton]="true"
+											(onKeyDown)="onContactoValorKeyDown(item, $event)"
+											(onInput)="onContactoValorInput(item, $event)"
+											(onValueChanged)="onContactoValorChanged(item, $event)"
+										></dx-text-box>
+									</div>
+								</div>
+								<ng-template #sinContactosModal>
+									<p class="ep-empty">No hay tipos de contacto activos en el catálogo.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: familiares e hijos editables (cualquier parentesco + hijos) -->
+					<dxi-item title="Familiares" [icon]="'group'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Familiares</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalFamiliarNuevo('familiar')"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="familiares?.length; else sinFamiliaresModal">
+									<article class="ep-card" *ngFor="let f of familiares; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(f.NOMBRE_COMPLETO) }}</div>
+											<div class="ep-card__summary">{{ resumenFamiliar(f) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalFamiliarEditar('familiar', i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarFamiliar(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinFamiliaresModal>
+									<p class="ep-empty">Sin familiares registrados.</p>
+								</ng-template>
+							</section>
+
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Hijos</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalFamiliarNuevo('hijo')"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="hijos?.length; else sinHijosModal">
+									<article class="ep-card" *ngFor="let h of hijos; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__summary">{{ resumenHijo(h) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalFamiliarEditar('hijo', i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarHijo(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinHijosModal>
+									<p class="ep-empty">Sin hijos registrados.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Formación editable — estudios / idiomas / competencias -->
+					<dxi-item title="Formación" [icon]="'bookmark'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Estudios</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalFormacionNuevo('estudio')"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="formacionesAcademicas?.length; else sinEstudiosModal">
+									<article class="ep-card" *ngFor="let f of formacionesAcademicas; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(f.NIVEL || f.TITULO || f.CENTRO_EDUCATIVO) }}</div>
+											<div class="ep-card__summary">{{ resumenEstudio(f) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalFormacionEditar('estudio', i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarEstudio(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinEstudiosModal>
+									<p class="ep-empty">Sin estudios registrados.</p>
+								</ng-template>
+							</section>
+
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Idiomas</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalFormacionNuevo('idioma')"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="idiomas?.length; else sinIdiomasModal">
+									<article class="ep-card" *ngFor="let idioma of idiomas; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(idioma.NOMBRE_IDIOMA) }}</div>
+											<div class="ep-card__summary">{{ resumenIdioma(idioma) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalFormacionEditar('idioma', i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarIdioma(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinIdiomasModal>
+									<p class="ep-empty">Sin idiomas registrados.</p>
+								</ng-template>
+							</section>
+
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Competencias</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalFormacionNuevo('competencia')"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="competencias?.length; else sinCompetenciasModal">
+									<article class="ep-card" *ngFor="let c of competencias; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(c.NOMBRE_COMPETENCIA) }}</div>
+											<div class="ep-card__summary">{{ resumenCompetencia(c) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalFormacionEditar('competencia', i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarCompetencia(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinCompetenciasModal>
+									<p class="ep-empty">Sin competencias registradas.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Experiencia laboral editable (después de Formación) -->
+					<dxi-item title="Experiencia" [icon]="'card'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Experiencia laboral</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalExperienciaNuevo()"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="experienciasLaborales?.length; else sinExperienciasModal">
+									<article class="ep-card" *ngFor="let exp of experienciasLaborales; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(exp.LUGAR_TRABAJO) }}</div>
+											<div class="ep-card__summary">{{ resumenExperiencia(exp) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalExperienciaEditar(i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarExperiencia(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinExperienciasModal>
+									<p class="ep-empty">Sin experiencias laborales registradas.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Adicional editable — familiares que trabajan en UEES -->
+					<dxi-item title="Adicional" [icon]="'info'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Familiares que trabajan en UEES</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalFamiliarUeesNuevo()"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="familiaresUees?.length; else sinFamiliaresUeesModal">
+									<article class="ep-card" *ngFor="let f of familiaresUees; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(f.NOMBRE_COMPLETO) }}</div>
+											<div class="ep-card__summary">{{ resumenFamiliarUees(f) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalFamiliarUeesEditar(i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarFamiliarUees(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinFamiliaresUeesModal>
+									<p class="ep-empty">Sin familiares UEES registrados.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Referencias personales editable (después de Adicional) -->
+					<dxi-item title="Referencias" [icon]="'user'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Referencias personales</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalReferenciaPersonalNuevo()"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="referenciasPersonales?.length; else sinReferenciasModal">
+									<article class="ep-card" *ngFor="let r of referenciasPersonales; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(r.NOMBRE_COMPLETO) }}</div>
+											<div class="ep-card__summary">{{ resumenReferenciaPersonal(r) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalReferenciaPersonalEditar(i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarReferenciaPersonal(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinReferenciasModal>
+									<p class="ep-empty">Sin referencias personales registradas.</p>
+								</ng-template>
+							</section>
+
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Referencias laborales</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalReferenciaLaboralNuevo()"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="referenciasLaborales?.length; else sinReferenciasLabModal">
+									<article class="ep-card" *ngFor="let r of referenciasLaborales; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(r.NOMBRE_COMPLETO) }}</div>
+											<div class="ep-card__summary">{{ resumenReferenciaLaboral(r) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalReferenciaLaboralEditar(i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarReferenciaLaboral(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinReferenciasLabModal>
+									<p class="ep-empty">Sin referencias laborales registradas.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Direcciones editable (después de Referencias) -->
+					<dxi-item title="Direcciones" [icon]="'home'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Direcciones</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										[disabled]="!tieneDomiciliadoDefinido"
+										(onClick)="abrirSubmodalDomicilioNuevo()"
+									></dx-button>
+								</div>
+								<p class="ep-hint ep-hint--warn" *ngIf="!tieneDomiciliadoDefinido">
+									Seleccione primero en Personales si el empleado es domiciliado (Sí / No) para poder registrar direcciones.
+								</p>
+								<p class="ep-hint" *ngIf="tieneDomiciliadoDefinido && esEmpleadoDomiciliado">
+									Domiciliado: solo El Salvador + departamento / municipio (distrito opcional).
+								</p>
+								<p class="ep-hint" *ngIf="tieneDomiciliadoDefinido && !esEmpleadoDomiciliado">
+									No domiciliado: solo país (sin El Salvador) y dirección.
+								</p>
+								<div class="ep-cards" *ngIf="domicilios?.length; else sinDomiciliosModal">
+									<article
+										class="ep-card"
+										[class.ep-card--inactive]="!d.ACTIVO_DOMICILIO"
+										*ngFor="let d of domicilios; let i = index"
+									>
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(d.NOMBRE_PAIS) }}</div>
+											<div class="ep-card__summary">{{ resumenDomicilio(d) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<!-- motivo: toggle activo/inactivo estilo switcher -->
+											<button
+												type="button"
+												class="ep-activo-toggle ep-activo-toggle--sep"
+												[class.ep-activo-toggle--on]="d.ACTIVO_DOMICILIO"
+												[class.ep-activo-toggle--off]="!d.ACTIVO_DOMICILIO"
+												[attr.aria-pressed]="d.ACTIVO_DOMICILIO"
+												[attr.aria-label]="d.ACTIVO_DOMICILIO ? 'Desactivar dirección' : 'Activar dirección'"
+												(click)="toggleActivoDomicilio(i, $event)"
+											>
+												<span class="ep-activo-toggle__track">
+													<span class="ep-activo-toggle__icon ep-activo-toggle__icon--on" aria-hidden="true">
+														<i class="dx-icon dx-icon-check"></i>
+													</span>
+													<span class="ep-activo-toggle__thumb" aria-hidden="true"></span>
+													<span class="ep-activo-toggle__icon ep-activo-toggle__icon--off" aria-hidden="true">
+														<i class="dx-icon dx-icon-close"></i>
+													</span>
+												</span>
+											</button>
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalDomicilioEditar(i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarDomicilio(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinDomiciliosModal>
+									<p class="ep-empty">Sin direcciones registradas.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Contactos editable (después de Direcciones) -->
+					<dxi-item title="Contactos" [icon]="'group'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Contactos</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										(onClick)="abrirSubmodalParentescoContactoNuevo()"
+									></dx-button>
+								</div>
+								<div class="ep-cards" *ngIf="parentescoContactos?.length; else sinParentescoContactosModal">
+									<article class="ep-card" *ngFor="let c of parentescoContactos; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(c.NOMBRE_COMPLETO) }}</div>
+											<div class="ep-card__summary">{{ resumenParentescoContacto(c) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<!-- motivo: contacto de emergencia con el mismo switch de direcciones -->
+											<button
+												type="button"
+												class="ep-activo-toggle"
+												[class.ep-activo-toggle--on]="c.PARENTESCO_CONTACTO_EMERGENCIA"
+												[class.ep-activo-toggle--off]="!c.PARENTESCO_CONTACTO_EMERGENCIA"
+												[attr.aria-pressed]="!!c.PARENTESCO_CONTACTO_EMERGENCIA"
+												[attr.aria-label]="c.PARENTESCO_CONTACTO_EMERGENCIA ? 'Quitar contacto de emergencia' : 'Marcar contacto de emergencia'"
+												(click)="toggleParentescoContactoEmergencia(i, $event)"
+											>
+												<span class="ep-activo-toggle__track">
+													<span class="ep-activo-toggle__icon ep-activo-toggle__icon--on" aria-hidden="true">
+														<i class="dx-icon dx-icon-check"></i>
+													</span>
+													<span class="ep-activo-toggle__thumb" aria-hidden="true"></span>
+													<span class="ep-activo-toggle__icon ep-activo-toggle__icon--off" aria-hidden="true">
+														<i class="dx-icon dx-icon-close"></i>
+													</span>
+												</span>
+											</button>
+											<span class="ep-activo-toggle__label">Emergencia</span>
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalParentescoContactoEditar(i)"
+											></dx-button>
+											<dx-button
+												icon="trash"
+												stylingMode="text"
+												hint="Eliminar"
+												(onClick)="eliminarParentescoContacto(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinParentescoContactosModal>
+									<p class="ep-empty">Sin contactos registrados.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+
+					<!-- motivo: Puestos editable (unidad, puesto, sueldo y fecha de ingreso) -->
+					<dxi-item title="Puestos" [icon]="'card'">
+						<div class="ep-panel">
+							<section class="ep-section">
+								<div class="ep-section__head">
+									<h4 class="ep-section__title">Puestos</h4>
+									<dx-button
+										text="Agregar"
+										icon="plus"
+										type="default"
+										stylingMode="outlined"
+										[disabled]="!tienePersonaBase"
+										(onClick)="abrirSubmodalPuestoNuevo()"
+									></dx-button>
+								</div>
+								<p class="ep-hint" *ngIf="!tienePersonaBase">
+									Guarde el empleado antes de asignar puestos.
+								</p>
+								<div class="ep-cards" *ngIf="puestos?.length; else sinPuestosModal">
+									<article class="ep-card" [class.ep-card--inactive]="p.ACTIVO_PUESTO === false" *ngFor="let p of puestos; let i = index">
+										<div class="ep-card__body">
+											<div class="ep-card__title">{{ textoLectura(p.NOMBRE_PUESTO) }}</div>
+											<div class="ep-card__summary">{{ textoLectura(p.NOMBRE_UNIDAD) }} · {{ resumenPuesto(p) }}</div>
+										</div>
+										<div class="ep-card__actions">
+											<!-- motivo: apagar cierra el periodo en historial; encender abre uno nuevo en activos -->
+											<button
+												type="button"
+												class="ep-activo-toggle ep-activo-toggle--sep"
+												[class.ep-activo-toggle--on]="p.ACTIVO_PUESTO !== false"
+												[class.ep-activo-toggle--off]="p.ACTIVO_PUESTO === false"
+												[attr.aria-pressed]="p.ACTIVO_PUESTO !== false"
+												[attr.aria-label]="p.ACTIVO_PUESTO === false ? 'Activar puesto' : 'Desactivar puesto'"
+												(click)="toggleActivoPuesto(i, $event)"
+											>
+												<span class="ep-activo-toggle__track">
+													<span class="ep-activo-toggle__icon ep-activo-toggle__icon--on" aria-hidden="true">
+														<i class="dx-icon dx-icon-check"></i>
+													</span>
+													<span class="ep-activo-toggle__thumb" aria-hidden="true"></span>
+													<span class="ep-activo-toggle__icon ep-activo-toggle__icon--off" aria-hidden="true">
+														<i class="dx-icon dx-icon-close"></i>
+													</span>
+												</span>
+											</button>
+											<dx-button
+												icon="edit"
+												stylingMode="text"
+												hint="Editar"
+												(onClick)="abrirSubmodalPuestoEditar(i)"
+											></dx-button>
+											<!-- motivo: borrar el puesto activo y su historial; el inactivo solo lo deja el interruptor -->
+											<dx-button
+												*ngIf="p.ACTIVO_PUESTO !== false"
+												icon="trash"
+												stylingMode="text"
+												hint="Quitar"
+												(onClick)="eliminarPuesto(i)"
+											></dx-button>
+										</div>
+									</article>
+								</div>
+								<ng-template #sinPuestosModal>
+									<p class="ep-empty">Sin puestos asignados.</p>
+								</ng-template>
+							</section>
+						</div>
+					</dxi-item>
+				</dx-tab-panel>
+			</dx-scroll-view>
+		</div>
+	</dx-popup>
+
+	<!-- motivo: submodal alta/edición de familiar o hijo -->
+	<dx-popup
+		[(visible)]="submodalFamiliarVisible"
+		[title]="tituloSubmodalFamiliar"
+		[width]="720"
+		[maxWidth]="'94vw'"
+		[height]="'auto'"
+		[maxHeight]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalFamiliar()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ep-submodal">
+			<div class="ep-submodal__body" *ngIf="submodalFamiliarTipo === 'familiar'">
+				<div class="ep-grid">
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Nombre <span class="req">*</span></label>
+						<dx-text-box stylingMode="outlined" [(value)]="submodalFamiliarDraft.NOMBRE_COMPLETO" [maxLength]="100"></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Parentesco</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalFamiliarDraft.CORR_PARENTESCO"
+							[items]="mCORR_PARENTESCO"
+							displayExpr="NOMBRE_PARENTESCO"
+							valueExpr="CORR_PARENTESCO"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+							(onValueChanged)="onSubmodalParentescoChanged($event)"
+						></dx-select-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Teléfono</label>
+						<dx-text-box stylingMode="outlined" [(value)]="submodalFamiliarDraft.TELEFONO" [maxLength]="25"></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Fecha de nacimiento</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="dd/MM/yyyy"
+							[(value)]="submodalFamiliarDraft.FECHA_NACIMIENTO"
+						></dx-date-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Ocupación</label>
+						<dx-text-box stylingMode="outlined" [(value)]="submodalFamiliarDraft.OCUPACION" [maxLength]="150"></dx-text-box>
+					</div>
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Domicilio</label>
+						<dx-text-box stylingMode="outlined" [(value)]="submodalFamiliarDraft.DOMICILIO" [maxLength]="255"></dx-text-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__body" *ngIf="submodalFamiliarTipo === 'hijo'">
+				<div class="ep-grid">
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Nombre <span class="req">*</span></label>
+						<dx-text-box stylingMode="outlined" [(value)]="submodalFamiliarDraft.NOMBRE_COMPLETO" [maxLength]="100"></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Sexo</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalFamiliarDraft.SEXO"
+							[items]="mSEXO"
+							displayExpr="Value"
+							valueExpr="Key"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+						></dx-select-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Fecha de nacimiento</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="dd/MM/yyyy"
+							[value]="submodalFamiliarDraft.FECHA_NACIMIENTO"
+							(onValueChanged)="onSubmodalHijoFechaChanged($event.value)"
+						></dx-date-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Edad</label>
+						<dx-number-box stylingMode="outlined" [value]="submodalFamiliarDraft.EDAD" [readOnly]="true"></dx-number-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalFamiliar()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalFamiliar()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
+
+	<!-- motivo: submodal alta/edición de estudio, idioma o competencia -->
+	<dx-popup
+		[(visible)]="submodalFormacionVisible"
+		[title]="tituloSubmodalFormacion"
+		[width]="720"
+		[maxWidth]="'94vw'"
+		[height]="'auto'"
+		[maxHeight]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalFormacion()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ep-submodal">
+			<div class="ep-submodal__body" *ngIf="submodalFormacionTipo === 'estudio'">
+				<div class="ep-grid">
+					<div class="ep-field">
+						<label class="ep-label">Nivel</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalFormacionDraft.NIVEL"
+							[items]="mNIVEL_ACADEMICO"
+							displayExpr="Value"
+							valueExpr="Key"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+						></dx-select-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Centro educativo</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalFormacionDraft.CENTRO_EDUCATIVO"
+							[maxLength]="150"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Desde</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="MM/yyyy"
+							[calendarOptions]="{ zoomLevel: 'year', maxZoomLevel: 'year' }"
+							[(value)]="submodalFormacionDraft.DESDE"
+						></dx-date-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Hasta</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="MM/yyyy"
+							[calendarOptions]="{ zoomLevel: 'year', maxZoomLevel: 'year' }"
+							[(value)]="submodalFormacionDraft.HASTA"
+						></dx-date-box>
+					</div>
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Título</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalFormacionDraft.TITULO"
+							[maxLength]="150"
+						></dx-text-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__body" *ngIf="submodalFormacionTipo === 'idioma'">
+				<div class="ep-grid">
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Idioma <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalFormacionDraft.NOMBRE_IDIOMA"
+							[maxLength]="100"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Nivel de dominio</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalFormacionDraft.NIVEL_DOMINIO"
+							[items]="mNIVEL_DOMINIO"
+							displayExpr="Value"
+							valueExpr="Key"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+						></dx-select-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__body" *ngIf="submodalFormacionTipo === 'competencia'">
+				<div class="ep-grid">
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Competencia <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalFormacionDraft.NOMBRE_COMPETENCIA"
+							[maxLength]="100"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Nivel de dominio</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalFormacionDraft.NIVEL_DOMINIO"
+							[items]="mNIVEL_DOMINIO"
+							displayExpr="Value"
+							valueExpr="Key"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+						></dx-select-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalFormacion()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalFormacion()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
+
+	<!-- motivo: submodal alta/edición de experiencia laboral -->
+	<dx-popup
+		[(visible)]="submodalExperienciaVisible"
+		[title]="tituloSubmodalExperiencia"
+		[width]="760"
+		[maxWidth]="'94vw'"
+		[height]="'auto'"
+		[maxHeight]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalExperiencia()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ep-submodal">
+			<div class="ep-submodal__body">
+				<div class="ep-grid">
+					<div class="ep-field">
+						<label class="ep-label">Lugar de trabajo <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalExperienciaDraft.LUGAR_TRABAJO"
+							[maxLength]="150"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Teléfono</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalExperienciaDraft.TELEFONO"
+							[maxLength]="30"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Cargo</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalExperienciaDraft.CARGO_DESEMPENADO"
+							[maxLength]="100"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Jefe inmediato</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalExperienciaDraft.JEFE_INMEDIATO"
+							[maxLength]="100"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Fecha inicio</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="dd/MM/yyyy"
+							[(value)]="submodalExperienciaDraft.FECHA_INICIO"
+						></dx-date-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Fecha fin</label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="dd/MM/yyyy"
+							[(value)]="submodalExperienciaDraft.FECHA_FIN"
+						></dx-date-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Salario inicial</label>
+						<dx-number-box
+							stylingMode="outlined"
+							[(value)]="submodalExperienciaDraft.SALARIO_INICIAL"
+							format="$#,##0.00"
+							[min]="0"
+						></dx-number-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Salario final</label>
+						<dx-number-box
+							stylingMode="outlined"
+							[(value)]="submodalExperienciaDraft.SALARIO_FINAL"
+							format="$#,##0.00"
+							[min]="0"
+						></dx-number-box>
+					</div>
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Motivo de salida</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalExperienciaDraft.MOTIVO_SALIDA"
+							[maxLength]="500"
+						></dx-text-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalExperiencia()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalExperiencia()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
+
+	<!-- motivo: submodal alta/edición de familiar que trabaja en UEES -->
+	<dx-popup
+		[(visible)]="submodalFamiliarUeesVisible"
+		[title]="tituloSubmodalFamiliarUees"
+		[width]="720"
+		[maxWidth]="'94vw'"
+		[height]="'auto'"
+		[maxHeight]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalFamiliarUees()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ep-submodal">
+			<div class="ep-submodal__body">
+				<div class="ep-grid">
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Nombre <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalFamiliarUeesDraft.NOMBRE_COMPLETO"
+							[maxLength]="100"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Parentesco</label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalFamiliarUeesDraft.CORR_PARENTESCO"
+							[items]="mCORR_PARENTESCO"
+							displayExpr="NOMBRE_PARENTESCO"
+							valueExpr="CORR_PARENTESCO"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+							(onValueChanged)="onSubmodalFamiliarUeesParentescoChanged($event)"
+						></dx-select-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Teléfono</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalFamiliarUeesDraft.TELEFONO"
+							[maxLength]="25"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Cargo</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalFamiliarUeesDraft.CARGO"
+							[maxLength]="25"
+						></dx-text-box>
+					</div>
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Lugar de trabajo</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalFamiliarUeesDraft.LUGAR_TRABAJO"
+							[maxLength]="150"
+						></dx-text-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalFamiliarUees()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalFamiliarUees()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
+
+	<!-- motivo: submodal alta/edición de referencia personal -->
+	<dx-popup
+		[(visible)]="submodalReferenciaPersonalVisible"
+		[title]="tituloSubmodalReferenciaPersonal"
+		[width]="720"
+		[maxWidth]="'94vw'"
+		[height]="'auto'"
+		[maxHeight]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalReferenciaPersonal()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ep-submodal">
+			<div class="ep-submodal__body">
+				<div class="ep-grid">
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Nombre <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalReferenciaPersonalDraft.NOMBRE_COMPLETO"
+							[maxLength]="100"
+						></dx-text-box>
+					</div>
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Dirección</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalReferenciaPersonalDraft.DIRECCION"
+							[maxLength]="150"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Teléfono</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalReferenciaPersonalDraft.TELEFONO"
+							[maxLength]="25"
+						></dx-text-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalReferenciaPersonal()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalReferenciaPersonal()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
+
+	<!-- motivo: submodal alta/edición de persona de contacto -->
+	<dx-popup
+		[(visible)]="submodalParentescoContactoVisible"
+		[title]="tituloSubmodalParentescoContacto"
+		[width]="720"
+		[maxWidth]="'94vw'"
+		[height]="'auto'"
+		[maxHeight]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalParentescoContacto()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ep-submodal">
+			<div class="ep-submodal__body">
+				<div class="ep-grid">
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Nombre <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalParentescoContactoDraft.NOMBRE_COMPLETO"
+							[maxLength]="100"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Parentesco <span class="req">*</span></label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalParentescoContactoDraft.CORR_PARENTESCO"
+							[items]="mCORR_PARENTESCO"
+							displayExpr="NOMBRE_PARENTESCO"
+							valueExpr="CORR_PARENTESCO"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+						></dx-select-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Tipo de contacto <span class="req">*</span></label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalParentescoContactoDraft.CORR_TIPO_CONTACTO"
+							[items]="tiposParentescoContactoVisibles"
+							displayExpr="NOMBRE_TIPO_CONTACTO"
+							valueExpr="CORR_TIPO_CONTACTO"
+							[searchEnabled]="true"
+							[showClearButton]="true"
+							(onValueChanged)="onTipoParentescoContactoChanged($event)"
+						></dx-select-box>
+					</div>
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Valor <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalParentescoContactoDraft.VALOR_CONTACTO"
+							[disabled]="!tipoParentescoContactoSeleccionado()"
+							[maxLength]="maxLengthParentescoContacto() ?? undefined"
+							(onKeyDown)="onParentescoContactoValorKeyDown($event)"
+							(onInput)="onParentescoContactoValorInput($event)"
+							(onValueChanged)="onParentescoContactoValorChanged($event)"
+						></dx-text-box>
+					</div>
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Dirección</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalParentescoContactoDraft.DIRECCION"
+							[maxLength]="255"
+						></dx-text-box>
+					</div>
+					<!-- motivo: extranjero filtra el tipo; va junto al check de emergencia -->
+					<div class="ep-field">
+						<dx-check-box
+							[(value)]="submodalParentescoContactoDraft.ES_EXTRANJERO"
+							text="Es extranjero"
+							(onValueChanged)="onEsExtranjeroParentescoContactoChanged()"
+						></dx-check-box>
+					</div>
+					<div class="ep-field">
+						<dx-check-box
+							[(value)]="submodalParentescoContactoDraft.PARENTESCO_CONTACTO_EMERGENCIA"
+							text="Contacto de emergencia"
+						></dx-check-box>
+					</div>
+				</div>
+			</div>
+			<div class="ep-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalParentescoContacto()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalParentescoContacto()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
+
+	<!-- motivo: submodal alta/edición de referencia laboral -->
+	<dx-popup
+		[(visible)]="submodalReferenciaLaboralVisible"
+		[title]="tituloSubmodalReferenciaLaboral"
+		[width]="720"
+		[maxWidth]="'94vw'"
+		[height]="'auto'"
+		[maxHeight]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalReferenciaLaboral()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ep-submodal">
+			<div class="ep-submodal__body">
+				<div class="ep-grid">
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Nombre <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalReferenciaLaboralDraft.NOMBRE_COMPLETO"
+							[maxLength]="100"
+						></dx-text-box>
+					</div>
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Lugar de trabajo</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalReferenciaLaboralDraft.LUGAR_TRABAJO"
+							[maxLength]="150"
+						></dx-text-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Teléfono</label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalReferenciaLaboralDraft.TELEFONO"
+							[maxLength]="25"
+						></dx-text-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalReferenciaLaboral()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalReferenciaLaboral()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
+
+	<!-- motivo: submodal alta/edición de domicilio / dirección -->
+	<dx-popup
+		[(visible)]="submodalDomicilioVisible"
+		[title]="tituloSubmodalDomicilio"
+		[width]="760"
+		[maxWidth]="'94vw'"
+		[height]="'auto'"
+		[maxHeight]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalDomicilio()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ep-submodal">
+			<div class="ep-submodal__body">
+				<div class="ep-grid">
+					<div class="ep-field">
+						<label class="ep-label">País <span class="req">*</span></label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalDomicilioDraft.CORR_PAIS"
+							[items]="mCORR_PAIS_DOMICILIO"
+							displayExpr="NOMBRE_PAIS"
+							valueExpr="CORR_PAIS"
+							[searchEnabled]="true"
+							[showClearButton]="!esEmpleadoDomiciliado"
+							[readOnly]="esEmpleadoDomiciliado"
+							(onValueChanged)="onSubmodalDomicilioPaisChanged($event)"
+						></dx-select-box>
+					</div>
+					<ng-container *ngIf="esEmpleadoDomiciliado">
+						<div class="ep-field">
+							<label class="ep-label">Departamento <span class="req">*</span></label>
+							<dx-select-box
+								stylingMode="outlined"
+								[(value)]="submodalDomicilioDraft.CORR_DEPTO"
+								[items]="mCORR_DEPTO_DOMICILIO"
+								displayExpr="NOMBRE_DEPTO"
+								valueExpr="CORR_DEPTO"
+								[searchEnabled]="true"
+								[showClearButton]="true"
+								(onValueChanged)="onSubmodalDomicilioDeptoChanged($event)"
+							></dx-select-box>
+						</div>
+						<div class="ep-field">
+							<label class="ep-label">Municipio <span class="req">*</span></label>
+							<dx-select-box
+								stylingMode="outlined"
+								[(value)]="submodalDomicilioDraft.CORR_MUNICIPIO"
+								[items]="mCORR_MUNICIPIO_DOMICILIO"
+								displayExpr="NOMBRE_MUNICIPIO"
+								valueExpr="CORR_MUNICIPIO"
+								[searchEnabled]="true"
+								[showClearButton]="true"
+								(onValueChanged)="onSubmodalDomicilioMunicipioChanged($event)"
+							></dx-select-box>
+						</div>
+						<div class="ep-field">
+							<label class="ep-label">Distrito</label>
+							<dx-select-box
+								stylingMode="outlined"
+								[(value)]="submodalDomicilioDraft.CORR_DISTRITO"
+								[items]="mCORR_DISTRITO_DOMICILIO"
+								displayExpr="NOMBRE_DISTRITO"
+								valueExpr="CORR_DISTRITO"
+								[searchEnabled]="true"
+								[showClearButton]="true"
+								(onValueChanged)="onSubmodalDomicilioDistritoChanged($event)"
+							></dx-select-box>
+						</div>
+					</ng-container>
+					<div class="ep-field ep-field--wide">
+						<label class="ep-label">Dirección <span class="req">*</span></label>
+						<dx-text-box
+							stylingMode="outlined"
+							[(value)]="submodalDomicilioDraft.DIRECCION"
+							[maxLength]="255"
+						></dx-text-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalDomicilio()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalDomicilio()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
+
+	<!-- motivo: submodal alta/edición de puesto del empleado -->
+	<dx-popup
+		[(visible)]="submodalPuestoVisible"
+		[title]="tituloSubmodalPuesto"
+		[width]="760"
+		[maxWidth]="'94vw'"
+		[height]="'auto'"
+		[maxHeight]="'90vh'"
+		[dragEnabled]="false"
+		[showCloseButton]="true"
+		[hideOnOutsideClick]="false"
+		(onHiding)="cerrarSubmodalPuesto()"
+	>
+		<div *dxTemplate="let data of 'content'" class="ep-submodal">
+			<div class="ep-submodal__body">
+				<div class="ep-grid">
+					<div class="ep-field">
+						<label class="ep-label">Unidad <span class="req">*</span></label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalPuestoDraft.CORR_UNIDAD"
+							[items]="mCORR_UNIDAD"
+							displayExpr="NOMBRE_UNIDAD"
+							valueExpr="CORR_UNIDAD"
+							[searchEnabled]="true"
+							[showClearButton]="false"
+							(onValueChanged)="onUnidadPuestoChanged($event)"
+						></dx-select-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Puesto <span class="req">*</span></label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalPuestoDraft.CORR_PUESTO"
+							[items]="mCORR_PUESTO"
+							displayExpr="NOMBRE_PUESTO"
+							valueExpr="CORR_PUESTO"
+							[searchEnabled]="true"
+							[showClearButton]="false"
+							[disabled]="!submodalPuestoDraft.CORR_UNIDAD"
+						></dx-select-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Fecha de ingreso <span class="req">*</span></label>
+						<dx-date-box
+							stylingMode="outlined"
+							type="date"
+							displayFormat="dd/MM/yyyy"
+							[(value)]="submodalPuestoDraft.FECHA_INGRESO"
+							[showClearButton]="false"
+						></dx-date-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Sueldo <span class="req">*</span></label>
+						<dx-number-box
+							stylingMode="outlined"
+							[(value)]="submodalPuestoDraft.SUELDO"
+							format="$#,##0.00"
+							[min]="0"
+							[showClearButton]="false"
+						></dx-number-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Tipo de contratación <span class="req">*</span></label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalPuestoDraft.CORR_TIPO_CONTRATACION"
+							[items]="mCORR_TIPO_CONTRATACION"
+							displayExpr="NOMBRE_TIPO_CONTRATACION"
+							valueExpr="CORR_TIPO_CONTRATACION"
+							[searchEnabled]="true"
+							[showClearButton]="false"
+						></dx-select-box>
+					</div>
+					<div class="ep-field">
+						<label class="ep-label">Tipo de modalidad <span class="req">*</span></label>
+						<dx-select-box
+							stylingMode="outlined"
+							[(value)]="submodalPuestoDraft.CORR_TIPO_MODALIDAD"
+							[items]="mCORR_TIPO_MODALIDAD"
+							displayExpr="MODALIDAD_NOMBRE"
+							valueExpr="CORR_TIPO_MODALIDAD"
+							[searchEnabled]="true"
+							[showClearButton]="false"
+						></dx-select-box>
+					</div>
+				</div>
+			</div>
+
+			<div class="ep-submodal__footer">
+				<dx-button text="Cancelar" stylingMode="outlined" type="normal" (onClick)="cerrarSubmodalPuesto()"></dx-button>
+				<dx-button text="Guardar" type="default" icon="save" (onClick)="guardarSubmodalPuesto()"></dx-button>
+			</div>
+		</div>
+	</dx-popup>
+</div>
+
+<!-- motivo: formulario personales ep-section compartido (alta sin tabs + modal Personales) -->
+<ng-template #tplPersonalesEp>
+	<div class="ep-panel">
+		<section class="ep-section">
+			<h4 class="ep-section__title">Identidad</h4>
+			<div class="ep-grid">
+				<div class="ep-field">
+					<label class="ep-label">Primer nombre <span class="req">*</span></label>
+					<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.PRIMER_NOMBRE" [maxLength]="50"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Segundo nombre</label>
+					<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.SEGUNDO_NOMBRE" [maxLength]="50"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Primer apellido <span class="req">*</span></label>
+					<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.PRIMER_APELLIDO" [maxLength]="50"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Segundo apellido</label>
+					<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.SEGUNDO_APELLIDO" [maxLength]="50"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Sexo</label>
+					<dx-select-box
+						stylingMode="outlined"
+						[(value)]="modelPersonaNatural.SEXO"
+						[items]="mSEXO"
+						displayExpr="Value"
+						valueExpr="Key"
+						[searchEnabled]="true"
+						[showClearButton]="true"
+						(onValueChanged)="onPersonalesSelectChanged('SEXO', $event)"
+					></dx-select-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Estado civil</label>
+					<dx-select-box
+						stylingMode="outlined"
+						[(value)]="modelPersonaNatural.ESTADO_CIVIL"
+						[items]="mESTADO_CIVIL"
+						displayExpr="Value"
+						valueExpr="Key"
+						[searchEnabled]="true"
+						[showClearButton]="true"
+						(onValueChanged)="onPersonalesSelectChanged('ESTADO_CIVIL', $event)"
+					></dx-select-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Apellido de casada</label>
+					<dx-text-box
+						stylingMode="outlined"
+						[(value)]="modelPersonaNatural.APELLIDO_CASADA"
+						[maxLength]="50"
+						[readOnly]="!apellidoCasadaHabilitado"
+					></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Nacionalidad</label>
+					<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.NACIONALIDAD" [maxLength]="25"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Fecha nacimiento</label>
+					<dx-date-box
+						stylingMode="outlined"
+						type="date"
+						displayFormat="dd/MM/yyyy"
+						[(value)]="modelPersonaNatural.FECHA_NACIMIENTO"
+						(onValueChanged)="onFechaNacimientoChanged($event)"
+					></dx-date-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Edad</label>
+					<dx-number-box stylingMode="outlined" [(value)]="modelPersonaNatural.EDAD" [min]="0" [readOnly]="true"></dx-number-box>
+				</div>
+			</div>
+		</section>
+
+		<section class="ep-section">
+			<h4 class="ep-section__title">Situación</h4>
+			<div class="ep-grid">
+				<div class="ep-field ep-field--check">
+					<dx-check-box [(value)]="modelPersonaNatural.ES_JUBILADO" text="Es jubilado"></dx-check-box>
+				</div>
+				<div class="ep-field ep-field--check">
+					<dx-check-box
+						[(value)]="modelPersonaNatural.POSEE_DISCAPACIDAD"
+						text="Posee discapacidad"
+						(onValueChanged)="onPersonalesSelectChanged('POSEE_DISCAPACIDAD', $event)"
+					></dx-check-box>
+				</div>
+				<div class="ep-field ep-field--check">
+					<dx-check-box
+						[(value)]="modelPersonaNatural.ES_EXTRANJERO"
+						text="Es extranjero"
+						(onValueChanged)="onPersonalesSelectChanged('ES_EXTRANJERO', $event)"
+					></dx-check-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Domiciliado</label>
+					<dx-select-box
+						stylingMode="outlined"
+						[(value)]="modelPersonaNatural.DOMICILIADO"
+						[items]="mSI_NO"
+						displayExpr="Value"
+						valueExpr="Key"
+					></dx-select-box>
+				</div>
+				<div class="ep-field ep-field--wide" *ngIf="modelPersonaNatural.POSEE_DISCAPACIDAD">
+					<label class="ep-label">Tipo discapacidad</label>
+					<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.TIPO_DISCAPACIDAD" [maxLength]="250"></dx-text-box>
+				</div>
+			</div>
+		</section>
+
+		<section class="ep-section">
+			<h4 class="ep-section__title">Lugar de nacimiento</h4>
+			<div class="ep-grid">
+				<div class="ep-field">
+					<label class="ep-label">País</label>
+					<app-data-lookup
+						[model]="mCORR_PAIS_NACIMIENTO"
+						[(value)]="modelPersonaNatural.CORR_PAIS_NACIMIENTO"
+						(valueChange)="onPaisNacimientoChange($event)"
+						[valueExpr]="'CORR_PAIS'"
+						[displayExpr]="'NOMBRE_PAIS'"
+						[selectedRowKeys]="selectedLookUpPaisNacimiento"
+						[readOnly]="!paisNacimientoHabilitado"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Departamento</label>
+					<app-data-lookup
+						[model]="mCORR_DEPTO_NACIMIENTO"
+						[(value)]="modelPersonaNatural.CORR_DEPTO_NACIMIENTO"
+						(valueChange)="onDeptoNacimientoChange($event)"
+						[valueExpr]="'CORR_DEPTO'"
+						[displayExpr]="'NOMBRE_DEPTO'"
+						[selectedRowKeys]="selectedLookUpDeptoNacimiento"
+						[readOnly]="!territorioCompletoHabilitado"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Municipio</label>
+					<app-data-lookup
+						[model]="mCORR_MUNICIPIO_NACIMIENTO"
+						[(value)]="modelPersonaNatural.CORR_MUNICIPIO_NACIMIENTO"
+						(valueChange)="onMunicipioNacimientoChange($event)"
+						[valueExpr]="'CORR_MUNICIPIO'"
+						[displayExpr]="'NOMBRE_MUNICIPIO'"
+						[selectedRowKeys]="selectedLookUpMunicipioNacimiento"
+						[readOnly]="!territorioCompletoHabilitado"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Distrito</label>
+					<app-data-lookup
+						[model]="mCORR_DISTRITO_NACIMIENTO"
+						[(value)]="modelPersonaNatural.CORR_DISTRITO_NACIMIENTO"
+						[valueExpr]="'CORR_DISTRITO'"
+						[displayExpr]="'NOMBRE_DISTRITO'"
+						[selectedRowKeys]="selectedLookUpDistritoNacimiento"
+						[readOnly]="!territorioCompletoHabilitado"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+			</div>
+		</section>
+
+		<section class="ep-section">
+			<h4 class="ep-section__title">Religión</h4>
+			<div class="ep-grid">
+				<div class="ep-field">
+					<label class="ep-label">Religión</label>
+					<app-data-lookup
+						[model]="mCORR_RELIGION"
+						[(value)]="modelPersonaNatural.CORR_RELIGION"
+						[valueExpr]="'CORR_RELIGION'"
+						[displayExpr]="'NOMBRE_RELIGION'"
+						[selectedRowKeys]="selectedLookUpReligion"
+						[readOnly]="false"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Iglesia</label>
+					<dx-text-box stylingMode="outlined" [(value)]="modelPersonaNatural.IGLESIA_CONGREGA" [maxLength]="50"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Carta pastoral</label>
+					<dx-select-box
+						stylingMode="outlined"
+						[(value)]="modelPersonaNatural.CARTA_PASTORAL"
+						[items]="mSI_NO"
+						displayExpr="Value"
+						valueExpr="Key"
+					></dx-select-box>
+				</div>
+			</div>
+		</section>
+
+		<section class="ep-section">
+			<h4 class="ep-section__title">Tributario</h4>
+			<div class="ep-grid">
+				<div class="ep-field">
+					<label class="ep-label">Origen ingreso</label>
+					<app-data-lookup
+						[model]="mCORR_ORIGEN_INGRESO"
+						[(value)]="modelPersonaNatural.CORR_ORIGEN_INGRESO"
+						[valueExpr]="'CORR_ORIGEN_INGRESO'"
+						[displayExpr]="'NOMBRE_ORIGEN_INGRESO'"
+						[selectedRowKeys]="selectedLookUpOrigenIngreso"
+						[readOnly]="false"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Tipo contribuyente</label>
+					<app-data-lookup
+						[model]="mCORR_TIPO_CONTRIBUYENTE"
+						[(value)]="modelPersonaNatural.CORR_TIPO_CONTRIBUYENTE"
+						[valueExpr]="'CORR_TIPO_CONTRIBUYENTE'"
+						[displayExpr]="'NOMBRE_TIPO_CONTRIBUYENTE'"
+						[selectedRowKeys]="selectedLookUpTipoContribuyente"
+						[readOnly]="false"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field ep-field--wide">
+					<label class="ep-label">Actividad económica</label>
+					<app-data-lookup
+						[model]="mCORR_ACTIVIDAD_ECONOMICA"
+						[(value)]="modelPersonaNatural.CORR_ACTIVIDAD_ECONOMICA"
+						[valueExpr]="'CORR_ACTIVIDAD_ECONOMICA'"
+						[displayExpr]="'NOMBRE_ACTIVIDAD_ECONOMICA'"
+						[selectedRowKeys]="selectedLookUpActividadEconomica"
+						[readOnly]="false"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+			</div>
+		</section>
+
+		<!-- motivo: campos de GEN_EMPLEADO en el form Personales -->
+		<section class="ep-section">
+			<h4 class="ep-section__title">Datos de empleado</h4>
+			<div class="ep-grid">
+				<div class="ep-field">
+					<label class="ep-label">Código empleado</label>
+					<dx-text-box stylingMode="outlined" [(value)]="model.CODIGO_EMPLEADO" [maxLength]="50"></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Fecha ingreso</label>
+					<dx-date-box
+						stylingMode="outlined"
+						type="date"
+						displayFormat="dd/MM/yyyy"
+						[(value)]="model.FECHA_INGRESO"
+					></dx-date-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Correo institucional</label>
+					<dx-text-box
+						stylingMode="outlined"
+						[(value)]="model.CORREO_INSTITUCIONAL"
+						[maxLength]="255"
+						(onKeyDown)="onCorreoInstitucionalKeyDown($event)"
+						(onInput)="onCorreoInstitucionalInput($event)"
+						(onValueChanged)="onCorreoInstitucionalChanged($event)"
+					></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Teléfono institucional</label>
+					<dx-text-box
+						stylingMode="outlined"
+						[(value)]="model.TELEFONO_INSTITUCIONAL"
+						[maxLength]="14"
+						(onKeyDown)="onTelefonoInstitucionalKeyDown($event)"
+						(onInput)="onTelefonoInstitucionalInput($event)"
+						(onValueChanged)="onTelefonoInstitucionalChanged($event)"
+					></dx-text-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Seguro social</label>
+					<app-data-lookup
+						[model]="mCORR_SEGURO_SOCIAL"
+						[(value)]="model.CORR_SEGURO_SOCIAL"
+						[valueExpr]="'CORR_SEGURO_SOCIAL'"
+						[displayExpr]="'NOMBRE_SEGURO_SOCIAL'"
+						[selectedRowKeys]="selectedLookUpSeguroSocial"
+						[readOnly]="false"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">AFP</label>
+					<app-data-lookup
+						[model]="mCORR_AFP"
+						[(value)]="model.CORR_AFP"
+						[valueExpr]="'CORR_AFP'"
+						[displayExpr]="'NOMBRE_AFP'"
+						[selectedRowKeys]="selectedLookUpAfp"
+						[readOnly]="false"
+						[showClearButton]="true"
+					></app-data-lookup>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Fecha afiliación AFP</label>
+					<dx-date-box
+						stylingMode="outlined"
+						type="date"
+						displayFormat="dd/MM/yyyy"
+						[(value)]="model.FECHA_AFILIACION_AFP"
+					></dx-date-box>
+				</div>
+				<!-- motivo: FECHA_INCORPORACION_SP, date nullable, se guarda con el empleado -->
+				<div class="ep-field">
+					<label class="ep-label">Fecha incorporación SP</label>
+					<dx-date-box
+						stylingMode="outlined"
+						type="date"
+						displayFormat="dd/MM/yyyy"
+						[(value)]="model.FECHA_INCORPORACION_SP"
+					></dx-date-box>
+				</div>
+				<div class="ep-field">
+					<label class="ep-label">Estado NIP</label>
+					<dx-select-box
+						stylingMode="outlined"
+						[(value)]="model.ESTADO_NIP"
+						[items]="mESTADO_NIP"
+						displayExpr="Value"
+						valueExpr="Key"
+						[searchEnabled]="true"
+						[showClearButton]="true"
+					></dx-select-box>
+				</div>
+			</div>
+		</section>
+	</div>
+</ng-template>
+
+<!-- Panel de carga. -->
+<dx-load-panel
+	#loadPanel
+	shadingColor="rgba(0,0,0,0.4)"
+	[position]="{ my: 'center', at: 'center', of: '#LoadPanel' }"
+	[(visible)]="loadingVisible"
+	[showIndicator]="true"
+	[showPane]="true"
+	[shading]="true"
+	(onShown)="(loadingVisible)"
+>
+</dx-load-panel>

@@ -3,11 +3,13 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, take } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { DataGridMttoComponent } from 'src/app/layouts/data-grid-mtto/data-grid-mtto.component';
+import { NotifyType } from 'src/app/shared/models/NotifyType';
 import { UpdateType } from 'src/app/shared/models/UpdateType.enum';
 import { AppInfoService } from 'src/app/shared/services/app-info.service';
+import { environment } from 'src/environments/environment';
 import { GenTipoContacto } from './models/gen-tipo-contacto';
 import { GenTipoContactoService } from './gen-tipo-contacto.service';
 
@@ -33,6 +35,11 @@ export class GenTipoContactoComponent extends CBaseComponent implements OnInit {
 
 	private readonly maintenanceSubtitulo = 'Mantenimiento de Tipo Contacto';
 
+	/** Listas GEN_LISTA para lookups del formulario. */
+	mFORMATO_CARACTERES: any[] = [];
+	mAPLICA_PARA: any[] = [];
+	readOnly = false;
+
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
@@ -50,7 +57,49 @@ export class GenTipoContactoComponent extends CBaseComponent implements OnInit {
 
 	ngOnInit(): void {
 		this.subTituloVentana = this.maintenanceSubtitulo;
+		this.cargarLookups();
 		this.consultar();
+	}
+
+	// Qué hace: carga listas FORMATO_CARACTERES y APLICA_PARA desde GEN_LISTA.
+	// Cómo lo hace: GetLookUp del módulo gen-tipo-contacto (Key = valor del CHECK).
+	private cargarLookups(): void {
+		this.appInfoService
+			.getLookUp('GEN_TIPO_CONTACTO', 'GEN_LISTA', 'GetFORMATO_CARACTERES', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result) {
+						this.mFORMATO_CARACTERES = this.normalizarListaLookup(response.Data);
+					}
+				},
+				error: (error: any) => this.notifyFx(error, NotifyType.Error),
+			});
+
+		this.appInfoService
+			.getLookUp('GEN_TIPO_CONTACTO', 'GEN_LISTA', 'GetAPLICA_PARA', undefined, environment.UrlGENERALAPI)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					if (response?.Result) {
+						this.mAPLICA_PARA = this.normalizarListaLookup(response.Data);
+					}
+				},
+				error: (error: any) => this.notifyFx(error, NotifyType.Error),
+			});
+	}
+
+	/** Qué hace: unifica Key/Value aunque el API serialice en camelCase. */
+	private normalizarListaLookup(rows: any[]): any[] {
+		return (rows ?? []).map((r) => ({
+			Key: r?.Key ?? r?.key,
+			Value: r?.Value ?? r?.value,
+		}));
+	}
+
+	selectedLookUpLista(vRow: any): any {
+		const row = vRow?.[0];
+		return row?.Key ?? row?.key;
 	}
 
 	override AsignaStatus(xEstado: UpdateType): void {
@@ -73,6 +122,10 @@ export class GenTipoContactoComponent extends CBaseComponent implements OnInit {
 				ACTIVO_TIPO_CONTACTO: xModel.ACTIVO_TIPO_CONTACTO,
 				NUMERO_CARACTERES: xModel.NUMERO_CARACTERES,
 				ACTIVO_CARACTERES: xModel.ACTIVO_CARACTERES,
+				FORMATO_CARACTERES: xModel.FORMATO_CARACTERES ?? '',
+				NOMBRE_FORMATO_CARACTERES: xModel.NOMBRE_FORMATO_CARACTERES ?? '',
+				APLICA_PARA: xModel.APLICA_PARA ?? '',
+				NOMBRE_APLICA_PARA: xModel.NOMBRE_APLICA_PARA ?? '',
 				USUARIO_CREA: xModel.USUARIO_CREA,
 				ESTACION_CREA: xModel.ESTACION_CREA,
 				FECHA_CREA: xModel.FECHA_CREA,
@@ -89,6 +142,10 @@ export class GenTipoContactoComponent extends CBaseComponent implements OnInit {
 			ACTIVO_TIPO_CONTACTO: true,
 			NUMERO_CARACTERES: 0,
 			ACTIVO_CARACTERES: false,
+			FORMATO_CARACTERES: '',
+			NOMBRE_FORMATO_CARACTERES: '',
+			APLICA_PARA: '',
+			NOMBRE_APLICA_PARA: '',
 			USUARIO_CREA: '',
 			ESTACION_CREA: '',
 			FECHA_CREA: new Date(),
@@ -198,12 +255,12 @@ export class GenTipoContactoComponent extends CBaseComponent implements OnInit {
 
 		const formValidation = this.dataForm?.instance?.validate();
 		if (formValidation && !formValidation.isValid) {
-			this.service.esValido(this.model, this.notifyFx.bind(this));
+			this.service.esValido(this.model, this.notifyFx.bind(this), this.models as GenTipoContacto[]);
 			return;
 		}
 
 		this.guardarMtto({
-			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this)),
+			esValido: () => this.service.esValido(this.model, this.notifyFx.bind(this), this.models as GenTipoContacto[]),
 			insert: () => this.service.insert(this.model),
 			update: () => this.service.update(this.model),
 		});
@@ -261,6 +318,7 @@ export class GenTipoContactoComponent extends CBaseComponent implements OnInit {
 	}
 
 	override bloquear(): void {
+		this.readOnly = true;
 		this.dataForm.instance.getEditor('CORR_TIPO_CONTACTO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_TIPO_CONTACTO')?.option('readOnly', true);
 		this.dataForm.instance.getEditor('NOMBRE_CORTO')?.option('readOnly', true);
@@ -271,6 +329,7 @@ export class GenTipoContactoComponent extends CBaseComponent implements OnInit {
 
 	override habilitar(): void {
 		const estadoSoloLectura = this.banderaMtto === UpdateType.Update;
+		this.readOnly = false;
 		setTimeout(() => {
 			this.dataForm.instance.getEditor('CORR_TIPO_CONTACTO')?.option('readOnly', true);
 			this.dataForm.instance.getEditor('NOMBRE_TIPO_CONTACTO')?.option('readOnly', false);

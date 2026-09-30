@@ -2,9 +2,11 @@ import {
   Component,
   OnInit,
   OnDestroy,
+  AfterViewInit,
   NgModule,
   Input,
   ViewChild,
+  ElementRef,
 } from '@angular/core';
 import { DxTreeViewTypes } from 'devextreme-angular/ui/tree-view';
 import { DxDrawerModule, DxDrawerTypes } from 'devextreme-angular/ui/drawer';
@@ -26,7 +28,7 @@ import { debounceTime } from 'rxjs/operators';
   templateUrl: './side-nav-outer-toolbar.component.html',
   styleUrls: ['./side-nav-outer-toolbar.component.scss'],
 })
-export class SideNavOuterToolbarComponent implements OnInit, OnDestroy {
+export class SideNavOuterToolbarComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild(DxScrollViewComponent, { static: true }) scrollView!: DxScrollViewComponent;
 
   @Input()
@@ -50,14 +52,28 @@ export class SideNavOuterToolbarComponent implements OnInit, OnDestroy {
 
   routerSubscription: Subscription;
 
-  screenSubscription: Subscription;
+  screenSubscription!: Subscription;
 
-  constructor(private screen: ScreenService, private router: Router, public appInfo: AppInfoService) {
+  constructor(
+    private screen: ScreenService,
+    private router: Router,
+    public appInfo: AppInfoService,
+    private host: ElementRef<HTMLElement>
+  ) {
     this.routerSubscription = this.router.events.subscribe((event: Event) => {
       if (event instanceof NavigationEnd) {
         this.selectedRoute = event.urlAfterRedirects.split('?')[0];
       }
     });
+  }
+
+  // Qué hace: deja el aviso por encima del modal.
+  // Cómo: mueve el toast al body para que no quede debajo del overlay del popup.
+  ngAfterViewInit(): void {
+    const toast = this.host.nativeElement.querySelector('p-toast');
+    if (toast && toast.parentElement !== document.body) {
+      document.body.appendChild(toast);
+    }
   }
 
   ngOnInit() {

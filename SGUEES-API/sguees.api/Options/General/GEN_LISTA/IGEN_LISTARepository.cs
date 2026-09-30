@@ -20,7 +20,15 @@ namespace sguees.Repositories
 		CResult GetLIBRO_IVA();
 		CResult GetMES();
 		CResult GetCLASE_BANCO();
-		
-		
+		CResult GetFORMATO_CARACTERES();
+		CResult GetAPLICA_PARA();
+		// Qué hace: expone lookup de nivel de dominio (CHECK BASICO/INTERMEDIO/AVANZADO).
+		CResult GetNIVEL_DOMINIO();
+		// Qué hace: lookups de personales/formación para gen-empleado (CHECK o catálogo).
+		CResult GetSEXO();
+		CResult GetESTADO_CIVIL();
+		CResult GetSI_NO();
+		CResult GetNIVEL_ACADEMICO();
+		CResult GetESTADO_NIP();
 	}
 }

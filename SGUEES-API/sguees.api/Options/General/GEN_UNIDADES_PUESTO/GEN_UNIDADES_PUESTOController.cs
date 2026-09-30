@@ -115,6 +115,60 @@ namespace SGUEES.Controllers
             return await _service.GetAllAsync(Data);
         }
 
+        // Qué hace: entrega los puestos asociados a la unidad en el tab Puestos de gen-empleado.
+        // Cómo: fija CORR_EMPRESA y reutiliza GetAllAsync filtrado por CORR_UNIDAD.
+        [HttpGet("GetCORR_PUESTO_GEN_EMPLEADO")]
+        [Authorize(Policy = "/gen-empleado|R")]
+        public async Task<CResult> GetCORR_PUESTO_GEN_EMPLEADO([FromQuery] GEN_UNIDADES_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetAllAsync(Data);
+        }
+
+        // Qué hace: lista unidad y puesto para el browse de pla-puesto.
+        // Cómo: fija CORR_EMPRESA y reutiliza GetAllAsync sin filtrar una sola unidad.
+        [HttpGet("GetAll_PLA_PUESTO")]
+        [Authorize(Policy = "/pla-puesto|R")]
+        public async Task<CResult> GetAll_PLA_PUESTO([FromQuery] GEN_UNIDADES_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetAllAsync(Data);
+        }
+
+        // Qué hace: asocia una unidad al puesto desde pla-puesto.
+        // Cómo: completa auditoría y reutiliza CreateAsync, con permiso de alta de pla-puesto.
+        [HttpPost("Post_PLA_PUESTO")]
+        [Authorize(Policy = "/pla-puesto|C")]
+        public async Task<IActionResult> Post_PLA_PUESTO(GEN_UNIDADES_PUESTOTable Data)
+        {
+            SetCreateAudit(Data);
+
+            var resultado = await _service.CreateAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
+        }
+
+        // Qué hace: quita la unidad asociada al puesto desde pla-puesto.
+        // Cómo: fija CORR_EMPRESA y reutiliza DeleteAsync, con permiso de baja de pla-puesto.
+        [HttpDelete("Delete_PLA_PUESTO")]
+        [Authorize(Policy = "/pla-puesto|D")]
+        public async Task<IActionResult> Delete_PLA_PUESTO([FromQuery] GEN_UNIDADES_PUESTOTable Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+
+            var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+            return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+        }
+
+        // Qué hace: entrega las unidades que ya tienen el puesto, para el tab Salarios de pla-puesto.
+        // Cómo: fija CORR_EMPRESA y reutiliza GetAllAsync filtrado por CORR_PUESTO.
+        [HttpGet("GetCORR_UNIDAD_PLA_PUESTO")]
+        [Authorize(Policy = "/pla-puesto|R")]
+        public async Task<CResult> GetCORR_UNIDAD_PLA_PUESTO([FromQuery] GEN_UNIDADES_PUESTOParam Data)
+        {
+            Data.CORR_EMPRESA = GetCorrEmpresa();
+            return await _service.GetAllAsync(Data);
+        }
+
         // Qué hace: obtiene CORR_EMPRESA del claim del usuario autenticado.
         // Cómo: busca el claim CORR_EMPRESA y lo parsea a int; si falta, retorna 0.
         private int GetCorrEmpresa()

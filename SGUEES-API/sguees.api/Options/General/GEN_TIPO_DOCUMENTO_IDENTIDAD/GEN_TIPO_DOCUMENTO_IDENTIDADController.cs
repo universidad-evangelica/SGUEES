@@ -91,6 +91,8 @@ namespace sguees.Controllers
 			Data.ACTIVO_TIPO_DOCUMENTO_IDENTIDAD ??= true;
 			Data.ACTIVO_CARACTERES ??= false;
 			Data.NUMERO_CARACTERES ??= 0;
+			Data.FORMATO_CARACTERES ??= string.Empty;
+			Data.APLICA_PARA ??= string.Empty;
 		}
 
 		private void SetUpdateAudit(GEN_TIPO_DOCUMENTO_IDENTIDADTable Data)
@@ -110,6 +112,8 @@ namespace sguees.Controllers
 			{
 				Data.NUMERO_CARACTERES = 0;
 			}
+			Data.FORMATO_CARACTERES ??= string.Empty;
+			Data.APLICA_PARA ??= string.Empty;
 		}
 	}
 }

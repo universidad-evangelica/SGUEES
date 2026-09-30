@@ -55,6 +55,21 @@ namespace SGUEES.Controllers
 			return await _service.GetAllAsync(data);
 		}
 
+		[HttpGet("GetCORR_DISTRITO_GEN_EMPLEADO")]
+		[Authorize(Policy = "/gen-empleado|R")]
+		// Qué hace: entrega el catálogo de distritos para nacimiento en el tab Personales de empleado.
+		// Cómo: asigna CORR_EMPRESA de sesión y llama a GetAllAsync.
+		public async Task<CResult> GetCORR_DISTRITO_GEN_EMPLEADO([FromQuery] GEN_DISTRITOParam data)
+		{
+			data.CORR_EMPRESA = GetCorrEmpresa();
+			if (data.CORR_EMPRESA <= 0)
+			{
+				data.CORR_EMPRESA = 1;
+			}
+
+			return await _service.GetAllAsync(data);
+		}
+
 		[HttpPost]
 		[Authorize(Policy = "/gen-estructura-territorial|C")]
 		// Qué hace: crea distrito

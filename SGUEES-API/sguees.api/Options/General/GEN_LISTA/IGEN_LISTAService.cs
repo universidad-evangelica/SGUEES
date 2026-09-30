@@ -20,6 +20,15 @@ namespace sguees.Services
 		CResult GetLIBRO_IVA();
 		CResult GetMES();
 		CResult GetCLASE_BANCO();
-		
+		CResult GetFORMATO_CARACTERES();
+		CResult GetAPLICA_PARA();
+		// Qué hace: expone lookup de nivel de dominio (idiomas/competencias en empleado).
+		CResult GetNIVEL_DOMINIO();
+		// Qué hace: lookups de personales/formación para gen-empleado.
+		CResult GetSEXO();
+		CResult GetESTADO_CIVIL();
+		CResult GetSI_NO();
+		CResult GetNIVEL_ACADEMICO();
+		CResult GetESTADO_NIP();
 	}
 }

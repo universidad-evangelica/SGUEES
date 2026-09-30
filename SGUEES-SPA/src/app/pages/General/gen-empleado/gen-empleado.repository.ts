@@ -1,0 +1,74 @@
+// Qué hace: acceso HTTP al API de Empleado (browse + Iniciar + personales vía SP).
+// Cómo lo hace: llama al controller GEN_EMPLEADO (GENERAL API); sin APIs anidadas.
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { CData } from 'src/app/FxAPI/CData';
+import { IParam } from 'src/app/FxAPI/IParam';
+import { IResult } from 'src/app/FxAPI/IResult';
+import { environment } from 'src/environments/environment';
+
+@Injectable({ providedIn: 'root' })
+export class GenEmpleadoRepository {
+	readonly xController = 'GEN_EMPLEADO';
+
+	constructor(private objData: CData) {}
+
+	getAll(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetAll', xWhere, environment.UrlGENERALAPI);
+	}
+
+	get(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'Get', xWhere, environment.UrlGENERALAPI);
+	}
+
+	// Qué hace: crea persona + empresa_persona + persona_natural (SP) + empleado.
+	iniciar(model: any): Observable<IResult> {
+		return this.objData.Post(model, this.xController, 'Iniciar', environment.UrlGENERALAPI);
+	}
+
+	getPersonaNatural(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Get(this.xController, 'GetPersonaNatural', xWhere, environment.UrlGENERALAPI);
+	}
+
+	createPersonaNatural(model: any): Observable<IResult> {
+		return this.objData.Post(model, this.xController, 'PersonaNatural', environment.UrlGENERALAPI);
+	}
+
+	updatePersonaNatural(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'PersonaNatural', xWhere, environment.UrlGENERALAPI);
+	}
+
+	deletePersonaNatural(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Delete(this.xController, 'PersonaNatural', xWhere, environment.UrlGENERALAPI);
+	}
+
+	/** Qué hace: sube/reemplaza fotografía del empleado (multipart → uploads/gen-empleado). */
+	subirFoto(corrPersona: number, file: File): Observable<IResult> {
+		const formData = new FormData();
+		formData.append('CORR_PERSONA', String(corrPersona));
+		formData.append('file', file, file.name);
+		return this.objData.Post(formData, this.xController, 'SubirFoto', environment.UrlGENERALAPI);
+	}
+
+	/** Qué hace: descarga el blob de la foto del empleado para preview. */
+	getFoto(corrPersona: number): Observable<Blob> {
+		return this.objData.GetBlob(
+			this.xController,
+			'GetFoto',
+			[{ Parameter: 'CORR_PERSONA', Value: corrPersona }],
+			environment.UrlGENERALAPI
+		);
+	}
+
+	// Qué hace: elimina empleado por correlativo.
+	// Cómo: DELETE GEN_EMPLEADO/?CORR_EMPLEADO=...
+	delete(xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Delete(this.xController, '', xWhere, environment.UrlGENERALAPI);
+	}
+
+	// Qué hace: invierte el estado activo/inactivo del empleado.
+	// Cómo: PUT GEN_EMPLEADO/ActivarInactivar con la llave CORR_EMPLEADO.
+	activarInactivar(model: any, xWhere: IParam[]): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'ActivarInactivar', xWhere, environment.UrlGENERALAPI);
+	}
+}
