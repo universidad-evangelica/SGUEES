@@ -420,17 +420,17 @@ namespace SGUEES.Repositories
         {
             if (tieneSalario && tieneEmpleado)
             {
-                return "No se puede quitar la unidad porque tiene salarios y empleados asignados en este puesto.";
+                return "No se puede quitar la unidad porque tiene registros relacionados: salarios y empleados asignados en este puesto.";
             }
 
             if (tieneSalario)
             {
-                return "No se puede quitar la unidad porque tiene salarios asignados en este puesto.";
+                return "No se puede quitar la unidad porque tiene registros relacionados: salarios asignados en este puesto.";
             }
 
             if (tieneEmpleado)
             {
-                return "No se puede quitar la unidad porque tiene empleados asignados en este puesto.";
+                return "No se puede quitar la unidad porque tiene registros relacionados: empleados asignados en este puesto.";
             }
 
             return null;
