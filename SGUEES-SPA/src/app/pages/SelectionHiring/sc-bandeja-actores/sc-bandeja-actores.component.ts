@@ -240,20 +240,11 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 	}
 
 	async accionAprobar(): Promise<void> {
-		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.APROBAR, 'Aprobar requisición');
-	}
-
-	async accionDevolver(): Promise<void> {
-		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.DEVOLVER, 'Devolver requisición');
-	}
-
-	async accionRechazar(): Promise<void> {
-		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.RECHAZAR, 'Rechazar requisición');
 		if (this.selectedItem?.TIPO === 'MOVIMIENTO') {
 			await this.ejecutarAutorizaMovimiento(OPERACION_BANDEJA_ACTORES.APROBAR, 'Aprobar movimiento');
 			return;
 		}
-		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.APROBAR, 'Aprobar requisición', false);
+		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.APROBAR, 'Aprobar requisición');
 	}
 
 	async accionDevolver(): Promise<void> {
@@ -261,7 +252,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 			await this.ejecutarAutorizaMovimiento(OPERACION_BANDEJA_ACTORES.DEVOLVER, 'Devolver movimiento');
 			return;
 		}
-		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.DEVOLVER, 'Devolver requisición', true);
+		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.DEVOLVER, 'Devolver requisición');
 	}
 
 	async accionRechazar(): Promise<void> {
@@ -269,7 +260,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 			await this.ejecutarAutorizaMovimiento(OPERACION_BANDEJA_ACTORES.RECHAZAR, 'Rechazar movimiento');
 			return;
 		}
-		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.RECHAZAR, 'Rechazar requisición', true);
+		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.RECHAZAR, 'Rechazar requisición');
 	}
 
 	async accionDictamen(aplica: boolean): Promise<void> {
