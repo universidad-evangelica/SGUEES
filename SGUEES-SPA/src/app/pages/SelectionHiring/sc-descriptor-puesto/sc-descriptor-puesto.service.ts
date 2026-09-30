@@ -31,6 +31,7 @@ import { ScDescriptorPuestoRequerimientoOrganizacionalRepository } from './sc-de
 import { ScDescriptorPuestoRiesgoPuesto } from './sc-descriptor-puesto-riesgo-puesto/models/sc-descriptor-puesto-riesgo-puesto';
 import { ScDescriptorPuestoRiesgoPuestoRepository } from './sc-descriptor-puesto-riesgo-puesto/sc-descriptor-puesto-riesgo-puesto.repository';
 import { ScDescriptorPuestoEmpleadoRepository } from './sc-descriptor-puesto-empleado/sc-descriptor-puesto-empleado.repository';
+import { ScDescriptorPuestoFirmasRepository } from './sc-descriptor-puesto-firmas/sc-descriptor-puesto-firmas.repository';
 import { ScDescriptorPuestoInduccion } from './sc-descriptor-puesto-induccion/models/sc-descriptor-puesto-induccion';
 import { ScDescriptorPuestoInduccionRepository } from './sc-descriptor-puesto-induccion/sc-descriptor-puesto-induccion.repository';
 import { ScDescriptorPuestoResponsabilidadCargo } from './sc-descriptor-puesto-responsabilidad-cargo/models/sc-descriptor-puesto-responsabilidad-cargo';
@@ -73,6 +74,7 @@ export class ScDescriptorPuestoService {
 		private requerimientosOrganizacionalesRepo: ScDescriptorPuestoRequerimientoOrganizacionalRepository,
 		private riesgosPuestoRepo: ScDescriptorPuestoRiesgoPuestoRepository,
 		private empleadosDescriptorRepo: ScDescriptorPuestoEmpleadoRepository,
+		private firmasDescriptorRepo: ScDescriptorPuestoFirmasRepository,
 		private responsabilidadesCargoRepo: ScDescriptorPuestoResponsabilidadCargoRepository,
 		private relacionLaboralRepo: ScDescriptorPuestoRelacionLaboralRepository,
 		private induccionesRepo: ScDescriptorPuestoInduccionRepository
@@ -1742,6 +1744,14 @@ export class ScDescriptorPuestoService {
 				} as IResult;
 			})
 		);
+	}
+
+	// Qué hace: lista las firmas guardadas del descriptor.
+	// Cómo lo hace: GetAll al abrir el detalle. El alta ocurre en el API al quedar Activo.
+	getFirmasDescriptor(corrDescriptorPuesto: number): Observable<IResult> {
+		return this.firmasDescriptorRepo.getAll([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+		]);
 	}
 
 	// Qué hace: lista los empleados ya cargados en el descriptor.

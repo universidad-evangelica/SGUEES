@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+﻿import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
@@ -33,6 +33,7 @@ import { ScPerfilPuestoCompetenciasTecnicas } from './sc-perfil-puesto-competenc
 import { ScPerfilPuestoCompetenciasConductuales } from './sc-perfil-puesto-competencias-conductuales/models/sc-perfil-puesto-competencias-conductuales';
 import { ScDescriptorPuestoRequerimientoOrganizacional } from './sc-descriptor-puesto-requerimiento-organizacional/models/sc-descriptor-puesto-requerimiento-organizacional';
 import { ScDescriptorPuestoEmpleado } from './sc-descriptor-puesto-empleado/models/sc-descriptor-puesto-empleado';
+import { ScDescriptorPuestoFirma } from './sc-descriptor-puesto-firmas/models/sc-descriptor-puesto-firmas';
 import { ScDescriptorPuestoRiesgoPuesto } from './sc-descriptor-puesto-riesgo-puesto/models/sc-descriptor-puesto-riesgo-puesto';
 import {
 	RESPONSABLE_ENTRENAMIENTO_CLIENT_KEY,
@@ -291,6 +292,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	requerimientosOrganizacionales: ScDescriptorPuestoRequerimientoOrganizacional[] = [];
 	riesgosPuesto: ScDescriptorPuestoRiesgoPuesto[] = [];
 	empleadosCargados: ScDescriptorPuestoEmpleado[] = [];
+	firmasDescriptor: ScDescriptorPuestoFirma[] = [];
 	empleadosDisponibles: ScDescriptorPuestoEmpleado[] = [];
 	popupCargarEmpleadoVisible = false;
 	cargaEmpleadoModalPageSize = 50;
@@ -1548,6 +1550,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarResponsabilidadesCargo();
 		this.cargarInduccionesDescriptor();
 		this.cargarEmpleadosDescriptor();
+		this.cargarFirmasDescriptor();
 	}
 
 	// Limpia listas y flags de edición de todas las secciones al cambiar o cancelar.
@@ -1562,6 +1565,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.requerimientosOrganizacionales = [];
 		this.riesgosPuesto = [];
 		this.empleadosCargados = [];
+		this.firmasDescriptor = [];
 		this.empleadosDisponibles = [];
 		this.popupCargarEmpleadoVisible = false;
 		this.induccionesDescriptor = [];
@@ -5209,6 +5213,35 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 		return '';
 	};
+
+	// Qué hace: carga las firmas ya guardadas del descriptor.
+	// Cómo lo hace: GetAll al abrir el detalle. No consulta de nuevo al mover el flujo.
+	private cargarFirmasDescriptor(): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0) {
+			this.firmasDescriptor = [];
+			return;
+		}
+
+		this.service
+			.getFirmasDescriptor(corrDescriptor)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.firmasDescriptor = response?.Result
+						? (response.Data ?? []).map((item: ScDescriptorPuestoFirma) => ({
+								CORR_FIRMAS: item.CORR_FIRMAS,
+								CORR_DESCRIPTOR_PUESTO: item.CORR_DESCRIPTOR_PUESTO,
+								NOMBRE_COMPLETO: item.NOMBRE_COMPLETO ?? '',
+								TIPO_JEFE: item.TIPO_JEFE ?? '',
+								TIPO_ACTOR: item.TIPO_ACTOR ?? '',
+								FECHA_FIRMA: item.FECHA_FIRMA ?? null,
+							}))
+						: [];
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
 
 	// Qué hace: carga los empleados ya asociados al descriptor.
 	// Cómo lo hace: GetAll al abrir el detalle; no se vuelve a consultar después de guardar.

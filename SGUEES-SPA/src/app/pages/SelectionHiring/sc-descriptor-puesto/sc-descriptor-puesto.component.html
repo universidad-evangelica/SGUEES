@@ -2444,6 +2444,39 @@
 			</div>
 		</dxi-item>
 
+		<!-- Firmas copiadas al quedar Activo: jefe inmediato y jefe de TH. -->
+		<dxi-item title="Firmas" icon="check">
+			<div class="descriptor-bitacora">
+				<h3 class="descriptor-section-title descriptor-bitacora-title">
+					<span class="dx-icon-check descriptor-bitacora-title-icon" aria-hidden="true"></span>
+					Firmas del descriptor
+				</h3>
+				<dx-data-grid
+					class="descriptor-firmas-grid"
+					[dataSource]="firmasDescriptor"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
+					[width]="'100%'"
+					noDataText="Aún no hay firmas. Se guardan cuando el descriptor queda Activo."
+				>
+					<dxo-paging [enabled]="true" [pageSize]="5"></dxo-paging>
+					<dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25]" [showInfo]="true"></dxo-pager>
+					<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+					<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+					<dxo-load-panel [enabled]="false"></dxo-load-panel>
+					<dxi-column dataField="NOMBRE_COMPLETO" caption="Nombre" [width]="280" [minWidth]="200"></dxi-column>
+					<dxi-column dataField="TIPO_ACTOR" caption="Actor" [width]="220" [minWidth]="160"></dxi-column>
+					<dxi-column dataField="TIPO_JEFE" caption="Unidad" [width]="240" [minWidth]="160"></dxi-column>
+					<dxi-column dataField="FECHA_FIRMA" caption="Fecha firma" [width]="150" dataType="date" format="dd/MM/yyyy"></dxi-column>
+				</dx-data-grid>
+			</div>
+		</dxi-item>
+
 		<!-- Pestaña Bitácora: historial del flujo vía app-firmas-documento (tipo 102). -->
 		<dxi-item title="Bitácora" icon="event">
 			<div class="descriptor-bitacora">

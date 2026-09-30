@@ -20,6 +20,7 @@ namespace SGUEES.Services
         private readonly ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService _responsabilidadCargoService;
         private readonly ISC_REPORepository _repoRpt;
         private readonly ISEG_USUARIOService _repoUser;
+        private readonly ISC_DESCRIPTOR_PUESTO_FIRMASRepository _firmasRepo;
 
         public SC_DESCRIPTOR_PUESTOService(
             ISC_DESCRIPTOR_PUESTORepository repo,
@@ -28,7 +29,8 @@ namespace SGUEES.Services
             ISC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService riesgoPuestoService,
             ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService responsabilidadCargoService,
             ISC_REPORepository repoRpt,
-            ISEG_USUARIOService repoUser)
+            ISEG_USUARIOService repoUser,
+            ISC_DESCRIPTOR_PUESTO_FIRMASRepository firmasRepo)
         {
             _repo = repo;
             _unidadesUsuarioRepo = unidadesUsuarioRepo;
@@ -37,6 +39,7 @@ namespace SGUEES.Services
             _responsabilidadCargoService = responsabilidadCargoService;
             _repoRpt = repoRpt;
             _repoUser = repoUser;
+            _firmasRepo = firmasRepo;
         }
 
         // Qué hace: lista descriptores de la empresa visibles para el usuario de sesión.
@@ -429,7 +432,30 @@ namespace SGUEES.Services
             }
 
             Data.OBSERVACION = Data.OBSERVACION.Trim();
-            return await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());
+            var resultado = await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());
+
+            // Qué hace: al quedar Activo copia las firmas del jefe inmediato y del jefe de TH.
+            // Cómo lo hace: lee la bitácora en otra conexión. Si falla, la aprobación del flujo se mantiene.
+            if (resultado.Result
+                && resultado.ErrorCode == 0
+                && Data.OPERACION == 3
+                && resultado.Data is SC_DESCRIPTOR_PUESTOView descriptorActivo
+                && descriptorActivo.CORR_ESTADO == 14)
+            {
+                try
+                {
+                    await _firmasRepo.GuardarAlQuedarActivoAsync(
+                        Data.CORR_EMPRESA,
+                        Data.CORR_DESCRIPTOR_PUESTO,
+                        vLOGIN_SISTEMA.Trim());
+                }
+                catch (Exception)
+                {
+                    // El SP de flujo ya confirmó el estado. Esta copia no lo revierte.
+                }
+            }
+
+            return resultado;
         }
 
         // Qué hace: indica qué botones de flujo mostrar para el usuario de sesión.
