@@ -93,8 +93,8 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
-		// Qué hace: lista empleados que pueden cargarse en este descriptor.
-		// Cómo lo hace: exige el mismo CORR_PUESTO y CORR_UNIDAD en GEN_EMPLEADO_PUESTO y omite los ya cargados.
+		// Qué hace: lista empleados del puesto y la unidad de este descriptor.
+		// Cómo lo hace: incluye también los ya cargados para que el modal los muestre con check.
 		public async Task<CResult> GetDisponiblesAsync(int corrEmpresa, int corrDescriptor)
 		{
 			CResult objResultado = new();
@@ -122,13 +122,6 @@ namespace SGUEES.Repositories
 					AND D.CORR_PUESTO = P.CORR_PUESTO
 					AND D.CORR_UNIDAD = P.CORR_UNIDAD
 				WHERE E.CORR_EMPRESA = @CORR_EMPRESA
-				AND NOT EXISTS (
-					SELECT 1
-					FROM dbo.SC_DESCRIPTOR_PUESTO_EMPLEADO X
-					WHERE X.CORR_EMPRESA = E.CORR_EMPRESA
-					AND X.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
-					AND X.CORR_EMPLEADO = E.CORR_EMPLEADO
-				)
 				ORDER BY E.NOMBRE_EMPLEADO;";
 
 				var rows = new List<SC_DESCRIPTOR_PUESTO_EMPLEADOView>();

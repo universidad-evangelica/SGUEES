@@ -1,4 +1,4 @@
-﻿import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
@@ -108,6 +108,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	@ViewChild('gridActividades', { static: false }) gridActividades?: DxDataGridComponent;
 	@ViewChild('gridRelacionesInternas', { static: false }) gridRelacionesInternas?: DxDataGridComponent;
 	@ViewChild('gridRelacionesExternas', { static: false }) gridRelacionesExternas?: DxDataGridComponent;
+	@ViewChild('popupCargarEmpleado') popupCargarEmpleado?: any;
+	@ViewChild('gridCargarEmpleado') gridCargarEmpleado?: any;
 
 	protected override etiquetaRegistro = 'el descriptor de puesto';
 	protected override requiereEmpresaSesion = true;
@@ -291,6 +293,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	empleadosCargados: ScDescriptorPuestoEmpleado[] = [];
 	empleadosDisponibles: ScDescriptorPuestoEmpleado[] = [];
 	popupCargarEmpleadoVisible = false;
+	cargaEmpleadoModalPageSize = 50;
 	cargandoEmpleados = false;
 	induccionesDescriptor: ScDescriptorPuestoInduccion[] = [];
 	responsabilidadesCargo: ScDescriptorPuestoResponsabilidadCargo[] = [];
@@ -5246,6 +5249,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			return;
 		}
 
+		this.cargaEmpleadoModalPageSize = 50;
 		this.cargandoEmpleados = true;
 		this.service
 			.getEmpleadosDisponiblesDescriptor(corrDescriptor)
@@ -5257,9 +5261,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.notifyFx(response?.ErrorMessage || 'No se pudieron consultar los empleados.', NotifyType.Warning);
 						return;
 					}
+					const cargados = new Set(this.empleadosCargados.map((item) => item.CORR_EMPLEADO));
 					this.empleadosDisponibles = (response.Data ?? []).map((item: ScDescriptorPuestoEmpleado) => ({
 						...this.mapEmpleadoCargado(item),
-						SELECCION: false,
+						SELECCION: cargados.has(Number(item?.CORR_EMPLEADO)),
 					}));
 					this.popupCargarEmpleadoVisible = true;
 				},
@@ -5268,6 +5273,27 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.notifyFx(this.textoErrorCargaEmpleado(error), NotifyType.Warning);
 				},
 			});
+	}
+
+	// Qué hace: con 5 o 10 filas la tabla se encoge; con más, mantiene altura y scroll.
+	// Cómo lo hace: deja espacio para el título, los botones y el paginador dentro de la pantalla.
+	get alturaCargaEmpleadoModal(): string {
+		return this.cargaEmpleadoModalPageSize <= 10 ? 'auto' : 'calc(100vh - 300px)';
+	}
+
+	// Qué hace: actualiza la altura cuando cambia el tamaño de página del modal.
+	// Cómo lo hace: reaplica la altura en la grilla para que el paginador no quede fuera.
+	onCargaEmpleadoModalOptionChanged(e: any): void {
+		if (e?.fullName !== 'paging.pageSize' || !(Number(e.value) > 0)) {
+			return;
+		}
+		this.cargaEmpleadoModalPageSize = Number(e.value);
+		const altura = this.alturaCargaEmpleadoModal;
+		setTimeout(() => {
+			e.component?.option('height', altura);
+			e.component?.updateDimensions?.();
+			this.popupCargarEmpleado?.instance?.repaint();
+		});
 	}
 
 	cerrarCargarEmpleados(): void {
@@ -5287,34 +5313,57 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}));
 	}
 
-	// Qué hace: carga los empleados marcados en el descriptor.
-	// Cómo lo hace: inserta uno por uno y agrega en memoria solo los que el API acepta.
+	// Qué hace: carga los marcados y quita los que se desmarcaron.
+	// Cómo lo hace: inserta o elimina uno por uno y parchea la grilla en memoria.
 	guardarEmpleadosMarcados(): void {
 		if (this.cargandoEmpleados || !this.esDescriptorActivo) {
 			return;
 		}
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
-		const marcados = (this.empleadosDisponibles ?? []).filter((item) => !!item.SELECCION && item.CORR_EMPLEADO > 0);
-		if (!marcados.length) {
-			this.notifyFx('Seleccione al menos un empleado.', NotifyType.Warning);
+		const lista = this.empleadosDisponibles ?? [];
+		if (!lista.length) {
+			this.notifyFx('No hay empleados para cargar.', NotifyType.Warning);
+			return;
+		}
+
+		const cargados = new Set(this.empleadosCargados.map((item) => item.CORR_EMPLEADO));
+		const operaciones = [
+			...lista
+				.filter((item) => !!item.SELECCION && !cargados.has(item.CORR_EMPLEADO))
+				.map((empleado) => ({ tipo: 'insert' as const, empleado })),
+			...lista
+				.filter((item) => !item.SELECCION && cargados.has(item.CORR_EMPLEADO))
+				.map((empleado) => ({ tipo: 'delete' as const, empleado })),
+		];
+		if (!operaciones.length) {
+			this.notifyFx('Cambios guardados con exito!', NotifyType.Success, { raw: true });
+			this.popupCargarEmpleadoVisible = false;
+			this.empleadosDisponibles = [];
 			return;
 		}
 
 		this.cargandoEmpleados = true;
-		from(marcados)
+		from(operaciones)
 			.pipe(
-				concatMap((empleado) =>
-					this.service.cargarEmpleadoDescriptor(corrDescriptor, empleado.CORR_EMPLEADO).pipe(
+				concatMap((op) => {
+					const request$ =
+						op.tipo === 'insert'
+							? this.service.cargarEmpleadoDescriptor(corrDescriptor, op.empleado.CORR_EMPLEADO)
+							: this.service.quitarEmpleadoDescriptor(corrDescriptor, op.empleado.CORR_EMPLEADO);
+					return request$.pipe(
 						take(1),
 						catchError((error) =>
 							of({
 								Result: false,
-								ErrorMessage: this.textoErrorCargaEmpleado(error),
+								ErrorMessage: this.textoErrorCargaEmpleado(
+									error,
+									op.tipo === 'insert' ? 'No se pudo cargar el empleado.' : 'No se pudo quitar el empleado.'
+								),
 							})
 						),
-						map((response: any) => ({ ...response, _empleado: empleado }))
-					)
-				),
+						map((response: any) => ({ ...response, _tipo: op.tipo, _empleado: op.empleado }))
+					);
+				}),
 				toArray()
 			)
 			.subscribe({
@@ -5322,20 +5371,32 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.cargandoEmpleados = false;
 					const ok = responses.filter((item) => item?.Result);
 					const fail = responses.filter((item) => !item?.Result);
+					let insertOk = 0;
+					let deleteOk = 0;
 					for (const response of ok) {
-						const fila = this.mapEmpleadoCargado(response.Data ?? response._empleado);
-						if (!this.empleadosCargados.some((item) => item.CORR_EMPLEADO === fila.CORR_EMPLEADO)) {
-							this.empleadosCargados = [...this.empleadosCargados, fila].sort((a, b) =>
-								(a.NOMBRE_EMPLEADO ?? '').localeCompare(b.NOMBRE_EMPLEADO ?? '')
-							);
+						if (response._tipo === 'insert') {
+							const fila = this.mapEmpleadoCargado(response.Data ?? response._empleado);
+							if (!this.empleadosCargados.some((item) => item.CORR_EMPLEADO === fila.CORR_EMPLEADO)) {
+								this.empleadosCargados = [...this.empleadosCargados, fila].sort((a, b) =>
+									(a.NOMBRE_EMPLEADO ?? '').localeCompare(b.NOMBRE_EMPLEADO ?? '')
+								);
+							}
+							insertOk += 1;
+						} else {
+							const corrEmpleado = Number(response._empleado?.CORR_EMPLEADO);
+							this.empleadosCargados = this.empleadosCargados.filter((item) => item.CORR_EMPLEADO !== corrEmpleado);
+							deleteOk += 1;
 						}
 					}
-					if (ok.length > 0) {
-						this.notifyFx(
-							ok.length === 1 ? '1 empleado cargado.' : `${ok.length} empleados cargados.`,
-							NotifyType.Success,
-							{ raw: true }
-						);
+					if (insertOk > 0 || deleteOk > 0) {
+						const partes: string[] = [];
+						if (insertOk > 0) {
+							partes.push(insertOk === 1 ? '1 empleado cargado' : `${insertOk} empleados cargados`);
+						}
+						if (deleteOk > 0) {
+							partes.push(deleteOk === 1 ? '1 empleado quitado' : `${deleteOk} empleados quitados`);
+						}
+						this.notifyFx(partes.join('. ') + '.', NotifyType.Success, { raw: true });
 					}
 					if (fail.length > 0) {
 						const msg = fail
@@ -5343,11 +5404,14 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							.filter((texto) => !!texto)
 							.filter((texto, index, lista) => lista.indexOf(texto) === index)
 							.join(' ');
-						this.notifyFx(msg || 'Algunos empleados no se pudieron cargar.', NotifyType.Warning);
-						const cargados = new Set(this.empleadosCargados.map((item) => item.CORR_EMPLEADO));
-						this.empleadosDisponibles = this.empleadosDisponibles
-							.filter((item) => !cargados.has(item.CORR_EMPLEADO))
-							.map((item) => ({ ...item, SELECCION: !!item.SELECCION }));
+						this.notifyFx(msg || 'Algunos empleados no se pudieron actualizar.', NotifyType.Warning);
+						const siguen = new Set(this.empleadosCargados.map((item) => item.CORR_EMPLEADO));
+						this.gridCargarEmpleado?.instance?.cancelEditData?.();
+						this.empleadosDisponibles = this.empleadosDisponibles.map((item) => ({
+							...item,
+							SELECCION: siguen.has(item.CORR_EMPLEADO),
+						}));
+						setTimeout(() => this.gridCargarEmpleado?.instance?.refresh?.());
 						return;
 					}
 					this.popupCargarEmpleadoVisible = false;
@@ -5409,12 +5473,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		};
 	}
 
-	private textoErrorCargaEmpleado(error: any): string {
+	private textoErrorCargaEmpleado(error: any, respaldo = 'No se pudo cargar el empleado.'): string {
 		if (typeof error === 'string' && error.trim()) {
 			return error.replace(/^Error:\s*/i, '').trim();
 		}
 		const mensaje = error?.error?.ErrorMessage || error?.ErrorMessage || error?.message || '';
-		return String(mensaje).replace(/^Error:\s*/i, '').trim() || 'No se pudo cargar el empleado.';
+		return String(mensaje).replace(/^Error:\s*/i, '').trim() || respaldo;
 	}
 
 	// Consulta las inducciones (entrenamiento) del descriptor y actualiza el lookup disponible.

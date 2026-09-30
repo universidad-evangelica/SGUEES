@@ -2393,7 +2393,7 @@
 							></dx-button>
 						</div>
 						<dx-data-grid
-							class="theme-dependent sguees-data-grid-mtto sguees-data-grid-mtto--enterprise descriptor-deta-datagrid"
+							class="theme-dependent sguees-data-grid-mtto carga-empleado-grid"
 							[dataSource]="empleadosCargados"
 							keyExpr="CORR_EMPLEADO"
 							[columnAutoWidth]="false"
@@ -2407,13 +2407,15 @@
 							[width]="'100%'"
 							noDataText="Sin empleados cargados."
 						>
-							<dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
-							<dxo-pager [visible]="true" [showInfo]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25]"></dxo-pager>
+							<dxo-paging [enabled]="true" [pageSize]="5"></dxo-paging>
+							<dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25]" [showInfo]="true"></dxo-pager>
 							<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
-							<dxo-scrolling [mode]="'standard'" [showScrollbar]="'always'"></dxo-scrolling>
-							<dxi-column type="buttons" caption="" [width]="70" [visible]="esDescriptorActivo">
-								<dxi-button hint="Quitar" icon="trash" [onClick]="quitarEmpleadoCargadoClick"></dxi-button>
-							</dxi-column>
+							<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+							<dxo-load-panel [enabled]="false"></dxo-load-panel>
+							<dxi-column caption="" [width]="70" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesEmpleadoTpl" [visible]="esDescriptorActivo" alignment="center"></dxi-column>
+							<div *dxTemplate="let cell of 'accionesEmpleadoTpl'">
+								<dx-button icon="trash" stylingMode="text" hint="Quitar" (onClick)="quitarEmpleadoCargado(cell.data)"></dx-button>
+							</div>
 							<dxi-column dataField="CORR_EMPLEADO" caption="Corr." [width]="90" dataType="number"></dxi-column>
 							<dxi-column dataField="NOMBRE_EMPLEADO" caption="Persona" [width]="280" [minWidth]="200"></dxi-column>
 							<dxi-column dataField="DUI" caption="DUI" [width]="120" [minWidth]="100"></dxi-column>
@@ -2694,6 +2696,7 @@
 
 <!-- motivo: elegir empleados que ya tienen el puesto y la unidad del descriptor -->
 <dx-popup
+	#popupCargarEmpleado
 	[(visible)]="popupCargarEmpleadoVisible"
 	title="Cargar empleado"
 	[width]="920"
@@ -2703,15 +2706,38 @@
 	[dragEnabled]="false"
 	[showCloseButton]="true"
 	[hideOnOutsideClick]="false"
+	[wrapperAttr]="{ class: 'carga-empleado-asignar-popup' }"
 	(onHiding)="cerrarCargarEmpleados()"
 >
-	<div class="descriptor-deta-toolbar">
-		<dx-button text="Todos" icon="check" type="success" stylingMode="contained" (onClick)="selectTodosEmpleadosCarga(true)" [disabled]="cargandoEmpleados"></dx-button>
-		<dx-button text="Ninguno" icon="close" type="danger" stylingMode="contained" (onClick)="selectTodosEmpleadosCarga(false)" [disabled]="cargandoEmpleados"></dx-button>
-		<dx-button text="Guardar" icon="save" type="default" stylingMode="contained" (onClick)="guardarEmpleadosMarcados()" [disabled]="cargandoEmpleados"></dx-button>
+	<div class="carga-empleado-popup-toolbar">
+		<dx-button
+			icon="check"
+			text="Todos"
+			type="success"
+			stylingMode="contained"
+			(onClick)="selectTodosEmpleadosCarga(true)"
+			[disabled]="cargandoEmpleados || !empleadosDisponibles.length"
+		></dx-button>
+		<dx-button
+			icon="close"
+			text="Ninguno"
+			type="danger"
+			stylingMode="contained"
+			(onClick)="selectTodosEmpleadosCarga(false)"
+			[disabled]="cargandoEmpleados || !empleadosDisponibles.length"
+		></dx-button>
+		<dx-button
+			icon="save"
+			text="Guardar"
+			type="default"
+			stylingMode="contained"
+			(onClick)="guardarEmpleadosMarcados()"
+			[disabled]="cargandoEmpleados || !empleadosDisponibles.length"
+		></dx-button>
 	</div>
 	<dx-data-grid
-		class="theme-dependent sguees-data-grid-mtto descriptor-deta-datagrid"
+		#gridCargarEmpleado
+		class="theme-dependent sguees-data-grid-mtto carga-empleado-popup-grid"
 		[dataSource]="empleadosDisponibles"
 		keyExpr="CORR_EMPLEADO"
 		[columnAutoWidth]="false"
@@ -2720,16 +2746,35 @@
 		[showRowLines]="true"
 		[rowAlternationEnabled]="true"
 		[hoverStateEnabled]="true"
+		[allowColumnResizing]="true"
+		[columnResizingMode]="'widget'"
 		[width]="'100%'"
-		[height]="420"
+		[height]="alturaCargaEmpleadoModal"
+		(onOptionChanged)="onCargaEmpleadoModalOptionChanged($event)"
 		noDataText="No hay empleados con este puesto y esta unidad."
 	>
-		<dxo-paging [enabled]="true" [pageSize]="10"></dxo-paging>
-		<dxo-pager [visible]="true" [showInfo]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25]"></dxo-pager>
+		<dxo-paging [enabled]="true" [pageSize]="cargaEmpleadoModalPageSize"></dxo-paging>
+		<dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25, 50]" [showInfo]="true"></dxo-pager>
 		<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
-		<dxo-scrolling [mode]="'standard'" [showScrollbar]="'always'"></dxo-scrolling>
-		<dxo-editing [mode]="'cell'" [allowUpdating]="true" [allowAdding]="false" [allowDeleting]="false"></dxo-editing>
-		<dxi-column dataField="SELECCION" caption="" [width]="70" dataType="boolean" [allowSorting]="false" [allowFiltering]="false" alignment="center"></dxi-column>
+		<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+		<dxo-load-panel [enabled]="false"></dxo-load-panel>
+		<dxo-editing
+			[mode]="'cell'"
+			[allowUpdating]="!cargandoEmpleados"
+			[allowAdding]="false"
+			[allowDeleting]="false"
+			[useIcons]="false"
+		></dxo-editing>
+		<dxi-column
+			dataField="SELECCION"
+			caption=""
+			[width]="70"
+			dataType="boolean"
+			[allowSorting]="false"
+			[allowFiltering]="false"
+			[allowEditing]="!cargandoEmpleados"
+			alignment="center"
+		></dxi-column>
 		<dxi-column dataField="CORR_EMPLEADO" caption="Corr." [width]="90" dataType="number" [allowEditing]="false"></dxi-column>
 		<dxi-column dataField="NOMBRE_EMPLEADO" caption="Persona" [width]="260" [minWidth]="180" [allowEditing]="false"></dxi-column>
 		<dxi-column dataField="DUI" caption="DUI" [width]="120" [allowEditing]="false"></dxi-column>

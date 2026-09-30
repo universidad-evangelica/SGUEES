@@ -541,6 +541,44 @@
 	min-width: 140px;
 }
 
+.carga-empleado-grid {
+	min-height: 220px;
+}
+
+.carga-empleado-popup-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 12px;
+	padding: 10px 12px;
+	background: var(--sguees-surface-subtle, color-mix(in srgb, var(--base-text-color) 6%, transparent));
+	border: 1px solid var(--border-color, color-mix(in srgb, var(--base-text-color) 12%, transparent));
+	border-radius: var(--sguees-radius-md, 10px);
+}
+
+:host ::ng-deep .carga-empleado-popup-toolbar .dx-button {
+	min-width: 120px;
+	min-height: 36px;
+	font-weight: 600;
+}
+
+::ng-deep .carga-empleado-asignar-popup .dx-popup-content {
+	box-sizing: border-box;
+	overflow: visible;
+	padding-bottom: 8px;
+}
+
+::ng-deep .carga-empleado-asignar-popup .carga-empleado-popup-grid {
+	width: 100%;
+	max-height: calc(100vh - 300px);
+
+	.dx-datagrid-headers .dx-header-row > td,
+	.dx-datagrid-rowsview .dx-data-row > td {
+		vertical-align: middle;
+	}
+}
+
 :host ::ng-deep .descriptor-deta-datagrid {
 	.dx-link-save,
 	.dx-link-cancel {
