@@ -51,11 +51,13 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 	kpis: ScBandejaActoresKpi[] = [];
 	totalRequisicionesApi = 0;
 	totalCandidatosApi = 0;
+	totalMovimientosApi = 0;
 	totalUnidadesApi = 0;
 
 	readonly tabs: Array<{ id: ScBandejaActoresTab; label: string }> = [
 		{ id: 'REQUISICIONES', label: 'Requisiciones' },
 		{ id: 'CANDIDATOS', label: 'Candidatos' },
+		{ id: 'MOVIMIENTOS', label: 'Movimientos' },
 	];
 
 	readonly estadosFiltroRequisicion: Array<{ VALUE: string; TEXT: string }> = [
@@ -76,6 +78,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 
 	private requisicionesStore: CustomStore | null = null;
 	private candidatosStore: CustomStore | null = null;
+	private movimientosStore: CustomStore | null = null;
 
 	constructor(
 		public override appInfoService: AppInfoService,
@@ -96,6 +99,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		return {
 			REQUISICIONES: this.totalRequisicionesApi,
 			CANDIDATOS: this.totalCandidatosApi,
+			MOVIMIENTOS: this.totalMovimientosApi,
 		};
 	}
 
@@ -154,7 +158,10 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		this.panelTab = 'RESUMEN';
 
 		if (item.TIPO === 'REQUISICION' && item.CORR_REQUISICION_PERSONAL) {
-			this.cargarBitacoraRequisicion(item.CORR_REQUISICION_PERSONAL);
+			this.cargarBitacoraRequisicion(item.CORR_REQUISICION_PERSONAL, 101);
+		}
+		if (item.TIPO === 'MOVIMIENTO' && item.CORR_MOVIMIENTO_PERSONAL) {
+			this.cargarBitacoraRequisicion(item.CORR_MOVIMIENTO_PERSONAL, 103);
 		}
 	}
 
@@ -184,6 +191,21 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 			}
 			void this.navRouter.navigate(['/sc-requisicion-personal'], {
 				queryParams: { corr: this.selectedItem.CORR_REQUISICION_PERSONAL },
+			});
+			return;
+		}
+
+		if (this.selectedItem.TIPO === 'MOVIMIENTO' && this.selectedItem.CORR_MOVIMIENTO_PERSONAL) {
+			if (!this.tienePermisoLectura('/sc-movimiento-personal')) {
+				this.notifyFx(
+					'No tiene permiso de lectura en Movimiento de personal.',
+					NotifyType.Warning,
+					{ raw: true }
+				);
+				return;
+			}
+			void this.navRouter.navigate(['/sc-movimiento-personal'], {
+				queryParams: { corr: this.selectedItem.CORR_MOVIMIENTO_PERSONAL },
 			});
 			return;
 		}
@@ -218,14 +240,26 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 	}
 
 	async accionAprobar(): Promise<void> {
+		if (this.selectedItem?.TIPO === 'MOVIMIENTO') {
+			await this.ejecutarAutorizaMovimiento(OPERACION_BANDEJA_ACTORES.APROBAR, 'Aprobar movimiento');
+			return;
+		}
 		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.APROBAR, 'Aprobar requisición', false);
 	}
 
 	async accionDevolver(): Promise<void> {
+		if (this.selectedItem?.TIPO === 'MOVIMIENTO') {
+			await this.ejecutarAutorizaMovimiento(OPERACION_BANDEJA_ACTORES.DEVOLVER, 'Devolver movimiento');
+			return;
+		}
 		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.DEVOLVER, 'Devolver requisición', true);
 	}
 
 	async accionRechazar(): Promise<void> {
+		if (this.selectedItem?.TIPO === 'MOVIMIENTO') {
+			await this.ejecutarAutorizaMovimiento(OPERACION_BANDEJA_ACTORES.RECHAZAR, 'Rechazar movimiento');
+			return;
+		}
 		await this.ejecutarAutoriza(OPERACION_BANDEJA_ACTORES.RECHAZAR, 'Rechazar requisición', true);
 	}
 
@@ -303,11 +337,23 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 	}
 
 	tipoLabel(tipo: ScBandejaActoresTipo, _item?: ScBandejaActoresItem | null): string {
-		return tipo === 'REQUISICION' ? 'Requisición' : 'Candidato';
+		if (tipo === 'REQUISICION') {
+			return 'Requisición';
+		}
+		if (tipo === 'MOVIMIENTO') {
+			return 'Movimiento';
+		}
+		return 'Candidato';
 	}
 
 	tipoIcon(tipo: ScBandejaActoresTipo, _item?: ScBandejaActoresItem | null): string {
-		return tipo === 'REQUISICION' ? 'doc' : 'user';
+		if (tipo === 'REQUISICION') {
+			return 'doc';
+		}
+		if (tipo === 'MOVIMIENTO') {
+			return 'group';
+		}
+		return 'user';
 	}
 
 	estadoChipClass(item: ScBandejaActoresItem): string {
@@ -417,6 +463,60 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		}
 	}
 
+	private async ejecutarAutorizaMovimiento(operacion: number, titulo: string): Promise<void> {
+		if (!this.selectedItem || this.selectedItem.TIPO !== 'MOVIMIENTO' || this.accionEnCurso) {
+			return;
+		}
+
+		const item = this.selectedItem;
+		const observacion = await this.pedirObservacion(
+			titulo,
+			'Indique la observación. Es obligatoria para el flujo del movimiento.'
+		);
+		if (observacion == null) {
+			return;
+		}
+		if (!observacion.trim()) {
+			this.notifyFx('La observación es obligatoria.', NotifyType.Warning, { raw: true });
+			return;
+		}
+
+		this.accionEnCurso = true;
+		try {
+			const response = await lastValueFrom(
+				this.service.autorizaMovimiento({
+					CORR_MOVIMIENTO_PERSONAL: item.CORR_MOVIMIENTO_PERSONAL || 0,
+					OPERACION: operacion,
+					OBSERVACION: observacion,
+				})
+			);
+
+			if (!response.Result) {
+				this.notifyFx(
+					response.ErrorMessage || 'No se pudo ejecutar la operación de flujo.',
+					NotifyType.Error,
+					{ raw: true }
+				);
+				return;
+			}
+
+			this.notifyFx(response.ErrorMessage || 'Operación ejecutada correctamente.', NotifyType.Success, {
+				raw: true,
+			});
+			this.cerrarPanel();
+			this.cargarKpis();
+			this.configurarDataSource();
+		} catch (error: any) {
+			const msg =
+				error?.error?.ErrorMessage ||
+				error?.message ||
+				'Error al autorizar el movimiento.';
+			this.notifyFx(msg, NotifyType.Error, { raw: true });
+		} finally {
+			this.accionEnCurso = false;
+		}
+	}
+
 	private pedirObservacion(titulo: string, hint?: string): Promise<string | null> {
 		this.popupObservacionTitulo = titulo;
 		this.popupObservacionHint =
@@ -459,12 +559,22 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 
 		if (this.activeTab === 'REQUISICIONES') {
 			this.candidatosStore = null;
+			this.movimientosStore = null;
 			this.requisicionesStore = this.crearRequisicionesStore();
 			this.models = this.requisicionesStore;
 			return;
 		}
 
+		if (this.activeTab === 'MOVIMIENTOS') {
+			this.requisicionesStore = null;
+			this.candidatosStore = null;
+			this.movimientosStore = this.crearMovimientosStore();
+			this.models = this.movimientosStore;
+			return;
+		}
+
 		this.requisicionesStore = null;
+		this.movimientosStore = null;
 		this.candidatosStore = this.crearCandidatosStore();
 		this.models = this.candidatosStore;
 	}
@@ -588,6 +698,63 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		});
 	}
 
+	private crearMovimientosStore(): CustomStore {
+		return new CustomStore({
+			key: 'ID',
+			loadMode: 'processed',
+			cacheRawData: false,
+			load: async (loadOptions: any) => {
+				try {
+					const { page, pageSize, sortField, sortDesc } = this.parseLoadOptions(
+						loadOptions,
+						'FECHA_NOTIFICACION',
+						(sel) => this.mapSortFieldMovimiento(sel)
+					);
+
+					const corrUnidad =
+						this.filtroUnidad !== 'TODOS' && !isNaN(Number(this.filtroUnidad))
+							? Number(this.filtroUnidad)
+							: 0;
+
+					const response = await lastValueFrom(
+						this.service.getMovimientos({
+							PAGE: page,
+							PAGE_SIZE: pageSize,
+							SORT_FIELD: sortField,
+							SORT_DESC: sortDesc,
+							CORR_UNIDAD: corrUnidad > 0 ? corrUnidad : undefined,
+							FECHA_DESDE: this.fechaDesde,
+							FECHA_HASTA: this.fechaHasta,
+							BUSQUEDA: this.filtroBusqueda?.trim() || undefined,
+						})
+					);
+
+					if (!response.Result) {
+						throw new Error(response.ErrorMessage || 'No se pudieron cargar los movimientos.');
+					}
+
+					const rows = (response.Data || []).map((r: any) =>
+						this.service.mapMovimientoToBandejaItem(r)
+					);
+					this.totalMovimientosApi = response.RowsAffected || rows.length;
+					this.recalcularKpisLocal();
+
+					return {
+						data: rows,
+						totalCount: response.RowsAffected || rows.length,
+					};
+				} catch (error: any) {
+					this.notifyFx(
+						error?.message || 'Error al consultar movimientos pendientes.',
+						NotifyType.Error,
+						{ raw: true }
+					);
+					throw error;
+				}
+			},
+		});
+	}
+
 	private parseLoadOptions(
 		loadOptions: any,
 		defaultSort: string,
@@ -649,12 +816,31 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 		}
 	}
 
-	private cargarBitacoraRequisicion(corr: number): void {
+	private mapSortFieldMovimiento(selector: string | undefined): string {
+		switch (selector) {
+			case 'CODIGO':
+			case 'ID':
+				return 'CORR_MOVIMIENTO_PERSONAL';
+			case 'DESCRIPCION':
+				return 'NOMBRE_COMPLETO';
+			case 'FECHA':
+				return 'FECHA_ELABORACION';
+			default:
+				return 'FECHA_NOTIFICACION';
+		}
+	}
+
+	private cargarBitacoraRequisicion(corr: number, tipoDocumento = 101): void {
 		this.bitacoraLoading = true;
-		this.service.getBitacoraRequisicion(corr).subscribe({
+		this.service.getBitacoraRequisicion(corr, tipoDocumento).subscribe({
 			next: (response) => {
 				this.bitacoraLoading = false;
-				if (!this.selectedItem || this.selectedItem.CORR_REQUISICION_PERSONAL !== corr) {
+				const coincide =
+					this.selectedItem &&
+					(tipoDocumento === 103
+						? this.selectedItem.CORR_MOVIMIENTO_PERSONAL === corr
+						: this.selectedItem.CORR_REQUISICION_PERSONAL === corr);
+				if (!coincide) {
 					return;
 				}
 				if (!response.Result) {
@@ -708,6 +894,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 				const data = response.Data as any;
 				this.totalRequisicionesApi = Number(data.TOTAL_REQUISICIONES) || 0;
 				this.totalCandidatosApi = Number(data.TOTAL_CANDIDATOS) || 0;
+				this.totalMovimientosApi = Number(data.TOTAL_MOVIMIENTOS) || 0;
 				this.totalUnidadesApi = Number(data.TOTAL_UNIDADES) || this.totalUnidadesApi;
 				this.recalcularKpisLocal();
 			},
@@ -719,7 +906,7 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 			{
 				KEY: 'TOT',
 				LABEL: 'Total pendientes',
-				VALUE: this.totalRequisicionesApi + this.totalCandidatosApi,
+				VALUE: this.totalRequisicionesApi + this.totalCandidatosApi + this.totalMovimientosApi,
 				SUBLABEL: 'Requieren mi acción',
 				TONE: 'warning',
 				ICON: 'warning',
@@ -739,6 +926,14 @@ export class ScBandejaActoresComponent extends CBaseComponent implements OnInit 
 				SUBLABEL: 'Jefatura de unidad',
 				TONE: 'default',
 				ICON: 'user',
+			},
+			{
+				KEY: 'MOV',
+				LABEL: 'Movimientos por autorizar',
+				VALUE: this.totalMovimientosApi,
+				SUBLABEL: 'Ascenso y traslado',
+				TONE: 'info',
+				ICON: 'group',
 			},
 			{
 				KEY: 'UNI',
