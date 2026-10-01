@@ -60,4 +60,16 @@ export class ScDescriptorPuestoEmpleadoRepository {
 	quitarPorEmpleado(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Delete(this.xController, 'DeletePorEmpleado', xWhere, environment.UrlSELECCIONCONTRATACIONAPI);
 	}
+
+	// Qué hace: pide el PDF formato corto del descriptor para el empleado abierto.
+	// Cómo lo hace: POST getPDFFormatoCorto con el permiso de impresión de gen-empleado.
+	getPDFFormatoCorto(model: { CORR_DESCRIPTOR_PUESTO: number; CORR_EMPLEADO: number }): Observable<Blob> {
+		return this.objData.PostBlob(model, this.xController, 'getPDFFormatoCorto', environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
+	// Qué hace: pide el PDF formato extenso del descriptor para el empleado abierto.
+	// Cómo lo hace: POST getPDFFormatoExtenso con el permiso de impresión de gen-empleado.
+	getPDFFormatoExtenso(model: { CORR_DESCRIPTOR_PUESTO: number; CORR_EMPLEADO: number }): Observable<Blob> {
+		return this.objData.PostBlob(model, this.xController, 'getPDFFormatoExtenso', environment.UrlSELECCIONCONTRATACIONAPI);
+	}
 }

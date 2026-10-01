@@ -730,8 +730,9 @@
 					<!-- motivo: descriptores activos cuyo puesto y unidad coinciden con el empleado -->
 					<dxi-item title="Descriptores" [icon]="'doc'">
 						<div class="rd-panel">
-							<div class="empleado-descriptor-toolbar" *ngIf="puedeAsignarDescriptores">
+							<div class="empleado-descriptor-toolbar" *ngIf="puedeAsignarDescriptores || puedeImprimirDescriptorEmpleado">
 								<dx-button
+									*ngIf="puedeAsignarDescriptores"
 									class="empleado-descriptor-toolbar-btn"
 									icon="upload"
 									text="Asignar"
@@ -740,11 +741,32 @@
 									(onClick)="abrirAsignarDescriptores()"
 									[disabled]="cargandoDescriptores"
 								></dx-button>
+								<!-- motivo: el PDF es del empleado abierto y del descriptor seleccionado -->
+								<dx-button
+									*ngIf="puedeImprimirDescriptorEmpleado && esFormatoCortoDescriptor"
+									class="empleado-descriptor-toolbar-btn"
+									icon="print"
+									text="Formato corto"
+									type="default"
+									stylingMode="contained"
+									(onClick)="imprimirDescriptorCorto()"
+								></dx-button>
+								<dx-button
+									*ngIf="puedeImprimirDescriptorEmpleado && esFormatoExtensoDescriptor"
+									class="empleado-descriptor-toolbar-btn"
+									icon="print"
+									text="Formato extenso"
+									type="default"
+									stylingMode="contained"
+									(onClick)="imprimirDescriptorExtenso()"
+								></dx-button>
 							</div>
 							<dx-data-grid
 								class="theme-dependent sguees-data-grid-mtto empleado-descriptor-grid"
 								[dataSource]="descriptoresAsignados"
 								keyExpr="CORR_DESCRIPTOR_PUESTO"
+								[selectedRowKeys]="descriptorImpresionKeys"
+								(onSelectionChanged)="onDescriptorImpresionSeleccionado($event)"
 								[columnAutoWidth]="false"
 								[showBorders]="true"
 								[showColumnLines]="true"
@@ -761,6 +783,7 @@
 								<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
 								<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
 								<dxo-load-panel [enabled]="false"></dxo-load-panel>
+								<dxo-selection mode="single"></dxo-selection>
 								<dxi-column caption="" [width]="70" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesDescriptorTpl" [visible]="puedeAsignarDescriptores" alignment="center"></dxi-column>
 								<div *dxTemplate="let cell of 'accionesDescriptorTpl'">
 									<dx-button icon="trash" stylingMode="text" hint="Quitar" (onClick)="quitarDescriptorAsignado(cell.data)"></dx-button>
@@ -2846,6 +2869,20 @@
 			>{{ cell.data?.NOMBRE_ESTADO }}</span>
 		</div>
 	</dx-data-grid>
+</dx-popup>
+
+<!-- motivo: PDF del descriptor seleccionado, del empleado que se está viendo -->
+<dx-popup
+	[(visible)]="popupVisiblePdfDescriptor"
+	[title]="tituloPdfDescriptor"
+	[fullScreen]="true"
+	[showCloseButton]="true"
+>
+	<div *dxTemplate="let data of 'content'" style="height: 100%;">
+		<object [data]="PDFDescriptor" type="application/pdf" width="100%" height="95%">
+			<embed [src]="PDFDescriptor" type="application/pdf" />
+		</object>
+	</div>
 </dx-popup>
 
 <!-- Panel de carga. -->

@@ -24,5 +24,6 @@ export interface ScDescriptorAsignadoEmpleado {
 	FECHA_EMISION?: string | Date | null;
 	CORR_ESTADO?: number | null;
 	NOMBRE_ESTADO?: string;
+	FORMATO?: string;
 	SELECCION?: boolean;
 }

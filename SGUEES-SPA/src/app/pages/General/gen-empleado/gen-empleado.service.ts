@@ -236,6 +236,24 @@ export class GenEmpleadoService {
 		});
 	}
 
+	// Qué hace: pide el PDF formato corto del descriptor seleccionado.
+	// Cómo lo hace: envía el descriptor y el empleado que se está viendo.
+	getPDFDescriptorCorto(corrDescriptor: number, corrEmpleado: number): Observable<Blob> {
+		return this.descriptorEmpleadoRepo.getPDFFormatoCorto({
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_EMPLEADO: corrEmpleado,
+		});
+	}
+
+	// Qué hace: pide el PDF formato extenso del descriptor seleccionado.
+	// Cómo lo hace: envía el descriptor y el empleado que se está viendo.
+	getPDFDescriptorExtenso(corrDescriptor: number, corrEmpleado: number): Observable<Blob> {
+		return this.descriptorEmpleadoRepo.getPDFFormatoExtenso({
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_EMPLEADO: corrEmpleado,
+		});
+	}
+
 	// Qué hace: quita un descriptor del empleado.
 	// Cómo lo hace: llama a la baja existente con el permiso de gen-empleado.
 	quitarDescriptorEmpleado(corrDescriptor: number, corrEmpleado: number): Observable<IResult> {

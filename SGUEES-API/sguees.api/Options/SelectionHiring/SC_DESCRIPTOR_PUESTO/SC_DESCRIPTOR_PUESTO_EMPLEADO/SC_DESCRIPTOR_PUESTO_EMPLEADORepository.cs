@@ -417,7 +417,8 @@ namespace SGUEES.Repositories
 				ISNULL(D.NOMBRE_UNIDAD, ''),
 				D.FECHA_EMISION,
 				D.CORR_ESTADO,
-				ISNULL(D.NOMBRE_ESTADO, '')
+				ISNULL(D.NOMBRE_ESTADO, ''),
+				ISNULL(D.FORMATO, '')
 			FROM dbo.SC_DESCRIPTOR_PUESTO_EMPLEADO X
 			INNER JOIN dbo.V_SC_DESCRIPTOR_PUESTO D
 				ON D.CORR_EMPRESA = X.CORR_EMPRESA
@@ -443,7 +444,8 @@ namespace SGUEES.Repositories
 				ISNULL(D.NOMBRE_UNIDAD, ''),
 				D.FECHA_EMISION,
 				D.CORR_ESTADO,
-				ISNULL(D.NOMBRE_ESTADO, '')
+				ISNULL(D.NOMBRE_ESTADO, ''),
+				ISNULL(D.FORMATO, '')
 			FROM dbo.V_SC_DESCRIPTOR_PUESTO D
 			INNER JOIN dbo.GEN_EMPLEADO_PUESTO P
 				ON P.CORR_EMPRESA = D.CORR_EMPRESA
@@ -506,6 +508,7 @@ namespace SGUEES.Repositories
 				FECHA_EMISION = reader.IsDBNull(6) ? null : reader.GetDateTime(6),
 				CORR_ESTADO = reader.IsDBNull(7) ? null : reader.GetInt32(7),
 				NOMBRE_ESTADO = reader.IsDBNull(8) ? "" : reader.GetString(8),
+				FORMATO = reader.IsDBNull(9) ? "" : reader.GetString(9),
 			};
 		}
 	}

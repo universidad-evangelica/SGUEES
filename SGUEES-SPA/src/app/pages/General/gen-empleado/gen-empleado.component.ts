@@ -1,8 +1,9 @@
 // Qué hace: browse + formulario Nuevo/Editar de Empleado (Iniciar + Personales + Documentos + Familiares + Formación + Experiencia + Adicional + Referencias).
 // Cómo: grilla browse; Guardar según tab; personales vía SP; documentos/familiares/hijos/formación/experiencia/UEES/referencias anidados.
 import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
-import { firstValueFrom, from, of } from 'rxjs';
+import { firstValueFrom, from, Observable, of } from 'rxjs';
 import { catchError, concatMap, map, take, toArray } from 'rxjs/operators';
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { IParam } from 'src/app/FxAPI/IParam';
@@ -27,6 +28,7 @@ import { GenPersonaReferenciaLaboral } from './gen-persona-referencia-laboral/mo
 import { GenPersonaDomicilio } from './gen-persona-domicilio/models/gen-persona-domicilio';
 import { GenEmpleadoPuesto } from './gen-empleado-puesto/models/gen-empleado-puesto';
 import { ScDescriptorAsignadoEmpleado } from '../../SelectionHiring/sc-descriptor-puesto/sc-descriptor-puesto-empleado/models/sc-descriptor-puesto-empleado';
+import { FORMATO_AMBOS, FORMATO_CORTO, FORMATO_EXTENSO } from '../../SelectionHiring/sc-descriptor-puesto/models/sc-descriptor-puesto';
 import { GenPersonaParentescoContacto } from './gen-persona-parentesco-contacto/models/gen-persona-parentesco-contacto';
 import { GenEmpleadoService } from './gen-empleado.service';
 import {
@@ -230,6 +232,10 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	tabEmpleadoIndex = TAB_PERSONALES;
 	descriptoresAsignados: ScDescriptorAsignadoEmpleado[] = [];
 	descriptoresDisponibles: ScDescriptorAsignadoEmpleado[] = [];
+	descriptorImpresionKeys: number[] = [];
+	popupVisiblePdfDescriptor = false;
+	tituloPdfDescriptor = 'Descriptor de Puesto';
+	PDFDescriptor!: SafeUrl;
 	popupDescriptorEmpleadoVisible = false;
 	cargandoDescriptores = false;
 	descriptorModalPageSize = 50;
@@ -282,7 +288,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	constructor(
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
-		private service: GenEmpleadoService
+		private service: GenEmpleadoService,
+		private sanitization: DomSanitizer
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -337,6 +344,36 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	// Cómo lo hace: solo en edición del empleado y con permiso de modificar.
 	get puedeAsignarDescriptores(): boolean {
 		return !!this.permiteEdit && !this.readOnlyPersonales && this.tienePersonaBase;
+	}
+
+	// Qué hace: descriptor marcado en el tab para imprimir su reporte.
+	// Cómo lo hace: toma la fila cuya llave está en descriptorImpresionKeys.
+	get descriptorSeleccionado(): ScDescriptorAsignadoEmpleado | null {
+		const corr = this.corrDescriptorImpresion();
+		if (corr <= 0) {
+			return null;
+		}
+		return this.descriptoresAsignados.find((item) => Number(item.CORR_DESCRIPTOR_PUESTO) === corr) ?? null;
+	}
+
+	// Qué hace: indica si ya se puede imprimir el descriptor del empleado abierto.
+	// Cómo lo hace: exige permiso de impresión y que el descriptor seleccionado esté Activo.
+	get puedeImprimirDescriptorEmpleado(): boolean {
+		return !!this.permitePrint && this.esEstadoDescriptorActivo(this.descriptorSeleccionado?.NOMBRE_ESTADO);
+	}
+
+	// Qué hace: indica si el descriptor seleccionado admite el formato corto.
+	// Cómo lo hace: compara FORMATO con CORTO o AMBOS.
+	get esFormatoCortoDescriptor(): boolean {
+		const formato = (this.descriptorSeleccionado?.FORMATO ?? '').trim().toUpperCase();
+		return formato === FORMATO_CORTO || formato === FORMATO_AMBOS;
+	}
+
+	// Qué hace: indica si el descriptor seleccionado admite el formato extenso.
+	// Cómo lo hace: compara FORMATO con EXTENSO o AMBOS.
+	get esFormatoExtensoDescriptor(): boolean {
+		const formato = (this.descriptorSeleccionado?.FORMATO ?? '').trim().toUpperCase();
+		return formato === FORMATO_EXTENSO || formato === FORMATO_AMBOS;
 	}
 
 	/** Qué hace: el form de personales es editable en alta o dentro del modal. */
@@ -596,6 +633,8 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		this.puestosOriginal = [];
 		this.descriptoresAsignados = [];
 		this.descriptoresDisponibles = [];
+		this.descriptorImpresionKeys = [];
+		this.popupVisiblePdfDescriptor = false;
 		this.popupDescriptorEmpleadoVisible = false;
 		this.fotoUrlNueva = '';
 		this.revocarFotoLocal();
@@ -5306,6 +5345,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
 		if (corrEmpleado <= 0) {
 			this.descriptoresAsignados = [];
+			this.descriptorImpresionKeys = [];
 			this.popupDescriptorEmpleadoVisible = false;
 			return;
 		}
@@ -5318,6 +5358,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.descriptoresAsignados = response?.Result
 						? (response.Data ?? []).map((item: ScDescriptorAsignadoEmpleado) => this.mapDescriptorAsignado(item))
 						: [];
+					this.conservarSeleccionDescriptorImpresion();
 				},
 				error: (error) => this.notifyApiError(error),
 			});
@@ -5549,6 +5590,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 					this.descriptoresAsignados = this.descriptoresAsignados.filter(
 						(item) => item.CORR_DESCRIPTOR_PUESTO !== corrDescriptor
 					);
+					this.conservarSeleccionDescriptorImpresion();
 				},
 				error: (error) => {
 					this.cargandoDescriptores = false;
@@ -5567,7 +5609,97 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			FECHA_EMISION: item?.FECHA_EMISION ?? null,
 			CORR_ESTADO: item?.CORR_ESTADO ?? null,
 			NOMBRE_ESTADO: item?.NOMBRE_ESTADO ?? '',
+			FORMATO: item?.FORMATO ?? '',
 		};
+	}
+
+	// Qué hace: guarda el descriptor marcado en la grilla del empleado.
+	// Cómo lo hace: deja una sola llave, la del CORR_DESCRIPTOR_PUESTO.
+	onDescriptorImpresionSeleccionado(e: { selectedRowKeys?: number[] }): void {
+		const keys = e?.selectedRowKeys ?? [];
+		this.descriptorImpresionKeys = keys.length ? [Number(keys[0])] : [];
+	}
+
+	// Qué hace: abre el PDF formato corto del descriptor seleccionado.
+	// Cómo lo hace: lo pide para el empleado abierto y lo muestra en el popup.
+	imprimirDescriptorCorto(): void {
+		this.imprimirDescriptor('corto');
+	}
+
+	// Qué hace: abre el PDF formato extenso del descriptor seleccionado.
+	// Cómo lo hace: lo pide para el empleado abierto y lo muestra en el popup.
+	imprimirDescriptorExtenso(): void {
+		this.imprimirDescriptor('extenso');
+	}
+
+	// Qué hace: valida la selección y pide el PDF del formato indicado.
+	// Cómo lo hace: usa el CORR_EMPLEADO del empleado abierto, no el de otra persona.
+	private imprimirDescriptor(formato: 'corto' | 'extenso'): void {
+		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
+		const corrDescriptor = this.corrDescriptorImpresion();
+		if (corrEmpleado <= 0 || corrDescriptor <= 0) {
+			this.notifyFx('Seleccione un descriptor para imprimir.', NotifyType.Warning);
+			return;
+		}
+		if (!this.puedeImprimirDescriptorEmpleado) {
+			this.notifyFx('Solo se puede imprimir cuando el descriptor esta Activo.', NotifyType.Warning);
+			return;
+		}
+		if (formato === 'corto' && !this.esFormatoCortoDescriptor) {
+			this.notifyFx('El descriptor no esta configurado como Formato corto.', NotifyType.Warning);
+			return;
+		}
+		if (formato === 'extenso' && !this.esFormatoExtensoDescriptor) {
+			this.notifyFx('El descriptor no esta configurado como Formato extenso.', NotifyType.Warning);
+			return;
+		}
+
+		this.tituloPdfDescriptor =
+			formato === 'corto' ? 'Descriptor de Puesto - Formato corto' : 'Descriptor de Puesto - Formato extenso';
+		const peticion =
+			formato === 'corto'
+				? this.service.getPDFDescriptorCorto(corrDescriptor, corrEmpleado)
+				: this.service.getPDFDescriptorExtenso(corrDescriptor, corrEmpleado);
+		this.mostrarPdfDescriptor(peticion);
+	}
+
+	// Qué hace: muestra el PDF del descriptor en pantalla.
+	// Cómo lo hace: crea una URL del blob y abre el popup.
+	private mostrarPdfDescriptor(peticion: Observable<Blob>): void {
+		this.loadingVisible = true;
+		peticion.pipe(take(1)).subscribe({
+			next: (pdf: Blob) => {
+				this.loadingVisible = false;
+				if (!pdf?.size) {
+					this.notifyFx('No se recibio el PDF del descriptor.', NotifyType.Error);
+					return;
+				}
+				this.PDFDescriptor = this.sanitization.bypassSecurityTrustResourceUrl(window.URL.createObjectURL(pdf));
+				this.popupVisiblePdfDescriptor = true;
+			},
+			error: (error: any) => {
+				this.loadingVisible = false;
+				this.notifyFx(this.textoErrorDescriptorEmpleado(error, 'Error al generar PDF'), NotifyType.Error);
+			},
+		});
+	}
+
+	// Qué hace: correlativo del descriptor marcado para el PDF.
+	// Cómo lo hace: lee la primera llave seleccionada.
+	private corrDescriptorImpresion(): number {
+		return Number(this.descriptorImpresionKeys?.[0] ?? 0);
+	}
+
+	// Qué hace: suelta la selección si ese descriptor ya no está en la grilla.
+	// Cómo lo hace: compara la llave con los descriptores asignados.
+	private conservarSeleccionDescriptorImpresion(): void {
+		const corr = this.corrDescriptorImpresion();
+		if (corr <= 0) {
+			return;
+		}
+		if (!this.descriptoresAsignados.some((item) => Number(item.CORR_DESCRIPTOR_PUESTO) === corr)) {
+			this.descriptorImpresionKeys = [];
+		}
 	}
 
 	private textoErrorDescriptorEmpleado(error: any, respaldo = 'No se pudo asignar el descriptor.'): string {

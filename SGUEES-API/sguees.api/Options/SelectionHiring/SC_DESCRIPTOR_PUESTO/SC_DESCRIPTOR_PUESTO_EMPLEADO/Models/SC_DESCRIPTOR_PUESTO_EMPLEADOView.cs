@@ -37,5 +37,6 @@ namespace SGUEES.Models
 		public DateTime? FECHA_EMISION { get; set; }
 		public int? CORR_ESTADO { get; set; }
 		public string NOMBRE_ESTADO { get; set; }
+		public string FORMATO { get; set; }
 	}
 }

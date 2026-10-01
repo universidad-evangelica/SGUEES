@@ -1,6 +1,7 @@
 // Qué hace: expone la carga de empleados del descriptor de puesto.
 // Cómo lo hace: usa la empresa de sesión y el permiso de sc-descriptor-puesto.
 using System;
+using System.IO;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -19,10 +20,14 @@ namespace SGUEES.Controllers
 	public class SC_DESCRIPTOR_PUESTO_EMPLEADOController : ControllerBase
 	{
 		private readonly ISC_DESCRIPTOR_PUESTO_EMPLEADOService _service;
+		private readonly ISC_DESCRIPTOR_PUESTOService _descriptorService;
 
-		public SC_DESCRIPTOR_PUESTO_EMPLEADOController(ISC_DESCRIPTOR_PUESTO_EMPLEADOService service)
+		public SC_DESCRIPTOR_PUESTO_EMPLEADOController(
+			ISC_DESCRIPTOR_PUESTO_EMPLEADOService service,
+			ISC_DESCRIPTOR_PUESTOService descriptorService)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(service));
+			_descriptorService = descriptorService ?? throw new ArgumentNullException(nameof(descriptorService));
 		}
 
 		// Qué hace: lista los empleados ya cargados en el descriptor.
@@ -96,6 +101,58 @@ namespace SGUEES.Controllers
 			Data.CORR_EMPRESA = GetCorrEmpresa();
 			var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
 			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
+		// Qué hace: PDF formato corto del descriptor, del empleado que se está viendo.
+		// Cómo lo hace: mismo generador del descriptor, con el permiso de impresión de gen-empleado.
+		[HttpPost("getPDFFormatoCorto")]
+		[Authorize(Policy = "/gen-empleado|P")]
+		public Task<IActionResult> GetPDFFormatoCorto([FromBody] SC_DESCRIPTOR_PUESTOParam Data)
+		{
+			return PdfDescriptorAsync(Data, _descriptorService.GetPDFFormatoCortoAsync, "SC_DESCRIPTOR_PUESTO_FORMATO_CORTO.pdf");
+		}
+
+		// Qué hace: PDF formato extenso del descriptor, del empleado que se está viendo.
+		// Cómo lo hace: mismo generador del descriptor, con el permiso de impresión de gen-empleado.
+		[HttpPost("getPDFFormatoExtenso")]
+		[Authorize(Policy = "/gen-empleado|P")]
+		public Task<IActionResult> GetPDFFormatoExtenso([FromBody] SC_DESCRIPTOR_PUESTOParam Data)
+		{
+			return PdfDescriptorAsync(Data, _descriptorService.GetPDFFormatoExtensoAsync, "SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO.pdf");
+		}
+
+		// Qué hace: arma la respuesta PDF o el error del generador.
+		// Cómo lo hace: fija la empresa de sesión y devuelve el archivo o el mensaje del API.
+		private async Task<IActionResult> PdfDescriptorAsync(
+			SC_DESCRIPTOR_PUESTOParam Data,
+			Func<SC_DESCRIPTOR_PUESTOParam, string, Task<Stream>> generar,
+			string nombreArchivo)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			var login = GetUsuario() ?? string.Empty;
+			try
+			{
+				var stream = await generar(Data, login);
+				if (stream == null)
+				{
+					return BadRequest(new CResult
+					{
+						Result = false,
+						ErrorCode = -1,
+						ErrorMessage = "No se pudo generar el PDF del descriptor.",
+					});
+				}
+
+				return File(stream, "application/pdf", nombreArchivo);
+			}
+			catch (InvalidOperationException ex)
+			{
+				return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new CResult { Result = false, ErrorCode = -1, ErrorMessage = ex.Message });
+			}
 		}
 
 		// Qué hace: quita un empleado del descriptor.
