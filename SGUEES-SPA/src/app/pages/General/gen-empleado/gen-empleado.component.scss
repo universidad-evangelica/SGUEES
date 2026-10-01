@@ -1273,6 +1273,15 @@
 	min-height: 220px;
 }
 
+:host ::ng-deep .empleado-descriptor-grid {
+	col.empleado-descriptor-col-estado,
+	td.empleado-descriptor-col-estado {
+		width: 110px !important;
+		min-width: 110px !important;
+		max-width: 110px !important;
+	}
+}
+
 .empleado-descriptor-popup-toolbar {
 	display: flex;
 	flex-wrap: wrap;

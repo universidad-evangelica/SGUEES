@@ -5516,6 +5516,18 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 
 	// Qué hace: quita un descriptor asignado desde la grilla.
 	// Cómo lo hace: elimina el vínculo y lo saca de la grilla en memoria.
+	// Qué hace: pinta de verde el estado Activo del descriptor.
+	// Cómo lo hace: compara el nombre del estado sin distinguir mayúsculas.
+	esEstadoDescriptorActivo(nombre: string | null | undefined): boolean {
+		return (nombre ?? '').trim().toUpperCase() === 'ACTIVO';
+	}
+
+	// Qué hace: pinta de rojo el estado Inactivo del descriptor.
+	// Cómo lo hace: compara el nombre del estado sin distinguir mayúsculas.
+	esEstadoDescriptorInactivo(nombre: string | null | undefined): boolean {
+		return (nombre ?? '').trim().toUpperCase() === 'INACTIVO';
+	}
+
 	quitarDescriptorAsignado(row: ScDescriptorAsignadoEmpleado): void {
 		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
 		const corrDescriptor = Number(row?.CORR_DESCRIPTOR_PUESTO);

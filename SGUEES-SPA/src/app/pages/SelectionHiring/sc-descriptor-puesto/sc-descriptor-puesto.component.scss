@@ -581,6 +581,15 @@
 	.dx-datagrid-rowsview .dx-data-row > td {
 		vertical-align: middle;
 	}
+
+	// Qué hace: deja la columna Estado al tamaño de la insignia.
+	// Cómo lo hace: fija el ancho para que el espacio sobrante no la estire.
+	col.carga-empleado-col-estado,
+	td.carga-empleado-col-estado {
+		width: 110px !important;
+		min-width: 110px !important;
+		max-width: 110px !important;
+	}
 }
 
 :host ::ng-deep .descriptor-deta-datagrid {

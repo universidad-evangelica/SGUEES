@@ -2422,7 +2422,15 @@
 							<dxi-column dataField="CORREO_INSTITUCIONAL" caption="Correo" [width]="220" [minWidth]="160"></dxi-column>
 							<dxi-column dataField="TELEFONO_INSTITUCIONAL" caption="Teléfono" [width]="130" [minWidth]="110"></dxi-column>
 							<dxi-column dataField="LOGIN_SISTEMA_WEB" caption="Login" [width]="140" [minWidth]="110"></dxi-column>
-							<dxi-column dataField="ACTIVO_EMPLEADO" caption="Estado" [width]="110" [customizeText]="textoEstadoEmpleado"></dxi-column>
+							<!-- motivo: estado del empleado como insignia Activo o Inactivo -->
+							<dxi-column caption="Estado" [width]="130" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoEmpleadoCargadoTpl" alignment="center"></dxi-column>
+							<div *dxTemplate="let cell of 'estadoEmpleadoCargadoTpl'">
+								<span
+									class="estado-badge"
+									[class.estado-badge--activo]="esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO)"
+									[class.estado-badge--inactivo]="!esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO)"
+								>{{ esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO) ? 'Activo' : 'Inactivo' }}</span>
+							</div>
 						</dx-data-grid>
 					</div>
 				</dxi-item>
@@ -2809,8 +2817,16 @@
 			alignment="center"
 		></dxi-column>
 		<dxi-column dataField="CORR_EMPLEADO" caption="Corr." [width]="90" dataType="number" [allowEditing]="false"></dxi-column>
-		<dxi-column dataField="NOMBRE_EMPLEADO" caption="Persona" [width]="260" [minWidth]="180" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="NOMBRE_EMPLEADO" caption="Persona" [width]="360" [minWidth]="240" [allowEditing]="false"></dxi-column>
 		<dxi-column dataField="DUI" caption="DUI" [width]="120" [allowEditing]="false"></dxi-column>
-		<dxi-column dataField="ACTIVO_EMPLEADO" caption="Estado" [width]="110" [allowEditing]="false" [customizeText]="textoEstadoEmpleado"></dxi-column>
+		<!-- motivo: estado del empleado como insignia Activo o Inactivo, sin estirar la columna -->
+		<dxi-column cssClass="carga-empleado-col-estado" caption="Estado" [width]="110" [allowEditing]="false" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoEmpleadoModalTpl" alignment="center"></dxi-column>
+		<div *dxTemplate="let cell of 'estadoEmpleadoModalTpl'">
+			<span
+				class="estado-badge"
+				[class.estado-badge--activo]="esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO)"
+				[class.estado-badge--inactivo]="!esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO)"
+			>{{ esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO) ? 'Activo' : 'Inactivo' }}</span>
+		</div>
 	</dx-data-grid>
 </dx-popup>

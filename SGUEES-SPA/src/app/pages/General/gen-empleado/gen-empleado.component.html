@@ -766,10 +766,18 @@
 									<dx-button icon="trash" stylingMode="text" hint="Quitar" (onClick)="quitarDescriptorAsignado(cell.data)"></dx-button>
 								</div>
 								<dxi-column dataField="CODIGO_DESCRIPTOR_PUESTO" caption="Codigo" [width]="120" [minWidth]="100"></dxi-column>
-								<dxi-column dataField="NOMBRE_PUESTO" caption="Puesto" [width]="240" [minWidth]="180"></dxi-column>
-								<dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [width]="220" [minWidth]="160"></dxi-column>
+								<dxi-column dataField="NOMBRE_PUESTO" caption="Puesto" [width]="320" [minWidth]="220"></dxi-column>
+								<dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [width]="300" [minWidth]="200"></dxi-column>
 								<dxi-column dataField="FECHA_EMISION" caption="Fecha emision" [width]="130" dataType="date" format="dd/MM/yyyy"></dxi-column>
-								<dxi-column dataField="NOMBRE_ESTADO" caption="Estado" [width]="140" [minWidth]="110"></dxi-column>
+								<!-- motivo: estado del descriptor como insignia, sin estirar la columna -->
+								<dxi-column cssClass="empleado-descriptor-col-estado" caption="Estado" [width]="110" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoDescriptorAsignadoTpl" alignment="center"></dxi-column>
+								<div *dxTemplate="let cell of 'estadoDescriptorAsignadoTpl'">
+									<span
+										class="estado-badge"
+										[class.estado-badge--activo]="esEstadoDescriptorActivo(cell.data?.NOMBRE_ESTADO)"
+										[class.estado-badge--inactivo]="esEstadoDescriptorInactivo(cell.data?.NOMBRE_ESTADO)"
+									>{{ cell.data?.NOMBRE_ESTADO }}</span>
+								</div>
 							</dx-data-grid>
 						</div>
 					</dxi-item>
@@ -2828,7 +2836,15 @@
 		<dxi-column dataField="CODIGO_DESCRIPTOR_PUESTO" caption="Codigo" [width]="120" [allowEditing]="false"></dxi-column>
 		<dxi-column dataField="NOMBRE_PUESTO" caption="Puesto" [width]="240" [minWidth]="160" [allowEditing]="false"></dxi-column>
 		<dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [width]="220" [minWidth]="140" [allowEditing]="false"></dxi-column>
-		<dxi-column dataField="NOMBRE_ESTADO" caption="Estado" [width]="140" [allowEditing]="false"></dxi-column>
+		<!-- motivo: estado del descriptor como insignia Activo o Inactivo -->
+		<dxi-column caption="Estado" [width]="140" [allowEditing]="false" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoDescriptorModalTpl" alignment="center"></dxi-column>
+		<div *dxTemplate="let cell of 'estadoDescriptorModalTpl'">
+			<span
+				class="estado-badge"
+				[class.estado-badge--activo]="esEstadoDescriptorActivo(cell.data?.NOMBRE_ESTADO)"
+				[class.estado-badge--inactivo]="esEstadoDescriptorInactivo(cell.data?.NOMBRE_ESTADO)"
+			>{{ cell.data?.NOMBRE_ESTADO }}</span>
+		</div>
 	</dx-data-grid>
 </dx-popup>
 

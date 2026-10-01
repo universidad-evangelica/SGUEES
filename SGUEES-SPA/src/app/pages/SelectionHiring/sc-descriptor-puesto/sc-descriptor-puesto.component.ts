@@ -5201,6 +5201,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: indica si el empleado está activo para la insignia de la grilla.
+	// Cómo lo hace: acepta el bit que devuelve la vista (true, 1 o '1').
+	esEmpleadoActivo(valor: any): boolean {
+		return valor === true || valor === 1 || valor === '1';
+	}
+
 	// Qué hace: muestra Activo o Inactivo en la grilla de empleados.
 	// Cómo lo hace: traduce el bit ACTIVO_EMPLEADO.
 	textoEstadoEmpleado = (cell: { value?: any }): string => {
