@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
 using eFramework.Data;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using SGUEES.Models;
 
@@ -14,11 +16,14 @@ namespace SGUEES.Repositories
         private const string _TableName = "SC_DESCRIPTOR_PUESTO";
         private const string _ViewName = "V_SC_DESCRIPTOR_PUESTO";
         private const string _CampoPk = "CORR_DESCRIPTOR_PUESTO";
+        private const string _CodigoOpcionFlujo = "SC_DESCRIPTOR_PUESTO";
+        private readonly string _connectionString;
 
         public SC_DESCRIPTOR_PUESTORepository(IConfiguration config) :
             base(config.GetConnectionString("defaultConnection"),
                 config.GetSection("DbProvider:defaultProvider").Value)
         {
+            _connectionString = config.GetConnectionString("defaultConnection") ?? string.Empty;
         }
 
         // Lee de la vista V_SC_DESCRIPTOR_PUESTO filtrando por CORR_EMPRESA; ordena por id.
@@ -367,35 +372,17 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Borra tablas hijas en orden (detalle → encabezados) y luego el registro en SC_DESCRIPTOR_PUESTO.
+        // Qué hace: elimina el descriptor, sus hijos y el flujo de ese documento.
+        // Cómo lo hace: resuelve el tipo con CODIGO_OPCION, borra notificaciones, bitácora e instancia
+        // de ese CORR_DOCUMENTO, y en la misma transacción borra el detalle y la cabecera.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
 
             try
             {
-                var pWhere = new List<CParameter>
-                {
-                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
-                };
-
-                // Primero elimina detalle y encabezados del descriptor y del perfil; al final el descriptor.
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_FUNCION_ACTIVIDAD", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_FUNCION", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_KPI_FUNCION", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_RELACION_LABORAL", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_INDUCCION", pWhere);
-                await objData.Delete("SC_PERFIL_PUESTO_EDUCACION", pWhere);
-                await objData.Delete("SC_PERFIL_PUESTO_EXPERIENCIA", pWhere);
-                await objData.Delete("SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS", pWhere);
-                await objData.Delete("SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES", pWhere);
-                await objData.Delete("SC_PERFIL_PUESTO", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_RIESGO_PUESTO", pWhere);
-
-                objResultado.RowsAffected = (int)await objData.Delete(_TableName, pWhere);
+                await EliminarDescriptorYFlujoAsync(Data.CORR_EMPRESA, Data.CORR_DESCRIPTOR_PUESTO);
+                objResultado.RowsAffected = 1;
                 objResultado.Data = null;
                 objResultado.Result = true;
                 objResultado.CodeHelper = Data.CORR_DESCRIPTOR_PUESTO;
@@ -418,6 +405,103 @@ namespace SGUEES.Repositories
             }
 
             return objResultado;
+        }
+
+        // Qué hace: borra el flujo del documento y después el descriptor.
+        // Cómo lo hace: el tipo sale de SEG_FLUJO_TIPO_DOCUMENTO por CODIGO_OPCION;
+        // la instancia se filtra por CORR_DOCUMENTO. Si falla, no queda nada a medias.
+        private async Task EliminarDescriptorYFlujoAsync(int corrEmpresa, int corrDocumento)
+        {
+            const string sql = @"
+            SET XACT_ABORT ON;
+            BEGIN TRAN;
+
+            DELETE N
+            FROM dbo.SEG_FLUJO_NOTIFICACION N
+            INNER JOIN dbo.SEG_FLUJO_INSTANCIA I
+                ON I.CORR_EMPRESA = N.CORR_EMPRESA
+               AND I.CORR_INSTANCIA = N.CORR_INSTANCIA
+            INNER JOIN dbo.SEG_FLUJO_TIPO_DOCUMENTO T
+                ON T.CORR_EMPRESA = I.CORR_EMPRESA
+               AND T.CORR_TIPO_DOCUMENTO = I.CORR_TIPO_DOCUMENTO
+            WHERE I.CORR_EMPRESA = @CORR_EMPRESA
+              AND T.CODIGO_OPCION = @CODIGO_OPCION
+              AND I.CORR_DOCUMENTO = @CORR_DOCUMENTO;
+
+            DELETE B
+            FROM dbo.SEG_FLUJO_BITACORA B
+            INNER JOIN dbo.SEG_FLUJO_INSTANCIA I
+                ON I.CORR_EMPRESA = B.CORR_EMPRESA
+               AND I.CORR_INSTANCIA = B.CORR_INSTANCIA
+            INNER JOIN dbo.SEG_FLUJO_TIPO_DOCUMENTO T
+                ON T.CORR_EMPRESA = I.CORR_EMPRESA
+               AND T.CORR_TIPO_DOCUMENTO = I.CORR_TIPO_DOCUMENTO
+            WHERE I.CORR_EMPRESA = @CORR_EMPRESA
+              AND T.CODIGO_OPCION = @CODIGO_OPCION
+              AND I.CORR_DOCUMENTO = @CORR_DOCUMENTO;
+
+            DELETE I
+            FROM dbo.SEG_FLUJO_INSTANCIA I
+            INNER JOIN dbo.SEG_FLUJO_TIPO_DOCUMENTO T
+                ON T.CORR_EMPRESA = I.CORR_EMPRESA
+               AND T.CORR_TIPO_DOCUMENTO = I.CORR_TIPO_DOCUMENTO
+            WHERE I.CORR_EMPRESA = @CORR_EMPRESA
+              AND T.CODIGO_OPCION = @CODIGO_OPCION
+              AND I.CORR_DOCUMENTO = @CORR_DOCUMENTO;
+
+            DELETE A
+            FROM dbo.SC_DESCRIPTOR_PUESTO_FUNCION_ACTIVIDAD A
+            WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+              AND A.CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_FUNCION
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_KPI_FUNCION
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_RELACION_LABORAL
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_INDUCCION
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_PERFIL_PUESTO_EDUCACION
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_PERFIL_PUESTO_EXPERIENCIA
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_PERFIL_PUESTO
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_RIESGO_PUESTO
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            COMMIT TRAN;";
+
+            await using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+            await using var cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = corrEmpresa });
+            cmd.Parameters.Add(new SqlParameter("@CORR_DOCUMENTO", SqlDbType.Int) { Value = corrDocumento });
+            cmd.Parameters.Add(new SqlParameter("@CODIGO_OPCION", SqlDbType.VarChar, 50) { Value = _CodigoOpcionFlujo });
+            await cmd.ExecuteNonQueryAsync();
         }
 
         // Arma la lista de columnas y valores para insertar o actualizar en SC_DESCRIPTOR_PUESTO.
