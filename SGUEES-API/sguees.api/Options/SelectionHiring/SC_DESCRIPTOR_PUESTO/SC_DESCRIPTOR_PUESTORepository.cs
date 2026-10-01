@@ -894,6 +894,22 @@ namespace SGUEES.Repositories
                         .ToList();
                 }
 
+                var empleado = new List<SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    empleado = new List<SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var firmas = new List<SC_DESCRIPTOR_PUESTO_FIRMAS_IMPRView>();
+                if (reader.NextResult())
+                {
+                    firmas = new List<SC_DESCRIPTOR_PUESTO_FIRMAS_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
                 reader.Close();
 
                 var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRPayload
@@ -908,6 +924,8 @@ namespace SGUEES.Repositories
                     PerfilPuestoExperiencia = perfilPuestoExperiencia,
                     PerfilPuestoCompetenciasTecnicas = perfilPuestoCompTecnicas,
                     PerfilPuestoCompetenciasConductuales = perfilPuestoCompConductuales,
+                    Empleado = empleado,
+                    Firmas = firmas,
                 };
 
                 objResultado.Data = payload;
@@ -1077,6 +1095,22 @@ namespace SGUEES.Repositories
                         .ToList();
                 }
 
+                var empleado = new List<SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    empleado = new List<SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var firmas = new List<SC_DESCRIPTOR_PUESTO_FIRMAS_IMPRView>();
+                if (reader.NextResult())
+                {
+                    firmas = new List<SC_DESCRIPTOR_PUESTO_FIRMAS_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
                 reader.Close();
 
                 var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload
@@ -1095,6 +1129,8 @@ namespace SGUEES.Repositories
                     PerfilPuestoExperiencia = perfilPuestoExperiencia,
                     PerfilPuestoCompetenciasTecnicas = perfilPuestoCompTecnicas,
                     PerfilPuestoCompetenciasConductuales = perfilPuestoCompConductuales,
+                    Empleado = empleado,
+                    Firmas = firmas,
                 };
 
                 objResultado.Data = payload;

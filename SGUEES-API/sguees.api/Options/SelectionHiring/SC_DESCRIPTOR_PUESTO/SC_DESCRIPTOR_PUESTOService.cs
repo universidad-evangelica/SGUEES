@@ -498,10 +498,16 @@ namespace SGUEES.Services
         // Cómo: SP de impresión → SC_REPO → SelectionHiring/PostScDescriptorPuestoFormatoCortoImpr.
         public async Task<Stream> GetPDFFormatoCortoAsync(SC_DESCRIPTOR_PUESTOParam xWhere, string loginSistema)
         {
+            if (xWhere.CORR_EMPLEADO <= 0)
+            {
+                throw new InvalidOperationException("Seleccione un empleado para imprimir el descriptor.");
+            }
+
             var p = new List<CParameter>
             {
                 new CParameter() { ParameterName = "@CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "@CORR_DESCRIPTOR_PUESTO", Value = xWhere.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "@CORR_EMPLEADO", Value = xWhere.CORR_EMPLEADO, DbType = System.Data.DbType.Int32 },
             };
 
             var dataResult = await _repo.GetDescriptorFormatoCortoImprAsync(p);
@@ -522,10 +528,16 @@ namespace SGUEES.Services
         // Cómo: SP de impresión → SC_REPO → SelectionHiring/PostScDescriptorPuestoFormatoExtensoImpr.
         public async Task<Stream> GetPDFFormatoExtensoAsync(SC_DESCRIPTOR_PUESTOParam xWhere, string loginSistema)
         {
+            if (xWhere.CORR_EMPLEADO <= 0)
+            {
+                throw new InvalidOperationException("Seleccione un empleado para imprimir el descriptor.");
+            }
+
             var p = new List<CParameter>
             {
                 new CParameter() { ParameterName = "@CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "@CORR_DESCRIPTOR_PUESTO", Value = xWhere.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "@CORR_EMPLEADO", Value = xWhere.CORR_EMPLEADO, DbType = System.Data.DbType.Int32 },
             };
 
             var dataResult = await _repo.GetDescriptorFormatoExtensoImprAsync(p);

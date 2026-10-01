@@ -244,10 +244,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	btnObservar = '';
 	btnInactivar = '';
 	btnReactivar = '';
-	// Qué hace: botón Imprimir Formato corto (solo Activo + permiso P + FORMATO CORTO/AMBOS).
-	btnImprimirFormatoCorto = '';
-	// Qué hace: botón Imprimir Formato extenso (solo Activo + permiso P + FORMATO EXTENSO/AMBOS).
-	btnImprimirFormatoExtenso = '';
+	// Qué hace: empleado elegido en Carga empleado para imprimir su descriptor.
+	empleadoImpresionKeys: number[] = [];
 
 	popupVisiblePdf = false;
 	vPDF: Blob | null = null;
@@ -1276,12 +1274,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.refrescarBotonesFlujo();
 	}
 
-	// Qué hace: al enfocar una fila en la grilla, carga el modelo y refresca botones de flujo/impresión.
-	// Cómo: delega al base (asigna this.model); botones de impresión si Activo; luego GetAccionesFlujo.
+	// Qué hace: al enfocar una fila en la grilla, carga el modelo y refresca botones de flujo.
+	// Cómo: delega al base (asigna this.model) y luego pide GetAccionesFlujo.
 	override focusedRowChanged(e: any): void {
 		super.focusedRowChanged(e);
 		if (this.isBrowse()) {
-			this.actualizarBotonesImprimir();
 			this.refrescarBotonesFlujo();
 		}
 	}
@@ -1565,6 +1562,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.requerimientosOrganizacionales = [];
 		this.riesgosPuesto = [];
 		this.empleadosCargados = [];
+		this.limpiarSeleccionEmpleadoImpresion();
 		this.firmasDescriptor = [];
 		this.empleadosDisponibles = [];
 		this.popupCargarEmpleadoVisible = false;
@@ -1614,6 +1612,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return toCorrEstado(this.model?.CORR_ESTADO) === CORR_ESTADO_ACTIVO;
 	}
 
+	// Qué hace: indica si ya se puede imprimir el descriptor de un empleado.
+	// Cómo: el tab ya exige descriptor Activo; además hace falta permiso P y una fila seleccionada.
+	get puedeImprimirEmpleado(): boolean {
+		return this.permitePrint && this.esDescriptorActivo && this.corrEmpleadoImpresion() > 0;
+	}
+
 	// Qué hace: sale del tab Carga empleado cuando el descriptor deja de estar Activo.
 	// Cómo lo hace: cierra el modal y selecciona Entrenamiento, que siempre está visible.
 	private salirDeTabCargaSiNoActivo(): void {
@@ -1623,6 +1627,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.popupCargarEmpleadoVisible = false;
 		this.empleadosDisponibles = [];
 		this.empleadosCargados = [];
+		this.limpiarSeleccionEmpleadoImpresion();
 		this.seleccionarTabSeccion(10);
 	}
 
@@ -5255,6 +5260,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (!this.esDescriptorActivo || !corrDescriptor || corrDescriptor <= 0) {
 			this.empleadosCargados = [];
+			this.limpiarSeleccionEmpleadoImpresion();
 			this.popupCargarEmpleadoVisible = false;
 			return;
 		}
@@ -5267,6 +5273,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.empleadosCargados = response?.Result
 						? (response.Data ?? []).map((item: ScDescriptorPuestoEmpleado) => this.mapEmpleadoCargado(item))
 						: [];
+					this.conservarSeleccionEmpleadoImpresion();
 				},
 				error: (error) => this.notifyApiError(error),
 			});
@@ -5427,6 +5434,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							deleteOk += 1;
 						}
 					}
+					this.conservarSeleccionEmpleadoImpresion();
 					if (insertOk > 0 || deleteOk > 0) {
 						const partes: string[] = [];
 						if (insertOk > 0) {
@@ -5490,6 +5498,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						return;
 					}
 					this.empleadosCargados = this.empleadosCargados.filter((item) => item.CORR_EMPLEADO !== corrEmpleado);
+					this.conservarSeleccionEmpleadoImpresion();
 				},
 				error: (error) => {
 					this.cargandoEmpleados = false;
@@ -6140,8 +6149,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		this.model.FORMATO = value || FORMATO_CORTO;
 		this.ultimoFormatoAplicado = formatoNuevo;
-		// El formato decide qué botones de impresión aplican (corto, extenso o ambos).
-		this.actualizarBotonesImprimir();
 		this.actualizarResponsabilidadesCargoLookupDisponibles();
 		if (cambioReal && Number(this.model?.CORR_DESCRIPTOR_PUESTO) > 0) {
 			this.cargarResponsabilidadesCargo(true);
@@ -6801,7 +6808,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.btnObservar = this.accionesFlujo.puedeObservar ? 'Observar' : '';
 					this.btnInactivar = this.accionesFlujo.puedeInactivar ? 'Inactivar' : '';
 					this.btnReactivar = this.accionesFlujo.puedeReactivar ? 'Reactivar' : '';
-					this.actualizarBotonesImprimir();
 					this.cdr.detectChanges();
 				},
 				error: () => {
@@ -6812,18 +6818,32 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Qué hace: muestra los botones de impresión según el FORMATO del descriptor.
-	// Cómo: base común (CORR_ESTADO = 14 + permitePrint claim |P + correlativo) y luego
-	//       esFormatoCorto / esFormatoExtenso; con FORMATO = AMBOS salen los dos botones.
-	private actualizarBotonesImprimir(): void {
-		const corr = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
-		const esActivo = toCorrEstado(this.model?.CORR_ESTADO) === CORR_ESTADO_ACTIVO;
-		const puedeImprimir = this.permitePrint && corr > 0 && esActivo;
+	// Qué hace: guarda la fila elegida en Carga empleado para imprimir su descriptor.
+	// Cómo: la grilla es de selección simple; sin fila los botones de formato no se muestran.
+	onEmpleadoImpresionSeleccionado(e: { selectedRowKeys?: Array<number | string> }): void {
+		const key = Number(e?.selectedRowKeys?.[0] ?? 0);
+		this.empleadoImpresionKeys = key > 0 ? [key] : [];
+	}
 
-		this.btnImprimirFormatoCorto =
-			puedeImprimir && this.esFormatoCorto ? 'Formato corto' : '';
-		this.btnImprimirFormatoExtenso =
-			puedeImprimir && this.esFormatoExtenso ? 'Formato extenso' : '';
+	// Qué hace: correlativo del empleado seleccionado para el PDF.
+	// Cómo: lee la única llave de la grilla de Carga empleado.
+	private corrEmpleadoImpresion(): number {
+		return Number(this.empleadoImpresionKeys[0] ?? 0);
+	}
+
+	// Qué hace: quita la selección de impresión.
+	// Cómo: vacía las llaves de la grilla de Carga empleado.
+	private limpiarSeleccionEmpleadoImpresion(): void {
+		this.empleadoImpresionKeys = [];
+	}
+
+	// Qué hace: mantiene la selección solo si ese empleado sigue cargado.
+	// Cómo: si la llave ya no está en la grilla, la limpia.
+	private conservarSeleccionEmpleadoImpresion(): void {
+		const key = this.corrEmpleadoImpresion();
+		if (!this.empleadosCargados.some((item) => Number(item.CORR_EMPLEADO) === key)) {
+			this.limpiarSeleccionEmpleadoImpresion();
+		}
 	}
 
 	// Qué hace: valida correlativo, estado Activo y permiso P antes de pedir cualquier PDF.
@@ -6845,10 +6865,15 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return corr;
 	}
 
-	// Qué hace: solicita PDF Formato corto y lo muestra en popup (patrón con-partida).
+	// Qué hace: solicita PDF Formato corto del empleado seleccionado.
+	// Cómo: valida descriptor Activo y permiso P, y envía el CORR_EMPLEADO de la fila.
 	imprimirFormatoCorto(): void {
 		const corr = this.validarImpresionDescriptor();
-		if (!corr) {
+		const corrEmpleado = this.corrEmpleadoImpresion();
+		if (!corr || !corrEmpleado) {
+			if (corr && !corrEmpleado) {
+				this.notifyFx('Seleccione un empleado para imprimir el descriptor.', NotifyType.Warning);
+			}
 			return;
 		}
 		if (!this.esFormatoCorto) {
@@ -6857,15 +6882,22 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 
 		this.mostrarPdfEnPopup(
-			this.service.getPDFFormatoCorto({ CORR_DESCRIPTOR_PUESTO: corr })
+			this.service.getPDFFormatoCorto({
+				CORR_DESCRIPTOR_PUESTO: corr,
+				CORR_EMPLEADO: corrEmpleado,
+			})
 		);
 	}
 
-	// Qué hace: solicita PDF Formato extenso y lo muestra en popup.
+	// Qué hace: solicita PDF Formato extenso del empleado seleccionado.
 	// Cómo: mismas validaciones del corto; endpoint getPDFFormatoExtenso.
 	imprimirFormatoExtenso(): void {
 		const corr = this.validarImpresionDescriptor();
-		if (!corr) {
+		const corrEmpleado = this.corrEmpleadoImpresion();
+		if (!corr || !corrEmpleado) {
+			if (corr && !corrEmpleado) {
+				this.notifyFx('Seleccione un empleado para imprimir el descriptor.', NotifyType.Warning);
+			}
 			return;
 		}
 		if (!this.esFormatoExtenso) {
@@ -6874,7 +6906,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 
 		this.mostrarPdfEnPopup(
-			this.service.getPDFFormatoExtenso({ CORR_DESCRIPTOR_PUESTO: corr })
+			this.service.getPDFFormatoExtenso({
+				CORR_DESCRIPTOR_PUESTO: corr,
+				CORR_EMPLEADO: corrEmpleado,
+			})
 		);
 	}
 
@@ -6919,7 +6954,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.btnObservar = '';
 		this.btnInactivar = '';
 		this.btnReactivar = '';
-		this.actualizarBotonesImprimir();
 	}
 
 	// Qué hace: texto del boton de avance segun el paso (Revision TH vs Aprobar JI/JTH).

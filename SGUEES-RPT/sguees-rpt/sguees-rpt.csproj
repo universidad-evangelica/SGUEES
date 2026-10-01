@@ -251,6 +251,8 @@
     <Compile Include="Reports\Shop\ShopController.cs" Condition="'$(EnableCrystalReports)' == 'true'" />
     <Compile Include="Reports\Shop\COM_REPO_SUJETO_EXCLUIDOView.cs" />
     <Compile Include="Reports\SelectionHiring\SelectionHiringController.cs" Condition="'$(EnableCrystalReports)' == 'true'" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPRView.cs" />
+    <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FIRMAS_IMPRView.cs" />
     <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRView.cs" />
     <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_FUNCIONES_IMPRView.cs" />
     <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_KPI_IMPRView.cs" />

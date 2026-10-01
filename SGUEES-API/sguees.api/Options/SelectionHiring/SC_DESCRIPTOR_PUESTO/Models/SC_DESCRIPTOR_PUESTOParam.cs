@@ -13,5 +13,7 @@ namespace SGUEES.Models
         public int CORR_PUESTO { get; set; }
         /// <summary>Login de sesión: GetAll filtra por unidades de PRAL_DATA_SC_UNIDADES_USUARIO.</summary>
         public string LOGIN_SISTEMA { get; set; }
+        /// <summary>Empleado seleccionado en Carga empleado; el PDF imprime solo su nombre.</summary>
+        public int CORR_EMPLEADO { get; set; }
     }
 }
