@@ -8,5 +8,6 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO
 		public int CORR_DESCRIPTOR_PUESTO { get; set; }
 		public int CORR_EMPLEADO { get; set; }
 		public string NOMBRE_EMPLEADO { get; set; }
+		public string FECHA_INGRESO { get; set; }
 	}
 }

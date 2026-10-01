@@ -19,7 +19,7 @@ GO
 --  10) Result set 10: competencias técnicas (V_SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS_FORMATO_CORTO_IMPR).
 --  11) Result set 11: competencias conductuales en 2 columnas
 --      (V_SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_CORTO_IMPR).
---  12) Result set 12: empleado seleccionado (V_SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPR; 1 fila).
+--  12) Result set 12: empleado seleccionado y su fecha de ingreso (V_SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPR; 1 fila).
 --  13) Result set 13: últimas firmas JI y JTH (V_SC_DESCRIPTOR_PUESTO_FIRMAS_IMPR; 1 fila).
 -- Alcance: solo Formato corto. El Formato extenso tiene su propio SP y vistas _IMPR.
 -- Uso API: SC_DESCRIPTOR_PUESTO/getPDFFormatoCorto → SGUEES-RPT SelectionHiring.
@@ -203,12 +203,13 @@ BEGIN
 	  AND CC.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
 	ORDER BY CC.CORR_PERFIL_PUESTO, CC.CORR_FILA;
 
-	-- Result set 12: nombre del empleado seleccionado (1 fila).
+	-- Result set 12: nombre y fecha de ingreso del empleado seleccionado (1 fila).
 	SELECT
 		E.CORR_EMPRESA,
 		E.CORR_DESCRIPTOR_PUESTO,
 		E.CORR_EMPLEADO,
-		E.NOMBRE_EMPLEADO
+		E.NOMBRE_EMPLEADO,
+		E.FECHA_INGRESO
 	FROM dbo.V_SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPR E
 	WHERE E.CORR_EMPRESA = @CORR_EMPRESA
 	  AND E.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO

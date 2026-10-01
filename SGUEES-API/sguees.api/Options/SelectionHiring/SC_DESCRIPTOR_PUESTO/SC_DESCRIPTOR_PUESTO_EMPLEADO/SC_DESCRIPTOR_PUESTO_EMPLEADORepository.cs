@@ -154,7 +154,8 @@ namespace SGUEES.Repositories
 		}
 
 		// Qué hace: carga un empleado en el descriptor.
-		// Cómo lo hace: rechaza si no tiene el puesto y la unidad, o si ya está cargado; luego relee la vista.
+		// Cómo lo hace: rechaza si no tiene el puesto y la unidad, o si ya está cargado;
+		// copia FECHA_INGRESO desde GEN_EMPLEADO y luego relee la vista.
 		public async Task<CResult> CreateAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)
 		{
 			CResult objResultado = new();
@@ -170,11 +171,13 @@ namespace SGUEES.Repositories
 					return objResultado;
 				}
 
+				var fechaIngreso = await LeerFechaIngresoEmpleadoAsync(Data.CORR_EMPRESA, Data.CORR_EMPLEADO);
 				var p = new List<CParameter>
 				{
 					new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
 					new CParameter() { ParameterName = "CORR_EMPLEADO", Value = Data.CORR_EMPLEADO, DbType = System.Data.DbType.Int32 },
+					new CParameter() { ParameterName = "FECHA_INGRESO", Value = fechaIngreso.HasValue ? (object)fechaIngreso.Value.Date : DBNull.Value, DbType = System.Data.DbType.Date },
 					new CParameter() { ParameterName = "USUARIO_CREA", Value = Data.USUARIO_CREA ?? string.Empty, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "ESTACION_CREA", Value = Data.ESTACION_CREA ?? string.Empty, DbType = System.Data.DbType.String },
 					new CParameter() { ParameterName = "FECHA_CREA", Value = Data.FECHA_CREA ?? DateTime.Now, DbType = System.Data.DbType.DateTime },
@@ -271,6 +274,30 @@ namespace SGUEES.Repositories
 			}
 
 			return objResultado;
+		}
+
+		// Qué hace: toma la fecha de ingreso del maestro al momento de cargar.
+		// Cómo lo hace: lee GEN_EMPLEADO.FECHA_INGRESO; no usa el valor que mande el cliente.
+		private async Task<DateTime?> LeerFechaIngresoEmpleadoAsync(int corrEmpresa, int corrEmpleado)
+		{
+			const string sql = @"
+			SELECT FECHA_INGRESO
+			FROM dbo.GEN_EMPLEADO
+			WHERE CORR_EMPRESA = @CORR_EMPRESA
+			AND CORR_EMPLEADO = @CORR_EMPLEADO;";
+
+			await using var conn = new SqlConnection(_connectionString);
+			await conn.OpenAsync();
+			await using var cmd = new SqlCommand(sql, conn);
+			cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = corrEmpresa });
+			cmd.Parameters.Add(new SqlParameter("@CORR_EMPLEADO", SqlDbType.Int) { Value = corrEmpleado });
+			var valor = await cmd.ExecuteScalarAsync();
+			if (valor == null || valor == DBNull.Value)
+			{
+				return null;
+			}
+
+			return Convert.ToDateTime(valor).Date;
 		}
 
 		// Qué hace: impide cargar o quitar empleados si el descriptor no está Activo.
