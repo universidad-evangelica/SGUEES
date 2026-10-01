@@ -549,6 +549,15 @@
 	min-height: 220px;
 }
 
+:host ::ng-deep .carga-empleado-grid {
+	col.carga-empleado-col-estado,
+	td.carga-empleado-col-estado {
+		width: 110px !important;
+		min-width: 110px !important;
+		max-width: 110px !important;
+	}
+}
+
 .carga-empleado-popup-toolbar {
 	display: flex;
 	flex-wrap: wrap;

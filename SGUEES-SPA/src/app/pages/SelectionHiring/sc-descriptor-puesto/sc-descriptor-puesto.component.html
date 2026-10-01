@@ -2417,13 +2417,13 @@
 								<dx-button icon="trash" stylingMode="text" hint="Quitar" (onClick)="quitarEmpleadoCargado(cell.data)"></dx-button>
 							</div>
 							<dxi-column dataField="CORR_EMPLEADO" caption="Corr." [width]="90" dataType="number"></dxi-column>
-							<dxi-column dataField="NOMBRE_EMPLEADO" caption="Persona" [width]="280" [minWidth]="200"></dxi-column>
+							<dxi-column dataField="NOMBRE_EMPLEADO" caption="Persona" [width]="380" [minWidth]="260"></dxi-column>
 							<dxi-column dataField="DUI" caption="DUI" [width]="120" [minWidth]="100"></dxi-column>
 							<dxi-column dataField="CORREO_INSTITUCIONAL" caption="Correo" [width]="220" [minWidth]="160"></dxi-column>
 							<dxi-column dataField="TELEFONO_INSTITUCIONAL" caption="Teléfono" [width]="130" [minWidth]="110"></dxi-column>
 							<dxi-column dataField="LOGIN_SISTEMA_WEB" caption="Login" [width]="140" [minWidth]="110"></dxi-column>
-							<!-- motivo: estado del empleado como insignia Activo o Inactivo -->
-							<dxi-column caption="Estado" [width]="130" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoEmpleadoCargadoTpl" alignment="center"></dxi-column>
+							<!-- motivo: estado del empleado como insignia, sin estirar la columna -->
+							<dxi-column cssClass="carga-empleado-col-estado" caption="Estado" [width]="110" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoEmpleadoCargadoTpl" alignment="center"></dxi-column>
 							<div *dxTemplate="let cell of 'estadoEmpleadoCargadoTpl'">
 								<span
 									class="estado-badge"
