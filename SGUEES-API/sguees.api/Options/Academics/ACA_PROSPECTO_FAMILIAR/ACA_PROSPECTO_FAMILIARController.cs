@@ -1,3 +1,4 @@
+using sguees.api.Policies;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,7 @@ using sguees.api.Shared;
 namespace sguees.Controllers
 {
     // Qué hace: familiares y contacto de emergencia del prospecto (pestaña Información personal).
-    // Cómo lo hace: usa el permiso de la pantalla padre (/aca-prospecto): R para consultar y U para
+    // Cómo lo hace: usa el permiso de la pantalla padre (vistas de prospectos): R para consultar y U para
     //               los cambios, porque los hijos del prospecto se rigen por el padre. El prospecto
     //               puede tener varios familiares y solo uno marcado como contacto de emergencia.
     [Authorize]
@@ -29,7 +30,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Policy = "/aca-prospecto|R")]
+        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
         public async Task<CResult> GetAll([FromQuery] ACA_PROSPECTO_FAMILIARParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -37,7 +38,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("Get")]
-        [Authorize(Policy = "/aca-prospecto|R")]
+        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
         public async Task<CResult> Get([FromQuery] ACA_PROSPECTO_FAMILIARParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -46,7 +47,7 @@ namespace sguees.Controllers
 
         // Qué hace: actualiza un familiar del prospecto.
         [HttpPut]
-        [Authorize(Policy = "/aca-prospecto|U")]
+        [Authorize(Policy = PermisosProspecto.EdicionAmbos)]
         public async Task<IActionResult> Put(ACA_PROSPECTO_FAMILIARTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(ACA_PROSPECTO_FAMILIARTable.CORR_PROSPECTO_FAMILIAR));
@@ -58,7 +59,7 @@ namespace sguees.Controllers
 
         // Qué hace: agrega un familiar al prospecto.
         [HttpPost]
-        [Authorize(Policy = "/aca-prospecto|U")]
+        [Authorize(Policy = PermisosProspecto.EdicionAmbos)]
         public async Task<IActionResult> Post(ACA_PROSPECTO_FAMILIARTable Data)
         {
             SetCreateAudit(Data);
@@ -69,7 +70,7 @@ namespace sguees.Controllers
 
         // Qué hace: elimina un familiar del prospecto.
         [HttpDelete]
-        [Authorize(Policy = "/aca-prospecto|U")]
+        [Authorize(Policy = PermisosProspecto.EdicionAmbos)]
         public async Task<IActionResult> Delete([FromQuery] ACA_PROSPECTO_FAMILIARTable Data)
         {
             var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));

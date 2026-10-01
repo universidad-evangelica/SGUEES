@@ -30,6 +30,14 @@ export class AcaProspectoRepository {
         return this.objData.Get(this.xController, 'GetCORR_MODALIDAD_ACA_PROSPECTO', xWhere, environment.UrlGENERALAPI);
     }
 
+    getCiclos(xWhere: IParam[]): Observable<IResult> {
+        return this.objData.Get(this.xController, 'GetCICLO_ACA_PROSPECTO', xWhere, environment.UrlGENERALAPI);
+    }
+
+    validarCambio(xWhere: IParam[]): Observable<IResult> {
+        return this.objData.Get(this.xController, 'GetVALIDAR_CAMBIO_ACA_PROSPECTO', xWhere, environment.UrlGENERALAPI);
+    }
+
     // Qué hace: PUT estándar (body + PK en query).
     update(model: any, xWhere: IParam[]): Observable<IResult> {
         return this.objData.Put(model, this.xController, '', xWhere, environment.UrlGENERALAPI);

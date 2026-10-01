@@ -98,6 +98,8 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     // Oferta para el cambio de carrera: carreras del ciclo del prospecto y modalidades de la elegida.
     mCORR_CARRERA_CICLO: any[] = [];
     mCORR_MODALIDAD: any[] = [];
+    // Ciclos a los que se puede mover el prospecto (no confundir con mCICLO, el filtro de la barra).
+    mCICLO_CAMBIO: any[] = [];
     mOPCIONES_SE: any[] = [];
     // Dependientes del país/departamento del registro abierto.
     mCORR_DEPTO_RESIDENCIA: any[] = [];
@@ -197,6 +199,19 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     respuestasSEModel: any = {};
     // #endregion
 
+    // Qué hace: la misma pantalla sirve dos opciones de menú (data.vista en academics-routing.module.ts):
+    //   'academico' -> Información personal + Información académica (y el encabezado editable)
+    //   'economico' -> Información personal + Información económica (encabezado de solo lectura)
+    // Cómo lo hace: la vista decide qué se carga, qué pestañas se ven y qué pasos entran al guardar; así una
+    //               vista nunca envía datos de la otra. El API exige el permiso de la vista correspondiente.
+    get esAcademico(): boolean {
+        return this.router?.snapshot?.data?.['vista'] !== 'economico';
+    }
+
+    get esEconomico(): boolean {
+        return this.router?.snapshot?.data?.['vista'] === 'economico';
+    }
+
     constructor(
         public override appInfoService: AppInfoService,
         public override router: ActivatedRoute,
@@ -257,6 +272,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.selectedLookUpCORR_LIMITACION_FISICA = this.selectedLookUpCORR_LIMITACION_FISICA.bind(this);
         this.selectedLookUpCORR_MEDIO_ORIGEN = this.selectedLookUpCORR_MEDIO_ORIGEN.bind(this);
         this.selectedLookUpCORR = this.selectedLookUpCORR.bind(this);
+        this.selectedLookUpCICLO_CAMBIO = this.selectedLookUpCICLO_CAMBIO.bind(this);
     }
 
     //#region <Inicializando Opciones>
@@ -343,6 +359,10 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
     //           devuelven en la columna CORR.
     selectedLookUpCORR(vRow: any): any {
         return vRow?.[0]?.CORR;
+    }
+
+    selectedLookUpCICLO_CAMBIO(vRow: any): any {
+        return vRow?.[0]?.CICLO;
     }
 
     // Qué hace: carga los ciclos de pregrado y selecciona el ciclo por defecto.
@@ -671,13 +691,48 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.rowDblClick(e);
     }
 
-    // Qué hace: carreras que el prospecto puede elegir en su ciclo y modalidades de la actual.
-    // Cómo lo hace: la oferta depende del período del prospecto, así que se consulta al abrirlo.
+    // Qué hace: ciclos a los que se puede mover el prospecto, carreras de su ciclo y modalidades de la actual.
+    // Cómo lo hace: se consulta al abrirlo; las carreras se vuelven a pedir cada vez que cambia el ciclo.
     private cargarOfertaAcademica(CORR_PROSPECTO: number): void {
-        this.cargarLista(this.service.getCarrerasDelCiclo(CORR_PROSPECTO), (data: any[]) => {
-            this.mCORR_CARRERA_CICLO = data ?? [];
+        this.cargarLista(this.service.getCiclosCambio(CORR_PROSPECTO), (data: any[]) => {
+            this.mCICLO_CAMBIO = data ?? [];
         });
+        if (this.model?.ANIO && this.model?.NUMERO_PERIODO) {
+            this.cargarLista(this.service.getCarrerasDelCiclo(CORR_PROSPECTO, this.model.ANIO, this.model.NUMERO_PERIODO), (data: any[]) => {
+                this.mCORR_CARRERA_CICLO = data ?? [];
+            });
+        }
         this.getCORR_MODALIDAD(this.model?.CORR_CARRERA);
+    }
+
+    // Qué hace: al cambiar el ciclo se recargan las carreras de ese ciclo; la carrera elegida se conserva
+    //           si sigue ofertada y, si no, se limpia junto con la modalidad para que se elija otra.
+    // Cómo lo hace: misma regla que ACA_SP_CAMBIAR_CICLO_PROSPECTO, que la vuelve a validar al guardar.
+    onCicloChange(value: string): void {
+        if (!this.model || this.readOnly) {
+            return;
+        }
+        const ciclo = this.mCICLO_CAMBIO.find((c: any) => c.CICLO === value);
+        if (!ciclo) {
+            return;
+        }
+        this.model.ANIO = ciclo.ANIO;
+        this.model.NUMERO_PERIODO = ciclo.NUMERO_PERIODO;
+
+        this.cargarLista(this.service.getCarrerasDelCiclo(this.model.CORR_PROSPECTO, ciclo.ANIO, ciclo.NUMERO_PERIODO), (data: any[]) => {
+            this.mCORR_CARRERA_CICLO = data ?? [];
+            const sigueOfertada = this.mCORR_CARRERA_CICLO.some((c: any) => c.CORR === this.model.CORR_CARRERA);
+            if (this.model.CORR_CARRERA && !sigueOfertada) {
+                this.notifyFx(
+                    `${this.model.NOMBRE_CARRERA || 'La carrera'} no se oferta en el ciclo ${value}. Seleccione otra carrera.`,
+                    NotifyType.Warning,
+                    { raw: true }
+                );
+                this.model.CORR_CARRERA = null;
+                this.model.CORR_MODALIDAD = null;
+                this.mCORR_MODALIDAD = [];
+            }
+        });
     }
 
     // Qué hace: modalidades con plan vigente de una carrera.
@@ -1496,7 +1551,80 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         if (!this.validarFormularios()) {
             return;
         }
+        if (!this.model?.CORR_CARRERA || !this.model?.CORR_MODALIDAD) {
+            this.notifyFx('Seleccione la carrera y la modalidad del prospecto.', NotifyType.Warning, { raw: true });
+            return;
+        }
 
+        const original: any = this.modelUpdate ?? {};
+        const cambiaOferta =
+            this.model.CICLO !== original.CICLO ||
+            this.model.CORR_CARRERA !== original.CORR_CARRERA ||
+            this.model.CORR_MODALIDAD !== original.CORR_MODALIDAD;
+        if (!cambiaOferta) {
+            this.iniciarGuardado();
+            return;
+        }
+
+        // Antes de guardar se pregunta al procedimiento qué pasará (sin escribir): así el aviso de beca
+        // y de reapertura es el mismo que verá el portal, y un cambio inválido se detiene aquí.
+        this.loadingVisible = true;
+        this.service
+            .validarCambio(this.model)
+            .pipe(take(1))
+            .subscribe({
+                next: (response: any) => {
+                    this.loadingVisible = false;
+                    const r = response?.Result ? response.Data?.[0] : null;
+                    if (!r) {
+                        this.notifyFx(response?.ErrorMessage ?? 'No se pudo validar el cambio de ciclo.', NotifyType.Error, { raw: true });
+                        return;
+                    }
+                    if (r.RESULTADO !== 0) {
+                        this.notifyFx(r.MENSAJE, NotifyType.Warning, { raw: true });
+                        return;
+                    }
+                    const avisos: string[] = [];
+                    if (r.BECA_RESTAURADA) {
+                        const puntaje = r.PUNTAJE_RESTAURADO != null ? `, ${r.PUNTAJE_RESTAURADO} puntos` : '';
+                        avisos.push(
+                            `Se restaurará la solicitud de beca que el prospecto tenía en el ciclo ${this.model.CICLO} ` +
+                                `(${r.ESTADO_BECA_RESTAURADA}${puntaje}), tal como quedó.` +
+                                (r.BECAS_DEPURADAS > 0 ? ` Lo registrado en el ciclo ${original.CICLO} queda en el historial.` : '')
+                        );
+                    } else if (r.BECAS_DEPURADAS > 0) {
+                        avisos.push(
+                            r.BECAS_CLONADAS > 0
+                                ? `La solicitud de beca del ciclo ${original.CICLO} (${r.ESTADO_BECA}) quedará como historial y se copiará al ciclo ${this.model.CICLO} en borrador: el aspirante deberá revisarla y volver a enviarla.`
+                                : `La solicitud de beca del ciclo ${original.CICLO} (${r.ESTADO_BECA}) quedará como historial. Ese tipo de beca ya no está vigente, así que no se copiará al ciclo nuevo.`
+                        );
+                    }
+                    if (r.REABRE_POSTULACION) {
+                        avisos.push('El prospecto ya había enviado su documentación: la postulación se reabrirá para que la envíe de nuevo en el ciclo nuevo.');
+                    }
+                    if (!avisos.length) {
+                        this.iniciarGuardado();
+                        return;
+                    }
+                    confirm(
+                        `<div class="sguees-confirm-message">${avisos.join('<br><br>')}<br><br>¿Desea continuar?</div>`,
+                        'Cambio de ciclo'
+                    ).then((acepta: boolean) => {
+                        this.zone.run(() => {
+                            if (acepta) {
+                                this.iniciarGuardado();
+                            }
+                        });
+                    });
+                },
+                error: (error: any) => {
+                    this.loadingVisible = false;
+                    this.notifyFx(`Cambio de ciclo: ${this.mensajeError(error)}`, NotifyType.Error, { raw: true });
+                },
+            });
+    }
+
+    private iniciarGuardado(): void {
         const pasos = this.armarPasosGuardado();
         this.loadingVisible = true;
         this.ejecutarPasos(pasos, 0);
@@ -1728,10 +1856,13 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
                 });
             }
         }
-        pasos.push({
-            nombre: 'Datos del prospecto',
-            accion: () => this.service.update(this.leerFormData(this.dataForm, this.model)),
-        });
+        // El encabezado (carrera, ciclo, forma de ingreso) solo se edita desde la vista académica.
+        if (this.esAcademico) {
+            pasos.push({
+                nombre: 'Datos del prospecto',
+                accion: () => this.service.update(this.leerFormData(this.dataForm, this.model)),
+            });
+        }
 
         return pasos;
     }
@@ -1797,10 +1928,15 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.cargarLimitaciones(CORR_PROSPECTO);
         this.cargarDeportaciones(CORR_PROSPECTO);
         this.cargarMedios(CORR_PROSPECTO);
-        this.cargarEstudios(CORR_PROSPECTO);
-        this.cargarEmpleo(CORR_PROSPECTO);
-        this.cargarSocioeconomico(CORR_PROSPECTO);
-        this.cargarRespuestasSE(CORR_PROSPECTO);
+        // Solo lo de la vista abierta: lo que no se carga no tiene modelo, así que tampoco entra al guardado.
+        if (this.esAcademico) {
+            this.cargarEstudios(CORR_PROSPECTO);
+        }
+        if (this.esEconomico) {
+            this.cargarEmpleo(CORR_PROSPECTO);
+            this.cargarSocioeconomico(CORR_PROSPECTO);
+            this.cargarRespuestasSE(CORR_PROSPECTO);
+        }
     }
 
     limpiarDetalle(): void {
@@ -1842,6 +1978,7 @@ export class AcaProspectoComponent extends CBaseComponent implements OnInit {
         this.mCORR_DEPTO_ESTUDIO = [];
         this.mCORR_CARRERA_CICLO = [];
         this.mCORR_MODALIDAD = [];
+        this.mCICLO_CAMBIO = [];
         this.empleoModel = null;
         this.empleoNuevo = false;
         this.empleoEliminar = false;

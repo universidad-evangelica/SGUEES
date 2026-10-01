@@ -1,5 +1,6 @@
 // Qué hace: endpoints REST del catálogo religión.
 // Cómo lo hace: CRUD + ActivarInactivar con auditoría por claims (sin empresa).
+using sguees.api.Policies;
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -40,7 +41,7 @@ namespace sguees.Controllers
 		}
 
 		[HttpGet("GetCORR_RELIGION_ACA_PROSPECTO")]
-		[Authorize(Policy = "/aca-prospecto|R")]
+		[Authorize(Policy = PermisosProspecto.LecturaAmbos)]
 		// Qué hace: religiones para la edición de datos personales del prospecto.
 		// Cómo: llama a GetAllAsync del servicio.
 		public async Task<CResult> GetCORR_RELIGION_ACA_PROSPECTO([FromQuery] GEN_RELIGIONParam Data)

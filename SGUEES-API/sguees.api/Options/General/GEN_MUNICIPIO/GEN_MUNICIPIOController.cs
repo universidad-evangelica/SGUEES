@@ -1,3 +1,4 @@
+using sguees.api.Policies;
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -71,7 +72,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpGet("GetCORR_MUNICIPIO_ACA_PROSPECTO")]
-		[Authorize(Policy = "/aca-prospecto|R")]
+		[Authorize(Policy = PermisosProspecto.LecturaAmbos)]
 		// Qué hace: municipios del país y departamento indicados para residencia y empleo en la edición de prospectos.
 		// Cómo: llama a GetAllAsync del servicio, que filtra por CORR_PAIS y CORR_DEPTO cuando vienen.
 		public async Task<CResult> GetCORR_MUNICIPIO_ACA_PROSPECTO([FromQuery] GEN_MUNICIPIOParam data)

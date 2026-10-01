@@ -37,16 +37,40 @@ export class AcaProspectoService {
             CORR_PROSPECTO: model.CORR_PROSPECTO,
             FORMA_INGRESO: model.FORMA_INGRESO,
             FINANCIA_ESTUDIOS: model.FINANCIA_ESTUDIOS,
+            ANIO: model.ANIO,
+            NUMERO_PERIODO: model.NUMERO_PERIODO,
             CORR_CARRERA: model.CORR_CARRERA,
             CORR_MODALIDAD: model.CORR_MODALIDAD,
         };
         return this.repo.update(payload, xWhere);
     }
 
-    // Qué hace: carreras que el prospecto puede elegir en su ciclo.
-    getCarrerasDelCiclo(CORR_PROSPECTO: number): Observable<IResult> {
-        let xWhere: IParam[] = [{ Parameter: 'CORR_PROSPECTO', Value: CORR_PROSPECTO }];
+    // Qué hace: carreras que se pueden elegir en un ciclo (el que está en pantalla, aún sin guardar).
+    getCarrerasDelCiclo(CORR_PROSPECTO: number, ANIO: number, NUMERO_PERIODO: number): Observable<IResult> {
+        let xWhere: IParam[] = [
+            { Parameter: 'CORR_PROSPECTO', Value: CORR_PROSPECTO },
+            { Parameter: 'ANIO', Value: ANIO },
+            { Parameter: 'NUMERO_PERIODO', Value: NUMERO_PERIODO },
+        ];
         return this.repo.getCarreras(xWhere);
+    }
+
+    // Qué hace: ciclos a los que se puede mover el prospecto, más el suyo actual.
+    getCiclosCambio(CORR_PROSPECTO: number): Observable<IResult> {
+        let xWhere: IParam[] = [{ Parameter: 'CORR_PROSPECTO', Value: CORR_PROSPECTO }];
+        return this.repo.getCiclos(xWhere);
+    }
+
+    // Qué hace: qué pasará al guardar el cambio de ciclo/carrera (beca a clonar, reapertura), sin guardar.
+    validarCambio(model: any): Observable<IResult> {
+        let xWhere: IParam[] = [
+            { Parameter: 'CORR_PROSPECTO', Value: model.CORR_PROSPECTO },
+            { Parameter: 'ANIO', Value: model.ANIO },
+            { Parameter: 'NUMERO_PERIODO', Value: model.NUMERO_PERIODO },
+            { Parameter: 'CORR_CARRERA', Value: model.CORR_CARRERA },
+            { Parameter: 'CORR_MODALIDAD', Value: model.CORR_MODALIDAD },
+        ];
+        return this.repo.validarCambio(xWhere);
     }
 
     // Qué hace: modalidades con plan vigente de la carrera elegida.
@@ -98,9 +122,9 @@ export class AcaProspectoService {
     }
 
     // Qué hace: encabezado de la consulta/edición del prospecto.
-    // Cómo lo hace: son editables la forma de ingreso, quién financia y la carrera con su modalidad
-    //               (el dx-form [readOnly] las bloquea en consulta); el resto lleva readOnly fijo.
-    //               Facultad, ciclo y plan siguen siendo derivados: los recalcula el API al guardar.
+    // Cómo lo hace: son editables la forma de ingreso, quién financia, el ciclo y la carrera con su
+    //               modalidad (el dx-form [readOnly] las bloquea en consulta); el resto lleva readOnly fijo.
+    //               Facultad y plan son derivados: los resuelve ACA_SP_CAMBIAR_CICLO_PROSPECTO al guardar.
     getItems(): any {
         return [
             {
@@ -137,7 +161,7 @@ export class AcaProspectoService {
                 dataField: 'CICLO',
                 label: { text: 'Ciclo' },
                 colSpan: 2,
-                editorOptions: { readOnly: true },
+                template: 'CICLO_PROSPECTOLookup',
             },
             {
                 dataField: 'NOMBRE_FACULTAD',

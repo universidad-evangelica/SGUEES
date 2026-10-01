@@ -24,7 +24,7 @@ namespace sguees.Services
 			return await _repo.GetAllAsync(p);
 		}
 
-		// Qué hace: parentescos para los familiares del prospecto (/aca-prospecto).
+		// Qué hace: parentescos para los familiares del prospecto (vistas de prospectos).
 		// Cómo lo hace: solo los activos, sin alterar la consulta del mantenimiento del catálogo.
 		public async Task<CResult> GetCORR_PARENTESCO_ACA_PROSPECTOAsync(GEN_PARENTESCOParam xWhere)
 		{

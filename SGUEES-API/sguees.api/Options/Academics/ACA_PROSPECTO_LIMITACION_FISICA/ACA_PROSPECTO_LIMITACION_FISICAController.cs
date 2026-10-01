@@ -1,3 +1,4 @@
+using sguees.api.Policies;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,7 @@ using sguees.api.Shared;
 namespace sguees.Controllers
 {
     // Qué hace: limitaciones físicas declaradas por el prospecto para la consulta de prospectos (pestaña Información personal).
-    // Cómo lo hace: solo lectura con el permiso de la pantalla padre (/aca-prospecto);
+    // Cómo lo hace: solo lectura con el permiso de la pantalla padre (vistas de prospectos);
     //               sin POST/PUT/DELETE hasta la fase de edición.
     [Authorize]
     [Route("[controller]")]
@@ -28,7 +29,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Policy = "/aca-prospecto|R")]
+        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
         public async Task<CResult> GetAll([FromQuery] ACA_PROSPECTO_LIMITACION_FISICAParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -36,16 +37,16 @@ namespace sguees.Controllers
         }
 
         [HttpGet("Get")]
-        [Authorize(Policy = "/aca-prospecto|R")]
+        [Authorize(Policy = PermisosProspecto.LecturaAmbos)]
         public async Task<CResult> Get([FromQuery] ACA_PROSPECTO_LIMITACION_FISICAParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
             return await _service.GetAsync(Data);
         }
 
-        // Qué hace: actualiza una limitación física del prospecto (permiso U del padre /aca-prospecto).
+        // Qué hace: actualiza una limitación física del prospecto (permiso U del de las vistas de prospectos).
         [HttpPut]
-        [Authorize(Policy = "/aca-prospecto|U")]
+        [Authorize(Policy = PermisosProspecto.EdicionAmbos)]
         public async Task<IActionResult> Put(ACA_PROSPECTO_LIMITACION_FISICATable Data)
         {
             this.ApplyQueryKeys(Data, nameof(ACA_PROSPECTO_LIMITACION_FISICATable.CORR_PROSPECTO_LIMITACION_FISICA));
@@ -57,7 +58,7 @@ namespace sguees.Controllers
 
         // Qué hace: agrega una limitación física (y enciende POSEE_DISCAPACIDAD en la persona).
         [HttpPost]
-        [Authorize(Policy = "/aca-prospecto|U")]
+        [Authorize(Policy = PermisosProspecto.EdicionAmbos)]
         public async Task<IActionResult> Post(ACA_PROSPECTO_LIMITACION_FISICATable Data)
         {
             SetCreateAudit(Data);
@@ -68,7 +69,7 @@ namespace sguees.Controllers
 
         // Qué hace: elimina una limitación física (si era la última, apaga POSEE_DISCAPACIDAD).
         [HttpDelete]
-        [Authorize(Policy = "/aca-prospecto|U")]
+        [Authorize(Policy = PermisosProspecto.EdicionAmbos)]
         public async Task<IActionResult> Delete([FromQuery] ACA_PROSPECTO_LIMITACION_FISICATable Data)
         {
             var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));

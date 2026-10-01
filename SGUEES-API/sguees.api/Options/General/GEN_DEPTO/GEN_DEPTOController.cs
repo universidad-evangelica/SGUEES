@@ -1,3 +1,4 @@
+using sguees.api.Policies;
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -71,7 +72,7 @@ namespace SGUEES.Controllers
 		}
 
 		[HttpGet("GetCORR_DEPTO_ACA_PROSPECTO")]
-		[Authorize(Policy = "/aca-prospecto|R")]
+		[Authorize(Policy = PermisosProspecto.LecturaAmbos)]
 		// Qué hace: departamentos del país indicado (CORR_PAIS) para residencia y empleo en la edición de prospectos.
 		// Cómo: llama a GetAllAsync del servicio, que filtra por CORR_PAIS cuando viene.
 		public async Task<CResult> GetCORR_DEPTO_ACA_PROSPECTO([FromQuery] GEN_DEPTOParam Data)

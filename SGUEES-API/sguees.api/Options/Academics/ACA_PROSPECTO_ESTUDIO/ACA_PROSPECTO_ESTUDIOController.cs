@@ -1,3 +1,4 @@
+using sguees.api.Policies;
 using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -12,7 +13,7 @@ using sguees.api.Shared;
 namespace sguees.Controllers
 {
     // Qué hace: estudios previos del prospecto (pestaña Información académica).
-    // Cómo lo hace: usa el permiso de la pantalla padre (/aca-prospecto): R para consultar y U para
+    // Cómo lo hace: usa el permiso de la pantalla padre (vistas de prospectos): R para consultar y U para
     //               los cambios, porque los hijos del prospecto se rigen por el padre (C crearía
     //               prospectos). Un prospecto tiene a lo sumo tres estudios, uno por sección.
     [Authorize]
@@ -29,7 +30,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("GetAll")]
-        [Authorize(Policy = "/aca-prospecto|R")]
+        [Authorize(Policy = PermisosProspecto.LecturaAcademico)]
         public async Task<CResult> GetAll([FromQuery] ACA_PROSPECTO_ESTUDIOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -37,7 +38,7 @@ namespace sguees.Controllers
         }
 
         [HttpGet("Get")]
-        [Authorize(Policy = "/aca-prospecto|R")]
+        [Authorize(Policy = PermisosProspecto.LecturaAcademico)]
         public async Task<CResult> Get([FromQuery] ACA_PROSPECTO_ESTUDIOParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
@@ -48,7 +49,7 @@ namespace sguees.Controllers
         // Cómo lo hace: toma CORR_PROSPECTO_ESTUDIO del body o del query, completa auditoría y valida
         //               en el Service según la sección (media, universitarios o graduado UEES).
         [HttpPut]
-        [Authorize(Policy = "/aca-prospecto|U")]
+        [Authorize(Policy = PermisosProspecto.EdicionAcademico)]
         public async Task<IActionResult> Put(ACA_PROSPECTO_ESTUDIOTable Data)
         {
             this.ApplyQueryKeys(Data, nameof(ACA_PROSPECTO_ESTUDIOTable.CORR_PROSPECTO_ESTUDIO));
@@ -60,7 +61,7 @@ namespace sguees.Controllers
 
         // Qué hace: crea un estudio del prospecto (uno por sección).
         [HttpPost]
-        [Authorize(Policy = "/aca-prospecto|U")]
+        [Authorize(Policy = PermisosProspecto.EdicionAcademico)]
         public async Task<IActionResult> Post(ACA_PROSPECTO_ESTUDIOTable Data)
         {
             SetCreateAudit(Data);
@@ -72,7 +73,7 @@ namespace sguees.Controllers
         // Qué hace: elimina un estudio del prospecto (al apagar el interruptor de su sección).
         // Cómo lo hace: PK por query (estándar DELETE); mismo permiso U del padre.
         [HttpDelete]
-        [Authorize(Policy = "/aca-prospecto|U")]
+        [Authorize(Policy = PermisosProspecto.EdicionAcademico)]
         public async Task<IActionResult> Delete([FromQuery] ACA_PROSPECTO_ESTUDIOTable Data)
         {
             var resultado = await _service.DeleteAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
