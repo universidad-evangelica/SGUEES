@@ -374,8 +374,8 @@ namespace SGUEES.Services
         }
 
         // Qué hace: ejecuta una operación del flujo (Enviar/Aprobar/Observar/Inactivar/Reactivar).
-        // Cómo lo hace: valida claves y OPERACION; en REACTIVAR bloquea si hay otro descriptor abierto del puesto;
-        //              luego delega al SP AUTORIZA; el repo relee la vista.
+        // Cómo lo hace: valida claves y OPERACION; en ENVIAR exige un dato en cada apartado visible;
+        //              en REACTIVAR bloquea si hay otro descriptor abierto del puesto; luego delega al SP AUTORIZA.
         public async Task<CResult> AutorizaAsync(SC_DESCRIPTOR_PUESTO_AUTORIZAParam Data, string vLOGIN_SISTEMA)
         {
             var empresaError = ValidateEmpresaSesion(Data?.CORR_EMPRESA ?? 0);
@@ -431,6 +431,26 @@ namespace SGUEES.Services
                         return ValidationError(
                             "Ya existe un descriptor para este puesto en esta unidad que se encuentra en proceso de aprobacion o activo. Solo sera posible reactivar esta version cuando la version actual haya sido activada y posteriormente desactivada.");
                     }
+                }
+            }
+
+            // Qué hace: al solicitar, exige al menos un dato en cada apartado visible del formato.
+            // Cómo lo hace: solo OPERACION 2. Firmas y carga de empleados no se revisan. Si falta algo, no avanza el flujo.
+            if (Data.OPERACION == 2)
+            {
+                var vacios = await _repo.ApartadosVaciosParaSolicitudAsync(
+                    Data.CORR_EMPRESA,
+                    Data.CORR_DESCRIPTOR_PUESTO);
+
+                if (vacios == null)
+                {
+                    return ValidationError("No se encontro el descriptor de puesto.");
+                }
+
+                if (vacios.Count > 0)
+                {
+                    return ValidationError(
+                        "No se puede solicitar el descriptor. Faltan datos en: " + string.Join(", ", vacios) + ".");
                 }
             }
 

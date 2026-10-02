@@ -848,6 +848,139 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Qué hace: indica qué apartados van vacíos antes de solicitar el descriptor.
+        // Cómo lo hace: cuenta filas por apartado y revisa los campos del perfil. Firmas y carga de empleados no entran.
+        // Formato corto pide funciones secundarias, KPIs y Otros; extenso pide relaciones y riesgos; ambos pide los dos.
+        public async Task<List<string>> ApartadosVaciosParaSolicitudAsync(int corrEmpresa, int corrDescriptor)
+        {
+            const string sql = @"SELECT
+                    UPPER(RTRIM(ISNULL(D.FORMATO, ''))) AS FORMATO,
+                    CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(D.OBJETIVO_PUESTO, ''))), '') IS NULL THEN 0 ELSE 1 END AS OBJETIVO,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_FUNCION X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO
+                          AND RTRIM(X.TIPO_FUNCION) = 'CLAVE') AS FUNCIONES,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_FUNCION X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO
+                          AND RTRIM(X.TIPO_FUNCION) = 'SECUNDARIA') AS FUNCIONES_SECUNDARIAS,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_KPI_FUNCION X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS KPIS,
+                    (SELECT COUNT(1) FROM dbo.SC_PERFIL_PUESTO_EDUCACION X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS EDUCACION,
+                    (SELECT COUNT(1) FROM dbo.SC_PERFIL_PUESTO_EXPERIENCIA X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS EXPERIENCIA,
+                    (SELECT COUNT(1) FROM dbo.SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS TECNICAS,
+                    (SELECT COUNT(1) FROM dbo.SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS CONDUCTUALES,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS REQUERIMIENTOS,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS RESPONSABILIDADES,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_INDUCCION X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS ENTRENAMIENTO,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_RELACION_LABORAL X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO
+                          AND RTRIM(X.TIPO_RELACION) = 'I') AS RELACIONES_INTERNAS,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_RELACION_LABORAL X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO
+                          AND RTRIM(X.TIPO_RELACION) = 'E') AS RELACIONES_EXTERNAS,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_RIESGO_PUESTO X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS RIESGOS,
+                    CASE WHEN P.EDAD_MINIMA IS NULL THEN 0 ELSE 1 END AS EDAD_MINIMA,
+                    CASE WHEN P.EDAD_MAXIMA IS NULL THEN 0 ELSE 1 END AS EDAD_MAXIMA,
+                    CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(P.SEXO, ''))), '') IS NULL THEN 0 ELSE 1 END AS SEXO,
+                    CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(P.ESTADO_FAMILIAR, ''))), '') IS NULL THEN 0 ELSE 1 END AS ESTADO_FAMILIAR,
+                    CASE WHEN ISNULL(P.CORR_DISPONIBILIDAD_HORARIO, 0) <= 0 THEN 0 ELSE 1 END AS DISPONIBILIDAD,
+                    CASE WHEN ISNULL(P.CORR_TIPO_MODALIDAD, 0) <= 0 THEN 0 ELSE 1 END AS MODALIDAD,
+                    CASE WHEN P.LICENCIA IS NULL THEN 0 ELSE 1 END AS LICENCIA,
+                    CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(P.OTROS, ''))), '') IS NULL THEN 0 ELSE 1 END AS OTROS
+                FROM dbo.SC_DESCRIPTOR_PUESTO D
+                OUTER APPLY (
+                    SELECT TOP 1
+                        EDAD_MINIMA,
+                        EDAD_MAXIMA,
+                        SEXO,
+                        ESTADO_FAMILIAR,
+                        CORR_DISPONIBILIDAD_HORARIO,
+                        CORR_TIPO_MODALIDAD,
+                        LICENCIA,
+                        OTROS
+                    FROM dbo.SC_PERFIL_PUESTO
+                    WHERE CORR_EMPRESA = D.CORR_EMPRESA
+                      AND CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO
+                    ORDER BY CORR_PERFIL_PUESTO
+                ) P
+                WHERE D.CORR_EMPRESA = @CORR_EMPRESA
+                  AND D.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO";
+
+            try
+            {
+                var reader = await objData.GetDataReader(CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = corrDescriptor, DbType = DbType.Int32 },
+                });
+
+                if (!reader.Read())
+                {
+                    reader.Close();
+                    return null;
+                }
+
+                var formato = reader.IsDBNull(0) ? string.Empty : reader.GetString(0).Trim().ToUpperInvariant();
+                var formatoConocido = formato == "CORTO" || formato == "EXTENSO" || formato == "AMBOS";
+                var pideCorto = !formatoConocido || formato == "CORTO" || formato == "AMBOS";
+                var pideExtenso = !formatoConocido || formato == "EXTENSO" || formato == "AMBOS";
+                var vacios = new List<string>();
+
+                void Falta(int indice, string nombre)
+                {
+                    var cantidad = reader.IsDBNull(indice) ? 0 : Convert.ToInt32(reader.GetValue(indice));
+                    if (cantidad <= 0)
+                    {
+                        vacios.Add(nombre);
+                    }
+                }
+
+                Falta(1, "Objetivo");
+                Falta(2, "Funciones");
+                Falta(15, "Edad minima");
+                Falta(16, "Edad maxima");
+                Falta(17, "Sexo");
+                Falta(18, "Estado familiar");
+                Falta(19, "Disponibilidad");
+                Falta(20, "Modalidad");
+                Falta(21, "Licencia");
+                if (pideCorto)
+                {
+                    Falta(22, "Otros");
+                    Falta(3, "Funciones secundarias");
+                    Falta(4, "KPIs");
+                }
+
+                Falta(5, "Educacion");
+                Falta(6, "Experiencia");
+                Falta(7, "Competencias tecnicas");
+                Falta(8, "Competencias conductuales");
+                Falta(9, "Requerimientos");
+                Falta(10, "Responsabilidades");
+                Falta(11, "Entrenamiento");
+                if (pideExtenso)
+                {
+                    Falta(12, "Relaciones internas");
+                    Falta(13, "Relaciones externas");
+                    Falta(14, "Riesgos");
+                }
+
+                reader.Close();
+                return vacios;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
         /// <summary>
         /// Lookup para sc-requisicion-personal: lista descriptores de V_SC_DESCRIPTOR_PUESTO
         /// filtrados por CORR_EMPRESA + CORR_UNIDAD (no altera GetAllAsync).
