@@ -932,44 +932,54 @@ namespace SGUEES.Repositories
                 var pideCorto = !formatoConocido || formato == "CORTO" || formato == "AMBOS";
                 var pideExtenso = !formatoConocido || formato == "EXTENSO" || formato == "AMBOS";
                 var vacios = new List<string>();
+                var perfilVacios = new List<string>();
 
-                void Falta(int indice, string nombre)
+                void Falta(int indice, string nombre, List<string> destino)
                 {
                     var cantidad = reader.IsDBNull(indice) ? 0 : Convert.ToInt32(reader.GetValue(indice));
                     if (cantidad <= 0)
                     {
-                        vacios.Add(nombre);
+                        destino.Add(nombre);
                     }
                 }
 
-                Falta(1, "Objetivo");
-                Falta(2, "Funciones");
-                Falta(15, "Edad minima");
-                Falta(16, "Edad maxima");
-                Falta(17, "Sexo");
-                Falta(18, "Estado familiar");
-                Falta(19, "Disponibilidad");
-                Falta(20, "Modalidad");
-                Falta(21, "Licencia");
+                Falta(1, "Objetivo", vacios);
+                Falta(2, "Funciones", vacios);
+                Falta(15, "Edad minima", perfilVacios);
+                Falta(16, "Edad maxima", perfilVacios);
+                Falta(17, "Sexo", perfilVacios);
+                Falta(18, "Estado familiar", perfilVacios);
+                Falta(19, "Disponibilidad", perfilVacios);
+                Falta(20, "Modalidad", perfilVacios);
+                Falta(21, "Licencia", perfilVacios);
                 if (pideCorto)
                 {
-                    Falta(22, "Otros");
-                    Falta(3, "Funciones secundarias");
-                    Falta(4, "KPIs");
+                    Falta(22, "Otros", perfilVacios);
                 }
 
-                Falta(5, "Educacion");
-                Falta(6, "Experiencia");
-                Falta(7, "Competencias tecnicas");
-                Falta(8, "Competencias conductuales");
-                Falta(9, "Requerimientos");
-                Falta(10, "Responsabilidades");
-                Falta(11, "Entrenamiento");
+                if (perfilVacios.Count > 0)
+                {
+                    vacios.Add("Perfil del puesto (" + string.Join(", ", perfilVacios) + ")");
+                }
+
+                if (pideCorto)
+                {
+                    Falta(3, "Funciones secundarias", vacios);
+                    Falta(4, "KPIs", vacios);
+                }
+
+                Falta(5, "Educacion", vacios);
+                Falta(6, "Experiencia", vacios);
+                Falta(7, "Competencias tecnicas", vacios);
+                Falta(8, "Competencias conductuales", vacios);
+                Falta(9, "Requerimientos", vacios);
+                Falta(10, "Responsabilidades", vacios);
+                Falta(11, "Entrenamiento", vacios);
                 if (pideExtenso)
                 {
-                    Falta(12, "Relaciones internas");
-                    Falta(13, "Relaciones externas");
-                    Falta(14, "Riesgos");
+                    Falta(12, "Relaciones internas", vacios);
+                    Falta(13, "Relaciones externas", vacios);
+                    Falta(14, "Riesgos", vacios);
                 }
 
                 reader.Close();
