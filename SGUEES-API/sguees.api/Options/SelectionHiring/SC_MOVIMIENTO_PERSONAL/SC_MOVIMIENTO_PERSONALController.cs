@@ -6,6 +6,7 @@ using eFramework.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using sguees.api.Shared;
+using sguees.Services;
 using SGUEES.Models;
 using SGUEES.Services;
 
@@ -27,10 +28,14 @@ namespace SGUEES.Controllers
 		private const int TipoDocumentoMovimiento = 103;
 
 		private readonly ISC_MOVIMIENTO_PERSONALService _service;
+		private readonly ISEG_USUARIOService _userService;
 
-		public SC_MOVIMIENTO_PERSONALController(ISC_MOVIMIENTO_PERSONALService service)
+		public SC_MOVIMIENTO_PERSONALController(
+			ISC_MOVIMIENTO_PERSONALService service,
+			ISEG_USUARIOService userService)
 		{
 			_service = service ?? throw new ArgumentNullException(nameof(service));
+			_userService = userService ?? throw new ArgumentNullException(nameof(userService));
 		}
 
 		[HttpGet("GetAll")]
@@ -191,6 +196,16 @@ namespace SGUEES.Controllers
 		{
 			Data.CORR_EMPRESA = GetCorrEmpresa();
 			return await _service.GetEmpleadosAsync(Data);
+		}
+
+		/// <summary>JWT para abrir SelectionHiring.aspx (visor universal) en iframe.</summary>
+		[HttpGet("GetRptToken")]
+		[Authorize(Policy = "/sc-movimiento-personal|R")]
+		public IActionResult GetRptToken()
+		{
+			var login = GetUsuario() ?? "user";
+			var token = _userService.GenerateRptToken(login);
+			return Ok(new { Token = token });
 		}
 
 		private int GetCorrEmpresa()

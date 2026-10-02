@@ -56,6 +56,16 @@ export class ScMovimientoPersonalRepository {
 		);
 	}
 
+	/** JWT RPT para abrir SelectionHiring.aspx en iframe. */
+	getRptToken(): Observable<any> {
+		return this.objData.Get(
+			this.xController,
+			'GetRptToken',
+			[],
+			environment.UrlSELECCIONCONTRATACIONAPI
+		);
+	}
+
 	getBitacora(xWhere: IParam[]): Observable<IResult> {
 		return this.objData.Get(
 			this.xController,
