@@ -441,9 +441,9 @@ namespace SGUEES.Repositories
             return encontrado != null && encontrado != DBNull.Value && Convert.ToInt32(encontrado) == 1;
         }
 
-        // Qué hace: borra el flujo del documento y después el descriptor.
-        // Cómo lo hace: el tipo sale de SEG_FLUJO_TIPO_DOCUMENTO por CODIGO_OPCION;
-        // la instancia se filtra por CORR_DOCUMENTO. Si falla, no queda nada a medias.
+        // Qué hace: borra el flujo, las firmas y después el descriptor.
+        // Cómo lo hace: solo llega aquí si no hay carga de empleados. El tipo sale de
+        // SEG_FLUJO_TIPO_DOCUMENTO por CODIGO_OPCION. Si falla, no queda nada a medias.
         private async Task EliminarDescriptorYFlujoAsync(int corrEmpresa, int corrDocumento)
         {
             const string sql = @"
@@ -522,6 +522,9 @@ namespace SGUEES.Repositories
             WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
 
             DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_RIESGO_PUESTO
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_FIRMAS
             WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
 
             DELETE FROM dbo.SC_DESCRIPTOR_PUESTO
