@@ -7432,7 +7432,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	// Qué hace: convierte un error de red de guardar/eliminar en una respuesta homogénea cuando es un aviso de negocio.
 	// Cómo: intercepta el error con catchError; si esAdvertenciaOperacion lo reconoce como aviso, devuelve un
-	// observable con Result en false y el mensaje de contexto; si no, propaga el error original con throwError.
+	// observable con Result en false y el mensaje de la API; si no, propaga el error original con throwError.
 	private convertirErrorOperacionEnRespuesta<T>(
 		request: Observable<T>,
 		operacion: 'guardar' | 'eliminar',
@@ -7441,16 +7441,29 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return request.pipe(
 			catchError((error: any) => {
 				if (this.esAdvertenciaOperacion(error, operacion)) {
+					const mensajeApi = this.obtenerMensajeOperacion(error);
 					return of({
 						Result: false,
-						ErrorCode: 2627,
-						ErrorMessage: contextMessage,
+						ErrorCode: Number(error?.error?.ErrorCode ?? error?.ErrorCode ?? 4102),
+						ErrorMessage: mensajeApi || contextMessage,
 					} as T);
 				}
 
 				return throwError(() => error);
 			})
 		);
+	}
+
+	// Qué hace: muestra el aviso de la API al eliminar un descriptor con carga de empleados.
+	// Cómo lo hace: ese texto lleva "asociados"; el aviso general lo cambiaría, así que aquí se muestra tal cual.
+	override notifyApiResponse(response: any): void {
+		const message = `${response?.ErrorMessage ?? ''}`.trim();
+		if (message.toLowerCase().includes('carga de empleados')) {
+			this.notifyFx(message, NotifyType.Warning, { raw: true });
+			return;
+		}
+
+		super.notifyApiResponse(response);
 	}
 
 	// Utilidades comunes de los grids: marcar fila inválida, sincronizar formulario y cancelar edición.

@@ -373,14 +373,27 @@ namespace SGUEES.Repositories
         }
 
         // Qué hace: elimina el descriptor, sus hijos y el flujo de ese documento.
-        // Cómo lo hace: resuelve el tipo con CODIGO_OPCION, borra notificaciones, bitácora e instancia
-        // de ese CORR_DOCUMENTO, y en la misma transacción borra el detalle y la cabecera.
+        // Cómo lo hace: si hay empleados cargados no borra nada y avisa; si no, resuelve el tipo con
+        // CODIGO_OPCION, borra notificaciones, bitácora e instancia de ese CORR_DOCUMENTO, y en la misma
+        // transacción borra el detalle y la cabecera.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
 
             try
             {
+                if (await TieneCargaEmpleadosAsync(Data.CORR_EMPRESA, Data.CORR_DESCRIPTOR_PUESTO))
+                {
+                    objResultado.Data = null;
+                    objResultado.Result = false;
+                    objResultado.RowsAffected = 0;
+                    objResultado.CodeHelper = 0;
+                    objResultado.ErrorCode = 4102;
+                    objResultado.ErrorMessage = "No se puede eliminar el descriptor porque tiene carga de empleados asociados.";
+                    objResultado.ErrorSource = "";
+                    return objResultado;
+                }
+
                 await EliminarDescriptorYFlujoAsync(Data.CORR_EMPRESA, Data.CORR_DESCRIPTOR_PUESTO);
                 objResultado.RowsAffected = 1;
                 objResultado.Data = null;
@@ -405,6 +418,27 @@ namespace SGUEES.Repositories
             }
 
             return objResultado;
+        }
+
+        // Qué hace: indica si el descriptor tiene empleados en la carga.
+        // Cómo lo hace: busca una fila en SC_DESCRIPTOR_PUESTO_EMPLEADO por empresa y correlativo.
+        private async Task<bool> TieneCargaEmpleadosAsync(int corrEmpresa, int corrDocumento)
+        {
+            const string sql = @"
+            SELECT CASE WHEN EXISTS (
+                SELECT 1
+                FROM dbo.SC_DESCRIPTOR_PUESTO_EMPLEADO
+                WHERE CORR_EMPRESA = @CORR_EMPRESA
+                  AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO
+            ) THEN 1 ELSE 0 END;";
+
+            await using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+            await using var cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = corrEmpresa });
+            cmd.Parameters.Add(new SqlParameter("@CORR_DOCUMENTO", SqlDbType.Int) { Value = corrDocumento });
+            var encontrado = await cmd.ExecuteScalarAsync();
+            return encontrado != null && encontrado != DBNull.Value && Convert.ToInt32(encontrado) == 1;
         }
 
         // Qué hace: borra el flujo del documento y después el descriptor.
