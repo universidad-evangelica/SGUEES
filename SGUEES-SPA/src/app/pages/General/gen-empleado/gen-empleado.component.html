@@ -727,6 +727,115 @@
 						</div>
 					</dxi-item>
 
+					<!-- motivo: descriptores activos cuyo puesto y unidad coinciden con el empleado -->
+					<dxi-item title="Descriptores" [icon]="'doc'">
+						<div class="rd-panel">
+							<div class="empleado-descriptor-toolbar" *ngIf="puedeAsignarDescriptores || puedeImprimirDescriptorEmpleado">
+								<dx-button
+									*ngIf="puedeAsignarDescriptores"
+									class="empleado-descriptor-toolbar-btn"
+									icon="upload"
+									text="Asignar"
+									type="success"
+									stylingMode="contained"
+									(onClick)="abrirAsignarDescriptores()"
+									[disabled]="cargandoDescriptores"
+								></dx-button>
+								<!-- motivo: Activar y Desactivar de la carga solo si el descriptor seleccionado está Activo -->
+								<dx-button
+									*ngIf="puedeAsignarDescriptores && descriptorSeleccionado && esEstadoDescriptorActivo(descriptorSeleccionado.NOMBRE_ESTADO) && esCargaAsignacionActiva(descriptorSeleccionado.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+									class="empleado-descriptor-toolbar-btn"
+									icon="close"
+									text="Desactivar"
+									type="danger"
+									stylingMode="contained"
+									(onClick)="cambiarActivoCargaDescriptor(false)"
+									[disabled]="cargandoDescriptores"
+								></dx-button>
+								<dx-button
+									*ngIf="puedeAsignarDescriptores && descriptorSeleccionado && esEstadoDescriptorActivo(descriptorSeleccionado.NOMBRE_ESTADO) && !esCargaAsignacionActiva(descriptorSeleccionado.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+									class="empleado-descriptor-toolbar-btn"
+									icon="check"
+									text="Activar"
+									type="success"
+									stylingMode="contained"
+									(onClick)="cambiarActivoCargaDescriptor(true)"
+									[disabled]="cargandoDescriptores"
+								></dx-button>
+								<!-- motivo: el PDF es del empleado abierto y del descriptor seleccionado -->
+								<dx-button
+									*ngIf="puedeImprimirDescriptorEmpleado && esFormatoCortoDescriptor"
+									class="empleado-descriptor-toolbar-btn"
+									icon="print"
+									text="Formato corto"
+									type="default"
+									stylingMode="contained"
+									(onClick)="imprimirDescriptorCorto()"
+								></dx-button>
+								<dx-button
+									*ngIf="puedeImprimirDescriptorEmpleado && esFormatoExtensoDescriptor"
+									class="empleado-descriptor-toolbar-btn"
+									icon="print"
+									text="Formato extenso"
+									type="default"
+									stylingMode="contained"
+									(onClick)="imprimirDescriptorExtenso()"
+								></dx-button>
+							</div>
+							<dx-data-grid
+								class="theme-dependent sguees-data-grid-mtto empleado-descriptor-grid"
+								[dataSource]="descriptoresAsignados"
+								keyExpr="CORR_DESCRIPTOR_PUESTO"
+								[selectedRowKeys]="descriptorImpresionKeys"
+								(onSelectionChanged)="onDescriptorImpresionSeleccionado($event)"
+								[columnAutoWidth]="false"
+								[showBorders]="true"
+								[showColumnLines]="true"
+								[showRowLines]="true"
+								[rowAlternationEnabled]="true"
+								[hoverStateEnabled]="true"
+								[allowColumnResizing]="true"
+								[columnResizingMode]="'widget'"
+								[width]="'100%'"
+								noDataText="Sin descriptores asignados."
+							>
+								<dxo-paging [enabled]="true" [pageSize]="5"></dxo-paging>
+								<dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25]" [showInfo]="true"></dxo-pager>
+								<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+								<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+								<dxo-load-panel [enabled]="false"></dxo-load-panel>
+								<dxo-selection mode="single"></dxo-selection>
+								<!-- motivo: quitar la asignación queda en el código; la columna se oculta por ahora -->
+								<dxi-column caption="" [width]="70" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesDescriptorTpl" [visible]="false" alignment="center"></dxi-column>
+								<div *dxTemplate="let cell of 'accionesDescriptorTpl'">
+									<dx-button icon="trash" stylingMode="text" hint="Quitar" (onClick)="quitarDescriptorAsignado(cell.data)"></dx-button>
+								</div>
+								<dxi-column dataField="CODIGO_DESCRIPTOR_PUESTO" caption="Codigo" [width]="120" [minWidth]="100"></dxi-column>
+								<dxi-column dataField="NOMBRE_PUESTO" caption="Puesto" [width]="320" [minWidth]="220"></dxi-column>
+								<dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [width]="300" [minWidth]="200"></dxi-column>
+								<dxi-column dataField="FECHA_EMISION" caption="Fecha emision" [width]="130" dataType="date" format="dd/MM/yyyy"></dxi-column>
+								<!-- motivo: estado del descriptor, distinto del estado de la carga -->
+								<dxi-column cssClass="empleado-descriptor-col-estado" caption="Estado descriptor" [width]="160" [minWidth]="150" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoDescriptorAsignadoTpl" alignment="center"></dxi-column>
+								<div *dxTemplate="let cell of 'estadoDescriptorAsignadoTpl'">
+									<span
+										class="estado-badge"
+										[class.estado-badge--activo]="esEstadoDescriptorActivo(cell.data?.NOMBRE_ESTADO)"
+										[class.estado-badge--inactivo]="esEstadoDescriptorInactivo(cell.data?.NOMBRE_ESTADO)"
+									>{{ cell.data?.NOMBRE_ESTADO }}</span>
+								</div>
+								<!-- motivo: estado del registro de carga, distinto del estado del descriptor -->
+								<dxi-column cssClass="empleado-descriptor-col-estado" caption="Estado carga" [width]="140" [minWidth]="130" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoCargaDescriptorTpl" alignment="center"></dxi-column>
+								<div *dxTemplate="let cell of 'estadoCargaDescriptorTpl'">
+									<span
+										class="estado-badge"
+										[class.estado-badge--activo]="esCargaAsignacionActiva(cell.data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+										[class.estado-badge--inactivo]="!esCargaAsignacionActiva(cell.data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+									>{{ esCargaAsignacionActiva(cell.data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO) ? 'Activo' : 'Inactivo' }}</span>
+								</div>
+							</dx-data-grid>
+						</div>
+					</dxi-item>
+
 					</dx-tab-panel>
 				</div>
 			</ng-container>
@@ -2696,6 +2805,116 @@
 		</section>
 	</div>
 </ng-template>
+
+<!-- motivo: descriptores activos del puesto y la unidad de este empleado -->
+<dx-popup
+	#popupDescriptoresEmpleado
+	[(visible)]="popupDescriptorEmpleadoVisible"
+	title="Asignar descriptor"
+	[width]="920"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[maxHeight]="'calc(100vh - 48px)'"
+	[dragEnabled]="false"
+	[showCloseButton]="true"
+	[hideOnOutsideClick]="false"
+	[wrapperAttr]="{ class: 'empleado-descriptor-asignar-popup' }"
+	(onHiding)="cerrarAsignarDescriptores()"
+>
+	<div class="empleado-descriptor-popup-toolbar">
+		<dx-button
+			icon="check"
+			text="Todos"
+			type="success"
+			stylingMode="contained"
+			(onClick)="selectTodosDescriptores(true)"
+			[disabled]="cargandoDescriptores || !descriptoresDisponibles.length"
+		></dx-button>
+		<dx-button
+			icon="close"
+			text="Ninguno"
+			type="danger"
+			stylingMode="contained"
+			(onClick)="selectTodosDescriptores(false)"
+			[disabled]="cargandoDescriptores || !descriptoresDisponibles.length"
+		></dx-button>
+		<dx-button
+			icon="save"
+			text="Guardar"
+			type="default"
+			stylingMode="contained"
+			(onClick)="guardarDescriptoresMarcados()"
+			[disabled]="cargandoDescriptores || !descriptoresDisponibles.length"
+		></dx-button>
+	</div>
+	<dx-data-grid
+		#gridDescriptoresEmpleado
+		class="theme-dependent sguees-data-grid-mtto empleado-descriptor-popup-grid"
+		[dataSource]="descriptoresDisponibles"
+		keyExpr="CORR_DESCRIPTOR_PUESTO"
+		[columnAutoWidth]="false"
+		[showBorders]="true"
+		[showColumnLines]="true"
+		[showRowLines]="true"
+		[rowAlternationEnabled]="true"
+		[hoverStateEnabled]="true"
+		[allowColumnResizing]="true"
+		[columnResizingMode]="'widget'"
+		[width]="'100%'"
+		[height]="alturaDescriptorEmpleadoModal"
+		(onOptionChanged)="onDescriptorEmpleadoModalOptionChanged($event)"
+		noDataText="No hay descriptores pendientes de asignar con el puesto y la unidad de este empleado."
+	>
+		<dxo-paging [enabled]="true" [pageSize]="descriptorModalPageSize"></dxo-paging>
+		<dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25, 50]" [showInfo]="true"></dxo-pager>
+		<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+		<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+		<dxo-load-panel [enabled]="false"></dxo-load-panel>
+		<dxo-editing
+			[mode]="'cell'"
+			[allowUpdating]="!cargandoDescriptores"
+			[allowAdding]="false"
+			[allowDeleting]="false"
+			[useIcons]="false"
+		></dxo-editing>
+		<dxi-column
+			dataField="SELECCION"
+			caption=""
+			[width]="70"
+			dataType="boolean"
+			[allowSorting]="false"
+			[allowFiltering]="false"
+			[allowEditing]="!cargandoDescriptores"
+			alignment="center"
+		></dxi-column>
+		<dxi-column dataField="CODIGO_DESCRIPTOR_PUESTO" caption="Codigo" [width]="120" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="NOMBRE_PUESTO" caption="Puesto" [width]="240" [minWidth]="160" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [width]="220" [minWidth]="140" [allowEditing]="false"></dxi-column>
+		<!-- motivo: estado del descriptor como insignia Activo o Inactivo -->
+		<dxi-column caption="Estado" [width]="140" [allowEditing]="false" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoDescriptorModalTpl" alignment="center"></dxi-column>
+		<div *dxTemplate="let cell of 'estadoDescriptorModalTpl'">
+			<span
+				class="estado-badge"
+				[class.estado-badge--activo]="esEstadoDescriptorActivo(cell.data?.NOMBRE_ESTADO)"
+				[class.estado-badge--inactivo]="esEstadoDescriptorInactivo(cell.data?.NOMBRE_ESTADO)"
+			>{{ cell.data?.NOMBRE_ESTADO }}</span>
+		</div>
+	</dx-data-grid>
+</dx-popup>
+
+<!-- motivo: PDF del descriptor seleccionado, del empleado que se está viendo -->
+<dx-popup
+	[(visible)]="popupVisiblePdfDescriptor"
+	[title]="tituloPdfDescriptor"
+	[fullScreen]="true"
+	[showCloseButton]="true"
+>
+	<div *dxTemplate="let data of 'content'" style="height: 100%;">
+		<object [data]="PDFDescriptor" type="application/pdf" width="100%" height="95%">
+			<embed [src]="PDFDescriptor" type="application/pdf" />
+		</object>
+	</div>
+</dx-popup>
 
 <!-- Panel de carga. -->
 <dx-load-panel

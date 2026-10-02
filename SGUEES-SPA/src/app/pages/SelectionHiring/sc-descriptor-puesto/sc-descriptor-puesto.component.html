@@ -38,16 +38,6 @@
 	[btn5Type]="'default'"
 	[btn5Width]="120"
 	(btn5Click)="abrirPopupFlujo(OPERACION_FLUJO.REACTIVAR)"
-	[btn6]="btnImprimirFormatoCorto"
-	[btn6Icon]="'print'"
-	[btn6Type]="'default'"
-	[btn6Width]="0"
-	(btn6Click)="imprimirFormatoCorto()"
-	[btn7]="btnImprimirFormatoExtenso"
-	[btn7Icon]="'print'"
-	[btn7Type]="'default'"
-	[btn7Width]="0"
-	(btn7Click)="imprimirFormatoExtenso()"
 	[combox1]="barraFiltroUnidad"
 	[combox2]="barraFiltroEstado"
 	(combox1Change)="onFiltroUnidadChanged($event)"
@@ -2370,6 +2360,124 @@
 						</dx-data-grid>
 					</div>
 				</dxi-item>
+
+				<!-- motivo: se muestra con el descriptor Activo y también cuando queda Inactivo -->
+				<dxi-item title="Carga empleado" [visible]="mostrarTabCargaEmpleado">
+					<div class="descriptor-sub-tab-content">
+						<div class="descriptor-funciones-header">
+							<h4 class="descriptor-sub-tab-heading">
+								<span class="dx-icon-group descriptor-funciones-icon" aria-hidden="true"></span>
+								Carga empleado
+							</h4>
+						</div>
+						<!-- motivo: sin botones el contenedor queda una barra vacía; se oculta con el descriptor Inactivo -->
+						<div class="descriptor-deta-toolbar" *ngIf="esDescriptorActivo">
+							<dx-button
+								*ngIf="esDescriptorActivo"
+								class="descriptor-deta-toolbar-btn"
+								icon="upload"
+								text="Cargar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="abrirCargarEmpleados()"
+								[disabled]="cargandoEmpleados"
+							></dx-button>
+							<!-- motivo: Activar y Desactivar de la carga solo con el descriptor Activo -->
+							<dx-button
+								*ngIf="esDescriptorActivo && empleadoCargaSeleccionado && esCargaAsignacionActiva(empleadoCargaSeleccionado.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+								class="descriptor-deta-toolbar-btn"
+								icon="close"
+								text="Desactivar"
+								type="danger"
+								stylingMode="contained"
+								(onClick)="cambiarActivoCargaEmpleado(false)"
+								[disabled]="cargandoEmpleados"
+							></dx-button>
+							<dx-button
+								*ngIf="esDescriptorActivo && empleadoCargaSeleccionado && !esCargaAsignacionActiva(empleadoCargaSeleccionado.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+								class="descriptor-deta-toolbar-btn"
+								icon="check"
+								text="Activar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="cambiarActivoCargaEmpleado(true)"
+								[disabled]="cargandoEmpleados"
+							></dx-button>
+							<!-- motivo: el PDF es del empleado seleccionado; sin fila no se imprime -->
+							<dx-button
+								*ngIf="puedeImprimirEmpleado && esFormatoCorto"
+								class="descriptor-deta-toolbar-btn"
+								icon="print"
+								text="Formato corto"
+								type="default"
+								stylingMode="contained"
+								(onClick)="imprimirFormatoCorto()"
+							></dx-button>
+							<dx-button
+								*ngIf="puedeImprimirEmpleado && esFormatoExtenso"
+								class="descriptor-deta-toolbar-btn"
+								icon="print"
+								text="Formato extenso"
+								type="default"
+								stylingMode="contained"
+								(onClick)="imprimirFormatoExtenso()"
+							></dx-button>
+						</div>
+						<dx-data-grid
+							class="theme-dependent sguees-data-grid-mtto carga-empleado-grid"
+							[dataSource]="empleadosCargados"
+							keyExpr="CORR_EMPLEADO"
+							[selectedRowKeys]="empleadoImpresionKeys"
+							(onSelectionChanged)="onEmpleadoImpresionSeleccionado($event)"
+							[columnAutoWidth]="false"
+							[showBorders]="true"
+							[showColumnLines]="true"
+							[showRowLines]="true"
+							[rowAlternationEnabled]="true"
+							[hoverStateEnabled]="true"
+							[allowColumnResizing]="true"
+							[columnResizingMode]="'widget'"
+							[width]="'100%'"
+							noDataText="Sin empleados cargados."
+						>
+							<dxo-paging [enabled]="true" [pageSize]="5"></dxo-paging>
+							<dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25]" [showInfo]="true"></dxo-pager>
+							<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+							<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+							<dxo-selection mode="single"></dxo-selection>
+							<dxo-load-panel [enabled]="false"></dxo-load-panel>
+							<!-- motivo: la baja de la carga queda en el código; la columna se oculta por ahora -->
+							<dxi-column caption="" [width]="70" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesEmpleadoTpl" [visible]="false" alignment="center"></dxi-column>
+							<div *dxTemplate="let cell of 'accionesEmpleadoTpl'">
+								<dx-button icon="trash" stylingMode="text" hint="Quitar" (onClick)="quitarEmpleadoCargado(cell.data)"></dx-button>
+							</div>
+							<dxi-column dataField="CORR_EMPLEADO" caption="Corr." [width]="90" dataType="number"></dxi-column>
+							<dxi-column dataField="NOMBRE_EMPLEADO" caption="Persona" [width]="380" [minWidth]="260"></dxi-column>
+							<dxi-column dataField="DUI" caption="DUI" [width]="120" [minWidth]="100"></dxi-column>
+							<dxi-column dataField="CORREO_INSTITUCIONAL" caption="Correo" [width]="220" [minWidth]="160"></dxi-column>
+							<dxi-column dataField="TELEFONO_INSTITUCIONAL" caption="Teléfono" [width]="130" [minWidth]="110"></dxi-column>
+							<dxi-column dataField="LOGIN_SISTEMA_WEB" caption="Login" [width]="140" [minWidth]="110"></dxi-column>
+							<!-- motivo: estado del empleado, distinto del estado de la carga -->
+							<dxi-column cssClass="carga-empleado-col-estado" caption="Estado empleado" [width]="150" [minWidth]="140" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoEmpleadoCargadoTpl" alignment="center"></dxi-column>
+							<div *dxTemplate="let cell of 'estadoEmpleadoCargadoTpl'">
+								<span
+									class="estado-badge"
+									[class.estado-badge--activo]="esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO)"
+									[class.estado-badge--inactivo]="!esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO)"
+								>{{ esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO) ? 'Activo' : 'Inactivo' }}</span>
+							</div>
+							<!-- motivo: estado del registro de carga, distinto del estado del empleado -->
+							<dxi-column cssClass="carga-empleado-col-estado" caption="Estado carga" [width]="140" [minWidth]="130" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoCargaEmpleadoTpl" alignment="center"></dxi-column>
+							<div *dxTemplate="let cell of 'estadoCargaEmpleadoTpl'">
+								<span
+									class="estado-badge"
+									[class.estado-badge--activo]="esCargaAsignacionActiva(cell.data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+									[class.estado-badge--inactivo]="!esCargaAsignacionActiva(cell.data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+								>{{ esCargaAsignacionActiva(cell.data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO) ? 'Activo' : 'Inactivo' }}</span>
+							</div>
+						</dx-data-grid>
+					</div>
+				</dxi-item>
 			</dx-tab-panel>
 
 			<!-- Aviso: el tab anterior no aplica al formato actual; elija otro. -->
@@ -2385,6 +2493,39 @@
 						El tab anterior no esta disponible en el formato actual. Elija uno de los tabs disponibles.
 					</p>
 				</div>
+			</div>
+		</dxi-item>
+
+		<!-- motivo: el tab Firmas se oculta; el contenido se conserva -->
+		<dxi-item title="Firmas" icon="check" [visible]="false">
+			<div class="descriptor-bitacora">
+				<h3 class="descriptor-section-title descriptor-bitacora-title">
+					<span class="dx-icon-check descriptor-bitacora-title-icon" aria-hidden="true"></span>
+					Firmas del descriptor
+				</h3>
+				<dx-data-grid
+					class="descriptor-firmas-grid"
+					[dataSource]="firmasDescriptor"
+					[showBorders]="true"
+					[showColumnLines]="true"
+					[showRowLines]="true"
+					[rowAlternationEnabled]="true"
+					[hoverStateEnabled]="true"
+					[allowColumnResizing]="true"
+					[columnResizingMode]="'widget'"
+					[width]="'100%'"
+					noDataText="Aún no hay firmas. Se guardan cuando el descriptor queda Activo."
+				>
+					<dxo-paging [enabled]="true" [pageSize]="5"></dxo-paging>
+					<dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25]" [showInfo]="true"></dxo-pager>
+					<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+					<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+					<dxo-load-panel [enabled]="false"></dxo-load-panel>
+					<dxi-column dataField="NOMBRE_COMPLETO" caption="Nombre" [width]="460" [minWidth]="320"></dxi-column>
+					<dxi-column dataField="TIPO_ACTOR" caption="Actor" [width]="300" [minWidth]="200"></dxi-column>
+					<dxi-column dataField="TIPO_JEFE" caption="Unidad" [width]="380" [minWidth]="240"></dxi-column>
+					<dxi-column dataField="FECHA_FIRMA" caption="Fecha firma" [width]="120" [minWidth]="110" dataType="date" format="dd/MM/yyyy"></dxi-column>
+				</dx-data-grid>
 			</div>
 		</dxi-item>
 
@@ -2606,6 +2747,11 @@
 >
 	<div class="descriptor-flujo-popup">
 		<p class="descriptor-flujo-popup__hint">{{ hintPopupFlujo }}</p>
+		<!-- motivo: avisa que inactivar el descriptor también apaga las cargas de empleados -->
+		<div class="descriptor-flujo-popup__aviso" *ngIf="operacionFlujoPendiente === OPERACION_FLUJO.INACTIVAR">
+			<span class="dx-icon-warning descriptor-flujo-popup__aviso-icon" aria-hidden="true"></span>
+			<span>Si inactiva el descriptor, también se inactivarán todas las cargas de empleados de este descriptor.</span>
+		</div>
 		<dx-text-area
 			[(value)]="observacionFlujo"
 			[height]="140"
@@ -2636,4 +2782,100 @@
 			<embed [src]="PDF" type="application/pdf" />
 		</object>
 	</div>
+</dx-popup>
+
+<!-- motivo: elegir empleados que ya tienen el puesto y la unidad del descriptor -->
+<dx-popup
+	#popupCargarEmpleado
+	[(visible)]="popupCargarEmpleadoVisible"
+	title="Cargar empleado"
+	[width]="920"
+	[maxWidth]="'calc(100vw - 24px)'"
+	[height]="'auto'"
+	[maxHeight]="'calc(100vh - 48px)'"
+	[dragEnabled]="false"
+	[showCloseButton]="true"
+	[hideOnOutsideClick]="false"
+	[wrapperAttr]="{ class: 'carga-empleado-asignar-popup' }"
+	(onHiding)="cerrarCargarEmpleados()"
+>
+	<div class="carga-empleado-popup-toolbar">
+		<dx-button
+			icon="check"
+			text="Todos"
+			type="success"
+			stylingMode="contained"
+			(onClick)="selectTodosEmpleadosCarga(true)"
+			[disabled]="cargandoEmpleados || !empleadosDisponibles.length"
+		></dx-button>
+		<dx-button
+			icon="close"
+			text="Ninguno"
+			type="danger"
+			stylingMode="contained"
+			(onClick)="selectTodosEmpleadosCarga(false)"
+			[disabled]="cargandoEmpleados || !empleadosDisponibles.length"
+		></dx-button>
+		<dx-button
+			icon="save"
+			text="Guardar"
+			type="default"
+			stylingMode="contained"
+			(onClick)="guardarEmpleadosMarcados()"
+			[disabled]="cargandoEmpleados || !empleadosDisponibles.length"
+		></dx-button>
+	</div>
+	<dx-data-grid
+		#gridCargarEmpleado
+		class="theme-dependent sguees-data-grid-mtto carga-empleado-popup-grid"
+		[dataSource]="empleadosDisponibles"
+		keyExpr="CORR_EMPLEADO"
+		[columnAutoWidth]="false"
+		[showBorders]="true"
+		[showColumnLines]="true"
+		[showRowLines]="true"
+		[rowAlternationEnabled]="true"
+		[hoverStateEnabled]="true"
+		[allowColumnResizing]="true"
+		[columnResizingMode]="'widget'"
+		[width]="'100%'"
+		[height]="alturaCargaEmpleadoModal"
+		(onOptionChanged)="onCargaEmpleadoModalOptionChanged($event)"
+		noDataText="No hay empleados pendientes de cargar con este puesto y esta unidad."
+	>
+		<dxo-paging [enabled]="true" [pageSize]="cargaEmpleadoModalPageSize"></dxo-paging>
+		<dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25, 50]" [showInfo]="true"></dxo-pager>
+		<dxo-filter-row [visible]="true" [applyFilter]="'auto'"></dxo-filter-row>
+		<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
+		<dxo-load-panel [enabled]="false"></dxo-load-panel>
+		<dxo-editing
+			[mode]="'cell'"
+			[allowUpdating]="!cargandoEmpleados"
+			[allowAdding]="false"
+			[allowDeleting]="false"
+			[useIcons]="false"
+		></dxo-editing>
+		<dxi-column
+			dataField="SELECCION"
+			caption=""
+			[width]="70"
+			dataType="boolean"
+			[allowSorting]="false"
+			[allowFiltering]="false"
+			[allowEditing]="!cargandoEmpleados"
+			alignment="center"
+		></dxi-column>
+		<dxi-column dataField="CORR_EMPLEADO" caption="Corr." [width]="90" dataType="number" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="NOMBRE_EMPLEADO" caption="Persona" [width]="360" [minWidth]="240" [allowEditing]="false"></dxi-column>
+		<dxi-column dataField="DUI" caption="DUI" [width]="120" [allowEditing]="false"></dxi-column>
+		<!-- motivo: estado del empleado como insignia Activo o Inactivo, sin estirar la columna -->
+		<dxi-column cssClass="carga-empleado-col-estado" caption="Estado" [width]="110" [allowEditing]="false" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoEmpleadoModalTpl" alignment="center"></dxi-column>
+		<div *dxTemplate="let cell of 'estadoEmpleadoModalTpl'">
+			<span
+				class="estado-badge"
+				[class.estado-badge--activo]="esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO)"
+				[class.estado-badge--inactivo]="!esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO)"
+			>{{ esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO) ? 'Activo' : 'Inactivo' }}</span>
+		</div>
+	</dx-data-grid>
 </dx-popup>

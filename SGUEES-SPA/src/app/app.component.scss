@@ -6,3 +6,30 @@
   height: 100%;
   width: 100%;
 }
+
+.idle-session {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 2px 8px;
+}
+
+.idle-session__text {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.idle-session__text strong {
+  font-size: 1.35rem;
+}
+
+.idle-session__hint {
+  margin: 0;
+  opacity: 0.8;
+}
+
+.idle-session__actions {
+  display: flex;
+  justify-content: flex-end;
+}

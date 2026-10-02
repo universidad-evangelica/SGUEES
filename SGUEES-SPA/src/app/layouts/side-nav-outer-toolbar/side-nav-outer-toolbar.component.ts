@@ -18,6 +18,7 @@ import { ScreenService, AppInfoService } from '../../shared/services';
 import { SideNavigationMenuModule } from 'src/app/shared/components/library/side-navigation-menu/side-navigation-menu.component';
 import { AppHeaderModule } from 'src/app/shared/components/library/app-header/app-header.component';
 import { AppFooterModule } from 'src/app/shared/components/library/app-footer/app-footer.component';
+import { MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
 
 import { Subscription } from 'rxjs';
@@ -54,11 +55,15 @@ export class SideNavOuterToolbarComponent implements OnInit, AfterViewInit, OnDe
 
   screenSubscription!: Subscription;
 
+  // Qué hace: guarda el aviso que se movió al body.
+  private toastMovidoAlBody: Element | null = null;
+
   constructor(
     private screen: ScreenService,
     private router: Router,
     public appInfo: AppInfoService,
-    private host: ElementRef<HTMLElement>
+    private host: ElementRef<HTMLElement>,
+    private messageService: MessageService
   ) {
     this.routerSubscription = this.router.events.subscribe((event: Event) => {
       if (event instanceof NavigationEnd) {
@@ -73,6 +78,7 @@ export class SideNavOuterToolbarComponent implements OnInit, AfterViewInit, OnDe
     const toast = this.host.nativeElement.querySelector('p-toast');
     if (toast && toast.parentElement !== document.body) {
       document.body.appendChild(toast);
+      this.toastMovidoAlBody = toast;
     }
   }
 
@@ -86,7 +92,14 @@ export class SideNavOuterToolbarComponent implements OnInit, AfterViewInit, OnDe
     this.updateDrawer();
   }
 
+  // Qué hace: quita el aviso al cerrar el menú, por ejemplo al salir de la sesión.
+  // Cómo: lo devuelve al menú para que Angular lo destruya y limpia los avisos pendientes.
   ngOnDestroy(): void {
+    if (this.toastMovidoAlBody?.parentElement === document.body) {
+      this.host.nativeElement.appendChild(this.toastMovidoAlBody);
+    }
+    this.toastMovidoAlBody = null;
+    this.messageService.clear();
     this.routerSubscription.unsubscribe();
     this.screenSubscription.unsubscribe();
   }

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using eFramework.Core;
 using eFramework.Data;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using SGUEES.Models;
 
@@ -14,11 +16,14 @@ namespace SGUEES.Repositories
         private const string _TableName = "SC_DESCRIPTOR_PUESTO";
         private const string _ViewName = "V_SC_DESCRIPTOR_PUESTO";
         private const string _CampoPk = "CORR_DESCRIPTOR_PUESTO";
+        private const string _CodigoOpcionFlujo = "SC_DESCRIPTOR_PUESTO";
+        private readonly string _connectionString;
 
         public SC_DESCRIPTOR_PUESTORepository(IConfiguration config) :
             base(config.GetConnectionString("defaultConnection"),
                 config.GetSection("DbProvider:defaultProvider").Value)
         {
+            _connectionString = config.GetConnectionString("defaultConnection") ?? string.Empty;
         }
 
         // Lee de la vista V_SC_DESCRIPTOR_PUESTO filtrando por CORR_EMPRESA; ordena por id.
@@ -367,35 +372,30 @@ namespace SGUEES.Repositories
             return objResultado;
         }
 
-        // Borra tablas hijas en orden (detalle → encabezados) y luego el registro en SC_DESCRIPTOR_PUESTO.
+        // Qué hace: elimina el descriptor, sus hijos y el flujo de ese documento.
+        // Cómo lo hace: si hay empleados cargados no borra nada y avisa; si no, resuelve el tipo con
+        // CODIGO_OPCION, borra notificaciones, bitácora e instancia de ese CORR_DOCUMENTO, y en la misma
+        // transacción borra el detalle y la cabecera.
         public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTOTable Data, string vLOGIN_SISTEMA, string vESTACION)
         {
             CResult objResultado = new();
 
             try
             {
-                var pWhere = new List<CParameter>
+                if (await TieneCargaEmpleadosAsync(Data.CORR_EMPRESA, Data.CORR_DESCRIPTOR_PUESTO))
                 {
-                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = Data.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
-                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = Data.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
-                };
+                    objResultado.Data = null;
+                    objResultado.Result = false;
+                    objResultado.RowsAffected = 0;
+                    objResultado.CodeHelper = 0;
+                    objResultado.ErrorCode = 4102;
+                    objResultado.ErrorMessage = "No se puede eliminar el descriptor porque tiene carga de empleados asociados.";
+                    objResultado.ErrorSource = "";
+                    return objResultado;
+                }
 
-                // Primero elimina detalle y encabezados del descriptor y del perfil; al final el descriptor.
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_FUNCION_ACTIVIDAD", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_FUNCION", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_KPI_FUNCION", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_RELACION_LABORAL", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_INDUCCION", pWhere);
-                await objData.Delete("SC_PERFIL_PUESTO_EDUCACION", pWhere);
-                await objData.Delete("SC_PERFIL_PUESTO_EXPERIENCIA", pWhere);
-                await objData.Delete("SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS", pWhere);
-                await objData.Delete("SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES", pWhere);
-                await objData.Delete("SC_PERFIL_PUESTO", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL", pWhere);
-                await objData.Delete("SC_DESCRIPTOR_PUESTO_RIESGO_PUESTO", pWhere);
-
-                objResultado.RowsAffected = (int)await objData.Delete(_TableName, pWhere);
+                await EliminarDescriptorYFlujoAsync(Data.CORR_EMPRESA, Data.CORR_DESCRIPTOR_PUESTO);
+                objResultado.RowsAffected = 1;
                 objResultado.Data = null;
                 objResultado.Result = true;
                 objResultado.CodeHelper = Data.CORR_DESCRIPTOR_PUESTO;
@@ -418,6 +418,127 @@ namespace SGUEES.Repositories
             }
 
             return objResultado;
+        }
+
+        // Qué hace: indica si el descriptor tiene empleados en la carga.
+        // Cómo lo hace: busca una fila en SC_DESCRIPTOR_PUESTO_EMPLEADO por empresa y correlativo.
+        private async Task<bool> TieneCargaEmpleadosAsync(int corrEmpresa, int corrDocumento)
+        {
+            const string sql = @"
+            SELECT CASE WHEN EXISTS (
+                SELECT 1
+                FROM dbo.SC_DESCRIPTOR_PUESTO_EMPLEADO
+                WHERE CORR_EMPRESA = @CORR_EMPRESA
+                  AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO
+            ) THEN 1 ELSE 0 END;";
+
+            await using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+            await using var cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = corrEmpresa });
+            cmd.Parameters.Add(new SqlParameter("@CORR_DOCUMENTO", SqlDbType.Int) { Value = corrDocumento });
+            var encontrado = await cmd.ExecuteScalarAsync();
+            return encontrado != null && encontrado != DBNull.Value && Convert.ToInt32(encontrado) == 1;
+        }
+
+        // Qué hace: borra el flujo, las firmas y después el descriptor.
+        // Cómo lo hace: solo llega aquí si no hay carga de empleados. El tipo sale de
+        // SEG_FLUJO_TIPO_DOCUMENTO por CODIGO_OPCION. Si falla, no queda nada a medias.
+        private async Task EliminarDescriptorYFlujoAsync(int corrEmpresa, int corrDocumento)
+        {
+            const string sql = @"
+            SET XACT_ABORT ON;
+            BEGIN TRAN;
+
+            DELETE N
+            FROM dbo.SEG_FLUJO_NOTIFICACION N
+            INNER JOIN dbo.SEG_FLUJO_INSTANCIA I
+                ON I.CORR_EMPRESA = N.CORR_EMPRESA
+               AND I.CORR_INSTANCIA = N.CORR_INSTANCIA
+            INNER JOIN dbo.SEG_FLUJO_TIPO_DOCUMENTO T
+                ON T.CORR_EMPRESA = I.CORR_EMPRESA
+               AND T.CORR_TIPO_DOCUMENTO = I.CORR_TIPO_DOCUMENTO
+            WHERE I.CORR_EMPRESA = @CORR_EMPRESA
+              AND T.CODIGO_OPCION = @CODIGO_OPCION
+              AND I.CORR_DOCUMENTO = @CORR_DOCUMENTO;
+
+            DELETE B
+            FROM dbo.SEG_FLUJO_BITACORA B
+            INNER JOIN dbo.SEG_FLUJO_INSTANCIA I
+                ON I.CORR_EMPRESA = B.CORR_EMPRESA
+               AND I.CORR_INSTANCIA = B.CORR_INSTANCIA
+            INNER JOIN dbo.SEG_FLUJO_TIPO_DOCUMENTO T
+                ON T.CORR_EMPRESA = I.CORR_EMPRESA
+               AND T.CORR_TIPO_DOCUMENTO = I.CORR_TIPO_DOCUMENTO
+            WHERE I.CORR_EMPRESA = @CORR_EMPRESA
+              AND T.CODIGO_OPCION = @CODIGO_OPCION
+              AND I.CORR_DOCUMENTO = @CORR_DOCUMENTO;
+
+            DELETE I
+            FROM dbo.SEG_FLUJO_INSTANCIA I
+            INNER JOIN dbo.SEG_FLUJO_TIPO_DOCUMENTO T
+                ON T.CORR_EMPRESA = I.CORR_EMPRESA
+               AND T.CORR_TIPO_DOCUMENTO = I.CORR_TIPO_DOCUMENTO
+            WHERE I.CORR_EMPRESA = @CORR_EMPRESA
+              AND T.CODIGO_OPCION = @CODIGO_OPCION
+              AND I.CORR_DOCUMENTO = @CORR_DOCUMENTO;
+
+            DELETE A
+            FROM dbo.SC_DESCRIPTOR_PUESTO_FUNCION_ACTIVIDAD A
+            WHERE A.CORR_EMPRESA = @CORR_EMPRESA
+              AND A.CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_FUNCION
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_KPI_FUNCION
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_RELACION_LABORAL
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_INDUCCION
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_PERFIL_PUESTO_EDUCACION
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_PERFIL_PUESTO_EXPERIENCIA
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_PERFIL_PUESTO
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_RIESGO_PUESTO
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO_FIRMAS
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            DELETE FROM dbo.SC_DESCRIPTOR_PUESTO
+            WHERE CORR_EMPRESA = @CORR_EMPRESA AND CORR_DESCRIPTOR_PUESTO = @CORR_DOCUMENTO;
+
+            COMMIT TRAN;";
+
+            await using var conn = new SqlConnection(_connectionString);
+            await conn.OpenAsync();
+            await using var cmd = new SqlCommand(sql, conn);
+            cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = corrEmpresa });
+            cmd.Parameters.Add(new SqlParameter("@CORR_DOCUMENTO", SqlDbType.Int) { Value = corrDocumento });
+            cmd.Parameters.Add(new SqlParameter("@CODIGO_OPCION", SqlDbType.VarChar, 50) { Value = _CodigoOpcionFlujo });
+            await cmd.ExecuteNonQueryAsync();
         }
 
         // Arma la lista de columnas y valores para insertar o actualizar en SC_DESCRIPTOR_PUESTO.
@@ -727,6 +848,149 @@ namespace SGUEES.Repositories
             }
         }
 
+        // Qué hace: indica qué apartados van vacíos antes de solicitar el descriptor.
+        // Cómo lo hace: cuenta filas por apartado y revisa los campos del perfil. Firmas y carga de empleados no entran.
+        // Formato corto pide funciones secundarias, KPIs y Otros; extenso pide relaciones y riesgos; ambos pide los dos.
+        public async Task<List<string>> ApartadosVaciosParaSolicitudAsync(int corrEmpresa, int corrDescriptor)
+        {
+            const string sql = @"SELECT
+                    UPPER(RTRIM(ISNULL(D.FORMATO, ''))) AS FORMATO,
+                    CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(D.OBJETIVO_PUESTO, ''))), '') IS NULL THEN 0 ELSE 1 END AS OBJETIVO,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_FUNCION X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO
+                          AND RTRIM(X.TIPO_FUNCION) = 'CLAVE') AS FUNCIONES,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_FUNCION X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO
+                          AND RTRIM(X.TIPO_FUNCION) = 'SECUNDARIA') AS FUNCIONES_SECUNDARIAS,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_KPI_FUNCION X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS KPIS,
+                    (SELECT COUNT(1) FROM dbo.SC_PERFIL_PUESTO_EDUCACION X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS EDUCACION,
+                    (SELECT COUNT(1) FROM dbo.SC_PERFIL_PUESTO_EXPERIENCIA X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS EXPERIENCIA,
+                    (SELECT COUNT(1) FROM dbo.SC_PERFIL_PUESTO_COMPETENCIAS_TECNICAS X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS TECNICAS,
+                    (SELECT COUNT(1) FROM dbo.SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS CONDUCTUALES,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_REQUERIMIENTO_ORGANIZACIONAL X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS REQUERIMIENTOS,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGO X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS RESPONSABILIDADES,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_INDUCCION X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS ENTRENAMIENTO,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_RELACION_LABORAL X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO
+                          AND RTRIM(X.TIPO_RELACION) = 'I') AS RELACIONES_INTERNAS,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_RELACION_LABORAL X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO
+                          AND RTRIM(X.TIPO_RELACION) = 'E') AS RELACIONES_EXTERNAS,
+                    (SELECT COUNT(1) FROM dbo.SC_DESCRIPTOR_PUESTO_RIESGO_PUESTO X
+                        WHERE X.CORR_EMPRESA = D.CORR_EMPRESA AND X.CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO) AS RIESGOS,
+                    CASE WHEN P.EDAD_MINIMA IS NULL THEN 0 ELSE 1 END AS EDAD_MINIMA,
+                    CASE WHEN P.EDAD_MAXIMA IS NULL THEN 0 ELSE 1 END AS EDAD_MAXIMA,
+                    CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(P.SEXO, ''))), '') IS NULL THEN 0 ELSE 1 END AS SEXO,
+                    CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(P.ESTADO_FAMILIAR, ''))), '') IS NULL THEN 0 ELSE 1 END AS ESTADO_FAMILIAR,
+                    CASE WHEN ISNULL(P.CORR_DISPONIBILIDAD_HORARIO, 0) <= 0 THEN 0 ELSE 1 END AS DISPONIBILIDAD,
+                    CASE WHEN ISNULL(P.CORR_TIPO_MODALIDAD, 0) <= 0 THEN 0 ELSE 1 END AS MODALIDAD,
+                    CASE WHEN P.LICENCIA IS NULL THEN 0 ELSE 1 END AS LICENCIA,
+                    CASE WHEN NULLIF(LTRIM(RTRIM(ISNULL(P.OTROS, ''))), '') IS NULL THEN 0 ELSE 1 END AS OTROS
+                FROM dbo.SC_DESCRIPTOR_PUESTO D
+                OUTER APPLY (
+                    SELECT TOP 1
+                        EDAD_MINIMA,
+                        EDAD_MAXIMA,
+                        SEXO,
+                        ESTADO_FAMILIAR,
+                        CORR_DISPONIBILIDAD_HORARIO,
+                        CORR_TIPO_MODALIDAD,
+                        LICENCIA,
+                        OTROS
+                    FROM dbo.SC_PERFIL_PUESTO
+                    WHERE CORR_EMPRESA = D.CORR_EMPRESA
+                      AND CORR_DESCRIPTOR_PUESTO = D.CORR_DESCRIPTOR_PUESTO
+                    ORDER BY CORR_PERFIL_PUESTO
+                ) P
+                WHERE D.CORR_EMPRESA = @CORR_EMPRESA
+                  AND D.CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO";
+
+            try
+            {
+                var reader = await objData.GetDataReader(CommandType.Text, sql, new List<CParameter>
+                {
+                    new CParameter() { ParameterName = "CORR_EMPRESA", Value = corrEmpresa, DbType = DbType.Int32 },
+                    new CParameter() { ParameterName = "CORR_DESCRIPTOR_PUESTO", Value = corrDescriptor, DbType = DbType.Int32 },
+                });
+
+                if (!reader.Read())
+                {
+                    reader.Close();
+                    return null;
+                }
+
+                var formato = reader.IsDBNull(0) ? string.Empty : reader.GetString(0).Trim().ToUpperInvariant();
+                var formatoConocido = formato == "CORTO" || formato == "EXTENSO" || formato == "AMBOS";
+                var pideCorto = !formatoConocido || formato == "CORTO" || formato == "AMBOS";
+                var pideExtenso = !formatoConocido || formato == "EXTENSO" || formato == "AMBOS";
+                var vacios = new List<string>();
+                var perfilVacios = new List<string>();
+
+                void Falta(int indice, string nombre, List<string> destino)
+                {
+                    var cantidad = reader.IsDBNull(indice) ? 0 : Convert.ToInt32(reader.GetValue(indice));
+                    if (cantidad <= 0)
+                    {
+                        destino.Add(nombre);
+                    }
+                }
+
+                Falta(1, "Objetivo", vacios);
+                Falta(2, "Funciones", vacios);
+                Falta(15, "Edad minima", perfilVacios);
+                Falta(16, "Edad maxima", perfilVacios);
+                Falta(17, "Sexo", perfilVacios);
+                Falta(18, "Estado familiar", perfilVacios);
+                Falta(19, "Disponibilidad", perfilVacios);
+                Falta(20, "Modalidad", perfilVacios);
+                Falta(21, "Licencia", perfilVacios);
+                if (pideCorto)
+                {
+                    Falta(22, "Otros", perfilVacios);
+                }
+
+                if (perfilVacios.Count > 0)
+                {
+                    vacios.Add("Perfil del puesto (" + string.Join(", ", perfilVacios) + ")");
+                }
+
+                if (pideCorto)
+                {
+                    Falta(3, "Funciones secundarias", vacios);
+                    Falta(4, "KPIs", vacios);
+                }
+
+                Falta(5, "Educacion", vacios);
+                Falta(6, "Experiencia", vacios);
+                Falta(7, "Competencias tecnicas", vacios);
+                Falta(8, "Competencias conductuales", vacios);
+                Falta(9, "Requerimientos", vacios);
+                Falta(10, "Responsabilidades", vacios);
+                Falta(11, "Entrenamiento", vacios);
+                if (pideExtenso)
+                {
+                    Falta(12, "Relaciones internas", vacios);
+                    Falta(13, "Relaciones externas", vacios);
+                    Falta(14, "Riesgos", vacios);
+                }
+
+                reader.Close();
+                return vacios;
+            }
+            finally
+            {
+                objData.objConnection.Close();
+            }
+        }
+
         /// <summary>
         /// Lookup para sc-requisicion-personal: lista descriptores de V_SC_DESCRIPTOR_PUESTO
         /// filtrados por CORR_EMPRESA + CORR_UNIDAD (no altera GetAllAsync).
@@ -894,6 +1158,22 @@ namespace SGUEES.Repositories
                         .ToList();
                 }
 
+                var empleado = new List<SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    empleado = new List<SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var firmas = new List<SC_DESCRIPTOR_PUESTO_FIRMAS_IMPRView>();
+                if (reader.NextResult())
+                {
+                    firmas = new List<SC_DESCRIPTOR_PUESTO_FIRMAS_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
                 reader.Close();
 
                 var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_CORTO_IMPRPayload
@@ -908,6 +1188,8 @@ namespace SGUEES.Repositories
                     PerfilPuestoExperiencia = perfilPuestoExperiencia,
                     PerfilPuestoCompetenciasTecnicas = perfilPuestoCompTecnicas,
                     PerfilPuestoCompetenciasConductuales = perfilPuestoCompConductuales,
+                    Empleado = empleado,
+                    Firmas = firmas,
                 };
 
                 objResultado.Data = payload;
@@ -1077,6 +1359,22 @@ namespace SGUEES.Repositories
                         .ToList();
                 }
 
+                var empleado = new List<SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPRView>();
+                if (reader.NextResult())
+                {
+                    empleado = new List<SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
+                var firmas = new List<SC_DESCRIPTOR_PUESTO_FIRMAS_IMPRView>();
+                if (reader.NextResult())
+                {
+                    firmas = new List<SC_DESCRIPTOR_PUESTO_FIRMAS_IMPRView>()
+                        .FromDataReader(reader)
+                        .ToList();
+                }
+
                 reader.Close();
 
                 var payload = new SC_DESCRIPTOR_PUESTO_FORMATO_EXTENSO_IMPRPayload
@@ -1095,6 +1393,8 @@ namespace SGUEES.Repositories
                     PerfilPuestoExperiencia = perfilPuestoExperiencia,
                     PerfilPuestoCompetenciasTecnicas = perfilPuestoCompTecnicas,
                     PerfilPuestoCompetenciasConductuales = perfilPuestoCompConductuales,
+                    Empleado = empleado,
+                    Firmas = firmas,
                 };
 
                 objResultado.Data = payload;

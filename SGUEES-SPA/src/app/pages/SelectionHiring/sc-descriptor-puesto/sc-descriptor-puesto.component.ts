@@ -1,11 +1,11 @@
-﻿import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
 import { DxFormComponent } from 'devextreme-angular/ui/form';
 import { DxTabPanelComponent } from 'devextreme-angular/ui/tab-panel';
-import { Observable, of, throwError } from 'rxjs';
-import { catchError, take } from 'rxjs/operators';
+import { Observable, from, of, throwError } from 'rxjs';
+import { catchError, concatMap, map, take, toArray } from 'rxjs/operators';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { BarraMttoCombox } from 'src/app/layouts/barra-data-mtto/barra-data-mtto.component';
@@ -32,6 +32,8 @@ import { ScPerfilPuestoExperiencia } from './sc-perfil-puesto-experiencia/models
 import { ScPerfilPuestoCompetenciasTecnicas } from './sc-perfil-puesto-competencias-tecnicas/models/sc-perfil-puesto-competencias-tecnicas';
 import { ScPerfilPuestoCompetenciasConductuales } from './sc-perfil-puesto-competencias-conductuales/models/sc-perfil-puesto-competencias-conductuales';
 import { ScDescriptorPuestoRequerimientoOrganizacional } from './sc-descriptor-puesto-requerimiento-organizacional/models/sc-descriptor-puesto-requerimiento-organizacional';
+import { ScDescriptorPuestoEmpleado } from './sc-descriptor-puesto-empleado/models/sc-descriptor-puesto-empleado';
+import { ScDescriptorPuestoFirma } from './sc-descriptor-puesto-firmas/models/sc-descriptor-puesto-firmas';
 import { ScDescriptorPuestoRiesgoPuesto } from './sc-descriptor-puesto-riesgo-puesto/models/sc-descriptor-puesto-riesgo-puesto';
 import {
 	RESPONSABLE_ENTRENAMIENTO_CLIENT_KEY,
@@ -68,6 +70,7 @@ import {
 	esEstadoDescriptorEliminable,
 	CORR_ESTADO_APROBADO_JI,
 	CORR_ESTADO_ACTIVO,
+	CORR_ESTADO_INACTIVO,
 	CORR_ESTADO_ENVIADO_JI,
 	CORR_ESTADO_ENVIADO_JTH,
 	CORR_ESTADO_REVISADO_TH,
@@ -107,6 +110,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	@ViewChild('gridActividades', { static: false }) gridActividades?: DxDataGridComponent;
 	@ViewChild('gridRelacionesInternas', { static: false }) gridRelacionesInternas?: DxDataGridComponent;
 	@ViewChild('gridRelacionesExternas', { static: false }) gridRelacionesExternas?: DxDataGridComponent;
+	@ViewChild('popupCargarEmpleado') popupCargarEmpleado?: any;
+	@ViewChild('gridCargarEmpleado') gridCargarEmpleado?: any;
 
 	protected override etiquetaRegistro = 'el descriptor de puesto';
 	protected override requiereEmpresaSesion = true;
@@ -240,10 +245,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	btnObservar = '';
 	btnInactivar = '';
 	btnReactivar = '';
-	// Qué hace: botón Imprimir Formato corto (solo Activo + permiso P + FORMATO CORTO/AMBOS).
-	btnImprimirFormatoCorto = '';
-	// Qué hace: botón Imprimir Formato extenso (solo Activo + permiso P + FORMATO EXTENSO/AMBOS).
-	btnImprimirFormatoExtenso = '';
+	// Qué hace: empleado elegido en Carga empleado para imprimir su descriptor.
+	empleadoImpresionKeys: number[] = [];
 
 	popupVisiblePdf = false;
 	vPDF: Blob | null = null;
@@ -287,6 +290,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	competenciasConductuales: ScPerfilPuestoCompetenciasConductuales[] = [];
 	requerimientosOrganizacionales: ScDescriptorPuestoRequerimientoOrganizacional[] = [];
 	riesgosPuesto: ScDescriptorPuestoRiesgoPuesto[] = [];
+	empleadosCargados: ScDescriptorPuestoEmpleado[] = [];
+	firmasDescriptor: ScDescriptorPuestoFirma[] = [];
+	empleadosDisponibles: ScDescriptorPuestoEmpleado[] = [];
+	popupCargarEmpleadoVisible = false;
+	cargaEmpleadoModalPageSize = 50;
+	cargandoEmpleados = false;
 	induccionesDescriptor: ScDescriptorPuestoInduccion[] = [];
 	responsabilidadesCargo: ScDescriptorPuestoResponsabilidadCargo[] = [];
 	relacionesInternas: ScDescriptorPuestoRelacionLaboral[] = [];
@@ -1266,12 +1275,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.refrescarBotonesFlujo();
 	}
 
-	// Qué hace: al enfocar una fila en la grilla, carga el modelo y refresca botones de flujo/impresión.
-	// Cómo: delega al base (asigna this.model); botones de impresión si Activo; luego GetAccionesFlujo.
+	// Qué hace: al enfocar una fila en la grilla, carga el modelo y refresca botones de flujo.
+	// Cómo: delega al base (asigna this.model) y luego pide GetAccionesFlujo.
 	override focusedRowChanged(e: any): void {
 		super.focusedRowChanged(e);
 		if (this.isBrowse()) {
-			this.actualizarBotonesImprimir();
 			this.refrescarBotonesFlujo();
 		}
 	}
@@ -1539,6 +1547,8 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.cargarRequerimientosOrganizacionales();
 		this.cargarResponsabilidadesCargo();
 		this.cargarInduccionesDescriptor();
+		this.cargarEmpleadosDescriptor();
+		this.cargarFirmasDescriptor();
 	}
 
 	// Limpia listas y flags de edición de todas las secciones al cambiar o cancelar.
@@ -1552,6 +1562,11 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.competenciasConductuales = [];
 		this.requerimientosOrganizacionales = [];
 		this.riesgosPuesto = [];
+		this.empleadosCargados = [];
+		this.limpiarSeleccionEmpleadoImpresion();
+		this.firmasDescriptor = [];
+		this.empleadosDisponibles = [];
+		this.popupCargarEmpleadoVisible = false;
 		this.induccionesDescriptor = [];
 		this.responsabilidadesCargo = [];
 		this.relacionesInternas = [];
@@ -1590,6 +1605,60 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	get esFormatoExtenso(): boolean {
 		const formato = (this.model?.FORMATO ?? '').toUpperCase();
 		return formato === FORMATO_EXTENSO || formato === FORMATO_AMBOS;
+	}
+
+	// Qué hace: indica si el descriptor actual está Activo.
+	// Cómo lo hace: compara el CORR_ESTADO contra el estado Activo.
+	get esDescriptorActivo(): boolean {
+		return toCorrEstado(this.model?.CORR_ESTADO) === CORR_ESTADO_ACTIVO;
+	}
+
+	// Qué hace: indica si el tab Carga empleado debe mostrarse.
+	// Cómo lo hace: se muestra con el descriptor Activo y también cuando queda Inactivo.
+	get mostrarTabCargaEmpleado(): boolean {
+		const estado = toCorrEstado(this.model?.CORR_ESTADO);
+		return estado === CORR_ESTADO_ACTIVO || estado === CORR_ESTADO_INACTIVO;
+	}
+
+	// Qué hace: indica si ya se puede imprimir el descriptor de un empleado.
+	// Cómo: exige descriptor Activo, permiso P, fila seleccionada y carga activa.
+	get puedeImprimirEmpleado(): boolean {
+		const fila = this.empleadoCargaSeleccionado;
+		return (
+			this.permitePrint &&
+			this.esDescriptorActivo &&
+			!!fila &&
+			this.esCargaAsignacionActiva(fila.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)
+		);
+	}
+
+	// Qué hace: fila de carga seleccionada en el tab del descriptor.
+	// Cómo lo hace: busca el empleado cuya llave está marcada en la grilla.
+	get empleadoCargaSeleccionado(): ScDescriptorPuestoEmpleado | null {
+		const key = this.corrEmpleadoImpresion();
+		if (key <= 0) {
+			return null;
+		}
+		return this.empleadosCargados.find((item) => Number(item.CORR_EMPLEADO) === key) ?? null;
+	}
+
+	// Qué hace: indica si la carga seleccionada está activa.
+	// Cómo lo hace: el bit nulo se toma como activo, que es el valor por defecto de la tabla.
+	esCargaAsignacionActiva(valor: boolean | number | string | null | undefined): boolean {
+		return valor !== false && valor !== 0 && valor !== '0';
+	}
+
+	// Qué hace: sale del tab Carga empleado cuando ese tab ya no aplica.
+	// Cómo lo hace: Inactivo sigue mostrando el tab; solo lo cierra en los demás estados.
+	private salirDeTabCargaSiNoActivo(): void {
+		if (this.mostrarTabCargaEmpleado || this.subTabIndex !== 11) {
+			return;
+		}
+		this.popupCargarEmpleadoVisible = false;
+		this.empleadosDisponibles = [];
+		this.empleadosCargados = [];
+		this.limpiarSeleccionEmpleadoImpresion();
+		this.seleccionarTabSeccion(10);
 	}
 
 	// Qué hace: indica si deben mostrarse las secciones del descriptor (funciones, perfil, etc.).
@@ -5167,6 +5236,368 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		});
 	}
 
+	// Qué hace: indica si el empleado está activo para la insignia de la grilla.
+	// Cómo lo hace: acepta el bit que devuelve la vista (true, 1 o '1').
+	esEmpleadoActivo(valor: any): boolean {
+		return valor === true || valor === 1 || valor === '1';
+	}
+
+	// Qué hace: muestra Activo o Inactivo en la grilla de empleados.
+	// Cómo lo hace: traduce el bit ACTIVO_EMPLEADO.
+	textoEstadoEmpleado = (cell: { value?: any }): string => {
+		const valor = cell?.value;
+		if (valor === true || valor === 1 || valor === '1') {
+			return 'Activo';
+		}
+		if (valor === false || valor === 0 || valor === '0') {
+			return 'Inactivo';
+		}
+		return '';
+	};
+
+	// Qué hace: carga las firmas ya guardadas del descriptor.
+	// Cómo lo hace: GetAll al abrir el detalle. No consulta de nuevo al mover el flujo.
+	private cargarFirmasDescriptor(): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!corrDescriptor || corrDescriptor <= 0) {
+			this.firmasDescriptor = [];
+			return;
+		}
+
+		this.service
+			.getFirmasDescriptor(corrDescriptor)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.firmasDescriptor = response?.Result
+						? (response.Data ?? []).map((item: ScDescriptorPuestoFirma) => ({
+								CORR_FIRMAS: item.CORR_FIRMAS,
+								CORR_DESCRIPTOR_PUESTO: item.CORR_DESCRIPTOR_PUESTO,
+								NOMBRE_COMPLETO: item.NOMBRE_COMPLETO ?? '',
+								TIPO_JEFE: item.TIPO_JEFE ?? '',
+								TIPO_ACTOR: item.TIPO_ACTOR ?? '',
+								FECHA_FIRMA: item.FECHA_FIRMA ?? null,
+							}))
+						: [];
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	// Qué hace: carga los empleados ya asociados al descriptor.
+	// Cómo lo hace: GetAll al abrir el detalle; no se vuelve a consultar después de guardar.
+	private cargarEmpleadosDescriptor(): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (!this.mostrarTabCargaEmpleado || !corrDescriptor || corrDescriptor <= 0) {
+			this.empleadosCargados = [];
+			this.limpiarSeleccionEmpleadoImpresion();
+			this.popupCargarEmpleadoVisible = false;
+			return;
+		}
+
+		this.service
+			.getEmpleadosDescriptor(corrDescriptor)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.empleadosCargados = response?.Result
+						? (response.Data ?? []).map((item: ScDescriptorPuestoEmpleado) => this.mapEmpleadoCargado(item))
+						: [];
+					this.conservarSeleccionEmpleadoImpresion();
+				},
+				error: (error) => this.notifyApiError(error),
+			});
+	}
+
+	// Qué hace: abre el modal para cargar empleados que aplican al descriptor.
+	// Cómo lo hace: pide los del mismo puesto y unidad y deja fuera los que ya están cargados.
+	abrirCargarEmpleados(): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		if (this.cargandoEmpleados || !this.esDescriptorActivo) {
+			return;
+		}
+		if (!corrDescriptor || corrDescriptor <= 0) {
+			this.notifyFx('Guarde el descriptor para cargar empleados.', NotifyType.Warning);
+			return;
+		}
+		if (!Number(this.model?.CORR_PUESTO) || !Number(this.model?.CORR_UNIDAD)) {
+			this.notifyFx('El descriptor no tiene puesto y unidad. No se pueden cargar empleados.', NotifyType.Warning);
+			return;
+		}
+
+		this.cargaEmpleadoModalPageSize = 50;
+		this.cargandoEmpleados = true;
+		this.service
+			.getEmpleadosDisponiblesDescriptor(corrDescriptor)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.cargandoEmpleados = false;
+					if (!response?.Result) {
+						this.notifyFx(response?.ErrorMessage || 'No se pudieron consultar los empleados.', NotifyType.Warning);
+						return;
+					}
+					const cargados = new Set(this.empleadosCargados.map((item) => item.CORR_EMPLEADO));
+					this.empleadosDisponibles = (response.Data ?? [])
+						.filter((item: ScDescriptorPuestoEmpleado) => !cargados.has(Number(item?.CORR_EMPLEADO)))
+						.map((item: ScDescriptorPuestoEmpleado) => ({
+							...this.mapEmpleadoCargado(item),
+							SELECCION: false,
+						}));
+					this.popupCargarEmpleadoVisible = true;
+				},
+				error: (error) => {
+					this.cargandoEmpleados = false;
+					this.notifyFx(this.textoErrorCargaEmpleado(error), NotifyType.Warning);
+				},
+			});
+	}
+
+	// Qué hace: con 5 o 10 filas la tabla se encoge; con más, mantiene altura y scroll.
+	// Cómo lo hace: deja espacio para el título, los botones y el paginador dentro de la pantalla.
+	get alturaCargaEmpleadoModal(): string {
+		return this.cargaEmpleadoModalPageSize <= 10 ? 'auto' : 'calc(100vh - 300px)';
+	}
+
+	// Qué hace: actualiza la altura cuando cambia el tamaño de página del modal.
+	// Cómo lo hace: reaplica la altura en la grilla para que el paginador no quede fuera.
+	onCargaEmpleadoModalOptionChanged(e: any): void {
+		if (e?.fullName !== 'paging.pageSize' || !(Number(e.value) > 0)) {
+			return;
+		}
+		this.cargaEmpleadoModalPageSize = Number(e.value);
+		const altura = this.alturaCargaEmpleadoModal;
+		setTimeout(() => {
+			e.component?.option('height', altura);
+			e.component?.updateDimensions?.();
+			this.popupCargarEmpleado?.instance?.repaint();
+		});
+	}
+
+	cerrarCargarEmpleados(): void {
+		if (this.cargandoEmpleados) {
+			this.popupCargarEmpleadoVisible = true;
+			return;
+		}
+		this.popupCargarEmpleadoVisible = false;
+		this.empleadosDisponibles = [];
+	}
+
+	// Qué hace: marca o quita la marca de todos los empleados del modal.
+	selectTodosEmpleadosCarga(marcar: boolean): void {
+		this.empleadosDisponibles = (this.empleadosDisponibles ?? []).map((item) => ({
+			...item,
+			SELECCION: marcar,
+		}));
+	}
+
+	// Qué hace: carga los marcados y quita los que se desmarcaron.
+	// Cómo lo hace: inserta o elimina uno por uno y parchea la grilla en memoria.
+	guardarEmpleadosMarcados(): void {
+		if (this.cargandoEmpleados || !this.esDescriptorActivo) {
+			return;
+		}
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		const lista = this.empleadosDisponibles ?? [];
+		if (!lista.length) {
+			this.notifyFx('No hay empleados para cargar.', NotifyType.Warning);
+			return;
+		}
+
+		const cargados = new Set(this.empleadosCargados.map((item) => item.CORR_EMPLEADO));
+		const operaciones = [
+			...lista
+				.filter((item) => !!item.SELECCION && !cargados.has(item.CORR_EMPLEADO))
+				.map((empleado) => ({ tipo: 'insert' as const, empleado })),
+			...lista
+				.filter((item) => !item.SELECCION && cargados.has(item.CORR_EMPLEADO))
+				.map((empleado) => ({ tipo: 'delete' as const, empleado })),
+		];
+		if (!operaciones.length) {
+			this.notifyFx('Cambios guardados con exito!', NotifyType.Success, { raw: true });
+			this.popupCargarEmpleadoVisible = false;
+			this.empleadosDisponibles = [];
+			return;
+		}
+
+		this.cargandoEmpleados = true;
+		from(operaciones)
+			.pipe(
+				concatMap((op) => {
+					const request$ =
+						op.tipo === 'insert'
+							? this.service.cargarEmpleadoDescriptor(corrDescriptor, op.empleado.CORR_EMPLEADO)
+							: this.service.quitarEmpleadoDescriptor(corrDescriptor, op.empleado.CORR_EMPLEADO);
+					return request$.pipe(
+						take(1),
+						catchError((error) =>
+							of({
+								Result: false,
+								ErrorMessage: this.textoErrorCargaEmpleado(
+									error,
+									op.tipo === 'insert' ? 'No se pudo cargar el empleado.' : 'No se pudo quitar el empleado.'
+								),
+							})
+						),
+						map((response: any) => ({ ...response, _tipo: op.tipo, _empleado: op.empleado }))
+					);
+				}),
+				toArray()
+			)
+			.subscribe({
+				next: (responses: any[]) => {
+					this.cargandoEmpleados = false;
+					const ok = responses.filter((item) => item?.Result);
+					const fail = responses.filter((item) => !item?.Result);
+					let insertOk = 0;
+					let deleteOk = 0;
+					for (const response of ok) {
+						if (response._tipo === 'insert') {
+							const fila = this.mapEmpleadoCargado(response.Data ?? response._empleado);
+							if (!this.empleadosCargados.some((item) => item.CORR_EMPLEADO === fila.CORR_EMPLEADO)) {
+								this.empleadosCargados = [...this.empleadosCargados, fila].sort((a, b) =>
+									(a.NOMBRE_EMPLEADO ?? '').localeCompare(b.NOMBRE_EMPLEADO ?? '')
+								);
+							}
+							insertOk += 1;
+						} else {
+							const corrEmpleado = Number(response._empleado?.CORR_EMPLEADO);
+							this.empleadosCargados = this.empleadosCargados.filter((item) => item.CORR_EMPLEADO !== corrEmpleado);
+							deleteOk += 1;
+						}
+					}
+					this.conservarSeleccionEmpleadoImpresion();
+					if (insertOk > 0 || deleteOk > 0) {
+						const partes: string[] = [];
+						if (insertOk > 0) {
+							partes.push(insertOk === 1 ? '1 empleado cargado' : `${insertOk} empleados cargados`);
+						}
+						if (deleteOk > 0) {
+							partes.push(deleteOk === 1 ? '1 empleado quitado' : `${deleteOk} empleados quitados`);
+						}
+						this.notifyFx(partes.join('. ') + '.', NotifyType.Success, { raw: true });
+					}
+					if (fail.length > 0) {
+						const msg = fail
+							.map((item) => item?.ErrorMessage)
+							.filter((texto) => !!texto)
+							.filter((texto, index, lista) => lista.indexOf(texto) === index)
+							.join(' ');
+						this.notifyFx(msg || 'Algunos empleados no se pudieron actualizar.', NotifyType.Warning);
+						const siguen = new Set(this.empleadosCargados.map((item) => item.CORR_EMPLEADO));
+						this.gridCargarEmpleado?.instance?.cancelEditData?.();
+						this.empleadosDisponibles = this.empleadosDisponibles.map((item) => ({
+							...item,
+							SELECCION: siguen.has(item.CORR_EMPLEADO),
+						}));
+						setTimeout(() => this.gridCargarEmpleado?.instance?.refresh?.());
+						return;
+					}
+					this.popupCargarEmpleadoVisible = false;
+					this.empleadosDisponibles = [];
+				},
+				error: (error) => {
+					this.cargandoEmpleados = false;
+					this.notifyApiError(error);
+				},
+			});
+	}
+
+	// Qué hace: activa o inactiva la carga seleccionada.
+	// Cómo lo hace: actualiza el bit y parchea la fila en memoria con la respuesta.
+	cambiarActivoCargaEmpleado(activo: boolean): void {
+		const fila = this.empleadoCargaSeleccionado;
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		const corrEmpleado = Number(fila?.CORR_EMPLEADO);
+		if (!this.esDescriptorActivo || !corrDescriptor || !corrEmpleado || this.cargandoEmpleados) {
+			return;
+		}
+
+		this.cargandoEmpleados = true;
+		this.service
+			.cambiarActivoEmpleadoDescriptor(corrDescriptor, corrEmpleado, activo)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.cargandoEmpleados = false;
+					if (!response?.Result) {
+						this.notifyFx(response?.ErrorMessage || 'No se pudo actualizar la carga.', NotifyType.Warning);
+						return;
+					}
+					const bit = response?.Data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO ?? activo;
+					this.empleadosCargados = this.empleadosCargados.map((item) =>
+						Number(item.CORR_EMPLEADO) === corrEmpleado
+							? { ...item, ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO: bit }
+							: item
+					);
+					this.notifyFx(activo ? 'Carga activada.' : 'Carga inactivada.', NotifyType.Success, { raw: true });
+				},
+				error: (error) => {
+					this.cargandoEmpleados = false;
+					this.notifyFx(this.textoErrorCargaEmpleado(error, 'No se pudo actualizar la carga.'), NotifyType.Warning);
+				},
+			});
+	}
+
+	// Qué hace: toma la fila del botón quitar de la grilla.
+	// Cómo lo hace: lee los datos de la fila y llama a la baja.
+	quitarEmpleadoCargadoClick = (e: any): void => {
+		this.quitarEmpleadoCargado(e?.row?.data);
+	};
+
+	// Qué hace: quita un empleado cargado en el descriptor.
+	// Cómo lo hace: elimina el vínculo y lo saca de la grilla en memoria.
+	quitarEmpleadoCargado(row: ScDescriptorPuestoEmpleado): void {
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		const corrEmpleado = Number(row?.CORR_EMPLEADO);
+		if (!this.esDescriptorActivo || !corrDescriptor || !corrEmpleado) {
+			return;
+		}
+
+		this.cargandoEmpleados = true;
+		this.service
+			.quitarEmpleadoDescriptor(corrDescriptor, corrEmpleado)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.cargandoEmpleados = false;
+					if (!response?.Result) {
+						this.notifyFx(response?.ErrorMessage || 'No se pudo quitar el empleado.', NotifyType.Warning);
+						return;
+					}
+					this.empleadosCargados = this.empleadosCargados.filter((item) => item.CORR_EMPLEADO !== corrEmpleado);
+					this.conservarSeleccionEmpleadoImpresion();
+				},
+				error: (error) => {
+					this.cargandoEmpleados = false;
+					this.notifyFx(this.textoErrorCargaEmpleado(error), NotifyType.Warning);
+				},
+			});
+	}
+
+	private mapEmpleadoCargado(item: ScDescriptorPuestoEmpleado): ScDescriptorPuestoEmpleado {
+		return {
+			CORR_DESCRIPTOR_PUESTO: Number(item?.CORR_DESCRIPTOR_PUESTO ?? this.model?.CORR_DESCRIPTOR_PUESTO ?? 0),
+			CORR_EMPLEADO: Number(item?.CORR_EMPLEADO ?? 0),
+			NOMBRE_EMPLEADO: item?.NOMBRE_EMPLEADO ?? '',
+			DUI: item?.DUI ?? '',
+			FECHA_INGRESO: item?.FECHA_INGRESO ?? null,
+			CORREO_INSTITUCIONAL: item?.CORREO_INSTITUCIONAL ?? '',
+			TELEFONO_INSTITUCIONAL: item?.TELEFONO_INSTITUCIONAL ?? '',
+			LOGIN_SISTEMA_WEB: item?.LOGIN_SISTEMA_WEB ?? '',
+			ACTIVO_EMPLEADO: item?.ACTIVO_EMPLEADO ?? null,
+			ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO: item?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO ?? null,
+		};
+	}
+
+	private textoErrorCargaEmpleado(error: any, respaldo = 'No se pudo cargar el empleado.'): string {
+		if (typeof error === 'string' && error.trim()) {
+			return error.replace(/^Error:\s*/i, '').trim();
+		}
+		const mensaje = error?.error?.ErrorMessage || error?.ErrorMessage || error?.message || '';
+		return String(mensaje).replace(/^Error:\s*/i, '').trim() || respaldo;
+	}
+
 	// Consulta las inducciones (entrenamiento) del descriptor y actualiza el lookup disponible.
 	private cargarInduccionesDescriptor(forzar = false): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
@@ -5787,8 +6218,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 		this.model.FORMATO = value || FORMATO_CORTO;
 		this.ultimoFormatoAplicado = formatoNuevo;
-		// El formato decide qué botones de impresión aplican (corto, extenso o ambos).
-		this.actualizarBotonesImprimir();
 		this.actualizarResponsabilidadesCargoLookupDisponibles();
 		if (cambioReal && Number(this.model?.CORR_DESCRIPTOR_PUESTO) > 0) {
 			this.cargarResponsabilidadesCargo(true);
@@ -6448,7 +6877,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 					this.btnObservar = this.accionesFlujo.puedeObservar ? 'Observar' : '';
 					this.btnInactivar = this.accionesFlujo.puedeInactivar ? 'Inactivar' : '';
 					this.btnReactivar = this.accionesFlujo.puedeReactivar ? 'Reactivar' : '';
-					this.actualizarBotonesImprimir();
 					this.cdr.detectChanges();
 				},
 				error: () => {
@@ -6459,18 +6887,32 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
-	// Qué hace: muestra los botones de impresión según el FORMATO del descriptor.
-	// Cómo: base común (CORR_ESTADO = 14 + permitePrint claim |P + correlativo) y luego
-	//       esFormatoCorto / esFormatoExtenso; con FORMATO = AMBOS salen los dos botones.
-	private actualizarBotonesImprimir(): void {
-		const corr = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
-		const esActivo = toCorrEstado(this.model?.CORR_ESTADO) === CORR_ESTADO_ACTIVO;
-		const puedeImprimir = this.permitePrint && corr > 0 && esActivo;
+	// Qué hace: guarda la fila elegida en Carga empleado para imprimir su descriptor.
+	// Cómo: la grilla es de selección simple; sin fila los botones de formato no se muestran.
+	onEmpleadoImpresionSeleccionado(e: { selectedRowKeys?: Array<number | string> }): void {
+		const key = Number(e?.selectedRowKeys?.[0] ?? 0);
+		this.empleadoImpresionKeys = key > 0 ? [key] : [];
+	}
 
-		this.btnImprimirFormatoCorto =
-			puedeImprimir && this.esFormatoCorto ? 'Formato corto' : '';
-		this.btnImprimirFormatoExtenso =
-			puedeImprimir && this.esFormatoExtenso ? 'Formato extenso' : '';
+	// Qué hace: correlativo del empleado seleccionado para el PDF.
+	// Cómo: lee la única llave de la grilla de Carga empleado.
+	private corrEmpleadoImpresion(): number {
+		return Number(this.empleadoImpresionKeys[0] ?? 0);
+	}
+
+	// Qué hace: quita la selección de impresión.
+	// Cómo: vacía las llaves de la grilla de Carga empleado.
+	private limpiarSeleccionEmpleadoImpresion(): void {
+		this.empleadoImpresionKeys = [];
+	}
+
+	// Qué hace: mantiene la selección solo si ese empleado sigue cargado.
+	// Cómo: si la llave ya no está en la grilla, la limpia.
+	private conservarSeleccionEmpleadoImpresion(): void {
+		const key = this.corrEmpleadoImpresion();
+		if (!this.empleadosCargados.some((item) => Number(item.CORR_EMPLEADO) === key)) {
+			this.limpiarSeleccionEmpleadoImpresion();
+		}
 	}
 
 	// Qué hace: valida correlativo, estado Activo y permiso P antes de pedir cualquier PDF.
@@ -6489,13 +6931,22 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.notifyFx('No tiene permiso de impresion (P) en esta opcion.', NotifyType.Warning);
 			return 0;
 		}
+		if (!this.esCargaAsignacionActiva(this.empleadoCargaSeleccionado?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)) {
+			this.notifyFx('Solo se puede imprimir cuando la carga del empleado esta activa.', NotifyType.Warning);
+			return 0;
+		}
 		return corr;
 	}
 
-	// Qué hace: solicita PDF Formato corto y lo muestra en popup (patrón con-partida).
+	// Qué hace: solicita PDF Formato corto del empleado seleccionado.
+	// Cómo: valida descriptor Activo y permiso P, y envía el CORR_EMPLEADO de la fila.
 	imprimirFormatoCorto(): void {
 		const corr = this.validarImpresionDescriptor();
-		if (!corr) {
+		const corrEmpleado = this.corrEmpleadoImpresion();
+		if (!corr || !corrEmpleado) {
+			if (corr && !corrEmpleado) {
+				this.notifyFx('Seleccione un empleado para imprimir el descriptor.', NotifyType.Warning);
+			}
 			return;
 		}
 		if (!this.esFormatoCorto) {
@@ -6504,15 +6955,22 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 
 		this.mostrarPdfEnPopup(
-			this.service.getPDFFormatoCorto({ CORR_DESCRIPTOR_PUESTO: corr })
+			this.service.getPDFFormatoCorto({
+				CORR_DESCRIPTOR_PUESTO: corr,
+				CORR_EMPLEADO: corrEmpleado,
+			})
 		);
 	}
 
-	// Qué hace: solicita PDF Formato extenso y lo muestra en popup.
+	// Qué hace: solicita PDF Formato extenso del empleado seleccionado.
 	// Cómo: mismas validaciones del corto; endpoint getPDFFormatoExtenso.
 	imprimirFormatoExtenso(): void {
 		const corr = this.validarImpresionDescriptor();
-		if (!corr) {
+		const corrEmpleado = this.corrEmpleadoImpresion();
+		if (!corr || !corrEmpleado) {
+			if (corr && !corrEmpleado) {
+				this.notifyFx('Seleccione un empleado para imprimir el descriptor.', NotifyType.Warning);
+			}
 			return;
 		}
 		if (!this.esFormatoExtenso) {
@@ -6521,7 +6979,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		}
 
 		this.mostrarPdfEnPopup(
-			this.service.getPDFFormatoExtenso({ CORR_DESCRIPTOR_PUESTO: corr })
+			this.service.getPDFFormatoExtenso({
+				CORR_DESCRIPTOR_PUESTO: corr,
+				CORR_EMPLEADO: corrEmpleado,
+			})
 		);
 	}
 
@@ -6566,7 +7027,6 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		this.btnObservar = '';
 		this.btnInactivar = '';
 		this.btnReactivar = '';
-		this.actualizarBotonesImprimir();
 	}
 
 	// Qué hace: texto del boton de avance segun el paso (Revision TH vs Aprobar JI/JTH).
@@ -6726,6 +7186,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.modelUpdate = this.fillData(descriptor);
 						this.aplicarRegistroEnGrid(descriptor, false);
 						this.cancelarPopupFlujo();
+						if (operacion === OPERACION_FLUJO.INACTIVAR) {
+							this.empleadosCargados = this.empleadosCargados.map((item) => ({
+								...item,
+								ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO: false,
+							}));
+						}
 						this.notifyFx(mensajeExitoFlujo, NotifyType.Success);
 						// Qué hace: tras Solicitar / Aprobar / Observar / Reactivar vuelve al listado; tras Inactivar se queda en detalle.
 						// Cómo: Browse evita reintentar la acción; Inactivar deja el form para mostrar Reactivar sin salir.
@@ -6742,6 +7208,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 							this.aplicarModoSegunEstadoFlujo();
 							this.firmasDocumento?.refresh();
 							this.refrescarBotonesFlujo();
+							this.salirDeTabCargaSiNoActivo();
 						}
 					} else {
 						// Qué hace: avisos de negocio del flujo con API 200 + Result=false.
@@ -7044,7 +7511,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 
 	// Qué hace: convierte un error de red de guardar/eliminar en una respuesta homogénea cuando es un aviso de negocio.
 	// Cómo: intercepta el error con catchError; si esAdvertenciaOperacion lo reconoce como aviso, devuelve un
-	// observable con Result en false y el mensaje de contexto; si no, propaga el error original con throwError.
+	// observable con Result en false y el mensaje de la API; si no, propaga el error original con throwError.
 	private convertirErrorOperacionEnRespuesta<T>(
 		request: Observable<T>,
 		operacion: 'guardar' | 'eliminar',
@@ -7053,16 +7520,29 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return request.pipe(
 			catchError((error: any) => {
 				if (this.esAdvertenciaOperacion(error, operacion)) {
+					const mensajeApi = this.obtenerMensajeOperacion(error);
 					return of({
 						Result: false,
-						ErrorCode: 2627,
-						ErrorMessage: contextMessage,
+						ErrorCode: Number(error?.error?.ErrorCode ?? error?.ErrorCode ?? 4102),
+						ErrorMessage: mensajeApi || contextMessage,
 					} as T);
 				}
 
 				return throwError(() => error);
 			})
 		);
+	}
+
+	// Qué hace: muestra el aviso de la API al eliminar un descriptor con carga de empleados.
+	// Cómo lo hace: ese texto lleva "asociados"; el aviso general lo cambiaría, así que aquí se muestra tal cual.
+	override notifyApiResponse(response: any): void {
+		const message = `${response?.ErrorMessage ?? ''}`.trim();
+		if (message.toLowerCase().includes('carga de empleados')) {
+			this.notifyFx(message, NotifyType.Warning, { raw: true });
+			return;
+		}
+
+		super.notifyApiResponse(response);
 	}
 
 	// Utilidades comunes de los grids: marcar fila inválida, sincronizar formulario y cancelar edición.

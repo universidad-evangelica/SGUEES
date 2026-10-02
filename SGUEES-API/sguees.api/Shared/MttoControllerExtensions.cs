@@ -1,3 +1,6 @@
+// Qué hace: permite anotar object? sin encender avisos de nulos en el resto del archivo.
+// Cómo lo hace: habilita solo las anotaciones. El proyecto sigue con nulabilidad desactivada.
+#nullable enable annotations
 using System;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;

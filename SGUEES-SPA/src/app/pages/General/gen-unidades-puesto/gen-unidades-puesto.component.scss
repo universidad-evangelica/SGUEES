@@ -7,6 +7,10 @@
 	align-items: center;
 	gap: 10px;
 	margin-bottom: 12px;
+	padding: 10px 12px;
+	background: var(--sguees-surface-subtle, color-mix(in srgb, var(--base-text-color) 6%, transparent));
+	border: 1px solid var(--border-color, color-mix(in srgb, var(--base-text-color) 12%, transparent));
+	border-radius: var(--sguees-radius-md, 10px);
 }
 
 :host ::ng-deep .unidades-puesto-popup-toolbar .dx-button {

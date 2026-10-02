@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using sgueesRpt.Models;
+using sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO;
 
 namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_PUESTO_FORMATO_CORTO
 {
@@ -104,6 +105,14 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 			var perfilPuestoCompCond = Utils.CreateDataTable(compCondRows);
 			perfilPuestoCompCond.TableName = "V_SC_PERFIL_PUESTO_COMPETENCIAS_CONDUCTUALES_FORMATO_CORTO_IMPR";
 
+			var empleadoRows = payload.Empleado ?? new List<SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPRView>();
+			var empleado = Utils.CreateDataTable(empleadoRows);
+			empleado.TableName = "V_SC_DESCRIPTOR_PUESTO_EMPLEADO_IMPR";
+
+			var firmasRows = payload.Firmas ?? new List<SC_DESCRIPTOR_PUESTO_FIRMAS_IMPRView>();
+			var firmas = Utils.CreateDataTable(firmasRows);
+			firmas.TableName = "V_SC_DESCRIPTOR_PUESTO_FIRMAS_IMPR";
+
 			var dataSet = new DataSet();
 			dataSet.Tables.Add(encabezado);
 			dataSet.Tables.Add(param);
@@ -116,6 +125,8 @@ namespace sgueesRpt.Reports.SelectionHiring.SC_DESCRIPTOR_PUESTO.SC_DESCRIPTOR_P
 			dataSet.Tables.Add(perfilPuestoExperiencia);
 			dataSet.Tables.Add(perfilPuestoCompTec);
 			dataSet.Tables.Add(perfilPuestoCompCond);
+			dataSet.Tables.Add(empleado);
+			dataSet.Tables.Add(firmas);
 
 			return dataSet;
 		}

@@ -14,6 +14,9 @@ namespace SGUEES.Repositories
         // Qué hace: calcula la siguiente VERSION para empresa+unidad+puesto (MAX+1, o 1 si no hay filas).
         // Cómo lo hace: MAX(VERSION) en SC_DESCRIPTOR_PUESTO excluyendo el corr actual (Update).
         Task<int> GetNextVersionPorUnidadPuestoAsync(int corrEmpresa, int corrUnidad, int corrPuesto, int excludeCorrDescriptor);
+        // Qué hace: lista los apartados del descriptor que van vacíos al solicitar.
+        // Cómo lo hace: null si no existe el descriptor; lista vacía si todos tienen al menos un dato.
+        Task<List<string>> ApartadosVaciosParaSolicitudAsync(int corrEmpresa, int corrDescriptor);
         /// <summary>Lookup sc-requisicion-personal: descriptores por empresa + CORR_UNIDAD.</summary>
         Task<CResult> GetCORR_DESCRIPTOR_PUESTO_SC_REQUISICION_PERSONAL(List<CParameter> xWhere);
         // Actualiza solo RESPONSABLE (Entrenamiento).

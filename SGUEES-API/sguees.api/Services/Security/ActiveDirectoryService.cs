@@ -4,6 +4,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System.DirectoryServices.AccountManagement;
 
+// Qué hace: este servicio solo se ejecuta en Windows, donde vive el directorio activo.
+// Cómo lo hace: el aviso de plataforma queda limitado a este archivo y no se propaga al login.
+#pragma warning disable CA1416
+
 namespace sguees.Services.Security
 {
     public class ADUserInfo

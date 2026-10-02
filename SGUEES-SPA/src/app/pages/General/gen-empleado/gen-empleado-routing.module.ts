@@ -9,6 +9,7 @@ import { DxDateBoxModule } from 'devextreme-angular/ui/date-box';
 import { DxLoadPanelModule } from 'devextreme-angular/ui/load-panel';
 import { DxNumberBoxModule } from 'devextreme-angular/ui/number-box';
 import { DxPopupModule } from 'devextreme-angular/ui/popup';
+import { DxDataGridModule } from 'devextreme-angular/ui/data-grid';
 import { DxScrollViewModule } from 'devextreme-angular/ui/scroll-view';
 import { DxSelectBoxModule } from 'devextreme-angular/ui/select-box';
 import { DxTabPanelModule } from 'devextreme-angular/ui/tab-panel';
@@ -32,6 +33,7 @@ const routes: Routes = [{ path: '', component: GenEmpleadoComponent }];
 		DxLoadPanelModule,
 		DxNumberBoxModule,
 		DxPopupModule,
+		DxDataGridModule,
 		DxScrollViewModule,
 		DxSelectBoxModule,
 		DxTabPanelModule,

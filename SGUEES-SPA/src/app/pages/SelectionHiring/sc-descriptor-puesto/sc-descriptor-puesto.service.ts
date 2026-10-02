@@ -30,6 +30,8 @@ import { ScDescriptorPuestoRequerimientoOrganizacional } from './sc-descriptor-p
 import { ScDescriptorPuestoRequerimientoOrganizacionalRepository } from './sc-descriptor-puesto-requerimiento-organizacional/sc-descriptor-puesto-requerimiento-organizacional.repository';
 import { ScDescriptorPuestoRiesgoPuesto } from './sc-descriptor-puesto-riesgo-puesto/models/sc-descriptor-puesto-riesgo-puesto';
 import { ScDescriptorPuestoRiesgoPuestoRepository } from './sc-descriptor-puesto-riesgo-puesto/sc-descriptor-puesto-riesgo-puesto.repository';
+import { ScDescriptorPuestoEmpleadoRepository } from './sc-descriptor-puesto-empleado/sc-descriptor-puesto-empleado.repository';
+import { ScDescriptorPuestoFirmasRepository } from './sc-descriptor-puesto-firmas/sc-descriptor-puesto-firmas.repository';
 import { ScDescriptorPuestoInduccion } from './sc-descriptor-puesto-induccion/models/sc-descriptor-puesto-induccion';
 import { ScDescriptorPuestoInduccionRepository } from './sc-descriptor-puesto-induccion/sc-descriptor-puesto-induccion.repository';
 import { ScDescriptorPuestoResponsabilidadCargo } from './sc-descriptor-puesto-responsabilidad-cargo/models/sc-descriptor-puesto-responsabilidad-cargo';
@@ -71,6 +73,8 @@ export class ScDescriptorPuestoService {
 		private competenciasConductualesRepo: ScPerfilPuestoCompetenciasConductualesRepository,
 		private requerimientosOrganizacionalesRepo: ScDescriptorPuestoRequerimientoOrganizacionalRepository,
 		private riesgosPuestoRepo: ScDescriptorPuestoRiesgoPuestoRepository,
+		private empleadosDescriptorRepo: ScDescriptorPuestoEmpleadoRepository,
+		private firmasDescriptorRepo: ScDescriptorPuestoFirmasRepository,
 		private responsabilidadesCargoRepo: ScDescriptorPuestoResponsabilidadCargoRepository,
 		private relacionLaboralRepo: ScDescriptorPuestoRelacionLaboralRepository,
 		private induccionesRepo: ScDescriptorPuestoInduccionRepository
@@ -309,15 +313,15 @@ export class ScDescriptorPuestoService {
 		]);
 	}
 
-	// Qué hace: genera PDF Formato corto del descriptor seleccionado.
-	// Cómo: PostBlob getPDFFormatoCorto con CORR_DESCRIPTOR_PUESTO.
-	getPDFFormatoCorto(model: { CORR_DESCRIPTOR_PUESTO: number }): Observable<Blob> {
+	// Qué hace: genera PDF Formato corto del empleado seleccionado.
+	// Cómo: PostBlob getPDFFormatoCorto con el descriptor y el CORR_EMPLEADO.
+	getPDFFormatoCorto(model: { CORR_DESCRIPTOR_PUESTO: number; CORR_EMPLEADO: number }): Observable<Blob> {
 		return this.repo.getPDFFormatoCorto(model);
 	}
 
-	// Qué hace: genera PDF Formato extenso del descriptor seleccionado.
-	// Cómo: PostBlob getPDFFormatoExtenso con CORR_DESCRIPTOR_PUESTO.
-	getPDFFormatoExtenso(model: { CORR_DESCRIPTOR_PUESTO: number }): Observable<Blob> {
+	// Qué hace: genera PDF Formato extenso del empleado seleccionado.
+	// Cómo: PostBlob getPDFFormatoExtenso con el descriptor y el CORR_EMPLEADO.
+	getPDFFormatoExtenso(model: { CORR_DESCRIPTOR_PUESTO: number; CORR_EMPLEADO: number }): Observable<Blob> {
 		return this.repo.getPDFFormatoExtenso(model);
 	}
 
@@ -1740,5 +1744,57 @@ export class ScDescriptorPuestoService {
 				} as IResult;
 			})
 		);
+	}
+
+	// Qué hace: lista las firmas guardadas del descriptor.
+	// Cómo lo hace: GetAll al abrir el detalle. El alta ocurre en el API al quedar Activo.
+	getFirmasDescriptor(corrDescriptorPuesto: number): Observable<IResult> {
+		return this.firmasDescriptorRepo.getAll([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+		]);
+	}
+
+	// Qué hace: lista los empleados ya cargados en el descriptor.
+	// Cómo lo hace: GetAll filtrado por el correlativo del descriptor.
+	getEmpleadosDescriptor(corrDescriptorPuesto: number): Observable<IResult> {
+		return this.empleadosDescriptorRepo.getAll([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+		]);
+	}
+
+	// Qué hace: lista empleados que tienen el puesto y la unidad del descriptor.
+	// Cómo lo hace: GetDisponibles; el API cruza GEN_EMPLEADO_PUESTO.
+	getEmpleadosDisponiblesDescriptor(corrDescriptorPuesto: number): Observable<IResult> {
+		return this.empleadosDescriptorRepo.getDisponibles([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+		]);
+	}
+
+	// Qué hace: carga un empleado en el descriptor.
+	// Cómo lo hace: POST con el correlativo del empleado.
+	cargarEmpleadoDescriptor(corrDescriptorPuesto: number, corrEmpleado: number): Observable<IResult> {
+		return this.empleadosDescriptorRepo.create({
+			CORR_DESCRIPTOR_PUESTO: corrDescriptorPuesto,
+			CORR_EMPLEADO: corrEmpleado,
+		});
+	}
+
+	// Qué hace: activa o inactiva la carga del empleado en el descriptor.
+	// Cómo lo hace: envía el bit del registro de carga, no el del empleado.
+	cambiarActivoEmpleadoDescriptor(corrDescriptorPuesto: number, corrEmpleado: number, activo: boolean): Observable<IResult> {
+		return this.empleadosDescriptorRepo.cambiarActivo({
+			CORR_DESCRIPTOR_PUESTO: corrDescriptorPuesto,
+			CORR_EMPLEADO: corrEmpleado,
+			ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO: activo,
+		});
+	}
+
+	// Qué hace: quita un empleado del descriptor.
+	// Cómo lo hace: DELETE por descriptor y empleado.
+	quitarEmpleadoDescriptor(corrDescriptorPuesto: number, corrEmpleado: number): Observable<IResult> {
+		return this.empleadosDescriptorRepo.delete([
+			{ Parameter: 'CORR_DESCRIPTOR_PUESTO', Value: corrDescriptorPuesto },
+			{ Parameter: 'CORR_EMPLEADO', Value: corrEmpleado },
+		]);
 	}
 }

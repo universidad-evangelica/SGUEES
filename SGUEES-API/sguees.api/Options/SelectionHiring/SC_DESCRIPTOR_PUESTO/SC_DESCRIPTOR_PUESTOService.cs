@@ -20,6 +20,8 @@ namespace SGUEES.Services
         private readonly ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService _responsabilidadCargoService;
         private readonly ISC_REPORepository _repoRpt;
         private readonly ISEG_USUARIOService _repoUser;
+        private readonly ISC_DESCRIPTOR_PUESTO_FIRMASRepository _firmasRepo;
+        private readonly ISC_DESCRIPTOR_PUESTO_EMPLEADORepository _empleadoRepo;
 
         public SC_DESCRIPTOR_PUESTOService(
             ISC_DESCRIPTOR_PUESTORepository repo,
@@ -28,7 +30,9 @@ namespace SGUEES.Services
             ISC_DESCRIPTOR_PUESTO_RIESGO_PUESTOService riesgoPuestoService,
             ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService responsabilidadCargoService,
             ISC_REPORepository repoRpt,
-            ISEG_USUARIOService repoUser)
+            ISEG_USUARIOService repoUser,
+            ISC_DESCRIPTOR_PUESTO_FIRMASRepository firmasRepo,
+            ISC_DESCRIPTOR_PUESTO_EMPLEADORepository empleadoRepo)
         {
             _repo = repo;
             _unidadesUsuarioRepo = unidadesUsuarioRepo;
@@ -37,6 +41,8 @@ namespace SGUEES.Services
             _responsabilidadCargoService = responsabilidadCargoService;
             _repoRpt = repoRpt;
             _repoUser = repoUser;
+            _firmasRepo = firmasRepo;
+            _empleadoRepo = empleadoRepo;
         }
 
         // Qué hace: lista descriptores de la empresa visibles para el usuario de sesión.
@@ -368,8 +374,8 @@ namespace SGUEES.Services
         }
 
         // Qué hace: ejecuta una operación del flujo (Enviar/Aprobar/Observar/Inactivar/Reactivar).
-        // Cómo lo hace: valida claves y OPERACION; en REACTIVAR bloquea si hay otro descriptor abierto del puesto;
-        //              luego delega al SP AUTORIZA; el repo relee la vista.
+        // Cómo lo hace: valida claves y OPERACION; en ENVIAR exige un dato en cada apartado visible;
+        //              en REACTIVAR bloquea si hay otro descriptor abierto del puesto; luego delega al SP AUTORIZA.
         public async Task<CResult> AutorizaAsync(SC_DESCRIPTOR_PUESTO_AUTORIZAParam Data, string vLOGIN_SISTEMA)
         {
             var empresaError = ValidateEmpresaSesion(Data?.CORR_EMPRESA ?? 0);
@@ -428,8 +434,69 @@ namespace SGUEES.Services
                 }
             }
 
+            // Qué hace: al solicitar, exige al menos un dato en cada apartado visible del formato.
+            // Cómo lo hace: solo OPERACION 2. Firmas y carga de empleados no se revisan. Si falta algo, no avanza el flujo.
+            if (Data.OPERACION == 2)
+            {
+                var vacios = await _repo.ApartadosVaciosParaSolicitudAsync(
+                    Data.CORR_EMPRESA,
+                    Data.CORR_DESCRIPTOR_PUESTO);
+
+                if (vacios == null)
+                {
+                    return ValidationError("No se encontro el descriptor de puesto.");
+                }
+
+                if (vacios.Count > 0)
+                {
+                    return ValidationError(
+                        "No se puede solicitar el descriptor. Faltan datos en: " + string.Join(", ", vacios) + ".");
+                }
+            }
+
             Data.OBSERVACION = Data.OBSERVACION.Trim();
-            return await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());
+            var resultado = await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());
+
+            // Qué hace: al inactivar el descriptor, inactiva sus cargas de empleados.
+            // Cómo lo hace: corre después del flujo, solo sobre SC_DESCRIPTOR_PUESTO_EMPLEADO. El SP de flujo no se altera.
+            if (resultado.Result && resultado.ErrorCode == 0 && Data.OPERACION == 5)
+            {
+                try
+                {
+                    await _empleadoRepo.InactivarCargasPorDescriptorAsync(
+                        Data.CORR_EMPRESA,
+                        Data.CORR_DESCRIPTOR_PUESTO,
+                        vLOGIN_SISTEMA.Trim(),
+                        string.Empty);
+                }
+                catch (Exception)
+                {
+                    // El flujo ya confirmó el estado Inactivo. Esta actualización no lo revierte.
+                }
+            }
+
+            // Qué hace: al quedar Activo copia las firmas del jefe inmediato y del jefe de TH.
+            // Cómo lo hace: lee la bitácora en otra conexión. Si falla, la aprobación del flujo se mantiene.
+            if (resultado.Result
+                && resultado.ErrorCode == 0
+                && Data.OPERACION == 3
+                && resultado.Data is SC_DESCRIPTOR_PUESTOView descriptorActivo
+                && descriptorActivo.CORR_ESTADO == 14)
+            {
+                try
+                {
+                    await _firmasRepo.GuardarAlQuedarActivoAsync(
+                        Data.CORR_EMPRESA,
+                        Data.CORR_DESCRIPTOR_PUESTO,
+                        vLOGIN_SISTEMA.Trim());
+                }
+                catch (Exception)
+                {
+                    // El SP de flujo ya confirmó el estado. Esta copia no lo revierte.
+                }
+            }
+
+            return resultado;
         }
 
         // Qué hace: indica qué botones de flujo mostrar para el usuario de sesión.
@@ -472,10 +539,16 @@ namespace SGUEES.Services
         // Cómo: SP de impresión → SC_REPO → SelectionHiring/PostScDescriptorPuestoFormatoCortoImpr.
         public async Task<Stream> GetPDFFormatoCortoAsync(SC_DESCRIPTOR_PUESTOParam xWhere, string loginSistema)
         {
+            if (xWhere.CORR_EMPLEADO <= 0)
+            {
+                throw new InvalidOperationException("Seleccione un empleado para imprimir el descriptor.");
+            }
+
             var p = new List<CParameter>
             {
                 new CParameter() { ParameterName = "@CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "@CORR_DESCRIPTOR_PUESTO", Value = xWhere.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "@CORR_EMPLEADO", Value = xWhere.CORR_EMPLEADO, DbType = System.Data.DbType.Int32 },
             };
 
             var dataResult = await _repo.GetDescriptorFormatoCortoImprAsync(p);
@@ -496,10 +569,16 @@ namespace SGUEES.Services
         // Cómo: SP de impresión → SC_REPO → SelectionHiring/PostScDescriptorPuestoFormatoExtensoImpr.
         public async Task<Stream> GetPDFFormatoExtensoAsync(SC_DESCRIPTOR_PUESTOParam xWhere, string loginSistema)
         {
+            if (xWhere.CORR_EMPLEADO <= 0)
+            {
+                throw new InvalidOperationException("Seleccione un empleado para imprimir el descriptor.");
+            }
+
             var p = new List<CParameter>
             {
                 new CParameter() { ParameterName = "@CORR_EMPRESA", Value = xWhere.CORR_EMPRESA, DbType = System.Data.DbType.Int32 },
                 new CParameter() { ParameterName = "@CORR_DESCRIPTOR_PUESTO", Value = xWhere.CORR_DESCRIPTOR_PUESTO, DbType = System.Data.DbType.Int32 },
+                new CParameter() { ParameterName = "@CORR_EMPLEADO", Value = xWhere.CORR_EMPLEADO, DbType = System.Data.DbType.Int32 },
             };
 
             var dataResult = await _repo.GetDescriptorFormatoExtensoImprAsync(p);
