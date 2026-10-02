@@ -212,6 +212,11 @@ export class ScMovimientoPersonalService {
 		return this.repo.confirmar(model);
 	}
 
+	/** JWT RPT para iframe SelectionHiring.aspx. */
+	getRptToken(): Observable<any> {
+		return this.repo.getRptToken();
+	}
+
 	getBitacora(param: any): Observable<IResult> {
 		return this.repo.getBitacora([
 			{ Parameter: 'CORR_MOVIMIENTO_PERSONAL', Value: param.CORR_MOVIMIENTO_PERSONAL },

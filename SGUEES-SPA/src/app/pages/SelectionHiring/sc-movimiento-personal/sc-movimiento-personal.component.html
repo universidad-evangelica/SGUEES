@@ -36,6 +36,11 @@
 		[btn5Type]="'danger'"
 		[btn5Width]="120"
 		(btn5Click)="rechazarMovimiento()"
+		[btn6]="btnImprimirMovimiento"
+		[btn6Icon]="'print'"
+		[btn6Type]="'default'"
+		[btn6Width]="120"
+		(btn6Click)="imprimirMovimiento()"
 	>
 	</app-barra-data-mtto>
 
@@ -356,6 +361,38 @@
 			<dx-button text="Cancelar" stylingMode="outlined" (onClick)="cerrarPopupFlujo()"></dx-button>
 			<dx-button text="Continuar" type="default" stylingMode="contained" (onClick)="confirmarPopupFlujo()"></dx-button>
 		</div>
+	</div>
+</dx-popup>
+
+<dx-popup
+	[(visible)]="imprimirPopupVisible"
+	[showTitle]="true"
+	title="Movimiento de personal"
+	[width]="'90%'"
+	[height]="'90%'"
+	[showCloseButton]="true"
+	[dragEnabled]="true"
+	[resizeEnabled]="true"
+	(onHidden)="cerrarImprimirPopup()"
+>
+	<div *dxTemplate="let data of 'content'" class="imprimir-viewer" id="imprimirMovimientoViewerHost">
+		<dx-load-panel
+			shadingColor="rgba(0,0,0,0.4)"
+			[position]="{ my: 'center', at: 'center', of: '#imprimirMovimientoViewerHost' }"
+			[(visible)]="imprimirLoading"
+			[showIndicator]="true"
+			[showPane]="true"
+			[shading]="true"
+			[container]="'#imprimirMovimientoViewerHost'"
+			message="Cargando..."
+		></dx-load-panel>
+		<iframe
+			*ngIf="imprimirUrl"
+			class="imprimir-viewer__iframe"
+			[src]="imprimirUrl"
+			(load)="onImprimirIframeLoad()"
+			title="Visor Movimiento de personal"
+		></iframe>
 	</div>
 </dx-popup>
 

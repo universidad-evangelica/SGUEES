@@ -152,6 +152,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\PublishProfiles\" />
+    <Folder Include="Reports\SelectionHiring\SC_MOVIMIENTO_PERSONAL\" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="WebActivatorEx">
@@ -207,6 +208,12 @@
     </Compile>
     <Compile Include="Reports\SelectionHiring\SC_REQUISICION_PERSONAL\rptRequisicionPersonal.Designer.cs">
       <DependentUpon>rptRequisicionPersonal.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Reports\SelectionHiring\SC_MOVIMIENTO_PERSONAL\rptMovimientoPersonal.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\SelectionHiring\SC_MOVIMIENTO_PERSONAL\rptMovimientoPersonal.Designer.cs">
+      <DependentUpon>rptMovimientoPersonal.cs</DependentUpon>
     </Compile>
     <Compile Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTOReport.cs" Condition="'$(EnableCrystalReports)' == 'true'">
       <AutoGen>True</AutoGen>
@@ -437,6 +444,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Reports\SelectionHiring\SC_REQUISICION_PERSONAL\rptRequisicionPersonal.resx">
       <DependentUpon>rptRequisicionPersonal.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\SelectionHiring\SC_MOVIMIENTO_PERSONAL\rptMovimientoPersonal.resx">
+      <DependentUpon>rptMovimientoPersonal.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Reports\SelectionHiring\SC_DESCRIPTOR_PUESTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTO\SC_DESCRIPTOR_PUESTO_FORMATO_CORTOReport.rpt" Condition="'$(EnableCrystalReports)' == 'true'">
       <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>

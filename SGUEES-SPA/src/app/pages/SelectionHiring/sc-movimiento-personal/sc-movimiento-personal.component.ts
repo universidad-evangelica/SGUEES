@@ -1,8 +1,16 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { take } from 'rxjs/operators';
 import { confirm } from 'devextreme/ui/dialog';
 import { environment } from 'src/environments/environment';
+import { AuthService } from 'src/app/shared/services/auth.service';
+import {
+	SELECTION_HIRING_RPT,
+	SELECTION_HIRING_RPT_MESSAGE_SOURCE,
+	buildSelectionHiringRptUrl,
+	resolveSelectionHiringFuente,
+} from '../shared/selection-hiring-rpt';
 
 import { CBaseComponent } from 'src/app/FxAPI/CBaseComponent.component';
 import { NotifyType } from 'src/app/shared/models/NotifyType';
@@ -50,6 +58,18 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 	btnAprobarMovimiento = '';
 	btnDevolverMovimiento = '';
 	btnRechazarMovimiento = '';
+
+	/** Visible al tener un movimiento seleccionado o abierto (CORR > 0). */
+	get btnImprimirMovimiento(): string {
+		const corr = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
+		return corr > 0 ? 'Imprimir' : '';
+	}
+
+	imprimirPopupVisible = false;
+	imprimirUrl: SafeResourceUrl | null = null;
+	imprimirLoading = false;
+	private imprimirLoadFallbackTimer: ReturnType<typeof setTimeout> | null = null;
+
 	private avisoIngresoTimer: ReturnType<typeof setTimeout> | null = null;
 	private ultimaFechaIngresoMs: number | null = null;
 
@@ -94,7 +114,9 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		public override appInfoService: AppInfoService,
 		public override router: ActivatedRoute,
 		private navRouter: Router,
-		private service: ScMovimientoPersonalService
+		private service: ScMovimientoPersonalService,
+		private authService: AuthService,
+		private sanitizer: DomSanitizer,
 	) {
 		super(appInfoService, router);
 		this.columns = this.service.getColumns();
@@ -549,10 +571,106 @@ export class ScMovimientoPersonalComponent extends CBaseComponent implements OnI
 		this.puedeEditarFechaEfectiva = puedeConfirmar;
 	}
 
-	/** En browse, al seleccionar fila se habilita Confirmar en la barra. */
+	/** En browse, al seleccionar fila se habilita Confirmar e Imprimir en la barra. */
 	override focusedRowChanged(e: any): void {
 		super.focusedRowChanged(e);
 		this.refrescarBotones();
+	}
+
+	/**
+	 * Abre SelectionHiring.aspx (mismo visor que requisición).
+	 * fuente = ruta del componente; report = rptMovimientoPersonal.
+	 */
+	imprimirMovimiento(): void {
+		const corr = Number(this.model?.CORR_MOVIMIENTO_PERSONAL) || 0;
+		const corrEmpresa =
+			Number(this.model?.CORR_EMPRESA) ||
+			Number(this.authService?.decodedToken?.CORR_EMPRESA) ||
+			0;
+		if (corr <= 0 || corrEmpresa <= 0) {
+			this.notifyFx('Guarde o seleccione un movimiento para imprimir.', NotifyType.Warning);
+			return;
+		}
+
+		const fuente = resolveSelectionHiringFuente(this.router, this.urlOpcion);
+		if (!fuente) {
+			this.notifyFx('No se pudo resolver la fuente del reporte (ruta SPA).', NotifyType.Error);
+			return;
+		}
+
+		this.clearImprimirLoadFallback();
+		this.imprimirUrl = null;
+		this.imprimirLoading = true;
+		this.imprimirPopupVisible = true;
+
+		this.service
+			.getRptToken()
+			.pipe(take(1))
+			.subscribe({
+				next: (res: any) => {
+					const token = res?.Token || res?.Data?.Token || res?.token;
+					if (!token) {
+						this.imprimirLoading = false;
+						this.imprimirPopupVisible = false;
+						this.notifyFx('No se pudo obtener el token de reportería.', NotifyType.Error);
+						return;
+					}
+					const url = buildSelectionHiringRptUrl({
+						fuente,
+						report: SELECTION_HIRING_RPT.MOVIMIENTO_PERSONAL,
+						params: {
+							CORR_EMPRESA: corrEmpresa,
+							CORR_MOVIMIENTO_PERSONAL: corr,
+						},
+						token,
+					});
+					this.imprimirUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+					this.imprimirLoadFallbackTimer = setTimeout(() => {
+						this.imprimirLoading = false;
+						this.imprimirLoadFallbackTimer = null;
+					}, 45000);
+				},
+				error: (err: any) => {
+					this.imprimirLoading = false;
+					this.imprimirPopupVisible = false;
+					this.notifyFx(err?.ErrorMessage || err?.message || err || 'Error al preparar impresión', NotifyType.Error);
+				},
+			});
+	}
+
+	@HostListener('window:message', ['$event'])
+	onImprimirRptMessage(event: MessageEvent): void {
+		const data = event?.data;
+		if (!data || data.type !== 'sguees-rpt-ready' || data.source !== SELECTION_HIRING_RPT_MESSAGE_SOURCE) {
+			return;
+		}
+		this.clearImprimirLoadFallback();
+		this.imprimirLoading = false;
+	}
+
+	onImprimirIframeLoad(): void {
+		if (!this.imprimirLoading) {
+			return;
+		}
+		this.clearImprimirLoadFallback();
+		this.imprimirLoadFallbackTimer = setTimeout(() => {
+			this.imprimirLoading = false;
+			this.imprimirLoadFallbackTimer = null;
+		}, 8000);
+	}
+
+	cerrarImprimirPopup(): void {
+		this.clearImprimirLoadFallback();
+		this.imprimirPopupVisible = false;
+		this.imprimirUrl = null;
+		this.imprimirLoading = false;
+	}
+
+	private clearImprimirLoadFallback(): void {
+		if (this.imprimirLoadFallbackTimer != null) {
+			clearTimeout(this.imprimirLoadFallbackTimer);
+			this.imprimirLoadFallbackTimer = null;
+		}
 	}
 
 	cargarBitacora(): void {
