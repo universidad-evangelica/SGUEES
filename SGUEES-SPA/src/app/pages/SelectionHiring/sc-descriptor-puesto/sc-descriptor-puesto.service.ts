@@ -1779,6 +1779,16 @@ export class ScDescriptorPuestoService {
 		});
 	}
 
+	// Qué hace: activa o inactiva la carga del empleado en el descriptor.
+	// Cómo lo hace: envía el bit del registro de carga, no el del empleado.
+	cambiarActivoEmpleadoDescriptor(corrDescriptorPuesto: number, corrEmpleado: number, activo: boolean): Observable<IResult> {
+		return this.empleadosDescriptorRepo.cambiarActivo({
+			CORR_DESCRIPTOR_PUESTO: corrDescriptorPuesto,
+			CORR_EMPLEADO: corrEmpleado,
+			ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO: activo,
+		});
+	}
+
 	// Qué hace: quita un empleado del descriptor.
 	// Cómo lo hace: DELETE por descriptor y empleado.
 	quitarEmpleadoDescriptor(corrDescriptorPuesto: number, corrEmpleado: number): Observable<IResult> {

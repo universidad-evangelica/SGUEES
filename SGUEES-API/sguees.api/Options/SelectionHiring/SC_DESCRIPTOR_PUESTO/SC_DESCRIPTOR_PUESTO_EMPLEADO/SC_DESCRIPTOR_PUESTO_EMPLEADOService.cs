@@ -78,6 +78,23 @@ namespace SGUEES.Services
 			return await _repo.CreateAsync(Data, vLOGIN_SISTEMA, vESTACION);
 		}
 
+		// Qué hace: activa o inactiva la carga del empleado en el descriptor.
+		// Cómo lo hace: exige la llave y el bit, y deja que el repositorio actualice solo ese campo.
+		public async Task<CResult> CambiarActivoAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			if (Data.CORR_EMPRESA <= 0 || Data.CORR_DESCRIPTOR_PUESTO <= 0 || Data.CORR_EMPLEADO <= 0)
+			{
+				return ValidationError("Debe indicar el descriptor y el empleado de la carga.");
+			}
+
+			if (Data.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO == null)
+			{
+				return ValidationError("Debe indicar si la carga queda activa o inactiva.");
+			}
+
+			return await _repo.CambiarActivoAsync(Data, vLOGIN_SISTEMA, vESTACION);
+		}
+
 		// Qué hace: quita un empleado del descriptor.
 		// Cómo lo hace: exige la llave y elimina el vínculo.
 		public async Task<CResult> DeleteAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)

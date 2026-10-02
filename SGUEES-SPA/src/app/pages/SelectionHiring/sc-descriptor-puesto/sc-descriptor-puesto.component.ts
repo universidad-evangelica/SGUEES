@@ -1,4 +1,4 @@
-﻿import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ChangeDetectorRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { ActivatedRoute } from '@angular/router';
 import { DxDataGridComponent } from 'devextreme-angular/ui/data-grid';
@@ -70,6 +70,7 @@ import {
 	esEstadoDescriptorEliminable,
 	CORR_ESTADO_APROBADO_JI,
 	CORR_ESTADO_ACTIVO,
+	CORR_ESTADO_INACTIVO,
 	CORR_ESTADO_ENVIADO_JI,
 	CORR_ESTADO_ENVIADO_JTH,
 	CORR_ESTADO_REVISADO_TH,
@@ -1606,22 +1607,51 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 		return formato === FORMATO_EXTENSO || formato === FORMATO_AMBOS;
 	}
 
-	// Qué hace: indica si el tab Carga empleado debe mostrarse.
-	// Cómo lo hace: solo cuando el CORR_ESTADO del descriptor es Activo.
+	// Qué hace: indica si el descriptor actual está Activo.
+	// Cómo lo hace: compara el CORR_ESTADO contra el estado Activo.
 	get esDescriptorActivo(): boolean {
 		return toCorrEstado(this.model?.CORR_ESTADO) === CORR_ESTADO_ACTIVO;
 	}
 
-	// Qué hace: indica si ya se puede imprimir el descriptor de un empleado.
-	// Cómo: el tab ya exige descriptor Activo; además hace falta permiso P y una fila seleccionada.
-	get puedeImprimirEmpleado(): boolean {
-		return this.permitePrint && this.esDescriptorActivo && this.corrEmpleadoImpresion() > 0;
+	// Qué hace: indica si el tab Carga empleado debe mostrarse.
+	// Cómo lo hace: se muestra con el descriptor Activo y también cuando queda Inactivo.
+	get mostrarTabCargaEmpleado(): boolean {
+		const estado = toCorrEstado(this.model?.CORR_ESTADO);
+		return estado === CORR_ESTADO_ACTIVO || estado === CORR_ESTADO_INACTIVO;
 	}
 
-	// Qué hace: sale del tab Carga empleado cuando el descriptor deja de estar Activo.
-	// Cómo lo hace: cierra el modal y selecciona Entrenamiento, que siempre está visible.
+	// Qué hace: indica si ya se puede imprimir el descriptor de un empleado.
+	// Cómo: exige descriptor Activo, permiso P, fila seleccionada y carga activa.
+	get puedeImprimirEmpleado(): boolean {
+		const fila = this.empleadoCargaSeleccionado;
+		return (
+			this.permitePrint &&
+			this.esDescriptorActivo &&
+			!!fila &&
+			this.esCargaAsignacionActiva(fila.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)
+		);
+	}
+
+	// Qué hace: fila de carga seleccionada en el tab del descriptor.
+	// Cómo lo hace: busca el empleado cuya llave está marcada en la grilla.
+	get empleadoCargaSeleccionado(): ScDescriptorPuestoEmpleado | null {
+		const key = this.corrEmpleadoImpresion();
+		if (key <= 0) {
+			return null;
+		}
+		return this.empleadosCargados.find((item) => Number(item.CORR_EMPLEADO) === key) ?? null;
+	}
+
+	// Qué hace: indica si la carga seleccionada está activa.
+	// Cómo lo hace: el bit nulo se toma como activo, que es el valor por defecto de la tabla.
+	esCargaAsignacionActiva(valor: boolean | number | string | null | undefined): boolean {
+		return valor !== false && valor !== 0 && valor !== '0';
+	}
+
+	// Qué hace: sale del tab Carga empleado cuando ese tab ya no aplica.
+	// Cómo lo hace: Inactivo sigue mostrando el tab; solo lo cierra en los demás estados.
 	private salirDeTabCargaSiNoActivo(): void {
-		if (this.esDescriptorActivo || this.subTabIndex !== 11) {
+		if (this.mostrarTabCargaEmpleado || this.subTabIndex !== 11) {
 			return;
 		}
 		this.popupCargarEmpleadoVisible = false;
@@ -5258,7 +5288,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	// Cómo lo hace: GetAll al abrir el detalle; no se vuelve a consultar después de guardar.
 	private cargarEmpleadosDescriptor(): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
-		if (!this.esDescriptorActivo || !corrDescriptor || corrDescriptor <= 0) {
+		if (!this.mostrarTabCargaEmpleado || !corrDescriptor || corrDescriptor <= 0) {
 			this.empleadosCargados = [];
 			this.limpiarSeleccionEmpleadoImpresion();
 			this.popupCargarEmpleadoVisible = false;
@@ -5280,7 +5310,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 	}
 
 	// Qué hace: abre el modal para cargar empleados que aplican al descriptor.
-	// Cómo lo hace: pide los que tienen el mismo puesto y la misma unidad y aún no están cargados.
+	// Cómo lo hace: pide los del mismo puesto y unidad y deja fuera los que ya están cargados.
 	abrirCargarEmpleados(): void {
 		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
 		if (this.cargandoEmpleados || !this.esDescriptorActivo) {
@@ -5308,10 +5338,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						return;
 					}
 					const cargados = new Set(this.empleadosCargados.map((item) => item.CORR_EMPLEADO));
-					this.empleadosDisponibles = (response.Data ?? []).map((item: ScDescriptorPuestoEmpleado) => ({
-						...this.mapEmpleadoCargado(item),
-						SELECCION: cargados.has(Number(item?.CORR_EMPLEADO)),
-					}));
+					this.empleadosDisponibles = (response.Data ?? [])
+						.filter((item: ScDescriptorPuestoEmpleado) => !cargados.has(Number(item?.CORR_EMPLEADO)))
+						.map((item: ScDescriptorPuestoEmpleado) => ({
+							...this.mapEmpleadoCargado(item),
+							SELECCION: false,
+						}));
 					this.popupCargarEmpleadoVisible = true;
 				},
 				error: (error) => {
@@ -5471,6 +5503,42 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			});
 	}
 
+	// Qué hace: activa o inactiva la carga seleccionada.
+	// Cómo lo hace: actualiza el bit y parchea la fila en memoria con la respuesta.
+	cambiarActivoCargaEmpleado(activo: boolean): void {
+		const fila = this.empleadoCargaSeleccionado;
+		const corrDescriptor = Number(this.model?.CORR_DESCRIPTOR_PUESTO);
+		const corrEmpleado = Number(fila?.CORR_EMPLEADO);
+		if (!this.esDescriptorActivo || !corrDescriptor || !corrEmpleado || this.cargandoEmpleados) {
+			return;
+		}
+
+		this.cargandoEmpleados = true;
+		this.service
+			.cambiarActivoEmpleadoDescriptor(corrDescriptor, corrEmpleado, activo)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.cargandoEmpleados = false;
+					if (!response?.Result) {
+						this.notifyFx(response?.ErrorMessage || 'No se pudo actualizar la carga.', NotifyType.Warning);
+						return;
+					}
+					const bit = response?.Data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO ?? activo;
+					this.empleadosCargados = this.empleadosCargados.map((item) =>
+						Number(item.CORR_EMPLEADO) === corrEmpleado
+							? { ...item, ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO: bit }
+							: item
+					);
+					this.notifyFx(activo ? 'Carga activada.' : 'Carga inactivada.', NotifyType.Success, { raw: true });
+				},
+				error: (error) => {
+					this.cargandoEmpleados = false;
+					this.notifyFx(this.textoErrorCargaEmpleado(error, 'No se pudo actualizar la carga.'), NotifyType.Warning);
+				},
+			});
+	}
+
 	// Qué hace: toma la fila del botón quitar de la grilla.
 	// Cómo lo hace: lee los datos de la fila y llama a la baja.
 	quitarEmpleadoCargadoClick = (e: any): void => {
@@ -5518,6 +5586,7 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			TELEFONO_INSTITUCIONAL: item?.TELEFONO_INSTITUCIONAL ?? '',
 			LOGIN_SISTEMA_WEB: item?.LOGIN_SISTEMA_WEB ?? '',
 			ACTIVO_EMPLEADO: item?.ACTIVO_EMPLEADO ?? null,
+			ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO: item?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO ?? null,
 		};
 	}
 
@@ -6862,6 +6931,10 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 			this.notifyFx('No tiene permiso de impresion (P) en esta opcion.', NotifyType.Warning);
 			return 0;
 		}
+		if (!this.esCargaAsignacionActiva(this.empleadoCargaSeleccionado?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)) {
+			this.notifyFx('Solo se puede imprimir cuando la carga del empleado esta activa.', NotifyType.Warning);
+			return 0;
+		}
 		return corr;
 	}
 
@@ -7113,6 +7186,12 @@ export class ScDescriptorPuestoComponent extends CBaseComponent implements OnIni
 						this.modelUpdate = this.fillData(descriptor);
 						this.aplicarRegistroEnGrid(descriptor, false);
 						this.cancelarPopupFlujo();
+						if (operacion === OPERACION_FLUJO.INACTIVAR) {
+							this.empleadosCargados = this.empleadosCargados.map((item) => ({
+								...item,
+								ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO: false,
+							}));
+						}
 						this.notifyFx(mensajeExitoFlujo, NotifyType.Success);
 						// Qué hace: tras Solicitar / Aprobar / Observar / Reactivar vuelve al listado; tras Inactivar se queda en detalle.
 						// Cómo: Browse evita reintentar la acción; Inactivar deja el form para mostrar Reactivar sin salir.

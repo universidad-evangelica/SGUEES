@@ -2361,8 +2361,8 @@
 					</div>
 				</dxi-item>
 
-				<!-- motivo: solo con el descriptor Activo; empleados del puesto y la unidad -->
-				<dxi-item title="Carga empleado" [visible]="esDescriptorActivo">
+				<!-- motivo: se muestra con el descriptor Activo y también cuando queda Inactivo -->
+				<dxi-item title="Carga empleado" [visible]="mostrarTabCargaEmpleado">
 					<div class="descriptor-sub-tab-content">
 						<div class="descriptor-funciones-header">
 							<h4 class="descriptor-sub-tab-heading">
@@ -2370,15 +2370,37 @@
 								Carga empleado
 							</h4>
 						</div>
-						<!-- motivo: el descriptor Activo se abre en consulta; aqui igual se puede cargar -->
-						<div class="descriptor-deta-toolbar">
+						<!-- motivo: sin botones el contenedor queda una barra vacía; se oculta con el descriptor Inactivo -->
+						<div class="descriptor-deta-toolbar" *ngIf="esDescriptorActivo">
 							<dx-button
+								*ngIf="esDescriptorActivo"
 								class="descriptor-deta-toolbar-btn"
 								icon="upload"
 								text="Cargar"
 								type="success"
 								stylingMode="contained"
 								(onClick)="abrirCargarEmpleados()"
+								[disabled]="cargandoEmpleados"
+							></dx-button>
+							<!-- motivo: Activar y Desactivar de la carga solo con el descriptor Activo -->
+							<dx-button
+								*ngIf="esDescriptorActivo && empleadoCargaSeleccionado && esCargaAsignacionActiva(empleadoCargaSeleccionado.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+								class="descriptor-deta-toolbar-btn"
+								icon="close"
+								text="Desactivar"
+								type="danger"
+								stylingMode="contained"
+								(onClick)="cambiarActivoCargaEmpleado(false)"
+								[disabled]="cargandoEmpleados"
+							></dx-button>
+							<dx-button
+								*ngIf="esDescriptorActivo && empleadoCargaSeleccionado && !esCargaAsignacionActiva(empleadoCargaSeleccionado.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+								class="descriptor-deta-toolbar-btn"
+								icon="check"
+								text="Activar"
+								type="success"
+								stylingMode="contained"
+								(onClick)="cambiarActivoCargaEmpleado(true)"
 								[disabled]="cargandoEmpleados"
 							></dx-button>
 							<!-- motivo: el PDF es del empleado seleccionado; sin fila no se imprime -->
@@ -2424,7 +2446,8 @@
 							<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
 							<dxo-selection mode="single"></dxo-selection>
 							<dxo-load-panel [enabled]="false"></dxo-load-panel>
-							<dxi-column caption="" [width]="70" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesEmpleadoTpl" [visible]="esDescriptorActivo" alignment="center"></dxi-column>
+							<!-- motivo: la baja de la carga queda en el código; la columna se oculta por ahora -->
+							<dxi-column caption="" [width]="70" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesEmpleadoTpl" [visible]="false" alignment="center"></dxi-column>
 							<div *dxTemplate="let cell of 'accionesEmpleadoTpl'">
 								<dx-button icon="trash" stylingMode="text" hint="Quitar" (onClick)="quitarEmpleadoCargado(cell.data)"></dx-button>
 							</div>
@@ -2434,14 +2457,23 @@
 							<dxi-column dataField="CORREO_INSTITUCIONAL" caption="Correo" [width]="220" [minWidth]="160"></dxi-column>
 							<dxi-column dataField="TELEFONO_INSTITUCIONAL" caption="Teléfono" [width]="130" [minWidth]="110"></dxi-column>
 							<dxi-column dataField="LOGIN_SISTEMA_WEB" caption="Login" [width]="140" [minWidth]="110"></dxi-column>
-							<!-- motivo: estado del empleado como insignia, sin estirar la columna -->
-							<dxi-column cssClass="carga-empleado-col-estado" caption="Estado" [width]="110" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoEmpleadoCargadoTpl" alignment="center"></dxi-column>
+							<!-- motivo: estado del empleado, distinto del estado de la carga -->
+							<dxi-column cssClass="carga-empleado-col-estado" caption="Estado empleado" [width]="150" [minWidth]="140" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoEmpleadoCargadoTpl" alignment="center"></dxi-column>
 							<div *dxTemplate="let cell of 'estadoEmpleadoCargadoTpl'">
 								<span
 									class="estado-badge"
 									[class.estado-badge--activo]="esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO)"
 									[class.estado-badge--inactivo]="!esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO)"
 								>{{ esEmpleadoActivo(cell.data?.ACTIVO_EMPLEADO) ? 'Activo' : 'Inactivo' }}</span>
+							</div>
+							<!-- motivo: estado del registro de carga, distinto del estado del empleado -->
+							<dxi-column cssClass="carga-empleado-col-estado" caption="Estado carga" [width]="140" [minWidth]="130" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoCargaEmpleadoTpl" alignment="center"></dxi-column>
+							<div *dxTemplate="let cell of 'estadoCargaEmpleadoTpl'">
+								<span
+									class="estado-badge"
+									[class.estado-badge--activo]="esCargaAsignacionActiva(cell.data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+									[class.estado-badge--inactivo]="!esCargaAsignacionActiva(cell.data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+								>{{ esCargaAsignacionActiva(cell.data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO) ? 'Activo' : 'Inactivo' }}</span>
 							</div>
 						</dx-data-grid>
 					</div>
@@ -2715,6 +2747,11 @@
 >
 	<div class="descriptor-flujo-popup">
 		<p class="descriptor-flujo-popup__hint">{{ hintPopupFlujo }}</p>
+		<!-- motivo: avisa que inactivar el descriptor también apaga las cargas de empleados -->
+		<div class="descriptor-flujo-popup__aviso" *ngIf="operacionFlujoPendiente === OPERACION_FLUJO.INACTIVAR">
+			<span class="dx-icon-warning descriptor-flujo-popup__aviso-icon" aria-hidden="true"></span>
+			<span>Si inactiva el descriptor, también se inactivarán todas las cargas de empleados de este descriptor.</span>
+		</div>
 		<dx-text-area
 			[(value)]="observacionFlujo"
 			[height]="140"
@@ -2804,7 +2841,7 @@
 		[width]="'100%'"
 		[height]="alturaCargaEmpleadoModal"
 		(onOptionChanged)="onCargaEmpleadoModalOptionChanged($event)"
-		noDataText="No hay empleados con este puesto y esta unidad."
+		noDataText="No hay empleados pendientes de cargar con este puesto y esta unidad."
 	>
 		<dxo-paging [enabled]="true" [pageSize]="cargaEmpleadoModalPageSize"></dxo-paging>
 		<dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25, 50]" [showInfo]="true"></dxo-pager>

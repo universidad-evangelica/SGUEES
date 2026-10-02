@@ -216,6 +216,118 @@ namespace SGUEES.Repositories
 			return objResultado;
 		}
 
+		// Qué hace: activa o inactiva el registro de la carga, sin tocar el activo del empleado.
+		// Cómo lo hace: actualiza el bit y la auditoría, y devuelve la fila releída de la vista.
+		public async Task<CResult> CambiarActivoAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			CResult objResultado = new();
+			try
+			{
+				const string sql = @"
+				UPDATE dbo.SC_DESCRIPTOR_PUESTO_EMPLEADO
+				SET ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO = @ACTIVO,
+					USUARIO_ACTU = @USUARIO_ACTU,
+					ESTACION_ACTU = @ESTACION_ACTU,
+					FECHA_ACTU = GETDATE()
+				WHERE CORR_EMPRESA = @CORR_EMPRESA
+				AND CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
+				AND CORR_EMPLEADO = @CORR_EMPLEADO;";
+
+				if (Data.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO == true)
+				{
+					var noActivo = await MensajeSiNoActivoAsync(Data.CORR_EMPRESA, Data.CORR_DESCRIPTOR_PUESTO);
+					if (noActivo != null)
+					{
+						objResultado.Result = false;
+						objResultado.ErrorCode = 4000;
+						objResultado.ErrorMessage = "La carga solo se puede activar cuando el descriptor esta Activo.";
+						return objResultado;
+					}
+				}
+
+				await using var conn = new SqlConnection(_connectionString);
+				await conn.OpenAsync();
+				await using var cmd = new SqlCommand(sql, conn);
+				cmd.Parameters.Add(new SqlParameter("@ACTIVO", SqlDbType.Bit) { Value = Data.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO == true });
+				cmd.Parameters.Add(new SqlParameter("@USUARIO_ACTU", SqlDbType.VarChar, 50) { Value = (object)vLOGIN_SISTEMA ?? string.Empty });
+				cmd.Parameters.Add(new SqlParameter("@ESTACION_ACTU", SqlDbType.VarChar, 50) { Value = (object)vESTACION ?? string.Empty });
+				cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = Data.CORR_EMPRESA });
+				cmd.Parameters.Add(new SqlParameter("@CORR_DESCRIPTOR_PUESTO", SqlDbType.Int) { Value = Data.CORR_DESCRIPTOR_PUESTO });
+				cmd.Parameters.Add(new SqlParameter("@CORR_EMPLEADO", SqlDbType.Int) { Value = Data.CORR_EMPLEADO });
+				var filas = await cmd.ExecuteNonQueryAsync();
+				if (filas <= 0)
+				{
+					objResultado.Result = false;
+					objResultado.ErrorCode = 4000;
+					objResultado.ErrorMessage = "No se encontro la carga del empleado en el descriptor.";
+					return objResultado;
+				}
+
+				var fila = await LeerFilaAsync(Data.CORR_EMPRESA, Data.CORR_DESCRIPTOR_PUESTO, Data.CORR_EMPLEADO);
+				if (fila != null)
+				{
+					fila.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO = Data.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO == true;
+				}
+
+				objResultado.Data = fila;
+				objResultado.Result = true;
+				objResultado.RowsAffected = filas;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+
+			return objResultado;
+		}
+
+		// Qué hace: deja inactivas todas las cargas de un descriptor.
+		// Cómo lo hace: pone el bit de la carga en 0. No toca el empleado ni el flujo del descriptor.
+		public async Task<CResult> InactivarCargasPorDescriptorAsync(int corrEmpresa, int corrDescriptor, string vLOGIN_SISTEMA, string vESTACION)
+		{
+			CResult objResultado = new();
+			try
+			{
+				const string sql = @"
+				UPDATE dbo.SC_DESCRIPTOR_PUESTO_EMPLEADO
+				SET ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO = 0,
+					USUARIO_ACTU = @USUARIO_ACTU,
+					ESTACION_ACTU = @ESTACION_ACTU,
+					FECHA_ACTU = GETDATE()
+				WHERE CORR_EMPRESA = @CORR_EMPRESA
+				AND CORR_DESCRIPTOR_PUESTO = @CORR_DESCRIPTOR_PUESTO
+				AND ISNULL(ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO, 1) = 1;";
+
+				await using var conn = new SqlConnection(_connectionString);
+				await conn.OpenAsync();
+				await using var cmd = new SqlCommand(sql, conn);
+				cmd.Parameters.Add(new SqlParameter("@USUARIO_ACTU", SqlDbType.VarChar, 50) { Value = (object)vLOGIN_SISTEMA ?? string.Empty });
+				cmd.Parameters.Add(new SqlParameter("@ESTACION_ACTU", SqlDbType.VarChar, 50) { Value = (object)vESTACION ?? string.Empty });
+				cmd.Parameters.Add(new SqlParameter("@CORR_EMPRESA", SqlDbType.Int) { Value = corrEmpresa });
+				cmd.Parameters.Add(new SqlParameter("@CORR_DESCRIPTOR_PUESTO", SqlDbType.Int) { Value = corrDescriptor });
+				var filas = await cmd.ExecuteNonQueryAsync();
+
+				objResultado.Result = true;
+				objResultado.RowsAffected = filas;
+				objResultado.ErrorCode = 0;
+				objResultado.ErrorMessage = "";
+			}
+			catch (Exception e)
+			{
+				objResultado.Result = false;
+				objResultado.ErrorCode = -1;
+				objResultado.ErrorMessage = e.Message;
+				objResultado.ErrorSource += $"[{e.Source}]";
+			}
+
+			return objResultado;
+		}
+
 		// Qué hace: esta tabla no se actualiza; el empleado se carga o se quita.
 		// Cómo lo hace: devuelve un resultado controlado sin escribir en la tabla.
 		public Task<CResult> UpdateAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION)
@@ -418,7 +530,8 @@ namespace SGUEES.Repositories
 				D.FECHA_EMISION,
 				D.CORR_ESTADO,
 				ISNULL(D.NOMBRE_ESTADO, ''),
-				ISNULL(D.FORMATO, '')
+				ISNULL(D.FORMATO, ''),
+				ISNULL(X.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO, 1)
 			FROM dbo.SC_DESCRIPTOR_PUESTO_EMPLEADO X
 			INNER JOIN dbo.V_SC_DESCRIPTOR_PUESTO D
 				ON D.CORR_EMPRESA = X.CORR_EMPRESA
@@ -509,6 +622,9 @@ namespace SGUEES.Repositories
 				CORR_ESTADO = reader.IsDBNull(7) ? null : reader.GetInt32(7),
 				NOMBRE_ESTADO = reader.IsDBNull(8) ? "" : reader.GetString(8),
 				FORMATO = reader.IsDBNull(9) ? "" : reader.GetString(9),
+				ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO = reader.FieldCount > 10 && !reader.IsDBNull(10)
+					? reader.GetBoolean(10)
+					: null,
 			};
 		}
 	}

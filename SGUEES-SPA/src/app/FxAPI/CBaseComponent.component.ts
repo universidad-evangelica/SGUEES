@@ -247,7 +247,9 @@ export class CBaseComponent {
 	}
 
 	permitirSalir(): boolean | import('rxjs').Observable<boolean> | Promise<boolean> {
-		if (this.permiteSalir) {
+		// Qué hace: al cerrar sesión no pregunta por los cambios del formulario.
+		// Cómo lo hace: la sesión ya no existe, así que deja pasar el regreso al login.
+		if (this.permiteSalir || this.sessionAuth?.cerrandoSesion || this.sessionAuth?.loggedIn === false) {
 			return true;
 		}
 		const confirmacion = custom({
@@ -265,7 +267,7 @@ export class CBaseComponent {
 			],
 		});
 
-		return confirmacion.show().then(() => {});
+		return confirmacion.show();
 	}
 	//#endregion
 

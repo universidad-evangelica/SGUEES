@@ -16,6 +16,7 @@ namespace SGUEES.Models
 		public string TELEFONO_INSTITUCIONAL { get; set; }
 		public string LOGIN_SISTEMA_WEB { get; set; }
 		public bool? ACTIVO_EMPLEADO { get; set; }
+		public bool? ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }
 		public DateTime? FECHA_CREA { get; set; }
@@ -38,5 +39,6 @@ namespace SGUEES.Models
 		public int? CORR_ESTADO { get; set; }
 		public string NOMBRE_ESTADO { get; set; }
 		public string FORMATO { get; set; }
+		public bool? ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO { get; set; }
 	}
 }

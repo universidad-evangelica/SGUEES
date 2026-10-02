@@ -10,6 +10,7 @@ namespace SGUEES.Models
 		public int CORR_EMPRESA { get; set; }
 		public int CORR_DESCRIPTOR_PUESTO { get; set; }
 		public int CORR_EMPLEADO { get; set; }
+		public bool? ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO { get; set; }
 		public string USUARIO_CREA { get; set; }
 		public string ESTACION_CREA { get; set; }
 		public DateTime? FECHA_CREA { get; set; }

@@ -741,6 +741,27 @@
 									(onClick)="abrirAsignarDescriptores()"
 									[disabled]="cargandoDescriptores"
 								></dx-button>
+								<!-- motivo: Activar y Desactivar de la carga solo si el descriptor seleccionado está Activo -->
+								<dx-button
+									*ngIf="puedeAsignarDescriptores && descriptorSeleccionado && esEstadoDescriptorActivo(descriptorSeleccionado.NOMBRE_ESTADO) && esCargaAsignacionActiva(descriptorSeleccionado.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+									class="empleado-descriptor-toolbar-btn"
+									icon="close"
+									text="Desactivar"
+									type="danger"
+									stylingMode="contained"
+									(onClick)="cambiarActivoCargaDescriptor(false)"
+									[disabled]="cargandoDescriptores"
+								></dx-button>
+								<dx-button
+									*ngIf="puedeAsignarDescriptores && descriptorSeleccionado && esEstadoDescriptorActivo(descriptorSeleccionado.NOMBRE_ESTADO) && !esCargaAsignacionActiva(descriptorSeleccionado.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+									class="empleado-descriptor-toolbar-btn"
+									icon="check"
+									text="Activar"
+									type="success"
+									stylingMode="contained"
+									(onClick)="cambiarActivoCargaDescriptor(true)"
+									[disabled]="cargandoDescriptores"
+								></dx-button>
 								<!-- motivo: el PDF es del empleado abierto y del descriptor seleccionado -->
 								<dx-button
 									*ngIf="puedeImprimirDescriptorEmpleado && esFormatoCortoDescriptor"
@@ -784,7 +805,8 @@
 								<dxo-scrolling [mode]="'standard'" [useNative]="false" [showScrollbar]="'always'"></dxo-scrolling>
 								<dxo-load-panel [enabled]="false"></dxo-load-panel>
 								<dxo-selection mode="single"></dxo-selection>
-								<dxi-column caption="" [width]="70" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesDescriptorTpl" [visible]="puedeAsignarDescriptores" alignment="center"></dxi-column>
+								<!-- motivo: quitar la asignación queda en el código; la columna se oculta por ahora -->
+								<dxi-column caption="" [width]="70" [allowFiltering]="false" [allowSorting]="false" cellTemplate="accionesDescriptorTpl" [visible]="false" alignment="center"></dxi-column>
 								<div *dxTemplate="let cell of 'accionesDescriptorTpl'">
 									<dx-button icon="trash" stylingMode="text" hint="Quitar" (onClick)="quitarDescriptorAsignado(cell.data)"></dx-button>
 								</div>
@@ -792,14 +814,23 @@
 								<dxi-column dataField="NOMBRE_PUESTO" caption="Puesto" [width]="320" [minWidth]="220"></dxi-column>
 								<dxi-column dataField="NOMBRE_UNIDAD" caption="Unidad" [width]="300" [minWidth]="200"></dxi-column>
 								<dxi-column dataField="FECHA_EMISION" caption="Fecha emision" [width]="130" dataType="date" format="dd/MM/yyyy"></dxi-column>
-								<!-- motivo: estado del descriptor como insignia, sin estirar la columna -->
-								<dxi-column cssClass="empleado-descriptor-col-estado" caption="Estado" [width]="110" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoDescriptorAsignadoTpl" alignment="center"></dxi-column>
+								<!-- motivo: estado del descriptor, distinto del estado de la carga -->
+								<dxi-column cssClass="empleado-descriptor-col-estado" caption="Estado descriptor" [width]="160" [minWidth]="150" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoDescriptorAsignadoTpl" alignment="center"></dxi-column>
 								<div *dxTemplate="let cell of 'estadoDescriptorAsignadoTpl'">
 									<span
 										class="estado-badge"
 										[class.estado-badge--activo]="esEstadoDescriptorActivo(cell.data?.NOMBRE_ESTADO)"
 										[class.estado-badge--inactivo]="esEstadoDescriptorInactivo(cell.data?.NOMBRE_ESTADO)"
 									>{{ cell.data?.NOMBRE_ESTADO }}</span>
+								</div>
+								<!-- motivo: estado del registro de carga, distinto del estado del descriptor -->
+								<dxi-column cssClass="empleado-descriptor-col-estado" caption="Estado carga" [width]="140" [minWidth]="130" [allowFiltering]="false" [allowSorting]="false" cellTemplate="estadoCargaDescriptorTpl" alignment="center"></dxi-column>
+								<div *dxTemplate="let cell of 'estadoCargaDescriptorTpl'">
+									<span
+										class="estado-badge"
+										[class.estado-badge--activo]="esCargaAsignacionActiva(cell.data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+										[class.estado-badge--inactivo]="!esCargaAsignacionActiva(cell.data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)"
+									>{{ esCargaAsignacionActiva(cell.data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO) ? 'Activo' : 'Inactivo' }}</span>
 								</div>
 							</dx-data-grid>
 						</div>
@@ -2832,7 +2863,7 @@
 		[width]="'100%'"
 		[height]="alturaDescriptorEmpleadoModal"
 		(onOptionChanged)="onDescriptorEmpleadoModalOptionChanged($event)"
-		noDataText="No hay descriptores activos con el puesto y la unidad de este empleado."
+		noDataText="No hay descriptores pendientes de asignar con el puesto y la unidad de este empleado."
 	>
 		<dxo-paging [enabled]="true" [pageSize]="descriptorModalPageSize"></dxo-paging>
 		<dxo-pager [visible]="true" [showPageSizeSelector]="true" [allowedPageSizes]="[5, 10, 25, 50]" [showInfo]="true"></dxo-pager>

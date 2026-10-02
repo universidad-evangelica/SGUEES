@@ -31,6 +31,18 @@ export class ScDescriptorPuestoEmpleadoRepository {
 		return this.objData.Post(model, this.xController, '', environment.UrlSELECCIONCONTRATACIONAPI);
 	}
 
+	// Qué hace: activa o inactiva la carga desde el descriptor.
+	// Cómo lo hace: PUT Activar con el bit de la carga.
+	cambiarActivo(model: any): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'Activar', [], environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
+	// Qué hace: activa o inactiva la carga desde el empleado.
+	// Cómo lo hace: PUT ActivarPorEmpleado con el permiso de gen-empleado.
+	cambiarActivoPorEmpleado(model: any): Observable<IResult> {
+		return this.objData.Put(model, this.xController, 'ActivarPorEmpleado', [], environment.UrlSELECCIONCONTRATACIONAPI);
+	}
+
 	// Qué hace: quita un empleado del descriptor.
 	// Cómo lo hace: DELETE con descriptor y empleado.
 	delete(xWhere: IParam[]): Observable<IResult> {

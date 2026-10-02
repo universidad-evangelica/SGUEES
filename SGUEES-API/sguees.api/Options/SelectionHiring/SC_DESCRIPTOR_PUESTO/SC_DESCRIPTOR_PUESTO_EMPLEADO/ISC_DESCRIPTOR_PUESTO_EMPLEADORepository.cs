@@ -9,6 +9,8 @@ namespace SGUEES.Repositories
 {
 	public interface ISC_DESCRIPTOR_PUESTO_EMPLEADORepository : IRepository<SC_DESCRIPTOR_PUESTO_EMPLEADOTable>
 	{
+		Task<CResult> CambiarActivoAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOTable Data, string vLOGIN_SISTEMA, string vESTACION);
+		Task<CResult> InactivarCargasPorDescriptorAsync(int corrEmpresa, int corrDescriptor, string vLOGIN_SISTEMA, string vESTACION);
 		Task<CResult> GetDisponiblesAsync(int corrEmpresa, int corrDescriptor);
 		Task<CResult> GetPorEmpleadoAsync(int corrEmpresa, int corrEmpleado);
 		Task<CResult> GetDisponiblesPorEmpleadoAsync(int corrEmpresa, int corrEmpleado);

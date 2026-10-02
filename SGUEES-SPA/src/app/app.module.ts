@@ -11,7 +11,9 @@ import { CreateAccountFormModule } from './shared/components/library/create-acco
 import { ChangePasswordFormModule } from './shared/components/library/change-password-form/change-password-form.component';
 import { LoginFormModule } from './shared/components/library/login-form/login-form.component';
 
-import { AuthService, ScreenService, AppInfoService } from './shared/services';
+import { AuthService, ScreenService, AppInfoService, readOwnedSessionToken } from './shared/services';
+import { DxPopupModule } from 'devextreme-angular/ui/popup';
+import { DxButtonModule } from 'devextreme-angular/ui/button';
 import { UnauthenticatedContentModule } from './layouts/unauthenticated-content/unauthenticated-content';
 import { HttpClientModule } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
@@ -49,7 +51,7 @@ import { MessageService } from 'primeng/api';
 registerLocaleData(localeEs, 'es');
 
 export function tokenGetterLocal(): string {
-	return localStorage.getItem('token') || '';
+	return readOwnedSessionToken();
 }
 
 @NgModule({
@@ -99,6 +101,8 @@ export function tokenGetterLocal(): string {
     //import primeng
     BrowserAnimationsModule,
     ToastModule,
+    DxPopupModule,
+    DxButtonModule,
   ],
   providers: [
     ErrorInterceptorProvider,

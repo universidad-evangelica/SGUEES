@@ -21,6 +21,7 @@ namespace SGUEES.Services
         private readonly ISC_REPORepository _repoRpt;
         private readonly ISEG_USUARIOService _repoUser;
         private readonly ISC_DESCRIPTOR_PUESTO_FIRMASRepository _firmasRepo;
+        private readonly ISC_DESCRIPTOR_PUESTO_EMPLEADORepository _empleadoRepo;
 
         public SC_DESCRIPTOR_PUESTOService(
             ISC_DESCRIPTOR_PUESTORepository repo,
@@ -30,7 +31,8 @@ namespace SGUEES.Services
             ISC_DESCRIPTOR_PUESTO_RESPONSABILIDAD_CARGOService responsabilidadCargoService,
             ISC_REPORepository repoRpt,
             ISEG_USUARIOService repoUser,
-            ISC_DESCRIPTOR_PUESTO_FIRMASRepository firmasRepo)
+            ISC_DESCRIPTOR_PUESTO_FIRMASRepository firmasRepo,
+            ISC_DESCRIPTOR_PUESTO_EMPLEADORepository empleadoRepo)
         {
             _repo = repo;
             _unidadesUsuarioRepo = unidadesUsuarioRepo;
@@ -40,6 +42,7 @@ namespace SGUEES.Services
             _repoRpt = repoRpt;
             _repoUser = repoUser;
             _firmasRepo = firmasRepo;
+            _empleadoRepo = empleadoRepo;
         }
 
         // Qué hace: lista descriptores de la empresa visibles para el usuario de sesión.
@@ -433,6 +436,24 @@ namespace SGUEES.Services
 
             Data.OBSERVACION = Data.OBSERVACION.Trim();
             var resultado = await _repo.AutorizaAsync(Data, vLOGIN_SISTEMA.Trim());
+
+            // Qué hace: al inactivar el descriptor, inactiva sus cargas de empleados.
+            // Cómo lo hace: corre después del flujo, solo sobre SC_DESCRIPTOR_PUESTO_EMPLEADO. El SP de flujo no se altera.
+            if (resultado.Result && resultado.ErrorCode == 0 && Data.OPERACION == 5)
+            {
+                try
+                {
+                    await _empleadoRepo.InactivarCargasPorDescriptorAsync(
+                        Data.CORR_EMPRESA,
+                        Data.CORR_DESCRIPTOR_PUESTO,
+                        vLOGIN_SISTEMA.Trim(),
+                        string.Empty);
+                }
+                catch (Exception)
+                {
+                    // El flujo ya confirmó el estado Inactivo. Esta actualización no lo revierte.
+                }
+            }
 
             // Qué hace: al quedar Activo copia las firmas del jefe inmediato y del jefe de TH.
             // Cómo lo hace: lee la bitácora en otra conexión. Si falla, la aprobación del flujo se mantiene.

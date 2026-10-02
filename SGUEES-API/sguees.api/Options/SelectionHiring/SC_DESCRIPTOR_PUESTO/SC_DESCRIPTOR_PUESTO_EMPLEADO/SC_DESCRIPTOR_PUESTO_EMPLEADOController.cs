@@ -92,6 +92,33 @@ namespace SGUEES.Controllers
 			return resultado.ErrorCode == 0 ? StatusCode(201, resultado) : BadRequest(resultado);
 		}
 
+		// Qué hace: activa o inactiva la carga desde el descriptor de puesto.
+		// Cómo lo hace: usa el permiso de modificación de sc-descriptor-puesto.
+		[HttpPut("Activar")]
+		[Authorize(Policy = "/sc-descriptor-puesto|U")]
+		public Task<IActionResult> Activar(SC_DESCRIPTOR_PUESTO_EMPLEADOTable Data)
+		{
+			return CambiarActivoAsync(Data);
+		}
+
+		// Qué hace: activa o inactiva la carga desde el empleado.
+		// Cómo lo hace: usa el permiso de modificación de gen-empleado.
+		[HttpPut("ActivarPorEmpleado")]
+		[Authorize(Policy = "/gen-empleado|U")]
+		public Task<IActionResult> ActivarPorEmpleado(SC_DESCRIPTOR_PUESTO_EMPLEADOTable Data)
+		{
+			return CambiarActivoAsync(Data);
+		}
+
+		// Qué hace: aplica el bit de la carga y devuelve la fila.
+		// Cómo lo hace: fija empresa y auditoría, y responde 200 o el error del servicio.
+		private async Task<IActionResult> CambiarActivoAsync(SC_DESCRIPTOR_PUESTO_EMPLEADOTable Data)
+		{
+			Data.CORR_EMPRESA = GetCorrEmpresa();
+			var resultado = await _service.CambiarActivoAsync(Data, GetUsuario(), ClientInfoHelper.GetClientStation(HttpContext));
+			return resultado.ErrorCode == 0 ? Ok(resultado) : BadRequest(resultado);
+		}
+
 		// Qué hace: quita un descriptor del empleado.
 		// Cómo lo hace: usa la baja existente, con el permiso de modificación de gen-empleado.
 		[HttpDelete("DeletePorEmpleado")]

@@ -180,6 +180,26 @@
 	opacity: 0.85;
 }
 
+.descriptor-flujo-popup__aviso {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	margin: 0;
+	padding: 10px 12px;
+	border-radius: 8px;
+	font-size: 0.9rem;
+	line-height: 1.4;
+	color: #fbbf24;
+	background: rgba(245, 158, 11, 0.16);
+	border: 1px solid rgba(245, 158, 11, 0.45);
+}
+
+.descriptor-flujo-popup__aviso-icon {
+	flex-shrink: 0;
+	margin-top: 2px;
+	font-size: 16px;
+}
+
 .descriptor-flujo-popup__actions {
 	display: flex;
 	justify-content: flex-end;

@@ -236,6 +236,16 @@ export class GenEmpleadoService {
 		});
 	}
 
+	// Qué hace: activa o inactiva la carga del descriptor en el empleado.
+	// Cómo lo hace: envía el bit del registro de carga, no el estado del descriptor.
+	cambiarActivoDescriptorEmpleado(corrDescriptor: number, corrEmpleado: number, activo: boolean): Observable<IResult> {
+		return this.descriptorEmpleadoRepo.cambiarActivoPorEmpleado({
+			CORR_DESCRIPTOR_PUESTO: corrDescriptor,
+			CORR_EMPLEADO: corrEmpleado,
+			ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO: activo,
+		});
+	}
+
 	// Qué hace: pide el PDF formato corto del descriptor seleccionado.
 	// Cómo lo hace: envía el descriptor y el empleado que se está viendo.
 	getPDFDescriptorCorto(corrDescriptor: number, corrEmpleado: number): Observable<Blob> {

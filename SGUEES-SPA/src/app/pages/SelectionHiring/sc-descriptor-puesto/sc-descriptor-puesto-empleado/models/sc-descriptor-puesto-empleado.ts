@@ -10,6 +10,7 @@ export interface ScDescriptorPuestoEmpleado {
 	TELEFONO_INSTITUCIONAL?: string;
 	LOGIN_SISTEMA_WEB?: string;
 	ACTIVO_EMPLEADO?: boolean | null;
+	ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO?: boolean | null;
 	SELECCION?: boolean;
 }
 
@@ -25,5 +26,6 @@ export interface ScDescriptorAsignadoEmpleado {
 	CORR_ESTADO?: number | null;
 	NOMBRE_ESTADO?: string;
 	FORMATO?: string;
+	ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO?: boolean | null;
 	SELECCION?: boolean;
 }

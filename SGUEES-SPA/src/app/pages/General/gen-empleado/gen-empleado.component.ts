@@ -357,9 +357,20 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	// Qué hace: indica si ya se puede imprimir el descriptor del empleado abierto.
-	// Cómo lo hace: exige permiso de impresión y que el descriptor seleccionado esté Activo.
+	// Cómo lo hace: exige permiso de impresión, descriptor Activo y carga activa.
 	get puedeImprimirDescriptorEmpleado(): boolean {
-		return !!this.permitePrint && this.esEstadoDescriptorActivo(this.descriptorSeleccionado?.NOMBRE_ESTADO);
+		const fila = this.descriptorSeleccionado;
+		return (
+			!!this.permitePrint &&
+			this.esEstadoDescriptorActivo(fila?.NOMBRE_ESTADO) &&
+			this.esCargaAsignacionActiva(fila?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)
+		);
+	}
+
+	// Qué hace: indica si la carga seleccionada está activa.
+	// Cómo lo hace: el bit nulo se toma como activo, que es el valor por defecto de la tabla.
+	esCargaAsignacionActiva(valor: boolean | number | string | null | undefined): boolean {
+		return valor !== false && valor !== 0 && valor !== '0';
 	}
 
 	// Qué hace: indica si el descriptor seleccionado admite el formato corto.
@@ -5365,7 +5376,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 	}
 
 	// Qué hace: abre el modal de descriptores que aplican al empleado.
-	// Cómo lo hace: marca el check de los que ya están asignados.
+	// Cómo lo hace: deja fuera los que ya están asignados a este empleado.
 	abrirAsignarDescriptores(): void {
 		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
 		if (!this.puedeAsignarDescriptores || this.cargandoDescriptores) {
@@ -5389,10 +5400,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 						return;
 					}
 					const asignados = new Set(this.descriptoresAsignados.map((item) => item.CORR_DESCRIPTOR_PUESTO));
-					this.descriptoresDisponibles = (response.Data ?? []).map((item: ScDescriptorAsignadoEmpleado) => ({
-						...this.mapDescriptorAsignado(item),
-						SELECCION: asignados.has(Number(item?.CORR_DESCRIPTOR_PUESTO)),
-					}));
+					this.descriptoresDisponibles = (response.Data ?? [])
+						.filter((item: ScDescriptorAsignadoEmpleado) => !asignados.has(Number(item?.CORR_DESCRIPTOR_PUESTO)))
+						.map((item: ScDescriptorAsignadoEmpleado) => ({
+							...this.mapDescriptorAsignado(item),
+							SELECCION: false,
+						}));
 					this.popupDescriptorEmpleadoVisible = true;
 				},
 				error: (error) => {
@@ -5569,6 +5582,45 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 		return (nombre ?? '').trim().toUpperCase() === 'INACTIVO';
 	}
 
+	// Qué hace: activa o inactiva la carga del descriptor seleccionado.
+	// Cómo lo hace: actualiza el bit y parchea la fila en memoria con la respuesta.
+	cambiarActivoCargaDescriptor(activo: boolean): void {
+		const fila = this.descriptorSeleccionado;
+		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
+		const corrDescriptor = Number(fila?.CORR_DESCRIPTOR_PUESTO);
+		if (!this.puedeAsignarDescriptores || !corrEmpleado || !corrDescriptor || this.cargandoDescriptores) {
+			return;
+		}
+		if (activo && !this.esEstadoDescriptorActivo(fila?.NOMBRE_ESTADO)) {
+			return;
+		}
+
+		this.cargandoDescriptores = true;
+		this.service
+			.cambiarActivoDescriptorEmpleado(corrDescriptor, corrEmpleado, activo)
+			.pipe(take(1))
+			.subscribe({
+				next: (response: any) => {
+					this.cargandoDescriptores = false;
+					if (!response?.Result) {
+						this.notifyFx(response?.ErrorMessage || 'No se pudo actualizar la carga.', NotifyType.Warning);
+						return;
+					}
+					const bit = response?.Data?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO ?? activo;
+					this.descriptoresAsignados = this.descriptoresAsignados.map((item) =>
+						Number(item.CORR_DESCRIPTOR_PUESTO) === corrDescriptor
+							? { ...item, ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO: bit }
+							: item
+					);
+					this.notifyFx(activo ? 'Carga activada.' : 'Carga inactivada.', NotifyType.Success, { raw: true });
+				},
+				error: (error) => {
+					this.cargandoDescriptores = false;
+					this.notifyFx(this.textoErrorDescriptorEmpleado(error, 'No se pudo actualizar la carga.'), NotifyType.Warning);
+				},
+			});
+	}
+
 	quitarDescriptorAsignado(row: ScDescriptorAsignadoEmpleado): void {
 		const corrEmpleado = Number(this.model?.CORR_EMPLEADO ?? 0);
 		const corrDescriptor = Number(row?.CORR_DESCRIPTOR_PUESTO);
@@ -5610,6 +5662,7 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			CORR_ESTADO: item?.CORR_ESTADO ?? null,
 			NOMBRE_ESTADO: item?.NOMBRE_ESTADO ?? '',
 			FORMATO: item?.FORMATO ?? '',
+			ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO: item?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO ?? null,
 		};
 	}
 
@@ -5641,8 +5694,12 @@ export class GenEmpleadoComponent extends CBaseComponent implements OnInit, OnDe
 			this.notifyFx('Seleccione un descriptor para imprimir.', NotifyType.Warning);
 			return;
 		}
-		if (!this.puedeImprimirDescriptorEmpleado) {
+		if (!this.esEstadoDescriptorActivo(this.descriptorSeleccionado?.NOMBRE_ESTADO)) {
 			this.notifyFx('Solo se puede imprimir cuando el descriptor esta Activo.', NotifyType.Warning);
+			return;
+		}
+		if (!this.esCargaAsignacionActiva(this.descriptorSeleccionado?.ACTIVO_DESCRIPTOR_PUESTO_EMPLEADO)) {
+			this.notifyFx('Solo se puede imprimir cuando la carga del descriptor esta activa.', NotifyType.Warning);
 			return;
 		}
 		if (formato === 'corto' && !this.esFormatoCortoDescriptor) {
