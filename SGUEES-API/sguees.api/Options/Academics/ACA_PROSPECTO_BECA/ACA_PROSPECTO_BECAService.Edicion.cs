@@ -130,11 +130,13 @@ namespace sguees.Services
             {
                 cmd.CommandText = @"
                     SELECT P.CORR_PREGUNTA_BECA, P.TIPO_RESPUESTA,
-                           CAST(PA.ANIO AS varchar(4)) + '-' + CAST(PA.NUMERO_PERIODO AS varchar(2)) + '_' + CAST(PB.CORR_PROSPECTO_BECA AS varchar(12))
+                           CAST(PA.ANIO AS varchar(4)) + '-' + CAST(PA.NUMERO_PERIODO AS varchar(12)) + '_' +
+                           COALESCE(NULLIF(LTRIM(RTRIM(PB.Cif)), ''), NULLIF(LTRIM(RTRIM(PI.Cif)), ''), CAST(PB.CORR_PROSPECTO AS varchar(20)))
                     FROM dbo.ACA_PROSPECTO_BECA_RESPUESTA R
                     INNER JOIN dbo.ACA_PROSPECTO_BECA_PREGUNTA P ON P.CORR_PREGUNTA_BECA = R.CORR_PREGUNTA_BECA
                     INNER JOIN dbo.ACA_PROSPECTO_BECA PB ON PB.CORR_PROSPECTO_BECA = R.CORR_PROSPECTO_BECA
                     INNER JOIN dbo.ACA_PERIODOS_ACADEMICOS PA ON PA.CORR_PERIODO_ACADEMICO = PB.CORR_PERIODO_ACADEMICO
+                    LEFT JOIN dbo.PersonalInformations PI ON PI.InformationId = PB.CORR_PROSPECTO
                     WHERE R.CORR_RESPUESTA_BECA = @Respuesta
                       AND R.CORR_PROSPECTO_BECA = @Solicitud
                       AND PB.CORR_EMPRESA = @Empresa

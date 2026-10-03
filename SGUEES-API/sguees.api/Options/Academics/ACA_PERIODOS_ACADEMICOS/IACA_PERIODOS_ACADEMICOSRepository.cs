@@ -9,5 +9,6 @@ namespace sguees.Repositories
     public interface IACA_PERIODOS_ACADEMICOSRepository : IRepository<ACA_PERIODOS_ACADEMICOSTable>
     {
         Task<CResult> GetCICLO_ACA_PROSPECTOAsync(List<CParameter> xWhere);
+        Task<CResult> GetCICLO_ACA_PROSPECTO_BECAAsync(List<CParameter> xWhere);
     }
 }

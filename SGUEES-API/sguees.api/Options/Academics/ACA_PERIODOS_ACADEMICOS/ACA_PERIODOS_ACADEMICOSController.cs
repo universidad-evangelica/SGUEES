@@ -33,14 +33,14 @@ namespace sguees.Controllers
             return await _service.GetCICLO_ACA_PROSPECTOAsync(Data);
         }
 
-        // Qué hace: mismos ciclos de pregrado, para el filtro de Solicitudes de beca.
-        // Cómo lo hace: reutiliza V_ACA_PROSPECTO_CICLO; el permiso es el de esa pantalla.
+        // Qué hace: ciclos con solicitudes de beca, para el filtro de esa pantalla.
+        // Cómo lo hace: lee V_ACA_PROSPECTO_BECA_CICLO en SIS_ADMISION; el permiso es el de esa pantalla.
         [HttpGet("GetCICLO_ACA_PROSPECTO_BECA")]
         [Authorize(Policy = "/aca-prospecto-beca|R")]
         public async Task<CResult> GetCICLO_ACA_PROSPECTO_BECA([FromQuery] ACA_PERIODOS_ACADEMICOSParam Data)
         {
             Data.CORR_EMPRESA = int.Parse(User.Claims.ToList().SingleOrDefault(e => e.Type == "CORR_EMPRESA").Value);
-            return await _service.GetCICLO_ACA_PROSPECTOAsync(Data);
+            return await _service.GetCICLO_ACA_PROSPECTO_BECAAsync(Data);
         }
     }
 }

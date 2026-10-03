@@ -22,7 +22,7 @@ namespace sguees.Services
         public ACA_PROSPECTO_BECAService(IACA_PROSPECTO_BECARepository repo, IConfiguration config)
         {
             _repo = repo;
-            _connectionString = config.GetConnectionString("defaultConnection");
+            _connectionString = config.GetConnectionString("admisionConnection") ?? config.GetConnectionString("defaultConnection");
         }
 
         // Qué hace: solicitudes de beca de un ciclo, en borrador o enviadas.
@@ -102,31 +102,28 @@ namespace sguees.Services
 
         private static string ResolverRuta(ACA_PROSPECTO_BECA_ARCHIVOView row)
         {
-            if (row == null || row.NUMERO_PERIODO == null)
+            if (row == null)
                 return null;
 
             var raiz = Path.GetFullPath(RaizDocumentos);
-            var carpeta = row.ANIO + "-" + row.NUMERO_PERIODO + "_" + row.CORR_PROSPECTO_BECA;
-            var directorio = Path.GetFullPath(Path.Combine(raiz, carpeta));
-            if (!EstaDentro(directorio, raiz))
-                return null;
+            if (!string.IsNullOrWhiteSpace(row.ARCHIVO_RUTA))
+            {
+                var porRuta = Path.GetFullPath(row.ARCHIVO_RUTA);
+                if (EstaDentro(porRuta, raiz) && File.Exists(porRuta))
+                    return porRuta;
+            }
 
             var nombre = Path.GetFileName(row.ARCHIVO_NOMBRE ?? "");
-            if (string.IsNullOrWhiteSpace(nombre))
+            if (string.IsNullOrWhiteSpace(row.CARPETA) || string.IsNullOrWhiteSpace(nombre))
+                return null;
+
+            var directorio = Path.GetFullPath(Path.Combine(raiz, row.CARPETA));
+            if (!EstaDentro(directorio, raiz))
                 return null;
 
             var porNombre = Path.GetFullPath(Path.Combine(directorio, nombre));
             if (EstaDentro(porNombre, directorio) && File.Exists(porNombre))
                 return porNombre;
-
-            if (!string.IsNullOrWhiteSpace(row.ARCHIVO_RUTA))
-            {
-                var porRuta = Path.GetFullPath(row.ARCHIVO_RUTA);
-                if (string.Equals(Path.GetFileName(porRuta), nombre, StringComparison.OrdinalIgnoreCase)
-                    && EstaDentro(porRuta, directorio)
-                    && File.Exists(porRuta))
-                    return porRuta;
-            }
 
             return null;
         }

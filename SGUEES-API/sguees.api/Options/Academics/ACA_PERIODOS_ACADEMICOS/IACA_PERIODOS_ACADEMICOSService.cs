@@ -12,5 +12,6 @@ namespace sguees.Services
         Task<CResult> UpdateAsync(ACA_PERIODOS_ACADEMICOSTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> DeleteAsync(ACA_PERIODOS_ACADEMICOSTable Data, string vLOGIN_SISTEMA, string vESTACION);
         Task<CResult> GetCICLO_ACA_PROSPECTOAsync(ACA_PERIODOS_ACADEMICOSParam xWhere);
+        Task<CResult> GetCICLO_ACA_PROSPECTO_BECAAsync(ACA_PERIODOS_ACADEMICOSParam xWhere);
     }
 }
