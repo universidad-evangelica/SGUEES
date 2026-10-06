@@ -365,7 +365,7 @@ namespace sguees.Repositories
 					objResultado.RowsAffected = 0;
 					objResultado.CodeHelper = 0;
 					objResultado.ErrorCode = 4102;
-					objResultado.ErrorMessage = "No se puede eliminar el empleado porque tiene puesto o carga de descriptor asociados.";
+					objResultado.ErrorMessage = "No se puede eliminar el empleado porque tiene registros asociados en otras tablas.";
 					objResultado.ErrorSource = "";
 					return objResultado;
 				}
