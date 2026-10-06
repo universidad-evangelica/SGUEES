@@ -155,8 +155,8 @@ namespace sguees.Controllers
 			return File(stream, EmpleadoFotoStorage.GetContentType(physicalPath));
 		}
 
-		// Qué hace: elimina el registro de empleado (fila GEN_EMPLEADO).
-		// Cómo: Delete por CORR_EMPRESA (sesión) + CORR_EMPLEADO; 200 OK o BadRequest si hay FK.
+		// Qué hace: elimina el empleado y su persona, salvo puesto o carga de descriptor.
+		// Cómo: Delete por CORR_EMPRESA (sesión) + CORR_EMPLEADO; 200 OK o BadRequest si hay hijos que lo frenan.
 		[HttpDelete]
 		[Authorize(Policy = "/gen-empleado|D")]
 		public async Task<IActionResult> Delete([FromQuery] GEN_EMPLEADOTable Data)
